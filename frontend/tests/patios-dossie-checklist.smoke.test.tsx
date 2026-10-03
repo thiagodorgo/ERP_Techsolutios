@@ -59,8 +59,8 @@ const RUNS: ChecklistRunSummaryItem[] = [
 test("adaptChecklistRunsResponse: parseia {items}, tolera snake/camelCase e ordena por startedAt DESC", () => {
   const runs = adaptChecklistRunsResponse({
     items: [
-      { id: "a", template_id: TEMPLATE_ID, template_name: "Vistoria de recolhimento", template_version: 1, status: "in_progress", started_at: "2026-07-01T10:00:00.000Z", completed_at: null },
-      { id: "b", templateId: TEMPLATE_ID, templateName: "Checklist de avarias", templateVersion: 2, status: "completed", startedAt: "2026-07-10T10:00:00.000Z", completedAt: "2026-07-10T11:00:00.000Z" },
+      { id: "a", template_id: TEMPLATE_ID, template_name: "Vistoria de recolhimento", template_version: 1, status: "in_progress", started_at: "2026-07-01T10:00:00.000Z", completed_at: null, reopenedFromRunId: null, supersededByRunId: null, currentRunId: null },
+      { id: "b", templateId: TEMPLATE_ID, templateName: "Checklist de avarias", templateVersion: 2, status: "completed", startedAt: "2026-07-10T10:00:00.000Z", completedAt: "2026-07-10T11:00:00.000Z", reopenedFromRunId: null, supersededByRunId: null, currentRunId: null },
     ],
   });
   assert.equal(runs.length, 2);
@@ -75,7 +75,7 @@ test("adaptChecklistRunsResponse: parseia {items}, tolera snake/camelCase e orde
 test("adaptChecklistRunsResponse: status desconhecido cai em 'in_progress'; item sem id/template/startedAt é descartado", () => {
   const runs = adaptChecklistRunsResponse({
     items: [
-      { id: "x", templateId: TEMPLATE_ID, templateVersion: 1, status: "banana", startedAt: "2026-07-01T10:00:00.000Z" },
+      { id: "x", templateId: TEMPLATE_ID, templateVersion: 1, status: "banana", startedAt: "2026-07-01T10:00:00.000Z", reopenedFromRunId: null, supersededByRunId: null, currentRunId: null },
       { templateId: TEMPLATE_ID, status: "completed", startedAt: "2026-07-02T10:00:00.000Z" }, // sem id → descartado
       { id: "y", status: "completed", startedAt: "2026-07-03T10:00:00.000Z" }, // sem templateId → descartado
     ],

@@ -11,14 +11,18 @@ import { renderToString } from "react-dom/server";
 
 import {
   adaptChecklistRunsResponse,
+  ChecklistRunContractError,
 } from "../src/modules/patios/processes/processes.adapter";
 import type { ChecklistRunSummaryItem } from "../src/modules/patios/processes/processes.types";
-import { ChecklistRunsPanel } from "../src/modules/patios/processes/components/ChecklistRunsPanel";
+import { ChecklistRunsPanel, focusVersionRow } from "../src/modules/patios/processes/components/ChecklistRunsPanel";
 import { DossiePrintDocument } from "../src/modules/patios/processes/components/DossiePrintDocument";
 import { VehicleDossieView, type VehicleDossieViewProps } from "../src/modules/patios/processes/components/VehicleDossieModal";
 import type { ProcessDetail } from "../src/modules/patios/processes/processes.types";
 
-// B-SAN3-11 — testes T1–T14: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
+// B-SAN3-11 — testes T1–T22: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
+// Ciclo 2 (§16 do plano): T3′ e T15/T16 (ausência ou valor inválido de chave de versão fica do lado fechado), T11′
+// (ids só em id=/href= nas 3 superfícies), T17–T19 (links com afordância que não navegam; ids únicos na impressão),
+// T12 com a saída do gerador v2 e T20–T22 (o gerador vê o emissor e a vistoria pelo tipo).
 
 const TEMPLATE_ID = "11111111-2222-4333-8444-111111111111";
 const RELATED_ID  = "99999999-8888-4777-8666-999999999999";
@@ -113,13 +117,36 @@ test("T2: adapter snake_case — 3 campos preservados", () => {
   assert.strictEqual(run.currentRunId, null);
 });
 
-test("T3: adapter chaves ausentes → null (não undefined)", () => {
-  const [run] = adaptChecklistRunsResponse({
-    items: [{ id: "x", templateId: TEMPLATE_ID, templateVersion: 1, status: "completed", startedAt: "2026-09-01T10:00:00.000Z" }],
-  });
+// Item que passa pelo filtro id/templateId/startedAt, com as 12 chaves do contrato (as 3 de versão em null).
+function contractItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: "x", templateId: TEMPLATE_ID, templateName: null, templateVersion: 1, status: "completed",
+    relatedEntityType: null, relatedEntityId: null, startedAt: "2026-09-01T10:00:00.000Z", completedAt: null,
+    reopenedFromRunId: null, supersededByRunId: null, currentRunId: null,
+    ...overrides,
+  };
+}
+const VERSION_KEYS = ["reopenedFromRunId", "supersededByRunId", "currentRunId"] as const;
+
+test("T3′: adapter — chave de versão AUSENTE lança ChecklistRunContractError; null explícito → null (camel e snake)", () => {
+  for (const key of VERSION_KEYS) {
+    const item = contractItem();
+    delete item[key];
+    assert.throws(
+      () => adaptChecklistRunsResponse({ items: [item] }),
+      (error: unknown) => error instanceof ChecklistRunContractError && error.message === `campo de versão ausente: ${key}`,
+      `${key} ausente deve recusar a resposta`,
+    );
+  }
+  const [run] = adaptChecklistRunsResponse({ items: [contractItem()] });
   assert.strictEqual(run.reopenedFromRunId, null);
   assert.strictEqual(run.supersededByRunId, null);
   assert.strictEqual(run.currentRunId, null);
+  const snake = contractItem();
+  delete snake.supersededByRunId;
+  snake.superseded_by_run_id = null;
+  const [runSnake] = adaptChecklistRunsResponse({ items: [snake] });
+  assert.strictEqual(runSnake.supersededByRunId, null, "superseded_by_run_id: null (snake) → null");
 });
 
 // ─────────────── T4: substituída não tem chip verde (vermelho-controle via fixture) ───────────────
@@ -226,10 +253,61 @@ test("T10: VehicleDossieView aba checklist com substituída → texto presente; 
   assert.doesNotMatch(htmlWithout, /Versão substituída/);
 });
 
-// ─────────────── T11: §allowlist — ids só em atributos, sem UUID/tenant como texto ───────────────
+// ─────────────── T11′: §allowlist — ids só em atributos, sem UUID/tenant como texto ───────────────
 
-test("T11: HTML sem tags não casa UUID nem 'tenant'/'work_order'; ids só em id=/href=", () => {
+function dossieViewProps(runs: readonly ChecklistRunSummaryItem[]): VehicleDossieViewProps {
+  return {
+    canRead: true, loading: false, error: null, notFound: false, process: PROCESS,
+    events: [], verify: null, inspection: null, yardName: "Pátio", currentSpot: null,
+    statement: null, statementLoading: false, statementError: null, statementDenied: false,
+    canCreateCharge: false, canTransition: false,
+    canReadChecklist: true, checklistRuns: runs, checklistLoading: false, checklistError: null, checklistDenied: false,
+    historyItems: [], historyLoading: false, historyError: null,
+    context: {}, activeTab: "checklist", onTabChange: () => {}, onReload: () => {}, onReloadStatement: () => {},
+    onReloadChecklist: () => {}, onReloadHistory: () => {}, onReloadAll: () => {}, onLaunchCharge: () => {},
+    onPrint: () => {}, printReady: true,
+  };
+}
+
+function renderPrint(runs: readonly ChecklistRunSummaryItem[]): string {
+  return renderToString(
+    <DossiePrintDocument
+      process={PROCESS} issuedAt="2026-09-10T10:00:00.000Z" orgName="Org" yardName="Pátio"
+      currentSpot={null} inspection={null} verify={null} events={[]} statement={null}
+      canReadChecklist checklistRuns={runs} historyItems={[]}
+    />,
+  );
+}
+
+function countOf(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+// Exclusividade de atributo: cada id de vistoria renderizado aparece SÓ como `id="<prefixo>-<id>"` ou `href="#<prefixo>-<id>"`
+// (nunca em title=, data-*, texto…); id referenciado mas não renderizado não aparece.
+function assertIdsOnlyInIdAndHref(html: string, prefix: string, rendered: readonly string[], absent: readonly string[], surface: string): void {
+  for (const id of rendered) {
+    const total = countOf(html, id);
+    const asId = countOf(html, `id="${prefix}-${id}"`);
+    const asHref = countOf(html, `href="#${prefix}-${id}"`);
+    assert.strictEqual(asId, 1, `${surface}: ${id} deve sair uma vez como id="${prefix}-${id}"`);
+    assert.strictEqual(total, asId + asHref, `${surface}: ${id} aparece ${total}× mas só ${asId} como id e ${asHref} como href`);
+  }
+  for (const id of absent) assert.strictEqual(countOf(html, id), 0, `${surface}: ${id} não está na lista e não deve aparecer`);
+}
+
+test("T11′: HTML sem tags não casa UUID nem 'tenant'/'work_order'; ids só em id=/href= nas 3 superfícies", () => {
   const html = renderPanel([RUN_V1, RUN_U1, RUN_U2]);
+  // exclusividade de atributo nas 3 superfícies (painel, impressão com idPrefix, VehicleDossieView)
+  const surfaces: readonly [string, string, string][] = [
+    ["painel", "vistoria", html],
+    ["impressão", "vistoria-impressa", renderPrint([RUN_V1, RUN_U1, RUN_U2])],
+    ["VehicleDossieView", "vistoria", renderToString(<VehicleDossieView {...dossieViewProps([RUN_V1, RUN_U1, RUN_U2])} />)],
+  ];
+  for (const [surface, prefix, surfaceHtml] of surfaces) {
+    assertIdsOnlyInIdAndHref(surfaceHtml, prefix, ["run-v1", "run-u1", "run-u2"], ["run-v2", "run-v3"], surface);
+    assert.doesNotMatch(surfaceHtml.replace(/<[^>]*>/g, " "), /run-v1|run-u1|run-u2/, `${surface}: id não-UUID fora do texto`);
+  }
   // sem tags, nenhum UUID aparece como texto
   const textOnly = html.replace(/<[^>]*>/g, " ");
   assert.doesNotMatch(textOnly, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
@@ -251,6 +329,93 @@ test("T11: HTML sem tags não casa UUID nem 'tenant'/'work_order'; ids só em id
   const textUuid = htmlUuid.replace(/<[^>]*>/g, " ");
   assert.doesNotMatch(textUuid, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i, "UUID não deve aparecer como texto");
   assert.match(htmlUuid, new RegExp(`id="vistoria-${TEMPLATE_ID}"`), "UUID aparece como atributo id");
+});
+
+// ─────────────── T15–T16: valor inválido fica do lado fechado, do adapter ao service ───────────────
+
+test("T15: adapter — valor inválido em cada chave de versão lança; item sem id e sem as chaves é descartado sem lançar", () => {
+  for (const key of VERSION_KEYS) {
+    for (const invalid of ["", 42, { id: "run-u2" }] as const) {
+      assert.throws(
+        () => adaptChecklistRunsResponse({ items: [contractItem({ [key]: invalid })] }),
+        (error: unknown) => error instanceof ChecklistRunContractError && error.message === `campo de versão inválido: ${key}`,
+        `${key}=${JSON.stringify(invalid)} deve recusar a resposta`,
+      );
+    }
+  }
+  const semIdSemChaves = { templateId: TEMPLATE_ID, templateVersion: 1, status: "completed", startedAt: "2026-09-01T10:00:00.000Z" };
+  assert.deepEqual(adaptChecklistRunsResponse({ items: [semIdSemChaves] }), [], "item irrenderizável segue descartado (não lança)");
+});
+
+test("T16: service — resposta sem currentRunId REJEITA com ChecklistRunContractError; com as 12 chaves resolve 2 runs", async () => {
+  const g = globalThis as unknown as { window?: { localStorage?: unknown; dispatchEvent?: unknown } };
+  const hadWindow = "window" in g;
+  const previousMocks = process.env.VITE_USE_MOCKS;
+  const originalFetch = globalThis.fetch;
+  g.window ??= {};
+  g.window.localStorage ??= { getItem: () => null, setItem: () => undefined, removeItem: () => undefined };
+  g.window.dispatchEvent ??= () => true;
+  process.env.VITE_USE_MOCKS = "false";
+  const u1 = { ...RUN_U1 } as Record<string, unknown>;
+  const u2 = { ...RUN_U2 } as Record<string, unknown>;
+  const u1SemCurrent = { ...u1 };
+  delete u1SemCurrent.currentRunId;
+  let body: unknown = { data: { items: [u1SemCurrent, u2] } };
+  globalThis.fetch = (async () => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  try {
+    const { listProcessChecklistRuns } = await import("../src/modules/patios/processes/processes.service");
+    await assert.rejects(() => listProcessChecklistRuns({}, "p1"), (error: unknown) => error instanceof ChecklistRunContractError);
+    body = { data: { items: [u1, u2] } };
+    const runs = await listProcessChecklistRuns({}, "p1");
+    assert.strictEqual(runs.length, 2);
+    assert.strictEqual(runs[0].id, "run-u2", "vigente (mais recente) primeiro");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousMocks === undefined) delete process.env.VITE_USE_MOCKS; else process.env.VITE_USE_MOCKS = previousMocks;
+    if (!hadWindow) delete g.window;
+  }
+});
+
+// ─────────────── T17–T19: links com afordância, ids únicos na impressão, âncora que não navega ───────────────
+
+test("T17: painel B1/B3 — os dois links saem com class=\"pat-link\" e href=\"#vistoria-…\"; nenhum <a sem pat-link nas linhas", () => {
+  const html = renderPanel([RUN_U2, RUN_U1]);
+  const anchors = html.match(/<a\b[^>]*>/g) ?? [];
+  assert.strictEqual(anchors.length, 2, "Ver versão anterior (u2) e Ver versão vigente (u1)");
+  for (const anchor of anchors) {
+    assert.match(anchor, /class="pat-link"/, `link sem o idioma da casa: ${anchor}`);
+    assert.match(anchor, /href="#vistoria-run-u[12]"/, `link sem âncora de versão: ${anchor}`);
+  }
+  assert.match(trHtml(html, "run-u1"), /<a class="pat-link" href="#vistoria-run-u2">/);
+  assert.match(trHtml(html, "run-u2"), /<a class="pat-link" href="#vistoria-run-u1">/);
+});
+
+test("T18: impressão com substituída e vigente — ids com prefixo vistoria-impressa; o painel puro mantém vistoria-", () => {
+  const htmlPrint = renderPrint([RUN_U2, RUN_U1]);
+  assert.match(htmlPrint, /id="vistoria-impressa-run-u1"/);
+  assert.match(htmlPrint, /href="#vistoria-impressa-run-u2"/);
+  assert.doesNotMatch(htmlPrint, /id="vistoria-run-/, "a impressão não repete o id do painel do modal");
+  assert.match(renderPanel([RUN_U2, RUN_U1]), /id="vistoria-run-u1"/);
+});
+
+test("T19: focusVersionRow — com alvo previne, centraliza e foca uma vez cada; sem alvo não previne e devolve null", () => {
+  const calls = { preventDefault: 0, scrollIntoView: [] as unknown[], focus: [] as unknown[], selectors: [] as string[] };
+  const target = {
+    scrollIntoView: (options?: unknown) => { calls.scrollIntoView.push(options); },
+    focus: (options?: unknown) => { calls.focus.push(options); },
+  };
+  const event = { preventDefault: () => { calls.preventDefault++; } };
+  const found = focusVersionRow(event, { querySelector: (selector: string) => { calls.selectors.push(selector); return target; } }, "vistoria-run-u2");
+  assert.strictEqual(found, "vistoria-run-u2");
+  assert.strictEqual(calls.preventDefault, 1);
+  assert.deepEqual(calls.scrollIntoView, [{ block: "center" }]);
+  assert.deepEqual(calls.focus, [{ preventScroll: true }]);
+  assert.deepEqual(calls.selectors, ['[id="vistoria-run-u2"]'], "procura pelo id dentro do escopo");
+
+  let prevented = 0;
+  const missing = focusVersionRow({ preventDefault: () => { prevented++; } }, { querySelector: () => null }, "vistoria-run-zz");
+  assert.strictEqual(missing, null);
+  assert.strictEqual(prevented, 0, "sem alvo, o href nativo vale (nada é prevenido)");
 });
 
 // ─────────────── T12–T14: guard gerado (CE-G1) ───────────────
@@ -279,11 +444,15 @@ function mutate(path: string, fn: (src: string) => string): void {
   writeFileSync(path, mutated);
 }
 
-test("T12: gerador no head → DESCARTADAS 0, pontos sem consulta 0, exit 0", () => {
+test("T12: gerador no head → descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0, exit 0", () => {
   const { exitCode, stdout } = runCenso(REPO_ROOT);
   assert.match(stdout, /DESCARTADAS pelo espelho \(0\): ∅/, "espelho sem descarte");
   assert.match(stdout, /DESCARTADAS pelo adapter \(0\): ∅/, "adapter sem descarte");
+  assert.match(stdout, /SEM EMISSOR no espelho \(0\): ∅/, "espelho sem chave sem emissor");
+  assert.match(stdout, /SEM EMISSOR no adapter \(0\): ∅/, "adapter sem chave sem emissor");
+  assert.match(stdout, /L0 VAZIO \(emissor ilegível\): não/, "emissor legível");
   assert.match(stdout, /pontos sem consulta=0/, "nenhum ponto sem consulta");
+  assert.match(stdout, /descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0 /, "veredito do gerador v2 todo em zero");
   assert.strictEqual(exitCode, 0, `gerador deve sair 0; stdout:\n${stdout}`);
 });
 
@@ -319,6 +488,69 @@ test("T14: mutação 2 — adapter sem supersededByRunId → DESCARTADAS pelo ad
     const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
     assert.strictEqual(exitCode, 1, `mutação 2 deve deixar gerador vermelho; stdout:\n${stdout}`);
     assert.match(stdout, /DESCARTADAS pelo adapter \([1-9]/, "deve reportar chave descartada");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── T20–T22: o gerador v2 vê o emissor (P-L0) e a vistoria pelo tipo (P-L3) ───────────────
+
+// Copia o que o gerador lê (o mesmo que T13/T14): o DTO, frontend/src e o package.json; o TS_ROOT é o frontend real.
+function copyCensoInputs(tmp: string): void {
+  cpSync(join(REPO_ROOT, "src", "modules", "impound", "impound.checklist-link.dto.ts"),
+    join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts"), { recursive: true });
+  cpSync(join(REPO_ROOT, "frontend", "src"), join(tmp, "frontend", "src"), { recursive: true });
+  writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
+}
+
+test("T20: gerador — DTO sem currentRunId → SEM EMISSOR no espelho (1): currentRunId, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const dtoPath = join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts");
+    mutate(dtoPath, (s) => s.replace(/ *currentRunId: run\.currentRunId \?\? null,/, ""));
+    assert.doesNotMatch(readFileSync(dtoPath, "utf8"), /currentRunId: run\.currentRunId/, "a chave saiu do emissor");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# SEM EMISSOR no espelho \(1\): currentRunId/, "espelho declara chave que o emissor não emite");
+    assert.match(stdout, /# SEM EMISSOR no adapter \(1\): currentRunId/, "adapter consome chave que o emissor não emite");
+    assert.strictEqual(exitCode, 1, `DTO sem currentRunId deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+const IMPORT_MODAL = 'import { getVehicleLabel } from "../processes.adapter";';
+const IMPORT_MODAL_M2 = 'import { getChecklistRunStatusLabel, getVehicleLabel } from "../processes.adapter";';
+const PONTO_M2 = "{checklistRuns.map((vistoria) => <p key={vistoria.id}>{getChecklistRunStatusLabel(vistoria.status)}</p>)}";
+
+test("T21: gerador — ponto novo com receptor 'vistoria' ao lado do painel no modal → receptor=vistoria … NÃO, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const modalPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "VehicleDossieModal.tsx");
+    mutate(modalPath, (s) => s.replace(IMPORT_MODAL, IMPORT_MODAL_M2).replace(/<ChecklistRunsPanel[^>]*\/>/, (panel) => "<>" + panel + PONTO_M2 + "</>"));
+    const mutated = readFileSync(modalPath, "utf8");
+    assert.ok(mutated.includes(IMPORT_MODAL_M2) && mutated.includes(PONTO_M2), "as duas partes da mutação aplicaram");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /VehicleDossieModal\.tsx:\d+ \| receptor=vistoria \| tipo vistoria: sim \| .* \| consulta substituição: NÃO/, "o ponto novo é visto pelo TIPO, não pelo nome");
+    assert.strictEqual(exitCode, 1, `receptor 'vistoria' sem consulta deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("T22: gerador — emissor com Object.freeze (ilegível) → L0 VAZIO (emissor ilegível): SIM, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const dtoPath = join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts");
+    // Só a abertura muda: o parêntese de agrupamento `({` vira `Object.freeze({`, e o fecho `})),` já fecha os dois —
+    // o emissor fica com o MESMO comportamento e a forma deixa de ser um literal de objeto (M6 do §16).
+    mutate(dtoPath, (s) => s.replace("runs.map((run) => ({", "runs.map((run) => Object.freeze({"));
+    assert.match(readFileSync(dtoPath, "utf8"), /runs\.map\(\(run\) => Object\.freeze\(\{/, "a abertura mudou");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# L0 VAZIO \(emissor ilegível\): SIM/, "emissor ilegível é vermelho");
+    assert.strictEqual(exitCode, 1, `L0 vazio deixa o gerador vermelho; stdout:\n${stdout}`);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
