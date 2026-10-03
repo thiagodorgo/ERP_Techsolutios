@@ -309,6 +309,48 @@ grep -cE '<padroes do db-catalog-write-guard>' tests/san3-05-acessos-de-platafor
   nao tem teste no ramo; o que existe deles e a medicao manual do §2 (boot real) e do §4 (substituto do H1).
 - A rodada de mutacoes (cada A# visto vermelho com a sua mutacao), a bateria completa do §8, o `npm test` para o KPI e o E8 (KPI e
   registro) **ainda nao foram feitos**.
+## RETOMADA — 2026-10-03T11:28:24Z
+
+Papel: dev · Identidade: dev-b-san3-05-sucessor-1 (SUCEDE dev-b-san3-05; identidade nova, nao planejou v1/v2/v3, nao criticou r1/r2, nao vota) · Modelo: claude-opus-5-5 (Opus 5.5 — `session_context.model` e `last_served_model` da sessao) · mandato_md5: 62f6873ca8f43cafb2ab91fb579c9235
+
+> Retomada decidida pelo orquestrador local a pedido do dono (opcao (a)), confirmada pelo dono nesta sessao de nuvem.
+> P3: as §0–§7 acima sao do antecessor e servem de ROTEIRO de re-execucao, nao de conclusao. Toda divergencia entre a
+> saida gravada por ele e a minha vira registro aqui, nunca correcao silenciosa.
+
+### O bloqueio original
+
+A mensagem literal do bloqueio da ferramenta que interrompeu a escrita de `tests/san3-05-runtime-role-guard-db.test.ts` na
+sessao do antecessor **nao esta disponivel nesta sessao**: esta sessao nunca a viu, e o §7 acima so registra que houve "um
+bloqueio da ferramenta" e que o rascunho foi descartado. Nada aqui a reconstitui. Se a ferramenta bloquear de novo nesta
+sessao: gravo a mensagem literal e o que estava em curso, empurro e PARO, sem contornar.
+
+### MEDIDO — abertura
+
+`date -u +%FT%TZ; uname -a`
+```
+2026-10-03T11:28:24Z
+Linux vm 6.18.44-fc-v64 #1 SMP PREEMPT_DYNAMIC @0 x86_64 x86_64 x86_64 GNU/Linux
+```
+`git fetch origin; git rev-parse origin/fix/runtime-role-sem-bypass origin/main; git merge-base origin/main origin/fix/runtime-role-sem-bypass`
+```
+5da4845ba586f3a91bd494bbf973d501eb537eca      (= o head esperado: o ultimo push do antecessor)
+b404815ce3d1f1b8e5121bd1526978f7222e7479      (origin/main)
+4ab9d232d2c6705ad39cf6bd4313ca5c91b222a9      (merge-base)
+```
+Worktree proprio `/home/user/wt-dev-s1` no ramo, `git status --porcelain | wc -l` → 0.
+`tr -d '\r' < agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/dev.md | md5sum` → `62f6873ca8f43cafb2ab91fb579c9235` (= o publicado).
+`git log --format=%B origin/main..HEAD | grep -icE '^(co-authored-by|claude-session)'` → 0.
+
+### FALSIFICACAO DE TERRENO (pedido × medido)
+
+- **A `main` andou.** O pedido de retomada diz "a main continua em 4ab9d232"; medido: `origin/main` = `b404815c`, 3 commits
+  a frente (`git log --oneline 4ab9d232..b404815`: `3e40a25` #402 fix(web) B-SAN3-01b, `f03b883` #403 e `b404815` #404,
+  registros do porteiro). O ramo **nao integra nada** (instrucao do pedido); o merge-base segue `4ab9d232`. Efeito: o
+  KPI do §9 e recontado contra o que a `origin/main` publicar no instante do commit de KPI (o mandato manda assim), e a
+  integracao da `main` ao ramo fica com o orquestrador.
+- **Node 20 da imagem mudou de patch.** O antecessor mediu `/opt/node20` → `v20.20.0`; aqui `/opt/node20/bin/node -v` →
+  `v20.20.2`. Mesma major do CI (`node-version: 20`); a re-execucao abaixo compara as saidas com essa diferenca declarada.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
