@@ -4879,3 +4879,27 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## PAUSA 2026-10-03 18:25Z — ordem do dono (P7, `D-PAUSA-GRAVA-E-PARA`)
+
+Ordem do dono: *"o codex parou e só volta às 22:00, por isso vamos pausar as atividades, só assim o pc é reiniciado"*.
+Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registro: Fable só em bloco de dinheiro (manhã),
+depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
+por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
+foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
+`C:/Users/AMP/erp-pausa-2026-10-03/`.
+
+| frente | onde parou | retomada |
+|---|---|---|
+| **#393** B-GOV-MANDATO, ciclo 4, junta 4 (objeto `371b09b2`, CI 14/14) | C1⁗ **REPROVADO** (C1d-01 `bloqueia`: SHA fabricado depois de `:` sai PRE-VOO OK); C3⁗ **APROVADO** (0 bloqueia); C2⁗ (Opus) recebeu PAUSA no meio do voto | relançar a C2⁗ — mesma identidade, P3 sobre a seção `## PAUSA` do `VOTO-393-J4-C2.md`; maioria de 3: o voto dela decide. Depois: ata (esqueleto `ata-c4-esqueleto.md`), quedas (`quedas-pendentes-393.md` já no ramo) e merge ou ciclo 5 |
+| **#401** B-SAN3-11, ciclo 2, junta 2 (head `3ec6f52b`, CI 14/14) | inspetor (Codex, sessão `01a102b0-…`) caiu por limite de uso às 18:14Z no baseline (parecer até 18:11Z); worktrees `w-insp401c`/`w-insp401clf` de pé | `run-codex-resume.ps1` com `resume-insp401c2.txt`, GPT-5.6 Sol; depois versionar o parecer e as 3 cadeiras (Codex, Sol, ≤2 por vez) |
+| **B-SAN3-05** (ramo `fix/runtime-role-sem-bypass` @ `b7773898`, sem PR) | dev sucessor-2 (Codex, sessão `01a102bc-…`) caiu às 18:14Z; 3 commits empurrados; worktree `w-s05d` limpo; cluster `san3-05-s2-pg` (55405) | `run-codex-resume.ps1` com `resume-dev-s05.txt`, GPT-5.6 Sol; o dev abre o PR em rascunho no fim |
+| **#404** (registro) | porteiro (Codex) **LIBERADO COM RESSALVA** (R404-1 a R404-4; R404-4 = disco < 10 GB) | versionar `PORTEIRO-404.md` neste ramo, com as ressalvas no registro |
+| **#400** B-SAN3-09 | parado (inspetor e junta pendentes) | depois do #401 |
+| **#389**, **#388** | parados | erratas dos corpos dos jurados e integração da `main` |
+| **B-SAN3-06b** | plano e mandato prontos para dev no Codex | quando houver cota |
+
+**Disco:** ~6,1 GB livres; limpeza profunda (`DEEP_CLEAN=1`) só com as juntas paradas — esta pausa é a janela.
+**Incidentes do dia, declarados:** `core.autocrlf=false` na config comum 05:46Z–11:20Z (consertado); um `git merge`
+meu rodou na árvore principal por `cd` falho (no-op, conferido pelo reflog); 4 quedas do Claude por limite de sessão e 2
+do Codex por limite de uso.
