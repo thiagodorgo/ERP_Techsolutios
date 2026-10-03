@@ -9987,26 +9987,29 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
 
-Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (processo aberto antes da
+Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (custódia aberta antes da
 reabertura), o painel exibe "A versão vigente desta vistoria não está vinculada a este dossiê." sem link nem
-identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrar —
-informação incompleta, potencialmente confusa.
+identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrá-la.
 
-Causa: o backend emite `currentRunId` (id da vigente), mas a vigente só aparece na lista se foi ligada ao
-mesmo processo de custódia. Se a reabertura gerou uma nova order que não aparece no `GET /impound-processes/:id/checklist-runs`,
-o frontend não tem como exibir mais dados.
-
-**status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado) · **dono:** B-SAN3-12 ou
-bloco dedicado — depende de decisão de backend (expor a run vigente mesmo de OS diferente, ou aceitar a
-limitação).
+- **causa (P-d do plano, medida):** reabrir não vincula. O `reopenRun` **copia** `related_entity_type`/`related_entity_id`
+  da vistoria anterior (`src/modules/checklists/checklist-prisma.repository.ts:806-807`), e o AUTO-link roda **só na
+  abertura** da custódia (`src/modules/impound/impound-prisma.repository.ts:205-215`, chamado só na criação do processo, l.155).
+  A rota MANUAL `POST /impound-processes/:processId/link-checklist-run` existe (`src/modules/impound/impound.routes.ts:195`),
+  mas não tem UI (`git grep link-checklist-run -- frontend/src` = 0). Medido no §0.5 A1 do plano do bloco: lista `[v1]`, v2 e v3 ausentes.
+- **remédio (o do §13 do plano do B-SAN3-11, fora deste bloco):** o backend listar os sucessores da cadeia com origem `DERIVED`
+  **ou** o `reopenRun` propagar os vínculos da vistoria anterior — decisão de desenho da junta do bloco dono.
+- **status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado)
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
 - **bloqueia:** não — a UI já é honesta ("não está vinculada").
 
 ## P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11)
 
-O painel exibe as runs na ordem recebida (sem reordenar). O adapter ordena por `startedAt` DESC, mas a
-especificação do endpoint não garante essa ordem. Se o backend entregar numa ordem diferente, a lógica de
-navegação (âncoras para versão vigente/anterior) continua correta, mas a apresentação pode confundir.
+O repositório ordena por `created_at` do **vínculo** (`listChecklistRunsForProcess`,
+`src/modules/impound/impound.checklist-link-prisma.repository.ts:51`), e os vínculos criados na mesma transação do AUTO-link
+têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do plano). **O adapter reordena por `startedAt desc`**
+(`frontend/src/modules/patios/processes/processes.adapter.ts:576-577`) e essa é a ordem do dossiê (B1c, T5). Informativa —
+nenhum consumidor além do frontend.
 
-**status:** ABERTA · **severidade:** baixa · **dono:** a definir (pode ser documentação de contrato ou
-`order_by=started_at:desc` no endpoint).
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
 - **bloqueia:** não.
