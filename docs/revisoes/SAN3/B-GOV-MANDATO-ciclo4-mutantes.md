@@ -689,6 +689,60 @@ NÃO-COBERTOS), logo **nada abate e nada fica verde por isso**: o efeito é uma 
 fronteira 33 (§7 item 7 e `P-GOV-MANDATO-3-FRONTEIRAS`); consertar agora mudaria o blob da ferramenta e a identidade das
 duas matrizes.
 
+### 4.3 As 39 versões viáveis dos `MUTANTE-INVALIDO`, pela conferência `8849b1cd` — e o `[M-1]` recalculado por conjuntos (K4b-3)
+
+> **Só adição** (plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §15.17(g), passo 5-bis, Dev-S4): nenhum bloco
+> verbatim do §3, do §4 ou do §4.2 foi tocado, nem o arquivo de equivalentes (`123e6afd`, parte da identidade das duas
+> matrizes, §0). Fonte: a conferência dos dois lados
+> (`agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-conferencia-dois-lados.md` §8, §9 e §11, versionada em
+> `8849b1cd`), lida como relatório de quem mediu; o que este registro re-mediu está dito como tal.
+
+**Por que esta seção existe.** A ferramenta publica `MUTANTE-INVALIDO` quando o operador gera programa que não compila, e
+o §1 declara o limite: "a versão VIÁVEL do operador é medida pelo conferente". O M7(salto) dela troca `continue|break` por
+`:` (comando nulo do shell, inválido em awk) e o M10 troca o 1º `)` sem casar o parêntese. O conferente reconstruiu a
+versão viável de cada um (`continue|break` → `;`; `if (cond)` → `if (0)` com o parêntese balanceado; `!=` → `==`),
+provou que é programa, mediu o comportamento e só então a cor.
+
+**Identidade dos 39, re-medida por este registro (K4b-3):** os 37 `MUTANTE-INVALIDO` da matriz verbatim do pré-voo (§4)
+são exatamente os 37 da tabela da conferência (`comm` nos dois sentidos: sobra ∅, falta ∅); os 2 do refs (§3) são o 257 e
+o 268, os mesmos da conferência.
+
+| classe da versão viável | n | pontos | cor e destino |
+|---|---|---|---|
+| coberta, pré-voo | 26 | 254, 273, 278, 344, 348, 400, 404, 418, 425, 426, 427, 451, 455, 488, 489, 498, 507, 522, 523, 530, 538, 542, 545, 546, 548, 556 | VERMELHO com o guard `2275bea0` (352 casos), 1º `not ok` nomeado na conferência (§8). Depois dele o guard só ganhou linhas (T4c-4 `+81/−0`, T4c-5 `+30/−0`): um vermelho não fica verde — premissa (b) do lema do §14.18(3). |
+| coberta, refs | 2 | 257, 268 | rv257 `fail=26/44` e rv268 `fail=1/44` (guard do refs `a8bd601b`, inalterado). |
+| sem mudança | 8 | 399, 474, 481, 490, 501, 503, 504, 508 | equivalentes **por fixture**, com duas tentativas independentes que não discriminaram: Dev-T4 (3 fixtures dirigidas por ponto, 48/48 IGUAIS — o comentário do arquivo de equivalentes, l.27-34) e conferente (fixture de tokens degenerados e razão estrutural por ponto, §8 dela). Ficam **no comentário** do arquivo de equivalentes, não como linhas `id:`: a ferramenta imprimiria `ANOMALIA-EQUIV` (não estão nos NÃO-COBERTOS dela) e tocar o arquivo mudaria o blob `123e6afd`. Uma fixture que discrimine qualquer um deles faz dele `VIAVEL-NAO-COBERTA`. |
+| `TIMEOUT` na versão viável | 2 | 270, 564 | não terminam sob `timeout -k 5 60` nos insumos fixos (`ec=124`; o pristino termina); cobertos **por tempo** por todo caso que executa o artefato — o `roda()` do guard tem `timeout: 60_000` e assere `signal === null` (fronteira 25, `[F-25]`); medido pelo planejador (§15.17(e): 1 caso contra cada mutante → `# fail 1`, "artefato nao terminou em 60 s"). A mesma classe que a ferramenta publica para o 249 (§4.1). |
+| **`VIAVEL-NAO-COBERTA`** | **1** | **263** | programa, muda comportamento observável pelo autor (a linha `## <outro>` sai listada duas vezes como conteúdo fora; com 5 ou mais linhas fora, a 5ª linha real some da listagem) e o guard fica VERDE (`fail=0/352` na conferência; `fail=0/355` com o guard `9483be74`, §15.17(d)) — CONF-01. **Coberta pelo caso `[V263]` do T4c-5** (`faf87d8c`, Dev-T4, só `tests/mandato-preflight.test.ts`, `+30/−0`): no relato do dev, o guard inteiro sobre o mutante dá `fail=1/356` e o único `not ok` é o `[V263]`, com a lista `[1,1,2,3,4]`. **Sujeita à reconferência** (passo 6-bis, conferente): no head deste registro a última linha da conferência ainda é `DIVERGE 263`. |
+| **total** | **39** | 37 do pré-voo + 2 do refs | 26 + 2 + 8 + 2 + 1 |
+
+**`[M-1]` recalculado por conjuntos, com a fórmula da §15.15(d) do plano:**
+`[M-1] = NÃO-COBERTOS da ferramenta ∪ VIAVEL-NAO-COBERTA − equivalentes com fixture`.
+
+| conjunto | ids | fonte |
+|---|---|---|
+| NÃO-COBERTOS da ferramenta | ∅ | completa {359, 372, 441, 612} − VERMELHOS da delta {359, 372, 612} − conferido {441} (§4.1, §4.2) |
+| `VIAVEL-NAO-COBERTA`, hoje | 263 | conferência §8 e §11 (CONF-01); planejador, §15.17(b)-(d) |
+| equivalentes com fixture (ids) | 441 | o arquivo de equivalentes (`123e6afd`); os 8 sem mudança não são ids |
+| **`[M-1]` hoje** | **{263}** | (∅ ∪ {263}) − {441} |
+| **`[M-1]` depois do `T4c-5` e da reconferência** | **∅** | `VIAVEL-NAO-COBERTA` → ∅ quando a reconferência gravar `CONFERIDO` |
+
+A conta acima foi re-executada por este registro com `comm` sobre arquivos de ids; quem julga o `[M-1]` final por
+reexecução é a C2⁗ (v263 sob o `T4c-5` → `[V263]` vermelho).
+
+**Como se lê a l.9 do cabeçalho deste arquivo** ("`[M-1] = ∅`", K4b-2): "∅ pela enumeração da ferramenta; {263} pela
+versão viável (CONF-01, plano §15.17) até o `T4c-5` e a reconferência". Esta seção é a adição que o diz; o cabeçalho não é
+editado.
+
+**Números que o `T4c-5` move, re-medidos no head deste registro:** E1 48 → **49** entradas de TAP (`git diff 335cf09d
+<rev> -- tests/…`, com o laço A15 de 6 entradas: pai do T4c-5 = 48, T4c-5 = 49; pré-voo 43 → 44, refs 5); guard do
+pré-voo rodado sozinho no head: **356** casos, `fail 0`; guard do refs: **44**, `fail 0`; `backend_tests`
+**3452/3454** por N=2 execuções reais em cluster descartável próprio (RUN1 `3454/3452/0/2`, 965 s, `ec=0` · RUN2 `3454/3452/0/2`, 847 s, `ec=0`). Do relato do T4c-5, não re-medido aqui: a lista
+histórica sobre `faa408c8` fica em **26** (o `[V263]` é verde lá, logo `[M-EXT]`, 22 → 23).
+
+**O que NÃO muda:** a ferramenta (`373e5728`) — gerar a versão viável é a **fronteira 34** (§7 item 8); o arquivo de
+equivalentes; os blocos verbatim do §3, do §4 e do §4.2.
+
 ## 5. A ferramenta nova, medida pelos drills (Dev-S4) — cada um com o vermelho-controle histórico ao lado
 
 Os drills da §15.8 rodaram sobre o arnês **do ciclo 3** (`C:/Users/AMP/w-dv4a`, detached em `335cf09d`: pré-voo
@@ -789,3 +843,14 @@ e o excesso cobriu os controles que faltavam. A fórmula certa é a da tabela ac
    sai vazia. `EQUIVALENTES-CONFERIDOS` e `ec` continuam certos (nada é abatido); só a anomalia deixa de ser mostrada.
    Instância: a delta do §4.2 (441 declarado, fora do `--only`, sem a linha). **Fronteira 33** em
    `P-GOV-MANDATO-3-FRONTEIRAS`; conserto: ler os NÃO-COBERTOS por `FILENAME`/`ARGIND` e não por `NR==FNR`.
+8. **Fronteira 34 — a ferramenta gera a troca de M7 que não compila, e a versão viável não entra na matriz** (achado
+   CONF-01 da conferência dos dois lados; decisão do planejador, plano §15.17(f), remédio 2): o M7(salto) troca
+   `continue|break` por `:` (comando nulo do shell, inválido em awk) e o M10 troca o 1º `)` sem casar o parêntese; o
+   ponto sai `MUTANTE-INVALIDO`, fora de K, de NÃO-COBERTOS e do `[M-1]` da ferramenta, e a versão viável — a que o
+   operador deveria gerar — só é medida pelo conferente (§1). Instância medida: 39 pontos que a ferramenta não mede (37
+   do pré-voo e 2 do refs); 1 escapou do guard (263, coberto depois pelo `[V263]` do T4c-5, sujeito à reconferência); 2
+   seriam `TIMEOUT` se ela gerasse `;` (270 e 564) — §4.3. O passo compensatório (conferente, plano §15.5 item 4 e
+   §15.15(d)) pegou o 263, e o `K/N` publicado é honesto sobre o que mede. Consertar agora mudaria o blob `373e5728` e
+   re-identificaria as duas matrizes e a conferência (§0; plano §15.4). Conserto: gerar a forma viável — `continue|break`
+   → `;` quando o ponto está dentro de programa awk; `if (…)` → `if (0)` com o parêntese de fecho casado, não o 1º `)`.
+   **Fronteira 34** em `P-GOV-MANDATO-3-FRONTEIRAS`, dono `B-GOV-MANDATO-2`.
