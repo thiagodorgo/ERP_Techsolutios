@@ -508,6 +508,63 @@ As secoes §0–§7 e RETOMADA do sucessor-1 continuam apenas como roteiro P3. C
 qualquer divergencia vira falsificacao escrita. O proximo comando e continuar a leitura integral de
 `docs/revisoes/SAN3/B-SAN3-05-plano.md` a partir do Apêndice C; nenhum arquivo de implementacao esta meio-escrito.
 
+## §7-local — P3 parcial + E7 (trava, catálogo, script e boot) — 2026-10-03T17:45:01Z
+
+### MEDIDO — ambiente descartável próprio
+
+- `npm ci --no-audit --no-fund` no worktree próprio, sem junction: `ec=0`, **326 pacotes** em 1 minuto. Diverge das 222
+  entradas publicadas pela nuvem porque aquela linha contou entradas de `node_modules`, enquanto o npm local publicou pacotes;
+  a árvore de dependências vem do mesmo lockfile, que segue intocado.
+- Porta **55405** provada livre por `TcpListener` antes da subida. Contêiner efêmero próprio
+  `san3-05-s2-pg`, imagem `postgres:16`, bind somente `127.0.0.1:55405`, auth trust; `erp-postgres:5432` e
+  `erp-redis:6379` continuaram intocados. `npx prisma generate` recebeu `DATABASE_URL` somente no ambiente do comando;
+  `prisma migrate deploy` aplicou 107 migrações. Resultado: PostgreSQL **16.14** · tabelas **115** · FORCE **106** · views **0** ·
+  administrador `postgres|t|t` — igual ao roteiro P3.
+- Node local: **v20.19.5** (mesma major do CI; divergência declarada contra 20.20.0/20.20.2 da nuvem).
+
+### MEDIDO — reexecução do roteiro já registrado
+
+- T1/T3 + T2/T4, lote combinado: `# tests 84 # pass 84 # fail 0 # skipped 0` (T1/T3 continuam 72; T2/T4, 12).
+- T10–T12 no cluster próprio: `# tests 11 # pass 11 # fail 0 # skipped 0`; a primeira execução perdeu só a cauda do
+  stdout na ferramenta local, terminou sem processo vivo e foi reexecutada integralmente com a mesma saída verde.
+- `npm run check`: `ec=0`.
+- Blobs versionados, medidos por `git show HEAD:<arquivo> | md5sum`: gerador
+  `81d9259571391eded68255391a99fb61`, script `810c1c4a2552665d4947bf0ef4e93670`, fixture N10
+  `578a3a6d3d26aea7343f0c3fa6f49275`; script `100755`, `w/lf`, `bash -n` verde.
+
+### FALSIFICAÇÕES OPERACIONAIS (sem desvio silencioso)
+
+1. A primeira chamada local de `npm run check` embrulhada pelo `timeout.exe` diretamente não preservou o PATH do Git Bash
+   (`sed`, `dirname`, `uname` ausentes) e falhou antes do TypeScript. Repetida por `bash -lc 'timeout 180s npm run check'`:
+   verde. Nenhum arquivo foi alterado pela tentativa falha.
+2. A primeira extração dos apêndices por `awk` atravessou PowerShell → Bash e perdeu as crases do fence Markdown, devolvendo
+   vazio. A prova foi refeita contra os blobs versionados (md5 acima); o checkout do gerador é CRLF por `core.autocrlf=true`,
+   razão pela qual md5 cru do disco não serve (§A7).
+
+### MEDIDO — cauda E7 implementada até aqui
+
+`tests/san3-05-runtime-role-guard-db.test.ts` nasceu com catálogo serializado pelo arnês e teardown resiliente. Exercita:
+papel limpo; superusuário real e renomeado; pertença a BYPASSRLS direta, NOINHERIT, cadeia e `WITH SET FALSE`; posse direta e
+por membro; `session_user` preservado com `options=-c role=...`; REPLICATION; `pg_execute_server_program` com porta real;
+view de dono super e `pg_read_all_data`; logs sem URL/senha/host; script completo verde e idempotente, MODO 0, MODO 1,
+MODO 6 e falha propagada sem entrada; boot real recusando super antes de Redis e aceitando papel limpo.
+
+Execução local final desta entrega parcial:
+```
+tests/san3-05-runtime-role-guard-db.test.ts → # tests 7 · pass 7 · fail 0 · skipped 0
+tests/db-catalog-write-guard.test.ts        → # tests 5 · pass 5 · fail 0 · skipped 0
+npm run check                              → ec=0
+```
+
+A entrada A21 do `FROZEN_ALLOWLIST` ficou em **29** ocorrências, medida no arquivo; o diff do guard contém só o bloco novo do
+Map. Limpeza após cada execução: `pg_roles LIKE 's305_%'` = 0 e objetos `public.s305_%` = 0.
+
+### FALTA DESTA SEÇÃO (não promovido a conclusão)
+
+Completar T14 com os MODO 2–5, migrador não-super, default privileges, cadeia revogada e os controles de senha/argv; completar
+a porta de REPLICATION e os três semi-mutantes do T8c; então rodar a rodada A1–A24 e a bateria §8. O próximo comando exato é
+ampliar `tests/san3-05-runtime-role-guard-db.test.ts` nesses cenários.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
