@@ -3338,3 +3338,14 @@ o `[V263]`, para a versão viável do ponto 263 que a conferência achou VERDE (
 **44**. Contra o K4b-2: 3453 + 1 = **3454**; contra a `origin/main` (3052/3054): 3054 + 356 + 44 = **3454**.
 
 **Mutação:** as 39 versões viáveis dos `MUTANTE-INVALIDO` pela conferência `8849b1cd` publicadas em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §4.3 (26 + 2 cobertas · 8 sem mudança · 2 `TIMEOUT` · 1 `VIAVEL-NAO-COBERTA`, o 263) → **[M-1] por conjuntos (fórmula da §15.15(d)) = {263} hoje → ∅ depois do T4c-5 e da reconferência**; fronteira 34 aberta (§7 item 8). **`merge_commit` e `approved_head`: `null` na autoria** (§C3.5).
+
+## 2026-10-03 — B-GOV-MANDATO **ciclo 4 — recontagem pós-integração da main** (PR #393) — `published_per_pr`
+
+| métrica | K4b-3 | agora (merge `4535ebb3`, main `b404815c`) | origem |
+|---|---|---|---|
+| `blocks_completed` | 170 | **171** | 170 na `main` (#402 contou 169 → 170; #403/#404 registro) + 1 deste bloco |
+| `frontend_smoke_tests` | 1202/1202 | **1214/1214** | CARREGADO da `main` (execução real do #402); o ramo não toca `frontend/` |
+| `flutter_tests` e contratos mobile | 864/864 · 34/34 · 18/18 · 21/21 · 17/17 | idem | CARREGADOS, iguais à `main`; o ramo não toca `mobile/` |
+| `backend_tests` | 3452/3454 | **3452/3454** | MANTIDO: o merge não trouxe arquivo em `tests/`, `src/`, `prisma/`, `scripts/` nem `package*.json`; os 7 leitores do que ele trouxe contam 57 antes e 57 depois, por execução |
+| `mvp_demo` / `mvp_vendavel` | — | **intocados** | §C3.4 |
+| pr / merge_commit / approved_head | — | `393` / `null` / `null` **na autoria** (§C3.5) | backfill pós-merge |

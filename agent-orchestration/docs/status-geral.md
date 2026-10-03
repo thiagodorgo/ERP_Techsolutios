@@ -5146,3 +5146,17 @@ worktree novo; o `C:/Users/AMP/w-devs4` segue mantido; 0 processo vivo com os no
 
 **Limpeza §C5 do K4b-3:** os contêineres `pg-devs4b`/`redis-devs4b` do N=2 removidos pelo nome pelo próprio script; o
 worktree `C:/Users/AMP/w-devs4b` fica de pé até o orquestrador empurrar; 0 processo vivo do Dev-S4; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-4 do Dev-S4 (2026-10-03) — o KPI recontado contra a `main` integrada
+
+- **Integração:** o orquestrador integrou a `main` `b404815c` (#402 B-SAN3-01b; #403 e #404 registro) no ramo pelo merge
+  `4535ebb3`; o latest do #393 atravessou o merge com os valores de antes (blocks 170, smoke 1202 carregado do merge-base antigo).
+- **KPI (§C3):** `blocks_completed` 170 (`main`, #402) + 1 = **171**; `frontend_smoke_tests` CARREGADO da `main` = **1214/1214**
+  (execução real do #402; o ramo não toca `frontend/`); `flutter_tests` 864/864 e os contratos mobile CARREGADOS, iguais à
+  `main` (o ramo não toca `mobile/`); `backend_tests` **3452/3454 MANTIDO** — o merge trouxe 42 arquivos e nenhum em `tests/`,
+  `src/`, `prisma/`, `scripts/` nem `package*.json`, e os 7 testes da raiz que leem o que ele trouxe contam 57 com os dados de
+  antes e 57 com os de depois, por execução. `mvp_*` intocados; `merge_commit`/`approved_head` `null` na autoria. History com
+  a entrada nova (175); `Kpis/app.js` só pela saída do `kpi-freeze` (`--check` em dia); guards do KPI 29/29.
+
+**Limpeza §C5 do K4b-4:** nenhum cluster subido (nenhuma medição exigiu banco); o worktree `C:/Users/AMP/w-devs4c` fica de pé
+até o orquestrador empurrar; 0 processo vivo do Dev-S4; base viva nunca alvo.
