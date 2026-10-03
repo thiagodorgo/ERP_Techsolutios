@@ -4769,6 +4769,21 @@ bloco mergear.
   mergeado a remover na árvore principal. O `scripts/post-merge-cleanup.sh` não rodou porque desce nos worktrees de outras
   sessões (`P-CHORE-CLEANUP-DESCE-EM-WORKTREES`).
 
+## Registro do #403 (registro puro) — as quatro ressalvas do porteiro do #403 (2026-10-03)
+
+- **Porteiro do #403:** `LIBERADO COM RESSALVA` (parecer em `omega/juntas/votos/B-SAN3-01b/PORTEIRO-403.md`). Pagas aqui:
+  (1) o parecer do porteiro do #399, que só existia no ramo `docs/registro-399`, versionado byte a byte; (2) a
+  `backfill_note` do B-SAN3-01b nos dois JSON de KPI corrigida — a árvore do merge é a do head final do PR, `1483a6f7`,
+  que é o head aprovado `cdf370dc` mais a ata e os votos, e não a do head aprovado; (3) dono atribuído às duas pendências
+  que estavam como "proposto" (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` → `B-SAN3-06c`;
+  `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` → `B-SAN3-06a`); (4) as seções do #397 e do #402 no `kpis-history.md` deixam de
+  dizer "na autoria".
+- **Ressalva não paga, declarada:** a escolha da referência do cabeçalho da lista de OS
+  (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`) é decisão do dono e foi levada a ele em 2026-10-03. Não entra em
+  `controle/decisoes.md`, que só registra decisões tomadas.
+- **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
+  do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
 ---
 
 ## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria
