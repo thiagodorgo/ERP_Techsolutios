@@ -84,6 +84,14 @@ e na 1ª linha da evidência de cada uma.
 - **N5:** a errata 15.15 e os `scripts/mandato-*.sh` vivem só no PR #393, aberto: forma do mandato, não norma da ref.
 - **N6:** não há suplente nomeado por cadeira.
 
+## O inspetor novo (2ª instância): `LIBERADO COM RESSALVA`
+
+Parecer em `votos/B-SAN3-11/00-inspetor-terreno-b.md`. O baseline que bloqueou o primeiro inspetor não se reproduz no
+objeto, nos dois terrenos desta máquina (CRLF e LF). As ressalvas R1 a R3 repetem as do primeiro parecer. A nova é a
+**R4**: a rodada 1 do inspetor correu com os dois terrenos em paralelo, então a **C2 cola o `duration_ms` de T12, T13 e
+T14 e a contagem de `morto por sinal`** (esperado 0) da execução dela. As notas N4 e N7 do primeiro parecer estão
+superadas: a P7 está no `CLAUDE.md` do objeto e a `main` está integrada.
+
 ## Pré-existentes nomeados pelo plano (seção 10) — não reprovam
 
 A vigente não vinculada ao processo (P-e/A1), a ausência de tela de execução na web
