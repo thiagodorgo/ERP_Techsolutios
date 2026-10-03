@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from "react";
 
 import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
 import { formatDateTime, getChecklistRunStatusLabel, getChecklistRunStatusTone } from "../processes.adapter";
@@ -13,20 +14,61 @@ const legendStyle: CSSProperties = { fontSize: 11, color: "#64748B" };
 const primaryStyle: CSSProperties = { fontSize: 14, color: "#0F172A", fontWeight: 600 };
 const numCell: CSSProperties = { whiteSpace: "nowrap" };
 
+// B-SAN3-11 (ciclo 2, D-C2-4) — os links de versão usam o idioma de link da casa (`.pat-link`: cor, peso, hover e foco
+// visível) e NÃO navegam: o clique procura a linha-alvo DENTRO da própria tabela (escopo pelo `ref`, nunca o documento —
+// a impressão monta uma segunda cópia do painel), centraliza-a (fora do cabeçalho fixo do modal), dá-lhe o foco e a
+// realça por ~1,6 s, sem tocar a URL nem o histórico. Sem alvo, nada é prevenido e o `href` nativo vale.
+const highlightStyle: CSSProperties = { outline: "2px solid #2563EB", outlineOffset: -2 };
+const HIGHLIGHT_MS = 1600;
+
+type VersionRowEvent = { preventDefault(): void };
+type VersionRowTarget = { scrollIntoView(options?: ScrollIntoViewOptions): void; focus(options?: FocusOptions): void };
+type VersionRowScope = { querySelector(selectors: string): unknown };
+
+function isVersionRowTarget(value: unknown): value is VersionRowTarget {
+  const candidate = value as Partial<VersionRowTarget> | null | undefined;
+  return typeof candidate?.scrollIntoView === "function" && typeof candidate?.focus === "function";
+}
+
+export function focusVersionRow(event: VersionRowEvent, scope: VersionRowScope | null, targetId: string): string | null {
+  const target = scope?.querySelector(`[id="${targetId.replace(/["\\]/g, "\\$&")}"]`);
+  if (!isVersionRowTarget(target)) return null;
+  event.preventDefault();
+  target.scrollIntoView({ block: "center" });
+  target.focus({ preventScroll: true });
+  return targetId;
+}
+
 export function ChecklistRunsPanel({
   runs,
   loading,
   error,
   denied,
   onRetry,
+  idPrefix = "vistoria",
 }: {
   readonly runs: readonly ChecklistRunSummaryItem[];
   readonly loading: boolean;
   readonly error: string | null;
   readonly denied: boolean;
   readonly onRetry: () => void;
+  /** Prefixo dos ids das linhas (`<prefixo>-<id>`): ids únicos no DOM quando o painel aparece duas vezes (impressão). */
+  readonly idPrefix?: string;
 }) {
   const hasRuns = runs.length > 0;
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [highlightedRowId, setHighlightedRowId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (highlightedRowId === null) return;
+    const timer = setTimeout(() => setHighlightedRowId(null), HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [highlightedRowId]);
+
+  const goToVersionRow = (event: ReactMouseEvent<HTMLAnchorElement>, targetId: string) => {
+    const focused = focusVersionRow(event, tableRef.current, targetId);
+    if (focused !== null) setHighlightedRowId(focused);
+  };
 
   return (
     <Card title="Checklist do guincho">
@@ -66,7 +108,7 @@ export function ChecklistRunsPanel({
             Vistoria reaberta gera uma nova versão; a anterior fica preservada e marcada como substituída.
           </p>
           <div className="ui-table-wrap">
-            <table className="ui-table">
+            <table className="ui-table" ref={tableRef}>
               <thead>
                 <tr>
                   <th>Checklist</th>
@@ -81,8 +123,9 @@ export function ChecklistRunsPanel({
                   const isReopenedCurrent = !isSuperseded && run.reopenedFromRunId !== null;
                   const currentInList = isSuperseded ? (runs.find((r) => r.id === run.currentRunId) ?? null) : null;
                   const previousInList = isReopenedCurrent ? (runs.find((r) => r.id === run.reopenedFromRunId) ?? null) : null;
+                  const rowId = `${idPrefix}-${run.id}`;
                   return (
-                    <tr key={run.id} id={`vistoria-${run.id}`} tabIndex={-1}>
+                    <tr key={run.id} id={rowId} tabIndex={-1} style={highlightedRowId === rowId ? highlightStyle : undefined}>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                           {/* Ω-VID PR-08 (junta, MÉDIA) — identidade real da linha pelo NOME do formulário; fallback ao
@@ -92,7 +135,13 @@ export function ChecklistRunsPanel({
                           {isSuperseded && currentInList && (
                             <small style={legendStyle}>
                               {`Versão vigente: ${currentInList.templateName ?? "Checklist do guincho"} · Formulário v${currentInList.templateVersion} · iniciada em ${formatDateTime(currentInList.startedAt)}`}{" "}
-                              <a href={`#vistoria-${run.currentRunId}`}>Ver versão vigente</a>
+                              <a
+                                className="pat-link"
+                                href={`#${idPrefix}-${run.currentRunId}`}
+                                onClick={(event) => goToVersionRow(event, `${idPrefix}-${run.currentRunId}`)}
+                              >
+                                Ver versão vigente
+                              </a>
                             </small>
                           )}
                           {isSuperseded && !currentInList && (
@@ -102,7 +151,13 @@ export function ChecklistRunsPanel({
                             <small style={legendStyle}>
                               Versão atual — substitui uma vistoria anterior.{" "}
                               {previousInList && (
-                                <a href={`#vistoria-${run.reopenedFromRunId}`}>Ver versão anterior</a>
+                                <a
+                                  className="pat-link"
+                                  href={`#${idPrefix}-${run.reopenedFromRunId}`}
+                                  onClick={(event) => goToVersionRow(event, `${idPrefix}-${run.reopenedFromRunId}`)}
+                                >
+                                  Ver versão anterior
+                                </a>
                               )}
                             </small>
                           )}
