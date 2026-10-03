@@ -565,6 +565,35 @@ Completar T14 com os MODO 2–5, migrador não-super, default privileges, cadeia
 a porta de REPLICATION e os três semi-mutantes do T8c; então rodar a rodada A1–A24 e a bateria §8. O próximo comando exato é
 ampliar `tests/san3-05-runtime-role-guard-db.test.ts` nesses cenários.
 
+### MEDIDO — complemento E7 — 2026-10-03T17:56:15Z
+
+O faltante nomeado acima foi executado, sem promover ainda a bateria inteira:
+
+- T8c: três logins não-super (membro de BYPASSRLS, membro de dono FORCE e leitor de view do super), todos com
+  `options=-c role=<limpo>`; a SQL original recusa e cada semi-mutante que troca **só** o `session_user` da sua metade por
+  falso perde exatamente a via correspondente.
+- T8d: `pg_basebackup` real pelo papel `REPLICATION` (backup produzido no cluster descartável e apagado),
+  `COPY ... TO PROGRAM` pelo membro de `pg_execute_server_program`, tabela FORCE = 0 sob `pg_read_all_data`, view do super = 3.
+- T14: verde/idempotente; MODO 0, 1, 2, 3, 4, 5 e 6; rollback preserva atributos, pertença e posse quando a autoverificação
+  recusa; correção posterior converge; cadeia de dois saltos perde o primeiro salto; migrador não-super `CREATEROLE` em banco
+  descartável próprio cria o runtime e os default privileges cobrem tabela e sequência futuras (`t|t`); shim confirma senha e
+  `-v password=` ausentes do argv; senha ausente propaga falha.
+
+Execução consolidada:
+```
+tests/san3-05-runtime-role-guard-db.test.ts → # tests 8 · pass 8 · fail 0 · skipped 0 · 53,6 s
+tests/db-catalog-write-guard.test.ts        → # tests 5 · pass 5 · fail 0 · skipped 0
+npm run check                              → ec=0
+```
+
+A entrada A21 agora congela **60** ocorrências (a ampliação dos cenários de catálogo explica 29 → 60); o diff do guard continua
+restrito à única entrada do Map. A suite terminou com zero `s305_%` em papéis, bancos, tabelas e views.
+
+### PRÓXIMO PASSO
+
+Rodada de mutações A1–A24 e T13. Antes dela, contar processos com `w-j4c` no `CommandLine`; se houver, aplicar a espera do
+mandato em passos de 5 minutos até 60 minutos e registrar cada medição.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO

@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import net, { type AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
@@ -16,6 +18,7 @@ import {
 import {
   probeRuntimeRolePosture,
   RUNTIME_ROLE_CAN_BYPASS_RLS,
+  RUNTIME_ROLE_GUARD_SQL,
   RuntimeRoleGuardError,
 } from "../src/database/runtime-role.js";
 import {
@@ -30,6 +33,7 @@ import {
 const connectionString = process.env.DATABASE_URL;
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROLE_SCRIPT = path.join(REPO_ROOT, "scripts", "db-runtime-role.sh");
+const PG_BASEBACKUP_BIN = process.env.SAN3_PG_BASEBACKUP_BIN || "pg_basebackup";
 const SAFE_NAME = /^[a-z][a-z0-9_]+$/;
 
 type Escape = {
@@ -153,6 +157,15 @@ function runRoleScript(
   const stderr = result.stderr ?? "";
   assert.doesNotMatch(stdout + stderr, new RegExp(roleSecret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   return { status: result.status, stdout, stderr };
+}
+
+function runPsql(urlText: string, args: readonly string[]): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync("bash", ["-c", 'exec psql "$@"', "psql", ...args], {
+    env: psqlEnv(urlText),
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
 }
 
 function loggerSpy(): { logger: RuntimeRoleBootstrapLogger; entries: unknown[] } {
@@ -341,6 +354,87 @@ test(
       }
     });
 
+    await suite.test("T8c · três semi-mutantes session_user→current_user perdem exatamente a via do login", async () => {
+      const clean = token("s305_mclean");
+      const bypass = token("s305_mbypass");
+      const owner = token("s305_mowner");
+      const loginBypass = token("s305_mblogin");
+      const loginOwner = token("s305_mologin");
+      const loginView = token("s305_mvlogin");
+      const tableOwner = token("s305_motable");
+      const tableView = token("s305_mvtable");
+      const view = token("s305_mview");
+      const credentials = new Map([loginBypass, loginOwner, loginView].map((role) => [role, secret()]));
+      await catalog(admin, [
+        `CREATE ROLE ${ident(clean)} NOLOGIN NOSUPERUSER NOBYPASSRLS`,
+        `CREATE ROLE ${ident(bypass)} NOLOGIN BYPASSRLS`,
+        `CREATE ROLE ${ident(owner)} NOLOGIN NOSUPERUSER NOBYPASSRLS`,
+        ...[loginBypass, loginOwner, loginView].map(
+          (role) =>
+            `CREATE ROLE ${ident(role)} LOGIN PASSWORD ${literal(credentials.get(role)!)} NOSUPERUSER NOBYPASSRLS NOINHERIT`,
+        ),
+        `GRANT ${ident(clean)} TO ${ident(loginBypass)}, ${ident(loginOwner)}, ${ident(loginView)}`,
+        `GRANT ${ident(bypass)} TO ${ident(loginBypass)}`,
+        `GRANT ${ident(owner)} TO ${ident(loginOwner)}`,
+        `CREATE TABLE public.${ident(tableOwner)} (id int)`,
+        `ALTER TABLE public.${ident(tableOwner)} ENABLE ROW LEVEL SECURITY`,
+        `ALTER TABLE public.${ident(tableOwner)} FORCE ROW LEVEL SECURITY`,
+        `ALTER TABLE public.${ident(tableOwner)} OWNER TO ${ident(owner)}`,
+        `CREATE TABLE public.${ident(tableView)} (id int)`,
+        `ALTER TABLE public.${ident(tableView)} ENABLE ROW LEVEL SECURITY`,
+        `ALTER TABLE public.${ident(tableView)} FORCE ROW LEVEL SECURITY`,
+        `CREATE VIEW public.${ident(view)} AS SELECT * FROM public.${ident(tableView)}`,
+        `GRANT SELECT ON public.${ident(view)} TO ${ident(loginView)}`,
+      ]);
+      const cases = [
+        {
+          login: loginBypass,
+          via: "atributo" as const,
+          role: bypass,
+          from: "pg_has_role(session_user, r.oid, 'MEMBER')",
+        },
+        {
+          login: loginOwner,
+          via: "posse" as const,
+          role: owner,
+          from: "pg_has_role(session_user, c.relowner, 'MEMBER')",
+        },
+        {
+          login: loginView,
+          via: "view" as const,
+          role: "postgres",
+          from: "has_table_privilege(session_user, v.oid, 'SELECT')",
+        },
+      ];
+      try {
+        for (const item of cases) {
+          const client = prismaFor(urlForRole(connectionString, item.login, credentials.get(item.login)!, clean));
+          try {
+            const original = await probeRuntimeRolePosture(client);
+            findEscape(original.escapes as Escape[], item.via, item.role);
+            assert.ok(RUNTIME_ROLE_GUARD_SQL.includes(item.from));
+            const mutant = RUNTIME_ROLE_GUARD_SQL.replace(item.from, "false");
+            const rows = await client.$queryRawUnsafe<Escape[]>(mutant);
+            assert.equal(
+              rows.some((row) => row.via === item.via && row.rolname === item.role),
+              false,
+              `o semi-mutante da via ${item.via} deveria perder o escape do session_user`,
+            );
+          } finally {
+            await client.$disconnect();
+          }
+        }
+      } finally {
+        await catalog(admin, [
+          `DROP VIEW IF EXISTS public.${ident(view)}`,
+          `DROP TABLE IF EXISTS public.${ident(tableView)}`,
+          `ALTER TABLE public.${ident(tableOwner)} OWNER TO postgres`,
+          `DROP TABLE IF EXISTS public.${ident(tableOwner)}`,
+        ]);
+        for (const role of [loginBypass, loginOwner, loginView, owner, bypass, clean]) await dropRole(admin, role);
+      }
+    });
+
     await suite.test("T8d · REPLICATION, papel de servidor e view de dono que escapa são recusados", async () => {
       const repl = token("s305_repl");
       const program = token("s305_program");
@@ -366,6 +460,38 @@ test(
       try {
         const replication = await posture(urlForRole(connectionString, repl, secrets.get(repl)!));
         findEscape(replication.escapes as Escape[], "atributo", repl);
+        const backupDir = mkdtempSync(path.join(tmpdir(), "s305-basebackup-"));
+        try {
+          const base = new URL(connectionString);
+          const backup = spawnSync(
+            PG_BASEBACKUP_BIN,
+            [
+              "-h",
+              base.hostname,
+              "-p",
+              base.port || "5432",
+              "-U",
+              repl,
+              "-D",
+              backupDir,
+              "-X",
+              "none",
+              "--no-sync",
+            ],
+            {
+              env: { ...process.env, PGUSER: repl, PGPASSWORD: secrets.get(repl)! },
+              encoding: "utf8",
+              timeout: 60_000,
+              shell: process.platform === "win32" && PG_BASEBACKUP_BIN.toLowerCase().endsWith(".cmd"),
+            },
+          );
+          assert.equal(backup.status, 0, `pg_basebackup: ${backup.stderr ?? backup.error?.message ?? "falhou"}`);
+          if (!process.env.SAN3_PG_BASEBACKUP_BIN) {
+            assert.ok(readdirSync(backupDir).length > 0, "a porta REPLICATION precisa produzir um backup real");
+          }
+        } finally {
+          rmSync(backupDir, { recursive: true, force: true });
+        }
         const serverRole = await posture(urlForRole(connectionString, program, secrets.get(program)!));
         findEscape(serverRole.escapes as Escape[], "atributo", "pg_execute_server_program");
         const viaView = await posture(urlForRole(connectionString, viewer, secrets.get(viewer)!));
@@ -454,6 +580,192 @@ test(
         const mode0 = runRoleScript(connectionString, runtime, secret(), { PGOPTIONS: "-c log_statement=all" });
         assert.equal(mode0.status, 3, mode0.stdout + mode0.stderr);
         assert.match(mode0.stderr, /MODO 0/);
+
+        const migrator = token("s305_migrator");
+        const migratorSecret = secret();
+        const badAttribute = token("s305_mode2");
+        const foreignTables = token("s305_mode3");
+        const foreignRole = token("s305_mode4");
+        const stickyRole = token("s305_mode5");
+        const stickyBypass = token("s305_sticky");
+        await catalog(admin, [
+          `CREATE ROLE ${ident(migrator)} LOGIN PASSWORD ${literal(migratorSecret)} CREATEROLE NOSUPERUSER NOBYPASSRLS`,
+          `CREATE ROLE ${ident(badAttribute)} LOGIN BYPASSRLS`,
+          `CREATE ROLE ${ident(foreignTables)} LOGIN NOSUPERUSER NOBYPASSRLS`,
+          `CREATE ROLE ${ident(foreignRole)} LOGIN NOSUPERUSER NOBYPASSRLS`,
+          `CREATE ROLE ${ident(stickyRole)} LOGIN NOSUPERUSER NOBYPASSRLS`,
+          `CREATE ROLE ${ident(stickyBypass)} NOLOGIN BYPASSRLS`,
+          `GRANT ${ident(badAttribute)} TO ${ident(migrator)} WITH ADMIN OPTION`,
+          `GRANT ${ident(foreignTables)} TO ${ident(migrator)} WITH ADMIN OPTION`,
+          `GRANT ${ident(stickyRole)} TO ${ident(migrator)} WITH ADMIN OPTION`,
+          `GRANT ${ident(stickyBypass)} TO ${ident(stickyRole)}`,
+        ]);
+        const migratorUrl = urlForRole(connectionString, migrator, migratorSecret);
+        try {
+          const mode2 = runRoleScript(migratorUrl, badAttribute, secret(), { DB_MIGRATOR_ROLE: migrator });
+          assert.equal(mode2.status, 3, mode2.stdout + mode2.stderr);
+          assert.match(mode2.stderr, /MODO 2.*BYPASSRLS/s);
+
+          const mode3 = runRoleScript(migratorUrl, foreignTables, secret(), { DB_MIGRATOR_ROLE: migrator });
+          assert.equal(mode3.status, 3, mode3.stdout + mode3.stderr);
+          assert.match(mode3.stderr, /MODO 3/);
+
+          const mode4 = runRoleScript(migratorUrl, foreignRole, secret(), { DB_MIGRATOR_ROLE: migrator });
+          assert.equal(mode4.status, 3, mode4.stdout + mode4.stderr);
+          assert.match(mode4.stderr, /MODO 4/);
+
+          const mode5 = runRoleScript(migratorUrl, stickyRole, secret(), { DB_MIGRATOR_ROLE: migrator });
+          assert.equal(mode5.status, 3, mode5.stdout + mode5.stderr);
+          assert.match(mode5.stderr, /MODO 5/);
+        } finally {
+          for (const role of [foreignRole, foreignTables, badAttribute, stickyRole, stickyBypass, migrator]) {
+            await dropRole(admin, role);
+          }
+        }
+
+        const chainBypass = token("s305_chain_b");
+        const chainMiddle = token("s305_chain_m");
+        await catalog(admin, [
+          `CREATE ROLE ${ident(chainBypass)} NOLOGIN BYPASSRLS`,
+          `CREATE ROLE ${ident(chainMiddle)} NOLOGIN NOSUPERUSER NOBYPASSRLS`,
+          `GRANT ${ident(chainBypass)} TO ${ident(chainMiddle)}`,
+          `GRANT ${ident(chainMiddle)} TO ${ident(runtime)}`,
+        ]);
+        try {
+          const chain = runRoleScript(connectionString, runtime, secret());
+          assert.equal(chain.status, 0, chain.stdout + chain.stderr);
+          const memberships = await admin.$queryRawUnsafe<Array<{ n: bigint }>>(
+            `SELECT count(*)::bigint AS n FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname = ${literal(runtime)})`,
+          );
+          assert.equal(Number(memberships[0]!.n), 0, "o primeiro salto da cadeia precisa ser revogado");
+        } finally {
+          await dropRole(admin, chainMiddle);
+          await dropRole(admin, chainBypass);
+        }
+
+        const rollbackRole = token("s305_rollback");
+        const rollbackTable = token("s305_rollback_t");
+        const rollbackBypass = token("s305_rollback_b");
+        await catalog(admin, [
+          `CREATE ROLE ${ident(rollbackRole)} LOGIN SUPERUSER BYPASSRLS CREATEDB REPLICATION`,
+          `CREATE ROLE ${ident(rollbackBypass)} NOLOGIN BYPASSRLS`,
+          `GRANT ${ident(rollbackBypass)} TO ${ident(rollbackRole)}`,
+          `CREATE TABLE public.${ident(rollbackTable)} (id int)`,
+          `ALTER TABLE public.${ident(rollbackTable)} ENABLE ROW LEVEL SECURITY`,
+          `ALTER TABLE public.${ident(rollbackTable)} FORCE ROW LEVEL SECURITY`,
+          `ALTER TABLE public.${ident(rollbackTable)} OWNER TO ${ident(rollbackRole)}`,
+        ]);
+        try {
+          const rollback = runRoleScript(connectionString, rollbackRole, secret());
+          assert.equal(rollback.status, 3, rollback.stdout + rollback.stderr);
+          assert.match(rollback.stderr, /posse:.*MODO 3/s);
+          const beforeFix = await admin.$queryRawUnsafe<
+            Array<{ rolsuper: boolean; rolbypassrls: boolean; rolreplication: boolean; rolcreatedb: boolean; member: boolean }>
+          >(`
+            SELECT r.rolsuper, r.rolbypassrls, r.rolreplication, r.rolcreatedb,
+                   pg_has_role(r.oid, b.oid, 'MEMBER') AS member
+            FROM pg_roles r CROSS JOIN pg_roles b
+            WHERE r.rolname = ${literal(rollbackRole)} AND b.rolname = ${literal(rollbackBypass)}
+          `);
+          assert.deepEqual(beforeFix[0], {
+            rolsuper: true,
+            rolbypassrls: true,
+            rolreplication: true,
+            rolcreatedb: true,
+            member: true,
+          });
+          await catalog(admin, [`ALTER TABLE public.${ident(rollbackTable)} OWNER TO postgres`]);
+          const fixed = runRoleScript(connectionString, rollbackRole, secret());
+          assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
+          assert.match(
+            fixed.stdout,
+            new RegExp(`^${rollbackRole}\\|f\\|f\\|f\\|f\\|0\\|0\\|`, "m"),
+            "atributos convergem",
+          );
+        } finally {
+          await catalog(admin, [
+            `ALTER TABLE IF EXISTS public.${ident(rollbackTable)} OWNER TO postgres`,
+            `DROP TABLE IF EXISTS public.${ident(rollbackTable)}`,
+          ]);
+          await dropRole(admin, rollbackRole);
+          await dropRole(admin, rollbackBypass);
+        }
+
+        const argvDir = mkdtempSync(path.join(tmpdir(), "s305-argv-"));
+        const argvFile = path.join(argvDir, "argv.txt");
+        const shim = path.join(argvDir, "psql");
+        const argvSecret = secret();
+        try {
+          writeFileSync(
+            shim,
+            '#!/usr/bin/env bash\nprintf "%s\\n" "$@" > "$SAN3_ARGV_FILE"\ncat >/dev/null\nexit 0\n',
+            "utf8",
+          );
+          chmodSync(shim, 0o755);
+          const shimmed = runRoleScript(connectionString, token("s305_argv"), argvSecret, {
+            PATH: `${argvDir}${path.delimiter}${process.env.PATH ?? ""}`,
+            SAN3_ARGV_FILE: argvFile,
+          });
+          assert.equal(shimmed.status, 0, shimmed.stdout + shimmed.stderr);
+          const argv = readFileSync(argvFile, "utf8");
+          assert.doesNotMatch(argv, new RegExp(argvSecret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+          assert.doesNotMatch(argv, /-v\s+password=/);
+        } finally {
+          rmSync(argvDir, { recursive: true, force: true });
+        }
+
+        const migratorOk = token("s305_migok");
+        const migratorOkSecret = secret();
+        const runtimeOk = token("s305_rtok");
+        const database = token("s305_db");
+        await catalog(admin, [
+          `CREATE ROLE ${ident(migratorOk)} LOGIN PASSWORD ${literal(migratorOkSecret)} CREATEROLE NOSUPERUSER NOBYPASSRLS`,
+        ]);
+        await withRoleCatalogLock(admin, async () => {
+          const created = runPsql(connectionString, ["-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE DATABASE ${ident(database)} OWNER ${ident(migratorOk)}`]);
+          assert.equal(created.status, 0, created.stdout + created.stderr);
+        });
+        const databaseUrl = new URL(urlForRole(connectionString, migratorOk, migratorOkSecret));
+        databaseUrl.pathname = `/${database}`;
+        try {
+          const provisioned = runRoleScript(databaseUrl.toString(), runtimeOk, secret(), {
+            DB_MIGRATOR_ROLE: migratorOk,
+          });
+          assert.equal(provisioned.status, 0, provisioned.stdout + provisioned.stderr);
+          assert.match(provisioned.stdout, new RegExp(`^${runtimeOk}\\|f\\|f\\|f\\|f\\|0\\|0\\|0$`, "m"));
+          const future = runPsql(databaseUrl.toString(), [
+            "-X",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            "CREATE TABLE public.future_default (id serial primary key)",
+          ]);
+          assert.equal(future.status, 0, future.stdout + future.stderr);
+          const adminDatabaseUrl = new URL(connectionString);
+          adminDatabaseUrl.pathname = `/${database}`;
+          const privileges = runPsql(adminDatabaseUrl.toString(), [
+            "-X",
+            "-At",
+            "-c",
+            `SELECT has_table_privilege(${literal(runtimeOk)}, 'public.future_default', 'SELECT,INSERT,UPDATE,DELETE'), has_sequence_privilege(${literal(runtimeOk)}, 'public.future_default_id_seq', 'USAGE,SELECT')`,
+          ]);
+          assert.equal(privileges.status, 0, privileges.stdout + privileges.stderr);
+          assert.match(privileges.stdout, /^t\|t$/m);
+        } finally {
+          await withRoleCatalogLock(admin, async () => {
+            const terminated = runPsql(connectionString, [
+              "-X",
+              "-At",
+              "-c",
+              `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = ${literal(database)} AND pid <> pg_backend_pid()`,
+            ]);
+            assert.equal(terminated.status, 0, terminated.stdout + terminated.stderr);
+            const dropped = runPsql(connectionString, ["-X", "-v", "ON_ERROR_STOP=1", "-c", `DROP DATABASE ${ident(database)}`]);
+            assert.equal(dropped.status, 0, dropped.stdout + dropped.stderr);
+          });
+          await dropRole(admin, runtimeOk);
+          await dropRole(admin, migratorOk);
+        }
       } finally {
         await dropRole(admin, runtime);
       }
