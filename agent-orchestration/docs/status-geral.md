@@ -4903,3 +4903,9 @@ foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefat
 **Incidentes do dia, declarados:** `core.autocrlf=false` na config comum 05:46Z–11:20Z (consertado); um `git merge`
 meu rodou na árvore principal por `cd` falho (no-op, conferido pelo reflog); 4 quedas do Claude por limite de sessão e 2
 do Codex por limite de uso.
+- **18:30Z — terreno da C2⁗ do #393:** a cadeira gravou `## PAUSA 2026-10-03T18:25:23Z` no `VOTO-393-J4-C2.md` (voto ainda não
+  emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
+  guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
+  caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
