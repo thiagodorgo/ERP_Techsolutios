@@ -3056,14 +3056,14 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
 
-## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02: ERRATA 1 e integração pós-#402)
+## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02: ERRATA 1 e integração pós-#402; e em 2026-10-03: ciclo 2)
 
-**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagens 2026-10-02
+**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagens 2026-10-02 e 2026-10-03
 
-| Métrica | Anterior (`origin/main` `3e40a256`, #402 B-SAN3-01b) | Este PR | Δ |
+| Métrica | Anterior (`origin/main` `b404815c`, #404 — registro; publica o que o #402 B-SAN3-01b publicou) | Este PR | Δ |
 |---|---|---|---|
 | `blocks_completed` | 170 | **171** | +1 |
-| `frontend_smoke_tests` | 1214/1214 | **1230/1230** (executado no head `5c8efa08`, merge da main, checkout CRLF) | +16 |
+| `frontend_smoke_tests` | 1214/1214 | **1238/1238** (executado no ciclo 2 no head `a73fb35f`, nos dois terrenos: CRLF e LF) | +24 |
 | `flutter_tests` | 864/864 | 864/864 (carregado §C3.3) | 0 |
 | `backend_tests` | 3052/3054 | 3052/3054 (carregado §C3.3) | 0 |
 
@@ -3078,5 +3078,10 @@ merge, nunca rebase; a linha `test:smoke` do `frontend/package.json` é a UNIÃO
 (`tests/work-orders-page-live.test.tsx` do #402 e `tests/patios-dossie-versao.smoke.test.tsx` do bloco); `blocks_completed`
 recontado pela regra (main + 1 = 171) e `frontend_smoke_tests` pelo TAP do head integrado (1214 + 16 = 1230).
 
-`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Backfill DEVIDO e NÃO pago por este PR: a
-entrada do #402 está na `main` com `pr`/`merge_commit`/`approved_head` null; o mandato de integração não o inclui.
+**CICLO 2 (§16):** links com afordância, adapter fail-closed, gerador v2, pendências com dono; +8 testes (16 → 24).
+A `main` andou para `b404815c` (#404, registro) e entrou por merge; `blocks_completed` recontado pela regra (main + 1 = 171)
+e `frontend_smoke_tests` pelo TAP dos dois terrenos (1214 + 24 = 1238).
+
+`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Nenhum backfill devido por este PR: a entrada
+do B-SAN3-01b (#402) já está preenchida na `main` — `pr 402 · 3e40a256 · cdf370dc` (`merge_commit 3e40a256…`,
+`approved_head cdf370dc…`), pago pelo registro do #403 (`f03b883f`), com a nota corrigida pelo #404 (`b404815c`).
