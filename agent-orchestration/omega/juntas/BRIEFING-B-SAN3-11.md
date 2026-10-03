@@ -184,3 +184,13 @@ foi esse; nenhum commit entrou com CR. Quem mede confere `git config core.autocr
 
 Valem as seções "Pré-existentes nomeados pelo plano", "Ambiente de quem mede" e "Regra de voto" do ciclo 1, acima, com o
 nome dos arquivos deste ciclo. As duas pendências que o bloco abriu agora têm dono do plano da rodada (E14).
+
+## Atualização 2026-10-03 ~16:45Z — a junta 2 roda no Codex
+
+O dono suspendeu o Fable até o reinício do limite semanal e habilitou o Codex neste projeto (*"o uso do fable está suspenso
+até o reinício de limites semanais. vamos usar o codex pra ajudar, ele está habilitado para ajudar nesse projeto"*; depois,
+*"pode rodar o codex"*). Por isso o inspetor e as três cadeiras da junta 2 rodam no **Codex, em GPT-6 Astra** (o modelo de
+gate do espelho, §C7.6-bis), com os corpos do espelho em `.agents/agents/` e o protocolo de emulação de
+`.agents/agents/README.md`. Os quatro mandatos foram **regenerados** com esse modelo (o texto anterior dizia Opus 5.5) e
+substituem os do commit anterior. Onde a seção acima diz "Opus 5.5" para o inspetor e as cadeiras, vale esta atualização.
+O orquestrador continua sendo a sessão do Claude Code; ele lança cada papel por `codex exec` e versiona os artefatos.
