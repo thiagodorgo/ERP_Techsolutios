@@ -495,6 +495,10 @@ sem tocar `erp-postgres:5432` nem `erp-redis:6379`.
 | 2026-10-03T17:20Z | primeira retomada, ainda na leitura do plano | retomada ordenada pelo orquestrador | worktree conferido; leitura continuou |
 | 2026-10-03T17:24Z | leitura do plano | o dono fechou a janela para trocar o modelo | worktree limpo, nenhum commit nem arquivo meio-escrito |
 | 2026-10-03T17:25:47Z | segunda retomada | GPT-5.6 Sol, substituicao declarada acima | este registro P1; proximo passo: terminar a leitura integral do plano a partir do Apêndice C |
+| 2026-10-03T18:14Z | quarto intervalo da espera de carga antes da rodada de mutações, depois do push `b7773898` | novo limite de uso da conta OpenAI; a sessão caiu | ramo remoto e local em `b7773898`, worktree limpo; cluster descartável permaneceu de pé |
+| 2026-10-03T22:23:22Z | terceira retomada | GPT-5.6 Sol, mesmo mandato | `HEAD = origin/fix/runtime-role-sem-bypass = b7773898`; carga `w-j4c` externa = 0; cluster revalidado antes do uso |
+| 2026-10-03T22:31Z | retomada concorrente acidental | um agendamento que deveria ter sido cancelado já havia retomado esta mesma sessão às 22:23Z; o orquestrador iniciou outra instância às 22:31Z | as duas instâncias foram paradas pelo orquestrador; nenhuma delas commitou; ficou só este registro não commitado |
+| 2026-10-03T22:34:31Z | quarta retomada, instância única | GPT-5.6 Sol, mesmo mandato; limites resetados | relatório conferido sem seção duplicada; cluster revalidado; regra de carga substituída pela ordem nova do dono |
 
 ### CARGA COMPARTILHADA
 
@@ -616,6 +620,41 @@ nomeado. A contagem distinta é **6**. A primeira tentativa chamou o caminho ine
 321 abertas e 3 sem status.
 
 O próximo marco de carga é 18:17:50Z; a rodada continua suspensa até a carga zerar ou completar os 60 minutos previstos.
+
+### TERCEIRA RETOMADA — TERRENO REVALIDADO — 2026-10-03T22:23:22Z
+
+A sessão caiu por limite de uso por volta de 18:14Z, durante o quarto intervalo; o `Start-Sleep` em curso já não existia na
+retomada (`Unknown process id`), sem processo órfão. O primeiro censo novo encontrou **0** processos externos com `w-j4c`
+no `CommandLine`; portanto a espera terminou sem competir com a junta. Carga declarada para a rodada: junta = 0,
+cluster próprio = 1 contêiner.
+
+O contêiner `san3-05-s2-pg` foi medido antes de ser confiado: `pg_isready` aceitou conexões; PostgreSQL **16.14**;
+**115** tabelas públicas, **106** com FORCE RLS e **0** papéis residuais `s305_%`. O primeiro `docker inspect` tentou ler
+`.State.Health.Status`, mas a imagem não define `HEALTHCHECK`; o erro foi só de template e o `pg_isready` + consulta real
+provaram o serviço. Porta publicada e estado são reconferidos separadamente antes da bateria.
+
+### RETOMADA DUPLA E NOVA REGRA DE CARGA — 2026-10-03T22:34:31Z
+
+O orquestrador retomou por engano a mesma sessão duas vezes, às 22:23Z e 22:31Z. As duas instâncias foram paradas e esta é a
+única continuação. A árvore foi conferida: `HEAD = origin/fix/runtime-role-sem-bypass = b7773898`; a única mudança era esta
+seção do relatório, sem duplicação de texto e sem código parcialmente escrito. Uma tentativa do T13 foi abortada pela mensagem
+de retomada antes de produzir resultado; não havia processo de teste vivo. O T13 deve ser refeito inteiro.
+
+O cluster foi medido novamente: `running`, bind **127.0.0.1:55405**, `pg_isready` verde, PostgreSQL **16.14**, 115 tabelas,
+106 FORCE e 0 papéis `s305_%`. A primeira tentativa de CPU usou o contador inglês do Windows e falhou porque o nome é
+localizado; a medição válida por `Win32_Processor.LoadPercentage` deu **8%**. Outras frentes: **1** processo `codex.exe`, do
+inspetor `w-insp401c2`; `w-j4c*` = 0. Pela nova ordem do dono, não há mais espera: cada passo pesado declara CPU e processos,
+e qualquer falha por tempo é reexecutada em série antes de conclusão.
+
+### MEDIDO — início da rodada pela instância única — 2026-10-03T22:38:08Z
+
+- T13 refeito inteiro depois do aborto: **30/30**, 0 falhas, 0 pulos, 36,5 s. As 27 fixtures deram pelo menos uma chave,
+  `N10_any` entrou e o override deu `novas=1 sumidas=1`. Carga no início: CPU **22%**, 3 processos das outras frentes.
+- A primeira reexecução da suíte dinâmica usou o PATH do PowerShell, que resolveu `bash.exe` para o stub do WSL sem distro:
+  T14 falhou como `psql: ausente` e T15 expirou sem stdout. A falha foi operacional e a suíte limpou todos os objetos
+  (`s305_%` = 0 em papéis, bancos e classes). Pela regra nova, foi repetida em série com o Git Bash explícito no PATH.
+- Reexecução válida: `tests/san3-05-runtime-role-guard-db.test.ts` **8/8**, 0 falhas, 0 pulos, 32,9 s; T14 = 10,1 s e
+  T15 = 7,4 s. Carga no início: CPU **48%**, 7 processos das outras frentes; não houve timeout. Esta é a medição usada.
 
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
