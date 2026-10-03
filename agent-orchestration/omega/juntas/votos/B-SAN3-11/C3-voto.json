@@ -1,0 +1,106 @@
+{
+  "junta": "J-B-SAN3-11 (junta 1, ciclo 1)",
+  "pr": 401,
+  "cadeira": "C3",
+  "identidade": "coordenador-de-acessos",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "mandato_md5": "589f7348cd6cb4afd2a2ed19cc1e4e44",
+  "corpo_md5": "a4141c3170516194254e578d0e7acc8d",
+  "objeto": "defa502ee0a03dabbc8786d568d00f7eb7ca726d (gh headRefOid = refs/pull/401/head = origin/fix/dossie-versao-da-vistoria; delta desde a cerca 97e5ec12 = so registro em omega/juntas/**)",
+  "legalidade": "VERDE: inspetor B LIBERADO COM RESSALVA; check-runs 14/14 completed/success no objeto",
+  "itens": {
+    "1_premissa_P-o_e_aba_acesso_negado": {
+      "status": "VERDE",
+      "resumo": "Apendice D verbatim (md5 57671f29...) no catalogo de defa502e: ambas(9)=super_admin,tenant_admin,manager,technician,viewer,platform_admin,operator,field_technician,auditor; so impound(1)=field_dispatcher; so checklist(3)=finance,inventory,support; nenhuma 0 = plano. Guarda dupla impound.routes.ts l.202-204 intacta; gate do front (can checklist_runs:read, dossieTabsFor, l.232) fora do diff; ramos loading/empty/error/denied fora do diff. T10 ok; checklist 12/12 (denied, integracao, AUTO-CURA). Vermelho-controle proprio: painel fora do gate -> T10 not ok; restaurado (porcelain 0).",
+      "evidencia": "C3-evidencia.md#item-1",
+      "achados": []
+    },
+    "2_T11_ids_so_em_atributos": {
+      "status": "VERDE COM AJUSTE",
+      "resumo": "T11 ok; mutacao declarada do A9 (currentRunId como texto) -> T11 not ok. Sonda propria com UUIDs reais nos 4 ramos, painel+impressao+modal: run-ids no HTML 12 = 12 em id/href de vistoria em cada superficie; UUID/tenant/work_order no texto = 0; templateId/relatedEntityId/process.id/tenantId no HTML = 0; id da vigente nao vinculada nunca emitido.",
+      "evidencia": "C3-evidencia.md#item-2",
+      "achados": [
+        "C3-A1",
+        "C3-N1"
+      ]
+    },
+    "3_diff_x_escopo_pendencias_kpi": {
+      "status": "VERMELHO",
+      "resumo": "3a diff ⊆ PERMITIDO (§6+§15.4/§15.5/§15-bis.8), PROIBIDO intocado, frontend/package.json so +1 token no test:smoke, nada em src, Kpis/app.js = 2 linhas var FROZEN e freeze --check ec=0: VERDE. 3b escopo da errata e resolucoes de merge so registro + uniao do test:smoke; teste congelado desde 92cfc05e: VERDE. 3c P-CHK RESOLVIDA com evidencia e indice = saida do gerador (A26): VERDE; pendencias novas do §13 sem dono valido: VERMELHO (C3-B1). 3d KPI: 171 = 170+1 contra a main integrada (e a de agora), smoke 1230/1230 reexecutado, carregados com nota correta, history n=main+1: VERDE; nota de backfill falsa sobre o objeto (C3-A2, ajuste). 3e A18' TETO=0 NULL=0 CP=1 EOL=3 nomeados, controle NULL=1; kpi-dashboard-charts 17/17; diff --check vazio: VERDE.",
+      "evidencia": "C3-evidencia.md#item-3",
+      "achados": [
+        "C3-B1",
+        "C3-A2"
+      ]
+    }
+  },
+  "achados": [
+    {
+      "id": "C3-A1",
+      "item": "2",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "T11 vive em frontend/tests/patios-dossie-versao.smoke.test.tsx, arquivo novo deste PR",
+      "titulo": "T11 nao asserta a exclusividade de atributo que o seu nome e o §8 prometem",
+      "N": 1,
+      "forma": "assercao de presenca (id= e href= existem) + texto sem tags, no lugar de 'todo id so em id/href de ancora'",
+      "causa": "o teste reconhece a forma (texto sem tags) e nao a propriedade",
+      "medido": "mutacao title={run.currentRunId} no <a> do painel (aplicacao provada) -> T11 ok (ec=0); sonda da C3 not ok (15 ocorrencias, 12 em ancora); restaurado, diff --stat 0",
+      "impacto": "o produto cumpre o A9 hoje (sonda 12/12 em painel, impressao e modal); vao de regressao para id em atributo nao-ancora visivel (title/aria-label)"
+    },
+    {
+      "id": "C3-N1",
+      "item": "2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "o id=vistoria-<id> na <tr> nasce neste PR (diff do ChecklistRunsPanel.tsx)",
+      "titulo": "com o modal aberto cada <tr id=vistoria-<id>> existe duas vezes no DOM (modal em #root + DossiePrintDocument no portal do body)",
+      "medido": "VehicleDossieModal.tsx l.423-442 createPortal(...,document.body); grep createPortal src/components/ui/*.tsx -> 0 (Modal nao e portal)",
+      "impacto": "pela ordem de arvore a ancora resolve para a linha do modal; duplicidade de id e invalidade de HTML; a ancora no navegador e item da C1, nao medida por mim"
+    },
+    {
+      "id": "C3-B1",
+      "item": "3",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "git log -S 'B-SAN3-12 ou' e -S 'dono:** a definir (pode ser' -- pendencias.md -> dd58142f fix(patios) (B-SAN3-11), 2026-10-01 22:01Z, commit do proprio bloco; as duas entradas sao novas neste PR",
+      "titulo": "A15: as pendencias novas do §13 foram abertas sem dono valido, e o indice as publica com dono 'sim'",
+      "criterio": "plano §7 A15 ('pendências novas do §13 abertas com dono'), §10 linha C3 item (3), §13 (donos propostos), mandato C3 item (3)",
+      "N": 2,
+      "forma": "P-SAN3-11-VIGENTE-NAO-VINCULADA: '**dono:** B-SAN3-12 ou bloco dedicado — depende de decisão de backend'; B-SAN3-12 = feat/web-financeiro-baixa-e-contas (PLANO_SAN3.md l.268, frontend/src/modules/finance/**), sem relacao com vinculo processo<->vistoria; §13 propunha trilha CHECKLIST P1 PR-05. P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA: '**dono:** a definir'; §13 propunha B-O6R-12. gerar-indice-pendencias.py:98 so exclui 'a atribuir' -> pendencias-indice.md l.326-327 publica dono 'sim' para as duas",
+      "causa": "o commit do bloco escreveu donos que o §13 nao propos (um de outro dominio, outro indefinido); o check mecanico do A15 (grep -c dono >= 1) reconhece a palavra, nao a propriedade",
+      "agravante": "o texto das duas entradas contradiz o §13: ORDEM diz que o painel nao reordena e que a ordem do backend pode confundir (o adapter reordena por startedAt desc, processes.adapter.ts:557-558; §13: 'Informativa'); VIGENTE atribui a causa a 'nova order' (o plano mediu que reabrir copia related_entity, P-d; causa = AUTO-link so na abertura)",
+      "medido": "git diff -U1 origin/main...HEAD -- pendencias.md; grep -n B-SAN3-12 PLANO_SAN3.md; sed gerar-indice-pendencias.py l.98; grep P-SAN3-11 pendencias-indice.md"
+    },
+    {
+      "id": "C3-A2",
+      "item": "3",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "git log -S 'NÃO PAGO POR ESTE PR' -- Kpis/kpis-latest.json Kpis/kpis-history.json -> 53d7f8e3 fix(kpi) B-SAN3-11; ficou falsa no merge 5f062346 do proprio ramo (integracao do #403), cuja resolucao nao tocou kpis-latest.json",
+      "titulo": "a nota de backfill do proprio bloco diz que a entrada do #402 esta sem pr/merge_commit/approved_head, e no objeto ela esta preenchida",
+      "N": 3,
+      "forma": "kpis-latest.json release.backfill_note; kpis-history.json ultima entrada backfill_note; kpis-history.md fim da secao do bloco",
+      "causa": "a integracao do #403 trouxe o backfill (history[165]: pr 402, merge_commit 3e40a256, approved_head cdf370dc) e nao reescreveu a nota que o negava",
+      "impacto": "numeros corretos; texto de registro afirma o contrario do proprio objeto"
+    }
+  ],
+  "voto": "REPROVADO",
+  "evidencia": "C3-evidencia.md",
+  "kpi_medido": {
+    "blocks_completed": "171 = 170 (f03b883f integrada; tambem b404815c) + 1",
+    "frontend_smoke_tests": "1230/1230 reexecutado pela C3 no objeto (ec=0, not ok=0)",
+    "carregados": "backend 3052/3054 e flutter 864/864 = main, nota conferida (src/tests/mobile/prisma = 0 no diff)",
+    "history": "n 166 -> 167, 166 entradas da main identicas e na ordem, bloco por ultimo",
+    "app_js": "2 linhas var FROZEN; kpi-freeze --check ec=0"
+  },
+  "terreno_nota": "origin/main andou para b404815c (#404, registro, mergeado 03:19:52Z) durante a junta; o objeto defa502e integra f03b883f; as 03:28Z gh pr view 401 -> CONFLICTING/DIRTY (head inalterado, CI 14/14 success). Nao e achado do bloco: o pre-merge integra o #404 e reconta (blocks_completed segue 170 na main de agora).",
+  "fundamento": "Unanimidade de 3 (plano §10): o voto da C3 sozinho reprova. Item 3 vermelho por C3-B1 (bloqueia, dentro-do-bloco): A15 exige as pendencias novas do §13 abertas com dono; das 2 abertas pelo commit do bloco dd58142f, 0 tem dono valido (P-SAN3-11-VIGENTE-NAO-VINCULADA -> 'B-SAN3-12 ou bloco dedicado — depende de decisão', e B-SAN3-12 e o bloco do financeiro web, PLANO_SAN3.md l.268; P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA -> 'a definir'), o indice gerado publica 'dono: sim' para as duas (gerar-indice-pendencias.py:98 so exclui 'a atribuir'), e o texto de ambas contradiz o que o §13 mediu. Itens 1 e 2 verdes (item 2 com o ajuste C3-A1); no item 3, diff × escopo, escopo da errata, A26, A18' e os numeros do KPI verdes (com o ajuste C3-A2).",
+  "resumo_por_item": {
+    "1": "VERDE",
+    "2": "VERDE COM AJUSTE (C3-A1)",
+    "3": "VERMELHO (C3-B1 bloqueia; C3-A2 ajuste)"
+  },
+  "nao_li_votos_de_outras_cadeiras": true,
+  "gravado_em": "2026-10-03T03:32Z"
+}
