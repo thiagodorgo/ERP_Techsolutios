@@ -418,6 +418,50 @@ duas paradas, no mesmo arquivo.
 - **limpeza:** cluster proprio `54405` (`/var/lib/postgresql/san3_05_s1`) parado e removido pelo nome; worktree do head-base
   `/home/user/wt-s1-base` removido (`pgrep` pelo caminho = 0 antes); o worktree do ramo e removido depois deste push.
 
+## ENCERRAMENTO DA NUVEM — decisao do dono — 2026-10-03T15:01:50Z
+
+Papel: dev · Identidade: dev-b-san3-05-sucessor-1 · Modelo: claude-opus-5-5 · mandato_md5: 62f6873ca8f43cafb2ab91fb579c9235
+
+> Nota para o orquestrador local. Nao muda codigo, plano nem escopo: registra uma decisao do dono e o ponto de retomada.
+
+### A decisao (do dono, nesta sessao de nuvem, 2026-10-03)
+
+O restante do dev do B-SAN3-05 **sai da nuvem** e e feito **inteiro na maquina local**, sobre o **mesmo plano v3, sem corte**.
+Nenhuma nova tentativa na nuvem.
+
+- **Nao** se encolhe o plano para caber na nuvem (trocar a prova por execucao por uma prova mais fraca deixaria o codigo com
+  menos garantia do que a junta vai cobrar).
+- **Nao** se divide a suite entre nuvem e local (o mesmo arquivo de testes escrito em dois lugares, por dois agentes).
+
+### Por que (medido)
+
+O bloqueio do classificador de seguranca aconteceu **tres vezes**, sempre no mesmo trecho do trabalho:
+1. com o antecessor `dev-b-san3-05`, ao escrever `tests/san3-05-runtime-role-guard-db.test.ts` (§7 acima);
+2. com o sucessor-1, ao passar da leitura do catalogo de cenarios para a escrita dessa suite (secao PARADA acima);
+3. com o sucessor-1 de novo, ao responder ao dono como seguir (sem chamada de ferramenta em curso; nada escrito).
+
+Mensagem literal do 3.o bloqueio (identica a do 2.o):
+```
+Your response above was stopped by a safety classifier — this is not a tool or API error. The rest of it was withheld, and tool calls in it that had not finished did not run. Do not produce that content again, even reworded.
+```
+
+### Ponto de retomada (local)
+
+- **head de retomada:** o deste commit (pai: `18150c0514748c0de6326e2d507b89d9bc442ce0`).
+- **quem:** dev de identidade nova (proposta: `dev-b-san3-05-sucessor-2`), na maquina local, mesmo mandato
+  (`00-mandatos/dev.md`, md5 `62f6873ca8f43cafb2ab91fb579c9235`) e mesmo plano v3.
+- **como (P3):** este relatorio e roteiro, nao conclusao — re-executar o que esta registrado nas §0–§7 e na RETOMADA, comparar,
+  e so entao medir a cauda.
+- **o que falta (inalterado, lista da secao PARADA):** T5–T9, T8b–T8d, T14 (a/b) e T15 em `tests/san3-05-runtime-role-guard-db.test.ts`;
+  a entrada A21 da `FROZEN_ALLOWLIST`; a rodada de mutacoes A1–A24; a bateria do §8; o `npm test` real para o KPI; o E8; o §10.
+  Depois: PR em rascunho, CI, inspetor, junta (unanimidade de 3) e porteiro — como no §10 do plano.
+- **o que a nuvem entregou e continua valendo:** E1–E6 e os testes T1–T4 e T10–T13, re-verificados pelo sucessor-1 em `5893921`
+  (17 itens, nenhuma divergencia de saida).
+- **a considerar pelo orquestrador:** `origin/main` andou para `b404815` (#402–#404) e o ramo nao a integrou (instrucao do
+  pedido); a integracao, se houver, e do orquestrador. O Node 20 da imagem de nuvem era `v20.20.2`.
+- **terreno da nuvem:** nada vivo — cluster `54405` e worktrees removidos (secao PARADA); o worktree usado para este commit e
+  removido logo depois do push.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
