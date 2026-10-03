@@ -351,6 +351,39 @@ Worktree proprio `/home/user/wt-dev-s1` no ramo, `git status --porcelain | wc -l
 - **Node 20 da imagem mudou de patch.** O antecessor mediu `/opt/node20` → `v20.20.0`; aqui `/opt/node20/bin/node -v` →
   `v20.20.2`. Mesma major do CI (`node-version: 20`); a re-execucao abaixo compara as saidas com essa diferenca declarada.
 
+### MEDIDO — P3: re-execucao do roteiro das §0–§7 (2026-10-03T11:40Z), comparada com o gravado
+
+Terreno: cluster Postgres 16 PROPRIO, porta 54405 (a mesma do antecessor), provada livre antes de subir
+(`bind()` em Python → "LIVRE"; `(exec 3<>/dev/tcp/127.0.0.1/54405)` → "connect: Connection refused"),
+`/var/lib/postgresql/san3_05_s1`, `listen_addresses=127.0.0.1`, auth trust; `SHOW log_statement` → `none`,
+`log_min_duration_statement` → `-1`, `log_min_error_statement` → `error`, `max_connections` → `100` (igual ao CI).
+Head-base para os vermelhos-controle: worktree destacado `/home/user/wt-s1-base` em `4ab9d232` com `npm ci` proprio
+(arvore `src` = `21e1c4f2…`, `prisma` = `e906ac2e…`, identicas as do `cb94b78b` do antecessor), banco `erp_base`.
+
+| # | comando (Node 20, `PATH=/opt/node20/bin:$PATH`) | gravado pelo antecessor | medido agora | |
+|---|---|---|---|:-:|
+| 1 | `npm ci --no-audit --no-fund` | ec=0, 222 entradas | ec=0, 222 entradas | = |
+| 2 | `npx prisma generate` sem `DATABASE_URL` / com | ec=1 `PrismaConfigEnvError` / ec=0 | ec=1 / ec=0 | = |
+| 3 | `prisma migrate deploy` → tabelas / FORCE / views | 115 / 106 / 0 | 115 / 106 / 0 | = |
+| 4 | md5 Apendice A / C / E do plano; `session_user` no E | `81d92595…` / `810c1c4a…` / `36650de5…`; 8 | iguais; 8 | = |
+| 5 | md5 de `scripts/san3-05-acessos-de-plataforma.mjs`, `scripts/db-runtime-role.sh`, `RUNTIME_ROLE_GUARD_SQL` | = A, = C (115 linhas), = E | iguais | = |
+| 6 | `git ls-files -s` / `--eol` do script; `bash -n` | `100755`; `i/lf w/lf attr/text eol=lf`; ec=0 | iguais | = |
+| 7 | 27 fixtures × tabela do Apendice D; padrao de escrita de catalogo nelas | 27/27; 0 | 27/27; 0 | = |
+| 8 | gerador v3 no head-base (`4ab9d232`) | 53 chaves `5c566532…`, identico a l.774-826 | 53 `5c566532…`, `diff` vazio | = |
+| 9 | gerador v3 no head | L1 725, L2 453, 53 `79e1d86e…`; aviso de OPS no stderr | identico, inclusive o aviso (19,5 s) | = |
+| 10 | diff do inventario base → head | −3 / +3 (§3) | as mesmas 3 sumidas e 3 novas | = |
+| 11 | `production-runtime-gates` (T1/T3) | 72/72 | `# tests 72 # pass 72 # fail 0` | = |
+| 12 | `san3-05-runtime-role-bootstrap` (T2/T4) | 12/12 | `# tests 12 # pass 12 # fail 0` | = |
+| 13 | `san3-05-leituras-de-plataforma-db` (T10–T12) no head | 11/11 (2,4 s), limpeza 0 | 11/11 (3,8 s); `tenants san3-05-%` 0, papeis `o6r_b01_%` 0, eventos de 2001 0, rateios 0 | = |
+| 14 | o mesmo arquivo no head-base (vermelho-controle) | 11 · pass 2 · fail 9; T11d verdes | 11 · pass 2 · fail 9; T11d verdes; T10 `[]` × `A@01,B@02,…`; T11a `actual 0` × `expected 50`; T12 `[]` × `['A','B']` | = |
+| 15 | `san3-05-acessos-de-plataforma-guard` (T13) | 30/30, 36,9 s | 30/30, 40,2 s (< 60 s) | = |
+| 16 | `npm run check` | ec=0 | ec=0 | = |
+| 17 | `deploy-manifest-parity`; `grep DATABASE_RUNTIME_ROLE_GUARD fly.*.toml .env.example`; `git grep -nE '\bnew PrismaCloudChargeRepository\(prisma\)' -- src` | 28/28; vazio; vazio | 28/28; ec=1; ec=1 | = |
+
+Divergencias: so as declaradas na abertura (Node `v20.20.2` × `v20.20.0`; `origin/main` andou) e duracoes. Nenhuma saida
+de teste, md5, contagem ou inventario divergiu. O boot real manual (§2) e o substituto do H1 (§4) nao foram refeitos a mao:
+o T15 e o T14b, abaixo, os re-medem como teste.
+
 ## §8 — Bateria do §8 — EM APURACAO
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
