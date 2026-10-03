@@ -4800,6 +4800,142 @@ gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS 
 `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
 classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
 
+### `B-GOV-MANDATO` (#393) — o mandato do orquestrador passa a ser verificável por máquina (autoria, 2026-09-25)
+
+**Peça 1 do circuito do `PLANO_SAN3.md`, e a única mecânica:** *"a premissa entra pelo mandato do orquestrador,
+escrita como fato"*. A regra *"a prova tem de poder falhar"* **já estava escrita** e foi violada dez vezes numa
+rodada — a pior na **linha 8** do mandato do ciclo 3 do `B-O6R-11` (*"a perda **MEDIDA** é `0/N`"*, número herdado
+da ata anterior), treze linhas acima de o mesmo arquivo exigir do planejador *"para CADA critério, a mutação que o
+deixaria vermelho"*. Entram `scripts/mandato-refs.sh` (o orquestrador **nunca digita SHA**; `approved_head` **lido
+da ata**, nunca de `gh pr view`), `scripts/mandato-preflight.sh` (o mandato só sai em duas seções, **MEDIDO** com
+`medido por:` e **HIPOTESE** com `derruba com:`) e `tests/mandato-refs.test.ts` (6 casos, com as **3 regressões do
+matcher** como fixture e um **vermelho-controle**). **3 arquivos novos, nenhum alterado**; diff de `src`, `prisma`,
+`frontend`, `mobile` e `.github` **vazio**.
+
+**O mandato deste bloco foi o primeiro escrito no formato novo, e uma hipótese CAIU.** Dos **8** itens de `MEDIDO`, **7
+bateram** e **1 estava vencido** — o head (`f8d5a2c8` no papel, `1ae82626` na medição), porque o ramo andou
+depois de o mandato sair; é exatamente por isso que a âncora se **mede**. Das **4 hipóteses**, **3 sobreviveram** — a suíte em **3058/3060**
+(medida, não herdada), smoke/Flutter carregáveis por §C3.3 (N=0 nos dois caminhos), e o pré-voo **sem** falso
+positivo em caminho relativo ao app Flutter (com vermelho-controle rejeitando nas 5). **Caiu a quarta** — *"o
+índice não muda, porque o bloco não abre nem fecha pendência"* —, e caiu **pelo mecanismo funcionando**: a sonda
+escrita para atacar a terceira encontrou a propriedade **vizinha** e um defeito real no próprio pré-voo. A
+checagem de caminho decide *"existe arquivo com este **nome**"* e não *"existe arquivo neste **caminho**"*:
+classe gerada da fonte, **20 de 20** caminhos errados com basename real **aceitos**, vermelho-controle **5 de 5**
+com basename inexistente **rejeitados**. Virou `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (**BAIXA**, não
+bloqueia, escopo `dentro-do-bloco`, **dono a nomear pela junta**) — **quem achou não consertou** (§C7.4-bis), e há
+razão técnica além da regra: a cláusula existe para aceitar o `lib/…` do app Flutter, e apertá-la errado faria o
+pré-voo rejeitar mandato correto.
+
+**KPI.** Backend **3052/3054 → 3058/3060 REEXECUTADO** (Δ +6, **todos** de `tests/mandato-refs.test.ts`, testes
+1557–1562 da ordem TAP; 2 skips **pré-existentes** de `RBAC_DB_PARITY`; Postgres e Redis descartáveis próprios, a
+base viva intocada). Smoke **1202/1202** **CARREGADO com nota e CONFIRMADO POR REGRESSÃO** (`npm ci --prefix frontend` próprio do
+worktree, `test:smoke` → 1202/1202, ec=0 — exatamente o valor carregado) e Flutter **864/864** **CARREGADO com
+nota, SEM** confirmação por regressão (§C3.3) — dito assim para ninguém ler a confirmação de uma trilha como
+valendo para a outra.
+`blocks_completed` **167 → 168**. `mvp_demo`/`mvp_vendavel` **intocados** (§C3.4). Índice de pendências **pelo
+gerador**: **414** cabeçalhos / **403** IDs, **110** FECHADAS, **304** ABERTAS. **Backfill §C3.5 do #392 pago com
+a própria ferramenta nova** — `merge_commit fc3363e3…` e `approved_head `7822deaf…`` lido da **ata**, não o head
+do PR no merge (`5cfcd7d3…`), que é o par que o orquestrador já trocou duas vezes.
+
+## B-GOV-MANDATO — CICLO 2 (PR #393, 2026-09-26) — a correção da reprovação 2 × 1
+
+**O que a junta reprovou, e por que é UMA coisa.** A ata `agent-orchestration/omega/juntas/J-B-GOV-MANDATO.md`
+reprovou o ciclo 1 por **quatro bloqueantes de uma classe única**: *guarda que reconhece uma FORMA CONHECIDA
+em vez de enunciar a PROPRIEDADE* (C1-01, C2-01 e o basename) e *insumo não validado tratado com a confiança
+do caminho feliz* (C2-02, C2-03). O `R-B-GOV-MANDATO-1` registrou que consertar por instância repetiria o erro
+que custou o #386.
+
+**Os quatro, reproduzidos pelo dev do ciclo 2 antes de escrever uma linha.** C1-01: as **mesmas** 8 afirmações
+numéricas, zero `medido por:`, dentro de `## MEDIDO` — como bullets `ec=1`, **como tabela `ec=0`, PRE-VOO OK**.
+C2-01: o guard passa **4 dos 6** casos com o `.sh` **apagado** (rodada de controle com o script no lugar:
+6/6, provando que o arnês não é a variável; `git hash-object` dos dois rastreados igual ao blob do head).
+C2-02 e C2-03 entram reproduzidos **dentro** do guard novo, como os casos `[A4]` e `[D1]`.
+
+**O conserto, por propriedade.** `scripts/mandato-preflight.sh`: a checagem 3 parte o documento em **unidades**
+(a forma da linha deixa de existir como conceito — tabela, parágrafo, lista numerada, citação e item recuado
+são unidades como as outras); a 4 classifica **tokens** (as 11 vizinhanças do SHA deixam de esconder, e o
+caminho do scratchpad, o UUID e `deadbeef.md` continuam de fora porque o token inteiro não é hexadecimal); a 5
+exige `-i` no **comando** (acento, aspas e o truque `via-interna` deixam de existir); a 6 exige **existência no
+caminho citado** — morrem a lista de 10 extensões e o `find -name <basename>`; nasce a **checagem 7**, que
+confronta o rótulo `approved_head` do mandato com o que a ferramenta consegue LER.
+`scripts/mandato-refs.sh`: `approved_head` em **três estados** — LIDO (ec 0), AUSENTE (ec 0) e **NÃO
+DETERMINÁVEL (ec 3)** —, insumo validado **antes** do laço, fonte = `origin/$BASE` **∪ head do PR**, e o
+`python` substituído pelo `--jq` embutido do próprio `gh` (zero dependência nova).
+
+**A decisão que mais muda a vida de quem usa: objeto JULGADO deixa de ser objeto APROVADO.** Uma ata REPROVADA
+declara objeto e **não** declara aprovação; ler o veredito em prosa seria reconhecer forma (três grafias em
+10 das 107 atas, e numa delas APROVADO e REPROVADO na MESMA linha). Só a linha `- **approved_head:**` conta.
+**Custo medido, declarado e aceito:** `linha_estrutural_approved_head` = **0 de 107** em `origin/main@fc3363e3`
+(0 de 108 no head do ramo) — **LIDO é inalcançável no corpus de hoje**, e #390/#391/#392 deixam de sair como
+"lidos": passam a NÃO DETERMINÁVEL com o objeto listado. Estavam certos **por sorte do veredito**. O ritual que
+faz nascer a linha tem dono: `P-GOV-ATA-APPROVED-HEAD-LINHA` → bloco `B-GOV-ATA-CABECALHO`.
+
+**Os guards passam a exercitar o artefato.** `tests/mandato-refs.test.ts` reescrito (**18** casos) e
+`tests/mandato-preflight.test.ts` novo (**33**) — **51 casos, 100 % por `spawnSync` do `.sh` real**, em arnês
+com repositório git em `mkdtemp`, `gh` shimado por PR e uma ata que vive **só no ramo**. Zero réplica, zero
+asserção sobre comentário. Com o script apagado, cada arquivo passa **0**; reescrevendo só comentários, passa
+**tudo**. **30 mutações** executadas em arnês isolado no scratchpad, cada critério com a sua, com rodada de
+controle antes e depois — e a rodada com o artefato apagado **pegou um buraco no próprio guard**: dois casos
+(`[C7]` e `[D1]`) sobreviviam por serem **comparações relativas**, vacuamente verdadeiras com os dois lados
+vazios. Ganharam âncora absoluta; a re-medição deu 0/18.
+
+**KPI.** Backend **3058/3060 → 3103/3105 REEXECUTADO** (Δ +45 sobre o ciclo 1, +51 sobre a `origin/main`;
+decomposto: `mandato-refs` 6 → 18 e `mandato-preflight` 0 → 33; **N=2 execuções com denominador idêntico**,
+Postgres `pg-dev393` e Redis `redis-dev393` descartáveis próprios, a base viva intocada; os 2 skips são os
+`RBAC_DB_PARITY` pré-existentes). Smoke **1202/1202** e Flutter **864/864** **carregados com nota** (§C3.3),
+provados nos dois sentidos. `blocks_completed` **168, inalterado** — o ciclo 2 é correção do MESMO bloco.
+`mvp_demo`/`mvp_vendavel` **intocados**. Índice de pendências **pelo gerador**: fecha
+`P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` (com o teste de encerramento colado) e abre três com dono —
+`P-GOV-ATA-CABECALHO-TEMPLATE`, `P-GOV-ATA-APPROVED-HEAD-LINHA` e `P-GOV-MANDATO-2-FRONTEIRAS`.
+
+**Fica devendo, e é do orquestrador** (o §4 do plano do ciclo 2 põe esses caminhos fora do escopo do dev):
+nomear `B-GOV-ATA-CABECALHO` e `B-GOV-MANDATO-2` na fila do `docs/revisoes/SAN3/PLANO_SAN3.md` §7.3, e
+escrever a seção do ciclo 2 na ata.
+
+---
+
+## B-GOV-MANDATO — ciclo 3 (PR #393, na autoria)
+
+**O que a junta 2 reprovou.** Não a falta de propriedade — o ciclo 2 já tinha movido cada checagem de
+FORMA para PROPRIEDADE — mas o fato de **cada checagem ter o seu próprio reconhecedor de seção e de
+cerca**, com a agregação de unidades decidida pela *aparência da linha*. Os dois lados saíam disso: uma
+evidência absolvia cinco afirmações, e um cabeçalho de seção virava unidade.
+
+**O que o ciclo 3 entrega.** `scripts/mandato-preflight.sh` v3 com **oráculo único** de seção/cerca,
+agregação limitada pela **estrutura**, o campo `approved_head` como **token reservado de documento
+inteiro** (a colagem verbatim da ferramenta é a única forma inventariada — isenção I1) e o **inventário
+completo I1–I20** com recíproco nos dois lados. `scripts/mandato-refs.sh` só ganhou cabeçalho (21
+linhas, **zero** não-comentário; guard 33/33 verde depois). E `scripts/mandato-mutantes.sh` **novo**: a
+cobertura por mutação deixa de ser adjetivo e passa a ser um comando, com os pontos de decisão
+**enumerados da fonte**, um mutante por ponto com operador declarado e a **lista dos sobreviventes**
+publicada em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-mutantes.md`.
+
+**Guards.** Pré-voo **33 → 298** casos, refs **18 → 33** — os dois escritos pelo Dev-T, **outra
+identidade**, **antes** do artefato e vermelhos de propósito. Conferido que `tests/**` ficou byte a byte
+intocado (`hash-object` com caminho absoluto = blob do head; `git diff --name-only <head-do-Dev-T> HEAD
+-- tests` vazio). **Matriz de ausência reexecutada:** com cada artefato apagado **e** renomeado, o guard
+do artefato ausente passa **0** (pré-voo 0/298, refs 0/33, nos dois modos), e a rodada de controle no
+arnês pristino reproduz 297/298 e 33/33.
+
+**O achado do ciclo, e ele não fecha aqui.** `[B8b]` e `[F-EOL/s7-neg]` levam ao artefato a **mesma
+fixture** — byte a byte igual, `md5` idêntico — e exigem vereditos **opostos**. É contradição por
+construção, não dificuldade de implementação. Pelo contrato quem está certo é o `s7-neg`; o `[B8b]` é o
+critério da **v2**, que a v3 revoga ao tornar o token proibido fora da colagem. Fechá-lo exigiria
+isenção **fora do inventário** e **estreitaria o gatilho** — então o dev do artefato, que **não toca
+`tests/**`**, reportou: `P-GOV-MANDATO-3-B8B-CONTRADICAO`, **ALTA**, **bloqueia o merge** (job `backend`
+do CI vermelho com **1** not-ok em 3385, o único da suíte).
+
+**KPI.** Backend **3103/3105 → 3382/3385** por execução real no CI, delta decomposto (guards 51 → 331
+casos: +280 no denominador, +279 no numerador, porque um caso novo nasce vermelho). Smoke e Flutter
+**carregados com nota**, provados nos dois sentidos. `blocks_completed` **168, inalterado**; `mvp_*`
+**intocados**.
+
+**Fica devendo, e é do orquestrador dividir.** A rodada completa de mutação do **pré-voo** (184 pontos)
+não cabe numa sessão: medido nesta máquina, cada execução do guard do pré-voo custa **531 s** (N=2: 514 e
+548; 298 casos, um processo `bash` por caso), logo **≈ 12,7 h serial** / **≈ 5,1 h com `--jobs 4`** —
+~2,5× acima da faixa do plano, que usou 0,52–0,64 s por caso. O **refs** (99 pontos) fechou; o parcial do pré-voo está
+publicado **rotulado como parcial**, com denominador e taxa, para o próximo bloco retomar.
+
 ## B-GOV-SEM-TETO (PR #394) — o teto de ciclos cai; no ciclo 3 audita-se a máquina — MERGEADO `b3f0af5f` (2026-09-28)
 
 - **Decisão transcrita:** `D-SEM-TETO-AUDITORIA-NO-3` (dono, 2026-09-27) — sem teto de dois ciclos; se o ciclo 3
@@ -4818,6 +4954,66 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
   (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## B-GOV-MANDATO — ciclo 3, pós-integração (PR #393) — K1 do Dev-S-2: KPI recontado e registro (2026-09-29)
+
+**O que aconteceu desde a autoria do ciclo 3** (`git log --first-parent 616fd4fa..ade74d09`):
+- `9d3de5dd` — **Dev-T-3** (`dev-t3-mandato-b8-refs`): `[B8a]`/`[B8b]`/`[B8c]` na semântica v3 (o rótulo em item de
+  lista sob ND, LIDO-A e LIDO-B dá **1** REJ, a do token reservado), `[B8d]` novo, e `[V16]`–`[V19]` para os
+  não-cobertos do refs (plano §13.1, §13.2, §13.4).
+- `c32f77b5` — **Dev-S-2 fase 1** (`dev-s2-mandato-registro`): o detector do ciclo 2 (`rotulo_ah`) sai do pré-voo —
+  o token reservado é o único mecanismo da checagem 7 — e a E4 **aborta** (`ec=2`) com linha de base suja (§13.1,
+  §13.5). `P-GOV-MANDATO-3-B8B-CONTRADICAO` fecha por esses dois.
+- `7d02d8da` — **integração da `main` por merge** (orquestrador; pais `e27fbe14` e `3b1fe0f9`, o #395 que registrou o
+  #394), 9 arquivos resolvidos (§14.14). `$MB` = `3b1fe0f9` = `origin/main`.
+- `395d07c9` — **Dev-T-4** (`dev-t4-mandato-refs-win32`): `[V18b]`/`[V18c]` discriminam as l.116/l.119 do refs também
+  em win32; a fronteira 23 é retirada (§14.4).
+- Plano §14, §14.14 e §14.15 e ERRATAs E-1…E-8 nos corpos da junta 3 (planejador e orquestrador).
+- **E4 em curso:** a do pré-voo, do zero, em `w-e4` (tripla `faa408c8`·`3d875a54`·`37549262`, base `fail=0 de
+  tests=299`, 162 pontos; o mutante M10 da l.161 **não termina** — vaga morta pelo orquestrador em 29/09 20:36:07,
+  `TIMEOUT`, fronteira 25); e a E4-refs-2 em `w-e4b` (guard `9e680314`, base `fail=0 de tests=39`).
+
+**K1 — o que este registro fez.**
+- **KPI** (`Kpis/*`, `app.js` por `kpi-freeze`): `backend_tests` **3389/3392**, N=2 execuções reais locais em
+  cluster descartável próprio (RUN1 `3392/3389/0/3` (tests/pass/fail/skipped), 1750 s, `ec=1` · RUN2 `3392/3389/0/3` (tests/pass/fail/skipped), 1527 s, `ec=1`); CI no mesmo head `3392/3390/0/2`. O `ec=1` local é o **guard de skip (P8)** do
+  runner — 3 pulados > orçamento 2 com banco —, porque o `[V18]` (nascido neste bloco, `9d3de5dd`) pula por
+  plataforma em win32; nenhum teste falhou. Δ por arquivo: contra o `$MB`, +299 (`tests/mandato-preflight.test.ts`)
+  e +39 (`tests/mandato-refs.test.ts`); contra o ciclo 2 (`34969a81`), 33 → 299 e 18 → 39 (inclui os +2 do
+  Dev-T-4). `blocks_completed` **168 → 169** (MB + 1). Smoke e Flutter carregados com nota. Entrada nova no
+  history: "ciclo 3 — recontagem pós-integração".
+- **Pendências:** abre `P-GOV-MANDATO-3-FRONTEIRAS` (9–11, 13–22, 24 e 25, com o item "cabeçalho congelado" e a 23
+  como retirada; BAIXA, dono `B-GOV-MANDATO-2`); fecha `P-GOV-MANDATO-3-B8B-CONTRADICAO` e
+  `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392`; atualiza `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` (rodada do zero em curso,
+  tripla, TIMEOUT); anota o fechamento parcial do item 2 de `P-GOV-MANDATO-2-FRONTEIRAS` (`--ignore-case`).
+- **R-A e R-B do porteiro do #395:** a linha `pr / merge_commit / approved_head` da entrada do #394 no
+  `Kpis/kpis-history.md` passa a `394` / `b3f0af5f…` / `7ad08690…`; as 2 âncoras do item 2.2 do inspetor em
+  `pendencias.md` passam ao squash do #394 na `main`, `b3f0af5f`.
+- **Comando:** Emenda 6 (o escopo nominal pós-§14, a identidade por tripla e a errata 106 → 107 das atas).
+- **`…-mutantes.md`:** §2.1 com a grafia real da sonda, transcrita da fonte; §7 item 6 (fronteira 24).
+
+**Fica para o K2:** §3 (matriz E4-refs-2) e §4 (matriz do pré-voo completa, com o `TIMEOUT` reclassificado) do
+`…-mutantes.md`, §5 e §7 item 7 (fronteira 25); fechar `P-GOV-MANDATO-3-MUTANTES-REFS` e
+`P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`; fechar a citação N/K do history.
+
+## B-GOV-MANDATO — ciclo 3 (PR #393): K2a, K1b e K2b do Dev-S-2 (2026-09-30) — as matrizes publicadas
+
+- **K2a** (`371961ac`): `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt` — os 3 equivalentes do pré-voo (245, 318,
+  336), provados com a própria ferramenta (`--only 245,318,336 --equivalentes`: base `fail=0 de tests=312`, 3 VERDE,
+  `EQUIVALENTES-DECLARADOS=3`, `ec=0`).
+- **K1b** (`4794169a`): backend **3403/3405** REEXECUTADO (N=2 locais em cluster descartável; `skipped 2`, `ec=0`, sem o
+  GUARD DE SKIP (P8) — o `[V18]` roda em win32 desde o T5; CI no mesmo head igual); `blocks_completed` 169.
+- **Delta B abortada e refeita:** a primeira delta B (`E4D`) abortou pela trava do §13.5 (base `fail=2 de tests=312`,
+  `[F-6i/520]`/`[F-6i/523]`) porque o runner exportava `MSYS_NO_PATHCONV=1` — ambiente errado, não defeito no ambiente
+  de uso (fronteira 27, plano §14.19); refeita (`E4E`) com a variável não exportada: `N=16 K=13 NAO-COBERTOS=3
+  EQUIVALENTES-DECLARADOS=3`, `ec=0`.
+- **K2b:** `…-ciclo3-mutantes.md` §0 (identidade: tripla + ambiente), §3 = matriz E4-refs-3 (`N=46 K=46
+  NAO-COBERTOS=0`), §4 = matriz do pré-voo COMPOSTA (A: 146 linhas, B: 16), com o lema e as premissas (a)-(g), e o
+  resumo recomposto derivado por script: `N=103 K=100 NAO-COBERTOS=3 (equivalentes declarados e conferidos por id: 3) EXCLUIDOS=57 ANOMALIAS=2` → **[M-1] = 0**; ids do arquivo de equivalentes == NÃO-COBERTOS de B
+  (provado por script); §5 e §7 itens 7, 8, 9 (fronteiras 25, 26, 27). Pendências: **fecham**
+  `P-GOV-MANDATO-3-MUTANTES-REFS` e `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT`; `P-GOV-MANDATO-3-FRONTEIRAS` ganha 26 e 27 e o
+  fato do K2b (sem número): a ferramenta CONTA as linhas de `--equivalentes` e não confere o id — um arquivo fora do repo com o id inventado `999` absolveu o não-coberto 245 (`EQUIVALENTES-DECLARADOS=1`, `ec=0`; controle sem fixture: `ec=1`); na matriz publicada os ids == NÃO-COBERTOS da rodada B, provado por script.
+- **KPI:** valores inalterados (3403/3405, 169); o history fecha a citação N/K que o K1 e o K1b deixaram marcada
+  "matriz publicada no K2" (plano §14.12 passo 5).
 
 ## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
 
@@ -4879,3 +5075,88 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): E2 e E3 do Dev-S4 (2026-10-01) — o pré-voo e a ferramenta consertados, e o registro
+
+- **Quem:** `dev-scripts-ciclo4-b-gov-mandato` (Dev-S4), plano `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md` §15
+  com as erratas §15.14 e §15.15; mandato `agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo4/00-mandatos/dev-scripts.md`.
+- **S4a** (`2ca15eb0`, só `scripts/mandato-preflight.sh`): A15 (status de todo subprocesso lido; morte = 1 REJ que nomeia o
+  componente, `exit 1`, nunca `PRE-VOO OK`; refs fora do contrato 0..3 = morte nomeada, §15.15(b)), C1c-01..06 e a fronteira
+  27. Provas: guard do pré-voo 348/348 (LF e CRLF) e refs 44/44; os 6 pares de §15.0(b) e os 6 componentes de §15.0(c)
+  com shims próprios, vereditos invertidos (awk da passada 2 morto: o pré-voo do ciclo 3 dava `PRE-VOO OK` em 6 de 6
+  insumos, o novo nomeia `awk (passada 2)` em 6 de 6); 17 contra-mutações de 1 linha, cada uma com os `not ok` esperados.
+- **S4b** (`7a156a62`, `scripts/mandato-mutantes.sh` + só o cabeçalho de `scripts/mandato-refs.sh`): `MUTANTE-INVALIDO`
+  (awk compilado antes da cor do guard), causa por ponto, histograma, controles fail-closed (`ec=2`), diferencial que
+  percorre RAIZ, `--timeout` por mutante (fronteira 25), M7(next) em qualquer posição (26), equivalentes por id (28).
+  Drills com vermelho-controle histórico sobre `37549262` em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §5.
+- **D4** (registro): `…-ciclo4-mutantes.md` (identidade, drills, custo — 85 mutantes do pré-voo e 44 do refs chegam ao
+  guard), `…-ciclo4-equivalentes.txt` (id 441), EMENDA — CICLO 4 no comando, pendências (25-28 FECHADAS com o teste
+  de encerramento executado; 29-31 abertas; `P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA`; MUTANTES-REFS e MUTANTES-PREFLIGHT
+  REABERTAS até o K4b) e índice pelo gerador.
+- **K4:** backend **3448/3450** por N=2 execuções reais (Postgres 16 e Redis 7 descartáveis próprios em
+  127.0.0.1:55471/:56401; RUN1 `3450/3448/0/2` (tests/pass/fail/skipped), 748 s, `ec=0` · RUN2 `3450/3448/0/2` (tests/pass/fail/skipped), 813 s, `ec=0`); guards `tests/mandato-preflight.test.ts` **352** e `tests/mandato-refs.test.ts`
+  **44** casos; `blocks_completed` **169 → 170** (a `origin/main` integrada `5bcdcc58` + 1); smoke e Flutter carregados.
+- **Integração da `main` no ramo** (orquestrador, por merge): #397 e #398, antes do E3; o push do D4 foi recusado como
+  fast-forward por um commit do orquestrador (emendas 1-bis nos corpos C1d/C2d/C3d) e o D4, ainda não empurrado, foi
+  rebaseado sobre ele — nenhum commit já empurrado foi reescrito.
+- **Fica para o K4b** (mesma identidade, depois da E4 do orquestrador): as matrizes verbatim, o `[M-1]` por conjuntos e
+  por fixture, o fechamento das duas pendências de mutação e a citação N/K/INVALIDOS/TIMEOUT no history.
+
+**Limpeza §C5 do ciclo 4 — Dev-S4, até o K4 (2026-10-01):** removidos pelo nome — os worktrees `C:/Users/AMP/w-dv4a` (arnês dos drills, com os 7 arquivos de drill não rastreados) e `C:/Users/AMP/w-dvs4c` (só para o commit do S4b), ambos com 0 processo vivo com o nome na linha de comando antes; os conteineres `pg-devs4` e `redis-devs4` (dois conjuntos, um por N=2, removidos pelo próprio script ao fim de cada um); o diretório da rodada de controle que eu invalidei e matei pela marca (`tmp.tMR09C2QgJ`, 11 processos, 27 MB); as cópias de arnês e de mutante no scratchpad. Ficam, como evidência reexecutável, o scratchpad `devs4c/` e os relatórios `DEVS4C.md`/`DEVS4C.trilha.md`, e o worktree `C:/Users/AMP/w-devs4`, mantido para a retomada do K4b (matrizes verbatim depois da E4). Base viva (5432/6379) nunca alvo; `MSYS_NO_PATHCONV` nunca exportada; resíduo alheio só reportado.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b do Dev-S4 (2026-10-02) — as matrizes publicadas
+
+- **E4** (orquestrador, `w-e4f` no K4, 21:39 → 04:09, 6 h 30 min): refs `N=44 K=44 NAO-COBERTOS=0 EXCLUIDOS=52 ANOMALIAS=1 INVALIDOS=2 TIMEOUT=0` → `[M-1] = 0`; pré-voo `N=84 K=80 NAO-COBERTOS=4 EXCLUIDOS=60 ANOMALIAS=0 INVALIDOS=37 TIMEOUT=1 EQUIVALENTES-DECLARADOS=1 EQUIVALENTES-CONFERIDOS=1` → `[M-1]` por conjuntos = **{359, 372, 612}**.
+- **K4b** (Dev-S4): as duas matrizes VERBATIM (bytes conferidos contra as saídas da E4) em
+  `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md`, com o cabeçalho do log, o resumo por conjuntos e por fixture (441
+  equivalente; 359/372/612 discriminados) e o custo medido re-multiplicado — a fórmula com os 7 guards seriais dos controles
+  erra −3,4 % (refs) e −0,5 % (pré-voo); a projeção do D4, que os omitia, fica com ERRATA no próprio arquivo.
+- **Pendências:** MUTANTES-REFS fechada de novo; MUTANTES-PREFLIGHT ABERTA até a delta (R1: T4c-4 do Dev-T4 + `--only
+  359,372,612` do orquestrador); fronteira 32 (corte por bytes na coluna de causa). Índice pelo gerador.
+- **KPI:** só a citação da matriz na entrada do ciclo 4 do history; nenhum número muda; `kpi-freeze --check` em dia.
+
+**Limpeza §C5 do K4b:** nenhum worktree, conteiner ou diretório de rodada criado no K4b além do arnês descartável do
+scratchpad (`devs4c/k4b/arn`, removido pelo nome ao fim); o worktree `C:/Users/AMP/w-devs4` segue mantido (a delta e a
+conferência podem pedir retomada); 0 processo vivo com os nomes do Dev-S4 na linha de comando; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-2 do Dev-S4 (2026-10-02) — a delta da R1 e o KPI recontado
+
+- **Delta** (orquestrador, 04:36 → 05:41): `N=3 K=3 NAO-COBERTOS=0` sob o lema do §14.18(3), premissas (a)-(e) medidas →
+  **`[M-1]` do pré-voo = ∅**; publicada verbatim em `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` §4.2.
+  `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` FECHADA com o teste de encerramento executado; fronteira 33 aberta (`ANOMALIA-EQUIV`
+  calado com NÃO-COBERTOS vazio — defeito da minha ferramenta, só de exibição). Índice pelo gerador.
+- **KPI:** o T4c-4 acrescentou 3 casos ao guard do pré-voo depois do K4 → backend **3451/3453** por N=2 reais em
+  Postgres e Redis descartáveis próprios (RUN1 `3453/3451/0/2`, 691 s, `ec=0` · RUN2 `3453/3451/0/2`, 698 s, `ec=0`); pré-voo 355, refs 44; `blocks_completed` 170.
+
+**Limpeza §C5 do K4b-2:** os conteineres `pg-devs4`/`redis-devs4` do N=2 removidos pelo nome pelo próprio script; nenhum
+worktree novo; o `C:/Users/AMP/w-devs4` segue mantido; 0 processo vivo com os nomes do Dev-S4; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-3 do Dev-S4 (2026-10-02) — as 39 versões viáveis, a fronteira 34 e o KPI depois do T4c-5
+
+- **§4.3** de `docs/revisoes/SAN3/B-GOV-MANDATO-ciclo4-mutantes.md` (só adição; plano §15.17(g), passo 5-bis): as 39
+  versões viáveis dos `MUTANTE-INVALIDO` pela conferência `8849b1cd` — 26 + 2 cobertas · 8 sem mudança (equivalentes por
+  fixture, duas tentativas independentes) · 2 `TIMEOUT` cobertos por tempo · 1 `VIAVEL-NAO-COBERTA` (263), coberta pelo
+  `[V263]` do T4c-5 e sujeita à reconferência; **`[M-1]` por conjuntos (fórmula da §15.15(d)) = {263} hoje → ∅ depois do
+  T4c-5 e da reconferência**.
+- **Fronteira 34** (a ferramenta gera a troca de M7 que não compila; a versão viável não entra na matriz): §7 item 8 do
+  mesmo arquivo e item 34 de `P-GOV-MANDATO-3-FRONTEIRAS` (título 24–33 → 24–34); índice pelo gerador.
+- **KPI:** o T4c-5 acrescentou o `[V263]` ao guard do pré-voo (355 → 356; refs 44) → backend **3452/3454** por N=2 execuções
+  reais em Postgres e Redis descartáveis próprios (RUN1 `3454/3452/0/2`, 965 s, `ec=0` · RUN2 `3454/3452/0/2`, 847 s, `ec=0`). `blocks_completed` **170, inalterado** — a recontagem contra a
+  `main` do pré-inspetor é **devida**: a `main` andou com o #402 (B-SAN3-01b, 169 → 170) e o #403 (registro), e publica 170.
+
+**Limpeza §C5 do K4b-3:** os contêineres `pg-devs4b`/`redis-devs4b` do N=2 removidos pelo nome pelo próprio script; o
+worktree `C:/Users/AMP/w-devs4b` fica de pé até o orquestrador empurrar; 0 processo vivo do Dev-S4; base viva nunca alvo.
+
+## B-GOV-MANDATO — ciclo 4 (PR #393): K4b-4 do Dev-S4 (2026-10-03) — o KPI recontado contra a `main` integrada
+
+- **Integração:** o orquestrador integrou a `main` `b404815c` (#402 B-SAN3-01b; #403 e #404 registro) no ramo pelo merge
+  `4535ebb3`; o latest do #393 atravessou o merge com os valores de antes (blocks 170, smoke 1202 carregado do merge-base antigo).
+- **KPI (§C3):** `blocks_completed` 170 (`main`, #402) + 1 = **171**; `frontend_smoke_tests` CARREGADO da `main` = **1214/1214**
+  (execução real do #402; o ramo não toca `frontend/`); `flutter_tests` 864/864 e os contratos mobile CARREGADOS, iguais à
+  `main` (o ramo não toca `mobile/`); `backend_tests` **3452/3454 MANTIDO** — o merge trouxe 42 arquivos e nenhum em `tests/`,
+  `src/`, `prisma/`, `scripts/` nem `package*.json`, e os 7 testes da raiz que leem o que ele trouxe contam 57 com os dados de
+  antes e 57 com os de depois, por execução. `mvp_*` intocados; `merge_commit`/`approved_head` `null` na autoria. History com
+  a entrada nova (175); `Kpis/app.js` só pela saída do `kpi-freeze` (`--check` em dia); guards do KPI 29/29.
+
+**Limpeza §C5 do K4b-4:** nenhum cluster subido (nenhuma medição exigiu banco); o worktree `C:/Users/AMP/w-devs4c` fica de pé
+até o orquestrador empurrar; 0 processo vivo do Dev-S4; base viva nunca alvo.
