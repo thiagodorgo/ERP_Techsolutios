@@ -3062,7 +3062,7 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 
 | KPI | Valor |
 |-----|-------|
-| Backend | **3122/3124** — execução real no head: 291 arquivos, 3124 testes, pass 3120, fail 2, skipped 2, 461,2 s. As duas falhas TAP eram o mesmo timeout de `pg_basebackup` contado no subteste T8d e no pai; a re-medição serial exigida pelo dono passou **8/8**, sem falha ou pulo, em 27,9 s. Lotes dirigidos: 134/134, 42/42, 19/19 e 88/88 |
+| Backend | **3122/3124** — execução real final no head de código `bbbb3b29`: 291 arquivos, 3124 testes, **pass 3122, fail 0, skipped 2**, 434,0 s. T8d focado: **8/8**, sem falha ou pulo, 46,1 s; a porta REPLICATION cria/remove slot físico real e o controle após NOREPLICATION recebe 42501, sem depender de `host replication` no `pg_hba` |
 | Frontend / Flutter | **CARREGADOS, sem reexecução** (§C3.3): 1214/1214 e 864/864. O diff não toca `frontend/` nem `mobile/`; valores oficiais de `origin/main` `b404815c` |
 | Demais métricas de contratos | **CARREGADAS, sem reexecução** (§C3.3), com nota explícita no snapshot |
 | Blocos Entregues | **170 → 171** — +1 bloco backend/database, contado de `origin/main` `b404815c` |

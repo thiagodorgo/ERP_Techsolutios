@@ -4888,3 +4888,4 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **KPI:** backend 3122/3124 por execução real com re-medição declarada; frontend 1214/1214 e Flutter 864/864 carregados; blocos 170 → 171; `mvp_*` intocados. `pr=405`; `merge_commit`/`approved_head` nulos na autoria.
 - **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.
 - **Fechamento local:** PR #405 em rascunho; cluster descartável e temporários `s05-*` removidos; 0 worker/teste vivo. O worktree é removido após o último push.
+- **Correção CI (2026-10-04):** T8d deixou de depender da regra `host replication` do `pg_hba`: cria/remove slot físico com REPLICATION e recebe 42501 após NOREPLICATION. Arquivo 8/8; backend final 291 arquivos, 3122/3124, 0 falhas, 2 skips.

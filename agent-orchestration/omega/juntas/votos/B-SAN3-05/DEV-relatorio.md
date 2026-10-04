@@ -819,3 +819,14 @@ Medição válida no cluster novo: arquivo do bloco **8/8**, 0 falhas, 0 pulos, 
 
 Falta desta retomada: suíte backend inteira para publicar N e forma, atualização da nota do KPI com a nova execução,
 commit/push fast-forward, cluster e worktree removidos.
+
+### MEDIDO — suíte backend final da correção CI — 2026-10-04T18:55:33Z
+
+Antes da execução: CPU **0%**, 1 processo de outra frente; resíduos `s305_%` = 0 papéis / 0 classes / 0 slots.
+`DATABASE_URL=<descartável> npm test` terminou verde em **434,0 s**: **291 arquivos**, **3124 testes**, **3122 passes**,
+**0 falhas**, **2 pulos**, 0 cancelados. Esta é a execução real final que sustenta `backend_tests=3122/3124` e substitui
+a nota anterior do KPI sobre o timeout de `pg_basebackup`.
+
+`Kpis/kpis-latest.json`, a última entrada de `kpis-history.json` e a seção B-SAN3-05 de `kpis-history.md` agora registram
+a forma final: slot físico real + controle 42501 e suíte integral sem falha. `Kpis/app.js` foi regenerado somente por
+`node scripts/kpi-freeze.mjs`. O PR continua #405; blocos e métricas carregadas não mudam.

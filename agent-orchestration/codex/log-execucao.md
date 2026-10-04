@@ -4792,3 +4792,4 @@ bloco mergear.
 - Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
 - PR **#405** aberto em rascunho, base `main`, com o título obrigatório. Inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
 - Limpeza final: `san3-05-s2-pg` removido; `dist/`, wrappers e scratch/logs `s05-*` removidos; 0 processo worker/teste do worktree. Remoção do worktree ocorre depois do push final.
+- Retomada 7a do PR #405: CI no head `e3cb269d` falhou porque `pg_basebackup` exigia `host replication` no HBA do serviço. Correção no head de código `bbbb3b29`: T8d usa slot físico real + controle 42501 após NOREPLICATION; arquivo 8/8 e backend integral 291 arquivos, 3122 passes, 0 falhas, 2 skips.
