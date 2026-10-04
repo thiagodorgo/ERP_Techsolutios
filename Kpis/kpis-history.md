@@ -2979,7 +2979,7 @@ próprio texto, §C7.4-bis) fez três coisas:
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
 
-## 2026-10-01 — B-GOV-PAUSA (PR #397, na autoria) — sob ordem de pausa, o agente grava o estado e para sozinho
+## 2026-10-01 — B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho
 
 ### Resultado
 
@@ -3017,7 +3017,7 @@ mandato idêntico nos três textos.
 **Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
 pagos pelo #395.
 
-## 2026-10-02 — B-SAN3-01b (PR na autoria) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
+## 2026-10-02 — B-SAN3-01b (PR #402) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
 
 ### Resultado
 

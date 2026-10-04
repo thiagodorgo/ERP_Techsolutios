@@ -4783,7 +4783,6 @@ bloco mergear.
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
-
 ---
 
 ## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria
@@ -4803,3 +4802,4 @@ bloco mergear.
 - **ERRATA 1 + 1-bis aplicadas (2026-10-02, `dev-errata1-b-san3-11`, plano §15/§15-bis):** arnês do gerador sem teto e mutação normalizada com prova (T13/T14, `92cfc05e`); main `4ab9d232` e ramo `1ae41a42` integrados por merge; KPI recontado contra a main (`blocks_completed` 169 → 170, `pr 401`); status da `P-CHK-DOSSIE-VERSAO-NA-UI` na forma do gerador e índice regenerado (FECHADA 112, SEM STATUS 0); bateria verde nos dois terrenos (CRLF e LF: 16/16, `test:smoke` 1218/1218); A17′, A18′, A19–A26 medidos; head empurrado vai a CI → mandatos HC=H0 → inspetor novo → junta 1.
 - **Integração pós-#402 (2026-10-02, `dev-errata1-b-san3-11`, mandato `dev-integracao2.md`):** main `3e40a256` integrada por merge (`5c8efa08`; conflitos só em registro, KPI e na linha `test:smoke`, esta pela união provada por conjunto dos acréscimos do #402 e do bloco); KPI recontado (`blocks_completed` 170 → 171; `frontend_smoke_tests` 1230/1230 por TAP do head integrado, 1214 + 16; history n=167); arquivo do bloco 16/16; backfill do #402 devido e não pago aqui.
 - **CICLO 2 (2026-10-03, `dev-ciclo2-b-san3-11`, plano §16 e §16-bis; fatias D1–D3):** main `b404815c` (#404) integrada por merge (`77abde50`, 6 conflitos só em KPI/registro); E10 links `.pat-link` que não navegam + `idPrefix` (`7cd227d1`); E11 adapter fail-closed com `ChecklistRunContractError` (`4d159e09`); E12 gerador v2 = Apêndice E (`eb218a90`); E13 16 → 24 testes (`a73fb35f`); ramo do orquestrador integrado (`8c8f4a1c`); E14 pendências com dono do plano da rodada (`c628a87a`); E15 KPI 171 blocos, 1238/1238 por execução nos dois terrenos, `backfill_note` verdadeira (`070b9a03`, empurrado fast-forward); controles A17″/A18″/A25″/T22 da §16-bis verdes no head empurrado. Registro em `votos/B-SAN3-11/DEV-relatorio.md` § CICLO 2.
+- 2026-10-04 — registro: parecer do porteiro do #404, decisões do dono de 03–04/10 (modelos, Codex, nuvem), R404-1 e R404-3 do porteiro, retomada pós-pausa.

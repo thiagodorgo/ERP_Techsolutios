@@ -2905,3 +2905,53 @@ teste carregadas (§C3.3) e `blocks_completed` recontado contra a `origin/main` 
 
 **Pendências nomeadas pelo plano (§7 E2c), abertas por esta emenda com dono:** `P-GOV-OBITUARIO-SEMTETO`
 (pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10) — em `controle/pendencias.md`, índice pelo gerador.
+
+## Decisões do dono de 2026-10-03 e 2026-10-04 — modelos, Codex e nuvem (transcritas pelo orquestrador)
+
+Fonte §A1.1 (decisão do dono), registradas aqui pelo orquestrador; a citação é literal, o resto é transcrição.
+
+- **D-FABLE-SO-DINHEIRO (2026-10-03, manhã)** — *"Fable agora só em blocos que toque em dinheiro até segunda ordem"*.
+  **Substituída** pela D-FABLE-ASTRA-SUSPENSOS abaixo.
+- **D-NUVEM-ENCERRADA (2026-10-03 ~15:02Z)** — o restante do dev do B-SAN3-05 saiu da nuvem e foi feito na máquina local,
+  sobre o mesmo plano v3, sem corte (o classificador de segurança da nuvem bloqueou três vezes a escrita da suíte
+  `tests/san3-05-runtime-role-guard-db.test.ts`). Registro na seção "ENCERRAMENTO DA NUVEM" do `DEV-relatorio.md` do bloco
+  (`6edf21ee`). Nenhuma sessão de nuvem com trabalho pendente.
+- **D-CODEX-HABILITADO (2026-10-03 ~16:25Z)** — *"vamos usar o codex pra ajudar, ele está habilitado para ajudar nesse
+  projeto"*; depois *"pode rodar o codex"* e *"quero ver o codex sendo executado"*. O orquestrador (Claude Code) roda o
+  Codex por `codex exec` em janela visível, um papel por sessão, com os corpos do espelho `.agents/agents/`.
+- **D-CODEX-PADRAO-SOL (2026-10-03 ~17:25Z)** — *"o padrão é o 'sol' — restrinja o astra a demandas com dinheiro como o
+  claude"*; *"o sol é o 5.6"*. Modelo padrão do Codex: `gpt-5.6-sol`.
+- **D-FABLE-ASTRA-SUSPENSOS (2026-10-03 ~22:25Z)** — *"uso de fable e astra suspenso até o reset semanal"*; *"trabalhos
+  pesados com codex"*; *"restrinja o uso do astra com bloqueios igual ao fable"*. Até o reset semanal, nenhum papel roda em
+  Fable nem em GPT-6 Astra; os lançadores do Codex do orquestrador recusam esses modelos. **Conflito registrado (§A2):** o
+  §C7.6 manda o `planejador-mestre` rodar em Fable no retorno ao planejador depois de correção; a decisão do dono, fonte
+  §A1.1, prevalece enquanto vigorar, e cada planejador declara a substituição.
+- **D-CLAUDE-OPUS-UMA-POR-VEZ (2026-10-04 ~09:15Z)** — *"usar mais o Claude, com Opus, nas janelas em que o Codex está
+  parado, com cautela, não usar tarefas paralelas, fazer uma a uma para evitar que o limite acabe e nós fiquemos ociosos"*.
+  Com o Codex no limite de uso, um subagente Claude (Opus) por vez; com o Codex de volta, o pesado volta para ele (no
+  máximo 2 sessões).
+- **Pendente do dono (não é decisão):** `D-MANDATO-FORMA-2` — seguir consertando o linter de prosa (1) ou trocar o mandato
+  por campos tipados (2), posta pela §16.5 do plano do B-GOV-MANDATO depois de 4 ciclos com a mesma classe de defeito; e a
+  referência do cabeçalho da lista de OS (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`), mostrada ao dono em 2026-10-04
+  com o PNG de `screen-refs/`, sem resposta até este registro.
+
+## D-GOV-PROPORCIONAL (2026-10-04) — junta proporcional, teto de 2 ciclos, menos burocracia, Traccar depois de sanar o que está em andamento e KPI congelado
+
+**Decisão do dono (fonte §A1.1), literal:** *"me diz como saio desse buraco onde estou a mais de um mes, rodo uma junta
+para fazer um bloco e passo uma semana rodando uma, duas, tres e varias vezes. preciso sair desse loop e continuar
+fazendo meu sistema, quero implantar o traccar"*; sobre a proposta do orquestrador (quatro decisões), *"aprovo 1, 2, 3 e
+4 kpi congelado tambem"*.
+
+**Transcrição** (texto normativo no §C7 item 8 do `CLAUDE.md`, espelhado no `AGENTS.md`): (1) junta completa só para
+dinheiro, segurança, permissão ou perda de dado; o resto mergeia com um revisor independente e CI verde; (2) teto de 2
+ciclos — do ciclo 3 em diante só defeito de produto grave bloqueia, o resto vira pendência com dono; (3) mandato forma A
+só para inspetor e cadeiras, registro semanal, porteiro só depois de merge de produto, `B-GOV-MANDATO` (#393) congelado;
+(4) trilha do Traccar aberta depois de sanar o que está em andamento (ajuste do dono: *"sanar tudo antes de começar o
+traccar"*; perguntado o alcance, *"o que está em andamento"* — os PRs em voo resolvidos, o registro em dia e o disco limpo,
+sem esperar os demais bloqueantes do gate), com junta de segurança em todo bloco de ingestão e o `B-SAN3-05` como
+pré-requisito de produção; (5) KPI congelado até segunda ordem.
+
+**O que esta decisão revoga ou suspende, por nome:** `D-SEM-TETO-AUDITORIA-NO-3` (o teto volta, com o freio da regra 2; a
+auditoria do ciclo 3 deixa de ser obrigatória); `D-KPI-PER-PR` (suspensa enquanto o KPI estiver congelado); a parte de
+`D-MANDATO-FORMA` que exigia forma A para todo papel; a regra "o Traccar não começa antes do gate" do `PLANO_SAN3` (§11);
+e a exigência de porteiro para PR de registro.
