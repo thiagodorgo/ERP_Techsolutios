@@ -1,0 +1,61 @@
+{
+  "junta": "J1-B-SAN3-09",
+  "pr": 400,
+  "cadeira": "C2",
+  "identidade": "agente-dba-guardiao",
+  "modelo": "Opus 5.5 (claude-opus-5-5) — decisao do dono de 2026-10-04 (Fable/Astra suspensos); o corpo nao fixa model:",
+  "mandato_md5": "aa9f7170a35dcc22631f2d13428678b9",
+  "corpo_md5": "de789c12f149cd9c36dc79e861adc043",
+  "objeto_head": "ba65c03a4c3edc0723633b0f1330f34852a60e6f (delta desde 6330bce2 = so votos/B-SAN3-09/00-inspetor-terreno.md; 14/14 check-runs completed success; arvore de produto = 6330bce2)",
+  "legalidade": "LEGAL — inspetor LIBERADO COM RESSALVA (R-1..R-7); frase da R-1 presente no disparo; objeto resolvido por git e gh",
+  "itens": {
+    "1_cluster_idempotencia_concorrencia_dryrun": {
+      "status": "VERDE",
+      "evidencia": "cluster proprio j09c2-pg (postgres:16): migrate deploy 107/107 + db:provision-rbac (12 papeis, 908 concessoes); script 2x -> 1/1/1/1/1, md5(hash) igual, 2a execucao com 0 INSERT/UPDATE/DELETE; duas simultaneas x3 -> ambas ec=0 e 1/1/1/1/1 (controle sem trava: 3/3 colidem na UNIQUE slug); --dry-run em estado limpo e convergido -> fingerprint de linhas e contador de tuplas identicos"
+    },
+    "2_papel_nosuperuser_nobypassrls_rls_rollback": {
+      "status": "VERDE",
+      "evidencia": "papel j09c2_rt criado por mim (super=f bypassrls=f): cria 1/1/1/1/1 e e idempotente (hash igual, 0 escritas); mutante sem setTenantRlsContext sob o papel -> ec=1 'new row violates row-level security policy for table users', 0 linhas e fingerprint identico (rollback total); sob superusuario o mesmo mutante -> ec=0 1/1/1/1/1 (verde-cego); no T2 o mesmo sed derruba so o T2.7 (por RLS); restauro md5 = blob"
+    },
+    "3_base_so_migrada_rbac_not_provisioned_sem_criar_papel": {
+      "status": "VERDE",
+      "evidencia": "base so migrada: aplicar e --dry-run -> ec=2 RECUSADO (RBAC_NOT_PROVISIONED), todas as contagens 0; grep role.create|rolePermission = 0; grep ampliado da classe so acha leitura de _count role_permissions; modulos importados = 0"
+    }
+  },
+  "ressalvas_inspetor": {
+    "R-1": "aplicada: merge-base 8ee10bd2..ba65c03a toca 0 arquivos em prisma/|migrations/|infra/ e 0 com backup/pg_dump/pitr; criterios gerais do corpo (migration up/down, PITR, pg_dump, restore) nao se aplicam ao objeto (A7) e nao pesam no voto",
+    "R-3": "medido e classificado: teste -db 11/11 em container Linux proprio e no CI ubuntu; no Windows (npm ci proprio, cluster proprio) t_ec=1 em T2.1 por shim sh de .bin/prisma executado por node --import tsx/esm e spawnSync(npm) sem shell (ENOENT); unico arquivo da casa com esse padrao; nasce em 9890fc06 (ramo do bloco) -> achado A-3, ajuste, dentro-do-bloco",
+    "R-5": "escopos datados por execucao propria: git cat-file -e 8ee10bd2:<teste -db> falha; git log ba65c03a -- <teste -db> -> 9890fc06 (2026-10-01, ramo do bloco)",
+    "R-6": "teste -db medido em container Linux proprio (receita 4.2-bis) e, para R-3, tambem no Windows",
+    "R-7": "execucao concentrada no container; worktree, containers, rede e volumes removidos ao fim (ver evidencia, secao LIMPEZA)"
+  },
+  "achados": [
+    {
+      "id": "A-1",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "tests/san3-09-bootstrap-platform-admin-db.test.ts ausente em 8ee10bd2 (git cat-file -e falha); nasce em 9890fc06 2026-10-01T22:00:08Z, commit do ramo do bloco",
+      "defeito": "T2.4 e T2.10 nao implementam os criterios A11 e A18 que o plano lhes atribui (§7 l.492/l.499; §8 l.541/l.547), e os mutantes declarados no plano sobrevivem: (a) T2.4 so exercita o dry-run em estado convergido (l.238), apesar do nome 'em estado limpo (novo tenant) e em estado convergido'; o mutante if(dryRun)->if(false && dryRun) (l.212/257) deixa o T2 11/11 verde, e esse mutante em --dry-run numa base limpa grava tenants=1 users=1 imprimindo 'nada foi escrito no banco'; (b) T2.10 afirma fulfilled.length >= 1 (l.645), conta 2 das 5 tabelas (l.654-655), 1 rodada; o mutante sem pg_advisory_xact_lock deixa o T2 11/11 verde em 3/3 rodadas, embora o desenho em processo do T2.10 colida 3/3 (sonda propria: um lado rejected Unique constraint slug, contagens 1/1/1/1/1)",
+      "motivo": "sao as propriedades do item 1 deste mandato (dry-run com zero escrita; duas execucoes simultaneas convergem), e o plano as escreveu com a mutacao que deve avermelhar o teste; o entregavel de teste nao as guarda e os nomes dos testes afirmam cobertura que nao executam. O caso (a) e o caminho de producao do Runbook B (1o bootstrap numa base limpa, --dry-run primeiro). O comportamento atual do script esta correto — o defeito e do teste."
+    },
+    {
+      "id": "A-3",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "mesmo arquivo, nascido em 9890fc06 no ramo do bloco; nenhum outro tests/*-db.test.ts faz spawn de migrate/npm; precedente de portabilidade da casa em tests/o6r06-billing-census.test.ts:261",
+      "defeito": "o teste -db so executa em Linux: no Windows falha em T2.1 (node --import tsx/esm executa o shim sh de node_modules/.bin/prisma: SyntaxError) e o fallback spawnSync('npm') sem shell da ENOENT (l.75-77, 121, 352-359, 515-522, 603-610)",
+      "motivo": "falha alto (nunca verde falso) e o gate CI Linux executa e passa; mas a linha 'DATABASE_URL=<descartavel> npm test' da bateria §8 nao fica verde na maquina Windows do projeto, e o erro exibido nao nomeia a causa"
+    },
+    {
+      "id": "N-1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "BOOTSTRAP_ADVISORY_LOCK = 20260909n nasce neste bloco (scripts/bootstrap-platform-admin.ts:66)",
+      "defeito": "chave de advisory lock 20260909 distinta das demais chaves fixas (20260863 provision-rbac, 20268801 arnes); o financial-period-lock usa hashtext() e poderia, em teoria, coincidir",
+      "motivo": "coincidencia so serializaria, sem efeito de dado"
+    }
+  ],
+  "veredito": "REPROVADO",
+  "razao_do_veredito": "Os tres itens do mandato estao VERDES por medicao direta no cluster descartavel proprio (o script e correto: idempotente, convergente sob concorrencia, dry-run sem escrita, RLS com rollback total sob NOBYPASSRLS, recusa nomeada sem linha e sem criar papel). Reprovo pelo achado A-1 (bloqueia, dentro-do-bloco): os testes que o bloco entrega como guarda do dry-run (A11) e da concorrencia (A18) nao avermelham sob as mutacoes que o proprio plano declara — medido por execucao: 11/11 verde com o dry-run gravando e 11/11 verde (3/3) sem a trava. A-3 e ajuste e N-1 e nota; nao reprovam.",
+  "terreno_limpeza": "worktree w-j09c2 removido (git worktree remove --force, ec=0, worktree list sem ele); containers j09c2-node/pg/redis removidos com -v, rede j09c2-net removida, 0 processo com j09c2 na linha de comando (pos-check; o pre-check falhou por powershell fora do PATH), temporarios do scratchpad apagados; base viva nunca alvo"
+}
