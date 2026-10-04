@@ -1,0 +1,179 @@
+inspetor-de-terreno-da-junta | Opus 5.5 (substituicao declarada: dono suspendeu Fable e Astra ate o reset semanal; D-FALLBACK-MODELO-FABLE-OPUS) | mandato_md5 275b74dc97101b7eca0550d0f58128a2 | corpo md5 EOL-neutro de80b2a9d4fc7edd7b9a26e2d601f97d
+
+# Parecer do inspetor de terreno — junta 1 do B-SAN3-05 (PR 405)
+
+- Papel: inspetor-de-terreno-da-junta (CLAUDE.md §C7.1-bis, fail-closed). Instancia nova. Nao vota, nao conserta, nao julga merito.
+- Modelo: Opus 5.5 (claude-opus-5-5). Por que o Fable faltou: o dono suspendeu Fable e Astra ate o reset semanal e manda usar Claude em Opus nas janelas sem Codex.
+- Corpo: materializado de origin/main 357a98e9; blob .claude/agents/inspetor-de-terreno-da-junta.md 9c97b03c md5 EOL-neutro de80b2a9d4fc7edd7b9a26e2d601f97d = md5 do arquivo carregado (medido 2026-10-04T20:12Z).
+- Mandato: w-o05 00-mandatos/inspetor.md, md5 EOL-neutro 275b74dc97101b7eca0550d0f58128a2 (confere com o informado).
+- Inicio: 2026-10-04T20:12Z
+
+## Veredito
+
+**BLOQUEADO** (2026-10-04T20:33:28Z) — **um unico item sujo (B1)**; todo o resto do tabuleiro foi medido e esta limpo. A re-inspecao so precisa re-medir o B1 (mais head e check-runs, se o head mudar).
+
+### B1 — `psql` 16 ausente do PATH dos jurados (pre-requisito que o §10 do plano manda este inspetor conferir)
+- **O que esta sujo:** nesta maquina nao ha `psql` (nem `pg_ctl`/`initdb`/`pg_basebackup`) no PATH nem em disco nos lugares provaveis; nenhum dos tres mandatos diz ao jurado de onde vem o `psql`. O teste do bloco exige `psql (PostgreSQL) 16.` por `bash` (l.528-533) e roda o `.sh` e o shim de argv sobre o psql real (l.145, 162, 713).
+- **Evidencia executada:** item 1.2 (`which`/`where`/`find` -> 0) e item 4.2 parte 2: no objeto 6f53d11b, em cluster descartavel proprio (PG 16.14, 115/106/0), `tests/san3-05-runtime-role-guard-db.test.ts` + `tests/san3-05-leituras-de-plataforma-db.test.ts` -> **17/19, ec=1**, as 2 falhas = `T14a/b` + pai, `psql: ausente — pré-requisito da suíte -db` / `127 !== 0`. Tudo o mais verde.
+- **Efeito na junta se nao limpar:** C1 item (1) (18 cenarios, inclusive vii–x "senha 0/0" e "shim de psql -> argv sem senha") e C2 item (2) ("re-executa vii e viii") nao conseguem medir -> "nao consigo medir = REPROVADO" por ambiente, ou cada jurado improvisa um wrapper proprio (o dev precisou de um, `s05-bin`, e tropecou em "socket MSYS convertido") — a contaminacao por improviso que este gate existe para impedir.
+- **O que precisa acontecer (nomear, nao consertar):** o orquestrador prove um `psql` 16 **uniforme e testado** para cada cadeira que roda a suite `-db` (C1 e C2 no minimo; C3 se rodar o arquivo da trava), escreve a receita no briefing/mandatos, e prova por execucao, no ambiente de cada cadeira, `bash -c 'psql --version'` -> `psql (PostgreSQL) 16.x`. Cuidado nomeado: um wrapper que delegue a `docker exec` e passe a senha como `-e PGPASSWORD=<valor>` poe a senha no argv do `docker` e **fabrica** achado de vazamento nos cenarios vii/viii/argv; a forma que nao contamina o merito e responsabilidade de quem prove o binario.
+
+### Ressalvas para o briefing (em destaque, valem quando o B1 estiver limpo)
+- **R1 — objeto x colagem.** Objeto = **6f53d11b** (head do PR agora, 7/7 check-runs concluidos e verdes, inclusive `docker`). Os mandatos colam `240dbaa9` (HC = H0 da geracao); delta = so os 4 mandatos. Cada cadeira re-mede `git diff --name-only 240dbaa9 6f53d11b`.
+- **R2 — A RE-VERIFICAR (nunca herdar do DEV-relatorio):** (1) **T8d trocou `pg_basebackup` por `pg_create_physical_replication_slot`** (bbbb3b29) — o §10 C1(2) e o A4b nomeiam `pg_basebackup`; a C1 julga se a troca preserva o A4b; (2) `FROZEN_ALLOWLIST` 60 -> 62 -> 63; (3) OPS do gerador cai na lista embutida; (4) premissa `git grep 'PrismaCloudChargeRepository(prisma)'` declarada falsa pelo dev; (5) `Kpis/app.js` no diff apesar do §6; (6) toda contagem publicada (3122/3124, 19/19, 88/88, 42/42, 30/30, 53 chaves).
+- **R3 — portas e disco.** Portas nao pre-atribuidas: cada cadeira prova a sua; evitar 5432/6379 (base viva), 55432 (`erp-postgres-alt`, parado) e repetir porta entre cadeiras simultaneas. Disco: 8,1 GB -> 7,6 GB livres so com este worktree + `npm ci` + cluster (~0,5 GB por cadeira).
+- **R4 — KPI e integracao.** O PR altera `Kpis/*` (4 arquivos, inclusive `Kpis/app.js`); desde 357a98e9 o KPI esta congelado e **a junta nao cobra KPI** — se `Kpis/*` fica ou sai na integracao e decisao do orquestrador, registrada em `controle/` (§A2); o briefing diz a C2(3) como tratar `Kpis/*` no diff x §6. O PR esta CONFLICTING (2 arquivos de registro); a integracao gera SHA novo, que precisa de check-runs concluidos proprios antes do merge, e a ata reconcilia `approved_head`.
+- **R5 — contrato da junta = origin/main 357a98e9** (`git show origin/main:CLAUDE.md`, l.611-650, §C7 item 8 `D-GOV-PROPORCIONAL`). O CLAUDE.md do objeto **nao tem** esse item (`grep -c` = 0); nenhuma cadeira aplica o §A7 ao contrato do objeto para descartar o item 8. O §10 do plano (l.313) ja manda seguir a main.
+- **R6 — com o orquestrador:** P5 (no maximo 2 cadeiras em paralelo; a 3a so quando uma concluir; pausa de ~15 min apos 2 quedas em <30 min) e P6 (`00-quedas.md` criado na primeira queda — hoje inexistente).
+
+### Medido limpo (resumo)
+1.1 head/arvore VERDE · 1.2 isolamento declarado VERDE (psql VERMELHO = B1) · 1.3 residuos VERDE · 2.1 VERDE · 2.2 N/A · 2.3 VERDE · 3.1/3.1-bis 0 colisoes VERDE · 3.2 VERDE · 3.3 corpo carregado = julgado (4/4) VERDE · 4.1 S0 = 0 VERDE · 4.2 `npm run check` ec=0, nao-DB 114/114, `-db` 17/19 so por B1 · 4.3 7/7 concluidos VERDE · 5.1 VERDE · segredo 0 · main nao integrada: nao pesa no merito, pesa no briefing (R4, R5).
+
+## Itens (P1: comando -> saida resumida -> veredito parcial)
+
+### 0. Objeto (head, check-runs, job docker da secao 10)
+(gravado 2026-10-04T20:16:02Z)
+- Comando: `gh pr view 405 --json headRefOid,isDraft,state,mergeable` · `git rev-parse origin/fix/runtime-role-sem-bypass` (apos `git fetch`) · `git log --oneline -3 origin/fix/runtime-role-sem-bypass`.
+- Saida: headRefOid **6f53d11bb917aaef791108b1fdf822e022e847d0** (OPEN, rascunho, CONFLICTING); remoto = 6f53d11b; 6f53d11b = "docs(junta): mandatos da junta 1 ... HC = H0 = 240dbaa9"; pai 240dbaa9 ("fecha correcao do ci").
+- Comando: `git diff --name-only 240dbaa9 6f53d11b -- . ':(exclude)agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos' | wc -l` -> **0**; `git diff --stat 240dbaa9 6f53d11b` -> so os 4 mandatos (C1, C2, C3, inspetor; +259 linhas). Arvore de codigo/teste/doc do 6f53d11b = a do 240dbaa9.
+- Comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<sha>/check-runs --jq ...` nos dois SHAs:
+  - 240dbaa9: total=7, todos `completed|success` (docker, authority-portal, owner-portal, frontend, backend-postgres, flutter, backend).
+  - 6f53d11b: total=7, todos `completed|success` (docker 19:42:43Z->19:45:02Z id=111515432607; backend 19:35:37Z->19:42:41Z; backend-postgres; frontend; flutter; authority-portal; owner-portal). Nenhum `queued`/`in_progress`/`cancelled`.
+- Job docker (exigido pela secao 10, A16/H1): **rodou e concluiu `success` no objeto**. Log baixado (`gh api .../actions/jobs/111515432607/logs`, 2597 linhas): build da imagem com `GIT_COMMIT=6f53d11b`; `node scripts/smoke-compose-persistence.mjs` sobe `docker-compose.prod.yml` (projeto erp-o6r-smoke), migrate `Exited`, api `Started`, 12 passos OK, "VERDE — worker de pe no boot e no restart". **O log NAO imprime a linha de boot da api** (`grep -ci 'runtime database role\|escapes\|erp_runtime'` = 0): que a api conectou como `erp_runtime` com a trava ATIVA nao e visivel no log do CI — e merito da C1(3) estabelecer por execucao propria (A16), nao herdar do verde do job.
+- Veredito parcial: objeto = **6f53d11b** (head do PR agora), com 7/7 check-runs concluidos e verdes, inclusive `docker`. Os mandatos colam `head do PR: 240dbaa9` (HC = H0 no momento da geracao); o PR andou um commit so-de-mandatos. **Nao bloqueia** (delta provado sem codigo), mas vai como RESSALVA R1 ao briefing.
+
+### 1.1 Head e arvore limpa
+(gravado 2026-10-04T20:17:37Z)
+- Comando: `git worktree add --detach C:/Users/AMP/w-insp405 6f53d11b` -> HEAD 6f53d11b; `git -C w-insp405 status --porcelain | wc -l` -> **0**; `core.autocrlf=true`.
+- Comando: `npm ci --no-audit --no-fund` em w-insp405 -> `added 326 packages`, `npmci_ec=0`; `fsutil reparsepoint query node_modules` -> "nao e um ponto de nova analise" (**sem junction**). Aviso EBADENGINE (node v20.19.5 / npm 11.7.0), nao fatal.
+- Comando: `git -C C:/Users/AMP/w-o05 status --porcelain` -> so `?? .../00-inspetor-terreno.md` (este parecer). w-o05 em 6f53d11b, ramo fix/runtime-role-sem-bypass.
+- Comando (EOL-neutro, 11 arquivos centrais): `git cat-file blob <blob@6f53d11b> | tr -d '\r' | md5sum` x `tr -d '\r' < w-o05/<f> | md5sum` x `tr -d '\r' < w-insp405/<f> | md5sum` -> **11/11 IGUAL**: runtime-role.ts 1971131b · runtime-role.bootstrap.ts 373cb2e2 · rls.ts da4a4636 · env.ts d412c4a4 · server.ts bad489d2 · db-runtime-role.sh **810c1c4a** (= Apendice C, md5 do plano §14) · san3-05-acessos-de-plataforma.mjs **81d92595** (= Apendice A) · docker-compose.prod.yml e7870da6 · cloud-usage repo f518b429 · cloud-charge repo 98715d41 · san3-05-runtime-role-guard-db.test.ts 1afa6225.
+- Worktree do dev `C:/Users/AMP/w-s05d`: **ausente** (`ls` -> No such file). Worktree `C:/Users/AMP/w-pvpr` (detached 240dbaa9, do pre-voo do orquestrador) tem 2 untracked (`scripts/mandato-preflight.sh`, `scripts/mandato-refs.sh`) — e o arnes do pre-voo, nao arvore de jurado; inerte para o objeto.
+- Veredito parcial: **VERDE** — head existe, e o do PR, arvore limpa, sem mutacao viva nos arquivos centrais.
+
+### 1.2 Plano de isolamento declarado
+(gravado 2026-10-04T20:19:28Z)
+- Comando: leitura de `00-mandatos/C1.md`, `C2.md`, `C3.md` (md5 EOL-neutro 2c29ffed / 03ab6201 / b4ec906a) e `diff C1.md C2.md`, `diff C1.md C3.md` (so mudam papel, identidade, caminhos e a palavra-sonda).
+- Saida: cada mandato declara, por escrito: "worktree proprio detached C:/Users/AMP/w-j05c{1,2,3} no objeto, npm ci proprio sem junction; cluster Postgres descartavel proprio em porta livre provada (a base viva erp-postgres 5432 e erp-redis 6379 nunca e alvo)"; "worktree e cluster removidos ao fim com 0 processo vivo"; "escreve so a propria evidencia ... e o proprio voto". Plano de isolamento **declarado e verificavel** (o derruba-com de cada mandato e `git worktree list | grep -ic w-j05cN`). As portas NAO sao pre-atribuidas por cadeira (cada jurado prova a sua): ressalva menor R3.
+- **Pre-requisito do §10 do plano, que o plano atribui nominalmente a este inspetor:** "`psql --version` no PATH de cada jurado que roda a suite `-db` (A23)".
+  - Comando: `which psql pg_ctl initdb pg_basebackup` -> **nenhum** no PATH; `cmd //c "where psql"` -> "nao foi possivel localizar"; `ls "/c/Program Files/PostgreSQL"` -> inexistente; `find /c/Users/AMP -maxdepth 4 -iname 'psql*'` (fora de node_modules) e `find "/c/Program Files" "/c/Program Files (x86)" /c/msys64/... -maxdepth 3 -iname 'psql*'` -> **0**. Docker 29.6.1 presente (servidor responde).
+  - Comando: `grep -n "psql" tests/san3-05-runtime-role-guard-db.test.ts` (no objeto) -> l.528-533: `spawnSync("bash", ["-c", "psql --version"])` + `assert.equal(psql.status, 0, "psql: ausente — pre-requisito da suite -db")` + `assert.match(..., /psql \(PostgreSQL\) 16\./)`; l.145/162: o `.sh` e o psql rodam por `bash` com o PATH herdado; l.713: shim de argv que delega ao psql real.
+  - Comando: `grep -n -i psql 00-mandatos/C*.md` -> **0 ocorrencias**: nenhum mandato diz ao jurado de onde vem o psql 16.
+  - Consequencia medida: na maquina dos jurados, T14b (cenarios vii, viii, ix, x — os que provam "senha 0/0" e argv) **falha por ambiente** em qualquer cadeira que rode `tests/san3-05-runtime-role-guard-db.test.ts`; C1 item (1) ("os 18 cenarios ... shim de psql -> argv sem senha") e C2 item (2) ("re-executa vii e viii") dependem dele. O dev contornou com um wrapper local proprio (`s05-bin`, DEV-relatorio §7-local e setima retomada: "o wrapper local entregou um socket MSYS convertido") — exatamente a improvisacao por jurado que este item existe para impedir.
+- Veredito parcial: isolamento **VERDE**; pre-requisito `psql` 16 do §10 **VERMELHO** — nao confirmado por execucao (ausente). Item **BLOQUEANTE** (B1).
+
+### 1.3 Residuos de jurado anterior
+(gravado 2026-10-04T20:19:28Z)
+- Comando: `docker ps -a --format '{{.Names}}|{{.Status}}|{{.Ports}}|{{.Image}}'` -> 4 containers: `erp-postgres` (Up 7 days, 5432 — base viva), `erp-redis` (Up 7 days, 6379 — base viva), `erp-postgres-alt` (Exited (255) 2 weeks ago, 127.0.0.1:55432), `pastrack-teste-banco-teste-1` (Exited (0) 10 days ago, outro projeto). **Nenhum** `jur-*`, `crit-*`, `san3-05-*`, `s305*`. O cluster do dev `san3-05-s2-pg` **ausente** (bate com o DEV-relatorio).
+- Comando: `docker volume ls | grep -iE 'jur|crit|san3|s305|o6r-smoke'` e `docker network ls | ...` -> **0**.
+- Comando: `git worktree list | grep -iE 'w-j05|jur|crit'` -> **0** (os worktrees das cadeiras ainda nao existem — correto antes da junta). Demais worktrees listados (b04a, b11, gov-descuido, w-d11c3, w-d11c3-lf, w-mandato, w-nuv09, w-nuv11, w-pvnuv, w-pvpr, w-pvreg, w-reg406) sao de outros blocos/sessoes: **reportados, nao varridos** (regra de remocao por identificador de bloco).
+- Comando: `find <repo> C:/Users/AMP/w-o05 -maxdepth 3 \( -name 'jur-probe*' -o -name '*-probe.ts' \)` (fora de node_modules) -> **0**.
+- Comando: `Get-CimInstance Win32_Process | ? CommandLine -match 'w-s05d|w-j05c|san3-05|s305_|s05-bin'` -> **count=0**.
+- Veredito parcial: **VERDE** — nenhum residuo de jurado/dev com privilegio ou mutacao. `erp-postgres-alt` (parado, porta 55432) e residuo inerte de outra rodada: os jurados nao devem escolher a porta 55432 (ressalva R3).
+
+### 2.1 Ata anterior / afirmacoes a re-verificar
+(gravado 2026-10-04T20:20:17Z)
+- Comando: `ls agent-orchestration/omega/juntas/ | grep -i san3-05`; `ls agent-orchestration/omega/reprovacoes/ | grep -i san3-05`; `git grep -l -i B-SAN3-05 -- 'agent-orchestration/omega/juntas/J-*' 'agent-orchestration/omega/reprovacoes/*'` no objeto **e** em origin/main -> **0** em todos. Esta e a **junta 1, ciclo 1**: nao ha ata anterior a herdar.
+- Comando: leitura dos mandatos C1–C3 -> nenhum repassa conclusao como fato; todos mandam "cada um por execucao propria, com a saida colada", "queda relanca a mesma identidade, que nao herda conclusao", escopo pre-existente "com evidencia de data ou origem, re-executada".
+- Afirmacoes do DEV-relatorio que divergem do plano e que o briefing tem de marcar **A RE-VERIFICAR** (lidas como insumo, nao como fato; cada uma medida por mim so ate o ponto de provar que existe):
+  1. **T8d trocou a porta `pg_basebackup` por `pg_create_physical_replication_slot`** (commit bbbb3b29 "prova replication sem depender do hba"; `grep -c pg_basebackup tests/san3-05-runtime-role-guard-db.test.ts` = **0**, l.467/476/481 usam slot + `ALTER ROLE ... NOREPLICATION`). O §10 C1(2) do plano nomeia `pg_basebackup` entre as portas executadas e o A4b cita "base.tar com marcador": a C1 julga se a troca preserva o A4b — nao herda a "falsificacao sem contradicao do invariante" do dev.
+  2. Allowlist do `FROZEN_ALLOWLIST` 60 -> 62 -> **63** (l.138 de `tests/db-catalog-write-guard.test.ts`) — "contagem medida no head" (A21) e para a C2(3) re-medir.
+  3. OPS do gerador **nao** derivado do client gerado (cai na lista embutida; DEV §1) — para a C3(1).
+  4. Premissa textual do plano `git grep 'PrismaCloudChargeRepository(prisma)'` -> vazio declarada falsa pelo dev (casa `new RlsPrismaCloudChargeRepository(prisma)`) — para a C2/C3.
+  5. `Kpis/app.js` no diff (regenerado por `kpi-freeze.mjs`), embora o §6 do plano o liste como PROIBIDO; e `Kpis/*` inteiro no diff sob o KPI congelado da `D-GOV-PROPORCIONAL` (5) — ver item "Main 357a98e9".
+  6. Contagens publicadas (backend 3122/3124, lotes 19/19, 88/88, 42/42, T13 30/30, inventario 53 chaves sha1 79e1d86e) — nada conta sem re-execucao propria.
+- Veredito parcial: **VERDE** (nao ha ata anterior; nenhum mandato herda conclusao). Os 6 pontos acima vao ao briefing como RESSALVA R2.
+
+### 2.2 Ciclo >= 4
+(gravado 2026-10-04T20:20:17Z)
+- Ciclo 1 (item 2.1: nenhuma ata/reprovacao anterior). **Nao se aplica.** Alem disso, sob `D-GOV-PROPORCIONAL` (2) (origin/main 357a98e9, CLAUDE.md l.611 ss., medido por `git cat-file blob` do CLAUDE.md da main) a auditoria obrigatoria da maquina no ciclo 3 deixou de ser obrigatoria; teto de 2 ciclos.
+- Veredito parcial: **N/A**.
+
+### 2.3 Plano do ciclo (head, §5, bateria com forma)
+(gravado 2026-10-04T20:20:17Z)
+- Comando: `wc -l < docs/revisoes/SAN3/B-SAN3-05-plano.md` no objeto -> 1121 (= mandato); `grep -n '^## ' plano` -> §5 (l.176, arquivos tocados), §6 (l.203, PERMITIDO/PROIBIDO com caminhos exatos), §8 (l.247, bateria), §10 (l.300, junta).
+- Saida: o plano nomeia o objeto como "o SHA do head da entrega com check-runs concluidos, inclusive o job docker" (§10) — nao um SHA fixo (o plano antecede o codigo); a bateria do §8 tem **forma declarada**: "na ordem, com `timeout` e `ec` por variavel, tudo em Node 20 (`node -v` colado)", `DATABASE_URL=<descartavel>`, `skipped <= 2`, `psql` 16 como pre-requisito. Md5 dos apendices fixados no §14 (trava 36650de5, script 810c1c4a, gerador 81d92595) — os dois ultimos conferidos no objeto no item 1.1.
+- Nota de terreno: o Node da maquina e **v20.19.5** (`node -v`), nao o 20.20.0 do planejador; mesma linha maior (20), forma declarada pelo plano atendida.
+- Veredito parcial: **VERDE**.
+
+### 3.1 / 3.1-bis Inelegibilidade por nome (obituario + grep)
+(gravado 2026-10-04T20:22:35Z)
+- **3.1-bis (fonte primeira, lida antes do grep):** `git ls-tree <ref> agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` -> mesmo blob 2d0b8b3a em origin/main e no objeto (md5 EOL-neutro b3b11247, 301 linhas). `grep -n -i 'agente-dba-guardiao\|agente-secops\|guardiao-fail-closed'` -> so l.251-252 ("as permanentes que votaram ... e as nomeadas como suplentes ... nao entram aqui"); §4 (l.126-139): os 23 papeis permanentes **nao se sepultam**, inelegibilidade **por caso**, conferida nas atas. **0 linhas SEPULTADA/RESERVADA** com os tres nomes. Ausencia nao absolve -> grep nas atas abaixo.
+- **3.1 (grep no caso):** `grep -n -o '.{0,80}<nome>.{0,80}'` nos 9 artefatos do caso (plano v3, critica r1, critica r2, PLANEJADOR-v3-relatorio, DEV-relatorio, mandatos dev/dev-sucessor-2/planejador-v3, comando do bloco) -> as tres identidades aparecem **so** como cadeiras previstas (plano l.302; mandato do dev l.46). Nenhuma achou, planejou ou desenvolveu.
+- Inelegiveis do caso, medidos: `git grep -h -o -E '\b(critico|planejador|dev)-b-san3-05[a-z0-9-]*'` -> `critico-b-san3-05` (5), `planejador-b-san3-05-v3` (8), `dev-b-san3-05` (7), `dev-b-san3-05-sucessor-1` (5), `dev-b-san3-05-sucessor-2` (7); planos v1 (`c3f57e9b`) e v2 (`c727156d`) por instancias de `planejador-mestre` (cabecalhos lidos por `git show`); critica r1/r2 por `critico-b-san3-05` (papel `critico-adversarial`). Nenhum `J-*`/`R-*` anterior do bloco (item 2.1). Colisao com C1 `agente-dba-guardiao`, C2 `agente-secops`, C3 `guardiao-fail-closed`: **0**. Nenhuma das tres e `planejador-mestre` nem `critico-adversarial`.
+- Veredito parcial: **VERDE** — inelegibilidade conferida por nome, 0 colisoes. Lembrete ao briefing: suplente de cadeira caida = a mesma identidade relancada (mandatos), nunca uma das cinco inelegiveis acima nem o orquestrador.
+
+### 3.2 Competencia da composicao
+(gravado 2026-10-04T20:22:35Z)
+- Comando: leitura da tabela do §10 do plano (l.305-309) x o que o bloco muda (`git diff --name-only b404815c 6f53d11b`, colado no mandato) x os criterios A1–A24 (§7).
+- Saida: C1 `agente-dba-guardiao` cobre a trava SQL (A1–A5, A4b), o script de papel (A17, A22) e o compose (A16) — competencia de banco/papeis/grants; C2 `agente-secops` cobre fiacao/gate de producao (A7, A8, A20), segredo (A6, script vii/viii) e escopo/registro (A18, A19, A21) — competencia de secret/env/config de producao, que o corpo dele declara obrigatoria "em todo PR que toque secret, env ... ou config de producao"; C3 `guardiao-fail-closed` cobre o ratchet por exclusao (A15, A24 — enumeracao fail-closed, prova por mutacao) e a superficie T11a–d (A10–A14).
+- Nota: o compose (`docker-compose.prod.yml`, A16) e de competencia natural do `agente-devops-provisionador`; esta coberto pela C1 por desenho do plano (papel no banco da app). Nao e lacuna de achado (nao ha achado previo em julgamento — ciclo 1).
+- Veredito parcial: **VERDE**.
+
+### 3.3 Corpo carregado x corpo julgado
+(gravado 2026-10-04T20:22:35Z)
+- Diretorio da sessao: `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios` (`git rev-parse HEAD` -> 357a98e9 = origin/main, ramo main).
+- Comando (EOL-neutro, por identidade): `git cat-file blob $(git ls-tree <ref> .claude/agents/<x>.md) | tr -d '\r' | md5sum` em `6f53d11b` e em `origin/main` x `tr -d '\r' < <sessao>/.claude/agents/<x>.md | md5sum`:
+  - agente-dba-guardiao: head = main = sessao = **de789c12** (blob fef74fac)
+  - agente-secops: head = main = sessao = **dc1a2974** (blob 6216e132)
+  - guardiao-fail-closed: head = main = sessao = **5b0f7f5d** (blob 06a39978)
+  - inspetor-de-terreno-da-junta: head = main = sessao = **de80b2a9** (blob 9c97b03c) = corpo carregado por esta instancia.
+- Normas citadas pelos corpos: `grep -o '§[A-Z][0-9.]*...'` -> so `guardiao-fail-closed` cita `§C7.4` (historico, l.9) e `D-JUNTA-SEPARACAO-DE-PAPEIS` (l.21); ambas existem no CLAUDE.md do objeto e da main (`grep -c '^4. **Protocolo de dificuldade\|^4-bis'` = 2 nos dois). Nenhuma clausula inexistente.
+- Veredito parcial: **VERDE** — corpo carregado = corpo julgado nas 4 identidades; 0 divergencia; nenhuma norma fantasma.
+
+### 4.1 S0 espelho Codex
+(gravado 2026-10-04T20:25:39Z)
+- Comando: `cd C:/Users/AMP/w-insp405 && timeout 120 node scripts/sync-agent-agents.mjs --check; ec=$?` (no objeto 6f53d11b).
+- Saida: `[agents-sync] OK — 30 agentes, espelho consistente.` `sync_ec=0`. Recursivo: `.claude/agents` = 23 corpos + `especialistas/` (7); `.agents/agents` = 23 + README + `especialistas/` (7); 23 + 7 = 30 = o que o script conta.
+- Veredito parcial: **VERDE** (S0 = 0).
+
+### 4.2 Baseline honesto
+(gravado em partes; parte 1 2026-10-04T20:25:39Z)
+- Forma: worktree proprio detached `C:/Users/AMP/w-insp405` em 6f53d11b, `npm ci` proprio (326 pacotes, sem junction), Node **v20.19.5**, `core.autocrlf=true`, exit por variavel (`cmd > arq 2>&1; ec=$?`), `timeout` em tudo.
+- Comando: `DATABASE_URL=<inalcancavel, so para o config> npx prisma generate; ec=$?` -> **0**. `npm run check > log 2>&1; ec=$?` -> **npm_run_check_ec=0** (`tsc -p tsconfig.json --noEmit`, sem saida de erro).
+- Comando: `node --test --import tsx tests/production-runtime-gates.test.ts tests/san3-05-runtime-role-bootstrap.test.ts tests/san3-05-acessos-de-plataforma-guard.test.ts > log 2>&1; ec=$?` -> **ec=0**; TAP: `tests 114 · pass 114 · fail 0 · cancelled 0 · skipped 0`, 34,8 s.
+- `git -C w-insp405 status --porcelain | wc -l` -> 0 apos as execucoes (nenhum artefato rastreado mutado).
+- Parte 2 (arquivos `-db` do bloco em cluster descartavel proprio):
+(gravado 2026-10-04T20:31:30Z)
+  - Cluster descartavel proprio: porta 55915 provada livre ANTES (`Get-NetTCPConnection -LocalPort 55915` -> 0 listeners; `TcpClient.Connect` -> recusado); `docker run -d --name insp405-pg -p 127.0.0.1:55915:5432 postgres:16` (imagem local be01cf82, sem pull) -> PostgreSQL **16.14**, `wal_level=replica`, `max_replication_slots=10`; `DATABASE_URL=<insp405-pg> npx prisma migrate deploy; ec=$?` -> **0** ("All migrations have been successfully applied"); public: tabelas/FORCE/views = **115 / 106 / 0** (= P-f do plano). Base viva (5432/6379) nao recebeu comando.
+  - Comando: `DATABASE_URL=<insp405-pg> timeout 600 node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts tests/san3-05-leituras-de-plataforma-db.test.ts > log 2>&1; ec=$?` -> **ec=1**; TAP: `tests 19 · pass 17 · fail 2 · cancelled 0 · skipped 0`, 21,1 s. As 2 falhas sao **o mesmo evento em dois niveis**: `not ok 6 - T14a/b · o procedimento converge...` (l.85 do log) e o pai `not ok 2 - B-SAN3-05 · o papel de runtime nao contorna FORCE RLS` (l.119). Erro literal: `psql: ausente — pré-requisito da suíte -db` / `bash: line 1: psql: command not found` / `127 !== 0`. T5–T9 (inclusive T8d por slot), T15 (boot real), T10–T12 (leituras) **verdes**.
+  - Pos-execucao: no cluster, `s305%` papeis 0, bancos 0, `pg_replication_slots` 0; `Get-CimInstance Win32_Process | ? CommandLine -match 'w-insp405'` (node|bash|psql) -> **0** vivos.
+- Veredito parcial 4.2: `npm run check` **VERDE** (exit 0); lote nao-DB **114/114 VERDE**; lote `-db` do bloco **17/19** — o vermelho e **ambiental**, exatamente o previsto pelo A23 (falha nomeando o pre-requisito, sem skip): **prova por execucao do bloqueante B1** (item 1.2). O baseline do produto nao esta vermelho por defeito de codigo medido aqui; mas, sem `psql` 16 no PATH, todo jurado que rode este arquivo vera vermelho que nao e do merito.
+
+### 4.3 Check-runs concluidos
+(gravado 2026-10-04T20:32:06Z; medicao no item 0)
+- Comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/6f53d11bb917aaef791108b1fdf822e022e847d0/check-runs --jq '.total_count, (.check_runs[] | "\(.name)|\(.status)|\(.conclusion)")'`.
+- Saida: **total_count = 7**; `docker|completed|success`, `backend|completed|success`, `backend-postgres|completed|success`, `frontend|completed|success`, `flutter|completed|success`, `authority-portal|completed|success`, `owner-portal|completed|success`. Nenhum `queued`/`in_progress`/`cancelled`. (240dbaa9 tambem 7/7 verdes, inclusive `docker`.) PR em rascunho: so runs de `push` — o gatilho por ramo de bloco funcionou para o SHA novo.
+- Insumo para o voto (nao bloqueia): o CI do head anterior `e3cb269d` foi **vermelho** no T8d (`pg_basebackup` recusado pelo `pg_hba` do servico da CI; DEV-relatorio "SETIMA RETOMADA"); o verde atual vem da troca da porta por slot fisico (bbbb3b29) — ver R2.1.
+- Veredito parcial: **VERDE** — objeto com check-runs concluidos.
+
+### 5.1 Plano de perda de jurado e de PAUSA
+(gravado 2026-10-04T20:32:06Z)
+- Comando: leitura dos mandatos C1–C3 (l.43-49 de cada).
+- Saida: "queda relanca a mesma identidade, que nao herda conclusao; voto perdido nunca aprova"; quorum "unanimidade de 3 com veto"; "sob PAUSA grava a secao PAUSA e para (P7)"; voto nasce como esqueleto com itens EM APURACAO, gravado item a item (P2 emenda); evidencia incremental com hora (P1). P7 existe no CLAUDE.md do objeto (`grep -c D-PAUSA-GRAVA-E-PARA` = 2) e da main (= 2).
+- O que fica com o orquestrador (nao esta nos mandatos, e e dever dele pelo §C7.7): **P5** — no maximo 2 cadeiras em paralelo (sao 3: a terceira so quando uma concluir) e pausa de ~15 min apos 2 quedas em <30 min; **P6** — `votos/B-SAN3-05/00-quedas.md` (hoje **inexistente**: `ls` do diretorio mostra so `00-mandatos/`, `DEV-relatorio.md`, `PLANEJADOR-v3-relatorio.md` e este parecer) criado na primeira queda.
+- Veredito parcial: **VERDE** — plano de perda e de PAUSA declarado. Ressalva R6 (P5/P6 com o orquestrador).
+
+### Mandatos (00-mandatos) e segredo no tabuleiro
+(gravado 2026-10-04T20:32:42Z)
+- Comando: `ls 00-mandatos/` -> C1.md, C2.md, C3.md, inspetor.md (+ dev.md, dev-sucessor-2.md, planejador-v3.md, dos papeis anteriores). **Um por papel da junta**; md5 EOL-neutro: C1 2c29ffed · C2 03ab6201 · C3 b4ec906a · inspetor 275b74dc (= o informado). Versionados no commit 6f53d11b (`git diff --stat 240dbaa9 6f53d11b` -> so esses 4).
+- Cerca: os 4 colam `head do PR: 240dbaa9...` e `check-runs: total=7 nao-verdes=0 pendentes=0` (pre-voo `PRE-VOO OK`, ec=0, 19:33–19:34Z). **Hoje** o head do PR e **6f53d11b** (o commit dos proprios mandatos foi empurrado depois do pre-voo). Delta 240dbaa9 -> 6f53d11b = so os 4 mandatos (item 0: 0 arquivos fora de `00-mandatos/`); 6f53d11b tem 7/7 check-runs concluidos e verdes. O pre-voo, se re-rodado agora, compararia a colagem com 6f53d11b e nao com 240dbaa9 — as ferramentas (`scripts/mandato-refs.sh`, `mandato-preflight.sh`) **nao existem** nem em origin/main nem no objeto (`git ls-tree` vazio; vivem em `chore/mandato-refs-e-preflight` e no arnes `w-pvpr`), entao nao re-executei o pre-voo. -> **RESSALVA R1**: o briefing diz a cada cadeira que o objeto e 6f53d11b, que a colagem 240dbaa9 e o HC = H0 da geracao, e que o delta e so de mandatos (cada cadeira re-mede com `git diff --name-only 240dbaa9 6f53d11b`).
+- Contrato citado pelos mandatos: "CLAUDE.md secao C7 item 8 (D-GOV-PROPORCIONAL)". Medido: existe em **origin/main 357a98e9** (CLAUDE.md l.611 ss.; `grep -c '^8\. \*\*GOVERNAN'` = 1) e **NAO existe no CLAUDE.md do objeto** (= 0; o ultimo commit do CLAUDE.md no ramo e 513937b0, #397/P7). Ver item seguinte e **RESSALVA R5**.
+- Segredo no tabuleiro: `git diff b404815c 6f53d11b -U0 | grep '^+'` por `AKIA..`, `-----BEGIN`, `ghp_`, `gho_`, `sk-..`, `xox[bp]-`, `AIza..` -> **0**. URLs com senha acrescentadas: `postgresql://erp_runtime:local-prod-validation-db-runtime-not-a-secret@postgres:5432` (x2, compose de validacao local, rotulado "Placeholders ... NAO sao segredos", l.76), `postgresql://postgres:postgres@localhost` (CI), `postgresql://erp:erp@db.interno.exemplo.com:5432` (exemplo de doc). `git ls-files | grep .env` -> so `.env.example`. Mandatos: `grep -i password|senha|secret|token` -> so texto de regra, nenhum valor. **Nenhum segredo real.**
+- Veredito parcial: **VERDE com ressalvas R1 e R5**.
+
+### Main 357a98e9 nao integrada
+(gravado 2026-10-04T20:32:42Z)
+- Comando: `git merge-base origin/main 6f53d11b` -> b404815c; `git log --oneline b404815c..origin/main` -> 2 commits: 8ee10bd2 (#406, registro) e 357a98e9 (#407, D-GOV-PROPORCIONAL). `git diff --name-only b404815c origin/main` -> **9 arquivos**: AGENTS.md, CLAUDE.md, Kpis/kpis-history.md, agent-orchestration/{codex/log-execucao.md, controle/decisoes.md, docs/status-geral.md, omega/juntas/REVISAO-PR-407.md, omega/juntas/votos/B-SAN3-01b/00-mandatos/porteiro-404.md, .../PORTEIRO-404.md}. `grep -E '^(src|tests|scripts|prisma|frontend|mobile|.github|docker|Dockerfile|package)'` -> **0**.
+- Comando: `git merge-tree --write-tree --name-only origin/main 6f53d11b` -> CONFLICT (content) em **2** arquivos de registro (`agent-orchestration/codex/log-execucao.md`, `agent-orchestration/docs/status-geral.md`); `Kpis/kpis-history.md` auto-merge.
+- **Pesa no objeto de merito? NAO** para codigo/teste/script/compose/doc do bloco: a main nao tocou nada disso desde o merge-base, entao o que as cadeiras julgam em 6f53d11b e o que entraria na main.
+- **Pesa no tabuleiro? SIM, em tres pontos (nenhum bloqueante, todos para o briefing):**
+  1. **Contrato:** o CLAUDE.md do objeto nao tem o §C7 item 8. Uma cadeira que aplique o §A7 do proprio objeto ("norma citada que nao existe na ref julgada nao se aplica") ao contrato acharia "item 8 inexistente" e cairia no §C3 KPI-por-PR e no `D-SEM-TETO` do ramo. O §10 do plano (no objeto, l.313) ja diz "a junta segue o contrato da main"; o briefing tem de nomear a ref: **contrato da junta = origin/main 357a98e9, lido por `git show origin/main:CLAUDE.md` (l.611-650)** — R5.
+  2. **KPI:** o objeto altera `Kpis/kpis-latest.json`, `kpis-history.json`, `kpis-history.md` e `Kpis/app.js` (este, PROIBIDO no §6 do plano; o dev diz que so o regenerou por `kpi-freeze.mjs`). Desde 357a98e9, `D-GOV-PROPORCIONAL` (5): "PR nenhum atualiza `Kpis/*`" e "a junta nao cobra KPI". Se o `Kpis/*` do PR fica ou sai na integracao e decisao do orquestrador, a registrar em `controle/` (§A2) — nao do jurado. O briefing deve dizer a C2(3) (diff x escopo §6) como tratar `Kpis/*` — R4.
+  3. **Merge:** o PR esta CONFLICTING; nao mergeia sem integrar a main, o que gera um SHA novo (delta so de registro/KPI) que precisara de check-runs concluidos proprios; o `approved_head` da junta e a reconciliacao com o SHA integrado ficam para a ata/porteiro — R4.
+- Veredito parcial: **nao bloqueia**; ressalvas R4 e R5.
+
+## Limpeza
+(gravado 2026-10-04T20:37Z)
+- Criado para medir e derrubado: container `insp405-pg` (`docker rm -f insp405-pg` -> ec=0; `docker ps -a | grep -c '^insp405-pg$'` -> 0) e o volume anonimo dele (`91928b0b...`, CreatedAt 20:26:06Z, removido **pelo nome** com `docker volume rm` -> ec=0; os outros 12 volumes orfaos da maquina sao de outras rodadas e **nao** foram tocados); worktree `C:/Users/AMP/w-insp405` (`git worktree remove --force`, chamado da arvore principal -> ec=0; `ls` -> inexistente; `git worktree list | grep -c insp405` -> 0), com o `node_modules` proprio (sem junction) e o client Prisma gerado dentro dele. Processos com `insp405` no CommandLine: **0** antes da remocao. Disco: 8,1 GB livres antes e depois. Arquivos temporarios meus no scratchpad da sessao removidos pelo nome ao final. Base viva (5432/6379) nunca recebeu comando. Nao escrevi nada no repositorio alem deste parecer; nao commitei.
+- **Correcao de registro (transparencia):** as horas "(gravado ...)" dos itens foram escritas primeiro por estimativa e sairam adiantadas (20:25Z–21:27Z, horario ainda nao alcancado). Ao medir `date -u` (20:34:13Z) corrigi cada uma pelo mtime real do arquivo de conteudo de onde o item foi colado (`date -u -r <arquivo>`); as horas acima sao as corrigidas. Nenhum conteudo medido mudou.
