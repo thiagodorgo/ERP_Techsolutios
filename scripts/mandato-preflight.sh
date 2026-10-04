@@ -22,6 +22,45 @@
 # token. Era por ai que UMA evidencia cobria CINCO afirmacoes (achado B-1 do critico).
 #
 # -----------------------------------------------------------------------------------------------
+# O QUE MUDOU NO CICLO 5 (mesmo bloco, PR #393), E POR QUE
+#
+# A junta 4 reprovou o ciclo 4 com dois bloqueantes, os dois na checagem 4, e eles sao a MESMA
+# propriedade (plano §16.1-§16.2): C1d-01 e o lado "vizinhanca" (`head:<SHA>` — a direita do `:` nunca
+# era classificada) e C2d-02 o lado "comprimento" (nenhum caso exigia a cobranca de 7..39 em prosa). A
+# causa medida: quem COBRAVA (checagem 4) enumerava SHAs por TOKEN do tokenizador de caminhos, e quem
+# ABSOLVIA (a proveniencia da colagem) enumerava por CORRIDA hexadecimal; toda forma em que os dois
+# discordavam era um escape, e cada ciclo achou formas novas desse desacordo.
+#   P-SHA   "SHA citado" e definido pelo CONTEUDO, nao pela vizinhanca: toda corrida MAXIMA de
+#           [0-9A-Fa-f] de uma linha nao isenta. Comprimento 7..40 = SHA (checagem 4, proveniencia);
+#           > 40 = corrida longa (REJ nomeando o comprimento); < 7 = nao e SHA. UM texto (`PSHA`: as
+#           funcoes `psha` e `pshaClasse`) entra nos DOIS programas — o que cobra (passada 2) e o que
+#           absolve (`PROVSHA`) —, logo cobranca e absolvicao nao podem mais discordar por construcao.
+#           O enumerador nao olha `:`, `/`, `-`, `.`, `_` nem letras: qualquer nao-hex PARTE a corrida.
+#           Sairam a classificacao de SHA por token e a particao no 1o `:` da C1c-02(i); a C1c-02(ii)
+#           (`revExiste` na checagem 6) fica.
+#   isencao A UNICA da checagem 4, e por FATO VERIFICADO, nao por forma: a corrida que esta INTEIRA
+#           dentro da parte de CAMINHO de um token — o token inteiro, ou o que vem depois do ULTIMO `:`
+#           de `<rev>:<caminho>`, sem o sufixo `:NN`, com `/` e nao absoluto — nao e cobrada quando esse
+#           caminho e VERSIONADO na raiz: `git -C "$RAIZ" ls-files --error-unmatch -- <caminho>` com o
+#           status LIDO (0 = versionado, isenta e sai `AVISO corrida hex em caminho versionado ...`
+#           nomeando a corrida e o caminho; 1 = nao versionado, cobrada; >= 2 = morte nomeada, A15).
+#           Diretorio com arquivo versionado tambem isenta. No GIT, nao no disco: no disco, criar um
+#           arquivo com o nome de um SHA fabricado o lavaria; no git, exige um commit. Caminho absoluto
+#           (I17) e URL (I18) NAO isentam — nao sao verificados, e `.../commit/<SHA>` e forma REAL de
+#           citar commit. E o que mantem citaveis as migrations (`prisma/migrations/<14 digitos>_...`).
+#           CUSTO ACEITO E DECLARADO: o UUID da sessao no caminho ABSOLUTO do scratchpad passa a ser
+#           cobrado (plano §16.2, medido em 28 de 40 mandatos versionados); o contorno e citar o
+#           scratchpad por marcador (`<SCRATCH>/...`), sem isencao nova (§16.6 R2).
+#   C1d-02  a checagem 5 le a PALAVRA do comando como o SHELL a executa: a remocao de citacao do POSIX
+#           — aspas simples, aspas duplas e `\`, inclusive o `\` que junta palavras — e aplicada a cada
+#           segmento ANTES de reconhecer a familia e o `-i`. `"grep"`, `'grep'`, `g""rep` e `gr\ep` sao
+#           `grep`. A remocao so tira os caracteres de citacao; nunca esconde texto.
+#   fr. 10  FECHADA: `_` parte a corrida, como qualquer nao-hex (caso [F-4-pos]).
+#   nota    a de `<80 hex>:x` (a esquerda de `:` com mais de 40 hex nao era cobrada) CAIU: a corrida de
+#           80 e corrida longa como qualquer outra.
+#   fr. 35 e 36 NOVAS, na lista de custos e fronteiras abaixo.
+#
+# -----------------------------------------------------------------------------------------------
 # O QUE MUDOU NO CICLO 4 (mesmo bloco, PR #393), E POR QUE
 #
 # A junta 3 reprovou o ciclo 3 (2 x 1) com seis bloqueantes, quatro deles aqui, e a auditoria da
@@ -34,6 +73,8 @@
 #   C1c-02  a classificacao SHA/caminho e por TOKEN, e `:` nao esconde um SHA: `<sha>:CLAUDE.md` e
 #           partido no 1o `:` e a esquerda hex de 7..40 e SHA; e a revisao de `<rev>:<caminho>` so
 #           resolve se EXISTE como commit, nos DOIS ramos da checagem 6 (arquivo e diretorio).
+#           [ciclo 5: a classificacao por token e a particao no 1o `:` SAIRAM — P-SHA, acima; a
+#           revisao que so resolve se existe como commit FICA.]
 #   C1c-03  a cerca e SAIDA, nunca COMANDO: `medido por:` dentro de cerca nao satisfaz a unidade.
 #   C1c-04  o cabecalho de secao e EXATAMENTE `## MEDIDO`/`## HIPOTESE`; qualquer outro `## …` (e o que
 #           vem embaixo dele) e conteudo fora das secoes — `## MEDIDO — <afirmacao>` deixou de ser
@@ -80,7 +121,8 @@
 #   checagem 4  o TOKEN, nao a vizinhanca — e agora PARTIR *e* JUNTAR. `..` PARTE o token (intervalo
 #               do git: `git log <a>..<b>` cobra o `<b>`); o `.` inicial sai da ponta; e uma CORRIDA
 #               HEXADECIMAL de mais de 40 caracteres e REJEITADA nomeando o comprimento — juntar
-#               dois SHAs sem separador deixava de ser SHA e escapava. `_` NAO parte (fronteira 10).
+#               dois SHAs sem separador deixava de ser SHA e escapava. `_` NAO partia (fronteira 10,
+#               FECHADA no ciclo 5: a enumeracao por token deste paragrafo foi SUBSTITUIDA pela P-SHA).
 #               A proveniencia e a UNIAO de `mandato-refs.sh <PR> --sha-only` com os SHAs de TODA
 #               colagem VERIFICADA do documento: citar o head de outro PR e legitimo quando o bloco
 #               daquele PR esta colado. E o `ec` do mandato-refs.sh e LIDO: ferramenta morta =
@@ -146,8 +188,13 @@
 #   - fronteira 22: hash de blob e md5 nao tem canal de proveniencia na checagem 4 — publique o
 #     VEREDITO da comparacao (`IDENTICO`/`DIVERGE`), nao o hash.
 #   - fronteira 27: FECHADA no ciclo 4 (`RAIZ` por `cygpath -m` quando existe; caso [F-6j]).
-#   - a esquerda de `:` que e hex de MAIS de 40 caracteres (`<80 hex>:x`) nao e cobrada: a C1c-02
-#     parte so a esquerda de 7 a 40 (o plano a prescreve assim); a corrida longa INTEIRA ja e REJ.
+#   - fronteira 10: FECHADA no ciclo 5 (`_` parte a corrida; caso [F-4-pos]). A nota `<80 hex>:x`
+#     do ciclo 4 caiu com ela: sob a P-SHA a corrida de 80 e corrida longa.
+#   - fronteira 14 e da checagem 6 (existencia no DISCO); a isencao da checagem 4 e conferida no GIT.
+#   - fronteira 35 (ciclo 5): SHA fatiado em grupos de MENOS de 7 por separador (`dead-beef-cafe...`)
+#     nao e cobrado — cada grupo e uma corrida curta, e isso nao e citacao que o git resolva.
+#   - fronteira 36 (ciclo 5): abreviacao de 4 a 6 hex nao e cobrada. O git aceita a partir de 4; o
+#     pre-voo fixa 7, o padrao de `core.abbrev`, porque 4..6 colide com ano, porta e contagem.
 #
 # CODIGO DE SAIDA: 0 = PRE-VOO OK · 1 = rejeitou (inclusive quando um componente interno MORREU — a
 # rejeicao o nomeia e nada foi julgado) · uso errado tambem sai 1, com a linha `uso:` no stderr.
@@ -344,8 +391,28 @@ index($0, "# gerado em: ") == 1 && match(substr($0, 14), /^[0-9][0-9][0-9][0-9]-
   if (depois == "" || substr(depois, 1, 1) == " ") $0 = "# gerado em: <carimbo>" depois
 }
 NF'
-# e a proveniencia da colagem sai das linhas COMPARADAS, menos a do carimbo: corridas hex de 7 a 40
-PROVSHA='index($0, "# gerado em: <carimbo>") != 1 { n = split($0, h, /[^0-9A-Fa-f]+/); for (j = 1; j <= n; j++) if (length(h[j]) >= 7 && length(h[j]) <= 40) print tolower(h[j]) }'
+# P-SHA (ciclo 5) — O ENUMERADOR, UM SO TEXTO, DOIS USOS. "SHA citado" e definido pelo CONTEUDO: toda
+# corrida MAXIMA de [0-9A-Fa-f] da linha. `psha` devolve a posicao e o comprimento de cada corrida;
+# `pshaClasse` decide o que ela e (7..40 = SHA, > 40 = corrida longa, < 7 = nada). Este MESMO texto entra
+# no programa que ABSOLVE (`PROVSHA`, a proveniencia da colagem) e no que COBRA (a passada 2, checagem 4):
+# cobranca e absolvicao nao podem mais discordar por construcao — a discordancia entre os dois enumeradores
+# (token de um lado, corrida do outro) era a causa medida de C1d-01 e C2d-02 (plano §16.1(b)).
+PSHA='
+function psha(s, ini, comp,   n, p) {
+  n = 0; p = 1
+  while (match(substr(s, p), /[0-9A-Fa-f]+/)) { n++; ini[n] = p + RSTART - 1; comp[n] = RLENGTH; p = ini[n] + RLENGTH }
+  return n
+}
+function pshaClasse(n) {
+  if (n >= 7 && n <= 40) return "SHA"
+  if (n > 40) return "HEXLONGO"
+  return ""
+}
+'
+# e a proveniencia da colagem sai das linhas COMPARADAS, menos a do carimbo: as corridas que o enumerador
+# P-SHA classifica como SHA (as mesmas que a checagem 4 cobra)
+PROVSHA="$PSHA"'
+index($0, "# gerado em: <carimbo>") != 1 { n = psha($0, ini, comp); for (j = 1; j <= n; j++) if (pshaClasse(comp[j]) == "SHA") print tolower(substr($0, ini[j], comp[j])) }'
 
 peg BLOCO
 while IFS="$TAB" read -r _t ini fim; do
@@ -391,7 +458,7 @@ done < "$TMPD/peg.BLOCO"
 # oraculo, e `EX` traz as linhas isentas pela colagem VERIFICADA.
 # =================================================================================================
 REC="$TMPD/rec"
-corre "awk (passada 2)" "$REC" awk -v OFS="$TAB" -v EX="$EXENTAS" '
+corre "awk (passada 2)" "$REC" awk -v OFS="$TAB" -v EX="$EXENTAS" "$PSHA"'
 function isento(num) { return (index(EX, ":" num ":") > 0) }
 function limpaP(s) { sub(/^[:-]+/,"",s); sub(/[.:-]+$/,"",s); return s }     # caminho: `.` inicial FICA
 function limpaS(s) { sub(/^[.:-]+/,"",s); sub(/[.:-]+$/,"",s); return s }    # SHA: o `.` inicial SAI
@@ -412,18 +479,41 @@ function contaGrep(s,   c) {
   }
   return c
 }
+# C1d-02 (ciclo 5): a palavra do comando e lida como o SHELL a executa. A remocao de citacao do POSIX
+# (2.2.1-2.2.3) — aspas simples (conteudo literal), aspas duplas (a barra so escapa $ ` " \) e a barra
+# fora de aspas (o caractere seguinte vira literal, inclusive a barra que junta palavras) — e aplicada ao
+# segmento ANTES de reconhecer a familia e o `-i`. Ela so REMOVE os caracteres de citacao: nunca esconde
+# texto, logo nao tira de vista uma invocacao que ja era vista.
+function semCitacao(s,   r, i, n, c, q) {
+  if (s !~ /["\047\\]/) return s
+  r = ""; q = ""; n = length(s)
+  for (i = 1; i <= n; i++) {
+    c = substr(s, i, 1)
+    if (q == "\047") { if (c == "\047") q = ""; else r = r c; continue }
+    if (q == "\"") {
+      if (c == "\"") { q = ""; continue }
+      if (c == "\\" && i < n && index("$\140\"\\", substr(s, i + 1, 1)) > 0) { i++; r = r substr(s, i, 1); continue }
+      r = r c; continue
+    }
+    if (c == "\\") { if (i < n) { i++; r = r substr(s, i, 1) }; continue }
+    if (c == "\047" || c == "\"") { q = c; continue }
+    r = r c
+  }
+  return r
+}
 # Checagem 5, por SEGMENTO: `|`, `||`, `&&`, `;`, `$(` e crase partem a linha. O `-i` e o
 # `caixa-exata:` valem no segmento em que estao — nunca na unidade, nunca na linha inteira.
-function coletaGrep(num, l,   t, nseg, seg, j, c, k5) {
+function coletaGrep(num, l,   t, nseg, seg, j, c, k5, w) {
   if (isento(num)) return
   t = l
   gsub(/\$\(/, "\001", t)
   gsub(/[|;&\140]/, "\001", t)
   nseg = split(t, seg, "\001")
   for (j=1;j<=nseg;j++) {
-    c = contaGrep(seg[j])
+    w = semCitacao(seg[j])                       # C1d-02: a palavra como o shell a executa
+    c = contaGrep(w)
     if (c == 0) continue
-    if (temI(seg[j])) continue
+    if (temI(w)) continue
     if (index(seg[j], "caixa-exata:") > 0) { print "AVI5", num, c; continue }
     for (k5=1;k5<=c;k5++) print "REJ5", num, seg[j]
   }
@@ -457,18 +547,42 @@ function fecha() {
   }
   ustart=0; ufirst=""; utext=""; uprosa=""; uok=0; uapos=0; ucerca=0
 }
+# P-SHA (a isencao por fato) — a parte de CAMINHO de um pedaco de token (u, que comeca na coluna `uini` da linha): o pedaco
+# inteiro, ou o que vem depois do ULTIMO `:` (`<rev>:<caminho>`), sem o sufixo de linha `:NN` e com as
+# pontas limpas como na checagem 6. So conta se tem `/` e NAO e absoluto — caminho absoluto e URL
+# (`https://…/commit/<SHA>`, cuja parte depois do ultimo `:` comeca por `/`) nao sao conferidos no git e
+# por isso NAO isentam. Registra o intervalo de colunas para `caminhoDe`.
+function registraCaminho(u, uini,   v, p, pini, k, j) {
+  v = u
+  sub(/:[0-9]+$/, "", v)
+  p = v; pini = uini; k = 0
+  for (j = 1; j <= length(v); j++) if (substr(v, j, 1) == ":") k = j
+  if (k > 0) { p = substr(v, k + 1); pini = uini + k }
+  match(p, /^[:-]*/); pini = pini + RLENGTH; p = substr(p, RLENGTH + 1)
+  sub(/[.:-]+$/, "", p)
+  if (p == "" || index(p, "/") == 0) return          # I13: sem `/` nao e caminho
+  if (p ~ /^\// || p ~ /^[A-Za-z]:\//) return        # absoluto (e a URL, que cai aqui): nao isenta
+  ncam++; cini[ncam] = pini; cfim[ncam] = pini + length(p) - 1; ccam[ncam] = p
+}
+# a corrida (coluna a, comprimento n) esta INTEIRA dentro de uma parte de caminho? devolve o caminho
+function caminhoDe(a, n,   j) {
+  for (j = 1; j <= ncam; j++) if (a >= cini[j] && a + n - 1 <= cfim[j]) return ccam[j]
+  return ""
+}
 # --- 1o arquivo: o ORACULO ---------------------------------------------------------------------
 NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
 # --- 2o arquivo: o documento -------------------------------------------------------------------
 {
   L[FNR]=$0
   if (isento(FNR)) next
-  np=0; delete pt; delete pex
-  s = $0
+  np=0; delete pt; delete pex; ncam=0; delete cini; delete cfim; delete ccam
+  s = $0; base = 0
   while (match(s, /[A-Za-z0-9_.\/:-]+/)) {
     t = substr(s, RSTART, RLENGTH)
+    tini = base + RSTART                                    # a coluna do token na linha
     antes = (RSTART > 1) ? substr(s, RSTART-1, 1) : ""
     depois = substr(s, RSTART+RLENGTH, 1)
+    base = base + RSTART + RLENGTH - 1
     s = substr(s, RSTART+RLENGTH)
     # `(novo)`: isenta o token de caminho IMEDIATAMENTE ANTERIOR (I3), nao a linha
     if (t == "novo" && antes == "(" && depois == ")") { if (np > 0) pex[np]=1; continue }
@@ -476,27 +590,19 @@ NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
     # `split` trata o terceiro argumento como REGEX, e um ".." cru casaria QUALQUER par de
     # caracteres — picava todo token e as checagens 4 e 6 saiam mudas (medido).
     nparte = split(t, parte, /\.\./)
+    poff = tini
     for (ip=1; ip<=nparte; ip++) {
       u = parte[ip]
+      uini = poff; poff = poff + length(u) + 2              # + o `..` que partiu
       if (u == "") continue
-      # o sufixo de linha (`arquivo.md:12`, `<sha>:12`) cai ANTES da classificacao — nas DUAS
-      # pontas. Testar hexadecimal primeiro fazia `<sha>:12` deixar de ser SHA (medido: o B3
-      # caia 10/11, e o escape era exatamente a 10a vizinhanca).
+      registraCaminho(u, uini)                              # P-SHA: candidata a isencao por fato
+      # o token PURO hex (com ou sem sufixo de linha) nao e candidato a caminho da checagem 6; quem
+      # decide se ele e SHA e o enumerador P-SHA, mais abaixo, sobre a linha inteira (ciclo 5: saiu a
+      # classificacao por token e a particao no 1o `:` da C1c-02(i)).
       usuf = u
       sub(/:[0-9]+$/, "", usuf)
       us = limpaS(usuf)
-      if (us != "" && ehex(us)) {
-        if (length(us) > 40) { print "HEXLONGO", FNR, length(us); continue }
-        if (length(us) >= 7) { print "SHA", FNR, tolower(us); continue }
-      }
-      # C1c-02: `:` nao esconde um SHA. O token com `:` e partido no PRIMEIRO `:`; a esquerda que e hex
-      # de 7 a 40 vai para a checagem 4 como SHA, e o token INTEIRO segue abaixo para a checagem 6
-      # (nada muda para `HEAD:…`, `C:/…`, `https://…`, que nao tem hex a esquerda).
-      kc = index(usuf, ":")
-      if (kc > 1) {
-        ls = limpaS(substr(usuf, 1, kc - 1))
-        if (ls != "" && ehex(ls) && length(ls) >= 7 && length(ls) <= 40) print "SHA", FNR, tolower(ls)
-      }
+      if (us != "" && ehex(us)) continue
       up = limpaP(u)
       if (up == "") continue
       sub(/:[0-9]+$/, "", up); up = limpaP(up)
@@ -510,6 +616,19 @@ NR==FNR { FE[$1]=$2; SC[$1]=$3; HD[$1]=$4; next }
       if (up !~ /\/$/ && up !~ /\/[^\/]*\.[^\/]*$/) continue  # I14: sem extensao e sem barra final
       np++; pt[np]=up
     }
+  }
+  # P-SHA — a COBRANCA da checagem 4 enumera a LINHA INTEIRA pelo MESMO texto que absolve (`psha`,
+  # `pshaClasse`): nenhum vizinho esconde uma corrida. A corrida que cai INTEIRA dentro de uma parte de
+  # caminho vai como `SHAP` (com o caminho), e o shell confere no git se ele e versionado (a isencao).
+  nr = psha($0, rini, rcomp)
+  for (ir = 1; ir <= nr; ir++) {
+    cls = pshaClasse(rcomp[ir])
+    if (cls == "") continue
+    run = tolower(substr($0, rini[ir], rcomp[ir]))
+    cam = caminhoDe(rini[ir], rcomp[ir])
+    if (cam != "") { print "SHAP", FNR, cls, run, cam; continue }
+    if (cls == "HEXLONGO") print "HEXLONGO", FNR, rcomp[ir]
+    else print "SHA", FNR, run
   }
   for (ip=1; ip<=np; ip++) print "PATH", FNR, pt[ip], (pex[ip]==1) ? 1 : 0
 }
@@ -594,13 +713,30 @@ done < "$TMPD/pega.REJ19"
 
 # 4) todo SHA citado tem de vir de mandato-refs.sh — resolver NAO basta (o a62d04e2 resolvia)
 pega HEXLONGO
+pega SHA
+# P-SHA' — a UNICA isencao da checagem 4, por FATO e nao por forma: a corrida que esta INTEIRA dentro da
+# parte de caminho de um token (`SHAP`) nao e cobrada se esse caminho e VERSIONADO na raiz. O status do
+# git e LIDO (A15): 0 = versionado -> isenta, com um AVISO que nomeia a corrida e o caminho (a cadeira ve o
+# que foi absolvido); 1 = nao versionado -> a corrida volta para a cobranca, como qualquer outra; >= 2 =
+# morte nomeada. No GIT e nao no disco: no disco, criar um arquivo com o nome de um SHA fabricado o lavaria.
+pega SHAP
+corre "sort (corridas em caminho)" "$TMPD/shap" sort -u "$TMPD/pega.SHAP"
+while IFS="$TAB" read -r _t ln cls run cam; do
+  [ -n "${cam:-}" ] || continue
+  if veredito "git (chk 4, caminho versionado '$cam')" /dev/null git -C "$RAIZ" ls-files --error-unmatch -- "$cam"; then
+    aviso "corrida hex em caminho versionado nao cobrada pela checagem 4: '$run' em $cam — l.$ln"
+  elif [ "$cls" = "HEXLONGO" ]; then
+    printf 'HEXLONGO%s%s%s%s\n' "$TAB" "$ln" "$TAB" "${#run}" >> "$TMPD/pega.HEXLONGO"
+  else
+    printf 'SHA%s%s%s%s\n' "$TAB" "$ln" "$TAB" "$run" >> "$TMPD/pega.SHA"
+  fi
+done < "$TMPD/shap"
 corre "sort (corridas hex longas)" "$TMPD/hexlongo" sort -u "$TMPD/pega.HEXLONGO"
 while IFS="$TAB" read -r _t ln len; do
   [ -n "${ln:-}" ] || continue
   falha "corrida hexadecimal de $len caracteres (SHAs colados?) — l.$ln"
 done < "$TMPD/hexlongo"
 
-pega SHA
 corre "awk (SHAs citados)" "$TMPD/shas.raw" awk -F"$TAB" '{ print $3 }' "$TMPD/pega.SHA"
 corre "sort (SHAs citados)" "$TMPD/shas" sort -u "$TMPD/shas.raw"
 NSHAS=0; while IFS= read -r _s; do NSHAS=$((NSHAS+1)); done < "$TMPD/shas"
