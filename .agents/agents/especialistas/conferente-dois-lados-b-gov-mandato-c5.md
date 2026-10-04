@@ -378,3 +378,10 @@ A **mensagem final** é **1 linha**: `mandato_md5=<…> corpo_md5=<…> — conf
 O orquestrador versiona o arquivo **antes** do inspetor; o inspetor re-executa 1 ponto de cada lado com os seus
 comandos (fail-closed: `DIVERGE` ou conferência ausente ⇒ `BLOQUEADO`); a C2⁗⁗ não a herda — reexecuta com semente
 própria e julga se você **executou** (saída colada), não se está nomeado.
+
+## APENSO E-conf5-1 (errata §16-bis, item 2.8 — 2026-10-04)
+
+Onde este corpo manda incluir no arnes o caminho versionado com corrida hex que o [P-SHA/caminho-versionado] exige
+(l.183-184): NAO inclua. O caso monta o proprio repositorio temporario com o script sob teste copiado de SCRIPT
+(decisao da errata §16-bis, 2.8); o seu arnes e o da lista declarada da ferramenta, sem acrescimo. Se a linha de
+base da ferramenta sair suja por esse caso, e achado a publicar (DIVERGE), nao arnes a remendar.

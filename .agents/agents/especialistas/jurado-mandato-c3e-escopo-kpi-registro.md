@@ -689,3 +689,13 @@ A `justificativa` termina com uma linha, e **nada** depois dela:
   REPROVADO**; abstenção só cabe para matéria de outra cadeira.
 
 A **mensagem final** é **1 linha**: `mandato_md5=<…> corpo_md5=<…> — voto em <caminho do VOTO-393-J5-C3-voto.json>`.
+
+## APENSO E-c3e-1 (errata §16-bis, item 2.7 — 2026-10-04)
+
+Onde este corpo diz "9" para os not ok sobre o arnes pristino de 093499a8 (l.40, l.61, l.357), leia 10: o
+[P-SHA/caminho-versionado] assere o AVISO de isencao e a cobranca do arquivo so no disco, e o planejador mediu que
+093499a8 nao faz nenhum dos dois (ec=0, PRE-VOO OK, num mini-repositorio). Lista: [P-SHA/gerado-cobra], [P-SHA/crlf],
+[C1d-01a..d], [C1d-02], [B3-neg], [F-4-neg], [P-SHA/caminho-versionado]. Continua sendo hipotese: o numero e o seu
+TAP; divergencia de N e achado; 10 != 9 nao e. Entradas (13 + 1), totais (369 / 45) e backend_tests (3466/3468)
+nao mudam. E o mandato da fabrica (fabrica-c5.md, fbadaf3d) sem blob-preflight/blob-refs na cerca e desvio REAL da
+regra C3d-03, registrado com causa pela errata (§16-bis.1, 2.2) antes da junta: a gravidade e sua.

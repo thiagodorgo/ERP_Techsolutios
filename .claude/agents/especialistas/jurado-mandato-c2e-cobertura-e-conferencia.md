@@ -515,3 +515,21 @@ A `justificativa` termina com uma linha, e **nada** depois dela:
   REPROVADO**; abstenção só cabe para matéria de outra cadeira.
 
 A **mensagem final** é **1 linha**: `mandato_md5=<…> corpo_md5=<…> — voto em <caminho do VOTO-393-J5-C2-voto.json>`.
+
+## APENSO E-c2e-1 (errata §16-bis, item 2.6 — 2026-10-04)
+
+O seu item 1 NAO e so "M-a..M-g e o da C1d-02": sao TODOS os ⇄ escritos nas §16.2 e §16.3 do plano — M-a, M-b,
+M-c, M-d, M-e, M-f, M-g, M-h, M-i, o do [P-SHA/isento] (chamar o enumerador antes do isento(FNR)), o da C1d-02
+(tirar a remocao de citacao) e o do C2d-01 (if (!(f in temO)) -> if (1) no refs) —, cada um reexecutado sobre o S5a,
+linha re-localizada por conteudo, diff de 1 linha, comportamento antes da cor, critério vermelho pela PROPRIA
+assercao. M-h, M-i e o do [P-SHA/isento] deixam de ser "candidatos" aos [M-EXT]: os seus >= 10 [M-EXT] sao ALEM
+destes. ⇄ escrito no plano e nao reexecutado = item 1 incompleto.
+
+## APENSO E-c2e-2 (errata §16-bis, item 2.8 — 2026-10-04)
+
+A lista de dependencias do arnes da ferramenta (373e5728, l.189-191) NAO tem caminho versionado com corrida hex
+(medido pelo planejador: 0 de 341). Por decisao da errata, o [P-SHA/caminho-versionado] NAO depende da raiz do
+arnes: ele monta o PROPRIO repositorio temporario com o script SOB TESTE copiado de SCRIPT. Logo: (i) NAO acrescente
+caminho nenhum ao arnes; (ii) confira, lendo o caso, que ele copia SCRIPT (e nao um caminho fixo do repositorio) —
+copia fixa = a mutacao do arnes da ferramenta nao e exercida = A11, achado; (iii) o caso e da lista historica (vermelho
+em 093499a8; a lista e 10, nao 9), e M-h/M-i sao os vermelhos-controle dele por mutacao sobre o S5a.

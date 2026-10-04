@@ -2436,3 +2436,109 @@ g3 '\grep' · g4 'command grep' · g5 'ls | xargs grep' · g6 'env grep'   ec=1 
 - **Os comandos de derrubada do meu mandato, executados no plano final** (valores no fechamento abaixo): `grep -ic 'planejador-ciclo5'` ≥ 1 · `grep -ic 'C1d-01'` ≥ 1 · `grep -ic 'SO O DONO'` ≥ 1 — **nota:** o comando é ASCII e não casa `SÓ`; a 1ª versão do título (`SÓ O DONO`) dava **0** (medido às 11:53Z), por isso o título de §16.5 traz a grafia ASCII — é a classe A5 (a ferramenta responde quase a pergunta), registrada para o próximo mandato · `git status --porcelain | grep -iv '<plano>' | grep -iv '^ M .agents' | grep -ic .` = 0 · `git worktree list | grep -ic 'w-pl5'` = 0.
 - **Não fiz** (§C7.4-bis e o mandato): não escrevi caso, script, corpo nem mandato; não versionei; não commitei. O protótipo de §16.2 é medição em scratchpad, não entrega.
 - **Fechamento medido — 11:58:55Z:** `planejador-ciclo5` = 3 · `C1d-01` = 12 · `SO O DONO` = 3 · `porcelain` sem o plano = 0 · worktree `w-pl5` = 0; plano 2231 → 2437 linhas (antes desta linha), CR = linhas, 0 linhas removidas, `git diff --check` limpo, as 2231 primeiras linhas = blob do HEAD, nenhum `EM APURAÇÃO` restante depois da l.2231; ramo local `6369a1bc` = `origin/chore/mandato-refs-e-preflight` `6369a1bc` (não andou). Evidência incremental no próprio plano, preenchida parte a parte com hora (P1).
+
+## §16-bis — ERRATA 1 do ciclo 5 (2026-10-04): as 13 divergências do relatório da fábrica, decididas item a item
+
+planejador-mestre | planejador-ciclo5-b-gov-mandato (a MESMA da §16, relançada) | Opus 5.5 (Claude Code), substituição DECLARADA — decisão do dono de 2026-10-04 (Claude em Opus nas janelas sem Codex, uma tarefa por vez; Fable e GPT-6 Astra suspensos até o reset semanal) | mandato_md5 737a2a4d4549688517f245854cb388be (`00-mandatos/planejador-c5-errata1.md` @ `a3d92139`; disco = blob, EOL-neutro) | corpo planejador-mestre .claude 4c912f69a93f07b14d8fd1c49539c778 · espelho Codex 9ef61338b04967fbc8de696edd7319c9 (os da §16.0)
+
+> Esqueleto gravado em 12:51:27Z antes de medir (P1). O relatório da fábrica é relato a re-verificar, nunca fato.
+
+### §16-bis.0 — Terreno e insumos
+
+- **Objeto** (12:51:07Z) — medido por: `git -C C:/Users/AMP/w-mandato rev-parse HEAD` e `git ls-remote origin refs/heads/chore/mandato-refs-e-preflight`: **`a3d92139`** nas duas fontes. A §16 está versionada em `e9086c2d`: o plano tem 2438 linhas e 487985 bytes, termina em CRLF, e esta errata entra depois do último byte. O `porcelain` de `w-mandato` mostra só ` M .agents/agents/*`, os fantasmas de stat-cache sob `autocrlf`, que não são meus e não foram tocados.
+- **Mandato** — medido por: `tr -d '\r' < <m> | md5sum` no disco e `git cat-file -p <blob de a3d92139:m> | tr -d '\r' | md5sum`: **`737a2a4d…` nos dois** = o declarado. A cerca tem `PRE-VOO OK`, `head=724a7a26`, `blob-preflight=093499a8`, `blob-refs=e1ed8f0d` e `12:50:20Z`. O C3d-03 da §16.3 está cumprido neste mandato.
+- **Artefatos inalterados desde a §16** — medido por: `git rev-parse a3d92139:<f>`: pré-voo `093499a8`, refs `e1ed8f0d`, ferramenta `373e5728`, guard do pré-voo `47cfaeba`, guard do refs `a8bd601b`. Os quatro corpos estão versionados em `37166b32`, com md5 EOL-neutro no disco medido por `tr -d '\r' < <corpo> | md5sum`: c1e `52158dc5…` · c2e `bf6cd74a…` · c3e `47fffb02…` · conferente c5 `6e510d29…`.
+- **Terreno:** não criei worktree. As duas medições de comportamento rodaram no arnês pristino que já existia em `scratchpad/pl5/arn` (`hash-object --no-filters` do pré-voo = `093499a8`) e num mini-repositório em `scratchpad/pl5/mini`. Nada abriu banco. Não toquei em `w-s11k2c` nem em `w-s05d`.
+- **Insumo:** a seção 2 de `votos/B-GOV-MANDATO-ciclo5/00-fabrica-relatorio.md` (`724a7a26`), que a fábrica mediu por LEITURA, sem Bash. Das passagens dos corpos que as divergências citam, li só as linhas que importam para elas: c2e l.264-276 e l.318-330, conferente l.180-186, c3e l.38-42, e o `grep` de c1e.
+
+### §16-bis.1 — As 13 divergências: decisão item a item
+
+**2.1 — o mandato da fábrica repete o dado falso do sufixo `d`.** Fica **como registro**. O erro é do gerador do orquestrador e já foi corrigido: o mandato desta errata diz *"os três com sufixo e (c1e, c2e, c3e) são as cadeiras do ciclo 5"* (l.66). A fábrica não herdou o erro: a `## HIPOTESE` dela e os quatro corpos nomeiam o sufixo `e`, e a inelegibilidade continua sendo conferida **por nome**, contra a ata (§16.4; §16.6 R6). Nada muda na §16.
+
+**2.2 — o mandato da fábrica (`fabrica-c5.md`) não tem `blob-preflight=`/`blob-refs=` na cerca.** Medido por: `git log --format='%h %cI' -- <m>` dá `fbadaf3d 2026-10-04T09:11:19-03:00`, com `git merge-base --is-ancestor e9086c2d fbadaf3d` ok, e `e9086c2d` (09:00:14-03:00) é o commit que versionou a §16.3; `grep -c 'blob-' <m>` = 0; cerca `head=e9086c2d`; `git diff --quiet e9086c2d a3d92139 -- scripts/` ok. **É desvio real da regra C3d-03.** Não há remédio retroativo e o mandato não é relançado, porque o produto dele (os corpos) é julgado no mérito pelo inspetor e pela junta. O instrumento continua derivável: `HC = H0 = e9086c2d` está no ramo, e a ferramenta e o pré-voo não mudaram de `e9086c2d` a `a3d92139` (blobs acima). A correção prospectiva está medida: o gerador já emite as duas linhas (cerca deste mandato). A gravidade fica com a C3⁗⁗, com esta evidência; o corpo dela já manda tratar o caso como achado, e não há emenda.
+
+**2.3 — a linha C1⁗⁗ da §16.4 nomeia a forma `head:<SHA>`, que a cadeira deveria reportar "sem ser mandada".** **A divergência procede e a escolha da fábrica fica.** Escrever a forma no corpo esvaziaria o teste. O corpo nomeia a **classe**, ou seja, o achado C1d-01, e impõe uma ordem: a lista de escapes em `093499a8` vai gravada com hora UTC **antes** de a cadeira ler a §16.1, o C1-evidencia da junta 4 e o R-4. **Errata à §16.4:** a célula C1⁗⁗ lê-se *"vermelho-controle sobre `093499a8`, que tem de reportar a forma do achado da junta 4 sem ser mandado (o corpo não a nomeia)"*. Vazamento declarado: a §16.2, que a cadeira precisa ler, cita as vizinhas de `:` na M-a. A ordem de leitura, conferida pela hora da evidência (P1), é o que separa achar de ler; a ata confronta. Não há emenda de corpo.
+
+**2.4 — "CR solitário" aparece como meio do item 1 da C1⁗⁗ e é também a fronteira declarada 29 (C1c-07).** **Procede.** Cobrar fronteira declarada é reprovar por construção. **Errata à §16.4:** na célula C1⁗⁗, "CR solitário" lê-se *"CR solitário **só** onde o escape for mais largo do que a fronteira 29 declara"*. O corpo c1e já diz isso nas l.288 e l.346. Não há emenda.
+
+**2.5 — as premissas (b)–(g) do lema do refs estão em "O objeto" da C3⁗⁗, fora dos 3 itens.** **Fica como está.** Não é uma 4ª matéria (P4): é a prova do número da matriz do refs, que pertence ao item (2), número/KPI, da C3⁗⁗. Sem as premissas, o refs não tem número. A ata lê as premissas como parte do item (2). Não há emenda.
+
+**2.6 — M-h, M-i e o ⇄ do `[P-SHA/isento]` não têm cadeira que os reexecute.** **Procede, e é lacuna minha:** a célula C2⁗⁗ da §16.4 diz *"M-a..M-g e o da C1d-02"*. Na c2e (l.325-328) esses ⇄ só aparecem como **candidatos** aos `[M-EXT]`, o que deixa a cadeira escolher não executá-los. **Errata à §16.4:** o item (1) da C2⁗⁗ lê-se *"**todos** os ⇄ escritos na §16.2 e na §16.3 — M-a..M-i, o do `[P-SHA/isento]`, o da C1d-02 e o do C2d-01 — reexecutados sobre o `S5a`, cada critério vermelho com a sua mutação"*. Os ≥ 10 `[M-EXT]` passam a ser **além** desses. **Emenda de corpo:** E-c2e-1, na §16-bis.2.
+
+**2.7 — a lista histórica é 9 ou 10?** **MEDIDO: é 10.** O `[P-SHA/caminho-versionado]` assere duas coisas: o caminho versionado sai com 0 REJ e com o AVISO de isenção, e o arquivo só no disco é cobrado (M-i). Medi o artefato anterior num mini-repositório (12:53:09Z): o `093499a8` copiado para `scratchpad/pl5/mini/scripts/`, `git init`, `docs/x-deadbeef1.md` versionado, `docs/y-deadbee2c.md` só no disco (`porcelain` = `?? docs/y-deadbee2c.md`), fixture citando os dois, `MANDATO_REFS=/bin/false timeout -k 5 60 bash scripts/mandato-preflight.sh <fx>` sem PR:
+```
+ec=0 · stderr 0 B · PRE-VOO OK · nenhuma REJ · nenhum AVISO de isencao (so 'sem colagem da ferramenta')
+```
+O artefato anterior não cobra a corrida do arquivo solto, e esse é o defeito que a M-i nomeia; também não publica isenção nenhuma. O caso fica **vermelho em `093499a8`** e verde no `S5a`, e pela regra da §15.16(b) entra na lista histórica. **Errata aos números da §16.2 e da §16.4:** a lista histórica sobre `093499a8` passa de 9 a **10**: [P-SHA/gerado-cobra], [P-SHA/crlf], [C1d-01a..d], [C1d-02], [B3-neg], [F-4-neg] e [P-SHA/caminho-versionado]. Onde a §16.4 diz *"[P-SHA/caminho-versionado] verde no head, com M-h e M-i"*, lê-se *"vermelho no head (histórico), e com M-h e M-i como vermelhos-controle por mutação sobre o `S5a`"*: um caso pode ter os dois controles (§15.16(b)). Entradas, totais e `backend_tests` **não mudam** (13 e 1; 369 e 45; 3466/3468). **Emenda de corpo:** E-c3e-1 (os "9" do c3e).
+
+**2.8 — a lista de dependências do arnês da ferramenta não alcança um caminho versionado com corrida hex.** **MEDIDO: procede.** A lista declarada no `373e5728` (l.189-191) é `scripts tests src/config mobile/flutter_app/lib/core/sync/sync_action_store.dart docs/revisoes/SAN3 CLAUDE.md package.json`. Medido por `git ls-files -- <lista> | awk '<corrida hex >= 7>'`: **0 de 341** caminhos têm corrida hex de 7 ou mais. Logo, na linha de base da E4, o `[P-SHA/caminho-versionado]` ficaria vermelho, com linha de base suja e `ec=2`, e a ferramenta não pode mudar no ciclo 5. **DECISÃO:** o caso **não depende da raiz do arnês**. Ele monta o seu próprio repositório temporário, copia para dentro dele o script **sob teste** (`SCRIPT`, o da cópia em que roda; assim a mutação do arnês da ferramenta é exercida), versiona um arquivo com corrida hex, cria outro só no disco e roda o pré-voo daquela cópia. A medição de 2.7 mostra que dá certo: o `093499a8` copiado roda isolado com stderr 0 B, e a checagem 6 e a isenção leem o `git` do mini-repositório. **Errata à §16.2:** cai a frase *"o Dev-T5 acrescenta um caminho de migration à lista do `git archive`, declarado"*. A precondição ◐ do caso passa a ser *"`git -C <mini> ls-files --error-unmatch <x>` = 0 e `git -C <mini> status --porcelain` lista `?? <y>`, asseridos no próprio caso"*. **Emendas de corpo:** E-c2e-2 e E-conf5-1, para que nem a cadeira nem o conferente acrescentem caminho ao arnês.
+
+**2.9 — modelos no frontmatter: cadeiras `opus`, conferente `fable`.** **Fica como está.** As cadeiras seguem o precedente do ciclo 4. O conferente segue a §15.5 ("Fable por padrão"). Com o Fable suspenso, quem invoca cai para Opus e declara (§C7.6-bis); o frontmatter continua dizendo `fable`.
+
+**2.10 — saídas e caminhos derivados por analogia.** **Fica como os corpos escreveram.** Os quatro gravam em arquivo antes da mensagem final, o que cumpre o P2 melhor que os corpos do ciclo 4: evidência e voto em `scratchpad/VOTO-393-J5-C{1,2,3}.md` e `…-voto.json`; conferência em `scratchpad/CONFERENCIA-393-C5.md` e `…-entrega.md`; worktrees `C:/Users/AMP/w-j5c{1,2,3}` e `w-conf5`. Os mandatos dos passos 0 e 8 **nomeiam esses mesmos caminhos**. A cláusula "vale o do mandato" dos corpos continua valendo para exceções, sempre declaradas.
+
+**2.11 — a reconferência não tem mandato em nenhum passo.** **Procede. Errata à §16.4, passo 7:** *"só se a conferência der `DIVERGE`: mandato novo `00-mandatos/conferente-reconferencia-c5.md` (forma A, `HC = H0`, cerca com `blob-preflight=`/`blob-refs=`), gerado pelo orquestrador sobre o head do conserto, antes de a mesma identidade do conferente nascer de novo"*. É o precedente da §15.17(g). Não há emenda: o corpo do conferente já exige mandato novo.
+
+**2.12 — os números da §16.4 e da §16.2 divergem.** Já estava resolvido pela §16.2 (*"§16.4 lê-se com estes números"*). Com 2.7, os números operantes são: entradas novas **13** no pré-voo e **1** no refs; totais **369 / 45**; `backend_tests` **3466/3468**; lista histórica **10**. Todos são hipótese até o TAP.
+
+**2.13 — escopo da saída do conferente.** **Fica como o corpo escreveu:** o conferente grava no scratchpad e o orquestrador versiona `00-conferencia-dois-lados.md` **verbatim**, como na §15.5 ("versionado pelo orquestrador"). A §16.4, passo 6, *"só o arquivo da conferência (o orquestrador versiona)"*, quer dizer isso.
+
+### §16-bis.2 — Apensos prontos para os corpos e o que muda na §16
+
+**O que muda na §16 (só leitura; o texto acima fica intocado):** §16.4, célula C1⁗⁗ (2.3, 2.4); §16.4, célula C2⁗⁗, item (1) (2.6); §16.4, passos 2 e 7 (2.7, 2.11); §16.2, precondição do `[P-SHA/caminho-versionado]` e número da lista histórica (2.7, 2.8).
+
+**Apensos — quem escreve é a `agente-fabrica` ou o orquestrador, VERBATIM, ao fim de cada corpo, nos dois espelhos (`git add -f`, `node scripts/sync-agent-agents.mjs --check`), ANTES do inspetor. Cada cadeira declara o md5 do corpo COM o apenso. Eu não edito corpo.**
+
+**E-c2e-1** — ao fim de `jurado-mandato-c2e-cobertura-e-conferencia.md`:
+```
+## APENSO E-c2e-1 (errata §16-bis, item 2.6 — 2026-10-04)
+
+O seu item 1 NAO e so "M-a..M-g e o da C1d-02": sao TODOS os ⇄ escritos nas §16.2 e §16.3 do plano — M-a, M-b,
+M-c, M-d, M-e, M-f, M-g, M-h, M-i, o do [P-SHA/isento] (chamar o enumerador antes do isento(FNR)), o da C1d-02
+(tirar a remocao de citacao) e o do C2d-01 (if (!(f in temO)) -> if (1) no refs) —, cada um reexecutado sobre o S5a,
+linha re-localizada por conteudo, diff de 1 linha, comportamento antes da cor, critério vermelho pela PROPRIA
+assercao. M-h, M-i e o do [P-SHA/isento] deixam de ser "candidatos" aos [M-EXT]: os seus >= 10 [M-EXT] sao ALEM
+destes. ⇄ escrito no plano e nao reexecutado = item 1 incompleto.
+```
+
+**E-c2e-2** — ao fim do mesmo corpo:
+```
+## APENSO E-c2e-2 (errata §16-bis, item 2.8 — 2026-10-04)
+
+A lista de dependencias do arnes da ferramenta (373e5728, l.189-191) NAO tem caminho versionado com corrida hex
+(medido pelo planejador: 0 de 341). Por decisao da errata, o [P-SHA/caminho-versionado] NAO depende da raiz do
+arnes: ele monta o PROPRIO repositorio temporario com o script SOB TESTE copiado de SCRIPT. Logo: (i) NAO acrescente
+caminho nenhum ao arnes; (ii) confira, lendo o caso, que ele copia SCRIPT (e nao um caminho fixo do repositorio) —
+copia fixa = a mutacao do arnes da ferramenta nao e exercida = A11, achado; (iii) o caso e da lista historica (vermelho
+em 093499a8; a lista e 10, nao 9), e M-h/M-i sao os vermelhos-controle dele por mutacao sobre o S5a.
+```
+
+**E-c3e-1** — ao fim de `jurado-mandato-c3e-escopo-kpi-registro.md`:
+```
+## APENSO E-c3e-1 (errata §16-bis, item 2.7 — 2026-10-04)
+
+Onde este corpo diz "9" para os not ok sobre o arnes pristino de 093499a8 (l.40, l.61, l.357), leia 10: o
+[P-SHA/caminho-versionado] assere o AVISO de isencao e a cobranca do arquivo so no disco, e o planejador mediu que
+093499a8 nao faz nenhum dos dois (ec=0, PRE-VOO OK, num mini-repositorio). Lista: [P-SHA/gerado-cobra], [P-SHA/crlf],
+[C1d-01a..d], [C1d-02], [B3-neg], [F-4-neg], [P-SHA/caminho-versionado]. Continua sendo hipotese: o numero e o seu
+TAP; divergencia de N e achado; 10 != 9 nao e. Entradas (13 + 1), totais (369 / 45) e backend_tests (3466/3468)
+nao mudam. E o mandato da fabrica (fabrica-c5.md, fbadaf3d) sem blob-preflight/blob-refs na cerca e desvio REAL da
+regra C3d-03, registrado com causa pela errata (§16-bis.1, 2.2) antes da junta: a gravidade e sua.
+```
+
+**E-conf5-1** — ao fim de `conferente-dois-lados-b-gov-mandato-c5.md`:
+```
+## APENSO E-conf5-1 (errata §16-bis, item 2.8 — 2026-10-04)
+
+Onde este corpo manda incluir no arnes o caminho versionado com corrida hex que o [P-SHA/caminho-versionado] exige
+(l.183-184): NAO inclua. O caso monta o proprio repositorio temporario com o script sob teste copiado de SCRIPT
+(decisao da errata §16-bis, 2.8); o seu arnes e o da lista declarada da ferramenta, sem acrescimo. Se a linha de
+base da ferramenta sair suja por esse caso, e achado a publicar (DIVERGE), nao arnes a remendar.
+```
+
+**c1e: sem apenso** (2.3 e 2.4 ficam como a fábrica escreveu). **Ordem:** os apensos entram antes do passo 9, o inspetor. O Dev-T5 escreve o `[P-SHA/caminho-versionado]` já na forma de 2.8. Se ele já tiver começado na forma antiga, relata e não decide (R2 da §15.10).
+
+### §16-bis.3 — Fechamento (limpeza §C5 e comandos de derrubada)
+
+- **Limpeza §C5 (1 linha):** não criei worktree, logo `w-pl5b` nunca existiu (`git worktree list | grep -ic 'w-pl5b'` = 0). Removi pelo nome o mini-repositório `scratchpad/pl5/mini`. Ficam o arnês `scratchpad/pl5/arn` e a fixture `scratchpad/pl5/fx/cv.md`, que permitem reexecutar a medição. Não deixei processo de longa duração nem contêiner; a base viva nunca foi alvo; `MSYS_NO_PATHCONV` nunca foi exportada; não usei `tail -f`; não rodei `git config`, `clean`, `stash`, `reset` nem `push`; não toquei em corpo, mandato, caso ou script; não versionei.
+- **Fechamento medido — 12:55:08Z:** `16-bis` = 12 (≥ 1) · `fabrica` = 40 (≥ 1) · worktree `w-pl5b` = 0. O plano passou de 2438 para 2543 linhas antes desta seção, com CR igual ao número de linhas, 0 linhas removidas e `git diff --check` limpo. As 2438 primeiras linhas são iguais ao blob do HEAD. Fora o plano, o `porcelain` mostra só os fantasmas ` M .agents`. O ramo local e o `origin` estão em `a3d92139` e não andaram.
