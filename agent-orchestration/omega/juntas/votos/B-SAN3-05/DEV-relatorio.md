@@ -720,5 +720,33 @@ resíduos s305_%                            → papéis 0 · bancos 0 · classes
 Uma execução completa anterior teve T15 sem stdout até 30 s. Pela regra de carga, T15 foi repetido sozinho e passou em
 7,1 s; depois a suíte completa passou com T15 em 6,7 s. A falha temporal não foi promovida a defeito.
 
+### MEDIDO — bateria dirigida e suíte integral — 2026-10-04T13:51:59Z
+
+A bateria do §8 foi retomada no ponto em que a sessão anterior caiu. O lote não-DB já medido antes da queda tinha
+**134/134**, sem falha nem pulo. Nesta continuação:
+
+- `npm run check`: verde; `npm run lint`: verde; `psql` do wrapper próprio = PostgreSQL **16.14**.
+- bootstrap + ratchet T13: **42/42**, 0 falhas, 0 pulos. A primeira chamada terminou depois da janela da ferramenta e sua
+  sessão não foi preservada pelo invólucro; a execução foi repetida integralmente e é esta segunda medição que conta.
+- lote DB novo (T5–T12, T14 e T15): **19/19**, 0 falhas, 0 pulos, 29,8 s.
+- regressões DB nomeadas no plano: **88/88**, 0 falhas, 0 pulos, 40,6 s.
+- gerador: L0 `ENABLE=106 FORCE=106`, 779 arquivos; L1 = 725 call-sites; L2 = 453 instanciações; inventário =
+  **53** chaves, `sha1=79e1d86e89ad11230b0c8967d2368a939a0c6d6b`.
+- script versionado: modo `100755`, `i/lf w/lf attr/text eol=lf`; `bash -n` já verde na rodada A22.
+- `npm run build`: verde. Resíduos finais `s305_%`: 0 papéis, 0 bancos, 0 classes.
+
+Carga declarada antes dos lotes pesados, conforme a ordem nova do dono: DB novo CPU **1%** / 1 processo de outra frente;
+regressões CPU **0%** / 1; suíte integral CPU **9%** / 1. A suíte integral terminou em 461,2 s com **3.124** testes,
+**3.120** passes, **2** falhas e **2** pulos. As duas falhas TAP eram o mesmo evento contado em dois níveis: T8d e o pai
+B-SAN3-05. Sob a concorrência integral, `pg_basebackup` ultrapassou 60 s e `spawnSync` devolveu `status=null`; nenhuma
+asserção funcional distinta falhou. Pela regra expressa de re-medição serial, carga CPU **8%** / 1, a suíte inteira do
+arquivo foi executada sozinha e passou **8/8**, 0 falhas, 0 pulos, com T8d em 10,4 s e total 27,9 s. A conclusão é verde
+com timeout de carga declarado, não ocultado; o KPI conserva a contagem real da rodada integral e a nota da re-medição.
+
+Guardas adicionais: a variável de bypass não aparece em `fly.production.toml`, `fly.staging.toml` nem `.env.example`;
+`new PrismaCloudChargeRepository(prisma)` não aparece no `src`. O comando literal mais amplo do plano,
+`PrismaCloudChargeRepository(prisma)`, encontra legitimamente `new RlsPrismaCloudChargeRepository(prisma)` porque o nome
+contém a substring; esta premissa textual do plano foi falsificada e o cheque exato ficou vazio.
+
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
