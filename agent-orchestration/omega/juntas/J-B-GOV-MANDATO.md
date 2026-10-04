@@ -328,29 +328,37 @@ Evidência das cadeiras e do inspetor em `agent-orchestration/omega/juntas/votos
 > Esqueleto escrito pelo orquestrador antes da junta (2026-10-02). Cada linha `EM APURAÇÃO` é preenchida com o
 > que as cadeiras e o inspetor gravaram, nunca com o que o orquestrador espera.
 
-- **Objeto julgado:** EM APURAÇÃO — o head que as três cadeiras resolverem, cada uma por `git` e por `gh`.
+- **Objeto julgado:** `371b09b26cf51ee28996074c81e2f91dca585cc3`, resolvido pelas três cadeiras por `git` e `gh`; nenhuma
+  viu o head andar durante o voto. CI 14/14 verde. Delta desde `d042a78d` (objeto do inspetor): só registro.
 - **Base:** `origin/main` em `b404815c`, integrada por merge em `325030c8` e `4535ebb3`.
-- **Legalidade do ciclo 4:** EM APURAÇÃO — §9 do parecer `R-B-GOV-MANDATO-ciclo3-auditoria.md` (atestação).
-- **Inspetor de terreno:** EM APURAÇÃO — `votos/B-GOV-MANDATO-ciclo4/00-inspetor-terreno.md`.
+- **Legalidade do ciclo 4:** §9 do parecer `R-B-GOV-MANDATO-ciclo3-auditoria.md` termina em `CONSERTO VERIFICADO`,
+  conferido pelas três cadeiras antes do mérito.
+- **Inspetor de terreno:** **LIBERADO COM RESSALVA** (R-01 a R-07) — `votos/B-GOV-MANDATO-ciclo4/00-inspetor-terreno.md`,
+  instância sucessora em Opus 5.5 (a 1ª, em Fable, caiu por limite de sessão; parcial em `00-inspetor-terreno-instancia-caida.md`).
 - **Quórum:** maioria de 3, sem veto, sem suplente (§15.9).
 
-## VEREDITO: EM APURAÇÃO
+## VEREDITO: REPROVADO 2 × 1 (C1⁗ e C2⁗ contra, C3⁗ a favor)
 
 | cadeira | identidade | md5 do corpo | modelo | voto | achados |
 |---|---|---|---|---|---|
-| C1⁗ — invariância e morte interna | `jurado-mandato-c1d-invariancia-e-morte-interna` | `fa887726…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| C2⁗ — cobertura e dois lados | `jurado-mandato-c2d-cobertura-e-dois-lados` | `0bb59aa2…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
-| C3⁗ — escopo, KPI, registro e mandato | `jurado-mandato-c3d-escopo-kpi-registro-mandato` | `34aac689…` | EM APURAÇÃO | EM APURAÇÃO | EM APURAÇÃO |
+| C1⁗ — invariância e morte interna | `jurado-mandato-c1d-invariancia-e-morte-interna` | `7b13b3f1…` (pós-1-quater) | Opus 5.5 | **REPROVADO** | **C1d-01 `bloqueia`** (um SHA fabricado escrito colado depois de `:` — `head:<SHA>` — sai PRE-VOO OK, e a gêmea com espaço é rejeitada; a propriedade do §15.2 a cobre); C1d-02 `ajuste` (nome de comando entre aspas não reconhecido); C1d-03 a C1d-06 `nota` |
+| C2⁗ — cobertura e dois lados | `jurado-mandato-c2d-cobertura-e-dois-lados` | `e59abf6b…` (`.claude`); `9d46cfa9…` (espelho Codex, na sucessora) | Opus 5.5 até a PAUSA do dono (18:25Z); depois Codex GPT-5.6 Sol, mesma identidade (P7) | **REPROVADO** | **C2d-02 `bloqueia`** (o guard do pré-voo não exige a rejeição de SHA abreviado de 7 a 39 hex em prosa fora da proveniência: a mutação que restringe a emissão a 40 hex troca REJEITADO por PRE-VOO OK com o guard verde); C2d-01 `ajuste` (o guard do `refs` não enuncia a direção inversa do `[C3]`) |
+| C3⁗ — escopo, KPI, registro e mandato | `jurado-mandato-c3d-escopo-kpi-registro-mandato` | `34aac689…` | Opus 5.5 | **APROVADO** | 0 `bloqueia`; C3d-02, C3d-03, C3d-04 e C3d-06 `ajuste` (registro e mandatos do orquestrador e dos devs no ciclo 4); C3d-01, C3d-05 e C3d-07 `nota` |
 
 ## Mandatos como artefato
 
 Um por papel em `votos/B-GOV-MANDATO-ciclo4/00-mandatos/`, versionado antes do lançamento, com a cerca do veredito
-do pré-voo. O `mandato_md5` declarado por cada papel na 1ª linha do seu artefato: EM APURAÇÃO (conferido pela C3⁗,
+do pré-voo. O `mandato_md5` declarado por cada papel na 1ª linha do seu artefato: C1⁗ `bebdd354…`, C2⁗ `31eea329…`, C3⁗ `f4190e9d…`, inspetor `69beed56…` (conferido pela C3⁗,
 item 4).
 
 ## Quedas e substituições de modelo (P6, §C7.6-bis)
 
-EM APURAÇÃO — `votos/B-GOV-MANDATO-ciclo4/00-quedas.md`, se houver queda.
+`votos/B-GOV-MANDATO-ciclo4/00-quedas.md`. Em resumo: o inspetor em Fable caiu por limite de sessão (~05:40Z) e o
+sucessor rodou em **Opus 5.5** (decisão do dono de 2026-10-03: Fable só em bloco de dinheiro; depois, Fable e Astra
+suspensos até o reset semanal). A C2⁗ foi **pausada pelo dono** (P7, 18:25Z) no meio do voto; os jobs locais dela foram
+parados pelo orquestrador (o PC ia ser reiniciado); a retomada foi no **Codex, GPT-5.6 Sol**, mesma identidade, com P3
+sobre a seção `## PAUSA` (o dono passou o trabalho pesado ao Codex); essa sessão caiu duas vezes por limite de uso da
+conta OpenAI (22:57Z e 04:00Z) e foi retomada com o contexto preservado. As cadeiras rodaram 2 por vez (P5).
 
 ## §C7.4-bis — quem ocupou cada papel no ciclo 4
 
@@ -361,5 +369,5 @@ EM APURAÇÃO — `votos/B-GOV-MANDATO-ciclo4/00-quedas.md`, se houver queda.
 | planejador | `planejador-ciclo4-b-gov-mandato` (Fable): §15 e as erratas §15.14, §15.15, §15.16 e §15.17 |
 | devs | `dev-tests-ciclo4-b-gov-mandato` (T4c, T4c-2, T4c-3, T4c-4, T4c-5) · `dev-scripts-ciclo4-b-gov-mandato` (S4a, S4b, D4, K4, K4b, K4b-2, K4b-3, K4b-4) |
 | conferente dos dois lados | `conferente-dois-lados-b-gov-mandato-c4` (Fable): conferência (DIVERGE 263) e reconferência (CONFERIDO) |
-| achadores (pareceres e votos) | o inspetor da junta 4; C1⁗, C2⁗, C3⁗ |
+| achadores (pareceres e votos) | o inspetor da junta 4 (sucessor, Opus); C1⁗ (Opus), C2⁗ (Opus → Codex Sol), C3⁗ (Opus) |
 | orquestrador | registro, integrações por merge, versionamento de corpos e mandatos, rodadas da E4; **não escreveu código** |
