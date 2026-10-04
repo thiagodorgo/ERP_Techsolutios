@@ -19,10 +19,11 @@ import { DossiePrintDocument } from "../src/modules/patios/processes/components/
 import { VehicleDossieView, type VehicleDossieViewProps } from "../src/modules/patios/processes/components/VehicleDossieModal";
 import type { ProcessDetail } from "../src/modules/patios/processes/processes.types";
 
-// B-SAN3-11 — testes T1–T22: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
+// B-SAN3-11 — testes T1–T24: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
 // Ciclo 2 (§16 do plano): T3′ e T15/T16 (ausência ou valor inválido de chave de versão fica do lado fechado), T11′
 // (ids só em id=/href= nas 3 superfícies), T17–T19 (links com afordância que não navegam; ids únicos na impressão),
 // T12 com a saída do gerador v2 e T20–T22 (o gerador vê o emissor e a vistoria pelo tipo).
+// Ciclo 3 (§17): T23 cobre acesso por índice e T24 torna L3/L4 vazios explicitamente vermelhos.
 
 const TEMPLATE_ID = "11111111-2222-4333-8444-111111111111";
 const RELATED_ID  = "99999999-8888-4777-8666-999999999999";
@@ -551,6 +552,74 @@ test("T22: gerador — emissor com Object.freeze (ilegível) → L0 VAZIO (emiss
     const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
     assert.match(stdout, /# L0 VAZIO \(emissor ilegível\): SIM/, "emissor ilegível é vermelho");
     assert.strictEqual(exitCode, 1, `L0 vazio deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── T23–T24: P-L3 fail-closed para ElementAccess e conjuntos vazios ───────────────
+
+test("T23: gerador — run[\"status\"] tipado fora de decisão de versão → ponto nominal NÃO, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
+    mutate(printPath, (source) => source.replace(
+      /(<ChecklistRunsPanel[^>]*\/>)/,
+      '$1\n{checklistRuns.map((run) => <span key={run.id}>{run["status"]}</span>)}',
+    ));
+    const mutated = readFileSync(printPath, "utf8");
+    assert.match(mutated, /run\["status"\]/, "a apresentação por índice foi inserida");
+
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(
+      stdout,
+      /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\["status"\] \| consulta substituição: NÃO/,
+      "o acesso por índice deve aparecer nominalmente como ponto sem consulta",
+    );
+    assert.strictEqual(exitCode, 1, `run["status"] sem decisão de versão deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("T24: gerador — conjuntos efetivos L3/L4 vazios → diagnósticos explícitos e exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+
+    const panelPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "ChecklistRunsPanel.tsx");
+    mutate(panelPath, (source) => source
+      .replace(
+        "formatDateTime, getChecklistRunStatusLabel, getChecklistRunStatusTone",
+        "formatDateTime, getChecklistRunStatusLabel as labelStatus, getChecklistRunStatusTone as toneStatus",
+      )
+      .replace("{runs.map((run) => {", "{runs.map((run) => {\n                  const { status: runStatus } = run;")
+      .replace(/getChecklistRunStatusLabel\(/g, "labelStatus(")
+      .replace(/getChecklistRunStatusTone\(/g, "toneStatus(")
+      .replace(/run\.status/g, "runStatus"));
+    assert.doesNotMatch(
+      readFileSync(panelPath, "utf8"),
+      /getChecklistRunStatus(?:Label|Tone)\(run\.status\)/,
+      "os pontos conhecidos de L3 saíram sem mudar o comportamento compilável",
+    );
+
+    const consumers = [
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx"),
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "VehicleDossieModal.tsx"),
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "pages", "ProcessoDossiePage.tsx"),
+    ];
+    for (const consumerPath of consumers) {
+      mutate(consumerPath, (source) => source
+        .replace(/import \{ ChecklistRunsPanel \} from ("[^"\n]+";)/, "import { ChecklistRunsPanel as RunsPanel } from $1")
+        .replace(/<ChecklistRunsPanel/g, "<RunsPanel"));
+      assert.doesNotMatch(readFileSync(consumerPath, "utf8"), /<ChecklistRunsPanel/, `${consumerPath}: consumidor conhecido saiu`);
+    }
+
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# L3 VAZIO: SIM/, "L3 vazio deve ter diagnóstico próprio");
+    assert.match(stdout, /# L4 VAZIO: SIM/, "L4 vazio deve ter diagnóstico próprio");
+    assert.strictEqual(exitCode, 1, `L3/L4 vazios deixam o gerador vermelho; stdout:\n${stdout}`);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// B-SAN3-11 — GERADOR v2 (ciclo 2) — censo CE-G1 por PROPRIEDADE, com o checker de tipos do TypeScript.
+// B-SAN3-11 — GERADOR v3 (ciclo 3) — censo CE-G1 por PROPRIEDADE, com o checker de tipos do TypeScript.
 // PROPRIEDADES (não lista de nomes):
 //   P-L0  as três cópias da verdade (DTO emite · espelho declara · adapter consome) são o MESMO conjunto, nos dois sentidos,
 //         e um emissor ilegível (L0 vazio) é vermelho — pega remoção de chave no emissor (M5/M5b/M5c) e L0 vazio (M6).
-//   P-L3  todo ponto de JSX que renderiza a SITUAÇÃO de uma vistoria (x.status ou helper de situação) — "vistoria" decidida
+//   P-L3  todo ponto de JSX que renderiza a SITUAÇÃO de uma vistoria (x.status, x["status"] ou helper de situação) — "vistoria" decidida
 //         pelo TIPO do receptor (ChecklistRunSummaryItem, ou a forma de resumo id/templateVersion/status/startedAt), nunca pelo
 //         nome da variável — está sob uma DECISÃO (?:, &&, ||, ??, if) cuja condição lê o estado de substituição
 //         (supersededByRunId/currentRunId/reopenedFromRunId), resolvendo const/função do mesmo arquivo. Receptor de tipo
-//         desconhecido/any = vistoria (negar); ponto sem decisão = NÃO.
+//         desconhecido/any = vistoria (negar); ponto sem decisão = NÃO; L3/L4 vazios também negam.
 // Camadas: L0 DTO · L1 espelho · L2 adapter · L3 pontos · L4 consumidores. Uso: node censo-v2.mjs <repo-root>
 // TS_ROOT = diretório do frontend com node_modules + tsconfig.json (default <root>/frontend). Cópias temporárias (T13/T14)
 // não têm node_modules: especificadores bare (react, react/jsx-runtime…) são resolvidos a partir do TS_ROOT.
@@ -108,6 +108,17 @@ function buildProgram(files) {
 function enclosingFunction(node) { let p = node.parent; while (p && !(ts.isArrowFunction(p) || ts.isFunctionExpression(p) || ts.isFunctionDeclaration(p) || ts.isMethodDeclaration(p))) p = p.parent; return p; }
 function inJsx(n) { for (let p = n.parent; p; p = p.parent) if (ts.isJsxElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxExpression(p) || ts.isJsxFragment(p)) return true; return false; }
 function unwrapCasts(e) { while (e && (ts.isAsExpression(e) || ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isTypeAssertionExpression(e) || (typeof ts.isSatisfiesExpression === "function" && ts.isSatisfiesExpression(e)))) e = e.expression; return e; } // o TIPO que vale é o da expressão por baixo do cast
+function statusReceiver(expr) {
+  const candidate = unwrapCasts(expr);
+  if (ts.isPropertyAccessExpression(candidate) && candidate.name.text === "status") return candidate.expression;
+  if (
+    ts.isElementAccessExpression(candidate)
+    && candidate.argumentExpression
+    && ts.isStringLiteralLike(unwrapCasts(candidate.argumentExpression))
+    && unwrapCasts(candidate.argumentExpression).text === "status"
+  ) return candidate.expression;
+  return null;
+}
 function typeIsVistoria(type) {
   if (!type) return "desconhecido";
   if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return "desconhecido";
@@ -155,10 +166,12 @@ function censo(files) {
     walk(sf, (n) => {
       if (rel.endsWith(".tsx")) {
         let receptor = null; let unknownReceptor = false; // expressão cujo TIPO decide se é vistoria
-        if (ts.isPropertyAccessExpression(n) && n.name.text === "status") receptor = n.expression;
+        const directReceiver = statusReceiver(n);
+        if (directReceiver) receptor = directReceiver;
         else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && STATUS_HELPERS.has(n.expression.text)) {
           const a = n.arguments[0];
-          if (a && ts.isPropertyAccessExpression(a) && a.name.text === "status") receptor = a.expression; else { receptor = a ?? n; unknownReceptor = true; }
+          const helperReceiver = a ? statusReceiver(a) : null;
+          if (helperReceiver) receptor = helperReceiver; else { receptor = a ?? n; unknownReceptor = true; }
         }
         if (receptor && inJsx(n)) {
           const ln = line(sf, n); const key = `${rel}:${ln}`;
@@ -199,10 +212,16 @@ console.log(`# L0 VAZIO (emissor ilegível): ${l0Vazio ? "SIM" : "não"}`);
 console.log(`# L3 arquivos varridos (${files.length}): ${files.join(" · ")}`);
 console.log(`# L3 pontos de apresentação da situação de uma vistoria (${sites.length}):`);
 for (const s of sites) console.log(`${s.file}:${s.line} | receptor=${s.receptor} | tipo vistoria: ${s.tipo} | ${s.expr} | consulta substituição: ${s.consulta}`);
+const l3Vazio = sites.length === 0;
+const desconhecidos = sites.filter((s) => s.tipo === "desconhecido");
+console.log(`# L3 CANDIDATOS DESCONHECIDOS (${desconhecidos.length}): ${desconhecidos.map((s) => s.key).join(" · ") || "∅"}`);
+console.log(`# L3 VAZIO: ${l3Vazio ? "SIM" : "não"}`);
 console.log(`# L4 consumidores do painel (${consumers.length}):`);
 for (const c of consumers) console.log(`${c.file}:${c.line} | runs=${c.runs}`);
+const l4Vazio = consumers.length === 0;
+console.log(`# L4 VAZIO: ${l4Vazio ? "SIM" : "não"}`);
 const naoConsulta = sites.filter((s) => s.consulta !== "sim");
-const desconhecidos = sites.filter((s) => s.tipo === "desconhecido");
-const total = dropMirror.length + dropAdapter.length + semEmissorMirror.length + semEmissorAdapter.length + (l0Vazio ? 1 : 0) + naoConsulta.length;
-console.log(`# VEREDITO: descartadas=${dropMirror.length + dropAdapter.length} · sem emissor=${semEmissorMirror.length + semEmissorAdapter.length} · L0 vazio=${l0Vazio ? 1 : 0} · pontos sem consulta=${naoConsulta.length} (receptor desconhecido=${desconhecidos.length}) · ${Date.now() - t0} ms`);
+const total = dropMirror.length + dropAdapter.length + semEmissorMirror.length + semEmissorAdapter.length
+  + (l0Vazio ? 1 : 0) + naoConsulta.length + desconhecidos.length + (l3Vazio ? 1 : 0) + (l4Vazio ? 1 : 0);
+console.log(`# VEREDITO: descartadas=${dropMirror.length + dropAdapter.length} · sem emissor=${semEmissorMirror.length + semEmissorAdapter.length} · L0 vazio=${l0Vazio ? 1 : 0} · pontos sem consulta=${naoConsulta.length} · candidato desconhecido=${desconhecidos.length} · L3 vazio=${l3Vazio ? 1 : 0} · L4 vazio=${l4Vazio ? 1 : 0} · ${Date.now() - t0} ms`);
 process.exitCode = total === 0 ? 0 : 1;
