@@ -830,3 +830,10 @@ a nota anterior do KPI sobre o timeout de `pg_basebackup`.
 `Kpis/kpis-latest.json`, a última entrada de `kpis-history.json` e a seção B-SAN3-05 de `kpis-history.md` agora registram
 a forma final: slot físico real + controle 42501 e suíte integral sem falha. `Kpis/app.js` foi regenerado somente por
 `node scripts/kpi-freeze.mjs`. O PR continua #405; blocos e métricas carregadas não mudam.
+
+### FECHAMENTO DA SÉTIMA RETOMADA — 2026-10-04T18:57:29Z
+
+Os commits da correção e do KPI foram empurrados fast-forward; PR #405 continua `OPEN` e `isDraft=true`. O corpo do PR
+foi atualizado com a prova por slot e a suíte final verde. O cluster `san3-05-s2-pg` foi derrubado e removido; wrappers,
+log integral e scratch `s05-*` foram removidos. Contagens posteriores: cluster 0, temporários 0, workers/testes do
+worktree 0. Depois do commit/push desta linha de fechamento, o worktree será removido pela árvore principal.
