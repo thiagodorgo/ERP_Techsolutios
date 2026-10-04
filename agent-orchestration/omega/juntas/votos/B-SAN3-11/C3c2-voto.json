@@ -1,0 +1,63 @@
+{
+  "jurado": "jurado-san3-11-c2-registro-e-escopo (identidade nova; nenhum número, conjunto, SHA, linha ou campo de JSON herdado como fato)",
+  "cadeira": "C3′ — registro, escopo e acesso",
+  "mandato_md5": "d3e79477153562167aab40620ca0cd80 · declarado no disparo: d3e79477153562167aab40620ca0cd80",
+  "modelo": "Codex GPT-5.6 Sol (substituição declarada: dono suspendeu Fable e Astra até o reset semanal em 2026-10-03; bloco sem dinheiro)",
+  "corpo_md5": "blob d24f7283: 18d4663667b75007dbe4082268b13728 · recebido no prompt: 18d4663667b75007dbe4082268b13728",
+  "objeto": "d24f7283bfba55d298e8118e7b590465c5a4d4d6 (git ls-remote = gh pr view = worktree no início e no fim); main integrada = origin/main no início e no fim b404815ce3d1f1b8e5121bd1526978f7222e7479; cerca do parecer 3ec6f52b2be38160f82dc8f766948b685a3de79e; delta = somente registro do parecer",
+  "legalidade": "00-inspetor-terreno-c2.md, 3ª instância, LIBERADO COM RESSALVA; R-CORPOS e R-PERDA aplicadas; confere identidade/corpo/worktree C3′; head corrente acrescenta somente o parecer; check-runs 14 | não-verdes 0 | pendentes 0",
+  "quorum": "unanimidade de 3, com veto",
+  "leitura_de_outras_cadeiras": "não li nenhum arquivo de voto nem worktree de outra cadeira do ciclo 2",
+  "pausa": "nenhuma",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "id": 1,
+      "estado": "APROVADO",
+      "resumo": "P-o por script md5 57671f2979d477ca8272226badc85d05: ambas 9, só impound 1, só checklist 3, nenhuma 0; guarda dupla e gates intactos; T10 verde e mutação true vermelha; T11′ + sonda UUID verdes nas 3 superfícies e mutação title vermelha; mensagem técnica não alcança a UI"
+    },
+    {
+      "id": 2,
+      "estado": "APROVADO",
+      "resumo": "F2 [653532f7,objeto]: 36 próprios, 3 só-da-main, próprios fora de §16.3+§16.4=0; bloco integral 65 caminhos e fora da soma autorizada=0; DossiePrint 1/1 só idPrefix; fixtures 49→49 asserts; seis corpos e sync 33 verdes; A18″ TETO/NULL 0, CP 1, classe 0 com V1/V3 vermelhos; A25″ arnês AST idêntico a 92cfc05e"
+    },
+    {
+      "id": 3,
+      "estado": "APROVADO",
+      "subitens": {
+        "A15′": "APROVADO — os dois donos provados por precedente/§5; texto confere com blob; quatro frases antigas N=0; IDs novos exatamente 2; controle a definir acusado apesar de o gerador dizer sim",
+        "A26": "APROVADO — gerador 434 cabeçalhos/423 IDs; MD5 EOL-neutro 441c4ac24ef4b07f1324b0f45f69c18d igual ao blob; estados e seções corretos; linha removida foi regenerada ao hash do blob",
+        "A35": "APROVADO — objeto sem NÃO PAGO nos três artefatos; main real tem #402/3e40a256/cdf370dc preenchidos e nenhuma dívida; nota confere; controle com merge_commit null retornou devido",
+        "A36": "APROVADO — smoke próprio 1238/1238, igual ao KPI e aos dois terrenos do DEV; blocks 170→171; history 166→167 com prefixo intacto; freeze/check/guards 29/29 verdes; mutação 171→172 deixou freeze vermelho"
+      },
+      "resumo": "A15′, A26, A35 e A36 aprovados com controles discriminantes; registro, índice, backfill e KPI contam a mesma história"
+    }
+  ],
+  "justificativa": "A cadeia de acesso preserva a interseção exata das duas permissões e não vaza identificadores; o delta próprio do ciclo 2 e o bloco integral ficam dentro do escopo autorizado; A18″/A25″ medem verde com controles vermelhos; as duas pendências têm dono comprovado e texto atual; o índice é reproduzível; o backfill confere com a main real; e o KPI 171/1238 foi recontado e reexecutado. Check-runs finais 14/14 verdes, árvore limpa, nenhum achado.",
+  "o_que_executei": [
+    {
+      "comando": "Apêndice D por parse + tsx; inspeção linha a linha dos gates; T10/T11′ filtrados; suíte patios-dossie-modal; sondas e mutações restauráveis true/title",
+      "forma": "cwd C:/Users/AMP/w-s11k2c, Node v20.19.5, frontend npm ci próprio, timeouts 600 s, objeto d24f7283; CPU declarada em cada medição",
+      "resultado": "item 1 APROVADO; controles acusaram e restores hash-object=blob"
+    },
+    {
+      "comando": "Apêndices F1/F2/F3 por parse; delta próprio por patch-id; laços de allowlist; diffs por hunk; sync --check; mutações V1 e V3 restauradas",
+      "forma": "objeto d24f7283, main integrada/merge-base b404815c, intervalo próprio desde 653532f7, Git Bash explícito, sem banco; CPU declarada em cada medição",
+      "resultado": "item 2 APROVADO; próprio 36/fora 0, bloco 65/fora 0; A18″ classe 0; F3 preserva os dois md5 do arnês"
+    },
+    {
+      "comando": "parsers A15′/A35; gerador de índice com timeout 120 s; smoke frontend completo com timeout 1800 s; kpi-freeze/check e três guards KPI; quatro controles restauráveis",
+      "forma": "main integrada e atual b404815c; objeto d24f7283; execução serial sob carga declarada; sem banco",
+      "resultado": "item 3 APROVADO; A15′/A26/A35/A36 aprovados; smoke 1238/1238 e guards 29/29"
+    }
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [
+    "A hipótese de controle do corpo dizia que o grep exato `NÃO PAGO` em 653532f7 seria >=1 nos três artefatos; no Markdown antigo a grafia real era `NÃO pago`, logo o exato foi 0. A busca case-insensitive reexecutada deu 1/1/1 na ref antiga e 0/0/0 no objeto; a divergência da hipótese foi declarada, não convertida em defeito do produto."
+  ],
+  "pendencias_que_aceito": [
+    "P-SAN3-11-VIGENTE-NAO-VINCULADA — ABERTA, baixa, não bloqueia; dono provado por precedente: trilha CHECKLIST P1, PR-05.",
+    "P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA — ABERTA, baixa, não bloqueia; dono B-O6R-12 provado na §5 do PLANO_SAN3.md."
+  ],
+  "teardown": "COMPLETO — zero processo vivo antes da remoção; worktree C:/Users/AMP/w-s11k2c removido por git worktree remove --force; scratch dedicado removido; ambos inexistentes; C: 8,03 GB livres; nenhuma outra frente tocada"
+}

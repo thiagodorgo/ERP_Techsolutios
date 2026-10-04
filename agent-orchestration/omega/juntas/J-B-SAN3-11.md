@@ -82,3 +82,38 @@ substituição; toda ausência da chave fica do lado fechado).
 | inspetor | duas instâncias de `inspetor-de-terreno-da-junta` (Fable 5.1) |
 | cadeiras | C1, C2 e C3 da tabela acima |
 | orquestrador | registro, mandatos, briefing, integração da `main` com o #403; **não escreveu código do bloco** |
+
+---
+
+# Ciclo 2 — junta 2 (PR #401), 2026-10-03/04
+
+- **Objeto julgado:** `d24f7283bfba55d298e8118e7b590465c5a4d4d6` (resolvido pelas três cadeiras; CI 14/14 verde). Delta desde
+  `3ec6f52b`: só o parecer do inspetor.
+- **Inspetor de terreno (3ª instância):** **LIBERADO COM RESSALVA** — R-CORPOS (corpo carregado do blob do objeto) e R-PERDA
+  (sucessor por queda tem identidade nova) — `votos/B-SAN3-11/00-inspetor-terreno-c2.md`. Rodou no Codex: GPT-6 Astra até a 1ª
+  queda, GPT-5.6 Sol depois (o dono restringiu e depois suspendeu o Astra), três quedas por limite de uso e uma retomada dupla
+  (22:23Z/22:31Z) por engano do orquestrador, declaradas no parecer.
+- **Quórum:** unanimidade de 3 com veto (§C7.1-ter(b)).
+
+## VEREDITO: REPROVADO (veto da C2′; C1′ e C3′ aprovaram)
+
+| cadeira | identidade | modelo | voto | achados |
+|---|---|---|---|---|
+| C1′ — afordância, âncora e superfícies | `jurado-san3-11-c2-afordancia-e-ancora` | Codex GPT-5.6 Sol | **APROVADO** | 0 |
+| C2′ — enumeração tipada e fail-closed | `jurado-san3-11-c2-enumeracao-tipada` | Codex GPT-5.6 Sol | **REPROVADO** | **C2c2-F1 `bloqueia`** (o gerador P-L3 é fail-open para `ElementAccess` e para conjunto vazio); **C2c2-F2 `bloqueia`** (o fluxo adapter → service → hook → painel não limpa as linhas quando recusa uma resposta subsequente) |
+| C3′ — registro, escopo e acesso | `jurado-san3-11-c2-registro-e-escopo` | Codex GPT-5.6 Sol | **APROVADO** | 0 |
+
+Evidências e votos em `votos/B-SAN3-11/C{1,2,3}c2-evidencia.md` e `C{1,2,3}c2-voto.json`. As cadeiras rodaram no Codex (decisão do
+dono de 2026-10-03: trabalho pesado no Codex, Fable e Astra suspensos), no máximo 2 por vez; C1′ e C2′ caíram uma vez por limite de
+uso logo depois de começar e foram retomadas na mesma sessão (continuação, contexto preservado); a C3′ caiu uma vez e foi retomada.
+
+## §C7.4-bis — quem ocupou cada papel no ciclo 2
+
+| papel | quem |
+|---|---|
+| planejador | `planejador-ciclo2-b-san3-11`: §16 (Fable) e §16-bis (Opus, substituição declarada) |
+| dev | `dev-ciclo2-b-san3-11` (Opus 5.5): fatias D1, D2, D3 |
+| fábrica | `agente-fabrica` (instância do ciclo 2): os 3 corpos; apensos da §16-bis aplicados verbatim pelo orquestrador |
+| inspetor | 3ª instância de `inspetor-de-terreno-da-junta` (Codex) |
+| achadores | C1′, C2′, C3′ |
+| orquestrador | registro, mandatos, briefing, integração; **não escreveu código do bloco** |
