@@ -748,5 +748,21 @@ Guardas adicionais: a variável de bypass não aparece em `fly.production.toml`,
 `PrismaCloudChargeRepository(prisma)`, encontra legitimamente `new RlsPrismaCloudChargeRepository(prisma)` porque o nome
 contém a substring; esta premissa textual do plano foi falsificada e o cheque exato ficou vazio.
 
-## §9 — E8 KPI e registro — EM APURACAO
+## §9 — E8 KPI e registro — 2026-10-04T13:55:16Z
+
+`origin/main` foi buscada e medida em `b404815c`: B-SAN3-01b, backend 3052/3054, frontend 1214/1214, Flutter
+864/864 e 170 blocos. Este bloco publica backend **3122/3124**: a rodada integral teve 3124 total e 2 skips; o único
+timeout de carga produziu 2 fails TAP (T8d + pai), e a re-medição serial validou o arquivo em 8/8. A nota do snapshot
+preserva os dois números brutos e a forma da re-medição. Frontend, Flutter, métricas focadas e contratos móveis foram
+carregados com nota explícita; `mvp_demo`/`mvp_vendavel` ficaram intactos; `blocks_completed` = **171**.
+
+Foram atualizados `kpis-latest.json`, append em `kpis-history.json` e append em `kpis-history.md`. `release.pr`,
+`merge_commit` e `approved_head` estão `null` na autoria. O fallback `Kpis/app.js`, embora não seja edição manual do
+escopo do bloco, foi regenerado exclusivamente por `node scripts/kpi-freeze.mjs`, como exige o §C3 canônico; o plano
+proíbe edição direta desse arquivo. Validações: `node --check` verde, freeze `--check` em dia e dashboard **17/17**.
+
+O registro do ramo foi acrescentado a `agent-orchestration/docs/status-geral.md` e
+`agent-orchestration/codex/log-execucao.md`. O PR em rascunho ainda será aberto; seu número será inserido nos dois JSON,
+no history Markdown, nesses registros e nesta seção em commit posterior.
+
 ## §10 — Fechamento — EM APURACAO

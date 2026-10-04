@@ -3055,3 +3055,26 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
+
+## 2026-10-04 — B-SAN3-05 (PR na autoria) — o papel de runtime não contorna o RLS
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend | **3122/3124** — execução real no head: 291 arquivos, 3124 testes, pass 3120, fail 2, skipped 2, 461,2 s. As duas falhas TAP eram o mesmo timeout de `pg_basebackup` contado no subteste T8d e no pai; a re-medição serial exigida pelo dono passou **8/8**, sem falha ou pulo, em 27,9 s. Lotes dirigidos: 134/134, 42/42, 19/19 e 88/88 |
+| Frontend / Flutter | **CARREGADOS, sem reexecução** (§C3.3): 1214/1214 e 864/864. O diff não toca `frontend/` nem `mobile/`; valores oficiais de `origin/main` `b404815c` |
+| Demais métricas de contratos | **CARREGADAS, sem reexecução** (§C3.3), com nota explícita no snapshot |
+| Blocos Entregues | **170 → 171** — +1 bloco backend/database, contado de `origin/main` `b404815c` |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): os itens 9 e 10 dependem dos atos do dono e este PR não move escopo de produto |
+| pr / merge_commit / approved_head | `null` / `null` / `null` na autoria (§C3.5) |
+
+**O que o bloco entrega.** O runtime usa uma credencial própria `NOSUPERUSER NOBYPASSRLS`; o boot de produção recusa
+atributos, memberships, posse e views que permitam escapar de tabelas `FORCE RLS`. O procedimento converge papel, grants e
+default privileges, revoga o primeiro salto de cadeias perigosas, não leva senha em argv e falha fechado nos modos nomeados.
+As leituras cross-tenant autorizadas da plataforma e o cálculo de cobranças usam caminhos explícitos sob o papel sem bypass.
+
+**Prova.** A1–A24 foram executados por mutação e ficaram vermelhos. O gerador mediu 779 arquivos, 725 call-sites, 453
+instanciações e o inventário congelado de 53 chaves. A lista que o §5.2 histórico chamava de quatro foi medida como **sete
+sítios / cinco métodos dentro + um fora**. Esta entrega implementa a **v3** depois das críticas r1 e r2, com todos os achados
+respondidos por medição. Relatório: `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.

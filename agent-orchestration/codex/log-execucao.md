@@ -4783,3 +4783,11 @@ bloco mergear.
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## B-SAN3-05 — execução local do dev sucessor-2 (2026-10-04)
+
+- Branch `fix/runtime-role-sem-bypass`, worktree próprio `C:/Users/AMP/w-s05d`, `npm ci` próprio; nenhuma junction.
+- Cluster próprio `san3-05-s2-pg`, PostgreSQL 16.14 em `127.0.0.1:55405`; `erp-postgres:5432` e `erp-redis:6379` não foram tocados.
+- Implementação e testes: papel runtime sem bypass, guarda de boot, procedimento, plataforma cross-tenant explícita, gerador/fixtures e duas suítes DB. A1–A24 executados; relatório incremental contém quedas, retomadas, cargas e falsificações.
+- Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
+- Próximo rito externo: abrir PR em rascunho; depois inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
