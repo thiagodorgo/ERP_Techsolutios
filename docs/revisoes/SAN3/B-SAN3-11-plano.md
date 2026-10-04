@@ -2077,3 +2077,333 @@ for (const [name, text] of Object.entries(forms)) {
 ```
 
 **Fim da §16-bis.**
+
+## 17. Replanejamento do ciclo 3 — B-SAN3-11
+
+**papel:** `planejador-mestre` | **identidade:** `planejador-ciclo3-b-san3-11` | **modelo:** `GPT-5.6 Sol` (substituição declarada: o dono suspendeu Fable e GPT-6 Astra até o reset semanal de 2026-10-03) | **mandato_md5 EOL-neutro:** `e57fc906451a5ef4881348ebdd6c24e3` | **corpo_md5 EOL-neutro:** `9ef61338b04967fbc8de696edd7319c9`
+
+### 17.1 Proveniência, objeto medido e separação de papéis
+
+**Medido por esta identidade, sem herdar o dossiê como fato.** O worktree próprio
+`C:/Users/AMP/w-pl11c3` foi criado detached em
+`05510bf16f3cc058509728610c694be0c6e4f227`, com `core.autocrlf=true`, árvore limpa e
+`npm ci --no-audit --no-fund` próprio na raiz (`326` pacotes; sem junction/symlink). Em
+2026-10-04, `git rev-parse HEAD`, `git ls-remote`/`gh pr view 401` e a ref
+`origin/fix/dossie-versao-da-vistoria` resolveram o mesmo `05510bf1`; PR `OPEN`, draft,
+`MERGEABLE`. O mandato fora gerado quando `HC=H0=bf285f13`; desde então o único commit é
+`05510bf1`, que acrescenta o próprio mandato. `git diff --name-status d24f7283 05510bf1 --
+frontend/src frontend/tests scripts/san3-11-dossie-vistoria-censo.mjs Kpis` é vazio: para
+produto, teste e KPI, o objeto continua byte-idêntico ao julgado no ciclo 2. A ata, o
+`R-B-SAN3-11-2`, C1c2/C2c2/C3c2 e o parecer do inspetor foram lidos integralmente como
+**relatos a re-verificar**. No momento desta medição o novo head tinha `12` check-runs, com
+`2` jobs `backend` ainda `in_progress`; isso não bloqueia este replanejamento, mas impede o
+inspetor/junta 3 de iniciar até todos concluírem (§C7.1-bis).
+
+**Separação (§C7.4-bis).** Quem achou =
+`jurado-san3-11-c2-enumeracao-tipada` (C2′, ciclo 2), inelegível para planejar,
+desenvolver ou votar no ciclo 3. Quem planeja =
+`planejador-ciclo3-b-san3-11` (esta identidade), que não achou, não desenvolve e não vota.
+Quem desenvolverá = identidade nova, ainda a ser nomeada pelo orquestrador, distinta de
+`dev-san3-11-dossie`, `dev-errata1-b-san3-11`, `dev-ciclo2-b-san3-11`, de todos os
+planejadores anteriores, dos inspetores e das seis cadeiras dos ciclos 1–2. As três cadeiras
+do ciclo 3 também terão identidades novas. A substituição de modelo desta seção é explícita:
+`planejador-mestre` em **GPT-5.6 Sol**, porque o dono suspendeu Fable e GPT-6 Astra até o
+reset semanal informado em 2026-10-03.
+
+**Retomada da mesma instância (2026-10-04T18:32:45Z).** A sessão caiu por limite de uso por
+volta de 14:18Z. Antes de continuar, foram re-medidos: worktree existente e detached no mesmo
+`05510bf1`; status vazio; ambos os `node_modules` próprios presentes; zero processo próprio de
+teste/Vite/npm (o único match era esta própria sessão Codex); e os arquivos temporariamente
+mutados na apuração de F1 estavam byte-restaurados aos blobs do head:
+`VehicleDossieModal.tsx=049886ea…` e `ChecklistRunsPanel.tsx=d8a4269b…`. A §17 persistida
+continha somente §17.1 preenchida e marcadores pendentes nas demais partes; nenhum resultado parcial
+não gravado foi promovido a fato sem esta conferência.
+
+**Atualização do objeto remoto na retomada.** Às 18:45Z, `origin/main` já era `8ee10bd2`
+(um commit somente de registro após `b404815c`) e o PR ainda apontava `05510bf1`; os `14`
+check-runs estavam todos `COMPLETED/SUCCESS`. Como a `main` avançou depois do head, o GitHub
+passou a informar `mergeable=UNKNOWN`: o dev deve integrar a `origin/main` viva antes da bateria
+final e o inspetor só libera a junta sobre o novo SHA, novamente com todos os checks concluídos.
+
+### 17.2 C2c2-F1 — propriedade fail-closed do gerador P-L3
+
+**Relato reexecutado e confirmado no `05510bf1`.** Baseline:
+`TS_ROOT=<frontend próprio> node scripts/san3-11-dossie-vistoria-censo.mjs .` → `ec=0`,
+L0/L1/L2 `12/12/12`, L3 `2` pontos, L4 `3` consumidores, `pontos sem consulta=0`.
+Dois vermelhos-controle próprios provaram que o verde é fail-open:
+
+1. Em mutação restaurável de `VehicleDossieModal.tsx`, foi acrescentada uma apresentação
+   observável e tipada `{run["status"]}` (`âncora=1`). `npm --prefix frontend run check` →
+   `ec=0`; o censo → `ec=0`, continuou publicando só os `2` pontos antigos e ignorou o membro
+   novo. Restauração byte a byte: `hash-object=blob=049886ea…`.
+2. Em mutação restaurável de `ChecklistRunsPanel.tsx`, as duas apresentações existentes foram
+   reescritas para ler diretamente `run["status"]`, sem os helpers (os imports foram mantidos
+   vivos fora do JSX só para a mutação compilar). `check` → `ec=0`; o censo → `ec=0` com
+   **`L3 pontos=0`**, `L4 consumidores=3` e `pontos sem consulta=0`. Restauração byte a byte:
+   `hash-object=blob=d8a4269b…`.
+
+**Decisão por propriedade (não pela forma atual).** P-F1a: toda apresentação em JSX da
+situação de um `ChecklistRunSummaryItem` — inclusive `PropertyAccess`, `ElementAccess` com
+`"status"`, argumento dos helpers e qualquer candidato que o checker não consiga classificar
+— nasce **negada** até o censo provar que está sob uma decisão de versão. P-F1b: o conjunto de
+pontos L3 e o conjunto de consumidores L4 são invariantes não vazios; `0` em qualquer um é
+vermelho, nunca vacuidade verdadeira. O `unknownReceptor` deixa de ser apenas telemetria:
+qualquer candidato desconhecido compõe o total vermelho.
+
+**Remédio prescrito para o dev (testes antes do código).** No arquivo
+`frontend/tests/patios-dossie-versao.smoke.test.tsx`, acrescentar primeiro:
+
+- **T23:** cópia mutada com apresentação compilável `{run["status"]}` fora de decisão de
+  versão → `tsc=0`, censo `ec=1`, linha nominal do ponto e `consulta substituição: NÃO`;
+- **T24:** cópia compilável em que as apresentações/consumidores conhecidos deixam o conjunto
+  efetivo vazio → censo `ec=1`, diagnósticos explícitos `L3 VAZIO` e/ou `L4 VAZIO` (não basta
+  inferir pelo total).
+
+Só então alterar `scripts/san3-11-dossie-vistoria-censo.mjs`: substituir o reconhecimento
+exclusivo de `PropertyAccess .status` por um classificador único dirigido pelo checker que
+extraia o receptor tanto de `run.status` quanto de `run["status"]`, use o tipo por baixo de
+casts e alimente a mesma prova `guardedByVersion`; publicar contagens separadas de candidato
+desconhecido, L3 vazio e L4 vazio; somar todas ao `total`. O head deve continuar com `2` pontos
+e `3` consumidores. **Mutações que derrubam o aceite:** retirar o ramo de `ElementAccess`
+deixa T23 verde indevidamente; retirar o termo de conjunto vazio deixa T24 verde
+indevidamente. Nenhuma lista de nomes de variável entra como solução.
+
+### 17.3 C2c2-F2 — propriedade de limpeza do estado após recusa contratual
+
+**Relato reexecutado e confirmado no `05510bf1`.** Primeiro, a bateria focada real do arquivo
+do bloco passou `24/24`. Nela, T16 confirma que `listProcessChecklistRuns` propaga
+`ChecklistRunContractError` quando falta `currentRunId`. Depois, numa sonda de navegador sobre
+o hook e o painel reais, com Vite local próprio e interceptação apenas do endpoint do processo,
+a primeira resposta válida produziu `runs=1`, `rows=1`, `error=null`; a segunda resposta `200`
+idêntica, mas sem `currentRunId`, produziu `runs=1`, `rows=1`, erro genérico, aviso
+“Atualização em segundo plano falhou” e a linha “Concluído” ainda visível (`calls=2`). A base
+viva não foi acessada. Isso coincide com o fluxo medido no código: o adapter lança; o service
+não captura; o `catch` genérico de `useProcessChecklistRuns` só chama `setError`; e
+`ChecklistRunsPanel`, diante de `error && hasRuns`, preserva a tabela. Portanto C2c2-F2 é
+**dentro-do-bloco e reproduzido**, não uma inferência herdada.
+
+**Decisão por propriedade.** P-F2a: uma resposta recusada por
+`ChecklistRunContractError` é dado não confiável; após qualquer transição
+`válida → contrato inválido`, o estado publicável deve ser `runs=[]`, e modal, página e
+impressão devem mostrar zero linha de vistoria e o erro destrutivo. P-F2b: isso não autoriza
+apagar a última resposta válida em falha operacional transitória (`ApiError` 5xx/rede): nesse
+caso continua valendo o aviso não destrutivo com linhas anteriores. A discriminação é pela
+classe exportada do adapter, não por texto de mensagem nem por status HTTP.
+
+**Remédio prescrito para o dev (testes antes do código).** Acrescentar ao mesmo arquivo focado:
+
+- **T25:** fluxo real `válida → resposta sem uma das três chaves de versão`, exercitando
+  service/hook/painel: antes há linha; depois de `ChecklistRunContractError`, `runs=0`, nenhuma
+  linha/rotulagem antiga em qualquer consumidor e aparece o estado de erro com retry;
+- **T26:** contraprova `válida → falha transitória não contratual`: a linha válida permanece e
+  aparece “Atualização em segundo plano falhou”. Ela impede a correção larga `setRuns([])` em
+  todo `catch`.
+
+Só então, em `useProcessChecklistRuns.ts`, importar `ChecklistRunContractError` e limpar
+`runs` exclusivamente nesse ramo antes de definir o erro seguro. Não alterar adapter, service
+ou painel: eles já fornecem, respectivamente, o discriminador, a propagação e os estados de UI
+necessários. **Mutação que derruba o aceite:** retirar `setRuns([])` do ramo contratual deve
+deixar T25 vermelho; mover a limpeza ao ramo genérico deve deixar T26 vermelho.
+
+### 17.4 Plano executável do ciclo 3
+
+#### 17.4.1 Objetivo, ator e fluxo origem→destino
+
+**Objetivo cirúrgico:** fechar somente C2c2-F1 e C2c2-F2 sem redesenhar o dossiê: (a) o
+censo passa a negar toda apresentação nova de situação de vistoria que não prove a decisão
+de versão, inclusive acesso por índice e conjuntos vazios; (b) uma resposta recusada pelo
+contrato nunca deixa linhas anteriores aparentando ser atuais.
+
+**Ator:** operador/gestor/auditor autenticado com `impound:read` e
+`checklist_runs:read`, consultando a aba Checklist do dossiê, a página dedicada ou a impressão.
+O backend continua autoridade final; este ciclo não cria permissão, escrita ou rota.
+
+**Fluxo medido, origem→destino:** `GET /api/v1/impound-processes/:id/checklist-runs` → DTO
+backend de 12 chaves → `apiRequest` → `listProcessChecklistRuns` →
+`adaptChecklistRunsResponse` (recusa contratual nomeada) → `useProcessChecklistRuns` (estado
+confiável ou vazio) → `ChecklistRunsPanel` → modal, página e impressão. Em paralelo, o censo
+percorre DTO → espelho → adapter → todos os pontos L3 → os três consumidores L4 e falha se
+alguma camada ficar vazia, desconhecida ou sem decisão de substituição.
+
+#### 17.4.2 Contrato e propriedades obrigatórias
+
+O contrato REST não muda: resposta estreita `{ items }`, cada item renderizável com
+`id`, `templateId`, `templateName`, `templateVersion`, `status`, `relatedEntityType`,
+`relatedEntityId`, `startedAt`, `completedAt`, `reopenedFromRunId`, `supersededByRunId` e
+`currentRunId`; as três referências aceitam string não vazia ou `null`, mas nunca ausência ou
+outro tipo. Permanecem o 401/403 como acesso negado, 404 como lista vazia honesta e falha
+transitória como aviso sobre a última lista válida. Nenhum UUID técnico, tenant, token, path,
+bucket ou blob vira texto público.
+
+Propriedades cumulativas de aceite:
+
+1. **P-F1a/P-F1b (§17.2):** cobertura L3 sem dependência da grafia; `run.status` e
+   `run["status"]` recebem a mesma classificação por tipo; candidato desconhecido, L3 vazio ou
+   L4 vazio tornam o censo vermelho.
+2. **P-F2a/P-F2b (§17.3):** `ChecklistRunContractError` limpa `runs`; erro operacional não
+   contratual preserva a lista válida e mostra o aviso de atualização.
+3. As garantias verdes dos ciclos anteriores continuam: adapter fail-closed nas três chaves;
+   “Versão substituída” sem tom verde; versão atual/única honestas; links `.pat-link`, foco e ids
+   por superfície; ordenação `startedAt desc`; três consumidores; guarda dupla de acesso e
+   allowlist visual.
+4. Não há modelagem de banco, migration, novo endpoint, novo payload nem alteração de
+   autorização. Qualquer necessidade disso é expansão de escopo: o dev para e registra.
+
+#### 17.4.3 Modelagem e arquivos exatos
+
+**Modelagem:** nenhuma. Prisma, banco, DTO backend e persistência ficam byte-intocados.
+
+**Arquivos de produto/teste do ciclo 3 (e nenhum outro):**
+
+- `scripts/san3-11-dossie-vistoria-censo.mjs` — classificador P-L3 e invariantes de conjunto;
+- `frontend/src/modules/patios/processes/useProcessChecklistRuns.ts` — ramo estreito para
+  `ChecklistRunContractError`;
+- `frontend/tests/patios-dossie-versao.smoke.test.tsx` — T23–T26, sem remover ou afrouxar os
+  24 casos existentes.
+
+**KPI/registro permitido:** `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`,
+`Kpis/kpis-history.md`, `Kpis/app.js` somente pela saída de `kpi-freeze`;
+`agent-orchestration/omega/juntas/votos/B-SAN3-11/DEV-relatorio.md` (seção ciclo 3),
+`agent-orchestration/codex/comandos/B-SAN3-11-dossie-versao-da-vistoria.md`,
+`agent-orchestration/codex/log-execucao.md` e `agent-orchestration/docs/status-geral.md`.
+Mandatos, briefing, ata, votos, parecer do inspetor e corpos espelhados das cadeiras são
+registro do **orquestrador/fábrica**, não autoria do dev. Esta §17 é autoria exclusiva do
+planejador/orquestrador.
+
+#### 17.4.4 Dev de identidade nova, testes antes do código e sequência de execução
+
+O orquestrador deve nomear `dev-ciclo3-b-san3-11` (busca no `05510bf1`: zero ocorrência),
+identidade nova e inelegível para votar. Ordem obrigatória:
+
+1. criar worktrees CRLF/LF próprios; integrar por **merge** a `origin/main` viva (agora
+   `8ee10bd2`), nunca rebase; resolver registro preservando as duas histórias;
+2. acrescentar T23/T24 e executar o vermelho-controlado de F1; acrescentar T25/T26 e executar
+   o vermelho-controlado de F2; colar comando, saída, `ec` e mensagem nominal no relatório;
+3. implementar primeiro o classificador/invariantes do censo, depois o ramo contratual do hook;
+4. executar os quatro controles de mutação pós-verde e restaurar bytes; `git status` limpo fora
+   do permitido antes de cada commit;
+5. rodar a bateria completa nos dois terrenos, recontar KPI contra a `main` integrada, gerar o
+   freeze, registrar e só então empurrar o novo head sem `--force`;
+6. esperar todos os check-runs concluírem; gerar mandatos com `HC=H0`; inspetor novo antes de
+   qualquer voto.
+
+Commits pequenos e reversíveis: teste/guard F1; teste/hook F2; KPI/registro. Cada um precedido
+por `git diff --check`. O dev não escreve corpo de jurado, plano ou voto.
+
+#### 17.4.5 Escopo permitido e proibido
+
+**PERMITIDO:** somente os caminhos enumerados em §17.4.3 e, pelo orquestrador, os artefatos da
+junta 3 em `agent-orchestration/omega/juntas/**` e os pares de corpos
+`.claude/agents/especialistas/jurado-san3-11-c3-*.md` /
+`.agents/agents/especialistas/jurado-san3-11-c3-*.md`. Esta seção **emenda** a proibição do
+§16.4 exclusivamente para `useProcessChecklistRuns.ts`, porque F2 foi agora reproduzido ali.
+
+**PROIBIDO:** `src/**`, `tests/**` da raiz, `prisma/**`, migrations, `mobile/**`, lockfiles,
+`frontend/package.json`, `frontend/src/modules/patios/processes/processes.adapter.ts`,
+`processes.service.ts`, `processes.types.ts`, `ChecklistRunsPanel.tsx`,
+`VehicleDossieModal.tsx`, `DossiePrintDocument.tsx`, `ProcessoDossiePage.tsx`, styles/UI,
+`.github/**`, `CLAUDE.md`, `AGENTS.md`, `Kpis/index.html`, `Kpis/styles.css`, qualquer rota,
+payload ou permissão. Também é proibido apagar/renomear testes existentes, trocar mensagem
+para satisfazer regex ou introduzir allowlist de nomes de variável. Se um teste provar que o
+remédio exige caminho proibido, o dev para e registra a prova; não amplia sozinho.
+
+#### 17.4.6 Baseline N, meta M≥2N e bateria nos dois terrenos
+
+**Baseline reexecutado no CRLF, `05510bf1`:** `check` verde; censo `12/12/12`, L3 `2`, L4
+`3`, total vermelho `0`; arquivo focado `24/24` em `139980 ms`, sem morto por sinal; árvore
+restaurada e limpa. O baseline funcional original permanece **N=12**; a meta é **M≥24**. Com
+T23–T26, o arquivo do bloco vai `24→28`; somado aos 12 testes preexistentes do painel,
+**M=40≥24**, sem contar regressões adjacentes.
+
+O dev mede em `C:/Users/AMP/w-dev11c3` (checkout CRLF) e
+`C:/Users/AMP/w-dev11c3lf` (`git -c core.autocrlf=false worktree add --detach`, LF), cada um
+com `npm ci --no-audit --no-fund` próprio na raiz e em `frontend/`, sem junction. Todo comando
+tem timeout externo, `ec` capturado; nunca `tail -f`; a base viva 5432/6379 não é alvo. Em
+**cada** terreno:
+
+```text
+npm --prefix frontend run check                                      # ec=0
+cd frontend && timeout 1200 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx
+                                                                    # 28/28; morto por sinal=0
+cd frontend && timeout 900 node --test --import tsx \
+  tests/patios-dossie-checklist.smoke.test.tsx \
+  tests/patios-dossie-print.smoke.test.tsx \
+  tests/patios-dossie-modal.smoke.test.tsx \
+  tests/patios-dossie.smoke.test.tsx \
+  tests/patios-dossie-deeplink.smoke.test.tsx \
+  tests/patios-dossie-history.smoke.test.tsx tests/checklists-run-lock.test.ts
+TS_ROOT=<frontend próprio> timeout 300 node scripts/san3-11-dossie-vistoria-censo.mjs .
+                                                                    # ec=0; L3=2; L4=3
+timeout 1800 npm --prefix frontend run test:smoke                    # N/N real
+npm --prefix frontend run build                                     # ec=0; remover frontend/dist
+git diff --check                                                     # vazio
+```
+
+Controles em cópia restaurável, nos dois EOLs: (M-F1a) inserir `{run["status"]}` não guardado
+→ T23/censo vermelhos; (M-F1b) esvaziar L3/L4 → T24/censo vermelhos; (M-F2a) retirar a limpeza
+contratual → T25 vermelho; (M-F2b) limpar em todo erro → T26 vermelho. Provar aplicação da
+mutação e restauração por hash/diff. Na raiz, uma vez: `node scripts/kpi-freeze.mjs --check`,
+`node --check Kpis/app.js`, `node --test --import tsx tests/kpi-dashboard-charts.test.ts`,
+`node scripts/sync-agent-agents.mjs --check`, varreduras de allowlist/acesso dos ciclos
+anteriores e diff por pathspec contra §17.4.5. Remover ambos os worktrees com zero processo
+vivo após publicar as evidências.
+
+#### 17.4.7 KPI recontado contra a `main`
+
+Medição atual em `origin/main=8ee10bd2`: `blocks_completed=170`,
+`frontend_smoke_tests=1214/1214`, `backend_tests=3052/3054`, `flutter_tests=864/864` e
+history `n=166`. Se a main não mover a suíte, o resultado esperado após T23–T26 é
+`frontend_smoke_tests=1242/1242` (`1214+28`) e `blocks_completed=171`; **vale sempre o TAP e
+a main imediatamente anteriores ao push, não esta previsão**.
+
+Este é outro ciclo do mesmo PR/bloco: atualizar a entrada B-SAN3-11 já existente e a última
+linha correspondente, sem contar um segundo bloco nem apensar uma segunda entrada lógica.
+History permanece `n=167` (= main `166+1`), B-SAN3-11 por último. `release.pr=401`,
+`merge_commit=null`, `approved_head=null`, `status=published_per_pr`; backend/flutter são
+carregados com nota e prova de diff vazio; `mvp_demo`/`mvp_vendavel` ficam intocados. A nota
+do ciclo 3 declara +4 casos, os dois terrenos, SHA e TAP reais. `node scripts/kpi-freeze.mjs`
+é a única fonte da mudança em `Kpis/app.js`; `--check` deve ficar verde. Se a main mover antes
+do push, integrar de novo, reexecutar e recontar.
+
+#### 17.4.8 Competências das três cadeiras da junta 3
+
+Quórum: **unanimidade de 3**, mantido porque o dossiê é documento de prova e o ciclo endurece
+fail-closed/estado confiável. Sem crítico-adversarial. A fábrica cria e o orquestrador
+versiona corpos novos e espelhados; cada evidência declara identidade, modelo e md5
+EOL-neutro do corpo. Identidades propostas, todas inéditas no `05510bf1`:
+
+| cadeira | identidade | competência e mandato (máximo 3 itens) |
+|---|---|---|
+| C1c3 — enumeração total/fail-closed | `jurado-san3-11-c3-enumeracao-fail-closed` | TypeScript AST/checker e teste de mutação cross-EOL: executar T23/T24, M-F1a/M-F1b e uma mutação própria; provar `ElementAccess`, receptor desconhecido, L3/L4 vazios e baseline `2/3`; conferir que não nasceu allowlist nominal. |
+| C2c3 — transição contratual | `jurado-san3-11-c3-transicao-contratual` | Estado React assíncrono e contrato ponta a ponta em navegador/hook reais: executar `válida→inválida` e `válida→transitória`, T25/T26 e controles; conferir zero linha antiga nas três superfícies no erro contratual, mas preservação no erro operacional. |
+| C3c3 — registro/escopo/KPI | `jurado-san3-11-c3-registro-escopo-kpi` | Diff por pathspec × §17.4.5, guarda dupla/allowlist e regressões dos ciclos 1–2; reconciliar TAP dos dois terrenos com KPI/main/history/freeze; conferir corpos espelhados, mandatos `HC=H0` e checks concluídos. |
+
+O inspetor deve ser identidade nova, verificar inelegibilidade nominal, worktree/cluster
+descartável quando aplicável, S0, corpos commitados no SHA, baseline honesto, dois terrenos,
+todos os check-runs concluídos e plano de perda. Sem `LIBERADO`, nenhuma cadeira dispara;
+quem muta usa worktree próprio e `npm ci` próprio.
+
+#### 17.4.9 Riscos, rollback e gatilho de auditoria da máquina
+
+| risco | mitigação |
+|---|---|
+| Classificador AST passa a acusar status de outro domínio ou deixa escapar forma nova | checker pelo tipo `ChecklistRunSummaryItem`, desconhecido vermelho, T23/T24 e mutação própria da C1c3; nenhuma regex/nome como autoridade |
+| Limpeza larga apaga dado útil em queda de rede | ramo exclusivo `ChecklistRunContractError`; T26 e C2c3 protegem a semântica transitória |
+| Efeito assíncrono permite um frame/consumidor com linha velha | T25 observa a transição real até estado estável e conta linhas nas três superfícies; jurado repete em navegador |
+| Mutação não aplica ou CRLF/LF altera a conclusão | âncora única, prova antes/depois, dois terrenos, hash/diff após restauração |
+| `origin/main` ou checks movem depois da medição | merge da main viva, reexecução/recontagem pré-push; inspetor julga somente SHA com checks concluídos |
+
+**Rollback:** não há migration nem dado persistido. Reverter os commits próprios do ciclo 3
+em ordem inversa restaura hook, censo, testes e KPI; nunca apagar a trilha de reprovação ou
+reescrever history. Uma regressão operacional permite reverter o ramo contratual sem tocar
+adapter/service, mas o PR volta a reprovado até outro remédio satisfazer P-F2.
+
+**Gatilho obrigatório:** se a junta do **ciclo 3** produzir qualquer achado
+`dentro-do-bloco · bloqueia`, o orquestrador grava `R-B-SAN3-11-3.md` e, **antes de abrir o
+ciclo 4**, convoca auditoria da máquina por identidade que não votou, planejou nem desenvolveu
+este bloco (§C7.4). O parecer `R-B-SAN3-11-ciclo3-auditoria.md` deve responder por execução se
+o achado é produto ou artefato de critério/processo, se competência e inelegibilidade estavam
+corretas, se o planejador usou dado podre, se o mandato foi conferido e se cada terreno foi
+liberado; termina `máquina sã` ou `máquina defeituosa`. Máquina defeituosa é consertada por
+outra identidade e registrada antes do ciclo 4; máquina sã abre o ciclo 4. A auditoria não é
+pausa nem teto de ciclos, mas é insumo obrigatório do próximo inspetor.
