@@ -4707,6 +4707,84 @@ bloco mergear.
   `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
 - **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
 
+## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
+
+- **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — norma **P7** do protocolo de junta resiliente. O
+  texto do orquestrador foi medido pelo plano (`planejador-b-gov-pausa`, Fable: 17 elaborações, 7 achados dentro do
+  bloco, KPI pelo precedente do #394 — o commit de abertura citava o #396, errado) e emendado por dev de identidade nova
+  (`dev-pausa-emenda`, Opus: S-01…S-05, S-07, S-11 como T-18…T-24).
+- **Junta:** APROVADO **3 × 0** sobre `67c2c280` (C1 2 ajuste + 2 nota, C2 4 nota, C3 1 nota); inspetor `LIBERADO COM
+  RESSALVA` (as cadeiras rodaram como `general-purpose` lendo o corpo do objeto — o diretório de agentes da sessão não
+  as registrava). Merge squash `513937b0` fixado no SHA do head `5fed0a55`; estado `MERGED` lido antes de limpar.
+- **Registro #398** (`5bcdcc58`, registro puro): parecer do porteiro do #397, backfill §C3.5, `P-GOV-PAUSA-ELABORACOES-DO-
+  TRANSCRITOR` e `P-GOV-PAUSA-CASO-SEM-FONTE` (dono `B-GOV-CICLOS-RESIDUAIS`), fonte do caso do Dev-T4 versionada, errata
+  pós-merge no corpo do #397. Porteiro do #398: `LIBERADO COM RESSALVA` (ciclo 4 do #393 e as tarefas de nuvem 05/09/11).
+- **Limpeza §C5 — correção do orquestrador (ressalva do porteiro do #398):** o mandato do porteiro do #397 dizia que o
+  `scripts/post-merge-cleanup.sh` não rodou "porque o `docker volume prune` derrubaria o cluster de KPI de um dev vivo do
+  #393". **Errado:** o script só toca Docker sob `DEEP_CLEAN=1`; a limpeza padrão não toca container nem volume. Medido
+  depois (01/10, ~19:05): a limpeza padrão não teria removido nada na árvore principal — nenhum `frontend/dist`, `dist`,
+  `coverage`, `mobile/flutter_app/build` nem `*.tsbuildinfo` fora de `node_modules` e de `.claude/worktrees/*`, nenhuma
+  branch local mergeada; `git remote prune` feito. O que a limpeza fez de fato, nos dois merges: worktrees do PR
+  removidos pelo nome (0 processos antes), ramo apagado local e remoto depois de provar árvores iguais, `main` local
+  avançada. O `find` de `*.tsbuildinfo` do script desce em `.claude/worktrees/*` de outras sessões — classe já aberta em
+  `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168 → 169; trilhas de teste carregadas com nota; backfill pago pelo #398.
+
+## B-SAN3-01b — as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE NO RAMO pela tarefa de nuvem (2026-10-02), PR a abrir
+
+- **Quem:** `dev-b-san3-01b` (identidade nova; Fable 5.1 `claude-fable-5-1`, declarado na 1ª linha do relatório), tarefa de nuvem
+  no ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`; mandato `omega/juntas/votos/B-SAN3-01b/00-mandatos/dev.md`
+  (md5 EOL-neutro `1c8e3b9d650880a0f8ff5bd3fb1fb44b`, conferido); relatório `omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+- **Entregas:** E1 teste vivo (13 casos, DOM mínimo sem dependência) · E2 `[G1]` por alcance em qualquer profundidade + fecho +
+  fronteira, `[G1b]`, `[G2]` 29 formas, `[G3]` · E3 três cabeçalhos (só comentário) · E4 gate do "Nova OS" · E5 lista do smoke ·
+  E6 KPI (smoke 1214/1214 real; `blocks_completed` 169 → 170; `pr`/`merge_commit`/`approved_head` null na autoria) · E7 registro.
+- **Bateria §8:** bloco 79/79 · `tsc` 0 · smoke 1214/1214 (Node 22 e 20) · build 0 · `kpi-freeze --check` em dia · 3 guards de KPI
+  29/29 · `git diff --check` limpo. Mutações do §7 com restauro por hash: relatório §M.
+- **Escopo (§6):** `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO; `src/`, `prisma/`, lockfiles, hooks, `App.tsx`,
+  `work-orders.service.ts`, `.github/`, `Kpis/index.html` intocados.
+- **Pendências:** 4 FECHADAS (as do bloco), 3 ABERTAS com dono (`B-SAN3-10`, fila pós-gate, `B-SAN3-06a`); índice regenerado.
+- **Fica para o orquestrador local:** `gh pr create` + `release.pr`, inspetor, junta (unanimidade de 3), CI, squash, §C5, porteiro.
+
+## B-SAN3-01b (PR #402) — a web guarda por alcance e pelo estado da página — MERGEADO `3e40a256` (2026-10-02)
+
+- **Junta 1:** APROVADO **3 × 0** sobre `cdf370dc` (unanimidade de 3: permissão e perda de dado). C1 `guardiao-fail-closed`
+  1 ajuste e 1 nota; C2 `jurado-san3-01b-c2-cadeia-de-acesso` (identidade nova, escrita pela `agente-fabrica`) 3 notas; C3
+  `cognicao-visual` 1 nota; 0 bloqueia. Ata `omega/juntas/J-B-SAN3-01b.md`; votos, pareceres e quedas em
+  `omega/juntas/votos/B-SAN3-01b/`.
+- **Inspetor de terreno:** 1ª passada `BLOQUEADO` (o `coordenador-de-acessos` achou o C2-05, que o bloco fecha); 2ª passada
+  `LIBERADO COM RESSALVA` depois da C2 nova versionada nos dois espelhos. Duas quedas do inspetor por limite de sessão da
+  conta, retomadas como a mesma instância.
+- **Merge:** squash fixado no head `1483a6f7` (o PR era rascunho da nuvem e foi marcado pronto antes); árvore do merge igual
+  à do head; estado `MERGED` lido antes de limpar.
+- **Porteiro do #402:** `LIBERADO COM RESSALVA` — dívidas pagas por este registro: backfill §C3.5 (`pr 402`,
+  `merge_commit 3e40a256…`, `approved_head cdf370dc…` lido da ata) e quatro pendências com dono a partir das notas da
+  junta (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME`, `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL`,
+  `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE`, `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`). Índice pelo gerador: **432**
+  cabeçalhos / **421** IDs, **115** FECHADAS, **317** ABERTAS. Ressalva para os próximos alvos: o #401 e o ciclo 4 do
+  #393 integram esta `main` e recontam o KPI antes do inspetor novo de cada um (171 e 172 na ordem de merge).
+- **KPI:** `blocks_completed` 169 → 170; `frontend_smoke_tests` 1214/1214 por execução real; backend e Flutter carregados
+  com nota.
+- **Limpeza §C5:** worktrees do PR e das cadeiras removidos pelo nome com 0 processo vivo; ramo apagado no local e no
+  remoto depois de provar árvores iguais; `remote prune`; `main` local avançada; nenhum artefato de build nem ramo local
+  mergeado a remover na árvore principal. O `scripts/post-merge-cleanup.sh` não rodou porque desce nos worktrees de outras
+  sessões (`P-CHORE-CLEANUP-DESCE-EM-WORKTREES`).
+
+## Registro do #403 (registro puro) — as quatro ressalvas do porteiro do #403 (2026-10-03)
+
+- **Porteiro do #403:** `LIBERADO COM RESSALVA` (parecer em `omega/juntas/votos/B-SAN3-01b/PORTEIRO-403.md`). Pagas aqui:
+  (1) o parecer do porteiro do #399, que só existia no ramo `docs/registro-399`, versionado byte a byte; (2) a
+  `backfill_note` do B-SAN3-01b nos dois JSON de KPI corrigida — a árvore do merge é a do head final do PR, `1483a6f7`,
+  que é o head aprovado `cdf370dc` mais a ata e os votos, e não a do head aprovado; (3) dono atribuído às duas pendências
+  que estavam como "proposto" (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` → `B-SAN3-06c`;
+  `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` → `B-SAN3-06a`); (4) as seções do #397 e do #402 no `kpis-history.md` deixam de
+  dizer "na autoria".
+- **Ressalva não paga, declarada:** a escolha da referência do cabeçalho da lista de OS
+  (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`) é decisão do dono e foi levada a ele em 2026-10-03. Não entra em
+  `controle/decisoes.md`, que só registra decisões tomadas.
+- **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
+  do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+- 2026-10-04 — registro: parecer do porteiro do #404, decisões do dono de 03–04/10 (modelos, Codex, nuvem), R404-1 e R404-3 do porteiro, retomada pós-pausa.
+
 ## 2026-10-01 — B-SAN3-09 — Bootstrap do 1º admin de plataforma (tarefa de nuvem, dev-san3-09-bootstrap)
 
 - **Branch:** `feat/bootstrap-platform-admin` (10 commits à frente de `origin/main`)

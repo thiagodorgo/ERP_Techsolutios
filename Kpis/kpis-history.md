@@ -2979,6 +2979,83 @@ próprio texto, §C7.4-bis) fez três coisas:
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
 
+## 2026-10-01 — B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) e carregados pelo `B-GOV-SEM-TETO` (#394) |
+| Blocos Entregues | **168 → 169** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`5b6e1036`, #396; o último PR que contou bloco foi o #394 = 168). O #393 também publica bloco no ramo dele: quem mergear depois **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos agentes, não o produto |
+| pr / merge_commit / approved_head | `397` / `513937b0…` / `67c2c280…` — backfill §C3.5 pago pelo #398 |
+
+**O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-10-01
+(`D-PAUSA-GRAVA-E-PARA`): **sob ordem de pausa do dono, o agente grava o estado e para sozinho** — a norma **P7**
+do protocolo de junta resiliente. O texto foi escrito pelo orquestrador; o plano do bloco o mediu (17 elaborações,
+7 achados dentro do bloco) e a **emenda** (desenvolvedor de identidade nova — quem escreveu não emenda o próprio
+texto, §C7.4-bis) implementou a propriedade de cada achado:
+
+1. **O protocolo passa a se descrever inteiro** — a abertura do item 7 diz *P1–P7* e *sete normas* (S-01); o escopo
+   declarado, nos dois contratos e na fonte, cobre todo agente vivo e a pausa, não só junta, inspeção, porteiro e a
+   morte (S-02); o lado Codex (`.agents/agents/README.md`) ganha a P7 (S-03).
+2. **Toda peça que a P7 nomeia tem destino na ref** — a seção `## PAUSA` vai para o `<cadeira>-evidencia.md` do P1
+   ou, para quem não tem um, para o arquivo de saída que o mandato nomeia (S-04); o roteiro de retomada vai para
+   uma seção `## PAUSA` de `agent-orchestration/docs/status-geral.md`, que o §A4 manda ler antes de cada bloco — o
+   "custo/trilha" do texto de origem não existia na ref (S-05).
+3. **Vocabulário e listas coerentes** — a lista de jobs sem modelo é a da fonte nos três textos (S-07); "pare" sai
+   dos exemplos de ordem de pausa e uma frase separa pausa de **parada** (§C7.5, §C7.6-bis) (S-11).
+
+Cada frase nova está declarada como **elaboração do dev** (T-18…T-24) num parágrafo datado da entrada
+`D-PAUSA-GRAVA-E-PARA` de `decisoes.md`; o parágrafo *Decisão.* do orquestrador fica como foi transcrito. Pendências
+abertas com dono: `P-GOV-OBITUARIO-SEMTETO` (pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10); índice pelo
+gerador.
+
+**Espelho:** `CLAUDE.md` × `AGENTS.md` com hunks idênticos e o item 7 inteiro com md5 EOL-neutro igual; modelo de
+mandato idêntico nos três textos.
+
+**Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
+pagos pelo #395.
+
+## 2026-10-02 — B-SAN3-01b (PR #402) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Smoke (frontend) | **1214/1214** — EXECUÇÃO REAL no head do PR (`npm --prefix frontend run test:smoke`, Node 22.22.0 e Node 20.20.0): 1202 → 1214 = **+13** (`tests/work-orders-page-live.test.tsx`, novo) **+1** (`[G1b]`) **−2** (`[W1]`/`[W2]` movidos para o arquivo vivo, por comportamento). Bloco: **79/79** (13 + 66) |
+| Backend / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 864/864. Este PR **não toca `src/`, `tests/` da raiz nem `mobile/`** (`git diff --name-only origin/main...HEAD -- src tests mobile prisma` → vazio); últimos valores oficiais publicados pelo `B-SAN3-00` (#392) |
+| Blocos Entregues | **169 → 170** — +1 bloco de guarda do gate SAN3, contado a partir do valor publicado na `origin/main` (`4ab9d232`, #398; o último PR que contou bloco foi o #397 = 169). Se outro PR mergear antes, **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): bloco de guarda — não move escopo; o item 4 do §4.1 já estava fechado pelo `B-SAN3-01` |
+| pr / merge_commit / approved_head | `402` / `3e40a256…` / `cdf370dc…` — backfill §C3.5 pago pelo #403 |
+
+**O que o bloco entrega** (decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`; plano `docs/revisoes/SAN3/B-SAN3-01b-plano.md`;
+relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`):
+
+1. **Página amarrada ao estado** — `frontend/tests/work-orders-page-live.test.tsx` monta a `WorkOrdersPage` REAL com o hook REAL rodando
+   efeitos (`useEffect → refresh → service → nextListState → setState`) sobre um **DOM mínimo escrito no próprio teste** (o projeto não tem
+   biblioteca de DOM; zero dependência nova), com os BYTES do backend na borda (`fetch`): 403 → `forbidden` e KPIs "—"; 500 → `error` com
+   `role="alert"` e o texto do service; 200 vazio → `empty` embutido com a busca; 200×3 → 3 linhas, KPIs das linhas e paginador; pendente →
+   esqueletos; 403 em 2º plano → a lista SAI, sem faixa. `N-PG-PAINEL` e `N-PG-KPI` ficam vermelhas.
+2. **Fiação dos hooks por comportamento** — `[W1]`/`[W2]` deixam de ser regex: 3 OS (ou a OS do detalhe) na tela, 500 no tick capturado
+   do auto-refresh → `data-state="stale"` com o dado mantido. `N-W1TXT`/`N-W2TXT` ficam vermelhas **sem tocar nenhum hook**.
+3. **Guard por alcance de verdade** — `[G1]` resolve re-export em **profundidade arbitrária** (barrel de N níveis, re-export local,
+   `default`, namespace, `import()`), varre o **fecho** de import das raízes e o arquivo de fronteira `useServiceQuoteReferences.ts`, com
+   denominadores (81 raízes, fecho 48, 20 referências guardadas, sítio sabido); `[G1b]` pega **entidade fabricada inline**
+   (`id`/`code` constante em `catch`/`.catch(`/`??`/`||`; 19 literais legítimos vistos, 0 com identidade); `[G2]` 29 formas virtuais;
+   `[G3]` em disco. `N-BARREL2`, `N-BARREL3`, `N-LITERAL`, `N-FORA-RAIZ` ficam vermelhas. Os cabeçalhos dos três arquivos dizem o que o
+   guard prova **e o que não prova** (só comentário).
+4. **Gate do botão** — "Nova OS" do cabeçalho só com `work_orders:create` (a régua de `POST /work-orders`), reusando o `canCreate` do CTA;
+   provado papel a papel com os **13 papéis** de `ROLE_PERMISSIONS` executado. Vermelho-controle no head-base: **7 papéis** viam o botão
+   (`technician, viewer, finance, inventory, field_technician, auditor, support`).
+
+**Pendências:** fecha `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES`,
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`, `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO`; abre com dono `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`
+(MÉDIA, `pre-existente`, `B-SAN3-10`), `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` (BAIXA, fila pós-gate) e
+`P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
+
+**Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
+
 ## 2026-10-01 — B-SAN3-09 (PR null, na autoria) — Bootstrap do 1º admin de plataforma: script idempotente, guard de produção, runbook B
 
 ### Resultado

@@ -1,0 +1,133 @@
+{
+ "jurado": "jurado-pausa-c2-consistencia-normativa-espelho (identidade nova; nada de plano, briefing ou corpo herdado como fato)",
+ "cadeira": "C2 — consistência normativa e espelho",
+ "mandato_md5": "becd53d8fe673d5561b14c1c282664c6 (medido) · declarado no disparo: becd53d8fe673d5561b14c1c282664c6",
+ "modelo": "Opus (claude-opus-5-5)",
+ "corpo_md5": "facd19fd5c1a6ab892d08fb61c4dfc23 (blob no head) · corpo recebido no prompt (general-purpose): facd19fd5c1a6ab892d08fb61c4dfc23",
+ "head_medido": "67c2c280612cb644f246af0b5410cab59afe028d (git rev-parse origin/docs/gov-pausa-grava-e-para = gh pr view 397 headRefOid, 18:32Z) · merge-base 5b6e103638f398d6074eecc5daebdf2d3bcd2252 (= origin/main) · head no fim (19:21:50Z): igual, 67c2c280612cb644f246af0b5410cab59afe028d",
+ "quorum": "maioria de 3, sem veto, sem suplente (declarado no BRIEFING-B-GOV-PAUSA.md do head, cabeçalho; confirmado pelo inspetor)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo c1-* nem c3-* antes de gravar este voto",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "itens": {
+  "item1": "VERDE — hunks CLAUDE×AGENTS multiconjunto IGUAL (38 linhas cada, 0 de um lado só); item 7 l.524–604 × l.552–632, 81 linhas, início casa 1×, md5 EOL-neutro 89888b2cfdd7f71c8938f9091b5de04f nos dois (cru igual no blob; CRLF na cópia de trabalho); modelo de mandato 8 linhas com [P7] idêntico nos 3 (md5 6d5c8fa9…); 4/4 vermelhos-controle acusaram",
+  "item2": "VERDE — gerador próprio (8 famílias, árvore inteira do head, Python Unicode): 4 lugares vivos carregam o protocolo e os 4 têm P7 (CLAUDE, AGENTS, PROTOCOLO, README Codex l.69/73–76); nenhuma frase viva conta P1–P6/seis como total (l.527/531 e PROTOCOLO l.4/9 são subconjunto verdadeiro); escopo l.526/PROTOCOLO l.3 cobre os sujeitos de P7; a mais que o plano: scripts/audit-agents-skills.mjs (P1/P2 nominal), inspetor 5.1 e §C7.1-bis (perda de jurado, conceito), 6 corpos jurado-pausa (com [P7]) — nenhum precisa; S-01/S-02/S-03 resolvidos no head; R1–R3 achados na main; mutação VIVO×REGISTRO discriminou",
+  "item3": "VERDE — sujeitos gerados do texto (agente vivo, cadeira/jurado, inspetor/porteiro por P1, dev/planejador/fábrica, orquestrador; vigias e jobs = objeto): destino P1 votos/<JUNTA>/<cadeira>-evidencia.md (dir existe), convenção \"arquivo de saída que o mandato nomeia\" + fallback \"orquestrador nomeia no disparo\", roteiro em ## PAUSA de agent-orchestration/docs/status-geral.md (existe; §A4); custo/trilha = 0 nos 5 vivos; exemplos de ordem = \"pause tudo\"/\"não use mais tokens\" (nenhum verbo de PARADA); l.568 separa pausa de parada; listas de jobs = fonte nos 4 vivos; S-04/S-05/S-07/S-11 resolvidos no head; notas S-06/S-08/S-09/S-10(dono)/S-12/S-13/S-14 confirmadas; 3/3 vermelhos-controle acusaram"
+ },
+ "justificativa": "terreno: legalidade conferida (00-inspetor-terreno.md, LIBERADO COM RESSALVA, objeto 67c2c280 = o head que resolvi por git e gh); mandato_md5 becd53d8... e corpo facd19fd... medidos e conferidos; worktree próprio detached C:/Users/AMP/w-jur-pz2; blobs por git show; Python Unicode e md5 EOL-neutro; quórum maioria de 3 (briefing). ITEM 1: hunks CLAUDE x AGENTS como multiconjunto IGUAIS (38 linhas cada, +33 -5; 0 linhas de um lado só, logo 0 FERRAMENTA e 0 REGRA COMUM assimétrica; piso do mandato IDENTICAS); item 7: início casa 1x em cada, CLAUDE l.524-604 e AGENTS l.552-632, 81 linhas, CR=0 no blob (81 na cópia CRLF), md5 cru = EOL-neutro = 89888b2cfdd7f71c8938f9091b5de04f nos dois, cauda \"...encerrar (P7)**.\" alcançada; modelo de mandato 8 linhas com [P7] idêntico em CLAUDE l.589-598, AGENTS l.617-626, PROTOCOLO l.117-126 (md5 6d5c8fa9..., diffs vazios). ITEM 2: comando do briefing rodado como está (piso) + gerador próprio de 8 famílias sobre a árvore inteira do head; 4 lugares vivos carregam o protocolo (CLAUDE, AGENTS, PROTOCOLO, README Codex) e os 4 têm P7; as frases com P1-P6 (CLAUDE/AGENTS l.527/531, PROTOCOLO l.4/9) são subconjunto verdadeiro (\"Origem medida de P1-P6\", \"sobrevive à morte (P1-P6) e à pausa (P7)\"), e o total é \"P1-P7\"/\"sete normas\"; o escopo declarado (l.526, PROTOCOLO l.3) cobre todo agente vivo e o orquestrador; lugares a mais que o plano não listou (scripts/audit-agents-skills.mjs P1/P2 nominal; inspetor 5.1 e §C7.1-bis \"perda de jurado\"; 6 corpos jurado-pausa com [P7]; cópia docs/claude-code-handoff/CLAUDE.md sem protocolo) não precisam de P7; S-01/S-02/S-03 do plano resolvidos no head; recall R1-R3 encontrados em origin/main; mutação validador (VIVO, carrega, sem P7, FALTA) x decisoes (REGISTRO) discriminou. ITEM 3: tabela gerada do texto: jurado/cadeira/inspetor/porteiro -> votos/<JUNTA>/<cadeira>-evidencia.md (P1; diretório existe), dev/planejador/fábrica -> arquivo de saída que o mandato nomeia + fallback \"orquestrador nomeia um no disparo\" (convenção total em texto vivo; exercida em planejador.md:94 e dev-pausa-emenda.md:100), orquestrador -> ## PAUSA em agent-orchestration/docs/status-geral.md (existe; §A4 l.80), vigias e jobs = objeto; \"custo/trilha\" = 0 nos 5 vivos; exemplos de ordem \"pause tudo\"/\"não use mais tokens\" sem verbo de PARADA, l.568 separa pausa de parada; 32 usos de pare/para/parada classificados e iguais nos dois contratos; listas de jobs = fonte nos 4 vivos; notas S-06/S-08/S-09/S-10 (com dono)/S-12/S-13/S-14 confirmadas. Vermelhos-controle: item 1 4/4 acusaram (P7->P8 diverge; CRLF só muda o cru; \" X\" na cauda diverge; [P7] apagado -> diff acusa); item 2 recall 3/3 + par de mutações em classes opostas; item 3 3/3 (destino trocado por pausas/<agente>.md -> \"não existe\" no agente e no orquestrador; padrão acha **PARA.** e não casa \"separação\"; \"vigias\" apagado -> linha some). Sem medir: nada do mandato. Achados: só notas (nenhum bloqueia, nenhum ajuste). Limpeza: worktree w-jur-pz2 removido por git worktree remove --force (ec=0, dir inexistente, list=0); cópias de $SCRATCH/pz2 apagadas; nenhum arquivo rastreado tocado; base viva nunca tocada; resíduo alheio só reportado.\nVOTO: APROVADO — os hunks são simétricos salvo 0 linhas de ferramenta, o item 7 é idêntico nos dois contratos (md5 EOL-neutro 89888b2cfdd7f71c8938f9091b5de04f, borda provada pela mutação da cauda) e o modelo com [P7] é idêntico nos três; nenhuma das 147 ocorrências VIVAS da lista gerada nos 8 arquivos não-corpo (mais 416 nos 6 corpos jurado-pausa) conta P1–P6 como total, estreita o escopo ou deixa lugar vivo sem P7 (R1–R3 encontrados em origin/main); todo sujeito de P7 e o roteiro de retomada têm destino na ref ou dono declarado, e nenhum verbo de PARADA viva é exemplo de pausa",
+ "o_que_executei": [
+  {
+   "comando": "git fetch origin; git rev-parse origin/docs/gov-pausa-grava-e-para; gh pr view 397 --json headRefOid,isDraft,mergeable,state; git merge-base origin/main <head>",
+   "forma": "cwd árvore principal; início 18:32Z e fim 19:21:50Z",
+   "resultado": "ec=0; 67c2c280612cb644f246af0b5410cab59afe028d nas duas vias nas duas medições; merge-base 5b6e1036 = origin/main"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-jur-pz2 67c2c280...; test -e .git; status --porcelain",
+   "forma": "caminho curto, inexistente antes",
+   "resultado": "ec=0; GIT_OK; porcelain 0"
+  },
+  {
+   "comando": "git diff -U0 origin/main 67c2c280 -- CLAUDE.md / -- AGENTS.md -> python hunks.py (Counter)",
+   "forma": "blobs, CR removido, linhas ^[+-] não ^[+-][+-]",
+   "resultado": "38/38 linhas, MULTICONJUNTO IGUAL; controles P7->P8 e linha extra -> DIFERENTE"
+  },
+  {
+   "comando": "python item7.py CLAUDE.md.head AGENTS.md.head (e cópias de trabalho)",
+   "forma": "blobs do head, CR normalizado antes da borda",
+   "resultado": "1 início cada; l.524-604 / l.552-632; 81 linhas; md5 EOL-neutro 89888b2c... nos dois; cópia CRLF cru 433039729... nos dois"
+  },
+  {
+   "comando": "python modelo.py CLAUDE AGENTS PROTOCOLO + diff dois a dois",
+   "forma": "bloco cercado após «Modelo de mandato», sem indentação/CR",
+   "resultado": "8 linhas, [P7] nos 3, md5 6d5c8fa9..., 3 diffs ec=0"
+  },
+  {
+   "comando": "python ctl1.py / ctl4.py (4 vermelhos-controle do item 1)",
+   "forma": "cópias no scratchpad, substituição provada por diff",
+   "resultado": "4/4 acusaram"
+  },
+  {
+   "comando": "git grep -c -i -E <padrão do briefing §5> 67c2c280 -- <caminhos do briefing>; idem EXECUTION_MODEL.md comando-template.md; git grep -i -c pausa -- .claude/agents .claude/skills",
+   "forma": "como está (piso)",
+   "resultado": "ec=0; README 1, CLAUDE 14, AGENTS 14, PROTOCOLO 12, semteto 4 cada, jurado-pausa 9/29/6, inspetor 1, Kpis/tests registro ou falso positivo; raiz 0; pausa só nos 3 corpos novos"
+  },
+  {
+   "comando": "python gerador.py 67c2c280 ger-head.json (e origin/main; e com overrides de mutação)",
+   "forma": "árvore inteira por git ls-tree + git show, 8 famílias de padrão, Python Unicode re.I",
+   "resultado": "312 arquivos com casamento; 28 VIVO + 6 VIVO-inerte; FALTA_P7 só em inspetor (conceito) e script (P1/P2 nominal), julgados não-exigíveis; R1/R2/R3 achados na main; mutação validador -> VIVO FALTA_P7, decisoes -> REGISTRO"
+  },
+  {
+   "comando": "grep -n -E «P1[–-]P6|seis normas» (comando do corpo) com e sem LC_ALL=C.UTF-8; python s01.py",
+   "forma": "blobs head e main",
+   "resultado": "sem locale: 0 linhas até na main (cego); com C.UTF-8 e Python: CLAUDE/AGENTS l.527/531 (+28), subconjunto; nenhum total P1-P6/seis"
+  },
+  {
+   "comando": "node scripts/sync-agent-agents.mjs --check",
+   "forma": "node puro, cwd w-jur-pz2, timeout 120",
+   "resultado": "ec=0; OK — 29 agentes, espelho consistente"
+  },
+  {
+   "comando": "python sujeitos.py 67c2c280 CLAUDE= AGENTS= PROTOCOLO= README= TERRENO= DECISOES= (+ cópias mutantes)",
+   "forma": "trechos e sujeitos por regra publicada; git cat-file -e para existência",
+   "resultado": "todo sujeito que grava tem destino (dir do P1 existe / convenção + fallback / status-geral existe); controles 1a/1b viraram «não existe»; controle 3 tirou a linha «vigias»"
+  },
+  {
+   "comando": "git grep -n -i -P «custo/trilha|trilha de custo|arquivo de custo» 67c2c280",
+   "forma": "árvore inteira",
+   "resultado": "0 nos 5 vivos; só registro/plano/briefing/mandato/KPI, o meu corpo e 1 falso positivo"
+  },
+  {
+   "comando": "python pare.py CLAUDE.md.head AGENTS.md.head + controles de fronteira",
+   "forma": "padrão declarado com fronteira Unicode",
+   "resultado": "62/65 casamentos, 32 listados idênticos nos dois; **PARA.** achado; separação/compare/parecer/disparo não casam"
+  },
+  {
+   "comando": "git worktree remove --force C:/Users/AMP/w-jur-pz2; rm -rf scratchpad/pz2",
+   "forma": "pelo nome, só o meu",
+   "resultado": "ec=0; diretório inexistente; worktree list 0"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "«pausa» passa a ter dois sentidos dentro do mesmo item 7 do §C7: a pausa de janela instável do P5 e a pausa ordenada pelo dono do P7",
+   "evidencia": "CLAUDE.md l.560 e l.599 (já na main l.557/572) x l.566-586 e l.602 (novos); AGENTS +28; a main só tinha o sentido do P5",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o item usa a mesma palavra para dois atos distintos (espera do orquestrador antes de redisparar x corte limpo do agente), distinguidos só por qualificador e pela caixa do token PAUSA"
+  },
+  {
+   "defeito": "S-09 confirmado: o resumo «Do orquestrador» do contrato omite «declara quais jobs sem modelo ficam vivos», que o bullet P7 do mesmo contrato e a fonte trazem",
+   "evidencia": "CLAUDE.md l.602-603 x l.578-579 e PROTOCOLO l.133-134; AGENTS idem",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "assimetria interna entre o resumo de deveres e a norma, sem contradição"
+  },
+  {
+   "defeito": "S-06 confirmado: «vigia(s)» entra no contrato sem definição; o termo só é definido por uso fora dele",
+   "evidencia": "CLAUDE.md l.576/602 (main: 0 ocorrências de vigia); definição por uso em conhecimento-de-terreno.md l.89 (entrou em 5b6e1036, 2026-09-30) e PROTOCOLO l.96",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (o termo no contrato é novo; a definição por uso no terreno é pré-existente, 5b6e1036)",
+   "motivo": "o contrato nomeia um objeto da ação do orquestrador que ele não define"
+  },
+  {
+   "defeito": "o resumo P7 do README Codex omite o fallback «o orquestrador nomeia um no disparo se o mandato não o fizer»",
+   "evidencia": ".agents/agents/README.md l.73-76 x AGENTS.md l.599-601",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o resumo de emulação traz o destino por mandato mas não o fallback; o AGENTS.md inline (idêntico ao CLAUDE) o traz, e o README remete a ele"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "O comando de S-01 do corpo e do briefing §10 (grep -n -E «P1[–-]P6|seis normas») é CEGO no Git Bash desta máquina sem locale UTF-8 (LANG vazio): devolve 0 linhas até em origin/main, onde «P1–P6, inline» existe (l.524; grep -F acha). Com LC_ALL=C.UTF-8 acha. git grep -E também é cego ao colchete; git grep -P não. Não usei esse vazio como prova (medi por Python Unicode e com C.UTF-8), mas como critério escrito ele não pode falhar — achado contra o corpo/briefing, não contra o bloco. O piso do briefing §5 só não é cego porque traz também o literal P1–P6 na alternância.",
+  "Controle 1 do item 3, 1a tentativa: o replace do caminho status-geral pegou a ocorrência da l.80 (§A4), não a do roteiro; a tabela corretamente NÃO virou. Refeito com âncora única na l.577 -> virou. Registrado para mostrar que a tabela lê o texto.",
+  "Horas dos cabeçalhos dos itens na evidência foram escritas estimadas, não medidas; corrigido no próprio arquivo (seção Correção de terreno). Nenhum resultado depende delas."
+ ],
+ "pendencias_que_aceito": [
+  "C1: S-08 (~20–40 min x ~30 min; 06:4x) e o caso T-14 — matéria de fidelidade",
+  "C3: EOL — blobs LF e cópia de trabalho CRLF (md5 cru da cópia 433039729... diferente do blob 89888b2c...; EOL-neutro igual); nome dos meus arquivos: o mandato e o disparo dizem C2-evidencia.md/C2-voto.json, o corpo diz c2-* — segui o mandato",
+  "S-10 com dono declarado: P-GOV-PAUSA-ESCADA-C76BIS (pendencias.md:9879 do head, dono B-GOV-CICLOS-RESIDUAIS, BAIXA, não bloqueia)",
+  "P-GOV-OBITUARIO-SEMTETO (pré-existente; corpos jurado-semteto-* inertes, não cobrados)",
+  "S-12/S-13/S-14 coerentes; S-01/S-02/S-03/S-04/S-05/S-07/S-11 resolvidos no head (E2)"
+ ],
+ "teardown": "worktree C:/Users/AMP/w-jur-pz2 removido por git worktree remove --force (ec=0; diretório inexistente; worktree list = 0; sem prune) · cópias do scratchpad/pz2 descartadas · nenhum arquivo rastreado tocado (w-pausa: só os meus 2 arquivos untracked) · base viva nunca tocada · resíduo ALHEIO apenas reportado (worktrees w-devs4 e w-pl4f além da lista do inspetor; arquivos de outras sessões no scratchpad)"
+}

@@ -1,0 +1,48 @@
+{
+  "cadeira": "C3",
+  "identidade": "cognicao-visual",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "mandato_md5": "3ca69077d807404facdde5f88c293719",
+  "corpo_md5_eol_neutro": "59632cb92550e620320a2ec896188e3d",
+  "objeto": "cdf370dcb4c817e1c4292aed1204140951616971 (head do PR 402 por gh pr view e git ls-remote; check-runs 14/14 concluidos e verdes; delta b02745b7..objeto e 2cfd4f48..objeto so registro)",
+  "legalidade": "VERDE — inspetor segunda passada LIBERADO COM RESSALVA, C3 cognicao-visual elegivel (R3, l.286); corpo md5 59632cb9 = origin/main; mandato md5 3ca69077 = blob",
+  "itens": {
+    "1_cabecalho_com_e_sem_botao": {
+      "veredito": "VERDE",
+      "evidencia": "C3-evidencia.md secao Item 1: captura real Chromium (vite do worktree proprio) 924 e 1440 — com create pixel-identico ao head-base (6 PNG byte-identicos); sem create sem conteiner de acoes, mesma altura 84.2, titulo/subtitulo/1o KPI nas mesmas coordenadas; hover #1D4ED8 e foco 2px #2563EB; regra RBAC_MATRIX.md:45 + screen-element-map.md:18,23 vencem o prototipo",
+      "achados": [
+        {
+          "id": "C3-N1",
+          "gravidade": "nota",
+          "escopo": "pre-existente",
+          "descricao": "O cabecalho da lista de OS diverge do ordens-servico.png / ERP Web.dc.html l.288-296 (kicker, titulo 22 x 20, subtitulo, align flex-end, borda #E2E8F0, Filtrar/Exportar omitidos, Nova OS pad 9/16 e borda 1px). Identico no head-base pixel a pixel; segue o design padronizado do dono (ERP Web - Telas Padronizadas.dc.html sc_os l.242-251).",
+          "evidencia_de_origem": "git log -S'.pat-page-header {' -- frontend/src/styles/app.css -> 0a38f1be 2026-08-04 (#331); git log -S'nunca botão morto' -- WorkOrdersPage.tsx -> d43314bd 2026-08-04 (#332); docs/juntas/J-TELAS-PADRONIZADAS.md §1; o ramo do bloco comeca em 4ab9d232 (2026-10)"
+        }
+      ]
+    },
+    "2_aparencia_dos_estados_identica": {
+      "veredito": "VERDE",
+      "evidencia": "C3-evidencia.md secao Item 2: sonda do Apendice B (HTML completo) base 4ab9d232 x head cdf370dc — 98/98 arquivos de papeis com create byte-identicos em PV1-PV6 e W1; 98/98 de papeis sem create diferem SO pelo conteiner de acoes do cabecalho; V1-V6 ok (79/79) e byte-identicos entre as refs",
+      "achados": []
+    },
+    "3_linguagem_e_acentuacao": {
+      "veredito": "VERDE",
+      "evidencia": "C3-evidencia.md secao Item 3: 34 linhas adicionadas nos 4 arquivos de producao = 28 comentario + 6 de JSX sem texto novo (so re-indentacao de 'Nova OS'); varredura de acentuacao: 1 ocorrencia (BOTAO) que e identificador ASCII de pendencia; texto novo do KPI acentuado; UI renderizada sem termo tecnico e acentuada",
+      "achados": []
+    }
+  },
+  "achados": [
+    {
+      "id": "C3-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "descricao": "O cabecalho da lista de OS diverge do ordens-servico.png / ERP Web.dc.html l.288-296 (kicker, titulo 22 x 20, subtitulo, align flex-end, borda #E2E8F0, Filtrar/Exportar omitidos, Nova OS pad 9/16 e borda 1px). Identico no head-base pixel a pixel; segue o design padronizado do dono (ERP Web - Telas Padronizadas.dc.html sc_os l.242-251).",
+      "evidencia_de_origem": "git log -S'.pat-page-header {' -- frontend/src/styles/app.css -> 0a38f1be 2026-08-04 (#331); git log -S'nunca botão morto' -- WorkOrdersPage.tsx -> d43314bd 2026-08-04 (#332); docs/juntas/J-TELAS-PADRONIZADAS.md §1; o ramo do bloco comeca em 4ab9d232 (2026-10)"
+    }
+  ],
+  "voto": "APROVADO",
+  "objeto_reconferido": "22:08:53Z — gh pr view 402 e git ls-remote refs/pull/402/head -> cdf370dc (nao andou); check-runs [14 total, 0 nao concluido/nao success]",
+  "bloqueantes_dentro_do_bloco": 0,
+  "justificativa": "Os tres itens da linha C3 da secao 10 do plano estao VERDES por execucao propria no objeto cdf370dc: (1) cabecalho com botao pixel-identico ao head-base em Chromium real (924 e 1440), sem botao integro e sem deslocamento, coerente com RBAC_MATRIX.md:45 e screen-element-map.md:18,23 que vencem o prototipo na regra; (2) HTML completo de PV1-PV6 e W1 byte-identico entre 4ab9d232 e cdf370dc para os 7 conjuntos com work_orders:create (sonda do Apendice B), a unica mudanca para quem nao cria e a ausencia do conteiner de acoes, V1-V6 verdes e inalterados (79/79); (3) nenhum texto novo de UI, comentarios e KPI acentuados, UI sem termo tecnico. Unico achado: C3-N1, nota, pre-existente (2026-08-04, #331/#332).",
+  "terreno": "worktree proprio C:/Users/AMP/w-j01bc3 detached em cdf370dc, npm ci proprio (raiz --ignore-scripts e frontend), 0 junction, Node 20.19.5; vite proprio em 127.0.0.1:5791 encerrado; 0 processo vivo; removido por git worktree remove --force (ec=0, worktree list 0); base viva nunca alvo"
+}
