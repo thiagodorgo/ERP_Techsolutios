@@ -34,3 +34,35 @@ Ref medida: `origin/chore/governanca-proporcional` / head `3a707cde16fd86340e4e2
 - **bloqueia:** obrigações vivas de junta para toda PR e KPI por PR permanecem fora da precedência/revogação declarada, deixando os contratos contraditórios.
 - **ajuste:** corrigir a inserção malformada do ponteiro em §C7.4.
 - **nota:** espelho dos acréscimos exato, diff restrito aos quatro arquivos, `git diff --check` limpo e 14/14 check-runs verdes.
+
+## 2a revisao 2026-10-04T19:19:25Z
+
+Head reavaliado: `dc940698e3ae091ed33d43c045b1e8e42caaafac`.
+
+### 1. Fidelidade — Traccar depois de sanar o que está em andamento
+
+**Comando:** `git show <head>:agent-orchestration/controle/decisoes.md` e `git show <head>:agent-orchestration/docs/status-geral.md`, filtrados por `D-GOV-PROPORCIONAL`, `Traccar`, `sanar tudo antes` e `o que está em andamento`; conferência dos itens `(1)`–`(5)` em `git show <head>:CLAUDE.md`.
+
+**Saída resumida:** o título de `decisoes.md` e o resumo de `status-geral.md` agora dizem **“Traccar depois de sanar o que está em andamento”**. O item 8 e a transcrição preservam as cinco partes aprovadas e as citações do dono; não restou “Traccar em paralelo” como resumo da decisão.
+
+**Veredito:** **APROVADO** — o bloqueio de fidelidade foi corrigido.
+
+### 2. Espelho e consistência — precedência e ponteiro do §C7.4
+
+**Comando:** extração EOL-neutra das linhas adicionadas por `git diff --unified=0 origin/main...<head>` + `Compare-Object`; busca da cláusula `Onde este item divergir`; `git diff dc940698^..dc940698 -- CLAUDE.md AGENTS.md`.
+
+**Saída resumida:** `CLAUDE.md` e `AGENTS.md` têm 44 linhas adicionadas cada, zero diferenças e SHA-256 comum `6a6d7c1cdee54e1d9169a412896f694c452318c16267f965ae911360b7eb7603`. A precedência agora nomeia §C1, §C2 itens 5/6/8, §C3, §C4, §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4, §C7.4-bis, §8 itens 4/7, §10 e `D-MANDATO-FORMA`, inclusive explicitando junta para todo PR e atualização de `Kpis/*`. O ponteiro “Teto de 2 ciclos restabelecido” está em bloco próprio antes do título íntegro do §C7.4.
+
+**Veredito:** **APROVADO** — as contradições residuais e a marcação malformada foram corrigidas, sem criar nova inconsistência.
+
+### 3. Higiene, escopo e CI
+
+**Comando:** `git diff --name-status origin/main...<head>`; `git diff --check origin/main...<head>`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`.
+
+**Saída resumida:** o diff contém os quatro documentos do PR e o parecer anterior agora versionado; `git diff --check` retornou exit `0`. Às `2026-10-04T19:19:25Z`, os 14 check-runs estavam `completed/success`, com zero pendentes e zero conclusões não verdes.
+
+**Veredito:** **APROVADO** — escopo esperado, whitespace limpo e CI integralmente verde.
+
+### Veredito final da 2a revisao
+
+**APROVADO** — nenhum achado `bloqueia`; os três achados da primeira revisão foram sanados no head reavaliado.
