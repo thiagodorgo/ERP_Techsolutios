@@ -607,8 +607,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
 ---
 
-8. **GOVERNANÇA PROPORCIONAL — junta só onde o risco pede, teto de 2 ciclos, menos burocracia, Traccar em paralelo
-   e KPI congelado (decisão do dono, 2026-10-04 — `D-GOV-PROPORCIONAL`).** Nas palavras do dono, depois de mais de um
+8. **GOVERNANÇA PROPORCIONAL — junta só onde o risco pede, teto de 2 ciclos, menos burocracia, Traccar depois de sanar
+   o que está em andamento e KPI congelado (decisão do dono, 2026-10-04 — `D-GOV-PROPORCIONAL`).** Nas palavras do dono, depois de mais de um
    mês com cada bloco levando cerca de uma semana de ciclos de junta: *"me diz como saio desse buraco… preciso sair desse
    loop e continuar fazendo meu sistema, quero implantar o traccar"*; e, sobre a proposta, *"aprovo 1, 2, 3 e 4 kpi
    congelado também"*. **Onde este item divergir de §C2 item 8, §C3, §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4,
@@ -629,8 +629,11 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      semanal (ou no próprio PR do bloco), sem porteiro. **Porteiro** só depois de merge de **produto**. O
      `B-GOV-MANDATO` (PR #393) fica **congelado**: o verificador de mandato não recebe novos ciclos; o que já
      está no ramo segue pela regra (1) (governança = um revisor + CI) ou é estacionado.
-   - **(4) Traccar em paralelo.** A trilha do Traccar **abre já**, sem esperar os 56 bloqueantes do gate
-     (`PLANO_SAN3`), com **junta completa de segurança** em todo bloco de ingestão — a decisão de desenho
+   - **(4) Traccar depois de sanar o que está em andamento.** Ajuste do dono no mesmo dia: *"sanar tudo antes de
+     começar o traccar"*, e, perguntado o alcance, *"o que está em andamento"*. A trilha do Traccar abre quando os PRs
+     em voo em 2026-10-04 estiverem resolvidos (`#400`, `#401`, `#405`, `#389`, `#388` mergeados ou decididos; `#393`
+     decidido pela regra (3)), o registro em dia e o disco limpo — **sem esperar** os demais bloqueantes do gate
+     (`PLANO_SAN3`), que correm em paralelo. Todo bloco de ingestão do Traccar tem **junta completa de segurança** — a decisão de desenho
      `D-TRACCAR-HTTP-PRIVADO-AWS` e as regras do dono para o Traccar continuam valendo (nunca `tenant_id` do payload
      como contexto confiável; dispositivo não mapeado em quarentena; vínculo ambíguo falha fechado; token nunca em
      código, log, query string, frontend ou payload público, comparado em tempo constante; nenhuma porta pública

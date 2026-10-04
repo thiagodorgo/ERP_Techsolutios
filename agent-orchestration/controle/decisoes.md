@@ -2946,8 +2946,10 @@ fazendo meu sistema, quero implantar o traccar"*; sobre a proposta do orquestrad
 dinheiro, segurança, permissão ou perda de dado; o resto mergeia com um revisor independente e CI verde; (2) teto de 2
 ciclos — do ciclo 3 em diante só defeito de produto grave bloqueia, o resto vira pendência com dono; (3) mandato forma A
 só para inspetor e cadeiras, registro semanal, porteiro só depois de merge de produto, `B-GOV-MANDATO` (#393) congelado;
-(4) trilha do Traccar aberta já, com junta de segurança em todo bloco de ingestão e o `B-SAN3-05` como pré-requisito de
-produção; (5) KPI congelado até segunda ordem.
+(4) trilha do Traccar aberta depois de sanar o que está em andamento (ajuste do dono: *"sanar tudo antes de começar o
+traccar"*; perguntado o alcance, *"o que está em andamento"* — os PRs em voo resolvidos, o registro em dia e o disco limpo,
+sem esperar os demais bloqueantes do gate), com junta de segurança em todo bloco de ingestão e o `B-SAN3-05` como
+pré-requisito de produção; (5) KPI congelado até segunda ordem.
 
 **O que esta decisão revoga ou suspende, por nome:** `D-SEM-TETO-AUDITORIA-NO-3` (o teto volta, com o freio da regra 2; a
 auditoria do ciclo 3 deixa de ser obrigatória); `D-KPI-PER-PR` (suspensa enquanto o KPI estiver congelado); a parte de
