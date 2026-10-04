@@ -1,0 +1,84 @@
+{
+  "cadeira": "C3",
+  "junta": "J1-B-SAN3-05",
+  "pr": 405,
+  "identidade": "guardiao-fail-closed",
+  "modelo": "Opus 5.5 (claude-opus-5-5) — Fable/Astra suspensos pelo dono ate o reset semanal",
+  "corpo_md5_eol_neutro": "5b0f7f5d31df366b69ac2cc8c113e963",
+  "mandato_md5": "b4ec906a22c4e21f2b2082f58c975bb8",
+  "objeto_head": "5ab037a3fc8f0b4ae1d24d68fd23691b154df7e1",
+  "legalidade": "LEGAL — inspetor LIBERADO COM RESSALVA (Reavaliacao do B1); head do PR = 5ab037a3 por git e gh; 7/7 check-runs completed|success; delta desde 240dbaa9/6f53d11b so registro",
+  "itens": {
+    "C3.1_ratchet_do_gerador": {
+      "veredito": "REPROVADO",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "resumo": "md5 81d92595 = Apendice A; inventario head 53 chaves sha1 79e1d86e == congelado; origin/main 53 chaves sha1 5c566532 == literal ORIGIN_MAIN; 3 sumidas + 3 novas explicadas; T13 30/30. MAS forma propria no alcance declarado (src/**, tsc strict ec=0, Prisma, tabela FORCE) passa com 0 chaves: C3A fabrica generica de construtor, C3B construtor em uniao, C3C Reflect.construct (controle C3D new direto = 1 chave). E o proximo membro FORCE fora do regex do L0 (ALTER TABLE public.x / model sem @@map) = 0 chaves. Forma propria nº2 (relacao aninhada: include de tenant_cloud_charges/audit_logs por delegate sem FORCE) = 0 chaves e 0 call-sites.",
+      "evidencia": "C3-evidencia.md partes A-D"
+    },
+    "C3.2_T11_papel_efemero_rotas_platform": {
+      "veredito": "REPROVADO",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "resumo": "Enumeracao fonte (5 arquivos de rota, 32) == lista fechada (32). Sob papel efemero (pg 16.14, container proprio): head 3/3 = 11/11; head-base = 2/11 (T11a 0!==50, T11b [] x 2 agregados, T11c [] x 2 cobrancas; T11d verde). E1 rota nova sem etiqueta -> T11d vermelho (omissao nega). MAS E2 a mesma rota etiquetada FORCE-SEM-TENANT com nota \"S1 — T11a\" -> 11/11 verde com a rota devolvendo 5 linhas sob super e 0 sob efemero; E3 ramo com tenantId de listEvents cru -> 11/11 verde com /cloud-usage/tenants/:id/summary (controle S4 do §2.3/A12) devolvendo metrics [] sob efemero x quantity 30 sob super.",
+      "evidencia": "C3-evidencia.md item C3(2) partes A-C"
+    },
+    "C3.3_seis_transaction_sem_setter_runner_e_jobs_sob_papel": {
+      "veredito": "APROVADO",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "resumo": "6 $TRANSACTION-SEM-SETTER-PROVADO herdam contexto: identity-link 323 (l.311), 362 (l.355), 412 (l.401) por setter de identidade 1a instrucao; prisma-core-saas 368 por setTenantRlsContext l.364; work-order 525/541 por withTenantRls l.669 + $transaction aninhado — MEDIDO (txid/pid/GUC iguais dentro e fora, 3/3; controle sem envoltorio guc vazio). runWithTenantContext = withTenantRls em toda construcao de producao (auth-runtime.ts:81-84, session-admin.service.ts:287-290; LocalAuthLoginService herda do envoltorio externo auth-runtime.ts:44+). semForceRls() so toca tabelas sem FORCE. aggregateDailyUsage/executeCalculationRun somam as 2 organizacoes sob o papel (T11b/T11c, head 3/3; head-base 0).",
+      "notas": [
+        "§0.4 do plano da como motivo dos 3 sitios de identity-link 'setter chamado depois de outra instrucao'; o lido e setter 1o em declaracao (let/const), que o setterFirst (l.152-160) nao reconhece — erro do gerador para o lado suspeito, motivo do plano errado (nota, dentro-do-bloco)",
+        "default work() sem GUC de LocalAuthLoginService (local-auth-login.service.ts:106) e fail-open em principio; pre-existente: 35c218a8 2026-06-07 (nota, pre-existente)"
+      ],
+      "evidencia": "C3-evidencia.md item C3(3)"
+    }
+  },
+  "achados": [
+    {
+      "id": "C3-F1",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "git diff --name-status b404815c 5ab037a3 -- scripts/san3-05-acessos-de-plataforma.mjs = A (o gerador nasce neste PR); §10 do plano: ratchet e seu alcance declarado = dentro-do-bloco",
+      "propriedade_ausente": "INJETADO cuja classe nao tem `new` resolvivel em src nasce do lado PERMITIDO: l.331 tira todo INJETADO do L1 na promessa do L2, e o L2 (l.289-290) so emite para NewExpression resolvida a ClassDeclaration, sem else; a raiz nao tem o SEM-INSTANCIACAO-EM-SRC que a transitividade tem (l.320)",
+      "mutacao": "3 formas proprias em src/modules/zz-mut/ (tsc strict ec=0) lendo cloud_usage_events/tenant_cloud_charges pelo client raiz: C3A construtor generico, C3B construtor em uniao, C3C Reflect.construct",
+      "resultado": "0/0/0 chaves; controle new direto = 1 chave CRU; chaves fora de zz-mut == head"
+    },
+    {
+      "id": "C3-F2",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "L0 e parte do gerador novo (mesmo A acima)",
+      "propriedade_ausente": "a enumeracao FORCE do L0 e regex sobre texto de migracao + @@map linha a linha; tabela FORCE nao reconhecida e tratada como sem FORCE e nada compara o L0 com pg_class.relforcerowsecurity",
+      "mutacao": "migracao descartavel com 3 tabelas ENABLE+FORCE (public.zz_force_a qualificada; \"ZzForceB\" sem @@map; \"zz_force_c\" controle) + leitura pelo client raiz",
+      "resultado": "FORCE 106->108, acessores 106->107; lerA 0 chaves, lerB 0 chaves, lerC (controle) 1 chave CRU; revertido (status 0, sha1 79e1d86e de volta)",
+      "nota": "hoje 0/106 FORCE usam a grafia que escapa; o inventario atual nao esta errado — o membro novo e que nasce permitido"
+    },
+    {
+      "id": "C3-F3",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "§10 do plano: superficie T11a–d e dentro-do-bloco; tests/san3-05-leituras-de-plataforma-db.test.ts nasce neste PR",
+      "propriedade_ausente": "a superficie fechada fecha a ENUMERACAO, nao a MEDICAO: a etiqueta decide se ha diferencial e nada verifica que ha — l.380 assert.match(item.nota, /T11[ac]/) reconhece uma string; FORCE-POR-TENANT nao exige medicao (4 de 7 sem medida, inclusive o /cloud-usage/tenants/:id/summary que o §2.3 S4 lista como controle)",
+      "mutacao": "E2: rota FORCE sem tenant etiquetada FORCE-SEM-TENANT \"S1 — T11a\"; E3: ramo com tenantId de RlsPrismaCloudUsageRepository.listEvents lendo cru",
+      "resultado": "E2 11/11 verde (sonda: super linhas 5 x efemero 0); E3 11/11 verde (sonda: super quantity 30 x efemero metrics []); controle E1 (sem etiqueta) = vermelho"
+    },
+    {
+      "id": "C3-F1b",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "gerador nasce neste PR (A); o plano nao declara relacao aninhada como residual (grep -i include|aninhad|nested no texto do plano: 0)",
+      "propriedade_ausente": "leitura/escrita de tabela FORCE por relacao aninhada num delegate sem FORCE nao e call-site para o L1",
+      "mutacao": "C3E: cloudChargeCalculationRun.findUnique({include:{tenant_cloud_charges:true}}) e tenant.findMany({include:{audit_logs:true}}) pelo client raiz (tsc strict ec=0)",
+      "resultado": "0 chaves, 0 call-sites no --all"
+    }
+  ],
+  "voto": "CONTRA",
+  "notas_gerais": [
+    "o §10 do plano lista 4 arquivos de rota para a enumeracao; ha 5 (src/modules/cloud-costs/aws-cur.routes.ts) — o teste cobre as 5 rotas dele (nota)",
+    "calibracao do C3-F2: o gatilho exige migracao numa grafia que 0/106 das FORCE atuais usa; o inventario de hoje nao esta errado — o membro novo e que nasce permitido",
+    "sem executar por esta cadeira (fora do mandato C3): tests/san3-05-runtime-role-guard-db.test.ts (T5–T9/T14/T15, C1/C2), npm test inteiro, as 3 rotas FORCE-POR-TENANT que o §2.3 exclui por leitura (tenants/:id/detail, POST e GET-summary de cloud-cost-allocations)"
+  ],
+  "linha_final": "VOTO: CONTRA — o membro nao previsto nasce PERMITIDO no ratchet e na superficie T11 | evidencia: C3A/C3B/C3C (construtor generico, uniao, Reflect.construct) e C3E (include aninhado) = 0 chaves com tsc strict ec=0; tabela FORCE nova fora do regex do L0 = 0 chaves; rota FORCE-SEM-TENANT etiquetada sem diferencial e ramo cru de /cloud-usage/tenants/:id/summary = suite 11/11 verde com 5x0 e 30x[] sob efemero"
+}
