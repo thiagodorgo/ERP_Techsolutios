@@ -246,17 +246,6 @@ test("[B3] as 11 vizinhancas do SHA: 11 rejeicoes — a pontuacao deixa de escon
   for (let i = 1; i <= 11; i++) assert.match(r.out, new RegExp(FAKE(i)), `a vizinhanca ${i} escapou`);
 });
 
-test("[B3-neg] controles negativos: caminho do scratchpad, UUID e `deadbeef.md` NAO sao SHA", () => {
-  const r = roda(
-    mandato("f-neg", [
-      "- caminho C:/Users/AMP/AppData/Local/Temp/claude/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/x, medido por: true",
-      "- uuid solto 3ad1b87d-fdbf-41f2-b085-1068e01c5d64, medido por: true",
-      "- arquivo `deadbeef.md` citado como nome, medido por: true",
-    ]),
-  );
-  assert.equal(r.rejeicoes, 0, r.out);
-  assert.equal(r.status, 0, r.out);
-});
 
 test("[B4] ferramenta de referencias MORTA: a causa e ela, nunca 'SHA VELHO' do mandato", () => {
   const r = roda(mandato("f-refs-morta", [`- head \`${SHA_A}\` medido por: true`]), "393", REFS_MORTO);
@@ -1172,16 +1161,6 @@ test("[F-4c] SHA COLADO: `<40 legitimo><40 fabricado>` = 80 hex — corrida > 40
   assert.match(sep.out, new RegExp(FAKE(43)));
 });
 
-test("[F-4-neg] `_` NAO parte o token (fronteira 10) e UUID/`deadbeef.md` seguem fora: PRE-VOO OK", () => {
-  const r = roda(
-    mandato("f4neg", [
-      `- o arquivo relatorio_${FAKE(44)}.log ficou no scratchpad, medido por: true`,
-      "- uuid solto 3ad1b87d-fdbf-41f2-b085-1068e01c5d64, medido por: true",
-    ]),
-    "393",
-  );
-  assert.equal(r.status, 0, r.out);
-});
 
 // --- F-5: checagem 5 por SEGMENTO ---------------------------------------------------------------
 test("[F-5a] `egrep`/`fgrep` sem -i: familia e quem TERMINA em grep, nao uma lista de nomes", () => {
@@ -2966,4 +2945,63 @@ test("[P-SHA/caminho-versionado] num repositorio PROPRIO com o script sob teste 
   assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), r.out);
   assert.doesNotMatch(r.out, /^REJEITADO[^\n]*20260521000000/m, `o caminho VERSIONADO foi cobrado\n${r.out}`);
   assert.match(r.out, /^AVISO {6}[^\n]*corrida hex[^\n]*caminho versionado[^\n]*prisma\/migrations\/20260521000000_censo\/migration\.sql/m, `a isencao nao foi publicada\n${r.out}`);
+});
+
+// =================================================================================================
+// CICLO 5 -- T5b (errata §16-ter do plano; identidade `dev-tests-ciclo5-b-gov-mandato`). Os controles
+// [B3-neg] e [F-4-neg] afirmavam a isencao POR FORMA (forma de UUID, caminho absoluto, nome sem `/`, `_` que
+// nao parte) que a P-SHA revoga; sairam, por autorizacao nominal de remocao da errata, e no lugar entram os
+// casos POSITIVOS da mesma classe, com identificadores novos. Mesmas linhas, mesmo PR 393, mesmo refs cuja
+// proveniencia nao as contem; o esperado e calculado das corridas PLANTADAS (as de 7..40), nunca de uma regex
+// sobre a linha. Vermelhos no pre-voo de antes do conserto (lista historica): o ⇄ dos dois e a M-a.
+// =================================================================================================
+
+/** Corridas plantadas -> o conjunto que a P-SHA cobra (7..40, minusculas). Nada aqui le a linha montada. */
+function cobradasDoPlantado(plantadas: string[]): string[] {
+  return [...new Set(plantadas.filter((s) => s.length >= 7 && s.length <= 40).map((s) => s.toLowerCase()))].sort();
+}
+/** O conjunto de SHAs que a checagem 4 acusou, com a contagem de cada um. */
+function acusadosNaSaida(out: string): { conjunto: string[]; repetidos: string[] } {
+  const todos = [...out.matchAll(/^REJEITADO {2}SHA '([0-9a-f]+)' nao esta na saida/gm)].map((m) => m[1] ?? "");
+  return { conjunto: [...new Set(todos)].sort(), repetidos: todos.filter((s, i) => todos.indexOf(s) !== i) };
+}
+const UUID_GRUPOS = ["3ad1b87d", "fdbf", "41f2", "b085", "1068e01c5d64"] as const;
+const UUID_PSHA = UUID_GRUPOS.join("-");
+
+test("[B3-pos] forma de UUID, caminho absoluto NAO versionado e nome de arquivo sem `/` nao escondem um SHA: exatamente as corridas plantadas de 7..40 cobradas, cada uma uma vez, 3 REJ — ⇄ M-a (classificacao por token de volta: o pre-voo de antes do conserto da PRE-VOO OK)", () => {
+  const arquivo = "deadbeef";
+  const linhas = [
+    `- caminho C:/Users/AMP/AppData/Local/Temp/claude/${UUID_PSHA}/x, medido por: true`,
+    `- uuid solto ${UUID_PSHA}, medido por: true`,
+    `- arquivo \`${arquivo}.md\` citado como nome, medido por: true`,
+  ];
+  const esperado = cobradasDoPlantado([...UUID_GRUPOS, arquivo]);
+  assert.equal(esperado.length, 3, "◐ o plantado nao tem as 3 corridas de 7..40 (dois grupos do UUID e o nome)");
+  // controle NA MESMA rodada: as MESMAS linhas sem as corridas plantadas -> 0 REJ (as REJ vem das corridas).
+  const ctrl = roda(mandato("b3pos-ctrl", linhas.map((l) => l.split(UUID_PSHA).join("sessao").split(arquivo).join("nome"))), "393");
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
+  const r = roda(mandato("b3pos", linhas), "393");
+  const { conjunto, repetidos } = acusadosNaSaida(r.out);
+  assert.deepEqual(conjunto, esperado, `o conjunto cobrado nao e o das corridas plantadas\n${r.out}`);
+  assert.deepEqual(repetidos, [], `SHA cobrado mais de uma vez\n${r.out}`);
+  assert.equal(r.rejeicoes, 3, r.out);
+  assert.equal(r.status, 1, r.out);
+});
+
+test("[F-4-pos] `_` PARTE a corrida (fronteira 10 FECHADA): o SHA fabricado colado por `_` num nome de arquivo e os dois grupos longos do UUID sao cobrados, exatamente esses, 3 REJ — ⇄ M-a (classificacao por token de volta: o pre-voo de antes do conserto da PRE-VOO OK)", () => {
+  const fab = FAKE(44);
+  const linhas = [`- o arquivo relatorio_${fab}.log ficou no scratchpad, medido por: true`, `- uuid solto ${UUID_PSHA}, medido por: true`];
+  const esperado = cobradasDoPlantado([fab, ...UUID_GRUPOS]);
+  assert.equal(esperado.length, 3, "◐ o plantado nao tem as 3 corridas de 7..40 (o fabricado e dois grupos do UUID)");
+  // controle NA MESMA rodada: as MESMAS linhas sem as corridas plantadas -> 0 REJ.
+  const ctrl = roda(mandato("f4pos-ctrl", linhas.map((l) => l.split(fab).join("x").split(UUID_PSHA).join("sessao"))), "393");
+  assert.equal(ctrl.rejeicoes, 0, ctrl.out);
+  assert.equal(ctrl.status, 0, ctrl.out);
+  const r = roda(mandato("f4pos", linhas), "393");
+  const { conjunto, repetidos } = acusadosNaSaida(r.out);
+  assert.deepEqual(conjunto, esperado, `o conjunto cobrado nao e o das corridas plantadas\n${r.out}`);
+  assert.deepEqual(repetidos, [], `SHA cobrado mais de uma vez\n${r.out}`);
+  assert.equal(r.rejeicoes, 3, r.out);
+  assert.equal(r.status, 1, r.out);
 });
