@@ -4783,3 +4783,4 @@ bloco mergear.
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+- 2026-10-04 — registro: parecer do porteiro do #404, decisões do dono de 03–04/10 (modelos, Codex, nuvem), R404-1 e R404-3 do porteiro, retomada pós-pausa.

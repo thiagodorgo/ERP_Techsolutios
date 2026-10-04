@@ -4909,3 +4909,16 @@ do Codex por limite de uso.
   caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
   que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
   vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
+
+## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
+
+- Limites resetados; Fable e Astra suspensos; Codex em `gpt-5.6-sol`; Claude em Opus só nas janelas sem Codex, uma tarefa
+  por vez (`decisoes.md`, decisões de 03 e 04/10). A cota do Codex medida: janelas de 35–45 min a cada ~4h30.
+- **#393** — junta 4 **REPROVADA 2×1** (C1d-01, C2d-02); ciclo 5 aberto: §16, §16-bis, §16-ter, corpos da junta 5, T5, T5b,
+  S5a (`d07814b0`, 369/369 e 45/45); matriz E4 do ciclo 5 rodando pelo orquestrador.
+- **#401** — junta 2 **REPROVADA** (veto da C2′: C2c2-F1, C2c2-F2); ciclo 3 aberto (planejador no Codex).
+- **#405** — B-SAN3-05 em rascunho (head `e3cb269d`); CI `backend` vermelho no T8d (depende do `pg_hba` do ambiente); de volta
+  ao dev no Codex.
+- **#404** — porteiro LIBERADO COM RESSALVA; este PR versiona o parecer e trata a R404-1 (títulos do `kpis-history.md`) e a
+  R404-3 (estado da decisão do cabeçalho em `decisoes.md`). A R404-2 (aceite dos planejadores para os donos de duas
+  pendências) e a R404-4 (disco: 8–9 GB livres; limpeza profunda feita em parte) seguem abertas.
