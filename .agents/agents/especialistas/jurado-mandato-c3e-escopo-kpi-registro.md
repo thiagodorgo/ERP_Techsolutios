@@ -699,3 +699,11 @@ Onde este corpo diz "9" para os not ok sobre o arnes pristino de 093499a8 (l.40,
 TAP; divergencia de N e achado; 10 != 9 nao e. Entradas (13 + 1), totais (369 / 45) e backend_tests (3466/3468)
 nao mudam. E o mandato da fabrica (fabrica-c5.md, fbadaf3d) sem blob-preflight/blob-refs na cerca e desvio REAL da
 regra C3d-03, registrado com causa pela errata (§16-bis.1, 2.2) antes da junta: a gravidade e sua.
+
+## APENSO E-c3e-2 (errata §16-ter — 2026-10-04)
+
+A lista historica (10) e: [P-SHA/gerado-cobra], [C1d-01a..d], [P-SHA/crlf], [C1d-02], [P-SHA/caminho-versionado],
+[B3-pos], [F-4-pos] — [B3-neg]/[F-4-neg] do apenso E-c3e-1 leem-se [B3-pos]/[F-4-pos]. O guard tem um commit T5b
+(Dev-T5) que REMOVE exatamente os blocos [B3-neg] e [F-4-neg] do 2ae15eef: confira por git diff -U0 2ae15eef <T5b>
+-- tests/ que toda linha '-' pertence a esses dois blocos (extraidos por parse do blob 2ae15eef), que o T5b toca so
+tests/mandato-preflight.test.ts e que vem ANTES do S5a (ordem por par, %cI). Totais 369 / 45; backend_tests 3466/3468.

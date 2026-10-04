@@ -2542,3 +2542,93 @@ base da ferramenta sair suja por esse caso, e achado a publicar (DIVERGE), nao a
 
 - **Limpeza §C5 (1 linha):** não criei worktree, logo `w-pl5b` nunca existiu (`git worktree list | grep -ic 'w-pl5b'` = 0). Removi pelo nome o mini-repositório `scratchpad/pl5/mini`. Ficam o arnês `scratchpad/pl5/arn` e a fixture `scratchpad/pl5/fx/cv.md`, que permitem reexecutar a medição. Não deixei processo de longa duração nem contêiner; a base viva nunca foi alvo; `MSYS_NO_PATHCONV` nunca foi exportada; não usei `tail -f`; não rodei `git config`, `clean`, `stash`, `reset` nem `push`; não toquei em corpo, mandato, caso ou script; não versionei.
 - **Fechamento medido — 12:55:08Z:** `16-bis` = 12 (≥ 1) · `fabrica` = 40 (≥ 1) · worktree `w-pl5b` = 0. O plano passou de 2438 para 2543 linhas antes desta seção, com CR igual ao número de linhas, 0 linhas removidas e `git diff --check` limpo. As 2438 primeiras linhas são iguais ao blob do HEAD. Fora o plano, o `porcelain` mostra só os fantasmas ` M .agents`. O ramo local e o `origin` estão em `a3d92139` e não andaram.
+
+## §16-ter — ERRATA 2 do ciclo 5 (2026-10-04): [B3-neg] e [F-4-neg], a lista histórica certa, a variante com barra do C1d-02 e o que muda para o dev de scripts
+
+planejador-mestre | planejador-ciclo5-b-gov-mandato (a MESMA da §16 e da §16-bis, relançada) | Opus 5.5 (Claude Code), substituição DECLARADA — decisão do dono de 2026-10-04 (Claude em Opus nas janelas sem Codex, uma tarefa por vez; Fable e GPT-6 Astra suspensos até o reset semanal) | mandato_md5 c6cccff35d642926015708c878dbc904 (`00-mandatos/planejador-c5-errata2.md` @ `329edfad`; disco = blob, EOL-neutro) | corpo planejador-mestre .claude 4c912f69a93f07b14d8fd1c49539c778 · espelho Codex 9ef61338b04967fbc8de696edd7319c9
+
+> Esqueleto gravado em 14:08:51Z antes de medir (P1). O relatório do dev de testes é relato a re-verificar, nunca fato.
+
+### §16-ter.0 — Terreno e insumos
+
+- **Objeto** (14:08:36Z) — medido por: `git rev-parse` em `w-mandato` e `git ls-remote origin refs/heads/chore/mandato-refs-e-preflight`: **`329edfad`** nas duas fontes. O T5 (`2ae15eef`) é ancestral do objeto, e `git diff --stat 2ae15eef 329edfad -- tests` é vazio: os guards do objeto são os do T5. O plano tinha 2544 linhas e 504521 bytes, termina em CRLF, e esta errata entra depois do último byte.
+- **Mandato** — medido por: `tr -d '\r' | md5sum` no disco e no blob de `329edfad`: **`c6cccff3…` nos dois** = o declarado.
+- **Terreno:** não criei worktree. Li o guard do T5 pelo blob (`git show 2ae15eef:tests/mandato-preflight.test.ts`, gravado em `scratchpad/pl5/t5.ts`) e não toquei em `w-devt5`. As duas medições rodaram no arnês pristino `scratchpad/pl5/arn` (pré-voo `093499a8`, que é o do objeto) e no protótipo de medição `scratchpad/pl5/iproto` (P-SHA da §16.2), com `MANDATO_REFS=stub-refs.sh` (a proveniência é só o SHA do commit do arnês), PR 393 e `timeout -k 5 60`. Não toquei em `w-s05d` nem em `w-pl11c3`.
+- **Insumo:** `00-dev-tests-relatorio.md` (`aabb211f`), seções de 13:23Z a 13:44Z, lido como relato. Re-medido por mim: o caso `[P-SHA/caminho-versionado]` do T5 monta o próprio mini-repositório e copia `SCRIPT` (l.2938 e seguintes do blob: `mkdtempSync`, `copyFileSync(SCRIPT, …)`, e as precondições ◐ de `ls-files --error-unmatch` e `?? <solto>`), como manda a §16-bis 2.8. O AVISO que o caso assere é `^AVISO {6}…corrida hex…caminho versionado…<caminho>`.
+
+### §16-ter.1 — (a) [B3-neg], [F-4-neg] e a lista histórica
+
+**O conflito procede, e o erro é meu.** A §16.2 mandou o Dev-T5 modificar linhas existentes. O passo 2 da §16.4 e o mandato do dev dizem "só adições". O dev não escolheu o lado da regra, entregou só as adições e parou. Fez certo (R2 da §15.10).
+
+**As linhas dos dois casos, medidas (14:10:30Z), no pré-voo do head e no protótipo, com PR 393 e stub:**
+```
+[B3-neg]  (caminho absoluto C:/…/3ad1b87d-fdbf-…-1068e01c5d64/x · uuid solto · `deadbeef.md`)
+   093499a8 (head):  ec=0  PRE-VOO OK, 0 REJ, stderr 0 B
+   P-SHA:            ec=1  SHA '1068e01c5d64' · SHA '3ad1b87d' · SHA 'deadbeef'   nao esta na saida   (3 REJ, nada mais)
+[F-4-neg] (relatorio_<FAKE(44)>.log · uuid solto)
+   093499a8 (head):  ec=0  PRE-VOO OK, 0 REJ
+   P-SHA:            ec=1  SHA '1068e01c5d64' · SHA '3ad1b87d' · SHA 'deadbeef…be44'   nao esta na saida   (3 REJ, nada mais)
+```
+A isenção por fato da P-SHA′ não alcança nenhuma dessas linhas. O caminho absoluto não é versionado, e `deadbeef.md` e `relatorio_….log` não têm `/` (I13). Por isso o protótipo, que só tem P-SHA, prevê o `S5a`. **Os dois casos, como estão, ficam vermelhos sob o `S5a`** (foi o que o guard sobre o protótipo mediu na §16.2: `not ok 12` e `not ok 254`). Sem uma decisão, o `S5a` não fecha `fail 0`.
+
+**DECISÃO: remover os dois casos e acrescentar dois casos novos, com identificadores novos.** Não reescrevo no lugar porque um `[…-neg]` que asserisse cobrança mentiria no próprio identificador. E "só adição", mantendo os dois, é impossível: eles afirmam a isenção por forma que a P-SHA′ revoga, então o `S5a` nunca fecharia.
+- **Sai:** os dois blocos inteiros, `test("[B3-neg] …` e `test("[F-4-neg] …`, do `test(` ao `});` que o fecha. Mais nada.
+- **Entra `[B3-pos]`.** Propriedade: *"forma de UUID, caminho absoluto não versionado e nome de arquivo sem `/` não escondem um SHA"*. Usa as mesmas três linhas, com PR 393 e um refs cuja proveniência não as contém. Esperado: o conjunto de `SHA '<x>' nao esta na saida` = **exatamente** {`3ad1b87d`, `1068e01c5d64`, `deadbeef`}, cada um uma vez, `rejeicoes` = 3, `status` 1. Esse é o conjunto medido acima, e o caso o calcula das corridas que plantou, não por regex sobre a linha.
+- **Entra `[F-4-pos]`.** Propriedade: *"`_` parte a corrida: a fronteira 10 está FECHADA"*. Usa as mesmas duas linhas. Esperado: o conjunto = **exatamente** {`FAKE(44)`, `3ad1b87d`, `1068e01c5d64`}, `rejeicoes` = 3.
+- **⇄ dos dois:** a M-a (a classificação por token de `093499a8` de volta) deixa ambos vermelhos, porque o head dá `PRE-VOO OK`, medido acima. Os dois entram na lista histórica.
+
+**Quem executa: o Dev-T5** (`dev-tests-ciclo5-b-gov-mandato`, a mesma identidade), num commit **`T5b`** só em `tests/mandato-preflight.test.ts`. A **autorização nominal de remoção** cobre só os dois blocos nomeados. Mandato novo `00-mandatos/dev-tests-c5-t5b.md`, gerado pelo orquestrador: forma A, `HC = H0`, cerca com `blob-preflight=`/`blob-refs=`, e esta seção citada como fonte. É o precedente do T4c-2 (§15.14(e)): o dev relata, o planejador decide por errata, o mesmo dev executa. Ele não julgou o achado e não escreveu o critério. **Prova do Dev-T5 antes do commit:** o guard inteiro no arnês pristino do head, com a lista de `not ok` comparada **por conjunto** com a lista abaixo e "sobra" e "falta" vazias, e o `[B3-pos]`/`[F-4-pos]` sobre a cópia com a M-a. Ele não precisa do `S5a`: o vermelho deles no head é o vermelho-controle histórico.
+
+**A lista histórica certa, sobre `093499a8`, com o guard do `T5b` — 10:** [P-SHA/gerado-cobra], [C1d-01a], [C1d-01b], [C1d-01c], [C1d-01d], [P-SHA/crlf], [C1d-02], [P-SHA/caminho-versionado], **[B3-pos]**, **[F-4-pos]**. As 8 primeiras foram medidas pelo dev (13:42Z, `# tests 369 · fail 8`) e conferem com a §16-bis. As 2 últimas são hipótese por construção: o head dá `PRE-VOO OK` nas linhas delas, medido acima. **Derruba:** o TAP do Dev-T5 no `T5b`. **Onde a §16-bis 2.7 e o apenso E-c3e-1 escrevem `[B3-neg]`, `[F-4-neg]`, lê-se `[B3-pos]`, `[F-4-pos]`.**
+
+**Números (hipóteses; derruba: o TAP):** pré-voo 356 − 2 + 15 = **369**, igual ao total da §16-bis por outro caminho: no ciclo 5 entram 15 identificadores e saem 2. Refs **45**; `backend_tests` **3466/3468**, inalterado. Linhas removidas no `T5b`: só as dos dois blocos. A C3⁗⁗ confere por `git diff -U0 2ae15eef <T5b> -- tests/ | grep -E '^-[^-]'` contra os dois blocos extraídos por parse do blob `2ae15eef`, e qualquer linha removida fora deles é achado. **Risco (R1):** algum caso de meta-contagem do guard (contagem de títulos ou de casos, leitura da própria fonte) pode depender dos dois identificadores. O Dev-T5 roda o guard inteiro, relata o que mudar e não decide.
+
+### §16-ter.2 — (b) a variante com barra invertida do C1d-02
+
+**O relato procede.** `grep\ -c` (a barra no fim do nome) não é invocação de `grep`: a barra escapa o espaço (POSIX 2.2.1) e o shell tenta executar uma palavra com espaço dentro. **DECISÃO: fica fora, e não vira fronteira.** Fronteira serve para um escape que a propriedade deveria pegar e não pega. Aqui não existe busca a cobrar, então não há escape. O caso do T5 já trata a variante como a §16.2 manda para o que muda a estrutura da unidade: o oráculo independente é o próprio `bash`, o caso assere que o conjunto que sai é **exatamente** essa variante, e não assere nada sobre ela (`linhasFora`). **O comportamento do `S5a` nessa linha não é critério:** REJ5 ali é sobre-rejeição inofensiva de um comando que nem executa, e a ausência de REJ é o certo. O caso exige que toda REJ seja da checagem 5 (`r.rejeicoes === rej5.length`), e as duas saídas cumprem. Nenhuma linha do caso muda.
+
+### §16-ter.3 — (c) o que muda para o dev de scripts, e quem executa cada mudança
+
+| mudança | quem | quando |
+|---|---|---|
+| mandato `00-mandatos/dev-tests-c5-t5b.md` (forma A, `HC = H0`, blobs na cerca, autorização nominal de remover os dois blocos) | orquestrador | antes do T5b |
+| commit **`T5b`**: sai `[B3-neg]` e `[F-4-neg]`; entra `[B3-pos]` e `[F-4-pos]`; vermelho-controle histórico republicado (10) | Dev-T5 | antes do S5a |
+| apensos E-c2e-3 e E-c3e-2 (abaixo), nos dois espelhos, antes do inspetor | fábrica ou orquestrador | qualquer ordem com o T5b |
+| **S5a** | Dev-S5 | **depois** do T5b empurrado |
+
+**Para o Dev-S5 (o mandato dele nasce com `HC = H0` no head que já contém o `T5b`):**
+1. A meta é o guard do **`T5b`** com `fail 0`: pré-voo **369**, refs **45**. Os 10 da lista histórica ficam verdes no `S5a`. O protótipo prevê os 3 + 3 conjuntos de `[B3-pos]`/`[F-4-pos]` (medido acima).
+2. **Fronteira 10 FECHADA** no cabeçalho (`_` parte a corrida), com o `[F-4-pos]` como teste de encerramento. Cai também a nota `<80 hex>:x` (§16.2).
+3. A isenção por fato imprime uma linha `AVISO` que contém `corrida hex`, `caminho versionado` e o caminho. É o que o `[P-SHA/caminho-versionado]` assere, e o texto exato é do dev.
+4. A checagem 5 lê a palavra do comando pelas regras de citação do shell: aspas e `\`, inclusive o `\` que junta palavras. O cabeçalho registra isso. O `grep\ -c` **não** é critério (§16-ter.2), e o Dev-S5 não deve escrever código para reconhecê-lo.
+5. Se o `S5a` precisar mexer num caso, o dev escreve a falsificação e **para** (§8 regra 1). Não edita `tests/**`.
+
+**Apensos (VERBATIM, ao fim de cada corpo, nos dois espelhos; o md5 do corpo é declarado já com o apenso):**
+
+**E-c2e-3** — ao fim de `jurado-mandato-c2e-cobertura-e-conferencia.md`:
+```
+## APENSO E-c2e-3 (errata §16-ter — 2026-10-04)
+
+Na sua lista de casos a localizar pelo identificador, [B3-neg] e [F-4-neg] SAIRAM do guard (commit T5b, autorizacao
+nominal de remocao) e [B3-pos] e [F-4-pos] ENTRARAM: forma de UUID, caminho absoluto nao versionado, nome sem '/' e
+'_' nao escondem um SHA. Os dois sao da lista historica (vermelhos em 093499a8) e o ⇄ deles e a M-a. A variante
+'grep\' (barra no fim do nome) do [C1d-02] fica FORA do conjunto asserido por decisao da errata: o comportamento do
+S5a nela nao e criterio, e cobrar REJ5 ali e reprovacao por construcao.
+```
+
+**E-c3e-2** — ao fim de `jurado-mandato-c3e-escopo-kpi-registro.md`:
+```
+## APENSO E-c3e-2 (errata §16-ter — 2026-10-04)
+
+A lista historica (10) e: [P-SHA/gerado-cobra], [C1d-01a..d], [P-SHA/crlf], [C1d-02], [P-SHA/caminho-versionado],
+[B3-pos], [F-4-pos] — [B3-neg]/[F-4-neg] do apenso E-c3e-1 leem-se [B3-pos]/[F-4-pos]. O guard tem um commit T5b
+(Dev-T5) que REMOVE exatamente os blocos [B3-neg] e [F-4-neg] do 2ae15eef: confira por git diff -U0 2ae15eef <T5b>
+-- tests/ que toda linha '-' pertence a esses dois blocos (extraidos por parse do blob 2ae15eef), que o T5b toca so
+tests/mandato-preflight.test.ts e que vem ANTES do S5a (ordem por par, %cI). Totais 369 / 45; backend_tests 3466/3468.
+```
+
+### §16-ter.4 — Fechamento
+
+- **Precisão ao R1 de (a), medida:** `grep -n 'B3-neg\|F-4-neg'` no blob `2ae15eef` dá **2** ocorrências, só nas declarações (l.249 e l.1175). Nenhuma outra linha do guard cita os dois identificadores. O risco de meta-contagem por **número** de casos continua sendo do TAP do Dev-T5.
+- **Limpeza §C5 (1 linha):** não criei worktree (`git worktree list | grep -ic 'w-pl5c'` = 0). Ficam, para reexecutar, `scratchpad/pl5/{t5.ts, fx/b3.md, fx/f4.md, out/{arn,iproto}.{b3,f4}.err}`, além do arnês e do protótipo que já existiam. Nenhum processo de longa duração, nenhum contêiner. Base viva nunca alvo. `MSYS_NO_PATHCONV` nunca exportada; `tail -f` nunca. Não rodei `git config`, `clean`, `stash`, `reset` nem `push`. Não toquei em `w-devt5`, `w-s05d` nem `w-pl11c3`, nem em corpo, mandato, caso ou script; não versionei.
+- **Fechamento medido — 14:11:46Z:** `16-ter` = 9 (≥ 1) · `B3-neg` = 17 (≥ 1) · worktree `w-pl5c` = 0. O ramo local e o `origin` estão em `329edfad` e não andaram.

@@ -539,3 +539,11 @@ arnes: ele monta o PROPRIO repositorio temporario com o script SOB TESTE copiado
 caminho nenhum ao arnes; (ii) confira, lendo o caso, que ele copia SCRIPT (e nao um caminho fixo do repositorio) —
 copia fixa = a mutacao do arnes da ferramenta nao e exercida = A11, achado; (iii) o caso e da lista historica (vermelho
 em 093499a8; a lista e 10, nao 9), e M-h/M-i sao os vermelhos-controle dele por mutacao sobre o S5a.
+
+## APENSO E-c2e-3 (errata §16-ter — 2026-10-04)
+
+Na sua lista de casos a localizar pelo identificador, [B3-neg] e [F-4-neg] SAIRAM do guard (commit T5b, autorizacao
+nominal de remocao) e [B3-pos] e [F-4-pos] ENTRARAM: forma de UUID, caminho absoluto nao versionado, nome sem '/' e
+'_' nao escondem um SHA. Os dois sao da lista historica (vermelhos em 093499a8) e o ⇄ deles e a M-a. A variante
+'grep\' (barra no fim do nome) do [C1d-02] fica FORA do conjunto asserido por decisao da errata: o comportamento do
+S5a nela nao e criterio, e cobrar REJ5 ali e reprovacao por construcao.
