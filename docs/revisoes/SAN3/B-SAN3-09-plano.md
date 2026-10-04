@@ -1548,3 +1548,351 @@ produção (exige o DB provisionado), NAO um passo deste PR. Requisitos:
    como secret fixo (senao reabre o seed demo no mesmo ambiente).
 3. Dominio + TLS pelo Fly (certs gerenciados) apos o `fly apps create` e o apontamento de DNS.
 ```
+
+---
+
+## §15 — CICLO 2 (o último em que achado não grave bloqueia) — plano de correção
+
+Papel: planejador-mestre · identidade `planejador-ciclo2-b-san3-09` (nova; não achou, não desenvolveu, não planejou o ciclo 1) ·
+**Modelo: Claude Opus 5.5 (`claude-opus-5-5`) — substituição declarada (§C7.6-bis): Fable e Astra suspensos pelo dono até o
+reset semanal; Claude em Opus nas janelas sem Codex, uma tarefa por vez.** Corpo carregado: `planejador-mestre.md`, md5
+EOL-neutro `4c912f69a93f07b14d8fd1c49539c778`. Início 2026-10-04T23:24Z.
+
+> STATUS: COMPLETO — ver o fecho em 15.6.
+
+### 15.0 Objeto, regra e insumos
+
+- **Objeto medido:** `7812fe7cd1783afc09e7d4afce5c7cb497011d45` (= `origin/feat/bootstrap-platform-admin`, medido por `git fetch` +
+  `git rev-parse`); árvore de produto idêntica ao objeto julgado `ba65c03a` (o delta são só ata, votos e R-1). Medição num
+  worktree próprio detached `C:/Users/AMP/w-pl09c2` (npm ci próprio, `prisma generate` com URL só no comando); o teste `-db` num
+  container Linux próprio (receita 4.2-bis do inspetor, nomes `pl09c2-*`). Base viva 5432/6379 nunca alvo.
+- **Regra (CLAUDE.md da `origin/main` `357a98e9`, §C7 item 8, `D-GOV-PROPORCIONAL`):** junta completa (o bloco mexe em
+  segurança e permissão), **teto de 2 ciclos** — este é o último ciclo em que achado não grave bloqueia; no ciclo 3 só defeito de
+  produto grave bloqueia. **KPI congelado** (item 8(5)): este plano não muda `Kpis/*`.
+- **Insumos (relato de quem achou; re-medidos aqui, nunca herdados):** ata `J-B-SAN3-09.md` (ciclo 1, REPROVADO 3×0), `R-B-SAN3-09-1.md`,
+  `votos/B-SAN3-09/C{1,2,3}-{voto.json,evidencia.md}`, `00-inspetor-terreno.md` (receita 4.2-bis).
+- **Baseline no objeto:** T1 (`tests/san3-09-bootstrap-platform-admin.test.ts`) **23/23**, ec=0, Windows (depois de
+  `prisma generate`; sem ele o arquivo inteiro cai por `PrismaClient` ausente — artefato de terreno, não do bloco).
+
+### 15.1 Bloqueantes — vermelho-controle no objeto, remédio por PROPRIEDADE, mutação que deixa cada critério vermelho
+
+Regra deste ciclo, para os cinco: o remédio enuncia a **propriedade** e é gerado da fonte; nenhum critério aceita uma lista de
+formas ou de grafias. Cada critério traz a mutação que o deixa vermelho; a junta 2 roda a mutação.
+
+#### 15.1.1 C3-F3 — o script trata flag desconhecida como benigna (defeito de PRODUTO, o mais grave dos cinco)
+
+**Vermelho-controle (reproduzido por mim: `parseArgv` do objeto, Windows, `node --import tsx` de uma sonda fora do repositório):**
+
+| argv | resultado no objeto |
+|---|---|
+| `--password-stdin --dryrun` | `{dryRun:false, passwordStdin:true}` → **aplica de verdade** |
+| `--dry_run` · `--Dry-Run` · `dry-run` · `-n` | `dryRun:false` → aplica |
+| `--dry-run=false` (e, pela mesma regra, `--dry-run=true`) | `dryRun:false` → aplica |
+| `--reset-pasword` | `resetPassword:false` → a senha "redefinida" fica a antiga, em silêncio |
+| `-p segredo` | aceito → senha em argv, visível em `ps` (a defesa `PASSWORD_IN_ARGV` só conhece 2 grafias) |
+
+8 de 8 tokens desconhecidos passam calados. O efeito no banco (o `--dryrun` grava o e-mail errado e o certo passa a ser recusado com
+`ADDITIONAL_ADMIN_REFUSED`, sem caminho de remoção) está re-medido no container em 15.1.4.
+
+**Propriedade:** *todo token de argv que não pertence ao conjunto fechado de flags conhecidas é RECUSADO (exit 2; nada lido, nada
+conectado, nada escrito), e a recusa nunca ecoa o token* (ele pode ser uma senha).
+
+**Remédio (dev)** em `scripts/bootstrap-platform-admin.ts`:
+1. Uma fonte só para as flags: `export const BOOTSTRAP_FLAGS = { "--dry-run": "dryRun", "--password-stdin": "passwordStdin",
+   "--reset-password": "resetPassword" } as const satisfies Record<string, keyof BootstrapFlags>;` e a exaustividade no outro
+   sentido pelo compilador (todo campo de `BootstrapFlags` tem flag: um tipo `Exclude<keyof BootstrapFlags, (typeof
+   BOOTSTRAP_FLAGS)[keyof typeof BOOTSTRAP_FLAGS]>` que tem de ser `never`, de modo que um campo novo sem flag quebra o `tsc` do A19).
+2. `parseArgv`: para cada token, **primeiro** a recusa de senha (`--password`, `--password=…` → `PASSWORD_IN_ARGV`, como hoje); depois,
+   se `!Object.hasOwn(BOOTSTRAP_FLAGS, token)` → `BootstrapRefused("UNKNOWN_ARGUMENT", "Argumento não reconhecido na posição N. Aceitos:
+   --dry-run, --password-stdin, --reset-password. Nada foi feito.")` — com a **posição**, nunca o texto do token. `Object.hasOwn`, não
+   `in` (o `in` aceita `constructor`, `toString`, `__proto__`). Comparação exata (sem `toLowerCase`, sem `=valor`). Flag repetida é
+   aceita (idempotente; declarado). Novo membro `"UNKNOWN_ARGUMENT"` na união `BootstrapRefusalCode`.
+3. `parseArgv` continua a **primeira** linha de `main()` — antes da trava, do `DATABASE_URL`, do stdin e do `PrismaClient`.
+4. Runbook B ganha uma linha: argumento não reconhecido → `UNKNOWN_ARGUMENT`, exit 2, nada gravado.
+
+**Testes (dev), com a tabela GERADA da fonte:**
+- **T1.2b** (sem banco): importa `BOOTSTRAP_FLAGS` do script e gera, para cada flag conhecida, as variantes de distância 1 (apagar
+  cada caractere; trocar a caixa de cada letra; `-`↔`_`; um traço só; sem traços; `=true`, `=1`, `=false`), mais as fixas `--dryrun`,
+  `-n`, `-p`, `--`, `""`, `" --dry-run"`, `constructor`, `toString`, `__proto__`, `hasOwnProperty`; **cada uma** recusa com
+  `UNKNOWN_ARGUMENT` (ou `PASSWORD_IN_ARGV` nas formas de senha) e a mensagem **não contém** o token (tokens de 3+ caracteres). Asserta
+  que a tabela gerada tem pelo menos `3 × |BOOTSTRAP_FLAGS|` linhas e publica o N no nome do caso. Controle positivo: cada flag
+  conhecida sozinha e todas juntas são aceitas, com o campo certo `true`.
+- **T1.5c** (processo filho, sem banco, roda no Windows): `--password-stdin --dryrun` sem `DATABASE_URL` → exit 2 e stderr com
+  `UNKNOWN_ARGUMENT` (e **não** `DATABASE_URL_MISSING`, o que prova que a recusa vem antes de tudo); `-p <sentinela>` → exit 2 e a
+  sentinela ausente de stdout+stderr.
+- **T2.4b** (com banco, Linux): numa base de drill limpa e provisionada, o processo filho com `--password-stdin --dryrun` → exit 2
+  `UNKNOWN_ARGUMENT` e **0** linhas nas 5 tabelas da organização de sistema — o cenário exato da C3.
+
+**Mutações que deixam cada critério vermelho (a junta roda):**
+
+| mutação | fica vermelho |
+|---|---|
+| MF3-a: o ramo `UNKNOWN_ARGUMENT` vira `continue` (o comportamento do objeto) | T1.2b (todas as linhas geradas), T1.5c (sai `DATABASE_URL_MISSING`), T2.4b (exit 0, 1/1/1/1/1) |
+| MF3-b: `Object.hasOwn(BOOTSTRAP_FLAGS, t)` → `t in BOOTSTRAP_FLAGS` | T1.2b (linhas `constructor`/`toString`/`__proto__`/`hasOwnProperty`) |
+| MF3-c: a mensagem passa a incluir o token | T1.2b (checagem de eco) e T1.5c (sentinela) |
+| MF3-d: comparação por `token.toLowerCase()` | T1.2b (variantes de caixa) |
+| MF3-e: `parseArgv` movido para depois da leitura de `DATABASE_URL` | T1.5c (sai `DATABASE_URL_MISSING`) |
+| MF3-f: campo novo em `BootstrapFlags` sem flag em `BOOTSTRAP_FLAGS` | `tsc` do A19 (o tipo de exaustividade deixa de ser `never`) |
+
+#### 15.1.2 C3-F1 — o guard de imports reconhece FORMA (regex de uma linha, com `from` e aspas duplas)
+
+**Vermelho-controle (reproduzido por mim: cópia do script no meu worktree, T1 inteiro a cada mutante, restauro provado por
+`git hash-object` = blob `827a53b4…`):**
+
+| mutante (intruso `node:crypto`, fora da allowlist) | T1 |
+|---|---|
+| E — `import { randomUUID } from 'node:crypto'` (aspas simples) | **23/23 verde** |
+| C — import multilinha (`import {` … `} from "node:crypto"`) | **23/23 verde** |
+| F — re-export `export { randomUUID } from "node:crypto"` | **23/23 verde** |
+| DYN — `await import("node:crypto")` | **23/23 verde** |
+| controle A — `import { randomUUID } from "node:crypto"` (uma linha, `from`, aspas duplas) | 22/23, T1.7 vermelho |
+
+**Propriedade:** *todo construto do script que pode carregar módulo em runtime — import estático (inclusive de efeito colateral e
+multilinha, com qualquer aspa), re-export, `import x = require(…)`, `import(…)` dinâmico, chamada a `require` — tem especificador
+literal pertencente à allowlist; construto com especificador não literal reprova; e o fecho de runtime do script em `src/` não contém
+`src/config/env.ts`* (a razão da allowlist, plano §2.1).
+
+**Remédio (dev)** em `tests/san3-09-bootstrap-platform-admin.test.ts`:
+1. **Uma** função verificadora, `collectModuleSpecifiers(text, fileName)`, sobre a **AST do TypeScript** (`typescript` já é
+   devDependency, `package.json:59` — não é dependência nova; é o primeiro uso dele em `tests/`, e fica declarado): percorre a árvore
+   inteira (`ts.forEachChild` recursivo, não só o nível de topo) e coleta `ImportDeclaration`, `ExportDeclaration` com
+   `moduleSpecifier`, `ImportEqualsDeclaration` com `ExternalModuleReference`, `CallExpression` com `ImportKeyword` e `CallExpression`
+   de identificador `require`. Especificador não literal (variável, template com substituição) entra como o marcador `<não-literal>`,
+   que nunca está na allowlist. Arquivo com `parseDiagnostics` reprova (não parseável = não verificável).
+2. **Oráculo independente (diferencial):** o conjunto coletado tem de **conter** o de `ts.preProcessFile(text, true, true).importedFiles`
+   (o scanner de imports do próprio compilador, outro caminho de código). Se o verificador perder uma forma que o scanner vê, fica
+   vermelho. No script real os dois conjuntos são iguais e têm os **6** especificadores (a regex do objeto via 3, voto C3).
+3. **Fecho de runtime:** a mesma função, aplicada recursivamente aos especificadores relativos (`.js` → `.ts`), ignorando só
+   `import type`/`export type` (apagados pelo compilador), produz o conjunto de arquivos de `src/` carregados; asserta
+   `src/config/env.ts` ∉ fecho e publica o tamanho do fecho no nome do caso.
+4. A regex de `extractScriptImports` some: nenhuma extração de import por regex no arquivo.
+
+#### 15.1.3 C3-F2 — o teste de mutação do T1.7 é tautológico (segunda cópia literal da regex)
+
+**Vermelho-controle (reproduzido por mim):** mutante V — a regex da l.261 enfraquecida para `"(@prisma[^"]+)"` — **mais** o intruso
+de controle A no script: T1 **23/23**, inclusive `ok 22 - T1.7 … MUTAÇÃO — import fora da allowlist é detectado`. O guard e o teste
+que o "testa" vivem em dois literais, e nada falha quando divergem.
+
+**Propriedade:** *enfraquecer qualquer ramo do verificador deixa vermelho pelo menos um caso do teste de mutação.*
+
+**Remédio (dev):** o T1.7-mutação lê o texto **real** do script (`readFileSync` do mesmo caminho do guard) e, para cada forma da lista
+abaixo, injeta o intruso e chama **a mesma** `collectModuleSpecifiers` do guard (um só literal no arquivo; nenhuma segunda regex nem
+segunda implementação); cada injeção tem de produzir violação **nomeando o especificador injetado**, e o texto sem injeção produz **0**
+violações (controle). Formas: efeito colateral; multilinha; aspas simples; `export * from`; `export { x } from`; `import(…)` literal;
+`import(variavel)`; `` import(`node:crypto`) `` (template sem substituição); `import x = require("…")`; `require("…")`; injeção
+**dentro** de uma função (não no topo); e import precedido de comentário de bloco.
+
+**Mutações que deixam os critérios de 15.1.2 e 15.1.3 vermelhos (a junta publica a matriz ramo × caso vermelho):**
+
+| mutação no script (MF1-*) ou no verificador (MF2-*) | fica vermelho |
+|---|---|
+| MF1-a…e: injetar no **script** as formas E, C, F, DYN e efeito colateral (`import "node:crypto"`) | T1.7-guard |
+| MF1-f: injetar `await import(nome)` com `nome` variável | T1.7-guard (`<não-literal>`) |
+| MF1-g: o script passa a importar `../src/modules/auth/index.js` (alcança `env.ts`) | T1.7-guard (allowlist), T1.7-fecho (`env.ts` no fecho) e T1.5 |
+| MF2-a: apagar o ramo `ExportDeclaration` do verificador | T1.7-mutação (casos `export … from`) e o diferencial do `preProcessFile` |
+| MF2-b: apagar o ramo `ImportKeyword` (dinâmico) | T1.7-mutação (casos `import(…)`) e o diferencial |
+| MF2-c: percorrer só `sourceFile.statements` (sem recursão) | T1.7-mutação (injeção dentro de função) |
+| MF2-d: tratar especificador não literal como "ignorar" | T1.7-mutação (caso `import(variavel)`) |
+| MF2-e: o mutante V do ciclo 1 (verificador só aceita `@prisma*`) | T1.7-guard no script real (o controle de 0 violações deixa de valer) |
+| MF2-f: o fecho deixa de recursar | T1.7-fecho sob MF1-g (o `env.ts` é transitivo, via `auth/index.js`) |
+
+#### 15.1.4 A-1 — T2.4 e T2.10 ficam verdes sob os mutantes do A11 e do A18
+
+**Vermelho-controle (reproduzido por mim, container Linux `pl09c2-node` — node 20, `postgres:16` e `redis:7` próprios, árvore por
+`git -c core.autocrlf=false archive` com md5 = blob no script, no teste `-db` e no lockfile):** baseline T2 **11/11**, ec=0.
+MA1 (`if (dryRun) {` da l.212 → `if (false && dryRun) {`) → T2 **11/11 verde**. MA6 (apagar a l.190, o `pg_advisory_xact_lock`) →
+T2 **11/11 verde**. Restauro md5 = blob `a5f5383d…` depois de cada um.
+
+O efeito de produto do C3-F3 também foi re-medido aqui (Windows, script contra o cluster próprio): banco limpo e provisionado →
+`--password-stdin --dryrun` com o e-mail ERRADO → exit 0, `modo: aplicar`, `CONVERGIDO`; depois, o e-mail certo com `--dry-run` e
+aplicando → exit 2 `ADDITIONAL_ADMIN_REFUSED` nos dois; estado final `1/1/errado@example.com`.
+
+**O remédio foi medido antes de ser planejado (sondas fora do repositório, no container):**
+- **Dry-run sob sessão READ ONLY** (`options=-c default_transaction_read_only=on` na URL do `PrismaPg`): no objeto, o dry-run passa nos
+  4 estados alcançáveis e **aplicar** sob a mesma sessão falha com `cannot execute INSERT in a read-only transaction`. Matriz medida,
+  5 guardas de dry-run × 4 estados:
+
+  | mutante (no objeto) | limpo | só organização | organização + usuário (sem vínculo, sem credencial) | convergido |
+  |---|---|---|---|---|
+  | nenhum (objeto) | OK | OK | OK | OK |
+  | MA1 l.212 `if (dryRun)` → `if (false && dryRun)` | **ERRO** | OK | OK | OK |
+  | MA2 l.257 idem | OK | **ERRO** | OK | OK |
+  | MA3 l.282 `!assignment && !dryRun` → `!assignment` | OK | OK | **ERRO** | OK |
+  | MA4 l.297 `if (!dryRun)` → `if (true)` | OK | OK | **ERRO** | OK |
+  | MA5 l.317 `if (!dryRun && …` → `if (…` | OK | OK | **ERRO** | OK |
+
+  Cada mutante morre em exatamente um estado. Por isso o critério exige **todos** os estados: o T2.4 do objeto só exercita o convergido,
+  onde nenhum dos cinco morre.
+- **Corrida** (2 clientes, `Promise.allSettled`, um banco clonado por rodada com `CREATE DATABASE … TEMPLATE`): objeto **3/3** rodadas
+  com as duas resolvidas e 1/1/1/1/1; sem a trava (MA6), **0/5** — uma das duas rejeita em `tx.tenant.create()` e as contagens ficam
+  1/1/1/1/1 **mesmo assim**. É por isso que o `fulfilled.length >= 1` do objeto não pode falhar.
+- Formato real do hash gravado: `scrypt$v=1$N=…$r=…$p=…$<sal>$<chave>`; o literal `$scrypt-v1$` do T2.9 nunca ocorre (M-1, em 15.2).
+
+**Propriedades:** A11 — *o dry-run não emite escrita em NENHUM estado alcançável*, dito pelo próprio banco (sessão read only), não por
+contagem de duas tabelas. A18 — *duas execuções simultâneas em estado limpo resolvem AMBAS e convergem 1/1/1/1/1 nas 5 tabelas*.
+
+**Remédio (dev)** em `tests/san3-09-bootstrap-platform-admin-db.test.ts`:
+1. **Banco-modelo:** um banco de drill migrado e provisionado **uma vez**; cada caso que precisa de estado limpo clona com
+   `CREATE DATABASE "<nome>" TEMPLATE "<modelo>"` (nenhuma conexão aberta no modelo durante o clone — desconectar antes) e o derruba com
+   `DROP DATABASE … WITH (FORCE)` no `finally`. `CREATE DATABASE` não está no ratchet lexical; `CREATE ROLE`/`GRANT`/… continuam
+   proibidos no arquivo, inclusive em comentário.
+2. **T2.4 reescrito:** para cada estado de {limpo; só organização; organização + usuário sem vínculo e sem credencial; convergido;
+   convergido com `resetPassword: true`}, um clone semeado pela conexão administrativa; o dry-run roda por um `PrismaClient` cuja URL leva
+   `options=-c default_transaction_read_only=on` (montada com `new URL(...).searchParams.set`, nunca por concatenação, porque a URL da CI
+   pode ter query); asserta sucesso, o relatório coerente com o estado e a impressão digital das 5 tabelas (`tenants` slug `platform`,
+   `users`, `user_role_assignments`, `local_auth_credentials`, `audit_logs`, mais o `password_hash`) igual antes e depois. **Controle
+   dentro do próprio caso:** a mesma sessão read only com `dryRun: false` no estado limpo tem de falhar com `read-only transaction` (prova
+   que a sessão de fato morde; sem isso, um `options` ignorado deixaria o caso verde-cego). E o caminho do Runbook B: o processo filho
+   `--password-stdin --dry-run` no estado limpo → exit 0, `nada foi escrito`, 0 nas 5 tabelas.
+3. **T2.4b:** o cenário do C3-F3 (15.1.1).
+4. **T2.10 reescrito:** N = 3 rodadas, cada uma num clone; por rodada, `fulfilled.length === 2` (nenhuma rejeita) **e** 1/1/1/1/1 nas
+   5 tabelas; o N vai no nome do caso.
+
+**Mutações que deixam cada critério vermelho** — a junta aplica por **âncora de texto** (as linhas acima são as do objeto e mudam com a
+edição), roda o T2 no container e restaura com md5 = blob:
+
+| mutação | fica vermelho |
+|---|---|
+| MA1 | T2.4 estado limpo (read only) e o processo filho `--dry-run` (contagens 1) |
+| MA2 | T2.4 só organização |
+| MA3, MA4, MA5 | T2.4 organização + usuário (o estado "convergido com reset" é exigido pelo plano e não foi medido por mim) |
+| MA6 (sem trava) | T2.10 (medido 0/5 na sonda) |
+| MT-1 (mutação do TESTE): tirar o `options` da URL read only | o controle interno do T2.4 (`dryRun: false` deixa de falhar) |
+
+#### 15.1.5 3b-1 — o registro agenda o fechamento de `P-SAN-PROD-BOOTSTRAP` no pós-merge, e não no ato do dono
+
+**Vermelho-controle (gerado, não amostrado):** `git grep -n P-SAN-PROD-BOOTSTRAP 7812fe7c` sobre os arquivos que o PR toca dá **5
+instâncias em 3 arquivos** que fecham, agendam o fechamento ou mandam o opt-in errado:
+
+| arquivo:linha (objeto) | texto |
+|---|---|
+| `agent-orchestration/controle/pendencias.md:578` | `acao:` "rodado one-shot com `ALLOW_PROD_SEED=1` inline" (é a variável do seed; a D2 do plano a separou) |
+| `agent-orchestration/controle/pendencias.md:580` | `status:` "Pós-merge: D2 (CI verde) e D3 (porteiro pós-merge) devem confirmar o fechamento" (e D2/D3 com sentido trocado: no plano são as decisões `ALLOW_PROD_BOOTSTRAP ≠ ALLOW_PROD_SEED` e "o papel é do CD") |
+| `agent-orchestration/controle/pendencias.md:584` | `agendamento:` "fechamento confirmado pelo porteiro pós-merge" |
+| `agent-orchestration/docs/status-geral.md:4937` | "confirmação pelo porteiro pós-merge após o merge" |
+| `agent-orchestration/codex/log-execucao.md:4802` | "Próximos: … porteiro pós-merge, confirmação de P-SAN-PROD-BOOTSTRAP" |
+
+A C1 apontou as duas primeiras; as outras três são a mesma classe do outro lado da fronteira (lição do #386: corrigir a propriedade,
+não a instância).
+
+**Propriedade:** *nenhum artefato do PR fecha, nem agenda o fechamento de, `P-SAN-PROD-BOOTSTRAP` antes do ato do dono em produção
+(§11, Ato 1); e toda instrução de opt-in do bootstrap nomeia `NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1` inline, nunca
+`ALLOW_PROD_SEED=1`.*
+
+**Remédio (dev):** na entrada `P-SAN-PROD-BOOTSTRAP`: `acao` com `NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1` inline (Runbook B);
+`status` = "EM ANDAMENTO — script mergeado e testado no B-SAN3-09; **fecha só com a execução em produção, ato do dono (§11 Ato 1)**;
+nem CI nem porteiro a fecham"; a nota do `agendamento` com a mesma regra; e duas linhas que dão às decisões os nomes do plano —
+"D2: `ALLOW_PROD_BOOTSTRAP` ≠ `ALLOW_PROD_SEED` (uma não abre a outra)" e "D3: o papel `super_admin` e as concessões são do CD
+(`db:provision-rbac`), nunca do script". `status-geral.md:4937`: a mesma regra. `log-execucao.md`: **não** se reescreve a linha
+histórica 4802; apensa-se uma entrada do ciclo 2 que diz a regra.
+
+**Critério e mutação (a junta roda):** (i) o bloco da entrada (de `## P-SAN-PROD-BOOTSTRAP` ao próximo `## `) contém "ato do dono" e
+não casa `-iE 'porteiro|CI verde|ALLOW_PROD_SEED=1'`; (ii) toda linha adicionada pelo PR (`git diff origin/main...HEAD`, `^+`) que cite
+`P-SAN-PROD-BOOTSTRAP` não casa `-iE 'porteiro|fechamento confirmado|confirmar o fechamento|CI verde'`, exceto a frase que **nega**
+("nem CI nem porteiro a fecham"), que a junta lê e classifica uma a uma. Mutação: reinserir "fechamento confirmado pelo porteiro
+pós-merge" em **qualquer um** dos 3 arquivos, ou trocar `ALLOW_PROD_BOOTSTRAP=1` por `ALLOW_PROD_SEED=1` na `acao` → vermelho.
+
+### 15.2 Ajustes M-1, M-2, 3a-1, 3b-2, C3-A1 — os cinco ENTRAM neste ciclo (custo de uma linha a um caso cada; deixá-los para o ciclo 3 seria pagar uma junta por eles)
+
+| ajuste | vermelho-controle no objeto (meu) | remédio | mutação que o deixa vermelho |
+|---|---|---|---|
+| **M-1** — a guarda de hash do T2.9 nunca dispara | o hash real é `scrypt$v=1$…`; `includes("$scrypt-v1$")` é falso para qualquer hash (sonda no container) | o T2.9 lê o `password_hash` gravado (cliente do drill, depois da 1ª execução) e asserta que as saídas não contêm o hash inteiro **nem** nenhum segmento `$…$` de 16+ caracteres (sal, chave); o literal `$scrypt-v1$` sai. URL: `/postgres(ql)?:\/\//` (cobre a nota M-n1) | o script imprime `JSON.stringify(existingCredential)` logo após lê-la (l.294) → T2.9 vermelho na 2ª execução |
+| **M-2** — o T2.9 não tem o run `ALLOW_PROD_SEED=1` (M5c de processo) | mutante l.368 `isBootstrapAllowed({ ...process.env, ALLOW_PROD_BOOTSTRAP: process.env.ALLOW_PROD_SEED ?? … })`: T1 **23/23**; o processo `NODE_ENV=production ALLOW_PROD_SEED=1` sai `DATABASE_URL_MISSING` (a trava abriu); no objeto sai `PRODUCTION_OPT_IN_MISSING` | caso novo no **T1.5** (processo filho, sem banco, roda no Windows): `NODE_ENV=production ALLOW_PROD_SEED=1` sem `ALLOW_PROD_BOOTSTRAP` → exit 2 **e** `PRODUCTION_OPT_IN_MISSING` (o código discrimina: o mutante também sai 2, mas com outro código) | o mutante l.368 → T1.5 vermelho |
+| **3a-1** — o passo de domínio + TLS sumiu do Runbook B | `grep -ciE 'TLS\|certs\|dom[ií]nio'` no Runbook B do objeto = **0**; na `origin/main` é a l.185 | devolver ao Runbook B a linha da `origin/main:docs/deployment.md:185` ("Domínio + TLS pelo Fly (certs gerenciados) após o `fly apps create` e o apontamento de DNS"), com acento | `TLS` entra na lista do T1.8; apagar a linha → T1.8 vermelho |
+| **C3-A1** — o Runbook B não cita o exit 1 | `grep -cE 'exit 1\|FALHOU'` no Runbook B = **0** | uma linha com os três códigos: 0 = criado ou já convergido; 2 = recusa nomeada (trava, entrada, argumento, estado), nada gravado; 1 = `FALHOU` (erro, p.ex. banco inalcançável), nada confirmado, a transação não fecha. Mais a linha do `UNKNOWN_ARGUMENT` (15.1.1) | `exit 1`, `FALHOU` e `UNKNOWN_ARGUMENT` entram na lista do T1.8; apagar → vermelho |
+| **3b-2** — §13 incompleto no registro | `grep -c P-SAN3-09-ROTEIRO-DE-OPERACAO` no objeto = **0**; "dono: … (a nomear)" em 3 entradas; `ORG-PLATAFORMA-NO-CONSOLE` diz o **contrário** do §13 ("não exibe" × "aparece como se fosse cliente") | abrir `P-SAN3-09-ROTEIRO-DE-OPERACAO` (dono `B-SAN3-10`, item (e)); donos do §13: `ORG-PLATAFORMA` → `B-SAN3-06b`; `SCRIPTS-FORA-DO-TSCONFIG` → `B-ARNES-2`; `ENV-EXAMPLE` → `B-SAN3-10` (operação e go-live; o §13 deixava ao orquestrador, e este plano propõe); descrição da `ORG-PLATAFORMA` = a do §13; mais as pendências novas de 15.5 | a junta: as 4+N entradas existem, nenhuma com "a nomear", e a descrição da `ORG-PLATAFORMA` casa "como se fosse cliente"; apagar uma ou voltar "a nomear" → vermelho |
+
+### 15.3 O dev do ciclo 2 — escopo e bateria
+
+**Identidade nova** (não é o dev de nuvem do ciclo 1, nem `dev-kpi-b-san3-09`, nem quem achou ou planejou). Trabalha em worktree
+próprio no ramo `feat/bootstrap-platform-admin` **depois** de o orquestrador integrar a `origin/main` (`357a98e9`, o #407 mexeu em
+`status-geral.md`, que este ciclo também toca — o conflito, se houver, é do orquestrador).
+
+**PERMITIDO (caminhos exatos):**
+- `scripts/bootstrap-platform-admin.ts` — **só** `BOOTSTRAP_FLAGS`, `parseArgv`, a união `BootstrapRefusalCode` e o tipo de
+  exaustividade (15.1.1). O corpo de `bootstrapPlatformAdmin`, a trava, a entrada e o relatório ficam **byte-idênticos** (os três itens
+  das cadeiras C1/C2/C3 sobre eles estão verdes por medição; hunk fora dessas linhas = fora do escopo).
+- `tests/san3-09-bootstrap-platform-admin.test.ts` — T1.2b, T1.5 (M-2), T1.5c, T1.7 reescrito, T1.8 (TLS, exit 1, FALHOU, UNKNOWN_ARGUMENT).
+- `tests/san3-09-bootstrap-platform-admin-db.test.ts` — banco-modelo, T2.4 reescrito, T2.4b, T2.9 (M-1), T2.10 reescrito.
+- `docs/deployment.md` — **só** dentro do Runbook B (3a-1, C3-A1, `UNKNOWN_ARGUMENT`).
+- `agent-orchestration/controle/pendencias.md` — a entrada `P-SAN-PROD-BOOTSTRAP` e o bloco "Pendências abertas por B-SAN3-09" (3b-1,
+  3b-2, 15.5).
+- `agent-orchestration/docs/status-geral.md` — a linha de `P-SAN-PROD-BOOTSTRAP` (3b-1).
+- `agent-orchestration/codex/log-execucao.md` — **apenso** da entrada do ciclo 2 (nada reescrito).
+
+**PROIBIDO:** `Kpis/**` (congelado, §C7 item 8(5)); `src/**`; `prisma/**`; `migrations/**`; `infra/**`; `.github/**`; `fly.*.toml`;
+`.env*`; `package.json`; `package-lock.json` (o `typescript` do T1.7 já é devDependency — dependência nova seria decisão crítica,
+junta-5); `frontend/**`; `mobile/**`; `CLAUDE.md`; `AGENTS.md`; `.claude/**`; `.agents/**`; `scripts/**` exceto o script do bloco;
+qualquer outro arquivo de `tests/`; `docs/revisoes/**` (o plano é do planejador); `agent-orchestration/omega/**` e
+`agent-orchestration/codex/comandos/**` (do orquestrador). O dev não commita fora do ramo, não faz push forçado e não toca a base viva.
+
+**Bateria (o dev roda e publica N e forma; a junta re-executa):**
+1. `npm ci` próprio (sem junction) · `npx prisma generate` com `DATABASE_URL` só no comando.
+2. `npm run check` · `npm run lint`.
+3. A19: `npx tsc --noEmit --strict --module NodeNext --moduleResolution NodeNext --target ES2022 --esModuleInterop --skipLibCheck --types node scripts/bootstrap-platform-admin.ts`.
+4. T1: `node --test --import tsx tests/san3-09-bootstrap-platform-admin.test.ts` (Windows ou Linux) — publicar `tests/pass/fail` e o N da
+   tabela gerada do T1.2b.
+5. Regressões sem banco da família (§8 do plano): `node --test --import tsx tests/seed-guard.test.ts tests/backfill-third-party-vehicle-identity.test.ts tests/npm-test-runner-guard.test.ts tests/deploy-manifest-parity.test.ts tests/auth-invariant-guards.test.ts tests/db-catalog-write-guard.test.ts`.
+6. T2 **só em container Linux** (no Windows o arnês cai no T2.1 por artefato — pendência A-3). Receita (4.2-bis do inspetor, medida de
+   novo por mim neste ciclo, ~6 min de preparo e ~2 min por rodada do T2): rede `<id>-net`; `postgres:16` (senha aleatória passada por
+   `-e POSTGRES_PASSWORD` **sem valor**, lido do ambiente) e `redis:7` na rede; `node:20-bookworm-slim` com `--init` e `sleep infinity`;
+   árvore por `git -c core.autocrlf=false archive <head> | docker exec -i <id>-node sh -c 'mkdir -p /work && cd /work && tar -x'`
+   (caminhos só dentro do `sh -c`, por causa do MSYS), md5 de script, testes e lockfile = blob; `apt-get install -y openssl`; `npm ci`;
+   `prisma generate`; `CREATE DATABASE` + `prisma migrate deploy` + `npm run db:provision-rbac`; o teste com
+   `-e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE=memory`. Teardown: `docker rm -f -v` dos 3 e `docker network rm`. Alternativa
+   equivalente: `C:/Users/AMP/erp-terreno/receita-pg16.sh` adaptada aos dois arquivos deste bloco (imagem `erp-junta-node20-pg16:local`).
+7. Regressões com banco (§8 do plano) no mesmo container: `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts tests/core-saas-role-authority-db.test.ts tests/auth-login-anonymous-db.test.ts tests/auth-login-candidates-fn-db.test.ts tests/rls-tenant-isolation.test.ts tests/auth-identity-exposure-scan.test.ts`.
+8. As mutações de 15.1 e 15.2 que o dev consegue rodar (todas as de T1 e as MA1–MA6 no container), cada uma com o resultado e o restauro
+   provado por md5 = blob, publicadas no relatório do dev. A junta re-executa: o relatório do dev é roteiro, não prova.
+9. `git diff --check` · `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO ∪ (arquivos já tocados pelo ramo no ciclo 1) ·
+   `git grep -n -E 'CREATE ROLE|DROP ROLE|ALTER ROLE|GRANT|REVOKE|OWNER TO' -- tests/san3-09-*` vazio.
+10. A suíte inteira é a da CI no head (14 check-runs concluídos), que o inspetor da junta 2 confere. Sem `kpi-freeze` e sem recontagem
+   (KPI congelado).
+
+### 15.4 Junta 2 — três cadeiras com identidade NOVA (competências para a `agente-fabrica`)
+
+Quórum: **unanimidade de 3 com veto** (segurança e permissão). Teto: este é o **último** ciclo em que achado não grave bloqueia. Todo
+achado declara `gravidade` e `escopo` (`pre-existente` só com evidência de data ou origem). Cada cadeira: mandato de 3 itens (P4),
+worktree próprio detached, container próprio para o T2, vermelho-controle por item, P1/P2/P7, não propõe correção (§C7.4-bis).
+**Inelegíveis por nome:** `agente-secops`, `agente-dba-guardiao`, `guardiao-fail-closed` (acharam no ciclo 1), `planejador-b-san3-09`,
+`planejador-ciclo2-b-san3-09`, o dev de nuvem do ciclo 1, `dev-kpi-b-san3-09` e o dev do ciclo 2.
+
+| cadeira | competência | os 3 itens (todos por execução) |
+|---|---|---|
+| **C1** `jurado-san3-09c2-c1-entrada-e-registro` | segurança de entrada de CLI e de segredo (secops), registro de ato irreversível | (1) C3-F3: MF3-a…f, a tabela gerada do T1.2b conferida contra `BOOTSTRAP_FLAGS` (o N cresce com a fonte), T1.5c e T2.4b, e o efeito no banco (`--dryrun` não grava) medido por processo real; (2) segredo e trava no processo: M-1 (hash lido do banco) e M-2 (opt-in independente) pelas mutações de 15.2, mais o eco do token e `ps` de uma execução real com `-p <sentinela>`; (3) registro e runbook: as 5 instâncias do 3b-1 regeneradas pelo `git grep`, o critério (i)/(ii) e a mutação, e 3b-2, 3a-1, C3-A1 contra o Runbook B e o T1.8 |
+| **C2** `jurado-san3-09c2-c2-dryrun-e-concorrencia` | banco: transação, sessão read only, concorrência, arnês de drill (dba) | (1) A11: a matriz MA1–MA5 × 5 estados re-executada, mais o controle interno (MT-1) e o processo filho `--dry-run` no limpo; (2) A18: T2.10 com N declarado, MA6 com frequência medida em N ≥ 5 rodadas na própria sonda; (3) o arnês: clone por template sem conexão pendurada, teardown no `finally` (0 banco `erp_san3_09_drill_%` e 0 papel efêmero depois da suíte, inclusive com um caso forçado a falhar), ratchet lexical, e o corpo de `bootstrapPlatformAdmin` byte-idêntico ao objeto do ciclo 1 (`git diff 7812fe7c..<head> -- scripts/` só nas linhas de 15.1.1) |
+| **C3** `jurado-san3-09c2-c3-guard-ast-e-escopo` | enumeração fail-closed e cobertura do artefato (a competência de `guardiao-fail-closed` + `medidor-de-cobertura-do-artefato`, em identidade nova) | (1) C3-F1: MF1-a…g no script real, o diferencial com `ts.preProcessFile` e o fecho de runtime sem `env.ts`; (2) C3-F2: a matriz ramo × caso vermelho (MF2-a…f) — todo ramo do verificador tem um caso que morre sem ele; (3) **pelo menos três mutações novas** que ninguém listou (contra o verificador e contra o conjunto fechado de flags) e o escopo do dev por laço (`git diff --name-only` contra PERMITIDO/PROIBIDO de 15.3, `Kpis/**` intocado pelo dev) |
+
+**Reprovação por construção (a junta não cobra):** KPI e `Kpis/*` (congelados); o T2 rodar no Windows (pendência A-3); a mensagem vazia do
+`FALHOU` (pendência C3-N1); a semântica da trava só para `NODE_ENV` exato e o `.env` do operador (pré-existentes, classe do
+`prisma/seed-guard.ts`, `4a2db09b`, 2026-07-14); `import(new Function(...))` e outras cargas fora da AST (limite declarado do guard: ele
+enuncia a propriedade sobre o texto do script, e o T1.5 cobre o efeito em runtime); a suíte inteira fora da CI.
+
+### 15.5 Pendências com dono (o dev as abre no `pendencias.md`; o orquestrador decide a D-C2-1)
+
+| id | o quê (N, forma, causa) | severidade | dono |
+|---|---|---|---|
+| `P-SAN3-09-DB-TEST-SO-LINUX` (A-3, C3-N3) | o arquivo `-db` falha no T2.1 no Windows (1 arquivo; o `node --import tsx` executa o shim sh de `node_modules/.bin/prisma`, e `spawnSync("npm")` sem shell dá ENOENT); falha vermelha, nunca verde falso; a CI Linux executa | BAIXA | `B-ARNES-2` |
+| `P-SAN3-09-FALHOU-SEM-CAUSA` (C3-N1) | em erro de conexão o script imprime `FALHOU: ` vazio (exit 1 correto, nada gravado); falta a causa ao operador, sem vazar URL | BAIXA | `B-SAN3-10` (roteiro de operação) |
+| nota em `P-O6R-B01-TROCA-SENHA` (2f-2) | o piso de 12 só vale no script; a troca de senha pela aplicação aplicará 8 | BAIXA | `B-O6R-01` (já aberta) |
+| registro, sem pendência | 2d-1 (`actor_user_id` = o próprio admin; `metadata.source` distingue), 2f-1 (fator único, pré-existente), N-1 (chave do advisory lock), N4 e 1-n1 (pré-existentes, §10 do plano) | nota | ata da junta 2 |
+| **D-C2-1** (divergência, §A2) | o ramo carrega `Kpis/*` da recontagem do ciclo 1 (`033739b6`, antes do #407); pelo §C7 item 8(5) "PR nenhum atualiza `Kpis/*`". Manter ou devolver os 4 arquivos à `origin/main` é decisão de **registro**, do orquestrador (ou do dono), **não** do dev — por isso `Kpis/**` está no PROIBIDO dele | — | orquestrador |
+| as quatro do §13 | corrigidas pelo 3b-2 (15.2) | — | as do §13 |
+
+### 15.6 Riscos e rollback do ciclo 2
+
+- **Risco:** `UNKNOWN_ARGUMENT` recusar algo que o Runbook B manda passar. Mitigação: o T1.8 lê o Runbook B e o T1.2b aceita as 3 flags; um
+  teste extra extrai os tokens `--…` dos comandos do Runbook B e exige que todos estejam em `BOOTSTRAP_FLAGS`.
+- **Risco:** `options` ignorado pelo driver (sessão read only que não morde). Mitigação: o controle interno do T2.4 (MT-1).
+- **Risco:** clone por template falhar por conexão pendurada. Mitigação: desconectar antes de clonar; a falha é vermelha, nunca verde.
+- **Rollback:** o ramo não tem migração nem mexe em `src/`; reverter o commit do ciclo 2 devolve o ciclo 1.
+
+> STATUS: COMPLETO (2026-10-04). Medido no objeto `7812fe7c`: T1 23/23 (Windows); T2 11/11 (container Linux); vermelho-controle
+> reproduzido para os 5 bloqueantes (F3: 8/8 tokens desconhecidos aceitos e o `--dryrun` que grava; F1: 4/4 formas verdes; F2: mutante V
+> verde; A-1: MA1 e MA6 verdes no T2; 3b-1: 5 instâncias em 3 arquivos) e para M-1, M-2, 3a-1, 3b-2, C3-A1; o remédio do A-1 foi medido
+> antes de ser planejado (matriz 5 × 4 da sessão read only e 0/5 da corrida sem trava). Terreno `w-pl09c2` e containers `pl09c2-*` removidos
+> ao fim (relatório da limpeza na mensagem de entrega).
+
+> **Decisão do orquestrador sobre a D-C2-1 (2026-10-04):** o KPI está congelado (§C7 item 8(5), `D-GOV-PROPORCIONAL`, em vigor
+> desde `357a98e9`), e PR nenhum atualiza `Kpis/*`. A recontagem do ciclo 1 (`033739b6`) é anterior ao congelamento; o dev do ciclo
+> 2 devolve `Kpis/*` ao conteúdo da `origin/main` (`git checkout origin/main -- Kpis/`, num commit próprio) e a junta não cobra KPI.
