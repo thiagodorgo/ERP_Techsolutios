@@ -643,6 +643,26 @@ test(
           await dropRole(admin, chainBypass);
         }
 
+        const replicationRole = token("s305_script_repl");
+        await catalog(admin, [
+          `CREATE ROLE ${ident(replicationRole)} NOLOGIN REPLICATION NOSUPERUSER NOBYPASSRLS`,
+          `GRANT ${ident(replicationRole)} TO ${ident(runtime)}`,
+        ]);
+        try {
+          const replicationMembership = runRoleScript(connectionString, runtime, secret());
+          assert.equal(replicationMembership.status, 0, replicationMembership.stdout + replicationMembership.stderr);
+          const membership = await admin.$queryRawUnsafe<Array<{ member: boolean }>>(`
+            SELECT pg_has_role(
+              (SELECT oid FROM pg_roles WHERE rolname = ${literal(runtime)}),
+              (SELECT oid FROM pg_roles WHERE rolname = ${literal(replicationRole)}),
+              'MEMBER'
+            ) AS member
+          `);
+          assert.equal(membership[0]!.member, false, "pertença a papel REPLICATION precisa ser revogada");
+        } finally {
+          await dropRole(admin, replicationRole);
+        }
+
         const rollbackRole = token("s305_rollback");
         const rollbackTable = token("s305_rollback_t");
         const rollbackBypass = token("s305_rollback_b");

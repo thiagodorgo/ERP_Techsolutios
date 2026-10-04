@@ -499,6 +499,8 @@ sem tocar `erp-postgres:5432` nem `erp-redis:6379`.
 | 2026-10-03T22:23:22Z | terceira retomada | GPT-5.6 Sol, mesmo mandato | `HEAD = origin/fix/runtime-role-sem-bypass = b7773898`; carga `w-j4c` externa = 0; cluster revalidado antes do uso |
 | 2026-10-03T22:31Z | retomada concorrente acidental | um agendamento que deveria ter sido cancelado já havia retomado esta mesma sessão às 22:23Z; o orquestrador iniciou outra instância às 22:31Z | as duas instâncias foram paradas pelo orquestrador; nenhuma delas commitou; ficou só este registro não commitado |
 | 2026-10-03T22:34:31Z | quarta retomada, instância única | GPT-5.6 Sol, mesmo mandato; limites resetados | relatório conferido sem seção duplicada; cluster revalidado; regra de carga substituída pela ordem nova do dono |
+| 2026-10-03T22:57Z | rodada de mutações A1–A24, depois de A23 sem `psql` | limite de uso da conta OpenAI; a sessão caiu | `HEAD = origin = 10842f88`; ficaram só o cenário REPLICATION de T14 (+20 linhas) e a allowlist consciente 60 → 62, ambos sem commit |
+| 2026-10-04T13:30:33Z | quinta retomada, mesma instância | GPT-5.6 Sol, mesmo mandato | os dois diffs foram conferidos; cluster e carga re-medidos antes de confiar |
 
 ### CARGA COMPARTILHADA
 
@@ -655,6 +657,68 @@ e qualquer falha por tempo é reexecutada em série antes de conclusão.
   (`s305_%` = 0 em papéis, bancos e classes). Pela regra nova, foi repetida em série com o Git Bash explícito no PATH.
 - Reexecução válida: `tests/san3-05-runtime-role-guard-db.test.ts` **8/8**, 0 falhas, 0 pulos, 32,9 s; T14 = 10,1 s e
   T15 = 7,4 s. Carga no início: CPU **48%**, 7 processos das outras frentes; não houve timeout. Esta é a medição usada.
+
+### QUINTA RETOMADA — DIFERENÇAS E CLUSTER REVALIDADOS — 2026-10-04T13:30:33Z
+
+A queda de ~22:57Z ocorreu depois da execução negativa A23. O orquestrador preservou o diff. Medido nesta retomada:
+`HEAD = origin/fix/runtime-role-sem-bypass = 10842f88`; somente dois arquivos modificados. A suíte acrescenta um cenário
+T14 que cria um papel `REPLICATION`, concede-o ao runtime, roda o script e exige que a pertença seja revogada; a allowlist
+acompanha a contagem real **60 → 62**. Nenhum outro trecho diverge do `HEAD`.
+
+O contêiner próprio segue `running` em **127.0.0.1:55405**; `pg_isready` verde; PostgreSQL **16.14**; 115 tabelas públicas,
+106 FORCE; resíduos `s305_%`: 0 papéis, 0 bancos, 0 classes. Carga declarada: CPU **43%**, outras frentes nomeadas = 0;
+o único processo com `w-s05d` é esta sessão Codex. Os resultados anteriores só serão promovidos depois de a suíte válida
+com o novo cenário ficar verde.
+
+### MEDIDO — rodada de mutações A1–A24 — 2026-10-04T13:35:18Z
+
+Cada mutação abaixo foi aplicada em cópia temporária ou na árvore com restauração byte a byte no `finally`. O resultado só
+contou quando o oráculo correto ficou vermelho e os hashes voltaram ao original. O primeiro arnês tentou
+`suite.test.skip`, API inexistente; esses falsos vermelhos foram descartados, os arquivos restaurados ao blob do `HEAD` e o
+arnês foi refeito com `{ skip: true }`.
+
+| critério | mutação executada | sinal vermelho medido |
+|---|---|---|
+| A1 | metade `atributo` desligada | T6: `escape atributo/postgres não encontrado`; só `posse/postgres` restou |
+| A2 | `r.rolsuper` retirado | T7: super renomeado não apareceu |
+| A3 | pertença recursiva trocada por `rolname=current_user` | T8: papel BYPASS membro não apareceu |
+| A4 | metade `posse` desligada | T8b: dono FORCE não apareceu |
+| A4b | três mutantes: REPLICATION, papel de servidor e metade `view` retirados | T8d falhou separadamente em `s305_repl`, `pg_execute_server_program` e `view/postgres` |
+| A5 | três semi-mutantes independentes `session_user → current_user` | T8c mediu exatamente **0** via atributo, **0** posse e **0** view no mutante correspondente, contra 1/1/1 original |
+| A6 | URL adicionada ao log; `$disconnect` removido | T9 acusou dado de conexão; T4 acusou que `$disconnect` não foi chamado |
+| A7 | gate de produção desligado | T1 e a mensagem `P-INFRA-RLS` falharam |
+| A8 | default do export fixado em `skip` | T2 do processo filho obteve `skip` em produção |
+| A9 | chave do schema tornada obrigatória | `deploy-manifest-parity` morreu com `ZodError` no import |
+| A10 | `head-base 4ab9d232` | T10 devolveu `[]` em vez de A/B intercalados |
+| A11 | `head-base 4ab9d232` | T10 diário devolveu `[]` em vez dos dois agregados |
+| A12 | `head-base 4ab9d232` | T11a = 0 em vez de 50; T11b = `[]`; T11c = `[]`; controles T11d ficaram verdes |
+| A13 | `deleteMany` removido; depois transação única trocada por uma transação por tenant | B7 deixou cobrança antiga; B8 deixou linha da primeira organização após a falha na segunda |
+| A14 | canário removido | `Missing expected rejection (canario)` |
+| A15 | 27 fixtures + override executados pelo T13 | 27/27 atribuídas; override `novas=1 sumidas=1`; teste total 30/30 |
+| A16 | `api.DATABASE_URL` trocada de `erp_runtime` para `postgres` em memória | identidade da API igualou a do migrador; T15 sob `postgres` recusou antes do Redis |
+| A17 | seis mutantes do script: exceção CREATE, segredo em argv, precheck ADMIN, cadeia direta, REPLICATION ausente, autoverificação como NOTICE | T14 ficou vermelho em cada mutante |
+| A18 | seção `G-DB-ROLE` removida em memória | contagem 3 → 0, abaixo do piso 2; original: 3/0/1/8/5/5 para os seis checks |
+| A19 | um dos seis IDs removido em memória | IDs distintos 6 → 5 |
+| A20 | chamada da guarda retirada de `main()` | T15 não saiu e registrou o timeout esperado; a árvore própria de teste foi encerrada após o teardown não liberar handles, arquivo restaurado e 0 processo residual |
+| A21 | allowlist 62 → 61 | guard acusou `contagem 62 difere da congelada 61` |
+| A22 | linha de `.gitattributes` removida num worktree descartável | checkout com `core.autocrlf=true` deu `w/crlf`; `bash -n` no contêiner PostgreSQL saiu **2** em `)\r`; worktree removido |
+| A23 | suíte original sem `psql` no PATH, com Docker e `pg_basebackup` presentes | só T14 falhou por `psql: ausente`; T8d/T15 verdes; `skipped=0` |
+| A24 | fixture `N10_any.ts` | T13 atribuiu +1 chave `cloudUsageEvent.findMany`, classe CRU |
+
+**Falsificação encontrada e corrigida pela própria rodada.** O mutante A17 que retirava `rolreplication` do script ficou
+verde na primeira tentativa: T14 cobria REPLICATION como atributo do alvo, mas não a pertença a outro papel REPLICATION.
+Foi acrescentado o cenário de pertença, sempre sob `withRoleCatalogLock`; o mutante então ficou vermelho. A contagem A21
+subiu conscientemente **60 → 62**. Execução válida depois da correção:
+
+```text
+tests/san3-05-runtime-role-guard-db.test.ts → 8/8 · fail 0 · skipped 0 · 28,6 s
+tests/db-catalog-write-guard.test.ts        → guard verde · contagem 62
+npm run check                              → ec=0
+resíduos s305_%                            → papéis 0 · bancos 0 · classes 0
+```
+
+Uma execução completa anterior teve T15 sem stdout até 30 s. Pela regra de carga, T15 foi repetido sozinho e passou em
+7,1 s; depois a suíte completa passou com T15 em 6,7 s. A falha temporal não foi promovida a defeito.
 
 ## §9 — E8 KPI e registro — EM APURACAO
 ## §10 — Fechamento — EM APURACAO
