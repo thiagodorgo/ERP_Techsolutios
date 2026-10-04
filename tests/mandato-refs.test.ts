@@ -1091,3 +1091,29 @@ test("[F-25] artefato que NAO TERMINA (gh que dorme 120 s): `roda()` falha em 60
   );
   assert.equal(espera.status, 0, "o shim que dorme continuou vivo depois do caso");
 });
+
+// =================================================================================================
+// CICLO 5 -- E1 / T5 (plano §16.3, ajuste C2d-01; identidade `dev-tests-ciclo5-b-gov-mandato`). A C2 da junta 4
+// mediu que o `mandato-refs.sh` esta certo e que o guard e que nao enuncia a DIRECAO do rotulo: uma ata COM
+// linha de Objeto nunca sai rotulada "(sem linha de Objeto)". [M-EXT]: verde no head; o vermelho-controle e
+// por mutacao (titulo). O conjunto de PRs e o do arnes (`PRS`), nao uma lista digitada. So adicoes.
+// =================================================================================================
+
+test("[C2d-01] ata COM linha de Objeto nunca sai rotulada `(sem linha de Objeto)`, em TODO PR do arnes; e a ata sem Objeto do #380 sai — ⇄ C2d-01: `if (!(f in temO))` -> `if (1)` no awk que decide quem casa", () => {
+  let exercitadas = 0;
+  const contradicoes: string[] = [];
+  for (const pr of Object.keys(PRS)) {
+    const r = roda(pr);
+    const comObjeto = new Set([...r.out.matchAll(/objeto declarado [0-9a-fA-F]+ \(([^:()\s]+):\d+ /g)].map((m) => m[1] ?? ""));
+    const semObjeto = [...r.out.matchAll(/^ +(\S+) \(sem linha de Objeto\)/gm)].map((m) => m[1] ?? "");
+    exercitadas += comObjeto.size;
+    for (const f of semObjeto) if (comObjeto.has(f)) contradicoes.push(`#${pr}: ${f}`);
+  }
+  // ◐ a propriedade foi EXERCITADA: houve ata com Objeto listada no ramo NAO DETERMINAVEL, onde o rotulo e impresso.
+  assert.ok(exercitadas > 0, "◐ nenhum PR do arnes listou ata com linha de Objeto no ramo NAO DETERMINAVEL");
+  assert.deepEqual(contradicoes, [], "ata com linha de Objeto saiu rotulada '(sem linha de Objeto)'");
+  // controle NA MESMA rodada: o rotulo existe e nomeia a ata SEM Objeto (#380).
+  const ctrl = roda("380");
+  assert.equal(ctrl.status, 3, ctrl.out + ctrl.err);
+  assert.match(ctrl.out, /^ +agent-orchestration\/omega\/juntas\/J-SEM-OBJETO\.md \(sem linha de Objeto\)/m, ctrl.out);
+});

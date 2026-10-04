@@ -26,6 +26,8 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 // CICLO 4 (E1, Dev-T4): idem -- a ancora de alcance dos shims da A15 e do [F-25].
 import { existsSync } from "node:fs";
+// CICLO 5 (E1, Dev-T5): idem -- o mini-repositorio do [P-SHA/caminho-versionado] copia o script sob teste.
+import { copyFileSync } from "node:fs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const SCRIPT = path.join(RAIZ, "scripts/mandato-preflight.sh");
@@ -2682,4 +2684,286 @@ test("[V263] cada linha fora das secoes e nomeada NO MAXIMO uma vez, e a janela 
   const b = roda(bruto("v263-cabecalho-com-texto", ["## MEDIDO — afirmacao no cabecalho, suite 3103/3105", "", "- a, medido por: true", "", "## HIPOTESE", "", "- h. derruba com: true"]));
   const nb = foraListadas(b.out).map(([n]) => n);
   assert.ok(umaVezEmOrdem(foraListadas(b.out)), `linha nomeada mais de uma vez, ou fora de ordem: [${nb.join(",")}]\n${b.out}`);
+});
+
+// =================================================================================================
+// CICLO 5 -- E1 / T5 (plano §16.2, §16.3 e errata §16-bis; identidade `dev-tests-ciclo5-b-gov-mandato`).
+// Os dois bloqueia da junta 4 sao a MESMA propriedade, P-SHA: "SHA citado" e definido pelo CONTEUDO -- toda
+// corrida MAXIMA de [0-9A-Fa-f] de uma linha nao isenta; comprimento 7..40 = SHA, > 40 = corrida longa,
+// < 7 = nao e SHA -- e quem COBRA (checagem 4) enumera do MESMO jeito que quem ABSOLVE (a proveniencia da
+// colagem verificada). C1d-01 e o lado "vizinhanca" (o que o tokenizador cola num token escapava da
+// cobranca); C2d-02 e o lado "comprimento" (nenhum caso exigia a cobranca de 7..39 em prosa).
+// Os casos gerados enunciam a propriedade, nao a forma de um mutante: o conjunto de caracteres vizinhos e
+// GERADO (0x20..0x7E menos o hex), e o esperado e calculado do que o caso PLANTOU -- nunca de uma regex
+// sobre a linha (o guard nao e replica do artefato). C1d-02 (§16.3): o nome do comando e lido como o shell
+// o executa -- a remocao de citacao do POSIX vem antes de reconhecer a familia; o oraculo do "como o shell
+// executa" e o proprio bash, nunca uma reimplementacao dele.
+// Vermelhos no pre-voo de antes do conserto (lista historica, §15.8): [P-SHA/gerado-cobra], [P-SHA/crlf],
+// [C1d-01a..d], [C1d-02], [P-SHA/caminho-versionado]. Verdes nele, com o vermelho-controle POR MUTACAO no
+// titulo ([M-EXT]): [P-SHA/gerado-absolve], [P-SHA/isento], [C2d-02a..c]. So adicoes.
+// =================================================================================================
+
+/** Os caracteres ASCII imprimiveis que NAO sao hex -- GERADOS de 0x20..0x7E, nunca digitados. */
+const HEX_DIGITOS = "0123456789abcdefABCDEF";
+const NAO_HEX: string[] = [];
+for (let cp = 0x20; cp <= 0x7e; cp++) {
+  if (!HEX_DIGITOS.includes(String.fromCharCode(cp))) NAO_HEX.push(String.fromCharCode(cp));
+}
+const COMPRIMENTOS_PSHA = [6, 7, 8, 39, 40, 41] as const;
+/** Limite do spawn para os documentos GERADOS (centenas de unidades e de consultas de proveniencia). */
+const LIMITE_GERADO_MS = 900_000;
+
+type Plantada = { k: number; c: string; L: number; corrida: string };
+/** Corrida hex de comprimento L, unica por `k` (o `k` em hex vai nos digitos 2-4), com metade em MAIUSCULAS. */
+function corridaPsha(k: number, L: number): string {
+  const base = (`c${k.toString(16).padStart(3, "0")}` + "e0".repeat(32)).slice(0, L);
+  return k % 2 === 1 ? base.toUpperCase() : base;
+}
+/** O que o caso PLANTA: uma unidade por (caractere vizinho, comprimento), corrida distinta por unidade. */
+function plantaPsha(): Plantada[] {
+  const p: Plantada[] = [];
+  let k = 0;
+  for (const c of NAO_HEX) {
+    for (const L of COMPRIMENTOS_PSHA) {
+      k += 1;
+      p.push({ k, c, L, corrida: corridaPsha(k, L) });
+    }
+  }
+  return p;
+}
+/** A unidade: a corrida ENTRE `c` e `c`; sem a corrida, a MESMA linha e o controle "a unidade e unidade". */
+const unidadePsha = (p: Plantada, comCorrida = true) => `- u${p.k} x${p.c}${comCorrida ? p.corrida : ""}${p.c}x, medido por: true`;
+
+/** `roda()` com limite PROPRIO e com o script escolhido; a mesma forma de retorno. */
+function rodaLimite(fixture: string, pr: string | undefined, refs: string, limiteMs: number, script: string = SCRIPT) {
+  const args = pr === undefined ? [script, fixture] : [script, fixture, pr];
+  const r = spawnSync("bash", args, {
+    encoding: "utf8",
+    env: { ...process.env, MANDATO_REFS: refs },
+    timeout: limiteMs,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  assert.equal(r.signal, null, `artefato nao terminou em ${limiteMs / 1000} s`);
+  const out = r.stdout ?? "";
+  return { status: r.status, out, err: r.stderr ?? "", rejeicoes: (out.match(/^REJEITADO {2}/gm) ?? []).length };
+}
+
+/** shim de refs que REGISTRA cada chamada; `--sha-only` responde so SHA_A; o modo completo devolve `dados`. */
+function refsQueRegistraEResponde(nome: string, dados?: string): { caminho: string; registro: string } {
+  const registro = path.join(dir, "bin", `${nome}.chamadas`);
+  const linhas = [
+    "#!/usr/bin/env bash",
+    `printf '%s\\n' "$*" >> "${registro.split(path.sep).join("/")}"`,
+    `if [ "\${2:-}" = "--sha-only" ]; then printf '%s\\n' "${SHA_A}"; exit 0; fi`,
+  ];
+  if (dados !== undefined) linhas.push(`cat "${dados.split(path.sep).join("/")}"`);
+  linhas.push("exit 0", "");
+  return { caminho: shim(nome, linhas.join("\n")), registro };
+}
+
+/** O esperado da P-SHA CALCULADO do que foi plantado, e a conferencia contra a saida do artefato. */
+function confereCobranca(r: ReturnType<typeof rodaLimite>, plantadas: Plantada[], primeiraLinha: number): void {
+  const doSha = new Map(plantadas.filter((p) => p.L >= 7 && p.L <= 40).map((p) => [p.corrida.toLowerCase(), p] as const));
+  const linhas41 = new Map(plantadas.map((p, i) => [i + primeiraLinha, p] as const).filter(([, p]) => p.L === 41));
+  const acusados = [...r.out.matchAll(/^REJEITADO {2}SHA '([0-9a-f]+)' nao esta na saida/gm)].map((m) => m[1] ?? "");
+  const longas = [...r.out.matchAll(/^REJEITADO {2}corrida hexadecimal de 41 caracteres[^\n]*?l\.(\d+)/gm)].map((m) => Number(m[1]));
+  const vizinho = (p: Plantada | undefined) => (p === undefined ? "?" : `${JSON.stringify(p.c)}/L=${p.L}`);
+  const faltaSha = [...doSha.keys()].filter((s) => !acusados.includes(s));
+  const sobraSha = acusados.filter((s) => !doSha.has(s));
+  const falta41 = [...linhas41.keys()].filter((n) => !longas.includes(n));
+  const sobra41 = longas.filter((n) => !linhas41.has(n));
+  assert.deepEqual(
+    { faltaSha: faltaSha.map((s) => vizinho(doSha.get(s))), sobraSha, falta41: falta41.map((n) => vizinho(linhas41.get(n))), sobra41 },
+    { faltaSha: [], sobraSha: [], falta41: [], sobra41: [] },
+    `a cobranca nao e a do conteudo: o que escapou (vizinho/comprimento) e o que sobrou\n${r.out.slice(0, 4000)}`,
+  );
+  assert.equal(new Set(acusados).size, acusados.length, "o mesmo SHA cobrado duas vezes");
+  for (const p of plantadas.filter((q) => q.L === 6)) {
+    assert.ok(!r.out.toLowerCase().includes(p.corrida.toLowerCase()), `corrida de 6 hex (vizinho ${JSON.stringify(p.c)}) foi cobrada`);
+  }
+  assert.equal(r.rejeicoes, doSha.size + linhas41.size, `rejeicao fora da P-SHA\n${r.out.slice(0, 4000)}`);
+  assert.equal(r.status, 1, r.out.slice(0, 2000));
+}
+
+test("[P-SHA/gerado-cobra] toda corrida hex de 7..40 entre DOIS caracteres nao-hex QUAISQUER (0x20..0x7E, gerados) e cobrada; 41 = corrida longa; 6 nao e SHA — ⇄ M-a (classificacao por token: as vizinhas de `:`, `/`, `-`, `.`, `_` e letras escapam) / M-b (`>= 7` -> `== 40`) / M-c (piso 8) / M-d (sem o ramo da corrida longa) / M-e (enumerador sensivel a caixa) / M-f (fronteira por alfanumerico)", () => {
+  assert.equal(NAO_HEX.length, 95 - 22, "◐ o conjunto gerado nao e o ASCII imprimivel menos os 22 digitos hex");
+  const plantadas = plantaPsha();
+  assert.equal(plantadas.length, NAO_HEX.length * COMPRIMENTOS_PSHA.length, "◐ uma unidade por (vizinho, comprimento)");
+  assert.equal(new Set(plantadas.map((p) => p.corrida.toLowerCase())).size, plantadas.length, "◐ corridas repetidas: o conjunto esperado colapsaria");
+  // controle NA MESMA rodada: as MESMAS linhas sem a corrida sao unidades validas e saem PRE-VOO OK.
+  const ctrl = roda(mandato("psha-cobra-ctrl", plantadas.map((p) => unidadePsha(p, false))), "393");
+  assert.equal(ctrl.rejeicoes, 0, `◐ a unidade sem a corrida nao e unidade valida\n${ctrl.out.slice(0, 2000)}`);
+  assert.equal(ctrl.status, 0, ctrl.out.slice(0, 2000));
+  const { caminho, registro } = refsQueRegistraEResponde("refs-psha-cobra.sh");
+  const r = rodaLimite(mandato("psha-cobra", plantadas.map((p) => unidadePsha(p))), "393", caminho, LIMITE_GERADO_MS);
+  // ◐ o stub foi alcancado: a proveniencia foi PERGUNTADA (o veredito nao e o de uma ferramenta muda).
+  assert.match(existsSync(registro) ? readFileSync(registro, "utf8") : "", /^393 --sha-only$/m, `◐ o stub de refs nao foi chamado\n${r.out.slice(0, 2000)}`);
+  confereCobranca(r, plantadas, 3);
+});
+
+test("[P-SHA/gerado-absolve] as MESMAS corridas de 7..40, cada uma com o seu vizinho DENTRO de uma colagem verificada e citada NUA na prosa: COLAGEM confere e 0 REJ — cobranca = absolvicao — ⇄ M-g (so o enumerador da proveniencia por token: a absolvicao perde as corridas coladas)", () => {
+  const plantadas = plantaPsha().filter((p) => p.L >= 7 && p.L <= 40);
+  const dados = path.join(dir, "bin", "refs-psha-absolve.dados");
+  const linhasCol = [
+    "# refs do PR #718 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato",
+    "# gerado em: 2026-10-04T00:00Z · repo: t/t",
+    "",
+    "ramo:            fix/x",
+    ...plantadas.map((p) => `u${p.k} x${p.c}${p.corrida}${p.c}x`),
+  ];
+  writeFileSync(dados, linhasCol.join("\n") + "\n", "utf8");
+  const { caminho } = refsQueRegistraEResponde("refs-psha-absolve.sh", dados);
+  const corpo = saidaDoRefs("718", caminho);
+  for (const p of plantadas) {
+    assert.ok(corpo.includes(`u${p.k} x${p.c}${p.corrida}${p.c}x`), `◐ a colagem nao traz a corrida plantada com o vizinho ${JSON.stringify(p.c)}`);
+  }
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  const prosa = plantadas.map((p) => `- nua ${p.corrida}, medido por: true`);
+  const r = rodaLimite(mandato("psha-absolve", [UNIDADE_COLAGEM("718"), ...bloco, "", ...prosa]), "393", caminho, LIMITE_GERADO_MS);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #718 confere/m, `◐ a colagem nao confere: o stub esta errado, nao o artefato\n${r.out.slice(0, 2000)}`);
+  const rej = r.out.split("\n").filter((l) => l.startsWith("REJEITADO"));
+  assert.equal(r.rejeicoes, 0, `corrida da colagem cobrada na prosa (a absolvicao nao enumera como a cobranca):\n${rej.slice(0, 40).join("\n")}`);
+  assert.equal(r.status, 0, r.out.slice(0, 2000));
+});
+
+const C1D01: Array<[string, string, string, string, string]> = [
+  ["a", "`head:<SHA>`", `head:${FAKE(60)}`, `head: ${FAKE(60)}`, FAKE(60)],
+  ["b", "`merge:<7 hex>`", "merge:dead7e1", "merge: dead7e1", "dead7e1"],
+  ["c", "`HEAD:<SHA>`", `HEAD:${FAKE(61)}`, `HEAD: ${FAKE(61)}`, FAKE(61)],
+  ["d", "`x:<SHA>:CLAUDE.md`", `x:${FAKE(62)}:CLAUDE.md`, `x: ${FAKE(62)}:CLAUDE.md`, FAKE(62)],
+];
+for (const [id, nome, forma, par, sha] of C1D01) {
+  test(`[C1d-01${id}] a forma ${nome} que a C1 da junta 4 achou: exatamente 1 REJ da checagem 4 nomeando o SHA, e o par com espaco depois do \`:\` da o MESMO veredito — ⇄ M-a (classificacao por token de volta)`, () => {
+    const r = roda(mandato(`c1d01${id}`, [`- o objeto e ${forma}, medido por: true`]), "393");
+    assert.equal(r.status, 1, r.out);
+    assert.equal(r.rejeicoes, 1, r.out);
+    assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${sha}' nao esta na saida`, "m"), r.out);
+    // controle NA MESMA rodada: o par (um espaco depois do `:`) -- o MESMO SHA, o MESMO veredito.
+    const ctrl = roda(mandato(`c1d01${id}-par`, [`- o objeto e ${par}, medido por: true`]), "393");
+    assert.equal(ctrl.rejeicoes, 1, ctrl.out);
+    assert.match(ctrl.out, new RegExp(`^REJEITADO {2}SHA '${sha}' nao esta na saida`, "m"), ctrl.out);
+  });
+}
+
+const C2D02: Array<[string, string, string]> = [
+  ["a", "7 hex (`merge: <7 hex>`)", "dead7e1"],
+  ["b", "8 hex", "dea1be58"],
+  ["c", "39 hex", FAKE(67).slice(0, 39)],
+];
+for (const [id, nome, sha] of C2D02) {
+  test(`[C2d-02${id}] ${nome} em prosa, fora da proveniencia: 1 REJ nomeando o SHA — ⇄ M-b: \`if (length(us) >= 7)\` -> \`if (length(us) == 40)\` na classificacao do pre-voo (C2d-02)`, () => {
+    assert.equal(sha.length, id === "a" ? 7 : id === "b" ? 8 : 39, "◐ o comprimento plantado nao e o do titulo");
+    const linha = id === "a" ? `- merge: ${sha} em prosa, medido por: true` : `- o objeto e ${sha} em prosa, medido por: true`;
+    const r = roda(mandato(`c2d02${id}`, [linha]), "393");
+    assert.equal(r.status, 1, r.out);
+    assert.equal(r.rejeicoes, 1, r.out);
+    assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${sha}' nao esta na saida`, "m"), r.out);
+  });
+}
+
+test("[P-SHA/crlf] o documento GERADO do [P-SHA/gerado-cobra] em CRLF: o MESMO conjunto cobrado (A3)", () => {
+  const plantadas = plantaPsha();
+  const { caminho, registro } = refsQueRegistraEResponde("refs-psha-crlf.sh");
+  const r = rodaLimite(mandatoCrLf("psha-crlf", plantadas.map((p) => unidadePsha(p))), "393", caminho, LIMITE_GERADO_MS);
+  assert.match(existsSync(registro) ? readFileSync(registro, "utf8") : "", /^393 --sha-only$/m, `◐ o stub de refs nao foi chamado\n${r.out.slice(0, 2000)}`);
+  confereCobranca(r, plantadas, 3);
+});
+
+test("[P-SHA/isento] corridas plantadas em linhas de uma colagem VERIFICADA (7..40 na linha do carimbo, que nao absolve; 41 numa linha comum) NAO sao cobradas: COLAGEM confere e 0 REJ — ⇄ chamar o enumerador antes do `isento(FNR)` (no pre-voo do head: `if (isento(FNR)) next` -> `if (0) next` na passada 2)", () => {
+  const curta = "cafe0719ab";
+  const longa = `${FAKE(66)}c`;
+  assert.equal(longa.length, 41, "◐ a corrida longa nao tem 41 hex");
+  const dados = path.join(dir, "bin", "refs-psha-isento.dados");
+  writeFileSync(
+    dados,
+    [
+      "# refs do PR #719 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato",
+      `# gerado em: 2026-10-04T00:00Z · repo: t/t ${curta}`,
+      "",
+      "ramo:            fix/x",
+      `corrida longa:   ${longa}`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  const { caminho } = refsQueRegistraEResponde("refs-psha-isento.sh", dados);
+  const corpo = saidaDoRefs("719", caminho);
+  assert.ok(corpo.some((l) => l.includes(curta)) && corpo.some((l) => l.includes(longa)), `◐ a colagem nao traz as corridas plantadas\n${corpo.join("\n")}`);
+  const bloco = ["  ```", ...corpo.map((l) => (l === "" ? "" : `  ${l}`)), "  ```"];
+  const r = roda(mandato("psha-isento", [UNIDADE_COLAGEM("719"), ...bloco]), "393", caminho);
+  assert.match(r.out, /^COLAGEM {4}l\.\d+-\d+: refs do PR #719 confere/m, `◐ a colagem nao confere: o stub esta errado, nao o artefato\n${r.out}`);
+  assert.equal(r.rejeicoes, 0, r.out);
+  assert.equal(r.status, 0, r.out);
+});
+
+/** O nome que o SHELL executa para `<palavra> -c x CLAUDE.md` -- o oraculo e o bash, nao uma reimplementacao. */
+function nomeQueOShellExecuta(palavra: string): string {
+  const r = spawnSync("bash", ["-c", `set -- ${palavra} -c x CLAUDE.md; printf '%s' "$1"`], { encoding: "utf8", timeout: 30_000 });
+  assert.equal(r.status, 0, `◐ o bash nao avaliou a palavra ${JSON.stringify(palavra)}: ${r.stderr}`);
+  return r.stdout ?? "";
+}
+
+test("[C1d-02] o nome da familia lido como o SHELL o executa (remocao de citacao do POSIX): cada posicao de insercao de aspas duplas, aspas simples e barra invertida no nome (gerada), as duas formas que a C1 da junta 4 relatou e o par sem citacao: exatamente 1 REJ5 em cada; os embrulhos (`command`, `env`, `xargs`) sao controle — ⇄ tirar a remocao de citacao", () => {
+  const NOME = "grep";
+  const variantes: string[] = [];
+  for (const q of ['""', "''", "\\"]) for (let pos = 0; pos <= NOME.length; pos++) variantes.push(NOME.slice(0, pos) + q + NOME.slice(pos));
+  variantes.push(`"${NOME}"`, `'${NOME}'`);
+  // Fora do conjunto POR MEDICAO, com o motivo: a insercao que MUDA A ESTRUTURA da palavra. Uma barra invertida
+  // no FIM do nome escapa o separador seguinte (POSIX 2.2.1), e o shell nao executa a familia: o oraculo devolve
+  // outra palavra. Ela sai do conjunto so com este controle na mesma rodada; nao se assere nada sobre ela.
+  const nomes = new Map(variantes.map((v) => [v, nomeQueOShellExecuta(v)] as const));
+  const fora = variantes.filter((v) => nomes.get(v) !== NOME);
+  assert.deepEqual(fora, [`${NOME}\\`], `◐ o oraculo do shell mudou o conjunto que muda de estrutura: ${JSON.stringify([...nomes])}`);
+  assert.equal(nomeQueOShellExecuta(NOME), NOME, "◐ o oraculo nao reconhece nem o par sem citacao");
+  const asseridas = [...variantes.filter((v) => nomes.get(v) === NOME), NOME];
+  const embrulhos = [`command ${NOME}`, `env ${NOME}`, `ls | xargs ${NOME}`];
+  const linhas = [
+    ...asseridas.map((v, i) => `- conta ${i}, medido por: ${v} -c x CLAUDE.md`),
+    ...embrulhos.map((v, i) => `- embrulho ${i}, medido por: ${v} -c x CLAUDE.md`),
+    ...fora.map((v, i) => `- fora ${i}, medido por: ${v} -c x CLAUDE.md`),
+  ];
+  const r = roda(mandato("c1d02-gerado", linhas));
+  const rej5 = [...r.out.matchAll(/^REJEITADO {2}invocacao de grep\/rg SEM -i[^\n]*?— l\.(\d+):/gm)].map((m) => Number(m[1]));
+  const linhaDe = (i: number) => i + 3;
+  const esperadas = [...asseridas.keys(), ...embrulhos.map((_, j) => asseridas.length + j)].map(linhaDe);
+  const linhasFora = fora.map((_, j) => linhaDe(asseridas.length + embrulhos.length + j));
+  const conta = (n: number) => rej5.filter((x) => x === n).length;
+  const erradas = esperadas.filter((n) => conta(n) !== 1).map((n) => `${linhas[n - 3]} -> ${conta(n)} REJ5`);
+  assert.deepEqual(erradas, [], `invocacao da familia nao cobrada exatamente uma vez\n${r.out}`);
+  assert.deepEqual(rej5.filter((n) => !esperadas.includes(n) && !linhasFora.includes(n)), [], `REJ5 fora das linhas plantadas\n${r.out}`);
+  assert.equal(r.rejeicoes, rej5.length, `rejeicao que nao e da checagem 5\n${r.out}`);
+  assert.equal(r.status, 1, r.out);
+});
+
+test("[P-SHA/caminho-versionado] num repositorio PROPRIO com o script sob teste copiado: corrida hex num caminho VERSIONADO (migration de 14 digitos) nao e cobrada e sai o AVISO de isencao nomeando o caminho; o arquivo so no DISCO com o nome de um SHA e cobrado — ⇄ M-h (sem a isencao) / M-i (`ls-files --error-unmatch` -> `[ -e ]`)", () => {
+  const mini = mkdtempSync(path.join(dir, "mini-psha-"));
+  const gitMini = (...args: string[]) =>
+    spawnSync("git", ["-C", mini, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", ...args], { encoding: "utf8" });
+  mkdirSync(path.join(mini, "scripts"), { recursive: true });
+  copyFileSync(SCRIPT, path.join(mini, "scripts", "mandato-preflight.sh"));
+  const versionado = "prisma/migrations/20260521000000_censo/migration.sql";
+  const fab = FAKE(65);
+  const solto = `docs/${fab}.md`;
+  mkdirSync(path.join(mini, path.dirname(versionado)), { recursive: true });
+  writeFileSync(path.join(mini, versionado), "-- migration de teste\n", "utf8");
+  assert.equal(spawnSync("git", ["-c", "init.defaultBranch=main", "init", "-q", mini], { encoding: "utf8" }).status, 0, "◐ git init");
+  assert.equal(gitMini("add", "-A").status, 0, "◐ git add");
+  assert.equal(gitMini("commit", "-q", "-m", "mini").status, 0, "◐ git commit");
+  mkdirSync(path.join(mini, "docs"), { recursive: true });
+  writeFileSync(path.join(mini, solto), "nao versionado\n", "utf8");
+  // ◐ as duas precondicoes, na MESMA rodada (errata §16-bis 2.8): um versionado, o outro so no disco.
+  assert.equal(gitMini("ls-files", "--error-unmatch", "--", versionado).status, 0, "◐ o caminho da migration nao esta versionado no mini-repositorio");
+  assert.match(gitMini("status", "--porcelain", "--untracked-files=all").stdout ?? "", new RegExp(`^\\?\\? ${solto}$`, "m"), "◐ o arquivo solto nao esta so no disco");
+  const r = rodaLimite(
+    mandato("psha-caminho-versionado", [`- a migration ${versionado} foi citada, medido por: true`, `- e o arquivo ${solto} tambem, medido por: true`]),
+    "393",
+    REFS_OK,
+    60_000,
+    path.join(mini, "scripts", "mandato-preflight.sh"),
+  );
+  assert.equal(r.status, 1, r.out);
+  assert.equal(r.rejeicoes, 1, r.out);
+  assert.match(r.out, new RegExp(`^REJEITADO {2}SHA '${fab}' nao esta na saida`, "m"), r.out);
+  assert.doesNotMatch(r.out, /^REJEITADO[^\n]*20260521000000/m, `o caminho VERSIONADO foi cobrado\n${r.out}`);
+  assert.match(r.out, /^AVISO {6}[^\n]*corrida hex[^\n]*caminho versionado[^\n]*prisma\/migrations\/20260521000000_censo\/migration\.sql/m, `a isencao nao foi publicada\n${r.out}`);
 });
