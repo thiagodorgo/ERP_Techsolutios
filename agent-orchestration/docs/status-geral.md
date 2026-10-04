@@ -4879,3 +4879,46 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## PAUSA 2026-10-03 18:25Z — ordem do dono (P7, `D-PAUSA-GRAVA-E-PARA`)
+
+Ordem do dono: *"o codex parou e só volta às 22:00, por isso vamos pausar as atividades, só assim o pc é reiniciado"*.
+Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registro: Fable só em bloco de dinheiro (manhã),
+depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
+por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
+foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
+`C:/Users/AMP/erp-pausa-2026-10-03/`.
+
+| frente | onde parou | retomada |
+|---|---|---|
+| **#393** B-GOV-MANDATO, ciclo 4, junta 4 (objeto `371b09b2`, CI 14/14) | C1⁗ **REPROVADO** (C1d-01 `bloqueia`: SHA fabricado depois de `:` sai PRE-VOO OK); C3⁗ **APROVADO** (0 bloqueia); C2⁗ (Opus) recebeu PAUSA no meio do voto | relançar a C2⁗ — mesma identidade, P3 sobre a seção `## PAUSA` do `VOTO-393-J4-C2.md`; maioria de 3: o voto dela decide. Depois: ata (esqueleto `ata-c4-esqueleto.md`), quedas (`quedas-pendentes-393.md` já no ramo) e merge ou ciclo 5 |
+| **#401** B-SAN3-11, ciclo 2, junta 2 (head `3ec6f52b`, CI 14/14) | inspetor (Codex, sessão `01a102b0-…`) caiu por limite de uso às 18:14Z no baseline (parecer até 18:11Z); worktrees `w-insp401c`/`w-insp401clf` de pé | `run-codex-resume.ps1` com `resume-insp401c2.txt`, GPT-5.6 Sol; depois versionar o parecer e as 3 cadeiras (Codex, Sol, ≤2 por vez) |
+| **B-SAN3-05** (ramo `fix/runtime-role-sem-bypass` @ `b7773898`, sem PR) | dev sucessor-2 (Codex, sessão `01a102bc-…`) caiu às 18:14Z; 3 commits empurrados; worktree `w-s05d` limpo; cluster `san3-05-s2-pg` (55405) | `run-codex-resume.ps1` com `resume-dev-s05.txt`, GPT-5.6 Sol; o dev abre o PR em rascunho no fim |
+| **#404** (registro) | porteiro (Codex) **LIBERADO COM RESSALVA** (R404-1 a R404-4; R404-4 = disco < 10 GB) | versionar `PORTEIRO-404.md` neste ramo, com as ressalvas no registro |
+| **#400** B-SAN3-09 | parado (inspetor e junta pendentes) | depois do #401 |
+| **#389**, **#388** | parados | erratas dos corpos dos jurados e integração da `main` |
+| **B-SAN3-06b** | plano e mandato prontos para dev no Codex | quando houver cota |
+
+**Disco:** ~6,1 GB livres; limpeza profunda (`DEEP_CLEAN=1`) só com as juntas paradas — esta pausa é a janela.
+**Incidentes do dia, declarados:** `core.autocrlf=false` na config comum 05:46Z–11:20Z (consertado); um `git merge`
+meu rodou na árvore principal por `cd` falho (no-op, conferido pelo reflog); 4 quedas do Claude por limite de sessão e 2
+do Codex por limite de uso.
+- **18:30Z — terreno da C2⁗ do #393:** a cadeira gravou `## PAUSA 2026-10-03T18:25:23Z` no `VOTO-393-J4-C2.md` (voto ainda não
+  emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
+  guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
+  caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
+
+## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
+
+- Limites resetados; Fable e Astra suspensos; Codex em `gpt-5.6-sol`; Claude em Opus só nas janelas sem Codex, uma tarefa
+  por vez (`decisoes.md`, decisões de 03 e 04/10). A cota do Codex medida: janelas de 35–45 min a cada ~4h30.
+- **#393** — junta 4 **REPROVADA 2×1** (C1d-01, C2d-02); ciclo 5 aberto: §16, §16-bis, §16-ter, corpos da junta 5, T5, T5b,
+  S5a (`d07814b0`, 369/369 e 45/45); matriz E4 do ciclo 5 rodando pelo orquestrador.
+- **#401** — junta 2 **REPROVADA** (veto da C2′: C2c2-F1, C2c2-F2); ciclo 3 aberto (planejador no Codex).
+- **#405** — B-SAN3-05 em rascunho (head `e3cb269d`); CI `backend` vermelho no T8d (depende do `pg_hba` do ambiente); de volta
+  ao dev no Codex.
+- **#404** — porteiro LIBERADO COM RESSALVA; este PR versiona o parecer e trata a R404-1 (títulos do `kpis-history.md`) e a
+  R404-3 (estado da decisão do cabeçalho em `decisoes.md`). A R404-2 (aceite dos planejadores para os donos de duas
+  pendências) e a R404-4 (disco: 8–9 GB livres; limpeza profunda feita em parte) seguem abertas.
