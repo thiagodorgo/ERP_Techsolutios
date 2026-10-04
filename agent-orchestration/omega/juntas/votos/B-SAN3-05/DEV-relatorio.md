@@ -788,3 +788,34 @@ A janela fechou por limite de uso por volta de 13:59Z, depois de criar localment
 `HEAD=e2dc1c5c`, remoto `11652b15`; autor `thiagodorgo`; PR **#405** já aberto em rascunho com base, head e título
 corretos; cluster `san3-05-s2-pg` ausente; 0 worker/teste vivo no worktree. Esta seção é o único delta posterior ao
 commit de fechamento e será commitada e empurrada fast-forward antes da remoção do worktree.
+
+### SÉTIMA RETOMADA — CI vermelho e correção do T8d — 2026-10-04T18:46:03Z
+
+O CI do PR #405 no head `e3cb269d` ficou vermelho nos runs de `push` e `pull_request`: **3124** testes,
+**3120** passes, **2** skips e **2** fails TAP, ambos o mesmo defeito (T8d + seu pai). `pg_basebackup` saiu 1 porque o
+serviço `postgres:16` da CI não tem regra `host replication` no `pg_hba.conf` para a origem `172.18.0.1`; a prova local
+anterior usava um cluster cuja HBA aceitava essa conexão especial.
+
+**Falsificação sem contradição do invariante.** A evidência literal `pg_basebackup` do plano não é portátil: antes de
+testar o atributo `REPLICATION`, ela exige uma decisão externa de HBA. O critério A4b/T8d continua sendo executar uma
+porta exclusiva do atributo, com setup ausente em vermelho e sem skip. A prova foi substituída pela porta nativa
+`pg_create_physical_replication_slot`: a role `REPLICATION` cria e remove um slot físico real; depois de
+`ALTER ROLE ... NOREPLICATION`, a mesma role e a mesma chamada recebem `42501`/`permission denied to use replication
+slots`. Isso mede por execução o mesmo privilégio sem abrir o pseudo-banco `replication` no HBA e preserva o vermelho do
+mutante que tira `rolreplication` da guarda. Não contradiz a propriedade nem o critério; corrige a premissa ambiental do
+método de evidência.
+
+O worktree foi recriado em `C:/Users/AMP/w-s05d`, com `core.autocrlf=true`, `npm ci` próprio (**326** pacotes) e sem
+junction. Cluster descartável próprio `san3-05-s2-pg`, PostgreSQL 16.14, porta 55405 provada livre, 107 migrações; a base
+viva não recebeu comando. A primeira execução após a edição encontrou duas falhas do próprio ensaio: Prisma não
+desserializa o retorno `void` de `pg_drop_replication_slot`, e o wrapper local entregou um socket MSYS convertido. Ambos
+foram corrigidos (`DO/PERFORM` e socket default do contêiner). Como o cleanup antigo parou no `void`, o cluster ficou com
+uma tabela/view residual; ele foi descartado inteiro e recriado antes da medição válida.
+
+Medição válida no cluster novo: arquivo do bloco **8/8**, 0 falhas, 0 pulos, 46,1 s; T8d **1,5 s**. O novo
+`ALTER ROLE ... NOREPLICATION` é escrita de catálogo sob `withRoleCatalogLock`, portanto a allowlist consciente passa de
+62 para **63**; `tests/db-catalog-write-guard.test.ts` ficou **5/5**, 0 falhas, 0 pulos. `npm run check` e
+`npm run lint` ficaram verdes. Carga antes do arquivo: CPU 23%, 1 processo de outra frente.
+
+Falta desta retomada: suíte backend inteira para publicar N e forma, atualização da nota do KPI com a nova execução,
+commit/push fast-forward, cluster e worktree removidos.

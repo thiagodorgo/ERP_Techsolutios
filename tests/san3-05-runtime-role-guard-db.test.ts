@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net, { type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -33,7 +33,6 @@ import {
 const connectionString = process.env.DATABASE_URL;
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROLE_SCRIPT = path.join(REPO_ROOT, "scripts", "db-runtime-role.sh");
-const PG_BASEBACKUP_BIN = process.env.SAN3_PG_BASEBACKUP_BIN || "pg_basebackup";
 const SAFE_NAME = /^[a-z][a-z0-9_]+$/;
 
 type Escape = {
@@ -442,6 +441,7 @@ test(
       const readAll = token("s305_readall");
       const table = token("s305_vtable");
       const view = token("s305_view");
+      const slot = token("s305_slot");
       const secrets = new Map([repl, program, viewer, readAll].map((role) => [role, secret()]));
       await catalog(admin, [
         `CREATE ROLE ${ident(repl)} LOGIN PASSWORD ${literal(secrets.get(repl)!)} REPLICATION NOSUPERUSER NOBYPASSRLS`,
@@ -460,37 +460,31 @@ test(
       try {
         const replication = await posture(urlForRole(connectionString, repl, secrets.get(repl)!));
         findEscape(replication.escapes as Escape[], "atributo", repl);
-        const backupDir = mkdtempSync(path.join(tmpdir(), "s305-basebackup-"));
+        const replicationUrl = urlForRole(connectionString, repl, secrets.get(repl)!);
+        const replicationClient = prismaFor(replicationUrl);
         try {
-          const base = new URL(connectionString);
-          const backup = spawnSync(
-            PG_BASEBACKUP_BIN,
-            [
-              "-h",
-              base.hostname,
-              "-p",
-              base.port || "5432",
-              "-U",
-              repl,
-              "-D",
-              backupDir,
-              "-X",
-              "none",
-              "--no-sync",
-            ],
-            {
-              env: { ...process.env, PGUSER: repl, PGPASSWORD: secrets.get(repl)! },
-              encoding: "utf8",
-              timeout: 60_000,
-              shell: process.platform === "win32" && PG_BASEBACKUP_BIN.toLowerCase().endsWith(".cmd"),
-            },
+          const created = await replicationClient.$queryRawUnsafe<Array<{ slot_name: string }>>(
+            `SELECT slot_name FROM pg_create_physical_replication_slot(${literal(slot)})`,
           );
-          assert.equal(backup.status, 0, `pg_basebackup: ${backup.stderr ?? backup.error?.message ?? "falhou"}`);
-          if (!process.env.SAN3_PG_BASEBACKUP_BIN) {
-            assert.ok(readdirSync(backupDir).length > 0, "a porta REPLICATION precisa produzir um backup real");
-          }
+          assert.equal(created[0]?.slot_name, slot, "a porta REPLICATION precisa criar um slot físico real");
+          await replicationClient.$executeRawUnsafe(
+            `DO $$ BEGIN PERFORM pg_drop_replication_slot(${literal(slot)}); END $$`,
+          );
         } finally {
-          rmSync(backupDir, { recursive: true, force: true });
+          await replicationClient.$disconnect();
+        }
+        await catalog(admin, [`ALTER ROLE ${ident(repl)} NOREPLICATION`]);
+        const deniedReplicationClient = prismaFor(replicationUrl);
+        try {
+          await assert.rejects(
+            deniedReplicationClient.$queryRawUnsafe(
+              `SELECT slot_name FROM pg_create_physical_replication_slot(${literal(slot)})`,
+            ),
+            /42501|permission denied to use replication slots/i,
+            "sem REPLICATION, a mesma porta deve recusar por privilégio",
+          );
+        } finally {
+          await deniedReplicationClient.$disconnect();
         }
         const serverRole = await posture(urlForRole(connectionString, program, secrets.get(program)!));
         findEscape(serverRole.escapes as Escape[], "atributo", "pg_execute_server_program");
@@ -519,6 +513,9 @@ test(
           await Promise.all([programClient.$disconnect(), viewerClient.$disconnect(), readAllClient.$disconnect()]);
         }
       } finally {
+        await admin.$executeRawUnsafe(
+          `DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = ${literal(slot)}) THEN PERFORM pg_drop_replication_slot(${literal(slot)}); END IF; END $$`,
+        );
         await catalog(admin, [
           `DROP VIEW IF EXISTS public.${ident(view)}`,
           `DROP TABLE IF EXISTS public.${ident(table)}`,
