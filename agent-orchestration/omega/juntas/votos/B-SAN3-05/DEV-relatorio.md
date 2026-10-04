@@ -780,3 +780,11 @@ worker/teste com `w-s05d` no `CommandLine`, excluída esta sessão Codex: **0**.
 Depois do push fast-forward deste fechamento, a última ação local é remover o worktree por
 `git worktree remove --force C:/Users/AMP/w-s05d`, chamado da árvore principal. Inspetor, check-runs e junta pertencem ao
 orquestrador; os dois atos de staging/produção do §11 pertencem ao dono.
+
+### SEXTA RETOMADA — push final — 2026-10-04T14:09:40Z
+
+A janela fechou por limite de uso por volta de 13:59Z, depois de criar localmente o commit de fechamento
+`e2dc1c5c`, antes do push. Nesta retomada, fase **fechamento**, o estado foi re-medido: árvore limpa;
+`HEAD=e2dc1c5c`, remoto `11652b15`; autor `thiagodorgo`; PR **#405** já aberto em rascunho com base, head e título
+corretos; cluster `san3-05-s2-pg` ausente; 0 worker/teste vivo no worktree. Esta seção é o único delta posterior ao
+commit de fechamento e será commitada e empurrada fast-forward antes da remoção do worktree.
