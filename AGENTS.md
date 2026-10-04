@@ -440,8 +440,9 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
    > **Teto de 2 ciclos restabelecido (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(2)):** a partir do ciclo 3, só defeito de produto grave bloqueia; o resto vira pendência e o bloco mergeia.
+
+4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
    2026-09-27, `D-SEM-TETO-AUDITORIA-NO-3`).** **REVOGA o `D-TETO-DOIS-CICLOS`** (2026-08-29), que por sua vez
    já revogara o teto de 5. **Não há mais teto por contagem de ciclos.**
    - **Reprovação de junta NÃO para o bloco.** Abre-se o ciclo seguinte, com os papéis recompostos pelo
@@ -639,8 +640,9 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    o que está em andamento e KPI congelado (decisão do dono, 2026-10-04 — `D-GOV-PROPORCIONAL`).** Nas palavras do dono, depois de mais de um
    mês com cada bloco levando cerca de uma semana de ciclos de junta: *"me diz como saio desse buraco… preciso sair desse
    loop e continuar fazendo meu sistema, quero implantar o traccar"*; e, sobre a proposta, *"aprovo 1, 2, 3 e 4 kpi
-   congelado também"*. **Onde este item divergir de §C2 item 8, §C3, §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4,
-   §C7.4-bis e da `D-MANDATO-FORMA`, vale este item.** As paradas irredutíveis (§C7.5), a separação de papéis
+   congelado também"*. **Onde este item divergir de §C1 (feature atualiza KPI), §C2 (itens 5, 6 e 8), §C3, §C4
+   (KPI em todo PR), §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4, §C7.4-bis, §8 (itens 4 e 7), §10 (DoD) e da
+   `D-MANDATO-FORMA`, vale este item** — inclusive onde esses trechos mandam todo PR passar por junta ou atualizar `Kpis/*`. As paradas irredutíveis (§C7.5), a separação de papéis
    (§C7.4-bis: quem acha ≠ quem planeja ≠ quem desenvolve) e P1–P7 continuam valendo onde houver junta.
 
    - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só

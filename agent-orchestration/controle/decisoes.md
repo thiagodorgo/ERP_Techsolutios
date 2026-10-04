@@ -2935,7 +2935,7 @@ Fonte §A1.1 (decisão do dono), registradas aqui pelo orquestrador; a citação
   referência do cabeçalho da lista de OS (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`), mostrada ao dono em 2026-10-04
   com o PNG de `screen-refs/`, sem resposta até este registro.
 
-## D-GOV-PROPORCIONAL (2026-10-04) — junta proporcional, teto de 2 ciclos, menos burocracia, Traccar em paralelo e KPI congelado
+## D-GOV-PROPORCIONAL (2026-10-04) — junta proporcional, teto de 2 ciclos, menos burocracia, Traccar depois de sanar o que está em andamento e KPI congelado
 
 **Decisão do dono (fonte §A1.1), literal:** *"me diz como saio desse buraco onde estou a mais de um mes, rodo uma junta
 para fazer um bloco e passo uma semana rodando uma, duas, tres e varias vezes. preciso sair desse loop e continuar

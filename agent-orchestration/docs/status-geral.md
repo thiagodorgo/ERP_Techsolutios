@@ -4926,5 +4926,5 @@ do Codex por limite de uso.
 ## 2026-10-04 — D-GOV-PROPORCIONAL
 
 O dono aprovou a governança proporcional (§C7 item 8): junta completa só onde há dinheiro, segurança, permissão ou perda
-de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar em
-paralelo; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
+de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar depois
+de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
