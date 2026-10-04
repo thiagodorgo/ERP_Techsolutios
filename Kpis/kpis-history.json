@@ -2508,16 +2508,16 @@
     "backfill_note": "`pr` null NA AUTORIA (tarefa de nuvem; o orquestrador abre o PR e preenche); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge (`approved_head` lido da ata da junta, não do head do merge). Nenhum backfill devido por este PR: a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398 (`5bcdcc58`). Se outro PR mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então. BACKFILL PAGO pelo registro do #402 (docs/registro-402): `pr 402`, `merge_commit 3e40a256…` (squash; a árvore do merge é a do head final do PR, `1483a6f7`, que é o head aprovado `cdf370dc` mais a ata e os votos), `approved_head cdf370dc…` lido da ata `J-B-SAN3-01b.md`."
   },
   {
-    "snapshot_date": "2026-10-01",
+    "snapshot_date": "2026-10-04",
     "version": "B-SAN3-09",
-    "pr": null,
+    "pr": 400,
     "merge_commit": null,
     "approved_head": null,
     "flutter_tests": "864/864",
-    "backend_tests": "3080/3088",
-    "frontend_smoke_tests": "1202/1202",
-    "blocks_completed": 169,
-    "description": "B-SAN3-09 — bootstrap do 1º administrador de plataforma (item 43 do §4.1 do PLANO_SAN3.md). E1: `scripts/bootstrap-platform-admin.ts` — script idempotente (417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo): trava `pg_advisory_xact_lock(20260909n)`, guard `ALLOW_PROD_BOOTSTRAP` strict-bool, senha nunca via argv, 8 passos em transação com `setTenantRlsContext`, CE-G1 import allowlist. E2: `tests/san3-09-bootstrap-platform-admin.test.ts` — T1.1–T1.8, 23/23 pass (doc-guard T1.8 verde após E4). E3: `tests/san3-09-bootstrap-platform-admin-db.test.ts` — T2.1–T2.10, 11/11 pass com banco de drill descartável (porta 54332, `erp_san3_09_dev`, RBAC provisionado); papéis efêmeros NOSUPERUSER NOBYPASSRLS; RLS com `setTenantRlsContext` verificado; idempotência e concorrência com `Promise.allSettled`. E4: `docs/deployment.md` Runbook B (linhas 169-185) reescrito com `ALLOW_PROD_BOOTSTRAP`, `--dry-run`, `--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01`. BACKEND REEXECUTADO: `DATABASE_URL=postgresql://postgres@127.0.0.1:54332/erp_san3_09_dev npm test` → 3088 testes · pass 3080 · fail 6 (Redis ausente no cluster de drill, pré-existentes) · skipped 2 (permission-catalog-db-parity). Delta vs 3052/3054: +34 casos (+23 E2 + 11 E3). frontend_smoke_tests e flutter_tests CARREGADOS (§C3.3): `git diff --name-only origin/main...HEAD -- frontend/ mobile/` vazio. mvp_demo/mvp_vendavel INTOCADOS (§C3.4). blocks_completed 168 → 169.",
-    "backfill_note": "`pr`/`merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge pelo próximo PR a mergear."
+    "backend_tests": "3086/3088",
+    "frontend_smoke_tests": "1214/1214",
+    "blocks_completed": 171,
+    "description": "B-SAN3-09 — bootstrap do 1º administrador de plataforma (item 43 do §4.1 do PLANO_SAN3.md). E1: `scripts/bootstrap-platform-admin.ts` — script idempotente (417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo): trava `pg_advisory_xact_lock(20260909n)`, guard `ALLOW_PROD_BOOTSTRAP` strict-bool, senha nunca via argv, 8 passos em transação com `setTenantRlsContext`, CE-G1 import allowlist. E2: `tests/san3-09-bootstrap-platform-admin.test.ts` — T1.1–T1.8, 23 casos. E3: `tests/san3-09-bootstrap-platform-admin-db.test.ts` — T2.1–T2.10, 11 casos com banco de drill descartável; papéis efêmeros NOSUPERUSER NOBYPASSRLS. E4: `docs/deployment.md` Runbook B reescrito. RECONTADO em 2026-10-04 contra a `origin/main` `8ee10bd2` (integrada pelo merge `aa64aac3`): BACKEND REEXECUTADO no head `01f1da3b` num container Linux node:20 com Postgres e Redis descartáveis próprios → 289 arquivos · 3088 testes · pass 3086 · fail 0 · skipped 2 (`RBAC_DB_PARITY`). Delta vs 3052/3054: +34 (23 E2 + 11 E3). frontend_smoke_tests 1214/1214 e flutter_tests 864/864 CARREGADOS (§C3.3): `git diff --name-only origin/main...HEAD -- frontend mobile` vazio. mvp_demo/mvp_vendavel INTOCADOS (§C3.4): o item 43 só conta fechado após o ato do dono. blocks_completed 170 → 171.",
+    "backfill_note": "`pr` 400 (o PR já existia, em rascunho, na recontagem); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge (`approved_head` lido da ata da junta). Nenhum backfill devido por este PR: a última entrada da `origin/main` (`8ee10bd2`) é a do #402 (B-SAN3-01b), que já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos pelo #403 (`f03b883f`). Se outro PR mergear antes deste, `blocks_completed` e esta nota se RECONTAM no pré-merge a partir da `main` de então."
   }
 ]
