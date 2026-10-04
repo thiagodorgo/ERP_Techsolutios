@@ -94,3 +94,15 @@ O terreno: mede num worktree proprio detached C:/Users/AMP/w-pl5 no head do ramo
   fim com 0 processo vivo; nunca tail -f nem MSYS_NO_PATHCONV exportada; nunca git config sem --worktree; timeout no que executa artefato
   mutado; base viva erp-postgres 5432 e erp-redis 6379 nunca alvo; evidencia incremental com hora; a cota da conta dura de 35 a 50 minutos
   por janela, entao cada passo e gravado assim que medido; se receber PAUSA, grava a secao PAUSA no fim e para sozinho derruba com: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -ic 'w-pl5'`
+
+## MEDIDO
+
+Pre-voo deste mandato no head do lancamento medido por: `cd C:/Users/AMP/w-mandato && bash scripts/mandato-preflight.sh agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo5/00-mandatos/planejador-c5.md 393; echo ec=$?`
+```
+COLAGEM    l.11-31: refs do PR #393 confere com a saida atual
+
+PRE-VOO OK — C:/Users/AMP/w-mandato/agent-orchestration/omega/juntas/votos/B-GOV-MANDATO-ciclo5/00-mandatos/planejador-c5.md
+ec=0
+head=90d65341c3022607793eefaa4553ac0831397d1f
+utc=2026-10-04T09:07:57Z
+```
