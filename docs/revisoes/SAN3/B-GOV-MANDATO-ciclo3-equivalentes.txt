@@ -1,0 +1,12 @@
+# B-GOV-MANDATO ciclo 3 — mutantes EQUIVALENTES declarados do pre-voo (scripts/mandato-preflight.sh, blob faa408c8)
+# Lido por: bash scripts/mandato-mutantes.sh preflight --equivalentes docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-equivalentes.txt
+# Formato (cabecalho da ferramenta, l.310-311): `id: justificativa (fixture que tentou discriminar)` — linha sem
+# fixture nomeada entre parenteses e IGNORADA (A6). A ferramenta CONTA as linhas `^[0-9]+:.*\(.+\)`; comentario com
+# `#` nao conta.
+# Fonte: plano do ciclo 3, docs/revisoes/SAN3/B-GOV-MANDATO-ciclo3-plano.md §14.18 (tabela e decisao 1), medido pelo
+# planejador em arnes proprio com o mesmo `sed` da ferramenta: pristino x mutante com saida IGUAL nas fixtures
+# abaixo. Transcrito pelo Dev-S-2 (dev-s2-mandato-registro), K2a, 2026-09-30. A C2''' reclassifica com fixture SUA
+# (ERRATA E-10(a), item 7).
+245: M7 no `*) continue ;;` (bloco de colagem sem cabecalho) e equivalente — o `case *)` so e alcancado com `prim` sem o prefixo `# refs do PR #`, logo `N` (l.247) e vazio e a l.248 `[ -n "$N" ] || continue` da o mesmo salto (fixture que tentou e falhou: semcab.md, um bloco cercado SEM a linha `# refs do PR #`; pristino x mutante IGUAIS)
+318: M10 em `celulaCheia` (`idx<2 || idx>n` -> 0) e equivalente — em awk, `c[idx]` fora do intervalo e "" e `~ /[^[:space:]]/` e falso, o mesmo 0; a linha de tabela comeca por `|`, logo `c[1]` e vazio (fixture que tentou e falhou: tabela.md, linha de tabela `| a |` com uma celula a menos; pristino x mutante IGUAIS)
+336: M7 no `NR==FNR {...; next}` (1o arquivo = o oraculo) e equivalente — as linhas do oraculo casam `^[0-9]+ [012] [-MHX] [01]$` (l.164/168-171/180/186) e nao carregam caminho, SHA, token nem `medido por:`, e `L[FNR]` e sobrescrito pelo 2o arquivo no mesmo intervalo (fixture que tentou e falhou: paste2.md, bullets.md e paths.md, as tres; pristino x mutante IGUAIS nas tres)

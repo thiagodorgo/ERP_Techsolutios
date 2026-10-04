@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **432** |
-| IDs distintos | 421 |
-| **ABERTAS** | **317** |
+| Cabecalhos `## P-` | **445** |
+| IDs distintos | 434 |
+| **ABERTAS** | **324** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **248** |
+| — das quais **ativas nesta rodada** | **255** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 115 |
+| FECHADAS | 121 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **432 cabecalhos para 421 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **445 cabecalhos para 434 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 138
+## ABERTAS · balde A — material — 143
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -201,16 +201,21 @@
 | `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9737 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9747 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
 | `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9760 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
-| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9773 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
-| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9788 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
-| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9803 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
-| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 9827 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
-| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 9839 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
-| `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9912 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
-| `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 9943 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
-| `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 9963 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
+| `P-GOV-ATA-CABECALHO-TEMPLATE` | 9802 | MÉDIA | sim | P-GOV-ATA-CABECALHO-TEMPLATE (2026-09-26) — não existe template RASTREADO de ata com cab |
+| `P-GOV-ATA-APPROVED-HEAD-LINHA` | 9812 | MÉDIA | sim | P-GOV-ATA-APPROVED-HEAD-LINHA (2026-09-26) — nenhuma das 107 atas escreve a linha `- **a |
+| `P-GOV-CICLOS-CORPOS-ORFAOS` | 9949 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
+| `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9964 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
+| `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9979 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
+| `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` | 10004 | MÉDIA | sim | P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388  |
+| `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO` | 10016 | MÉDIA | sim | P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o númer |
+| `P-GOV-MAQUINA-393-D-M1-DOIS-LADOS` | 10046 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M1-DOIS-LADOS (2026-09-30) — o número de uma ferramenta de medição e |
+| `P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO` | 10056 | MÉDIA | sim | P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO (2026-09-30) — o mandato que lança um agente não |
+| `P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA` | 10067 | ALTA | sim | P-GOV-MAQUINA-393-D-M3-FALHA-INTERNA (2026-09-30) — a classe "falha interna do artefato  |
+| `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 10131 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
+| `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 10162 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
+| `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 10182 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
 
-## ABERTAS · balde B — processo/registro — 110
+## ABERTAS · balde B — processo/registro — 112
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -313,17 +318,19 @@
 | `P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD` | 9546 | BAIXA | sim | P-SAN3-01-C2-DIVERGENCIA-VAZIO-NO-CARD (2026-09-18) — divergência do plano do ciclo 2 (§ |
 | `P-SAN3-04A-MATRIZ-BULLETS-101-103` | 9692 | BAIXA | sim | P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Fina |
 | `P-SAN3-04A-TARIFAS-X-L41-FINANCE` | 9700 | BAIXA | sim | P-SAN3-04A-TARIFAS-X-L41-FINANCE (2026-09-18) — tópicos de tarifas e tabelas de valores  |
-| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9817 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
-| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 9849 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
-| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 9859 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
-| `P-GOV-OBITUARIO-SEMTETO` | 9869 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
-| `P-GOV-PAUSA-ESCADA-C76BIS` | 9879 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
-| `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 9889 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
-| `P-GOV-PAUSA-CASO-SEM-FONTE` | 9899 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
-| `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 9921 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
-| `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 9930 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
-| `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` | 9953 | BAIXA | sim | P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa |
-| `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 9973 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
+| `P-GOV-MANDATO-2-FRONTEIRAS` | 9823 | BAIXA | sim | P-GOV-MANDATO-2-FRONTEIRAS (2026-09-26) — as OITO fronteiras que o pré-voo e o refs DECL |
+| `P-GOV-MANDATO-3-FRONTEIRAS` | 9891 | BAIXA | sim | P-GOV-MANDATO-3-FRONTEIRAS (2026-09-29) — as fronteiras que os artefatos do ciclo 3 decl |
+| `P-GOV-PROJECT-MEMORY-TETO-VELHO` | 10026 | BAIXA | sim | P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatór |
+| `P-CHORE-CLEANUP-DESCE-EM-WORKTREES` | 10036 | BAIXA | sim | P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro |
+| `P-GOV-OBITUARIO-SEMTETO` | 10088 | BAIXA | sim | P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no O |
+| `P-GOV-PAUSA-ESCADA-C76BIS` | 10098 | BAIXA | sim | P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a paus |
+| `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` | 10108 | BAIXA | sim | P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquest |
+| `P-GOV-PAUSA-CASO-SEM-FONTE` | 10118 | BAIXA | sim | P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de |
+| `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 10140 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
+| `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 10149 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
+| `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` | 10172 | BAIXA | sim | P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa |
+| `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10192 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
+| `P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA` | 10202 | BAIXA | sim | P-GOV-MANDATO-4-GUARD-DA-FERRAMENTA (2026-10-01) — `scripts/mandato-mutantes.sh` não tem |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -399,7 +406,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3581 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3625 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 115
+## FECHADAS — 121
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -518,3 +525,9 @@
 | `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9555 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
 | `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9564 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9573 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
+| `P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME` | 9773 | BAIXA | sim | P-GOV-MANDATO-PREFLIGHT-CAMINHO-POR-BASENAME (2026-09-25) — a checagem de caminho do pré |
+| `P-GOV-MANDATO-3-B8B-CONTRADICAO` | 9842 | ALTA | sim | P-GOV-MANDATO-3-B8B-CONTRADICAO (2026-09-28) — `[B8b]` e `[F-EOL/s7-neg]` exigem veredit |
+| `P-GOV-MANDATO-3-MUTANTES-REFS` | 9856 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-REFS (2026-09-28) — os 5 pontos de decisão de `mandato-refs.sh` |
+| `P-GOV-MANDATO-3-MUTANTES-PREFLIGHT` | 9874 | MÉDIA | sim | P-GOV-MANDATO-3-MUTANTES-PREFLIGHT (2026-09-28) — a rodada de mutação do pré-voo mediu 1 |
+| `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` | 9993 | BAIXA | sim | P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas se |
+| `P-GOV-MANDATO-FORMA` | 10078 | MÉDIA | sim | P-GOV-MANDATO-FORMA (2026-09-30) — o mandato de lançamento é documento de campos declara |

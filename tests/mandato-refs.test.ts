@@ -1,0 +1,1119 @@
+// Guard do `scripts/mandato-refs.sh` — o script que existe para o orquestrador NUNCA digitar um SHA.
+//
+// POR QUE ESTE ARQUIVO FOI REESCRITO NO CICLO 2 (bloco B-GOV-MANDATO, PR #393).
+// A junta reprovou o ciclo 1 com o bloqueante C2-01: **o guard media uma RÉPLICA, não o artefato**.
+// A versão anterior tinha uma função `casar()` em TypeScript que "reproduzia o matcher do script".
+// Medido: quebrar o matcher do `.sh` deixava 6/6 verde; **4 dos 6 casos passavam com o script
+// APAGADO**; e reescrever só um comentário deixava o guard vermelho (um caso lia a fonte por `cat`).
+//
+// A PROPRIEDADE QUE ESTE ARQUIVO PASSA A TER: *o teste fica vermelho se — e só se — o COMPORTAMENTO
+// do artefato muda.* Dois corolários, e os dois são medidos:
+//   - apagar/renomear `scripts/mandato-refs.sh` derruba TODOS os casos (nenhum sobrevive);
+//   - reescrever só comentários do script não derruba NENHUM.
+// Consequência de desenho, e ela é inegociável aqui: NÃO existe réplica do matcher neste arquivo,
+// nenhuma asserção sobre comentário, e nenhum `cat`/`readFileSync` da fonte do script. Todo caso
+// passa por `spawnSync("bash", [<o .sh de verdade>, ...])`.
+//
+// O ARNÊS (novo na casa; o padrão `mkdtemp` + processo-filho já existe em `agents-mirror-guard` e
+// em `npm-test-runner-guard`, mas repositório git em tmpdir + `gh` shimado é inédito):
+//   1. `mkdtempSync` -> `git init` -> atas-fixture -> commits -> `git update-ref
+//      refs/remotes/origin/main <A>` (é o que o script lista) e um commit `B` com uma ata que vive
+//      SÓ no ramo (é o caso do PR #393, cuja ata a ferramenta do ciclo 1 não enxergava).
+//   2. Um `gh` shimado que RESPONDE POR PR (`MANDATO_GH`), invocado pelo script como `bash <shim>`.
+//   3. Os SHAs das fixtures são commits REAIS do repo temporário — o `git rev-parse` do script
+//      expande de verdade, em vez de devolver o que leu.
+// FRONTEIRA DECLARADA: o `gh` real e a API do GitHub NÃO são atravessados aqui. A forma do JSON está
+// colada no shim com a data da captura; a cobertura viva dela é a execução `bash
+// scripts/mandato-refs.sh 392/393/387` da bateria do bloco.
+import test from "node:test";
+import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+// CICLO 3 (E1): import proprio, em linha nova -- [P-0] exige SO adicoes neste arquivo.
+import { readFileSync } from "node:fs";
+// CICLO 3 (Dev-T-3, §13.4): idem -- as ancoras de [V17] (nome que nao e arquivo) e [V18] (modo sem x).
+import { existsSync, statSync } from "node:fs";
+
+const RAIZ = path.resolve(import.meta.dirname, "..");
+const SCRIPT = path.join(RAIZ, "scripts/mandato-refs.sh");
+
+const repo = mkdtempSync(path.join(tmpdir(), "mandato-refs-"));
+process.on("exit", () => {
+  try {
+    rmSync(repo, { recursive: true, force: true });
+  } catch {
+    /* tmpdir de teste; a limpeza é best-effort */
+  }
+});
+
+/** git com identidade e EOL fixados — o arnês tem de se comportar igual no Windows e no ubuntu. */
+function git(...args: string[]): string {
+  return execFileSync(
+    "git",
+    ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.autocrlf=false", "-c", "commit.gpgsign=false", ...args],
+    { cwd: repo, encoding: "utf8" },
+  ).toString();
+}
+function escreve(rel: string, conteudo: string): void {
+  const alvo = path.join(repo, rel);
+  mkdirSync(path.dirname(alvo), { recursive: true });
+  writeFileSync(alvo, conteudo, "utf8"); // "\n" puro: nenhuma asserção deste arquivo depende de \r
+}
+function commit(msg: string): string {
+  git("add", "-A");
+  git("commit", "-q", "-m", msg);
+  return git("rev-parse", "HEAD").trim();
+}
+
+execFileSync("git", ["-c", "init.defaultBranch=main", "init", "-q", repo], { encoding: "utf8" });
+
+// Seis commits só para virarem os SHAs das fixtures — assim `rev-parse` expande de verdade.
+const S: string[] = [];
+for (let i = 0; i < 6; i++) {
+  escreve(`semente-${i}.txt`, `semente ${i}\n`);
+  S.push(commit(`semente ${i}`));
+}
+const [S1, S2, S3, S4, S5, S6] = S as [string, string, string, string, string, string];
+const c7 = (s: string) => s.slice(0, 8);
+
+// --- as atas-fixture --------------------------------------------------------------------------
+// As duas primeiras são as REGRESSÕES REAIS do ciclo 1, verbatim na estrutura (SHAs trocados pelos
+// commits do repo temporário).
+escreve(
+  "agent-orchestration/omega/juntas/J-B-SAN3-04a.md",
+  [
+    "# J-B-SAN3-04a — junta do bloco `B-SAN3-04a` (PR #390)",
+    "",
+    "- **Data:** 2026-09-20.",
+    `- **Objeto:** \`${c7(S1)}\` (PR #390); head na junta = o objeto. Base \`origin/main@${c7(S6)}\`.`,
+    "",
+    "Corpo da ata.",
+    "",
+  ].join("\n"),
+);
+escreve(
+  "agent-orchestration/omega/juntas/J-B-SAN3-00.md",
+  [
+    "# J-B-SAN3-00 — junta do bloco `B-SAN3-00` (PR #392)",
+    "",
+    `- **Objeto julgado:** \`${c7(S2)}\`, ramo \`chore/corpos-de-jurado-rastreados\`, base \`${c7(S3)}\`.`,
+    "- **Data:** 2026-09-21.",
+    "",
+    "## As dividas pagas aqui",
+    "As 5 do porteiro do #390 e as 6 do porteiro do #391 — todas conferidas no arquivo rastreado.",
+    "",
+  ].join("\n"),
+);
+// ATA_MULTI — dois ciclos, dois Objetos, nenhuma linha de aprovação (é a forma do J-B-SAN3-01 real).
+escreve(
+  "agent-orchestration/omega/juntas/J-MULTI.md",
+  [
+    "# J-MULTI — junta do bloco `B-MULTI` (PR #387)",
+    "",
+    `- **Objeto:** \`${c7(S4)}\` (PR #387); ciclo 1, REPROVADO.`,
+    "",
+    "## Ciclo 2",
+    "",
+    `- **Objeto:** \`${c7(S5)}\` (PR #387); ciclo 2.`,
+    "",
+  ].join("\n"),
+);
+// ATA_SEM_OBJETO — a classe das 102 atas que não têm linha de Objeto.
+escreve(
+  "agent-orchestration/omega/juntas/J-SEM-OBJETO.md",
+  ["# J-SEM-OBJETO — junta do bloco `B-SEM` (PR #380)", "", "Votou-se; ninguem escreveu o objeto.", ""].join("\n"),
+);
+// ATA_MENCAO — cita o PR só no corpo. Mencionar não é ser sobre — mas também não é ausência.
+escreve(
+  "agent-orchestration/omega/juntas/J-MENCAO.md",
+  [
+    "# J-MENCAO — junta do bloco `B-OUTRO`",
+    "",
+    `- **Objeto:** \`${c7(S6)}\`; bloco sem relacao.`,
+    "",
+    "Pagamos de passagem uma divida do #381, que e de outro bloco.",
+    "",
+  ].join("\n"),
+);
+// ATA_REPROVADA_UNICA — a forma EXATA da ata do ciclo 1 deste bloco: Objeto julgado + VEREDITO
+// REPROVADO em prosa, e NENHUMA linha de aprovação.
+escreve(
+  "agent-orchestration/omega/juntas/J-REPROVADA.md",
+  [
+    "# J-REPROVADA (PR #382) — ciclo 1",
+    "",
+    `- **Objeto julgado:** \`${c7(S6)}\`, resolvido pelas tres cadeiras.`,
+    "",
+    "## VEREDITO: **REPROVADO — 2 × 1**",
+    "",
+  ].join("\n"),
+);
+// ATA_APROVADA — a ÚNICA forma que a ferramenta lê como aprovação.
+escreve(
+  "agent-orchestration/omega/juntas/J-APROVADA.md",
+  [
+    "# J-APROVADA (PR #383) — ciclo 1",
+    "",
+    `- **Objeto julgado:** \`${c7(S1)}\`.`,
+    `- **approved_head:** \`${c7(S1)}\``,
+    "",
+    "## VEREDITO: **APROVADO — 3 × 0**",
+    "",
+  ].join("\n"),
+);
+// ATA_CONTRADITORIA — declara aprovação de um head que ela mesma não declarou como objeto.
+escreve(
+  "agent-orchestration/omega/juntas/J-CONTRADITORIA.md",
+  [
+    "# J-CONTRADITORIA (PR #384) — ciclo 1",
+    "",
+    `- **Objeto julgado:** \`${c7(S4)}\`.`,
+    `- **approved_head:** \`${c7(S5)}\``,
+    "",
+  ].join("\n"),
+);
+// Casa pelo RAMO, não pelo número: o título não tem `#N`; a linha de Objeto nomeia o ramo.
+escreve(
+  "agent-orchestration/omega/juntas/J-POR-RAMO.md",
+  [
+    "# J-POR-RAMO — junta do bloco `B-RAMO`",
+    "",
+    `- **Objeto julgado:** \`${c7(S3)}\`, ramo \`feat/so-pelo-ramo\`, base \`main\`.`,
+    `- **approved_head:** \`${c7(S3)}\``,
+    "",
+  ].join("\n"),
+);
+
+// --- CICLO 3 (E1): fixtures novas -- todas ANTES do commit que vira `origin/main` ---------------
+// [V8] os dois delimitadores de `RE_PR`: `#3901` (vizinho pela direita) e `#1390` (pela esquerda)
+// NAO sao `#390`. Nenhuma das duas cita `#390` no corpo -- se citasse, viraria MENCAO e o caso
+// deixaria de discriminar o delimitador (e o artefato de processo que a ◐ do plano nomeia).
+escreve(
+  "agent-orchestration/omega/juntas/J-3901.md",
+  [
+    "# J-3901 — junta do bloco `B-3901` (PR #3901)",
+    "",
+    `- **Objeto julgado:** \`${c7(S4)}\`; bloco de numero vizinho pela DIREITA.`,
+    "",
+  ].join("\n"),
+);
+escreve(
+  "agent-orchestration/omega/juntas/J-1390.md",
+  [
+    "# J-1390 — junta do bloco `B-1390` (PR #1390)",
+    "",
+    `- **Objeto julgado:** \`${c7(S5)}\`; bloco de numero vizinho pela ESQUERDA.`,
+    "",
+  ].join("\n"),
+);
+// [V9] duas linhas `approved_head` na MESMA ata: a ferramenta nao escolhe uma delas.
+escreve(
+  "agent-orchestration/omega/juntas/J-DUAS-APH.md",
+  [
+    "# J-DUAS-APH (PR #3955) — dois ciclos, duas linhas de aprovacao",
+    "",
+    `- **Objeto julgado:** \`${c7(S1)}\`.`,
+    `- **approved_head:** \`${c7(S1)}\``,
+    "",
+    "## Ciclo 2",
+    "",
+    `- **Objeto julgado:** \`${c7(S2)}\`.`,
+    `- **approved_head:** \`${c7(S2)}\``,
+    "",
+  ].join("\n"),
+);
+// [V10] a caixa do SHA e indiferente. O hex NAO e commit deste repo DE PROPOSITO: com um commit
+// real o `git rev-parse` expandiria os dois lados e a comparacao deixaria de discriminar a caixa
+// (licao da sonda C2' nova3 -- a sonda fraca que devolve "equivalente").
+const HEX_NAO_COMMIT = "abcdefabcdefabcdefabcdefabcdefabcdefabcd";
+escreve(
+  "agent-orchestration/omega/juntas/J-CAIXA.md",
+  [
+    "# J-CAIXA (PR #3956) — o mesmo head, escrito em duas caixas",
+    "",
+    `- **Objeto julgado:** \`${HEX_NAO_COMMIT}\`.`,
+    `- **approved_head:** \`${HEX_NAO_COMMIT.toUpperCase()}\``,
+    "",
+  ].join("\n"),
+);
+
+const COMMIT_BASE = commit("atas em origin/main");
+git("update-ref", "refs/remotes/origin/main", COMMIT_BASE);
+
+// Ata que vive SÓ no head do PR — é o caso do #393, invisível para a ferramenta do ciclo 1.
+escreve(
+  "agent-orchestration/omega/juntas/J-SO-NO-RAMO.md",
+  [
+    "# J-SO-NO-RAMO (PR #385) — ciclo 1",
+    "",
+    `- **Objeto julgado:** \`${c7(S2)}\`.`,
+    `- **approved_head:** \`${c7(S2)}\``,
+    "",
+  ].join("\n"),
+);
+const COMMIT_HEAD = commit("ata que so existe no ramo");
+
+// --- os shims de `gh` ---------------------------------------------------------------------------
+// Forma REAL do JSON, capturada em 2026-09-26T03:39Z com gh 2.89.0:
+//   {"baseRefName":"main","headRefName":"chore/corpos-de-jurado-rastreados",
+//    "headRefOid":"5cfcd7d35f1fbb7027c8d1811898a1c0e3216188","isDraft":false,
+//    "mergeCommit":{"oid":"fc3363e38aabd77f54e6b53034128182f8000571"},"mergeable":"UNKNOWN",
+//    "state":"MERGED"}
+// O script consome esses sete campos por `gh --jq '[...]|@tsv'`; o shim devolve o TSV correspondente.
+const PRS: Record<string, { ramo: string; estado: string; rascunho: string; merge: string }> = {
+  "390": { ramo: "fix/rbac-catalogo-banco-matriz", estado: "MERGED", rascunho: "false", merge: S6 },
+  "392": { ramo: "chore/corpos-de-jurado-rastreados", estado: "MERGED", rascunho: "false", merge: S6 },
+  "387": { ramo: "fix/multi", estado: "MERGED", rascunho: "false", merge: S6 },
+  "386": { ramo: "feat/so-pelo-ramo", estado: "OPEN", rascunho: "false", merge: "" },
+  "385": { ramo: "fix/so-no-ramo", estado: "OPEN", rascunho: "true", merge: "" },
+  "384": { ramo: "fix/contraditoria", estado: "OPEN", rascunho: "false", merge: "" },
+  "383": { ramo: "fix/aprovada", estado: "OPEN", rascunho: "false", merge: "" },
+  "382": { ramo: "fix/reprovada", estado: "OPEN", rascunho: "true", merge: "" },
+  "381": { ramo: "fix/mencao", estado: "OPEN", rascunho: "false", merge: "" },
+  "380": { ramo: "fix/sem-objeto", estado: "OPEN", rascunho: "false", merge: "" },
+  "3901": { ramo: "fix/vizinho-pela-direita", estado: "OPEN", rascunho: "false", merge: "" },
+  "1390": { ramo: "fix/vizinho-pela-esquerda", estado: "OPEN", rascunho: "false", merge: "" },
+  "3955": { ramo: "fix/duas-linhas-de-aprovacao", estado: "OPEN", rascunho: "false", merge: "" },
+  "3956": { ramo: "fix/caixa-do-sha", estado: "OPEN", rascunho: "false", merge: "" },
+  "999": { ramo: "fix/nenhuma-ata-fala-disto", estado: "OPEN", rascunho: "false", merge: "" },
+};
+
+function shim(nome: string, corpo: string): string {
+  const alvo = path.join(repo, "bin", nome);
+  mkdirSync(path.dirname(alvo), { recursive: true });
+  writeFileSync(alvo, corpo, "utf8");
+  try {
+    chmodSync(alvo, 0o755);
+  } catch {
+    /* no Windows o bit de execução não existe; o script invoca o shim como `bash <arquivo>` */
+  }
+  return alvo;
+}
+
+const casos = Object.entries(PRS)
+  .map(
+    ([pr, d]) =>
+      `    ${pr}) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "${d.ramo}" "main" "${d.estado}" "${d.rascunho}" "UNKNOWN" "${d.merge}" ;;`,
+  )
+  .join("\n");
+
+const CABECA_SHIM = "#!/usr/bin/env bash\nset -u\n";
+const PR_VIEW = `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  case "\${3:-}" in
+${casos}
+    *) exit 9 ;;
+  esac
+  exit 0
+fi
+`;
+const API_OK = `if [ "\${1:-}" = "api" ]; then printf '%s\\n' "14 0 0"; exit 0; fi
+exit 9
+`;
+
+const SHIM_OK = shim("gh-ok.sh", CABECA_SHIM + PR_VIEW + API_OK);
+const SHIM_RAMO_NULO = shim(
+  "gh-ramo-nulo.sh",
+  CABECA_SHIM +
+    `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "" "main" "OPEN" "false" "UNKNOWN" ""
+  exit 0
+fi
+` +
+    API_OK,
+);
+const SHIM_MORTO = shim("gh-morto.sh", CABECA_SHIM + 'echo "gh: boom" >&2\nexit 1\n');
+const SHIM_API_MORTA = shim(
+  "gh-api-morta.sh",
+  CABECA_SHIM + PR_VIEW + 'if [ "${1:-}" = "api" ]; then exit 1; fi\nexit 9\n',
+);
+
+// --- CICLO 3 (E1): um shim por CLAUSULA do bloco de validacao de insumo -------------------------
+// O ciclo 2 tinha 4 shims e so `headRefName` vazio alcancava o bloco; as outras seis clausulas
+// nao tinham insumo que as disparasse. `shimTsv` produz a MESMA forma de TSV dos shims acima
+// (sete campos, capturada em 2026-09-26), trocando so o campo sob ataque.
+function shimTsv(nome: string, head: string, base: string, cr: string = "14 0 0"): string {
+  return shim(
+    nome,
+    CABECA_SHIM +
+      `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${head}" "fix/insumo" "${base}" "OPEN" "false" "UNKNOWN" ""
+  exit 0
+fi
+if [ "\${1:-}" = "api" ]; then printf '%s\n' "${cr}"; exit 0; fi
+exit 9
+`,
+  );
+}
+const SHIM_HEAD_VAZIO = shimTsv("gh-head-vazio.sh", "", "main");
+const SHIM_HEAD_NAO_HEX = shimTsv("gh-head-nao-hex.sh", "z".repeat(40), "main");
+const SHIM_HEAD_CURTO = shimTsv("gh-head-curto.sh", "a".repeat(39), "main");
+const SHIM_BASE_VAZIA = shimTsv("gh-base-vazia.sh", COMMIT_HEAD, "");
+const SHIM_BASE_INEXISTENTE = shimTsv("gh-base-inexistente.sh", COMMIT_HEAD, "nao-existe");
+const SHIM_CR_LIXO = shimTsv("gh-cr-lixo.sh", COMMIT_HEAD, "main", "lixo");
+const SHIM_CR_ZERO = shimTsv("gh-cr-zero.sh", COMMIT_HEAD, "main", "0 0 0");
+const SHIM_CR_PENDENTE = shimTsv("gh-cr-pendente.sh", COMMIT_HEAD, "main", "14 0 2");
+const SHIM_HEAD_NAO_LOCAL = shimTsv("gh-head-nao-local.sh", "c".repeat(40), "main");
+
+// --- o invocador: TODO caso passa por aqui, e aqui roda o ARTEFATO ------------------------------
+function roda(pr: string, args: string[] = [], gh: string = SHIM_OK) {
+  const r = spawnSync("bash", [SCRIPT, pr, ...args], {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, MANDATO_GH: gh, MANDATO_REPO: "t/t" },
+    timeout: 60_000,
+  });
+  assert.equal(r.signal, null, "artefato nao terminou em 60 s");
+  return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
+}
+/** Todo SHA de 40 hex que a saída imprime, como conjunto ordenado. */
+function shas(texto: string): string[] {
+  return [...new Set(texto.match(/\b[0-9a-f]{40}\b/g) ?? [])].sort();
+}
+
+test("[A1a] #390 — o objeto sai da ata QUE SE DECLARA sobre o #390, com arquivo e linha", () => {
+  const r = roda("390");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL/);
+  assert.match(
+    r.out,
+    new RegExp(`objeto declarado ${S1} \\(agent-orchestration/omega/juntas/J-B-SAN3-04a\\.md:4 @head-do-PR\\)`),
+  );
+  assert.doesNotMatch(r.out, new RegExp(`objeto declarado ${S2}`), "o objeto do #392 nao pode aparecer para o #390");
+});
+
+test("[A1b] #392 — a ata do #392 MENCIONA #390 e #391; mencionar nao e ser sobre", () => {
+  const r = roda("392");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(
+    r.out,
+    new RegExp(`objeto declarado ${S2} \\(agent-orchestration/omega/juntas/J-B-SAN3-00\\.md:3 @head-do-PR\\)`),
+  );
+  // a mesma linha de Objeto cita `base <hex>`: o VALOR do campo e o PRIMEIRO SHA depois do rotulo.
+  assert.doesNotMatch(r.out, new RegExp(`objeto declarado ${S3}`), "a base citada na linha nao e objeto");
+});
+
+test("[A1c] ata com a linha '- **approved_head:**' — o unico LIDO possivel, ec=0", () => {
+  const r = roda("383");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, new RegExp(`approved_head:   ${S1}`));
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+});
+
+test("[A1d] casa pelo RAMO quando o titulo nao tem o numero — a 1a regressao do ciclo 1", () => {
+  const r = roda("386");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, new RegExp(`approved_head:   ${S3}`));
+  assert.match(r.out, /LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-POR-RAMO\.md:/);
+});
+
+test("[A4/C1] headRefName vazio: PARADO, ec=1, e NADA no stdout (achado C2-02)", () => {
+  const r = roda("393", [], SHIM_RAMO_NULO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.match(r.err, /PARADO: campo 'headRefName' VAZIO/);
+  assert.equal(r.out.trim(), "", "com ramo vazio o ciclo 1 imprimia um approved_head FABRICADO");
+  assert.doesNotMatch(r.out, /approved_head/);
+});
+
+test("[A5] gh morto: ec=1 no modo completo E no --sha-only, com ZERO linha de SHA", () => {
+  const completo = roda("392", [], SHIM_MORTO);
+  assert.equal(completo.status, 1);
+  assert.match(completo.err, /PARADO: nao li o PR #392/);
+  const so = roda("392", ["--sha-only"], SHIM_MORTO);
+  assert.equal(so.status, 1);
+  assert.equal(so.out.trim(), "");
+});
+
+test("[C2] duas linhas de Objeto, zero aprovacao: ec=3 e as DUAS listadas (achado C2-04)", () => {
+  const r = roda("387");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, new RegExp(`objeto declarado ${S4} \\(agent-orchestration/omega/juntas/J-MULTI\\.md:3`));
+  assert.match(r.out, new RegExp(`objeto declarado ${S5} \\(agent-orchestration/omega/juntas/J-MULTI\\.md:7`));
+  assert.doesNotMatch(r.out, /approved_head:   [0-9a-f]{40}/, "nenhum dos dois pode sair rotulado como aprovado");
+});
+
+test("[C3] ata que casa no titulo e nao tem linha de Objeto: ec=3 nomeando a ata", () => {
+  const r = roda("380");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /J-SEM-OBJETO\.md \(sem linha de Objeto\)/);
+});
+
+test("[C4] mencao so no corpo: ec=3, e a ferramenta diz que foi mencao — nao diz AUSENTE", () => {
+  const r = roda("381");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /J-MENCAO\.md \(mencao no corpo\)/);
+  assert.doesNotMatch(r.out, /AUSENTE/);
+});
+
+test("[C5] nenhuma ata nomeia nem menciona: AUSENTE, ec=0 — e so aqui o silencio e afirmavel", () => {
+  const r = roda("999");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /approved_head:   AUSENTE — nenhuma ata nomeia nem menciona #999/);
+});
+
+test("[C6] ata que vive SO no head do PR e lida — e o caso do #393", () => {
+  const r = roda("385");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, new RegExp(`approved_head:   ${S2}`));
+  assert.match(r.out, /LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-SO-NO-RAMO\.md:\d+ @head-do-PR/);
+});
+
+test("[C7] --sha-only e EXATAMENTE o conjunto de SHAs do modo completo, um por linha", () => {
+  for (const pr of ["387", "383", "392"]) {
+    const completo = roda(pr);
+    const so = roda(pr, ["--sha-only"]);
+    // ÂNCORA ABSOLUTA, e ela existe por um defeito medido: sem ela, com o script APAGADO os dois lados
+    // saem vazios e a comparação relativa passa vazia — o caso sobreviveria ao artefato, que é
+    // exatamente o bloqueante C2-01. O critério [A2] pegou isto.
+    assert.match(completo.out, /^approved_head:/m, `o modo completo nao produziu saida no #${pr}`);
+    assert.equal(so.status, completo.status, `ec diverge entre os modos no #${pr}`);
+    const linhas = so.out.split("\n").filter((l) => l.trim() !== "");
+    assert.ok(linhas.length >= 3, `--sha-only devolveu ${linhas.length} linha(s) no #${pr}`);
+    assert.ok(
+      linhas.every((l) => /^[0-9a-f]{40}$/.test(l)),
+      `--sha-only imprimiu algo que nao e SHA no #${pr}: ${JSON.stringify(linhas)}`,
+    );
+    assert.deepEqual([...linhas].sort(), shas(completo.out), `conjuntos divergem no #${pr}`);
+  }
+});
+
+test("[C8] ata UNICA e REPROVADA: objeto julgado NAO vira approved_head (adendo A1)", () => {
+  const r = roda("382");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.doesNotMatch(r.out, /approved_head:   [0-9a-f]{40}/, "o objeto de uma ata REPROVADA sairia como aprovado");
+  assert.match(r.out, new RegExp(`objeto declarado ${S6} \\(agent-orchestration/omega/juntas/J-REPROVADA\\.md:3`));
+  assert.match(r.out, /aprovacao nao legivel por maquina/);
+});
+
+test("[C9] approved_head que nao bate com objeto nenhum da ata: ec=3, contradicao", () => {
+  const r = roda("384");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /contradicao/);
+  assert.doesNotMatch(r.out, /LIDO DA ATA/);
+});
+
+test("[D1] sem `python` no PATH a saida e IDENTICA — a dependencia nao declarada morreu", () => {
+  const binMorto = path.join(repo, "bin-sem-python");
+  mkdirSync(binMorto, { recursive: true });
+  for (const n of ["python", "python3", "python.exe", "python3.exe"]) {
+    writeFileSync(path.join(binMorto, n), "#!/usr/bin/env bash\nexit 1\n", "utf8");
+    try {
+      chmodSync(path.join(binMorto, n), 0o755);
+    } catch {
+      /* Windows */
+    }
+  }
+  const normal = roda("392");
+  const semPython = spawnSync("bash", [SCRIPT, "392"], {
+    cwd: repo,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      PATH: `${binMorto}${path.delimiter}${process.env.PATH ?? ""}`,
+      MANDATO_GH: SHIM_OK,
+      MANDATO_REPO: "t/t",
+    },
+  });
+  // ÂNCORA ABSOLUTA, pela mesma razão do [C7]: comparar duas saídas VAZIAS passaria com o script
+  // apagado. A linha abaixo exige que a execução normal tenha, de fato, produzido o relatório.
+  assert.equal(normal.status, 3, normal.out + normal.err);
+  assert.match(normal.out, /^approved_head:   NAO DETERMINAVEL/m);
+  const semLinhaDeData = (s: string) => s.replace(/^# gerado em:.*$/m, "");
+  assert.equal(semPython.status, normal.status);
+  assert.equal(semLinhaDeData(semPython.stdout ?? ""), semLinhaDeData(normal.out));
+});
+
+test("[D2] check-runs que nao respondem: PARADO ec=1 — 'nao perguntei' nao e 'zero check-run'", () => {
+  const r = roda("392", [], SHIM_API_MORTA);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.match(r.err, /PARADO: nao li os check-runs/);
+  assert.doesNotMatch(r.out, /total=0/, "o ciclo 1 virava '0 0 0' e disparava BLOQUEADO pela causa errada");
+});
+
+test("[D3] flag desconhecida: mensagem de uso e ec=2, nunca modo completo em silencio", () => {
+  const r = roda("392", ["--shaonly"]);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.match(r.err, /uso: mandato-refs\.sh/);
+  assert.equal(r.out.trim(), "");
+});
+
+test("[D3b] PR ausente ou nao-numerico: ec=2 com uso; nunca ec=0", () => {
+  const semPr = spawnSync("bash", [SCRIPT], {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, MANDATO_GH: SHIM_OK, MANDATO_REPO: "t/t" },
+  });
+  assert.equal(semPr.status, 2);
+  assert.match(semPr.stderr ?? "", /uso: mandato-refs\.sh/);
+  const naoNumerico = roda("--sha-only");
+  assert.equal(naoNumerico.status, 2);
+  assert.match(naoNumerico.err, /PR nao-numerico/);
+});
+
+// =================================================================================================
+// CICLO 3 -- E1. PROPRIEDADE: *cada clausula que PARA a ferramenta tem um insumo que a dispara e um
+// caso que assere ec=1, stdout VAZIO e a CAUSA no stderr; cada estado/aviso que a ferramenta emite
+// tem um caso que o exige.*
+//
+// POR QUE: no ciclo 2 o bloco de validacao de insumo tinha SETE clausulas `parado` e SEIS delas nao
+// tinham nenhum insumo que as alcancasse. Neutralizar tres (m021 `origin/$BASE` inexistente, m016
+// `headRefOid` sem 40 hex, m025 check-runs malformado) mudava o comportamento -- ec 1 -> 0, com
+// `LIDO DA ATA` impresso sob premissa quebrada -- e o guard continuava 18/18 VERDE. E o bloqueante
+// C2'-01: o que nao tem teste nao e promessa, e estado atual.
+//
+// Cada caso traz no titulo a mutacao (⇄) de UMA linha do artefato que o deixa vermelho. Nenhum caso
+// le a fonte do script: todos passam por `roda()`, que e `spawnSync` do `.sh` de verdade.
+// =================================================================================================
+
+test("[V1] headRefOid VAZIO: PARADO ec=1, stdout vazio — ⇄ m014 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_HEAD_VAZIO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com o insumo quebrado nada pode sair no stdout");
+  assert.match(r.err, /PARADO: campo 'headRefOid' VAZIO/);
+  assert.doesNotMatch(r.out, /approved_head/);
+});
+
+test("[V2] headRefOid nao-hexadecimal: PARADO ec=1 — ⇄ m015 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_HEAD_NAO_HEX);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "");
+  assert.match(r.err, /PARADO: campo 'headRefOid' nao e hexadecimal/);
+});
+
+test("[V3] headRefOid com 39 hex: PARADO ec=1 — ⇄ m016 (a clausula que o §0.3 mediu: ec 1->0)", () => {
+  const r = roda("383", [], SHIM_HEAD_CURTO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m016 vivo o mutante imprime `head do PR: <lixo>` e segue");
+  assert.match(r.err, /PARADO: campo 'headRefOid' nao tem 40 hex/);
+});
+
+test("[V4] baseRefName VAZIO: PARADO ec=1 — ⇄ m018 (`|| parado` -> `|| true`)", () => {
+  const r = roda("383", [], SHIM_BASE_VAZIA);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "");
+  assert.match(r.err, /PARADO: campo 'baseRefName' VAZIO/);
+});
+
+test("[V5] base inexistente COM ata que seria LIDA: ec=1 e stdout vazio — ⇄ m021 (§0.3 (1a))", () => {
+  // ◐ (discriminacao): se o repo temporario tivesse `refs/remotes/origin/nao-existe` por residuo,
+  // o caso passaria pela razao errada. A ancora abaixo mata essa leitura antes de culpar o script.
+  const ref = spawnSync("git", ["show-ref", "refs/remotes/origin/nao-existe"], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(ref.status, 0, "o arnes tem a ref que o caso supoe inexistente — o caso nao discrimina");
+  // A ata do #383 (J-APROVADA) existe e seria LIDO DA ATA. Ela esta aqui DE PROPOSITO: e o que o
+  // mutante m021 tem para inventar quando a clausula nao para a ferramenta.
+  const controle = roda("383");
+  assert.equal(controle.status, 0, controle.out + controle.err);
+  assert.match(controle.out, /LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:/);
+  const r = roda("383", [], SHIM_BASE_INEXISTENTE);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m021 vivo o mutante imprime `approved_head: … ^ LIDO DA ATA`");
+  assert.match(r.err, /PARADO: ref 'origin\/nao-existe' nao existe localmente/);
+});
+
+test("[V6] check-runs malformado: PARADO ec=1 — ⇄ m025 (`*) parado …` -> `*) : ;;`)", () => {
+  const r = roda("383", [], SHIM_CR_LIXO);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "com m025 vivo o mutante imprime `check-runs: total=lixo`");
+  assert.match(r.err, /PARADO: resposta de check-runs malformada: 'lixo'/);
+});
+
+test("[V7] argumento extra depois de --sha-only: ec=2 com uso — ⇄ m006", () => {
+  const r = roda("392", ["--sha-only", "extra"]);
+  assert.equal(r.status, 2, r.out + r.err);
+  assert.match(r.err, /uso: mandato-refs\.sh/);
+  assert.equal(r.out.trim(), "");
+});
+
+test("[V8] `#3901` e `#1390` nao casam `#390` — ⇄ nova2 (tirar `(^|[^0-9])`/`([^0-9]|$)`)", () => {
+  const r = roda("390");
+  assert.equal(r.status, 3, r.out + r.err);
+  // ancora positiva: a ata que DEVE casar casou (sem ela, o `doesNotMatch` passaria com o script morto)
+  assert.match(r.out, /J-B-SAN3-04a\.md:4/);
+  assert.doesNotMatch(r.out, /J-3901\.md/, "o vizinho pela direita (#3901) casou como se fosse #390");
+  assert.doesNotMatch(r.out, /J-1390\.md/, "o vizinho pela esquerda (#1390) casou como se fosse #390");
+});
+
+test("[V9] duas linhas `approved_head` na mesma ata: ec=3 nomeando as 2 — ⇄ m046 (`-gt 1` -> `-le 1`)", () => {
+  const r = roda("3955");
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(2 linhas '- \*\*approved_head:\*\*' na mesma ata\)/);
+  assert.match(r.out, new RegExp(`approved_head declarado ${S1} \\(agent-orchestration/omega/juntas/J-DUAS-APH\\.md:4`));
+  assert.match(r.out, new RegExp(`approved_head declarado ${S2} \\(agent-orchestration/omega/juntas/J-DUAS-APH\\.md:9`));
+  assert.doesNotMatch(r.out, /\^ LIDO DA ATA/, "escolher uma das duas seria inventar");
+});
+
+test("[V10] caixa do SHA indiferente: objeto minusculo, approved_head MAIUSCULO -> LIDO — ⇄ nova3 (tirar o `tr` de `mesmo()`)", () => {
+  const r = roda("3956");
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-CAIXA\.md:4/);
+  assert.doesNotMatch(r.out, /contradicao/, "sem o `tr` os dois lados divergem e a ata vira contradicao");
+});
+
+test("[V11] ZERO check-run: AVISO no stdout, ec=0 — ⇄ m055", () => {
+  const r = roda("383", [], SHIM_CR_ZERO);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /check-runs: +total=0 nao-verdes=0 pendentes=0/);
+  assert.match(r.out, /AVISO: ZERO check-run no head/);
+});
+
+test("[V12] check-runs ainda rodando: AVISO com a CONTAGEM, ec=0 — ⇄ m056", () => {
+  const r = roda("383", [], SHIM_CR_PENDENTE);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, /check-runs: +total=14 nao-verdes=0 pendentes=2/);
+  assert.match(r.out, /AVISO: 2 check-run\(s\) ainda rodando/);
+});
+
+test("[V13] repo sem remoto: o fetch que falha vira AVISO no stderr, nunca silencio — ⇄ m020", () => {
+  const r = roda("392");
+  assert.equal(r.status, 3, r.out + r.err); // ancora positiva: a execucao produziu o relatorio
+  assert.match(r.err, /AVISO: fetch falhou \(offline\?\)/);
+});
+
+test("[V14] head do PR que nao existe localmente: AVISO no stderr e a ata da BASE e lida — ⇄ inverter HEAD_LOCAL", () => {
+  const r = roda("383", [], SHIM_HEAD_NAO_LOCAL);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.err, /AVISO: o head do PR \(c{40}\) nao existe localmente/);
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4 @origin\/main/);
+  assert.match(r.out, /merge-base: +<vazio>/);
+});
+
+test("[V15] guarda do guard: zero leitura da FONTE do artefato, e a rota E o artefato", () => {
+  // (a) o arquivo nunca abre a fonte do script -- foi assim que o ciclo 1 ficou vermelho ao reescrever
+  //     um comentario, e assim que 4 de 6 casos sobreviveram ao script APAGADO (bloqueante C2-01).
+  const fonte = readFileSync(import.meta.filename, "utf8");
+  assert.doesNotMatch(fonte, /readFileSync\(\s*SCRIPT/, "ler a fonte do artefato prende o guard ao texto");
+  assert.doesNotMatch(fonte, /readFileSync\([^)]*mandato-refs\.sh/);
+  assert.equal(
+    (fonte.match(/"scripts\/mandato-refs\.sh"/g) ?? []).length,
+    1,
+    "o caminho do artefato so pode aparecer numa string: a que monta SCRIPT (as outras 3 ocorrencias sao comentario)",
+  );
+  // (b) a rota E o artefato: pela MESMA invocacao, com o `.sh` ausente nada sai e o ec nao e 0.
+  const ausente = spawnSync("bash", [`${SCRIPT}.NAO-EXISTE`, "392"], {
+    cwd: repo,
+    encoding: "utf8",
+    env: { ...process.env, MANDATO_GH: SHIM_OK, MANDATO_REPO: "t/t" },
+  });
+  assert.notEqual(ausente.status, 0, "sem o artefato a invocacao nao pode terminar em 0");
+  assert.equal((ausente.stdout ?? "").trim(), "");
+  // (c) controle positivo, na MESMA rota: com o artefato presente, sai relatorio.
+  const presente = roda("392");
+  assert.match(presente.out, /^approved_head:/m);
+});
+
+// =================================================================================================
+// CICLO 3 -- Dev-T-3 (plano §13.4, pendencia P-GOV-MANDATO-3-MUTANTES-REFS). Os 5 pontos de decisao
+// que a matriz de mutacao do refs publicou como NAO-COBERTOS ganham insumo e caso. O l.379 vem
+// PRIMEIRO porque e o erro que fundou este bloco: `approved_head` e `merge commit` sao o par que o
+// orquestrador trocou duas vezes (REGISTRO-SAN3-00-APPROVED-HEAD-DUAS-VEZES), e o AVISO que os separa
+// sobrevivia a mutacao com o guard inteiro verde.
+//
+// Mesma regra do bloco E1: todo caso roda o `.sh` de verdade por `spawnSync`; cada titulo traz a
+// mutacao (⇄) de UMA linha do artefato que o deixa vermelho; e onde o mutante tambem termina em ec=1
+// (V17, V19), o que discrimina e a CAUSA nomeada no stderr -- com a clausula neutralizada o script
+// segue e para mais adiante pela causa ERRADA, e "ec=1" sozinho seria uma sonda fraca.
+// =================================================================================================
+
+/** `gh` shimado para o #383 (ata J-APROVADA: objeto = approved_head = S1) no estado MERGED. */
+function shimMergeado(nome: string, merge: string): string {
+  return shim(
+    nome,
+    CABECA_SHIM +
+      `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  case "\${3:-}" in
+    383) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "fix/aprovada" "main" "MERGED" "false" "UNKNOWN" "${merge}" ;;
+    *) exit 9 ;;
+  esac
+  exit 0
+fi
+` +
+      API_OK,
+  );
+}
+const SHIM_MERGE_OUTRO = shimMergeado("gh-merge-outro.sh", S6);
+const SHIM_MERGE_IGUAL = shimMergeado("gh-merge-igual.sh", S1);
+
+test("[V16] PR MERGED, ata APROVADA, merge commit != approved_head: AVISO — ⇄ l.379 (`-n` -> `-z`; `!=` -> `=`; `= LIDO` -> `!= LIDO`)", () => {
+  // o par que o bloco existe para separar: approved_head (da ATA) = S1, merge commit (do gh) = S6.
+  const difere = roda("383", [], SHIM_MERGE_OUTRO);
+  assert.equal(difere.status, 0, difere.out + difere.err);
+  assert.match(difere.out, new RegExp(`^approved_head: +${S1}$`, "m"), "ancora: o approved_head tem de ser LIDO da ata");
+  assert.match(difere.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  assert.match(difere.out, new RegExp(`^merge commit: +${S6}$`, "m"));
+  assert.match(difere.out, /^AVISO: merge commit != approved_head\./m, "o par trocado duas vezes saiu SEM aviso");
+  // controle 1 (`!=` -> `=`): merge commit == approved_head -> NENHUM aviso.
+  const igual = roda("383", [], SHIM_MERGE_IGUAL);
+  assert.equal(igual.status, 0, igual.out + igual.err);
+  assert.match(igual.out, new RegExp(`^merge commit: +${S1}$`, "m"));
+  assert.match(igual.out, /\^ LIDO DA ATA/);
+  assert.doesNotMatch(igual.out, /AVISO: merge commit/, "aviso com os dois SHAs IGUAIS");
+  // controle 2 (`-n` -> `-z`): LIDO mas ainda nao mergeado (merge commit vazio) -> NENHUM aviso.
+  const aberto = roda("383");
+  assert.equal(aberto.status, 0, aberto.out + aberto.err);
+  assert.match(aberto.out, /^merge commit: +<ainda nao mergeado>$/m);
+  assert.doesNotMatch(aberto.out, /AVISO: merge commit/, "aviso sem merge commit nenhum");
+  // controle 3 (`= LIDO` -> `!= LIDO`): MERGED mas approved_head NAO DETERMINAVEL -> NENHUM aviso,
+  // porque nao ha approved_head LIDO com que comparar (o #390 do SHIM_OK: MERGED em S6, ata sem aprovacao).
+  const nd = roda("390");
+  assert.equal(nd.status, 3, nd.out + nd.err);
+  assert.match(nd.out, new RegExp(`^merge commit: +${S6}$`, "m"));
+  assert.doesNotMatch(nd.out, /AVISO: merge commit/, "aviso comparando o merge commit com um approved_head que ninguem leu");
+});
+
+test("[V17] `gh` que nao e arquivo nem comando: PARADO ec=1 nomeando-o, stdout vazio — ⇄ l.115 (`|| parado` -> `|| true`)", () => {
+  const nome = "nao-existe-8877";
+  // ◐ ancoras: o nome nao pode ser ARQUIVO no cwd do script (seria invocado como `bash <arquivo>`) nem
+  // COMANDO no PATH -- em qualquer dos dois o caso passaria pela razao errada.
+  assert.equal(existsSync(path.join(repo, nome)), false, "o arnes tem um arquivo com o nome — o caso nao discrimina");
+  const noPath = spawnSync("bash", ["-c", `command -v ${nome}`], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(noPath.status, 0, `'${nome}' existe no PATH — o caso nao discrimina`);
+  const r = roda("383", [], nome);
+  assert.equal(r.status, 1, r.out + r.err);
+  assert.equal(r.out.trim(), "", "dependencia ausente: nada pode sair no stdout");
+  assert.match(r.err, /PARADO: falta 'nao-existe-8877' no PATH/);
+  // com l.115 neutralizada o script segue, o `gh pr view` falha e ele para pela causa ERRADA:
+  assert.doesNotMatch(r.err, /nao li o PR/, "parou pela causa errada: o binario ausente nao foi nomeado");
+});
+
+test(
+  "[V18] shim de `gh` SEM bit de execucao: o script o invoca como `bash <arquivo>` e le a ata — ⇄ l.116/l.119 (`-f` -> `-d`)",
+  () => {
+    // RODA EM TODA PLATAFORMA (plano §14.16) -- sem `skip` e sem `return` antecipado. Discrimina o mutante
+    // `-f` -> `-d` so onde ha bit x (ubuntu do CI): la o pristino passa e os dois mutantes param (l.116:
+    // execucao direta -> Permission denied -> "nao li o PR"; l.119: `command -v` de arquivo sem x falha ->
+    // "falta ... no PATH"). No Windows/MSYS nao ha bit x e um arquivo com shebang EXECUTA direto, logo ESTA
+    // fixture nao discrimina ali: em win32 a cobertura das l.116/l.119 e de [V18b]/[V18c] (plano §14.4).
+    // A fronteira 23 esta fechada. O caso roda assim mesmo: o pristino passa em win32 (a ancora abaixo
+    // tambem -- `statSync().mode` = 0o100666, medido na §14.16), e um `skip` aqui era o 3o skip que o
+    // GUARD DE SKIP (P8) do runner recusa com DATABASE_URL (orcamento 2, nomeado).
+    const alvo = path.join(repo, "bin", "gh-sem-bit-x.sh");
+    writeFileSync(alvo, CABECA_SHIM + PR_VIEW + API_OK, { encoding: "utf8", mode: 0o644 });
+    chmodSync(alvo, 0o644); // `mode` do writeFileSync so vale na CRIACAO: o chmod explicito garante
+    // ◐ ancora: SEM nenhum bit x. Com um deles o mutante executaria o arquivo direto e o caso nao discriminaria.
+    assert.equal(statSync(alvo).mode & 0o111, 0, "o shim nasceu com bit de execucao — o caso nao discrimina");
+    const r = roda("383", [], alvo);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"));
+    assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  },
+);
+
+test("[V19] cwd FORA de repositorio git: PARADO ec=1, stdout vazio — ⇄ l.160 (`|| parado` -> `|| true`)", () => {
+  const fora = mkdtempSync(path.join(tmpdir(), "mandato-refs-sem-git-"));
+  try {
+    // o teto impede o git de subir do tmpdir e achar um repositorio acima dele (no CI e aqui nao ha,
+    // mas o caso nao pode depender disso); GIT_DIR/GIT_WORK_TREE herdados furariam a sonda.
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      MANDATO_GH: SHIM_OK,
+      MANDATO_REPO: "t/t",
+      GIT_CEILING_DIRECTORIES: path.dirname(fora),
+    };
+    delete env.GIT_DIR;
+    delete env.GIT_WORK_TREE;
+    // ◐ ancora: sob o MESMO ambiente, o git NAO acha repositorio a partir de `fora`.
+    const sonda = spawnSync("git", ["rev-parse", "--git-dir"], { cwd: fora, encoding: "utf8", env });
+    assert.notEqual(sonda.status, 0, `o tmpdir esta dentro de um repositorio (${(sonda.stdout ?? "").trim()}) — o caso nao discrimina`);
+    const r = spawnSync("bash", [SCRIPT, "383"], { cwd: fora, encoding: "utf8", env });
+    assert.equal(r.status, 1, (r.stdout ?? "") + (r.stderr ?? ""));
+    assert.equal((r.stdout ?? "").trim(), "", "fora de repositorio nada pode sair no stdout");
+    assert.match(r.stderr ?? "", /PARADO: nao estou dentro de um repositorio git/);
+    // com l.160 neutralizada o script segue e para no `origin/main` inexistente -- a causa ERRADA:
+    assert.doesNotMatch(r.stderr ?? "", /ref 'origin\/main' nao existe/, "parou pela causa errada");
+  } finally {
+    rmSync(fora, { recursive: true, force: true });
+  }
+});
+
+// =================================================================================================
+// CICLO 3 -- Dev-T-4 (plano §14.4, identidade `dev-t4-mandato-refs-win32`). A matriz de mutacao do
+// refs (E4) publicou l.116 e l.119 como NAO-COBERTOS (`-f` -> `-d` sobre `$GH_BIN`), e o [V18], que os
+// mira pelo bit x, ERA `skip` em win32 até o T5 (plano §14.16) — desde então roda em toda plataforma. O planejador mediu que os dois sao discriminaveis TAMBEM em
+// win32 -- e no ubuntu --, cada um por uma fixture propria:
+//   - l.119 (`[ -f "$GH_BIN" ] || ver "$GH_BIN"`): shim SEM shebang passado por CAMINHO. Sem shebang
+//     (e sem bit x no ubuntu) `command -v <caminho>` falha: o pristino nao chama `ver` e le a ata; o
+//     mutante chama `ver` e PARA com "falta '<caminho>' no PATH". -> [V18b]
+//   - l.116 (`ghc()`: `-f` -> `bash "$GH_BIN"`, senao `"$GH_BIN"`): ARQUIVO regular no cwd do script x
+//     COMANDO de mesmo nome num diretorio prefixado ao PATH, com `MANDATO_GH` = o nome NU. O pristino
+//     roda o arquivo do cwd; o mutante roda o comando do PATH. -> [V18c], discriminado pelo SHA que
+//     cada um responde, nunca so pelo `ec` (os dois terminam em 0).
+// Mesma regra dos blocos anteriores: todo caso passa pelo `.sh` de verdade por `spawnSync`, e as
+// ancoras (◐) rodam no MESMO ambiente do spawn -- se uma delas cair, o caso diz que nao discrimina
+// em vez de passar pela razao errada.
+// =================================================================================================
+
+/**
+ * `roda()` com o `env` ESTENDIDO (Dev-T-4). `roda()` fixa o ambiente; o [V18c] precisa prefixar um
+ * diretorio ao PATH do spawn, e as ancoras precisam do MESMO objeto de ambiente que o script recebe.
+ * A chave do PATH e procurada sem caixa: no Windows o Node pode herdar `Path`, e acrescentar `PATH`
+ * ao lado dela deixaria duas chaves -- qual delas o filho herda nao e garantido.
+ */
+function ambienteCom(gh: string, prefixoPath?: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, MANDATO_GH: gh, MANDATO_REPO: "t/t" };
+  if (prefixoPath !== undefined) {
+    const chaves = Object.keys(env).filter((k) => k.toUpperCase() === "PATH");
+    const chave = chaves[0] ?? "PATH";
+    const atual = env[chave] ?? "";
+    for (const k of chaves) delete env[k];
+    env[chave] = `${prefixoPath}${path.delimiter}${atual}`;
+  }
+  return env;
+}
+function rodaNoAmbiente(pr: string, env: NodeJS.ProcessEnv) {
+  const r = spawnSync("bash", [SCRIPT, pr], { cwd: repo, encoding: "utf8", env });
+  return { status: r.status, out: r.stdout ?? "", err: r.stderr ?? "" };
+}
+/**
+ * A sonda `command -v`, com o alvo como ARGUMENTO POSICIONAL. Medido pelo Dev-T-4 em win32: com o
+ * caminho interpolado no texto do `-c` (`command -v C:\Users\...`) o bash come as `\` e a sonda falha
+ * para QUALQUER arquivo -- ate para um shim executavel --, e a ancora do [V18b] passaria pela razao
+ * errada. Por isso o [V18b] tambem assere o controle da sonda (o `SHIM_OK` tem de resolver).
+ */
+function commandV(alvo: string, env: NodeJS.ProcessEnv) {
+  return spawnSync("bash", ["-c", 'command -v "$1"', "_", alvo], { cwd: repo, encoding: "utf8", env });
+}
+/** RegExp que casa `s` literalmente (o caminho do Windows tem `\`, que em RegExp e escape). */
+function literal(s: string): RegExp {
+  return new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+}
+/** Corpo de `gh` para o #383 MERGED (ata J-APROVADA: approved_head = S1) com o merge commit dado. */
+function corpoGh383Mergeado(merge: string): string {
+  return (
+    CABECA_SHIM +
+    `if [ "\${1:-}" = "pr" ] && [ "\${2:-}" = "view" ]; then
+  case "\${3:-}" in
+    383) printf '%s\\t%s\\t%s\\t%s\\t%s\\t%s\\t%s\\n' "${COMMIT_HEAD}" "fix/aprovada" "main" "MERGED" "false" "UNKNOWN" "${merge}" ;;
+    *) exit 9 ;;
+  esac
+  exit 0
+fi
+` +
+    API_OK
+  );
+}
+
+test("[V18b] shim de `gh` SEM shebang passado por CAMINHO: `bash <arquivo>` le a ata — ⇄ l.119 (`-f` -> `-d`: `ver` para com \"falta '<caminho>' no PATH\")", () => {
+  const alvo = path.join(repo, "bin", "gh-sem-shebang.sh");
+  // o MESMO corpo do SHIM_OK, sem a linha `#!`: `bash <arquivo>` nao precisa dela.
+  writeFileSync(alvo, "set -u\n" + PR_VIEW + API_OK, { encoding: "utf8", mode: 0o644 });
+  chmodSync(alvo, 0o644); // `mode` do writeFileSync so vale na CRIACAO
+  const env = ambienteCom(alvo);
+  // ◐ ancoras -- a fixture e a que o plano descreve:
+  assert.equal(existsSync(alvo), true, "o shim nao foi gravado");
+  assert.equal(readFileSync(alvo, "utf8").startsWith("#!"), false, "o shim tem shebang — o caso nao discrimina");
+  assert.equal(statSync(alvo).mode & 0o111, 0, "o shim tem bit de execucao — o caso nao discrimina");
+  // ◐ controle da SONDA: a mesma forma resolve um shim executavel. Sem isto, uma sonda quebrada daria
+  // status != 0 para qualquer arquivo e a ancora de baixo nao provaria nada.
+  const controle = commandV(SHIM_OK, env);
+  assert.equal(controle.status, 0, `a sonda nao resolve nem o SHIM_OK — ela esta quebrada: ${controle.stderr ?? ""}`);
+  // ◐ a ancora do plano: `command -v <caminho>` FALHA para este shim -- e e isso que faz o mutante parar.
+  const sonda = commandV(alvo, env);
+  assert.notEqual(sonda.status, 0, `\`command -v\` resolve o shim sem shebang (${(sonda.stdout ?? "").trim()}) — o caso nao discrimina`);
+  const r = rodaNoAmbiente("383", env);
+  assert.equal(r.status, 0, r.out + r.err);
+  assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"));
+  assert.match(r.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-APROVADA\.md:4/);
+  // com l.119 mutada o script PARA antes de ler o PR, nomeando o caminho -- a causa que o caso mede:
+  assert.doesNotMatch(r.err, literal(`falta '${alvo}' no PATH`), "o pristino chamou `ver` sobre um shim que e ARQUIVO");
+});
+
+test("[V18c] ARQUIVO no cwd x COMANDO no PATH com o mesmo nome nu: o script roda o ARQUIVO — ⇄ l.116 (`-f` -> `-d`: roda o COMANDO; discriminado pelo SHA)", () => {
+  const nome = "gh-arquivo-x-comando";
+  const S_A = S4; // merge commit que o ARQUIVO do cwd responde
+  const S_B = S5; // merge commit que o COMANDO do PATH responde
+  const noCwd = path.join(repo, nome);
+  const dirPath = mkdtempSync(path.join(tmpdir(), "mandato-refs-path-"));
+  const noPath = path.join(dirPath, nome);
+  try {
+    writeFileSync(noCwd, corpoGh383Mergeado(S_A), { encoding: "utf8", mode: 0o644 });
+    chmodSync(noCwd, 0o644); // arquivo REGULAR, sem bit x
+    writeFileSync(noPath, corpoGh383Mergeado(S_B), "utf8");
+    try {
+      chmodSync(noPath, 0o755); // comando: com bit x no ubuntu; no MSYS e o shebang que o torna executavel
+    } catch {
+      /* Windows */
+    }
+    const env = ambienteCom(nome, dirPath);
+    // ◐ ancoras, no MESMO ambiente do spawn:
+    assert.equal(existsSync(noCwd), true, "o arquivo do cwd nao existe — o pristino nao teria o que rodar");
+    assert.equal(statSync(noCwd).mode & 0o111, 0, "o arquivo do cwd tem bit x — o caso mediria outra coisa");
+    // `command -v <nome>` resolve para o diretorio do PATH e NAO para o cwd. Codigos: 7 = nao resolve,
+    // 8 = resolve para outro lugar que nao o diretorio do PATH, 9 = resolve para o arquivo do cwd.
+    const resolve = spawnSync(
+      "bash",
+      ["-c", 'p=$(command -v "$1") || exit 7; [ "$p" -ef "$2" ] || exit 8; [ "$p" -ef "$3" ] && exit 9; exit 0', "_", nome, noPath, noCwd],
+      { cwd: repo, encoding: "utf8", env },
+    );
+    assert.equal(resolve.status, 0, `\`command -v ${nome}\` nao resolve para o diretorio do PATH (status ${resolve.status}) — o caso nao discrimina`);
+    const r = rodaNoAmbiente("383", env);
+    assert.equal(r.status, 0, r.out + r.err);
+    assert.match(r.out, new RegExp(`^approved_head: +${S1}$`, "m"), "ancora positiva: o relatorio foi produzido");
+    assert.match(r.out, new RegExp(`^merge commit: +${S_A}$`, "m"), "o script nao rodou o ARQUIVO do cwd");
+    assert.doesNotMatch(r.out, new RegExp(S_B), "o script rodou o COMANDO do PATH em vez do ARQUIVO do cwd");
+  } finally {
+    rmSync(noCwd, { force: true });
+    rmSync(dirPath, { recursive: true, force: true });
+  }
+});
+
+// =================================================================================================
+// CICLO 4 -- E1 (plano §15.2/§15.3; identidade `dev-tests-ciclo4-b-gov-mandato`). Os quatro [M-EXT]
+// sobreviventes da C2''' que sao deste artefato (C2c-03: Y02..Y05) e a fronteira 25 ([F-25]). O
+// `mandato-refs.sh` NAO muda no ciclo 4 (so cabecalho, plano §15.6): estes casos sao VERDES contra ele e
+// ficam vermelhos com a mutacao (⇄) que a C2''' mediu -- cobrem comportamento que o guard nao via.
+// As atas novas entram num commit FILHO do COMMIT_HEAD montado por plumbing (indice temporario proprio):
+// o HEAD, o indice e a arvore de trabalho do arnes nao mudam, e nenhum caso anterior ve as atas novas.
+// =================================================================================================
+
+/** Commit filho do COMMIT_HEAD com `atas` (caminho -> conteudo), sem mexer em HEAD, indice nem arvore. */
+function commitComAtas(nome: string, atas: Record<string, string>): string {
+  const pasta = mkdtempSync(path.join(tmpdir(), "mandato-refs-indice-"));
+  const env: NodeJS.ProcessEnv = { ...process.env, GIT_INDEX_FILE: path.join(pasta, "indice") };
+  const g = (args: string[], input?: string): string =>
+    execFileSync(
+      "git",
+      ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "core.autocrlf=false", "-c", "commit.gpgsign=false", ...args],
+      { cwd: repo, encoding: "utf8", env, input },
+    )
+      .toString()
+      .trim();
+  try {
+    g(["read-tree", COMMIT_HEAD]);
+    for (const [rel, conteudo] of Object.entries(atas)) {
+      const blob = g(["hash-object", "-w", "--stdin"], conteudo);
+      g(["update-index", "--add", "--cacheinfo", `100644,${blob},${rel}`]);
+    }
+    return g(["commit-tree", g(["write-tree"]), "-p", COMMIT_HEAD, "-m", nome]);
+  } finally {
+    rmSync(pasta, { recursive: true, force: true });
+  }
+}
+
+/**
+ * [F-25] um `gh` que NAO termina: dorme ate `segundos`, ou ate o caso criar o arquivo de PARADA -- e
+ * assim que o caso encerra o orfao (o `spawnSync` mata so o filho direto; o shim e NETO, o script o
+ * chama). Ao sair, grava o arquivo de FIM: e por ele que o caso prova que nao deixou processo vivo.
+ */
+function shimQueDorme(nome: string, segundos = 120): { caminho: string; para: string; fim: string } {
+  const para = path.join(repo, "bin", `${nome}.PARA`);
+  const fim = path.join(repo, "bin", `${nome}.FIM`);
+  const caminho = shim(
+    nome,
+    [
+      "#!/usr/bin/env bash",
+      `i=0; while [ "$i" -lt ${segundos} ]; do [ -f "${para.split(path.sep).join("/")}" ] && break; sleep 1; i=$((i+1)); done`,
+      `: > "${fim.split(path.sep).join("/")}"`,
+      "exit 0",
+      "",
+    ].join("\n"),
+  );
+  return { caminho, para, fim };
+}
+
+test("[Y02] Objeto de 40 hex e approved_head com os 8 primeiros (e o inverso), SHAs que NAO existem localmente: LIDO pelos dois lados do prefixo — ⇄ Y02: `mesmo()` sem o casamento por prefixo (l.193/l.194)", () => {
+  const X40 = "ab".repeat(20);
+  const Y40 = "cd".repeat(20);
+  for (const s of [X40, Y40]) {
+    assert.notEqual(spawnSync("git", ["cat-file", "-e", s], { cwd: repo }).status, 0, `◐ ${s} existe no arnes: o \`expande()\` resolveria e o prefixo nao seria exercitado`);
+  }
+  const head = commitComAtas("y02", {
+    "agent-orchestration/omega/juntas/J-PREFIXO-A.md": ["# J-PREFIXO-A (PR #4411) — ciclo 1", "", `- **Objeto julgado:** \`${X40}\`.`, `- **approved_head:** \`${X40.slice(0, 8)}\``, ""].join("\n"),
+    "agent-orchestration/omega/juntas/J-PREFIXO-B.md": ["# J-PREFIXO-B (PR #4412) — ciclo 1", "", `- **Objeto julgado:** \`${Y40.slice(0, 8)}\`.`, `- **approved_head:** \`${Y40}\``, ""].join("\n"),
+  });
+  const gh = shimTsv("gh-y02.sh", head, "main");
+  // approved_head CURTO, Objeto LONGO: e a l.194 que casa.
+  const a = roda("4411", [], gh);
+  assert.equal(a.status, 0, a.out + a.err);
+  assert.match(a.out, new RegExp(`^approved_head: +${X40.slice(0, 8)}$`, "m"), a.out);
+  assert.match(a.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-PREFIXO-A\.md:4 @head-do-PR/, a.out);
+  // approved_head LONGO, Objeto CURTO: e a l.193 que casa.
+  const b = roda("4412", [], gh);
+  assert.equal(b.status, 0, b.out + b.err);
+  assert.match(b.out, new RegExp(`^approved_head: +${Y40}$`, "m"), b.out);
+  assert.match(b.out, /\^ LIDO DA ATA: agent-orchestration\/omega\/juntas\/J-PREFIXO-B\.md:4 @head-do-PR/, b.out);
+});
+
+test("[Y03] approved_head que e SHA de ARVORE (a do proprio objeto): ec=3 contradicao, nunca LIDO, e o declarado sai como foi escrito — ⇄ Y03: `expande()` sem `^{commit}` (l.186) expande a arvore", () => {
+  const T40 = git("rev-parse", `${S1}^{tree}`).trim();
+  const T8 = T40.slice(0, 8);
+  // ◐ ancoras: o prefixo resolve UNICO para a arvore (e o que o mutante expandiria) e NAO resolve como
+  // commit (o pristino nao expande) -- sem as duas o caso nao discrimina a l.186.
+  const comoObjeto = spawnSync("git", ["rev-parse", "--verify", "-q", T8], { cwd: repo, encoding: "utf8" });
+  assert.equal((comoObjeto.stdout ?? "").trim(), T40, "◐ o prefixo da arvore nao resolve unico para ela");
+  const comoCommit = spawnSync("git", ["rev-parse", "--verify", "-q", `${T8}^{commit}`], { cwd: repo, encoding: "utf8" });
+  assert.notEqual(comoCommit.status, 0, "◐ o prefixo da arvore resolve como commit");
+  const head = commitComAtas("y03", {
+    "agent-orchestration/omega/juntas/J-ARVORE.md": ["# J-ARVORE (PR #4421) — ciclo 1", "", `- **Objeto julgado:** \`${c7(S1)}\`.`, `- **approved_head:** \`${T8}\``, ""].join("\n"),
+  });
+  const r = roda("4421", [], shimTsv("gh-y03.sh", head, "main"));
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(contradicao/, r.out);
+  assert.doesNotMatch(r.out, /LIDO DA ATA/, "SHA de arvore nao e head aprovado");
+  assert.match(r.out, new RegExp(`approved_head declarado ${T8} \\(agent-orchestration/omega/juntas/J-ARVORE\\.md:4 @head-do-PR\\)`), r.out);
+});
+
+test("[Y04] DUAS atas casam o PR no cabecalho: ec=3 '2 atas casam', nunca AUSENTE — ⇄ Y04: `-gt 1` -> `-gt 2` na l.317", () => {
+  const head = commitComAtas("y04", {
+    "agent-orchestration/omega/juntas/J-DUPLA-A.md": ["# J-DUPLA-A (PR #4431) — ciclo 1", "", `- **Objeto julgado:** \`${c7(S1)}\`.`, ""].join("\n"),
+    "agent-orchestration/omega/juntas/J-DUPLA-B.md": ["# J-DUPLA-B (PR #4431) — ciclo 2", "", `- **Objeto julgado:** \`${c7(S2)}\`.`, ""].join("\n"),
+  });
+  const r = roda("4431", [], shimTsv("gh-y04.sh", head, "main"));
+  assert.equal(r.status, 3, r.out + r.err);
+  assert.match(r.out, /NAO DETERMINAVEL \(2 atas casam #4431 no cabecalho/, r.out);
+  assert.doesNotMatch(r.out, /AUSENTE/, "duas atas casando nao e 'nenhuma ata'");
+});
+
+test("[Y05] --sha-only inclui o SHA da linha approved_head mesmo quando ele NAO e objeto (ata contraditoria do #384) — ⇄ Y05: apagar a l.336", () => {
+  const completo = roda("384");
+  assert.equal(completo.status, 3, completo.out + completo.err);
+  assert.match(completo.out, new RegExp(`approved_head declarado ${S5} `), "◐ o modo completo nao lista o approved_head declarado");
+  const so = roda("384", ["--sha-only"]);
+  assert.equal(so.status, 3, so.out + so.err);
+  const linhas = so.out.split("\n").filter((l) => l.trim() !== "");
+  assert.ok(linhas.includes(S5), `--sha-only perdeu o SHA da linha approved_head: ${JSON.stringify(linhas)}`);
+  assert.deepEqual([...linhas].sort(), shas(completo.out), "os dois modos divergem no #384");
+});
+
+test("[F-25] artefato que NAO TERMINA (gh que dorme 120 s): `roda()` falha em 60 s nomeando a causa, em vez de travar a suite — ⇄ tirar o `timeout` de `roda()`", () => {
+  const dorme = shimQueDorme("gh-dorme-f25.sh");
+  try {
+    assert.throws(() => roda("383", [], dorme.caminho), /artefato nao terminou em 60 s/);
+  } finally {
+    writeFileSync(dorme.para, "", "utf8");
+  }
+  // ◐ o shim e NETO do spawn: sem a parada ele seguiria vivo ate 120 s. O caso so termina quando ele
+  // gravou o arquivo de fim -- nenhum processo deste caso fica para tras.
+  const espera = spawnSync(
+    "bash",
+    ["-c", 'for i in $(seq 100); do [ -f "$1" ] && exit 0; sleep 0.2; done; exit 1', "_", dorme.fim.split(path.sep).join("/")],
+    { encoding: "utf8" },
+  );
+  assert.equal(espera.status, 0, "o shim que dorme continuou vivo depois do caso");
+});
+
+// =================================================================================================
+// CICLO 5 -- E1 / T5 (plano §16.3, ajuste C2d-01; identidade `dev-tests-ciclo5-b-gov-mandato`). A C2 da junta 4
+// mediu que o `mandato-refs.sh` esta certo e que o guard e que nao enuncia a DIRECAO do rotulo: uma ata COM
+// linha de Objeto nunca sai rotulada "(sem linha de Objeto)". [M-EXT]: verde no head; o vermelho-controle e
+// por mutacao (titulo). O conjunto de PRs e o do arnes (`PRS`), nao uma lista digitada. So adicoes.
+// =================================================================================================
+
+test("[C2d-01] ata COM linha de Objeto nunca sai rotulada `(sem linha de Objeto)`, em TODO PR do arnes; e a ata sem Objeto do #380 sai — ⇄ C2d-01: `if (!(f in temO))` -> `if (1)` no awk que decide quem casa", () => {
+  let exercitadas = 0;
+  const contradicoes: string[] = [];
+  for (const pr of Object.keys(PRS)) {
+    const r = roda(pr);
+    const comObjeto = new Set([...r.out.matchAll(/objeto declarado [0-9a-fA-F]+ \(([^:()\s]+):\d+ /g)].map((m) => m[1] ?? ""));
+    const semObjeto = [...r.out.matchAll(/^ +(\S+) \(sem linha de Objeto\)/gm)].map((m) => m[1] ?? "");
+    exercitadas += comObjeto.size;
+    for (const f of semObjeto) if (comObjeto.has(f)) contradicoes.push(`#${pr}: ${f}`);
+  }
+  // ◐ a propriedade foi EXERCITADA: houve ata com Objeto listada no ramo NAO DETERMINAVEL, onde o rotulo e impresso.
+  assert.ok(exercitadas > 0, "◐ nenhum PR do arnes listou ata com linha de Objeto no ramo NAO DETERMINAVEL");
+  assert.deepEqual(contradicoes, [], "ata com linha de Objeto saiu rotulada '(sem linha de Objeto)'");
+  // controle NA MESMA rodada: o rotulo existe e nomeia a ata SEM Objeto (#380).
+  const ctrl = roda("380");
+  assert.equal(ctrl.status, 3, ctrl.out + ctrl.err);
+  assert.match(ctrl.out, /^ +agent-orchestration\/omega\/juntas\/J-SEM-OBJETO\.md \(sem linha de Objeto\)/m, ctrl.out);
+});

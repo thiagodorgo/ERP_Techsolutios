@@ -2630,6 +2630,55 @@ ata** antes de publicá-lo.
 
 ---
 
+## `D-NOITE-SEM-TETO` — o teto de ciclos fica SUSPENSO até 2026-09-26 07:00 (decisão do dono)
+
+> **REVOGAÇÃO COM HORA MARCADA, nas palavras do dono:** *"amanhã às 7:00 horas da manhã essa decisão será
+> revogada."* Instante exato: **2026-09-26, 07:00 local (BRT, UTC−3) = 10:00Z**. A partir daí,
+> `D-TETO-DOIS-CICLOS` volta a valer integralmente, sem necessidade de nova decisão.
+>
+> **Regra de corte, conservadora:** ciclo **já em curso** às 07:00 segue até concluir — nasceu sob a
+> suspensão. **Nenhum ciclo novo abre depois das 07:00** sem o teto normal. Verificável por `date -u`
+> contra `2026-09-26T10:00:00Z`; na dúvida, aplica-se o teto.
+
+**O que o dono decidiu, nas palavras dele:** *"não tem limite de rodada para os ciclos essa noite, achou erro
+tá valendo e pode continuar."* Fonte §A1.1 — decisão aprovada explicitamente pelo usuário, acima de qualquer
+regra deste contrato.
+
+**O que muda.** O `D-TETO-DOIS-CICLOS` **não se aplica** aos blocos trabalhados nesta noite. Reprovação de
+junta **não** manda o bloco a dossiê nem para a execução: abre-se ciclo seguinte, com os papéis recompostos
+pelo §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) e o registro `R-<entrega>-<ciclo>.md` de sempre.
+
+**O ESCOPO É A NOITE, e isto não vira permanente por omissão.** Palavras do dono, em mensagem posterior que
+**estreita** o que eu havia registrado: *"a decisão só vale para hoje à noite, amanhã de manhã o teto volta ao
+normal"* — depois precisada para **07:00**, ver o bloco de revogação no topo. Eu tinha escrito "até o dono retomar a conversa", o que deixaria a suspensão aberta se ele não
+escrevesse cedo. **Vale a formulação dele.**
+
+**Leitura operacional, deliberadamente conservadora:** a suspensão cobre os ciclos **já iniciados durante a
+madrugada**. Ciclo que não tiver começado ao amanhecer nasce sob o `D-TETO-DOIS-CICLOS` normal. **Na dúvida
+sobre o alcance de uma permissão, aplica-se a regra mais estrita** — permissão ambígua se lê pelo lado
+estreito, nunca pelo largo.
+
+**O que NÃO muda — e é a maior parte.** Continuam valendo: junta com registro (junta sem ata = merge inválido),
+CI verde, KPI por PR com contagem de execução real, inspetor de terreno fail-closed antes de cada junta,
+porteiro pós-merge, limpeza §C5, isolamento multi-tenant e as **paradas imediatas irredutíveis do §C7.5**
+(migração destrutiva, exposição de segredo, ação irreversível em produção sem junta unânime prévia).
+Continua valendo também a regra do dono de 2026-09-21: **falha que não se resolve limpo = parar e reportar**,
+sem laço de repetição. E `prisma/**`/`migrations/**` seguem exigindo autorização nominal e unanimidade de 3
+com o `agente-dba-guardiao` — o teto suspenso não afrouxa quórum.
+
+**Por que o dono decidiu assim, e o risco que fica declarado.** O teto existe contra o loop, e foi ele que
+trouxe ao dono as decisões do #388 e do #389. Sem ele, um bloco que não converge pode consumir a noite —
+ainda mais porque a resposta do §C7.4 à reprovação é **escalar**, o que torna cada ciclo seguinte mais difícil.
+Mitigação assumida pelo orquestrador, que **não é um teto disfarçado**: cada ciclo é registrado, e se um ciclo
+produzir **a mesma classe de defeito sem informação nova**, isso é relatado como ausência de convergência — em
+vez de simplesmente tentar de novo.
+
+**Regra de custo, reafirmada aqui porque a suspensão do teto a torna mais tentadora** (`D-CUSTO-NAO-E-CRITERIO`,
+mesma data): o consumo medido é dado de planejamento do dono e de escalonamento do orquestrador. **Nunca** entra
+em prompt de agente, **nunca** escolhe quórum e **nunca** afrouxa limiar de `bloqueia`.
+
+---
+
 ## `D-SEM-TETO-AUDITORIA-NO-3` — o teto de ciclos cai; no ciclo 3 audita-se a MÁQUINA (decisão do dono, 2026-09-27)
 
 **O que o dono decidiu, nas palavras dele:** *"vamos remover a trava de dois ciclos; se rodar três ciclos e
@@ -2780,10 +2829,12 @@ se espera o PR. O push é barato e reversível; a perda não é.
 trabalho fica na nuvem tambem mas em pasta separada com seu comportamento e previsão no papel".
 
 **Contexto medido (30/09).** O ramo `demo/investidor` tem 49 commits fora da `main` (23–29/08). Arquivo a arquivo,
-**275 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
+**281 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
 pátios, tabela de preços, clique-na-linha, consistência visual, dossiê do veículo, fidelidade do app de campo)
 não estão na `main`. Cruzados por script com os PRs em voo (#388, #389, #393) e com os caminhos que cada bloco do
-`PLANO_SAN3` §5 declara: **156 não tocam nada em curso nem planejado; 119 tocam**.
+`PLANO_SAN3` §5 declara: **156 na trilha livre; 125 em espera** — números do gerador `docs/revisoes/DEMO-UX/gerar-manifesto.py`
+(o texto original desta entrada dizia 275/119, contados à mão antes da geração; o `conhecimento-de-terreno.md` §4 dizia
+~227 por outro recorte — o porteiro do #396 pegou os três totais, R2; vale o gerador).
 
 **Decisão.**
 1. **Por padrão, tudo vai para a nuvem** (sessões em claude.ai/code): plano, crítico e desenvolvimento, **por
