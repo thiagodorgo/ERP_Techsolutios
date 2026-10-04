@@ -762,7 +762,21 @@ escopo do bloco, foi regenerado exclusivamente por `node scripts/kpi-freeze.mjs`
 proíbe edição direta desse arquivo. Validações: `node --check` verde, freeze `--check` em dia e dashboard **17/17**.
 
 O registro do ramo foi acrescentado a `agent-orchestration/docs/status-geral.md` e
-`agent-orchestration/codex/log-execucao.md`. O PR em rascunho ainda será aberto; seu número será inserido nos dois JSON,
-no history Markdown, nesses registros e nesta seção em commit posterior.
+`agent-orchestration/codex/log-execucao.md`. O PR **#405** foi aberto em rascunho às 2026-10-04T13:56:17Z, base `main`,
+com o título obrigatório. `release.pr` e a entrada final do histórico foram preenchidos com 405; `merge_commit` e
+`approved_head` permanecem `null` na autoria por §C3.5.
 
-## §10 — Fechamento — EM APURACAO
+## §10 — Fechamento — 2026-10-04T13:58:36Z
+
+PR **#405** confirmado `OPEN`, `isDraft=true`, base `main`, head `fix/runtime-role-sem-bypass`, título
+`fix(database): o papel de runtime nao contorna o RLS (B-SAN3-05)`. O corpo contém objetivo, DoD, como testar, KPI e ID.
+
+Validação final antes do commit de fechamento: `node --check Kpis/app.js` verde; `kpi-freeze --check` em dia;
+dashboard 17/17; `git diff --check` limpo. A árvore tinha somente os sete arquivos esperados do preenchimento do PR e
+do fechamento. O cluster próprio `san3-05-s2-pg` foi derrubado e removido; contagem posterior = 0. Foram removidos o
+`dist/` regenerável, os wrappers locais `s05-bin` e todos os scratch/logs `s05-*`; contagem posterior = 0. Processos
+worker/teste com `w-s05d` no `CommandLine`, excluída esta sessão Codex: **0**.
+
+Depois do push fast-forward deste fechamento, a última ação local é remover o worktree por
+`git worktree remove --force C:/Users/AMP/w-s05d`, chamado da árvore principal. Inspetor, check-runs e junta pertencem ao
+orquestrador; os dois atos de staging/produção do §11 pertencem ao dono.

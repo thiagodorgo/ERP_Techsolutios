@@ -6,7 +6,7 @@
   "release": {
     "block": "B-SAN3-05 (itens 9 e 10 do §4.1 — código; fecho depende do ato do dono)",
     "title": "O papel de runtime não contorna o RLS",
-    "pr": null,
+    "pr": 405,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",

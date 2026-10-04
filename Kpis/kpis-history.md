@@ -3056,7 +3056,7 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
 
-## 2026-10-04 — B-SAN3-05 (PR na autoria) — o papel de runtime não contorna o RLS
+## 2026-10-04 — B-SAN3-05 (PR #405, rascunho) — o papel de runtime não contorna o RLS
 
 ### Resultado
 
@@ -3067,7 +3067,7 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 | Demais métricas de contratos | **CARREGADAS, sem reexecução** (§C3.3), com nota explícita no snapshot |
 | Blocos Entregues | **170 → 171** — +1 bloco backend/database, contado de `origin/main` `b404815c` |
 | mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): os itens 9 e 10 dependem dos atos do dono e este PR não move escopo de produto |
-| pr / merge_commit / approved_head | `null` / `null` / `null` na autoria (§C3.5) |
+| pr / merge_commit / approved_head | `405` / `null` / `null` na autoria (§C3.5) |
 
 **O que o bloco entrega.** O runtime usa uma credencial própria `NOSUPERUSER NOBYPASSRLS`; o boot de produção recusa
 atributos, memberships, posse e views que permitam escapar de tabelas `FORCE RLS`. O procedimento converge papel, grants e

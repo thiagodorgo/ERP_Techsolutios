@@ -4880,10 +4880,11 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
 
-## B-SAN3-05 — papel de runtime sem bypass — ENTREGUE NO RAMO, PR a abrir (2026-10-04)
+## B-SAN3-05 — papel de runtime sem bypass — PR #405 EM RASCUNHO (2026-10-04)
 
 - **Identidade:** `dev-b-san3-05-sucessor-2`, GPT-5.6 Sol por substituição expressa do dono; mandato EOL-neutro `552d24b6ef32b69d0f61979c78285355`.
 - **Entrega:** papel de runtime separado do migrador; procedimento fail-closed; trava no boot de produção; leituras e escritas de plataforma preservadas sob `NOSUPERUSER NOBYPASSRLS`; gerador e ratchet semântico; documentação e seis pendências com dono.
 - **Validação:** A1–A24 vermelhos por mutação; lotes 134/134, 42/42, 19/19 e 88/88; suíte integral 3124 testes, 2 skips e um timeout de carga contado em dois níveis, re-medido em série 8/8; build/check/lint verdes. PostgreSQL 16.14 descartável próprio, 115 tabelas / 106 FORCE, sem resíduos `s305_%`.
-- **KPI:** backend 3122/3124 por execução real com re-medição declarada; frontend 1214/1214 e Flutter 864/864 carregados; blocos 170 → 171; `mvp_*` intocados. `pr` será preenchido depois de abrir o rascunho; `merge_commit`/`approved_head` nulos na autoria.
+- **KPI:** backend 3122/3124 por execução real com re-medição declarada; frontend 1214/1214 e Flutter 864/864 carregados; blocos 170 → 171; `mvp_*` intocados. `pr=405`; `merge_commit`/`approved_head` nulos na autoria.
 - **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.
+- **Fechamento local:** PR #405 em rascunho; cluster descartável e temporários `s05-*` removidos; 0 worker/teste vivo. O worktree é removido após o último push.

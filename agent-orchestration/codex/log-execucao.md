@@ -4790,4 +4790,5 @@ bloco mergear.
 - Cluster próprio `san3-05-s2-pg`, PostgreSQL 16.14 em `127.0.0.1:55405`; `erp-postgres:5432` e `erp-redis:6379` não foram tocados.
 - Implementação e testes: papel runtime sem bypass, guarda de boot, procedimento, plataforma cross-tenant explícita, gerador/fixtures e duas suítes DB. A1–A24 executados; relatório incremental contém quedas, retomadas, cargas e falsificações.
 - Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
-- Próximo rito externo: abrir PR em rascunho; depois inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
+- PR **#405** aberto em rascunho, base `main`, com o título obrigatório. Inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
+- Limpeza final: `san3-05-s2-pg` removido; `dist/`, wrappers e scratch/logs `s05-*` removidos; 0 processo worker/teste do worktree. Remoção do worktree ocorre depois do push final.
