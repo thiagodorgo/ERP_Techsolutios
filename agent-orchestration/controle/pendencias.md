@@ -10013,3 +10013,26 @@ nenhum consumidor além do frontend.
 - **status:** ABERTA · **severidade:** baixa
 - **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
 - **bloqueia:** não.
+
+## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+O censo do gerador (`scripts/san3-11-dossie-vistoria-censo.mjs`) ainda deixa passar a leitura da situação por índice com chave
+de tipo `string` sob cast que apaga o tipo — `(run as Record<string, unknown>)[k]`: compila, o censo sai com ec=0 e a forma não
+está na fronteira que o dev declarou. Função local e subcomponente por props também escapam (já declarados pelo dev), assim como
+o valor que passa por coleção ou função fora do JSX (`runs.map(r => r.status)`) e o painel renomeado por alias. Medido pelo
+revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-1) e pelo dev (`DEV-ciclo3-relatorio.md`).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o próximo bloco que tocar o gerador do censo ou o painel de vistorias do dossiê (atribuição nominal no próximo registro)
+- **bloqueia:** não (regra 1 do §C7 item 8: ajuste vira pendência).
+
+## P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+Duas lacunas só de teste, com o produto certo no head: (a) tirar "L3 vazio" ou "candidato desconhecido" do total do gerador deixa
+T12–T14 e T20–T24 verdes (8/8), embora o head negue os dois casos (ec=1 nas sondas do revisor); (b) o T26 só cobre o erro 500, e
+alargar a limpeza do painel a todo erro que não é `ApiError` passa pela suíte, embora apagasse a lista quando a rede cai.
+Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o mesmo da `P-SAN3-11-CENSO-CAST-RECORD`
+- **bloqueia:** não.

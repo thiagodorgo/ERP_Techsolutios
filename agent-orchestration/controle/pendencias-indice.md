@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **434** |
-| IDs distintos | 423 |
-| **ABERTAS** | **318** |
+| Cabecalhos `## P-` | **436** |
+| IDs distintos | 425 |
+| **ABERTAS** | **320** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **249** |
+| — das quais **ativas nesta rodada** | **251** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 116 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **434 cabecalhos para 423 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **436 cabecalhos para 425 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -210,7 +210,7 @@
 | `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 9948 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
 | `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 9968 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
 
-## ABERTAS · balde B — processo/registro — 111
+## ABERTAS · balde B — processo/registro — 113
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -325,6 +325,8 @@
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 9978 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 | `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 9988 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
 | `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 10005 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
+| `P-SAN3-11-CENSO-CAST-RECORD` | 10017 | BAIXA | sim | P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
+| `P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE` | 10029 | BAIXA | sim | P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
