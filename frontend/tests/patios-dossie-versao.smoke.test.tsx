@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join, resolve, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
-import test from "node:test";
+import test, { after } from "node:test";
 
 import React from "react";
 import { renderToString } from "react-dom/server";
@@ -19,12 +19,13 @@ import { DossiePrintDocument } from "../src/modules/patios/processes/components/
 import { VehicleDossieView, type VehicleDossieViewProps } from "../src/modules/patios/processes/components/VehicleDossieModal";
 import type { ProcessDetail } from "../src/modules/patios/processes/processes.types";
 
-// B-SAN3-11 — testes T1–T24: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
+// B-SAN3-11 — testes T1–T26: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
 // Ciclo 2 (§16 do plano): T3′ e T15/T16 (ausência ou valor inválido de chave de versão fica do lado fechado), T11′
 // (ids só em id=/href= nas 3 superfícies), T17–T19 (links com afordância que não navegam; ids únicos na impressão),
 // T12 com a saída do gerador v2 e T20–T22 (o gerador vê o emissor e a vistoria pelo tipo).
 // Ciclo 3 (§17): T23 cobre acesso por índice e toda grafia que o checker resolve (V1–V6); T24 torna L3/L4 vazios
-// explicitamente vermelhos.
+// explicitamente vermelhos; T25/T26 montam a transição real fetch → service → hook → modal/página/impressão (contrato
+// inválido limpa; falha operacional preserva).
 
 const TEMPLATE_ID = "11111111-2222-4333-8444-111111111111";
 const RELATED_ID  = "99999999-8888-4777-8666-999999999999";
@@ -664,4 +665,352 @@ test("T24: gerador — conjuntos efetivos L3/L4 vazios → diagnósticos explíc
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+// ─────────────── T25–T26: transição real fetch → apiRequest → service → hook → três superfícies, com EFEITOS ───────────────
+// §17.3 (P-F2a/P-F2b). ZERO dependência nova — o mesmo contrato de tests/work-orders-page-live.test.tsx: DOM mínimo escrito
+// aqui, instalado só quando T25/T26 rodam (T1–T24 seguem em SSR, sem `window`) e ANTES do import de `react-dom/client`;
+// o único dublê é o `fetch` (a borda de rede); o intervalo do auto-refresh é CAPTURADO e o teste dispara o tick (o 2º plano
+// real: `useAutoRefresh` → `reload(true)`). As superfícies são as dos consumidores reais: o modal (`VehicleDossieView`, que o
+// `VehicleDossieModal` alimenta com o hook), a página (o painel com as props que `ProcessoDossiePage` passa) e a impressão
+// (`DossiePrintDocument`, que recebe as runs do mesmo hook e nunca mostra erro — nela a prova é zero linha).
+
+type MiniListener = (event: unknown) => void;
+const MINI_HTML_NS = "http://www.w3.org/1999/xhtml";
+
+class MiniNode {
+  childNodes: MiniNode[] = [];
+  parentNode: MiniNode | null = null;
+  readonly listeners = new Map<string, Set<MiniListener>>();
+  constructor(public nodeType: number, public nodeName: string, public ownerDocument: MiniDocument | null) {}
+  get firstChild(): MiniNode | null { return this.childNodes[0] ?? null; }
+  get lastChild(): MiniNode | null { return this.childNodes[this.childNodes.length - 1] ?? null; }
+  get nextSibling(): MiniNode | null {
+    const siblings = this.parentNode?.childNodes;
+    return siblings ? siblings[siblings.indexOf(this) + 1] ?? null : null;
+  }
+  get previousSibling(): MiniNode | null {
+    const siblings = this.parentNode?.childNodes;
+    return siblings ? siblings[siblings.indexOf(this) - 1] ?? null : null;
+  }
+  get parentElement(): MiniNode | null { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; }
+  appendChild<T extends MiniNode>(child: T): T {
+    child.parentNode?.removeChild(child);
+    child.parentNode = this;
+    this.childNodes.push(child);
+    return child;
+  }
+  insertBefore<T extends MiniNode>(child: T, reference: MiniNode | null): T {
+    if (!reference) return this.appendChild(child);
+    child.parentNode?.removeChild(child);
+    this.childNodes.splice(this.childNodes.indexOf(reference), 0, child);
+    child.parentNode = this;
+    return child;
+  }
+  removeChild<T extends MiniNode>(child: T): T {
+    const index = this.childNodes.indexOf(child);
+    if (index >= 0) this.childNodes.splice(index, 1);
+    child.parentNode = null;
+    return child;
+  }
+  contains(node: MiniNode | null): boolean {
+    for (let current = node; current; current = current.parentNode) if (current === this) return true;
+    return false;
+  }
+  get textContent(): string { return this.childNodes.map((child) => child.textContent).join(""); }
+  set textContent(value: string | null) {
+    for (const child of this.childNodes) child.parentNode = null;
+    this.childNodes = [];
+    if (value !== "" && value != null) this.appendChild(this.ownerDocument!.createTextNode(String(value)));
+  }
+  addEventListener(type: string, listener: MiniListener): void {
+    const set = this.listeners.get(type) ?? new Set<MiniListener>();
+    set.add(listener);
+    this.listeners.set(type, set);
+  }
+  removeEventListener(type: string, listener: MiniListener): void { this.listeners.get(type)?.delete(listener); }
+}
+
+class MiniText extends MiniNode {
+  constructor(public data: string, doc: MiniDocument) { super(3, "#text", doc); }
+  get nodeValue(): string { return this.data; }
+  set nodeValue(value: string) { this.data = String(value); }
+  override get textContent(): string { return this.data; }
+  override set textContent(value: string | null) { this.data = String(value); }
+}
+
+class MiniComment extends MiniNode {
+  constructor(public data: string, doc: MiniDocument) { super(8, "#comment", doc); }
+  override get textContent(): string { return ""; }
+  override set textContent(_value: string | null) { /* comentário não tem texto visível */ }
+}
+
+class MiniElement extends MiniNode {
+  readonly tagName: string;
+  readonly localName: string;
+  readonly attributes = new Map<string, string>();
+  readonly style: Record<string, string> = {};
+  constructor(tag: string, doc: MiniDocument, readonly namespaceURI = MINI_HTML_NS) {
+    super(1, namespaceURI === MINI_HTML_NS ? tag.toUpperCase() : tag, doc);
+    this.tagName = this.nodeName;
+    this.localName = tag;
+    Object.defineProperty(this.style, "setProperty", { value: (key: string, value: string) => void (this.style[key] = value) });
+    Object.defineProperty(this.style, "removeProperty", { value: (key: string) => void delete this.style[key] });
+  }
+  setAttribute(name: string, value: unknown): void { this.attributes.set(name, String(value)); }
+  getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; }
+  hasAttribute(name: string): boolean { return this.attributes.has(name); }
+  removeAttribute(name: string): void { this.attributes.delete(name); }
+  setAttributeNS(_ns: string | null, name: string, value: unknown): void { this.setAttribute(name, value); }
+  removeAttributeNS(_ns: string | null, name: string): void { this.removeAttribute(name); }
+  focus(): void {}
+  blur(): void {}
+}
+
+class MiniDocument extends MiniNode {
+  documentElement!: MiniElement;
+  body!: MiniElement;
+  activeElement!: MiniElement;
+  hidden = false;
+  defaultView: unknown = null;
+  constructor() { super(9, "#document", null); }
+  createElement(tag: string): MiniElement { return new MiniElement(tag, this); }
+  createElementNS(ns: string, tag: string): MiniElement { return new MiniElement(tag, this, ns); }
+  createTextNode(text: unknown): MiniText { return new MiniText(String(text), this); }
+  createComment(text: string): MiniComment { return new MiniComment(text, this); }
+}
+
+type MiniDom = {
+  readonly doc: MiniDocument;
+  readonly storage: Map<string, string>;
+  readonly intervals: Array<{ fn: (() => void) | null; ms: number }>;
+};
+let miniDom: MiniDom | null = null;
+const miniDomPrevious = new Map<string, PropertyDescriptor | undefined>();
+
+function installMiniDom(): MiniDom {
+  if (miniDom) return miniDom;
+  const doc = new MiniDocument();
+  doc.documentElement = doc.appendChild(new MiniElement("html", doc));
+  doc.body = doc.documentElement.appendChild(new MiniElement("body", doc));
+  doc.activeElement = doc.body;
+  const storage = new Map<string, string>();
+  const intervals: MiniDom["intervals"] = [];
+  const win = {
+    document: doc,
+    event: undefined as unknown,
+    HTMLIFrameElement: class {},
+    navigator: { userAgent: "node" },
+    location: { href: "http://localhost/", pathname: "/", search: "", hash: "" },
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: unknown) => void storage.set(key, String(value)),
+      removeItem: (key: string) => void storage.delete(key),
+      clear: () => storage.clear(),
+    },
+    addEventListener: (type: string, listener: MiniListener) => doc.addEventListener(type, listener),
+    removeEventListener: (type: string, listener: MiniListener) => doc.removeEventListener(type, listener),
+    dispatchEvent: (event: { type: string }) => {
+      for (const listener of doc.listeners.get(event.type) ?? []) listener(event);
+      return true;
+    },
+    // intervalo CAPTURADO: nunca dispara sozinho — o teste aciona o tick do auto-refresh quando quer o 2º plano
+    setInterval: (fn: () => void, ms: number) => intervals.push({ fn, ms }),
+    clearInterval: (id: number) => { if (intervals[id - 1]) intervals[id - 1].fn = null; },
+    setTimeout: globalThis.setTimeout.bind(globalThis),
+    clearTimeout: globalThis.clearTimeout.bind(globalThis),
+    getComputedStyle: () => ({ getPropertyValue: () => "" }),
+    matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    scrollTo: () => {},
+  };
+  doc.defaultView = win;
+  const define = (key: string, value: unknown) => {
+    miniDomPrevious.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
+  };
+  define("window", win);
+  define("document", doc);
+  if (typeof (globalThis as { navigator?: unknown }).navigator === "undefined") define("navigator", win.navigator); // Node 20
+  define("IS_REACT_ACT_ENVIRONMENT", true);
+  miniDom = { doc, storage, intervals };
+  return miniDom;
+}
+
+after(() => {
+  for (const [key, descriptor] of miniDomPrevious) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+    else delete (globalThis as Record<string, unknown>)[key];
+  }
+});
+
+function miniElements(root: MiniNode, match: (el: MiniElement) => boolean, acc: MiniElement[] = []): MiniElement[] {
+  for (const child of root.childNodes) {
+    if (child instanceof MiniElement) {
+      if (match(child)) acc.push(child);
+      miniElements(child, match, acc);
+    }
+  }
+  return acc;
+}
+
+type TransitionScenario = "valid" | "contract-invalid" | "transient";
+type Surface = "modal" | "pagina" | "impressao";
+// `alerts` = os TÍTULOS dos Alert (o <strong> de `ui-alert`): a mensagem do hook ("Não foi possível carregar os checklists do
+// guincho.") aparece nos DOIS alertas, então o que distingue o destrutivo do aviso é o título, não o texto solto.
+type SurfaceRead = { readonly rows: number; readonly text: string; readonly retry: number; readonly alerts: readonly string[] };
+
+const TRANSITION_PROCESS_ID = "process-ciclo-3";
+const TRANSITION_ROUTE = new RegExp(`/impound-processes/${TRANSITION_PROCESS_ID}/checklist-runs(\\?|$)`);
+const DESTRUCTIVE_ERROR = "Não foi possível carregar os checklists";
+const BACKGROUND_WARNING = "Atualização em segundo plano falhou";
+
+function transitionResponse(scenario: TransitionScenario): Response {
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  // `sendRouteError` — o 500 genérico do backend: falha OPERACIONAL, não contratual
+  if (scenario === "transient") return json(500, { error: { code: "INTERNAL_SERVER_ERROR", reason: "unknown_error", message: "Unexpected error." } });
+  const item = { ...RUN_U1 } as Record<string, unknown>;
+  if (scenario === "contract-invalid") delete item.currentRunId; // 200 idêntico, sem uma das três chaves de versão
+  return json(200, { data: { items: [item] } });
+}
+
+type TransitionTools = {
+  setScenario(next: TransitionScenario): void;
+  read(): Record<Surface, SurfaceRead>;
+  backgroundTick(): Promise<void>;
+};
+
+/**
+ * Monta as três superfícies sobre UM hook real, a partir de uma resposta válida, e entrega o leitor e o tick do 2º plano.
+ * Cada caso desmonta (inclusive quando uma asserção falha) e restaura `fetch` e `VITE_USE_MOCKS`.
+ */
+async function withChecklistTransition(body: (tools: TransitionTools) => Promise<void>): Promise<void> {
+  const dom = installMiniDom();
+  const { createRoot } = await import("react-dom/client");
+  const { AuthProvider } = await import("../src/providers/AuthProvider");
+  const { TenantProvider } = await import("../src/providers/TenantProvider");
+  const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { mockSession } = await import("../src/mocks/auth/context");
+  const { useProcessChecklistRuns } = await import("../src/modules/patios/processes/useProcessChecklistRuns");
+  const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
+  type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
+  const act = (React as unknown as { act?: ActFn }).act;
+  if (typeof act !== "function") throw new Error("React.act ausente (build de produção?) — o arnês não roda efeitos sem ele");
+  const settle = async () => {
+    for (let round = 0; round < 3; round += 1) await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  };
+
+  let scenario: TransitionScenario = "valid";
+  const originalFetch = globalThis.fetch;
+  const previousMocks = process.env.VITE_USE_MOCKS;
+  process.env.VITE_USE_MOCKS = "false";
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (!TRANSITION_ROUTE.test(url)) throw new Error(`rota não prevista no stub de fetch: ${url}`);
+    return transitionResponse(scenario);
+  }) as typeof fetch;
+
+  dom.storage.clear();
+  dom.intervals.length = 0;
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: [], permissions: [] } });
+  dom.storage.set("erp-techsolutions.active-context", JSON.stringify({
+    tenantId: "ten-ciclo-3", tenantName: "Organização ciclo 3", tenantStatus: "active",
+    branchId: "fil-ciclo-3", branchName: "Filial ciclo 3", role: "Operador",
+    permissions: ["impound:read", "checklist_runs:read"], enabledModules: ["impound"], scope: "branch",
+  }));
+
+  function Surfaces() {
+    const { runs, loading, error, denied, reload } = useProcessChecklistRuns(TRANSITION_PROCESS_ID);
+    const retry = () => void reload();
+    return (
+      <main>
+        <section data-surface="modal">
+          <VehicleDossieView {...dossieViewProps(runs)} checklistLoading={loading} checklistError={error} checklistDenied={denied} onReloadChecklist={retry} />
+        </section>
+        <section data-surface="pagina">
+          <ChecklistRunsPanel runs={runs} loading={loading} error={error} denied={denied} onRetry={retry} />
+        </section>
+        <section data-surface="impressao">
+          <DossiePrintDocument
+            process={PROCESS} issuedAt="2026-09-10T10:00:00.000Z" orgName="Org" yardName="Pátio"
+            currentSpot={null} inspection={null} verify={null} events={[]} statement={null}
+            canReadChecklist checklistRuns={runs} historyItems={[]}
+          />
+        </section>
+      </main>
+    );
+  }
+
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  try {
+    await act(async () => {
+      root.render(<AuthProvider><TenantProvider><PermissionProvider><Surfaces /></PermissionProvider></TenantProvider></AuthProvider>);
+    });
+    await settle();
+    await body({
+      setScenario(next) { scenario = next; },
+      read() {
+        const out = {} as Record<Surface, SurfaceRead>;
+        for (const section of miniElements(container, (el) => el.hasAttribute("data-surface"))) {
+          const all = miniElements(section, () => true);
+          out[section.getAttribute("data-surface") as Surface] = {
+            rows: all.filter((el) => el.localName === "tr" && (el.getAttribute("id") ?? "").startsWith("vistoria-")).length,
+            text: section.textContent,
+            retry: all.filter((el) => el.localName === "button" && el.textContent.trim() === "Tentar novamente").length,
+            alerts: all
+              .filter((el) => el.localName === "section" && (el.getAttribute("class") ?? "").split(/\s+/).includes("ui-alert"))
+              .flatMap((alert) => miniElements(alert, (el) => el.localName === "strong").slice(0, 1).map((title) => title.textContent.trim())),
+          };
+        }
+        return out;
+      },
+      async backgroundTick() {
+        const live = dom.intervals.filter((interval) => interval.fn !== null && interval.ms === DEFAULT_AUTO_REFRESH_MS);
+        assert.strictEqual(live.length, 1, `exatamente 1 auto-refresh capturado (o do hook); vivos: ${live.length}`);
+        await act(async () => { live[0].fn!(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+        await settle();
+      },
+    });
+  } finally {
+    await act(async () => root.unmount());
+    dom.doc.body.removeChild(container);
+    dom.storage.clear();
+    globalThis.fetch = originalFetch;
+    if (previousMocks === undefined) delete process.env.VITE_USE_MOCKS; else process.env.VITE_USE_MOCKS = previousMocks;
+  }
+}
+
+const rowsOf = (read: Record<Surface, SurfaceRead>) => [read.modal.rows, read.pagina.rows, read.impressao.rows];
+
+test("T25: válida → contrato inválido no 2º plano — runs limpas: zero linha nas três superfícies, erro destrutivo com retry no modal e na página", async () => {
+  await withChecklistTransition(async ({ setScenario, read, backgroundTick }) => {
+    assert.deepStrictEqual(rowsOf(read()), [1, 1, 1], "antes: uma linha válida em cada superfície (modal/página/impressão)");
+    setScenario("contract-invalid");
+    await backgroundTick();
+    const after = read();
+    assert.deepStrictEqual(rowsOf(after), [0, 0, 0], `depois de ChecklistRunContractError: nenhuma linha antiga em superfície alguma (modal/página/impressão); página: ${after.pagina.text}`);
+    for (const surface of ["modal", "pagina", "impressao"] as const) {
+      assert.ok(!after[surface].text.includes("Situação na época"), `${surface}: nenhuma rotulagem antiga`);
+      assert.ok(!after[surface].alerts.includes(BACKGROUND_WARNING), `${surface}: não é o aviso não destrutivo sobre linhas velhas`);
+    }
+    for (const surface of ["modal", "pagina"] as const) {
+      assert.deepStrictEqual(after[surface].alerts, [DESTRUCTIVE_ERROR], `${surface}: só o erro destrutivo`);
+      assert.strictEqual(after[surface].retry, 1, `${surface}: um retry`);
+    }
+  });
+});
+
+test("T26: válida → falha transitória (500) no 2º plano — a última lista válida permanece, com o aviso de atualização", async () => {
+  await withChecklistTransition(async ({ setScenario, read, backgroundTick }) => {
+    assert.deepStrictEqual(rowsOf(read()), [1, 1, 1], "antes: uma linha válida em cada superfície (modal/página/impressão)");
+    setScenario("transient");
+    await backgroundTick();
+    const after = read();
+    assert.deepStrictEqual(rowsOf(after), [1, 1, 1], `falha operacional não apaga a última lista válida; página: ${after.pagina.text}`);
+    for (const surface of ["modal", "pagina"] as const) {
+      assert.deepStrictEqual(after[surface].alerts, [BACKGROUND_WARNING], `${surface}: só o aviso não destrutivo, sem erro destrutivo`);
+    }
+  });
 });
