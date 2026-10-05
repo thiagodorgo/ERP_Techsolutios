@@ -23,12 +23,12 @@
 - [x] instalar dependências próprias nos dois terrenos
 - [x] baseline e falsificação da seção 17
 - [x] testes T23/T24 antes do código + vermelho F1
-- [ ] testes T25/T26 antes do código + vermelho F2
+- [x] testes T25/T26 antes do código + vermelho F2
 - [x] implementação F1
-- [ ] implementação F2
-- [ ] quatro mutações pós-verde, CRLF e LF
-- [ ] bateria integral da seção 17, N e forma por TAP nos dois terrenos
-- [ ] commits, push fast-forward e limpeza dos worktrees/processos
+- [x] implementação F2
+- [x] quatro mutações pós-verde, CRLF e LF (+ MC-1..MC-7 do gerador)
+- [x] bateria integral da seção 17, N e forma por TAP nos dois terrenos
+- [x] commits (`eec4a24a`, `69095df7`, `10aa38f8`, `4e377923`, registro) · [ ] push fast-forward e remoção dos worktrees: feitos depois deste commit, relatados na entrega ao orquestrador
 
 ## 2026-10-04T19:36:33Z — integração da `main`
 
@@ -113,7 +113,7 @@
 - Comando: `timeout 600 node --test --import tsx --test-name-pattern="^T2[56]:" tests/patios-dossie-versao.smoke.test.tsx` contra o hook do head. Saída: `tests 28 · pass 1 · fail 1 · cancelled 0`, `ec=1`. **T25 vermelho nominal**: `depois de ChecklistRunContractError: nenhuma linha antiga em superfície alguma (modal/página/impressão)` com `actual [1,1,1]`, `expected [0,0,0]`, e o texto da página mostrando `Atualização em segundo plano falhou` sobre a linha velha — é o C2c2-F2 reproduzido pela cadeia real fetch → `apiRequest` → service → hook → superfícies. **T26 verde** (o comportamento atual já preserva a lista na falha operacional) — é a contraprova que impede o `setRuns([])` em todo `catch`.
 - Veredito parcial: vermelho pelo motivo nominal antes do código; a §17.3 não foi falsificada.
 
-## 2026-10-05T00:24Z — F2 implementado; verde dirigido; quatro controles do plano no CRLF
+## 2026-10-05T00:21Z — F2 implementado; verde dirigido; quatro controles do plano no CRLF
 
 - Mudança (só `frontend/src/modules/patios/processes/useProcessChecklistRuns.ts`): importa `ChecklistRunContractError` do adapter e, **só** nesse ramo do `catch`, `setRuns([])` + o erro seguro; 401/403 (negado), 404 (lista vazia honesta) e o genérico (falha operacional → aviso de 2º plano sobre a última lista válida) intocados. Adapter, service, painel e consumidores intocados (§17.4.5).
 - Comando: `timeout 600 npm --prefix frontend run check` → `ec=0`. Comando: `--test-name-pattern="^T(16|2[56]):"` → `tests 28 · pass 3 · fail 0 · cancelled 0`, `ec=0` (T16, T25, T26).
@@ -122,3 +122,57 @@
   - `M-F2b` (limpa em todo erro, no ramo genérico) → T26 `ec=1`, `pass 0 fail 1` — **VERMELHO**; restaurado.
   - `M-F1a` (insere `{run["status"]}` sem decisão de versão em `DossiePrintDocument`) → censo `ec=1`, `pontos sem consulta=1` — **VERMELHO**; restaurado.
   - `M-F1b` (tira as apresentações de L3 em `ChecklistRunsPanel`) → censo `ec=1`, `L3 vazio=1` — **VERMELHO**; restaurado. (L4 vazio: coberto pelo T24, que renomeia os 3 consumidores, e pela `MC-2` abaixo.)
+
+## 2026-10-05T00:27Z — KPI devolvido à main; terreno LF (parcial)
+
+- Comando: `git fetch origin main fix/dossie-versao-da-vistoria` → `origin/main=357a98e9`, ramo remoto `31e7ebc4` (ninguém empurrou no meio). `git diff --stat origin/main HEAD -- Kpis` → 4 arquivos (`app.js` 1 linha, `kpis-history.json` +15, `kpis-history.md` +30, `kpis-latest.json` 36). `git checkout origin/main -- Kpis/` → commit próprio `4e377923` `chore(kpi): devolve Kpis/* ao conteudo da main`; depois dele `git diff origin/main HEAD -- Kpis` é **vazio**.
+- Terreno LF `C:/Users/AMP/w-d11c3-lf` (`core.autocrlf=false` por worktree; arquivo do bloco com `CRLF 0 · LF 927`), movido detached para `4e377923`, `node_modules` próprios (raiz e frontend) já instalados pela instância anterior, sem junction:
+  - `timeout 600 npm --prefix frontend run check` → `ec=0`.
+  - `timeout 1200 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx` → `tests 28 · pass 28 · fail 0 · cancelled 0 · skipped 0`, `duration_ms 140582`, `ec=0`, nenhum morto por sinal.
+  - Adjacentes (`patios-dossie-checklist`, `-print`, `-modal`, `patios-dossie`, `-deeplink`, `-history`, `checklists-run-lock`) → `tests 53 · pass 53 · fail 0`, `ec=0`.
+  - Censo → `ec=0`; `12/12/12`; L3 `2` (171, 174, ambos `consulta substituição: sim`); L4 `3`; desconhecido/L3 vazio/L4 vazio `0`.
+- Registro: `log-execucao.md` — a resolução do merge `f1329cda` tinha deslocado a linha da main (`2026-10-04 — registro: parecer do porteiro do #404…`) para dentro da seção do B-SAN3-11 e apagado a linha em branco antes de `---` (o parágrafo virava título setext); devolvida ao lugar da main e acrescentada a linha do CICLO 3; `git diff origin/main -- log-execucao.md status-geral.md` = **só inserções** (21 + 17, 0 deleções).
+
+## 2026-10-05T00:34Z — controles de mutação do GERADOR (CRLF) e o resto do terreno LF
+
+- Runner `dev11c3-mut.cjs` no CRLF, cada mutação contra o teste que a deve derrubar (âncora única, prova de aplicação, restauração byte a byte):
+  - MC-2-conjunto-vazio | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 12981 ms | restaurado byte a byte: sim
+  - MC-1-elementaccess | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 63409 ms | restaurado byte a byte: sim
+  - MC-3-desestruturacao | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 75286 ms | restaurado byte a byte: sim
+  - MC-4-primeiro-da-linha | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 74550 ms | restaurado byte a byte: sim
+  - MC-5-alias-do-helper | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 115961 ms | restaurado byte a byte: sim
+  - MC-6-const-local | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 80010 ms | restaurado byte a byte: sim
+  - MC-7-chave-por-tipo | scripts/san3-11-dossie-vistoria-censo.mjs | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 | 71179 ms | restaurado byte a byte: sim
+  Leitura: cada termo novo do classificador tem um caso que o derruba — `MC-1` índice (T23 V1/V2), `MC-2` conjunto vazio (T24), `MC-3` desestruturação (V4/V5), `MC-4` primeiro-da-linha (V3), `MC-5` alias do helper (V4, pela expressão nominal), `MC-6` const local (V6), `MC-7` chave por tipo (V2).
+- Terreno LF, runner com os quatro controles do plano + as duas mutações do gerador que a §17.2 nomeia:
+  - M-F2a | frontend/src/modules/patios/processes/useProcessChecklistRuns.ts | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 |  | restaurado byte a byte: sim
+  - M-F2b | frontend/src/modules/patios/processes/useProcessChecklistRuns.ts | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 |  | restaurado byte a byte: sim
+  - M-F1a | frontend/src/modules/patios/processes/components/DossiePrintDocument.tsx | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=- fail=- | # VEREDITO: descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=1 · candidato desconhecido=0 · L3 vazio=0 · L4 vazio=0 | restaurado byte a byte: sim
+  - M-F1b | frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=- fail=- | # VEREDITO: descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0 · candidato desconhecido=0 · L3 vazio=1 · L4 vazio=0 | restaurado byte a byte: sim
+  - MC-1-elementaccess | scripts/san3-11-dossie-vistoria-censo.mjs | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 |  | restaurado byte a byte: sim
+  - MC-2-conjunto-vazio | scripts/san3-11-dossie-vistoria-censo.mjs | EOL LF | ec=1 | VERMELHO (esperado VERMELHO) | tap pass=0 fail=1 |  | restaurado byte a byte: sim
+- Terreno LF, resto da bateria: `timeout 1800 npm --prefix frontend run test:smoke` → **`tests 1242 · pass 1242 · fail 0 · cancelled 0 · skipped 0`**, `duration_ms 200136`, `ec=0` (o KPI da main publica 1214; 1214 + 28 do arquivo do bloco = 1242, a previsão da §17.4.7 — conta, não medição da main); `npm --prefix frontend run build` → `ec=0`, `frontend/dist` removido; árvore LF limpa.
+- Raiz (LF, uma vez): `node scripts/kpi-freeze.mjs --check` → `ec=0`, "em dia (snapshot 2026-10-02)"; `node --check Kpis/app.js` → `ec=0`; `node --test --import tsx tests/kpi-dashboard-charts.test.ts` → `tests 17 · pass 17 · fail 0`; `node scripts/sync-agent-agents.mjs --check` → `ec=0`, 33 agentes, espelho consistente.
+- Terreno CRLF (head `4e377923`): `check` `ec=0`; arquivo do bloco **`tests 28 · pass 28 · fail 0 · cancelled 0 · skipped 0`**, `duration_ms 181956`, `ec=0`; adjacentes `tests 53 · pass 53 · fail 0`; censo `ec=0`, L3 2 (ambos `sim`), L4 3, desconhecido/L3 vazio/L4 vazio 0. `test:smoke` e `build` do CRLF em execução.
+
+## 2026-10-05T00:39Z — CRLF fechado; escopo; publicação
+
+- Terreno CRLF: `timeout 1800 npm --prefix frontend run test:smoke` → **`tests 1242 · pass 1242 · fail 0 · cancelled 0 · skipped 0`**, `duration_ms 224416`, `ec=0`, 0 `not ok`; `npm --prefix frontend run build` → `ec=0`, `frontend/dist` removido.
+- **Bateria da §17.4.6, N e forma por TAP, nos dois terrenos (head `4e377923`, idêntico em produto/teste ao head empurrado):**
+
+  | comando | CRLF | LF |
+  |---|---|---|
+  | `npm --prefix frontend run check` | ec=0 | ec=0 |
+  | arquivo do bloco (`patios-dossie-versao.smoke.test.tsx`) | 28/28, fail 0, cancelled 0, 181956 ms | 28/28, fail 0, cancelled 0, 140582 ms |
+  | adjacentes (6 do dossiê + `checklists-run-lock`) | 53/53 | 53/53 |
+  | censo `san3-11-dossie-vistoria-censo.mjs` | ec=0 · 12/12/12 · L3 2 · L4 3 · 0 vermelhos | idem |
+  | `test:smoke` | 1242/1242, fail 0, 224416 ms | 1242/1242, fail 0, 200136 ms |
+  | `build` | ec=0 (dist removido) | ec=0 (dist removido) |
+  | controles M-F1a/M-F1b/M-F2a/M-F2b | 4/4 VERMELHOS, restaurados | 4/4 VERMELHOS, restaurados |
+  | mutações do gerador | MC-1..MC-7: 7/7 VERMELHOS | MC-1, MC-2: 2/2 VERMELHOS |
+
+- Meta da §17.4.6: N=12 (baseline funcional), M ≥ 24; arquivo do bloco 24 → 28 (+T23 com 6 grafias, T24, T25, T26), M = 28 + 12 do painel = 40 ≥ 24.
+- **Escopo (§17.4.5 + `D-GOV-PROPORCIONAL`):** `git diff --name-only f1329cda` (o ciclo 3 inteiro, commits + árvore) = `scripts/san3-11-dossie-vistoria-censo.mjs`, `frontend/src/modules/patios/processes/useProcessChecklistRuns.ts`, `frontend/tests/patios-dossie-versao.smoke.test.tsx`, `agent-orchestration/codex/log-execucao.md`, `agent-orchestration/docs/status-geral.md`, este relatório e `Kpis/*` (devolvido à main: `git diff origin/main -- Kpis` = 0 arquivos). Pathspec dos proibidos (`src/**`, `tests/**` da raiz, `prisma/**`, `mobile/**`, lockfiles, `frontend/package.json`, adapter/service/types, painel, modal, impressão, página, `.github/**`, `CLAUDE.md`, `AGENTS.md`, `Kpis/index.html`, `Kpis/styles.css`) → **vazio**. Nenhuma dependência nova (o rascunho com `@playwright/test` não entrou).
+- `origin/main` re-medida antes do commit final: `357a98e9` (não andou); `origin/fix/dossie-versao-da-vistoria` `31e7ebc4`, ancestral do head (push fast-forward).
+- **Pendência que deixo nomeada (fronteira declarada, não paga aqui):** o censo P-L3 segue o valor de situação por acesso, índice, desestruturação, const local e helper; **não** segue fluxo de dados por coleção ou função (ex.: `const xs = runs.map((r) => r.status)` fora do JSX e `{xs.join()}` dentro), nem o painel reapelidado por `const P = ChecklistRunsPanel` em L4 (L4 reconhece a tag pelo texto/alias de import). Dono sugerido: o próximo bloco que tocar o gerador; severidade baixa (o painel e os três consumidores reais não usam essas formas, medido pelo censo verde no head).
+- Revisão: pela regra (1) do `D-GOV-PROPORCIONAL`, o #401 segue para **um revisor independente** (que não escreveu nem planejou) + CI verde, sem inspetor e sem junta. Não sou revisor.
