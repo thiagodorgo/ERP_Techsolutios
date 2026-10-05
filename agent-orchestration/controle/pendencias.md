@@ -2255,8 +2255,13 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch `fix/dossie-versao-da-vistoria`
+  - E1: `processes.types.ts` +3 campos obrigatórios (`reopenedFromRunId`, `supersededByRunId`, `currentRunId`)
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos (null quando ausente)
+  - E3: `ChecklistRunsPanel.tsx` três estados: substituída ("Versão substituída" chip default, link para vigente), vigente de reabertura ("Versão atual", link para anterior), única (sem marcação)
+  - E4: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) — exit 1 se campo descartado ou ponto sem consulta em JSX
+  - E5: 16 testes novos `patios-dossie-versao.smoke.test.tsx` (T1–T14 com T5b e T7b)
+  - Bateria: `check` ✓, `test:smoke` 1218/1218 ✓, `build` ✓, guard exit 0 ✓, `git diff --check` ✓
 - **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
@@ -9979,3 +9984,55 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** decisão do dono — qual referência vale para o cabeçalho da lista de OS, o PNG de `screen-refs/` ou o design padronizado de `J-TELAS-PADRONIZADAS`. Sem bloco dono até a decisão.
 - **bloqueia:** não.
 - **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.
+
+## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
+
+Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (custódia aberta antes da
+reabertura), o painel exibe "A versão vigente desta vistoria não está vinculada a este dossiê." sem link nem
+identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrá-la.
+
+- **causa (P-d do plano, medida):** reabrir não vincula. O `reopenRun` **copia** `related_entity_type`/`related_entity_id`
+  da vistoria anterior (`src/modules/checklists/checklist-prisma.repository.ts:806-807`), e o AUTO-link roda **só na
+  abertura** da custódia (`src/modules/impound/impound-prisma.repository.ts:205-215`, chamado só na criação do processo, l.155).
+  A rota MANUAL `POST /impound-processes/:processId/link-checklist-run` existe (`src/modules/impound/impound.routes.ts:195`),
+  mas não tem UI (`git grep link-checklist-run -- frontend/src` = 0). Medido no §0.5 A1 do plano do bloco: lista `[v1]`, v2 e v3 ausentes.
+- **remédio (o do §13 do plano do B-SAN3-11, fora deste bloco):** o backend listar os sucessores da cadeia com origem `DERIVED`
+  **ou** o `reopenRun` propagar os vínculos da vistoria anterior — decisão de desenho da junta do bloco dono.
+- **status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado)
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **bloqueia:** não — a UI já é honesta ("não está vinculada").
+
+## P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11)
+
+O repositório ordena por `created_at` do **vínculo** (`listChecklistRunsForProcess`,
+`src/modules/impound/impound.checklist-link-prisma.repository.ts:51`), e os vínculos criados na mesma transação do AUTO-link
+têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do plano). **O adapter reordena por `startedAt desc`**
+(`frontend/src/modules/patios/processes/processes.adapter.ts:576-577`) e essa é a ordem do dossiê (B1c, T5). Informativa —
+nenhum consumidor além do frontend.
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
+- **bloqueia:** não.
+
+## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+O censo do gerador (`scripts/san3-11-dossie-vistoria-censo.mjs`) ainda deixa passar a leitura da situação por índice com chave
+de tipo `string` sob cast que apaga o tipo — `(run as Record<string, unknown>)[k]`: compila, o censo sai com ec=0 e a forma não
+está na fronteira que o dev declarou. Função local e subcomponente por props também escapam (já declarados pelo dev), assim como
+o valor que passa por coleção ou função fora do JSX (`runs.map(r => r.status)`) e o painel renomeado por alias. Medido pelo
+revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-1) e pelo dev (`DEV-ciclo3-relatorio.md`).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o próximo bloco que tocar o gerador do censo ou o painel de vistorias do dossiê (atribuição nominal no próximo registro)
+- **bloqueia:** não (regra 1 do §C7 item 8: ajuste vira pendência).
+
+## P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+Duas lacunas só de teste, com o produto certo no head: (a) tirar "L3 vazio" ou "candidato desconhecido" do total do gerador deixa
+T12–T14 e T20–T24 verdes (8/8), embora o head negue os dois casos (ec=1 nas sondas do revisor); (b) o T26 só cobre o erro 500, e
+alargar a limpeza do painel a todo erro que não é `ApiError` passa pela suíte, embora apagasse a lista quando a rede cai.
+Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o mesmo da `P-SAN3-11-CENSO-CAST-RECORD`
+- **bloqueia:** não.

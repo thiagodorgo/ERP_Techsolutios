@@ -1,0 +1,71 @@
+{
+  "bloco": "B-SAN3-11",
+  "pr": 401,
+  "ciclo": 2,
+  "cadeira": "C2′",
+  "identidade": "jurado-san3-11-c2-enumeracao-tipada",
+  "modelo": "Codex GPT-5.6 Sol (substituicao declarada)",
+  "mandato_md5": "54e634ba1251e7dc0473180e0fe4e661",
+  "corpo_md5_recebido": "494547b988020c449fd5e26c9df2b302",
+  "corpo_md5_blob": "494547b988020c449fd5e26c9df2b302",
+  "objeto": "d24f7283bfba55d298e8118e7b590465c5a4d4d6",
+  "itens": [
+    {
+      "id": "C2c2-I1",
+      "titulo": "Gerador v2, M1-M9 e mutacao propria",
+      "status": "REPROVADO",
+      "achados": [
+        {
+          "id": "C2c2-F1",
+          "gravidade": "bloqueia",
+          "escopo": "dentro-do-bloco",
+          "evidencia_escopo": "O gerador v2 scripts/san3-11-dossie-vistoria-censo.mjs e entrega E12 criada no ciclo 2; a fronteira PropertyAccess/helpers e o criterio de saida estao no diff do bloco.",
+          "evidencia": "Mutacao propria run[\"status\"] em JSX: ancora=1, tsc=0, runtime=<span data-own-boundary>completed</span>, gerador ec=0 e nao enumera a linha. Controle independente com apresentacoes por ElementAccess e consumidores semanticamente identicos sob alias: tsc=0, L3 arquivos=26, pontos=0, consumidores=0, gerador ec=0. Todos os hashes foram restaurados.",
+          "descricao": "O censo P-L3 e fail-open fora das duas formas sintaticas reconhecidas e aceita inclusive conjunto vazio de pontos/consumidores; uma apresentacao de status compilavel e observavel pode escapar sem tornar a CI vermelha. O escape ElementAccess nao esta declarado no cabecalho/residuais do guard."
+        }
+      ]
+    },
+    {
+      "id": "C2c2-I2",
+      "titulo": "A30/A31 e fail-closed adapter-service-painel; T3′/T15/T16",
+      "status": "REPROVADO",
+      "achados": [
+        {
+          "id": "C2c2-F2",
+          "gravidade": "bloqueia",
+          "escopo": "dentro-do-bloco",
+          "evidencia_escopo": "O hook/service nao mudaram desde 653532f7, mas E11 introduziu no adapter o ChecklistRunContractError que aciona o caminho; D-C2-1 do ciclo 2 promete recusa integral e zero linhas. Trata-se da integracao do novo caminho E11 com estado retido.",
+          "evidencia": "Vite+Chromium real, tres superficies: malformada inicial => 3 Alerts/0 linhas; retry valido => 0 Alerts/3 linhas; resposta malformada seguinte => 3 Alerts de atualizacao em segundo plano e 3 linhas antigas preservadas. useProcessChecklistRuns.ts:50-58 nao limpa runs no ramo generico; ChecklistRunsPanel.tsx:82-105 conserva tabela quando hasRuns.",
+          "descricao": "Depois de uma carga valida, uma resposta recusada pelo adapter nao resulta em nenhuma linha: o hook retém runs e o painel continua apresentando dados antigos, contrariando D-C2-1."
+        }
+      ]
+    },
+    {
+      "id": "C2c2-I3",
+      "titulo": "T12-T14 e T20-T22 em CRLF/LF; A17′/A19-A21",
+      "status": "APROVADO",
+      "achados": []
+    }
+  ],
+  "achados": [
+    {
+      "id": "C2c2-F1",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "E12/gerador v2 pertence ao ciclo 2.",
+      "evidencia": "run[\"status\"] compilou/renderizou e o gerador saiu 0; 0 pontos e 0 consumidores tambem saiu 0.",
+      "descricao": "Gerador P-L3 fail-open para ElementAccess e conjunto vazio."
+    },
+    {
+      "id": "C2c2-F2",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "E11 cria o novo erro e D-C2-1 exige zero linhas.",
+      "evidencia": "No Chromium, valido→malformado preservou 3 linhas e exibiu Alert de atualizacao em segundo plano.",
+      "descricao": "Fluxo adapter-service-hook-painel não limpa linhas ao recusar resposta subsequente."
+    }
+  ],
+  "veredito": "REPROVADO",
+  "justificativa": "F1: o gerador P-L3 e fail-open para ElementAccess e conjunto vazio de pontos/consumidores. F2: o caminho E11 retém linhas antigas apos resposta recusada no fluxo real hook/painel. Item 3 e demais controles passaram nos dois EOLs.",
+  "limpeza": "CONCLUIDA: 0 processos proprios; worktrees CRLF/LF removidos por git worktree remove --force; scratch removido; nenhuma base viva tocada"
+}

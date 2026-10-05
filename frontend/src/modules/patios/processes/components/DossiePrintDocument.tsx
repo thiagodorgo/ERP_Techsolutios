@@ -92,7 +92,7 @@ export function DossiePrintDocument({
         </Card>
 
         {canReadChecklist ? (
-          <ChecklistRunsPanel runs={checklistRuns} loading={false} error={null} denied={false} onRetry={noop} />
+          <ChecklistRunsPanel runs={checklistRuns} loading={false} error={null} denied={false} onRetry={noop} idPrefix="vistoria-impressa" />
         ) : null}
 
         <CustodyHistoryPanel items={historyItems} loading={false} error={null} onRetry={noop} />

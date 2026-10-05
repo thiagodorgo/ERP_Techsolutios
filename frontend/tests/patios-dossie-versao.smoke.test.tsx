@@ -1,0 +1,1016 @@
+import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, cpSync, writeFileSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { join, resolve, dirname } from "node:path";
+import { spawnSync } from "node:child_process";
+import test, { after } from "node:test";
+
+import React from "react";
+import { renderToString } from "react-dom/server";
+
+import {
+  adaptChecklistRunsResponse,
+  ChecklistRunContractError,
+} from "../src/modules/patios/processes/processes.adapter";
+import type { ChecklistRunSummaryItem } from "../src/modules/patios/processes/processes.types";
+import { ChecklistRunsPanel, focusVersionRow } from "../src/modules/patios/processes/components/ChecklistRunsPanel";
+import { DossiePrintDocument } from "../src/modules/patios/processes/components/DossiePrintDocument";
+import { VehicleDossieView, type VehicleDossieViewProps } from "../src/modules/patios/processes/components/VehicleDossieModal";
+import type { ProcessDetail } from "../src/modules/patios/processes/processes.types";
+
+// B-SAN3-11 — testes T1–T26: o dossiê rotula a vistoria substituída (item 8 do gate vendável).
+// Ciclo 2 (§16 do plano): T3′ e T15/T16 (ausência ou valor inválido de chave de versão fica do lado fechado), T11′
+// (ids só em id=/href= nas 3 superfícies), T17–T19 (links com afordância que não navegam; ids únicos na impressão),
+// T12 com a saída do gerador v2 e T20–T22 (o gerador vê o emissor e a vistoria pelo tipo).
+// Ciclo 3 (§17): T23 cobre acesso por índice e toda grafia que o checker resolve (V1–V6); T24 torna L3/L4 vazios
+// explicitamente vermelhos; T25/T26 montam a transição real fetch → service → hook → modal/página/impressão (contrato
+// inválido limpa; falha operacional preserva).
+
+const TEMPLATE_ID = "11111111-2222-4333-8444-111111111111";
+const RELATED_ID  = "99999999-8888-4777-8666-999999999999";
+
+// Cenário A: processo aberto ANTES da reabertura — só v1 na lista, mas v1 aponta v3 como vigente
+const RUN_V1: ChecklistRunSummaryItem = {
+  id: "run-v1", templateId: TEMPLATE_ID, templateName: "Vistoria de recolhimento",
+  templateVersion: 1, status: "completed", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-01T10:00:00.000Z", completedAt: "2026-09-01T10:30:00.000Z",
+  reopenedFromRunId: null, supersededByRunId: "run-v2", currentRunId: "run-v3",
+};
+const RUN_V2: ChecklistRunSummaryItem = {
+  id: "run-v2", templateId: TEMPLATE_ID, templateName: "Vistoria de recolhimento",
+  templateVersion: 1, status: "completed", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-02T10:00:00.000Z", completedAt: "2026-09-02T10:30:00.000Z",
+  reopenedFromRunId: "run-v1", supersededByRunId: "run-v3", currentRunId: "run-v3",
+};
+const RUN_V3: ChecklistRunSummaryItem = {
+  id: "run-v3", templateId: TEMPLATE_ID, templateName: "Vistoria de recolhimento",
+  templateVersion: 1, status: "in_progress", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-03T10:00:00.000Z", completedAt: null,
+  reopenedFromRunId: "run-v2", supersededByRunId: null, currentRunId: null,
+};
+
+// Cenário B: processo aberto DEPOIS — u1 (substituída) e u2 (vigente de reabertura) ambas na lista
+const RUN_U1: ChecklistRunSummaryItem = {
+  id: "run-u1", templateId: TEMPLATE_ID, templateName: "Checklist de avarias",
+  templateVersion: 2, status: "completed", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-05T10:00:00.000Z", completedAt: "2026-09-05T11:00:00.000Z",
+  reopenedFromRunId: null, supersededByRunId: "run-u2", currentRunId: "run-u2",
+};
+const RUN_U2: ChecklistRunSummaryItem = {
+  id: "run-u2", templateId: TEMPLATE_ID, templateName: "Checklist de avarias",
+  templateVersion: 2, status: "completed_with_divergence", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-06T10:00:00.000Z", completedAt: "2026-09-06T11:00:00.000Z",
+  reopenedFromRunId: "run-u1", supersededByRunId: null, currentRunId: null,
+};
+
+// Vistoria única (sem reabertura)
+const RUN_UNICO: ChecklistRunSummaryItem = {
+  id: "run-unico", templateId: TEMPLATE_ID, templateName: "Checklist completo",
+  templateVersion: 1, status: "completed", relatedEntityType: "work_order", relatedEntityId: RELATED_ID,
+  startedAt: "2026-09-10T08:00:00.000Z", completedAt: "2026-09-10T08:30:00.000Z",
+  reopenedFromRunId: null, supersededByRunId: null, currentRunId: null,
+};
+
+const PROCESS: ProcessDetail = {
+  id: "550e8400-e29b-41d4-a716-446655440000", vehiclePlate: "ABC1D23", vehicleUnidentified: false,
+  yardId: "yard-1", profileId: "prof-1", status: "ACTIVE_CUSTODY", statusLabel: "Custódia ativa",
+  enteredAt: "2026-09-01T10:00:00.000Z", frozenAt: null, originAuthority: "DETRAN-SP",
+  custodySeqHead: 1, createdAt: "2026-09-01T10:00:00.000Z", custodyHashHead: "seal-01",
+  updatedAt: "2026-09-01T10:00:00.000Z",
+};
+
+function renderPanel(runs: readonly ChecklistRunSummaryItem[]): string {
+  return renderToString(<ChecklistRunsPanel runs={runs} loading={false} error={null} denied={false} onRetry={() => {}} />);
+}
+
+function trHtml(html: string, id: string): string {
+  const start = html.indexOf(`id="vistoria-${id}"`);
+  if (start === -1) return "";
+  const trStart = html.lastIndexOf("<tr", start);
+  const trEnd = html.indexOf("</tr>", start) + 5;
+  return html.slice(trStart, trEnd);
+}
+
+// ─────────────── T1–T3: adapter preserva os 3 campos ───────────────
+
+test("T1: adapter camelCase — 3 campos preservados", () => {
+  const [run] = adaptChecklistRunsResponse({
+    items: [{
+      id: "x", templateId: TEMPLATE_ID, templateVersion: 1, status: "completed",
+      startedAt: "2026-09-01T10:00:00.000Z", completedAt: null,
+      reopenedFromRunId: null, supersededByRunId: "y", currentRunId: "z",
+    }],
+  });
+  assert.strictEqual(run.reopenedFromRunId, null);
+  assert.strictEqual(run.supersededByRunId, "y");
+  assert.strictEqual(run.currentRunId, "z");
+});
+
+test("T2: adapter snake_case — 3 campos preservados", () => {
+  const [run] = adaptChecklistRunsResponse({
+    items: [{
+      id: "x", template_id: TEMPLATE_ID, template_version: 1, status: "completed",
+      started_at: "2026-09-01T10:00:00.000Z", completed_at: null,
+      reopened_from_run_id: "prev", superseded_by_run_id: null, current_run_id: null,
+    }],
+  });
+  assert.strictEqual(run.reopenedFromRunId, "prev");
+  assert.strictEqual(run.supersededByRunId, null);
+  assert.strictEqual(run.currentRunId, null);
+});
+
+// Item que passa pelo filtro id/templateId/startedAt, com as 12 chaves do contrato (as 3 de versão em null).
+function contractItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: "x", templateId: TEMPLATE_ID, templateName: null, templateVersion: 1, status: "completed",
+    relatedEntityType: null, relatedEntityId: null, startedAt: "2026-09-01T10:00:00.000Z", completedAt: null,
+    reopenedFromRunId: null, supersededByRunId: null, currentRunId: null,
+    ...overrides,
+  };
+}
+const VERSION_KEYS = ["reopenedFromRunId", "supersededByRunId", "currentRunId"] as const;
+
+test("T3′: adapter — chave de versão AUSENTE lança ChecklistRunContractError; null explícito → null (camel e snake)", () => {
+  for (const key of VERSION_KEYS) {
+    const item = contractItem();
+    delete item[key];
+    assert.throws(
+      () => adaptChecklistRunsResponse({ items: [item] }),
+      (error: unknown) => error instanceof ChecklistRunContractError && error.message === `campo de versão ausente: ${key}`,
+      `${key} ausente deve recusar a resposta`,
+    );
+  }
+  const [run] = adaptChecklistRunsResponse({ items: [contractItem()] });
+  assert.strictEqual(run.reopenedFromRunId, null);
+  assert.strictEqual(run.supersededByRunId, null);
+  assert.strictEqual(run.currentRunId, null);
+  const snake = contractItem();
+  delete snake.supersededByRunId;
+  snake.superseded_by_run_id = null;
+  const [runSnake] = adaptChecklistRunsResponse({ items: [snake] });
+  assert.strictEqual(runSnake.supersededByRunId, null, "superseded_by_run_id: null (snake) → null");
+});
+
+// ─────────────── T4: substituída não tem chip verde (vermelho-controle via fixture) ───────────────
+
+test("T4: substituída → 'Versão substituída', sem ui-tone-success, com 'Situação na época: Concluído'", () => {
+  const html = renderPanel([RUN_V1]);
+  const tr = trHtml(html, "run-v1");
+  assert.match(tr, /Versão substituída/, "deve conter chip 'Versão substituída'");
+  assert.doesNotMatch(tr, /ui-tone-success/, "NÃO deve ter tom de sucesso (seria bug — v1 é substituída)");
+  assert.match(tr, /Situação na época: Concluído/, "deve mostrar o status histórico");
+});
+
+// ─────────────── T5/T5b: substituída COM vigente na lista ───────────────
+
+test("T5: substituída com vigente na lista → frase + âncora; vigente aparece ACIMA (startedAt desc)", () => {
+  const html = renderPanel([RUN_U2, RUN_U1]); // adapter ordena startedAt DESC; u2 mais recente vem antes
+  const trU1 = trHtml(html, "run-u1");
+  assert.match(trU1, /Versão vigente:/, "deve ter frase da vigente");
+  assert.match(trU1, /href="#vistoria-run-u2"/, "âncora aponta a vigente (u2)");
+  assert.ok(html.indexOf("vistoria-run-u2") < html.indexOf("vistoria-run-u1"), "vigente (u2, mais recente) antes da substituída (u1)");
+});
+
+test("T5b: cadeia v1→v2→v3 com as três na lista — v1 aponta v3 (fim da cadeia), v2 aponta v3, v3 é 'Versão atual'", () => {
+  const html = renderPanel([RUN_V3, RUN_V2, RUN_V1]);
+  const trV1 = trHtml(html, "run-v1");
+  const trV2 = trHtml(html, "run-v2");
+  assert.match(trV1, /href="#vistoria-run-v3"/, "v1 aponta v3 (currentRunId), não v2");
+  assert.doesNotMatch(trV1, /href="#vistoria-run-v2"/, "v1 NÃO deve apontar v2");
+  assert.match(trV2, /href="#vistoria-run-v3"/, "v2 aponta v3");
+  assert.match(trHtml(html, "run-v3"), /Versão atual — substitui uma vistoria anterior/, "v3 é 'Versão atual'");
+  assert.match(trHtml(html, "run-v3"), /href="#vistoria-run-v2"/, "v3 tem link para a anterior (v2)");
+});
+
+// ─────────────── T6: substituída SEM vigente na lista ───────────────
+
+test("T6: substituída sem vigente na lista → frase fixa, nenhuma âncora href='#vistoria-'", () => {
+  const html = renderPanel([RUN_V1]); // v2/v3 não estão na lista
+  const trV1 = trHtml(html, "run-v1");
+  assert.match(trV1, /A versão vigente desta vistoria não está vinculada a este dossiê\./);
+  assert.doesNotMatch(trV1, /href="#vistoria-run-v3"/);
+  assert.doesNotMatch(trV1, /href="#vistoria-run-v2"/);
+});
+
+// ─────────────── T7/T7b: vigente nascida de reabertura ───────────────
+
+test("T7: vigente de reabertura sem anterior na lista → chip de status mantido + 'Versão atual', sem 'Ver versão anterior'", () => {
+  const html = renderPanel([RUN_U2]); // u1 não está na lista
+  const trU2 = trHtml(html, "run-u2");
+  assert.match(trU2, /Versão atual — substitui uma vistoria anterior/);
+  assert.match(trU2, /ui-tone-warning/, "chip de status mantido (completed_with_divergence → warning)");
+  assert.doesNotMatch(trU2, /Ver versão anterior/);
+});
+
+test("T7b: vigente de reabertura COM anterior na lista → 'Ver versão anterior' com âncora", () => {
+  const html = renderPanel([RUN_U1, RUN_U2]);
+  const trU2 = trHtml(html, "run-u2");
+  assert.match(trU2, /Ver versão anterior/);
+  assert.match(trU2, /href="#vistoria-run-u1"/);
+});
+
+// ─────────────── T8: única (null/null/null) — linha idêntica à de hoje ───────────────
+
+test("T8: vistoria única (sem reabertura) → sem 'Versão', sem âncora de versão", () => {
+  const html = renderPanel([RUN_UNICO]);
+  const tr = trHtml(html, "run-unico");
+  assert.doesNotMatch(tr, /Versão substituída/);
+  assert.doesNotMatch(tr, /Versão atual/);
+  assert.doesNotMatch(tr, /href="#vistoria-/);
+  assert.match(tr, /Concluído/); // chip de status normal
+});
+
+// ─────────────── T9: impressão com substituída ───────────────
+
+test("T9: DossiePrintDocument com substituída → 'Versão substituída' presente, sem ui-tone-success", () => {
+  const html = renderToString(
+    <DossiePrintDocument
+      process={PROCESS} issuedAt="2026-09-10T10:00:00.000Z" orgName="Org" yardName="Pátio"
+      currentSpot={null} inspection={null} verify={null} events={[]} statement={null}
+      canReadChecklist checklistRuns={[RUN_V1]} historyItems={[]}
+    />,
+  );
+  assert.match(html, /Versão substituída/);
+  const tr = trHtml(html, "run-v1");
+  assert.doesNotMatch(tr, /ui-tone-success/);
+});
+
+// ─────────────── T10: integração no modal ───────────────
+
+test("T10: VehicleDossieView aba checklist com substituída → texto presente; canReadChecklist=false → ausente", () => {
+  const baseProps: VehicleDossieViewProps = {
+    canRead: true, loading: false, error: null, notFound: false, process: PROCESS,
+    events: [], verify: null, inspection: null, yardName: "Pátio", currentSpot: null,
+    statement: null, statementLoading: false, statementError: null, statementDenied: false,
+    canCreateCharge: false, canTransition: false,
+    canReadChecklist: true, checklistRuns: [RUN_V1], checklistLoading: false, checklistError: null, checklistDenied: false,
+    historyItems: [], historyLoading: false, historyError: null,
+    context: {}, activeTab: "checklist", onTabChange: () => {}, onReload: () => {}, onReloadStatement: () => {},
+    onReloadChecklist: () => {}, onReloadHistory: () => {}, onReloadAll: () => {}, onLaunchCharge: () => {},
+    onPrint: () => {}, printReady: true,
+  };
+  const htmlWith = renderToString(<VehicleDossieView {...baseProps} />);
+  assert.match(htmlWith, /Versão substituída/);
+  const htmlWithout = renderToString(<VehicleDossieView {...baseProps} canReadChecklist={false} />);
+  assert.doesNotMatch(htmlWithout, /Versão substituída/);
+});
+
+// ─────────────── T11′: §allowlist — ids só em atributos, sem UUID/tenant como texto ───────────────
+
+function dossieViewProps(runs: readonly ChecklistRunSummaryItem[]): VehicleDossieViewProps {
+  return {
+    canRead: true, loading: false, error: null, notFound: false, process: PROCESS,
+    events: [], verify: null, inspection: null, yardName: "Pátio", currentSpot: null,
+    statement: null, statementLoading: false, statementError: null, statementDenied: false,
+    canCreateCharge: false, canTransition: false,
+    canReadChecklist: true, checklistRuns: runs, checklistLoading: false, checklistError: null, checklistDenied: false,
+    historyItems: [], historyLoading: false, historyError: null,
+    context: {}, activeTab: "checklist", onTabChange: () => {}, onReload: () => {}, onReloadStatement: () => {},
+    onReloadChecklist: () => {}, onReloadHistory: () => {}, onReloadAll: () => {}, onLaunchCharge: () => {},
+    onPrint: () => {}, printReady: true,
+  };
+}
+
+function renderPrint(runs: readonly ChecklistRunSummaryItem[]): string {
+  return renderToString(
+    <DossiePrintDocument
+      process={PROCESS} issuedAt="2026-09-10T10:00:00.000Z" orgName="Org" yardName="Pátio"
+      currentSpot={null} inspection={null} verify={null} events={[]} statement={null}
+      canReadChecklist checklistRuns={runs} historyItems={[]}
+    />,
+  );
+}
+
+function countOf(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+// Exclusividade de atributo: cada id de vistoria renderizado aparece SÓ como `id="<prefixo>-<id>"` ou `href="#<prefixo>-<id>"`
+// (nunca em title=, data-*, texto…); id referenciado mas não renderizado não aparece.
+function assertIdsOnlyInIdAndHref(html: string, prefix: string, rendered: readonly string[], absent: readonly string[], surface: string): void {
+  for (const id of rendered) {
+    const total = countOf(html, id);
+    const asId = countOf(html, `id="${prefix}-${id}"`);
+    const asHref = countOf(html, `href="#${prefix}-${id}"`);
+    assert.strictEqual(asId, 1, `${surface}: ${id} deve sair uma vez como id="${prefix}-${id}"`);
+    assert.strictEqual(total, asId + asHref, `${surface}: ${id} aparece ${total}× mas só ${asId} como id e ${asHref} como href`);
+  }
+  for (const id of absent) assert.strictEqual(countOf(html, id), 0, `${surface}: ${id} não está na lista e não deve aparecer`);
+}
+
+test("T11′: HTML sem tags não casa UUID nem 'tenant'/'work_order'; ids só em id=/href= nas 3 superfícies", () => {
+  const html = renderPanel([RUN_V1, RUN_U1, RUN_U2]);
+  // exclusividade de atributo nas 3 superfícies (painel, impressão com idPrefix, VehicleDossieView)
+  const surfaces: readonly [string, string, string][] = [
+    ["painel", "vistoria", html],
+    ["impressão", "vistoria-impressa", renderPrint([RUN_V1, RUN_U1, RUN_U2])],
+    ["VehicleDossieView", "vistoria", renderToString(<VehicleDossieView {...dossieViewProps([RUN_V1, RUN_U1, RUN_U2])} />)],
+  ];
+  for (const [surface, prefix, surfaceHtml] of surfaces) {
+    assertIdsOnlyInIdAndHref(surfaceHtml, prefix, ["run-v1", "run-u1", "run-u2"], ["run-v2", "run-v3"], surface);
+    assert.doesNotMatch(surfaceHtml.replace(/<[^>]*>/g, " "), /run-v1|run-u1|run-u2/, `${surface}: id não-UUID fora do texto`);
+  }
+  // sem tags, nenhum UUID aparece como texto
+  const textOnly = html.replace(/<[^>]*>/g, " ");
+  assert.doesNotMatch(textOnly, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  assert.doesNotMatch(textOnly, /\btenant\b/i);
+  assert.doesNotMatch(textOnly, /work_order/);
+  // com tags, ids aparecem apenas em id=" e href="#
+  assert.match(html, /id="vistoria-run-v1"/);
+  assert.match(html, /href="#vistoria-run-u2"/);
+  // ids não-UUID usados no teste não disparam falso positivo
+  assert.doesNotMatch(textOnly, /run-v1|run-u1|run-u2/);
+  // Teste extra com UUID real: o id fica em atributo, não em texto
+  const uuidRun: ChecklistRunSummaryItem = {
+    id: TEMPLATE_ID, templateId: TEMPLATE_ID, templateName: "Teste UUID",
+    templateVersion: 1, status: "completed", relatedEntityType: null, relatedEntityId: null,
+    startedAt: "2026-09-01T10:00:00.000Z", completedAt: null,
+    reopenedFromRunId: null, supersededByRunId: null, currentRunId: null,
+  };
+  const htmlUuid = renderPanel([uuidRun]);
+  const textUuid = htmlUuid.replace(/<[^>]*>/g, " ");
+  assert.doesNotMatch(textUuid, /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i, "UUID não deve aparecer como texto");
+  assert.match(htmlUuid, new RegExp(`id="vistoria-${TEMPLATE_ID}"`), "UUID aparece como atributo id");
+});
+
+// ─────────────── T15–T16: valor inválido fica do lado fechado, do adapter ao service ───────────────
+
+test("T15: adapter — valor inválido em cada chave de versão lança; item sem id e sem as chaves é descartado sem lançar", () => {
+  for (const key of VERSION_KEYS) {
+    for (const invalid of ["", 42, { id: "run-u2" }] as const) {
+      assert.throws(
+        () => adaptChecklistRunsResponse({ items: [contractItem({ [key]: invalid })] }),
+        (error: unknown) => error instanceof ChecklistRunContractError && error.message === `campo de versão inválido: ${key}`,
+        `${key}=${JSON.stringify(invalid)} deve recusar a resposta`,
+      );
+    }
+  }
+  const semIdSemChaves = { templateId: TEMPLATE_ID, templateVersion: 1, status: "completed", startedAt: "2026-09-01T10:00:00.000Z" };
+  assert.deepEqual(adaptChecklistRunsResponse({ items: [semIdSemChaves] }), [], "item irrenderizável segue descartado (não lança)");
+});
+
+test("T16: service — resposta sem currentRunId REJEITA com ChecklistRunContractError; com as 12 chaves resolve 2 runs", async () => {
+  const g = globalThis as unknown as { window?: { localStorage?: unknown; dispatchEvent?: unknown } };
+  const hadWindow = "window" in g;
+  const previousMocks = process.env.VITE_USE_MOCKS;
+  const originalFetch = globalThis.fetch;
+  g.window ??= {};
+  g.window.localStorage ??= { getItem: () => null, setItem: () => undefined, removeItem: () => undefined };
+  g.window.dispatchEvent ??= () => true;
+  process.env.VITE_USE_MOCKS = "false";
+  const u1 = { ...RUN_U1 } as Record<string, unknown>;
+  const u2 = { ...RUN_U2 } as Record<string, unknown>;
+  const u1SemCurrent = { ...u1 };
+  delete u1SemCurrent.currentRunId;
+  let body: unknown = { data: { items: [u1SemCurrent, u2] } };
+  globalThis.fetch = (async () => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
+  try {
+    const { listProcessChecklistRuns } = await import("../src/modules/patios/processes/processes.service");
+    await assert.rejects(() => listProcessChecklistRuns({}, "p1"), (error: unknown) => error instanceof ChecklistRunContractError);
+    body = { data: { items: [u1, u2] } };
+    const runs = await listProcessChecklistRuns({}, "p1");
+    assert.strictEqual(runs.length, 2);
+    assert.strictEqual(runs[0].id, "run-u2", "vigente (mais recente) primeiro");
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (previousMocks === undefined) delete process.env.VITE_USE_MOCKS; else process.env.VITE_USE_MOCKS = previousMocks;
+    if (!hadWindow) delete g.window;
+  }
+});
+
+// ─────────────── T17–T19: links com afordância, ids únicos na impressão, âncora que não navega ───────────────
+
+test("T17: painel B1/B3 — os dois links saem com class=\"pat-link\" e href=\"#vistoria-…\"; nenhum <a sem pat-link nas linhas", () => {
+  const html = renderPanel([RUN_U2, RUN_U1]);
+  const anchors = html.match(/<a\b[^>]*>/g) ?? [];
+  assert.strictEqual(anchors.length, 2, "Ver versão anterior (u2) e Ver versão vigente (u1)");
+  for (const anchor of anchors) {
+    assert.match(anchor, /class="pat-link"/, `link sem o idioma da casa: ${anchor}`);
+    assert.match(anchor, /href="#vistoria-run-u[12]"/, `link sem âncora de versão: ${anchor}`);
+  }
+  assert.match(trHtml(html, "run-u1"), /<a class="pat-link" href="#vistoria-run-u2">/);
+  assert.match(trHtml(html, "run-u2"), /<a class="pat-link" href="#vistoria-run-u1">/);
+});
+
+test("T18: impressão com substituída e vigente — ids com prefixo vistoria-impressa; o painel puro mantém vistoria-", () => {
+  const htmlPrint = renderPrint([RUN_U2, RUN_U1]);
+  assert.match(htmlPrint, /id="vistoria-impressa-run-u1"/);
+  assert.match(htmlPrint, /href="#vistoria-impressa-run-u2"/);
+  assert.doesNotMatch(htmlPrint, /id="vistoria-run-/, "a impressão não repete o id do painel do modal");
+  assert.match(renderPanel([RUN_U2, RUN_U1]), /id="vistoria-run-u1"/);
+});
+
+test("T19: focusVersionRow — com alvo previne, centraliza e foca uma vez cada; sem alvo não previne e devolve null", () => {
+  const calls = { preventDefault: 0, scrollIntoView: [] as unknown[], focus: [] as unknown[], selectors: [] as string[] };
+  const target = {
+    scrollIntoView: (options?: unknown) => { calls.scrollIntoView.push(options); },
+    focus: (options?: unknown) => { calls.focus.push(options); },
+  };
+  const event = { preventDefault: () => { calls.preventDefault++; } };
+  const found = focusVersionRow(event, { querySelector: (selector: string) => { calls.selectors.push(selector); return target; } }, "vistoria-run-u2");
+  assert.strictEqual(found, "vistoria-run-u2");
+  assert.strictEqual(calls.preventDefault, 1);
+  assert.deepEqual(calls.scrollIntoView, [{ block: "center" }]);
+  assert.deepEqual(calls.focus, [{ preventScroll: true }]);
+  assert.deepEqual(calls.selectors, ['[id="vistoria-run-u2"]'], "procura pelo id dentro do escopo");
+
+  let prevented = 0;
+  const missing = focusVersionRow({ preventDefault: () => { prevented++; } }, { querySelector: () => null }, "vistoria-run-zz");
+  assert.strictEqual(missing, null);
+  assert.strictEqual(prevented, 0, "sem alvo, o href nativo vale (nada é prevenido)");
+});
+
+// ─────────────── T12–T14: guard gerado (CE-G1) ───────────────
+
+const _dir = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(_dir, "../..");
+const FRONTEND_ROOT = resolve(_dir, "..");
+const CENSO_SCRIPT = join(REPO_ROOT, "scripts", "san3-11-dossie-vistoria-censo.mjs");
+
+function runCenso(root: string, env?: Record<string, string>): { exitCode: number; stdout: string } {
+  const result = spawnSync(process.execPath, [CENSO_SCRIPT, root], {
+    env: { ...process.env, TS_ROOT: FRONTEND_ROOT, ...env },
+    encoding: "utf8",
+    // SEM teto (ERRATA 1, §15.2 P-A): o relógio não é veredito. O tempo é do runner/CI, de fora, e uma morte lá aparece como morte.
+  });
+  if (result.error) throw new Error(`gerador não executou: ${result.error.message}`);
+  if (result.status === null) throw new Error(`gerador morto por sinal ${result.signal} — não é veredito (ERRATA 1)`);
+  return { exitCode: result.status, stdout: result.stdout ?? "" };
+}
+
+// Mutação de texto-fonte em qualquer EOL de checkout, com PROVA de que aplicou antes de o gerador correr (ERRATA 1, §15.2 P-B).
+function mutate(path: string, fn: (src: string) => string): void {
+  const original = readFileSync(path, "utf8").replace(/\r\n/g, "\n"); // qualquer EOL de checkout → LF (ERRATA 1, P-B)
+  const mutated = fn(original);
+  if (mutated === original) throw new Error(`mutação não aplicou em ${path} (ERRATA 1)`);
+  writeFileSync(path, mutated);
+}
+
+test("T12: gerador no head → descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0, exit 0", () => {
+  const { exitCode, stdout } = runCenso(REPO_ROOT);
+  assert.match(stdout, /DESCARTADAS pelo espelho \(0\): ∅/, "espelho sem descarte");
+  assert.match(stdout, /DESCARTADAS pelo adapter \(0\): ∅/, "adapter sem descarte");
+  assert.match(stdout, /SEM EMISSOR no espelho \(0\): ∅/, "espelho sem chave sem emissor");
+  assert.match(stdout, /SEM EMISSOR no adapter \(0\): ∅/, "adapter sem chave sem emissor");
+  assert.match(stdout, /L0 VAZIO \(emissor ilegível\): não/, "emissor legível");
+  assert.match(stdout, /pontos sem consulta=0/, "nenhum ponto sem consulta");
+  assert.match(stdout, /descartadas=0 · sem emissor=0 · L0 vazio=0 · pontos sem consulta=0 /, "veredito do gerador v2 todo em zero");
+  assert.strictEqual(exitCode, 0, `gerador deve sair 0; stdout:\n${stdout}`);
+});
+
+test("T13: mutação 1 — ponto novo sem consulta em DossiePrintDocument → gerador exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    // Copia apenas os arquivos que o gerador lê
+    cpSync(join(REPO_ROOT, "src", "modules", "impound", "impound.checklist-link.dto.ts"),
+      join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts"), { recursive: true });
+    cpSync(join(REPO_ROOT, "frontend", "src"), join(tmp, "frontend", "src"), { recursive: true });
+    writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
+    // Injeta ponto de apresentação sem consulta em DossiePrintDocument — UMA mutação, sobre o elemento real (runs=), com prova (ERRATA 1)
+    const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
+    mutate(printPath, (s) => s.replace(/(<ChecklistRunsPanel[^>]*\/>)/, `$1\n{checklistRuns.map((run) => React.createElement("span", {key: run.id}, run.status))}`));
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.strictEqual(exitCode, 1, `mutação 1 deve deixar gerador vermelho; stdout:\n${stdout}`);
+    assert.match(stdout, /pontos sem consulta=[1-9]/, "deve reportar ponto sem consulta");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("T14: mutação 2 — adapter sem supersededByRunId → DESCARTADAS pelo adapter (1), exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    cpSync(join(REPO_ROOT, "src", "modules", "impound", "impound.checklist-link.dto.ts"),
+      join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts"), { recursive: true });
+    cpSync(join(REPO_ROOT, "frontend", "src"), join(tmp, "frontend", "src"), { recursive: true });
+    writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
+    // Remove supersededByRunId do adapter
+    const adapterPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "processes.adapter.ts");
+    mutate(adapterPath, (s) => s.replace(/\s*supersededByRunId:.*\n/, "\n"));
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.strictEqual(exitCode, 1, `mutação 2 deve deixar gerador vermelho; stdout:\n${stdout}`);
+    assert.match(stdout, /DESCARTADAS pelo adapter \([1-9]/, "deve reportar chave descartada");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── T20–T22: o gerador v2 vê o emissor (P-L0) e a vistoria pelo tipo (P-L3) ───────────────
+
+// Copia o que o gerador lê (o mesmo que T13/T14): o DTO, frontend/src e o package.json; o TS_ROOT é o frontend real.
+function copyCensoInputs(tmp: string): void {
+  cpSync(join(REPO_ROOT, "src", "modules", "impound", "impound.checklist-link.dto.ts"),
+    join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts"), { recursive: true });
+  cpSync(join(REPO_ROOT, "frontend", "src"), join(tmp, "frontend", "src"), { recursive: true });
+  writeFileSync(join(tmp, "frontend", "package.json"), readFileSync(join(FRONTEND_ROOT, "package.json")));
+}
+
+test("T20: gerador — DTO sem currentRunId → SEM EMISSOR no espelho (1): currentRunId, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const dtoPath = join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts");
+    mutate(dtoPath, (s) => s.replace(/ *currentRunId: run\.currentRunId \?\? null,/, ""));
+    assert.doesNotMatch(readFileSync(dtoPath, "utf8"), /currentRunId: run\.currentRunId/, "a chave saiu do emissor");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# SEM EMISSOR no espelho \(1\): currentRunId/, "espelho declara chave que o emissor não emite");
+    assert.match(stdout, /# SEM EMISSOR no adapter \(1\): currentRunId/, "adapter consome chave que o emissor não emite");
+    assert.strictEqual(exitCode, 1, `DTO sem currentRunId deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+const IMPORT_MODAL = 'import { getVehicleLabel } from "../processes.adapter";';
+const IMPORT_MODAL_M2 = 'import { getChecklistRunStatusLabel, getVehicleLabel } from "../processes.adapter";';
+const PONTO_M2 = "{checklistRuns.map((vistoria) => <p key={vistoria.id}>{getChecklistRunStatusLabel(vistoria.status)}</p>)}";
+
+test("T21: gerador — ponto novo com receptor 'vistoria' ao lado do painel no modal → receptor=vistoria … NÃO, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const modalPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "VehicleDossieModal.tsx");
+    mutate(modalPath, (s) => s.replace(IMPORT_MODAL, IMPORT_MODAL_M2).replace(/<ChecklistRunsPanel[^>]*\/>/, (panel) => "<>" + panel + PONTO_M2 + "</>"));
+    const mutated = readFileSync(modalPath, "utf8");
+    assert.ok(mutated.includes(IMPORT_MODAL_M2) && mutated.includes(PONTO_M2), "as duas partes da mutação aplicaram");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /VehicleDossieModal\.tsx:\d+ \| receptor=vistoria \| tipo vistoria: sim \| .* \| consulta substituição: NÃO/, "o ponto novo é visto pelo TIPO, não pelo nome");
+    assert.strictEqual(exitCode, 1, `receptor 'vistoria' sem consulta deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("T22: gerador — emissor com Object.freeze (ilegível) → L0 VAZIO (emissor ilegível): SIM, exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+    const dtoPath = join(tmp, "src", "modules", "impound", "impound.checklist-link.dto.ts");
+    // Só a abertura muda: o parêntese de agrupamento `({` vira `Object.freeze({`, e o fecho `})),` já fecha os dois —
+    // o emissor fica com o MESMO comportamento e a forma deixa de ser um literal de objeto (M6 do §16).
+    mutate(dtoPath, (s) => s.replace("runs.map((run) => ({", "runs.map((run) => Object.freeze({"));
+    assert.match(readFileSync(dtoPath, "utf8"), /runs\.map\(\(run\) => Object\.freeze\(\{/, "a abertura mudou");
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# L0 VAZIO \(emissor ilegível\): SIM/, "emissor ilegível é vermelho");
+    assert.strictEqual(exitCode, 1, `L0 vazio deixa o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── T23–T24: P-L3 fail-closed para ElementAccess e conjuntos vazios ───────────────
+
+// Cada variante é uma apresentação COMPILÁVEL da situação de uma vistoria, sem decisão de versão, inserida em
+// DossiePrintDocument (dentro de um fragmento, ao lado do painel). V1 é a do plano (§17.2); V2–V6 são a MESMA propriedade
+// por outras grafias que o checker resolve — chave por tipo literal, a mesma linha de um ponto guardado, helper por alias de
+// import, desestruturação e const local. A compilação de todas foi medida com `tsc` (relatório do dev, ciclo 3).
+const T23_VARIANTS: ReadonlyArray<{ readonly name: string; readonly jsx: string; readonly header?: string; readonly body?: string; readonly line: RegExp }> = [
+  {
+    name: "V1 índice literal",
+    jsx: '{checklistRuns.map((run) => <span key={run.id}>{run["status"]}</span>)}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\["status"\] \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V2 chave const de tipo literal",
+    jsx: '{checklistRuns.map((run) => { const chave = "status" as const; return <span key={run.id}>{run[chave]}</span>; })}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\[chave\] \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V3 mesma linha de um ponto guardado",
+    jsx: '{checklistRuns.map((run) => <span key={run.id}>{run.supersededByRunId ? "substituída" : run.status}{run.status}</span>)}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\.status \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V4 helper por alias de import + desestruturação",
+    header: 'import { getChecklistRunStatusLabel as rotuloDaSituacao } from "../processes.adapter";\n',
+    jsx: "{checklistRuns.map(({ id, status }) => <span key={id}>{rotuloDaSituacao(status)}</span>)}",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=\{ id, status \} \| tipo vistoria: sim \| rotuloDaSituacao\(status\) \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V5 desestruturação renomeada",
+    jsx: "{checklistRuns.map(({ id, status: situacao }) => <span key={id}>{situacao}</span>)}",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=\{ id, status: situacao \} \| tipo vistoria: sim \| situacao \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V6 const local fora do JSX",
+    body: "  const situacaoDaPrimeira = checklistRuns[0]?.status;\n",
+    jsx: "<span>{situacaoDaPrimeira}</span>",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=checklistRuns\[0\] \| tipo vistoria: sim \| situacaoDaPrimeira \| consulta substituição: NÃO/,
+  },
+];
+
+test("T23: gerador — situação de vistoria fora de decisão de versão, por índice e por toda grafia que o checker resolve → ponto nominal NÃO, exit 1", () => {
+  const escapes: string[] = []; // variante que o gerador deixou passar — nominal, para o vermelho dizer QUAL grafia escapou
+  for (const variant of T23_VARIANTS) {
+    const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+    try {
+      copyCensoInputs(tmp);
+      const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
+      mutate(printPath, (source) => {
+        let next = source.replace(/(<ChecklistRunsPanel[^>]*\/>)/, (panel) => `<>${panel}${variant.jsx}</>`);
+        if (variant.header) next = variant.header + next;
+        if (variant.body) next = next.replace("\n  return (\n", `\n${variant.body}  return (\n`);
+        return next;
+      });
+      const mutated = readFileSync(printPath, "utf8");
+      assert.ok(mutated.includes(variant.jsx), `${variant.name}: a apresentação foi inserida`);
+      if (variant.header) assert.ok(mutated.startsWith(variant.header), `${variant.name}: o import foi inserido`);
+      if (variant.body) assert.ok(mutated.includes(variant.body), `${variant.name}: a const foi inserida`);
+
+      const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+      if (!variant.line.test(stdout) || exitCode !== 1) {
+        escapes.push(`${variant.name} (exit ${exitCode}; linha nominal NÃO ${variant.line.test(stdout) ? "presente" : "AUSENTE"})`);
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+  assert.deepStrictEqual(escapes, [], `toda apresentação sem decisão de versão deixa o gerador vermelho, com a linha nominal; escaparam: ${escapes.join(" · ")}`);
+});
+
+test("T24: gerador — conjuntos efetivos L3/L4 vazios → diagnósticos explícitos e exit 1", () => {
+  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+  try {
+    copyCensoInputs(tmp);
+
+    const panelPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "ChecklistRunsPanel.tsx");
+    // L3 vazio de verdade: as apresentações da situação saem (texto fixo, compilável). Alias de import + desestruturação já
+    // NÃO esvaziam L3 desde o ciclo 3 — o checker os resolve (T23 V4/V5); por isso a mutação é a remoção, não o disfarce.
+    mutate(panelPath, (source) => source
+      .replace(/getChecklistRunStatusLabel\(run\.status\)/g, '"—"')
+      .replace(/getChecklistRunStatusTone\(run\.status\)/g, '"default"'));
+    assert.doesNotMatch(
+      readFileSync(panelPath, "utf8"),
+      /getChecklistRunStatus(?:Label|Tone)\(|run\.status/,
+      "os pontos conhecidos de L3 saíram (texto fixo compilável no lugar)",
+    );
+
+    const consumers = [
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx"),
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "VehicleDossieModal.tsx"),
+      join(tmp, "frontend", "src", "modules", "patios", "processes", "pages", "ProcessoDossiePage.tsx"),
+    ];
+    for (const consumerPath of consumers) {
+      mutate(consumerPath, (source) => source
+        .replace(/import \{ ChecklistRunsPanel \} from ("[^"\n]+";)/, "import { ChecklistRunsPanel as RunsPanel } from $1")
+        .replace(/<ChecklistRunsPanel/g, "<RunsPanel"));
+      assert.doesNotMatch(readFileSync(consumerPath, "utf8"), /<ChecklistRunsPanel/, `${consumerPath}: consumidor conhecido saiu`);
+    }
+
+    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+    assert.match(stdout, /# L3 VAZIO: SIM/, "L3 vazio deve ter diagnóstico próprio");
+    assert.match(stdout, /# L4 VAZIO: SIM/, "L4 vazio deve ter diagnóstico próprio");
+    assert.strictEqual(exitCode, 1, `L3/L4 vazios deixam o gerador vermelho; stdout:\n${stdout}`);
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+// ─────────────── T25–T26: transição real fetch → apiRequest → service → hook → três superfícies, com EFEITOS ───────────────
+// §17.3 (P-F2a/P-F2b). ZERO dependência nova — o mesmo contrato de tests/work-orders-page-live.test.tsx: DOM mínimo escrito
+// aqui, instalado só quando T25/T26 rodam (T1–T24 seguem em SSR, sem `window`) e ANTES do import de `react-dom/client`;
+// o único dublê é o `fetch` (a borda de rede); o intervalo do auto-refresh é CAPTURADO e o teste dispara o tick (o 2º plano
+// real: `useAutoRefresh` → `reload(true)`). As superfícies são as dos consumidores reais: o modal (`VehicleDossieView`, que o
+// `VehicleDossieModal` alimenta com o hook), a página (o painel com as props que `ProcessoDossiePage` passa) e a impressão
+// (`DossiePrintDocument`, que recebe as runs do mesmo hook e nunca mostra erro — nela a prova é zero linha).
+
+type MiniListener = (event: unknown) => void;
+const MINI_HTML_NS = "http://www.w3.org/1999/xhtml";
+
+class MiniNode {
+  childNodes: MiniNode[] = [];
+  parentNode: MiniNode | null = null;
+  readonly listeners = new Map<string, Set<MiniListener>>();
+  constructor(public nodeType: number, public nodeName: string, public ownerDocument: MiniDocument | null) {}
+  get firstChild(): MiniNode | null { return this.childNodes[0] ?? null; }
+  get lastChild(): MiniNode | null { return this.childNodes[this.childNodes.length - 1] ?? null; }
+  get nextSibling(): MiniNode | null {
+    const siblings = this.parentNode?.childNodes;
+    return siblings ? siblings[siblings.indexOf(this) + 1] ?? null : null;
+  }
+  get previousSibling(): MiniNode | null {
+    const siblings = this.parentNode?.childNodes;
+    return siblings ? siblings[siblings.indexOf(this) - 1] ?? null : null;
+  }
+  get parentElement(): MiniNode | null { return this.parentNode && this.parentNode.nodeType === 1 ? this.parentNode : null; }
+  appendChild<T extends MiniNode>(child: T): T {
+    child.parentNode?.removeChild(child);
+    child.parentNode = this;
+    this.childNodes.push(child);
+    return child;
+  }
+  insertBefore<T extends MiniNode>(child: T, reference: MiniNode | null): T {
+    if (!reference) return this.appendChild(child);
+    child.parentNode?.removeChild(child);
+    this.childNodes.splice(this.childNodes.indexOf(reference), 0, child);
+    child.parentNode = this;
+    return child;
+  }
+  removeChild<T extends MiniNode>(child: T): T {
+    const index = this.childNodes.indexOf(child);
+    if (index >= 0) this.childNodes.splice(index, 1);
+    child.parentNode = null;
+    return child;
+  }
+  contains(node: MiniNode | null): boolean {
+    for (let current = node; current; current = current.parentNode) if (current === this) return true;
+    return false;
+  }
+  get textContent(): string { return this.childNodes.map((child) => child.textContent).join(""); }
+  set textContent(value: string | null) {
+    for (const child of this.childNodes) child.parentNode = null;
+    this.childNodes = [];
+    if (value !== "" && value != null) this.appendChild(this.ownerDocument!.createTextNode(String(value)));
+  }
+  addEventListener(type: string, listener: MiniListener): void {
+    const set = this.listeners.get(type) ?? new Set<MiniListener>();
+    set.add(listener);
+    this.listeners.set(type, set);
+  }
+  removeEventListener(type: string, listener: MiniListener): void { this.listeners.get(type)?.delete(listener); }
+}
+
+class MiniText extends MiniNode {
+  constructor(public data: string, doc: MiniDocument) { super(3, "#text", doc); }
+  get nodeValue(): string { return this.data; }
+  set nodeValue(value: string) { this.data = String(value); }
+  override get textContent(): string { return this.data; }
+  override set textContent(value: string | null) { this.data = String(value); }
+}
+
+class MiniComment extends MiniNode {
+  constructor(public data: string, doc: MiniDocument) { super(8, "#comment", doc); }
+  override get textContent(): string { return ""; }
+  override set textContent(_value: string | null) { /* comentário não tem texto visível */ }
+}
+
+class MiniElement extends MiniNode {
+  readonly tagName: string;
+  readonly localName: string;
+  readonly attributes = new Map<string, string>();
+  readonly style: Record<string, string> = {};
+  constructor(tag: string, doc: MiniDocument, readonly namespaceURI = MINI_HTML_NS) {
+    super(1, namespaceURI === MINI_HTML_NS ? tag.toUpperCase() : tag, doc);
+    this.tagName = this.nodeName;
+    this.localName = tag;
+    Object.defineProperty(this.style, "setProperty", { value: (key: string, value: string) => void (this.style[key] = value) });
+    Object.defineProperty(this.style, "removeProperty", { value: (key: string) => void delete this.style[key] });
+  }
+  setAttribute(name: string, value: unknown): void { this.attributes.set(name, String(value)); }
+  getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; }
+  hasAttribute(name: string): boolean { return this.attributes.has(name); }
+  removeAttribute(name: string): void { this.attributes.delete(name); }
+  setAttributeNS(_ns: string | null, name: string, value: unknown): void { this.setAttribute(name, value); }
+  removeAttributeNS(_ns: string | null, name: string): void { this.removeAttribute(name); }
+  focus(): void {}
+  blur(): void {}
+}
+
+class MiniDocument extends MiniNode {
+  documentElement!: MiniElement;
+  body!: MiniElement;
+  activeElement!: MiniElement;
+  hidden = false;
+  defaultView: unknown = null;
+  constructor() { super(9, "#document", null); }
+  createElement(tag: string): MiniElement { return new MiniElement(tag, this); }
+  createElementNS(ns: string, tag: string): MiniElement { return new MiniElement(tag, this, ns); }
+  createTextNode(text: unknown): MiniText { return new MiniText(String(text), this); }
+  createComment(text: string): MiniComment { return new MiniComment(text, this); }
+}
+
+type MiniDom = {
+  readonly doc: MiniDocument;
+  readonly storage: Map<string, string>;
+  readonly intervals: Array<{ fn: (() => void) | null; ms: number }>;
+};
+let miniDom: MiniDom | null = null;
+const miniDomPrevious = new Map<string, PropertyDescriptor | undefined>();
+
+function installMiniDom(): MiniDom {
+  if (miniDom) return miniDom;
+  const doc = new MiniDocument();
+  doc.documentElement = doc.appendChild(new MiniElement("html", doc));
+  doc.body = doc.documentElement.appendChild(new MiniElement("body", doc));
+  doc.activeElement = doc.body;
+  const storage = new Map<string, string>();
+  const intervals: MiniDom["intervals"] = [];
+  const win = {
+    document: doc,
+    event: undefined as unknown,
+    HTMLIFrameElement: class {},
+    navigator: { userAgent: "node" },
+    location: { href: "http://localhost/", pathname: "/", search: "", hash: "" },
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: unknown) => void storage.set(key, String(value)),
+      removeItem: (key: string) => void storage.delete(key),
+      clear: () => storage.clear(),
+    },
+    addEventListener: (type: string, listener: MiniListener) => doc.addEventListener(type, listener),
+    removeEventListener: (type: string, listener: MiniListener) => doc.removeEventListener(type, listener),
+    dispatchEvent: (event: { type: string }) => {
+      for (const listener of doc.listeners.get(event.type) ?? []) listener(event);
+      return true;
+    },
+    // intervalo CAPTURADO: nunca dispara sozinho — o teste aciona o tick do auto-refresh quando quer o 2º plano
+    setInterval: (fn: () => void, ms: number) => intervals.push({ fn, ms }),
+    clearInterval: (id: number) => { if (intervals[id - 1]) intervals[id - 1].fn = null; },
+    setTimeout: globalThis.setTimeout.bind(globalThis),
+    clearTimeout: globalThis.clearTimeout.bind(globalThis),
+    getComputedStyle: () => ({ getPropertyValue: () => "" }),
+    matchMedia: () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    scrollTo: () => {},
+  };
+  doc.defaultView = win;
+  const define = (key: string, value: unknown) => {
+    miniDomPrevious.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
+    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
+  };
+  define("window", win);
+  define("document", doc);
+  if (typeof (globalThis as { navigator?: unknown }).navigator === "undefined") define("navigator", win.navigator); // Node 20
+  define("IS_REACT_ACT_ENVIRONMENT", true);
+  miniDom = { doc, storage, intervals };
+  return miniDom;
+}
+
+after(() => {
+  for (const [key, descriptor] of miniDomPrevious) {
+    if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+    else delete (globalThis as Record<string, unknown>)[key];
+  }
+});
+
+function miniElements(root: MiniNode, match: (el: MiniElement) => boolean, acc: MiniElement[] = []): MiniElement[] {
+  for (const child of root.childNodes) {
+    if (child instanceof MiniElement) {
+      if (match(child)) acc.push(child);
+      miniElements(child, match, acc);
+    }
+  }
+  return acc;
+}
+
+type TransitionScenario = "valid" | "contract-invalid" | "transient";
+type Surface = "modal" | "pagina" | "impressao";
+// `alerts` = os TÍTULOS dos Alert (o <strong> de `ui-alert`): a mensagem do hook ("Não foi possível carregar os checklists do
+// guincho.") aparece nos DOIS alertas, então o que distingue o destrutivo do aviso é o título, não o texto solto.
+type SurfaceRead = { readonly rows: number; readonly text: string; readonly retry: number; readonly alerts: readonly string[] };
+
+const TRANSITION_PROCESS_ID = "process-ciclo-3";
+const TRANSITION_ROUTE = new RegExp(`/impound-processes/${TRANSITION_PROCESS_ID}/checklist-runs(\\?|$)`);
+const DESTRUCTIVE_ERROR = "Não foi possível carregar os checklists";
+const BACKGROUND_WARNING = "Atualização em segundo plano falhou";
+
+function transitionResponse(scenario: TransitionScenario): Response {
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  // `sendRouteError` — o 500 genérico do backend: falha OPERACIONAL, não contratual
+  if (scenario === "transient") return json(500, { error: { code: "INTERNAL_SERVER_ERROR", reason: "unknown_error", message: "Unexpected error." } });
+  const item = { ...RUN_U1 } as Record<string, unknown>;
+  if (scenario === "contract-invalid") delete item.currentRunId; // 200 idêntico, sem uma das três chaves de versão
+  return json(200, { data: { items: [item] } });
+}
+
+type TransitionTools = {
+  setScenario(next: TransitionScenario): void;
+  read(): Record<Surface, SurfaceRead>;
+  backgroundTick(): Promise<void>;
+};
+
+/**
+ * Monta as três superfícies sobre UM hook real, a partir de uma resposta válida, e entrega o leitor e o tick do 2º plano.
+ * Cada caso desmonta (inclusive quando uma asserção falha) e restaura `fetch` e `VITE_USE_MOCKS`.
+ */
+async function withChecklistTransition(body: (tools: TransitionTools) => Promise<void>): Promise<void> {
+  const dom = installMiniDom();
+  const { createRoot } = await import("react-dom/client");
+  const { AuthProvider } = await import("../src/providers/AuthProvider");
+  const { TenantProvider } = await import("../src/providers/TenantProvider");
+  const { PermissionProvider } = await import("../src/providers/PermissionProvider");
+  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { mockSession } = await import("../src/mocks/auth/context");
+  const { useProcessChecklistRuns } = await import("../src/modules/patios/processes/useProcessChecklistRuns");
+  const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
+  type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
+  const act = (React as unknown as { act?: ActFn }).act;
+  if (typeof act !== "function") throw new Error("React.act ausente (build de produção?) — o arnês não roda efeitos sem ele");
+  const settle = async () => {
+    for (let round = 0; round < 3; round += 1) await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+  };
+
+  let scenario: TransitionScenario = "valid";
+  const originalFetch = globalThis.fetch;
+  const previousMocks = process.env.VITE_USE_MOCKS;
+  process.env.VITE_USE_MOCKS = "false";
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (!TRANSITION_ROUTE.test(url)) throw new Error(`rota não prevista no stub de fetch: ${url}`);
+    return transitionResponse(scenario);
+  }) as typeof fetch;
+
+  dom.storage.clear();
+  dom.intervals.length = 0;
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: [], permissions: [] } });
+  dom.storage.set("erp-techsolutions.active-context", JSON.stringify({
+    tenantId: "ten-ciclo-3", tenantName: "Organização ciclo 3", tenantStatus: "active",
+    branchId: "fil-ciclo-3", branchName: "Filial ciclo 3", role: "Operador",
+    permissions: ["impound:read", "checklist_runs:read"], enabledModules: ["impound"], scope: "branch",
+  }));
+
+  function Surfaces() {
+    const { runs, loading, error, denied, reload } = useProcessChecklistRuns(TRANSITION_PROCESS_ID);
+    const retry = () => void reload();
+    return (
+      <main>
+        <section data-surface="modal">
+          <VehicleDossieView {...dossieViewProps(runs)} checklistLoading={loading} checklistError={error} checklistDenied={denied} onReloadChecklist={retry} />
+        </section>
+        <section data-surface="pagina">
+          <ChecklistRunsPanel runs={runs} loading={loading} error={error} denied={denied} onRetry={retry} />
+        </section>
+        <section data-surface="impressao">
+          <DossiePrintDocument
+            process={PROCESS} issuedAt="2026-09-10T10:00:00.000Z" orgName="Org" yardName="Pátio"
+            currentSpot={null} inspection={null} verify={null} events={[]} statement={null}
+            canReadChecklist checklistRuns={runs} historyItems={[]}
+          />
+        </section>
+      </main>
+    );
+  }
+
+  const container = dom.doc.createElement("div");
+  dom.doc.body.appendChild(container);
+  const root = createRoot(container as unknown as Element);
+  try {
+    await act(async () => {
+      root.render(<AuthProvider><TenantProvider><PermissionProvider><Surfaces /></PermissionProvider></TenantProvider></AuthProvider>);
+    });
+    await settle();
+    await body({
+      setScenario(next) { scenario = next; },
+      read() {
+        const out = {} as Record<Surface, SurfaceRead>;
+        for (const section of miniElements(container, (el) => el.hasAttribute("data-surface"))) {
+          const all = miniElements(section, () => true);
+          out[section.getAttribute("data-surface") as Surface] = {
+            rows: all.filter((el) => el.localName === "tr" && (el.getAttribute("id") ?? "").startsWith("vistoria-")).length,
+            text: section.textContent,
+            retry: all.filter((el) => el.localName === "button" && el.textContent.trim() === "Tentar novamente").length,
+            alerts: all
+              .filter((el) => el.localName === "section" && (el.getAttribute("class") ?? "").split(/\s+/).includes("ui-alert"))
+              .flatMap((alert) => miniElements(alert, (el) => el.localName === "strong").slice(0, 1).map((title) => title.textContent.trim())),
+          };
+        }
+        return out;
+      },
+      async backgroundTick() {
+        const live = dom.intervals.filter((interval) => interval.fn !== null && interval.ms === DEFAULT_AUTO_REFRESH_MS);
+        assert.strictEqual(live.length, 1, `exatamente 1 auto-refresh capturado (o do hook); vivos: ${live.length}`);
+        await act(async () => { live[0].fn!(); await new Promise((resolve) => setTimeout(resolve, 0)); });
+        await settle();
+      },
+    });
+  } finally {
+    await act(async () => root.unmount());
+    dom.doc.body.removeChild(container);
+    dom.storage.clear();
+    globalThis.fetch = originalFetch;
+    if (previousMocks === undefined) delete process.env.VITE_USE_MOCKS; else process.env.VITE_USE_MOCKS = previousMocks;
+  }
+}
+
+const rowsOf = (read: Record<Surface, SurfaceRead>) => [read.modal.rows, read.pagina.rows, read.impressao.rows];
+
+test("T25: válida → contrato inválido no 2º plano — runs limpas: zero linha nas três superfícies, erro destrutivo com retry no modal e na página", async () => {
+  await withChecklistTransition(async ({ setScenario, read, backgroundTick }) => {
+    assert.deepStrictEqual(rowsOf(read()), [1, 1, 1], "antes: uma linha válida em cada superfície (modal/página/impressão)");
+    setScenario("contract-invalid");
+    await backgroundTick();
+    const after = read();
+    assert.deepStrictEqual(rowsOf(after), [0, 0, 0], `depois de ChecklistRunContractError: nenhuma linha antiga em superfície alguma (modal/página/impressão); página: ${after.pagina.text}`);
+    for (const surface of ["modal", "pagina", "impressao"] as const) {
+      assert.ok(!after[surface].text.includes("Situação na época"), `${surface}: nenhuma rotulagem antiga`);
+      assert.ok(!after[surface].alerts.includes(BACKGROUND_WARNING), `${surface}: não é o aviso não destrutivo sobre linhas velhas`);
+    }
+    for (const surface of ["modal", "pagina"] as const) {
+      assert.deepStrictEqual(after[surface].alerts, [DESTRUCTIVE_ERROR], `${surface}: só o erro destrutivo`);
+      assert.strictEqual(after[surface].retry, 1, `${surface}: um retry`);
+    }
+  });
+});
+
+test("T26: válida → falha transitória (500) no 2º plano — a última lista válida permanece, com o aviso de atualização", async () => {
+  await withChecklistTransition(async ({ setScenario, read, backgroundTick }) => {
+    assert.deepStrictEqual(rowsOf(read()), [1, 1, 1], "antes: uma linha válida em cada superfície (modal/página/impressão)");
+    setScenario("transient");
+    await backgroundTick();
+    const after = read();
+    assert.deepStrictEqual(rowsOf(after), [1, 1, 1], `falha operacional não apaga a última lista válida; página: ${after.pagina.text}`);
+    for (const surface of ["modal", "pagina"] as const) {
+      assert.deepStrictEqual(after[surface].alerts, [BACKGROUND_WARNING], `${surface}: só o aviso não destrutivo, sem erro destrutivo`);
+    }
+  });
+});
