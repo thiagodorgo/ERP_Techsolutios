@@ -3,7 +3,8 @@
 // PROPRIEDADES (não lista de nomes):
 //   P-L0  as três cópias da verdade (DTO emite · espelho declara · adapter consome) são o MESMO conjunto, nos dois sentidos,
 //         e um emissor ilegível (L0 vazio) é vermelho — pega remoção de chave no emissor (M5/M5b/M5c) e L0 vazio (M6).
-//   P-L3  todo ponto de JSX que renderiza a SITUAÇÃO de uma vistoria (x.status, x["status"] ou helper de situação) — "vistoria" decidida
+//   P-L3  todo ponto de JSX que renderiza a SITUAÇÃO de uma vistoria (x.status, x["status"], x[k] com k do tipo "status",
+//         `status` desestruturado, const local que o carrega, ou helper de situação por símbolo/alias) — "vistoria" decidida
 //         pelo TIPO do receptor (ChecklistRunSummaryItem, ou a forma de resumo id/templateVersion/status/startedAt), nunca pelo
 //         nome da variável — está sob uma DECISÃO (?:, &&, ||, ??, if) cuja condição lê o estado de substituição
 //         (supersededByRunId/currentRunId/reopenedFromRunId), resolvendo const/função do mesmo arquivo. Receptor de tipo
@@ -108,16 +109,52 @@ function buildProgram(files) {
 function enclosingFunction(node) { let p = node.parent; while (p && !(ts.isArrowFunction(p) || ts.isFunctionExpression(p) || ts.isFunctionDeclaration(p) || ts.isMethodDeclaration(p))) p = p.parent; return p; }
 function inJsx(n) { for (let p = n.parent; p; p = p.parent) if (ts.isJsxElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxExpression(p) || ts.isJsxFragment(p)) return true; return false; }
 function unwrapCasts(e) { while (e && (ts.isAsExpression(e) || ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isTypeAssertionExpression(e) || (typeof ts.isSatisfiesExpression === "function" && ts.isSatisfiesExpression(e)))) e = e.expression; return e; } // o TIPO que vale é o da expressão por baixo do cast
-function statusReceiver(expr) {
-  const candidate = unwrapCasts(expr);
-  if (ts.isPropertyAccessExpression(candidate) && candidate.name.text === "status") return candidate.expression;
-  if (
-    ts.isElementAccessExpression(candidate)
-    && candidate.argumentExpression
-    && ts.isStringLiteralLike(unwrapCasts(candidate.argumentExpression))
-    && unwrapCasts(candidate.argumentExpression).text === "status"
-  ) return candidate.expression;
+// Ciclo 3 (§17.2, P-F1a) — a ORIGEM de um valor de situação, resolvida pelo CHECKER (nunca pelo nome da variável):
+//   x.status · x?.status · x["status"] · x[k] com k de tipo literal "status" · `status` desestruturado de x (inclusive
+//   renomeado, inclusive em parâmetro) · const local cujo inicializador é uma dessas. Devolve o nó cujo TIPO decide se é
+//   vistoria, ou null. O NOME que declara (o binding em si) não é uso.
+function declOf(checker, id) {
+  let sym = checker.getSymbolAtLocation(id);
+  if (sym && (sym.flags & ts.SymbolFlags.Alias)) { try { sym = checker.getAliasedSymbol(sym); } catch { /* fica o alias */ } }
+  return { sym, decl: sym?.valueDeclaration ?? sym?.declarations?.[0] };
+}
+function isStatusKey(arg, checker) {
+  const a = unwrapCasts(arg);
+  if (ts.isStringLiteralLike(a)) return a.text === "status";
+  const t = checker.getTypeAtLocation(a);
+  const parts = t.isUnion && t.isUnion() ? t.types : [t];
+  return parts.some((p) => p.isStringLiteral && p.isStringLiteral() && p.value === "status");
+}
+function statusOrigin(expr, checker, depth = 0) {
+  const e = unwrapCasts(expr);
+  if (!e || depth > 5) return null;
+  if (ts.isPropertyAccessExpression(e) && e.name.text === "status") return e.expression;
+  if (ts.isElementAccessExpression(e) && e.argumentExpression && isStatusKey(e.argumentExpression, checker)) return e.expression;
+  if (ts.isIdentifier(e)) {
+    const { decl } = declOf(checker, e);
+    if (!decl || decl.name === e) return null;
+    if (ts.isBindingElement(decl) && ts.isObjectBindingPattern(decl.parent)) {
+      const prop = decl.propertyName ?? decl.name;
+      return (ts.isIdentifier(prop) || ts.isStringLiteralLike(prop)) && prop.text === "status" ? decl.parent : null;
+    }
+    if (ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer) return statusOrigin(decl.initializer, checker, depth + 1);
+  }
   return null;
+}
+// helper de situação reconhecido pelo SÍMBOLO (alias de import e const que o reapelida resolvidos), não pelo texto do chamado
+function isStatusHelperCall(n, checker) {
+  if (!ts.isCallExpression(n)) return false;
+  const callee = unwrapCasts(n.expression);
+  let id = ts.isPropertyAccessExpression(callee) ? callee.name : callee;
+  for (let depth = 0; id && ts.isIdentifier(id) && depth <= 5; depth += 1) {
+    if (STATUS_HELPERS.has(id.text)) return true;
+    const { sym, decl } = declOf(checker, id);
+    if (sym && STATUS_HELPERS.has(sym.name)) return true;
+    if (!decl || !ts.isVariableDeclaration(decl) || !decl.initializer) return false;
+    const init = unwrapCasts(decl.initializer);
+    id = ts.isPropertyAccessExpression(init) ? init.name : init;
+  }
+  return false;
 }
 function typeIsVistoria(type) {
   if (!type) return "desconhecido";
@@ -166,21 +203,29 @@ function censo(files) {
     walk(sf, (n) => {
       if (rel.endsWith(".tsx")) {
         let receptor = null; let unknownReceptor = false; // expressão cujo TIPO decide se é vistoria
-        const directReceiver = statusReceiver(n);
-        if (directReceiver) receptor = directReceiver;
-        else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && STATUS_HELPERS.has(n.expression.text)) {
+        if (isStatusHelperCall(n, checker)) {
           const a = n.arguments[0];
-          const helperReceiver = a ? statusReceiver(a) : null;
+          const helperReceiver = a ? statusOrigin(a, checker) : null;
           if (helperReceiver) receptor = helperReceiver; else { receptor = a ?? n; unknownReceptor = true; }
+        } else if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isIdentifier(n)) {
+          receptor = statusOrigin(n, checker); // invólucros (as, !, parênteses) não contam: o nó de dentro é visitado
         }
         if (receptor && inJsx(n)) {
           const ln = line(sf, n); const key = `${rel}:${ln}`;
-          if (!sites.some((s) => s.key === key)) {
-            const vis = unknownReceptor ? "desconhecido" : typeIsVistoria(checker.getTypeAtLocation(unwrapCasts(receptor)));
-            if (vis !== "nao") {
-              const fn = enclosingFunction(n);
-              const consulta = guardedByVersion(n, fn, checker) ? "sim" : "NÃO";
-              sites.push({ key, file: rel, line: ln, receptor: unknownReceptor ? "?" : receptor.getText(sf).slice(0, 40), tipo: vis, expr: n.getText(sf).slice(0, 60), consulta });
+          const vis = unknownReceptor ? "desconhecido" : typeIsVistoria(checker.getTypeAtLocation(unwrapCasts(receptor)));
+          if (vis !== "nao") {
+            const fn = enclosingFunction(n);
+            const consulta = guardedByVersion(n, fn, checker) ? "sim" : "NÃO";
+            const site = { key, file: rel, line: ln, receptor: unknownReceptor ? "?" : receptor.getText().slice(0, 40), tipo: vis, expr: n.getText(sf).slice(0, 60), consulta };
+            // o ponto é a LINHA; com mais de um candidato na mesma linha vale o PIOR (desconhecido / sem decisão), nunca o 1º visitado
+            const prev = sites.find((s) => s.key === key);
+            if (!prev) sites.push(site);
+            else {
+              const piorTipo = site.tipo === "desconhecido" && prev.tipo !== "desconhecido";
+              const piorConsulta = site.consulta !== "sim" && prev.consulta === "sim";
+              if (piorTipo || piorConsulta) { prev.receptor = site.receptor; prev.expr = site.expr; }
+              if (piorTipo) prev.tipo = site.tipo;
+              if (piorConsulta) prev.consulta = site.consulta;
             }
           }
         }

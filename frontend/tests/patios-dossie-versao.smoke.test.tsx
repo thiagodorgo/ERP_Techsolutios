@@ -23,7 +23,8 @@ import type { ProcessDetail } from "../src/modules/patios/processes/processes.ty
 // Ciclo 2 (§16 do plano): T3′ e T15/T16 (ausência ou valor inválido de chave de versão fica do lado fechado), T11′
 // (ids só em id=/href= nas 3 superfícies), T17–T19 (links com afordância que não navegam; ids únicos na impressão),
 // T12 com a saída do gerador v2 e T20–T22 (o gerador vê o emissor e a vistoria pelo tipo).
-// Ciclo 3 (§17): T23 cobre acesso por índice e T24 torna L3/L4 vazios explicitamente vermelhos.
+// Ciclo 3 (§17): T23 cobre acesso por índice e toda grafia que o checker resolve (V1–V6); T24 torna L3/L4 vazios
+// explicitamente vermelhos.
 
 const TEMPLATE_ID = "11111111-2222-4333-8444-111111111111";
 const RELATED_ID  = "99999999-8888-4777-8666-999999999999";
@@ -559,28 +560,72 @@ test("T22: gerador — emissor com Object.freeze (ilegível) → L0 VAZIO (emiss
 
 // ─────────────── T23–T24: P-L3 fail-closed para ElementAccess e conjuntos vazios ───────────────
 
-test("T23: gerador — run[\"status\"] tipado fora de decisão de versão → ponto nominal NÃO, exit 1", () => {
-  const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
-  try {
-    copyCensoInputs(tmp);
-    const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
-    mutate(printPath, (source) => source.replace(
-      /(<ChecklistRunsPanel[^>]*\/>)/,
-      '$1\n{checklistRuns.map((run) => <span key={run.id}>{run["status"]}</span>)}',
-    ));
-    const mutated = readFileSync(printPath, "utf8");
-    assert.match(mutated, /run\["status"\]/, "a apresentação por índice foi inserida");
+// Cada variante é uma apresentação COMPILÁVEL da situação de uma vistoria, sem decisão de versão, inserida em
+// DossiePrintDocument (dentro de um fragmento, ao lado do painel). V1 é a do plano (§17.2); V2–V6 são a MESMA propriedade
+// por outras grafias que o checker resolve — chave por tipo literal, a mesma linha de um ponto guardado, helper por alias de
+// import, desestruturação e const local. A compilação de todas foi medida com `tsc` (relatório do dev, ciclo 3).
+const T23_VARIANTS: ReadonlyArray<{ readonly name: string; readonly jsx: string; readonly header?: string; readonly body?: string; readonly line: RegExp }> = [
+  {
+    name: "V1 índice literal",
+    jsx: '{checklistRuns.map((run) => <span key={run.id}>{run["status"]}</span>)}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\["status"\] \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V2 chave const de tipo literal",
+    jsx: '{checklistRuns.map((run) => { const chave = "status" as const; return <span key={run.id}>{run[chave]}</span>; })}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\[chave\] \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V3 mesma linha de um ponto guardado",
+    jsx: '{checklistRuns.map((run) => <span key={run.id}>{run.supersededByRunId ? "substituída" : run.status}{run.status}</span>)}',
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\.status \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V4 helper por alias de import + desestruturação",
+    header: 'import { getChecklistRunStatusLabel as rotuloDaSituacao } from "../processes.adapter";\n',
+    jsx: "{checklistRuns.map(({ id, status }) => <span key={id}>{rotuloDaSituacao(status)}</span>)}",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=\{ id, status \} \| tipo vistoria: sim \| rotuloDaSituacao\(status\) \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V5 desestruturação renomeada",
+    jsx: "{checklistRuns.map(({ id, status: situacao }) => <span key={id}>{situacao}</span>)}",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=\{ id, status: situacao \} \| tipo vistoria: sim \| situacao \| consulta substituição: NÃO/,
+  },
+  {
+    name: "V6 const local fora do JSX",
+    body: "  const situacaoDaPrimeira = checklistRuns[0]?.status;\n",
+    jsx: "<span>{situacaoDaPrimeira}</span>",
+    line: /DossiePrintDocument\.tsx:\d+ \| receptor=checklistRuns\[0\] \| tipo vistoria: sim \| situacaoDaPrimeira \| consulta substituição: NÃO/,
+  },
+];
 
-    const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
-    assert.match(
-      stdout,
-      /DossiePrintDocument\.tsx:\d+ \| receptor=run \| tipo vistoria: sim \| run\["status"\] \| consulta substituição: NÃO/,
-      "o acesso por índice deve aparecer nominalmente como ponto sem consulta",
-    );
-    assert.strictEqual(exitCode, 1, `run["status"] sem decisão de versão deixa o gerador vermelho; stdout:\n${stdout}`);
-  } finally {
-    rmSync(tmp, { recursive: true, force: true });
+test("T23: gerador — situação de vistoria fora de decisão de versão, por índice e por toda grafia que o checker resolve → ponto nominal NÃO, exit 1", () => {
+  const escapes: string[] = []; // variante que o gerador deixou passar — nominal, para o vermelho dizer QUAL grafia escapou
+  for (const variant of T23_VARIANTS) {
+    const tmp = mkdtempSync(join(tmpdir(), ".tmp-censo-"));
+    try {
+      copyCensoInputs(tmp);
+      const printPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "DossiePrintDocument.tsx");
+      mutate(printPath, (source) => {
+        let next = source.replace(/(<ChecklistRunsPanel[^>]*\/>)/, (panel) => `<>${panel}${variant.jsx}</>`);
+        if (variant.header) next = variant.header + next;
+        if (variant.body) next = next.replace("\n  return (\n", `\n${variant.body}  return (\n`);
+        return next;
+      });
+      const mutated = readFileSync(printPath, "utf8");
+      assert.ok(mutated.includes(variant.jsx), `${variant.name}: a apresentação foi inserida`);
+      if (variant.header) assert.ok(mutated.startsWith(variant.header), `${variant.name}: o import foi inserido`);
+      if (variant.body) assert.ok(mutated.includes(variant.body), `${variant.name}: a const foi inserida`);
+
+      const { exitCode, stdout } = runCenso(tmp, { TS_ROOT: FRONTEND_ROOT });
+      if (!variant.line.test(stdout) || exitCode !== 1) {
+        escapes.push(`${variant.name} (exit ${exitCode}; linha nominal NÃO ${variant.line.test(stdout) ? "presente" : "AUSENTE"})`);
+      }
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
   }
+  assert.deepStrictEqual(escapes, [], `toda apresentação sem decisão de versão deixa o gerador vermelho, com a linha nominal; escaparam: ${escapes.join(" · ")}`);
 });
 
 test("T24: gerador — conjuntos efetivos L3/L4 vazios → diagnósticos explícitos e exit 1", () => {
@@ -589,19 +634,15 @@ test("T24: gerador — conjuntos efetivos L3/L4 vazios → diagnósticos explíc
     copyCensoInputs(tmp);
 
     const panelPath = join(tmp, "frontend", "src", "modules", "patios", "processes", "components", "ChecklistRunsPanel.tsx");
+    // L3 vazio de verdade: as apresentações da situação saem (texto fixo, compilável). Alias de import + desestruturação já
+    // NÃO esvaziam L3 desde o ciclo 3 — o checker os resolve (T23 V4/V5); por isso a mutação é a remoção, não o disfarce.
     mutate(panelPath, (source) => source
-      .replace(
-        "formatDateTime, getChecklistRunStatusLabel, getChecklistRunStatusTone",
-        "formatDateTime, getChecklistRunStatusLabel as labelStatus, getChecklistRunStatusTone as toneStatus",
-      )
-      .replace("{runs.map((run) => {", "{runs.map((run) => {\n                  const { status: runStatus } = run;")
-      .replace(/getChecklistRunStatusLabel\(/g, "labelStatus(")
-      .replace(/getChecklistRunStatusTone\(/g, "toneStatus(")
-      .replace(/run\.status/g, "runStatus"));
+      .replace(/getChecklistRunStatusLabel\(run\.status\)/g, '"—"')
+      .replace(/getChecklistRunStatusTone\(run\.status\)/g, '"default"'));
     assert.doesNotMatch(
       readFileSync(panelPath, "utf8"),
-      /getChecklistRunStatus(?:Label|Tone)\(run\.status\)/,
-      "os pontos conhecidos de L3 saíram sem mudar o comportamento compilável",
+      /getChecklistRunStatus(?:Label|Tone)\(|run\.status/,
+      "os pontos conhecidos de L3 saíram (texto fixo compilável no lugar)",
     );
 
     const consumers = [
