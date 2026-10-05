@@ -3055,33 +3055,3 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
-
-## B-SAN3-11 — 2026-10-01 (recontado em 2026-10-02: ERRATA 1 e integração pós-#402; e em 2026-10-03: ciclo 2)
-
-**Bloco**: B-SAN3-11 · **PR**: #401 (`merge_commit`/`approved_head` null na autoria — backfill pós-merge) · **Data**: 2026-10-01; recontagens 2026-10-02 e 2026-10-03
-
-| Métrica | Anterior (`origin/main` `b404815c`, #404 — registro; publica o que o #402 B-SAN3-01b publicou) | Este PR | Δ |
-|---|---|---|---|
-| `blocks_completed` | 170 | **171** | +1 |
-| `frontend_smoke_tests` | 1214/1214 | **1238/1238** (executado no ciclo 2 no head `a73fb35f`, nos dois terrenos: CRLF e LF) | +24 |
-| `flutter_tests` | 864/864 | 864/864 (carregado §C3.3) | 0 |
-| `backend_tests` | 3052/3054 | 3052/3054 (carregado §C3.3) | 0 |
-
-**Descrição**: Corrige o dossiê de custódia para rotular vistorias substituídas (`supersededByRunId`/`reopenedFromRunId`/`currentRunId`). E1: tipo +3 campos, E2: adapter +3 campos, E3: painel três estados, E4: guard CE-G1, E5: 16 testes novos (T1-T14). Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
-
-**ERRATA 1 (§15):** T13/T14 re-formados (arnês sem teto, mutação normalizada com prova); contagem inalterada.
-`blocks_completed` recontado contra a `origin/main` de agora (`4ab9d232`, que já publicava 169 pelo #397) — na autoria
-original o bloco contara 168 → 169 contra o merge-base `5b6e1036`. `mvp_demo`/`mvp_vendavel` intocados.
-
-**Integração pós-#402 (2026-10-02):** a `main` andou para `3e40a256` (#402, B-SAN3-01b, que publicou 170 e 1214/1214);
-merge, nunca rebase; a linha `test:smoke` do `frontend/package.json` é a UNIÃO dos dois acréscimos
-(`tests/work-orders-page-live.test.tsx` do #402 e `tests/patios-dossie-versao.smoke.test.tsx` do bloco); `blocks_completed`
-recontado pela regra (main + 1 = 171) e `frontend_smoke_tests` pelo TAP do head integrado (1214 + 16 = 1230).
-
-**CICLO 2 (§16):** links com afordância, adapter fail-closed, gerador v2, pendências com dono; +8 testes (16 → 24).
-A `main` andou para `b404815c` (#404, registro) e entrou por merge; `blocks_completed` recontado pela regra (main + 1 = 171)
-e `frontend_smoke_tests` pelo TAP dos dois terrenos (1214 + 24 = 1238).
-
-`merge_commit`/`approved_head`: null na autoria — backfill pós-merge (§C3.5). Nenhum backfill devido por este PR: a entrada
-do B-SAN3-01b (#402) já está preenchida na `main` — `pr 402 · 3e40a256 · cdf370dc` (`merge_commit 3e40a256…`,
-`approved_head cdf370dc…`), pago pelo registro do #403 (`f03b883f`), com a nota corrigida pelo #404 (`b404815c`).
