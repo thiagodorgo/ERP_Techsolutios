@@ -1672,3 +1672,14 @@ defeituoso; (3) o gerador com **forma própria** dentro do alcance, porque cada 
 classe noutra forma; (4) a igualdade "membros FORCE == cenários executados", inclusive os três jobs.
 
 STATUS: COMPLETO — planejador-ciclo2-b-san3-05-sucessor (Claude Opus, substituição declarada), 2026-10-08.
+
+**Errata do orquestrador ao D4 (2026-10-08, resposta à PARADA-D4 do dev do ciclo 2 — opção (b)).** O aceite acima
+pede que o `username` decodificado não apareça no JSON de log, mas o contrato do próprio bootstrap
+(`src/database/runtime-role.bootstrap.ts`, l.13: *"O log diz session_user, current_user e as vias de escape — nunca
+URL, host ou credencial"*) registra de propósito o papel que conectou, e esse é o valor que a trava existe para provar.
+O nome do papel não é credencial. **D4 passa a ser:** `hostname`, `port`, `password` (decodificados), o nome do banco,
+`postgresql://` e `password` não aparecem no JSON serializado das entradas de log; o `username` só pode aparecer como
+**valor** das chaves `session_user`/`current_user` (identidade medida no banco), nunca dentro de URL, DSN ou outro campo.
+`src/database/runtime-role.bootstrap.ts` continua PROIBIDO. **Mutações:** o logger da trava passa a incluir o host →
+vermelho; o logger passa a incluir a senha → vermelho; o logger passa a incluir o `username` num campo que não seja
+`session_user`/`current_user` → vermelho. O texto original do D4 fica acima como histórico; este parágrafo o substitui.
