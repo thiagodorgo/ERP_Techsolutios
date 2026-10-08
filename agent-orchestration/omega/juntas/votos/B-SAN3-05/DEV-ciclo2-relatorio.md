@@ -61,13 +61,21 @@
 
 ## Implementação
 
+### Retomada após PARADA-D4 — errata do orquestrador
+
+**Comando:** `git -C C:/Users/AMP/w-o05 pull --ff-only`; `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura de `docs/revisoes/SAN3/B-SAN3-05-plano.md` no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
+
+**Saída resumida:** pull fast-forward já aplicado; HEAD local = remoto = `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`; a “Errata do orquestrador ao D4” substitui o aceite original pela opção (b).
+
+**Resultado:** PASSOU — PARADA-D4 resolvida pelo orquestrador. `username` é permitido somente como valor de `session_user`/`current_user`; host, porta, senha, banco, `postgresql://`, `password` e username em qualquer outro campo continuam proibidos. `src/database/runtime-role.bootstrap.ts` permanece intocado.
+
 ### B1 — credencial sem senha em claro no canal do servidor
 
-**Comando:** EM APURAÇÃO
+**Comando:** viabilidade em `postgres:16` descartável `dev05c2-viab2-pg`, sem porta/volume: cria papel; envia duas linhas de senha por stdin para `setsid -w psql -v role=... -c '\password :"role"'`, com `PGOPTIONS='-c password_encryption=scram-sha-256'`; consulta `pg_authid`; login TCP; remove só o container nomeado.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** `password_ec=0`; prefixo armazenado `SCRAM-SHA-256$`; login devolveu `dev05c2_role`; `login_ec=0`; container removido.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PARCIAL — o mecanismo exigido pelo plano existe no `psql` 16 e não requer dependência nova; falta implementá-lo e rodar B7/B14.
 
 ### B2 — toda mutação de catálogo sob a trava única
 
@@ -123,7 +131,7 @@
 
 **Saída resumida:** D4 exige ausência literal de `username` decodificado no JSON do T9/T15. O bootstrap atual registra `session_user: posture.sessionUser` e `current_user: posture.currentUser` tanto no sucesso quanto na recusa; esses valores são o username efetivo da URL. C2.3 proíbe explicitamente alterar `src/database/runtime-role.bootstrap.ts`.
 
-**Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — o aceite de D4 é incompatível com o comportamento deliberado e documentado do logger, e o conserto esbarra em arquivo PROIBIDO. Não afrouxei o teste e não editei o arquivo proibido.
+**Resultado:** PARADA original RESOLVIDA no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`, mas a execução do aceite substitutivo encontrou a PARADA-D4-2 abaixo.
 
 ### A1 — ajustes do ciclo 2 e pendências C2.6
 
@@ -266,28 +274,45 @@
 - **Decisão do dev:** parada fail-closed determinada pelo dono; sem improvisar semântica alternativa para “não aparece”, sem editar arquivo proibido e sem iniciar B1–B4/D1–D3 depois de conhecida a parada.
 - **Direção necessária:** o planejador/orquestrador precisa escolher explicitamente entre (a) ampliar o escopo para redigir/remover `session_user`/`current_user` dos logs; ou (b) reescrever D4 para permitir o nome do papel quando ele aparece como identidade medida, mantendo proibidos host/porta/senha/banco/URL. O dev não escolhe entre as duas.
 
+### RESOLUÇÃO-PARADA-D4 — commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`
+
+- **Decisão escrita:** opção (b), sem ampliar escopo.
+- **Aceite vigente:** username somente como valor de `session_user`/`current_user`; demais componentes de conexão proibidos; três mutações negativas para host, senha e username fora das duas chaves.
+- **Estado:** RESOLVIDA; desenvolvimento retomado pela mesma identidade.
+
+### PARADA-D4-2 — username já existe fora das duas chaves permitidas
+
+- **Fato medido na ref:** `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
+- **Comando:** `git show HEAD:docs/revisoes/SAN3/B-SAN3-05-plano.md` na errata; `git show HEAD:src/database/runtime-role.bootstrap.ts` em `describeEscapes`; `git show HEAD:src/database/runtime-role.ts` no construtor de `RuntimeRoleGuardError`.
+- **Saída resumida:** a errata permite o username somente como valor de `session_user`/`current_user`. Na recusa do superusuário, o mesmo username (`postgres`) também aparece em `escapes[].rolname` e na mensagem `atributo:postgres`; o bootstrap serializa `escapes: posture.escapes`. A mutação “username em outro campo” não distingue mutação de comportamento já existente.
+- **Escopo:** `src/database/runtime-role.bootstrap.ts` continua PROIBIDO; `src/database/runtime-role.ts` é permitido somente para D2 e “nada mais muda no arquivo”.
+- **Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — não é possível cumprir literalmente o aceite substitutivo e preservar o payload de razões atual dentro do escopo concedido.
+- **Decisão necessária:** dizer se `escapes[].rolname` e o texto nomeado `via:rolname` são também valores de identidade permitidos; ou ampliar nominalmente o escopo para redigi-los. O dev não escolhe em silêncio.
+- **Estado local preservado, ainda não commitado:** `scripts/db-runtime-role.sh`, `src/database/runtime-role.ts`, `docs/deployment.md` e `tests/san3-05-runtime-role-guard-db.test.ts` contêm a fatia parcial B1/B2/D1/D2; `git diff --check` = 0. Nenhum arquivo proibido foi tocado; `scratchpad/` segue preservado.
+- **Próximo comando após decisão:** reler a nova errata na ref empurrada, registrar a resolução aqui e concluir primeiro `tests/san3-05-runtime-role-guard-db.test.ts` antes de iniciar B3/B4.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
 
-- [ ] B1 — não iniciado por PARADA-D4.
-- [ ] B2 — não iniciado por PARADA-D4.
+- [ ] B1 — viabilidade `psql \password`/SCRAM medida; implementação local parcial, não commitada, interrompida por PARADA-D4-2.
+- [ ] B2 — helper assíncrono sob trava localmente parcial, não commitado.
 - [ ] B3 — não iniciado por PARADA-D4.
 - [ ] B4 — não iniciado por PARADA-D4.
-- [ ] D1 — não iniciado por PARADA-D4.
-- [ ] D2 — não iniciado por PARADA-D4.
+- [ ] D1 — título/fixture do T8d localmente parciais, não commitados.
+- [ ] D2 — SQL transitiva e documentação localmente parciais, não commitadas.
 - [ ] D3 — não iniciado por PARADA-D4.
-- [ ] D4 — impossível no escopo: logger publica o username como identidade e o arquivo de correção é proibido.
+- [ ] D4 — nova parada: a errata permite username só em `session_user/current_user`, mas a recusa já o publica também em `escapes[].rolname` e `via:rolname`.
 - [ ] Ajustes do ciclo — pendências C2.6 não registradas por PARADA-D4.
 - [x] Integração da main — commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos resolvidos por união; `D-GOV-PROPORCIONAL` presente.
 - [x] `Kpis/*` à main — `git diff --quiet origin/main -- Kpis/` retornou 0.
 
-**Feito:** integração da main e restauração integral de `Kpis/*`; evidência incremental criada desde o início. Commits: `84758fc3` (esqueleto P1) e `37e024c3` (merge da main + união dos registros + KPI congelado).
+**Feito:** integração da main e restauração integral de `Kpis/*`; errata `45da0d17` medida; viabilidade de B1 em container `dev05c2-viab2-pg` verde (`SCRAM-SHA-256$`, login funcionando); fatia B1/B2/D1/D2 iniciada localmente com `bash -n` verde e `git diff --check` limpo.
 
-**Não feito / divergências:** B1–B4, D1–D3, D4 e pendências C2.6 não foram implementados. Motivo: D4 exige ausência do username ao mesmo tempo em que o logger deliberadamente registra esse username como `session_user`/`current_user`; corrigir exige `src/database/runtime-role.bootstrap.ts`, proibido por C2.3. A ordem do dono manda parar quando o conserto esbarra em arquivo proibido.
+**Não feito / divergências:** nenhuma fatia de produto do ciclo 2 está concluída/commitada. PARADA-D4-2: o username já aparece em `escapes[].rolname` e no texto `via:rolname`, fora das duas chaves autorizadas pela errata, e os arquivos necessários para mudar essa superfície estão proibidos ou limitados a D2.
 
-**Validação:** B0 parcial — head local/remoto e integração conferidos; KPI igual à main. B13 — `git diff --check` limpo antes dos commits. B1–B12/B14 não rodados após a parada; B10 é reservado à junta.
+**Validação:** B0 parcial — retomada começou em local/remoto `45da0d17`; KPI continuava igual à main antes das edições. B1/B2/B3/B4/B6–B12/B14 não concluídos. B5 parcial: `bash -n` do script = 0; modo/EOL ainda não re-medidos. B13 local = 0. B10 é reservado à junta.
 
 **Head empurrado:** `d6b3e6303e02a26ed472599173c4c378cba5d616`, confirmado por `git ls-remote` após o commit do relatório de parada. O commit seguinte altera somente esta linha de confirmação; seu SHA final fica na mensagem de entrega, porque um commit não pode conter o próprio hash.
 
-**Próximos passos (análise):** o planejador/orquestrador deve resolver a contradição de D4 sem ambiguidade. Se ampliar o escopo, a revisão precisa avaliar a perda de observabilidade ao remover identidades do log; se reescrever o aceite, precisa declarar que `username == session_user/current_user` é permitido somente no campo de identidade e continua proibido como componente/URL. Depois disso, um dev elegível retoma B1–B4/D1–D4 a partir do head empurrado.
+**Próximos passos (análise):** o orquestrador deve dizer expressamente se `escapes[].rolname` e `via:rolname` são identidades permitidas pelo D4. Se não forem, precisa ampliar o escopo e definir a redação sem apagar a razão operacional da recusa. Depois, a mesma identidade retoma os quatro arquivos locais parciais, conclui o teste `-db`, commita e segue B3/B4.
