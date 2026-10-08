@@ -2934,3 +2934,59 @@ Fonte §A1.1 (decisão do dono), registradas aqui pelo orquestrador; a citação
   por campos tipados (2), posta pela §16.5 do plano do B-GOV-MANDATO depois de 4 ciclos com a mesma classe de defeito; e a
   referência do cabeçalho da lista de OS (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`), mostrada ao dono em 2026-10-04
   com o PNG de `screen-refs/`, sem resposta até este registro.
+
+## D-GOV-PROPORCIONAL (2026-10-04) — junta proporcional, teto de 2 ciclos, menos burocracia, Traccar depois de sanar o que está em andamento e KPI congelado
+
+**Decisão do dono (fonte §A1.1), literal:** *"me diz como saio desse buraco onde estou a mais de um mes, rodo uma junta
+para fazer um bloco e passo uma semana rodando uma, duas, tres e varias vezes. preciso sair desse loop e continuar
+fazendo meu sistema, quero implantar o traccar"*; sobre a proposta do orquestrador (quatro decisões), *"aprovo 1, 2, 3 e
+4 kpi congelado tambem"*.
+
+**Transcrição** (texto normativo no §C7 item 8 do `CLAUDE.md`, espelhado no `AGENTS.md`): (1) junta completa só para
+dinheiro, segurança, permissão ou perda de dado; o resto mergeia com um revisor independente e CI verde; (2) teto de 2
+ciclos — do ciclo 3 em diante só defeito de produto grave bloqueia, o resto vira pendência com dono; (3) mandato forma A
+só para inspetor e cadeiras, registro semanal, porteiro só depois de merge de produto, `B-GOV-MANDATO` (#393) congelado;
+(4) trilha do Traccar aberta depois de sanar o que está em andamento (ajuste do dono: *"sanar tudo antes de começar o
+traccar"*; perguntado o alcance, *"o que está em andamento"* — os PRs em voo resolvidos, o registro em dia e o disco limpo,
+sem esperar os demais bloqueantes do gate), com junta de segurança em todo bloco de ingestão e o `B-SAN3-05` como
+pré-requisito de produção; (5) KPI congelado até segunda ordem.
+
+**O que esta decisão revoga ou suspende, por nome:** `D-SEM-TETO-AUDITORIA-NO-3` (o teto volta, com o freio da regra 2; a
+auditoria do ciclo 3 deixa de ser obrigatória); `D-KPI-PER-PR` (suspensa enquanto o KPI estiver congelado); a parte de
+`D-MANDATO-FORMA` que exigia forma A para todo papel; a regra "o Traccar não começa antes do gate" do `PLANO_SAN3` (§11);
+e a exigência de porteiro para PR de registro.
+
+## Decisões do dono de 2026-10-08 — cabeçalho da lista de OS, #393, modelos e Codex (transcritas pelo orquestrador)
+
+- **D-OS-CABECALHO-PADRONIZADO (2026-10-08)** — o dono viu, lado a lado, o PNG de `screen-refs/web/ordens-servico.png`,
+  o protótipo antigo (`ERP Web.dc.html`, `sc_workOrders`), o design padronizado (`ERP Web - Telas Padronizadas.dc.html`,
+  `sc_os`) e o app, com a análise do agente de frontend (opções A: voltar ao PNG; B: manter o padronizado; C: B mais
+  Filtrar e Exportar funcionando de verdade). Decisão literal: *"faça o C"*. Consequências:
+  (1) para as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência visual é o
+  design padronizado (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs `dashboard-operacional.png`,
+  `ordens-servico.png`, `usuarios.png` e `auditoria-organizacao.png` (não há PNG de Pátios); a divergência entre eles não
+  é mais achado de fidelidade (§11); fecha `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`;
+  (2) abre o bloco `B-OS-FILTRAR-EXPORTAR`: Filtrar (Prioridade e Período; Técnico quando `P-WO-LIST-TECH-NAME` fechar)
+  e Exportar (CSV da lista que a pessoa vê, com os filtros aplicados, reaproveitando `frontend/src/lib/csv.ts`) no
+  cabeçalho da lista de OS — nunca botão morto. Pela `D-GOV-PROPORCIONAL` regra (1): tela sem regra de negócio nova →
+  um revisor independente e CI verde.
+  **Premissa do orquestrador, a confirmar pelo dono (não é decisão dele):** a exportação usa a permissão de leitura que
+  já abre a lista (`work_orders:read`) e leva só o que a tela mostra (§2.8: sem ids internos nem dado de organização);
+  o `RBAC_MATRIX.md` não tem permissão de exportação. Se o dono preferir uma permissão própria, o bloco passa a mexer em
+  permissão e vira junta completa.
+  Também literal: *"anotar no índice das referências visuais que esses PNGs antigos foram substituídos pelo design
+  padronizado"* — feito em `docs/claude-code-handoff/screen-refs/README.md` e no §11 do `CLAUDE.md`/`AGENTS.md`.
+- **D-393-ESTACIONADO (2026-10-08)** — *"1-estacionar"*: o `B-GOV-MANDATO` (PR #393) fica em rascunho, sem novos ciclos de
+  junta (`D-GOV-PROPORCIONAL` regra 3). As ferramentas do ramo (pré-voo, `mandato-refs`) continuam usáveis localmente.
+  `D-MANDATO-FORMA-2` (linter de prosa × campos tipados) perde o objeto enquanto o bloco estiver estacionado.
+- **D-FABLE-ASTRA-SO-DINHEIRO (2026-10-08)** — depois do reset semanal, *"3- so em dinheiro"*: o Fable (Claude) e o
+  GPT-6 Astra (Codex) voltam, mas só em papel de bloco que toca dinheiro; todo o resto roda em Opus (Claude) ou
+  `gpt-5.6-sol` (Codex), com a substituição declarada (§C7.6-bis). Substitui `D-FABLE-ASTRA-SUSPENSOS`. Os lançadores
+  do Codex só aceitam Astra com a chave explícita de bloco de dinheiro.
+- **D-CODEX-DISPONIVEL (2026-10-08)** — *"o codex esta disponivel, use-o quando achares necessário"*; e *"quero que vc
+  comece orquestrando o codex, depois vc vai no bonde tambem. quero uma janela para cada execução do codex mostrando o
+  desenvolvimento e checklists ao terminar cada bloco detalhando o que foi solicitado, o que foi feito e a analise dos
+  proximos passos"*. Consequência: cada execução do Codex roda numa janela visível própria e termina com o checklist
+  Solicitado · Feito · Não feito · Validação · Próximos passos, gravado no relatório da execução; o orquestrador
+  relata o mesmo checklist ao dono ao fim de cada bloco. Continua o ritmo (uma sessão pesada do Codex por vez, no máximo
+  duas; Claude uma tarefa por vez).

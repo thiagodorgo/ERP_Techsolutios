@@ -8,6 +8,16 @@
 > alvo renderizado, o fonte mostra grade, tokens e cópia exatos. As regras completas de
 > fidelidade estão em **`../CLAUDE.md` §11**.
 
+> **Substituídos pelo design padronizado (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`).** Para as 5
+> telas padronizadas — Dashboard, Ordens de Serviço, Usuários, Auditoria e Pátios — a referência visual é
+> **`ERP Web - Telas Padronizadas.dc.html`** (raiz do repo; telas `sc_dash`, `sc_os`, `sc_users`, `sc_audit`,
+> `sc_patios`; ver `docs/juntas/J-TELAS-PADRONIZADAS.md`), **não** os PNGs `dashboard-operacional.png`,
+> `ordens-servico.png`, `usuarios.png` e `auditoria-organizacao.png` (não há PNG de Pátios). Divergência entre esses
+> PNGs e o app não é achado de fidelidade. Os PNGs ficam como histórico do protótipo antigo.
+>
+> **Tamanho real das capturas web: 924×540** (medido nos 35 arquivos em 2026-10-08), não 1440px — por isso alguns
+> textos quebram linha no PNG e não no app.
+
 **Padrão-ouro (HTML):** `Cloud Billing.reference.html` é a única tela também exportada como
 **HTML estático isolado** — use-a como exemplo do nível de fidelidade esperado em todas as demais.
 
@@ -32,8 +42,8 @@ Navegação no protótipo: estado `screen` (+ `role`, que define a sidebar). Agr
 ### Operação · `role: gestor`
 | Arquivo | Tela | `screen` |
 |---|---|---|
-| `dashboard-operacional.png` | Dashboard Operacional | `dashboard` |
-| `ordens-servico.png` | Ordens de Serviço (lista) | `workOrders` |
+| `dashboard-operacional.png` *(substituído pelo design padronizado)* | Dashboard Operacional | `dashboard` |
+| `ordens-servico.png` *(substituído pelo design padronizado)* | Ordens de Serviço (lista) | `workOrders` |
 | `os-detalhe.png` | Ordem de Serviço · detalhe | `workOrderDetail` |
 | `mapa-operacional.png` | Mapa Operacional | `opsMap` |
 | `despachos.png` | Despachos | `dispatches` |
@@ -58,9 +68,9 @@ Navegação no protótipo: estado `screen` (+ `role`, que define a sidebar). Agr
 | Arquivo | Tela | `screen` |
 |---|---|---|
 | `builder-checklists.png` | Builder de Checklists | `adminChecklists` |
-| `usuarios.png` | Usuários | `users` |
+| `usuarios.png` *(substituído pelo design padronizado)* | Usuários | `users` |
 | `config-organizacao.png` | Configurações da Organização | `settings` |
-| `auditoria-organizacao.png` | Auditoria (organização) | `auditTenant` |
+| `auditoria-organizacao.png` *(substituído pelo design padronizado)* | Auditoria (organização) | `auditTenant` |
 | `notificacoes.png` | Notificações | `notifications` |
 
 ### Financeiro · `role: finance`

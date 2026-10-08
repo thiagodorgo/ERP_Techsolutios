@@ -522,6 +522,25 @@ export function getChecklistRunStatusTone(status: ChecklistRunStatus | string | 
   return CHECKLIST_RUN_STATUS_TONES[(status ?? "in_progress") as ChecklistRunStatus] ?? "default";
 }
 
+// B-SAN3-11 (ciclo 2, D-C2-1) — as três chaves de versão fazem parte do contrato de 12 chaves do resumo. `null` EMITIDO
+// pelo backend quer dizer "não se aplica" (vigente/única); chave AUSENTE ou valor inválido NÃO é `null`: é contrato
+// quebrado e fica do lado fechado — a resposta inteira é recusada (o hook mostra o estado de erro, nenhuma linha), porque
+// um item sem a chave é renderizável ERRADO (a substituída viraria "Concluído"). Não se captura aqui.
+export class ChecklistRunContractError extends Error {
+  name = "ChecklistRunContractError";
+}
+
+function readVersionRef(record: Record<string, unknown>, keys: readonly [string, string]): string | null {
+  for (const key of keys) {
+    if (!(key in record)) continue;
+    const value = record[key];
+    if (value === null) return null;
+    if (typeof value === "string" && value.trim()) return value.trim();
+    throw new ChecklistRunContractError(`campo de versão inválido: ${key}`);
+  }
+  throw new ChecklistRunContractError(`campo de versão ausente: ${keys[0]}`);
+}
+
 function adaptChecklistRun(input: unknown): ChecklistRunSummaryItem | null {
   const record = readRecord(input);
   if (!record) return null;
@@ -543,6 +562,9 @@ function adaptChecklistRun(input: unknown): ChecklistRunSummaryItem | null {
     relatedEntityId: readString(record, ["relatedEntityId", "related_entity_id"]) ?? null,
     startedAt,
     completedAt: readString(record, ["completedAt", "completed_at"]) ?? null,
+    reopenedFromRunId: readVersionRef(record, ["reopenedFromRunId", "reopened_from_run_id"]),
+    supersededByRunId: readVersionRef(record, ["supersededByRunId", "superseded_by_run_id"]),
+    currentRunId: readVersionRef(record, ["currentRunId", "current_run_id"]),
   };
 }
 

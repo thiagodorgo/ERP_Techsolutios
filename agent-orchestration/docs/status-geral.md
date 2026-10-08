@@ -4880,6 +4880,23 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
 
+## Atualização 2026-10-01 — B-SAN3-11: em execução (branch fix/dossie-versao-da-vistoria)
+
+**Bloco em branch**, não mergeado. Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
+
+- **E1–E3**: tipo +3 campos, adapter +3 campos, painel três estados ✓
+- **E4**: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) ✓
+- **E5**: 16 testes novos `patios-dossie-versao.smoke.test.tsx` ✓
+- **E6**: KPIs atualizados (169 blocos, 1218/1218 smoke) ✓
+- **Bateria**: `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Novas pendências**: P-SAN3-11-VIGENTE-NAO-VINCULADA, P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (ambas não-bloqueantes)
+
+Próximo: push do branch → PR → junta.
+- **2026-10-02 — ERRATA 1 + 1-bis aplicadas** (inspetor da junta 1 BLOQUEOU por T13/T14 vermelhos em Windows/CRLF): T13/T14 sem relógio e sem dependência de EOL; KPI recontado contra a main `4ab9d232` (170 blocos, 1218/1218, `pr 401`); `P-CHK-DOSSIE-VERSAO-NA-UI` lida como FECHADA pelo gerador; bateria verde nos dois terrenos. Próximo: CI no head novo → mandatos regenerados (HC=H0) → inspetor novo → junta 1.
+- **2026-10-02 — integração pós-#402:** a main andou (`3e40a256`, B-SAN3-01b); merge no ramo com a linha `test:smoke` pela união dos dois acréscimos; KPI recontado (171 blocos, 1230/1230 por execução real); backfill do #402 pendente (não pago aqui). Próximo: CI no head novo → mandatos HC=H0 → inspetor → junta 1.
+- **2026-10-03 — ciclo 2 (§16/§16-bis):** links com afordância que não navegam, adapter fail-closed, gerador v2, 16 → 24 testes, pendências com dono; main `b404815c` integrada; KPI 171 blocos e 1238/1238 (dois terrenos); empurrado em `070b9a03` + este registro. Próximo: CI no head, mandatos regenerados (HC = H0), inspetor novo e junta do ciclo 2 (3 cadeiras novas, unanimidade).
+- **2026-10-05 — ciclo 3 (§17):** C2c2-F1 (censo P-L3 pelo checker; L3/L4 vazios vermelhos) e C2c2-F2 (recusa contratual limpa as vistorias; falha operacional preserva) corrigidos com testes antes do código (T23–T26, 24 → 28) e mutações vermelhas nos dois terrenos; `Kpis/*` devolvido à main (KPI congelado). Próximo (regra (1) do `D-GOV-PROPORCIONAL`): um revisor independente + CI verde no head empurrado do ramo, sem nova junta.
+
 ## PAUSA 2026-10-03 18:25Z — ordem do dono (P7, `D-PAUSA-GRAVA-E-PARA`)
 
 Ordem do dono: *"o codex parou e só volta às 22:00, por isso vamos pausar as atividades, só assim o pc é reiniciado"*.
@@ -4922,6 +4939,24 @@ do Codex por limite de uso.
 - **#404** — porteiro LIBERADO COM RESSALVA; este PR versiona o parecer e trata a R404-1 (títulos do `kpis-history.md`) e a
   R404-3 (estado da decisão do cabeçalho em `decisoes.md`). A R404-2 (aceite dos planejadores para os donos de duas
   pendências) e a R404-4 (disco: 8–9 GB livres; limpeza profunda feita em parte) seguem abertas.
+
+## 2026-10-04 — D-GOV-PROPORCIONAL
+
+O dono aprovou a governança proporcional (§C7 item 8): junta completa só onde há dinheiro, segurança, permissão ou perda
+de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar depois
+de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
+
+## 2026-10-08 — retomada depois da queda de energia
+
+- **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
+  verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
+  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  desligados desde a queda — não são alvo de nada.
+- **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
+  `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
+- **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
+  do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
+  porteiro do #401.
 
 ## B-SAN3-09 — bootstrap do 1º admin de plataforma — EM ANDAMENTO (2026-10-01, branch `feat/bootstrap-platform-admin`)
 
