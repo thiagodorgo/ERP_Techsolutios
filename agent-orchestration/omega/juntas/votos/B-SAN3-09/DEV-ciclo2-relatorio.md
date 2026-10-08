@@ -103,5 +103,5 @@ Objeto inicial: `53b2d8171162b0ad7565e7a3c3a4034fc6f1660e` (HEAD local = ramo re
   em parte** — MF3-b…f e MF1-a foram executadas (todas vermelhas, restauro por MD5); o resto de MF1 e todo MF2 continuam
   não executados pelo dev e ficam para a junta 2, como o próprio checklist já indicava.
 - Terreno: o container `dev09c2-mut` (imagem `erp-junta-node20-pg16:local`, `sleep infinity`) ficou vivo e foi removido
-  pelo orquestrador; nenhum outro `dev09c2-*` existia. O script de produto no worktree estava restaurado
+  pelo orquestrador; nenhum outro container `dev09c2-*` existia; a rede `dev09c2-mut-net` também foi removida. O script de produto no worktree estava restaurado
   (`git status` só com este relatório).
