@@ -72,6 +72,7 @@ export type BootstrapRefusalCode =
   | "EMAIL_MISSING"
   | "PASSWORD_MISSING"
   | "PASSWORD_IN_ARGV"
+  | "UNKNOWN_ARGUMENT"
   | "PASSWORD_TOO_WEAK"
   | "RBAC_NOT_PROVISIONED"
   | "ADDITIONAL_ADMIN_REFUSED";
@@ -107,20 +108,38 @@ export type BootstrapFlags = {
   readonly resetPassword: boolean;
 };
 
+export const BOOTSTRAP_FLAGS = {
+  "--dry-run": "dryRun",
+  "--password-stdin": "passwordStdin",
+  "--reset-password": "resetPassword",
+} as const satisfies Record<string, keyof BootstrapFlags>;
+
+type MissingBootstrapFlag = Exclude<keyof BootstrapFlags, (typeof BOOTSTRAP_FLAGS)[keyof typeof BOOTSTRAP_FLAGS]>;
+const BOOTSTRAP_FLAGS_ARE_EXHAUSTIVE: MissingBootstrapFlag extends never ? true : never = true;
+void BOOTSTRAP_FLAGS_ARE_EXHAUSTIVE;
+
 export function parseArgv(argv: readonly string[]): BootstrapFlags {
-  for (const argument of argv) {
+  const flags: Record<keyof BootstrapFlags, boolean> = {
+    dryRun: false,
+    passwordStdin: false,
+    resetPassword: false,
+  };
+  for (const [index, argument] of argv.entries()) {
     if (argument === "--password" || argument.startsWith("--password=")) {
       throw new BootstrapRefused(
         "PASSWORD_IN_ARGV",
         "Senha por argumento é recusada (argv é visível em `ps`). Use PLATFORM_ADMIN_PASSWORD ou --password-stdin.",
       );
     }
+    if (!Object.hasOwn(BOOTSTRAP_FLAGS, argument)) {
+      throw new BootstrapRefused(
+        "UNKNOWN_ARGUMENT",
+        `Argumento não reconhecido na posição ${index + 1}. Aceitos: --dry-run, --password-stdin, --reset-password. Nada foi feito.`,
+      );
+    }
+    flags[BOOTSTRAP_FLAGS[argument as keyof typeof BOOTSTRAP_FLAGS]] = true;
   }
-  return {
-    dryRun: argv.includes("--dry-run"),
-    passwordStdin: argv.includes("--password-stdin"),
-    resetPassword: argv.includes("--reset-password"),
-  };
+  return flags;
 }
 
 export type BootstrapInput = {

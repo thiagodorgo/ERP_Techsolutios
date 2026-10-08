@@ -4800,3 +4800,8 @@ bloco mergear.
   - Roles são objetos `{id, key, name}`, verificados por `.key === "super_admin"`
   - Ratchet lexical: comentários dos cabeçalhos dos dois arquivos de teste substituídos para não acionar o guard
 - **Próximos:** junta do PR, porteiro pós-merge, confirmação de P-SAN-PROD-BOOTSTRAP
+
+## 2026-10-08 — B-SAN3-09 — ciclo 2 de desenvolvimento
+
+- `P-SAN-PROD-BOOTSTRAP` permanece em andamento: fecha somente após a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
+- D2: `ALLOW_PROD_BOOTSTRAP` é independente de `ALLOW_PROD_SEED`. D3: papel `super_admin` e concessões pertencem ao CD (`db:provision-rbac`).

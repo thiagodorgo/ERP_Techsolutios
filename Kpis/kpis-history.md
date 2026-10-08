@@ -3055,27 +3055,3 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
-
-## 2026-10-04 — B-SAN3-09 (PR #400, recontado no pré-merge) — Bootstrap do 1º admin de plataforma: script idempotente, guard de produção, runbook B
-
-### Resultado
-
-| KPI | Valor |
-|-----|-------|
-| Backend | **3052/3054 → 3086/3088** — REEXECUTADO sobre a árvore do head `01f1da3b` com estes `Kpis/**` recontados (recontagem contra a `origin/main` `8ee10bd2`, integrada pelo merge `aa64aac3`), num container Linux `node:20-bookworm-slim` (o SO e a major de Node da CI; árvore por `git -c core.autocrlf=false archive`, `npm ci` próprio): `npm test` com Postgres (`dev-kpi-k400-pg`, postgres:16) e Redis (`dev-kpi-k400-redis`, redis:7) DESCARTÁVEIS PRÓPRIOS, banco novo `erp_k400_lxf` (`prisma migrate deploy` ec=0), `DATABASE_URL`/`REDIS_URL` só no ambiente do comando → 289 arquivos · 3088 · pass 3086 · fail 0 · skipped 2 (`RBAC_DB_PARITY`) · 508 s. Antes da recontagem: 3088 · 3085 · fail 1 (o guard do painel), igual ao CI do `aa64aac3`. **+34** = 23 (`tests/san3-09-bootstrap-platform-admin.test.ts`, T1.1–T1.8) + 11 (`tests/san3-09-bootstrap-platform-admin-db.test.ts`, T2.1–T2.10). A base viva não recebeu um comando. A autoria (2026-10-01) publicara 3080/3088 com 6 fail por Redis ausente |
-| Smoke (frontend) | **1214/1214 — CARREGADO, sem reexecução** (§C3.3): o PR não toca `frontend/` (`git diff --name-only origin/main...HEAD -- frontend mobile` → vazio). Último oficial, publicado pelo `B-SAN3-01b` (#402); a autoria carregava 1202/1202, anterior ao #402 |
-| Flutter | **864/864 — CARREGADO, sem reexecução** (§C3.3): o PR não toca `mobile/` (mesmo comando, vazio) |
-| Blocos Entregues | **170 → 171** — +1 bloco de implementação, RECONTADO a partir do valor publicado na `origin/main` (`8ee10bd2`; o último PR que contou bloco foi o #402 = 170). A autoria contara 168 → 169 sobre a `main` de 01/10. Se outro PR mergear antes, **reconta** no pré-merge |
-| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o item 43 do §4.1 do `PLANO_SAN3.md` só conta fechado depois do ato do dono (executar o script em produção — §4.2 e §10 item 0 do `PLANO_SAN3.md`); este PR entrega o caminho testado, não o fecho |
-| pr / merge_commit / approved_head | `400` / `null` / `null` **na autoria** (§C3.5); backfill pós-merge, com o `approved_head` lido da ata da junta |
-
-**O que o bloco entrega** (plano `docs/revisoes/SAN3/B-SAN3-09-plano.md`; relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-09/DEV-relatorio.md`).
-
-- **E1** — `scripts/bootstrap-platform-admin.ts` (417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo): script idempotente de provisionamento do 1º tenant `platform` + usuário `super_admin`. Trava `pg_advisory_xact_lock(20260909n)`. Guard **próprio** `ALLOW_PROD_BOOTSTRAP` strict-bool (`1/true/yes/on`; independente do `ALLOW_PROD_SEED` — D2 do plano). Exige o RBAC já provisionado pelo CD (`RBAC_NOT_PROVISIONED` — D3). Senha nunca via argv (`PASSWORD_IN_ARGV` exit 2). 8 passos em transação com `setTenantRlsContext`. CE-G1 import allowlist. `--dry-run`, `--password-stdin`, `--reset-password`.
-- **E2** — `tests/san3-09-bootstrap-platform-admin.test.ts` T1.1–T1.8, 23 casos sem banco (doc-guard T1.8 incluso).
-- **E3** — `tests/san3-09-bootstrap-platform-admin-db.test.ts` T2.1–T2.10, 11 casos com banco de drill descartável criado pelo próprio teste. Papéis efêmeros NOSUPERUSER NOBYPASSRLS via `createEphemeralRole`; sem GUC o papel vê 0 usuários. Idempotência e duas execuções simultâneas.
-- **E4** — `docs/deployment.md` Runbook B reescrito com os termos exigidos pelo T1.8: `ALLOW_PROD_BOOTSTRAP`, `scripts/bootstrap-platform-admin.ts`, `--dry-run`, `--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01`.
-
-**Medição além da linha do §5.2.** A linha do bloco no §5.2 do `PLANO_SAN3.md` (l.256) pede "2 execuções = 1 tenant de sistema + 1 admin"; o plano mediu **19 linhas de matriz / 25 execuções do script** (§0.5), inclusive 2 execuções **simultâneas** (M14, `1/1/1/1/1` pelo advisory lock).
-
-**Backfill §C3.5: nenhum devido** — a última entrada da `origin/main` (#402, `B-SAN3-01b`) já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos pelo #403 (`f03b883f`).

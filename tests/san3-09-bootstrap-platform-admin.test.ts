@@ -10,8 +10,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 import {
+  BOOTSTRAP_FLAGS,
   BOOTSTRAP_MIN_PASSWORD_LENGTH,
   BootstrapRefused,
   assertBootstrapPassword,
@@ -86,6 +88,47 @@ test("T1.2 parseArgv: sem flags → todos false", () => {
   assert.equal(flags.dryRun, false);
   assert.equal(flags.passwordStdin, false);
   assert.equal(flags.resetPassword, false);
+});
+
+function unknownArgumentVariants(): string[] {
+  const variants = new Set<string>(["--dryrun", "-n", "-p", "--", "", " --dry-run", "constructor", "toString", "__proto__", "hasOwnProperty"]);
+  for (const flag of Object.keys(BOOTSTRAP_FLAGS)) {
+    for (let index = 0; index < flag.length; index += 1) variants.add(flag.slice(0, index) + flag.slice(index + 1));
+    for (let index = 0; index < flag.length; index += 1) {
+      if (/[a-z]/i.test(flag[index])) variants.add(flag.slice(0, index) + flag[index].toUpperCase() + flag.slice(index + 1));
+    }
+    for (let index = 0; index < flag.length; index += 1) {
+      if (flag[index] === "-") variants.add(flag.slice(0, index) + "_" + flag.slice(index + 1));
+      if (flag[index] === "_") variants.add(flag.slice(0, index) + "-" + flag.slice(index + 1));
+    }
+    variants.add(flag.replace(/^--/, "-"));
+    variants.add(flag.replace(/^--/, ""));
+    variants.add(`${flag}=true`);
+    variants.add(`${flag}=1`);
+    variants.add(`${flag}=false`);
+  }
+  for (const known of Object.keys(BOOTSTRAP_FLAGS)) variants.delete(known);
+  return [...variants];
+}
+
+const UNKNOWN_ARGUMENT_VARIANTS = unknownArgumentVariants();
+test(`T1.2b conjunto fechado: ${UNKNOWN_ARGUMENT_VARIANTS.length} variantes desconhecidas são recusadas sem eco`, () => {
+  assert.ok(UNKNOWN_ARGUMENT_VARIANTS.length >= 3 * Object.keys(BOOTSTRAP_FLAGS).length);
+  for (const token of UNKNOWN_ARGUMENT_VARIANTS) {
+    assert.throws(
+      () => parseArgv([token]),
+      (error: unknown) => {
+        assert.ok(error instanceof BootstrapRefused);
+        assert.equal(error.code, "UNKNOWN_ARGUMENT");
+        if (token.length >= 3 && !Object.keys(BOOTSTRAP_FLAGS).some((flag) => flag.includes(token.trim()))) {
+          assert.ok(!error.message.includes(token), `mensagem ecoou token: ${token}`);
+        }
+        return true;
+      },
+    );
+  }
+  for (const [flag, field] of Object.entries(BOOTSTRAP_FLAGS)) assert.equal(parseArgv([flag])[field], true);
+  assert.deepEqual(parseArgv(Object.keys(BOOTSTRAP_FLAGS)), { dryRun: true, passwordStdin: true, resetPassword: true });
 });
 
 // ── T1.3 — readBootstrapInput: validações de entrada ─────────────────────────────────────────────
@@ -218,6 +261,30 @@ test("T1.5 processo filho: NODE_ENV=production sem opt-in → exit 2 + PRODUCTIO
   );
 });
 
+test("T1.5 M-2: ALLOW_PROD_SEED=1 não abre bootstrap em produção", () => {
+  const result = spawnSync(process.execPath, ["--import", "tsx/esm", SCRIPT], {
+    env: { NODE_ENV: "production", ALLOW_PROD_SEED: "1", PATH: process.env.PATH }, encoding: "utf8", timeout: 30_000,
+  });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr ?? "", /PRODUCTION_OPT_IN_MISSING/);
+});
+
+test("T1.5c argumento desconhecido é recusado antes de ambiente/banco e nunca ecoa segredo", () => {
+  const typo = spawnSync(process.execPath, ["--import", "tsx/esm", SCRIPT, "--password-stdin", "--dryrun"], {
+    env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 30_000,
+  });
+  assert.equal(typo.status, 2);
+  assert.match(typo.stderr ?? "", /UNKNOWN_ARGUMENT/);
+  assert.doesNotMatch(typo.stderr ?? "", /DATABASE_URL_MISSING/);
+  const secret = `segredo-${Date.now()}-sentinela`;
+  const short = spawnSync(process.execPath, ["--import", "tsx/esm", SCRIPT, "-p", secret], {
+    env: { PATH: process.env.PATH }, encoding: "utf8", timeout: 30_000,
+  });
+  assert.equal(short.status, 2);
+  assert.match(short.stderr ?? "", /UNKNOWN_ARGUMENT/);
+  assert.ok(!`${short.stdout}${short.stderr}`.includes(secret));
+});
+
 // ── T1.6 — processo filho com senha no argv e sentinela no env ─────────────────────────────────
 
 test("T1.6 processo filho: --password=x → exit 2 PASSWORD_IN_ARGV; sentinela não vaza em stdout/stderr", () => {
@@ -256,15 +323,53 @@ const IMPORT_ALLOWLIST = new Set([
   "../src/modules/auth/services/local-auth-credential.service.js",
 ]);
 
-function extractScriptImports(scriptPath: string): string[] {
-  const text = readFileSync(scriptPath, "utf8");
-  const matches = [...text.matchAll(/^import\s+.*?from\s+"([^"]+)"/gm)];
-  return matches.map((m) => m[1]);
+function collectModuleSpecifiers(text: string, fileName: string, runtimeOnly = false): string[] {
+  const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  assert.equal(source.parseDiagnostics.length, 0, `${fileName} não é parseável`);
+  const found: string[] = [];
+  const literal = (node: ts.Expression): string =>
+    ts.isStringLiteralLike(node) || ts.isNoSubstitutionTemplateLiteral(node) ? node.text : "<não-literal>";
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && node.moduleSpecifier) {
+      const clause = node.importClause;
+      const onlyNamedTypes = clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
+        && clause.namedBindings.elements.length > 0 && clause.namedBindings.elements.every((element) => element.isTypeOnly);
+      if (!runtimeOnly || !clause?.isTypeOnly && !onlyNamedTypes) found.push(literal(node.moduleSpecifier));
+    }
+    else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
+      if (!runtimeOnly || !node.isTypeOnly) found.push(literal(node.moduleSpecifier));
+    }
+    else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && node.moduleReference.expression) {
+      if (!runtimeOnly || !node.isTypeOnly) found.push(literal(node.moduleReference.expression));
+    }
+    else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && node.arguments[0]) found.push(literal(node.arguments[0]));
+    else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "require" && node.arguments[0]) found.push(literal(node.arguments[0]));
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+function runtimeClosure(entryPath: string): Set<string> {
+  const closure = new Set<string>();
+  const visit = (path: string): void => {
+    if (closure.has(path)) return;
+    closure.add(path);
+    const text = readFileSync(path, "utf8");
+    for (const specifier of collectModuleSpecifiers(text, path, true)) {
+      if (!specifier.startsWith(".")) continue;
+      const resolved = fileURLToPath(new URL(specifier.replace(/\.js$/, ".ts"), `file:///${path.replaceAll("\\", "/")}`));
+      visit(resolved);
+    }
+  };
+  visit(entryPath);
+  return closure;
 }
 
 test("T1.7 guard de imports (CE-G1): todos os imports de bootstrap-platform-admin.ts pertencem à allowlist", () => {
   const scriptPath = join(ROOT, "scripts", "bootstrap-platform-admin.ts");
-  const imports = extractScriptImports(scriptPath);
+  const text = readFileSync(scriptPath, "utf8");
+  const imports = collectModuleSpecifiers(text, scriptPath);
   assert.ok(imports.length > 0, "nenhum import encontrado no script");
   for (const imp of imports) {
     assert.ok(
@@ -272,28 +377,27 @@ test("T1.7 guard de imports (CE-G1): todos os imports de bootstrap-platform-admi
       `import fora da allowlist (CE-G1): "${imp}"\nAllowlist: ${[...IMPORT_ALLOWLIST].join(", ")}`,
     );
   }
+  const compilerImports = ts.preProcessFile(text, true, true).importedFiles.map((item) => item.fileName);
+  for (const specifier of compilerImports) assert.ok(imports.includes(specifier), `AST perdeu import visto pelo compilador: ${specifier}`);
+  assert.equal(imports.length, 6, `esperava 6 especificadores no script real, recebeu ${imports.length}`);
+  const closure = runtimeClosure(scriptPath);
+  assert.ok(![...closure].some((path) => path.replaceAll("\\", "/").endsWith("/src/config/env.ts")), `fecho carregou env.ts: ${[...closure].join(", ")}`);
 });
 
 test("T1.7 guard de imports (CE-G1): MUTAÇÃO — import fora da allowlist é detectado", () => {
-  const fakeScript = `
-import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
-import { setTenantRlsContext } from "../src/database/rls.js";
-import { LocalAuthCredentialRepository } from "../src/modules/auth/repositories/local-auth-credential.repository.js";
-import { LocalAuthCredentialService } from "../src/modules/auth/services/local-auth-credential.service.js";
-import { auth } from "../src/modules/auth/index.js";
-`;
-  const imports = [...fakeScript.matchAll(/^import\s+.*?from\s+"([^"]+)"/gm)].map((m) => m[1]);
-  const outOfAllowlist = imports.filter((imp) => !IMPORT_ALLOWLIST.has(imp));
-  assert.ok(
-    outOfAllowlist.length > 0,
-    "a mutação deveria ter detectado um import fora da allowlist",
-  );
-  assert.ok(
-    outOfAllowlist.includes("../src/modules/auth/index.js"),
-    `esperava detectar "../src/modules/auth/index.js", achado: ${outOfAllowlist.join(", ")}`,
-  );
+  const script = readFileSync(SCRIPT, "utf8");
+  const intruder = "node:crypto";
+  const forms = [
+    `import "${intruder}";`, `import {\n randomUUID\n} from "${intruder}";`, `import { randomUUID } from '${intruder}';`, `export * from "${intruder}";`,
+    `export { randomUUID } from "${intruder}";`, `await import("${intruder}");`, `const nome = "${intruder}"; await import(nome);`,
+    `await import(\`${intruder}\`);`, `import crypto = require("${intruder}");`, `require("${intruder}");`,
+    `function carregar() { return import("${intruder}"); }`, `/* comentário */ import "${intruder}";`,
+  ];
+  assert.deepEqual(collectModuleSpecifiers(script, SCRIPT).filter((item) => !IMPORT_ALLOWLIST.has(item)), []);
+  for (const form of forms) {
+    const violations = collectModuleSpecifiers(`${script}\n${form}`, SCRIPT).filter((item) => !IMPORT_ALLOWLIST.has(item));
+    assert.ok(violations.includes(intruder) || violations.includes("<não-literal>"), `forma não detectada: ${form}`);
+  }
 });
 
 // ── T1.8 — doc-guard: Runbook B em docs/deployment.md contém as variáveis e flags corretas ──────
@@ -308,7 +412,7 @@ function extractRunbookB(text: string): string {
   return end === -1 ? text.slice(afterStart) : text.slice(afterStart, end);
 }
 
-test("T1.8 doc-guard Runbook B: contém ALLOW_PROD_BOOTSTRAP, scripts/bootstrap-platform-admin.ts, --dry-run, --password-stdin, PRODUCTION_OPT_IN_MISSING e menção ao runbook B-O6R-01", () => {
+test("T1.8 doc-guard Runbook B contém contrato operacional completo", () => {
   const text = readFileSync(DEPLOYMENT_PATH, "utf8");
   const runbook = extractRunbookB(text);
   assert.ok(runbook.length > 0, "Runbook B não encontrado em docs/deployment.md (procurou por '#### Runbook B')");
@@ -320,6 +424,10 @@ test("T1.8 doc-guard Runbook B: contém ALLOW_PROD_BOOTSTRAP, scripts/bootstrap-
     "--password-stdin",
     "PRODUCTION_OPT_IN_MISSING",
     "B-O6R-01",
+    "TLS",
+    "exit 1",
+    "FALHOU",
+    "UNKNOWN_ARGUMENT",
   ]) {
     assert.ok(
       runbook.includes(expected),

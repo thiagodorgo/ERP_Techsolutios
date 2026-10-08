@@ -4934,4 +4934,4 @@ do Codex por limite de uso.
 - **Junta:** aguardando (`feat/bootstrap-platform-admin`, 10 commits à frente de `origin/main`).
 - **KPI:** `blocks_completed` **168 → 169**; `backend_tests` **3052/3054 → 3080/3088** (reexecução real; +34 casos); smoke e Flutter carregados (§C3.3).
 - **Pendências abertas:** `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, `P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP`, `P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG`.
-- **P-SAN-PROD-BOOTSTRAP:** em andamento — script entregue; confirmação pelo porteiro pós-merge após o merge.
+- **P-SAN-PROD-BOOTSTRAP:** em andamento — script entregue; fecha somente com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.

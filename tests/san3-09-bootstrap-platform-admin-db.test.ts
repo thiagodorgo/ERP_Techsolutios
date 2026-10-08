@@ -58,6 +58,7 @@ if (!connectionString) {
 
       const suffix = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
       const drillDbName = `erp_san3_09_drill_${suffix}`;
+      const modelDbName = `erp_san3_09_drill_model_${suffix}`;
       // Reescreve só o nome do banco na URL, preservando host/porta/usuário
       const drillUrl = connectionString.replace(/\/([^/?]+)(\?.*)?$/, `/${drillDbName}$2`);
 
@@ -130,6 +131,8 @@ if (!connectionString) {
             `db:provision-rbac falhou:\nstdout: ${npmRes.stdout}\nstderr: ${npmRes.stderr}`,
           );
         }
+
+        await adminClient.$executeRawUnsafe(`CREATE DATABASE "${modelDbName}" TEMPLATE "${drillDbName}"`);
 
         drillClient = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillUrl }) });
 
@@ -229,24 +232,95 @@ if (!connectionString) {
 
         // T2.4 — dry-run ────────────────────────────────────────────────────────────────────────────────
 
-        await t.test("T2.4 --dry-run em estado limpo (novo tenant) e em estado convergido: 0 escritas", async () => {
-          // Estado convergido: dry-run não deve mudar nada
-          const tenantsAntes = await drillClient!.tenant.count();
-          const usersAntes = await drillClient!.user.count();
-          const auditAntes = await drillClient!.auditLog.count();
+        await t.test("T2.4 --dry-run read-only em 5 estados + controle de escrita", async () => {
+          const states = ["limpo", "tenant", "usuario", "convergido", "reset"] as const;
+          for (const [index, state] of states.entries()) {
+            const dbName = `erp_san3_09_drill_t24_${index}_${suffix}`;
+            const url = new URL(connectionString);
+            url.pathname = `/${dbName}`;
+            await adminClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE "${modelDbName}"`);
+            const seed = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
+            try {
+              if (state === "tenant" || state === "usuario") {
+                const tenant = await seed.tenant.create({ data: { name: "Plataforma", slug: PLATFORM_TENANT_SLUG, status: "active", modules: [] } });
+                if (state === "usuario") await seed.user.create({ data: { tenant_id: tenant.id, name: ADMIN_NAME, email: ADMIN_EMAIL, status: "active" } });
+              } else if (state === "convergido" || state === "reset") {
+                await bootstrapPlatformAdmin(seed, baseInput);
+              }
+              const fingerprint = async () => {
+                const tenant = await seed.tenant.findUnique({ where: { slug: PLATFORM_TENANT_SLUG }, select: { id: true } });
+                return {
+                  tenants: await seed.tenant.count({ where: { slug: PLATFORM_TENANT_SLUG } }),
+                  users: tenant ? await seed.user.count({ where: { tenant_id: tenant.id } }) : 0,
+                  assignments: tenant ? await seed.userRoleAssignment.count({ where: { tenant_id: tenant.id } }) : 0,
+                  credentials: tenant ? await seed.localAuthCredential.count({ where: { tenant_id: tenant.id } }) : 0,
+                  audits: tenant ? await seed.auditLog.count({ where: { tenant_id: tenant.id } }) : 0,
+                  hash: tenant ? (await seed.localAuthCredential.findFirst({ where: { tenant_id: tenant.id }, select: { password_hash: true } }))?.password_hash ?? null : null,
+                };
+              };
+              const before = await fingerprint();
+              const readOnlyUrl = new URL(url);
+              readOnlyUrl.searchParams.set("options", "-c default_transaction_read_only=on");
+              const readOnly = new PrismaClient({ adapter: new PrismaPg({ connectionString: readOnlyUrl.toString() }) });
+              try {
+                const input = state === "reset" ? { ...baseInput, resetPassword: true } : baseInput;
+                const report = await bootstrapPlatformAdmin(readOnly, input, { dryRun: true });
+                assert.equal(report.dryRun, true, `${state}: relatório dryRun`);
+                const expected = {
+                  limpo: [true, true, true, true, false], tenant: [false, true, true, true, false],
+                  usuario: [false, false, true, true, false], convergido: [false, false, false, false, false], reset: [false, false, false, false, false],
+                }[state];
+                assert.deepEqual(
+                  [report.tenantCreated, report.userCreated, report.assignmentCreated, report.credentialCreated, report.passwordReset], expected,
+                  `${state}: relatório deve descrever o estado sem escrever`,
+                );
+                if (state === "limpo") {
+                  await assert.rejects(() => bootstrapPlatformAdmin(readOnly, baseInput), /read-only transaction/i);
+                }
+              } finally {
+                await readOnly.$disconnect();
+              }
+              assert.deepEqual(await fingerprint(), before, `${state}: impressão digital deve permanecer idêntica`);
+            } finally {
+              await seed.$disconnect();
+              await adminClient.$executeRawUnsafe(`DROP DATABASE "${dbName}" WITH (FORCE)`);
+            }
+          }
+          const processDbName = `erp_san3_09_drill_t24_process_${suffix}`;
+          const processUrl = new URL(connectionString); processUrl.pathname = `/${processDbName}`;
+          await adminClient.$executeRawUnsafe(`CREATE DATABASE "${processDbName}" TEMPLATE "${modelDbName}"`);
+          try {
+            const result = spawnSync(process.execPath, ["--import", "tsx/esm", SCRIPT, "--password-stdin", "--dry-run"], {
+              env: { ...process.env, DATABASE_URL: processUrl.toString(), PLATFORM_ADMIN_EMAIL: ADMIN_EMAIL },
+              input: `${ADMIN_PASSWORD}\n`, encoding: "utf8", timeout: 30_000,
+            });
+            assert.equal(result.status, 0, `processo Runbook dry-run: ${result.stderr}`);
+            assert.match(result.stdout ?? "", /nada foi escrito/i);
+            const verify = new PrismaClient({ adapter: new PrismaPg({ connectionString: processUrl.toString() }) });
+            try {
+              assert.deepEqual([await verify.tenant.count({ where: { slug: PLATFORM_TENANT_SLUG } }), await verify.user.count(), await verify.userRoleAssignment.count(), await verify.localAuthCredential.count(), await verify.auditLog.count()], [0, 0, 0, 0, 0]);
+            } finally { await verify.$disconnect(); }
+          } finally { await adminClient.$executeRawUnsafe(`DROP DATABASE "${processDbName}" WITH (FORCE)`); }
+        });
 
-          const reportConvergido = await bootstrapPlatformAdmin(drillClient!, baseInput, { dryRun: true });
-
-          assert.equal(reportConvergido.dryRun, true, "dryRun deve ser true");
-          assert.equal(reportConvergido.tenantCreated, false, "dry-run em estado convergido: tenantCreated false");
-
-          const tenantsDepois = await drillClient!.tenant.count();
-          const usersDepois = await drillClient!.user.count();
-          const auditDepois = await drillClient!.auditLog.count();
-
-          assert.equal(tenantsDepois, tenantsAntes, "dry-run não deve criar tenants");
-          assert.equal(usersDepois, usersAntes, "dry-run não deve criar usuários");
-          assert.equal(auditDepois, auditAntes, "dry-run não deve criar audit_logs");
+        await t.test("T2.4b --dryrun desconhecido: exit 2 UNKNOWN_ARGUMENT e 0/0/0/0/0", async () => {
+          const dbName = `erp_san3_09_drill_t24b_${suffix}`;
+          const url = new URL(connectionString); url.pathname = `/${dbName}`;
+          await adminClient.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE "${modelDbName}"`);
+          try {
+            const result = spawnSync(process.execPath, ["--import", "tsx/esm", SCRIPT, "--password-stdin", "--dryrun"], {
+              env: { ...process.env, DATABASE_URL: url.toString(), PLATFORM_ADMIN_EMAIL: ADMIN_EMAIL }, input: `${ADMIN_PASSWORD}\n`, encoding: "utf8", timeout: 30_000,
+            });
+            assert.equal(result.status, 2);
+            assert.match(result.stderr ?? "", /UNKNOWN_ARGUMENT/);
+            const verify = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
+            try {
+              assert.deepEqual([
+                await verify.tenant.count({ where: { slug: PLATFORM_TENANT_SLUG } }), await verify.user.count(),
+                await verify.userRoleAssignment.count(), await verify.localAuthCredential.count(), await verify.auditLog.count(),
+              ], [0, 0, 0, 0, 0]);
+            } finally { await verify.$disconnect(); }
+          } finally { await adminClient.$executeRawUnsafe(`DROP DATABASE "${dbName}" WITH (FORCE)`); }
         });
 
         // T2.5 — outro e-mail recusado ──────────────────────────────────────────────────────────────────
@@ -557,6 +631,9 @@ if (!connectionString) {
             // NODE_ENV=production sem opt-in → exit 2 e contagens intactas
             const drillT29Client = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT29Url }) });
             const tenantsAntes = await drillT29Client.tenant.count();
+            const storedHash = (await drillT29Client.localAuthCredential.findFirst({ select: { password_hash: true } }))?.password_hash;
+            assert.ok(storedHash, "T2.9 deve ler o hash real gravado");
+            const sensitiveSegments = storedHash.split("$").filter((segment) => segment.length >= 16);
 
             const resProd = spawnSync(
               process.execPath,
@@ -579,8 +656,9 @@ if (!connectionString) {
             for (const [label, res] of [["1ª", res1], ["2ª", res2], ["prod", resProd]] as const) {
               const combined = (res.stdout ?? "") + (res.stderr ?? "");
               assert.ok(!combined.includes(ADMIN_PASSWORD), `T2.9-${label}: senha não deve aparecer em stdout/stderr`);
-              assert.ok(!combined.includes("$scrypt-v1$"), `T2.9-${label}: hash não deve aparecer em stdout/stderr`);
-              assert.ok(!combined.includes("postgresql://"), `T2.9-${label}: URL de banco não deve aparecer em stdout/stderr`);
+              assert.ok(!combined.includes(storedHash), `T2.9-${label}: hash inteiro não deve aparecer em stdout/stderr`);
+              for (const segment of sensitiveSegments) assert.ok(!combined.includes(segment), `T2.9-${label}: segmento sensível do hash vazou`);
+              assert.doesNotMatch(combined, /postgres(ql)?:\/\//, `T2.9-${label}: URL de banco não deve aparecer`);
             }
           } finally {
             try {
@@ -591,32 +669,16 @@ if (!connectionString) {
 
         // T2.10 — duas chamadas simultâneas (advisory lock) ─────────────────────────────────────────────
 
-        await t.test("T2.10 duas chamadas simultâneas → 1/1/1/1/1 (trava própria)", async () => {
+        await t.test("T2.10 3 rodadas: duas chamadas simultâneas resolvem → 1/1/1/1/1", async () => {
           // Banco de drill limpo para concorrência
-          const suffixT210 = `t210_${Date.now()}`;
-          const drillT210Name = `erp_san3_09_drill_${suffixT210}`;
-          const drillT210Url = connectionString.replace(/\/([^/?]+)(\?.*)?$/, `/${drillT210Name}$2`);
+          for (let round = 0; round < 3; round += 1) {
+            const drillT210Name = `erp_san3_09_drill_t210_${round}_${suffix}`;
+            const drillT210Url = new URL(connectionString); drillT210Url.pathname = `/${drillT210Name}`;
+            try {
+              await adminClient.$executeRawUnsafe(`CREATE DATABASE "${drillT210Name}" TEMPLATE "${modelDbName}"`);
 
-          try {
-            await adminClient.$executeRawUnsafe(`CREATE DATABASE "${drillT210Name}"`);
-
-            const mRes = spawnSync(
-              process.execPath,
-              ["--import", "tsx/esm", join(ROOT, "node_modules", ".bin", "prisma"), "migrate", "deploy"],
-              { env: { ...process.env, DATABASE_URL: drillT210Url }, encoding: "utf8", timeout: 120_000 },
-            );
-            assert.equal(mRes.status, 0, `migrate T2.10 falhou: ${mRes.stderr}`);
-
-            const pRes = spawnSync("npm", ["run", "--silent", "db:provision-rbac"], {
-              env: { ...process.env, DATABASE_URL: drillT210Url },
-              encoding: "utf8",
-              timeout: 60_000,
-              cwd: ROOT,
-            });
-            assert.equal(pRes.status, 0, `provision-rbac T2.10 falhou: ${pRes.stderr}`);
-
-            const drillT210ClientA = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url }) });
-            const drillT210ClientB = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url }) });
+            const drillT210ClientA = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url.toString() }) });
+            const drillT210ClientB = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url.toString() }) });
 
             const emailA = `concurrent-a-${Date.now()}@example.com`;
             // Ambos usam o mesmo e-mail para simular corrida real
@@ -642,17 +704,19 @@ if (!connectionString) {
               r.status === "fulfilled";
 
             const fulfilled = [resultA, resultB].filter(isFulfilled);
-            assert.ok(fulfilled.length >= 1, "pelo menos uma das execuções deve ter sucesso");
+            assert.equal(fulfilled.length, 2, `rodada ${round + 1}: ambas as execuções devem resolver`);
 
             // Verificar estado final: exatamente 1 tenant, 1 usuário
-            const drillT210Verify = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url }) });
+            const drillT210Verify = new PrismaClient({ adapter: new PrismaPg({ connectionString: drillT210Url.toString() }) });
             try {
               const tenants = await drillT210Verify.tenant.count({ where: { slug: PLATFORM_TENANT_SLUG } });
-              const users = await drillT210Verify.user.count({
-                where: { tenant: { slug: PLATFORM_TENANT_SLUG } },
-              });
+              const users = await drillT210Verify.user.count({ where: { tenant: { slug: PLATFORM_TENANT_SLUG } } });
+              const assignments = await drillT210Verify.userRoleAssignment.count();
+              const credentials = await drillT210Verify.localAuthCredential.count();
+              const audits = await drillT210Verify.auditLog.count();
               assert.equal(tenants, 1, "deve haver exatamente 1 tenant após execução concorrente");
               assert.equal(users, 1, "deve haver exatamente 1 usuário após execução concorrente");
+              assert.deepEqual([assignments, credentials, audits], [1, 1, 1]);
             } finally {
               await drillT210Verify.$disconnect();
             }
@@ -660,6 +724,7 @@ if (!connectionString) {
             try {
               await adminClient.$executeRawUnsafe(`DROP DATABASE "${drillT210Name}" WITH (FORCE)`);
             } catch { /* ignore */ }
+          }
           }
         });
       } finally {
@@ -676,6 +741,9 @@ if (!connectionString) {
         try { await adminClient.$disconnect(); } catch { /* ignore */ }
         try {
           await adminClient.$executeRawUnsafe(`DROP DATABASE "${drillDbName}" WITH (FORCE)`);
+        } catch { /* ignore */ }
+        try {
+          await adminClient.$executeRawUnsafe(`DROP DATABASE "${modelDbName}" WITH (FORCE)`);
         } catch { /* ignore */ }
       }
     },

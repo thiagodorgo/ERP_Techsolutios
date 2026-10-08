@@ -193,6 +193,11 @@ unset SENHA
 Saída de sucesso: `CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.` (exit 0). Sem
 `ALLOW_PROD_BOOTSTRAP=1` → `PRODUCTION_OPT_IN_MISSING` e exit 2 (nada gravado). Senha perdida: `--reset-password`.
 `ALLOW_PROD_BOOTSTRAP` e `ALLOW_PROD_SEED` são variáveis **independentes** — uma não abre a outra.
+Argumento não reconhecido → `UNKNOWN_ARGUMENT` e exit 2, sem ecoar o argumento e sem gravar nada. Códigos: exit 0 =
+criado ou já convergido; exit 2 = recusa nomeada (trava, entrada, argumento ou estado), nada gravado; exit 1 =
+`FALHOU` (por exemplo, banco inalcançável), nada confirmado e a transação não fecha.
+
+Domínio + TLS pelo Fly (certs gerenciados) após o `fly apps create` e o apontamento de DNS.
 
 **Ato 2 — login pela web:** requer o runbook B-O6R-01 ("Runbook de ativação do login sem organização") para que
 o papel de runtime possa executar a função `auth_login_candidates`. Sem ele, a tela responde 401 para qualquer conta.
