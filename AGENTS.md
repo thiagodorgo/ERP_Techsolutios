@@ -764,7 +764,10 @@ Regras de fidelidade (aprendidas de uma entrega que divergiu do modelo):
 
 Referências disponíveis (índice completo em **`screen-refs/README.md`**):
 - **`screen-refs/web/`** — **35 PNGs** (todas as telas do ERP Web, agrupadas por papel: Plataforma,
-  Operação, Despacho, Administração, Financeiro). Alvo renderizado a 1440px, sem andaime de dev.
+  Operação, Despacho, Administração, Financeiro). Capturas a 924×540 (medido em 2026-10-08), sem andaime de dev.
+  **Exceção (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`):** para as 5 telas padronizadas
+  (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência é `ERP Web - Telas Padronizadas.dc.html`
+  (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**

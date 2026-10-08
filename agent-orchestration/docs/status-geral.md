@@ -4945,3 +4945,15 @@ do Codex por limite de uso.
 O dono aprovou a governança proporcional (§C7 item 8): junta completa só onde há dinheiro, segurança, permissão ou perda
 de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar depois
 de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
+
+## 2026-10-08 — retomada depois da queda de energia
+
+- **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
+  verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
+  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  desligados desde a queda — não são alvo de nada.
+- **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
+  `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
+- **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
+  do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
+  porteiro do #401.

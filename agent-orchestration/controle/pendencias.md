@@ -9977,7 +9977,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS diverge do PNG e do protótipo, mas segue o design padronizado do dono — BAIXA
 
-- status: ABERTA (aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`).
+- status: **FECHADA em 2026-10-08** por `D-OS-CABECALHO-PADRONIZADO` (o dono escolheu a opção C: vale o design padronizado, o cabeçalho do app já o segue valor por valor; Filtrar e Exportar vão para o bloco `B-OS-FILTRAR-EXPORTAR`). Aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`.
 - **prova (forma: kicker, título 22 × 20, subtítulo, alinhamento, borda, Filtrar e Exportar omitidos, padding e borda do botão "Nova OS", contra `docs/claude-code-handoff/screen-refs/web/ordens-servico.png` e `docs/claude-code-handoff/ERP Web.dc.html` l.288-296; idêntico pixel a pixel no head-base):** `votos/B-SAN3-01b/C3-voto.json`, achado `C3-N1`.
 - **escopo:** `pre-existente` — `0a38f1be` (#331) e `d43314bd` (#332), 2026-08-04; o cabeçalho segue `docs/juntas/J-TELAS-PADRONIZADAS.md` §1.
 - **efeito medido:** divergência visual, não de regra.
@@ -10036,3 +10036,38 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **status:** ABERTA · **severidade:** baixa
 - **dono:** o mesmo da `P-SAN3-11-CENSO-CAST-RECORD`
 - **bloqueia:** não.
+
+## P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as duas referências mostram — MÉDIA
+
+- status: ABERTA (aberta por `D-OS-CABECALHO-PADRONIZADO`).
+- **prova:** comparativo de 2026-10-08 (agente de frontend; capturas reais a 1440×900 do app em `main` 749a5cf8, do
+  protótipo antigo e do design padronizado): os dois designs têm Filtrar e Exportar no cabeçalho; o app os omitiu em
+  2026-08-04 (#332) por não haver função ligada. As funções existem: o backend aceita `priority`, `assignedOperatorId`,
+  `from`, `to` (`src/modules/work-orders/work-order.types.ts`), o serviço e o adaptador do front os enviam e filtram, e a
+  tela os fixa em `STABLE_FILTERS` (`frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`); `frontend/src/lib/csv.ts`
+  já serve a exportação da Auditoria.
+- **dono:** bloco `B-OS-FILTRAR-EXPORTAR` (plano → dev → revisor + CI, `D-GOV-PROPORCIONAL` regra 1).
+- **bloqueia:** não.
+- **teste de encerramento:** Filtrar (Prioridade, Período) e Exportar funcionando na lista de OS, com testes; Técnico
+  quando `P-WO-LIST-TECH-NAME` fechar.
+
+## P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users e /audit — BAIXA
+
+- status: ABERTA.
+- **prova:** capturas `05-app-usuarios-1440.png` e `05-app-auditoria-1440.png` do comparativo de 2026-10-08 (perfil
+  Operador Logístico, mocks): o título da barra do topo cai no rótulo de fallback em vez do nome da tela; o fallback
+  está em `frontend/src/layouts/appSidebarNav.ts` (~l.338).
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** a barra do topo mostra o nome da tela em toda rota do menu, com teste por rota.
+
+## P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o design padronizado — BAIXA
+
+- status: ABERTA.
+- **prova:** comparativo de 2026-10-08: (1) o botão primário do cabeçalho tem borda de 1px que o design não tem (+2px
+  de altura) nas 5 telas padronizadas; (2) o conteúdo começa a 24px do topo no app e a 22px no design; (3) no próprio
+  design, o primário de Usuários, Auditoria e Pátios tem folga 10/16 e o de OS 9/16. A fonte Inter não carregada já é
+  `P-WEB-FONTE-INTER-NAO-CARREGADA`.
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.
