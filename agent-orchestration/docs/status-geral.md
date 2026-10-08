@@ -4970,3 +4970,13 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **KPI:** `blocks_completed` **168 → 169**; `backend_tests` **3052/3054 → 3080/3088** (reexecução real; +34 casos); smoke e Flutter carregados (§C3.3).
 - **Pendências abertas:** `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, `P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP`, `P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG`.
 - **P-SAN-PROD-BOOTSTRAP:** em andamento — script entregue; fecha somente com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
+
+## 2026-10-08 (noite) — #400 e #409 mergeados; #405 em desenvolvimento
+
+- **Mergeados:** #400 (`B-SAN3-09`, 1º admin de plataforma; junta 2 APROVADO 3×0; squash `026ff7b8`; porteiro LIBERADO COM
+  RESSALVA) e #409 (`B-OS-FILTRAR-EXPORTAR`; revisor independente APROVADO; squash `fea93281`; porteiro LIBERADO COM RESSALVA).
+- **#405 (`B-SAN3-05`):** plano do ciclo 2 completo; dev do ciclo 2 no Codex (`gpt-5.6-sol`), com duas paradas obrigatórias
+  resolvidas (errata 1 do orquestrador e errata 2 por decisão do dono, `D-405-D4-NOME-DE-PAPEL`); retomada agendada para
+  22:08 BRT depois do limite de uso do Codex.
+- **Estacionados:** #388, #389, #393. **Traccar:** plano só depois do merge do #405 (`D-TRACCAR-PLANO-APOS-405`).
+- **Disco:** ~12 GB livres; limpeza profunda antes da trilha do Traccar (ressalvas dos porteiros).
