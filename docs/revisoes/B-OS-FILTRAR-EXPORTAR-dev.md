@@ -50,17 +50,17 @@
 - Saída resumida: página viva existente `13/13`, 0 falha, 0 pulado, ec 0.
 - Resultado: cada busca recebe sequência crescente; resposta superada não toca estado nem flags. Os 13 casos anteriores permanecem verdes.
 
-### Passo 6 — A7 + A8 — EM APURAÇÃO
+### Passo 6 — A7 + A8 — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `timeout 600 npm --prefix frontend run check`; `cd frontend && timeout 600 node --test --import tsx tests/pattern-css-guard.test.ts`.
+- Saída resumida: TypeScript ec 0; guard CSS `3/3`, 0 falha, 0 pulado.
+- Resultado: cartão acessível de 5 campos/ações criado só como apresentação; CSS acrescenta exclusivamente `.pat-btn--engaged` e `.pat-btn__count`, sem engolir regras pelo parser.
 
-### Passo 7 — A1, integração da página — EM APURAÇÃO
+### Passo 7 — A1, integração da página — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `timeout 600 npm --prefix frontend run check`; `cd frontend && timeout 600 node --test --import tsx tests/work-orders-page-live.test.tsx`.
+- Saída resumida: TypeScript ec 0; página viva anterior `13/13`, 0 falha, 0 pulado.
+- Resultado: cabeçalho em ordem Filtrar · Exportar · Nova OS, estado memoizado por valor, cartão entre KPI e faixa, CSV das linhas filtradas e vazio honesto ligados à página; regressão viva anterior intacta.
 
 ### Passo 8 — A10 + A12 — EM APURAÇÃO
 

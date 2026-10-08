@@ -3095,6 +3095,28 @@
   color: #fff;
 }
 
+/* B-OS-FILTRAR-EXPORTAR: Filtrar com filtro ativo usa o azul do hover, fixo */
+.pat-btn--engaged {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+/* B-OS-FILTRAR-EXPORTAR: selo de contagem, 15px de altura para nao crescer o botao */
+.pat-btn__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Link de ação 12px/700 azul (cabeçalho de card, faixas) ── */
 .pat-link {
   padding: 0;
