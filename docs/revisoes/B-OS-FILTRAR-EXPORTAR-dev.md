@@ -38,17 +38,17 @@
 - Saída resumida: arquivo puro `15/15`, 0 falha, 0 pulado (7 anteriores + EX1–EX8); TypeScript ec 0.
 - Resultado: CSV em allowlist com 8 colunas, fórmula neutralizada, agenda absoluta, nome demonstrativo e matriz de disponibilidade implementados; N=8 testes novos do exportador verdes.
 
-### Passo 4 — A3 + AD1 — EM APURAÇÃO
+### Passo 4 — A3 + AD1 — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `cd frontend && timeout 600 node --test --import tsx tests/work-orders-list-tools.test.ts tests/work-orders.adapter.test.ts`.
+- Saída resumida: TAP `24/24`, 0 falha, 0 pulado (15 ferramentas + 9 adaptador), ec 0.
+- Resultado: filtro local usa `createdAt`, idêntico ao `created_at` filtrado pelo backend; AD1 prova agenda fora/abertura dentro e o inverso.
 
-### Passo 5 — A2, guarda de ordem — EM APURAÇÃO
+### Passo 5 — A2, guarda de ordem — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `cd frontend && timeout 600 node --test --import tsx tests/work-orders-page-live.test.tsx`.
+- Saída resumida: página viva existente `13/13`, 0 falha, 0 pulado, ec 0.
+- Resultado: cada busca recebe sequência crescente; resposta superada não toca estado nem flags. Os 13 casos anteriores permanecem verdes.
 
 ### Passo 6 — A7 + A8 — EM APURAÇÃO
 
