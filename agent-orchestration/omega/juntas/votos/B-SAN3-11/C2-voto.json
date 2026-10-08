@@ -1,0 +1,84 @@
+{
+  "cadeira": "C2",
+  "identidade": "guardiao-fail-closed",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "mandato_md5": "36d40f032a83c6fc50395342068fe99a",
+  "corpo_md5": "5b0f7f5d31df366b69ac2cc8c113e963",
+  "objeto": "defa502ee0a03dabbc8786d568d00f7eb7ca726d",
+  "legalidade": "inspetor LIBERADO COM RESSALVA; check-runs 14/14 concluidos success; delta 97e5ec12->defa502e so registro",
+  "itens": {
+    "1_gerador_e_mutacao_propria": {
+      "estado": "MEDIDO",
+      "gerador_no_head": "ec=0; DESCARTADAS 0/0; pontos sem consulta 0; fonte = Apendice A (md5 da2f2891)",
+      "mutacoes_proprias": {
+        "M1_receptor_run": "gerador ec=1, check ec=0, T12 vermelho -> fail-closed pela suite",
+        "M2_receptor_vistoria": "gerador ec=0, check ec=0, arquivo 16/16, test:smoke 1230/1230, runtime mostra substituida como Concluido -> FAIL-OPEN",
+        "M2b_indice": "gerador ec=0, check ec=0, 16/16, runtime Ultima vistoria: Concluido -> FAIL-OPEN",
+        "M3_helper_residual_iii": "gerador ec=1 (vermelho por excesso) -> direcao fail-closed confirmada",
+        "M4_leitura_em_atributo": "gerador ec=0 (consulta=sim), 16/16, runtime Concluido -> FAIL-OPEN"
+      },
+      "veredito": "CONTRA — gerador no head verde e mutacoes mandadas (M1, M3) fail-closed, mas o proximo ponto nao classificado nasce PERMITIDO conforme o nome/forma do receptor (M2, M2b) ou qualquer leitura do campo na funcao (M4)"
+    },
+    "2_T12_T13_T14": {
+      "estado": "MEDIDO",
+      "veredito": "VERDE",
+      "resumo": "CRLF (583 CR no adapter): arquivo do bloco 16/16 ec=0; duration_ms T12=914.88 T13=7928.9914 T14=8315.2125; morto por sinal=0, ETIMEDOUT=0, SIGTERM=0. Controles: A17prime[a] fail 3 com 3 excecoes do arnes e 0 ERR_ASSERTION; A17prime[b] ERR_ASSERTION=3; A19/A20/A21 vermelho explicito mutacao nao aplicou; arquivo restaurado, status 0."
+    },
+    "3_decisao_secao4_null_vigente": {
+      "estado": "MEDIDO",
+      "veredito": "DEVOLVIDA",
+      "resumo": "a rede que o par.4 cita (guard E4 impede o DTO de deixar de emitir a chave) nao existe por algebra (gerador so testa emitido contido em espelho/adapter; L0 vazio = sucesso, M6); DTO sem currentRunId (M5b) e sem reopenedFromRunId (M5c): build, backend, arquivo do bloco e gerador verdes, dossie errado (M5b afirma nao vinculada com a vigente na lista); DTO sem supersededByRunId (M5) so vermelho pelo T14 por acoplamento nao declarado, T12 verde, runtime volta a mostrar a substituida como Concluido verde; adapter colapsa ausente/invalido/vazio com null (3b) e T3 consagra. A alternativa que o proprio par.4 considerou (tri-estado) volta ao planejador; a cadeira nao escolhe o mecanismo."
+    }
+  },
+  "achados": [
+    {
+      "id": "C2-01",
+      "item": 3,
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_origem": "par.4 do plano; adapter processes.adapter.ts:546-548 e T3 nascem em dd58142f (2026-10-01T22:01Z); scripts/san3-11-dossie-vistoria-censo.mjs ausente em origin/main",
+      "propriedade_ausente": "a remocao de chave no emissor (DTO) nao fica vermelha por construcao: o gerador so testa emitido contido em espelho/adapter e aceita L0 vazio; ausente/invalido colapsa com null e vira vigente/nao-vinculada/unica",
+      "evidencia": "M5b e M5c: gerador ec=0, raiz check ec=0, backend impound-checklist-link 16/16, arquivo do bloco 16/16; runtime M5b u1 diz_nao_vinculada=true com u2 na lista; M5c u2 versao_atual=false. M5: so T14 vermelho (acoplamento), T12 verde, LINHA_v1 ui-tone-success=true Concluido=true. M6 L0 (0) com descartadas=0.",
+      "arquivos": [
+        "scripts/san3-11-dossie-vistoria-censo.mjs:782",
+        "frontend/src/modules/patios/processes/processes.adapter.ts:461-467,546-548",
+        "frontend/tests/patios-dossie-versao.smoke.test.tsx (T3; T14 l.309-325)",
+        "docs/revisoes/SAN3/B-SAN3-11-plano.md par.4 (l.375-377)"
+      ]
+    },
+    {
+      "id": "C2-02",
+      "item": 1,
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_origem": "gerador nasce em dd58142f (2026-10-01); ausente em origin/main; o residual (ii) do par.0.4 nao esta entre os pre-existentes nomeados na secao 10",
+      "propriedade_ausente": "o proximo ponto de apresentacao nao classificado nasce do lado permitido: receptor fora de /run|checklist/i (ou nao-identificador) e descartado em silencio, e consulta e aceita por qualquer leitura do campo na funcao",
+      "evidencia": "M2 (receptor vistoria): gerador ec=0, frontend check ec=0, arquivo 16/16, test:smoke 1230/1230, runtime Situacao da vistoria: Concluido para a substituida. M2b (checklistRuns[0]?.status) e M4 (leitura so em atributo): gerador ec=0, 16/16, runtime Concluido. Controle M1 (receptor run): gerador ec=1, T12 vermelho.",
+      "arquivos": [
+        "scripts/san3-11-dossie-vistoria-censo.mjs:749,765-767",
+        "docs/revisoes/SAN3/B-SAN3-11-plano.md par.2.2 (l.332) e par.0.4 (l.160-165)"
+      ]
+    },
+    {
+      "id": "C2-03",
+      "item": 3,
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "propriedade_ausente": "o T14 e o unico canario da emissao de supersededByRunId pelo DTO e o acoplamento nao esta declarado; dispara igual em remocao real (M5) e em refatoracao inocua (M6)",
+      "evidencia": "M5 e M6: not ok 16 - T14 com DESCARTADAS pelo adapter (0); T12 verde nos dois."
+    }
+  ],
+  "voto": "CONTRA",
+  "r4": {
+    "T12_duration_ms": 914.88,
+    "T13_duration_ms": 7928.9914,
+    "T14_duration_ms": 8315.2125,
+    "morto_por_sinal": 0,
+    "terreno": "CRLF (583 CR no adapter), w-j11c2 em defa502e"
+  },
+  "sem_executar": [
+    "npm test inteiro do backend sob M5/M5b/M5c (testes -db pedem Postgres; base viva fora de alvo); coberto por git grep + tests/impound-checklist-link.test.ts + raiz npm run check",
+    "test:smoke inteiro so em M2"
+  ],
+  "linha_final": "VOTO: CONTRA — a remocao de chave no DTO e o ponto novo com receptor fora do padrao de nome nascem do lado permitido, e a rede que o par.4 cita nao existe | evidencia: M5b/M5c e M2 com build verde, suite verde (1230/1230 em M2) e gerador ec=0, runtime mostrando a substituida como Concluido (M2) ou afirmando nao vinculada com a vigente na lista (M5b)"
+}

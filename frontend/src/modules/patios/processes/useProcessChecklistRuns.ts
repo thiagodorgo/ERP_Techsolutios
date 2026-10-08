@@ -5,6 +5,7 @@ import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import { ApiError } from "../../../services/api/client";
+import { ChecklistRunContractError } from "./processes.adapter";
 import { listProcessChecklistRuns } from "./processes.service";
 import type { ChecklistRunSummaryItem } from "./processes.types";
 
@@ -53,6 +54,12 @@ export function useProcessChecklistRuns(processId: string | undefined, enabled =
         } else if (err instanceof ApiError && err.status === 404) {
           // processo inexistente/desatualizado → lista vazia honesta (o painel mostra o EmptyState de vínculo)
           setRuns([]);
+        } else if (err instanceof ChecklistRunContractError) {
+          // B-SAN3-11 ciclo 3 (C2c2-F2) — resposta RECUSADA pelo contrato não é dado confiável: as linhas anteriores não podem
+          // continuar aparentando ser atuais. Limpa e mostra o erro destrutivo. Só aqui: a falha operacional (5xx/rede, ramo
+          // abaixo) preserva a última lista válida com o aviso de 2º plano — o discriminador é a classe, nunca a mensagem.
+          setRuns([]);
+          setError("Não foi possível carregar os checklists do guincho.");
         } else {
           setError("Não foi possível carregar os checklists do guincho.");
         }

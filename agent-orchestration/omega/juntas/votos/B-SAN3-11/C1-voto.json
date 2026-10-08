@@ -1,0 +1,87 @@
+{
+  "cadeira": "C1",
+  "identidade": "cognicao-visual",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "junta": "junta 1 do B-SAN3-11 (PR 401)",
+  "objeto": "defa502ee0a03dabbc8786d568d00f7eb7ca726d",
+  "mandato_md5": "cc2c6a79b23a981ceb5bcd2b11cbbd73",
+  "corpo_md5": "59632cb92550e620320a2ec896188e3d",
+  "legalidade": "inspetor B LIBERADO COM RESSALVA; objeto resolvido por git e gh; 14/14 check-runs success; delta cerca->objeto so registro",
+  "arnes_render": "app real do worktree w-j11c1 no Vite 5291 + Chromium headless Playwright 1.60; /api/v1/** interceptado com fixtures no formato do DTO (12 chaves); sem backend nem banco",
+  "itens": {
+    "1_render_tres_superficies_A1_B1_B3_ancora": {
+      "status": "MEDIDO",
+      "veredito_parcial": "REPROVA",
+      "resumo": "Rotulos corretos nas tres superficies (modal, pagina, impressao) para A1, B1 e B3: substituida com chip ui-tone-default 'Versão substituída' + 'Situação na época: Concluído', nunca verde; frase certa em cada ramo; vigente B3 mantem chip de status. Mas os dois links novos nao tem afordancia nem hover (C1-01, bloqueia); H2: foco vai a linha e o modal fica aberto, porem a URL muda e o voltar nao fecha o modal (C1-03), o clique de mouse e mudo (C1-04) e com lista longa o salto esconde o alvo sob o cabecalho sticky (C1-02)."
+    },
+    "2_literais_termo_tecnico_estados_A12_A14": {
+      "status": "MEDIDO",
+      "veredito_parcial": "APROVA",
+      "resumo": "A14: as duas buscas da bateria do plano voltam vazias; todos os literais novos acentuados (diff e texto renderizado); nenhum termo tecnico nem UUID como texto nas 6 superficies renderizadas (ids so em id/href). A12: denied/loading/error/empty do painel byte-identicos entre o objeto e a head-base (sha256 e tamanho); 34/34 nas suites do dossie, inclusive os testes de estado."
+    },
+    "3_T4_vermelho_controle_head_base": {
+      "status": "MEDIDO",
+      "veredito_parcial": "APROVA",
+      "resumo": "T4 no head-base (3 arquivos de codigo em f03b883f, teste do objeto): ec=1, falha 'deve conter chip Versão substituída' com actual vazio; no objeto: ec=0. Mutacoes proprias M1 (A2 do plano), M2 (tom de status com o texto certo) e M3 (sem 'Situação na época') deixam T4 vermelho cada uma na sua assercao. Nota C1-06: o vermelho do head-base falha pela ausencia da id (recorte vazio), nao pelo chip verde."
+    }
+  },
+  "achados": [
+    {
+      "id": "C1-01",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "item": 1,
+      "defeito": "Os links novos 'Ver versão vigente' e 'Ver versão anterior' nao tem afordancia de link nem estado de hover: em repouso e sob :hover o computado e identico ao texto em volta (color rgb(100,116,139) = cor do pai, text-decoration none, font-weight 400, 11px, outline none); o cursor pointer e o fundo de hover sao os da linha inteira (pre-existentes) e valem tambem sobre o texto nao-link. Na impressao saem sem sublinhado (o plano 2.2 diz 'texto sublinhado inerte').",
+      "evidencia": "frontend/src/modules/patios/processes/components/ChecklistRunsPanel.tsx:95 e :105 (<a href> cru dentro de <small style={legendStyle}>); frontend/src/styles/global.css:26-29 (a {color: inherit; text-decoration: none}); app.css:754 e :758 (cursor/hover da linha); idioma de link do modulo: ProcessoDossiePage.tsx:29, OccupancyMap.tsx:23 (#2563EB/700); C1-evidencia.md secao 1.B; screenshot scratchpad c1shots/modal-B1_B3-hover-link1.png",
+      "motivo": "veto 2 do corpo da cadeira: todo elemento interativo precisa de hover/foco visivel; um link indistinguivel do texto em volta e um caminho para a vigente que o usuario nao encontra"
+    },
+    {
+      "id": "C1-02",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "item": 1,
+      "defeito": "Com o corpo do modal rolavel, o salto da ancora alinha a linha alvo ao topo do container, atras do cabecalho sticky (identidade + abas): a vigente, visivel antes do clique, fica inteiramente escondida depois dele.",
+      "evidencia": "C1-evidencia.md secao 1.C: cenario L (B + 8 unicas, 1440x700) scrollTop 0->220, alvo y115..189, fundo do sticky y219, targetHiddenBySticky=true; h2-L_mouse_vigente.png; limiar: B+1..B+4 em 1366x768/1920x1080 nao reproduz; VehicleDossieModal.tsx:66 (stickyHead)",
+      "motivo": "o caminho para a vigente leva a uma linha que o usuario nao ve; so com lista longa"
+    },
+    {
+      "id": "C1-03",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "item": 1,
+      "defeito": "H2 previa 'a URL nao muda': cada clique numa ancora acrescenta #vistoria-<uuid> a URL e empilha uma entrada no historico (history.length 2->3->4); depois de 2 cliques o voltar do navegador precisa de 3 voltas para fechar o modal (o contrato do deep-link do PR-07 e 'o botao-voltar fecha o modal'); o id opaco da vistoria aparece na barra de endereco.",
+      "evidencia": "C1-evidencia.md secao 1.C (B_mouse_vigente, B_mouse_anterior, B_back1, B_back2: dialogs=1 apos 2 voltas); dossieDeepLink.ts:1-3; PatioDetailPage.tsx:98-110",
+      "motivo": "o H2 do plano e refutado na dimensao URL/historico"
+    },
+    {
+      "id": "C1-04",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "item": 1,
+      "defeito": "No cenario B do 0.5 (duas linhas) o clique de mouse em 'Ver versão vigente' nao produz retorno visivel: o corpo nao rola, o alvo recebe foco sem :focus-visible, sem outline e sem fundo; so por teclado o foco aparece (outline do UA).",
+      "evidencia": "C1-evidencia.md secao 1.C (H2V em 4 viewports: scrollTop 0->0, focusVisible=false, outline none, bg transparente); h2-B_mouse_vigente.png",
+      "motivo": "veto 2 do corpo (microinteracao): clique sem retorno parece quebrado"
+    },
+    {
+      "id": "C1-05",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "item": 1,
+      "defeito": "Com o modal aberto, cada id 'vistoria-<id>' existe 2x no DOM (linha do modal + linha do documento de impressao no portal escondido); a ancora funciona so porque #root vem antes do portal em ordem de arvore.",
+      "evidencia": "C1-evidencia.md secoes 1.A/1.B (idCount=2 no modal, 1 na pagina); VehicleDossieModal.tsx (createPortal .dossie-print com o mesmo ChecklistRunsPanel)",
+      "motivo": "id duplicado e DOM invalido; hoje sem efeito funcional medido"
+    },
+    {
+      "id": "C1-06",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "item": 3,
+      "defeito": "No head-base o T4 fica vermelho porque trHtml nao acha id=vistoria-run-v1 (actual vazio); a assercao 'sem ui-tone-success' nao e avaliada na base. O vermelho-controle do plano 8 ('Versão substituída ausente, ui-tone-success presente') so se demonstra inteiro com a mutacao M1/M2 no objeto ou com o render direto da base.",
+      "evidencia": "frontend/tests/patios-dossie-versao.smoke.test.tsx:80-86 (trHtml) e :127-133 (T4); C1-evidencia.md secao 3 (TAP base: error deve conter chip, actual ''; c1-row base success=true)",
+      "motivo": "o vermelho-controle colado na ata, sozinho, e de motivo acoplado; os dentes existem (M1-M3)"
+    }
+  ],
+  "voto": "REPROVADO",
+  "fundamento": "Unanimidade de 3 (plano 10). Um achado bloqueia e e dentro-do-bloco: C1-01 — os links novos 'Ver versão vigente' / 'Ver versão anterior' (ChecklistRunsPanel.tsx:95 e :105) sao visualmente indistinguiveis do texto em volta e nao tem estado de hover (veto 2 do corpo da cadeira). O merito central do item 8 esta certo nas tres superficies: nenhuma vistoria substituida aparece com chip verde, o rotulo e a frase de cada ramo (A1, B1, B3) batem com o plano 2.2, literais acentuados, sem termo tecnico, estados do painel byte-identicos e T4 vermelho no head-base. Ajustes C1-02, C1-03, C1-04; notas C1-05, C1-06. Nenhum pre-existente nomeado no plano 10 foi usado para reprovar.",
+  "hora_utc": "2026-10-03T03:00:24.197Z"
+}
