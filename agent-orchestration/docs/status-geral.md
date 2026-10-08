@@ -4889,3 +4889,80 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.
 - **Fechamento local:** PR #405 em rascunho; cluster descartável e temporários `s05-*` removidos; 0 worker/teste vivo. O worktree é removido após o último push.
 - **Correção CI (2026-10-04):** T8d deixou de depender da regra `host replication` do `pg_hba`: cria/remove slot físico com REPLICATION e recebe 42501 após NOREPLICATION. Arquivo 8/8; backend final 291 arquivos, 3122/3124, 0 falhas, 2 skips.
+## Atualização 2026-10-01 — B-SAN3-11: em execução (branch fix/dossie-versao-da-vistoria)
+
+**Bloco em branch**, não mergeado. Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
+
+- **E1–E3**: tipo +3 campos, adapter +3 campos, painel três estados ✓
+- **E4**: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) ✓
+- **E5**: 16 testes novos `patios-dossie-versao.smoke.test.tsx` ✓
+- **E6**: KPIs atualizados (169 blocos, 1218/1218 smoke) ✓
+- **Bateria**: `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Novas pendências**: P-SAN3-11-VIGENTE-NAO-VINCULADA, P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (ambas não-bloqueantes)
+
+Próximo: push do branch → PR → junta.
+- **2026-10-02 — ERRATA 1 + 1-bis aplicadas** (inspetor da junta 1 BLOQUEOU por T13/T14 vermelhos em Windows/CRLF): T13/T14 sem relógio e sem dependência de EOL; KPI recontado contra a main `4ab9d232` (170 blocos, 1218/1218, `pr 401`); `P-CHK-DOSSIE-VERSAO-NA-UI` lida como FECHADA pelo gerador; bateria verde nos dois terrenos. Próximo: CI no head novo → mandatos regenerados (HC=H0) → inspetor novo → junta 1.
+- **2026-10-02 — integração pós-#402:** a main andou (`3e40a256`, B-SAN3-01b); merge no ramo com a linha `test:smoke` pela união dos dois acréscimos; KPI recontado (171 blocos, 1230/1230 por execução real); backfill do #402 pendente (não pago aqui). Próximo: CI no head novo → mandatos HC=H0 → inspetor → junta 1.
+- **2026-10-03 — ciclo 2 (§16/§16-bis):** links com afordância que não navegam, adapter fail-closed, gerador v2, 16 → 24 testes, pendências com dono; main `b404815c` integrada; KPI 171 blocos e 1238/1238 (dois terrenos); empurrado em `070b9a03` + este registro. Próximo: CI no head, mandatos regenerados (HC = H0), inspetor novo e junta do ciclo 2 (3 cadeiras novas, unanimidade).
+- **2026-10-05 — ciclo 3 (§17):** C2c2-F1 (censo P-L3 pelo checker; L3/L4 vazios vermelhos) e C2c2-F2 (recusa contratual limpa as vistorias; falha operacional preserva) corrigidos com testes antes do código (T23–T26, 24 → 28) e mutações vermelhas nos dois terrenos; `Kpis/*` devolvido à main (KPI congelado). Próximo (regra (1) do `D-GOV-PROPORCIONAL`): um revisor independente + CI verde no head empurrado do ramo, sem nova junta.
+
+## PAUSA 2026-10-03 18:25Z — ordem do dono (P7, `D-PAUSA-GRAVA-E-PARA`)
+
+Ordem do dono: *"o codex parou e só volta às 22:00, por isso vamos pausar as atividades, só assim o pc é reiniciado"*.
+Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registro: Fable só em bloco de dinheiro (manhã),
+depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
+por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
+foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
+`C:/Users/AMP/erp-pausa-2026-10-03/`.
+
+| frente | onde parou | retomada |
+|---|---|---|
+| **#393** B-GOV-MANDATO, ciclo 4, junta 4 (objeto `371b09b2`, CI 14/14) | C1⁗ **REPROVADO** (C1d-01 `bloqueia`: SHA fabricado depois de `:` sai PRE-VOO OK); C3⁗ **APROVADO** (0 bloqueia); C2⁗ (Opus) recebeu PAUSA no meio do voto | relançar a C2⁗ — mesma identidade, P3 sobre a seção `## PAUSA` do `VOTO-393-J4-C2.md`; maioria de 3: o voto dela decide. Depois: ata (esqueleto `ata-c4-esqueleto.md`), quedas (`quedas-pendentes-393.md` já no ramo) e merge ou ciclo 5 |
+| **#401** B-SAN3-11, ciclo 2, junta 2 (head `3ec6f52b`, CI 14/14) | inspetor (Codex, sessão `01a102b0-…`) caiu por limite de uso às 18:14Z no baseline (parecer até 18:11Z); worktrees `w-insp401c`/`w-insp401clf` de pé | `run-codex-resume.ps1` com `resume-insp401c2.txt`, GPT-5.6 Sol; depois versionar o parecer e as 3 cadeiras (Codex, Sol, ≤2 por vez) |
+| **B-SAN3-05** (ramo `fix/runtime-role-sem-bypass` @ `b7773898`, sem PR) | dev sucessor-2 (Codex, sessão `01a102bc-…`) caiu às 18:14Z; 3 commits empurrados; worktree `w-s05d` limpo; cluster `san3-05-s2-pg` (55405) | `run-codex-resume.ps1` com `resume-dev-s05.txt`, GPT-5.6 Sol; o dev abre o PR em rascunho no fim |
+| **#404** (registro) | porteiro (Codex) **LIBERADO COM RESSALVA** (R404-1 a R404-4; R404-4 = disco < 10 GB) | versionar `PORTEIRO-404.md` neste ramo, com as ressalvas no registro |
+| **#400** B-SAN3-09 | parado (inspetor e junta pendentes) | depois do #401 |
+| **#389**, **#388** | parados | erratas dos corpos dos jurados e integração da `main` |
+| **B-SAN3-06b** | plano e mandato prontos para dev no Codex | quando houver cota |
+
+**Disco:** ~6,1 GB livres; limpeza profunda (`DEEP_CLEAN=1`) só com as juntas paradas — esta pausa é a janela.
+**Incidentes do dia, declarados:** `core.autocrlf=false` na config comum 05:46Z–11:20Z (consertado); um `git merge`
+meu rodou na árvore principal por `cd` falho (no-op, conferido pelo reflog); 4 quedas do Claude por limite de sessão e 2
+do Codex por limite de uso.
+- **18:30Z — terreno da C2⁗ do #393:** a cadeira gravou `## PAUSA 2026-10-03T18:25:23Z` no `VOTO-393-J4-C2.md` (voto ainda não
+  emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
+  guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
+  caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
+
+## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
+
+- Limites resetados; Fable e Astra suspensos; Codex em `gpt-5.6-sol`; Claude em Opus só nas janelas sem Codex, uma tarefa
+  por vez (`decisoes.md`, decisões de 03 e 04/10). A cota do Codex medida: janelas de 35–45 min a cada ~4h30.
+- **#393** — junta 4 **REPROVADA 2×1** (C1d-01, C2d-02); ciclo 5 aberto: §16, §16-bis, §16-ter, corpos da junta 5, T5, T5b,
+  S5a (`d07814b0`, 369/369 e 45/45); matriz E4 do ciclo 5 rodando pelo orquestrador.
+- **#401** — junta 2 **REPROVADA** (veto da C2′: C2c2-F1, C2c2-F2); ciclo 3 aberto (planejador no Codex).
+- **#405** — B-SAN3-05 em rascunho (head `e3cb269d`); CI `backend` vermelho no T8d (depende do `pg_hba` do ambiente); de volta
+  ao dev no Codex.
+- **#404** — porteiro LIBERADO COM RESSALVA; este PR versiona o parecer e trata a R404-1 (títulos do `kpis-history.md`) e a
+  R404-3 (estado da decisão do cabeçalho em `decisoes.md`). A R404-2 (aceite dos planejadores para os donos de duas
+  pendências) e a R404-4 (disco: 8–9 GB livres; limpeza profunda feita em parte) seguem abertas.
+
+## 2026-10-04 — D-GOV-PROPORCIONAL
+
+O dono aprovou a governança proporcional (§C7 item 8): junta completa só onde há dinheiro, segurança, permissão ou perda
+de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar depois
+de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
+
+## 2026-10-08 — retomada depois da queda de energia
+
+- **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
+  verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
+  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  desligados desde a queda — não são alvo de nada.
+- **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
+  `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
+- **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
+  do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
+  porteiro do #401.

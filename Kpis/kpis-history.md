@@ -2979,7 +2979,7 @@ próprio texto, §C7.4-bis) fez três coisas:
 `gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
 `J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
 
-## 2026-10-01 — B-GOV-PAUSA (PR #397, na autoria) — sob ordem de pausa, o agente grava o estado e para sozinho
+## 2026-10-01 — B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho
 
 ### Resultado
 
@@ -3017,7 +3017,7 @@ mandato idêntico nos três textos.
 **Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
 pagos pelo #395.
 
-## 2026-10-02 — B-SAN3-01b (PR na autoria) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
+## 2026-10-02 — B-SAN3-01b (PR #402) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
 
 ### Resultado
 
@@ -3055,26 +3055,3 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
-
-## 2026-10-04 — B-SAN3-05 (PR #405, rascunho) — o papel de runtime não contorna o RLS
-
-### Resultado
-
-| KPI | Valor |
-|-----|-------|
-| Backend | **3122/3124** — execução real final no head de código `bbbb3b29`: 291 arquivos, 3124 testes, **pass 3122, fail 0, skipped 2**, 434,0 s. T8d focado: **8/8**, sem falha ou pulo, 46,1 s; a porta REPLICATION cria/remove slot físico real e o controle após NOREPLICATION recebe 42501, sem depender de `host replication` no `pg_hba` |
-| Frontend / Flutter | **CARREGADOS, sem reexecução** (§C3.3): 1214/1214 e 864/864. O diff não toca `frontend/` nem `mobile/`; valores oficiais de `origin/main` `b404815c` |
-| Demais métricas de contratos | **CARREGADAS, sem reexecução** (§C3.3), com nota explícita no snapshot |
-| Blocos Entregues | **170 → 171** — +1 bloco backend/database, contado de `origin/main` `b404815c` |
-| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): os itens 9 e 10 dependem dos atos do dono e este PR não move escopo de produto |
-| pr / merge_commit / approved_head | `405` / `null` / `null` na autoria (§C3.5) |
-
-**O que o bloco entrega.** O runtime usa uma credencial própria `NOSUPERUSER NOBYPASSRLS`; o boot de produção recusa
-atributos, memberships, posse e views que permitam escapar de tabelas `FORCE RLS`. O procedimento converge papel, grants e
-default privileges, revoga o primeiro salto de cadeias perigosas, não leva senha em argv e falha fechado nos modos nomeados.
-As leituras cross-tenant autorizadas da plataforma e o cálculo de cobranças usam caminhos explícitos sob o papel sem bypass.
-
-**Prova.** A1–A24 foram executados por mutação e ficaram vermelhos. O gerador mediu 779 arquivos, 725 call-sites, 453
-instanciações e o inventário congelado de 53 chaves. A lista que o §5.2 histórico chamava de quatro foi medida como **sete
-sítios / cinco métodos dentro + um fora**. Esta entrega implementa a **v3** depois das críticas r1 e r2, com todos os achados
-respondidos por medição. Relatório: `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.

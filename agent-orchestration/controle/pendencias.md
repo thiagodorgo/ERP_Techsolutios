@@ -2255,8 +2255,13 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch `fix/dossie-versao-da-vistoria`
+  - E1: `processes.types.ts` +3 campos obrigatórios (`reopenedFromRunId`, `supersededByRunId`, `currentRunId`)
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos (null quando ausente)
+  - E3: `ChecklistRunsPanel.tsx` três estados: substituída ("Versão substituída" chip default, link para vigente), vigente de reabertura ("Versão atual", link para anterior), única (sem marcação)
+  - E4: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) — exit 1 se campo descartado ou ponto sem consulta em JSX
+  - E5: 16 testes novos `patios-dossie-versao.smoke.test.tsx` (T1–T14 com T5b e T7b)
+  - Bateria: `check` ✓, `test:smoke` 1218/1218 ✓, `build` ✓, guard exit 0 ✓, `git diff --check` ✓
 - **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
@@ -9972,7 +9977,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS diverge do PNG e do protótipo, mas segue o design padronizado do dono — BAIXA
 
-- status: ABERTA (aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`).
+- status: **FECHADA em 2026-10-08** por `D-OS-CABECALHO-PADRONIZADO` (o dono escolheu a opção C: vale o design padronizado, o cabeçalho do app já o segue valor por valor; Filtrar e Exportar vão para o bloco `B-OS-FILTRAR-EXPORTAR`). Aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`.
 - **prova (forma: kicker, título 22 × 20, subtítulo, alinhamento, borda, Filtrar e Exportar omitidos, padding e borda do botão "Nova OS", contra `docs/claude-code-handoff/screen-refs/web/ordens-servico.png` e `docs/claude-code-handoff/ERP Web.dc.html` l.288-296; idêntico pixel a pixel no head-base):** `votos/B-SAN3-01b/C3-voto.json`, achado `C3-N1`.
 - **escopo:** `pre-existente` — `0a38f1be` (#331) e `d43314bd` (#332), 2026-08-04; o cabeçalho segue `docs/juntas/J-TELAS-PADRONIZADAS.md` §1.
 - **efeito medido:** divergência visual, não de regra.
@@ -10021,3 +10026,89 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **status:** EM ANDAMENTO · **escopo:** `pre-existente` — origem `fe2748c` (#380) · **dono:** `B-O6R-07b` / segurança.
 - O teste anterior reescrevia a regra em vez de ler o export e deixou 13/13 mutantes verdes. O T2 de `B-SAN3-05` exerce o export em processo filho; o registro permanece até o merge e a validação do bloco.
 - **bloqueia:** não.
+## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
+
+Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (custódia aberta antes da
+reabertura), o painel exibe "A versão vigente desta vistoria não está vinculada a este dossiê." sem link nem
+identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrá-la.
+
+- **causa (P-d do plano, medida):** reabrir não vincula. O `reopenRun` **copia** `related_entity_type`/`related_entity_id`
+  da vistoria anterior (`src/modules/checklists/checklist-prisma.repository.ts:806-807`), e o AUTO-link roda **só na
+  abertura** da custódia (`src/modules/impound/impound-prisma.repository.ts:205-215`, chamado só na criação do processo, l.155).
+  A rota MANUAL `POST /impound-processes/:processId/link-checklist-run` existe (`src/modules/impound/impound.routes.ts:195`),
+  mas não tem UI (`git grep link-checklist-run -- frontend/src` = 0). Medido no §0.5 A1 do plano do bloco: lista `[v1]`, v2 e v3 ausentes.
+- **remédio (o do §13 do plano do B-SAN3-11, fora deste bloco):** o backend listar os sucessores da cadeia com origem `DERIVED`
+  **ou** o `reopenRun` propagar os vínculos da vistoria anterior — decisão de desenho da junta do bloco dono.
+- **status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado)
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **bloqueia:** não — a UI já é honesta ("não está vinculada").
+
+## P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11)
+
+O repositório ordena por `created_at` do **vínculo** (`listChecklistRunsForProcess`,
+`src/modules/impound/impound.checklist-link-prisma.repository.ts:51`), e os vínculos criados na mesma transação do AUTO-link
+têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do plano). **O adapter reordena por `startedAt desc`**
+(`frontend/src/modules/patios/processes/processes.adapter.ts:576-577`) e essa é a ordem do dossiê (B1c, T5). Informativa —
+nenhum consumidor além do frontend.
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
+- **bloqueia:** não.
+
+## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+O censo do gerador (`scripts/san3-11-dossie-vistoria-censo.mjs`) ainda deixa passar a leitura da situação por índice com chave
+de tipo `string` sob cast que apaga o tipo — `(run as Record<string, unknown>)[k]`: compila, o censo sai com ec=0 e a forma não
+está na fronteira que o dev declarou. Função local e subcomponente por props também escapam (já declarados pelo dev), assim como
+o valor que passa por coleção ou função fora do JSX (`runs.map(r => r.status)`) e o painel renomeado por alias. Medido pelo
+revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-1) e pelo dev (`DEV-ciclo3-relatorio.md`).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o próximo bloco que tocar o gerador do censo ou o painel de vistorias do dossiê (atribuição nominal no próximo registro)
+- **bloqueia:** não (regra 1 do §C7 item 8: ajuste vira pendência).
+
+## P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+Duas lacunas só de teste, com o produto certo no head: (a) tirar "L3 vazio" ou "candidato desconhecido" do total do gerador deixa
+T12–T14 e T20–T24 verdes (8/8), embora o head negue os dois casos (ec=1 nas sondas do revisor); (b) o T26 só cobre o erro 500, e
+alargar a limpeza do painel a todo erro que não é `ApiError` passa pela suíte, embora apagasse a lista quando a rede cai.
+Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o mesmo da `P-SAN3-11-CENSO-CAST-RECORD`
+- **bloqueia:** não.
+
+## P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as duas referências mostram — MÉDIA
+
+- status: ABERTA (aberta por `D-OS-CABECALHO-PADRONIZADO`).
+- **prova:** comparativo de 2026-10-08 (agente de frontend; capturas reais a 1440×900 do app em `main` 749a5cf8, do
+  protótipo antigo e do design padronizado): os dois designs têm Filtrar e Exportar no cabeçalho; o app os omitiu em
+  2026-08-04 (#332) por não haver função ligada. As funções existem: o backend aceita `priority`, `assignedOperatorId`,
+  `from`, `to` (`src/modules/work-orders/work-order.types.ts`), o serviço e o adaptador do front os enviam e filtram, e a
+  tela os fixa em `STABLE_FILTERS` (`frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`); `frontend/src/lib/csv.ts`
+  já serve a exportação da Auditoria.
+- **dono:** bloco `B-OS-FILTRAR-EXPORTAR` (plano → dev → revisor + CI, `D-GOV-PROPORCIONAL` regra 1).
+- **bloqueia:** não.
+- **teste de encerramento:** Filtrar (Prioridade, Período) e Exportar funcionando na lista de OS, com testes; Técnico
+  quando `P-WO-LIST-TECH-NAME` fechar.
+
+## P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users e /audit — BAIXA
+
+- status: ABERTA.
+- **prova:** capturas `05-app-usuarios-1440.png` e `05-app-auditoria-1440.png` do comparativo de 2026-10-08 (perfil
+  Operador Logístico, mocks): o título da barra do topo cai no rótulo de fallback em vez do nome da tela; o fallback
+  está em `frontend/src/layouts/appSidebarNav.ts` (~l.338).
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** a barra do topo mostra o nome da tela em toda rota do menu, com teste por rota.
+
+## P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o design padronizado — BAIXA
+
+- status: ABERTA.
+- **prova:** comparativo de 2026-10-08: (1) o botão primário do cabeçalho tem borda de 1px que o design não tem (+2px
+  de altura) nas 5 telas padronizadas; (2) o conteúdo começa a 24px do topo no app e a 22px no design; (3) no próprio
+  design, o primário de Usuários, Auditoria e Pátios tem folga 10/16 e o de OS 9/16. A fonte Inter não carregada já é
+  `P-WEB-FONTE-INTER-NAO-CARREGADA`.
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.

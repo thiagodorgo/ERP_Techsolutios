@@ -37,27 +37,27 @@
 
 ### I1 — `origin/main` integrada por merge
 
-**Comando:** EM APURAÇÃO
+**Comando:** `git fetch origin main`; `git rev-parse origin/main`; `git merge --no-edit origin/main`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** `origin/main=c8af64580cb85ddf4960fecb2f8604384f8f0328`; merge iniciado sem rebase/force; conflitos somente nos 4 registros previstos pelo plano.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PARCIAL — merge em curso; resolução por união em I2.
 
 ### I2 — quatro conflitos de registro resolvidos por união
 
-**Comando:** EM APURAÇÃO
+**Comando:** remoção mecânica somente dos marcadores nos 3 registros-fonte, preservando os dois lados; `python agent-orchestration/controle/gerar-indice-pendencias.py`; busca por `^(<<<<<<<|=======|>>>>>>>)` nos 4 arquivos.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** união preservou as entradas do B-SAN3-05 e da main/B-SAN3-11; índice regenerado com 446 cabeçalhos/435 IDs, 326 abertas, 117 fechadas, 3 sem status; marcadores = 0.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — os quatro conflitos previstos foram resolvidos sem apagar nenhum lado.
 
 ### I3 — `Kpis/*` byte a byte na versão da main
 
-**Comando:** EM APURAÇÃO
+**Comando:** `git -c core.autocrlf=false checkout origin/main -- Kpis/app.js Kpis/kpis-latest.json Kpis/kpis-history.json Kpis/kpis-history.md`; `git diff --quiet origin/main -- Kpis/`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** `kpi_diff_ec=0`.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — KPI congelado; o diff final do PR não carrega alteração própria em `Kpis/*`.
 
 ## Implementação
 

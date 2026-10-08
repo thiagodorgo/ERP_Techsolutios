@@ -2506,18 +2506,5 @@
     "blocks_completed": 170,
     "description": "B-SAN3-01b — as guardas da propriedade que o B-SAN3-01 fechou (decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`): (i) teste VIVO da `WorkOrdersPage` real com o hook real (DOM mínimo escrito no teste, zero dependência; `fetch` com os bytes do backend) — 403/500/200 vazio/200×3/pendente/403 em 2º plano, e `[W1]`/`[W2]` por comportamento; (ii) guard `[G1]` por alcance em profundidade ARBITRÁRIA + fecho de import + arquivo de fronteira, `[G1b]` para entidade fabricada inline, `[G2]` 29 formas, `[G3]` em disco; (iii) cabeçalhos dizem o que o guard prova e não prova (só comentário); (iv) \"Nova OS\" do cabeçalho só com `work_orders:create`, provado com os 13 papéis do catálogo executado (head-base: 7 viam o botão). Fecha 4 pendências (`P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES`, `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`, `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO`), abre 3 com dono. `frontend_smoke_tests` da EXECUÇÃO REAL 1202 → 1214 (+13 +1 −2), Node 22 e 20; backend/flutter CARREGADOS com nota (§C3.3: o PR não toca `src/`, `tests/` da raiz nem `mobile/`); `mvp_demo`/`mvp_vendavel` INTOCADOS (§C3.4: bloco de guarda — não move escopo; o item 4 do §4.1 já estava fechado pelo `B-SAN3-01`); `blocks_completed` 169 -> 170.",
     "backfill_note": "`pr` null NA AUTORIA (tarefa de nuvem; o orquestrador abre o PR e preenche); `merge_commit`/`approved_head` são `null` NA AUTORIA por contrato (§C3.5) e recebem backfill pós-merge (`approved_head` lido da ata da junta, não do head do merge). Nenhum backfill devido por este PR: a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398 (`5bcdcc58`). Se outro PR mergear antes, `blocks_completed` se RECONTA no pré-merge a partir da `main` de então. BACKFILL PAGO pelo registro do #402 (docs/registro-402): `pr 402`, `merge_commit 3e40a256…` (squash; a árvore do merge é a do head final do PR, `1483a6f7`, que é o head aprovado `cdf370dc` mais a ata e os votos), `approved_head cdf370dc…` lido da ata `J-B-SAN3-01b.md`."
-  },
-  {
-    "snapshot_date": "2026-10-04",
-    "version": "B-SAN3-05",
-    "pr": 405,
-    "merge_commit": null,
-    "approved_head": null,
-    "flutter_tests": "864/864",
-    "backend_tests": "3122/3124",
-    "frontend_smoke_tests": "1214/1214",
-    "blocks_completed": 171,
-    "description": "B-SAN3-05 — o runtime passa a usar papel próprio NOSUPERUSER NOBYPASSRLS e o boot de produção recusa atributos, memberships, posse e views que escapem de FORCE RLS; o procedimento converge atributos/grants/default privileges e falha fechado. As leituras cross-tenant da plataforma ficam explícitas sob papel sem bypass. A1–A24 foram executados por mutação. Correção do CI: a porta de REPLICATION cria/remove slot físico real e o controle após NOREPLICATION recebe 42501, sem depender de `host replication` no pg_hba. Backend por execução real final: 291 arquivos, 3124 total, 3122 passes, 0 falhas, 2 skips, 434,0 s. Frontend 1214/1214, Flutter 864/864, baterias focadas e contratos móveis CARREGADOS com nota (§C3.3; diff de frontend/mobile vazio). mvp_demo/vendavel INTOCADOS (§C3.4). A lista chamada de quatro no §5.2 foi medida como sete sítios/cinco métodos dentro + um fora. Plano v3 após críticas r1 e r2, com todos os achados respondidos por medição.",
-    "backfill_note": "`pr=405`; `merge_commit`/`approved_head` null na autoria por §C3.5. Nenhum backfill anterior devido; recontar blocks_completed contra a main se ela avançar antes do merge."
   }
 ]

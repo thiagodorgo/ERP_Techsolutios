@@ -293,6 +293,8 @@ validação** e **rastreabilidade**. Tipos:
 
 ## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 
+> **CONGELADO (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(5)):** até segunda ordem do dono, PR nenhum atualiza `Kpis/*`.
+
 > A política antiga ("KPI só após avaliação humana em bloco `…K`") está **REVOGADA**. Decisão do dono
 > (Thiago), rodada Ω-GOV. A junta do PR valida os números; o humano audita a posteriori pelo history.
 
@@ -438,6 +440,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → subagente pesquisador web (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
+   > **Teto de 2 ciclos restabelecido (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(2)):** a partir do ciclo 3, só defeito de produto grave bloqueia; o resto vira pendência e o bloco mergeia.
+
 4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
    2026-09-27, `D-SEM-TETO-AUDITORIA-NO-3`).** **REVOGA o `D-TETO-DOIS-CICLOS`** (2026-08-29), que por sua vez
    já revogara o teto de 5. **Não há mais teto por contagem de ciclos.**
@@ -632,6 +636,46 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
 ---
 
+8. **GOVERNANÇA PROPORCIONAL — junta só onde o risco pede, teto de 2 ciclos, menos burocracia, Traccar depois de sanar
+   o que está em andamento e KPI congelado (decisão do dono, 2026-10-04 — `D-GOV-PROPORCIONAL`).** Nas palavras do dono, depois de mais de um
+   mês com cada bloco levando cerca de uma semana de ciclos de junta: *"me diz como saio desse buraco… preciso sair desse
+   loop e continuar fazendo meu sistema, quero implantar o traccar"*; e, sobre a proposta, *"aprovo 1, 2, 3 e 4 kpi
+   congelado também"*. **Onde este item divergir de §C1 (feature atualiza KPI), §C2 (itens 5, 6 e 8), §C3, §C4
+   (KPI em todo PR), §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4, §C7.4-bis, §8 (itens 4 e 7), §10 (DoD) e da
+   `D-MANDATO-FORMA`, vale este item** — inclusive onde esses trechos mandam todo PR passar por junta ou atualizar `Kpis/*`. As paradas irredutíveis (§C7.5), a separação de papéis
+   (§C7.4-bis: quem acha ≠ quem planeja ≠ quem desenvolve) e P1–P7 continuam valendo onde houver junta.
+
+   - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só
+     quando o bloco mexe em **dinheiro, segurança, permissão ou perda de dado**. Todo o resto (telas e textos sem
+     regra de negócio nova, documentação, registro, KPI, governança, ferramentas de processo) mergeia com **um
+     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta.
+   - **(2) Teto de 2 ciclos.** Nos ciclos 1 e 2 a junta funciona como hoje. **A partir do ciclo 3, só bloqueia
+     defeito de produto grave**: perde dado, vaza dado entre organizações, quebra permissão ou erra dinheiro. Todo
+     outro achado — inclusive de processo, registro, mandato, KPI, forma de teste — vira **pendência com dono** e o
+     bloco **mergeia**. A auditoria obrigatória da máquina no ciclo 3 (`D-SEM-TETO-AUDITORIA-NO-3`) deixa de ser
+     obrigatória.
+   - **(3) Menos burocracia.** Mandato forma A com pré-voo **só para inspetor e cadeiras de junta**; planejador,
+     dev, fábrica, revisor e porteiro nascem de prompt simples com as referências explícitas. **Registro** em um PR
+     semanal (ou no próprio PR do bloco), sem porteiro. **Porteiro** só depois de merge de **produto**. O
+     `B-GOV-MANDATO` (PR #393) fica **congelado**: o verificador de mandato não recebe novos ciclos; o que já
+     está no ramo segue pela regra (1) (governança = um revisor + CI) ou é estacionado.
+   - **(4) Traccar depois de sanar o que está em andamento.** Ajuste do dono no mesmo dia: *"sanar tudo antes de
+     começar o traccar"*, e, perguntado o alcance, *"o que está em andamento"*. A trilha do Traccar abre quando os PRs
+     em voo em 2026-10-04 estiverem resolvidos (`#400`, `#401`, `#405`, `#389`, `#388` mergeados ou decididos; `#393`
+     decidido pela regra (3)), o registro em dia e o disco limpo — **sem esperar** os demais bloqueantes do gate
+     (`PLANO_SAN3`), que correm em paralelo. Todo bloco de ingestão do Traccar tem **junta completa de segurança** — a decisão de desenho
+     `D-TRACCAR-HTTP-PRIVADO-AWS` e as regras do dono para o Traccar continuam valendo (nunca `tenant_id` do payload
+     como contexto confiável; dispositivo não mapeado em quarentena; vínculo ambíguo falha fechado; token nunca em
+     código, log, query string, frontend ou payload público, comparado em tempo constante; nenhuma porta pública
+     sem decisão, threat model e junta; nunca os servidores públicos de demonstração em produção). **Pré-requisito
+     de ingestão em produção:** o `B-SAN3-05` (papel de runtime sem bypass de RLS) mergeado.
+   - **(5) KPI congelado.** Até segunda ordem do dono, **PR nenhum atualiza `Kpis/*`** (revoga, enquanto vigorar,
+     a `D-KPI-PER-PR` do §C3); o painel fica no último snapshot publicado e a consolidação é por **marco**, num PR
+     próprio, quando o dono pedir. A junta não cobra KPI.
+   - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
+     (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
+     congelado pela regra (3).
+
 ## 8. GitHub Flow & governança de commits
 
 O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:
@@ -720,7 +764,10 @@ Regras de fidelidade (aprendidas de uma entrega que divergiu do modelo):
 
 Referências disponíveis (índice completo em **`screen-refs/README.md`**):
 - **`screen-refs/web/`** — **35 PNGs** (todas as telas do ERP Web, agrupadas por papel: Plataforma,
-  Operação, Despacho, Administração, Financeiro). Alvo renderizado a 1440px, sem andaime de dev.
+  Operação, Despacho, Administração, Financeiro). Capturas a 924×540 (medido em 2026-10-08), sem andaime de dev.
+  **Exceção (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`):** para as 5 telas padronizadas
+  (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência é `ERP Web - Telas Padronizadas.dc.html`
+  (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**

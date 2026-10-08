@@ -33,7 +33,7 @@ const PROCESS: ProcessDetail = {
 };
 
 const CHECKLIST: ChecklistRunSummaryItem[] = [
-  { id: "run-1", templateId: "tpl-1", templateName: "Vistoria de recolhimento", templateVersion: 2, status: "completed", relatedEntityType: "work_order", relatedEntityId: "wo-1", startedAt: "2026-07-20T10:00:00.000Z", completedAt: "2026-07-20T10:30:00.000Z" },
+  { id: "run-1", templateId: "tpl-1", templateName: "Vistoria de recolhimento", templateVersion: 2, status: "completed", relatedEntityType: "work_order", relatedEntityId: "wo-1", startedAt: "2026-07-20T10:00:00.000Z", completedAt: "2026-07-20T10:30:00.000Z", reopenedFromRunId: null, supersededByRunId: null, currentRunId: null },
 ];
 
 const HISTORY: CustodyHistoryItem[] = [
