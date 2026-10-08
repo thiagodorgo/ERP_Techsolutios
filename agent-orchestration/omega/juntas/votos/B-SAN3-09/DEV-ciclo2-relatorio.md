@@ -32,6 +32,15 @@ Objeto inicial: `53b2d8171162b0ad7565e7a3c3a4034fc6f1660e` (HEAD local = ramo re
 ### Evidência incremental — mutações MF3
 
 - **MF3-a:** comando no container: substituir o ramo `UNKNOWN_ARGUMENT` por `continue`, rodar T1 sob `timeout 300` e restaurar pelo arquivo do worktree. Saída: T1.2b e T1.5c vermelhos; **24/26**, 2 falhas, ec=1. Resultado: o comportamento fail-open do objeto é detectado.
+- **MF3-b:** `Object.hasOwn` → operador `in`; T1 sob `timeout 300` → T1.2b/T1.5c vermelhos, **24/26**, ec=1. Restauro: MD5 host/container `19c50cf7a034efd9f7c6941c33242a01`, igual.
+- **MF3-c:** mensagem passa a interpolar o token; T1 sob `timeout 300` → T1.2b vermelho, **25/26**, ec=1. Uma tentativa inicial não encontrou a âncora por interpolação do shell e deu 26/26; foi descartada e repetida com OLD/NEW via ambiente. Restauro MD5 igual.
+- **MF3-d:** comparação/lookup por `argument.toLowerCase()`; T1 sob `timeout 300` → T1.2b vermelho, **25/26**, ec=1. Restauro MD5 igual.
+- **MF3-e:** `parseArgv` movido depois da leitura de `DATABASE_URL`; T1 sob `timeout 300` → T1.5c e T1.6 vermelhos, **24/26**, ec=1. Restauro MD5 igual.
+- **MF3-f:** campo `novaFlag` acrescentado a `BootstrapFlags` sem entrada na fonte; A19 sob `timeout 300` → TS2322 (`true` não atribuível a `never`) e TS2741 (campo ausente), ec=2. Restauro MD5 igual.
+
+### Evidência incremental — mutações MF1 no script real
+
+- **MF1-a (aspas simples):** injetado `node:crypto`; T1 sob `timeout 300` → T1.7 guard e mutação vermelhos, **24/26**, ec=1; script restaurado do worktree.
 
 ### Divergência registrada — relatório do estado reset no dry-run
 
@@ -84,3 +93,15 @@ Objeto inicial: `53b2d8171162b0ad7565e7a3c3a4034fc6f1660e` (HEAD local = ramo re
 **Head empurrado:** será preenchido na mensagem final por `git ls-remote`, pois o SHA nasce ao commitar este relatório.
 
 **Próximos passos (análise):** a junta 2 deve olhar com atenção a matriz MF1/MF2/MF3 ainda não reexecutada externamente, a interpretação de `passwordReset=false` no dry-run, o conjunto fechado de flags e o teardown dos clones; pendências operacionais continuam com `B-SAN3-10`, `B-ARNES-2`, `B-SAN3-06b` e o ato de produção com o dono.
+
+## QUEDA 14:57Z (2026-10-08) — limite de uso do Codex (registro do orquestrador)
+
+- Depois do commit `1c520f1e` (já empurrado, com o checklist acima), o dev seguiu executando mutações a mais e caiu por
+  limite de uso às 14:57:53Z. O que ficou no disco sem commit são as linhas de evidência **MF3-b…MF3-f** e **MF1-a** da
+  seção "Evidência incremental" — versionadas aqui sem edição.
+- Reconciliação com o checklist: o item "Não feito" que diz que MF3-b…f e MF1/MF2 não foram executadas fica **superado
+  em parte** — MF3-b…f e MF1-a foram executadas (todas vermelhas, restauro por MD5); o resto de MF1 e todo MF2 continuam
+  não executados pelo dev e ficam para a junta 2, como o próprio checklist já indicava.
+- Terreno: o container `dev09c2-mut` (imagem `erp-junta-node20-pg16:local`, `sleep infinity`) ficou vivo e foi removido
+  pelo orquestrador; nenhum outro `dev09c2-*` existia. O script de produto no worktree estava restaurado
+  (`git status` só com este relatório).
