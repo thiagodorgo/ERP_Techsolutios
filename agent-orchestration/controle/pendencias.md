@@ -10071,3 +10071,46 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** trilha de acabamento web (sem bloco nomeado ainda).
 - **bloqueia:** não.
 - **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.
+
+## P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recentes — MÉDIA
+
+- status: ABERTA (aberta pelo plano do `B-OS-FILTRAR-EXPORTAR`, §9.3, medido em `c8af6458`).
+- **escopo:** `pre-existente` — origem 2026-06-09 (`9f12ea99` front / `51238552` backend).
+- **prova (N · forma · causa):** N = toda organização com mais de 20 OS no recorte · `GET /work-orders` sem `limit`
+  devolve 20 (`parseLimit` padrão 20, máx. 100) · `buildQuery` do front não envia `limit` e a tela pagina no cliente;
+  KPIs, paginador e (depois do bloco) Exportar só veem essas 20.
+- **dono:** bloco a nomear (lista de OS, paginação no servidor).
+- **bloqueia:** não.
+- **teste de encerramento:** uma organização com 25 OS vê as 25 na lista (paginação no servidor ou "carregar mais"),
+  e os KPIs e o Exportar cobrem o recorte inteiro.
+
+## P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/lib/csv.ts` (`D-Ω4C-REM-CSV`).
+- **prova:** N = 7 exportadores (Auditoria, Acessos, Acessos do app, Dispositivos, Quilometragem, Recusas,
+  Remunerações; o da OS fica coberto pelo próprio bloco) · `csvCell` não neutraliza células que começam com
+  `=`/`+`/`-`/`@`.
+- **dono:** bloco a nomear (acabamento web / segurança de formato).
+- **bloqueia:** não.
+- **teste de encerramento:** `csvCell` (ou `buildCsv`) neutraliza, com teste por consumidor que leva texto livre.
+
+## P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de prioridade — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/work-orders.adapter.ts` l.58-63 (2026-06-09) e
+  `frontend/src/pages/WorkOrderFormPage.tsx` l.55.
+- **prova:** "Media" sem acento no Mapa Operacional e no `WorkOrderPriorityBadge` (§11.3).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** os rótulos de prioridade têm uma fonte só (`WORK_ORDER_PRIORITY_LABEL`, criada pelo
+  `B-OS-FILTRAR-EXPORTAR`) e nenhuma tela mostra "Media".
+
+## P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/components/WorkOrdersFilters.tsx`.
+- **prova:** 0 imports; cópia sem acento e com o texto "UUID ou user ID".
+- **dono:** bloco de faxina web.
+- **bloqueia:** não.
+- **teste de encerramento:** arquivo apagado, com `check` e `smoke` verdes.
