@@ -630,6 +630,29 @@
 - severidade: BAIXA
 - dono: B-SAN3-10
 
+#### P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA
+- descricao: com `--reset-password`, a simulação (`--dry-run`) relata "credencial já existia (senha mantida)" e `passwordReset=false`, mas a execução real redefine a senha e grava +1 na auditoria. A simulação não grava nada; o defeito é a mensagem ao operador. O corpo foi congelado pelo §15.3 do ciclo 2 (achado C2c2-A1 da junta 2).
+- acao: a simulação relata o que a execução real faria com a flag pedida, com teste no estado "convergido com reset".
+- status: aberto
+- severidade: MÉDIA
+- dono: B-SAN3-10
+- adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
+- adendo (junta 2, C1c2-07, 2026-10-08): não afeta só a IDE — com a mutação MF3-f aplicada, a CI e o T1 continuam verdes; a checagem de tipos que protege as flags (A19) só roda manualmente.
+
+#### P-SAN3-09-ECO-APOS-FLAG-DE-SENHA
+- descricao: uma mutação em que o script repete o argumento só a partir da 2ª posição (o formato real de `--password-stdin <valor>`) passa no T1 (26/26) e no T2 (12/12); o produto hoje não repete nada (achado C1c2-02 da junta 2).
+- acao: caso de teste que injeta um valor após a flag de senha e exige que ele não apareça em nenhuma saída.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-FECHO-RUNTIME-SEM-CASO-VERMELHO
+- descricao: os ramos do cálculo do fecho de runtime do guard (T1.7) podem ser enfraquecidos sem nenhum caso vermelho (MF2-f e mais 6 mutações sobrevivem 26/26); o T1.5, que roda na CI, continua acusando o efeito (achado C3c2-A1 da junta 2).
+- acao: um caso por ramo do fecho, com a mutação que o deixa vermelho.
+- status: aberto
+- severidade: BAIXA
+- dono: B-ARNES-2
+
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
   (simetrico ao backend) nao se aplica ao frontend (hoje: `fly releases` nativo ou rebuild do SHA). Apontado por

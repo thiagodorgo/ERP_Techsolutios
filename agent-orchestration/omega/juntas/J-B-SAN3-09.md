@@ -32,3 +32,46 @@ Opus (decisão do dono: Claude nas janelas sem Codex, uma tarefa por vez).
 
 **Incidente de terreno declarado pela C3:** na limpeza, um glob `./*.log` no scratchpad do orquestrador apagou também logs que não
 eram dela (logs de sessões do Codex e um log de CI do #405); nada rastreado foi afetado.
+
+## Ciclo 2 — junta 2 (2026-10-08)
+
+- **Objeto julgado:** inspetor em `e1206447`; cadeiras em `07209295` (C1), `e277bb6d` (C2) e `d3eace58` (C3) — entre eles só
+  entrou registro (mandatos, parecer, evidências e votos). CI 7/7 verde em cada objeto. Head do ramo ao fim da junta
+  (`approved_head`): `cc01c9c480b3`. O ramo integra a `main` depois da junta (só arquivos de registro em conflito); o
+  delta até o merge fica no fecho abaixo.
+- **Inspetor:** **LIBERADO COM RESSALVA** (R-1 a R-6) — `votos/B-SAN3-09/00-inspetor-terreno-c2.md`.
+- **Quórum:** unanimidade de 3 com veto (segurança e permissão); ciclo 2, o último em que achado não grave bloqueia
+  (`D-GOV-PROPORCIONAL`); a norma aplicada foi a da `origin/main` (ressalva R-2).
+- **Modelo:** todas as identidades em Claude Opus 5.5, substituição declarada (`D-FABLE-ASTRA-SO-DINHEIRO`: o bloco não toca
+  dinheiro); dev do ciclo 2 no Codex `gpt-5.6-sol`.
+
+## VEREDITO: APROVADO (3 × 0)
+
+| cadeira | identidade | voto | bloqueia | ajustes → pendência |
+|---|---|---|---|---|
+| C1 | `jurado-san3-09c2-c1-entrada-e-registro` | **APROVADO** | — | C1c2-02 → `P-SAN3-09-ECO-APOS-FLAG-DE-SENHA`; C1c2-06 e C1c2-07 → adendos em `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE` e `P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG` |
+| C2 | `jurado-san3-09c2-c2-dryrun-e-concorrencia` | **APROVADO** | — | C2c2-A1 → `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` |
+| C3 | `jurado-san3-09c2-c3-guard-ast-e-escopo` | **APROVADO** | — | C3c2-A1 → `P-SAN3-09-FECHO-RUNTIME-SEM-CASO-VERMELHO` |
+
+Notas (sem pendência nova): critérios do plano que não podiam passar com o texto que o próprio plano prescreve — §15.1.1
+(eco em "3+ caracteres"), §15.1.5 ((i)/(ii)), §15.1.4 × §15.3 (relatório coerente com o corpo congelado), "T1.7-fecho sob
+MF1-g" e o "diferencial" isolado de MF2-a/MF2-b (C1c2-04/05, C2c2-R1, C3c2) — defeitos da régua, não do produto. Demais
+notas: C1c2-01/03/08/09/10/11, C2c2-N1/N2, C3c2-N1…N6, nas evidências.
+
+Evidências e votos em `votos/B-SAN3-09/C{1,2,3}c2-evidencia.md` e `C{1,2,3}c2-voto.json`; mandatos com pré-voo em
+`votos/B-SAN3-09/00-mandatos/`. As cadeiras rodaram uma por vez, sem ler os votos umas das outras.
+
+## §C7.4-bis — papéis do ciclo 2
+
+| papel | quem |
+|---|---|
+| planejador | `planejador-ciclo2-b-san3-09` (Claude Opus) — §15 do plano |
+| dev | `dev-ciclo2-b-san3-09` (Codex `gpt-5.6-sol`) — caiu por limite de uso depois do commit `1c520f1e`; evidência final versionada pelo orquestrador |
+| fábrica | `agente-fabrica` (Claude Opus) — as 3 cadeiras |
+| inspetor | instância nova de `inspetor-de-terreno-da-junta` (Claude Opus) |
+| achadores / votantes | C1, C2, C3 acima — identidades novas, nenhuma do ciclo 1 |
+| orquestrador | mandatos, registro, integração da `main`; **não escreveu código do bloco** |
+
+(a) A composição cobriu as competências dos achados do ciclo 1 (o inspetor conferiu os 10). (b) Quem achou no ciclo 1 não
+consertou nem votou no ciclo 2. (c) O planejador mediu o objeto num worktree próprio; o dev registrou a única divergência
+(`passwordReset`) em vez de improvisar.
