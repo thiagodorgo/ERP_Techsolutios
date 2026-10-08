@@ -1119,3 +1119,136 @@ FROM (
   GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
 ) x ORDER BY via, rolname
 ```
+
+---
+
+## Ciclo 2 — planejador-ciclo2-b-san3-05 · GPT-5.6 Sol
+
+> **Papel e separação:** `planejador-mestre`; identidade nova `planejador-ciclo2-b-san3-05` — não achou, não
+> desenvolveu e não votou no ciclo 1; não escreve código de produto nem teste e não desenvolverá este plano
+> (§C7.4-bis). **Modelo:** GPT-5.6 Sol, substituição expressamente determinada pelo dono em 2026-10-08: o
+> bloco não toca dinheiro; Fable/GPT-6 Astra ficam reservados aos blocos de dinheiro.
+
+**Objeto medido.** `git -C C:/Users/AMP/w-o05 rev-parse HEAD` e
+`git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass` devolveram, ambos,
+`c251c9b7aaa8610799796713d6135c711dabb9fe`; merge-base com a `main` =
+`b404815ce3d1f1b8e5121bd1526978f7222e7479`. A árvore só tinha este plano modificado. O `CLAUDE.md` do
+objeto ainda não contém `D-GOV-PROPORCIONAL` (`grep -c` = 0), enquanto a fonte governante atual
+`origin/main@749a5cf825be76415953d26e8b849a4fb5213c41` contém o §C7 item 8. A divergência é declarada, não
+consolidada em silêncio (§A2/A7); a ordem atual do dono manda aplicar a regra da `main` ao PR em voo #405.
+
+**Regra do ciclo.** Este é bloco de **segurança/permissão**: junta completa, inspetor + três cadeiras novas,
+**unanimidade de 3**. Pelo §C7 item 8(2), o ciclo 2 é o **último** no qual achado não grave pode bloquear;
+do ciclo 3 em diante só defeito grave de produto — perda/vazamento de dados, quebra de permissão ou dinheiro —
+bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os quatro arquivos hoje no diff
+(`Kpis/app.js`, `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md`) byte a byte para
+`origin/main@749a5cf…`; não publica número, bloco nem histórico novo, e a junta não cobra KPI.
+
+### C2.1 Bloqueantes re-medidos e propriedades de correção
+
+#### B1 — A4 = F-C2-01 · a senha em claro cruza o canal que o servidor amostra
+
+- **Vermelho-controle re-medido no objeto:** em PostgreSQL 16 descartável `pl05c2-log-pg`, com
+  `log_transaction_sample_rate=1`, executar o `scripts/db-runtime-role.sh` do `c251…` produziu
+  `script_ec=0` e `secret_occurrences_server_log=1`; a linha final do papel foi verde. Comando: sonda Docker
+  sob `timeout 180s`, imagem `postgres:16`, script montado read-only; saída:
+  `probe=log_transaction_sample_rate script_ec=0 secret_occurrences_server_log=1`.
+- **Defeito confirmado:** sim. O MODO 0 enumera dois GUCs, mas a propriedade é ausência de segredo no log;
+  duas cadeiras independentes acharam a mesma quebra. É defeito grave de segurança e continuaria bloqueando
+  num eventual ciclo 3.
+- **Remédio como propriedade:** a senha em claro **não pode integrar texto SQL, parâmetro registrável,
+  argv, terminal nem log do servidor**. O procedimento deve transformar a senha no cliente por mecanismo já
+  disponível (sem dependência nova) e entregar ao PostgreSQL somente material que não permita autenticar como
+  o papel; a segurança não pode depender de uma lista de GUCs de logging. Atualizar a afirmação absoluta do
+  cabeçalho e `docs/deployment.md` para descrever o mecanismo real e seu residual honesto.
+- **Aceite:** senha-sentinela = 0 em stdout/stderr, argv e `server.log`, tanto no sucesso quanto em cada modo de
+  falha, sob uma matriz que inclui logging integral, amostragem de transação, amostragem por duração e defaults;
+  a sonda positiva demonstra que o leitor de log encontra o sentinela quando ele é propositalmente emitido.
+  O papel converge/idempotente e conserva `NOSUPERUSER NOBYPASSRLS NOREPLICATION`.
+- **Mutação que deixa vermelho:** substituir o material derivado no cliente pela senha em claro no canal SQL;
+  a rodada com `log_transaction_sample_rate=1` precisa falhar por `secret_occurrences_server_log > 0`.
+
+#### B2 — A2 / ressalva R7 · o filho `psql` escreve catálogo fora da trava única
+
+- **Vermelho-controle re-medido no objeto:** três rodadas completas e independentes da receita fornecida,
+  imagem `erp-junta-node20-pg16:local`, PostgreSQL 16.14, 3.652/3.652 blobs byte-idênticos, containers/rede
+  `pl05c2-*`, sem porta no host: **19/19**, **16/19**, **19/19**. A rodada 2 teve
+  `ERROR: tuple concurrently updated` no `GRANT USAGE ON SCHEMA public` do T14; o caso T14, o T15 contaminado
+  e o pai contabilizaram as três falhas. Comando-base:
+  `OUT_BASE=<rN> timeout 2400s bash receita-pl05c2.sh c251c9b7… normal`; nunca houve rerun silencioso.
+- **Defeito confirmado:** sim. O denominador varia e a escrita de catálogo alcançável pelo teste está fora de
+  `withRoleCatalogLock`; é `dentro-do-bloco` porque o arquivo de teste e `runRoleScript` nasceram no PR.
+- **Remédio como propriedade:** **toda** mutação do catálogo disparada por esta suíte — inclusive processo
+  descendente `psql`, criação/alteração/grant/revoke/drop e teardown — ocorre dentro da mesma exclusão mútua do
+  arnês; falha em qualquer ponto executa limpeza no `finally` antes de liberar a trava. Não basta ensinar o
+  guard léxico a reconhecer mais uma forma.
+- **Aceite:** (a) canário determinístico adquire a trava, dispara a ação e prova que nenhum efeito de catálogo
+  ocorre antes da liberação; (b) depois da liberação a ação conclui e deixa zero papel/view/banco/slot residual;
+  (c) N=10 execuções do lote paralelo têm denominador idêntico, zero `XX000|23505|40P01` e zero falha.
+- **Mutação que deixa vermelho:** chamar `runRoleScript` diretamente, contornando o helper travado; o canário de
+  barreira observa efeito/erro antes da liberação e reprova de modo determinístico.
+
+#### B3 — C3-F1 + C3-F1b + C3-F2 · o ratchet trata “não reconheci” como “não existe”
+
+- **Vermelhos-controle re-medidos no objeto, sem tocar `src/**`:** o gerador recebeu arquivos virtuais por
+  `--mutant`. Fábrica genérica tipada `C3A` adicionou um call-site Prisma em `cloud_usage_events` (`L1=726`),
+  mas o inventário permaneceu **53 chaves / sha1 `79e1d86e…`**; o controle `new ZzRepoD(prisma)` produziu
+  **54 chaves** e a chave L2 `CRU`. `include: { tenant_cloud_charges: true }` por delegate sem FORCE (`C3E`)
+  permaneceu em **53 chaves** e nem apareceu como call-site. Comando:
+  `timeout 300s node scripts/san3-05-acessos-de-plataforma.mjs . --all --mutant <arquivo>`.
+- **C3-F2 re-medido:** o L0 do objeto extrai FORCE por regex textual
+  `ALTER TABLE ... ([a-z_]+) ... FORCE` e o mapa Prisma por `@@map` linha a linha; o catálogo real da rodada
+  descartável foi `115 tabelas / 106 FORCE`, mas não existe igualdade executável catálogo↔L0. A mutação da
+  junta (tabela qualificada por schema e model sem `@@map`) ficou fora do inventário; este ciclo transforma essa
+  constatação em critério executável, não em nova lista de grafias.
+- **Defeito confirmado:** sim para as três instâncias. O gerador novo suprime L1 `INJETADO` esperando que L2
+  reconheça a construção; quando L2 não reconhece, o caso nasce permitido. Relações aninhadas e membros FORCE
+  não reconhecidos sofrem a mesma inversão.
+- **Remédio como propriedade:** o ratchet é **fail-closed**: todo acesso tipado por Prisma a tabela FORCE,
+  direto ou por relação, só sai do inventário quando existe prova positiva de contexto tenant correto; construção,
+  relação, tabela ou origem que o analisador não resolve permanece suspeita. Separadamente, num PostgreSQL 16
+  descartável migrado, o conjunto FORCE de `pg_class.relforcerowsecurity` deve ser exatamente o conjunto que o
+  gerador conhece; diferença em qualquer direção reprova. Nada em `prisma/**` é alterado no produto.
+- **Aceite:** C3A, construtor em união, `Reflect.construct`, C3E e fixtures de tabela qualificada/model sem
+  `@@map` entram como suspeitos; o `new` direto continua suspeito; os 53 casos atuais só mudam com motivo por
+  chave; catálogo↔gerador = 106↔106 no objeto. `npm run check` estrito fica verde.
+- **Mutação que deixa vermelho:** reintroduzir `SUSPEITO_L1(INJETADO)=false`, ignorar relation `include/select`,
+  ou retirar um membro do conjunto FORCE conhecido; cada mutação deve deixar o respectivo fixture vermelho.
+
+#### B4 — C3-F3 · a superfície fecha etiquetas, não fecha medições
+
+- **Vermelho-controle re-medido no objeto:** numa cópia efêmera byte-idêntica dentro de container, foi adicionada
+  uma rota `/api/v1/platform/cloud-usage/zz-pl05c2-export` que lê `cloud_usage_events` cru e uma etiqueta
+  `FORCE-SEM-TENANT` cuja nota cita `T11a`; a mutação foi aplicada (`route=true label=true`), porém a suíte saiu
+  **11/11, ec=0**. Comando: receita PostgreSQL 16.14 sob `timeout 2400s`; recursos `pl05c2-*`; teardown 0/0.
+- **Defeito confirmado:** sim. Uma string na nota satisfaz o teste sem executar diferencial para aquela rota;
+  quatro de sete rotas `FORCE-POR-TENANT`, inclusive `/cloud-usage/tenants/:tenantId/summary`, não têm prova
+  dinâmica própria.
+- **Remédio como propriedade:** cada membro FORCE da superfície — rota ou job — possui **um cenário executável
+  próprio**, identificado pela mesma chave da enumeração, que roda o mesmo seed sob superusuário e sob
+  `NOSUPERUSER NOBYPASSRLS` e compara corpo/efeito não vazio. A igualdade de conjuntos
+  `FORCE enumerado == diferenciais executados` é obrigatória; nota textual não conta como prova.
+- **Aceite:** todas as rotas FORCE e os dois jobs têm cenário próprio; omissão, etiqueta sem cenário e ramo cru
+  produzem vermelho. Rotas `SEM-FORCE` continuam apenas justificadas e verificadas contra o catálogo.
+- **Mutação que deixa vermelho:** adicionar a rota etiquetada usada nesta sonda sem registrar/executar cenário;
+  a igualdade de conjuntos falha. Se registrar o cenário mantendo a leitura crua, o diferencial 5×0 falha.
+
+### C2.2 Ajustes classificados
+
+EM APURAÇÃO.
+
+### C2.3 Escopo do desenvolvimento
+
+EM APURAÇÃO.
+
+### C2.4 Bateria do ciclo 2
+
+EM APURAÇÃO.
+
+### C2.5 Junta 2 — três cadeiras novas
+
+EM APURAÇÃO.
+
+### C2.6 Pendências com dono
+
+EM APURAÇÃO.
