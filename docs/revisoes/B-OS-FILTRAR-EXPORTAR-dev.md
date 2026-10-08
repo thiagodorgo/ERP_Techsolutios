@@ -32,11 +32,11 @@
 - Saída resumida: arquivo puro `7/7`, 0 falha, 0 pulado (LT1–LT6 + RL1); TypeScript `tsc -b --noEmit` ec 0.
 - Resultado: estado, atalhos, datas locais, limites ISO, contagem e intervalo invertido implementados; N=7 testes novos verdes.
 
-### Passo 3 — A6 + EX* — EM APURAÇÃO
+### Passo 3 — A6 + EX* — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `cd frontend && timeout 600 node --test --import tsx tests/work-orders-list-tools.test.ts`; `timeout 600 npm --prefix frontend run check`.
+- Saída resumida: arquivo puro `15/15`, 0 falha, 0 pulado (7 anteriores + EX1–EX8); TypeScript ec 0.
+- Resultado: CSV em allowlist com 8 colunas, fórmula neutralizada, agenda absoluta, nome demonstrativo e matriz de disponibilidade implementados; N=8 testes novos do exportador verdes.
 
 ### Passo 4 — A3 + AD1 — EM APURAÇÃO
 

@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { buildCsv } from "../src/lib/csv";
 import { filterWorkOrders } from "../src/modules/work-orders/work-orders.adapter";
+import {
+  exportAvailability,
+  formatAgendaForExport,
+  neutralizeCsvFormula,
+  workOrdersCsvFilename,
+  workOrdersCsvRows,
+  WORK_ORDERS_CSV_HEADER,
+} from "../src/modules/work-orders/work-orders-export";
 import {
   countActiveFilters,
   deriveOpeningPeriod,
@@ -114,4 +123,130 @@ test("[RL1] rótulos de prioridade e composição do serviço preservam a UI", (
   assert.equal(workOrderServiceLine(order(new Date(), { title: "Título", serviceCity: "Cidade", serviceState: "UF" })), "Título · Cidade/UF");
   assert.equal(workOrderServiceLine(order(new Date(), { title: "Título", serviceCity: "Cidade" })), "Título · Cidade");
   assert.equal(workOrderServiceLine(order(new Date(), { title: "Título" })), "Título");
+});
+
+test("[EX1] cabeçalho CSV tem exatamente as oito colunas visíveis", () => {
+  assert.deepEqual(WORK_ORDERS_CSV_HEADER, [
+    "Código",
+    "Prioridade",
+    "Cliente",
+    "Serviço",
+    "Técnico",
+    "Agenda",
+    "Atrasada",
+    "Situação",
+  ]);
+});
+
+test("[EX2] linhas CSV traduzem os quatro cenários sem expor ids técnicos", () => {
+  const now = new Date(2026, 9, 7, 12, 0).getTime();
+  const agenda = new Date(2026, 9, 7, 9, 5).toISOString();
+  const items = [
+    order(new Date(2026, 9, 1), {
+      code: "OS-1",
+      priority: "medium",
+      customerName: "Atlas",
+      assignedOperatorId: "operador-secreto",
+      scheduledFor: agenda,
+    }),
+    order(new Date(2026, 9, 2), {
+      code: "OS-2",
+      priority: "low",
+      customerName: null,
+      assignedOperatorId: null,
+      scheduledFor: null,
+    }),
+    order(new Date(2026, 9, 3), {
+      code: "OS-3",
+      status: "completed",
+      scheduledFor: agenda,
+    }),
+    order(new Date(2026, 9, 4), {
+      code: "OS-4",
+      status: "assigned",
+      scheduledFor: new Date(2026, 9, 8, 9, 5).toISOString(),
+    }),
+  ];
+
+  assert.deepEqual(workOrdersCsvRows(items, now), [
+    ["OS-1", "Média", "Atlas", "Reboque", "Atribuído", "07/10/2026 09:05", "Sim", "Aberta"],
+    ["OS-2", "Baixa", "Sem cliente vinculado", "Reboque", "Sem técnico", "Sem agenda", "Não", "Aberta"],
+    ["OS-3", "Alta", "Sem cliente vinculado", "Reboque", "Sem técnico", "07/10/2026 09:05", "Não", "Concluída"],
+    ["OS-4", "Alta", "Sem cliente vinculado", "Reboque", "Sem técnico", "08/10/2026 09:05", "Não", "Atribuída"],
+  ]);
+});
+
+test("[EX3] allowlist CSV exclui ids, localização, endereço e telefone", () => {
+  const item = order(new Date(2026, 9, 7), {
+    id: "11111111-1111-4111-8111-111111111111",
+    assignedOperatorId: "22222222-2222-4222-8222-222222222222",
+    assignedUserId: "33333333-3333-4333-8333-333333333333",
+    vehicleId: "44444444-4444-4444-8444-444444444444",
+    serviceAddress: "Rua Segredo 123",
+    serviceLatitude: -19.91,
+    serviceLongitude: -43.94,
+    customerPhone: "+5531999999999",
+  });
+  const csv = buildCsv(WORK_ORDERS_CSV_HEADER, workOrdersCsvRows([item], Date.now()));
+  for (const forbidden of [
+    item.id,
+    item.assignedOperatorId ?? "",
+    item.assignedUserId ?? "",
+    item.vehicleId ?? "",
+    item.serviceAddress ?? "",
+    String(item.serviceLatitude),
+    String(item.serviceLongitude),
+    item.customerPhone ?? "",
+  ]) {
+    assert.ok(forbidden);
+    assert.doesNotMatch(csv, new RegExp(forbidden.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  for (const cell of workOrdersCsvRows([item], Date.now())[0]) {
+    assert.doesNotMatch(cell, /^[0-9a-f]{8}-[0-9a-f]{4}-/i);
+  }
+});
+
+test("[EX4] fórmula CSV é neutralizada em toda célula de dado livre", () => {
+  for (const risky of ["=1+1", "+55319999", "-x", "@SUM", "\tx", "\rx"]) {
+    assert.equal(neutralizeCsvFormula(risky), `'${risky}`);
+  }
+  for (const safe of ["Cliente", "", "a=b"]) assert.equal(neutralizeCsvFormula(safe), safe);
+
+  const [rowWithFormula] = workOrdersCsvRows([
+    order(new Date(2026, 9, 7), { customerName: '=HYPERLINK("x")' }),
+  ], Date.now());
+  assert.match(rowWithFormula[2], /^'/);
+});
+
+test("[EX5] agenda do CSV é absoluta, local e tem zeros à esquerda", () => {
+  assert.equal(formatAgendaForExport(null), "Sem agenda");
+  assert.equal(formatAgendaForExport("lixo"), "—");
+  assert.equal(formatAgendaForExport(new Date(2026, 9, 7, 9, 5).toISOString()), "07/10/2026 09:05");
+});
+
+test("[EX6] disponibilidade do Exportar respeita prioridade e dicas exatas", () => {
+  const base = { loading: false, failure: false, total: 2, stale: false, demo: false, loaded: 2, serverTotal: 2 };
+  assert.deepEqual(exportAvailability({ ...base, loading: true }), { enabled: false, hint: "Aguarde: a lista ainda está carregando." });
+  assert.deepEqual(exportAvailability({ ...base, failure: true }), { enabled: false, hint: "Nada para exportar: a lista não carregou." });
+  assert.deepEqual(exportAvailability({ ...base, total: 0 }), { enabled: false, hint: "Nenhuma ordem na lista para exportar." });
+  assert.deepEqual(exportAvailability({ ...base, total: 1 }), { enabled: true, hint: "Baixar a ordem da lista em planilha (CSV)." });
+  assert.deepEqual(exportAvailability(base), { enabled: true, hint: "Baixar as 2 ordens da lista em planilha (CSV)." });
+  assert.deepEqual(exportAvailability({ ...base, loaded: 2, serverTotal: 25 }), {
+    enabled: true,
+    hint: "Baixar as 2 ordens da lista em planilha (CSV). A tela mostra as 2 ordens mais recentes de 25; o arquivo leva só as da tela.",
+  });
+  assert.deepEqual(exportAvailability({ ...base, stale: true, demo: true }), {
+    enabled: true,
+    hint: "Baixar as 2 ordens da lista em planilha (CSV). Atenção: a última atualização falhou; os dados podem estar desatualizados. Dados demonstrativos.",
+  });
+});
+
+test("[EX7] nome do arquivo distingue dados demonstrativos", () => {
+  assert.equal(workOrdersCsvFilename("api"), "ordens-de-servico.csv");
+  assert.equal(workOrdersCsvFilename("fallback"), "ordens-de-servico.csv");
+  assert.equal(workOrdersCsvFilename("mock"), "ordens-de-servico-demonstrativo.csv");
+});
+
+test("[EX8] lista vazia não fabrica linha de CSV", () => {
+  assert.deepEqual(workOrdersCsvRows([], Date.now()), []);
 });
