@@ -4957,3 +4957,16 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
   do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
   porteiro do #401.
+
+## B-SAN3-09 — bootstrap do 1º admin de plataforma — EM ANDAMENTO (2026-10-01, branch `feat/bootstrap-platform-admin`)
+
+- **O que foi entregue:**
+  - **E1** `scripts/bootstrap-platform-admin.ts` — 417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo. Script idempotente: trava `pg_advisory_xact_lock(20260909n)`, guard `ALLOW_PROD_BOOTSTRAP` strict-bool, senha nunca via argv, 8 passos com `setTenantRlsContext`, CE-G1 import allowlist.
+  - **E2** `tests/san3-09-bootstrap-platform-admin.test.ts` — T1.1–T1.8, 23/23 pass. Doc-guard T1.8 verde após E4.
+  - **E3** `tests/san3-09-bootstrap-platform-admin-db.test.ts` — T2.1–T2.10, 11/11 pass, banco de drill descartável (porta 54332). Papéis efêmeros NOSUPERUSER NOBYPASSRLS; RLS com GUC verificado; idempotência e concorrência.
+  - **E4** `docs/deployment.md` Runbook B (linhas 169-185) — `ALLOW_PROD_BOOTSTRAP`, `--dry-run`, `--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01`.
+  - **E5** KPI + comando + pendências + este registro (2026-10-01T01:30Z–02:30Z aprox.).
+- **Junta:** aguardando (`feat/bootstrap-platform-admin`, 10 commits à frente de `origin/main`).
+- **KPI:** `blocks_completed` **168 → 169**; `backend_tests` **3052/3054 → 3080/3088** (reexecução real; +34 casos); smoke e Flutter carregados (§C3.3).
+- **Pendências abertas:** `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, `P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP`, `P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG`.
+- **P-SAN-PROD-BOOTSTRAP:** em andamento — script entregue; fecha somente com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
