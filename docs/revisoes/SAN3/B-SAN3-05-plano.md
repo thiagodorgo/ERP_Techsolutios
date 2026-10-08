@@ -1129,6 +1129,20 @@ FROM (
 > (§C7.4-bis). **Modelo:** GPT-5.6 Sol, substituição expressamente determinada pelo dono em 2026-10-08: o
 > bloco não toca dinheiro; Fable/GPT-6 Astra ficam reservados aos blocos de dinheiro.
 
+> **Sucessor (P3) — `planejador-ciclo2-b-san3-05-sucessor` · Claude Opus · 2026-10-08.** O antecessor caiu por
+> limite de uso às 14:57Z, com o C2.1 escrito e C2.2–C2.6 em apuração (versionado em `cd267978`). Identidade
+> nova: não achou, não desenvolveu, não votou e não desenvolverá (§C7.4-bis). **Modelo:** Claude Opus,
+> substituição declarada (§C7 item 6-bis): o bloco não toca dinheiro e, por decisão do dono de 2026-10-08,
+> Fable só em bloco de dinheiro. **Objeto re-medido por mim:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD` =
+> `git ls-remote origin fix/runtime-role-sem-bypass` = `cd267978eb44a195497b2dfec6f663e96df06f79`;
+> `git diff --stat c251c9b7 cd267978` = só este plano (+133), logo o código julgado é o mesmo que o antecessor
+> mediu. `origin/main` andou para `c8af6458` (merge-base continua `b404815c`). **Protocolo:** o C2.1 abaixo é
+> roteiro, não fato — cada vermelho-controle foi re-executado por mim em recursos `pl05c2s-*` (PostgreSQL 16.14
+> descartável, imagem `erp-junta-node20-pg16:local` `sha256:4203157f95ea`, sem porta no host; `erp-postgres`,
+> `erp-redis`, 5432 e 6379 nunca tocados), e o resultado vai como **"Re-execução do sucessor"** em cada B, com
+> a divergência apontada quando houver. Sondas e saídas: `C:/Users/AMP/w-o05/scratchpad/pl05c2s/` (não
+> rastreado; `evidencia.md` com comando → saída → veredito parcial por item).
+
 **Objeto medido.** `git -C C:/Users/AMP/w-o05 rev-parse HEAD` e
 `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass` devolveram, ambos,
 `c251c9b7aaa8610799796713d6135c711dabb9fe`; merge-base com a `main` =
@@ -1167,6 +1181,43 @@ bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os
   O papel converge/idempotente e conserva `NOSUPERUSER NOBYPASSRLS NOREPLICATION`.
 - **Mutação que deixa vermelho:** substituir o material derivado no cliente pela senha em claro no canal SQL;
   a rodada com `log_transaction_sample_rate=1` precisa falhar por `secret_occurrences_server_log > 0`.
+- **Re-execução do sucessor (2026-10-08) — REPRODUZ, e com mais cobertura.** `timeout 600 bash
+  scratchpad/pl05c2s/probe-b1.sh`: `postgres:16` descartável `pl05c2s-b1-*`, script = blob do objeto
+  (`git show cd267978:scripts/db-runtime-role.sh`, md5 `810c1c4a`, montado read-only), senha-sentinela só por
+  ambiente (`docker exec -e NOME`, nunca no argv). Cinco variantes:
+
+  | variante (`postgres -c …`) | `DB_RUNTIME_ALLOW_LOG_ALL` | ec | senha no `server.log` | senha no terminal |
+  |---|---|--:|--:|--:|
+  | `log_transaction_sample_rate=1` | 0 | 0 | **1** | 0 |
+  | `log_min_duration_sample=0` + `log_statement_sample_rate=1` | 0 | 0 | **1** | 0 |
+  | `log_statement=all` (o MODO 0 recusa) | 0 | 3 (`MODO 0`) | 0 | 0 |
+  | `log_statement=all` — controle positivo do leitor | 1 | 0 | 1 | 0 |
+  | defaults | 0 | 0 | 0 | 0 |
+
+  Divergência com o registro do antecessor: ele registrou só a primeira variante; a segunda (achada por C1 e C2
+  no ciclo 1) também reproduz e entra na matriz do aceite. O papel ficou `NOSUPERUSER NOBYPASSRLS NOREPLICATION`
+  em todas as variantes que concluíram.
+- **Viabilidade do remédio, medida por mim (não é produto; `scratchpad/pl05c2s/probe-b1-viab.sh`).** Num
+  `postgres:16` com `log_statement=all`, `printf … | setsid -w psql -X -c '\password <papel>'` sem tty: o psql 16
+  lê a senha do stdin, calcula o verificador no cliente (`PQencryptPasswordConn`) e o servidor registra só
+  `ALTER USER … PASSWORD 'SCRAM-SHA-256$4096:<verificador>'`; senha em claro no `server.log` = 0, no terminal =
+  0, e o login com a senha funciona. Não é dependência nova: o script já exige `psql` 16. **Dois residuais que o
+  plano obriga a tratar:** (1) com `password_encryption=md5` o `\password` gera verificador md5, que autentica
+  por *pass-the-hash* sob `auth md5` — por isso a sessão do script faz `SET password_encryption =
+  'scram-sha-256'` (GUC de usuário, não exige superusuário) e a matriz confere o prefixo `SCRAM-SHA-256$`; (2) o
+  verificador SCRAM no log permite ataque de dicionário offline (PBKDF2, 4096 iterações) — a documentação do
+  operador exige senha aleatória de alta entropia, e o residual fica declarado no cabeçalho do script e em
+  `docs/deployment.md`. O mecanismo é recomendação medida, não mandato: vale qualquer um que passe no aceite.
+- **Onde cada parte do aceite do B1 se mede (o teste não lê o log do servidor).** O T14 roda contra o
+  `DATABASE_URL` da CI ou da receita, cujo log vai para o `stderr` de outro container: ler `server.log` de dentro
+  do teste não é possível sem `logging_collector` e reinício. Por isso: **(i) no T14 (CI e receita):** depois do
+  script, `pg_authid.rolpassword` do papel começa com `SCRAM-SHA-256$`, inclusive com
+  `PGOPTIONS='-c password_encryption=md5'`; o login com a senha funciona; senha 0 em stdout/stderr/argv no sucesso
+  e em cada MODO; e uma guarda estática fail-closed: o SQL que o script envia não tem caminho para a senha em
+  claro (nenhuma interpolação `:'…'`/`:"…"` da variável da senha, nenhum `set_config` com ela); **(ii) na bateria da
+  junta (item B7 do C2.4):** a matriz do `server.log` por execução, em PostgreSQL 16 descartável com `docker logs`,
+  com controle positivo do leitor. A mutação "senha em claro de volta ao canal SQL" fica vermelha na matriz (ii) e
+  na guarda estática (i); a mutação "sem `SET password_encryption`" fica vermelha no (i).
 
 #### B2 — A2 / ressalva R7 · o filho `psql` escreve catálogo fora da trava única
 
@@ -1187,6 +1238,41 @@ bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os
   (c) N=10 execuções do lote paralelo têm denominador idêntico, zero `XX000|23505|40P01` e zero falha.
 - **Mutação que deixa vermelho:** chamar `runRoleScript` diretamente, contornando o helper travado; o canário de
   barreira observa efeito/erro antes da liberação e reprova de modo determinístico.
+- **Re-execução do sucessor (2026-10-08) — a CAUSA reproduz (determinística); o SINTOMA não reproduziu em N=13.**
+  (1) Os mesmos três comandos do antecessor, com prefixo `pl05c2s` (`receita-pg16.sh` copiada, só prefixo e
+  `REPO=C:/Users/AMP/w-o05` trocados; `timeout 1500` por rodada): **19/19, 19/19, 19/19** (3.652/3.652 blobs,
+  PG 16.14, resíduo 0). (2) Dez execuções do lote no mesmo container (`receita-pl05c2s-loop.sh`, `LOOP=10`):
+  **10/10 verdes**, resíduo `s305%` 0 entre execuções — mas a execução 1 teve **um** `XX000 tuple concurrently
+  updated` no TAP: o teardown do arnês (`DROP OWNED BY "o6r_b01_…"`, do arquivo `leituras-de-plataforma-db`,
+  **dentro** da trava) colidiu com um escritor de fora e foi absorvido pela re-tentativa. É o mecanismo do R7
+  visto do lado da vítima que sobrevive. (3) **Vermelho-controle determinístico** (`probe-b2-canario.sh`): com a
+  trava do arnês segura por um canário (`pg_advisory_lock(20268801)`), um escritor que a respeita fica bloqueado
+  (`lock timeout` em 4 s), enquanto o script do objeto conclui `ec=0` em < 1 s, cria o papel e concede `USAGE ON
+  SCHEMA public` **com a trava ainda segura**. (4) Estático, no blob do objeto: as **15** chamadas a
+  `runRoleScript` (l.538-722 e 748) estão fora de `withRoleCatalogLock`; a limpeza do cenário MODO 6 (`REVOKE`/
+  `DROP VIEW`, l.556-560) não está em `finally`.
+  **Divergência com o antecessor:** ele viu 1 vermelho em 3 (16/19); eu, 0 em 13 — coerente com a taxa histórica
+  de ~28% por rodada (inspetor 2/6, C1 2/9; P(0/3) ≈ 0,37), mas mostra que **N=3 não tem poder** para provar a
+  correção. Por isso o aceite do B2 fica assim (substitui o "Aceite" acima, mantendo a propriedade):
+  **(a) canário determinístico** — o teste segura a trava numa conexão própria, dispara o helper travado e
+  prova que, enquanto a trava está segura, o papel do cenário **não existe** em `pg_roles`; depois da liberação a
+  ação conclui (vale para o helper, não para cada chamada); **(b) estrutural, fail-closed** — no arquivo
+  `tests/san3-05-runtime-role-guard-db.test.ts`, todo processo filho que pode escrever catálogo (o
+  `scripts/db-runtime-role.sh` e o `psql` com DDL/DCL) só nasce pelo helper travado; os filhos que não escrevem
+  catálogo (o boot `node --import tsx src/server.ts` do T15, o `psql --version` e o script sem senha do T14b)
+  ficam numa allowlist **fechada e nominal** no próprio teste; qualquer outra referência a `spawn`/`spawnSync`/
+  `exec*`/`execFile*` de `node:child_process` reprova (a mutação "chamar o script por fora do helper" fica
+  vermelha **sem depender de corrida**); **(c) N=10
+  execuções do lote** (os dois arquivos `-db`, mesmo container) com denominador idêntico, zero falha **e zero
+  `XX000|23505|40P01` no TAP inteiro** — inclusive o absorvido por re-tentativa do arnês, que é o que apareceu
+  aqui; **(d)** a limpeza de cada cenário (inclusive MODO 6) em `finally`, dentro da trava.
+  **Cuidado de desenho que a junta deve conferir:** a janela da trava é uma transação com `timeout: 30_000`
+  (`ROLE_CATALOG_TX_OPTIONS`, arnês l.76) e o filho hoje roda por `spawnSync` com `timeout: 60_000`. Dentro da
+  trava, o filho tem de rodar **assíncrono** e com timeout **menor** que o da janela (o script leva < 1 s), e a
+  janela não pode ter escrita própria **antes** do filho sobre o mesmo objeto (a transação não comitada
+  bloquearia o filho e o `spawnSync` travaria o laço de eventos: impasse até o timeout). O arnês
+  (`tests/helpers/auth-identity-fixture.ts`) continua PROIBIDO; o helper novo mora no próprio arquivo de teste
+  e usa o `withRoleCatalogLock` exportado.
 
 #### B3 — C3-F1 + C3-F1b + C3-F2 · o ratchet trata “não reconheci” como “não existe”
 
@@ -1214,6 +1300,38 @@ bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os
   chave; catálogo↔gerador = 106↔106 no objeto. `npm run check` estrito fica verde.
 - **Mutação que deixa vermelho:** reintroduzir `SUSPEITO_L1(INJETADO)=false`, ignorar relation `include/select`,
   ou retirar um membro do conjunto FORCE conhecido; cada mutação deve deixar o respectivo fixture vermelho.
+- **Re-execução do sucessor (2026-10-08) — REPRODUZ, e aparece uma quarta instância.** Container
+  `pl05c2s-b3-*` com a árvore do objeto por `git archive` sem filtro de EOL (gerador md5 `81d92595` = blob),
+  `npm ci` + `prisma generate` próprios. (1) `probe-b3.sh`: base **53 chaves / `79e1d86e`**; **C3A** (fábrica
+  genérica), **C3B** (construtor em união) e **C3C** (`Reflect.construct`) somam call-sites `INJETADO` em L1 e
+  ficam em **53 / `79e1d86e`**; **C3E** (`include` aninhado) fica em 53 e **nem vira call-site**; o controle
+  **C3D** (`new` direto) vai a **54** chaves (L2 `new ZzRepoD(prisma) CRU`). O antecessor registrou A, D e E; B e
+  C também reproduzem. (2) `probe-b3-f2.sh` (esquema e migração descartáveis só na cópia do container): três
+  tabelas `ENABLE`+`FORCE` — `public.zz_force_a` (qualificada), `"ZzForceB"` (model sem `@@map`) e `zz_force_c`
+  (controle) — e um leitor pelo client raiz: **zzForceA 0 linhas, zzForceB 0 linhas, zzForceC 2 linhas `CRU`**.
+  O L0 foi a `FORCE=108`, mas um dos dois novos é `zzforceb` em minúsculas (a regex tem flag `i` e o código
+  rebaixa a caixa), nome que nenhum model mapeia. **C3-F2 reproduz.** (3) **Quarta instância, nova:**
+  `probe-b3-ops.sh` mostra que a "derivação de OPS do client gerado" (l.94-103) **nunca roda**: as 114 interfaces
+  `*Delegate` do `index.d.ts` gerado estão **dentro de namespace**, e no laço da l.96-99 o `else
+  ts.forEachChild(n, look)` se liga ao `if` interno (o do `isMethodSignature`), não ao externo — a recursão não
+  desce. Medido: o laço verbatim coleta **0**, o gerador cai na lista embutida e só avisa no `stderr`, que o T13
+  põe em `t.diagnostic` (l.159) e não reprova. Com chaves no `if` externo o mesmo laço coleta **17**, igual à
+  lista embutida — por isso o inventário de hoje não muda, mas a afirmação do plano v3 ("OPS derivado do client,
+  sem regex") é falsa e o próximo método de delegate do Prisma nasceria fora do L1.
+  **O aceite do B3 ganha, além do que está acima:** (e) sem OPS derivado do client o gerador **sai ≠ 0** (nada
+  de lista embutida), e o T13 reprova qualquer `stderr` não vazio do gerador; (f) a igualdade catálogo↔gerador é
+  **de conjunto de nomes, com a caixa exata** (não de contagem), nos dois sentidos, e também
+  `tabela FORCE do catálogo → model Prisma` (com `@@map` ou pelo nome do model) — tabela FORCE sem model conhecido
+  é suspeita, não ausente; (g) as fixtures novas entram em `tests/fixtures/san3-05-mutacoes/` (C3A, C3B, C3C e
+  C3E) e cada uma exige ≥ 1 chave no inventário; as duas grafias do C3-F2 (tabela qualificada por schema e model
+  sem `@@map`) precisam de outro mecanismo, porque o L0 lê `prisma/schema.prisma` e as migrações por
+  `readFileSync`, fora do host virtual que o `--mutant`/`--override` alcança — o dev escolhe (entrada virtual de
+  migração/esquema no gerador, ou cópia efêmera fora do repositório), desde que o teste exija ≥ 1 chave para cada
+  grafia e que `prisma/**` do produto não mude.
+  **Medido no objeto, para calibrar o (f)** (`receita-pl05c2s-l0.sh`, banco migrado, linhas 52-67 do gerador
+  verbatim × `pg_class.relforcerowsecurity`): **L0 = 106, catálogo = 106, 0 nome só de um lado**, 0 tabela FORCE
+  sem model com `@@map`, 0 model sem `@@map`. O (f) passa no objeto depois do conserto; o C3-F2 é sobre o próximo
+  membro, como a C3 calibrou ("o inventário atual não está errado — o membro novo é que nasce permitido").
 
 #### B4 — C3-F3 · a superfície fecha etiquetas, não fecha medições
 
@@ -1232,23 +1350,325 @@ bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os
   produzem vermelho. Rotas `SEM-FORCE` continuam apenas justificadas e verificadas contra o catálogo.
 - **Mutação que deixa vermelho:** adicionar a rota etiquetada usada nesta sonda sem registrar/executar cenário;
   a igualdade de conjuntos falha. Se registrar o cenário mantendo a leitura crua, o diferencial 5×0 falha.
+- **Re-execução do sucessor (2026-10-08) — REPRODUZ nas duas formas da C3.** `run-b4.sh`: a receita roda só o
+  arquivo `leituras-de-plataforma-db` e aplica a mutação na cópia efêmera dentro do container, por âncora exata
+  (falha fechado se a âncora não casar). **E1, controle** (rota `GET /cloud-usage/zz-pl05c2s-export` lendo
+  `cloud_usage_events` cru, **sem** etiqueta): **9/11**, `not ok` no T11d — a enumeração em runtime está viva.
+  **E2** (a mesma rota etiquetada `FORCE-SEM-TENANT` com nota "S1 — T11a", sem cenário): **11/11, ec=0**.
+  **E3** (o ramo com `tenantId` de `RlsPrismaCloudUsageRepository.listEvents` lendo pelo client cru, sem
+  `withTenantRls`): **11/11, ec=0** — o `/cloud-usage/tenants/:tenantId/summary`, que o §2.3 lista como controle
+  S4, não tem medida. O antecessor re-mediu só o E2; o E3 também reproduz.
+  **Superfície de jobs, medida:** `src/infra/jobs/job.registry.ts` registra **12** jobs; três são do domínio de
+  nuvem e tocam FORCE sem tenant de entrada — `cloud-usage.aggregate-daily` (T11b), `cloud-charges.calculate`
+  e `cloud-cost-allocation.run` (sem medida própria hoje). O aceite do B4 fica assim: a lista fechada cobre
+  **rotas de `/api/v1/platform` (do router) e jobs do registro (do `job.registry` em runtime)**; cada membro
+  FORCE — as rotas e os três jobs de nuvem — tem cenário próprio com o mesmo seed sob superusuário e sob
+  `NOSUPERUSER NOBYPASSRLS`, corpo/efeito **não vazio** e igual; os outros 9 jobs ficam etiquetados "fora da
+  superfície de plataforma — `B-ARNES-2`" e a enumeração os confere (job novo sem etiqueta = vermelho).
+- **Viabilidade do remédio, medida por mim (não é produto; `b4/mut-p4.mjs`).** Acrescentei ao laço de medição, na
+  cópia do container, as três rotas GET `FORCE-POR-TENANT` sem medida e comparei superusuário × papel efêmero no
+  mesmo seed: `GET /cloud-usage/tenants/:A/summary`, `GET /tenants/:A/detail` e `GET /cloud-cost-allocations/summary`
+  deram **200/200 com corpos iguais e não vazios** (242, 1.249 e 564 caracteres; `totalAllocatedCost` 40). O dev
+  não deve esbarrar em defeito pré-existente nelas. **Não medidos** (têm efeito colateral): `POST
+  /cloud-cost-allocations/runs` e os jobs `cloud-charges.calculate` e `cloud-cost-allocation.run` — se um deles
+  divergir sob o papel sem bypass por causa de arquivo PROIBIDO, vale a parada do dev (C2.3).
 
 ### C2.2 Ajustes classificados
 
-EM APURAÇÃO.
+Fonte: `R-B-SAN3-05-1.md`, `J-B-SAN3-05.md`, `votos/B-SAN3-05/C{1,2,3}-voto.json` e `00-inspetor-terreno.md`
+(R1–R8), todos lidos no objeto `cd267978`. Cada linha diz o que foi **re-medido por mim** (e como) ou o que é
+**só registro**; nada é herdado como fato. Regra: o ciclo 2 é o último em que achado não grave bloqueia
+(§C7 item 8(2)); por isso **todo ajuste de produto ou de teste que tem conserto barato dentro do escopo é
+resolvido neste ciclo**, e só vira pendência o que está fora do escopo permitido ou é pré-existente.
+
+| # | origem | o que é | re-medido por mim | decisão | justificativa |
+|--:|---|---|---|---|---|
+| J1 | C1 **A1** · R2(1) | O T8d trocou `pg_basebackup` por `pg_create_physical_replication_slot`: prova que `REPLICATION` é exercível, não que vaza linha; o `INSERT … ('marcador')` nunca é lido por via de replicação. | sim — blob l.437-526: slot criado e derrubado; `'marcador'` só no INSERT | **RESOLVER** (D1, abaixo) | Teste que promete mais do que mede é a classe que reprova. O CI não aceita `pg_basebackup` (`pg_hba` do serviço; CI vermelho em `e3cb269d`, inspetor item 4.3), então a prova da porta vai para a bateria da junta, em container com `pg_hba` de replicação. |
+| J2 | C1 **A3** | A via `view` da trava e o MODO 6 do script olham **um** nível de `pg_rewrite`/`pg_depend`: view sobre view sobre tabela FORCE, com SELECT só na externa, passa (trava 0 linhas, script `ec=0`). | sim — `runtime-role.ts` l.26-32 e `db-runtime-role.sh` l.93-94 e 110: junção direta à tabela FORCE, sem recursão | **RESOLVER** (D2) | É abertura da própria trava de permissão; hoje há 0 views, mas no ciclo 3 isso seria discutível como "quebra de permissão" (grave). Custo: um CTE recursivo em dois lugares + um teste. |
+| J3 | C1 N1 | O texto do plano v3 §4.1 diz 73 CR e quebra na l.81; medido 115 CR e quebra na l.114. | não (nota de número; a propriedade reproduziu) | **RESOLVIDO por esta nota** | O número de texto é corrigido aqui; a propriedade (CRLF quebra o bash) segue no aceite A22. |
+| J4 | C2 **F-C2-02** | O T15 fixa `DATABASE_RUNTIME_ROLE_GUARD=enforce` no `PROD_BASE`; o boot de produção **sem** a variável (default) não tem teste — a mutação M1 (default→`skip`) só é pega pelo T2. | sim — blob l.217-232: `PROD_BASE` com `enforce` | **RESOLVER** (D3) | O A20 pede os dois sinais por mutação; um caso a mais no T15. |
+| J5 | C2 **F-C2-03** | O T15 não afirma `exitCode`; `adminBoot.kill` fora de `finally`; sob a M2 o runner trava (`ec=124`). | sim — blob l.799-831: `if (adminBoot.exitCode === null) adminBoot.kill(…)` fora de `try/finally`, nenhum `assert` de código de saída | **RESOLVER** a parte do teste (D3); **PENDÊNCIA** a parte do runner (`P-SAN3-05-RUNNER-SEM-TIMEOUT`, C2.6) | O teste é do bloco; `scripts/run-backend-tests.mjs` e `.github/workflows/**` são PROIBIDOS aqui (§6) e a ausência de timeout por arquivo é anterior ao bloco. |
+| J6 | C2 **F-C2-04** | A guarda de host do T9 é literal (`127\.0\.0\.1` ou `55405`): não vê o host da CI (`localhost:5432`) nem o da receita, e não procura a senha. | sim — blob l.254 e l.273 | **RESOLVER** (D4) | Barato; o A6 pede log sem conexão em qualquer ambiente. |
+| J7 | C2 N1 | Artefatos de plano/crítica (`docs/revisoes/SAN3/B-SAN3-05-{plano,critica-r1,critica-r2}.md`) fora da lista literal do §6. | sim — `git diff --name-status b404815c cd267978` | **RESOLVIDO no C2.3** | Entram nominalmente no PERMITIDO do ciclo 2. |
+| J8 | C2 N2 | 27 fixtures no diretório; o §5/§6 diziam 26. | sim — `git ls-tree cd267978 tests/fixtures/san3-05-mutacoes/` = **27** linhas | **RESOLVIDO no C2.3** | A contagem passa a ser a medida (27) mais as fixtures novas do B3, publicada com N pelo dev. |
+| J9 | C2 N3 · R2(4) | A premissa do §8 `git grep 'PrismaCloudChargeRepository(prisma)' -- src` → vazio é falsa como grep literal. | sim — literal = **1** (`new RlsPrismaCloudChargeRepository(prisma)`, l.324); ancorado (`git grep -E` com `(^` ou `[^A-Za-z])` antes do nome) = **0** | **RESOLVIDO no C2.4** | A bateria usa a forma ancorada (item B12), que mede o que a premissa queria dizer. |
+| J10 | C2 N4 · R2(5) · R4 | `Kpis/app.js` (PROIBIDO no §6) e os três JSON/MD de KPI no diff. | sim — `git diff --stat b404815c cd267978 -- Kpis/` = 4 arquivos; a `main` também mudou `Kpis/kpis-history.md` desde a base | **RESOLVER** (C2.3) | KPI congelado (§C7 item 8(5)): os quatro arquivos voltam byte a byte à versão da `origin/main` integrada; a junta não cobra KPI. |
+| J11 | C3 nota (§0.4) | O motivo dado no plano para os 3 sítios de `identity-link` ("setter depois de outra instrução") está errado: o setter é a 1ª instrução, em declaração `const`, que o `setterFirst` não reconhece — erro do gerador **para o lado suspeito**. | não (registro da C3) | **RESOLVIDO por esta nota** | Erro fail-closed (chave a mais, nunca a menos); o texto fica corrigido aqui; o remédio do B3 não pode tornar esse caso permitido sem prova positiva. |
+| J12 | C3 nota (pré-existente) | O default `work()` sem GUC de `LocalAuthLoginService` (`local-auth-login.service.ts:106`) é fail-open em princípio; origem `35c218a8` (2026-06-07). | não (registro da C3, com origem datada) | **PENDÊNCIA** `P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC` (C2.6) | `src/modules/auth/**` é PROIBIDO aqui; a classe antecede o bloco (§C7.1-ter(a)). |
+| J13 | C3 nota | O §10 do plano lista 4 arquivos de rota; são 5 (`src/modules/cloud-costs/aws-cur.routes.ts`). | não (registro) | **RESOLVIDO pelo remédio do B4** | A enumeração do T11d vem do router em runtime (cobre os 5); o B4 amarra cada rota FORCE a cenário próprio. |
+| J14 | C3 "não executado" | As rotas `FORCE-POR-TENANT` sem medição dinâmica (4 de 7). | sim (re-medido como B4) | **RESOLVER** (= B4) | É o próprio B4. |
+| J15 | R1 | Objeto × colagem dos mandatos (HC = H0 da geração ≠ head do PR no voto). | — (processo) | **RESOLVER no C2.5** | Mandatos da junta 2 nascem sobre o head **empurrado e integrado** (HC = H0); o delta até o voto é re-medido por cada cadeira. |
+| J16 | R2(2) | `FROZEN_ALLOWLIST` 60 → 62 → 63. | sim — o diff de `tests/db-catalog-write-guard.test.ts` é **só** a entrada `san3-05-runtime-role-guard-db.test.ts` com `count: 63` | **RESOLVER no C2.4** | O remédio do B2 muda o arquivo de teste; a contagem é **re-medida** pelo dev e o diff do guard continua sendo só essa entrada (count e motivo novos). |
+| J17 | R2(3) | O gerador cai na lista embutida de OPS se não derivar do client (`OPS.size < 10` → aviso e segue). | sim — gerador l.100-103 | **RESOLVER** (instância do B3) | É a mesma inversão "não reconheci → sigo": sem OPS derivado do client, o gerador **sai ≠ 0**. |
+| J18 | R2(6) | Contagens publicadas no PR (3122/3124, 19/19, 88/88, 42/42, 30/30, 53 chaves). | — | **RESOLVER no C2.4** | Toda contagem do ciclo 2 vem da bateria executada no head do ciclo 2, com N e forma; nenhuma é copiada. Não há KPI. |
+| J19 | R3 · R8 | Portas e disco. | sim — `df -h /c` = 13 GB livres às 15:40Z; cada receita ≈ 0,4 GB de vhdx | **RESOLVER no C2.4/C2.5** | Recursos sem porta no host (rede Docker própria); o orquestrador acompanha o `df` entre cadeiras e roda `DEEP_CLEAN=1` se cair de 10 GB. |
+| J20 | R4 | O PR está em conflito com a `main`. | sim — `git merge-tree --write-tree cd267978 origin/main` (`c8af6458`): conflito em **4** arquivos de registro (`agent-orchestration/codex/log-execucao.md`, `agent-orchestration/controle/pendencias-indice.md`, `agent-orchestration/controle/pendencias.md`, `agent-orchestration/docs/status-geral.md`); `gh pr view 405` = `mergeable: UNKNOWN` | **RESOLVER** (C2.3) | O dev integra a `origin/main` por **merge** (sem reescrever o ramo, sem force-push), resolvendo os quatro por união das entradas; a junta 2 julga o head integrado, com check-runs concluídos. |
+| J21 | R5 | O `CLAUDE.md` do objeto não tem o §C7 item 8. | o antecessor mediu `grep -c` = 0 no objeto | **RESOLVIDO pela integração (J20)** | Depois do merge da `main`, o `CLAUDE.md` do ramo é o da `main`; até lá, os mandatos citam `origin/main`. |
+| J22 | R6 | P5/P6 com o orquestrador. | — (processo) | **RESOLVER no C2.5** | Máx. 2 cadeiras em paralelo; `00-quedas.md` criado na primeira queda. |
+| J23 | R7 | = **B2**. | sim (C2.1, B2) | **RESOLVER** (= B2) | — |
+
+**D1 (A1).** O T8d passa a afirmar só o que mede: título e mensagem dizem "`REPLICATION` é exercível (o slot
+físico nasce) e a trava o recusa"; o `INSERT … ('marcador')` sai do T8d ou passa a ser lido por algo — dado de
+fixture sem leitura não fica. A **prova da porta** (o papel com `REPLICATION` extrai, por `pg_basebackup`, um
+`base.tar` que contém o marcador de outra organização) vira o **item B10 da bateria** (C2.4), executado pela C1
+da junta 2 num PostgreSQL 16 descartável com `pg_hba` de replicação — não no CI. Mutação: tirar o termo
+`rolreplication` da trava → o T8d fica vermelho (o `findEscape` do `atributo` falha).
+
+**D2 (A3).** A via `view` fica **transitiva** nos dois lugares que a implementam (`RUNTIME_ROLE_GUARD_SQL` em
+`src/database/runtime-role.ts` e o MODO 6 de `scripts/db-runtime-role.sh`). Uma relação `V` (`relkind` `v`/`m`)
+sobre a qual a sessão (`session_user` ou `current_user`) tem `SELECT` escapa se, seguindo `pg_rewrite`/
+`pg_depend` por **qualquer número** de views, chega a uma view `W` cujo dono é `rolsuper` ou `rolbypassrls` e
+que depende **diretamente** de tabela FORCE (`V = W` é o caso de hoje). Sobre-aproximação aceita e declarada:
+view `security_invoker` também conta (fail-closed). **Aceite:** view sobre view sobre tabela FORCE, as duas do
+superusuário, `SELECT` só na externa → a trava devolve 1 escape `view` e o script sai `ec=3` com `MODO 6`; o caso
+de um nível continua pego; a postura limpa continua com 0 escapes. **Mutação:** voltar a junção para um nível →
+o caso de dois níveis passa na trava e no script (o teste fica vermelho). O md5 `36650de5` do Apêndice E **deixa
+de ser critério**: o dev regrava o md5 no comentário de `runtime-role.ts`, e a junta julga a propriedade por
+execução. `docs/deployment.md` e o comentário de `runtime-role.ts` deixam de declarar o limite de um nível.
+
+**D3 (F-C2-02 + F-C2-03).** O T15 ganha o caso **produção sem `DATABASE_RUNTIME_ROLE_GUARD`** (o `PROD_BASE`
+sem a variável → default `enforce` → recusa o superusuário). Cada boot recusado afirma **os dois sinais do
+A20**: código de saída `1` em ≤ 15 s, lido do evento `close` (não só do texto), e a primeira linha de falha com
+`RUNTIME_ROLE_CAN_BYPASS_RLS` antes de qualquer menção a Redis ou job worker. **Todo** processo filho é morto no
+`finally` (SIGTERM, e SIGKILL depois da carência), e cada subteste tem `timeout` explícito menor que o do
+arquivo: uma regressão falha rápido em vez de travar o runner. **Mutações:** M1 (default → `skip`) deixa o
+**T15** vermelho, não só o T2; M2 (a chamada da trava apagada de `src/server.ts`) deixa o T15 vermelho em
+< 60 s sob `timeout 300` (ec ≠ 124).
+
+**D4 (F-C2-04).** A guarda de log do T9 (e a do T15) deriva do `DATABASE_URL` **efetivo** e da URL do papel
+limpo: `hostname`, `port`, `username`, `password` (decodificados) e o nome do banco não aparecem no JSON
+serializado das entradas de log, além de `postgresql://` e `password`. **Mutação:** o logger da trava passa a
+incluir o host → vermelho sob qualquer `DATABASE_URL` (CI `localhost:5432`, receita `<rede>-pg:5432`).
 
 ### C2.3 Escopo do desenvolvimento
 
-EM APURAÇÃO.
+**Ponto de partida obrigatório (antes de qualquer edição de produto).** O dev — identidade nova, que não achou,
+não planejou e não votou — trabalha num worktree próprio do ramo `fix/runtime-role-sem-bypass` em caminho curto
+(`C:/Users/AMP/w-<id>`), com `npm ci` próprio e `prisma generate` com `DATABASE_URL` só no ambiente (nunca
+junction de `node_modules`). (1) Mede `HEAD` = `git ls-remote origin fix/runtime-role-sem-bypass`; se divergir
+do head que o orquestrador passar, para. (2) **Integra a `origin/main` por merge** (`git merge origin/main`,
+sem rebase e sem force-push): resolve os 4 conflitos de registro medidos (J20) por **união** das entradas, sem
+apagar nenhuma; o `CLAUDE.md` do ramo passa a ser o da `main` (§C7 item 8 presente — J21). (3) **KPI congelado:**
+`git -c core.autocrlf=false checkout origin/main -- Kpis/app.js Kpis/kpis-latest.json Kpis/kpis-history.json
+Kpis/kpis-history.md` e confere `git diff --quiet origin/main -- Kpis/` (ec=0) — os quatro saem do diff do PR.
+(4) Só então as correções, em commits pequenos (Conventional Commits), cada um com a sua bateria parcial.
+
+**PERMITIDO no ciclo 2 (e nada mais):**
+
+| caminho | para quê |
+|---|---|
+| `scripts/db-runtime-role.sh` | B1 (a senha nunca vai em claro ao servidor: verificador SCRAM no cliente, `password_encryption` forçado na sessão, cabeçalho com o residual honesto); D2 (MODO 6 transitivo). Continua `100755` e `eol=lf`. |
+| `src/database/runtime-role.ts` | D2 (`RUNTIME_ROLE_GUARD_SQL` com a via `view` transitiva; md5 novo no comentário). Nada mais muda no arquivo. |
+| `docs/deployment.md` | B1 (mecanismo real e residual: verificador SCRAM no log, senha aleatória de alta entropia); D2 (sem o limite de um nível). |
+| `scripts/san3-05-acessos-de-plataforma.mjs` | B3 (L1/L2 fail-closed para o que não resolve; relação aninhada `include`/`select`/escrita aninhada como call-site; L0 com nomes exatos, grafia qualificada e model sem `@@map`; OPS derivado com recursão correta e saída ≠ 0 sem ele). |
+| `tests/san3-05-acessos-de-plataforma-guard.test.ts` | B3 (T13: fixtures novas; `stderr` do gerador vazio; inventário congelado atualizado só com motivo por chave). |
+| `tests/fixtures/san3-05-mutacoes/**` | B3 (C3A, C3B, C3C, C3E e o que o dev escolher para as grafias do C3-F2). A contagem final vai publicada com N (hoje 27). |
+| `tests/san3-05-runtime-role-guard-db.test.ts` | B1 (o item (i): `rolpassword` com `SCRAM-SHA-256$`, inclusive sob `password_encryption=md5`; guarda estática; senha 0 nos modos — a matriz do `server.log` é a B7 da bateria), B2 (helper travado, canário, estrutura), D1 (T8d), D2 (view sobre view), D3 (T15), D4 (T9). |
+| `tests/san3-05-leituras-de-plataforma-db.test.ts` | B4 (cenário por membro FORCE da superfície e igualdade de conjuntos); B3(f) (igualdade catálogo↔L0), se o dev não preferir arquivo próprio. |
+| `tests/san3-05-*-db.test.ts` **novos** | Só se o dev separar B3(f) ou B4 em arquivo próprio; cada um entra na `FROZEN_ALLOWLIST` se escrever catálogo. |
+| `tests/db-catalog-write-guard.test.ts` | **Só** as entradas do Map dos arquivos `san3-05-*` (count e motivo re-medidos). Nenhuma outra linha (J16). |
+| `docs/revisoes/SAN3/B-SAN3-05-plano.md`, `B-SAN3-05-critica-r1.md`, `B-SAN3-05-critica-r2.md` | Artefatos do próprio bloco (J7). O dev **não** reescreve o plano; só o planejador/orquestrador. |
+| `agent-orchestration/codex/log-execucao.md`, `agent-orchestration/controle/pendencias.md`, `agent-orchestration/controle/pendencias-indice.md` (só pelo gerador do índice), `agent-orchestration/docs/status-geral.md` | Integração da `main` (J20) e as pendências novas do C2.6. |
+| `agent-orchestration/omega/juntas/**`, `agent-orchestration/omega/reprovacoes/**` | Só o orquestrador (atas, votos, mandatos); o dev não escreve aqui. |
+| `Kpis/*` | Só para **restaurar** à `origin/main` (passo 3); o diff final do PR em `Kpis/` é vazio. |
+
+**PROIBIDO no ciclo 2** (além do §6 da v3, que continua valendo onde não for ampliado acima):
+`prisma/**` (inclusive para o C3-F2: a prova usa entrada virtual ou cópia efêmera, nunca migração nova) ·
+`src/config/env.ts`, `src/server.ts`, `src/database/runtime-role.bootstrap.ts`, `src/database/rls.ts` e os dois
+repositórios de nuvem (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`,
+`src/modules/cloud-charges/cloud-charge-prisma.repository.ts`) — nenhum achado do ciclo 1 pede mudança neles; ·
+qualquer outro `src/**` (inclusive `src/modules/cloud-cost-allocation/**`, dono `B-O6R-08`, e
+`src/modules/auth/**`, J12) · `tests/helpers/auth-identity-fixture.ts` (o arnês não muda; o helper travado mora no
+arquivo de teste e usa o `withRoleCatalogLock` exportado) · `scripts/run-backend-tests.mjs` · `.github/workflows/**`
+· `package.json`, lockfiles · `docker-compose*.yml`, `Dockerfile`, `fly.*.toml` · `.env*` · `CLAUDE.md`,
+`AGENTS.md`, `.claude/**`, `.agents/**` (só chegam pela integração da `main`, sem edição) · `Kpis/*` (fora da
+restauração) · `frontend/**`, `mobile/**`.
+
+**Parada do dev (fail-closed).** Se um cenário do B4 ficar vermelho por defeito de produto num arquivo PROIBIDO
+(ex.: uma rota `FORCE-POR-TENANT` que devolve corpo diferente sob o papel sem bypass por causa de
+`cloud-cost-allocation`), o dev **para e relata** ao orquestrador (defeito + evidência executada), sem afrouxar o
+cenário e sem tocar o arquivo: é achado novo, e quem decide escopo é o orquestrador (§C7.4-bis). O mesmo vale se
+o B1 exigir algo que o `psql` 16 da imagem não ofereça.
 
 ### C2.4 Bateria do ciclo 2
 
-EM APURAÇÃO.
+**Onde roda.** No Windows do dono, **só** `git`/`gh` (leitura do objeto, check-runs, diff de escopo). Todo o resto
+roda em **Linux, dentro de container**, a partir da receita do terreno (`C:/Users/AMP/erp-terreno/receita-pg16.sh`,
+com prefixo próprio por cadeira): `git archive` do head com `core.autocrlf=false`, conferência de **todos** os
+blobs (`git hash-object --no-filters` × `ls-tree`), imagem `erp-junta-node20-pg16:local` (Node 20.20.2, `psql`
+16.14), PostgreSQL 16 descartável numa rede Docker própria **sem porta no host**, `npm ci` + `prisma generate` +
+`prisma migrate deploy` dentro, teardown verificado (0 container, 0 rede, 0 volume, árvore temporária removida).
+`erp-postgres`, `erp-redis`, 5432, 6379 e 55432 nunca são alvo. Cada comando tem `timeout` e o `ec` é lido em
+variável — nunca `a && b` numa linha seguida de outra que dependa dele. Nenhum `tail -f`.
+
+**Objeto.** O head **integrado** (C2.3, passo 2), empurrado, com **todos** os check-runs concluídos
+(`gh api repos/thiagodorgo/ERP_Techsolutios/commits/<sha>/check-runs`); `cancelled`/`queued` contam como ausentes.
+
+| # | comando (forma) | onde · timeout | esperado (N e forma) |
+|--:|---|---|---|
+| B0 | `git rev-parse HEAD` = `git ls-remote origin fix/runtime-role-sem-bypass`; check-runs do head; `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO do C2.3; `git diff --quiet origin/main -- Kpis/` | Windows · 120 s cada | heads iguais; check-runs concluídos e verdes; 0 arquivo fora do PERMITIDO; `Kpis/` ec=0 |
+| B1 | `npm run check` | container · 600 s | ec=0 (tsc estrito) |
+| B2 | `npm run lint` | container · 600 s | ec=0 |
+| B3 | `node --test --import tsx tests/production-runtime-gates.test.ts tests/deploy-manifest-parity.test.ts tests/o6r07b-scanner-failclosed.test.ts tests/cors-env.test.ts tests/portal-env.test.ts tests/san3-05-runtime-role-bootstrap.test.ts tests/san3-05-acessos-de-plataforma-guard.test.ts` | container · 900 s | fail 0, skipped 0; N publicado = executado (referência v3: gates 63, paridade 28) |
+| B4 | `node scripts/san3-05-acessos-de-plataforma.mjs .` e `… --all` | container · 300 s | ec=0; **`stderr` vazio**; cabeçalho com `OPS(derivados)=17` sem aviso; inventário == congelado do T13; cada chave nova ou sumida em relação às 53 do `cd267978` (`79e1d86e`) com motivo escrito |
+| B5 | `git ls-files -s scripts/db-runtime-role.sh`; `git ls-files --eol scripts/db-runtime-role.sh .gitattributes` | Windows · 60 s | `100755`; `i/lf w/lf attr/text eol=lf` |
+| B6 | receita `normal` dos arquivos `-db` do bloco (`tests/san3-05-runtime-role-guard-db.test.ts`, `tests/san3-05-leituras-de-plataforma-db.test.ts` e os `san3-05-*-db` novos), **N = 3 receitas independentes**; e **1** receita `controle` (PATH sem `psql`) | container · 1.500 s por receita | 3 × verde com **denominador idêntico** (> 19, o N do objeto, pelos cenários novos); `controle`: o T14 vermelho nomeando `psql: ausente`, nunca skip |
+| B7 | **matriz do `server.log` do B1**: o `scripts/db-runtime-role.sh` do head num `postgres:16` descartável, senha-sentinela só por ambiente, sob (a) `log_statement=all`, (b) `log_transaction_sample_rate=1`, (c) `log_min_duration_sample=0`+`log_statement_sample_rate=1`, (d) `log_min_duration_statement=0`, (e) defaults, (f) servidor com `password_encryption=md5`; sucesso e os MODOS 1–6; mais o controle positivo do leitor (um `SELECT '<sentinela>'` proposital sob (a)) | container · 600 s | senha = **0** no `server.log`, no terminal e no argv em todas as linhas; controle positivo = ≥ 1; `ALTER … PASSWORD 'SCRAM-SHA-256$…'` presente sob (a); papel `NOSUPERUSER NOBYPASSRLS NOREPLICATION`; idempotente (2ª execução sem diff de privilégios) |
+| B8 | **critério (c) do B2**: o lote dos arquivos `-db` do bloco **10 vezes** no mesmo container (`npm ci` uma vez), com resíduo `s305%` conferido entre execuções | container · 2.400 s | 10 × verde, denominador idêntico, **0** ocorrência de `XX000`, `23505` ou `40P01` no TAP inteiro (inclusive o absorvido por re-tentativa do arnês); resíduo 0 |
+| B9 | **canário do B2** (o teste do critério (a)) isolado, e a guarda estrutural (b) | container (dentro do B6) | verdes; e vermelhos sob as mutações M-B2a/M-B2b abaixo |
+| B10 | **porta `REPLICATION` do D1** (só a junta, não o CI): papel com `REPLICATION` num PostgreSQL 16 descartável com `pg_hba` de replicação; `pg_basebackup` extrai `base.tar`; o marcador da linha FORCE de outra organização aparece nele | container · 300 s | marcador ≥ 1 no `base.tar`; a trava recusa o papel (`atributo`) |
+| B11 | `DATABASE_URL=<descartável> npm test` (suíte inteira) e `npm run build` | container · 2.400 s e 600 s | fail 0; `skipped ≤ 2` (teto `SKIP_BUDGET_DB`); N publicado = executado; build ec=0 |
+| B12 | `git grep -n -E '(^\|[^A-Za-z])PrismaCloudChargeRepository\(prisma\)' -- src`; `grep -n 'DATABASE_RUNTIME_ROLE_GUARD' fly.production.toml fly.staging.toml .env.example`; diff de `tests/db-catalog-write-guard.test.ts` contra `origin/main` | Windows · 60 s | vazio; vazio; só as entradas `san3-05-*` do Map |
+| B13 | `git diff --check origin/main...HEAD` | Windows · 60 s | ec=0 |
+| B14 | **caminho do compose**: `postgres:16` descartável com o `scripts/db-runtime-role.sh` do head montado em `/docker-entrypoint-initdb.d/10-runtime-role.sh` (como no `docker-compose.prod.yml`, que o entrypoint executa por `source`, sem tty), com `DB_RUNTIME_PASSWORD` por ambiente e `log_statement=all` | container · 300 s | o papel nasce com `SCRAM-SHA-256$`, o login com a senha funciona, senha 0 no `docker logs`; script sem senha derruba o container (exit 1), como medido no ciclo 1 |
+
+Não há `node --check Kpis/app.js` nem `kpi-dashboard-charts`: `Kpis/*` não muda (KPI congelado).
+
+**Mutações que a junta 2 roda (cada uma aplicada na cópia efêmera do container, por âncora exata que falha
+fechado; restauro conferido por md5; nenhuma toca a árvore do ramo):**
+
+| id | mutação | tem de ficar vermelho |
+|---|---|---|
+| M-B1a | a senha em claro volta ao canal SQL (ex.: `set_config` com a variável da senha + `ALTER ROLE … PASSWORD` com ela) | B7 (b) e (c) com senha ≥ 1 no `server.log`; a guarda estática do T14 |
+| M-B1b | sai o `SET password_encryption` da sessão | o T14 sob `PGOPTIONS='-c password_encryption=md5'` (`rolpassword` sem `SCRAM-SHA-256$`) |
+| M-B2a | o helper travado deixa de tomar a trava | o canário (a), deterministicamente |
+| M-B2b | uma chamada do script por fora do helper | a guarda estrutural (b), sem depender de corrida |
+| M-B3a | `SUSPEITO_L1` volta a excluir `INJETADO` | as fixtures C3A, C3B e C3C (≥ 1 chave cada) |
+| M-B3b | o L1 volta a ignorar relação aninhada | a fixture C3E |
+| M-B3c | a regex do L0 volta à de hoje (ou um membro FORCE some do L0) | a igualdade catálogo↔L0 (f) e as grafias do C3-F2 |
+| M-B3d | o `else` pendurado volta ao laço de OPS | o gerador sai ≠ 0 ou o T13 reprova o `stderr` |
+| M-B4a | E2: rota crua etiquetada `FORCE-SEM-TENANT` sem cenário | a igualdade "membros FORCE enumerados == cenários executados" |
+| M-B4b | E3: o ramo com `tenantId` lendo cru | o cenário de `/cloud-usage/tenants/:tenantId/summary` |
+| M-B4c | um dos três jobs de nuvem lendo cru | o cenário do job |
+| M-D1 | o termo `rolreplication` sai da trava | o T8d |
+| M-D2 | a via `view` volta a um nível (na trava e no script) | o teste de view sobre view (trava e MODO 6) |
+| M-D3a | M1: default do export → `skip` | o **T15** (não só o T2) |
+| M-D3b | M2: a chamada da trava apagada de `src/server.ts` | o T15, em < 60 s sob `timeout 300` (ec ≠ 124) |
+| M-D4 | o logger da trava inclui o host | o T9, sob o `DATABASE_URL` da receita |
+
+**Disco e paralelismo.** Cada receita custa ≈ 0,4 GB de `vhdx` que o Docker não devolve; 13 GB livres às 15:40Z
+de hoje. O orquestrador confere `df -h /c` entre cadeiras e roda `DEEP_CLEAN=1 bash scripts/post-merge-cleanup.sh`
+abaixo de 10 GB (§C5). No máximo 2 cadeiras com container vivo ao mesmo tempo (P5).
 
 ### C2.5 Junta 2 — três cadeiras novas
 
-EM APURAÇÃO.
+**Regra.** Bloco de **segurança e permissão** → junta completa (§C7 item 8(1)): `inspetor-de-terreno-da-junta`
+antes, com `LIBERADO` obrigatório; três cadeiras de **identidade nova**; quórum **unanimidade de 3, com veto**.
+**Este é o último ciclo em que achado não grave bloqueia** (§C7 item 8(2)): no ciclo 3, só bloqueia defeito de
+produto grave — perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro — e todo o
+resto vira pendência com dono e o bloco mergeia. Por isso cada cadeira classifica todo achado como `grave`
+(uma das quatro classes, dita qual) ou `não grave`, além de `gravidade` e `escopo` (§C7.1-ter(a), escopo com
+evidência de data ou origem). Contrato da junta = `CLAUDE.md` do head integrado (= `origin/main`, §C7 item 8).
+
+**Objeto e mandato.** Head integrado e empurrado (C2.3), com check-runs concluídos; mandato forma A com pré-voo
+(só inspetor e cadeiras, §C7 item 8(3)), **HC = H0** = esse head. Cada cadeira re-mede `git rev-parse HEAD` =
+`git ls-remote` e o delta desde a colagem (R1/J15). P1–P7 inline; máx. 3 itens por cadeira (P4); máx. 2 cadeiras
+com container vivo ao mesmo tempo (P5); quedas em `votos/B-SAN3-05/ciclo2/00-quedas.md` (P6). Cadeiras rodam em
+Opus com substituição declarada (decisão do dono de 2026-10-08: Fable só em bloco de dinheiro) ou no Codex em
+GPT-6 Astra; nunca abaixo (§C7 item 6-bis). Cada cadeira mede **por execução** no próprio terreno (receita com
+prefixo próprio: `j05c2-c1-`, `j05c2-c2-`, `j05c2-c3-`; sem porta no host) — afirmação de ata, de plano ou de
+relatório do dev é roteiro, nunca fato.
+
+**Cadeiras (para a `agente-fabrica`; o corpo diz a competência, os três itens e que a cadeira acha e não
+conserta — defeito + evidência executada + motivo, sem propor correção, §C7.4-bis):**
+
+| cadeira | identidade nova (proposta) | competência | itens (máx. 3) |
+|---|---|---|---|
+| **C1** | `jurado-san305-c2-credencial-e-papel` | PostgreSQL 16: autenticação SCRAM, `password_encryption`, logging do servidor (`log_statement`, amostragens), atributos e pertença de papéis, views e `pg_rewrite`/`pg_depend`, replicação | **(1) B1** — B7 (matriz do `server.log`, 6 configurações × sucesso e MODOS 1–6, controle positivo do leitor) e o (i) do T14 (`SCRAM-SHA-256$` inclusive sob `password_encryption=md5`; guarda estática); mutações M-B1a e M-B1b; o cabeçalho do script e `docs/deployment.md` dizem o mecanismo e o residual real; B14 (o caminho do compose). **(2) D2 + D1** — view sobre view (trava e MODO 6), M-D2; T8d diz o que mede, M-D1; B10 (`pg_basebackup` com marcador). **(3) D3 + D4** — T15 com os dois sinais do A20 e `finally`, M-D3a e M-D3b (ec ≠ 124); T9 derivado do `DATABASE_URL`, M-D4. |
+| **C2** | `jurado-san305-c2-arnes-e-escopo` | Concorrência de catálogo no PostgreSQL (tuplas de ACL, `XX000`), arnês `node:test` multiprocesso, travas consultivas, escopo de PR e integração de ramo | **(1) B2 (a)(b)(d)** — o canário prova a exclusão mútua deterministicamente; a guarda estrutural reprova qualquer filho fora do helper; limpezas em `finally`; o filho assíncrono com timeout menor que o da janela (sem impasse); M-B2a e M-B2b. **(2) B2 (c) + B6** — B8 (N=10, 0 `XX000/23505/40P01` no TAP inteiro, resíduo 0) e B6 (N=3 receitas com denominador idêntico + 1 `controle`). **(3) Escopo e integração** — B0, B11, B12, B13: diff ⊆ PERMITIDO do C2.3; `Kpis/` = `origin/main`; `main` integrada por merge sem reescrever o ramo; diff do `db-catalog-write-guard` só nas entradas `san3-05-*`; suíte inteira com `skipped ≤ 2`. |
+| **C3** | `jurado-san305-c2-ratchet-e-superficie` | Análise estática com o compilador TypeScript (tipos, símbolos, AST), princípio fail-closed, diferencial dinâmico sob papel sem bypass | **(1) B3 — gerador** — B4 (`stderr` vazio, OPS derivado = 17, inventário == congelado com motivo por chave); fixtures C3A, C3B, C3C, C3E com ≥ 1 chave; M-B3a, M-B3b, M-B3d; **e uma forma própria** dentro do alcance declarado (`src/**`, acesso tipado por Prisma, tabela FORCE). **(2) B3 (f) + C3-F2** — igualdade catálogo↔L0 por nome nos dois sentidos e tabela FORCE → model; as duas grafias do C3-F2 com ≥ 1 chave; M-B3c. **(3) B4 — superfície** — lista fechada de rotas (router) e jobs (registro) em runtime; um cenário executado por membro FORCE (rotas e os três jobs de nuvem) com corpo/efeito não vazio e igual nos dois papéis; igualdade "membros FORCE == cenários executados"; M-B4a, M-B4b, M-B4c. |
+
+**Inelegíveis por nome (não podem ocupar cadeira da junta 2):** os que **acharam** no ciclo 1 —
+`agente-dba-guardiao` (C1), `agente-secops` (C2), `guardiao-fail-closed` (C3) e o `inspetor-de-terreno-da-junta`
+da junta 1 (achou o R7; segue podendo ser **inspetor**, que não vota); os que **planejaram** —
+`planejador-b-san3-05-v3`, os planejadores das versões v1 e v2 (papel `planejador-mestre`; os nomes não estão
+registrados no objeto — o inspetor confere em `controle/` e no log), `planejador-ciclo2-b-san3-05` (GPT-5.6 Sol)
+e `planejador-ciclo2-b-san3-05-sucessor` (eu); os que **criticaram** — `critico-b-san3-05` (r1 e r2); os que
+**desenvolveram** — `dev-b-san3-05`, `dev-b-san3-05-sucessor-1`, `dev-b-san3-05-sucessor-2` e o dev do ciclo 2
+(nome dado pelo orquestrador no disparo). O inspetor confere por nome (§C7.1-bis), inclusive contra os
+especialistas não rastreados que existem na árvore principal com nome parecido.
+
+**Reprovação por construção — o que a junta 2 NÃO pode cobrar** (cobrar é voto sem base; o inspetor e a ata
+registram e descartam):
+1. **KPI** — congelado (§C7 item 8(5)); a única exigência é `Kpis/` igual à `origin/main`.
+2. **Classes pré-existentes fora do escopo**, que já têm dono: as 53 chaves do inventário (exceto as que o B3
+   muda), a suíte `-db` inteira sob papel real e os 9 jobs fora da superfície (`B-ARNES-2`), funções `SECURITY
+   DEFINER` (`B-SAN3-10`), o `work()` default de `LocalAuthLoginService` (J12), o timeout do runner/CI (J5), a
+   leitura morta do rateio (`B-O6R-08`) e a postura no `/health` — viram pendência, nunca voto contra.
+3. **Residuais declarados por construção**: `/proc/<pid>/environ` do `psql` enquanto roda; o verificador SCRAM no
+   log permitir ataque de dicionário offline (mitigado pela exigência de senha aleatória longa); a CI não ler o log
+   do servidor (a matriz é a B7); a semântica do contexto (envoltório confiado que não sete GUC, `tenantId`
+   errado) fora da superfície dinâmica; acesso por `pg` direto ou fora de `src/**`; a sobre-aproximação
+   fail-closed de view `security_invoker` (D2).
+4. **Forma que escapa fora do alcance declarado** do gerador. Dentro do alcance (`src/**`, acesso tipado por
+   Prisma, tabela FORCE), forma que nasce **permitida** é defeito do bloco e bloqueia; forma que o gerador não
+   resolve e marca **suspeita** é o comportamento pedido, não defeito.
+5. **Números de texto herdados** — md5 do Apêndice E (deixou de ser critério, D2), "26 fixtures", "73 CR", as
+   contagens do PR do ciclo 1, o N=19 do objeto: vale o N medido no head do ciclo 2.
+6. **Mecanismo em vez de propriedade** — no B1 vale a propriedade (senha em claro nunca chega ao servidor), não
+   o uso de `\password`; no B2, a exclusão mútua provada, não a forma do helper.
+7. **Norma citada que não existe na ref julgada** (§A7) e redação de plano/documentação sem efeito no produto.
+8. **Falha de infraestrutura não atribuível ao objeto** (queda do Docker, rede, cota) — re-execução declarada na
+   evidência, nunca silenciosa; mas `XX000` no TAP **conta** (é o B2) e não é "infraestrutura".
 
 ### C2.6 Pendências com dono
 
-EM APURAÇÃO.
+Registradas pelo dev em `agent-orchestration/controle/pendencias.md` (e no índice, só pelo gerador) no próprio PR
+do ciclo 2. Nenhuma bloqueia este PR.
+
+| id | severidade | escopo (com evidência) | o que é | dono | bloqueia | teste de encerramento |
+|---|---|---|---|---|---|---|
+| `P-SAN3-05-RUNNER-SEM-TIMEOUT` (nova) | MÉDIA | `pre-existente` — `scripts/run-backend-tests.mjs` e `.github/workflows/ci.yml` anteriores ao bloco e PROIBIDOS nele (§6 v3); medido pela C2 do ciclo 1 (F-C2-03: sob a M2 o runner ficou preso até `timeout 150`, ec=124) | Não há timeout por arquivo no runner nem `timeout-minutes` no job `backend`: um teste que trave prende o job inteiro em vez de falhar. O D3 fecha o caso do T15; a classe continua para qualquer outro teste. | `B-ARNES-2` (dono do `SUITES` e do job `backend-postgres`) | não | um teste que dorme além do teto falha o job em ≤ o teto, com o nome do arquivo |
+| `P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC` (nova) | MÉDIA | `pre-existente` — `src/modules/auth/services/local-auth-login.service.ts:106`, origem `35c218a8` (2026-06-07), achado da C3 do ciclo 1 (nota); `src/modules/auth/**` PROIBIDO aqui | O `runWithTenantContext` default de `LocalAuthLoginService` é `work()` sem GUC: fail-open em princípio. Hoje toda construção de produção injeta `withTenantRls` (medido pela C3: `auth-runtime.ts:81-84`, `session-admin.service.ts:287-290`). | a nomear pelo orquestrador; candidato `B-ARNES-2` (a suíte sob papel real exporia uma construção nova sem o envoltório) | não | o default deixa de existir (parâmetro obrigatório) ou falha fechado, provado por teste |
+| `P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI` (nova) | BAIXA | `dentro-do-bloco` (residual declarado do B1) | A CI não lê o log do servidor PostgreSQL; a regressão "senha em claro de volta ao canal SQL" só é pega na CI pela guarda estática do T14, e por execução só na bateria da junta (B7). | `B-ARNES-2` (workflows) | não | um job de CI com PostgreSQL descartável e leitura do `server.log` roda a matriz do B7 e fica vermelho sob a M-B1a |
+| `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` (existente — **sub-item**) | ALTA | `pre-existente` (já registrada, dono `B-ARNES-2`) | **Acrescentar a lista nominal medida** em `src/infra/jobs/job.registry.ts`: os 9 jobs fora da superfície de plataforma (`aws-cur.import-cost-file`, `checklist-attachment-postprocess`, `notification-dispatch`, `notifications.scan-due`, `audit-log-fanout`, `field-ops-event-fanout`, `impound.reconcile-removals`, `charging.accrue-daily`, `impound.notify-due`) não têm medida sob o papel sem bypass; o inventário estático não tem chave suspeita em `notifications` nem em `charging`, mas o residual semântico (envoltório que não sete o GUC) só a medida dinâmica fecha — e `charging.accrue-daily` é dinheiro. **Recomendação ao dono:** o Ato 2 em **produção** (trocar o `DATABASE_URL` do app para `erp_runtime`) espera a medida desses 9 jobs, ou é decidido em ata com o risco dito. | `B-ARNES-2` | não este PR; **proposta**: o Ato 2 em produção | cada job executado sob papel `NOSUPERUSER NOBYPASSRLS` produz o mesmo efeito que sob superusuário, no mesmo seed |
+
+**Pendências do ciclo 1 que este ciclo fecha (o dev as marca FECHADA no PR, com a evidência do C2.4):** nenhuma
+pendência registrada nasceu dos achados A1–A4, F-C2-01..04 e C3-F1..F3 (foram para o R-1, não para
+`pendencias.md`); fechá-los é o próprio ciclo. `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` continua EM ANDAMENTO
+até o merge (o T2 e, agora, o T15 sem a variável exercem o export).
+
+### Fecho do ciclo 2
+
+**O que este ciclo 2 substitui na v3** (onde divergirem, vale o C2): o §6 (escopo) pelo C2.3; o §8 (bateria) pelo
+C2.4; o §10 (junta) pelo C2.5; o md5 do Apêndice E deixa de ser critério (D2); o §11, Ato 1, passo 3 (MODO 0) e o
+R14 do §12 perdem a premissa — **decisão deste plano:** com a senha chegando ao servidor só como verificador SCRAM,
+o MODO 0 e o `DB_RUNTIME_ALLOW_LOG_ALL` **saem** (recusar `log_statement=all` e aceitar amostragem, que registra o
+mesmo verificador, seria incoerente), e o caso "MODO 0 recusa" do T14 (blob l.577) vira "`log_statement=all` →
+sucesso com `SCRAM-SHA-256$`". Se o dev escolher um mecanismo em que ainda passe algo sensível pelo canal, o MODO 0
+fica e a junta julga pelo B7. `docs/deployment.md` sai com o Ato 1 reescrito por isso. **Acréscimo ao B7:** uma
+linha com tty alocado (`docker exec -t`): o script não pede a senha no terminal nem trava (≤ 60 s), e a senha
+continua 0 — no Ato 1 o operador roda o script do próprio terminal, e o `psql` abre `/dev/tty` quando pode (por
+isso o `setsid` medido; numa máquina sem `setsid`, o script falha nomeando o motivo, nunca pede a senha).
+
+**Riscos** (o que pode dar errado no desenvolvimento ou na junta 2):
+
+| R | risco | mitigação no plano |
+|---|---|---|
+| RC1 | O remédio do B1 muda a ordem: papel e grants numa transação, senha numa segunda sessão. Se a segunda falhar, o papel fica sem a senha nova. | Falha fechada (sem senha nova não há login), saída ≠ 0 nomeando o passo, reexecução idempotente; a B7 cobre sucesso e modos. |
+| RC2 | Helper travado do B2 com impasse: escrita da transação antes do filho sobre o mesmo objeto, ou filho mais lento que a janela de 30 s. | Filho assíncrono, timeout menor que a janela, nenhuma escrita própria antes do filho (C2.1 B2); a C2 da junta mede. |
+| RC3 | A relação aninhada (C3E) faz o inventário crescer. | Medido: o fail-closed do C3-F1 acrescenta **0** chave hoje (72 classes injetadas, todas com `new` em `src`); o L0 por nome não muda nada (106 = 106). Só a relação aninhada pode crescer: cada chave nova com motivo; **acima de 20 chaves novas, o dev para e relata**. |
+| RC4 | Cenário do B4 vermelho em membro que depende de arquivo PROIBIDO (`POST /cloud-cost-allocations/runs` e os jobs `cloud-charges.calculate` e `cloud-cost-allocation.run` não foram medidos — têm efeito colateral). | Parada do dev (C2.3). As 3 rotas GET sem medida foram medidas por mim: iguais e não vazias. |
+| RC5 | A integração da `main` traz mudança que quebra a suíte (#401, #407, #408 e o que entrar até o dev). | B11 (suíte inteira) e check-runs do head integrado. |
+| RC6 | O próprio conserto reabre a classe (o que a junta 1 já pegou duas vezes no histórico deste bloco). | Cada propriedade tem mutação que a deixa vermelha (C2.4) e a C3 escreve uma forma própria; quem conserta não julga. |
+| RC7 | Disco: N=3 receitas + N=10 + B7 + B10 + B11 por cadeira (≈ 0,4 GB por receita; 13 GB livres hoje). | `df` entre cadeiras, `DEEP_CLEAN=1` abaixo de 10 GB, máx. 2 cadeiras vivas. |
+| RC8 | Ativação em produção com os 9 jobs fora da superfície sem medida (`charging.accrue-daily` é dinheiro). | Sub-item em `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` com recomendação ao dono (C2.6); não é deste PR. |
+
+**Rollback.** Antes do merge: `git revert` dos commits do ciclo 2 no ramo (sem reescrever, sem force-push).
+Depois do merge: `git revert` do squash, sem migração a desfazer; o papel criado pelo Ato 1 fica inerte enquanto
+o secret do app não o usar, e o §12 R1 da v3 (secret anterior ou imagem anterior) continua valendo.
+
+**Tamanho estimado do dev:** médio-grande. ≈ 9–12 arquivos e ≈ 600–1.000 linhas: script e documentação (B1 + D2
++ retirada do MODO 0), a trava (D2), o teste de guarda `-db` (B1-i, B2, D1, D3, D4 — o maior: 15 chamadas a
+reencaminhar pelo helper travado), o gerador e o T13 (B3: quatro instâncias, fixtures, mecanismo do C3-F2), o
+teste de superfície (B4: 4 rotas, 3 jobs, enumeração do registro, igualdade de conjuntos), o teste catálogo↔L0,
+a integração da `main`, a restauração do `Kpis/` e o registro. Uma sessão longa de dev, mais ≈ 1 h de bateria; a
+junta 2 leva de 3 a 5 h de execução somando as três cadeiras.
+
+**O que a junta 2 deve medir com mais cuidado:** (1) o B1 sob **todas** as configurações da B7, inclusive tty e
+`password_encryption=md5`, porque é o único defeito grave do ciclo 1 e a CI não o vê; (2) o B2 pelo **canário**
+e pela **guarda estrutural**, não pela contagem de rodadas verdes — eu vi 0 vermelho em 13 rodadas no objeto
+defeituoso; (3) o gerador com **forma própria** dentro do alcance, porque cada correção anterior dele reabriu a
+classe noutra forma; (4) a igualdade "membros FORCE == cenários executados", inclusive os três jobs.
+
+STATUS: COMPLETO — planejador-ciclo2-b-san3-05-sucessor (Claude Opus, substituição declarada), 2026-10-08.
