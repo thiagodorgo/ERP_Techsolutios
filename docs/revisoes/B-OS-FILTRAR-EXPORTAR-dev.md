@@ -62,11 +62,14 @@
 - Saída resumida: TypeScript ec 0; página viva anterior `13/13`, 0 falha, 0 pulado.
 - Resultado: cabeçalho em ordem Filtrar · Exportar · Nova OS, estado memoizado por valor, cartão entre KPI e faixa, CSV das linhas filtradas e vazio honesto ligados à página; regressão viva anterior intacta.
 
-### Passo 8 — A10 + A12 — EM APURAÇÃO
+### Passo 8 — A10 + A12 — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando parcial: `cd frontend && timeout 600 node --test --import tsx tests/work-orders-list-tools.test.ts tests/work-orders.adapter.test.ts tests/work-orders-page-live.test.tsx`.
+- Saída resumida parcial: `47` testes, `46` passaram, `1` falhou; FE1–FE2 e FE4–FE10 verdes. FE3 falhou só porque `Blob.text()` no Node devolveu o cabeçalho sem o caractere BOM.
+- Resultado parcial: **premissa falsa do plano registrada** — o Blob criado por `downloadCsv` contém BOM, mas `Blob.text()` o consome na decodificação UTF-8. A prova mede os bytes brutos `EF BB BF`; nenhum remédio no produto nem fora de A10.
+- Comando final: o mesmo conjunto de três arquivos, após medir o BOM bruto.
+- Saída resumida final: TAP `47/47`, 0 falha, 0 pulado, ec 0; FE1–FE10 verdes e os 13 casos vivos anteriores preservados.
+- Resultado final: arnês registra URLs, eventos e downloads; `test:smoke` recebeu somente `tests/work-orders-list-tools.test.ts` ao fim da lista.
 
 ### Passo 9 — bateria, mutações, QA e limpeza — EM APURAÇÃO
 
