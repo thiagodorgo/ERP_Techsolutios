@@ -15,7 +15,12 @@ import { StatePanel, StatePanelAction } from "../components/StatePanel";
 import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
 import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { runAdvance, runRevokeConfirm, runRevokeDiscovery, type RevokeTarget } from "../work-orders-row.handlers";
-import { isWorkOrderDelayed, WORK_ORDER_STATUS_LABEL } from "../work-orders-row.logic";
+import {
+  isWorkOrderDelayed,
+  workOrderServiceLine,
+  WORK_ORDER_PRIORITY_LABEL,
+  WORK_ORDER_STATUS_LABEL,
+} from "../work-orders-row.logic";
 import { useWorkOrders } from "../useWorkOrders";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus, WorkOrdersFilters } from "../work-orders.types";
 
@@ -46,13 +51,6 @@ const STATUS_TONE: Record<WorkOrderStatus, { bg: string; fg: string }> = {
   completed: { bg: "#F1F5F9", fg: "#475569" },
   cancelled: { bg: "#FEE2E2", fg: "#B91C1C" },
   rejected: { bg: "#FEE2E2", fg: "#B91C1C" },
-};
-
-const PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-  urgent: "Urgente",
 };
 
 // Dot + cor do texto de prioridade (design: Alta DC2626/B91C1C · Média F59E0B/B45309 · Baixa
@@ -342,9 +340,7 @@ export function WorkOrdersPage() {
               const st = STATUS_TONE[o.status];
               const pr = PRIORITY_TONE[o.priority];
               const agenda = agendaInfo(o.scheduledFor, o.status, now);
-              const svc = [o.title, o.serviceCity ? `${o.serviceCity}${o.serviceState ? `/${o.serviceState}` : ""}` : null]
-                .filter(Boolean)
-                .join(" · ");
+              const svc = workOrderServiceLine(o);
               return (
                 <div key={o.id} className="pat-os-grid pat-os-row" onClick={() => navigate(`/work-orders/${o.id}`)}>
                   {/* CÓDIGO — mono azul + prioridade com dot */}
@@ -352,7 +348,7 @@ export function WorkOrdersPage() {
                     <div className="pat-mono" style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{o.code}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: pr.dot, flexShrink: 0 }} aria-hidden="true" />
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: pr.fg }}>{PRIORITY_LABEL[o.priority]}</span>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: pr.fg }}>{WORK_ORDER_PRIORITY_LABEL[o.priority]}</span>
                     </div>
                   </div>
 
