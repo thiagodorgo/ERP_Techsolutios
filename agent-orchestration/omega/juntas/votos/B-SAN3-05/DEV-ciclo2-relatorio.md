@@ -313,6 +313,6 @@
 
 **Validação:** B0 parcial — retomada começou em local/remoto `45da0d17`; KPI continuava igual à main antes das edições. B1/B2/B3/B4/B6–B12/B14 não concluídos. B5 parcial: `bash -n` do script = 0; modo/EOL ainda não re-medidos. B13 local = 0. B10 é reservado à junta.
 
-**Head empurrado:** `d6b3e6303e02a26ed472599173c4c378cba5d616`, confirmado por `git ls-remote` após o commit do relatório de parada. O commit seguinte altera somente esta linha de confirmação; seu SHA final fica na mensagem de entrega, porque um commit não pode conter o próprio hash.
+**Head empurrado:** `babec96ba4e5bd39275f4974428af130786d8475`, confirmado por `git ls-remote` após o commit da PARADA-D4-2. O commit seguinte altera somente esta linha de confirmação; seu SHA final fica na mensagem de entrega, porque um commit não pode conter o próprio hash.
 
 **Próximos passos (análise):** o orquestrador deve dizer expressamente se `escapes[].rolname` e `via:rolname` são identidades permitidas pelo D4. Se não forem, precisa ampliar o escopo e definir a redação sem apagar a razão operacional da recusa. Depois, a mesma identidade retoma os quatro arquivos locais parciais, conclui o teste `-db`, commita e segue B3/B4.
