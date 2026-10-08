@@ -70,6 +70,43 @@ test("work orders filtros aplicam status, prioridade e busca", () => {
   assert.equal(filtered[0].code, "OS-1");
 });
 
+test("[AD1] período filtra pela data de abertura, não pela agenda", () => {
+  const inside = new Date(2026, 9, 7, 12, 0);
+  const outside = new Date(2026, 9, 9, 12, 0);
+  const data = adaptWorkOrdersResponse({
+    items: [
+      {
+        id: "wo-aberta-dentro",
+        code: "OS-DENTRO",
+        title: "Abertura dentro, agenda fora",
+        status: "open",
+        priority: "high",
+        createdAt: inside.toISOString(),
+        scheduledFor: outside.toISOString(),
+      },
+      {
+        id: "wo-aberta-fora",
+        code: "OS-FORA",
+        title: "Abertura fora, agenda dentro",
+        status: "open",
+        priority: "high",
+        createdAt: outside.toISOString(),
+        scheduledFor: inside.toISOString(),
+      },
+    ],
+  });
+
+  const filtered = filterWorkOrders(data.items, {
+    search: "",
+    status: "all",
+    priority: "all",
+    assignedOperatorId: "",
+    from: new Date(2026, 9, 7, 0, 0, 0, 0).toISOString(),
+    to: new Date(2026, 9, 7, 23, 59, 59, 999).toISOString(),
+  });
+  assert.deepEqual(filtered.map((item) => item.code), ["OS-DENTRO"]);
+});
+
 test("work orders timeline e formulario validam contrato", () => {
   const timeline = adaptWorkOrderTimelineResponse({
     data: [

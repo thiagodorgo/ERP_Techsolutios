@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **439** |
-| IDs distintos | 428 |
-| **ABERTAS** | **322** |
+| Cabecalhos `## P-` | **443** |
+| IDs distintos | 432 |
+| **ABERTAS** | **326** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **253** |
+| — das quais **ativas nesta rodada** | **257** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 117 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **439 cabecalhos para 428 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **443 cabecalhos para 432 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 139
+## ABERTAS · balde A — material — 141
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -210,8 +210,10 @@
 | `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 10018 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
 | `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 10038 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
 | `P-OS-FILTRAR-EXPORTAR` | 10110 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
+| `P-WO-LISTA-SO-20-MAIS-RECENTES` | 10145 | MÉDIA | sim | P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recent |
+| `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` | 10168 | MÉDIA | sim | P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de priorid |
 
-## ABERTAS · balde B — processo/registro — 114
+## ABERTAS · balde B — processo/registro — 116
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -329,6 +331,8 @@
 | `P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE` | 10099 | BAIXA | sim | P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
 | `P-WEB-TOPBAR-ROTULO-FALLBACK` | 10124 | BAIXA | sim | P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users  |
 | `P-WEB-PADRAO-MICRODIFERENCAS` | 10134 | BAIXA | sim | P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o desig |
+| `P-CSV-FORMULA-GLOBAL` | 10157 | BAIXA | sim | P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA |
+| `P-WO-FILTROS-LEGADO-MORTO` | 10179 | BAIXA | sim | P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
