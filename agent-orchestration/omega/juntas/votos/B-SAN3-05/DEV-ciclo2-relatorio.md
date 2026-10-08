@@ -288,6 +288,6 @@
 
 **Validação:** B0 parcial — head local/remoto e integração conferidos; KPI igual à main. B13 — `git diff --check` limpo antes dos commits. B1–B12/B14 não rodados após a parada; B10 é reservado à junta.
 
-**Head empurrado:** será preenchido após o commit deste relatório de parada e confirmado por `git ls-remote`.
+**Head empurrado:** `d6b3e6303e02a26ed472599173c4c378cba5d616`, confirmado por `git ls-remote` após o commit do relatório de parada. O commit seguinte altera somente esta linha de confirmação; seu SHA final fica na mensagem de entrega, porque um commit não pode conter o próprio hash.
 
 **Próximos passos (análise):** o planejador/orquestrador deve resolver a contradição de D4 sem ambiguidade. Se ampliar o escopo, a revisão precisa avaliar a perda de observabilidade ao remover identidades do log; se reescrever o aceite, precisa declarar que `username == session_user/current_user` é permitido somente no campo de identidade e continua proibido como componente/URL. Depois disso, um dev elegível retoma B1–B4/D1–D4 a partir do head empurrado.
