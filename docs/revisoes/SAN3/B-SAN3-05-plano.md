@@ -1683,3 +1683,13 @@ O nome do papel não é credencial. **D4 passa a ser:** `hostname`, `port`, `pas
 `src/database/runtime-role.bootstrap.ts` continua PROIBIDO. **Mutações:** o logger da trava passa a incluir o host →
 vermelho; o logger passa a incluir a senha → vermelho; o logger passa a incluir o `username` num campo que não seja
 `session_user`/`current_user` → vermelho. O texto original do D4 fica acima como histórico; este parágrafo o substitui.
+
+**Errata 2 ao D4 — DECISÃO DO DONO (2026-10-08, resposta à PARADA-D4-2; fonte §A1.1).** Perguntado entre (a) nome de
+papel pode aparecer no log como identidade, (b) esconder o nome de papel ampliando o escopo para o bootstrap, ou (c)
+mandar ao planejador, o dono escolheu literalmente *"Nome de papel pode aparecer (Recomendado)"* — o que **ratifica a
+errata 1** acima e vale como regra do D4: nome de papel do banco (`rolname`) é identidade, não credencial, e pode
+aparecer como valor de `session_user`, `current_user`, `escapes[].rolname` e na mensagem de recusa no formato
+`via:rolname` (o diagnóstico que diz ao operador qual papel abre o bypass). Continua proibido: `hostname`, `port`,
+`password` (decodificados), nome do banco, `postgresql://`, `password`, e qualquer nome de papel dentro de URL/DSN ou de
+outro campo. As três mutações da errata 1 (host, senha, nome de papel fora dos campos de identidade) seguem
+obrigatórias. `src/database/runtime-role.bootstrap.ts` continua PROIBIDO.
