@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **436** |
-| IDs distintos | 425 |
-| **ABERTAS** | **320** |
+| Cabecalhos `## P-` | **439** |
+| IDs distintos | 428 |
+| **ABERTAS** | **322** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **251** |
+| — das quais **ativas nesta rodada** | **253** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 116 |
+| FECHADAS | 117 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **436 cabecalhos para 425 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **439 cabecalhos para 428 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 138
+## ABERTAS · balde A — material — 139
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -209,8 +209,9 @@
 | `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9917 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
 | `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 9948 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
 | `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 9968 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
+| `P-OS-FILTRAR-EXPORTAR` | 10040 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
 
-## ABERTAS · balde B — processo/registro — 113
+## ABERTAS · balde B — processo/registro — 114
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -322,11 +323,12 @@
 | `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 9926 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
 | `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 9935 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
 | `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` | 9958 | BAIXA | sim | P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa |
-| `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 9978 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 | `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 9988 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
 | `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 10005 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
 | `P-SAN3-11-CENSO-CAST-RECORD` | 10017 | BAIXA | sim | P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
 | `P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE` | 10029 | BAIXA | sim | P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
+| `P-WEB-TOPBAR-ROTULO-FALLBACK` | 10054 | BAIXA | sim | P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users  |
+| `P-WEB-PADRAO-MICRODIFERENCAS` | 10064 | BAIXA | sim | P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o desig |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -402,7 +404,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3586 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3630 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 116
+## FECHADAS — 117
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -522,3 +524,4 @@
 | `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9560 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
 | `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9569 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9578 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
+| `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 9978 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
