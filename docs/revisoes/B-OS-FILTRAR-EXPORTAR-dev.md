@@ -26,11 +26,11 @@
 - Saída resumida: TAP `# tests 1242`, `# pass 1242`, `# fail 0`, `# skipped 0`, ec 0; duração 154636 ms.
 - Resultado: `WORK_ORDER_PRIORITY_LABEL` e `workOrderServiceLine` movidos para `work-orders-row.logic.ts`; a página consome as duas fontes únicas sem alteração visual/comportamental.
 
-### Passo 2 — A5 + LT* + RL1 — EM APURAÇÃO
+### Passo 2 — A5 + LT* + RL1 — CONCLUÍDO
 
-- Comando: EM APURAÇÃO.
-- Saída resumida: EM APURAÇÃO.
-- Resultado: EM APURAÇÃO.
+- Comando: `cd frontend && timeout 600 node --test --import tsx tests/work-orders-list-tools.test.ts`; `timeout 600 npm --prefix frontend run check`.
+- Saída resumida: arquivo puro `7/7`, 0 falha, 0 pulado (LT1–LT6 + RL1); TypeScript `tsc -b --noEmit` ec 0.
+- Resultado: estado, atalhos, datas locais, limites ISO, contagem e intervalo invertido implementados; N=7 testes novos verdes.
 
 ### Passo 3 — A6 + EX* — EM APURAÇÃO
 
