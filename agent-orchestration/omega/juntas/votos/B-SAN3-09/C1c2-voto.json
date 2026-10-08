@@ -1,0 +1,173 @@
+{
+ "jurado": "jurado-san3-09c2-c1-entrada-e-registro (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C1 — entrada de CLI, segredo, trava e registro de ato irreversível",
+ "mandato_md5": "5ffd55c53c19ed3f56ac663e10efd15e · declarado no disparo: 5ffd55c53c19ed3f56ac663e10efd15e",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — Fable só em bloco que toca dinheiro",
+ "corpo_md5": "a5829fc8cbccfe480187d19a64006e50 · corpo recebido no prompt: n/a (lido do blob por git show)",
+ "objeto": "07209295af1c4cd36bd223366d025505a6ab91ef (git ls-remote do ramo = gh pr view 400 headRefOid) · origin/main no início/fim c8af64580cb85ddf4960fecb2f8604384f8f0328/c8af64580cb85ddf4960fecb2f8604384f8f0328 · merge-base 8ee10bd2e44d95206551b71351f23d901192cbb6 · cerca do mandato 6319f11aef2c05ca375bb7b6df2eb941ae14e4aa e delta só registro (00-mandatos/C1c2.md, C2c2.md, C3c2.md) · objeto do inspetor e1206447 → 07209295 = parecer + 3 mandatos (só registro) · objeto no fim: igual",
+ "legalidade": "parecer que vale: agent-orchestration/omega/juntas/votos/B-SAN3-09/00-inspetor-terreno-c2.md, inspetor-de-terreno-da-junta (junta 2), veredito gravado 17:24Z · LIBERADO COM RESSALVA (R-1..R-6) · confere este nome, este corpo (a5829fc8…), worktree próprio (inspetor nomeou w-j09c2a; o mandato fixou w-j9c2c1, medido livre pelo inspetor) e container próprio: sim · check-runs no objeto no fim: total 7 | não-verdes 0 | pendentes 0 (no início 6 | 0 | 4) · norma: CLAUDE.md da origin/main (R-2 confirmada: ramo sem o #407; diffs three-dot)",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 de 2 (último em que achado não grave bloqueia)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta (C2c2-*, C3c2-*) antes de gravar este voto · li do ciclo 1 e da trilha: 00-inspetor-terreno-c2.md (inteiro), o plano (§13, §15.0–15.6), DEV-ciclo2-relatorio.md (linhas do MF3-b…e por grep), meu mandato e meu corpo; linhas da ata J-B-SAN3-09.md e de C1-evidencia/C1-voto do ciclo 1 só como hits do git grep do 3(a), classificadas como meta",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "itens": {
+  "item1_C3F3_entrada": {
+   "baseline": "VERDE — A19 ec=0; T1 26/26 (T1.2b 'ok 9 … 98 variantes', T1.5 ok 20/21, T1.5c ok 22, T1.6 ok 23); parseArgv é a 1ª linha de main() (scripts/bootstrap-platform-admin.ts:385; trava :387, DATABASE_URL :394, stdin :399, PrismaClient :402); nota: import 'dotenv/config' :41 roda no carregamento, antes de main()",
+   "tabela_gerada": "VERDE — N_seu=98=N_teste (ok 9 T1.2b), diferença simétrica ∅; 98/98 UNKNOWN_ARGUMENT com mensagem = template fixo (sem eco); N_eco do teste = 84/98 (14 excluídos: len<3 ou substring de flag, que aparece na lista de aceitos); N cresce 98→119 com 1 flag acrescida, restore hash-object=blob; nota contra a régua: literal '3+ caracteres' do §15.1.1 não pode passar com a mensagem prescrita",
+   "MF3": "VERDE com achados de cobertura — MF3-a (T1.2b+T1.5c, 24/26), MF3-b (só T1.2b, 25/26; 4 propriedades herdadas aceitas; o T1.5c do dev reproduz-se só sem parênteses, mutante que nem compila), MF3-c (só T1.2b, 25/26; T1.5c NÃO pode acusar: sentinela na posição 2 atrás de '-p' recusado — medido: -p <sent> 0 ecos, --dry-run <sent> 1 eco), MF3-d (T1.2b, 25/26), MF3-e (T1.5c+T1.6, 24/26), MF3-f (A19 ec=2 TS2322+TS2741; tipo de exaustividade provado pelo par inicializado/sem tipo). Novas: MF3-c2 eco na posição >=2 SOBREVIVE (T1 26/26); MF3-e2 parseArgv após a trava SOBREVIVE (T1 26/26). Restore hash-object=blob em todas.",
+   "T1_5c_T2_4b": "VERDE — T1.5c ok 22 (Windows); T2 no container próprio 12/12 (T2.4b ok 5); T2.4b vermelho sob MF3-a (expected 2, actual 0), restore md5=blob; MF3-c2 sobrevive também ao T2 (12/12)",
+   "efeito_no_banco": "VERDE — base j9_base (107 migrations, provision-rbac) → clones: e-mail errado --password-stdin --dryrun ec=2 UNKNOWN_ARGUMENT, 0/0/0/0/0; e-mail certo --dry-run ec=0 0/0/0/0/0; aplicar ec=0 CONVERGIDO 1/1/1/1/1 com o e-mail certo; controle: script de 7812fe7c com --dryrun gravou 1/1/1/1/1 com o e-mail errado e o certo passou a ADDITIONAL_ADMIN_REFUSED; senha/URL/senha do cluster 0 nas saídas (controles 1/1/1)"
+  },
+  "item2_segredo_trava": {
+   "M1": "VERDE — T2.9 lê password_hash do banco depois da 2ª execução (db.test.ts:634), proíbe hash inteiro + segmentos >=16 (:636, laço :656-661) e /postgres(ql)?:\\/\\//; literal $scrypt-v1$ 0 no objeto × 1 em 7812fe7c; controle: o mutante M-1 imprime o hash (inteiro 1, segmentos 1/1) e o objeto 0; T2 sob M-1: T2.9 vermelho na 2ª ('hash inteiro'); variante só-segmento: T2.9 vermelho ('segmento sensível')",
+   "M2": "VERDE — T1.5 M-2 (test.ts:264-270) asserta exit 2 E /PRODUCTION_OPT_IN_MISSING/; sob a mutação M-2 (main.ts:387) só 'not ok 21' (saiu DATABASE_URL_MISSING), T1.1/A2 'ok 4' verde (o unitário não discrimina); processo à mão: mutante ec=2 DATABASE_URL_MISSING (trava abriu), objeto ec=2 PRODUCTION_OPT_IN_MISSING; ALLOW_PROD_BOOTSTRAP=1 abre (DATABASE_URL_MISSING). Restore hash-object=blob",
+   "eco_e_ps": "VERDE — 6 execuções reais no Windows (-p, --dry-run <s>, <s>, --password=<s>, --dryrun+env, --password-stdin <s>): exit 2, sentinela 0 em stdout+stderr; 5 no container com DATABASE_URL real: exit 2, sentinela 0, URL 0, 0/0/0/0/0; ps: controle positivo 37 hits, negativo 0; execução real -p <sentinela> 3x: vida ≈0,42–0,46 s, sentinela visível na linha de comando em 2–3 amostras (propriedade do SO; nota)"
+  },
+  "item3_registro_runbook": {
+   "3b1_instancias": "VERDE pela propriedade — antes (7812fe7c): 5 instâncias (git grep dá 3 linhas com o ID; :578/:580/:584 só pelo parse do bloco) = 1 opt-in errado, 3 agendam/afirmam fechamento pelo porteiro, 1 agenda no log; depois (07209295): :578 opt-in certo (NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1), :580 nega, :584 'depende exclusivamente do ato do dono', status-geral:4937 nega, log:4802 histórica intocada (§A2) + apenso :4806 que nega; 53 linhas do ID nos 39 arquivos do PR, 48 meta (plano 20, corpos 20, ata/votos/relatórios 8)",
+   "criterio_i_ii_mutacao": "VERDE pela propriedade, VERMELHO literal por construção da régua — (i) regra A (plano: até o próximo ##, 574-632) e B (até o 1º cabeçalho/---, 574-586): 'ato do dono' x2; literal casa :580 'nem CI nem porteiro a fecham' (texto PRESCRITO pelo próprio §15.1.5, sem exceção de negação) → não pode passar; propriedade (tirando só a frase que nega) passa; (ii) 52 linhas + citam o ID, 11 casam: 2 negam, 1 histórica (log:4802, que o plano manda preservar), 8 meta, 0 não classificadas; 4/4 mutações (porteiro em pendencias/status/log + ALLOW_PROD_SEED na acao) → VERMELHO; restore hash-object=blob",
+   "3b2_pendencias": "VERDE no critério do 15.2 com 2 ajustes — 6/6 entradas, donos do 15.2/15.5 (B-SAN3-06b, B-SAN3-10 x3, B-ARNES-2 x2), 0 'a nomear', ORG casa 'como se fosse cliente', nota 2f-2 presente; 3/3 mutações acusadas. Ajustes: (1) ORG-PLATAFORMA contradiz a si mesma — severidade 'não vê o próprio tenant' e acao 'B-SAN3-06a' (dono 06b), linhas herdadas do ciclo 1; (2) SCRIPTS-FORA-DO-TSCONFIG diz 'afeta só o build da IDE', mas medido: CI (npm run check) e T1 verdes sob MF3-f — a guarda de exaustividade só roda na A19 manual. Nota: B-ARNES-2 é bloco da fila pós-gate (§7.3), não linha do §5",
+   "3a1_C3A1_runbook_T1_8": "VERDE — Runbook B docs/deployment.md:168-204 (meu extrator com cercas = extrator do T1.8); :200 'Domínio + TLS pelo Fly…' (= origin/main:185 acentuada); :196-198 três códigos (0/2/1 FALHOU); :196 UNKNOWN_ARGUMENT; T1.8 ok; deleções D1 (TLS), D2 (códigos: 'exit 1'), D3 (UNKNOWN_ARGUMENT) → not ok 26 pelo token certo; flags dos blocos de código {--password-stdin, --dry-run} ⊆ BOOTSTRAP_FLAGS. Nota: o 'teste extra' do §15.6 não existe — controle: '--verbose' no Runbook deixa T1 26/26"
+  }
+ },
+ "justificativa": "TERRENO: worktree C:/Users/AMP/w-j9c2c1 detached em 07209295, npm ci próprio (326, sem junction), prisma generate com URL fictícia só no comando, node v20.19.5; container j9c2c1-node (erp-junta-node20-pg16:local, node 20.20.2, psql 16.14) + j9c2c1-pg (postgres:16, senha aleatória por -e sem valor) + j9c2c1-redis, rede j9c2c1-net, sem porta publicada; árvore por git archive com md5 = blob (script 995022e1, T1 407100f6, T2 928d7d29, lock 69a6ea32); disco 12 G; base viva intocada. ITEM 1: A19 ec=0; T1 26/26; parseArgv é a 1ª linha de main() (scripts/bootstrap-platform-admin.ts:385; trava :387; DATABASE_URL :394; stdin :399; PrismaClient :402). Tabela gerada pela minha leitura do §15.1.1: N_seu=98=N_teste, diferença simétrica vazia, 98/98 UNKNOWN_ARGUMENT com mensagem = template fixo (sem eco); N_eco do teste 84/98 (14 excluídos: len<3 ou substring de flag); N cresce 98→119 com 1 flag. MF3-a T1.2b+T1.5c (24/26); MF3-b só T1.2b (25/26; 4 propriedades herdadas aceitas; o T1.5c do dev reproduz-se só sem parênteses, mutante que nem compila); MF3-c só T1.2b (25/26) — o T1.5c não pode acusar; MF3-d T1.2b; MF3-e T1.5c+T1.6 (24/26); MF3-f A19 ec=2 TS2322(l.119)+TS2741(l.123) e o tipo de exaustividade provado pelo par inicializado/sem-tipo. Mutações novas: MF3-c2 (eco na posição >=2) sobrevive a T1 e T2; MF3-e2 (parseArgv após a trava) sobrevive ao T1. T1.5c ok; T2 12/12 no container, T2.4b ok e vermelho sob MF3-a (expected 2, actual 0). Processo real: e-mail errado --password-stdin --dryrun → exit 2 UNKNOWN_ARGUMENT, 0/0/0/0/0; e-mail certo --dry-run → exit 0, 0/0/0/0/0; aplicar → CONVERGIDO 1/1/1/1/1 com o e-mail certo; controle: script de 7812fe7c gravou 1/1/1/1/1 com o e-mail errado e envenenou o clone (ADDITIONAL_ADMIN_REFUSED). ITEM 2: M-1 — T2.9 lê password_hash do banco depois da 2ª execução (db.test.ts:634), proíbe hash inteiro e segmentos >=16 (:636, :656-661) e a URL postgres(ql)://; o literal scrypt-v1 entre cifrões: 0 no objeto × 1 em 7812fe7c; controle: o mutante imprime o hash (inteiro 1, segmentos 1/1), o objeto 0; T2.9 vermelho na 2ª ('hash inteiro'); variante só-segmento vermelha ('segmento sensível'). M-2 — sob o mutante só T1.5 M-2 vermelho (DATABASE_URL_MISSING no lugar de PRODUCTION_OPT_IN_MISSING), T1.1/A2 verde; processo à mão: mutante DATABASE_URL_MISSING, objeto PRODUCTION_OPT_IN_MISSING. Eco: 6 execuções reais (-p, --dry-run <s>, <s>, --password=<s>, --dryrun+env, --password-stdin <s>) exit 2 e sentinela 0; 5 no container com DATABASE_URL real, 0/0/0/0/0. ps: controle positivo 37 hits, negativo 0; -p <sentinela> 3x: vida ≈0,42–0,46 s, argv visível em 2–3 amostras (propriedade do SO). ITEM 3: 3b-1 — antes 5 instâncias (git grep 3 linhas + parse do bloco), depois: opt-in certo, status e status-geral negam, agendamento 'depende exclusivamente do ato do dono', log:4802 histórica intocada + apenso :4806 que nega; verificador por propriedade VERDE e 4/4 mutações VERMELHAS; literal (i) e (ii) do §15.1.5 não podem passar com o texto que o próprio plano prescreve. 3b-2 — 6/6 entradas, donos do 15.2/15.5, 0 'a nomear', ORG casa 'como se fosse cliente', nota 2f-2; 3/3 mutações acusadas; ORG contraditória (ajuste) e SCRIPTS subestima a consequência (ajuste; medido: CI e T1 verdes sob MF3-f). 3a-1/C3-A1 — Runbook B :168-204, TLS :200 (= main:185 acentuada), códigos :196-198, UNKNOWN_ARGUMENT :196; T1.8 vermelho nas 3 deleções pelo token certo; flags do Runbook contidas em BOOTSTRAP_FLAGS; teste extra do §15.6 ausente (nota). VERMELHO-CONTROLE: item 1 — controle do ciclo 1 gravou; lista do teste sem 1 token acusou; eco fabricado e eco real sob MF3-c acusados; N cresce. Item 2 — mutante M-1 imprime hash; T1.1/A2 verde sob M-2; ps 37/0; grep da sentinela em saída fabricada = 1. Item 3 — 4/4 mutações do registro, 3/3 da pendência, 3/3 deleções do Runbook, irmãos não-vazios dos greps vazios. Nada ficou sem medir. LIMPEZA: containers j9c2c1-* e rede removidos (0), dangling 14 antes/depois, processos 0, worktree removido por git worktree remove --force, mutações restauradas (hash-object = blob; md5 container = blob), segredos do scratch apagados, base viva intocada. VOTO: APROVADO — conjunto fechado provado (N_teste=98 gerado da fonte e crescendo com ela para 119, N_eco=84 no teste e 98/98 pelo template), MF3-a…f mortos pelos casos certos (MF3-b só T1.2b com a mutação pretendida; MF3-c só pelo T1.2b — o T1.5c não pode acusá-lo; MF3-e também pelo T1.6; MF3-f pelo tipo, provado), --dryrun não grava por processo real (0 nas 5 tabelas; controle do ciclo 1 gravou 1/1/1/1/1), M-1 e M-2 vermelhos com controle, sentinela 0 em todas as saídas, ps mostrou o argv de -p <sentinela> em 2–3 amostras durante ≈0,45 s (propriedade do SO); registro: nenhuma instância fecha ou agenda antes do ato do dono (literal (i)/(ii) vermelho por construção da régua × propriedade verde, hit a hit), mutações acusadas, pendências com dono do plano (B-ARNES-2 na fila pós-gate §7.3), Runbook B com TLS, códigos e UNKNOWN_ARGUMENT, T1.8 vermelho nas deleções; 2 ajustes de registro (C1c2-06, C1c2-07) e 1 de cobertura (C1c2-02), nenhum bloqueia",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/feat/bootstrap-platform-admin · gh pr view 400 --json headRefOid · gh api repos/thiagodorgo/ERP_Techsolutios/commits/07209295/check-runs?per_page=100",
+   "forma": "cwd C:/Users/AMP/w-nuv09, início 16:55Z e fim 17:32Z",
+   "resultado": "07209295 nas 2 fontes, início e fim; check-runs no fim 7|0|0"
+  },
+  {
+   "comando": "timeout 300 npx tsc --noEmit --strict … scripts/bootstrap-platform-admin.ts (A19) · timeout 300 node --test --import tsx tests/san3-09-bootstrap-platform-admin.test.ts (T1)",
+   "forma": "worktree w-j9c2c1 (Windows), node v20.19.5, blob 07209295",
+   "resultado": "A19 ec=0; T1 ec=0 26/26"
+  },
+  {
+   "comando": "node --import tsx sonda-tabela.mts",
+   "forma": "WT_ROOT=w-j9c2c1, sonda md5 91227e05",
+   "resultado": "N_seu=98=N_teste, diferença vazia, 98/98 UNKNOWN_ARGUMENT com template exato, N_eco=84"
+  },
+  {
+   "comando": "bash runmut.sh <id> scripts/bootstrap-platform-admin.ts t1 <âncora> <subst> — NCRESCE, MF3-a, MF3-b, MF3-b sem parênteses, MF3-c, MF3-c2, MF3-d, MF3-e, MF3-e2, MF3-f e 3 variantes, M-2",
+   "forma": "worktree, CRLF, âncora 1 ocorrência, restore cp + hash-object = blob 4ebe9574",
+   "resultado": "ver as tabelas do item 1(c) e 2(b) na evidência"
+  },
+  {
+   "comando": "docker exec j9c2c1-node sh -c 'cd /work && node --test --import tsx tests/san3-09-bootstrap-platform-admin-db.test.ts' — base, MF3-a, MF3-c2, M-1, M-1 só-segmento (cmut.sh)",
+   "forma": "container Linux, -e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE (nomes; valores só no ambiente), árvore git archive LF com md5 = blob",
+   "resultado": "base 12/12; MF3-a T2.4b vermelho; MF3-c2 12/12; M-1 e M-1 só-segmento T2.9 vermelho na 2ª"
+  },
+  {
+   "comando": "sh /tmp/c1/efeito.sh base|clone|run (j9_base, j9_c1, j9_c2) · sh /tmp/c1/m1ctl.sh · sh /tmp/c1/eco-db.sh",
+   "forma": "container, PGPASSWORD/SENHA/SENT por -e sem valor, contagem por psql como superusuário",
+   "resultado": "107 migrations; --dryrun 0/0/0/0/0; certo 1/1/1/1/1; controle 7812fe7c 1/1/1/1/1 com o e-mail errado; mutante M-1 imprime o hash; 5 recusas com banco real 0/0/0/0/0"
+  },
+  {
+   "comando": "env -i PATH SYSTEMROOT timeout 60 node --import tsx scripts/bootstrap-platform-admin.ts <argv com sentinela> · ps-run.sh + amostra-ps.ps1 (Get-CimInstance Win32_Process)",
+   "forma": "Windows, padrão da sentinela por arquivo, alvo do powershell por variável de ambiente",
+   "resultado": "sentinela 0 em 6 execuções; ps controles 37/0; -p <sentinela> visível em 2–3 amostras, vida ≈0,45 s"
+  },
+  {
+   "comando": "python verif-registro.py · runmut-reg.sh MR-1..MR-4 · python verif-pend.py · runmut-pend.sh MP-1..MP-3 · node --import tsx verif-runbook.mts · runmut.sh D1..D3 em docs/deployment.md + controle --verbose",
+   "forma": "worktree, PYTHONIOENCODING=utf-8, diff worktree × merge-base 8ee10bd2",
+   "resultado": "propriedade VERDE e 4/4 mutações vermelhas; 6/6 pendências e 3/3 mutações; Runbook 168-204, T1.8 vermelho nas 3 deleções; --verbose não acusado pela suíte"
+  },
+  {
+   "comando": "npm run check (o da CI) e T1 sob MF3-f",
+   "forma": "worktree",
+   "resultado": "check ec=0, T1 26/26, A19 ec=2 — a guarda de exaustividade só roda na A19 manual"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "C1c2-01 — o T1.5c não pode acusar o MF3-c",
+   "evidencia": "MF3-c: T1 25/26, só not ok 9 T1.2b ('mensagem ecoou token: --dryrun'); test.ts:280 roda ['-p', secret] e a recusa acontece no índice 0; processo sob MF3-c: '-p <sent>' 0 ecos, '--dry-run <sent>' 1, '--password-stdin <sent>' 1",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (T1.5c nasceu no ciclo 2, commit 1c520f1e)",
+   "motivo": "o caso que o plano diz que mata a mutação não pode acusá-la (o sentinela fica atrás de um token já recusado)"
+  },
+  {
+   "defeito": "C1c2-02 — mutação nova MF3-c2: eco do token só na posição >= 2 sobrevive",
+   "evidencia": "diff 137c137 (a mensagem interpola o argumento só quando index > 0); A19 ec=0; T1 26/26 ec=0; T2 no container 12/12 ec=0; restore hash-object/md5 = blob. Nenhum caso põe token desconhecido depois de flag aceita com checagem de eco (o T2.4b só asserta UNKNOWN_ARGUMENT). Produto: template 98/98 e 11 execuções reais com sentinela 0",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (T1.2b/T1.5c/T2.4b nasceram no ciclo 2, 1c520f1e)",
+   "motivo": "a guarda de eco só cobre o token na 1ª posição; uma recusa que ecoasse a senha digitada depois de --password-stdin não deixaria teste vermelho"
+  },
+  {
+   "defeito": "C1c2-03 — mutação nova MF3-e2: parseArgv depois da trava sobrevive",
+   "evidencia": "diff 385,386d384 / 392a391; A19 ec=0; T1 26/26; processo NODE_ENV=production --dryrun: mutante PRODUCTION_OPT_IN_MISSING, objeto UNKNOWN_ARGUMENT",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a ordem 'parseArgv antes da trava' (§15.1.1 item 3) não tem caso que a acuse; o mutante só troca o código da recusa (exit 2, nada conectado)"
+  },
+  {
+   "defeito": "C1c2-04 — literal 'a mensagem não contém o token (tokens de 3+ caracteres)' impossível",
+   "evidencia": "a mensagem prescrita no §15.1.1 item 2 lista --dry-run, --password-stdin, --reset-password; 12 tokens de distância 1 são substrings dela; o teste estreitou para '3+ e não substring de flag' (84/98)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (régua do plano do ciclo 2, 53b2d817)",
+   "motivo": "o critério literal não pode passar com o texto que o próprio plano prescreve"
+  },
+  {
+   "defeito": "C1c2-05 — critérios literais (i)/(ii) do §15.1.5 impossíveis",
+   "evidencia": "(i): pendencias:580 'nem CI nem porteiro a fecham' (texto prescrito) casa 'porteiro' e o (i) não tem exceção de negação; (ii): log:4802 (o plano manda preservar) casa 'porteiro'; 11 linhas + casam: 2 negam, 1 histórica, 8 meta, 0 não classificadas",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (régua do plano do ciclo 2, 53b2d817)",
+   "motivo": "o critério literal não pode passar com o texto que o próprio plano prescreve; a propriedade passa e o verificador por propriedade acusa 4/4 mutações"
+  },
+  {
+   "defeito": "C1c2-06 — P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE contradiz a si mesma",
+   "evidencia": "pendencias:591-596 no objeto: descricao 'aparece no console como se fosse cliente' × severidade 'sem isso o platform_admin não vê o próprio tenant no console' × acao 'B-SAN3-06a ou bloco equivalente' com dono B-SAN3-06b; severidade e acao idênticas em 7812fe7c (ciclo 1); o ciclo 2 trocou só descricao e dono; verif-pend.py: coerencia_ORG = INCOERENTE",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (entrada aberta no ciclo 1 deste bloco; 3b-2 corrigido pela metade em 1c520f1e)",
+   "motivo": "a entrada diz o contrário de si mesma e a ação aponta outro bloco que o dono"
+  },
+  {
+   "defeito": "C1c2-07 — P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG subestima a consequência medida",
+   "evidencia": "pendencias:605-610 'afeta só o build da IDE'; tsconfig include src/**/*.ts; a CI roda npm run check (ci.yml:106); sob MF3-f: npm run check ec=0, T1 26/26, só a A19 manual ec=2",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco quanto ao texto da entrada (aberta no ciclo 1); a classe (CI não tipa scripts/) é pre-existente: tsconfig include desde 04ad42c0 (2026-05-10), dono B-ARNES-2 (fila pós-gate §7.3)",
+   "motivo": "o registro diz que só a IDE é afetada, mas a guarda de exaustividade do bloco não roda na CI"
+  },
+  {
+   "defeito": "C1c2-08 — o teste extra do §15.6 (flags do Runbook contidas em BOOTSTRAP_FLAGS) não existe",
+   "evidencia": "grep nos 2 testes: o T1.8 só faz includes de lista fixa; controle: '--verbose' no comando do Runbook (:185) → T1 26/26, ok 26 T1.8; meu verificador acusa ['--verbose']",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (mitigação escrita no §15.6, não listada no PERMITIDO do §15.3)",
+   "motivo": "o Runbook pode mandar o operador passar algo que o script recusa sem que a suíte acuse; o efeito é fail-closed (UNKNOWN_ARGUMENT, exit 2, nada gravado)"
+  },
+  {
+   "defeito": "C1c2-09 — o argv de '-p <senha>' fica visível na tabela de processos enquanto o processo vive",
+   "evidencia": "amostra-ps.ps1: controles 37/0; -p <sentinela> 3x: 3, 3 e 2 amostras com a linha 'node.exe --import tsx scripts/bootstrap-platform-admin.ts -p <ALVO>', vida ≈0,42–0,46 s",
+   "gravidade": "nota",
+   "escopo": "pre-existente (propriedade do sistema operacional; cobrar invisibilidade é reprovação por construção no corpo)",
+   "motivo": "a janela de exposição de um erro de digitação '-p <senha>' é ≈0,45 s, não zero"
+  },
+  {
+   "defeito": "C1c2-10 — o .env do cwd é lido no carregamento do módulo, antes de main()/parseArgv",
+   "evidencia": "scripts/bootstrap-platform-admin.ts:41 import dotenv/config; o mesmo padrão em prisma/seed.ts:1 desde bd9a7bba (2026-05-21)",
+   "gravidade": "nota",
+   "escopo": "pre-existente (padrão do repositório; o '.env do operador' é reprovação por construção no §15.4)",
+   "motivo": "'recusa antes de tudo, nada lido' vale para env/stdin/banco lidos pelo script, não para o .env carregado no import"
+  },
+  {
+   "defeito": "C1c2-11 — B-ARNES-2 (dono de 2 pendências) é bloco da fila pós-gate, não linha do §5",
+   "evidencia": "PLANO_SAN3.md: 39 blocos como 1ª célula das tabelas do §5; B-ARNES-2 só como destino na linha do B-SAN3-05 (:253) e nomeado no §7.3 (:405)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (donos nomeados pelo §15.2/15.5 do plano)",
+   "motivo": "o dono existe no plano da rodada, mas fora do gate"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "T1.5c × MF3-c (C1c2-01): o sentinela fica na posição 2, atrás de '-p' recusado na posição 1 — o caso não pode acusar eco do token sob MF3-c",
+  "literal '3+ caracteres' do §15.1.1 (C1c2-04): não pode PASSAR com a mensagem prescrita — achado contra a régua",
+  "literais (i) e (ii) do §15.1.5 (C1c2-05): não podem PASSAR com o texto prescrito e a linha histórica preservada — achado contra a régua",
+  "nenhum controle MEU deixou de acusar (todos os vermelhos-controle dos 3 itens acusaram)"
+ ],
+ "pendencias_que_aceito": [
+  "C2 (jurado-san3-09c2-c2-dryrun-e-concorrencia): MA1–MA6, T2.4 em cinco estados, T2.10, MT-1, arnês e teardown, corpo byte-idêntico de bootstrapPlatformAdmin — não julguei",
+  "C3 (jurado-san3-09c2-c3-guard-ast-e-escopo): guard AST (T1.7), diferencial ts.preProcessFile, fecho de runtime, MF1/MF2, escopo do dev por laço — não julguei",
+  "§15.4 reprovação por construção: KPI/Kpis (congelados), T2 no Windows (P-SAN3-09-DB-TEST-SO-LINUX, B-ARNES-2), FALHOU vazio (P-SAN3-09-FALHOU-SEM-CAUSA, B-SAN3-10), trava só para NODE_ENV exato e .env do operador, import(new Function), suíte inteira fora da CI",
+  "C1c2-07 classe pre-existente (CI não tipa scripts/) com dono B-ARNES-2 via P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG; C1c2-09 propriedade do SO; C1c2-10 padrão dotenv do repositório"
+ ],
+ "teardown": "containers j9c2c1-node/-pg/-redis removidos por docker rm -f -v (contagem --filter name=j9c2c1- = 0; volumes dangling 14 antes e depois, nenhum meu) e rede j9c2c1-net removida (0) · processos vivos com w-j9c2c1 = 0 antes da remoção · worktree C:/Users/AMP/w-j9c2c1 removido por git worktree remove --force ec=0 (com node_modules e o resíduo meu 'undefined/' do cache do tsx) · mutações restauradas com hash-object = blob (worktree, 6 arquivos conferidos) e md5 = blob 995022e1 (container) · sonda zz-c1c2-ciclo1.ts removida · segredos e cópias do scratch apagados · base viva erp-postgres/erp-redis nunca tocada · w-nuv09 só com C1c2-evidencia.md e C1c2-voto.json · nenhum resíduo alheio removido"
+}
