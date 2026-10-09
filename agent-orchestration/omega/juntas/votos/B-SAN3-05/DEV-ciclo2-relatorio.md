@@ -404,6 +404,14 @@
 
 **Resultado:** PASSOU — N=5 focado em paralelo com a suíte DB completa; forma Linux/PostgreSQL 16, sem alvo na base viva.
 
+### CI do commit de correção
+
+**Comando:** `git push origin fix/runtime-role-sem-bypass`; `git ls-remote origin fix/runtime-role-sem-bypass`; consulta repetida de `gh api repos/thiagodorgo/ERP_Techsolutios/commits/112ea3ca.../check-runs` até nenhum job permanecer `queued`/`in_progress`.
+
+**Saída resumida:** remoto = `112ea3cab67c7c0580281af0b73c618f483c9428`; **7/7** check-runs concluídos com `success`: `backend` `113719997608`, `backend-postgres` `113719997596`, `frontend`, `flutter`, `owner-portal`, `authority-portal` e `docker` `113722282325`.
+
+**Resultado:** PASSOU — o mesmo job `backend` que revelou a corrida no head anterior ficou verde no novo objeto.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
@@ -411,7 +419,7 @@
 - [x] B1 — commit `d9fc0d6d`; `npm run check` **1/1** e prova SCRAM/guarda estática na suíte focada.
 - [x] B2 — commit `d9fc0d6d`; canário e guarda estrutural verdes; lote N=10 reservado à junta.
 - [x] B3 — commit `16014c06`; T13 **35/35**, gerador **2/2**, OPS=17, L0=106/106 e inventário 56 (+3, cada chave motivada).
-- [x] B4 — commits `41af41f5` + `EM APURAÇÃO`; rotas FORCE **11/11** e jobs FORCE **3/3** com recorte exclusivo do próprio seed; mutações de isolamento **2/2**.
+- [x] B4 — commits `41af41f5` + `112ea3ca`; rotas FORCE **11/11** e jobs FORCE **3/3** com recorte exclusivo do próprio seed; mutações de isolamento **2/2**.
 - [x] D1 — commit `d9fc0d6d`; T8d verde; extração `pg_basebackup` reservada à junta.
 - [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
 - [x] D3 — commit `d9fc0d6d`; T15 explícito/default, evento `close` e exit 1 verdes.
@@ -424,8 +432,8 @@
 
 **Não feito / divergências:** nenhum item solicitado ao dev ficou aberto. B6–B8, B10, B14 e as 16 mutações da tabela C2.4 pertencem à junta 2, não ao dev. Divergência registrada no B0: o diff integral contém seis corpos `.agents/.claude` nominalmente fora do permitido do C2.3, introduzidos pelo orquestrador no commit `c2df97cc`; os 18 caminhos dos commits do dev estão dentro do escopo.
 
-**Validação:** B0 heads 2/2, CI do novo head EM APURAÇÃO, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 focado paralelo **65/65**, suíte DB simultânea **301/301**, mutações **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
+**Validação:** B0 heads 2/2, CI do commit de correção **7/7** concluída verde, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 focado paralelo **65/65**, suíte DB simultânea **301/301**, mutações **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
 
-**Head empurrado:** EM APURAÇÃO após a correção pós-CI; será confirmado por `git ls-remote` depois dos check-runs verdes.
+**Head empurrado:** `112ea3cab67c7c0580281af0b73c618f483c9428`, confirmado por `git ls-remote`, com **7/7** check-runs concluídos verdes. O commit deste checklist é o único delta documental subsequente e seu SHA completo é confirmado no handoff final (um commit não pode conter o próprio hash).
 
 **Próximos passos (análise):** a junta 2 deve confirmar que toda comparação de agregado global permanece projetada pelos IDs/source do seed, observar especialmente os resumos que escolhem o run mais recente e repetir a pressão concorrente. Também deve concentrar-se na matriz B7 e em vazamento de senha no `server.log`, nas 16 mutações efêmeras, no canário concorrente B2, na porta de replicação B10, no caminho compose B14 e nos 9 jobs fora da superfície antes do Ato 2; e tratar a exceção de escopo de `c2df97cc` pela autoria correta.
