@@ -12,6 +12,7 @@ import {
   mapUsageSummary,
 } from "../src/modules/platform/cloud-billing/cloud-billing.adapter";
 import {
+  currentBillingMonth,
   getCloudBilling,
   getCloudCostSummary,
   periodForMonth,
@@ -305,14 +306,18 @@ test("T47 resposta atrasada do mês anterior é descartada e o mês novo não he
     const kept = nextCloudBillingState(state, failed, true, PERIOD);
     assert.equal(kept.stale, true);
     assert.equal(kept.charges?.totalChargeAmount, 18);
-
-    // Fiação (sem biblioteca de DOM no repo, como T2/T8): o hook descarta pelo período selecionado e aplica esta regra.
-    const hook = readFileSync(new URL("../src/modules/platform/cloud-billing/useCloudBilling.ts", import.meta.url), "utf8");
-    assert.match(hook, /if \(!isSamePeriod\(next\.period, selected\.current\)\)/);
-    assert.match(hook, /setData\(\(current\) => nextCloudBillingState\(current, next, background, selected\.current\)\)/);
-    assert.doesNotMatch(hook, /nextRefreshState/);
   } finally {
     globalThis.fetch = original;
     process.env.VITE_USE_MOCKS = "";
   }
+});
+
+// Fiação do hook (sem biblioteca de DOM no repo, como T2/T8 — guarda de forma, declarada como tal): o hook descarta a
+// resposta pelo período selecionado AGORA e aplica a regra de T47, não a genérica `nextRefreshState`.
+test("T48 o hook de Cloud Billing descarta resposta de outro período e usa a regra de T47 (A1)", () => {
+  const hook = readFileSync(new URL("../src/modules/platform/cloud-billing/useCloudBilling.ts", import.meta.url), "utf8");
+  assert.match(hook, /selected\.current = period;/);
+  assert.match(hook, /if \(!isSamePeriod\(next\.period, selected\.current\)\)/);
+  assert.match(hook, /setData\(\(current\) => nextCloudBillingState\(current, next, background, selected\.current\)\)/);
+  assert.doesNotMatch(hook, /nextRefreshState/);
 });
