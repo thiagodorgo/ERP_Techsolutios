@@ -23,3 +23,46 @@ Evidências e votos em `votos/B-SAN3-05/C{1,2,3}-evidencia.md` e `C{1,2,3}-voto.
 
 **Defeito de segurança real, achado por duas cadeiras independentes:** a senha do papel de runtime pode ir em claro para o log do
 servidor quando a amostragem de log está ligada (A4 = F-C2-01).
+
+## Ciclo 2 — junta 2 (2026-10-09)
+
+- **Objeto julgado:** inspetor em `0925482b`; cadeiras em `d00ca8ee` (C1), `a158f4af` (C2) e `9add8f3b` (C3) — entre eles só
+  entrou registro (parecer, mandatos, evidências e votos). CI 7/7 verde em cada objeto. A integração da `main` fica para depois
+  (ressalva R4 do inspetor).
+- **Inspetor:** **LIBERADO COM RESSALVA** (R1–R7) — `votos/B-SAN3-05/ciclo2/00-inspetor-terreno.md`.
+- **Quórum:** unanimidade de 3 com veto (segurança e permissão); ciclo 2, o último em que achado não grave bloqueia
+  (`D-GOV-PROPORCIONAL`, CLAUDE.md §C7 item 8).
+- **Modelo:** todas as identidades em Claude Opus 5.5, substituição declarada (`D-FABLE-ASTRA-SO-DINHEIRO`). Dev do ciclo 2 no
+  Codex `gpt-5.6-sol` (identidade `dev-ciclo2-b-san3-05`); um sucessor nos "créditos de API" (`dev-ciclo2-b-san3-05-api`) caiu por
+  limite sem gravar nada (rodou, na verdade, no plano Max — a chave de API foi ignorada pelo login).
+
+## VEREDITO: REPROVADO (3 × 0)
+
+| cadeira | identidade | voto | bloqueia | grave? | ajustes e notas |
+|---|---|---|---|---|---|
+| C1 | `jurado-san305-c2-credencial-e-papel` | **REPROVADO** | **A2** — cadeia de views com donos mistos: o papel limpo leu linhas de outra organização e a trava e o MODO 6 deram 0 escape (conferem o dono da view do topo, não o da que lê a tabela); hoje não há view no esquema. **A3** — quebrar a transitividade do MODO 6 deixa o arquivo de teste 9/9 | **A2: sim** (vaza dado entre organizações) · A3: não | A1 (guarda do T14 reconhece grafia), A4 (guarda de log aceita `session_user=<papel>` em outro campo), A5 (T15 falso vermelho com "5432" no pid/hora) |
+| C2 | `jurado-san305-c2-arnes-e-escopo` | **REPROVADO** | **C2-A1** — a guarda de processos filhos conta 5 grafias em vez da lista fechada do aceite (b); `execFileSync` e `runPsqlReadOnly` passam | não | C2-A2 (timeout mata só o bash; filho >30 s escreve sem trava), C2-A3 (falha depois do CREATE ROLE deixa papel com LOGIN/CREATEROLE) |
+| C3 | `jurado-san305-c2-ratchet-e-superficie` | **REPROVADO** | **C3-c2-01** — um uso reconhecido libera todos (`inst.some`): construção por fábrica genérica/`Reflect.construct` sem contexto fica fora (0 chaves). **C3-c2-05** — o cenário do job `cloud-charges.calculate` mede o efeito da rota, não do job | não | C3-c2-02 (igualdade banco↔gerador não é teste), C3-c2-03/04 (notas) |
+
+Produto confirmado pelas cadeiras: a senha nunca chega em claro ao servidor em 66 situações de log (B1 fechado); a porta de
+replicação é provada e recusada; o boot de produção recusa o papel que escapa; estabilidade do lote `-db` 10/10 + 3/3; escopo do
+ciclo 2 dentro do C2.3; suíte 3130/3132 (0 falha).
+
+## §C7.4-bis — papéis do ciclo 2 e as perguntas da reprovação
+
+| papel | quem |
+|---|---|
+| planejador | `planejador-ciclo2-b-san3-05` (Codex, caiu por limite) e `planejador-ciclo2-b-san3-05-sucessor` (Claude Opus) |
+| dev | `dev-ciclo2-b-san3-05` (Codex `gpt-5.6-sol`); `dev-ciclo2-b-san3-05-api` (caiu sem gravar) |
+| fábrica | `agente-fabrica` (Claude Opus) |
+| inspetor | instância nova de `inspetor-de-terreno-da-junta` (Claude Opus) |
+| achadores / votantes | C1, C2, C3 acima — identidades novas |
+| orquestrador | erratas 1 ao D4 e decisão na PARADA-RC3; mandatos; registro; **não escreveu código do bloco** |
+
+(a) A composição cobriu as competências: os bloqueantes caem exatamente nas três cadeiras desenhadas no C2.5. (b) Quem achou no
+ciclo 1 não consertou nem votou no ciclo 2. (c) O planejador usou dado medido; o A2 nasce de uma divergência que a fábrica já
+tinha anotado (dono da view do topo) — sinal de que o plano não fechou o critério da D2 para cadeias de donos mistos.
+
+**Ciclo 3 (D-GOV-PROPORCIONAL regra 2):** só defeito de produto grave bloqueia. O **A2** é grave (vazamento entre organizações) e
+tem de ser fechado; os demais bloqueantes (A3, C2-A1, C3-c2-01, C3-c2-05) e os ajustes viram pendência com dono se não forem
+consertados no ciclo 3. Decisão do dono pendente: abrir o ciclo 3 agora.
