@@ -265,11 +265,11 @@
 
 ### B12 — premissas e diff do guard de catálogo
 
-**Comando:** execução do ratchet; recontagem Linux das seis regexes no arquivo `san3-05-runtime-role-guard-db.test.ts`; diff contra `origin/main`.
+**Comando:** `git grep -n -E '(^|[^A-Za-z])PrismaCloudChargeRepository\(prisma\)' -- src`; `git grep -n 'DATABASE_RUNTIME_ROLE_GUARD' -- fly.production.toml fly.staging.toml .env.example`; `git diff origin/main -- tests/db-catalog-write-guard.test.ts` no Windows; ratchet e recontagem Linux das seis regexes.
 
-**Saída resumida:** contagem medida **64** (`CREATE ROLE=28`, `ALTER ROLE=2`, `GRANT=26`, `REVOKE=1`, `OWNER TO=7`, `DROP ROLE=0`) contra 63; o +1 é a guarda estática do B1 que nomeia a forma proibida `ALTER ROLE %I WITH PASSWORD %L`. A única entrada do Map do bloco foi atualizada 63→64 com esse motivo. Os dois greps nominais restantes não foram executados após a parada.
+**Saída resumida:** os dois greps ficaram vazios (ec=1 esperado), **2/2**; contagem medida **64** (`CREATE ROLE=28`, `ALTER ROLE=2`, `GRANT=26`, `REVOKE=1`, `OWNER TO=7`, `DROP ROLE=0`) contra 63; o +1 é a guarda estática do B1 que nomeia a forma proibida `ALTER ROLE %I WITH PASSWORD %L`. O diff do guard contém somente a entrada `san3-05-runtime-role-guard-db.test.ts` do Map, com count 64 e motivo, **1/1**.
 
-**Resultado:** PARCIAL — ratchet corrigido e focado verde; item completo aguarda retomada.
+**Resultado:** PASSOU — **3/3** formas do B12.
 
 ### B13 — `git diff --check`
 
