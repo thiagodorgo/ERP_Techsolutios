@@ -49,3 +49,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: `npm --prefix frontend run check` + teste existente de saúde.
 - Saída resumida: TypeScript verde; 2/2 testes verdes; alteração autorizada no teste = 1 adição/1 remoção.
 - Estado: concluída — 200 e 503 exibem Postgres, Redis e Worker com estado real; rede/JSON inválido falha honestamente; uptime, p95, fila e backup continuam com selo, sem fonte.
+
+### E5 — Interruptor único e vazio honesto
+
+- Comando: `npm --prefix frontend run check` + busca por `readFrontendEnv("VITE_USE_MOCKS"`.
+- Saída resumida: TypeScript verde; única ocorrência restante em `frontend/src/config/env.ts`.
+- Estado: concluída — fixtures de plataforma removidos; modo demonstração devolve vazio ou recusa clara; tela de módulos sem código interno e com plano em PT-BR.
