@@ -165,11 +165,11 @@
 
 ### B0 — head, CI, escopo e KPI
 
-**Comando:** EM APURAÇÃO
+**Comando:** `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`; diff de escopo e `git diff --quiet origin/main -- Kpis/` no Windows.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** no objeto `3401f162fc6b00d48962447183b98e12a1b0280c`, local=remoto; 7 check-runs concluídos: `owner-portal`, `authority-portal`, `backend-postgres`, `flutter` e `frontend` verdes, `docker` skipped e `backend` vermelho; `Kpis/*` ec=0 contra `origin/main`. O backend publicou **3126/3132**, fail 4, skipped 2: a entrada de catálogo 63→64 e o T15/D4 (mais os pais TAP).
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** VERMELHO — a ausência inicial de check-runs se resolveu, mas o backend concluído expôs a PARADA-D4-3 abaixo. Os demais componentes do B0 ficaram verdes; a conferência final de escopo aguarda a parada.
 
 ### B1 — `npm run check`
 
@@ -181,19 +181,19 @@
 
 ### B2 — `npm run lint`
 
-**Comando:** EM APURAÇÃO
+**Comando:** `npm run lint` no container Linux `dev05c2-bateria-node`, após `npm ci`, `prisma generate` e migrações no PostgreSQL descartável da mesma rede.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** `npm run lint` delegou ao `npm run check`; ec=0.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — 1/1.
 
 ### B3 — testes unitários/contratuais selecionados
 
-**Comando:** parcial do item B3: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` no container `dev05c2-b3final`.
+**Comando:** os 7 arquivos nominais do B3 no container Linux `dev05c2-bateria-node`; antes, T13 isolado em `dev05c2-b3final`.
 
-**Saída resumida:** **35/35** passaram; fail 0, skipped 0. Os outros seis arquivos do item B3 serão executados na bateria consolidada.
+**Saída resumida:** bateria consolidada **181/181**, fail 0, skipped 0; T13 interno **35/35**.
 
-**Resultado:** PARCIAL VERDE — T13 35/35.
+**Resultado:** PASSOU.
 
 ### B4 — gerador normal e `--all`
 
@@ -253,27 +253,27 @@
 
 ### B11 — suíte inteira e build
 
-**Comando:** EM APURAÇÃO
+**Comando:** `DATABASE_URL=<descartável> npm test` sob `timeout 2400s` em `dev05c2-bateria-*`; reexecução diagnóstica com Redis também descartável `dev05c2-diag3-redis`; logs oficiais por `gh run view --job 113637900062 --log-failed`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** primeira rodada local sem Redis: **3118/3132**, 12 falhas de terreno Redis + guard/T14/T15, skipped 2. Com Redis descartável e a contagem local do guard corrigida: **3126/3132**, fail 4, skipped 2; as falhas materiais ficaram no T15 e nos pais TAP. CI oficial repetiu **3126/3132**, fail 4, skipped 2; `backend-postgres` ficou verde. `npm run build` não foi iniciado depois do vermelho.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** VERMELHO — PARADA-D4-3; build pendente.
 
 ### B12 — premissas e diff do guard de catálogo
 
-**Comando:** EM APURAÇÃO
+**Comando:** execução do ratchet; recontagem Linux das seis regexes no arquivo `san3-05-runtime-role-guard-db.test.ts`; diff contra `origin/main`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** contagem medida **64** (`CREATE ROLE=28`, `ALTER ROLE=2`, `GRANT=26`, `REVOKE=1`, `OWNER TO=7`, `DROP ROLE=0`) contra 63; o +1 é a guarda estática do B1 que nomeia a forma proibida `ALTER ROLE %I WITH PASSWORD %L`. A única entrada do Map do bloco foi atualizada 63→64 com esse motivo. Os dois greps nominais restantes não foram executados após a parada.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PARCIAL — ratchet corrigido e focado verde; item completo aguarda retomada.
 
 ### B13 — `git diff --check`
 
-**Comando:** EM APURAÇÃO
+**Comando:** `git diff --check` antes dos commits incrementais e antes do registro da parada.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** ec=0 em todas as medições.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU na árvore atual; o B13 final contra `origin/main...HEAD` aguarda retomada.
 
 ### B14 — caminho do compose
 
@@ -342,28 +342,39 @@
 - **Decisão:** autorizado corrigir a discriminação por operação/tipo dos falsos candidatos (`role`, `yard`, `settlement` e semelhantes) e re-medir. O teto RC3 continua inalterado; inventário final acima de +20 exige nova parada, lista de chaves e motivo por chave.
 - **Resultado:** RETOMADO — sem relaxar o analisador e sem atualizar o congelado apenas para caber no teto.
 
+### PARADA-D4-3 — `error.sessionUser`/`error.currentUser` violam a Errata 2
+
+- **Objeto empurrado medido:** `3401f162fc6b00d48962447183b98e12a1b0280c`; check-run `backend` `113637900062` concluído vermelho, enquanto `backend-postgres` concluiu verde.
+- **Comandos:** `gh run view --job 113637900062 --log-failed`; boot direto de `node --import tsx src/server.ts` contra PostgreSQL 16 descartável `dev05c2-logprobe-pg`, sem porta no host, com `DATABASE_URL=postgresql://postgres:postgres@dev05c2-logprobe-pg:5432/...`; teardown nominal verificado.
+- **Saída resumida:** o primeiro log de recusa usa as formas permitidas `"session_user":"postgres"`, `"current_user":"postgres"` e `escapes[].rolname`. O segundo log contém `"error":{"code":"RUNTIME_ROLE_CAN_BYPASS_RLS","sessionUser":"postgres","currentUser":"postgres",...}`. A CI usa o mesmo texto `postgres` como senha e nome do papel, por isso a guarda D4 detectou `password da conexão apareceu no log`; a execução direta provou que a ocorrência restante está nos dois campos camelCase, não em URL/DSN.
+- **Regra aplicável:** a decisão do dono em `dee3f821` permite nome de papel somente como valor de `session_user`, `current_user`, `escapes[].rolname` e `via:rolname`; nome de papel em outro campo continua proibido. `sessionUser`/`currentUser` são outros campos.
+- **Impossibilidade dentro do escopo:** eliminar esses campos exige mudar a serialização do erro em `src/server.ts` ou `src/database/runtime-role.bootstrap.ts` (ambos PROIBIDOS), ou alterar a enumerabilidade de propriedades em `src/database/runtime-role.ts`, cujo único uso permitido no C2.3 é D2 e onde “nada mais muda”. Permitir camelCase no teste relaxaria a decisão do dono e não é opção do dev.
+- **Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — nenhuma correção de produto foi improvisada. O ajuste semântico parcial do teste, que mascara apenas as formas permitidas e torna a colisão username=senha testável, permanece local e não commitado; ele evidencia os campos camelCase. O ajuste independente do ratchet 63→64 pode ser commitado com este registro.
+- **Decisão necessária:** autorizar nominalmente um dos três caminhos: (a) retirar/redigir `sessionUser` e `currentUser` da serialização em arquivo hoje proibido; (b) permitir alterar `runtime-role.ts` para tornar essas propriedades não enumeráveis sem mudar o diagnóstico permitido; ou (c) ampliar a Errata 2 para também permitir `error.sessionUser`/`error.currentUser`. O dev não escolhe entre eles.
+- **Estado da bateria ao parar:** B1 1/1; B2 1/1; B3 181/181; B4 2/2; B11 3126/3132 (fail 4, skipped 2); B12 parcial; B13 incremental limpo. B6–B8/B10/B14 e as 16 mutações continuam reservados à junta; build e fecho B0/B12/B13 aguardam decisão.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
 
 - [x] B1 — commit `d9fc0d6d`; `npm run check` 1/1 e suíte focada 9/9.
 - [x] B2 — commit `d9fc0d6d`; canário/guarda estrutural verdes; N=10 reservado à junta.
-- [ ] B3 — implementação parcial local; PARADA-RC3 em 76 contra 53 chaves (+23 > +20).
-- [ ] B4 — não iniciado por determinação da PARADA-RC3.
+- [x] B3 — commit `16014c06`; T13 35/35, gerador 2/2, OPS=17, L0=106/106 e inventário 56 (+3, com motivo por chave).
+- [x] B4 — commit `41af41f5`; arquivo focado 13/13, 11/11 rotas FORCE e 3/3 jobs FORCE com diferencial próprio.
 - [x] D1 — commit `d9fc0d6d`; T8d verde, prova `pg_basebackup` reservada à junta.
 - [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
 - [x] D3 — commit `d9fc0d6d`; T15 explícito/default e exit 1 verdes.
-- [x] D4 — commit `d9fc0d6d`; Errata 2 aplicada e T9/T15 verdes.
-- [ ] Ajustes do ciclo — pendências C2.6 ainda não registradas devido à PARADA-RC3.
+- [ ] D4 — commit `d9fc0d6d` cobre T9/T15 na senha distinta, mas a CI revelou `error.sessionUser`/`error.currentUser`; PARADA-D4-3 aberta.
+- [x] Ajustes do ciclo — commit `3401f162`; três pendências novas e o sub-item nominal dos 9 jobs registrados; guard de catálogo 63→64 fica no commit desta parada.
 - [x] Integração da main — commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos resolvidos por união; `D-GOV-PROPORCIONAL` presente.
 - [x] `Kpis/*` à main — `git diff --quiet origin/main -- Kpis/` retornou 0.
 
-**Feito:** integração/main e `Kpis/*`; B1, B2(a/b/d), D1, D2, D3 e D4 implementados, validados e empurrados em `d9fc0d6d`. B3 confirmou OPS=17, C3A/B/C/E e L0 106/106 antes de acionar a parada pelo tamanho do inventário.
+**Feito:** integração/main e `Kpis/*`; B1, B2(a/b/d), B3, B4, D1, D2, D3 e pendências C2.6 implementados e empurrados. B4 confirmou sem parada os três efeitos laterais antes não medidos.
 
-**Não feito / divergências:** B3 não concluído nem commitado: inventário parcial cresceu +23, acima do teto +20. B4, pendências C2.6 e bateria restante aguardam decisão. A PARADA-D4-2 está resolvida pela decisão do dono `dee3f821`.
+**Não feito / divergências:** D4 não pode fechar literalmente porque o logger do servidor publica o nome do papel também em `error.sessionUser`/`error.currentUser`, formas não permitidas pela Errata 2. O escopo proíbe os dois arquivos naturais de correção e restringe `runtime-role.ts` somente a D2. Build e fecho de B0/B12/B13 não foram executados após a parada.
 
-**Validação:** B1 `npm run check` passou 1/1; B5 modo/EOL passou 2/2; B9 objeto passou (T14c dentro de 9/9), mutações são da junta. B3 parcial/T13 = 32/35 e B4/gerador = vermelho por +23 chaves. B6–B8, B11–B14 ainda não executados pelo dev; B10 é somente da junta.
+**Validação:** B0 vermelho em 1/7 check-runs (`backend`); B1 1/1; B2 1/1; B3 181/181; B4 2/2; B5 2/2; B9 focado verde antes da nova asserção; B11 **3126/3132**, fail 4, skipped 2; B12 parcial; B13 incremental ec=0. B6–B8/B10/B14 e as 16 mutações cabem à junta conforme C2.5.
 
-**Head empurrado:** `d9fc0d6df2b9098bd8665f9070e8082a54f97e39`, confirmado por `git ls-remote` antes do commit deste registro de parada; o SHA desse registro fica na mensagem ao orquestrador, pois o commit não pode conter o próprio hash.
+**Head empurrado:** o SHA completo do commit deste registro é confirmado por `git ls-remote` e publicado na mensagem ao orquestrador; o último head anterior era `3401f162fc6b00d48962447183b98e12a1b0280c`.
 
-**Próximos passos (análise):** o orquestrador deve decidir se autoriza corrigir a discriminação parcial de relações/operações e re-medir RC3, ou como tratar as 23 chaves. As mudanças locais de B3 devem permanecer preservadas. Só após decisão: concluir B3, então B4, pendências C2.6 e bateria restante.
+**Próximos passos (análise):** o orquestrador/dono deve escolher (a), (b) ou (c) da PARADA-D4-3. Depois, concluir a asserção sem relaxar campos, reexecutar T9/T15 com username=senha, `npm test` + build, fechar B0/B12/B13 e entregar o head à junta. A junta deve olhar com atenção especial a serialização dupla do erro, a matriz B7, o canário B2 e os 9 jobs fora da superfície antes do Ato 2 em produção.

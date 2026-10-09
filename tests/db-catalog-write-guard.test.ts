@@ -137,9 +137,9 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
     [
       "san3-05-runtime-role-guard-db.test.ts",
       {
-        count: 63,
+        count: 64,
         reason:
-          "B-SAN3-05: escritor de catálogo da prova do papel de runtime; toda sequência passa por withRoleCatalogLock e o teardown reutiliza dropEphemeralRoleResilient — contagem medida no head da entrega",
+          "B-SAN3-05: escritor de catálogo da prova do papel de runtime; 63 -> 64 porque a guarda estática do B1 nomeia a forma proibida ALTER ROLE %I WITH PASSWORD %L; toda sequência executável passa por withRoleCatalogLock e o teardown reutiliza dropEphemeralRoleResilient",
       },
     ],
   ]);
