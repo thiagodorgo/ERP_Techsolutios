@@ -61,3 +61,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: `npm --prefix frontend run check` + `git diff --numstat -- frontend/src/layouts/PlatformLayout.tsx`.
 - Saída resumida: TypeScript verde; `PlatformLayout.tsx` = exatamente `1 5`.
 - Estado: concluída — menu fica com Visão Geral, Organizações, Cloud Billing e Saúde do Sistema; as quatro paradas honestas continuam acessíveis somente por URL direta.
+
+### E7 — Geradores reproduzíveis
+
+- Comando: `node --check scripts/san3-06b-*.mjs` e execução dos cinco geradores sob `timeout 120`.
+- Saída resumida: 10 rotas, 4 itens no menu real, 6 telas ligadas, 4 paradas honestas, 0 telas sem fonte; 0 sítios de dado fabricado; 32 endpoints reais; inventários de testes literais e das 6 pendências do bloco emitidos.
+- Estado: concluída — os cinco censos são derivados dos fontes, usam falha conservadora para forma não reconhecida e o gerador de pendências aceita cabeçalhos `##` a `####`.
