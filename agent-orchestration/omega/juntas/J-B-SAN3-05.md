@@ -66,3 +66,30 @@ tinha anotado (dono da view do topo) — sinal de que o plano não fechou o crit
 **Ciclo 3 (D-GOV-PROPORCIONAL regra 2):** só defeito de produto grave bloqueia. O **A2** é grave (vazamento entre organizações) e
 tem de ser fechado; os demais bloqueantes (A3, C2-A1, C3-c2-01, C3-c2-05) e os ajustes viram pendência com dono se não forem
 consertados no ciclo 3. Decisão do dono pendente: abrir o ciclo 3 agora.
+
+## Ciclo 3 — junta 3 (2026-10-09)
+
+- **Objeto:** inspetor em `7c134e2c` (LIBERADO COM RESSALVA, R1–R11 — `votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md`); C1 em
+  `f7fabd4a` (só registro desde o objeto do inspetor). CI 7/7 verde. Leitura R3/R4 registrada em `controle/decisoes.md`
+  antes do voto (só defeito GRAVE de produto reprova no ciclo 3).
+- **Dev do ciclo 3:** `dev-ciclo3-b-san3-05` (Codex `gpt-5.6-sol`), head `9a66b4e4`; planejador `planejador-ciclo3-b-san3-05`
+  (Claude Opus); fábrica `agente-fabrica` (Claude Opus).
+
+## VEREDITO: REPROVADO (pela C1; C2 e C3 não votaram por decisão do dono)
+
+| cadeira | identidade | voto | bloqueia | grave? |
+|---|---|---|---|---|
+| C1 | `jurado-san305-c3-trava-de-views` | **REPROVADO** | **C1-c3-01** — `GRANT SELECT (colunas)` numa view cuja cadeia tem dono que escapa: o papel lê linhas da organização B sob o contexto A; trava 0 escape, boot aceita, MODO 6 ec=0. **C1-c3-02** — `UPDATE`/`INSERT` de coluna sobrescreve/grava linhas de B, sem a trava acusar | **sim** (vazamento e perda de dado entre organizações) |
+| C2 | `jurado-san305-c3-regressao-e-escopo` | não votou | — | — |
+| C3 | `jurado-san305-c3-superficie-e-suite` | não votou | — | — |
+
+Notas da C1: C1-c3-03 (pertença sem herança — exige SET ROLE) e C1-c3-04 (T8f não cobre a expressão de privilégio). A
+C1 confirmou que as formas S/B/K/I e as próprias (3 níveis, matview, escrita em 2 níveis) eram recusadas; as 10 mutações
+do ciclo 3 ficaram vermelhas. **Não-convergência:** terceira forma da via `view`. O plano do dia mandava levar ao dono:
+**D-405-PROIBIR-VIEWS** — *"Proibir qualquer view (Recomendado)"* — e a junta 3 fechou sem C2/C3 (o resultado já estava
+dado pela C1 e o ciclo 4 muda o objeto).
+
+§C7.4-bis: (a) a composição cobria a competência (a C1 era a cadeira da via view); (b) quem achou não conserta — ciclo 4
+com planejador `planejador-ciclo4-b-san3-05` e dev `dev-ciclo4-b-san3-05`, identidades novas; (c) o planejador do ciclo 3
+fixou a propriedade por sobre-aproximação de dono/privilégio de TABELA; o furo veio do privilégio de COLUNA, que nenhuma
+medição anterior tinha exercido.
