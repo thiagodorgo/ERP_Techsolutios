@@ -37,3 +37,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: `npm --prefix frontend run check`.
 - Saída resumida: TypeScript sem erro após espelhar os quatro DTOs, ligar cinco GETs com período e criar o hook de leitura.
 - Estado: concluída — oito indicadores reais, painéis por serviço/organização, uso, cobranças e importações; ausência de fonte vira selo. A página não importa nenhuma função de escrita e não calcula margem.
+
+### E3 — Paradas honestas
+
+- Comando: `npm --prefix frontend run check`.
+- Saída resumida: TypeScript sem erro nas quatro páginas substituídas.
+- Estado: concluída — Auditoria da Plataforma, APIs e Credenciais, Planos e Módulos e Configurações não exibem linhas, números, controles ou ações sem fonte; todas exportam `PLATFORM_HONEST_STOP`.
