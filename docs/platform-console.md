@@ -1,16 +1,14 @@
 # Console da Plataforma
 
-O Console da Plataforma e a area exclusiva do dono do SaaS e de usuarios Super Admin. Ele opera em escopo global da plataforma, separado da administracao de cada tenant.
+O Console da Plataforma é a área exclusiva do dono do SaaS e de usuários Admin Plataforma. Ele opera em contexto global, separado da administração de cada organização cliente.
 
 ## Objetivo
 
-Permitir que o dono da plataforma crie e acompanhe tenants/clientes, defina planos, habilite modulos, crie o administrador inicial do tenant e acompanhe a saude operacional global do SaaS.
+Nesta entrega, o console permite consultar organizações, Cloud Billing e a prontidão técnica com dados reais. Criação, suspensão, planos, módulos e configurações globais permanecem fora da interface enquanto não houver persistência e contrato completos.
 
-Nesta fase, o Console da Plataforma tambem possui a tela `/platform/cloud-billing` para consultar uso cloud interno por tenant via `cloud_usage_metering`, custo AWS bruto via `cloud_cost_import`, custo AWS alocado por tenant via `cloud_cost_allocation` e valor cobrável via `cloud_charge_markup_rules`.
+Cloud Billing é estritamente de leitura: consulta uso, custo bruto, rateio, valor cobrável e margem já calculados pelo backend. Importação, cálculo e edição de regras não são expostos pela tela.
 
-O item de menu do Console da Plataforma deve vir do registry backend `GET /api/v1/navigation/menu` quando disponivel, filtrado por permissoes `platform:*` e sem misturar itens tenant para usuario comum.
-
-Implementacao frontend atual: `PlatformLayout` consome `GET /api/v1/navigation/menu?scope=platform` e usa fallback local seguro apenas quando a API estiver indisponivel ou `VITE_USE_MOCKS=true`.
+Implementação atual: `PlatformLayout` usa o literal local `PLATFORM_NAV`. O menu contém apenas Visão Geral, Organizações, Cloud Billing e Saúde do Sistema. Auditoria Global, APIs e Credenciais, Planos e Módulos e Configurações ficam fora do menu e mostram uma parada honesta quando acessadas diretamente. A autorização final continua nos guards e endpoints.
 
 ## Diferenca de escopo
 
@@ -23,31 +21,18 @@ Implementacao frontend atual: `PlatformLayout` consome `GET /api/v1/navigation/m
 
 ## Telas MVP
 
-- P00 - Visao Geral Platform: planejada, rota `/platform/dashboard`, permissao `platform:dashboard:read`.
-- P01 - Tenants: listagem dos tenants, status, plano, modulos habilitados e resumo de uso.
-- P02 - Detalhe do Tenant: dados gerais, admin principal, atividade recente e acoes criticas.
-- P03 - Modulos do Tenant: habilitacao e bloqueio de modulos por tenant e plano.
-- P04 - Cloud Billing: uso, custos AWS, rateio, cobranca, regras e runs em boundary Platform.
-- P05 - Auditoria Platform: planejada, rota `/platform/audit`, permissao `platform:audit:read`.
+- Visão Geral: `/platform/overview`, ligada ao resumo real de organizações.
+- Organizações: `/platform/tenants` e detalhe, ligadas ao resumo real; a organização `platform` é identificada como organização de sistema e não entra nas métricas de clientes.
+- Cloud Billing: `/platform/cloud-billing`, leitura real por período.
+- Saúde do Sistema: `/platform/health`, ligada ao readiness de Postgres, Redis e Worker.
+- Auditoria Global, APIs e Credenciais, Planos e Módulos e Configurações: rotas preservadas como paradas honestas, fora do menu.
 
 ## Funcionalidades
 
-- Criar tenant.
-- Editar tenant.
-- Suspender tenant.
-- Reativar tenant.
-- Habilitar e desabilitar modulos por tenant.
-- Habilitar e desabilitar a feature `tenant_checklist` por tenant/plano.
-- Expor `tenant_checklist` como modulo habilitavel; a configuracao de checklists, estados e publicacao ocorre dentro do tenant.
-- Expor `field_operations` como modulo habilitavel; mapa real com provider externo, UI de despacho e roteirizacao permanecem em branch futura.
-- Definir plano.
-- Criar administrador inicial do tenant.
-- Ver resumo de uso.
-- Consultar uso cloud interno medido por tenant, sem custo monetario, preco, margem, fatura ou pagamento.
-- Consultar/importar custo AWS CUR bruto, sem rateio, markup, fatura ou pagamento.
-- Executar e consultar alocacao de custo AWS por tenant, mantendo markup, fatura e pagamento fora desta fase.
-- Criar regras de markup cloud e executar calculo de charges, mantendo fatura, pagamento e emissao fiscal fora desta fase.
-- Visualizar Cloud Billing em abas internas de Visao geral, Uso, Custos AWS, Rateio, Cobranca, Regras e Runs.
+- Consultar organizações e abrir o detalhe usando o identificador devolvido pelo backend.
+- Consultar Cloud Billing por mês, sem executar qualquer escrita monetária no frontend.
+- Consultar a prontidão real de Postgres, Redis e Worker.
+- Informar explicitamente quando uma tela ou métrica ainda não possui fonte.
 
 ## Permissoes
 
@@ -80,12 +65,16 @@ Implementacao frontend atual: `PlatformLayout` consome `GET /api/v1/navigation/m
 
 ## Rotas frontend MVP
 
-- `/platform/dashboard`
+- `/platform/overview`
 - `/platform/tenants`
 - `/platform/tenants/:tenantId`
 - `/platform/tenants/:tenantId/modules`
 - `/platform/cloud-billing`
 - `/platform/audit`
+- `/platform/health`
+- `/platform/apis`
+- `/platform/plans-modules`
+- `/platform/settings`
 
 ## API esperada
 
