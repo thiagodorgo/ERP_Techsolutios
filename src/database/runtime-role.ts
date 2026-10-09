@@ -1,13 +1,14 @@
 // B-SAN3-05 (item 9 do gate vendável) — a identidade com que a API fala ao banco em produção não pode
 // escapar de FORCE ROW LEVEL SECURITY por nenhuma das três vias medidas: ATRIBUTO (superusuário,
 // BYPASSRLS, REPLICATION ou pertença — direta ou por cadeia — a papel assim ou a um dos três papéis de
-// servidor), POSSE (dono, ou membro do dono, de tabela FORCE) e VIEW (SELECT em view/matview de dono que
-// escapa e que, por qualquer cadeia de views, alcança tabela FORCE). As três são avaliadas para
+// servidor), POSSE (dono, ou membro do dono, de tabela FORCE) e VIEW (leitura ou escrita em view/matview
+// cuja árvore alcança tabela FORCE e em que qualquer view tem dono que escapa, ou há matview de qualquer
+// dono). As três são avaliadas para
 // `session_user` E `current_user`: um login
 // superusuário com `options=-c role=<limpo>` escaparia por `SET ROLE NONE`.
 //
 // Esta constante é a ÚNICA fonte da propriedade; o md5 do Apêndice E deixou de ser critério no ciclo 2.
-// O hash abaixo é regravado quando a SQL muda e serve somente para diagnóstico EOL-neutro: f95dacc4ab623a08961635683aab5ce1.
+// O hash abaixo é regravado quando a SQL muda e serve somente para diagnóstico EOL-neutro: ddd60b06688f7f4c103946decc780cb2.
 export const RUNTIME_ROLE_GUARD_SQL = `WITH RECURSIVE view_walk(root_oid, leaf_oid) AS (
   SELECT v.oid, v.oid FROM pg_class v WHERE v.relkind IN ('v', 'm')
   UNION
@@ -22,6 +23,13 @@ export const RUNTIME_ROLE_GUARD_SQL = `WITH RECURSIVE view_walk(root_oid, leaf_o
   JOIN pg_rewrite rw ON rw.ev_class = w.leaf_oid
   JOIN pg_depend d ON d.classid = 'pg_rewrite'::regclass AND d.objid = rw.oid AND d.refclassid = 'pg_class'::regclass
   JOIN pg_class t ON t.oid = d.refobjid AND t.relkind IN ('r', 'p') AND t.relforcerowsecurity
+), view_escape AS (
+  SELECT DISTINCT vf.root_oid, lv.relowner AS owner_oid
+  FROM view_force vf
+  JOIN view_walk w ON w.root_oid = vf.root_oid
+  JOIN pg_class lv ON lv.oid = w.leaf_oid AND lv.relkind IN ('v', 'm')
+  JOIN pg_roles o ON o.oid = lv.relowner
+  WHERE o.rolsuper OR o.rolbypassrls OR lv.relkind = 'm'
 )
 SELECT via, rolname, rolsuper, rolbypassrls, is_self, objetos
 FROM (
@@ -41,11 +49,10 @@ FROM (
   UNION ALL
   SELECT 'view', o.rolname::text, o.rolsuper, o.rolbypassrls,
          (o.rolname = session_user OR o.rolname = current_user), count(DISTINCT v.oid)::int
-  FROM view_force vf
-  JOIN pg_class v ON v.oid = vf.root_oid
-  JOIN pg_roles o ON o.oid = v.relowner
-  WHERE v.relkind IN ('v', 'm') AND (o.rolsuper OR o.rolbypassrls)
-    AND (has_table_privilege(session_user, v.oid, 'SELECT') OR has_table_privilege(current_user, v.oid, 'SELECT'))
+  FROM view_escape ve
+  JOIN pg_class v ON v.oid = ve.root_oid
+  JOIN pg_roles o ON o.oid = ve.owner_oid
+  WHERE (has_table_privilege(session_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege(current_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE'))
   GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
 ) x ORDER BY via, rolname`;
 
