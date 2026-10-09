@@ -1592,6 +1592,27 @@ com o §0.3. Duas leituras dela que este plano **não** segue, por medição: (i
 `GET /platform/overview`" — o `platform.adapter`/`GET /platform/tenants` é memória (P-f), só o `/overview` serve; (ii) l.55
 diz não ter confirmado o caminho final de `/platform/cloud-*` — o gerador (c) confirma os 32 (Apêndice C, re-executado).
 
+#### R.1-s Confirmação independente do sucessor (P3)
+
+> **Papel:** `planejador-mestre` · **identidade nova:** `planejador-remedicao-b-san3-06b-sucessor` · **modelo que rodou:
+> GPT-5.6 Sol — SUBSTITUIÇÃO DECLARADA (§C7.6-bis):** o dono determinou este modelo para esta sucessão; o bloco fica
+> classificado em R.6 como leitura de dinheiro sem regra monetária nova. · **ref medida:**
+> `HEAD@b5749f6a65033497d2282eae94516c4ba6a0d01f`. A árvore já continha **somente este arquivo modificado** pelo
+> complemento interrompido; todas as confirmações abaixo leram o objeto imutável `HEAD`, não o texto herdado do disco.
+
+Nada da conclusão do antecessor foi herdado como fato. Cinco afirmações de R.1 foram escolhidas e reexecutadas:
+
+| Afirmação | Comando reexecutado no `HEAD` → saída resumida | Confirmação do sucessor |
+|---|---|---|
+| P-b — permissão de auditoria sem rota de plataforma | `timeout 30 git grep -n 'platform:audit:read' HEAD -- src` → exatamente 3 ocorrências (`catalog.ts:13`, `navigation.registry.ts:60`, `platform-permissions.ts:23`); `timeout 30 git grep -n -i audit HEAD -- src/modules/platform/platform.routes.ts` → 0 endpoint de Auditoria da Plataforma | **confirmada** |
+| P-c — Cloud Billing é cartaz, sem importador do serviço | `timeout 30 git grep -l 'cloud-billing.service' HEAD -- frontend/src` → 0 arquivo; `timeout 30 git grep -n 'PlatformCloudBillingPage' HEAD -- frontend/src` → só o lazy import/rota em `App.tsx` e a própria página | **confirmada** |
+| P-f — `/overview` inclui a organização de sistema | `timeout 30 git show HEAD:src/modules/platform/platform-overview-prisma.repository.ts` → `tenant.findMany` sem `where`, `totalOrgs: tenants.length` e soma bruta de `activeOrgs/totalUsers`; `timeout 30 git show HEAD:scripts/bootstrap-platform-admin.ts` → `PLATFORM_TENANT_SLUG = "platform"`, nome `"Plataforma"`, status `active` | **confirmada com o fato novo de C-1** |
+| P-i — três autoridades de mock | `timeout 30 git grep -n 'readFrontendEnv("VITE_USE_MOCKS"' HEAD -- frontend/src` → 3 ocorrências: `config/env.ts:23`, `cloud-billing.service.ts:164`, `platform.service.ts:123` | **confirmada** |
+| P-k — readiness público e honesto | `timeout 30 git show HEAD:src/routes/health.routes.ts` → `healthRouter.get("/health/ready", …)`; `timeout 30 git show HEAD:src/app.ts` → `app.use("/api/v1", healthRouter)` na l.114, antes das montagens com `attachAuthenticatedActor()` a partir da l.126 | **confirmada** |
+
+As cinco saídas concordam com R.1. Elas não validam a cauda dinâmica P-r: a contagem atual de `test:smoke` continua
+desconhecida até o passo 0 de R.5.
+
 ### R.2 Regras novas que o plano não conhecia
 
 | Regra (fonte, ref `a9bbde38`) | O que muda neste plano |
@@ -1725,6 +1746,7 @@ Substitui o §6. Branch: a do worktree, `feat/b-san3-06b-plataforma` (o §14 diz
 §5.3 do `PLANO_SAN3`; o orquestrador abriu o ramo com o outro nome — fica o do worktree, registrado na ata/PR).
 
 **PERMITIDO** (e nada mais):
+- `docs/revisoes/SAN3/B-SAN3-06b-plano.md` — artefato de planejamento **já presente no ramo**; o dev não o altera;
 - `frontend/src/modules/platform/**` (inclui apagar `platform.mock.ts` e `cloud-billing.mock.ts`; inclui
   `PlatformOverviewPage.tsx` e `PlatformTenantDetailPage.tsx` **só** para o aviso `stale` (E1b) e a organização de
   sistema (C-1));
@@ -1759,10 +1781,150 @@ dinheiro em `cloud-billing.{adapter,service}.ts` (C-2: byte-idênticas).
 origin/main...HEAD -- Kpis src prisma mobile tests/e2e .github` → vazio.
 
 ### R.5 Bateria atualizada
-EM APURAÇÃO
+
+Substitui a bateria do §8. Nenhum passo sobe servidor ou banco; todo comando potencialmente longo roda com `timeout`.
+
+**Passo 0 — terreno e baseline, antes de editar código:**
+
+```bash
+git branch --show-current                                           # feat/b-san3-06b-plataforma
+git fetch origin main && git pull --rebase origin main
+git status --short                                                  # vazio
+df -h /c                                                            # >= 5 GB livres; abaixo disso aplicar C-10
+timeout 900 npm --prefix frontend ci                                # node_modules próprio, sem junction
+timeout 900 npm ci                                                  # raiz; necessário para lint/tsx, sem servidor/banco
+cd frontend
+timeout 300 node --test --import tsx \
+  tests/platform-overview.smoke.test.tsx \
+  tests/platform-tenant-detail.smoke.test.tsx \
+  tests/platform-health-honest-stop.smoke.test.tsx                 # esperado 15/15
+timeout 300 node --test --import tsx tests/smoke-flow.test.tsx      # esperado 22/22
+timeout 1200 npm run test:smoke                                     # N real anotado no relatório; não publicar KPI
+cd ..
+```
+
+Qualquer vermelho no baseline **para o dev**: registra comando/saída e devolve ao planejador; não se corrige teste
+preexistente para abrir caminho. O número integral de `test:smoke` é medido, não herdado de P-r.
+
+**Bateria da entrega, depois de E1–E8 + C-1–C-13:**
+
+```bash
+timeout 600 npm --prefix frontend run check
+for f in scripts/san3-06b-*.mjs; do timeout 30 node --check "$f" || exit 1; done
+timeout 120 node scripts/san3-06b-literais-de-plataforma.mjs .       # sítios = 0
+timeout 120 node scripts/san3-06b-telas-de-plataforma.mjs .          # 10 rotas; menu = 4; SEM-FONTE = 0
+timeout 120 node scripts/san3-06b-endpoints-de-plataforma.mjs .      # 32 endpoints
+timeout 120 node scripts/san3-06b-testes-com-literal.mjs .           # com literal = 0
+timeout 120 node scripts/san3-06b-pendencias-do-bloco.mjs \
+  agent-orchestration/controle/pendencias.md                         # v2: 6 seções, 6 FECHADA com evidência
+
+cd frontend
+timeout 600 node --test --import tsx \
+  tests/san3-06b-organizacoes.smoke.test.tsx \
+  tests/san3-06b-cloud-billing.smoke.test.tsx \
+  tests/san3-06b-paradas-honestas.smoke.test.tsx \
+  tests/san3-06b-health.smoke.test.tsx \
+  tests/san3-06b-navegacao-plataforma.test.ts \
+  tests/san3-06b-console-sem-ficcao.guard.test.ts                    # T1–T45 verdes
+timeout 600 node --test --import tsx \
+  tests/platform-overview.smoke.test.tsx \
+  tests/platform-tenant-detail.smoke.test.tsx \
+  tests/platform-health-honest-stop.smoke.test.tsx \
+  tests/smoke-flow.test.tsx tests/sidebar-nav.test.tsx \
+  tests/access-gating.test.ts tests/invoices-nfe-honest-stop.smoke.test.tsx \
+  tests/work-orders-honest-errors.test.tsx
+timeout 1200 npm run test:smoke                                    # M real e delta contra o passo 0 no PR
+timeout 900 npm run build
+cd ..
+timeout 600 npm run lint                                            # inclui os scripts novos
+
+git grep -n 'readFrontendEnv("VITE_USE_MOCKS"' -- frontend/src      # só config/env.ts
+git grep -n -E 'Tenant[s]?\b' -- frontend/src/modules/platform \
+  frontend/src/navigation/platformNavigation.ts \
+  frontend/src/layouts/PlatformLayout.tsx                            # 0 em rótulo/JSX
+git diff --name-only origin/main...HEAD                              # subconjunto de R.4
+git diff --numstat origin/main...HEAD -- \
+  frontend/src/layouts/PlatformLayout.tsx                            # exatamente 1 5
+git diff --numstat origin/main...HEAD -- \
+  frontend/tests/platform-health-honest-stop.smoke.test.tsx         # exatamente 1 1
+git diff --name-only origin/main...HEAD -- Kpis src prisma mobile tests/e2e .github  # vazio
+git diff --check
+rm -rf frontend/dist                                                # somente artefato regenerável da validação
+git status --short                                                  # só arquivos rastreados do bloco; nenhum dist
+```
+
+**Controles negativos obrigatórios:** T34, T35, T37, T43, T44 e T45 executam suas mutações em cópia temporária e
+precisam provar vermelho; o relatório registra a mutação e a recusa. As cinco funções de escrita de C-2 são comparadas
+por blob/trecho contra `origin/main` e não podem aparecer importadas fora de `cloud-billing.{adapter,service}.ts`.
+
+**CI:** o SHA revisado precisa ter todos os check-runs obrigatórios concluídos e verdes. A CI não autoriza tocar
+`Kpis/*`; o total real do smoke fica no relatório/PR enquanto vigorar o congelamento.
 
 ### R.6 Rota de aprovação (D-GOV-PROPORCIONAL)
-EM APURAÇÃO
+
+**Rota final: um revisor independente + CI verde; não há junta completa.**
+
+Classificação pela propriedade que muda, e não pelo nome da tela:
+
+- Cloud Billing **só lê** os GETs existentes e formata valores vindos dos DTOs. C-2 proíbe soma, diferença, razão
+  monetária, cálculo de margem, importação, rateio, cobrança, regra ou qualquer outra escrita; logo o bloco não cria nem
+  altera regra de dinheiro. É uma tela sem regra de negócio nova, caso da regra (1) da `D-GOV-PROPORCIONAL`.
+- O bloco não muda RBAC, `PermissionGuard`, catálogo de permissões nem backend: `App.tsx`, `RBAC_MATRIX.md` e `src/**`
+  estão proibidos. Retirar do menu páginas sem fonte muda a porta de navegação, **não** a autorização. Substituir toggles
+  fictícios por parada honesta remove uma alegação de segurança; não implementa nem afrouxa controle de segurança.
+- Não há escrita persistente, migração ou fluxo destrutivo; portanto não há risco novo de perda de dado.
+
+**Trava de reclassificação:** se o dev precisar (a) calcular/alterar dinheiro, (b) importar uma das cinco funções de
+escrita de C-2 na página/hook, (c) mudar permissão/guard ou (d) criar escrita persistente, ele **para**. O plano volta a
+um `planejador-mestre` novo e a aprovação passa a **junta completa com inspetor + 3 cadeiras unânimes**, antes de seguir.
+
+Fluxo vigente:
+
+1. dev de identidade nova recebe prompt simples com este arquivo e R.4/R.5 explícitos;
+2. CI conclui verde no SHA candidato;
+3. revisor independente — não planejou nem desenvolveu — reexecuta R.5, confere C-2 por AST/diff, escopo, fidelidade
+   visual, estados e as 6 pendências; achado dentro do bloco volta ao dev;
+4. verde do revisor + CI verde autoriza merge; sem inspetor e sem ata de junta;
+5. por ser merge de **produto**, nasce o `porteiro-pos-merge`: promessa × diff, testes/guards reexecutados, registro,
+   limpeza §C5 e autorização do próximo alvo.
 
 ### R.7 Veredito
-EM APURAÇÃO
+
+**PRONTO COM AJUSTES.** O plano de 30/09 continua utilizável, mas o dev só começa pela seção de re-medição; R.1-s e
+R.3–R.6 prevalecem sobre §0–§14 onde houver divergência.
+
+**Ajustes obrigatórios, em lista curta:**
+
+1. rebasear na `origin/main`, instalar dependências próprias e medir o baseline dinâmico antes de editar (C-10/R.5);
+2. tratar a organização `platform` como organização de sistema, excluída das métricas de clientes nas duas telas e
+   amarrada ao bootstrap por T41–T43 (C-1);
+3. manter Cloud Billing estritamente de leitura, sem aritmética monetária e sem consumidor das funções de escrita
+   (C-2, T44–T45);
+4. trocar "Health" por "Saúde", ajustar somente a asserção obsoleta autorizada e preservar a pendência de
+   observabilidade como parcial (C-4, C-8, C-13);
+5. não tocar `Kpis/*`; usar o gerador de pendências v2 e fechar as **6** entradas com evidência (C-5/C-6);
+6. respeitar R.4 — inclusive os dois `--numstat` exatos e o plano já presente no ramo — e entregar 45 testes mais a
+   bateria/controles negativos de R.5 (C-7, C-9, C-11).
+
+**Aprovação:** **revisor independente + CI verde**, pelos limites de leitura explicados em R.6. Qualquer violação de
+C-2 ou mudança de autorização/escrita reclassifica o bloco para junta completa unânime de 3. O porteiro pós-merge segue
+obrigatório porque o PR é de produto.
+
+**Tamanho do dev:** **G (grande)** — uma fatia vertical de frontend com Organizações, Cloud Billing, Saúde e quatro
+paradas honestas, cerca de 35–45 arquivos no diff final, 5 geradores e 45 testes novos. Não há backend, migração,
+servidor ou banco. A coesão vem dos mesmos guards, menu e registro; dividir no meio duplicaria a prova de ausência de
+ficção, mas o dev deve gravar incrementalmente por entrega E1–E8.
+
+**Riscos que permanecem:**
+
+- o baseline integral ainda não foi executado neste worktree; falta de espaço/dependência ou vermelho preexistente
+  interrompe o start;
+- descontar a organização de sistema em dois lugares pode produzir contagem divergente se o payload for incoerente —
+  T41/T42 e o uso dos agregados do backend são a trava;
+- erro de campo, moeda ou arredondamento pode fazer a UI **mostrar** dinheiro errado mesmo sem escrevê-lo — DTOs,
+  T10–T15/T45 e revisão independente cobrem essa superfície;
+- até o `B-SAN3-05` produzir leitura válida sob o papel de runtime sem bypass, Cloud Billing pode mostrar vazio honesto;
+- rebase pode conflitar em `frontend/package.json` e `pendencias.md`; sempre regenerar, nunca copiar contagem/linha;
+- fidelidade visual versus honestidade continua uma tensão: sem fonte entra selo/parada, nunca número inventado;
+- qualquer crescimento para regra financeira, permissão, segurança ou escrita invalida a rota proporcional e exige
+  replanejamento + junta completa.
