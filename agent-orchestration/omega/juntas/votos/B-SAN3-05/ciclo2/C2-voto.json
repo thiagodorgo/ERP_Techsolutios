@@ -1,0 +1,120 @@
+{
+ "jurado": "jurado-san305-c2-arnes-e-escopo (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C2 — arnês e escopo: trava única do catálogo, estabilidade em N, escopo e integração do PR",
+ "mandato_md5": "cb81a5a50af55d1f172bf404845cc6b9 · declarado no disparo: cb81a5a50af55d1f172bf404845cc6b9",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO (Fable só em bloco que toca dinheiro; este não toca)",
+ "corpo_md5": "8a69d12f861c3ff9d33b15168ea674a5 · corpo lido do blob do objeto por git show (lançada como general-purpose; md5 esperado no disparo igual)",
+ "objeto": "a158f4af5babf2deaab1335d2e84a12b32aacc1c (git ls-remote do ramo = gh pr view 405 headRefOid, 09:26Z e 10:12Z) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · merge-base c8af64580cb85ddf4960fecb2f8604384f8f0328 · cerca do mandato 0925482b3ee40ef27b0404fdb5a8e066ce2b26aa e delta só registro (6 × A em votos/B-SAN3-05: 3 mandatos c2, parecer do inspetor, C1-evidencia.md, C1-voto.json — os dois da C1 não lidos) · objeto no fim: igual",
+ "legalidade": "parecer ciclo2/00-inspetor-terreno.md (inspetor-de-terreno-da-junta, Opus declarado, 08:11–08:53Z, commit d00ca8ee) · LIBERADO COM RESSALVA (R2 escopo = delta do ciclo 2 e R4 integração da main depois do voto — ambas aplicadas) · confere este nome, este corpo (md5 8a69d12f…), worktree w-j05c2c2 e containers j05c2-c2-: sim · check-runs a158f4af (10:02Z) total=7 não-verdes=0 pendentes=0",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 de 2 (último em que achado não grave bloqueia)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (vi só o ASSUNTO do commit a158f4af no git log, declarado na evidência) · li do ciclo 1 e da trilha: plano (C2.1 B2, C2.3, C2.4, C2.5, erratas), parecer do inspetor da junta 2, cabeçalho do DEV-ciclo2-relatorio.md (l.1-6), e os hex do relatório/ata/plano/parecer só para ancestralidade",
+ "pausa": "nenhuma",
+ "voto": "REPROVADO",
+ "itens": {
+  "item1": "VERMELHO — canário determinístico (M-B2a(ii) 10/10; script 22/23/54 ms × espera 400 ms); M-B2a(i) cai na asserção estrutural l.1105 (canário não roda); M-B2b vermelho pela contagem 3!==2; MAS guarda estrutural = contagem de 5 grafias (satisfeita por comentário, cega a exec*/execFile*/fork e ao psql genérico runPsqlReadOnly): formas próprias F2 (execFileSync do script) e F1 (GRANT por runPsqlReadOnly) verdes em todo guarda do head; D1: limpeza do cenário migratorOk fora de finally deixa papel CREATEROLE LOGIN; filho além da janela: SIGKILL só no bash, subshell/psql sobrevivem, com filho > 30 s a tx expira (ROLLBACK 09:49:37.180) e o filho escreve catálogo 5,05 s depois sem trava (09:49:42.228).",
+  "item2": "VERDE — B8 10/10 (tests=22 pass=22, nomes_md5 3d071bcc40bd idêntico, 0 XX000/23505/40P01/tuple concurrently/[o6r-arnes] no TAP com stderr, resíduo 0 entre execuções); B6 3/3 receitas independentes 22/22 com o mesmo conjunto de nomes, 3740=3740 blobs, sonda argv 4/0/0, teardown limpo; controle (sem psql) 19/22 com T14a/b vermelho \"psql: ausente\" e 0 SKIP. (1-p)^N: 13 verdes provam pouco sozinhos (0,014 a 0,513 conforme p) — o peso fica no item 1.",
+  "item3": "VERDE — B0: heads iguais; check-runs 7/7; delta do ciclo 2 (34 por commit próprio / 36 no PR) ⊆ PERMITIDO salvo os 6 corpos desta junta (c2df97cc, registro do orquestrador — critério que não pode passar por construção); Kpis/ = main nos 2 sentidos (ec 0/0); 108/108 commits do PR ancestrais, 0 force-push, 4 merges com 2º pai na main; merge-tree com a main de agora: conflito só em pendencias-indice.md (R4, nota); B12 três premissas vazias com irmãos não-vazios, diff do guard só a entrada san3-05, recontagem 64 = count, nenhum outro tests/**san3-05** escreve catálogo; B13 ec=0; B1/B2 ec=0; B11 3132 tests · 3130 pass · 0 fail · skipped 2 (os 2 RBAC_DB_PARITY do orçamento) com Postgres+Redis próprios; build ec=0."
+ },
+ "justificativa": "Terreno: worktree próprio w-j05c2c2 detached @a158f4af; condutor (md5 8f2106bf…) derivado da receita (md5 9861a2aa…) com containers j05c2-c2-{pg,node,redis} sem porta publicada, senha só por ambiente, árvore 3740=3740 blobs e md5sum -c 0; receita adaptada (md5 b779f1f9…, diff publicado) para o B6; base viva intocada; disco 12G → 9,3G → 11G.\nITEM 1 (VERMELHO): trava 20268801 em tx de 30 s, filho com 20 s, runCatalogCommand l.176-185 dentro de withRoleCatalogLock; lista AST de child_process = 5 chamadas e, no OBJETO, todo escritor passa pelo helper; o script cria o papel em 22/23/54 ms (N=15) contra a espera de 400 ms; M-B2a(i) cai na asserção estrutural l.1105 sem o canário rodar; M-B2a(ii) canário vermelho 10/10 (5/5 no lote, com o sintoma tuple concurrently de volta em 1/5) enquanto a asserção estrutural passa por um comentário; M-B2b vermelho pela contagem 3!==2; a guarda estrutural é contagem de 5 grafias, não allowlist fechada; as formas próprias F2 (execFileSync do script) e F1 (GRANT por runPsqlReadOnly) ficam VERDES em todo guarda do head (arquivo 9/9, db-catalog-write-guard 5/5); limpeza: MODO 6 em finally (corrigido), mas o cenário migratorOk fora do try deixa papel CREATEROLE LOGIN sob falha forçada (D2, controle, limpo); filho além da janela: SIGKILL só no bash, subshell e psql sobrevivem — 25 s com o trabalho concluído depois do kill; com 35 s a tx expira (ROLLBACK 09:49:37.180) e o filho escreve catálogo sem trava 5,05 s depois (DO $$ 09:49:42.228). Controles: sonda fora da trava 5/5 vermelha com XX000; resíduo +1.\nITEM 2 (VERDE): B8 10/10, denominador 22 idêntico (nomes_md5 3d071bcc40bd), 0 XX000/23505/40P01/tuple concurrently, resíduo 0; B6 3/3 com 22 e o mesmo conjunto de nomes, controle 19/22 com psql: ausente e 0 skip; (1-p)^13 = 0,014 (p=0,28) a 0,513 (p=0,05) — a contagem sozinha prova pouco; o peso fica no item 1.\nITEM 3 (VERDE): ver itens.item3. Teardown completo. A reprovação vem só do C2-A1 (bloqueia, não grave, dentro-do-bloco); C2-A2 e C2-A3 são ajuste; C2-N1 e C2-N2 são nota.\nVOTO: REPROVADO — um filho escritor de catálogo nasce fora do helper travado e nenhum guarda do head reprova (a guarda estrutural do T14c é uma contagem de 5 grafias, satisfeita por comentário e cega a exec*/execFile*/fork e ao psql genérico runPsqlReadOnly; não é a allowlist fechada e nominal do aceite (b)) | escopo: dentro-do-bloco (d9fc0d6d, 2026-10-08, ciclo 2) | classe: não grave | evidência: F2 (execFileSync do script fora da trava) e F1 (GRANT por runPsqlReadOnly) → arquivo -db 9/9 verde e db-catalog-write-guard 5/5 verde, N=1 cada, determinístico por texto, com M-B2b (3!==2) e o controle // GRANT (65≠64) vistos acusando",
+ "o_que_executei": [
+  {
+   "comando": "node /tmp/dur.mjs 15 (container j05c2-c2-node, /work = árvore do objeto)",
+   "forma": "spawn do script do objeto sem trava + observador pg sondando pg_roles a cada ~2 ms; N=15",
+   "resultado": "ec=0; tRole min 22 / med 23 / max 54 ms"
+  },
+  {
+   "comando": "/tmp/mutrun.sh MB2a-i 1 ; MB2a-ii 10 ; MB2b 1 catguard ; F1-readonly-ddl 1 catguard ; F2-execFileSync 1 catguard",
+   "forma": "mutação por âncora única na cópia efêmera /work do container, node --test --import tsx --test-reporter=tap tests/san3-05-runtime-role-guard-db.test.ts (+ tests/db-catalog-write-guard.test.ts), restauro md5 = blob 76377dd0…",
+   "resultado": "M-B2a(i): T14c vermelho na asserção estrutural l.1105; M-B2a(ii): canário vermelho 10/10; M-B2b: T14c vermelho 3!==2; F1 e F2: arquivo 9/9 verde e catguard 5/5 verde"
+  },
+  {
+   "comando": "/tmp/b8.sh 1 10",
+   "forma": "lote GERADO (2 arquivos -db do bloco) 10× no mesmo container j05c2-c2-node, timeout 600 por execução, TAP com stdout+stderr",
+   "resultado": "10/10 ec=0, 22/22, 0 XX000/23505/40P01, resíduo 0"
+  },
+  {
+   "comando": "timeout 6600 bash b6.sh (receita-c2.sh × 3 normal + 1 controle)",
+   "forma": "receita adaptada (md5 b779f1f9…), RUN_ID/rede/cluster/npm ci novos, timeout 1500 cada",
+   "resultado": "r1-r3 22/22 pass, controle 19/22 com psql: ausente, teardown 0/0/removido"
+  },
+  {
+   "comando": "/tmp/mutrun.sh D1-falha-migok 1 ; D2-falha-modo6 1 ; /tmp/probe.mjs 9 em paralelo com o arquivo x5",
+   "forma": "falha forçada por throw (âncora única) na cópia efêmera; sonda pg GRANT/REVOKE USAGE ON SCHEMA public fora da trava",
+   "resultado": "D1 deixa s305_migok_…[CREATEROLE LOGIN]; D2 resíduo 0; sonda 5/5 rodadas vermelhas com XX000"
+  },
+  {
+   "comando": "/tmp/imprun.sh IA-sleep25 80 ; IB-pgsleep35 100 (x2, a 2a com log_statement=all no meu cluster, revertido)",
+   "forma": "mutação no SCRIPT na cópia efêmera; observador pg_locks/pg_roles; docker logs do pg descartável",
+   "resultado": "A: trava 25 s, papel criado depois do SIGKILL; B: ROLLBACK 09:49:37.180 e DO $$ do filho 09:49:42.228 sem trava; erro expired transaction"
+  },
+  {
+   "comando": "node escopo.mjs plano.md claude.md <listas> ; git rev-list/merge-base/merge-tree ; gh api pulls/405/commits + issues/405/timeline ; git grep (B12) ; git diff --check",
+   "forma": "Windows, só git/gh; listas extraídas do blob do plano no objeto",
+   "resultado": "delta do ciclo 2 contido no PERMITIDO salvo 6 corpos (c2df97cc); Kpis 0/0; 108/108 ancestrais; 0 force-push; B12 vazio x3 com irmãos; recontagem 64; diff --check 0"
+  },
+  {
+   "comando": "/tmp/b11.sh (npm run check ; npm run lint ; npm test com DATABASE_URL=erp_b11 novo e REDIS_URL próprio ; npm run build)",
+   "forma": "container j05c2-c2-node, Node 20.20.2, timeout 600/600/2400/600",
+   "resultado": "check 0, lint 0, test 3132 / 3130 pass / 0 fail / 2 skip, build 0"
+  },
+  {
+   "comando": "/tmp/mb2a-lote.sh",
+   "forma": "M-B2a(ii) no lote de 2 arquivos x5",
+   "resultado": "canário vermelho 5/5; sintoma tuple concurrently em 1/5"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "C2-A1 — um filho escritor de catálogo nasce fora do helper travado e nenhum guarda do head reprova; a guarda estrutural do T14c é contagem de 5 grafias, satisfeita por comentário, cega a exec/execSync/execFile/execFileSync/fork e ao psql genérico runPsqlReadOnly",
+   "evidencia": "F2 execFileSync(bash, [path.join(REPO_ROOT, scripts, db-runtime-role.sh)]) no T14a/b (AST: fora de withRoleCatalogLock) e F1 GRANT USAGE do createLogin via runPsqlReadOnly → tests/san3-05-runtime-role-guard-db.test.ts 9/9 ok e tests/db-catalog-write-guard.test.ts 5/5 ok (N=1 cada, determinístico); M-B2a(ii): estrutural 0/10; M-B2b acusada só por usar spawnCommand + ROLE_SCRIPT; restauro md5 = blob 76377dd0…",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — d9fc0d6d 2026-10-08 (ciclo 2) introduziu T14c, a guarda por contagem e runPsqlReadOnly (git log -S no objeto)",
+   "classe": "não grave",
+   "motivo": "o aceite (b) do B2 (C2.1) pede allowlist fechada e nominal em que qualquer outra referência a spawn/spawnSync/exec*/execFile* de node:child_process reprova; a regressão da classe A2 (escritor fora da trava → XX000) entra sem vermelho"
+  },
+  {
+   "defeito": "C2-A2 — o timeout de 20 s do helper não termina o trabalho do filho; com filho além de 30 s a transação da trava expira e o filho escreve catálogo fora da exclusão mútua",
+   "evidencia": "variante A (sleep 25): trava 25 s, papel s305_canary criado ~5 s depois do SIGKILL; variante B (pg_sleep 35): [1677] pg_advisory_xact_lock 09:49:07.178 → [1677] ROLLBACK 09:49:37.180 → [1701] DO $$ 09:49:42.228 e [1703] ALTER USER … PASSWORD 09:49:42.254 sem trava; erro expired transaction em vez da mensagem do helper",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — helper e timeout de d9fc0d6d (2026-10-08) sobre o script em subshell de 041e414b (2026-10-02), ambos do bloco",
+   "classe": "não grave",
+   "motivo": "a mitigação do RC2 (timeout menor que a janela) supõe que matar o filho para o trabalho; o SIGKILL só alcança o bash. Grau ajuste porque o gatilho exige filho > 30 s, nunca observado sem força (23–91 ms)"
+  },
+  {
+   "defeito": "C2-A3 — a limpeza do cenário migratorOk/CREATE DATABASE (T14a/b l.1022-1034) não roda quando o cenário falha antes do try e deixa papel com LOGIN e CREATEROLE",
+   "evidencia": "D1 (throw logo depois do CREATE ROLE migratorOk) → resíduo s305_migok_…[CREATEROLE LOGIN]; D2 (throw dentro do try do MODO 6) → resíduo 0; por leitura, mesma forma no T15 (createLogin l.1203 antes do try l.1215)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — cenário de 4e89d7ac (2026-10-03), arquivo editado no ciclo 2 sob o aceite (d)",
+   "classe": "não grave",
+   "motivo": "aceite (d): a limpeza de cada cenário em finally, dentro da trava; a família s305 não é varrida pelo sweep do arnês"
+  },
+  {
+   "defeito": "C2-N1 — o relatório do dev (DEV-ciclo2-relatorio.md) foi escrito pelo dev em omega/juntas/**, que o C2.3 l.1472 reserva ao orquestrador",
+   "evidencia": "git log c251c9b7..a158f4af -- …/DEV-ciclo2-relatorio.md: 84758fc3 … 5e15cbb9, commits do dev",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "registro sem efeito no produto (reprovação por construção item 7 se cobrado como bloqueio)"
+  },
+  {
+   "defeito": "C2-N2 — o objeto conflita com a main de agora em agent-orchestration/controle/pendencias-indice.md",
+   "evidencia": "git merge-tree --write-tree a158f4af origin/main ec=1, CONFLICT só nesse arquivo; gh mergeable=CONFLICTING",
+   "gravidade": "nota",
+   "escopo": "pre-existente à integração — a main andou depois de c8af6458 (026ff7b8 #400, fea93281 #409, a9bbde38 #410); a ressalva R4 do inspetor manda integrar depois do voto",
+   "classe": "não grave",
+   "motivo": "arquivo gerado; integração por merge depois do voto"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "O C2.3 proíbe .claude/** e .agents/**, mas a legalidade exige os corpos desta junta commitados no ramo julgado: os 6 corpos de c2df97cc (registro do orquestrador) não podem passar por construção — não cobrados do dev",
+  "Nenhum controle meu ficou sem acusar: sonda fora da trava 5/5, resíduo +1, leitor XX000 1, classificador X em prisma/schema.prisma, diff --check ec=3, catguard 65≠64, controle sem psql vermelho sem skip, canário intacto verde 10/10 + 3/3"
+ ],
+ "pendencias_que_aceito": [
+  "C1 (jurado-san305-c2-credencial-e-papel): B7, B10, B14, T15, D4, M-B1*, M-D* — anoto só o fato de o T15 ter levado 13,6 s numa das 10 execuções da M-B2a(ii), contra ~4,3 s nas demais",
+  "C3 (jurado-san305-c2-ratchet-e-superficie): B4 gerador, fixtures, catálogo↔L0, superfície (inclusive a instabilidade do T11e que o inspetor viu na CI e que não reproduziu em 13 execuções do lote nem no B11)",
+  "P-SAN3-05-RUNNER-SEM-TIMEOUT (J5, B-ARNES-2): timeout do runner/CI — proibido ao bloco",
+  "KPI congelado (§C7 item 8(5)) — Kpis/ = main conferido, nada mais cobrado",
+  "C2-N2 (integração da main depois do voto, R4)"
+ ],
+ "teardown": "containers j05c2-c2-node/-pg/-redis removidos por docker rm -f -v (volumes anônimos conferidos inexistentes) e rede j05c2-c2-net removida; contagem j05c2-c2- = 0; receitas j05c2-c2-r-* com TEARDOWN 0/0/removido; árvores t-j05c2-c2-* = 0 · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j05c2c2 removido por git worktree remove --force (ec 0) · mutações restauradas com md5 = blob (guard 76377dd0…, script 26c18e1b…) e log_statement do meu cluster revertido · log do servidor com senhas aleatórias de teste e cópias apagados do $SCRATCH · base viva (erp-postgres/erp-redis/erp-postgres-alt) nunca tocada · w-o05 só com os meus dois arquivos de saída · volumes órfãos alheios não tocados"
+}
