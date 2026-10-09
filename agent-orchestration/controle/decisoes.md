@@ -3009,3 +3009,12 @@ e a exigência de porteiro para PR de registro.
   - **R4, "não consigo medir = REPROVADO":** regra dos corpos das cadeiras, sem cláusula no contrato. **Leitura
     adotada:** um item não medido que possa esconder defeito grave (A2, B1, B2, B4, D1–D4) conta como reprovação
     (grave não descartado); um item não medido de matéria não grave vira pendência, não reprova.
+
+- **D-405-PROIBIR-VIEWS (2026-10-09)** — a C1 da junta 3 do B-SAN3-05 reprovou com dois achados GRAVES novos na mesma via
+  (`GRANT SELECT/UPDATE/INSERT (colunas)` numa view cuja cadeia tem dono que escapa: o papel de runtime lê e altera dados
+  de outra organização sem a trava nem o MODO 6 acusarem) — a terceira forma da via `view`. Perguntado entre proibir
+  qualquer view, mais uma rodada de precisão, ou completar a junta 3 antes, o dono escolheu literalmente *"Proibir
+  qualquer view (Recomendado)"*: a trava recusa o boot (e o script recusa no MODO 6) se existir QUALQUER view ou
+  matview cuja árvore alcance uma tabela com FORCE ROW LEVEL SECURITY, sem analisar dono nem privilégio. Hoje há 0
+  views; nenhuma funcionalidade quebra. Ciclo 4 curto, só desse ponto; C2 e C3 da junta 3 não votam (a junta 3 fecha
+  REPROVADA pela C1).
