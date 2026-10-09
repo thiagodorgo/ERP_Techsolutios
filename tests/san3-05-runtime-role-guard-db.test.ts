@@ -136,35 +136,93 @@ function psqlEnv(urlText: string, overrides: Record<string, string> = {}): NodeJ
   };
 }
 
-function runRoleScript(
+type ChildResult = { status: number | null; stdout: string; stderr: string; timedOut: boolean };
+
+async function spawnCommand(
+  command: string,
+  args: readonly string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; timeoutMs: number; stdin?: string },
+): Promise<ChildResult> {
+  const child = spawn(command, [...args], {
+    cwd: options.cwd,
+    env: options.env,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+  let timedOut = false;
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => (stdout += chunk));
+  child.stderr.on("data", (chunk: string) => (stderr += chunk));
+  child.stdin.end(options.stdin);
+
+  return await new Promise<ChildResult>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, options.timeoutMs);
+    child.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.once("close", (status) => {
+      clearTimeout(timer);
+      resolve({ status, stdout, stderr, timedOut });
+    });
+  });
+}
+
+async function runCatalogCommand(
+  admin: PrismaClient,
+  command: string,
+  args: readonly string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; stdin?: string },
+): Promise<ChildResult> {
+  return await withRoleCatalogLock(admin, async () => {
+    return await spawnCommand(command, args, { ...options, timeoutMs: 20_000 });
+  });
+}
+
+async function runRoleScript(
+  admin: PrismaClient,
   urlText: string,
   role: string,
   roleSecret: string,
   overrides: Record<string, string> = {},
-): { status: number | null; stdout: string; stderr: string } {
-  const result = spawnSync("bash", [ROLE_SCRIPT], {
+): Promise<ChildResult> {
+  const result = await runCatalogCommand(admin, "bash", [ROLE_SCRIPT], {
     cwd: REPO_ROOT,
     env: psqlEnv(urlText, {
       DB_RUNTIME_ROLE: role,
       DB_RUNTIME_PASSWORD: roleSecret,
       ...overrides,
     }),
-    encoding: "utf8",
-    timeout: 60_000,
   });
-  const stdout = result.stdout ?? "";
-  const stderr = result.stderr ?? "";
-  assert.doesNotMatch(stdout + stderr, new RegExp(roleSecret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  return { status: result.status, stdout, stderr };
+  assert.equal(result.timedOut, false, "o script do papel excedeu a janela menor que a transação da trava");
+  assert.doesNotMatch(
+    result.stdout + result.stderr,
+    new RegExp(roleSecret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+  );
+  return result;
 }
 
-function runPsql(urlText: string, args: readonly string[]): { status: number | null; stdout: string; stderr: string } {
+function runPsqlReadOnly(
+  urlText: string,
+  args: readonly string[],
+): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync("bash", ["-c", 'exec psql "$@"', "psql", ...args], {
     env: psqlEnv(urlText),
     encoding: "utf8",
     timeout: 60_000,
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}
+
+async function runCatalogPsql(admin: PrismaClient, urlText: string, args: readonly string[]): Promise<ChildResult> {
+  return await runCatalogCommand(admin, "bash", ["-c", 'exec psql "$@"', "psql", ...args], {
+    env: psqlEnv(urlText),
+  });
 }
 
 function loggerSpy(): { logger: RuntimeRoleBootstrapLogger; entries: unknown[] } {
@@ -177,6 +235,62 @@ function loggerSpy(): { logger: RuntimeRoleBootstrapLogger; entries: unknown[] }
       error: (payload, message) => entries.push({ level: "error", payload, message }),
     },
   };
+}
+
+function connectionParts(urlText: string): {
+  hostname: string;
+  port: string;
+  username: string;
+  password: string;
+  database: string;
+} {
+  const url = new URL(urlText);
+  return {
+    hostname: url.hostname,
+    port: url.port || "5432",
+    username: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: decodeURIComponent(url.pathname.slice(1)),
+  };
+}
+
+function assertConnectionSecretsAbsent(serialized: string, urls: readonly string[]): void {
+  assert.doesNotMatch(serialized, /postgresql:\/\/|password/i);
+  for (const urlText of urls) {
+    const parts = connectionParts(urlText);
+    for (const [label, value] of Object.entries(parts)) {
+      if (label === "username" || value.length === 0) continue;
+      assert.equal(serialized.includes(value), false, `${label} da conexão apareceu no log`);
+    }
+  }
+}
+
+function assertRoleNamesOnlyInIdentityFields(value: unknown, urls: readonly string[]): void {
+  const usernames = urls.map((urlText) => connectionParts(urlText).username).filter(Boolean);
+  const visit = (current: unknown, key: string | null): void => {
+    if (typeof current === "string") {
+      for (const username of usernames) {
+        if (!current.includes(username)) continue;
+        const allowedIdentityValue =
+          (key === "session_user" || key === "current_user" || key === "rolname") && current === username;
+        assert.equal(allowedIdentityValue, true, `nome de papel apareceu no campo não-identitário ${key ?? "<raiz>"}`);
+      }
+      return;
+    }
+    if (Array.isArray(current)) {
+      current.forEach((item) => visit(item, key));
+      return;
+    }
+    if (typeof current === "object" && current !== null) {
+      for (const [childKey, child] of Object.entries(current)) visit(child, childKey);
+    }
+  };
+  visit(value, null);
+}
+
+function assertConnectionLogsSafe(entries: readonly unknown[], urls: readonly string[]): void {
+  assertConnectionSecretsAbsent(JSON.stringify(entries), urls);
+  assertRoleNamesOnlyInIdentityFields(entries, urls);
 }
 
 async function waitFor(
@@ -214,6 +328,40 @@ async function waitFor(
   });
 }
 
+function startBackend(env: NodeJS.ProcessEnv): ReturnType<typeof spawn> {
+  return spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
+    cwd: REPO_ROOT,
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+async function waitForCloseCode(child: ReturnType<typeof spawn>, timeoutMs: number): Promise<number | null> {
+  if (child.exitCode !== null) return child.exitCode;
+  return await new Promise<number | null>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.off("close", onClose);
+      reject(new Error(`processo filho não encerrou em ${timeoutMs}ms`));
+    }, timeoutMs);
+    const onClose = (code: number | null): void => {
+      clearTimeout(timer);
+      resolve(code);
+    };
+    child.once("close", onClose);
+  });
+}
+
+async function stopChild(child: ReturnType<typeof spawn>): Promise<void> {
+  if (child.exitCode !== null) return;
+  child.kill("SIGTERM");
+  try {
+    await waitForCloseCode(child, 3_000);
+  } catch {
+    if (child.exitCode === null) child.kill("SIGKILL");
+    await waitForCloseCode(child, 3_000);
+  }
+}
+
 const PROD_BASE = {
   NODE_ENV: "production",
   JWT_SECRET: "s305-jwt-production-value",
@@ -227,7 +375,6 @@ const PROD_BASE = {
   CORE_SAAS_PERSISTENCE: "prisma",
   JOBS_WORKER_ENABLED: "true",
   REDIS_URL: "redis://192.0.2.1:6379",
-  DATABASE_RUNTIME_ROLE_GUARD: "enforce",
   LOG_LEVEL: "info",
 } as const;
 
@@ -251,7 +398,8 @@ test(
           loadClient: async () => cleanClient,
         });
         assert.equal(ok.enforced, true);
-        assert.doesNotMatch(JSON.stringify(cleanLog.entries), /postgresql:\/\/|password|127\.0\.0\.1|55405/i);
+        const cleanUrl = urlForRole(connectionString, clean, cleanSecret);
+        assertConnectionLogsSafe(cleanLog.entries, [connectionString, cleanUrl]);
 
         const refusedLog = loggerSpy();
         await assert.rejects(
@@ -270,7 +418,21 @@ test(
             return true;
           },
         );
-        assert.doesNotMatch(JSON.stringify(refusedLog.entries), /postgresql:\/\/|password|127\.0\.0\.1|55405/i);
+        assertConnectionLogsSafe(refusedLog.entries, [connectionString]);
+
+        const parts = connectionParts(cleanUrl);
+        assert.throws(
+          () => assertConnectionLogsSafe([...cleanLog.entries, { database_host: parts.hostname }], [cleanUrl]),
+          /hostname da conexão apareceu no log/,
+        );
+        assert.throws(
+          () => assertConnectionLogsSafe([...cleanLog.entries, { database_secret: parts.password }], [cleanUrl]),
+          /password|conexão apareceu no log/i,
+        );
+        assert.throws(
+          () => assertConnectionLogsSafe([...cleanLog.entries, { database_user: parts.username }], [cleanUrl]),
+          /campo não-identitário database_user/,
+        );
       } finally {
         await cleanClient.$disconnect();
         await dropRole(admin, clean);
@@ -434,13 +596,14 @@ test(
       }
     });
 
-    await suite.test("T8d · REPLICATION, papel de servidor e view de dono que escapa são recusados", async () => {
+    await suite.test("T8d · REPLICATION exercível, papel de servidor e view transitiva são recusados", async () => {
       const repl = token("s305_repl");
       const program = token("s305_program");
       const viewer = token("s305_viewer");
       const readAll = token("s305_readall");
       const table = token("s305_vtable");
-      const view = token("s305_view");
+      const innerView = token("s305_view_i");
+      const outerView = token("s305_view_o");
       const slot = token("s305_slot");
       const secrets = new Map([repl, program, viewer, readAll].map((role) => [role, secret()]));
       await catalog(admin, [
@@ -453,9 +616,10 @@ test(
         `CREATE TABLE public.${ident(table)} (value text)`,
         `ALTER TABLE public.${ident(table)} ENABLE ROW LEVEL SECURITY`,
         `ALTER TABLE public.${ident(table)} FORCE ROW LEVEL SECURITY`,
-        `INSERT INTO public.${ident(table)} VALUES ('a'), ('b'), ('marcador')`,
-        `CREATE VIEW public.${ident(view)} AS SELECT * FROM public.${ident(table)}`,
-        `GRANT SELECT ON public.${ident(view)} TO ${ident(viewer)}`,
+        `INSERT INTO public.${ident(table)} VALUES ('a'), ('b')`,
+        `CREATE VIEW public.${ident(innerView)} AS SELECT * FROM public.${ident(table)}`,
+        `CREATE VIEW public.${ident(outerView)} AS SELECT * FROM public.${ident(innerView)}`,
+        `GRANT SELECT ON public.${ident(outerView)} TO ${ident(viewer)}`,
       ]);
       try {
         const replication = await posture(urlForRole(connectionString, repl, secrets.get(repl)!));
@@ -502,9 +666,9 @@ test(
           );
           assert.ok(Array.isArray(copied));
           const visible = await viewerClient.$queryRawUnsafe<Array<{ n: bigint }>>(
-            `SELECT count(*)::bigint AS n FROM public.${ident(view)}`,
+            `SELECT count(*)::bigint AS n FROM public.${ident(outerView)}`,
           );
-          assert.equal(Number(visible[0]!.n), 3);
+          assert.equal(Number(visible[0]!.n), 2);
           const filtered = await readAllClient.$queryRawUnsafe<Array<{ n: bigint }>>(
             `SELECT count(*)::bigint AS n FROM public.${ident(table)}`,
           );
@@ -517,7 +681,8 @@ test(
           `DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = ${literal(slot)}) THEN PERFORM pg_drop_replication_slot(${literal(slot)}); END IF; END $$`,
         );
         await catalog(admin, [
-          `DROP VIEW IF EXISTS public.${ident(view)}`,
+          `DROP VIEW IF EXISTS public.${ident(outerView)}`,
+          `DROP VIEW IF EXISTS public.${ident(innerView)}`,
           `DROP TABLE IF EXISTS public.${ident(table)}`,
         ]);
         for (const role of [program, viewer, readAll, repl]) await dropRole(admin, role);
@@ -531,39 +696,68 @@ test(
       });
       assert.equal(psql.status, 0, `psql: ausente — pré-requisito da suíte -db\n${psql.stderr ?? ""}`);
       assert.match(psql.stdout ?? "", /psql \(PostgreSQL\) 16\./, "T14b exige psql 16");
+      const roleScriptSource = readFileSync(ROLE_SCRIPT, "utf8");
+      assert.match(roleScriptSource, /\\password :"role"/);
+      assert.match(roleScriptSource, /password_encryption=scram-sha-256/);
+      assert.doesNotMatch(roleScriptSource, /san3\.password|:'password'|set_config\([^\n]*password/i);
+      assert.doesNotMatch(roleScriptSource, /ALTER ROLE %I WITH PASSWORD %L/);
 
       const runtime = token("s305_runtime");
       const runtimeSecret = secret();
       try {
-        const first = runRoleScript(connectionString, runtime, runtimeSecret);
+        const first = await runRoleScript(admin, connectionString, runtime, runtimeSecret);
         assert.equal(first.status, 0, first.stdout + first.stderr);
         assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|115$`, "m"));
-        const second = runRoleScript(connectionString, runtime, secret());
+        const firstPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
+          `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
+        );
+        assert.match(firstPassword[0]?.rolpassword ?? "", /^SCRAM-SHA-256\$/);
+        const secondSecret = secret();
+        const second = await runRoleScript(admin, connectionString, runtime, secondSecret, {
+          PGOPTIONS: "-c password_encryption=md5",
+        });
         assert.equal(second.status, 0, second.stdout + second.stderr);
+        const secondPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
+          `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
+        );
+        assert.match(secondPassword[0]?.rolpassword ?? "", /^SCRAM-SHA-256\$/);
+        const secondLogin = prismaFor(urlForRole(connectionString, runtime, secondSecret));
+        try {
+          assert.equal((await probeRuntimeRolePosture(secondLogin)).escapes.length, 0);
+        } finally {
+          await secondLogin.$disconnect();
+        }
 
         const viewTable = token("s305_script_t");
-        const view = token("s305_script_v");
+        const innerView = token("s305_script_vi");
+        const outerView = token("s305_script_vo");
         await catalog(admin, [
           `CREATE TABLE public.${ident(viewTable)} (id int)`,
           `ALTER TABLE public.${ident(viewTable)} ENABLE ROW LEVEL SECURITY`,
           `ALTER TABLE public.${ident(viewTable)} FORCE ROW LEVEL SECURITY`,
-          `CREATE VIEW public.${ident(view)} AS SELECT * FROM public.${ident(viewTable)}`,
-          `GRANT SELECT ON public.${ident(view)} TO ${ident(runtime)}`,
+          `CREATE VIEW public.${ident(innerView)} AS SELECT * FROM public.${ident(viewTable)}`,
+          `CREATE VIEW public.${ident(outerView)} AS SELECT * FROM public.${ident(innerView)}`,
+          `GRANT SELECT ON public.${ident(outerView)} TO ${ident(runtime)}`,
         ]);
-        const mode6 = runRoleScript(connectionString, runtime, secret());
-        assert.equal(mode6.status, 3, mode6.stdout + mode6.stderr);
-        assert.match(mode6.stderr, /MODO 6/);
-        await catalog(admin, [
-          `REVOKE SELECT ON public.${ident(view)} FROM ${ident(runtime)}`,
-          `DROP VIEW public.${ident(view)}`,
-          `DROP TABLE public.${ident(viewTable)}`,
-        ]);
+        try {
+          const mode6 = await runRoleScript(admin, connectionString, runtime, secret());
+          assert.equal(mode6.status, 3, mode6.stdout + mode6.stderr);
+          assert.match(mode6.stderr, /MODO 6/);
+        } finally {
+          await catalog(admin, [
+            `REVOKE SELECT ON public.${ident(outerView)} FROM ${ident(runtime)}`,
+            `DROP VIEW IF EXISTS public.${ident(outerView)}`,
+            `DROP VIEW IF EXISTS public.${ident(innerView)}`,
+            `DROP TABLE IF EXISTS public.${ident(viewTable)}`,
+          ]);
+        }
 
         const noCreate = token("s305_nocr");
         const noCreateSecret = secret();
         await createLogin(admin, noCreate, noCreateSecret);
         try {
-          const denied = runRoleScript(
+          const denied = await runRoleScript(
+            admin,
             urlForRole(connectionString, noCreate, noCreateSecret),
             token("s305_target"),
             secret(),
@@ -574,9 +768,11 @@ test(
           await dropRole(admin, noCreate);
         }
 
-        const mode0 = runRoleScript(connectionString, runtime, secret(), { PGOPTIONS: "-c log_statement=all" });
-        assert.equal(mode0.status, 3, mode0.stdout + mode0.stderr);
-        assert.match(mode0.stderr, /MODO 0/);
+        const loggingAll = await runRoleScript(admin, connectionString, runtime, secret(), {
+          PGOPTIONS: "-c log_statement=all",
+        });
+        assert.equal(loggingAll.status, 0, loggingAll.stdout + loggingAll.stderr);
+        assert.doesNotMatch(loggingAll.stderr, /MODO 0/);
 
         const migrator = token("s305_migrator");
         const migratorSecret = secret();
@@ -599,19 +795,27 @@ test(
         ]);
         const migratorUrl = urlForRole(connectionString, migrator, migratorSecret);
         try {
-          const mode2 = runRoleScript(migratorUrl, badAttribute, secret(), { DB_MIGRATOR_ROLE: migrator });
+          const mode2 = await runRoleScript(admin, migratorUrl, badAttribute, secret(), {
+            DB_MIGRATOR_ROLE: migrator,
+          });
           assert.equal(mode2.status, 3, mode2.stdout + mode2.stderr);
           assert.match(mode2.stderr, /MODO 2.*BYPASSRLS/s);
 
-          const mode3 = runRoleScript(migratorUrl, foreignTables, secret(), { DB_MIGRATOR_ROLE: migrator });
+          const mode3 = await runRoleScript(admin, migratorUrl, foreignTables, secret(), {
+            DB_MIGRATOR_ROLE: migrator,
+          });
           assert.equal(mode3.status, 3, mode3.stdout + mode3.stderr);
           assert.match(mode3.stderr, /MODO 3/);
 
-          const mode4 = runRoleScript(migratorUrl, foreignRole, secret(), { DB_MIGRATOR_ROLE: migrator });
+          const mode4 = await runRoleScript(admin, migratorUrl, foreignRole, secret(), {
+            DB_MIGRATOR_ROLE: migrator,
+          });
           assert.equal(mode4.status, 3, mode4.stdout + mode4.stderr);
           assert.match(mode4.stderr, /MODO 4/);
 
-          const mode5 = runRoleScript(migratorUrl, stickyRole, secret(), { DB_MIGRATOR_ROLE: migrator });
+          const mode5 = await runRoleScript(admin, migratorUrl, stickyRole, secret(), {
+            DB_MIGRATOR_ROLE: migrator,
+          });
           assert.equal(mode5.status, 3, mode5.stdout + mode5.stderr);
           assert.match(mode5.stderr, /MODO 5/);
         } finally {
@@ -629,7 +833,7 @@ test(
           `GRANT ${ident(chainMiddle)} TO ${ident(runtime)}`,
         ]);
         try {
-          const chain = runRoleScript(connectionString, runtime, secret());
+          const chain = await runRoleScript(admin, connectionString, runtime, secret());
           assert.equal(chain.status, 0, chain.stdout + chain.stderr);
           const memberships = await admin.$queryRawUnsafe<Array<{ n: bigint }>>(
             `SELECT count(*)::bigint AS n FROM pg_auth_members WHERE member = (SELECT oid FROM pg_roles WHERE rolname = ${literal(runtime)})`,
@@ -646,7 +850,7 @@ test(
           `GRANT ${ident(replicationRole)} TO ${ident(runtime)}`,
         ]);
         try {
-          const replicationMembership = runRoleScript(connectionString, runtime, secret());
+          const replicationMembership = await runRoleScript(admin, connectionString, runtime, secret());
           assert.equal(replicationMembership.status, 0, replicationMembership.stdout + replicationMembership.stderr);
           const membership = await admin.$queryRawUnsafe<Array<{ member: boolean }>>(`
             SELECT pg_has_role(
@@ -673,7 +877,7 @@ test(
           `ALTER TABLE public.${ident(rollbackTable)} OWNER TO ${ident(rollbackRole)}`,
         ]);
         try {
-          const rollback = runRoleScript(connectionString, rollbackRole, secret());
+          const rollback = await runRoleScript(admin, connectionString, rollbackRole, secret());
           assert.equal(rollback.status, 3, rollback.stdout + rollback.stderr);
           assert.match(rollback.stderr, /posse:.*MODO 3/s);
           const beforeFix = await admin.$queryRawUnsafe<
@@ -692,7 +896,7 @@ test(
             member: true,
           });
           await catalog(admin, [`ALTER TABLE public.${ident(rollbackTable)} OWNER TO postgres`]);
-          const fixed = runRoleScript(connectionString, rollbackRole, secret());
+          const fixed = await runRoleScript(admin, connectionString, rollbackRole, secret());
           assert.equal(fixed.status, 0, fixed.stdout + fixed.stderr);
           assert.match(
             fixed.stdout,
@@ -719,7 +923,7 @@ test(
             "utf8",
           );
           chmodSync(shim, 0o755);
-          const shimmed = runRoleScript(connectionString, token("s305_argv"), argvSecret, {
+          const shimmed = await runRoleScript(admin, connectionString, token("s305_argv"), argvSecret, {
             PATH: `${argvDir}${path.delimiter}${process.env.PATH ?? ""}`,
             SAN3_ARGV_FILE: argvFile,
           });
@@ -738,19 +942,23 @@ test(
         await catalog(admin, [
           `CREATE ROLE ${ident(migratorOk)} LOGIN PASSWORD ${literal(migratorOkSecret)} CREATEROLE NOSUPERUSER NOBYPASSRLS`,
         ]);
-        await withRoleCatalogLock(admin, async () => {
-          const created = runPsql(connectionString, ["-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE DATABASE ${ident(database)} OWNER ${ident(migratorOk)}`]);
-          assert.equal(created.status, 0, created.stdout + created.stderr);
-        });
+        const created = await runCatalogPsql(admin, connectionString, [
+          "-X",
+          "-v",
+          "ON_ERROR_STOP=1",
+          "-c",
+          `CREATE DATABASE ${ident(database)} OWNER ${ident(migratorOk)}`,
+        ]);
+        assert.equal(created.status, 0, created.stdout + created.stderr);
         const databaseUrl = new URL(urlForRole(connectionString, migratorOk, migratorOkSecret));
         databaseUrl.pathname = `/${database}`;
         try {
-          const provisioned = runRoleScript(databaseUrl.toString(), runtimeOk, secret(), {
+          const provisioned = await runRoleScript(admin, databaseUrl.toString(), runtimeOk, secret(), {
             DB_MIGRATOR_ROLE: migratorOk,
           });
           assert.equal(provisioned.status, 0, provisioned.stdout + provisioned.stderr);
           assert.match(provisioned.stdout, new RegExp(`^${runtimeOk}\\|f\\|f\\|f\\|f\\|0\\|0\\|0$`, "m"));
-          const future = runPsql(databaseUrl.toString(), [
+          const future = await runCatalogPsql(admin, databaseUrl.toString(), [
             "-X",
             "-v",
             "ON_ERROR_STOP=1",
@@ -760,7 +968,7 @@ test(
           assert.equal(future.status, 0, future.stdout + future.stderr);
           const adminDatabaseUrl = new URL(connectionString);
           adminDatabaseUrl.pathname = `/${database}`;
-          const privileges = runPsql(adminDatabaseUrl.toString(), [
+          const privileges = runPsqlReadOnly(adminDatabaseUrl.toString(), [
             "-X",
             "-At",
             "-c",
@@ -770,16 +978,22 @@ test(
           assert.match(privileges.stdout, /^t\|t$/m);
         } finally {
           await withRoleCatalogLock(admin, async () => {
-            const terminated = runPsql(connectionString, [
+            const terminated = runPsqlReadOnly(connectionString, [
               "-X",
               "-At",
               "-c",
               `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = ${literal(database)} AND pid <> pg_backend_pid()`,
             ]);
             assert.equal(terminated.status, 0, terminated.stdout + terminated.stderr);
-            const dropped = runPsql(connectionString, ["-X", "-v", "ON_ERROR_STOP=1", "-c", `DROP DATABASE ${ident(database)}`]);
-            assert.equal(dropped.status, 0, dropped.stdout + dropped.stderr);
           });
+          const dropped = await runCatalogPsql(admin, connectionString, [
+            "-X",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-c",
+            `DROP DATABASE ${ident(database)}`,
+          ]);
+          assert.equal(dropped.status, 0, dropped.stdout + dropped.stderr);
           await dropRole(admin, runtimeOk);
           await dropRole(admin, migratorOk);
         }
@@ -796,75 +1010,142 @@ test(
       assert.notEqual(missing.status, 0, "senha ausente precisa propagar falha no bash/entrypoint");
     });
 
-    await suite.test("T15 · boot real recusa super antes do Redis e aceita papel limpo", async () => {
-      const [portA, portalA, portB, portalB] = await Promise.all([
-        reserveFreePort(),
-        reserveFreePort(),
-        reserveFreePort(),
-        reserveFreePort(),
-      ]);
-      const adminBoot = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
-        cwd: REPO_ROOT,
-        env: {
-          ...process.env,
-          ...PROD_BASE,
-          DATABASE_URL: connectionString,
-          PORT: String(portA),
-          PORTAL_PORT: String(portalA),
-        },
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      const started = Date.now();
-      const refused = await waitFor(
-        adminBoot,
-        (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
-        30_000,
-      );
-      const refusedText = refused.stdout + refused.stderr;
-      assert.ok(Date.now() - started <= 15_000);
-      assert.match(refusedText, /RUNTIME_ROLE_CAN_BYPASS_RLS/);
-      const firstFailure = refusedText
-        .split(/\r?\n/)
-        .find((line) => line.includes("Failed to start ERP Techsolutions API"));
-      assert.match(firstFailure ?? "", /RUNTIME_ROLE_CAN_BYPASS_RLS/);
-      assert.doesNotMatch(refusedText.split("Failed to start ERP Techsolutions API")[0] ?? "", /Redis|job worker/i);
-      if (adminBoot.exitCode === null) adminBoot.kill("SIGKILL");
+    await suite.test(
+      "T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada",
+      { timeout: 45_000 },
+      async () => {
+        const source = readFileSync(fileURLToPath(import.meta.url), "utf8");
+        const catalogHelperStart = source.indexOf("async function runCatalogCommand(");
+        const roleHelperStart = source.indexOf("async function runRoleScript(");
+        const psqlHelperStart = source.indexOf("async function runCatalogPsql(");
+        assert.ok(catalogHelperStart >= 0 && roleHelperStart > catalogHelperStart && psqlHelperStart > roleHelperStart);
+        const catalogHelper = source.slice(catalogHelperStart, roleHelperStart);
+        const roleHelper = source.slice(roleHelperStart, source.indexOf("function runPsqlReadOnly(", roleHelperStart));
+        const psqlHelper = source.slice(psqlHelperStart, source.indexOf("async function waitFor(", psqlHelperStart));
+        assert.match(catalogHelper, /withRoleCatalogLock\(admin/);
+        assert.match(roleHelper, /runCatalogCommand\(admin, "bash", \[ROLE_SCRIPT\]/);
+        assert.doesNotMatch(roleHelper, /spawnCommand\(/);
+        assert.match(psqlHelper, /runCatalogCommand\(admin, "bash"/);
+        assert.equal((source.match(/\bspawnCommand\(/g) ?? []).length, 2);
+        assert.equal((source.match(/\brunCatalogCommand\(/g) ?? []).length, 4);
+        assert.equal((source.match(/\bROLE_SCRIPT\b/g) ?? []).length, 5);
+        assert.equal((source.match(/\bspawn\(/g) ?? []).length, 2);
+        assert.equal((source.match(/\bspawnSync\(/g) ?? []).length, 3);
 
-      const clean = token("s305_boot");
-      const cleanSecret = secret();
-      await createLogin(admin, clean, cleanSecret);
-      const cleanUrl = urlForRole(connectionString, clean, cleanSecret);
-      const cleanBoot = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
-        cwd: REPO_ROOT,
-        env: {
+        const heldClient = prismaFor(connectionString);
+        const observer = prismaFor(connectionString);
+        const role = token("s305_canary");
+        const roleSecret = secret();
+        let releaseLock: (() => void) | undefined;
+        let announceLocked: (() => void) | undefined;
+        const locked = new Promise<void>((resolve) => (announceLocked = resolve));
+        const release = new Promise<void>((resolve) => (releaseLock = resolve));
+        let holder: Promise<void> | undefined;
+        let action: Promise<ChildResult> | undefined;
+        try {
+          holder = withRoleCatalogLock(heldClient, async () => {
+            announceLocked?.();
+            await release;
+          });
+          await locked;
+          action = runRoleScript(admin, connectionString, role, roleSecret);
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          const beforeRelease = await observer.$queryRawUnsafe<Array<{ n: bigint }>>(
+            `SELECT count(*)::bigint AS n FROM pg_roles WHERE rolname = ${literal(role)}`,
+          );
+          assert.equal(Number(beforeRelease[0]!.n), 0, "nenhum efeito de catálogo pode preceder a trava");
+          releaseLock?.();
+          await holder;
+          const result = await action;
+          assert.equal(result.timedOut, false);
+          assert.equal(result.status, 0, result.stdout + result.stderr);
+          const afterRelease = await observer.$queryRawUnsafe<Array<{ n: bigint }>>(
+            `SELECT count(*)::bigint AS n FROM pg_roles WHERE rolname = ${literal(role)}`,
+          );
+          assert.equal(Number(afterRelease[0]!.n), 1);
+        } finally {
+          releaseLock?.();
+          await holder?.catch(() => undefined);
+          await action?.catch(() => undefined);
+          await dropRole(admin, role);
+          await Promise.all([heldClient.$disconnect(), observer.$disconnect()]);
+        }
+      },
+    );
+
+    await suite.test(
+      "T15 · boot real recusa super antes do Redis e aceita papel limpo",
+      { timeout: 90_000 },
+      async () => {
+        const refuseBoot = async (guard: "default" | "explicit"): Promise<void> => {
+          const [port, portalPort] = await Promise.all([reserveFreePort(), reserveFreePort()]);
+          const env: NodeJS.ProcessEnv = {
+            ...process.env,
+            ...PROD_BASE,
+            DATABASE_URL: connectionString,
+            PORT: String(port),
+            PORTAL_PORT: String(portalPort),
+          };
+          if (guard === "explicit") env.DATABASE_RUNTIME_ROLE_GUARD = "enforce";
+          else delete env.DATABASE_RUNTIME_ROLE_GUARD;
+          const child = startBackend(env);
+          const started = Date.now();
+          try {
+            const refused = await waitFor(
+              child,
+              (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
+              15_000,
+            );
+            const refusedText = refused.stdout + refused.stderr;
+            assert.ok(Date.now() - started <= 15_000);
+            assert.match(refusedText, /RUNTIME_ROLE_CAN_BYPASS_RLS/);
+            const firstFailure = refusedText
+              .split(/\r?\n/)
+              .find((line) => line.includes("Failed to start ERP Techsolutions API"));
+            assert.match(firstFailure ?? "", /RUNTIME_ROLE_CAN_BYPASS_RLS/);
+            assert.doesNotMatch(
+              refusedText.split("Failed to start ERP Techsolutions API")[0] ?? "",
+              /Redis|job worker/i,
+            );
+            assertConnectionSecretsAbsent(refusedText, [connectionString]);
+            assert.equal(await waitForCloseCode(child, 5_000), 1, `boot ${guard} precisa sair com código 1`);
+          } finally {
+            await stopChild(child);
+          }
+        };
+
+        await refuseBoot("explicit");
+        await refuseBoot("default");
+
+        const clean = token("s305_boot");
+        const cleanSecret = secret();
+        await createLogin(admin, clean, cleanSecret);
+        const cleanUrl = urlForRole(connectionString, clean, cleanSecret);
+        const [port, portalPort] = await Promise.all([reserveFreePort(), reserveFreePort()]);
+        const cleanEnv: NodeJS.ProcessEnv = {
           ...process.env,
           ...PROD_BASE,
           DATABASE_URL: cleanUrl,
-          PORT: String(portB),
-          PORTAL_PORT: String(portalB),
-        },
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      try {
-        const accepted = await waitFor(
-          cleanBoot,
-          (stdout, stderr) => (stdout + stderr).includes("runtime database role verified"),
-          15_000,
-        );
-        assert.match(accepted.stdout + accepted.stderr, /"escapes":0/);
-        assert.doesNotMatch(accepted.stdout + accepted.stderr, /postgresql:\/\/|password/i);
-      } finally {
-        if (cleanBoot.exitCode === null) cleanBoot.kill("SIGTERM");
-        await new Promise<void>((resolve) => {
-          if (cleanBoot.exitCode !== null) resolve();
-          else cleanBoot.once("close", () => resolve());
-          setTimeout(() => {
-            if (cleanBoot.exitCode === null) cleanBoot.kill("SIGKILL");
-          }, 3_000).unref();
-        });
-        await dropRole(admin, clean);
-      }
-    });
+          PORT: String(port),
+          PORTAL_PORT: String(portalPort),
+        };
+        delete cleanEnv.DATABASE_RUNTIME_ROLE_GUARD;
+        const cleanBoot = startBackend(cleanEnv);
+        try {
+          const accepted = await waitFor(
+            cleanBoot,
+            (stdout, stderr) => (stdout + stderr).includes("runtime database role verified"),
+            15_000,
+          );
+          const acceptedText = accepted.stdout + accepted.stderr;
+          assert.match(acceptedText, /"escapes":0/);
+          assertConnectionSecretsAbsent(acceptedText, [cleanUrl]);
+        } finally {
+          await stopChild(cleanBoot);
+          await dropRole(admin, clean);
+        }
+      },
+    );
 
     await admin.$disconnect();
   },

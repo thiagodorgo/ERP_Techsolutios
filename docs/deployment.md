@@ -92,7 +92,8 @@ instrução de `main()` (`src/server.ts`) é a **trava de boot** (`src/database/
 - **atributo** — `SUPERUSER`, `BYPASSRLS`, `REPLICATION`, ou pertença (direta ou por cadeia, com ou sem
   `INHERIT`) a papel assim ou a `pg_execute_server_program`/`pg_read_server_files`/`pg_write_server_files`;
 - **posse** — dono, ou membro do dono, de tabela `FORCE RLS` (o dono desliga o `FORCE` com um `ALTER TABLE`);
-- **view** — `SELECT` em view/matview de dono superusuário/`BYPASSRLS` sobre tabela `FORCE RLS`.
+- **view** — `SELECT` em view/matview de dono superusuário/`BYPASSRLS` que, por qualquer cadeia de views,
+  alcança tabela `FORCE RLS` (a sobre-aproximação inclui `security_invoker`, por desenho fail-closed).
 
 Recusa ⇒ log `error` com `session_user`, `current_user` e as `escapes` (`via`, `rolname`, `rolsuper`,
 `rolbypassrls`, `is_self`, `objetos`) — **nunca** URL, host nem credencial —, `$disconnect` e `Failed to start`
@@ -105,21 +106,25 @@ muda. Em dev/test o default é `skip` (o `postgres` local é superusuário), com
 `.gitattributes`). Cria/converge o papel `LOGIN NOSUPERUSER NOBYPASSRLS NOREPLICATION`, sem posse de tabela
 `FORCE`, revoga o **primeiro salto** de toda cadeia de pertença que leve a papel que escapa, concede **só DML +
 `USAGE`/`SELECT` em sequências** e `ALTER DEFAULT PRIVILEGES` do migrador para as tabelas futuras, e termina com a
-**mesma propriedade da trava** avaliada para o papel. A credencial nova entra no `psql` por `\set` com backtick
-(nunca em argv), vai ao servidor uma vez e é definida **por último**; todo erro é re-emitido **sem** o SQL
-dinâmico. Exposição residual declarada: `/proc/<pid>/environ` do `psql` enquanto ele roda (a mesma classe de
-`PGPASSWORD`). Linha final (`-At`): `rolname|rolsuper|rolbypassrls|rolreplication|escapa|posse|views|dml` — ex.:
+**mesma propriedade da trava** avaliada para o papel. A credencial nova é lida duas vezes pelo stdin de
+`psql \password` sob `setsid` (nunca em argv nem em `/dev/tty`); o `psql` 16 calcula o verificador no cliente e
+o servidor recebe somente `SCRAM-SHA-256$…`, com `password_encryption=scram-sha-256` forçado na sessão mesmo se
+um `PGOPTIONS` externo pedir `md5`. O verificador pode aparecer no log integral do servidor e permite ataque de
+dicionário offline: use senha **aleatória, longa e de alta entropia**. A senha em claro permanece durante a
+execução no ambiente do processo (`/proc/<pid>/environ`, mesma classe de `PGPASSWORD`, legível pelo mesmo
+usuário/root), mas nenhum modo de logging do PostgreSQL a recebe. Linha final (`-At`):
+`rolname|rolsuper|rolbypassrls|rolreplication|escapa|posse|views|dml` — ex.:
 `erp_runtime|f|f|f|f|0|0|115`. Qualquer via de escape ⇒ `ec=3` e **nada persiste**.
 
 **Os modos de falha, todos nomeados na mensagem (nenhum com a credencial):**
 
-- **MODO 0** — o servidor registra o texto de todo statement (`log_statement=all` ou `log_min_duration_statement=0`): a credencial iria ao log. Desligue (superusuário/console do provedor) ou aceite conscientemente com `DB_RUNTIME_ALLOW_LOG_ALL=1` (aí ela **vai** ao log do provedor — rotacione depois).
 - **MODO 1** — `permission denied to create role`: o migrador não tem `CREATEROLE` → decisão de provedor; pare e registre.
 - **MODO 2** — o papel já tem `SUPERUSER|BYPASSRLS|REPLICATION|CREATEDB|CREATEROLE` e o executor não pode remover: outro nome (`DB_RUNTIME_ROLE`) ou corrija com a credencial administrativa e rode de novo.
 - **MODO 3** — tabela/sequência de `public` de outro dono, ou o papel é dono (ou membro do dono) de tabela FORCE: `ALTER TABLE public.<t> OWNER TO <migrador>` e rode de novo.
 - **MODO 4** — o papel já existe e o executor não tem `ADMIN OPTION` sobre ele: outro nome, ou `GRANT <papel> TO <migrador> WITH ADMIN OPTION` pela credencial que o criou; rode de novo.
 - **MODO 5** — pertença que leva a papel que escapa e que o executor não pode revogar: `REVOKE <papel> FROM erp_runtime` com credencial que tenha `ADMIN OPTION` sobre ele; rode de novo.
-- **MODO 6** — view/matview de dono que escapa, sobre tabela FORCE, com `SELECT` para o papel: `REVOKE SELECT ON <view> FROM erp_runtime` ou troque o dono da view; rode de novo.
+- **MODO 6** — view/matview de dono que escapa, ligada por qualquer cadeia de views a tabela FORCE, com `SELECT`
+  para o papel: `REVOKE SELECT ON <view> FROM erp_runtime` ou troque o dono da view; rode de novo.
 
 **Compose local-prod (`docker-compose.prod.yml`).** O serviço `postgres` executa o script no
 `/docker-entrypoint-initdb.d/` **no banco da aplicação** na 1ª subida do volume (papel `erp_runtime`, migrador
@@ -141,7 +146,9 @@ desenho). A imagem `ubuntu-24.04` do runner traz o PostgreSQL 16.
    é procedimental — `P-SAN3-05-STAGING-CD-AMARRACAO`).
 1. **Criar o papel no banco gerenciado** (produção e staging), conectado ao banco **da aplicação** com a credencial
    **do migrador** (`PROD_DATABASE_URL`/`STAGING_DATABASE_URL` — ela fica como migrador), na raiz do repo no SHA
-   mergeado, com uma credencial nova, forte, sem quebra de linha, que não vai ao repositório nem ao chat:
+   mergeado, com uma credencial nova, aleatória, longa, de alta entropia e sem quebra de linha, que não vai ao
+   repositório nem ao chat. O host precisa ter `psql` 16 e `setsid`; sem `setsid` o procedimento falha antes de
+   pedir a senha, em vez de abrir `/dev/tty`:
    ```bash
    PGHOST=<host> PGPORT=5432 PGUSER=<migrador> PGPASSWORD=<senha do migrador> PGDATABASE=<banco da app> \
    DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD='<senha nova>' \

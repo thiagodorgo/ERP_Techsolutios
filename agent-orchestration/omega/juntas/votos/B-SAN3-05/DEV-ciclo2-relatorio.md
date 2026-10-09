@@ -75,39 +75,43 @@
 
 **Saída resumida:** `password_ec=0`; prefixo armazenado `SCRAM-SHA-256$`; login devolveu `dev05c2_role`; `login_ec=0`; container removido.
 
-**Resultado:** PARCIAL — o mecanismo exigido pelo plano existe no `psql` 16 e não requer dependência nova; falta implementá-lo e rodar B7/B14.
+**Comando adicional:** implementação em `scripts/db-runtime-role.sh`, `docs/deployment.md` e T14; `npm run check` em `dev05c2-check-gen`; suíte focada em PostgreSQL 16 descartável `dev05c2-fatia1c-*`.
+
+**Saída resumida adicional:** `npm run check` ec=0 após `npm ci` + `prisma generate`; T14 comprovou `SCRAM-SHA-256$`, inclusive com `PGOPTIONS=password_encryption=md5`, login e idempotência; suíte focada final = **9/9**, fail 0, skipped 0. Uma tentativa anterior sem `prisma generate` falhou por terreno (client ausente), e duas iterações focadas ficaram vermelhas só nos totais autorreferentes do novo guard estrutural (7/9), corrigidos antes do verde final.
+
+**Resultado:** PASSOU — senha em claro não integra SQL/argv/log do teste; `psql \\password` produz verificador SCRAM no cliente, MODO 0 saiu e o residual de ataque offline está documentado. A matriz de `server.log` B7 e o caminho B14 permanecem para a junta, conforme C2.5/C1.
 
 ### B2 — toda mutação de catálogo sob a trava única
 
-**Comando:** EM APURAÇÃO
+**Comando:** todas as chamadas escritoras redirecionadas ao helper assíncrono `runCatalogCommand` sob `withRoleCatalogLock`, timeout 20 s; canário T14c segura a trava e observa o catálogo antes/depois; suíte focada no terreno `dev05c2-fatia1c-*`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** guarda fechada mediu `spawnCommand=2`, `runCatalogCommand=4`, `ROLE_SCRIPT=5`, `spawn=2`, `spawnSync=3`; antes da liberação papel=0, após liberação papel=1; T14c verde; suíte **9/9**, resíduo removido no `finally`; containers/rede próprios removidos.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU para (a), (b) e (d). O critério (c), N=10 sem erros de catálogo, é B8 da junta C2.
 
 ### B3 — ratchet fail-closed e catálogo FORCE reconciliado
 
-**Comando:** EM APURAÇÃO
+**Comando:** T8d reescrito sem fixture morta; cria/derruba slot físico e mantém a mutação `rolreplication` observável; suíte focada no terreno `dev05c2-fatia1c-*`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** subteste T8d verde; suíte **9/9**. O título afirma somente “REPLICATION exercível”; `pg_basebackup` permanece reservado ao B10 da junta.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU.
 
 ### B4 — cenário executável por membro FORCE da superfície
 
-**Comando:** EM APURAÇÃO
+**Comando:** CTE recursivo em `RUNTIME_ROLE_GUARD_SQL` e MODO 6; cenário view externa → view interna → tabela FORCE; `bash -n`; suíte focada no terreno `dev05c2-fatia1c-*`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** `bash -n` ec=0; T8d e T14/MODO 6 verdes; suíte **9/9**; md5 do SQL regravado para `f95dacc4ab623a08961635683aab5ce1`; documentação sem limite de um nível.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU.
 
 ### D1 — T8d mede exercibilidade de REPLICATION
 
-**Comando:** EM APURAÇÃO
+**Comando:** T15 com boot explícito e default, espera do evento `close`, timeout ≤15 s e teardown SIGTERM/SIGKILL em `finally`; suíte focada `dev05c2-fatia1c-*`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** os dois boots recusados saíram com código 1 antes de Redis/job worker; boot limpo aceito; subteste T15 verde; suíte **9/9**.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU.
 
 ### D2 — via de views transitiva
 
@@ -131,7 +135,11 @@
 
 **Saída resumida:** D4 exige ausência literal de `username` decodificado no JSON do T9/T15. O bootstrap atual registra `session_user: posture.sessionUser` e `current_user: posture.currentUser` tanto no sucesso quanto na recusa; esses valores são o username efetivo da URL. C2.3 proíbe explicitamente alterar `src/database/runtime-role.bootstrap.ts`.
 
-**Resultado:** PARADA original RESOLVIDA no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`, mas a execução do aceite substitutivo encontrou a PARADA-D4-2 abaixo.
+**Comando adicional:** aplicação da Errata 2 do dono (`dee3f821…`); helpers derivam os componentes das URLs efetivas e verificam logs do T9/T15; três mutações negativas por host, senha e nome de papel em campo não identitário.
+
+**Saída resumida adicional:** T5/T6/T9 e T15 verdes na suíte focada; host, porta, senha, banco, `postgresql://` e `password` ausentes; nome de papel permitido somente em `session_user`, `current_user`, `escapes[].rolname` e `via:rolname`.
+
+**Resultado:** PASSOU — PARADA-D4 e PARADA-D4-2 resolvidas sem tocar `src/database/runtime-role.bootstrap.ts`.
 
 ### A1 — ajustes do ciclo 2 e pendências C2.6
 
@@ -153,11 +161,11 @@
 
 ### B1 — `npm run check`
 
-**Comando:** EM APURAÇÃO
+**Comando:** container `dev05c2-check-gen`, cópia read-only da árvore, `npm ci --ignore-scripts`; `DATABASE_URL` só no ambiente; `npx prisma generate`; `npm run check`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** Prisma Client 7.8.0 gerado; `tsc -p tsconfig.json --noEmit`; ec=0. A primeira tentativa sem `prisma generate` falhou por ausência do client e não foi contada como produto.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — 1/1.
 
 ### B2 — `npm run lint`
 
@@ -185,11 +193,11 @@
 
 ### B5 — modo e EOL do script
 
-**Comando:** EM APURAÇÃO
+**Comando:** `git ls-files -s scripts/db-runtime-role.sh`; `git ls-files --eol scripts/db-runtime-role.sh .gitattributes`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** modo `100755`; script `i/lf w/lf attr/text eol=lf`.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — 2/2 propriedades.
 
 ### B6 — receitas DB N=3 + controle sem psql
 
@@ -217,11 +225,11 @@
 
 ### B9 — canário e guarda estrutural
 
-**Comando:** EM APURAÇÃO
+**Comando:** T14c dentro da suíte focada contra PostgreSQL 16 descartável `dev05c2-fatia1c-pg`, sem porta no host.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** canário antes=0/depois=1; guarda estrutural 5/5 contagens; T14c verde; suíte focada **9/9**.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU no objeto; mutações M-B2a/M-B2b cabem à junta C2.
 
 ### B10 — porta REPLICATION
 
