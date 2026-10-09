@@ -169,6 +169,47 @@ Contêiner conferido no head `d66eb178` antes da bateria: md5 dos 5 arquivos de 
   `san3-05-runtime-role-guard-db.test.ts` (`count: 82` → `72` e a `reason`), 2+/2−.
 - **Resultado:** verde.
 
-## Teardown
+### D0 — head, escopo e KPI (no head `2fee8d28`, 18:20Z)
 
-EM APURAÇÃO
+- **Comando:** `git rev-parse HEAD` × `git ls-remote origin fix/runtime-role-sem-bypass`; `git diff --name-only 7c63f920..HEAD` contra o
+  PERMITIDO do C4.4 (regex dos 8 caminhos); `git diff --quiet 7c63f920 HEAD -- Kpis/`; `git diff --numstat 7c63f920..HEAD`.
+- **Saída:** HEAD = ls-remote = `2fee8d28810086d5dc924fa22e99c6fce73a2cde`; 8 arquivos, **0 fora do PERMITIDO**; `Kpis/` ec=0 (sem diff).
+  numstat: trava 9+/16− · script 8+/24− · `deployment.md` 11+/9− · arquivo de guarda 232+/185− · catalog-guard 2+/2− · log 6+ ·
+  status 8+ · relatório 174+. Os ` M` fantasmas de `.agents/` e o `scratchpad/` não rastreado nunca entraram em commit (staging nominal).
+- **Resultado:** verde.
+
+### D10 — push e check-runs (head `2fee8d28`)
+
+- **Comando:** `gh api repos/thiagodorgo/ERP_Techsolutios/commits/2fee8d28…/check-runs` em laço até nenhum pendente.
+- **Saída:** `total=7` — docker · backend · owner-portal · backend-postgres · flutter · frontend · authority-portal, todos
+  `completed | success` (último às 18:30:45Z). Os runs dos heads intermediários (`afb575b4`, `d66eb178`, `941c9ea7`) foram cancelados
+  pelo grupo de concorrência do CI ao chegar o push seguinte — não são falha.
+- **Resultado:** verde. O commit de fecho deste relatório (só este arquivo) gera head novo; os check-runs dele vão na mensagem final.
+
+## Teardown (18:31Z)
+
+- **Comando:** `docker rm -f -v dev05c4-node dev05c4-pg dev05c4-redis` · `docker network rm dev05c4-net` · contagem por filtro de nome ·
+  `docker volume inspect` dos 2 volumes anônimos registrados antes · `ls /c/Users/AMP/t-dev05c4`.
+- **Saída:** rm ec=0, network rm ec=0; contêineres `dev05c4` = 0, redes = 0; os 2 volumes anônimos removidos; árvore temporária ausente
+  (já removida no setup); arquivo da senha descartável e saídas da B7 apagados do scratchpad da sessão; nenhum outro contêiner tocado;
+  `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo; disco 11 GB livres (igual ao início).
+- **Resultado:** terreno limpo.
+
+## Checklist do dev
+
+- [x] Código: trava sem `view_escape` e sem filtro de dono/privilégio na via `view`; script idem no `DO` e na linha final; `RAISE`
+      4 × 4; mensagem; comentário e md5 diagnóstico; `docs/deployment.md` nos 3 trechos (`afb575b4`).
+- [x] Testes: T8c, T8d, T8e, T8f, T14d reescritos; 12 testes no arquivo; T14c intacto; ratchet 82 → 72 (`afb575b4`).
+- [x] Mutações: 6/6 vermelhas pelo caso indicado, restauro por md5 (`d66eb178`).
+- [x] Bateria: D0–D10 verdes com os N do plano (12 · 12 · 35 · 13 · 5; suíte 3135/3133/0/2) (`941c9ea7`, `2fee8d28`).
+- [x] Registro: 1 entrada no log de execução e 1 no status geral (`2fee8d28`).
+- [x] Não abri/fechei PR nem fiz merge.
+
+### Divergências declaradas
+
+- O comentário-cabeçalho da linha final do script (`views_de_dono_que_escapa` → `views_sobre_force`) foi tratado como parte de "a
+  coluna `views`" do C4.4 (o significado da coluna mudou; manter o nome antigo deixaria o texto mentindo).
+- T8c teve o título ajustado de "três semi-mutantes" para "dois semi-mutantes" (o caso `view` saiu, como o plano manda).
+- Nos casos em sequência (COL → COM → MAT → CTL), cada mutação reporta o PRIMEIRO caso indicado pelo plano que ela derruba (M4a → COL,
+  M4b → COM, M4c → CTL); os casos seguintes do mesmo subteste não são alcançados naquela execução.
+- O prefixo do terreno é `dev05c4-` (o do disparo do orquestrador), não `dv05c4-` (o do C4.5).
