@@ -92,9 +92,10 @@ instrução de `main()` (`src/server.ts`) é a **trava de boot** (`src/database/
 - **atributo** — `SUPERUSER`, `BYPASSRLS`, `REPLICATION`, ou pertença (direta ou por cadeia, com ou sem
   `INHERIT`) a papel assim ou a `pg_execute_server_program`/`pg_read_server_files`/`pg_write_server_files`;
 - **posse** — dono, ou membro do dono, de tabela `FORCE RLS` (o dono desliga o `FORCE` com um `ALTER TABLE`);
-- **view** — `SELECT`, `INSERT`, `UPDATE` ou `DELETE` em view/matview cuja árvore alcança tabela `FORCE RLS`
-  e em que qualquer view da cadeia tem dono superusuário/`BYPASSRLS`, ou há matview de qualquer dono (a
-  sobre-aproximação inclui `security_invoker`, por desenho fail-closed).
+- **view** — existe no banco **qualquer** view ou matview, de qualquer esquema e de qualquer dono, cuja árvore
+  alcança tabela `FORCE RLS` — sem olhar dono nem privilégio (de tabela ou de coluna); a via é do banco, não do
+  papel. **Regra operacional (`D-405-PROIBIR-VIEWS`): nenhuma view nem matview sobre tabela protegida (FORCE
+  RLS), em nenhum esquema, de nenhum dono** (inclui `security_invoker` e matview vazia).
 
 Recusa ⇒ log `error` com `session_user`, `current_user` e as `escapes` (`via`, `rolname`, `rolsuper`,
 `rolbypassrls`, `is_self`, `objetos`) — **nunca** URL, host nem credencial —, `$disconnect` e `Failed to start`
@@ -124,16 +125,17 @@ usuário/root), mas nenhum modo de logging do PostgreSQL a recebe. Linha final (
 - **MODO 3** — tabela/sequência de `public` de outro dono, ou o papel é dono (ou membro do dono) de tabela FORCE: `ALTER TABLE public.<t> OWNER TO <migrador>` e rode de novo.
 - **MODO 4** — o papel já existe e o executor não tem `ADMIN OPTION` sobre ele: outro nome, ou `GRANT <papel> TO <migrador> WITH ADMIN OPTION` pela credencial que o criou; rode de novo.
 - **MODO 5** — pertença que leva a papel que escapa e que o executor não pode revogar: `REVOKE <papel> FROM erp_runtime` com credencial que tenha `ADMIN OPTION` sobre ele; rode de novo.
-- **MODO 6** — leitura ou escrita em view/matview cuja árvore alcança tabela FORCE e em que qualquer view tem
-  dono que escapa, ou há matview: `REVOKE ALL ON <view> FROM erp_runtime`, troque o dono que escapa em qualquer
-  ponto da cadeia ou retire a matview; rode de novo.
+- **MODO 6** — existe view/matview (qualquer esquema, qualquer dono, qualquer privilégio) cuja árvore alcança
+  tabela FORCE; a mensagem lista cada uma (`view:<objeto>`): `DROP VIEW`/`DROP MATERIALIZED VIEW` de cada uma —
+  nenhuma view nem matview sobre tabela protegida —; rode de novo.
 
 **Compose local-prod (`docker-compose.prod.yml`).** O serviço `postgres` executa o script no
 `/docker-entrypoint-initdb.d/` **no banco da aplicação** na 1ª subida do volume (papel `erp_runtime`, migrador
 `postgres`); o `migrate` continua como `postgres`; a `api` conecta como `erp_runtime` com a trava ativa. Volume
-já iniciado sem o papel ⇒ `docker compose -f docker-compose.prod.yml down -v`. Toda view que uma migração criar
-sobre tabela FORCE (o migrador do compose é superusuário) derruba o boot da `api` pela via `view` — é o MODO 6
-aparecendo no smoke, não defeito do smoke.
+já iniciado sem o papel ⇒ `docker compose -f docker-compose.prod.yml down -v`. Regra operacional: nenhuma view
+nem matview sobre tabela protegida (FORCE RLS), em nenhum esquema, de nenhum dono. Uma migração que crie uma
+deixa o T5/T15 da suíte `-db` vermelhos na CI antes do deploy; se chegar ao banco, a trava recusa o boot da `api`
+pela via `view` e o MODO 6 do script lista cada view — não é defeito do smoke.
 
 **Suíte `-db` — pré-requisito declarado:** o cliente **`psql` 16 no `PATH`** de quem roda
 `tests/san3-05-runtime-role-guard-db.test.ts` com `DATABASE_URL` (o T14b executa o script real por `bash` + `psql`).

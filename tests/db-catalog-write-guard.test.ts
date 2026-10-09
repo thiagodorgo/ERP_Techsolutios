@@ -137,9 +137,9 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
     [
       "san3-05-runtime-role-guard-db.test.ts",
       {
-        count: 82,
+        count: 72,
         reason:
-          "B-SAN3-05: escritor de catálogo da prova do papel de runtime; 64 -> 82 pelos fixtures T8e/T14d de cadeia de views, donos mistos, matview e DML; toda sequência executável passa por withRoleCatalogLock e o teardown reutiliza dropEphemeralRoleResilient",
+          "B-SAN3-05: escritor de catálogo da prova do papel de runtime; 64 -> 82 pelos fixtures T8e/T14d de cadeia de views, donos mistos, matview e DML; 82 -> 72 no ciclo 4 (D-405-PROIBIR-VIEWS: T8e/T14d viram os casos COL/COM/MAT/CTL, um por vez, e o caso view do T8c sai — GRANT 34 -> 30, OWNER TO 14 -> 8); toda sequência executável passa por withRoleCatalogLock e o teardown reutiliza dropEphemeralRoleResilient",
       },
     ],
   ]);

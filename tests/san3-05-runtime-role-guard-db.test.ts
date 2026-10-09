@@ -112,106 +112,92 @@ function findEscape(rows: readonly Escape[], via: Escape["via"], role: string): 
   return found;
 }
 
-type ViewEscapeCase = "S" | "B" | "K" | "I" | "C";
+// D-405-PROIBIR-VIEWS (ciclo 4): a via `view` é do BANCO — qualquer view/matview cuja árvore alcança tabela FORCE
+// recusa, sem olhar dono nem privilégio. Os casos rodam UM POR VEZ (cria → mede → derruba no finally) e cada um
+// afirma o conjunto EXATO de linhas da trava, o que também prova o isolamento entre os casos:
+//   COL — view de dono `postgres` sobre T, privilégio SÓ de coluna (SELECT/UPDATE/INSERT) — a forma da C1 da junta 3;
+//   COM — view de dono comum sobre T, sem grant nenhum;  MAT — matview de dono comum sobre T, sem grant nenhum;
+//   CTL — controle: view de dono `postgres` sobre N (RLS ligada, SEM FORCE) — não pode disparar.
+type ViewRuleCase = "COL" | "COM" | "MAT" | "CTL";
 
-type ViewEscapeFixture = {
-  readonly table: string;
+const VIEW_RULE_CASES: readonly ViewRuleCase[] = ["COL", "COM", "MAT", "CTL"];
+
+type ViewRuleTables = {
+  readonly protectedTable: string;
+  readonly plainTable: string;
   readonly commonOwner: string;
-  readonly bypassOwner: string;
-  readonly principals: Readonly<Record<ViewEscapeCase, { role: string; password?: string }>>;
-  readonly roots: Readonly<Record<ViewEscapeCase, string>>;
-  readonly inner: Readonly<Record<ViewEscapeCase, string>>;
 };
 
-async function createViewEscapeFixture(admin: PrismaClient, login: boolean): Promise<ViewEscapeFixture> {
-  const table = token("s305_a2_t");
-  const commonOwner = token("s305_a2_common");
-  const bypassOwner = token("s305_a2_bypass");
-  const roots = {
-    S: token("s305_a2_vs"),
-    B: token("s305_a2_vb"),
-    K: token("s305_a2_vk"),
-    I: token("s305_a2_wi"),
-    C: token("s305_a2_vc"),
-  } satisfies Record<ViewEscapeCase, string>;
-  const inner = {
-    S: token("s305_a2_ws"),
-    B: token("s305_a2_wb"),
-    K: token("s305_a2_mk"),
-    I: roots.I,
-    C: token("s305_a2_wc"),
-  } satisfies Record<ViewEscapeCase, string>;
-  const principals = Object.fromEntries(
-    (["S", "B", "K", "I", "C"] as const).map((name) => [
-      name,
-      { role: token(`s305_a2_${name.toLowerCase()}`), ...(login ? { password: secret() } : {}) },
-    ]),
-  ) as Record<ViewEscapeCase, { role: string; password?: string }>;
-  const roleSql = Object.values(principals).map(
-    ({ role, password }) =>
-      `CREATE ROLE ${ident(role)} ${login ? `LOGIN PASSWORD ${literal(password!)}` : "NOLOGIN"} NOSUPERUSER NOBYPASSRLS NOREPLICATION NOCREATEDB NOCREATEROLE NOINHERIT`,
-  );
+type ViewRuleObject = { readonly name: string; readonly materialized: boolean; readonly owner: string };
 
+async function createViewRuleTables(admin: PrismaClient): Promise<ViewRuleTables> {
+  const protectedTable = token("s305_c4_t");
+  const plainTable = token("s305_c4_n");
+  const commonOwner = token("s305_c4_common");
+  const policy = (table: string): string =>
+    `CREATE POLICY ${ident(`${table}_tenant`)} ON public.${ident(table)} USING (tenant_id = current_setting('app.current_tenant_id', true)) WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true))`;
   await catalog(admin, [
     `CREATE ROLE ${ident(commonOwner)} NOLOGIN NOSUPERUSER NOBYPASSRLS NOREPLICATION NOINHERIT`,
-    `CREATE ROLE ${ident(bypassOwner)} NOLOGIN NOSUPERUSER BYPASSRLS NOREPLICATION NOINHERIT`,
-    ...roleSql,
-    `CREATE TABLE public.${ident(table)} (tenant_id text NOT NULL, value text NOT NULL)`,
-    `ALTER TABLE public.${ident(table)} ENABLE ROW LEVEL SECURITY`,
-    `ALTER TABLE public.${ident(table)} FORCE ROW LEVEL SECURITY`,
-    `CREATE POLICY ${ident(`${table}_tenant`)} ON public.${ident(table)} USING (tenant_id = current_setting('app.current_tenant_id', true)) WITH CHECK (tenant_id = current_setting('app.current_tenant_id', true))`,
-    `INSERT INTO public.${ident(table)} VALUES ('A','a'), ('B','b1'), ('B','b2')`,
-    `GRANT SELECT ON public.${ident(table)} TO ${ident(commonOwner)}, ${ident(bypassOwner)}`,
-    `CREATE VIEW public.${ident(inner.S)} AS SELECT * FROM public.${ident(table)}`,
-    `GRANT SELECT ON public.${ident(inner.S)} TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(roots.S)} AS SELECT * FROM public.${ident(inner.S)}`,
-    `ALTER VIEW public.${ident(roots.S)} OWNER TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(inner.B)} AS SELECT * FROM public.${ident(table)}`,
-    `ALTER VIEW public.${ident(inner.B)} OWNER TO ${ident(bypassOwner)}`,
-    `GRANT SELECT ON public.${ident(inner.B)} TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(roots.B)} AS SELECT * FROM public.${ident(inner.B)}`,
-    `ALTER VIEW public.${ident(roots.B)} OWNER TO ${ident(commonOwner)}`,
-    `CREATE MATERIALIZED VIEW public.${ident(inner.K)} AS SELECT * FROM public.${ident(table)} WITH NO DATA`,
-    `ALTER MATERIALIZED VIEW public.${ident(inner.K)} OWNER TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(roots.K)} AS SELECT * FROM public.${ident(inner.K)}`,
-    `ALTER VIEW public.${ident(roots.K)} OWNER TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(roots.I)} AS SELECT * FROM public.${ident(table)}`,
-    `CREATE VIEW public.${ident(inner.C)} AS SELECT * FROM public.${ident(table)}`,
-    `ALTER VIEW public.${ident(inner.C)} OWNER TO ${ident(commonOwner)}`,
-    `CREATE VIEW public.${ident(roots.C)} AS SELECT * FROM public.${ident(inner.C)}`,
-    `ALTER VIEW public.${ident(roots.C)} OWNER TO ${ident(commonOwner)}`,
-    `GRANT SELECT ON public.${ident(roots.S)} TO ${ident(principals.S.role)}`,
-    `GRANT SELECT ON public.${ident(roots.B)} TO ${ident(principals.B.role)}`,
-    `GRANT SELECT ON public.${ident(roots.K)} TO ${ident(principals.K.role)}`,
-    `GRANT INSERT ON public.${ident(roots.I)} TO ${ident(principals.I.role)}`,
-    `GRANT SELECT ON public.${ident(roots.C)} TO ${ident(principals.C.role)}`,
+    `CREATE TABLE public.${ident(protectedTable)} (tenant_id text NOT NULL, value text NOT NULL)`,
+    `ALTER TABLE public.${ident(protectedTable)} ENABLE ROW LEVEL SECURITY`,
+    `ALTER TABLE public.${ident(protectedTable)} FORCE ROW LEVEL SECURITY`,
+    policy(protectedTable),
+    `INSERT INTO public.${ident(protectedTable)} VALUES ('A','a'), ('B','b1'), ('B','b2')`,
+    `CREATE TABLE public.${ident(plainTable)} (tenant_id text NOT NULL, value text NOT NULL)`,
+    `ALTER TABLE public.${ident(plainTable)} ENABLE ROW LEVEL SECURITY`,
+    policy(plainTable),
+    `INSERT INTO public.${ident(plainTable)} VALUES ('A','a'), ('B','b1')`,
   ]);
-  await catalog(admin, [
-    `SET LOCAL ROLE ${ident(commonOwner)}`,
-    `DO $$ BEGIN PERFORM set_config('app.current_tenant_id', 'A', true); END $$`,
-    `REFRESH MATERIALIZED VIEW public.${ident(inner.K)}`,
-    `RESET ROLE`,
-  ]);
-
-  return { table, commonOwner, bypassOwner, principals, roots, inner };
+  return { protectedTable, plainTable, commonOwner };
 }
 
-async function dropViewEscapeFixture(admin: PrismaClient, fixture: ViewEscapeFixture): Promise<void> {
+async function dropViewRuleTables(admin: PrismaClient, tables: ViewRuleTables): Promise<void> {
   await catalog(admin, [
-    `DROP VIEW IF EXISTS public.${ident(fixture.roots.S)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.roots.B)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.roots.K)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.roots.I)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.roots.C)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.inner.S)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.inner.B)}`,
-    `DROP MATERIALIZED VIEW IF EXISTS public.${ident(fixture.inner.K)}`,
-    `DROP VIEW IF EXISTS public.${ident(fixture.inner.C)}`,
-    `DROP TABLE IF EXISTS public.${ident(fixture.table)}`,
+    `DROP TABLE IF EXISTS public.${ident(tables.protectedTable)}`,
+    `DROP TABLE IF EXISTS public.${ident(tables.plainTable)}`,
   ]);
-  for (const { role } of Object.values(fixture.principals)) await dropRole(admin, role);
-  await dropRole(admin, fixture.bypassOwner);
-  await dropRole(admin, fixture.commonOwner);
+  await dropRole(admin, tables.commonOwner);
+}
+
+async function createViewRuleObject(
+  admin: PrismaClient,
+  tables: ViewRuleTables,
+  kase: ViewRuleCase,
+  grants: readonly string[],
+): Promise<ViewRuleObject> {
+  const name = token(`s305_c4_${kase.toLowerCase()}`);
+  const materialized = kase === "MAT";
+  const owner = kase === "COM" || kase === "MAT" ? tables.commonOwner : "postgres";
+  const source = kase === "CTL" ? tables.plainTable : tables.protectedTable;
+  const kind = materialized ? "MATERIALIZED VIEW" : "VIEW";
+  await catalog(admin, [
+    `CREATE ${kind} public.${ident(name)} AS SELECT tenant_id, value FROM public.${ident(source)}${materialized ? " WITH NO DATA" : ""}`,
+    ...(owner === "postgres" ? [] : [`ALTER ${kind} public.${ident(name)} OWNER TO ${ident(owner)}`]),
+    ...grants.map((grant) => grant.replaceAll("<obj>", `public.${ident(name)}`)),
+  ]);
+  return { name, materialized, owner };
+}
+
+async function dropViewRuleObject(admin: PrismaClient, object: ViewRuleObject): Promise<void> {
+  await catalog(admin, [
+    `DROP ${object.materialized ? "MATERIALIZED VIEW" : "VIEW"} IF EXISTS public.${ident(object.name)}`,
+  ]);
+}
+
+async function viewRuleAnchor(
+  admin: PrismaClient,
+  role: string,
+  object: ViewRuleObject,
+): Promise<{ table: boolean; column: boolean }> {
+  const rows = await admin.$queryRawUnsafe<Array<{ table: boolean; column: boolean }>>(
+    `SELECT has_table_privilege(${literal(role)}, 'public.${object.name}'::regclass, 'SELECT,INSERT,UPDATE,DELETE') AS "table", ` +
+      `has_any_column_privilege(${literal(role)}, 'public.${object.name}'::regclass, 'SELECT,INSERT,UPDATE') AS "column"`,
+  );
+  return { table: rows[0]!.table, column: rows[0]!.column };
+}
+
+function escapeLines(escapes: readonly Escape[]): string[] {
+  return escapes.map((escape) => `${escape.via}/${escape.rolname}/${escape.objetos}`);
 }
 
 async function rowsThroughView(url: string, view: string, tenant: string): Promise<string[]> {
@@ -241,12 +227,15 @@ async function insertThroughView(url: string, view: string): Promise<void> {
   }
 }
 
-async function assertNoInnerSelect(admin: PrismaClient, fixture: ViewEscapeFixture): Promise<void> {
-  for (const name of ["S", "B", "K", "I", "C"] as const) {
-    const rows = await admin.$queryRawUnsafe<Array<{ allowed: boolean }>>(
-      `SELECT has_table_privilege(${literal(fixture.principals[name].role)}, 'public.${fixture.inner[name]}'::regclass, 'SELECT') AS allowed`,
-    );
-    assert.equal(rows[0]?.allowed, false, `caso ${name}: SELECT direto no nó interno tornaria a prova vazia`);
+async function updateThroughView(url: string, view: string): Promise<number> {
+  const client = prismaFor(url);
+  try {
+    return await client.$transaction(async (tx) => {
+      await tx.$queryRawUnsafe("SELECT set_config('app.current_tenant_id', 'A', true)");
+      return await tx.$executeRawUnsafe(`UPDATE public.${ident(view)} SET value = 'c4-tocado'`);
+    });
+  } finally {
+    await client.$disconnect();
   }
 }
 
@@ -733,37 +722,29 @@ test(
       }
     });
 
-    await suite.test("T8c · três semi-mutantes session_user→current_user perdem exatamente a via do login", async () => {
+    await suite.test("T8c · dois semi-mutantes session_user→current_user perdem exatamente a via do login", async () => {
       const clean = token("s305_mclean");
       const bypass = token("s305_mbypass");
       const owner = token("s305_mowner");
       const loginBypass = token("s305_mblogin");
       const loginOwner = token("s305_mologin");
-      const loginView = token("s305_mvlogin");
       const tableOwner = token("s305_motable");
-      const tableView = token("s305_mvtable");
-      const view = token("s305_mview");
-      const credentials = new Map([loginBypass, loginOwner, loginView].map((role) => [role, secret()]));
+      const credentials = new Map([loginBypass, loginOwner].map((role) => [role, secret()]));
       await catalog(admin, [
         `CREATE ROLE ${ident(clean)} NOLOGIN NOSUPERUSER NOBYPASSRLS`,
         `CREATE ROLE ${ident(bypass)} NOLOGIN BYPASSRLS`,
         `CREATE ROLE ${ident(owner)} NOLOGIN NOSUPERUSER NOBYPASSRLS`,
-        ...[loginBypass, loginOwner, loginView].map(
+        ...[loginBypass, loginOwner].map(
           (role) =>
             `CREATE ROLE ${ident(role)} LOGIN PASSWORD ${literal(credentials.get(role)!)} NOSUPERUSER NOBYPASSRLS NOINHERIT`,
         ),
-        `GRANT ${ident(clean)} TO ${ident(loginBypass)}, ${ident(loginOwner)}, ${ident(loginView)}`,
+        `GRANT ${ident(clean)} TO ${ident(loginBypass)}, ${ident(loginOwner)}`,
         `GRANT ${ident(bypass)} TO ${ident(loginBypass)}`,
         `GRANT ${ident(owner)} TO ${ident(loginOwner)}`,
         `CREATE TABLE public.${ident(tableOwner)} (id int)`,
         `ALTER TABLE public.${ident(tableOwner)} ENABLE ROW LEVEL SECURITY`,
         `ALTER TABLE public.${ident(tableOwner)} FORCE ROW LEVEL SECURITY`,
         `ALTER TABLE public.${ident(tableOwner)} OWNER TO ${ident(owner)}`,
-        `CREATE TABLE public.${ident(tableView)} (id int)`,
-        `ALTER TABLE public.${ident(tableView)} ENABLE ROW LEVEL SECURITY`,
-        `ALTER TABLE public.${ident(tableView)} FORCE ROW LEVEL SECURITY`,
-        `CREATE VIEW public.${ident(view)} AS SELECT * FROM public.${ident(tableView)}`,
-        `GRANT SELECT ON public.${ident(view)} TO ${ident(loginView)}`,
       ]);
       const cases = [
         {
@@ -777,12 +758,6 @@ test(
           via: "posse" as const,
           role: owner,
           from: "pg_has_role(session_user, c.relowner, 'MEMBER')",
-        },
-        {
-          login: loginView,
-          via: "view" as const,
-          role: "postgres",
-          from: "has_table_privilege(session_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE')",
         },
       ];
       try {
@@ -805,12 +780,10 @@ test(
         }
       } finally {
         await catalog(admin, [
-          `DROP VIEW IF EXISTS public.${ident(view)}`,
-          `DROP TABLE IF EXISTS public.${ident(tableView)}`,
           `ALTER TABLE public.${ident(tableOwner)} OWNER TO postgres`,
           `DROP TABLE IF EXISTS public.${ident(tableOwner)}`,
         ]);
-        for (const role of [loginBypass, loginOwner, loginView, owner, bypass, clean]) await dropRole(admin, role);
+        for (const role of [loginBypass, loginOwner, owner, bypass, clean]) await dropRole(admin, role);
       }
     });
 
@@ -871,7 +844,7 @@ test(
         const serverRole = await posture(urlForRole(connectionString, program, secrets.get(program)!));
         findEscape(serverRole.escapes as Escape[], "atributo", "pg_execute_server_program");
         const viaView = await posture(urlForRole(connectionString, viewer, secrets.get(viewer)!));
-        assert.equal(findEscape(viaView.escapes as Escape[], "view", "postgres").objetos, 1);
+        assert.equal(findEscape(viaView.escapes as Escape[], "view", "postgres").objetos, 2);
         const readAllPosture = await posture(urlForRole(connectionString, readAll, secrets.get(readAll)!));
         findEscape(readAllPosture.escapes as Escape[], "view", "postgres");
 
@@ -907,61 +880,116 @@ test(
       }
     });
 
-    await suite.test("T8e · trava: cadeia de views com donos mistos, matview e escrita pela view (A2)", async () => {
-      const fixture = await createViewEscapeFixture(admin, true);
-      try {
-        await assertNoInnerSelect(admin, fixture);
-        const urls = Object.fromEntries(
-          (Object.entries(fixture.principals) as Array<
-            [ViewEscapeCase, { role: string; password?: string }]
-          >).map(([name, principal]) => [
-            name,
-            urlForRole(connectionString, principal.role, principal.password!),
-          ]),
-        ) as Record<ViewEscapeCase, string>;
+    await suite.test(
+      "T8e · qualquer view/matview sobre tabela FORCE recusa, sem olhar dono nem privilégio (D-405-PROIBIR-VIEWS)",
+      async () => {
+        const tables = await createViewRuleTables(admin);
+        const readers = {
+          rnone: token("s305_c4_rnone"),
+          rsel: token("s305_c4_rsel"),
+          rupd: token("s305_c4_rupd"),
+          rins: token("s305_c4_rins"),
+        };
+        const secrets = new Map(Object.values(readers).map((role) => [role, secret()]));
+        const readerUrl = (role: string): string => urlForRole(connectionString, role, secrets.get(role)!);
+        const lines = async (role: string): Promise<string[]> =>
+          escapeLines((await posture(readerUrl(role))).escapes as Escape[]);
+        try {
+          await catalog(
+            admin,
+            Object.values(readers).map(
+              (role) =>
+                `CREATE ROLE ${ident(role)} LOGIN PASSWORD ${literal(secrets.get(role)!)} NOSUPERUSER NOBYPASSRLS NOREPLICATION NOCREATEDB NOCREATEROLE NOINHERIT`,
+            ),
+          );
+          for (const kase of VIEW_RULE_CASES) {
+            const grants =
+              kase === "COL"
+                ? [
+                    `GRANT SELECT (tenant_id, value) ON <obj> TO ${ident(readers.rsel)}`,
+                    `GRANT UPDATE (value) ON <obj> TO ${ident(readers.rupd)}`,
+                    `GRANT INSERT (tenant_id, value) ON <obj> TO ${ident(readers.rins)}`,
+                  ]
+                : kase === "CTL"
+                  ? [`GRANT SELECT ON <obj> TO ${ident(readers.rsel)}`]
+                  : [];
+            const object = await createViewRuleObject(admin, tables, kase, grants);
+            try {
+              if (kase === "COL") {
+                for (const role of [readers.rsel, readers.rupd, readers.rins]) {
+                  assert.deepEqual(
+                    await viewRuleAnchor(admin, role, object),
+                    { table: false, column: true },
+                    `caso COL: a âncora de ${role} precisa ser privilégio SÓ de coluna (tabela=f, coluna=t)`,
+                  );
+                }
+                assert.ok(
+                  (await rowsThroughView(readerUrl(readers.rsel), object.name, "A")).includes("B"),
+                  "caso COL: SELECT de coluna precisa ler B sob A pela view (o efeito que a regra fecha)",
+                );
+                const updated = await updateThroughView(readerUrl(readers.rupd), object.name);
+                const touched = await admin.$queryRawUnsafe<Array<{ n: bigint }>>(
+                  `SELECT count(*)::bigint AS n FROM public.${ident(tables.protectedTable)} WHERE tenant_id = 'B' AND value = 'c4-tocado'`,
+                );
+                assert.ok(
+                  updated >= 1 && Number(touched[0]?.n) >= 1,
+                  `caso COL: UPDATE de coluna sem WHERE precisa alterar linha de B sob A (alterou ${updated})`,
+                );
+                await insertThroughView(readerUrl(readers.rins), object.name);
+                const inserted = await admin.$queryRawUnsafe<Array<{ n: bigint }>>(
+                  `SELECT count(*)::bigint AS n FROM public.${ident(tables.protectedTable)} WHERE tenant_id = 'B' AND value = 'insert-b'`,
+                );
+                assert.equal(Number(inserted[0]?.n), 1, "caso COL: INSERT de coluna precisa gravar B sob A pela view");
+                for (const role of [readers.rsel, readers.rupd, readers.rins, readers.rnone]) {
+                  assert.deepEqual(
+                    await lines(role),
+                    ["view/postgres/1"],
+                    `caso COL: a trava de ${role} precisa recusar exatamente a view ${object.name}`,
+                  );
+                }
+              } else if (kase === "COM" || kase === "MAT") {
+                assert.deepEqual(
+                  await viewRuleAnchor(admin, readers.rnone, object),
+                  { table: false, column: false },
+                  `caso ${kase}: a âncora de ${readers.rnone} precisa ser SEM privilégio algum`,
+                );
+                assert.deepEqual(
+                  await lines(readers.rnone),
+                  [`view/${tables.commonOwner}/1`],
+                  `caso ${kase}: a trava precisa recusar a ${object.materialized ? "matview" : "view"} de dono comum sem grant`,
+                );
+              } else {
+                for (const role of [readers.rsel, readers.rnone]) {
+                  assert.deepEqual(
+                    await lines(role),
+                    [],
+                    `caso CTL: view sobre tabela SEM FORCE não pode produzir escape para ${role}`,
+                  );
+                }
+              }
+            } finally {
+              await dropViewRuleObject(admin, object);
+            }
+          }
+        } finally {
+          for (const role of Object.values(readers)) await dropRole(admin, role);
+          await dropViewRuleTables(admin, tables);
+        }
+      },
+    );
 
-        assert.ok((await rowsThroughView(urls.S, fixture.roots.S, "A")).includes("B"), "caso S precisa ler B sob A");
-        assert.ok((await rowsThroughView(urls.B, fixture.roots.B, "A")).includes("B"), "caso B precisa ler B sob A");
-        assert.deepEqual(await rowsThroughView(urls.K, fixture.roots.K, "B"), ["A"], "caso K precisa ler A sob B");
-        await insertThroughView(urls.I, fixture.roots.I);
-        const inserted = await admin.$queryRawUnsafe<Array<{ n: bigint }>>(
-          `SELECT count(*)::bigint AS n FROM public.${ident(fixture.table)} WHERE tenant_id = 'B' AND value = 'insert-b'`,
-        );
-        assert.equal(Number(inserted[0]?.n), 1, "caso I precisa gravar B sob A pela view");
-        assert.deepEqual(await rowsThroughView(urls.C, fixture.roots.C, "A"), ["A"], "controle C precisa respeitar RLS");
-
-        const s = await posture(urls.S);
-        assert.equal(findEscape(s.escapes as Escape[], "view", "postgres").objetos, 1, "caso S sem escape postgres");
-        const b = await posture(urls.B);
-        assert.equal(
-          findEscape(b.escapes as Escape[], "view", fixture.bypassOwner).objetos,
-          1,
-          "caso B sem escape BYPASSRLS",
-        );
-        const k = await posture(urls.K);
-        assert.equal(
-          findEscape(k.escapes as Escape[], "view", fixture.commonOwner).objetos,
-          1,
-          "caso K sem escape de matview",
-        );
-        const i = await posture(urls.I);
-        assert.equal(findEscape(i.escapes as Escape[], "view", "postgres").objetos, 1, "caso I sem escape de escrita");
-        const c = await posture(urls.C);
-        assert.equal(c.escapes.length, 0, `controle C não pode produzir escape: ${JSON.stringify(c.escapes)}`);
-      } finally {
-        await dropViewEscapeFixture(admin, fixture);
-      }
-    });
-
-    await suite.test("T8f · a trava e o MODO 6 avaliam o mesmo CTE", () => {
-      const ctePattern = /WITH RECURSIVE view_walk[\s\S]*?view_escape AS \([\s\S]*?\n\s*\)(?=\s*\n\s*SELECT)/g;
+    await suite.test("T8f · a trava e o MODO 6 avaliam o mesmo CTE, sem view_escape", () => {
+      const ctePattern = /WITH RECURSIVE view_walk[\s\S]*?view_force AS \([\s\S]*?\n\s*\)(?=\s*\n\s*SELECT)/g;
+      const scriptSource = readFileSync(path.join(REPO_ROOT, "scripts", "db-runtime-role.sh"), "utf8");
       const guardCtes = RUNTIME_ROLE_GUARD_SQL.match(ctePattern) ?? [];
-      const scriptCtes = readFileSync(path.join(REPO_ROOT, "scripts", "db-runtime-role.sh"), "utf8").match(ctePattern) ?? [];
+      const scriptCtes = scriptSource.match(ctePattern) ?? [];
       assert.equal(guardCtes.length, 1, "a trava precisa ter exatamente um CTE da propriedade de view");
       assert.equal(scriptCtes.length, 2, "o script precisa ter o mesmo CTE no DO e na linha final");
       const normalized = [guardCtes[0]!, ...scriptCtes].map((value) => value.replace(/\s+/g, ""));
       assert.equal(normalized[1], normalized[0], "o CTE do DO divergiu da trava");
       assert.equal(normalized[2], normalized[0], "o CTE da linha final divergiu da trava");
+      assert.doesNotMatch(RUNTIME_ROLE_GUARD_SQL, /view_escape/, "a trava não pode conservar o filtro view_escape");
+      assert.doesNotMatch(scriptSource, /view_escape/, "o script não pode conservar o filtro view_escape");
     });
 
     await suite.test("T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados", async () => {
@@ -1349,34 +1377,53 @@ test(
     );
 
     await suite.test(
-      "T14d · MODO 6: a mesma cadeia criada ANTES do script, sem SELECT direto em W (A2/A3)",
+      "T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio",
       { timeout: 90_000 },
       async () => {
-        const fixture = await createViewEscapeFixture(admin, false);
+        const tables = await createViewRuleTables(admin);
         try {
-          await assertNoInnerSelect(admin, fixture);
-          for (const name of ["S", "B", "K", "I"] as const) {
-            const principal = fixture.principals[name];
-            const result = await (runRoleScript)(admin, connectionString, principal.role, secret());
-            assert.equal(result.status, 3, `caso ${name}: status deveria ser 3\n${result.stdout}${result.stderr}`);
-            assert.match(result.stderr, /MODO 6/, `caso ${name}: mensagem precisa nomear MODO 6`);
-            assert.match(
-              result.stderr,
-              new RegExp(`view:${fixture.roots[name]}`),
-              `caso ${name}: MODO 6 precisa nomear a raiz revogável`,
-            );
+          for (const kase of VIEW_RULE_CASES) {
+            const runtime = token(`s305_c4_rt_${kase.toLowerCase()}`);
+            await catalog(admin, [
+              `CREATE ROLE ${ident(runtime)} NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOREPLICATION NOCREATEDB NOCREATEROLE`,
+            ]);
+            let object: ViewRuleObject | undefined;
+            try {
+              object = await createViewRuleObject(
+                admin,
+                tables,
+                kase,
+                kase === "COL" ? [`GRANT SELECT (tenant_id, value) ON <obj> TO ${ident(runtime)}`] : [],
+              );
+              assert.deepEqual(
+                await viewRuleAnchor(admin, runtime, object),
+                { table: false, column: kase === "COL" },
+                `caso ${kase}: âncora imediatamente antes do script (tabela=f; coluna=${kase === "COL" ? "t" : "f"})`,
+              );
+              const result = await runRoleScript(admin, connectionString, runtime, secret());
+              if (kase === "CTL") {
+                assert.equal(result.status, 0, `caso CTL: view sobre tabela SEM FORCE deveria convergir\n${result.stdout}${result.stderr}`);
+                assert.match(
+                  result.stdout,
+                  new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|`, "m"),
+                  "caso CTL: precisa terminar com posse=0 e views=0",
+                );
+              } else {
+                assert.equal(result.status, 3, `caso ${kase}: status deveria ser 3\n${result.stdout}${result.stderr}`);
+                assert.match(result.stderr, /MODO 6/, `caso ${kase}: a mensagem precisa nomear MODO 6`);
+                assert.match(
+                  result.stderr,
+                  new RegExp(`por 1 via\\(s\\): view:${object.name}\\.`),
+                  `caso ${kase}: MODO 6 precisa nomear exatamente a view do caso`,
+                );
+              }
+            } finally {
+              if (object) await dropViewRuleObject(admin, object);
+              await dropRole(admin, runtime);
+            }
           }
-
-          const control = fixture.principals.C;
-          const result = await (runRoleScript)(admin, connectionString, control.role, secret());
-          assert.equal(result.status, 0, `controle C deveria convergir\n${result.stdout}${result.stderr}`);
-          assert.match(
-            result.stdout,
-            new RegExp(`^${control.role}\\|f\\|f\\|f\\|f\\|0\\|0\\|`, "m"),
-            "controle C precisa terminar com posse=0 e views=0",
-          );
         } finally {
-          await dropViewEscapeFixture(admin, fixture);
+          await dropViewRuleTables(admin, tables);
         }
       },
     );

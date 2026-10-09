@@ -1,14 +1,15 @@
 // B-SAN3-05 (item 9 do gate vendável) — a identidade com que a API fala ao banco em produção não pode
 // escapar de FORCE ROW LEVEL SECURITY por nenhuma das três vias medidas: ATRIBUTO (superusuário,
 // BYPASSRLS, REPLICATION ou pertença — direta ou por cadeia — a papel assim ou a um dos três papéis de
-// servidor), POSSE (dono, ou membro do dono, de tabela FORCE) e VIEW (leitura ou escrita em view/matview
-// cuja árvore alcança tabela FORCE e em que qualquer view tem dono que escapa, ou há matview de qualquer
-// dono). As três são avaliadas para
+// servidor), POSSE (dono, ou membro do dono, de tabela FORCE) e VIEW (existe no banco QUALQUER view ou
+// matview, de qualquer esquema e de qualquer dono, cuja árvore alcança tabela FORCE — sem olhar dono,
+// privilégio de tabela ou de coluna, herança nem pertença: D-405-PROIBIR-VIEWS; a via é do banco, não do
+// papel). ATRIBUTO e POSSE são avaliadas para
 // `session_user` E `current_user`: um login
 // superusuário com `options=-c role=<limpo>` escaparia por `SET ROLE NONE`.
 //
 // Esta constante é a ÚNICA fonte da propriedade; o md5 do Apêndice E deixou de ser critério no ciclo 2.
-// O hash abaixo é regravado quando a SQL muda e serve somente para diagnóstico EOL-neutro: ddd60b06688f7f4c103946decc780cb2.
+// O hash abaixo é regravado quando a SQL muda e serve somente para diagnóstico EOL-neutro: 2ed16571b942efbc8b48231469396786.
 export const RUNTIME_ROLE_GUARD_SQL = `WITH RECURSIVE view_walk(root_oid, leaf_oid) AS (
   SELECT v.oid, v.oid FROM pg_class v WHERE v.relkind IN ('v', 'm')
   UNION
@@ -23,13 +24,6 @@ export const RUNTIME_ROLE_GUARD_SQL = `WITH RECURSIVE view_walk(root_oid, leaf_o
   JOIN pg_rewrite rw ON rw.ev_class = w.leaf_oid
   JOIN pg_depend d ON d.classid = 'pg_rewrite'::regclass AND d.objid = rw.oid AND d.refclassid = 'pg_class'::regclass
   JOIN pg_class t ON t.oid = d.refobjid AND t.relkind IN ('r', 'p') AND t.relforcerowsecurity
-), view_escape AS (
-  SELECT DISTINCT vf.root_oid, lv.relowner AS owner_oid
-  FROM view_force vf
-  JOIN view_walk w ON w.root_oid = vf.root_oid
-  JOIN pg_class lv ON lv.oid = w.leaf_oid AND lv.relkind IN ('v', 'm')
-  JOIN pg_roles o ON o.oid = lv.relowner
-  WHERE o.rolsuper OR o.rolbypassrls OR lv.relkind = 'm'
 )
 SELECT via, rolname, rolsuper, rolbypassrls, is_self, objetos
 FROM (
@@ -49,10 +43,9 @@ FROM (
   UNION ALL
   SELECT 'view', o.rolname::text, o.rolsuper, o.rolbypassrls,
          (o.rolname = session_user OR o.rolname = current_user), count(DISTINCT v.oid)::int
-  FROM view_escape ve
-  JOIN pg_class v ON v.oid = ve.root_oid
-  JOIN pg_roles o ON o.oid = ve.owner_oid
-  WHERE (has_table_privilege(session_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege(current_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE'))
+  FROM view_force vf
+  JOIN pg_class v ON v.oid = vf.root_oid
+  JOIN pg_roles o ON o.oid = v.relowner
   GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
 ) x ORDER BY via, rolname`;
 
@@ -105,7 +98,7 @@ export class RuntimeRoleGuardError extends Error {
       `${RUNTIME_ROLE_CAN_BYPASS_RLS}: a identidade de banco do processo (session_user=${posture.sessionUser}, ` +
         `current_user=${posture.currentUser}) escapa de FORCE ROW LEVEL SECURITY por ${posture.escapes.length} via(s): ` +
         posture.escapes.map((escape) => `${escape.via}:${escape.rolname}`).join(", ") +
-        ". Use um papel NOSUPERUSER NOBYPASSRLS sem posse de tabela FORCE (scripts/db-runtime-role.sh; docs/deployment.md).",
+        ". Use um papel NOSUPERUSER NOBYPASSRLS sem posse de tabela FORCE e nenhuma view/matview sobre tabela FORCE (scripts/db-runtime-role.sh; docs/deployment.md).",
     );
     this.name = "RuntimeRoleGuardError";
     this.sessionUser = posture.sessionUser;
