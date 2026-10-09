@@ -10024,8 +10024,9 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` — residual declarado do B1 · **dono:** `B-ARNES-2` (workflows).
 - A CI pega a volta da senha em claro ao canal SQL pela guarda estática do T14, mas não lê o log do servidor; a prova por execução fica somente na matriz B7 da junta.
+- **sub-item A1 (ciclo 2):** a guarda estática reconhece grafias, não a propriedade: `\getenv` + `set_config(:'segredo')` e backtick + `format()`/`\gexec` passam e vazam no `server.log`. O job de encerramento precisa executar essas duas variantes contra o log real.
 - **bloqueia:** não.
-- **teste de encerramento:** job de CI com PostgreSQL descartável lê `server.log`, executa a matriz B7 e fica vermelho sob M-B1a.
+- **teste de encerramento:** job de CI com PostgreSQL descartável lê `server.log`, executa a matriz B7 e fica vermelho sob M-B1a e sob as variantes V1/V2 do sub-item A1.
 
 ## P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA
 
@@ -10037,6 +10038,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 - **status:** ABERTA · **escopo:** `residual-de-segurança` · **dono:** `B-SAN3-10`.
 - Inventariar funções `SECURITY DEFINER` cujo dono escapa do RLS e que o runtime pode executar; a medição deste bloco encontrou `auth_login_candidates`, criada por ato humano.
+- **sub-item ciclo 3:** cobrir função `SECURITY DEFINER` chamada por view; `pg_depend` da view aponta para a função, não para a tabela, e essa cadeia fica fora do `view_walk`. Hipótese registrada pelo planejador, ainda não medida pelo dev.
 - **bloqueia:** não bloqueia este PR; permanece risco nominal até o inventário.
 
 ## P-SAN3-05-STAGING-CD-AMARRACAO (2026-10-03) — CD de staging depende dos atos de provisão — ALTA
@@ -10136,3 +10138,66 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** trilha de acabamento web (sem bloco nomeado ainda).
 - **bloqueia:** não.
 - **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.
+
+## P-SAN3-05-RATCHET-INST-SOME (2026-10-09) — uma instanciação reconhecida libera a classe inteira — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-01, origem `scripts/san3-05-acessos-de-plataforma.mjs` em `16014c06` (2026-10-08) · **dono:** `B-ARNES-2` (ou bloco próprio do ratchet, a nomear pelo orquestrador).
+- O `inst.some` faz uma instanciação reconhecida liberar a classe inteira; construção por fábrica genérica ou `Reflect.construct` fica com zero chave. O inventário atual tem zero acesso dessa forma.
+- **bloqueia:** não bloqueia o #405; ficou fora do ciclo 3 por decisão do dono.
+- **teste de encerramento:** fixture com duas instanciações da mesma classe — uma reconhecida e outra por `Reflect.construct` — gera ao menos uma chave suspeita; voltar ao `inst.some` deixa o T13 vermelho.
+
+## P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE (2026-10-09) — igualdade catálogo↔L0 não é uma propriedade testada — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-02 e notas C3-c2-03/04; gerador `05d7789f` (2026-10-02), regex `16014c06` (2026-10-08) · **dono:** o mesmo de `P-SAN3-05-RATCHET-INST-SOME`.
+- O T13 fixa contagens, mas não prova igualdade por nome nos dois sentidos. Grafias como `ALTER TABLE IF EXISTS`/`EXECUTE format(...)` em `DO` somem do L0; tabela FORCE sem model aparece apenas na contagem. Hoje a medição é 106 = 106.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** igualdade executável nos dois sentidos; grafia que o L0 não lê e tabela FORCE sem model deixam o teste vermelho.
+
+## P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA (2026-10-09) — T14c conta grafias em vez de fechar a lista de filhos — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A1, origem `d9fc0d6d` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- A guarda de processos filhos do T14c conta grafias; `exec`, `execSync`, `execFile`, `execFileSync`, `fork` e o helper genérico `runPsqlReadOnly` podem passar sem lista nominal fechada.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** qualquer chamada a `node:child_process` fora da lista nominal reprova; filho escritor fora do helper deixa T14c vermelho.
+
+## P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job — MÉDIA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-05, cenário de `41af41f5` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- O T11f do job `cloud-charges.calculate` identifica o efeito pelo mesmo critério do run criado pela rota `POST /cloud-charges/calculation-runs`; assim pode medir a rota em vez do job. O produto atual faz o efeito correto.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** o run comparado é identificado como produzido pelo job; M-B4c no job deixa T11f vermelho.
+
+## P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A2, helper `d9fc0d6d` sobre script `041e414b` · **dono:** `B-ARNES-2`.
+- O timeout de 20 s mata só o `bash`; um filho além de 30 s pode escrever catálogo depois de a transação da trava expirar. O gatilho nunca foi observado sem força (23–91 ms).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** filho forçado além do teto é morto como grupo antes da janela; nenhuma escrita de catálogo ocorre após o timeout.
+
+## P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR (2026-10-09) — fixture pode deixar migrador com privilégios — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A3, cenário `migratorOk`/`CREATE DATABASE` de `4e89d7ac` (2026-10-03) · **dono:** `B-ARNES-2`.
+- A limpeza do T14a/b não roda se o cenário falhar antes do `try`; pode restar papel com `LOGIN` e `CREATEROLE` no cluster descartável.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** falha forçada antes do `try` ainda remove o papel no `finally`; resíduo `s305%` = 0.
+
+## P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL (2026-10-09) — guarda de log aceita campo textual indevido — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A4, regex de `02544a79` (2026-10-08) · **dono:** `B-ARNES-2`.
+- A guarda D4 aceita o nome do papel em qualquer campo quando aparece como `session_user=`, `current_user=`, `atributo:`, `posse:` ou `view:<papel>`, inclusive formas que as erratas 1–3 não produzem.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** a mutação `diag: session_user=<papel>` deixa T9 e T15 vermelhos.
+
+## P-SAN3-05-T15-FALSO-VERMELHO-PORTA (2026-10-09) — pid ou tempo pode casar a porta — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A5, `assertConnectionSecretsAbsent` de `d9fc0d6d` · **dono:** `B-ARNES-2`.
+- O T15 pode dar falso vermelho quando o `pid` ou o timestamp do log contém o número da porta (medido com pid 5432/15432 e tempo terminando em 54321).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** pid/tempo contendo a porta é aceito; porta em campo de conexão continua recusada.
+
+## P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` — medição C3.1; a trava nasceu em `d76b255f` (2026-10-02) começando `view_walk` apenas em `v`/`m` · **dono:** `B-SAN3-10`.
+- Uma regra `INSTEAD`/`ALSO` em tabela de dono que escapa executa a ação com o privilégio do dono: papel limpo com `INSERT` gravou linha da organização B sob contexto A e a trava retornou zero escapes. Hoje há zero regras fora do `_RETURN` das views no catálogo migrado.
+- **bloqueia:** não bloqueia o #405. A correção ficou explicitamente fora do ciclo 3 por decisão padrão do plano e decisão do dono de cobrir somente A2/A3.
+- **teste de encerramento:** regra em tabela de dono que escapa com DML para o papel é recusada pela trava e pelo script; controle sem regra retorna zero.
