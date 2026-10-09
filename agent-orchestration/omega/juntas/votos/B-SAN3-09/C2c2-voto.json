@@ -1,0 +1,103 @@
+{
+ "jurado": "jurado-san3-09c2-c2-dryrun-e-concorrencia (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C2 — banco: transação, sessão read only, concorrência e arnês de drill",
+ "mandato_md5": "5106f756f29e4d49ebf35851b065e8d3 · declarado no disparo: 5106f756f29e4d49ebf35851b065e8d3",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — bloco não toca dinheiro",
+ "corpo_md5": "cadc600ca06e7956a4b9c1b276b298da · corpo recebido: lido do blob no objeto, cadc600ca06e7956a4b9c1b276b298da",
+ "objeto": "e277bb6dd7da706cba8e023aaf785d077db721f6 (git ls-remote do ramo = gh pr view 400 headRefOid) · origin/main no início/fim c8af64580cb85ddf4960fecb2f8604384f8f0328/c8af64580cb85ddf4960fecb2f8604384f8f0328 · merge-base 8ee10bd2e44d95206551b71351f23d901192cbb6 · cerca do mandato 6319f11aef2c05ca375bb7b6df2eb941ae14e4aa e delta só registro (5 A em omega/juntas/votos/B-SAN3-09: 3 mandatos + C1c2-evidencia/voto) · objeto do inspetor e120644708fc78694d1b69847e0bcd93666343f0, delta só registro (+ o próprio parecer) · objeto no fim (18:01:48Z): igual",
+ "legalidade": "parecer que vale: 00-inspetor-terreno-c2.md (inspetor-de-terreno-da-junta, Opus declarado, 2026-10-08T17:24Z sobre e1206447) · LIBERADO COM RESSALVA (R-1..R-6 + nota) · confere este nome, corpo cadc600c…, worktree e container próprios: sim (worktree w-j9c2c2 e prefixo j9c2c2- nomeados pelo mandato) · check-runs no objeto e277bb6d no fim: total 7 | não-verdes 0 | pendentes 0 (no início, 17:42Z: 6 | 0 | 4 — CI do head recém-empurrado) · job -db backend-postgres: completed/success 17:42:41Z · normas citadas presentes em origin/main:CLAUDE.md (13 âncoras, N publicado) e D-FABLE-ASTRA-SO-DINHEIRO em decisoes.md l.2982; scripts/mandato-* = 0 em origin/main (não é norma)",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 de 2 (último em que achado não grave bloqueia)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (C1c2-evidencia.md/C1c2-voto.json existem no head e não foram abertos; um git grep -l pelo meu nome listou C1c2-voto.json como arquivo que contém o nome, sem abrir o conteúdo) · li do ciclo 1 e da trilha: o meu corpo e o meu mandato (blobs), 00-inspetor-terreno-c2.md, plano §15.1.4/§15.3/§15.4/§15.5/§15.6 (l.1690-1770, 1800-1898), DEV-ciclo2-relatorio.md l.30-70 (roteiro, não prova), docs/deployment.md Runbook B l.175-200; não li C2-evidencia/C2-voto do ciclo 1 nem a ata",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "item1": "VERDE com 1 ajuste (C2c2-A1) — (a) T2 baseline 12/12; (b) MA1–MA5 os 5 vermelhos no T2.4 com T1 26/26 sob cada mutante e restauro = blob; (c) matriz 5×6: nenhum OK nos 5, MA1 limpo, MA2 só org, MA3/MA5 org+usuário, MA4 org+usuário e reset, 0/24 divergências do plano, célula fabricada acusada; (d) MT-1 vermelho pelo controle interno; (e) processo filho do objeto 0/0/0/0/0, linha viva (MM1 morto); (f) reset: simulação diz senha mantida, execução redefine",
+ "item2": "VERDE — T2.10: N=3 no nome e no laço (l.672-674), clone por rodada, fulfilled.length === 2 (l.707), contagens [tenants slug, users por slug, ura/creds/audits globais] — global ≡ por organização no clone (modelo 0/0/0/0/0, slug UNIQUE); MA6 no T2: T2.10 vermelho na rodada 1 pela asserção de fulfilled.length (1 !== 2), T1 26/26 sob o mutante, restauro md5 = blob; sonda: com trava 0/20 rejeições, sem trava 20/20 (10 aquecidas + 10 frias), rejeição em tx.tenant.create() (Unique constraint), contagens 1/1/1/1/1 por organização em 40/40 inclusive sem trava; (1 − p)^3 = 0 pontual, ≤ 0,0027 (95 %, 0/20) ou ≤ 0,017 (só as 10 frias); controle: 2º usuário inserido à mão → contagem 2",
+ "item3": "VERDE — 3(a) clones sem sessão pendurada (5 pontos com TEMPLATE lidos; máx 0 sessões no modelo em 365 amostras; controle: clone com sessão aberta recusado, is being accessed by other users); 3(b) 0 banco erp_san3_09_drill_% e 0 papel (o6r_b01_% e as 6 famílias) após o T2 verde e após 8 T2 com falha forçada (T2.4 ×7: MA1–MA5, MT-1, MM1; T2.10 ×1: MA6), 9 execuções acumuladas sem limpar; controle do contador +1→0; 3(c) ratchet: git grep vazio, guard com 6 padrões sem CREATE DATABASE, varre o -db, ok; injeção // GRANT acusada, restauro hash-object = blob; 3(d) diff 7812fe7c..objeto = 2 hunks só em BootstrapRefusalCode e BOOTSTRAP_FLAGS/exaustividade/parseArgv; md5 AST igual em bootstrapPlatformAdmin 8fe2810b, isBootstrapAllowed, strictBool, readBootstrapInput, assertBootstrapPassword, main; parseArgv difere (controle); 1 caractere trocado acusado; scripts/ só o do bloco; ba65c03a ≡ 7812fe7c na árvore de produto",
+ "justificativa": "terreno: worktree próprio C:/Users/AMP/w-j9c2c2 detached em e277bb6d, npm ci próprio (326 pacotes, sem junction), typescript 5.9.3; containers j9c2c2-node (node 20.20.2, --init), j9c2c2-pg (postgres 16.14, senha aleatória por -e sem valor), j9c2c2-redis (redis:7), rede j9c2c2-net, nenhuma porta publicada; árvore por git -c core.autocrlf=false archive com md5 = blob (script 995022e1, -db 928d7d29, T1 407100f6, lockfile 69a6ea32, helper 7e1ad910); disco 12G; base viva intocada · T2 baseline 12/12 ec=0 (T2.1–T2.10 e T2.4b ok); T2.4 lido com arquivo:linha (estados l.236, clone l.241, semeadura l.244-249, URL read only l.262-263 por searchParams.set, impressão l.250-261/283, relatório esperado l.269-272, controle interno l.277-279, processo filho l.289-303) · MA1–MA5 no T2: diff 2 linhas cada (MA1/MA2 por ocorrência #1 l.231 e #2 l.276), T1 26/26 sob cada mutante, T2 12/10/2 com só o T2.4 vermelho, mensagem cannot execute INSERT in a read-only transaction, restauro md5 = blob; estado derivado pela ordem do laço + matriz + duração (858/1151/1252–1716 ms); o 0/1 do dev não se reproduziu · matriz 5×6 da sonda (30 células, impressão igual em 30/30): nenhum OK nos 5; MA1 ERRO limpo; MA2 ERRO só organização; MA3 ERRO org+usuário; MA4 ERRO org+usuário e reset; MA5 ERRO org+usuário; contra a 5×4 do plano: 0/24 divergências; a comparação numa cópia fabricada (MA3/usuario) acusou · MT-1: sem searchParams.set(options) o T2.4 fica vermelho por Missing expected rejection (operator rejects) — a sessão morde; controle da sonda: escrita sob read only rejeitada · processo filho: objeto no limpo ec=0, nada foi escrito, 0/0/0/0/0; sob MA1 isolado grava [1,0,0,0,0] e imprime nada foi escrito (no T2 o laço aborta antes); mutação nova MM1 (main passa dryRun:false) morta pelo processo filho do T2.4 · reset: dry-run com --reset-password imprime credencial já existia (senha mantida) e passwordReset=false, idêntico ao dry-run sem reset; a execução real imprime senha redefinida, troca o hash e leva a auditoria de 1 a 2 → C2c2-A1, ajuste, dentro-do-bloco (script nascido em 399d1fef, 2026-10-01; corpo congelado no ciclo pelo §15.3; leitura do §C7.1-ter(a): o congelamento é do ciclo, não do bloco) · T2.10: N=3 no nome e no laço, clone por rodada, fulfilled.length === 2, contagens com 3 tabelas globais (≡ por organização no clone: modelo 0/0/0/0/0, slug UNIQUE) · MA6 no T2: só o T2.10 vermelho, rodada 1, asserção de fulfilled.length (1 !== 2); sonda: com trava 0/20, sem trava 20/20 (10 aquecidas + 10 frias), rejeição em tx.tenant.create() por Unique constraint, 1/1/1/1/1 por organização em 40/40 inclusive sem trava; (1 − p)^3 = 0 pontual, ≤ 0,0027 (95 %, 0/20) e ≤ 0,017 (só as frias); controle 2º usuário → 2 · arnês: 3(a)/(b)/(c)/(d) verdes como no item3; teardown com disconnect antes dos DROP e catch vazio, sem resíduo em 9 execuções (nota C2c2-N1) · vermelho-controle de CADA item acusou: item1 (linha nenhum verde + escrita rejeitada; MT-1; célula fabricada); item2 (sem trava ≥1/N; com trava 0/N; 2º usuário → 2); item3 (sessão aberta recusa o clone; contador +1; injeção GRANT; parseArgv difere e 1 caractere acusado; irmãos de todo diff vazio não-vazios) · nada dos 3 itens ficou sem medir · limpeza: bancos zz_j9c2c2_% = 0, drill = 0, papéis = 0; containers e volumes anônimos removidos, rede removida; worktree removido (0 processos antes); segredo descartável apagado do scratch · VOTO: APROVADO — dry-run sem escrita nos 5 estados pelo próprio banco (sessão read only que morde, MT-1 vermelho), MA1–MA5 mortos pelo T2.4 no estado certo e na matriz 5 × 5 (MA1 limpo · MA2 só organização · MA3/MA5 org+usuário · MA4 org+usuário e reset), relatório do reset graduado como ajuste dentro-do-bloco (simulação diz senha mantida, execução redefine); T2.10 com N=3, MA6 vermelho na rodada 1, corrida sem lock 20/20 e (1 − p)^3 = 0 (≤ 0,0027 a 95 %); arnês: clones sem sessão pendurada (máx 0 em 365 amostras), 0 resíduo verde e com falha forçada (9 execuções acumuladas), ratchet vazio e guard acusando, corpo congelado com md5 igual ao ciclo 1 nas 6 funções e hunks só nas 4 regiões",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/feat/bootstrap-platform-admin + gh pr view 400 --json headRefOid (início e fim)",
+   "forma": "w-nuv09, Git Bash",
+   "resultado": "e277bb6d nos dois, nas duas vezes; origin/main c8af6458 nas duas"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/<sha>/check-runs?per_page=100 → arquivo; filtro node",
+   "forma": "e277bb6d (início e fim) e e1206447",
+   "resultado": "fim 7|0|0; início 6|0|4; e1206447 7|0|0"
+  },
+  {
+   "comando": "timeout 900 node --test --import tsx tests/san3-09-bootstrap-platform-admin-db.test.ts",
+   "forma": "container j9c2c2-node, node 20.20.2, DATABASE_URL/REDIS_URL/CORE_SAAS_PERSISTENCE (nomes) de /root/.dbenv, árvore = blob e277bb6d, N=1 baseline",
+   "resultado": "ec=0, 12/12"
+  },
+  {
+   "comando": "sh /work/zz-j9c2c2-runmut.sh <MA1..MA6|MT1|MM1> <arquivo>",
+   "forma": "container, protocolo pristino→mutação por âncora→diff→T1→T2→restauro→md5; 8 execuções sequenciais sem limpar o cluster",
+   "resultado": "MA1–MA5/MT1/MM1: T2 12/10/2 com T2.4 vermelho; MA6: 12/10/2 com T2.10 vermelho; T1 26/26 em todas; restauro = blob em todas"
+  },
+  {
+   "comando": "node --import tsx zz-j9c2c2-matriz.mts",
+   "forma": "container, sonda md5 a34c6459, 6 mutantes × 5 estados = 30 células, clone por template, read only por options",
+   "resultado": "ec=0, tabela 5×6, impressão igual em 30/30"
+  },
+  {
+   "comando": "LADO=com|sem N=10 [FRIO=1] [CONTROLE=1] node --import tsx zz-j9c2c2-corrida.mts",
+   "forma": "container, sonda md5 c32909ff (v1) / b4bf728b (v2), 4 séries de 10 rodadas",
+   "resultado": "com 0/20 rejeições, sem 20/20; 1/1/1/1/1 por organização em 40/40; controle deu 2"
+  },
+  {
+   "comando": "sh /work/zz-j9c2c2-cli.sh <db> <script> <estado> <flags>",
+   "forma": "container, CLI real com senha no stdin, 5 execuções (E0, E1, F1, F2, F3)",
+   "resultado": "E0 0/0/0/0/0; E1 [1,0,0,0,0] com nada foi escrito; F1 senha mantida e hash igual; F2 senha redefinida, hash muda, auditoria +1; F3 = F1"
+  },
+  {
+   "comando": "psql (container pg): resíduo; amostragem de pg_stat_activity; CREATE DATABASE … TEMPLATE com sessão aberta; contador +1",
+   "forma": "container j9c2c2-pg, psql 16",
+   "resultado": "0/0 antes e depois de 9 T2; máx 0 sessões no modelo em 365 amostras; clone recusado com sessão aberta; contador 0→1→0"
+  },
+  {
+   "comando": "env -u DATABASE_URL timeout 300 node --test --import tsx tests/db-catalog-write-guard.test.ts (base e com // GRANT injetado)",
+   "forma": "worktree w-j9c2c2, Windows, node 20.19.5",
+   "resultado": "base ec=0 pass 1 skip 1; injeção ec=1 not ok 1 acusando o -db; restauro hash-object = blob"
+  },
+  {
+   "comando": "git diff 7812fe7c e277bb6d -- scripts/…; node zz-j9c2c2-extrator.cjs <blob> <funções>; git diff --name-only …",
+   "forma": "worktree, typescript 5.9.3, extrator md5 d58eb7c5",
+   "resultado": "2 hunks nas 4 regiões; 6/6 funções congeladas iguais; parseArgv difere; controle de 1 caractere acusado; ba65c03a ≡ 7812fe7c"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "C2c2-A1 — com --reset-password, a simulação relata credencial já existia (senha mantida) / passwordReset=false, idêntico ao dry-run sem a flag, enquanto a execução real redefine a senha (hash trocado), zera o lockout e grava auditoria",
+   "evidencia": "zz-j9c2c2-cli.sh F1 × F2 × F3 (ec=0 nos três; F2 contagens [1,1,1,1,1]→[1,1,1,1,2], hash 325f5004→cd6504da; F1 hash igual); matriz nenhum/reset passwordReset=false; script l.315-332 e main l.413; T2.4 l.271 fixa reset [F,F,F,F,F]",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — script nascido no bloco (git log --diff-filter=A: 399d1fef, 2026-10-01, ciclo 1); o §15.3 congelou o corpo só no ciclo 2. Pendência nomeada; dono a definir pelo orquestrador (candidato B-SAN3-10, saída de CLI ao operador)",
+   "motivo": "o relatório da simulação descreve, para a credencial, o contrário do que a execução faz quando --reset-password é passado; nada é escrito (A11 íntegro), a ação real é a pedida pela flag e fica auditada — por isso não bloqueia"
+  },
+  {
+   "defeito": "C2c2-N1 — o finally externo desconecta o cliente administrativo antes dos dois DROP DATABASE pelo mesmo cliente e engole os erros com catch vazio",
+   "evidencia": "-db.test.ts l.741-747; 0 resíduo de erp_san3_09_drill_% e de papel após 9 execuções do T2 acumuladas (1 verde + 8 com falha forçada), Prisma 7.8.0 + adapter-pg reabrindo a conexão",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (arquivo nascido no bloco, 9890fc06, 2026-10-01)",
+   "motivo": "uma falha de DROP passaria em silêncio; hoje não deixa rastro, medido"
+  },
+  {
+   "defeito": "C2c2-N2 — sob MA1 o processo filho do T2.4 não roda (o laço aborta no limpo), embora o plano o liste entre os vermelhos de MA1",
+   "evidencia": "MA1 no T2: T2.4 cai no limpo; CLI isolado sob MA1 grava [1,0,0,0,0] e imprime nada foi escrito; a linha está viva: MM1 (main ignora --dry-run) morto pelo processo filho",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "leitura do plano a corrigir na ata; sem defeito no teste"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "contra a régua (C2c2-R1): o §15.1.4 item 2 exige o relatório coerente com o estado nos 5 estados e o §15.3 congela o corpo que produz o relatório — no estado convergido com reset o critério não podia PASSAR dentro do escopo do ciclo (o planejador não mediu esse estado, plano l.1758); o dev o declarou como divergência",
+  "nenhum controle meu deixou de acusar: célula fabricada, MT-1, escrita sob read only, sem trava 20/20, 2º usuário, sessão aberta, contador +1, injeção GRANT, parseArgv e 1 caractere — todos acusaram"
+ ],
+ "pendencias_que_aceito": [
+  "C2c2-A1 (ajuste) e as notas C2c2-N1/N2/R1 — para a ata e o registro, dono a definir pelo orquestrador",
+  "da C1 (não medido por mim): conjunto fechado de flags/MF3, T2.4b, eco, ps, T2.9/M-1, M-2, Runbook e registro",
+  "da C3 (não medido por mim): guard AST, MF1/MF2, fecho de runtime, mutações novas do verificador, escopo do dev por laço",
+  "reprovação por construção do §15.4: KPI/Kpis congelados; T2 no Windows (P-SAN3-09-DB-TEST-SO-LINUX, A-3); FALHOU sem causa (C3-N1, P-SAN3-09-FALHOU-SEM-CAUSA, B-SAN3-10); trava só para NODE_ENV exato e .env do operador (pré-existente, prisma/seed-guard.ts 4a2db09b, 2026-07-14); cargas fora da AST; suíte inteira fora da CI; backup/PITR/restore/migration (bloco sem migration)"
+ ],
+ "teardown": "bancos zz_j9c2c2_% derrubados e contagem 0 publicada (e erp_san3_09_drill_% = 0, papéis das 6 famílias = 0) · containers j9c2c2-node/-pg/-redis removidos por docker rm -f -v (volumes anônimos 4c2aa489…/ad9e5303… conferidos removidos; docker volume ls 18→16, os 16 alheios intactos) e rede j9c2c2-net removida, contagens 0 · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j9c2c2 removido por git worktree remove --force (ec=0, test -e falso, worktree list 0) · mutações restauradas com md5 = blob no container nas 8 rodadas e hash-object = blob no worktree (injeção GRANT) · sondas e mutantes removidos de /work antes de remover o container; status do worktree vazio antes da remoção · pgpw.secret e cópias do script apagados de $SCRATCH (ficam logs e as sondas, cujo texto está no Anexo A da evidência) · base viva nunca tocada (erp-postgres/erp-redis Exited) · w-nuv09 só com os meus dois arquivos de saída · resíduo ALHEIO apenas reportado (volumes órfãos, containers alheios)"
+}

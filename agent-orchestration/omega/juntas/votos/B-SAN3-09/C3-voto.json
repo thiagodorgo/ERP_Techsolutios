@@ -1,0 +1,130 @@
+{
+  "junta": "B-SAN3-09 junta 1 (PR 400)",
+  "cadeira": "C3",
+  "identidade": "guardiao-fail-closed",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "corpo_md5_eol_neutro": "5b0f7f5d31df366b69ac2cc8c113e963",
+  "mandato_md5": "20988a161542a58700505890866230d2",
+  "objeto": "ba65c03a4c3edc0723633b0f1330f34852a60e6f (head do PR 400; delta desde 6330bce2 = so 00-inspetor-terreno.md; 14/14 check-runs completed success)",
+  "legalidade": "inspetor LIBERADO COM RESSALVA (R-1..R-7); objeto resolvido por git e gh",
+  "itens": {
+    "1_guard_imports_T1.2-T1.4_T1.7_mutacao": {
+      "status": "REPROVADO",
+      "medido": "T1 23/23 ec=0 no head (Windows); guard extrai 3 dos 6 imports reais do script; mutacoes proprias B (side-effect), C (multilinha), E (aspas simples), F (re-export) com import fora da allowlist => 23/23 ec=0 (check/lint/tsc ec=0; runtime carrega o modulo); D (forma do plano) => T1.7 verde, so T1.5 vermelho; controle A => T1.7 vermelho; mutante V (verificador enfraquecido + intruso A) => 23/23, o teste de mutacao do T1.7 continua verde",
+      "evidencia": "C3-evidencia.md §1b, §1c"
+    },
+    "2_T2.5_T2.6_T2.8_T2.9_login_http": {
+      "status": "APROVADO",
+      "medido": "-db no head em container Linux (node 20, cluster proprio): 11/11 ec=0 (T2.5, T2.6, T2.8, T2.9 ok); HTTP instrumentado: login com tenantId 200, overview 200, senha errada 401, anonimo 401 INVALID_CREDENTIALS; controle A16 (conexao administrativa) => anonimo 200 e T2.8 vermelho; no Windows o -db falha vermelho (nao pula)",
+      "evidencia": "C3-evidencia.md §2a-2d"
+    },
+    "3_tsc_e_Runbook_B": {
+      "status": "APROVADO COM AJUSTE",
+      "medido": "tsc A19 do script ec=0; npm run check ec=0; comandos do Runbook B executados contra cluster descartavel: dry-run ec=0 sem escrita, sem opt-in ec=2 PRODUCTION_OPT_IN_MISSING, --password= ec=2 PASSWORD_IN_ARGV, aplicacao ec=0 1/1/1/1/1, reaplicacao ec=0 hash igual, --reset-password ec=0 hash muda, banco inalcancavel ec=1 FALHOU; zero segredo nas saidas; T1.8 vermelho sob o Runbook B da base",
+      "divergencias": "Runbook B nao cita o exit 1 (A20 exige 0/2/1); pre-condicao do runbook mais frouxa que o script (sentido seguro); env da senha sem nome; FALHOU com mensagem vazia",
+      "evidencia": "C3-evidencia.md §3a-3c"
+    }
+  },
+  "achados": [
+    {
+      "id": "C3-F1",
+      "titulo": "Guard de imports CE-G1 (A4/T1.7) e fail-open: o import nao reconhecido pelo regex e permitido",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "tests/san3-09-bootstrap-platform-admin.test.ts e arquivo NOVO deste bloco (git diff --name-only merge-base..HEAD)",
+      "onde": "tests/san3-09-bootstrap-platform-admin.test.ts:259-263 (extractScriptImports: regex de linha unica que exige from e aspas duplas) e :265-275",
+      "propriedade_ausente": "o membro nao previsto (import em forma que o regex nao reconhece: side-effect, multilinha, aspas simples, re-export) nasce do lado PERMITIDO e nem build nem suite acusam; o guard ve 3 dos 6 imports do proprio script (nao ve os dois de src/modules/auth/** nem dotenv/config)",
+      "evidencia_execucao": "mutantes B/C/E/F: 23/23 ec=0, npm run check/lint ec=0, tsc A19 ec=0, runtime aceita; mutante D (forma do plano §8): T1.7 verde; controle A: T1.7 vermelho",
+      "motivo": "e o UNICO guard de enumeracao fail-closed declarado pelo bloco (§7 CE-G1: 'default = negar'); a declaracao nao sobrevive a mutacao"
+    },
+    {
+      "id": "C3-F2",
+      "titulo": "O 'teste de mutacao' do T1.7 e tautologico: segunda copia literal do regex sobre fixture na unica forma que ele reconhece",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "mesmo arquivo novo do bloco",
+      "onde": "tests/san3-09-bootstrap-platform-admin.test.ts:277-297 (regex duplicado na l.287 x l.261; fixture l.285)",
+      "propriedade_ausente": "a mesma verdade (o verificador) vive em dois literais e nada falha quando divergem; o teste nao exerce extractScriptImports nem copia temporaria do script, contrariando o §8 T1.7 do plano ('o MESMO verificador reprova')",
+      "evidencia_execucao": "mutante V: verificador l.261 enfraquecido para so @prisma/* + intruso de controle A => 23/23 ec=0, 'ok 22 - MUTAÇÃO — import fora da allowlist é detectado'",
+      "motivo": "guard que nao pode falhar compra confianca: e a classe que o corpo desta cadeira veta (afirmacao sem execucao)"
+    },
+    {
+      "id": "C3-F3",
+      "titulo": "Enumeracao de flags fail-open: token desconhecido e ignorado em silencio; '--dryrun' aplica de verdade e o admin errado fica preso",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "scripts/bootstrap-platform-admin.ts e arquivo NOVO deste bloco (git diff --name-only merge-base..HEAD)",
+      "onde": "scripts/bootstrap-platform-admin.ts:110-124 (parseArgv: denylist de 2 grafias de senha + includes de 3 flags, sem recusa do resto)",
+      "propriedade_ausente": "o membro nao previsto da enumeracao de argv nasce do lado PERMITIDO (tratado como benigno); nenhum teste acusa (T1.2 so cobre as grafias listadas)",
+      "evidencia_execucao": "cluster descartavel: F1 '--password-stdin --dryrun' com e-mail errado => ec=0 'modo: aplicar' CONVERGIDO, 1/1/1/1; F2 '--dry-run' e F3 aplicacao com o e-mail certo => ec=2 ADDITIONAL_ADMIN_REFUSED (sem caminho de remocao, plano §4.1); F4 '-p <senha>' => ec=0 CONVERGIDO (senha em argv aceita)",
+      "motivo": "a simulacao e o passo de seguranca que o Runbook B manda dar primeiro antes de um ato irreversivel em producao; um erro de digitacao o converte no proprio ato, e o script entao recusa a correcao"
+    },
+    {
+      "id": "C3-A1",
+      "titulo": "Runbook B nao documenta o exit 1 (FALHOU), contra o A20 do plano",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Runbook B reescrito neste bloco (E4)",
+      "onde": "docs/deployment.md, Runbook B (l.168-199 do head)",
+      "propriedade_ausente": "o leitor do runbook nao distingue 'banco caiu' (1) de 'trava mordeu' (2) — distincao que o plano §4.2 item 8 declara ser o motivo dos dois codigos",
+      "evidencia_execucao": "R6 banco inalcancavel => ec=1 'FALHOU: ' (mensagem vazia); grep -c 'exit 1|FALHOU' no Runbook B = 0; T1.8 nao confere codigos",
+      "motivo": "A20 pede 0/2/1"
+    },
+    {
+      "id": "C3-N1",
+      "titulo": "FALHOU com mensagem vazia em erro de conexao",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "script novo",
+      "onde": "scripts/bootstrap-platform-admin.ts:413",
+      "evidencia_execucao": "R6 => '[bootstrap-platform-admin] FALHOU: ' e nada mais",
+      "motivo": "o codigo 1 esta certo (nada gravado, nao segue o fluxo); falta a causa para o operador"
+    },
+    {
+      "id": "C3-N2",
+      "titulo": "Pre-condicao do Runbook B mais frouxa que o script (conta existencia, script exige concessoes > 0)",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Runbook B reescrito neste bloco",
+      "onde": "docs/deployment.md Runbook B 'Pre-condicao' x scripts/bootstrap-platform-admin.ts:200-201",
+      "evidencia_execucao": "leitura; a divergencia e no sentido seguro (o script recusa RBAC_NOT_PROVISIONED onde o runbook diria ok)",
+      "motivo": "duas fontes para a mesma pre-condicao; nenhuma das duas permite o que a outra nega"
+    },
+    {
+      "id": "C3-N3",
+      "titulo": "O teste -db do bloco so executa em Linux (R-3); no Windows falha vermelho, nao pula",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "tests/san3-09-bootstrap-platform-admin-db.test.ts e arquivo novo do bloco",
+      "onde": "tests/san3-09-bootstrap-platform-admin-db.test.ts (spawn de node sobre node_modules/.bin/prisma; spawnSync('npm') sem shell)",
+      "evidencia_execucao": "Windows: ec=1, not ok T2.1, SyntaxError do shim; Linux: 11/11",
+      "motivo": "portabilidade do arnes; a falha e fail-closed (vermelha), sem efeito de seguranca"
+    },
+    {
+      "id": "C3-N4",
+      "titulo": "A trava so reconhece NODE_ENV exatamente 'production'; outras grafias e ausencia permitem",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_de_escopo": "semantica espelhada de prisma/seed-guard.ts:28, criado em 4a2db09b (2026-07-14, Omega-INFRA-3 #182), anterior ao bloco; o plano §10 lista a classe ('NODE_ENV nao exportado fora do conteiner') como pre-existente",
+      "onde": "scripts/bootstrap-platform-admin.ts:97-102",
+      "evidencia_execucao": "sonda: Production/PRODUCTION/'production '/prod/ausente => PERMITE; production => nega",
+      "motivo": "registro; a mitigacao vigente e o Runbook exportar NODE_ENV=production inline"
+    }
+  ],
+  "voto": "REPROVADO",
+  "autoridade_unica": {
+    "medido": "PLATFORM_ROLE_KEY literal no script x ROLE_AUTHORITY/PLATFORM_ROLES no catalog: mutacao super_admin->tenant => T2.8 vermelho (overview 403); concordancia imposta por teste (so onde o -db roda)",
+    "evidencia": "C3-evidencia.md §P3"
+  },
+  "resumo": "Itens 2 e 3 de pe (T2.5/T2.6/T2.8/T2.9 verdes no head em Linux; 200/401 medidos por HTTP com controle; tsc verde; Runbook B confere com a execucao, com ajuste do exit 1). Item 1 reprova: o unico guard de enumeracao fail-closed do bloco (CE-G1, A4/T1.7) e fail-open por construcao, e o teste de mutacao dele e tautologico. E a enumeracao de flags do script trata o desconhecido como benigno: '--dryrun' aplica de verdade, e o admin errado fica preso.",
+  "propriedade_ausente": "o membro nao previsto nasce do lado PERMITIDO: (F1) import fora da allowlist em forma que o regex nao reconhece => 23/23 verde, check/tsc verdes, runtime carrega; (F2) o teste de mutacao do T1.7 continua verde com o verificador enfraquecido; (F3) flag desconhecida ignorada => a simulacao escreve",
+  "bloqueia": [
+    "C3-F1",
+    "C3-F2",
+    "C3-F3"
+  ],
+  "nao_executado": "nao rodei a suite inteira (npm test) nem as regressoes de §8 l.568/570 (fora das tres linhas desta cadeira); a mutacao M10 sem GUC e da C2; nao medi ps -o args (C1)",
+  "incidente_de_limpeza": "o glob ./*.log apagou todo .log da raiz do scratchpad COMPARTILHADO da sessao, inclusive possiveis logs alheios (contagem anterior nao medida); ver C3-evidencia.md §L2",
+  "terreno": "worktree C:/Users/AMP/w-j09c3 (detached ba65c03a) e containers j09c3-pg/j09c3-redis/j09c3-node + rede j09c3-net criados e removidos; base viva nunca alvo",
+  "gravado_em": "2026-10-04T20:10Z"
+}

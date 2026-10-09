@@ -20,6 +20,7 @@ import type { TenantContext } from "../src/modules/context/types";
 //       o 2º plano (é assim que `[W1]`/`[W2]`/`[PV6]` provam o comportamento sem tocar nos hooks);
 //   (e) `IS_REACT_ACT_ENVIRONMENT = true`;
 //   (f) cada caso desmonta a raiz (`root.unmount()` dentro de `act`) e limpa o `localStorage`.
+//   (g) `fire` chama o handler registrado em `__reactProps$…`; prova a fiação da página, não a delegação de eventos do React.
 // Toda asserção é de COMPORTAMENTO (data-state, contagens, presença/ausência de controle) — nunca "contém OS-000101".
 // Em modo REAL (`VITE_USE_MOCKS` ≠ "true"); rota não prevista no stub de `fetch` LANÇA — nenhum caso passa por acidente.
 process.env.VITE_USE_MOCKS = "false";
@@ -29,6 +30,8 @@ process.env.VITE_USE_MOCKS = "false";
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 
 type Listener = (event: unknown) => void;
+type DownloadClick = { readonly download: string; readonly href: string };
+const downloadClicks: DownloadClick[] = [];
 
 class MiniNode {
   nodeType: number;
@@ -198,6 +201,21 @@ class MiniElement extends MiniNode {
   set value(value: unknown) {
     this.storedValue = String(value);
   }
+  get download(): string {
+    return this.getAttribute("download") ?? "";
+  }
+  set download(value: string) {
+    this.setAttribute("download", value);
+  }
+  get href(): string {
+    return this.getAttribute("href") ?? "";
+  }
+  set href(value: string) {
+    this.setAttribute("href", value);
+  }
+  click(): void {
+    downloadClicks.push({ download: this.download, href: this.href });
+  }
 }
 
 type CapturedInterval = { fn: (() => void) | null; ms: number };
@@ -317,6 +335,7 @@ const { createRoot } = await import("react-dom/client");
 const { MemoryRouter, Routes, Route } = await import("react-router-dom");
 const { WorkOrdersPage } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
 const { WorkOrderDetailPage } = await import("../src/modules/work-orders/pages/WorkOrderDetailPage");
+const { localDateString } = await import("../src/modules/work-orders/work-orders-list-filters");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
 const { PermissionProvider } = await import("../src/providers/PermissionProvider");
@@ -350,7 +369,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
 /** Item da lista como `toWorkOrderListDto` o serializa (camelCase; `work-order.dto.ts`). */
-const listItem = (id: string, code: string) => ({
+const listItem = (id: string, code: string, overrides: Readonly<Record<string, unknown>> = {}) => ({
   id,
   code,
   title: `Atendimento ${code}`,
@@ -366,8 +385,24 @@ const listItem = (id: string, code: string) => ({
   scheduledFor: null,
   slaDueAt: null,
   createdAt: "2026-09-01T10:00:00.000Z",
+  ...overrides,
 });
 const THREE = [listItem("a", "OS-000001"), listItem("b", "OS-000002"), listItem("c", "OS-000003")];
+const TWENTY_FIVE = Array.from({ length: 25 }, (_, index) =>
+  listItem(`item-${index + 1}`, `OS-${String(index + 1).padStart(6, "0")}`, {
+    title: index === 0 ? "Troca; urgente" : `Atendimento ${index + 1}`,
+  }),
+);
+const THREE_WITH_COMPLETED = [
+  listItem("open-a", "OS-ABERTA-1"),
+  listItem("done", "OS-CONCLUIDA", { status: "completed" }),
+  listItem("open-b", "OS-ABERTA-2"),
+];
+const THREE_PRIORITIES = [
+  listItem("urgent", "OS-URGENTE", { priority: "urgent" }),
+  listItem("high", "OS-ALTA", { priority: "high" }),
+  listItem("low", "OS-BAIXA", { priority: "low" }),
+];
 
 const BODIES = {
   // `rbac.middleware.ts` — o 403 do gate `work_orders:read`
@@ -376,18 +411,23 @@ const BODIES = {
   "500": () => json(500, { error: { code: "INTERNAL_SERVER_ERROR", reason: "unknown_error", message: "Unexpected error." } }),
   "200vazio": () => json(200, { items: [], pagination: { limit: 20, offset: 0, total: 0 } }),
   "200x3": () => json(200, { items: THREE, pagination: { limit: 20, offset: 0, total: 3 } }),
+  "200x25": () => json(200, { items: TWENTY_FIVE, pagination: { limit: 20, offset: 0, total: 25 } }),
+  "200concl": () => json(200, { items: THREE_WITH_COMPLETED, pagination: { limit: 20, offset: 0, total: 3 } }),
+  "200prio": () => json(200, { items: THREE_PRIORITIES, pagination: { limit: 20, offset: 0, total: 3 } }),
   pendente: () => new Promise<Response>(() => undefined),
 } as const;
 type Scenario = keyof typeof BODIES;
 
 type FetchImpl = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-type RouteTable = ReadonlyArray<readonly [RegExp, () => Response | Promise<Response>]>;
+type RouteTable = ReadonlyArray<readonly [RegExp, (url: string) => Response | Promise<Response>]>;
+const requestedUrls: string[] = [];
 
 /** Stub de `fetch` na borda: rota não prevista LANÇA (padrão `routes()` de `work-orders-honest-errors.test.tsx`). */
 function installFetch(table: RouteTable): void {
   const impl: FetchImpl = async (input) => {
     const url = String(input);
-    for (const [pattern, respond] of table) if (pattern.test(url)) return respond();
+    requestedUrls.push(url);
+    for (const [pattern, respond] of table) if (pattern.test(url)) return respond(url);
     throw new Error(`rota não prevista no stub de fetch: ${url}`);
   };
   globalThis.fetch = impl as typeof fetch;
@@ -417,6 +457,8 @@ type Mounted = {
 async function mount(permissions: readonly string[], role: string, tree: (children: unknown) => unknown, element: unknown): Promise<Mounted> {
   dom.storage.clear();
   dom.intervals.length = 0;
+  requestedUrls.length = 0;
+  downloadClicks.length = 0;
   // Sessão SEM permissões próprias: as permissões do ator vêm só do contexto ativo (o papel sob teste).
   setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: [], permissions: [] } });
   const context: TenantContext = { ...CONTEXT_BASE, role: role as TenantContext["role"], permissions: [...permissions] };
@@ -500,6 +542,69 @@ function read(container: MiniElement) {
 
 const noDigit = (values: string[]) => values.every((value) => !/\d/.test(value));
 const SERVICE_ERROR_TEXT = "A consulta às ordens de serviço falhou. Tente novamente em instantes.";
+
+async function fire(element: MiniElement, prop: "onClick" | "onChange", value?: string): Promise<void> {
+  const propsKey = Object.keys(element).find((key) => key.startsWith("__reactProps$"));
+  if (!propsKey) throw new Error(`propriedades internas do React ausentes em <${element.localName}>`);
+  const props = (element as unknown as Record<string, unknown>)[propsKey] as Record<string, unknown>;
+  const handler = props[prop];
+  if (typeof handler !== "function") throw new Error(`${prop} ausente em <${element.localName}>`);
+  if (value !== undefined) element.value = value;
+  await act(async () => {
+    handler({
+      target: element,
+      currentTarget: element,
+      preventDefault() {},
+      stopPropagation() {},
+    });
+  });
+  await settle();
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+function buttonNamed(container: MiniElement, label: string): MiniElement {
+  const button = elements(
+    container,
+    (element) => element.localName === "button" && text(element).trim().startsWith(label),
+  )[0];
+  if (!button) throw new Error(`botão "${label}" ausente: ${serialize(container)}`);
+  return button;
+}
+
+function elementById(container: MiniElement, id: string): MiniElement {
+  const element = elements(container, (candidate) => candidate.getAttribute("id") === id)[0];
+  if (!element) throw new Error(`#${id} ausente: ${serialize(container)}`);
+  return element;
+}
+
+function queryParam(url: string, key: string): string | null {
+  return new URL(url, "http://t").searchParams.get(key);
+}
+
+async function captureDownloads(run: () => Promise<void>): Promise<readonly Blob[]> {
+  const blobs: Blob[] = [];
+  const originalCreateObjectUrl = URL.createObjectURL;
+  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  URL.createObjectURL = (blob: Blob) => {
+    blobs.push(blob);
+    return `blob:osfe-${blobs.length}`;
+  };
+  URL.revokeObjectURL = () => undefined;
+  try {
+    await run();
+    return blobs;
+  } finally {
+    URL.createObjectURL = originalCreateObjectUrl;
+    URL.revokeObjectURL = originalRevokeObjectUrl;
+  }
+}
 
 /** O tick do auto-refresh capturado (um só intervalo vivo) — dispara o 2º plano sob controle do teste. */
 async function backgroundTick() {
@@ -661,6 +766,202 @@ test("[PV7] em modo REAL nenhum cenário mostra 'Dados demonstrativos'", async (
       async (page) => assert.equal(read(page.container).demo, false, `cenário ${scenario}: ${page.html()}`),
     );
   }
+});
+
+// =============================== FE. Filtrar e Exportar ligados à página real ===============================
+
+test("[FE1] cabeçalho ordena Filtrar, Exportar e Nova OS conforme o gate de criação", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200x3";
+  await withPage(() => mountList(READ_CREATE), async ({ container }) => {
+    const header = elements(container, (element) => element.localName === "header" && hasClass(element, "pat-page-header"))[0];
+    const buttons = elements(header, (element) => element.localName === "button");
+    assert.deepEqual(buttons.map((button) => text(button).trim()), ["Filtrar", "Exportar", "Nova OS"]);
+    assert.equal(buttons[0].getAttribute("class"), "pat-btn");
+    assert.equal(buttons[1].getAttribute("class"), "pat-btn");
+    assert.equal(buttons[0].getAttribute("aria-expanded"), "false");
+    for (const button of buttons.slice(0, 2)) {
+      assert.equal(elements(button, (element) => element.localName === "svg" && element.getAttribute("aria-hidden") === "true").length, 1);
+    }
+    assert.equal(elements(container, (element) => element.getAttribute("id") === "os-filtros").length, 0);
+  });
+
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    const header = elements(container, (element) => element.localName === "header" && hasClass(element, "pat-page-header"))[0];
+    assert.deepEqual(elements(header, (element) => element.localName === "button").map((button) => text(button).trim()), ["Filtrar", "Exportar"]);
+  });
+});
+
+test("[FE2] Exportar reflete carregando, erro, vazio, pronto e 403", async () => {
+  installFetch(LIST_ROUTES);
+
+  listScenario = "403";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    assert.equal(elements(container, (element) => element.localName === "button" && /^(Filtrar|Exportar)$/.test(text(element).trim())).length, 0);
+    assert.equal(elements(container, (element) => hasClass(element, "pat-page-header__actions")).length, 0);
+  });
+
+  const cases = [
+    ["500", "Nada para exportar: a lista não carregou.", true],
+    ["200vazio", "Nenhuma ordem na lista para exportar.", true],
+    ["pendente", "Aguarde: a lista ainda está carregando.", true],
+    ["200x3", "Baixar as 3 ordens da lista em planilha (CSV).", false],
+  ] as const;
+  for (const [scenario, title, disabled] of cases) {
+    listScenario = scenario;
+    await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+      const button = buttonNamed(container, "Exportar");
+      assert.equal(button.hasAttribute("disabled"), disabled, scenario);
+      assert.equal(button.getAttribute("title"), title, scenario);
+    });
+  }
+});
+
+test("[FE3] Exportar baixa as 25 linhas filtradas, não só a página visível", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200x25";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    const blobs = await captureDownloads(async () => {
+      await fire(buttonNamed(container, "Exportar"), "onClick");
+    });
+    assert.deepEqual(downloadClicks, [{ download: "ordens-de-servico.csv", href: "blob:osfe-1" }]);
+    assert.equal(blobs.length, 1);
+    const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+    assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
+    const csv = await blobs[0].text();
+    const lines = csv.split("\r\n");
+    assert.equal(lines[0], "Código;Prioridade;Cliente;Serviço;Técnico;Agenda;Atrasada;Situação");
+    assert.equal(lines.length - 1, 25);
+    assert.match(csv, /"Troca; urgente"/);
+    assert.deepEqual(read(container).count, ["25 ordens"]);
+    assert.equal(read(container).rows, 20);
+  });
+});
+
+test("[FE4] Filtrar abre cartão acessível, envia prioridade, mostra selo e limpa", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200x3";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    const filterButton = buttonNamed(container, "Filtrar");
+    await fire(filterButton, "onClick");
+    assert.equal(filterButton.getAttribute("aria-expanded"), "true");
+    assert.equal(filterButton.getAttribute("aria-controls"), "os-filtros");
+    const card = elementById(container, "os-filtros");
+    assert.equal(card.getAttribute("role"), "group");
+    assert.equal(card.getAttribute("aria-label"), "Filtros da lista de ordens de serviço");
+    const labels = elements(card, (element) => element.localName === "label");
+    assert.deepEqual(labels.map((label) => text(label)), ["Prioridade", "Data de abertura", "De", "Até"]);
+    for (const label of labels) assert.equal(elements(card, (element) => element.getAttribute("id") === label.getAttribute("for")).length, 1);
+    assert.equal(buttonNamed(card, "Limpar").hasAttribute("disabled"), true);
+
+    await fire(elementById(container, "os-filtro-prioridade"), "onChange", "high");
+    assert.equal(queryParam(requestedUrls.at(-1)!, "priority"), "high");
+    assert.ok((filterButton.getAttribute("class") ?? "").includes("pat-btn--engaged"));
+    assert.equal(elements(filterButton, (element) => hasClass(element, "pat-btn__count") && element.getAttribute("aria-hidden") === "true").map(text).join(""), "1");
+    assert.match(elements(filterButton, (element) => hasClass(element, "sr-only")).map(text).join(""), /1 filtro ativo/);
+
+    await fire(buttonNamed(card, "Limpar"), "onClick");
+    assert.equal(queryParam(requestedUrls.at(-1)!, "priority"), null);
+    assert.equal(elements(filterButton, (element) => hasClass(element, "pat-btn__count")).length, 0);
+  });
+});
+
+test("[FE5] datas chegam como limites ISO locais e o atalho Hoje preenche o dia", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200x3";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    await fire(buttonNamed(container, "Filtrar"), "onClick");
+    await fire(elementById(container, "os-filtro-de"), "onChange", "2026-10-01");
+    await fire(elementById(container, "os-filtro-ate"), "onChange", "2026-10-07");
+    assert.equal(queryParam(requestedUrls.at(-1)!, "from"), new Date(2026, 9, 1, 0, 0, 0, 0).toISOString());
+    assert.equal(queryParam(requestedUrls.at(-1)!, "to"), new Date(2026, 9, 7, 23, 59, 59, 999).toISOString());
+    assert.match(text(buttonNamed(container, "Filtrar")), /1 filtro ativo/);
+
+    const today = localDateString(new Date());
+    await fire(elementById(container, "os-filtro-abertura"), "onChange", "today");
+    const [year, month, day] = today.split("-").map(Number);
+    assert.equal(queryParam(requestedUrls.at(-1)!, "from"), new Date(year, month - 1, day, 0, 0, 0, 0).toISOString());
+    assert.equal(queryParam(requestedUrls.at(-1)!, "to"), new Date(year, month - 1, day, 23, 59, 59, 999).toISOString());
+  });
+});
+
+test("[FE6] vazio por filtro usa cópia filtrada e não duplica Nova OS", async () => {
+  installFetch([[/\/work-orders(\?|$)/, (url) => queryParam(url, "priority") === "high" ? BODIES["200vazio"]() : BODIES["200x3"]()]]);
+  await withPage(() => mountList(READ_CREATE), async ({ container }) => {
+    await fire(buttonNamed(container, "Filtrar"), "onClick");
+    await fire(elementById(container, "os-filtro-prioridade"), "onChange", "high");
+    assert.deepEqual(read(container).dataStates, ["empty"]);
+    assert.match(serialize(container), /Nenhuma OS para os filtros atuais/);
+    assert.equal(read(container).novaOs, 1);
+    await fire(buttonNamed(elementById(container, "os-filtros"), "Limpar"), "onClick");
+    assert.equal(read(container).rows, 3);
+  });
+});
+
+test("[FE7] resposta superada não sobrescreve a busca mais nova", async () => {
+  const first = deferred<Response>();
+  const second = deferred<Response>();
+  installFetch([[/\/work-orders(\?|$)/, (url) => queryParam(url, "priority") === "high" ? second.promise : first.promise]]);
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    await fire(buttonNamed(container, "Filtrar"), "onClick");
+    await fire(elementById(container, "os-filtro-prioridade"), "onChange", "high");
+    second.resolve(json(200, {
+      items: [listItem("new-a", "OS-NOVA-A", { priority: "high" }), listItem("new-b", "OS-NOVA-B", { priority: "high" })],
+      pagination: { limit: 20, offset: 0, total: 2 },
+    }));
+    await settle();
+    first.resolve(json(200, {
+      items: [listItem("old-high", "OS-ANTIGA-A", { priority: "high" }), listItem("old-low", "OS-ANTIGA-B", { priority: "low" })],
+      pagination: { limit: 20, offset: 0, total: 2 },
+    }));
+    await settle();
+    assert.equal(read(container).rows, 2);
+    assert.deepEqual(read(container).count, ["2 ordens"]);
+  });
+});
+
+test("[FE8] auto-refresh repete os filtros vigentes e mantém um intervalo", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200prio";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    await fire(buttonNamed(container, "Filtrar"), "onClick");
+    await fire(elementById(container, "os-filtro-prioridade"), "onChange", "urgent");
+    await backgroundTick();
+    assert.equal(queryParam(requestedUrls.at(-1)!, "priority"), "urgent");
+    assert.equal(dom.intervals.filter((interval) => interval.fn !== null).length, 1);
+  });
+});
+
+test("[FE9] Exportar segue a aba e a busca aplicadas no cliente", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200concl";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    const blobs = await captureDownloads(async () => {
+      await fire(buttonNamed(container, "Concluídas"), "onClick");
+      await fire(buttonNamed(container, "Exportar"), "onClick");
+      await fire(buttonNamed(container, "Todas"), "onClick");
+      const search = elements(container, (element) => element.localName === "input" && element.getAttribute("aria-label") === "Buscar por código, cliente ou endereço")[0];
+      await fire(search, "onChange", "OS-ABERTA-1");
+      await fire(buttonNamed(container, "Exportar"), "onClick");
+    });
+    assert.equal(blobs.length, 2);
+    assert.equal((await blobs[0].text()).split("\r\n").length - 1, 1);
+    assert.equal((await blobs[1].text()).split("\r\n").length - 1, 1);
+  });
+});
+
+test("[FE10] 403 em segundo plano fecha cartão e remove Filtrar e Exportar", async () => {
+  installFetch(LIST_ROUTES);
+  listScenario = "200x3";
+  await withPage(() => mountList(["work_orders:read"]), async ({ container }) => {
+    await fire(buttonNamed(container, "Filtrar"), "onClick");
+    assert.equal(elements(container, (element) => element.getAttribute("id") === "os-filtros").length, 1);
+    listScenario = "403";
+    await backgroundTick();
+    assert.deepEqual(read(container).dataStates, ["forbidden"]);
+    assert.equal(elements(container, (element) => element.getAttribute("id") === "os-filtros").length, 0);
+    assert.equal(elements(container, (element) => element.localName === "button" && /^(Filtrar|Exportar)$/.test(text(element).trim())).length, 0);
+  });
 });
 
 // =============================== W. Fiação dos hooks, por COMPORTAMENTO (A4, A5) ===============================

@@ -1,0 +1,150 @@
+{
+ "jurado": "jurado-san3-09c2-c3-guard-ast-e-escopo (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C3 — enumeração fail-closed e cobertura do artefato: guard por AST, matriz de ramos, mutações novas e escopo do dev",
+ "mandato_md5": "63443fcb86cf6621df736e094b5a41c7 · declarado no disparo: 63443fcb86cf6621df736e094b5a41c7",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — o bloco não toca dinheiro",
+ "corpo_md5": "f259ce4769fbeaf71d1b07e49574d1cc · corpo recebido: lido do blob do objeto, f259ce4769fbeaf71d1b07e49574d1cc",
+ "objeto": "d3eace58240cac15062ee8f46c6e7f418711671a (git ls-remote do ramo = refs/pull/400/head = gh pr view 400 headRefOid) · origin/main no início/fim c8af64580cb85ddf4960fecb2f8604384f8f0328 / c8af64580cb85ddf4960fecb2f8604384f8f0328 · merge-base 8ee10bd2e44d95206551b71351f23d901192cbb6 · cerca do mandato 6319f11aef2c05ca375bb7b6df2eb941ae14e4aa e delta só registro (7 arquivos em omega/juntas/votos/B-SAN3-09/) · do objeto do inspetor e1206447 ao objeto: só registro (8 arquivos) · objeto no fim: igual (não andou)",
+ "legalidade": "parecer 00-inspetor-terreno-c2.md (inspetor-de-terreno-da-junta, junta 2, 17:24Z) · LIBERADO COM RESSALVA (R-1..R-6) · confere este nome, este corpo (f259ce47…) e worktree próprio (o mandato fixou w-j9c2c3, livre na medição do inspetor): sim · norma = CLAUDE.md de origin/main c8af6458 (R-2) · check-runs no objeto d3eace58 no fim: total 7 | não-verdes 0 | pendentes 0 (às 18:09Z 4 estavam in_progress; concluíram success)",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 de 2",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta (C1c2-*, C2c2-*) antes de gravar este voto — só vi os nomes no git diff --name-only · li do ciclo 1 e da trilha: meu corpo, meu mandato C3c2.md, 00-inspetor-terreno-c2.md, plano §15 (l.1554-1898), DEV-ciclo2-relatorio.md (cabeçalho e linhas de mutação), C3-voto.json e C3-evidencia.md do ciclo 1 só por grep de nomes de mutantes (para a novidade)",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "itens": {
+  "item1_C3-F1": "VERDE (nota C3c2-N1) — uma função/um literal/zero regex de import; 6 especificadores (preProcessFile = varredura própria = allowlist = o 6 fixo); MF1-a…g vermelhos pelo caso certo com carga 26/26; diferencial pp ⊆ guard em todas; fecho do teste = fecho executado (6 de src, sem env.ts) e MF1-g põe env.ts nos dois",
+  "item2_C3-F2": "AJUSTE — 31 pontos de decisão gerados por AST (+3 estruturais; controle N+1=32 acusou). Detecção de forma: todo ramo tem caso que morre (MF2-a…e, B02, B03b, B04, B18, B26, MF2-c; diferencial morde em MF2-a+MF1-c e MF2-b+MF1-d). Fecho de runtime: MF2-f, B06, B07, B12, B16, B21, B31 sobrevivem; a mordida do fecho existe (TENV sozinho mata o T1.7-guard com 'fecho carregou env.ts') e some sob MF2-f/B12/B31, restando só o T1.5 (roda na CI) — C3c2-A1 (ajuste). parseDiagnostics sem caso (C3c2-N2, nota). Alternativa '<não-literal>' deixa B03c (lado fechado) sobreviver (C3c2-N3, nota)",
+  "item3_mutacoes_novas_e_escopo": "VERDE (notas N4, N5, N6) — 5 mutações novas (N1 TENV fecho transitivo; N2 predicado do guard aceita node:; N3 '--' fim-de-opções; N4 --flag=valor; N5 typeof import) — todas mortas onde têm efeito (N1 T1.7-guard 'fecho carregou env.ts' + T1.5; N2 completo T1.7-mutação; N3/N4 T1.2b; N5 diferencial); A19 ec=0 em todas as que mexem no script/src. Escopo: único commit do dev 1c520f1e dentro de PERMITIDO ∪ ciclo 1, hunks nas regiões; Kpis/* = main (árvore 4ec5b46c) por execução da D-C2-1, no mesmo commit do código (N5); DEV-ciclo2-relatorio.md em omega/** (N4)"
+ },
+ "justificativa": "terreno: worktree próprio detached d3eace58 (CRLF), npm ci próprio (326, sem junction), prisma generate com URL fictícia só no comando, node v20.19.5, typescript 5.9.3, disco 11-12G, sem banco, base viva intocada · T1 baseline 26/26 (ok 24 T1.7-guard, ok 25 T1.7-mutação, ok 20/21 T1.5) · uma collectModuleSpecifiers (l.326), um literal de allowlist (l.317), guard e mutação chamam a mesma função sobre o mesmo SCRIPT; 0 regex de extração (regra: RegularExpressionLiteral + RegExp + extractScriptImports; 8 regex, nenhuma de import) · especificadores: preProcessFile 6 = varredura própria 6 = allowlist 6 = o 6 fixo; controle 5/5 · MF1-a…f: 24/26 (24 guard nomeando node:crypto ou <não-literal>, 25 pelo controle de 0 violações), carga 26/26, restauro = blob; MF1-g: 22/26 (20, 21 T1.5; 24 pela allowlist; 25), carga ok · diferencial pp ⊆ guard nas 7 formas; MF1-f: pp 6, guard 7 (<não-literal>) · fecho do teste 7 (6 de src) = fecho executado por gancho module.register (6 de src), sem env.ts; MF1-g: env.ts nos dois (teste 53 de src ⊇ executado 44); nome do caso sem o tamanho (N1) · ramos GERADOS: 31 (+3 estruturais), controle N+1 = 32 · MF2-a/b/c/d: 25 vermelho com a forma nomeada; MF2-e: 24 (diferencial dotenv/config) e 25; MF2-f: sobrevive, e sob MF1-g morre pela allowlist igual ao controle · matriz: detecção de forma toda com caso que morre (B02, B03b, B04, B09, B13, B18, B26, S3 vermelhos); fecho: MF2-f, B06, B07, B12, B16, B21, B31 sobrevivem; TENV sozinho mata o 24 (fecho carregou env.ts), TENV+MF2-f/B12/B31 só mata T1.5 → C3c2-A1 (ajuste); B01 sobrevive (N2); B03c sobrevive pela alternativa <não-literal> e morre com a asserção estrita (N3); B03a equivalente; B11/B30 não enfraquecem · mutações novas (5): N1 TENV morto (24 fecho + T1.5), N2 completo morto (25), N3 morto (9 T1.2b), N4 morto (9 T1.2b), N5 morto (24 diferencial), A19 ec=0 · escopo: PERMITIDO (7) e PROIBIDO (21) extraídos por parse; bloco 43, fora de PERMITIDO ∪ ciclo 1 = 17 (16 do orquestrador + relatório do dev); ciclo 2 sem merge da main; único commit do dev 1c520f1e em PERMITIDO ∪ ciclo 1, hunks nas regiões (Runbook B l.168-204; entrada e bloco de pendencias; nota 15.5; linha de status; apenso do log) · Kpis: three-dot vazio, árvore do objeto = main = 4ec5b46c (controle 7812fe7c difere), tocado pelo dev em 1c520f1e por execução da D-C2-1 (N5) · relatório do dev em omega/** (N4) · git diff --check: 6 quebras Markdown em registro (N6) · vermelho-controle de cada item acusou (MF1-g nos dois fechos; varredura própria 5/5; gancho known-b; N+1; MF2-e; TENV; src/app.ts; irmão scripts/; árvores 7812fe7c × main) · critérios do plano que não podiam falhar declarados (T1.7-fecho sob MF1-g; diferencial de MF2-a/b sozinhos) · sem medir: hunks do script (da C2) · limpeza: worktree e sondas removidos, nenhum container\nVOTO: APROVADO — guard por AST vê as 7 formas (MF1-a…g vermelhos pelo caso certo, carga 26/26), diferencial e fecho executado coincidem sem env.ts (MF1-g acusa nos dois), 31 ramos gerados: os de detecção de forma todos com caso que morre (MF2-a…e + 8 extras), os do fecho não (C3c2-A1, ajuste: o T1.5 na CI guarda a propriedade), alternativa <não-literal> medida como só do lado fechado (N3); 5 mutações novas, todas mortas onde têm efeito (T1.7-guard fecho/diferencial, T1.7-mutação, T1.2b); escopo: dev dentro de PERMITIDO ∪ ciclo 1 por laço, hunks nas regiões, Kpis = main por execução da D-C2-1 (árvore 4ec5b46c)",
+ "o_que_executei": [
+  {
+   "comando": "timeout 300 node --test --test-reporter=tap --import tsx tests/san3-09-bootstrap-platform-admin.test.ts",
+   "forma": "cwd C:/Users/AMP/w-j9c2c3 (detached d3eace58, CRLF), node v20.19.5, typescript 5.9.3, sem env extra",
+   "resultado": "ec=0, 26/26"
+  },
+  {
+   "comando": "node $SCRATCH/c3/p1-structure.mjs (AST do teste)",
+   "forma": "blob d3eace58 no worktree",
+   "resultado": "1 collectModuleSpecifiers, 1 literal de allowlist, 4 chamadas (guard/mutação sobre o mesmo SCRIPT), 0 regex de extração"
+  },
+  {
+   "comando": "node $SCRATCH/c3/p2-specs.mjs file|control",
+   "forma": "varredura própria por switch(kind) × preProcessFile × allowlist",
+   "resultado": "6=6=6; controle 5/5"
+  },
+  {
+   "comando": "bash $SCRATCH/c3/runmut.sh MF1-a…g",
+   "forma": "7 mutantes no script real, âncora única, CRLF, T1 inteiro, restauro por cp + hash-object",
+   "resultado": "a…f: 24/26 (24,25 vermelhos); g: 22/26 (20,21,24,25); restauro 4ebe9574 = blob em todos"
+  },
+  {
+   "comando": "node p3-extract.mjs + p4-diff.mjs diff|closure",
+   "forma": "funções do teste extraídas verbatim e transpiladas",
+   "resultado": "pp ⊆ guard nas 7 formas; fecho do teste 7 (6 src), MF1-g 54 com env.ts"
+  },
+  {
+   "comando": "node --import tsx --import file:///$SCRATCH/c3/register.mjs probe-import.mjs (gancho module.register)",
+   "forma": "DATABASE_URL fictícia só no comando; main() não roda",
+   "resultado": "6 arquivos de src, env.ts 0; MF1-g: 44 com env.ts; exec ⊆ teste; controle known-b = 1"
+  },
+  {
+   "comando": "node $SCRATCH/c3/p5-branches.mjs <wt> tests/san3-09-bootstrap-platform-admin.test.ts [control]",
+   "forma": "AST: if/ternário/&&/||/??/?./assert.* em collectModuleSpecifiers e runtimeClosure",
+   "resultado": "N=31; controle com 1 else-if a mais N=32"
+  },
+  {
+   "comando": "bash $SCRATCH/c3/runmut.sh <MF2-a…f, B01…B31, S3, ASTRICT, combinações com MF1-c/d/g e TENV>",
+   "forma": "33 execuções do T1 inteiro, mutação por âncora única CRLF no teste (e no script/rls.ts nas combinações), restauro por cp + hash-object = blob",
+   "resultado": "matriz na evidência §2(c); sobreviventes: B01, B03a(equivalente), B03c, B06, B07, B11(não enfraquece), B12, B16, B21, B30(não enfraquece), B31, MF2-f; TENV: 23/26 com T1.7-guard 'fecho carregou env.ts'; TENV+MF2-f/B12/B31: só T1.5 vermelho"
+  },
+  {
+   "comando": "A19=1 bash $SCRATCH/c3/runmut2.sh <N1-TENV|N2|N2+MF1-a|N2+N2c+MF1-a|N3|N4|N5>",
+   "forma": "mutações novas, âncora única CRLF, T1 inteiro + A19 (tsc estrito do script), restauro por cp + hash-object",
+   "resultado": "N1 23/26 (24 fecho, 20, 21); N2 26/26 sozinho; N2+MF1-a 24/26 (esperava 6); N2+N2c+MF1-a 25/26 (25 T1.7-mutação); N3 25/26 (9 T1.2b); N4 25/26 (9 T1.2b); N5 25/26 (24 diferencial); A19 ec=0 em todas"
+  },
+  {
+   "comando": "node $SCRATCH/c3/p6-scope.mjs <wt> d3eace58 [src/app.ts]",
+   "forma": "PERMITIDO/PROIBIDO extraídos do §15.3 do blob por parse; delta do bloco three-dot; ciclo 1 = 8ee10bd2...7812fe7c; atribuição por commit",
+   "resultado": "43 no bloco, 17 fora de PERMITIDO ∪ ciclo 1 (16 do orquestrador + o relatório do dev); dev: 12 arquivos, casamentos no PROIBIDO só Kpis/* ×4 e omega/** ×1; controle src/app.ts acusou"
+  },
+  {
+   "comando": "git rev-parse <r>:Kpis para 7812fe7c, 1c520f1e, d3eace58, 8ee10bd2, 357a98e9, origin/main; git diff --name-only (three-dot e two-dot) -- Kpis/",
+   "forma": "comparação de árvores",
+   "resultado": "objeto = main = 4ec5b46c; 7812fe7c = b8f620d2 (controle: difere em 4 arquivos)"
+  },
+  {
+   "comando": "git diff --check origin/main...d3eace58; git grep CREATE/DROP/ALTER ROLE|GRANT|REVOKE|OWNER TO em tests/san3-09-*",
+   "forma": "objeto d3eace58",
+   "resultado": "6 trailing whitespace (Markdown, registro); 0 DDL de papel"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C3c2-N1",
+   "defeito": "o nome do caso T1.7-guard não publica o tamanho do fecho de runtime, como o §15.1.2 item 3 do plano promete",
+   "evidencia": "tests/san3-09-bootstrap-platform-admin.test.ts l.369 no blob d3eace58: nome sem número; fecho medido = 7 arquivos (6 de src)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a publicação do tamanho do fecho prometida no plano não existe; a asserção env.ts ∉ fecho existe e morde"
+  },
+  {
+   "id": "C3c2-A1",
+   "defeito": "o fecho de runtime pode ser enfraquecido e nenhum caso fica vermelho",
+   "evidencia": "MF2-f (visit(resolved)→closure.add), B12, B31, B06, B07, B16, B21: T1 26/26; TENV (rls.ts importa ../config/env.js) sozinho: 24 T1.7-guard 'fecho carregou env.ts'; TENV+MF2-f / +B12 / +B31: T1.7-guard verde, só 20/21 (T1.5) vermelhos; sob MF1-g o caso morre pela allowlist com a mesma mensagem com e sem MF2-f",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a propriedade do §15.1.3 (todo ramo enfraquecido deixa um caso vermelho) não vale para runtimeClosure nem para os ramos runtimeOnly: o T1.7-mutação não exercita o fecho e o T1.7-guard só asserta env.ts ∉ fecho no script real; a propriedade de produto segue guardada por execução no T1.5, que roda na CI"
+  },
+  {
+   "id": "C3c2-N2",
+   "defeito": "o ramo parseDiagnostics pode ser apagado e nenhum caso fica vermelho",
+   "evidencia": "B01 (assert l.328 → void 0): T1 26/26",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "nenhum caso alimenta texto não-parseável ao verificador; script não-parseável já derruba a carga do arquivo de teste"
+  },
+  {
+   "id": "C3c2-N3",
+   "defeito": "o teste de mutação aceita, para forma literal, uma violação que não nomeia o especificador injetado",
+   "evidencia": "l.399 '|| violations.includes(\"<não-literal>\")'; B03c (isStringLiteral || false) 26/26; com a asserção estrita (ASTRICT) 25/26 'forma não detectada: await import(`node:crypto`)'; ASTRICT no objeto 26/26",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a alternativa dissolve o critério do §15.1.3 ('nomeando o especificador injetado'); medido que só deixa sobreviver mutante do lado fechado"
+  },
+  {
+   "id": "C3c2-N4",
+   "defeito": "o dev criou o próprio relatório em agent-orchestration/omega/**, que o §15.3 põe no PROIBIDO dele",
+   "evidencia": "git diff-tree 1c520f1e: A agent-orchestration/omega/juntas/votos/B-SAN3-09/DEV-ciclo2-relatorio.md; §15.3 item 8 manda as mutações 'publicadas no relatório do dev' sem nomear caminho; mandato do dev do ciclo 2 não versionado",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o PROIBIDO literal e a exigência de relatório da bateria divergem; o lugar do relatório do dev não está escrito"
+  },
+  {
+   "id": "C3c2-N5",
+   "defeito": "a restauração de Kpis/* à main veio no mesmo commit do código, e não num commit próprio como a decisão D-C2-1 diz",
+   "evidencia": "1c520f1e toca Kpis/app.js, kpis-history.json, kpis-history.md, kpis-latest.json junto com script/testes; árvore Kpis em 1c520f1e = origin/main = 4ec5b46c",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a forma 'commit próprio' da decisão não foi seguida; o conteúdo é exatamente o da main"
+  },
+  {
+   "id": "C3c2-N6",
+   "defeito": "git diff --check do bloco não está limpo",
+   "evidencia": "git diff --check origin/main...d3eace58 ec=2: 4 em codex/comandos/B-SAN3-09-bootstrap-platform-admin.md (ciclo 1, d7e857d1) e 2 em DEV-ciclo2-relatorio.md (l.3-4) — quebras de linha Markdown de dois espaços",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a bateria 9 do §15.3 pede git diff --check; as ocorrências são só em registro"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "régua do plano §15.1.3: a expectativa 'MF2-f → T1.7-fecho sob MF1-g' e o 'T1.7-fecho' da linha MF1-g não discriminam — sob MF1-g o laço da allowlist (l.373-378) mata o caso antes da asserção do fecho (l.383-384); controle MF1-g sozinha = mesmo caso, mesma mensagem. Medi a mordida do fecho por outro cenário (TENV).",
+  "régua do plano §15.1.3: 'o diferencial do preProcessFile' para MF2-a/MF2-b sozinhos não pode falhar (o diferencial só roda no script real, que não tem export-from nem import()); medido em combinação (MF2-a+MF1-c, MF2-b+MF1-d): morde."
+ ],
+ "pendencias_que_aceito": [
+  "C2: os hunks do script por região (BOOTSTRAP_FLAGS/parseArgv/BootstrapRefusalCode/exaustividade × corpo byte-idêntico), o dry-run, a concorrência, o arnês e o T2 — não medi; meu item foi o script por arquivo",
+  "C1: T1.2b e MF3 como critério, eco, T2.4b, M-1, M-2, registro e Runbook (conteúdo) — não medi",
+  "reprovação por construção do §15.4 (não cobrei): Kpis/* números; T2 no Windows (P-SAN3-09-DB-TEST-SO-LINUX, dono B-ARNES-2); FALHOU vazio (P-SAN3-09-FALHOU-SEM-CAUSA, dono B-SAN3-10); semântica da trava e .env do operador; import(new Function(...)) e cargas fora da AST; suíte inteira fora da CI",
+  "R-2 do inspetor: o ramo não integrou a main depois de 8ee10bd2; o head que mergear será outro (2 arquivos de registro em conflito) — approved_head e delta até o merge são da ata"
+ ],
+ "teardown": "processos vivos com w-j9c2c3 na linha de comando = 0 antes da remoção · worktree C:/Users/AMP/w-j9c2c3 removido por git worktree remove --force (ec=0; node_modules dentro), test -e = removido, worktree list = 0 · mutações do script, do teste e de src/database/rls.ts restauradas com hash-object = blob (4ebe9574…, d57fb182…, f8bd0fae…) e status --porcelain 0 antes da remoção · sondas e cópias em $SCRATCH/c3 apagadas (1,9 MB) · base viva nunca tocada · nenhum container criado (filtro j9c2c3 = 0); volumes órfãos e containers dev05c2-* alheios não tocados · w-nuv09 só com os meus dois arquivos de saída (+ 30 ' M .agents/**' fantasmas pré-existentes, diff --ignore-cr-at-eol = 0) · disco C: 11G → 12G livres"
+}

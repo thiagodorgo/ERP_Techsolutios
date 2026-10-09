@@ -2991,6 +2991,36 @@ e a exigência de porteiro para PR de registro.
   relata o mesmo checklist ao dono ao fim de cada bloco. Continua o ritmo (uma sessão pesada do Codex por vez, no máximo
   duas; Claude uma tarefa por vez).
 
+## Decisões do dono de 2026-10-08 (tarde) — rumo ao Traccar, papel do banco, #388/#389 e ritmo (transcritas pelo orquestrador)
+
+- **D-ATO2-OPCAO-B (2026-10-08)** — perguntado quando trocar a conexão do app para o papel `erp_runtime` em produção (Ato 2
+  do `B-SAN3-05`), com as opções A (esperar a suíte `-db` inteira sob o papel, `B-ARNES-2`), B (medir só as 5 tarefas
+  automáticas que usam banco) e C (ligar logo, com vigia de 48 h), o dono decidiu: *"vamos de B · Testar só o que importa,
+  tenho pressa, estou a dias dando volta, preciso fazer alguma entrega. a entrega que vejo é o traccar integrado e rodando,
+  telas sem place holde, funcional. e so posso fazer isso quando esse bloco acabar"*. Consequência: antes do Ato 2 em
+  produção, um bloco pequeno só de teste roda `notification-dispatch`, `notifications.scan-due`,
+  `impound.reconcile-removals`, `impound.notify-due` e `charging.accrue-daily` sob o papel novo e sob o atual, mesmo seed,
+  e exige o mesmo resultado; as outras 4 tarefas (`checklist-attachment-postprocess` e `audit-log-fanout` vazias,
+  `field-ops-event-fanout` sem banco, `aws-cur.import-cost-file` em tabelas sem RLS) ficam dispensadas pela leitura do
+  código. O bloco vem depois do merge do #405 e não bloqueia o Traccar (pendência `P-SAN3-05-ATO2-CINCO-TAREFAS`).
+- **D-388-389-ESTACIONADOS (2026-10-08)** — escolha literal *"Estacionar os dois (Recomendado)"*: o #388 (`B-O6R-11`) e o
+  #389 (`B-O6R-04a`) ficam em rascunho, sem novos ciclos, como o #393 (comentado nos dois PRs). Com isso a regra 4 da
+  `D-GOV-PROPORCIONAL` (Traccar depois de sanar o que está em andamento) passa a depender só do #405 entre os PRs em voo.
+- **D-TRACCAR-PLANO-APOS-405 (2026-10-08)** — escolha literal *"Não, esperar o #405"*: o plano da trilha do Traccar só
+  começa depois do merge do #405.
+- **D-CLAUDE-RITMO-08-10 (2026-10-08)** — *"manter um por enquanto, hoje a noite o limite volta ao normal ai vc pode dar de
+  cacete pra terminar isso"* (um agente Claude por vez até o reset da noite; depois, mais de um) e *"rode o codex, uma
+  janela por vez"*.
+- **D-405-D4-NOME-DE-PAPEL (2026-10-08)** — na PARADA-D4-2 do dev do ciclo 2 do #405, escolha literal *"Nome de papel pode
+  aparecer (Recomendado)"*: o nome de papel do banco é identidade, não credencial, e pode aparecer no log como valor de
+  `session_user`, `current_user`, `escapes[].rolname` e na recusa `via:rolname`; host, porta, senha, banco e URL continuam
+  proibidos. Ratifica a errata 1 do orquestrador; texto normativo nas erratas do D4 em `docs/revisoes/SAN3/B-SAN3-05-plano.md`.
+  (Uma primeira tentativa do orquestrador de escrever a errata 2 sozinho foi barrada pelo classificador de permissões como
+  afrouxamento de critério de segurança — por isso a decisão foi levada ao dono.)
+- **D-MERGE-O-QUE-ESTA-FEITO (2026-10-08)** — *"pode mergear o que esta feito"*: mergeados o #400 (`026ff7b8`) e o #409
+  (`fea93281`), cada um com o seu porteiro (`PORTEIRO-400.md`, `PORTEIRO-409.md`). A premissa de que exportar a lista de
+  OS usa `work_orders:read` segue como premissa do orquestrador, sem veto do dono até este registro
+  (`P-OS-EXPORTAR-PERMISSAO-PREMISSA`).
 ## Decisões de 2026-10-09 — plano do dia e a leitura da junta 3 do B-SAN3-05 (transcritas pelo orquestrador)
 
 - **D-PLANO-DIA-2026-10-09** — o dono pediu o plano do dia em Fable (*"use o fable para fazer o plano de hoje"*, exceção

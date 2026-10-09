@@ -257,21 +257,39 @@ O deploy e a promocao da imagem GHCR `:<sha>`; o rollback e a **redeploy da imag
 #### Runbook B — provisionamento do 1o tenant real (sem seed demo)
 
 Produção **nunca** roda `db:seed`/`db:seed:demo` (guarda `assertSeedAllowed` + ausencia do passo no CD). O
-bootstrap do 1o tenant/administrador de plataforma real e uma acao de **ativacao** contra o banco vivo de
-produção (exige o DB provisionado), NAO um passo deste PR. Requisitos:
+bootstrap do 1º administrador de plataforma é executado por `scripts/bootstrap-platform-admin.ts` — um ato de
+**ativação one-shot**, idempotente, fora do CD. Exige que o banco já tenha o `super_admin` global provisionado
+(passo "Provisionamento de RBAC" do CD). A senha vai por env ou `--password-stdin`, **nunca** por argv (`--password=`
+→ `PRODUCTION_OPT_IN_MISSING` não é esse erro; `PASSWORD_IN_ARGV` é — e exit 2 em ambos os casos).
 
-1. E um **bootstrap dedicado e idempotente** (tenant de sistema + platform admin + credencial), exigindo
-   `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` — **nunca** o seed demo. O script de
-   bootstrap idempotente e verificado contra um banco prod-like e entregue na ativacao (follow-up
-   **P-SAN-PROD-BOOTSTRAP**; o seed atual so cria o tenant demo, inadequado para produção).
-   **A parte de RBAC saiu deste follow-up:** papéis (inclusive `super_admin`), permissões e concessões já são
-   provisionados pelo passo do CD (secao "Provisionamento de RBAC"). Resta ao bootstrap **só** a organização real,
-   o usuário administrador e a credencial dele — o vínculo usuário↔papel (`user_role_assignments`) é dado de
-   organização e **nunca** é criado pelo provisionamento.
-2. Se o bootstrap precisar rodar com `NODE_ENV=production`, usar o escape hatch **one-shot** `ALLOW_PROD_SEED=1`
-   **inline no unico comando** e **remove-lo em seguida** — NUNCA persistir a variavel no `[env]` do toml nem
-   como secret fixo (senao reabre o seed demo no mesmo ambiente).
-3. Dominio + TLS pelo Fly (certs gerenciados) apos o `fly apps create` e o apontamento de DNS.
+**Pré-condição:** verifique `SELECT count(*) FROM roles WHERE key='super_admin' AND tenant_id IS NULL` → `1`.
+
+**Comandos (num checkout do SHA mergeado, após `npm ci && npx prisma generate`):**
+
+```bash
+read -rs -p "Senha do admin de plataforma: " SENHA; echo
+# simulação primeiro — nada é gravado:
+printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 \
+  DATABASE_URL="$PROD_DATABASE_URL" PLATFORM_ADMIN_EMAIL='<e-mail>' \
+  npx tsx scripts/bootstrap-platform-admin.ts --password-stdin --dry-run
+# aplicação:
+printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 \
+  DATABASE_URL="$PROD_DATABASE_URL" PLATFORM_ADMIN_EMAIL='<e-mail>' \
+  npx tsx scripts/bootstrap-platform-admin.ts --password-stdin
+unset SENHA
+```
+
+Saída de sucesso: `CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.` (exit 0). Sem
+`ALLOW_PROD_BOOTSTRAP=1` → `PRODUCTION_OPT_IN_MISSING` e exit 2 (nada gravado). Senha perdida: `--reset-password`.
+`ALLOW_PROD_BOOTSTRAP` e `ALLOW_PROD_SEED` são variáveis **independentes** — uma não abre a outra.
+Argumento não reconhecido → `UNKNOWN_ARGUMENT` e exit 2, sem ecoar o argumento e sem gravar nada. Códigos: exit 0 =
+criado ou já convergido; exit 2 = recusa nomeada (trava, entrada, argumento ou estado), nada gravado; exit 1 =
+`FALHOU` (por exemplo, banco inalcançável), nada confirmado e a transação não fecha.
+
+Domínio + TLS pelo Fly (certs gerenciados) após o `fly apps create` e o apontamento de DNS.
+
+**Ato 2 — login pela web:** requer o runbook B-O6R-01 ("Runbook de ativação do login sem organização") para que
+o papel de runtime possa executar a função `auth_login_candidates`. Sem ele, a tela responde 401 para qualquer conta.
 
 ### Provedor (decidido na PD-INFRA-1 — `docs/omega-pd.md`)
 

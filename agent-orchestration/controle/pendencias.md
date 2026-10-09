@@ -575,14 +575,83 @@
 - descricao: o seed atual so cria o tenant DEMO; `User.tenant_id` e NOT NULL/FK Restrict (nao existe platform_admin
   tenant-less). Um bootstrap de produção precisa criar tenant de SISTEMA + role super_admin + admin + credencial,
   idempotente, verificado contra banco prod-like. Fora do escopo do PR6 (config-as-code) — apontado por critico (C9).
-- acao: entregar o script de bootstrap dedicado na ATIVACAO (Runbook B), rodado one-shot com `ALLOW_PROD_SEED=1`
+- acao: executar o script de bootstrap dedicado na ATIVAÇÃO (Runbook B), one-shot com `NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1`
   inline (removido em seguida). NUNCA usa `db:seed`/demo.
-- status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
+- status: **EM ANDAMENTO** — script entregue e testado no B-SAN3-09; fecha só com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham. D2: `ALLOW_PROD_BOOTSTRAP` ≠ `ALLOW_PROD_SEED` (uma não abre a outra). D3: o papel `super_admin` e as concessões são do CD (`db:provision-rbac`), nunca do script.
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: sem bootstrap versionado do 1º `platform_admin`, a primeira organização real em produção só nasce por SQL manual fora do repositório; bloqueia o go-live, não a demo.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
-  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **EM ANDAMENTO desde 2026-10-01** — B-SAN3-09 entregou o script; o fechamento depende exclusivamente do ato do dono em produção (§11 Ato 1).</sub>
 - **dono:** `B-SAN3-09` (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
+---
+
+### Pendências abertas por B-SAN3-09 (2026-10-01)
+
+#### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE
+- descricao: a organização `platform` criada pelo bootstrap aparece no console como se fosse cliente; precisa de tratamento visual e operacional próprio.
+- acao: cobrir na tela de Organizações/Detalhe do B-SAN3-06a ou bloco equivalente.
+- status: aberto
+- severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
+- dono: B-SAN3-06b
+- adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
+
+#### P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP
+- descricao: `.env.example` não documenta `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, `PLATFORM_ADMIN_NAME` nem `ALLOW_PROD_BOOTSTRAP`.
+- acao: adicionar as quatro variáveis com comentário ao `.env.example` num bloco de housekeeping.
+- status: aberto
+- severidade: BAIXA — script funciona sem; afeta só onboarding de novos devs.
+- dono: B-SAN3-10
+
+#### P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG
+- descricao: `scripts/bootstrap-platform-admin.ts` usa `--skipLibCheck` no `tsc --noEmit`; o `tsconfig.json` raiz pode não incluir `scripts/` na compilação padrão.
+- acao: verificar e, se necessário, criar `scripts/tsconfig.json` incluindo o diretório.
+- status: aberto
+- severidade: BAIXA — tsc direto no arquivo passa; afeta só o build da IDE.
+- dono: B-ARNES-2
+- adendo (junta 2, C1c2-07, 2026-10-08): não afeta só a IDE — com a mutação MF3-f aplicada, a CI e o T1 continuam verdes; a checagem de tipos que protege as flags (A19) só roda manualmente.
+
+#### P-SAN3-09-ROTEIRO-DE-OPERACAO
+- descricao: consolidar o roteiro operacional de ativação, diagnóstico, repetição segura e recuperação do bootstrap.
+- acao: documentar e ensaiar o roteiro antes do go-live.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-DB-TEST-SO-LINUX
+- descricao: o arquivo `-db` falha no T2.1 no Windows porque o Node tenta executar o shim shell de `node_modules/.bin/prisma`; a falha é vermelha, nunca verde falso, e a CI Linux executa o teste.
+- acao: tornar o arnês de processos de banco portável no Windows.
+- status: aberto
+- severidade: BAIXA
+- dono: B-ARNES-2
+
+#### P-SAN3-09-FALHOU-SEM-CAUSA
+- descricao: em erro de conexão o script imprime `FALHOU: ` vazio (exit 1 correto e nada gravado), sem causa útil ao operador.
+- acao: informar causa segura, sem vazar a URL do banco.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA
+- descricao: com `--reset-password`, a simulação (`--dry-run`) relata "credencial já existia (senha mantida)" e `passwordReset=false`, mas a execução real redefine a senha e grava +1 na auditoria. A simulação não grava nada; o defeito é a mensagem ao operador. O corpo foi congelado pelo §15.3 do ciclo 2 (achado C2c2-A1 da junta 2).
+- acao: a simulação relata o que a execução real faria com a flag pedida, com teste no estado "convergido com reset".
+- status: aberto
+- severidade: MÉDIA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-ECO-APOS-FLAG-DE-SENHA
+- descricao: uma mutação em que o script repete o argumento só a partir da 2ª posição (o formato real de `--password-stdin <valor>`) passa no T1 (26/26) e no T2 (12/12); o produto hoje não repete nada (achado C1c2-02 da junta 2).
+- acao: caso de teste que injeta um valor após a flag de senha e exige que ele não apareça em nenhuma saída.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-FECHO-RUNTIME-SEM-CASO-VERMELHO
+- descricao: os ramos do cálculo do fecho de runtime do guard (T1.7) podem ser enfraquecidos sem nenhum caso vermelho (MF2-f e mais 6 mutações sobrevivem 26/26); o T1.5, que roda na CI, continua acusando o efeito (achado C3c2-A1 da junta 2).
+- acao: um caso por ramo do fecho, com a mutação que o deixa vermelho.
+- status: aberto
+- severidade: BAIXA
+- dono: B-ARNES-2
 
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
@@ -2547,7 +2616,8 @@ homônimo em organizações distintas é legal no modelo.
 - **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
   `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
   (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
-  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** status: ABERTA.
+  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** Nota B-SAN3-09: o piso de 12 caracteres vale
+  somente para o bootstrap; a troca de senha pela aplicação mantém o piso de 8. status: ABERTA.
 - **`P-O6R-B01-REAUTH-SEM-CREDENCIAL`** (S7) — identidade sem credencial elegível fora da organização do
   vínculo removido recebe `403 REAUTH_CREDENTIAL_UNAVAILABLE` e fica sem caminho de autosserviço; desenhar o
   caminho assistido. status: ABERTA.
@@ -10106,7 +10176,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as duas referências mostram — MÉDIA
 
-- status: ABERTA (aberta por `D-OS-CABECALHO-PADRONIZADO`).
+- status: **FECHADA em 2026-10-08** pelo #409 (`fea93281`): Filtrar (Prioridade, Data de abertura) e Exportar funcionando, com testes `[FE1]`–`[FE10]`; revisor independente APROVADO e porteiro LIBERADO COM RESSALVA (`votos/B-OS-FILTRAR-EXPORTAR/`). Técnico segue com `P-WO-LIST-TECH-NAME`. Aberta por `D-OS-CABECALHO-PADRONIZADO`.
 - **prova:** comparativo de 2026-10-08 (agente de frontend; capturas reais a 1440×900 do app em `main` 749a5cf8, do
   protótipo antigo e do design padronizado): os dois designs têm Filtrar e Exportar no cabeçalho; o app os omitiu em
   2026-08-04 (#332) por não haver função ligada. As funções existem: o backend aceita `priority`, `assignedOperatorId`,
@@ -10139,6 +10209,97 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **bloqueia:** não.
 - **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.
 
+## P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recentes — MÉDIA
+
+- status: ABERTA (aberta pelo plano do `B-OS-FILTRAR-EXPORTAR`, §9.3, medido em `c8af6458`).
+- **escopo:** `pre-existente` — origem 2026-06-09 (`9f12ea99` front / `51238552` backend).
+- **prova (N · forma · causa):** N = toda organização com mais de 20 OS no recorte · `GET /work-orders` sem `limit`
+  devolve 20 (`parseLimit` padrão 20, máx. 100) · `buildQuery` do front não envia `limit` e a tela pagina no cliente;
+  KPIs, paginador e (depois do bloco) Exportar só veem essas 20.
+- **dono:** bloco a nomear (lista de OS, paginação no servidor).
+- **bloqueia:** não.
+- **teste de encerramento:** uma organização com 25 OS vê as 25 na lista (paginação no servidor ou "carregar mais"),
+  e os KPIs e o Exportar cobrem o recorte inteiro.
+
+## P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/lib/csv.ts` (`D-Ω4C-REM-CSV`).
+- **prova:** N = 7 exportadores (Auditoria, Acessos, Acessos do app, Dispositivos, Quilometragem, Recusas,
+  Remunerações; o da OS fica coberto pelo próprio bloco) · `csvCell` não neutraliza células que começam com
+  `=`/`+`/`-`/`@`.
+- **dono:** bloco a nomear (acabamento web / segurança de formato).
+- **bloqueia:** não.
+- **teste de encerramento:** `csvCell` (ou `buildCsv`) neutraliza, com teste por consumidor que leva texto livre.
+
+## P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de prioridade — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/work-orders.adapter.ts` l.58-63 (2026-06-09) e
+  `frontend/src/pages/WorkOrderFormPage.tsx` l.55.
+- **prova:** "Media" sem acento no Mapa Operacional e no `WorkOrderPriorityBadge` (§11.3).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** os rótulos de prioridade têm uma fonte só (`WORK_ORDER_PRIORITY_LABEL`, criada pelo
+  `B-OS-FILTRAR-EXPORTAR`) e nenhuma tela mostra "Media".
+
+## P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/components/WorkOrdersFilters.tsx`.
+- **prova:** 0 imports; cópia sem acento e com o texto "UUID ou user ID".
+- **dono:** bloco de faxina web.
+- **bloqueia:** não.
+- **teste de encerramento:** arquivo apagado, com `check` e `smoke` verdes.
+
+## P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel erp_runtime antes do Ato 2 — ALTA
+
+- status: ABERTA (`D-ATO2-OPCAO-B`).
+- **prova:** leitura do código no ramo do #405 em 2026-10-08 (`src/infra/jobs/job.registry.ts` registra 12 jobs; 3 de
+  nuvem têm cenário próprio no B4; dos 9 restantes, 5 usam banco com o contexto da organização aberto por `withTenantRls`
+  — notificações, notificações agendadas, conciliação OS→custódia, avisos de custódia e diárias do pátio); leitura não é
+  medição, e a falha seria silenciosa (cada varredura isola a organização em try/catch e só registra aviso).
+- **dono:** bloco a nomear, depois do merge do #405.
+- **bloqueia:** o Ato 2 em produção (não bloqueia o Traccar).
+- **teste de encerramento:** as 5 tarefas rodam sob `NOSUPERUSER NOBYPASSRLS` e sob o papel atual, mesmo seed, e produzem o
+  mesmo efeito, não vazio.
+
+## P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão de leitura — BAIXA
+
+- status: ABERTA (premissa do orquestrador, sem veto do dono).
+- **prova:** `D-OS-CABECALHO-PADRONIZADO` e o §0.6 do plano do `B-OS-FILTRAR-EXPORTAR`: não existe permissão de exportação
+  no catálogo nem no `RBAC_MATRIX.md`; a exportação da Auditoria também não tem permissão própria.
+- **dono:** decisão do dono.
+- **bloqueia:** não.
+- **teste de encerramento:** o dono confirma a premissa, ou um bloco com junta completa cria a permissão própria (catálogo,
+  matriz, backend).
+
+## P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere uma coluna — BAIXA
+
+- status: ABERTA (ajuste A-2 do revisor do #409).
+- **prova:** o `[EX4]` promete neutralizar "em toda célula", mas só confere a coluna Cliente; a mutação que neutraliza só
+  essa coluna passou verde. O produto está certo (CSV real conferido com 4 fórmulas).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** o `[EX4]` exercita fórmula em toda coluna de texto livre e a mutação "só Cliente" fica vermelha.
+
+## P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o painel de filtros fechado — BAIXA
+
+- status: ABERTA (nota N-1 do revisor do #409).
+- **prova:** a mutação que mantém `aria-controls` com o painel fechado sobrevive; na tela o comportamento está certo.
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** caso que fecha o painel e exige `aria-controls` ausente, vermelho sob a mutação.
+
+## P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e ignora títulos de nível 4 — BAIXA
+
+- status: ABERTA (nota N-3 do revisor do #409 e ressalva R-C do porteiro do #400).
+- **prova:** `agent-orchestration/controle/gerar-indice-pendencias.py` classifica `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` como
+  MÉDIA porque lê "MEDIA" de dentro do próprio ID (a entrada diz BAIXA); e só lê títulos `## ` (l.~84), então as
+  pendências do B-SAN3-09 escritas como `#### P-…` não aparecem no índice. Vale o `pendencias.md`.
+- **dono:** bloco de ferramentas de registro (a nomear).
+- **bloqueia:** não.
+- **teste de encerramento:** o índice mostra a severidade declarada na entrada e inclui as pendências de nível 4.
 ## P-SAN3-05-RATCHET-INST-SOME (2026-10-09) — uma instanciação reconhecida libera a classe inteira — MÉDIA
 
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-01, origem `scripts/san3-05-acessos-de-plataforma.mjs` em `16014c06` (2026-10-08) · **dono:** `B-ARNES-2` (ou bloco próprio do ratchet, a nomear pelo orquestrador).

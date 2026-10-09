@@ -4816,6 +4816,26 @@ bloco mergear.
 - **CICLO 2 (2026-10-03, `dev-ciclo2-b-san3-11`, plano §16 e §16-bis; fatias D1–D3):** main `b404815c` (#404) integrada por merge (`77abde50`, 6 conflitos só em KPI/registro); E10 links `.pat-link` que não navegam + `idPrefix` (`7cd227d1`); E11 adapter fail-closed com `ChecklistRunContractError` (`4d159e09`); E12 gerador v2 = Apêndice E (`eb218a90`); E13 16 → 24 testes (`a73fb35f`); ramo do orquestrador integrado (`8c8f4a1c`); E14 pendências com dono do plano da rodada (`c628a87a`); E15 KPI 171 blocos, 1238/1238 por execução nos dois terrenos, `backfill_note` verdadeira (`070b9a03`, empurrado fast-forward); controles A17″/A18″/A25″/T22 da §16-bis verdes no head empurrado. Registro em `votos/B-SAN3-11/DEV-relatorio.md` § CICLO 2.
 - **CICLO 3 (2026-10-04/05, `dev-ciclo3-b-san3-11`, plano §17; Codex GPT-5.6 Sol até a queda por cota às 23:47Z, depois Claude Opus 5.5):** main `357a98e9` (#407, `D-GOV-PROPORCIONAL`) integrada por merge (`f1329cda`); C2c2-F1 — o censo P-L3 resolve a situação pelo checker (índice literal e por tipo, desestruturação, const local, helper por alias, pior candidato por linha) e L3/L4 vazios são vermelhos (`eec4a24a`, `69095df7`); C2c2-F2 — só o ramo `ChecklistRunContractError` do hook limpa as runs, a falha operacional preserva (`10aa38f8`); T23–T26 antes do código, com vermelho nominal; T25/T26 com DOM mínimo, sem dependência nova (o rascunho com Playwright ficaria vermelho no job `frontend` do CI); `Kpis/*` devolvido à main (`4e377923`, KPI congelado); bateria e mutações nos dois terrenos em `votos/B-SAN3-11/DEV-ciclo3-relatorio.md`. Pela regra (1) do `D-GOV-PROPORCIONAL`, segue para um revisor independente + CI verde, sem nova junta.
 
+## 2026-10-01 — B-SAN3-09 — Bootstrap do 1º admin de plataforma (tarefa de nuvem, dev-san3-09-bootstrap)
+
+- **Branch:** `feat/bootstrap-platform-admin` (10 commits à frente de `origin/main`)
+- **Identidade dev:** `dev-san3-09-bootstrap` (claude-sonnet-4-6, tarefa de nuvem)
+- **E1** ENTREGUE — `scripts/bootstrap-platform-admin.ts` 417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, tsc limpo
+- **E2** ENTREGUE — `tests/san3-09-bootstrap-platform-admin.test.ts` 23/23 pass
+- **E3** ENTREGUE — `tests/san3-09-bootstrap-platform-admin-db.test.ts` 11/11 pass (banco de drill porta 54332)
+- **E4** ENTREGUE — `docs/deployment.md` Runbook B reescrito (linhas 169-185); T1.8 verde
+- **E5** ENTREGUE — KPI 3080/3088, blocks_completed 168→169; comando, pendências, status, log
+- **Correções durante a implementação:**
+  - Hash scrypt: formato real `scrypt$v=1$…` (não `$scrypt-v1$`)
+  - Token do login: `body.data.access_token` (não `body.data.token`)
+  - Roles são objetos `{id, key, name}`, verificados por `.key === "super_admin"`
+  - Ratchet lexical: comentários dos cabeçalhos dos dois arquivos de teste substituídos para não acionar o guard
+- **Próximos:** junta do PR, porteiro pós-merge, confirmação de P-SAN-PROD-BOOTSTRAP
+
+## 2026-10-08 — B-SAN3-09 — ciclo 2 de desenvolvimento
+
+- `P-SAN-PROD-BOOTSTRAP` permanece em andamento: fecha somente após a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
+- D2: `ALLOW_PROD_BOOTSTRAP` é independente de `ALLOW_PROD_SEED`. D3: papel `super_admin` e concessões pertencem ao CD (`db:provision-rbac`).
 ## B-SAN3-05 — ciclo 3 do dev (2026-10-09)
 
 - `dev-ciclo3-b-san3-05` implementou somente A2/A3 do plano concluído sobre o objeto inicial `91d79495`: `view_escape` idêntico na trava e nas duas cópias do script, cobrindo DML, donos que escapam em qualquer profundidade e matviews.

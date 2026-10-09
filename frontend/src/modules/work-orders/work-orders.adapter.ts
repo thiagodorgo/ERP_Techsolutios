@@ -143,9 +143,9 @@ export function filterWorkOrders(items: readonly WorkOrderListItem[], filters: W
     if (filters.priority !== "all" && item.priority !== filters.priority) return false;
     if (operator && item.assignedOperatorId !== operator && item.assignedUserId !== operator) return false;
 
-    const scheduledTime = parseOptionalDate(item.scheduledFor ?? item.createdAt);
-    if (fromTime && scheduledTime && scheduledTime < fromTime) return false;
-    if (toTime && scheduledTime && scheduledTime > toTime) return false;
+    const createdTime = parseOptionalDate(item.createdAt);
+    if (fromTime && createdTime && createdTime < fromTime) return false;
+    if (toTime && createdTime && createdTime > toTime) return false;
 
     if (!search) return true;
     return [item.code, item.title, item.customerName, item.serviceAddress, item.assignedOperatorId, item.assignedUserId]
