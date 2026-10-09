@@ -10001,7 +10001,31 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 - **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-2`.
 - Rodar a suíte `-db` inteira sob papel real fecha o residual semântico do ratchet: hoje 13 suítes escrevem catálogo, 8 fazem DDL e 10 usam helpers. O `SUITES` de `backend-postgres` também pertence a esse bloco.
-- **bloqueia:** não bloqueia este PR; bloqueia declarar a cobertura dinâmica fora da superfície de plataforma.
+- **sub-item medido no B-SAN3-05/ciclo 2:** os 9 jobs do registro runtime fora da superfície de plataforma — `aws-cur.import-cost-file`, `checklist-attachment-postprocess`, `notification-dispatch`, `notifications.scan-due`, `audit-log-fanout`, `field-ops-event-fanout`, `impound.reconcile-removals`, `charging.accrue-daily` e `impound.notify-due` — ainda não têm diferencial sob papel `NOSUPERUSER NOBYPASSRLS`. O inventário estático não acusa chave em `notifications` nem `charging`, mas só a execução fecha um envoltório que deixe de setar GUC.
+- **recomendação ao dono:** o Ato 2 em produção (troca do `DATABASE_URL` do app para `erp_runtime`) espera a medida desses 9 jobs ou é decidido em ata com o risco explícito; `charging.accrue-daily` toca dinheiro.
+- **bloqueia:** não bloqueia este PR; bloqueia declarar a cobertura dinâmica fora da superfície de plataforma e é proposta de gate para o Ato 2 em produção.
+- **teste de encerramento:** cada um dos 9 jobs produz o mesmo efeito não vazio sob superusuário e sob papel `NOSUPERUSER NOBYPASSRLS`, no mesmo seed.
+
+## P-SAN3-05-RUNNER-SEM-TIMEOUT (2026-10-09) — runner e job backend sem teto por arquivo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `scripts/run-backend-tests.mjs` e `.github/workflows/ci.yml` antecedem o bloco e são PROIBIDOS no C2.3; sob a mutação M2, a C2 do ciclo 1 mediu `timeout 150` com ec=124 · **dono:** `B-ARNES-2`.
+- Não há timeout por arquivo no runner nem `timeout-minutes` no job `backend`: um teste que trave prende o job inteiro em vez de falhar. O D3 fecha o T15, mas não a classe para os demais testes.
+- **bloqueia:** não.
+- **teste de encerramento:** um teste que dorme além do teto falha o job em tempo menor ou igual ao teto e nomeia o arquivo.
+
+## P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC (2026-10-09) — default de LocalAuthLoginService pode executar sem GUC — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/modules/auth/services/local-auth-login.service.ts:106`, origem `35c218a8` (2026-06-07); `src/modules/auth/**` é PROIBIDO no C2.3 · **dono:** a nomear pelo orquestrador; candidato `B-ARNES-2`.
+- O `runWithTenantContext` default é `work()` sem GUC, fail-open em princípio. As construções de produção medidas hoje injetam `withTenantRls` (`auth-runtime.ts:81-84` e `session-admin.service.ts:287-290`), mas uma construção nova poderia omitir o envoltório.
+- **bloqueia:** não.
+- **teste de encerramento:** o parâmetro se torna obrigatório ou o default falha fechado, com teste dedicado.
+
+## P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI (2026-10-09) — CI não lê o server.log do PostgreSQL — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — residual declarado do B1 · **dono:** `B-ARNES-2` (workflows).
+- A CI pega a volta da senha em claro ao canal SQL pela guarda estática do T14, mas não lê o log do servidor; a prova por execução fica somente na matriz B7 da junta.
+- **bloqueia:** não.
+- **teste de encerramento:** job de CI com PostgreSQL descartável lê `server.log`, executa a matriz B7 e fica vermelho sob M-B1a.
 
 ## P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA
 

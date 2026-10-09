@@ -155,11 +155,11 @@
 
 ### A1 — ajustes do ciclo 2 e pendências C2.6
 
-**Comando:** EM APURAÇÃO
+**Comando:** inclusão nominal em `agent-orchestration/controle/pendencias.md`; gerador oficial `gerar-indice-pendencias.py` executado em Linux no container `dev05c2-pend-index`, sob `timeout 300s`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** três pendências novas registradas (`P-SAN3-05-RUNNER-SEM-TIMEOUT`, `P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC`, `P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI`) e o sub-item existente `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` recebeu a lista nominal dos **9 jobs** e a recomendação sobre o Ato 2. Índice regenerado: **449 cabeçalhos / 438 IDs**, 117 fechadas, 329 abertas e 3 sem status; as quatro entradas aparecem no índice.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** PASSOU — todas têm escopo/evidência, dono ou atribuição a nomear, bloqueio e teste de encerramento; nenhuma bloqueia este PR.
 
 ## Validação B0–B14
 
