@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 import type { PlatformTenantDetailData, PlatformTenantDetailInfo } from "../platform-tenant-detail.types";
+import { PLATFORM_SYSTEM_ORG_SLUG } from "../platform-overview.types";
 
 // PR-SCALE-5c — "Detalhe da Organização" (sc tenantDetail). Consome GET
 // /api/v1/platform/tenants/:tenantId/detail via usePlatformTenantDetail, lendo o :tenantId REAL da rota
@@ -98,6 +99,7 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sub }: StatCard
 // para teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
 export function PlatformTenantDetailView({ detail }: { detail: PlatformTenantDetailInfo }) {
   const status = orgStatusView(detail.status);
+  const isSystemOrg = detail.slug === PLATFORM_SYSTEM_ORG_SLUG;
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -116,6 +118,7 @@ export function PlatformTenantDetailView({ detail }: { detail: PlatformTenantDet
               {detail.slug ? " · " : null}
               criada em {formatCreatedAt(detail.createdAt)}
             </div>
+            {isSystemOrg ? <div style={{ marginTop: 5, fontSize: 11.5, fontWeight: 700, color: "#2563EB" }}>Organização de sistema</div> : null}
           </div>
         </div>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 99, background: status.bg, border: `1px solid ${status.border}`, fontSize: 13, fontWeight: 700, color: status.color, flexShrink: 0 }}>

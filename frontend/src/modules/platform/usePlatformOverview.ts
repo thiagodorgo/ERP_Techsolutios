@@ -36,7 +36,13 @@ export function usePlatformOverview() {
   const refresh = useCallback(async (background = false) => {
     if (background) setIsRefreshing(true);
     else setLoading(true);
-    setData(await getPlatformOverview(context));
+    const next = await getPlatformOverview(context);
+    setData((current) => {
+      if (background && next.source === "fallback" && !next.forbidden && current.source !== "fallback") {
+        return { ...current, stale: true };
+      }
+      return { ...next, stale: false };
+    });
     setLoading(false);
     setIsRefreshing(false);
   }, [context]);
