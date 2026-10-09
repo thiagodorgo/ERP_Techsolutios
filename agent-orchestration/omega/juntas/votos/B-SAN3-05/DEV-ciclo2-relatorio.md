@@ -111,11 +111,11 @@
 
 ### B4 — cenário executável por membro FORCE da superfície
 
-**Comando:** não iniciado após a PARADA-RC3.
+**Comando:** enumeração do router e do `job.registry` em runtime; mesma fixture sob superusuário e papel efêmero `NOSUPERUSER NOBYPASSRLS`; `npm run check` e `node --test --import tsx tests/san3-05-leituras-de-plataforma-db.test.ts` em PostgreSQL 16 descartável `dev05c2-b4b-*`, sem porta no host e sob `timeout`.
 
-**Saída resumida:** sem execução.
+**Saída resumida:** TypeScript 1/1; arquivo focado **13/13**, fail 0, skipped 0; conjuntos fechados em **11 rotas FORCE = 11 cenários** e **3 jobs FORCE = 3 cenários**, todos com corpo/efeito não vazio e igualdade super × efêmero. Os outros **9 jobs** foram etiquetados `FORA-DA-SUPERFICIE`/`B-ARNES-2`. Uma primeira execução caiu antes dos diferenciais porque a fixture usou um `source_type` fora do `CHECK`; corrigida para o valor permitido `mock_fixture`, sem tocar produto. Teardown final: containers=0, redes=0.
 
-**Resultado:** AGUARDA DECISÃO DO ORQUESTRADOR SOBRE RC3.
+**Resultado:** PASSOU — inclusive `POST /cloud-cost-allocations/runs`, `cloud-charges.calculate` e `cloud-cost-allocation.run`; nenhuma divergência exigiu arquivo proibido e a parada C2.3 não foi acionada.
 
 ### D1 — T8d mede exercibilidade de REPLICATION
 

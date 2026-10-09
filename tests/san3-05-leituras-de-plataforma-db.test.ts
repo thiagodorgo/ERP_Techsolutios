@@ -79,10 +79,28 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/tenants/:tenantId/admin-user`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
 ]);
 
+type EtiquetaJob = "FORCE-PLATAFORMA" | "FORA-DA-SUPERFICIE";
+const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
+  ["aws-cur.import-cost-file", "FORA-DA-SUPERFICIE"],
+  ["cloud-charges.calculate", "FORCE-PLATAFORMA"],
+  ["cloud-cost-allocation.run", "FORCE-PLATAFORMA"],
+  ["checklist-attachment-postprocess", "FORA-DA-SUPERFICIE"],
+  ["cloud-usage.aggregate-daily", "FORCE-PLATAFORMA"],
+  ["notification-dispatch", "FORA-DA-SUPERFICIE"],
+  ["notifications.scan-due", "FORA-DA-SUPERFICIE"],
+  ["audit-log-fanout", "FORA-DA-SUPERFICIE"],
+  ["field-ops-event-fanout", "FORA-DA-SUPERFICIE"],
+  ["impound.reconcile-removals", "FORA-DA-SUPERFICIE"],
+  ["charging.accrue-daily", "FORA-DA-SUPERFICIE"],
+  ["impound.notify-due", "FORA-DA-SUPERFICIE"],
+]);
+
 type Cenario = {
   tenantA: string;
   tenantB: string;
   allocationRunId: string;
+  allocationRunIds: string[];
+  costImportId: string;
   ruleIds: string[];
   calculationRunIds: string[];
 };
@@ -105,7 +123,15 @@ if (!connectionString) {
     (globalThis as { prisma?: unknown }).prisma = roteado(alvo);
 
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const cenario: Cenario = { tenantA: "", tenantB: "", allocationRunId: "", ruleIds: [], calculationRunIds: [] };
+    const cenario: Cenario = {
+      tenantA: "",
+      tenantB: "",
+      allocationRunId: "",
+      allocationRunIds: [],
+      costImportId: "",
+      ruleIds: [],
+      calculationRunIds: [],
+    };
     let server: Server | undefined;
 
     try {
@@ -178,7 +204,7 @@ if (!connectionString) {
         { PrismaCoreSaasStore },
         { AuditLogRepository, RoleRepository, TenantRepository, UserRepository, UserRoleRepository },
         { prisma: singleton },
-        { createCloudUsageAggregateDailyJobHandler },
+        { getDefaultJobRegistry, resetDefaultJobRegistryForTests },
       ] = await Promise.all([
         import("../src/app.js"),
         import("../src/modules/auth/index.js"),
@@ -186,7 +212,7 @@ if (!connectionString) {
         import("../src/modules/core-saas/store/prisma-core-saas.store.js"),
         import("../src/modules/core-saas/repositories/index.js"),
         import("../src/database/prisma.js"),
-        import("../src/modules/cloud-usage/cloud-usage.jobs.js"),
+        import("../src/infra/jobs/job.registry.js"),
       ]);
 
       const appClient = singleton as unknown as PrismaClient;
@@ -226,7 +252,20 @@ if (!connectionString) {
         });
         return { status: response.status, body: (await response.json()) as Record<string, unknown> };
       };
-      const job = createCloudUsageAggregateDailyJobHandler();
+      resetDefaultJobRegistryForTests();
+      const registry = getDefaultJobRegistry();
+      const registeredJobs = new Set(
+        (registry as unknown as { handlers: Map<string, unknown> }).handlers.keys(),
+      );
+      assert.deepEqual(
+        { semEtiqueta: [...registeredJobs].filter((name) => !JOBS.has(name)), etiquetaSemJob: [...JOBS.keys()].filter((name) => !registeredJobs.has(name)) },
+        { semEtiqueta: [], etiquetaSemJob: [] },
+        "o registro runtime de jobs precisa coincidir com a lista fechada",
+      );
+      const usageJob = registry.get("cloud-usage.aggregate-daily");
+      const chargesJob = registry.get("cloud-charges.calculate");
+      const allocationJob = registry.get("cloud-cost-allocation.run");
+      assert.ok(usageJob && chargesJob && allocationJob, "os três jobs FORCE precisam estar registrados");
 
       type Medida = {
         s1: unknown;
@@ -238,11 +277,25 @@ if (!connectionString) {
         s4Alocacoes: unknown;
         s4Overview: unknown;
         s4Daily: unknown;
+        rotas: Record<string, unknown>;
+        jobs: Record<string, unknown>;
       };
       const medidas = new Map<"super" | "efemero", Medida>();
 
       for (const papel of ["super", "efemero"] as const) {
         alvo.atual = papel === "super" ? admin : efemera.client;
+        const rotas: Record<string, unknown> = {};
+        const jobs: Record<string, unknown> = {};
+        const registrarRota = (chave: string, body: unknown): void => {
+          assert.ok(SUPERFICIE.get(chave)?.etiqueta !== "SEM-FORCE", `cenário registrado para rota fora da superfície FORCE: ${chave}`);
+          assertNonEmpty(body, chave);
+          rotas[chave] = normalizar(body);
+        };
+        const registrarJob = (chave: string, efeito: unknown): void => {
+          assert.equal(JOBS.get(chave), "FORCE-PLATAFORMA", `cenário registrado para job fora da superfície FORCE: ${chave}`);
+          assertNonEmpty(efeito, chave);
+          jobs[chave] = normalizar(efeito);
+        };
         const identidade = await appClient.$queryRawUnsafe<Array<{ rolsuper: boolean }>>(
           "SELECT rolsuper FROM pg_roles WHERE rolname = current_user",
         );
@@ -252,27 +305,82 @@ if (!connectionString) {
         const s1 = await http("GET", `${P}/cloud-usage/summary?periodStart=${JANELA_INICIO}&periodEnd=${JANELA_FIM}`);
         assert.equal(s1.status, 200, JSON.stringify(s1.body));
         const s1Data = s1.body.data as { metrics: Array<{ quantity: number }> };
+        registrarRota(`GET ${P}/cloud-usage/summary`, s1.body.data);
 
         // S4 controles ANTES do job (a janela do daily não inclui o dia que o job grava)
         const s4Alocacoes = await http("GET", `${P}/cloud-cost-allocations/runs/${cenario.allocationRunId}/tenant-allocations`);
         assert.equal(s4Alocacoes.status, 200, JSON.stringify(s4Alocacoes.body));
+        registrarRota(`GET ${P}/cloud-cost-allocations/runs/:runId/tenant-allocations`, s4Alocacoes.body.data);
         const s4Overview = await http("GET", `${P}/overview`);
         assert.equal(s4Overview.status, 200, JSON.stringify(s4Overview.body));
+        registrarRota(`GET ${P}/overview`, s4Overview.body.data);
         const s4Daily = await http(
           "GET",
           `${P}/cloud-usage/tenants/${cenario.tenantA}/daily?periodStart=2001-01-10T00:00:00.000Z&periodEnd=2001-01-20T00:00:00.000Z`,
         );
         assert.equal(s4Daily.status, 200, JSON.stringify(s4Daily.body));
+        registrarRota(`GET ${P}/cloud-usage/tenants/:tenantId/daily`, s4Daily.body.data);
+
+        const tenantSummary = await http(
+          "GET",
+          `${P}/cloud-usage/tenants/${cenario.tenantA}/summary?periodStart=${JANELA_INICIO}&periodEnd=${JANELA_FIM}`,
+        );
+        assert.equal(tenantSummary.status, 200, JSON.stringify(tenantSummary.body));
+        registrarRota(`GET ${P}/cloud-usage/tenants/:tenantId/summary`, tenantSummary.body.data);
+
+        const tenantDetail = await http("GET", `${P}/tenants/${cenario.tenantA}/detail`);
+        assert.equal(tenantDetail.status, 200, JSON.stringify(tenantDetail.body));
+        registrarRota(`GET ${P}/tenants/:tenantId/detail`, tenantDetail.body.data);
+
+        const allocationSummary = await http(
+          "GET",
+          `${P}/cloud-cost-allocations/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}`,
+        );
+        assert.equal(allocationSummary.status, 200, JSON.stringify(allocationSummary.body));
+        registrarRota(`GET ${P}/cloud-cost-allocations/summary`, allocationSummary.body.data);
+
+        const allocationRoute = await http("POST", `${P}/cloud-cost-allocations/runs`, {
+          periodStart: MES_INICIO,
+          periodEnd: MES_FIM,
+        });
+        assert.equal(allocationRoute.status, 201, JSON.stringify(allocationRoute.body));
+        const allocationRouteId = (allocationRoute.body.data as { id: string }).id;
+        cenario.allocationRunIds.push(allocationRouteId);
+        const allocationRouteRows = await admin.tenantCloudCostAllocation.findMany({
+          where: { allocation_run_id: allocationRouteId },
+          orderBy: { tenant_id: "asc" },
+        });
+        registrarRota(`POST ${P}/cloud-cost-allocations/runs`, {
+          run: allocationRoute.body.data,
+          allocations: allocationRouteRows.map((row) => ({
+            tenantId: tag(row.tenant_id),
+            serviceCode: row.service_code,
+            allocationMethod: row.allocation_method,
+            allocatedCost: Number(row.allocated_cost),
+            currency: row.currency,
+          })),
+        });
 
         // S2 — o job cloud-usage.aggregate-daily (aggregateDailyUsage → listEvents sem tenant → grava agregados)
         await admin.cloudUsageDailyAggregate.deleteMany({
           where: { tenant_id: { in: [cenario.tenantA, cenario.tenantB] }, date: new Date(JANELA_INICIO) },
         });
-        await job({ date: JANELA_INICIO }, {} as never);
+        await usageJob({ date: JANELA_INICIO }, {} as never);
         const gravados = await admin.cloudUsageDailyAggregate.findMany({
           where: { tenant_id: { in: [cenario.tenantA, cenario.tenantB] }, date: new Date(JANELA_INICIO) },
           orderBy: [{ tenant_id: "asc" }, { metric_key: "asc" }],
         });
+        registrarJob(
+          "cloud-usage.aggregate-daily",
+          gravados.map((row) => ({
+            tenantId: tag(row.tenant_id),
+            date: row.date.toISOString(),
+            metricKey: row.metric_key,
+            quantity: Number(row.quantity),
+            unit: row.unit,
+            sourceType: row.source_type,
+          })),
+        );
 
         // S3 — POST calculation-runs → GET tenant-charges → GET summary (nesta ordem: o summary lê o run mais recente)
         const s3Run = await http("POST", `${P}/cloud-charges/calculation-runs`, {
@@ -287,6 +395,53 @@ if (!connectionString) {
         assert.equal(s3Charges.status, 200, JSON.stringify(s3Charges.body));
         const s3Summary = await http("GET", `${P}/cloud-charges/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}`);
         assert.equal(s3Summary.status, 200, JSON.stringify(s3Summary.body));
+        registrarRota(`POST ${P}/cloud-charges/calculation-runs`, s3Run.body.data);
+        registrarRota(`GET ${P}/cloud-charges/calculation-runs/:runId/tenant-charges`, s3Charges.body.data);
+        registrarRota(`GET ${P}/cloud-charges/summary`, s3Summary.body.data);
+
+        await chargesJob(
+          { sourceAllocationRunId: cenario.allocationRunId, periodStart: MES_INICIO, periodEnd: MES_FIM },
+          {} as never,
+        );
+        const jobChargeRun = await admin.cloudChargeCalculationRun.findFirstOrThrow({
+          where: { source_allocation_run_id: cenario.allocationRunId },
+          orderBy: { created_at: "desc" },
+        });
+        const jobCharges = await admin.tenantCloudCharge.findMany({
+          where: { calculation_run_id: jobChargeRun.id },
+          orderBy: { tenant_id: "asc" },
+        });
+        registrarJob(
+          "cloud-charges.calculate",
+          jobCharges.map((row) => ({
+            tenantId: tag(row.tenant_id),
+            allocatedCost: Number(row.allocated_cost),
+            finalChargeAmount: Number(row.final_charge_amount),
+            currency: row.currency,
+            status: row.status,
+          })),
+        );
+        await admin.tenantCloudCharge.deleteMany({ where: { calculation_run_id: jobChargeRun.id } });
+        await admin.cloudChargeCalculationRun.delete({ where: { id: jobChargeRun.id } });
+
+        await allocationJob({ periodStart: MES_INICIO, periodEnd: MES_FIM }, {} as never);
+        const jobAllocationRun = await admin.cloudCostAllocationRun.findFirstOrThrow({ orderBy: { created_at: "desc" } });
+        const jobAllocations = await admin.tenantCloudCostAllocation.findMany({
+          where: { allocation_run_id: jobAllocationRun.id },
+          orderBy: { tenant_id: "asc" },
+        });
+        registrarJob(
+          "cloud-cost-allocation.run",
+          jobAllocations.map((row) => ({
+            tenantId: tag(row.tenant_id),
+            serviceCode: row.service_code,
+            allocationMethod: row.allocation_method,
+            allocatedCost: Number(row.allocated_cost),
+            currency: row.currency,
+          })),
+        );
+        await admin.tenantCloudCostAllocation.deleteMany({ where: { allocation_run_id: jobAllocationRun.id } });
+        await admin.cloudCostAllocationRun.delete({ where: { id: jobAllocationRun.id } });
 
         medidas.set(papel, {
           s1: normalizar(s1.body.data),
@@ -300,7 +455,12 @@ if (!connectionString) {
             .filter((org) => org.id === cenario.tenantA || org.id === cenario.tenantB)
             .map((org) => normalizar(org)),
           s4Daily: normalizar(s4Daily.body.data),
+          rotas,
+          jobs,
         });
+
+        await admin.tenantCloudCostAllocation.deleteMany({ where: { allocation_run_id: allocationRouteId } });
+        await admin.cloudCostAllocationRun.delete({ where: { id: allocationRouteId } });
       }
 
       const sup = medidas.get("super")!;
@@ -341,7 +501,30 @@ if (!connectionString) {
         assert.deepEqual(efe.s4Daily, sup.s4Daily);
       });
 
-      await t.test("T11d · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido", async () => {
+      await t.test("T11e · cada rota FORCE tem cenário próprio, não vazio e igual nos dois papéis", () => {
+        const forceEnumeradas = [...SUPERFICIE]
+          .filter(([, item]) => item.etiqueta !== "SEM-FORCE")
+          .map(([chave]) => chave)
+          .sort();
+        assert.deepEqual(Object.keys(sup.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob super");
+        assert.deepEqual(Object.keys(efe.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob efêmero");
+        for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
+      });
+
+      await t.test("T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+        const forceEnumerados = [...JOBS]
+          .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
+          .map(([chave]) => chave)
+          .sort();
+        const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
+        assert.equal(forceEnumerados.length, 3);
+        assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
+        assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
+        assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");
+        for (const chave of forceEnumerados) assert.deepEqual(efe.jobs[chave], sup.jobs[chave], chave);
+      });
+
+      await t.test("T11g · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido", async () => {
         const rotas = new Set<string>();
         const juntar = (prefixo: string, path: string): string => (path === "/" ? prefixo : `${prefixo}${path}`);
         const visitar = (router: object, prefixo: string): void => {
@@ -490,6 +673,22 @@ function normalizar(value: unknown): unknown {
   return value;
 }
 
+function assertNonEmpty(value: unknown, chave: string): void {
+  assert.notEqual(value, null, `${chave}: resultado nulo`);
+  assert.notEqual(value, undefined, `${chave}: resultado ausente`);
+  if (Array.isArray(value)) {
+    assert.ok(value.length > 0, `${chave}: resultado vazio`);
+    return;
+  }
+  if (typeof value === "string") {
+    assert.ok(value.length > 0, `${chave}: resultado vazio`);
+    return;
+  }
+  if (typeof value === "object") {
+    assert.ok(Object.keys(value as Record<string, unknown>).length > 0, `${chave}: resultado vazio`);
+  }
+}
+
 function cobranca(cenario: Cenario, runId: string, tenantId: string, valor: number) {
   return {
     calculationRunId: runId,
@@ -543,6 +742,38 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
       { tenant_id: tenantA.id, date: new Date("2001-01-15T00:00:00.000Z"), metric_key: "storage_bytes_current", quantity: 7, unit: "bytes", source_type: "medicao", metadata: {} },
       { tenant_id: tenantB.id, date: new Date("2001-01-14T00:00:00.000Z"), metric_key: "storage_bytes_current", quantity: 3, unit: "bytes", source_type: "medicao", metadata: {} },
     ],
+  });
+
+  const importado = await admin.cloudCostImport.create({
+    data: {
+      provider: "aws",
+      source_type: "mock_fixture",
+      status: "completed",
+      period_start: new Date(MES_INICIO),
+      period_end: new Date(MES_FIM),
+      imported_at: new Date(MES_FIM),
+      row_count: 1,
+      total_unblended_cost: 40,
+      currency: "BRL",
+      metadata: {},
+    },
+  });
+  cenario.costImportId = importado.id;
+  await admin.cloudCostLineItem.create({
+    data: {
+      import_id: importado.id,
+      provider: "aws",
+      billing_period_start: new Date(MES_INICIO),
+      billing_period_end: new Date(MES_FIM),
+      service_code: "AmazonS3",
+      usage_type: "TimedStorage-ByteHrs",
+      usage_amount: 40,
+      usage_unit: "bytes",
+      unblended_cost: 40,
+      currency: "BRL",
+      raw_line_hash: `san3-05-${suffix}`,
+      metadata: {},
+    },
   });
 
   const run = await admin.cloudCostAllocationRun.create({
@@ -606,7 +837,11 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   }
   await admin.cloudChargeRule.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantCloudCostAllocation.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  if (cenario.allocationRunIds.length > 0) {
+    await admin.cloudCostAllocationRun.deleteMany({ where: { id: { in: cenario.allocationRunIds } } });
+  }
   if (cenario.allocationRunId) await admin.cloudCostAllocationRun.deleteMany({ where: { id: cenario.allocationRunId } });
+  if (cenario.costImportId) await admin.cloudCostImport.deleteMany({ where: { id: cenario.costImportId } });
   await admin.cloudUsageDailyAggregate.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.cloudUsageEvent.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenant.deleteMany({ where: { id: { in: tenantIds } } });
