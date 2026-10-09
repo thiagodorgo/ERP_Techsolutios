@@ -3021,3 +3021,30 @@ e a exigência de porteiro para PR de registro.
   (`fea93281`), cada um com o seu porteiro (`PORTEIRO-400.md`, `PORTEIRO-409.md`). A premissa de que exportar a lista de
   OS usa `work_orders:read` segue como premissa do orquestrador, sem veto do dono até este registro
   (`P-OS-EXPORTAR-PERMISSAO-PREMISSA`).
+## Decisões de 2026-10-09 — plano do dia e a leitura da junta 3 do B-SAN3-05 (transcritas pelo orquestrador)
+
+- **D-PLANO-DIA-2026-10-09** — o dono pediu o plano do dia em Fable (*"use o fable para fazer o plano de hoje"*, exceção
+  explícita à `D-FABLE-ASTRA-SO-DINHEIRO`) e aprovou as nove decisões dele: *"aprovo os 9, comece agora"* (plano em
+  `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): ciclo 3 do #405 só com A2 (grave) + A3; C2-A1 e
+  C3-c2-05 num PR só de testes depois do merge (revisor + CI); C3-c2-01 pendência; dev no Codex Sol; porteiro no Claude
+  se o gasto semanal ficar ≤ 25 %; veredito do B-SAN3-06b na 2ª janela do Codex; plano do Traccar amanhã; limpeza
+  profunda abaixo de 10 GB sem volumes alheios; cota acabou → pausar, nunca descer de Opus. Também: *"ok, deixa quieto
+  o uso da api neste pc"* (créditos de API não usados neste PC).
+- **Conflito registrado (§A2) e a leitura adotada na junta 3 do B-SAN3-05 — ressalvas R3 e R4 do inspetor:**
+  - **R3, mutação cega:** o plano do ciclo 3 (C3.4) trata "mutação que nenhum teste pega" como "A2 aberto"; o contrato
+    (CLAUDE.md §C7 item 8(2)) diz que do ciclo 3 em diante só defeito GRAVE de produto bloqueia. **Vale o contrato
+    (§A1):** se a TRAVA REAL ou o MODO 6 deixam passar um escape medido (o papel lê/grava dado de outra organização
+    sem a trava acusar), é A2 aberto → grave → bloqueia; se o produto recusa o escape mas um teste não acusa a
+    mutação, é forma de teste → não grave → pendência com dono.
+  - **R4, "não consigo medir = REPROVADO":** regra dos corpos das cadeiras, sem cláusula no contrato. **Leitura
+    adotada:** um item não medido que possa esconder defeito grave (A2, B1, B2, B4, D1–D4) conta como reprovação
+    (grave não descartado); um item não medido de matéria não grave vira pendência, não reprova.
+
+- **D-405-PROIBIR-VIEWS (2026-10-09)** — a C1 da junta 3 do B-SAN3-05 reprovou com dois achados GRAVES novos na mesma via
+  (`GRANT SELECT/UPDATE/INSERT (colunas)` numa view cuja cadeia tem dono que escapa: o papel de runtime lê e altera dados
+  de outra organização sem a trava nem o MODO 6 acusarem) — a terceira forma da via `view`. Perguntado entre proibir
+  qualquer view, mais uma rodada de precisão, ou completar a junta 3 antes, o dono escolheu literalmente *"Proibir
+  qualquer view (Recomendado)"*: a trava recusa o boot (e o script recusa no MODO 6) se existir QUALQUER view ou
+  matview cuja árvore alcance uma tabela com FORCE ROW LEVEL SECURITY, sem analisar dono nem privilégio. Hoje há 0
+  views; nenhuma funcionalidade quebra. Ciclo 4 curto, só desse ponto; C2 e C3 da junta 3 não votam (a junta 3 fecha
+  REPROVADA pela C1).

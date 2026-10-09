@@ -1,0 +1,114 @@
+{
+  "junta": "J1-B-SAN3-05",
+  "pr": 405,
+  "cadeira": "C2",
+  "identidade": "agente-secops",
+  "modelo": "Opus 5.5 (claude-opus-5-5)",
+  "mandato_md5": "03ab62015d19972226e4ee8ceb5ebed4",
+  "corpo_md5_eol_neutro": "dc1a2974877dc56f04a5e3cb43668c75",
+  "ciclo": 1,
+  "objeto": "5ab037a3fc8f0b4ae1d24d68fd23691b154df7e1 (PR 405 head por git e gh; 7/7 check-runs completed|success; delta desde 240dbaa9 so registro)",
+  "legalidade": "LEGAL: 00-inspetor-terreno.md versionado no objeto, l.228 LIBERADO COM RESSALVA (R1-R8)",
+  "itens": {
+    "C2.1": {
+      "veredito": "VERDE COM AJUSTES",
+      "resumo": "objeto: T2 5/5 (bootstrap 12/12), T15 verde (receita 3/3 + rodada propria), paridade deploy-manifest 28/28, gates 72/72, catalog-guard 5/5; boot sob super: exit 1 em ~1,4 s com RUNTIME_ROLE_CAN_BYPASS_RLS (com e sem a variavel). M1 (default->skip; md5 d412c4a4->6fc5f089): T2 VERMELHO (not ok 1), T15 VERDE (PROD_BASE fixa enforce); boot real sem a variavel sob M1 mostra os 2 sinais do A20 (SIGKILL aos 30 s; RedisCommandError aos 6,4 s). M2 (chamada apagada; md5 bad489d2->3ebb051f): T2 verde, T15 VERMELHO por 1 sinal afirmado (codigo, l.825) e runner travado (ec=124; kill fora de finally); boot sob M2: SIGKILL aos 30 s, RedisCommandError aos 6,2 s. Restauros conferidos por md5. A letra do §10 C2(1) (dois sinais do A20 por mutacao no T2/T15) nao e cumprida pelos testes; cada mutacao deixa a suite vermelha.",
+      "achados": [
+        "F-C2-02",
+        "F-C2-03"
+      ]
+    },
+    "C2.2": {
+      "veredito": "REPROVADO",
+      "resumo": "zero segredo versionado (diff final e 77 commits do ramo: 0 credencial real; .env so example); placeholders do compose rotulados; log da trava sem URL/host/senha por leitura e T9/T15 verdes (T9 com guarda de host literal: F-C2-04); /health/* inalterado; env.ts so mais rigido (20+/0-). vii (MODO 1) e MODO 4: senha 0 no terminal e 0 no server.log; viii (shim que delega ao psql real): senha 0 no argv, sem password=; ix (MODO 0, log_statement=all) recusa; controle com ALLOW mostra a senha no server.log (grep nao-vacuo). MAS: com log_transaction_sample_rate=1, ou log_min_duration_sample=0 + log_statement_sample_rate=1, o MODO 0 nao dispara (ec=0) e a senha nova vai em claro ao server.log (3 medicoes, inclusive ALTER DATABASE SET + migrador nao-super) -> F-C2-01 bloqueia.",
+      "achados": [
+        "F-C2-01",
+        "F-C2-04"
+      ]
+    },
+    "C2.3": {
+      "veredito": "VERDE",
+      "resumo": "diff merge-base(b404815c)..5ab037a3: 67 arquivos, 63 no PERMITIDO do §6; fora: 3 artefatos de plano/critica do proprio bloco (commits de planejador/critico 2026-09-30..10-01, antes do dev) e Kpis/app.js (R4: KPI congelado, nao cobrado); nenhum PROIBIDO de codigo/infra; catalog-guard: so a entrada do Map (8+/0-, count 63); server.ts 2+/0- (import+chamada); .gitattributes 1 linha; db-runtime-role.sh 100755; A18 verde (G-DB-ROLE 3, Confirmar na ativacao 0, TO erp_runtime 1, MODO 8, psql na secao -db, STAGING 5); A19 verde (6 IDs P-SAN3-05, P-INFRA-RLS e P-O6R-B06 EM ANDAMENTO, P-O6R-07B presente)",
+      "notas": [
+        "docs/revisoes/SAN3/B-SAN3-05-{plano,critica-r1,critica-r2}.md fora da lista literal do §6 (artefatos de planejamento, nao implementacao)",
+        "fixtures 27 x 26 do §5/§6 (A24 conta a 27a)",
+        "premissa do §8 git grep PrismaCloudChargeRepository(prisma) -> vazio e falsa como grep literal (casa new RlsPrismaCloudChargeRepository(prisma) l.324)"
+      ]
+    }
+  },
+  "achados": [
+    {
+      "id": "F-C2-01",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "scripts/db-runtime-role.sh adicionado em 041e414b (2026-10-02) no ramo; ausente no merge-base b404815c (git ls-tree = 0); §10 do plano poe o procedimento em dentro-do-bloco",
+      "arquivo": "scripts/db-runtime-role.sh:6-9,35-37,41; docs/deployment.md:116",
+      "defeito": "o MODO 0 (fail-closed contra o servidor registrar o texto dos statements) confere so log_statement=all e log_min_duration_statement=0; com log_transaction_sample_rate>0 ou log_min_duration_sample>=0 (+log_statement_sample_rate>0) o script passa (ec=0) e SELECT set_config('san3.password', <senha>) vai em claro ao log do servidor",
+      "execucao": "sonda A (PGOPTIONS -c log_transaction_sample_rate=1): ec=0, senha_no_server_log=1; sonda B (log_min_duration_sample=0 + log_statement_sample_rate=1): ec=0, 1; realista (ALTER DATABASE SET log_transaction_sample_rate=1, migrador j05c2_migr CREATEROLE nao-super): ec=0, 1; controle positivo log_statement=all+ALLOW: 1; vii, MODO 4, sucesso, viii: 0",
+      "motivo": "credencial do papel de runtime exposta em log do banco sem recusa nem aviso de rotacao (o papel pode setar o GUC de tenant: acesso a todas as organizacoes); a afirmacao absoluta do script (l.6, l.8-9) e da doc do operador e falsa no PG 16; criterio de veto do agente-secops: segredo em log"
+    },
+    {
+      "id": "F-C2-02",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "tests/san3-05-runtime-role-guard-db.test.ts e novo no ramo (A na lista do diff)",
+      "arquivo": "tests/san3-05-runtime-role-guard-db.test.ts:217-232,806-816",
+      "defeito": "o T15 fixa DATABASE_RUNTIME_ROLE_GUARD=enforce no PROD_BASE; a M1 (default->skip) fica verde no T15 (pega so pelo T2); o caso de producao sem a variavel (A9) nao tem teste de boot",
+      "execucao": "M1: bootstrap 11/12 (not ok T2 producao sem a variavel), guard-db 8/8; boot sem variavel sob M1: SIGKILL 30014 ms, RedisCommandError 6414 ms",
+      "motivo": "o §7 A20 diz 'default do export -> skip -> idem' no T15; o §10 C2(1) pede os dois sinais do A20 por mutacao"
+    },
+    {
+      "id": "F-C2-03",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "T15 novo no ramo",
+      "arquivo": "tests/san3-05-runtime-role-guard-db.test.ts:817-831",
+      "defeito": "o T15 nao afirma exit/exitCode (A20(a) 'exit 1 <= 15 s'); adminBoot.kill fora de finally: sob a M2 o assert da l.825 lanca, o servidor mutado fica vivo e o runner trava (sem timeout por arquivo em run-backend-tests.mjs nem timeout-minutes no ci.yml); o §8 promete 'kill garantido' + pgrep (0 ocorrencia no teste)",
+      "execucao": "M2: not ok 7 T15 (l.825, RedisCommandError); timeout 150 -> ec=124 sem sumario TAP",
+      "motivo": "um dos dois sinais do A20 nao e afirmado; uma regressao da fiacao travaria o job backend em vez de falhar rapido"
+    },
+    {
+      "id": "F-C2-04",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo": "T9 novo no ramo",
+      "arquivo": "tests/san3-05-runtime-role-guard-db.test.ts:254,273",
+      "defeito": "a guarda de host do T9 e literal (127.0.0.1|55405) e nao procura o valor da senha",
+      "execucao": "regex verbatim: localhost:5432 (CI) false; pg16r-...-pg:5432 (receita) false; postgres:5432 false; 127.0.0.1:55405 true",
+      "motivo": "o A6 pede log sem host; a guarda so ve o host do autor"
+    },
+    {
+      "id": "N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "arquivo": "docs/revisoes/SAN3/B-SAN3-05-{plano,critica-r1,critica-r2}.md",
+      "defeito": "fora da lista literal do §6 (artefatos de planejamento; commits de planejador/critico antes do dev)"
+    },
+    {
+      "id": "N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "arquivo": "tests/fixtures/san3-05-mutacoes/",
+      "defeito": "27 fixtures; o §5/§6 dizem 26 (o A24 conta a 27a)"
+    },
+    {
+      "id": "N3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "arquivo": "docs/revisoes/SAN3/B-SAN3-05-plano.md §8",
+      "defeito": "a premissa git grep 'PrismaCloudChargeRepository(prisma)' -> vazio e falsa como grep literal (casa new RlsPrismaCloudChargeRepository(prisma), l.324)"
+    },
+    {
+      "id": "N4",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "arquivo": "Kpis/app.js",
+      "defeito": "PROIBIDO no §6; registrado e NAO cobrado (R4/R5: KPI congelado, §C7 item 8 da main 357a98e9)"
+    }
+  ],
+  "veredito": "REPROVADO",
+  "escopo": "dentro-do-bloco (F-C2-01 bloqueia: script novo do bloco, 041e414b)",
+  "veto": "SIM - F-C2-01 (segredo em log do servidor por fail-open do MODO 0)",
+  "terreno": "receita psql 16 (9861a2aa; imagem sha256:4203157f95ea) N=3 no objeto, 19/19 x3, [normal] psql achado 16.14 nas 3; rodadas proprias j05c2-c0f313 e j05c2r-882252 (sem porta no host); sem worktree; tudo derrubado (ver Limpeza na evidencia)",
+  "gravado_em": "2026-10-04T22:36:04.586Z"
+}

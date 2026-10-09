@@ -499,7 +499,7 @@
   PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** a classificar · **dono:** `B-SAN3-05` + dono do ambiente
 - **junta do PR #386, ciclo 1 (C2-03, 2026-09-12):** a lista das leituras de plataforma que quebram sob papel sem `BYPASSRLS` inclui também `replaceTenantCharges`/`listTenantCharges` (`src/modules/cloud-charges/cloud-charge-prisma.repository.ts:24-25,166-212,238-240`, sem contexto; `tenant_cloud_charges` tem policy com `USING` e `WITH CHECK`). Plano SAN3 v5: fronteira do `B-SAN3-05`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
@@ -7521,7 +7521,7 @@ medido, e `fly.production.toml` não o declara.
 O **rateio** já não depende disso — este bloco o passou a ler por tenant, sob contexto. O que resta são as
 leituras de plataforma **fora** do rateio.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
 - **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
@@ -10063,6 +10063,73 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **bloqueia:** não.
 - **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.
 
+## P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA (2026-10-03) — leitura da projeção diária sem chamador — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-08`.
+- `cloud-cost-allocation-prisma.repository.ts:238` não tem chamador em `src/`; ao remover o sítio morto, atualizar o congelado do ratchet para retirar a chave `new PrismaCloudCostAllocationRepository(prisma) CRU`.
+- **bloqueia:** não.
+
+## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
+- `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
+- **bloqueia:** não.
+
+## P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL (2026-10-03) — suíte de banco ainda roda majoritariamente como administrador — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-2`.
+- Rodar a suíte `-db` inteira sob papel real fecha o residual semântico do ratchet: hoje 13 suítes escrevem catálogo, 8 fazem DDL e 10 usam helpers. O `SUITES` de `backend-postgres` também pertence a esse bloco.
+- **sub-item medido no B-SAN3-05/ciclo 2:** os 9 jobs do registro runtime fora da superfície de plataforma — `aws-cur.import-cost-file`, `checklist-attachment-postprocess`, `notification-dispatch`, `notifications.scan-due`, `audit-log-fanout`, `field-ops-event-fanout`, `impound.reconcile-removals`, `charging.accrue-daily` e `impound.notify-due` — ainda não têm diferencial sob papel `NOSUPERUSER NOBYPASSRLS`. O inventário estático não acusa chave em `notifications` nem `charging`, mas só a execução fecha um envoltório que deixe de setar GUC.
+- **recomendação ao dono:** o Ato 2 em produção (troca do `DATABASE_URL` do app para `erp_runtime`) espera a medida desses 9 jobs ou é decidido em ata com o risco explícito; `charging.accrue-daily` toca dinheiro.
+- **bloqueia:** não bloqueia este PR; bloqueia declarar a cobertura dinâmica fora da superfície de plataforma e é proposta de gate para o Ato 2 em produção.
+- **teste de encerramento:** cada um dos 9 jobs produz o mesmo efeito não vazio sob superusuário e sob papel `NOSUPERUSER NOBYPASSRLS`, no mesmo seed.
+
+## P-SAN3-05-RUNNER-SEM-TIMEOUT (2026-10-09) — runner e job backend sem teto por arquivo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `scripts/run-backend-tests.mjs` e `.github/workflows/ci.yml` antecedem o bloco e são PROIBIDOS no C2.3; sob a mutação M2, a C2 do ciclo 1 mediu `timeout 150` com ec=124 · **dono:** `B-ARNES-2`.
+- Não há timeout por arquivo no runner nem `timeout-minutes` no job `backend`: um teste que trave prende o job inteiro em vez de falhar. O D3 fecha o T15, mas não a classe para os demais testes.
+- **bloqueia:** não.
+- **teste de encerramento:** um teste que dorme além do teto falha o job em tempo menor ou igual ao teto e nomeia o arquivo.
+
+## P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC (2026-10-09) — default de LocalAuthLoginService pode executar sem GUC — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/modules/auth/services/local-auth-login.service.ts:106`, origem `35c218a8` (2026-06-07); `src/modules/auth/**` é PROIBIDO no C2.3 · **dono:** a nomear pelo orquestrador; candidato `B-ARNES-2`.
+- O `runWithTenantContext` default é `work()` sem GUC, fail-open em princípio. As construções de produção medidas hoje injetam `withTenantRls` (`auth-runtime.ts:81-84` e `session-admin.service.ts:287-290`), mas uma construção nova poderia omitir o envoltório.
+- **bloqueia:** não.
+- **teste de encerramento:** o parâmetro se torna obrigatório ou o default falha fechado, com teste dedicado.
+
+## P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI (2026-10-09) — CI não lê o server.log do PostgreSQL — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — residual declarado do B1 · **dono:** `B-ARNES-2` (workflows).
+- A CI pega a volta da senha em claro ao canal SQL pela guarda estática do T14, mas não lê o log do servidor; a prova por execução fica somente na matriz B7 da junta.
+- **sub-item A1 (ciclo 2):** a guarda estática reconhece grafias, não a propriedade: `\getenv` + `set_config(:'segredo')` e backtick + `format()`/`\gexec` passam e vazam no `server.log`. O job de encerramento precisa executar essas duas variantes contra o log real.
+- **bloqueia:** não.
+- **teste de encerramento:** job de CI com PostgreSQL descartável lê `server.log`, executa a matriz B7 e fica vermelho sob M-B1a e sob as variantes V1/V2 do sub-item A1.
+
+## P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** observabilidade (orquestrador deve nomear o bloco).
+- Publicar a postura do papel em `/health/ready`, fora de `checks`; o corpo público e o arquivo ficam fora da fronteira permitida de `B-SAN3-05`.
+- **bloqueia:** não.
+
+## P-SAN3-05-SECURITY-DEFINER-INVENTARIO (2026-10-03) — funções de dono que escapa — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` · **dono:** `B-SAN3-10`.
+- Inventariar funções `SECURITY DEFINER` cujo dono escapa do RLS e que o runtime pode executar; a medição deste bloco encontrou `auth_login_candidates`, criada por ato humano.
+- **sub-item ciclo 3:** cobrir função `SECURITY DEFINER` chamada por view; `pg_depend` da view aponta para a função, não para a tabela, e essa cadeia fica fora do `view_walk`. Hipótese registrada pelo planejador, ainda não medida pelo dev.
+- **bloqueia:** não bloqueia este PR; permanece risco nominal até o inventário.
+
+## P-SAN3-05-STAGING-CD-AMARRACAO (2026-10-03) — CD de staging depende dos atos de provisão — ALTA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** bloco que toque workflows (`B-SAN3-10` ou `B-ARNES-2`).
+- Amarrar mecanicamente `STAGING_DEPLOY_ENABLED` aos Atos 1–2 de staging. Até lá, a variável permanece desligada; `.github/workflows/**` é proibido em `B-SAN3-05`.
+- **bloqueia:** ligar o CD de staging, não este PR.
+
+## P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT (2026-09-06) — teste reescreve a regra do default — MÉDIA
+
+- **status:** EM ANDAMENTO · **escopo:** `pre-existente` — origem `fe2748c` (#380) · **dono:** `B-O6R-07b` / segurança.
+- O teste anterior reescrevia a regra em vez de ler o export e deixou 13/13 mutantes verdes. O T2 de `B-SAN3-05` exerce o export em processo filho; o registro permanece até o merge e a validação do bloco.
+- **bloqueia:** não.
 ## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
 
 Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (custódia aberta antes da
@@ -10241,6 +10308,96 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** bloco de ferramentas de registro (a nomear).
 - **bloqueia:** não.
 - **teste de encerramento:** o índice mostra a severidade declarada na entrada e inclui as pendências de nível 4.
+## P-SAN3-05-RATCHET-INST-SOME (2026-10-09) — uma instanciação reconhecida libera a classe inteira — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-01, origem `scripts/san3-05-acessos-de-plataforma.mjs` em `16014c06` (2026-10-08) · **dono:** `B-ARNES-2` (ou bloco próprio do ratchet, a nomear pelo orquestrador).
+- O `inst.some` faz uma instanciação reconhecida liberar a classe inteira; construção por fábrica genérica ou `Reflect.construct` fica com zero chave. O inventário atual tem zero acesso dessa forma.
+- **bloqueia:** não bloqueia o #405; ficou fora do ciclo 3 por decisão do dono.
+- **teste de encerramento:** fixture com duas instanciações da mesma classe — uma reconhecida e outra por `Reflect.construct` — gera ao menos uma chave suspeita; voltar ao `inst.some` deixa o T13 vermelho.
+
+## P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE (2026-10-09) — igualdade catálogo↔L0 não é uma propriedade testada — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-02 e notas C3-c2-03/04; gerador `05d7789f` (2026-10-02), regex `16014c06` (2026-10-08) · **dono:** o mesmo de `P-SAN3-05-RATCHET-INST-SOME`.
+- O T13 fixa contagens, mas não prova igualdade por nome nos dois sentidos. Grafias como `ALTER TABLE IF EXISTS`/`EXECUTE format(...)` em `DO` somem do L0; tabela FORCE sem model aparece apenas na contagem. Hoje a medição é 106 = 106.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** igualdade executável nos dois sentidos; grafia que o L0 não lê e tabela FORCE sem model deixam o teste vermelho.
+
+## P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA (2026-10-09) — T14c conta grafias em vez de fechar a lista de filhos — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A1, origem `d9fc0d6d` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- A guarda de processos filhos do T14c conta grafias; `exec`, `execSync`, `execFile`, `execFileSync`, `fork` e o helper genérico `runPsqlReadOnly` podem passar sem lista nominal fechada.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** qualquer chamada a `node:child_process` fora da lista nominal reprova; filho escritor fora do helper deixa T14c vermelho.
+
+## P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job — MÉDIA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-05, cenário de `41af41f5` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- O T11f do job `cloud-charges.calculate` identifica o efeito pelo mesmo critério do run criado pela rota `POST /cloud-charges/calculation-runs`; assim pode medir a rota em vez do job. O produto atual faz o efeito correto.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** o run comparado é identificado como produzido pelo job; M-B4c no job deixa T11f vermelho.
+
+## P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A2, helper `d9fc0d6d` sobre script `041e414b` · **dono:** `B-ARNES-2`.
+- O timeout de 20 s mata só o `bash`; um filho além de 30 s pode escrever catálogo depois de a transação da trava expirar. O gatilho nunca foi observado sem força (23–91 ms).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** filho forçado além do teto é morto como grupo antes da janela; nenhuma escrita de catálogo ocorre após o timeout.
+
+## P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR (2026-10-09) — fixture pode deixar migrador com privilégios — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A3, cenário `migratorOk`/`CREATE DATABASE` de `4e89d7ac` (2026-10-03) · **dono:** `B-ARNES-2`.
+- A limpeza do T14a/b não roda se o cenário falhar antes do `try`; pode restar papel com `LOGIN` e `CREATEROLE` no cluster descartável.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** falha forçada antes do `try` ainda remove o papel no `finally`; resíduo `s305%` = 0.
+
+## P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL (2026-10-09) — guarda de log aceita campo textual indevido — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A4, regex de `02544a79` (2026-10-08) · **dono:** `B-ARNES-2`.
+- A guarda D4 aceita o nome do papel em qualquer campo quando aparece como `session_user=`, `current_user=`, `atributo:`, `posse:` ou `view:<papel>`, inclusive formas que as erratas 1–3 não produzem.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** a mutação `diag: session_user=<papel>` deixa T9 e T15 vermelhos.
+
+## P-SAN3-05-T15-FALSO-VERMELHO-PORTA (2026-10-09) — pid ou tempo pode casar a porta — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A5, `assertConnectionSecretsAbsent` de `d9fc0d6d` · **dono:** `B-ARNES-2`.
+- O T15 pode dar falso vermelho quando o `pid` ou o timestamp do log contém o número da porta (medido com pid 5432/15432 e tempo terminando em 54321).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** pid/tempo contendo a porta é aceito; porta em campo de conexão continua recusada.
+
+## P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` — medição C3.1; a trava nasceu em `d76b255f` (2026-10-02) começando `view_walk` apenas em `v`/`m` · **dono:** `B-SAN3-10`.
+- Uma regra `INSTEAD`/`ALSO` em tabela de dono que escapa executa a ação com o privilégio do dono: papel limpo com `INSERT` gravou linha da organização B sob contexto A e a trava retornou zero escapes. Hoje há zero regras fora do `_RETURN` das views no catálogo migrado.
+- **bloqueia:** não bloqueia o #405. A correção ficou explicitamente fora do ciclo 3 por decisão padrão do plano e decisão do dono de cobrir somente A2/A3.
+- **teste de encerramento:** regra em tabela de dono que escapa com DML para o papel é recusada pela trava e pelo script; controle sem regra retorna zero.
+
+## P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER (2026-10-09) — view sobre função SQL invoker não é recusada pela trava — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — a trava nasceu em `d76b255f` (2026-10-02); achado F5 da C1 da junta 4 (`votos/B-SAN3-05/ciclo4/C1-voto.json`) · **dono:** `B-SAN3-10`.
+- Uma view que lê tabela FORCE só pelo corpo de uma função SQL `SECURITY INVOKER` depende de `pg_proc`, não da tabela: a trava, o boot e o MODO 6 não a recusam. Escape medido: nenhum — a função roda como o invocador e o RLS morde (`42501` sem privilégio; só a organização do contexto com GUC). A variante `SECURITY DEFINER` é matéria do `B-SAN3-10`.
+- **bloqueia:** não.
+- **teste de encerramento:** view sobre função invoker que lê tabela FORCE é recusada pelas três cópias da propriedade, ou a decisão de não recusá-la fica escrita com o caso fixado na suíte.
+
+## P-SAN3-05-SUITE-SEM-FORMAS-F1-F3 (2026-10-09) — a suíte não fixa as formas de view que o produto recusa — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — `tests/san3-05-runtime-role-guard-db.test.ts` (nasceu em `e0143db1`, 2026-10-03); nota da C1 da junta 4 · **dono:** `B-SAN3-05T` (PR só de testes, decisão do plano do dia de 2026-10-09).
+- O T8e/T14d exercem COL, COM, MAT, CTL e cadeia em `public`. A C1 mediu o produto recusando também regra não-`_RETURN`, esquema ≠ `public`, tabela particionada e tabela só em subconsulta/CTE/LATERAL (F1–F3), mas nenhum caso da suíte as fixa: uma regressão que estreite a descida pode passar verde.
+- **bloqueia:** não.
+- **teste de encerramento:** casos F1–F3 na suíte, e a mutação que restringe a descida à regra `_RETURN` deixa ao menos um deles vermelho.
+
+## P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carga — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — achado A2-1 (ajuste) da C3 da junta 4 · **dono:** `B-ARNES-2` (vizinha de `P-SAN3-05-RUNNER-SEM-TIMEOUT`).
+- Sob a carga da suíte inteira (8 CPUs, Docker/WSL2), o T15 estoura o teto de 15 s em 2 de 2 rodadas: o processo de produção recusado fica vivo ~10 s depois da recusa, com uma conexão ociosa ao Postgres, e o teste não vê o encerramento a tempo. A recusa está correta; o critério mede relógio, não comportamento. O CI do PR passou 7/7.
+- **bloqueia:** não.
+- **teste de encerramento:** o T15 assere a recusa e o encerramento do processo sem teto de relógio de parede sensível à carga (ou o processo fecha a conexão na recusa), verde em 3 rodadas da suíte inteira.
+
+## P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e não chega ao log — BAIXA
+
+- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** a nomear pelo orquestrador; candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`.
+- O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
+- **bloqueia:** não.
+- **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.
 
 ## P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda não persistem — ALTA
 

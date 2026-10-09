@@ -1,0 +1,439 @@
+# DEV ciclo 2 — B-SAN3-05
+
+- Identidade: `dev-ciclo2-b-san3-05`
+- Papel: desenvolvedor do ciclo 2; não achou, não planejou e não votou.
+- Modelo: GPT-5.6 Sol — substituição declarada por decisão do dono em 2026-10-08; o bloco não toca dinheiro e Fable/Astra ficam reservados a blocos de dinheiro.
+- Worktree exclusivo: `C:/Users/AMP/w-o05`
+- Ramo: `fix/runtime-role-sem-bypass`
+- PR: #405
+
+## Pré-condições
+
+### P0.1 — head local × remoto
+
+**Comando:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`
+
+**Saída resumida:** ambos devolveram `ebffaca889ce81e326a657921811e19f40ecc19f`.
+
+**Resultado:** PASSOU — ponto de partida local e remoto idênticos ao SHA determinado pelo dono.
+
+### P0.2 — contrato, memória e plano
+
+**Comando:** `Get-Content` integral de `.agents/skills/saas-multi-tenant/SKILL.md`, `CLAUDE.md`, `PROJECT_MEMORY.md` e `docs/revisoes/SAN3/B-SAN3-05-plano.md` C2.1–C2.6; busca do estado vivo em `status-geral`, `log-execucao` e `controle`.
+
+**Saída resumida:** contrato canônico com separação de papéis/P1/P7 lido; plano C2 `STATUS: COMPLETO`; escopo, paradas RC3/RC4 e bateria B0–B14 identificados.
+
+**Resultado:** PASSOU — a autorização específica do plano para RLS prevalece sobre a restrição genérica da skill.
+
+### P0.3 — árvore e scratchpads preservados
+
+**Comando:** `git status --short --branch`; `git log --oneline --decorate -12`; `git diff --name-status origin/main...HEAD`.
+
+**Saída resumida:** ramo correto e sem mutação rastreada; somente `?? scratchpad/`; `pl05c2` e `pl05c2s` não serão apagados nem commitados.
+
+**Resultado:** PASSOU — terreno inicial preservado.
+
+## Integração da main e KPI congelado
+
+### I1 — `origin/main` integrada por merge
+
+**Comando:** `git fetch origin main`; `git rev-parse origin/main`; `git merge --no-edit origin/main`.
+
+**Saída resumida:** `origin/main=c8af64580cb85ddf4960fecb2f8604384f8f0328`; merge iniciado sem rebase/force; conflitos somente nos 4 registros previstos pelo plano.
+
+**Resultado:** PASSOU — merge commit `37e024c332b3ad31bc609db5fad8728d26500abe`, sem rebase/force; empurrado ao remoto e confirmado por `git ls-remote`.
+
+### I2 — quatro conflitos de registro resolvidos por união
+
+**Comando:** remoção mecânica somente dos marcadores nos 3 registros-fonte, preservando os dois lados; `python agent-orchestration/controle/gerar-indice-pendencias.py`; busca por `^(<<<<<<<|=======|>>>>>>>)` nos 4 arquivos.
+
+**Saída resumida:** união preservou as entradas do B-SAN3-05 e da main/B-SAN3-11; índice regenerado com 446 cabeçalhos/435 IDs, 326 abertas, 117 fechadas, 3 sem status; marcadores = 0.
+
+**Resultado:** PASSOU — os quatro conflitos previstos foram resolvidos sem apagar nenhum lado.
+
+### I3 — `Kpis/*` byte a byte na versão da main
+
+**Comando:** `git -c core.autocrlf=false checkout origin/main -- Kpis/app.js Kpis/kpis-latest.json Kpis/kpis-history.json Kpis/kpis-history.md`; `git diff --quiet origin/main -- Kpis/`.
+
+**Saída resumida:** `kpi_diff_ec=0`.
+
+**Resultado:** PASSOU — KPI congelado; o diff final do PR não carrega alteração própria em `Kpis/*`.
+
+## Implementação
+
+### Retomada após PARADA-D4 — errata do orquestrador
+
+**Comando:** `git -C C:/Users/AMP/w-o05 pull --ff-only`; `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura de `docs/revisoes/SAN3/B-SAN3-05-plano.md` no commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
+
+**Saída resumida:** pull fast-forward já aplicado; HEAD local = remoto = `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`; a “Errata do orquestrador ao D4” substitui o aceite original pela opção (b).
+
+**Resultado:** PASSOU — PARADA-D4 resolvida pelo orquestrador. `username` é permitido somente como valor de `session_user`/`current_user`; host, porta, senha, banco, `postgresql://`, `password` e username em qualquer outro campo continuam proibidos. `src/database/runtime-role.bootstrap.ts` permanece intocado.
+
+### B1 — credencial sem senha em claro no canal do servidor
+
+**Comando:** viabilidade em `postgres:16` descartável `dev05c2-viab2-pg`, sem porta/volume: cria papel; envia duas linhas de senha por stdin para `setsid -w psql -v role=... -c '\password :"role"'`, com `PGOPTIONS='-c password_encryption=scram-sha-256'`; consulta `pg_authid`; login TCP; remove só o container nomeado.
+
+**Saída resumida:** `password_ec=0`; prefixo armazenado `SCRAM-SHA-256$`; login devolveu `dev05c2_role`; `login_ec=0`; container removido.
+
+**Comando adicional:** implementação em `scripts/db-runtime-role.sh`, `docs/deployment.md` e T14; `npm run check` em `dev05c2-check-gen`; suíte focada em PostgreSQL 16 descartável `dev05c2-fatia1c-*`.
+
+**Saída resumida adicional:** `npm run check` ec=0 após `npm ci` + `prisma generate`; T14 comprovou `SCRAM-SHA-256$`, inclusive com `PGOPTIONS=password_encryption=md5`, login e idempotência; suíte focada final = **9/9**, fail 0, skipped 0. Uma tentativa anterior sem `prisma generate` falhou por terreno (client ausente), e duas iterações focadas ficaram vermelhas só nos totais autorreferentes do novo guard estrutural (7/9), corrigidos antes do verde final.
+
+**Resultado:** PASSOU — senha em claro não integra SQL/argv/log do teste; `psql \\password` produz verificador SCRAM no cliente, MODO 0 saiu e o residual de ataque offline está documentado. A matriz de `server.log` B7 e o caminho B14 permanecem para a junta, conforme C2.5/C1.
+
+### B2 — toda mutação de catálogo sob a trava única
+
+**Comando:** todas as chamadas escritoras redirecionadas ao helper assíncrono `runCatalogCommand` sob `withRoleCatalogLock`, timeout 20 s; canário T14c segura a trava e observa o catálogo antes/depois; suíte focada no terreno `dev05c2-fatia1c-*`.
+
+**Saída resumida:** guarda fechada mediu `spawnCommand=2`, `runCatalogCommand=4`, `ROLE_SCRIPT=5`, `spawn=2`, `spawnSync=3`; antes da liberação papel=0, após liberação papel=1; T14c verde; suíte **9/9**, resíduo removido no `finally`; containers/rede próprios removidos.
+
+**Resultado:** PASSOU para (a), (b) e (d). O critério (c), N=10 sem erros de catálogo, é B8 da junta C2.
+
+### B3 — ratchet fail-closed e catálogo FORCE reconciliado
+
+**Comando:** implementação parcial em `scripts/san3-05-acessos-de-plataforma.mjs` + 7 fixtures C3A/B/C/E e C3-F2; container Linux `dev05c2-b3` sob `timeout 900`, `npm ci`, `prisma generate`, gerador `--all` e T13.
+
+**Saída resumida:** gerador ec=0, stderr=0, `ENABLE=106`, `FORCE=106`, acessores=106, `OPS(derivados)=17`; inventário = **76 chaves** contra congelado **53**, crescimento **+23**. O T13 terminou **32/35**: as 27 fixtures herdadas e C3A/B/C3C/C3E ficaram vermelhas como exigido; o ratchet listou 23 chaves novas sem motivo e o fixture C3-F2 ainda falhou ao exigir a chave do leitor. Container `--rm` removido.
+
+**Resultado:** PARADA OBRIGATÓRIA RC3 — crescimento +23 excede o teto de +20. A implementação parcial não foi commitada; não afrouxei o analisador nem continuei para B4.
+
+**Retomada autorizada — comando:** restringir o caminho sintático a métodos presentes em `OPS(derivados)` antes de associar nomes de campos a models Prisma; repetir gerador normal/`--all` e T13 no container `dev05c2-b3final`.
+
+**Saída resumida da re-medição:** inventário final **56** contra 53, crescimento **+3** (dentro do teto), sha1 `2db380a29bd61272bb3441a13ee5001b3f567d47`; gerador normal e `--all` ec=0/stderr=0; `OPS(derivados)=17`; T13 **35/35**.
+
+**Motivos das três chaves novas que permaneceram:**
+
+1. `AuthSessionService.refreshSession · userRoleAssignment.findMany.select.role → roles`: relação FORCE alcançada pela mesma consulta já suspeita, via callback `runWithTenantContext` não provado pelo símbolo confiado.
+2. `PrismaCoreSaasService.listTenantsForIdentity · user.findFirst.include.role_assignments → user_role_assignments`: relação FORCE sob `$TRANSACTION-SEM-SETTER-PROVADO`.
+3. `PrismaCoreSaasService.listTenantsForIdentity · …role_assignments.include.role → roles`: segunda relação FORCE sob a mesma transação sem setter provado.
+
+**Resultado final:** PASSOU — RC3 resolvida sem relaxar o analisador; C3A/B/C3C/C3E e as grafias C3-F2 ficaram cobertas; L0 deriva exatamente 106 FORCE/106 models no objeto.
+
+### B4 — cenário executável por membro FORCE da superfície
+
+**Comando:** enumeração do router e do `job.registry` em runtime; mesma fixture sob superusuário e papel efêmero `NOSUPERUSER NOBYPASSRLS`; `npm run check` e `node --test --import tsx tests/san3-05-leituras-de-plataforma-db.test.ts` em PostgreSQL 16 descartável `dev05c2-b4b-*`, sem porta no host e sob `timeout`.
+
+**Saída resumida:** TypeScript 1/1; arquivo focado **13/13**, fail 0, skipped 0; conjuntos fechados em **11 rotas FORCE = 11 cenários** e **3 jobs FORCE = 3 cenários**, todos com corpo/efeito não vazio e igualdade super × efêmero. Os outros **9 jobs** foram etiquetados `FORA-DA-SUPERFICIE`/`B-ARNES-2`. Uma primeira execução caiu antes dos diferenciais porque a fixture usou um `source_type` fora do `CHECK`; corrigida para o valor permitido `mock_fixture`, sem tocar produto. Teardown final: containers=0, redes=0.
+
+**Resultado:** PASSOU — inclusive `POST /cloud-cost-allocations/runs`, `cloud-charges.calculate` e `cloud-cost-allocation.run`; nenhuma divergência exigiu arquivo proibido e a parada C2.3 não foi acionada.
+
+### D1 — T8d mede exercibilidade de REPLICATION
+
+**Comando:** T8d reescrito sem fixture morta; cria/derruba slot físico e mantém a mutação `rolreplication` observável; suíte focada no terreno `dev05c2-fatia1c-*`.
+
+**Saída resumida:** subteste T8d verde; suíte **9/9**. O título afirma somente “REPLICATION exercível”; `pg_basebackup` permanece reservado ao B10 da junta.
+
+**Resultado:** PASSOU.
+
+### D2 — via de views transitiva
+
+**Comando:** CTE recursivo em `RUNTIME_ROLE_GUARD_SQL` e MODO 6; cenário view externa → view interna → tabela FORCE; `bash -n`; suíte focada no terreno `dev05c2-fatia1c-*`.
+
+**Saída resumida:** `bash -n` ec=0; T8d e T14/MODO 6 verdes; suíte **9/9**; md5 do SQL regravado para `f95dacc4ab623a08961635683aab5ce1`; documentação sem limite de um nível.
+
+**Resultado:** PASSOU.
+
+### D3 — boot de produção fail-closed e filhos finalizados
+
+**Comando:** T15 com boot explícito e default, espera do evento `close`, timeout ≤15 s e teardown SIGTERM/SIGKILL em `finally`; suíte focada `dev05c2-fatia1c-*`.
+
+**Saída resumida:** os dois boots recusados saíram com código 1 antes de Redis/job worker; boot limpo aceito; subteste T15 verde; suíte **9/9**.
+
+**Resultado:** PASSOU.
+
+### D4 — logs sem componentes da URL efetiva
+
+**Comando:** no head integrado `37e024c332b3ad31bc609db5fad8728d26500abe`, `git show HEAD:docs/revisoes/SAN3/B-SAN3-05-plano.md` para D4/C2.3; `git show HEAD:src/database/runtime-role.bootstrap.ts` buscando `describeEscapes`, `session_user` e `current_user`; `git show HEAD:tests/san3-05-runtime-role-guard-db.test.ts` buscando T9/logger.
+
+**Saída resumida:** D4 exige ausência literal de `username` decodificado no JSON do T9/T15. O bootstrap atual registra `session_user: posture.sessionUser` e `current_user: posture.currentUser` tanto no sucesso quanto na recusa; esses valores são o username efetivo da URL. C2.3 proíbe explicitamente alterar `src/database/runtime-role.bootstrap.ts`.
+
+**Comando adicional:** aplicação da Errata 2 do dono (`dee3f821…`); helpers derivam os componentes das URLs efetivas e verificam logs do T9/T15; três mutações negativas por host, senha e nome de papel em campo não identitário.
+
+**Saída resumida adicional:** T5/T6/T9 e T15 verdes na suíte focada; host, porta, senha, banco, `postgresql://` e `password` ausentes; nome de papel permitido somente em `session_user`, `current_user`, `escapes[].rolname` e `via:rolname`.
+
+**Resultado:** PASSOU — PARADA-D4 e PARADA-D4-2 resolvidas sem tocar `src/database/runtime-role.bootstrap.ts`.
+
+**Retomada Errata 3:** em PostgreSQL 16 descartável `dev05c2-d4e3-*`, com a colisão deliberada username=senha=`postgres`, `npm run check` passou **1/1** e a suíte focada passou **14/14**. A allowlist reconhece `error.sessionUser`/`error.currentUser` somente sob `error`; as três mutações obrigatórias (host, senha e papel em outro campo) ficaram vermelhas **3/3**, e uma quarta mutação confirmou que `payload.sessionUser` continua proibido. Teardown nominal concluído.
+
+**Resultado final:** PASSOU — D4 cumpre as Erratas 1–3, sem tocar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
+
+### A1 — ajustes do ciclo 2 e pendências C2.6
+
+**Comando:** inclusão nominal em `agent-orchestration/controle/pendencias.md`; gerador oficial `gerar-indice-pendencias.py` executado em Linux no container `dev05c2-pend-index`, sob `timeout 300s`.
+
+**Saída resumida:** três pendências novas registradas (`P-SAN3-05-RUNNER-SEM-TIMEOUT`, `P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC`, `P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI`) e o sub-item existente `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` recebeu a lista nominal dos **9 jobs** e a recomendação sobre o Ato 2. Índice regenerado: **449 cabeçalhos / 438 IDs**, 117 fechadas, 329 abertas e 3 sem status; as quatro entradas aparecem no índice.
+
+**Resultado:** PASSOU — todas têm escopo/evidência, dono ou atribuição a nomear, bloqueio e teste de encerramento; nenhuma bloqueia este PR.
+
+## Validação B0–B14
+
+### B0 — head, CI, escopo e KPI
+
+**Comando:** `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`; diff de escopo e `git diff --quiet origin/main -- Kpis/` no Windows.
+
+**Saída resumida:** no objeto `d9a0cea11fe1641d857cd299780e7afb7d12fbd8`, local=remoto; **7/7** check-runs (`authority-portal`, `backend`, `backend-postgres`, `docker`, `flutter`, `frontend`, `owner-portal`) concluídos com `success`; `Kpis/*` ec=0 contra `origin/main`; diff integral com 87 arquivos. Os seis corpos `.agents/.claude` novos são do commit de registro do orquestrador `c2df97cc`; os commits do dev tocaram **18 caminhos únicos**, todos na lista permitida do C2.3 (o relatório decorre da ordem explícita do dono).
+
+**Resultado:** PASSOU em heads, CI e KPI. **Divergência de forma no escopo integral:** a expectativa literal “87/87 dentro do PERMITIDO C2.3” não pode ser satisfeita porque o próprio objeto contém o baseline do ciclo 1 e, depois, seis arquivos nominalmente proibidos em `.agents/.claude` adicionados pelo orquestrador em `c2df97cc`. Medição por autoria do ciclo: dev **18/18** dentro do permitido; orquestrador **6** exceções nominais, registradas sem atribuí-las ao dev.
+
+### B1 — `npm run check`
+
+**Comando:** container `dev05c2-check-gen`, cópia read-only da árvore, `npm ci --ignore-scripts`; `DATABASE_URL` só no ambiente; `npx prisma generate`; `npm run check`.
+
+**Saída resumida:** Prisma Client 7.8.0 gerado; `tsc -p tsconfig.json --noEmit`; ec=0. A primeira tentativa sem `prisma generate` falhou por ausência do client e não foi contada como produto.
+
+**Resultado:** PASSOU — 1/1.
+
+### B2 — `npm run lint`
+
+**Comando:** `npm run lint` no container Linux `dev05c2-bateria-node`, após `npm ci`, `prisma generate` e migrações no PostgreSQL descartável da mesma rede.
+
+**Saída resumida:** `npm run lint` delegou ao `npm run check`; ec=0.
+
+**Resultado:** PASSOU — 1/1.
+
+### B3 — testes unitários/contratuais selecionados
+
+**Comando:** os 7 arquivos nominais do B3 no container Linux `dev05c2-bateria-node`; antes, T13 isolado em `dev05c2-b3final`.
+
+**Saída resumida:** bateria consolidada **181/181**, fail 0, skipped 0; T13 interno **35/35**.
+
+**Resultado:** PASSOU.
+
+### B4 — gerador normal e `--all`
+
+**Comando:** `node scripts/san3-05-acessos-de-plataforma.mjs . --all` em Linux, depois de `npm ci` e `prisma generate`.
+
+**Saída resumida:** normal e `--all`: 2/2 com ec=0 e stderr=0 bytes; `OPS(derivados)=17`; inventário **56**, sha1 `2db380a29bd61272bb3441a13ee5001b3f567d47`.
+
+**Resultado:** PASSOU — +3 chaves, cada uma com motivo escrito.
+
+### B5 — modo e EOL do script
+
+**Comando:** `git ls-files -s scripts/db-runtime-role.sh`; `git ls-files --eol scripts/db-runtime-role.sh .gitattributes`.
+
+**Saída resumida:** modo `100755`; script `i/lf w/lf attr/text eol=lf`.
+
+**Resultado:** PASSOU — 2/2 propriedades.
+
+### B6 — receitas DB N=3 + controle sem psql
+
+**Comando:** EM APURAÇÃO
+
+**Saída resumida:** EM APURAÇÃO
+
+**Resultado:** EM APURAÇÃO
+
+### B7 — matriz do `server.log`
+
+**Comando:** EM APURAÇÃO
+
+**Saída resumida:** EM APURAÇÃO
+
+**Resultado:** EM APURAÇÃO
+
+### B8 — lote DB N=10
+
+**Comando:** EM APURAÇÃO
+
+**Saída resumida:** EM APURAÇÃO
+
+**Resultado:** EM APURAÇÃO
+
+### B9 — canário e guarda estrutural
+
+**Comando:** T14c dentro da suíte focada contra PostgreSQL 16 descartável `dev05c2-fatia1c-pg`, sem porta no host.
+
+**Saída resumida:** canário antes=0/depois=1; guarda estrutural 5/5 contagens; T14c verde; suíte focada **9/9**.
+
+**Resultado:** PASSOU no objeto; mutações M-B2a/M-B2b cabem à junta C2.
+
+### B10 — porta REPLICATION
+
+**Comando:** reservado à junta 2 por C2.4.
+
+**Saída resumida:** não cabe ao dev.
+
+**Resultado:** AGUARDA JUNTA
+
+### B11 — suíte inteira e build
+
+**Comando:** no objeto de produto `02544a79cead8d9713354697f8ee78dac1575546`, cópia por `git archive -c core.autocrlf=false`, conferência blob a blob, PostgreSQL 16 e Redis 7 descartáveis sem porta no host, `DATABASE_URL=<descartável> npm test` sob `timeout 2400s` e `npm run build` sob `timeout 600s`; containers/redes `dev05c2-final-*`. Confirmação no head de registro `c2df97cc3b87cf5e7a17bfa2cdea050d8af9f8aa` pelo check-run oficial `backend` `113692887553`.
+
+**Saída resumida:** integridade **3726/3726** blobs e **3726/3726** MD5 dentro do container. Duas rodadas diagnósticas com paralelismo visível 8 e uma com cota que ainda expunha 8 produziram **3128/3132**, fail 2, skipped 2: só T15 + pai, porque o evento `close` passou do teto sob saturação; nenhuma foi publicada como verde. Com afinidade `--cpuset-cpus=0-3` (`availableParallelism=4`), o comando literal fechou **3130/3132**, fail 0, skipped 2; `npm run build` ec=0. Teardown: 0 container, 0 rede, árvore temporária removida. No head `c2df97cc`, que acrescenta somente registros, o `backend` oficial repetiu **3130/3132**, fail 0, skipped 2, e o passo Build ficou verde.
+
+**Resultado:** PASSOU — suíte **3132/3132** (3130 pass + 2 skips permitidos), fail 0; build 1/1, ec=0.
+
+### B12 — premissas e diff do guard de catálogo
+
+**Comando:** `git grep -n -E '(^|[^A-Za-z])PrismaCloudChargeRepository\(prisma\)' -- src`; `git grep -n 'DATABASE_RUNTIME_ROLE_GUARD' -- fly.production.toml fly.staging.toml .env.example`; `git diff origin/main -- tests/db-catalog-write-guard.test.ts` no Windows; ratchet e recontagem Linux das seis regexes.
+
+**Saída resumida:** os dois greps ficaram vazios (ec=1 esperado), **2/2**; contagem medida **64** (`CREATE ROLE=28`, `ALTER ROLE=2`, `GRANT=26`, `REVOKE=1`, `OWNER TO=7`, `DROP ROLE=0`) contra 63; o +1 é a guarda estática do B1 que nomeia a forma proibida `ALTER ROLE %I WITH PASSWORD %L`. O diff do guard contém somente a entrada `san3-05-runtime-role-guard-db.test.ts` do Map, com count 64 e motivo, **1/1**.
+
+**Resultado:** PASSOU — **3/3** formas do B12.
+
+### B13 — `git diff --check`
+
+**Comando:** `git diff --check` antes de cada commit incremental; fecho com `git diff --check origin/main...HEAD` no Windows.
+
+**Saída resumida:** ec=0 em todas as medições, inclusive no diff completo de **87 arquivos** contra `origin/main`.
+
+**Resultado:** PASSOU — **1/1**, ec=0.
+
+### B14 — caminho do compose
+
+**Comando:** EM APURAÇÃO
+
+**Saída resumida:** EM APURAÇÃO
+
+**Resultado:** EM APURAÇÃO
+
+## Divergências e paradas obrigatórias
+
+### PARADA-D4 — aceite impossível dentro do escopo permitido
+
+- **Fato medido na ref:** `37e024c332b3ad31bc609db5fad8728d26500abe`.
+- **Contradição:** o C2.2/D4 requer que o `username` da URL efetiva não apareça no JSON; o próprio contrato existente do bootstrap diz e implementa que o log informa `session_user`/`current_user`. Para a conexão da sonda, o username decodificado e `session_user` são o mesmo valor.
+- **Arquivo necessário para corrigir a propriedade literal:** `src/database/runtime-role.bootstrap.ts`.
+- **Escopo:** C2.3 declara esse arquivo PROIBIDO e afirma que nenhum achado do ciclo 1 pede mudança nele.
+- **Decisão do dev:** parada fail-closed determinada pelo dono; sem improvisar semântica alternativa para “não aparece”, sem editar arquivo proibido e sem iniciar B1–B4/D1–D3 depois de conhecida a parada.
+- **Direção necessária:** o planejador/orquestrador precisa escolher explicitamente entre (a) ampliar o escopo para redigir/remover `session_user`/`current_user` dos logs; ou (b) reescrever D4 para permitir o nome do papel quando ele aparece como identidade medida, mantendo proibidos host/porta/senha/banco/URL. O dev não escolhe entre as duas.
+
+### RESOLUÇÃO-PARADA-D4 — commit `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`
+
+- **Decisão escrita:** opção (b), sem ampliar escopo.
+- **Aceite vigente:** username somente como valor de `session_user`/`current_user`; demais componentes de conexão proibidos; três mutações negativas para host, senha e username fora das duas chaves.
+- **Estado:** RESOLVIDA; desenvolvimento retomado pela mesma identidade.
+
+### PARADA-D4-2 — username já existe fora das duas chaves permitidas
+
+- **Fato medido na ref:** `45da0d17e8f2abc1941ee8760a4b7e06cd28da46`.
+- **Comando:** `git show HEAD:docs/revisoes/SAN3/B-SAN3-05-plano.md` na errata; `git show HEAD:src/database/runtime-role.bootstrap.ts` em `describeEscapes`; `git show HEAD:src/database/runtime-role.ts` no construtor de `RuntimeRoleGuardError`.
+- **Saída resumida:** a errata permite o username somente como valor de `session_user`/`current_user`. Na recusa do superusuário, o mesmo username (`postgres`) também aparece em `escapes[].rolname` e na mensagem `atributo:postgres`; o bootstrap serializa `escapes: posture.escapes`. A mutação “username em outro campo” não distingue mutação de comportamento já existente.
+- **Escopo:** `src/database/runtime-role.bootstrap.ts` continua PROIBIDO; `src/database/runtime-role.ts` é permitido somente para D2 e “nada mais muda no arquivo”.
+- **Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — não é possível cumprir literalmente o aceite substitutivo e preservar o payload de razões atual dentro do escopo concedido.
+- **Decisão necessária:** dizer se `escapes[].rolname` e o texto nomeado `via:rolname` são também valores de identidade permitidos; ou ampliar nominalmente o escopo para redigi-los. O dev não escolhe em silêncio.
+- **Estado local preservado, ainda não commitado:** `scripts/db-runtime-role.sh`, `src/database/runtime-role.ts`, `docs/deployment.md` e `tests/san3-05-runtime-role-guard-db.test.ts` contêm a fatia parcial B1/B2/D1/D2; `git diff --check` = 0. Nenhum arquivo proibido foi tocado; `scratchpad/` segue preservado.
+- **Próximo comando após decisão:** reler a nova errata na ref empurrada, registrar a resolução aqui e concluir primeiro `tests/san3-05-runtime-role-guard-db.test.ts` antes de iniciar B3/B4.
+
+### RESOLUÇÃO-PARADA-D4-2 — decisão do dono no commit `dee3f821a56ca99e11059e8e34a5d48438841329`
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura da “Errata 2 ao D4 — DECISÃO DO DONO” na ref atual.
+- **Saída resumida:** local = remoto = `dee3f821a56ca99e11059e8e34a5d48438841329`; os quatro arquivos parciais continuam modificados e `scratchpad/` intacto.
+- **Decisão §A1.1:** `rolname` pode aparecer como valor de `session_user`, `current_user`, `escapes[].rolname` e no texto `via:rolname`; permanece proibido em URL/DSN ou qualquer outro campo. Host, porta, senha, banco, `postgresql://` e `password` continuam proibidos; três mutações negativas obrigatórias; bootstrap continua PROIBIDO.
+- **Resultado:** PASSOU — PARADA-D4-2 resolvida; desenvolvimento retomado da fatia parcial B1/B2/D1/D2.
+
+### QUEDA DE USO E RETOMADA — 2026-10-08T21:07Z / 2026-10-09T01:42:50Z
+
+- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Saída resumida:** 5 arquivos modificados (`DEV-ciclo2-relatorio.md` e os 4 arquivos parciais de produto), `scratchpad/` não rastreado e preservado; remoto = `dee3f821a56ca99e11059e8e34a5d48438841329`.
+- **Ocorrência:** a sessão anterior caiu por limite de uso do Codex às `2026-10-08T21:07Z`; nenhuma mudança remota ocorreu durante a interrupção.
+- **Resultado:** PASSOU — retomada em `2026-10-09T01:42:50Z`, sem perda dos arquivos parciais e sem divergência do head remoto informado pelo dono.
+
+### PARADA-RC3 — inventário B3 cresceu acima do teto
+
+- **Objeto de partida empurrado:** `d9fc0d6df2b9098bd8665f9070e8082a54f97e39`.
+- **Comando:** container `dev05c2-b3` sob `timeout 900`; cópia read-only da árvore local; `npm ci`; `prisma generate`; `node scripts/san3-05-acessos-de-plataforma.mjs . --all`; T13 completo.
+- **Saída resumida:** L0 `ENABLE=106 FORCE=106 acessores=106`; `OPS(derivados)=17`; stderr=0; inventário `76`/sha1 `d990f882341867f4e3b1366c56c3df1bff401168`, contra 53 chaves congeladas: **+23**. T13 **32/35**; C3A/B/C/E passaram, mas o congelado enumerou 23 novas e C3-F2 ainda não atribuiu a chave do leitor.
+- **Diagnóstico da fatia parcial:** 22 chaves L1 incluem relações e falsos candidatos que compartilham nomes de acessores Prisma (`role`, `yard`, `settlement`) e 1 chave L2 já visível após a integração da main. Corrigir a discriminação por operação/tipo poderia reduzir o número, mas isso seria continuar a implementação depois de observado o teto excedido.
+- **Regra aplicada:** C2.3/RC3 determina “acima de 20 chaves novas, o dev para e relata”. Nenhum relaxamento do analisador, atualização do congelado ou avanço para B4 foi feito.
+- **Estado local preservado:** alterações parciais não commitadas somente nos caminhos permitidos de B3 (`scripts/san3-05-acessos-de-plataforma.mjs`, `tests/san3-05-acessos-de-plataforma-guard.test.ts`, 7 fixtures); `scratchpad/` intocado; `dev05c2-b3` removido por `--rm`.
+- **Decisão necessária:** o orquestrador precisa autorizar a continuação para corrigir os falsos candidatos e re-medir o teto, ou redefinir o tratamento das 23 chaves. O dev não escolhe em silêncio.
+
+### RESOLUÇÃO-PARADA-RC3 — autorização do orquestrador em 2026-10-09
+
+- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Saída resumida:** alterações locais somente na fatia parcial B3 e `scratchpad/` preservado; remoto = `b9a1dda3752f07de386bbd1430057b84b47b25c6`, conforme esperado.
+- **Decisão:** autorizado corrigir a discriminação por operação/tipo dos falsos candidatos (`role`, `yard`, `settlement` e semelhantes) e re-medir. O teto RC3 continua inalterado; inventário final acima de +20 exige nova parada, lista de chaves e motivo por chave.
+- **Resultado:** RETOMADO — sem relaxar o analisador e sem atualizar o congelado apenas para caber no teto.
+
+### PARADA-D4-3 — `error.sessionUser`/`error.currentUser` violam a Errata 2
+
+- **Objeto empurrado medido:** `3401f162fc6b00d48962447183b98e12a1b0280c`; check-run `backend` `113637900062` concluído vermelho, enquanto `backend-postgres` concluiu verde.
+- **Comandos:** `gh run view --job 113637900062 --log-failed`; boot direto de `node --import tsx src/server.ts` contra PostgreSQL 16 descartável `dev05c2-logprobe-pg`, sem porta no host, com `DATABASE_URL=postgresql://postgres:postgres@dev05c2-logprobe-pg:5432/...`; teardown nominal verificado.
+- **Saída resumida:** o primeiro log de recusa usa as formas permitidas `"session_user":"postgres"`, `"current_user":"postgres"` e `escapes[].rolname`. O segundo log contém `"error":{"code":"RUNTIME_ROLE_CAN_BYPASS_RLS","sessionUser":"postgres","currentUser":"postgres",...}`. A CI usa o mesmo texto `postgres` como senha e nome do papel, por isso a guarda D4 detectou `password da conexão apareceu no log`; a execução direta provou que a ocorrência restante está nos dois campos camelCase, não em URL/DSN.
+- **Regra aplicável:** a decisão do dono em `dee3f821` permite nome de papel somente como valor de `session_user`, `current_user`, `escapes[].rolname` e `via:rolname`; nome de papel em outro campo continua proibido. `sessionUser`/`currentUser` são outros campos.
+- **Impossibilidade dentro do escopo:** eliminar esses campos exige mudar a serialização do erro em `src/server.ts` ou `src/database/runtime-role.bootstrap.ts` (ambos PROIBIDOS), ou alterar a enumerabilidade de propriedades em `src/database/runtime-role.ts`, cujo único uso permitido no C2.3 é D2 e onde “nada mais muda”. Permitir camelCase no teste relaxaria a decisão do dono e não é opção do dev.
+- **Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — nenhuma correção de produto foi improvisada. O ajuste semântico parcial do teste, que mascara apenas as formas permitidas e torna a colisão username=senha testável, permanece local e não commitado; ele evidencia os campos camelCase. O ajuste independente do ratchet 63→64 pode ser commitado com este registro.
+- **Decisão necessária:** autorizar nominalmente um dos três caminhos: (a) retirar/redigir `sessionUser` e `currentUser` da serialização em arquivo hoje proibido; (b) permitir alterar `runtime-role.ts` para tornar essas propriedades não enumeráveis sem mudar o diagnóstico permitido; ou (c) ampliar a Errata 2 para também permitir `error.sessionUser`/`error.currentUser`. O dev não escolhe entre eles.
+- **Estado da bateria ao parar:** B1 1/1; B2 1/1; B3 181/181; B4 2/2; B11 3126/3132 (fail 4, skipped 2); B12 parcial; B13 incremental limpo. B6–B8/B10/B14 e as 16 mutações continuam reservados à junta; build e fecho B0/B12/B13 aguardam decisão.
+
+### RESOLUÇÃO-PARADA-D4-3 — decisão do dono no commit `b3af298af24833855b630c6f69ea8d532215c746`
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; leitura da “Errata 3 ao D4 — DECISÃO DO DONO” na ref atual.
+- **Saída resumida:** pull sem mudanças; local = remoto = `b3af298af24833855b630c6f69ea8d532215c746`; somente o teste parcial do D4 continuou modificado e `scratchpad/` permaneceu intacto.
+- **Decisão §A1.1:** além das identidades da Errata 2, o nome do papel pode aparecer como valor de `error.sessionUser` e `error.currentUser`. Nome de papel em qualquer outro campo e todos os componentes secretos/de conexão continuam proibidos; as três mutações negativas continuam obrigatórias; `src/database/runtime-role.bootstrap.ts` e `src/server.ts` continuam proibidos.
+- **Resultado:** PASSOU — PARADA-D4-3 resolvida; D4 retomado sem tocar os arquivos proibidos e com allowlist por caminho JSON exato.
+
+### RETOMADA APÓS LIMITE — 2026-10-09
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; bateria final no head incorporado.
+- **Saída resumida:** o head local já era o registro `c2df97cc3b87cf5e7a17bfa2cdea050d8af9f8aa` e batia com o remoto; o sucessor não deixou mudança. Os arquivos `.agents/agents/**` marcados pelo status têm hash local idêntico ao blob do `HEAD` e `git diff` vazio (racy-stat/EOL), por isso foram preservados e nunca adicionados. `scratchpad/` permaneceu intocado.
+- **Resultado:** PASSOU — retomada sem perda e sem absorver arquivo alheio; somente este relatório foi adicionado nominalmente nos commits finais.
+
+## Correção pós-CI — isolamento das leituras globais do B4
+
+### Achado no head `7c8a2f3c815a0e082e3e752769705bb5ab781249`
+
+**Comando:** `git pull --ff-only`; comparação de `git rev-parse HEAD` com `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api .../commits/7c8a2f3c/check-runs`; `gh run view --job 113712759793 --log-failed`.
+
+**Saída resumida:** local = remoto = `7c8a2f3c815a0e082e3e752769705bb5ab781249`; **7/7** check-runs concluídos, com `backend` vermelho e os demais 6 verdes/skipped conforme contrato. O T11e comparou o corpo global inteiro de `GET /api/v1/platform/overview`: super viu `activeOrgs=3`, efêmero viu `activeOrgs=2`; a terceira organização `SAN3-04a T2 ...` pertencia a outro arquivo executado em paralelo.
+
+**Resultado:** REPRODUZIDO — defeito de isolamento do teste B4, não defeito de RLS do produto.
+
+### Varredura T10/T11a–T11e e jobs B4
+
+**Comando:** leitura de `tests/san3-05-leituras-de-plataforma-db.test.ts` e dos serviços/repositórios chamados por todas as 11 rotas FORCE e 3 jobs FORCE; `npm run check` dentro do container Linux descartável.
+
+**Saída resumida:** quatro respostas globais precisavam de recorte (`cloud-usage/summary`, `overview`, `cloud-cost-allocations/summary`, `cloud-charges/summary`), além da criação global de rateio. O job `cloud-cost-allocation.run` ainda identificava seu efeito por `findFirst(orderBy: created_at desc)`. T10 também comparava os eventos/agregados globais sem recortar os dois tenant IDs. O teste agora: (1) filtra eventos/agregados por `tenantA`/`tenantB`; (2) usa `source_type` exclusivo no resumo de uso; (3) projeta e exige exatamente as duas organizações nos resumos/overview/rateios; (4) consulta o resumo de cobrança pelo `sourceAllocationRunId`; (5) identifica o run do job por `createdBy` exclusivo; e (6) sorteia por processo uma janela histórica exclusiva de 32 dias, preservando a soma exata 50. `npm run check`: **1/1**, ec=0.
+
+**Resultado:** PASSOU — nenhum analisador foi relaxado; perder qualquer linha do seed continua sendo falha explícita.
+
+### Mutações adversariais de isolamento
+
+**Comando:** no container Linux `dev05c2-isolamento-node`, contra PostgreSQL 16 `dev05c2-isolamento-pg` sem porta publicada: (M-ISO-1) mutação temporária que cria uma organização alheia entre a leitura super e a efêmera; (M-ISO-2) mutação temporária que remove uma das duas organizações do recorte efêmero. Cada mutação foi aplicada apenas ao arquivo copiado/árvore local, executada sob `timeout 600` e revertida por patch antes do fecho.
+
+**Saída resumida:** M-ISO-1 **13/13**, fail 0, ec=0; M-ISO-2 **10/13**, fail 3 (T11d, T11e e pai), ec=1, com diff nominal em `GET /api/v1/platform/overview` mostrando a linha B ausente.
+
+**Resultado:** PASSOU — dado alheio intercalado não contamina a comparação; perda de uma linha do seed permanece vermelha.
+
+### Repetição paralela com a suíte `*-db`
+
+**Comando:** cinco processos simultâneos `timeout 900 node --test --import tsx tests/san3-05-leituras-de-plataforma-db.test.ts` junto de um sexto processo `timeout 1800 node --test --import tsx tests/*-db.test.ts`, todos no mesmo container Linux e no mesmo PostgreSQL descartável `dev05c2-isolamento-*`.
+
+**Saída resumida:** focados: **5/5 execuções**, cada uma **13/13**, total **65/65**, fail 0; suíte `*-db`: **301/301**, fail 0. A rodada diagnóstica anterior, ainda com a janela 2001 compartilhada, deixou 4/5 focados vermelhos no resumo de rateio e provou a segunda dependência global; após a janela exclusiva, todos ficaram verdes. Durações dos focados: 16,85–17,41 s; suíte DB: 63,76 s. Fecho da árvore permanente: `npm run check` **1/1** e arquivo focado **13/13**; teardown nominal deixou **0** container e **0** rede `dev05c2-isolamento-*`.
+
+**Resultado:** PASSOU — N=5 focado em paralelo com a suíte DB completa; forma Linux/PostgreSQL 16, sem alvo na base viva.
+
+### CI do commit de correção
+
+**Comando:** `git push origin fix/runtime-role-sem-bypass`; `git ls-remote origin fix/runtime-role-sem-bypass`; consulta repetida de `gh api repos/thiagodorgo/ERP_Techsolutios/commits/112ea3ca.../check-runs` até nenhum job permanecer `queued`/`in_progress`.
+
+**Saída resumida:** remoto = `112ea3cab67c7c0580281af0b73c618f483c9428`; **7/7** check-runs concluídos com `success`: `backend` `113719997608`, `backend-postgres` `113719997596`, `frontend`, `flutter`, `owner-portal`, `authority-portal` e `docker` `113722282325`.
+
+**Resultado:** PASSOU — o mesmo job `backend` que revelou a corrida no head anterior ficou verde no novo objeto.
+
+## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
+
+**Solicitado:**
+
+- [x] B1 — commit `d9fc0d6d`; `npm run check` **1/1** e prova SCRAM/guarda estática na suíte focada.
+- [x] B2 — commit `d9fc0d6d`; canário e guarda estrutural verdes; lote N=10 reservado à junta.
+- [x] B3 — commit `16014c06`; T13 **35/35**, gerador **2/2**, OPS=17, L0=106/106 e inventário 56 (+3, cada chave motivada).
+- [x] B4 — commits `41af41f5` + `112ea3ca`; rotas FORCE **11/11** e jobs FORCE **3/3** com recorte exclusivo do próprio seed; mutações de isolamento **2/2**.
+- [x] D1 — commit `d9fc0d6d`; T8d verde; extração `pg_basebackup` reservada à junta.
+- [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
+- [x] D3 — commit `d9fc0d6d`; T15 explícito/default, evento `close` e exit 1 verdes.
+- [x] D4 — commit `02544a79`; Erratas 1–3 aplicadas por caminho JSON exato; suíte focada **14/14** e mutações obrigatórias host/senha/papel fora de identidade vermelhas **3/3**.
+- [x] Ajustes que entram no ciclo — commits `3401f162` e `36a88a07`; três pendências novas, subitem nominal dos 9 jobs e ratchet 63→64 registrados.
+- [x] Integração da `main` — merge commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos de registro resolvidos por união.
+- [x] `Kpis/*` à `main` — `git diff --quiet origin/main -- Kpis/` retornou ec=0 no B0 final.
+
+**Feito:** todos os itens solicitados acima foram implementados, validados e empurrados; a correção pós-CI do B4 remove a dependência de dados alheios sem esconder a perda de linhas do seed. D4 ficou fechado pelo texto cumulativo das três erratas sem editar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
+
+**Não feito / divergências:** nenhum item solicitado ao dev ficou aberto. B6–B8, B10, B14 e as 16 mutações da tabela C2.4 pertencem à junta 2, não ao dev. Divergência registrada no B0: o diff integral contém seis corpos `.agents/.claude` nominalmente fora do permitido do C2.3, introduzidos pelo orquestrador no commit `c2df97cc`; os 18 caminhos dos commits do dev estão dentro do escopo.
+
+**Validação:** B0 heads 2/2, CI do commit de correção **7/7** concluída verde, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 focado paralelo **65/65**, suíte DB simultânea **301/301**, mutações **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
+
+**Head empurrado:** `112ea3cab67c7c0580281af0b73c618f483c9428`, confirmado por `git ls-remote`, com **7/7** check-runs concluídos verdes. O commit deste checklist é o único delta documental subsequente e seu SHA completo é confirmado no handoff final (um commit não pode conter o próprio hash).
+
+**Próximos passos (análise):** a junta 2 deve confirmar que toda comparação de agregado global permanece projetada pelos IDs/source do seed, observar especialmente os resumos que escolhem o run mais recente e repetir a pressão concorrente. Também deve concentrar-se na matriz B7 e em vazamento de senha no `server.log`, nas 16 mutações efêmeras, no canário concorrente B2, na porta de replicação B10, no caminho compose B14 e nos 9 jobs fora da superfície antes do Ato 2; e tratar a exceção de escopo de `c2df97cc` pela autoria correta.

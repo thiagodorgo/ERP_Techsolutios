@@ -1,0 +1,13 @@
+model C2ForceQualified {
+  id Int @id
+  @@map("c2_force_qualified")
+}
+
+model C2ForceDefault {
+  id Int @id
+}
+
+model C2ForceControl {
+  id Int @id
+  @@map("c2_force_control")
+}

@@ -264,6 +264,10 @@ export const envSchema = z.object({
   // que ESQUECER a variável em produção caia no lado seguro. `noop` em produção é recusado no BOOT pelo
   // gate G-EVIDENCE-SCANNER do `superRefine` — ver o comentário lá.
   EVIDENCE_SCANNER: z.enum(["noop", "unavailable"]).optional(),
+  // B-SAN3-05 (item 9) — a trava de boot do papel de banco (`src/database/runtime-role.bootstrap.ts`). Sem
+  // `.default()` de propósito, como o EVIDENCE_SCANNER: o default sai do `NODE_ENV` no export
+  // (`production` → `enforce`; dev/test → `skip`), e `skip` em produção é recusado pelo gate G-DB-ROLE.
+  DATABASE_RUNTIME_ROLE_GUARD: z.enum(["enforce", "skip"]).optional(),
   AWS_CUR_IMPORT_ENABLED: z.coerce.boolean().default(false),
   AWS_CUR_S3_BUCKET: z.string().trim().optional().default(""),
   AWS_CUR_S3_PREFIX: z.string().trim().optional().default(""),
@@ -552,6 +556,18 @@ export const envSchema = z.object({
     });
   }
 
+  // G-DB-ROLE (B-SAN3-05, item 9) — produção não sobe com a trava do papel de banco desligada. Sem ela, um
+  // DATABASE_URL de superusuário ou BYPASSRLS anula toda política FORCE ROW LEVEL SECURITY em silêncio. Não há
+  // válvula: um "permitir skip em produção" seria o achado com outro nome.
+  if (value.NODE_ENV === "production" && value.DATABASE_RUNTIME_ROLE_GUARD === "skip") {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["DATABASE_RUNTIME_ROLE_GUARD"],
+      message:
+        "P-INFRA-RLS: DATABASE_RUNTIME_ROLE_GUARD=skip is not allowed in production. A trava de boot recusa um papel de banco que escape de FORCE ROW LEVEL SECURITY (superusuário, BYPASSRLS, REPLICATION, posse de tabela FORCE ou view de dono que escapa); desligá-la em produção é o defeito que ela existe para impedir. Crie o papel com scripts/db-runtime-role.sh (docs/deployment.md).",
+    });
+  }
+
   // G-EVIDENCE-SNIFFABLE (Ω6R-SEC-004, B-O6R-07b §3.3 + EMENDA E1·4) — a allowlist de MIME do storage é
   // configurável por env, e o gate de upload só sabe VERIFICAR os tipos que o sniff de assinatura
   // reconhece. Ligar `image/svg+xml`, `text/html` ou `image/heic` por env criaria um tipo aceito que
@@ -636,5 +652,9 @@ export const env = {
   // sobe: o gate G-EVIDENCE-SCANNER do superRefine recusa o boot.
   EVIDENCE_SCANNER:
     parsedEnv.EVIDENCE_SCANNER ?? (parsedEnv.NODE_ENV === "production" ? "unavailable" : "noop"),
+  // B-SAN3-05 — DEFAULT DA TRAVA POR AMBIENTE (mesma forma do EVIDENCE_SCANNER): esquecer a variável em
+  // produção (staging incluso — NODE_ENV=production) cai em `enforce`, o lado seguro.
+  DATABASE_RUNTIME_ROLE_GUARD:
+    parsedEnv.DATABASE_RUNTIME_ROLE_GUARD ?? (parsedEnv.NODE_ENV === "production" ? "enforce" : "skip"),
 };
 

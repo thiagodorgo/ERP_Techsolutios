@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **459** |
-| IDs distintos | 448 |
-| **ABERTAS** | **335** |
+| Cabecalhos `## P-` | **482** |
+| IDs distintos | 471 |
+| **ABERTAS** | **355** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **268** |
+| — das quais **ativas nesta rodada** | **288** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 124 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **459 cabecalhos para 448 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **482 cabecalhos para 471 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -57,17 +57,20 @@
 | `P-PURCHASE-ORDERS-BACKEND-GATE` | 1723 | **MÉDIA** | P-PURCHASE-ORDERS-BACKEND-GATE - Gate server-side de Pedidos/Relatórios pendente |
 | `P-CHK-SEED-DEMO-SUJO` | 2218 | **MÉDIA** | P-CHK-SEED-DEMO-SUJO (2026-08-08) — dados de demonstração com nomes técnicos e l |
 
-## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 0
+## SEM STATUS — nenhuma linha `status:`/`Estado:` (o indice NAO chuta) — 3
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
+| `P-INFRA-RLS` | 495 | — | sim | P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em run |
+| `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` | 7505 | ALTA | sim | P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem ten |
+| `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` | 10128 | MÉDIA | sim | P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT (2026-09-06) — teste reescreve a regra do defa |
 
 ## CONTRADITORIAS — cabecalho e linha de status se opoem — 0
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 147
+## ABERTAS · balde A — material — 159
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -115,7 +118,6 @@
 | `P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA` | 7426 | MÉDIA | sim | P-O6R-B06-DIVERGENCIA-MOBILE-NAO-FATURADA (2026-09-07) — a trilha de divergência do app  |
 | `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL` | 7453 | ALTA | sim | P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL (2026-09-07) — as chaves de anexo e de job continua |
 | `P-O6R-B06-BASE-SEM-PRODUTOR` | 7481 | ALTA | sim | P-O6R-B06-BASE-SEM-PRODUTOR (2026-09-07) — três categorias de custo caem sempre em `unal |
-| `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` | 7505 | ALTA | sim | P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem ten |
 | `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA` | 7532 | MÉDIA | sim | P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA (2026-09-07) — ninguém enfileira o job da projeção  |
 | `P-O6R-B06-RATEIO-CURSOR-100K` | 7550 | ALTA | sim | P-O6R-B06-RATEIO-CURSOR-100K (2026-09-07) — o teto do rateio ficou ALTO, mas continua se |
 | `P-GOV-AUDITOR-FORA-DA-CI` | 7778 | MÉDIA | sim | P-GOV-AUDITOR-FORA-DA-CI (2026-09-07) — o auditor de elenco e o `--check` das skills são |
@@ -205,27 +207,39 @@
 | `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9995 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
 | `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 10026 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
 | `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 10046 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
-| `P-WO-LISTA-SO-20-MAIS-RECENTES` | 10153 | MÉDIA | sim | P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recent |
-| `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` | 10176 | MÉDIA | sim | P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de priorid |
-| `P-SAN3-05-ATO2-CINCO-TAREFAS` | 10196 | ALTA | sim | P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel e |
-| `P-INDICE-PENDENCIAS-CLASSIFICADOR` | 10235 | MÉDIA | sim | P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e i |
-| `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` | 10245 | ALTA | sim | P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda nã |
-| `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` | 10252 | MÉDIA | sim | P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organi |
-| `P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT` | 10259 | MÉDIA | sim | P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉD |
-| `P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND` | 10266 | MÉDIA | sim | P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND (2026-10-09) — configuração global sem autorida |
-| `P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND` | 10273 | MÉDIA | sim | P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND (2026-10-09) — credenciais administrativas sem c |
-| `P-SAN3-06B-PLANOS-SEM-ENDPOINT` | 10280 | MÉDIA | sim | P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA |
-| `P-SAN3-06B-CLOUD-BILLING-ESCRITA` | 10287 | ALTA | sim | P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produ |
-| `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA` | 10294 | MÉDIA | sim | P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — M |
-| `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` | 10301 | MÉDIA | sim | P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros d |
+| `P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL` | 10078 | ALTA | sim | P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL (2026-10-03) — suíte de banco ainda roda majoritariame |
+| `P-SAN3-05-RUNNER-SEM-TIMEOUT` | 10087 | MÉDIA | sim | P-SAN3-05-RUNNER-SEM-TIMEOUT (2026-10-09) — runner e job backend sem teto por arquivo —  |
+| `P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC` | 10094 | MÉDIA | sim | P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC (2026-10-09) — default de LocalAuthLoginService pode e |
+| `P-SAN3-05-POSTURA-NO-HEALTH` | 10109 | MÉDIA | sim | P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA |
+| `P-SAN3-05-SECURITY-DEFINER-INVENTARIO` | 10115 | ALTA | sim | P-SAN3-05-SECURITY-DEFINER-INVENTARIO (2026-10-03) — funções de dono que escapa — ALTA |
+| `P-SAN3-05-STAGING-CD-AMARRACAO` | 10122 | ALTA | sim | P-SAN3-05-STAGING-CD-AMARRACAO (2026-10-03) — CD de staging depende dos atos de provisão |
+| `P-WO-LISTA-SO-20-MAIS-RECENTES` | 10220 | MÉDIA | sim | P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recent |
+| `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` | 10243 | MÉDIA | sim | P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de priorid |
+| `P-SAN3-05-ATO2-CINCO-TAREFAS` | 10263 | ALTA | sim | P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel e |
+| `P-INDICE-PENDENCIAS-CLASSIFICADOR` | 10302 | MÉDIA | sim | P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e i |
+| `P-SAN3-05-RATCHET-INST-SOME` | 10311 | MÉDIA | sim | P-SAN3-05-RATCHET-INST-SOME (2026-10-09) — uma instanciação reconhecida libera a classe  |
+| `P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE` | 10318 | MÉDIA | sim | P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE (2026-10-09) — igualdade catálogo↔L0 não é uma |
+| `P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA` | 10325 | MÉDIA | sim | P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA (2026-10-09) — T14c conta grafias em vez de fechar |
+| `P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES` | 10332 | MÉDIA | sim | P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job |
+| `P-SAN3-05-TIMEOUT-MATA-SO-O-BASH` | 10339 | MÉDIA | sim | P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉD |
+| `P-SAN3-05-REGRA-EM-TABELA` | 10367 | ALTA | sim | P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava —  |
+| `P-SAN3-05-T15-TETO-DE-RELOGIO` | 10388 | MÉDIA | sim | P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carg |
+| `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` | 10402 | ALTA | sim | P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda nã |
+| `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` | 10409 | MÉDIA | sim | P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organi |
+| `P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT` | 10416 | MÉDIA | sim | P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉD |
+| `P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND` | 10423 | MÉDIA | sim | P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND (2026-10-09) — configuração global sem autorida |
+| `P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND` | 10430 | MÉDIA | sim | P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND (2026-10-09) — credenciais administrativas sem c |
+| `P-SAN3-06B-PLANOS-SEM-ENDPOINT` | 10437 | MÉDIA | sim | P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA |
+| `P-SAN3-06B-CLOUD-BILLING-ESCRITA` | 10444 | ALTA | sim | P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produ |
+| `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA` | 10451 | MÉDIA | sim | P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — M |
+| `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` | 10458 | MÉDIA | sim | P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros d |
 
-## ABERTAS · balde B — processo/registro — 121
+## ABERTAS · balde B — processo/registro — 129
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 | `P-006` | 73 | — | **a atribuir** | P-006 - RLS por-tenant e rate-limit por-tenant (proposta, nao implementar) |
 | `P-007` | 80 | — | **a atribuir** | P-007 - Prisma forward-only: rollback via SQL manual (2026-07-07) |
-| `P-INFRA-RLS` | 495 | — | sim | P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em run |
 | `P-SAN-E2E` | 509 | — | sim | P-SAN-E2E - Playwright e2e fora do gate obrigatório (Ω-GATE, 2026-07-13) |
 | `P-SAN-KPI-BACKFILL` | 534 | — | **a atribuir** | P-SAN-KPI-BACKFILL - Backfill de merge_commit/approved_head nos KPIs pode persistir null |
 | `P-Ω3F6-COMISSAO-REVERSAL` | 832 | — | **a atribuir** | P-Ω3F6-COMISSAO-REVERSAL - dual-gate na engine de cálculo + reversão de comissão de OS c |
@@ -331,19 +345,28 @@
 | `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` | 10004 | BAIXA | sim | P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da  |
 | `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` | 10013 | BAIXA | sim | P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de  |
 | `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` | 10036 | BAIXA | sim | P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa |
-| `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 10066 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
-| `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 10083 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
-| `P-SAN3-11-CENSO-CAST-RECORD` | 10095 | BAIXA | sim | P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
-| `P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE` | 10107 | BAIXA | sim | P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
-| `P-WEB-TOPBAR-ROTULO-FALLBACK` | 10132 | BAIXA | sim | P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users  |
-| `P-WEB-PADRAO-MICRODIFERENCAS` | 10142 | BAIXA | sim | P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o desig |
-| `P-CSV-FORMULA-GLOBAL` | 10165 | BAIXA | sim | P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA |
-| `P-WO-FILTROS-LEGADO-MORTO` | 10187 | BAIXA | sim | P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA |
-| `P-OS-EXPORTAR-PERMISSAO-PREMISSA` | 10208 | BAIXA | sim | P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão d |
-| `P-OS-EX4-SO-COLUNA-CLIENTE` | 10218 | BAIXA | sim | P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere |
-| `P-OS-ARIA-CONTROLS-FECHADO` | 10227 | BAIXA | sim | P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o pai |
-| `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO` | 10308 | BAIXA | sim | P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console anti |
-| `P-SAN3-06B-HEALTH-FETCH-DIRETO` | 10315 | BAIXA | sim | P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAI |
+| `P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA` | 10066 | BAIXA | sim | P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA (2026-10-03) — leitura da projeção diária sem ch |
+| `P-SAN3-05-LACO-POR-TENANT-DUPLICADO` | 10072 | BAIXA | sim | P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — B |
+| `P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI` | 10101 | BAIXA | sim | P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI (2026-10-09) — CI não lê o server.log do PostgreSQL |
+| `P-SAN3-11-VIGENTE-NAO-VINCULADA` | 10133 | BAIXA | sim | P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11) |
+| `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA` | 10150 | BAIXA | sim | P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11) |
+| `P-SAN3-11-CENSO-CAST-RECORD` | 10162 | BAIXA | sim | P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
+| `P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE` | 10174 | BAIXA | sim | P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3) |
+| `P-WEB-TOPBAR-ROTULO-FALLBACK` | 10199 | BAIXA | sim | P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users  |
+| `P-WEB-PADRAO-MICRODIFERENCAS` | 10209 | BAIXA | sim | P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o desig |
+| `P-CSV-FORMULA-GLOBAL` | 10232 | BAIXA | sim | P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA |
+| `P-WO-FILTROS-LEGADO-MORTO` | 10254 | BAIXA | sim | P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA |
+| `P-OS-EXPORTAR-PERMISSAO-PREMISSA` | 10275 | BAIXA | sim | P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão d |
+| `P-OS-EX4-SO-COLUNA-CLIENTE` | 10285 | BAIXA | sim | P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere |
+| `P-OS-ARIA-CONTROLS-FECHADO` | 10294 | BAIXA | sim | P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o pai |
+| `P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR` | 10346 | BAIXA | sim | P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR (2026-10-09) — fixture pode deixar migrador com p |
+| `P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL` | 10353 | BAIXA | sim | P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL (2026-10-09) — guarda de log aceita campo textual ind |
+| `P-SAN3-05-T15-FALSO-VERMELHO-PORTA` | 10360 | BAIXA | sim | P-SAN3-05-T15-FALSO-VERMELHO-PORTA (2026-10-09) — pid ou tempo pode casar a porta — BAIX |
+| `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` | 10374 | BAIXA | sim | P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER (2026-10-09) — view sobre função SQL invoker não é r |
+| `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` | 10381 | BAIXA | sim | P-SAN3-05-SUITE-SEM-FORMAS-F1-F3 (2026-10-09) — a suíte não fixa as formas de view que o |
+| `P-SAN3-05-MENSAGEM-DA-RECUSA` | 10395 | BAIXA | sim | P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e n |
+| `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO` | 10465 | BAIXA | sim | P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console anti |
+| `P-SAN3-06B-HEALTH-FETCH-DIRETO` | 10472 | BAIXA | sim | P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAI |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -544,4 +567,4 @@
 | `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9647 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9656 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10056 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
-| `P-OS-FILTRAR-EXPORTAR` | 10118 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
+| `P-OS-FILTRAR-EXPORTAR` | 10185 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
