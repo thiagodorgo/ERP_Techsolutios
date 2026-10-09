@@ -55,3 +55,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: `npm --prefix frontend run check` + busca por `readFrontendEnv("VITE_USE_MOCKS"`.
 - Saída resumida: TypeScript verde; única ocorrência restante em `frontend/src/config/env.ts`.
 - Estado: concluída — fixtures de plataforma removidos; modo demonstração devolve vazio ou recusa clara; tela de módulos sem código interno e com plano em PT-BR.
+
+### E6 — Menu real e rótulos
+
+- Comando: `npm --prefix frontend run check` + `git diff --numstat -- frontend/src/layouts/PlatformLayout.tsx`.
+- Saída resumida: TypeScript verde; `PlatformLayout.tsx` = exatamente `1 5`.
+- Estado: concluída — menu fica com Visão Geral, Organizações, Cloud Billing e Saúde do Sistema; as quatro paradas honestas continuam acessíveis somente por URL direta.
