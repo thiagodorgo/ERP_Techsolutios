@@ -1,0 +1,123 @@
+{
+ "jurado": "jurado-san305-c4-credencial-arnes-escopo (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato — tudo re-medido)",
+ "cadeira": "C2 — credencial, arnês e escopo: B1 (senha), B2 (catálogo sob a trava, T14c, N=3, resíduo), escopo do ciclo",
+ "mandato_md5": "bfeb025fa6154f817436a42c03104712 (tr -d CR do disco = versionado no objeto, hash-object 6ce2ee58) · declarado no disparo: bfeb025fa6154f817436a42c03104712",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — Fable só em bloco que toca dinheiro; este é segurança/permissão",
+ "corpo_md5": "3363eb094cdf49a3534a73321b7d1d2f (.claude, blob do objeto 84831ad9 = do 2400049b) / 4b34813dd4b5b98c4e72d423c5c45801 (.agents, cabeçalho Codex) · corpo recebido (lançada como general-purpose, lido do blob HEAD de w-o05): 3363eb094cdf49a3534a73321b7d1d2f = esperado no disparo",
+ "objeto": "84831ad9796d8db29766b0ff6e0a1a894a9d45e7 (git ls-remote do ramo = gh pr view 405 headRefOid, no início e no fim) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · head do disparo do dev 7c63f920c996cf105535f345eec2ee10461c77a3 (DEV-relatorio l.7 + plano C4.5 D0 + git log) e ancestral: sim (0 merge no ciclo) · cerca do mandato 2400049bf8ec421c3f65a07884c6394d4ab208bc e delta só registro (6 arquivos: mandatos c4, parecer, C1-evidencia/voto; 0 em src/tests/scripts/prisma/docs/Kpis) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor da junta 4: votos/B-SAN3-05/ciclo4/00-inspetor-terreno.md (inspetor-de-terreno-da-junta, Opus 5.5, 19:14–19:28Z) · LIBERADO COM RESSALVA (R1–R4) · confere este nome, este corpo commitado nos dois espelhos (md5 iguais aos meus), worktree w-j05c4c2 e containers j05c4-c2-*: sim · R4 aplicada: o head andou para 84831ad9, delta só registro, e só comecei o mérito com os check-runs dele concluídos — total 7 | não-verdes 0 | pendentes 0 (docker 20:27:00Z)",
+ "quorum": "unanimidade de 3, com veto · ciclo 4 (só defeito de produto grave reprova; leitura R3/R4 de decisoes.md do objeto)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (ciclo4/C1-* e ciclo4/C3-* vistos só pelo nome em git diff/git status) · li dos ciclos anteriores e da trilha: plano §Ciclo 4, ciclo4/DEV-relatorio.md, parecer do inspetor da junta 4, decisoes.md (R3/R4, D-405-PROIBIR-VIEWS, D-FABLE-ASTRA-SO-DINHEIRO), tests/helpers/auth-identity-fixture.ts, receita do terreno",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "justificativa": "TERRENO: worktree próprio detached C:/Users/AMP/w-j05c4c2 em 84831ad9 (status limpo); receita copiada e adaptada ($S/setup.sh md5 a8aacd70…, diff publicado: RUN_ID e o case do rm da árvore trocados juntos, REPO = meu worktree, seções 5–6 fora, servidor B7 acrescentado); containers j05c4-c2-node/-pg/-b7-pg numa rede própria sem porta publicada; árvore 3776/3776 blobs byte-idênticos e md5sum -c 0 divergência no container; psql 16.14 e setsid no container; npm ci/generate/migrate (107) ec=0; base viva nunca tocada; disco 11→12 GB; anomalia de infra declarada (image inspect pela tag). ITEM 1 (B1): diff do script no ciclo = 8 hunks (cabeçalho x2, CTE view_escape x2 removido, ramo view do DO, RAISE 4 % x 4 args, coluna views, comentário-cabeçalho da linha final), 0 linha na sessão da senha (md5 das linhas de senha idêntico nos dois heads; ordem das 3 sessões preservada). TABELA B7 (servidor com log_statement=all, sentinela nova por caso só por ambiente): sucesso ec=0 · cliente md5 ec=0 · MODO 6 do COL ec=3 (MODO 6 x1, view:c2b7_w nomeada, rolpassword nulo depois) — sentinela 0 no server.log, stdout, stderr, argv do host e argv do container nos 3 casos; rolpassword SCRAM-SHA-256$ no sucesso e sob PGOPTIONS md5 (o md5 pedido sem o script dá password_encryption = md5); papel converge super=f bypassrls=f replication=f; login com a sentinela ok. Controles: (1) o log tem ALTER USER … PASSWORD SCRAM-SHA-256$… (o controle acusou primeiro o MEU leitor, regex com $ âncora, corrigido para -F); (2) SELECT de marcador = 1 no server.log; (3) token no argv = 4 (host) e 199 amostras (container), nunca posto = 0. T14a/b ok em r1, r2, r3. ITEM 2 (B2): escritores dos subtestes reescritos gerados por AST — toda criação e todo teardown por catalog/withRoleCatalogLock/runRoleScript/dropRole do arnês, teardown de view/matview/tabela/papel em finally; extrator visto acusando um DROP injetado fora da trava; as 4 chamadas de slot do T8d fora da trava são pre-existentes (bbbb3b29) e não escrevem tabela de catálogo. T14c: bloco idêntico (md5 0c47e6fb) e contagens 2·4·5·2·3 nos dois heads; ok 3/3. TABELA N=3 (guard-db + leituras juntos, mesmo container e banco, timeout 900): r1/r2/r3 ec=0, guard-db 12/12, leituras 13/13, total 25/25, cancelled 0, skipped 0, XX000/23505/40P01/tuple concurrently/[o6r-arnes] = 0 em todo o TAP com stderr, T14c/T14d/T15 abaixo de 1 s/1 s/8 s contra 45/90/90 s, resíduo 0 em 10 colunas (papéis s305 e das 6 famílias do arnês, tabelas/views/matviews s305, views fora do sistema, view_force, bancos, slots) antes, entre e depois; caminho de falha do T14d (sem psql) e do T8e (forma M4b na cópia do container) também com resíduo 0. Controles: (1) XX000 inserido = 1 e o stderr do filho chega ao arquivo; (2) papel + tabela FORCE + view de controle = +1 em papéis/views/view_force e voltam a 0; (3) sem psql: T14a/b vermelho 'psql: ausente', T14d vermelho, skipped 0. ITEM 3 (escopo): head do disparo 7c63f920 ancestral, 0 merge; 24 arquivos = dev 8 ∪ orquestrador 17; dev 8/8 no PERMITIDO extraído por script do blob do plano; guard-db 32/32 hunks nas regiões permitidas, T5·T7/T8·T8b/T8c·T14a/b·T14c·T15 byte a byte; runtime-role.ts só SQL/comentário/mensagem; deployment.md os 3 trechos; log e status 1 entrada cada; registro do orquestrador sem código; Kpis/ sem diff; db-catalog-write-guard só a entrada (82→72), recontagem 72 = count, 5/5 (controle GRANT a mais → 73≠72 vermelho, restaurado md5 = blob); 100755, i/lf attr eol=lf, CR 0; diff --check ec=0. Controles do classificador acusaram prisma/schema.prisma e um hunk no T15 (a 1ª passada do avaliador foi cega por caminho Windows no awk — falha minha, refeita). NÃO MEDIDO: nada. LIMPEZA: containers, volumes anônimos, rede, worktree e árvore temporária removidos pelo nome (contagens 0); mutações de controle restauradas; segredos e sentinelas apagados. VOTO: APROVADO — senha em claro 0 no server.log/terminal/argv sob log_statement=all no sucesso e no MODO 6 do caso COL (+ cliente md5), com o leitor visto achando, SCRAM em todas; escritores reescritos só sob a trava, T14c igual e verde (2·4·5·2·3), lote -db 3 × 12/13 sem XX000/23505/40P01 e resíduo 0 (view_force 0); diff do ciclo ⊆ PERMITIDO (registro do orquestrador separado), Kpis/ sem diff, guarda de catálogo só na entrada e 5/5, 100755/eol=lf, diff --check 0; pendências: C2c4-N1 (comentário-cabeçalho da linha final), C2c4-N2 (título do T8c), C2c4-N3 (slots do T8d, pre-existente), C2c4-N4 (mandato do dev do ciclo 4 ausente em 00-mandatos), C2c4-N5 (C3 em paralelo)",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/runtime-role-sem-bypass ; gh pr view 405 --json headRefOid ; git diff --name-only 2400049b 84831ad9",
+   "forma": "Windows, git/gh, início 20:18Z e fim 20:46Z",
+   "resultado": "84831ad9 nas duas fontes, igual no fim; delta da cerca = 6 arquivos de registro"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/84831ad9…/check-runs?per_page=100, em laço até pendentes=0",
+   "forma": "não-verdes = completed com conclusion != success; pendentes = status != completed",
+   "resultado": "20:18Z total 6, pendentes 4 → 20:27:26Z total 7, não-verdes 0, pendentes 0"
+  },
+  {
+   "comando": "bash $S/setup.sh 84831ad9… normal",
+   "forma": "receita adaptada; containers j05c4-c2-*; git -c core.autocrlf=false archive do worktree; segredos só por ambiente",
+   "resultado": "ec=0; 3776/3776 blobs; md5sum -c 0 divergência; npm ci/generate/migrate ec=0; 115 tabelas, 106 FORCE, 0 views"
+  },
+  {
+   "comando": "bash $S/ctl-leitores.sh ; bash $S/b7case.sh sucesso c2b7_ok ; … md5 c2b7_ok md5 ; … modo6col c2b7_col",
+   "forma": "cliente j05c4-c2-node, servidor j05c4-c2-b7-pg (log_statement=all), script do container md5 5cab4f63 = blob, sentinela nova por caso via -e sem valor, N=1 por caso",
+   "resultado": "ec 0/0/3; sentinela 0 em server.log/stdout/stderr/argv host/argv container nos 3; SCRAM-SHA-256$; MODO 6 view:c2b7_w; controles 1, 4/0, 199/0"
+  },
+  {
+   "comando": "node /tmp/escritores.cjs tests/san3-05-runtime-role-guard-db.test.ts (+ cópia com DROP injetado)",
+   "forma": "AST do typescript no container; blob do objeto",
+   "resultado": "17 sob a trava; 0 escrita de catálogo do ciclo fora da trava (4 de slot, pre-existentes); injetado acusado em T8e l.972 finally=sim"
+  },
+  {
+   "comando": "bash $S/lote.sh r1|r2|r3 ; bash $S/lote.sh ctl-sempsql sempsql",
+   "forma": "timeout 900 node --test --test-reporter=tap --import tsx guard-db + leituras, mesmo container e banco, stdout+stderr no arquivo, N=3 + 1 controle",
+   "resultado": "3 × 25/25 (12 + 13), 0 XX000/23505/40P01, resíduo 0; sem psql 21/25 com T14a/b, T14c, T14d vermelhos, skipped 0, resíduo 0"
+  },
+  {
+   "comando": "node --test guard-db com a forma M4b na cópia do container; restauro; re-execução",
+   "forma": "âncora de ocorrência 1, diff 1 linha, md5 restaurado = blob 9efee03d",
+   "resultado": "T8e vermelho (caso COM), resíduo 0 no caminho de falha; pós-restauro 12/12"
+  },
+  {
+   "comando": "node $S/escopo.cjs ; node $S/blocos.cjs + awk avalia ; git diff --numstat/-U0 7c63f920 84831ad9 ; node $S/recontagem.cjs",
+   "forma": "blobs do objeto e do head do disparo, sem CR",
+   "resultado": "dev 8/8 PERMITIDO; 32/32 hunks nas regiões permitidas; 6 subtestes byte a byte; recontagem 72/82 = counts"
+  },
+  {
+   "comando": "node --test tests/db-catalog-write-guard.test.ts (normal, com GRANT a mais, restaurado)",
+   "forma": "container, DATABASE_URL do meu pg, timeout 300",
+   "resultado": "5/5 ec=0; mutado 4/5 'contagem 73 difere da congelada 72'; restaurado md5 57ab4744 = blob, 5/5"
+  },
+  {
+   "comando": "git diff --quiet 7c63f920 84831ad9 -- Kpis/ ; git ls-files -s/--eol scripts/db-runtime-role.sh ; git diff --check 7c63f920 84831ad9",
+   "forma": "meu worktree; irmãos de controle não-vazios",
+   "resultado": "Kpis ec=0 (irmão docs/ ec=1); 100755, i/lf attr eol=lf, CR 0; diff --check ec=0 (irmão com espaço → ec=3)"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C2c4-N1",
+   "defeito": "o comentário-cabeçalho da linha final do script (views_de_dono_que_escapa → views_sobre_force) está fora da letra estrita do PERMITIDO do script",
+   "evidencia": "git diff -U0 7c63f920 84831ad9 -- scripts/db-runtime-role.sh, hunk @@ -132 +123; declarado pelo dev (DEV-relatorio, Divergências); efeito em B1 medido = 0 (B7)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "rótulo da coluna views cujo significado mudou; sem efeito em senha, trava ou dado"
+  },
+  {
+   "id": "C2c4-N2",
+   "defeito": "o título do T8c mudou (três → dois semi-mutantes)",
+   "evidencia": "hunk @@ -736 +725 do guard-db; declarado pelo dev",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "consequência da retirada do caso view que o plano manda"
+  },
+  {
+   "id": "C2c4-N3",
+   "defeito": "4 chamadas de slot de replicação no T8d rodam fora de withRoleCatalogLock",
+   "evidencia": "escritores.cjs: T8d l.821/825/835/871; git log -S pg_create_physical_replication_slot → bbbb3b29 2026-10-04; ausentes do diff 7c63f920..84831ad9; 0 XX000 em 5 execuções",
+   "gravidade": "nota",
+   "escopo": "pre-existente (bbbb3b29, 2026-10-04, ciclo anterior deste bloco; dono: B-SAN3-05 / arnês)",
+   "classe": "não grave",
+   "motivo": "slot de replicação não é tabela de catálogo disputada; fora da matéria reescrita no ciclo"
+  },
+  {
+   "id": "C2c4-N4",
+   "defeito": "não há mandato do dev do ciclo 4 em votos/B-SAN3-05/00-mandatos/",
+   "evidencia": "00-mandatos no objeto: só dev.md e dev-sucessor-2.md (ciclos anteriores); head do disparo provado por DEV-relatorio l.7, plano C4.5 D0 e git log",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "registro; não afeta produto"
+  },
+  {
+   "id": "C2c4-N5",
+   "defeito": "a cadeira C3 subiu seus containers (j05c4-c3-*) às 20:41:33Z, em paralelo com esta cadeira",
+   "evidencia": "docker ps -a (nomes e hora); C4.6 diz uma cadeira por vez no Claude; meu lote N=3 terminou às 20:39:06Z em cluster próprio",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "anomalia de terreno do orquestrador; sem efeito nas minhas medições"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum restou · dois leitores meus nasceram cegos e foram pegos pelos próprios controles antes de concluir: (1) regex do SCRAM com $ como âncora deu 0 no controle (1) do item 1 — corrigido para grep -F, dá 1 e 2; (2) o avaliador de hunks com caminho Windows no awk -v deu 32 fora — refeito com caminho POSIX, 0 fora, e o controle fabricado (hunk no T15) segue acusando"
+ ],
+ "pendencias_que_aceito": [
+  "C1 (jurado-san305-c4-catalogo-de-views): via view contra o catálogo, mutações M4a/b/c, T8f, falso positivo no banco migrado — usei a forma M4b só para forçar o caminho de falha do T8e, sem julgá-la",
+  "C3 (jurado-san305-c4-boot-e-suite): boot de produção, log da recusa, suíte inteira, bootstrap, acessos, texto da regra",
+  "reprovação por construção do C4.6: verificador SCRAM no log (aparece 2x, residual declarado), /proc/<pid>/environ, texto do env.ts, integração da main, KPI além de Kpis/ sem diff",
+  "C2c4-N1..N5, notas não graves; N3 pre-existente"
+ ],
+ "teardown": "fixtures e papéis de controle do meu cluster removidos (s305_zz_*, o6r_b01_1_controle, s305_zz_mv; resíduo 0) · servidor com log_statement=all removido · containers j05c4-c2-node/-pg/-b7-pg removidos por docker rm -f -v, volumes anônimos b3ca1ef5…/391cf0ca… removidos, rede j05c4-c2-net removida, contagem 0 · árvore temporária /c/Users/AMP/t-j05c4c2 ausente · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j05c4c2 removido por git worktree remove --force (ec=0) · mutações de controle restauradas com md5 = blob (container) · sondas removidas · cópias, sentinelas e segredos descartáveis de $SCRATCH apagados · base viva (erp-postgres/erp-redis/erp-postgres-alt) nunca tocada · w-o05 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO (18 volumes órfãos, scratchpad/ do w-o05, containers j05c4-c3-*) apenas reportado"
+}
