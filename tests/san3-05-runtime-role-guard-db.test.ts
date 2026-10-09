@@ -255,37 +255,102 @@ function connectionParts(urlText: string): {
 }
 
 function assertConnectionSecretsAbsent(serialized: string, urls: readonly string[]): void {
-  assert.doesNotMatch(serialized, /postgresql:\/\/|password/i);
+  const usernames = [...new Set(urls.map((urlText) => connectionParts(urlText).username).filter(Boolean))];
+  const allowedIdentityPath = (path: readonly (string | number)[]): boolean => {
+    const key = path.at(-1);
+    if (key === "session_user" || key === "current_user") return true;
+    if (key === "rolname") return path.at(-3) === "escapes";
+    return (key === "sessionUser" || key === "currentUser") && path.at(-2) === "error";
+  };
+  const redactAllowedValues = (current: unknown, path: readonly (string | number)[] = []): unknown => {
+    if (typeof current === "string") {
+      if (allowedIdentityPath(path) && usernames.includes(current)) return "<role>";
+      let redacted = current;
+      for (const username of usernames) {
+        const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        redacted = redacted.replace(
+          new RegExp(`(?:session_user=|current_user=|atributo:|posse:|view:)${escaped}(?=[\\s,.)"\\\\]|$)`, "g"),
+          "<role-identity>",
+        );
+      }
+      return redacted;
+    }
+    if (Array.isArray(current)) return current.map((item, index) => redactAllowedValues(item, [...path, index]));
+    if (typeof current === "object" && current !== null) {
+      return Object.fromEntries(
+        Object.entries(current).map(([key, child]) => [key, redactAllowedValues(child, [...path, key])]),
+      );
+    }
+    return current;
+  };
+  const redactJson = (text: string): string => {
+    try {
+      return JSON.stringify(redactAllowedValues(JSON.parse(text)));
+    } catch {
+      return text;
+    }
+  };
+  let withoutAllowedRoleIdentities = redactJson(serialized);
+  if (withoutAllowedRoleIdentities === serialized) {
+    withoutAllowedRoleIdentities = serialized
+      .split(/\r?\n/)
+      .map((line) => redactJson(line))
+      .join("\n");
+  }
+  for (const username of usernames) {
+    const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    withoutAllowedRoleIdentities = withoutAllowedRoleIdentities.replace(
+      new RegExp(`(?:session_user=|current_user=|atributo:|posse:|view:)${escaped}(?=[\\s,.)"\\\\]|$)`, "g"),
+      "<role-identity>",
+    );
+  }
+
+  assert.doesNotMatch(withoutAllowedRoleIdentities, /postgresql:\/\/|password/i);
   for (const urlText of urls) {
     const parts = connectionParts(urlText);
     for (const [label, value] of Object.entries(parts)) {
-      if (label === "username" || value.length === 0) continue;
-      assert.equal(serialized.includes(value), false, `${label} da conexão apareceu no log`);
+      if (value.length === 0) continue;
+      assert.equal(withoutAllowedRoleIdentities.includes(value), false, `${label} da conexão apareceu no log`);
     }
   }
 }
 
 function assertRoleNamesOnlyInIdentityFields(value: unknown, urls: readonly string[]): void {
   const usernames = urls.map((urlText) => connectionParts(urlText).username).filter(Boolean);
-  const visit = (current: unknown, key: string | null): void => {
+  const visit = (current: unknown, path: readonly (string | number)[]): void => {
     if (typeof current === "string") {
       for (const username of usernames) {
         if (!current.includes(username)) continue;
+        const key = path.at(-1);
         const allowedIdentityValue =
-          (key === "session_user" || key === "current_user" || key === "rolname") && current === username;
-        assert.equal(allowedIdentityValue, true, `nome de papel apareceu no campo não-identitário ${key ?? "<raiz>"}`);
+          ((key === "session_user" || key === "current_user") ||
+            (key === "rolname" && path.at(-3) === "escapes") ||
+            ((key === "sessionUser" || key === "currentUser") && path.at(-2) === "error")) &&
+          current === username;
+        const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const viaPattern = new RegExp(
+          `(?:session_user=|current_user=|atributo:|posse:|view:)${escaped}(?=[\\s,.)"\\\\]|$)`,
+          "g",
+        );
+        const withoutAllowedVia = current.replace(viaPattern, "<role-identity>");
+        const allowedViaText = withoutAllowedVia !== current && !withoutAllowedVia.includes(username);
+        assert.equal(
+          allowedIdentityValue || allowedViaText,
+          true,
+          `nome de papel apareceu no campo não-identitário ${key ?? "<raiz>"}`,
+        );
       }
       return;
     }
     if (Array.isArray(current)) {
-      current.forEach((item) => visit(item, key));
+      current.forEach((item, index) => visit(item, [...path, index]));
       return;
     }
     if (typeof current === "object" && current !== null) {
-      for (const [childKey, child] of Object.entries(current)) visit(child, childKey);
+      for (const [childKey, child] of Object.entries(current)) visit(child, [...path, childKey]);
     }
   };
-  visit(value, null);
+  visit(value, []);
 }
 
 function assertConnectionLogsSafe(entries: readonly unknown[], urls: readonly string[]): void {
@@ -431,7 +496,22 @@ test(
         );
         assert.throws(
           () => assertConnectionLogsSafe([...cleanLog.entries, { database_user: parts.username }], [cleanUrl]),
-          /campo não-identitário database_user/,
+          /username da conexão|campo não-identitário database_user/,
+        );
+        const collisionUrl = "postgresql://same_role:same_role@db.internal:5432/collision_db";
+        assert.doesNotThrow(() =>
+          assertConnectionSecretsAbsent(
+            '{"session_user":"same_role","current_user":"same_role","escapes":[{"rolname":"same_role"}],"error":{"sessionUser":"same_role","currentUser":"same_role"},"message":"atributo:same_role"}',
+            [collisionUrl],
+          ),
+        );
+        assert.throws(
+          () => assertConnectionSecretsAbsent('{"database_secret":"same_role"}', [collisionUrl]),
+          /username|password da conexão apareceu no log/,
+        );
+        assert.throws(
+          () => assertConnectionSecretsAbsent('{"payload":{"sessionUser":"same_role"}}', [collisionUrl]),
+          /username|password da conexão apareceu no log/,
         );
       } finally {
         await cleanClient.$disconnect();
@@ -1097,7 +1177,6 @@ test(
               15_000,
             );
             const refusedText = refused.stdout + refused.stderr;
-            assert.ok(Date.now() - started <= 15_000);
             assert.match(refusedText, /RUNTIME_ROLE_CAN_BYPASS_RLS/);
             const firstFailure = refusedText
               .split(/\r?\n/)
@@ -1108,7 +1187,9 @@ test(
               /Redis|job worker/i,
             );
             assertConnectionSecretsAbsent(refusedText, [connectionString]);
-            assert.equal(await waitForCloseCode(child, 5_000), 1, `boot ${guard} precisa sair com código 1`);
+            const remainingMs = Math.max(1, 15_000 - (Date.now() - started));
+            assert.equal(await waitForCloseCode(child, remainingMs), 1, `boot ${guard} precisa sair com código 1`);
+            assert.ok(Date.now() - started <= 15_000, `boot ${guard} excedeu o teto total de 15 s`);
           } finally {
             await stopChild(child);
           }

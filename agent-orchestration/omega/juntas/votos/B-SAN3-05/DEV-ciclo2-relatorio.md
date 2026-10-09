@@ -153,6 +153,10 @@
 
 **Resultado:** PASSOU — PARADA-D4 e PARADA-D4-2 resolvidas sem tocar `src/database/runtime-role.bootstrap.ts`.
 
+**Retomada Errata 3:** em PostgreSQL 16 descartável `dev05c2-d4e3-*`, com a colisão deliberada username=senha=`postgres`, `npm run check` passou **1/1** e a suíte focada passou **14/14**. A allowlist reconhece `error.sessionUser`/`error.currentUser` somente sob `error`; as três mutações obrigatórias (host, senha e papel em outro campo) ficaram vermelhas **3/3**, e uma quarta mutação confirmou que `payload.sessionUser` continua proibido. Teardown nominal concluído.
+
+**Resultado final:** PASSOU — D4 cumpre as Erratas 1–3, sem tocar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
+
 ### A1 — ajustes do ciclo 2 e pendências C2.6
 
 **Comando:** inclusão nominal em `agent-orchestration/controle/pendencias.md`; gerador oficial `gerar-indice-pendencias.py` executado em Linux no container `dev05c2-pend-index`, sob `timeout 300s`.
@@ -352,6 +356,13 @@
 - **Resultado:** BLOQUEADO / PARADA OBRIGATÓRIA — nenhuma correção de produto foi improvisada. O ajuste semântico parcial do teste, que mascara apenas as formas permitidas e torna a colisão username=senha testável, permanece local e não commitado; ele evidencia os campos camelCase. O ajuste independente do ratchet 63→64 pode ser commitado com este registro.
 - **Decisão necessária:** autorizar nominalmente um dos três caminhos: (a) retirar/redigir `sessionUser` e `currentUser` da serialização em arquivo hoje proibido; (b) permitir alterar `runtime-role.ts` para tornar essas propriedades não enumeráveis sem mudar o diagnóstico permitido; ou (c) ampliar a Errata 2 para também permitir `error.sessionUser`/`error.currentUser`. O dev não escolhe entre eles.
 - **Estado da bateria ao parar:** B1 1/1; B2 1/1; B3 181/181; B4 2/2; B11 3126/3132 (fail 4, skipped 2); B12 parcial; B13 incremental limpo. B6–B8/B10/B14 e as 16 mutações continuam reservados à junta; build e fecho B0/B12/B13 aguardam decisão.
+
+### RESOLUÇÃO-PARADA-D4-3 — decisão do dono no commit `b3af298af24833855b630c6f69ea8d532215c746`
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; leitura da “Errata 3 ao D4 — DECISÃO DO DONO” na ref atual.
+- **Saída resumida:** pull sem mudanças; local = remoto = `b3af298af24833855b630c6f69ea8d532215c746`; somente o teste parcial do D4 continuou modificado e `scratchpad/` permaneceu intacto.
+- **Decisão §A1.1:** além das identidades da Errata 2, o nome do papel pode aparecer como valor de `error.sessionUser` e `error.currentUser`. Nome de papel em qualquer outro campo e todos os componentes secretos/de conexão continuam proibidos; as três mutações negativas continuam obrigatórias; `src/database/runtime-role.bootstrap.ts` e `src/server.ts` continuam proibidos.
+- **Resultado:** PASSOU — PARADA-D4-3 resolvida; D4 retomado sem tocar os arquivos proibidos e com allowlist por caminho JSON exato.
 
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
