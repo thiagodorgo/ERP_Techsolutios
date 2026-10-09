@@ -31,3 +31,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: testes existentes de visão geral e detalhe.
 - Saída resumida: 13/13 verdes.
 - Estado: concluída — lista real, métricas de clientes sem a organização `platform`, selo de sistema nas três superfícies e preservação do último dado bom.
+
+### E2 — Cloud Billing estritamente de leitura
+
+- Comando: `npm --prefix frontend run check`.
+- Saída resumida: TypeScript sem erro após espelhar os quatro DTOs, ligar cinco GETs com período e criar o hook de leitura.
+- Estado: concluída — oito indicadores reais, painéis por serviço/organização, uso, cobranças e importações; ausência de fonte vira selo. A página não importa nenhuma função de escrita e não calcula margem.
