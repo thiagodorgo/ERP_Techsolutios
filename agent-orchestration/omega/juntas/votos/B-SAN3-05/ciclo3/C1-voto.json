@@ -1,0 +1,116 @@
+{
+ "jurado": "jurado-san305-c3-trava-de-views (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato — tudo re-medido no objeto)",
+ "cadeira": "C1 — trava de views: A2 por execução, as dez mutações, A3",
+ "mandato_md5": "57954e0863bc89afafd2d05ea27c29e8 · declarado no disparo: 57954e0863bc89afafd2d05ea27c29e8",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — o B-SAN3-05 não toca dinheiro",
+ "corpo_md5": "002b50832790a0f59e789d74dcb75c93 (blob do objeto, EOL-neutro) · corpo recebido como general-purpose, lido do blob; md5 do disparo 002b50832790a0f59e789d74dcb75c93 — igual",
+ "objeto": "f7fabd4a7db230f93ceb2130f86a7e662882d3f5 (git ls-remote do ramo = gh pr view 405 headRefOid, início 16:51Z e fim 17:22Z) · origin/main início/fim a9bbde382213627545e9d229c9ab616d83a0a840 / a9bbde382213627545e9d229c9ab616d83a0a840 · head do dev 9a66b4e4, head de disparo do dev 91d79495 (lidos no parecer do inspetor; conferido: árvores de produto de 9a66b4e4 = f7fabd4a) · cerca do mandato 7c134e2c; delta 7c134e2c..f7fabd4a = só registro (decisoes.md, 3 mandatos, parecer do inspetor) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor da junta 3: votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md (inspetor-de-terreno-da-junta, Opus 5.5, veredito 16:35Z) · LIBERADO COM RESSALVA (R1–R11) · confere este nome, este corpo commitado nos dois espelhos (md5 002b5083…), vaga w-j05c3c1 e prefixo j05c3-c1-: sim · check-runs em f7fabd4a: total 7 | não-verdes 0 | pendentes 0 · backend-postgres: completed/success 16:42:35Z · leitura R3/R4 de agent-orchestration/controle/decisoes.md @f7fabd4a aplicada",
+ "quorum": "unanimidade de 3, com veto · ciclo 3 (só defeito de produto grave reprova, §C7 item 8(2))",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (no fim, ciclo3/ só tinha os meus dois além do inspetor, DEV e FABRICA) · li: o parecer do inspetor da junta 3, decisoes.md (entrada de 2026-10-09), o plano (seção Ciclo 3, C3.1–C3.5), o arquivo de teste, a trava, o script e o bootstrap no objeto; votos dos ciclos 1 e 2 e DEV-relatorio não usados como fonte de número",
+ "pausa": "nenhuma",
+ "voto": "REPROVADO",
+ "sinal_r1": "o A2 reabriu? sim — informação nova: a granularidade de COLUNA do privilégio na raiz (GRANT SELECT/UPDATE/INSERT (<colunas>) ON <raiz>) não é vista por has_table_privilege, que responde por privilégio de tabela; não é dono da raiz, nem DML pela view, nem matview (as três formas já descritas); está na dimensão do privilégio que o ajuste J-A abriu",
+ "justificativa": "TERRENO: worktree próprio detached C:/Users/AMP/w-j05c3c1 em f7fabd4a (só leitura de git); condutor setup.sh (md5 4fcc2213…) adaptado da receita (md5 9861a2aa…); containers j05c3-c1-pg (postgres 16.14) e j05c3-c1-node (node 20.20.2, psql 16.14) na rede j05c3-c1-net sem porta no host; 3758 blobs com sha1 recalculado = ls-tree e md5sum -c 0 divergência; npm ci, prisma generate, migrate deploy (107) ec=0; senha só por ambiente (argv do host 0; controles 4/0); base viva intocada.\nITEM 1 — a propriedade nas três cópias (trava runtime-role.ts l.12-33 + ramo view l.50-56; DO do script l.81-102 + l.110-112 + RAISE l.115; linha final l.133-154 + coluna views l.158): cada nó da árvore é conferido (lv.oid = w.leaf_oid), matview por relkind, privilégio = has_table_privilege(…, 'SELECT,INSERT,UPDATE,DELETE') na raiz. Em banco clone do migrado, tudo montado antes de qualquer script (pg_default_acl 0): S, B, K, I com efeito real e âncora false são recusados pela trava REAL (view/postgres, view/zc1_bypass, view/zc1_common, view/postgres; objetos 1) e pelo MODO 6 (ec=3, view:<raiz>); C passa nos dois (0 escape; ec=0, posse 0, views 0) e o RLS morde nele; formas próprias P4 (3 níveis), P5 (caso M), P6 (INSERT por 2 níveis), P8 (matview raiz) recusadas.\nESCAPAM — P1A (SELECT de coluna na raiz de vcol(comum)→wcol(postgres)→T), P1B (SELECT de coluna em w1col(postgres)→T), P2 (UPDATE de coluna em wu(postgres)→T: sobrescreveu as 5 linhas de B sob A), P3 (INSERT de coluna em wci: grava B sob A): has_table_privilege lista = f, has_any_column_privilege = t; trava REAL 0 escape; o boot real (assertRuntimeDatabaseRoleIfEnforced, enforce) ACEITA; o MODO 6 converge (ec=0, views=0) e o papel que o próprio script entrega, logado com a senha que o script definiu, lê 6 linhas A,B,B,B,B,B sob A, faz UPDATE 6 (5 de B) e grava B. Par discriminante na MESMA raiz zc1_vs: GRANT de tabela → trava 1 escape e MODO 6 ec=3; GRANT de coluna em todas as colunas → SELECT * lê as mesmas 7 linhas, trava 0, MODO 6 ec=0. P7 (pertença NOINHERIT + SET ROLE) também passa, mas exige SET ROLE em tempo de execução: nota.\nALCANCE: C3.4 item 1 (l.2010-2013) inclui 'privilégio de leitura ou escrita na raiz'; não é regra em tabela, SECURITY DEFINER nem sobre-aproximação declarada; nenhuma pendência ou residual do objeto trata privilégio de coluna (git grep). Controles do item 1: o RLS morde (superusuário 3; leitor direto 0 e 1/A; escrita-controle recusada pela política), a trava vê a montagem (CTL2 de 1 nível recusado nos dois), a âncora acusa (GRANT SELECT ON ALL TABLES → t).\nITEM 2 — base 12/12 (pass 12, fail 0, skipped 0); as 10 mutações, cada uma com âncora única contada, diff de 2 linhas, carga provada (import com md5 da SQL; bash -n), irmão verde (T5/T6/T9 em (t), T14c em (s)) e restauro md5 = blob: M-D2a(t) T8e caso S (l.934) · M-D2a(s) T14d caso S (l.1361) · M-D2b(t) T8e caso B (l.937) · M-D2b(s) T14d caso B · M-D2c(t) T8e caso S + T8d (l.874) · M-D2c(s) T14d caso S · M-D2d(t) T8e caso K (l.943) · M-D2d(s) T14d caso K · M-D2e(t) T8e caso I (l.948) (+ T8c por texto) · M-D2e(s) T14d caso I; T8f vermelho em a–d e verde em e (o privilégio fica fora do CTE); sondas sob o mutante: M-D2a e M-D2c reabrem S, B e K (I segue pego), M-D2b só B, M-D2d só K, M-D2e só I. Controles: grossa nas 3 cópias derruba T8e e T14d com T8f verde; token só na linha final derruba T8f com T14d verde; o leitor de TAP acusa.\nITEM 3 — T14d cria a fixture (l.1355) por CREATE ROLE NOLOGIN (não createLogin), afirma a âncora por assert (l.1357 → l.249) antes do laço e roda o script uma vez por caso (l.1360); espera status 3 + MODO 6 + view:<raiz> e C com posse 0 e views 0; T8e idem com LOGIN. Controles: GRANT SELECT em W ao papel S antes do script → T14d vermelho pela âncora ('caso S: SELECT direto no nó interno tornaria a prova vazia'); M-D2c no DO → T14d vermelho e T14a/b verde (também na variante duas cópias); T8f com a regex lida do objeto (l.957): trava 1 bloco, script 2, os três iguais sem espaço (md5 8b4a83ab…), assert.equal estrito (3 blocos reprova), texto sem bloco reprova.\nNenhum critério ficou sem poder falhar; nenhum item ficou sem medir. Anomalia minha declarada: na 1ª montagem um erro de psql ecoou no log o valor descartável do FIXPW do ambiente do container (nunca usado como credencial; senha das fixtures trocada; log apagado). Limpeza: fixtures 0, containers e rede j05c3-c1- 0, volume anônimo removido, worktree removido (0 processos antes), base viva intocada.\nVOTO: REPROVADO — o papel lê e grava linha de outra organização por uma raiz view em que tem privilégio de COLUNA (GRANT SELECT/UPDATE/INSERT (<colunas>) ON <raiz>) numa árvore com dono que escapa sobre tabela FORCE, e a trava REAL (0 escape; boot aceita) e o MODO 6 (ec=0, views=0) não acusam | escopo: dentro-do-bloco | classe: grave: vazamento entre organizações (e grave: perda de dado na escrita) | sinal R1: informação nova (granularidade de coluna do privilégio) | evidência: par na mesma raiz zc1_vs — tabela → trava 1 escape, MODO 6 ec=3; coluna → SELECT * lê as mesmas 7 linhas (6 de B sob A), trava 0, MODO 6 ec=0, papel convergido lê 7; N = 5 montagens de coluna, 1 execução cada",
+ "o_que_executei": [
+  {
+   "comando": "bash setup.sh f7fabd4a <scratch> (md5 4fcc2213…)",
+   "forma": "host Git Bash + Docker 29.6.1; postgres:16 e erp-junta-node20-pg16:local; env só por -e NOME; archive com core.autocrlf=false",
+   "resultado": "ec=0; 3758 blobs sha1 = ls-tree, md5sum -c 0 divergência; npm ci, generate, migrate deploy (107) ec=0; 115 tabelas / 106 FORCE / 0 views; senha 0 no argv e nos logs"
+  },
+  {
+   "comando": "psql -f zz-j05c3c1-fixture.sql (md5 114e45bf…) em j05c3c1_fx via zz-j05c3c1-montar.sh (md5 33749d28…)",
+   "forma": "clone do banco migrado; 21 views, 3 matviews, 35 papéis zc1 antes de qualquer script; pg_default_acl 0",
+   "resultado": "ec=0; política USING + WITH CHECK por app.current_tenant_id; CTL3 âncora acusa t"
+  },
+  {
+   "comando": "bash zz-j05c3c1-efeito.sh (md5 389542be…)",
+   "forma": "leitores LOGIN com senha nova só no ambiente; leituras sem GUC/A/B; escritas sob A",
+   "resultado": "S,B,P1A,P1B,P4,P5,P7 (SET ROLE),CTL2 leem B sob A; K/P8 leem A sob B; C 0/1A/2B; I,P3,P6 gravam B; P2 toca A=1 B=5; escrita-controle recusada"
+  },
+  {
+   "comando": "node --import tsx zz-j05c3c1-probe.mjs j05c3c1_fx <16 leitores> (md5 22d0022e…)",
+   "forma": "probeRuntimeRolePosture de /work/src/database/runtime-role.ts (md5 = blob), PrismaClient + PrismaPg, como cada leitor",
+   "resultado": "S,B,K,I,P4,P5,P6,P8,CTL2 com 1 escape; C 0; P1A,P1B,P2,P3,P7 0 escape"
+  },
+  {
+   "comando": "node --import tsx zz-j05c3c1-boot.mjs (md5 d98c8dd0…)",
+   "forma": "assertRuntimeDatabaseRoleIfEnforced({enforce:true}) do objeto",
+   "resultado": "S recusado (RUNTIME_ROLE_CAN_BYPASS_RLS); C aceito; P1A, P1B, P2, P3 ACEITOS"
+  },
+  {
+   "comando": "bash zz-j05c3c1-modo6.sh (md5 21afd427…) + zz-j05c3c1-script.sh (md5 1f52ffd5…)",
+   "forma": "script do objeto (md5 911fddc1… = blob) para papéis zc1_s_* NOLOGIN NOINHERIT com privilégio só na raiz; senha aleatória só no ambiente; âncora imediatamente antes",
+   "resultado": "S,B,K,I,CTL2,P4,P5,P6,P8 ec=3 view:<raiz>; C ec=0 views=0 lê 1/A; P1A,P1B,P2,P3,P7 ec=0 views=0 e o papel convergido lê/grava B; senha 0 no stdout/stderr"
+  },
+  {
+   "comando": "bash zz-j05c3c1-par.sh (md5 584397f6…)",
+   "forma": "mesma raiz zc1_vs, papéis novos com GRANT de tabela × de coluna",
+   "resultado": "tabela: trava 1 escape, MODO 6 ec=3; coluna: SELECT * lê 7 (6 de B sob A), trava 0, MODO 6 ec=0, convergido lê 7"
+  },
+  {
+   "comando": "bash zz-j05c3c1-rodar.sh base (md5 2251d001…) = timeout 900 node --test --import tsx --test-reporter=tap tests/san3-05-runtime-role-guard-db.test.ts",
+   "forma": "DATABASE_URL do pg descartável; TAP para arquivo; leitor zz-j05c3c1-tap.mjs (md5 486f1606…)",
+   "resultado": "ec=0; tests 12 pass 12 fail 0 cancelled 0 skipped 0; T8e/T8f/T14d ok; resíduo s305 0"
+  },
+  {
+   "comando": "bash zz-j05c3c1-ciclo.sh <a..e>-<t|s> (md5 0b338053…) com zz-j05c3c1-mut.mjs (md5 1fc7ee43…)",
+   "forma": "10 execuções separadas; âncora contada = 1; diff 2 linhas; carga provada; irmão verde; sondas sob o mutante; restauro md5 = blob",
+   "resultado": "10/10 vermelhas no T8e (t) ou T14d (s) pela asserção do caso indicado; 8–9 s cada"
+  },
+  {
+   "comando": "bash zz-j05c3c1-ctl2.sh (md5 e1aec6c2…)",
+   "forma": "grossa nas 3 cópias; token só na linha final; TAP com ok trocado",
+   "resultado": "T8e+T14d vermelhos com T8f verde; T8f vermelho com T14d verde; leitor acusa NOT OK"
+  },
+  {
+   "comando": "bash zz-j05c3c1-item3.sh (md5 2c376c37…) + t8f.mjs (2e422460…) + t8f3.mjs (3ad46951…) + mut3.mjs (ec303996…)",
+   "forma": "regex do T8f lida do objeto (l.957); GRANT SELECT em W ao papel S antes do script; M-D2c nas duas cópias",
+   "resultado": "1 + 2 blocos iguais, contagem estrita; vácuo reprova; âncora acusa; duas cópias: T14d vermelho, T14a/b verde"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "C1-c3-01 — o papel LÊ linha de outra organização por uma raiz em que tem privilégio de SELECT DE COLUNA (GRANT SELECT (<colunas>) ON <raiz>), numa árvore com dono que escapa (postgres) sobre tabela FORCE, e a trava REAL devolve 0 escape (o boot real aceita) e o MODO 6 converge (ec=0, views=0)",
+   "evidencia": "P1A (vcol(comum)→wcol(postgres)→T), P1B (w1col(postgres)→T) e o par em zc1_vs: has_table_privilege lista = f, has_any_column_privilege = t; leitor lê 3/A,B,B sob A e sob B; trava 0; boot ACEITO; script ec=0, linha final |0|0|116; o papel convergido lê 6–7 linhas com B sob A; a mesma raiz com GRANT de tabela → trava 1 escape, ec=3. Código (blob f7fabd4a): runtime-role.ts l.55, db-runtime-role.sh l.112 e l.158 — privilégio de tabela na raiz",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — src/database/runtime-role.ts nasceu em d76b255f (2026-10-02) e scripts/db-runtime-role.sh em 041e414b (2026-10-02) no ramo (git log --diff-filter=A no objeto, linha do ramo não squashado), ausentes na origin/main; o privilégio de tabela na via view existe desde d76b255f (git log -S)",
+   "classe": "grave: vazamento entre organizações",
+   "motivo": "a propriedade do C3.2(1) ('tem SELECT … numa relação raiz R') e o alcance do C3.4 item 1 ('privilégio de leitura ou escrita na raiz') não são conferidos para privilégio de coluna: a trava e o MODO 6 não veem a leitura alheia"
+  },
+  {
+   "defeito": "C1-c3-02 — o papel GRAVA e SOBRESCREVE linha de outra organização por uma raiz em que tem INSERT ou UPDATE DE COLUNA numa view de dono que escapa sobre tabela FORCE, e a trava REAL (0 escape; boot aceita) e o MODO 6 (ec=0, views=0) não acusam",
+   "evidencia": "P2 (wu(postgres)→T, UPDATE (value)): UPDATE sem WHERE sob A tocou A=1, B=5; o papel entregue pelo script fez UPDATE 6 (B=5) sob A; P3 (wci(postgres)→T, INSERT (tenant_id, value)): INSERT de B sob A aceito; o papel entregue pelo script gravou B sob A; trava 0; boot ACEITO",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — mesma origem do C1-c3-01 (d76b255f, 041e414b)",
+   "classe": "grave: perda de dado",
+   "motivo": "a via view não confere privilégio de escrita de coluna; a escrita atravessa a view de dono que escapa e altera dado de outra organização sem a trava ver"
+  },
+  {
+   "defeito": "C1-c3-03 — papel NOINHERIT membro de um papel X que tem SELECT na raiz de cadeia que escapa: a trava e o MODO 6 não acusam e o script mantém a pertença (o MODO 5 só revoga pertença a papel que escapa por atributo ou posse)",
+   "evidencia": "P7: has_table_privilege(rx, vx, lista) = f; pg_has_role MEMBER = t, USAGE = f; sem SET ROLE 'permission denied'; com SET ROLE zc1_x lê 3/A,B,B; trava 0; script ec=0 views=0 e pertença mantida",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (mesma origem)",
+   "classe": "não grave",
+   "motivo": "o privilégio é do papel do qual o leitor é membro e o uso exige SET ROLE em tempo de execução, que a aplicação não emite"
+  },
+  {
+   "defeito": "C1-c3-04 — o T8f compara só o CTE; a expressão de privilégio do ramo view (trava l.55, DO l.112, linha final l.158) fica fora da igualdade das três cópias",
+   "evidencia": "M-D2e(t) e M-D2e(s): T8f verde (os vermelhos vieram do T8e e do T14d, como deve ser)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a guarda de deriva não cobre a cópia diagnóstica da linha final quanto ao privilégio; a prova de comportamento cobre o DO e a trava"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum: todo controle acusou — RLS morde, CTL2 recusado, âncora acusa (item 1); grossa, linha final e leitor de TAP (item 2); âncora do T14d, vácuo do T8f, T14a/b cego sob M-D2c (item 3)"
+ ],
+ "pendencias_que_aceito": [
+  "C1-c3-03 e C1-c3-04 (notas, não graves) — pendência com dono a nomear pelo orquestrador",
+  "senha no log, lote -db N=3, escopo do diff, db-catalog-write-guard, Kpis/ — da C2",
+  "T13/gerador, superfície, T15/T9/D4, suíte inteira, pendências — da C3",
+  "o que o C3.5 declara reprovação por construção (C2-A1, C3-c2-05, C3-c2-01, regra em tabela, SECURITY DEFINER, sobre-aproximações declaradas)"
+ ],
+ "teardown": "fixtures do meu cluster removidas (papéis zc1% 39→0, banco j05c3c1_fx 0, s305% 0; md5 dos 3 arquivos no container = blob; pristinos 0) · containers j05c3-c1-node e j05c3-c1-pg por docker rm -f -v (volume anônimo 39f542af… removido) e rede j05c3-c1-net removida, contagem 0/0 · sem árvore temporária no host · processos vivos com w-j05c3c1 = 0 antes da remoção · worktree C:/Users/AMP/w-j05c3c1 removido por git worktree remove --force (ec=0, diretório ausente) · mutações restauradas com md5 = blob · sondas removidas com o container · senha descartável das fixtures apagada; cópias do scratchpad apagadas após o voto · base viva (erp-postgres/erp-redis/erp-postgres-alt) nunca tocada · w-o05 só com os meus dois arquivos de saída · resíduo ALHEIO (18 volumes órfãos, worktrees w-pv*) apenas reportado"
+}
