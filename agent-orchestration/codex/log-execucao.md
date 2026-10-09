@@ -4826,3 +4826,19 @@ bloco mergear.
 
 - `P-SAN-PROD-BOOTSTRAP` permanece em andamento: fecha somente após a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
 - D2: `ALLOW_PROD_BOOTSTRAP` é independente de `ALLOW_PROD_SEED`. D3: papel `super_admin` e concessões pertencem ao CD (`db:provision-rbac`).
+
+## 2026-10-09 — B-SAN3-06b — dev-b-san3-06b
+
+- Worktree exclusivo `C:/Users/AMP/w-06b`; head inicial `4489a996`; `fetch` + rebase em `origin/main` sem conflito.
+- Dependências instaladas separadamente na raiz e em `frontend/`; baseline verde antes da primeira edição: plataforma 15/15, `smoke-flow` 22/22 e smoke 1268/1268.
+- E1–E7 publicados incrementalmente até `c29a1f8b`; E8 entrega seis arquivos de teste, documentação, comando e registro.
+- Resultado funcional: 10 rotas classificadas (6 ligadas, 4 paradas honestas), menu real com 4 itens, 0 tela sem fonte, 0 sítio de dado fabricado e 32 endpoints preservados.
+- Pendências: seis entradas do bloco fechadas com evidência; dívidas de persistência, produto, shell, menu e e2e abertas com dono; observabilidade continua parcial.
+- `Kpis/*` intocado conforme congelamento. Nenhum backend, banco, porta ou container foi iniciado.
+
+## 2026-10-09 — B-SAN3-06b — dev-b-san3-06b-sucessor (Claude Opus 5.5; substitui o Codex, caído por limite de uso na E8)
+
+- Recebeu o worktree em `c29a1f8b` (= remoto) com E8 não commitada; mediu cada arquivo antes de aceitar (P3): 45/45 verdes, geradores com as saídas do E7, índice de pendências regenerado byte a byte igual ao herdado.
+- Fechou a E8: costura de estados sem mudança de comportamento (`ca29352f`), testes T1–T45 reforçados para medir o estado renderizado em vez do texto-fonte (`7644512c`), docs (`8007be1e`), registro com evidência `arquivo:linha` nas 6 pendências fechadas (`d73d421c`).
+- Bateria: `check` frontend verde; `test:smoke` 1313/1313 (baseline 1268, Δ +45); T1–T45 45/45; regressões 125/125; `smoke-flow` 22/22; build verde; testes da raiz que leem `frontend/src` 16/16; `check`/`lint` da raiz verdes após `prisma generate` local; 9/9 controles negativos externos vermelhos com restauro provado.
+- Divergências do plano registradas no relatório do dev (geradores não byte-idênticos aos apêndices, mas de saída equivalente; critério de docs da A18 com 2 menções verdadeiras, uma fora das linhas permitidas). `Kpis/*` intocado; nada de backend, banco ou porta.
