@@ -91,6 +91,12 @@ function chargeRows(charges: CloudBillingData["charges"]): readonly CloudChargeT
   return charges?.tenants ?? [];
 }
 
+// Seletor de mês único da tela: o cabeçalho com dados e o estado vazio usam o mesmo (A2 da revisão do PR 411 — o vazio
+// diz "Selecione outro mês", então tem de oferecer o seletor).
+function MonthSelect({ month, onMonthChange }: { readonly month: string; readonly onMonthChange: (month: string) => void }) {
+  return <label style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 11px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#334155" }}><CalendarDays size={14} aria-hidden="true" /><span className="sr-only">Mês de referência</span><select aria-label="Mês de referência" value={month} onChange={(event) => onMonthChange(event.target.value)} style={{ border: 0, background: "transparent", font: "inherit", color: "inherit" }}>{monthOptions(currentBillingMonth()).map((option) => <option key={option} value={option}>{formatMonth(option)}</option>)}</select></label>;
+}
+
 export function PlatformCloudBillingView({ data, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
   const { usage, costs, allocation, charges, imports } = data;
   const latestImport = imports[0];
@@ -103,7 +109,7 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
     <div style={{ color: "#0F172A" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, paddingBottom: 18, borderBottom: "1px solid #F1F5F9", flexWrap: "wrap", gap: 10 }}>
         <div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)} · atualizado {formatDate(updatedAt)}</div></div>
-        <label style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 11px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#334155" }}><CalendarDays size={14} aria-hidden="true" /><span className="sr-only">Mês de referência</span><select aria-label="Mês de referência" value={month} onChange={(event) => onMonthChange(event.target.value)} style={{ border: 0, background: "transparent", font: "inherit", color: "inherit" }}>{monthOptions(currentBillingMonth()).map((option) => <option key={option} value={option}>{formatMonth(option)}</option>)}</select></label>
+        <MonthSelect month={month} onMonthChange={onMonthChange} />
       </div>
 
       {data.stale ? <div style={{ marginBottom: 14 }}><Alert title="Dados desatualizados" tone="warning">A atualização falhou. Os últimos dados confirmados permanecem visíveis enquanto a plataforma tenta novamente.</Alert></div> : null}
@@ -144,7 +150,7 @@ export function PlatformCloudBillingScreen({ data, loading, month, onMonthChange
   if (loading || !isPeriodOfMonth(data.period, month)) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
   if (data.forbidden) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar os dados de cobrança cloud." /></div>;
   if (data.source === "fallback") return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><Alert title="Não foi possível carregar Cloud Billing" tone="warning">A plataforma tentará novamente. Nenhum valor é exibido enquanto não houver uma resposta confirmada.</Alert></div>;
-  if (empty) return <div style={base}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}><div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)}</div></div></div><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhum custo importado no período" detail="Selecione outro mês ou aguarde uma importação confirmada pela plataforma." /></div></div>;
+  if (empty) return <div style={base}><div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}><div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)}</div></div><MonthSelect month={month} onMonthChange={onMonthChange} /></div><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhum custo importado no período" detail="Selecione outro mês ou aguarde uma importação confirmada pela plataforma." /></div></div>;
   return <PlatformCloudBillingView data={data} month={month} onMonthChange={onMonthChange} />;
 }
 

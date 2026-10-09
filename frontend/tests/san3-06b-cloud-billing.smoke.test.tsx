@@ -321,3 +321,52 @@ test("T48 o hook de Cloud Billing descarta resposta de outro período e usa a re
   assert.match(hook, /setData\(\(current\) => nextCloudBillingState\(current, next, background, selected\.current\)\)/);
   assert.doesNotMatch(hook, /nextRefreshState/);
 });
+
+// A2 da revisão do PR 411 — o vazio diz "Selecione outro mês": o seletor tem de estar lá e de trocar o mês. Sem
+// biblioteca de DOM, a fiação do `onChange` é provada chamando os componentes sem hooks da árvore (a `Screen`, o
+// seletor e o `EmptyState`) e acionando o `<select>` encontrado.
+function findElement(node: unknown, predicate: (element: React.ReactElement) => boolean): React.ReactElement | null {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findElement(child, predicate);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (!React.isValidElement(node)) return null;
+  if (predicate(node)) return node;
+  if (typeof node.type === "function") {
+    try {
+      return findElement((node.type as (props: unknown) => unknown)(node.props), predicate);
+    } catch {
+      // componente com hooks fica fora do alcance sem DOM; segue pelos filhos
+    }
+  }
+  return findElement((node.props as { children?: unknown }).children, predicate);
+}
+
+test("T49 estado vazio oferece o seletor de mês que o texto promete (A2)", async () => {
+  process.env.VITE_USE_MOCKS = "true";
+  try {
+    // O mês corrente é o de entrada da tela (e o que fica vazio até haver importação confirmada).
+    const month = currentBillingMonth();
+    const period = periodForMonth(month);
+    const states = [emptyCloudBilling(period, "api"), await getCloudBilling(period)];
+    for (const data of states) {
+      const html = renderToString(<PlatformCloudBillingScreen data={data} loading={false} month={month} />);
+      assert.match(html, /Nenhum custo importado no período/);
+      assert.match(html, /Selecione outro mês/);
+      assert.match(html, /<select[^>]*aria-label="Mês de referência"/);
+      assert.equal(html.match(/<option /g)?.length, 12);
+      assert.match(html, new RegExp(`<option value="${month}" selected="">`));
+      const chosen: string[] = [];
+      const tree = PlatformCloudBillingScreen({ data, loading: false, month, onMonthChange: (next) => chosen.push(next) });
+      const select = findElement(tree, (element) => element.type === "select");
+      assert.ok(select, "o estado vazio não tem <select>");
+      (select.props as { onChange: (event: { target: { value: string } }) => void }).onChange({ target: { value: "2026-08" } });
+      assert.deepEqual(chosen, ["2026-08"]);
+    }
+  } finally {
+    process.env.VITE_USE_MOCKS = "";
+  }
+});
