@@ -594,6 +594,7 @@
 - status: aberto
 - severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
 - dono: B-SAN3-06b
+- adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
 
 #### P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP
 - descricao: `.env.example` não documenta `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, `PLATFORM_ADMIN_NAME` nem `ALLOW_PROD_BOOTSTRAP`.
@@ -608,6 +609,7 @@
 - status: aberto
 - severidade: BAIXA — tsc direto no arquivo passa; afeta só o build da IDE.
 - dono: B-ARNES-2
+- adendo (junta 2, C1c2-07, 2026-10-08): não afeta só a IDE — com a mutação MF3-f aplicada, a CI e o T1 continuam verdes; a checagem de tipos que protege as flags (A19) só roda manualmente.
 
 #### P-SAN3-09-ROTEIRO-DE-OPERACAO
 - descricao: consolidar o roteiro operacional de ativação, diagnóstico, repetição segura e recuperação do bootstrap.
@@ -636,8 +638,6 @@
 - status: aberto
 - severidade: MÉDIA
 - dono: B-SAN3-10
-- adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
-- adendo (junta 2, C1c2-07, 2026-10-08): não afeta só a IDE — com a mutação MF3-f aplicada, a CI e o T1 continuam verdes; a checagem de tipos que protege as flags (A19) só roda manualmente.
 
 #### P-SAN3-09-ECO-APOS-FLAG-DE-SENHA
 - descricao: uma mutação em que o script repete o argumento só a partir da 2ª posição (o formato real de `--password-stdin <valor>`) passa no T1 (26/26) e no T2 (12/12); o produto hoje não repete nada (achado C1c2-02 da junta 2).
@@ -10109,7 +10109,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as duas referências mostram — MÉDIA
 
-- status: ABERTA (aberta por `D-OS-CABECALHO-PADRONIZADO`).
+- status: **FECHADA em 2026-10-08** pelo #409 (`fea93281`): Filtrar (Prioridade, Data de abertura) e Exportar funcionando, com testes `[FE1]`–`[FE10]`; revisor independente APROVADO e porteiro LIBERADO COM RESSALVA (`votos/B-OS-FILTRAR-EXPORTAR/`). Técnico segue com `P-WO-LIST-TECH-NAME`. Aberta por `D-OS-CABECALHO-PADRONIZADO`.
 - **prova:** comparativo de 2026-10-08 (agente de frontend; capturas reais a 1440×900 do app em `main` 749a5cf8, do
   protótipo antigo e do design padronizado): os dois designs têm Filtrar e Exportar no cabeçalho; o app os omitiu em
   2026-08-04 (#332) por não haver função ligada. As funções existem: o backend aceita `priority`, `assignedOperatorId`,
@@ -10184,3 +10184,52 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** bloco de faxina web.
 - **bloqueia:** não.
 - **teste de encerramento:** arquivo apagado, com `check` e `smoke` verdes.
+
+## P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel erp_runtime antes do Ato 2 — ALTA
+
+- status: ABERTA (`D-ATO2-OPCAO-B`).
+- **prova:** leitura do código no ramo do #405 em 2026-10-08 (`src/infra/jobs/job.registry.ts` registra 12 jobs; 3 de
+  nuvem têm cenário próprio no B4; dos 9 restantes, 5 usam banco com o contexto da organização aberto por `withTenantRls`
+  — notificações, notificações agendadas, conciliação OS→custódia, avisos de custódia e diárias do pátio); leitura não é
+  medição, e a falha seria silenciosa (cada varredura isola a organização em try/catch e só registra aviso).
+- **dono:** bloco a nomear, depois do merge do #405.
+- **bloqueia:** o Ato 2 em produção (não bloqueia o Traccar).
+- **teste de encerramento:** as 5 tarefas rodam sob `NOSUPERUSER NOBYPASSRLS` e sob o papel atual, mesmo seed, e produzem o
+  mesmo efeito, não vazio.
+
+## P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão de leitura — BAIXA
+
+- status: ABERTA (premissa do orquestrador, sem veto do dono).
+- **prova:** `D-OS-CABECALHO-PADRONIZADO` e o §0.6 do plano do `B-OS-FILTRAR-EXPORTAR`: não existe permissão de exportação
+  no catálogo nem no `RBAC_MATRIX.md`; a exportação da Auditoria também não tem permissão própria.
+- **dono:** decisão do dono.
+- **bloqueia:** não.
+- **teste de encerramento:** o dono confirma a premissa, ou um bloco com junta completa cria a permissão própria (catálogo,
+  matriz, backend).
+
+## P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere uma coluna — BAIXA
+
+- status: ABERTA (ajuste A-2 do revisor do #409).
+- **prova:** o `[EX4]` promete neutralizar "em toda célula", mas só confere a coluna Cliente; a mutação que neutraliza só
+  essa coluna passou verde. O produto está certo (CSV real conferido com 4 fórmulas).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** o `[EX4]` exercita fórmula em toda coluna de texto livre e a mutação "só Cliente" fica vermelha.
+
+## P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o painel de filtros fechado — BAIXA
+
+- status: ABERTA (nota N-1 do revisor do #409).
+- **prova:** a mutação que mantém `aria-controls` com o painel fechado sobrevive; na tela o comportamento está certo.
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** caso que fecha o painel e exige `aria-controls` ausente, vermelho sob a mutação.
+
+## P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e ignora títulos de nível 4 — BAIXA
+
+- status: ABERTA (nota N-3 do revisor do #409 e ressalva R-C do porteiro do #400).
+- **prova:** `agent-orchestration/controle/gerar-indice-pendencias.py` classifica `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` como
+  MÉDIA porque lê "MEDIA" de dentro do próprio ID (a entrada diz BAIXA); e só lê títulos `## ` (l.~84), então as
+  pendências do B-SAN3-09 escritas como `#### P-…` não aparecem no índice. Vale o `pendencias.md`.
+- **dono:** bloco de ferramentas de registro (a nomear).
+- **bloqueia:** não.
+- **teste de encerramento:** o índice mostra a severidade declarada na entrada e inclui as pendências de nível 4.

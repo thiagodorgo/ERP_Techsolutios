@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **443** |
-| IDs distintos | 432 |
-| **ABERTAS** | **326** |
+| Cabecalhos `## P-` | **448** |
+| IDs distintos | 437 |
+| **ABERTAS** | **330** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **257** |
+| — das quais **ativas nesta rodada** | **261** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 117 |
+| FECHADAS | 118 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **443 cabecalhos para 432 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **448 cabecalhos para 437 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -67,7 +67,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 141
+## ABERTAS · balde A — material — 142
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -209,11 +209,12 @@
 | `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL` | 9987 | MÉDIA | sim | P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a m |
 | `P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` | 10018 | MÉDIA | sim | P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo |
 | `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE` | 10038 | MÉDIA | sim | P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard  |
-| `P-OS-FILTRAR-EXPORTAR` | 10110 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
 | `P-WO-LISTA-SO-20-MAIS-RECENTES` | 10145 | MÉDIA | sim | P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recent |
 | `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` | 10168 | MÉDIA | sim | P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de priorid |
+| `P-SAN3-05-ATO2-CINCO-TAREFAS` | 10188 | ALTA | sim | P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel e |
+| `P-INDICE-PENDENCIAS-CLASSIFICADOR` | 10227 | MÉDIA | sim | P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e i |
 
-## ABERTAS · balde B — processo/registro — 116
+## ABERTAS · balde B — processo/registro — 119
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -333,6 +334,9 @@
 | `P-WEB-PADRAO-MICRODIFERENCAS` | 10134 | BAIXA | sim | P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o desig |
 | `P-CSV-FORMULA-GLOBAL` | 10157 | BAIXA | sim | P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA |
 | `P-WO-FILTROS-LEGADO-MORTO` | 10179 | BAIXA | sim | P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA |
+| `P-OS-EXPORTAR-PERMISSAO-PREMISSA` | 10200 | BAIXA | sim | P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão d |
+| `P-OS-EX4-SO-COLUNA-CLIENTE` | 10210 | BAIXA | sim | P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere |
+| `P-OS-ARIA-CONTROLS-FECHADO` | 10219 | BAIXA | sim | P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o pai |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
@@ -408,7 +412,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3656 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3700 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 117
+## FECHADAS — 118
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -529,3 +533,4 @@
 | `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9639 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9648 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10048 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
+| `P-OS-FILTRAR-EXPORTAR` | 10110 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
