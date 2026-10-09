@@ -1,0 +1,9 @@
+CREATE TABLE public.c2_force_qualified (id int primary key);
+ALTER TABLE public.c2_force_qualified ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.c2_force_qualified FORCE ROW LEVEL SECURITY;
+CREATE TABLE "C2ForceDefault" (id int primary key);
+ALTER TABLE "C2ForceDefault" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "C2ForceDefault" FORCE ROW LEVEL SECURITY;
+CREATE TABLE "c2_force_control" (id int primary key);
+ALTER TABLE "c2_force_control" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "c2_force_control" FORCE ROW LEVEL SECURITY;

@@ -110,6 +110,18 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
 // O que este bloco ACRESCENTOU ao inventário, com o motivo (nenhuma é acesso a tabela FORCE sem contexto).
 const NOVAS: ReadonlyMap<string, string> = new Map([
   [
+    k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
+    "B3/C3E: a relação aninhada `select.role` toca a tabela FORCE `roles` pela mesma consulta já congelada como suspeita; relação FORCE não pode desaparecer só porque a operação raiz é `userRoleAssignment.findMany`.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/prisma-core-saas.service.ts", "PrismaCoreSaasService.listTenantsForIdentity", "tx.user", "user.findFirst.include.role_assignments", "user_role_assignments", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B3/C3E: `include.role_assignments` alcança a tabela FORCE `user_role_assignments` dentro de uma transação cujo setter inicial não foi provado; herda a classificação suspeita da consulta raiz.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/services/prisma-core-saas.service.ts", "PrismaCoreSaasService.listTenantsForIdentity", "tx.user", "user.findFirst.include.role_assignments.include.role", "roles", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B3/C3E: a segunda relação aninhada `role_assignments.include.role` alcança a tabela FORCE `roles` na mesma transação sem setter provado; o analisador deve mantê-la suspeita separadamente.",
+  ],
+  [
     k("L1", "src/database/runtime-role.ts", "-.probeRuntimeRolePosture", "client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(client)", "×2"),
     "a sonda da trava de boot (item 9): duas consultas ao CATÁLOGO (session_user/current_user e RUNTIME_ROLE_GUARD_SQL sobre pg_roles/pg_class/pg_rewrite/pg_depend); SQL cru sem tabela literal é OPACO por desenho do gerador — não toca tabela FORCE.",
   ],
@@ -147,16 +159,17 @@ function setDiff(left: readonly string[], right: readonly string[]): string[] {
   return left.filter((item) => !other.has(item));
 }
 
-test("T13 · ratchet semântico: congelado com motivo por chave, 27 formas vermelhas e a 'sumida' vermelha", { timeout: 2 * GENERATOR_TIMEOUT_MS }, async (t) => {
+test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas vermelhas e a 'sumida' vermelha", { timeout: 3 * GENERATOR_TIMEOUT_MS }, async (t) => {
   const fixtures = readdirSync(path.join(REPO_ROOT, FIXTURES_DIR))
     .filter((name) => name.endsWith(".ts"))
     .sort();
 
-  assert.equal(fixtures.length, 27, `esperava as 27 fixtures do Apêndice D (17 da r1 + N01–N10); vieram ${fixtures.length}`);
+  assert.equal(fixtures.length, 31, `esperava 27 fixtures herdadas + C3A/C3B/C3C/C3E; vieram ${fixtures.length}`);
 
   const withMutants = runGenerator(fixtures.flatMap((name) => ["--mutant", path.join(FIXTURES_DIR, name)]));
   assert.equal(withMutants.status, 0, `o gerador (head + 27 fixtures) falhou:\n${withMutants.stderr}`);
-  if (withMutants.stderr.trim()) t.diagnostic(`stderr do gerador: ${withMutants.stderr.trim()}`);
+  assert.equal(withMutants.stderr, "", `stderr do gerador precisa ser vazio:\n${withMutants.stderr}`);
+  assert.match(withMutants.stdout, /OPS\(derivados\)=17\b/);
 
   const headKeys = withMutants.keys.filter((key) => !key.includes("\tsrc/modules/zz-mut/")).sort();
 
@@ -190,6 +203,21 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 27 formas verme
       assert.ok(attributed.length >= 1, `a forma ${fixture} passou VERDE pelo gerador (0 chaves) — defeito do gerador`);
     });
   }
+
+  await t.test("L0 exato: tabela qualificada e model sem @@map entram por nome", () => {
+    const f2 = runGenerator([
+      "--schema-extra", path.join(FIXTURES_DIR, "c2-f2-schema.prisma"),
+      "--migration-extra", path.join(FIXTURES_DIR, "c2-f2-migration.sql"),
+      "--mutant", path.join(FIXTURES_DIR, "c2-f2-reader.fixture.tsx"),
+    ]);
+    assert.equal(f2.status, 0, `o gerador das grafias C3-F2 falhou:\n${f2.stderr}`);
+    assert.equal(f2.stderr, "");
+    assert.match(f2.stdout, /tabelas ENABLE=109 FORCE=109 · acessores Prisma em FORCE=109/);
+    assert.match(f2.stdout, /"C2ForceDefault"/);
+    for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
+      assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
+    }
+  });
 
   await t.test("'sumida': a fábrica do sítio 7 trocada por fora → novas=1 sumidas=1", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "san3-05-sumida-"));

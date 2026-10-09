@@ -32,13 +32,16 @@ import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 
 const args = process.argv.slice(2);
-const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--mutant" && args[i - 1] !== "--override");
+const VALUE_FLAGS = new Set(["--mutant", "--override", "--schema-extra", "--migration-extra"]);
+const positional = args.filter((a, i) => !a.startsWith("--") && !VALUE_FLAGS.has(args[i - 1]));
 const repo = path.resolve(positional[0] ?? ".");
 const showAll = args.includes("--all");
-const mutants = []; const overrides = new Map();
+const mutants = []; const overrides = new Map(); const schemaExtras = []; const migrationExtras = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--mutant") mutants.push(path.resolve(args[++i]));
   if (args[i] === "--override") { const s = args[++i]; const k = s.indexOf("="); overrides.set(s.slice(0, k).replace(/\\/g, "/"), path.resolve(s.slice(k + 1))); }
+  if (args[i] === "--schema-extra") schemaExtras.push(path.resolve(args[++i]));
+  if (args[i] === "--migration-extra") migrationExtras.push(path.resolve(args[++i]));
 }
 let req = null;
 for (const base of [import.meta.url, path.join(process.cwd(), "package.json"), path.join(repo, "package.json")]) {
@@ -50,21 +53,44 @@ const ts = req("typescript");
 // ---------- L0: tabelas FORCE ← migrações; tabela→model→acessor ← schema; OPS ← client gerado ----------
 function walk(dir, out = []) { for (const e of readdirSync(dir)) { const f = path.join(dir, e); if (statSync(f).isDirectory()) walk(f, out); else out.push(f); } return out; }
 const FORCE = new Set(); const ENABLE = new Set();
-for (const f of walk(path.join(repo, "prisma/migrations")).filter((f) => f.endsWith("migration.sql"))) {
+const sqlIdentifier = (quoted, plain) => quoted === undefined ? plain.toLowerCase() : quoted.replace(/""/g, '"');
+const rlsStatement = /ALTER\s+TABLE\s+(?:ONLY\s+)?(?:(?:"((?:[^"]|"")*)"|([A-Za-z_][A-Za-z0-9_$]*))\s*\.\s*)?(?:"((?:[^"]|"")*)"|([A-Za-z_][A-Za-z0-9_$]*))\s+(NO\s+FORCE|FORCE|ENABLE|DISABLE)\s+ROW\s+LEVEL\s+SECURITY/gi;
+for (const f of [...walk(path.join(repo, "prisma/migrations")).filter((f) => f.endsWith("migration.sql")), ...migrationExtras]) {
   const sql = readFileSync(f, "utf8");
-  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+FORCE ROW LEVEL SECURITY/gi)) FORCE.add(m[1].toLowerCase());
-  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+ENABLE ROW LEVEL SECURITY/gi)) ENABLE.add(m[1].toLowerCase());
-  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+NO FORCE ROW LEVEL SECURITY/gi)) FORCE.delete(m[1].toLowerCase());
-  for (const m of sql.matchAll(/ALTER TABLE\s+"?([a-z_]+)"?\s+DISABLE ROW LEVEL SECURITY/gi)) ENABLE.delete(m[1].toLowerCase());
+  for (const m of sql.matchAll(rlsStatement)) {
+    const schemaName = m[1] === undefined && m[2] === undefined ? "public" : sqlIdentifier(m[1], m[2]);
+    if (schemaName !== "public") continue;
+    const table = sqlIdentifier(m[3], m[4]);
+    const action = m[5].replace(/\s+/g, " ").toUpperCase();
+    if (action === "FORCE") FORCE.add(table);
+    if (action === "NO FORCE") FORCE.delete(table);
+    if (action === "ENABLE") ENABLE.add(table);
+    if (action === "DISABLE") ENABLE.delete(table);
+  }
 }
-const schema = readFileSync(path.join(repo, "prisma/schema.prisma"), "utf8");
-const modelToTable = new Map(); let current = null;
-for (const line of schema.split(/\r?\n/)) {
-  const m = line.match(/^model\s+(\w+)\s*\{/); if (m) current = m[1];
-  const map = line.match(/@@map\("([^"]+)"\)/); if (map && current) modelToTable.set(current, map[1]);
+const schema = [readFileSync(path.join(repo, "prisma/schema.prisma"), "utf8"), ...schemaExtras.map((f) => readFileSync(f, "utf8"))].join("\n");
+const modelToTable = new Map(); const modelBodies = new Map();
+for (const m of schema.matchAll(/^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm)) {
+  const model = m[1];
+  const map = m[2].match(/@@map\("((?:[^"]|\\")+)"\)/);
+  modelToTable.set(model, map ? map[1].replace(/\\"/g, '"') : model);
+  modelBodies.set(model, m[2]);
 }
-const accessorToTable = new Map();
-for (const [model, table] of modelToTable) if (FORCE.has(table)) accessorToTable.set(model[0].toLowerCase() + model.slice(1), table);
+const relations = new Map();
+for (const [model, body] of modelBodies) {
+  const fields = new Map();
+  for (const line of body.split(/\r?\n/)) {
+    const field = line.match(/^\s*(\w+)\s+(\w+)(?:\[\])?\??(?:\s|$)/);
+    if (field && modelToTable.has(field[2])) fields.set(field[1], field[2]);
+  }
+  relations.set(model, fields);
+}
+const accessorToTable = new Map(); const accessorToModel = new Map();
+for (const [model, table] of modelToTable) {
+  const accessor = model[0].toLowerCase() + model.slice(1);
+  accessorToModel.set(accessor, model);
+  if (FORCE.has(table)) accessorToTable.set(accessor, table);
+}
 let OPS = null; // derivado do PROGRAMA (abaixo), não de regex sobre o d.ts
 const RAW = new Set(["$queryRaw", "$queryRawUnsafe", "$executeRaw", "$executeRawUnsafe"]);
 // Envoltórios CONFIADOS — pelo SÍMBOLO declarado nestes arquivos (a junta lê os corpos: ambos setam o GUC a cada volta).
@@ -93,13 +119,18 @@ const program = ts.createProgram({ rootNames, options, host });
 const checker = program.getTypeChecker();
 // OPS ← métodos das interfaces *Delegate do client GERADO, pelo próprio programa (F4 da r1, agora sem regex de texto)
 OPS = new Set();
-for (const sf of program.getSourceFiles()) if (sf.fileName.replace(/\\/g, "/").endsWith("/.prisma/client/index.d.ts")) sf.forEachChild(function look(n) {
-  if (ts.isInterfaceDeclaration(n) && /Delegate$/.test(n.name.text)) for (const m of n.members) if (ts.isMethodSignature(m) && m.name) OPS.add(m.name.getText());
-  else ts.forEachChild(n, look);
-});
+for (const sf of program.getSourceFiles()) {
+  if (!sf.fileName.replace(/\\/g, "/").endsWith("/.prisma/client/index.d.ts")) continue;
+  sf.forEachChild(function look(n) {
+    if (ts.isInterfaceDeclaration(n) && /Delegate$/.test(n.name.text)) {
+      for (const m of n.members) if (ts.isMethodSignature(m) && m.name) OPS.add(m.name.getText());
+    }
+    ts.forEachChild(n, look);
+  });
+}
 if (OPS.size < 10) {
-  OPS = new Set(["findMany","findFirst","findFirstOrThrow","findUnique","findUniqueOrThrow","count","aggregate","groupBy","create","createMany","createManyAndReturn","update","updateMany","updateManyAndReturn","upsert","delete","deleteMany"]);
-  console.error("# aviso: OPS não derivado do client gerado; usando lista embutida");
+  console.error(`# erro: OPS não derivado do client gerado (N=${OPS.size})`);
+  process.exit(2);
 }
 const rel = (f) => path.relative(repo, f).replace(/\\/g, "/");
 const GENERATED = /[\\/](\.prisma|@prisma)[\\/]client[\\/]/;
@@ -237,6 +268,29 @@ function rawTables(node) { // tabelas citadas no SQL literal, ou numa constante 
   for (const a of args) { const u = unwrap(a); if (ts.isIdentifier(u)) { const d = declOf(u); if (d && ts.isVariableDeclaration(d) && d.initializer && ts.isStringLiteralLike(d.initializer)) text += " " + d.initializer.text; } }
   return literalTablesIn(text);
 }
+function propertyName(node) {
+  if (ts.isIdentifier(node) || ts.isStringLiteralLike(node) || ts.isNumericLiteral(node)) return node.text;
+  return null;
+}
+function relationAccesses(model, expression, prefix = [], out = []) {
+  const value = unwrap(expression);
+  if (!value || !ts.isObjectLiteralExpression(value)) return out;
+  for (const property of value.properties) {
+    if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) continue;
+    const name = propertyName(property.name);
+    if (!name) continue;
+    const initializer = ts.isShorthandPropertyAssignment(property) ? property.name : property.initializer;
+    const related = relations.get(model)?.get(name);
+    if (related) {
+      const table = modelToTable.get(related);
+      if (table && FORCE.has(table)) out.push({ path: [...prefix, name].join("."), table });
+      relationAccesses(related, initializer, [...prefix, name], out);
+    } else {
+      relationAccesses(model, initializer, [...prefix, name], out);
+    }
+  }
+  return out;
+}
 
 // ---------- L1: toda chamada a método de delegate de tabela FORCE, ou RAW ----------
 const rows = []; const pushRow = (r) => rows.push(r);
@@ -257,12 +311,20 @@ for (const sf of program.getSourceFiles()) {
       const op = ts.isPropertyAccessExpression(callee) ? callee.name.text : ts.isStringLiteralLike(callee.argumentExpression) ? callee.argumentExpression.text : null;
       const target = unwrap(callee.expression);
       if (op && RAW.has(op)) { const tabs = rawTables(node); if (tabs.length) for (const t of tabs) emit(node, target, `RAW-SQL(${op})`, t, "literal"); else emit(node, target, `RAW-SQL(${op}) OPACO`, "?", "opaco"); }
-      else if (op) {
+      else if (op && OPS.has(op)) {
         let model = null; const sig = checker.getResolvedSignature(node); const d = sig?.declaration;
         if (d) { let p = d.parent; while (p && !ts.isInterfaceDeclaration(p)) p = p.parent; if (p && /Delegate$/.test(p.name.text) && GENERATED.test(p.getSourceFile().fileName)) model = p.name.text.replace(/Delegate$/, ""); }
         if (!model) { const ty = checker.getTypeAtLocation(callee.expression); const sy = ty?.getSymbol?.() ?? ty?.symbol; const sd = sy?.declarations?.[0]; if (sy && /Delegate$/.test(sy.name) && sd && GENERATED.test(sd.getSourceFile().fileName) && OPS.has(op)) model = sy.name.replace(/Delegate$/, ""); }
         let acc = null; if (ts.isPropertyAccessExpression(target)) acc = target.name.text; else if (ts.isElementAccessExpression(target) && ts.isStringLiteralLike(target.argumentExpression)) acc = target.argumentExpression.text; else if (ts.isIdentifier(target)) acc = target.text;
-        if (model) { const t = modelToTable.get(model); if (t && FORCE.has(t)) emit(node, target, `${model[0].toLowerCase() + model.slice(1)}.${op}`, t, "semantico"); }
+        if (!model && acc) model = accessorToModel.get(acc) ?? null;
+        if (model) {
+          const accessor = model[0].toLowerCase() + model.slice(1);
+          const t = modelToTable.get(model);
+          if (t && FORCE.has(t)) emit(node, target, `${accessor}.${op}`, t, "semantico");
+          for (const nested of relationAccesses(model, node.arguments[0])) {
+            emit(node, target, `${accessor}.${op}.${nested.path}`, nested.table, "relacao-aninhada");
+          }
+        }
         else if (acc && accessorToTable.has(acc) && OPS.has(op)) emit(node, target, `${acc}.${op}`, accessorToTable.get(acc), "sintatico");
         else if (OPS.has(op)) { const ty = checker.getTypeAtLocation(callee.expression); if (ty.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) emit(node, target, `?.${op}`, "?", "TIPO-DESCONHECIDO"); }
       }
@@ -328,18 +390,20 @@ function cleanUpstream(K, j, seen) {
 for (const i of inst) if (i.cls === "INJETADO" && i.upKlass) { const r = cleanUpstream(i.upKlass, i.upIdx, new Set([i.injClass])); i.cls = r === "ok" ? `SOB-CONTEXTO(transitivo via ${i.upKlass.name?.text})` : `INJETADO-TRANSITIVO:${r}`; }
 
 // ---------- saída ----------
-const SUSPEITO_L1 = (cls) => cls !== "SOB-CONTEXTO" && cls !== "INJETADO";
+const hasKnownInstantiation = (row) => inst.some((i) => i.injClass === row.klassNode && i.injIdx === row.index);
+const SUSPEITO_L1 = (row) => row.cls !== "SOB-CONTEXTO" && (row.cls !== "INJETADO" || !hasKnownInstantiation(row));
 const SUSPEITO_L2 = (cls) => !cls.startsWith("SOB-CONTEXTO");
 const byCls = {}; for (const r of rows) byCls[r.cls.replace(/\(.*$/, "")] = (byCls[r.cls.replace(/\(.*$/, "")] ?? 0) + 1;
 const instByCls = {}; for (const i of inst) instByCls[i.cls.replace(/\(.*$/, "")] = (instByCls[i.cls.replace(/\(.*$/, "")] ?? 0) + 1;
 const diag = program.getSyntacticDiagnostics().length;
 console.log(`# L0: tabelas ENABLE=${ENABLE.size} FORCE=${FORCE.size} · acessores Prisma em FORCE=${accessorToTable.size} · OPS(derivados)=${OPS.size} · arquivos no programa=${rootNames.length} (virtuais=${virtual.size}) · erros sintaticos=${diag}`);
+console.log(`# L0 FORCE: ${JSON.stringify([...FORCE].sort())}`);
 console.log(`# L1: call-sites sobre tabelas FORCE (+ RAW) = ${rows.length} · por como: ${JSON.stringify(rows.reduce((a, r) => ((a[r.how] = (a[r.how] ?? 0) + 1), a), {}))}`);
 console.log(`# L1 por classificação: ${JSON.stringify(byCls)}`);
 console.log(`# L2: classes com executor injetado = ${injected.size}; instanciações achadas = ${inst.length}; rodadas L2 = ${rodada}`);
 console.log(`# L2 por classificação do argumento: ${JSON.stringify(instByCls)}`);
 const keys = new Map(); const add = (k) => keys.set(k, (keys.get(k) ?? 0) + 1);
-for (const r of rows.filter((r) => SUSPEITO_L1(r.cls))) add(`L1\t${r.file}\t${r.klass ?? "-"}.${r.method ?? "-"}\t${r.recv}\t${r.what}\t${r.table}\t${r.cls}`);
+for (const r of rows.filter(SUSPEITO_L1)) add(`L1\t${r.file}\t${r.klass ?? "-"}.${r.method ?? "-"}\t${r.recv}\t${r.what}\t${r.table}\t${r.cls}`);
 for (const i of inst.filter((i) => SUSPEITO_L2(i.cls))) add(`L2\t${i.file}\tnew ${i.klass}${i.base}(${i.arg})\t${i.cls}`);
 const inv = [...keys].map(([k, n]) => `${k}\t×${n}`).sort();
 console.log(`# INVENTÁRIO SUSPEITO (L1+L2): ${inv.length} chaves · sha1=${createHash("sha1").update(inv.join("\n")).digest("hex")}`);

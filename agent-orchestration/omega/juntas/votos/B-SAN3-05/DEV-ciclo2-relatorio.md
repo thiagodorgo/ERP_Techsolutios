@@ -97,6 +97,18 @@
 
 **Resultado:** PARADA OBRIGATÓRIA RC3 — crescimento +23 excede o teto de +20. A implementação parcial não foi commitada; não afrouxei o analisador nem continuei para B4.
 
+**Retomada autorizada — comando:** restringir o caminho sintático a métodos presentes em `OPS(derivados)` antes de associar nomes de campos a models Prisma; repetir gerador normal/`--all` e T13 no container `dev05c2-b3final`.
+
+**Saída resumida da re-medição:** inventário final **56** contra 53, crescimento **+3** (dentro do teto), sha1 `2db380a29bd61272bb3441a13ee5001b3f567d47`; gerador normal e `--all` ec=0/stderr=0; `OPS(derivados)=17`; T13 **35/35**.
+
+**Motivos das três chaves novas que permaneceram:**
+
+1. `AuthSessionService.refreshSession · userRoleAssignment.findMany.select.role → roles`: relação FORCE alcançada pela mesma consulta já suspeita, via callback `runWithTenantContext` não provado pelo símbolo confiado.
+2. `PrismaCoreSaasService.listTenantsForIdentity · user.findFirst.include.role_assignments → user_role_assignments`: relação FORCE sob `$TRANSACTION-SEM-SETTER-PROVADO`.
+3. `PrismaCoreSaasService.listTenantsForIdentity · …role_assignments.include.role → roles`: segunda relação FORCE sob a mesma transação sem setter provado.
+
+**Resultado final:** PASSOU — RC3 resolvida sem relaxar o analisador; C3A/B/C3C/C3E e as grafias C3-F2 ficaram cobertas; L0 deriva exatamente 106 FORCE/106 models no objeto.
+
 ### B4 — cenário executável por membro FORCE da superfície
 
 **Comando:** não iniciado após a PARADA-RC3.
@@ -177,19 +189,19 @@
 
 ### B3 — testes unitários/contratuais selecionados
 
-**Comando:** parcial: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` no container `dev05c2-b3`.
+**Comando:** parcial do item B3: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` no container `dev05c2-b3final`.
 
-**Saída resumida:** **32/35** passaram; 3 falharam (pai + congelado com +23 chaves + leitor C3-F2). Os outros seis arquivos do item B3 não foram executados após a parada.
+**Saída resumida:** **35/35** passaram; fail 0, skipped 0. Os outros seis arquivos do item B3 serão executados na bateria consolidada.
 
-**Resultado:** VERMELHO / PARADA-RC3.
+**Resultado:** PARCIAL VERDE — T13 35/35.
 
 ### B4 — gerador normal e `--all`
 
 **Comando:** `node scripts/san3-05-acessos-de-plataforma.mjs . --all` em Linux, depois de `npm ci` e `prisma generate`.
 
-**Saída resumida:** ec=0; stderr=0 bytes; `OPS(derivados)=17`; inventário **76**, sha1 `d990f882341867f4e3b1366c56c3df1bff401168`.
+**Saída resumida:** normal e `--all`: 2/2 com ec=0 e stderr=0 bytes; `OPS(derivados)=17`; inventário **56**, sha1 `2db380a29bd61272bb3441a13ee5001b3f567d47`.
 
-**Resultado:** VERMELHO contra o congelado: +23 chaves > teto +20.
+**Resultado:** PASSOU — +3 chaves, cada uma com motivo escrito.
 
 ### B5 — modo e EOL do script
 
@@ -322,6 +334,13 @@
 - **Regra aplicada:** C2.3/RC3 determina “acima de 20 chaves novas, o dev para e relata”. Nenhum relaxamento do analisador, atualização do congelado ou avanço para B4 foi feito.
 - **Estado local preservado:** alterações parciais não commitadas somente nos caminhos permitidos de B3 (`scripts/san3-05-acessos-de-plataforma.mjs`, `tests/san3-05-acessos-de-plataforma-guard.test.ts`, 7 fixtures); `scratchpad/` intocado; `dev05c2-b3` removido por `--rm`.
 - **Decisão necessária:** o orquestrador precisa autorizar a continuação para corrigir os falsos candidatos e re-medir o teto, ou redefinir o tratamento das 23 chaves. O dev não escolhe em silêncio.
+
+### RESOLUÇÃO-PARADA-RC3 — autorização do orquestrador em 2026-10-09
+
+- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Saída resumida:** alterações locais somente na fatia parcial B3 e `scratchpad/` preservado; remoto = `b9a1dda3752f07de386bbd1430057b84b47b25c6`, conforme esperado.
+- **Decisão:** autorizado corrigir a discriminação por operação/tipo dos falsos candidatos (`role`, `yard`, `settlement` e semelhantes) e re-medir. O teto RC3 continua inalterado; inventário final acima de +20 exige nova parada, lista de chaves e motivo por chave.
+- **Resultado:** RETOMADO — sem relaxar o analisador e sem atualizar o congelado apenas para caber no teto.
 
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
