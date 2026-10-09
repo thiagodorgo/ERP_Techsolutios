@@ -4783,6 +4783,16 @@ bloco mergear.
   `controle/decisoes.md`, que só registra decisões tomadas.
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## B-SAN3-05 — execução local do dev sucessor-2 (2026-10-04)
+
+- Branch `fix/runtime-role-sem-bypass`, worktree próprio `C:/Users/AMP/w-s05d`, `npm ci` próprio; nenhuma junction.
+- Cluster próprio `san3-05-s2-pg`, PostgreSQL 16.14 em `127.0.0.1:55405`; `erp-postgres:5432` e `erp-redis:6379` não foram tocados.
+- Implementação e testes: papel runtime sem bypass, guarda de boot, procedimento, plataforma cross-tenant explícita, gerador/fixtures e duas suítes DB. A1–A24 executados; relatório incremental contém quedas, retomadas, cargas e falsificações.
+- Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
+- PR **#405** aberto em rascunho, base `main`, com o título obrigatório. Inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
+- Limpeza final: `san3-05-s2-pg` removido; `dist/`, wrappers e scratch/logs `s05-*` removidos; 0 processo worker/teste do worktree. Remoção do worktree ocorre depois do push final.
+- Retomada 7a do PR #405: CI no head `e3cb269d` falhou porque `pg_basebackup` exigia `host replication` no HBA do serviço. Correção no head de código `bbbb3b29`: T8d usa slot físico real + controle 42501 após NOREPLICATION; arquivo 8/8 e backend integral 291 arquivos, 3122 passes, 0 falhas, 2 skips.
 - 2026-10-04 — registro: parecer do porteiro do #404, decisões do dono de 03–04/10 (modelos, Codex, nuvem), R404-1 e R404-3 do porteiro, retomada pós-pausa.
 
 ---
@@ -4826,3 +4836,22 @@ bloco mergear.
 
 - `P-SAN-PROD-BOOTSTRAP` permanece em andamento: fecha somente após a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
 - D2: `ALLOW_PROD_BOOTSTRAP` é independente de `ALLOW_PROD_SEED`. D3: papel `super_admin` e concessões pertencem ao CD (`db:provision-rbac`).
+## B-SAN3-05 — ciclo 3 do dev (2026-10-09)
+
+- `dev-ciclo3-b-san3-05` implementou somente A2/A3 do plano concluído sobre o objeto inicial `91d79495`: `view_escape` idêntico na trava e nas duas cópias do script, cobrindo DML, donos que escapam em qualquer profundidade e matviews.
+- T8e/T8f/T14d elevam `guard-db` de 9 para 12; três rodadas 12/12, demais dirigidos 12/12 + 35/35 + 13/13 + 5/5. Dez mutações M-D2a…e (trava/script) ficaram vermelhas no caso nominal S/B/S/K/I e os arquivos foram restaurados por MD5.
+- B7 mínima: sucesso 0, caso S MODO 6/ec=3, SCRAM verdadeiro, senha-sentinela 0 no servidor/terminal, controle de log 1. Suíte integral válida com Redis descartável próprio: 3135 executados, 3133 passes, 0 falhas, 2 skips; build/check/lint verdes.
+- A primeira suíte integral sem Redis foi declarada inválida: 6 falhas `ECONNREFUSED 127.0.0.1:6379`; repetição com `dev05c3-redis` sem porta no host ficou verde. Nenhum serviço `erp-*` foi alvo.
+- Pendências C3.6 registradas e índice regenerado. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/DEV-relatorio.md`.
+
+## B-SAN3-05 — ciclo 4 do dev (2026-10-09)
+
+- `dev-ciclo4-b-san3-05` (Claude Opus 5.5, substituição declarada) implementou a seção "Ciclo 4" do plano sobre o disparo `7c63f920`: `D-405-PROIBIR-VIEWS` — sai o CTE `view_escape` e os filtros de dono/privilégio da trava e das duas cópias do script; a via `view` recusa qualquer view/matview cuja árvore alcance tabela FORCE; mensagem, `RAISE` (4 `%` × 4 argumentos) e `docs/deployment.md` dizem a regra; md5 diagnóstico da SQL `2ed16571…`.
+- T8c (sai o caso `view`), T8d (`objetos` 2), T8e e T14d (COL/COM/MAT/CTL, um por vez) e T8f (1 + 2 blocos `view_walk…view_force`, sem `view_escape`) reescritos; o arquivo continua com 12 testes; ratchet 82 → 72; T14c intacto (2·4·5·2·3).
+- Vermelho-controle no objeto: T8d, T8e·COL (depois dos três efeitos de coluna), T8f e T14d·COL (`status 0`). Head: guard-db 3 × 12/12 (0 `XX000`/`23505`/`40P01`, resíduo 0), sem psql 8/12 nomeando o pré-requisito; 12 · 35 · 13 · 5; M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso, restauro por md5; B7 sentinela 0, controle 1; suíte integral 3135/3133/0/2 com `dev05c4-redis`; check/lint/build ec=0. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`.
+
+## B-SAN3-05 — junta 4 e integração da main (2026-10-09)
+
+- Junta 4 APROVADA 3 × 0 sobre `84831ad9` (C1 em `79b0d594`, só registro de diferença); C2 e C3 em paralelo por autorização do dono (até 2 processos Claude), desvio do R2 do inspetor declarado na ata; 0 quedas.
+- `main` `a9bbde38` integrada por merge depois do voto; conflitos só em registro (log, decisões, pendências, status — união; índice regenerado pelo gerador); delta de produto idêntico ao aprovado.
+- 4 pendências não graves registradas; KPI congelado e sem diff.

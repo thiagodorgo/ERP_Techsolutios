@@ -9,8 +9,18 @@ services:
       POSTGRES_DB: erp_techsolutions
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      # B-SAN3-05 (item 9) — papel de RUNTIME da `api`, criado na 1ª subida do volume por
+      # scripts/db-runtime-role.sh, NO banco da aplicação: LOGIN NOSUPERUSER NOBYPASSRLS, só DML + USAGE, e
+      # DEFAULT PRIVILEGES do migrador (`postgres`) para as tabelas que o `migrate` cria depois. Placeholder de
+      # VALIDAÇÃO local-prod (mesma classe dos placeholders da `api`) — não é credencial de ambiente nenhum.
+      # Volume já iniciado SEM o papel ⇒ `docker compose -f docker-compose.prod.yml down -v` (o initdb.d só
+      # roda em volume vazio).
+      DB_RUNTIME_ROLE: erp_runtime
+      DB_RUNTIME_PASSWORD: local-prod-validation-db-runtime-not-a-secret
+      DB_MIGRATOR_ROLE: postgres
     volumes:
       - erp_prod_pg:/var/lib/postgresql/data
+      - ./scripts/db-runtime-role.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d erp_techsolutions"]
       interval: 10s
@@ -54,7 +64,11 @@ services:
       # e a auditoria desse agregado) vivia na RAM e sumia a cada restart, num arquivo cujo NODE_ENV é
       # `production`. O gate G1 do env.ts agora reprova o boot nessa configuração.
       CORE_SAAS_PERSISTENCE: prisma
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/erp_techsolutions?schema=public
+      # B-SAN3-05 (item 9) — a `api` NÃO fala ao banco como `postgres` (superusuário ignora FORCE ROW LEVEL
+      # SECURITY): conecta como o papel de runtime criado no serviço `postgres`. NODE_ENV=production ⇒ a trava
+      # de boot (DATABASE_RUNTIME_ROLE_GUARD=enforce) recusa subir se este papel escapar de RLS. O `migrate`
+      # continua como `postgres` (dono das tabelas). Placeholder rotulado, como os de baixo.
+      DATABASE_URL: postgresql://erp_runtime:local-prod-validation-db-runtime-not-a-secret@postgres:5432/erp_techsolutions?schema=public
       REDIS_URL: redis://redis:6379
       # B-O6R-05 (Ω6R-DIN-006) — sem esta flag o worker in-process NUNCA subia: diária de pátio, reconciliação
       # de custódia e notificação legal não eram materializadas. O gate G3 agora a exige em produção.

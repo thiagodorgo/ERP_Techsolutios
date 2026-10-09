@@ -38,6 +38,58 @@ export async function withTenantRls<T>(
   });
 }
 
+// B-SAN3-05 (item 10) — leitura/escrita de PLATAFORMA sobre tabela FORCE ROW LEVEL SECURITY: N organizações
+// rodam N voltas numa ÚNICA transação, e a primeira instrução de cada volta troca o GUC para a organização
+// da volta. Sem isso, sob papel NOSUPERUSER NOBYPASSRLS a política casa `tenant_id` com NULL e a leitura
+// devolve zero linhas, com ec=0. O resultado é a concatenação das voltas, na ordem de `tenantIds`.
+const TENANT_SWEEP_TX_TIMEOUT_MS = 60_000;
+
+export async function forEachTenantRls<T>(
+  client: PrismaClient,
+  tenantIds: readonly string[],
+  work: (tx: Prisma.TransactionClient, tenantId: string) => Promise<readonly T[]>,
+): Promise<T[]> {
+  if (tenantIds.length === 0) {
+    return [];
+  }
+
+  return client.$transaction(
+    async (tx) => {
+      const collected: T[] = [];
+
+      for (const tenantId of tenantIds) {
+        await setTenantRlsContext(tx, tenantId);
+        collected.push(...(await work(tx, tenantId)));
+      }
+
+      return collected;
+    },
+    { timeout: TENANT_SWEEP_TX_TIMEOUT_MS },
+  );
+}
+
+// CANÁRIO DE CONTEXTO: numa volta de LEITURA em que o GUC não foi trocado, a política casa com o valor
+// obsoleto e devolve as linhas da organização ANTERIOR em silêncio. Conferir o `tenantId` de cada linha
+// contra o da volta é o que torna a leitura tão fail-closed quanto a escrita (que a política já recusa).
+export class TenantRowsLeakError extends Error {
+  readonly code = "rows_from_another_tenant";
+
+  constructor(readonly table: string) {
+    super(`rows_from_another_tenant: ${table} devolveu linha de outra organização sob o contexto da volta corrente.`);
+    this.name = "TenantRowsLeakError";
+  }
+}
+
+export function assertRowsBelongToTenant(
+  rows: readonly { readonly tenantId: string }[],
+  tenantId: string,
+  table: string,
+): void {
+  if (rows.some((row) => row.tenantId !== tenantId)) {
+    throw new TenantRowsLeakError(table);
+  }
+}
+
 // B-O6R-01 (§3.7 do plano) — o setter do GUC de identidade NÃO SABE MENTIR NEM SOBRE O PAR:
 // aceita SOMENTE `AuthenticatedActor` (JWT — auth.types.ts), nunca objeto literal, nunca
 // RequestActor/LegacyHeaderActor/request.tenantContext. O que ele faz, nesta ordem, dentro da

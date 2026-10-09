@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { assertRowsBelongToTenant, forEachTenantRls, withTenantRls } from "../../database/rls.js";
 import type {
   CloudUsageDailyAggregate,
   CloudUsageEvent,
@@ -163,14 +163,25 @@ export class RlsPrismaCloudUsageRepository implements CloudUsageRepository {
     );
   }
 
-  listEvents(filters: CloudUsageFilters): Promise<readonly CloudUsageEvent[]> {
+  async listEvents(filters: CloudUsageFilters): Promise<readonly CloudUsageEvent[]> {
     if (filters.tenantId) {
       return withTenantRls(this.prismaClient, filters.tenantId, (tx) =>
         new PrismaCloudUsageRepository(tx).listEvents(filters),
       );
     }
 
-    return new PrismaCloudUsageRepository(this.prismaClient).listEvents(filters);
+    // B-SAN3-05 (item 10) — leitura de plataforma: uma volta por organização, sob o contexto dela. O
+    // `tenantId` também vai no filtro: superusuário (dev/CI) ignora a política e leria todas as organizações
+    // em cada volta.
+    const tenantIds = await listTenantIds(this.prismaClient);
+    const events = await forEachTenantRls(this.prismaClient, tenantIds, async (tx, tenantId) => {
+      const rows = await new PrismaCloudUsageRepository(tx).listEvents({ ...filters, tenantId });
+      assertRowsBelongToTenant(rows, tenantId, "cloud_usage_events");
+
+      return rows;
+    });
+
+    return events.sort((left, right) => left.occurredAt.getTime() - right.occurredAt.getTime());
   }
 
   upsertDailyAggregate(input: {
@@ -187,15 +198,30 @@ export class RlsPrismaCloudUsageRepository implements CloudUsageRepository {
     );
   }
 
-  listDailyAggregates(filters: CloudUsageFilters): Promise<readonly CloudUsageDailyAggregate[]> {
+  async listDailyAggregates(filters: CloudUsageFilters): Promise<readonly CloudUsageDailyAggregate[]> {
     if (filters.tenantId) {
       return withTenantRls(this.prismaClient, filters.tenantId, (tx) =>
         new PrismaCloudUsageRepository(tx).listDailyAggregates(filters),
       );
     }
 
-    return new PrismaCloudUsageRepository(this.prismaClient).listDailyAggregates(filters);
+    const tenantIds = await listTenantIds(this.prismaClient);
+    const aggregates = await forEachTenantRls(this.prismaClient, tenantIds, async (tx, tenantId) => {
+      const rows = await new PrismaCloudUsageRepository(tx).listDailyAggregates({ ...filters, tenantId });
+      assertRowsBelongToTenant(rows, tenantId, "cloud_usage_daily_aggregates");
+
+      return rows;
+    });
+
+    return aggregates.sort((left, right) => (left.date < right.date ? -1 : left.date > right.date ? 1 : 0));
   }
+}
+
+// `tenants` não tem RLS: listar as organizações é a leitura de plataforma legítima que abre o laço.
+async function listTenantIds(client: PrismaClient): Promise<string[]> {
+  const tenants = await client.tenant.findMany({ select: { id: true }, orderBy: { created_at: "asc" } });
+
+  return tenants.map((tenant) => tenant.id);
 }
 
 export async function createPrismaCloudUsageRepository(): Promise<RlsPrismaCloudUsageRepository> {

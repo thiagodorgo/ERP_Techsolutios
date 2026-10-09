@@ -4880,6 +4880,15 @@ classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 8
 - **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
   do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
 
+## B-SAN3-05 — papel de runtime sem bypass — PR #405 EM RASCUNHO (2026-10-04)
+
+- **Identidade:** `dev-b-san3-05-sucessor-2`, GPT-5.6 Sol por substituição expressa do dono; mandato EOL-neutro `552d24b6ef32b69d0f61979c78285355`.
+- **Entrega:** papel de runtime separado do migrador; procedimento fail-closed; trava no boot de produção; leituras e escritas de plataforma preservadas sob `NOSUPERUSER NOBYPASSRLS`; gerador e ratchet semântico; documentação e seis pendências com dono.
+- **Validação:** A1–A24 vermelhos por mutação; lotes 134/134, 42/42, 19/19 e 88/88; suíte integral 3124 testes, 2 skips e um timeout de carga contado em dois níveis, re-medido em série 8/8; build/check/lint verdes. PostgreSQL 16.14 descartável próprio, 115 tabelas / 106 FORCE, sem resíduos `s305_%`.
+- **KPI:** backend 3122/3124 por execução real com re-medição declarada; frontend 1214/1214 e Flutter 864/864 carregados; blocos 170 → 171; `mvp_*` intocados. `pr=405`; `merge_commit`/`approved_head` nulos na autoria.
+- **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.
+- **Fechamento local:** PR #405 em rascunho; cluster descartável e temporários `s05-*` removidos; 0 worker/teste vivo. O worktree é removido após o último push.
+- **Correção CI (2026-10-04):** T8d deixou de depender da regra `host replication` do `pg_hba`: cria/remove slot físico com REPLICATION e recebe 42501 após NOREPLICATION. Arquivo 8/8; backend final 291 arquivos, 3122/3124, 0 falhas, 2 skips.
 ## Atualização 2026-10-01 — B-SAN3-11: em execução (branch fix/dossie-versao-da-vistoria)
 
 **Bloco em branch**, não mergeado. Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
@@ -4980,3 +4989,26 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
   22:08 BRT depois do limite de uso do Codex.
 - **Estacionados:** #388, #389, #393. **Traccar:** plano só depois do merge do #405 (`D-TRACCAR-PLANO-APOS-405`).
 - **Disco:** ~12 GB livres; limpeza profunda antes da trilha do Traccar (ressalvas dos porteiros).
+## B-SAN3-05 — ciclo 3 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo3-b-san3-05`, Codex GPT-5.6 Sol, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** A2/A3 — via `view` transitiva para `SELECT/INSERT/UPDATE/DELETE`, dono `rolsuper`/`rolbypassrls` em qualquer nó e matview como escape; T8e/T8f/T14d; documentação operacional.
+- **Prova:** guarda DB 3 × 12/12; regressões 12/12 + 35/35 + 13/13 + 5/5; mutações M-D2a…e × trava/script = 10/10 vermelhas pelo comportamento; B7 mínima sem sentinela; suíte integral válida 3133/3135, 0 falhas, 2 skips; build/check/lint verdes.
+- **Terreno:** `dev05c3-pg`, `dev05c3-node`, `dev05c3-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo.
+- **Registro:** nove pendências novas e dois sub-itens; `P-SAN3-05-REGRA-EM-TABELA` permanece fora do ciclo 3, dona `B-SAN3-10`; KPI congelado e sem diff.
+- **Próximo:** head final empurrado → check-runs concluídos/verdes → inspetor e junta 3; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — ciclo 4 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo4-b-san3-05`, Claude Opus 5.5, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** `D-405-PROIBIR-VIEWS` — a trava `RUNTIME_ROLE_GUARD_SQL` e o MODO 6 recusam se existir qualquer view/matview cuja árvore alcance tabela FORCE, sem olhar dono nem privilégio (sai o `view_escape`); `docs/deployment.md` com a regra operacional; T8c/T8d/T8e/T8f/T14d reescritos (casos COL/COM/MAT/CTL); ratchet do arquivo de guarda 82 → 72.
+- **Prova:** vermelho-controle no objeto (T8d, T8e·COL, T8f, T14d·COL); guard-db 3 × 12/12 e sem psql fail-closed; bootstrap 12 · acessos 35 · leituras 13 · catalog-guard 5; mutações M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso; B7 mínima sem sentinela; suíte integral 3135 · 3133 pass · 0 fail · 2 skips; check/lint/build verdes.
+- **Terreno:** `dev05c4-pg`, `dev05c4-node`, `dev05c4-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo. KPI congelado e sem diff.
+- **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`. **Próximo:** check-runs do head concluídos/verdes → inspetor e junta 4; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — junta 4 APROVADA (2026-10-09)
+
+- **Veredito:** APROVADO 3 × 0 (C1 `jurado-san305-c4-catalogo-de-views`, C2 `jurado-san305-c4-credencial-arnes-escopo`, C3 `jurado-san305-c4-boot-e-suite`; Opus 5.5 por substituição declarada). **approved_head:** `84831ad9`. Ata: `agent-orchestration/omega/juntas/J-B-SAN3-05.md` § Ciclo 4.
+- **Depois do voto:** `main` `a9bbde38` integrada por merge (só registro em conflito, união main→ramo; índice regenerado); delta de produto contra a `main` idêntico ao aprovado (patch-id).
+- **Pendências novas (não graves):** `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` (B-SAN3-10), `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (B-SAN3-05T), `P-SAN3-05-T15-TETO-DE-RELOGIO` (B-ARNES-2), `P-SAN3-05-MENSAGEM-DA-RECUSA` (a nomear).
+- **Próximo:** CI do head novo → `gh pr ready 405` → squash merge com `--match-head-commit` → porteiro → trilha do Traccar (plano).
