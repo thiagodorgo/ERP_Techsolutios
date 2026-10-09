@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
+import ts from "typescript";
 
 import { PlatformOverviewView } from "../src/modules/platform/pages/PlatformOverviewPage";
 import { PlatformTenantsView } from "../src/modules/platform/pages/PlatformTenantsPage";
@@ -52,28 +53,122 @@ function allFiles(directory: string): string[] {
   });
 }
 
-const WRITE_FUNCTIONS = [
-  "importCloudCostsFromApi",
-  "runCloudAllocationFromApi",
-  "calculateCloudChargesFromApi",
-  "createCloudChargeRuleFromApi",
-  "updateCloudChargeRuleFromApi",
-] as const;
+// A3 da revisão do PR 411 — a trava da C-2 enuncia a PROPRIEDADE, não uma lista de nomes. "Função de escrita" é
+// derivada do código: toda declaração de topo de `cloud-billing.{adapter,service}.ts` que monta requisição com `method`
+// diferente do literal "GET" (método não literal conta como escrita) e, por fecho, toda declaração desses dois arquivos
+// que referencia uma delas — os aliases e wrappers do serviço entram qualquer que seja o nome. Fora desses dois
+// arquivos, o verificador de tipos do TypeScript resolve cada identificador (atravessa import renomeado, reexportação,
+// propriedade de namespace e chave literal) e acusa: (i) referência a função de escrita; (ii) acesso ao módulo inteiro
+// que exporta escrita — `import * as`, `export *`, `import()` —, porque o namespace carrega a escrita sob qualquer
+// nome; (iii) `import()` com módulo não resolvível.
+const WRITE_HOME = new Set([
+  "modules/platform/cloud-billing/cloud-billing.adapter.ts",
+  "modules/platform/cloud-billing/cloud-billing.service.ts",
+]);
 
-function forbiddenWriteReferences(sourceRoot: string): string[] {
-  const allowed = new Set([
-    "modules/platform/cloud-billing/cloud-billing.adapter.ts",
-    "modules/platform/cloud-billing/cloud-billing.service.ts",
-  ]);
-  return allFiles(sourceRoot)
-    .filter((file) => /\.(ts|tsx)$/.test(file))
-    .filter((file) => {
-      const relative = path.relative(sourceRoot, file).replace(/\\/g, "/");
-      if (allowed.has(relative)) return false;
-      const source = readFileSync(file, "utf8");
-      return WRITE_FUNCTIONS.some((name) => source.includes(name));
-    })
-    .map((file) => path.relative(sourceRoot, file).replace(/\\/g, "/"));
+// Opções do `frontend/tsconfig.json`; sem tipos ambientes de `@types/*` (não participam da resolução de símbolos do
+// `src` e só custariam tempo).
+const COMPILER_OPTIONS: ts.CompilerOptions = {
+  ...ts.parseJsonConfigFileContent(ts.readConfigFile(path.join(FRONTEND, "tsconfig.json"), ts.sys.readFile).config, ts.sys, FRONTEND).options,
+  types: [],
+};
+
+type WriteSurface = { readonly writes: readonly string[]; readonly violations: readonly string[] };
+
+function containsNode(root: ts.Node, predicate: (node: ts.Node) => boolean): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) return;
+    if (predicate(node)) found = true;
+    else ts.forEachChild(node, visit);
+  };
+  visit(root);
+  return found;
+}
+
+function isReadMethod(initializer: ts.Expression): boolean {
+  return ts.isStringLiteralLike(initializer) && initializer.text.toUpperCase() === "GET";
+}
+
+function buildsWriteRequest(root: ts.Node): boolean {
+  return containsNode(root, (node) =>
+    (ts.isPropertyAssignment(node) && ts.isIdentifier(node.name) && node.name.text === "method" && !isReadMethod(node.initializer)) ||
+    (ts.isShorthandPropertyAssignment(node) && node.name.text === "method"));
+}
+
+function writeSurface(sourceRoot: string): WriteSurface {
+  const files = allFiles(sourceRoot).filter((file) => /\.(ts|tsx)$/.test(file));
+  const program = ts.createProgram(files, COMPILER_OPTIONS);
+  const checker = program.getTypeChecker();
+  const relative = (fileName: string) => path.relative(sourceRoot, path.resolve(fileName)).replace(/\\/g, "/");
+  const own = program.getSourceFiles().filter((source) => !relative(source.fileName).startsWith(".."));
+  const resolve = (symbol: ts.Symbol | undefined) =>
+    symbol && symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+
+  const declarations: { readonly symbol: ts.Symbol | undefined; readonly node: ts.Node; readonly label: string }[] = [];
+  for (const source of own.filter((file) => WRITE_HOME.has(relative(file.fileName)))) {
+    for (const statement of source.statements) {
+      if (ts.isFunctionDeclaration(statement) && statement.name) {
+        declarations.push({ symbol: checker.getSymbolAtLocation(statement.name), node: statement, label: statement.name.text });
+      }
+      if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (ts.isIdentifier(declaration.name) && declaration.initializer) {
+            declarations.push({ symbol: checker.getSymbolAtLocation(declaration.name), node: declaration.initializer, label: declaration.name.text });
+          }
+        }
+      }
+    }
+  }
+  const writes = new Set(declarations.filter((item) => buildsWriteRequest(item.node)).map((item) => item.symbol));
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const item of declarations) {
+      if (writes.has(item.symbol)) continue;
+      if (containsNode(item.node, (node) => ts.isIdentifier(node) && writes.has(resolve(checker.getSymbolAtLocation(node))))) {
+        writes.add(item.symbol);
+        grew = true;
+      }
+    }
+  }
+
+  const moduleSymbol = (specifier: string, from: ts.SourceFile) => {
+    const resolved = ts.resolveModuleName(specifier, from.fileName, COMPILER_OPTIONS, ts.sys).resolvedModule;
+    const target = resolved ? program.getSourceFile(resolved.resolvedFileName) : undefined;
+    return target ? checker.getSymbolAtLocation(target) : undefined;
+  };
+  const exportsWrite = (symbol: ts.Symbol | undefined) =>
+    !!symbol && checker.getExportsOfModule(symbol).some((exported) => writes.has(resolve(exported)));
+
+  const violations: string[] = [];
+  for (const source of own.filter((file) => !WRITE_HOME.has(relative(file.fileName)))) {
+    const at = (node: ts.Node) => `${relative(source.fileName)}:${source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1}`;
+    const visit = (node: ts.Node): void => {
+      const literalKey = ts.isStringLiteralLike(node) && ts.isElementAccessExpression(node.parent) && node.parent.argumentExpression === node;
+      if ((ts.isIdentifier(node) || literalKey) && writes.has(resolve(checker.getSymbolAtLocation(node)))) {
+        violations.push(`${at(node)} referencia escrita: ${node.text}`);
+      }
+      if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.importClause?.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings) && exportsWrite(moduleSymbol(node.moduleSpecifier.text, source))) {
+        violations.push(`${at(node)} import * de módulo com escrita`);
+      }
+      if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier) && (!node.exportClause || ts.isNamespaceExport(node.exportClause)) && exportsWrite(moduleSymbol(node.moduleSpecifier.text, source))) {
+        violations.push(`${at(node)} export * de módulo com escrita`);
+      }
+      if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        const [specifier] = node.arguments;
+        if (!specifier || !ts.isStringLiteralLike(specifier)) violations.push(`${at(node)} import() não resolvível`);
+        else if (exportsWrite(moduleSymbol(specifier.text, source))) violations.push(`${at(node)} import() de módulo com escrita`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+  const writeLabels = declarations.filter((item) => writes.has(item.symbol)).map((item) => item.label);
+  return { writes: writeLabels, violations };
+}
+
+function violatingFiles(surface: WriteSurface): string[] {
+  return [...new Set(surface.violations.map((violation) => violation.split(":")[0]))].sort();
 }
 
 test("T33 censo de fabricação retorna zero no head", () => {
@@ -163,12 +258,56 @@ test("T43 slug do frontend permanece amarrado ao bootstrap e a mutação diverge
   assert.notEqual(extract(readFileSync(mutatedPath, "utf8")), PLATFORM_SYSTEM_ORG_SLUG);
 });
 
-test("T44 escrita monetária fica isolada do restante do frontend e mutação é detectada", () => {
+test("T44 escrita monetária fica isolada do restante do frontend, qualquer que seja o nome, e mutação é detectada", () => {
   const sourceRoot = path.join(FRONTEND, "src");
-  assert.deepEqual(forbiddenWriteReferences(sourceRoot), []);
+  const head = writeSurface(sourceRoot);
+  assert.deepEqual(head.violations, []);
+  // Controle de vacuidade (piso, não fonte da trava): o conjunto DERIVADO contém as 5 escritas do adapter e os 5
+  // nomes do serviço, e não contém leitura.
+  for (const name of ["importCloudCostsFromApi", "runCloudAllocationFromApi", "calculateCloudChargesFromApi", "createCloudChargeRuleFromApi", "updateCloudChargeRuleFromApi", "importCloudCosts", "runCloudAllocation", "calculateCloudCharges", "createCloudChargeRule", "updateCloudChargeRule"]) {
+    assert.ok(head.writes.includes(name), `escrita não derivada: ${name}`);
+  }
+  for (const name of ["getCloudBilling", "getCloudCostSummary", "periodForMonth", "getCloudChargeSummaryFromApi", "listCloudChargeRules"]) {
+    assert.equal(head.writes.includes(name), false, `leitura tomada por escrita: ${name}`);
+  }
+
   const temporary = mkdtempSync(path.join(tmpdir(), "san3-06b-write-"));
-  cpSync(sourceRoot, path.join(temporary, "src"), { recursive: true });
-  const page = path.join(temporary, "src/modules/platform/pages/PlatformOverviewPage.tsx");
-  writeFileSync(page, `import { calculateCloudChargesFromApi } from "../cloud-billing/cloud-billing.adapter";\n${readFileSync(page, "utf8")}`);
-  assert.deepEqual(forbiddenWriteReferences(path.join(temporary, "src")), ["modules/platform/pages/PlatformOverviewPage.tsx"]);
+  try {
+    const root = path.join(temporary, "src");
+    cpSync(sourceRoot, root, { recursive: true });
+    const platform = path.join(root, "modules/platform");
+    const prepend = (file: string, text: string) => writeFileSync(file, `${text}${readFileSync(file, "utf8")}`);
+    // nome do adapter (a mutação original)
+    prepend(path.join(platform, "pages/PlatformOverviewPage.tsx"), 'import { calculateCloudChargesFromApi } from "../cloud-billing/cloud-billing.adapter";\nvoid calculateCloudChargesFromApi;\n');
+    // R1 do revisor: a página importa e expõe o alias de escrita do serviço
+    appendFileSync(path.join(platform, "cloud-billing/pages/PlatformCloudBillingPage.tsx"), '\nimport { runCloudAllocation } from "../cloud-billing.service";\nexport const executarRateio = runCloudAllocation;\n');
+    // import renomeado
+    appendFileSync(path.join(platform, "pages/PlatformTenantsPage.tsx"), '\nimport { importCloudCosts as carregar } from "../cloud-billing/cloud-billing.service";\nexport const sonda = carregar;\n');
+    // namespace do serviço
+    appendFileSync(path.join(platform, "pages/PlatformHealthPage.tsx"), '\nimport * as cobranca from "../cloud-billing/cloud-billing.service";\nexport const sondaNamespace = cobranca;\n');
+    // reexportação com outro nome e consumidor dela
+    writeFileSync(path.join(platform, "reexporta.ts"), 'export { updateCloudChargeRule as salvarRegra } from "./cloud-billing/cloud-billing.service";\n');
+    writeFileSync(path.join(platform, "consome.ts"), 'import { salvarRegra } from "./reexporta";\nexport const usa = salvarRegra;\n');
+    // import dinâmico, por propriedade e por chave literal
+    writeFileSync(path.join(platform, "dinamico.ts"), 'export const tardio = () => import("./cloud-billing/cloud-billing.service").then((m) => m.createCloudChargeRule);\nexport const porChave = async () => (await import("./cloud-billing/cloud-billing.service"))["calculateCloudCharges"];\n');
+    // reexportação do módulo inteiro
+    writeFileSync(path.join(platform, "tudo.ts"), 'export * from "./cloud-billing/cloud-billing.service";\n');
+    // controle negativo: consumidor só de leitura não é acusado
+    writeFileSync(path.join(platform, "somente-leitura.ts"), 'import { getCloudBilling, periodForMonth } from "./cloud-billing/cloud-billing.service";\nexport const leitura = () => getCloudBilling(periodForMonth("2026-09"));\n');
+
+    const mutated = writeSurface(root);
+    assert.deepEqual(violatingFiles(mutated), [
+      "modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx",
+      "modules/platform/consome.ts",
+      "modules/platform/dinamico.ts",
+      "modules/platform/pages/PlatformHealthPage.tsx",
+      "modules/platform/pages/PlatformOverviewPage.tsx",
+      "modules/platform/pages/PlatformTenantsPage.tsx",
+      "modules/platform/reexporta.ts",
+      "modules/platform/tudo.ts",
+    ]);
+    assert.ok(mutated.violations.some((violation) => /PlatformCloudBillingPage\.tsx:\d+ referencia escrita: runCloudAllocation$/.test(violation)));
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
 });
