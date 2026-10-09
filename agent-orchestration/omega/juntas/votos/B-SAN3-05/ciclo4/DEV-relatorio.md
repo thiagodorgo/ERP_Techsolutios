@@ -107,7 +107,57 @@ arquivo sem CR, prova `substituida=sim`) → `bash -n` → `npx tsc --noEmit` �
 
 ## Item 4 — Bateria do C4.5 (D0–D10)
 
-EM APURAÇÃO
+Linha de base do planejador no objeto `37c83064`: guard-db 12 · bootstrap 12 · acessos 35 · leituras 13 · catalog-guard 5.
+Contêiner conferido no head `d66eb178` antes da bateria: md5 dos 5 arquivos de código/teste/doc tocados = blob do head (5/5 IGUAL).
+
+### D1–D2 — check e lint (18:12Z)
+
+- **Comando:** `dk exec dev05c4-node timeout 600 npm run check` · `… npm run lint` (`lint` = `npm run check` = `tsc -p tsconfig.json --noEmit`).
+- **Saída:** `npm run check ec=0` · `npm run lint ec=0`.
+- **Resultado:** verde.
+
+### D3 — guard-db 3× + controle sem psql (18:13Z)
+
+- **Comando:** 3 × `timeout 900 node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts` no mesmo contêiner; antes e
+  depois de cada rodada, resíduo (`pg_roles`/`pg_class`/`pg_database` `LIKE 's305%'`, views/matviews fora do sistema, slots);
+  4ª execução com `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin` (`command -v psql` → ausente).
+- **Saída:** r1/r2/r3 = `# tests 12 # pass 12 # fail 0 # skipped 0` (denominador idêntico); `XX000|23505|40P01` no TAP = 0, 0, 0;
+  resíduo antes e depois de cada rodada = papéis 0 · relações 0 · bancos 0 · views 0 · slots 0. Sem psql: ec=1,
+  `# tests 12 # pass 8 # fail 4` — T14a/b ("psql: ausente — pré-requisito da suíte -db"), T14c, T14d ("caso COL: status deveria ser
+  3 … psql: command not found") e o pai; resíduo 0.
+- **Resultado:** verde; sem psql falha fechado nomeando o pré-requisito.
+
+### D4 — regressões dirigidas (18:14Z)
+
+- **Comando:** 4 execuções separadas de `node --test --import tsx` com `DATABASE_URL` do pg descartável.
+- **Saída:** `san3-05-runtime-role-bootstrap` **12/12** · `san3-05-acessos-de-plataforma-guard` **35/35** ·
+  `san3-05-leituras-de-plataforma-db` **13/13** · `db-catalog-write-guard` **5/5** — todos fail 0, skipped 0; resíduo 0.
+- **Resultado:** verde; N = linha de base.
+
+### D5 — mutações
+
+- Ver item 3: 6/6 vermelhas pelo caso indicado, restauro conferido.
+
+### D6 — B7 mínima (18:14Z)
+
+- **Comando:** `bash b7.sh` (scratchpad da sessão): `ALTER SYSTEM SET log_statement='all'` + reload; script do head (do contêiner, =
+  blob) com senha-sentinela só por ambiente (`-e DB_RUNTIME_PASSWORD` sem valor em argv) para (1) papel novo e (2) o caso COL (tabela
+  FORCE, view de dono `postgres`, papel `NOLOGIN NOINHERIT` com `GRANT SELECT (tenant_id, value)` só na view; âncora tabela=f,
+  coluna=t); leitor de controle `SELECT 'dev05c4-b7-control-…'`; `docker logs --since` do pg; busca por descritor (`grep -F -f`).
+- **Saída:** (1) ec=0, linha final `s305_b7_ok_…|f|f|f|f|0|0|115`, `rolpassword LIKE 'SCRAM-SHA-256$%'` = t; (2) ec=3, `MODO 6` 1×,
+  `view:s305_b7_w_…` nomeada, `rolpassword` do papel continua nulo (nada persistiu). Sentinela 1 e 2 = **0** no `server.log` (252
+  linhas) e no stdout/stderr das duas execuções; controle no `server.log` = **1**; `SCRAM-SHA-256$` no log = 1 do `\password`
+  (`ALTER USER … PASSWORD 'SCRAM-SHA-256$<verificador>'`) + 1 da minha própria consulta de conferência. Limpeza: `log_statement=none`,
+  papéis/relações `s305_b7%` = 0.
+- **Resultado:** verde.
+
+### D8–D9 — modo, EOL, `diff --check`, catalog-guard
+
+- **Comando:** `git ls-files -s scripts/db-runtime-role.sh` · `git ls-files --eol …` · `git diff --check 7c63f920..HEAD` ·
+  `git diff -U0 7c63f920..HEAD -- tests/db-catalog-write-guard.test.ts`.
+- **Saída:** `100755 c0d51635…` · `i/lf w/lf attr/text eol=lf` · `diff --check ec=0` · o diff do catalog-guard é só a entrada
+  `san3-05-runtime-role-guard-db.test.ts` (`count: 82` → `72` e a `reason`), 2+/2−.
+- **Resultado:** verde.
 
 ## Teardown
 
