@@ -1702,3 +1702,464 @@ da errata 2, um nome de papel pode aparecer como valor de `error.sessionUser` e 
 errata 2 continua: `hostname`, `port`, `password`, nome do banco, `postgresql://`, `password` e nome de papel em URL/DSN
 ou em qualquer outro campo seguem proibidos; as três mutações seguem obrigatórias; `src/database/runtime-role.bootstrap.ts`
 e `src/server.ts` seguem PROIBIDOS.
+
+## Ciclo 3 — planejador-ciclo3-b-san3-05
+
+> **Papel:** `planejador-mestre` · **identidade nova:** `planejador-ciclo3-b-san3-05` (não achou, não desenvolveu, não
+> votou e não planejou nenhum ciclo anterior deste bloco). **Modelo que rodou: Claude Opus 5.5 (`claude-opus-5-5`) —
+> substituição declarada (§C7.6-bis):** o B-SAN3-05 não toca dinheiro, e o Fable está reservado a bloco de dinheiro por
+> decisão do dono (2026-10-08, `D-FABLE-ASTRA-SO-DINHEIRO`). **Medido no objeto** `fix/runtime-role-sem-bypass@b37b9af0`
+> (worktree `C:/Users/AMP/w-o05`). Escrito incrementalmente a partir de 2026-10-09 14:44Z; não commito (o orquestrador
+> versiona). **Decisões do dono já tomadas** (2026-10-09, *"aprovo os 9, comece agora"*, sobre
+> `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): escopo do ciclo 3 = **só o A2 (grave) + o A3** (sai
+> junto); C2-A1 e C3-c2-05 num PR **só de testes** depois do merge (revisor + CI); C3-c2-01 vira pendência com dono;
+> ajustes e notas viram pendências nomeadas; junta 3 = só defeito **grave** bloqueia (§C7 item 8(2)); dev = Codex
+> `gpt-5.6-sol` (identidade `dev-ciclo3-b-san3-05`).
+
+### C3.1 Vermelho-controle do A2 e do A3, medidos no objeto
+
+**Terreno (14:48–14:50Z).** Condutor próprio `setup.sh` (md5 `36f515c8…`), adaptado de `C:/Users/AMP/erp-terreno/receita-pg16.sh`
+(passos 1–4: rede Docker própria, `postgres:16` descartável, `git archive` com `core.autocrlf=false`, `npm ci` + `prisma
+generate` + `prisma migrate deploy` dentro). Diferenças declaradas: prefixo `pl05c3-` (`pl05c3-net`, `pl05c3-pg`,
+`pl05c3-node`), sem `trap EXIT` (os contêineres ficam de pé para as medições; teardown por nome no fim), senha do pg aleatória
+num arquivo `0600` do scratchpad, que entra nos contêineres só por `-e NOME`. Saída: portas publicadas `{}` nos dois; PostgreSQL
+16.14; `blobs=3745 byte_identicos=3745`; `md5sum -c` de 3745 arquivos no contêiner → 0 divergência; md5 blob = contêiner:
+`scripts/db-runtime-role.sh` `26c18e1b…`, `src/database/runtime-role.ts` `4f5c695e…`, `tests/san3-05-runtime-role-guard-db.test.ts`
+`76377dd0…` — **os mesmos md5 que a C1 do ciclo 2 mediu em `d00ca8ee`** (o produto não mudou até `b37b9af0`, só registro);
+node v20.20.2 · psql 16.14 · `setsid` presente; `npm ci` ec=0 (326 pacotes); `migrate deploy` ec=0 (107 migrations); catálogo
+`public` = 115 tabelas · 106 FORCE · **0 views · 0 matviews**. `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo.
+
+**A2 — arnês `d2.sh`** (md5 `2bbd009e…`; `lib.sh` `6ee5aba9…`; `probe.ts` `9a6e7252…`, que chama a trava REAL
+`probeRuntimeRolePosture` como o papel; montagem `setup-d2.sql` `9e2e6e0d…`). Tabela `public.pl5_t` ENABLE+FORCE RLS com a
+política das migrações (`tenant_id = current_setting('app.current_tenant_id', true)`, 208 ocorrências em `prisma/migrations`) e
+3 linhas (A, B, B). Donos: `pl5_common` (NOLOGIN NOSUPERUSER NOBYPASSRLS), `pl5_bypass` (NOLOGIN **NOSUPERUSER BYPASSRLS**),
+`postgres` (superusuário). **Tudo criado antes de qualquer execução do script; leitores com `SELECT` só na raiz.** Comando:
+`timeout 900 bash d2.sh` (14:54:11–14:54:31Z), ec=0. Saída (resumida, linha a linha):
+
+| caso | cadeia | `SELECT` direto em W | o papel lê (sem GUC · GUC=B · GUC=A) | trava REAL do objeto | script do objeto (papel pré-criado) |
+|---|---|---|---|---|---|
+| **S** (o A2 da C1) | `pl5_vs`(comum) → `pl5_ws`(**postgres**) → T | `false` | **3/A,B · 3/A,B · 3/A,B** | `escapes=[]` | `ec=0`, nenhum MODO, final `…\|0\|0\|116` |
+| **B** (alvo da M-D2b) | `pl5_vb`(comum) → `pl5_wb`(**BYPASSRLS**) → T | `false` | **3/A,B · 3/A,B · 3/A,B** | `escapes=[]` | `ec=0`, nenhum MODO |
+| **C** (controle) | `pl5_vc`(comum) → `pl5_wc`(comum) → T | `false` | 0/- · 2/B · 1/A (o RLS morde) | `escapes=[]` | `ec=0` |
+| **M** (matview intermediária) | `pl5_vm`(comum) → `pl5_ms` matview(**postgres**) → T | `false` | **3/A,B · 3/A,B · 3/A,B** | `escapes=[]` | `ec=0` |
+| **K** (matview de dono comum) | `pl5_vk`(comum) → `pl5_mk` matview(comum, `REFRESH` sob GUC=A) → T | `false` | **1/A · 1/A · 1/A** (sob o contexto B, lê a linha de A) | `escapes=[]` | `ec=0` |
+
+Controle do RLS no mesmo banco: `pl5_rc` direto em T → sem GUC 0, GUC=A 1. Senha descartável do script no stdout/stderr = 0
+em todas as execuções. **Leitura:** S e B reproduzem o A2 (a trava e o MODO 6 conferem o dono da view **raiz**, que é comum, e
+não o da W que lê a tabela); **B prova que o termo `rolbypassrls` precisa de caso próprio** (sem ele a M-D2b não tem quem a pegue
+— hoje nenhum teste do arquivo monta view de dono `BYPASSRLS`); M confirma que a matview intermediária é a mesma classe; K é
+outra classe (conteúdo materializado, dono que **não** escapa) — tratada no C3.2.
+
+
+**Escrita pela via `view` — arnês `dw.sh`** (md5 `5f78167f…`, 14:55:37–14:55:42Z, ec=0). Papel `pl5_ri` **sem `SELECT`**
+(`has_table_privilege(…,'SELECT')=f`), com `INSERT` e depois `UPDATE` em `pl5_wi` (view de dono `postgres` sobre T) e `USAGE` na
+sequência. Saída: `INSERT` sob GUC=A de uma linha da organização **B** pela view → aceito, **1** linha gravada (lida como
+postgres); controle — o mesmo `INSERT` direto em T por papel com `INSERT` em T → `ERROR: new row violates row-level security
+policy for table "pl5_t"`; `UPDATE public.pl5_wi SET v = 'tocado'` (sem `WHERE`, sem ler coluna) sob GUC=A → linhas tocadas
+**A=1, B=3** (as de B inclusive); `UPDATE … SET v = v` → `permission denied for view` (ler coluna exige `SELECT`); trava REAL
+para `pl5_ri` → `escapes=[]`; `has_table_privilege('pl5_ri','public.pl5_wi','SELECT,INSERT,UPDATE,DELETE')` = `t` (a forma de
+lista devolve verdadeiro se **qualquer** dos privilégios existir). **Leitura:** a via `view` hoje só olha `SELECT`; quem tem
+só DML numa view de dono que escapa **grava e altera dado de outra organização** e a trava não vê — mesma classe do A2
+(o dono da view decide o RLS da tabela de baixo), outra dimensão (o privilégio). Tratado no C3.2.
+
+**Classe vizinha, medida e NÃO incluída — regra `INSTEAD` em tabela comum — arnês `dr.sh`** (md5 `9304441b…`, 14:56:55Z, ec=0).
+`pl5_r` (relkind `r`, dono `postgres`) com `CREATE RULE … ON INSERT TO pl5_r DO INSTEAD INSERT INTO pl5_t …`; papel `pl5_rc` com
+`INSERT` em `pl5_r` e `USAGE` na sequência: `INSERT` sob GUC=A de linha da organização B → aceito, **1** linha gravada em T; trava
+REAL → `escapes=[]`. **Regras fora do `_RETURN` das views no catálogo migrado (107 migrations): 0.** É outra via (a ação da regra
+roda com o privilégio do dono da TABELA, não de uma view) — fora do A2 e fora do escopo que o dono fixou. Não entra no ciclo 3;
+vai para decisão do dono pelo orquestrador (C3.6, `P-SAN3-05-REGRA-EM-TABELA`), registrada antes do disparo do dev (§A2 —
+nada de consolidação silenciosa).
+
+**A3 — arnês `a3.sh`** (md5 `fd72fa14…`, 15:03:07–15:03:27Z, ec=0) e mecanismo `a3m.sh` (md5 `4460933b…`). O arquivo
+`tests/san3-05-runtime-role-guard-db.test.ts` do objeto, no contêiner, com `DATABASE_URL` do pg descartável
+(`timeout 500 node --test --import tsx …`): **base** `# tests 9 # pass 9 # fail 0 # skipped 0` (T5/T6/T9, T7/T8, T8b/T8c, T8c,
+T8d, T14a/b, T14c, T15). **M-D2c no script** — a junção recursiva do `view_walk` do `DO` (a que decide o MODO 6; âncora de 6
+espaços = 1 ocorrência, l.86) trocada por `AND false`, `bash -n` ok, só na cópia do contêiner: **`# tests 9 # pass 9 # fail 0`** —
+nenhum teste fica vermelho; restauro md5 = blob `26c18e1b…`. Mecanismo: papel novo `pl5_rt`, script do objeto com sucesso
+(`ec=0`), `pg_default_acl` para ele = 2; o migrador cria `pl5_vi` (interna) e `pl5_vo` (externa) sobre tabela FORCE e concede
+`SELECT` só na externa → `has_table_privilege('pl5_rt','public.pl5_vi','SELECT') = t`; o script de novo sai `ec=3` com
+`via(s): view:pl5_vi, view:pl5_vo` — **a view interna é pega pela lógica de UM nível**, porque o `ALTER DEFAULT PRIVILEGES` que o
+próprio script gravou deu `SELECT` nela. É o que o T14 faz (duas execuções com sucesso, l.788-803, antes de criar as views,
+l.811-821): o caso "dois níveis" do T14 não mede a transitividade. **Confirmado: o A3 da C1 reproduz no objeto `b37b9af0`.**
+Teardown do fixture `pl5_` no cluster descartável: papéis 0, relações 0, `pg_default_acl` 0.
+
+**Leitura conjunta para o C3.2.** O teste do A2 tem de nascer **antes** de qualquer execução do script para o papel julgado e
+**afirmar** `has_table_privilege(<papel>, <W>, 'SELECT') = false` antes de rodar o script (âncora de não-vacuidade): é o que fecha
+o A3 sem custo extra — sem isso, o caso é pego pelo nível único e a M-D2c continua verde.
+### C3.2 A propriedade, os trechos a mudar, o aceite e as mutações
+
+**(1) A propriedade — a da §2.1 do plano do dia, transcrita, e dois ajustes medidos.** Texto da §2.1: *"há escape pela via
+`view` se o papel tem SELECT numa view RAIZ cuja árvore de dependência (`view_walk`) alcança uma tabela FORCE RLS **e** QUALQUER
+view dessa árvore — raiz ou intermediária, `relkind` v ou m — tem dono com `rolsuper` ou `rolbypassrls`. A trava
+(`RUNTIME_ROLE_GUARD_SQL`) e o `DO` do script avaliam a mesma propriedade com o mesmo CTE (a igualdade dos dois textos é
+critério; o md5 não é). Falso positivo (view intermediária de superusuário cujo ramo não lê a FORCE) é aceito e declarado."*
+
+**A propriedade do ciclo 3 (vale esta redação):** *a sessão (`session_user` ou `current_user`; no script, o papel) escapa pela
+via `view` se tem **`SELECT`, `INSERT`, `UPDATE` ou `DELETE`** numa relação raiz R de `relkind` `v`/`m` cuja árvore de views
+(`view_walk`, por `pg_rewrite`/`pg_depend`, qualquer profundidade) alcança tabela `relkind` `r`/`p` com `relforcerowsecurity`,
+**e** algum nó da árvore de R — a própria R ou qualquer intermediária, `relkind` `v`/`m` — **(i)** tem dono `rolsuper` ou
+`rolbypassrls`, **ou (ii)** é matview (`relkind = 'm'`), de qualquer dono.* A linha devolvida pela trava tem `rolname` = o dono
+do nó que escapa (não o da raiz) e `objetos` = número de raízes distintas; o script nomeia a **raiz** (`view:<raiz>`), que é o
+objeto do `REVOKE`.
+
+| ajuste | o que a §2.1 não cobre | medição que mostrou (C3.1) | por que entra no ciclo 3 |
+|---|---|---|---|
+| **J-A** privilégio = `SELECT,INSERT,UPDATE,DELETE` | papel **sem** `SELECT` e com DML numa view de dono que escapa | `dw.sh`: `INSERT` grava linha de B sob o contexto A; `UPDATE` sem `WHERE` altera 3 linhas de B; trava `[]` | mesma via e mesma causa do A2 (o dono da view decide o RLS da tabela de baixo); vazamento/alteração entre organizações = grave; custo: a lista no `has_table_privilege` (a forma de lista devolve `t` se **qualquer** privilégio existir — medido) |
+| **J-B** matview na árvore = escape, de qualquer dono | matview de dono **comum** materializada sob o contexto de uma organização | `d2.sh` caso K: sob GUC=B o papel lê a linha de A pela `pl5_vk`; trava `[]` | a leitura de matview não avalia RLS (o conteúdo é o da hora do `REFRESH`); a §2.1 já põe `m` na árvore, mas só pelo dono; custo: um `OR lv.relkind = 'm'` |
+
+**Falsos positivos aceitos e declarados (sobre-aproximação fail-closed):** view intermediária de dono que escapa num ramo que não
+lê a tabela FORCE; view `security_invoker` (o RLS seria do invocador); matview vazia ou de dono comum nunca atualizada sob
+contexto. Hoje o catálogo tem 0 views e 0 matviews (C3.1): nenhum falso positivo existe no produto.
+
+**Fora da propriedade (registrado, não incluído):** regra `INSTEAD`/`ALSO` em **tabela** (C3.1, `dr.sh`) — outra via; funções
+`SECURITY DEFINER` chamadas por view — `B-SAN3-10`; ver C3.6.
+
+
+**(2) Os trechos exatos a mudar (especificação validada por execução numa cópia-candidata, só no contêiner — C3.2(4)).**
+
+*(a) `src/database/runtime-role.ts`, `RUNTIME_ROLE_GUARD_SQL`.* Acrescentar, depois do `view_force` (l.19-25), um terceiro CTE, e
+trocar o ramo `view` (l.42-49) para lê-lo. **Nenhuma outra linha da SQL muda** (as vias `atributo` e `posse` ficam byte a byte):
+
+```sql
+), view_escape AS (
+  SELECT DISTINCT vf.root_oid, lv.relowner AS owner_oid
+  FROM view_force vf
+  JOIN view_walk w ON w.root_oid = vf.root_oid
+  JOIN pg_class lv ON lv.oid = w.leaf_oid AND lv.relkind IN ('v', 'm')
+  JOIN pg_roles o ON o.oid = lv.relowner
+  WHERE o.rolsuper OR o.rolbypassrls OR lv.relkind = 'm'
+)
+…
+  SELECT 'view', o.rolname::text, o.rolsuper, o.rolbypassrls,
+         (o.rolname = session_user OR o.rolname = current_user), count(DISTINCT v.oid)::int
+  FROM view_escape ve
+  JOIN pg_class v ON v.oid = ve.root_oid
+  JOIN pg_roles o ON o.oid = ve.owner_oid
+  WHERE (has_table_privilege(session_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE') OR has_table_privilege(current_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE'))
+  GROUP BY o.rolname, o.rolsuper, o.rolbypassrls, (o.rolname = session_user OR o.rolname = current_user)
+```
+
+O comentário do arquivo (l.2-10) passa a dizer a propriedade nova (privilégio de leitura **ou escrita**; dono de **cada** view da
+árvore; matview de qualquer dono) e o md5 diagnóstico da l.10 é regravado (não é critério). Tipos e funções não mudam.
+
+*(b) `scripts/db-runtime-role.sh`.* O **mesmo** `view_escape` (mesmo texto, com a indentação do lugar) nos **dois** CTE do arquivo
+— o do `DO` (depois da l.93) e o da linha final (depois da l.138). O ramo `view` do `DO` (l.101-103) passa a
+`SELECT DISTINCT 'view', v.relname::text FROM view_escape ve JOIN pg_class v ON v.oid = ve.root_oid WHERE
+has_table_privilege(alvo.oid, v.oid, 'SELECT,INSERT,UPDATE,DELETE')` (nomeia a **raiz**, o objeto do `REVOKE`). A coluna `views`
+da linha final (l.142) passa a `(SELECT count(DISTINCT ve.root_oid) FROM view_escape ve WHERE has_table_privilege(r.oid,
+ve.root_oid, 'SELECT,INSERT,UPDATE,DELETE')) AS views`. O texto do `RAISE` (l.106) e o cabeçalho (l.3 e l.19) dizem o remédio
+real do MODO 6: `REVOKE ALL ON <view> FROM <papel>`, ou trocar o dono que escapa **em qualquer ponto da cadeia**, ou retirar a
+matview. Modo `100755` e `eol=lf` continuam. Nada mais muda no script (o B1 do ciclo 2 — `\password` sob `setsid` — fica intacto).
+
+*(c) `docs/deployment.md`* — a via `view` (l.95-96) e o **MODO 6** (l.126-127) passam a dizer a mesma propriedade (`SELECT` ou DML
+numa view/matview cuja árvore alcança tabela FORCE e em que **qualquer** view tem dono superusuário/`BYPASSRLS`, ou há matview);
+a l.132-134 continua verdadeira. Só esses trechos.
+
+*(d) `tests/san3-05-runtime-role-guard-db.test.ts`* — três subtestes novos e uma linha do T8c.
+
+- **T8e · "trava: cadeia de views com donos mistos, matview e escrita pela view (A2)"**, depois do T8d. Fixture própria (tokens
+  `s305_…`), toda escrita de catálogo em `catalog(admin, …)`: tabela ENABLE+FORCE RLS com a política das migrações (`USING` e
+  `WITH CHECK` por `current_setting('app.current_tenant_id', true)`, coluna de organização em texto, **sem** `serial` — evita a
+  dependência de `USAGE` em sequência medida no C3.1) e linhas A, B, B; dono comum (NOLOGIN NOSUPERUSER NOBYPASSRLS) e dono
+  `BYPASSRLS` (NOLOGIN **NOSUPERUSER** BYPASSRLS). Cinco casos, um leitor por caso, criado por `CREATE ROLE … LOGIN PASSWORD …
+  NOSUPERUSER NOBYPASSRLS NOREPLICATION NOINHERIT` e **não** por `createLogin` (o `GRANT … ON ALL TABLES` do `createLogin` alcança
+  views e daria `SELECT` direto em W — o A3): **S** V(comum)→W(postgres)→T, `SELECT` só em V · **B** V(comum)→W(BYPASSRLS)→T,
+  `SELECT` só em V · **K** V(comum)→matview(comum, `REFRESH` com `set_config('app.current_tenant_id','A', true)` na mesma
+  transação)→T, `SELECT` só em V · **I** W(postgres)→T, **só `INSERT`** em W · **C** (controle) V(comum)→W(comum)→T, `SELECT` só em V.
+  Asserções, nesta ordem: (i) **âncora** — `has_table_privilege(<leitor>, <W ou matview>, 'SELECT') = false` em S, B, K, C, e em W
+  para I; (ii) **efeito real** — sob o contexto A, S e B **leem** linha de B; sob o contexto B, K lê a linha de A; sob o contexto A,
+  I **grava** uma linha de B (contada pelo admin); C sob o contexto A lê só A; (iii) **trava** — `posture(S)` tem `view/postgres`
+  com `objetos === 1`; `posture(B)` tem `view/<dono BYPASSRLS>`; `posture(K)` tem `view/<dono comum>`; `posture(I)` tem
+  `view/postgres`; `posture(C).escapes.length === 0`. Teardown no `finally` (views e matview em ordem inversa, tabela, `dropRole`).
+- **T14d · "MODO 6: a mesma cadeia criada ANTES do script, sem SELECT direto em W (A2/A3)"**, depois do T14c. Fixture própria com
+  os mesmos cinco casos; o papel de cada caso é um papel de runtime **novo** (`CREATE ROLE … NOLOGIN NOSUPERUSER NOBYPASSRLS
+  NOINHERIT` + o privilégio só na raiz), que **nunca** passou pelo script. Por caso: (i) a mesma âncora `has_table_privilege(…,
+  'SELECT') = false` em W **imediatamente antes** do script; (ii) `runRoleScript(admin, connectionString, <papel>, secret())` **uma
+  vez**; S, B, K, I → `status === 3`, `stderr` casa `/MODO 6/` e contém `view:<raiz do caso>`; C → `status === 0` e a linha final
+  com `posse = 0` e `views = 0` (sem fixar a contagem de `dml`, que inclui a tabela da fixture).
+- **T8f · "a trava e o MODO 6 avaliam o mesmo CTE"** (estático): extrai de `RUNTIME_ROLE_GUARD_SQL` e de `readFileSync(ROLE_SCRIPT)`
+  cada bloco de `WITH RECURSIVE view_walk` até o `)` em linha própria que fecha o `view_escape` e precede um `SELECT` (regex
+  `/WITH RECURSIVE view_walk[\s\S]*?view_escape AS \([\s\S]*?\n\s*\)(?=\s*\n\s*SELECT)/g`); exige **1** bloco na trava e **2** no
+  script, e os três iguais depois de `replace(/\s+/g, "")`. É guarda de **deriva**, não substitui T8e/T14d: a prova de cada mutação
+  é o T8e (trava) ou o T14d (script) vermelho pelo **comportamento**.
+- **T8c** (l.647): o `from` do semi-mutante da via `view` passa a `"has_table_privilege(session_user, v.oid,
+  'SELECT,INSERT,UPDATE,DELETE')"` — a expressão continua aparecendo **uma** vez na SQL (o `.replace` troca só a primeira).
+- **T14a/b** fica como está (o caso de dois níveis dele segue válido como MODO 6; a transitividade passa a ser provada no T14d).
+
+*(e) `tests/db-catalog-write-guard.test.ts`* — **só** a entrada `san3-05-runtime-role-guard-db.test.ts` do `FROZEN_ALLOWLIST`
+(hoje `count: 64`): contagem **re-medida** depois dos subtestes novos (as regexes contam `CREATE ROLE`, `GRANT`, `REVOKE`,
+`OWNER TO`…) e motivo novo citando T8e/T14d. Nenhuma outra linha.
+
+**(3) Critério de aceite (o que o dev entrega e a junta 3 mede por execução).**
+
+| # | aceite | onde |
+|--:|---|---|
+| AC1 | O A2 fecha: S, B, K e I são recusados pela trava, com `rolname` = o dono do nó que escapa; C devolve 0 escapes; cada caso prova o efeito real (lê ou grava dado de outra organização) e o controle prova que o RLS morde. | T8e |
+| AC2 | O MODO 6 fecha a mesma cadeia criada **antes** do script e sem `SELECT` direto em W: S, B, K, I → `ec=3`, `MODO 6`, `view:<raiz>`; C → `ec=0`, `views=0`. **Isto fecha o A3**: a âncora `has_table_privilege(…,'SELECT') = false` impede que o nível único pegue o caso. | T14d |
+| AC3 | O mesmo CTE (`view_walk`/`view_force`/`view_escape`) nas 3 ocorrências, igual sem espaço em branco. | T8f |
+| AC4 | Cada mutação da tabela (4), aplicada **separadamente** em (t) e em (s), deixa vermelho o subteste indicado **pela asserção do caso indicado** (a mensagem nomeia o escape ausente ou o `status` ≠ 3) — não só o T8f. | T8e / T14d |
+| AC5 | Sem regressão: os 8 subtestes atuais do arquivo verdes (T8c com o `from` novo; T8d com `objetos === 1`); bootstrap 12/12; acessos 35/35 (inventário inalterado); leituras 13/13; `db-catalog-write-guard` 5/5. | C3.4 |
+| AC6 | `docs/deployment.md`, o comentário de `runtime-role.ts` e o cabeçalho/`RAISE` do script dizem a propriedade nova; nenhum define a via `view` pelo dono de **uma** view. | leitura |
+
+**(4) As mutações — cada uma com o subteste que fica vermelho, e o resultado já medido na candidata.** `gen-cand.py` (md5
+`d140d219…`) gerou a candidata (`runtime-role.cand.ts` md5 `701adc95…`, `db-runtime-role.cand.sh` md5 `0d10a6fa…`) e as 5
+mutações por âncora exata (contagem conferida, falha fechado); `cand.sh` (md5 `a3ded14e…`, 15:00:57–15:02:12Z, ec=0) rodou a
+trava de cada variante (módulo importado por `probe-mod.ts`, md5 `d5a69834…`) para os 6 leitores do `d2.sh` e o script de cada
+variante para 6 papéis novos pré-criados. **Candidata — trava:** `rs=[view:postgres:1]` `rb=[view:pl5_bypass:1]` `rc=[]`
+`rm=[view:postgres:1]` `ri=[view:postgres:1]` `rk=[view:pl5_common:1]`; **script:** S/B/M/K/I `ec=3` com `view:<raiz>`, C `ec=0` com
+`views=0`. Igualdade do CTE nas 3 ocorrências (sem espaço em branco): **verdadeira**.
+
+| id | mutação (aplicar **separadamente** em (t) `RUNTIME_ROLE_GUARD_SQL` e em (s) o `DO` do script) | (t) vermelho | (s) vermelho | medido na candidata (o que reabriu) |
+|---|---|---|---|---|
+| **M-D2a** | `lv.oid = w.leaf_oid` → `lv.oid = w.root_oid` (volta ao dono da raiz) | **T8e** (S, B, K) | **T14d** (S, B, K) | trava `rs=rb=rm=rk=[]`; script S, B, M, K `ec=0` (I segue pego: a raiz é a própria W) |
+| **M-D2b** | `o.rolsuper OR o.rolbypassrls OR …` → `o.rolsuper OR …` | **T8e** (B) | **T14d** (B) | trava `rb=[]`; script B `ec=0`; o resto intacto |
+| **M-D2c** | recursão do `view_walk` cortada (`dep.relkind IN ('v','m')` → `false`) | **T8e** (S, B, K) e T8d | **T14d** (S, B, K) | trava `rs=rb=rm=rk=[]`; script S, B, M, K `ec=0` |
+| **M-D2d** | sai `OR lv.relkind = 'm'` | **T8e** (K) | **T14d** (K) | trava `rk=[]`; script K `ec=0` |
+| **M-D2e** | privilégio volta a `'SELECT'` | **T8e** (I) | **T14d** (I) | trava `ri=[]`; script I `ec=0` |
+
+M-D2a/b/c são as três da §2.1; **M-D2d e M-D2e nascem dos ajustes J-B e J-A** (cada ajuste tem de ter quem o pegue). Nesta
+medição as mutações do script foram aplicadas às duas cópias do CTE; o `ec` é decidido pelo `DO` — a cópia da linha final é
+diagnóstica e a deriva dela é pega pelo T8f. **Regressão da candidata — `reg.sh`** (md5 `f9cae17a…`, 15:04:34–15:05:24Z, ec=0):
+trava e script trocados pela candidata e o `from` do T8c atualizado, só no contêiner → `npm run check` ec=0 (0 erros TS);
+`guard-db` + `bootstrap` + `acessos-de-plataforma-guard` + `leituras-de-plataforma-db` = **`# tests 69 # pass 69 # fail 0`** (no
+objeto, um a um às 15:06Z: 9 + 12 + 35 + 13 = 69; `db-catalog-write-guard` 5/5); restauro md5 = blobs; resíduo `s305`/`pl5` = 0.
+A candidata é **especificação**, não entrega: o dev escreve o código no ramo e a junta mede o que ele escreveu.
+### C3.3 Escopo do desenvolvimento (PERMITIDO / PROIBIDO)
+
+**Ponto de partida obrigatório.** O dev (`dev-ciclo3-b-san3-05`, Codex `gpt-5.6-sol`; identidade nova) trabalha no worktree
+`C:/Users/AMP/w-o05` (ou outro worktree próprio em caminho curto `C:/Users/AMP/w-<id>`, com `npm ci` próprio — nunca junction de
+`node_modules`). (1) Mede `git rev-parse HEAD` = `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass` = o head que o
+orquestrador passar no disparo (hoje `b37b9af0`, mais o commit deste plano); se divergir, **para**. (2) **Não integra a
+`origin/main`** (a integração é do orquestrador, depois do voto da junta 3 — ressalva R4 do inspetor do ciclo 2; medido no plano do
+dia: a `main` não toca `src/database/**`, `scripts/db-runtime-role.sh` nem `tests/san3-05-*`). (3) Commits pequenos, Conventional
+Commits, cada um com a sua bateria parcial; push sem `--force`.
+
+**PERMITIDO no ciclo 3 (e nada mais):**
+
+| caminho | para quê (C3.2) |
+|---|---|
+| `src/database/runtime-role.ts` | **Só** `RUNTIME_ROLE_GUARD_SQL` (o CTE `view_escape` e o ramo `view`) e o comentário das l.2-10 (propriedade nova; md5 diagnóstico regravado). Tipos, funções e as vias `atributo`/`posse` ficam byte a byte. |
+| `scripts/db-runtime-role.sh` | **Só** o `view_escape` nos dois CTE, o ramo `view` do `DO`, a coluna `views` da linha final, o texto do `RAISE` do MODO 6 e o cabeçalho (l.3, l.19). Modo `100755` e `eol=lf` mantidos; nada do B1 (senha) muda. |
+| `tests/san3-05-runtime-role-guard-db.test.ts` | T8e, T14d e T8f novos; o `from` do T8c (l.647). Nenhum outro subteste muda. |
+| `tests/db-catalog-write-guard.test.ts` | **Só** a entrada `san3-05-runtime-role-guard-db.test.ts` do `FROZEN_ALLOWLIST` (count re-medido + motivo). |
+| `docs/deployment.md` | **Só** a via `view` (l.95-96) e o MODO 6 (l.126-127). |
+| `agent-orchestration/controle/pendencias.md` | As pendências do C3.6 (entradas novas e sub-itens), no formato do arquivo. |
+| `agent-orchestration/controle/pendencias-indice.md` | **Só pelo gerador** `agent-orchestration/controle/gerar-indice-pendencias.py` (nunca à mão). |
+| `agent-orchestration/codex/log-execucao.md`, `agent-orchestration/docs/status-geral.md` | Uma entrada do ciclo 3 em cada (o que mudou, head, bateria com N). |
+| `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-ciclo3-relatorio.md` | O relatório do dev (arquivo de saída do mandato; P7 grava aqui). Único arquivo de `omega/` que o dev escreve. |
+
+**PROIBIDO no ciclo 3:** `Kpis/*` (KPI congelado, §C7 item 8(5) — o diff do ciclo em `Kpis/` é vazio) · `prisma/**` ·
+qualquer outro `src/**` — inclusive `src/database/runtime-role.bootstrap.ts`, `src/database/rls.ts`, `src/config/env.ts`,
+`src/server.ts` · qualquer outro `scripts/**` — inclusive `scripts/san3-05-acessos-de-plataforma.mjs` (o **C3-c2-01** ficou fora
+por decisão do dono) e `scripts/run-backend-tests.mjs` · qualquer outro `tests/**` — inclusive
+`tests/san3-05-leituras-de-plataforma-db.test.ts` (o **C3-c2-05** vai ao PR só de testes), o **T14c** do próprio arquivo de guarda
+(o **C2-A1** vai ao mesmo PR), `tests/san3-05-acessos-de-plataforma-guard.test.ts`, `tests/fixtures/**`, `tests/helpers/**` ·
+`.github/**` · `package.json` e lockfiles · `docker-compose*.yml`, `Dockerfile`, `fly.*.toml` · `.env*` · `CLAUDE.md`, `AGENTS.md`,
+`.claude/**`, `.agents/**` · `frontend/**`, `mobile/**` · `docs/revisoes/**` (o plano é do planejador/orquestrador) · o resto de
+`agent-orchestration/omega/**` (atas, mandatos, votos, reprovações: só o orquestrador) · o resto de `docs/deployment.md`.
+
+**Regra de staging — nunca `git add -A`** (nem `git add .`, nem `git commit -a`). Só `git add <caminho exato>` dos arquivos da
+tabela; antes de cada commit, `git diff --cached --name-only` ⊆ PERMITIDO e `git diff --cached --check || exit 1` **em linha
+própria** (trava, não elo de cadeia). O worktree tem 33 ` M` fantasmas de CRLF em `.agents/agents/*.md` e um `scratchpad/`
+untracked (plano do dia, item 3) — nenhum entra. **Excedente** (arquivo fora do PERMITIDO no diff do ciclo): o orquestrador manda
+reverter **antes** de chamar o inspetor (R9 do plano do dia).
+
+**Parada do dev (fail-closed).** O dev para e relata ao orquestrador (defeito + evidência executada), sem afrouxar asserção e sem
+tocar arquivo proibido, se: (a) algum aceite do C3.2(3) só passar mudando arquivo PROIBIDO; (b) o T8e/T14d precisar de privilégio
+ou objeto que o PostgreSQL 16 da receita não ofereça; (c) uma mutação do C3.2(4) **não** deixar vermelho o subteste indicado
+pela asserção do caso (sinal de que o teste ficou cego, a classe do A3); (d) a contagem do `db-catalog-write-guard` exigir mexer
+em entrada que não a do arquivo de guarda.
+
+### C3.4 Bateria do dev e o que a junta 3 cobra
+
+**Onde roda.** No Windows, **só** `git`/`gh`. Todo o resto em Linux, em contêiner, pela receita
+`C:/Users/AMP/erp-terreno/receita-pg16.sh` adaptada com prefixo próprio do dev (ex.: `dv05c3-`; rede própria, `postgres:16`
+descartável **sem porta no host**, `git archive` com `core.autocrlf=false`, conferência de todos os blobs, `npm ci` + `prisma
+generate` + `prisma migrate deploy` dentro, teardown verificado). `erp-postgres`, `erp-redis`, 5432, 6379 e 55432 **nunca** são
+alvo. Todo comando com `timeout`; `ec` lido em variável; nenhum `tail -f`; nenhum `export` de conveniência no condutor.
+
+**Linha de base medida por mim no objeto `b37b9af0` (C3.1/C3.2):** `guard-db` **9** · `bootstrap` **12** ·
+`acessos-de-plataforma-guard` **35** · `leituras-de-plataforma-db` **13** · `db-catalog-write-guard` **5** (todos fail 0, skipped 0);
+check-runs do objeto 7/7 `completed/success`; `git diff --quiet origin/main b37b9af0 -- Kpis/` ec=0; suíte inteira do ciclo 2:
+3130/3132, skipped 2 (ata). **Meta do ciclo:** o ciclo só **acrescenta** prova (3 subtestes) e não retira nenhuma; a regra
+M ≥ 2N do papel vale para o bloco e já foi cumprida na v3 (§8: N = 5 → 15 testes nomeados); aqui a meta é **N_guard-db 9 → 12**
+com 0 regressão nos outros quatro arquivos.
+
+| # | comando (forma) | onde · timeout | esperado (N e forma) |
+|--:|---|---|---|
+| D0 | `git rev-parse HEAD` = `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; `git diff --name-only <head-do-disparo>..HEAD` ⊆ PERMITIDO do C3.3; `git diff --quiet <head-do-disparo> HEAD -- Kpis/` | Windows · 120 s | heads iguais; 0 arquivo fora do PERMITIDO; `Kpis/` ec=0 |
+| D1 | `npm run check` | contêiner · 600 s | ec=0 |
+| D2 | `npm run lint` | contêiner · 600 s | ec=0 |
+| D3 | `node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts`, **3 vezes** no mesmo contêiner, resíduo `s305%` conferido entre elas; e **1** vez com `PATH` sem `psql` | contêiner · 900 s cada | 3 × **`# tests 12 # pass 12 # fail 0 # skipped 0`** (denominador idêntico); 0 `XX000`/`23505`/`40P01` no TAP; resíduo 0; sem `psql`: T14a/b (e T14d) **vermelhos** nomeando `psql: ausente`, nunca skip |
+| D4 | os outros quatro: `tests/san3-05-runtime-role-bootstrap.test.ts`, `tests/san3-05-acessos-de-plataforma-guard.test.ts`, `tests/san3-05-leituras-de-plataforma-db.test.ts`, `tests/db-catalog-write-guard.test.ts` | contêiner · 900 s | **12 · 35 · 13 · 5**, fail 0, skipped 0 (o inventário do T13 continua o congelado; o `stderr` do gerador vazio) |
+| D5 | as **10** mutações do C3.2(4) (M-D2a…e × (t) e (s)), cada uma só na cópia do contêiner, por âncora exata com contagem conferida, `tsc --noEmit`/`bash -n` ec=0, restauro conferido por md5 = blob | contêiner · 300 s cada | (t) → **`not ok … T8e`** com a mensagem nomeando o escape ausente do caso indicado; (s) → **`not ok … T14d`** com `status` ≠ 3 no caso indicado; publicar a tabela 10 × (subteste, caso, mensagem) |
+| D6 | **B7 mínima** (não regressão do B1): o script do head num `postgres:16` descartável com `log_statement=all`, senha-sentinela só por ambiente: sucesso (papel novo) + o caso S do T14d (MODO 6); leitor de controle (`SELECT '<marcador>'` proposital) | contêiner · 300 s | sentinela **0** no `server.log`/stdout/stderr; controle ≥ 1; `rolpassword` `SCRAM-SHA-256$` |
+| D7 | `DATABASE_URL=<descartável> npm test` (suíte inteira) e `npm run build` | contêiner · 2.400 s e 600 s | fail 0; skipped ≤ 2; **N publicado = executado** (esperado ≈ 3132 + 3); build ec=0 |
+| D8 | `git ls-files -s scripts/db-runtime-role.sh`; `git ls-files --eol scripts/db-runtime-role.sh` | Windows · 60 s | `100755`; `i/lf w/lf attr/text eol=lf` |
+| D9 | `git diff --check <head-do-disparo>..HEAD`; e o diff de `tests/db-catalog-write-guard.test.ts` contra o head do disparo | Windows · 60 s | ec=0; só a entrada `san3-05-runtime-role-guard-db.test.ts` |
+| D10 | push; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<sha>/check-runs` | Windows · 120 s | 7/7 `completed/success` antes de chamar o inspetor |
+
+O relatório do dev (`DEV-ciclo3-relatorio.md`) traz cada linha com comando, saída resumida e N; nenhuma contagem copiada do ciclo
+2 nem deste plano. **Tamanho do dev:** pequeno — 5 arquivos de código/doc (`runtime-role.ts` ≈ 15 linhas de SQL;
+`db-runtime-role.sh` ≈ 20; `docs/deployment.md` ≈ 6; o arquivo de guarda ≈ 150–220 linhas nos 3 subtestes + 1 linha do T8c;
+1 entrada do `db-catalog-write-guard`) + 3 arquivos de registro. ≈ 45–60 min de dev e ≈ 40 min de bateria (D5 = 10 rodadas curtas
+do arquivo de guarda; D7 é a mais longa).
+
+**O que a junta 3 cobra — e só isto bloqueia** (§C7 item 8(2): do ciclo 3 em diante só defeito de produto **grave** — perde dado,
+vaza dado entre organizações, quebra permissão ou erra dinheiro):
+1. **A2 aberto** — qualquer forma **dentro do alcance da propriedade do C3.2(1)** (view/matview, qualquer profundidade, donos
+   mistos, privilégio de leitura ou escrita na raiz, tabela FORCE no fim) em que o papel lê ou grava dado de outra organização e a
+   trava **ou** o MODO 6 devolvem 0 escape; ou uma mutação do C3.2(4) que **não** deixa o T8e/T14d vermelho pelo comportamento
+   (o A3 de novo: a prova ficou cega). Forma fora do alcance declarado (regra em tabela, função `SECURITY DEFINER`) **não** é A2.
+2. **Regressão grave do que o ciclo 2 fechou**, medida por execução: **B1** (senha em claro no `server.log`, no terminal ou no
+   argv); **B2** (escrita de catálogo fora da trava — `XX000`/`23505`/`40P01` ou filho escritor fora do helper nos subtestes
+   **novos**); **B4** (corpo/efeito diferente sob o papel sem bypass na superfície fechada); **D1–D4** (T8d deixa de recusar
+   `REPLICATION`/papel de servidor; o boot de produção sobe com papel que escapa ou sem a trava; host, porta, senha ou banco da
+   conexão no log).
+3. **Algo grave no diff fora do PERMITIDO** do C3.3.
+
+Todo o resto — forma de teste, registro, KPI, mandato, processo, ajuste e nota — vira pendência com dono e **o bloco mergeia**.
+O inspetor e a ata **descartam** voto que bloqueie por não grave (C3.5, reprovação por construção).
+
+### C3.5 Junta 3 — três cadeiras novas
+
+**Regra.** Bloco de **segurança e permissão** → junta completa (§C7 item 8(1)): `inspetor-de-terreno-da-junta` antes, com
+`LIBERADO` obrigatório (instância nova; inspetores das juntas 1 e 2 podem **inspecionar**, nunca votar); **três cadeiras de
+identidade nova**; quórum **unanimidade de 3, com veto** (§C7.1-ter(b): bloco que toca segurança/permissão). **Ciclo 3:** só
+defeito de produto **grave** bloqueia (§C7 item 8(2)); cada cadeira classifica todo achado como `classe: grave (qual das quatro)`
+ou `não grave`, com `gravidade` e `escopo` com evidência de data/origem (§C7.1-ter(a)). Objeto = o head do dev **empurrado**, com
+check-runs concluídos (§C7.1-bis); a integração da `main` é **depois** do voto (R4). Mandato forma A com pré-voo (§C7 item 8(3)),
+HC = H0 = esse head; P1–P7 inline; máx. 3 itens por cadeira (P4); **uma cadeira por vez** no Claude (plano do dia, §2.3); prefixo
+de terreno próprio por cadeira (`j05c3-c1-`, `j05c3-c2-`, `j05c3-c3-`), sem porta no host. Modelo: Claude **Opus** com
+substituição declarada (§C7.6-bis; Fable só em bloco de dinheiro, decisão do dono de 2026-10-08) ou Codex **GPT-6 Astra**; nunca
+abaixo — Opus esgotado = **PAUSA** (P7), não degrau.
+
+**Cadeiras (para a `agente-fabrica`; o corpo diz a competência, os três itens, e que a cadeira **acha e não conserta** — defeito +
+evidência executada + motivo, sem propor correção, §C7.4-bis; afirmação de plano, de ata ou de relatório do dev é **roteiro**,
+nunca fato):**
+
+| cadeira | identidade nova | competência | itens (máx. 3) |
+|---|---|---|---|
+| **C1** | `jurado-san305-c3-trava-de-views` | PostgreSQL 16: views e matviews, `pg_rewrite`/`pg_depend`, o RLS checado como o dono da view (`checkAsUser`), `BYPASSRLS` × `FORCE`, views auto-atualizáveis, `has_table_privilege`, `REFRESH MATERIALIZED VIEW` | **(1) A2 por execução** — no próprio cluster descartável, as cadeias do C3.2(1) (S, B, K, I e o controle C) criadas **antes** de qualquer execução do script e sem `SELECT` direto em W: o papel lê/grava dado da outra organização de verdade, a trava REAL e o MODO 6 do head recusam, o controle passa; **e uma forma própria** dentro do alcance (outra profundidade, outro ponto da cadeia, outro privilégio). **(2) As 10 mutações** M-D2a…e × (t)/(s): cada uma deixa vermelho o T8e (t) ou o T14d (s) **pela asserção do caso indicado**, não só o T8f. **(3) A3** — o T14d nasce antes do script e afirma `has_table_privilege(…,'SELECT') = false` antes de rodá-lo; a M-D2c no `DO` do script deixa o T14d vermelho; o T8f exige 1 + 2 blocos iguais. |
+| **C2** | `jurado-san305-c3-regressao-e-escopo` | Autenticação SCRAM e logging do servidor PostgreSQL; concorrência de catálogo (`XX000`, travas consultivas); arnês `node:test`; escopo de PR | **(1) B1 não regrediu** — B7 reduzida: 2 configurações ((a) `log_statement=all`, (b) `log_transaction_sample_rate=1`) × sucesso + o MODO 6 do caso S; senha-sentinela 0 no `server.log`, no terminal e no argv; leitor de controle ≥ 1; `SCRAM-SHA-256$` inclusive sob `PGOPTIONS` md5 (T14a/b). **(2) B2 não regrediu** — o lote `-db` (`guard-db` + `leituras`) N=3 com denominador idêntico (12 e 13), 0 `XX000`/`23505`/`40P01` no TAP inteiro, resíduo 0; T8e/T14d escrevem catálogo só por `catalog()`/`runRoleScript` (dentro de `withRoleCatalogLock`). **(3) Escopo** — diff do ciclo ⊆ PERMITIDO do C3.3; `Kpis/` sem diff; `db-catalog-write-guard` só na entrada do arquivo de guarda e 5/5; `100755`/`eol=lf`; `git diff --check`. |
+| **C3** | `jurado-san305-c3-superficie-e-suite` | Gerador/ratchet do inventário (TypeScript), diferencial dinâmico sob papel sem bypass, boot de produção e log da trava | **(1) T13** — o gerador não mudou e o inventário segue o congelado (`stderr` vazio; 35/35): a SQL da trava mudou, o call-site não. **(2) B4 e D3/D4 não regrediram** — `leituras-de-plataforma-db` 13/13 (cenários FORCE iguais e não vazios nos dois papéis); `bootstrap` 12/12; T15 recusa o superusuário no boot de produção com e sem a variável e aceita o papel limpo; o log da trava sem host/porta/senha/banco (T9/T15). **(3) Suíte inteira** — `npm test` (fail 0, skipped ≤ 2, N = executado) e `npm run build`; e a conferência de que cada não grave do ciclo 2 e os novos do C3.6 têm pendência com dono (ausência = **nota**, nunca bloqueio). |
+
+
+**Inelegíveis por nome (não ocupam cadeira da junta 3):** os que **acharam** — ciclo 1: `agente-dba-guardiao` (C1),
+`agente-secops` (C2), `guardiao-fail-closed` (C3); ciclo 2: `jurado-san305-c2-credencial-e-papel`,
+`jurado-san305-c2-arnes-e-escopo`, `jurado-san305-c2-ratchet-e-superficie`; os **inspetores** das juntas 1 e 2 (instâncias de
+`inspetor-de-terreno-da-junta` — podem **inspecionar** a junta 3, não votar); os que **criticaram** — `critico-b-san3-05` (r1 e
+r2); os que **planejaram** — os planejadores v1 e v2 (papel `planejador-mestre`), `planejador-b-san3-05-v3`,
+`planejador-ciclo2-b-san3-05`, `planejador-ciclo2-b-san3-05-sucessor`, `planejador-dia-2026-10-09` (fixou a propriedade do A2) e
+`planejador-ciclo3-b-san3-05` (eu); os que **desenvolveram** — `dev-b-san3-05`, `dev-b-san3-05-sucessor-1`,
+`dev-b-san3-05-sucessor-2`, `dev-ciclo2-b-san3-05`, `dev-ciclo2-b-san3-05-api`, `dev405api` (R7 do inspetor do ciclo 2) e
+`dev-ciclo3-b-san3-05` (e qualquer sucessor dele). A `agente-fabrica` escreve os corpos e não vota; o orquestrador não vota. O
+inspetor confere por nome (§C7.1-bis), inclusive contra os especialistas não rastreados com nome parecido que existem na árvore
+principal (`.claude/agents/especialistas/jurado-*`), e confere que os três corpos `jurado-san305-c3-*` estão **commitados no
+ramo julgado** nos dois espelhos (`git add -f` — o ignore global cobre `.claude/` e `.agents/`).
+
+**Reprovação por construção — o que a junta 3 NÃO pode cobrar** (cobrar é voto sem defeito; o inspetor e a ata registram e
+descartam):
+1. **O que ficou fora por decisão do dono (2026-10-09):** **C2-A1** (guarda de filhos por contagem) e **C3-c2-05** (cenário do job
+   `cloud-charges.calculate`) — vão ao PR só de testes depois do merge; **C3-c2-01** (`inst.some` do ratchet) — pendência com dono;
+   os ajustes **A1, A4, A5, C2-A2, C2-A3, C3-c2-02** e as notas **C2-N1, C2-N2, C3-c2-03, C3-c2-04** — pendências nomeadas (C3.6).
+2. **Não grave** em qualquer forma: forma de teste, registro, processo, mandato, redação de plano ou de documentação sem efeito
+   no produto, md5 do comentário de `runtime-role.ts` (diagnóstico, não critério), números herdados.
+3. **KPI** — congelado (§C7 item 8(5)); a única exigência é `Kpis/` sem diff no ciclo.
+4. **Classes vizinhas fora da via `view`, registradas com dono:** regra `INSTEAD`/`ALSO` em **tabela** (`P-SAN3-05-REGRA-EM-TABELA`,
+   C3.6 — se o dono decidir trazê-la ao ciclo 3 antes do disparo do dev, este item sai e o C3.2 ganha o adendo correspondente);
+   funções `SECURITY DEFINER`, inclusive chamadas por view (`P-SAN3-05-SECURITY-DEFINER-INVENTARIO`, `B-SAN3-10`).
+5. **Sobre-aproximações fail-closed declaradas** no C3.2(1) (view intermediária de dono que escapa num ramo que não lê a FORCE;
+   `security_invoker`; matview vazia) e os **residuais por construção** do ciclo 2 (`/proc/<pid>/environ`; verificador SCRAM no log;
+   a CI não ler o log do servidor).
+6. **Classes pré-existentes com dono** do C2.5 item 2 (inventário fora do que o bloco muda, suíte `-db` sob papel real e os 9 jobs
+   fora da superfície — `B-ARNES-2`; `work()` default — J12; timeout do runner — J5; leitura morta do rateio — `B-O6R-08`; postura
+   no `/health`).
+7. **A integração da `main`** — é do orquestrador, depois do voto (R4); o conflito em `pendencias-indice.md` é C2-N2.
+8. **Norma citada que não existe na ref julgada** (§A7) e **falha de infraestrutura** não atribuível ao objeto (re-execução
+   declarada na evidência; `XX000` no TAP **conta** — é o B2).
+
+**Sinal de não-convergência (R1 do plano do dia).** Se a junta 3 reprovar pelo **A2 de novo** (a trava/MODO 6 deixam passar uma
+forma **dentro do alcance** da propriedade, sem informação nova sobre a classe), **não** se abre ciclo 4 no automático: registra-se
+`R-B-SAN3-05-3.md` e o orquestrador leva ao dono as duas saídas do plano do dia (lista de permissão, ou recusar **qualquer** view
+cuja árvore alcance FORCE), com a recomendação de lá. Grave **novo** de outra classe → ciclo 4 pelo §C7.4, com o dono decidindo
+antes de gastar.
+### C3.6 Pendências com dono e o PR só de testes posterior
+
+Registradas pelo **dev do ciclo 3** em `agent-orchestration/controle/pendencias.md`, no formato do arquivo (`## P-… (2026-10-09) —
+título — SEVERIDADE` + `status · escopo · dono`, descrição, `bloqueia`), e no índice **só pelo gerador**
+`agent-orchestration/controle/gerar-indice-pendencias.py`. **Nenhuma bloqueia o #405.** Origem de cada uma: ata do ciclo 2
+(`J-B-SAN3-05.md`) e votos `ciclo2/C{1,2,3}-voto.json` (lidos por mim no objeto); datas de origem conforme o `escopo` de cada voto.
+
+| id (novo salvo indicação) | sev. | origem · escopo (evidência) | o que é | dono | teste de encerramento |
+|---|---|---|---|---|---|
+| `P-SAN3-05-RATCHET-INST-SOME` | MÉDIA | **C3-c2-01** · dentro-do-bloco — `scripts/san3-05-acessos-de-plataforma.mjs` l.393-394 de `16014c06` (2026-10-08); fora do ciclo 3 por decisão do dono | Uma instanciação reconhecida sob contexto libera a classe injetada inteira (`inst.some`): construção por fábrica genérica ou `Reflect.construct` fica com 0 chave. Hoje 0 acesso dessa forma em `src` (inventário = congelado). | `B-ARNES-2` (ou bloco próprio do ratchet, a nomear pelo orquestrador) | fixture com classe de duas instanciações — uma reconhecida, outra por `Reflect.construct` — gera ≥ 1 chave suspeita; voltar ao `inst.some` deixa o T13 vermelho |
+| `P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE` | MÉDIA | **C3-c2-02** (+ notas **C3-c2-03/04**) · dentro-do-bloco — gerador `05d7789f` (2026-10-02), regex `16014c06` (2026-10-08) | A igualdade catálogo↔L0 por nome não é teste (o T13 pina contagens); grafias de DDL de RLS à mão (`ALTER TABLE IF EXISTS …`, `EXECUTE format(…)` em `DO`) somem do L0; tabela FORCE sem model aparece só na contagem do cabeçalho. Hoje 106 = 106. | o mesmo dono da linha acima | teste executável da igualdade nos dois sentidos; tabela FORCE numa grafia que o L0 não lê → vermelho; tabela FORCE sem model → chave suspeita |
+| `P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA` | MÉDIA | **C2-A1** · dentro-do-bloco — T14c e `runPsqlReadOnly` de `d9fc0d6d` (2026-10-08) | A guarda de processos filhos do T14c conta 5 grafias em vez de uma lista fechada nominal: `exec`, `execSync`, `execFile`, `execFileSync`, `fork` e o `runPsqlReadOnly` genérico passam. | **PR só de testes** `B-SAN3-05T` (abaixo) | qualquer chamada de `node:child_process` fora da lista nominal reprova; um filho escritor fora do helper → T14c vermelho |
+| `P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES` | MÉDIA (dinheiro) | **C3-c2-05** · dentro-do-bloco — cenário de `41af41f5` (2026-10-08) | O cenário do job `cloud-charges.calculate` (T11f) lê o efeito pelo mesmo critério que casa o run criado pela rota `POST /cloud-charges/calculation-runs` — mede o efeito da rota, não do job. Hoje o job faz o certo. | **PR só de testes** `B-SAN3-05T` | o efeito comparado é identificado como produzido pela execução do job; a M-B4c aplicada a esse job (leitura crua, sem efeito) deixa o T11f vermelho |
+| `P-SAN3-05-TIMEOUT-MATA-SO-O-BASH` | MÉDIA | **C2-A2** · dentro-do-bloco — helper `d9fc0d6d` sobre o script `041e414b` | O timeout de 20 s do helper mata só o `bash`; um filho além de 30 s escreve catálogo depois de a transação da trava expirar. Gatilho nunca observado sem força (23–91 ms). | `B-ARNES-2` | filho forçado além do teto é morto **como grupo** antes de a janela expirar; nenhuma escrita de catálogo depois do timeout |
+| `P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR` | BAIXA | **C2-A3** · dentro-do-bloco — cenário `migratorOk`/`CREATE DATABASE` de `4e89d7ac` (2026-10-03) | A limpeza do cenário (T14a/b) não roda se ele falhar antes do `try`: fica papel com `LOGIN` e `CREATEROLE` no cluster de teste. | `B-ARNES-2` | falha forçada antes do `try` → papel removido no `finally`, resíduo `s305%` = 0 |
+| `P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL` | BAIXA | **A4** · dentro-do-bloco — regex de `02544a79` (2026-10-08) | A guarda D4 aceita o nome de papel em **qualquer** campo quando escrito `session_user=`/`current_user=`/`atributo:`/`posse:`/`view:<papel>` — formas que as erratas 1–3 não dão. | `B-ARNES-2` | a mutação "logger com `diag: session_user=<papel>`" deixa T9 e T15 vermelhos |
+| `P-SAN3-05-T15-FALSO-VERMELHO-PORTA` | BAIXA | **A5** (nota) · dentro-do-bloco — `assertConnectionSecretsAbsent` de `d9fc0d6d` | O T15 dá falso vermelho "port da conexão apareceu no log" quando o `pid` ou o `time` do pino contém o número da porta (medido: pid 5432, 15432; time …54321). | `B-ARNES-2` | linha real do pino com pid/time contendo a porta → aceita; a porta num campo de conexão → recusa |
+| sub-item de `P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI` (existente) | — | **A1** · dentro-do-bloco — guarda estática de `d9fc0d6d` | A guarda estática do T14 reconhece grafias, não a propriedade: as variantes V1 (`\getenv` + `set_config(:'segredo')`) e V2 (backtick + `format()`/`\gexec`) passam 9/9 e vazam no `server.log`. A prova real é a B7 na CI — o encerramento da pendência existente fecha este sub-item. | `B-ARNES-2` (já dono) | o job de CI com `server.log` fica vermelho sob V1 e V2 |
+| `P-SAN3-05-REGRA-EM-TABELA` | **ALTA** | **nova, medida por este planejador** (C3.1, `dr.sh`) · `residual-de-segurança` — a trava nasceu em `d76b255f` (2026-10-02) começando o `view_walk` só em `relkind` `v`/`m` | Uma regra `INSTEAD`/`ALSO` em **tabela** de dono que escapa executa a ação com o privilégio do dono: o papel limpo com `INSERT` na tabela gravou linha da organização B sob o contexto A; a trava deu `[]`. Hoje **0** regras fora do `_RETURN` das views no catálogo migrado. | `B-SAN3-10` (dono da classe "código que roda com o privilégio do dono", como `P-SAN3-05-SECURITY-DEFINER-INVENTARIO`) | regra numa tabela de dono que escapa, com DML para o papel → trava recusa e o script sai `MODO 6` (ou modo novo); controle sem regra → 0 |
+| sub-item de `P-SAN3-05-SECURITY-DEFINER-INVENTARIO` (existente) | — | hipótese **não medida** por mim | View que chama função `SECURITY DEFINER` lê a tabela pelo dono da **função**: o `pg_depend` da view aponta para a função, não para a tabela, e fica fora do `view_walk`. | `B-SAN3-10` (já dono) | o inventário do `B-SAN3-10` cobre função chamada por view |
+
+**Notas do ciclo 2 sem pendência nova:** **C2-N1** (o relatório do dev em `omega/`) — resolvida pelo C3.3, que nomeia o único
+arquivo de `omega/` que o dev escreve; **C2-N2** (`pendencias-indice.md` conflita com a `main`) — resolve-se na integração pós-voto,
+com o índice regenerado pelo gerador, nunca à mão.
+
+**Decisão pedida ao dono antes do disparo do dev (§A2 — sem consolidação silenciosa):** `P-SAN3-05-REGRA-EM-TABELA` — (a)
+pendência ALTA com dono `B-SAN3-10`, fora do ciclo 3 (**recomendado**: 0 regras hoje; é outra via; generalizar o `view_walk` a
+toda relação com regra muda a semântica da autodependência das regras de tabela e reabre a via pela 4ª vez, o sinal R1 do plano
+do dia); ou (b) entra no ciclo 3, com um adendo ao C3.2 escrito por este planejador antes do disparo. Sem resposta, vale (a).
+
+**O PR só de testes posterior — `B-SAN3-05T`** (nome proposto; o orquestrador confirma). Abre **depois do merge do #405**, a
+partir da `main`, ramo `test/san3-05-guardas-pos-merge`. **Rota:** regra (1) do §C7 item 8 — **um revisor independente** (quem não
+escreveu nem planejou) **+ CI verde**, sem inspetor e sem junta (decisão do dono de 2026-10-09). **Escopo PERMITIDO:**
+`tests/san3-05-runtime-role-guard-db.test.ts` (só o T14c), `tests/san3-05-leituras-de-plataforma-db.test.ts` (só o T11f),
+`tests/db-catalog-write-guard.test.ts` (só as entradas `san3-05-*`, se a contagem mudar), `agent-orchestration/controle/pendencias.md`
+(fechar as duas pendências) e o índice pelo gerador; **PROIBIDO** todo `src/**`, `scripts/**`, `prisma/**`, `Kpis/*` e o resto.
+**Propriedades** (as (c) e (d) do `R-B-SAN3-05-2`): **(d)** a guarda de processos filhos é **lista fechada nominal** — toda
+referência a `spawn`/`spawnSync`/`exec*`/`execFile*`/`fork` de `node:child_process` fora da lista reprova, inclusive quando a
+grafia é satisfeita por comentário; **(c)** o cenário de cada job protegido mede o efeito **do próprio job** — o run comparado é
+identificado como produzido pela execução do `cloud-charges.calculate`, não pela rota. **Mutações que o revisor roda:** um filho
+escritor fora do helper (`execFileSync`, `fork`, `runPsqlReadOnly` escrevendo) → T14c vermelho; a M-B4c no job (leitura crua, sem
+efeito) → T11f vermelho. Fecha `P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA` e `P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES`. As propriedades (b)
+e (e) do `R-B-SAN3-05-2` ficam com `P-SAN3-05-RATCHET-INST-SOME` e `P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE`.
+
+### C3.7 Riscos e rollback
+
+| R | risco | sinal | mitigação |
+|---|---|---|---|
+| RC3-1 | O dev conserta a instância (só o caso S) e deixa B, K ou I abertos | a mutação M-D2b/d/e não deixa o T8e/T14d vermelho | cada ajuste tem mutação própria (C3.2(4)); D5 publica a tabela 10 × (subteste, caso, mensagem); a parada (c) do C3.3 |
+| RC3-2 | O teste nasce cego de novo (a classe do A3): o caso é pego pelo nível único porque o papel tem `SELECT` direto em W | a âncora `has_table_privilege(…,'SELECT') = false` ausente ou verde por construção do fixture (`createLogin` usado nos leitores) | a âncora é asserção obrigatória do T8e e do T14d; os leitores **não** usam `createLogin`; a C1 da junta mede a M-D2c no script |
+| RC3-3 | O T8c quebra (o semi-mutante procura a string antiga) ou a expressão aparece duas vezes | T8c vermelho no D3 | o `from` muda junto (C3.2(2)(d)); a expressão aparece uma vez (medido na candidata: 69/69) |
+| RC3-4 | A contagem do `db-catalog-write-guard` muda e o dev "corrige" outra entrada | diff do guard com mais de uma entrada | C3.3: só a entrada do arquivo de guarda; D9 confere o diff |
+| RC3-5 | Falso positivo em produção: uma view legítima futura derruba o boot da `api` | `RUNTIME_ROLE_CAN_BYPASS_RLS` com `via: view` num deploy | é o comportamento fail-closed escolhido (o boot recusa e a máquina anterior segue servindo — `docs/deployment.md`); hoje 0 views/matviews; o remédio é `REVOKE` ou trocar o dono, documentado no MODO 6 |
+| RC3-6 | A junta 3 acha a via `regra em tabela` e a classifica como grave | voto `bloqueia` por regra em tabela | decisão do dono pedida antes do disparo (C3.6); com (a), é reprovação por construção item 4 |
+| RC3-7 | Disco e cota | `df` < 10 GB; limite do Opus | `df` entre cadeiras e `DEEP_CLEAN=1` (§C5); Opus esgotado = **PAUSA** (P7), nunca degrau abaixo |
+
+**Rollback.** Antes do merge: `git revert` dos commits do ciclo 3 no ramo (sem reescrever, sem force-push). Depois do merge:
+`git revert` do squash — sem migração a desfazer; a trava volta à versão do ciclo 2 (que recusa menos, nunca mais). O papel criado
+pelo Ato 1 não muda de privilégio por este ciclo (o script só passa a **recusar** mais cedo).
+
+### Fecho do ciclo 3
+
+**O que este ciclo 3 substitui no plano** (onde divergirem, vale o C3): o **D2** do C2.2 pela propriedade do C3.2(1); a linha
+**M-D2** do C2.4 pelas M-D2a…e do C3.2(4); o escopo do C2.3 pelo C3.3; a bateria do C2.4 pelo C3.4 (para este ciclo); a junta do
+C2.5 pelo C3.5. O B1 (senha), o B2 (catálogo), o B3/B4 (gerador e superfície) e as erratas 1–3 ao D4 seguem como estão.
+
+**Papéis (§C7.4-bis):** quem achou o A2/A3 = `jurado-san305-c2-credencial-e-papel`; quem fixou a propriedade =
+`planejador-dia-2026-10-09`; quem planeja este ciclo = `planejador-ciclo3-b-san3-05` (Claude Opus 5.5, substituição declarada);
+quem desenvolve = `dev-ciclo3-b-san3-05` (Codex `gpt-5.6-sol`). Nenhum acumula. Este planejador **não** escreveu código no ramo:
+a candidata viveu só no scratchpad e no contêiner descartável, e foi apagada no teardown.
+
+**Terreno deste planejador — teardown (15:16Z):** `docker rm -f -v pl05c3-node pl05c3-pg` ec=0; `docker network rm pl05c3-net`
+ec=0; contêineres `pl05c3` = 0, redes = 0, volume anônimo do pg = removido, árvore temporária `/c/Users/AMP/t-pl05c3` ausente
+(removida no setup); candidata, mutantes e segredos descartáveis apagados do scratchpad; nenhum outro contêiner tocado; `erp-postgres`,
+`erp-redis`, 5432 e 6379 nunca foram alvo; disco 11 GB livres (igual ao início). No `w-o05`, o único arquivo alterado é este plano
+(`git diff --ignore-cr-at-eol --stat` = 461 linhas acrescentadas com este fecho, 0 removidas; `git diff --check` ec=0). Nada commitado — o orquestrador versiona.
+
+STATUS: COMPLETO — `planejador-ciclo3-b-san3-05` · Claude Opus 5.5 (`claude-opus-5-5`), substituição declarada (§C7.6-bis: Fable só em
+bloco de dinheiro, decisão do dono de 2026-10-08) · 2026-10-09 15:17Z · objeto `fix/runtime-role-sem-bypass@b37b9af0`.
