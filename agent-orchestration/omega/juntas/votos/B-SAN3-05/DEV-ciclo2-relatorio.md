@@ -91,13 +91,29 @@
 
 ### B3 — ratchet fail-closed e catálogo FORCE reconciliado
 
+**Comando:** implementação parcial em `scripts/san3-05-acessos-de-plataforma.mjs` + 7 fixtures C3A/B/C/E e C3-F2; container Linux `dev05c2-b3` sob `timeout 900`, `npm ci`, `prisma generate`, gerador `--all` e T13.
+
+**Saída resumida:** gerador ec=0, stderr=0, `ENABLE=106`, `FORCE=106`, acessores=106, `OPS(derivados)=17`; inventário = **76 chaves** contra congelado **53**, crescimento **+23**. O T13 terminou **32/35**: as 27 fixtures herdadas e C3A/B/C3C/C3E ficaram vermelhas como exigido; o ratchet listou 23 chaves novas sem motivo e o fixture C3-F2 ainda falhou ao exigir a chave do leitor. Container `--rm` removido.
+
+**Resultado:** PARADA OBRIGATÓRIA RC3 — crescimento +23 excede o teto de +20. A implementação parcial não foi commitada; não afrouxei o analisador nem continuei para B4.
+
+### B4 — cenário executável por membro FORCE da superfície
+
+**Comando:** não iniciado após a PARADA-RC3.
+
+**Saída resumida:** sem execução.
+
+**Resultado:** AGUARDA DECISÃO DO ORQUESTRADOR SOBRE RC3.
+
+### D1 — T8d mede exercibilidade de REPLICATION
+
 **Comando:** T8d reescrito sem fixture morta; cria/derruba slot físico e mantém a mutação `rolreplication` observável; suíte focada no terreno `dev05c2-fatia1c-*`.
 
 **Saída resumida:** subteste T8d verde; suíte **9/9**. O título afirma somente “REPLICATION exercível”; `pg_basebackup` permanece reservado ao B10 da junta.
 
 **Resultado:** PASSOU.
 
-### B4 — cenário executável por membro FORCE da superfície
+### D2 — via de views transitiva
 
 **Comando:** CTE recursivo em `RUNTIME_ROLE_GUARD_SQL` e MODO 6; cenário view externa → view interna → tabela FORCE; `bash -n`; suíte focada no terreno `dev05c2-fatia1c-*`.
 
@@ -105,29 +121,13 @@
 
 **Resultado:** PASSOU.
 
-### D1 — T8d mede exercibilidade de REPLICATION
+### D3 — boot de produção fail-closed e filhos finalizados
 
 **Comando:** T15 com boot explícito e default, espera do evento `close`, timeout ≤15 s e teardown SIGTERM/SIGKILL em `finally`; suíte focada `dev05c2-fatia1c-*`.
 
 **Saída resumida:** os dois boots recusados saíram com código 1 antes de Redis/job worker; boot limpo aceito; subteste T15 verde; suíte **9/9**.
 
 **Resultado:** PASSOU.
-
-### D2 — via de views transitiva
-
-**Comando:** EM APURAÇÃO
-
-**Saída resumida:** EM APURAÇÃO
-
-**Resultado:** EM APURAÇÃO
-
-### D3 — boot de produção fail-closed e filhos finalizados
-
-**Comando:** EM APURAÇÃO
-
-**Saída resumida:** EM APURAÇÃO
-
-**Resultado:** EM APURAÇÃO
 
 ### D4 — logs sem componentes da URL efetiva
 
@@ -177,19 +177,19 @@
 
 ### B3 — testes unitários/contratuais selecionados
 
-**Comando:** EM APURAÇÃO
+**Comando:** parcial: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` no container `dev05c2-b3`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** **32/35** passaram; 3 falharam (pai + congelado com +23 chaves + leitor C3-F2). Os outros seis arquivos do item B3 não foram executados após a parada.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** VERMELHO / PARADA-RC3.
 
 ### B4 — gerador normal e `--all`
 
-**Comando:** EM APURAÇÃO
+**Comando:** `node scripts/san3-05-acessos-de-plataforma.mjs . --all` em Linux, depois de `npm ci` e `prisma generate`.
 
-**Saída resumida:** EM APURAÇÃO
+**Saída resumida:** ec=0; stderr=0 bytes; `OPS(derivados)=17`; inventário **76**, sha1 `d990f882341867f4e3b1366c56c3df1bff401168`.
 
-**Resultado:** EM APURAÇÃO
+**Resultado:** VERMELHO contra o congelado: +23 chaves > teto +20.
 
 ### B5 — modo e EOL do script
 
@@ -313,28 +313,38 @@
 - **Ocorrência:** a sessão anterior caiu por limite de uso do Codex às `2026-10-08T21:07Z`; nenhuma mudança remota ocorreu durante a interrupção.
 - **Resultado:** PASSOU — retomada em `2026-10-09T01:42:50Z`, sem perda dos arquivos parciais e sem divergência do head remoto informado pelo dono.
 
+### PARADA-RC3 — inventário B3 cresceu acima do teto
+
+- **Objeto de partida empurrado:** `d9fc0d6df2b9098bd8665f9070e8082a54f97e39`.
+- **Comando:** container `dev05c2-b3` sob `timeout 900`; cópia read-only da árvore local; `npm ci`; `prisma generate`; `node scripts/san3-05-acessos-de-plataforma.mjs . --all`; T13 completo.
+- **Saída resumida:** L0 `ENABLE=106 FORCE=106 acessores=106`; `OPS(derivados)=17`; stderr=0; inventário `76`/sha1 `d990f882341867f4e3b1366c56c3df1bff401168`, contra 53 chaves congeladas: **+23**. T13 **32/35**; C3A/B/C/E passaram, mas o congelado enumerou 23 novas e C3-F2 ainda não atribuiu a chave do leitor.
+- **Diagnóstico da fatia parcial:** 22 chaves L1 incluem relações e falsos candidatos que compartilham nomes de acessores Prisma (`role`, `yard`, `settlement`) e 1 chave L2 já visível após a integração da main. Corrigir a discriminação por operação/tipo poderia reduzir o número, mas isso seria continuar a implementação depois de observado o teto excedido.
+- **Regra aplicada:** C2.3/RC3 determina “acima de 20 chaves novas, o dev para e relata”. Nenhum relaxamento do analisador, atualização do congelado ou avanço para B4 foi feito.
+- **Estado local preservado:** alterações parciais não commitadas somente nos caminhos permitidos de B3 (`scripts/san3-05-acessos-de-plataforma.mjs`, `tests/san3-05-acessos-de-plataforma-guard.test.ts`, 7 fixtures); `scratchpad/` intocado; `dev05c2-b3` removido por `--rm`.
+- **Decisão necessária:** o orquestrador precisa autorizar a continuação para corrigir os falsos candidatos e re-medir o teto, ou redefinir o tratamento das 23 chaves. O dev não escolhe em silêncio.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
 
-- [ ] B1 — viabilidade `psql \password`/SCRAM medida; implementação local parcial, não commitada, interrompida por PARADA-D4-2.
-- [ ] B2 — helper assíncrono sob trava localmente parcial, não commitado.
-- [ ] B3 — não iniciado por PARADA-D4.
-- [ ] B4 — não iniciado por PARADA-D4.
-- [ ] D1 — título/fixture do T8d localmente parciais, não commitados.
-- [ ] D2 — SQL transitiva e documentação localmente parciais, não commitadas.
-- [ ] D3 — não iniciado por PARADA-D4.
-- [ ] D4 — nova parada: a errata permite username só em `session_user/current_user`, mas a recusa já o publica também em `escapes[].rolname` e `via:rolname`.
-- [ ] Ajustes do ciclo — pendências C2.6 não registradas por PARADA-D4.
+- [x] B1 — commit `d9fc0d6d`; `npm run check` 1/1 e suíte focada 9/9.
+- [x] B2 — commit `d9fc0d6d`; canário/guarda estrutural verdes; N=10 reservado à junta.
+- [ ] B3 — implementação parcial local; PARADA-RC3 em 76 contra 53 chaves (+23 > +20).
+- [ ] B4 — não iniciado por determinação da PARADA-RC3.
+- [x] D1 — commit `d9fc0d6d`; T8d verde, prova `pg_basebackup` reservada à junta.
+- [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
+- [x] D3 — commit `d9fc0d6d`; T15 explícito/default e exit 1 verdes.
+- [x] D4 — commit `d9fc0d6d`; Errata 2 aplicada e T9/T15 verdes.
+- [ ] Ajustes do ciclo — pendências C2.6 ainda não registradas devido à PARADA-RC3.
 - [x] Integração da main — commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos resolvidos por união; `D-GOV-PROPORCIONAL` presente.
 - [x] `Kpis/*` à main — `git diff --quiet origin/main -- Kpis/` retornou 0.
 
-**Feito:** integração da main e restauração integral de `Kpis/*`; errata `45da0d17` medida; viabilidade de B1 em container `dev05c2-viab2-pg` verde (`SCRAM-SHA-256$`, login funcionando); fatia B1/B2/D1/D2 iniciada localmente com `bash -n` verde e `git diff --check` limpo.
+**Feito:** integração/main e `Kpis/*`; B1, B2(a/b/d), D1, D2, D3 e D4 implementados, validados e empurrados em `d9fc0d6d`. B3 confirmou OPS=17, C3A/B/C/E e L0 106/106 antes de acionar a parada pelo tamanho do inventário.
 
-**Não feito / divergências:** nenhuma fatia de produto do ciclo 2 está concluída/commitada. PARADA-D4-2: o username já aparece em `escapes[].rolname` e no texto `via:rolname`, fora das duas chaves autorizadas pela errata, e os arquivos necessários para mudar essa superfície estão proibidos ou limitados a D2.
+**Não feito / divergências:** B3 não concluído nem commitado: inventário parcial cresceu +23, acima do teto +20. B4, pendências C2.6 e bateria restante aguardam decisão. A PARADA-D4-2 está resolvida pela decisão do dono `dee3f821`.
 
-**Validação:** B0 parcial — retomada começou em local/remoto `45da0d17`; KPI continuava igual à main antes das edições. B1/B2/B3/B4/B6–B12/B14 não concluídos. B5 parcial: `bash -n` do script = 0; modo/EOL ainda não re-medidos. B13 local = 0. B10 é reservado à junta.
+**Validação:** B1 `npm run check` passou 1/1; B5 modo/EOL passou 2/2; B9 objeto passou (T14c dentro de 9/9), mutações são da junta. B3 parcial/T13 = 32/35 e B4/gerador = vermelho por +23 chaves. B6–B8, B11–B14 ainda não executados pelo dev; B10 é somente da junta.
 
-**Head empurrado:** `babec96ba4e5bd39275f4974428af130786d8475`, confirmado por `git ls-remote` após o commit da PARADA-D4-2. O commit seguinte altera somente esta linha de confirmação; seu SHA final fica na mensagem de entrega, porque um commit não pode conter o próprio hash.
+**Head empurrado:** `d9fc0d6df2b9098bd8665f9070e8082a54f97e39`, confirmado por `git ls-remote` antes do commit deste registro de parada; o SHA desse registro fica na mensagem ao orquestrador, pois o commit não pode conter o próprio hash.
 
-**Próximos passos (análise):** o orquestrador deve dizer expressamente se `escapes[].rolname` e `via:rolname` são identidades permitidas pelo D4. Se não forem, precisa ampliar o escopo e definir a redação sem apagar a razão operacional da recusa. Depois, a mesma identidade retoma os quatro arquivos locais parciais, conclui o teste `-db`, commita e segue B3/B4.
+**Próximos passos (análise):** o orquestrador deve decidir se autoriza corrigir a discriminação parcial de relações/operações e re-medir RC3, ou como tratar as 23 chaves. As mudanças locais de B3 devem permanecer preservadas. Só após decisão: concluir B3, então B4, pendências C2.6 e bateria restante.
