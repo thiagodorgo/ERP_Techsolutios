@@ -1496,3 +1496,273 @@ Controle por **mutação** (uma seção fabricada `## P-TESTE-MUTACAO … - stat
 ---
 
 *Fim do plano. Nenhuma seção em apuração. Conferência pré-commit aplicada (18/18, §0.7). Cluster Postgres não subido (§0.2); nenhum arquivo além deste foi tocado no worktree; o commit e o push deste plano são os da etapa de fechamento, no ramo `docs/plano-b-san3-06b` (nunca `main`, nunca PR).*
+
+---
+
+## Re-medição 2026-10-09 (antes do dev)
+
+> **Papel:** `planejador-mestre` · **identidade:** `planejador-remedicao-b-san3-06b` (nova; não planejou, votou nem
+> desenvolveu este bloco) · **modelo que rodou: Claude Opus 5.5 — SUBSTITUIÇÃO DECLARADA (§C7.6-bis):** o frontmatter
+> pede Fable; pela decisão do dono de 2026-10-08 o Fable roda só em bloco de dinheiro. · **worktree:** `C:/Users/AMP/w-06b`
+> · **HEAD medido:** `9301a86ac15be22c2125587cd9543bcd1be2d5f0` · **ref de medição:** `origin/main@a9bbde382213627545e9d229c9ab616d83a0a840`.
+>
+> Regra desta seção: o texto antigo (§0–§14, Apêndices) **não foi reescrito**; o que mudou está aqui, com comando e
+> saída. Onde esta seção divergir do texto antigo, **vale esta seção**.
+
+### R.0 Terreno desta re-medição
+
+```
+$ date -u ; git -C C:/Users/AMP/w-06b rev-parse HEAD ; git fetch origin main ; git rev-parse origin/main main
+2026-10-09 03:51Z
+9301a86ac15be22c2125587cd9543bcd1be2d5f0
+a9bbde382213627545e9d229c9ab616d83a0a840   (origin/main = main local)
+$ git diff --name-only origin/main HEAD
+docs/revisoes/SAN3/B-SAN3-06b-plano.md     (o worktree É a main + este plano — §A7: medir no disco = medir na ref)
+$ git merge-base --is-ancestor 3b1fe0f9 a9bbde38 && git rev-list --count 3b1fe0f9..a9bbde38
+ancestor-ok · 14 commits   (#396 #397 #398 #399 #402 #403 #404 #406 #401 #407 #408 #400 #409 #410)
+$ git diff --name-only 3b1fe0f9 a9bbde38 | wc -l ; … | grep -c -E '^(src|prisma|\.github|tests/e2e)/'
+214 · 0      (nenhum arquivo de src/, prisma/, .github/ ou tests/e2e/ mudou)
+```
+
+**Máquina:** Windows 11 (Git Bash), `node v20.19.5`. **O worktree NÃO tem `node_modules`** (`ls frontend/node_modules` →
+ausente) e o disco está a **96 % (11 GB livres)** — `npm ci` não foi rodado (o mandato é escrever só o plano; §C5).
+Consequência: os geradores (a)–(e) **foram re-executados** (resolvem `typescript` por `createRequire`, e o
+`NODE_PATH=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/frontend/node_modules` — checkout principal, também em
+`a9bbde38 [main]`, só **lido**, sem junction — dá `typescript 5.9.3`); os **testes dinâmicos** (24 backend, 15+22
+frontend, `test:smoke` inteiro) **não foram re-executados** aqui — ver R.1 linha P-r e a correção C-10 (o passo 0 do dev
+re-mede o baseline). Nada além deste arquivo foi escrito no worktree; os geradores rodaram de cópias no scratchpad.
+
+**Os 5 geradores extraídos dos Apêndices batem o md5 declarado** (`sed -n` das faixas dos blocos ```` ```js ````):
+(a) `99e599a2…` · (b) `ec0101e1…` · (c) `c3c987eb…` · (d) `e07b5880…` · (e) `70e47c96…` — 5/5 iguais ao plano.
+
+**Identidade de blob dos arquivos que o plano cita** — lista de **100 caminhos** (os nomeados em §0–§14, mais os
+`git ls-files` de `src/modules/{cloud-usage,aws-cur,cloud-cost-allocation,cloud-charge}/*`, `catalog.ts`,
+`PlatformGuard.tsx`, `useAutoRefresh.ts`, `components/ui/index.tsx`); laço `git rev-parse 3b1fe0f9:<p>` × `a9bbde38:<p>`.
+**Ressalva de quem mediu:** dois desses globs não casaram nada — os diretórios reais são `src/modules/cloud-charges/` e
+`src/modules/cloud-costs/` (onde moram `aws-cur.*`); os tipos deles ficam cobertos pela linha acima (`src/**` = 0
+arquivos mudados), não pela lista:
+
+```
+total=100 identicos=96 mudaram=4 ausentes=0
+MUDOU: frontend/src/modules/work-orders/useWorkOrders.ts          (espelho do `stale` — ver R.1 E1b)
+MUDOU: frontend/tests/work-orders-honest-errors.test.tsx          (espelho do `stale` e da regressão — ver R.1)
+MUDOU: frontend/package.json                                       (só `test:smoke`: +3 arquivos — ver R.1 §6)
+MUDOU: docs/claude-code-handoff/screen-refs/README.md              (D-OS-CABECALHO-PADRONIZADO — ver R.2)
+```
+
+Todo fato do §0 sobre os outros **96 arquivos** (linhas, literais, rotas, tipos, permissões) vale **por identidade de
+blob** — e uma amostra foi **re-executada** (R.1), não herdada (§C7.7 P3).
+
+### R.1 Tabela — afirmação do plano → hoje → vale / mudou / caiu
+
+| # | Afirmação do plano (ref `3b1fe0f9`) | Hoje em `a9bbde38` — comando → saída resumida | Veredito |
+|---|---|---|---|
+| P-a | MFA/auditoria por `<Toggle on />`; "365 dias"; botões sem `onClick`; backend sem MFA | blob idêntico; `git grep -n -i mfa a9bbde38 -- src \| wc -l` → `0`; gerador (b) lista os 4 sítios de `PlatformSettingsPage.tsx` | **vale** |
+| P-b | Auditoria Global 100 % inventada; `platform:audit:read` não é comparada por rota | blob idêntico; `git grep -n 'platform:audit:read' a9bbde38 -- src` → 3 linhas (`catalog.ts:13`, `navigation.registry.ts:60`, `platform-permissions.ts:23`); gerador (c) → 32 endpoints, nenhum com `audit` | **vale** |
+| P-c | Cloud Billing é cartaz; módulo `cloud-billing.*` sem página importadora | blob idêntico (página + adapter/service/types/mock); `git grep -l 'cloud-billing.service' a9bbde38 -- frontend/src \| wc -l` → `0` | **vale** |
+| P-d | Planos, APIs e Organizações com dado inventado | blobs idênticos; gerador (b): `PlatformPlansModulesPage.tsx:2 · PlatformApisPage.tsx:1 · PlatformTenantsPage.tsx:2` | **vale** |
+| P-e | o menu real é `PLATFORM_NAV` (literal), não `platformNavigation.ts` | `git grep -n 'useNavigationMenu' a9bbde38 -- frontend/src` → as mesmas 4 linhas (`AppShell.tsx:6,40`, `navigation/index.ts:5`, `useNavigationMenu.ts:13`); gerador (a) idêntico | **vale** |
+| P-f | Organizações liga-se ao `/overview`; `/platform/tenants*` é memória | blobs idênticos; `git grep -l 'Techsolutions Industrial' a9bbde38 -- src` → só `platform-tenants.repository.ts`. **Fato novo:** o `/overview` (`platform-overview-prisma.repository.ts:24-61`, `findMany` sem filtro) passa a devolver também a **organização de sistema** que o #400 cria (`scripts/bootstrap-platform-admin.ts:56-57,244-245`: `slug "platform"`, `name "Plataforma"`, `status "active"`), contada em `activeOrgs/totalOrgs/totalUsers` | **vale, com fato novo** → C-1 |
+| P-g | 4 resumos + listas de nuvem, `{ data: … }` | `src/**` sem mudança (0 arquivos); gerador (c) → 32 endpoints, saída **idêntica** à do Apêndice C (`diff` das linhas não-`#`, ordenadas → vazio) | **vale** |
+| P-h | adapter lê campos que o DTO não tem; fixtures do `smoke-flow:748-883` moldados ao adapter | blobs idênticos (`cloud-billing.adapter.ts`, `smoke-flow.test.tsx`) | **vale** |
+| P-i | 3 autoridades de mock | `git grep -n 'readFrontendEnv("VITE_USE_MOCKS"' a9bbde38 -- frontend/src` → `env.ts:23`, `cloud-billing.service.ts:164`, `platform.service.ts:123` | **vale** |
+| P-j | `requirePlatformPermission` compara o papel para JWT | blob idêntico (`platform-permissions.ts`) | **vale** |
+| P-k | Saúde é parada honesta; `GET /health/ready` público | blobs idênticos (`PlatformHealthPage.tsx`, `health.routes.ts`, `app.ts`) | **vale** |
+| P-l | e2e defasado e fora da CI | `tests/e2e/**` e `.github/**` sem mudança; `git grep -n -E 'playwright\|critical-flows\|e2e' a9bbde38 -- .github \| wc -l` → `0` | **vale** |
+| P-m | nenhum ramo de bloco em voo toca a fronteira | `git fetch origin --prune`; laço sobre **146** refs `origin/*` × `git diff --name-only origin/main...<ref> -- frontend/src/modules/platform platformNavigation.ts PlatformLayout.tsx smoke-flow.test.tsx docs/platform-console.md docs/platform-cloud-billing-ui.md` → `origin/demo/investidor` (2026-08-29; as 4 páginas de antes) **e dois ramos velhos** que o filtro do plano não pegava — `origin/feat/web-fidelity-cleanup` (2026-07-02: `platform.mock.ts`, `smoke-flow.test.tsx`) e `origin/feat/web-b124-dashboard-dispatches-field-locations` (2026-07-05: `smoke-flow.test.tsx`), nenhum com PR. `gh pr list --state open` → **#405, #393, #389, #388**: nenhum toca `frontend/**` da fronteira; os 4 tocam `agent-orchestration/controle/pendencias.md` (conflito de apensar, só no registro); o **#405 (B-SAN3-05)** toca `src/modules/cloud-charges/cloud-charge-prisma.repository.ts` e `src/modules/cloud-usage/cloud-usage-prisma.repository.ts` (laço por organização sob RLS — **não** muda tipo/DTO: nenhum `*.types.ts` no diff dele) | **vale** (não trava); H1 continua dependência do #405, em voo |
+| P-n | trava de mesmo arquivo: só "textos de `frontend/` → `SAN3-21`" | `docs/revisoes/SAN3/PLANO_SAN3.md` blob idêntico | **vale** |
+| P-o | 1 teste assevera literal (`smoke-flow.test.tsx:1464`) | gerador (d) → `arquivos de teste = 145 · tocam a fronteira = 4 · com literal = 1` (o plano dizia **142**: +3 testes novos fora da fronteira — `work-orders-page-live`, `work-orders-list-tools`, `patios-dossie-versao`); `sed -n '1464p'` → `assert.match(protectedHtml, /Tenants\|tenant/i);` | **vale** (142 → 145 não muda a conclusão) |
+| P-p | origem anterior ao bloco | nenhum arquivo da fronteira mudou | **vale** |
+| P-q | papéis/permissões (CE-G2) | blobs idênticos (`RBAC_MATRIX.md`, `catalog.ts`, `PlatformGuard.tsx`, `App.tsx`, `mocks/auth/context.ts`, `navigation/types.ts`) | **vale** |
+| P-r | baseline 24/24 · 15/15 · 22/22 · 1202/1202; KPI 168 blocos | **dinâmico NÃO re-executado** (R.0: sem `node_modules`). Estático: os 6 testes de backend e os 4 do frontend que tocam a fronteira têm **blob idêntico** (N = 6 + 7 + 2 + 3 = **18** continua). KPI publicado hoje (`Kpis/kpis-latest.json`, último PR que o tocou: #402 `3e40a256`, 2026-10-02): `frontend_smoke_tests 1214/1214` · `backend_tests 3052/3054` · `flutter_tests 864/864` · `blocks_completed 170`. Depois disso o KPI **congelou** (D-GOV-PROPORCIONAL, 2026-10-04) e a lista `test:smoke` ganhou mais 2 arquivos sem publicação (`patios-dossie-versao` do #401, `work-orders-list-tools` do #409) — o total real de hoje **não é conhecido sem execução** | **mudou** → C-9, C-10 |
+| §5/§8 espelho `stale` | `useWorkOrders.ts nextListState` + `work-orders-honest-errors.test.tsx:517-534` (R1–R3) | os dois arquivos **mudaram** (#402). `git grep -n nextListState a9bbde38 -- …/useWorkOrders.ts` → `:7 import { initialListState, nextListState } from "./work-orders.state"` e `:42 setState((prev) => nextListState(prev, result, background))` — a função mora em **`work-orders.state.ts`** (blob idêntico); `git show a9bbde38:…/work-orders-honest-errors.test.tsx \| grep -n '\[R[123]\]'` → `:517`, `:526`, `:534` (mesmas linhas); `:12 import ts from "typescript"` | **vale** (o espelho correto é `work-orders.state.ts`, consumido por `useWorkOrders.ts:42`) |
+| §6 `frontend/package.json` | "só a lista `test:smoke` (+6 arquivos)" | a lista mudou desde `3b1fe0f9` (+3: `work-orders-page-live`, `patios-dossie-versao`, `work-orders-list-tools`); a regra (só o valor de `scripts["test:smoke"]`) continua | **vale** (rebase obrigatório antes de editar a lista) |
+| §11.5 / §A2 | `CLAUDE.md` §11 aponta `screen-refs/web/`; os PNGs vivem em `docs/claude-code-handoff/screen-refs/web/` | `git ls-tree -r --name-only a9bbde38 screen-refs` → só `screen-refs/README.md` (igual); o §11 de hoje passou a remeter ao índice `docs/claude-code-handoff/screen-refs/README.md` (exceção das 5 telas padronizadas) mas ainda diz `screen-refs/web/` | **vale** (divergência segue aberta, fora deste bloco) |
+| §11.4 | candidatos a dono do provisionamento: `B-SAN3-09`, `B-SAN3-18` | o **#400 mergeou o `B-SAN3-09`** (`026ff7b8`): só o 1º `platform_admin` + a organização de sistema, por script (`scripts/bootstrap-platform-admin.ts`), **não** pelo console; e abriu `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE` com **dono `B-SAN3-06b`** (`pendencias.md` subseção `####` sob a l.574; adendo C1c2-06 de 2026-10-08: "vale a descrição; o dono é B-SAN3-06b") | **mudou** → C-1 |
+| §0.2 menu × §3 | rótulos do menu real | `sed -n '35,54p' PlatformLayout.tsx` → `"Health do Sistema"` (l.49) — termo em inglês no **menu que fica** (o plano só corrige o registro, e nele também esquece `platformNavigation.ts:65` `"Health do Sistema"`); a página já se chama "Saúde do Sistema" (`PlatformHealthPage.tsx:4`, `P-PLATFORM-HEALTH-OBSERVABILITY`) | **lacuna do plano** → C-4 |
+| (a) | gerador (a): 10 rotas · 8 itens `PLATFORM_NAV` · 7 no registro | re-executado → saída **idêntica**, linha a linha, às 10 linhas do §0.4 (a) | **vale** |
+| (b) | gerador (b): 20 arquivos · 22 sítios | re-executado → `arquivos varridos = 20 · sítios = 22 · {"MOCK-DEFAULT":2,"ARRAY-LITERAL":13,"TEXTO-DATADO":3,"CONTROLE-BOOL":2,"JSX-NUMERO":2}`; as 22 linhas = Apêndice B (`diff` ordenado → vazio) | **vale** |
+| (c) | gerador (c): 32 endpoints | re-executado → `# endpoints sob /api/v1/platform = 32`; 34 linhas = Apêndice C | **vale** |
+| (d) | gerador (d): 142 · 4 · 1 | re-executado → `145 · 4 · 1` | **mudou** (só o total de arquivos) |
+| (e) | gerador (e): 437 seções · citam = 5 · abertas = 5 | re-executado → `# seções = 464 · citam B-SAN3-06b = 6 · abertas = 5` — a 6.ª é a **`P-SAN-PROD-BOOTSTRAP` (l.574)**, que o gerador credita por um artefato: a citação (l.596-597) está na subseção `#### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, que o gerador **não separa** (só corta em `^## `). Linhas novas: `P-019 :228` · `P-WEB-CLOUD-BILLING-CARTAZ :8465` · `P-WEB-PLATAFORMA-TELAS-FICCAO :8569` · `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA :8586` · `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES :9544` · `P-WEB-ROTAS-SEM-PORTA :8603` (cruzamento de conteúdo) · `P-DONO-CLOUD-BILLING-ESCOPO :8482` | **mudou** → C-1, C-6 |
+
+**Insumo, não fato:** a varredura de telas de hoje (`C:/Users/AMP/erp-pausa-2026-10-03/VARREDURA-TELAS-2026-10-09.md`,
+l.13 e l.40-45) classifica as 6 telas deste bloco como **PLACEHOLDER** e a Saúde como "bloqueada honesta" — **concorda**
+com o §0.3. Duas leituras dela que este plano **não** segue, por medição: (i) l.40 sugere "trocar por `platform.adapter` /
+`GET /platform/overview`" — o `platform.adapter`/`GET /platform/tenants` é memória (P-f), só o `/overview` serve; (ii) l.55
+diz não ter confirmado o caminho final de `/platform/cloud-*` — o gerador (c) confirma os 32 (Apêndice C, re-executado).
+
+### R.2 Regras novas que o plano não conhecia
+
+| Regra (fonte, ref `a9bbde38`) | O que muda neste plano |
+|---|---|
+| **`D-GOV-PROPORCIONAL` (2026-10-04)**, `CLAUDE.md` §C7 item 8, `decisoes.md:2938` — (1) junta completa só para dinheiro/segurança/permissão/perda de dado, o resto = 1 revisor independente + CI verde; (2) teto de 2 ciclos, do 3.º em diante só defeito grave bloqueia; (3) mandato forma A só para inspetor e cadeiras; porteiro só depois de merge de **produto**; registro no PR semanal ou no do bloco; (5) **KPI congelado** — PR nenhum toca `Kpis/*` | §9 inteiro **cai**; `Kpis/*` e `scripts/kpi-freeze.mjs` saem do PERMITIDO e entram no PROIBIDO; a linha `kpi-freeze`/`kpi-dashboard-charts` sai da bateria; §10 é substituído pela rota de R.6; a menção a `D-SEM-TETO-AUDITORIA-NO-3` (auditoria no ciclo 3) **cai** — vale o teto de 2. Este bloco **é produto** → o porteiro pós-merge continua. |
+| **`D-FABLE-ASTRA-SO-DINHEIRO` (2026-10-08)**, `decisoes.md:2982` | o planejador e a revalidação rodam em **Opus declarado** (esta seção), salvo se o dono classificar o bloco como dinheiro (R.6). |
+| **`D-OS-CABECALHO-PADRONIZADO` (2026-10-08)**, `screen-refs/README.md` (novo parágrafo) e `docs/juntas/J-TELAS-PADRONIZADAS.md:3,29` | **não alcança este bloco.** As 5 telas padronizadas são `sc_dash`, `sc_os`, `sc_users`, `sc_audit`, `sc_patios`; a "Auditoria" é `sc_audit` = rota **`/audit`** da organização (`J-TELAS-PADRONIZADAS.md:29`: "página da rota `/audit` · audit-events adapter real"), cujo PNG substituído é `auditoria-organizacao.png`. `auditoria-plataforma.png` (`auditPlatform`) **não** foi substituído; `grep -o 'sc-if value="{{ sc_[a-zA-Z]*' "ERP Web - Telas Padronizadas.dc.html" \| sort -u` → `sc_audit sc_dash sc_os sc_patios sc_soon sc_users` (nenhuma tela de plataforma). As referências do §0.2 continuam valendo. Fato novo do mesmo parágrafo: as capturas web têm **924×540**, não 1440 px — a comparação de fidelidade (A20) é na largura do PNG. |
+| **`D-ATO2-OPCAO-B` (2026-10-08)**, `decisoes.md:2996` — *"a entrega que vejo é o traccar integrado e rodando, telas sem place holde, funcional"* | este bloco **é** a fatia "telas sem placeholder" do console da plataforma — 6 das 9 telas PLACEHOLDER da varredura (l.13). Prioridade alta para o dono; nada de escopo novo além do que fecha os itens 17/45/46 e a pendência nova de dono `06b` (C-1). |
+| **`D-MERGE-O-QUE-ESTA-FEITO` / #400 (`B-SAN3-09`)** | nasce a organização de sistema `platform`/"Plataforma" no banco real; `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE` tem dono **este bloco** (C-1). |
+| **P7 (`D-PAUSA-GRAVA-E-PARA`, 2026-10-01)** | o dev nasce com arquivo de saída nomeado (para gravar `## PAUSA` se ordenado) — R.5. |
+| **`D-MANDATO-FORMA` parcialmente revogada** (D-GOV regra 3) | o dev e o revisor nascem de **prompt simples** com as referências explícitas (este plano + o comando); forma A só se a rota for junta completa (para inspetor e cadeiras). |
+
+### R.3 Correções ao plano (sem reescrever o texto antigo)
+
+Cada correção diz **o que muda, onde, e como se prova**. Numeração própria (C-n) para não colidir com D1–D18 do §0.7.
+
+**C-1 — A organização de sistema "Plataforma" no console (nova; fecha `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, dono este
+bloco).** Fato medido (R.1 P-f): o `GET /platform/overview` devolve, desde o #400, a organização `slug "platform"` /
+`name "Plataforma"` / `status "active"` (`scripts/bootstrap-platform-admin.ts:56-57,244-245`) e a conta em `activeOrgs`,
+`totalOrgs` e `totalUsers` (`platform-overview-prisma.repository.ts:24-61`, sem filtro). Sem correção, E1 mostraria o
+console da própria plataforma como "cliente" e os cartões contariam 1 a mais. Remédio **só no frontend** (o `src/**`
+continua PROIBIDO):
+- constante única `PLATFORM_SYSTEM_ORG_SLUG = "platform"` em `frontend/src/modules/platform/platform-overview.types.ts`
+  (comentário apontando `scripts/bootstrap-platform-admin.ts` `PLATFORM_TENANT_SLUG`);
+- **Organizações (E1):** a linha da organização de sistema fica na tabela (ela existe) com o selo **"Organização de
+  sistema"** e sem ação de cliente; os cartões contam **só organizações clientes** = **agregado do backend menos a
+  contribuição da organização de sistema quando ela está no payload** (`activeOrgs − (sistema ativa ? 1 : 0)`,
+  `totalOrgs − (sistema presente ? 1 : 0)`, `totalUsers − sistema.userCount`) — o backend continua a autoridade da
+  contagem (e não `orgs.filter().length`, que divergiria do agregado — medido: `platform-overview.smoke.test.tsx:200-216`
+  renderiza `totalUsers: 1500` e assevera `/1\.500/` com uma lista que não soma isso); os chips contam sobre a lista sem a
+  organização de sistema; subtítulo "sem a organização de sistema" só quando ela está presente;
+- **Visão Geral (`PlatformOverviewPage.tsx`, l.97-124 hoje usa `activeOrgs/totalOrgs/totalUsers` crus):** a mesma regra,
+  para as duas telas não divergirem em 1 — isto **amplia** o toque nessa página além do aviso `stale` de E1b (dentro de
+  `frontend/src/modules/platform/**`, PERMITIDO). Sem organização de sistema no payload a conta é a de hoje, e os 6
+  testes de `platform-overview.smoke.test.tsx` (fora do PERMITIDO) ficam verdes **sem edição** — se algum precisar de
+  edição, o dev **para** e relata (a regra está errada, não o teste);
+- **Detalhe (`PlatformTenantDetailPage.tsx:115`, já exibe `slug`):** o mesmo selo no cabeçalho quando o `slug` é o de
+  sistema;
+- **testes novos** (em `san3-06b-organizacoes.smoke.test.tsx` e no guard): **T41** fixture com a organização de sistema
+  + 2 clientes (1 ativa, 1 suspensa), agregados do backend coerentes com a lista (`activeOrgs 2`, `totalOrgs 3`,
+  `totalUsers` = soma) → "Plataforma" com o selo, cartão "Organizações ativas" = 1, chip "Todas (2)", usuários sem os da
+  organização de sistema; **T42** Visão Geral com o mesmo fixture → os mesmos números (e não `totalOrgs` cru); **T43** o guard lê
+  `scripts/bootstrap-platform-admin.ts` como texto, extrai `PLATFORM_TENANT_SLUG = "…"` e exige igualdade com a
+  constante do front — **mutação:** trocar o valor numa cópia do script → vermelho;
+- critério **A21** (novo): "a organização de sistema nunca é contada nem apresentada como cliente; uma só constante,
+  amarrada ao script por teste" — mutação: tirar o filtro do cartão → T41 vermelho.
+
+**C-2 — Dinheiro: só leitura, sem aritmética no front (trava da rota R.6).** O §2.2 lista a "Margem
+(`charges.totalMarginAmount` + `%`)" sem dizer de onde vem o `%`. Fica escrito: o `%` exibido vem **só** de
+`totalMarginPercentage`/`marginPercentage` do DTO; ausente → o `%` é omitido, **nunca calculado** no front. Regra geral:
+**nenhum valor monetário ou percentual exibido é resultado de soma, diferença ou razão feita no front** (barra
+proporcional pode usar `x/Σ` só para **largura**, com o número exibido = valor do DTO). E as funções de **escrita** de
+dinheiro (`importCloudCostsFromApi`, `runCloudAllocationFromApi`, `calculateCloudChargesFromApi`,
+`createCloudChargeRuleFromApi`, `updateCloudChargeRuleFromApi`) ficam **byte-idênticas** e **sem importador** fora de
+`cloud-billing.{adapter,service}.ts`. Testes novos: **T44** (guard) — varredura AST de `frontend/src`: nenhum arquivo além
+desses dois referencia as 5 funções; **mutação:** importar uma delas na página → vermelho; **T45** — fixture de cobrança
+**sem** `totalMarginPercentage` → o HTML não contém `%` no cartão Margem; **mutação:** calcular `margin/charge*100` → vermelho.
+Critério **A22** (novo) = T44 + T45. Se o dev precisar violar C-2, o bloco **muda de classe** (vira dinheiro → R.6).
+
+**C-3 — Rota de aprovação.** O §10 (junta unânime de 3 + inspetor) é **substituído** pela rota de R.6. A linha da junta
+do `PLANO_SAN3.md` §5.3 (l.276: "unanimidade + `coordenador-de-acessos` + `cognicao-visual`") foi escrita sob o §C7.1-ter(b);
+a `D-GOV-PROPORCIONAL` (decisão do dono, fonte §A1.1) **prevalece** onde diverge (`CLAUDE.md` §C7 item 8, 1.º parágrafo).
+Divergência registrada aqui (§A2); o orquestrador a apensa em `controle/` no registro do bloco.
+
+**C-4 — "Health do Sistema" → "Saúde do Sistema" no menu que fica.** `PlatformLayout.tsx:49` e `platformNavigation.ts:65`
+mantêm termo em inglês (§3/§11.1); a página já se chama "Saúde do Sistema". A ampliação nominal de `PlatformLayout.tsx`
+continua **só `PLATFORM_NAV`**, agora com 4 remoções **e** 1 troca de rótulo: `git diff --numstat` esperado **`1 5`** (não
+`0 4`). A15/T38 passam a exigir "Saúde do Sistema" nos dois e nenhum rótulo casando `/Health|Tenant/`; A10/T36 inalterados.
+
+**C-5 — KPI congelado.** O §9 inteiro **cai**; de E9 saem `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`,
+`Kpis/kpis-history.md`, `Kpis/app.js` (e o uso de `scripts/kpi-freeze.mjs`). O dev **mede** a suíte (`test:smoke`) no
+passo 0 e no fim e **relata no corpo do PR** (os dois números + a diferença), sem tocar `Kpis/*`. O item "KPIs atualizados
+no próprio PR" da DoD (§10 do contrato) não se aplica enquanto o congelamento vigorar (§C7 item 8(5)).
+
+**C-6 — Gerador (e) v2 (subseções).** O gerador do Apêndice E só corta seção em `^## `; a pendência nova vive numa
+subseção `####` e era creditada à `P-SAN-PROD-BOOTSTRAP` (R.1 (e)). Troca de **duas âncoras** (`/^## /` → `/^#{2,4} /`, no
+`test` e no `match`), aplicada por script com âncora única e conferida: v2 md5 **`b97cd902482b2e0ed56acf2a8d153b9a`**.
+Saída da v2 em `a9bbde38`:
+```
+# seções = 552 · citam B-SAN3-06b = 6 · abertas = 6
+228 | P-019 | cita em l.243 | status: ABERTA (PARCIAL — …
+591 | P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE | cita em l.596,597 | status: aberto
+8465 | P-WEB-CLOUD-BILLING-CARTAZ | cita em l.8476 | status: ABERTA …
+8569 | P-WEB-PLATAFORMA-TELAS-FICCAO | cita em l.8580 | status: ABERTA …
+8586 | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA | cita em l.8597 | status: ABERTA …
+9544 | P-SAN3-01-MOCKMODE-TRES-AUTORIDADES | cita em l.9549,9550 | status: ABERTA …
+```
+Controle: as **8** linhas de citação da v1 (`243 · 596,597 · 8476 · 8580 · 8597 · 9549,9550`) são as **mesmas 8** na v2
+(nenhuma citação perdida; só a atribuição mudou). O `scripts/san3-06b-pendencias-do-bloco.mjs` commitado é a **v2**; A18
+passa a exigir as **6** com `FECHADA` + evidência (inclui a `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, por C-1). Os números de
+linha mudam a cada apensar no registro — o gerador é a fonte, não esta tabela.
+
+**C-7 — Espelho do `stale` (§5, E1b).** O módulo de referência é `frontend/src/modules/work-orders/work-orders.state.ts`
+(`nextListState`), consumido em `useWorkOrders.ts:42`; os testes-modelo continuam `work-orders-honest-errors.test.tsx`
+`[R1]:517`, `[R2]:526`, `[R3]:534`.
+
+**C-8 — Saúde (E4) não fecha a pendência de observabilidade.** `P-PLATFORM-HEALTH-OBSERVABILITY` (`pendencias.md:1692`,
+ABERTA) **continua aberta**: o bloco liga só o readiness (Postgres/Redis/Worker); uptime, p95, fila e backup seguem sem
+fonte, com selo. O registro do bloco apensa a ela uma linha "parcial: readiness real desde o B-SAN3-06b".
+
+**C-9 — Números de referência.** Baseline do bloco **N = 18** (inalterado, blobs idênticos); meta **M ≥ 36**; o bloco
+entrega **45** (T1–T40 + T41–T45). Os números "1202/1202", "168 → 169", "`release.pr 394`" do §0.5/§9 estão **velhos** e
+**não** são reescritos em lugar nenhum (KPI congelado, C-5).
+
+**C-10 — Passo 0 do dev (terreno).** O worktree `C:/Users/AMP/w-06b` não tem `node_modules`. Antes de tudo:
+`df -h /c` (≥ 5 GB livres; abaixo disso `DEEP_CLEAN=1 bash scripts/post-merge-cleanup.sh`, §C5) → `npm --prefix frontend ci`
+(**próprio**, sem junction — §C7.1-ter(c)) → `npm ci` na raiz (para `npm run lint` e o `tsx` dos geradores) → **baseline
+re-medido**: os 3 testes de plataforma (esperado 15/15), `smoke-flow.test.tsx` (22/22) e `test:smoke` inteiro (número
+real de hoje, colado no relatório) — **antes** de mudar uma linha. Vermelho no baseline = parar e relatar, não seguir.
+
+**C-11 — Rebase e registro.** Os 4 PRs abertos tocam `pendencias.md` (R.1 P-m): o dev faz `git pull --rebase origin main`
+antes do push e **regenera** com o gerador (e) v2 (nunca copia número de linha). O `frontend/package.json` também mudou
+desde a base do plano: a lista `test:smoke` é editada **depois** do rebase, acrescentando os arquivos `san3-06b-*` no fim.
+
+**C-13 — A Saúde ligada (E4) desmente uma asserção de teste existente.** `frontend/tests/platform-health-honest-stop.smoke.test.tsx`
+(blob idêntico; está na lista de regressões do §8) tem na l.29 `assert.doesNotMatch(html, /API Gateway|PostgreSQL|Redis/); //
+serviços com status inventado`. Depois de E4, "Postgres"/"Redis" com status do `/health/ready` **não** são inventados. O
+teste continua verde por acaso (o `renderToString` não roda efeito: a página sai no estado de carregamento, sem a lista de
+serviços) — ficaria uma asserção que mente sobre o comportamento novo. **Ampliação nominal declarada:** esse arquivo entra
+no PERMITIDO **só na l.29**, trocando a regex por `/API Gateway/` (o serviço que o backend não monitora) e o comentário por
+"serviço sem fonte"; as l.21-23, 26-28, 30 e o 2.º teste (l.33-36) ficam como estão. `git diff --numstat` desse arquivo =
+**`1 1`**. A presença legítima de "Postgres/Redis" com dado real é T29/T30.
+
+**C-12 — §11 (atos do dono) atualizado.** Ato 4: o `B-SAN3-09` mergeou (#400) — o 1º admin nasce **por script**; o console
+continua sem "Nova Organização" (default mantido). **Ato 6 (novo):** a classificação de dinheiro e a rota (R.6). Os atos
+1, 2, 3 e 5 seguem como escritos.
+
+### R.4 Escopo PERMITIDO / PROIBIDO atualizado
+
+Substitui o §6. Branch: a do worktree, `feat/b-san3-06b-plataforma` (o §14 dizia `fix/console-plataforma-sem-ficcao`, a do
+§5.3 do `PLANO_SAN3`; o orquestrador abriu o ramo com o outro nome — fica o do worktree, registrado na ata/PR).
+
+**PERMITIDO** (e nada mais):
+- `frontend/src/modules/platform/**` (inclui apagar `platform.mock.ts` e `cloud-billing.mock.ts`; inclui
+  `PlatformOverviewPage.tsx` e `PlatformTenantDetailPage.tsx` **só** para o aviso `stale` (E1b) e a organização de
+  sistema (C-1));
+- `frontend/src/navigation/platformNavigation.ts`;
+- **ampliação nominal** `frontend/src/layouts/PlatformLayout.tsx` — **só** o literal `PLATFORM_NAV` (l.35-54): −4 itens e o
+  rótulo "Saúde do Sistema" (C-4); `--numstat` = `1 5`;
+- **ampliação nominal** `frontend/tests/platform-health-honest-stop.smoke.test.tsx` — **só** a l.29 (C-13); `--numstat` = `1 1`;
+- `frontend/tests/san3-06b-*.test.ts{,x}` (novos);
+- `frontend/tests/smoke-flow.test.tsx` — **só** o teste do adapter (l.748-883) e a l.1464;
+- `frontend/package.json` — **só** o valor de `scripts["test:smoke"]`, editado **depois** do rebase (C-11);
+- `scripts/san3-06b-*.mjs` (novos; o de pendências é a **v2**, C-6);
+- `docs/platform-console.md` · `docs/platform-cloud-billing-ui.md` · `docs/frontend-menu-navigation.md:13` ·
+  `docs/backend-navigation-menu.md:32` · `docs/frontend-screens.md:369`;
+- registro: `agent-orchestration/controle/pendencias.md` (+ `pendencias-indice.md` se o gerador de índice exigir) ·
+  `agent-orchestration/docs/status-geral.md` · `agent-orchestration/codex/log-execucao.md` ·
+  `agent-orchestration/codex/comandos/B-SAN3-06b-console-plataforma-sem-ficcao.md` (novo, opcional — D-GOV regra 3) ·
+  `agent-orchestration/omega/juntas/**` **só se** a rota for junta completa (do orquestrador, não do dev) ·
+  `agent-orchestration/omega/revisoes/**` ou equivalente para o parecer do revisor (do orquestrador).
+
+**PROIBIDO** (§C4 + fronteira + D-GOV): tudo o que o §6 proibia (`src/**`, `prisma/**`, `.env*`, `package.json` da raiz,
+lockfiles, `pubspec.*`, `.github/workflows/**`, `frontend/src/App.tsx`, `appSidebarNav.ts`, `AppShell.tsx`,
+`PlatformLayout.tsx` fora de `PLATFORM_NAV`, `frontend/src/modules/navigation/**`, `tenantNavigation.ts`, `types.ts`,
+`modules/auth/**`, `mocks/**`, `config/env.ts`, `services/**`, `components/**`, `hooks/**`, `tests/e2e/**`, `tests/**` da
+raiz, `mobile/**`, `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.agents/**`, `PLANO_SAN3.md`, arquivos-base, outros `docs/**`)
+**mais:** `Kpis/**` **inteiro** (KPI congelado — inclui `app.js` e `index.html`) · `scripts/kpi-freeze.mjs` ·
+`scripts/bootstrap-platform-admin.ts` (o guard T43 só **lê**) · os testes existentes `platform-overview.smoke.test.tsx` e
+`platform-tenant-detail.smoke.test.tsx` (se um deles precisar mudar, o dev **para** — C-1) · as funções de escrita de
+dinheiro em `cloud-billing.{adapter,service}.ts` (C-2: byte-idênticas).
+
+**Prova do escopo (laço, não leitura):** `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO; `--numstat` de
+`PlatformLayout.tsx` = `1 5` e de `platform-health-honest-stop.smoke.test.tsx` = `1 1`; `git diff --name-only
+origin/main...HEAD -- Kpis src prisma mobile tests/e2e .github` → vazio.
+
+### R.5 Bateria atualizada
+EM APURAÇÃO
+
+### R.6 Rota de aprovação (D-GOV-PROPORCIONAL)
+EM APURAÇÃO
+
+### R.7 Veredito
+EM APURAÇÃO
