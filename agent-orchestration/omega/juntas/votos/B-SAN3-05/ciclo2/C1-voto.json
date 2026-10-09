@@ -1,0 +1,131 @@
+{
+ "jurado": "jurado-san305-c2-credencial-e-papel (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C1 — credencial e papel: SCRAM e log do servidor, view transitiva e replicação, boot e log sem conexão",
+ "mandato_md5": "40a88628c09e3d066600a7a9847dd896 · declarado no disparo: 40a88628c09e3d066600a7a9847dd896",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — o bloco não toca dinheiro",
+ "corpo_md5": "1fbee2ba9d4cdb13e79394a584899b06 · corpo recebido no prompt: n/a (lido do blob por git show; md5 declarado no disparo 1fbee2ba9d4cdb13e79394a584899b06)",
+ "objeto": "d00ca8ee832591c171098952052d5e8e8460b930 (git ls-remote do ramo = gh pr view 405 headRefOid, no início 08:35Z e no fim 09:19Z) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · merge-base c8af64580cb85ddf4960fecb2f8604384f8f0328 · cerca do mandato 0925482b3ee40ef27b0404fdb5a8e066ce2b26aa e delta só registro (4 arquivos em agent-orchestration/omega/juntas/votos/B-SAN3-05: 3 mandatos + parecer do inspetor; produto idêntico, git diff --quiet ec=0) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor da junta 2 que vale: votos/B-SAN3-05/ciclo2/00-inspetor-terreno.md (inspetor-de-terreno-da-junta, Opus declarado, no commit d00ca8ee de 08:26:15Z) · LIBERADO COM RESSALVA (R1–R7) · confere este nome, este corpo (1fbee2ba…), worktree C:/Users/AMP/w-j05c2c1 e prefixo j05c2-c1-: sim · check-runs d00ca8ee total=7 | não-verdes=0 | pendentes=0 · backend success / backend-postgres success · normas citadas presentes no objeto e na origin/main · anomalia de forma no parecer: horas 08:11–08:53Z incompatíveis com o commit que o contém (08:26Z) — nota",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 de 2 (último em que achado não grave bloqueia)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto · li do ciclo 1 e da trilha: plano (C2.1–C2.5, Fecho, erratas 1–3), DEV-ciclo2-relatorio.md (seções PARADA-D4/-2/-3 e D4, por grep), parecer do inspetor da junta 2; não li C1-*/C2-*/C3-* do ciclo 1 nem a ata",
+ "pausa": "nenhuma",
+ "voto": "REPROVADO",
+ "itens": {
+  "item1_B1_senha_scram_log": "VERDE no produto, com ajuste A1 — senha em claro 0 no server.log/terminal/argv em 66 células do objeto (6 configurações × sucesso, idempotência, cliente md5, MODOS 1–6, setsid; + tty) e no compose; SCRAM em todas as que concluíram (inclusive servidor/banco md5 e cliente md5); f/f/f; idempotente (diff 0); tty ≤ 311 ms sem esperar entrada; leitor visto achando em cada servidor; regra da matriz acusa célula fabricada; M-B1a vermelha (B7 b/c = 2; T14 l.780); M-B1b vermelha (T14 md5…; B7 f md5…); B14: entrypoint executa, SCRAM, login ok, senha 0 com leitor 1, sem senha exit 1; cabeçalho e docs conferem. A1: guarda estática não é fail-closed (V1/V2 passam 9/9 e vazam 1/2 no server.log).",
+  "item2_D2_D1_view_replicacao": "VERMELHO — A2: D2-3 (V de dono comum com SELECT em W → W do superusuário → tabela FORCE): o papel limpo lê 3 linhas de A e B inclusive com o GUC da organização A; trava real escapes [] e script ec=0 (o dono conferido é o da view raiz). A3: M-D2 no script deixa os 9/9 verdes (o T14 de dois níveis é acusado pela lógica de um nível por causa do DEFAULT PRIVILEGES). Verdes: D2-1, D2-2, D2-5; D2-4 sobre-aproximação (nota); M-D2 na trava → T8d vermelho; D1 honesto; M-D1 → T8d vermelho (l.706); B10: marcador da organização B no base.tar (1), controles ec=1/0/permission denied, trava recusa atributo:j7repl.",
+  "item3_D3_D4_boot_log": "VERDE no núcleo, com ajuste A4 e nota A5 — T15: 3 boots, código 1 lido do close em ≤15 s, 1ª falha com RUNTIME_ROLE_CAN_BYPASS_RLS antes de Redis/job worker, finally SIGTERM→SIGKILL, 90 s < 180 s; M-D3a → T15 (l.1199) e T2 vermelhos; M-D3b → T15 vermelho em 6,2 s, runner ec=1; D4: formas das erratas aceitas; M-D4 host/senha/papel vermelhas nas URLs da receita e da CI (papel=senha=postgres). A4: formas textuais session_user=/current_user=/via: aceitas em qualquer campo (mutação (3) assim fica 9/9). A5: falso vermelho quando pid/time contém 5432."
+ },
+ "justificativa": "TERRENO: worktree próprio detached C:/Users/AMP/w-j05c2c1 @d00ca8ee; setup.sh (md5 0025e91a…) adaptado da receita (sem trap, prefixo j05c2-c1-, árvore temporária removida); rede e containers sem porta (PortBindings {}); 3738/3738 blobs byte-idênticos e md5sum -c 0 divergência; node 20.20.2, psql 16.14, setsid presente; npm ci, prisma generate, 107 migrations; disco 12G → 11G; base viva intocada. · MECANISMO (script @d00ca8ee): senha só por ambiente; sessão 1 (postura+grants, DO atômico) → setsid obrigatório → sessão 2 printf | PGOPTIONS=…-c password_encryption=scram-sha-256 setsid -w psql -c password → sessão 3 (linha final). MODO 0/ALLOW_LOG_ALL: 0 em scripts/docs/src. · TABELA B7 (6 configs × 10 células + tty = 66 do objeto): sentinela 0 em server.log/stdout/stderr/argv-shim em todas; SCRAM em todas as que concluíram; MODOS 1–6 ec=3 nomeados; setsid ausente ec=3 com papel sem senha (RC1 fechado); idempotência diff 0; cliente md5 e servidor md5 → SCRAM; tty ec=0 ≤ 311 ms. Controles: SELECT proposital 1 em a–d, erro proposital ≥ 2 em todas, linha ALTER USER … PASSWORD 'SCRAM-SHA-256$…' 7 sob (a), argv host +4/−0, shim +1/−0, regra da matriz acusa a célula fabricada. · GUARDA ESTÁTICA × variantes: objeto verde; M-B1a vermelha (l.780, l.782); M-B1b verde (l.781 satisfeita pelo comentário l.9); V1 e V2 verdes e o arquivo inteiro 9/9 — e o B7 acusa V1 (1) e V2 (2) em a–d. · B14: modo 777 no bind → entrypoint 'running' (executa, não source); SCRAM, login ok, senha 0, leitor 1 (após corrigir defeito MEU no controle), sem senha → exit 1 nomeado; nenhum caminho abre /dev/tty. · TABELA D2 (probe real, papel limpo, tabela FORCE com a política das migrações, linhas A/B/B; limpo direto sem GUC = 0): D2-1 acusado (view:postgres:1; MODO 6); D2-2 acusado (aceite do D2); D2-3 NÃO acusado — limpo lê 3/A,B inclusive com GUC A, trava [], script ec=0; D2-4 acusado sem vazamento (sobre-aproximação); D2-5 limpo. Nuance: com o DEFAULT PRIVILEGES do script gravado e W criado depois pelo migrador superusuário, a trava acusa por W. · M-D2: trava → T8d vermelho ('escape view/postgres não encontrado: []', l.736); script → 9/9 VERDE (harness: banco fresco D2-2 ec=0 sob a mutação; com DEFAULT PRIVILEGES gravado, ec=3 pela view interna — o estado do T14). T8d honesto (marcador 0); M-D1 → T8d vermelho (l.706). B10: base.tar 31,5 MB com o marcador de B = 1; sem REPLICATION ec=1 'permission denied to start WAL sender'; marcador nunca posto 0; SQL direto permission denied / 0 linhas; trava recusa atributo:j7repl. · T15: 3 boots, os dois sinais, finally, 90 s < 180 s, ok em 4,4 s; log real: error sem message/stack, senha/host/URL 0. M-D3a: T15 (default, l.1199) e T2 vermelhos. M-D3b: T15 vermelho em 6,2 s, runner ec=1 sob timeout 300. · D4: aceita nos 2 sentidos as formas das erratas; aceita também, em qualquer campo, session_user=<papel> / current_user=<papel> / via:<papel>. TABELA M-D4 (receita | CI papel=senha=postgres): host vermelho | vermelho; senha vermelho | vermelho (pelo nome, colisão); papel vermelho | vermelho; papel como session_user=<papel> (forma minha) verde 9/9 | verde 9/9. Controles: postgresql:// recusado; só formas permitidas aceito. · VERMELHO-CONTROLE de cada item: item 1 — leitor visto achando, argv +/−, célula fabricada acusada; item 2 — D2-1 acusado pela trava, RLS morde direto (0) e superusuário lê (3), B10 três controles; item 3 — boot recusado e limpo vistos, guarda acusa postgresql:// e aceita só-permitidas. · SEM MEDIR: residual /proc/<pid>/environ (declarado por construção); estabilidade estatística do T15 (A5 reproduzido por fabricação e observado 1 vez em 16 rodadas). · HORAS: os cabeçalhos da minha evidência de 1(c) em diante foram escritos por estimativa e corrigidos pelas mtimes dos artefatos — declarado na evidência. · LIMPEZA: containers j05c2-c1-* e rede removidos (0), volumes anônimos removidos, worktree removido (0 processos antes), árvore temporária ausente, segredos descartáveis apagados, w-o05 só com os meus 2 arquivos. · VOTO: REPROVADO — a trava de boot e o MODO 6 não recusam um papel que lê, por uma cadeia de views (V de dono comum → W do superusuário → tabela FORCE), linhas de outra organização; e a transitividade do MODO 6 não tem teste que a guarde | escopo: dentro-do-bloco (trava d76b255f 2026-10-02 e recursão d9fc0d6d 2026-10-08, ambas deste bloco) | classe: grave: vazamento entre organizações (A2) e não grave (A3) | evidência: D2-3 executado em PG16 migrado — limpo lê 3/A,B com GUC A, probeRuntimeRolePosture escapes [], script ec=0; M-D2 no script → node --test 9/9 verde (N=1) + harness fresco ec=0 × com DEFAULT PRIVILEGES ec=3",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote / gh pr view 405 / gh api …/commits/d00ca8ee…/check-runs",
+   "forma": "Windows, Git Bash; início e fim",
+   "resultado": "d00ca8ee nas duas fontes, início e fim; 7 check-runs completed/success"
+  },
+  {
+   "comando": "bash setup.sh d00ca8ee…",
+   "forma": "rede j05c2-c1-net, postgres:16 + erp-junta-node20-pg16:local, archive core.autocrlf=false, N=3738 blobs",
+   "resultado": "ec=0; 3738/3738 iguais; md5sum -c 0 divergência; npm ci / prisma generate / migrate deploy (107) ec=0"
+  },
+  {
+   "comando": "bash b7-run.sh <cfg> … (b7-driver.sh dentro do container)",
+   "forma": "6 servidores postgres:16 (a log_statement=all; b log_transaction_sample_rate=1; c log_min_duration_sample=0+log_statement_sample_rate=1; d log_min_duration_statement=0; e defaults; f password_encryption=md5 + ALTER DATABASE); sentinela por célula só por export; shim de psql para argv; Win32 para argv do host",
+   "resultado": "66 células do objeto com sentinela 0; M-B1a/V1/V2 vazam em a–d; M-B1b dá md5 em f e no cliente md5; controles positivos ≥ 1"
+  },
+  {
+   "comando": "node static-guard.mjs <teste> <scripts…>",
+   "forma": "as 4 asserções extraídas do próprio teste (l.780–783)",
+   "resultado": "objeto verde; M-B1a vermelha; M-B1b, V1, V2 verdes"
+  },
+  {
+   "comando": "bash mutrun.sh <rótulo> <arquivo> <âncora> <substituto> (runtest.sh: node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts)",
+   "forma": "pristino → âncora=1 → diff → bash -n/tsc → mede → restaura → md5 = blob; 17 rodadas",
+   "resultado": "base 9/9; b1a 7/9 (T14 l.780); b1b 7/9 (T14 md5); v1 9/9; v2 9/9; md2t 7/9 (T8d); md2s 9/9; md1 7/9 (T8d l.706); md3a T15+T2 vermelhos; md3b T15 vermelho 6,2 s ec=1; md4h/s/p 6/9 nas 2 URLs; md4t 9/9 nas 2 URLs; RESTORE_OK em todas"
+  },
+  {
+   "comando": "bash b14-run.sh",
+   "forma": "postgres:16 com o script do objeto em /docker-entrypoint-initdb.d/10-runtime-role.sh:ro, -c log_statement=all; caso sem senha",
+   "resultado": "running (exec); SCRAM; login ok; senha 0; leitor 1 (após corrigir o controle); sem senha exit=1"
+  },
+  {
+   "comando": "docker exec … bash /tmp/d2-harness.sh (probe.ts = probeRuntimeRolePosture real)",
+   "forma": "PG16 migrado; tabela FORCE própria com a política das migrações; D2-1…D2-5; e com /tmp/mut/md2s.sh (fresco e com DEFAULT PRIVILEGES)",
+   "resultado": "D2-3: limpo lê 3/A,B com GUC A, trava [], script ec=0; md2s fresco D2-2 ec=0; com DEFAULT PRIVILEGES ec=3 pela view interna"
+  },
+  {
+   "comando": "bash b10-run.sh (b10-inner.sh)",
+   "forma": "postgres:16 com host replication all all scram-sha-256; pg_basebackup -F t -X none -c fast como papel REPLICATION sem privilégio",
+   "resultado": "ec=0; marcador de B no base.tar = 1; sem REPLICATION ec=1; marcador nunca posto 0; SQL direto permission denied / 0; trava recusa atributo:j7repl"
+  },
+  {
+   "comando": "boot-probe.sh; node d4-guard.mjs; node d4-pid.mjs; bash ci-setup.sh",
+   "forma": "boot de produção real sem a variável; funções da guarda extraídas do próprio teste (l.240–360) e transpiladas; forma da CI papel=senha=postgres via proxy localhost:5432",
+   "resultado": "log real sem message/stack e sem senha/host/URL; formas textuais aceitas em qualquer campo; pid/time com 5432 → falso 'port apareceu'"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A2 — a trava de boot (RUNTIME_ROLE_GUARD_SQL) e o MODO 6 do script não recusam um papel que lê, por uma cadeia de views, linhas de outra organização: com V (dono = papel comum com SELECT em W) → W (dono = superusuário) → tabela FORCE e SELECT em V para o papel, a trava devolve 0 escapes e o script sai ec=0. A via view confere o dono da view RAIZ, não o da view W que o enunciado do D2 nomeia.",
+   "evidencia": "d2-harness.sh + probe.ts em PG16 migrado: D2-3 lido pelo limpo sem GUC 3/A,B, com GUC A 3/A,B, superusuário 3 :: trava escapes [] :: script ec=0; controle D2-2 (donos postgres) acusado; src/database/runtime-role.ts l.44-47 e scripts/db-runtime-role.sh l.101-103 (JOIN pg_class v ON v.oid = vf.root_oid JOIN pg_roles o ON o.oid = v.relowner); plano l.1418-1421; RLS morde no mesmo banco (limpo direto sem GUC = 0)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — trava nasceu em d76b255f (2026-10-02) e a recursão em d9fc0d6d (2026-10-08), ambas deste bloco (git log --diff-filter=A / -S)",
+   "classe": "grave: vazamento entre organizações",
+   "motivo": "propriedade ausente: o papel de runtime não contorna FORCE RLS por view de qualquer cadeia — aqui o papel lê linhas de outra organização por uma cadeia de views e nem a trava nem o MODO 6 acusam. Condição medida: o papel sem SELECT direto em W (W anterior ao script, de dono que não é o migrador do DEFAULT PRIVILEGES, ou com SELECT revogado); o catálogo do objeto tem 0 views hoje."
+  },
+  {
+   "defeito": "A3 — a transitividade do MODO 6 do script não tem teste que a guarde: a M-D2 no script (a junção recursiva do DO volta a um nível) deixa o arquivo de teste inteiro verde.",
+   "evidencia": "mutrun md2s (scripts/db-runtime-role.sh l.86 + 'AND false', âncora=1, bash -n 0): # tests 9 # pass 9 # fail 0; harness com a mesma cópia: banco fresco D2-2 → ec=0 (a mutação quebra a propriedade); com DEFAULT PRIVILEGES gravado → ec=3 por view:j7d2_w2 (a interna); no T14 o papel roda o script com sucesso 2 vezes (l.786-809) antes de innerView/outerView nascerem (l.811-818) e herda SELECT nas duas",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — caso de view do T14 nasceu em d9fc0d6d (2026-10-08, git log -S s305_script_vo)",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: a M-D2 no script deixa um teste vermelho (plano D2: voltar a junção para um nível → o caso de dois níveis passa na trava e no script, o teste fica vermelho); o caso de dois níveis do T14 é acusado pela lógica de um nível."
+  },
+  {
+   "defeito": "A1 — a guarda estática do (i) do T14 reconhece grafias (:'password', san3.password, set_config(…password, ALTER ROLE %I WITH PASSWORD %L), não a propriedade 'o SQL enviado não tem caminho para a senha em claro'.",
+   "evidencia": "V1 (getenv segredo DB_RUNTIME_PASSWORD + SELECT set_config('san3.segredo', :'segredo', false)) e V2 (set pw com backtick printenv + SELECT format('ALTER ROLE %I PASSWORD %L', …) gexec): static-guard.mjs verde; arquivo de teste inteiro 9/9; B7 server.log 1 e 2 ocorrências em a, b, c, d. Corolário: a l.781 é satisfeita pelo comentário l.9 do script (M-B1b deixa a guarda estática verde)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — guarda nasceu em d9fc0d6d (2026-10-08)",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: guarda fail-closed do aceite (i) — o plano pede nenhuma interpolação :'…' da variável da senha e nenhum set_config com ela, e V1 é exatamente isso com outro nome. Não bloqueia: o produto mede 0 em 66 células e a CI não ler o log do servidor é residual declarado (C2.5, item 3)."
+  },
+  {
+   "defeito": "A4 — a guarda D4 aceita o nome de papel em QUALQUER campo quando escrito session_user=<papel>, current_user=<papel>, atributo:/posse:/view:<papel>, e aceita session_user= na mensagem — formas que as erratas 1–3 não dão.",
+   "evidencia": "d4-guard.mjs (funções do próprio teste, l.240-360): payload.diag='session_user=<papel>' ACEITA; 'current_user=<papel>' ACEITA; payload.note='posse:<papel>' ACEITA; mensagem '(session_user=<papel>, …)' ACEITA; mutação (t) no logger da trava (diag: `session_user=${posture.sessionUser}`) → 9/9 verde nas URLs da receita e da CI; nenhum log real usa essas formas (pino serializa error sem message)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — regex textual nasceu em 02544a79 (2026-10-08, 'aplica terceira errata')",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: nome de papel em qualquer outro campo segue proibido (erratas 2 e 3); a guarda aceita o nome num campo que as erratas não dão. Nome de papel é identidade, não credencial (decisão do dono)."
+  },
+  {
+   "defeito": "A5 — o T15 dá falso vermelho 'port da conexão apareceu no log' quando o pid ou o time serializado pelo pino contém o número da porta.",
+   "evidencia": "mut-md4p-ci: T15 caiu por 'port' (l.1189) sem a porta no log; d4-pid.mjs sobre linha real do pino, URL da CI: pid 4321 aceita; pid 5432, pid 15432 e time …54321 recusam",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco — assertConnectionSecretsAbsent nasceu em d9fc0d6d (2026-10-08)",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: o leitor procura o componente da URL por substring no texto inteiro, inclusive em campos numéricos do logger — instabilidade do lado fechado."
+  },
+  {
+   "defeito": "Notas de redação e de terreno",
+   "evidencia": "(i) B14: o entrypoint EXECUTA o script (modo 777 no bind), não faz source como o plano C2.4 diz; (ii) docs/deployment.md l.157 'uma linha' — stdout tem 2 (DO + linha final) e stderr 2 linhas de prompt; (iii) o Ato 1 manda digitar DB_RUNTIME_PASSWORD='<senha nova>' na linha de comando (histórico do shell do operador), resíduo do procedimento não declarado; (iv) sob tty o terminal exibe os 2 prompts do password sem ler deles; (v) D2-4 sobre-aproximação fail-closed; (vi) 6 subtestes sem timeout próprio (herdam 180 s; o D3 cobre o T15, que tem); (vii) horas do parecer do inspetor incompatíveis com o commit que o contém — e as minhas também, corrigidas e declaradas",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (docs 041e414b ciclo 1; teste d9fc0d6d)",
+   "classe": "não grave",
+   "motivo": "redação/terreno sem efeito em segurança"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "Contra a régua do plano: o caso de dois níveis do T14 (MODO 6) não pode falhar sob a M-D2 do script, porque o DEFAULT PRIVILEGES gravado pelas execuções anteriores do próprio script concede SELECT na view interna (= A3).",
+  "Contra a régua do plano: o aceite do D2 (as duas views do superusuário) não distingue 'dono da raiz' de 'dono de W' — a forma literal do aceite passa com a implementação que falha no D2-3 (= A2).",
+  "Contra a régua: na B7 (e) e (f) a coluna 'sentinela no server.log' é 0 por construção (o servidor não registra statements) e não distingue objeto de mutante — o veredito do B1 apoiou-se em (a)–(d); em (e)/(f) o leitor foi visto achando só pelo erro proposital.",
+  "Controle meu que falhou e foi refeito: o controle positivo do leitor no B14 deu 0 na 1ª tentativa por defeito MEU (variável não exportada ao docker exec); corrigido e re-executado no mesmo servidor vivo → 1."
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI (residual declarado; a matriz é a B7 da junta) — por isso A1 é ajuste",
+  "Residuais declarados por construção: /proc/<pid>/environ do psql e o verificador SCRAM no log (dicionário offline; senha aleatória longa) — C2.5 item 3",
+  "P-SAN3-05-RUNNER-SEM-TIMEOUT (J5) — timeout por arquivo do runner, pré-existente",
+  "Da C2: estabilidade do lote -db (T11e pego pela CI, insumo do inspetor), canário, guarda estrutural, N=10/N=3, escopo, integração, suíte inteira — não medi",
+  "Da C3: gerador, fixtures, catálogo↔L0, superfície — não medi",
+  "Integração da main depois do voto (R4) — não é objeto meu"
+ ],
+ "teardown": "containers j05c2-c1-* (node, pg, ci-pg; antes b7-a…f, b14, b14n, b10) removidos por docker rm -f -v (volumes anônimos dos 2 pg conferidos removidos; total de volumes voltou a 20) e rede j05c2-c1-net removida, contagem 0 conferida · árvore temporária /c/Users/AMP/t-j05c2c1 removida no setup · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j05c2c1 removido por git worktree remove --force (ec=0, ausente do worktree list) · 17 mutações restauradas com md5 = blob (RESTORE_OK) antes de o container sair · sondas (/work/.j05c2c1) removidas com o container · segredos descartáveis e logs de servidor com senhas descartáveis apagados do scratchpad · base viva (erp-postgres/erp-redis/erp-postgres-alt) nunca tocada · w-o05 só com ciclo2/C1-evidencia.md e ciclo2/C1-voto.json · resíduo ALHEIO (18 volumes órfãos, worktrees de pré-voo, janela pwsh 3120) apenas visto, não tocado"
+}
