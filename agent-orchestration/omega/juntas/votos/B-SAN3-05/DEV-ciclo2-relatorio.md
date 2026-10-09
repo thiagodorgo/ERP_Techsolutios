@@ -273,11 +273,11 @@
 
 ### B13 — `git diff --check`
 
-**Comando:** `git diff --check` antes dos commits incrementais e antes do registro da parada.
+**Comando:** `git diff --check` antes de cada commit incremental; fecho com `git diff --check origin/main...HEAD` no Windows.
 
-**Saída resumida:** ec=0 em todas as medições.
+**Saída resumida:** ec=0 em todas as medições, inclusive no diff completo de **87 arquivos** contra `origin/main`.
 
-**Resultado:** PASSOU na árvore atual; o B13 final contra `origin/main...HEAD` aguarda retomada.
+**Resultado:** PASSOU — **1/1**, ec=0.
 
 ### B14 — caminho do compose
 
