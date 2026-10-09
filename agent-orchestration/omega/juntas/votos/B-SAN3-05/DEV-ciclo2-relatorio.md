@@ -291,6 +291,20 @@
 - **Estado local preservado, ainda não commitado:** `scripts/db-runtime-role.sh`, `src/database/runtime-role.ts`, `docs/deployment.md` e `tests/san3-05-runtime-role-guard-db.test.ts` contêm a fatia parcial B1/B2/D1/D2; `git diff --check` = 0. Nenhum arquivo proibido foi tocado; `scratchpad/` segue preservado.
 - **Próximo comando após decisão:** reler a nova errata na ref empurrada, registrar a resolução aqui e concluir primeiro `tests/san3-05-runtime-role-guard-db.test.ts` antes de iniciar B3/B4.
 
+### RESOLUÇÃO-PARADA-D4-2 — decisão do dono no commit `dee3f821a56ca99e11059e8e34a5d48438841329`
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass`; leitura da “Errata 2 ao D4 — DECISÃO DO DONO” na ref atual.
+- **Saída resumida:** local = remoto = `dee3f821a56ca99e11059e8e34a5d48438841329`; os quatro arquivos parciais continuam modificados e `scratchpad/` intacto.
+- **Decisão §A1.1:** `rolname` pode aparecer como valor de `session_user`, `current_user`, `escapes[].rolname` e no texto `via:rolname`; permanece proibido em URL/DSN ou qualquer outro campo. Host, porta, senha, banco, `postgresql://` e `password` continuam proibidos; três mutações negativas obrigatórias; bootstrap continua PROIBIDO.
+- **Resultado:** PASSOU — PARADA-D4-2 resolvida; desenvolvimento retomado da fatia parcial B1/B2/D1/D2.
+
+### QUEDA DE USO E RETOMADA — 2026-10-08T21:07Z / 2026-10-09T01:42:50Z
+
+- **Comando:** `git -C C:/Users/AMP/w-o05 status --short`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`.
+- **Saída resumida:** 5 arquivos modificados (`DEV-ciclo2-relatorio.md` e os 4 arquivos parciais de produto), `scratchpad/` não rastreado e preservado; remoto = `dee3f821a56ca99e11059e8e34a5d48438841329`.
+- **Ocorrência:** a sessão anterior caiu por limite de uso do Codex às `2026-10-08T21:07Z`; nenhuma mudança remota ocorreu durante a interrupção.
+- **Resultado:** PASSOU — retomada em `2026-10-09T01:42:50Z`, sem perda dos arquivos parciais e sem divergência do head remoto informado pelo dono.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
