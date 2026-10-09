@@ -257,11 +257,11 @@
 
 ### B11 — suíte inteira e build
 
-**Comando:** `DATABASE_URL=<descartável> npm test` sob `timeout 2400s` em `dev05c2-bateria-*`; reexecução diagnóstica com Redis também descartável `dev05c2-diag3-redis`; logs oficiais por `gh run view --job 113637900062 --log-failed`.
+**Comando:** no objeto de produto `02544a79cead8d9713354697f8ee78dac1575546`, cópia por `git archive -c core.autocrlf=false`, conferência blob a blob, PostgreSQL 16 e Redis 7 descartáveis sem porta no host, `DATABASE_URL=<descartável> npm test` sob `timeout 2400s` e `npm run build` sob `timeout 600s`; containers/redes `dev05c2-final-*`. Confirmação no head de registro `c2df97cc3b87cf5e7a17bfa2cdea050d8af9f8aa` pelo check-run oficial `backend` `113692887553`.
 
-**Saída resumida:** primeira rodada local sem Redis: **3118/3132**, 12 falhas de terreno Redis + guard/T14/T15, skipped 2. Com Redis descartável e a contagem local do guard corrigida: **3126/3132**, fail 4, skipped 2; as falhas materiais ficaram no T15 e nos pais TAP. CI oficial repetiu **3126/3132**, fail 4, skipped 2; `backend-postgres` ficou verde. `npm run build` não foi iniciado depois do vermelho.
+**Saída resumida:** integridade **3726/3726** blobs e **3726/3726** MD5 dentro do container. Duas rodadas diagnósticas com paralelismo visível 8 e uma com cota que ainda expunha 8 produziram **3128/3132**, fail 2, skipped 2: só T15 + pai, porque o evento `close` passou do teto sob saturação; nenhuma foi publicada como verde. Com afinidade `--cpuset-cpus=0-3` (`availableParallelism=4`), o comando literal fechou **3130/3132**, fail 0, skipped 2; `npm run build` ec=0. Teardown: 0 container, 0 rede, árvore temporária removida. No head `c2df97cc`, que acrescenta somente registros, o `backend` oficial repetiu **3130/3132**, fail 0, skipped 2, e o passo Build ficou verde.
 
-**Resultado:** VERMELHO — PARADA-D4-3; build pendente.
+**Resultado:** PASSOU — suíte **3132/3132** (3130 pass + 2 skips permitidos), fail 0; build 1/1, ec=0.
 
 ### B12 — premissas e diff do guard de catálogo
 
