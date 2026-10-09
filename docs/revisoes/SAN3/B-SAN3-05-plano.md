@@ -2163,3 +2163,193 @@ ec=0; contêineres `pl05c3` = 0, redes = 0, volume anônimo do pg = removido, á
 
 STATUS: COMPLETO — `planejador-ciclo3-b-san3-05` · Claude Opus 5.5 (`claude-opus-5-5`), substituição declarada (§C7.6-bis: Fable só em
 bloco de dinheiro, decisão do dono de 2026-10-08) · 2026-10-09 15:17Z · objeto `fix/runtime-role-sem-bypass@b37b9af0`.
+
+## Ciclo 4 — planejador-ciclo4-b-san3-05
+
+> **Papel:** `planejador-mestre` · **identidade nova:** `planejador-ciclo4-b-san3-05` (não achou, não desenvolveu, não votou,
+> não planejou ciclo anterior). **Modelo: Claude Opus 5.5 (`claude-opus-5-5`) — substituição declarada (§C7.6-bis):** o bloco
+> não toca dinheiro; Fable só em dinheiro (`D-FABLE-ASTRA-SO-DINHEIRO`). **Objeto medido:** `fix/runtime-role-sem-bypass@37c83064`
+> (worktree `C:/Users/AMP/w-o05`). **Fonte §A1.1:** `D-405-PROIBIR-VIEWS` (decisoes.md, 2026-10-09) — *"Proibir qualquer view
+> (Recomendado)"*. Escrito incrementalmente; não commito.
+
+### C4.1 Vermelho-controle no objeto (medido 17:32–17:45Z)
+
+**Terreno.** `setup.sh` (md5 `9057a4c9…`) = passos 1–4 da `receita-pg16.sh` (md5 `9861a2aa…`), prefixo `pl05c4-`, rede própria, sem
+porta no host: `postgres:16` 16.14 + `erp-junta-node20-pg16:local` (node 20.20.2, psql 16.14); `blobs=3760 byte_identicos=3760`,
+`md5sum -c` no contêiner 0 divergência; md5 blob = contêiner: script `911fddc1…` (o que a C1 mediu), `runtime-role.ts` `692d953d…`,
+guarda `a7b09615…`; `npm ci`/`generate`/`migrate deploy` (107) ec=0. Migrado: 115 tabelas, **106 FORCE**, **0 views em `public`**,
+**0 relações no `view_force`**. `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo.
+
+**A forma de coluna da C1 escapa hoje.** Clone `c4fx`, fixture `fx.sql` (md5 `bb1f0e10…`): `c4_t` ENABLE+FORCE com a política das
+migrações, linhas A, B, B; `c4_wcol` view de dono `postgres`; leitores `LOGIN NOINHERIT` com `GRANT SELECT (tenant_id, value)`,
+`UPDATE (value)` e `INSERT (tenant_id, value)` **só** na view (`has_table_privilege` lista = `f`, `has_any_column_privilege` = `t`).
+Sob o contexto A: `SELECT` → **`A,B,B`** (direto na tabela: `permission denied`); `UPDATE … SET value='tocado'` sem `WHERE` →
+**`UPDATE 3`**; `INSERT` de linha B → **`INSERT 0 1`**. Trava REAL (`probe.ts`) → **`escapes=[]`** nos três; boot real
+(`assertRuntimeDatabaseRoleIfEnforced({enforce:true})`) → os três **ACEITOS**; script do objeto para papéis **novos** com privilégio
+só de coluna → **ec=0**, sem `MODO 6`, final `…|0|0|116`, e o papel entregue, logado com a senha que o script definiu, lê
+**`A,B,B,B`** e faz **`UPDATE 4`** sob A. **C1-c3-01 e C1-c3-02 reproduzem no `37c83064`.**
+
+### C4.2 A propriedade, os trechos, o que sai, a documentação e o aceite
+
+**(1) Propriedade (a da decisão, sem acréscimo):** *a via `view` recusa se existe no banco **qualquer** relação `v`/`m`, de
+qualquer esquema e dono, cuja árvore (`view_walk` por `pg_rewrite`/`pg_depend`) alcança tabela `r`/`p` com `relforcerowsecurity` —
+sem olhar dono, privilégio (tabela ou coluna), herança nem pertença.* A via passa a ser do **banco**, não do papel. Formato da linha
+inalterado (`rolname` = dono da view, só diagnóstico; `objetos` = nº de views proibidas dele): tipos, bootstrap e log não mudam. O
+script nomeia cada view (`view:<regclass>`). Catálogo do sistema não dispara (medido: 0 mesmo sob a M4c, sem o filtro FORCE).
+
+**(2) O que sai — inteiro, não fica como defesa extra:** o CTE `view_escape` (3 cópias) e os filtros de privilégio e de dono do ramo
+`view` (trava l.55, `DO` l.112, linha final l.158): o que eles recusavam o `view_force` já recusa (subconjunto estrito), e mantê-los
+conservaria a dimensão que a C1 mostrou incompleta. **Ficam:** o `has_table_privilege` da coluna `dml` (contagem de tabelas) e a
+recursão do `view_walk`, só como diagnóstico — a decisão não depende dela, mas ela lista a cadeia que o operador derruba (medido:
+cadeia de 2 → `objetos 2`, `view:c4_vo, view:c4_wi`).
+
+**(3) Trechos exatos** (especificação validada numa candidata só no contêiner — `gen-cand.py` md5 `bd6158c8…` → `cand.ts`
+`618e7ec6…`, `cand.sh` `956a83c4…`; o dev escreve no ramo, a candidata foi apagada no teardown):
+- *`src/database/runtime-role.ts`* — apagar l.26-32 (`), view_escape AS (` … `)`), o `)` do `view_force` fecha o `WITH`; ramo `view`
+  l.52-55 passa a `FROM view_force vf JOIN pg_class v ON v.oid = vf.root_oid JOIN pg_roles o ON o.oid = v.relowner`, **sem `WHERE`**
+  (o `SELECT`/`GROUP BY` ficam). Comentário l.2-11 diz a propriedade nova (md5 diagnóstico regravado; não é critério). Mensagem
+  do `RuntimeRoleGuardError` (l.108): acrescentar *"e nenhuma view/matview sobre tabela FORCE"*. Nada mais.
+- *`scripts/db-runtime-role.sh`* — apagar o `view_escape` do `DO` (l.95-101) e da linha final (l.147-153); ramo `view` do `DO`
+  (l.110-112) → `SELECT DISTINCT 'view', v.oid::regclass::text FROM view_force vf JOIN pg_class v ON v.oid = vf.root_oid`;
+  coluna `views` (l.158) → `(SELECT count(*) FROM view_force) AS views`; `RAISE` (l.115) com o remédio novo (*nenhuma view/matview
+  pode alcançar tabela FORCE: DROP VIEW/DROP MATERIALIZED VIEW de cada uma*) — **tirar o último `%` junto com o último argumento
+  `v_role`** (PL/pgSQL recusa contagem desigual); cabeçalho l.3-4 e l.20-21. `100755`, `eol=lf`, B1 (`\password`/`setsid`) intactos.
+- *`docs/deployment.md`* — via `view` (l.95-97), MODO 6 (l.127-129) e a frase do compose *"Toda view que uma migração criar…"* (l.134-136): **regra operacional
+  "nenhuma view nem matview sobre tabela protegida (FORCE RLS), em nenhum esquema, de nenhum dono"**; a trava recusa o boot, o
+  MODO 6 lista cada view; uma migração que crie uma deixa o T5/T15 vermelhos na CI antes do deploy. Só esses trechos.
+
+**(4) Aceite.**
+
+| # | aceite | onde |
+|--:|---|---|
+| AC4-1 | As formas de coluna da C1 (SELECT, UPDATE, INSERT de coluna; âncora tabela=`f`, coluna=`t`), a view de dono comum **sem grant nenhum** ao papel e a matview são recusadas pela trava REAL (linha `view` exata do caso) e pelo MODO 6 (`ec=3`, `view:<objeto>`); cada forma de coluna prova o efeito (lê/altera/grava B sob A). | T8e, T14d |
+| AC4-2 | Controle: view sobre tabela **sem** FORCE → 0 escape na trava e `ec=0`, `views=0` no script; banco migrado → 0. | T8e, T14d, T5 |
+| AC4-3 | As 3 mutações do C4.3, cada uma em (t) e em (s) separadamente, deixam vermelho o T8e (t) ou o T14d (s) **pela asserção do caso indicado**. | D5 |
+| AC4-4 | 1 bloco `view_walk…view_force` na trava, 2 no script, iguais sem espaço; `view_escape` ausente das 3 fontes. | T8f |
+| AC4-5 | Sem regressão: T5/T6/T9, T7/T8, T8b/T8c, T14a/b, T14c e T15 byte a byte e verdes; bootstrap 12, acessos 35, leituras 13, `db-catalog-write-guard` 5. | C4.5 |
+
+### C4.3 Testes e mutações (só `tests/san3-05-runtime-role-guard-db.test.ts`)
+
+**A candidata no arquivo do objeto** (só no contêiner, 12 testes): **5 vermelhos** — T8c (`includes(from)` da via `view`), T8d e
+T8e (`objetos` 2 ≠ 1), T8f (0 bloco), T14d (controle C recusado) — e 6 verdes. São os cinco que o dev reescreve; nada mais:
+- **T8c** — sai o caso `view` (e os objetos dele: `tableView`, `view`, `loginView`): a via já não tem termo `session_user`. Ficam os
+  casos `atributo` e `posse`, intactos.
+- **T8d** — `objetos` 1 → **2** (as duas views da cadeia são listadas; prende a recursão como diagnóstico).
+- **T8e (reescrito)** — "qualquer view/matview sobre tabela FORCE recusa, sem olhar dono nem privilégio". Fixture: T ENABLE+FORCE
+  (política das migrações, linhas A, B, B); N **sem** FORCE; dono comum (`NOLOGIN NOSUPERUSER NOBYPASSRLS`); leitores `LOGIN` por
+  `CREATE ROLE` (nunca `createLogin`): `rnone` (sem grant algum), `rsel`/`rupd`/`rins` (`GRANT SELECT (cols)`/`UPDATE (value)`/
+  `INSERT (cols)` só na view). **Um caso por vez** (cria → mede → derruba no `finally`), porque a propriedade é do banco; cada
+  caso afirma o conjunto **exato** de linhas `view` (`deepEqual`), o que também prova o isolamento:
+  **COL** W(dono `postgres`)→T: âncora `has_table_privilege(r,W,'SELECT,INSERT,UPDATE,DELETE') = f` **e**
+  `has_any_column_privilege(r,W,'SELECT,INSERT,UPDATE') = t` nos três; efeito sob A (`rsel` lê B; `rupd` `UPDATE` sem `WHERE`
+  altera ≥ 1 linha de B; `rins` grava B — contados pelo admin); trava de `rsel`, `rupd`, `rins` e `rnone` = `[view/postgres/1]`.
+  **COM** V(dono comum)→T, nenhum grant: âncora `rnone` sem privilégio de tabela nem de coluna em V; trava = `[view/<comum>/1]`.
+  **MAT** matview(dono comum)→T, nenhum grant: idem, `[view/<comum>/1]`. **CTL** view(dono `postgres`)→N, `SELECT` a `rsel`:
+  `escapes.length === 0` para `rsel` e `rnone`.
+- **T14d (reescrito)** — os mesmos COL/COM/MAT/CTL, um por vez, cada um com papel de runtime **novo** (`NOLOGIN NOINHERIT`, nunca
+  passou pelo script; COL com privilégio **só de coluna**, os outros **sem nada**), âncora imediatamente antes, `runRoleScript` uma
+  vez: COL/COM/MAT → `status 3`, `/MODO 6/`, `view:<objeto do caso>`; CTL → `status 0` e `^<papel>\|f\|f\|f\|f\|0\|0\|`.
+- **T8f** — regex `/WITH RECURSIVE view_walk[\s\S]*?view_force AS \([\s\S]*?\n\s*\)(?=\s*\n\s*SELECT)/g` (medida na candidata:
+  1 + 2 blocos, iguais sem espaço, md5 `6e9fe5df…`) e `view_escape` ausente da trava e do script.
+- **Travas do arnês que o dev não pode mexer:** o T14c conta `spawnCommand(` 2, `runCatalogCommand(` 4, `ROLE_SCRIPT` 5, `spawn(`
+  2, `spawnSync(` 3 — não acrescentar nenhum (usar `runRoleScript`; o T8f lê o script por `path.join`); toda escrita de catálogo por
+  `catalog(admin, …)`; o `count` do `FROZEN_ALLOWLIST` (hoje 82) re-medido. Teste continua 12 (nenhum subteste novo). **Risco do
+arnês:** a propriedade é do banco — view sobre FORCE criada em paralelo por outro arquivo derrubaria T5/T8e/T14d; hoje nenhum outro
+`tests/**` cria view nem chama a trava real (`git grep` no objeto; o bootstrap usa cliente falso).
+
+**Mutações — medidas na candidata (`trava.sh` `3b858f7b…`, `script.sh` `ee4e2bcc…`, um banco clone por caso):**
+
+| id | mutação (separada em (t) trava e em (s) `DO`) | trava medida | MODO 6 medido | vermelho esperado |
+|---|---|---|---|---|
+| **M4a** | ramo `view` volta a filtrar por `has_table_privilege(…,'SELECT,INSERT,UPDATE,DELETE')` (a forma da C1) | COL, COM, MAT → `[]` | COL, COM, MAT `ec=0` | T8e (t) / T14d (s): COL, COM, MAT |
+| **M4b** | ramo `view` volta a filtrar por dono (`WHERE o.rolsuper OR o.rolbypassrls`) | COM, MAT → `[]`; COL segue pego | COM, MAT `ec=0` | T8e / T14d: COM, MAT |
+| **M4c** | sai `AND t.relforcerowsecurity` do `view_force` | CTL → `[view/postgres/1]` | CTL `ec=3 view:c4_vn` | T8e / T14d: CTL (e o T8f) |
+
+Candidata sem mutação: COL/COM/MAT recusados nos dois, CTL e banco sem view passam, cadeia lista 2; objeto (`37c83064`): **tudo**
+`[]`/`ec=0` — o vermelho-controle. Formas extras na candidata (um banco cada): view em outro esquema, tabela só em subconsulta, só
+em CTE, `security_invoker` → as 4 recusadas (`[view/postgres/1]`); objeto → `[]`. Regressão: `tsc --noEmit` ec=0; acessos 35/35;
+bootstrap 12/12.
+
+### C4.4 Escopo (§C4) — PERMITIDO e PROIBIDO
+
+**PERMITIDO (e nada mais):** `src/database/runtime-role.ts` (só a SQL, o comentário l.1-11 e a string da l.108) ·
+`scripts/db-runtime-role.sh` (só os dois CTE, o ramo `view` do `DO`, o `RAISE`, a coluna `views` e o cabeçalho) ·
+`tests/san3-05-runtime-role-guard-db.test.ts` (só T8c-caso-`view`, T8d-`objetos`, T8e, T8f, T14d e os helpers deles) ·
+`tests/db-catalog-write-guard.test.ts` (só a entrada do arquivo de guarda) · `docs/deployment.md` (só os 3 trechos do C4.2(3)) ·
+1 entrada em `agent-orchestration/codex/log-execucao.md` e em `agent-orchestration/docs/status-geral.md` ·
+`agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md` (saída do dev; P7 grava aqui).
+**PROIBIDO:** `Kpis/*` (congelado: diff vazio) · `prisma/**` · todo outro `src/**` (inclusive o bootstrap e `src/config/env.ts`,
+cuja frase *"view de dono que escapa"* é subconjunto verdadeiro da regra — nota para o orquestrador) · todo outro `scripts/**` e
+`tests/**` (T5, T7/T8, T8b/T8c, T14a/b, T14c, T15 byte a byte; `fixtures/`, `helpers/`) · `.github/**`, `package*.json`, lockfiles,
+compose, `Dockerfile`, `.env*`, `CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.agents/**`, `frontend/**`, `mobile/**`, `docs/revisoes/**`,
+`controle/pendencias*` e o resto de `omega/**`. **Nunca `git add -A`/`.`/`commit -a`**; `git diff --cached --name-only` ⊆ PERMITIDO e
+`git diff --cached --check || exit 1` em linha própria; os ` M` fantasmas de `.agents/` nunca entram. **Parada (fail-closed):**
+aceite que só passa tocando PROIBIDO, mutação que não fica vermelha pelo caso, ou T14c/catalog-guard exigindo mais que a
+entrada → o dev para e relata.
+
+### C4.5 Bateria do dev — dev `dev-ciclo4-b-san3-05` (Claude Opus ou Codex Sol, a critério do orquestrador)
+
+Terreno: Windows só `git`/`gh`; o resto pela `receita-pg16.sh` com prefixo próprio (`dv05c4-`), sem porta no host, teardown
+conferido; tudo sob `timeout`, `ec` em variável, sem `tail -f`, sem `export` de conveniência. **Linha de base medida por mim no
+objeto `37c83064`:** guard-db **12** · bootstrap **12** · acessos **35** · leituras **13** · `db-catalog-write-guard` **5** (todos
+fail 0, skipped 0). **Meta:** os mesmos N (o ciclo **troca** a prova, não acrescenta subteste), com 0 regressão.
+
+| # | comando (forma) | esperado |
+|--:|---|---|
+| D0 | head = `ls-remote` do ramo = head do disparo (o commit deste plano); `git diff --name-only <disparo>..HEAD` ⊆ PERMITIDO; `git diff --quiet <disparo> HEAD -- Kpis/` | iguais; 0 fora; ec=0 |
+| D1–D2 | `npm run check` · `npm run lint` (contêiner, 600 s) | ec=0 |
+| D3 | guard-db **3×** no mesmo contêiner (resíduo `s305%` entre elas) e **1×** sem `psql` no `PATH` | 3 × `# tests 12 # pass 12 # fail 0 # skipped 0`; 0 `XX000`/`23505`/`40P01`; sem `psql`: T14a/b e T14d vermelhos nomeando `psql: ausente` |
+| D4 | bootstrap · acessos · leituras · `db-catalog-write-guard` | **12 · 35 · 13 · 5**, fail 0, skipped 0 |
+| D5 | as **6** execuções do C4.3 (M4a/b/c × (t)/(s)), só na cópia do contêiner, âncora com contagem, `tsc`/`bash -n` ec=0, restauro md5 = blob | (t) → `not ok … T8e` no caso da tabela; (s) → `not ok … T14d` no caso; publicar a tabela 6 × (subteste, caso, mensagem) |
+| D6 | B7 mínima: script do head com `log_statement=all`, senha-sentinela só por ambiente — sucesso (papel novo) + MODO 6 do caso COL; leitor de controle | sentinela **0** no `server.log`/stdout/stderr; controle ≥ 1; `SCRAM-SHA-256$` |
+| D7 | `npm test` (suíte inteira, 2.400 s) e `npm run build` | fail 0; skipped ≤ 2; N publicado = executado; build ec=0 |
+| D8–D9 | `git ls-files -s`/`--eol` do script; `git diff --check <disparo>..HEAD`; diff do `db-catalog-write-guard` | `100755`, `eol=lf`; ec=0; só a entrada |
+| D10 | push; `gh api …/commits/<sha>/check-runs` | 7/7 `completed/success` antes de chamar o inspetor |
+
+**Tamanho do dev: pequeno.** `runtime-role.ts` ≈ −8/+5 linhas; script ≈ −16/+6; `deployment.md` ≈ 8; o arquivo de guarda ≈ 150–200
+linhas trocadas (T8e/T14d e helpers) + T8c −12, T8d 1, T8f 3; 1 entrada do catalog-guard. ≈ 40–60 min de código, ≈ 30–40 min de
+bateria (D7 é a mais longa).
+
+### C4.6 Junta 4 — três cadeiras novas
+
+**Regra.** Segurança/permissão → junta completa (§C7 item 8(1)): inspetor de terreno antes (instância nova; inspetores das juntas
+1–3 podem inspecionar, não votar), **unanimidade de 3, com veto**. **Ciclo 4: só defeito GRAVE reprova** (§C7 item 8(2): perde dado,
+vaza entre organizações, quebra permissão, erra dinheiro) com a leitura **R3/R4** de `decisoes.md` (escape medido que a trava REAL ou
+o MODO 6 deixam passar = grave; mutação não pega com o produto recusando = forma de teste, pendência; item não medido que possa
+esconder grave conta como reprovação, o resto vira pendência). Objeto = head do dev empurrado com check-runs concluídos; mandato
+forma A com pré-voo, HC = H0; P1–P7; máx. 3 itens; uma cadeira por vez no Claude; prefixos `j05c4-c1-/c2-/c3-`, sem porta no host.
+
+| cadeira | identidade nova | competência | itens |
+|---|---|---|---|
+| **C1** | `jurado-san305-c4-catalogo-de-views` | PostgreSQL 16: views/matviews, `pg_rewrite`/`pg_depend` (inclusive objetos fixados do `initdb`), FORCE RLS, privilégio de tabela × coluna, `regclass`/esquemas | **(1)** por execução, um banco por caso, no head: COL (SELECT/UPDATE/INSERT de coluna), COM sem grant, MAT, cadeia, CTL — trava REAL, boot real e MODO 6 — **e** ≥ 1 forma própria **dentro da decisão** (ex.: view em outro esquema, tabela só em subconsulta ou CTE, `security_invoker` — as três recusadas na candidata, roteiro e não fato): tem de recusar. **(2)** M4a/b/c × (t)/(s) vermelhas pelo caso; T8f 1 + 2 iguais, `view_escape` ausente. **(3)** Sem falso positivo no produto: banco migrado do head → 0 no `view_force`, T5/T15 verdes, catálogo do sistema não dispara. |
+| **C2** | `jurado-san305-c4-credencial-arnes-escopo` | SCRAM e log do servidor; concorrência de catálogo; `node:test`; escopo de PR | **(1)** B1: sentinela 0 em `server.log`/terminal/argv sob `log_statement=all`, no sucesso e no MODO 6 do caso COL; `SCRAM-SHA-256$`. **(2)** B2: guard-db + leituras N=3 com denominador idêntico (12/13), 0 `XX000`/`23505`/`40P01`, resíduo 0, contagens do T14c intactas. **(3)** Escopo: diff ⊆ PERMITIDO do C4.4, `Kpis/` sem diff, catalog-guard só a entrada e 5/5, `100755`/`eol=lf`, `diff --check`. |
+| **C3** | `jurado-san305-c4-boot-e-suite` | boot de produção e log da trava; ratchet do inventário; suíte inteira | **(1)** Boot real (`enforce`) recusa com uma view de dono comum sem grant e aceita sem ela; log da recusa sem host/porta/senha/banco (T9/T15). **(2)** `npm test` (fail 0, skipped ≤ 2, N = executado) + build; bootstrap 12, acessos 35 (T13 congelado), leituras 13. **(3)** Texto (`deployment.md`, comentário, `RAISE`, mensagem) diz a regra — **só nota**, nunca bloqueia. |
+
+**Inelegíveis por nome:** `agente-dba-guardiao`, `agente-secops`, `guardiao-fail-closed`; `jurado-san305-c2-credencial-e-papel`,
+`-c2-arnes-e-escopo`, `-c2-ratchet-e-superficie`, `-c3-trava-de-views`, `-c3-regressao-e-escopo`, `-c3-superficie-e-suite`; os
+inspetores das juntas 1–3 (não votam); `critico-b-san3-05`; os planejadores (v1/v2 `planejador-mestre`, `planejador-b-san3-05-v3`,
+`planejador-ciclo2-b-san3-05` e `-sucessor`, `planejador-dia-2026-10-09`, `planejador-ciclo3-b-san3-05`, `planejador-ciclo4-b-san3-05`);
+os devs (`dev-b-san3-05`, `-sucessor-1`, `-sucessor-2`, `dev-ciclo2-b-san3-05`, `dev-ciclo2-b-san3-05-api`, `dev405api`,
+`dev-ciclo3-b-san3-05`, `dev-ciclo4-b-san3-05` e sucessores). Corpos commitados no ramo julgado nos dois espelhos (`git add -f`).
+
+**Reprovação por construção (voto sem defeito; inspetor e ata descartam):** (1) cobrar **precisão de dono ou privilégio** na via
+`view` — recusar view de dono comum, sem grant, `security_invoker`, de outro esquema ou matview vazia **é a regra** do dono; (2)
+matéria **fora deste ponto** — regra em tabela e `SECURITY DEFINER` (`B-SAN3-10`), C2-A1/C3-c2-05 (PR só de testes), C3-c2-01,
+ajustes/notas do C3.6, o texto do `env.ts`, view criada depois do boot (a trava é de boot desde a v3); (3) não grave de qualquer
+forma (teste, registro, documentação, mandato, KPI); (4) C1-c3-03 e C1-c3-04, que **fecham por construção** (não há mais privilégio
+na via); (5) integração da `main` (orquestrador, pós-voto), norma inexistente na ref julgada (§A7), falha de infraestrutura.
+**Não-convergência:** view/matview que alcança FORCE e a trava não recusa = defeito do `view_walk` (cobertura do `pg_depend`) —
+informação nova, vai ao dono antes de qualquer ciclo 5.
+
+**Papéis (§C7.4-bis):** achou `jurado-san305-c3-trava-de-views` · decidiu o dono (`D-405-PROIBIR-VIEWS`) · planeja
+`planejador-ciclo4-b-san3-05` (Opus 5.5, substituição declarada) · desenvolve `dev-ciclo4-b-san3-05`. **Rollback:** `git revert` dos
+commits do ciclo (antes do merge) ou do squash (depois); sem migração; a trava volta à do ciclo 3. **Risco aceito pelo dono:** toda
+view futura sobre tabela FORCE derruba o boot; hoje 0, nenhuma funcionalidade quebra.
+
+**Teardown deste planejador (17:50Z):** `docker rm -f -v pl05c4-node pl05c4-pg` ec=0, rede `pl05c4-net` removida; contêineres e redes
+`pl05c4` = 0, volume anônimo do pg removido, árvore `/c/Users/AMP/t-pl05c4` ausente; candidata, mutantes e senhas descartáveis
+apagados do scratchpad; nenhum outro contêiner tocado (0 vivos); `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo; disco
+11 GB livres (igual ao início). No `w-o05` o único arquivo que alterei é este plano; nada commitado — o orquestrador versiona.
+
+STATUS: COMPLETO — `planejador-ciclo4-b-san3-05` · Claude Opus 5.5 (`claude-opus-5-5`), substituição declarada (§C7.6-bis: Fable
+só em bloco de dinheiro) · 2026-10-09 · objeto `fix/runtime-role-sem-bypass@37c83064`.
