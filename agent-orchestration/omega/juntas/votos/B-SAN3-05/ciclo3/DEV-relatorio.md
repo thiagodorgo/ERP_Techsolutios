@@ -55,6 +55,12 @@
 - **Saída resumida:** 9 pendências novas (`RATCHET-INST-SOME`, `IGUALDADE-CATALOGO-L0-SEM-TESTE`, `GUARDA-FILHOS-LISTA-FECHADA`, `CENARIO-JOB-CLOUD-CHARGES`, `TIMEOUT-MATA-SO-O-BASH`, `LIMPEZA-SEM-FINALLY-MIGRATOR`, `GUARDA-LOG-FORMA-TEXTUAL`, `T15-FALSO-VERMELHO-PORTA`, `REGRA-EM-TABELA`) e 2 sub-itens (`LOG-DO-SERVIDOR-FORA-DA-CI`, `SECURITY-DEFINER-INVENTARIO`). Índice gerado: 458 cabeçalhos / 447 IDs; ABERTA 338, FECHADA 117, SEM-STATUS 3.
 - **Resultado:** concluído. `P-SAN3-05-REGRA-EM-TABELA` está registrada como ALTA, dona `B-SAN3-10`, e explicitamente fora da implementação do ciclo 3.
 
+### C3.3 — escopo permitido/proibido — CONCLUÍDO
+
+- **Comando:** `git diff --name-only 91d794956309f6e63511bdfd76cbfddd8bf45c40..HEAD`; `git diff --quiet 91d79495 HEAD -- Kpis/`; inspeção nominal do staging antes de cada commit.
+- **Saída resumida:** somente `src/database/runtime-role.ts`, `scripts/db-runtime-role.sh`, `tests/san3-05-runtime-role-guard-db.test.ts`, a entrada autorizada de `tests/db-catalog-write-guard.test.ts`, os dois trechos de `docs/deployment.md`, pendências/índice e o relatório pedido pelo dono. `Kpis/`, `prisma/`, `.github/`, demais `src/scripts/tests`, espelhos de agentes e `scratchpad/` ficaram fora.
+- **Resultado:** escopo respeitado. As 33 marcações EOL-fantasma de `.agents/agents/*.md` e `scratchpad/` não foram staged nem alteradas.
+
 ### D1 — check — VERDE
 
 - **Comando:** `docker exec -w /work dev05c3-node bash -c 'timeout 600 npm run check'`.
@@ -97,17 +103,17 @@
 - **Saída resumida:** tentativa 1 executou 3135 testes, 3127 passes, 6 falhas e 2 skips — todas as seis falhas foram `ECONNREFUSED 127.0.0.1:6379`, por Redis ausente. Tentativa válida: `# tests 3135 # pass 3133 # fail 0 # skipped 2`; build `tsc -p tsconfig.json` ec=0; resíduos `s305%` = 0. Redis próprio publicou `{"6379/tcp":null}`; `erp-redis` nunca foi alvo.
 - **Resultado:** verde na forma válida; N executado = 3135, com 2 skips dentro do teto.
 
-### D8 — modo e EOL do script — EM APURAÇÃO
+### D8 — modo e EOL do script — VERDE
 
-- **Comando:** EM APURAÇÃO.
-- **Saída resumida:** EM APURAÇÃO.
-- **Resultado:** EM APURAÇÃO.
+- **Comando:** `git ls-files -s scripts/db-runtime-role.sh`; `git ls-files --eol scripts/db-runtime-role.sh`.
+- **Saída resumida:** modo `100755`; `i/lf w/lf attr/text eol=lf`.
+- **Resultado:** verde.
 
-### D9 — diff e allowlist — EM APURAÇÃO
+### D9 — diff e allowlist — VERDE
 
-- **Comando:** EM APURAÇÃO.
-- **Saída resumida:** EM APURAÇÃO.
-- **Resultado:** EM APURAÇÃO.
+- **Comando:** `git diff --check 91d79495..HEAD`; `git diff --quiet 91d79495 HEAD -- Kpis/`; `git diff 91d79495..HEAD -- tests/db-catalog-write-guard.test.ts`; lista nominal de caminhos do diff.
+- **Saída resumida:** diff-check ec=0; `Kpis/` ec=0; o ratchet mudou somente na entrada `san3-05-runtime-role-guard-db.test.ts` (64→82 + motivo). Caminhos alterados estão todos no permitido pelo plano ou no relatório explicitamente solicitado pelo dono.
+- **Resultado:** verde.
 
 ### D10 — push e check-runs — EM APURAÇÃO
 

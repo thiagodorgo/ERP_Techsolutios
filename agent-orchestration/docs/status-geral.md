@@ -4966,3 +4966,12 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
   do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
   porteiro do #401.
+
+## B-SAN3-05 — ciclo 3 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo3-b-san3-05`, Codex GPT-5.6 Sol, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** A2/A3 — via `view` transitiva para `SELECT/INSERT/UPDATE/DELETE`, dono `rolsuper`/`rolbypassrls` em qualquer nó e matview como escape; T8e/T8f/T14d; documentação operacional.
+- **Prova:** guarda DB 3 × 12/12; regressões 12/12 + 35/35 + 13/13 + 5/5; mutações M-D2a…e × trava/script = 10/10 vermelhas pelo comportamento; B7 mínima sem sentinela; suíte integral válida 3133/3135, 0 falhas, 2 skips; build/check/lint verdes.
+- **Terreno:** `dev05c3-pg`, `dev05c3-node`, `dev05c3-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo.
+- **Registro:** nove pendências novas e dois sub-itens; `P-SAN3-05-REGRA-EM-TABELA` permanece fora do ciclo 3, dona `B-SAN3-10`; KPI congelado e sem diff.
+- **Próximo:** head final empurrado → check-runs concluídos/verdes → inspetor e junta 3; sem abrir/fechar/mergear PR pelo dev.
