@@ -4823,3 +4823,9 @@ bloco mergear.
 - B7 mínima: sucesso 0, caso S MODO 6/ec=3, SCRAM verdadeiro, senha-sentinela 0 no servidor/terminal, controle de log 1. Suíte integral válida com Redis descartável próprio: 3135 executados, 3133 passes, 0 falhas, 2 skips; build/check/lint verdes.
 - A primeira suíte integral sem Redis foi declarada inválida: 6 falhas `ECONNREFUSED 127.0.0.1:6379`; repetição com `dev05c3-redis` sem porta no host ficou verde. Nenhum serviço `erp-*` foi alvo.
 - Pendências C3.6 registradas e índice regenerado. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/DEV-relatorio.md`.
+
+## B-SAN3-05 — ciclo 4 do dev (2026-10-09)
+
+- `dev-ciclo4-b-san3-05` (Claude Opus 5.5, substituição declarada) implementou a seção "Ciclo 4" do plano sobre o disparo `7c63f920`: `D-405-PROIBIR-VIEWS` — sai o CTE `view_escape` e os filtros de dono/privilégio da trava e das duas cópias do script; a via `view` recusa qualquer view/matview cuja árvore alcance tabela FORCE; mensagem, `RAISE` (4 `%` × 4 argumentos) e `docs/deployment.md` dizem a regra; md5 diagnóstico da SQL `2ed16571…`.
+- T8c (sai o caso `view`), T8d (`objetos` 2), T8e e T14d (COL/COM/MAT/CTL, um por vez) e T8f (1 + 2 blocos `view_walk…view_force`, sem `view_escape`) reescritos; o arquivo continua com 12 testes; ratchet 82 → 72; T14c intacto (2·4·5·2·3).
+- Vermelho-controle no objeto: T8d, T8e·COL (depois dos três efeitos de coluna), T8f e T14d·COL (`status 0`). Head: guard-db 3 × 12/12 (0 `XX000`/`23505`/`40P01`, resíduo 0), sem psql 8/12 nomeando o pré-requisito; 12 · 35 · 13 · 5; M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso, restauro por md5; B7 sentinela 0, controle 1; suíte integral 3135/3133/0/2 com `dev05c4-redis`; check/lint/build ec=0. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`.

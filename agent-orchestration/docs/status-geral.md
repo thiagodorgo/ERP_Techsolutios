@@ -4975,3 +4975,11 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Terreno:** `dev05c3-pg`, `dev05c3-node`, `dev05c3-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo.
 - **Registro:** nove pendências novas e dois sub-itens; `P-SAN3-05-REGRA-EM-TABELA` permanece fora do ciclo 3, dona `B-SAN3-10`; KPI congelado e sem diff.
 - **Próximo:** head final empurrado → check-runs concluídos/verdes → inspetor e junta 3; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — ciclo 4 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo4-b-san3-05`, Claude Opus 5.5, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** `D-405-PROIBIR-VIEWS` — a trava `RUNTIME_ROLE_GUARD_SQL` e o MODO 6 recusam se existir qualquer view/matview cuja árvore alcance tabela FORCE, sem olhar dono nem privilégio (sai o `view_escape`); `docs/deployment.md` com a regra operacional; T8c/T8d/T8e/T8f/T14d reescritos (casos COL/COM/MAT/CTL); ratchet do arquivo de guarda 82 → 72.
+- **Prova:** vermelho-controle no objeto (T8d, T8e·COL, T8f, T14d·COL); guard-db 3 × 12/12 e sem psql fail-closed; bootstrap 12 · acessos 35 · leituras 13 · catalog-guard 5; mutações M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso; B7 mínima sem sentinela; suíte integral 3135 · 3133 pass · 0 fail · 2 skips; check/lint/build verdes.
+- **Terreno:** `dev05c4-pg`, `dev05c4-node`, `dev05c4-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo. KPI congelado e sem diff.
+- **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`. **Próximo:** check-runs do head concluídos/verdes → inspetor e junta 4; sem abrir/fechar/mergear PR pelo dev.

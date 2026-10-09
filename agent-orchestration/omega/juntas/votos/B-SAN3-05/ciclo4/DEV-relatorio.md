@@ -151,6 +151,16 @@ Contêiner conferido no head `d66eb178` antes da bateria: md5 dos 5 arquivos de 
   papéis/relações `s305_b7%` = 0.
 - **Resultado:** verde.
 
+### D7 — suíte inteira e build (18:14–18:18Z)
+
+- **Comando:** `DATABASE_URL=<dev05c4-pg> REDIS_URL=redis://dev05c4-redis:6379 dk exec … timeout 2400 npm test` (runner
+  `scripts/run-backend-tests.mjs`; `CORE_SAAS_PERSISTENCE` não exportado → `memory`, como a CI); depois `npm run build`.
+- **Saída:** `[run-backend-tests] 291 arquivo(s) · 3135 teste(s) · pass 3133 · fail 0 · skipped 2`, `npm test ec=0` — os 2 skips são
+  os conhecidos do orçamento (`permission-catalog-db-parity`, `RBAC_DB_PARITY` ≠ "1"); `ECONNREFUSED` = 0; `XX000`/`40P01` só no
+  título do teste (PA) do catalog-guard; resíduo `s305%` = 0, views fora do sistema = 0. `npm run build` ec=0 (`dist/database/
+  runtime-role.js` sem `view_escape`).
+- **Resultado:** verde; N executado = 3135 (= ciclo 3: o ciclo troca a prova, não acrescenta subteste), skipped 2 ≤ 2.
+
 ### D8–D9 — modo, EOL, `diff --check`, catalog-guard
 
 - **Comando:** `git ls-files -s scripts/db-runtime-role.sh` · `git ls-files --eol …` · `git diff --check 7c63f920..HEAD` ·
