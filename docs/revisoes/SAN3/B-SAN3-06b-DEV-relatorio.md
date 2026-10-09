@@ -198,3 +198,91 @@ teste-alvo isolado, restauro e md5):
 `8007be1e` docs (5 documentos) · `d73d421c` registro (6 fechadas com `arquivo:linha`, 11 abertas, índice, comando) ·
 o commit deste relatório com `status-geral` e `log-execucao`. Sem linha de co-autoria. PR não aberto (cabe ao
 orquestrador).
+
+## Ajustes da revisão (A1–A3)
+
+Identidade `dev-ajustes-b-san3-06b` (Claude Opus 5.5, `claude-opus-5-5`; o bloco só lê dinheiro). Não achou os
+defeitos (achou o revisor independente, `REVISAO-PR-411.md`) e não julgou a validade deles: implementou. Worktree
+`C:/Users/AMP/w-06b`, head inicial `af6f345a` = remoto (medido por `rev-parse` e `ls-remote`). Cloud Billing continua
+só leitura: `git diff af6f345a..HEAD -- cloud-billing.adapter.ts cloud-billing.service.ts` → vazio (as 5 escritas e os
+5 nomes do serviço intocados); nenhuma aritmética monetária nova (a única comparação nova é de datas de período).
+
+Vermelho-controle: script de controle no scratchpad da sessão — âncora única provada, mutação no arquivo real, teste,
+restauro dos bytes e md5 depois = md5 antes em todas as rodadas.
+
+### A1 — dinheiro de um mês sob o rótulo de outro
+
+- Conserto: `cloud-billing.state.ts` (novo, regra pura): `nextCloudBillingState` descarta resposta de período que não é
+  o selecionado e não deixa o mês novo herdar o anterior como "desatualizado"; `isPeriodOfMonth` amarra dado e rótulo.
+  `useCloudBilling.ts`: ref do período selecionado (padrão de `useAutoRefresh`), descarte antes de tocar o estado e
+  `setData` pela regra nova. `PlatformCloudBillingScreen`: dado de outro período → carregando, nunca exibido.
+- Testes: **T46** (dado de agosto — com valor, vazio, falha e 403 — sob "setembro" → carregando, 0 `R$`, 0 `999`;
+  controle: o mesmo dado sob "agosto" mostra R$ 999,99); **T47** (serviço real, `fetch` dublê com agosto lento:
+  setembro chega, agosto chega depois em 1º e 2º plano → estado e tela seguem em setembro, R$ 18,00; falha de setembro
+  com agosto na tela → falha de setembro, sem `stale`; dentro do mesmo período o E1b segue); **T48** (fiação do hook,
+  guarda de forma declarada — sem DOM no repo, como T2/T8).
+- Vermelho-controle: guarda da tela e regra revertidas → T46 e T47 vermelhos (14 testes, 12 pass); só a guarda da tela
+  → T46 vermelho; só a regra → T47 vermelho; hook voltando a `nextRefreshState` → T48 vermelho. Restauro por md5:
+  `cloud-billing.state.ts` `0f92dc16…`, `PlatformCloudBillingPage.tsx` `d4ec2333…`, `useCloudBilling.ts` `fa6c6a96…` —
+  IGUAL nos três.
+- Nota de registro: a fiação do hook nasceu dentro do T47; o gerador (d) passou a contar o T47 como "asserção de
+  literal" (o T47 lê um caminho `modules/platform/` e assevera o `R$ 18,00` do fixture) e o T35 exige 0 — por isso
+  virou o T48 (`4dba043a`). Gerador (d) no head: `com asserção de literal = 0`.
+- Commits: `7e0341aa` (conserto + T46/T47), `4dba043a` (T48).
+
+### A2 — vazio sem seletor de mês
+
+- Conserto: `MonthSelect` único (o mesmo `<select aria-label="Mês de referência">` do cabeçalho com dados) também no
+  estado vazio, ligado ao `onMonthChange` da página. O texto "Selecione outro mês…" ficou verdadeiro.
+- Teste: **T49** — no mês corrente (relógio real, sem data fixa que expire), vazio da API e vazio do modo demonstração:
+  `<select>` com 12 opções e o mês corrente `selected`; acionar o `onChange` do `<select>` achado na árvore (componentes
+  sem hooks chamados direto) entrega o mês escolhido ao `onMonthChange`.
+- Vermelho-controle: tirar o seletor do vazio → T49 vermelho; deixar o seletor com `onMonthChange` vazio → T49 vermelho.
+  Restauro `228af356…` IGUAL nos dois. Commit `95dd3f11`.
+- Fora do ajuste (observação, não alterado): o estado de **falha** também não tem seletor; ele não promete troca de mês
+  (diz que tenta de novo) e o T17 exige 0 dígitos nele, que o seletor (anos) quebraria.
+
+### A3 — T44 por nome, não por propriedade
+
+- Conserto (só no teste, `san3-06b-console-sem-ficcao.guard.test.ts`): "função de escrita" derivada do código — toda
+  declaração de topo de `cloud-billing.{adapter,service}.ts` com requisição cujo `method` não é o literal `"GET"`
+  (não literal conta como escrita) e o fecho de quem as referencia nesses dois arquivos. Fora deles, o verificador de
+  tipos do TypeScript (opções do `frontend/tsconfig.json`, sem `@types` ambientes) resolve cada identificador e chave
+  literal e acusa: referência a escrita (import renomeado, reexportação, propriedade de namespace, chave literal),
+  `import * as`, `export *`/`export * as` e `import()` de módulo que exporta escrita, e `import()` não resolvível.
+- **T44** novo: head → 0 violações; piso de vacuidade (o conjunto derivado contém as 5 escritas e os 5 nomes do serviço
+  e nenhuma leitura); cópia temporária com 8 consumidores (nome do adapter; R1; import renomeado; namespace;
+  reexportação com outro nome + consumidor dela; `import()` por propriedade e por chave; `export *`) → exatamente os 8
+  arquivos acusados, e o consumidor só de leitura não. A cópia é apagada no `finally`. Duração ~15 s.
+- Vermelho-controle: (1) a lógica antiga (texto dos 5 `*FromApi`) com a mesma assinatura → T44 vermelho, acusa só
+  `PlatformOverviewPage.tsx` e deixa escapar os outros 7, R1 inclusive; (2) **a R1 do revisor no arquivo real**
+  (`PlatformCloudBillingPage.tsx` importa e exporta `runCloudAllocation`) → T44 vermelho:
+  `PlatformCloudBillingPage.tsx:165 referencia escrita: runCloudAllocation` e `:166`. Restauro: guard `2002a705…`,
+  página `228af356…` — IGUAL. Commit `2219c92d`.
+
+### Integração da `main`
+
+- `git fetch origin && git merge --no-ff origin/main` (`a9fbe283`, #405) → conflito só em registro:
+  `log-execucao.md`, `pendencias.md`, `status-geral.md` (1 bloco cada, no fim) e `pendencias-indice.md`.
+- Os três de apensar: lado da `main` primeiro, depois o do ramo; o resultado foi conferido igual a
+  `git merge-file --union main base ramo` nos três (igual, 0 marcadores). Índice regenerado por
+  `python agent-orchestration/controle/gerar-indice-pendencias.py` → `482 cabecalhos / 471 IDs`, 0 marcadores.
+  `git grep` de marcador de conflito → 0. Merge `18d967b3`.
+
+### Bateria final (head `18d967b3`; o commit seguinte só acrescenta esta seção)
+
+| Comando | Saída resumida | Estado |
+|---|---|---|
+| `npm --prefix frontend run check` | `tsc -b --noEmit`, exit 0 | verde |
+| `npm --prefix frontend run build` | 2179 módulos (2178 + `cloud-billing.state.ts`), exit 0 | verde |
+| `npm --prefix frontend run test:smoke` | **1317/1317**, 155 s; antes 1313 → **Δ +4** (T46–T49) | verde |
+| testes do bloco (6 arquivos) | 49/49, T1–T49 uma vez cada | verde |
+| regressões da R.5 (8 arquivos) | 125/125 | verde |
+| raiz que lê `frontend/src` (não `-db`) | `approval-frontend-contract`, `checklist-editor-blockers-parity`, `san3-04a-menu-front-x-catalogo` → 16/16 | verde |
+| `npm run check` / `npm run lint` (raiz) | exit 0 / exit 0, 0 `error TS` | verde |
+| `git diff --check origin/main...HEAD` | sem saída, exit 0 | verde |
+| geradores | literais 26 arquivos · 0 sítios; telas 10 · menu 4 · LIGADA 6 · PARADA 4 · SEM-FONTE 0; endpoints 32; testes com literal 0; pendências 586 seções · 6 citam · 0 abertas | verde |
+| escopo pelo laço | 54 arquivos: 38 PERM · 4 PERM nominal · 5 docs nominais · 1 plano · 5 registro · 1 este relatório (N4); `Kpis src prisma mobile .github` e proibidos → 0; numstat `PlatformLayout` `1 5`, `platform-health-honest-stop` `1 1`, `package.json` `1 1` (inalterados) | verde |
+
+Limpeza: `frontend/dist` e `frontend/tsconfig.tsbuildinfo` removidos. Nenhum backend, banco, porta, container ou
+`Kpis/*` tocado; o porteiro (`w-port405`, `port405-*`) não foi tocado.
