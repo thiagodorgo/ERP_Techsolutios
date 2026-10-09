@@ -43,3 +43,9 @@ Ramo: `feat/b-san3-06b-plataforma`
 - Comando: `npm --prefix frontend run check`.
 - Saída resumida: TypeScript sem erro nas quatro páginas substituídas.
 - Estado: concluída — Auditoria da Plataforma, APIs e Credenciais, Planos e Módulos e Configurações não exibem linhas, números, controles ou ações sem fonte; todas exportam `PLATFORM_HONEST_STOP`.
+
+### E4 — Saúde ligada ao readiness
+
+- Comando: `npm --prefix frontend run check` + teste existente de saúde.
+- Saída resumida: TypeScript verde; 2/2 testes verdes; alteração autorizada no teste = 1 adição/1 remoção.
+- Estado: concluída — 200 e 503 exibem Postgres, Redis e Worker com estado real; rede/JSON inválido falha honestamente; uptime, p95, fila e backup continuam com selo, sem fonte.
