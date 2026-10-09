@@ -5,6 +5,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const repo = path.resolve(process.argv[2] ?? ".");
+const sourceRoot = path.resolve(process.argv[3] ?? repo);
 const ts = (() => {
   for (const packageJson of ["frontend/package.json", "package.json"]) {
     try {
@@ -16,7 +17,7 @@ const ts = (() => {
 const sf = (relativePath) =>
   ts.createSourceFile(
     relativePath,
-    readFileSync(path.join(repo, relativePath), "utf8"),
+    readFileSync(path.join(sourceRoot, relativePath), "utf8"),
     ts.ScriptTarget.Latest,
     true,
     ts.ScriptKind.TSX,

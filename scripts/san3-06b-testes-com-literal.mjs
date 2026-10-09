@@ -13,7 +13,7 @@ const ts = (() => {
   }
   throw new Error("typescript não resolvido em frontend/ nem na raiz");
 })();
-const testDirectory = path.join(repo, "frontend/tests");
+const testDirectory = path.resolve(process.argv[3] ?? path.join(repo, "frontend/tests"));
 const files = readdirSync(testDirectory)
   .filter((file) => /\.test\.tsx?$/.test(file))
   .map((file) => path.join(testDirectory, file));
