@@ -5005,3 +5005,10 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Prova:** vermelho-controle no objeto (T8d, T8e·COL, T8f, T14d·COL); guard-db 3 × 12/12 e sem psql fail-closed; bootstrap 12 · acessos 35 · leituras 13 · catalog-guard 5; mutações M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso; B7 mínima sem sentinela; suíte integral 3135 · 3133 pass · 0 fail · 2 skips; check/lint/build verdes.
 - **Terreno:** `dev05c4-pg`, `dev05c4-node`, `dev05c4-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo. KPI congelado e sem diff.
 - **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`. **Próximo:** check-runs do head concluídos/verdes → inspetor e junta 4; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — junta 4 APROVADA (2026-10-09)
+
+- **Veredito:** APROVADO 3 × 0 (C1 `jurado-san305-c4-catalogo-de-views`, C2 `jurado-san305-c4-credencial-arnes-escopo`, C3 `jurado-san305-c4-boot-e-suite`; Opus 5.5 por substituição declarada). **approved_head:** `84831ad9`. Ata: `agent-orchestration/omega/juntas/J-B-SAN3-05.md` § Ciclo 4.
+- **Depois do voto:** `main` `a9bbde38` integrada por merge (só registro em conflito, união main→ramo; índice regenerado); delta de produto contra a `main` idêntico ao aprovado (patch-id).
+- **Pendências novas (não graves):** `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` (B-SAN3-10), `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (B-SAN3-05T), `P-SAN3-05-T15-TETO-DE-RELOGIO` (B-ARNES-2), `P-SAN3-05-MENSAGEM-DA-RECUSA` (a nomear).
+- **Próximo:** CI do head novo → `gh pr ready 405` → squash merge com `--match-head-commit` → porteiro → trilha do Traccar (plano).

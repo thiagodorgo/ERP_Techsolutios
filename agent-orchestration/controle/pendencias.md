@@ -10362,3 +10362,31 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - Uma regra `INSTEAD`/`ALSO` em tabela de dono que escapa executa a ação com o privilégio do dono: papel limpo com `INSERT` gravou linha da organização B sob contexto A e a trava retornou zero escapes. Hoje há zero regras fora do `_RETURN` das views no catálogo migrado.
 - **bloqueia:** não bloqueia o #405. A correção ficou explicitamente fora do ciclo 3 por decisão padrão do plano e decisão do dono de cobrir somente A2/A3.
 - **teste de encerramento:** regra em tabela de dono que escapa com DML para o papel é recusada pela trava e pelo script; controle sem regra retorna zero.
+
+## P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER (2026-10-09) — view sobre função SQL invoker não é recusada pela trava — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — a trava nasceu em `d76b255f` (2026-10-02); achado F5 da C1 da junta 4 (`votos/B-SAN3-05/ciclo4/C1-voto.json`) · **dono:** `B-SAN3-10`.
+- Uma view que lê tabela FORCE só pelo corpo de uma função SQL `SECURITY INVOKER` depende de `pg_proc`, não da tabela: a trava, o boot e o MODO 6 não a recusam. Escape medido: nenhum — a função roda como o invocador e o RLS morde (`42501` sem privilégio; só a organização do contexto com GUC). A variante `SECURITY DEFINER` é matéria do `B-SAN3-10`.
+- **bloqueia:** não.
+- **teste de encerramento:** view sobre função invoker que lê tabela FORCE é recusada pelas três cópias da propriedade, ou a decisão de não recusá-la fica escrita com o caso fixado na suíte.
+
+## P-SAN3-05-SUITE-SEM-FORMAS-F1-F3 (2026-10-09) — a suíte não fixa as formas de view que o produto recusa — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — `tests/san3-05-runtime-role-guard-db.test.ts` (nasceu em `e0143db1`, 2026-10-03); nota da C1 da junta 4 · **dono:** `B-SAN3-05T` (PR só de testes, decisão do plano do dia de 2026-10-09).
+- O T8e/T14d exercem COL, COM, MAT, CTL e cadeia em `public`. A C1 mediu o produto recusando também regra não-`_RETURN`, esquema ≠ `public`, tabela particionada e tabela só em subconsulta/CTE/LATERAL (F1–F3), mas nenhum caso da suíte as fixa: uma regressão que estreite a descida pode passar verde.
+- **bloqueia:** não.
+- **teste de encerramento:** casos F1–F3 na suíte, e a mutação que restringe a descida à regra `_RETURN` deixa ao menos um deles vermelho.
+
+## P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carga — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — achado A2-1 (ajuste) da C3 da junta 4 · **dono:** `B-ARNES-2` (vizinha de `P-SAN3-05-RUNNER-SEM-TIMEOUT`).
+- Sob a carga da suíte inteira (8 CPUs, Docker/WSL2), o T15 estoura o teto de 15 s em 2 de 2 rodadas: o processo de produção recusado fica vivo ~10 s depois da recusa, com uma conexão ociosa ao Postgres, e o teste não vê o encerramento a tempo. A recusa está correta; o critério mede relógio, não comportamento. O CI do PR passou 7/7.
+- **bloqueia:** não.
+- **teste de encerramento:** o T15 assere a recusa e o encerramento do processo sem teto de relógio de parede sensível à carga (ou o processo fecha a conexão na recusa), verde em 3 rodadas da suíte inteira.
+
+## P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e não chega ao log — BAIXA
+
+- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** a nomear pelo orquestrador; candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`.
+- O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
+- **bloqueia:** não.
+- **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.

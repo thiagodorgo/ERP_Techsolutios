@@ -93,3 +93,61 @@ dado pela C1 e o ciclo 4 muda o objeto).
 com planejador `planejador-ciclo4-b-san3-05` e dev `dev-ciclo4-b-san3-05`, identidades novas; (c) o planejador do ciclo 3
 fixou a propriedade por sobre-aproximação de dono/privilégio de TABELA; o furo veio do privilégio de COLUNA, que nenhuma
 medição anterior tinha exercido.
+
+## Ciclo 4 — junta 4 (2026-10-09)
+
+- **Objeto:** inspetor em `2400049b` (LIBERADO COM RESSALVA, R1–R4 — `votos/B-SAN3-05/ciclo4/00-inspetor-terreno.md`);
+  C1 em `79b0d594`; C2 e C3 em `84831ad9`. De `737e8cf3` (head do dev) até `3a7fde77` só entrou registro — parecer,
+  mandatos, evidências e votos; `git diff 737e8cf3 10fbbd98` fora de `agent-orchestration/`, `.claude/` e `.agents/` vazio.
+  CI 7/7 verde em cada objeto.
+- **Regra do ciclo:** `D-405-PROIBIR-VIEWS` (decisão do dono, 2026-10-09) — a trava recusa toda view/matview cuja árvore
+  de regras alcance tabela com FORCE RLS, sem filtro de dono, privilégio ou esquema. Leitura R3/R4 do ciclo ≥3: só defeito
+  GRAVE de produto reprova.
+- **Papéis (§C7.4-bis):** planejador `planejador-ciclo4-b-san3-05` · dev `dev-ciclo4-b-san3-05` · fábrica `agente-fabrica`
+  — todos Claude Opus 5.5 por substituição declarada (§C7.6-bis: o bloco não toca dinheiro; Fable/Astra só em bloco de
+  dinheiro, decisão do dono de 2026-10-08). Nenhum deles achou, votou ou conserta o que achou.
+
+## VEREDITO: APROVADO (3 × 0, unanimidade)
+
+| cadeira | identidade | modelo | voto | bloqueia |
+|---|---|---|---|---|
+| C1 | `jurado-san305-c4-catalogo-de-views` | Opus 5.5 (substituição declarada) | **APROVADO** | — |
+| C2 | `jurado-san305-c4-credencial-arnes-escopo` | Opus 5.5 (substituição declarada) | **APROVADO** | — |
+| C3 | `jurado-san305-c4-boot-e-suite` | Opus 5.5 (substituição declarada) | **APROVADO** | — |
+
+- **approved_head:** `84831ad9796d8db29766b0ff6e0a1a894a9d45e7`
+
+**O que as cadeiras mediram:**
+- **C1:** COL, COM, MAT e cadeia recusados pela trava, pelo boot e pelo MODO 6, e também as formas próprias F1 (outro
+  esquema, EXISTS, CTE, LATERAL, agregado), F2 (regra não-`_RETURN`), F3 (particionada, view→matview→view,
+  `security_barrier`/`security_invoker`) e F4 (TEMP de outra sessão). O código do disparo do dev deixava COL/COM/MAT
+  passar: a medição discrimina. Banco migrado com 0 view.
+- **C2:** a senha nunca aparece em claro (log do servidor, terminal e argv, no Windows e no container), e o verificador é
+  sempre `SCRAM-SHA-256$`. Lote de catálogo 3 vezes, 12/12 + 13/13, sem XX000, 23505 nem 40P01, resíduo 0, inclusive
+  nos caminhos de falha. Escopo do dev dentro do PERMITIDO; `Kpis/` sem diff; guarda de catálogo 72 = congelado.
+- **C3:** o boot de produção recusa a via view (`RuntimeRoleGuardError`) e o papel limpo do script sobe e serve. API e
+  owner-portal ouvindo, com Redis próprio. Suíte inteira: 3135 executados × 2 rodadas, 2 skips nomeados, 2 falhas — só o
+  T15 por tempo sob carga (A2-1). Build verde. Os textos da regra dizem (i)–(v).
+
+**Achados não graves (nenhum reprova; viram pendência ou ficam registrados aqui):**
+- C1 — **F5**: view sobre função SQL `SECURITY INVOKER` que lê tabela FORCE não é recusada, e nenhum escape foi medido
+  (o RLS morde o invocador) → `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER`. Variante `SECURITY DEFINER` = `B-SAN3-10`.
+- C1 — a suíte não fixa as formas F1–F3 que o produto recusa → `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (PR só de testes).
+- C3 — **A2-1** (ajuste): o T15 estoura o teto de 15 s sob a carga da suíte inteira; o processo recusado fica vivo ~10 s
+  com conexão ociosa. Reprova por tempo de máquina, não por comportamento → `P-SAN3-05-T15-TETO-DE-RELOGIO`.
+- C3 — **N3-a**: o RAISE do MODO 6 e o message do `RuntimeRoleGuardError` atribuem a via view ao papel. **N3-b**
+  (pré-existente, `src/server.ts:48`): o message da recusa não chega ao log de produção →
+  `P-SAN3-05-MENSAGEM-DA-RECUSA`.
+- C2 — N1 (comentário-cabeçalho da linha final do script, fora da letra do PERMITIDO, declarado pelo dev; efeito na senha
+  0) · N2 (título do T8c "três"→"dois", declarado) · N3 (pré-existente `bbbb3b29`: o T8d tem 4 chamadas de slot de
+  replicação fora da trava, sem escrever tabela de catálogo) · N4 (sem mandato do dev em `00-mandatos/` — pela
+  `D-GOV-PROPORCIONAL` (3), dev nasce de prompt simples) · N5, abaixo. Só registro.
+
+**Terreno e desvio declarado:** o parecer do inspetor (R2) e o C4.6 do plano pediam **uma cadeira por vez**, por disco.
+Às 20:41Z a C3 foi disparada com a C2 viva, porque o dono autorizou nessa hora até 2 processos Claude simultâneos. O
+disco foi medido antes (14 GB livres, depois da limpeza dos caches de gradle e npm, sem volume do Docker). Cada cadeira
+usou cluster, rede e worktree próprios. A C2 registrou o paralelismo como N5 e declarou efeito nulo nas suas medições. Ao
+fim: 12 GB livres, 0 container, 0 worktree `j05c4*`. Quedas: 0.
+
+**Não-convergência:** não — a classe da via view, que se repetiu nos ciclos 2 e 3, fechou pela regra do dono (sem filtro
+de dono/privilégio); nenhuma forma dentro da decisão passou.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **467** |
-| IDs distintos | 456 |
-| **ABERTAS** | **346** |
+| Cabecalhos `## P-` | **471** |
+| IDs distintos | 460 |
+| **ABERTAS** | **350** |
 | — das quais **diferidas** (balde C) | 69 |
-| — das quais **ativas nesta rodada** | **277** |
+| — das quais **ativas nesta rodada** | **281** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 118 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **467 cabecalhos para 456 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **471 cabecalhos para 460 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 153
+## ABERTAS · balde A — material — 154
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -227,8 +227,9 @@
 | `P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES` | 10324 | MÉDIA | sim | P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job |
 | `P-SAN3-05-TIMEOUT-MATA-SO-O-BASH` | 10331 | MÉDIA | sim | P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉD |
 | `P-SAN3-05-REGRA-EM-TABELA` | 10359 | ALTA | sim | P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava —  |
+| `P-SAN3-05-T15-TETO-DE-RELOGIO` | 10380 | MÉDIA | sim | P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carg |
 
-## ABERTAS · balde B — processo/registro — 124
+## ABERTAS · balde B — processo/registro — 127
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -356,6 +357,9 @@
 | `P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR` | 10338 | BAIXA | sim | P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR (2026-10-09) — fixture pode deixar migrador com p |
 | `P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL` | 10345 | BAIXA | sim | P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL (2026-10-09) — guarda de log aceita campo textual ind |
 | `P-SAN3-05-T15-FALSO-VERMELHO-PORTA` | 10352 | BAIXA | sim | P-SAN3-05-T15-FALSO-VERMELHO-PORTA (2026-10-09) — pid ou tempo pode casar a porta — BAIX |
+| `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` | 10366 | BAIXA | sim | P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER (2026-10-09) — view sobre função SQL invoker não é r |
+| `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` | 10373 | BAIXA | sim | P-SAN3-05-SUITE-SEM-FORMAS-F1-F3 (2026-10-09) — a suíte não fixa as formas de view que o |
+| `P-SAN3-05-MENSAGEM-DA-RECUSA` | 10387 | BAIXA | sim | P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e n |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 69
 
