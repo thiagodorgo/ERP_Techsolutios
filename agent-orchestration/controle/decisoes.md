@@ -2990,3 +2990,22 @@ e a exigência de porteiro para PR de registro.
   Solicitado · Feito · Não feito · Validação · Próximos passos, gravado no relatório da execução; o orquestrador
   relata o mesmo checklist ao dono ao fim de cada bloco. Continua o ritmo (uma sessão pesada do Codex por vez, no máximo
   duas; Claude uma tarefa por vez).
+
+## Decisões de 2026-10-09 — plano do dia e a leitura da junta 3 do B-SAN3-05 (transcritas pelo orquestrador)
+
+- **D-PLANO-DIA-2026-10-09** — o dono pediu o plano do dia em Fable (*"use o fable para fazer o plano de hoje"*, exceção
+  explícita à `D-FABLE-ASTRA-SO-DINHEIRO`) e aprovou as nove decisões dele: *"aprovo os 9, comece agora"* (plano em
+  `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): ciclo 3 do #405 só com A2 (grave) + A3; C2-A1 e
+  C3-c2-05 num PR só de testes depois do merge (revisor + CI); C3-c2-01 pendência; dev no Codex Sol; porteiro no Claude
+  se o gasto semanal ficar ≤ 25 %; veredito do B-SAN3-06b na 2ª janela do Codex; plano do Traccar amanhã; limpeza
+  profunda abaixo de 10 GB sem volumes alheios; cota acabou → pausar, nunca descer de Opus. Também: *"ok, deixa quieto
+  o uso da api neste pc"* (créditos de API não usados neste PC).
+- **Conflito registrado (§A2) e a leitura adotada na junta 3 do B-SAN3-05 — ressalvas R3 e R4 do inspetor:**
+  - **R3, mutação cega:** o plano do ciclo 3 (C3.4) trata "mutação que nenhum teste pega" como "A2 aberto"; o contrato
+    (CLAUDE.md §C7 item 8(2)) diz que do ciclo 3 em diante só defeito GRAVE de produto bloqueia. **Vale o contrato
+    (§A1):** se a TRAVA REAL ou o MODO 6 deixam passar um escape medido (o papel lê/grava dado de outra organização
+    sem a trava acusar), é A2 aberto → grave → bloqueia; se o produto recusa o escape mas um teste não acusa a
+    mutação, é forma de teste → não grave → pendência com dono.
+  - **R4, "não consigo medir = REPROVADO":** regra dos corpos das cadeiras, sem cláusula no contrato. **Leitura
+    adotada:** um item não medido que possa esconder defeito grave (A2, B1, B2, B4, D1–D4) conta como reprovação
+    (grave não descartado); um item não medido de matéria não grave vira pendência, não reprova.
