@@ -83,7 +83,27 @@ ligada **sem** FORCE (controle mais forte que tabela sem RLS). Nenhum subteste n
 
 ## Item 3 — Mutações M4a/M4b/M4c × (t)/(s)
 
-EM APURAÇÃO
+**Comando (18:08–18:11Z):** `bash mutrun.sh afb575b4… M4a-t M4a-s M4b-t M4b-s M4c-t M4c-s` (scratchpad da sessão). Para cada uma:
+restaura os 2 blobs do head `afb575b4` no contêiner → `node /tmp/mutate.cjs <id>` (âncora literal com **contagem = 1** exigida,
+arquivo sem CR, prova `substituida=sim`) → `bash -n` → `npx tsc --noEmit` → `node --test tests/san3-05-runtime-role-guard-db.test.ts`
+→ restaura os blobs e confere md5. Só a cópia do contêiner é mutada; o `w-o05` nunca.
+
+| id | mutação (só um arquivo) | `bash -n` / `tsc` | resultado da suíte | subteste · caso · mensagem |
+|---|---|---|---|---|
+| M4a-t | trava: ramo `view` volta a filtrar por `has_table_privilege(session_user\|current_user, v.oid, 'SELECT,INSERT,UPDATE,DELETE')` | 0 / 0 | 12 · pass 9 · fail 3 | **T8e · COL** · "caso COL: a trava de s305_c4_rsel_… precisa recusar exatamente a view s305_c4_col_…"; também T8d ("Expected values to be strictly equal": `objetos` cai para 1) |
+| M4a-s | script: ramo `view` do `DO` ganha `WHERE has_table_privilege(alvo.oid, v.oid, …)` | 0 / 0 | 12 · pass 10 · fail 2 | **T14d · COL** · "caso COL: status deveria ser 3" |
+| M4b-t | trava: ramo `view` ganha `WHERE o.rolsuper OR o.rolbypassrls` | 0 / 0 | 12 · pass 10 · fail 2 | **T8e · COM** · "caso COM: a trava precisa recusar a view de dono comum sem grant" |
+| M4b-s | script: ramo `view` do `DO` ganha `JOIN pg_roles o … WHERE o.rolsuper OR o.rolbypassrls` | 0 / 0 | 12 · pass 10 · fail 2 | **T14d · COM** · "caso COM: status deveria ser 3" |
+| M4c-t | trava: sai `AND t.relforcerowsecurity` do `view_force` | 0 / 0 | 12 · pass 9 · fail 3 | **T8e · CTL** · "caso CTL: view sobre tabela SEM FORCE não pode produzir escape para s305_c4_rsel_…"; também T8f ("o CTE do DO divergiu da trava") |
+| M4c-s | script: sai `AND t.relforcerowsecurity` só do `view_force` do `DO` (âncora inclui `\n  )\n  SELECT string_agg`) | 0 / 0 | 12 · pass 9 · fail 3 | **T14d · CTL** · "caso CTL: view sobre tabela SEM FORCE deveria convergir"; também T8f ("o CTE do DO divergiu da trava") |
+
+("fail" conta o teste-pai.) Os casos rodam em sequência COL → COM → MAT → CTL; sob M4a o primeiro caso da lista do plano (COL)
+é o que reporta, e sob M4b o primeiro (COM) — os seguintes não são alcançados no mesmo subteste.
+
+**Restauro:** depois de cada mutação, md5 no contêiner = blob do head: trava `9efee03db097f54e73178e1ec4c740d9`, script
+`5cab4f63b1259450acf68675205d5908` (6 × 2 conferências, todas iguais). `mutrun ec=0`.
+
+**Resultado:** 6/6 vermelhas pela asserção do caso indicado (AC4-3), com `bash -n`/`tsc` ec=0 em todas; restauro conferido.
 
 ## Item 4 — Bateria do C4.5 (D0–D10)
 
