@@ -10,11 +10,11 @@
 
 ## P1 — evidência incremental
 
-### Pré-voo e D0 — PARCIAL
+### Pré-voo e D0 — VERDE
 
 - **Comando:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD`; `git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass`; `git diff --ignore-cr-at-eol --stat`; `git diff --ignore-cr-at-eol --name-only`.
 - **Saída resumida:** HEAD local e remoto = `91d794956309f6e63511bdfd76cbfddd8bf45c40`; diff EOL-neutro vazio. O `git status` mostra 33 marcações `M` fantasmas em `.agents/agents/*.md` e `scratchpad/` não rastreado, já previstos no plano; nenhum tem diff de conteúdo e nenhum será staged.
-- **Resultado:** pré-voo liberado. D0 permanece parcial até o diff final contra o objeto inicial e a confirmação remota de cada commit.
+- **Resultado:** pré-voo liberado. No head `8f2fd6cfbeaf2d5fe59f0dd25c3aa2ee26a62bbc`, local = remoto; diff desde `91d79495` restrito ao escopo; `Kpis/` ec=0.
 
 ### C3.1 — vermelhos-controle A2/A3 — CONCLUÍDO
 
@@ -115,40 +115,56 @@
 - **Saída resumida:** diff-check ec=0; `Kpis/` ec=0; o ratchet mudou somente na entrada `san3-05-runtime-role-guard-db.test.ts` (64→82 + motivo). Caminhos alterados estão todos no permitido pelo plano ou no relatório explicitamente solicitado pelo dono.
 - **Resultado:** verde.
 
-### D10 — push e check-runs — EM APURAÇÃO
+### D10 — push e check-runs — VERDE
 
-- **Comando:** EM APURAÇÃO.
-- **Saída resumida:** EM APURAÇÃO.
-- **Resultado:** EM APURAÇÃO.
+- **Comando:** `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/8f2fd6cfbeaf2d5fe59f0dd25c3aa2ee26a62bbc/check-runs`.
+- **Saída resumida:** local = remoto = `8f2fd6cfbeaf2d5fe59f0dd25c3aa2ee26a62bbc`; 7 check-runs: `docker`, `owner-portal`, `backend`, `frontend`, `backend-postgres`, `flutter`, `authority-portal` — todos `completed/success` (run 37953941501).
+- **Resultado:** verde 7/7 no head que contém código, testes, pendências, status e log. O commit documental deste fecho será empurrado em seguida e rechecado antes da mensagem final.
+
+### Limpeza do terreno — CONCLUÍDA
+
+- **Comando:** validação nominal por `docker inspect`; `docker rm -f -v dev05c3-node dev05c3-redis dev05c3-pg`; `docker network rm dev05c3-net`; conferência por filtros e `docker volume inspect`.
+- **Saída resumida:** `containers=0 networks=0`; volume anônimo do PostgreSQL `f28e82d…` removido. Somente recursos prefixados `dev05c3-` foram removidos.
+- **Resultado:** terreno descartável limpo; `erp-postgres`, `erp-redis`, portas do host e `scratchpad/` não foram tocados.
 
 ## Checklist — B-SAN3-05 · ciclo 3 · desenvolvimento
 
 ### Solicitado
 
-- [ ] C3.1 — registrar os vermelhos-controle de A2/A3.
-- [ ] C3.2 — ampliar a propriedade fail-closed nas três ocorrências do CTE.
-- [ ] C3.2 — adicionar T8e, T8f e T14d.
-- [ ] C3.2 — provar M-D2a…e separadamente na trava e no script (10 mutações vermelhas).
-- [ ] C3.3 — respeitar integralmente o escopo permitido/proibido.
-- [ ] C3.4 — executar D0–D10 com N publicado.
-- [ ] C3.6 — registrar pendências com dono; manter `P-SAN3-05-REGRA-EM-TABELA` fora do ciclo 3.
+- [x] C3.1 — vermelhos-controle de A2/A3 registrados por execução.
+- [x] C3.2 — propriedade fail-closed ampliada nas três ocorrências do CTE.
+- [x] C3.2 — T8e, T8f e T14d adicionados e verdes.
+- [x] C3.2 — M-D2a…e provadas separadamente na trava e no script: **5 famílias × 2 superfícies = 10/10 mutações vermelhas**.
+- [x] C3.3 — escopo permitido/proibido respeitado.
+- [x] C3.4 — D0–D10 executados com N publicado.
+- [x] C3.6 — pendências com dono registradas; `P-SAN3-05-REGRA-EM-TABELA` ficou fora do ciclo 3.
 
 ### Feito
 
-- [ ] EM APURAÇÃO.
+- [x] `4d4195f3` — código, documentação e testes A2/A3.
+- [x] `ccb7c179` — pendências C3.6, índice pelo gerador e evidência incremental.
+- [x] `8f2fd6cf` — status/log do ciclo e relatório até D9; CI independente 7/7 verde.
+- [x] Commit deste fecho — D10, limpeza e checklist final.
 
 ### Não feito / divergências
 
-- EM APURAÇÃO.
+- C2-A1 e C3-c2-05 não foram implementados: vão ao PR só de testes `B-SAN3-05T`, por decisão do dono.
+- C3-c2-01 não foi implementado: virou `P-SAN3-05-RATCHET-INST-SOME`, com dono.
+- A regra `INSTEAD`/`ALSO` em tabela não foi corrigida: `P-SAN3-05-REGRA-EM-TABELA` pertence a `B-SAN3-10` e não bloqueia o #405.
+- A primeira D7, sem Redis no terreno, teve 6 `ECONNREFUSED`; foi declarada inválida e repetida com Redis descartável próprio, ficando verde. Não houve afrouxamento de teste.
+- O relatório usa `.../ciclo3/DEV-relatorio.md`, caminho explicitamente determinado pelo dono no disparo, em lugar do nome sugerido pelo plano.
+- Nenhum PR foi aberto/fechado, marcado pronto ou mergeado.
 
 ### Validação
 
-- D0–D10: EM APURAÇÃO.
+- D0 verde; D1 check verde; D2 lint/bash-n verdes; D3 3 × 12/12 + controle sem psql vermelho; D4 12/12 · 35/35 · 13/13 · 5/5; D5 10/10 mutações vermelhas; D6 verde (sentinela 0/0, SCRAM, MODO 6); D7 3133/3135, fail 0, skip 2 + build; D8 `100755`/LF; D9 diff limpo e allowlist somente 64→82; D10 7/7 `completed/success` no `8f2fd6cf`.
 
 ### Head empurrado
 
-- EM APURAÇÃO.
+- [x] Código/registro em `8f2fd6cfbeaf2d5fe59f0dd25c3aa2ee26a62bbc`, local = remoto, CI 7/7 verde. O commit exclusivamente documental deste checklist é empurrado após esta linha e conferido antes da entrega ao dono.
 
 ### Próximos passos
 
-- EM APURAÇÃO.
+- Orquestrador chama o inspetor de terreno sobre o SHA final com check-runs concluídos.
+- Com `LIBERADO`, junta 3 mede somente defeito grave dentro do alcance C3.2, conforme o plano.
+- O dev não abre/fecha PR e não faz merge.
