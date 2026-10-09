@@ -3,6 +3,7 @@ import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
 import { currentBillingMonth } from "../cloud-billing.service";
+import { isPeriodOfMonth } from "../cloud-billing.state";
 import type { CloudBillingData, CloudChargeTenant, CloudCostImport } from "../cloud-billing.types";
 import { useCloudBilling } from "../useCloudBilling";
 
@@ -135,11 +136,12 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
 }
 
 // Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8): carregando, acesso não
-// permitido, falha (nenhum valor), vazio e, por fim, a composição com os dados do backend.
+// permitido, falha (nenhum valor), vazio e, por fim, a composição com os dados do backend. Dado de um período que não
+// é o do mês rotulado (troca de mês com resposta em voo) é tratado como carregando: nunca aparece sob outro rótulo (A1).
 export function PlatformCloudBillingScreen({ data, loading, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly loading: boolean; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
   const empty = !data.costs?.lineItemCount && !data.allocation?.tenants.length && !data.charges?.tenants.length && !data.usage?.metrics.length && data.imports.length === 0;
   const base: CSSProperties = { color: "#0F172A" };
-  if (loading) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
+  if (loading || !isPeriodOfMonth(data.period, month)) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
   if (data.forbidden) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar os dados de cobrança cloud." /></div>;
   if (data.source === "fallback") return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><Alert title="Não foi possível carregar Cloud Billing" tone="warning">A plataforma tentará novamente. Nenhum valor é exibido enquanto não houver uma resposta confirmada.</Alert></div>;
   if (empty) return <div style={base}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}><div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)}</div></div></div><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhum custo importado no período" detail="Selecione outro mês ou aguarde uma importação confirmada pela plataforma." /></div></div>;

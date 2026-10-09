@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import React from "react";
@@ -16,7 +16,9 @@ import {
   getCloudCostSummary,
   periodForMonth,
 } from "../src/modules/platform/cloud-billing/cloud-billing.service";
+import { nextCloudBillingState } from "../src/modules/platform/cloud-billing/cloud-billing.state";
 import type { CloudBillingData } from "../src/modules/platform/cloud-billing/cloud-billing.types";
+import { emptyCloudBilling } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { PlatformCloudBillingScreen, PlatformCloudBillingView } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
 
 // B-SAN3-06b E8 — Cloud Billing (T10–T20, T45). Fixtures com a forma dos DTOs do backend (§4.1); a `Screen` recebe o
@@ -234,4 +236,83 @@ test("T45 margem sem percentual do DTO não ganha percentual calculado", () => {
   const visibleText = html.replace(/<[^>]+>/g, " ");
   assert.match(visibleText, /percentual não informado/);
   assert.doesNotMatch(visibleText, /%/);
+});
+
+// A1 da revisão do PR 411 — o dinheiro exibido é sempre do período rotulado. Agosto tem um "Valor cobrável" que
+// setembro não tem (999,99 × 18,00): se ele aparecer sob "setembro de 2026", a tela mentiu sobre dinheiro.
+const AUGUST = periodForMonth("2026-08");
+
+function augustData(): CloudBillingData {
+  const base = realData();
+  return { ...base, period: AUGUST, charges: base.charges ? { ...base.charges, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalChargeAmount: 999.99 } : null };
+}
+
+test("T46 dado de outro mês nunca aparece sob o rótulo do mês selecionado (A1)", () => {
+  const otherMonth = [augustData(), emptyCloudBilling(AUGUST, "api"), emptyCloudBilling(AUGUST, "fallback"), { ...emptyCloudBilling(AUGUST, "fallback"), forbidden: true }];
+  for (const data of otherMonth) {
+    const html = screen(data);
+    assert.match(html, /aria-busy="true"/);
+    assert.doesNotMatch(visibleText(html), /R\$|999|Nenhum custo importado|Acesso não permitido|Não foi possível/);
+  }
+  // Controle: o mesmo dado sob o rótulo do PRÓPRIO mês aparece — a guarda não esconde dinheiro do período certo.
+  const own = visibleText(renderToString(<PlatformCloudBillingScreen data={augustData()} loading={false} month="2026-08" />));
+  assert.match(own, /agosto de 2026/);
+  assert.match(own, /R\$\s999,99/);
+});
+
+test("T47 resposta atrasada do mês anterior é descartada e o mês novo não herda o anterior (A1)", async () => {
+  process.env.VITE_USE_MOCKS = "false";
+  const original = globalThis.fetch;
+  let releaseAugust: () => void = () => undefined;
+  const augustGate = new Promise<void>((resolve) => { releaseAugust = resolve; });
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    if (!url.includes(`periodStart=${AUGUST.start}`)) return responseFor(url);
+    await augustGate;
+    const charges = url.includes("cloud-charges/summary") ? { ...realData().charges, totalChargeAmount: 999.99 } : null;
+    return charges ? new Response(JSON.stringify({ data: charges }), { status: 200, headers: { "Content-Type": "application/json" } }) : responseFor(url);
+  }) as typeof fetch;
+  try {
+    // O usuário abre agosto (resposta lenta) e troca para setembro antes de ela chegar — serviço e regra reais.
+    let state = emptyCloudBilling(AUGUST, "api");
+    const augustRequest = getCloudBilling(AUGUST);
+    const september = await getCloudBilling(PERIOD);
+    state = nextCloudBillingState(state, september, false, PERIOD);
+    releaseAugust();
+    const august = await augustRequest;
+    assert.equal(august.charges?.totalChargeAmount, 999.99); // controle: a resposta atrasada é real e diferente
+    state = nextCloudBillingState(state, august, false, PERIOD);
+    state = nextCloudBillingState(state, august, true, PERIOD);
+    assert.deepEqual(state.period, PERIOD);
+    assert.equal(state.charges?.totalChargeAmount, 18);
+    const text = visibleText(renderToString(<PlatformCloudBillingScreen data={state} loading={false} month="2026-09" />));
+    assert.match(text, /setembro de 2026/);
+    assert.match(text, /R\$\s18,00/);
+    assert.doesNotMatch(text, /999/);
+
+    // Agosto na tela e a 1ª resposta de setembro é uma falha em 2º plano: a tela mostra a falha de setembro, não
+    // agosto marcado como "desatualizado".
+    const failed = emptyCloudBilling(PERIOD, "fallback");
+    const afterFailure = nextCloudBillingState(august, failed, true, PERIOD);
+    assert.deepEqual(afterFailure.period, PERIOD);
+    assert.equal(afterFailure.charges, null);
+    assert.equal(afterFailure.stale, false);
+    const failureText = visibleText(renderToString(<PlatformCloudBillingScreen data={afterFailure} loading={false} month="2026-09" />));
+    assert.match(failureText, /Não foi possível carregar Cloud Billing/);
+    assert.doesNotMatch(failureText, /R\$|999/);
+
+    // Dentro do mesmo período a regra do E1b continua: falha em 2º plano preserva setembro com o aviso.
+    const kept = nextCloudBillingState(state, failed, true, PERIOD);
+    assert.equal(kept.stale, true);
+    assert.equal(kept.charges?.totalChargeAmount, 18);
+
+    // Fiação (sem biblioteca de DOM no repo, como T2/T8): o hook descarta pelo período selecionado e aplica esta regra.
+    const hook = readFileSync(new URL("../src/modules/platform/cloud-billing/useCloudBilling.ts", import.meta.url), "utf8");
+    assert.match(hook, /if \(!isSamePeriod\(next\.period, selected\.current\)\)/);
+    assert.match(hook, /setData\(\(current\) => nextCloudBillingState\(current, next, background, selected\.current\)\)/);
+    assert.doesNotMatch(hook, /nextRefreshState/);
+  } finally {
+    globalThis.fetch = original;
+    process.env.VITE_USE_MOCKS = "";
+  }
 });
