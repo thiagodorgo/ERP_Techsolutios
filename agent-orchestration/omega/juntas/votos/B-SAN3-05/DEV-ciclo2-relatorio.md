@@ -171,9 +171,9 @@
 
 **Comando:** `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`; diff de escopo e `git diff --quiet origin/main -- Kpis/` no Windows.
 
-**Saída resumida:** no objeto `3401f162fc6b00d48962447183b98e12a1b0280c`, local=remoto; 7 check-runs concluídos: `owner-portal`, `authority-portal`, `backend-postgres`, `flutter` e `frontend` verdes, `docker` skipped e `backend` vermelho; `Kpis/*` ec=0 contra `origin/main`. O backend publicou **3126/3132**, fail 4, skipped 2: a entrada de catálogo 63→64 e o T15/D4 (mais os pais TAP).
+**Saída resumida:** no objeto `d9a0cea11fe1641d857cd299780e7afb7d12fbd8`, local=remoto; **7/7** check-runs (`authority-portal`, `backend`, `backend-postgres`, `docker`, `flutter`, `frontend`, `owner-portal`) concluídos com `success`; `Kpis/*` ec=0 contra `origin/main`; diff integral com 87 arquivos. Os seis corpos `.agents/.claude` novos são do commit de registro do orquestrador `c2df97cc`; os commits do dev tocaram **18 caminhos únicos**, todos na lista permitida do C2.3 (o relatório decorre da ordem explícita do dono).
 
-**Resultado:** VERMELHO — a ausência inicial de check-runs se resolveu, mas o backend concluído expôs a PARADA-D4-3 abaixo. Os demais componentes do B0 ficaram verdes; a conferência final de escopo aguarda a parada.
+**Resultado:** PASSOU em heads, CI e KPI. **Divergência de forma no escopo integral:** a expectativa literal “87/87 dentro do PERMITIDO C2.3” não pode ser satisfeita porque o próprio objeto contém o baseline do ciclo 1 e, depois, seis arquivos nominalmente proibidos em `.agents/.claude` adicionados pelo orquestrador em `c2df97cc`. Medição por autoria do ciclo: dev **18/18** dentro do permitido; orquestrador **6** exceções nominais, registradas sem atribuí-las ao dev.
 
 ### B1 — `npm run check`
 
@@ -364,28 +364,34 @@
 - **Decisão §A1.1:** além das identidades da Errata 2, o nome do papel pode aparecer como valor de `error.sessionUser` e `error.currentUser`. Nome de papel em qualquer outro campo e todos os componentes secretos/de conexão continuam proibidos; as três mutações negativas continuam obrigatórias; `src/database/runtime-role.bootstrap.ts` e `src/server.ts` continuam proibidos.
 - **Resultado:** PASSOU — PARADA-D4-3 resolvida; D4 retomado sem tocar os arquivos proibidos e com allowlist por caminho JSON exato.
 
+### RETOMADA APÓS LIMITE — 2026-10-09
+
+- **Comando:** `git pull --ff-only`; `git rev-parse HEAD`; `git ls-remote origin fix/runtime-role-sem-bypass`; bateria final no head incorporado.
+- **Saída resumida:** o head local já era o registro `c2df97cc3b87cf5e7a17bfa2cdea050d8af9f8aa` e batia com o remoto; o sucessor não deixou mudança. Os arquivos `.agents/agents/**` marcados pelo status têm hash local idêntico ao blob do `HEAD` e `git diff` vazio (racy-stat/EOL), por isso foram preservados e nunca adicionados. `scratchpad/` permaneceu intocado.
+- **Resultado:** PASSOU — retomada sem perda e sem absorver arquivo alheio; somente este relatório foi adicionado nominalmente nos commits finais.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
 
-- [x] B1 — commit `d9fc0d6d`; `npm run check` 1/1 e suíte focada 9/9.
-- [x] B2 — commit `d9fc0d6d`; canário/guarda estrutural verdes; N=10 reservado à junta.
-- [x] B3 — commit `16014c06`; T13 35/35, gerador 2/2, OPS=17, L0=106/106 e inventário 56 (+3, com motivo por chave).
-- [x] B4 — commit `41af41f5`; arquivo focado 13/13, 11/11 rotas FORCE e 3/3 jobs FORCE com diferencial próprio.
-- [x] D1 — commit `d9fc0d6d`; T8d verde, prova `pg_basebackup` reservada à junta.
+- [x] B1 — commit `d9fc0d6d`; `npm run check` **1/1** e prova SCRAM/guarda estática na suíte focada.
+- [x] B2 — commit `d9fc0d6d`; canário e guarda estrutural verdes; lote N=10 reservado à junta.
+- [x] B3 — commit `16014c06`; T13 **35/35**, gerador **2/2**, OPS=17, L0=106/106 e inventário 56 (+3, cada chave motivada).
+- [x] B4 — commit `41af41f5`; arquivo focado **13/13**, rotas FORCE **11/11** e jobs FORCE **3/3** com diferencial próprio.
+- [x] D1 — commit `d9fc0d6d`; T8d verde; extração `pg_basebackup` reservada à junta.
 - [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
-- [x] D3 — commit `d9fc0d6d`; T15 explícito/default e exit 1 verdes.
-- [ ] D4 — commit `d9fc0d6d` cobre T9/T15 na senha distinta, mas a CI revelou `error.sessionUser`/`error.currentUser`; PARADA-D4-3 aberta.
-- [x] Ajustes do ciclo — commit `3401f162`; três pendências novas e o sub-item nominal dos 9 jobs registrados; guard de catálogo 63→64 fica no commit desta parada.
-- [x] Integração da main — commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos resolvidos por união; `D-GOV-PROPORCIONAL` presente.
-- [x] `Kpis/*` à main — `git diff --quiet origin/main -- Kpis/` retornou 0.
+- [x] D3 — commit `d9fc0d6d`; T15 explícito/default, evento `close` e exit 1 verdes.
+- [x] D4 — commit `02544a79`; Erratas 1–3 aplicadas por caminho JSON exato; suíte focada **14/14** e mutações obrigatórias host/senha/papel fora de identidade vermelhas **3/3**.
+- [x] Ajustes que entram no ciclo — commits `3401f162` e `36a88a07`; três pendências novas, subitem nominal dos 9 jobs e ratchet 63→64 registrados.
+- [x] Integração da `main` — merge commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos de registro resolvidos por união.
+- [x] `Kpis/*` à `main` — `git diff --quiet origin/main -- Kpis/` retornou ec=0 no B0 final.
 
-**Feito:** integração/main e `Kpis/*`; B1, B2(a/b/d), B3, B4, D1, D2, D3 e pendências C2.6 implementados e empurrados. B4 confirmou sem parada os três efeitos laterais antes não medidos.
+**Feito:** todos os itens solicitados acima foram implementados, validados, commitados e empurrados. D4 ficou fechado pelo texto cumulativo das três erratas sem editar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
 
-**Não feito / divergências:** D4 não pode fechar literalmente porque o logger do servidor publica o nome do papel também em `error.sessionUser`/`error.currentUser`, formas não permitidas pela Errata 2. O escopo proíbe os dois arquivos naturais de correção e restringe `runtime-role.ts` somente a D2. Build e fecho de B0/B12/B13 não foram executados após a parada.
+**Não feito / divergências:** nenhum item solicitado ao dev ficou aberto. B6–B8, B10, B14 e as 16 mutações da tabela C2.4 pertencem à junta 2, não ao dev. Divergência registrada no B0: o diff integral contém seis corpos `.agents/.claude` nominalmente fora do permitido do C2.3, introduzidos pelo orquestrador no commit `c2df97cc`; os 18 caminhos dos commits do dev estão dentro do escopo.
 
-**Validação:** B0 vermelho em 1/7 check-runs (`backend`); B1 1/1; B2 1/1; B3 181/181; B4 2/2; B5 2/2; B9 focado verde antes da nova asserção; B11 **3126/3132**, fail 4, skipped 2; B12 parcial; B13 incremental ec=0. B6–B8/B10/B14 e as 16 mutações cabem à junta conforme C2.5.
+**Validação:** B0 heads 2/2, CI **7/7** verde, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
 
-**Head empurrado:** o SHA completo do commit deste registro é confirmado por `git ls-remote` e publicado na mensagem ao orquestrador; o último head anterior era `3401f162fc6b00d48962447183b98e12a1b0280c`.
+**Head empurrado:** `d9a0cea11fe1641d857cd299780e7afb7d12fbd8` foi confirmado por `git ls-remote` e é o head com B0 7/7 verde; este checklist é o único delta documental subsequente, cujo SHA completo é confirmado no handoff final (um commit não pode conter o próprio hash).
 
-**Próximos passos (análise):** o orquestrador/dono deve escolher (a), (b) ou (c) da PARADA-D4-3. Depois, concluir a asserção sem relaxar campos, reexecutar T9/T15 com username=senha, `npm test` + build, fechar B0/B12/B13 e entregar o head à junta. A junta deve olhar com atenção especial a serialização dupla do erro, a matriz B7, o canário B2 e os 9 jobs fora da superfície antes do Ato 2 em produção.
+**Próximos passos (análise):** a junta 2 deve concentrar-se na matriz B7 e em vazamento de senha no `server.log`, nas 16 mutações efêmeras, no canário concorrente B2, na porta de replicação B10, no caminho compose B14 e nos 9 jobs fora da superfície antes do Ato 2. Deve também tratar a exceção de escopo de `c2df97cc` pela autoria correta, sem atribuí-la ao dev nem ignorar que `.agents/.claude` são nominalmente proibidos no C2.3.
