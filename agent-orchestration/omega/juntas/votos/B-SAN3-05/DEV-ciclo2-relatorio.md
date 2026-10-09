@@ -370,6 +370,40 @@
 - **Saída resumida:** o head local já era o registro `c2df97cc3b87cf5e7a17bfa2cdea050d8af9f8aa` e batia com o remoto; o sucessor não deixou mudança. Os arquivos `.agents/agents/**` marcados pelo status têm hash local idêntico ao blob do `HEAD` e `git diff` vazio (racy-stat/EOL), por isso foram preservados e nunca adicionados. `scratchpad/` permaneceu intocado.
 - **Resultado:** PASSOU — retomada sem perda e sem absorver arquivo alheio; somente este relatório foi adicionado nominalmente nos commits finais.
 
+## Correção pós-CI — isolamento das leituras globais do B4
+
+### Achado no head `7c8a2f3c815a0e082e3e752769705bb5ab781249`
+
+**Comando:** `git pull --ff-only`; comparação de `git rev-parse HEAD` com `git ls-remote origin fix/runtime-role-sem-bypass`; `gh api .../commits/7c8a2f3c/check-runs`; `gh run view --job 113712759793 --log-failed`.
+
+**Saída resumida:** local = remoto = `7c8a2f3c815a0e082e3e752769705bb5ab781249`; **7/7** check-runs concluídos, com `backend` vermelho e os demais 6 verdes/skipped conforme contrato. O T11e comparou o corpo global inteiro de `GET /api/v1/platform/overview`: super viu `activeOrgs=3`, efêmero viu `activeOrgs=2`; a terceira organização `SAN3-04a T2 ...` pertencia a outro arquivo executado em paralelo.
+
+**Resultado:** REPRODUZIDO — defeito de isolamento do teste B4, não defeito de RLS do produto.
+
+### Varredura T10/T11a–T11e e jobs B4
+
+**Comando:** leitura de `tests/san3-05-leituras-de-plataforma-db.test.ts` e dos serviços/repositórios chamados por todas as 11 rotas FORCE e 3 jobs FORCE; `npm run check` dentro do container Linux descartável.
+
+**Saída resumida:** quatro respostas globais precisavam de recorte (`cloud-usage/summary`, `overview`, `cloud-cost-allocations/summary`, `cloud-charges/summary`), além da criação global de rateio. O job `cloud-cost-allocation.run` ainda identificava seu efeito por `findFirst(orderBy: created_at desc)`. T10 também comparava os eventos/agregados globais sem recortar os dois tenant IDs. O teste agora: (1) filtra eventos/agregados por `tenantA`/`tenantB`; (2) usa `source_type` exclusivo no resumo de uso; (3) projeta e exige exatamente as duas organizações nos resumos/overview/rateios; (4) consulta o resumo de cobrança pelo `sourceAllocationRunId`; (5) identifica o run do job por `createdBy` exclusivo; e (6) sorteia por processo uma janela histórica exclusiva de 32 dias, preservando a soma exata 50. `npm run check`: **1/1**, ec=0.
+
+**Resultado:** PASSOU — nenhum analisador foi relaxado; perder qualquer linha do seed continua sendo falha explícita.
+
+### Mutações adversariais de isolamento
+
+**Comando:** no container Linux `dev05c2-isolamento-node`, contra PostgreSQL 16 `dev05c2-isolamento-pg` sem porta publicada: (M-ISO-1) mutação temporária que cria uma organização alheia entre a leitura super e a efêmera; (M-ISO-2) mutação temporária que remove uma das duas organizações do recorte efêmero. Cada mutação foi aplicada apenas ao arquivo copiado/árvore local, executada sob `timeout 600` e revertida por patch antes do fecho.
+
+**Saída resumida:** M-ISO-1 **13/13**, fail 0, ec=0; M-ISO-2 **10/13**, fail 3 (T11d, T11e e pai), ec=1, com diff nominal em `GET /api/v1/platform/overview` mostrando a linha B ausente.
+
+**Resultado:** PASSOU — dado alheio intercalado não contamina a comparação; perda de uma linha do seed permanece vermelha.
+
+### Repetição paralela com a suíte `*-db`
+
+**Comando:** cinco processos simultâneos `timeout 900 node --test --import tsx tests/san3-05-leituras-de-plataforma-db.test.ts` junto de um sexto processo `timeout 1800 node --test --import tsx tests/*-db.test.ts`, todos no mesmo container Linux e no mesmo PostgreSQL descartável `dev05c2-isolamento-*`.
+
+**Saída resumida:** focados: **5/5 execuções**, cada uma **13/13**, total **65/65**, fail 0; suíte `*-db`: **301/301**, fail 0. A rodada diagnóstica anterior, ainda com a janela 2001 compartilhada, deixou 4/5 focados vermelhos no resumo de rateio e provou a segunda dependência global; após a janela exclusiva, todos ficaram verdes. Durações dos focados: 16,85–17,41 s; suíte DB: 63,76 s. Fecho da árvore permanente: `npm run check` **1/1** e arquivo focado **13/13**; teardown nominal deixou **0** container e **0** rede `dev05c2-isolamento-*`.
+
+**Resultado:** PASSOU — N=5 focado em paralelo com a suíte DB completa; forma Linux/PostgreSQL 16, sem alvo na base viva.
+
 ## Checklist — B-SAN3-05 · ciclo 2 · desenvolvimento
 
 **Solicitado:**
@@ -377,7 +411,7 @@
 - [x] B1 — commit `d9fc0d6d`; `npm run check` **1/1** e prova SCRAM/guarda estática na suíte focada.
 - [x] B2 — commit `d9fc0d6d`; canário e guarda estrutural verdes; lote N=10 reservado à junta.
 - [x] B3 — commit `16014c06`; T13 **35/35**, gerador **2/2**, OPS=17, L0=106/106 e inventário 56 (+3, cada chave motivada).
-- [x] B4 — commit `41af41f5`; arquivo focado **13/13**, rotas FORCE **11/11** e jobs FORCE **3/3** com diferencial próprio.
+- [x] B4 — commits `41af41f5` + `EM APURAÇÃO`; rotas FORCE **11/11** e jobs FORCE **3/3** com recorte exclusivo do próprio seed; mutações de isolamento **2/2**.
 - [x] D1 — commit `d9fc0d6d`; T8d verde; extração `pg_basebackup` reservada à junta.
 - [x] D2 — commit `d9fc0d6d`; view transitiva verde na trava e no MODO 6.
 - [x] D3 — commit `d9fc0d6d`; T15 explícito/default, evento `close` e exit 1 verdes.
@@ -386,12 +420,12 @@
 - [x] Integração da `main` — merge commit `37e024c332b3ad31bc609db5fad8728d26500abe`; quatro conflitos de registro resolvidos por união.
 - [x] `Kpis/*` à `main` — `git diff --quiet origin/main -- Kpis/` retornou ec=0 no B0 final.
 
-**Feito:** todos os itens solicitados acima foram implementados, validados, commitados e empurrados. D4 ficou fechado pelo texto cumulativo das três erratas sem editar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
+**Feito:** todos os itens solicitados acima foram implementados, validados e empurrados; a correção pós-CI do B4 remove a dependência de dados alheios sem esconder a perda de linhas do seed. D4 ficou fechado pelo texto cumulativo das três erratas sem editar `src/database/runtime-role.bootstrap.ts` nem `src/server.ts`.
 
 **Não feito / divergências:** nenhum item solicitado ao dev ficou aberto. B6–B8, B10, B14 e as 16 mutações da tabela C2.4 pertencem à junta 2, não ao dev. Divergência registrada no B0: o diff integral contém seis corpos `.agents/.claude` nominalmente fora do permitido do C2.3, introduzidos pelo orquestrador no commit `c2df97cc`; os 18 caminhos dos commits do dev estão dentro do escopo.
 
-**Validação:** B0 heads 2/2, CI **7/7** verde, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
+**Validação:** B0 heads 2/2, CI do novo head EM APURAÇÃO, KPI **1/1**, escopo do dev **18/18** (com a divergência de origem acima); B1 **1/1**; B2 **1/1**; B3 **181/181**; B4 focado paralelo **65/65**, suíte DB simultânea **301/301**, mutações **2/2**; B5 **2/2**; B9/cenário focado **14/14**; B11 suíte **3132/3132** (3130 pass, 0 fail, 2 skipped permitidos) e build **1/1**; B12 **3/3**; B13 **1/1**, ec=0.
 
-**Head empurrado:** `d9a0cea11fe1641d857cd299780e7afb7d12fbd8` foi confirmado por `git ls-remote` e é o head com B0 7/7 verde; este checklist é o único delta documental subsequente, cujo SHA completo é confirmado no handoff final (um commit não pode conter o próprio hash).
+**Head empurrado:** EM APURAÇÃO após a correção pós-CI; será confirmado por `git ls-remote` depois dos check-runs verdes.
 
-**Próximos passos (análise):** a junta 2 deve concentrar-se na matriz B7 e em vazamento de senha no `server.log`, nas 16 mutações efêmeras, no canário concorrente B2, na porta de replicação B10, no caminho compose B14 e nos 9 jobs fora da superfície antes do Ato 2. Deve também tratar a exceção de escopo de `c2df97cc` pela autoria correta, sem atribuí-la ao dev nem ignorar que `.agents/.claude` são nominalmente proibidos no C2.3.
+**Próximos passos (análise):** a junta 2 deve confirmar que toda comparação de agregado global permanece projetada pelos IDs/source do seed, observar especialmente os resumos que escolhem o run mais recente e repetir a pressão concorrente. Também deve concentrar-se na matriz B7 e em vazamento de senha no `server.log`, nas 16 mutações efêmeras, no canário concorrente B2, na porta de replicação B10, no caminho compose B14 e nos 9 jobs fora da superfície antes do Ato 2; e tratar a exceção de escopo de `c2df97cc` pela autoria correta.

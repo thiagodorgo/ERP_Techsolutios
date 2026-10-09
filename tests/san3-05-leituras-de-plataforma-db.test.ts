@@ -17,9 +17,9 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 // ASSERIDA por execução. A semeadura e a limpeza usam a conexão administrativa. Sob `postgres` (dev/CI) todo
 // teste de política ficaria verde para sempre — é por isso que o diferencial existe.
 //
-// JANELA FIXA EM 2001 (F2-03): ninguém grava em 2001 (`grep -rln '2001-0' tests src prisma` → 0 antes deste
-// arquivo), então o seed não colide com a captura de uso que grava `now()` em outras suítes do lote paralelo,
-// e os valores esperados são EXATOS (soma 50), não só "iguais".
+// JANELA HISTÓRICA EXCLUSIVA POR PROCESSO (F2-03): cada execução sorteia um bloco não sobreposto de 32 dias
+// entre os anos 1000 e 9760. Assim, processos paralelos não disputam o "run mais recente" dos resumos globais,
+// e os valores esperados continuam EXATOS (soma 50), não só "iguais".
 //
 // T11 — A PROPRIEDADE DO ITEM 10 sobre a superfície FECHADA de plataforma (§2.3 do plano): para cada rota e job
 // de plataforma que toca tabela FORCE sem tenant, o corpo devolvido (ou o efeito gravado) sob o papel sem bypass
@@ -32,10 +32,19 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 
 const connectionString = process.env.DATABASE_URL;
 
-const JANELA_INICIO = "2001-01-01T00:00:00.000Z";
-const JANELA_FIM = "2001-01-02T00:00:00.000Z";
-const MES_INICIO = "2001-01-01T00:00:00.000Z";
-const MES_FIM = "2001-01-31T23:59:59.999Z";
+const DIA_MS = 24 * 60 * 60 * 1_000;
+const SLOT_JANELA = Number.parseInt(randomUUID().replaceAll("-", "").slice(0, 12), 16) % 100_000;
+const JANELA_BASE_MS = Date.UTC(1000, 0, 1) + SLOT_JANELA * 32 * DIA_MS;
+const iso = (offsetMs: number): string => new Date(JANELA_BASE_MS + offsetMs).toISOString();
+const data = (offsetDias: number): string => iso(offsetDias * DIA_MS).slice(0, 10);
+const JANELA_INICIO = iso(0);
+const JANELA_FIM = iso(DIA_MS - 1);
+const MES_INICIO = JANELA_INICIO;
+const MES_FIM = JANELA_FIM;
+const DAILY_INICIO = iso(9 * DIA_MS);
+const DAILY_FIM = iso(19 * DIA_MS + DIA_MS - 1);
+const DAILY_B = data(13);
+const DAILY_A = data(14);
 
 type Etiqueta = "FORCE-SEM-TENANT" | "FORCE-POR-TENANT" | "SEM-FORCE";
 type Superficie = { readonly etiqueta: Etiqueta; readonly tabelas: readonly string[]; readonly nota: string };
@@ -98,6 +107,7 @@ const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
 type Cenario = {
   tenantA: string;
   tenantB: string;
+  usageSourceType: string;
   allocationRunId: string;
   allocationRunIds: string[];
   costImportId: string;
@@ -126,6 +136,7 @@ if (!connectionString) {
     const cenario: Cenario = {
       tenantA: "",
       tenantB: "",
+      usageSourceType: `san3_05_${suffix}`,
       allocationRunId: "",
       allocationRunIds: [],
       costImportId: "",
@@ -146,10 +157,11 @@ if (!connectionString) {
       // ─────────────── T10 — A10 + A11: o repositório de uso, sob o papel sem bypass ───────────────
       await t.test("T10 · listEvents sem tenant soma os 5 eventos de 2 organizações, intercalados, em ordem (A10)", async () => {
         const { RlsPrismaCloudUsageRepository } = await import("../src/modules/cloud-usage/cloud-usage-prisma.repository.js");
-        const events = await new RlsPrismaCloudUsageRepository(efemera.client).listEvents({
+        const eventosGlobais = await new RlsPrismaCloudUsageRepository(efemera.client).listEvents({
           periodStart: new Date(JANELA_INICIO),
           periodEnd: new Date(JANELA_FIM),
         });
+        const events = eventosGlobais.filter((event) => event.tenantId === cenario.tenantA || event.tenantId === cenario.tenantB);
 
         assert.deepEqual(
           events.map((event) => `${tag(event.tenantId)}@${event.occurredAt.toISOString().slice(11, 13)}`),
@@ -161,14 +173,15 @@ if (!connectionString) {
 
       await t.test("T10 · listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)", async () => {
         const { RlsPrismaCloudUsageRepository } = await import("../src/modules/cloud-usage/cloud-usage-prisma.repository.js");
-        const aggregates = await new RlsPrismaCloudUsageRepository(efemera.client).listDailyAggregates({
-          periodStart: new Date("2001-01-10T00:00:00.000Z"),
-          periodEnd: new Date("2001-01-20T00:00:00.000Z"),
+        const agregadosGlobais = await new RlsPrismaCloudUsageRepository(efemera.client).listDailyAggregates({
+          periodStart: new Date(DAILY_INICIO),
+          periodEnd: new Date(DAILY_FIM),
         });
+        const aggregates = agregadosGlobais.filter((aggregate) => aggregate.tenantId === cenario.tenantA || aggregate.tenantId === cenario.tenantB);
 
         assert.deepEqual(
           aggregates.map((aggregate) => `${tag(aggregate.tenantId)}@${aggregate.date}`),
-          ["B@2001-01-14", "A@2001-01-15"],
+          [`B@${DAILY_B}`, `A@${DAILY_A}`],
         );
       });
 
@@ -304,8 +317,8 @@ if (!connectionString) {
         // S1 — GET /cloud-usage/summary (listEvents sem tenant)
         const s1 = await http("GET", `${P}/cloud-usage/summary?periodStart=${JANELA_INICIO}&periodEnd=${JANELA_FIM}`);
         assert.equal(s1.status, 200, JSON.stringify(s1.body));
-        const s1Data = s1.body.data as { metrics: Array<{ quantity: number }> };
-        registrarRota(`GET ${P}/cloud-usage/summary`, s1.body.data);
+        const s1Data = recortarResumoUso(s1.body.data, cenario.usageSourceType);
+        registrarRota(`GET ${P}/cloud-usage/summary`, s1Data);
 
         // S4 controles ANTES do job (a janela do daily não inclui o dia que o job grava)
         const s4Alocacoes = await http("GET", `${P}/cloud-cost-allocations/runs/${cenario.allocationRunId}/tenant-allocations`);
@@ -313,10 +326,11 @@ if (!connectionString) {
         registrarRota(`GET ${P}/cloud-cost-allocations/runs/:runId/tenant-allocations`, s4Alocacoes.body.data);
         const s4Overview = await http("GET", `${P}/overview`);
         assert.equal(s4Overview.status, 200, JSON.stringify(s4Overview.body));
-        registrarRota(`GET ${P}/overview`, s4Overview.body.data);
+        const s4OverviewSeed = recortarOverview(s4Overview.body.data, cenario);
+        registrarRota(`GET ${P}/overview`, s4OverviewSeed);
         const s4Daily = await http(
           "GET",
-          `${P}/cloud-usage/tenants/${cenario.tenantA}/daily?periodStart=2001-01-10T00:00:00.000Z&periodEnd=2001-01-20T00:00:00.000Z`,
+          `${P}/cloud-usage/tenants/${cenario.tenantA}/daily?periodStart=${DAILY_INICIO}&periodEnd=${DAILY_FIM}`,
         );
         assert.equal(s4Daily.status, 200, JSON.stringify(s4Daily.body));
         registrarRota(`GET ${P}/cloud-usage/tenants/:tenantId/daily`, s4Daily.body.data);
@@ -337,7 +351,7 @@ if (!connectionString) {
           `${P}/cloud-cost-allocations/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}`,
         );
         assert.equal(allocationSummary.status, 200, JSON.stringify(allocationSummary.body));
-        registrarRota(`GET ${P}/cloud-cost-allocations/summary`, allocationSummary.body.data);
+        registrarRota(`GET ${P}/cloud-cost-allocations/summary`, recortarResumoPorTenant(allocationSummary.body.data, cenario));
 
         const allocationRoute = await http("POST", `${P}/cloud-cost-allocations/runs`, {
           periodStart: MES_INICIO,
@@ -350,9 +364,9 @@ if (!connectionString) {
           where: { allocation_run_id: allocationRouteId },
           orderBy: { tenant_id: "asc" },
         });
+        const allocationRouteSeed = recortarLinhasPorTenant(allocationRouteRows, cenario);
         registrarRota(`POST ${P}/cloud-cost-allocations/runs`, {
-          run: allocationRoute.body.data,
-          allocations: allocationRouteRows.map((row) => ({
+          allocations: allocationRouteSeed.map((row) => ({
             tenantId: tag(row.tenant_id),
             serviceCode: row.service_code,
             allocationMethod: row.allocation_method,
@@ -393,11 +407,15 @@ if (!connectionString) {
         cenario.calculationRunIds.push(runId);
         const s3Charges = await http("GET", `${P}/cloud-charges/calculation-runs/${runId}/tenant-charges`);
         assert.equal(s3Charges.status, 200, JSON.stringify(s3Charges.body));
-        const s3Summary = await http("GET", `${P}/cloud-charges/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}`);
+        const s3Summary = await http(
+          "GET",
+          `${P}/cloud-charges/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}&sourceAllocationRunId=${cenario.allocationRunId}`,
+        );
         assert.equal(s3Summary.status, 200, JSON.stringify(s3Summary.body));
         registrarRota(`POST ${P}/cloud-charges/calculation-runs`, s3Run.body.data);
         registrarRota(`GET ${P}/cloud-charges/calculation-runs/:runId/tenant-charges`, s3Charges.body.data);
-        registrarRota(`GET ${P}/cloud-charges/summary`, s3Summary.body.data);
+        const s3SummarySeed = recortarResumoPorTenant(s3Summary.body.data, cenario);
+        registrarRota(`GET ${P}/cloud-charges/summary`, s3SummarySeed);
 
         await chargesJob(
           { sourceAllocationRunId: cenario.allocationRunId, periodStart: MES_INICIO, periodEnd: MES_FIM },
@@ -424,15 +442,19 @@ if (!connectionString) {
         await admin.tenantCloudCharge.deleteMany({ where: { calculation_run_id: jobChargeRun.id } });
         await admin.cloudChargeCalculationRun.delete({ where: { id: jobChargeRun.id } });
 
-        await allocationJob({ periodStart: MES_INICIO, periodEnd: MES_FIM }, {} as never);
-        const jobAllocationRun = await admin.cloudCostAllocationRun.findFirstOrThrow({ orderBy: { created_at: "desc" } });
+        const jobAllocationCreatedBy = `san3-05-${papel}-${suffix}`;
+        await allocationJob({ periodStart: MES_INICIO, periodEnd: MES_FIM, createdBy: jobAllocationCreatedBy }, {} as never);
+        const jobAllocationRun = await admin.cloudCostAllocationRun.findFirstOrThrow({
+          where: { created_by: jobAllocationCreatedBy },
+        });
         const jobAllocations = await admin.tenantCloudCostAllocation.findMany({
           where: { allocation_run_id: jobAllocationRun.id },
           orderBy: { tenant_id: "asc" },
         });
+        const jobAllocationSeed = recortarLinhasPorTenant(jobAllocations, cenario);
         registrarJob(
           "cloud-cost-allocation.run",
-          jobAllocations.map((row) => ({
+          jobAllocationSeed.map((row) => ({
             tenantId: tag(row.tenant_id),
             serviceCode: row.service_code,
             allocationMethod: row.allocation_method,
@@ -444,16 +466,14 @@ if (!connectionString) {
         await admin.cloudCostAllocationRun.delete({ where: { id: jobAllocationRun.id } });
 
         medidas.set(papel, {
-          s1: normalizar(s1.body.data),
+          s1: normalizar(s1Data),
           s1Quantidade: s1Data.metrics.reduce((total, metric) => total + Number(metric.quantity), 0),
           s2: gravados.map((row) => `${tag(row.tenant_id)}|${row.metric_key}|${Number(row.quantity)}|${row.unit}|${row.source_type}`),
           s3Run: normalizar(s3Run.body.data),
           s3Charges: (s3Charges.body.data as Array<Record<string, unknown>>).map((charge) => normalizar({ ...charge, tenantId: tag(String(charge.tenantId)) })),
-          s3Summary: normalizar(s3Summary.body.data),
+          s3Summary: normalizar(s3SummarySeed),
           s4Alocacoes: normalizar(s4Alocacoes.body.data),
-          s4Overview: ((s4Overview.body.data as { orgs: Array<{ id: string }> }).orgs ?? [])
-            .filter((org) => org.id === cenario.tenantA || org.id === cenario.tenantB)
-            .map((org) => normalizar(org)),
+          s4Overview: s4OverviewSeed.orgs.map((org) => normalizar(org)),
           s4Daily: normalizar(s4Daily.body.data),
           rotas,
           jobs,
@@ -689,6 +709,44 @@ function assertNonEmpty(value: unknown, chave: string): void {
   }
 }
 
+type TenantRow = { readonly tenantId: string };
+
+/**
+ * Respostas de plataforma agregam o banco inteiro. O diferencial compara somente as linhas criadas
+ * por este cenário; contagens globais mudam legitimamente quando outra suíte grava entre as leituras.
+ */
+function recortarOverview(value: unknown, cenario: Cenario) {
+  const orgs = ((value as { orgs?: Array<Record<string, unknown> & { id: string }> }).orgs ?? [])
+    .filter((org) => org.id === cenario.tenantA || org.id === cenario.tenantB);
+  assert.deepEqual(orgs.map((org) => org.id).sort(), [cenario.tenantA, cenario.tenantB].sort(), "overview precisa conter as duas organizações do seed");
+  return {
+    activeOrgs: orgs.filter((org) => org.status === "active").length,
+    totalOrgs: orgs.length,
+    totalUsers: orgs.reduce((total, org) => total + Number(org.userCount), 0),
+    orgs,
+  };
+}
+
+function recortarResumoUso(value: unknown, sourceType: string) {
+  const metrics = ((value as { metrics?: Array<{ quantity: number; sourceType: string }> }).metrics ?? [])
+    .filter((metric) => metric.sourceType === sourceType);
+  assert.ok(metrics.length > 0, `summary precisa conter o sourceType do seed: ${sourceType}`);
+  return { metrics };
+}
+
+function recortarResumoPorTenant(value: unknown, cenario: Cenario) {
+  const tenants = ((value as { tenants?: TenantRow[] }).tenants ?? [])
+    .filter((tenant) => tenant.tenantId === cenario.tenantA || tenant.tenantId === cenario.tenantB);
+  assert.deepEqual(tenants.map((tenant) => tenant.tenantId).sort(), [cenario.tenantA, cenario.tenantB].sort(), "summary precisa conter as duas organizações do seed");
+  return { tenants };
+}
+
+function recortarLinhasPorTenant<T extends { readonly tenant_id: string }>(rows: readonly T[], cenario: Cenario): T[] {
+  const seed = rows.filter((row) => row.tenant_id === cenario.tenantA || row.tenant_id === cenario.tenantB);
+  assert.deepEqual(seed.map((row) => row.tenant_id).sort(), [cenario.tenantA, cenario.tenantB].sort(), "efeito global precisa conter as duas organizações do seed");
+  return seed;
+}
+
 function cobranca(cenario: Cenario, runId: string, tenantId: string, valor: number) {
   return {
     calculationRunId: runId,
@@ -729,18 +787,18 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
   await admin.cloudUsageEvent.createMany({
     data: eventos.map(([tenantId, hora]) => ({
       tenant_id: tenantId,
-      source_type: "medicao",
+      source_type: cenario.usageSourceType,
       metric_key: "storage_bytes_current",
       quantity: 10,
       unit: "bytes",
-      occurred_at: new Date(`2001-01-01T0${hora}:00:00.000Z`),
+      occurred_at: new Date(JANELA_BASE_MS + hora * 60 * 60 * 1_000),
       metadata: {},
     })),
   });
   await admin.cloudUsageDailyAggregate.createMany({
     data: [
-      { tenant_id: tenantA.id, date: new Date("2001-01-15T00:00:00.000Z"), metric_key: "storage_bytes_current", quantity: 7, unit: "bytes", source_type: "medicao", metadata: {} },
-      { tenant_id: tenantB.id, date: new Date("2001-01-14T00:00:00.000Z"), metric_key: "storage_bytes_current", quantity: 3, unit: "bytes", source_type: "medicao", metadata: {} },
+      { tenant_id: tenantA.id, date: new Date(`${DAILY_A}T00:00:00.000Z`), metric_key: "storage_bytes_current", quantity: 7, unit: "bytes", source_type: cenario.usageSourceType, metadata: {} },
+      { tenant_id: tenantB.id, date: new Date(`${DAILY_B}T00:00:00.000Z`), metric_key: "storage_bytes_current", quantity: 3, unit: "bytes", source_type: cenario.usageSourceType, metadata: {} },
     ],
   });
 
@@ -814,7 +872,7 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
         name: `SAN3-05 ${suffix}`,
         priority: 1000,
         effective_from: new Date(MES_INICIO),
-        effective_until: new Date("2001-12-31T23:59:59.999Z"),
+        effective_until: new Date(MES_FIM),
         currency: "BRL",
         markup_type: "percentage",
         markup_value: 10,
