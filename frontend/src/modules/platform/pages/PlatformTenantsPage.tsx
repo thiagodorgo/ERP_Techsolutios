@@ -1,5 +1,5 @@
 import { Building2, Info, Search, Users, type LucideIcon } from "lucide-react";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
@@ -196,21 +196,23 @@ export function PlatformTenantsView({
   );
 }
 
-export function PlatformTenantsPage() {
-  const { data, loading } = usePlatformOverview();
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrganizationStatusFilter>("all");
+// Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8): carregando, acesso não
+// permitido, falha sem dado anterior, vazio e, por fim, a lista.
+export function PlatformTenantsScreen({ loading, ...viewProps }: PlatformTenantsViewProps & { readonly loading: boolean }) {
+  const { data } = viewProps;
   const hasRows = data.orgs.length > 0;
-
-  const view = useMemo(() => (
-    <PlatformTenantsView data={data} query={query} statusFilter={statusFilter} onQueryChange={setQuery} onStatusFilterChange={setStatusFilter} />
-  ), [data, query, statusFilter]);
-
   if (loading) return <div style={{ color: "#0F172A" }}><PageHeader /><div style={{ ...card, padding: 20 }}><Skeleton lines={7} /></div></div>;
   if (data.forbidden) return <div style={{ color: "#0F172A" }}><PageHeader /><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar as organizações da plataforma." /></div>;
   if (data.source === "fallback" && !hasRows) return <div style={{ color: "#0F172A" }}><PageHeader /><Alert title="Não foi possível carregar as organizações" tone="warning">A plataforma tentará novamente em alguns instantes. Nenhuma contagem é exibida enquanto não houver uma resposta confirmada.</Alert></div>;
   if (!hasRows) return <div style={{ color: "#0F172A" }}><PageHeader /><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhuma organização" detail="Ainda não há organizações cadastradas na plataforma." /></div></div>;
-  return view;
+  return <PlatformTenantsView {...viewProps} />;
+}
+
+export function PlatformTenantsPage() {
+  const { data, loading } = usePlatformOverview();
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<OrganizationStatusFilter>("all");
+  return <PlatformTenantsScreen data={data} loading={loading} query={query} statusFilter={statusFilter} onQueryChange={setQuery} onStatusFilterChange={setStatusFilter} />;
 }
 
 export default PlatformTenantsPage;

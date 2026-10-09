@@ -1,5 +1,5 @@
 import { AlertTriangle, CalendarDays, Cloud, Database, Info, ReceiptText, Server, Users } from "lucide-react";
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
 import { currentBillingMonth } from "../cloud-billing.service";
@@ -134,16 +134,22 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
   );
 }
 
-export function PlatformCloudBillingPage() {
-  const [month, setMonth] = useState(currentBillingMonth());
-  const { data, loading } = useCloudBilling(month);
+// Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8): carregando, acesso não
+// permitido, falha (nenhum valor), vazio e, por fim, a composição com os dados do backend.
+export function PlatformCloudBillingScreen({ data, loading, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly loading: boolean; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
   const empty = !data.costs?.lineItemCount && !data.allocation?.tenants.length && !data.charges?.tenants.length && !data.usage?.metrics.length && data.imports.length === 0;
-  const base = useMemo(() => ({ color: "#0F172A" }), []);
+  const base: CSSProperties = { color: "#0F172A" };
   if (loading) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
   if (data.forbidden) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar os dados de cobrança cloud." /></div>;
   if (data.source === "fallback") return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><Alert title="Não foi possível carregar Cloud Billing" tone="warning">A plataforma tentará novamente. Nenhum valor é exibido enquanto não houver uma resposta confirmada.</Alert></div>;
   if (empty) return <div style={base}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}><div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)}</div></div></div><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhum custo importado no período" detail="Selecione outro mês ou aguarde uma importação confirmada pela plataforma." /></div></div>;
-  return <PlatformCloudBillingView data={data} month={month} onMonthChange={setMonth} />;
+  return <PlatformCloudBillingView data={data} month={month} onMonthChange={onMonthChange} />;
+}
+
+export function PlatformCloudBillingPage() {
+  const [month, setMonth] = useState(currentBillingMonth());
+  const { data, loading } = useCloudBilling(month);
+  return <PlatformCloudBillingScreen data={data} loading={loading} month={month} onMonthChange={setMonth} />;
 }
 
 export default PlatformCloudBillingPage;

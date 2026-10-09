@@ -14,11 +14,16 @@ export function PlatformHealthView({ data }: { readonly data: PlatformHealthData
   return <div style={{ color: "#0F172A" }}><Header />{data.stale ? <div style={{ marginBottom: 14 }}><Alert title="Dados desatualizados" tone="warning">A última atualização falhou; o último estado confirmado continua visível.</Alert></div> : null}<div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", ...card, padding: 16, marginBottom: 14 }}><div><div style={{ fontSize: 14, fontWeight: 800 }}>{data.status === "ready" ? "Sistema pronto" : "Sistema não pronto"}</div><div style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>versão {data.version ?? "não informada"} · revisão {data.commit ?? "não informada"}</div></div><Activity size={20} style={{ color: data.status === "ready" ? "#059669" : "#DC2626" }} /></div><div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 14 }}><ServiceCard name="Postgres" operational={data.checks.postgres.status === "up"} detail={latency(data.checks.postgres)} icon={<Database size={18} />} /><ServiceCard name="Redis" operational={data.checks.redis.status === "up"} detail={latency(data.checks.redis)} icon={<HardDrive size={18} />} /><ServiceCard name="Worker" operational={workerOperational} detail={data.checks.worker.ageSeconds === null ? "sinal não informado" : `último sinal há ${data.checks.worker.ageSeconds} s`} icon={<Server size={18} />} /></div><div style={{ ...card, padding: 18, background: "#F8FAFC", borderStyle: "dashed", display: "flex", gap: 12 }}><Activity size={18} style={{ color: "#2563EB", flexShrink: 0 }} /><div><div style={{ fontSize: 13, fontWeight: 800 }}>Monitoramento em preparação</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3, lineHeight: 1.5 }}>Uptime, latência p95, erros, profundidade de fila, integrações e último backup dependem da camada de observabilidade e continuam sem números nesta tela.</div></div></div></div>;
 }
 
-export function PlatformHealthPage() {
-  const { data, loading } = usePlatformHealth();
+// Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8).
+export function PlatformHealthScreen({ data, loading }: { readonly data: PlatformHealthData; readonly loading: boolean }) {
   if (loading) return <div style={{ color: "#0F172A" }}><Header /><div style={{ ...card, padding: 20, marginBottom: 14 }}><Skeleton lines={5} /></div><div style={{ ...card, padding: 18, background: "#F8FAFC", borderStyle: "dashed" }}><div style={{ fontSize: 13, fontWeight: 800 }}>Monitoramento em preparação</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>A observabilidade complementar permanece sem fonte nesta versão.</div></div></div>;
   if (data.source !== "api") return <div style={{ color: "#0F172A" }}><Header /><Alert title="Não foi possível consultar a prontidão" tone="warning">A verificação será repetida automaticamente. Nenhum estado de serviço é presumido.</Alert></div>;
   return <PlatformHealthView data={data} />;
+}
+
+export function PlatformHealthPage() {
+  const { data, loading } = usePlatformHealth();
+  return <PlatformHealthScreen data={data} loading={loading} />;
 }
 
 export default PlatformHealthPage;

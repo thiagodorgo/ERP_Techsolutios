@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
+import { nextRefreshState } from "../refresh-state";
 import { currentBillingMonth, getCloudBilling, periodForMonth } from "./cloud-billing.service";
 import type { CloudBillingData } from "./cloud-billing.types";
 import { emptyCloudBilling } from "./cloud-billing.types";
@@ -15,10 +16,7 @@ export function useCloudBilling(month = currentBillingMonth()) {
     if (background) setIsRefreshing(true);
     else setLoading(true);
     const next = await getCloudBilling(period);
-    setData((current) => {
-      if (background && next.source === "fallback" && !next.forbidden && current.source !== "fallback") return { ...current, stale: true };
-      return { ...next, stale: false };
-    });
+    setData((current) => nextRefreshState(current, next, background));
     setLoading(false);
     setIsRefreshing(false);
   }, [period.end, period.start]);
