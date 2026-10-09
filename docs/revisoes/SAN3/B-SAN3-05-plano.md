@@ -1693,3 +1693,12 @@ aparecer como valor de `session_user`, `current_user`, `escapes[].rolname` e na 
 `password` (decodificados), nome do banco, `postgresql://`, `password`, e qualquer nome de papel dentro de URL/DSN ou de
 outro campo. As três mutações da errata 1 (host, senha, nome de papel fora dos campos de identidade) seguem
 obrigatórias. `src/database/runtime-role.bootstrap.ts` continua PROIBIDO.
+
+**Errata 3 ao D4 — DECISÃO DO DONO (2026-10-09, resposta à PARADA-D4-3; fonte §A1.1).** O log do servidor também
+publica o papel em `error.sessionUser` e `error.currentUser` — o mesmo dado de `session_user`/`current_user`, dentro do
+objeto de erro. Perguntado entre permitir esses dois campos, escondê-los alterando `src/database/runtime-role.ts`, ou
+mandar ao planejador, o dono escolheu literalmente *"Permitir esses dois campos (Recomendado)"*. Logo, além dos campos
+da errata 2, um nome de papel pode aparecer como valor de `error.sessionUser` e `error.currentUser`. Todo o resto da
+errata 2 continua: `hostname`, `port`, `password`, nome do banco, `postgresql://`, `password` e nome de papel em URL/DSN
+ou em qualquer outro campo seguem proibidos; as três mutações seguem obrigatórias; `src/database/runtime-role.bootstrap.ts`
+e `src/server.ts` seguem PROIBIDOS.
