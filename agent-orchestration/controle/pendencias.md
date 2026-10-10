@@ -10612,3 +10612,15 @@ nenhuma suíte sua faz DDL na base compartilhada.
 entraram na lista `SUITES` do `ci.yml` neste PR), o journal em memória da porta (emenda 1-e) e a pendência de
 sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo da
 `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+## P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor e o plano do ciclo 2 da junta 1 do `B-O6R-04a` nunca foram versionados — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` — 2026-09-20 (registro da junta 1, feito pelo orquestrador, não pelo dev) · **dono:** orquestrador
+- **prova:** t17 da seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de `agent-orchestration/omega/planos/B-O6R-04a-plano.md` (R1.3): `R-B-O6R-04a-ciclo1.md`, `PLANO-B-O6R-04a-ciclo2.md`, os 3 votos e o parecer do inspetor da junta 1 não existem em ref nenhuma nem em disco; os corpos das cadeiras do ciclo 2 mandam o jurado ler a ata do ciclo 1.
+- **paliativo:** ata reconstituída e declarada como tal em `agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md` (emenda 6 (gg) do comando).
+- **bloqueia:** não (`pre-existente`, §C7.1-ter(a); risco r6 da retomada).
+- **teste de encerramento:** a definir pelo dono (a retomada não o fixa).
+
+## EMENDA DA RETOMADA DO `B-O6R-04a` a pendência existente (2026-10-10) — APPEND, nunca reescrita
+
+- **`P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT`**, linha de status (`pendencias.md:9810` na ref `bc3e736b`): onde se lê "nasce na junta do ciclo 2 do `B-O6R-04a`", leia-se "nasce na junta do ciclo 1 do `B-O6R-04a`" — numeração de R1.3 da retomada (junta 1 = ciclo 1, a que votou; correção = ciclo 2; a próxima junta = junta do ciclo 2). O texto original fica como está.

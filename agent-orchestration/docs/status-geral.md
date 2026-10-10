@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-10-10 — B-O6R-04a: Retomada 2026-10-10
+
+Retomado por ordem do dono (`D-ORDEM-NOITE-2026-10-10`), que revoga para o #389 o estacionamento de 08/10. O plano é
+a seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de `agent-orchestration/omega/planos/B-O6R-04a-plano.md`;
+as decisões do orquestrador estão na Emenda 6 de `agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md`.
+O passo 1 (integração da `main`) é do dev de integração, com relatório em
+`agent-orchestration/omega/juntas/votos/B-O6R-04a/00-dev-integracao.md`. A ata do ciclo 1 está **reconstituída** em
+`agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md`. Próximo: inspetor de terreno e junta do ciclo 2 (régua completa).
+
 ## Atualização 2026-10-02 — B-SAN3-01b (tarefa de nuvem, dev): as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE no ramo, aguarda inspetor/junta/PR
 
 **Ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, desenvolvido na NUVEM** (claude.ai/code, Linux, Node 22.22.0 + Node 20.20.0

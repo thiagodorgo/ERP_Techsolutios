@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **493** |
-| IDs distintos | 482 |
-| **ABERTAS** | **365** |
+| Cabecalhos `## P-` | **494** |
+| IDs distintos | 483 |
+| **ABERTAS** | **366** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **298** |
+| — das quais **ativas nesta rodada** | **299** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 125 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **493 cabecalhos para 482 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **494 cabecalhos para 483 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -241,7 +241,7 @@
 | `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` | 10550 | MÉDIA | sim | P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N den |
 | `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` | 10569 | MÉDIA | sim | P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz qu |
 
-## ABERTAS · balde B — processo/registro — 132
+## ABERTAS · balde B — processo/registro — 133
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -377,6 +377,7 @@
 | `P-SAN3-06B-TESTES-RESIDUAIS` | 10486 | BAIXA | sim | P-SAN3-06B-TESTES-RESIDUAIS (2026-10-10) — lacunas de teste e um rótulo de Saúde deixado |
 | `P-LINT-RAIZ-SEM-MJS` | 10500 | BAIXA | sim | P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA |
 | `P-KPI-MARCO-2026-10-09-NOTAS` | 10507 | BAIXA | sim | P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412 |
+| `P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO` | 10616 | BAIXA | sim | P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
