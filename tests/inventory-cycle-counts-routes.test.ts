@@ -170,6 +170,14 @@ test("[isolamento] sessão/entrada cross-tenant → 404; tenant_id forjado ignor
     assert.equal(crossEntry.status, 404, JSON.stringify(crossEntry.body));
     assert.equal(crossClose.status, 404);
 
+    // B-O6R-04a (I9): um item fica em no máximo UMA contagem não terminal — a sessão de A (intocada pelas
+    // tentativas de B) é cancelada por A antes da nova abertura, que senão seria 409 items_in_open_session.
+    const cancelA = await requestJson(baseUrl, `/api/v1/cycle-counts/${openedA.id}/cancel`, {
+      method: "POST",
+      headers: authHeaders(seed.tenantA, seed.inventoryA, "inventory"),
+    });
+    assert.equal(cancelA.status, 200, JSON.stringify(cancelA.body));
+
     // tenant_id forjado no body é ignorado — a sessão fica no tenant do claim (A).
     const forged = await requestJson(baseUrl, "/api/v1/cycle-counts", {
       method: "POST",

@@ -1,0 +1,51 @@
+{
+  "SIZE": {
+    "N": 1000,
+    "v2_semIndice": {
+      "ms": 23439,
+      "status": "concluida",
+      "beginStatus": "started",
+      "totalVarianceValue": 0,
+      "applied": 1000,
+      "skipped": 0,
+      "reused": 0,
+      "final": {
+        "status": "concluida",
+        "is_active": true,
+        "ajustes": 1000,
+        "somaAjustes": -3000,
+        "entries": 1000,
+        "carimbadas": 1000
+      }
+    },
+    "v2_comIndice": {
+      "ms": 58853,
+      "status": "concluida",
+      "beginStatus": "started",
+      "totalVarianceValue": 0,
+      "applied": 1000,
+      "skipped": 0,
+      "reused": 0,
+      "final": {
+        "status": "concluida",
+        "is_active": true,
+        "ajustes": 1000,
+        "somaAjustes": -3000,
+        "entries": 1000,
+        "carimbadas": 1000
+      }
+    },
+    "headbase": {
+      "ms": 31790,
+      "final": {
+        "status": "concluida",
+        "is_active": true,
+        "ajustes": 1000,
+        "somaAjustes": -3000,
+        "entries": 1000,
+        "carimbadas": 1000
+      }
+    }
+  },
+  "fimMs": 115430
+}

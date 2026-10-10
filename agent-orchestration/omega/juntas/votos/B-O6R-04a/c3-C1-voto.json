@@ -1,0 +1,51 @@
+{
+  "jurado": "jurado-o6r04a-c2-suplente-banco-rls (cadeira C1, ciclo 3, identidade nova; nenhuma medição de outra cadeira foi herdada)",
+  "modelo": "GPT-5.6 Sol em nível menor, por decisão do dono de 2026-10-10; modelo de topo reservado ao plano e ao replanejamento após reprovação",
+  "mandato_md5": "2bdca8340a0b4324f241a1cb9126d62b",
+  "corpo_md5": "6af1ad8f996180a6080a2f4cceca4cdf",
+  "head_medido": "622bf8453d2d60ecb6577aa611b2d87645a689ae · merge-base c1cfdabe12c74b58f8393dbee4f333224c56b303 · 14/14 check-runs completed/success",
+  "regua": "ciclo 3: somente defeito grave de produto comprovado por execução — perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro — bloqueia",
+  "terreno": "worktree detached próprio C:/Users/AMP/w-ciclo3-389-c1; npm ci próprio; runner Linux Node 20.20.2; PostgreSQL 16.14 e Redis próprios sem portas publicadas; DATABASE_URL/REDIS_URL explícitas para os descartáveis; node_modules sem junction/symlink; árvore pristina antes do teardown",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "objeto": "dinheiro e dado sob corrida real",
+      "estado": "APROVADO",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "T-A 16/16 e T-B 22/22, zero falha/skip. Sonda dirigida independente repetiu A1+B1+B15 com RACE_N=10: 20 débitos sobre saldo 10 deixaram saldo 0; dois close deram um vencedor/um ajuste; total exato e zero unidade duplicada; zero 25P02 e zero 40P01 novo."
+    },
+    {
+      "item": 2,
+      "objeto": "isolamento entre organizações sob o papel real",
+      "estado": "APROVADO",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Seis vias sob NOSUPERUSER NOBYPASSRLS: saída cross-tenant sem escrita; close/cancel/recordEntry/get = 404; open ignora sessão alheia; censo sob papel real = 42501/nenhuma linha, nunca 0|0."
+    },
+    {
+      "item": 3,
+      "objeto": "perda por migração e censo somente leitura",
+      "estado": "APROVADO",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia": "Drill completo 6/6: dois índices parciais, 23505, P0001 com N=21, censo sem mutação e recusa fail-closed. Sonda BEGIN READ ONLY/ROLLBACK mostrou before=after e n_tup_ins/upd/del=0/0/0 nas três tabelas."
+    }
+  ],
+  "justificativa": "Nenhuma das execuções demonstrou perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro. VOTO: APROVADO — corridas preservaram o saldo e o fechamento único; isolamento permaneceu fail-closed; migração e censo foram aditivos/somente leitura.",
+  "achados": [
+    {
+      "defeito": "A imagem local erp-junta-node20-pg16:local não continha psql apesar da premissa do mandato.",
+      "evidencia": "docker image inspect + execução: Linux amd64, Node 20.20.2, psql: command not found; o PostgreSQL próprio forneceu psql 16.14 e permitiu toda a medição.",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "motivo": "Imagem local fora do diff do PR e anterior à cadeira; não afetou o produto nem ocultou defeito grave."
+    }
+  ],
+  "pendencias_que_aceito": [
+    "As cinco pendências de forma já registradas pelo ciclo 2 não entram no voto do ciclo 3; nenhuma instância grave delas foi observada no produto.",
+    "A divergência da imagem é nota de terreno pre-existente, não defeito grave do produto."
+  ],
+  "teardown": "3/3 containers j389c3-c1-* removidos com volumes; rede j389c3-c1-net removida; worktree próprio removido por git worktree remove --force; confirmações finais: 0 container, 0 rede, 0 worktree, diretório ausente; 14,59 GiB livres; recursos da outra cadeira, w-07ca e base viva nunca foram alvo; nenhum commit."
+}

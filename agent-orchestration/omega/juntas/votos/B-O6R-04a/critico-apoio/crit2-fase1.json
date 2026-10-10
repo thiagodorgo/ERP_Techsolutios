@@ -1,0 +1,411 @@
+{
+  "role_A": {
+    "u": "o6r_b01_1789681984838_dbabb955c595f",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "crit2-A"
+  },
+  "role_B": {
+    "u": "o6r_b01_1789681985267_ff806670f9f49",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "crit2-B"
+  },
+  "premissas": {
+    "isolation": "read committed",
+    "forUpdateComContexto": 1,
+    "forUpdateSemContexto": 0,
+    "forUpdateContextoDeOutroTenant": 0
+  },
+  "P1": {
+    "forma": "10 iter x 20 saidas de 1 (10 via papel A + 10 via papel B, largada comum), BASE=10, V1 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "ok": 18,
+        "rej": {
+          "STOCK_INVALID|409|insufficient_balance|Saldo insuficiente para o movimento: o saldo atual do item é 0.": 2
+        },
+        "saldo": -8,
+        "ms": 302
+      },
+      {
+        "i": 1,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 101
+      },
+      {
+        "i": 2,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 112
+      },
+      {
+        "i": 3,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 86
+      },
+      {
+        "i": 4,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 82
+      },
+      {
+        "i": 5,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 83
+      },
+      {
+        "i": 6,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 75
+      },
+      {
+        "i": 7,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 75
+      },
+      {
+        "i": 8,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 74
+      },
+      {
+        "i": 9,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10,
+        "ms": 100
+      }
+    ],
+    "negativas": 10
+  },
+  "P6": {
+    "forma": "10 iter x close() x2 (A e B), sistema 10 contado 7, V6 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 1,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 2,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 3,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 4,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 5,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 6,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 7,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 8,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      },
+      {
+        "i": 9,
+        "fulfilled": 2,
+        "rej": [],
+        "ajustes": 2,
+        "saldo": 4
+      }
+    ],
+    "duplicados": 10
+  },
+  "P3": {
+    "forma": "10 iter x reverseMovement x2 do mesmo movimento, V3 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 1,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 2,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 3,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 4,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 5,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 6,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 7,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 8,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 9,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      }
+    ],
+    "duplicados": 10
+  },
+  "P5": {
+    "forma": "5 iter x removeExitForSource x2 da mesma fonte, V5 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 2,
+        "st": [
+          "mov",
+          "mov"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 1,
+        "compensacoes": 2,
+        "st": [
+          "mov",
+          "mov"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 2,
+        "compensacoes": 2,
+        "st": [
+          "mov",
+          "mov"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 3,
+        "compensacoes": 2,
+        "st": [
+          "mov",
+          "mov"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 4,
+        "compensacoes": 2,
+        "st": [
+          "mov",
+          "mov"
+        ],
+        "saldo": 13
+      }
+    ],
+    "duplicados": 5
+  },
+  "P7": {
+    "forma": "5 iter x entrada 10@3 x2 concorrentes sobre 10@1 (esperado 2.333333), V1 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "ok": 2,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 1,
+        "ok": 2,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 2,
+        "ok": 2,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 3,
+        "ok": 2,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 4,
+        "ok": 2,
+        "avg": 2,
+        "saldo": 30
+      }
+    ],
+    "errados": 5
+  },
+  "P9": {
+    "forma": "5 iter x createExitForSource x2 MESMA fonte (InventoryService real, fast-path incluso), V4 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "linhas": 1,
+        "st": [
+          "ok",
+          "|||current transaction is aborted, commands ignored until end of transact"
+        ]
+      },
+      {
+        "i": 1,
+        "linhas": 1,
+        "st": [
+          "|||current transaction is aborted, commands ignored until end of transact",
+          "ok"
+        ]
+      },
+      {
+        "i": 2,
+        "linhas": 1,
+        "st": [
+          "|||current transaction is aborted, commands ignored until end of transact",
+          "ok"
+        ]
+      },
+      {
+        "i": 3,
+        "linhas": 1,
+        "st": [
+          "|||current transaction is aborted, commands ignored until end of transact",
+          "ok"
+        ]
+      },
+      {
+        "i": 4,
+        "linhas": 1,
+        "st": [
+          "ok",
+          "|||current transaction is aborted, commands ignored until end of transact"
+        ]
+      }
+    ],
+    "com25P02": 5
+  },
+  "IDX": {
+    "duplicadosReverses": 15,
+    "duplicadosCycleItem": 10,
+    "idxReverses": " Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Code: `23505`. Message: `could not create unique index \"crit2_rev\"`",
+    "idxCycleItem": " Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Code: `23505`. Message: `could not create unique index \"crit2_cc\"`",
+    "sobrou": 0
+  },
+  "fimMs": 6957
+}

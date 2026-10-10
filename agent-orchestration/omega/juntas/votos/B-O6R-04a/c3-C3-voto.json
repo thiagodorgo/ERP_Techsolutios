@@ -1,0 +1,63 @@
+{
+  "junta": "B-O6R-04a ciclo 3",
+  "pr": 389,
+  "cadeira": "C3",
+  "identidade": "coordenador-de-acessos",
+  "modelo": "claude-opus-5-5 (Opus 5.5, nível menor; substitui o Fable por decisão do dono de 2026-10-10)",
+  "mandato_md5": "2cdd2bfb9effff3ad0e1bfc2de598365",
+  "corpo_md5": "a4141c3170516194254e578d0e7acc8d",
+  "objeto": "622bf8453d2d60ecb6577aa611b2d87645a689ae",
+  "regua": "ciclo 3 — só defeito GRAVE de produto bloqueia (CLAUDE.md §C7 item 8(2))",
+  "itens": {
+    "I1_legalidade_registro": {
+      "status": "APROVADO",
+      "medido_em": "2026-10-10T14:03Z",
+      "resumo": "inspetor LIBERADO COM RESSALVA (R8 resolvida em bb083ea5); objeto 622bf845 por gh e ls-remote; 14/14 check-runs completed/success; git diff --exit-code 35ef85be..622bf845 -- src tests prisma scripts .github vazio (ec 0); merge-base = c1cfdabe; 5 pendências ABERTAS com dono B-GOV-GUARDA-POR-PROPRIEDADE (CENSO: ou B-BAT-01) e índice gerado = versionado (diff EOL-neutro ec 0); J-…-ciclo2 e R-…-ciclo2 versionados; Kpis sem diff (0 arquivos)",
+      "achados": []
+    },
+    "I2_rota_isolamento_permissao": {
+      "status": "APROVADO",
+      "medido_em": "2026-10-10T14:15Z",
+      "resumo": "login real (POST /api/v1/auth/login → Bearer, só Bearer) contra src/server.ts com CORE_SAAS_PERSISTENCE=prisma, organização A (demo, 9 papéis) e B (c3probe-b); 2 passadas — superusuário (camada da aplicação sozinha) e papel NOSUPERUSER NOBYPASSRLS com trava enforce — cada uma 80/80: outra organização → 404 (18/18), gravação no item alheio recusada 400 idêntica a UUID inexistente (sem oráculo), papel sem permissão → 403 (24 escritas + 6 leituras), tenant_id do corpo ignorado, X-Tenant-Id alheio sem dado, estado de A intacto; tests/inventory-cycle-counts-routes.test.ts 6/6 no Linux e no Windows; vermelho-controle M-C3a (filtro de organização removido de findSession na cópia do container): superusuário 75/80 (vazamento acusado), papel de runtime 80/80 (RLS segura); restauro provado por sha1",
+      "achados": []
+    },
+    "I3_suite_inteira": {
+      "status": "APROVADO (nota)",
+      "medido_em": "2026-10-10T14:06Z",
+      "resumo": "npm test forma canônica 3 no runner Linux próprio (banco recriado, 108 migrações): 298 arquivos · 3237 testes · pass 3233 · fail 2 · skipped 2 (RBAC_DB_PARITY ×2), ec 1, 528 s; as 2 falhas = 1 subteste T15 de tests/san3-05-runtime-role-guard-db.test.ts (processo filho não encerrou em 3834ms, 27,6 s sob carga) + o pai; arquivo byte-idêntico à main, nascido em a9fbe283 (#405, 2026-10-09), pendência P-SAN3-05-T15-TETO-DE-RELOGIO ABERTA (dono B-ARNES-2); re-execução isolada 12/12 (T15 11,4 s); T13 34/34 na suíte e gerador com 56 chaves sha1 2db380a2…, 0 em src/modules/inventory",
+      "achados": [
+        "C3-N1"
+      ]
+    }
+  },
+  "achados": [
+    {
+      "id": "C3-N1",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "tests/san3-05-runtime-role-guard-db.test.ts byte-idêntico a origin/main; nasceu em a9fbe283 (#405, 2026-10-09); P-SAN3-05-T15-TETO-DE-RELOGIO ABERTA, dono B-ARNES-2",
+      "descricao": "T15 falhou 1/1 na suíte inteira sob carga (processo filho não encerrou em 3834ms); isolado 12/12, T15 11,4 s — teto de relógio do arnês, não produto",
+      "conta_no_voto": false
+    },
+    {
+      "id": "C3-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "descricao": "parecer do inspetor medido em de1dff89, objeto 622bf845; delta reconciliado = só registro, código idêntico, 14/14 verdes",
+      "conta_no_voto": false
+    },
+    {
+      "id": "C3-N3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "descricao": "corpo pede a cadeia dos 9 papéis com menu e matriz de navegação; o mandato restringe à linha C3 do C3.3; menu e navigation-matrix não medidos; não podem esconder grave deste bloco (diff de src só em src/modules/inventory/**)",
+      "conta_no_voto": false
+    }
+  ],
+  "veredito": "APROVADO",
+  "escopo": "ciclo 3, régua GRAVE: nenhum bloqueia; os 3 achados são nota e não contam no voto",
+  "gravado_em": "2026-10-10T14:19:48.046Z",
+  "bloqueia": [],
+  "resposta_pergunta_C3_3": "medi e não há defeito de produto grave pela rota (vazamento entre organizações e permissão), com sonda de poder provado",
+  "limpeza": "containers j389c3-c3-runner/pg/redis e rede j389c3-c3-net removidos pelo nome; 2 volumes anônimos removidos pelo nome (sem prune); worktree w-ciclo3-389-c3 removido por git worktree remove --force; base viva e recursos da C1 intocados; nada commitado"
+}

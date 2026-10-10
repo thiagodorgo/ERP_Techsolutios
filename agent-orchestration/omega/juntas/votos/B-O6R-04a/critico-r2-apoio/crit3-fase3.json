@@ -1,0 +1,37 @@
+{
+  "C78_headbase": {
+    "C7": {
+      "resultado": "already_reversed",
+      "compensacoesDepois": 1
+    },
+    "C8": {
+      "resultado": "undefined",
+      "compensacoesDepois": 1
+    }
+  },
+  "B8POST_open": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "entries=2"
+    },
+    "bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ],
+    "deadlock": false
+  },
+  "B8POST_abc": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}"
+    },
+    "bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ],
+    "deadlock": false
+  },
+  "fimMs": 7161
+}

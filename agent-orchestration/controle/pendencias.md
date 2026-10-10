@@ -10510,3 +10510,163 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - (N-1) a nota de `blocks_completed` diz que #394/#397 contaram por terem ID, plano e junta, mas #360/#361/#362 também tinham e não contaram: o precedente é inconsistente e a frase pode orientar mal a próxima consolidação. (N-2) os guards de KPI não comparam o latest com o último ponto do history (com 175 no history e 174 no latest seguiram 29/29). (N-3) `release.pr`, `merge_commit` e `approved_head` do marco seguem `null`; com o KPI congelado, o preenchimento vai na próxima consolidação.
 - **bloqueia:** não.
 - **teste de encerramento:** critério de contagem escrito sem contradição com o history; guard vermelho com latest ≠ último ponto; campos do marco preenchidos.
+
+## P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD (2026-09-18) — o censo de duplicatas do estoque em staging e produção, ANTES do próximo deploy — ALTA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, emenda 2-g do comando; plano do bloco §4.3 e §13-1)
+- **prova:** a migration `prisma/migrations/20260873000000_add_stock_movements_unique_backstops/migration.sql` cria dois índices únicos parciais em `stock_movements` — `stock_movements_reversal_active_key (tenant_id, reverses_movement_id) WHERE reverses_movement_id IS NOT NULL` e `stock_movements_cycle_count_item_key (tenant_id, cycle_count_id, item_id) WHERE cycle_count_id IS NOT NULL` — e, antes deles, um bloco `DO $censo$` **fail-closed** que ABORTA se houver duplicata de legado, com a contagem real de grupos e uma amostra de até 20 (drill `tests/inventory-migration-drill-db.test.ts`, C5′: 21 grupos → `P0001` "21 grupo(s) … Amostra (ate 20 de 21)", sem `tenant_id` no texto). A migration **nunca deduplica**: qual compensação/ajuste "vale" é dinheiro — decisão humana. O código do head-base produzia esse dado sob concorrência (vermelho-controle do bloco: estorno duplo → 2 compensações; fechamento duplo → 2 ajustes).
+- **roteiro (ato do dono), nesta ordem:**
+  0. **Papel (C1-F1, ciclo 2 da junta — fail-closed).** Rode o censo E o `migrate deploy` com um papel **SUPERUSUARIO ou BYPASSRLS**. Sob FORCE RLS, qualquer outro papel enxerga ZERO linha e o censo mentiria "0 grupos": desde o ciclo 2 o script e o bloco `DO $censo$` fazem `SET row_security = off`, e o Postgres **RECUSA** (`42501`) em vez de filtrar — o censo sai com erro e a migration ABORTA com `censo CEGO sob o papel "<papel>"`, **nunca** com "0 grupos". Se `STAGING_DATABASE_URL`/`PROD_DATABASE_URL` for a URL da aplicação (`NOSUPERUSER`, sem BYPASSRLS — `docs/deployment.md:447`), há duas saídas: usar a URL de superusuário do cluster, ou conceder `ALTER ROLE <papel_da_migracao> BYPASSRLS` (o runbook `docs/deployment.md` §3.8 já prevê uma role dona dedicada `BYPASSRLS` sem membros — decisão do dono). **Consequência declarada:** na topologia "quem migra é quem serve", esta migration **não aplica** até esse ato sobre o papel, e a fila de `prisma/` fica presa naquele ambiente — é o custo operacional escolhido para nunca contar cego.
+  1. Antes do próximo deploy de staging (`STAGING_DATABASE_URL`, migrado por `deploy-staging.yml:44`) e de produção (`PROD_DATABASE_URL`, `deploy-production.yml:136`): `psql "$URL" -f scripts/inventory-duplicates-census.sql` (somente leitura: o arquivo tem só `SELECT`; a saída traz `tenant_id` e fica com o dono, fora do repositório).
+  2. Zero linhas nas duas consultas de grupos → o deploy passa. N > 0 → decisão humana por grupo: a compensação/ajuste que não vale é **estornada por movimento compensatório**, nunca apagada (o razão é imutável).
+  3. **Se a migration abortar num ambiente** (censo não rodado, ou dado novo): ela fica em `_prisma_migrations` com `finished_at NULL` e **todo `migrate deploy` seguinte responde `P3009`, mesmo depois de sanear** (medido pelo planejador, `[08]` do plano: 3º deploy com dado limpo → `P3009`). Saída: sanear → `npx prisma migrate resolve --rolled-back 20260873000000_add_stock_movements_unique_backstops` (contra a mesma `DATABASE_URL`) → `migrate deploy`. Enquanto isso a fila de `prisma/` do SAN3 (`03a → SAN3-02 → SAN3-20 → B-O6R-12 → B-O6R-09`) fica presa naquele ambiente — o texto da exceção já nomeia o comando.
+  4. **Aviso do gatilho:** `deploy-staging.yml` dispara em `push: main` quando `vars.STAGING_DEPLOY_ENABLED == 'true'`; no dia em que a variável for ligada, **o merge deste bloco na `main` já é o deploy** — o censo tem de vir antes.
+- **anexo (R19 do plano) — sessões de contagem sobrepostas que JÁ existam:** o `open` novo recusa sobreposição (409 `items_in_open_session`), mas não desfaz a que já existe; rodar junto com o censo e decidir qual fecha primeiro. **Desde o ciclo 2 esta consulta é a 3ª do próprio `scripts/inventory-duplicates-census.sql`** (nunca SQL solto aqui), e o lado fechado é derivado — `c.status NOT IN ('concluida','cancelada')`, e não a allowlist `IN ('aberta','fechando')`: um status não classificado SEGURA o item em vez de liberá-lo (C2-03). Reproduzida aqui só para leitura:
+  `SELECT e.tenant_id, e.item_id, array_agg(DISTINCT c.id) AS sessoes FROM cycle_count_entries e JOIN cycle_counts c ON c.tenant_id = e.tenant_id AND c.id = e.cycle_count_id WHERE c.status NOT IN ('concluida', 'cancelada') GROUP BY e.tenant_id, e.item_id HAVING count(DISTINCT c.id) > 1;`
+- **escopo:** nasce no bloco (a migration é dele); o dado que ela pode encontrar é `pre-existente` (produzido pelo código anterior ao bloco).
+- **dono:** ato do dono (emenda 2-g). Entra na recontagem do `B-SAN3-10` (§4.2 do plano SAN3).
+- **bloqueia:** o próximo deploy de staging e de produção (não o merge).
+- **teste de encerramento:** a saída do censo nos dois ambientes (N por consulta), registrada fora do repositório e referida aqui por data; N = 0 ou cada grupo decidido e estornado; o `migrate deploy` seguinte aplica a `20260873000000`.
+
+## P-O6R-B04-CONSUMIDORES-503 (2026-09-18) — o 503 de estoque e de contagem é contrato novo que a web e o app ainda não tratam — MÉDIA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, plano §13-2)
+- **prova:** o bloco mapeia falha transitória de banco (espera de lock acima do timeout, impasse, serialização, fila de conexão) para **503** `STOCK_UNAVAILABLE/stock_busy` e `CYCLE_COUNT_UNAVAILABLE/cycle_count_busy`, com nada gravado (`src/modules/inventory/inventory-prisma.repository.ts`, `mapTransientDbFailure`; provado por A14 de `tests/inventory-balance-lock-race-db.test.ts`). Antes era 400 com a mensagem crua do banco. Que a web e o app tratem 503 genericamente é **hipótese, não medida**.
+- **escopo:** nasce no bloco (contrato novo); `API_CONTRACTS.md` está fora do escopo do `B-O6R-04a`.
+- **dono:** `B-O6R-04b` ou o bloco de frontend de estoque — a designar pelo orquestrador.
+- **bloqueia:** não bloqueia o gate por si; sem ela, o usuário vê erro genérico onde "tente de novo" resolve.
+- **teste de encerramento:** a web e o app recebem 503 `stock_busy`/`cycle_count_busy` e mostram mensagem de repetição (teste de adapter com o status real); `API_CONTRACTS.md` registra os dois códigos.
+- **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, risco R30 do plano) — um segundo caminho de erro chega aos mesmos consumidores.** O C2-04 fechou a classificação de violação de unicidade pela **identidade do índice** (`isUniqueViolationOf`): violação de um índice que os wrappers de V3/V4/V5 **não** conhecem deixa de virar "já estornado"/`undefined` de sucesso silencioso e **propaga**. Medido no ciclo 2 (C10′): com um índice único alheio sobre `stock_movements`, `removeExitForSource` e `reverseMovement` **rejeitam** e o chamador fica sabendo — antes devolviam sucesso com o saldo em 7 onde devia ser 10. Consequência para esta pendência: `src/modules/fuel-logs/fuel-log.service.ts:575` e `src/modules/maintenance-orders/maintenance-order.service.ts:720` (módulos FORA do escopo deste bloco) passam a poder receber **exceção** onde recebiam `undefined`; sem `statusCode`, o `sendRouteError` responde **400 com a mensagem crua** (a classe transversal já registrada nas notas deste arquivo). É o comportamento fail-closed desejado — nunca 2xx sobre estorno que não aconteceu — mas o texto de negócio dessa recusa entra no mesmo teste de encerramento acima. Hoje o caminho só ocorre com índice único alheio: os três índices conhecidos estão pinados ao catálogo pelo teste C9.
+
+## P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os três códigos novos da contagem — MÉDIA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, plano §13-3)
+- **prova:** o backend passa a ter o status `fechando` em `CYCLE_COUNT_STATUSES` (`src/modules/inventory/cycle-count.types.ts`) e três recusas novas com mensagem de negócio: 422 `CYCLE_COUNT_INVALID/entry_already_adjusted` (recontar entrada já ajustada), 422 `CYCLE_COUNT_INVALID/close_in_progress` (cancelar contagem com ajuste aplicado — a saída é recontar as pendentes e concluir) e 409 `CYCLE_COUNT_CONFLICT/items_in_open_session` (abrir contagem com item já em outra contagem aberta). O `CycleCountStatus` do frontend não conhece `fechando` (o adapter mapeia desconhecido para "Aberta" e trata 422 com "Recarregue a lista" — plano §11 R8, não re-medido por este bloco).
+- **escopo:** nasce no bloco; `frontend/**` e `API_CONTRACTS.md` estão fora do escopo do `B-O6R-04a`.
+- **dono:** bloco de frontend de estoque, a designar (sugestão do plano: o próximo `B-SAN3-*` que tocar `frontend/src/modules/inventory/**`).
+- **bloqueia:** não bloqueia o gate por si; sem ela, a tela mostra "Aberta" para uma contagem em fechamento e esconde a saída do `close_in_progress`.
+- **teste de encerramento:** a tela de contagem exibe `fechando`, leva o usuário a recontar as pendentes no `close_in_progress` e mostra texto próprio para os três códigos; `API_CONTRACTS.md` atualizado no mesmo bloco.
+
+## P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N dentro de UMA transação e encosta no teto dos 5 s — MÉDIA
+
+- status: ABERTA (nasce na junta do ciclo 2 do `B-O6R-04a`, cadeira C1 `agente-dba-guardiao`, achado C1-N1; classificada como **pré-existente** pela regra `D-JUNTA-ESCOPO-E-CALIBRACAO` (a) — não reprova o bloco, vira pendência nomeada com bloco dono)
+- **prova (evidência de origem, conferida no ciclo 2):** `CycleCountService.open` monta o snapshot inteiro numa transação só e grava as entradas com um `cycleCountEntry.createMany` — desenho que existe desde `528e3601` (#149, 2026-07-09, "Estoque avançado — ABC, ponto de pedido e contagem cíclica (F7b)"), **anterior a este bloco**. O teto do snapshot é `SNAPSHOT_LIMIT = 10_000` (`src/modules/inventory/cycle-count.service.ts:41`, valor idêntico em `02bd7dab`, a `main` do momento). Medido pela cadeira C1: com N = 10 000 itens o `open` ocupa **1,6–3,3 s** de um timeout de 5 s — 32 % a 66 % do orçamento, sem margem para carga. O acréscimo deste bloco (o lock da linha do tenant + a consulta de sobreposição da I9) é **20–33 ms de 1 240–1 422 ms**: o bloco não é a causa, e removê-lo não devolveria a margem.
+- **escopo:** `pre-existente` — a transação única do `open` e o `SNAPSHOT_LIMIT` antecedem o `B-O6R-04a` (`528e3601`, #149) e estão fora do escopo permitido dele (o bloco só pôde tocar o predicado da sobreposição).
+- **dono:** `B-SAN3-15` (`fix/mobile-prestador-porta-e-estoque`) — é o **único bloco depois deste com `src/modules/inventory/**` no escopo** (`docs/revisoes/SAN3/PLANO_SAN3.md` §5 l.284: "backend: rota de estoque por custódia em `src/modules/inventory/**`"), e a trava de arquivo do §6 l.356 nomeia exatamente essa passagem: `src/modules/inventory/**` (`04a` → `SAN3-15`). O `B-O6R-04b` proposto pela cadeira **não** tem o arquivo (o escopo dele é `src/modules/mobile/mobile-inventory-sync.ts`).
+- **bloqueia:** não bloqueia o merge deste bloco nem o gate; sem ela, uma organização com o catálogo no teto vê a abertura de contagem falhar por timeout em máquina carregada — e o 503 de falha transitória não distingue "o banco está ocupado" de "esta operação não cabe no orçamento".
+- **teste de encerramento:** `open` de `SNAPSHOT_LIMIT` itens numa máquina sem carga com margem **≥ 50 %** do timeout; **ou** o `createMany` em lotes com estado retomável (o mesmo padrão de unidade retomável que a emenda 2-h já usa no fechamento), com a asserção de que abortar no meio não deixa sessão pela metade.
+
+## P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da lista do plano foi tocado para a I9 caber em memória — BAIXA
+
+- status: FECHADA — a ratificação que esta pendência esperava JÁ EXISTE, noutro documento: a **emenda 4-(t)** do comando (`agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:183`) ratifica o commit `cd055802` nominalmente (“o arquivo entra no escopo nominalmente”), e o registro da reprovação do ciclo 1 (`R-B-O6R-04a-ciclo1`) mostra a cadeira `validador-mestre` APROVANDO o objeto `c84a76a8`, que contém esse commit (ciclo 2 do `B-O6R-04a`, achado C3-N1, 2026-09-20). Nada a reverter: `cd055802` permanece. Valor anterior, preservado: “ABERTA (registrada na autoria do `B-O6R-04a` pelo desenvolvedor, §A2 — reportada, não decidida)”.
+- **prova:** o plano v3 manda a MESMA recusa de sobreposição de contagem (I9, `items_in_open_session`) no repositório em memória (§3.5) e exige 67 → 67 nas suítes de estoque em memória (§9). O caso `[isolamento]` de `tests/inventory-cycle-counts-routes.test.ts` — arquivo FORA da lista "PERMITIDO (e só isto)" do §8 — abre uma 2ª contagem sobre o mesmo item com a 1ª ainda aberta. Medido pelo desenvolvedor: com o arquivo como estava, `not ok … [isolamento] … 409 !== 201`. O commit isolado `cd055802` acrescenta só o cancelamento da sessão de A (200) antes da abertura com `tenant_id` forjado; nenhuma asserção removida ou afrouxada.
+- **escopo:** `dentro-do-bloco` (a I9 é do bloco; o teste é anterior).
+- **dono:** a junta do `B-O6R-04a` / o orquestrador — ratificar o commit `cd055802` ou descartá-lo (sem ele, ou a I9 some da memória, ou a contagem cai para 66/67).
+- **bloqueia:** o merge do bloco até a ratificação.
+- **teste de encerramento:** a decisão registrada na ata da junta, com o commit mantido ou revertido.
+- **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, achado C3-N1 da cadeira `validador-mestre`) — FECHADA.** A ratificação que esta pendência esperava **já existe, noutro documento**: a **emenda 4-(t)** do comando (`agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:183`) ratifica o commit `cd055802` nominalmente ("o arquivo entra no escopo nominalmente"), e o registro da reprovação do ciclo 1 (`R-B-O6R-04a-ciclo1`) mostra a C3 **aprovando** o objeto `c84a76a8`, que contém esse commit. Uma pendência que se declara "bloqueia: o merge até a ratificação" enquanto a ratificação já foi dada é um bloqueio fantasma — era exatamente o achado. **status: FECHADA** (o campo `status:` acima fica como nasceu; esta linha é a que vale, regra de append). Nada a reverter: o commit `cd055802` permanece.
+
+## P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz que o censo de duplicatas roda antes, nem sob qual papel — MÉDIA
+
+- status: ABERTA (divergência D-C2-6 do desenvolvedor do ciclo 2 do `B-O6R-04a`; emenda 5 (z) do orquestrador)
+- **prova:** o `B-O6R-04a` entrega `scripts/inventory-duplicates-census.sql` e uma migração que **aborta** se houver grupo duplicado (`23505` com a contagem), e o ato do dono `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` manda rodar o censo em staging e produção antes do deploy. O `docs/deployment.md` não menciona nem o censo nem a pré-condição de papel: sob FORCE RLS, um papel sem `BYPASSRLS` enumera um universo vazio e o censo responde "0 grupos" (achado C1-F1 do ciclo 1, fechado no código, mas não no runbook).
+- **escopo:** `pre-existente` quanto ao runbook; a necessidade nasce com este bloco. `docs/**` é escopo PROIBIDO do comando do `B-O6R-04a`.
+- **dono:** `B-SAN3-10` (roteiro de operação: deploy, restore, bootstrap, rotação de segredo).
+- **bloqueia:** não bloqueia o merge; **é pré-condição do próximo deploy**, junto do ato do dono.
+- **teste de encerramento:** o `docs/deployment.md` descreve o censo, o papel sob o qual ele tem de rodar e o que fazer quando a migração aborta (`prisma migrate resolve --rolled-back`), e o ensaio do roteiro cobre esse caminho.
+
+## EMENDAS DO `B-O6R-04a` a pendências existentes (2026-09-18) — APPEND, nunca reescrita
+
+**`P-O6R-B04` (a pendência-mãe, 2026-08-14) → PARCIAL na autoria.** Os dois P0 que ela carrega estão `fechado`
+no registro (`Ω6R-DAT-002`, `Ω6R-DAT-003`), com evidência por execução e o hash no backfill pós-merge (§C3.5).
+Segue aberto o `Ω6R-QUA-002` (P1, mobile/inventário), cujo dono é o `B-O6R-04b`. A linha de `status:` acima não
+muda na autoria — o fechamento só conta quando estiver na `main` (precedente do `B-O6R-06`).
+
+**`P-020` → fechada na autoria pelo `B-O6R-04a`; backfill pós-merge.** O "hardening futuro" que ela pedia (lock
+no agregado do item) é o conserto do `Ω6R-DAT-002`: `FOR UPDATE` na linha do item antes de toda leitura que
+decide, em toda via que debita. A corrida deixou de ser teórica e passou a ser medida: 20 saídas concorrentes
+sobre saldo 10 → 20 aceitas no head-base, exatamente 10 no bloco.
+
+**`P-021` → fechada na autoria pelo `B-O6R-04a`; backfill pós-merge.** O "hardening opcional" que ela citava
+(fechar tudo numa única transação) foi **substituído** pela emenda 2-h — unidades por item retomáveis, porque a
+transação única é impossível acima de ~650 itens sob o timeout de 5 s. A idempotência que ela introduziu
+(reaproveitar ajuste de legado da sessão) segue viva dentro da unidade, sob o lock, e o total do fechamento o
+inclui (caso B7).
+
+**Nota para o `B-O6R-12` (papel de menor privilégio).** `FOR UPDATE`/`FOR SHARE`/`FOR NO KEY UPDATE` exigem
+`UPDATE`/`SELECT` em `inventory_items`, `cycle_counts`, `cycle_count_entries` **e `tenants`** para o papel da
+aplicação (a linha do tenant é travada pelo `open` para serializar as aberturas de contagem).
+
+**Nota para o orquestrador (classe, fora deste bloco).** `sendRouteError` (`src/modules/core-saas/routes/http.ts`)
+responde 400 com a mensagem crua a qualquer `Error` sem `statusCode`. Este bloco fecha a **instância** no
+estoque (503 de domínio para falha transitória); a classe é candidata a pendência transversal — decisão do
+orquestrador.
+
+**Nota de classe (P4, T-04).** O drill de DDL em base PRÓPRIA (`tests/inventory-migration-drill-db.test.ts`)
+fecha a **instância** deste bloco; a classe "DDL na base compartilhada das suítes" (entradas com dono "a
+atribuir" neste arquivo) segue aberta e este bloco não a reabre nem a fecha — só declara, com o guard D9, que
+nenhuma suíte sua faz DDL na base compartilhada.
+
+**Não nascem** (plano §13): `P-O6R-B04-ABANDONO-DE-FECHAMENTO` (a saída do `fechando` está dentro do bloco:
+`abortClose`, recontagem em `fechando`, `cancel` sem ajuste aplicado), `P-O6R-B04-SUITES-LIST-CI` (as 4 suítes
+entraram na lista `SUITES` do `ci.yml` neste PR), o journal em memória da porta (emenda 1-e) e a pendência de
+sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo da
+`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+## P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor e o plano do ciclo 2 da junta 1 do `B-O6R-04a` nunca foram versionados — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` — 2026-09-20 (registro da junta 1, feito pelo orquestrador, não pelo dev) · **dono:** orquestrador
+- **prova:** t17 da seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de `agent-orchestration/omega/planos/B-O6R-04a-plano.md` (R1.3): `R-B-O6R-04a-ciclo1.md`, `PLANO-B-O6R-04a-ciclo2.md`, os 3 votos e o parecer do inspetor da junta 1 não existem em ref nenhuma nem em disco; os corpos das cadeiras do ciclo 2 mandam o jurado ler a ata do ciclo 1.
+- **paliativo:** ata reconstituída e declarada como tal em `agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md` (emenda 6 (gg) do comando).
+- **bloqueia:** não (`pre-existente`, §C7.1-ter(a); risco r6 da retomada).
+- **teste de encerramento:** a definir pelo dono (a retomada não o fixa).
+
+## EMENDA DA RETOMADA DO `B-O6R-04a` a pendência existente (2026-10-10) — APPEND, nunca reescrita
+
+- **`P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT`**, linha de status (`pendencias.md:9810` na ref `bc3e736b`): onde se lê "nasce na junta do ciclo 2 do `B-O6R-04a`", leia-se "nasce na junta do ciclo 1 do `B-O6R-04a`" — numeração de R1.3 da retomada (junta 1 = ciclo 1, a que votou; correção = ciclo 2; a próxima junta = junta do ciclo 2). O texto original fica como está.
+
+## P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de escritores do TIPO `<Model>Delegate` em callee, não do DESTINO da escrita — MÉDIA
+- status: ABERTA (nasce na junta do ciclo 2 do B-O6R-04a, cadeira C2 `jurado-o6r04a-c2-fail-closed-backend`; reclassificada no ciclo 3 pela régua GRAVE: forma de guard, não defeito de produto)
+- prova (N = 7 formas, por mutação executada e revertida; `c2-C2-evidencia.md` §1.3): N1 desestruturação do delegate (`const { create } = tx.stockMovement`), N2 `(tx as any)[m][c]`, N2b receptor de tipo estrutural anônimo, N3 `$executeRaw(Prisma.sql…)` em forma de CHAMADA, N3b `UPDATE ONLY stock_movements`, N5 arquivo em `src/**/generated/` (o `walk()` do guard pula `generated|dist`, l.86), N8 erasure por interface estrutural — todas compilam, passam verdes no D1 e GRAVAM sob o papel real (sonda F: 1 linha cada; N3b 5 linhas).
+- causa: `tests/inventory-write-paths-guard.test.ts` — (a) membro fora de READ_MEMBERS de receptor cujo TIPO se chama `<Model>Delegate` só em callee PropertyAccess/ElementAccess (l.308-317); (c) SQL cru só em `$…RawUnsafe` e tagged `$…Raw` (l.320-324, 377-380); superfície `walk()` exclui `generated|dist` (l.86).
+- produto hoje (ciclo 3, varredura por DESTINO — plano, §Ciclo 3 C3.0 u3/u5/u8/u11/u12): escritores das 3 tabelas por assinatura resolvida = 12 = a allowlist (`insertMovement` l.531, `prisma/seed-fleet.ts:171-173`, 8 do repositório dono da contagem); fora dela: 0; `any`/`unknown` com membro de escrita: 0; literal SQL de escrita em qualquer grafia: 0; `generated|dist`: 0; tipos `*Input` em `src`: 0. NÃO há instância no produto.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE`, o bloco transversal da `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D1 enumera por (i) ASSINATURA RESOLVIDA da chamada (declaração em `<Model>Delegate`, qualquer sintaxe), (ii) TIPO do argumento `*Create/Update/Upsert/Delete*Input`, (iii) qualquer LITERAL com verbo de escrita + tabela normalizada (aspas/schema/ONLY), (iv) `any`/`unknown` com membro de escrita = negar; superfície = o `include` do `tsconfig` (sem pular `generated`); as 7 formas em `D1′` ficam VERMELHAS e os controles de leitura verdes.
+```
+```
+## P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a `insertMovement` só pela forma `this.x(`; indireção `.call/.apply/.bind`/cast sai do universo — MÉDIA
+- status: ABERTA (idem à anterior; reclassificada no ciclo 3: forma de guard)
+- prova (N = 1 forma, N9): via nova `consumeViaCall` decide pelo saldo ANTES do lock e chega a `insertMovement` por `this.insertMovement.call(this, …)`; D1/D2 verdes; a via aparece só em "NÃO identificação".
+- causa: `analyzeRepository` constrói W por `thisCalls` (chamadas `this.<m>(`), não por referência ao SÍMBOLO `insertMovement`.
+- produto hoje: 7 chamadas a `insertMovement`, 7 diretas (`inventory-prisma.repository.ts:264,282,295,364,456,490`); `.call/.apply/.bind`/cast sobre método de escrita: 0 (u6, u11-r5). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: W = fechamento transitivo das REFERÊNCIAS ao símbolo `insertMovement` (checker), inclusive `.call/.apply/.bind`, cast e alias; a mutação N9 fica VERMELHA em D2 (R1: decide antes do lock).
+
+## P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta pública" do wrapper RLS por `MethodDeclaration`; propriedade-arrow e getter escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N10): `readonly contarSemMapeamento = (tenantId) => withTenantRls(this.prismaClient, tenantId, …)` em `RlsPrismaInventoryRepository`, sem `this.tx` e sem mapeamento 503; D7 verde ("17/17 portas por this.tx").
+- causa: filtro `ts.isMethodDeclaration` (l.1229) e o pino "withTenantRls fora de tx" só em métodos (l.1240-1243).
+- produto hoje: 0 membros propriedade-arrow/getter nas 14 classes do módulo (u7); as 3 arrows do módulo são `resolveService` em `*.routes.ts:31,101` (opção de montagem). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D7 enumera `MethodDeclaration` + `PropertyDeclaration` com inicializador função/arrow + `GetAccessor`/`SetAccessor` (públicos por modificador ou ausência de `private`), e exige `this.tx`/mapeamento 503 em todos; N10 VERMELHA.
+
+## P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status por ORM como classe e a por SQL cru por grafia; schema qualificado + identificadores entre aspas escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N11): `UPDATE "public"."cycle_counts" SET "status" = 'concluida' WHERE tenant_id = … AND id = …` (tagged, sem `status` no WHERE) no repositório dono passa D5/D8; o controle N11b (mesmo UPDATE sem schema) fica vermelho — o pino é textual.
+- causa: D5 reconhece "UPDATE cru da contagem" por regex sobre a grafia da tabela, não pela tabela NORMALIZADA (aspas, schema, `ONLY`).
+- produto hoje: 4 transições, 4 com `status` no WHERE (CAS; l.165, 225, 255, 283) + `create` em `aberta`; UPDATE cru em `cycle_counts` em qualquer literal: 0 (u9, u3, u11-r4). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D5 normaliza o identificador da tabela em SQL cru (remove aspas/schema/`ONLY`, case-insensitive) antes de classificar e exige precondição de `status` no WHERE para todo UPDATE em `cycle_counts`; N11 VERMELHA, N11b continua vermelha.
+
+## P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo (T-C6) só reconhece aspas simples como literal; `"…--"`, `$$…$$` e `E'…'` escondem comando — BAIXA
+- status: ABERTA (nasce na junta do ciclo 2, cadeira C1 `jurado-o6r04a-c2-banco-rls`, achado A1 `ajuste`)
+- prova (N = 3 formas): `stripSqlComments`/`SQL_WRITE_WORD` (`tests/inventory-unique-backstops-db.test.ts:41-74`) descartam o resto da linha a partir de `--` dentro de identificador entre aspas duplas, de `$$…$$` ou de `E'…'` com escape; o Postgres executa (sonda da C1: `DELETE 2`).
+- produto hoje: `scripts/inventory-duplicates-census.sql` tem 0 verbos de escrita, 0 `$$`, 0 `E'`, aspas duplas só em comentário (u13). NÃO esconde nada.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ou `B-BAT-01`, se o transversal não nascer antes).
+- bloqueia: não.
+- teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
+```

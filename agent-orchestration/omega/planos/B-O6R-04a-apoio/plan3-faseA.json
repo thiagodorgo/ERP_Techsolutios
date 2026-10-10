@@ -1,0 +1,1701 @@
+{
+  "role_A": {
+    "u": "o6r_b01_1789700956367_f3528ab838393",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "plan3-A"
+  },
+  "role_B": {
+    "u": "o6r_b01_1789700956891_3a09a2bc2e8ea",
+    "rolsuper": false,
+    "rolbypassrls": false,
+    "app": "plan3-B"
+  },
+  "premissas": {
+    "isolation": "read committed",
+    "forShareSessao": {
+      "comContexto": 1,
+      "semContexto": 0,
+      "contextoOutroTenant": 0
+    },
+    "forUpdateSessao": {
+      "comContexto": 1,
+      "semContexto": 0,
+      "contextoOutroTenant": 0
+    },
+    "forUpdateItem": {
+      "comContexto": 1,
+      "semContexto": 0,
+      "contextoOutroTenant": 0
+    },
+    "casCancelSemContexto_linhas": 0,
+    "casCancelContextoOutroTenant_linhas": 0
+  },
+  "P1_headbase": {
+    "forma": "5 iter x 20 saidas de 1 (A/B alternados) sobre BASE=10, createMovement REAL",
+    "iters": [
+      {
+        "i": 0,
+        "ms": 225,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10
+      },
+      {
+        "i": 1,
+        "ms": 67,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10
+      },
+      {
+        "i": 2,
+        "ms": 67,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10
+      },
+      {
+        "i": 3,
+        "ms": 85,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10
+      },
+      {
+        "i": 4,
+        "ms": 74,
+        "ok": 20,
+        "rej": {},
+        "saldo": -10
+      }
+    ],
+    "negativos": 5
+  },
+  "V1_new": {
+    "forma": "5 iter x 20 saidas de 1 com FOR UPDATE do item ANTES do aggregate (desenho v2)",
+    "iters": [
+      {
+        "i": 0,
+        "ms": 127,
+        "ok": 10,
+        "rej": {
+          "insufficient_balance": 10
+        },
+        "p2028": 0,
+        "deadlock": 0,
+        "saldo": 0
+      },
+      {
+        "i": 1,
+        "ms": 152,
+        "ok": 10,
+        "rej": {
+          "insufficient_balance": 10
+        },
+        "p2028": 0,
+        "deadlock": 0,
+        "saldo": 0
+      },
+      {
+        "i": 2,
+        "ms": 131,
+        "ok": 10,
+        "rej": {
+          "insufficient_balance": 10
+        },
+        "p2028": 0,
+        "deadlock": 0,
+        "saldo": 0
+      },
+      {
+        "i": 3,
+        "ms": 129,
+        "ok": 10,
+        "rej": {
+          "insufficient_balance": 10
+        },
+        "p2028": 0,
+        "deadlock": 0,
+        "saldo": 0
+      },
+      {
+        "i": 4,
+        "ms": 134,
+        "ok": 10,
+        "rej": {
+          "insufficient_balance": 10
+        },
+        "p2028": 0,
+        "deadlock": 0,
+        "saldo": 0
+      }
+    ]
+  },
+  "P11_headbase": {
+    "B_bloqueouEm": {
+      "n": 1,
+      "queries": [
+        "INSERT INTO \"public\".\"stock_movements\" (\"tenant_id\",\"item_id\",\"type\",\"quantidade_sinalizada\",\"unit_cost\",\"work_order_id\""
+      ],
+      "at": 3324
+    },
+    "aindaBloqueadoApos300ms": 1,
+    "B": {
+      "ok": "inserted",
+      "at": 3651
+    },
+    "saldoFinal": -1,
+    "marks": [
+      [
+        "A(admin): FOR UPDATE X + INSERT -10 (nao commitado)",
+        3102
+      ],
+      [
+        "A(admin): commit",
+        3642
+      ]
+    ]
+  },
+  "P11_new": {
+    "B_bloqueouEm": {
+      "n": 1,
+      "queries": [
+        "SELECT id, avg_cost::float8 AS avg FROM inventory_items WHERE tenant_id=$1::uuid AND id=$2::uuid FOR UPDATE"
+      ],
+      "at": 3909
+    },
+    "aindaBloqueadoApos300ms": 1,
+    "B": {
+      "err": {
+        "name": "Error",
+        "code": "STOCK_INVALID",
+        "status": 409,
+        "reason": "insufficient_balance",
+        "msg": "insufficient_balance saldo=0"
+      },
+      "at": 4230
+    },
+    "saldoFinal": 0,
+    "marks": [
+      [
+        "A(admin): FOR UPDATE X + INSERT -10 (nao commitado)",
+        3671
+      ],
+      [
+        "A(admin): commit",
+        4218
+      ]
+    ]
+  },
+  "LO_open_new": {
+    "design": "new",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "ok": "concluida",
+      "at": 5906
+    },
+    "B": {
+      "ok": "sessao entries=[Y,X]",
+      "at": 5879
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updat"
+      ],
+      "at": 4657
+    },
+    "deadlock": false,
+    "final": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 2,
+        "itens": 2,
+        "soma": -2
+      },
+      "entries": {
+        "total": 2,
+        "carimbadas": 2
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "marks": [
+      [
+        "A: unit0 status->fechando (era aberta)",
+        4310
+      ],
+      [
+        "A: item 9232465c travado FOR UPDATE, segura 1500ms",
+        4321
+      ],
+      [
+        "B: inicia open (codigo real)",
+        4604
+      ],
+      [
+        "A: final status->concluida",
+        5906
+      ]
+    ]
+  },
+  "LO_abc_new": {
+    "design": "new",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "ok": "concluida",
+      "at": 7557
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}",
+      "at": 7527
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_"
+      ],
+      "at": 6335
+    },
+    "deadlock": false,
+    "final": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 2,
+        "itens": 2,
+        "soma": -2
+      },
+      "entries": {
+        "total": 2,
+        "carimbadas": 2
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "marks": [
+      [
+        "A: unit0 status->fechando (era aberta)",
+        5995
+      ],
+      [
+        "A: item 904612ed travado FOR UPDATE, segura 1500ms",
+        6008
+      ],
+      [
+        "B: inicia abc (codigo real)",
+        6302
+      ],
+      [
+        "A: final status->concluida",
+        7557
+      ]
+    ]
+  },
+  "LO_open_v1lock": {
+    "design": "v1lock",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "ok": "A-ok",
+      "at": 9156
+    },
+    "B": {
+      "ok": "sessao entries=[Y,X]",
+      "at": 9168
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updat"
+      ],
+      "at": 7980
+    },
+    "deadlock": false,
+    "marks": [
+      [
+        "A(v1New): item travado",
+        7641
+      ],
+      [
+        "B: inicia open (codigo real)",
+        7946
+      ]
+    ]
+  },
+  "LO_abc_v1lock": {
+    "design": "v1lock",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "ok": "A-ok",
+      "at": 10768
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}",
+      "at": 10773
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_"
+      ],
+      "at": 9603
+    },
+    "deadlock": false,
+    "marks": [
+      [
+        "A(v1New): item travado",
+        9258
+      ],
+      [
+        "B: inicia abc (codigo real)",
+        9569
+      ]
+    ]
+  },
+  "LO_open_old": {
+    "design": "old",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "metaCode": "40P01",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      },
+      "at": 13394
+    },
+    "B": {
+      "ok": "sessao entries=[Y,X]",
+      "at": 13402
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updat"
+      ],
+      "at": 11199
+    },
+    "deadlock": true,
+    "marks": [
+      [
+        "A(old): 1o item travado",
+        10859
+      ],
+      [
+        "B: inicia open (codigo real)",
+        11165
+      ],
+      [
+        "A(old): pede 2o item",
+        12370
+      ]
+    ]
+  },
+  "LO_abc_old": {
+    "design": "old",
+    "ordemA": "X(menor id) depois Y",
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "metaCode": "40P01",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      },
+      "at": 16013
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}",
+      "at": 16019
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_"
+      ],
+      "at": 13823
+    },
+    "deadlock": true,
+    "marks": [
+      [
+        "A(old): 1o item travado",
+        13495
+      ],
+      [
+        "B: inicia abc (codigo real)",
+        13790
+      ],
+      [
+        "A(old): pede 2o item",
+        15008
+      ]
+    ]
+  },
+  "V6V6": {
+    "forma": "duas sessoes [X,Y] e [Y,X] fechadas em paralelo (v2), hold 300ms sob cada lock de item",
+    "st": [
+      {
+        "ok": "concluida",
+        "units": 2,
+        "ms": 1009
+      },
+      {
+        "ok": "concluida",
+        "units": 2,
+        "ms": 678
+      }
+    ],
+    "s1": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 2,
+        "itens": 2,
+        "soma": -2
+      },
+      "entries": {
+        "total": 2,
+        "carimbadas": 2
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "s2": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 2,
+        "itens": 2,
+        "soma": -2
+      },
+      "entries": {
+        "total": 2,
+        "carimbadas": 2
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "saldoX": 98,
+    "saldoY": 98
+  },
+  "E3_new": {
+    "B": {
+      "notOpen": "concluida",
+      "at": 18664,
+      "elapsedMs": 1222,
+      "terminouAntesDoCommitDeA": false
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR SHARE"
+      ],
+      "at": 17456
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 18658
+    },
+    "final": {
+      "entry": {
+        "contado": 7,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -3
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A(admin): sessao FOR UPDATE + status=fechando (leu contado=7)",
+        17137
+      ],
+      [
+        "B: recordEntry(new) contado=5",
+        17442
+      ],
+      [
+        "A(admin): ajuste -3 + carimbo + status=concluida (nao commitado)",
+        18652
+      ],
+      [
+        "A(admin): commit",
+        18652
+      ]
+    ]
+  },
+  "E3_headbase_ctrl": {
+    "B": {
+      "updatedHeadBase": "contado=5",
+      "at": 19033,
+      "elapsedMs": 15,
+      "terminouAntesDoCommitDeA": true
+    },
+    "bBloqueouEm": {
+      "n": 0,
+      "queries": [],
+      "timeout": true,
+      "at": 20027
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 20222
+    },
+    "final": {
+      "entry": {
+        "contado": 5,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -3
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A(admin): sessao FOR UPDATE + status=fechando (leu contado=7)",
+        18711
+      ],
+      [
+        "B: recordEntry(headbase) contado=5",
+        19018
+      ],
+      [
+        "A(admin): ajuste -3 + carimbo + status=concluida (nao commitado)",
+        20218
+      ],
+      [
+        "A(admin): commit",
+        20218
+      ]
+    ]
+  },
+  "E3_inverso": {
+    "forma": "B(recordEntry v2, FOR SHARE, segura 1500ms) comeca antes; A(close v2) entra 300ms depois",
+    "B_recordEntryNewHold": {
+      "updated": 1,
+      "at": 21778
+    },
+    "A_closeNew": {
+      "ok": "concluida",
+      "at": 21815,
+      "ms": 1241
+    },
+    "aBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR UPDATE"
+      ],
+      "at": 20607
+    },
+    "final": {
+      "entry": {
+        "contado": 5,
+        "variance": -5,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -5
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 5
+    },
+    "marks": [
+      [
+        "A: unit0 status->fechando (era aberta)",
+        21780
+      ],
+      [
+        "A: final status->concluida",
+        21815
+      ]
+    ]
+  },
+  "E4_new_aplicado": {
+    "faseDeA": "aplicado",
+    "B": {
+      "notOpen": "concluida",
+      "at": 23376,
+      "elapsedMs": 1227
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE cycle_counts SET status='cancelada', is_active=false, updated_at=now() WHERE tenant_id=$1::uuid AND id=$2::uuid A"
+      ],
+      "at": 22175
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 23369
+    },
+    "final": {
+      "entry": {
+        "contado": 7,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -3
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A(admin): sessao FOR UPDATE + status=fechando (leu contado=7)",
+        21856
+      ],
+      [
+        "A(admin): ajuste -3 + carimbo + status=concluida (nao commitado)",
+        21860
+      ],
+      [
+        "B: cancel(new)",
+        22149
+      ],
+      [
+        "A(admin): commit",
+        23365
+      ]
+    ]
+  },
+  "E4_new_fechando": {
+    "faseDeA": "fechando",
+    "B": {
+      "notOpen": "concluida",
+      "at": 24934,
+      "elapsedMs": 1223
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE cycle_counts SET status='cancelada', is_active=false, updated_at=now() WHERE tenant_id=$1::uuid AND id=$2::uuid A"
+      ],
+      "at": 23744
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 24927
+    },
+    "final": {
+      "entry": {
+        "contado": 7,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -3
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A(admin): sessao FOR UPDATE + status=fechando (leu contado=7)",
+        23415
+      ],
+      [
+        "B: cancel(new)",
+        23711
+      ],
+      [
+        "A(admin): ajuste -3 + carimbo + status=concluida (nao commitado)",
+        24923
+      ],
+      [
+        "A(admin): commit",
+        24923
+      ]
+    ]
+  },
+  "E4_headbase_ctrl": {
+    "faseDeA": "aplicado",
+    "B": {
+      "cancelledHeadBase": "cancelada",
+      "at": 26487,
+      "elapsedMs": 1208
+    },
+    "bBloqueouEm": {
+      "n": 1,
+      "queries": [
+        "UPDATE \"public\".\"cycle_counts\" SET \"status\" = $1, \"is_active\" = $2, \"updated_by\" = $3, \"updated_at\" = $4 WHERE (\"public\""
+      ],
+      "at": 25313
+    },
+    "A": {
+      "ok": "A-ok",
+      "at": 26483
+    },
+    "final": {
+      "entry": {
+        "contado": 7,
+        "variance": -3,
+        "tem_ajuste": true
+      },
+      "sessao": {
+        "status": "cancelada",
+        "is_active": false
+      },
+      "ajustes": {
+        "n": 1,
+        "itens": 1,
+        "soma": -3
+      },
+      "entries": {
+        "total": 1,
+        "carimbadas": 1
+      },
+      "itensComAjusteDuplicado": 0,
+      "saldoX": 7
+    },
+    "marks": [
+      [
+        "A(admin): sessao FOR UPDATE + status=fechando (leu contado=7)",
+        24974
+      ],
+      [
+        "A(admin): ajuste -3 + carimbo + status=concluida (nao commitado)",
+        24977
+      ],
+      [
+        "B: cancel(headbase)",
+        25279
+      ],
+      [
+        "A(admin): commit",
+        26477
+      ]
+    ]
+  },
+  "CRASH": {
+    "forma": "close v2 interrompido apos 7 de 20 unidades; depois recordEntry/cancel v2 e close head-base sobre fechando; depois retomada por OUTRO cliente",
+    "crash": {
+      "name": "Error",
+      "msg": "SIMULATED-CRASH-BETWEEN-UNITS"
+    },
+    "afterCrash": {
+      "sessao": {
+        "status": "fechando",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 7,
+        "itens": 7,
+        "soma": -21
+      },
+      "entries": {
+        "total": 20,
+        "carimbadas": 7
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "recordEntryDuranteFechando": {
+      "notOpen": "fechando"
+    },
+    "cancelDuranteFechando": {
+      "notOpen": "fechando"
+    },
+    "headBaseCloseSobreFechando": "CYCLE_COUNT_INVALID/|422|invalid_status_transition|A contagem cíclica está \"fechando\" e não aceita mais alterações.",
+    "resume": {
+      "status": "concluida",
+      "totalMs": 267,
+      "unit0Ms": 10,
+      "finalMs": 10,
+      "unitCount": 13,
+      "unitMaxMs": 23,
+      "unitAvgMs": 19,
+      "unitP95Ms": 23,
+      "skipped": 0,
+      "reusedLegacy": 0,
+      "totalVarianceValue": 0
+    },
+    "afterResume": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 20,
+        "itens": 20,
+        "soma": -60
+      },
+      "entries": {
+        "total": 20,
+        "carimbadas": 20
+      },
+      "itensComAjusteDuplicado": 0
+    }
+  },
+  "LEGACY_P021": {
+    "forma": "sessao aberta com ajuste pre-gravado para X (sem carimbo na entry, como o head-base deixa ao falhar no meio); close v2",
+    "resultado": {
+      "status": "concluida",
+      "totalMs": 59,
+      "unit0Ms": 12,
+      "finalMs": 10,
+      "unitCount": 2,
+      "unitMaxMs": 23,
+      "unitAvgMs": 18.5,
+      "unitP95Ms": 23,
+      "skipped": 0,
+      "reusedLegacy": 1,
+      "totalVarianceValue": 0
+    },
+    "final": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 2,
+        "itens": 2,
+        "soma": -5
+      },
+      "entries": {
+        "total": 2,
+        "carimbadas": 2
+      },
+      "itensComAjusteDuplicado": 0
+    },
+    "saldoX": 7,
+    "saldoY": 8
+  },
+  "DBL_50": {
+    "forma": "50 itens divergentes; close v2 x2 (A e B) em paralelo",
+    "st": [
+      {
+        "ok": "concluida",
+        "units": 50,
+        "skipped": 0,
+        "ms": 1151
+      },
+      {
+        "err": {
+          "name": "Error",
+          "code": "CYCLE_COUNT_INVALID",
+          "status": 422,
+          "reason": "invalid_status_transition",
+          "msg": "not_open:concluida"
+        }
+      }
+    ],
+    "final": {
+      "sessao": {
+        "status": "concluida",
+        "is_active": true
+      },
+      "ajustes": {
+        "n": 50,
+        "itens": 50,
+        "soma": -150
+      },
+      "entries": {
+        "total": 50,
+        "carimbadas": 50
+      },
+      "itensComAjusteDuplicado": 0
+    }
+  },
+  "DBL_1": {
+    "forma": "10 iter x close v2 x2 (A e B), sistema 10 contado 7",
+    "iters": [
+      {
+        "i": 0,
+        "st": [
+          "concluida",
+          "422|invalid_status_transition|concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 1,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 2,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 3,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 4,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 5,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 6,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 7,
+        "st": [
+          "concluida",
+          "422|invalid_status_transition|concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 8,
+        "st": [
+          "422|invalid_status_transition|concluida",
+          "concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      },
+      {
+        "i": 9,
+        "st": [
+          "concluida",
+          "422|invalid_status_transition|concluida"
+        ],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1,
+          "itens": 1,
+          "soma": -3
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 0,
+        "saldo": 7
+      }
+    ],
+    "ajustesTotais": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "vencedores200": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "P6_headbase": {
+    "forma": "5 iter x close() x2 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "fulfilled": 2,
+        "rej": [],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 2,
+          "itens": 1,
+          "soma": -6
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 1,
+        "saldo": 4
+      },
+      {
+        "i": 1,
+        "fulfilled": 2,
+        "rej": [],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 2,
+          "itens": 1,
+          "soma": -6
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 1,
+        "saldo": 4
+      },
+      {
+        "i": 2,
+        "fulfilled": 2,
+        "rej": [],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 2,
+          "itens": 1,
+          "soma": -6
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 1,
+        "saldo": 4
+      },
+      {
+        "i": 3,
+        "fulfilled": 2,
+        "rej": [],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 2,
+          "itens": 1,
+          "soma": -6
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 1,
+        "saldo": 4
+      },
+      {
+        "i": 4,
+        "fulfilled": 2,
+        "rej": [],
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 2,
+          "itens": 1,
+          "soma": -6
+        },
+        "entries": {
+          "total": 1,
+          "carimbadas": 1
+        },
+        "itensComAjusteDuplicado": 1,
+        "saldo": 4
+      }
+    ],
+    "duplicados": 5
+  },
+  "P3_headbase": {
+    "forma": "5 iter x reverseMovement x2 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 1,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 2,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 3,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 4,
+        "compensacoes": 2,
+        "st": [
+          "ok",
+          "ok"
+        ],
+        "saldo": 13
+      }
+    ],
+    "duplicados": 5
+  },
+  "V3_new": {
+    "forma": "5 iter x reverse v2 (lock do item ANTES do hasReversalOf) x2",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 1,
+        "st": [
+          "already_reversed",
+          "ok"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 1,
+        "compensacoes": 1,
+        "st": [
+          "already_reversed",
+          "ok"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 2,
+        "compensacoes": 1,
+        "st": [
+          "already_reversed",
+          "ok"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 3,
+        "compensacoes": 1,
+        "st": [
+          "ok",
+          "already_reversed"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 4,
+        "compensacoes": 1,
+        "st": [
+          "ok",
+          "already_reversed"
+        ],
+        "saldo": 10
+      }
+    ],
+    "duplicados": 0
+  },
+  "P5_headbase": {
+    "forma": "5 iter x removeExitForSource x2 head-base",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 2,
+        "st": [
+          "compensou",
+          "compensou"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 1,
+        "compensacoes": 2,
+        "st": [
+          "compensou",
+          "compensou"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 2,
+        "compensacoes": 2,
+        "st": [
+          "compensou",
+          "compensou"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 3,
+        "compensacoes": 2,
+        "st": [
+          "compensou",
+          "compensou"
+        ],
+        "saldo": 13
+      },
+      {
+        "i": 4,
+        "compensacoes": 2,
+        "st": [
+          "compensou",
+          "compensou"
+        ],
+        "saldo": 13
+      }
+    ],
+    "duplicados": 5
+  },
+  "V5_new": {
+    "forma": "5 iter x removeExit v2 x2",
+    "iters": [
+      {
+        "i": 0,
+        "compensacoes": 1,
+        "st": [
+          "undefined",
+          "compensou"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 1,
+        "compensacoes": 1,
+        "st": [
+          "compensou",
+          "undefined"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 2,
+        "compensacoes": 1,
+        "st": [
+          "undefined",
+          "compensou"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 3,
+        "compensacoes": 1,
+        "st": [
+          "compensou",
+          "undefined"
+        ],
+        "saldo": 10
+      },
+      {
+        "i": 4,
+        "compensacoes": 1,
+        "st": [
+          "undefined",
+          "compensou"
+        ],
+        "saldo": 10
+      }
+    ],
+    "duplicados": 0
+  },
+  "P7_headbase": {
+    "forma": "5 iter x entrada 10@3 x2 concorrentes sobre 10@1 (esperado avg 2.333333)",
+    "iters": [
+      {
+        "i": 0,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 1,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 2,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 3,
+        "avg": 2,
+        "saldo": 30
+      },
+      {
+        "i": 4,
+        "avg": 2,
+        "saldo": 30
+      }
+    ],
+    "errados": 5
+  },
+  "V7_new": {
+    "forma": "idem, desenho v2 (lock antes do saldoOf)",
+    "iters": [
+      {
+        "i": 0,
+        "avg": 2.333333,
+        "saldo": 30
+      },
+      {
+        "i": 1,
+        "avg": 2.333333,
+        "saldo": 30
+      },
+      {
+        "i": 2,
+        "avg": 2.333333,
+        "saldo": 30
+      },
+      {
+        "i": 3,
+        "avg": 2.333333,
+        "saldo": 30
+      },
+      {
+        "i": 4,
+        "avg": 2.333333,
+        "saldo": 30
+      }
+    ],
+    "errados": 0
+  },
+  "P9_headbase": {
+    "forma": "10 iter x createExitForSource MESMA fonte x2 head-base",
+    "ok": 10,
+    "outros": {
+      "/25P02|||current transaction is aborted, commands ignored un": 10
+    }
+  },
+  "V4_new": {
+    "forma": "10 iter x exit v2 (lock antes do findExitBySource; catch P2002 fora da tx) MESMA fonte x2",
+    "sameId": 10,
+    "outros": {},
+    "p25": 0,
+    "linhas": 10
+  },
+  "IDX": {
+    "seedsTenants": 3,
+    "censoAntes": {
+      "reverses": {
+        "grupos": 13,
+        "linhas": 26
+      },
+      "cycleItem": {
+        "grupos": 8,
+        "linhas": 16
+      }
+    },
+    "doBlockComDuplicatas": {
+      "name": "PrismaClientKnownRequestError",
+      "code": "P2010",
+      "metaCode": "P0001",
+      "msg": " Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Code: `P0001`. Message: `stock_movements: 20 grupo(s) DUPLICADO(S) de legado (Ω6R-DAT-002/003). Os indices unicos nao podem nascer sobre dado inconsiste"
+    },
+    "idxReversesComDup": "P2010/||| Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Co",
+    "idxCycleItemComDup": "P2010/||| Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Co",
+    "limpezaEscopada": {
+      "linhasRemovidasReverses": 13,
+      "linhasRemovidasCycleItem": 8
+    },
+    "censoDepois": {
+      "reverses": {
+        "grupos": 0,
+        "linhas": 0
+      },
+      "cycleItem": {
+        "grupos": 0,
+        "linhas": 0
+      }
+    },
+    "doBlockDepois": "mudo (0 grupos)",
+    "up": {
+      "ms": 35,
+      "indexdefs": [
+        "CREATE UNIQUE INDEX stock_movements_cycle_count_item_key ON public.stock_movements USING btree (tenant_id, cycle_count_id, item_id) WHERE (cycle_count_id IS NOT NULL)",
+        "CREATE UNIQUE INDEX stock_movements_reversal_active_key ON public.stock_movements USING btree (tenant_id, reverses_movement_id) WHERE (reverses_movement_id IS NOT NULL)"
+      ],
+      "segundaCompensacao": "P2010/||| Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code",
+      "segundoAjuste": "P2010/||| Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code",
+      "nullsAceitos": 3,
+      "pg_indexes": 2
+    },
+    "drill": {
+      "up": 2,
+      "down": 0,
+      "reup": 2,
+      "fim": 0
+    }
+  },
+  "TOK": {
+    "formaP2028": "withTenantRls (opcoes default) com 5300 ms entre dois statements",
+    "ms": 8182,
+    "p2028": {
+      "name": "PrismaClientKnownRequestError",
+      "code": "P2028",
+      "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Transaction API error: A query cannot be executed on an expired transaction. The timeout for this transaction was 5000 ms, however 5315 ms passed since the start of the tra"
+    },
+    "deadlockOrm": {
+      "name": "DriverAdapterError",
+      "metaCode": "40P01",
+      "msg": "deadlock detected"
+    },
+    "deadlockRaw": {
+      "name": "PrismaClientKnownRequestError",
+      "code": "P2010",
+      "metaCode": "40P01",
+      "msg": " Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+    },
+    "httpHoje": {
+      "p2028": {
+        "status": 400,
+        "code": "BAD_REQUEST",
+        "reason": "invalid_request",
+        "message": " Invalid `prisma.$queryRawUnsafe()` invocation: Transaction API error: A query cannot be executed on an expired transaction. The timeout for this transaction wa"
+      },
+      "deadlockOrm": {
+        "status": 400,
+        "code": "BAD_REQUEST",
+        "reason": "invalid_request",
+        "message": "deadlock detected"
+      },
+      "deadlockRaw": {
+        "status": 400,
+        "code": "BAD_REQUEST",
+        "reason": "invalid_request",
+        "message": " Invalid `prisma.$executeRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      },
+      "inventoryError409": {
+        "status": 409,
+        "code": "STOCK_INVALID",
+        "reason": "insufficient_balance",
+        "message": "insufficient_balance saldo=0"
+      },
+      "cycleCountError422": {
+        "status": 422,
+        "code": "CYCLE_COUNT_INVALID",
+        "reason": "invalid_status_transition",
+        "message": "not_open:concluida"
+      }
+    }
+  },
+  "fimMs": 40497
+}

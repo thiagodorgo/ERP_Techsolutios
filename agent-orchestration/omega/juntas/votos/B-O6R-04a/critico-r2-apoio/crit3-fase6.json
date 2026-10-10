@@ -1,0 +1,39 @@
+{
+  "MIX": {
+    "forma": "close v2 com 400 ms entre unidades; 250 ms depois, cancel do HEAD-BASE (codigo antigo)",
+    "estadoQuandoCancelChegou": {
+      "status": "fechando",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 4,
+      "carimbadas": 1
+    },
+    "cancelAntigo": {
+      "name": "CycleCountError",
+      "code": "CYCLE_COUNT_INVALID",
+      "status": 422,
+      "reason": "invalid_status_transition",
+      "msg": "A contagem cíclica está \"fechando\" e não aceita mais alterações."
+    },
+    "closeV2": {
+      "ok": {
+        "status": "concluida",
+        "beginStatus": "started",
+        "totalVarianceValue": -12,
+        "applied": 4,
+        "skipped": 0,
+        "reused": 0
+      }
+    },
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 4,
+      "somaAjustes": -12,
+      "entries": 4,
+      "carimbadas": 4
+    }
+  },
+  "fimMs": 2715
+}

@@ -1,0 +1,185 @@
+{
+ "jurado": "jurado-o6r04a-c2-fail-closed-backend (TITULAR, cadeira C2, ciclo 2, identidade nova — não planejei, não desenvolvi, não achei nem votei nada deste bloco; nada herdado de guardiao-fail-closed, agente-dba-guardiao, validador-mestre, planejador-mestre, das instâncias do desenvolvedor, do crítico, do inspetor, do porteiro nem do orquestrador; suplente nomeado: jurado-o6r04a-c2-suplente-fail-closed-backend) · modelo que rodou: Fable (claude-fable-5-1), sem fallback · mandato_md5 cf1b37fdfd4b3d918fc2af3e07c63317 · corpo_md5 (EOL-neutro) 82c3016b41e1f5ad9c4a4a0686338200 — ambos iguais ao publicado · disparo general-purpose com Read/Grep/Glob/Bash",
+ "head_medido": "35ef85be26e4ced21b25014ea7302c2fa60288cc (= gh headRefOid = origin/fix/inventory-consistency; OPEN, draft, MERGEABLE; 14/14 check-runs completed/success) · base c1cfdabe12c74b58f8393dbee4f333224c56b303 (merge-base com origin/main) · head-base do vermelho-controle: o guard T-D não existe em origin/main (c1cfdabe) — vermelho-controle por MUTAÇÃO (baseline verde 12/12 medido → 1 mutação → cor → restauração por hash); delta 6bec9f92→35ef85be = só os 3 mandatos",
+ "terreno": "worktree próprio detached C:/Users/AMP/w-j389c2 @35ef85be, npm ci próprio (sem junction), prisma generate com DATABASE_URL só no comando, sem .env; T-D em memória no hospedeiro com env -u DATABASE_URL -u REDIS_URL (Node v20.19.5); banco em containers PRÓPRIOS sem porta publicada: j389-c2-pg (postgres:16, log_line_prefix %e para contar SQLSTATE), j389-c2-redis, j389-c2-runner (erp-junta-node20-pg16:local, Node 20.20.2, psql 16.14) na rede j389-c2-net; árvore do head no runner por git -c core.autocrlf=false archive (3962 = ls-tree, 0 CR, 19/19 sha1 = blob), npm ci próprio no runner, 108 migrações; sondas em tests/_jurado_b04a_c2_c2/ do runner; papel efêmero rolsuper=false rolbypassrls=false para as vias; pristino por git status --porcelain e hash-object = blob antes e depois de cada mutação (21/21); 12 arquivos de mutação criados e removidos; base viva erp-postgres/erp-redis, w-389, w-j389c1, w-07c e w-traccar nunca tocados",
+ "lente": "Invariante e guards por mutação do B-O6R-04a ciclo 2 — (1) fonte da enumeração: universo derivado × publicado (D1/D2/D5/D7), superfície lida, AST × texto (N6a/N6b), 6 controles das classes do ciclo 1 (K1 C2-01, K2 C2-02, K3 C2-03, K4 C2-04, K5 C2-05, N11b C2-06) + 10 mutações novas (N1 desestruturação, N2 as any, N2b tipo estrutural, N3 $executeRaw(Prisma.sql) em chamada, N3b UPDATE ONLY, N5 fora do glob, N8 interface estrutural, N9 .call com decisão antes do lock, N10 porta-arrow, N11 UPDATE public.cycle_counts sem CAS), leitor de decisão com nome novo; (2) default fechado: membro novo/apagado/entrada extra quebram o build (K3/K3b/K3c), status desconhecido por dado em 8 decisões + sentinela mapeado×fallback, via/wrapper/transição novos, I7 no escopo transacional por FOR UPDATE SKIP LOCKED dentro da tx; (3) classificação por identidade da restrição (3 vias × outra restrição; índice certo via C7/C8), 25P02 contado no log do servidor, 503 em 2 wrappers + porta UoW, sanidade da rede (K4 índice errado → C8 vermelho; índice ambíguo → C9 vermelho). Quórum: unanimidade de 3. Não julga: C1 (jurado-o6r04a-c2-banco-rls: censo e migração sob o papel real, RLS, locks no banco, DAT-002/003 por execução) e C3 (agente-ci-doutor: integração, contrato, suíte inteira, registro, pendências, ata) — conforme o Passo 3 da retomada.",
+ "voto": "REPROVADO",
+ "justificativa": "TABELA DE MUTAÇÕES (21 executadas, uma por vez, baseline verde 12/12 medido antes; cada uma com npm run check + node --test por --test-name-pattern, ec lido por variável, restaurada com hash-object = blob) | # | classe | o que mutou | compila? | camada que negou | casos vermelhos | ec | restaurado | — K2 | C2-02 | tx.stockMovement[createMany] em arquivo novo | sim | guard D1 | D1 | 1 | sim — N1 | NOVA desestruturação | const { create } = tx.stockMovement; create({data}) | sim | NENHUMA | — | 0 | sim — N2 | NOVA as any | (tx as any)[stockMovement][create] | sim | NENHUMA | — | 0 | sim — N2b | NOVA tipo estrutural sem any | d: { create: Prisma.StockMovementDelegate[create] } = tx.stockMovement; d.create | sim | NENHUMA | — | 0 | sim — N3 | NOVA SQL cru em forma de chamada | tx.$executeRaw(Prisma.sql INSERT INTO stock_movements …) | sim | NENHUMA | — | 0 | sim — N3b | NOVA grafia SQL | tx.$executeRaw tagged UPDATE ONLY stock_movements | sim | NENHUMA | — | 0 | sim — N5 | NOVA fora do glob | src/modules/inventory/generated/….ts com stockMovement.create (tsc compila src/**/*.ts; o walk pula generated) | sim | NENHUMA | — | 0 | sim — N6a | controle AST | literal com /* antes do escritor | sim | guard D1 | D1 | 1 | sim — N6b | controle sem falso positivo | escritor só em string | sim | n/a (verde esperado) | — | 0 | sim — N7 | controle | findManyAndCount por cast (não escreve; inconclusivo, não conta) | sim | — | — | 0 | sim — N8 | NOVA erasure por interface | gravar(d: Gravador) com gravar(tx.stockMovement) | sim | NENHUMA | — | 0 | sim — K5 | C2-05 | uow.run com 2 createMovement | sim | guard D2 R6 | D2 | 1 | sim — K1 | C2-01 | consumeQuick: this.balanceSnapshot() antes do lock | sim | guard D2 R2 | D2 | 1 | sim — N9 | NOVA indireção | consumeViaCall: aggregate decide antes do lock; this.insertMovement.call(this, …) | sim | NENHUMA (sai do universo W) | — | 0 | sim — K7 | 2.4(a) | semLockHonesto sem token | NÃO (TS2554, @ts-expect-error consumido) | compilador + D2 R1=0 | D2 | 1 | sim — N10 | NOVA wrapper | porta pública como propriedade-arrow sem this.tx | sim | NENHUMA (D7 17/17) | — | 0 | sim — N11 | NOVA transição | forceConclude: UPDATE public.cycle_counts SET status sem CAS, tagged, no dono | sim | NENHUMA (D5/D8 verdes) | — | 0 | sim — N11b | C2-06 controle | idem sem schema | sim | pino textual D5 | D5 | 1 | sim — K3 | C2-03 | STATUSES += suspensa | NÃO | compilador TS1360 | — | 2 | sim — K3b | 2.2 inverso | STATUSES sem fechando | NÃO | compilador TS2367 ×4+ | — | 2 | sim — K3c | 2.2 | KIND.suspensa sem membro | NÃO | compilador TS2353 | — | 2 | sim — K4 (runner) | C2-04 | wrapper V5 com índice errado (.cycleCountItem) | sim | teste -db C8 | C8 | 1 | sim (sha1 igual) · UNIVERSO | D1 | derivado {inventory-prisma.repository.ts:531 insertMovement, prisma/seed-fleet.ts:171-173} | publicado 8 sítios (os mesmos) | superfície 788 raízes = 781 src/**/*.ts + 4 prisma + 3 scripts (publicada só como CONTAGEM; globs e diretórios pulados só no código) | igual? SIM — mas a propriedade enumerada é mais estreita que «todo escritor» | D2 | W = {V1..V5} = publicado | igual? SIM, e INCOMPLETO sob N9 | D5 | 16 sítios no dono, CAS = 4 transições | igual? SIM, e CEGO à 2ª classe (N11) | D7 | 17/17 e 12/12 | igual? SIM, e cego a propriedade-função (N10) · LEITOR DE DECISÃO COM NOME NOVO: forma honesta this.<novo>() → guard D2 vermelho (K1); forma por .call → guard verde, compilador aceita (N9) — corrida não executada porque a cor do guard já é o achado · TABELA DO STATUS DESCONHECIDO (suspensa por SQL): isTerminal false / isWritable false · open → 409 items_in_open_session (fechado) · recordEntry → 422 (fechado) · close → 422 · cancel → 422 · listagem sem filtro: aparece (exibição) · ?status=suspensa → 400 · estado inalterado | sentinela: com suspensa MAPEADA como terminal o open passa a liberar (fulfilled) e o cancel segue 422 → mapeado ≠ fallback · EXAUSTIVIDADE: membro acrescentado ec 2 (TS1360); membro apagado ec 2 (TS2367); entrada sem membro ec 2 (TS2353) · VIA/WRAPPER/TRANSIÇÃO NOVOS: sem lock → compilador (TS2554) e D2; dois locks → não repetido por mim (classe coberta por K5/R6 e pela medição G; o dev a executou em createTransfer); decisão antes do lock → D2 na forma honesta, NINGUÉM na indireção (N9); wrapper sem mapeamento → NINGUÉM na propriedade-arrow (N10); transição sem precondição → NINGUÉM com schema qualificado (N11) · INVARIANTE NO ESCOPO TRANSACIONAL (FOR UPDATE SKIP LOCKED do admin dentro da tx): 0 fora de tx; 1 por unidade real; 2 na composição a+b (a violação é mensurável e o R6 a reprova estaticamente — K5); createTransfer 1; depois 0 · TABELA DE RESTRIÇÕES | via | restrição violada | classificada como | resposta | efeito | 25P02 | — V4 createExitForSource | zz_c2_exit_por_item (criada na sonda) | não reconhecida → propaga | P2002 constraint=zz_c2_exit_por_item | 0 exits de s4, delta 0 | 0 — V3 reverseMovement | zz_c2_estorno_por_item | não reconhecida → propaga | P2002 nome certo | 0 compensações de m2 | 0 — V5 removeExitForSource | zz_c2_estorno_por_item | não reconhecida → propaga (nunca undefined) | P2002 | 0 compensações | 0 — V3 (C7) | reversal_active_key (índice certo, escritor sem lock) | reconhecida | 409 movement_already_reversed fora da tx | 1 compensação | 0 — V5 (C8) | reversal_active_key | reconhecida | undefined fora da tx | 1 compensação | 0 — índice ambíguo com as colunas do reversal | C9 vermelho (2 índices com o mesmo conjunto) · 25P02 no log do servidor (prefixo %e, 4 execuções da T-C + todas as sondas): 0 · transitório: createMovement sob FOR UPDATE alheio → 503 stock_busy; cancelSession → 503 cycle_count_busy; uow.run → 503 cycle_count_busy; nada gravado · MUTAÇÃO DE SANIDADE DA REDE: K4 (índice errado no wrapper V5) → C8 not ok; índice ambíguo → C9 not ok; a rede não é tautológica · AFIRMAÇÕES HERDADAS CONFRONTADAS: C2-01 — fechada na forma honesta (K1 vermelho), ABERTA por indireção (N9 verde); C2-02 — fechada para ElementAccess (K2), ABERTA em 7 formas novas; C2-03 — FECHADA (E, K3, sentinela); C2-04 — FECHADA (tabela de restrições, K4); C2-05 — FECHADA no escopo uow.run (G, K5); C2-06 — ABERTA (N11 verde / N11b vermelho); «universo publicado = derivado» — VERDADEIRO conjunto a conjunto, mas a propriedade é mais estreita que a promessa CE-G1(b) «todo membro não previsto nasce negado»; «npm run check nega membro novo pelo token» — VERDADEIRO na forma honesta (K7), contornável por .call/cast sem erro de tipo; baseline 67/67 e ≥3048/3050 — matéria da C3, não medida por mim · O QUE PASSOU: item 3 inteiro (identidade da restrição, sem sucesso silencioso, 0×25P02, 503 nos wrappers, rede não tautológica); item 2.2 (exaustividade pelo compilador nos dois sentidos); 2.3 (status desconhecido fechado em toda decisão, mapeado ≠ fallback); 2.5 (I7 medida no escopo da tx); 1.1 (universo publicado = derivado); 1.2 (AST, não texto); os 6 controles do ciclo 1 vermelhos · O QUE REPROVA: o membro não previsto nasce PERMITIDO em 4 guards — D1 (7 formas novas que compilam e, provado em banco, ESCREVEM: N1/N2/N3/N8 1 linha cada, N3b 5 linhas), D2 (decisão antes do lock por indireção), D7 (porta pública nova), D5 (transição sem CAS por SQL cru no dono) · PROPRIEDADES AUSENTES (nomeadas, sem conserto): «o universo de escritores é derivado da forma sintática do callee e do nome do tipo do receptor, não do destino da escrita — alias, acesso dinâmico, tipo apagado, forma de chamada do raw, grafia ONLY e diretório generated/ nascem permitidos»; «o alcance a insertMovement é medido só por this.x(, e a via que chega por indireção sai do universo e das regras R1–R5»; «toda porta pública é enumerada por MethodDeclaration — propriedade de função pública não é membro»; «a precondição CAS é conferida numa classe (ORM) e o pino da outra (SQL cru) é lista de grafias» · CLASSE DO ACHADO, declarada para a régua do ciclo 3: defeito de ENFORCEMENT (guard de enumeração do bloco, promessa CE-G1(b)), não defeito de produto em caminho alcançável hoje — todas as vias EXISTENTES (V1..V9) passaram nas medições de comportamento (2.3, 3, G); nenhuma via vigente perde dado, vaza entre organizações, quebra permissão ou erra dinheiro nas minhas sondas · O QUE NÃO MEDI POR SER DE OUTRA CADEIRA: RLS/censo/migração sob o papel real, pg_locks do drill (C1); suíte inteira, contrato das rotas, diff×plano, registro, KPI (C3) · O QUE FICOU SEM EXECUTAR E POR QUÊ: corrida N≥20 do N9 (a cor verde do guard com a via compilando já é o critério do corpo; o banco foi usado para provar escrita das formas do D1, não a corrida); D1-r3 (insumo opcional da Emenda 7 (oo): não rodada — a leitura do dev de que a previsão não se cumpre não foi confrontada por execução); mutação própria de «dois locks» (classe coberta por K5/R6 e pela medição G) · LINHA DE LIMPEZA: worktree w-j389c2 removido pelo nome (ec 0), 21/21 mutações restauradas com hash = blob, 12 arquivos de mutação removidos, containers j389-c2-runner/-pg/-redis e rede j389-c2-net removidos pelo nome (0 restantes, 0 volumes), sondas viviam só no runner (morreram com ele), logs no scratchpad da sessão · VOTO: REPROVADO — o membro não previsto nasce PERMITIDO: 10 vias novas (N1, N2, N2b, N3, N3b, N5, N8 no D1; N9 no D2; N10 no D7; N11 no D5) compilam sob npm run check, 4 delas provadas gravando no ledger sob papel efêmero (1 linha cada) e 1 atualizando 5 linhas, e deixam o guard VERDE | escopo: dentro-do-bloco (tests/inventory-write-paths-guard.test.ts nasce em 9a86b524 2026-09-18, reescrito em 1644c2a7 2026-09-20 e 518b8ccd 2026-10-10; ausente em origin/main c1cfdabe) | evidência: lotes A (12) e B (9) de mutações uma a uma com npm run check + node --test (ec por variável, scratchpad/c2-mut-a.jsonl e c2-mut-b.jsonl), 21/21 restauradas com hash-object = blob; sonda F no runner (scratchpad/c2-probe3.log): N1/N2/N3/N8 → 1 linha gravada cada, N3b → 5 linhas; controles do ciclo 1 (K1, K2, K3, K4, K5, N11b) todos vermelhos",
+ "o_que_executei": [
+  {
+   "comando": "MSYS_NO_PATHCONV=1 git show origin/fix/inventory-consistency:<corpo|mandato> | tr -d CR | md5sum",
+   "forma": "árvore principal, só leitura",
+   "resultado": "82c3016b41e1f5ad9c4a4a0686338200 / cf1b37fdfd4b3d918fc2af3e07c63317 — iguais ao publicado"
+  },
+  {
+   "comando": "gh pr view 389 · git rev-parse origin/fix/inventory-consistency · git merge-base · git diff --name-only 6bec9f92 35ef85be · gh api …/commits/35ef85be/check-runs",
+   "forma": "árvore principal",
+   "resultado": "head 35ef85be por gh e git; base c1cfdabe; delta = 3 mandatos; 14/14 completed success"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-j389c2 35ef85be · npm ci --no-audit --no-fund · DATABASE_URL=postgresql://x npx prisma generate · npm run check · env -u DATABASE_URL -u REDIS_URL node --test --import tsx tests/inventory-write-paths-guard.test.ts",
+   "forma": "worktree próprio, árvore limpa, Node v20.19.5, ec por variável",
+   "resultado": "check ec 0; T-D tests 12 pass 12 fail 0; porcelain vazio"
+  },
+  {
+   "comando": "node scratchpad/c2-mut.mjs C:/Users/AMP/w-j389c2 c2-specs-a.mjs c2-mut-a.jsonl (12 mutações) · idem c2-specs-b.mjs (9 mutações)",
+   "forma": "uma mutação por vez: arquivo novo ou substituição por âncora única (contagem 1, CRLF preservado) → npm run check → node --test --import tsx --test-name-pattern=<guard> → remoção/restauração por bytes → git status --porcelain → hash-object = rev-parse HEAD:<f>",
+   "resultado": "lote A: K2 red, N1/N2/N2b/N3/N3b/N5/N8 VERDE (achado), N6a red, N6b/N7 verde (controle), K5 red; lote B: K1 red, N9 VERDE (achado), K7 red + TS2554, N10 VERDE (achado), N11 VERDE (achado), N11b red, K3/K3b/K3c check ec 2; 21/21 pristino e hash=blob"
+  },
+  {
+   "comando": "docker network create j389-c2-net · docker run j389-c2-pg (postgres:16, log_line_prefix %e) / j389-c2-redis (redis:7) / j389-c2-runner (erp-junta-node20-pg16:local) · git -c core.autocrlf=false archive 35ef85be | docker exec -i tar -x -C /work · sha1 dos 19 arquivos do bloco × git show · npm ci + prisma generate no runner · prisma migrate deploy",
+   "forma": "containers próprios sem porta publicada; DATABASE_URL só no docker exec -e",
+   "resultado": "3962 arquivos = ls-tree, 0 CR, 19/19 iguais; npm ci ec 0; 108 migrações"
+  },
+  {
+   "comando": "node --import tsx tests/_jurado_b04a_c2_c2/probe3.mts (runner; papel efêmero via createEphemeralRole)",
+   "forma": "sonda A (3 vias × outra restrição única criada na sonda), D (FOR UPDATE alheio 6,5 s × wrapper/porta), E (sessão suspensa por SQL × 8 decisões), F (as vias novas dentro de withTenantRls), teardown escopado por tenant",
+   "resultado": "A: 3× propaga P2002 com o nome da restrição de sonda, 0 efeito; D: 503 stock_busy / cycle_count_busy ×2; E: tudo fechado; F: N1/N2/N3/N8 gravaram 1 linha cada, N3b atualizou 5; teardown 4 tenants → 0, índices de sonda → 0"
+  },
+  {
+   "comando": "sh /tmp/c2-chain-tc.sh e /tmp/c2-chain2.sh (runner): node --test --import tsx tests/inventory-unique-backstops-db.test.ts (baseline; com K4 por sed na l.882, restaurado; C9 com índice ambíguo criado por psql e removido) · node --import tsx tests/_jurado_b04a_c2_c2/probeG.mts (intacta e com a tabela de status mutada por sed e restaurada) · docker logs j389-c2-pg | grep -c ^25P02",
+   "forma": "CORE_SAAS_PERSISTENCE=prisma; PGPASSWORD só no runner",
+   "resultado": "T-C 8/8; K4 → C8 not ok, sha1 f4efdbbbb08a igual; C9 not ok com índice ambíguo, ok sem; G: 0/1/2/1/0 itens travados; S: 409 → fulfilled quando mapeada como terminal, cancel 422 sempre; types.ts sha1 31c423884cb3 igual; 25P02 = 0, 23505 = 50, 42501 = 4"
+  },
+  {
+   "comando": "git status --porcelain · hash-object × rev-parse 35ef85be:<4 arquivos> · wmic process CommandLine like %w-j389c2% · docker rm -f -v j389-c2-runner j389-c2-pg j389-c2-redis · docker network rm j389-c2-net · git worktree remove --force C:/Users/AMP/w-j389c2 · git worktree list · df -h",
+   "forma": "teardown pelo nome",
+   "resultado": "porcelain vazio; 4/4 IGUAL; 0 processos; 0 containers/redes/volumes j389-c2; worktree ausente; 11 GB livres"
+  }
+ ],
+ "mutacoes_novas": [
+  {
+   "id": "N1",
+   "classe": "alias por desestruturação do delegate",
+   "forma": "const { create } = tx.stockMovement; return create({ data: ROW });",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado) — e GRAVA (1 linha, sonda F)",
+   "ec": 0
+  },
+  {
+   "id": "N2",
+   "classe": "acesso dinâmico com as any",
+   "forma": "return (tx as any)[stockMovement][create]({ data: ROW });",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado) — e GRAVA (1 linha)",
+   "ec": 0
+  },
+  {
+   "id": "N2b",
+   "classe": "receptor com tipo estrutural anônimo (sem any)",
+   "forma": "const d: { create: Prisma.StockMovementDelegate[create] } = tx.stockMovement; return d.create({ data: ROW });",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado)",
+   "ec": 0
+  },
+  {
+   "id": "N3",
+   "classe": "SQL cru na forma de CHAMADA (não tagged, não Unsafe)",
+   "forma": "return tx.$executeRaw(Prisma.sql INSERT INTO stock_movements (tenant_id, item_id, type, quantidade_sinalizada) VALUES (…));",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado) — e GRAVA (1 linha)",
+   "ec": 0
+  },
+  {
+   "id": "N3b",
+   "classe": "grafia SQL válida fora da regex",
+   "forma": "return tx.$executeRaw tagged UPDATE ONLY stock_movements SET reason = … WHERE …;",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado) — e ATUALIZA (5 linhas)",
+   "ec": 0
+  },
+  {
+   "id": "N5",
+   "classe": "fora do glob do guard (diretório generated/ dentro de src/, que o tsc compila)",
+   "forma": "src/modules/inventory/generated/_jurado_b04a_c2_n5.ts: return tx.stockMovement.create({ data: ROW });",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado)",
+   "ec": 0
+  },
+  {
+   "id": "N8",
+   "classe": "erasure do tipo do receptor por interface estrutural",
+   "forma": "interface Gravador { create(args: { data: Prisma.StockMovementUncheckedCreateInput }): unknown } · async function gravar(d: Gravador, data) { return d.create({ data }); } · return gravar(tx.stockMovement, ROW);",
+   "camada_que_negou": "NENHUMA",
+   "cor": "VERDE (achado) — e GRAVA (1 linha)",
+   "ec": 0
+  },
+  {
+   "id": "N9",
+   "classe": "decisão ANTES do lock numa via que chega a insertMovement por indireção .call",
+   "forma": "async consumeViaCall(input) { const snapshot = await this.client.stockMovement.aggregate(…); if (wouldOverdraw(saldoAtual, …)) throw …; const lock = await this.lockItemForUpdate(…); if (!lock) return undefined; return this.insertMovement.call(this, { …input, custody }, lock); }",
+   "camada_que_negou": "NENHUMA (W = {V1..V5}; a via não entra no universo; D1 verde; compilador aceita)",
+   "cor": "VERDE (achado)",
+   "ec": 0
+  },
+  {
+   "id": "N10",
+   "classe": "porta pública NOVA do wrapper RLS como propriedade-arrow, sem this.tx",
+   "forma": "readonly contarSemMapeamento = (tenantId: string): Promise<number> => withTenantRls(this.prismaClient, tenantId, (tx) => tx.stockMovement.count({ where: { tenant_id: tenantId } }));",
+   "camada_que_negou": "NENHUMA (D7 publica 17/17)",
+   "cor": "VERDE (achado)",
+   "ec": 0
+  },
+  {
+   "id": "N11",
+   "classe": "transição de status SEM precondição por SQL cru tagged com schema qualificado, no repositório dono",
+   "forma": "async forceConclude(tenantId, cycleCountId) { return this.client.$executeRaw tagged UPDATE public.cycle_counts (identificadores entre aspas) SET status = concluida WHERE tenant_id = … AND id = …; }",
+   "camada_que_negou": "NENHUMA (D5 classifica como escritor DENTRO do dono e só confere CAS em cycleCount.update*; o pino textual não casa com o schema — N11b sem schema fica vermelho)",
+   "cor": "VERDE (achado)",
+   "ec": 0
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "D1 (fonte da enumeração de escritores de stock_movements): o membro não previsto nasce PERMITIDO e ESCREVE. 7 formas novas compilam sob npm run check, gravam no ledger sob papel efêmero dentro de withTenantRls e deixam o D1 verde publicando o mesmo universo (8) e 0 não classificados.",
+   "evidencia": "scratchpad/c2-mut-a.jsonl: N1, N2, N2b, N3, N3b, N5, N8 — check ec 0, D1 ok 3/3 (ec 0), pristino true; scratchpad/c2-probe3.log seção F: N1 → 1 linha, N2 → 1, N3 → 1, N8 → 1, N3b → UPDATE ONLY 5 linhas; controles K2/N6a vermelhos (ec 1) e N6b verde; D1 publica «[D1] universo de escritores de stock_movements (8)» e «não classificados: 0» em todas as verdes",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a propriedade enunciada é «membro ∉ READ_MEMBERS de um receptor cujo TIPO se chama <Model>Delegate, em callee PropertyAccess/ElementAccess; SQL cru só em $…RawUnsafe e tagged $…Raw; superfície src/prisma/scripts sem generated|dist» — o universo é derivado dessa propriedade, não do DESTINO da escrita; callee sem receptor (desestruturação), receptor com tipo apagado (any, tipo estrutural, interface), $executeRaw em forma de chamada, grafia ONLY e diretório generated/ são rotas reais e invisíveis. Origem (dentro-do-bloco): tests/inventory-write-paths-guard.test.ts não existe em origin/main c1cfdabe; nasce em 9a86b524 (2026-09-18), reescrito em 1644c2a7 (2026-09-20, ciclo 2) e 518b8ccd (2026-10-10, D5)."
+  },
+  {
+   "defeito": "D2 (leitura que decide antes do lock — classe do C2-01): a via que chega a insertMovement por indireção (.call, ou cast) SAI do universo W e as regras R1–R5 não a alcançam; a via compila em strict e decide pelo saldo ANTES do lock.",
+   "evidencia": "scratchpad/c2-mut-b.jsonl N9: check ec 0; D1/D2 ok 5/5 (ec 0); «[D2] universo W: createExitForSource, createMovement, createTransfer, removeExitForSource, reverseMovement» (sem consumeViaCall), que aparece só em «NÃO identificação: chama membro que acessa o banco: lockItemForUpdate»; controle K1 (mesma decisão por this.balanceSnapshot()) → D2 not ok com «R2 antes do lock: this.balanceSnapshot(...)»; K7: semLock por cast também fora de W, semLockHonesto vermelho",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o alcance a insertMovement é medido só pela forma this.x( (thisCalls); indireção por .call/.apply/.bind ou cast muda a forma, não o destino, e a via nasce fora do universo — a classe do C2-01 continua aberta por uma grafia que ninguém listou. Mesma origem do guard (9a86b524 → 1644c2a7 → 518b8ccd)."
+  },
+  {
+   "defeito": "D7 (toda porta pública passa por this.tx): porta pública NOVA do RlsPrismaInventoryRepository escrita como propriedade-arrow (sem this.tx, chamando withTenantRls direto) nasce PERMITIDA — D7 publica 17/17.",
+   "evidencia": "scratchpad/c2-mut-b.jsonl N10: check ec 0; D7 ok (ec 0) com «RlsPrismaInventoryRepository: 17/17 portas públicas por this.tx»; o guard filtra members por ts.isMethodDeclaration (l.1229) e o pino «withTenantRls fora de tx» também só olha methods (l.1240-1243)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a enumeração de «toda porta pública» é por MethodDeclaration — propriedade de classe com função (e getter) é porta pública que não é membro do universo; o wrapper novo sem mapeamento 503 não nasce negado (critério 2.4(d) do corpo). Mesma origem do guard."
+  },
+  {
+   "defeito": "D5 (toda transição de status é CAS — classe do C2-06): transição por SQL cru tagged UPDATE public.cycle_counts (identificadores entre aspas) SET status = concluida sem status no WHERE, dentro do repositório dono, nasce PERMITIDA: o classificador a vê como escritor CycleCount no dono (permitido), a conferência de CAS só percorre cycleCount.update* ORM e o pino textual UPDATE cycle_counts é lista de grafias (sem schema casa, com schema não).",
+   "evidencia": "scratchpad/c2-mut-b.jsonl N11: check ec 0; D5/D8 ok 2/2 (ec 0), «[D5] universo (17): … :98 (forceConclude) raw-tagged», «transições CAS: abortClose, beginClose, cancelSession, finishClose»; controle N11b (mesmo UPDATE sem schema) → D5 not ok «UPDATE cru da contagem»",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o guard enxerga UMA classe de transição (ORM) e pina a outra (SQL cru) por grafia — a segunda classe nasce permitida com a grafia seguinte; é a lição do C2-06 reintroduzida no conserto. Mesma origem do guard."
+  },
+  {
+   "defeito": "nota — a superfície lida pelo guard é publicada só como contagem («788 raízes»); as raízes (src/prisma/scripts), extensões (.ts/.mts) e os diretórios pulados (node_modules, generated, dist, prisma/migrations) vivem só no código do guard, e divergem do tsconfig (include src/**/*.ts sem exclusões internas).",
+   "evidencia": "baseline T-D «[T-D] programa: 788 raízes»; walk() l.76-97; tsconfig.json include src/**/*.ts; N5 compila (ec 0) e passa verde",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "guard que não declara a superfície não permite ao leitor ver onde o escritor é invisível (armadilha 6 do corpo); o custo está medido em N5 (achado 1)."
+  },
+  {
+   "defeito": "nota — a listagem de sessões devolve a sessão de status desconhecido com status «suspensa» (não é decisão: é exibição; nenhuma via a aceita).",
+   "evidencia": "probe3 E5: list sem filtro → [suspensa]; E6: ?status=suspensa → 400 invalid_status",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "registrado para a tabela do status desconhecido ficar completa; o lado permissivo não existe em nenhuma decisão medida."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "C1 (jurado-o6r04a-c2-banco-rls) cobre: censo e migração sob o papel real, RLS, pg_locks, drill de DDL, DAT-002/DAT-003 por execução — não medi",
+  "C3 (agente-ci-doutor) cobre: integração HC = main ∪ bloco, contrato das rotas e dos 3 códigos novos, suíte inteira (denominador 3237), 67/67 em memória, registro/pendências/ata, escopo §8, KPI (não se cobra) — não medi; o D7 da Emenda 7 (T15 do #405, pre-existente P-SAN3-05-T15-TETO-DE-RELOGIO) é insumo da C3",
+  "[A RE-VERIFICAR] herdadas, todas confrontadas por mim: C2-01 fechada na forma honesta e ABERTA por indireção (achado 2); C2-02 fechada para ElementAccess e ABERTA em 7 formas (achado 1); C2-03 FECHADA; C2-04 FECHADA; C2-05 FECHADA no escopo uow.run; C2-06 ABERTA (achado 4); «universo publicado = derivado» VERDADEIRO conjunto a conjunto; «check nega membro novo pelo token» VERDADEIRO na forma honesta",
+  "D1-r3 (Emenda 7 (oo), insumo opcional): não executada por mim — a leitura do dev («sem ts.isIdentifier, CallExpression chega a getSymbolAtLocation sem símbolo → undefined → negado») fica sem confronto por execução; D1-r1/D1-r2 do dev não foram re-executadas (não são critério do corpo; o resolvedor foi exercido indiretamente pelas formas const-* do próprio D1′ no baseline 12/12)",
+  "nenhum achado meu é pre-existente: os quatro bloqueantes tocam o guard T-D, que nasce e é reescrito dentro do bloco (9a86b524 2026-09-18 · 1644c2a7 2026-09-20 · 518b8ccd 2026-10-10; ausente em origin/main c1cfdabe)",
+  "para a régua do ciclo 3 (D-GOV-PROPORCIONAL §C7 item 8(2)), declaro a classe: os quatro bloqueantes são defeito de ENFORCEMENT (o guard de enumeração que o bloco promete em CE-G1(b)), não defeito de produto em caminho alcançável hoje — todas as vias existentes passaram nas medições de comportamento (itens 2.3, 3, G); quem recalibra é o orquestrador, não esta cadeira"
+ ],
+ "teardown": "criado: worktree detached C:/Users/AMP/w-j389c2 (npm ci próprio, sem junction); 12 arquivos de mutação em src/modules/inventory/_jurado_b04a_c2*.ts e generated/ (criados e removidos um a um); 9 edições por âncora em 3 fontes (restauradas por bytes); containers j389-c2-pg, j389-c2-redis, j389-c2-runner e rede j389-c2-net (sem porta publicada); sondas probe3.mts/probeG.mts e scripts em /work/tests/_jurado_b04a_c2_c2 e /tmp DO RUNNER (morreram com ele); logs e specs no scratchpad da sessão (c2-*.log, c2-mut-*.jsonl, c2-specs-*.mjs, c2-mut.mjs, probe3.mts, probeG.mts) · mutações restauradas: 21/21 com git status --porcelain vazio e hash-object = rev-parse 35ef85be:<f> nos 4 arquivos tocados (inventory-prisma.repository.ts 11459e26f717, cycle-count-prisma.repository.ts 214e262210ef, cycle-count.types.ts b0ebebab63b3, inventory-write-paths-guard.test.ts b0c461f9e6bd); no runner: inventory-prisma.repository.ts sha1 f4efdbbbb08a antes = depois (K4), cycle-count.types.ts 31c423884cb3 antes = depois (S-mut) · derrubado e confirmado: wmic process CommandLine like %w-j389c2% → nenhum; docker rm -f -v dos 3 containers + docker network rm → docker ps -a / network ls / volume ls com j389-c2 = 0/0/0; git worktree remove --force C:/Users/AMP/w-j389c2 ec 0, diretório ausente, git worktree list sem ele · pristino depois: sim · nada escrito no repositório além de C:/Users/AMP/w-389/agent-orchestration/omega/juntas/votos/B-O6R-04a/c2-C2-evidencia.md e c2-C2-voto.json (não commitados) · base viva erp-postgres/erp-redis (Up, intocadas), w-389, w-pvpr, w-traccar intocados; w-j389c1/j389-c1-* e w-07c já não constavam ao fim — não removidos por mim (meus comandos nomearam só j389-c2-* e w-j389c2) · disco ao fim: 11 GB livres"
+}
