@@ -1,6 +1,11 @@
-# Plano da trilha do Traccar — v2
+# Plano da trilha do Traccar — v2.1
 
-> **Estado:** v2 **PRONTA PARA A CRÍTICA r2** (resposta à crítica r1). Não autoriza código nem ambiente.
+> **Estado:** v2.1 **FINAL** (ajustes da crítica r2; não há rodada 3). Não autoriza código sozinho: o B-TRC-01 começa
+> quando as sete linhas do gate de §8.0 estiverem verdes, inclusive as decisões 1, 2 e 3 do dono e o registro.
+> **v2.1:** a crítica r2 (`critico-traccar-r2`, `790c2084`) deu **PRONTO COM AJUSTES** — 0 `bloqueia`, 14 `ajuste`,
+> 9 `nota`. Não há rodada 3. Os 14 ajustes viraram requisitos explícitos no corpo (tabela em "Resposta à crítica r2");
+> as seis decisões que a r2 separou estão em "Decisões do dono antes do B-TRC-01"; o texto a registrar em `controle/`
+> está em "Para o registro", no fim. Ref de código da v2.1: `origin/main@c1cfdabe` (igual à da r2).
 > **Versão:** v2, por `planejador-traccar-02`, sobre a v1 de `planejador-traccar-01` (`612d6650`) e a
 > crítica r1 de `critico-traccar-r1` (`1dfd0774`, veredito VOLTA AO PLANO, 7 `bloqueia` e 7 `ajuste`).
 > **Ref medida (§A7):** código em `origin/main@a2937bad`. Entre a base da v1 (`a9fbe283`) e `a2937bad` entraram
@@ -17,7 +22,166 @@
 > (`claude-opus-5-5`)**, no Claude Code · por que não Fable: `D-FABLE-ASTRA-SO-DINHEIRO`
 > (`decisoes.md:2982`) — Fable só em bloco que toca dinheiro, e esta trilha não toca. O mandato desta v2 foi
 > escrito para o Codex (GPT-5.6 Sol), que caiu por limite semanal antes de gravar qualquer coisa; o orquestrador
-> relançou no Claude Code. O frontmatter do corpo continua `model: fable`.
+> relançou no Claude Code. A v2.1 é da mesma identidade, também em Opus 5.5, pela mesma razão. O frontmatter do corpo
+> continua `model: fable`.
+
+## Decisões do dono antes do B-TRC-01
+
+São seis perguntas. **Três precisam de resposta antes de o primeiro código do Traccar começar** — ou, quando a
+recomendação é adiar, de um "pode seguir assim por enquanto" escrito: a 1, a 2 e a 3. **As outras três podem esperar
+o bloco em que pesam**: a 4 até as telas (B-TRC-04), a 5 até o cadastro de rastreador (B-TRC-03), a 6 até o staging com
+dado real ou a produção. As seis entram no registro (`controle/`) antes do código, como pede a crítica r2; o texto está
+em "Para o registro".
+
+### 1. Forma da trilha
+
+**Pergunta:** em quantos pedaços entregamos o Traccar, e o primeiro já mostra a posição no mapa?
+
+| Opção | Como fica | Efeito |
+|---|---|---|
+| **A — a sua, ao pé da letra** (`decisoes.md:2275-2279`) | 4 blocos por assunto: Dia 1 contrato e infraestrutura (pesquisa, versão, rede privada, segredo, ameaças, junta), **sem posição entrando**; Dia 2 ingestão e reconciliação; Dia 3 alimentar os módulos; Dia 4 endurecimento e demonstração | o primeiro bloco não mostra nada no mapa; a posição só aparece no Dia 3; o B-TRC-01 deste plano teria de ser cortado em três pedaços |
+| **B — quatro blocos do planejador** (Q1–Q4) | Q1 = B-TRC-01 inteiro (posição no mapa, em dev); Q2 = eventos + cadastro e reconciliação; Q3 = telas + alarmes; Q4 = staging + produção | algo visível no primeiro bloco; blocos e juntas maiores; Q4 inteiro sob junta de 5 |
+| **C — sete blocos** (proposta) | G-TRC-PD (pesquisa, junta de 5, sem código) + B-TRC-01 a 07 | o mesmo primeiro resultado da B, com blocos menores e a produção numa junta própria de 5 |
+
+**Recomendação: C.** O senhor pediu "o traccar integrado e rodando" (`decisoes.md:2999-3000`), e a C entrega a posição
+no mapa já no primeiro bloco de código. Blocos menores combinam com o ritmo medido (o #405 levou quatro ciclos de
+junta) e com a regra de no máximo três itens por cadeira de junta. Nenhuma das três formas cabe em 4 dias (§10.2).
+
+**O que trava:** o início do B-TRC-01. Na forma A, o B-TRC-01 muda de forma; nas formas B e C, ele é o mesmo.
+
+### 2. AWS × Fly, e quando decidir
+
+**Pergunta:** o ERP inteiro vai para a AWS, ou só o Traccar vai e o ERP fica no Fly — e quando o senhor decide isso?
+
+| Opção | Efeito |
+|---|---|
+| **a — ERP inteiro na AWS** | ERP e Traccar na mesma rede privada: é a leitura literal de "HTTP privado dentro da AWS" e a mais simples de proteger. Custo: migrar o ERP, com plano próprio |
+| **b — só o Traccar na AWS, ERP no Fly** | menos mudança agora; a ponte privada entre provedores muda o modelo de ameaças, pede nova junta e não é "dentro da AWS" ao pé da letra |
+| **c — adiar a escolha para antes do B-TRC-06**, aceitando por escrito | o registro pôs a escolha "por escrito, antes do Dia 1 do Traccar" (`decisoes.md:2306`); adiar exige o seu aceite expresso |
+
+**Recomendação: c, com a "a" como direção.** Do B-TRC-01 ao B-TRC-05 tudo roda em dev e igual em qualquer
+provedor; a escolha só pesa no staging (B-TRC-06), e migrar o ERP inteiro merece estudo de custo próprio. Mas, sem o
+seu aceite escrito do adiamento, o B-TRC-01 não começa.
+
+**O que trava:** o B-TRC-01 (só o aceite do adiamento) e o B-TRC-06 (a escolha em si).
+
+### 3. Convivência do app com o Traccar no "último ponto" do técnico
+
+**Pergunta:** quando o técnico manda posição pelo celular e a viatura manda pelo rastreador, qual ponto aparece no
+mapa?
+
+| Opção | Efeito | Custo estimado (hipótese) |
+|---|---|---|
+| **a — vence o mais recente**, seja qual for a fonte | é o que o B-TRC-01 faz: mesma tabela, último ponto pelo horário do fix (`field-location-prisma.repository.ts:41-65`). Risco: o pino alterna entre celular e viatura quando o técnico desce do carro | nenhum agora |
+| **b — preferência por fonte**: o celular vence se mandou nos últimos N minutos; senão, a viatura | uma regra nova na leitura do "último ponto" | 1–2 dias dentro do B-TRC-04 |
+| **c — dois pinos**, técnico e viatura | tela nova e, para viatura sem técnico, uma "posição de viatura" (ver a decisão 4) | bloco próprio, 4–7 dias |
+
+**Recomendação:** aceitar a **a** só como modo provisório de dev no B-TRC-01, e escolher entre **b** e **c** antes
+do B-TRC-04. No demo não há celular mandando junto, mas em produção a alternância confundiria o despachante. O senhor
+pediu o custo dos dois caminhos antes de decidir (`decisoes.md:2295-2296`): está na tabela.
+
+**O que trava:** o B-TRC-01 (só o aceite do modo provisório); o B-TRC-04 e a produção (a escolha em si).
+
+### 4. Regras de produto da atribuição por despacho, inclusive viatura sem técnico
+
+**Pergunta:** quando a viatura deve aparecer no mapa, e em nome de quem?
+
+**O que a regra segura faz.** A regra segue a sua decisão: "o vínculo pessoa↔viatura é pela janela do despacho",
+para que o trajeto de um técnico nunca vá para outro (`decisoes.md:2290-2292`). No B-TRC-01, ela faz o seguinte:
+
+- a viatura só aparece enquanto um técnico tem despacho **aceito por ele mesmo** depois de recebê-lo;
+- despacho que pulou o "aceito" (hoje o sistema permite "atribuído → a caminho") não mostra a viatura;
+- despacho reatribuído só volta a mostrar quando o novo técnico aceitar;
+- posição fora disso não vai ao mapa: vira um contador de quarentena, e o ponto fica guardado só no Traccar;
+- viatura **sem** técnico (frota parada, uso fora do expediente) não aparece em lugar nenhum.
+
+| Opção | Efeito |
+|---|---|
+| **a — regra estrita** (a do B-TRC-01) | nunca atribui trajeto ao técnico errado; mostra menos |
+| **b — aceitar também "a caminho" sem aceite** | mostra mais; se o despachante muda o status pelo técnico, o trajeto pode cair no técnico errado |
+| **c — "posição da viatura" sem técnico** | atende o plano pago de localização de veículos (`decisoes.md:2293-2294`); é modelo novo, bloco próprio e junta |
+
+**Recomendação: a agora.** A decidir antes do B-TRC-04: se o plano pago exige ver a viatura sem técnico (a **c**).
+Porquê: é a regra que o senhor já fixou, e privacidade vem antes de cobertura.
+
+**O que trava:** não trava o B-TRC-01, que nasce com a **a**. Trava o B-TRC-04 e a oferta comercial do rastreamento
+de veículos.
+
+### 5. Quem pode vincular rastreador, e como se prova a posse
+
+**Pergunta:** quem pode dizer "este rastreador é desta viatura", e como se prova que a organização é dona dele?
+
+**Fato:** há um Traccar só para todas as organizações. Quem vincular primeiro o número de um rastreador passa a
+receber as posições dele. O banco garante um dono por vez, mas não garante que seja o dono certo. A v2 deixava
+qualquer gestor com permissão de editar viatura fazer o vínculo (achado A2-05 da crítica r2).
+
+| Opção | Efeito |
+|---|---|
+| **a — só a plataforma vincula** (Admin Plataforma), a pedido da organização, com o rastreador registrado na compra ou na instalação | posse provada pelo processo; mais trabalho da plataforma |
+| **b — a organização vincula, mas só rastreador que a plataforma já liberou para ela** (lista de rastreadores por organização) | escala melhor; precisa da lista e da tela da plataforma |
+| **c — a organização vincula qualquer número** | permite ocupar o rastreador de outra organização. **Não recomendado** |
+
+**Recomendação: a para começar, b quando houver volume.** Porquê: fecha "um rastreador, um dono" pelo processo, não só
+pelo banco. Junto: o vínculo vale a partir do momento em que é gravado, pelo relógio do servidor; vínculo retroativo
+não existe (achado A2-04).
+
+**O que trava:** o início do B-TRC-03. Não trava o B-TRC-01, onde só o teste e o demo criam vínculo.
+
+### 6. LGPD antes da produção
+
+**Pergunta:** a posição da viatura passa a ser dado pessoal do técnico. Com que base legal, por quanto tempo se guarda
+e quem vê?
+
+**Fatos:**
+
+- o B-TRC-01 grava a posição da viatura como posição do técnico (`FieldOperatorLocation.operator_user_id`), sem o aviso
+  e o consentimento que o app pede;
+- os recibos (um por posição) e a quarentena (número do rastreador) não têm prazo de guarda;
+- nome, telefone e contato do rastreador chegam em todo envio e são descartados.
+
+| Ponto | Opções para o senhor |
+|---|---|
+| base legal | execução do contrato de trabalho ou legítimo interesse, com aviso ao técnico (no app e no contrato) |
+| guarda | por exemplo: posição e recibo 90 dias; quarentena resolvida 30 dias; depois, apagar ou anonimizar |
+| quem vê | despacho e gestão da organização, com trilha de consulta |
+
+**Recomendação:** decidir antes do staging com dado real (B-TRC-06) e, no mais tardar, antes da produção. Guarda curta
+para a quarentena; aviso ao técnico no app.
+
+**O que trava:** a produção (B-TRC-07), e o staging se ele usar dado real. Não trava o B-TRC-01, que usa só dado
+sintético.
+
+## Resposta à crítica r2
+
+A r2 é a última rodada (2 de 2). Todo `ajuste` virou **requisito explícito**, no lugar onde o dev o lê; nenhum foi
+recusado. Das 9 notas, entram as 7 que mudam algo (N2-01 e N2-09 já estavam declaradas e não mudam nada).
+
+| Ajuste | Requisito na v2.1 | Onde | Prova |
+|---|---|---|---|
+| A2-01 alcance da 3200 a partir do host | A frase "nem do host" sai. No Linux e na VM do Docker Desktop, o host alcança o IP da rede interna (medido pela r2, E-01c); a barreira nesse caminho é o segredo. O teste de topologia prova "não publicada", e o plano diz isso | §6.1, §5 | `traccar-dev-topology` (nome da propriedade corrigido) |
+| A2-02 `listen` com host errado derruba a API | O bootstrap trata `error` do `listen` e devolve `bind_failed`; a API pública segue no ar | §4.1 | `traccar-ingest-listener`; MUT-39 |
+| A2-03 timeout em `withTenantRls` | Helper novo `withTenantRlsBudget` com `maxWait`/`timeout`; a fase 2 abre com `SET LOCAL lock_timeout` e `statement_timeout` (medido: `canceling statement due to lock timeout`); `withTenantRls` intacto | §4.2 passo 0, §4.6, §8.3 | `traccar-resolution-race-db`; MUT-40 |
+| A2-04 validade sobreposta no B-TRC-03 | Condição de início do B-TRC-03: um dono no instante do fix, por construção (`EXCLUDE` com faixas de validade, ou `valid_from` = relógio do servidor por gatilho); sem vínculo retroativo | §7 B-TRC-03, §1 item 5 | condição de início, não teste do B-TRC-01 |
+| A2-05 posse do rastreador | Condição de início do B-TRC-03: a decisão 5 respondida e registrada | §7 B-TRC-03, decisão 5 | idem |
+| A2-06 penhasco do teto de 500 | Confirmação bem-sucedida renova a dica (validade deslizante); reinício zera e é declarado; métrica e log de "organizações ativas × teto" a partir de 80 %; o penhasco entra como risco | §4.3, §10.1 | `traccar-resolution-cost` (renovação); métrica no B-TRC-01, alarme no B-TRC-06 |
+| A2-07 pool de banco compartilhado | A ingestão usa `PrismaClient` próprio com `max = TRACCAR_DB_POOL_MAX` (5); concorrência padrão cai de 32 para 10; o app público fica com o pool dele | §4.1, §4.6, §8.3 | `traccar-ingest-pool-db`; MUT-41 |
+| A2-08 PORTEIRO-411 e `Ω6R-SEC-002` | O gate de início inclui o porteiro do último merge de produto (#411) e a leitura da trava `Ω6R-SEC-002` bloco a bloco | §8.0 linha 6, §7 B-TRC-03/04/05 | comando em §8.0 |
+| A2-09 forma literal do dono | Decisão 1 com as três formas; registro em `controle/` e resposta do dono passam a ser condição do §8.0 | decisão 1, §7.2, §8.0 linha 7 | §8.0 |
+| A2-10 retry com `position.id > 0` | Runtime aceita `id` ausente, 0 ou maior que 0 e o ignora na chave e no digest; a parada do §8.5 passo 3 deixa de olhar o `id` | §4.4, §8.2, §8.5 passo 3 | `traccar-position-contract`; MUT-42 |
+| A2-11 critérios sem mutação | Testes e mutações para taxa/concorrência (429), bind no host, 413, 415, `FORCE`, atomicidade recibo + localização, canário, prazo de 72 h e `Authorization` | §8.6, §8.9 (MUT-30 a MUT-38) | as próprias mutações |
+| A2-12 `reassign` não atômico | Coluna `operator_assigned_at` em `field_dispatches`, gravada por gatilho na mesma instrução que troca o operador; regra `operator_assigned_at ≤ accepted_at ≤ fixTime`. Nunca depende do evento (medido em PG 16) | §3.1 item 5, §4.2, §8.3 | `traccar-position-ingestion-db` (4 casos novos); MUT-22 redefinida, MUT-43 |
+| A2-13 convivência app × Traccar | Decisão 3; o B-TRC-01 só começa com o aceite do modo provisório | decisão 3, §3 | §8.0 linha 7 |
+| A2-14 prazo AWS × Fly | Decisão 2; o B-TRC-01 só começa com a escolha ou com o aceite escrito do adiamento | decisão 2, §6.2, §9.1 | §8.0 linha 7 |
+
+| Nota | O que muda | Onde |
+|---|---|---|
+| N2-02 MUT-07–09 fora das cadeiras | entram na cadeira (c) | §8.10 |
+| N2-03 operador antes do recibo | a fase 2 procura o recibo **antes** de resolver o operador; reenvio de posição já gravada sai 204 sem reavaliar o despacho | §4.2; MUT-45 |
+| N2-04 MUT-13 × M-21 | a MUT-13 passa a dizer o que acontece de fato (`42P10` em toda entrega), e M-21 ganha a correção | §8.9, §11 |
+| N2-05 LGPD em dev | o script de captura recusa `uniqueId` diferente de `trcdemo01` e troca `name`/`phone`/`contact` antes de imprimir; retenção vai à decisão 6 | §8.3, decisão 6 |
+| N2-06 `VALIDATE` no mesmo arquivo | o `VALIDATE CONSTRAINT` vai para uma segunda migração | §3.1 item 4 |
+| N2-07 organização suspensa com dica | a fase 2 confere `tenants.status = 'active'` da candidata; senão, quarentena `tenant_inactive` | §4.2 passo 1; MUT-44 |
+| N2-08 volume e retenção dos recibos | retenção na decisão 6; volume (recibo + job de fanout por posição) medido no B-TRC-06 | decisão 6, §10.1 |
 
 ## Resposta à crítica r1
 
@@ -133,7 +297,7 @@ fica verde se o header chegar (sem ele, 401 e nenhuma posição).
 O teste captura o logger real em 204, 400 (query), 401, 400 (JSON inválido), 413, 415, 422 e 503 (timeout) e procura o
 valor-sentinela do segredo e do corpo.
 
-**A-03 — ACEITO.** §8.9 tem uma mutação por propriedade crítica — 29 —, cada uma com a edição exata e o teste que tem
+**A-03 — ACEITO.** §8.9 tem uma mutação por propriedade crítica — 29 na v2, 45 na v2.1 —, cada uma com a edição exata e o teste que tem
 de ficar vermelho.
 
 **A-04 — ACEITO.** Todo comando de §8.8 roda sob `timeout -k 15 <s>` (Git Bash) e todo teste novo declara
@@ -163,7 +327,7 @@ condição** (provisiona serviço pago); (3) os "quatro críticos de J-6R" ganha
 | P-05 | `database.registerUnknown` só registra ids que casam `\w{3,15}` — o `sim-traccar-01` da v1 não registraria | `Keys.java:626-650` | o dispositivo do demo vira `trcdemo01` (§8.1) |
 | P-06 | `field_operator_locations` tem CHECK `source IN ('mobile','web','system')` | `prisma/migrations/20260615000000_add_field_operator_locations/migration.sql:16` | a migração alarga o CHECK (`NOT VALID` + `VALIDATE`), sob o DBA (§3.1) |
 | P-07 | A rota móvel aceita `source` do cliente a partir de `FIELD_LOCATION_SOURCES` | `field-location.service.ts:30,160-169`; `field-location.types.ts:3` | `traccar` entra numa lista separada, só gravável pelo comando interno; a rota móvel continua recusando `traccar` (§3.1) |
-| P-08 | `reassign` sobrescreve `operator_user_id` na própria linha do despacho | `field-dispatch-prisma.repository.ts:98-114` | despacho reatribuído não serve para atribuição temporal no B-TRC-01: quarentena `operator_history_ambiguous` (§4.2) |
+| P-08 | `reassign` sobrescreve `operator_user_id` na própria linha do despacho | `field-dispatch-prisma.repository.ts:98-114` | despacho reatribuído não serve para atribuição temporal no B-TRC-01: quarentena `operator_history_ambiguous` (§4.2). **v2.1:** o sinal deixa de ser o evento e passa a ser `operator_assigned_at`, gravado por gatilho (A2-12) |
 
 ## 1. Resumo para o dono
 
@@ -177,8 +341,10 @@ condição** (provisiona serviço pago); (3) os "quatro críticos de J-6R" ganha
    mapa operacional que já existe.
 4. A ingestão roda num **listener próprio, em porta própria e endereço privado**, desligado por padrão: a API pública
    não tem a rota, então ninguém de fora a alcança por ela.
-5. Uma posição **não tem como ir para a organização errada**: o banco garante um vínculo ativo por dispositivo em todas
-   as organizações juntas, e o vínculo fica travado enquanto a posição é gravada (medido).
+5. No B-TRC-01, uma posição **não tem como ir para a organização errada**: o banco garante um vínculo ativo por
+   dispositivo em todas as organizações juntas, e o vínculo fica travado enquanto a posição é gravada (medido). Para a
+   trilha inteira falta "um dono no instante do fix" e "quem vincula prova que é dono": são condições de início do
+   B-TRC-03 (A2-04, A2-05; decisão 5).
 6. Custo controlado: com o vínculo conhecido, uma posição custa ~0,5 ms de banco; a busca completa só roda na primeira
    vez de cada dispositivo e tem teto de 500 organizações (medido: 15 ms com 100).
 7. Reenvio igual não duplica; reenvio com conteúdo diferente **não** passa como sucesso (409); posição atrasada entra
@@ -237,7 +403,8 @@ tipos de alarme seguem sem dado de produção: limites iniciais configuráveis, 
   global no índice e `FOR SHARE` na transação (§4.2, §4.3). Sem advisory lock, sem diretório cross-tenant, sem
   `SECURITY DEFINER`, sem view, sem `BYPASSRLS`.
 - A primeira visualização é a do **técnico em despacho**: o mapa é orientado a `operator_user_id`, e a posição da
-  viatura vai ao técnico com despacho aceito e não encerrado no `fixTime`, excluído o despacho reatribuído.
+  viatura vai ao técnico que aceitou o despacho depois de recebê-lo e antes do fix, com o despacho não encerrado no
+  `fixTime` (`operator_assigned_at ≤ accepted_at ≤ fixTime`, §4.2; A2-12).
 - O SSE existente continua sendo o aviso; o navegador busca a posição pela REST do ERP. Sem WebSocket e sem chamada do
   navegador ao Traccar (M-10, M-11).
 
@@ -246,10 +413,10 @@ tipos de alarme seguem sem dado de produção: limites iniciais configuráveis, 
 | Dado recebido | Destino de domínio | Estado medido e decisão |
 |---|---|---|
 | Posição (`lat/lon`, precisão, rumo, velocidade, `fixTime`) | `FieldOperatorLocation` + `FieldLocationService` | **Existe.** O modelo guarda os campos e timestamps (`prisma/schema.prisma:1021-1042`, M-5); o serviço valida, sanitiza e publica `field_location.updated` (`field-location.service.ts:21-53,84-125`, M-6). O B-TRC-01 grava pelo mesmo repositório, no `tx` da fase 2, com `source='traccar'` — o que exige alargar o CHECK da coluna (P-06) e manter `traccar` fora da lista que o cliente móvel pode mandar (P-07). |
-| Posição atual no mapa | `/field-locations/latest` + mapa operacional | **Existe.** O repositório ordena `recorded_at DESC, received_at DESC` e escolhe uma por operador (`field-location-prisma.repository.ts:41-65`, M-7). O front lê essa rota e atualiza por SSE, com polling de 30 s só como fallback (`useOperationsMap.ts:9,90-94`, M-10), e não lê o campo `source` (M-25). Nenhum mapa novo, nenhuma mudança de tela no B-TRC-01. |
+| Posição atual no mapa | `/field-locations/latest` + mapa operacional | **Existe.** O repositório ordena `recorded_at DESC, received_at DESC` e escolhe uma por operador (`field-location-prisma.repository.ts:41-65`, M-7). O front lê essa rota e atualiza por SSE, com polling de 30 s só como fallback (`useOperationsMap.ts:9,90-94`, M-10), e não lê o campo `source` (M-25). Nenhum mapa novo, nenhuma mudança de tela no B-TRC-01. **Convivência (A2-13):** o "último ponto" escolhe por `recorded_at` sem olhar a fonte, então app e viatura disputam o mesmo ponto do técnico. No B-TRC-01 isso é modo provisório de dev, que só vale com o aceite do dono (decisão 3). |
 | Evento técnico do Traccar | `telemetry` veicular | **Falta destino compatível.** `TelemetryEvent` é telemetria do app e exige `operator_profile_id` (`schema.prisma:2180-2215`, M-5). B-TRC-02 cria o menor modelo veicular necessário, dentro de `telemetry`. |
 | Dispositivo | vínculo com `Vehicle` e organização | **Não existe.** `Vehicle` não tem dispositivo (`schema.prisma:1074-1103`) e a busca por `traccar\|device_id\|unique_id` não acha vínculo de frota (M-4). `ThirdPartyVehicleIdentity` é veículo recolhido, não rastreador (M-18). O B-TRC-01 cria `vehicle_tracking_bindings`, tenant-scoped, com **unicidade ativa global** por dispositivo (§3.1). A chave do dispositivo é `device.uniqueId` (o IMEI, que o administrador conhece), porque o JSON encaminhado traz o objeto `device` (P-02). |
-| Técnico que aparece no mapa | `WorkOrder.vehicle_id` → `FieldDispatch.operator_user_id` | **Existe a cadeia** (`schema.prisma:2347,2390,2471-2503`). A resolução é no `fixTime`, pela janela `accepted_at … término`, e exclui despacho reatribuído, porque `reassign` sobrescreve o operador na própria linha (P-08, §4.2). |
+| Técnico que aparece no mapa | `WorkOrder.vehicle_id` → `FieldDispatch.operator_user_id` | **Existe a cadeia** (`schema.prisma:2347,2390,2471-2503`). A resolução é no `fixTime`, com `operator_assigned_at ≤ accepted_at ≤ fixTime` e antes do término: `reassign` sobrescreve o operador na própria linha (P-08) e o evento sai em outra transação, então a troca é registrada por gatilho em `operator_assigned_at` (§3.1 item 5, §4.2; A2-12). |
 | Ignição | evento veicular normalizado | **Falta.** B-TRC-02. No B-TRC-01, `attributes` é ignorado por inteiro. |
 | Odômetro | amostra veicular; agregação de km | **Falta telemetria contínua.** A OS só guarda `mileage_start/end` informado (`schema.prisma:2369-2376`). B-TRC-02 conserva a amostra; nunca sobrescreve km de OS. |
 | Alarme | evento veicular; `notifications` se houver regra | **Parcial.** B-TRC-05, só tipos aprovados. |
@@ -257,7 +424,8 @@ tipos de alarme seguem sem dado de produção: limites iniciais configuráveis, 
 
 ### 3.1 Modelagem mínima do B-TRC-01
 
-Três tabelas novas e um CHECK alargado, numa migração aditiva e forward-only, sob o `agente-dba-guardiao`. Todas as
+Três tabelas novas, um CHECK alargado e uma coluna com gatilho em `field_dispatches`, em duas migrações aditivas e
+forward-only, sob o `agente-dba-guardiao`. Todas as
 datas em `timestamptz(6)`. O rollback SQL é comentado no topo da migração, como em
 `prisma/migrations/20260811000000_add_invoicing/migration.sql:20-23`, e só vale antes de haver dado real.
 
@@ -272,7 +440,10 @@ datas em `timestamptz(6)`. O rollback SQL é comentado no topo da migração, co
    - único `(tenant_id, vehicle_id) WHERE valid_to IS NULL` — uma viatura, um rastreador ativo;
    - `(tenant_id, instance_key, external_device_key) WHERE valid_to IS NULL` — a sondagem por organização.
    Desativar é gravar `valid_to` (delete lógico); a aplicação não apaga linha. No B-TRC-01 só o seed de teste e o do
-   demo escrevem aqui; o CRUD é do B-TRC-03.
+   demo escrevem aqui; o CRUD é do B-TRC-03. O índice garante **um vínculo ativo agora**, não **um dono no instante do
+   fix**: com validade retroativa, dois vínculos de organizações diferentes cobririam o mesmo instante (r2, E-02c).
+   Fechar isso é condição de início do B-TRC-03 (A2-04); no B-TRC-01 não acontece, porque só a semente grava vínculo,
+   com `valid_from` = relógio do servidor.
 2. **`traccar_ingress_receipts`** (tenant-scoped, `FORCE`): `id`, `tenant_id`, `instance_key`, `message_kind`
    (CHECK `'position'` no B-TRC-01), `external_event_key`, `payload_digest`, `binding_id` (FK composta), `vehicle_id`,
    `location_id` (FK composta para `field_operator_locations(tenant_id, id)`, nula até a gravação), `traccar_device_id`,
@@ -280,11 +451,21 @@ datas em `timestamptz(6)`. O rollback SQL é comentado no topo da migração, co
    `(instance_key, message_kind, external_event_key)` (§4.4). Não guarda JSON bruto.
 3. **`traccar_quarantine_items`** (global, sem RLS, sem `tenant_id`, sem coordenada, sem payload; §4.5). A necessidade
    é a da nota N-02 da crítica: sem organização resolvida, uma linha tenant-scoped fabricaria contexto.
-4. **CHECK de `field_operator_locations.source`** alargado para `('mobile','web','system','traccar')` — DROP + ADD,
-   espelho de `20260858000000_extend_field_dispatch_event_type_check/migration.sql`, com `NOT VALID` + `VALIDATE
-   CONSTRAINT` se o DBA quiser evitar a varredura sob trava forte (precedente
-   `20260837000000_add_intake_inspection_and_custody_fk/migration.sql:13`). Toda linha existente já satisfaz o CHECK
-   novo; o rollback só re-estreita depois de provar zero linhas `traccar`.
+4. **CHECK de `field_operator_locations.source`** alargado para `('mobile','web','system','traccar')`, espelho de
+   `20260858000000_extend_field_dispatch_event_type_check/migration.sql`. Na primeira migração vão o DROP e o
+   `ADD … NOT VALID`; o `VALIDATE CONSTRAINT` vai numa **segunda** migração (`<timestamp>_validate_location_source_check`).
+   A r2 mediu (N2-06): os três comandos num arquivo só seguram o `ACCESS EXCLUSIVE` até o fim (um `INSERT` esperou
+   1,99 s); com o `VALIDATE` à parte, 0,00 s. O precedente de FK (`20260837…`) não serve de argumento, porque a trava de
+   FK é outra. Toda linha existente já satisfaz o CHECK novo (5.000 linhas idênticas por md5 antes e depois, E-3b); o
+   rollback só re-estreita depois de provar zero linhas `traccar`.
+5. **`field_dispatches.operator_assigned_at`** (`timestamptz`, nulo, sem default: `ADD COLUMN` só de metadado) +
+   função de gatilho `field_dispatch_operator_assigned_at()` (`plpgsql`, `SECURITY INVOKER`, sem `SECURITY DEFINER`) +
+   gatilho `BEFORE INSERT OR UPDATE … FOR EACH ROW`. No `INSERT` grava `now()`; no `UPDATE` grava `now()` quando
+   `operator_user_id` muda (`IS DISTINCT FROM`) e repõe o valor antigo em qualquer outro caso, ignorando o que o
+   cliente mandar. É o que torna a regra do operador (§4.2) construção, e não disciplina (A2-12). Medido em PG 16, sob
+   papel sem bypass (§11 M-38): `prosecdef = false`, forja ignorada, reatribuição sem evento detectada. Não é `RULE` (não
+   reabre `P-SAN3-05-REGRA-EM-TABELA`). Linhas antigas ficam com nulo, e nulo é inelegível. O rollback remove gatilho,
+   função e coluna, e só antes de dado real. Nada mais em `field_dispatches` muda.
 
 No código: `FIELD_LOCATION_SOURCES` (`field-location.types.ts:3`) **não muda** — é a lista que `parseSource` aceita do
 cliente (`field-location.service.ts:160-169`); nasce `FIELD_LOCATION_STORED_SOURCES` com `traccar`, usada só no tipo
@@ -301,7 +482,7 @@ Não se cria `VehicleLocation`: a posição viva já tem destino. `VehicleTeleme
 | `telemetry` | B-TRC-02 acrescenta a vertente veicular sem alterar a semântica da telemetria do app; B-TRC-04 oferece leitura unificada com fonte explícita. |
 | `vehicles` | B-TRC-03 torna o cadastro de viatura dono do vínculo ao rastreador; não nasce cadastro duplicado. |
 | `vehicle-identities` | **Não recebe dispositivo.** A medição mostra que esse módulo é a identidade canônica de veículo **de terceiro/recolhido**, com placa/chassi/RENAVAM e merge (`vehicle-identity.types.ts:10-42,94-113`, M-18). Misturar tracker ali corromperia o domínio. Ele só participa futuramente se uma regra aprovada ligar uma identidade recolhida a uma `Vehicle`; essa regra não existe hoje. |
-| `field-dispatch` | B-TRC-01 adiciona `findOperatorsForVehicleAt` (janela `accepted_at … término`, exclui despacho reatribuído — P-08); não cria fluxo de despacho. |
+| `field-dispatch` | B-TRC-01 adiciona `findOperatorsForVehicleAt` (`operator_assigned_at ≤ accepted_at ≤ fixTime` e antes do término, A2-12) e a coluna `operator_assigned_at` com gatilho; não cria fluxo de despacho nem muda o serviço. |
 | `mobile` | Continua sendo a entrada autenticada da telemetria do app, derivando tenant/operador do ator (`mobile-telemetry-sync.ts:11-25`, M-18). O Traccar não chama rota mobile; B-TRC-04 preserva as duas fontes sem dupla contagem. |
 | mapa operacional | Recebe o mesmo DTO `/field-locations/latest`; não chama Traccar. |
 | `notifications` | Só B-TRC-05, somente para alarmes com contrato/regra aprovados. |
@@ -331,15 +512,21 @@ passa por `attachAuthenticatedActor()` e termina num 404 (`src/app.ts:126-256`).
   concorrência → `429`; (6) schema allowlist → `422`; (7) serviço com orçamento de tempo → `204`/`202`/`409`/`503`.
   Sem CORS (nenhum navegador fala com esta porta) e sem `attachAuthenticatedActor` (não há usuário).
 - `src/integrations/traccar/traccar-ingest.bootstrap.ts` exporta `startTraccarIngestListenerIfEnabled({ logger })`:
-  flag desligada → não escuta e devolve `null`; ligada → `listen(TRACCAR_INGEST_PORT, TRACCAR_INGEST_HOST)` e loga
-  só porta e host.
+  flag desligada → não escuta e devolve `{ status: "disabled" }`; ligada → registra `server.once("error", …)` **antes**
+  de `listen(TRACCAR_INGEST_PORT, TRACCAR_INGEST_HOST)` e devolve `{ status: "listening" }` ou
+  `{ status: "bind_failed", code }`. **Falha do `listen` não derruba a API pública (A2-02):** em `EADDRNOTAVAIL`,
+  `EADDRINUSE` ou `EACCES` o bootstrap loga `{ code, host, port }` em nível `error`, não relança, e o processo segue
+  servindo o app público; a ingestão fica fora até o próximo deploy (`traccar_ingest_listener_up = 0`). Medido pela
+  r2 (E-01d): sem tratador, o `EADDRNOTAVAIL` sai como `Unhandled 'error' event` e o processo morre com a API junto.
+  A mesma lacuna no `portalApp.listen` (`src/server.ts:39-44`) é pré-existente e vai ao registro
+  (`P-PORTAL-LISTEN-SEM-TRATADOR`).
 - `src/server.ts` ganha uma chamada a esse bootstrap depois do `portalApp.listen`. **`src/app.ts` não muda** e é escopo
   proibido do B-TRC-01: o app público não tem rota do Traccar, então nenhum caminho do listener público chega à
   ingestão, seja qual for a rede.
 - `src/config/env.ts` ganha: `TRACCAR_INGEST_ENABLED` (`booleanFlag(false)`), `TRACCAR_INGEST_HOST` (default
   `127.0.0.1`), `TRACCAR_INGEST_PORT` (default `3200`), `TRACCAR_INSTANCE_KEY` (sem default), `TRACCAR_FORWARD_SECRET_CURRENT`,
   `TRACCAR_FORWARD_SECRET_PREVIOUS`, `TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL` (ISO), `TRACCAR_INGEST_RATE_PER_SECOND` (20),
-  `TRACCAR_INGEST_BURST` (100), `TRACCAR_INGEST_MAX_CONCURRENCY` (32), `TRACCAR_INGEST_TIMEOUT_MS` (3000),
+  `TRACCAR_INGEST_BURST` (100), `TRACCAR_INGEST_MAX_CONCURRENCY` (10), `TRACCAR_DB_POOL_MAX` (5), `TRACCAR_INGEST_TIMEOUT_MS` (3000),
   `TRACCAR_RESOLVE_MAX_TENANTS` (500), `TRACCAR_RESOLVE_HINT_TTL_MS` (600000), `TRACCAR_RESOLVE_NEGATIVE_TTL_MS` (60000),
   `TRACCAR_RESOLVE_CACHE_MAX` (10000). Gates no `superRefine`, em qualquer ambiente com a flag ligada:
   `TRACCAR_INSTANCE_KEY` casa `^[a-z0-9-]{3,40}$`; segredo current com ao menos 32 caracteres e fora da lista de
@@ -348,6 +535,14 @@ passa por `attachAuthenticatedActor()` e termina num 404 (`src/app.ts:126-256`).
 
 **Rede.** Dev: §6.1 (a 3200 não aparece em `ports:` e o processo a liga ao IP fixo da rede interna). AWS: §6.2 (porta
 de contêiner própria, Security Group de entrada só a partir do SG do Traccar, nenhum target group público nela).
+
+**Pool de banco próprio (A2-07).** Hoje o processo tem um `PrismaClient` só, criado com
+`new PrismaPg({ connectionString })` sem `max` (`src/database/prisma.ts:15-17`); a r2 mediu no `node_modules` do clone
+principal que isso vira um `pg.Pool` de **10** conexões (`@prisma/adapter-pg` 7.8.0, `pg-pool` 3.14.0). Para a ingestão
+não roubar conexão do ERP público, `src/integrations/traccar/traccar-db.ts` cria um `PrismaClient` **só da ingestão**,
+com `new PrismaPg({ connectionString: DATABASE_URL, max: TRACCAR_DB_POOL_MAX })` (5), mesmo papel `erp_runtime`; a
+ingestão nunca importa `src/database/prisma.ts`. Concorrência da ingestão = 2 × pool (10); quem passar espera no pool
+até o `maxWait` de 250 ms e recebe `503`. Por processo: 10 conexões do app público + 5 da ingestão.
 
 **Por que o SSE continua funcionando.** O broker do tempo real é um mapa em memória do processo
 (`src/modules/field-ops-realtime/field-ops-realtime.broker.ts:25`); os dois listeners vivem no mesmo processo, então o
@@ -363,17 +558,21 @@ rastreador/simulador → Traccar (OsmAnd 5055, rede traccar_devices)
   → comando canônico (chave de identidade + digest)                              [§4.4]
   → FASE 1, descoberta (sem trava, NÃO autoritativa)                              [§4.3]
        dica em memória → senão organizações ativas, uma sondagem por organização sob o GUC dela,
-       parando no primeiro vínculo ativo; orçamento de 500 organizações
-  → FASE 2, transação curta sob withTenantRls(candidata), timeout = TRACCAR_INGEST_TIMEOUT_MS − 250 ms
-       1. SELECT do vínculo ativo (instância, dispositivo) … FOR SHARE
-          0 linhas → ROLLBACK, invalida a dica e refaz descoberta + fase 2 UMA vez; 0 de novo → quarentena
-          unmapped_device
-       2. valid=true e valid_from ≤ fixTime ≤ agora + 5 min; senão quarentena invalid_fix /
+       parando no primeiro vínculo ativo; orçamento de 500 organizações; transação com { maxWait: 250, timeout: 1000 }
+  → FASE 2, transação curta: withTenantRlsBudget(clienteDaIngestão, candidata, { maxWait: 250, timeout: 1750 })
+       0. SET LOCAL lock_timeout = '1000ms'; SET LOCAL statement_timeout = '1500ms'        [A2-03]
+       1. a candidata ainda está 'active' em tenants; senão quarentena tenant_inactive       [N2-07]
+       2. SELECT do vínculo ativo (instância, dispositivo) … FOR SHARE
+          0 linhas → ROLLBACK, invalida a dica e, se restar ≥ 1 s do orçamento, refaz descoberta + fase 2 UMA vez;
+          0 de novo → quarentena unmapped_device; sem orçamento → 503
+       3. valid=true e valid_from ≤ fixTime ≤ agora + 5 min; senão quarentena invalid_fix /
           fix_before_active_binding / fix_in_future
-       3. operador do veículo no fixTime (consulta do field-dispatch): exatamente um;
-          senão quarentena no_operator_at_fix_time / ambiguous_operator_at_fix_time / operator_history_ambiguous
-       4. INSERT do recibo … ON CONFLICT DO NOTHING RETURNING; sem linha → compara o digest [§4.4]
-       5. INSERT de FieldOperatorLocation (source='traccar') e UPDATE do recibo com location_id
+       4. SELECT do recibo pela chave: se visível, compara o digest → 204 (igual) ou 409 (diferente),
+          SEM resolver operador                                                            [N2-03]
+       5. operador do veículo no fixTime (regra abaixo): exatamente um; senão quarentena
+          no_operator_at_fix_time / ambiguous_operator_at_fix_time / operator_history_ambiguous
+       6. INSERT do recibo … ON CONFLICT DO NOTHING RETURNING; sem linha (corrida) → compara o digest [§4.4]
+       7. INSERT de FieldOperatorLocation (source='traccar') e UPDATE do recibo com location_id
      COMMIT
   → só depois do commit, e só na primeira gravação: publishDomainEvent('field_location.updated', sem coordenadas)
   → SSE existente → o mapa busca /api/v1/field-locations/latest e redesenha o pin
@@ -383,14 +582,41 @@ Quando a decisão é quarentena dentro da fase 2, a linha de quarentena (tabela 
 transação e nada de domínio é escrito; quando nem a descoberta acha organização, a quarentena é uma transação
 própria, sem GUC.
 
-**Operador no instante (regra fail-closed do B-TRC-01).** Elegível é o despacho `d` da OS `wo` com
-`wo.vehicle_id = vínculo.vehicle_id`, `d.accepted_at ≤ fixTime` e `fixTime` antes do primeiro entre `completed_at`,
-`cancelled_at` e `failed_at` que não for nulo. Despacho que tenha **qualquer** evento `field_dispatch_reassigned` não
-serve, porque `reassign` sobrescreve `operator_user_id` na própria linha (`field-dispatch-prisma.repository.ts:98-114`)
-e a linha deixa de dizer quem dirigia no instante (P-08); se algum despacho que caberia na janela foi excluído por
-reatribuição, o motivo é `operator_history_ambiguous`, mesmo que reste um operador. Exatamente um `operator_user_id` distinto grava; zero ou mais de um vai à quarentena.
-A consulta mora no `field-dispatch` (`findOperatorsForVehicleAt(tx, { tenantId, vehicleId, at })`), recebe o
-`tx` da fase 2 e não abre transação.
+**Operador no instante (regra fail-closed do B-TRC-01, refeita na v2.1 para fechar A2-12).** Elegível é o despacho `d`
+da OS `wo` com `wo.vehicle_id = vínculo.vehicle_id` e
+
+- `d.operator_assigned_at ≤ d.accepted_at ≤ fixTime`, e
+- `fixTime` antes do primeiro entre `completed_at`, `cancelled_at` e `failed_at` que não for nulo.
+
+`operator_assigned_at` é coluna nova em `field_dispatches`. Um gatilho a grava na **mesma instrução** que cria o
+despacho ou troca `operator_user_id`, e ignora o valor que o cliente mandar (§3.1 item 5). `accepted_at` só é gravado
+quando o status vai a `accepted` (`field-dispatch-prisma.repository.ts:86`). Então a desigualdade diz: o técnico que
+está hoje no despacho aceitou-o **depois de recebê-lo** e **antes do fix**. Medido em PostgreSQL 16, sob papel sem
+bypass (§11 M-38):
+
+- reatribuição A→B **sem** evento deixa B inelegível;
+- `reassigned → on_route` sem novo aceite continua inelegível;
+- B aceitando de novo passa a valer dali para frente;
+- valor forjado no `UPDATE` é ignorado.
+
+Na ida e volta A→B→A, a volta regrava `operator_assigned_at`, e nenhum fix do período de B vai para A.
+
+**Por que não o evento.** `reassign` e `createEvent` rodam em transações separadas
+(`field-dispatch-prisma.repository.ts:170,174`; `field-dispatch.service.ts:550-577`). O `accepted_at` antigo
+permanece, e `reassigned → on_route` dispensa novo aceite (`field-dispatch.validators.ts:7-17`). A r2 mediu tudo isso
+(E-3e). A não atomicidade é pré-existente e vai ao registro (`P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO`); o B-TRC-01
+deixa de depender dela.
+
+**Resultado:**
+
+- exatamente um `operator_user_id` distinto grava;
+- zero dá `no_operator_at_fix_time`; mais de um dá `ambiguous_operator_at_fix_time`;
+- despacho na janela com `accepted_at` anterior a `operator_assigned_at`, ou com `operator_assigned_at` nulo, dá
+  `operator_history_ambiguous`.
+
+Despachos anteriores à migração têm `operator_assigned_at` nulo e ficam inelegíveis até nova atribuição ou novo aceite
+(falha fechada). A consulta mora no `field-dispatch` (`findOperatorsForVehicleAt(tx, { tenantId, vehicleId, at })`),
+recebe o `tx` da fase 2 e não abre transação. Os efeitos visíveis dessa regra são a decisão 4 do dono.
 
 ### 4.3 Resolução do dispositivo: janela fechada e custo limitado (fecha B-02 e B-03)
 
@@ -426,6 +652,21 @@ ser barata e pode errar sem risco:
 - **Orçamento.** Com mais de `TRACCAR_RESOLVE_MAX_TENANTS` (500) organizações ativas, a descoberta não roda: a posição
   vai à quarentena `resolution_budget_exceeded` (`202`, durável, métrica), nunca a uma organização adivinhada.
 
+**O penhasco do teto, declarado (A2-06).** O teto conta **todas** as organizações ativas da plataforma, não só as que
+têm rastreador. Na 501ª, qualquer que seja, todo dispositivo sem dica válida vai para a quarentena, e a coordenada
+fica só no Traccar. Como `202` é 2xx, o Traccar não repete. Três regras escritas:
+
+1. **Validade deslizante:** cada confirmação bem-sucedida da fase 2 renova a dica por mais
+   `TRACCAR_RESOLVE_HINT_TTL_MS`, então um dispositivo que manda posição não perde a dica enquanto manda.
+2. **Reinício frio, declarado:** deploy ou reinício zeram as dicas (memória do processo). Abaixo do teto, cada
+   dispositivo redescobre uma vez (≤ 0,4 s pela hipótese de §4.3); acima, todos vão à quarentena até o teto subir.
+3. **Aviso antes do penhasco:** o B-TRC-01 emite o número de organizações ativas contra o teto, no log de início e
+   numa métrica a cada descoberta, com aviso a partir de 80 %; o alarme ligado a isso é do B-TRC-06.
+
+A saída estrutural — contar só as organizações com o módulo de rastreamento — depende da decisão sobre o recurso pago
+(decisão 4 do dono, opção c, e §9.1 item 7) e não entra no B-TRC-01. Hoje o número de organizações ativas em produção
+não foi medido (HIPÓTESE: muito abaixo de 500).
+
 Medição (pgbench, 1 cliente, TCP local dentro do contêiner, PG 16.14, §11 M-22): caminho quente — confirmação
 `FOR SHARE` + `INSERT` do recibo — **0,534 ms** por transação; varredura de pior caso (dispositivo sem vínculo) com
 10, 100 e 1.000 organizações — **1,455 ms**, **15,47 ms** e **165,7 ms**. É linear: ~0,16 ms de servidor por
@@ -456,7 +697,8 @@ prevê — "chave determinística documentada, nunca só timestamp":
   `protocol`, `fixTime`, `deviceTime`, `valid`, latitude e longitude com 7 casas, `speedKnots`, `course`, `accuracy` —,
   sem `serverTime` e sem `attributes`.
 
-**Algoritmo (fase 2, sob o GUC da organização confirmada).**
+**Algoritmo (fase 2, sob o GUC da organização confirmada).** O reenvio comum já sai no passo 4 da fase 2 (`SELECT`
+do recibo antes de resolver o operador, N2-03); a tabela abaixo é o passo 6, que cobre a corrida entre duas entregas.
 
 | Resultado do `INSERT … ON CONFLICT DO NOTHING RETURNING` | `SELECT` do recibo pela chave | Desfecho |
 |---|---|---|
@@ -475,12 +717,19 @@ de 100 ms, e depois descarta (`Keys.java:1118-1157`, `PositionForwardingHandler.
 limitado e aparece na métrica e no contador do recibo. Como a chave não usa `position.id`, reiniciar o banco do Traccar
 não gera colisão falsa.
 
+**Retry com `position.id > 0` (A2-10).** O P-01 vale só para a **primeira** tentativa. Cada retry reserializa o mesmo
+objeto `Position` (`PositionForwardingHandler.java:68-130`), e o `DatabaseHandler` já gravou o `id` nele por
+`position.setId(id)` (`DatabaseHandler.java:39-48`, tag v6.16.0, medido pela r2 em E-2a). Por isso o parser de
+runtime aceita `id` ausente, 0 ou maior que 0, e **ignora** o valor: ele não entra na chave nem no digest. Primeira
+entrega e retry da mesma posição geram a mesma chave e o mesmo digest e terminam em `204`. Rejeitar `id > 0` com 422
+perderia justamente as posições que o retry existe para salvar. O teste de contrato prova as duas entregas (MUT-42).
+
 ### 4.5 Quarentena (fecha B-05)
 
 Tabela global `traccar_quarantine_items`, **sem `tenant_id`, sem coordenada, sem payload**: `id`, `instance_key`,
 `external_device_key`, `reason`, `first_seen_at`, `last_seen_at`, `first_fix_at`, `last_fix_at`, `delivery_count`
 (≥ 1), `last_event_key`, `last_payload_digest`, `resolved_at`, `resolution`. Motivos (CHECK): `unmapped_device`,
-`invalid_fix` (`valid=false`, sem fix de GPS), `fix_before_active_binding`, `fix_in_future`, `no_operator_at_fix_time`, `ambiguous_operator_at_fix_time`,
+`invalid_fix` (`valid=false`, sem fix de GPS), `tenant_inactive` (organização da dica deixou de estar ativa, N2-07), `fix_before_active_binding`, `fix_in_future`, `no_operator_at_fix_time`, `ambiguous_operator_at_fix_time`,
 `operator_history_ambiguous`, `resolution_budget_exceeded`, `idempotency_key_owned_elsewhere`. O antigo
 `ambiguous_binding` sai: dois vínculos ativos ficaram impossíveis (§4.3).
 
@@ -539,8 +788,13 @@ Resposta `202` depois do commit; o Traccar não repete 2xx. O papel de runtime r
   `forward.retry.count` (default 10) e com no máximo `forward.retry.limit` (default 100) pendentes
   (`Keys.java:1118-1157`). O que passar do teto se recupera pela REST no B-TRC-03.
 - **Limites iniciais, configuráveis:** 64 KiB; 20 req/s sustentadas e rajada de 100 (token bucket por processo);
-  32 em processamento; 3 s de orçamento por requisição (a transação da fase 2 recebe `timeout` de 2,75 s no
-  `$transaction`, para abortar antes do `503`). São HIPÓTESE de proteção, não capacidade prometida; o B-TRC-06 mede.
+  10 em processamento sobre um pool próprio de 5 conexões (§4.1, A2-07); 3 s de orçamento por requisição, assim
+  dividido (A2-03): descoberta em transação com `{ maxWait: 250, timeout: 1000 }`; fase 2 em `withTenantRlsBudget`
+  com `{ maxWait: 250, timeout: 1750 }`, que começa por `SET LOCAL lock_timeout = '1000ms'` e
+  `SET LOCAL statement_timeout = '1500ms'` no servidor. O `FOR SHARE` que espera além disso é cancelado pelo próprio
+  PostgreSQL (`canceling statement due to lock timeout`, medido em PG 16, §11 M-39), a transação volta, nada é gravado,
+  e a resposta é `503`. `withTenantRls` não aceita opções (`src/database/rls.ts:29-39`) e continua intacto: o helper
+  novo vive ao lado dele. São HIPÓTESE de proteção, não capacidade prometida; o B-TRC-06 mede.
 
 ### 4.7 Logs sem segredo (fecha A-02)
 
@@ -582,19 +836,20 @@ autorizada por este plano.
 
 | STRIDE | Ameaça concreta | Mitigação e prova |
 |---|---|---|
-| Spoofing | Forward falso, ou segredo antigo reutilizado | Listener próprio, inalcançável pelo público (§4.1); segredo de 32 bytes em header; SHA-256 + `timingSafeEqual`; previous com prazo. Testes de `traccar-forward-auth` e `traccar-ingest-listener`; MUT-01 a MUT-03, MUT-17 a MUT-19 |
+| Spoofing | Forward falso, ou segredo antigo reutilizado | Listener próprio, inalcançável pela rede pública e pelo listener público (§4.1); em dev, alcançável do host Linux ou da VM do Docker (A2-01), onde a barreira é o segredo; segredo de 32 bytes em header; SHA-256 + `timingSafeEqual`; previous com prazo de até 72 h; `Authorization` recusado. Testes de `traccar-forward-auth` e `traccar-ingest-listener`; MUT-01 a MUT-03, MUT-17 a MUT-19, MUT-31, MUT-37, MUT-38 |
 | Spoofing | Payload declara outra organização | Organização nunca vem do payload; chave reservada dá 422; a confirmação sob RLS decide. MUT-20 |
 | Tampering | Mass assignment, coordenada ou unidade alterada | Allowlist do envelope `{position, device}`, `attributes` ignorado, nós → m/s explícito, limites físicos, digest canônico. MUT-25 |
 | Tampering / integridade | Mesma posição com conteúdo trocado | Chave de identidade + digest; divergência dá 409 e contador no recibo. MUT-10 a MUT-12 |
 | Repudiation | Traccar ou ERP nega entrega ou replay | Recibo com chave, digest, tempos e resultado; quarentena com contador; nada de payload bruto ou token |
 | Information disclosure | Token, coordenada ou organização em log, erro, SSE ou tela indevida | Serializador de allowlist no log da ingestão; corpo nunca logado; `device.name/phone/contact` nunca lidos; quarentena sem coordenada; SSE sem coordenada; respostas sem detalhe. MUT-16, MUT-27, MUT-28 |
 | Information disclosure (canal lateral) | O 23505 do índice global revela que o dispositivo está vinculado em algum lugar | Inerente à regra "um dispositivo, uma organização"; só a ação administrativa de vínculo (B-TRC-03) o vê, e responde 409 sem dizer onde |
-| Denial of service | Corpo grande, rajada, retry storm, varredura forçada | 64 KiB; 20 req/s, rajada 100; 32 em processamento; 3 s; dica, cache negativo e teto de 500 organizações (§4.3); métricas de 202/409/429/503. MUT-07 a MUT-09 |
+| Denial of service | Corpo grande, rajada, retry storm, varredura forçada, pool de banco esgotado, `listen` que falha | 64 KiB (MUT-32); `Content-Type` (MUT-33); 20 req/s, rajada 100, 10 em processamento → 429 (MUT-30); pool próprio de 5 conexões, o app público fica com o dele (MUT-41); `lock_timeout`/`statement_timeout` (MUT-40); falha do `listen` não derruba a API (MUT-39); dica, cache negativo e teto de 500 organizações, com o penhasco declarado (§4.3; MUT-07 a MUT-09); métricas de 202/409/429/503 |
 | Elevation of privilege | Runtime contorna FORCE por papel, regra de tabela ou função elevada | `NOSUPERUSER NOBYPASSRLS`; nenhuma `RULE`, view ou `SECURITY DEFINER` nova (o teste do vínculo conta `pg_rules` das tabelas novas e roda o `RUNTIME_ROLE_GUARD_SQL`); produção bloqueada pelos dois resíduos abaixo |
 | Elevation / tampering | Dois tenants com o mesmo dispositivo, ou troca do vínculo no meio da gravação | Índice único **global** + `SELECT … FOR SHARE` na transação da gravação (§4.3, medido). MUT-04 a MUT-06 |
+| Elevation / tampering (B-TRC-03) | Organização vincula rastreador que não é dela, ou vínculo retroativo cobre fix de outra organização | Condições de início do B-TRC-03: posse provada (decisão 5) e um dono no instante do fix por construção, sem vínculo retroativo (A2-04, A2-05). O oráculo de 1 bit do 23505 não vaza chave nem `tenant_id` (r2, E-02a) |
 | Tampering (lado do Traccar) | Administrador do Traccar põe `forward.url` por dispositivo e desvia posições | `forward.url` aceita valor por dispositivo (`Keys.java:1102-1108`); interface e REST do Traccar não expostas, conta só do serviço do ERP, egress do Traccar fechado (rede interna em dev, SG de saída na AWS) |
 | Supply chain | Imagem do Traccar adulterada ou vulnerável | Tag **e** digest (`sha256:03ebb7ed…`, §11 M-20), scan no B-TRC-06, atualização explícita com contract tests; nunca `latest`; nunca servidor público de demonstração |
-| Privacy | Trajeto atribuído a quem não dirigia, ou retenção excessiva | Atribuição pela janela do despacho aceito; despacho reatribuído vai à quarentena (P-08, MUT-22); retenção e finalidade LGPD decididas pelo dono antes da produção |
+| Privacy | Trajeto atribuído a quem não dirigia, ou retenção excessiva | `operator_assigned_at ≤ accepted_at ≤ fixTime`, gravado por gatilho na mesma instrução que troca o operador (§4.2, §3.1 item 5); despacho reatribuído sem novo aceite vai à quarentena (MUT-22, MUT-43); retenção, base legal e quem vê são a decisão 6 do dono, antes da produção |
 
 **Resíduos de RLS que bloqueiam produção** (ressalva do porteiro do #405, `PORTEIRO-405.md:147`, na `main`
 desde `c1cfdabe`): `P-SAN3-05-REGRA-EM-TABELA` (`pendencias.md:10367`) — o porteiro **reproduziu**: um
@@ -631,8 +886,12 @@ A-1, `decisoes.md:3085-3091`); a v2 a apoia numa medição: o demo do B-TRC-01 r
 
 Medido nesta máquina (Compose v5.2.0, `docker compose config` sem subir nada, §11 M-23): `ports: !override` substitui a
 porta da base e `host_ip` sai `127.0.0.1`; rede `internal: true` com `ipv4_address` fixo é aceita. O Traccar fala
-com a ingestão por `http://api:3200` dentro da `traccar_private`; a API escuta a 3200 só no IP dessa rede, e nada
-da rede `default` (Postgres, Redis, web) nem do host a alcança. O simulador só alcança o Traccar. A interface e a REST
+com a ingestão por `http://api:3200` dentro da `traccar_private`, e a API escuta a 3200 só no IP dessa rede. Da rede
+`default` (Postgres, Redis, web) ela não é alcançável. **Do host, é** (A2-01, corrigido): a rede `internal` tem
+gateway do lado do host (`172.31.x.1`), e a r2 conectou ao IP privado a partir de um contêiner `--network host`, isto
+é, do namespace da VM do Docker Desktop (E-01c). No Docker nativo do Linux (CI, dev Linux), esse namespace é o próprio
+host. Do Windows, deu `TIMEOUT`. Nesse caminho a barreira é o segredo, sorteado a cada rodada do demo. O teste de
+topologia prova "3200 não publicada", que é outra propriedade, e o plano não a apresenta como inalcançabilidade. O simulador só alcança o Traccar. A interface e a REST
 do Traccar ficam presas ao `127.0.0.1` do próprio contêiner no B-TRC-01 (`web.address`).
 
 ### 6.2 Staging e produção AWS
@@ -646,7 +905,9 @@ sem domínio público. Navegador e Flutter nunca atravessam essa fronteira.
 Conflito não consolidado, mantido da v1: `docs/deployment.md:11-63,296-297` ainda descreve Fly.io como provedor
 principal (M-14), e `D-TRACCAR-HTTP-PRIVADO-AWS` é a decisão posterior e específica do dono (M-2). O dono escolhe entre
 (1) **recomendado:** backend de ingestão e Traccar na mesma VPC AWS; ou (2) ERP no Fly com ponte privada autenticada
-Fly↔AWS, que muda threat model, custo e operação e exige nova junta antes de qualquer porta.
+Fly↔AWS, que muda threat model, custo e operação e exige nova junta antes de qualquer porta. **Quando (A2-14):** o
+registro pede a escolha "por escrito, antes do Dia 1 do Traccar" (`decisoes.md:2306`); a v2 a tinha levado para antes
+do B-TRC-06 sem registrar. Agora é a decisão 2 do dono: a escolha ou o aceite expresso do adiamento, antes do B-TRC-01.
 
 O listener dos rastreadores reais é decisão separada: APN/VPN privada é preferível; NLB público por protocolo só nasce
 depois de modelo do dispositivo, portas, rate/DDoS, TLS quando houver, threat model próprio e junta unânime. Este
@@ -659,7 +920,7 @@ plano autoriza só OsmAnd na rede privada de dev. Servidores públicos de demons
 | Etapa | Entrega visível | Tam. | Depende de | Quórum |
 |---|---|---:|---|---|
 | G-TRC-PD | PD do Traccar registrada em `docs/omega-pd.md`: versão 6.16.0 por tag e digest, semântica de forward medida no código-fonte (§2.2, P-01 a P-05), uso da imagem em dev | P | crítica r2 sem `bloqueia` | **crítica 5/5** (`decisoes.md:2283-2285`: "a PD e a decisão de implantação vão a junta unânime de 5"). Gate documental, sem código |
-| B-TRC-01 | Posição OsmAnd simulada aparece no mapa em dev | G | G-TRC-PD e §8.0 | segurança 3/3 |
+| B-TRC-01 | Posição OsmAnd simulada aparece no mapa em dev | G | G-TRC-PD e §8.0 (inclui as decisões 1 a 3 do dono) | segurança 3/3 |
 | B-TRC-02 | Ignição, odômetro, evento e estado do dispositivo persistidos | G | 01 e escolha do dono em §7.2 | segurança 3/3 |
 | B-TRC-03 | Vínculo de rastreador no cadastro da viatura + sincronização e reconciliação REST | G | 01–02; credencial dev/staging | segurança 3/3 |
 | B-TRC-04 | Rastreamento, km e Dispositivos sem placeholder nem dado fabricado | G | 02–03 | segurança 3/3 (reclassificável para revisor + CI só antes de começar, com diff medido) |
@@ -707,20 +968,27 @@ B-TRC-06 e B-TRC-07.
 4. a decisão de quatro dias nasceu quando o Traccar só começaria depois do gate da versão vendável; hoje ele corre em
    paralelo aos bloqueantes do gate (`D-GOV-PROPORCIONAL` (4)).
 
-**Forma alternativa de quatro blocos (para o dono escolher):** Q1 = B-TRC-01 (idêntico); Q2 = B-TRC-02 + B-TRC-03;
-Q3 = B-TRC-04 + B-TRC-05; Q4 = B-TRC-06 + B-TRC-07, inteiro sob 5/5. Custo: blocos maiores, mais cadeiras por junta,
-5/5 sobre o código de staging. **Prazo:** em nenhuma das formas o plano promete quatro dias; a estimativa honesta está
-em §10.2.
+**As três formas para o dono (decisão 1; corrigido pela r2, A2-09):**
 
-**O que fica parado:** nada do B-TRC-01, que é o mesmo nas duas formas; o B-TRC-02 só começa depois da escolha.
+- **A — a forma literal dele**, por assunto: o Dia 1 é contrato e infraestrutura, **sem ingestão**.
+- **B — quatro blocos do planejador:** Q1 = B-TRC-01 inteiro; Q2 = B-TRC-02 + B-TRC-03; Q3 = B-TRC-04 + B-TRC-05;
+  Q4 = B-TRC-06 + B-TRC-07, inteiro sob 5/5.
+- **C — sete blocos** (proposta).
 
-**Texto para o orquestrador registrar em `agent-orchestration/controle/pendencias.md`** (esta rodada commita só o
-plano):
+A v2 oferecia só B e C como se fossem as duas formas. A B **não é** a do dono: o próprio mapeamento acima põe o B-TRC-01
+nos Dias 1, 2 e 3 dele. Custo da B: blocos maiores, mais cadeiras por junta, 5/5 sobre o código de staging.
+**Prazo:** em nenhuma das formas o plano promete quatro dias; a estimativa honesta está em §10.2.
 
-> `P-TRC-FORMA-QUATRO-OU-SETE` (2026-10-10) — ALTA — conflito §A2 entre `D-TRACCAR-HTTP-PRIVADO-AWS`
-> (`decisoes.md:2275-2279`, quatro dias, "cada dia é bloco") e o `PLANO_TRACCAR.md` v2 (sete blocos + G-TRC-PD,
-> 26–46 dias úteis). Não consolidado. Dono: o dono do produto, escolhendo entre a forma de sete blocos (proposta, §7.2)
-> e a de quatro (Q1–Q4). Bloqueia: início do B-TRC-02. Não bloqueia: G-TRC-PD e B-TRC-01.
+**O que fica parado.** O B-TRC-01 só é o mesmo nas formas B e C; na forma A ele seria cortado em três. Por isso o
+B-TRC-01 só começa depois de duas coisas, que viram a linha 7 do gate de §8.0:
+
+- o registro em `controle/`, que a §A2 pede antes de consolidar;
+- a resposta do dono à decisão 1.
+
+A `D-ORDEM-NOITE-2026-10-10` (`decisoes.md:3080-3084`) autoriza "os blocos de ingestão com junta completa de
+segurança" sem fixar número: atenua, mas não escolhe a forma.
+
+O texto de `P-TRC-FORMA-QUATRO-OU-SETE`, agora com as três formas, está em "Para o registro".
 
 ### B-TRC-01 — posição segura no mapa, ponta a ponta
 
@@ -776,10 +1044,24 @@ lockfiles.
 **Migração:** nenhuma prevista. Se fixture real provar coluna adicional indispensável, parar,
 replanejar e convocar `agente-dba-guardiao`; não ampliar B-TRC-03 silenciosamente. **Testes:**
 409 neutro quando o índice global recusa o vínculo (23505 → `409`, sem dizer em que organização); dois tenants
-tentam o mesmo dispositivo ao mesmo tempo — um ganha, o outro `409`; `valid_from` não pode ficar antes de agora − 5 min
-(sem vínculo retroativo); create/rotate/deactivate temporal do binding; quarentena resolvida com backfill pela janela
+tentam o mesmo dispositivo ao mesmo tempo — um ganha, o outro `409`; `valid_from` é o relógio do servidor (sem vínculo
+retroativo; condição 2 acima); create/rotate/deactivate temporal do binding; quarentena resolvida com backfill pela janela
 `first_fix_at … last_fix_at`; 404 cross-tenant; timeout/401/429/5xx Traccar; cursor e backoff; reconciliação não
 duplica; nenhuma credencial/tenant externo em log/DTO.
+
+**Condições de início (v2.1, viram linha do gate deste bloco):**
+
+1. **A2-05, posse:** a decisão 5 do dono, respondida e registrada; a rota de vínculo segue a resposta (só a
+   plataforma, ou a organização sobre a lista de rastreadores liberados pela plataforma).
+2. **A2-04, um dono no instante do fix, por construção:** o banco recusa dois vínculos de organizações diferentes
+   cobrindo o mesmo instante — restrição `EXCLUDE` sobre `(instance_key, external_device_key)` e a faixa
+   `[valid_from, valid_to)`, que pede a extensão `btree_gist` (a decidir no G-TRC-PD ou pelo DBA). Se a extensão for
+   recusada: `valid_from` = relógio do servidor por gatilho, sem valor do cliente, e `valid_to` imutável depois de
+   gravado. A tolerância de "agora − 5 min" da v2 sai. Teste: vínculo de B não pode cobrir fix anterior à desativação
+   de A (o caso E-02c da r2).
+3. **A2-08, `Ω6R-SEC-002`:** o bloco abre rota sob `/vehicles` com permissões existentes. Se a resposta à decisão 5
+   exigir permissão nova, o bloco amplia RBAC e cai na trava (`pendencias.md:3118`) até o `Ω6R-SEC-002` fechar; a
+   junta confere isso antes de votar.
 
 **Quórum:** segurança 3/3 (permissão, tenant, segredo REST). **Tamanho:** G. **Dependências:** 01–02,
 credencial do Traccar do ambiente e escolha de quem é source of truth para cadastro (recomendado:
@@ -803,7 +1085,9 @@ odômetro regressivo sinalizado; stale; 403/404; isolamento entre tenants; pagin
 acessibilidade e nenhum placeholder/mock. **Quórum:** segurança 3/3 porque queries carregam
 localização tenant-scoped; se o diff final for comprovadamente só apresentação sobre DTO já
 aprovado, a junta pode reclassificar para revisor independente + CI antes de começar, nunca depois.
-**Tamanho:** G. **Dependências:** 02–03 e decisão do dono sobre coexistência/plano comercial.
+**Tamanho:** G. **Dependências:** 02–03, decisões 3 e 4 do dono (convivência e viatura sem técnico) e o plano
+comercial. **`Ω6R-SEC-002` (A2-08):** lê quilometragem de OS e não abre rota nem permissão de OS; leitura fora da trava,
+conferida pela junta.
 
 ### B-TRC-05 — alarmes, notificações e operação da quarentena
 
@@ -819,7 +1103,8 @@ coordenada/payload de quarentena, infra, KPI e lockfiles.
 **Migração:** nenhuma prevista. **Testes:** alarme allowlisted cria uma notificação idempotente;
 desconhecido não cria; tenant/permission; ack/resolução; quarantine→vínculo→backfill; conteúdo
 sanitizado; rate storm não inunda. **Quórum:** segurança 3/3. **Tamanho:** M. **Dependências:**
-02–03 e catálogo de alarmes aprovado pelo dono.
+02–03 e catálogo de alarmes aprovado pelo dono. **`Ω6R-SEC-002` (A2-08):** notificações não são superfície de OS nem
+de aprovação; fora da trava, conferida pela junta.
 
 ### B-TRC-06 — staging AWS privado e prova operacional
 
@@ -876,19 +1161,21 @@ anteriores e todos os atos do dono da §9.
 
 ### 8.0 Gate de início do código (fecha B-06)
 
-O dev só abre o ramo do B-TRC-01 com as cinco condições abaixo verdadeiras, cada uma conferida pelo comando ao lado
+O dev só abre o ramo do B-TRC-01 com as sete condições abaixo verdadeiras, cada uma conferida pelo comando ao lado
 (Git Bash, a partir de qualquer worktree do repo):
 
 | # | Condição | Comando | Estado medido em 2026-10-10 |
 |---|---|---|---|
 | 1 | Parecer do porteiro do #405 na `main` | `timeout 60 git fetch origin --prune && git cat-file -e origin/main:agent-orchestration/omega/juntas/votos/B-SAN3-05/PORTEIRO-405.md && echo OK` | falhava em `a2937bad`; **passa em `c1cfdabe`** (#413 mergeado). Veredito (linha 164): "LIBERADO COM RESSALVA: plano da trilha do Traccar (sem código de ingestão em produção)" |
 | 2 | Ressalvas do porteiro cumpridas no plano | leitura de §5 (resíduos de RLS e cadeia de produção), §7 B-TRC-07 (Ato 2) e §8.4 passo 1 (`DEEP_CLEAN`) | cumpridas nesta v2 |
-| 3 | Plano aprovado | `docs/revisoes/TRACCAR/CRITICA-r2.md` sem achado `bloqueia` | pendente |
+| 3 | Plano aprovado | `docs/revisoes/TRACCAR/CRITICA-r2.md` sem achado `bloqueia`, e os 14 `ajuste` como requisitos (seção "Resposta à crítica r2") | r2 = PRONTO COM AJUSTES, 0 `bloqueia`; requisitos nesta v2.1 |
 | 4 | G-TRC-PD aprovado 5/5 (§7.1) | ata `agent-orchestration/omega/juntas/J-TRC-PD.md` na `main`, com cinco votos `APROVO` | pendente |
-| 5 | Código-base igual ao medido | `git diff --name-only a2937bad origin/main -- src prisma docs/deployment.md` vazio; se não, o dev re-mede os arquivos de §8.3 antes do passo 1 de §8.5 e registra o que mudou | vazio em `a2937bad` |
+| 5 | Código-base igual ao medido | `git diff --name-only c1cfdabe origin/main -- src prisma docs/deployment.md` vazio; se não, o dev re-mede os arquivos de §8.3 antes do passo 1 de §8.5 e registra o que mudou | vazio em `c1cfdabe` |
+| 6 | Porteiro do **último merge de produto** e a trava `Ω6R-SEC-002` (A2-08) | `git show origin/main:agent-orchestration/omega/juntas/votos/B-SAN3-06b/PORTEIRO-411.md \| sed -n '101p;107p'`; `git show origin/main:agent-orchestration/controle/pendencias.md \| sed -n '3104,3123p'` | PORTEIRO-411, l.107: "LIBERADO COM RESSALVA … e o Traccar não amplia OS/aprovação enquanto o Ω6R-SEC-002 residual estiver aberto"; trava: "feature nova em ordens de serviço, aprovações e RBAC". **Leitura do B-TRC-01:** lê `work_orders.vehicle_id` e `field_dispatches`, não abre rota, não cria permissão, não escreve em OS nem em aprovação; a coluna com gatilho em `field_dispatches` registra a troca de operador, não muda fluxo de despacho. Fora da trava; a cadeira (c) da junta confere (§8.10) |
+| 7 | Decisões 1, 2 e 3 do dono respondidas (ou com aceite escrito do adiamento ou do modo provisório) e as seis registradas em `controle/` (A2-09, A2-13, A2-14) | `git show origin/main:agent-orchestration/controle/pendencias.md \| grep -n -E 'P-TRC-(FORMA-QUATRO-OU-SETE\|AWS-FLY-PRAZO\|CONVIVENCIA-APP\|ATRIBUICAO-PRODUTO\|VINCULO-POSSE\|LGPD)'` devolve as seis, e `decisoes.md` traz a resposta às três primeiras | pendente: o texto pronto está em "Para o registro" |
 
-O conflito quatro × sete blocos (§7.2) não impede o B-TRC-01 — ele é o mesmo bloco nas duas formas —, mas impede o
-B-TRC-02 até a escolha do dono.
+A v2 dizia que o conflito de forma não impedia o B-TRC-01. A r2 mostrou que isso só valia entre as duas formas do
+planejador (A2-09). Na forma literal do dono, o Dia 1 não tem ingestão; por isso a linha 7 existe.
 
 ### 8.1 Objetivo, ator, fluxo e critérios observáveis
 
@@ -910,7 +1197,8 @@ Ao terminar, `node scripts/traccar-dev-demo.mjs` — um comando finito — faz, 
    com essa viatura, um despacho aceito pelo técnico e o vínculo `trcdemo01 → viatura` na instância `erp-dev`
    (usuários pelo agregado core-saas dentro do contêiner `api`, como o passo 4 de
    `scripts/smoke-compose-persistence.mjs`; viatura, OS, despacho e vínculo por SQL como `postgres` no contêiner
-   `postgres`, numa transação);
+   `postgres`). O despacho é inserido numa transação e **aceito noutra** (`UPDATE … status='accepted', accepted_at =
+   now()`), para valer `operator_assigned_at ≤ accepted_at` (§4.2); a posição do passo 6 sai depois do aceite;
 5. abre o SSE `/api/v1/operations/field-events/stream` com token `field_dispatcher` assinado como o smoke assina;
 6. manda uma posição OsmAnd pelo serviço descartável `traccar-sim` à porta 5055 do Traccar (retenta só erro de
    conexão, nunca depois de resposta HTTP);
@@ -938,8 +1226,8 @@ query ou corpo não é aceito.
 **Corpo (fato do código-fonte 6.16.0, a confirmar pela fixture):** `{"position": {…}, "device": {…}}`
 (`PositionData.java:23-35`, `@JsonInclude(NON_NULL)`). A allowlist lê somente:
 
-- `position`: `id` (esperado ausente ou 0, P-01 — se vier maior que 0, o contract test acusa e o plano volta),
-  `deviceId`, `protocol`, `fixTime`, `deviceTime`, `serverTime` (só para métrica de atraso), `valid`, `latitude`,
+- `position`: `id` (aceito ausente, 0 ou maior que 0 e **ignorado**: a primeira entrega sai sem `id` e o retry sai com
+  o `id` do banco, A2-10, §4.4), `deviceId`, `protocol`, `fixTime`, `deviceTime`, `serverTime` (só para métrica de atraso), `valid`, `latitude`,
   `longitude`, `speed` (nós, `Position.java:267`), `course`, `accuracy`;
 - `device`: `id` e `uniqueId`.
 
@@ -981,8 +1269,9 @@ cross-tenant.
 
 | Arquivo | Trabalho |
 |---|---|
-| `prisma/schema.prisma` | Três modelos da §3.1 e relações; nada existente muda. |
-| `prisma/migrations/<timestamp>_traccar_ingestion_foundation/migration.sql` | Tabelas, FKs compostas, CHECKs, índices parciais (inclusive os dois **globais**), `ENABLE`/`FORCE` RLS e políticas nas duas tenant-scoped, CHECK de `source` alargado; rollback comentado no topo (espelho `20260811000000_add_invoicing`, `20260858000000_extend_field_dispatch_event_type_check`). |
+| `prisma/schema.prisma` | Três modelos da §3.1 e relações; em `FieldDispatch`, só o campo `operator_assigned_at DateTime? @db.Timestamptz(6)`; nada mais existente muda. |
+| `prisma/migrations/<timestamp>_traccar_ingestion_foundation/migration.sql` | Tabelas, FKs compostas, CHECKs, índices parciais (inclusive os dois **globais**), `ENABLE`/`FORCE` RLS e políticas nas duas tenant-scoped; DROP + `ADD … NOT VALID` do CHECK de `source`; coluna `field_dispatches.operator_assigned_at` com função e gatilho (§3.1 item 5); rollback comentado no topo (espelho `20260811000000_add_invoicing`, `20260858000000_extend_field_dispatch_event_type_check`). |
+| `prisma/migrations/<timestamp+1>_validate_location_source_check/migration.sql` | Só `VALIDATE CONSTRAINT` do CHECK de `source`, em migração (logo, transação) separada (N2-06). |
 | `src/integrations/traccar/traccar-ingest.app.ts` | App Express da ingestão, uma rota, ordem fixa de middlewares (§4.1) (espelho `src/portal-app.ts`). |
 | `src/integrations/traccar/traccar-ingest.bootstrap.ts` | `startTraccarIngestListenerIfEnabled` (espelho `src/infra/jobs/job-worker.bootstrap.ts:87`). |
 | `src/integrations/traccar/traccar-ingest.logger.ts` | `pinoHttp` com serializadores de allowlist (§4.7). |
@@ -995,7 +1284,8 @@ cross-tenant.
 | `src/integrations/traccar/traccar-ingestion.service.ts` | Orquestra fases, códigos de resposta, publicação pós-commit, orçamento de tempo. |
 | `src/integrations/traccar/index.ts` | Exporta só fábricas e tipos necessários. |
 | `src/server.ts` | Uma chamada ao bootstrap, depois do `portalApp.listen` (`src/server.ts:38-44`). |
-| `src/database/rls.ts` | Acrescenta `findFirstTenantRls`; `withTenantRls` e `forEachTenantRls` intactos. |
+| `src/database/rls.ts` | Acrescenta `findFirstTenantRls` (somente leitura, canário, parada no primeiro achado, `{ maxWait, timeout }`) e `withTenantRlsBudget(client, tenantId, { maxWait, timeout }, work)` (A2-03); `withTenantRls` e `forEachTenantRls` intactos. |
+| `src/integrations/traccar/traccar-db.ts` | `PrismaClient` só da ingestão, `new PrismaPg({ connectionString, max: TRACCAR_DB_POOL_MAX })`, com `application_name=erp-traccar-ingest` acrescentado à URL (A2-07); a ingestão nunca importa `src/database/prisma.ts`. |
 | `src/config/env.ts`, `.env.example` | Variáveis e gates de §4.1; exemplos vazios e rotulados. |
 | `src/modules/field-location/field-location.types.ts` | `FIELD_LOCATION_STORED_SOURCES`; `FIELD_LOCATION_SOURCES` intacta. |
 | `src/modules/field-location/field-location.repository.ts`, `field-location-prisma.repository.ts` | Gravação a partir de um `tx` recebido, sem transação aninhada (espelho `field-dispatch-prisma.repository.ts:169-170`, `new Prisma…Repository(tx)`). |
@@ -1005,8 +1295,8 @@ cross-tenant.
 | `infra/traccar/dev/traccar.xml` | `protocols.enable=osmand`, `osmand.port=5055`, H2 local, `forward.type=json`, `forward.retry.enable=true`, `database.registerUnknown=true`, `geocoder.enable=false`, `web.address=127.0.0.1` (interface e REST do Traccar só dentro do contêiner no B-TRC-01); sem segredo e sem URL de servidor público. |
 | `infra/traccar/fixtures/6.16.0/position-osmand.json` | Corpo real capturado (§8.5 passo 3), sanitizado. |
 | `scripts/traccar-dev-demo.mjs` | O smoke vertical de §8.1 (espelho `scripts/smoke-compose-persistence.mjs`: projeto fixo, loopback cravado, token HS256 com o placeholder do compose, `down -v` sempre, redação de saída). |
-| `scripts/traccar-capture-fixture.mjs` | Sobe Traccar + `traccar-capture`, manda um ponto, grava o corpo recebido sanitizado; imprime só nomes de header, nunca valores. |
-| os 11 arquivos de teste de §8.6 | Propriedades, não formato. |
+| `scripts/traccar-capture-fixture.mjs` | Sobe Traccar + `traccar-capture` (espera o `traccar-capture` responder antes do primeiro envio), manda um ponto, grava o corpo recebido sanitizado; imprime só nomes de header, nunca valores; **recusa** corpo cujo `device.uniqueId` não seja `trcdemo01` e troca `name`, `phone` e `contact` por valores sintéticos **antes** de gravar ou imprimir (N2-05); só roda sob o projeto `erp-trc01-capture`. |
+| os 13 arquivos de teste de §8.6 | Propriedades, não formato. |
 | `API_CONTRACTS.md`, `docs/deployment.md` | Rota interna (marcada "não é API de cliente"), variáveis, execução do demo. |
 | `docs/revisoes/TRACCAR/**`, `agent-orchestration/codex/comandos/B-TRC-01-*.md` e os registros de junta | Comando do bloco, evidências, ata. |
 
@@ -1078,21 +1368,24 @@ Nunca `docker system prune`, `git stash`, `git clean` ou `reset --hard`. A limpe
    e `infra/traccar/dev/traccar.xml` → verde.
 3. **Fixture real.** `timeout -k 30 600 node scripts/traccar-capture-fixture.mjs` sobe Traccar + `traccar-capture`
    (projeto `erp-trc01-capture`), manda um ponto OsmAnd `trcdemo01`, grava o corpo recebido, troca valores pessoais por
-   sintéticos mantendo as chaves, e derruba o projeto. **Parada:** se o corpo não for `{position, device}`, se
-   `device.uniqueId` faltar ou se `position.id` vier maior que 0, o dev registra a evidência e para — o plano volta
-   para a chave e para o contrato.
+   sintéticos mantendo as chaves, e derruba o projeto. A fixture gravada leva `position.id = 0`; o dev registra se o
+   corpo capturado veio da primeira entrega (`id` ausente ou 0) ou de um retry (`id > 0`) — as duas são legítimas
+   (A2-10). **Parada:** só se o corpo não for `{position, device}` ou se `device.uniqueId` faltar; aí o dev registra a
+   evidência e para, e o plano volta para o contrato.
 4. **Contrato.** `tests/traccar-position-contract.test.ts` vermelho → `traccar-position.schema.ts` e
    `traccar-position.adapter.ts` → verde.
-5. **Autenticação.** `tests/traccar-forward-auth.test.ts` vermelho → `traccar-forward-auth.ts` → verde.
+5. **Autenticação e limite.** `tests/traccar-forward-auth.test.ts` e `tests/traccar-rate-limit.test.ts` vermelhos →
+   `traccar-forward-auth.ts` e `traccar-rate-limit.ts` → verdes.
 6. **Listener e logs.** `tests/traccar-ingest-listener.test.ts` e `tests/traccar-ingest-logs.test.ts` vermelhos →
    app, bootstrap, logger, `env.ts`, `server.ts` → verdes.
 7. **Esquema, sob o `agente-dba-guardiao`.** `tests/traccar-binding-uniqueness-db.test.ts`,
    `tests/traccar-quarantine-db.test.ts` e `tests/traccar-idempotency-db.test.ts` vermelhos (tabelas não existem) →
-   migração → `migrate deploy` no `trc01-pg` → `prisma generate` → verdes.
+   as duas migrações → `migrate deploy` no `trc01-pg` → `prisma generate` → verdes.
 8. **Resolução.** `tests/traccar-resolution-cost.test.ts` vermelho → `traccar-resolution.ts` + `findFirstTenantRls` →
    verde; `tests/traccar-resolution-race-db.test.ts` vermelho → `FOR SHARE` na fase 2 → verde.
-9. **Vertical no banco.** `tests/traccar-position-ingestion-db.test.ts` vermelho → serviço, repositório,
-   `field-location` e `field-dispatch` → verde.
+9. **Vertical no banco.** `tests/traccar-position-ingestion-db.test.ts` e `tests/traccar-ingest-pool-db.test.ts`
+   vermelhos → serviço, repositório, `traccar-db.ts`, `withTenantRlsBudget`, `field-location` e `field-dispatch` →
+   verdes.
 10. **Smoke.** `node scripts/traccar-dev-demo.mjs` verde (§8.1).
 11. **Bateria e autocontrole.** §8.8 inteira; depois, em worktree descartável do próprio dev, cada mutação de §8.9
     uma a uma, registrando que o teste indicado ficou vermelho. Mutação que não derruba teste nenhum não se "conserta"
@@ -1100,19 +1393,22 @@ Nunca `docker system prune`, `git stash`, `git clean` ou `reset --hard`. A limpe
     §11.3 contra a migração real no `trc01-pg`, com 10, 100 e 500 organizações, registrado no arquivo de evidência.
 12. **Limpeza e PR.** Fim de §8.4; PR sem `Kpis/*`; junta de segurança (§8.10).
 
-### 8.6 Testes novos — propriedades mínimas (93 casos em 11 arquivos)
+### 8.6 Testes novos — propriedades mínimas (113 casos em 13 arquivos; v2.1 acrescenta 20 e 2 arquivos)
 
 Todo teste novo declara `{ timeout }` no `node:test` (30 s para os sem banco, 120 s para os `-db`); os `-db` se
 declaram pulados sem `DATABASE_URL` e, com ela, rodam sob o papel efêmero `NOSUPERUSER NOBYPASSRLS` do arnês
 (`createEphemeralRole`, `tests/helpers/auth-identity-fixture.ts:324`), com semeadura e limpeza pela conexão
 administrativa e escopo da própria rodada (nunca apagar por curinga).
 
-`tests/traccar-ingest-listener.test.ts` (10): o app público não serve `POST /ingest/traccar/v1/positions` nem
+`tests/traccar-ingest-listener.test.ts` (15): o app público não serve `POST /ingest/traccar/v1/positions` nem
 `POST /api/v1/internal/traccar/positions` com token válido (não-2xx); `src/app.ts` não menciona `traccar`; o app de
 ingestão responde 404 a `GET` no caminho e a `POST` em outro caminho; não emite `Access-Control-Allow-Origin`; query
 string dá 400 sem chamar o serviço; bootstrap com flag desligada não escuta; ligado, escuta no host e porta pedidos;
 porta de ingestão igual a `PORT` ou `PORTAL_PORT` reprova o env; flag ligada sem instance key ou sem segredo de 32+
 reprova, e em produção o default de dev reprova; a rota móvel recusa `source: "traccar"` com `400 invalid_source`.
+**v2.1 (A2-02, A2-11):** com host que não existe na máquina (`192.0.2.1`), o bootstrap devolve `bind_failed` e o app
+público, já no ar no mesmo processo, segue respondendo; corpo de 64 KiB + 1 dá `413`; `Content-Type: text/plain` dá
+`415`; a 101ª requisição numa rajada dá `429`; `TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL` a mais de 72 h reprova o env.
 
 `tests/traccar-forward-auth.test.ts` (9): aceita current sem ecoá-lo; aceita previous antes do prazo; recusa previous
 depois do prazo (relógio injetado); recusa ausente; recusa valor errado de mesmo tamanho e de tamanho diferente;
@@ -1124,17 +1420,23 @@ recusa header repetido; recusa o segredo em `Authorization`; compara digests SHA
 nenhum dos dois no log capturado.
 
 `tests/traccar-position-contract.test.ts` (13): a fixture 6.16.0 é `{position, device}` e adapta para o comando;
-`position.id` da fixture é ausente ou 0; `device.name`, `phone`, `contact` e `model` não chegam ao comando;
+a mesma posição com `id` ausente, 0 e maior que 0 (primeira entrega × retry, A2-10) gera a mesma chave e o mesmo
+digest; `device.name`, `phone`, `contact` e `model` não chegam ao comando;
 `attributes` é ignorado; chave reservada no envelope, em `position` e em `device` dá 422 (três casos); 10 nós viram
 5,1444 m/s; mesma identidade gera a mesma chave e latitude diferente gera outra; mesma identidade com velocidade
 diferente mantém a chave e muda o digest; `serverTime` não muda chave nem digest; coordenada fora da faixa, data
 inválida ou `uniqueId` inválido dão 422; `fixTime` além de agora + 5 min e `valid=false` produzem os motivos
 `fix_in_future` e `invalid_fix`.
 
-`tests/traccar-resolution-cost.test.ts` (7, portas falsas que contam chamadas): dica confirmada custa 1 sondagem e 0
+`tests/traccar-resolution-cost.test.ts` (9, portas falsas que contam chamadas): dica confirmada custa 1 sondagem e 0
 listagem; sem dica, para no primeiro achado (k sondagens); sem vínculo, T sondagens e, no prazo do cache negativo, 0;
 com mais de 500 organizações, 0 sondagens e `resolution_budget_exceeded`; dica envenenada cai e a descoberta acha a
-organização certa; linha de outra organização numa volta dá `TenantRowsLeakError` e 503; os caches respeitam o teto.
+organização certa; linha de outra organização numa volta dá `TenantRowsLeakError` e 503; os caches respeitam o teto;
+**v2.1 (A2-06):** a confirmação bem-sucedida renova a validade da dica (relógio injetado: passados 10 min de uma dica
+renovada aos 9 min, ainda 1 sondagem); com 400 de 500 organizações ativas sai o aviso de 80 %.
+
+`tests/traccar-rate-limit.test.ts` (4, relógio injetado; A2-11): a rajada de 100 passa e a 101ª dá 429; depois de 1 s,
+20 novas passam; com 10 em processamento, a 11ª dá 429; liberada uma vaga, a seguinte passa.
 
 `tests/traccar-binding-uniqueness-db.test.ts` (6): com o dispositivo ativo em A, o `INSERT` ativo em B falha com
 23505 embora B não enxergue A; sob B, `ON CONFLICT DO NOTHING` volta 0 linhas sem erro; segunda viatura não ganha
@@ -1143,29 +1445,40 @@ rastreador ativo duplicado na mesma organização; desativado em A, B vincula; a
 `RUNTIME_ROLE_GUARD_SQL` não acusa escape do papel; a quarentena não tem coluna de coordenada nem de
 payload (catálogo).
 
-`tests/traccar-resolution-race-db.test.ts` (4, barreira entre conexões): a desativação concorrente espera a ingestão
+`tests/traccar-resolution-race-db.test.ts` (5, barreira entre conexões): a desativação concorrente espera a ingestão
 confirmada terminar, e a posição fica em A; a ingestão que começa durante uma desativação em voo confirma 0 e não grava
 em A; o vínculo ativo em B falha enquanto A está ativo e passa depois; em nenhum instante amostrado há dois vínculos
-ativos do mesmo dispositivo.
+ativos do mesmo dispositivo; **v2.1 (A2-03):** com o vínculo preso por 4 s noutra conexão, a ingestão responde 503
+antes de 3 s, sem recibo nem localização.
 
-`tests/traccar-idempotency-db.test.ts` (7): primeira entrega — 204, 1 recibo, 1 localização, 1 evento; reenvio
+`tests/traccar-idempotency-db.test.ts` (8): primeira entrega — 204, 1 recibo, 1 localização, 1 evento; reenvio
 idêntico — 204, nada novo, nenhum evento; mesma chave com digest diferente — 409, `conflict_count = 1`, nenhuma
 localização; duas idênticas concorrentes — ambas 2xx, 1 recibo, 1 localização; duas divergentes concorrentes — uma 204
 e uma 409; chave já registrada em outra organização — 409 e quarentena `idempotency_key_owned_elsewhere`, nada na
-segunda; falha antes do commit — 503 e nada gravado, e a nova entrega dá 204.
+segunda; falha antes do commit — 503 e nada gravado, e a nova entrega dá 204; **v2.1 (A2-11):** falha forçada depois
+do `INSERT` do recibo e antes do da localização (porta de falha injetada no repositório) — nem recibo nem localização
+ficam.
 
 `tests/traccar-quarantine-db.test.ts` (6): dispositivo sem vínculo — 202, uma linha aberta, nenhuma localização nem
 recibo; 20 entregas concorrentes — 1 linha, `delivery_count = 20`; episódio resolvido não reabre; `fixTime` anterior
 ao `valid_from` — `fix_before_active_binding`; `valid=false` — `invalid_fix`; `first_fix_at`/`last_fix_at` acompanham
 mínimo e máximo.
 
-`tests/traccar-position-ingestion-db.test.ts` (10): recibo e localização gravados atomicamente sob o papel efêmero;
+`tests/traccar-position-ingestion-db.test.ts` (15): recibo e localização gravados atomicamente sob o papel efêmero;
 `source='traccar'` e `/field-locations/latest` devolve o técnico na organização certa; `tenantId` no envelope — 422 e
 zero escrita em qualquer organização; operador aceito antes do fix e terminado depois grava para ele; despacho só
-atribuído ou já terminado — `no_operator_at_fix_time`; dois operadores — `ambiguous_operator_at_fix_time`; despacho
-reatribuído — `operator_history_ambiguous`; posição atrasada entra no histórico e não regride o latest; o evento sai
+atribuído ou já terminado — `no_operator_at_fix_time`; dois operadores — `ambiguous_operator_at_fix_time`;
+**v2.1 (A2-12, N2-03, N2-07):** reatribuição A→B feita só pelo repositório, **sem** evento: o fix de A anterior à troca
+não vai para B; `reassigned → on_route` sem novo aceite — `operator_history_ambiguous`; B aceita de novo — fixes depois
+do aceite vão para B; A→B→A — nenhum fix do período de B vai para A; organização suspensa com dica válida —
+`tenant_inactive`; reenvio de posição já gravada depois de uma reatribuição — 204, sem quarentena; posição atrasada entra no histórico e não regride o latest; o evento sai
 uma vez, depois do commit, sem coordenada, e não sai em quarentena, duplicata ou rollback; a organização B não lê
 localização, recibo nem vínculo de A.
+
+`tests/traccar-ingest-pool-db.test.ts` (2; A2-07): com as 5 conexões da ingestão presas em `FOR SHARE`, uma consulta
+feita pelo cliente do app público (`src/database/prisma.ts`) responde em menos de 1 s; a ingestão nunca abre mais que
+`TRACCAR_DB_POOL_MAX` conexões (contadas em `pg_stat_activity` pelo `application_name=erp-traccar-ingest` da URL da
+ingestão).
 
 `tests/traccar-dev-topology.test.ts` (12, sobre `docker compose -p trc-topology -f docker-compose.prod.yml -f
 docker-compose.traccar.yml config --format json` com placeholders no ambiente do comando): Traccar sem `ports`; nenhum
@@ -1205,8 +1518,8 @@ timeout -k 15 300 npm test -- tests/field-location-routes.test.ts tests/field-op
   tests/operations-map-technicians.test.ts tests/operations-map-calls.test.ts 2>&1 | grep -E '^# (tests|pass|fail|skipped)')
 ```
 
-N = soma dos dois `# tests`. Meta: os N continuam verdes sem edição, e os casos novos são ≥ N; com os 93 de §8.6 e
-N estático 65, M = 158 ≥ 130. Se a contagem executada passar de 93, o dev escreve casos novos até `novos ≥ N` —
+N = soma dos dois `# tests`. Meta: os N continuam verdes sem edição, e os casos novos são ≥ N; com os 113 de §8.6 e
+N estático 65, M = 178 ≥ 130. Se a contagem executada passar de 113, o dev escreve casos novos até `novos ≥ N` —
 propriedade, não snapshot.
 
 ### 8.8 Bateria exata do B-TRC-01 (fecha A-04)
@@ -1223,13 +1536,14 @@ timeout -k 15 600 npm run lint
 
 # testes novos sem banco
 timeout -k 15 300 npm test -- tests/traccar-ingest-listener.test.ts tests/traccar-forward-auth.test.ts \
-  tests/traccar-ingest-logs.test.ts tests/traccar-position-contract.test.ts tests/traccar-resolution-cost.test.ts
+  tests/traccar-ingest-logs.test.ts tests/traccar-position-contract.test.ts tests/traccar-resolution-cost.test.ts \
+  tests/traccar-rate-limit.test.ts
 timeout -k 15 300 npm test -- tests/traccar-dev-topology.test.ts
 
 # testes novos com banco (papel efêmero NOSUPERUSER NOBYPASSRLS no cluster descartável)
 DATABASE_URL="$DB" timeout -k 15 900 npm test -- tests/traccar-binding-uniqueness-db.test.ts \
   tests/traccar-resolution-race-db.test.ts tests/traccar-idempotency-db.test.ts tests/traccar-quarantine-db.test.ts \
-  tests/traccar-position-ingestion-db.test.ts
+  tests/traccar-position-ingestion-db.test.ts tests/traccar-ingest-pool-db.test.ts
 
 # regressões diretas (§8.7) e a do papel de runtime
 timeout -k 15 300 npm test -- tests/field-location-routes.test.ts tests/field-ops-realtime.test.ts \
@@ -1262,7 +1576,7 @@ por comando e `Remove-Item Env:X` logo depois — nunca deixar `DATABASE_URL` no
 Cada mutação é aplicada **sozinha**, num worktree descartável próprio da rodada (um só, com `npm ci` próprio e cluster
 `trc01-mut-pg` próprio): aplica-se a edição, roda-se o teste indicado, registra-se o vermelho e desfaz-se a edição com
 `git checkout -- <arquivo>` antes da próxima; no fim, o worktree sai por `git worktree remove --force`. O dev faz a rodada inteira uma vez antes do PR (autocontrole, §8.5 passo 11); os jurados re-executam
-pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22). Mutação que não derruba o teste indicado é achado.
+pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22, MUT-30 a MUT-45). Mutação que não derruba o teste indicado é achado.
 
 | Mutação | Propriedade | Edição | Fica vermelho |
 |---|---|---|---|
@@ -1278,7 +1592,7 @@ pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22). Mutação que n�
 | MUT-10 | conteúdo divergente não é sucesso | 0 linhas → 204 sem comparar digest | `traccar-idempotency-db` (409) |
 | MUT-11 | conflito não aborta a transação | `INSERT` puro do recibo | `traccar-idempotency-db` (idênticas concorrentes) |
 | MUT-12 | posição em uma organização só | `tenant_id` na unique do recibo | `traccar-idempotency-db` (chave de outra organização) |
-| MUT-13 | identidade da quarentena | remover o índice único parcial | `traccar-quarantine-db` (1 linha) |
+| MUT-13 | identidade da quarentena | remover o índice único parcial (o `ON CONFLICT` passa a falhar com `42P10` em toda entrega, medido pela r2; com `INSERT` puro no lugar, nascem 20 linhas) | `traccar-quarantine-db` (1 linha; 202 em toda entrega) |
 | MUT-14 | contador sem perda | `SET delivery_count = EXCLUDED.delivery_count` | `traccar-quarantine-db` (20) |
 | MUT-15 | header do Traccar pelo ambiente | tirar `CONFIG_USE_ENVIRONMENT_VARIABLES` do overlay | `traccar-dev-topology`; o demo dá 401 e nenhuma posição |
 | MUT-16 | log sem segredo | serializadores padrão do `pino-http` | `traccar-ingest-logs` |
@@ -1287,7 +1601,7 @@ pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22). Mutação que n�
 | MUT-19 | header repetido recusado | usar só o primeiro valor de um header repetido | `traccar-forward-auth` (repetido → 401) |
 | MUT-20 | tenant do payload nunca vale | remover a checagem de chaves reservadas | `traccar-position-contract` (422) e `traccar-position-ingestion-db` |
 | MUT-21 | cliente não se diz Traccar | `traccar` dentro de `FIELD_LOCATION_SOURCES` | `traccar-ingest-listener` (rota móvel recusa) |
-| MUT-22 | trajeto não muda de dono | remover a exclusão de despacho reatribuído | `traccar-position-ingestion-db` (`operator_history_ambiguous`) |
+| MUT-22 | trajeto não muda de dono (A2-12) | o gatilho deixa de regravar `operator_assigned_at` quando `operator_user_id` muda | `traccar-position-ingestion-db` (A→B sem evento: fix de A não vai a B) |
 | MUT-23 | evento só depois do commit e uma vez | publicar antes do commit, ou também na duplicata | `traccar-position-ingestion-db`, `traccar-idempotency-db` |
 | MUT-24 | latest não regride | ordenar por `received_at` antes de `recorded_at` (`field-location-prisma.repository.ts:41-65`) | `traccar-position-ingestion-db` (posição atrasada) |
 | MUT-25 | unidade certa | gravar nós como m/s | `traccar-position-contract` (10 nós → 5,1444) |
@@ -1295,6 +1609,22 @@ pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22). Mutação que n�
 | MUT-27 | SSE sem coordenada (regressão existente) | tirar `coordinateKeyPattern` do broker | `tests/field-ops-realtime.test.ts:118-120` |
 | MUT-28 | segredo nunca em query | aceitar query string | `traccar-ingest-listener`, `traccar-ingest-logs` (400) |
 | MUT-29 | fix inválido não vai ao mapa | gravar `valid=false` | `traccar-position-contract`, `traccar-quarantine-db` (`invalid_fix`) |
+| MUT-30 | taxa e concorrência (A2-11) | o token bucket nunca esvazia | `traccar-rate-limit`, `traccar-ingest-listener` (429) |
+| MUT-31 | bind só no host privado (A2-11) | `listen(TRACCAR_INGEST_PORT)` sem host, como o `portalApp.listen` | `traccar-ingest-listener` (endereço = host pedido) |
+| MUT-32 | corpo limitado | limite do parser em `2mb` | `traccar-ingest-listener` (413) |
+| MUT-33 | só JSON | aceitar qualquer `Content-Type` | `traccar-ingest-listener` (415) |
+| MUT-34 | `FORCE` nas tabelas novas | migração sem `FORCE ROW LEVEL SECURITY` no recibo | `traccar-binding-uniqueness-db` (catálogo) |
+| MUT-35 | recibo e localização atômicos | recibo gravado em transação própria, antes da da localização | `traccar-idempotency-db` (falha injetada não deixa recibo) |
+| MUT-36 | canário na varredura | tirar `assertRowsBelongToTenant` de `findFirstTenantRls` | `traccar-resolution-cost` (`TenantRowsLeakError`) |
+| MUT-37 | previous com prazo de até 72 h | tirar o teto de 72 h do gate do env | `traccar-ingest-listener` (env) |
+| MUT-38 | segredo só no header próprio | aceitar o segredo em `Authorization: Bearer` | `traccar-forward-auth` |
+| MUT-39 | falha do `listen` não derruba a API (A2-02) | tirar o tratador de `error` do bootstrap | `traccar-ingest-listener` (`bind_failed`) |
+| MUT-40 | orçamento de tempo no banco (A2-03) | tirar `lock_timeout`/`statement_timeout` e as opções do `withTenantRlsBudget` | `traccar-resolution-race-db` (503 antes de 3 s) |
+| MUT-41 | pool próprio (A2-07) | a ingestão usa o `prisma` de `src/database/prisma.ts` | `traccar-ingest-pool-db` |
+| MUT-42 | retry com `id > 0` (A2-10) | pôr `position.id` na chave | `traccar-position-contract` (mesma chave na primeira entrega e no retry) |
+| MUT-43 | operador no instante (A2-12) | regra sem `operator_assigned_at` (só `accepted_at ≤ fixTime`) | `traccar-position-ingestion-db` (A→B sem evento; A→B→A) |
+| MUT-44 | organização suspensa (N2-07) | fase 2 sem conferir `tenants.status` | `traccar-position-ingestion-db` (`tenant_inactive`) |
+| MUT-45 | recibo antes do operador (N2-03) | resolver o operador antes do `SELECT` do recibo | `traccar-position-ingestion-db` (reenvio depois de reatribuição → 204) |
 
 O jurado também lê o código e confirma que `timingSafeEqual` recebe dois buffers de 32 bytes: estatística de tempo em
 CI não é prova.
@@ -1304,16 +1634,22 @@ CI não é prova.
 - os casos novos de §8.6 verdes (≥ N executado), os N diretos verdes sem edição, as duas formas da suíte verdes;
 - migração aditiva aprovada pelo `agente-dba-guardiao`; `FORCE` e o guard do runtime provados sob papel efêmero;
 - smoke vertical verde, com 1 recibo e 1 localização depois do reenvio;
-- as 29 mutações registradas em vermelho;
+- as 45 mutações registradas em vermelho;
 - `check`, `lint`, `build`, frontend `check`/`build`/`test:smoke` e `git diff --check` verdes;
 - limpeza de §8.4 reportada em uma linha; PR sem `Kpis/*`.
 
 **Quórum:** junta completa de segurança, **unanimidade 3/3**, com o `inspetor-de-terreno-da-junta` antes (ingestão,
-tenant, segredo e localização: `D-GOV-PROPORCIONAL` (1) e (4)). Três cadeiras, cada uma com no máximo três itens (P4): (a) RLS e
-unicidade — itens: vínculo global, trava da confirmação, recibo global (re-executa MUT-04 a MUT-06 e MUT-12); (b) superfície
-e segredo — itens: listener próprio, autenticação e rotação, logs (re-executa MUT-01 a MUT-03, MUT-15 a MUT-19 e MUT-28);
-(c) contrato e atribuição — itens: idempotência, quarentena, operador no instante (re-executa MUT-10, MUT-11, MUT-13, MUT-14 e
-MUT-20 a MUT-24). Teto de 2 ciclos; do ciclo 3 em diante só defeito grave de produto
+tenant, segredo e localização: `D-GOV-PROPORCIONAL` (1) e (4)). Três cadeiras, cada uma com no máximo três itens (P4):
+
+- **(a) RLS, unicidade e banco.** Itens: vínculo global e trava da confirmação; recibo global e atomicidade;
+  orçamento de tempo e pool próprio. Re-executa MUT-04 a MUT-06, MUT-12, MUT-34, MUT-35, MUT-40 e MUT-41.
+- **(b) Superfície e segredo.** Itens: listener próprio (bind, falha do `listen`, 413/415/429); autenticação e
+  rotação; logs. Re-executa MUT-01 a MUT-03, MUT-15 a MUT-19, MUT-28, MUT-30 a MUT-33 e MUT-37 a MUT-39.
+- **(c) Contrato e atribuição.** Itens: idempotência e quarentena; operador no instante, com a leitura da trava
+  `Ω6R-SEC-002` de §8.0 linha 6; resolução (dica, teto, canário). Re-executa MUT-07 a MUT-11, MUT-13, MUT-14,
+  MUT-20 a MUT-24, MUT-36 e MUT-42 a MUT-45 (N2-02: as de resolução agora têm cadeira).
+
+Teto de 2 ciclos; do ciclo 3 em diante só defeito grave de produto
 bloqueia (`D-GOV-PROPORCIONAL` (2)). Depois do merge, porteiro (bloco de produto, regra (3)). Nada disso autoriza
 staging nem produção.
 
@@ -1321,8 +1657,9 @@ staging nem produção.
 
 ### 9.1 Decisões e ações que pertencem ao dono
 
-0. **Forma da trilha (§7.2).** Escolher entre sete blocos (proposta) e quatro (Q1–Q4). Até a escolha, o B-TRC-02
-   não começa; o G-TRC-PD e o B-TRC-01 seguem, porque são iguais nas duas formas.
+0. **As seis decisões da seção "Decisões do dono antes do B-TRC-01"**: as 1, 2 e 3 antes do B-TRC-01; a 4 antes do
+   B-TRC-04; a 5 antes do B-TRC-03; a 6 antes do staging com dado real ou da produção. Os itens 1 e 7 abaixo detalham as
+   decisões 2 e 6.
 1. **AWS × Fly / alcance da mudança.** Confirmar se todo backend de ingestão vai à AWS com o
    Traccar (recomendado) ou se ERP permanece no Fly e haverá ponte privada. A decisão específica
    `D-TRACCAR-HTTP-PRIVADO-AWS` prevalece para o Traccar, mas não migra o ERP inteiro em silêncio;
@@ -1381,7 +1718,10 @@ staging nem produção.
 | Limite do Docker Hub ao baixar imagens (`P-CI-DOCKER-HUB-LIMITE`, `pendencias.md:10479`) | média/médio | A imagem do Traccar só é baixada na máquina do dev (§8.4 passo 4) e por digest; o teste de topologia usa `docker compose config`, que não baixa nada, então a CI não depende do Traccar no Docker Hub. |
 | Volume maior que limite inicial | média/alto | Limites configuráveis, load test de staging, métricas, sizing antes do go-live. |
 | Resíduos table-rule/SECURITY DEFINER anulam guard | existente/crítico | Bloquear B-TRC-07 até fechar as duas pendências e reexecutar inventários. |
-| Conflito AWS específico × Fly atual | alta/alto | Ato explícito do dono antes de B-TRC-06; nenhuma ponte pública improvisada. |
+| Conflito AWS específico × Fly atual | alta/alto | Decisão 2 do dono: escolha ou aceite escrito do adiamento antes do B-TRC-01; a escolha em si antes do B-TRC-06; nenhuma ponte pública improvisada. |
+| Penhasco do teto de 500 organizações | baixa hoje/alto | Falha fechada; validade deslizante da dica; aviso a partir de 80 % no B-TRC-01, alarme no B-TRC-06; contar só organizações com o módulo depende da decisão sobre o recurso pago (§4.3, A2-06). |
+| Ingestão degrada a API pública | média/alto | Pool próprio de 5 conexões, concorrência 10, `lock_timeout`, falha do `listen` sem derrubar o processo (§4.1, A2-02, A2-07). MUT-39 a MUT-41. |
+| Volume de recibos e de jobs de fanout | média/médio | Um recibo e um job `field-ops-event-fanout` no Redis por posição (`domain-event.publisher.ts:34,57-80`; r2, N2-08); medido no B-TRC-06; retenção na decisão 6. |
 | Custo/lock-in operacional | média/médio | OCI fixada, DB PostgreSQL, IaC, backup/restore e estimativa AWS aprovada antes de apply. |
 
 ### 10.2 Estimativa honesta
@@ -1462,7 +1802,7 @@ foi conferido manualmente contra `Vehicle` e `ThirdPartyVehicleIdentity`, não i
 |---|---|---|
 | M-19 | `git diff --name-only a9fbe283 origin/main -- src prisma docs/deployment.md` | vazio: #411 e #412 não tocam o que o plano mede |
 | M-20 | `docker buildx imagetools inspect traccar/traccar:6.16.0`; idem `node:20-bookworm-slim` | índices `sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda` e `sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0`, sem `pull` |
-| M-21 | cluster descartável `pltrc2-pg` (PostgreSQL 16.14, sem porta publicada, removido por nome), papel `app_rt NOSUPERUSER NOBYPASSRLS`; SQL em §11.3 | U1b 23505 sob B; U1c B vê 0; U2 `DO NOTHING` 0 linhas sem erro; U3b/U3c digest legível só na própria organização; U3d `INSERT` puro aborta; U4 `FOR SHARE` faz a desativação esperar 1,98 s, `FOR KEY SHARE` e sem trava 0,00 s; U4d confirmação durante desativação em voo espera e vê 0; U5 20 concorrentes → 1 linha e contagem 20, mutações → 1 e 20 |
+| M-21 | cluster descartável `pltrc2-pg` (PostgreSQL 16.14, sem porta publicada, removido por nome), papel `app_rt NOSUPERUSER NOBYPASSRLS`; SQL em §11.3 | U1b 23505 sob B; U1c B vê 0; U2 `DO NOTHING` 0 linhas sem erro; U3b/U3c digest legível só na própria organização; U3d `INSERT` puro aborta; U4 `FOR SHARE` faz a desativação esperar 1,98 s, `FOR KEY SHARE` e sem trava 0,00 s; U4d confirmação durante desativação em voo espera e vê 0; U5 20 concorrentes → 1 linha e contagem 20, mutações → 1 e 20; **correção da v2.1 (N2-04):** "sem o índice", com o `INSERT … ON CONFLICT` igual, dá `42P10` em toda entrega; as 20 linhas só aparecem trocando também o `INSERT` por um puro |
 | M-22 | `pgbench -n -c 1` dentro do contêiner, 1.000 organizações, 21.000 vínculos (1.000 ativos) | quente 0,534 ms; varredura 1,455 / 15,47 / 165,7 ms para 10 / 100 / 1.000 organizações |
 | M-23 | `docker compose -p pltrc2cfg -f base.yml -f over.yml config --format json` (Compose v5.2.0), sem subir nada | `ports: !override` substitui; `API_PORT=127.0.0.1:3102` sai `host_ip 127.0.0.1`; rede `internal` com `ipv4_address` aceita |
 | M-24 | `git show origin/main:src/server.ts` (35-44), `:src/portal-app.ts` (21-55), `:src/config/env.ts` (292), `:docker-compose.prod.yml` (93-94) | precedente de app e porta próprios; só a 3000 publicada |
@@ -1479,6 +1819,10 @@ foi conferido manualmente contra `Vehicle` e `ThirdPartyVehicleIdentity`, não i
 | M-35 | `node -e` com `http.createServer` e um socket cru mandando `X-Traccar-Forward-Token` duas vezes (Node v20.19.5) | o servidor recebe `"aaa, bbb"`: header repetido não bate com segredo nenhum |
 | M-36 | `gh api repos/thiagodorgo/ERP_Techsolutios/commits/a2937bada1661e678b36a42e4742c2a92bf5d949/check-runs` | `docker`, `backend`, `backend-postgres`, `frontend` e os portais `success`; o job `docker` roda `smoke-compose-persistence.mjs` (`ci.yml:394,473`) |
 | M-37 | `git fetch origin --prune`; `git diff --name-only a2937bad origin/main`; `git diff -U0 a2937bad origin/main -- agent-orchestration/controle/decisoes.md agent-orchestration/controle/pendencias.md` | `origin/main` = `c1cfdabe` (#413); 9 arquivos, todos de registro; `decisoes.md` cresce depois da 3050, `pendencias.md` troca 10270-10271 e 10397 linha por linha e cresce depois da 10477 |
+| M-38 | cluster descartável `pltrc3-pg` (PG 16, sem porta, `--rm`), tabela espelho de `field_dispatches` com RLS `FORCE`, a função e o gatilho de §3.1 item 5, papel `app_rt NOSUPERUSER NOBYPASSRLS` | `prosecdef=false`; depois do aceite de A, um `UPDATE` só de status com `operator_assigned_at` forjado mantém o valor do gatilho; reatribuição A→B sem evento → B inelegível; `reassigned → on_route` → inelegível; B aceita de novo → elegível |
+| M-39 | mesmo cluster: sessão 1 segura a linha com `UPDATE` + `pg_sleep(3)`; sessão 2 faz `SET LOCAL lock_timeout = '500ms'` e `SELECT … FOR SHARE` | `ERROR: canceling statement due to lock timeout` (55P03) na sessão 2; o PostgreSQL cancela a espera sozinho |
+| M-40 | `git show origin/main:agent-orchestration/omega/juntas/votos/B-SAN3-06b/PORTEIRO-411.md` (l. 83, 101, 107); `git show origin/main:agent-orchestration/controle/pendencias.md` (3104-3123) | ressalva nominal ao Traccar e a trava do `Ω6R-SEC-002` ("Bloqueia" na 3118) |
+| M-41 | `git show origin/main:src/database/prisma.ts` (15-17); medida da r2 no `node_modules` do clone principal (`@prisma/adapter-pg` 7.8.0 → `new pg.Pool(config)`; `pg-pool` 3.14.0, `max \|\| poolSize \|\| 10`) | um `PrismaClient` por processo com pool padrão de 10 |
 
 Comando de M-28 (Git Bash):
 
@@ -1540,3 +1884,112 @@ M-23 usa dois arquivos de rascunho: `base.yml` com `api` (`ports: ["${API_PORT:-
 
 Se a rede faltar na execução, a confirmação vem da imagem fixada por digest e da fixture capturada; sem ela, o contract
 test fica vermelho e o bloco não avança.
+
+## Para o registro
+
+Texto pronto para o orquestrador copiar para `agent-orchestration/controle/pendencias.md`, no formato das entradas
+de lá. Esta rodada commita só o plano. Nenhuma linha abaixo é decisão do dono: as seis primeiras são perguntas
+abertas, à espera da resposta dele. A resposta, quando vier, vai para `decisoes.md` com a frase literal do dono.
+
+```markdown
+## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
+  dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
+  "Decisões do dono", decisão 1) · **dono:** o dono do produto.
+- Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
+  blocos, proposta). O B-TRC-01 só é o mesmo em B e C. Achados A2-09 da crítica r2 e B-07 da r1. A
+  `D-ORDEM-NOITE-2026-10-10` autoriza "os blocos de ingestão" sem fixar número.
+- **bloqueia:** o início do B-TRC-01 (na forma A ele muda) e tudo depois dele.
+- **teste de encerramento:** `decisoes.md` registra a escolha (A, B ou C) com a frase do dono, e o plano é ajustado
+  se a escolha for A.
+
+## P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1 do Traccar — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
+  plano v2, que levava a escolha para antes do B-TRC-06 sem registrar (achado A2-14) · **dono:** o dono do produto.
+- Opções: (a) ERP inteiro na AWS; (b) só o Traccar na AWS, ERP no Fly com ponte privada; (c) adiar a escolha para antes
+  do B-TRC-06, com aceite escrito. Recomendação do planejador: (c), com (a) como direção.
+- **bloqueia:** o B-TRC-01, até a escolha ou o aceite escrito do adiamento; o B-TRC-06, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra a escolha, ou o aceite do adiamento com o novo prazo.
+
+## P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do técnico — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
+  custo dos dois caminhos) × B-TRC-01, que grava a posição da viatura em `field_operator_locations` do técnico, com o
+  latest escolhendo por `recorded_at` sem olhar a fonte (achado A2-13) · **dono:** o dono do produto.
+- Opções e custo estimado: (a) vence o mais recente, nenhum custo agora; (b) preferência por fonte, 1–2 dias no
+  B-TRC-04; (c) dois pinos, bloco próprio de 4–7 dias. Recomendação: (a) só como modo provisório de dev no B-TRC-01;
+  escolher (b) ou (c) antes do B-TRC-04.
+- **bloqueia:** o B-TRC-01, até o aceite do modo provisório; o B-TRC-04 e a produção, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra o aceite do provisório e, antes do B-TRC-04, a escolha.
+
+## P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde no mapa — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
+  do plano): a viatura só aparece com despacho aceito pelo técnico atual; "atribuído → a caminho" sem aceite não mostra;
+  reatribuído só volta com novo aceite; viatura sem técnico não aparece · **dono:** o dono do produto.
+- Recomendação do planejador: manter a regra estrita no B-TRC-01; decidir antes do B-TRC-04 se o plano pago de
+  localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
+- **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
+- **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
+```
+
+
+```markdown
+## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
+  organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
+  retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 da crítica r2, E-02c/E-02d) ·
+  **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
+- Recomendação do planejador: só a plataforma vincula, a pedido da organização, para começar; depois, lista de
+  rastreadores liberados por organização. Vínculo vale do relógio do servidor em diante, sem retroativo; `EXCLUDE` com
+  faixas de validade (`btree_gist`) ou gatilho de `valid_from`.
+- **bloqueia:** o início do B-TRC-03; não bloqueia o B-TRC-01, onde só o teste e o demo vinculam.
+- **teste de encerramento:** `decisoes.md` registra quem vincula; o B-TRC-03 prova por teste que B não vincula
+  rastreador fora da sua lista (ou sem a plataforma) e que nenhum vínculo cobre fix anterior à desativação do anterior.
+
+## P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e acesso — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
+  `schema.prisma:1024`) recebe a posição da viatura sem o aviso e o consentimento do app; recibos (um por posição) e
+  quarentena (número do rastreador) sem guarda definida; `device.name/phone/contact` chegam e são descartados (nota
+  N2-05 e N2-08 da r2) · **dono:** o dono do produto.
+- Recomendação do planejador: base legal com aviso ao técnico; guarda curta (ex.: posição e recibo 90 dias,
+  quarentena resolvida 30 dias); acesso de despacho e gestão com trilha de consulta.
+- **bloqueia:** a produção (B-TRC-07) e o staging, se usar dado real; não bloqueia o B-TRC-01 (dado sintético).
+- **teste de encerramento:** `decisoes.md` registra base legal, prazos e quem vê; o bloco seguinte implementa o expurgo
+  com teste.
+
+## P-TRC-TETO-ORGANIZACOES (2026-10-10) — teto de 500 organizações ativas na descoberta do Traccar — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — o teto conta todas as organizações ativas, não só as com
+  rastreador; na 501ª, todo dispositivo sem dica vai à quarentena (achado A2-06 da r2) · **dono:** `B-TRC-06` (alarme e
+  medição com o número real) e a decisão do recurso pago (contar só organizações com o módulo).
+- O B-TRC-01 entrega a validade deslizante da dica e o aviso de 80 % (log e métrica).
+- **bloqueia:** não, abaixo de 400 organizações ativas.
+- **teste de encerramento:** alarme do B-TRC-06 dispara a 80 %, e o teto passa a contar só organizações com o módulo,
+  ou é re-medido e ajustado.
+
+## P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO (2026-10-10) — reatribuição e evento em transações separadas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `field-dispatch-prisma.repository.ts:170,174` e
+  `field-dispatch.service.ts:550-577`: `reassign` grava o operador novo e o status e, em outra transação, o evento
+  `field_dispatch_reassigned`; o `accepted_at` do operador antigo fica; `reassigned → on_route` dispensa novo aceite
+  (`field-dispatch.validators.ts:7-17`). Medido pela crítica r2 (E-3e) · **dono:** a nomear (próximo bloco que tocar
+  `field-dispatch.service.ts`).
+- O Traccar deixa de depender disso: o B-TRC-01 usa `operator_assigned_at`, gravado por gatilho na mesma instrução da
+  troca. Fica o defeito de auditoria: despacho reatribuído pode ficar sem o evento.
+- **bloqueia:** não.
+- **teste de encerramento:** troca de operador e evento na mesma transação, com teste de falha injetada no evento.
+
+## P-PORTAL-LISTEN-SEM-TRATADOR (2026-10-10) — falha do listen do portal derruba a API do ERP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/server.ts:39-44`: `portalApp.listen(env.PORTAL_PORT)` sem host
+  (todas as interfaces) e sem tratador de `error`; um `EADDRINUSE` na 3100 sai como `Unhandled 'error' event` e leva o
+  processo, com a API pública (medido para a ingestão pela r2, E-01d; mesmo mecanismo) · **dono:** a nomear (bloco do
+  portal).
+- **bloqueia:** não.
+- **teste de encerramento:** porta do portal ocupada não derruba a API; host do portal explícito.
+```
