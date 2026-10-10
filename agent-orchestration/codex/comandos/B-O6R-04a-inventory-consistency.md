@@ -253,3 +253,30 @@ orquestrador** — propostas pelo planejador e adotadas aqui —, **não do dono
   aponta para ela; os containers do bloco usam os prefixos do plano.
 - **(kk) Ordem de início:** o dev de integração (passo 1) só começa depois que o PR de registro com a
   `D-ORDEM-NOITE-2026-10-10` estiver na `main` (ressalva do porteiro do #411).
+
+## Emenda 7 do orquestrador — as divergências da integração 2 (2026-10-10)
+
+O `dev-integracao-2-b-o6r-04a` aplicou a "Emenda 1 à retomada" (D5, D2, D3) e rodou a linha f inteira no head `a48872e0`
+(relatório: `votos/B-O6R-04a/00-dev-integracao.md`, seção "## Integração 2"). O HC empurrado é `297dfbc8`, com CI 14/14
+verde. Ele não decidiu três divergências, e ficou certo nisso. As decisões abaixo são **do orquestrador**:
+
+- **(ll) D6 — o aceite do D3 acha a frase nova da errata 2.** As frases velhas ("reprovar encerra o bloco em dossiê ao
+  dono", "no ciclo 2 (o último)") somem dos 8 corpos (0 ocorrências, medido). O padrão de busca do aceite também casa com
+  a frase NOVA que a própria errata 2 ditou ("…— não um dossiê ao dono."), que diz o contrário da velha. **Decisão:** o
+  aceite do D3 é "0 ocorrências das frases VELHAS". As 8 linhas com a frase nova são esperadas e não são defeito. O texto
+  dos corpos NÃO muda: muda só o critério de aceite. O inspetor confere o corpo carregado contra o corpo julgado sobre os
+  blobs deste head.
+- **(mm) D7 — o T15 do #405 falhou 1 em 3 no `npm test` sob a carga da suíte inteira** ("processo filho não encerrou em
+  10024ms", rodada 1; as rodadas 2 e 3 passaram; o denominador ficou 3237 nas 3). O arquivo
+  `tests/san3-05-runtime-role-guard-db.test.ts` é idêntico ao da `main` e não é deste bloco. É a classe já registrada em
+  `P-SAN3-05-T15-TETO-DE-RELOGIO` (MÉDIA, dono `B-ARNES-2`), aberta pela junta 4 do B-SAN3-05: o teste mede relógio de
+  parede, não comportamento. **Decisão:** `pre-existente`, nota. Não reabre o bloco, não se ajusta a espera aqui e não se
+  roda de novo para fabricar 3 verdes. A ocorrência entra na pendência no próximo registro.
+- **(nn) D8 — o script do drill do M-02 aplicava 108 migrações em vez de 107** (o `prisma.config.ts` fixa a pasta e
+  ignora o `--schema` da cópia). O dev consertou só a ferramenta (`votos/B-O6R-04a/dev-integracao-apoio/m02-drill.sh`,
+  +6/−1, passando `--config`), e o drill reproduziu a sequência da emenda. **Decisão:** aceito. A ferramenta é de apoio, não
+  é produto nem teste do bloco, e o resultado foi medido.
+- **(oo) D1-r3**, a mutação opcional que o dev não rodou: fica para a C2 da junta, como insumo, sem ser critério.
+- **(pp) Próximo:** o inspetor de terreno sobre o head que contiver esta emenda, depois de o CI concluir nele. Em
+  seguida, a junta do ciclo 2: régua completa, unanimidade de 3, C1/C2 com os corpos já errados nos 2 espelhos e C3 =
+  `agente-ci-doutor`. Os gates rodam em Fable, por ser bloco de dinheiro e dado, com fallback Opus DECLARADO.
