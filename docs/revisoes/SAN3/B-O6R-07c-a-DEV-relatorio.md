@@ -191,3 +191,18 @@ temporária revertida em `mobile-work-order-sync.ts` (M11). Nenhuma deixou diff.
 | MG13 `checklist_runs:create` no `field_technician` (catálogo, temporária) | T6 | `CLASSE-INCOMPATIVEL: ROTA POST /api/v1/mobile/checklist-runs = SEM-ALCANCE-CAMPO mas o campo alcança` + os 2 pares `checklist*.run_create` (`OS·SEM-ALCANCE mas o campo alcança`) |
 | MG14 instantâneo: `POST …/comments` passa a `VISTORIA·07c-b` | T11 | 24 entradas `·07c-b` × as 23 literais |
 | MG15 `registry.set("work_order", …)` no resolvedor de `/attachments` | T13 | `entityTypes()` com 5 entidades |
+| MG16a o `walk` do v2 (`f7334f34`, `census-v2.mts`: só desce em `l.route`/`l.handle.stack`, pula camada terminal e sub-app) no helper | T2, T12 | T12: `N1 (r2)` e `N2 (r2)` vermelhos; T2: os 14 `MIDDLEWARE …` do instantâneo `ENVELHECIDA` (o v2 não os conta) |
+| MG16b o extrator de tipos do v2 (`f7334f34`, `tipos.mts`: `extrairTipos`, regex de forma com ponto), verbatim, no lugar do `analisarTipos` | T8, T12 | T12: `N3a`, `N3b`, `N3c` vermelhos; T8: `naoResolvidos` de template do v2 fora dos 3 aceitos |
+
+### S7 — residual medido (não é mutação do plano; registro, não conserto)
+
+- **MG3b** = MG3 (`express()` com `POST /work-orders/:workOrderId/via-mg3` respondendo 200, montado por `router.use(sub)` no
+  roteador de OS) **mais** a chave nova `MIDDLEWARE /api/v1 · app` inscrita no instantâneo como `MIDDLEWARE` (a única classe que
+  o classificador aceita para chave de middleware) → guard **verde**: `# tests 31 · pass 31 · fail 0`, ec=0 (68 s).
+- Mecanismo, lido no helper: o censo só reconhece sub-app pela interceptação de `express.application.use`; um `express()`
+  montado por `Router.use` vira camada terminal de nome `app` (T1 a força a ser classificada), o `walk` não desce nela, e o T5 só
+  sonda caminhos de montagem `≠ "/"` e `__censo_07c__/x` sob cada montagem — a rota do sub-app nunca é chamada.
+- Não mexi no algoritmo (07c-a.3: "porta, **sem mudar o algoritmo**"). A barreira que resta é a revisão humana do diff do
+  instantâneo (R-a2): a chave `MIDDLEWARE … · app` aparece no diff. Proposta para o orquestrador, com dono a decidir pela junta:
+  `P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL` — sub-app `express()` montado dentro de `Router` não é descido pelo censo v3; inscrito
+  como `MIDDLEWARE`, a escrita dele fica fora do guard.
