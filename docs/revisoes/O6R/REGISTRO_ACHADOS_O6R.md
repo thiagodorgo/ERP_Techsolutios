@@ -629,7 +629,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Crash effect→receipt, duas chamadas concorrentes, dois usuários com mesma chave e mesma chave/payload diferente; exatamente um efeito correto deve persistir.
 
 ### [Ω6R-DAT-002] Saldo de estoque usa check-then-insert sem serialização
-- Status: **fechado** em 2026-09-18 pelo `B-O6R-04a` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
   **A saída decide sob o lock do item.** Toda via que chega a `insertMovement`/`avg_cost` (saída, transferência,
   estorno, baixa e estorno de baixa por fonte — V1–V5) toma `SELECT … FOR UPDATE` na linha
   `inventory_items(tenant_id, id)` **antes** da primeira leitura que decide; saldo da custódia, custo médio e
@@ -665,7 +665,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Vinte retiradas concorrentes e N reversões no PostgreSQL; saldo nunca negativo e exatamente uma compensação por origem.
 
 ### [Ω6R-DAT-003] Fechamento de contagem cíclica pode duplicar ajustes e ficar parcial
-- Status: **fechado** em 2026-09-18 pelo `B-O6R-04a` (PR na autoria; nº e hash no backfill pós-merge — §C3.5).
+- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
   **O fechamento virou máquina de estados com CAS, em unidades por item.** `aberta → fechando → concluida`:
   `beginClose` (sessão `FOR UPDATE` + CAS), uma unidade por item divergente (sessão `FOR UPDATE` → item
   `FOR UPDATE` → ajuste → carimbo, numa transação só) e `finishClose` (total da sessão **inteira** somado no
