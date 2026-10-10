@@ -127,8 +127,8 @@ if (REF) {
 /** Papéis cujo modelo o contrato FIXA — §C7.1-bis, §C7.6, §C2.8. */
 const MODELO_FIXADO = {
   "planejador-mestre": "fable",
-  "porteiro-pos-merge": "fable",
-  "inspetor-de-terreno-da-junta": "fable",
+  "porteiro-pos-merge": "opus",
+  "inspetor-de-terreno-da-junta": "opus",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

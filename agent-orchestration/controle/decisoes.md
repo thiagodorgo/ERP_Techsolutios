@@ -3182,3 +3182,11 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
   (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
   nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).
+
+- **Aplicação da `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` no contrato (2026-10-10)** — o PR de governança que a decisão
+  prescreve (`chore/gov-modelos-topo`): `CLAUDE.md` e `AGENTS.md` (hunks idênticos) ganham a regra no §C7.4 (topo audita e
+  replaneja em toda reprovação de junta), no §C7.6 (tabela topo × nível menor) e no §C7.6-bis (só o planejador fica em
+  `fable`; os gates descem para Opus, e para eles Opus esgotado → PARA); o §C2.8 e o §C7.1-bis deixam de dizer "Fable por
+  contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
+  `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
+  já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
