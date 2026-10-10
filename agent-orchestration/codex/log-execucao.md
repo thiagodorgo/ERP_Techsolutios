@@ -4878,3 +4878,4 @@ bloco mergear.
 - #412 (KPI por marco, pedido do dono) e #411 (B-SAN3-06b) mergeados com revisor independente + CI, pela `D-GOV-PROPORCIONAL` (1).
 - Limpeza autorizada pelo dono (`D-LIMPEZA-2026-10-09`); esteira da API congelada (`D-API-ESTEIRA-CONGELADA`); ordem da noite (`D-ORDEM-NOITE-2026-10-10`).
 - Pendências novas: `P-CI-DOCKER-HUB-LIMITE`, `P-SAN3-06B-TESTES-RESIDUAIS`, `P-CLOUD-BILLING-ORG-SISTEMA`, `P-LINT-RAIZ-SEM-MJS`, `P-KPI-MARCO-2026-10-09-NOTAS`; donos nomeados para `P-SAN3-05-ATO2-CINCO-TAREFAS` e `P-SAN3-05-MENSAGEM-DA-RECUSA` (`B-SAN3-05-ATO2`).
+- Ajustes A-1/A-2/A-3 e notas da revisão do #413 aplicados: o nome do bloco do Ato 2 é do orquestrador; a causa da API cobrar a assinatura foi a herança das `CLAUDE_CODE_*`; o Docker Hub derrubou 3 de 4 tentativas só no head do #405. #411: 1317/1317 no smoke, 49 testes do bloco, 54 arquivos.

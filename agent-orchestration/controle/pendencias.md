@@ -10267,8 +10267,8 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
   nuvem têm cenário próprio no B4; dos 9 restantes, 5 usam banco com o contexto da organização aberto por `withTenantRls`
   — notificações, notificações agendadas, conciliação OS→custódia, avisos de custódia e diárias do pátio); leitura não é
   medição, e a falha seria silenciosa (cada varredura isola a organização em try/catch e só registra aviso).
-- **dono:** `B-SAN3-05-ATO2` (nomeado em 2026-10-10, `D-ORDEM-NOITE-2026-10-10` item 7).
-- **bloqueia:** o Ato 2 e, por ele, QUALQUER deploy de produção — inclusive a ingestão do Traccar; não bloqueia o plano nem o desenvolvimento (errata A-1 do revisor do #410, medida do porteiro do #405; 2026-10-10).
+- **dono:** `B-SAN3-05-ATO2` (nome dado pelo orquestrador em 2026-10-10 ao item 7 da `D-ORDEM-NOITE-2026-10-10`).
+- **bloqueia:** o Ato 2 e, por ele, QUALQUER deploy de produção — inclusive a ingestão do Traccar; não bloqueia o plano (porteiro do #405); o desenvolvimento em dev não depende dele (leitura do orquestrador: a trava só recusa com `NODE_ENV=production`) — errata A-1 do revisor do #410, 2026-10-10.
 - **teste de encerramento:** as 5 tarefas rodam sob `NOSUPERUSER NOBYPASSRLS` e sob o papel atual, mesmo seed, e produzem o
   mesmo efeito, não vazio.
 
@@ -10394,7 +10394,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e não chega ao log — BAIXA
 
-- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** `B-SAN3-05-ATO2` (nomeado em 2026-10-10: o operador do Ato 2 precisa ler a recusa no log; antes: a nomear, candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`.
+- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** `B-SAN3-05-ATO2` (nomeado em 2026-10-10: o operador do Ato 2 precisa ler a recusa no log; antes: a nomear, candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`).
 - O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
 - **bloqueia:** não.
 - **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.
@@ -10478,15 +10478,15 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-CI-DOCKER-HUB-LIMITE (2026-10-09) — o CI baixa Postgres e Redis do Docker Hub sem login e cai por limite — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` — `.github/workflows/ci.yml` (serviços `postgres:16` e `redis:7` puxados anonimamente) · **dono:** `B-CI-ESPELHO-IMAGENS` (pipeline: revisão de segurança, `agente-secops`).
-- Em 2026-10-09 os jobs `backend` e `backend-postgres` falharam em "Initialize containers" com `toomanyrequests` em 3 de 4 tentativas no head do #405 e no head do #411; só a re-execução passou. Nenhum teste chegou a rodar nessas tentativas: o vermelho não diz nada do código e atrasa merge.
+- **status:** ABERTA · **escopo:** `pre-existente` — `.github/workflows/ci.yml` (serviços `postgres:16` e `redis:7` e, no job `docker`, as imagens `node` e `nginx`, todos puxados anonimamente) · **dono:** `B-CI-ESPELHO-IMAGENS` (pipeline: revisão de segurança, `agente-secops`).
+- Em 2026-10-09 os jobs `backend` e `backend-postgres` falharam em "Initialize containers" com `toomanyrequests` em 3 de 4 tentativas no head do #405 (`c16bf9be`, runs com `run_attempt=4`) e em heads intermediários do #411 (`c29a1f8b`, `d73d421c`, `af6f345a`; o head do merge `6e5351e3` passou de primeira); só a re-execução passou. Nenhum teste chegou a rodar nessas tentativas: o vermelho não diz nada do código e atrasa merge.
 - **bloqueia:** não (a re-execução passa), mas custou ~40 min só no #405.
 - **teste de encerramento:** o CI não depende de pull anônimo do Docker Hub (espelho público ou login por segredo do repositório), verde em 3 pushes seguidos.
 
 ## P-SAN3-06B-TESTES-RESIDUAIS (2026-10-10) — lacunas de teste e um rótulo de Saúde deixados pelo B-SAN3-06b — BAIXA
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (revisão e re-revisão do #411, `agent-orchestration/omega/juntas/REVISAO-PR-411.md`) · **dono:** o próximo bloco de frontend da plataforma (candidato `B-SAN3-06a`).
-- (N1) nenhum teste prova moeda diferente de BRL — todos os fixtures são BRL; a mutação "sempre BRL" passa 45/45. (N2) o selo "Organização de sistema" no Detalhe da Organização não tem teste (a mutação passa 52/52). (N3) Saúde: o backend emite `worker.status` `up|starting|stale|not_expected`; `starting` aparece como "Indisponível" com "Sistema pronto", e os fixtures usam `healthy`, que o backend não emite. (N8) o T44 não alcança porta-alias de escrita por `export default {…}` nem por `class` dentro do serviço do Cloud Billing (as duas formas passaram verdes na re-revisão). (Obs. do dev dos ajustes) T34/T35/T37/T43 deixam 5 pastas `san3-06b-*` no temp do sistema a cada `test:smoke` (o dev dos ajustes disse 6; o porteiro do #411 mediu 5).
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (revisão e re-revisão do #411, `agent-orchestration/omega/juntas/REVISAO-PR-411.md`) · **dono:** `B-SAN3-06a`.
+- (N1) nenhum teste prova moeda diferente de BRL — todos os fixtures são BRL; a mutação "sempre BRL" passa 45/45. (N2) o selo "Organização de sistema" no Detalhe da Organização não tem teste (a mutação passa 52/52). (N3) Saúde: o backend emite `worker.status` `up|starting|stale|not_expected`; `starting` aparece como "Indisponível" com "Sistema pronto", e os fixtures usam `healthy`, que o backend não emite. (N8) o T44 não alcança porta-alias de escrita por `export default {…}` nem por `class` dentro do serviço do Cloud Billing (as duas formas passaram verdes na re-revisão). (Obs. do dev dos ajustes) T34/T35/T37/T43 deixam 5 pastas `san3-06b-*` no temp do sistema a cada `test:smoke` (o dev dos ajustes disse 6; o porteiro do #411 mediu 5). (Obs. 2 do dev dos ajustes) o estado de FALHA do Cloud Billing também não tem seletor de mês: não promete troca de mês, e o T17 exige zero dígitos nessa tela.
 - **bloqueia:** não — o Cloud Billing continua só de leitura (0 consumidor de escrita fora do adapter/serviço, medido).
 - **teste de encerramento:** cada item com o teste que fica vermelho sob a mutação da revisão, e `test:smoke` sem resíduo no temp.
 

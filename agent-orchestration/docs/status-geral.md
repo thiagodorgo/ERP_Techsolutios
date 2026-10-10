@@ -5025,7 +5025,7 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 
 ## Estado em 2026-10-10 (madrugada) — registro em dia
 
-- **Mergeados:** #405 B-SAN3-05 (`a9fbe283`; junta 4 APROVADA 3 × 0; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-05/PORTEIRO-405.md`) · #412 KPI por marco (`8a79532f`; revisor APROVADO) · #411 B-SAN3-06b console da plataforma sem ficção (`a2937bad`; revisor APROVADO na re-revisão; porteiro em curso).
+- **Mergeados:** #405 B-SAN3-05 (`a9fbe283`; junta 4 APROVADA 3 × 0; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-05/PORTEIRO-405.md`) · #412 KPI por marco (`8a79532f`; revisor APROVADO) · #411 B-SAN3-06b console da plataforma sem ficção (`a2937bad`; revisor APROVADO na re-revisão; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-06b/PORTEIRO-411.md`; 1317/1317 no smoke, 49 testes do bloco, 54 arquivos).
 - **Em curso:** plano do Traccar no ramo `docs/plano-traccar` (`612d6650`, 7 blocos, B-TRC-01 detalhado) com a crítica r1 no Codex; plano de retomada do #389 (Fable).
 - **Congelados:** esteira da API (`D-API-ESTEIRA-CONGELADA`), Linux (`D-LINUX-CONGELADO`), #393. **Estacionado:** #388.
 - **Ordem do dono:** `D-ORDEM-NOITE-2026-10-10`.
