@@ -3182,3 +3182,37 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
   (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
   nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).
+
+## Registro de 10/10/2026 (noite) — agente Python sobre a API do Claude (B-AGENTE-API)
+
+- **D-AGENTE-CLAUDE-API (2026-10-10)** — o dono pediu um agente em Python sobre a API do Claude, com cerca e
+  autonomia limitada, versionado no repositório. Falas literais: *"vamos criar um agente, um script em python que
+  consiga usar a api do claude e nos ajudar aqui?"* e *"coloque guard rails, faça uma cerca e de mais autonomia a
+  esse agente, não muita, mas que ele consiga ajudar mais sem probabilidades altas de dar merda, pode fazer o
+  agente, coloque ele numa pasta para que possamos usar no repo e no git"*. Antes, o orquestrador condicionou:
+  chave só por variável de ambiente; nada de execução autônoma com escrita; provar qual conta paga.
+  **O que decide:** (1) nasce `scripts/agente-claude-api/` (pacote `agente_claude`, SDK `anthropic==1.13.0` num
+  venv local ignorado), com duas tarefas só-leitura — `revisar-pr <N>` e `investigar "<pergunta>"` — num laço
+  manual de ferramentas, em worktree descartável criado e removido pelo próprio script; (2) **autonomia nível 1**:
+  o agente decide o que ler e o que verificar (lista fechada: `git diff --check`, `sync-agent-agents --check`
+  e `node --test` de arquivo sem `-db`; o `npm run check` saiu na implementação, porque o `prisma generate` exige
+  `DATABASE_URL` — `P-AGENTE-CHECK-SEM-GENERATE`), e **não** conserta, commita, faz push, mergeia nem comenta;
+  (3) a **cerca** é do código, não do modelo: raiz confinada por `realpath` (junction, symlink, 8.3, UNC, `\\?\`,
+  ADS, dispositivos, `.env*`/`*.pem`/`*.key`/`id_*`/`.git`/`node_modules` negados), ferramentas nomeadas com argv
+  montado pelo script e `shell=False`, allowlist de flags, ambiente limpo por allowlist, orçamento (turnos,
+  ferramentas, tokens com cache, US$), redação de segredos em tudo o que sai, auditoria JSONL por execução,
+  `STOP`/Ctrl+C gravando parcial, parecer por ferramenta de schema estrito; (4) **conta e modelo**: a chave vem de
+  `ERP_AGENTE_ANTHROPIC_KEY` (processo ou `HKCU\Environment`), **nunca** de `ANTHROPIC_API_KEY` (com esse nome o
+  próprio Claude Code cobraria os créditos da API no lugar do plano Max); chave de usuário (`sk-ant-usr…`, medida
+  em 2026-10-10: 400 "not scoped to a workspace") exige `ERP_AGENTE_ANTHROPIC_WORKSPACE` e o cabeçalho
+  `anthropic-workspace-id`; sem isso o script para antes de qualquer chamada; modelo `claude-opus-5-5` com esforço
+  explícito (nível menor, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`); `request-id`, rate limit e o modelo que
+  respondeu vão ao parecer como prova de cobrança na conta da API.
+  **O que reabre:** reabre **parcialmente** a `D-API-ESTEIRA-CONGELADA` (2026-10-10) — só para este agente, com
+  esta cerca; o executor autônomo com terminal livre que o classificador barrou ("criar agente inseguro") **não
+  volta**. Se o classificador barrar a construção deste bloco, para-se e o orquestrador relata ao dono; nada de
+  contornar.
+  **Governança:** §C7 item 8(1) — ferramenta de processo: plano em Fable (`docs/revisoes/GOV/B-AGENTE-API-plano.md`),
+  dev em Opus, um revisor independente com olhar de segurança (`agente-secops`, Opus) + CI verde, sem junta; KPI
+  congelado. **Primeiro uso real:** só depois do merge, com a chave do dono, como revisor do PR #416 — o dono gravou
+  `ERP_AGENTE_ANTHROPIC_WORKSPACE` (workspace "erp") em 2026-10-10 ~19:00Z, e `GET /v1/models` respondeu 200 (gratuito).

@@ -10798,3 +10798,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Junto com o T15 do #405 (`P-SAN3-05-T15-TETO-DE-RELOGIO`), é a segunda falha intermitente que derruba o CI de PR que não toca o código dela.
 - **bloqueia:** não; custa re-execução de CI.
 - **teste de encerramento:** o A10 limpa na ordem das FKs (ou por banco próprio), verde em 10 rodadas do `backend-postgres`.
+
+## P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige prisma generate — BAIXA
+
+- **status:** ABERTA · **dono:** dono do projeto · **origem:** `B-AGENTE-API`, passo B9 (`docs/revisoes/GOV/B-AGENTE-API-dev.md`) · **escopo:** `dentro-do-bloco` (a lista fechada de verificações do agente).
+- **medido (2026-10-10):** num worktree descartável em `9b611468`, depois de `npm ci`, `npm run check` sai com código 2 (`@prisma/client` sem `Prisma`/`PrismaClient` nos `*-prisma.repository.ts`); `node node_modules/prisma/build/index.js generate` com o ambiente limpo do agente sai com código 1 (`PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL`). O brief proíbe `DATABASE_URL` no ambiente das verificações.
+- **efeito:** pela regra do plano (§0.7 [H3], §8), `npm_check` saiu da lista fechada do agente neste bloco; `verificar teste` (`node --test` sem `-db`) roda sem generate (`tests/auth-jwt.test.ts`: 6/6).
+- **bloqueia:** não.
+- **teste de encerramento:** uma forma, decidida pelo dono, de gerar o client do Prisma no worktree descartável sem `DATABASE_URL` real, e `npm_check` de volta à lista fechada com teste e mutação.
