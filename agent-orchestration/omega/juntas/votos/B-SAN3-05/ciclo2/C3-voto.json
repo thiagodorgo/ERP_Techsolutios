@@ -1,0 +1,153 @@
+{
+ "jurado": "jurado-san305-c2-ratchet-e-superficie (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C3 — ratchet e superfície: gerador fail-closed, catálogo↔L0 por nome, diferencial por membro FORCE",
+ "mandato_md5": "5dd26ff5911a02b5e7ab2d3ea8e13ea1 · declarado no disparo: 5dd26ff5911a02b5e7ab2d3ea8e13ea1",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO (Fable só em bloco de dinheiro)",
+ "corpo_md5": "ac55ed582c1de928f978ba0affcce53b · lançada como general-purpose; corpo lido do blob 9add8f3b, md5 = declarado",
+ "objeto": "9add8f3b698ebab358f3c8b57f8feedcb0f74e4c (git ls-remote do ramo = gh pr view 405 headRefOid) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · merge-base c8af64580cb85ddf4960fecb2f8604384f8f0328 · cerca do mandato 0925482b3ee40ef27b0404fdb5a8e066ce2b26aa e delta só registro (8 arquivos em votos/B-SAN3-05/{00-mandatos,ciclo2}; 0 em src/tests/scripts/prisma) · objeto no fim: igual · main não mudou src/prisma desde o merge-base (0 arquivos)",
+ "legalidade": "parecer do inspetor da junta 2 que vale: votos/B-SAN3-05/ciclo2/00-inspetor-terreno.md, inspetor-de-terreno-da-junta (Opus declarado), 08:11–08:53Z · LIBERADO COM RESSALVA · confere este nome (C3 jurado-san305-c2-ratchet-e-superficie, item 4.1), este corpo (md5 ac55ed58…, R1), worktree e containers próprios (item 1.2): sim · check-runs 9add8f3b no fim: 7 | 0 | 0 (backend success 10:25:07Z, backend-postgres success 10:20:38Z, docker success) · 0925482b (objeto do inspetor): 7 | 0 | 0 · normas citadas presentes em 9add8f3b e origin/main (CLAUDE.md idêntico): D-GOV-PROPORCIONAL, 'A partir do ciclo 3, só bloqueia', D-JUNTA-ESCOPO-E-CALIBRACAO, D-JUNTA-SEPARACAO-DE-PAPEIS, D-FALLBACK-MODELO-FABLE-OPUS, D-PAUSA-GRAVA-E-PARA, D-MEDIR-NA-REF-ALVO; D-FABLE-ASTRA-SO-DINHEIRO em decisoes.md",
+ "quorum": "unanimidade de 3, com veto (§C7 item 8(1): segurança e permissão) · ciclo 2 de 2 (último em que achado não grave bloqueia, §C7 item 8(2))",
+ "leitura_de_outras_cadeiras": "não abri, não li e não cito nenhum arquivo de outra cadeira desta junta (ciclo2/C1-*, ciclo2/C2-*) antes de gravar este voto; vi apenas o ASSUNTO dos commits a158f4af e 9add8f3b na saída de git log --oneline 0925482b..9add8f3b (o título traz o veredito delas) — declarado na evidência L0 · li do ciclo 1 e da trilha: cabeçalho da ata J-B-SAN3-05.md, o plano (C2.1 B3/B4, C2.3, C2.4, C2.5), DEV-ciclo2-relatorio.md (B3/B4) e o parecer do inspetor da junta 2",
+ "pausa": "nenhuma",
+ "voto": "REPROVADO",
+ "item1": "VERMELHO — 1(a) VERDE (ec 0, stderr 0, OPS(derivados)=17 derivado por recursão incondicional l.128, sem lista embutida; 56 chaves sha1 2db380a2); 1(b) VERDE (56 = congelado; 3 sumidas com prova positiva; 6 novas suspeitas com razão; J11 suspeito; T13 35/35; comparador acusou a chave removida); 1(c) VERDE (C3A 1 · C3B 2 · C3C 1 · C3E 1, vazia 0; M-B3a → not ok 29/30/31; M-B3b → not ok 32 + inventário; M-B3d → gerador ec=2, T13 fail); 1(d) VERMELHO — C3-c2-01: F1/F2/F3 = 0 chave (sha1 = base), controle F3c = 1 chave",
+ "item2": "VERDE no objeto, com ajuste — 2(a): a igualdade (f) não está em teste nenhum do head (só T11g sobre as tabelas da superfície e o T13 'L0 exato' por contagem); 2(b): catálogo 106 = gerador 106 por nome, caixa exata, 0 de um lado só, 106 tabela→model, 0 sem model; controles: +1/−1 nome acusados nos dois sentidos, NO FORCE 106→105→106; 2(c): grafias C3-F2 (qualificada, sem @@map) e controle com chave; M-B3c(i) → not ok 33 (L0 exato); M-B3c(ii) → minha (f) acusa auction_edicts e T13 not ok 33 por contagem; 2(d): minhas grafias IF EXISTS e DO+format somem do L0 (0 chave), controle 1 chave; como migração real na cópia: catálogo 108 × L0 106 e T13 35/35 verde → C3-c2-02 (ajuste), C3-c2-03 (nota), C3-c2-04 (nota)",
+ "item3": "VERMELHO — 3(a): rotas do router em runtime (l.189-211, T11g l.547-570) e jobs do registro (l.268-277) comparados à lista fechada nos dois sentidos; igualdade membros FORCE == chaves registradas em T11e/T11f por papel; chave = literal do registrar (l.302-311); nota por texto (l.583) sem valor de prova; FORA-DA-SUPERFICIE sem conferência de tabela (B-ARNES-2). 3(b): 32 rotas = 32 da lista (11 FORCE), 12 jobs (3 FORCE); 11 rotas e 3 jobs FORCE com cenário não vazio e igual nos dois papéis, inclusive POST cloud-cost-allocations/runs, cloud-charges.calculate e cloud-cost-allocation.run; papel efêmero rolsuper=f rolbypassrls=f lendo 0 de cloud_usage_events sem GUC (admin 5); comparador acusou campo diferente. 3(c): E1 → T11g; M-B4a → T11e; M-B4b → T11e na chave tenants/:tenantId/summary; M-B4c (aggregate-daily cru) → 'resultado vazio'. 3(d): VERMELHO — C3-c2-05: job cloud-charges.calculate sem efeito sob o papel sem bypass (contexto de organização errado) passa superfície 13/13 e T13 35/35; o cenário leu o run da rota (mesmo=true); M-B4c no job de cobrança (cru) também verde na superfície",
+ "justificativa": "Terreno: worktree próprio C:/Users/AMP/w-j05c2c3 detached em 9add8f3b; condutor derivado da receita (diff 224 linhas, md5 4967ef3c…; árvore temporária t-j05c2c3-* com o mesmo prefixo no case de remoção); containers j05c2-c3-net/pg/node sem porta no host; 3742 blobs = objeto e md5sum -c no container; Node 20.20.2, typescript 5.9.3, psql/postgres 16.14; disco 11G no início e no fim; base viva intocada. ITEM 1 (gerador): normal e --all ec=0, stderr 0 bytes, OPS(derivados)=17 derivado por recursão incondicional (l.128) através de 'export namespace Prisma' (114 *Delegate), sem lista embutida (só l.121 'new Set()'); 56 chaves, sha1 2db380a2…; T13 35/35; inventário = congelado (53 − 3 sumidas + 6 novas); as 3 sumidas com prova positiva (todas as 7 instanciações de PrismaCloudUsageRepository e a de PrismaCloudChargeRepository por (tx) estão SOB-CONTEXTO; o envoltório de uso deixou de ser classe injetada); as 6 novas suspeitas com razão (3 relações aninhadas, sonda OPACA da trava, 2 do envoltório de cobrança); J11 continua suspeito; fixtures C3A 1, C3B 2, C3C 1, C3E 1; M-B3a → not ok 29/30/31; M-B3b → not ok 32 + inventário; M-B3d → gerador ec=2 'OPS não derivado (N=0)' e T13 fail; FORMA PRÓPRIA: fábrica genérica / Reflect.construct sobre classe que TAMBÉM tem instanciação reconhecida sob contexto (F1 com PrismaCloudUsageRepository real, F2, F3 autocontida) → 0 chave, sha1 = base; controle F3c (mesmo arquivo sem a instanciação sob contexto) → 1 chave; compila no tsconfig estrito (npm run check ec=0) → C3-c2-01. ITEM 2 (catálogo↔L0): a igualdade (f) não está em teste nenhum do head (só T11g sobre as tabelas da superfície e o T13 'L0 exato' por CONTAGEM); medida por mim: catálogo 106 = gerador 106 por nome, caixa exata, 0 de um lado só, 106 tabela→model, 0 sem model; grafias do C3-F2 (qualificada, sem @@map) e controle com chave; M-B3c(i) → T13 not ok 33 (a (f) real não muda por construção); M-B3c(ii) → minha (f) acusa auction_edicts, T13 not ok 33 por contagem; minha grafia: IF EXISTS e DO+format somem do L0 (0 chave), controle 1; como migração real na cópia: catálogo 108 × L0 106 com T13 35/35 → C3-c2-02 (ajuste), C3-c2-03 (nota); tabela FORCE sem model fica fora do inventário → C3-c2-04 (nota). ITEM 3 (superfície): router em runtime 32 rotas = lista (11 FORCE), registro 12 jobs (3 FORCE), igualdade membros FORCE == chaves registradas por papel (T11e/T11f); 11 rotas e 3 jobs FORCE com corpo/efeito não vazio e igual nos dois papéis no objeto, inclusive POST cloud-cost-allocations/runs, cloud-charges.calculate e cloud-cost-allocation.run; E1 → T11g; M-B4a → T11e; M-B4b → T11e na chave tenants/:tenantId/summary; M-B4c (aggregate-daily cru) → 'resultado vazio'; MINHA FORMA: o job cloud-charges.calculate que, sob o papel sem bypass, sai sem efeito (contexto de organização errado) passa a superfície 13/13 e o T13 35/35 — o cenário dele compara o run criado pela rota POST calculation-runs (sonda: efêmero mesmo=true; base mesmo=false); com leitura crua (M-B4c nesse job) o cenário também fica verde e só o T13 estático pega → C3-c2-05. Vermelhos-controle: item 1 — new direto 1 chave, fixture vazia 0, comparador com chave removida acusou; item 2 — +1/−1 nome acusados nos dois sentidos, NO FORCE 106→105→106, grafia simples com chave; item 3 — E1 vermelho no T11g, corpos fabricados com um campo diferente acusados pela normalizar do blob, papel efêmero rolsuper=f rolbypassrls=f lendo 0 linhas FORCE sem GUC (admin 5), SEM-FORCE com tabela FORCE acusado no T11g. Sem medir: nada do meu mandato; status HTTP por papel é asserido pelo arquivo (não capturado à parte). Limpeza: containers/rede j05c2-c3 removidos (0/0, volume do pg removido), worktree removido (0 processos antes), mutações restauradas com md5 = blob, $SCRATCH só com scripts (391 KB), w-o05 só com os meus 2 arquivos.\nVOTO: REPROVADO — (C3-c2-01) a forma 'classe injetada com UMA instanciação reconhecida sob contexto e OUTRA por fábrica genérica ou Reflect.construct com o client raiz', dentro do alcance, nasce permitida: 0 chave no inventário | escopo: dentro-do-bloco (l.393-394 de scripts/san3-05-acessos-de-plataforma.mjs, 16014c06, 2026-10-08) | classe: não grave | evidência: gerador do blob 9add8f3b por --mutant no container, F1/F2/F3 = 56 chaves e sha1 = base, controle F3c = 57 (1 chave); e (C3-c2-05) o membro FORCE cloud-charges.calculate tem chave, não diferencial próprio: sob o papel sem bypass o job sai sem efeito e a superfície fica 13/13 e o T13 35/35 | escopo: dentro-do-bloco (l.420-443 do arquivo de superfície, 41af41f5, 2026-10-08) | classe: não grave | evidência: mutação D2 na cópia, sonda efêmero mesmo=true, N=1 por variante",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/runtime-role-sem-bypass; gh pr view 405 --json headRefOid,…; gh api …/commits/<sha>/check-runs (início e fim)",
+   "forma": "Windows, git/gh, leitura",
+   "resultado": "9add8f3b nas duas fontes, não andou; check-runs 9add8f3b 7|0|0 no fim; 0925482b 7|0|0"
+  },
+  {
+   "comando": "condutor-up.sh 9add8f3b (derivado da receita-pg16.sh, md5 4967ef3c…; cópia da receita 9861a2aa…)",
+   "forma": "rede j05c2-c3-net sem porta, postgres:16 j05c2-c3-pg (16.14), node j05c2-c3-node (erp-junta-node20-pg16:local, Node 20.20.2), git archive autocrlf=false, 3742 blobs conferidos + md5sum -c; senha só por ambiente",
+   "resultado": "ec=0; npm ci ec=0 (326); prisma generate ec=0; migrate deploy ec=0 (107); typescript 5.9.3"
+  },
+  {
+   "comando": "timeout 300 node scripts/san3-05-acessos-de-plataforma.mjs . [--all]",
+   "forma": "container, blob 9add8f3b (md5 ab8d3f11…)",
+   "resultado": "ec=0 · stderr 0 bytes · OPS(derivados)=17 · ENABLE=106 FORCE=106 acessores 106 · 56 chaves sha1 2db380a2…"
+  },
+  {
+   "comando": "sonda OPS (cópia +1 linha, âncora 'const GENERATED = ' ×1)",
+   "forma": "container; cópia apagada",
+   "resultado": "17 métodos: aggregate,count,create,createMany,createManyAndReturn,delete,deleteMany,findFirst,findFirstOrThrow,findMany,findUnique,findUniqueOrThrow,groupBy,update,updateMany,updateManyAndReturn,upsert"
+  },
+  {
+   "comando": "node comparar.mjs gen.out t13.ts [10]",
+   "forma": "host; t13.ts = blob (hash-object 5211b24f…)",
+   "resultado": "inventário 56 = congelado 56 (53−3+6); controle com a chave #10 removida → acusou"
+  },
+  {
+   "comando": "timeout 900 node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts",
+   "forma": "container, N=1 na base",
+   "resultado": "ec=0 · 35 tests · 35 pass · 0 fail · 0 skip"
+  },
+  {
+   "comando": "run-fixtures.sh (31 fixtures .ts + vazia da C3 por --mutant)",
+   "forma": "container",
+   "resultado": "C3A 1 · C3B 2 · C3C 1 · C3E 1 · Mf_new 1 · vazia 0 (88 chaves)"
+  },
+  {
+   "comando": "run-mut.sh MB3a | MB3b | MB3d",
+   "forma": "container, protocolo restaurável, âncora ×1, node --check, restauro md5 = blob",
+   "resultado": "MB3a: C3A/B/C 0, T13 not ok 29/30/31 · MB3b: C3E 0, T13 not ok 32 + inventário · MB3d: gerador ec=2 'OPS não derivado (N=0)', T13 fail"
+  },
+  {
+   "comando": "medir-formas.sh (F1, F2, F3, F3c, cada uma sozinha por --all --mutant) + npm run check com F1–F3 em src/modules/zz-mut da cópia",
+   "forma": "container",
+   "resultado": "F1 56/0, F2 56/0, F3 56/0 (sha1 = base) · F3c 57/1 · npm run check ec=0, 0 error TS"
+  },
+  {
+   "comando": "sonda L0 (cópia +1 linha, âncora 'const RAW = new Set(' ×1) + psql SELECT relname … relforcerowsecurity",
+   "forma": "container, banco descartável migrado",
+   "resultado": "catálogo 106 = gerador 106 por nome, 0 de um lado só, 106 tabela→model, 0 sem model; controles ±1 nome acusados; NO FORCE 106→105→106"
+  },
+  {
+   "comando": "run-mut.sh MB3ci | MB3cii",
+   "forma": "container",
+   "resultado": "(i): (f) real 106=106 (verde por construção), T13 not ok 33 · (ii): (f) acusa auction_edicts, T13 not ok 33 (contagem), inventário inalterado"
+  },
+  {
+   "comando": "gerador com c2-f2-* e com as grafias da C3 (IF EXISTS, DO+format, controle) por --schema-extra/--migration-extra/--mutant; demo-migracao.sh (migração real só na cópia)",
+   "forma": "container; limpeza conferida (106 FORCE, 107 migrações)",
+   "resultado": "c2-f2: 3 chaves · grafias C3: IF EXISTS e DO+format 0 no L0/0 chave, controle 1 · demo: catálogo 108 × L0 106 e T13 35/35"
+  },
+  {
+   "comando": "node --test tests/san3-05-leituras-de-plataforma-db.test.ts (base) + sonda-lt (cópia com 3 inserções de leitura)",
+   "forma": "container, banco descartável, papel efêmero do arnês",
+   "resultado": "13/13; papel efêmero rolsuper=f rolbypassrls=f, 0 linhas de cloud_usage_events sem GUC (admin 5); 32 rotas = lista; 12 jobs; 11 rotas e 3 jobs FORCE iguais e não vazios"
+  },
+  {
+   "comando": "multi-mut.sh R (E1) | R+E (M-B4a) | B (M-B4b) | C (M-B4c) | D1 | D2 | D3; x-semforce.mjs; sonda-job.mjs",
+   "forma": "container, npm run check ec=0 em cada mutante, restauro md5 = blob",
+   "resultado": "E1 → T11g · M-B4a → T11e · M-B4b → T11e (tenants/:tenantId/summary) · M-B4c aggregate-daily → 'resultado vazio' · D1 → só colateral T12·A14 · D2 → superfície 13/13 e T13 35/35, cenário do job leu o run da rota (mesmo=true) · D3 → superfície 13/13, só T13 pega · SEM-FORCE com tabela FORCE → T11g"
+  },
+  {
+   "comando": "docker rm -f -v j05c2-c3-node j05c2-c3-pg; docker network rm j05c2-c3-net; contagem de processos; git worktree remove --force C:/Users/AMP/w-j05c2c3",
+   "forma": "host",
+   "resultado": "tudo ec=0; containers/redes j05c2-c3 = 0; volume do pg removido; worktree ausente"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C3-c2-01",
+   "defeito": "a forma X, dentro do alcance, nasce permitida: 0 chave no inventário — acesso tipado por Prisma (this.<client>.cloudUsageEvent.findMany) a tabela FORCE numa classe injetada que tem UMA instanciação reconhecida sob contexto e OUTRA por construção que L2 não resolve (fábrica genérica `new Repositorio(prisma)` ou `Reflect.construct(K, [prisma])`) com o client raiz; a instanciação reconhecida suprime o L1 (inst.some) e a não reconhecida não é julgada em L2",
+   "evidencia": "container j05c2-c3-node, gerador do blob 9add8f3b (md5 ab8d3f11…), cada forma sozinha por --all --mutant: F1 (fábrica genérica + PrismaCloudUsageRepository real) total 56 / zz-mut 0 / sha1 2db380a2… = base; F2 (Reflect.construct + classe real) 56 / 0 / = base; F3 (classe nova: new K(tx) sob withTenantRls + construir(K) com prisma raiz) 56 / 0 / = base, e --all mostra o call-site INJETADO e só a instanciação SOB-CONTEXTO; controle F3c (mesmo arquivo sem a instanciação sob contexto) 57 / 1 chave L1 INJETADO. F1/F2/F3 em src/modules/zz-mut da cópia: npm run check ec=0, 0 error TS. Leitura: scripts/san3-05-acessos-de-plataforma.mjs l.393 hasKnownInstantiation = inst.some(...), l.394 SUSPEITO_L1, L2 l.349-374 só NewExpression com ClassDeclaration resolvida. git blame l.393-394 → 16014c06 (2026-10-08, ciclo 2, ramo).",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco (l.393-394 nasceram em 16014c06, 2026-10-08, commit do ciclo 2 neste ramo; gerador nascido em 05d7789f, 2026-10-02, neste bloco)",
+   "classe": "não grave — hoje 0 acesso dessa forma em src (inventário = congelado, 56); a propriedade ausente é do guard (ratchet) que protege a classe 'vazamento entre organizações' contra o próximo membro; no ciclo 2 achado não grave bloqueia (§C7 item 8(2)) e o plano C2.5, reprovação por construção item 4, declara forma permitida dentro do alcance defeito do bloco que bloqueia",
+   "motivo": "a propriedade do plano B3 — construção que o analisador não resolve permanece suspeita — só vale para classe sem outra instanciação reconhecida: o reconhecimento PARCIAL das instanciações de uma classe vira prova positiva de contexto para TODAS ('não reconheci' vira 'não existe' para a segunda instanciação)"
+  },
+  {
+   "id": "C3-c2-02",
+   "defeito": "a igualdade catálogo↔L0 (aceite B3(f): conjunto de nomes, caixa exata, nos dois sentidos) não é executada por teste nenhum do head; o T13 pina CONTAGENS (ENABLE/FORCE/acessores = 109 com extras) e por isso pega membro que o L0 LÊ, mas não pega tabela FORCE do catálogo que o L0 NÃO lê",
+   "evidencia": "git grep relforcerowsecurity 9add8f3b -- tests: só T11g (tabelas nomeadas da superfície) e 2 testes de schema alheios; git grep san3-05-acessos-de-plataforma -- tests: só o T13 (sem banco). Demo na CÓPIA do container (nunca no ramo): migração real 29990101000000_zz_j05c2c3_grafia com ENABLE+FORCE por ALTER TABLE IF EXISTS e por bloco DO com format(%I), prisma migrate deploy ec=0 no banco descartável j05c2-c3-pg → catálogo FORCE 106→108; gerador ec=0, stderr 0, L0 FORCE=106, inventário 56 sha1 = base; minha (f) so_catalogo=[zz_c3_force_do, zz_c3_force_ie]; T13 ec=0 35/35. Com a tabela na grafia simples (controle) o T13 fica vermelho (not ok 33, contagem). M-B3c (ii) (FORCE.delete de auction_edicts) só é pego pelo T13 via contagem pinada; o inventário não muda. Hoje no objeto: 106 = 106 por nome (medido).",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (o aceite (f) e o remédio do C3-F2 são deste ciclo — plano C2.1 B3 'este ciclo transforma essa constatação em critério executável'; o T13 e o gerador nasceram neste bloco: 05d7789f, 2026-10-02)",
+   "classe": "não grave — no objeto a propriedade vale (106 = 106, 0 tabela FORCE sem model); a ausência é de guard para a regressão futura da classe C3-F2",
+   "motivo": "a igualdade catálogo↔L0 por nome é propriedade medida uma vez (relatório do dev, esta junta), não critério executável: o próximo membro FORCE numa grafia que o L0 não lê nasce fora do L0 com a suíte do head verde"
+  },
+  {
+   "id": "C3-c2-03",
+   "defeito": "a grafia Z de tabela FORCE some do L0: ALTER TABLE IF EXISTS <t> ENABLE|FORCE ROW LEVEL SECURITY e EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', t) em bloco DO não são lidas pela regex rlsStatement (l.57); o leitor tipado do model dessas tabelas fica com 0 chave",
+   "evidencia": "gerador com --schema-extra/--migration-extra/--mutant (grafias G1 IF EXISTS, G2 DO+format, G3 controle simples): ENABLE=109 FORCE=107; zz_c3_force_ie no L0 0, zz_c3_force_do no L0 0, zz_c3_force_ctl 1; chaves do leitor: só zzC3ForceCtl.findMany. Nenhuma das 106 migrações do objeto usa essas grafias (git grep: 106 × ALTER TABLE \"T\" FORCE ROW LEVEL SECURITY).",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (regex rlsStatement de 16014c06, 2026-10-08, ciclo 2)",
+   "classe": "não grave",
+   "motivo": "grafias de DDL de RLS escritas à mão que o prisma migrate nunca gera (régua do corpo: nota); o que as torna relevantes é o C3-c2-02 — sem a (f) executável, nada acusa"
+  },
+  {
+   "id": "C3-c2-04",
+   "defeito": "tabela FORCE sem model conhecido não vira chave suspeita: aparece só como divergência de contagem no cabeçalho (FORCE=107 · acessores=106), com inventário inalterado",
+   "evidencia": "--migration-extra com CREATE TABLE zz_c3_sem_model + ENABLE + FORCE (grafia simples), sem model: ec=0, cabeçalho ENABLE=107 FORCE=107 acessores 106, inventário 56 sha1 = base, 0 chave com o nome. No objeto há 0 tabela FORCE sem model (medido em 2(b)). Num repositório real a tabela muda a base e o T13 'L0 exato' (contagem pinada 109) fica vermelho.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (aceite B3(f) deste ciclo: 'tabela FORCE sem model conhecido é suspeita, não ausente')",
+   "classe": "não grave",
+   "motivo": "o aceite diz 'suspeita, não ausente'; o gerador a deixa fora do inventário (só a contagem do cabeçalho a denuncia) — sem acesso tipado possível a tabela sem model, o efeito prático hoje é nulo"
+  },
+  {
+   "id": "C3-c2-05",
+   "defeito": "o cenário registra o efeito de outro membro: o 'diferencial próprio' do job FORCE cloud-charges.calculate (T11f) lê o efeito por source_allocation_run_id + created_at desc — o mesmo critério que casa o run criado, na mesma volta, pela rota POST /cloud-charges/calculation-runs; um job que, sob o papel sem bypass, sai sem efeito passa com o efeito da rota",
+   "evidencia": "container j05c2-c3-node, cópia do objeto 9add8f3b. Base: sonda de leitura no cenário (1 inserção antes de const jobCharges) → super e efêmero leem o PRÓPRIO run (mesmo=false), 13/13. Mutação D2 em src/modules/cloud-charges/cloud-charge.jobs.ts (só na cópia; npm run check ec=0): withTenantRls(prisma, '00000000-0000-0000-0000-000000000000', tx => tx.tenantCloudCostAllocation.count(...)) e return se 0 → tests/san3-05-leituras-de-plataforma-db.test.ts ec=0 13/13; T13 ec=0 35/35; sonda: efemero jobRunLido=6ed82965… = runDaRotaS3=6ed82965… (mesmo=true). Mutação D3 (leitura CRUA prisma.tenantCloudCostAllocation.count + return se 0): superfície ec=0 13/13 (o cenário do job não fica vermelho); só o T13 estático pega (chave CRU nova). Restauro f980383a… = blob. Linhas do cenário (l.420-443) de 41af41f5, 2026-10-08, ciclo 2.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco (cenário l.420-443 do arquivo de superfície nasceu em 41af41f5, 2026-10-08, ciclo 2 neste ramo; o arquivo nasceu em 4cb522dd, 2026-10-02, neste bloco; a semântica de contexto DENTRO da superfície dinâmica não é residual — C2.5 item 3 só exclui a de FORA)",
+   "classe": "não grave — hoje o job faz o certo (lê o próprio run nos dois papéis; 3 jobs e 11 rotas iguais e não vazios); a propriedade ausente é do guard dinâmico de um membro de cobrança (dinheiro): a regressão 'sob o papel de runtime o job de cobrança não cobra' passa verde",
+   "motivo": "o membro FORCE cloud-charges.calculate tem cenário com chave própria, não diferencial próprio: o efeito comparado não é identificado como produzido pela execução do job (forma 3 do corpo: cenário que satisfaz o teste com o efeito de outro membro; C3-F3 nos jobs). M-B4c aplicado a esse job (leitura crua que o deixa sem efeito) não fica vermelho no cenário do job"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "M-B3c (i) sobre o catálogo REAL não pode deixar a minha (f) vermelha por construção: as 106 migrações do objeto usam uma única grafia (ALTER TABLE \"t\" FORCE …), que a regex do ciclo 1 também lê; o vermelho de (i) só aparece nas fixtures do C3-F2 (T13 not ok 33). Declarado: não é achado contra o objeto.",
+  "Status HTTP por papel em 3(b) não foi capturado separadamente por mim: o arquivo de superfície assere 200 (GET) e 201 (POST) em cada papel e a sonda rodou 13/13; publico o tamanho e a igualdade por membro.",
+  "Os horários que escrevi em parte da evidência eram estimativas erradas e foram corrigidos na seção CORREÇÃO DE HORA (achado contra a minha própria evidência, sem efeito nos resultados)."
+ ],
+ "pendencias_que_aceito": [
+  "C3-c2-02 (ajuste) e C3-c2-03/C3-c2-04 (nota) viram pendência com dono no bloco se não forem tratados no conserto do ciclo: a igualdade catálogo↔L0 por nome executável; grafias IF EXISTS/DO+format; tabela FORCE sem model fora do inventário.",
+  "Os 9 jobs FORA-DA-SUPERFICIE (B-ARNES-2): a etiqueta FORA não é conferida contra tabelas — reprovação por construção cobrar (C2.5 item 2); registro, não voto.",
+  "Itens da C1 (B7, B10, B14, T15, D4) e da C2 (canário, guarda estrutural, N=10, N=3, escopo, integração, suíte inteira): não medi; são das outras cadeiras.",
+  "R4 do inspetor (integração da main depois do voto): não é objeto meu; medi que a main não mudou src/prisma desde o merge-base (0 arquivos)."
+ ],
+ "teardown": "containers j05c2-c3-node e j05c2-c3-pg removidos por docker rm -f -v (ec=0; volume anônimo 6fe2d682… do pg conferido removido) e rede j05c2-c3-net removida (ec=0); contagem j05c2-c3- containers 0 / redes 0 · árvores /c/Users/AMP/t-j05c2c3-* = 0 · processos vivos com w-j05c2c3 = 0 antes da remoção · worktree C:/Users/AMP/w-j05c2c3 removido por git worktree remove --force (ec=0; ausente do git worktree list e do disco) · mutações restauradas com md5 = blob no container (7 arquivos conferidos) · fixtures e sondas zz-j05c2c3-* removidas do container (tests/zz-*, scripts/zz-*, src/modules/zz-mut = 0; tabelas zz_c3_* e a linha de _prisma_migrations removidas do meu banco antes do teardown) · $SCRATCH: saídas grandes apagadas, ficam só scripts/fixtures (391 KB), nenhum segredo · base viva (erp-postgres/erp-redis/erp-postgres-alt) nunca tocada · w-o05 só com os meus dois arquivos de saída · resíduo ALHEIO (volumes órfãos, worktrees de pré-voo) apenas reportado pelo inspetor, não tocado"
+}

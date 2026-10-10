@@ -2942,125 +2942,185 @@ outra coisa senão 0. Os três já eram ignorados na base, e pelo ignore **globa
 suplente. **Não é perda** — a branch `43557a17` (#388) tem os **dois** espelhos completos, conferido por
 `git ls-tree`. É lacuna do **disco** de `demo/investidor`, mais uma instância de
 `P-GOV-CAMINHO-REPO-SESSAO`, e some quando o #388 mergear.
-## 2026-09-25 — B-O6R-04a (PR na autoria; autoria em 2026-09-18, REDATADA no pré-merge) — o estoque não fica negativo e a contagem fecha uma vez só
 
-Fecha os **dois P0 de estoque** do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020` absorvida.
+## 2026-09-28 — B-GOV-SEM-TETO (PR #394, na autoria) — o teto de ciclos cai; no ciclo 3 audita-se a máquina
 
-**Ω6R-DAT-002.** A saída lia o saldo, decidia e escrevia **sem lock**: medido no head-base, 20 saídas
-concorrentes de 1 sobre saldo 10 eram **todas** aceitas (saldo −10). Agora toda via que chega a
-`insertMovement`/`avg_cost` — saída, transferência, estorno, baixa e estorno de baixa por fonte — trava a linha
-do item `FOR UPDATE` **antes** da primeira leitura que decide, e o lock é **tipo**: só `lockItemForUpdate`
-produz o token `ItemWriteLock` que a escrita exige; as leituras sem lock que decidiam deixaram de existir.
-Estorno duplo → **uma** compensação, e no banco um índice único parcial por original.
-
-**Ω6R-DAT-003.** Dois fechamentos concorrentes da mesma contagem aplicavam o ajuste duas vezes. Agora o
-fechamento é `aberta → fechando → concluida` com CAS, **uma unidade por item** (cabe no timeout para qualquer
-tamanho de contagem), **exatamente um 200**, nenhum estado sem saída (falha sem ajuste aplicado devolve a sessão
-a `aberta`; com ajuste, recontar as pendentes e retomar) e o total da sessão **inteira** no 200 e na auditoria.
-Recontar e cancelar decidem sob o lock da sessão; abrir contagem recusa item que já está em outra contagem aberta.
-
-**A migration nunca deduplica.** `20260873000000_add_stock_movements_unique_backstops` cria dois índices únicos
-parciais e aborta com a **contagem real** de grupos duplicados de legado; o censo em staging e produção é **ato do
-dono antes do próximo deploy** (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
-
-**Números, por execução real.** `backend_tests` **2995/2997 → 3049/3051** (+54: T-A 16, T-B 20, T-C 7, T-C′ 2,
-T-D 9), forma canônica 3 (banco descartável recriado, `DATABASE_URL` exportada, `CORE_SAAS_PERSISTENCE` não
-exportado), `ec=0`, os 2 pulos são os do orçamento RBAC. As 4 suítes `-db` do bloco: **45/45 em 3 execuções**
-com o banco recriado antes de cada, a 3ª em paralelo. As 7 suítes de estoque em memória: **67/67**.
-Vermelho-controle **executado** no head-base (`cc696f93`): T-A 3/16, T-B 6/20, T-C 1/7, T-C′ 0/2, T-D 2/9 — cada
-vermelho lido do TAP com o motivo. 16 mutações dos guards, todas vermelhas e revertidas.
-`blocks_completed` 163 → 164. `flutter_tests` e `frontend_smoke_tests` **carregados** com marcador (§C3.3): o PR
-não toca `mobile/` nem `frontend/`. `mvp_demo`/`mvp_vendavel` intocados (§C3.4).
-
-## 2026-09-25 — B-O6R-04a CICLO 2 (o último, mesmo PR #389; autoria em 2026-09-20, REDATADA no pré-merge) — os guards deixam de ser lista e viram propriedade; o censo do deploy nunca mais conta cego
-
-A junta do ciclo 1 **REPROVOU 1 × 2** com 5 bloqueios. `D-TETO-DOIS-CICLOS`: este é o **último** ciclo. A lição
-que atravessa os cinco é a mesma, pela terceira vez na rodada — *correção por INSTÂNCIA, não pela PROPRIEDADE*:
-cada guarda estava escrita como **lista** (de nomes, de grafias, de status) e cada lista tinha um lado de fora.
-
-**C1-F1 — o portão do deploy enumerava um universo vazio em silêncio.** Com 17 grupos duplicados na tabela e um
-papel `NOSUPERUSER NOBYPASSRLS` (o papel da aplicação), o censo respondia `0|0`, o bloco `DO` ficava mudo e o
-`migrate deploy` saía com `23505` cru — fail-open no último portão antes do dado de produção. O conserto é o
-interruptor do próprio Postgres: `row_security = off` faz o motor **RECUSAR** (`42501`) toda consulta a que uma
-política se aplicaria, em vez de filtrar. Ou o papel enxerga TODAS as linhas, ou a migração **aborta** com
-*“censo CEGO sob o papel…”* — **nunca “0 grupos”**. Consequência **declarada**: na topologia “quem migra é quem
-serve”, esta migration só aplica depois de um ato do dono sobre o papel. É caro, e é o preço de não contar cego.
-
-**C2-01 e C2-02 — o guard de via de escrita era texto.** O D1 enumerava **grafias** de `stockMovement.<m>(` depois
-de um `stripComments` caseiro (um *regex literal* no fonte abria “comentário” e apagava o escritor seguinte); o D2
-classificava “leitura que decide” por **lista de nomes**. Agora o T-D monta um `ts.createProgram` sobre as 785
-raízes e pergunta ao **checker**: escritor é membro não-leitor de um receptor cujo TIPO é `StockMovementDelegate`
-(alias, `?.`, `["stockMovement"]`, cadeia em N linhas — dá no mesmo), escrita **aninhada** é reconhecida pelo
-**tipo do input** (`^StockMovement\w*(Create|Update|Upsert|Delete)`), SQL cru é lido no **template inteiro** e
-tabela interpolada = **negar**. Comentário não é nó: o escape do regex literal morreu com o `stripComments`.
-
-**C2-03 — status não classificado liberava o item.** `cycle_counts.status` é TEXT sem CHECK; uma sessão `suspensa`
-semeada segurava **0** itens porque a I9 perguntava `IN ('aberta','fechando')`. Agora a classificação é **uma**
-(`CYCLE_COUNT_STATUS_KIND` com `satisfies`): membro novo da enumeração sem classificação **quebra o build**
-(`TS1360`), e os dois lados fechados nascem da mesma tabela — o desconhecido **segura** o item e **recusa** escrita.
-
-**C2-04 — qualquer violação de unicidade virava “já estornado”.** Com um índice único alheio sobre
-`stock_movements`, `removeExitForSource` devolvia `undefined` — **sucesso silencioso sem estorno nenhum**: saldo 7
-onde devia ser 10 e o consumidor seguindo em frente. Agora a classificação é pela **identidade do índice** (as
-colunas que o driver expõe; ou o **nome** da restrição, no caminho em que a escrita esperou na tupla concorrente e
-o erro chega sem colunas — medido nas duas formas), pinada ao catálogo pelo caso **C9**. Índice não classificado:
-**propaga**. Nunca 2xx sobre estorno que não aconteceu.
-
-**C2-05 e C2-06 — contados por método, não por transação / só na classe dona.** O lock agora é contado por
-**transação** (chamada em laço conta 99; callback de `uow.run` aceita no máximo uma escrita de item) e o guard de
-contagem cíclica varre **todo** `src/`, não só o repositório dono.
-
-**Mudança de código além dos guards:** nada lido antes do lock sobrevive a ele — V3 e V5 relêem sob o lock
-(`findMovementByIdLocked`, novo). A leitura pré-lock só escolhe **qual item travar**.
-
-### Números, por execução real (2026-09-20, dev do ciclo 2, 2ª instância)
+### Resultado
 
 | KPI | Valor |
 |-----|-------|
-| `backend_tests` | **3049/3051 → 3058/3060** (+9: B18, B18m, C9, C6′, C7′, C8′, C10′, D1′, D2′). Forma canônica 3, cluster descartável próprio, `ec=0`, 288 arquivos, os 2 pulos são os do orçamento |
-| Suítes `-db` do bloco | **45 → 52** (16 + 22 + 8 + 6) — os 45 do ciclo 1 seguem **verdes** |
-| T-D (guards) | **9 → 11** casos, 17,3 s (orçamento declarado 60 s) |
-| Estoque em memória | **67/67** — inalterado |
-| Consumidores (`fuel-logs`, `maintenance-order-items`, `fleet-alerts-notifications`, `fuel-logs-routes`) | **64/64** — inalterado |
-| `blocks_completed` | **164 — INTOCADO**: é o MESMO bloco, o ciclo 2 é correção dentro do PR #389 |
-| `flutter_tests` / `frontend_smoke_tests` | **carregados** com marcador (§C3.3) — o ciclo 2 não toca `mobile/` nem `frontend/` |
-| `mvp_demo` / `mvp_vendavel` | **intocados** (§C3.4) |
+| Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) |
+| Blocos Entregues | **167 → 168** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`fc3363e3`, #392 = 167). O #393 publica 168 no ramo dele: quem mergear depois **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos blocos, não o produto |
+| pr / merge_commit / approved_head | `394` / `null` / `null` **na autoria** (§C3.5) |
 
-**Defeito do próprio ciclo 2, achado e corrigido na autoria — registrado porque a lição é do processo.** O primeiro
-`npm test` completo veio com **1 fail**: os papéis efêmeros que os casos novos do drill exigem faziam `ALTER ROLE`
-**fora** do `withRoleCatalogLock`, e o *ratchet de catálogo* do arnês (`tests/db-catalog-write-guard.test.ts`, do
-`B-O6R-ARNES` #359) reprovou — exatamente como foi desenhado para fazer. O `ALTER ROLE` entrou no lock (catálogo de
-cluster é compartilhado por todo o lote paralelo) e o arquivo foi registrado na allowlist congelada com a
-**composição escrita** (ALTER ROLE 2 · GRANT 1 · OWNER TO 1). O plano do ciclo 2 previu o papel efêmero e o helper
-do arnês; **não previu o ratchet**, que nasceu depois, noutro bloco. Um guard de outro bloco pegou o descuido deste.
+**O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-09-27
+(`D-SEM-TETO-AUDITORIA-NO-3`): **cai o teto de dois ciclos** de reprovação; se o ciclo 3 reprovar, **audita-se a
+orquestração e a junta** antes do ciclo 4, e **continua-se**. O texto de 27/09 foi escrito pelo orquestrador; o
+plano do bloco o mediu incompleto e a **emenda** (desenvolvedor de identidade nova — quem escreveu não emenda o
+próprio texto, §C7.4-bis) fez três coisas:
 
-`merge_commit` / `approved_head` **null na autoria** (§C3.5) — backfill pós-merge.
+1. **Alinhou as regras vivas que contradiziam a decisão** — o §C7.7 e a cauda do item 4 nos dois contratos, o
+   §C7.1-bis (que exigia "crítico + PD nos ciclos ≥3", protocolo do teto de 5), o item 2.2 do
+   `inspetor-de-terreno-da-junta` (o mesmo insumo, que **bloquearia por construção a junta 3 do #393**), o lado
+   Codex (`.agents/agents/README.md`) e o protocolo de junta resiliente.
+2. **Deu ao gatilho as peças mínimas para operar**, com maquinaria que já existe, cada uma declarada como
+   elaboração do transcritor (T-21…T-25 em `decisoes.md`): o inspetor passa a travar a junta do ciclo 4 sem o
+   parecer da auditoria; o parecer tem caminho `R-*` e veredito **máquina sã / defeituosa**; a pergunta (d) deixa
+   de citar ferramenta que só existe no #393; o disparo fica sem ambiguidade; o conserto fica registrado.
+3. **Nomeou com dono o que não desenhou**: `P-GOV-CICLOS-CORPOS-ORFAOS` (5 regras pré-existentes, em 4 corpos
+   e no `EXECUTION_MODEL.md`) e `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` (5 perguntas do mecanismo).
 
-### PRÉ-MERGE / REBASE (2026-09-25) — os números foram REEXECUTADOS, nunca somados
+**Espelho:** `CLAUDE.md` × `AGENTS.md` com hunks idênticos e md5 EOL-neutro igual nas três regiões tocadas;
+`sync-agent-agents.mjs --check` verde.
 
-O ramo foi **rebaseado sobre `origin/main@fc3363e3`** (o #387, #390, #391 e #392 mergearam depois da autoria) e
-as duas entradas acima foram **redatadas para 2026-09-25**, a data da medição — as datas de autoria (2026-09-18 e
-2026-09-20) ficam registradas no próprio cabeçalho, e nada foi apagado.
+**Backfill §C3.5 do #392, pago por este PR** (o primeiro a mergear depois dele), na entrada do #392 do
+`kpis-history.json`: `pr 392` · `merge_commit fc3363e38aabd77f54e6b53034128182f8000571` (de
+`gh pr view 392 --json mergeCommit`) · `approved_head 7822deaf9afabd076d1095eaf48a6dfb635e5401` — **lido da ata**
+`J-B-SAN3-00.md:3`, não de `gh pr view` (o head do PR no merge era `5cfcd7d3…`).
 
-| KPI | Autoria (base `02bd7dab`) | Pré-merge (base `fc3363e3`) | Como |
-|-----|---------------------------|------------------------------|------|
-| `backend_tests` | 3049/3051 → 3058/3060 | **3115/3117** | reexecutado, N=2 completas, denominador 3117 nas duas, `fail 0 · skipped 2`, 292 arquivos, 335 s, ec=0 |
-| `frontend_smoke_tests` | 1126 | **1202** | CARREGADO do último oficial da `main` — `git diff --name-only fc3363e3 HEAD -- frontend mobile` = **0 arquivos** |
-| `flutter_tests` | 864 | **864** | CARREGADO (§C3.3) — trilha não reexecutada, e está dito |
-| `blocks_completed` | 164 | **168** | recontado a partir do **167** que a `main` publica em `fc3363e3` |
-| `mvp_demo` / `mvp_vendavel` | 99 / 88 | **99 / 88** | INTOCADOS (§C3.4) — o rebase não move escopo de produto |
+## 2026-10-01 — B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho
 
-**Forma da medição:** worktree `.claude/worktrees/b04a`; Postgres `dev-b04a-rebase-pg` (postgres:16, 127.0.0.1:57411)
-e Redis `dev-b04a-rebase-redis` (redis:7-alpine, 127.0.0.1:57412) **descartáveis próprios** — a base viva
-`erp-postgres`/`erp-redis` **não recebeu um comando**; banco `erp_b04a_rebase` derrubado e recriado antes da medição
-(`DROP DATABASE ... WITH (FORCE)` + `CREATE DATABASE` + `prisma migrate deploy`, 108 migrations) e `FLUSHALL` no Redis;
-`DATABASE_URL`/`REDIS_URL` exportadas, `CORE_SAAS_PERSISTENCE` não exportada; node v20.19.5.
+### Resultado
 
-**A 1ª das 2 execuções veio com `fail 2`, e os 2 vermelhos eram os guards do próprio painel** — a cópia congelada
-divergia do `kpis-latest.json` e o acumulado ainda trazia o 164 da autoria, porque o KPI ainda estava no meio do
-rebase. **Não foi intermitência: foi o guard funcionando.** Depois da recontagem, `fail 0`.
+| KPI | Valor |
+|-----|-------|
+| Backend / Smoke / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 1202/1202, 864/864. O PR **não toca código nem teste**: o diff não traz arquivo de `src/`, `tests/`, `frontend/`, `mobile/`, `prisma/`, `scripts/` nem `.github/`. Os três números são os últimos oficiais, publicados pelo `B-SAN3-00` (#392) e carregados pelo `B-GOV-SEM-TETO` (#394) |
+| Blocos Entregues | **168 → 169** — +1 bloco de governança, contado a partir do valor publicado na `origin/main` (`5b6e1036`, #396; o último PR que contou bloco foi o #394 = 168). O #393 também publica bloco no ramo dele: quem mergear depois **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): o bloco não move escopo de produto — muda a regra de execução dos agentes, não o produto |
+| pr / merge_commit / approved_head | `397` / `513937b0…` / `67c2c280…` — backfill §C3.5 pago pelo #398 |
 
-**O CÓDIGO JULGADO NÃO MUDOU**, provado nas duas direções sobre `src tests prisma frontend mobile scripts`:
-`git diff 02bd7dab 738ff531` × `git diff fc3363e3 HEAD` = 6468 linhas cada, `cmp` idêntico (md5
-`4508831fa7639e220659549e13ddd7cf`); e `git diff 738ff531 HEAD` × `git diff 02bd7dab fc3363e3` = 5671 linhas cada,
-`cmp` idêntico. `merge_commit` / `approved_head` seguem **null** na autoria (§C3.5).
+**O que o bloco entrega.** Transcreve para o contrato de execução a decisão do dono de 2026-10-01
+(`D-PAUSA-GRAVA-E-PARA`): **sob ordem de pausa do dono, o agente grava o estado e para sozinho** — a norma **P7**
+do protocolo de junta resiliente. O texto foi escrito pelo orquestrador; o plano do bloco o mediu (17 elaborações,
+7 achados dentro do bloco) e a **emenda** (desenvolvedor de identidade nova — quem escreveu não emenda o próprio
+texto, §C7.4-bis) implementou a propriedade de cada achado:
+
+1. **O protocolo passa a se descrever inteiro** — a abertura do item 7 diz *P1–P7* e *sete normas* (S-01); o escopo
+   declarado, nos dois contratos e na fonte, cobre todo agente vivo e a pausa, não só junta, inspeção, porteiro e a
+   morte (S-02); o lado Codex (`.agents/agents/README.md`) ganha a P7 (S-03).
+2. **Toda peça que a P7 nomeia tem destino na ref** — a seção `## PAUSA` vai para o `<cadeira>-evidencia.md` do P1
+   ou, para quem não tem um, para o arquivo de saída que o mandato nomeia (S-04); o roteiro de retomada vai para
+   uma seção `## PAUSA` de `agent-orchestration/docs/status-geral.md`, que o §A4 manda ler antes de cada bloco — o
+   "custo/trilha" do texto de origem não existia na ref (S-05).
+3. **Vocabulário e listas coerentes** — a lista de jobs sem modelo é a da fonte nos três textos (S-07); "pare" sai
+   dos exemplos de ordem de pausa e uma frase separa pausa de **parada** (§C7.5, §C7.6-bis) (S-11).
+
+Cada frase nova está declarada como **elaboração do dev** (T-18…T-24) num parágrafo datado da entrada
+`D-PAUSA-GRAVA-E-PARA` de `decisoes.md`; o parágrafo *Decisão.* do orquestrador fica como foi transcrito. Pendências
+abertas com dono: `P-GOV-OBITUARIO-SEMTETO` (pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10); índice pelo
+gerador.
+
+**Espelho:** `CLAUDE.md` × `AGENTS.md` com hunks idênticos e o item 7 inteiro com md5 EOL-neutro igual; modelo de
+mandato idêntico nos três textos.
+
+**Backfill §C3.5: nenhum devido** — a entrada do #394 já tem `merge_commit b3f0af5f…` e `approved_head 7ad08690…`,
+pagos pelo #395.
+
+## 2026-10-02 — B-SAN3-01b (PR #402) — a web não fabrica dado: a guarda vale por alcance e pelo estado da página
+
+### Resultado
+
+| KPI | Valor |
+|-----|-------|
+| Smoke (frontend) | **1214/1214** — EXECUÇÃO REAL no head do PR (`npm --prefix frontend run test:smoke`, Node 22.22.0 e Node 20.20.0): 1202 → 1214 = **+13** (`tests/work-orders-page-live.test.tsx`, novo) **+1** (`[G1b]`) **−2** (`[W1]`/`[W2]` movidos para o arquivo vivo, por comportamento). Bloco: **79/79** (13 + 66) |
+| Backend / Flutter | **CARREGADOS, sem reexecução** (§C3.3) — 3052/3054, 864/864. Este PR **não toca `src/`, `tests/` da raiz nem `mobile/`** (`git diff --name-only origin/main...HEAD -- src tests mobile prisma` → vazio); últimos valores oficiais publicados pelo `B-SAN3-00` (#392) |
+| Blocos Entregues | **169 → 170** — +1 bloco de guarda do gate SAN3, contado a partir do valor publicado na `origin/main` (`4ab9d232`, #398; o último PR que contou bloco foi o #397 = 169). Se outro PR mergear antes, **reconta** no pré-merge |
+| mvp_demo / mvp_vendável | **INTOCADOS** (§C3.4): bloco de guarda — não move escopo; o item 4 do §4.1 já estava fechado pelo `B-SAN3-01` |
+| pr / merge_commit / approved_head | `402` / `3e40a256…` / `cdf370dc…` — backfill §C3.5 pago pelo #403 |
+
+**O que o bloco entrega** (decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`; plano `docs/revisoes/SAN3/B-SAN3-01b-plano.md`;
+relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`):
+
+1. **Página amarrada ao estado** — `frontend/tests/work-orders-page-live.test.tsx` monta a `WorkOrdersPage` REAL com o hook REAL rodando
+   efeitos (`useEffect → refresh → service → nextListState → setState`) sobre um **DOM mínimo escrito no próprio teste** (o projeto não tem
+   biblioteca de DOM; zero dependência nova), com os BYTES do backend na borda (`fetch`): 403 → `forbidden` e KPIs "—"; 500 → `error` com
+   `role="alert"` e o texto do service; 200 vazio → `empty` embutido com a busca; 200×3 → 3 linhas, KPIs das linhas e paginador; pendente →
+   esqueletos; 403 em 2º plano → a lista SAI, sem faixa. `N-PG-PAINEL` e `N-PG-KPI` ficam vermelhas.
+2. **Fiação dos hooks por comportamento** — `[W1]`/`[W2]` deixam de ser regex: 3 OS (ou a OS do detalhe) na tela, 500 no tick capturado
+   do auto-refresh → `data-state="stale"` com o dado mantido. `N-W1TXT`/`N-W2TXT` ficam vermelhas **sem tocar nenhum hook**.
+3. **Guard por alcance de verdade** — `[G1]` resolve re-export em **profundidade arbitrária** (barrel de N níveis, re-export local,
+   `default`, namespace, `import()`), varre o **fecho** de import das raízes e o arquivo de fronteira `useServiceQuoteReferences.ts`, com
+   denominadores (81 raízes, fecho 48, 20 referências guardadas, sítio sabido); `[G1b]` pega **entidade fabricada inline**
+   (`id`/`code` constante em `catch`/`.catch(`/`??`/`||`; 19 literais legítimos vistos, 0 com identidade); `[G2]` 29 formas virtuais;
+   `[G3]` em disco. `N-BARREL2`, `N-BARREL3`, `N-LITERAL`, `N-FORA-RAIZ` ficam vermelhas. Os cabeçalhos dos três arquivos dizem o que o
+   guard prova **e o que não prova** (só comentário).
+4. **Gate do botão** — "Nova OS" do cabeçalho só com `work_orders:create` (a régua de `POST /work-orders`), reusando o `canCreate` do CTA;
+   provado papel a papel com os **13 papéis** de `ROLE_PERMISSIONS` executado. Vermelho-controle no head-base: **7 papéis** viam o botão
+   (`technician, viewer, finance, inventory, field_technician, auditor, support`).
+
+**Pendências:** fecha `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES`,
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`, `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO`; abre com dono `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`
+(MÉDIA, `pre-existente`, `B-SAN3-10`), `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` (BAIXA, fila pós-gate) e
+`P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
+
+**Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
+
+## 2026-10-09 — KPI-MARCO-2026-10-09 (PR na autoria) — consolidação por marco: quatro entregas desde 02/10
+
+**Por que existe este registro.** O KPI está **congelado** desde 2026-10-04 (`D-GOV-PROPORCIONAL` (5), CLAUDE.md §C7 item
+8(5)): PR de bloco não atualiza `Kpis/*`, e a consolidação é por **marco**, num PR próprio, quando o dono pedir. O dono
+pediu em 2026-10-09 ("atualize kpis"). **O KPI segue congelado para os PRs de bloco.**
+
+**Forma.** O history ganha **uma entrada por entrega** (#401, #400, #409, #405), cada uma com os números da CI no
+**próprio merge commit** — e não uma entrada só para o marco. O gráfico "Entregas por rodada" conta registros, e um
+registro para quatro entregas é exatamente a distorção que o painel corta em 19/07 ("1 registro para 21 entregas"); uma
+entrada com versão `KPI-*` ainda cairia na barra "Correções". O `kpis-latest.json` descreve o marco (`version`
+`KPI-MARCO-2026-10-09`, `pr`/`merge_commit`/`approved_head` `null` na autoria).
+
+### Resultado (head da `origin/main` `a9fbe283`, CI run 37996854560, push, tentativa 1, 7/7 jobs `success`)
+
+| KPI | Antes (snapshot 2026-10-02, #402) | Depois | Fonte |
+|-----|-----|-----|-----|
+| Backend | 3052/3054 | **3171/3173** | job `backend` 114045007650, `npm test`: `# tests 3173 # pass 3171 # fail 0 # skipped 2`; runner `293 arquivo(s)` |
+| Console web (smoke) | 1214/1214 | **1268/1268** | job `frontend` 114045007712, `npm --prefix frontend run test:smoke` (Node 20.20.2): `# tests 1268 # pass 1268 # fail 0` |
+| App de campo | 864/864 (carregado) | **864/864 (medido)** | job `flutter` 114045007615, `flutter test --reporter compact` (Flutter 3.47.5): `+864: All tests passed!` |
+| Blocos entregues | 170 | **174** | +4 entregas de bloco (tabela abaixo) |
+| Contratos focados / módulos do app / contratos app↔servidor / contratos do núcleo | 34/34 · 17/17 · 18/18 · 21/21 | **CARREGADOS** com nota deste PR (§C3.3) | a CI não publica essas métricas em separado |
+| mvp_demo / mvp_vendável | 99% / 88% | **INTOCADOS** (§C3.4) | ver abaixo |
+
+Fora da métrica, para registro: o job `backend-postgres` (rotas contra PostgreSQL) deu **263/263** nas quatro runs.
+
+### As quatro entregas (uma entrada cada no `kpis-history.json`)
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-04 | `B-SAN3-11` — o dossiê rotula a vistoria substituída | #401 | `749a5cf8` | `dc63ff66` (revisor, ciclo 3) | 3052/3054 | 1242/1242 (+28) | 864/864 | 171 | 37251641822 |
+| 2026-10-08 | `B-SAN3-09` — caminho versionado para o 1º admin de plataforma | #400 | `026ff7b8` | `cc01c9c4` (junta 2) | 3090/3092 (+38) | 1242/1242 | 864/864 | 172 | 37841486912 |
+| 2026-10-08 | `B-OS-FILTRAR-EXPORTAR` — Filtrar e Exportar na lista de OS | #409 | `fea93281` | `585d178a` (revisor) | 3090/3092 | 1268/1268 (+26) | 864/864 | 173 | 37847916306 |
+| 2026-10-09 | `B-SAN3-05` — o papel de runtime não contorna o RLS | #405 | `a9fbe283` | `84831ad9` (junta 4) | 3171/3173 (+81) | 1268/1268 | 864/864 | 174 | 37996854560 |
+
+Cada delta é a diferença entre as runs de dois merges seguidos (entre eles só mergeou registro, sem teste). Arquivos de
+teste novos de cada PR: #401 `frontend/tests/patios-dossie-versao.smoke.test.tsx` (novo);
+#400 `tests/san3-09-bootstrap-platform-admin{,-db}.test.ts` (2 novos); #409 `frontend/tests/work-orders-list-tools.test.ts`
+(novo) e casos em 2 suítes da lista; #405 4 arquivos `tests/san3-05-*.test.ts`. Nenhum dos quatro toca `mobile/`.
+`approved_head` de cada um vem da ata ou da revisão independente (fonte no `backfill_note` da entrada); os arquivos de
+código do merge têm blob idêntico ao do `approved_head` (10/10, 4/4, 12/12 e 51/52 — no #405 o `docs/deployment.md`
+recebeu o Runbook B do #400 pela integração da `main` feita depois do voto).
+
+### PRs do intervalo que não contam bloco
+
+Registro: #403, #404, #406, #408, #410. Governança: #407 (`D-GOV-PROPORCIONAL` — sem ID de bloco, sem plano nem junta;
+mergeou pela própria regra (1)). Critério do history (#360): "governança e registro não contam como bloco de feature
+entregue"; os blocos de governança que contaram antes (#394, #397) tinham ID de bloco, plano e junta. Nenhum desses seis
+PRs toca código ou teste.
+
+### Métricas carregadas e `mvp_*`
+
+- As quatro métricas que a CI não publica em separado (`backend_contract_tests_focused` 34/34, `flutter_modules` 17/17,
+  `mobile_backend_contracts` 18/18, `mobile_core_saas_contracts` 21/21) seguem com o último valor oficial e passam a
+  carregar **nota deste PR** — o teste de encerramento da `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392`.
+- `mvp_demo`/`mvp_vendavel` **INTOCADOS**: o marco fecha defeito e guarda do gate SAN3 e acrescenta Filtrar e Exportar a
+  uma tela que já existia; a régua é estimativa com recálculo de dono nomeado (`B-SAN3-10`), e movê-la por julgamento
+  aqui seria inventar número.
+
+### Painel
+
+Nenhuma dimensão nova: nenhum PR do marco tocou `Kpis/*` nem criou métrica ou trilha, e `B-OS-*` cai na barra existente
+"Blocos B". No `app.js`: a cópia congelada regerada (`node scripts/kpi-freeze.mjs`) e o rótulo dos tipos `seguranca` e
+`qualidade` em "Últimas demandas" (a tela mostrava o identificador cru, sem acento). "Últimas demandas" ganha as quatro
+entregas.
+
+**Backfill §C3.5:** nenhum devido — a entrada do #402 já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos
+pelo #403. O `pr` desta consolidação é preenchido após `gh pr create`; `merge_commit`/`approved_head` dela recebem backfill
+pós-merge.

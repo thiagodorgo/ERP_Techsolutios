@@ -1,5 +1,5 @@
 import type { DispatchStatus } from "../operations/dispatches/dispatches.types";
-import type { WorkOrderStatus } from "./work-orders.types";
+import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "./work-orders.types";
 
 // Ω3F-9 — lógica PURA das ações de linha da lista de OS (dar andamento · revogar envio · badge de atraso).
 // Predicados exportados e testados diretamente; os componentes os LIGAM ao JSX (lição do Ω3F-6:
@@ -20,6 +20,20 @@ export const WORK_ORDER_STATUS_LABEL: Record<WorkOrderStatus, string> = {
   cancelled: "Cancelada",
   rejected: "Recusada",
 };
+
+export const WORK_ORDER_PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
+  low: "Baixa",
+  medium: "Média",
+  high: "Alta",
+  urgent: "Urgente",
+};
+
+export function workOrderServiceLine(order: WorkOrderListItem): string {
+  const location = order.serviceCity
+    ? `${order.serviceCity}${order.serviceState ? `/${order.serviceState}` : ""}`
+    : null;
+  return [order.title, location].filter(Boolean).join(" · ");
+}
 
 // D-Ω3F-9-ANDAMENTO — mapa de PRÓXIMO passo único, forward-only. Espelha WORK_ORDER_STATUS_TRANSITIONS
 // do backend (src/modules/work-orders/work-order.validators.ts) MENOS: `cancelled` (JAMAIS — reabriria a

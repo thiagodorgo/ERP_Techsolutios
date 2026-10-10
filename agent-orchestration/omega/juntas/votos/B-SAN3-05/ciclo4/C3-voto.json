@@ -1,0 +1,115 @@
+{
+ "jurado": "jurado-san305-c4-boot-e-suite (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C3 — boot e suíte: o processo de produção com e sem a view (e o log da recusa), a suíte inteira e o build com bootstrap/acessos/leituras, o texto da regra (nota)",
+ "mandato_md5": "833b319da996789e790aa2428f55733d · declarado no disparo: 833b319da996789e790aa2428f55733d",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — o bloco não toca dinheiro",
+ "corpo_md5": ".claude 093e4690131a30b24c3e30ec2751252a · .agents 2c86c959e3f7bb4ed365a36dd3b1cc13 (blob 84831ad9) · corpo recebido no prompt: n/a (lido do blob por git show; md5 = o publicado no disparo)",
+ "objeto": "84831ad9796d8db29766b0ff6e0a1a894a9d45e7 (git ls-remote do ramo = gh pr view 405 headRefOid, 20:36Z) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · head do disparo do dev 7c63f920c996cf105535f345eec2ee10461c77a3 (ciclo4/DEV-relatorio.md l.7) · cerca do mandato 2400049bf8ec421c3f65a07884c6394d4ab208bc e delta 2400049b→84831ad9 só registro (6 arquivos em votos/B-SAN3-05) · objeto no fim: andou para 10fbbd983eb81243e424c011d4b922eb6434ccf2 (1 commit, só ciclo4/C2-evidencia.md e C2-voto.json, não abertos); medi 84831ad9",
+ "legalidade": "parecer do inspetor da junta 4 que vale: ciclo4/00-inspetor-terreno.md (blob 84831ad9), inspetor-de-terreno-da-junta, fechado 19:28Z · LIBERADO COM RESSALVA (R1–R4) · confere este nome, este corpo commitado nos dois espelhos, worktree C:/Users/AMP/w-j05c4c3 e containers j05c4-c3-* sem porta: sim · R4 cumprida (delta só registro, check-runs concluídos) · check-runs em 84831ad9: total 7 | não-verdes 0 | pendentes 0 · backend completed/success · backend-postgres completed/success",
+ "quorum": "unanimidade de 3, com veto · ciclo 4 (só defeito de produto grave reprova; leitura R3/R4 de decisoes.md, que existe só no objeto — aplicada pela ref julgada, §A7)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (ciclo4/C1-* e C2-* nunca abertos; o assunto do commit 84831ad9 apareceu no git log que prova a delta) · li da trilha: o parecer do inspetor da junta 4, ciclo4/DEV-relatorio.md (cabeçalho e D7), decisoes.md (R3/R4, D-405-PROIBIR-VIEWS), o plano (erratas ao D4, C4.5, C4.6) e pendencias.md (grep T15)",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "sinal_ao_dono": "nenhum — a premissa de D-405-PROIBIR-VIEWS ('hoje há 0 views; nenhuma funcionalidade quebra') se manteve: banco migrado com 0 view, o papel limpo do script sobe (b1/b4 verified, escapes 0) e serve (b5: API listening e owner-portal listening com Redis alcançável)",
+ "itens": {
+  "item1_boot_producao": "VERDE — b2 (view+enforce) e b3 (view, sem variável): close 1 em 1593/1500 ms, 0 Redis/job worker antes, escapes view/zz_j05c4c3_dono/1; b1/b4 sem view: verified, escapes 0; b5 sem view + Redis próprio: API listening; guarda D4 do objeto ok nos 5 logs; T5/T6/T9 e T15 ok isolados (guard-db 12/12) e byte-idênticos a 7c63f920; controles (1)(2)(3) acusaram",
+  "item2_suite_build": "MEDIDO — suíte 3135 executados (2 rodadas), skipped 2 (os nomeados, RBAC_DB_PARITY), fail 2 em 2/2 rodadas: só o T15 (+pai) por 'processo filho não encerrou' sob carga (recusa correta; processo vivo ~10 s com conexão ociosa ao Postgres; isolado verde; CI backend verde) = achado não grave A2-1; build ec=0 (mutante TS2322 ec=2, restauro md5=blob, irmão ec=0); bootstrap 12/12, acessos 35/35 (T13 ok, inventário sem diff no ciclo), leituras 13/13; controles (1)(2)(3) acusaram",
+  "item3_texto_regra": "DIZ A REGRA com notas — docs via view (l.95-98), MODO 6 (l.128-130), compose (l.132-138) e comentário de runtime-role.ts (l.1-12) dizem (i)-(v); notas N3-a (RAISE e message atribuem a via ao papel) e N3-b (message não chega ao log de produção; forma do log pre-existente 1a4a3f97); controles (1)(2)(3) acusaram"
+ },
+ "justificativa": "Terreno: worktree próprio detached C:/Users/AMP/w-j05c4c3 em 84831ad9 (só git); receita adaptada condutor-setup.sh md5 4a7a9ede8eb9a8a3da0506ad3167a2d7 (diff 242 linhas contra receita-pg16.sh 9861a2aaa55fc49fcf1c4263261a3668: prefixo j05c4-c3-, árvore temporária t-j05c4c3-* com remoção pelo mesmo prefixo, redis:7 próprio, sem trap de derrubada); containers j05c4-c3-pg/-redis/-node na rede j05c4-c3-net com PortBindings {}; árvore por git archive autocrlf=false 3776/3776 blobs byte-idênticos e md5sum -c 3776 no container; npm ci 326 pacotes, prisma generate e migrate deploy (107) dentro do container; catálogo 115 tabelas | 106 FORCE | 0 views | 0 matviews; disco 13→12→12 GB; base viva intocada.\nItem 1 — call-site sem diff no ciclo (src/server.ts, runtime-role.bootstrap.ts, env.ts: 0 linha; irmão runtime-role.ts 25); server.ts:17 a trava é a 1ª instrução de main(); env.ts:657-658 sem a variável em produção → enforce. Papel limpo pelo scripts/db-runtime-role.sh do objeto (md5 5cab4f63… = blob), senha só por ambiente: ec=0, linha final zz_j05c4c3_app|f|f|f|f|0|0|115. TABELA de boots (src/server.ts, PROD_BASE extraído do blob, REDIS_URL inalcançável): b1 sem view sem variável → verified 2469 ms, escapes 0; view de dono comum zz_j05c4c3_dono (NOLOGIN NOSUPERUSER NOBYPASSRLS) sobre public.tenant_settings (FORCE), relacl null, 0 grant de tabela/coluna ao papel; b2 view+enforce → close 1, 1593 ms, 1ª falha 1456 ms com RUNTIME_ROLE_CAN_BYPASS_RLS, 0 Redis/job worker antes, escapes[0]={via:view, rolname:zz_j05c4c3_dono, objetos:1}; b3 view sem variável → close 1, 1500 ms, idem; b4 sem view de novo → verified 1317 ms, escapes 0 (depois o Redis inalcançável, como no T15); b5 sem view com Redis próprio → verified, job worker, API listening, owner-portal listening. Forma explorável não medida porque não houve vermelho. Guarda D4 do objeto (4 funções extraídas do blob, md5 ea9025d0…) ok/ok nos 5 logs; host/5432/banco/postgresql:/senha = 0 em todos; o dono da view só em escapes[].rolname, e a guarda não o examina (só olha o usuário da URL). T5/T6/T9 e T15 byte-idênticos a 7c63f920 (EOL-neutro; controle T8c acusa diff) e ok no guard-db isolado 12/12 pelo runner.\nItem 2 — npm test no modo do job backend (DATABASE_URL e REDIS_URL próprios, CORE_SAAS_PERSISTENCE=memory): 2 rodadas, ambas 291 arquivos · 3135 testes · pass 3131 · fail 2 · skipped 2 (os 2 nomeados de permission-catalog-db-parity); as 2 falhas são o T15 e o pai, por 'processo filho não encerrou em 8540ms / 7462ms' (waitForCloseCode). Medição própria: 5/5 boots recusados isolados saem em 136–187 ms após a recusa; 12 em paralelo: 12/12 código 1, 5 ficam vivos 10 059–10 222 ms; gancho de recursos ativos mostra TCPSocketWrap tcp->5432 + Timeout nos lentos (pg-pool idleTimeoutMillis 10000). Propriedade do bloco intacta (código 1, sem listen, antes do Redis); estoura só o teto de 15 s do T15. 0 XX000 de erro (as 2 ocorrências são nomes de teste). Build ec=0; mutante TS2322 → ec=2; restauro md5 = blob; build ec=0. Bootstrap 12/12 (T2: produção sem variável → enforce; enforce explícito; skip recusado), acessos 35/35 (T13 ok, stderr vazio do gerador no corpo do T13), leituras 13/13; inventário e testes dirigidos sem diff no ciclo; todos os arquivos vigiados nasceram no bloco (ausentes na main).\nItem 3 — TABELA (i) view+matview, (ii) esquema, (iii) dono, (iv) sem privilégio, (v) FORCE, (vi) DROP: docs l.95-98 SIM×5, sem remédio (está no MODO 6); docs MODO 6 l.128-130 SIM×6; docs compose l.132-138 SIM em (i)(ii)(iii)(v), (iv) só implícito, remédio remetido ao MODO 6; comentário runtime-role.ts l.1-12 SIM×5; RAISE do MODO 6 (execução ec=3) (i)(v)(vi) SIM, (ii)-(iv) implícitos em 'nenhuma view/matview', e atribui a via ao papel; message do RuntimeRoleGuardError (execução) (i)(v) SIM, (ii)-(iv) implícitos, atribui a via à identidade, e não chega ao log de produção; o que o operador lê no log não diz a regra. Nenhum trecho contradiz a regra.\nVermelho-controles: item 1 — (1) probe do objeto como o papel limpo: sem view [] / com view ['view/zz_j05c4c3_dono/1']; (2) guarda D4 reprova postgresql://, host e papel fora de campo, aceita as formas permitidas; (3) papel limpo f|f|f, 0 linhas sem GUC, 1 com a GUC da organização A, superusuário vê 2. Item 2 — (1) leitor de TAP conta +1 not ok e +1 SKIP numa cópia com o resumo intocado; (2) os pontos -db do bloco aparecem ok sem SKIP, só 2 SKIP no TAP; (3) erro de tipo proposital deixa o build ec=2. Item 3 — (1) frase sem 'qualquer dono' → iii=nao; (2) MODO 6 sem view → ec=0 e 0 'MODO 6'; (3) âncora inexistente → 0. Todos acusaram.\nFicou sem medir: a forma explorável da via view (só exigida se o boot subisse com a view — não subiu); a origem exata da conexão ociosa do processo recusado (a sonda de login sem organização disparada no import de app.ts é hipótese).\nLimpeza: processos src/server.ts 0; papéis/view/linhas semeadas removidos do meu cluster; containers j05c4-c3-* removidos com docker rm -f -v (volumes anônimos conferidos removidos), rede removida, contagem 0; árvore temporária 0; processos com o caminho do worktree 0, worktree removido por git worktree remove --force e ausente das listas; scratch apagado; w-o05 só com os meus dois arquivos; espaço no fim de linha 0 nos dois.\nVOTO: APROVADO — processo de produção recusa com a view de dono comum sem grant (código 1 do close em 1,5–1,6 s, com e sem a variável, antes do Redis, nomeando view/zz_j05c4c3_dono em escapes) e aceita o mesmo papel limpo sem ela (escapes 0, antes e depois; e serve com Redis alcançável), log limpo pela guarda D4 do objeto; T5/T6/T9 e T15 verdes isolados e sem diff; suíte 3131/3135 (fail 2 = T15 e o pai, teto de 15 s estourado sob carga com recusa correta — não grave; skipped 2 ≤ 2) e build 0; bootstrap 12, acessos 35 (T13 ok, inventário sem diff), leituras 13; texto: diz a regra, notas N3-a e N3-b; pendências: A2-1, N3-a, N3-b, env.ts:567",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/runtime-role-sem-bypass · gh pr view 405 --json headRefOid · gh api …/commits/84831ad9…/check-runs",
+   "forma": "Windows, git/gh, início e fim",
+   "resultado": "84831ad9 nas duas fontes no início; 10fbbd98 no fim (delta só C2-*); 7/7 completed/success"
+  },
+  {
+   "comando": "bash condutor-setup.sh (archive + md5 + npm ci + prisma generate/migrate deploy)",
+   "forma": "containers j05c4-c3-*, erp-junta-node20-pg16:local, postgres:16 16.14, redis:7; 3776 blobs",
+   "resultado": "ec=0; 107 migrations; 115|106|0|0"
+  },
+  {
+   "comando": "DB_RUNTIME_ROLE=zz_j05c4c3_app DB_RUNTIME_PASSWORD=<só ambiente> bash scripts/db-runtime-role.sh",
+   "forma": "container j05c4-c3-node, script do blob (md5 5cab4f63…)",
+   "resultado": "ec=0; zz_j05c4c3_app|f|f|f|f|0|0|115"
+  },
+  {
+   "comando": "node /tmp/zz-j05c4c3-boot.mjs <b1..b5> <enforce|unset> <accept|refuse>",
+   "forma": "src/server.ts do objeto, PROD_BASE do blob, DATABASE_URL do papel limpo, N=5 boots",
+   "resultado": "b1/b4 verified escapes 0; b2/b3 close 1 em ~1,5 s com escapes view/zz_j05c4c3_dono; b5 API listening"
+  },
+  {
+   "comando": "node --import tsx /tmp/zz-j05c4c3-d4.mts controle | logs <5 .seq>",
+   "forma": "funções D4 extraídas do blob (121 linhas, md5 ea9025d0…)",
+   "resultado": "3 controles positivos FALHA, 1 negativo ok; 5 logs ok/ok"
+  },
+  {
+   "comando": "timeout 900 npm test -- tests/san3-05-runtime-role-guard-db.test.ts",
+   "forma": "runner do repo, CORE_SAAS_PERSISTENCE=memory, N=1",
+   "resultado": "ec=0; 12/12; T5/T6/T9 e T15 ok"
+  },
+  {
+   "comando": "timeout 2400 npm test (suíte inteira)",
+   "forma": "DATABASE_URL e REDIS_URL próprios, CORE_SAAS_PERSISTENCE=memory, N=2 rodadas",
+   "resultado": "ec=1 nas 2: 3135 · pass 3131 · fail 2 (T15+pai) · skipped 2"
+  },
+  {
+   "comando": "sh /tmp/zz-j05c4c3-linger.sh 1 5 iso · 6 2 par · 6 1 hk (com gancho --require)",
+   "forma": "boots recusados como superusuário com enforce, N=23",
+   "resultado": "isolado 5/5 sai em <0,2 s; paralelo 7/18 ficam ~10 s com tcp->5432 + Timeout; todos código 1"
+  },
+  {
+   "comando": "sh /tmp/zz-j05c4c3-build-ctl.sh",
+   "forma": "npm run build; mutação de tipo em src/database/runtime-role.ts na cópia do container; restauro",
+   "resultado": "ec=0 · ec=2 (TS2322) · md5 restaurado = blob · ec=0"
+  },
+  {
+   "comando": "sh /tmp/zz-j05c4c3-dirigidos.sh",
+   "forma": "bootstrap, acessos, leituras pelo runner, N=1 cada",
+   "resultado": "12/12 · 35/35 · 13/13, ec=0"
+  },
+  {
+   "comando": "node /tmp/zz-j05c4c3-texto.mjs real | controle",
+   "forma": "docs/deployment.md e runtime-role.ts do blob, RAISE e message capturados por execução",
+   "resultado": "tabela (i)-(vi) do item 3; controles acusaram"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A2-1 — sob a carga da suíte inteira neste terreno (8 CPUs, Docker/WSL2), o T15 estoura o teto de 15 s: o processo de produção recusado fica vivo ~10 s depois da recusa, com uma conexão ociosa ao Postgres, e o refuseBoot não vê o close a tempo",
+   "evidencia": "npm test 2/2 rodadas: not ok 11 - T15 'processo filho não encerrou em 8540ms' e '…7462ms' (waitForCloseCode, tests/san3-05-runtime-role-guard-db.test.ts:536); guard-db isolado 12/12; linger: isolado 5/5 em 136–187 ms, paralelo 5/12 e 2/6 em ~10,1 s; gancho: TCPSocketWrap tcp->5432 + Timeout; pg-pool idleTimeoutMillis 10000; CI backend do objeto success",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — o T15 e o seu teto nasceram neste bloco (e0143db1, 2026-10-03; ausente na main a9bbde38); as peças do mecanismo são anteriores: src/app.ts:263 (1a4a3f97, 2026-05-29) e src/app.ts:88-95 (0a398246, 2026-08-19)",
+   "classe": "não grave",
+   "motivo": "a propriedade do bloco se mantém (código 1, nenhum listen, antes do Redis); o que falta é a saída do processo recusado dentro do teto que o próprio teste fixa quando a máquina está carregada — o teste fica vermelho por tempo, não por permissão"
+  },
+  {
+   "defeito": "N3-a — o RAISE do MODO 6 ('papel … ainda escapa de RLS por 1 via(s): view:<view>') e o message do RuntimeRoleGuardError ('a identidade … escapa … por 1 via(s): view:<dono>') atribuem a via view ao papel, quando a regra D-405-PROIBIR-VIEWS diz que a via é do banco, não do papel",
+   "evidencia": "stderr do script com view (ec=3, 20:48:08Z); message capturado pela sonda (20:46–20:47Z); verificador de texto y_via_atribuida_ao_papel=SIM nos dois; docs l.96-97 e comentário runtime-role.ts l.6-7 dizem que a via é do banco",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o texto da recusa não diz que a causa é um objeto do banco independente do papel"
+  },
+  {
+   "defeito": "N3-b — o message do RuntimeRoleGuardError (o único texto da recusa que nomeia view:<dono> e o remédio) não chega ao log de produção; o operador lê só 'runtime database role can bypass RLS — refusing to start' e o campo estruturado escapes",
+   "evidencia": "Object.keys(error) no log = code, sessionUser, currentUser, escapes, name (b2/b3); src/server.ts:48 logger.error({ error }, …)",
+   "gravidade": "nota",
+   "escopo": "pre-existente — a forma do log é de src/server.ts:48 (git blame → 1a4a3f97, 2026-05-29; presente na main a9bbde38 l.46); a frase do bootstrap nasceu no bloco (d76b255f, 2026-10-02); src/server.ts é PROIBIDO no ciclo",
+   "classe": "não grave",
+   "motivo": "o log da recusa não traz em texto a regra nem o remédio"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum controle deixou de acusar: os 9 vermelho-controles (3 por item) acusaram o que deviam",
+  "observação contra a régua: o teto de 15 s do T15 pode falhar por carga do terreno sem a propriedade falhar (A2-1) — é um critério que reprova por tempo de máquina, não por comportamento"
+ ],
+ "pendencias_que_aceito": [
+  "A2-1 (ajuste, não grave, dentro-do-bloco) — dono a nomear pelo orquestrador (vizinha de P-SAN3-05-RUNNER-SEM-TIMEOUT, B-ARNES-2)",
+  "N3-a (nota, dentro-do-bloco) — texto do RAISE do MODO 6 e do message do RuntimeRoleGuardError",
+  "N3-b (nota, pre-existente) — o message da recusa não chega ao log (src/server.ts:48, 1a4a3f97)",
+  "src/config/env.ts:567 ainda diz 'posse de tabela FORCE ou view de dono que escapa' — fora deste item pela C4.6 (env.ts PROIBIDO ao dev), 1 linha",
+  "resíduo alheio inerte: C:/Users/AMP/w-o05/scratchpad/ (pl05c2/pl05c2s, 08/10) e os 33 ' M' fantasmas de .agents/ — reportados, não varridos (R1 do inspetor)"
+ ],
+ "teardown": "papel limpo, papel novo, dono comum, view e linhas semeadas removidos do meu cluster (contagem 0) · processos src/server.ts 0 · containers j05c4-c3-node/-redis/-pg removidos por docker rm -f -v (volumes anônimos 8a2387444312… e a7bea646a896… conferidos removidos), rede j05c4-c3-net removida, contagem 0 · árvore temporária t-j05c4c3-* removida (0) · processos vivos com o caminho do worktree = 0 antes da remoção · worktree C:/Users/AMP/w-j05c4c3 removido por git worktree remove --force e ausente · mutação de controle restaurada com md5 = blob (9efee03d…) e build ec=0 · scratch da cadeira apagado · base viva (erp-postgres/erp-redis) nunca tocada · w-o05 só com os meus dois arquivos de saída · espaço no fim de linha = 0 nos dois · resíduo ALHEIO apenas reportado"
+}

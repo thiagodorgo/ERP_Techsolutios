@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuth } from "../../providers/AuthProvider";
 import { useTenantContext } from "../../providers/TenantProvider";
@@ -15,6 +15,7 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
   const [state, setState] = useState(initialListState);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const requestSeq = useRef(0);
 
   const context = useMemo(
     () => ({
@@ -33,9 +34,11 @@ export function useWorkOrders(filters: WorkOrdersFilters) {
   const refresh = useCallback(async (background = false) => {
     if (!activeContext) return;
 
+    const seq = ++requestSeq.current;
     if (background) setIsRefreshing(true);
     else setLoading(true);
     const result = await listWorkOrdersFromApi(context, filters);
+    if (seq !== requestSeq.current) return;
     setState((prev) => nextListState(prev, result, background));
     setLoading(false);
     setIsRefreshing(false);

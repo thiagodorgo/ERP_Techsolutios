@@ -1,5 +1,41 @@
 # Status Geral
 
+## Atualização 2026-10-02 — B-SAN3-01b (tarefa de nuvem, dev): as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE no ramo, aguarda inspetor/junta/PR
+
+**Ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, desenvolvido na NUVEM** (claude.ai/code, Linux, Node 22.22.0 + Node 20.20.0
+para paridade com a CI) pelo `dev-b-san3-01b` (identidade nova, §C7.4-bis), a partir do plano
+`docs/revisoes/SAN3/B-SAN3-01b-plano.md` e do mandato `omega/juntas/votos/B-SAN3-01b/00-mandatos/dev.md`. **Sem PR, sem merge**
+(a nuvem só empurra o ramo; o orquestrador local abre o PR, convoca o inspetor e a junta — unanimidade de 3, §C7.1-ter(b)).
+Relatório incremental do dev, com comando e saída de cada medição: `omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+
+**Entregue (E1–E7 do plano):** (i) `frontend/tests/work-orders-page-live.test.tsx` (novo, 13 casos) — a `WorkOrdersPage` REAL
+com o hook REAL rodando efeitos sobre um DOM mínimo escrito no próprio teste (zero dependência), `fetch` com os bytes do
+backend; `[W1]`/`[W2]` por comportamento (lista e detalhe), `[GB1]`–`[GB3]` com os 13 papéis de `ROLE_PERMISSIONS` executado;
+(ii) `[G1]` de `work-orders-honest-errors.test.tsx` por alcance em profundidade arbitrária + fecho de import + arquivo de
+fronteira, `[G1b]` novo (entidade fabricada inline), `[G2]` 29 formas, `[G3]` em disco; os `[W1]`/`[W2]` de regex saem;
+(iii) os três cabeçalhos dizem o que o guard prova e o que não prova (só comentário); (iv) "Nova OS" do cabeçalho só com
+`work_orders:create`; (v) `test:smoke` ganha o arquivo novo; (vi) KPI no próprio PR; (vii) este registro.
+
+**Medido no head da entrega:** bloco **79/79** (13 + 66), `tsc` ec=0, smoke **1214/1214** (Node 22 E Node 20), build ec=0;
+`[G1]` raízes=81 (64/16 + 1), fecho=48, 20 referências guardadas, 0 vazamentos; `[G1b]` 19 literais legítimos, 0 com identidade.
+**Vermelho-controle no head-base:** arquivo vivo 11/13 — `[GB1]`/`[GB2]` vermelhos, 7 papéis (`technician, viewer, finance,
+inventory, field_technician, auditor, support`). **Mutações do §7** (runner em `DEV-relatorio.md` §M, com restauro provado por hash):
+`N-PG-PAINEL`, `N-PG-KPI`, `N-W1TXT`, `N-W2TXT`, `N-BARREL2`, `N-LITERAL`, `N-FORA-RAIZ` — todas VERDES no head-base do `B-SAN3-01`
+— ficam VERMELHAS no bloco e no smoke; `N-S1ERR` fica verde (§13 N2, pendência nomeada).
+
+**Falsificações do plano, registradas (nenhum desvio silencioso):** a `origin/main` avançou de `3b1fe0f9` para `4ab9d232`
+(#397/#398) — a linha de base reproduz (67 · 1202), mas `blocks_completed` publicado é 169, logo o KPI conta **169 → 170**;
+a 1ª versão do arnês vivo contaminava os casos seguintes de um caso vermelho (corrigido com `withPage()`; só o arquivo de teste).
+
+**Pendências:** FECHADAS `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO`, `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES`,
+`P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO`, `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO`; ABERTAS com dono `P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL`
+(`B-SAN3-10`), `P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO` (fila pós-gate), `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA`
+(`B-SAN3-06a`). **Travas de mesmo arquivo (§12 R6 do plano):** `SAN3-08`, `SAN3-25` e `SAN3-21` não abrem ramo antes do merge deste.
+
+**Próximo passo (orquestrador local):** `gh pr create` (preencher `release.pr` no KPI) → `inspetor-de-terreno-da-junta` (check-runs
+concluídos no head) → junta C1 `guardiao-fail-closed` · C2 `coordenador-de-acessos` (inelegibilidade a conferir: achou o C2-05)
+· C3 `cognicao-visual` → CI verde → squash → §C5 → porteiro.
+
 ## Atualização 2026-09-20 — B-O6R-04a CICLO 2 (o último): os guards viram propriedade e o censo do deploy recusa contar cego
 
 **Mesma branch `fix/inventory-consistency`, mesmo PR #389, commits sem push.** A junta do ciclo 1 **REPROVOU
@@ -4823,3 +4859,233 @@ seguem **carregadas com nota** (§C3.3): o PR continua sem tocar código nem tes
 gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS, **303** ABERTAS — a pendência nova é
 `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` (MÉDIA, não bloqueia, **dono a nomear**), medida com a
 classe **gerada do arquivo-fonte**: 22 padrões x 4 diretórios = **88 sondas, 86 escondidas**.
+
+## B-GOV-SEM-TETO (PR #394) — o teto de ciclos cai; no ciclo 3 audita-se a máquina — MERGEADO `b3f0af5f` (2026-09-28)
+
+- **Decisão transcrita:** `D-SEM-TETO-AUDITORIA-NO-3` (dono, 2026-09-27) — sem teto de dois ciclos; se o ciclo 3
+  reprovar, audita-se a orquestração e a junta antes do ciclo 4, e continua-se. O texto do orquestrador foi medido
+  incompleto pelo plano (11 regras vivas, 20 elaborações — 16 não declaradas) e corrigido por emenda de dev de
+  identidade nova (V-01…V-06, T-21…T-25, trava do ciclo 4 no item 2.2 do inspetor).
+- **Junta:** APROVADO **3 × 0** (maioria de 3) sobre `7ad08690` — 0 bloqueia, 5 ajuste, 21 nota; segunda instância
+  das três cadeiras (a primeira caiu com a sessão, sem veredito, nada herdado). Ata `omega/juntas/J-B-GOV-SEM-TETO.md`;
+  votos, inspetor e porteiro em `omega/juntas/votos/B-GOV-SEM-TETO/`.
+- **Porteiro:** `LIBERADO COM RESSALVA` (R1–R6). R1–R4 pagas pelo PR de registro do #394 (evidência versionada,
+  backfill §C3.5 `b3f0af5f`/`7ad08690`, 4 pendências novas, este registro). R5 e R6 são condição das próximas juntas:
+  o #393 integra a `main` por merge e o inspetor da junta 3 mede `merge-base --is-ancestor b3f0af5f <objeto>`; o #389
+  e o #388 emendam os corpos de jurado que dizem "CICLO 2 — o ÚLTIMO" antes das juntas deles.
+- **Abertas, com dono:** `P-GOV-CICLOS-CORPOS-ORFAOS`, `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`,
+  `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`, `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO`, `P-GOV-PROJECT-MEMORY-TETO-VELHO`
+  (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
+  `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
+
+- **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — vira a norma **P7** do protocolo de junta
+  resiliente (`CLAUDE.md` §C7.7, espelho `AGENTS.md`, fonte `PROTOCOLO-JUNTA-RESILIENTE.md`, linha `[P7]` no modelo de
+  mandato, lição no `conhecimento-de-terreno.md` §2.2). Texto do orquestrador medido pelo plano
+  (`docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`: 17 elaborações, 7 achados dentro do bloco) e emendado por dev de
+  identidade nova (`dev-pausa-emenda`): S-01, S-02, S-03, S-04, S-05, S-07 e S-11, declarados como T-18…T-24 em
+  `controle/decisoes.md`.
+- **Junta:** APROVADO **3 × 0** (maioria de 3, sem crítico) sobre `67c2c280` — 0 bloqueia, 2 ajuste (C1-A1, C1-A3), 7
+  nota; primeira junta sob a P7 (nenhuma PAUSA recebida, nenhuma queda). Ata `omega/juntas/J-B-GOV-PAUSA.md`; votos,
+  inspetor e porteiros em `omega/juntas/votos/B-GOV-PAUSA/`.
+- **Porteiro do #397:** `LIBERADO COM RESSALVA` — dívidas pagas pelo registro **#398** (`5bcdcc58`): backfill §C3.5
+  (`merge_commit 513937b0`, `approved_head 67c2c280` lido da ata), as duas pendências dos ajustes da C1 e uma errata
+  pós-merge no corpo do PR. **Porteiro do #398:** `LIBERADO COM RESSALVA` — esta trilha defasada e a razão declarada
+  para não rodar a limpeza padrão (ver `codex/log-execucao.md`), pagas pelo registro do #398.
+- **Abertas, com dono:** `P-GOV-OBITUARIO-SEMTETO` (pré-existente), `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10),
+  `P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR` (C1-A1) e `P-GOV-PAUSA-CASO-SEM-FONTE` (C1-A3; a fonte do caso foi versionada
+  em `votos/B-GOV-PAUSA/00-caso-dev-t4-trilha.md`) — dono `B-GOV-CICLOS-RESIDUAIS` nas três últimas. Índice pelo
+  gerador depois do #398: **425** cabeçalhos / **414** IDs, **111** FECHADAS, **314** ABERTAS.
+- **KPI:** `blocks_completed` 168 → 169 (recontado contra a `origin/main` `5b6e1036`); trilhas de teste carregadas com
+  nota (nenhum código nem teste tocado); `pr 397`, e o backfill de `merge_commit`/`approved_head` pago pelo #398.
+
+## B-SAN3-01b (PR #402) — a web guarda por alcance e pelo estado da página — MERGEADO `3e40a256` (2026-10-02)
+
+- **Junta 1:** APROVADO **3 × 0** sobre `cdf370dc` (unanimidade de 3: permissão e perda de dado). C1 `guardiao-fail-closed`
+  1 ajuste e 1 nota; C2 `jurado-san3-01b-c2-cadeia-de-acesso` (identidade nova, escrita pela `agente-fabrica`) 3 notas; C3
+  `cognicao-visual` 1 nota; 0 bloqueia. Ata `omega/juntas/J-B-SAN3-01b.md`; votos, pareceres e quedas em
+  `omega/juntas/votos/B-SAN3-01b/`.
+- **Inspetor de terreno:** 1ª passada `BLOQUEADO` (o `coordenador-de-acessos` achou o C2-05, que o bloco fecha); 2ª passada
+  `LIBERADO COM RESSALVA` depois da C2 nova versionada nos dois espelhos. Duas quedas do inspetor por limite de sessão da
+  conta, retomadas como a mesma instância.
+- **Merge:** squash fixado no head `1483a6f7` (o PR era rascunho da nuvem e foi marcado pronto antes); árvore do merge igual
+  à do head; estado `MERGED` lido antes de limpar.
+- **Porteiro do #402:** `LIBERADO COM RESSALVA` — dívidas pagas por este registro: backfill §C3.5 (`pr 402`,
+  `merge_commit 3e40a256…`, `approved_head cdf370dc…` lido da ata) e quatro pendências com dono a partir das notas da
+  junta (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME`, `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL`,
+  `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE`, `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`). Índice pelo gerador: **432**
+  cabeçalhos / **421** IDs, **115** FECHADAS, **317** ABERTAS. Ressalva para os próximos alvos: o #401 e o ciclo 4 do
+  #393 integram esta `main` e recontam o KPI antes do inspetor novo de cada um (171 e 172 na ordem de merge).
+- **KPI:** `blocks_completed` 169 → 170; `frontend_smoke_tests` 1214/1214 por execução real; backend e Flutter carregados
+  com nota.
+- **Limpeza §C5:** worktrees do PR e das cadeiras removidos pelo nome com 0 processo vivo; ramo apagado no local e no
+  remoto depois de provar árvores iguais; `remote prune`; `main` local avançada; nenhum artefato de build nem ramo local
+  mergeado a remover na árvore principal. O `scripts/post-merge-cleanup.sh` não rodou porque desce nos worktrees de outras
+  sessões (`P-CHORE-CLEANUP-DESCE-EM-WORKTREES`).
+
+## Registro do #403 (registro puro) — as quatro ressalvas do porteiro do #403 (2026-10-03)
+
+- **Porteiro do #403:** `LIBERADO COM RESSALVA` (parecer em `omega/juntas/votos/B-SAN3-01b/PORTEIRO-403.md`). Pagas aqui:
+  (1) o parecer do porteiro do #399, que só existia no ramo `docs/registro-399`, versionado byte a byte; (2) a
+  `backfill_note` do B-SAN3-01b nos dois JSON de KPI corrigida — a árvore do merge é a do head final do PR, `1483a6f7`,
+  que é o head aprovado `cdf370dc` mais a ata e os votos, e não a do head aprovado; (3) dono atribuído às duas pendências
+  que estavam como "proposto" (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` → `B-SAN3-06c`;
+  `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` → `B-SAN3-06a`); (4) as seções do #397 e do #402 no `kpis-history.md` deixam de
+  dizer "na autoria".
+- **Ressalva não paga, declarada:** a escolha da referência do cabeçalho da lista de OS
+  (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`) é decisão do dono e foi levada a ele em 2026-10-03. Não entra em
+  `controle/decisoes.md`, que só registra decisões tomadas.
+- **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
+  do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## B-SAN3-05 — papel de runtime sem bypass — PR #405 EM RASCUNHO (2026-10-04)
+
+- **Identidade:** `dev-b-san3-05-sucessor-2`, GPT-5.6 Sol por substituição expressa do dono; mandato EOL-neutro `552d24b6ef32b69d0f61979c78285355`.
+- **Entrega:** papel de runtime separado do migrador; procedimento fail-closed; trava no boot de produção; leituras e escritas de plataforma preservadas sob `NOSUPERUSER NOBYPASSRLS`; gerador e ratchet semântico; documentação e seis pendências com dono.
+- **Validação:** A1–A24 vermelhos por mutação; lotes 134/134, 42/42, 19/19 e 88/88; suíte integral 3124 testes, 2 skips e um timeout de carga contado em dois níveis, re-medido em série 8/8; build/check/lint verdes. PostgreSQL 16.14 descartável próprio, 115 tabelas / 106 FORCE, sem resíduos `s305_%`.
+- **KPI:** backend 3122/3124 por execução real com re-medição declarada; frontend 1214/1214 e Flutter 864/864 carregados; blocos 170 → 171; `mvp_*` intocados. `pr=405`; `merge_commit`/`approved_head` nulos na autoria.
+- **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/DEV-relatorio.md`.
+- **Fechamento local:** PR #405 em rascunho; cluster descartável e temporários `s05-*` removidos; 0 worker/teste vivo. O worktree é removido após o último push.
+- **Correção CI (2026-10-04):** T8d deixou de depender da regra `host replication` do `pg_hba`: cria/remove slot físico com REPLICATION e recebe 42501 após NOREPLICATION. Arquivo 8/8; backend final 291 arquivos, 3122/3124, 0 falhas, 2 skips.
+## Atualização 2026-10-01 — B-SAN3-11: em execução (branch fix/dossie-versao-da-vistoria)
+
+**Bloco em branch**, não mergeado. Fecha `P-CHK-DOSSIE-VERSAO-NA-UI` (item 8 do gate vendável).
+
+- **E1–E3**: tipo +3 campos, adapter +3 campos, painel três estados ✓
+- **E4**: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) ✓
+- **E5**: 16 testes novos `patios-dossie-versao.smoke.test.tsx` ✓
+- **E6**: KPIs atualizados (169 blocos, 1218/1218 smoke) ✓
+- **Bateria**: `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Novas pendências**: P-SAN3-11-VIGENTE-NAO-VINCULADA, P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (ambas não-bloqueantes)
+
+Próximo: push do branch → PR → junta.
+- **2026-10-02 — ERRATA 1 + 1-bis aplicadas** (inspetor da junta 1 BLOQUEOU por T13/T14 vermelhos em Windows/CRLF): T13/T14 sem relógio e sem dependência de EOL; KPI recontado contra a main `4ab9d232` (170 blocos, 1218/1218, `pr 401`); `P-CHK-DOSSIE-VERSAO-NA-UI` lida como FECHADA pelo gerador; bateria verde nos dois terrenos. Próximo: CI no head novo → mandatos regenerados (HC=H0) → inspetor novo → junta 1.
+- **2026-10-02 — integração pós-#402:** a main andou (`3e40a256`, B-SAN3-01b); merge no ramo com a linha `test:smoke` pela união dos dois acréscimos; KPI recontado (171 blocos, 1230/1230 por execução real); backfill do #402 pendente (não pago aqui). Próximo: CI no head novo → mandatos HC=H0 → inspetor → junta 1.
+- **2026-10-03 — ciclo 2 (§16/§16-bis):** links com afordância que não navegam, adapter fail-closed, gerador v2, 16 → 24 testes, pendências com dono; main `b404815c` integrada; KPI 171 blocos e 1238/1238 (dois terrenos); empurrado em `070b9a03` + este registro. Próximo: CI no head, mandatos regenerados (HC = H0), inspetor novo e junta do ciclo 2 (3 cadeiras novas, unanimidade).
+- **2026-10-05 — ciclo 3 (§17):** C2c2-F1 (censo P-L3 pelo checker; L3/L4 vazios vermelhos) e C2c2-F2 (recusa contratual limpa as vistorias; falha operacional preserva) corrigidos com testes antes do código (T23–T26, 24 → 28) e mutações vermelhas nos dois terrenos; `Kpis/*` devolvido à main (KPI congelado). Próximo (regra (1) do `D-GOV-PROPORCIONAL`): um revisor independente + CI verde no head empurrado do ramo, sem nova junta.
+
+## PAUSA 2026-10-03 18:25Z — ordem do dono (P7, `D-PAUSA-GRAVA-E-PARA`)
+
+Ordem do dono: *"o codex parou e só volta às 22:00, por isso vamos pausar as atividades, só assim o pc é reiniciado"*.
+Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registro: Fable só em bloco de dinheiro (manhã),
+depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
+por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
+foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
+`C:/Users/AMP/erp-pausa-2026-10-03/`.
+
+| frente | onde parou | retomada |
+|---|---|---|
+| **#393** B-GOV-MANDATO, ciclo 4, junta 4 (objeto `371b09b2`, CI 14/14) | C1⁗ **REPROVADO** (C1d-01 `bloqueia`: SHA fabricado depois de `:` sai PRE-VOO OK); C3⁗ **APROVADO** (0 bloqueia); C2⁗ (Opus) recebeu PAUSA no meio do voto | relançar a C2⁗ — mesma identidade, P3 sobre a seção `## PAUSA` do `VOTO-393-J4-C2.md`; maioria de 3: o voto dela decide. Depois: ata (esqueleto `ata-c4-esqueleto.md`), quedas (`quedas-pendentes-393.md` já no ramo) e merge ou ciclo 5 |
+| **#401** B-SAN3-11, ciclo 2, junta 2 (head `3ec6f52b`, CI 14/14) | inspetor (Codex, sessão `01a102b0-…`) caiu por limite de uso às 18:14Z no baseline (parecer até 18:11Z); worktrees `w-insp401c`/`w-insp401clf` de pé | `run-codex-resume.ps1` com `resume-insp401c2.txt`, GPT-5.6 Sol; depois versionar o parecer e as 3 cadeiras (Codex, Sol, ≤2 por vez) |
+| **B-SAN3-05** (ramo `fix/runtime-role-sem-bypass` @ `b7773898`, sem PR) | dev sucessor-2 (Codex, sessão `01a102bc-…`) caiu às 18:14Z; 3 commits empurrados; worktree `w-s05d` limpo; cluster `san3-05-s2-pg` (55405) | `run-codex-resume.ps1` com `resume-dev-s05.txt`, GPT-5.6 Sol; o dev abre o PR em rascunho no fim |
+| **#404** (registro) | porteiro (Codex) **LIBERADO COM RESSALVA** (R404-1 a R404-4; R404-4 = disco < 10 GB) | versionar `PORTEIRO-404.md` neste ramo, com as ressalvas no registro |
+| **#400** B-SAN3-09 | parado (inspetor e junta pendentes) | depois do #401 |
+| **#389**, **#388** | parados | erratas dos corpos dos jurados e integração da `main` |
+| **B-SAN3-06b** | plano e mandato prontos para dev no Codex | quando houver cota |
+
+**Disco:** ~6,1 GB livres; limpeza profunda (`DEEP_CLEAN=1`) só com as juntas paradas — esta pausa é a janela.
+**Incidentes do dia, declarados:** `core.autocrlf=false` na config comum 05:46Z–11:20Z (consertado); um `git merge`
+meu rodou na árvore principal por `cd` falho (no-op, conferido pelo reflog); 4 quedas do Claude por limite de sessão e 2
+do Codex por limite de uso.
+- **18:30Z — terreno da C2⁗ do #393:** a cadeira gravou `## PAUSA 2026-10-03T18:25:23Z` no `VOTO-393-J4-C2.md` (voto ainda não
+  emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
+  guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
+  caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
+
+## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
+
+- Limites resetados; Fable e Astra suspensos; Codex em `gpt-5.6-sol`; Claude em Opus só nas janelas sem Codex, uma tarefa
+  por vez (`decisoes.md`, decisões de 03 e 04/10). A cota do Codex medida: janelas de 35–45 min a cada ~4h30.
+- **#393** — junta 4 **REPROVADA 2×1** (C1d-01, C2d-02); ciclo 5 aberto: §16, §16-bis, §16-ter, corpos da junta 5, T5, T5b,
+  S5a (`d07814b0`, 369/369 e 45/45); matriz E4 do ciclo 5 rodando pelo orquestrador.
+- **#401** — junta 2 **REPROVADA** (veto da C2′: C2c2-F1, C2c2-F2); ciclo 3 aberto (planejador no Codex).
+- **#405** — B-SAN3-05 em rascunho (head `e3cb269d`); CI `backend` vermelho no T8d (depende do `pg_hba` do ambiente); de volta
+  ao dev no Codex.
+- **#404** — porteiro LIBERADO COM RESSALVA; este PR versiona o parecer e trata a R404-1 (títulos do `kpis-history.md`) e a
+  R404-3 (estado da decisão do cabeçalho em `decisoes.md`). A R404-2 (aceite dos planejadores para os donos de duas
+  pendências) e a R404-4 (disco: 8–9 GB livres; limpeza profunda feita em parte) seguem abertas.
+
+## 2026-10-04 — D-GOV-PROPORCIONAL
+
+O dono aprovou a governança proporcional (§C7 item 8): junta completa só onde há dinheiro, segurança, permissão ou perda
+de dado; teto de 2 ciclos; #393 congelado (a matriz de mutantes do ciclo 5 foi parada pelo orquestrador); Traccar depois
+de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta completa; #401 passa a um revisor + CI.
+
+## 2026-10-08 — retomada depois da queda de energia
+
+- **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
+  verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
+  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  desligados desde a queda — não são alvo de nada.
+- **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
+  `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
+- **Em voo (Codex, `gpt-5.6-sol`, janelas visíveis):** dev do ciclo 2 do #400 (§15 do plano, em `w-nuv09`) e planejador
+  do ciclo 2 do #405 (em `w-o05`). Depois: cadeiras novas e junta 2 dos dois; plano e dev do `B-OS-FILTRAR-EXPORTAR`;
+  porteiro do #401.
+
+## B-SAN3-09 — bootstrap do 1º admin de plataforma — EM ANDAMENTO (2026-10-01, branch `feat/bootstrap-platform-admin`)
+
+- **O que foi entregue:**
+  - **E1** `scripts/bootstrap-platform-admin.ts` — 417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, `tsc --noEmit --strict` limpo. Script idempotente: trava `pg_advisory_xact_lock(20260909n)`, guard `ALLOW_PROD_BOOTSTRAP` strict-bool, senha nunca via argv, 8 passos com `setTenantRlsContext`, CE-G1 import allowlist.
+  - **E2** `tests/san3-09-bootstrap-platform-admin.test.ts` — T1.1–T1.8, 23/23 pass. Doc-guard T1.8 verde após E4.
+  - **E3** `tests/san3-09-bootstrap-platform-admin-db.test.ts` — T2.1–T2.10, 11/11 pass, banco de drill descartável (porta 54332). Papéis efêmeros NOSUPERUSER NOBYPASSRLS; RLS com GUC verificado; idempotência e concorrência.
+  - **E4** `docs/deployment.md` Runbook B (linhas 169-185) — `ALLOW_PROD_BOOTSTRAP`, `--dry-run`, `--password-stdin`, `PRODUCTION_OPT_IN_MISSING`, `B-O6R-01`.
+  - **E5** KPI + comando + pendências + este registro (2026-10-01T01:30Z–02:30Z aprox.).
+- **Junta:** aguardando (`feat/bootstrap-platform-admin`, 10 commits à frente de `origin/main`).
+- **KPI:** `blocks_completed` **168 → 169**; `backend_tests` **3052/3054 → 3080/3088** (reexecução real; +34 casos); smoke e Flutter carregados (§C3.3).
+- **Pendências abertas:** `P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, `P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP`, `P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG`.
+- **P-SAN-PROD-BOOTSTRAP:** em andamento — script entregue; fecha somente com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
+
+## 2026-10-08 (noite) — #400 e #409 mergeados; #405 em desenvolvimento
+
+- **Mergeados:** #400 (`B-SAN3-09`, 1º admin de plataforma; junta 2 APROVADO 3×0; squash `026ff7b8`; porteiro LIBERADO COM
+  RESSALVA) e #409 (`B-OS-FILTRAR-EXPORTAR`; revisor independente APROVADO; squash `fea93281`; porteiro LIBERADO COM RESSALVA).
+- **#405 (`B-SAN3-05`):** plano do ciclo 2 completo; dev do ciclo 2 no Codex (`gpt-5.6-sol`), com duas paradas obrigatórias
+  resolvidas (errata 1 do orquestrador e errata 2 por decisão do dono, `D-405-D4-NOME-DE-PAPEL`); retomada agendada para
+  22:08 BRT depois do limite de uso do Codex.
+- **Estacionados:** #388, #389, #393. **Traccar:** plano só depois do merge do #405 (`D-TRACCAR-PLANO-APOS-405`).
+- **Disco:** ~12 GB livres; limpeza profunda antes da trilha do Traccar (ressalvas dos porteiros).
+## B-SAN3-05 — ciclo 3 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo3-b-san3-05`, Codex GPT-5.6 Sol, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** A2/A3 — via `view` transitiva para `SELECT/INSERT/UPDATE/DELETE`, dono `rolsuper`/`rolbypassrls` em qualquer nó e matview como escape; T8e/T8f/T14d; documentação operacional.
+- **Prova:** guarda DB 3 × 12/12; regressões 12/12 + 35/35 + 13/13 + 5/5; mutações M-D2a…e × trava/script = 10/10 vermelhas pelo comportamento; B7 mínima sem sentinela; suíte integral válida 3133/3135, 0 falhas, 2 skips; build/check/lint verdes.
+- **Terreno:** `dev05c3-pg`, `dev05c3-node`, `dev05c3-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo.
+- **Registro:** nove pendências novas e dois sub-itens; `P-SAN3-05-REGRA-EM-TABELA` permanece fora do ciclo 3, dona `B-SAN3-10`; KPI congelado e sem diff.
+- **Próximo:** head final empurrado → check-runs concluídos/verdes → inspetor e junta 3; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — ciclo 4 de desenvolvimento (2026-10-09)
+
+- **Identidade:** `dev-ciclo4-b-san3-05`, Claude Opus 5.5, substituição declarada (§C7.6-bis); não achou, não planejou e não votou.
+- **Escopo entregue:** `D-405-PROIBIR-VIEWS` — a trava `RUNTIME_ROLE_GUARD_SQL` e o MODO 6 recusam se existir qualquer view/matview cuja árvore alcance tabela FORCE, sem olhar dono nem privilégio (sai o `view_escape`); `docs/deployment.md` com a regra operacional; T8c/T8d/T8e/T8f/T14d reescritos (casos COL/COM/MAT/CTL); ratchet do arquivo de guarda 82 → 72.
+- **Prova:** vermelho-controle no objeto (T8d, T8e·COL, T8f, T14d·COL); guard-db 3 × 12/12 e sem psql fail-closed; bootstrap 12 · acessos 35 · leituras 13 · catalog-guard 5; mutações M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso; B7 mínima sem sentinela; suíte integral 3135 · 3133 pass · 0 fail · 2 skips; check/lint/build verdes.
+- **Terreno:** `dev05c4-pg`, `dev05c4-node`, `dev05c4-redis` em rede própria, sem portas no host; `erp-postgres`/`erp-redis` não foram alvo. KPI congelado e sem diff.
+- **Relatório:** `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`. **Próximo:** check-runs do head concluídos/verdes → inspetor e junta 4; sem abrir/fechar/mergear PR pelo dev.
+
+## B-SAN3-05 — junta 4 APROVADA (2026-10-09)
+
+- **Veredito:** APROVADO 3 × 0 (C1 `jurado-san305-c4-catalogo-de-views`, C2 `jurado-san305-c4-credencial-arnes-escopo`, C3 `jurado-san305-c4-boot-e-suite`; Opus 5.5 por substituição declarada). **approved_head:** `84831ad9`. Ata: `agent-orchestration/omega/juntas/J-B-SAN3-05.md` § Ciclo 4.
+- **Depois do voto:** `main` `a9bbde38` integrada por merge (só registro em conflito, união main→ramo; índice regenerado); delta de produto contra a `main` idêntico ao aprovado (patch-id).
+- **Pendências novas (não graves):** `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` (B-SAN3-10), `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (B-SAN3-05T), `P-SAN3-05-T15-TETO-DE-RELOGIO` (B-ARNES-2), `P-SAN3-05-MENSAGEM-DA-RECUSA` (a nomear).
+- **Próximo:** CI do head novo → `gh pr ready 405` → squash merge com `--match-head-commit` → porteiro → trilha do Traccar (plano).
+
+## B-SAN3-06b — console da plataforma sem ficção — DESENVOLVIMENTO CONCLUÍDO (2026-10-09)
+
+- Organizações e Visão Geral usam o resumo real; `platform` recebe selo de sistema e fica fora das métricas de clientes.
+- Cloud Billing consome cinco leituras reais por período, sem cálculo ou ação monetária no frontend.
+- Saúde consome readiness de Postgres, Redis e Worker; observabilidade complementar permanece pendência parcial.
+- Auditoria Global, APIs e Credenciais, Planos e Módulos e Configurações são paradas honestas fora do menu.
+- Cinco geradores e 45 testes T1–T45 cobrem fabricação, rotas, menu, contratos e controles negativos.
+- KPI congelado: nenhum arquivo `Kpis/*` foi alterado. Aguarda revisor independente e CI; PR será aberto pelo orquestrador.
+- **Sucessor (2026-10-09):** E8 fechada por `dev-b-san3-06b-sucessor` (Claude Opus 5.5) depois da queda do Codex; `test:smoke` 1313/1313, T1–T45 45/45, regressões 125/125, build e `check` verdes; relatório em `docs/revisoes/SAN3/B-SAN3-06b-DEV-relatorio.md`.
+
+## Estado em 2026-10-10 (madrugada) — registro em dia
+
+- **Mergeados:** #405 B-SAN3-05 (`a9fbe283`; junta 4 APROVADA 3 × 0; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-05/PORTEIRO-405.md`) · #412 KPI por marco (`8a79532f`; revisor APROVADO) · #411 B-SAN3-06b console da plataforma sem ficção (`a2937bad`; revisor APROVADO na re-revisão; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-06b/PORTEIRO-411.md`; 1317/1317 no smoke, 49 testes do bloco, 54 arquivos).
+- **Em curso:** plano do Traccar no ramo `docs/plano-traccar` (`612d6650`, 7 blocos, B-TRC-01 detalhado) com a crítica r1 no Codex; plano de retomada do #389 (Fable).
+- **Congelados:** esteira da API (`D-API-ESTEIRA-CONGELADA`), Linux (`D-LINUX-CONGELADO`), #393. **Estacionado:** #388.
+- **Ordem do dono:** `D-ORDEM-NOITE-2026-10-10`.

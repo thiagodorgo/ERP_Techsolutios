@@ -234,7 +234,9 @@
 - impacto: telas de PLATAFORMA (fora do AppShell do tenant) e persona de login demo — nao violam o D-007
   operacional do tenant, mas sao dados estaticos que eventualmente devem virar reais (mesmo espirito do
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
-- status: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
+- status: FECHADA — B-SAN3-06b removeu os eventos e indicadores fabricados da Auditoria Global; a persona do login em modo demonstração é intencional e não é dado operacional da tela.
+- evidência: `PlatformAuditPage.tsx` é parada honesta; T21–T22 e o gerador `san3-06b-literais-de-plataforma.mjs` provam ausência de linhas e números fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformAuditPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:18` (T22), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:79` (T33).
+- histórico: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
   login e intencional em modo mock). Nao bloqueia F6."
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: a Auditoria Global da plataforma exibe trilha e contagens inventadas ("0 incidentes") sem rótulo de demonstração; bloqueia a demonstração do console.
 
@@ -497,7 +499,7 @@
   PRÉ-EXISTENTE e plataforma-wide (não do Ω3-d). RLS fica como defense-in-depth para quando o app conectar
   com role NÃO-superusuário. **Forte candidato para a rodada de saneamento-infra.**
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** a classificar · **dono:** `B-SAN3-05` + dono do ambiente
 - **junta do PR #386, ciclo 1 (C2-03, 2026-09-12):** a lista das leituras de plataforma que quebram sob papel sem `BYPASSRLS` inclui também `replaceTenantCharges`/`listTenantCharges` (`src/modules/cloud-charges/cloud-charge-prisma.repository.ts:24-25,166-212,238-240`, sem contexto; `tenant_cloud_charges` tem policy com `USING` e `WITH CHECK`). Plano SAN3 v5: fronteira do `B-SAN3-05`.
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
@@ -575,14 +577,84 @@
 - descricao: o seed atual so cria o tenant DEMO; `User.tenant_id` e NOT NULL/FK Restrict (nao existe platform_admin
   tenant-less). Um bootstrap de produção precisa criar tenant de SISTEMA + role super_admin + admin + credencial,
   idempotente, verificado contra banco prod-like. Fora do escopo do PR6 (config-as-code) — apontado por critico (C9).
-- acao: entregar o script de bootstrap dedicado na ATIVACAO (Runbook B), rodado one-shot com `ALLOW_PROD_SEED=1`
+- acao: executar o script de bootstrap dedicado na ATIVAÇÃO (Runbook B), one-shot com `NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1`
   inline (removido em seguida). NUNCA usa `db:seed`/demo.
-- status: aberto (follow-up de ativacao; nao bloqueia o merge da config inerte)
+- status: **EM ANDAMENTO** — script entregue e testado no B-SAN3-09; fecha só com a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham. D2: `ALLOW_PROD_BOOTSTRAP` ≠ `ALLOW_PROD_SEED` (uma não abre a outra). D3: o papel `super_admin` e as concessões são do CD (`db:provision-rbac`), nunca do script.
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: sem bootstrap versionado do 1º `platform_admin`, a primeira organização real em produção só nasce por SQL manual fora do repositório; bloqueia o go-live, não a demo.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
-  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+  <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **EM ANDAMENTO desde 2026-10-01** — B-SAN3-09 entregou o script; o fechamento depende exclusivamente do ato do dono em produção (§11 Ato 1).</sub>
 - **dono:** `B-SAN3-09` (plano SAN3, §4.1 item 43 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+
+---
+
+### Pendências abertas por B-SAN3-09 (2026-10-01)
+
+#### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE
+- descricao: a organização `platform` criada pelo bootstrap aparece no console como se fosse cliente; precisa de tratamento visual e operacional próprio.
+- acao: cobrir na tela de Organizações/Detalhe do B-SAN3-06a ou bloco equivalente.
+- status: FECHADA — a organização de sistema continua visível, recebe selo próprio, não possui ação de cliente e é excluída das métricas de clientes nas duas telas.
+- evidência: T41–T43 validam lista, Visão Geral e igualdade com `PLATFORM_TENANT_SLUG` do bootstrap; o Detalhe usa a mesma constante. Ponteiros: `frontend/src/modules/platform/platform-overview.types.ts:12` (`PLATFORM_SYSTEM_ORG_SLUG`), `frontend/src/modules/platform/pages/PlatformTenantDetailPage.tsx:8`, `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:132` (T41), `:148` (T42), `:156` (T43).
+- severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
+- dono: B-SAN3-06b
+- adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
+
+#### P-SAN3-09-ENV-EXAMPLE-BOOTSTRAP
+- descricao: `.env.example` não documenta `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_PASSWORD`, `PLATFORM_ADMIN_NAME` nem `ALLOW_PROD_BOOTSTRAP`.
+- acao: adicionar as quatro variáveis com comentário ao `.env.example` num bloco de housekeeping.
+- status: aberto
+- severidade: BAIXA — script funciona sem; afeta só onboarding de novos devs.
+- dono: B-SAN3-10
+
+#### P-SAN3-09-SCRIPTS-FORA-DO-TSCONFIG
+- descricao: `scripts/bootstrap-platform-admin.ts` usa `--skipLibCheck` no `tsc --noEmit`; o `tsconfig.json` raiz pode não incluir `scripts/` na compilação padrão.
+- acao: verificar e, se necessário, criar `scripts/tsconfig.json` incluindo o diretório.
+- status: aberto
+- severidade: BAIXA — tsc direto no arquivo passa; afeta só o build da IDE.
+- dono: B-ARNES-2
+- adendo (junta 2, C1c2-07, 2026-10-08): não afeta só a IDE — com a mutação MF3-f aplicada, a CI e o T1 continuam verdes; a checagem de tipos que protege as flags (A19) só roda manualmente.
+
+#### P-SAN3-09-ROTEIRO-DE-OPERACAO
+- descricao: consolidar o roteiro operacional de ativação, diagnóstico, repetição segura e recuperação do bootstrap.
+- acao: documentar e ensaiar o roteiro antes do go-live.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-DB-TEST-SO-LINUX
+- descricao: o arquivo `-db` falha no T2.1 no Windows porque o Node tenta executar o shim shell de `node_modules/.bin/prisma`; a falha é vermelha, nunca verde falso, e a CI Linux executa o teste.
+- acao: tornar o arnês de processos de banco portável no Windows.
+- status: aberto
+- severidade: BAIXA
+- dono: B-ARNES-2
+
+#### P-SAN3-09-FALHOU-SEM-CAUSA
+- descricao: em erro de conexão o script imprime `FALHOU: ` vazio (exit 1 correto e nada gravado), sem causa útil ao operador.
+- acao: informar causa segura, sem vazar a URL do banco.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA
+- descricao: com `--reset-password`, a simulação (`--dry-run`) relata "credencial já existia (senha mantida)" e `passwordReset=false`, mas a execução real redefine a senha e grava +1 na auditoria. A simulação não grava nada; o defeito é a mensagem ao operador. O corpo foi congelado pelo §15.3 do ciclo 2 (achado C2c2-A1 da junta 2).
+- acao: a simulação relata o que a execução real faria com a flag pedida, com teste no estado "convergido com reset".
+- status: aberto
+- severidade: MÉDIA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-ECO-APOS-FLAG-DE-SENHA
+- descricao: uma mutação em que o script repete o argumento só a partir da 2ª posição (o formato real de `--password-stdin <valor>`) passa no T1 (26/26) e no T2 (12/12); o produto hoje não repete nada (achado C1c2-02 da junta 2).
+- acao: caso de teste que injeta um valor após a flag de senha e exige que ele não apareça em nenhuma saída.
+- status: aberto
+- severidade: BAIXA
+- dono: B-SAN3-10
+
+#### P-SAN3-09-FECHO-RUNTIME-SEM-CASO-VERMELHO
+- descricao: os ramos do cálculo do fecho de runtime do guard (T1.7) podem ser enfraquecidos sem nenhum caso vermelho (MF2-f e mais 6 mutações sobrevivem 26/26); o T1.5, que roda na CI, continua acusando o efeito (achado C3c2-A1 da junta 2).
+- acao: um caso por ramo do fecho, com a mutação que o deixa vermelho.
+- status: aberto
+- severidade: BAIXA
+- dono: B-ARNES-2
 
 ## P-SAN-PROD-WEBIMG - Rollback do frontend sem imagem GHCR (Ω-INFRA-3, 2026-07-14)
 - descricao: o job docker do `ci.yml` publica só `erp-backend` no GHCR; o web nao tem imagem → o rollback-por-imagem
@@ -1630,6 +1702,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   (agentes devops/observabilidade). So entao a tela ganha indicadores reais. Requer decisao de provedor/infra (possivel junta
   + PD se envolver servico tarifado).
 - status: ABERTA (parada honesta entregue; monitoramento real e trabalho de infra futuro).
+- parcial (2026-10-09): readiness real de Postgres, Redis e Worker ligado pela entrega do console; uptime, p95, profundidade de fila, integrações e backup continuam sem fonte e mantêm selo honesto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -2255,8 +2328,13 @@ antes do PR-03.
 "versão substituída" (com link para a vigente) em `ChecklistRunsPanel.tsx` + smoke test. Nenhum guard pega
 hoje a defasagem do espelho — o teste do DTO só fixa `templateName`/ausência de `tenant_id`.
 
-- **status:** ABERTA · **severidade:** a classificar · **dono:** a atribuir
-  <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **status:** RESOLVIDA em B-SAN3-11 (2026-10-01) · branch `fix/dossie-versao-da-vistoria`
+  - E1: `processes.types.ts` +3 campos obrigatórios (`reopenedFromRunId`, `supersededByRunId`, `currentRunId`)
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos (null quando ausente)
+  - E3: `ChecklistRunsPanel.tsx` três estados: substituída ("Versão substituída" chip default, link para vigente), vigente de reabertura ("Versão atual", link para anterior), única (sem marcação)
+  - E4: guard CE-G1 (`scripts/san3-11-dossie-vistoria-censo.mjs`) — exit 1 se campo descartado ou ponto sem consulta em JSX
+  - E5: 16 testes novos `patios-dossie-versao.smoke.test.tsx` (T1–T14 com T5b e T7b)
+  - Bateria: `check` ✓, `test:smoke` 1218/1218 ✓, `build` ✓, guard exit 0 ✓, `git diff --check` ✓
 - **dono:** `B-SAN3-11` (plano SAN3, §4.1 item 8 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-CHK-FLUTTER-KIND-COLAPSA (2026-08-10 — junta do CHK P1 PR-04, voto vencido do `coordenador-de-acessos`) — **RESOLVIDA na PR-04b (2026-08-11)**: enum ganhou `unknown` + `fromLegacyApiValue` para os fluxos legados (coleta continua o default SÓ onde sempre foi legítimo), `fromApiValue` não colapsa mais desconhecido, `getRunByKind` recusa ambiguidade em vez de devolver palpite, e a tela de comparação RECUSA comparar fase não identificada com mensagem honesta — nunca fabrica divergência. 15 testes novos (b123), provados por mutação (reverter o colapso derruba 8); suíte Flutter 854/854 sem regressão no fluxo do guincheiro.
@@ -2542,7 +2620,8 @@ homônimo em organizações distintas é legal no modelo.
 - **`P-O6R-B01-TROCA-SENHA`** — rota de troca de senha (o gancho §5.5 nasce ARMADO e inerte;
   `changePasswordWithIdentityHook` + `IdentityLinkService.handlePasswordChange`). **Colisão declarada
   (crítico higiene 5): o fluxo de RESET de senha, por definição sem ator autenticado, não pode chamar o setter
-  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** status: ABERTA.
+  do §3.7 — implementá-lo REABRE o contrato do setter em junta.** Nota B-SAN3-09: o piso de 12 caracteres vale
+  somente para o bootstrap; a troca de senha pela aplicação mantém o piso de 8. status: ABERTA.
 - **`P-O6R-B01-REAUTH-SEM-CREDENCIAL`** (S7) — identidade sem credencial elegível fora da organização do
   vínculo removido recebe `403 REAUTH_CREDENTIAL_UNAVAILABLE` e fica sem caminho de autosserviço; desenhar o
   caminho assistido. status: ABERTA.
@@ -7042,7 +7121,7 @@ o que o §A2 proíbe.
 como fonte e passam a citar o que de fato está na `main`. As duas respostas são legítimas; a ausência não
 é, porque hoje seis arquivos apontam para um alvo que não existe na linha em que eles vivem.
 
-- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
+- **status:** FECHADA (2026-09-30 — a decisão foi portada VERBATIM para a `main` em `agent-orchestration/controle/decisoes.md`, por decisão do dono, no PR #396; md5 EOL-neutro da seção igual ao de `demo/investidor` `d1fab3bc`) · antes: ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` (evidência: citação na `main`
   desde `cae6086`, 2026-09-05; a decisão nunca esteve na `main`) · **dono:** **decisão do dono** — envolve
   consolidar texto entre `demo/investidor` e a `main`, que é dele, não de um bloco de execução
 
@@ -7442,7 +7521,7 @@ medido, e `fly.production.toml` não o declara.
 O **rateio** já não depende disso — este bloco o passou a ler por tenant, sob contexto. O que resta são as
 leituras de plataforma **fora** do rateio.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
+- **status:** EM ANDAMENTO (código mergeado; fecha com a trava verde no ambiente — ato do dono §11) · **severidade:** ALTA · **escopo:** `pre-existente` — migração `20260611000000`
 - **plano SAN3 (2026-09-11, crítico r2, CR2-02):** entra no gate como pré-requisito do item 9 — no dia em que o papel de runtime deixar de ter `BYPASSRLS`, estas leituras (`src/modules/cloud-usage/cloud-usage-prisma.repository.ts`, `RlsPrismaCloudUsageRepository`) zeram o resumo de uso da plataforma e a tela Cloud Billing. Bloco `B-SAN3-05`.
   (2026-06-08) · **dono:** bloco de plataforma (a decidir) · **N e forma:** `A7`, 3 asserções, Postgres
   descartável, papel `NOSUPERUSER NOBYPASSRLS`.
@@ -8389,7 +8468,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com selo "IA"; dados e rotas órfãos — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Cloud Billing passou a consumir os cinco GETs reais por período, estritamente em leitura e sem dado monetário fabricado.
+- evidência: T10–T20 e T45; gerador de literais retorna 0 sítios; T44 prova que funções de escrita não chegam à página. Ponteiros: `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:35` (`getCloudBilling`), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:130` (T15), `:228` (T45), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:166` (T44).
 - **fonte (fatia AUSENTES, §2a):** sintese B1-B3, C1 (selo), C2 (registry), D8
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`: 245 l., 0 `useEffect/useState/await/fetch/.service`, 0 `onClick`, literal "48,2k", selo `IA` l.181, insights literais l.62; `cloud-billing.{adapter,service,mock}.ts` sem página importadora; `src/modules/navigation/navigation.registry.ts:41` `status: "implemented"`
@@ -8493,7 +8573,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e lista de Organizações exibem dado inventado — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Organizações consome o resumo real; Planos e Módulos, Auditoria Global e APIs e Credenciais são paradas honestas sem linhas ou números inventados.
+- evidência: T1–T9 e T21–T28; geradores de telas e literais retornam 0 telas sem fonte e 0 sítios fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformTenantsPage.tsx:12` (hook real), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:94` (T1), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:51` (T28).
 - **fonte (fatia AUSENTES, §2a):** sintese B17 (residual), B18, D9
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `modules/platform/pages/PlatformPlansModulesPage.tsx` (73 l.), `PlatformAuditPage.tsx` (90), `PlatformApisPage.tsx` (78): 0 hooks; `PlatformTenantsPage.tsx:18-19` ids `ten-sp`/`ten-agromax`, `:81` navega para id fabricado
@@ -8510,7 +8591,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram MFA e auditoria "ligados" por literal — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Configurações da Plataforma virou parada honesta, sem toggle, estado ou ação de segurança simulados.
+- evidência: T27–T28 e `PLATFORM_HONEST_STOP`; censo de literais retorna 0 controles booleanos fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformSettingsPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:45` (T27).
 - **fonte (fatia AUSENTES, §2a):** sintese B19
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `PlatformSettingsPage.tsx:8` `function Toggle({ on }: { on: boolean })`; `:43` "MFA obrigatório para admins … `<Toggle on />`"; `:44` "Auditoria de operações críticas … `<Toggle on />`"
@@ -9468,7 +9550,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com padrões opostos: sem `VITE_USE_MOCKS` a plataforma mostra 3 organizações inventadas — MÉDIA
 
-- status: ABERTA (achado C4-08 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`, gravidade nota; registrada no ciclo 2)
+- status: FECHADA — os serviços da plataforma usam exclusivamente `isMockMode()`; modo demonstração devolve vazio/recusa honesta e os fixtures foram removidos.
+- evidência: T5, T19 e T39; a busca de `readFrontendEnv("VITE_USE_MOCKS"` encontra somente `frontend/src/config/env.ts`. Ponteiros: `frontend/src/modules/platform/platform.service.ts:1` e `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:1` (`isMockMode`), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:147` (T5), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:205` (T19), `frontend/tests/san3-06b-navegacao-plataforma.test.ts:37` (T39).
 - **prova:** `frontend/src/config/env.ts` `isMockMode()` = `VITE_USE_MOCKS === "true"` (padrão REAL) × `shouldUseMocks()` = `readFrontendEnv("VITE_USE_MOCKS", "true") !== "false"` (padrão MOCK) em `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:163-165` e `frontend/src/modules/platform/platform.service.ts:122-124`. Sonda da C4 com `VITE_USE_MOCKS` ausente ou `"0"`: a OS vai ao backend real, mas a plataforma NÃO chama a API e devolve 3 organizações inventadas. A promessa do `B-SAN3-01` (e o guard G1) confia em `isMockMode()` como O interruptor; na divergência, vence a ficção.
 - **escopo:** `pre-existente` — `git blame -L 163,165 …/cloud-billing.service.ts` → `4d6e1219` (2026-06-08); fora da fronteira do `B-SAN3-01`.
 - **dono:** `B-SAN3-06b` (`modules/platform/**` no §5 do `PLANO_SAN3.md`); cruza `P-WEB-PLATAFORMA-TELAS-FICCAO` (item 46).
@@ -9486,7 +9569,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lista aparece para quem não tem `work_orders:create` — BAIXA
 
-- status: ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, E4 do plano — `WorkOrdersPage.tsx` passa a renderizar o botão "Nova OS" do cabeçalho só com `canCreate` (`permissions.includes("work_orders:create")`, a mesma régua da rota `POST /work-orders` e do CTA do vazio). Prova: `frontend/tests/work-orders-page-live.test.tsx` `[GB1]`/`[GB2]` iteram os 13 papéis de `ROLE_PERMISSIONS` executado; no head-base os dois ficam VERMELHOS listando 7 papéis (`technician, viewer, finance, inventory, field_technician, auditor, support`), e verdes com o E4; mutações `canCreate = includes("work_orders:read")` e CTA sem `canCreate` → vermelho — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §E1/E4 e §M. Valor anterior, preservado: "ABERTA (achado C2-N5 da junta do ciclo 1 do `B-SAN3-01`, `master-teste-telas-rotas`; registrada no ciclo 2)")
 - **prova:** sonda RBAC da C2 como `viewer` (read sim, create não): o botão "Nova OS" do cabeçalho está presente; `/work-orders/new` → guard "Acesso nao autorizado"; `POST /work-orders` direto → 403 `permission_required`. O papel é negado, mas o elemento de ação continua visível. `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (botão do `PageHeader`, l.249-252 no head do ciclo 2). O CTA "Nova OS" do estado vazio, novo no ciclo 2, já nasce com o gate.
 - **escopo:** `pre-existente` — o botão sem gate está na página desde `9f12ea99` (2026-06-09; `02bd7dab` l.233); o diff do `B-SAN3-01` não toca a linha.
 - **dono:** `B-SAN3-01b` · `fix/web-guarda-por-alcance-e-estado-da-pagina`.
@@ -9554,7 +9637,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento:** E1 da cópia avulsa verde numa base sem OS (busca presente e `[data-state="empty"]` visível) e a C3 aceitar o vazio embutido contra a ficha.
 ## P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está amarrada ao estado que o reducer produziu — ALTA
 
-- status: ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E1 do plano — `frontend/tests/work-orders-page-live.test.tsx` monta a `WorkOrdersPage` REAL com o hook REAL rodando efeitos sobre um DOM mínimo escrito no próprio teste, com os bytes do backend em `fetch`: `[PV1]` 403 → `forbidden` e KPIs sem dígito, `[PV2]` 500 → `error`+alerta+texto do service, `[PV3]`–`[PV5]` vazio/3 linhas/pendente, `[PV6]` 403 em 2º plano. Teste de encerramento cumprido: a mutação `N-PG-PAINEL` fica VERMELHA — bloco 79/76/3 (`[PV1]` `[PV2]` `[PV6]`), smoke 1214/1211/3; `N-PG-KPI` idem — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M (restauro provado por hash). Valor anterior, preservado: "ABERTA (achado A-01 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)")
 - **prova:** mutação `N-PG-PAINEL` em `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` (trocar `status={status}` por `status="empty"` no `WorkOrdersLoadState`) → a página REAL mostra o 403 como `data-state="empty"`, "Nenhuma ordem de serviço" e KPIs `0|0|0|0`, com `node --test tests/work-orders-honest-errors.test.tsx` 67/67, `tsc` ec=0 e `test:smoke` 1193/1193 — nada fica vermelho. Controle `N-PG-SEED`: com o estado certo, `[forbidden]` e KPIs "—".
 - **escopo:** `dentro-do-bloco` (o código da página é do `B-SAN3-01`); os testes amarram o reducer e os componentes com props passados à mão, e ninguém vigia os props que a página passa.
 - **dono:** `B-SAN3-01b` (bloco novo do gate, `fix/web-guarda-por-alcance-e-estado-da-pagina`).
@@ -9563,7 +9646,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o próximo membro dentro das próprias raízes — ALTA
 
-- status: ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E2+E3 do plano — o `[G1]` de `frontend/tests/work-orders-honest-errors.test.tsx` resolve re-export em profundidade ARBITRÁRIA (barrel de N níveis, re-export local, `default`, namespace, `import()`), varre o FECHO de import das raízes e o arquivo de fronteira `useServiceQuoteReferences.ts`, com denominadores (81 raízes, fecho 48, 20 referências guardadas, sítio sabido); `[G1b]` novo pega entidade fabricada inline (`id`/`code` constante em `catch`/`.catch(`/`??`/`||`). Teste de encerramento cumprido: `N-BARREL2`, `N-BARREL3`, `N-LITERAL`, `N-FORA-RAIZ` ficam VERMELHAS no bloco e no smoke — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M; os cabeçalhos de `dispatches.service.ts`, `repository.ts` e `useServiceQuoteReferences.ts` dizem o que o guard prova e o que não prova (R2–R4). Valor anterior, preservado: "ABERTA (achado A-02 da cadeira C4 do ciclo 2 do `B-SAN3-01`; decisão do dono `D-SAN3-01-MERGE-COM-BLOCO-DE-GUARDA`)")
 - **prova:** mutação `N-BARREL2` (arquivos novos `reexport-a.ts` → `export * from "./work-orders.mock"`, `reexport-b.ts` → `export * from "./reexport-a"`, e um service novo com `catch → getMockWorkOrderDetail` importado de `./reexport-b`) → em modo real (`VITE_USE_MOCKS=false`, backend 500) a tela recebe `OS-000101`, com `[G1]` VERDE, bloco 67/67, `tsc` e smoke verdes; o controle com barrel de UM nível fica vermelho. Mutação `N-LITERAL`: entidade fabricada escrita inline (`id=""`, `code="OS-FALLBACK"`) em arquivo novo das raízes também nasce permitida — a classe é maior que o import de mock.
 - **escopo:** `dentro-do-bloco` (o guard e os cabeçalhos dos services são do `B-SAN3-01`; o cabeçalho afirma um alcance que a mutação desmente).
 - **dono:** `B-SAN3-01b`.
@@ -9572,7 +9655,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são textuais — MÉDIA
 
-- status: ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)
+- status: FECHADA (2026-10-02, `B-SAN3-01b`, E1 do plano — `[W1]`/`[W2]` deixam de ser regex sobre o texto dos hooks e vivem em `frontend/tests/work-orders-page-live.test.tsx` por COMPORTAMENTO: 3 OS (ou a OS do detalhe) na tela, 500 no tick capturado do auto-refresh → `data-state="stale"` com o dado mantido; nenhum hook foi tocado. Teste de encerramento cumprido: `N-W1TXT` e `N-W2TXT` ficam VERMELHAS no bloco e no smoke — relatório `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md` §M. Valor anterior, preservado: "ABERTA (achado A-03, ajuste, da cadeira C4 do ciclo 2 do `B-SAN3-01`)")
 - **prova:** mutação `N-W1TXT` em `frontend/src/modules/work-orders/useWorkOrders.ts` (embrulhar o `setState` num bloco que redefine `background = false`) mantém as três asserções textuais do `[W1]` satisfeitas, com bloco 67/67, `tsc` e smoke verdes.
 - **escopo:** `dentro-do-bloco`. A quebra vai na direção fail-closed (a falha em 2º plano passa a mostrar o painel de erro em vez de manter o dado com a faixa): não chega dado fabricado à tela — por isso ajuste, não bloqueio.
 - **dono:** `B-SAN3-01b`.
@@ -9769,6 +9852,665 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **forma do conserto, para quem pegar:** acrescentar ao `.gitignore` do repositório exceções `!` **por padrão**, geradas do arquivo-fonte e não escritas à mão — para cada um dos 22 padrões sem barra, uma reinclusão restrita aos 4 diretórios —, mantendo a reafirmação de `.claude/worktrees/` **depois** de todas elas (no mesmo arquivo, o último padrão que casa vence). Um guard que **gere a classe da fonte** e falhe quando um padrão novo aparecer no ignore global sem exceção correspondente fecharia a propriedade em vez de a instância.
 - **bloqueia: NÃO** bloqueia o gate nem o próximo bloco — não há efeito sobre código, dado ou permissão, e nenhum arquivo rastreado hoje é afetado.
 - **teste de encerramento:** a sonda gerada da fonte (22 padrões sem barra × 4 diretórios reincluídos, por `git check-ignore -q --no-index`) devolve **0 escondidos**; vermelho-controle: acrescentar um padrão sem barra ao ignore global **sem** a exceção correspondente faz a sonda voltar a achar escondido, e o guard falha nomeando o padrão.
+
+## P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda falam de protocolo de ciclos revogado — MÉDIA
+
+- status: ABERTA (aberta pelo `B-GOV-SEM-TETO`, PR #394 — classe (b) do plano `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` §3.3; o bloco **não** as corrige: o §6 do plano as proíbe a ele)
+- **prova (N = 5 regras; forma: linha de corpo de agente, ou de companheiro nomeado pelo contrato, que limita ou condiciona o número de ciclos de reprovação a um protocolo que o `D-SEM-TETO-AUDITORIA-NO-3` revoga; causa: foram escritas sob o teto de 5 ou antes dele, e nenhuma revogação posterior as alcançou — o `D-TETO-DOIS-CICLOS` não as tocou e este bloco, por escopo, também não). Linhas e origem medidas por `grep -n` e `git log -S --reverse` no head do #394:**
+  - **V-07** `.claude/agents/validador-mestre.md:100` (espelho `.agents/agents/validador-mestre.md:106`): *"Máximo 2 ciclos de reprovação por PR; na 3ª falha = CONDIÇÃO DE PARADA"* — `bed17db3`, 2026-07-08 (#141).
+  - **V-08** `.claude/agents/critico-adversarial.md:3` e `:6` (espelho `:3` e `:13`): *"Nos ciclos 4–5 do protocolo de reprovação … reabre a premissa desde o objetivo"* — `21fdf516`, 2026-07-10 (#158).
+  - **V-09** `.claude/agents/avaliador-mapas.md:17` (espelho `:24`): *"ciclo 3 reabre premissa com pesquisa ≥5"* — `56a6077b`, 2026-07-13 (#178).
+  - **V-10** `.claude/agents/agente-fabrica.md:8` (espelho `:15`): *"Especialistas do ciclo 3 do protocolo de reprovação"* — `21fdf516`, 2026-07-10 (#158).
+  - **V-11** `EXECUTION_MODEL.md:273–278`: a tabela do protocolo de **cinco** ciclos, *"após 5 falho → parada + dossiê ao humano"* — `39eb46cc`, 2026-07-28; último commit no arquivo `7fada65e`, 2026-08-15.
+- **escopo:** `pre-existente` — evidência de data: as cinco antecedem o `D-TETO-DOIS-CICLOS` (2026-08-29) e o `D-SEM-TETO-AUDITORIA-NO-3` (2026-09-27); nenhuma foi escrita nem tocada pelo #394.
+- **efeito medido:** nenhum desses cinco papéis tem cadeira na junta 3 do #393. O efeito é **latente**: na primeira vez que um deles participar de um ciclo ≥3, lerá regra de protocolo revogado — o `validador-mestre`, que tem veto, mandaria parar na 3ª falha.
+- **dono:** o **orquestrador**, que abre um bloco de governança próprio para os cinco (identificador proposto: `B-GOV-CICLOS-RESIDUAIS`; plano do #394 §3.3(b)), antes de qualquer junta de ciclo ≥3 em que um desses papéis tenha cadeira.
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393.
+- **teste de encerramento:** a busca pela propriedade (teto ou parada por contagem de ciclos, ou passo obrigatório de protocolo revogado em ciclo numerado), com `grep -n -i`, nos corpos dos dois espelhos e no `EXECUTION_MODEL.md`, devolve 0 linhas vivas; vermelho-controle: reintroduzir *"na 3ª falha = CONDIÇÃO DE PARADA"* num corpo faz a busca voltar a achá-la.
+
+## P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 opera, mas cinco perguntas do mecanismo ficaram sem resposta — MÉDIA
+
+- status: ABERTA (aberta pelo `B-GOV-SEM-TETO`, PR #394. O plano do bloco, §4, mediu dez peças ausentes no gatilho, M-01…M-10; a emenda do bloco fechou as que tornam o gatilho operável com maquinaria que já existe — o inspetor, o registro `R-*` — e as declarou como elaborações T-21…T-25 na entrada `D-SEM-TETO-AUDITORIA-NO-3` de `decisoes.md`. Estas ficam **nomeadas**, não desenhadas: desenhá-las seria legislar além das palavras do dono)
+- **prova (N = 5 perguntas; forma: elemento do mecanismo sem `arquivo:linha` que o responda no contrato nem no corpo de um gate; causa: o texto de 27/09 não as tratou, e a emenda só acrescentou o mínimo para a auditoria acontecer, ficar registrada e travar o ciclo 4):**
+  - **M-02** — corpo, papel e modelo do auditor. O contrato diz só quem **não** pode conduzir (quem votou, planejou ou desenvolveu no bloco); não há corpo de auditor em `.claude/agents/` nem modelo fixado.
+  - **M-04 (resto)** — quem confere que o conserto da máquina de fato consertou, e o que limita a espera enquanto ela está defeituosa. O gate confere a **presença** do registro do conserto, não o mérito dele.
+  - **M-05** — o texto opera com **uma** auditoria por bloco, a do ciclo 3, cujo parecer serve aos ciclos seguintes. Se um bloco que continue reprovando deve ser auditado de novo mais adiante, as palavras do dono não dizem — é pergunta **para o dono**.
+  - **M-06** — o relato do orquestrador "a cada ciclo" sobre classe de defeito repetida sem informação nova: onde fica e quem o lê.
+  - **M-09** — as perguntas (b) e (c) da auditoria repetem as (a) e (c) que o §C7.4-bis já manda responder a cada reprovação: somam ou substituem?
+- **escopo:** `dentro-do-bloco` quanto ao tema, **deixadas abertas por decisão escrita** (plano §4 e briefing §9: o mecanismo completo não está nas palavras do dono; o que se julga é se o transcritor as calou — aqui estão ditas).
+- **efeito medido:** nenhuma das cinco impede a primeira auditoria: com T-21…T-25 ela é convocada, conduzida por quem é elegível, registrada em caminho fixo e trava o ciclo 4. O que falta é padronização (M-02, M-06, M-09), atestação do conserto e prazo (M-04), e a recorrência (M-05).
+- **dono:** o **orquestrador** — leva ao dono as que são decisão dele (M-05 e o prazo de M-04) e transcreve as respostas no mesmo bloco de governança da `P-GOV-CICLOS-CORPOS-ORFAOS` (identificador proposto `B-GOV-CICLOS-RESIDUAIS`).
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393.
+- **teste de encerramento:** cada uma das cinco tem `arquivo:linha` no contrato ou no corpo de um gate que a responde, **ou** uma decisão do dono registrada em `decisoes.md` que a dispensa.
+
+## P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO sobre o texto que tirou o teto de ciclos — MÉDIA
+
+- status: ABERTA (aberta pelo orquestrador na ata `agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md`, junta APROVADA 3 × 0 sobre `7ad08690`; os quatro são `ajuste`, `dentro-do-bloco`, e **não** reprovaram)
+- **prova (N = 4 achados de 3 cadeiras; forma: `ajuste` com `arquivo:linha` no voto; causa comum: o texto do §C7.4 item 4 acrescenta mecanismo às palavras do dono e o mecanismo ficou incompleto em pontos que a emenda nomeou em vez de desenhar):**
+  - **C1-A1** — `CLAUDE.md` l.413–445 (= `AGENTS.md` l.441–473), sob o rótulo "(decisão do dono, 2026-09-27)": 16 proposições acrescentam ator, obrigação, condição ou restrição **sem marca local** de que são do transcritor; a separação só existe em `decisoes.md` ("nenhuma é palavra do dono").
+  - **C1-A2** — `CLAUDE.md` l.432–435: no ramo "máquina defeituosa", o "continuaremos" depende de um conserto **sem executor, sem prazo e sem desfecho alternativo** (condição explícita; é a M-04 da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` vista pelo lado do dono).
+  - **C2-3-1** — `inspetor-de-terreno-da-junta.md` item 2.2 (l.73–76, `dd79c96f`) × item 3.3 (l.110–112, `72fcdcde`, 2026-09-08): contra uma ref julgada **anterior** ao #394, a leitura "cláusula inexistente = o item não se aplica" desliga a trava do ciclo 4. Medido nos heads `c32f77b5` (#393), `a24f58b5` (#388) e `bc3e736b` (#389): `LIBERADO` numa leitura, `BLOQUEADO` na outra; com ref pós-#394, `BLOQUEADO` nas duas.
+  - **C3-A1** — o diff pôs no item 4 ~8 linhas normativas (T-21, T-22, T-24, T-25) que o §6 do plano `docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` proibia; o plano não foi emendado e `decisoes.md` diz "implementa aquele plano" sem registrar a divergência. Declarada na ata pelo orquestrador, que mandou a emenda.
+- **escopo:** `dentro-do-bloco` (todos nasceram no #394).
+- **efeito medido:** nenhum hoje — nenhum bloco está em ciclo ≥ 4. C2-3-1 é o único com efeito operável próximo; **conduta do orquestrador enquanto aberta** (registrada na ata, não é norma nova): nenhum PR vai a junta de ciclo ≥ 3 sem antes integrar a `main` pós-#394.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (proposto no plano do #394 §3.3(b); mesmo dono da `P-GOV-CICLOS-CORPOS-ORFAOS` e da `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`), aberto pelo orquestrador.
+- **bloqueia:** não bloqueia o #394 nem a junta 3 do #393 (esta, sob a conduta acima).
+- **teste de encerramento:** (C1-A1) cada proposição do item 4 que não é palavra do dono tem marca local no contrato; (C1-A2) o ramo "máquina defeituosa" nomeia executor, prazo e desfecho, ou o dono dispensa em `decisoes.md`; (C2-3-1) com uma ref julgada pré-#394, o inspetor sai `BLOQUEADO` no ciclo 4 sem parecer, provado por mutação; (C3-A1) a divergência do §6 fica registrada em `decisoes.md`.
+
+## P-KPI-NOTAS-CARREGADAS-REGRESSAO-392 (2026-09-28) — quatro métricas do KPI carregadas sem nota do PR corrente desde o #392 — BAIXA
+
+- status: ABERTA (aberta pelo orquestrador a partir da nota **C3-N6** da junta do `B-GOV-SEM-TETO`, ata `J-B-GOV-SEM-TETO.md`)
+- **prova (N = 4 métricas; forma: métrica carregada do último valor oficial cuja nota no `Kpis/kpis-latest.json` é de um PR anterior, contra o §C3.3 que exige nota explícita do PR corrente; causa: o #392 devolveu ao texto do #390 as notas que o #391 tinha escrito):** `backend_contract_tests_focused` 34, `flutter_modules` 17, `mobile_backend_contracts` 18, `mobile_core_saas_contracts` 21 — medido por `difflib` entre `b8cd22df` (#391) e `fc3363e3` (#392).
+- **escopo:** `pre-existente` — evidência de origem: regressão entre `b8cd22df` e `fc3363e3`, anterior ao #394, que só carregou o que recebeu.
+- **efeito medido:** o painel mostra os números certos; a nota de procedência é que está velha.
+- **dono:** o próximo PR que tocar `Kpis/*` — o #393, na integração da `main` (recontagem do KPI).
+- **bloqueia:** não.
+- **teste de encerramento:** as quatro métricas carregam nota do PR corrente no `kpis-latest.json` e no history.
+
+## P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO (2026-09-28) — seis corpos de jurado dos PRs #388 e #389 dizem ao jurado que o ciclo 2 é o último — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-2** da junta do `B-GOV-SEM-TETO` e da ressalva **R6** do porteiro do #394)
+- **prova (N = 6 corpos, 12 arquivos nos dois espelhos; forma: `git grep -l -i "CICLO 2 — o ÚLTIMO"` no head de cada PR; causa: os corpos foram escritos sob o `D-TETO-DOIS-CICLOS`, que o #394 revogou em `b3f0af5f`, e vivem em ramos que ainda não integraram a `main`):**
+  - **#389** (`B-O6R-04a`, head `bc3e736b`): `jurado-o6r04a-c2-banco-rls`, `jurado-o6r04a-c2-fail-closed-backend`, `jurado-o6r04a-c2-suplente-banco-rls`, `jurado-o6r04a-c2-suplente-fail-closed-backend` (× `.claude/` e `.agents/`).
+  - **#388** (`B-O6R-11`, head `a24f58b5`): `jurado-o6r11-c2-fail-closed-dart`, `jurado-o6r11-c2-suplente-fail-closed-dart` (× 2 espelhos).
+- **escopo:** `pre-existente` — evidência de data: corpos de 2026-09-20, anteriores ao #394 (2026-09-28); nenhum foi tocado por ele.
+- **efeito medido:** a premissa falsa está **dentro do corpo do jurado** ("reprovar aqui manda o bloco a dossiê ao dono") e muda a aposta do voto; e, quando os PRs mergearem, os corpos entram na `main` com regra revogada — o teste de encerramento da `P-GOV-CICLOS-CORPOS-ORFAOS` os reencontraria.
+- **dono:** cada bloco o seu — **`B-O6R-04a` (#389)** e **`B-O6R-11` (#388)**: ERRATA nos corpos, versionada nos dois espelhos, e integração da `main` pós-#394, **antes da junta** de cada um (não antes do start). O orquestrador lança; a fábrica escreve; o inspetor da junta confere por propriedade.
+- **bloqueia:** a **junta** do #389 e a do #388 — não o trabalho anterior a ela.
+- **teste de encerramento:** no head julgado de cada PR, a busca pela propriedade (teto ou "último ciclo" por contagem, `git grep -n -i`) nos corpos das cadeiras devolve 0 linhas vivas; vermelho-controle: reintroduzir "CICLO 2 — o ÚLTIMO" num corpo faz a busca achá-lo.
+
+## P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO (2026-09-28) — a trava do ciclo 4 lê o número do ciclo do briefing, não do repositório — MÉDIA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-3-6** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 entrada de trava; forma: `grep` no corpo do `inspetor-de-terreno-da-junta` por instrução de contar `R-<entrega>-<ciclo>` ou atas — nenhuma; o item 2.1 só confere a ata do ciclo ANTERIOR declarado; causa: o método do inspetor é anterior à trava e usa o ciclo que o briefing declara):** o item 2.2 (`dd79c96f`, 2026-09-28) liga a trava em "ciclo ≥ 4"; o número vem de quem escreve o briefing.
+- **escopo:** `pre-existente` quanto ao método (item 2.1 e o fail-closed: `d2839039` 2026-08-30 / `72fcdcde` 2026-09-08); o uso como trava é do #394.
+- **efeito medido:** um briefing que declare o ciclo errado desliga a trava sem que nada a contradiga. Nenhum bloco está em ciclo ≥ 4 hoje.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (mesmo dono da `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`).
+- **bloqueia:** não.
+- **teste de encerramento:** o corpo do inspetor deriva o número do ciclo do repositório (`omega/reprovacoes/R-<entrega>-<n>.md` + atas) e sai `BLOQUEADO` quando o briefing diverge; vermelho-controle: briefing declarando ciclo 3 com três `R-*` no repositório.
+
+## P-GOV-PROJECT-MEMORY-TETO-VELHO (2026-09-28) — o PROJECT_MEMORY.md, de leitura obrigatória antes de todo bloco, ainda fala do teto do §C7.4 — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, a partir da nota **C2-2-1** da junta do `B-GOV-SEM-TETO` e da ressalva **R3** do porteiro do #394)
+- **prova (N = 1 linha; forma: `git show b3f0af5f:PROJECT_MEMORY.md | sed -n 37p`; causa: snapshot datado, não re-gerado desde 2026-08-29):** `| B-O6R-02 atomicidade do financeiro | 5 P0 + QUA-003 | 🚧 ciclo 5 — **teto do §C7.4** |`.
+- **escopo:** `pre-existente` — evidência de data: último commit no arquivo `74430cc1`, 2026-08-29.
+- **efeito medido:** histórico pelo critério da C2 (não manda ninguém agir), mas em documento que o `CLAUDE.md` manda ler antes de todo bloco.
+- **dono:** `B-GOV-CICLOS-RESIDUAIS`.
+- **bloqueia:** não.
+- **teste de encerramento:** `PROJECT_MEMORY.md` sem menção a teto de ciclos como regra vigente (`grep -n -i "teto"` só em trecho marcado como histórico).
+
+## P-CHORE-CLEANUP-DESCE-EM-WORKTREES (2026-09-28) — a limpeza pós-merge apaga cache dentro de worktree de outro bloco — BAIXA
+
+- status: ABERTA (aberta pelo PR de registro do #394, ressalva **R4** do porteiro do #394; observada pelo orquestrador na limpeza do #394)
+- **prova (N = 1 arquivo apagado em 1 execução; forma: `bash scripts/post-merge-cleanup.sh` na árvore principal em 2026-09-28; causa: `scripts/post-merge-cleanup.sh:39` roda `find . -type f -name "*.tsbuildinfo" -not -path "*/node_modules/*" -delete`, que desce em `.claude/worktrees/`):** apagou `./.claude/worktrees/b04a/frontend/tsconfig.tsbuildinfo` (worktree do `B-O6R-04a`).
+- **escopo:** `pre-existente` — evidência de origem: a linha nasceu em `db4370cc` (#251, 2026-07-20).
+- **efeito medido:** cache regenerável do `tsc`; nenhum arquivo rastreado, nenhum dado. O defeito é a **fronteira**: o script de limpeza alcança worktree alheio, contra a regra "resíduo alheio se reporta, não se varre".
+- **dono:** o orquestrador — bloco de ferramenta próprio (identificador proposto `B-CHORE-CLEANUP-FRONTEIRA`), com teste que prove a fronteira.
+- **bloqueia:** não.
+- **teste de encerramento:** com um `*.tsbuildinfo` semeado em `.claude/worktrees/<x>/`, o script não o apaga; vermelho-controle: a versão atual o apaga.
+
+## P-GOV-OBITUARIO-SEMTETO (2026-10-01) — os três votantes do B-GOV-SEM-TETO não estão no OBITUÁRIO de identidades — BAIXA
+
+- status: ABERTA (aberta pelo `B-GOV-PAUSA` (#397), emenda do `dev-pausa-emenda`, a partir do plano do bloco `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §4 e §7 E2c)
+- **prova (N = 3 identidades; forma: `grep -c -i semteto agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` = **0** contra a ata `agent-orchestration/omega/juntas/J-B-GOV-SEM-TETO.md` l.21–23, que as nomeia votantes do #394 (APROVADO 3 × 0); causa: o PR de registro do #394 (#395, `3b1fe0f9`) versionou votos, inspetor e porteiro e não acrescentou as linhas de sepultamento — o último commit no OBITUÁRIO é `aadaa6d5`, 2026-09-20, anterior ao voto de 2026-09-28):** `jurado-semteto-c1-fidelidade-transcricao`, `jurado-semteto-c2-consistencia-normativa`, `jurado-semteto-c3-escopo-registro` — os três corpos seguem no diretório vivo (`.claude/agents/especialistas/` e o espelho `.agents/agents/especialistas/`).
+- **escopo:** `pre-existente` — evidência de data: voto de 2026-09-28 (`J-B-GOV-SEM-TETO.md`) e OBITUÁRIO parado em 2026-09-20 (`aadaa6d5`); o #397 não toca nenhum dos dois arquivos.
+- **efeito medido:** a conferência de inelegibilidade por nome (§C7.1-bis), que tem o OBITUÁRIO como "fonte primeira", não as acha; hoje o inspetor tem de conferi-las pela ata (o briefing do #397, §2, manda fazer isso).
+- **dono:** o próximo bloco de registro (sepultamento = linha nova no OBITUÁRIO, append-only, e saída dos corpos do diretório vivo, como o próprio OBITUÁRIO faz com as do `B-O6R-06`) — ou o próprio `B-GOV-PAUSA`, se o orquestrador decidir pagar, com a decisão declarada na ata `J-B-GOV-PAUSA.md`.
+- **bloqueia:** não.
+- **teste de encerramento:** `grep -c -i semteto agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md` ≥ 3, com as linhas anteriores intactas (append-only: `git diff` do arquivo sem linha removida).
+
+## P-GOV-PAUSA-ESCADA-C76BIS (2026-10-01) — a parada por Opus esgotado (§C7.6-bis) e a pausa ordenada (P7) registram o trabalho em voo sem forma comum — BAIXA
+
+- status: ABERTA (aberta pelo `B-GOV-PAUSA` (#397), emenda do `dev-pausa-emenda`, a partir da nota **S-10** do plano `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §5 e §7 E2c)
+- **prova (N = 2 regras; forma: `tr -d '\r' < CLAUDE.md | tr '\n' ' ' | grep -o 'o trabalho em *voo é \*\*registrado onde está\*\* ([^)]*)'` devolve 1 ocorrência — o §C7.6-bis manda registrar, na parada por Opus esgotado, "o trabalho em voo é registrado onde está (evidência P1, votos parciais, head medido)" sem citar a P7 nem a seção `## PAUSA`; a P7 cita o §C7.6-bis só para dizer que pausa não é parada (frase da emenda, T-24); causa: as duas nasceram em decisões diferentes — `D-FALLBACK-MODELO-FABLE-OPUS` (2026-09-07/08) e `D-PAUSA-GRAVA-E-PARA` (2026-10-01) — e ligar uma à outra não está nas palavras do dono):** a parada por esgotamento registra o trabalho em voo sem forma prescrita; a P7 dá forma (`## PAUSA <hora UTC>` com head · feito · falta · próximo comando · meio-escritos) ao mesmo ato só sob ordem do dono.
+- **escopo:** nota S-10 do plano — as duas regras são coerentes hoje (nenhuma nega a outra); a ligação seria elaboração nova, fora das palavras do dono, e por isso não entrou no #397.
+- **efeito medido:** nenhum operável hoje; o custo é de forma — uma parada por esgotamento pode deixar o trabalho registrado num formato que a retomada da P7 não reconhece.
+- **dono:** o bloco de governança `B-GOV-CICLOS-RESIDUAIS` (já dono da fila residual de governança do #394), salvo o orquestrador nomear outro na ata; se a ligação for normativa, com decisão do dono em `decisoes.md`.
+- **bloqueia:** não.
+- **teste de encerramento:** o §C7.6-bis diz em que forma o trabalho em voo é registrado na parada por esgotamento (a seção `## PAUSA` da P7 ou outra, declarada), espelhado no `AGENTS.md`; ou o dono dispensa em `decisoes.md`.
+
+## P-GOV-PAUSA-ELABORACOES-DO-TRANSCRITOR (2026-10-01) — 61 elaborações do texto do orquestrador aparecem sob "Decisão." da `D-PAUSA-GRAVA-E-PARA`, sem marca de que são do transcritor — BAIXA
+
+- status: ABERTA (aberta pelo registro do #397 `docs/registro-397`, a partir do ajuste **C1-A1** da junta `J-B-GOV-PAUSA` — APROVADO 3×0, ajuste não reprova)
+- **prova (N = 61 elaborações: 27 acréscimos e 34 derivações; forma: proposições geradas do diff `5b6e1036..67c2c280` pela C1, que cobrem 205 das 206 linhas acrescentadas; causa: o transcritor — o orquestrador — escreveu o texto E1 sob o rótulo "Decisão." sem marcar o que era dele; a emenda E2 declarou só as dela, T-18…T-24):** `agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/C1-evidencia.md`, item 1, e `C1-voto.json`.
+- **escopo:** dentro-do-bloco (#397) — mas quem escreveu não emenda (§C7.4-bis), logo o dono não é o autor.
+- **efeito medido:** nenhuma das 61 muda o que o dono decidiu (C1, item 1: "nenhuma proposição muda o decidido"); o custo é de rastreabilidade — o contrato proíbe apresentar derivação como declaração (§C7.6-bis).
+- **dono:** `B-GOV-CICLOS-RESIDUAIS` (a mesma classe dos ajustes do #394 que já são dele: elaboração do transcritor não declarada).
+- **bloqueia:** não.
+- **teste de encerramento:** a entrada `D-PAUSA-GRAVA-E-PARA` passa a marcar como do transcritor cada elaboração de E1 (parágrafo datado ou marcação por cláusula), sem tocar as palavras do dono; ou o dono dispensa em `decisoes.md`.
+
+## P-GOV-PAUSA-CASO-SEM-FONTE (2026-10-01) — o caso do Dev-T4 que motivou a P7 é chamado de "medido" e aparece com dois números — BAIXA
+
+- status: ABERTA (aberta pelo registro do #397, a partir do ajuste **C1-A3** da junta `J-B-GOV-PAUSA`). **Paga em parte por este registro:** a fonte do caso, que vivia só na trilha da sessão, foi versionada em `agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/00-caso-dev-t4-trilha.md` (linhas verbatim da trilha e a medição da retomada).
+- **prova (N = 2 números para o mesmo fato; forma: "~20–40 min de redo" em `decisoes.md` (entrada `D-PAUSA-GRAVA-E-PARA`), `CLAUDE.md`/`AGENTS.md` §C7.7 P7 e `PROTOCOLO-JUNTA-RESILIENTE.md` §P7, contra "~30 min" em `conhecimento-de-terreno.md` §2.2; causa: estimativa do autor no instante do corte, sem medição própria — a trilha versionada mostra que nenhum dos dois foi medido como redo isolado):** `C1-evidencia.md` item 3(c).
+- **escopo:** dentro-do-bloco (#397); a correção é texto do autor (o orquestrador) → §C7.4-bis: não é ele quem emenda. A ata nomeava como dono "o PR de registro que versiona o porteiro"; este registro pagou a parte que é registro (a fonte) e transfere a parte que é texto.
+- **efeito medido:** nenhum operável; o caso ilustra a norma, não a define.
+- **dono:** `B-GOV-CICLOS-RESIDUAIS`.
+- **bloqueia:** não.
+- **teste de encerramento:** os cinco lugares citam um só número com a sua fonte (`00-caso-dev-t4-trilha.md`) ou rebaixam "medido" para estimativa declarada; espelho `CLAUDE.md`⇔`AGENTS.md` preservado.
+
+> Abertas pelo `B-SAN3-01b` (tarefa de nuvem, `dev-b-san3-01b`, 2026-10-02) a partir do §13 do plano `docs/revisoes/SAN3/B-SAN3-01b-plano.md`
+> (N2, N4, N5): o que o bloco mediu e NÃO pega, nomeado com dono. Evidência: `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+
+## P-SAN3-01B-FIACAO-DO-CREATE-TEXTUAL (2026-10-02) — a página de criar OS pode engolir a mensagem de recusa com todos os gates verdes — MÉDIA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N2 do plano)
+- **prova (N = 1 mutação; forma: `N-S1ERR` em `frontend/src/modules/work-orders/pages/WorkOrderCreatePage.tsx` — `setError,` → `setError: () => undefined,` — medida pelo plano em `3b1fe0f9` e reexecutada pelo dev no head da entrega: bloco verde, `tsc` ec=0, smoke verde; causa: o `[S1]` de `work-orders-honest-errors.test.tsx` é REGEX ("a página chama `runCreateWorkOrder`"), e o e2e `tests/e2e/critical-flows.spec.ts` que asserta `role="alert"` no 422 não roda na CI — `ci.yml` não tem job e2e (jobs: backend, backend-postgres, frontend, owner-portal, authority-portal, flutter, docker)):** a recusa do backend ao criar OS pode deixar de chegar ao operador sem nada ficar vermelho.
+- **escopo:** `pre-existente` — o `[S1]` nasceu no `B-SAN3-01` (`83a3c68`, 2026-09-19) e a página é da raiz do histórico (`f4ef511`, 2026-08-11); `WorkOrderCreatePage.tsx` está no PROIBIDO do `B-SAN3-01b` (§6 do plano).
+- **dono:** `B-SAN3-10` — a fronteira dele tem `tests/e2e/**` e o job e2e da CI; com o job, o E2 do e2e fica vermelho sob `N-S1ERR`.
+- **bloqueia:** não bloqueia o gate por si (fail-closed: a OS não é criada; o que falta é a mensagem).
+- **teste de encerramento:** `N-S1ERR` aplicada → algum gate que a CI executa fica vermelho (job e2e com o E2, ou um teste vivo da `WorkOrderCreatePage` com o arnês do E1).
+
+## P-SAN3-01B-PAGINA-FIACAO-DE-INTERACAO (2026-10-02) — 9 sítios de fiação de interação da lista de OS não são distinguidos sem evento de usuário — BAIXA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N4 do plano)
+- **prova (N = 9 de 39 sítios de decisão gerados do AST de `WorkOrdersPage.tsx` pelo gerador do Apêndice C do plano; forma: `node gen/sitios-pagina.mjs frontend --oracle "node --test --import tsx tests/work-orders-page-live.test.tsx"`, VERDE só nos sítios de tipo `attr onRetry` (faixa de desatualizado), `attr filtered`, `attr onAdvance`, `attr onRevoke`, `attr onConfirm`, `attr onPrev`, `attr onNext`, `attr canPrev`, `attr canNext`; causa: são callbacks/flags de interação (clique, digitação, paginação) — a matriz de cenários do teste vivo não dispara eventos de usuário):** trocar um desses por `undefined` não muda o que a página mostra sem interação.
+- **escopo:** `dentro-do-bloco` como residual DECLARADO (§13 N4) — não é fabricação nem decisão sobre estado; a propriedade do bloco ("o que a página mostra é função do estado") está provada nos outros 30.
+- **dono:** fila pós-gate (§7.3 do `PLANO_SAN3.md`); o arnês do E1 (`withPage`, DOM mínimo com `addEventListener`) aceita eventos quando alguém precisar.
+- **bloqueia:** não.
+- **teste de encerramento:** o oráculo de sítios fica VERMELHO também nesses 9 (teste que dispara clique/digitação/paginação na página viva), ou a fila pós-gate dispensa com registro.
+
+## P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA (2026-10-02) — o `PermissionGuard` de `/work-orders/new` usa `hasAny` com atalho de plataforma, mais frouxo que o backend — BAIXA
+
+- status: ABERTA (aberta pelo `B-SAN3-01b`, §13 N5 do plano)
+- **prova (N = 0 papéis afetados hoje; forma: `frontend/src/App.tsx` l.776-780 `PermissionGuard permissions={["work_orders:create"]}` → `hasAny` (`PermissionProvider.tsx`) = `includes` OU `isPlatformAdmin` (`navigation/types.ts`: papel "Super Admin" ou `platform:tenants:read`); papéis do catálogo com `platform:tenants:read` = `super_admin`, `platform_admin`, ambos COM `work_orders:create` (medido pelo plano em `gen/bypass.mts`); o backend compara por `includes` estrito (`rbac.middleware.ts`); a página (`WorkOrdersPage.tsx`) usa `permissions.includes`, a régua do backend):** duas réguas para a mesma permissão — hoje coincidem nos 13 papéis, mas um papel de plataforma sem `create` passaria pelo guard de rota e seria recusado pelo backend.
+- **escopo:** `pre-existente` — `App.tsx` e o `PermissionGuard` antecedem o bloco e estão no PROIBIDO do `B-SAN3-01b` (§6 do plano).
+- **dono:** `B-SAN3-06a` (tem `frontend/src/App.tsx` na fronteira e o `coordenador-de-acessos` na junta).
+- **bloqueia:** não (impacto 0 nos papéis existentes; o backend é a autoridade final).
+- **teste de encerramento:** o guard de `/work-orders/new` usa a mesma régua do backend (`includes` estrito) ou um teste papel a papel (catálogo executado) prova que nenhum papel sem `work_orders:create` passa pelo guard de rota.
+
+> Abertas pelo registro do #402 (`docs/registro-402`, 2026-10-02) a partir das notas da junta `J-B-SAN3-01b`, como a ata e
+> o porteiro do #402 mandaram. O ajuste `A-C1-01` não vira pendência: é o backfill §C3.5 que este mesmo registro paga. A nota
+> da C2 sobre a troca de organização já tem classe e dono (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, `B-SAN3-06a`).
+
+## P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME (2026-10-02) — o guard decide pelo NOME do arquivo que um módulo é dado de demonstração: dado fabricado fora da convenção nasce classificado como real — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir da nota **N-C1-01** da junta `J-B-SAN3-01b`).
+- **prova (N = 1 mutação da cadeira; forma: módulo `work-orders.demo-data.ts`, fora da convenção `*.mock.ts(x)`/`mocks/`, devolvido pelo service no `catch` → bateria do bloco 79/79 verde, `[G1]` 0 vazamentos, `[G1b]` 0 fabricados; causa: `isMockModulePath` classifica a origem por convenção de nome):** `votos/B-SAN3-01b/C1-voto.json`, achado `N-C1-01`.
+- **escopo:** `pre-existente` — `isMockModulePath` nasceu em `83a3c68c` (2026-09-19, `B-SAN3-01`); o `B-SAN3-01b` não o tocou.
+- **efeito medido:** nenhum módulo assim existe hoje (a mutação foi da cadeira). É a fronteira por onde um dado fabricado novo entraria sem o guard ver.
+- **dono:** `B-SAN3-06c`, que já é dono do dado demonstrativo da web (`P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS`) — atribuído pelo registro do #403.
+- **bloqueia:** não.
+- **teste de encerramento:** a origem de dado de demonstração é decidida por propriedade (o que o módulo devolve e por qual caminho é alcançado), e a mutação `work-orders.demo-data.ts` deixa o guard vermelho.
+
+## P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL (2026-10-02) — a prova de que o botão "Nova OS" usa a régua do backend vale para o catálogo de hoje, e não separa a inclusão estrita de um atalho de plataforma — BAIXA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `dentro-do-bloco` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 2 mutações da cadeira; forma: M2c-i, atalho de plataforma, fica verde 13/13; M2c-ii, papel separador de sonda, é acusado em `[GB1]`/`[GB2]`; o atalho por rótulo "Super Admin" não é exercitável porque o arnês monta o papel pela chave):** `votos/B-SAN3-01b/C2-voto.json` e `C2-evidencia.md`.
+- **escopo:** `dentro-do-bloco` (nota; não reprovou). A propriedade "régua = inclusão estrita" está provada por parse e pela sonda, não pelo catálogo.
+- **efeito medido:** hoje nenhum papel do catálogo separa as duas réguas; a prova enfraquece no dia em que um papel separador existir sem teste.
+- **dono:** `B-SAN3-06a`, dono das permissões por papel no front (`P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`) — atribuído pelo registro do #403.
+- **bloqueia:** não.
+- **teste de encerramento:** o teste papel a papel do botão inclui um papel separador permanente, ou o atalho por rótulo passa a ser exercitável pelo arnês.
+
+## P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE (2026-10-02) — outro botão "Nova OS" no Dashboard leva a `/work-orders/new` sem o gate de `work_orders:create` — MÉDIA
+
+- status: ABERTA (aberta pelo registro do #402, a partir de uma nota `pre-existente` da C2 da junta `J-B-SAN3-01b`).
+- **prova (N = 1 botão; forma: `frontend/src/pages/DashboardPage.tsx` l.365-368 no objeto `cdf370dc`, sem gate; `git diff 4ab9d232..cdf370dc -- DashboardPage.tsx` = 0):** `votos/B-SAN3-01b/C2-voto.json`.
+- **escopo:** `pre-existente` — o último commit no arquivo antes da base é `0a38f1be` (2026-08-04); o arquivo está fora do PERMITIDO do plano do `01b`.
+- **efeito medido:** um papel sem `work_orders:create` vê o botão; a rota e o backend recusam. É falso positivo de interface, não escalada.
+- **dono:** `B-SAN3-06c` (proposto pela C2; já é dono de `DashboardPage.tsx` por outras pendências, l.9411 e l.9447).
+- **bloqueia:** não.
+- **teste de encerramento:** o botão do Dashboard usa a mesma régua do backend e do botão da lista, provado por teste papel a papel.
+
+## P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS diverge do PNG e do protótipo, mas segue o design padronizado do dono — BAIXA
+
+- status: **FECHADA em 2026-10-08** por `D-OS-CABECALHO-PADRONIZADO` (o dono escolheu a opção C: vale o design padronizado, o cabeçalho do app já o segue valor por valor; Filtrar e Exportar vão para o bloco `B-OS-FILTRAR-EXPORTAR`). Aberta pelo registro do #402, a partir da nota **C3-N1** da junta `J-B-SAN3-01b`.
+- **prova (forma: kicker, título 22 × 20, subtítulo, alinhamento, borda, Filtrar e Exportar omitidos, padding e borda do botão "Nova OS", contra `docs/claude-code-handoff/screen-refs/web/ordens-servico.png` e `docs/claude-code-handoff/ERP Web.dc.html` l.288-296; idêntico pixel a pixel no head-base):** `votos/B-SAN3-01b/C3-voto.json`, achado `C3-N1`.
+- **escopo:** `pre-existente` — `0a38f1be` (#331) e `d43314bd` (#332), 2026-08-04; o cabeçalho segue `docs/juntas/J-TELAS-PADRONIZADAS.md` §1.
+- **efeito medido:** divergência visual, não de regra.
+- **dono:** decisão do dono — qual referência vale para o cabeçalho da lista de OS, o PNG de `screen-refs/` ou o design padronizado de `J-TELAS-PADRONIZADAS`. Sem bloco dono até a decisão.
+- **bloqueia:** não.
+- **teste de encerramento:** a decisão registrada em `controle/decisoes.md` e o cabeçalho conforme a referência escolhida.
+
+## P-SAN3-05-LEITURA-MORTA-PROJECAO-DIARIA (2026-10-03) — leitura da projeção diária sem chamador — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-08`.
+- `cloud-cost-allocation-prisma.repository.ts:238` não tem chamador em `src/`; ao remover o sítio morto, atualizar o congelado do ratchet para retirar a chave `new PrismaCloudCostAllocationRepository(prisma) CRU`.
+- **bloqueia:** não.
+
+## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
+- `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
+- **bloqueia:** não.
+
+## P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL (2026-10-03) — suíte de banco ainda roda majoritariamente como administrador — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-2`.
+- Rodar a suíte `-db` inteira sob papel real fecha o residual semântico do ratchet: hoje 13 suítes escrevem catálogo, 8 fazem DDL e 10 usam helpers. O `SUITES` de `backend-postgres` também pertence a esse bloco.
+- **sub-item medido no B-SAN3-05/ciclo 2:** os 9 jobs do registro runtime fora da superfície de plataforma — `aws-cur.import-cost-file`, `checklist-attachment-postprocess`, `notification-dispatch`, `notifications.scan-due`, `audit-log-fanout`, `field-ops-event-fanout`, `impound.reconcile-removals`, `charging.accrue-daily` e `impound.notify-due` — ainda não têm diferencial sob papel `NOSUPERUSER NOBYPASSRLS`. O inventário estático não acusa chave em `notifications` nem `charging`, mas só a execução fecha um envoltório que deixe de setar GUC.
+- **recomendação ao dono:** o Ato 2 em produção (troca do `DATABASE_URL` do app para `erp_runtime`) espera a medida desses 9 jobs ou é decidido em ata com o risco explícito; `charging.accrue-daily` toca dinheiro.
+- **bloqueia:** não bloqueia este PR; bloqueia declarar a cobertura dinâmica fora da superfície de plataforma e é proposta de gate para o Ato 2 em produção.
+- **teste de encerramento:** cada um dos 9 jobs produz o mesmo efeito não vazio sob superusuário e sob papel `NOSUPERUSER NOBYPASSRLS`, no mesmo seed.
+
+## P-SAN3-05-RUNNER-SEM-TIMEOUT (2026-10-09) — runner e job backend sem teto por arquivo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `scripts/run-backend-tests.mjs` e `.github/workflows/ci.yml` antecedem o bloco e são PROIBIDOS no C2.3; sob a mutação M2, a C2 do ciclo 1 mediu `timeout 150` com ec=124 · **dono:** `B-ARNES-2`.
+- Não há timeout por arquivo no runner nem `timeout-minutes` no job `backend`: um teste que trave prende o job inteiro em vez de falhar. O D3 fecha o T15, mas não a classe para os demais testes.
+- **bloqueia:** não.
+- **teste de encerramento:** um teste que dorme além do teto falha o job em tempo menor ou igual ao teto e nomeia o arquivo.
+
+## P-SAN3-05-LOCAL-AUTH-WORK-SEM-GUC (2026-10-09) — default de LocalAuthLoginService pode executar sem GUC — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/modules/auth/services/local-auth-login.service.ts:106`, origem `35c218a8` (2026-06-07); `src/modules/auth/**` é PROIBIDO no C2.3 · **dono:** a nomear pelo orquestrador; candidato `B-ARNES-2`.
+- O `runWithTenantContext` default é `work()` sem GUC, fail-open em princípio. As construções de produção medidas hoje injetam `withTenantRls` (`auth-runtime.ts:81-84` e `session-admin.service.ts:287-290`), mas uma construção nova poderia omitir o envoltório.
+- **bloqueia:** não.
+- **teste de encerramento:** o parâmetro se torna obrigatório ou o default falha fechado, com teste dedicado.
+
+## P-SAN3-05-LOG-DO-SERVIDOR-FORA-DA-CI (2026-10-09) — CI não lê o server.log do PostgreSQL — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — residual declarado do B1 · **dono:** `B-ARNES-2` (workflows).
+- A CI pega a volta da senha em claro ao canal SQL pela guarda estática do T14, mas não lê o log do servidor; a prova por execução fica somente na matriz B7 da junta.
+- **sub-item A1 (ciclo 2):** a guarda estática reconhece grafias, não a propriedade: `\getenv` + `set_config(:'segredo')` e backtick + `format()`/`\gexec` passam e vazam no `server.log`. O job de encerramento precisa executar essas duas variantes contra o log real.
+- **bloqueia:** não.
+- **teste de encerramento:** job de CI com PostgreSQL descartável lê `server.log`, executa a matriz B7 e fica vermelho sob M-B1a e sob as variantes V1/V2 do sub-item A1.
+
+## P-SAN3-05-POSTURA-NO-HEALTH (2026-10-03) — postura do papel no readiness — MÉDIA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** observabilidade (orquestrador deve nomear o bloco).
+- Publicar a postura do papel em `/health/ready`, fora de `checks`; o corpo público e o arquivo ficam fora da fronteira permitida de `B-SAN3-05`.
+- **bloqueia:** não.
+
+## P-SAN3-05-SECURITY-DEFINER-INVENTARIO (2026-10-03) — funções de dono que escapa — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` · **dono:** `B-SAN3-10`.
+- Inventariar funções `SECURITY DEFINER` cujo dono escapa do RLS e que o runtime pode executar; a medição deste bloco encontrou `auth_login_candidates`, criada por ato humano.
+- **sub-item ciclo 3:** cobrir função `SECURITY DEFINER` chamada por view; `pg_depend` da view aponta para a função, não para a tabela, e essa cadeia fica fora do `view_walk`. Hipótese registrada pelo planejador, ainda não medida pelo dev.
+- **bloqueia:** não bloqueia este PR; permanece risco nominal até o inventário.
+
+## P-SAN3-05-STAGING-CD-AMARRACAO (2026-10-03) — CD de staging depende dos atos de provisão — ALTA
+
+- **status:** ABERTA · **escopo:** `fora-do-bloco` · **dono:** bloco que toque workflows (`B-SAN3-10` ou `B-ARNES-2`).
+- Amarrar mecanicamente `STAGING_DEPLOY_ENABLED` aos Atos 1–2 de staging. Até lá, a variável permanece desligada; `.github/workflows/**` é proibido em `B-SAN3-05`.
+- **bloqueia:** ligar o CD de staging, não este PR.
+
+## P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT (2026-09-06) — teste reescreve a regra do default — MÉDIA
+
+- **status:** EM ANDAMENTO · **escopo:** `pre-existente` — origem `fe2748c` (#380) · **dono:** `B-O6R-07b` / segurança.
+- O teste anterior reescrevia a regra em vez de ler o export e deixou 13/13 mutantes verdes. O T2 de `B-SAN3-05` exerce o export em processo filho; o registro permanece até o merge e a validação do bloco.
+- **bloqueia:** não.
+## P-SAN3-11-VIGENTE-NAO-VINCULADA (2026-10-01 — B-SAN3-11)
+
+Quando a vigente de uma vistoria substituída **não está na lista do dossiê** (custódia aberta antes da
+reabertura), o painel exibe "A versão vigente desta vistoria não está vinculada a este dossiê." sem link nem
+identificação. O usuário sabe que existe uma versão mais recente, mas não sabe qual é nem onde encontrá-la.
+
+- **causa (P-d do plano, medida):** reabrir não vincula. O `reopenRun` **copia** `related_entity_type`/`related_entity_id`
+  da vistoria anterior (`src/modules/checklists/checklist-prisma.repository.ts:806-807`), e o AUTO-link roda **só na
+  abertura** da custódia (`src/modules/impound/impound-prisma.repository.ts:205-215`, chamado só na criação do processo, l.155).
+  A rota MANUAL `POST /impound-processes/:processId/link-checklist-run` existe (`src/modules/impound/impound.routes.ts:195`),
+  mas não tem UI (`git grep link-checklist-run -- frontend/src` = 0). Medido no §0.5 A1 do plano do bloco: lista `[v1]`, v2 e v3 ausentes.
+- **remédio (o do §13 do plano do B-SAN3-11, fora deste bloco):** o backend listar os sucessores da cadeia com origem `DERIVED`
+  **ou** o `reopenRun` propagar os vínculos da vistoria anterior — decisão de desenho da junta do bloco dono.
+- **status:** ABERTA · **severidade:** baixa (informação parcial, sem dado errado)
+- **dono:** trilha CHECKLIST P1, PR-05 (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **bloqueia:** não — a UI já é honesta ("não está vinculada").
+
+## P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA (2026-10-01 — B-SAN3-11)
+
+O repositório ordena por `created_at` do **vínculo** (`listChecklistRunsForProcess`,
+`src/modules/impound/impound.checklist-link-prisma.repository.ts:51`), e os vínculos criados na mesma transação do AUTO-link
+têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do plano). **O adapter reordena por `startedAt desc`**
+(`frontend/src/modules/patios/processes/processes.adapter.ts:576-577`) e essa é a ordem do dossiê (B1c, T5). Informativa —
+nenhum consumidor além do frontend.
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
+- **bloqueia:** não.
+
+## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+O censo do gerador (`scripts/san3-11-dossie-vistoria-censo.mjs`) ainda deixa passar a leitura da situação por índice com chave
+de tipo `string` sob cast que apaga o tipo — `(run as Record<string, unknown>)[k]`: compila, o censo sai com ec=0 e a forma não
+está na fronteira que o dev declarou. Função local e subcomponente por props também escapam (já declarados pelo dev), assim como
+o valor que passa por coleção ou função fora do JSX (`runs.map(r => r.status)`) e o painel renomeado por alias. Medido pelo
+revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-1) e pelo dev (`DEV-ciclo3-relatorio.md`).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o próximo bloco que tocar o gerador do censo ou o painel de vistorias do dossiê (atribuição nominal no próximo registro)
+- **bloqueia:** não (regra 1 do §C7 item 8: ajuste vira pendência).
+
+## P-SAN3-11-TESTES-L3-DESCONHECIDO-E-REDE (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
+
+Duas lacunas só de teste, com o produto certo no head: (a) tirar "L3 vazio" ou "candidato desconhecido" do total do gerador deixa
+T12–T14 e T20–T24 verdes (8/8), embora o head negue os dois casos (ec=1 nas sondas do revisor); (b) o T26 só cobre o erro 500, e
+alargar a limpeza do painel a todo erro que não é `ApiError` passa pela suíte, embora apagasse a lista quando a rede cai.
+Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3).
+
+- **status:** ABERTA · **severidade:** baixa
+- **dono:** o mesmo da `P-SAN3-11-CENSO-CAST-RECORD`
+- **bloqueia:** não.
+
+## P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as duas referências mostram — MÉDIA
+
+- status: **FECHADA em 2026-10-08** pelo #409 (`fea93281`): Filtrar (Prioridade, Data de abertura) e Exportar funcionando, com testes `[FE1]`–`[FE10]`; revisor independente APROVADO e porteiro LIBERADO COM RESSALVA (`votos/B-OS-FILTRAR-EXPORTAR/`). Técnico segue com `P-WO-LIST-TECH-NAME`. Aberta por `D-OS-CABECALHO-PADRONIZADO`.
+- **prova:** comparativo de 2026-10-08 (agente de frontend; capturas reais a 1440×900 do app em `main` 749a5cf8, do
+  protótipo antigo e do design padronizado): os dois designs têm Filtrar e Exportar no cabeçalho; o app os omitiu em
+  2026-08-04 (#332) por não haver função ligada. As funções existem: o backend aceita `priority`, `assignedOperatorId`,
+  `from`, `to` (`src/modules/work-orders/work-order.types.ts`), o serviço e o adaptador do front os enviam e filtram, e a
+  tela os fixa em `STABLE_FILTERS` (`frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`); `frontend/src/lib/csv.ts`
+  já serve a exportação da Auditoria.
+- **dono:** bloco `B-OS-FILTRAR-EXPORTAR` (plano → dev → revisor + CI, `D-GOV-PROPORCIONAL` regra 1).
+- **bloqueia:** não.
+- **teste de encerramento:** Filtrar (Prioridade, Período) e Exportar funcionando na lista de OS, com testes; Técnico
+  quando `P-WO-LIST-TECH-NAME` fechar.
+
+## P-WEB-TOPBAR-ROTULO-FALLBACK (2026-10-08) — a barra do topo mostra "Operação" em /users e /audit — BAIXA
+
+- status: ABERTA.
+- **prova:** capturas `05-app-usuarios-1440.png` e `05-app-auditoria-1440.png` do comparativo de 2026-10-08 (perfil
+  Operador Logístico, mocks): o título da barra do topo cai no rótulo de fallback em vez do nome da tela; o fallback
+  está em `frontend/src/layouts/appSidebarNav.ts` (~l.338).
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** a barra do topo mostra o nome da tela em toda rota do menu, com teste por rota.
+
+## P-WEB-PADRAO-MICRODIFERENCAS (2026-10-08) — três diferenças miúdas entre o app e o design padronizado — BAIXA
+
+- status: ABERTA.
+- **prova:** comparativo de 2026-10-08: (1) o botão primário do cabeçalho tem borda de 1px que o design não tem (+2px
+  de altura) nas 5 telas padronizadas; (2) o conteúdo começa a 24px do topo no app e a 22px no design; (3) no próprio
+  design, o primário de Usuários, Auditoria e Pátios tem folga 10/16 e o de OS 9/16. A fonte Inter não carregada já é
+  `P-WEB-FONTE-INTER-NAO-CARREGADA`.
+- **dono:** trilha de acabamento web (sem bloco nomeado ainda).
+- **bloqueia:** não.
+- **teste de encerramento:** valores medidos por `getComputedStyle` iguais ao design nas 5 telas.
+
+## P-WO-LISTA-SO-20-MAIS-RECENTES (2026-10-08) — a lista de OS só carrega as 20 mais recentes — MÉDIA
+
+- status: ABERTA (aberta pelo plano do `B-OS-FILTRAR-EXPORTAR`, §9.3, medido em `c8af6458`).
+- **escopo:** `pre-existente` — origem 2026-06-09 (`9f12ea99` front / `51238552` backend).
+- **prova (N · forma · causa):** N = toda organização com mais de 20 OS no recorte · `GET /work-orders` sem `limit`
+  devolve 20 (`parseLimit` padrão 20, máx. 100) · `buildQuery` do front não envia `limit` e a tela pagina no cliente;
+  KPIs, paginador e (depois do bloco) Exportar só veem essas 20.
+- **dono:** bloco a nomear (lista de OS, paginação no servidor).
+- **bloqueia:** não.
+- **teste de encerramento:** uma organização com 25 OS vê as 25 na lista (paginação no servidor ou "carregar mais"),
+  e os KPIs e o Exportar cobrem o recorte inteiro.
+
+## P-CSV-FORMULA-GLOBAL (2026-10-08) — os exportadores CSV não neutralizam fórmulas — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/lib/csv.ts` (`D-Ω4C-REM-CSV`).
+- **prova:** N = 7 exportadores (Auditoria, Acessos, Acessos do app, Dispositivos, Quilometragem, Recusas,
+  Remunerações; o da OS fica coberto pelo próprio bloco) · `csvCell` não neutraliza células que começam com
+  `=`/`+`/`-`/`@`.
+- **dono:** bloco a nomear (acabamento web / segurança de formato).
+- **bloqueia:** não.
+- **teste de encerramento:** `csvCell` (ou `buildCsv`) neutraliza, com teste por consumidor que leva texto livre.
+
+## P-WO-PRIORIDADE-MEDIA-SEM-ACENTO (2026-10-08) — "Media" sem acento em rótulos de prioridade — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/work-orders.adapter.ts` l.58-63 (2026-06-09) e
+  `frontend/src/pages/WorkOrderFormPage.tsx` l.55.
+- **prova:** "Media" sem acento no Mapa Operacional e no `WorkOrderPriorityBadge` (§11.3).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** os rótulos de prioridade têm uma fonte só (`WORK_ORDER_PRIORITY_LABEL`, criada pelo
+  `B-OS-FILTRAR-EXPORTAR`) e nenhuma tela mostra "Media".
+
+## P-WO-FILTROS-LEGADO-MORTO (2026-10-08) — componente de filtros antigo sem uso — BAIXA
+
+- status: ABERTA (plano do `B-OS-FILTRAR-EXPORTAR`, §9.3).
+- **escopo:** `pre-existente` — `frontend/src/modules/work-orders/components/WorkOrdersFilters.tsx`.
+- **prova:** 0 imports; cópia sem acento e com o texto "UUID ou user ID".
+- **dono:** bloco de faxina web.
+- **bloqueia:** não.
+- **teste de encerramento:** arquivo apagado, com `check` e `smoke` verdes.
+
+## P-SAN3-05-ATO2-CINCO-TAREFAS (2026-10-08) — medir as 5 tarefas automáticas sob o papel erp_runtime antes do Ato 2 — ALTA
+
+- status: ABERTA (`D-ATO2-OPCAO-B`).
+- **prova:** leitura do código no ramo do #405 em 2026-10-08 (`src/infra/jobs/job.registry.ts` registra 12 jobs; 3 de
+  nuvem têm cenário próprio no B4; dos 9 restantes, 5 usam banco com o contexto da organização aberto por `withTenantRls`
+  — notificações, notificações agendadas, conciliação OS→custódia, avisos de custódia e diárias do pátio); leitura não é
+  medição, e a falha seria silenciosa (cada varredura isola a organização em try/catch e só registra aviso).
+- **dono:** `B-SAN3-05-ATO2` (nome dado pelo orquestrador em 2026-10-10 ao item 7 da `D-ORDEM-NOITE-2026-10-10`).
+- **bloqueia:** o Ato 2 e, por ele, QUALQUER deploy de produção — inclusive a ingestão do Traccar; não bloqueia o plano (porteiro do #405); o desenvolvimento em dev não depende dele (leitura do orquestrador: a trava só recusa com `NODE_ENV=production`) — errata A-1 do revisor do #410, 2026-10-10.
+- **teste de encerramento:** as 5 tarefas rodam sob `NOSUPERUSER NOBYPASSRLS` e sob o papel atual, mesmo seed, e produzem o
+  mesmo efeito, não vazio.
+
+## P-OS-EXPORTAR-PERMISSAO-PREMISSA (2026-10-08) — exportar a lista de OS usa a permissão de leitura — BAIXA
+
+- status: ABERTA (premissa do orquestrador, sem veto do dono).
+- **prova:** `D-OS-CABECALHO-PADRONIZADO` e o §0.6 do plano do `B-OS-FILTRAR-EXPORTAR`: não existe permissão de exportação
+  no catálogo nem no `RBAC_MATRIX.md`; a exportação da Auditoria também não tem permissão própria.
+- **dono:** decisão do dono.
+- **bloqueia:** não.
+- **teste de encerramento:** o dono confirma a premissa, ou um bloco com junta completa cria a permissão própria (catálogo,
+  matriz, backend).
+
+## P-OS-EX4-SO-COLUNA-CLIENTE (2026-10-08) — o teste de neutralização de fórmula só confere uma coluna — BAIXA
+
+- status: ABERTA (ajuste A-2 do revisor do #409).
+- **prova:** o `[EX4]` promete neutralizar "em toda célula", mas só confere a coluna Cliente; a mutação que neutraliza só
+  essa coluna passou verde. O produto está certo (CSV real conferido com 4 fórmulas).
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** o `[EX4]` exercita fórmula em toda coluna de texto livre e a mutação "só Cliente" fica vermelha.
+
+## P-OS-ARIA-CONTROLS-FECHADO (2026-10-08) — nenhum teste confere o aria-controls com o painel de filtros fechado — BAIXA
+
+- status: ABERTA (nota N-1 do revisor do #409).
+- **prova:** a mutação que mantém `aria-controls` com o painel fechado sobrevive; na tela o comportamento está certo.
+- **dono:** trilha de acabamento web.
+- **bloqueia:** não.
+- **teste de encerramento:** caso que fecha o painel e exige `aria-controls` ausente, vermelho sob a mutação.
+
+## P-INDICE-PENDENCIAS-CLASSIFICADOR (2026-10-08) — o gerador do índice erra severidade e ignora títulos de nível 4 — BAIXA
+
+- status: ABERTA (nota N-3 do revisor do #409 e ressalva R-C do porteiro do #400).
+- **prova:** `agent-orchestration/controle/gerar-indice-pendencias.py` classifica `P-WO-PRIORIDADE-MEDIA-SEM-ACENTO` como
+  MÉDIA porque lê "MEDIA" de dentro do próprio ID (a entrada diz BAIXA); e só lê títulos `## ` (l.~84), então as
+  pendências do B-SAN3-09 escritas como `#### P-…` não aparecem no índice. Vale o `pendencias.md`.
+- **dono:** bloco de ferramentas de registro (a nomear).
+- **bloqueia:** não.
+- **teste de encerramento:** o índice mostra a severidade declarada na entrada e inclui as pendências de nível 4.
+## P-SAN3-05-RATCHET-INST-SOME (2026-10-09) — uma instanciação reconhecida libera a classe inteira — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-01, origem `scripts/san3-05-acessos-de-plataforma.mjs` em `16014c06` (2026-10-08) · **dono:** `B-ARNES-2` (ou bloco próprio do ratchet, a nomear pelo orquestrador).
+- O `inst.some` faz uma instanciação reconhecida liberar a classe inteira; construção por fábrica genérica ou `Reflect.construct` fica com zero chave. O inventário atual tem zero acesso dessa forma.
+- **bloqueia:** não bloqueia o #405; ficou fora do ciclo 3 por decisão do dono.
+- **teste de encerramento:** fixture com duas instanciações da mesma classe — uma reconhecida e outra por `Reflect.construct` — gera ao menos uma chave suspeita; voltar ao `inst.some` deixa o T13 vermelho.
+
+## P-SAN3-05-IGUALDADE-CATALOGO-L0-SEM-TESTE (2026-10-09) — igualdade catálogo↔L0 não é uma propriedade testada — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-02 e notas C3-c2-03/04; gerador `05d7789f` (2026-10-02), regex `16014c06` (2026-10-08) · **dono:** o mesmo de `P-SAN3-05-RATCHET-INST-SOME`.
+- O T13 fixa contagens, mas não prova igualdade por nome nos dois sentidos. Grafias como `ALTER TABLE IF EXISTS`/`EXECUTE format(...)` em `DO` somem do L0; tabela FORCE sem model aparece apenas na contagem. Hoje a medição é 106 = 106.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** igualdade executável nos dois sentidos; grafia que o L0 não lê e tabela FORCE sem model deixam o teste vermelho.
+
+## P-SAN3-05-GUARDA-FILHOS-LISTA-FECHADA (2026-10-09) — T14c conta grafias em vez de fechar a lista de filhos — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A1, origem `d9fc0d6d` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- A guarda de processos filhos do T14c conta grafias; `exec`, `execSync`, `execFile`, `execFileSync`, `fork` e o helper genérico `runPsqlReadOnly` podem passar sem lista nominal fechada.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** qualquer chamada a `node:child_process` fora da lista nominal reprova; filho escritor fora do helper deixa T14c vermelho.
+
+## P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job — MÉDIA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C3-c2-05, cenário de `41af41f5` (2026-10-08) · **dono:** PR só de testes `B-SAN3-05T`.
+- O T11f do job `cloud-charges.calculate` identifica o efeito pelo mesmo critério do run criado pela rota `POST /cloud-charges/calculation-runs`; assim pode medir a rota em vez do job. O produto atual faz o efeito correto.
+- **bloqueia:** não bloqueia o #405; vai ao PR só de testes posterior por decisão do dono.
+- **teste de encerramento:** o run comparado é identificado como produzido pelo job; M-B4c no job deixa T11f vermelho.
+
+## P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A2, helper `d9fc0d6d` sobre script `041e414b` · **dono:** `B-ARNES-2`.
+- O timeout de 20 s mata só o `bash`; um filho além de 30 s pode escrever catálogo depois de a transação da trava expirar. O gatilho nunca foi observado sem força (23–91 ms).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** filho forçado além do teto é morto como grupo antes da janela; nenhuma escrita de catálogo ocorre após o timeout.
+
+## P-SAN3-05-LIMPEZA-SEM-FINALLY-MIGRATOR (2026-10-09) — fixture pode deixar migrador com privilégios — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — C2-A3, cenário `migratorOk`/`CREATE DATABASE` de `4e89d7ac` (2026-10-03) · **dono:** `B-ARNES-2`.
+- A limpeza do T14a/b não roda se o cenário falhar antes do `try`; pode restar papel com `LOGIN` e `CREATEROLE` no cluster descartável.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** falha forçada antes do `try` ainda remove o papel no `finally`; resíduo `s305%` = 0.
+
+## P-SAN3-05-GUARDA-LOG-FORMA-TEXTUAL (2026-10-09) — guarda de log aceita campo textual indevido — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A4, regex de `02544a79` (2026-10-08) · **dono:** `B-ARNES-2`.
+- A guarda D4 aceita o nome do papel em qualquer campo quando aparece como `session_user=`, `current_user=`, `atributo:`, `posse:` ou `view:<papel>`, inclusive formas que as erratas 1–3 não produzem.
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** a mutação `diag: session_user=<papel>` deixa T9 e T15 vermelhos.
+
+## P-SAN3-05-T15-FALSO-VERMELHO-PORTA (2026-10-09) — pid ou tempo pode casar a porta — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — A5, `assertConnectionSecretsAbsent` de `d9fc0d6d` · **dono:** `B-ARNES-2`.
+- O T15 pode dar falso vermelho quando o `pid` ou o timestamp do log contém o número da porta (medido com pid 5432/15432 e tempo terminando em 54321).
+- **bloqueia:** não bloqueia o #405.
+- **teste de encerramento:** pid/tempo contendo a porta é aceito; porta em campo de conexão continua recusada.
+
+## P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava — ALTA
+
+- **status:** ABERTA · **escopo:** `residual-de-segurança` — medição C3.1; a trava nasceu em `d76b255f` (2026-10-02) começando `view_walk` apenas em `v`/`m` · **dono:** `B-SAN3-10`.
+- Uma regra `INSTEAD`/`ALSO` em tabela de dono que escapa executa a ação com o privilégio do dono: papel limpo com `INSERT` gravou linha da organização B sob contexto A e a trava retornou zero escapes. Hoje há zero regras fora do `_RETURN` das views no catálogo migrado.
+- **bloqueia:** não bloqueia o #405. A correção ficou explicitamente fora do ciclo 3 por decisão padrão do plano e decisão do dono de cobrir somente A2/A3.
+- **teste de encerramento:** regra em tabela de dono que escapa com DML para o papel é recusada pela trava e pelo script; controle sem regra retorna zero.
+
+## P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER (2026-10-09) — view sobre função SQL invoker não é recusada pela trava — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — a trava nasceu em `d76b255f` (2026-10-02); achado F5 da C1 da junta 4 (`votos/B-SAN3-05/ciclo4/C1-voto.json`) · **dono:** `B-SAN3-10`.
+- Uma view que lê tabela FORCE só pelo corpo de uma função SQL `SECURITY INVOKER` depende de `pg_proc`, não da tabela: a trava, o boot e o MODO 6 não a recusam. Escape medido: nenhum — a função roda como o invocador e o RLS morde (`42501` sem privilégio; só a organização do contexto com GUC). A variante `SECURITY DEFINER` é matéria do `B-SAN3-10`.
+- **bloqueia:** não.
+- **teste de encerramento:** view sobre função invoker que lê tabela FORCE é recusada pelas três cópias da propriedade, ou a decisão de não recusá-la fica escrita com o caso fixado na suíte.
+
+## P-SAN3-05-SUITE-SEM-FORMAS-F1-F3 (2026-10-09) — a suíte não fixa as formas de view que o produto recusa — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — `tests/san3-05-runtime-role-guard-db.test.ts` (nasceu em `e0143db1`, 2026-10-03); nota da C1 da junta 4 · **dono:** `B-SAN3-05T` (PR só de testes, decisão do plano do dia de 2026-10-09).
+- O T8e/T14d exercem COL, COM, MAT, CTL e cadeia em `public`. A C1 mediu o produto recusando também regra não-`_RETURN`, esquema ≠ `public`, tabela particionada e tabela só em subconsulta/CTE/LATERAL (F1–F3), mas nenhum caso da suíte as fixa: uma regressão que estreite a descida pode passar verde.
+- **bloqueia:** não.
+- **teste de encerramento:** casos F1–F3 na suíte, e a mutação que restringe a descida à regra `_RETURN` deixa ao menos um deles vermelho.
+
+## P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carga — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` — achado A2-1 (ajuste) da C3 da junta 4 · **dono:** `B-ARNES-2` (vizinha de `P-SAN3-05-RUNNER-SEM-TIMEOUT`).
+- Sob a carga da suíte inteira (8 CPUs, Docker/WSL2), o T15 estoura o teto de 15 s em 2 de 2 rodadas: o processo de produção recusado fica vivo ~10 s depois da recusa, com uma conexão ociosa ao Postgres, e o teste não vê o encerramento a tempo. A recusa está correta; o critério mede relógio, não comportamento. O CI do PR passou 7/7.
+- **bloqueia:** não.
+- **teste de encerramento:** o T15 assere a recusa e o encerramento do processo sem teto de relógio de parede sensível à carga (ou o processo fecha a conexão na recusa), verde em 3 rodadas da suíte inteira.
+
+## P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e não chega ao log — BAIXA
+
+- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** `B-SAN3-05-ATO2` (nomeado em 2026-10-10: o operador do Ato 2 precisa ler a recusa no log; antes: a nomear, candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`).
+- O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
+- **bloqueia:** não.
+- **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.
+
+## P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda não persistem — ALTA
+
+- status: ABERTA.
+- **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
+- **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
+
+## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
+
+- status: ABERTA.
+- **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉDIA
+
+- status: ABERTA.
+- **prova:** nenhuma das 32 rotas inventariadas entrega auditoria global; a página é parada honesta.
+- **dono:** fila pós-gate, bloco de auditoria e observabilidade da plataforma.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND (2026-10-09) — configuração global sem autoridade persistida — MÉDIA
+
+- status: ABERTA.
+- **prova:** MFA obrigatório, retenção, auditoria das operações sensíveis e modos globais não possuem endpoint; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto.
+- **bloqueia:** não.
+
+## P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND (2026-10-09) — credenciais administrativas sem contrato — MÉDIA
+
+- status: ABERTA.
+- **prova:** não há endpoint para catálogo, criação ou rotação de credenciais; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto e segurança.
+- **bloqueia:** não.
+
+## P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA
+
+- status: ABERTA.
+- **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
+
+- status: ABERTA.
+- **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
+- **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
+
+## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
+
+- status: ABERTA.
+- **prova:** fora de `PLATFORM_NAV`, busca, seletor de organização, sino e identidade do cabeçalho continuam estáticos.
+- **dono:** bloco de shell e navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros divergentes — MÉDIA
+
+- status: ABERTA.
+- **prova:** `PLATFORM_NAV`, `platformNavigation.ts` e `navigation.registry.ts` não têm uma única autoridade; a documentação agora declara o estado real.
+- **dono:** bloco de navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console antigo — BAIXA
+
+- status: ABERTA.
+- **prova:** `critical-flows.spec.ts` ainda espera menu remoto e rótulos técnicos antigos; `tests/e2e/**` estava fora do escopo desta entrega.
+- **dono:** `B-SAN3-10`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAIXA
+
+- status: ABERTA.
+- **prova:** Saúde usa `fetch` direto para preservar o corpo útil do 503; o cliente comum transforma a resposta em exceção.
+- **dono:** próximo bloco que precisar de resposta crua em `frontend/src/services/api/client.ts`.
+- **bloqueia:** não; reavaliar se surgir um segundo consumidor.
+
+## P-CI-DOCKER-HUB-LIMITE (2026-10-09) — o CI baixa Postgres e Redis do Docker Hub sem login e cai por limite — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `.github/workflows/ci.yml` (serviços `postgres:16` e `redis:7` e, no job `docker`, as imagens `node` e `nginx`, todos puxados anonimamente) · **dono:** `B-CI-ESPELHO-IMAGENS` (pipeline: revisão de segurança, `agente-secops`).
+- Em 2026-10-09 os jobs `backend` e `backend-postgres` falharam em "Initialize containers" com `toomanyrequests` em 3 de 4 tentativas no head do #405 (`c16bf9be`, runs com `run_attempt=4`) e em heads intermediários do #411 (`c29a1f8b`, `d73d421c`, `af6f345a`; o head do merge `6e5351e3` passou de primeira); só a re-execução passou. Nenhum teste chegou a rodar nessas tentativas: o vermelho não diz nada do código e atrasa merge.
+- **bloqueia:** não (a re-execução passa), mas custou ~40 min só no #405.
+- **teste de encerramento:** o CI não depende de pull anônimo do Docker Hub (espelho público ou login por segredo do repositório), verde em 3 pushes seguidos.
+
+## P-SAN3-06B-TESTES-RESIDUAIS (2026-10-10) — lacunas de teste e um rótulo de Saúde deixados pelo B-SAN3-06b — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (revisão e re-revisão do #411, `agent-orchestration/omega/juntas/REVISAO-PR-411.md`) · **dono:** `B-SAN3-06a`.
+- (N1) nenhum teste prova moeda diferente de BRL — todos os fixtures são BRL; a mutação "sempre BRL" passa 45/45. (N2) o selo "Organização de sistema" no Detalhe da Organização não tem teste (a mutação passa 52/52). (N3) Saúde: o backend emite `worker.status` `up|starting|stale|not_expected`; `starting` aparece como "Indisponível" com "Sistema pronto", e os fixtures usam `healthy`, que o backend não emite. (N8) o T44 não alcança porta-alias de escrita por `export default {…}` nem por `class` dentro do serviço do Cloud Billing (as duas formas passaram verdes na re-revisão). (Obs. do dev dos ajustes) T34/T35/T37/T43 deixam 5 pastas `san3-06b-*` no temp do sistema a cada `test:smoke` (o dev dos ajustes disse 6; o porteiro do #411 mediu 5). (Obs. 2 do dev dos ajustes) o estado de FALHA do Cloud Billing também não tem seletor de mês: não promete troca de mês, e o T17 exige zero dígitos nessa tela.
+- **bloqueia:** não — o Cloud Billing continua só de leitura (0 consumidor de escrita fora do adapter/serviço, medido).
+- **teste de encerramento:** cada item com o teste que fica vermelho sob a mutação da revisão, e `test:smoke` sem resíduo no temp.
+
+## P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organização de sistema — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
+- A organização `platform` (de sistema) pode aparecer como organização cobrada e entrar na contagem de organizações do Cloud Billing; o B-SAN3-06b a tirou das métricas de clientes nas telas, mas a regra de rateio é do backend. É pergunta de produto: a plataforma paga a própria nuvem?
+- **bloqueia:** não.
+- **teste de encerramento:** rateio com a organização de sistema semeada não a cobra (ou a decisão de cobrá-la está escrita).
+
+## P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tsconfig.json:15` (`include: src/**/*.ts`) e `package.json:33` (`lint` = `tsc`); nota N5 da revisão do #411 · **dono:** `B-REG-TYPECHECK-TESTS`.
+- Os geradores em `scripts/*.mjs` só passam por `node --check`; um plano que diga "o lint cobre os scripts" está errado.
+- **bloqueia:** não.
+- **teste de encerramento:** erro de tipo plantado num `scripts/*.mjs` deixa um comando da bateria vermelho.
+
+## P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412) — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (N-1, N-3) e `pre-existente` (N-2, guard de 19/09) — `agent-orchestration/omega/juntas/REVISAO-PR-412.md` · **dono:** a próxima consolidação de KPI por marco (N-1, N-3) e `B-SAN3-10` (N-2, guards do painel).
+- (N-1) a nota de `blocks_completed` diz que #394/#397 contaram por terem ID, plano e junta, mas #360/#361/#362 também tinham e não contaram: o precedente é inconsistente e a frase pode orientar mal a próxima consolidação. (N-2) os guards de KPI não comparam o latest com o último ponto do history (com 175 no history e 174 no latest seguiram 29/29). (N-3) `release.pr`, `merge_commit` e `approved_head` do marco seguem `null`; com o KPI congelado, o preenchimento vai na próxima consolidação.
+- **bloqueia:** não.
+- **teste de encerramento:** critério de contagem escrito sem contradição com o history; guard vermelho com latest ≠ último ponto; campos do marco preenchidos.
+
 ## P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD (2026-09-18) — o censo de duplicatas do estoque em staging e produção, ANTES do próximo deploy — ALTA
 
 - status: ABERTA (nasce na autoria do `B-O6R-04a`, emenda 2-g do comando; plano do bloco §4.3 e §13-1)

@@ -4760,6 +4760,199 @@ bloco mergear.
   tocar código nem teste (diff do proibido vazio), então §C3.3 se aplica e **nada foi reexecutado como se fosse
   deste PR**. Índice de pendências **pelo gerador**: **413** cabeçalhos / **402** IDs, **110** FECHADAS,
   **303** ABERTAS.
+
+## B-GOV-SEM-TETO (PR #394) — o teto de ciclos cai; no ciclo 3 audita-se a máquina — MERGEADO `b3f0af5f` (2026-09-28)
+
+- **Decisão transcrita:** `D-SEM-TETO-AUDITORIA-NO-3` (dono, 2026-09-27) — sem teto de dois ciclos; se o ciclo 3
+  reprovar, audita-se a orquestração e a junta antes do ciclo 4, e continua-se. O texto do orquestrador foi medido
+  incompleto pelo plano (11 regras vivas, 20 elaborações — 16 não declaradas) e corrigido por emenda de dev de
+  identidade nova (V-01…V-06, T-21…T-25, trava do ciclo 4 no item 2.2 do inspetor).
+- **Junta:** APROVADO **3 × 0** (maioria de 3) sobre `7ad08690` — 0 bloqueia, 5 ajuste, 21 nota; segunda instância
+  das três cadeiras (a primeira caiu com a sessão, sem veredito, nada herdado). Ata `omega/juntas/J-B-GOV-SEM-TETO.md`;
+  votos, inspetor e porteiro em `omega/juntas/votos/B-GOV-SEM-TETO/`.
+- **Porteiro:** `LIBERADO COM RESSALVA` (R1–R6). R1–R4 pagas pelo PR de registro do #394 (evidência versionada,
+  backfill §C3.5 `b3f0af5f`/`7ad08690`, 4 pendências novas, este registro). R5 e R6 são condição das próximas juntas:
+  o #393 integra a `main` por merge e o inspetor da junta 3 mede `merge-base --is-ancestor b3f0af5f <objeto>`; o #389
+  e o #388 emendam os corpos de jurado que dizem "CICLO 2 — o ÚLTIMO" antes das juntas deles.
+- **Abertas, com dono:** `P-GOV-CICLOS-CORPOS-ORFAOS`, `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`,
+  `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA`, `P-GOV-INSPETOR-CICLO-DECLARADO-NAO-DERIVADO`, `P-GOV-PROJECT-MEMORY-TETO-VELHO`
+  (dono `B-GOV-CICLOS-RESIDUAIS`); `P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO` (donos #389 e #388);
+  `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (dono #393); `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168; trilhas de teste carregadas com nota (nenhum código nem teste tocado).
+
+## B-GOV-PAUSA (PR #397) — sob ordem de pausa, o agente grava o estado e para sozinho — MERGEADO `513937b0` (2026-10-01)
+
+- **Decisão transcrita:** `D-PAUSA-GRAVA-E-PARA` (dono, 2026-10-01) — norma **P7** do protocolo de junta resiliente. O
+  texto do orquestrador foi medido pelo plano (`planejador-b-gov-pausa`, Fable: 17 elaborações, 7 achados dentro do
+  bloco, KPI pelo precedente do #394 — o commit de abertura citava o #396, errado) e emendado por dev de identidade nova
+  (`dev-pausa-emenda`, Opus: S-01…S-05, S-07, S-11 como T-18…T-24).
+- **Junta:** APROVADO **3 × 0** sobre `67c2c280` (C1 2 ajuste + 2 nota, C2 4 nota, C3 1 nota); inspetor `LIBERADO COM
+  RESSALVA` (as cadeiras rodaram como `general-purpose` lendo o corpo do objeto — o diretório de agentes da sessão não
+  as registrava). Merge squash `513937b0` fixado no SHA do head `5fed0a55`; estado `MERGED` lido antes de limpar.
+- **Registro #398** (`5bcdcc58`, registro puro): parecer do porteiro do #397, backfill §C3.5, `P-GOV-PAUSA-ELABORACOES-DO-
+  TRANSCRITOR` e `P-GOV-PAUSA-CASO-SEM-FONTE` (dono `B-GOV-CICLOS-RESIDUAIS`), fonte do caso do Dev-T4 versionada, errata
+  pós-merge no corpo do #397. Porteiro do #398: `LIBERADO COM RESSALVA` (ciclo 4 do #393 e as tarefas de nuvem 05/09/11).
+- **Limpeza §C5 — correção do orquestrador (ressalva do porteiro do #398):** o mandato do porteiro do #397 dizia que o
+  `scripts/post-merge-cleanup.sh` não rodou "porque o `docker volume prune` derrubaria o cluster de KPI de um dev vivo do
+  #393". **Errado:** o script só toca Docker sob `DEEP_CLEAN=1`; a limpeza padrão não toca container nem volume. Medido
+  depois (01/10, ~19:05): a limpeza padrão não teria removido nada na árvore principal — nenhum `frontend/dist`, `dist`,
+  `coverage`, `mobile/flutter_app/build` nem `*.tsbuildinfo` fora de `node_modules` e de `.claude/worktrees/*`, nenhuma
+  branch local mergeada; `git remote prune` feito. O que a limpeza fez de fato, nos dois merges: worktrees do PR
+  removidos pelo nome (0 processos antes), ramo apagado local e remoto depois de provar árvores iguais, `main` local
+  avançada. O `find` de `*.tsbuildinfo` do script desce em `.claude/worktrees/*` de outras sessões — classe já aberta em
+  `P-CHORE-CLEANUP-DESCE-EM-WORKTREES`.
+- **KPI:** `blocks_completed` 168 → 169; trilhas de teste carregadas com nota; backfill pago pelo #398.
+
+## B-SAN3-01b — as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE NO RAMO pela tarefa de nuvem (2026-10-02), PR a abrir
+
+- **Quem:** `dev-b-san3-01b` (identidade nova; Fable 5.1 `claude-fable-5-1`, declarado na 1ª linha do relatório), tarefa de nuvem
+  no ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`; mandato `omega/juntas/votos/B-SAN3-01b/00-mandatos/dev.md`
+  (md5 EOL-neutro `1c8e3b9d650880a0f8ff5bd3fb1fb44b`, conferido); relatório `omega/juntas/votos/B-SAN3-01b/DEV-relatorio.md`.
+- **Entregas:** E1 teste vivo (13 casos, DOM mínimo sem dependência) · E2 `[G1]` por alcance em qualquer profundidade + fecho +
+  fronteira, `[G1b]`, `[G2]` 29 formas, `[G3]` · E3 três cabeçalhos (só comentário) · E4 gate do "Nova OS" · E5 lista do smoke ·
+  E6 KPI (smoke 1214/1214 real; `blocks_completed` 169 → 170; `pr`/`merge_commit`/`approved_head` null na autoria) · E7 registro.
+- **Bateria §8:** bloco 79/79 · `tsc` 0 · smoke 1214/1214 (Node 22 e 20) · build 0 · `kpi-freeze --check` em dia · 3 guards de KPI
+  29/29 · `git diff --check` limpo. Mutações do §7 com restauro por hash: relatório §M.
+- **Escopo (§6):** `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO; `src/`, `prisma/`, lockfiles, hooks, `App.tsx`,
+  `work-orders.service.ts`, `.github/`, `Kpis/index.html` intocados.
+- **Pendências:** 4 FECHADAS (as do bloco), 3 ABERTAS com dono (`B-SAN3-10`, fila pós-gate, `B-SAN3-06a`); índice regenerado.
+- **Fica para o orquestrador local:** `gh pr create` + `release.pr`, inspetor, junta (unanimidade de 3), CI, squash, §C5, porteiro.
+
+## B-SAN3-01b (PR #402) — a web guarda por alcance e pelo estado da página — MERGEADO `3e40a256` (2026-10-02)
+
+- **Junta 1:** APROVADO **3 × 0** sobre `cdf370dc` (unanimidade de 3: permissão e perda de dado). C1 `guardiao-fail-closed`
+  1 ajuste e 1 nota; C2 `jurado-san3-01b-c2-cadeia-de-acesso` (identidade nova, escrita pela `agente-fabrica`) 3 notas; C3
+  `cognicao-visual` 1 nota; 0 bloqueia. Ata `omega/juntas/J-B-SAN3-01b.md`; votos, pareceres e quedas em
+  `omega/juntas/votos/B-SAN3-01b/`.
+- **Inspetor de terreno:** 1ª passada `BLOQUEADO` (o `coordenador-de-acessos` achou o C2-05, que o bloco fecha); 2ª passada
+  `LIBERADO COM RESSALVA` depois da C2 nova versionada nos dois espelhos. Duas quedas do inspetor por limite de sessão da
+  conta, retomadas como a mesma instância.
+- **Merge:** squash fixado no head `1483a6f7` (o PR era rascunho da nuvem e foi marcado pronto antes); árvore do merge igual
+  à do head; estado `MERGED` lido antes de limpar.
+- **Porteiro do #402:** `LIBERADO COM RESSALVA` — dívidas pagas por este registro: backfill §C3.5 (`pr 402`,
+  `merge_commit 3e40a256…`, `approved_head cdf370dc…` lido da ata) e quatro pendências com dono a partir das notas da
+  junta (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME`, `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL`,
+  `P-SAN3-01B-DASHBOARD-NOVA-OS-SEM-GATE`, `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`). Índice pelo gerador: **432**
+  cabeçalhos / **421** IDs, **115** FECHADAS, **317** ABERTAS. Ressalva para os próximos alvos: o #401 e o ciclo 4 do
+  #393 integram esta `main` e recontam o KPI antes do inspetor novo de cada um (171 e 172 na ordem de merge).
+- **KPI:** `blocks_completed` 169 → 170; `frontend_smoke_tests` 1214/1214 por execução real; backend e Flutter carregados
+  com nota.
+- **Limpeza §C5:** worktrees do PR e das cadeiras removidos pelo nome com 0 processo vivo; ramo apagado no local e no
+  remoto depois de provar árvores iguais; `remote prune`; `main` local avançada; nenhum artefato de build nem ramo local
+  mergeado a remover na árvore principal. O `scripts/post-merge-cleanup.sh` não rodou porque desce nos worktrees de outras
+  sessões (`P-CHORE-CLEANUP-DESCE-EM-WORKTREES`).
+
+## Registro do #403 (registro puro) — as quatro ressalvas do porteiro do #403 (2026-10-03)
+
+- **Porteiro do #403:** `LIBERADO COM RESSALVA` (parecer em `omega/juntas/votos/B-SAN3-01b/PORTEIRO-403.md`). Pagas aqui:
+  (1) o parecer do porteiro do #399, que só existia no ramo `docs/registro-399`, versionado byte a byte; (2) a
+  `backfill_note` do B-SAN3-01b nos dois JSON de KPI corrigida — a árvore do merge é a do head final do PR, `1483a6f7`,
+  que é o head aprovado `cdf370dc` mais a ata e os votos, e não a do head aprovado; (3) dono atribuído às duas pendências
+  que estavam como "proposto" (`P-SAN3-01B-MOCK-POR-CONVENCAO-DE-NOME` → `B-SAN3-06c`;
+  `P-SAN3-01B-PROVA-DO-GATE-EXTENSIONAL` → `B-SAN3-06a`); (4) as seções do #397 e do #402 no `kpis-history.md` deixam de
+  dizer "na autoria".
+- **Ressalva não paga, declarada:** a escolha da referência do cabeçalho da lista de OS
+  (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`) é decisão do dono e foi levada a ele em 2026-10-03. Não entra em
+  `controle/decisoes.md`, que só registra decisões tomadas.
+- **Descompasso declarado:** o porteiro do #403 pediu este registro antes do inspetor novo do #401 e do #393. O inspetor
+  do #401 rodou antes de o parecer chegar; a ata do #401 registra isso.
+
+## B-SAN3-05 — execução local do dev sucessor-2 (2026-10-04)
+
+- Branch `fix/runtime-role-sem-bypass`, worktree próprio `C:/Users/AMP/w-s05d`, `npm ci` próprio; nenhuma junction.
+- Cluster próprio `san3-05-s2-pg`, PostgreSQL 16.14 em `127.0.0.1:55405`; `erp-postgres:5432` e `erp-redis:6379` não foram tocados.
+- Implementação e testes: papel runtime sem bypass, guarda de boot, procedimento, plataforma cross-tenant explícita, gerador/fixtures e duas suítes DB. A1–A24 executados; relatório incremental contém quedas, retomadas, cargas e falsificações.
+- Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
+- PR **#405** aberto em rascunho, base `main`, com o título obrigatório. Inspetor, CI e junta unânime de 3 são do orquestrador. Os atos de staging/produção continuam do dono conforme §11 do plano.
+- Limpeza final: `san3-05-s2-pg` removido; `dist/`, wrappers e scratch/logs `s05-*` removidos; 0 processo worker/teste do worktree. Remoção do worktree ocorre depois do push final.
+- Retomada 7a do PR #405: CI no head `e3cb269d` falhou porque `pg_basebackup` exigia `host replication` no HBA do serviço. Correção no head de código `bbbb3b29`: T8d usa slot físico real + controle 42501 após NOREPLICATION; arquivo 8/8 e backend integral 291 arquivos, 3122 passes, 0 falhas, 2 skips.
+- 2026-10-04 — registro: parecer do porteiro do #404, decisões do dono de 03–04/10 (modelos, Codex, nuvem), R404-1 e R404-3 do porteiro, retomada pós-pausa.
+
+---
+
+## B-SAN3-11 — 2026-10-01 — branch fix/dossie-versao-da-vistoria
+
+- **Objetivo:** fechar `P-CHK-DOSSIE-VERSAO-NA-UI` — o frontend descartava `supersededByRunId`/`reopenedFromRunId`/`currentRunId` e exibia substituídas como "Concluído" (verde).
+- **Entregas:**
+  - E1: `processes.types.ts` +3 campos obrigatórios
+  - E2: `processes.adapter.ts` lê camelCase e snake_case dos 3 campos
+  - E3: `ChecklistRunsPanel.tsx` três estados (substituída/atual/única)
+  - E4: `scripts/san3-11-dossie-vistoria-censo.mjs` guard AST CE-G1
+  - E5: `frontend/tests/patios-dossie-versao.smoke.test.tsx` 16 testes (T1–T14)
+  - E6: KPIs, pendências, status, log
+- **Bateria:** `check` ✓ · `test:smoke` 1218/1218 ✓ · `build` ✓ · guard exit 0 ✓ · `diff --check` ✓
+- **Pendências fechadas:** `P-CHK-DOSSIE-VERSAO-NA-UI`
+- **Pendências abertas (não-bloqueantes):** `P-SAN3-11-VIGENTE-NAO-VINCULADA`, `P-SAN3-11-ORDEM-DO-REPOSITORIO-INDEFINIDA`
+- **KPI:** `blocks_completed` 168 → 169; `frontend_smoke_tests` 1202 → 1218 (execução real)
+- **ERRATA 1 + 1-bis aplicadas (2026-10-02, `dev-errata1-b-san3-11`, plano §15/§15-bis):** arnês do gerador sem teto e mutação normalizada com prova (T13/T14, `92cfc05e`); main `4ab9d232` e ramo `1ae41a42` integrados por merge; KPI recontado contra a main (`blocks_completed` 169 → 170, `pr 401`); status da `P-CHK-DOSSIE-VERSAO-NA-UI` na forma do gerador e índice regenerado (FECHADA 112, SEM STATUS 0); bateria verde nos dois terrenos (CRLF e LF: 16/16, `test:smoke` 1218/1218); A17′, A18′, A19–A26 medidos; head empurrado vai a CI → mandatos HC=H0 → inspetor novo → junta 1.
+- **Integração pós-#402 (2026-10-02, `dev-errata1-b-san3-11`, mandato `dev-integracao2.md`):** main `3e40a256` integrada por merge (`5c8efa08`; conflitos só em registro, KPI e na linha `test:smoke`, esta pela união provada por conjunto dos acréscimos do #402 e do bloco); KPI recontado (`blocks_completed` 170 → 171; `frontend_smoke_tests` 1230/1230 por TAP do head integrado, 1214 + 16; history n=167); arquivo do bloco 16/16; backfill do #402 devido e não pago aqui.
+- **CICLO 2 (2026-10-03, `dev-ciclo2-b-san3-11`, plano §16 e §16-bis; fatias D1–D3):** main `b404815c` (#404) integrada por merge (`77abde50`, 6 conflitos só em KPI/registro); E10 links `.pat-link` que não navegam + `idPrefix` (`7cd227d1`); E11 adapter fail-closed com `ChecklistRunContractError` (`4d159e09`); E12 gerador v2 = Apêndice E (`eb218a90`); E13 16 → 24 testes (`a73fb35f`); ramo do orquestrador integrado (`8c8f4a1c`); E14 pendências com dono do plano da rodada (`c628a87a`); E15 KPI 171 blocos, 1238/1238 por execução nos dois terrenos, `backfill_note` verdadeira (`070b9a03`, empurrado fast-forward); controles A17″/A18″/A25″/T22 da §16-bis verdes no head empurrado. Registro em `votos/B-SAN3-11/DEV-relatorio.md` § CICLO 2.
+- **CICLO 3 (2026-10-04/05, `dev-ciclo3-b-san3-11`, plano §17; Codex GPT-5.6 Sol até a queda por cota às 23:47Z, depois Claude Opus 5.5):** main `357a98e9` (#407, `D-GOV-PROPORCIONAL`) integrada por merge (`f1329cda`); C2c2-F1 — o censo P-L3 resolve a situação pelo checker (índice literal e por tipo, desestruturação, const local, helper por alias, pior candidato por linha) e L3/L4 vazios são vermelhos (`eec4a24a`, `69095df7`); C2c2-F2 — só o ramo `ChecklistRunContractError` do hook limpa as runs, a falha operacional preserva (`10aa38f8`); T23–T26 antes do código, com vermelho nominal; T25/T26 com DOM mínimo, sem dependência nova (o rascunho com Playwright ficaria vermelho no job `frontend` do CI); `Kpis/*` devolvido à main (`4e377923`, KPI congelado); bateria e mutações nos dois terrenos em `votos/B-SAN3-11/DEV-ciclo3-relatorio.md`. Pela regra (1) do `D-GOV-PROPORCIONAL`, segue para um revisor independente + CI verde, sem nova junta.
+
+## 2026-10-01 — B-SAN3-09 — Bootstrap do 1º admin de plataforma (tarefa de nuvem, dev-san3-09-bootstrap)
+
+- **Branch:** `feat/bootstrap-platform-admin` (10 commits à frente de `origin/main`)
+- **Identidade dev:** `dev-san3-09-bootstrap` (claude-sonnet-4-6, tarefa de nuvem)
+- **E1** ENTREGUE — `scripts/bootstrap-platform-admin.ts` 417 linhas, md5 `a5f5383dfbbabde9a63205bd40f64782`, tsc limpo
+- **E2** ENTREGUE — `tests/san3-09-bootstrap-platform-admin.test.ts` 23/23 pass
+- **E3** ENTREGUE — `tests/san3-09-bootstrap-platform-admin-db.test.ts` 11/11 pass (banco de drill porta 54332)
+- **E4** ENTREGUE — `docs/deployment.md` Runbook B reescrito (linhas 169-185); T1.8 verde
+- **E5** ENTREGUE — KPI 3080/3088, blocks_completed 168→169; comando, pendências, status, log
+- **Correções durante a implementação:**
+  - Hash scrypt: formato real `scrypt$v=1$…` (não `$scrypt-v1$`)
+  - Token do login: `body.data.access_token` (não `body.data.token`)
+  - Roles são objetos `{id, key, name}`, verificados por `.key === "super_admin"`
+  - Ratchet lexical: comentários dos cabeçalhos dos dois arquivos de teste substituídos para não acionar o guard
+- **Próximos:** junta do PR, porteiro pós-merge, confirmação de P-SAN-PROD-BOOTSTRAP
+
+## 2026-10-08 — B-SAN3-09 — ciclo 2 de desenvolvimento
+
+- `P-SAN-PROD-BOOTSTRAP` permanece em andamento: fecha somente após a execução em produção, ato do dono (§11 Ato 1); nem CI nem porteiro a fecham.
+- D2: `ALLOW_PROD_BOOTSTRAP` é independente de `ALLOW_PROD_SEED`. D3: papel `super_admin` e concessões pertencem ao CD (`db:provision-rbac`).
+## B-SAN3-05 — ciclo 3 do dev (2026-10-09)
+
+- `dev-ciclo3-b-san3-05` implementou somente A2/A3 do plano concluído sobre o objeto inicial `91d79495`: `view_escape` idêntico na trava e nas duas cópias do script, cobrindo DML, donos que escapam em qualquer profundidade e matviews.
+- T8e/T8f/T14d elevam `guard-db` de 9 para 12; três rodadas 12/12, demais dirigidos 12/12 + 35/35 + 13/13 + 5/5. Dez mutações M-D2a…e (trava/script) ficaram vermelhas no caso nominal S/B/S/K/I e os arquivos foram restaurados por MD5.
+- B7 mínima: sucesso 0, caso S MODO 6/ec=3, SCRAM verdadeiro, senha-sentinela 0 no servidor/terminal, controle de log 1. Suíte integral válida com Redis descartável próprio: 3135 executados, 3133 passes, 0 falhas, 2 skips; build/check/lint verdes.
+- A primeira suíte integral sem Redis foi declarada inválida: 6 falhas `ECONNREFUSED 127.0.0.1:6379`; repetição com `dev05c3-redis` sem porta no host ficou verde. Nenhum serviço `erp-*` foi alvo.
+- Pendências C3.6 registradas e índice regenerado. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/DEV-relatorio.md`.
+
+## B-SAN3-05 — ciclo 4 do dev (2026-10-09)
+
+- `dev-ciclo4-b-san3-05` (Claude Opus 5.5, substituição declarada) implementou a seção "Ciclo 4" do plano sobre o disparo `7c63f920`: `D-405-PROIBIR-VIEWS` — sai o CTE `view_escape` e os filtros de dono/privilégio da trava e das duas cópias do script; a via `view` recusa qualquer view/matview cuja árvore alcance tabela FORCE; mensagem, `RAISE` (4 `%` × 4 argumentos) e `docs/deployment.md` dizem a regra; md5 diagnóstico da SQL `2ed16571…`.
+- T8c (sai o caso `view`), T8d (`objetos` 2), T8e e T14d (COL/COM/MAT/CTL, um por vez) e T8f (1 + 2 blocos `view_walk…view_force`, sem `view_escape`) reescritos; o arquivo continua com 12 testes; ratchet 82 → 72; T14c intacto (2·4·5·2·3).
+- Vermelho-controle no objeto: T8d, T8e·COL (depois dos três efeitos de coluna), T8f e T14d·COL (`status 0`). Head: guard-db 3 × 12/12 (0 `XX000`/`23505`/`40P01`, resíduo 0), sem psql 8/12 nomeando o pré-requisito; 12 · 35 · 13 · 5; M4a/M4b/M4c × trava/script = 6/6 vermelhas pelo caso, restauro por md5; B7 sentinela 0, controle 1; suíte integral 3135/3133/0/2 com `dev05c4-redis`; check/lint/build ec=0. KPI sem diff. Relatório P1: `agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/DEV-relatorio.md`.
+
+## B-SAN3-05 — junta 4 e integração da main (2026-10-09)
+
+- Junta 4 APROVADA 3 × 0 sobre `84831ad9` (C1 em `79b0d594`, só registro de diferença); C2 e C3 em paralelo por autorização do dono (até 2 processos Claude), desvio do R2 do inspetor declarado na ata; 0 quedas.
+- `main` `a9bbde38` integrada por merge depois do voto; conflitos só em registro (log, decisões, pendências, status — união; índice regenerado pelo gerador); delta de produto idêntico ao aprovado.
+- 4 pendências não graves registradas; KPI congelado e sem diff.
+
+## 2026-10-09 — B-SAN3-06b — dev-b-san3-06b
+
+- Worktree exclusivo `C:/Users/AMP/w-06b`; head inicial `4489a996`; `fetch` + rebase em `origin/main` sem conflito.
+- Dependências instaladas separadamente na raiz e em `frontend/`; baseline verde antes da primeira edição: plataforma 15/15, `smoke-flow` 22/22 e smoke 1268/1268.
+- E1–E7 publicados incrementalmente até `c29a1f8b`; E8 entrega seis arquivos de teste, documentação, comando e registro.
+- Resultado funcional: 10 rotas classificadas (6 ligadas, 4 paradas honestas), menu real com 4 itens, 0 tela sem fonte, 0 sítio de dado fabricado e 32 endpoints preservados.
+- Pendências: seis entradas do bloco fechadas com evidência; dívidas de persistência, produto, shell, menu e e2e abertas com dono; observabilidade continua parcial.
+- `Kpis/*` intocado conforme congelamento. Nenhum backend, banco, porta ou container foi iniciado.
+
+## 2026-10-09 — B-SAN3-06b — dev-b-san3-06b-sucessor (Claude Opus 5.5; substitui o Codex, caído por limite de uso na E8)
+
+- Recebeu o worktree em `c29a1f8b` (= remoto) com E8 não commitada; mediu cada arquivo antes de aceitar (P3): 45/45 verdes, geradores com as saídas do E7, índice de pendências regenerado byte a byte igual ao herdado.
+- Fechou a E8: costura de estados sem mudança de comportamento (`ca29352f`), testes T1–T45 reforçados para medir o estado renderizado em vez do texto-fonte (`7644512c`), docs (`8007be1e`), registro com evidência `arquivo:linha` nas 6 pendências fechadas (`d73d421c`).
+- Bateria: `check` frontend verde; `test:smoke` 1313/1313 (baseline 1268, Δ +45); T1–T45 45/45; regressões 125/125; `smoke-flow` 22/22; build verde; testes da raiz que leem `frontend/src` 16/16; `check`/`lint` da raiz verdes após `prisma generate` local; 9/9 controles negativos externos vermelhos com restauro provado.
+- Divergências do plano registradas no relatório do dev (geradores não byte-idênticos aos apêndices, mas de saída equivalente; critério de docs da A18 com 2 menções verdadeiras, uma fora das linhas permitidas). `Kpis/*` intocado; nada de backend, banco ou porta.
+
+## Registro de 2026-10-10 (madrugada)
+
+- #405 mergeado (`a9fbe283`, 2026-10-09 22:01Z) depois de 3 tentativas de CI derrubadas pelo limite do Docker Hub (`P-CI-DOCKER-HUB-LIMITE`); porteiro LIBERADO COM RESSALVA (o parecer foi versionado neste PR).
+- #412 (KPI por marco, pedido do dono) e #411 (B-SAN3-06b) mergeados com revisor independente + CI, pela `D-GOV-PROPORCIONAL` (1).
+- Limpeza autorizada pelo dono (`D-LIMPEZA-2026-10-09`); esteira da API congelada (`D-API-ESTEIRA-CONGELADA`); ordem da noite (`D-ORDEM-NOITE-2026-10-10`).
+- Pendências novas: `P-CI-DOCKER-HUB-LIMITE`, `P-SAN3-06B-TESTES-RESIDUAIS`, `P-CLOUD-BILLING-ORG-SISTEMA`, `P-LINT-RAIZ-SEM-MJS`, `P-KPI-MARCO-2026-10-09-NOTAS`; donos nomeados para `P-SAN3-05-ATO2-CINCO-TAREFAS` e `P-SAN3-05-MENSAGEM-DA-RECUSA` (`B-SAN3-05-ATO2`).
+- Ajustes A-1/A-2/A-3 e notas da revisão do #413 aplicados: o nome do bloco do Ato 2 é do orquestrador; a causa da API cobrar a assinatura foi a herança das `CLAUDE_CODE_*`; o Docker Hub derrubou 3 de 4 tentativas só no head do #405. #411: 1317/1317 no smoke, 49 testes do bloco, 54 arquivos.
+
 ## B-O6R-04a — `fix/inventory-consistency` (2026-09-18, PR na autoria)
 
 **Ω6R-DAT-002 + Ω6R-DAT-003, os dois P0 de estoque do gate (plano SAN3 §4.1, itens 1 e 2), com a `P-020`

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { assertRowsBelongToTenant, forEachTenantRls } from "../../database/rls.js";
 import type {
   CloudCostAllocationRun,
   TenantCloudCostAllocation,
@@ -168,30 +169,7 @@ export class PrismaCloudChargeRepository implements CloudChargeRepository {
     const created: TenantCloudCharge[] = [];
 
     for (const charge of charges) {
-      const record = await this.client.tenantCloudCharge.create({
-        data: {
-          calculation_run_id: runId,
-          tenant_id: charge.tenantId,
-          source_allocation_run_id: charge.sourceAllocationRunId,
-          cloud_charge_rule_id: charge.cloudChargeRuleId ?? null,
-          period_start: charge.periodStart,
-          period_end: charge.periodEnd,
-          allocated_cost: charge.allocatedCost,
-          included_cloud_cost: charge.includedCloudCost,
-          billable_cost: charge.billableCost,
-          markup_type: charge.markupType,
-          markup_value: charge.markupValue,
-          minimum_monthly_charge: charge.minimumMonthlyCharge,
-          gross_charge_amount: charge.grossChargeAmount,
-          discount_amount: charge.discountAmount,
-          final_charge_amount: charge.finalChargeAmount,
-          margin_amount: charge.marginAmount,
-          margin_percentage: charge.marginPercentage ?? null,
-          currency: charge.currency,
-          status: charge.status,
-          metadata: toJsonObject(charge.metadata),
-        },
-      });
+      const record = await this.client.tenantCloudCharge.create({ data: buildTenantChargeData(runId, charge) });
       created.push(mapTenantCharge(record));
     }
 
@@ -235,9 +213,147 @@ export class PrismaCloudChargeRepository implements CloudChargeRepository {
   }
 }
 
-export async function createPrismaCloudChargeRepository(): Promise<PrismaCloudChargeRepository> {
+// B-SAN3-05 (item 10) — o repositório que o serviço recebe. `tenant_cloud_charges` e
+// `tenant_cloud_cost_allocations` têm FORCE ROW LEVEL SECURITY: os três métodos que as tocam rodam uma volta
+// por organização, sob o contexto dela (`forEachTenantRls`), com o `tenant_id` também no filtro (superusuário
+// em dev/CI ignora a política) e o canário na leitura. O resto toca tabelas SEM FORCE (regras, runs de
+// cálculo, run de rateio, organizações) e é delegado ao repositório cru.
+export class RlsPrismaCloudChargeRepository implements CloudChargeRepository {
+  constructor(private readonly prismaClient: PrismaClient) {}
+
+  createRule(input: CreateCloudChargeRuleInput): Promise<CloudChargeRule> {
+    return this.semForceRls().createRule(input);
+  }
+
+  updateRule(ruleId: string, input: UpdateCloudChargeRuleInput): Promise<CloudChargeRule> {
+    return this.semForceRls().updateRule(ruleId, input);
+  }
+
+  getRule(ruleId: string): Promise<CloudChargeRule | undefined> {
+    return this.semForceRls().getRule(ruleId);
+  }
+
+  listRules(filters: CloudChargeRuleFilters = {}): Promise<readonly CloudChargeRule[]> {
+    return this.semForceRls().listRules(filters);
+  }
+
+  createCalculationRun(input: CreateCloudChargeCalculationRunInput): Promise<CloudChargeCalculationRun> {
+    return this.semForceRls().createCalculationRun(input);
+  }
+
+  updateCalculationRun(runId: string, input: UpdateCloudChargeCalculationRunInput): Promise<CloudChargeCalculationRun> {
+    return this.semForceRls().updateCalculationRun(runId, input);
+  }
+
+  getCalculationRun(runId: string): Promise<CloudChargeCalculationRun | undefined> {
+    return this.semForceRls().getCalculationRun(runId);
+  }
+
+  listCalculationRuns(filters: CloudChargeCalculationRunFilters = {}): Promise<readonly CloudChargeCalculationRun[]> {
+    return this.semForceRls().listCalculationRuns(filters);
+  }
+
+  getAllocationRun(allocationRunId: string): Promise<CloudCostAllocationRun | undefined> {
+    return this.semForceRls().getAllocationRun(allocationRunId);
+  }
+
+  listTenants(): Promise<readonly CloudChargeTenant[]> {
+    return this.semForceRls().listTenants();
+  }
+
+  // Varre TODAS as organizações (mais as das cobranças novas): a cobrança antiga de quem ficou sem cobrança
+  // nesta execução só é apagada pelo `deleteMany` sob o contexto DELA. Uma transação só: falha no meio não
+  // deixa o run sem o conjunto antigo nem com metade do novo.
+  async replaceTenantCharges(
+    runId: string,
+    charges: readonly Omit<TenantCloudCharge, "id" | "createdAt" | "updatedAt">[],
+  ): Promise<readonly TenantCloudCharge[]> {
+    const tenantIds = [...new Set([...(await listTenantIds(this.prismaClient)), ...charges.map((charge) => charge.tenantId)])];
+    const created = await forEachTenantRls(this.prismaClient, tenantIds, async (tx, tenantId) => {
+      await tx.tenantCloudCharge.deleteMany({ where: { calculation_run_id: runId, tenant_id: tenantId } });
+      const rows: Array<{ readonly index: number; readonly charge: TenantCloudCharge }> = [];
+
+      for (const [index, charge] of charges.entries()) {
+        if (charge.tenantId !== tenantId) continue;
+        const record = await tx.tenantCloudCharge.create({ data: buildTenantChargeData(runId, charge) });
+        rows.push({ index, charge: mapTenantCharge(record) });
+      }
+
+      return rows;
+    });
+
+    return created.sort((left, right) => left.index - right.index).map((row) => row.charge);
+  }
+
+  async listTenantCharges(runId: string, filters: TenantCloudChargeFilters = {}): Promise<readonly TenantCloudCharge[]> {
+    const tenantIds = filters.tenantId ? [filters.tenantId] : await listTenantIds(this.prismaClient);
+    const charges = await forEachTenantRls(this.prismaClient, tenantIds, async (tx, tenantId) => {
+      const rows = await new PrismaCloudChargeRepository(tx).listTenantCharges(runId, { ...filters, tenantId });
+      assertRowsBelongToTenant(rows, tenantId, "tenant_cloud_charges");
+
+      return rows;
+    });
+
+    return charges.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
+  }
+
+  // Sem o `take: 100_000` global do cru: o teto silencioso cortaria organizações inteiras do cálculo (R10 do plano).
+  async listAllocationTenantAllocations(allocationRunId: string): Promise<readonly TenantCloudCostAllocation[]> {
+    const tenantIds = await listTenantIds(this.prismaClient);
+    const allocations = await forEachTenantRls(this.prismaClient, tenantIds, async (tx, tenantId) => {
+      const records = await tx.tenantCloudCostAllocation.findMany({
+        where: { allocation_run_id: allocationRunId, tenant_id: tenantId },
+        orderBy: { created_at: "asc" },
+      });
+      const rows = records.map(mapCostAllocation);
+      assertRowsBelongToTenant(rows, tenantId, "tenant_cloud_cost_allocations");
+
+      return rows;
+    });
+
+    return allocations.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
+  }
+
+  private semForceRls(): PrismaCloudChargeRepository {
+    return new PrismaCloudChargeRepository(this.prismaClient);
+  }
+}
+
+export async function createPrismaCloudChargeRepository(): Promise<CloudChargeRepository> {
   const { prisma } = await import("../../database/prisma.js");
-  return new PrismaCloudChargeRepository(prisma);
+  return new RlsPrismaCloudChargeRepository(prisma);
+}
+
+// `tenants` não tem RLS: listar as organizações é a leitura de plataforma legítima que abre o laço.
+async function listTenantIds(client: PrismaClient): Promise<string[]> {
+  const tenants = await client.tenant.findMany({ select: { id: true }, orderBy: { created_at: "asc" } });
+
+  return tenants.map((tenant) => tenant.id);
+}
+
+function buildTenantChargeData(runId: string, charge: Omit<TenantCloudCharge, "id" | "createdAt" | "updatedAt">) {
+  return {
+    calculation_run_id: runId,
+    tenant_id: charge.tenantId,
+    source_allocation_run_id: charge.sourceAllocationRunId,
+    cloud_charge_rule_id: charge.cloudChargeRuleId ?? null,
+    period_start: charge.periodStart,
+    period_end: charge.periodEnd,
+    allocated_cost: charge.allocatedCost,
+    included_cloud_cost: charge.includedCloudCost,
+    billable_cost: charge.billableCost,
+    markup_type: charge.markupType,
+    markup_value: charge.markupValue,
+    minimum_monthly_charge: charge.minimumMonthlyCharge,
+    gross_charge_amount: charge.grossChargeAmount,
+    discount_amount: charge.discountAmount,
+    final_charge_amount: charge.finalChargeAmount,
+    margin_amount: charge.marginAmount,
+    margin_percentage: charge.marginPercentage ?? null,
+    currency: charge.currency,
+    status: charge.status,
+    metadata: toJsonObject(charge.metadata),
+  };
 }
 
 function mapRule(record: {

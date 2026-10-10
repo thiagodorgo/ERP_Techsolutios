@@ -1,0 +1,131 @@
+{
+ "jurado": "jurado-pausa-c1-fidelidade-transcricao (identidade nova; nada de plano, briefing ou corpo herdado como fato)",
+ "cadeira": "C1 — fidelidade da transcrição",
+ "mandato_md5": "75c80a5886a7e6d5323396a4933869fa (medido, EOL-neutro) · declarado no disparo: 75c80a5886a7e6d5323396a4933869fa · CONFERE",
+ "modelo": "Opus (claude-opus-5-5), o do frontmatter `model: opus`; sem substituição",
+ "corpo_md5": "5107a493df8cc8e0582d95127521809a (67c2c280:.claude/agents/especialistas/jurado-pausa-c1-fidelidade-transcricao.md, tr -d CR | md5sum) · corpo recebido no prompt (lançada como general-purpose, R1 do inspetor): o mesmo blob, 5107a493df8cc8e0582d95127521809a",
+ "head_medido": "67c2c280612cb644f246af0b5410cab59afe028d (git rev-parse origin/docs/gov-pausa-grava-e-para = gh pr view 397 headRefOid, às 18:32:43Z e às 19:25:05Z) · merge-base 5b6e103638f398d6074eecc5daebdf2d3bcd2252 · c9eda7bb ancestral: sim (merge-base --is-ancestor ec=0) · head no fim: igual",
+ "quorum": "maioria de 3, sem veto, sem suplente — BRIEFING-B-GOV-PAUSA.md l.15 do head; confirmado no parecer do inspetor (LIBERADO COM RESSALVA)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo c2-*/C2-* nem c3-*/C3-* antes de gravar este voto (vi só os nomes C2-evidencia.md e C2-voto.json no git status --porcelain do w-pausa)",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "justificativa": "TERRENO: inspetor LIBERADO COM RESSALVA (R1–R4 lidas; R3 e R4 medidas por mim); head 67c2c280 por git e gh, igual no início e no fim; worktree próprio detached C:/Users/AMP/w-jur-pz1; leitura pelos blobs (CR=0); mutações só em cópias no $SCRATCH, cada uma com diff não vazio provado. CITAÇÃO: 4 versões (decisoes.md do head, corpo, plano, briefing) por tokens normalizados — 0 operações em A (24 tokens) e B (31); decisoes.md difere só por quebra de linha; controle do comparador: conteúdo acusa, acento e quebra não. Sem 'duas versões em circulação'; nota A2 para a paráfrase entre aspas em PROTOCOLO:84. PROPOSIÇÕES: gerador por parse com âncora única e bordas publicadas; 307 proposições (CLAUDE 60, AGENTS 60, PROTOCOLO 57, decisoes 105, terreno 15, README 10; 247 únicas sem o espelho) cobrindo 205 das 206 linhas adicionadas (a de fora é linha em branco, decisoes.md:2824). Regra de quebra publicada (bullet, fim de frase, ponto e vírgula, travessão, dois-pontos com 3+ tokens dos dois lados, parêntese e aposto em par); dois defeitos do meu gerador achados e corrigidos antes de classificar. CLASSES (247 únicas): MUDA O DECIDIDO 0 · ACRÉSCIMO 52 · DERIVAÇÃO FIEL 64 · TRANSCRIÇÃO 10 · CONTEXTO 121 · não classificadas 0. Declaração pelo critério do contrato (CLAUDE.md:520, §C7.6-bis; CLAUDE.md:99, §A6): 61 elaborações normativas de E1 (27 acréscimos, 34 derivações) sob o rótulo do dono, sem marca — A1 ajuste. Diferenças de conjunto: nenhuma T-01…T-17 sem proposição (T-02 perdeu o 'pare'; T-09 perdeu o 'custo/trilha'); 38 proposições sem T do plano, todas de E2 (T-18…T-24). E2: f8b787de é o único commit que toca o texto; c9eda7bb ancestral; 126 proposições novas/mudadas (36 derivações, 25 acréscimos, 3 transcrições, 62 contexto), MUDA 0; T-18…T-24 mapeadas a S-01, S-02, S-03, S-04, S-05, S-07, S-11; todas declaradas como do desenvolvedor no parágrafo datado (decisoes.md l.2853–2907). (a) PARE: 0 nas ordens do dono; no head 'pare' saiu dos exemplos (E1 o tinha em CLAUDE:564, AGENTS:592, PROTOCOLO:82); 21 ocorrências da família em CLAUDE = 21 em AGENTS, classificadas PARADA (pré-existentes), PAUSA/W3, distinção e interrupção pelo orquestrador; o gatilho é a origem (ordem do dono) — W1 intacto. (b) TUDO x TOKENS: 38 proposições delimitadoras; agentes = todo agente vivo (derivação fiel); jobs sem modelo em três formas, a qualificada por tokens é derivação de W6, a incondicional (terreno:94–95, decisoes.md:2851) desprende-se do motivo — A4 nota; nenhuma alarga ou estreita W1–W5 (jobs não são 'o agente'). (c) T-14: nenhum arquivo rastreado narra o evento, no head nem no head atual do #393 (2ca15eb0; o plano media 335cf09d); w-devt4 existe, HEAD 738f0736, porcelain 0, arquivos uniformemente CRLF — traço não mensurável; o texto o chama de 'medido' (decisoes.md:2845, PROTOCOLO:106) com dois números (20–40 x 30 min) — A3 ajuste. CONTROLES: item 1 mut1 (oração 'para sem gravar' no meio da frase: N 60->61, isolada, MUDA O DECIDIDO) e mut2 (só acento: 0 mudança de classe); item 2 mut3 (parágrafo E2 apagado: 42 proposições viram para não declaradas); item 3 — padrão acha '**PARA.**' l.487 e não casa 'separação'; recall D-SEM-TETO-AUDITORIA-NO-3 = 20 arquivos (head) e 44 (#393); taskstop -i 10 x minúsculo 2; mut4 ('não são alvo' -> 'são alvo': DERIVAÇÃO FIEL -> MUDA O DECIDIDO). Todos acusaram ou passaram como deviam. SEM MEDIR: nada do mandato; a hipótese 'job de fundo re-invoca o orquestrador' NÃO foi medida (não está no repositório) e vai para a C2. ERRATA própria: escrevi 186/187 de cabeça; re-medido 206/205, nenhuma conclusão muda. LIMPEZA: ver teardown. VOTO: APROVADO — a citação coincide com as palavras do dono em conteúdo (4 versões comparadas), as 307 proposições geradas da fonte (247 únicas, cobrindo 205 das 206 linhas adicionadas) e as 126 de E2 não mudam o que o dono decidiu (61 não declaradas, graduadas em ajuste), e T-02, T-10 e T-14 foram medidas com controle (cada controle publicado)",
+ "o_que_executei": [
+  {
+   "comando": "git fetch origin; git rev-parse origin/docs/gov-pausa-grava-e-para; gh pr view 397 --json headRefOid,isDraft,mergeable,state",
+   "forma": "cwd árvore principal, início e fim",
+   "resultado": "ec=0; 67c2c280 nas duas vias, OPEN, MERGEABLE, não rascunho; igual no fim"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-jur-pz1 67c2c280; test -e .git",
+   "forma": "caminho curto, inexistente antes",
+   "resultado": "ec=0; HEAD 67c2c280; porcelain 0"
+  },
+  {
+   "comando": "MSYS_NO_PATHCONV=1 git show <ref>:<caminho> > $SCRATCH/<nome>.(obj|mb|e1)",
+   "forma": "6 arquivos x refs 67c2c280, 5b6e1036, c9eda7bb; plano e briefing no head",
+   "resultado": "ec=0; CR=0 em todos os blobs"
+  },
+  {
+   "comando": "python cit.py / citctl.py",
+   "forma": "4 versões da citação, tokens NFKD, difflib",
+   "resultado": "0 operações em A e B; controle: conteúdo acusa, acento e quebra não"
+  },
+  {
+   "comando": "python gen.py $SCRATCH obj --cov --dump",
+   "forma": "blobs do head; âncora única; cobertura por git diff -U0 5b6e1036 67c2c280",
+   "resultado": "ec=0; N=307; cobertura 205/206 (fora: decisoes.md:2824, em branco)"
+  },
+  {
+   "comando": "python cls.py $SCRATCH obj --tabela",
+   "forma": "regras de conteúdo publicadas em cls_rules.py; MUDA primeiro; classe mais grave",
+   "resultado": "ec=0; MUDA 0; 61 normativas de E1 não declaradas"
+  },
+  {
+   "comando": "python mut.py; diff; gen/cls mut1, mut2",
+   "forma": "cópias de CLAUDE.md em $SCRATCH",
+   "resultado": "mut1 N 60->61, nova isolada MUDA O DECIDIDO; mut2 0 mudança de classe"
+  },
+  {
+   "comando": "git cat-file -e c9eda7bb^(commit); git merge-base --is-ancestor c9eda7bb 67c2c280; git log c9eda7bb..head -- <6>",
+   "forma": "worktree próprio",
+   "resultado": "ec=0/ec=0; só f8b787de toca o texto"
+  },
+  {
+   "comando": "python delta.py (E1 x head); python mut3.py; gen/cls mut3",
+   "forma": "parágrafo E2 apagado numa cópia de decisoes.md (5096 bytes, diff 2853,2907d2852)",
+   "resultado": "42 proposições viram para NÃO declaradas; 0 SIM restantes fora de decisoes"
+  },
+  {
+   "comando": "python pare.py CLAUDE.md.obj / AGENTS.md.obj; grep pare head x e1",
+   "forma": "padrão declarado, re.I, fronteira unicode",
+   "resultado": "21 = 21; acha PARA. l.487; não casa separação; pare como exemplo: E1 3 lugares, head 0"
+  },
+  {
+   "comando": "python mut4.py; gen/cls mut4",
+   "forma": "não são alvo -> são alvo em cópia de CLAUDE.md",
+   "resultado": "DERIVAÇÃO FIEL -> MUDA O DECIDIDO"
+  },
+  {
+   "comando": "git grep -n -i -E 'TaskStop|Dev-T4|ordem de pausa' <ref> -- . (menos os 5 arquivos), no head e em 2ca15eb0 do #393; controles D-SEM-TETO-AUDITORIA-NO-3 e taskstop com e sem -i",
+   "forma": "fetch do head atual do #393",
+   "resultado": "head 45 linhas (14 arquivos do bloco + B-SAN3-04a de 20/09); #393 123 linhas, nenhuma narra o evento; recall 20/44; caixa 10 x 2"
+  },
+  {
+   "comando": "git -C C:/Users/AMP/w-devt4 rev-parse HEAD; status --porcelain; python rb contagem de CR",
+   "forma": "só leitura",
+   "resultado": "HEAD 738f0736; porcelain 0; 2502/2502 e 1093/1093 linhas com CR (blob 0)"
+  },
+  {
+   "comando": "python gen.py --cov (soma); git diff --numstat 5b6e1036 67c2c280 -- <6>",
+   "forma": "re-medição da errata",
+   "resultado": "206 adicionadas, 205 cobertas"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A1 — elaborações de E1 apresentadas sob o rótulo de decisão do dono, sem marca de que são do transcritor",
+   "evidencia": "CLAUDE.md:566–587 (e AGENTS.md:594–615) sob '(decisão do dono, 2026-10-01 — D-PAUSA-GRAVA-E-PARA)'; decisoes.md:2832–2838 sob 'Decisão.'; PROTOCOLO:82–114; terreno:91–97; README:73–76. 61 proposições normativas (27 acréscimos: SendMessage, status-geral.md, mesma identidade e mesmo mandato, contagem de CR/tsc/diff, ordem de minutos, declara quais ficam vivos; 34 derivações). Critério do contrato: CLAUDE.md:520. Mitigação medida: decisoes.md l.2853–2907 declara T-18…T-24 e diz que as palavras do dono são só as duas citações. W1–W5 intactos; T-01, T-03…T-13, T-16. cls.py ec=0",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (linhas adicionadas por git diff 5b6e1036..67c2c280)",
+   "motivo": "o texto apresenta como decisão do dono conteúdo que o dono não disse — ator, mecanismo, lugar e prazo —, quando o próprio contrato diz que derivação não se apresenta como declaração"
+  },
+  {
+   "defeito": "A3 — o caso que motiva P7 é apresentado como medido e nenhum arquivo rastreado o narra",
+   "evidencia": "decisoes.md:2845 'Por quê (medido). Em 01/10/2026 06:4x … ~20–40 min de redo … E4 de 5–6 h'; PROTOCOLO:106 'Por quê (medido em 01/10/2026)'; terreno:95–96 '~30 min'. git grep fora dos 5 arquivos: no head e no #393 (2ca15eb0) nada narra o evento; w-devt4 HEAD 738f0736, porcelain 0, sem traço mensurável. T-14",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (linhas adicionadas)",
+   "motivo": "o caso é apresentado como medido, nenhum arquivo rastreado o narra, e o mesmo fato tem dois números — fato e hipótese não estão separados (§A6, CLAUDE.md:99)"
+  },
+  {
+   "defeito": "A2 — paráfrase das palavras do dono entre aspas",
+   "evidencia": "PROTOCOLO:84, entre aspas, 'não use mais tokens até o limite voltar' x literal 'nao use mais tokens ate os limites serem resetados' (difflib: replace 'os limites serem resetados' -> 'o limite voltar'). W6, T-02",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "texto entre aspas apresentado como ordem do dono difere do literal no léxico (sentido igual; não rotulado como verbatim)"
+  },
+  {
+   "defeito": "A4 — exclusão de jobs sem modelo desprendida do motivo que a liga às palavras do dono",
+   "evidencia": "terreno:94–95 'job sem modelo (…) não é alvo.'; decisoes.md:2851 'não para job local sem modelo' — sem 'de uma pausa de tokens', que CLAUDE.md:578–579 e PROTOCOLO:99–100 trazem. W6, T-10/T-23",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a forma incondicional da exclusão não carrega a qualificação por tokens, a única ponte entre ela e W6; não muda W1–W5 (jobs não são 'o agente')"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum — os cinco controles (comparador da citação, mut1/mut2, mut3, padrão de 'pare' com recall e caixa da busca de fonte, mut4) acusaram ou passaram como deviam; dois defeitos do meu próprio gerador (aposto em travessão duplo; T-01/T-17 falsamente 'declaradas') foram achados na leitura da saída e corrigidos ANTES da classificação, declarados na evidência 1.3"
+ ],
+ "pendencias_que_aceito": [
+  "C2 — hipótese NÃO medida: um job local lançado em segundo plano pelo orquestrador o re-invoca ao terminar (comportamento do harness, não documentado no repositório), o que faria a exclusão de jobs (T-10) gastar tokens pelo mesmo mecanismo que justifica parar os vigias (T-17)",
+  "C2 — 'só então para quem não respondeu, para os vigias' (CLAUDE.md:576, 602) usa 'parar' num terceiro sentido (interrupção pelo orquestrador), além de PAUSA e PARADA; colisão de vocabulário é da C2",
+  "C2 — o parágrafo 'Decisão.' de decisoes.md mantém a lista '(rodada de mutação, CI)' e 'no seu arquivo de evidência' sem destino; o próprio parágrafo E2 declara que vale o texto vivo",
+  "C3 — o head do #393 andou (2ca15eb0; o plano media 335cf09d); o plano cita w-devt4 com 2 arquivos sujos, hoje porcelain 0 (R3 do inspetor) — registro e terreno",
+  "plano §3 já declarou: as 17 elaborações sem declaração e T-14 como [não-verif]",
+  "pré-existente com dono: P-GOV-OBITUARIO-SEMTETO (plano §9 e pendencias.md do head)"
+ ],
+ "anomalias_de_terreno": [
+  "o corpo nomeia os arquivos c1-evidencia.md/c1-voto.json; o mandato e o disparo, C1-*; usei C1-* (o mandato manda); NTFS não distingue caixa",
+  "neste Git Bash, comandos longos com heredoc falharam com 'unexpected EOF' (5 vezes) e passaram quando divididos em partes — o comando parece truncado acima de certo tamanho; contornado gravando em partes. Sem efeito no mérito"
+ ],
+ "teardown": "worktree C:/Users/AMP/w-jur-pz1 removido por git worktree remove --force (só o meu; porcelain 0 antes; fora da lista depois) · 101 cópias/scripts/logs do $SCRATCH (scratchpad/pz1) apagados · nenhum arquivo rastreado tocado (w-pausa e árvore principal: 0 modificados) · w-devt4 só lido (HEAD 738f0736, porcelain 0) · base viva nunca tocada · resíduo ALHEIO apenas reportado"
+}

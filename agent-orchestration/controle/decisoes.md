@@ -2627,6 +2627,469 @@ faltou foi **conferir o valor contra a régua** antes de mandá-lo adiante, duas
 aconteceu **depois** de a primeira ter sido diagnosticada. Instrução que fica: **`approved_head` se lê da ata
 do bloco**, nunca de `gh pr view` nem do head do ramo — e quem recebe um SHA num mandato **confere contra a
 ata** antes de publicá-lo.
+
+---
+
+## `D-SEM-TETO-AUDITORIA-NO-3` — o teto de ciclos cai; no ciclo 3 audita-se a MÁQUINA (decisão do dono, 2026-09-27)
+
+**O que o dono decidiu, nas palavras dele:** *"vamos remover a trava de dois ciclos; se rodar três ciclos e
+encontrar mais erro, faremos uma auditoria na orquestração e na junta para garantir que está tudo normal e
+continuaremos. Se está encontrando erro está tudo certo."* Fonte §A1.1.
+
+**REVOGA `D-TETO-DOIS-CICLOS`** (2026-08-29), que revogara o teto de 5. Não há mais teto por contagem.
+
+**O que muda.** Reprovação de junta deixa de parar o bloco. No lugar do teto entra um gatilho de natureza
+diferente: **no ciclo 3 com achado `bloqueia`, audita-se a orquestração e a junta antes do ciclo 4** — a
+máquina, não o bloco. Texto operante no §C7.4 item 4 do `CLAUDE.md` e no espelho do `AGENTS.md`.
+
+**Por que a troca é uma melhora de desenho, e não um afrouxamento.** O teto por contagem pergunta *"o bloco
+gastou o orçamento?"*. A pergunta útil é *"a máquina está achando defeito de verdade?"*. Foi o próprio
+`B-GOV-MANDATO` que mostrou a diferença: nos dois ciclos, as juntas acharam defeitos **reais e medidos por
+mutação** — a trava que só via bullets, o guard que testava uma réplica em vez do artefato, e o conserto do
+`approved_head` que não tinha teste nenhum e cuja remoção fazia a ferramenta **voltar a inventar o valor**
+com o guard verde. Parar ali por contagem descartaria uma máquina que estava funcionando.
+
+**Contexto medido que o dono tinha na mão ao decidir.** `B-GOV-MANDATO` ciclo 1 REPROVADO 2×1, ciclo 2
+REPROVADO 2×1. O ciclo 2 **fechou** o defeito central do ciclo 1 (0 de 51 casos sobrevivem ao artefato
+apagado, contra 4 de 6), fechou a pendência do basename **duas vezes com amostras independentes**, e publicou
+a primeira medição de cobertura que este artefato já teve: **87%**, sobre 195 pontos enumerados da fonte.
+Os bloqueantes novos são de uma classe nomeada: **o remédio nasceu com a doença** — a checagem 7, escrita no
+ciclo 2 para fechar o ciclo 1, é literalmente *"bullet rejeita, tabela passa"*.
+
+**O que NÃO muda.** §C7.4-bis (quem acha ≠ quem planeja ≠ quem desenvolve) · identidade nova nas cadeiras que
+votaram · inspetor de terreno fail-closed antes de cada junta · quórum por risco (§C7.1-ter(b)) · junta com
+ata registrada · CI verde · KPI por PR com execução real · limpeza §C5 · porteiro pós-merge · e as **paradas
+imediatas irredutíveis** do §C7.5 (migração destrutiva, exposição de segredo, ação irreversível em produção).
+
+**Risco assumido e sua mitigação, declarados.** Sem teto por contagem, um bloco que não converge pode consumir
+indefinidamente — e a resposta do §C7.4 à reprovação é **escalar**, o que torna cada ciclo mais caro. A
+mitigação não é um teto disfarçado: é o orquestrador **relatar, a cada ciclo, se a classe de defeito se
+repetiu sem informação nova**. Classe repetida sem informação nova é o sinal de não-convergência, e é isso
+que a auditoria do ciclo 3 existe para examinar.
+
+**Blocos em voo.** O `B-GOV-MANDATO`, que havia parado no teto revogado, **retoma no ciclo 3** sob esta
+decisão. Como o ciclo 3 é exatamente o do gatilho, se ele produzir achado `bloqueia` a auditoria da máquina é
+obrigatória antes do ciclo 4.
+
+**Emenda de 2026-09-28 — o que entrou além do texto de 27/09, e por quê (§A2: nada em silêncio).** Quem
+escreve: `dev-semteto-emenda`, desenvolvedor da emenda do #394, identidade nova. O orquestrador escreveu o texto
+de 27/09 e **não emenda o próprio texto** (§C7.4-bis); o `planejador-mestre` do bloco mediu que ele estava
+incompleto (`docs/revisoes/SAN3/B-GOV-SEM-TETO-plano.md` §3–§5 e §7), e esta emenda implementa aquele plano.
+**Nada abaixo muda o que o dono decidiu.** O que remove regra é consistência; o que acrescenta está numerado
+na sequência das T-01…T-20 do plano (§2), para a cadeira C1 julgar uma a uma contra as palavras do dono.
+
+*Regras vivas que contradiziam a decisão — classe (a) do plano §3.3, nos dois contratos quando é contrato:*
+- **V-01** §C7.7: saiu *"e o teto de dois ciclos"* da lista do que o protocolo resiliente não muda. Só deleção.
+- **V-02** cauda do item 4 (*"Por quê, medido … com dois conjuntos de achados na mesa, não cinco"*): saiu
+  inteira. Era a justificativa da decisão **revogada**; cada fato dela já está nesta casa, na entrada
+  `D-TETO-DOIS-CICLOS` acima (B-O6R-01 em 3 ciclos, B-O6R-02 no ciclo 5 com 16 identidades, 24% dos ciclos,
+  escalar reduz a chance de aprovar, o SAN2-1 que reintroduziu defeito, *"dois conjuntos de achados, não
+  cinco"*). Só deleção; nada se perde.
+- **V-03** §C7.1-bis: o insumo *"parecer do crítico + PD nos ciclos ≥3"* era do protocolo do teto de 5, que a
+  regra nova reativaria sem prescrever. Virou *"do ciclo 4 em diante, o parecer da auditoria da máquina do §C7.4
+  e, se ela achou a máquina defeituosa, o registro do conserto"* — é a T-21 abaixo.
+- **V-04** `inspetor-de-terreno-da-junta`, **só o item 2.2** (+ espelho `.agents/`, regenerado por
+  `sync-agent-agents.mjs`): a mesma troca, por **exceção escrita** do plano §3.3(a) — era o único remanescente
+  que bloquearia **por construção** a junta 3 do #393. Diff de 1 hunk; os demais itens do corpo intactos.
+- **V-05** `.agents/agents/README.md` passo 5 e l.122/126: o lado Codex repete o item 4 (sem teto; auditoria no
+  ciclo 3; a fábrica cria especialistas a cada ciclo). **V-06** `PROTOCOLO-JUNTA-RESILIENTE.md` l.6: só deleção,
+  a mesma de V-01.
+
+*Elaborações NOVAS desta emenda — continuam a numeração do plano; nenhuma é palavra do dono:*
+- **T-21** `[acrésc]` **A trava e a convocação** — adotada a opção §4.2(ii) do plano, declarada aqui como
+  **mecanismo do transcritor**: o inspetor, no item 2.2 e no §C7.1-bis, não libera junta de ciclo 4 ou seguinte
+  sem o parecer da auditoria; *"O orquestrador a convoca"*. Mede-se contra W3 (*"faremos uma auditoria"*) e o
+  *"OBRIGATÓRIA"* da T-06. **Efeito, dito para não ser descoberto:** o gate é o último ponto em que a ausência é
+  detectável por máquina — ele trava a **junta** do ciclo 4, não o planejamento dele; a regra continua sendo
+  *"antes de abrir o ciclo 4"*. Fecha M-01 e M-08.
+- **T-22** `[acrésc]` **O registro e a forma do veredito** — o parecer vai para
+  `omega/reprovacoes/R-<entrega>-ciclo3-auditoria.md` (o registro `R-*` que já existe), com o comando executado
+  em cada pergunta e o veredito **máquina sã** ou **máquina defeituosa** (as duas palavras que o texto de 27/09
+  já usava). Quem decide o veredito é quem conduz; quórum de uma identidade, como o texto já dizia. Fecha M-03.
+- **T-23** `[interp]` **A pergunta (d) reescrita** — *"passou no pré-voo?"* virou *"foi conferido antes do
+  voto?"*. O "pré-voo" só existe no #393 (`scripts/mandato-preflight.sh`, ausente da `main`); a propriedade não
+  depende da ferramenta, e quando o pré-voo por máquina estiver na `main` ele passa a ser a forma de conferir
+  sem reescrever o contrato (plano §4.1). A T-09 continua sendo julgada como elaboração. Fecha M-07.
+- **T-24** `[interp]` **O disparo, sem ambiguidade** — *"Conta o `bloqueia` que reprova o ciclo 3 — o
+  `pre-existente` não reprova (§C7.1-ter(a)) nem abre ciclo 4 —, e a auditoria é a do ciclo 3: o parecer dela
+  serve aos ciclos seguintes."* Não é regra nova: é o que *"no ciclo 3 … antes de abrir o ciclo 4"* já implicava
+  somado ao §C7.1-ter(a), dito por extenso. Mede-se contra W2 (*"se rodar três ciclos e encontrar mais erro"*).
+  **Efeito:** reprovação sem achado `bloqueia` (ex.: *"não consigo medir"*) abre o ciclo 4 e, pelo gate, também
+  exige a auditoria. Se o dono quer nova auditoria mais adiante, isso **não** está decidido aqui — é M-05, aberta.
+  Fecha M-10.
+- **T-25** `[acrésc]` **O conserto da máquina** — *"Quem auditou não conserta (§C7.4-bis); o conserto fica
+  registrado no mesmo arquivo do parecer, e sem esse registro o inspetor também não libera o ciclo 4."* Dá
+  executor e lugar ao *"conserta-se a máquina primeiro"* da T-11, com maquinaria que já existe. **Não** diz quem
+  atesta que o conserto consertou nem quanto a espera pode durar — isso fica em M-04, aberta. Fecha M-04 em parte.
+
+*As dez peças do plano §4:* **M-01** T-21 · **M-02** aberta · **M-03** T-22 · **M-04** parte T-25, resto aberto ·
+**M-05** aberta (pergunta ao dono) · **M-06** aberta · **M-07** T-23 · **M-08** V-03/V-04 · **M-09** aberta ·
+**M-10** T-24. As abertas estão **nomeadas com dono** em `pendencias.md` →
+`P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS`.
+
+*Fora deste bloco, com dono — classe (b) do plano §3.3:* V-07 `validador-mestre:100`, V-08
+`critico-adversarial:3,6`, V-09 `avaliador-mapas:17`, V-10 `agente-fabrica:8` e V-11 `EXECUTION_MODEL.md:273–278`,
+pré-existentes por data (2026-07-08 a 2026-08-15), sem cadeira na junta 3 do #393 →
+`P-GOV-CICLOS-CORPOS-ORFAOS`.
+
+*KPI (§C3):* `blocks_completed` 167 → 168, recontado da `origin/main` (`fc3363e3`); métricas de teste carregadas
+com nota (§C3.3); `mvp_*` intocados; e o backfill §C3.5 do #392 pago (`merge_commit fc3363e3…`, `approved_head
+7822deaf…` lido da ata `J-B-SAN3-00.md:3`, não de `gh pr view`).
+
+## D-DURABILIDADE-BRANCHES-LOCAIS (decisão do dono, 2026-08-29) — o que só existe num disco não conta como entregue
+
+**Contexto.** A sessão de 28–29/08 começou porque a máquina foi **desligada sem aviso** no meio de uma
+rodada. O levantamento pós-desligamento mediu, e o `porteiro-pos-merge` do #360 confirmou por execução
+(`git rev-list --count`, `git ls-remote`), que **82 commits viviam em três branches locais sem upstream** e
+que uma edição de três dias atrás nunca fora commitada:
+
+| O que | Tamanho | Estado antes |
+|---|---|---|
+| `feat/o6r-b02-financial-uow` | **35 commits** | sem upstream, 0 refs no origin — **é o insumo do ciclo 5 do financeiro** |
+| `docs/governanca-porteiro-pre-merge-sol` | **46 commits** | idem |
+| `chore/ressalvas-porteiro-357` | 1 commit | idem |
+| `scripts/porteiro-pre-merge.mjs` no worktree `gov-descuido` | +26/−6 | **não commitado**, vivo só no disco desde 26/08 |
+
+**Decisão.** O dono ordenou **pushar as três branches** e **commitar a edição na própria branch**. As três
+ganharam upstream; a edição virou `497d360` em `docs/governanca-porteiro-pre-merge-sol`. Medição pós-ordem:
+`git rev-list --count origin/<b>..<b>` = **0 nas quatro branches** — nada mais existe apenas neste disco.
+
+**O que isto NÃO é.** Não abre PR, não move a `main`, não muda uma linha de produto. É **durabilidade da
+prova e do insumo**, exatamente como o porteiro do #359 fez com a `demo/investidor` em 28/08 e pelo mesmo
+motivo. Reversível por `git push --delete`.
+
+**Por que virou decisão, e não rotina silenciosa.** O `porteiro-pos-merge` do #360 elevou isto a **primeiro
+ato do ciclo 5** (achado B do parecer), com um argumento que o registro deve preservar: *"obter a ordem de
+push — ou o registro da recusa — **antes** de gastar a junta ampliada sobre um insumo que um disco pode
+apagar"*. O ciclo 5 é o **teto do §C7.4**: se aquela junta reprovar, não há ciclo 6. Montar a junta mais cara
+do protocolo sobre 35 commits que existiam em cópia única seria apostar o teto num disco.
+
+**Regra que fica.** Branch de bloco em curso **ganha upstream assim que tiver commit que doa perder** — não
+se espera o PR. O push é barato e reversível; a perda não é.
+
+> **Portada para a `main` em 2026-09-30, por decisão do dono** ("regra viva: portar para a main"). O texto
+> abaixo é o **verbatim** da definição que vivia só no ramo `demo/investidor` (`d1fab3bc`, 2026-08-29) — nenhuma
+> palavra alterada. Fecha a `P-GOV-D-DURABILIDADE-FORA-DA-MAIN`. A comparação arquivo a arquivo dos 49 commits
+> do ramo (30/09) mediu que esta é a **única** regra viva dele ausente da `main`
+> (`agent-orchestration/docs/conhecimento-de-terreno.md` §4).
+
+
+## D-DEMO-UX-NUVEM (decisão do dono, 2026-09-30) — o produto de demo/UX do `demo/investidor` vai para a nuvem, e o que toca trabalho fica em pasta separada
+
+**Palavras do dono:** "o Produto (demo + UX) por padrao manda tudo pra nuvem arquivos que pode que tocar em
+trabalho fica na nuvem tambem mas em pasta separada com seu comportamento e previsão no papel".
+
+**Contexto medido (30/09).** O ramo `demo/investidor` tem 49 commits fora da `main` (23–29/08). Arquivo a arquivo,
+**275 arquivos de produto** (demo para investidor e acabamento de UX: seeds da demo, vídeos de fluxo, painel de
+pátios, tabela de preços, clique-na-linha, consistência visual, dossiê do veículo, fidelidade do app de campo)
+não estão na `main`. Cruzados por script com os PRs em voo (#388, #389, #393) e com os caminhos que cada bloco do
+`PLANO_SAN3` §5 declara: **156 não tocam nada em curso nem planejado; 119 tocam**.
+
+**Decisão.**
+1. **Por padrão, tudo vai para a nuvem** (sessões em claude.ai/code): plano, crítico e desenvolvimento, **por
+   tema**, cada tema como bloco com plano, crítico, junta e porteiro — nunca merge direto do `demo/investidor`.
+2. **O que toca trabalho em curso ou planejado também vai para a nuvem, mas em pasta separada**
+   (`docs/revisoes/DEMO-UX/trilha-em-espera/`), com o **comportamento** de cada tema e a **previsão** de entrada
+   escritos — o bloco que o destrava e a ordem. Não mergeia antes do bloco que o destrava.
+3. A trilha livre fica em `docs/revisoes/DEMO-UX/trilha-livre/`. O manifesto arquivo a arquivo
+   (`docs/revisoes/DEMO-UX/manifesto.tsv`) é gerado por script (`gerar-manifesto.py`, na mesma pasta), nunca
+   escrito à mão.
+4. O merge continua **só pela sessão local** do orquestrador, depois de junta e CI (um orquestrador só).
+
+**O que isto NÃO autoriza.** Não traz nenhum arquivo do `demo/investidor` para a `main` por si; não passa por
+cima da ordem do dono (perda de dado → multi-tenant → segurança → dinheiro → confiabilidade → contratos →
+fluxos de venda → acabamento → documentação); não permite à nuvem mergear.
+
+## D-MANDATO-FORMA (decisão do dono, 2026-09-30) — o mandato que lança um agente é um documento de campos declarados
+
+**Palavras do dono:** `"1=a"` — resposta à pergunta da §8.8 de `agent-orchestration/omega/reprovacoes/R-B-GOV-MANDATO-ciclo3-auditoria.md`,
+transcrita pelo orquestrador.
+
+**Decisão.** O mandato de lançamento de um agente (cadeira, dev, gate, planejador, auditor) é um **documento de campos
+declarados** — a forma **(A)** da §8.8: duas seções, `## MEDIDO` (toda afirmação com `medido por: <comando>` e a saída em
+cerca) e `## HIPOTESE` (toda afirmação com o comando que a derruba); a instrução ("julgue X") vira hipótese com o comando
+que a derrubaria; a prosa narrativa que não é afirmação nem hipótese **sai** do mandato. O pré-voo do `B-GOV-MANDATO`
+(`scripts/mandato-preflight.sh`) é o instrumento inteiro — nenhuma ferramenta nova.
+
+**O que isto fixa (do conserto da máquina, §8.3, válido nas duas respostas e agora na forma A):** o mandato existe como
+**arquivo versionado antes do lançamento** (`omega/juntas/votos/<bloco>-ciclo<N>/00-mandatos/<papel>.md`), passa pelo
+instrumento **no head do lançamento** com o veredito gravado (`ec`, head, blob, UTC), o agente declara `mandato_md5`, e o
+inspetor **re-executa** o instrumento no head do objeto — veredito gravado é insumo, não fato.
+
+**Consequência imediata:** os mandatos do ciclo 4 do `B-GOV-MANDATO` deixam de ser "forma provisória" e saem na forma A em
+definitivo; o passo 5 da §8.6 fica como está. Fecha `P-GOV-MANDATO-FORMA`.
+
+**O que NÃO decide:** não muda o contrato (`CLAUDE.md`) por si — o corpo do inspetor (item 2.4) e a frase na ata (§C7.1) são
+peças do `B-GOV-CICLOS-RESIDUAIS`/`B-GOV-MAQUINA-PRE-JUNTA` (`P-GOV-MAQUINA-393-D-M2-MANDATO-ARTEFATO`).
+
+## D-PAUSA-GRAVA-E-PARA (decisão do dono, 2026-10-01) — sob ordem de pausa, o agente grava o estado e para sozinho
+
+**Palavras do dono (verbatim):** `"documente, quando eu mandar uma ordem de pausa, o agente grava o estado e para sozinho.
+publique nos documentos e deixe isso como padrão"`. A ordem que a motivou, minutos antes: `"pause tudo, o limite esta perto
+do teto, nao use mais tokens ate os limites serem resetados, assim eu planejo nao perde contexto e retorno rapido quando a
+seção estiver ok"`.
+
+**Decisão.** Ordem de pausa do dono é **corte limpo, não morte**. Todo agente vivo, ao recebê-la (repassada pelo
+orquestrador em 1 linha, `PAUSA`), termina o comando em curso, grava `## PAUSA <hora UTC>` no seu arquivo de evidência
+(head medido · feito, com comando e saída · falta · próximo comando exato · arquivos meio-escritos nomeados) e **para
+sozinho**, com mensagem final de 1 linha apontando o arquivo. Não inicia item novo. O orquestrador dá o tempo de gravar,
+só então para quem não respondeu, para os vigias, declara quais jobs locais sem modelo ficam vivos (rodada de mutação, CI)
+e registra o roteiro de retomada antes de encerrar o turno. A retomada é pela **mesma identidade, do mesmo mandato**, com
+a seção `## PAUSA` como roteiro (P3), medindo o que ficou meio-escrito antes de confiar.
+
+**Onde vive.** Norma **P7** do protocolo de junta resiliente — `CLAUDE.md` §C7.7, espelhada byte a byte em `AGENTS.md`
+(regra de espelhamento), fonte longa em `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md`; o modelo de
+mandato colado no disparo de cada agente ganha a linha `[P7]`; lição em `agent-orchestration/docs/conhecimento-de-terreno.md`
+§2.2.
+
+**Por quê (medido).** Em 01/10/2026 06:4x, sob a ordem de pausa, o orquestrador **matou** o Dev-T4 do ciclo 4 do
+`B-GOV-MANDATO` (`TaskStop`) no meio de uma conversão LF→CRLF de `tests/mandato-preflight.test.ts`: parcial possivelmente
+inconsistente, ~20–40 min de redo. A pausa estava certa (as fases caras — E4 de 5–6 h e a junta — ainda viriam); o corte
+é que foi sujo. A ordem de pausa **autoriza o gasto mínimo de gravar** — um comando — porque é mais barato que o redo.
+
+**O que NÃO decide.** Não altera P1–P6 (quando a pausa não chega — 429, queda, suspensão do PC — é a evidência incremental
+que salva); não para job local sem modelo; não dispensa a junta do PR que publica esta decisão (§C7.1).
+
+**Emenda de 2026-10-01 — o que entrou além do texto do orquestrador, e por quê (§A2: nada em silêncio).** Quem
+escreve: `dev-pausa-emenda`, desenvolvedor da emenda do #397, identidade nova (Opus 5.5). O orquestrador escreveu o
+texto acima e **não emenda o próprio texto** (§C7.4-bis); o `planejador-mestre` do bloco mediu sete achados dentro do
+bloco (`docs/revisoes/SAN3/B-GOV-PAUSA-plano.md` §5: S-01, S-02, S-03, S-04, S-05, S-07, S-11), e esta emenda
+implementa a **propriedade** de cada um, sem julgar se o achado procede. **Toda frase abaixo é elaboração do
+desenvolvedor da emenda, não palavra do dono** — as palavras do dono continuam sendo só as duas citações verbatim do
+início desta entrada. A numeração continua a das elaborações T-01…T-17 do plano (§3), para a cadeira C1 julgar uma
+a uma.
+
+- **T-18** (S-01) `[consist]` A abertura do item 7 do §C7 dizia *"P1–P6, inline"* e *"as seis normas abaixo"* — com
+  a P7 são sete. Passa a dizer *"P1–P7"* e *"as sete normas"*, e o cabeçalho do item cita as duas decisões
+  (`D-JUNTA-RESILIENTE`, `D-PAUSA-GRAVA-E-PARA`). `CLAUDE.md` e `AGENTS.md`, mesmo commit, hunks idênticos.
+- **T-19** (S-02) `[consist]` O escopo declarado do protocolo — item 7 nos dois contratos e cabeçalho do
+  `PROTOCOLO-JUNTA-RESILIENTE.md` — dizia *"toda junta, inspeção de terreno e porteiro"* e que o protocolo muda
+  *"como o trabalho sobrevive à morte de quem o fez"*; a P7 alcança *"cada agente vivo"* e diz *"não é morte"*.
+  Passa a dizer que a P7 alcança, além deles, **todo agente vivo — dev, planejador, fábrica — e o orquestrador**, que
+  a origem medida das 14 quedas é a de **P1–P6**, e que o protocolo cobre a morte (P1–P6) **e a pausa ordenada pelo
+  dono** (P7, que não é morte).
+- **T-20** (S-03) `[espelho]` O lado Codex (`.agents/agents/README.md`, bloco *"Resiliência de junta"*) passa a
+  *"P1–P7"* e descreve o mesmo comportamento da P7, inclusive o destino de quem não tem arquivo de evidência e a
+  frase *"Pausa não é morte nem parada"*.
+- **T-21** (S-04) `[acrésc]` **Destino da seção `## PAUSA` para cada sujeito.** O texto dizia *"no seu arquivo de
+  evidência"*, que dev, planejador e fábrica não têm. Passa a dizer: o `<cadeira>-evidencia.md` do P1 (jurado,
+  inspetor e porteiro, que já o têm por P1); quem não tem um usa **o arquivo de saída que o seu mandato nomeia** (o
+  plano, o relatório — os mandatos versionados em `votos/<BLOCO>/00-mandatos/` já o fazem: o do planejador do #397
+  diz "no plano", o deste dev diz "no relatório"); e, se o mandato não nomear nenhum, **o orquestrador nomeia um no
+  disparo**. Mínimo: nenhum artefato novo; o modelo de mandato (linha `[P7]`, escrita para cadeira) fica intacto.
+- **T-22** (S-05) `[acrésc]` **Destino do roteiro de retomada.** O texto mandava registrá-lo *"no custo/trilha"* (e
+  *"no arquivo de custo/trilha"* na fonte), artefato que não existe na ref (`git grep -i 'custo/trilha'` só achava
+  os cinco arquivos deste PR). Passa a ser **uma seção `## PAUSA <hora UTC>` de
+  `agent-orchestration/docs/status-geral.md`** — arquivo que existe e que o §A4 item 1 manda ler **antes de cada
+  bloco**, logo o lugar onde a sessão que retoma o encontra sem regra nova de leitura. O conteúdo do roteiro não foi
+  desenhado aqui.
+- **T-23** (S-07) `[consist]` A lista de jobs locais sem modelo passa a ser a da fonte (`rodada de mutação, CI,
+  cluster descartável`, `PROTOCOLO-JUNTA-RESILIENTE.md`, que *"em divergência, vale"*) nos dois contratos (diziam
+  `rodada de mutação, CI`) e no `conhecimento-de-terreno.md` (dizia `E4, CI` — `E4` é nome de fase do #393, não
+  categoria).
+- **T-24** (S-11) `[consist]`+`[acrésc]` *"pare"* sai dos exemplos de ordem de pausa (contratos e fonte): não está
+  em nenhuma das duas ordens do dono e é o verbo de **parada** no §C7.5 e no §C7.6-bis (*"PARA."*). Uma frase nova
+  separa os dois: *"Também não é parada (§C7.5, §C7.6-bis), que nasce de regra e devolve a decisão ao dono: a pausa
+  nasce da ordem do dono e se retoma."* O *"para sozinho"* do texto e o *"pare sozinho"* da linha `[P7]` ficam: são
+  o verbo do dono (W3).
+
+**O parágrafo *Decisão.* acima fica como o orquestrador o transcreveu** — é registro, e §A2 não apaga em silêncio.
+Onde ele difere do texto vivo (*"no seu arquivo de evidência"* sem destino para quem não tem um; a lista
+`(rodada de mutação, CI)`), **vale o texto vivo**: `CLAUDE.md` §C7.7, o espelho `AGENTS.md` e a fonte
+`PROTOCOLO-JUNTA-RESILIENTE.md`.
+
+**KPI.** O commit `3b00cae9` dizia *"`Kpis/*` intocados: registro sem bloco, precedente #396"*. O plano (§6) mediu
+o precedente de mesma natureza — o #394 mudou o contrato, tem ID de bloco e junta, e contou bloco; o #396 não tem
+nenhuma das três. Esta emenda segue o plano: o bloco atualiza `Kpis/*` no próprio PR (§C3.1), com as trilhas de
+teste carregadas (§C3.3) e `blocks_completed` recontado contra a `origin/main` no instante do commit.
+
+**Pendências nomeadas pelo plano (§7 E2c), abertas por esta emenda com dono:** `P-GOV-OBITUARIO-SEMTETO`
+(pré-existente) e `P-GOV-PAUSA-ESCADA-C76BIS` (nota S-10) — em `controle/pendencias.md`, índice pelo gerador.
+
+## Decisões do dono de 2026-10-03 e 2026-10-04 — modelos, Codex e nuvem (transcritas pelo orquestrador)
+
+Fonte §A1.1 (decisão do dono), registradas aqui pelo orquestrador; a citação é literal, o resto é transcrição.
+
+- **D-FABLE-SO-DINHEIRO (2026-10-03, manhã)** — *"Fable agora só em blocos que toque em dinheiro até segunda ordem"*.
+  **Substituída** pela D-FABLE-ASTRA-SUSPENSOS abaixo.
+- **D-NUVEM-ENCERRADA (2026-10-03 ~15:02Z)** — o restante do dev do B-SAN3-05 saiu da nuvem e foi feito na máquina local,
+  sobre o mesmo plano v3, sem corte (o classificador de segurança da nuvem bloqueou três vezes a escrita da suíte
+  `tests/san3-05-runtime-role-guard-db.test.ts`). Registro na seção "ENCERRAMENTO DA NUVEM" do `DEV-relatorio.md` do bloco
+  (`6edf21ee`). Nenhuma sessão de nuvem com trabalho pendente.
+- **D-CODEX-HABILITADO (2026-10-03 ~16:25Z)** — *"vamos usar o codex pra ajudar, ele está habilitado para ajudar nesse
+  projeto"*; depois *"pode rodar o codex"* e *"quero ver o codex sendo executado"*. O orquestrador (Claude Code) roda o
+  Codex por `codex exec` em janela visível, um papel por sessão, com os corpos do espelho `.agents/agents/`.
+- **D-CODEX-PADRAO-SOL (2026-10-03 ~17:25Z)** — *"o padrão é o 'sol' — restrinja o astra a demandas com dinheiro como o
+  claude"*; *"o sol é o 5.6"*. Modelo padrão do Codex: `gpt-5.6-sol`.
+- **D-FABLE-ASTRA-SUSPENSOS (2026-10-03 ~22:25Z)** — *"uso de fable e astra suspenso até o reset semanal"*; *"trabalhos
+  pesados com codex"*; *"restrinja o uso do astra com bloqueios igual ao fable"*. Até o reset semanal, nenhum papel roda em
+  Fable nem em GPT-6 Astra; os lançadores do Codex do orquestrador recusam esses modelos. **Conflito registrado (§A2):** o
+  §C7.6 manda o `planejador-mestre` rodar em Fable no retorno ao planejador depois de correção; a decisão do dono, fonte
+  §A1.1, prevalece enquanto vigorar, e cada planejador declara a substituição.
+- **D-CLAUDE-OPUS-UMA-POR-VEZ (2026-10-04 ~09:15Z)** — *"usar mais o Claude, com Opus, nas janelas em que o Codex está
+  parado, com cautela, não usar tarefas paralelas, fazer uma a uma para evitar que o limite acabe e nós fiquemos ociosos"*.
+  Com o Codex no limite de uso, um subagente Claude (Opus) por vez; com o Codex de volta, o pesado volta para ele (no
+  máximo 2 sessões).
+- **Pendente do dono (não é decisão):** `D-MANDATO-FORMA-2` — seguir consertando o linter de prosa (1) ou trocar o mandato
+  por campos tipados (2), posta pela §16.5 do plano do B-GOV-MANDATO depois de 4 ciclos com a mesma classe de defeito; e a
+  referência do cabeçalho da lista de OS (`P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`), mostrada ao dono em 2026-10-04
+  com o PNG de `screen-refs/`, sem resposta até este registro.
+
+## D-GOV-PROPORCIONAL (2026-10-04) — junta proporcional, teto de 2 ciclos, menos burocracia, Traccar depois de sanar o que está em andamento e KPI congelado
+
+**Decisão do dono (fonte §A1.1), literal:** *"me diz como saio desse buraco onde estou a mais de um mes, rodo uma junta
+para fazer um bloco e passo uma semana rodando uma, duas, tres e varias vezes. preciso sair desse loop e continuar
+fazendo meu sistema, quero implantar o traccar"*; sobre a proposta do orquestrador (quatro decisões), *"aprovo 1, 2, 3 e
+4 kpi congelado tambem"*.
+
+**Transcrição** (texto normativo no §C7 item 8 do `CLAUDE.md`, espelhado no `AGENTS.md`): (1) junta completa só para
+dinheiro, segurança, permissão ou perda de dado; o resto mergeia com um revisor independente e CI verde; (2) teto de 2
+ciclos — do ciclo 3 em diante só defeito de produto grave bloqueia, o resto vira pendência com dono; (3) mandato forma A
+só para inspetor e cadeiras, registro semanal, porteiro só depois de merge de produto, `B-GOV-MANDATO` (#393) congelado;
+(4) trilha do Traccar aberta depois de sanar o que está em andamento (ajuste do dono: *"sanar tudo antes de começar o
+traccar"*; perguntado o alcance, *"o que está em andamento"* — os PRs em voo resolvidos, o registro em dia e o disco limpo,
+sem esperar os demais bloqueantes do gate), com junta de segurança em todo bloco de ingestão e o `B-SAN3-05` como
+pré-requisito de produção; (5) KPI congelado até segunda ordem.
+
+**O que esta decisão revoga ou suspende, por nome:** `D-SEM-TETO-AUDITORIA-NO-3` (o teto volta, com o freio da regra 2; a
+auditoria do ciclo 3 deixa de ser obrigatória); `D-KPI-PER-PR` (suspensa enquanto o KPI estiver congelado); a parte de
+`D-MANDATO-FORMA` que exigia forma A para todo papel; a regra "o Traccar não começa antes do gate" do `PLANO_SAN3` (§11);
+e a exigência de porteiro para PR de registro.
+
+## Decisões do dono de 2026-10-08 — cabeçalho da lista de OS, #393, modelos e Codex (transcritas pelo orquestrador)
+
+- **D-OS-CABECALHO-PADRONIZADO (2026-10-08)** — o dono viu, lado a lado, o PNG de `screen-refs/web/ordens-servico.png`,
+  o protótipo antigo (`ERP Web.dc.html`, `sc_workOrders`), o design padronizado (`ERP Web - Telas Padronizadas.dc.html`,
+  `sc_os`) e o app, com a análise do agente de frontend (opções A: voltar ao PNG; B: manter o padronizado; C: B mais
+  Filtrar e Exportar funcionando de verdade). Decisão literal: *"faça o C"*. Consequências:
+  (1) para as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência visual é o
+  design padronizado (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs `dashboard-operacional.png`,
+  `ordens-servico.png`, `usuarios.png` e `auditoria-organizacao.png` (não há PNG de Pátios); a divergência entre eles não
+  é mais achado de fidelidade (§11); fecha `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA`;
+  (2) abre o bloco `B-OS-FILTRAR-EXPORTAR`: Filtrar (Prioridade e Período; Técnico quando `P-WO-LIST-TECH-NAME` fechar)
+  e Exportar (CSV da lista que a pessoa vê, com os filtros aplicados, reaproveitando `frontend/src/lib/csv.ts`) no
+  cabeçalho da lista de OS — nunca botão morto. Pela `D-GOV-PROPORCIONAL` regra (1): tela sem regra de negócio nova →
+  um revisor independente e CI verde.
+  **Premissa do orquestrador, a confirmar pelo dono (não é decisão dele):** a exportação usa a permissão de leitura que
+  já abre a lista (`work_orders:read`) e leva só o que a tela mostra (§2.8: sem ids internos nem dado de organização);
+  o `RBAC_MATRIX.md` não tem permissão de exportação. Se o dono preferir uma permissão própria, o bloco passa a mexer em
+  permissão e vira junta completa.
+  Também literal: *"anotar no índice das referências visuais que esses PNGs antigos foram substituídos pelo design
+  padronizado"* — feito em `docs/claude-code-handoff/screen-refs/README.md` e no §11 do `CLAUDE.md`/`AGENTS.md`.
+- **D-393-ESTACIONADO (2026-10-08)** — *"1-estacionar"*: o `B-GOV-MANDATO` (PR #393) fica em rascunho, sem novos ciclos de
+  junta (`D-GOV-PROPORCIONAL` regra 3). As ferramentas do ramo (pré-voo, `mandato-refs`) continuam usáveis localmente.
+  `D-MANDATO-FORMA-2` (linter de prosa × campos tipados) perde o objeto enquanto o bloco estiver estacionado.
+- **D-FABLE-ASTRA-SO-DINHEIRO (2026-10-08)** — depois do reset semanal, *"3- so em dinheiro"*: o Fable (Claude) e o
+  GPT-6 Astra (Codex) voltam, mas só em papel de bloco que toca dinheiro; todo o resto roda em Opus (Claude) ou
+  `gpt-5.6-sol` (Codex), com a substituição declarada (§C7.6-bis). Substitui `D-FABLE-ASTRA-SUSPENSOS`. Os lançadores
+  do Codex só aceitam Astra com a chave explícita de bloco de dinheiro.
+- **D-CODEX-DISPONIVEL (2026-10-08)** — *"o codex esta disponivel, use-o quando achares necessário"*; e *"quero que vc
+  comece orquestrando o codex, depois vc vai no bonde tambem. quero uma janela para cada execução do codex mostrando o
+  desenvolvimento e checklists ao terminar cada bloco detalhando o que foi solicitado, o que foi feito e a analise dos
+  proximos passos"*. Consequência: cada execução do Codex roda numa janela visível própria e termina com o checklist
+  Solicitado · Feito · Não feito · Validação · Próximos passos, gravado no relatório da execução; o orquestrador
+  relata o mesmo checklist ao dono ao fim de cada bloco. Continua o ritmo (uma sessão pesada do Codex por vez, no máximo
+  duas; Claude uma tarefa por vez).
+
+## Decisões do dono de 2026-10-08 (tarde) — rumo ao Traccar, papel do banco, #388/#389 e ritmo (transcritas pelo orquestrador)
+
+- **D-ATO2-OPCAO-B (2026-10-08)** — perguntado quando trocar a conexão do app para o papel `erp_runtime` em produção (Ato 2
+  do `B-SAN3-05`), com as opções A (esperar a suíte `-db` inteira sob o papel, `B-ARNES-2`), B (medir só as 5 tarefas
+  automáticas que usam banco) e C (ligar logo, com vigia de 48 h), o dono decidiu: *"vamos de B · Testar só o que importa,
+  tenho pressa, estou a dias dando volta, preciso fazer alguma entrega. a entrega que vejo é o traccar integrado e rodando,
+  telas sem place holde, funcional. e so posso fazer isso quando esse bloco acabar"*. Consequência: antes do Ato 2 em
+  produção, um bloco pequeno só de teste roda `notification-dispatch`, `notifications.scan-due`,
+  `impound.reconcile-removals`, `impound.notify-due` e `charging.accrue-daily` sob o papel novo e sob o atual, mesmo seed,
+  e exige o mesmo resultado; as outras 4 tarefas (`checklist-attachment-postprocess` e `audit-log-fanout` vazias,
+  `field-ops-event-fanout` sem banco, `aws-cur.import-cost-file` em tabelas sem RLS) ficam dispensadas pela leitura do
+  código. O bloco vem depois do merge do #405 e não bloqueia o Traccar (pendência `P-SAN3-05-ATO2-CINCO-TAREFAS`).
+- **D-388-389-ESTACIONADOS (2026-10-08)** — escolha literal *"Estacionar os dois (Recomendado)"*: o #388 (`B-O6R-11`) e o
+  #389 (`B-O6R-04a`) ficam em rascunho, sem novos ciclos, como o #393 (comentado nos dois PRs). Com isso a regra 4 da
+  `D-GOV-PROPORCIONAL` (Traccar depois de sanar o que está em andamento) passa a depender só do #405 entre os PRs em voo.
+- **D-TRACCAR-PLANO-APOS-405 (2026-10-08)** — escolha literal *"Não, esperar o #405"*: o plano da trilha do Traccar só
+  começa depois do merge do #405.
+- **D-CLAUDE-RITMO-08-10 (2026-10-08)** — *"manter um por enquanto, hoje a noite o limite volta ao normal ai vc pode dar de
+  cacete pra terminar isso"* (um agente Claude por vez até o reset da noite; depois, mais de um) e *"rode o codex, uma
+  janela por vez"*.
+- **D-405-D4-NOME-DE-PAPEL (2026-10-08)** — na PARADA-D4-2 do dev do ciclo 2 do #405, escolha literal *"Nome de papel pode
+  aparecer (Recomendado)"*: o nome de papel do banco é identidade, não credencial, e pode aparecer no log como valor de
+  `session_user`, `current_user`, `escapes[].rolname` e na recusa `via:rolname`; host, porta, senha, banco e URL continuam
+  proibidos. Ratifica a errata 1 do orquestrador; texto normativo nas erratas do D4 em `docs/revisoes/SAN3/B-SAN3-05-plano.md`.
+  (Uma primeira tentativa do orquestrador de escrever a errata 2 sozinho foi barrada pelo classificador de permissões como
+  afrouxamento de critério de segurança — por isso a decisão foi levada ao dono.)
+- **D-MERGE-O-QUE-ESTA-FEITO (2026-10-08)** — *"pode mergear o que esta feito"*: mergeados o #400 (`026ff7b8`) e o #409
+  (`fea93281`), cada um com o seu porteiro (`PORTEIRO-400.md`, `PORTEIRO-409.md`). A premissa de que exportar a lista de
+  OS usa `work_orders:read` segue como premissa do orquestrador, sem veto do dono até este registro
+  (`P-OS-EXPORTAR-PERMISSAO-PREMISSA`).
+## Decisões de 2026-10-09 — plano do dia e a leitura da junta 3 do B-SAN3-05 (transcritas pelo orquestrador)
+
+- **D-PLANO-DIA-2026-10-09** — o dono pediu o plano do dia em Fable (*"use o fable para fazer o plano de hoje"*, exceção
+  explícita à `D-FABLE-ASTRA-SO-DINHEIRO`) e aprovou as nove decisões dele: *"aprovo os 9, comece agora"* (plano em
+  `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): ciclo 3 do #405 só com A2 (grave) + A3; C2-A1 e
+  C3-c2-05 num PR só de testes depois do merge (revisor + CI); C3-c2-01 pendência; dev no Codex Sol; porteiro no Claude
+  se o gasto semanal ficar ≤ 25 %; veredito do B-SAN3-06b na 2ª janela do Codex; plano do Traccar amanhã; limpeza
+  profunda abaixo de 10 GB sem volumes alheios; cota acabou → pausar, nunca descer de Opus. Também: *"ok, deixa quieto
+  o uso da api neste pc"* (créditos de API não usados neste PC).
+- **Conflito registrado (§A2) e a leitura adotada na junta 3 do B-SAN3-05 — ressalvas R3 e R4 do inspetor:**
+  - **R3, mutação cega:** o plano do ciclo 3 (C3.4) trata "mutação que nenhum teste pega" como "A2 aberto"; o contrato
+    (CLAUDE.md §C7 item 8(2)) diz que do ciclo 3 em diante só defeito GRAVE de produto bloqueia. **Vale o contrato
+    (§A1):** se a TRAVA REAL ou o MODO 6 deixam passar um escape medido (o papel lê/grava dado de outra organização
+    sem a trava acusar), é A2 aberto → grave → bloqueia; se o produto recusa o escape mas um teste não acusa a
+    mutação, é forma de teste → não grave → pendência com dono.
+  - **R4, "não consigo medir = REPROVADO":** regra dos corpos das cadeiras, sem cláusula no contrato. **Leitura
+    adotada:** um item não medido que possa esconder defeito grave (A2, B1, B2, B4, D1–D4) conta como reprovação
+    (grave não descartado); um item não medido de matéria não grave vira pendência, não reprova.
+
+- **D-405-PROIBIR-VIEWS (2026-10-09)** — a C1 da junta 3 do B-SAN3-05 reprovou com dois achados GRAVES novos na mesma via
+  (`GRANT SELECT/UPDATE/INSERT (colunas)` numa view cuja cadeia tem dono que escapa: o papel de runtime lê e altera dados
+  de outra organização sem a trava nem o MODO 6 acusarem) — a terceira forma da via `view`. Perguntado entre proibir
+  qualquer view, mais uma rodada de precisão, ou completar a junta 3 antes, o dono escolheu literalmente *"Proibir
+  qualquer view (Recomendado)"*: a trava recusa o boot (e o script recusa no MODO 6) se existir QUALQUER view ou
+  matview cuja árvore alcance uma tabela com FORCE ROW LEVEL SECURITY, sem analisar dono nem privilégio. Hoje há 0
+  views; nenhuma funcionalidade quebra. Ciclo 4 curto, só desse ponto; C2 e C3 da junta 3 não votam (a junta 3 fecha
+  REPROVADA pela C1).
+
+## Registro de 08–10/10/2026 — decisões do dono e fatos de orquestração (PR de registro de 10/10)
+
+- **D-LINUX-CONGELADO (2026-10-08)** — o dono desistiu de mover a execução para o PC Ubuntu da sala (i5 7ª geração, 16 GB,
+  SSD): *"vamos congelar o linux, é muito trabalho para pouco ganho"*. Reaberto em 10/10 só para a esteira da API, que foi
+  congelada no mesmo dia (`D-API-ESTEIRA-CONGELADA`, abaixo).
+- **D-API-FORA-DESTE-PC (2026-10-09)** — *"ok, deixa quieto o uso da api neste pc. vou usar no linuxmais tarde."* Causa
+  medida antes da decisão: o `claude` lançado de dentro da sessão herdava as variáveis `CLAUDE_CODE_*` da sessão-mãe e
+  usava a credencial dela — o `apiKeySource` do evento de início do stream veio `"none"` com a chave presente; com as
+  `CLAUDE_CODE_*` removidas, veio `ANTHROPIC_API_KEY`. Não foi o login vencendo a chave. Enquanto isso não era sabido,
+  trabalhadores que se julgavam na API consumiram a cota semanal da assinatura.
+- **D-CLAUDE-2-PROCESSOS (2026-10-09)** — *"a partir de agora, o claude pode ter ate 2 procesos simutaneo consumindo
+  tokens"*. O Codex segue com 1 sessão pesada por vez. Efeito declarado (ressalva do porteiro do #405): na junta 4 do
+  B-SAN3-05, a C2 e a C3 rodaram em paralelo, contra o R2 do inspetor (uma por vez, por disco), com o disco medido antes
+  (14 GB livres) e cada cadeira em worktree, cluster e rede próprios; a C2 mediu efeito nulo (nota C2c4-N5).
+- **D-KPI-MARCO-2026-10-09** — *"atualize kpis"*: a consolidação por marco que a `D-GOV-PROPORCIONAL` (5) prevê, feita no
+  PR #412 (revisor independente APROVADO, 3 notas). O KPI segue congelado para os PRs de bloco.
+- **D-LIMPEZA-2026-10-09** — *"autorizo a limpeza, os "Precisa de decisão sua (não apago sem você)" pode apagar"*. Feito: 7 worktrees, 10
+  ramos locais (9 preservados no GitHub; `chore/ci-probe` apagado de vez), 53 corpos de jurado soltos (todos versionados),
+  o stash de 8 semanas, os caches de gradle e npm, o cache de build do Docker, 115 ramos remotos (109 mergeados + 6
+  provados contidos na `main` por `git merge-tree`; a lista com os SHAs fica fora do repositório, em
+  `erp-pausa-2026-10-03/RAMOS-REMOTOS-PARA-APAGAR.txt`) e `git gc --prune=now` (o stash e o `ci-probe` não têm mais volta).
+  O classificador de segurança do Claude Code barrou a remoção de 2 containers e 18 volumes Docker (um par é do projeto
+  pastrack) e a compactação do disco do Docker exige administrador: os comandos ficaram com o dono.
+- **D-API-ESTEIRA-CONGELADA (2026-10-10)** — o dono propôs a API num *"papel pequeno que seja verificavel e retornavel,
+  com um plano em fable"* e aprovou (*"vai"*); o classificador barrou a peça que roda o Claude sozinho com terminal livre
+  ("criar agente inseguro"), e o dono congelou: *"ok, congele isso, rodo o agente em um script python pq os creditos que
+  tenho nao eh pra claude"*. O kit nunca foi commitado; está arquivado fora do repositório
+  (`erp-pausa-2026-10-03/esteira-api-CONGELADA-2026-10-10/`), com o plano parcial do PKT-001 (B-SAN3-05T) para um dev normal.
+- **D-ORDEM-NOITE-2026-10-10** — antes de dormir, o dono aprovou (*"vai"*) a ordem: (1) fechar o #411; (2) fechar o #412;
+  (3) registro em dia; (4) plano do Traccar no Codex, a crítica e os blocos de ingestão com junta completa de segurança;
+  (5) destravar a produção — retomar o #389, depois `B-O6R-07c` e `B-O6R-03a`, e uma junta J-6R nova; (6) telas sem
+  placeholder (`B-SAN3-06a`, `B-SAN3-12/24/25`); (7) Ato 2. O nome `B-SAN3-05-ATO2` para o bloco do Ato 2 é do
+  orquestrador (dado às 03:43Z, depois do "vai"), não do dono.
+- **Errata A-1 do revisor do #410** — em `D-ATO2-OPCAO-B` e em `P-SAN3-05-ATO2-CINCO-TAREFAS`, *"não bloqueia o Traccar"*
+  é leitura do orquestrador, não fala do dono. Medida do porteiro do #405: depois de `a9fbe283`, o boot de produção recusa
+  papel que escapa do RLS (`enforce` por padrão em produção), logo o Ato 2 bloqueia QUALQUER deploy de produção —
+  inclusive a ingestão do Traccar —, e não bloqueia o plano (o porteiro liberou o plano). Que o desenvolvimento em dev
+  também não dependa do Ato 2 é leitura do orquestrador: a trava só recusa o boot com `NODE_ENV=production`. O texto de
+  08/10 fica como estava
+  (append-only); a pendência foi atualizada com esta referência.
+
 ---
 
 ## `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` — a classe se resolve uma vez (decisão do dono, 2026-09-20)

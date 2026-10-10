@@ -1,10 +1,12 @@
-# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29)
+# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01)
 
-> Norma permanente para TODA junta, inspeção de terreno e porteiro. Nasce do postmortem das **14 quedas de
-> agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`.
-> O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo, separação de papéis
-> (§C7.4-bis) e o teto de dois ciclos (`D-TETO-DOIS-CICLOS`). Ele muda **como o trabalho sobrevive à morte
-> de quem o fez**.
+> Norma permanente para TODA junta, inspeção de terreno e porteiro (P1–P7); a **P7** alcança, além deles, todo
+> agente vivo — dev, planejador, fábrica — e o orquestrador. P1–P6 nascem do postmortem das **14 quedas de
+> agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; a P7, da
+> ordem de pausa do dono de 2026-10-01.
+> O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo e separação de papéis
+> (§C7.4-bis). Ele muda **como o trabalho sobrevive à morte
+> de quem o fez** (P1–P6) **e à pausa ordenada pelo dono** (P7, que não é morte).
 
 ## P1 — Evidência incremental: escrever no disco a cada item, nunca só no fim
 
@@ -77,6 +79,39 @@ só a série resolve — na sessão do postmortem, agentes pinados em `fable` mo
 herdavam o modelo da sessão ~13/23 (~57%), **n pequeno demais para concluir**. Ninguém pina modelo por
 palpite; a série do P6 confirma ou descarta.
 
+## P7 — Pausa ordenada: o agente grava o estado e para sozinho (decisão do dono, 2026-10-01, `D-PAUSA-GRAVA-E-PARA`)
+
+Uma ordem de pausa do dono ("pause tudo", "não use mais tokens até o limite voltar") **não é morte de
+agente**: é um **corte limpo**, e o protocolo o trata como tal. Também **não é parada** (§C7.5 e §C7.6-bis do
+`CLAUDE.md`), que nasce de regra e devolve a decisão ao dono: a pausa nasce da ordem do dono e se retoma.
+
+**O agente:** termina o comando em curso (nunca começa item novo), grava no seu arquivo de evidência — o
+`<cadeira>-evidencia.md` do P1; quem não tem um (dev, planejador, fábrica) usa o arquivo de saída que o seu
+mandato nomeia, e o orquestrador nomeia um no disparo se o mandato não o fizer — uma seção
+`## PAUSA <hora UTC>` com (1) o head medido, (2) o que está feito, com comando e saída, (3) o que falta,
+(4) o **próximo comando exato** que executaria, (5) os arquivos que ficaram **meio-escritos**, nomeados — e
+**para sozinho**, com a mensagem final de 1 linha apontando o arquivo (P2).
+
+**O orquestrador:** repassa a ordem a cada agente vivo (`SendMessage`, 1 linha: `PAUSA`); dá o tempo de gravar
+(ordem de minutos) e só então para quem não respondeu; para os vigias (um vigia que dispara re-invoca o
+orquestrador e gasta tokens); registra o **roteiro de retomada** numa seção `## PAUSA <hora UTC>` de
+`agent-orchestration/docs/status-geral.md` (lido antes de cada bloco, §A4 do `CLAUDE.md`); encerra o turno em
+1 linha. **Jobs locais sem modelo** — rodada de mutação, CI, cluster descartável — **não são alvo** de uma pausa
+de tokens; o orquestrador declara quais ficam vivos e por quê.
+
+**A retomada:** a **mesma identidade** nasce do **mesmo mandato** e usa a seção `## PAUSA` como roteiro — é a
+regra P3 aplicada a um corte limpo: re-executa o que está registrado, mede a cauda, e **mede** o arquivo
+meio-escrito antes de confiar nele (contagem de CR, `tsc`, diff).
+
+**Por quê (medido em 01/10/2026):** o dono mandou pausar com o limite perto do teto e o orquestrador **matou** o
+Dev-T4 (`TaskStop`) no meio de uma conversão LF→CRLF de um arquivo de teste. Resultado: parcial possivelmente
+inconsistente e ~20–40 min de redo — e a pausa em si estava certa (as fases caras, E4 e junta, ainda viriam).
+O custo não foi da pausa; foi do corte sujo. A ordem de pausa **autoriza o gasto mínimo de gravar**: custa um
+comando e economiza o redo inteiro.
+
+**O que P7 não faz:** não substitui P1/P2 — quando a pausa não chega (429, queda do harness, suspensão do PC),
+é a evidência incremental que salva, e é por isso que P1/P2 continuam obrigatórias por item.
+
 ## Modelo de mandato (colar no disparo de cada cadeira)
 
 ```
@@ -85,6 +120,9 @@ Antes da mensagem final: escreva <cadeira>-voto.json. Mensagem final = 1 linha a
 Máximo 3 itens; logs longos só no arquivo de evidência.  [P4]
 Se você substituir um caído: re-execute cada comando do <cadeira>-evidencia.md dele e compare, depois
 meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
+Se receber PAUSA: termine o comando em curso, grave `## PAUSA <hora UTC>` em <cadeira>-evidencia.md
+(head · feito · falta · próximo comando · arquivos meio-escritos) e pare sozinho com 1 linha apontando
+o arquivo. Não inicie item novo.  [P7]
 ```
 
 ## O que o orquestrador faz (não o agente)
@@ -92,6 +130,8 @@ meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
 - Dispara no máximo 2 em paralelo e aplica a pausa de janela instável (P5).
 - Commita os arquivos de evidência e voto após cada conclusão (agente não commita).
 - Preenche `00-quedas.md` (P6) no momento de cada perda.
+- Sob ordem de pausa do dono: repassa `PAUSA` a cada agente vivo, dá o tempo de gravar, para os vigias,
+  declara quais jobs sem modelo ficam vivos e registra o roteiro de retomada antes de encerrar (P7).
 - Na ata: consigna quedas, custo de redo real e, quando houver suplente, **quais itens foram re-executados
   do roteiro** vs medidos de novo.
 

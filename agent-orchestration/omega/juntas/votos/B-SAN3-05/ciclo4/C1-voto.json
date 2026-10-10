@@ -1,0 +1,92 @@
+{
+ "jurado": "jurado-san305-c4-catalogo-de-views (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C1 — catálogo de views: os cinco casos e a forma própria (trava, boot e MODO 6), as seis mutações e o T8f, sem falso positivo no banco migrado",
+ "mandato_md5": "d5848406ab33b7aa0aa192a6328e590c (medido no disco e no blob do objeto) · declarado no disparo: d5848406ab33b7aa0aa192a6328e590c",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · substituição (§C7.6-bis): D-FABLE-ASTRA-SO-DINHEIRO — Fable só em bloco de dinheiro",
+ "corpo_md5": "45b6126fee088767c15f736f0b1c717e (.claude/, blob do objeto) · espelho .agents/ f6e0b15bd03cc82abdb41949e734e569 (só cabeçalho Codex) · corpo recebido no prompt: n/a (lido do blob; = md5 do disparo)",
+ "objeto": "79b0d594b137c4b65640a2da6ac4e61b8e3ddc7f (git ls-remote = gh pr view 405 headRefOid, 19:43Z e 20:12Z) · origin/main no início/fim a9bbde382213627545e9d229c9ab616d83a0a840/a9bbde382213627545e9d229c9ab616d83a0a840 · head do disparo do dev 7c63f920c996cf105535f345eec2ee10461c77a3 (DEV-relatorio.md l.7) · objeto do dev 737e8cf3 e delta até o objeto: só registro (grep -vE agent-orchestration/.claude/agents/.agents/agents vazio) · cerca do mandato 2400049bf8ec421c3f65a07884c6394d4ab208bc e delta: só registro (4 arquivos: mandatos C1c4/C2c4/C3c4 e o parecer do inspetor) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor da junta 4 que vale: votos/B-SAN3-05/ciclo4/00-inspetor-terreno.md (inspetor-de-terreno-da-junta, Opus 5.5 declarado, 19:14Z–19:28Z, objeto 2400049b) · LIBERADO COM RESSALVA (R1 resíduo alheio inerte, R2 disco, R3 disparo general-purpose com md5 do corpo, R4 objeto que andar — cumprida: delta 2400049b..79b0d594 só registro e check-runs do head novo concluídos) · confere este nome, este corpo commitado nos dois espelhos (45b6126f…; .agents/ f6e0b15b…), worktree w-j05c4c1 e containers j05c4-c1- próprios: sim · check-runs 79b0d594: total 7 | não-verdes 0 | pendentes 0 · backend-postgres: completed success (19:33:17Z) · normas aplicadas presentes na ref julgada (CLAUDE.md objeto = origin/main, md5 EOL-neutro a9419a55…); D-405-PROIBIR-VIEWS, R3 e R4 conferidas no decisoes.md do objeto (l.3013, l.3004, l.3009)",
+ "quorum": "unanimidade de 3, com veto · ciclo 4 (só defeito de produto grave reprova; leitura R3/R4 de decisoes.md no objeto)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta antes de gravar este voto (ciclo4/ tinha só 00-inspetor-terreno.md, DEV-relatorio.md e FABRICA-relatorio.md quando listei) · li dos ciclos anteriores e da trilha: parecer do inspetor da junta 4, decisoes.md (R3/R4, D-405-PROIBIR-VIEWS, D-FABLE-ASTRA-SO-DINHEIRO), plano ## Ciclo 4 (C4.2–C4.3), ciclo4/DEV-relatorio.md (cabeçalho) — como roteiro, re-medido",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "itens": {
+  "item1": "VERDE — COL (âncora só de coluna; rsel lê B, rupd altera 2 linhas de B, rins grava B), COM, MAT e cadeia (2 raízes) recusados pela trava REAL (probeRuntimeRolePosture do blob), pelo boot real (RuntimeRoleGuardError RUNTIME_ROLE_CAN_BYPASS_RLS) e pelo MODO 6 (ec=3, view:<objeto>); CTL passa nos três (boot enforced:true, script ec=0 views=0). Formas próprias dentro da decisão recusadas pelos três: F1 (esquema outro; EXISTS/CTE/LATERAL/agregado, efeito: total e linhas de B), F2 (regra ON INSERT DO INSTEAD em view sobre tabela sem FORCE; grava B sob A), F3 (particionada relkind p FORCE; view→matview→view; security_barrier/security_invoker), F4 (TEMP de outra sessão). F5 (view sobre função SQL invoker que lê T) não recusada, sem escape medido (rsel 42501; rdir só A). Controles: RLS morde (rdir 0/A), discriminação (código do disparo 7c63f920 deixa o COL passar: trava [], boot aceito, script ec=0), âncora acusa (GRANT ON ALL TABLES → has_table_privilege true).",
+  "item2": "VERDE — linha de base 12/12 (T5/T6/T9, T8c, T8d, T8e, T8f, T14d, T15 ok). 6/6 mutações vermelhas pela asserção do caso indicado: M4a(t) T8e caso COL · M4a(s) T14d caso COL · M4b(t) T8e caso COM · M4b(s) T14d caso COM · M4c(t) T8e caso CTL + T8f · M4c(s) T14d caso CTL + T8f; sondas sob o mutante confirmam cada caso indicado (M4a reabre COL/COM/MAT; M4b reabre COM/MAT; M4c recusa o CTL); âncora 1/1, carga provada, restauro md5 = blob nas 6. T8f: regex lida do blob → 1 bloco na trava + 2 no script, iguais sem espaço (616/616/616), asserção exige exatamente 1 e 2, view_escape 0/0. Controles: view_force vazio nas 3 cópias derruba T8e e T14d (T8f verde); UNION→UNION ALL só na linha final derruba T8f e deixa T14d verde; leitor de TAP acusa ok→not ok.",
+  "item3": "VERDE — banco migrado do objeto (107/107 migrações): 115 tabelas, 106 FORCE, 0 particionadas, 0 relações v/m fora do catálogo, pg_inherits 0; as 9 sem FORCE têm RLS desligada. count(*) FROM view_force com o CTE extraído do blob (regex do T8f) = 0. Papel limpo: trava [], boot aceito (enforced:true, 0 escape); script ec=0 com views=0 e posse=0. Catálogo do sistema: 141 v/m (76 pg_catalog, 65 information_schema), 32 com dependência registrada (todas para views), 109 sem; nenhuma dependência de regra para OID < 12000 (objetos fixados); variante sem FORCE a partir das raízes do sistema alcança 0 tabelas. T5/T6/T9 e T15 ok; view_force 0 depois de 9 execuções do arquivo. Controles: view real sobre attachments 0→1 (trava e boot recusam)→0; variante sem FORCE devolve zz_n numa view de usuário; superusuário recusado pela via atributo no banco migrado."
+ },
+ "nao_convergencia": "não — nenhuma view/matview dentro da decisão que alcança FORCE passou na trava, no boot ou no MODO 6 (COL, COM, MAT, cadeia, F1 outro esquema/EXISTS/CTE/LATERAL/agregado, F2 regra não-_RETURN em view, F3 particionada p + view→matview→view + security_barrier/invoker, F4 TEMP de outra sessão); a única forma não recusada (F5, view sobre função SQL invoker) não tem escape medido e não é árvore de regra",
+ "sinal_ao_dono": "nenhum — premissa de D-405-PROIBIR-VIEWS confirmada: banco migrado do objeto com 0 views, view_force 0, papel limpo aceito pela trava, pelo boot e pelo script (views=0); catálogo do sistema não dispara (0 tabela alcançada)",
+ "justificativa": "Terreno: worktree próprio detached w-j05c4c1 no objeto; condutor adaptado da receita (md5 2dcc134c…, diferenças declaradas); containers j05c4-c1-* sem porta; árvore do objeto 3774/3774 blobs = blob; segunda árvore do disparo 7c63f920; psql 16.14 e node v20.20.2 no container; 11 GB livres; base viva intocada. Propriedade nas três cópias (trava l.13-27/44-49, DO l.81-106, linha final l.124-142): raízes = toda v/m de qualquer esquema, descida por TODA regra do nó, chegada em r/p com relforcerowsecurity, nenhum filtro de dono/privilégio/esquema; view_escape 0. TABELA (esperado escrito antes = medido): COL âncora só de coluna, efeito rsel lê B / rupd altera 2 de B / rins grava B, trava [view/postgres/1] p/ 4 leitores, boot RUNTIME_ROLE_CAN_BYPASS_RLS, MODO 6 ec=3 view:zz_w; COM e MAT trava [view/<comum>/1], boot recusa, MODO 6 ec=3; cadeia 2 raízes, rsel lê B, MODO 6 2 vias; CTL trava [], boot enforced, script ec=0 views=0. Formas próprias F1 (outro esquema, EXISTS/CTE/LATERAL/agregado), F2 (regra ON INSERT DO INSTEAD em view sobre tabela sem FORCE; grava B), F3 (particionada p FORCE; view→matview→view; security_barrier/invoker), F4 (TEMP de outra sessão) recusadas pelos três; F5 (função SQL invoker) não recusada e sem escape — nota. Linha de base 12/12. 6/6 mutações vermelhas no T8e/T14d pela asserção do caso indicado, casos seguintes confirmados pelas sondas sob o mutante; T8f 1 + 2 iguais (exatamente), view_escape 0. Banco migrado: 107 migrações, 115 tabelas, 106 FORCE, 0 views, view_force 0, papel limpo aceito pelos três; catálogo do sistema 141 v/m, 0 tabela alcançada, dependências não registradas só para OID < 12000; T5/T6/T9 e T15 ok; view_force 0 após a suíte. Vermelho-controle de cada item acusou (9/9). Nada ficou sem medir no meu mandato. Limpeza completa.\nVOTO: APROVADO — COL (SELECT/UPDATE/INSERT de coluna, efeito medido), COM, MAT e cadeia recusados pela trava REAL, pelo boot real e pelo MODO 6 (view:<objeto>), CTL passa; formas próprias F1 (outro esquema, EXISTS/CTE/LATERAL/agregado), F2 (regra não-_RETURN em view), F3 (particionada + view→matview→view + security_barrier/invoker) e F4 (TEMP de outra sessão) recusadas; 6/6 mutações vermelhas no T8e/T14d pelo caso indicado (casos seguintes confirmados pelas sondas); T8f 1 + 2 iguais, view_escape 0; banco migrado com view_force 0, catálogo do sistema 0, T5/T15 verdes; pendências: F5 view sobre função SQL invoker (nota, sem escape; SECURITY DEFINER é do B-SAN3-10), cobertura da suíte para formas além de COL/COM/MAT/CTL/cadeia (nota, forma de teste), herança/partição lidas direto fora do ponto (0 no produto)",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/runtime-role-sem-bypass; gh pr view 405 --json headRefOid,...; gh api commits/79b0d594/check-runs",
+   "forma": "host, Git Bash",
+   "resultado": "objeto 79b0d594 (duas fontes, início e fim); check-runs 7/7 completed success"
+  },
+  {
+   "comando": "timeout 1500 bash condutor-setup.sh (md5 2dcc134c…)",
+   "forma": "rede j05c4-c1-net, postgres:16 j05c4-c1-pg sem porta, erp-junta-node20-pg16:local j05c4-c1-node; git archive core.autocrlf=false do objeto; npm ci; prisma generate; prisma migrate deploy; DATABASE_URL só por ambiente",
+   "resultado": "ec=0; 3774/3774 blobs byte-idênticos; md5sum -c 0 divergência; 107 migrações; segunda árvore 7c63f920 (3 arquivos, md5 = blob); senha nos logs 0"
+  },
+  {
+   "comando": "node --import tsx /tmp/zz-j05c4c1-sonda/caso.ts montar|medir <caso> new|old (md5 dcd656f9…/bd3ee173…)",
+   "forma": "um banco por caso (TEMPLATE erp_techsolutions), 10 casos: col com mat cad ctl f1 f2 f3 f4 f5; trava REAL probeRuntimeRolePosture e boot real assertRuntimeDatabaseRoleIfEnforced importados do blob; MODO 6 = bash scripts/db-runtime-role.sh do blob; leitores e papéis de runtime novos; senhas por ambiente",
+   "resultado": "COL/COM/MAT/cadeia/F1/F2/F3/F4 recusados pelos três; CTL passa nos três; F5 não recusada e sem escape; código do disparo deixa COL/COM/MAT passar (discrimina)"
+  },
+  {
+   "comando": "node --test --test-reporter=tap --import tsx tests/san3-05-runtime-role-guard-db.test.ts (timeout 900)",
+   "forma": "container, DATABASE_URL superusuário do banco migrado, N=1 linha de base + 9 sob mutação/controle",
+   "resultado": "base 12/12 pass (21 s); M4a(t) T8e caso COL; M4a(s) T14d caso COL; M4b(t) T8e caso COM; M4b(s) T14d caso COM; M4c(t) T8e caso CTL + T8f; M4c(s) T14d caso CTL + T8f; CTL1 (3 cópias) T8e+T14d vermelhos, T8f verde; CTL2 (só linha final) T8f vermelho, T14d verde"
+  },
+  {
+   "comando": "bash mutrun.sh <S> <id> <casos> (md5 456e8b1b…) + mut.mjs (md5 b539afdf…)",
+   "forma": "âncora contada antes (=1; CTL1_s=2), diff, carga (import tsx / bash -n), arquivo de guarda, sondas sob o mutante com papel novo, restauro por cp e md5 = blob",
+   "resultado": "6/6 + 3 controles; restauro = blob em todas (9efee03d… trava, 5cab4f63… script)"
+  },
+  {
+   "comando": "node t8f.mjs (md5 f107d418…)",
+   "forma": "regex do T8f lida do blob do teste aplicada à constante da trava e ao script",
+   "resultado": "1 + 2 blocos, iguais sem espaço (616/616/616), view_escape 0/0; asserção exige exatamente 1 e 2"
+  },
+  {
+   "comando": "node --import tsx mig.ts extrator|migrado|sistema|controle1|desmontar (md5 1a5e1fb9…)",
+   "forma": "CTE extraído do blob pela regex do T8f (cd8af430…, 744 chars); banco migrado erp_techsolutions; clone j05c4c1_migctl para o controle 1",
+   "resultado": "107/107 migrações, 115 tabelas, 106 FORCE, 0 views, view_force 0; papel limpo trava [] boot aceito; script ec=0 views=0; catálogo do sistema 141 v/m, 0 tabela alcançada; controles 0→1→0, zz_n, superusuário recusado"
+  },
+  {
+   "comando": "teardown: desmontar ×11; docker rm -f -v j05c4-c1-node j05c4-c1-pg; docker network rm; git worktree remove --force",
+   "forma": "só pelo nome, processos vivos = 0 antes",
+   "resultado": "papéis/bancos j05c4c1 0; containers/redes j05c4-c1 0; volume anônimo removido; worktree 0; scratch c1 apagado (273 arquivos)"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "F5: existe a view public.zz_fv (dono postgres) que lê a tabela FORCE zz_t só pelo corpo de uma função SQL SECURITY INVOKER (zz_f RETURNS TABLE); a regra da view depende de pg_proc:zz_f(), não de zz_t, e a trava, o boot e o MODO 6 não a recusam",
+   "evidencia": "caso.ts medir f5 new (20:00:07Z): deps_da_regra = pg_proc:zz_f(); trava [] para rsel/rnone; boot aceito; MODO 6 ec=0 (…|0|0|117). Escape medido: nenhum — rsel 42501 permission denied for table zz_t; rdir (SELECT em zz_fv e em zz_t) lê só A sob A e [] sem GUC",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (a trava nasceu em d76b255f, 2026-10-02, não ancestral de origin/main)",
+   "classe": "não grave",
+   "motivo": "a propriedade da trava é a árvore de regras (pg_rewrite→pg_depend); corpo de função não é dependência de regra, e a função roda como o invocador, então o RLS morde o papel — sem leitura nem escrita de outra organização. Com SECURITY DEFINER a matéria é do B-SAN3-10 (fora, C4.6)"
+  },
+  {
+   "defeito": "nenhum caso do T8e/T14d exerce regra não-_RETURN, esquema ≠ public, tabela particionada, nem tabela só em subconsulta/CTE/LATERAL; o produto recusa essas formas (medido em F1–F3), mas a suíte não as fixa",
+   "evidencia": "leitura do blob: VIEW_RULE_CASES = COL, COM, MAT, CTL (l.123) e T8d com cadeia de views sobre tabela r em public (l.790-880); as formas F1–F3 recusadas pela trava, pelo boot e pelo MODO 6 (item 1(c)). NÃO executei mutação que restrinja a descida à _RETURN — a consequência sobre a suíte é inferência, não medição",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (o arquivo de guarda nasceu em e0143db1, 2026-10-03)",
+   "classe": "não grave",
+   "motivo": "pela R3, produto recusando e prova possivelmente cega = forma de teste — pendência, não reprovação"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum controle deixou de acusar: item 1 (RLS morde, discriminação pelo código do disparo, âncora), item 2 (view_force vazio nas 3 cópias, mutação só na linha final, leitor de TAP) e item 3 (contador 0→1→0, variante sem FORCE devolve zz_n, superusuário recusado) — todos vermelhos onde deviam",
+  "nota sobre a régua do corpo (item 2, controle 2): a mutação 'só na linha final' tem de preservar o resultado do CTL — tirar o FORCE da linha final derrubaria o T14d no CTL (a coluna views do CTL é asserida); usei UNION→UNION ALL, que muda o texto e não o resultado. Não é defeito do produto"
+ ],
+ "pendencias_que_aceito": [
+  "F5 (view sobre função SQL invoker que lê tabela FORCE) — nota, não grave, sem escape; variante SECURITY DEFINER = B-SAN3-10",
+  "cobertura da suíte para formas além de COL/COM/MAT/CTL/cadeia (regra não-_RETURN, outro esquema, particionada, subconsulta/CTE/LATERAL) — nota, não grave, forma de teste; dono: o PR só de testes já decidido (classe C2-A1/C3-c2-05) ou o bloco que o orquestrador nomear",
+  "herança e partição lidas direto (escape que existe sem view) — fora do ponto (C4.6, reprovação por construção item 2); no produto medido: 0 particionadas, pg_inherits 0",
+  "B1/B2/escopo/db-catalog-write-guard/Kpis — da C2; boot de produção do processo, suíte inteira, texto da regra — da C3 (não medidos por mim)"
+ ],
+ "teardown": "bancos de caso e fixtures do meu cluster removidos (papéis j05c4c1% 0, bancos j05c4c1% 0, papéis s305% 0, slots 0, views fora do catálogo 0, tabelas zz% 0) · containers j05c4-c1-node e j05c4-c1-pg removidos por docker rm -f -v (volume anônimo e81906ca… removido) e rede j05c4-c1-net removida, contagem 0 · árvore temporária /c/Users/AMP/t-j05c4c1 removida no setup · processos vivos com o caminho = 0 antes da remoção · worktree C:/Users/AMP/w-j05c4c1 removido por git worktree remove --force (lista 0) · mutações restauradas com md5 = blob (container) nas 9 execuções · sondas removidas com o container · cópias e segredos descartáveis de $SCRATCH/c1 apagados (273 arquivos) · base viva (erp-postgres/erp-redis) parada e nunca tocada · w-o05 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado (nenhum novo)"
+}

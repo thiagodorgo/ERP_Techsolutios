@@ -1,0 +1,29 @@
+{
+  "junta": "J1-B-SAN3-05",
+  "pr": 405,
+  "cadeira": "C1",
+  "identidade": "agente-dba-guardiao",
+  "modelo": "Opus 5.5 (Claude; decisao do dono, Fable e Astra suspensos ate o reset semanal)",
+  "mandato_md5": "2c29ffedd12b8a0b7accee9fb70d0af0",
+  "corpo_md5_eol_neutro": "de789c12f149cd9c36dc79e861adc043",
+  "ciclo": 1,
+  "objeto_head": "5ab037a3fc8f0b4ae1d24d68fd23691b154df7e1",
+  "check_runs": "7/7 completed e success, inclusive docker (111536051990)",
+  "legalidade": "inspetor LIBERADO COM RESSALVA (reavaliacao do B1, R1 a R8); head resolvido por git e gh; delta desde 6f53d11b so registro",
+  "itens": {
+    "C1.1": {"status": "REPROVADO", "resumo": "script md5 810c1c4a = Apendice C; 100755; w/lf sob autocrlf=true (mutacao A22: w/crlf, 115 CR, bash quebra na l.114); 18 cenarios do 4.1 re-executados VERDES (ec por cenario; senha 0/0 terminal e server.log nos modos 1 e 4; argv sem senha; MODO 0 com log_statement=all; idempotencia 122 linhas diff 0); MAS o MODO 0 nao cobre log_transaction_sample_rate nem log_min_duration_sample com log_statement_sample_rate: senha no server.log = 1 (A4)"},
+    "C1.2": {"status": "VERDE", "resumo": "trava md5 36650de5 = Apendice E; 13 papeis + 4 options= conforme o 4.2; portas NO FORCE (0 para 2), SET ROLE (3), COPY FROM PROGRAM (a,b,segredo-c1), pg_basebackup (marcador 1, controle recusa), SELECT na view (3) executadas; 3 semi-mutantes mortos (mutA/mutP/mutV = 0 so na via do proprio login). Ajustes A1 e A3."},
+    "C1.3": {"status": "VERDE", "resumo": "api erp_runtime diferente de migrate postgres; job docker verde no SHA; entrypoint real do postgres:16 cria erp_runtime no banco da app (default ACL so em erp_techsolutions), DML 114/114 depois do migrate, trava 0 linhas sob erp_runtime e recusa sob postgres; source sem senha mata o conteiner (exit 1); down -v documentado"},
+    "R2_T8d": {"status": "MEDIDO", "resumo": "a troca preserva a recusa de REPLICATION e o mutante rolreplication (mutR=0); nao preserva a prova de porta do A4b (marcador sem leitura). Porta real provada por mim: pg_basebackup local e decodificacao logica por conexao normal. Achado A1 (ajuste)."},
+    "R7_intermitencia": {"status": "MEDIDO", "resumo": "forma do plano: N=9 (3 minhas + 6 do inspetor), 2 vermelhas (22%), todas XX000 no GRANT do script; CI backend 4/4 verde; mecanismo reproduzido: 14/30 XX000 com escritor no lock do arnes contra 0/30 sem; achado A2 (bloqueia)."}
+  },
+  "achados": [
+    {"id": "A2", "gravidade": "bloqueia", "escopo": "dentro-do-bloco", "evidencia_escopo": "tests/san3-05-runtime-role-guard-db.test.ts nasce no bloco (diff contra o merge-base b404815c); o lock do arnes e anterior (df496d22, 2026-08-31), o escritor fora dele e deste arquivo", "texto": "T14 dispara scripts/db-runtime-role.sh (psql filho) fora de withRoleCatalogLock em todas as chamadas de runRoleScript, embora o arquivo declare (l.30) que toda escrita de catalogo fica dentro do lock e ponha as escritas por runPsql dentro dele (l.741-744, 772-782). O GRANT USAGE ON SCHEMA public do script colide com os escritores do arnes: XX000 tuple concurrently updated, 2/9 vermelhas na forma do plano; 14/30 sob escritor concorrente no lock contra 0/30 sem. A falha no cenario MODO 6 deixa a view (limpeza fora de finally) e contamina T15/T5 no mesmo cluster; o guard lexico nao enxerga o psql filho. Produto nao afetado (o script falha fechado e converge)."},
+    {"id": "A4", "gravidade": "bloqueia", "escopo": "dentro-do-bloco", "evidencia_escopo": "scripts/db-runtime-role.sh e o MODO 0 nascem no bloco (041e414b; Apendice C do plano v3)", "texto": "O MODO 0 so le log_statement=all e log_min_duration_statement=0. Com log_transaction_sample_rate=1, ou log_min_duration_sample=0 com log_statement_sample_rate=1, o script sai ec=0 e o server.log registra statement: SELECT set_config(san3.password, <SENHA>, false) (senha nova = 1 ocorrencia; controles ddl e mod = 0). O cabecalho do script (l.8-9), o 4.1 do plano e docs/deployment.md l.116 afirmam que so aqueles 2 parametros registram o texto. Mesma classe do F2-02 (bloqueia na critica r2), por enumeracao de forma em vez da propriedade. Nao e exposicao consumada de segredo real."},
+    {"id": "A1", "gravidade": "ajuste", "escopo": "dentro-do-bloco", "evidencia_escopo": "troca feita no proprio bloco (bbbb3b29)", "texto": "T8d troca pg_basebackup por pg_create_physical_replication_slot: prova que REPLICATION e exercivel, nao que vaza linha protegida; o INSERT do marcador ficou sem leitura; o A4b nomeia a porta pg_basebackup com base.tar e marcador."},
+    {"id": "A3", "gravidade": "ajuste", "escopo": "dentro-do-bloco", "evidencia_escopo": "RUNTIME_ROLE_GUARD_SQL e a via view do script nascem no bloco (Apendice E)", "texto": "A via view so ve 1 nivel (pg_depend direto a tabela FORCE): papel com SELECT so numa view sobre view sobre tabela FORCE le as linhas protegidas (v_out=a,b,segredo-c1) com trava 0 linhas e script ec=0 sem MODO 6. Na topologia das DEFAULT PRIVILEGES do migrador a view interna tambem recebe SELECT e e pega; o furo exige REVOKE na interna ou dono diferente. 0 views hoje. docs/deployment.md l.127-128 e o comentario de runtime-role.ts nao declaram o limite."},
+    {"id": "N1", "gravidade": "nota", "escopo": "dentro-do-bloco", "evidencia_escopo": "texto do plano v3, 4.1", "texto": "o plano diz 73 CR e quebra na l.81; medido 115 CR e quebra na l.114 (a propriedade reproduz, o numero do texto nao)"}
+  ],
+  "voto": "REPROVADO",
+  "justificativa": "Veto da C1 por dois achados bloqueantes dentro do bloco: A2 (o teste-prova do script e nao-deterministico, 2/9, mecanismo reproduzido) e A4 (MODO 0 incompleto: a senha nova vai ao log do servidor sob amostragem de statements, sem aviso). O resto do merito da C1 (18 cenarios, trava sob 13 papeis + 4 options= com portas e semi-mutantes, compose) esta VERDE por execucao propria. KPI nao cobrado (D-GOV-PROPORCIONAL item 5)."
+}

@@ -6,6 +6,13 @@ import { Badge, Button, Card, Checkbox, EmptyState, Skeleton } from "../../../co
 import { getPlatformTenantById, listPlatformTenantModules, updatePlatformTenantModules } from "../platform.service";
 import type { PlatformModule, PlatformTenant } from "../platform.types";
 
+function planLabel(plan: PlatformTenant["plan"]): string {
+  if (plan === "starter") return "Inicial";
+  if (plan === "professional") return "Profissional";
+  if (plan === "enterprise") return "Empresarial";
+  return "Indefinido";
+}
+
 export function PlatformTenantModulesPage() {
   const { tenantId = "" } = useParams();
   const [tenant, setTenant] = useState<PlatformTenant | null>(null);
@@ -47,19 +54,18 @@ export function PlatformTenantModulesPage() {
   }
 
   if (loading) return <Skeleton lines={8} />;
-  if (error || !tenant) return <EmptyState title="Modulos nao encontrados" detail={error ?? "Nao foi possivel carregar os modulos."} />;
+  if (error || !tenant) return <EmptyState title="Módulos não encontrados" detail={error ?? "Não foi possível carregar os módulos."} />;
 
   return (
     <section className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
-          <span>P03 Console da Plataforma</span>
           <h1>Módulos da Organização</h1>
-          <p>{tenant.name} · plano {tenant.plan}</p>
+          <p>{tenant.name} · plano {planLabel(tenant.plan)}</p>
         </div>
         <Button onClick={saveModules}>
           <Save size={16} />
-          Salvar alteracoes
+          Salvar alterações
         </Button>
       </header>
 

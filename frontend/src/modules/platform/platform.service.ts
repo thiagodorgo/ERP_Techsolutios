@@ -1,5 +1,4 @@
-import { readFrontendEnv } from "../../config/env";
-import { buildTenantModules, mockPlatformTenants } from "./platform.mock";
+import { isMockMode } from "../../config/env";
 import {
   createPlatformTenantFromApi,
   createTenantAdminUserFromApi,
@@ -10,115 +9,15 @@ import {
   updatePlatformTenantModulesFromApi,
   updatePlatformTenantStatusFromApi,
 } from "./platform.adapter";
-import type {
-  CreateTenantAdminInput,
-  CreateTenantInput,
-  PlatformTenant,
-  PlatformTenantStatus,
-  UpdateTenantInput,
-} from "./platform.types";
+import type { CreateTenantAdminInput, CreateTenantInput, PlatformTenant, PlatformTenantStatus, UpdateTenantInput } from "./platform.types";
 
-let tenants = [...mockPlatformTenants];
+function unavailable(): never { throw new Error("Ação indisponível no modo demonstração."); }
 
-export async function listPlatformTenants(): Promise<PlatformTenant[]> {
-  if (!shouldUseMocks()) return listPlatformTenantsFromApi();
-  await wait();
-  return tenants;
-}
-
-export async function getPlatformTenantById(tenantId: string): Promise<PlatformTenant> {
-  if (!shouldUseMocks()) return getPlatformTenantByIdFromApi(tenantId);
-  await wait();
-  return findTenant(tenantId);
-}
-
-export async function createPlatformTenant(input: CreateTenantInput): Promise<PlatformTenant> {
-  if (!shouldUseMocks()) return createPlatformTenantFromApi(input);
-  await wait();
-  const tenant: PlatformTenant = {
-    id: `pten-${input.slug}`,
-    name: input.name,
-    slug: input.slug,
-    plan: input.plan,
-    status: input.status ?? "pending",
-    activeUsers: input.adminEmail ? 1 : 0,
-    enabledModules: ["dashboard", "users", "tenant-admin"],
-    createdAt: new Date().toISOString(),
-    adminUser: input.adminEmail
-      ? {
-          id: `adm-${input.slug}`,
-          name: input.adminName ?? "Administrador",
-          email: input.adminEmail,
-        }
-      : undefined,
-    usageSummary: {
-      workOrders: 0,
-      storageGb: 0,
-      apiCalls: 0,
-    },
-  };
-  tenants = [tenant, ...tenants];
-  return tenant;
-}
-
-export async function updatePlatformTenant(tenantId: string, input: UpdateTenantInput): Promise<PlatformTenant> {
-  if (!shouldUseMocks()) return updatePlatformTenantFromApi(tenantId, input);
-  await wait();
-  tenants = tenants.map((tenant) => (tenant.id === tenantId ? { ...tenant, ...input } : tenant));
-  return findTenant(tenantId);
-}
-
-export async function updatePlatformTenantStatus(tenantId: string, status: PlatformTenantStatus): Promise<PlatformTenant> {
-  if (!shouldUseMocks()) return updatePlatformTenantStatusFromApi(tenantId, status);
-  return updatePlatformTenant(tenantId, { status });
-}
-
-export async function listPlatformTenantModules(tenantId: string) {
-  if (!shouldUseMocks()) return listPlatformTenantModulesFromApi(tenantId);
-  await wait();
-  return buildTenantModules(findTenant(tenantId));
-}
-
-export async function updatePlatformTenantModules(tenantId: string, enabledModules: string[]) {
-  if (!shouldUseMocks()) return updatePlatformTenantModulesFromApi(tenantId, enabledModules);
-  await wait();
-  tenants = tenants.map((tenant) => (tenant.id === tenantId ? { ...tenant, enabledModules } : tenant));
-  return buildTenantModules(findTenant(tenantId));
-}
-
-export async function createTenantAdminUser(tenantId: string, input: CreateTenantAdminInput): Promise<PlatformTenant> {
-  if (!shouldUseMocks()) return createTenantAdminUserFromApi(tenantId, input);
-  await wait();
-  tenants = tenants.map((tenant) =>
-    tenant.id === tenantId
-      ? {
-          ...tenant,
-          activeUsers: Math.max(tenant.activeUsers, 1),
-          adminUser: {
-            id: `adm-${tenant.slug}`,
-            name: input.name,
-            email: input.email,
-          },
-        }
-      : tenant,
-  );
-  return findTenant(tenantId);
-}
-
-function findTenant(tenantId: string): PlatformTenant {
-  const tenant = tenants.find((item) => item.id === tenantId);
-
-  if (!tenant) {
-    throw new Error("Tenant nao encontrado.");
-  }
-
-  return tenant;
-}
-
-async function wait() {
-  await new Promise((resolve) => window.setTimeout(resolve, 250));
-}
-
-function shouldUseMocks(): boolean {
-  return readFrontendEnv("VITE_USE_MOCKS", "true") !== "false";
-}
+export async function listPlatformTenants(): Promise<PlatformTenant[]> { return isMockMode() ? [] : listPlatformTenantsFromApi(); }
+export async function getPlatformTenantById(tenantId: string): Promise<PlatformTenant> { if (isMockMode()) throw new Error("Organização indisponível no modo demonstração."); return getPlatformTenantByIdFromApi(tenantId); }
+export async function createPlatformTenant(input: CreateTenantInput): Promise<PlatformTenant> { if (isMockMode()) return unavailable(); return createPlatformTenantFromApi(input); }
+export async function updatePlatformTenant(tenantId: string, input: UpdateTenantInput): Promise<PlatformTenant> { if (isMockMode()) return unavailable(); return updatePlatformTenantFromApi(tenantId, input); }
+export async function updatePlatformTenantStatus(tenantId: string, status: PlatformTenantStatus): Promise<PlatformTenant> { if (isMockMode()) return unavailable(); return updatePlatformTenantStatusFromApi(tenantId, status); }
+export async function listPlatformTenantModules(tenantId: string) { return isMockMode() ? [] : listPlatformTenantModulesFromApi(tenantId); }
+export async function updatePlatformTenantModules(tenantId: string, enabledModules: string[]) { if (isMockMode()) return unavailable(); return updatePlatformTenantModulesFromApi(tenantId, enabledModules); }
+export async function createTenantAdminUser(tenantId: string, input: CreateTenantAdminInput): Promise<PlatformTenant> { if (isMockMode()) return unavailable(); return createTenantAdminUserFromApi(tenantId, input); }

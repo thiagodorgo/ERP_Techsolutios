@@ -265,6 +265,8 @@ validação** e **rastreabilidade**. Tipos:
 
 ## C3. Política de KPI por PR (permanente) — **revoga a política pós-avaliação humana (2026-07-13, D-KPI-PER-PR)**
 
+> **CONGELADO (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(5)):** até segunda ordem do dono, PR nenhum atualiza `Kpis/*`.
+
 > A política antiga ("KPI só após avaliação humana em bloco `…K`") está **REVOGADA**. Decisão do dono
 > (Thiago), rodada Ω-GOV. A junta do PR valida os números; o humano audita a posteriori pelo history.
 
@@ -392,7 +394,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
    (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
    viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
-   viva não é alvo de ninguém); insumos do briefing presentes (parecer do crítico + PD nos ciclos ≥3);
+   viva não é alvo de ninguém); insumos do briefing presentes (do ciclo 4 em diante, o parecer da
+   auditoria da máquina do §C7.4 e, se ela achou a máquina defeituosa, o registro do conserto);
    afirmações da ata anterior marcadas "a re-verificar" e não herdadas como fato; inelegibilidade dos papéis
    conferida por nome; **fatia S0 executada** (espelho Codex consistente por `sync-agent-agents.mjs --check`);
    baseline honesto medido; **o objeto da junta é um SHA com check-runs CONCLUÍDOS**
@@ -409,31 +412,40 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 2. O humano é **informado** (relatório + history de KPI por PR), **não consultado** por PR.
 3. **Regra da dúvida:** qualquer dúvida → `agente-pesquisador-web` (≥3 fontes) → registro PD em
    `docs/omega-pd.md` **antes** da decisão. Dúvida sem pesquisa = veto.
-4. **Protocolo de dificuldade — TETO DE DOIS CICLOS (decisão do dono, 2026-08-29, `D-TETO-DOIS-CICLOS`).**
-   **REVOGA o teto de 5 ciclos** que esta seção trazia (ciclos 1–2 fábrica · ciclo 3 crítico reabre premissa ·
-   ciclos 4–5 junta ampliada · parada só após o 5). O teto agora é **2**:
-   - **Ciclo 1** — entrega, junta, veredito.
-   - **Ciclo 2** — se reprovado: corrige (com §C7.4-bis intacto — **quem achou não conserta**) e volta à junta
-     com **identidade nova** na cadeira que reprovou.
-   - **Reprovou no ciclo 2 → PARA. Não há ciclo 3.** **Dossiê ao dono**, com o que foi entregue, o que cada
-     junta achou, o que foi corrigido, **por que a correção não bastou** e as opções com custo.
-   - A `agente-fabrica` **continua** criando especialistas — mas **dentro dos dois ciclos**, nunca como forma
-     de adiar a parada.
-   - Registro dos ciclos segue em `omega/reprovacoes/R-<entrega>-<ciclo>.md`. As **paradas imediatas
-     irredutíveis** (§C7.5) são independentes deste teto.
-   - **Blocos em voo sob o teto antigo — aplicação, transcrita de `D-TETO-DOIS-CICLOS`
-     (`agent-orchestration/controle/decisoes.md`):** blocos **novos** nascem sob o teto de 2; e
-     "**`B-O6R-02`** está no **ciclo 5**, que já era o teto anterior e continua sendo o dele: o ciclo 5 já é a
-     última tentativa sob qualquer das duas regras. Se reprovar, **para** — como já estava previsto."
-     **Não há ciclo 6.** Após reprovação no teto, o único caminho é o dossiê ao dono.
+   > **Teto de 2 ciclos restabelecido (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(2)):** a partir do ciclo 3, só defeito de produto grave bloqueia; o resto vira pendência e o bloco mergeia.
 
-   **Por quê, medido:** o `B-O6R-01` levou 3 ciclos; o `B-O6R-02` chegou ao **ciclo 5** com **16 identidades de
-   jurado queimadas**, e a auditoria de 28/08 mediu **3 blocos consumindo 24% de todos os ciclos**. A resposta
-   do protocolo à reprovação era **escalar** (mais agentes, quórum maior), o que **reduz** a chance de
-   aprovação a cada rodada em vez de aumentar. E o `SAN2-1` mostrou a forma barata do mesmo mal: o ciclo 2
-   corrigiu seis achados e **reintroduziu um defeito ao corrigir outro**. Ciclo que conserta e reintroduz é
-   sinal de que a premissa precisa de **gente**, não de mais uma rodada. O dono passa a ser chamado quando a
-   informação vale mais — com **dois** conjuntos de achados na mesa, não cinco.
+4. **Protocolo de dificuldade — SEM TETO DE CICLOS; AUDITORIA DA MÁQUINA NO CICLO 3 (decisão do dono,
+   2026-09-27, `D-SEM-TETO-AUDITORIA-NO-3`).** **REVOGA o `D-TETO-DOIS-CICLOS`** (2026-08-29), que por sua vez
+   já revogara o teto de 5. **Não há mais teto por contagem de ciclos.**
+   - **Reprovação de junta NÃO para o bloco.** Abre-se o ciclo seguinte, com os papéis recompostos pelo
+     §C7.4-bis (quem achou ≠ quem planeja ≠ quem desenvolve), identidade nova nas cadeiras que votaram, e o
+     registro `omega/reprovacoes/R-<entrega>-<ciclo>.md` de sempre.
+   - **GATILHO NO CICLO 3 — auditoria da MÁQUINA, não do bloco.** Se o ciclo 3 também produzir achado
+     `bloqueia`, **antes de abrir o ciclo 4** é OBRIGATÓRIA uma auditoria da **orquestração e da junta**, que
+     responde **por execução**: (a) os achados são **defeitos reais do produto**, ou artefatos do processo
+     (critério impossível de passar, premissa herdada como fato, amostra do próprio autor, guarda que
+     reconhece forma em vez de enunciar propriedade)? (b) a **composição** cobre a competência que os achados
+     exigem, e a **inelegibilidade** foi conferida por nome? (c) o **planejador** está usando dado podre?
+     (d) o **mandato do orquestrador** foi conferido antes do voto? (e) o **terreno** foi limpo em cada
+     ciclo, e o inspetor liberou cada junta? Conduz a auditoria uma identidade que **não votou, não planejou
+     e não desenvolveu** no bloco. Conta o `bloqueia` que reprova o ciclo 3 — o `pre-existente` não reprova
+     (§C7.1-ter(a)) nem abre ciclo 4 —, e a auditoria é a do ciclo 3: o parecer dela serve aos ciclos
+     seguintes. O orquestrador a convoca. O parecer vai para `omega/reprovacoes/R-<entrega>-ciclo3-auditoria.md`,
+     com o comando executado em cada pergunta e o veredito **máquina sã** ou **máquina defeituosa**; sem ele
+     no briefing, o `inspetor-de-terreno-da-junta` não libera junta de ciclo 4 ou seguinte (§C7.1-bis).
+   - **Depois da auditoria, CONTINUA-SE.** Ela é checagem de saúde da máquina, **não uma parada**: máquina sã
+     → o ciclo 4 abre; máquina defeituosa → conserta-se a máquina primeiro, e então o ciclo 4 abre. Quem
+     auditou não conserta (§C7.4-bis); o conserto fica registrado no mesmo arquivo do parecer, e sem esse
+     registro o inspetor também não libera o ciclo 4.
+   - **A razão do dono, nas palavras dele:** ***"se está encontrando erro está tudo certo."*** Achado é a
+     junta funcionando. O que merece vigilância não é o bloco que reprova três vezes — é a possibilidade de a
+     máquina estar **fabricando** achados, ou **deixando de ver** os reais.
+   - **Risco assumido, declarado:** sem teto por contagem, um bloco que não converge pode consumir
+     indefinidamente. A mitigação é o gatilho do ciclo 3, **melhor dirigido que uma contagem** — ele pergunta
+     se a máquina está certa, não se o orçamento acabou. O orquestrador relata, a cada ciclo, se a classe de
+     defeito **se repetiu sem informação nova**, que é o sinal de não-convergência.
+   - A `agente-fabrica` continua criando especialistas por ciclo. As **paradas imediatas irredutíveis**
+     (§C7.5) são independentes disto e continuam valendo integralmente.
 
 4-bis. **SEPARAÇÃO DE PAPÉIS NA CORREÇÃO — quem acha NÃO conserta** (decisão do dono, 2026-08-17,
    `D-JUNTA-SEPARACAO-DE-PAPEIS`). Todo ciclo de reprovação distribui **três papéis em três agentes distintos**:
@@ -513,13 +525,16 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    `GPT-5.5` **não são fallback de gate em hipótese alguma** — para eles vale a parada.
 
 
-7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`) — P1–P6, inline.**
-   Toda junta, inspeção de terreno e porteiro seguem as seis normas abaixo. Origem medida: **14 quedas de
+7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`; P7 por decisão do dono,
+   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`) — P1–P7, inline.**
+   Toda junta, inspeção de terreno e porteiro seguem as sete normas abaixo; a **P7** alcança, além deles, **todo
+   agente vivo** — dev, planejador, fábrica — e o orquestrador. Origem medida de P1–P6: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
    `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
    `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
-   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** — quóruns, vetos, identidade nova,
-   separação de papéis (§C7.4-bis) e o teto de dois ciclos ficam intactos.
+   O protocolo muda **como o trabalho sobrevive à morte de quem o fez** (P1–P6) **e à pausa ordenada pelo
+   dono** (P7, que não é morte) — quóruns, vetos, identidade nova e separação de papéis (§C7.4-bis) ficam
+   intactos.
 
    - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a
      `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` três linhas: **comando
@@ -552,6 +567,27 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      colunas fixas: `agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do
      redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
      demais — só a série decide; sem ela, cada sessão redescobre o problema.
+   - **P7 — Pausa ordenada: grava o estado e para sozinho (decisão do dono, 2026-10-01 —
+     `D-PAUSA-GRAVA-E-PARA`).** Ordem de pausa do dono ("pause tudo", "não use mais tokens") **não é
+     morte**: é um corte limpo. Também **não é parada** (§C7.5, §C7.6-bis), que nasce de regra e devolve a
+     decisão ao dono: a pausa nasce da ordem do dono e se retoma. O orquestrador a **repassa a cada agente vivo**
+     (`SendMessage`, 1 linha: `PAUSA`); cada agente **termina o comando em curso, grava uma seção
+     `## PAUSA <hora UTC>`** no seu arquivo de evidência (o `<cadeira>-evidencia.md` do P1; quem não tem um —
+     dev, planejador, fábrica — usa o arquivo de saída que o seu mandato nomeia, e o orquestrador nomeia um no
+     disparo se o mandato não o fizer) — head medido, o que está feito (comando e saída), o que falta, o
+     **próximo comando** exato, arquivos meio-escritos nomeados — e **para sozinho**, com a mensagem final de
+     1 linha apontando o arquivo (P2). Não inicia item novo. O orquestrador dá o tempo de gravar (ordem de
+     minutos), só então para quem não respondeu, para os vigias, registra o roteiro de retomada numa seção
+     `## PAUSA <hora UTC>` de `agent-orchestration/docs/status-geral.md` (lido antes de cada bloco, §A4) e
+     encerra o turno em 1 linha. **Jobs locais sem modelo** (rodada de mutação, CI, cluster descartável) **não
+     são alvo** de uma pausa de tokens — o orquestrador declara quais ficam vivos. **Retomada:** a mesma
+     identidade nasce do mesmo mandato e usa a seção `## PAUSA` como roteiro
+     (P3: re-executa o que está registrado, mede a cauda; arquivo meio-escrito se **mede** antes de se confiar).
+     A ordem **autoriza o gasto mínimo de gravar** — custa um comando e economiza o redo. *Caso:* em 01/10 o
+     dono mandou pausar com o limite perto do teto e o orquestrador **matou** o Dev-T4 no meio de uma conversão
+     LF→CRLF de um arquivo de teste — parcial possivelmente inconsistente e ~20–40 min de redo; com P7 o corte
+     teria sido limpo. P7 **não substitui** P1/P2: quando a pausa não chega (429, queda), é a evidência
+     incremental que salva.
 
    **Modelo de mandato (colar no disparo de cada cadeira — verbatim da fonte):**
    ```
@@ -560,13 +596,57 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    Máximo 3 itens; logs longos só no arquivo de evidência.  [P4]
    Se você substituir um caído: re-execute cada comando do <cadeira>-evidencia.md dele e compare, depois
    meça a cauda. Conclusão sem comando registrado NÃO é insumo.  [P3]
+   Se receber PAUSA: termine o comando em curso, grave `## PAUSA <hora UTC>` em <cadeira>-evidencia.md
+   (head · feito · falta · próximo comando · arquivos meio-escritos) e pare sozinho com 1 linha apontando
+   o arquivo. Não inicie item novo.  [P7]
    ```
    **Do orquestrador (não do agente):** dispara ≤2 em paralelo e aplica a pausa de janela instável (P5);
    commita evidência e voto após cada conclusão (agente não commita); preenche `00-quedas.md` no momento
    da perda (P6); na ata, consigna quedas, custo real de redo e o que o suplente re-executou vs mediu de
-   novo.
+   novo; **sob ordem de pausa, repassa `PAUSA` a cada agente vivo, dá o tempo de gravar, para os vigias e
+   registra o roteiro de retomada antes de encerrar (P7)**.
 
 ---
+
+8. **GOVERNANÇA PROPORCIONAL — junta só onde o risco pede, teto de 2 ciclos, menos burocracia, Traccar depois de sanar
+   o que está em andamento e KPI congelado (decisão do dono, 2026-10-04 — `D-GOV-PROPORCIONAL`).** Nas palavras do dono, depois de mais de um
+   mês com cada bloco levando cerca de uma semana de ciclos de junta: *"me diz como saio desse buraco… preciso sair desse
+   loop e continuar fazendo meu sistema, quero implantar o traccar"*; e, sobre a proposta, *"aprovo 1, 2, 3 e 4 kpi
+   congelado também"*. **Onde este item divergir de §C1 (feature atualiza KPI), §C2 (itens 5, 6 e 8), §C3, §C4
+   (KPI em todo PR), §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4, §C7.4-bis, §8 (itens 4 e 7), §10 (DoD) e da
+   `D-MANDATO-FORMA`, vale este item** — inclusive onde esses trechos mandam todo PR passar por junta ou atualizar `Kpis/*`. As paradas irredutíveis (§C7.5), a separação de papéis
+   (§C7.4-bis: quem acha ≠ quem planeja ≠ quem desenvolve) e P1–P7 continuam valendo onde houver junta.
+
+   - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só
+     quando o bloco mexe em **dinheiro, segurança, permissão ou perda de dado**. Todo o resto (telas e textos sem
+     regra de negócio nova, documentação, registro, KPI, governança, ferramentas de processo) mergeia com **um
+     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta.
+   - **(2) Teto de 2 ciclos.** Nos ciclos 1 e 2 a junta funciona como hoje. **A partir do ciclo 3, só bloqueia
+     defeito de produto grave**: perde dado, vaza dado entre organizações, quebra permissão ou erra dinheiro. Todo
+     outro achado — inclusive de processo, registro, mandato, KPI, forma de teste — vira **pendência com dono** e o
+     bloco **mergeia**. A auditoria obrigatória da máquina no ciclo 3 (`D-SEM-TETO-AUDITORIA-NO-3`) deixa de ser
+     obrigatória.
+   - **(3) Menos burocracia.** Mandato forma A com pré-voo **só para inspetor e cadeiras de junta**; planejador,
+     dev, fábrica, revisor e porteiro nascem de prompt simples com as referências explícitas. **Registro** em um PR
+     semanal (ou no próprio PR do bloco), sem porteiro. **Porteiro** só depois de merge de **produto**. O
+     `B-GOV-MANDATO` (PR #393) fica **congelado**: o verificador de mandato não recebe novos ciclos; o que já
+     está no ramo segue pela regra (1) (governança = um revisor + CI) ou é estacionado.
+   - **(4) Traccar depois de sanar o que está em andamento.** Ajuste do dono no mesmo dia: *"sanar tudo antes de
+     começar o traccar"*, e, perguntado o alcance, *"o que está em andamento"*. A trilha do Traccar abre quando os PRs
+     em voo em 2026-10-04 estiverem resolvidos (`#400`, `#401`, `#405`, `#389`, `#388` mergeados ou decididos; `#393`
+     decidido pela regra (3)), o registro em dia e o disco limpo — **sem esperar** os demais bloqueantes do gate
+     (`PLANO_SAN3`), que correm em paralelo. Todo bloco de ingestão do Traccar tem **junta completa de segurança** — a decisão de desenho
+     `D-TRACCAR-HTTP-PRIVADO-AWS` e as regras do dono para o Traccar continuam valendo (nunca `tenant_id` do payload
+     como contexto confiável; dispositivo não mapeado em quarentena; vínculo ambíguo falha fechado; token nunca em
+     código, log, query string, frontend ou payload público, comparado em tempo constante; nenhuma porta pública
+     sem decisão, threat model e junta; nunca os servidores públicos de demonstração em produção). **Pré-requisito
+     de ingestão em produção:** o `B-SAN3-05` (papel de runtime sem bypass de RLS) mergeado.
+   - **(5) KPI congelado.** Até segunda ordem do dono, **PR nenhum atualiza `Kpis/*`** (revoga, enquanto vigorar,
+     a `D-KPI-PER-PR` do §C3); o painel fica no último snapshot publicado e a consolidação é por **marco**, num PR
+     próprio, quando o dono pedir. A junta não cobra KPI.
+   - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
+     (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
+     congelado pela regra (3).
 
 ## 8. GitHub Flow & governança de commits
 
@@ -656,7 +736,10 @@ Regras de fidelidade (aprendidas de uma entrega que divergiu do modelo):
 
 Referências disponíveis (índice completo em **`screen-refs/README.md`**):
 - **`screen-refs/web/`** — **35 PNGs** (todas as telas do ERP Web, agrupadas por papel: Plataforma,
-  Operação, Despacho, Administração, Financeiro). Alvo renderizado a 1440px, sem andaime de dev.
+  Operação, Despacho, Administração, Financeiro). Capturas a 924×540 (medido em 2026-10-08), sem andaime de dev.
+  **Exceção (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`):** para as 5 telas padronizadas
+  (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência é `ERP Web - Telas Padronizadas.dc.html`
+  (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**

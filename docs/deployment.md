@@ -74,11 +74,100 @@ Nenhum versionado — os cabecalhos dos `fly.*.toml` trazem so os **nomes**.
 | G2 | `DATABASE_URL` presente e nao-vazia | `Ω6R-DAT-001` — o caminho prisma sem banco so quebrava no 1o acesso |
 | G3 | `JOBS_WORKER_ENABLED=true` | `Ω6R-DIN-006` — o worker de jobs nunca subia |
 | G5 | `REDIS_URL` presente e **fora** de localhost/127.0.0.1 | fila e sinal de vida presos dentro do contêiner |
+| G-DB-ROLE | `DATABASE_RUNTIME_ROLE_GUARD` ausente (default `enforce`) ou `enforce` — `skip` é recusado | `P-INFRA-RLS` (B-SAN3-05) — um `DATABASE_URL` de superusuário/BYPASSRLS anulava toda política FORCE RLS em silêncio |
 
 **Consequencia operacional, sem eufemismo:** configuracao incompleta **nao degrada — ela reprova o boot**,
 com mensagem nomeando o achado, **antes do `listen`**. Um deploy assim nao fica "meio de pe": a maquina nao
 passa no healthcheck. E o inverso do que existia antes deste bloco, em que o processo subia feliz e perdia
 dado em silencio.
+
+#### Papel de banco de runtime (B-SAN3-05 — itens 9 e 10 do gate vendável)
+
+**O que a API exige do papel com que fala ao banco.** Em `NODE_ENV=production` (staging incluso) a primeira
+instrução de `main()` (`src/server.ts`) é a **trava de boot** (`src/database/runtime-role.bootstrap.ts`, gate
+**G-DB-ROLE**): ela sonda o catálogo com `RUNTIME_ROLE_GUARD_SQL` (`src/database/runtime-role.ts`) para o
+`session_user` **e** o `current_user` da conexão e **recusa subir** se a identidade escapar de
+`FORCE ROW LEVEL SECURITY` por qualquer das **três vias**:
+
+- **atributo** — `SUPERUSER`, `BYPASSRLS`, `REPLICATION`, ou pertença (direta ou por cadeia, com ou sem
+  `INHERIT`) a papel assim ou a `pg_execute_server_program`/`pg_read_server_files`/`pg_write_server_files`;
+- **posse** — dono, ou membro do dono, de tabela `FORCE RLS` (o dono desliga o `FORCE` com um `ALTER TABLE`);
+- **view** — existe no banco **qualquer** view ou matview, de qualquer esquema e de qualquer dono, cuja árvore
+  alcança tabela `FORCE RLS` — sem olhar dono nem privilégio (de tabela ou de coluna); a via é do banco, não do
+  papel. **Regra operacional (`D-405-PROIBIR-VIEWS`): nenhuma view nem matview sobre tabela protegida (FORCE
+  RLS), em nenhum esquema, de nenhum dono** (inclui `security_invoker` e matview vazia).
+
+Recusa ⇒ log `error` com `session_user`, `current_user` e as `escapes` (`via`, `rolname`, `rolsuper`,
+`rolbypassrls`, `is_self`, `objetos`) — **nunca** URL, host nem credencial —, `$disconnect` e `Failed to start`
+com `code: RUNTIME_ROLE_CAN_BYPASS_RLS`; o processo sai com código 1 em segundos (a máquina anterior continua
+servindo). Banco inalcançável no boot ⇒ 5 sondas com espera dobrando (2, 4, 8, 16 s) e recusa
+(`RUNTIME_ROLE_PROBE_FAILED`). Papel limpo ⇒ `runtime database role verified` com `escapes: 0`. `/health/*` não
+muda. Em dev/test o default é `skip` (o `postgres` local é superusuário), com uma linha `info` no boot.
+
+**O procedimento: `scripts/db-runtime-role.sh`** (idempotente; versionado com modo `100755` e `eol=lf` pelo
+`.gitattributes`). Cria/converge o papel `LOGIN NOSUPERUSER NOBYPASSRLS NOREPLICATION`, sem posse de tabela
+`FORCE`, revoga o **primeiro salto** de toda cadeia de pertença que leve a papel que escapa, concede **só DML +
+`USAGE`/`SELECT` em sequências** e `ALTER DEFAULT PRIVILEGES` do migrador para as tabelas futuras, e termina com a
+**mesma propriedade da trava** avaliada para o papel. A credencial nova é lida duas vezes pelo stdin de
+`psql \password` sob `setsid` (nunca em argv nem em `/dev/tty`); o `psql` 16 calcula o verificador no cliente e
+o servidor recebe somente `SCRAM-SHA-256$…`, com `password_encryption=scram-sha-256` forçado na sessão mesmo se
+um `PGOPTIONS` externo pedir `md5`. O verificador pode aparecer no log integral do servidor e permite ataque de
+dicionário offline: use senha **aleatória, longa e de alta entropia**. A senha em claro permanece durante a
+execução no ambiente do processo (`/proc/<pid>/environ`, mesma classe de `PGPASSWORD`, legível pelo mesmo
+usuário/root), mas nenhum modo de logging do PostgreSQL a recebe. Linha final (`-At`):
+`rolname|rolsuper|rolbypassrls|rolreplication|escapa|posse|views|dml` — ex.:
+`erp_runtime|f|f|f|f|0|0|115`. Qualquer via de escape ⇒ `ec=3` e **nada persiste**.
+
+**Os modos de falha, todos nomeados na mensagem (nenhum com a credencial):**
+
+- **MODO 1** — `permission denied to create role`: o migrador não tem `CREATEROLE` → decisão de provedor; pare e registre.
+- **MODO 2** — o papel já tem `SUPERUSER|BYPASSRLS|REPLICATION|CREATEDB|CREATEROLE` e o executor não pode remover: outro nome (`DB_RUNTIME_ROLE`) ou corrija com a credencial administrativa e rode de novo.
+- **MODO 3** — tabela/sequência de `public` de outro dono, ou o papel é dono (ou membro do dono) de tabela FORCE: `ALTER TABLE public.<t> OWNER TO <migrador>` e rode de novo.
+- **MODO 4** — o papel já existe e o executor não tem `ADMIN OPTION` sobre ele: outro nome, ou `GRANT <papel> TO <migrador> WITH ADMIN OPTION` pela credencial que o criou; rode de novo.
+- **MODO 5** — pertença que leva a papel que escapa e que o executor não pode revogar: `REVOKE <papel> FROM erp_runtime` com credencial que tenha `ADMIN OPTION` sobre ele; rode de novo.
+- **MODO 6** — existe view/matview (qualquer esquema, qualquer dono, qualquer privilégio) cuja árvore alcança
+  tabela FORCE; a mensagem lista cada uma (`view:<objeto>`): `DROP VIEW`/`DROP MATERIALIZED VIEW` de cada uma —
+  nenhuma view nem matview sobre tabela protegida —; rode de novo.
+
+**Compose local-prod (`docker-compose.prod.yml`).** O serviço `postgres` executa o script no
+`/docker-entrypoint-initdb.d/` **no banco da aplicação** na 1ª subida do volume (papel `erp_runtime`, migrador
+`postgres`); o `migrate` continua como `postgres`; a `api` conecta como `erp_runtime` com a trava ativa. Volume
+já iniciado sem o papel ⇒ `docker compose -f docker-compose.prod.yml down -v`. Regra operacional: nenhuma view
+nem matview sobre tabela protegida (FORCE RLS), em nenhum esquema, de nenhum dono. Uma migração que crie uma
+deixa o T5/T15 da suíte `-db` vermelhos na CI antes do deploy; se chegar ao banco, a trava recusa o boot da `api`
+pela via `view` e o MODO 6 do script lista cada view — não é defeito do smoke.
+
+**Suíte `-db` — pré-requisito declarado:** o cliente **`psql` 16 no `PATH`** de quem roda
+`tests/san3-05-runtime-role-guard-db.test.ts` com `DATABASE_URL` (o T14b executa o script real por `bash` + `psql`).
+Sem `psql` o teste **falha** nomeando o pré-requisito — nunca pula (o teto `SKIP_BUDGET_DB = 2` do runner é
+desenho). A imagem `ubuntu-24.04` do runner traz o PostgreSQL 16.
+
+**Atos do dono — nada disto é feito pelo PR (o repositório não pratica por você):**
+
+0. **Não ligue o CD de staging antes dos Atos 1–2 de staging.** `deploy-staging.yml` roda a cada push na `main`
+   quando `STAGING_DEPLOY_ENABLED == 'true'`, e `fly.staging.toml` sobe com `NODE_ENV=production` ⇒ trava ativa.
+   Mantenha `STAGING_DEPLOY_ENABLED` desligada até o papel de staging existir e o secret estar trocado (a amarração
+   é procedimental — `P-SAN3-05-STAGING-CD-AMARRACAO`).
+1. **Criar o papel no banco gerenciado** (produção e staging), conectado ao banco **da aplicação** com a credencial
+   **do migrador** (`PROD_DATABASE_URL`/`STAGING_DATABASE_URL` — ela fica como migrador), na raiz do repo no SHA
+   mergeado, com uma credencial nova, aleatória, longa, de alta entropia e sem quebra de linha, que não vai ao
+   repositório nem ao chat. O host precisa ter `psql` 16 e `setsid`; sem `setsid` o procedimento falha antes de
+   pedir a senha, em vez de abrir `/dev/tty`:
+   ```bash
+   PGHOST=<host> PGPORT=5432 PGUSER=<migrador> PGPASSWORD=<senha do migrador> PGDATABASE=<banco da app> \
+   DB_RUNTIME_ROLE=erp_runtime DB_RUNTIME_PASSWORD='<senha nova>' \
+   bash scripts/db-runtime-role.sh
+   ```
+   Saída esperada: **uma** linha `erp_runtime|f|f|f|f|0|0|<n>`. Qualquer modo acima ⇒ não siga ao Ato 2.
+2. **Trocar o secret do app (e só ele):** `fly secrets set DATABASE_URL='postgresql://erp_runtime:<senha nova>@<host>:5432/<banco>?schema=public' -c fly.production.toml`
+   (staging: `-c fly.staging.toml`). **Não** troque `PROD_DATABASE_URL`/`STAGING_DATABASE_URL`; **não** use
+   `options=-c role=…` (a trava julga o login). Deploy pela pipeline: o app sobe ⇒ a trava passou — confira
+   `runtime database role verified` com `escapes: 0`. Não subiu e o log diz `RUNTIME_ROLE_CAN_BYPASS_RLS` ⇒ as
+   `escapes` dizem a porta (`via`, `rolname`, `is_self`, `objetos`); volte ao Ato 1 ou 2. Depois,
+   `GET /api/v1/platform/cloud-usage/summary` continua somando as organizações (item 10).
+
+`P-INFRA-RLS` e `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` só fecham com a trava **verde no ambiente** (a linha
+do log como evidência). Até lá: código pronto, ato pendente.
 
 #### Provisionamento de RBAC — papéis, permissões e concessões (passo do CD)
 
@@ -168,21 +257,39 @@ O deploy e a promocao da imagem GHCR `:<sha>`; o rollback e a **redeploy da imag
 #### Runbook B — provisionamento do 1o tenant real (sem seed demo)
 
 Produção **nunca** roda `db:seed`/`db:seed:demo` (guarda `assertSeedAllowed` + ausencia do passo no CD). O
-bootstrap do 1o tenant/administrador de plataforma real e uma acao de **ativacao** contra o banco vivo de
-produção (exige o DB provisionado), NAO um passo deste PR. Requisitos:
+bootstrap do 1º administrador de plataforma é executado por `scripts/bootstrap-platform-admin.ts` — um ato de
+**ativação one-shot**, idempotente, fora do CD. Exige que o banco já tenha o `super_admin` global provisionado
+(passo "Provisionamento de RBAC" do CD). A senha vai por env ou `--password-stdin`, **nunca** por argv (`--password=`
+→ `PRODUCTION_OPT_IN_MISSING` não é esse erro; `PASSWORD_IN_ARGV` é — e exit 2 em ambos os casos).
 
-1. E um **bootstrap dedicado e idempotente** (tenant de sistema + platform admin + credencial), exigindo
-   `PLATFORM_ADMIN_EMAIL`/`PLATFORM_ADMIN_PASSWORD` — **nunca** o seed demo. O script de
-   bootstrap idempotente e verificado contra um banco prod-like e entregue na ativacao (follow-up
-   **P-SAN-PROD-BOOTSTRAP**; o seed atual so cria o tenant demo, inadequado para produção).
-   **A parte de RBAC saiu deste follow-up:** papéis (inclusive `super_admin`), permissões e concessões já são
-   provisionados pelo passo do CD (secao "Provisionamento de RBAC"). Resta ao bootstrap **só** a organização real,
-   o usuário administrador e a credencial dele — o vínculo usuário↔papel (`user_role_assignments`) é dado de
-   organização e **nunca** é criado pelo provisionamento.
-2. Se o bootstrap precisar rodar com `NODE_ENV=production`, usar o escape hatch **one-shot** `ALLOW_PROD_SEED=1`
-   **inline no unico comando** e **remove-lo em seguida** — NUNCA persistir a variavel no `[env]` do toml nem
-   como secret fixo (senao reabre o seed demo no mesmo ambiente).
-3. Dominio + TLS pelo Fly (certs gerenciados) apos o `fly apps create` e o apontamento de DNS.
+**Pré-condição:** verifique `SELECT count(*) FROM roles WHERE key='super_admin' AND tenant_id IS NULL` → `1`.
+
+**Comandos (num checkout do SHA mergeado, após `npm ci && npx prisma generate`):**
+
+```bash
+read -rs -p "Senha do admin de plataforma: " SENHA; echo
+# simulação primeiro — nada é gravado:
+printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 \
+  DATABASE_URL="$PROD_DATABASE_URL" PLATFORM_ADMIN_EMAIL='<e-mail>' \
+  npx tsx scripts/bootstrap-platform-admin.ts --password-stdin --dry-run
+# aplicação:
+printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 \
+  DATABASE_URL="$PROD_DATABASE_URL" PLATFORM_ADMIN_EMAIL='<e-mail>' \
+  npx tsx scripts/bootstrap-platform-admin.ts --password-stdin
+unset SENHA
+```
+
+Saída de sucesso: `CONVERGIDO — 1 organização de sistema, 1 administrador de plataforma.` (exit 0). Sem
+`ALLOW_PROD_BOOTSTRAP=1` → `PRODUCTION_OPT_IN_MISSING` e exit 2 (nada gravado). Senha perdida: `--reset-password`.
+`ALLOW_PROD_BOOTSTRAP` e `ALLOW_PROD_SEED` são variáveis **independentes** — uma não abre a outra.
+Argumento não reconhecido → `UNKNOWN_ARGUMENT` e exit 2, sem ecoar o argumento e sem gravar nada. Códigos: exit 0 =
+criado ou já convergido; exit 2 = recusa nomeada (trava, entrada, argumento ou estado), nada gravado; exit 1 =
+`FALHOU` (por exemplo, banco inalcançável), nada confirmado e a transação não fecha.
+
+Domínio + TLS pelo Fly (certs gerenciados) após o `fly apps create` e o apontamento de DNS.
+
+**Ato 2 — login pela web:** requer o runbook B-O6R-01 ("Runbook de ativação do login sem organização") para que
+o papel de runtime possa executar a função `auth_login_candidates`. Sem ele, a tela responde 401 para qualquer conta.
 
 ### Provedor (decidido na PD-INFRA-1 — `docs/omega-pd.md`)
 
@@ -455,8 +562,10 @@ pg_restore -h <host> -U <admin> -d erp_restore -j4 restore.dump
   RLS** / 71 tabelas) → **isolamento por tenant comportamental sob role NAO-superuser** (FORCE RLS): com
   `app.current_tenant_id` de UMA org, so as linhas dessa org sao visiveis (1 tenant distinto). Re-medir o RTO
   por faixa de tamanho no provedor gerenciado (restore e super-linear com indices).
-- **Em PRODUCAO o app conecta com role NAO-superuser** (o `app_user`, sem BYPASSRLS) — nunca `postgres` —, senao
-  o `FORCE ROW LEVEL SECURITY` e ignorado e o isolamento por tenant nao vale. Confirmar na ativacao.
+- **Em PRODUCAO o app conecta com o papel de runtime `erp_runtime`** (NAO-superuser, sem BYPASSRLS, sem posse de
+  tabela FORCE) — nunca `postgres` —, senao o `FORCE ROW LEVEL SECURITY` e ignorado e o isolamento por tenant nao
+  vale. Nao e mais conferencia manual: a trava de boot G-DB-ROLE recusa subir com papel que escape (secao "Papel de
+  banco de runtime"), e o papel nasce de `scripts/db-runtime-role.sh`.
 
 ### Runbook de ativação do login sem organização (B-O6R-01, §3.8 do plano) — ATO HUMANO
 
@@ -470,8 +579,10 @@ alcança) e o caminho nasce **ATIVO sem ato humano**. Quem responde é a sonda (
 Passos, na ordem:
 
 0. **Descobrir a role da aplicação PELA CONEXÃO DO PRÓPRIO APP** (`SELECT current_user` via o
-   `DATABASE_URL` dos secrets do provedor). O nome `app_user` acima é convenção em prosa, não fato
-   (`inert_no_execute` no log de boot com o GRANT feito = alvo errado).
+   `DATABASE_URL` dos secrets do provedor). Depois do B-SAN3-05 ela é o papel de runtime criado por
+   `scripts/db-runtime-role.sh` (default `erp_runtime`) — e o próprio log de boot a nomeia
+   (`runtime database role verified` → `session_user`/`current_user`). Ainda assim, confirme pela conexão:
+   `inert_no_execute` no log de boot com o GRANT feito = alvo errado.
 1. **Conferir `GET /health/ready` ANTES de conceder.** `login_without_org` já `active` = ativação por
    coincidência de credencial (a app é dona da função): decidir explicitamente — manter (registrado em
    ata) ou reverter com `ALTER FUNCTION public.auth_login_candidates(text) OWNER TO <role_dona>`
@@ -481,8 +592,10 @@ Passos, na ordem:
 3. `ALTER FUNCTION public.auth_login_candidates(text) OWNER TO <role_dona>;` (quem executa o comando
    precisa ser membro da role destino).
 4. `GRANT SELECT ON public.users, public.local_auth_credentials, public.tenants TO <role_dona>;`
-5. `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO <role do passo 0>;` → **restart** →
-   conferir `/health/ready` (`login_without_org: "active"`).
+5. `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO <role do passo 0>;` — com o papel de
+   runtime do B-SAN3-05: `GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime;`
+   (o script do papel **não** concede este EXECUTE: é decisão sua, em ata) → **restart** → conferir
+   `/health/ready` (`login_without_org: "active"`).
 6. **Discriminantes pós-ativação** (o canal do backfill em ambiente — o `prisma migrate deploy` DESCARTA
    warnings [medido]; o RAISE WARNING vai ao log do SERVIDOR): usuários sem vínculo = 0 · eventos
    `'backfill'` == vínculos · identidades órfãs = 0 · dono efetivo da função (`pg_proc.proowner`) com
