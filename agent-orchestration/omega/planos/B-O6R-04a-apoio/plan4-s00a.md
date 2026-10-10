@@ -1,0 +1,25 @@
+# PLANO v3 — B-O6R-04a · consistência do estoque sob concorrência (replanejamento após a rodada 2 — última — do crítico)
+
+> **Papel:** `planejador-mestre` · **Modelo que rodou:** Fable 5.1 (`claude-fable-5-1`, o fixado no frontmatter; sem fallback) · **Corpo aplicado:**
+> `origin/main:.claude/agents/planejador-mestre.md`, lido por `MSYS_NO_PATHCONV=1 git -C <worktree b04a> show origin/main:.claude/agents/planejador-mestre.md`
+> `[00]` — frontmatter `model: fable`; parágrafos `D-FALLBACK-MODELO-FABLE-OPUS` e `D-PLANEJADOR-MODELO-FABLE`.
+> **Insumos:** comando com as emendas 1 (a–f), 2 (g–m) e **3 (n–s)**; plano v2 (`fb9ee5a6`, lido @ `cc696f93`) e suas medições `plan3-*`; parecer do
+> crítico r2 (`00-critico-r2.md`: 2 `bloqueia` · 10 ajuste · 4 nota) e as sondas `crit3-*`; parecer r1; `PLANO_SAN3.md §5.6` `[03]`. Sondas do crítico e do
+> v2 foram lidas como **roteiro**; **todo número deste plano é de execução minha** (§14). Nada das atas anteriores foi herdado como fato.
+> **Terreno:** worktree `.claude/worktrees/b04a`, branch `fix/inventory-consistency`, HEAD `cc696f93` = commits só de `agent-orchestration/` sobre
+> `merge-base origin/main = 02bd7dab` → **`src/` no HEAD é o head-base** `[01]`. Somente leitura (`git status --short` = 0 antes e depois de cada
+> execução); sondas e este plano vivem no scratchpad (`plan4-*`). **Cluster:** `plan-b04a-pg` (`postgres:16`, porta **58544**, bases `erp_plan_b04a` e
+> `erp_plan_mig`), 107 migrações, removido pelo nome ao fim `[02]`. Nenhum comando em `erp-postgres`, `erp-redis`, `erp-postgres-alt`, `pastrack-*`, `bsan301-*`, `dev-*`, `crit-*`, `j-*`.
+> **Data:** 2026-09-18 · **Status:** COMPLETO — cada achado da r2 é requisito com desenho, teste com vermelho-controle (o cenário do crítico) e medição
+> minha (§0); os 4 `bloqueia` da r1 (A-01, A-02, A-03, A-06) foram **re-medidos contra o desenho v3** sem regressão (§0.2); as decisões (n)–(s) estão
+> carregadas dentro do plano (§0.3). O crítico não tem rodada 3: o que sobreviveu está aqui como requisito, e a junta confere cada linha por execução.
+> Toda afirmação numerada `[NN]` remete ao §14 (comando → saída).
+
+## 0. Tabela da emenda 3 — achado da r2 → requisito → desenho que o cumpre → teste com vermelho-controle (cenário do crítico) → medição minha
+
+Coluna "teste": nome do caso no §6 e o **cenário do crítico reproduzido** como controle vermelho. Coluna "medição": chave da sonda `plan4-probe-b04a.mts` (§14 `[04]`, `[07]`, `[09]`) ou do apoio (`[05]` guards, `[06]` KPI, `[08]` migração).
+
+| achado (r2) | gravidade | requisito (emenda 3) | desenho que o cumpre (§) | teste + vermelho-controle | medição minha → veredito |
+|---|---|---|---|---|---|
+| **S-01** `fechando` sem saída por 409 determinístico de uso comum | bloqueia | **(n)** nenhum estado sem saída; unidade falha sem ajuste aplicado → estado que aceita recontagem e cancelamento; com unidades aplicadas → saída com dono DENTRO do bloco | §3.3 **`abortClose`**: toda falha de unidade (409/400/503) chama, sob `FOR UPDATE` da sessão, `fechando + 0 carimbos → CAS aberta` (`reverted`); com carimbos → fica `fechando` (`kept`) e as saídas são **(i) recontar a entry não carimbada** (§3.4: `recordEntry` aceito em `fechando` com predicado `adjustment_movement_id IS NULL` no próprio UPDATE, sob `FOR SHARE` da sessão) **e (ii) retomar `close`**; `cancel` em `fechando` só com 0 carimbos (§3.4). A "saída de abandono a designar" **não existe mais**: as saídas são estas, implementadas neste bloco | **B13** (`STUCK`: BASE 4 + viatura 6, `open` real → 10, contado 2 → 409) + **B11** (parcial: X aplicado, Y 409) + **B16/B17**. Vermelho-controle = a emulação v2 embutida no teste (fica `fechando`, recontagem/cancel 422) e o head-base (limpo, `aberta`) | `[04]` STUCK: head-base `aberta`/recontagem ok/cancel ok; **v2 presa** (`fechando`, `not_open` ×2, 2º close 409); **v3 `abort: reverted` → `aberta`, recontagem ok, cancel ok**; v3 recontagem 8 → `concluida`, −2, saldo BASE 2. **STUCK_partial_v3**: `kept, stamped 1`; recontar Y ok / X `entry_adjusted` / cancel `close_in_progress` / retomada `concluida` 2 ajustes → **fechado** |
+| **S-02** `totalVarianceValue` errado na retomada e na concorrência | bloqueia | **(o)** total da sessão INTEIRA no 200 e na auditoria `cycle_count.closed`, na retomada e sob concorrência, com `avg_cost ≠ 0` | §3.3 **`finishClose` calcula o total**: `SUM(e.variance × i.avg_cost)` sobre as entries **carimbadas** da sessão, na MESMA tx do CAS `fechando→concluida`, sob o `FOR UPDATE` da sessão (uma SQL; em memória, resolvedor de `avgCost` injetado); o serviço deixa de acumular por chamada; a unidade deixa de ler `findItemById` | **B14** (`TVV_resume`: 5 itens avg 2, 3º com BASE 1 → 409, entrada +9, 2º close → **−30**) e **B15** (`TVV_concorrente`: 10 itens avg 2, 2 closes intercalados × RACE_N → **−60** no único 200). Vermelho-controle = emulação v2 embutida (−18; −48/−30) | `[04]` TVV_resume: head-base −30, **v2 −18**, **v3 −30**; TVV_concorrente: **v2 −48/−30/−30 (3/3 errados)**, **v3 −60 em 5/5**, ledger 10/0 dup em 5/5 → **fechado** |

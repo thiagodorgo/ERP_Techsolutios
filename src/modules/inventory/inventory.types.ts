@@ -411,6 +411,32 @@ export function movementAlreadyReversedError(): InventoryError {
   );
 }
 
+/**
+ * B-O6R-04a (V3) — o grupo de transferência de um movimento tem perna de OUTRO item. Um grupo legítimo é sempre
+ * do mesmo item (vincular/desvincular); perna alheia é dado corrompido — recusa (409) em vez de travar um 2º item.
+ */
+export function transferGroupInconsistentError(): InventoryError {
+  return new InventoryError(
+    409,
+    "STOCK_MOVEMENT_CONFLICT",
+    "transfer_group_inconsistent",
+    "Este movimento pertence a uma transferência inconsistente (pernas de itens diferentes) e não pode ser estornado.",
+  );
+}
+
+/**
+ * B-O6R-04a — o banco não atendeu a tempo (contenção de trava, conflito de serialização, impasse ou fila de
+ * conexões). NADA foi gravado; repetir resolve. 503 em vez do 400 cru que o erro de banco virava.
+ */
+export function stockBusyError(): InventoryError {
+  return new InventoryError(
+    503,
+    "STOCK_UNAVAILABLE",
+    "stock_busy",
+    "O estoque está ocupado com outra movimentação deste item. Nada foi gravado; tente novamente em instantes.",
+  );
+}
+
 /** Ω4C PR-08b — the automatic EXIT (baixa) points at an item that does not resolve in this tenant. */
 export function invalidStockItemReferenceError(): InventoryError {
   return new InventoryError(

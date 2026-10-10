@@ -1,0 +1,17 @@
+{
+  "DDLISO": {
+    "forma": "H (admin) INSERT em stock_movements na base das suites + segura 3,4 s; D = CREATE/DROP INDEX na base PROPRIA erp_plan_mig; V = createMovement head-base de outro tenant na base das suites",
+    "D": {
+      "ok_ms": 151,
+      "out": "CREATE INDEX\nDROP INDEX"
+    },
+    "V": {
+      "ok_ms": 95
+    },
+    "V_bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ]
+  },
+  "fimMs": 5241,
+  "papeisOrfaos": 0
+}

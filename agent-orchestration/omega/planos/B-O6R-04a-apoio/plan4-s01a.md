@@ -1,0 +1,13 @@
+## 1. Objetivo · ator · fluxo origem→destino
+
+**Objetivo — invariantes (os dois do comando + os que a medição mostrou serem a mesma propriedade; I9–I11 nascem da r2):**
+- **I1** saldo por item **e custódia** nunca negativo sob concorrência, em **toda** via que debita (V1–V5) — head-base: 20/20 saídas aceitas sobre saldo 10, saldo **−10** (v2 `[10-P1]`; o desenho de V1–V5 não mudou na v3).
+- **I2** fechamento de contagem aplicado **exatamente uma vez**: um vencedor, um ajuste por (sessão, item), falha no meio deixa estado **retomável** — head-base: 2 vencedores, 2 ajustes.
+- **I3** no máximo **uma compensação por movimento original**, na aplicação **e no banco** — `[07]` C7/C8: head-base 2 compensações; v3 1.
+- **I4** custo médio da `entrada` sobre saldo serializado (v2 `[10-P7]`). **I5** corrida da MESMA fonte em `createExitForSource` nunca vaza `25P02` (v2 `[10-P9]`).
+- **I6 (v3)** durante um fechamento: escrita **por cima de unidade aplicada** é recusada (422) — `recordEntry` de entry carimbada, `cancel` com carimbos; escrita que **não colide** com unidade aplicada é aceita e serializada pela linha da sessão — `recordEntry` de entry não carimbada (`FOR SHARE`), `cancel` com 0 carimbos (`FOR UPDATE`). `[04]` B3, `[07]` E34.
+- **I7 (v3 — enunciado corrigido, N-I7)** toda transação que toma **`FOR UPDATE` de `inventory_items`** toma **exatamente um** e, se toma lock de sessão, toma-o **antes**; `open` (KEY SHARE em N itens pela FK) e `recalculateAbc` (NO KEY UPDATE em N itens) **não tomam `FOR UPDATE`** de item e **nunca esperam** por lock de sessão nem de tenant; só `open` toma a linha do tenant (`NO KEY UPDATE`) e não segura item algum ao pedi-la. Consequência: nenhum ciclo — `[07]` LO 0 × `40P01`, controle v1 `40P01`.
+- **I8** o fechamento cabe no timeout de 5 s para **qualquer** N até `SNAPSHOT_LIMIT`: a unidade de tx é o item (`[10]`).
+- **I9 (N-OVL)** um item está em **no máximo uma** sessão não terminal (`aberta|fechando`) por tenant — `open` recusa sobreposição (409) sob o lock da linha do tenant. `[07]` OVL: head-base saldo 98 com físico 99; v3 saldo 99, 1 sessão em 5/5 corridas.
+- **I10 (S-02)** o `totalVarianceValue` do único 200 (e da auditoria) é o total da **sessão inteira**: Σ `variance` carimbada × `avg_cost` vigente, calculado sob o lock da sessão na tx do CAS final — `[04]` −30 na retomada, −60 em 5/5 concorrentes.
+- **I11 (S-01)** **nenhum estado sem saída** por uso comum: falha de unidade sem ajuste aplicado devolve a sessão a `aberta`; com ajustes aplicados, a sessão fica `fechando` e sai por **recontagem das entries não carimbadas + retomada** (ou, sem carimbos, por `cancel`). `[04]` STUCK_v3 e STUCK_partial_v3.
