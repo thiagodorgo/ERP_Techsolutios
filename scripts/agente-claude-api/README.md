@@ -24,6 +24,9 @@ O agente decide sozinho **o que ler e o que verificar**, mas tudo passa por uma 
    conteúdo negado **nunca é aberto**.
 3. **Sem shell.** Não existe ferramenta "rodar comando". Cada ferramenta monta o argv ela mesma
    (`shell=False`), com flags só da lista permitida, timeout e saída truncada.
+   Antes disso, a entrada de cada ferramenta é validada **pelo script** contra o esquema dela: fora
+   do esquema, volta ao modelo como erro e nada executa. Só `entregar_parecer` é `strict` na API
+   (com as 12 estritas, a API recusou a 1ª chamada real: "compiled grammar is too large").
 4. **Nada do commit alvo é executado por padrão.** As verificações que rodam código do commit
    revisado (`espelho_codex`, `teste`) e o `npm ci` só rodam com a flag explícita
    `--permitir-execucao-do-alvo` — e essa flag tem custo de segurança real (seção própria abaixo).

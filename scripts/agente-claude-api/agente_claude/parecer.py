@@ -1,9 +1,10 @@
 """Parecer: validação do que o modelo entregou e montagem do parecer final.
 
-- `validar` é um validador mínimo de JSON Schema em stdlib (tipos, `required`,
-  `enum`, `anyOf`, `additionalProperties: false`). Ele roda SEMPRE: o `strict`
-  da API é uma garantia do servidor, não deste código (e o modelo falso dos testes
-  não respeita esquema).
+- `validar` usa o validador mínimo de JSON Schema em stdlib de `esquemas`
+  (tipos, `required`, `enum`, `anyOf`, `additionalProperties: false`; o mesmo que
+  valida a entrada das outras ferramentas). Ele roda SEMPRE: o `strict` da API é
+  uma garantia do servidor, não deste código (e o modelo falso dos testes não
+  respeita esquema).
 - Na montagem, as chaves de origem S (custo, conta, modelo, comandos_executados,
   execução) vêm do SCRIPT; o `comandos_executados` do modelo vira
   `comandos_declarados_pelo_modelo` (plano §2.3).
@@ -18,7 +19,7 @@ import shlex
 import unicodedata
 from pathlib import Path
 
-from .esquemas import ESCOPOS, GRAVIDADES, PARECER_SCHEMA, VEREDITOS, VEREDITOS_POR_TAREFA
+from .esquemas import ESCOPOS, GRAVIDADES, PARECER_SCHEMA, VEREDITOS, VEREDITOS_POR_TAREFA, erros_de_schema
 
 VERSAO_SCHEMA = "agente-claude-api.parecer@2026-10-10.v1"
 NIVEL = "menor (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO)"
@@ -30,60 +31,8 @@ class ParecerInvalido(Exception):
         self.erros = erros
 
 
-def _tipo_ok(valor: object, tipo: str) -> bool:
-    if tipo == "object":
-        return isinstance(valor, dict)
-    if tipo == "array":
-        return isinstance(valor, list)
-    if tipo == "string":
-        return isinstance(valor, str)
-    if tipo == "integer":
-        return isinstance(valor, int) and not isinstance(valor, bool)
-    if tipo == "number":
-        return isinstance(valor, (int, float)) and not isinstance(valor, bool)
-    if tipo == "boolean":
-        return isinstance(valor, bool)
-    if tipo == "null":
-        return valor is None
-    return False
-
-
-def _validar(valor: object, schema: dict, caminho: str, erros: list[str]) -> None:
-    if "anyOf" in schema:
-        for opcao in schema["anyOf"]:
-            sub: list[str] = []
-            _validar(valor, opcao, caminho, sub)
-            if not sub:
-                return
-        erros.append(f"{caminho}: nenhuma opção do anyOf casa")
-        return
-    tipo = schema.get("type")
-    if tipo and not _tipo_ok(valor, tipo):
-        erros.append(f"{caminho}: esperado {tipo}")
-        return
-    if "enum" in schema and valor not in schema["enum"]:
-        erros.append(f"{caminho}: fora de {schema['enum']}")
-        return
-    if tipo == "object":
-        props = schema.get("properties", {})
-        for nome in schema.get("required", []):
-            if nome not in valor:
-                erros.append(f"{caminho}.{nome}: obrigatório")
-        if schema.get("additionalProperties") is False:
-            for nome in valor:
-                if nome not in props:
-                    erros.append(f"{caminho}.{nome}: campo não permitido")
-        for nome, sub in props.items():
-            if nome in valor:
-                _validar(valor[nome], sub, f"{caminho}.{nome}", erros)
-    elif tipo == "array" and "items" in schema:
-        for i, item in enumerate(valor):
-            _validar(item, schema["items"], f"{caminho}[{i}]", erros)
-
-
 def validar(entrada: object, tarefa: str | None = None) -> dict:
-    erros: list[str] = []
-    _validar(entrada, PARECER_SCHEMA, "parecer", erros)
+    erros = erros_de_schema(entrada, PARECER_SCHEMA, "parecer")
     # A7(b): o veredito tem de valer para a TAREFA (plano §2.3): `investigar` responde
     # (respondido | inconclusivo) e não aprova nem reprova; `revisar-pr` não "responde".
     if not erros and tarefa in VEREDITOS_POR_TAREFA:

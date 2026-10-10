@@ -23,19 +23,43 @@ def nos_de_schema(no, caminho="$"):
             yield from nos_de_schema(v, f"{caminho}[{i}]")
 
 
+# `required` das ferramentas NÃO estritas: só o que a ferramenta não tem como adivinhar. O resto pode
+# faltar (a cerca trata ausente como o padrão). Mudar isto é decisão, não acidente: o teste pina.
+OBRIGATORIOS_NAO_ESTRITAS = {
+    "ler_arquivo": ["caminho"],
+    "listar_diretorio": ["caminho"],
+    "buscar": ["padrao"],
+    "git_log": [],
+    "git_show": ["objeto"],
+    "git_diff": [],
+    "git_ls_files": [],
+    "gh_pr_view": ["numero"],
+    "gh_pr_diff": ["numero"],
+    "gh_pr_checks": ["numero"],
+    "verificar": ["nome"],
+}
+
+
 class TestEsquema(unittest.TestCase):
-    def test_schema_strict_e_additional_properties_false_em_todo_objeto(self):
+    def test_additional_properties_false_em_todo_objeto_e_strict_so_no_parecer(self):
         objetos = 0
         for f in esquemas.ferramentas():
-            self.assertIs(f["strict"], True, f["name"])
+            estrita = f.get("strict") is True
+            self.assertEqual(estrita, f["name"] == "entregar_parecer", f["name"])
             self.assertTrue(f["description"])
             for caminho, no in nos_de_schema(f["input_schema"], f["name"]):
                 self.assertFalse(PROIBIDAS_NO_STRICT & set(no), caminho)
                 if no.get("type") == "object":
                     objetos += 1
                     self.assertIs(no.get("additionalProperties"), False, caminho)
-                    self.assertEqual(sorted(no["required"]), sorted(no["properties"]), caminho)
+                    if estrita:  # no estrito, todo campo é obrigatório (o opcional aceita null)
+                        self.assertEqual(sorted(no["required"]), sorted(no["properties"]), caminho)
+                    else:
+                        self.assertLessEqual(set(no["required"]), set(no["properties"]), caminho)
+            if not estrita:
+                self.assertEqual(f["input_schema"]["required"], OBRIGATORIOS_NAO_ESTRITAS[f["name"]], f["name"])
         self.assertGreaterEqual(objetos, 14)
+        self.assertEqual(set(OBRIGATORIOS_NAO_ESTRITAS) | {"entregar_parecer"}, set(esquemas.NOMES_FERRAMENTAS))
 
     def test_ordem_das_ferramentas_e_fixa_e_entregar_e_a_ultima(self):
         esperado = ("ler_arquivo", "listar_diretorio", "buscar", "git_log", "git_show", "git_diff", "git_ls_files",
