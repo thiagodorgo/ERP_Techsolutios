@@ -280,3 +280,21 @@ verde. Ele não decidiu três divergências, e ficou certo nisso. As decisões a
 - **(pp) Próximo:** o inspetor de terreno sobre o head que contiver esta emenda, depois de o CI concluir nele. Em
   seguida, a junta do ciclo 2: régua completa, unanimidade de 3, C1/C2 com os corpos já errados nos 2 espelhos e C3 =
   `agente-ci-doutor`. Os gates rodam em Fable, por ser bloco de dinheiro e dado, com fallback Opus DECLARADO.
+
+## Emenda 8 do orquestrador — o ciclo 3 (2026-10-10)
+
+- **(qq) Régua do ciclo 3 = GRAVE** (`CLAUDE.md` §C7 item 8(2)): a junta do ciclo 2 reprovou 2 × 1
+  (`J-B-O6R-04a-ciclo2.md`, `R-B-O6R-04a-ciclo2.md`). Os 4 `bloqueia` da C2 são forma do GUARD. No ciclo 3, só bloqueia
+  defeito de produto que perde dado, vaza entre organizações, quebra permissão ou erra dinheiro.
+- **(rr) A pergunta que decide foi respondida pelo planejador da retomada** (§"Ciclo 3 — plano", C3.1): nenhuma das 4
+  formas da C2, nem a do A1 da C1, tem instância no código de produto deste head. A varredura foi por DESTINO, com N por
+  classe e os comandos u3–u13 do plano. **O ciclo 3 não tem dev:** a junta 3 mede o mesmo código.
+- **(ss) As 5 pendências** do C3.2 foram coladas em `agent-orchestration/controle/pendencias.md` (índice regenerado). O
+  bloco dono das 4 do guard é **`B-GOV-GUARDA-POR-PROPRIEDADE`**, nome dado pelo orquestrador; ele não existia, e o
+  `B-GOV-GUARD-DERIVADOS` é dos painéis de KPI.
+- **(tt) A junta do ciclo 3** segue o C3.3 do plano:
+  - inspetor em instância nova;
+  - C1 = `jurado-o6r04a-c2-suplente-banco-rls` e C2 = `jurado-o6r04a-c2-suplente-fail-closed-backend`, ambos com a nota
+    literal do ciclo 3 no mandato;
+  - C3 = `coordenador-de-acessos`, com suplente `inspetor-de-arnes-concorrente`;
+  - Fable, com fallback Opus DECLARADO; Opus esgotado → PARA.

@@ -10624,3 +10624,46 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## EMENDA DA RETOMADA DO `B-O6R-04a` a pendência existente (2026-10-10) — APPEND, nunca reescrita
 
 - **`P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT`**, linha de status (`pendencias.md:9810` na ref `bc3e736b`): onde se lê "nasce na junta do ciclo 2 do `B-O6R-04a`", leia-se "nasce na junta do ciclo 1 do `B-O6R-04a`" — numeração de R1.3 da retomada (junta 1 = ciclo 1, a que votou; correção = ciclo 2; a próxima junta = junta do ciclo 2). O texto original fica como está.
+
+## P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de escritores do TIPO `<Model>Delegate` em callee, não do DESTINO da escrita — MÉDIA
+- status: ABERTA (nasce na junta do ciclo 2 do B-O6R-04a, cadeira C2 `jurado-o6r04a-c2-fail-closed-backend`; reclassificada no ciclo 3 pela régua GRAVE: forma de guard, não defeito de produto)
+- prova (N = 7 formas, por mutação executada e revertida; `c2-C2-evidencia.md` §1.3): N1 desestruturação do delegate (`const { create } = tx.stockMovement`), N2 `(tx as any)[m][c]`, N2b receptor de tipo estrutural anônimo, N3 `$executeRaw(Prisma.sql…)` em forma de CHAMADA, N3b `UPDATE ONLY stock_movements`, N5 arquivo em `src/**/generated/` (o `walk()` do guard pula `generated|dist`, l.86), N8 erasure por interface estrutural — todas compilam, passam verdes no D1 e GRAVAM sob o papel real (sonda F: 1 linha cada; N3b 5 linhas).
+- causa: `tests/inventory-write-paths-guard.test.ts` — (a) membro fora de READ_MEMBERS de receptor cujo TIPO se chama `<Model>Delegate` só em callee PropertyAccess/ElementAccess (l.308-317); (c) SQL cru só em `$…RawUnsafe` e tagged `$…Raw` (l.320-324, 377-380); superfície `walk()` exclui `generated|dist` (l.86).
+- produto hoje (ciclo 3, varredura por DESTINO — plano, §Ciclo 3 C3.0 u3/u5/u8/u11/u12): escritores das 3 tabelas por assinatura resolvida = 12 = a allowlist (`insertMovement` l.531, `prisma/seed-fleet.ts:171-173`, 8 do repositório dono da contagem); fora dela: 0; `any`/`unknown` com membro de escrita: 0; literal SQL de escrita em qualquer grafia: 0; `generated|dist`: 0; tipos `*Input` em `src`: 0. NÃO há instância no produto.
+- dono: bloco transversal da `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D1 enumera por (i) ASSINATURA RESOLVIDA da chamada (declaração em `<Model>Delegate`, qualquer sintaxe), (ii) TIPO do argumento `*Create/Update/Upsert/Delete*Input`, (iii) qualquer LITERAL com verbo de escrita + tabela normalizada (aspas/schema/ONLY), (iv) `any`/`unknown` com membro de escrita = negar; superfície = o `include` do `tsconfig` (sem pular `generated`); as 7 formas em `D1′` ficam VERMELHAS e os controles de leitura verdes.
+```
+```
+## P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a `insertMovement` só pela forma `this.x(`; indireção `.call/.apply/.bind`/cast sai do universo — MÉDIA
+- status: ABERTA (idem à anterior; reclassificada no ciclo 3: forma de guard)
+- prova (N = 1 forma, N9): via nova `consumeViaCall` decide pelo saldo ANTES do lock e chega a `insertMovement` por `this.insertMovement.call(this, …)`; D1/D2 verdes; a via aparece só em "NÃO identificação".
+- causa: `analyzeRepository` constrói W por `thisCalls` (chamadas `this.<m>(`), não por referência ao SÍMBOLO `insertMovement`.
+- produto hoje: 7 chamadas a `insertMovement`, 7 diretas (`inventory-prisma.repository.ts:264,282,295,364,456,490`); `.call/.apply/.bind`/cast sobre método de escrita: 0 (u6, u11-r5). NÃO há instância.
+- dono / bloqueia: idem à anterior.
+- teste de encerramento: W = fechamento transitivo das REFERÊNCIAS ao símbolo `insertMovement` (checker), inclusive `.call/.apply/.bind`, cast e alias; a mutação N9 fica VERMELHA em D2 (R1: decide antes do lock).
+
+## P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta pública" do wrapper RLS por `MethodDeclaration`; propriedade-arrow e getter escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N10): `readonly contarSemMapeamento = (tenantId) => withTenantRls(this.prismaClient, tenantId, …)` em `RlsPrismaInventoryRepository`, sem `this.tx` e sem mapeamento 503; D7 verde ("17/17 portas por this.tx").
+- causa: filtro `ts.isMethodDeclaration` (l.1229) e o pino "withTenantRls fora de tx" só em métodos (l.1240-1243).
+- produto hoje: 0 membros propriedade-arrow/getter nas 14 classes do módulo (u7); as 3 arrows do módulo são `resolveService` em `*.routes.ts:31,101` (opção de montagem). NÃO há instância.
+- dono / bloqueia: idem.
+- teste de encerramento: D7 enumera `MethodDeclaration` + `PropertyDeclaration` com inicializador função/arrow + `GetAccessor`/`SetAccessor` (públicos por modificador ou ausência de `private`), e exige `this.tx`/mapeamento 503 em todos; N10 VERMELHA.
+
+## P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status por ORM como classe e a por SQL cru por grafia; schema qualificado + identificadores entre aspas escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N11): `UPDATE "public"."cycle_counts" SET "status" = 'concluida' WHERE tenant_id = … AND id = …` (tagged, sem `status` no WHERE) no repositório dono passa D5/D8; o controle N11b (mesmo UPDATE sem schema) fica vermelho — o pino é textual.
+- causa: D5 reconhece "UPDATE cru da contagem" por regex sobre a grafia da tabela, não pela tabela NORMALIZADA (aspas, schema, `ONLY`).
+- produto hoje: 4 transições, 4 com `status` no WHERE (CAS; l.165, 225, 255, 283) + `create` em `aberta`; UPDATE cru em `cycle_counts` em qualquer literal: 0 (u9, u3, u11-r4). NÃO há instância.
+- dono / bloqueia: idem.
+- teste de encerramento: D5 normaliza o identificador da tabela em SQL cru (remove aspas/schema/`ONLY`, case-insensitive) antes de classificar e exige precondição de `status` no WHERE para todo UPDATE em `cycle_counts`; N11 VERMELHA, N11b continua vermelha.
+
+## P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo (T-C6) só reconhece aspas simples como literal; `"…--"`, `$$…$$` e `E'…'` escondem comando — BAIXA
+- status: ABERTA (nasce na junta do ciclo 2, cadeira C1 `jurado-o6r04a-c2-banco-rls`, achado A1 `ajuste`)
+- prova (N = 3 formas): `stripSqlComments`/`SQL_WRITE_WORD` (`tests/inventory-unique-backstops-db.test.ts:41-74`) descartam o resto da linha a partir de `--` dentro de identificador entre aspas duplas, de `$$…$$` ou de `E'…'` com escape; o Postgres executa (sonda da C1: `DELETE 2`).
+- produto hoje: `scripts/inventory-duplicates-census.sql` tem 0 verbos de escrita, 0 `$$`, 0 `E'`, aspas duplas só em comentário (u13). NÃO esconde nada.
+- dono: idem (ou `B-BAT-01`, se o transversal não nascer antes).
+- bloqueia: não.
+- teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
+```

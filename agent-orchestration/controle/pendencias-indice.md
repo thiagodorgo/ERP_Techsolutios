@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **494** |
-| IDs distintos | 483 |
-| **ABERTAS** | **366** |
+| Cabecalhos `## P-` | **499** |
+| IDs distintos | 488 |
+| **ABERTAS** | **371** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **299** |
+| — das quais **ativas nesta rodada** | **304** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 125 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **494 cabecalhos para 483 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **499 cabecalhos para 488 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 166
+## ABERTAS · balde A — material — 170
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -240,8 +240,12 @@
 | `P-O6R-B04-UI-STATUS-FECHANDO` | 10541 | MÉDIA | sim | P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os |
 | `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` | 10550 | MÉDIA | sim | P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N den |
 | `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` | 10569 | MÉDIA | sim | P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz qu |
+| `P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA` | 10628 | MÉDIA | **a atribuir** | P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de es |
+| `P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER` | 10638 | MÉDIA | **a atribuir** | P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a  |
+| `P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE` | 10646 | MÉDIA | **a atribuir** | P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta públic |
+| `P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU` | 10654 | MÉDIA | **a atribuir** | P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status |
 
-## ABERTAS · balde B — processo/registro — 133
+## ABERTAS · balde B — processo/registro — 134
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -378,6 +382,7 @@
 | `P-LINT-RAIZ-SEM-MJS` | 10500 | BAIXA | sim | P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA |
 | `P-KPI-MARCO-2026-10-09-NOTAS` | 10507 | BAIXA | sim | P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412 |
 | `P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO` | 10616 | BAIXA | sim | P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor  |
+| `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10662 | BAIXA | **a atribuir** | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
