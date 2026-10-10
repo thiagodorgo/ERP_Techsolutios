@@ -1,0 +1,81 @@
+{
+  "junta": "B-O6R-04a — junta do ciclo 2 (PR #389, consistencia do estoque sob concorrencia)",
+  "cadeira": "C3 — integracao, contrato, regressao e registro",
+  "papel": "agente-ci-doutor (permanente; nao votou neste bloco)",
+  "modelo": "Fable (claude-fable-5-1)",
+  "fallback_usado": null,
+  "mandato": "agent-orchestration/omega/juntas/votos/B-O6R-04a/00-mandatos/C3c2.md @ origin/fix/inventory-consistency",
+  "mandato_md5": "0117bf638dcd575fc222fce8fbe0f7a8",
+  "corpo": ".claude/agents/agente-ci-doutor.md @ origin/main",
+  "corpo_md5_eol_neutro": "55979e2cc21a1e6aba6bfe36899454a0",
+  "objeto": "35ef85be26e4ced21b25014ea7302c2fa60288cc",
+  "objeto_resolucao": "git ls-remote origin == git rev-parse origin/fix/inventory-consistency == gh pr view 389 headRefOid; OPEN, draft, MERGEABLE, CLEAN; merge-base = origin/main c1cfdabe (ancestral)",
+  "check_runs": "14/14 completed/success no SHA (ultimo 2026-10-10T08:21:49Z)",
+  "inspetor": "LIBERADO COM RESSALVA (insp-c2-parecer.md, head julgado ae863e1a; delta ae863e1a..35ef85be = 6 arquivos de registro em votos/B-O6R-04a, produto identico)",
+  "regua": "ciclo 2 COMPLETA — unanimidade de 3 com veto; gravidade+escopo em todo achado; pre-existente so com evidencia de data/origem; nao consigo medir = REPROVADO; KPI nao se cobra; nao propoe correcao",
+  "terreno": "worktree proprio detached C:/Users/AMP/w-j389c3 @35ef85be com npm ci proprio (326 pacotes); container j389-c3-runner (erp-junta-node20-pg16:local, psql 16.14) + j389-c3-pg (postgres:16) + j389-c3-redis (redis:7) na rede j389-c3-net, sem porta publicada, banco recriado antes de cada medicao -db; base viva e portas do dono nao tocadas; disco 11G → 9,6G (teto 7G nao atingido)",
+  "itens": {
+    "1_integracao": {
+      "status": "APROVADO",
+      "medido": "git diff origin/main...35ef85be = 126 arquivos (19 codigo = §8+emendas 4-t/5-x; 2 docs/revisoes/O6R; 8 corpos; 97 agent-orchestration); -- Kpis vazio; 0 PROIBIDO; db-catalog-write-guard com as 2 entradas (drill count 4 l.131; san3-05 count 72 l.146) e 5/5 com banco; T13 re-executado: guard verde + gerador 56 chaves sha1 2db380a29bd61272bb3441a13ee5001b3f567d47 = main (t12) = dev; ci.yml +4 SUITES (+5 comentario) na posicao do §8; 14/14 em HC; cherry-picks 3fb275ad≡f06b29e0 e 010742c0≡1c7ade29 por patch-id; 0 chamadas sleep(20) (4 ocorrencias, todas comentario)",
+      "achados": []
+    },
+    "2_contrato_regressao": {
+      "status": "APROVADO",
+      "medido": "7 suites de estoque em memoria 67/67/0; npm test 1x propria, forma canonica 3, banco recriado (108 migracoes): 298 arquivos · 3237 testes · pass 3235 · fail 0 · skipped 2 (RBAC_DB_PARITY x2) · ec 0 · 245 s — denominador 3237 = as 3 rodadas do dev; [D1] nao classificados = 0; [T-D] 788 raizes 33,5 s (margem 17,9x); T15 do #405 verde nesta rodada (14,1 s); codigos novos asseridos como statusCode|reason nas suites -db (T-B/T-A); inventory-cycle-counts-routes +8/-0 conforme emenda 4-(t) (assert 54→55)",
+      "achados": [
+        {
+          "id": "C3-N1",
+          "gravidade": "nota",
+          "escopo": "dentro-do-bloco",
+          "titulo": "os 3 codigos novos (422 entry_already_adjusted, 422 close_in_progress, 409 items_in_open_session) e os 503 stock_busy/cycle_count_busy nao tem assercao em suite de ROTA HTTP em memoria",
+          "evidencia": "git grep dos 5 codigos em 35ef85be -- tests: cycle-count-close-units-db 16, balance-lock-race-db 4, cycle-counts-routes 1 (comentario l.174); items-routes e stock-movements-routes 0. Asseridos como par statusCode|reason nas suites -db (T-B l.524/530/602/621-622/756/772/880-881/1088/1108/1149-1150; T-A l.596/613); o mapeamento statusCode→HTTP e o sendRouteError da main (src/modules/core-saas/routes/http.ts:28-33, intocado; rotas/controller PROIBIDOS e sem diff), provado para a classe pela rota invalid_status_transition→422 (cycle-counts-routes l.94-95).",
+          "por_que_nota": "forma de teste, nao defeito de produto; o contrato esta no plano §5 e API_CONTRACTS.md e PROIBIDO no bloco — ja coberto por P-O6R-B04-CONSUMIDORES-503 e P-O6R-B04-UI-STATUS-FECHANDO"
+        },
+        {
+          "id": "C3-N2",
+          "gravidade": "nota",
+          "escopo": "pre-existente",
+          "evidencia_escopo": "tests/san3-05-runtime-role-guard-db.test.ts byte-identico a origin/main (diff 0); nasceu em a9fbe283 2026-10-09 (#405 B-SAN3-05); pendencia P-SAN3-05-T15-TETO-DE-RELOGIO em origin/main:pendencias.md l.10388-10390 (ABERTA, dono B-ARNES-2)",
+          "titulo": "T15 (boot real) falhou 1/3 no npm test do dev por espera fixa de 10 s sob carga (emenda 7-mm, R7 do inspetor); nesta rodada passou (duration_ms 14140)",
+          "evidencia": "pipeline.log: ok 11 - T15 · boot real recusa super antes do Redis e aceita papel limpo; fail 0 na suite inteira. Nao re-executado para fabricar serie.",
+          "por_que_nota": "classe registrada com dono; nao e do bloco; a ocorrencia do dev entra na pendencia no proximo registro (emenda 7-mm)"
+        }
+      ]
+    },
+    "3_registro": {
+      "status": "APROVADO",
+      "medido": "escopo §8+emendas: 126 arquivos classificados, 0 proibido, git diff --check origin/main...HEAD vazio; errata: 0 frases velhas nos 8 blobs (D6), 8 linhas da frase nova (esperadas), 8 corpos no ls-tree, sync-agent-agents --check OK 49; ata R-B-O6R-04a-ciclo1.md declarada RECONSTITUIDA no titulo e cabecalho, fontes, [A RE-VERIFICAR], placar 1x2, separacao de papeis do ciclo 2; achados.jsonl DAT-002/003 ativo (nota_criterio no 003), REGISTRO fechado NA AUTORIA, paridade+charts 23/23, kpi-freeze em dia; pendencias CENSO/CONSUMIDORES-503/UI-STATUS-FECHANDO/OPEN-NO-TETO/REGISTRO-CICLO1 no pendencias.md e no indice, indice regenerado byte-identico (md5 284ccc00…)",
+      "achados": [
+        {
+          "id": "C3-N3",
+          "gravidade": "nota",
+          "escopo": "dentro-do-bloco",
+          "titulo": "P-O6R-B04-CONSUMIDORES-503 e P-O6R-B04-UI-STATUS-FECHANDO tem dono a designar (B-O6R-04b ou frontend de estoque)",
+          "evidencia": "pendencias.md @35ef85be l.10536 e l.10546; e o texto literal do §13 itens 2 e 3 do plano aprovado — dono interino = orquestrador",
+          "por_que_nota": "registro fiel ao plano; a designacao cabe ao registro pos-merge (passo 6)"
+        },
+        {
+          "id": "C3-N4",
+          "gravidade": "nota",
+          "escopo": "dentro-do-bloco",
+          "titulo": "log-execucao.md sem entrada da retomada de 10/10 (o PR acrescenta so a entrada de 2026-09-20, +156)",
+          "evidencia": "git show 35ef85be:agent-orchestration/codex/log-execucao.md | grep 2026-10-10 → so entradas da main; a trilha da retomada vive em status-geral.md l.3-10, no plano (Retomada + Emenda 1) e nas emendas 6/7 do comando",
+          "por_que_nota": "o passo 6 do plano remete o registro pos-merge ao PR semanal (D-GOV-PROPORCIONAL 3); nada se perde"
+        }
+      ]
+    }
+  },
+  "veredito": "APROVADO",
+  "bloqueia_dentro_do_bloco": 0,
+  "ajustes": 0,
+  "notas": 4,
+  "condicoes_para_a_ata": [
+    "J-B-O6R-04a-ciclo2.md registra quem achou (C1/C2 da junta 1), quem planejou (planejador-mestre / planejador-retomada, Fable) e quem desenvolveu (devs de ciclo 2, bateria e integracao 1/2) — §C7.4-bis",
+    "a ata consigna as quedas de 00-quedas.md (inspetor instancia 1, 429 de sessao) e que a C3 rodou em Fable sem fallback",
+    "a ocorrencia 1/3 do T15 (dev) entra em P-SAN3-05-T15-TETO-DE-RELOGIO no proximo registro (emenda 7-mm)"
+  ],
+  "limpeza": "CONCLUIDA — docker rm -f -v j389-c3-runner j389-c3-pg j389-c3-redis + docker network rm j389-c3-net (pelo nome; nunca prune; 0 containers/redes/volumes j389-c3 restantes; erp-postgres/erp-redis/erp-postgres-alt/pastrack e a imagem erp-junta-node20-pg16:local intocados); git worktree remove --force C:/Users/AMP/w-j389c3 apos conferir processo vivo (nenhum alem desta cadeira) → lista 0, diretorio ausente; disco ao fim 9,5 G livres; logs brutos no scratchpad da sessao (pipeline.log, guards.log, mem7.log, kpi-guards.log, t13-gen.out)",
+  "gravado_em": "2026-10-10T09:33:30Z",
+  "evidencia": "agent-orchestration/omega/juntas/votos/B-O6R-04a/c2-C3-evidencia.md"
+}
