@@ -206,3 +206,85 @@ temporária revertida em `mobile-work-order-sync.ts` (M11). Nenhuma deixou diff.
   instantâneo (R-a2): a chave `MIDDLEWARE … · app` aparece no diff. Proposta para o orquestrador, com dono a decidir pela junta:
   `P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL` — sub-app `express()` montado dentro de `Router` não é descido pelo censo v3; inscrito
   como `MIDDLEWARE`, a escrita dele fica fora do guard.
+
+### S8 — bateria (parte 1)
+
+- `npm run check` → ec=0. `npm run lint` (= `npm run check`, `tsc -p tsconfig.json --noEmit`) → ec=0.
+- Testes da raiz que leem/importam `frontend/src` (gerados por `grep -l frontend tests/*.test.ts` e conferidos um a um:
+  `approval-frontend-contract`, `checklist-editor-blockers-parity`, `san3-04a-menu-front-x-catalogo`; os outros dois que citam
+  "frontend" — `kpi-dashboard-charts`, `operator-profiles` — só o citam em texto) → `# tests 16 · pass 16 · fail 0`.
+- **Régua.** O plano diz "44 suítes" e não as lista; o antecessor registrou a regra e rodou 73. Reaplicando a regra escrita
+  (31 por nome `mobile|evidence|dispatch|checklist|comment|mileage|geocod|o6r07a-wo` + conteúdo com os 17 padrões do passo 3;
+  não-`-db`; sem os `o6r07c-*` novos) dá **76** — não reproduzo as 73, e a diferença de 3 não se explica por filtro óbvio. Em vez
+  de forçar o número, rodei **a mesma lista de 76** no head e na base (mesmo método de troca do `src/`, `md5sum -c` OK):
+  - head → `# tests 873 · pass 870 · fail 0 · skipped 3` (99 s); base (`src/` == `c1cfdabe`, `git diff --quiet c1cfdabe -- src`)
+    → `# tests 873 · pass 870 · fail 0 · skipped 3` (92 s). Os 3 pulos são declarados sem banco: autolink, impound-process-
+    checklist-link-schema, rls-tenant-isolation.
+- **Fixture, classe (i)** (a única tocada): a primeira passada no head deu `fail 1` —
+  `tests/work-order-attachments-routes.test.ts` `[RBAC] upload: field_technician e manager 201…` (`expected 201, actual 403`):
+  a OS do arnês nascia sem atribuição. Correção: atribuir a OS a um técnico de user id UUID cru e gravar com ele (o `assign`
+  exige UUID — a primeira tentativa, atribuir ao `managerA` do registro em memória, deu 400). O que o teste afirma não muda.
+  `# tests 12 · pass 12`. Commit `a0dafa05`. Nenhuma fixture de classe (ii).
+
+### S9 — `npm test` no Windows (forma canônica 3), e por que ele não é a medida final
+
+- `env -u CORE_SAAS_PERSISTENCE DATABASE_URL=<dev07ca-pg 127.0.0.1:47807> REDIS_URL=<dev07ca-redis 127.0.0.1:47808> npm test`
+  (14:28→14:35Z, head `a0dafa05`'s pai `2e8a5711`+fixture = mesma árvore de `src/`) → `[run-backend-tests] 296 arquivo(s) · 3224
+  teste(s) · pass 3216 · fail 6 · skipped 2`, ec=1. Os 2 pulos são os do orçamento (`permission-catalog-db-parity`, `RBAC_DB_PARITY`).
+- Os 6 vermelhos são **de ambiente**, em 2 arquivos `-db` que este bloco não toca: `san3-05-runtime-role-guard-db` (T14a/b, T14c,
+  T14d e o pai — `psql: command not found`, ec 127: não há `psql` no Windows) e `san3-09-bootstrap-platform-admin-db` (T2.1 e o
+  pai — chama o `prisma` por bash; o contrato desse T2 é "só em container Linux próprio"). Por isso a medida final do `npm test`
+  é a do container (S10).
+- Os do bloco, dentro dessa rodada: guard 15/15 de topo (o censo levou 135–143 s sob a suíte paralela, contra 64 s sozinho),
+  vias 24/24, `-db` 6/6.
+
+### S10 — `npm test` em container Linux próprio (a medida final)
+
+- Terreno (adaptação, no scratchpad, dos passos 1–4 da `C:/Users/AMP/erp-terreno/receita-pg16.sh`): rede `dev07ca-net`,
+  `dev07ca-npg` (`postgres:16`, 16.14), `dev07ca-nredis` (`redis:7`), `dev07ca-node` (`erp-junta-node20-pg16:local`: node
+  v20.20.2, npm 10.8.2, psql 16.14) — **nenhuma porta publicada**. Árvore do head `a0dafa05` por
+  `git -c core.autocrlf=false archive` direto no container; conferência de **todos** os blobs (sha1 de `blob <n>\0<bytes>` × `ls-tree`):
+  `blobs=3869 byte_identicos=3869`. `npm ci` ec=0, `prisma generate` ec=0, `prisma migrate deploy` ec=0 (107 migrations).
+  Senha do Postgres aleatória, passada só por nome de variável (`-e DATABASE_URL`); 0 ocorrência dela nos logs.
+- **Rodada 1:** `296 arquivo(s) · 3218 teste(s) · pass 3201 · fail 15 · skipped 2`. 13 das 15 eram o guard:
+  `spawnSync git ENOENT` — o `sync-v3.mts` do Apêndice A (verbatim, portado sem mudar o algoritmo) chama `git ls-files src`, e a
+  árvore da receita não tem `.git` nem a imagem tem `git`. **Artefato do terreno**, não do produto: no CI o `actions/checkout`
+  deixa `.git` e `git`. As outras 2 eram o T15 do #405 (abaixo).
+- Conserto do terreno (não do código): `apt-get install git` no meu container e `git init && git add -A` em `/work` (o índice da
+  própria árvore extraída). Conferido: `git ls-files` = 3869 = `ls-tree` do host; `git ls-files src` = 779 e a lista é **idêntica**
+  à do host (`diff` vazio). Banco recriado (`DROP … WITH (FORCE)` + `CREATE` + `migrate deploy` 107) e Redis `FLUSHALL`.
+- **Rodada 2 (forma canônica 3, `CORE_SAAS_PERSISTENCE` ausente):** `[run-backend-tests] 296 arquivo(s) · 3234 teste(s) ·
+  pass 3230 · fail 2 · skipped 2`, ec=1 (14:44→14:50Z). Os 2 pulos são os do orçamento (`permission-catalog-db-parity`,
+  `RBAC_DB_PARITY`). Os do bloco: guard 15/15 de topo + 16/16 subtestes do T12 (censo 166–169 s sob a suíte), vias 24/24, `-db` 6/6.
+- **As 2 falhas = `pre-existente` (`P-SAN3-05-T15-TETO-DE-RELOGIO`), não ajustadas:** `san3-05-runtime-role-guard-db` T15
+  ("processo filho não encerrou em 7894ms"; na rodada 1, 8861ms) e o arquivo-pai. Evidência de origem: o bloco não toca arquivo
+  nenhum do san3-05 (`git diff --name-only origin/main...HEAD | grep -c san3-05` = 0); o mesmo arquivo **sozinho** no mesmo
+  container → `# tests 12 · pass 12 · fail 0`, T15 verde. É teto de relógio sob a carga da suíte inteira.
+- **Observação para a junta (fato medido, não achado):** o guard exige `git` e um índice do repositório no ambiente em que roda.
+
+### S11 — build, diff, escopo e limpeza
+
+- `npm run build` (`tsc -p tsconfig.json`) → ec=0. `git diff --check` (árvore) ec=0; `git diff --check origin/main...HEAD` ec=0.
+- Escopo (`git diff --name-only origin/main...HEAD`, `origin/main` = `c1cfdabe`): 22 arquivos, todos no PERMITIDO do 07c-a.5 (o
+  plano e as críticas são dos commits do planejador); PROIBIDO (lista do plano gerada por regex) → vazio; `Kpis/` intocado.
+  `work-order.service.ts` só em `geocodeById`, `geocodeDestinationById`, `getForMutation` (novo) e `setMileage`.
+  `tests/work-order-attachments-routes.test.ts` = a única fixture da régua (classe (i), S8).
+- `node scripts/sync-agent-agents.mjs --check`: não se aplica (a fábrica não criou corpo neste bloco).
+- Limpeza §C5: `dist/` (5,8 MB, do meu build) e 57 diretórios de `storage/checklist-attachments/` (56 UUID + `ten_000001`, 278 KB,
+  das passadas de suíte) removidos por `rm -rf` caminho a caminho — sem `git clean`; o `.gitkeep` rastreado fica. Containers
+  `dev07ca-node`, `dev07ca-npg`, `dev07ca-nredis`, `dev07ca-pg`, `dev07ca-redis` removidos com `-v`, rede `dev07ca-net` removida;
+  conferido: 0 container e 0 rede `dev07ca`. 0 `o6r07c-*` em `%TEMP%`. Worktree mantido. `erp-postgres`/`erp-redis`, as portas do
+  dono e os `j389c3-*` do Codex nunca foram alvo. Disco no fim: 12 GB livres.
+
+### Fecho do sucessor
+
+- **Vias fechadas (10):** anexo POST/DELETE, comentário POST/PATCH/DELETE, tag POST/DELETE, geocode, geocode-destination e
+  `work_order.mileage` pelo sync — todas por `getForMutation` (= `get` + `assertMutationObjectScope` do 07a, corpo intocado).
+- **Propostas de registro para o orquestrador** (não gravei em `controle/`: o registro é dele):
+  1. `P-O6R-07CA-DB-FORA-DA-LISTA-CI` — o `-db` novo não está na lista curada do job `backend-postgres` (`.github/**`, proibido
+     ao bloco); no job `backend` ele se declara pulado.
+  2. `P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL` — S7 (MG3b): `express()` montado dentro de `Router` não é descido pelo censo v3;
+     inscrito como `MIDDLEWARE`, a escrita dele fica fora do guard. Medido; algoritmo não alterado.
+  3. `P-SAN3-05-T15-TETO-DE-RELOGIO` — `pre-existente`, S10.
+  4. Régua: "44" do plano × 73 do antecessor × 76 pela regra escrita — a lista usada (76) está no scratchpad do sucessor e é
+     regenerável pela regra do S8.
