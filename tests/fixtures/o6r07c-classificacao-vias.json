@@ -1,0 +1,1874 @@
+{
+ "MIDDLEWARE / · corsMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE / · helmetMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE / · jsonParser": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE / · result": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1 · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 114
+ },
+ "MIDDLEWARE /api/v1 · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 56
+ },
+ "MIDDLEWARE /api/v1/auth/identity-links · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/me · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/me · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/navigation · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 2
+ },
+ "MIDDLEWARE /api/v1/navigation · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/platform · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/sessions · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/sessions · tenantContextMiddleware": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/attachments/:attachmentId": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/auth/identity-links/:id": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/cheques/:chequeId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/damages/:damageId/attachments/:attachmentId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/financial-accounts/:financialAccountId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/financial-entries/:financialEntryId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/financial-titles/:financialTitleId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/fines/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/fuel-logs/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/impound-processes/:processId/spot": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/insurance-policies/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/maintenance-orders/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/maintenance-orders/:maintenanceOrderId/items/:itemId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/notifications/scheduled/:scheduledNotificationId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/notifications/scheduled/central/:scheduledNotificationId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/professional-statements/:groupId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/service-quotes/:serviceQuoteId/items/:itemId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/teams/:teamId/members/:userId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/tenant/checklists/:checklistId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/work-orders/:workOrderId/attachments/:attachmentId": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/work-orders/:workOrderId/comments/:commentId": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA DELETE /api/v1/work-orders/:workOrderId/financial-items/:itemId": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA GET /api/v1/approvals/:approvalId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/approvals/pending": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/attachments": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/attachments/:attachmentId/download": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/audit-events": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/auth/identity-links": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/authority-credentials": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/branches": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/branches/:branchId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/cheques": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/cheques/:chequeId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/basis-events": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/calculations": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/calculations/mine": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/policies": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/statements": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/statements/my-summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/commissions/statements/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/customers": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/customers/:customerId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/cycle-counts": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/cycle-counts/:cycleCountId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/damages": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/damages/:damageId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/damages/:damageId/attachments": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/damages/:damageId/attachments/:attachmentId/download": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/dashboard/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/expense-categories": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/expense-policies": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/expense-reports": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/expense-reports/:reportId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/field-locations/history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/field-locations/latest": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-accounts": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-accounts/:financialAccountId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-accounts/:financialAccountId/balance": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-entries": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-entries/:financialEntryId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-periods": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-periods/:period": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-titles": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-titles/:financialTitleId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fines": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fines/:fineId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fines/:id/payable": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fuel-logs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fuel-logs/:fuelLogId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/fuel-logs/:id/payable": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/health": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/health/ready": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/health/worker": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/auction": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/auction/settlement": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/charges": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/charges/statement": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/checklist-runs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/custody-history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/events": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/inspection": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/notifications": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/release": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/verify": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/insurance-policies": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/insurance-policies/:id/payable": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/insurance-policies/:insurancePolicyId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/inventory-items": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/inventory-items/:itemId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/inventory-items/:itemId/custody-summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/jurisdiction-defaults": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/jurisdiction-profiles": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/jurisdiction-profiles/:profileId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/maintenance-orders": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/maintenance-orders/:id/payable": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/maintenance-orders/:maintenanceOrderId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/maintenance-orders/:maintenanceOrderId/items": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/maintenance-orders/odometer-suggestion": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/me": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/me/tenants": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/bootstrap": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/checklist-runs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/checklist-runs/:runId/attachments/:attachmentId/download": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/checklist-runs/:runId/comparison": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/checklists/:checklistId/render": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/checklists/available": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/inventory/availability": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/navigation/menu": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/notifications": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/notifications/scheduled": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/notifications/scheduled/:scheduledNotificationId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/notifications/scheduled/central": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/notifications/unread-count": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/dispatches": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/dispatches/:dispatchId": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/dispatches/:dispatchId/timeline": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/field-events/health": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/field-events/stream": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/technician-performance": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operations/work-orders-timeseries": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operator-profiles": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/operator-profiles/:profileId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/patios/dashboard/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charge-rules": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charge-rules/:ruleId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charges/calculation-runs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charges/calculation-runs/:runId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charges/calculation-runs/:runId/tenant-charges": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-charges/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-cost-allocations/runs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-cost-allocations/runs/:runId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-cost-allocations/runs/:runId/tenant-allocations": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-cost-allocations/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-costs/imports": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-costs/imports/:importId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-costs/line-items": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-costs/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-usage/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-usage/tenants/:tenantId/daily": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/cloud-usage/tenants/:tenantId/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/tenants": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/tenants/:tenantId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/tenants/:tenantId/detail": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/tenants/:tenantId/modules": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/pois": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/pois/:poiId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/price-tables": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/price-tables/:priceTableId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/professional-statements": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/professional-statements/:groupId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/roles": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/roles/:role": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/service-catalog": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/service-catalog/:serviceId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/service-quotes": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/service-quotes/:serviceQuoteId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/service-quotes/:serviceQuoteId/items": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/sessions": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/sessions/access-history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/stock-movements": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/stock-movements/:movementId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/suppliers": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/suppliers/:supplierId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tags": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tags/:tagId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tariffs": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tariffs/:tariffId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/teams": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/teams/:teamId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/telemetry/access": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/telemetry/devices": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/telemetry/km": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/telemetry/refusals": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/telemetry/track": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant-settings": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant-settings/:key": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant/checklist-components": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant/checklists": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant/checklists/:checklistId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenant/checklists/templates": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenants": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/tenants/:tenantId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/users": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/users/:userId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/vehicle-identities": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/vehicle-identities/:identityId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/vehicles": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/vehicles/:vehicleId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/attachments": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/attachments/:attachmentId/download": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/audit-logs": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/comments": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/financial-items": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/map-start-points": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/work-orders/:workOrderId/timeline": {
+  "classe": "LEITURA-OS",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yard-areas/:areaId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yard-areas/:areaId/spots": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yard-spots/:spotId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yards": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yards/:yardId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yards/:yardId/areas": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/yards/:yardId/occupancy": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/branches/:branchId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/cheques/:chequeId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/customers/:customerId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/cycle-counts/:cycleCountId/entries/:entryId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/damages/:damageId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/expense-reports/:reportId": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/financial-accounts/:financialAccountId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/financial-entries/:financialEntryId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/financial-entries/:financialEntryId/reconcile": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/financial-titles/:financialTitleId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/financial-titles/:financialTitleId/status": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/fines/:fineId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/fuel-logs/:fuelLogId": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/impound-processes/:processId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/insurance-policies/:insurancePolicyId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/inventory-items/:itemId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/jurisdiction-profiles/:profileId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/maintenance-orders/:maintenanceOrderId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/maintenance-orders/:maintenanceOrderId/items/:itemId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/mobile/checklist-runs/:runId": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/reassign": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/status": {
+  "classe": "DESPACHO·07c-b",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/operator-profiles/:profileId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/cloud-charge-rules/:ruleId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/tenants/:tenantId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/tenants/:tenantId/modules": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/tenants/:tenantId/status": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/pois/:poiId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/price-tables/:priceTableId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/professional-statements/:groupId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/service-catalog/:serviceId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/service-quotes/:serviceQuoteId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/service-quotes/:serviceQuoteId/items/:itemId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/service-quotes/:serviceQuoteId/status": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/suppliers/:supplierId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/tags/:tagId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/tariffs/:tariffId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/teams/:teamId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/tenant/checklists/:checklistId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/users/:userId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/vehicle-identities/:identityId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/vehicles/:vehicleId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId": {
+  "classe": "OS·07a",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId/checklists": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId/comments/:commentId": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId/financial-items/:itemId": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId/mileage": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/work-orders/:workOrderId/status": {
+  "classe": "OS·07a",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/yard-areas/:areaId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/yard-spots/:spotId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/yards/:yardId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/approvals/:approvalId/approve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/approvals/:approvalId/reject": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/attachments": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/auth/active-tenant": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/auth/identity-links": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/auth/login": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/auth/logout": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/auth/refresh": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/authority-credentials": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/authority-credentials/:credentialId/revoke": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/authority-credentials/:credentialId/rotate-password": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/authority-credentials/:credentialId/suspend": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/branches": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques/:chequeId/bounce": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques/:chequeId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques/:chequeId/clear": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques/:chequeId/deposit": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/commissions/basis-events": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/commissions/policies": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/commissions/settlements": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/customers": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cycle-counts": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cycle-counts/:cycleCountId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cycle-counts/:cycleCountId/close": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/damages": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/damages/:damageId/attachments": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/expense-reports": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/expense-reports/:reportId/items": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/expense-reports/:reportId/submit": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-accounts": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-entries": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-entries/:financialEntryId/reverse": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-periods/:period/close": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-periods/:period/reopen": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-titles": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/financial-titles/:financialTitleId/pay": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/fines": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/fines/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/fuel-logs": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/fuel-logs/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/appraisal": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/attempts": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/close": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/default": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/edicts": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/eligibility": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/lot": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/prep": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/reclaim": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/reclassify-scrap": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/reclassify-unrecoverable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/sale": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/settlement": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/settlement/claim-balance": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/auction/settlement/revert-funset": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/charges": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/charges/settle": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/inspection/complete": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/inspection/photos": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/link-checklist-run": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/notifications/:notificationId/issue": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/notifications/:notificationId/waive": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/approve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/checks": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/consume": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/for-repair/return": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/for-repair/start": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/recipient": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/release/start": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/spot": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/spot/move": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/impound-processes/:processId/transitions": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/insurance-policies": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/insurance-policies/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/inventory-items": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/inventory-items/abc-recalculate": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/jurisdiction-profiles": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/maintenance-orders": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/maintenance-orders/:id/payable": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/maintenance-orders/:maintenanceOrderId/items": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/acknowledgement": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/attachments": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/complete": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/divergence": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/markers": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/checklist-runs/:runId/reopen": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/evidence-uploads": {
+  "classe": "EVIDENCIA-OS·07c-b",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/field-locations": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/sync/checklist-actions": {
+  "classe": "LOTE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/sync/evidence-actions": {
+  "classe": "LOTE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/sync/expense-actions": {
+  "classe": "LOTE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/sync/inventory-actions": {
+  "classe": "LOTE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/sync/work-order-actions": {
+  "classe": "LOTE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/telemetry": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/notifications/:notificationId/archive": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/notifications/:notificationId/read": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/notifications/fleet-alerts/run": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/notifications/read-all": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/notifications/scheduled": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/operations/dispatches": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/operator-profiles": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/cloud-charge-rules": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/cloud-charges/calculation-runs": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/cloud-cost-allocations/runs": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/cloud-costs/imports/manual-csv": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/tenants": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/tenants/:tenantId/admin-user": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/pois": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/price-tables": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/professional-statements": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/service-catalog": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/service-quotes": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/service-quotes/:serviceQuoteId/approve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/service-quotes/:serviceQuoteId/items": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/service-quotes/:serviceQuoteId/share": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/sessions/:id/revoke": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/stock-movements": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/stock-movements/:movementId/reverse": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/suppliers": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/tags": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/tariffs": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/teams": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/teams/:teamId/members": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/tenant/checklists": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/tenant/checklists/:checklistId/publish": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/users": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/vehicle-identities": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/vehicle-identities/:identityId/unmerge-admin": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/vehicle-identities/:targetId/merge": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/vehicles": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/assign": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/attachments": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/cancel": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/comments": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/duplicate": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/financial-items": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/geocode": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/geocode-destination": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "ROTA POST /api/v1/work-orders/:workOrderId/invoice": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "ROTA POST /api/v1/yard-areas/:areaId/spots": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/yards": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/yards/:yardId/areas": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/impound-processes/:processId/inspection": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/tenant-settings/:key": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTEADOR /api/v1": {
+  "classe": "ROTEADOR",
+  "n": 59
+ },
+ "ROTEADOR /api/v1/audit-events": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/auth": {
+  "classe": "ROTEADOR",
+  "n": 2
+ },
+ "ROTEADOR /api/v1/fines": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/fuel-logs": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/insurance-policies": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/maintenance-orders": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/navigation": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/platform": {
+  "classe": "ROTEADOR",
+  "n": 2
+ },
+ "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/platform/cloud-costs": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/platform/cloud-usage": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/roles": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/tenants": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/users": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.assign": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.create": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.mileage": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.status_change": {
+  "classe": "OS·07a",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.acknowledgement_create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.attachment_attach": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.complete": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.divergence_create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_answer": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_note": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.marker_create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist.run_create": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_acknowledgement.create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_attachment.attach": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_divergence.create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_marker.create": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.complete": {
+  "classe": "VISTORIA·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.create": {
+  "classe": "OS·SEM-ALCANCE",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/inventory-actions · inventory.consume": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/inventory-actions · inventory.reserve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/inventory-actions · inventory.shortage_report": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.field_observation": {
+  "classe": "N",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.field_photo": {
+  "classe": "N",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.field_signature": {
+  "classe": "N",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_observation": {
+  "classe": "EVIDENCIA-OS·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_photo": {
+  "classe": "EVIDENCIA-OS·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_signature": {
+  "classe": "EVIDENCIA-OS·07c-b",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/expense-actions · expense_item.create": {
+  "classe": "R",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/expense-actions · expense_report.create": {
+  "classe": "R",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/expense-actions · expense_report.submit": {
+  "classe": "R",
+  "n": 1
+ }
+}
