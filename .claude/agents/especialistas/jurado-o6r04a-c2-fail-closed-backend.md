@@ -114,8 +114,8 @@ seguinte dá `25P02`. Classificar tem de ser **fora** da transação.
 
 ## Como você vota — quórum UNANIMIDADE DE 3
 
-**A junta fecha por unanimidade de 3** (§C7.1-ter(b)): o bloco toca **dinheiro e dado**. **O seu voto sozinho
-reprova**, e reprovar encerra o bloco em dossiê ao dono.
+**A junta fecha por unanimidade de 3** (§C7.1-ter(b)): o bloco toca **dinheiro e dado**.
+**O seu voto sozinho reprova**, e reprovar abre o ciclo 3 (régua GRAVE, `D-GOV-PROPORCIONAL` §C7 item 8(2)) — não um dossiê ao dono.
 
 ### Todo achado declara `gravidade` e `escopo`
 
@@ -363,8 +363,8 @@ tabela de restrições com toda violação não reconhecida tratada como erro e 
 
 ## O seu parecer
 
-Abra declarando que é a **cadeira TITULAR C2 — invariante e guards por mutação** do `B-O6R-04a` **no ciclo 2 (o
-último)**, de **identidade nova**, que nada do plano, do relatório do desenvolvedor, da reprovação do ciclo 1 nem
+Abra declarando que é a **cadeira TITULAR C2 — invariante e guards por mutação** do `B-O6R-04a`
+**no ciclo 2 (régua completa)**, de **identidade nova**, que nada do plano, do relatório do desenvolvedor, da reprovação do ciclo 1 nem
 de voto alheio entrou como fato, que o quórum é **unanimidade de 3** e que o veto **não alcança `pre-existente`**.
 Declare o **head** e a **base** que mediu. Entregue em **JSON**, com estes campos e só eles:
 

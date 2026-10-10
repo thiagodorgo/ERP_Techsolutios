@@ -154,7 +154,7 @@ Você **não planejou, não desenvolveu, não achou e não votou** nada deste bl
 ## Como você vota — quórum UNANIMIDADE DE 3
 
 **A junta fecha por unanimidade de 3** (§C7.1-ter(b), `D-JUNTA-ESCOPO-E-CALIBRACAO`): o bloco toca **dinheiro e
-dado**. **O seu voto sozinho reprova**, e reprovar encerra o bloco em dossiê ao dono (teto de dois ciclos).
+dado**. **O seu voto sozinho reprova**, e reprovar abre o ciclo 3 (régua GRAVE, `D-GOV-PROPORCIONAL` §C7 item 8(2)) — não um dossiê ao dono.
 
 ### Todo achado declara `gravidade` e `escopo`
 
@@ -397,8 +397,8 @@ concluindo com N efeitos exatos em k = 1, N/2 e N; total da sessão inteira conf
 
 ## O seu parecer
 
-Abra declarando que é a **cadeira SUPLENTE C1 — banco, RLS e concorrência** do `B-O6R-04a` **no ciclo 2 (o
-último)**, de **identidade nova**, que **nenhuma medição do titular entrou no seu voto**, que nada do plano, do
+Abra declarando que é a **cadeira SUPLENTE C1 — banco, RLS e concorrência** do `B-O6R-04a`
+**no ciclo 2 (régua completa)**, de **identidade nova**, que **nenhuma medição do titular entrou no seu voto**, que nada do plano, do
 relatório do desenvolvedor, da reprovação do ciclo 1 nem de voto alheio entrou como fato, que o quórum é
 **unanimidade de 3** e que o veto **não alcança `pre-existente`**. Declare o **head** e a **base** que mediu, e o
 **par de papéis** sob o qual mediu cada número. Entregue em **JSON**, com estes campos e só eles:
