@@ -44,7 +44,8 @@ export class WorkOrderCommentService {
   // Cria o comentário e (opcional) associa tag_ids. As tags são VALIDADAS antes da criação (422
   // tag_not_found se alguma não existe/ativa) para nunca deixar um comentário órfão.
   async addComment(actor: WorkOrderCommentActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrderCommentWithTags> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    // B-O6R-07c-a — escopo por objeto ANTES do parse: o técnico de campo só comenta na OS dele.
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
     const message = parseComment(body.message ?? body.text ?? body.comment);
     const tagIds = parseOptionalTagIds(body.tag_ids ?? body.tagIds);
 
@@ -67,7 +68,9 @@ export class WorkOrderCommentService {
 
   // Editar = PATCH message (carimba editedAt). Autor OU work_orders:update; senão 403.
   async editComment(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string, body: RawRecord): Promise<WorkOrderCommentWithTags> {
-    const current = await this.getComment(actor, workOrderId, commentId);
+    // B-O6R-07c-a — escopo por objeto da OS ANTES de buscar o comentário; a moderação (D-Ω3F-5-COMMENT) vem depois.
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
+    const current = await this.findComment(actor, workOrder.id, commentId);
     assertCanMutate(actor, current);
     const message = parseComment(body.message ?? body.text ?? body.comment);
     const updated = await this.repository.updateMessage({
@@ -84,7 +87,8 @@ export class WorkOrderCommentService {
 
   // Excluir = delete LÓGICO (deletedAt). Autor OU work_orders:update; senão 403. Re-delete → 404.
   async deleteComment(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string): Promise<void> {
-    const current = await this.getComment(actor, workOrderId, commentId);
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
+    const current = await this.findComment(actor, workOrder.id, commentId);
     assertCanMutate(actor, current);
     const removed = await this.repository.softDelete(actor.tenantId, current.workOrderId, current.id);
     if (!removed) {
@@ -95,7 +99,8 @@ export class WorkOrderCommentService {
   // Attach de tag a um comentário existente (404 se o comentário não existe/deletado/cross-tenant;
   // 422 tag_not_found; 409 duplicate_tag_assignment). Autor OU work_orders:update.
   async attachTag(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string, tagId: string): Promise<WorkOrderCommentWithTags["tags"]> {
-    const comment = await this.getComment(actor, workOrderId, commentId);
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
+    const comment = await this.findComment(actor, workOrder.id, commentId);
     assertCanMutate(actor, comment);
     await this.tagAssignments.attach(actor, COMMENT_ENTITY_TYPE, comment.id, parseRequiredUuid(tagId, "tagId"));
     return this.tagAssignments.listForEntity(actor, COMMENT_ENTITY_TYPE, comment.id);
@@ -103,7 +108,8 @@ export class WorkOrderCommentService {
 
   // Detach de tag = HARD-delete da associação (404 se não existir). Autor OU work_orders:update.
   async detachTag(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string, tagId: string): Promise<void> {
-    const comment = await this.getComment(actor, workOrderId, commentId);
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
+    const comment = await this.findComment(actor, workOrder.id, commentId);
     assertCanMutate(actor, comment);
     await this.tagAssignments.detach(actor, COMMENT_ENTITY_TYPE, comment.id, parseRequiredUuid(tagId, "tagId"));
   }
@@ -118,21 +124,34 @@ export class WorkOrderCommentService {
     try {
       return await this.workOrderService.get(actor, workOrderId);
     } catch (error) {
-      if (error instanceof WorkOrderError && error.statusCode === 404) {
-        throw commentNotFoundError();
-      }
-      throw error;
+      throw toCommentWorkOrderError(error);
     }
   }
 
-  private async getComment(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string): Promise<WorkOrderComment> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
-    const comment = await this.repository.findById(actor.tenantId, workOrder.id, parseRequiredUuid(commentId, "commentId"));
+  // B-O6R-07c-a — a OS para ESCREVER: `getForMutation` (404 do cross-tenant + escopo por objeto do 07a). A conversão
+  // do 404 é a mesma de `assertWorkOrder`; o 403 `not_assigned_to_actor` atravessa como está.
+  private async assertWorkOrderForMutation(actor: WorkOrderCommentActorContext, workOrderId: string) {
+    try {
+      return await this.workOrderService.getForMutation(actor, workOrderId);
+    } catch (error) {
+      throw toCommentWorkOrderError(error);
+    }
+  }
+
+  private async findComment(actor: WorkOrderCommentActorContext, workOrderId: string, commentId: string): Promise<WorkOrderComment> {
+    const comment = await this.repository.findById(actor.tenantId, workOrderId, parseRequiredUuid(commentId, "commentId"));
     if (!comment) {
       throw commentNotFoundError();
     }
     return comment;
   }
+}
+
+function toCommentWorkOrderError(error: unknown): unknown {
+  if (error instanceof WorkOrderError && error.statusCode === 404) {
+    return commentNotFoundError();
+  }
+  return error;
 }
 
 // Autor OU quem tem work_orders:update (D-Ω3F-5-COMMENT). A rota já exige work_orders:comment.

@@ -62,3 +62,39 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
   - S-ANX `DELETE do anexo alheio veio 204`; S-KM `ação accepted`; S-KM-RESTART `2º reenvio veio accepted` (o 1º, `already_applied`, já passa); S-COM `comentar veio 201`; S-GEO `origem veio 409 already_geocoded`; S-ORDEM `veio 400 multipart_required`.
 - Verdes na base (controle, como o plano prevê): o laço G das 3 entradas do 07a (regressão), S-MOD, S-XT, S-DUAL, S-ROLES, e o teste de não-vazio do laço.
 - **Estado:** vermelho-controle registrado.
+
+## Sucessor
+
+> **Identidade:** `dev-b-o6r-07c-a-sucessor` (nova), Claude Opus 5.5. O `dev-b-o6r-07c-a` caiu pelo limite de sessão
+> no meio da implementação. Termino o 07c-a ao pé do plano v3; não replanejo, não julgo achado, não voto.
+> **Ambiente:** Windows 11, Git Bash (MINGW64_NT-10.0-22631), Node v20.19.5, worktree `C:/Users/AMP/w-07ca`, `npm ci`
+> próprio do antecessor (sem junction). Nada exportado por conveniência; `DATABASE_URL`/`REDIS_URL` só inline.
+
+### S0 — o que herdei, medido (P3)
+
+- `git rev-parse HEAD` = `git rev-parse origin/fix/o6r07c-subresource-scope` (após `git fetch`) = `99c5912d28293d5e369988a7e2866b43c17cfcd7`.
+- `git status --short` → 5 ` M` não commitados: `API_CONTRACTS.md`, `work-order-comment.service.ts`,
+  `work-order-attachment.controller.ts`, `work-order-attachment.service.ts`, `work-order.service.ts`.
+- `diff <(tr -d '\r' < erp-pausa-2026-10-03/07ca-wip-nao-commitado.patch) <(git diff | tr -d '\r')` → vazio: o
+  diff vivo é o salvo pelo orquestrador.
+- `df -h /c` → 17 GB livres. `node_modules` presente (222 entradas) e `node_modules/.prisma/client` gerado.
+  `docker ps -a` → só `erp-postgres`/`erp-redis` (do dono) e dois parados alheios; nenhum `dev07ca-`.
+- Falta no ramo: `tests/o6r07c-subresource-scope-db.test.ts` (o `-db` do 07c-a.4) — não nasceu no `99c5912d`.
+
+### S1 — conferência do WIP contra o 07c-a.2 (leitura do diff, item a item)
+
+- `work-order.service.ts`: `getForMutation` = `get` → `assertMutationObjectScope` (corpo do 07a intocado) → OS. ✔
+  `setMileage` troca `this.get` por `getForMutation` ✔. `geocodeById`/`geocodeDestinationById` trocam
+  `parseRequiredUuid`+`findById` por `getForMutation` (mesmo 404 `WORK_ORDER_NOT_FOUND`/`not_found`, o `get` já faz
+  `parseRequiredUuid`) — escopo antes do 409/422 ✔. `update`/`changeStatus` sem mudança ✔.
+- `work-order-attachment.service.ts`: `assertCanMutate` exposto; `createUploadedAttachment` e `deleteAttachment` por
+  `assertWorkOrderForMutation` (= `getForMutation` + a conversão 404 → `work_order_not_found` de `assertWorkOrder`) ✔;
+  listar e baixar seguem em `get` ✔. **Corrigido:** o JSDoc do upload (Ω3-d) tinha ficado órfão acima do
+  `assertCanMutate`; voltou para cima do `createUploadedAttachment` (só comentário; CRLF preservado, 241/241).
+- `work-order-attachment.controller.ts`: `assertCanMutate` antes do teste de multipart e do parse ✔.
+- `work-order-comment.service.ts`: as 5 escritas passam por `assertWorkOrderForMutation` antes de `parseComment` e da
+  busca do comentário; `assertCanMutate` (D-Ω3F-5-COMMENT) intacto logo depois; `listComments` em `get` ✔.
+- `API_CONTRACTS.md`: só as linhas de anexo, comentário, geocode e `/mobile/sync/work-order-actions` ✔.
+- Fábricas: anexo e comentário usam `createDefaultWorkOrderService`/`createMemoryWorkOrderService`, ambas com
+  `createDefaultReferenceResolvers()` → o `resolveActorOperatorProfileId` do 07a chega a `getForMutation` ✔.
+- **Estado:** WIP mantido inteiro (nada descartado), com a correção de comentário acima.
