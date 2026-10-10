@@ -234,7 +234,9 @@
 - impacto: telas de PLATAFORMA (fora do AppShell do tenant) e persona de login demo — nao violam o D-007
   operacional do tenant, mas sao dados estaticos que eventualmente devem virar reais (mesmo espirito do
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
-- status: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
+- status: FECHADA — B-SAN3-06b removeu os eventos e indicadores fabricados da Auditoria Global; a persona do login em modo demonstração é intencional e não é dado operacional da tela.
+- evidência: `PlatformAuditPage.tsx` é parada honesta; T21–T22 e o gerador `san3-06b-literais-de-plataforma.mjs` provam ausência de linhas e números fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformAuditPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:18` (T22), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:79` (T33).
+- histórico: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
   login e intencional em modo mock). Nao bloqueia F6."
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: a Auditoria Global da plataforma exibe trilha e contagens inventadas ("0 incidentes") sem rótulo de demonstração; bloqueia a demonstração do console.
 
@@ -591,7 +593,8 @@
 #### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE
 - descricao: a organização `platform` criada pelo bootstrap aparece no console como se fosse cliente; precisa de tratamento visual e operacional próprio.
 - acao: cobrir na tela de Organizações/Detalhe do B-SAN3-06a ou bloco equivalente.
-- status: aberto
+- status: FECHADA — a organização de sistema continua visível, recebe selo próprio, não possui ação de cliente e é excluída das métricas de clientes nas duas telas.
+- evidência: T41–T43 validam lista, Visão Geral e igualdade com `PLATFORM_TENANT_SLUG` do bootstrap; o Detalhe usa a mesma constante. Ponteiros: `frontend/src/modules/platform/platform-overview.types.ts:12` (`PLATFORM_SYSTEM_ORG_SLUG`), `frontend/src/modules/platform/pages/PlatformTenantDetailPage.tsx:8`, `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:132` (T41), `:148` (T42), `:156` (T43).
 - severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
 - dono: B-SAN3-06b
 - adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
@@ -1699,6 +1702,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   (agentes devops/observabilidade). So entao a tela ganha indicadores reais. Requer decisao de provedor/infra (possivel junta
   + PD se envolver servico tarifado).
 - status: ABERTA (parada honesta entregue; monitoramento real e trabalho de infra futuro).
+- parcial (2026-10-09): readiness real de Postgres, Redis e Worker ligado pela entrega do console; uptime, p95, profundidade de fila, integrações e backup continuam sem fonte e mantêm selo honesto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -8464,7 +8468,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com selo "IA"; dados e rotas órfãos — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Cloud Billing passou a consumir os cinco GETs reais por período, estritamente em leitura e sem dado monetário fabricado.
+- evidência: T10–T20 e T45; gerador de literais retorna 0 sítios; T44 prova que funções de escrita não chegam à página. Ponteiros: `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:35` (`getCloudBilling`), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:130` (T15), `:228` (T45), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:166` (T44).
 - **fonte (fatia AUSENTES, §2a):** sintese B1-B3, C1 (selo), C2 (registry), D8
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`: 245 l., 0 `useEffect/useState/await/fetch/.service`, 0 `onClick`, literal "48,2k", selo `IA` l.181, insights literais l.62; `cloud-billing.{adapter,service,mock}.ts` sem página importadora; `src/modules/navigation/navigation.registry.ts:41` `status: "implemented"`
@@ -8568,7 +8573,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e lista de Organizações exibem dado inventado — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Organizações consome o resumo real; Planos e Módulos, Auditoria Global e APIs e Credenciais são paradas honestas sem linhas ou números inventados.
+- evidência: T1–T9 e T21–T28; geradores de telas e literais retornam 0 telas sem fonte e 0 sítios fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformTenantsPage.tsx:12` (hook real), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:94` (T1), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:51` (T28).
 - **fonte (fatia AUSENTES, §2a):** sintese B17 (residual), B18, D9
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `modules/platform/pages/PlatformPlansModulesPage.tsx` (73 l.), `PlatformAuditPage.tsx` (90), `PlatformApisPage.tsx` (78): 0 hooks; `PlatformTenantsPage.tsx:18-19` ids `ten-sp`/`ten-agromax`, `:81` navega para id fabricado
@@ -8585,7 +8591,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram MFA e auditoria "ligados" por literal — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Configurações da Plataforma virou parada honesta, sem toggle, estado ou ação de segurança simulados.
+- evidência: T27–T28 e `PLATFORM_HONEST_STOP`; censo de literais retorna 0 controles booleanos fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformSettingsPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:45` (T27).
 - **fonte (fatia AUSENTES, §2a):** sintese B19
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `PlatformSettingsPage.tsx:8` `function Toggle({ on }: { on: boolean })`; `:43` "MFA obrigatório para admins … `<Toggle on />`"; `:44` "Auditoria de operações críticas … `<Toggle on />`"
@@ -9543,7 +9550,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com padrões opostos: sem `VITE_USE_MOCKS` a plataforma mostra 3 organizações inventadas — MÉDIA
 
-- status: ABERTA (achado C4-08 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`, gravidade nota; registrada no ciclo 2)
+- status: FECHADA — os serviços da plataforma usam exclusivamente `isMockMode()`; modo demonstração devolve vazio/recusa honesta e os fixtures foram removidos.
+- evidência: T5, T19 e T39; a busca de `readFrontendEnv("VITE_USE_MOCKS"` encontra somente `frontend/src/config/env.ts`. Ponteiros: `frontend/src/modules/platform/platform.service.ts:1` e `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:1` (`isMockMode`), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:147` (T5), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:205` (T19), `frontend/tests/san3-06b-navegacao-plataforma.test.ts:37` (T39).
 - **prova:** `frontend/src/config/env.ts` `isMockMode()` = `VITE_USE_MOCKS === "true"` (padrão REAL) × `shouldUseMocks()` = `readFrontendEnv("VITE_USE_MOCKS", "true") !== "false"` (padrão MOCK) em `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:163-165` e `frontend/src/modules/platform/platform.service.ts:122-124`. Sonda da C4 com `VITE_USE_MOCKS` ausente ou `"0"`: a OS vai ao backend real, mas a plataforma NÃO chama a API e devolve 3 organizações inventadas. A promessa do `B-SAN3-01` (e o guard G1) confia em `isMockMode()` como O interruptor; na divergência, vence a ficção.
 - **escopo:** `pre-existente` — `git blame -L 163,165 …/cloud-billing.service.ts` → `4d6e1219` (2026-06-08); fora da fronteira do `B-SAN3-01`.
 - **dono:** `B-SAN3-06b` (`modules/platform/**` no §5 do `PLANO_SAN3.md`); cruza `P-WEB-PLATAFORMA-TELAS-FICCAO` (item 46).
@@ -10390,3 +10398,80 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
 - **bloqueia:** não.
 - **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.
+
+## P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda não persistem — ALTA
+
+- status: ABERTA.
+- **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
+- **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
+
+## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
+
+- status: ABERTA.
+- **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉDIA
+
+- status: ABERTA.
+- **prova:** nenhuma das 32 rotas inventariadas entrega auditoria global; a página é parada honesta.
+- **dono:** fila pós-gate, bloco de auditoria e observabilidade da plataforma.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND (2026-10-09) — configuração global sem autoridade persistida — MÉDIA
+
+- status: ABERTA.
+- **prova:** MFA obrigatório, retenção, auditoria das operações sensíveis e modos globais não possuem endpoint; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto.
+- **bloqueia:** não.
+
+## P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND (2026-10-09) — credenciais administrativas sem contrato — MÉDIA
+
+- status: ABERTA.
+- **prova:** não há endpoint para catálogo, criação ou rotação de credenciais; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto e segurança.
+- **bloqueia:** não.
+
+## P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA
+
+- status: ABERTA.
+- **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
+
+- status: ABERTA.
+- **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
+- **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
+
+## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
+
+- status: ABERTA.
+- **prova:** fora de `PLATFORM_NAV`, busca, seletor de organização, sino e identidade do cabeçalho continuam estáticos.
+- **dono:** bloco de shell e navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros divergentes — MÉDIA
+
+- status: ABERTA.
+- **prova:** `PLATFORM_NAV`, `platformNavigation.ts` e `navigation.registry.ts` não têm uma única autoridade; a documentação agora declara o estado real.
+- **dono:** bloco de navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console antigo — BAIXA
+
+- status: ABERTA.
+- **prova:** `critical-flows.spec.ts` ainda espera menu remoto e rótulos técnicos antigos; `tests/e2e/**` estava fora do escopo desta entrega.
+- **dono:** `B-SAN3-10`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAIXA
+
+- status: ABERTA.
+- **prova:** Saúde usa `fetch` direto para preservar o corpo útil do 503; o cliente comum transforma a resposta em exceção.
+- **dono:** próximo bloco que precisar de resposta crua em `frontend/src/services/api/client.ts`.
+- **bloqueia:** não; reavaliar se surgir um segundo consumidor.

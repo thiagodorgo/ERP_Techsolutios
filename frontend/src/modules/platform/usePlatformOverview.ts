@@ -6,6 +6,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { getPlatformOverview } from "./platform-overview.service";
 import type { PlatformOverviewData } from "./platform-overview.types";
 import { emptyPlatformOverview } from "./platform-overview.types";
+import { nextRefreshState } from "./refresh-state";
 
 // PR-SCALE-5a — carrega a "Visão Geral da Plataforma" (GET /api/v1/platform/overview) para o Admin da
 // Plataforma. Espelha useAuditEvents, mas a Visão Geral é CROSS-tenant: o contexto vem da SESSÃO do ator
@@ -36,7 +37,8 @@ export function usePlatformOverview() {
   const refresh = useCallback(async (background = false) => {
     if (background) setIsRefreshing(true);
     else setLoading(true);
-    setData(await getPlatformOverview(context));
+    const next = await getPlatformOverview(context);
+    setData((current) => nextRefreshState(current, next, background));
     setLoading(false);
     setIsRefreshing(false);
   }, [context]);

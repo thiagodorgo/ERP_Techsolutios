@@ -5012,3 +5012,13 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Depois do voto:** `main` `a9bbde38` integrada por merge (só registro em conflito, união main→ramo; índice regenerado); delta de produto contra a `main` idêntico ao aprovado (patch-id).
 - **Pendências novas (não graves):** `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` (B-SAN3-10), `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (B-SAN3-05T), `P-SAN3-05-T15-TETO-DE-RELOGIO` (B-ARNES-2), `P-SAN3-05-MENSAGEM-DA-RECUSA` (a nomear).
 - **Próximo:** CI do head novo → `gh pr ready 405` → squash merge com `--match-head-commit` → porteiro → trilha do Traccar (plano).
+
+## B-SAN3-06b — console da plataforma sem ficção — DESENVOLVIMENTO CONCLUÍDO (2026-10-09)
+
+- Organizações e Visão Geral usam o resumo real; `platform` recebe selo de sistema e fica fora das métricas de clientes.
+- Cloud Billing consome cinco leituras reais por período, sem cálculo ou ação monetária no frontend.
+- Saúde consome readiness de Postgres, Redis e Worker; observabilidade complementar permanece pendência parcial.
+- Auditoria Global, APIs e Credenciais, Planos e Módulos e Configurações são paradas honestas fora do menu.
+- Cinco geradores e 45 testes T1–T45 cobrem fabricação, rotas, menu, contratos e controles negativos.
+- KPI congelado: nenhum arquivo `Kpis/*` foi alterado. Aguarda revisor independente e CI; PR será aberto pelo orquestrador.
+- **Sucessor (2026-10-09):** E8 fechada por `dev-b-san3-06b-sucessor` (Claude Opus 5.5) depois da queda do Codex; `test:smoke` 1313/1313, T1–T45 45/45, regressões 125/125, build e `check` verdes; relatório em `docs/revisoes/SAN3/B-SAN3-06b-DEV-relatorio.md`.

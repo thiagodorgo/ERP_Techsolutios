@@ -16,7 +16,7 @@ export async function getPlatformOverview(context: PlatformOverviewApiContext): 
 
   try {
     const raw = await apiData<unknown>("/platform/overview", context);
-    return { ...adaptPlatformOverview(raw), source: "api", forbidden: false };
+    return { ...adaptPlatformOverview(raw), source: "api", forbidden: false, stale: false };
   } catch (err) {
     // 403 = gate RBAC `platform:tenants:read` → estado "acesso não permitido" (não é falha de sistema).
     if (err instanceof ApiError && err.status === 403) {
