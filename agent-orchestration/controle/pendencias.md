@@ -10633,8 +10633,6 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE`, o bloco transversal da `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
 - bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
 - teste de encerramento: D1 enumera por (i) ASSINATURA RESOLVIDA da chamada (declaração em `<Model>Delegate`, qualquer sintaxe), (ii) TIPO do argumento `*Create/Update/Upsert/Delete*Input`, (iii) qualquer LITERAL com verbo de escrita + tabela normalizada (aspas/schema/ONLY), (iv) `any`/`unknown` com membro de escrita = negar; superfície = o `include` do `tsconfig` (sem pular `generated`); as 7 formas em `D1′` ficam VERMELHAS e os controles de leitura verdes.
-```
-```
 ## P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a `insertMovement` só pela forma `this.x(`; indireção `.call/.apply/.bind`/cast sai do universo — MÉDIA
 - status: ABERTA (idem à anterior; reclassificada no ciclo 3: forma de guard)
 - prova (N = 1 forma, N9): via nova `consumeViaCall` decide pelo saldo ANTES do lock e chega a `insertMovement` por `this.insertMovement.call(this, …)`; D1/D2 verdes; a via aparece só em "NÃO identificação".
@@ -10669,15 +10667,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ou `B-BAT-01`, se o transversal não nascer antes).
 - bloqueia: não.
 - teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
-```
-
 ## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
 
 - **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
   dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
   "Decisões do dono", decisão 1) · **dono:** o dono do produto.
 - Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
-  blocos, proposta). O B-TRC-01 só é o mesmo em B e C. Achados A2-09 da o crítico (r2) e B-07 da r1. A
+  blocos, proposta). O B-TRC-01 só é o mesmo em B e C. Achados A2-09 do crítico (r2) e B-07 da r1. A
   `D-ORDEM-NOITE-2026-10-10` autoriza "os blocos de ingestão" sem fixar número.
 - **bloqueia:** o início do B-TRC-01 (na forma A ele muda) e tudo depois dele.
 - **teste de encerramento:** `decisoes.md` registra a escolha (A, B ou C) com a frase do dono, e o plano é ajustado
@@ -10712,15 +10708,12 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
 - **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
 - **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
-```
-
-
 ```markdown
 ## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
 
 - **status:** ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
   organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
-  retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 da o crítico (r2), E-02c/E-02d) ·
+  retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 do crítico (r2), E-02c/E-02d) ·
   **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
 - Recomendação do planejador: só a plataforma vincula, a pedido da organização, para começar; depois, lista de
   rastreadores liberados por organização. Vínculo vale do relógio do servidor em diante, sem retroativo; `EXCLUDE` com
@@ -10756,7 +10749,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` — `field-dispatch-prisma.repository.ts:170,174` e
   `field-dispatch.service.ts:550-577`: `reassign` grava o operador novo e o status e, em outra transação, o evento
   `field_dispatch_reassigned`; o `accepted_at` do operador antigo fica; `reassigned → on_route` dispensa novo aceite
-  (`field-dispatch.validators.ts:7-17`). Medido pela o crítico (r2) (E-3e) · **dono:** a nomear (próximo bloco que tocar
+  (`field-dispatch.validators.ts:7-17`). Medido pelo crítico (r2) (E-3e) · **dono:** a nomear (próximo bloco que tocar
   `field-dispatch.service.ts`).
 - O Traccar deixa de depender disso: o B-TRC-01 usa `operator_assigned_at`, gravado por gatilho na mesma instrução da
   troca. Fica o defeito de auditoria: despacho reatribuído pode ficar sem o evento.
@@ -10771,19 +10764,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   portal).
 - **bloqueia:** não.
 - **teste de encerramento:** porta do portal ocupada não derruba a API; host do portal explícito.
-```
-
 ## P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar um dano, lança débito no extrato de um colega e escolhe o valor — ALTA (dinheiro)
 
 - status: ABERTA (o crítico (r1) do plano do B-O6R-07c, achado A9, `critico-b-o6r-07c-r1`; reexecutado pelo planejador `planejador-b-o6r-07c` em `c1cfdabe`)
-- **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice da o crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
+- **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice do crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
 - **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
 - **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
-- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa, Fable por decisão do dono de 08/10), depois da decisão D3.
+- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), depois da decisão D3.
 - **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
 - **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
-```
-
 ## P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os guards que reconhecem forma ainda não existe — MÉDIA
 
 - **status:** ABERTA · **escopo:** `pre-existente` — a classe "guard que reconhece forma em vez de enunciar a propriedade" (`D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`) reapareceu no #389 (`P-O6R-B04-GUARD-D1/D2/D7/D5`, `-CENSO-DETECTOR-DE-LITERAIS`) e no `B-O6R-07c` (críticas r1 e r2: formas de rota e de tipo de sync que escapavam). O nome `B-GOV-GUARDA-POR-PROPRIEDADE` foi dado pelo orquestrador na Emenda 8 do `B-O6R-04a`, mas o bloco não tem plano nem lugar no `PLANO_SAN3` (ressalva 2 do porteiro do #389) · **dono:** o orquestrador (abrir o plano do bloco com o `planejador-mestre`).
@@ -10802,3 +10791,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` — `agent-orchestration/controle/gerar-indice-pendencias.py:75-80` (`severidade(body)` procura as quatro palavras de severidade no corpo inteiro e devolve a de nível mais alto que achar); uma entrada que cita o crítico com o substantivo feminino sobe ao nível máximo no índice, mesmo com o título dizendo outro nível (o dev do B-SAN3-06b já tinha esbarrado nisso) · **dono:** `B-REG-GERADOR`.
 - **bloqueia:** não; o índice superestima severidade e o dono pode olhar a pendência errada primeiro.
 - **teste de encerramento:** uma entrada com o título de nível médio e o substantivo do crítico no corpo aparece com o nível do título no índice.
+
+## P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falha na limpeza por FK, às vezes — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tests/o6r06-usage-atomic-db.test.ts:740` (suíte do #385, `B-O6R-06`): no run `pull_request` do head `250c97de` do PR 415 (só registro), o `backend-postgres` deu 314/315 com o A10 falhando no teardown por `cloud_usage_events_tenant_id_fkey`; o mesmo job passou no run `push` do mesmo SHA (revisor do PR 415, `agent-orchestration/omega/juntas/REVISAO-PR-415.md`) · **dono:** `B-ARNES-2`.
+- Junto com o T15 do #405 (`P-SAN3-05-T15-TETO-DE-RELOGIO`), é a segunda falha intermitente que derruba o CI de PR que não toca o código dela.
+- **bloqueia:** não; custa re-execução de CI.
+- **teste de encerramento:** o A10 limpa na ordem das FKs (ou por banco próprio), verde em 10 rodadas do `backend-postgres`.

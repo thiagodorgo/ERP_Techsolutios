@@ -5102,6 +5102,6 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 ## Estado em 2026-10-10 (tarde)
 
 - **Mergeado:** #389 `B-O6R-04a` (`ab52ec50`) — junta do ciclo 3 APROVADA 3 × 0; fecha os críticos Ω6R-DAT-002 e Ω6R-DAT-003; porteiro LIBERADO COM RESSALVA (`votos/B-O6R-04a/PORTEIRO-389.md`).
-- **Em curso:** `B-O6R-07c-a` (PR #414, rascunho; CI 14/14 com a `main` integrada) — a fábrica escreve as 3 cadeiras novas; depois inspetor e junta de permissão.
+- **Em curso:** `B-O6R-07c-a` (PR #414, rascunho; a `main` foi integrada e o CI do head integrado estava em curso, com o T15 do #405 derrubando o job `backend` uma vez) — a fábrica escreve as 3 cadeiras novas; depois inspetor e junta de permissão.
 - **Esperando o dono:** Traccar 1–6 (`P-TRC-*`), D1/D2/D3 do 07c, e o censo de duplicatas do estoque antes de qualquer deploy (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
 - **Regra de modelos:** `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`. **Formato do estado:** `agent-orchestration/docs/formato-do-estado.md`.

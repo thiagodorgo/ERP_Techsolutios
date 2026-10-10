@@ -3129,17 +3129,17 @@ do #390 nomeou continuam com o primeiro PR que mergear.
 
 ## Registro de 10/10/2026 (tarde) — modelos, formato do estado e as perguntas abertas
 
-- **D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (2026-10-10)** — o dono fixou o modelo de cada papel em três passos:
-  - 13:40Z, perguntado sobre os papéis de topo em bloco de dinheiro: *"so o plano no topo, no fim do segundo fluxo entra a
+- **D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (2026-10-10)** — o dono fixou o modelo de cada papel em quatro passos:
+  - 13:31Z, perguntado sobre os papéis de topo em bloco de dinheiro: *"so o plano no topo, no fim do segundo fluxo entra a
     inteligencia mais alta pra auditar e ver se esta tudo certo."*
-  - ~13:50Z, explicando "fluxo": *"roda o fluxo 1 e nao ficou pronto, vai para o fluxo 2, se nao ficar pronto a
+  - 13:35Z, explicando "fluxo": *"roda o fluxo 1 e nao ficou pronto, vai para o fluxo 2, se nao ficar pronto a
     inteligencia maior(fable/astra) entra no fluxo antes de começar o terceiro fluxo, audita e ver se esta tudo certo,
     planeja o plano para fechar o fluxo e entrega para fazer o fluxo 3, a terceira passada. isso é para evitar ficar em
     loop"*.
-  - ~14:30Z, generalizando: *"vamos refatorar o fluxo geral, numa reprovação de junta, EM TODA REPOVAÇÃO, o falbe/astra
+  - 13:44Z, generalizando: *"vamos refatorar o fluxo geral, numa reprovação de junta, EM TODA REPOVAÇÃO, o falbe/astra
     entra audita, faz o plano com detalhes para resolver a reprovação e o resto segue o fluxo, isso é pra dificultar o
     segundo loop em diante"*.
-  - ~15:50Z, como padrão: *"o modelo (\"topo só no plano e em toda reprovação de junta; resto no nível menor\") fica padrao
+  - 15:41Z, como padrão: *"o modelo (\"topo só no plano e em toda reprovação de junta; resto no nível menor\") fica padrao
     para nosso projeto, pra agregados e nossos agentes internos"*.
 
   **A regra vigente:**
@@ -3158,18 +3158,26 @@ do #390 nomeou continuam com o primeiro PR que mergear.
 - **D-FORMATO-DO-ESTADO (2026-10-10)** — *"quando eu pedir o estado vc me retorna onde estamos, o que estamos fazendo, como
   estamos indo, onde nos estamos no cronograma, previsao do bloco atual e global tudo com checklists para eu acompanhar o
   progresso, documente isso"*. O formato está em `agent-orchestration/docs/formato-do-estado.md`.
-- **Perguntas abertas ao dono** (texto do plano do `B-O6R-07c`, seção "Registro"; não são decisões):
-  - **D1-07c:** quem conta como "atribuído" para escrever em vistoria, evidência e km — (a) só `assigned_operator_id`;
-    (b) a atribuição da OS ou o alvo de um despacho ativo; (c) o despacho grava a atribuição. Também: a equipe da OS
-    (`teamId`) conta? Recomendação do orquestrador: (b).
-  - **D2-07c:** trabalho feito offline e sincronizado depois de redistribuição — o servidor recusa ou aceita? Se recusar,
-    a ação fica presa no aparelho (`retryCount < 5`). Recomendação do orquestrador: vira conflito para resolução manual
-    (B-107).
-  - **D3-07c:** o técnico pode lançar débito de dano no extrato de um colega? Hoje pode (−900 medido). Recomendação do
-    orquestrador: não — corrigir (pendência `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`).
-  - **Traccar 1–6:** forma da trilha, AWS × Fly, convivência app × rastreador, atribuição por despacho, vínculo e posse,
-    LGPD. As pendências estão em `pendencias.md` (`P-TRC-*`); a seção "Decisões do dono antes do B-TRC-01" do
-    `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` (ramo `docs/plano-traccar`) traz as recomendações.
+- **Perguntas abertas ao dono** — não são decisões. O texto abaixo é LITERAL do plano do `B-O6R-07c` v3 (`5b16932e`,
+  §R.2); as recomendações que seguem são do ORQUESTRADOR, não do plano nem do dono:
+
+  > - D1-07c (pergunta ao dono, 2026-10-10): quem é o técnico da OS para escrever QUALQUER coisa nela — editar os campos da OS, mudar o status, comentar, anexar, geocodificar, lançar km, fazer a vistoria e mandar evidência? (A resposta entra numa porta só, assertMutationObjectScope, e vale para tudo isso de uma vez.)
+  >   (a) só quem foi atribuído na OS — o técnico mandado pelo mapa sem atribuição não faz nada disso, nem a vistoria e as fotos que hoje faz;
+  >   (b) atribuído OU alvo de despacho ativo da OS — o fluxo do mapa segue; o despachado passa a editar a OS, comentar, anexar, geocodificar, mudar status, lançar km, fazer a vistoria e mandar evidência, inclusive pelo console web;
+  >   (c) o despacho passa a gravar a atribuição — um critério só; o efeito é o de (b); muda o fluxo de despacho.
+  >   E: membros da equipe da OS (teamId) contam? Bloqueia o B-O6R-07c-b. Plano: docs/revisoes/SAN3/B-O6R-07c-plano.md (07c-b.2).
+  > - D2-07c (pergunta ao dono, 2026-10-10): trabalho feito offline por quem ERA o técnico — vistoria, evidência, status e km —, sincronizado depois de a OS ir para outro:
+  >   (a) recusar — o app tenta 5 vezes e o trabalho fica preso no aparelho, sem saída, até o app ganhar uma (B-SAN3-16);
+  >   (b) aceitar se ele era o técnico na hora da coleta — pelo relógio do aparelho, que pode estar errado ou forjado;
+  >   (c) aceitar de quem já foi técnico da OS alguma vez — escopo frouxo;
+  >   (d) recusar como conflito — o app já mostra conflito com "manter a minha" e "usar a do servidor"; para valer também para status e km, o 07c-b passa a mexer no lote de OS.
+  >   Bloqueia o B-O6R-07c-b. Plano: 07c-b.3.
+  > - D3-07c (pergunta ao dono, 2026-10-10): o técnico de campo pode, ao registrar um dano, lançar débito no extrato de um colega e escolher o valor? Hoje pode (medido: -900). Fora do 07c; dono da pendência P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA.
+
+  **Recomendações do orquestrador** (2026-10-10): D1 → (b), sabendo que o despachado passa a poder TUDO na OS listado
+  em (b), inclusive pelo console web; D2 → (d), sabendo que para valer também para status e km o 07c-b mexe no lote de
+  OS; D3 → não (o débito no extrato de terceiro vira correção). Traccar 1–6: as pendências `P-TRC-*` em `pendencias.md`
+  e a seção "Decisões do dono antes do B-TRC-01" do `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` (ramo `docs/plano-traccar`).
 - **REGISTRO-07CA-TENSAO-COORDENADOR (§A2, 2026-10-10)** — o `PLANO_SAN3.md:254` pede *unanimidade +
   coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
   (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade

@@ -3,6 +3,9 @@
 > *"quando eu pedir o estado vc me retorna onde estamos, o que estamos fazendo, como estamos indo, onde nos estamos no
 > cronograma, previsao do bloco atual e global tudo com checklists para eu acompanhar o progresso, documente isso"*
 
+O dono pediu cinco itens com checklists (a citação acima). A seção 6, a legenda de ícones e as "Regras" no fim são
+ELABORAÇÃO do orquestrador, para o formato ficar completo; o dono pode cortá-las.
+
 Toda vez que o dono pedir "estado", "como estamos" ou "repasse o estado", a resposta usa **estas 6 seções, nesta ordem**,
 em português simples e sem enrolação, com checklists (✅ feito · 🟡 em curso · ⬜ não começou · ⏸ esperando decisão).
 
