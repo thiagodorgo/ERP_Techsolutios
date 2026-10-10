@@ -229,7 +229,7 @@ temporária revertida em `mobile-work-order-sync.ts` (M11). Nenhuma deixou diff.
 ### S9 — `npm test` no Windows (forma canônica 3), e por que ele não é a medida final
 
 - `env -u CORE_SAAS_PERSISTENCE DATABASE_URL=<dev07ca-pg 127.0.0.1:47807> REDIS_URL=<dev07ca-redis 127.0.0.1:47808> npm test`
-  (14:28→14:35Z, head `a0dafa05`'s pai `2e8a5711`+fixture = mesma árvore de `src/`) → `[run-backend-tests] 296 arquivo(s) · 3224
+  (14:28→14:35Z, árvore do commit `a0dafa05`, já com a fixture; só o relatório em edição) → `[run-backend-tests] 296 arquivo(s) · 3224
   teste(s) · pass 3216 · fail 6 · skipped 2`, ec=1. Os 2 pulos são os do orçamento (`permission-catalog-db-parity`, `RBAC_DB_PARITY`).
 - Os 6 vermelhos são **de ambiente**, em 2 arquivos `-db` que este bloco não toca: `san3-05-runtime-role-guard-db` (T14a/b, T14c,
   T14d e o pai — `psql: command not found`, ec 127: não há `psql` no Windows) e `san3-09-bootstrap-platform-admin-db` (T2.1 e o
