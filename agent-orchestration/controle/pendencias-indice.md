@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **513** |
-| IDs distintos | 502 |
-| **ABERTAS** | **384** |
+| Cabecalhos `## P-` | **514** |
+| IDs distintos | 503 |
+| **ABERTAS** | **385** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **317** |
+| — das quais **ativas nesta rodada** | **318** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 126 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **513 cabecalhos para 502 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **514 cabecalhos para 503 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -257,7 +257,7 @@
 | `P-BLOCO-BAT-01` | 10783 | MÉDIA | sim | P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, |
 | `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10795 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
 
-## ABERTAS · balde B — processo/registro — 135
+## ABERTAS · balde B — processo/registro — 136
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -396,6 +396,7 @@
 | `P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO` | 10616 | BAIXA | sim | P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor  |
 | `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10663 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
 | `P-REG-GERADOR-SEVERIDADE-POR-PALAVRA` | 10789 | BAIXA | sim | P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior pal |
+| `P-AGENTE-CHECK-SEM-GENERATE` | 10802 | BAIXA | sim | P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige p |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
