@@ -106,84 +106,164 @@ def validar(entrada: object, tarefa: str | None = None) -> dict:
 _NOME_FERRAMENTA_RE = re.compile(r"^[a-z][a-z_]{1,40}$")
 _CHAVE_RE = re.compile(r"^[a-z][a-z_]{0,40}$")
 
+# N1 (reconferência do PR #417): a citação é texto do MODELO, e um `json.loads` de JSON aninhado em
+# milhares de níveis levantava `RecursionError` na montagem do parecer — a execução terminava sem
+# `parecer.*`. Por isso, ANTES de qualquer parse: teto de tamanho e teto de profundidade, medidos por
+# uma varredura linear e sem recursão. Os argumentos de uma ferramenta deste agente são um objeto
+# plano cujos valores são escalares ou listas de escalares: profundidade 2. Uma citação mais funda
+# não pode ser uma chamada executada, então recusá-la não perde evidência verdadeira.
+MAX_CHARS_CITACAO = 8000  # o maior argumento legítimo: 10 caminhos de 400 + campos de 500
+MAX_PROFUNDIDADE_CITACAO = 2
+MOTIVO_CONFERIDA = "conferida: a ferramenta e os argumentos batem com a chamada executada #{seq}"
+MOTIVO_NAO_TEXTO = "não conferida: a citação não é texto"
+MOTIVO_LONGA = f"não conferida: citação com mais de {MAX_CHARS_CITACAO} caracteres"
+MOTIVO_FUNDA = f"não conferida: citação aninhada além da profundidade {MAX_PROFUNDIDADE_CITACAO}"
+MOTIVO_FORMA = "não conferida: a forma não é `<ferramenta> <JSON>` nem `<ferramenta> chave=valor`"
+MOTIVO_SEM_CHAMADA = "não conferida: nenhuma chamada executada tem essa ferramenta e esses argumentos"
+MOTIVO_ERRO = "não conferida: erro ao conferir ({classe})"
 
-def _escalar(valor: object) -> object:
+
+class _CitacaoRecusada(Exception):
+    def __init__(self, motivo: str) -> None:
+        super().__init__(motivo)
+        self.motivo = motivo
+
+
+def profundidade_excede(texto: str, maximo: int) -> bool:
+    """`[`/`{` abertos fora de string JSON passam de `maximo`? Varredura linear, sem parse e sem
+    recursão: é o que deixa o `json.loads` seguinte com profundidade limitada."""
+    nivel = 0
+    em_string = escapado = False
+    for c in texto:
+        if em_string:
+            if escapado:
+                escapado = False
+            elif c == "\\":
+                escapado = True
+            elif c == '"':
+                em_string = False
+        elif c == '"':
+            em_string = True
+        elif c in "[{":
+            nivel += 1
+            if nivel > maximo:
+                return True
+        elif c in "]}":
+            nivel -= 1
+    return False
+
+
+def _json_limitado(texto: str) -> object:
+    """`json.loads` só de texto curto e raso; senão `_CitacaoRecusada` (sem chegar a parsear)."""
+    if len(texto) > MAX_CHARS_CITACAO:
+        raise _CitacaoRecusada(MOTIVO_LONGA)
+    if profundidade_excede(texto, MAX_PROFUNDIDADE_CITACAO):
+        raise _CitacaoRecusada(MOTIVO_FUNDA)
+    return json.loads(texto)
+
+
+def _escalar(valor: object, dentro_de_lista: bool = False) -> object:
     """Escalar no texto canônico: string fica string; número/booleano vira o seu JSON. Para uma
-    mesma chave a cerca só aceita um tipo, então '5' citado e 5 executado são a mesma chamada."""
+    mesma chave a cerca só aceita um tipo, então '5' citado e 5 executado são a mesma chamada.
+    Lista só de escalares (profundidade 2): lista dentro de lista não é argumento de ferramenta."""
     if isinstance(valor, str):
         return valor
     if isinstance(valor, list):
-        return [_escalar(v) for v in valor]
+        if dentro_de_lista:
+            raise _CitacaoRecusada(MOTIVO_FUNDA)
+        return [_escalar(v, True) for v in valor]
+    if isinstance(valor, dict):
+        raise _CitacaoRecusada(MOTIVO_FUNDA)
     return json.dumps(valor, sort_keys=True, ensure_ascii=False)
 
 
 def args_canonicos(args: object) -> str | None:
     """Argumentos normalizados: sem os campos que a cerca trata como ausentes (null, false, "" e
-    lista vazia) e com chaves ordenadas. `None` se não for um objeto."""
+    lista vazia) e com chaves ordenadas. `None` se não for um objeto plano (profundidade <= 2)."""
     if not isinstance(args, dict):
         return None
     limpos = {}
-    for chave, valor in args.items():
-        if valor is None or valor is False:
-            continue
-        if isinstance(valor, (str, list)) and len(valor) == 0:
-            continue
-        limpos[str(chave)] = _escalar(valor)
+    try:
+        for chave, valor in args.items():
+            if valor is None or valor is False:
+                continue
+            if isinstance(valor, (str, list)) and len(valor) == 0:
+                continue
+            limpos[str(chave)] = _escalar(valor)
+    except _CitacaoRecusada:
+        return None
     return json.dumps(limpos, sort_keys=True, ensure_ascii=False)
 
 
-def citacao(comando: object) -> tuple[str, str] | None:
-    """Lê `<ferramenta> <JSON>` ou `<ferramenta> chave=valor ...` -> (ferramenta, args canônicos).
-
-    Qualquer outra forma (texto livre, caminho solto, "em <arquivo>") -> `None`: não conferida.
-    """
+def _ler_citacao(comando: object) -> tuple[str, str]:
+    """(ferramenta, args canônicos) de `<ferramenta> <JSON>` ou `<ferramenta> chave=valor ...`;
+    senão `_CitacaoRecusada` com o motivo. Tamanho e profundidade são conferidos ANTES do parse."""
     if not isinstance(comando, str):
-        return None
+        raise _CitacaoRecusada(MOTIVO_NAO_TEXTO)
+    if len(comando) > MAX_CHARS_CITACAO:
+        raise _CitacaoRecusada(MOTIVO_LONGA)
     texto = comando.strip()
     if len(texto) >= 2 and texto[0] == "`" and texto[-1] == "`":
         texto = texto.strip("`").strip()
     partes = texto.split(None, 1)
     if not partes or not _NOME_FERRAMENTA_RE.fullmatch(partes[0]):
-        return None
+        raise _CitacaoRecusada(MOTIVO_FORMA)
     nome = partes[0]
     resto = partes[1].strip() if len(partes) > 1 else ""
     if not resto:
         args: object = {}
     elif resto.startswith("{"):
         try:
-            args = json.loads(resto)
+            args = _json_limitado(resto)
         except ValueError:
-            return None
+            raise _CitacaoRecusada(MOTIVO_FORMA) from None
     else:
         try:
             pares = shlex.split(resto)
         except ValueError:
-            return None
+            raise _CitacaoRecusada(MOTIVO_FORMA) from None
         args = {}
         for par in pares:
             chave, sep, valor = par.partition("=")
             if not sep or not _CHAVE_RE.fullmatch(chave) or chave in args:
-                return None
+                raise _CitacaoRecusada(MOTIVO_FORMA)
             try:
-                args[chave] = json.loads(valor)
+                args[chave] = _json_limitado(valor)
             except ValueError:
                 args[chave] = valor
     canonico = args_canonicos(args)
-    return (nome, canonico) if canonico is not None else None
+    if canonico is None:
+        raise _CitacaoRecusada(MOTIVO_FORMA)
+    return nome, canonico
+
+
+def citacao(comando: object) -> tuple[str, str] | None:
+    """Forma pública e que nunca levanta: (ferramenta, args canônicos) ou `None`."""
+    try:
+        return _ler_citacao(comando)
+    except Exception:  # noqa: BLE001 — texto do modelo nunca derruba o script
+        return None
+
+
+def conferir_evidencia_com_motivo(comando: object, eventos_ferramenta: list[dict]) -> tuple[bool, str]:
+    """(conferida, motivo). Nunca levanta: qualquer falha vira `False` com o motivo (N1)."""
+    try:
+        nome, canonico = _ler_citacao(comando)
+        for ev in eventos_ferramenta:
+            if ev.get("negado") or ev.get("ferramenta") in (None, "entregar_parecer"):
+                continue
+            if ev.get("ferramenta") == nome and args_canonicos(ev.get("args")) == canonico:
+                return True, MOTIVO_CONFERIDA.format(seq=ev.get("seq"))
+        return False, MOTIVO_SEM_CHAMADA
+    except _CitacaoRecusada as e:
+        return False, e.motivo
+    except Exception as e:  # noqa: BLE001 — inclusive RecursionError e MemoryError
+        return False, MOTIVO_ERRO.format(classe=type(e).__name__)
 
 
 def conferir_evidencia(comando: object, eventos_ferramenta: list[dict]) -> bool:
     """True só se (ferramenta, argumentos normalizados) citados = os de uma chamada EXECUTADA."""
-    lida = citacao(comando)
-    if lida is None:
-        return False
-    nome, canonico = lida
-    for ev in eventos_ferramenta:
-        if ev.get("negado") or ev.get("ferramenta") in (None, "entregar_parecer"):
-            continue
-        if ev.get("ferramenta") == nome and args_canonicos(ev.get("args")) == canonico:
-            return True
-    return False
+    return conferir_evidencia_com_motivo(comando, eventos_ferramenta)[0]
 
 
 def comandos_da_auditoria(eventos_ferramenta: list[dict]) -> list[dict]:
@@ -220,7 +300,9 @@ def montar(
     for achado in base.get("achados", []) or []:
         a = dict(achado)
         evid = dict(a.get("evidencia") or {})
-        evid["conferida"] = conferir_evidencia(evid.get("comando", ""), eventos_ferramenta)
+        evid["conferida"], evid["motivo_conferencia"] = conferir_evidencia_com_motivo(
+            evid.get("comando", ""), eventos_ferramenta
+        )
         a["evidencia"] = evid
         achados.append(a)
     veredito = base.get("veredito", "inconclusivo")
@@ -251,7 +333,8 @@ def montar(
 
 def _escrever(destino: Path, texto: str) -> Path:
     temporario = destino.with_suffix(destino.suffix + ".tmp")
-    with open(temporario, "w", encoding="utf-8", newline="\n") as f:
+    # errors="backslashreplace": texto do modelo com surrogate solto não derruba o artefato (N1).
+    with open(temporario, "w", encoding="utf-8", newline="\n", errors="backslashreplace") as f:
         f.write(texto)
         f.flush()
         os.fsync(f.fileno())
@@ -324,6 +407,12 @@ def gravar_md(parecer: dict, pasta: Path, redator) -> Path:
         f"- **Modelo pedido / respondeu:** {_uma_linha(m.get('pedido'))} / {_uma_linha(m.get('respondeu'))}"
         f" · esforço {_uma_linha(m.get('esforco'))} · nível {_uma_linha(m.get('nivel'))}",
         f"- **Execução de código do commit alvo:** {'PERMITIDA' if e.get('permitir_execucao_alvo') else 'não permitida'}",
+    ]
+    if p.get("falhas_de_gravacao"):
+        linhas.append(f"- **Falhas na montagem/gravação:** {_uma_linha('; '.join(str(x) for x in p['falhas_de_gravacao']))}")
+    if p.get("parecer_do_modelo_sem_montagem") is not None:
+        linhas.append("- **O parecer do modelo não pôde ser montado; ele está cru no `parecer.json`.**")
+    linhas += [
         "",
         SECOES_DO_SCRIPT[1],
         "",
@@ -372,6 +461,8 @@ def gravar_md(parecer: dict, pasta: Path, redator) -> Path:
             f"#### Achado {i} — gravidade: {_do_enum(a.get('gravidade'), GRAVIDADES)} · "
             f"escopo: {_do_enum(a.get('escopo'), ESCOPOS)} · linha: {linha_txt} · "
             f"evidência conferida na auditoria: {'sim' if ev.get('conferida') is True else 'não'}",
+            "",
+            f"- Conferência {MARCA_SCRIPT}: {_uma_linha(ev.get('motivo_conferencia'))}",
             "",
         ]
         corpo = (

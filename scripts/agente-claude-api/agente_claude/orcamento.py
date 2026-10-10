@@ -45,7 +45,7 @@ BYTES_RESULTADO_POR_TURNO = 384 * 1024
 
 def bytes_json(obj: object) -> int:
     """Bytes UTF-8 do JSON de `obj` — a unidade da previsão de pior caso (1 token <= 1 byte)."""
-    return len(json.dumps(obj, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8"))
+    return len(json.dumps(obj, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8", "backslashreplace"))
 
 
 @dataclass

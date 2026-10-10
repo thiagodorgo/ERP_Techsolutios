@@ -1,8 +1,10 @@
 """Orquestração das tarefas: conta -> worktree -> auditoria -> laço -> parecer -> remoção.
 
 Códigos de saída (plano §2.2): 0 completo · 2 parcial · 3 recusa prévia ·
-4 erro de API · 5 erro interno. Em 2, 4 e 5 o parecer parcial, a auditoria e o
-`resumo.json` SEMPRE existem no disco; o worktree é removido no `finally`
+4 erro de API · 5 erro interno (inclusive quando o parecer foi produzido mas um artefato
+falhou ao ser gravado: `parecer.json.falhas_de_gravacao` e `erro.txt` dizem qual). Em 2, 4
+e 5 o parecer, a auditoria e o `resumo.json` SEMPRE existem no disco — a montagem e a
+gravação têm rede por etapa (N1 da reconferência); o worktree é removido no `finally`
 (a menos de `--manter-worktree` ou de um segundo Ctrl+C durante a limpeza, quando
 o parecer diz o comando exato para removê-lo).
 """
@@ -30,7 +32,7 @@ from .ferramentas import Ferramentas
 from .laco import Laco
 from .modelo import MODELO, ErroDeModelo, ModeloAnthropic, ModeloSimulado, fallback_servidor
 from .orcamento import Orcamento, Tetos
-from .parecer import NIVEL, gravar_json, gravar_md, montar
+from .parecer import NIVEL, VERSAO_SCHEMA, gravar_json, gravar_md, montar
 from .prompts import mensagem_inicial
 from .redacao import Redator
 from .worktree import RecusaPrevia, WorktreeDescartavel
@@ -153,8 +155,9 @@ def _criar_modelo(deps: Dependencias, credenciais: Credenciais | None, opcoes: O
     return ModeloAnthropic(credenciais)
 
 
-def _gravar_erro(pasta: Path, redator: Redator, texto: str) -> None:
-    with open(pasta / "erro.txt", "w", encoding="utf-8", newline="\n") as f:
+def _gravar_erro(pasta: Path, redator: Redator, texto: str, anexar: bool = False) -> None:
+    modo = "a" if anexar else "w"
+    with open(pasta / "erro.txt", modo, encoding="utf-8", newline="\n", errors="backslashreplace") as f:
         f.write(redator.redigir(texto))
 
 
@@ -304,37 +307,116 @@ def executar_tarefa(
             "sdk": versao_sdk(),
             "simulado": opcoes.simular,
         }
+        # Montagem e gravação À PROVA DE FALHA (N1 da reconferência): uma execução paga nunca termina
+        # sem artefato. Cada etapa tem a sua rede; a falha de uma não impede as outras. Havendo
+        # falha, o `parecer.json` diz qual (`falhas_de_gravacao`), o `erro.txt` traz o traceback
+        # redigido, o evento `fim` e o `resumo.json` são gravados, e o código de saída vira 5.
+        falhas: list[str] = []
+        detalhes: list[str] = []
+
+        def _registrar_falha(etapa: str, e: BaseException) -> None:
+            falhas.append(f"{etapa}: {type(e).__name__}")
+            detalhes.append(f"## {etapa}\n{traceback.format_exc()}")
+
+        dados = {
+            "tarefa": tarefa,
+            "alvo": alvo,
+            "modelo": modelo_info,
+            "conta": conta,
+            "custo": custo,
+            "execucao": execucao,
+        }
         eventos = [ev for ev in auditoria.eventos_ferramenta if ev.get("ferramenta") != "entregar_parecer"]
-        parecer = montar(
-            parecer_modelo=r.parecer_modelo if r else None,
-            tarefa=tarefa,
-            alvo=alvo,
-            eventos_ferramenta=eventos,
-            modelo=modelo_info,
-            conta=conta,
-            custo=custo,
-            execucao=execucao,
-            parcial=parcial,
-            motivo_parcial=motivo,
-            ultimo_texto=r.ultimo_texto if r else None,
-        )
-        gravar_json(parecer, pasta_saida, redator)
-        gravar_md(parecer, pasta_saida, redator)
-        fim = auditoria.registrar(
-            {
-                "tipo": "fim",
-                "parcial": parcial,
-                "motivo_parcial": motivo,
-                "custo": custo,
-                "request_ids": conta["request_ids"],
-                "modelo_respondeu": respondeu,
-                "duracao_total_ms": int((time.monotonic() - t0) * 1000),
-                "codigo_saida": codigo,
-            }
-        )
-        auditoria.gravar_resumo(fim)
-        auditoria.fechar()
+        try:
+            parecer = montar(
+                parecer_modelo=r.parecer_modelo if r else None,
+                eventos_ferramenta=eventos,
+                parcial=parcial,
+                motivo_parcial=motivo,
+                ultimo_texto=r.ultimo_texto if r else None,
+                **dados,
+            )
+        except Exception as e:  # noqa: BLE001
+            _registrar_falha("montagem do parecer", e)
+            parecer = parecer_de_emergencia(dados, f"falha_na_montagem:{type(e).__name__}", r.parecer_modelo if r else None)
+        parecer["falhas_de_gravacao"] = list(falhas)
+        json_ok = _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
+        try:
+            gravar_md(parecer, pasta_saida, redator)
+        except Exception as e:  # noqa: BLE001
+            _registrar_falha("parecer.md", e)
+        if falhas:
+            if codigo in (0, 2):
+                codigo = 5  # o parecer existe, mas um artefato falhou: erro interno (README, "Códigos de saída")
+            parecer["falhas_de_gravacao"] = list(falhas)
+            if json_ok:  # regrava, agora com a lista completa de falhas (substituição atômica)
+                _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
+            try:
+                _gravar_erro(pasta_saida, redator, "falha na gravação do parecer:\n" + "\n".join(detalhes), anexar=True)
+            except Exception:  # noqa: BLE001 — sem mais onde gravar; o fim e o resumo ainda tentam
+                pass
+        fim: dict = {
+            "tipo": "fim",
+            "parcial": parcial,
+            "motivo_parcial": motivo,
+            "custo": custo,
+            "request_ids": conta["request_ids"],
+            "modelo_respondeu": respondeu,
+            "duracao_total_ms": int((time.monotonic() - t0) * 1000),
+            "codigo_saida": codigo,
+            "falhas_de_gravacao": list(falhas),
+        }
+        try:
+            fim = auditoria.registrar(fim)
+        except Exception as e:  # noqa: BLE001
+            _registrar_falha("evento fim da auditoria", e)
+        try:
+            auditoria.gravar_resumo(fim)
+        except Exception:  # noqa: BLE001
+            pass
+        finally:
+            auditoria.fechar()
     return codigo, parecer
+
+
+def parecer_de_emergencia(dados: dict, motivo: str, parecer_modelo: dict | None) -> dict:
+    """Parecer só com os campos do SCRIPT, montado sem chamar nada que possa falhar. O parecer
+    que o modelo entregou (já validado) vai junto, à parte, para não se perder."""
+    return {
+        "versao_schema": VERSAO_SCHEMA,
+        "tarefa": dados["tarefa"],
+        "alvo": dados["alvo"],
+        "veredito": "inconclusivo",
+        "resumo": "",
+        "achados": [],
+        "limitacoes": [],
+        "comandos_declarados_pelo_modelo": [],
+        "comandos_executados": [],
+        "modelo": dados["modelo"],
+        "conta": dados["conta"],
+        "custo": dados["custo"],
+        "parcial": True,
+        "motivo_parcial": motivo,
+        "ultimo_texto_do_modelo": None,
+        "execucao": dados["execucao"],
+        "parecer_do_modelo_sem_montagem": parecer_modelo,
+    }
+
+
+def _gravar_parecer_json(parecer: dict, dados: dict, pasta: Path, redator: Redator, registrar_falha, falhas: list[str]) -> bool:
+    """Grava o `parecer.json`; se falhar, grava o de emergência (só campos do script)."""
+    try:
+        gravar_json(parecer, pasta, redator)
+        return True
+    except Exception as e:  # noqa: BLE001
+        registrar_falha("parecer.json", e)
+    try:
+        minimo = parecer_de_emergencia(dados, "falha_na_gravacao_do_parecer_json", None)
+        minimo["falhas_de_gravacao"] = list(falhas) + ["parecer.json: gravado o de emergência"]
+        gravar_json(minimo, pasta, redator)
+    except Exception as e:  # noqa: BLE001
+        registrar_falha("parecer.json de emergência", e)
+    return False
 
 
 def _preparar_comum(opcoes: Opcoes, deps: Dependencias) -> tuple[Credenciais, Redator, dict, str, str | None]:

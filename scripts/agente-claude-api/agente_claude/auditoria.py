@@ -55,7 +55,9 @@ class Auditoria:
         self._redator = redator
         self._relogio = relogio
         self._seq = 0
-        self._fh = open(self.arquivo, "a", encoding="utf-8", newline="\n")
+        # errors="backslashreplace": um surrogate solto vindo do modelo vira o texto "\udXXX" (escape
+        # JSON válido) em vez de derrubar a gravação (irmão do N1, medido nos ajustes da reconferência).
+        self._fh = open(self.arquivo, "a", encoding="utf-8", newline="\n", errors="backslashreplace")
         self.eventos_ferramenta: list[dict] = []
         self.inicio: dict | None = None
         self.fim: dict | None = None
@@ -95,7 +97,7 @@ class Auditoria:
         destino = self.pasta / "resumo.json"
         temporario = self.pasta / "resumo.json.tmp"
         conteudo = self._redator.redigir_objeto(self.resumo(fim))
-        with open(temporario, "w", encoding="utf-8", newline="\n") as f:
+        with open(temporario, "w", encoding="utf-8", newline="\n", errors="backslashreplace") as f:
             json.dump(conteudo, f, sort_keys=True, ensure_ascii=False, indent=2, default=str)
             f.write("\n")
             f.flush()

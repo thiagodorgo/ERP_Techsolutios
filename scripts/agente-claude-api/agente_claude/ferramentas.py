@@ -176,7 +176,7 @@ class Ferramentas:
             linhas.append(f"[truncado: {total - len(linhas)} entradas omitidas]")
         corpo = "\n".join(linhas)
         return ResultadoFerramenta(
-            texto=corpo, erro=False, codigo=0, bytes=len(corpo.encode()), truncado=total > MAX_ENTRADAS_LISTA
+            texto=corpo, erro=False, codigo=0, bytes=len(corpo.encode("utf-8", "backslashreplace")), truncado=total > MAX_ENTRADAS_LISTA
         )
 
     # -- comandos ------------------------------------------------------------
@@ -223,14 +223,14 @@ def envelopar(nome: str, resultado: ResultadoFerramenta, texto_redigido: str, li
         atributos += ' negado="true"'
     abre, fecha = f"<resultado {atributos}>\n", "\n</resultado>"
     corpo = _escapar(texto_redigido)
-    if limite_bytes is not None and len((abre + corpo + fecha).encode("utf-8")) > limite_bytes:
-        folga = limite_bytes - len((abre + AVISO_LIMITE_TURNO + fecha).encode("utf-8"))
+    if limite_bytes is not None and len((abre + corpo + fecha).encode("utf-8", "backslashreplace")) > limite_bytes:
+        folga = limite_bytes - len((abre + AVISO_LIMITE_TURNO + fecha).encode("utf-8", "backslashreplace"))
         corpo = _cortar_utf8(corpo, max(0, folga)) + AVISO_LIMITE_TURNO
     return abre + corpo + fecha
 
 
 def _cortar_utf8(texto: str, n_bytes: int) -> str:
-    cortado = texto.encode("utf-8")[:n_bytes].decode("utf-8", errors="ignore")
+    cortado = texto.encode("utf-8", "backslashreplace")[:n_bytes].decode("utf-8", errors="ignore")
     amp = cortado.rfind("&")
     if amp != -1 and ";" not in cortado[amp:]:
         cortado = cortado[:amp]  # não deixa entidade (&lt; ...) pela metade

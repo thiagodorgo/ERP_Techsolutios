@@ -85,6 +85,39 @@ class TestPadroes(unittest.TestCase):
             self.r.redigir(hostil)
             self.assertLess(time.perf_counter() - inicio, 1.0, hostil[:8])
 
+    def test_jwt_colado_redigido_e_limiares_iguais(self):
+        # N2: o padrão novo (borda + prefixo atômico + segmentos possessivos) não perde JWT colado a
+        # outro texto — redige junto o que vem colado antes — e mantém os limiares do padrão antigo.
+        for antes, depois_esperado in (("Bearer ", "Bearer "), ('"token":"', '"token":"'), ("a.", "a."),
+                                       ("x", ""), ("abc-", ""), ("id_", "")):
+            saida = self.r.redigir(antes + JWT + " fim")
+            self.assertEqual(saida, depois_esperado + "[REDIGIDO:jwt] fim", antes)
+        curto = "ey" + "J" + "a" * 7 + "." + "b" * 8 + "." + "c" * 8  # 7 depois de eyJ: abaixo do limiar
+        self.assertEqual(self.r.redigir(curto), curto)
+        self.assertEqual(self.r.redigir("ey" + "J" + "a" * 8 + "." + "b" * 8 + "." + "c" * 8), "[REDIGIDO:jwt]")
+
+    def test_todo_padrao_linear_em_texto_gerado(self):
+        # A PROPRIEDADE "redação linear" (N2: o revisor achou o JWT depois de o A6 consertar só a URL).
+        # Para o prefixo literal de CADA padrão, cinco formas hostis de 128 KB; cada uma < 1 s.
+        # Antes do N2, 'eyJ'*n em 128 KB levava ~4 s.
+        import time
+
+        prefixos = ("-----BEGIN RSA PRIVATE KEY-----", "-----END ", "sk-ant-", "AKIA", "aws_secret_access_key",
+                    "ghp_", "github_pat_", "AIza", "a://u:", "postgresql://", "ey" + "J", "api_key", "token", "senha")
+        n = 131_072
+        for pre in prefixos:
+            formas = {
+                "pre*": pre * (n // len(pre)),
+                "pre+a*": pre + "a" * n,
+                "(pre.)*": (pre + ".") * (n // (len(pre) + 1)),
+                "(pre=)*": (pre + "=") * (n // (len(pre) + 1)),
+                "(pre )*": (pre + " ") * (n // (len(pre) + 1)),
+            }
+            for nome, hostil in formas.items():
+                inicio = time.perf_counter()
+                self.r.redigir(hostil)
+                self.assertLess(time.perf_counter() - inicio, 1.0, f"{pre[:12]} {nome}")
+
     def test_texto_sem_segredo_intacto(self):
         texto = (
             "const akiaTokenizerFactory = 1; // identificador legítimo\n"

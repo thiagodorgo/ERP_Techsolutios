@@ -333,10 +333,10 @@ class Laco:
                 self.resultado.negadas += 1
             texto = self.redator.redigir(res.texto)
             conteudo = envelopar(nome, res, texto)
-            if len(conteudo.encode("utf-8")) > restante:
+            if len(conteudo.encode("utf-8", "backslashreplace")) > restante:
                 res.truncado = True
                 conteudo = envelopar(nome, res, texto, limite_bytes=restante)
-            bytes_no_turno += len(conteudo.encode("utf-8"))
+            bytes_no_turno += len(conteudo.encode("utf-8", "backslashreplace"))
             item = {"type": "tool_result", "tool_use_id": ident, "content": conteudo}
             if res.erro:
                 item["is_error"] = True

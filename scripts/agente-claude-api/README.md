@@ -53,6 +53,8 @@ python -m venv .venv
 
 O `.venv/` é ignorado pelo git (`.gitignore` local). Nada vai para o Python global. Se o Python da
 Microsoft Store não criar o venv, use `C:\Users\<você>\AppData\Local\Programs\Python\Python313\python.exe -m venv .venv`.
+Exige **Python 3.11 ou mais novo**: a redação de JWT usa grupo atômico e quantificador possessivo do
+módulo `re`, que só existem a partir do 3.11 (medido e testado no 3.13).
 
 ## A chave e o workspace (antes do primeiro uso real)
 
@@ -195,13 +197,20 @@ mesma ferramenta e mesmos argumentos (normalizados: campos nulos, falsos e vazio
 ausentes), na forma `<ferramenta> <JSON>` (`buscar {"padrao": "x", "caminhos": ["src"]}`) ou
 `<ferramenta> chave=valor` (`buscar padrao=x`). Citar só o nome da ferramenta, um pedaço do argumento,
 texto livre ou uma chamada que a cerca negou dá `false`. `false` não prova que o achado é falso; diz
-que a evidência não foi conferida. A prova de cobrança na conta da API é o `request-id` + os
+que a evidência não foi conferida. O porquê vai ao lado, em `evidencia.motivo_conferencia`. A citação é
+texto do modelo: antes de qualquer parse, ela é recusada se passar de 8000 caracteres ou de
+profundidade 2 (argumento de ferramenta é sempre plano), e qualquer erro na conferência vira `false`
+com o motivo — nunca derruba o parecer. A prova de cobrança na conta da API é o `request-id` + os
 cabeçalhos de rate limit de cada resposta.
 
 **Códigos de saída:** `0` parecer completo · `2` parcial (orçamento, STOP, Ctrl+C, recusa do modelo,
 sem `entregar_parecer`) · `3` recusa prévia (chave ausente, usuário sem workspace, URL base estranha,
-argumento inválido, disco curto, pasta já existente) · `4` erro de API · `5` erro interno. Em 2, 4 e 5
-o parecer parcial e a auditoria sempre existem.
+argumento inválido, disco curto, pasta já existente) · `4` erro de API · `5` erro interno, **inclusive**
+quando a revisão terminou mas a montagem ou a gravação de um artefato falhou. Em 2, 4 e 5 o parecer,
+a auditoria (com o evento `fim`) e o `resumo.json` sempre existem: cada etapa da gravação tem a sua rede.
+Se a montagem falhar, grava-se um parecer de emergência (só campos do script, `parcial`) com o parecer do
+modelo cru em `parecer_do_modelo_sem_montagem`. Toda falha fica em `parecer.json.falhas_de_gravacao` e no
+`erro.txt`.
 
 ## Parar
 

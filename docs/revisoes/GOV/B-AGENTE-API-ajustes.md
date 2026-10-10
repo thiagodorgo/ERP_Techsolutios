@@ -182,3 +182,110 @@ Todas as mutações: controle sem mutação = OK; restaurado por `sha256` = sim.
 - **Mutações novas:** 30 aplicadas, **30 VERMELHAS**, 30 restauradas por `sha256` (31/31 arquivos idênticos ao estado anterior à rodada).
 - **`git diff --check`:** exit 0.
 - Base: 130 testes no `c876e6b0` → 160 (30 novos; 5 ajustados à regra nova).
+
+## N1/N2 (head f6abcaa0)
+
+> Mesma identidade (`dev-agente-api-ajustes`), mesmo modelo (Claude **Opus 5.5**, nível menor), mesmas proibições: sem API, sem ler a chave, sem commit nem push. Insumo: `B-AGENTE-API-revisao.md`, seção "Reconferência dos ajustes" (N1, N2). O revisor não propôs correção; os remédios são os do orquestrador.
+
+### Q0 — terreno (22:40Z)
+- `git rev-parse HEAD` → `f6abcaa0e8a6f8252fcff5f7892d678200f92c78`; `git status --short` → vazio (os ajustes anteriores estão no `c727fb4e`; o `f6abcaa0` só acrescenta a reconferência ao parecer do revisor).
+- `sha256sum agente_claude/*.py tests/*.py README.md` → gravado no scratchpad (`n1/sha-inicio-n1.txt`).
+
+### Q1 — reprodução ANTES do conserto (`n1/medir_n1.py`, `Cenario` da suíte, falsos, sem rede)
+| Caso | Resultado no `f6abcaa0` | Arquivos na pasta de saída |
+|---|---|---|
+| N1 exato: `comando = 'buscar ' + '{"a":'*3000 + '1' + '}'*3000` | **levanta `RecursionError`** | `['auditoria.jsonl']` |
+| N1, forma `chave=valor`: `buscar padrao=` + `[`×3000 + `]`×3000 | **levanta `RecursionError`** | `['auditoria.jsonl']` |
+| N1 com profundidade 100 000 | **levanta `RecursionError`** | `['auditoria.jsonl']` |
+| Irmão medido da mesma classe: `resumo = "x\ud800y"` (surrogate solto no texto do modelo) | **levanta `UnicodeEncodeError`** | `['auditoria.jsonl', 'parecer.json.tmp']` |
+| Entrada de ferramenta aninhada 3000 níveis (`buscar {"padrao": [[[…]]]}`) | `codigo=5` (o `redigir_objeto` da auditoria recursa; o laço cai) | `auditoria.jsonl`, `erro.txt`, `parecer.json`, `parecer.md`, `resumo.json` |
+
+Veredito parcial: o N1 se reproduz nas três formas. Achei um quarto caminho da mesma propriedade, "conteúdo do modelo suprime o artefato de uma execução paga": o surrogate solto. O quinto caso já termina COM artefato; a própria API, com `strict`, não manda entrada fora do esquema. Ele fica declarado no §N-4.
+
+### Q2 — conserto (23:05Z)
+- **(1) N1, `parecer.py`:**
+  - A citação passa por `_ler_citacao`. Teto de **8000 caracteres** na citação inteira e em cada texto que vai ao `json.loads`.
+  - Teto de **profundidade 2**, medido por `profundidade_excede`: uma varredura linear, sem parse e sem recursão, que conta `[`/`{` fora de string JSON. Vale ANTES de qualquer `json.loads`, na forma JSON e em cada valor da forma `chave=valor`.
+  - `_escalar` recusa lista dentro de lista e objeto: argumento de ferramenta deste agente é plano, profundidade 2. Por isso a recusa não perde evidência verdadeira.
+  - `conferir_evidencia_com_motivo` **nunca levanta**. Qualquer falha, inclusive `RecursionError` e `MemoryError`, vira `conferida=false`.
+  - O motivo vai em `evidencia.motivo_conferencia`: `conferida … #<seq>`, `não é texto`, `mais de 8000 caracteres`, `aninhada além da profundidade 2`, `forma não é …`, `nenhuma chamada executada …` ou `erro ao conferir (<Classe>)`. O `.md` mostra o motivo fora do bloco, como linha do script.
+- **(2) Montagem à prova de falha, `tarefas.py`:**
+  - Cada etapa tem a sua rede: `montar`, `parecer.json`, `parecer.md`, evento `fim` e `resumo.json`.
+  - Se `montar` falha, entra o `parecer_de_emergencia`, só com campos do script, `parcial=true` e `motivo_parcial="falha_na_montagem:<Classe>"`. O parecer validado do modelo vai cru em `parecer_do_modelo_sem_montagem`.
+  - O `parecer.json` é gravado PRIMEIRO. Se ele falha, grava-se o de emergência.
+  - Havendo qualquer falha:
+    - `parecer.json.falhas_de_gravacao` lista a falha (o campo está sempre presente; vazio quando não há falha);
+    - o `erro.txt` recebe o traceback redigido, em modo de acréscimo;
+    - o `fim` traz `falhas_de_gravacao`;
+    - o **código de saída vira 5**.
+  - O `fechar()` da auditoria está num `finally`.
+- **Irmão do N1 (surrogate):** `errors="backslashreplace"` em todo arquivo gravado: `parecer.*` (`_escrever`), `auditoria.jsonl`, `resumo.json` e `erro.txt`. O surrogate vira o texto `\udXXX`, que é escape JSON válido.
+- **(3) N2, `redacao.py`:** o padrão do JWT passou a `(?<![A-Za-z0-9_-])(?>[A-Za-z0-9_-]*?eyJ)[A-Za-z0-9_-]{8,}+\.[A-Za-z0-9_-]{8,}+\.[A-Za-z0-9_-]{8,}+`. Funciona assim:
+  - o início só acontece na borda de uma sequência base64url;
+  - o prefixo até o 1º `eyJ` é atômico;
+  - os segmentos são possessivos.
+- **Medições depois do conserto:**
+  - `n1/medir_n1.py`: as 3 formas do N1 e o surrogate deram `codigo=0`, com `auditoria.jsonl`, `parecer.json`, `parecer.md` e `resumo.json`; a entrada aninhada de ferramenta segue em `codigo=5` com todos os artefatos (§N-4).
+  - JWT: `'eyJ'*n` → 16 K 0,006 s · 64 K 0,021 s · 256 K 0,106 s (antes: 64 K 1,1 s; 256 K 17,6 s). Outras 4 formas hostis (`eyJ…` + ponto, cadeias com ponto, colado a `x `) ficaram ≤ 0,09 s em 256 K.
+  - Semântica do JWT:
+    - `Bearer <jwt>`, `"token":"<jwt>"` e `a.<jwt>` são redigidos como antes;
+    - `x<jwt>` e `abc-<jwt>` (colados) são redigidos, junto com o prefixo colado;
+    - os limiares (`eyJ` + ≥ 8, segmentos ≥ 8) são os mesmos de antes.
+  - Varredura da PROPRIEDADE "todo padrão linear" (`n1/medir_redacao.py`, textos gerados do prefixo literal de cada padrão, com 5 formas cada): na régua de 16 K → 64 K, só o JWT antigo passava de razão 8 (16,7); todos os outros ficaram em ≤ 4,9.
+- Suíte antiga sobre o código novo: `Ran 160 tests` · `OK`.
+
+### Q3 — testes, mutações e bateria (23:40Z)
+- **Testes novos (10):**
+  - `tests/test_parecer_resiliente.py`, arquivo novo, 8 testes:
+    - `test_n1_citacao_aninhada_nao_derruba_o_parecer`: uma execução inteira com 6 citações. São a reprodução EXATA do revisor, a profundidade 100 000, a forma `chave=valor` com 3000 níveis, uma citação curta e funda (1000 níveis, 6008 caracteres), uma longa e rasa (9100 caracteres) e o controle verdadeiro. O teste exige `codigo=0`, os 4 artefatos, o evento `fim`, `conferida` e `motivo_conferencia` esperados, e tempo < 10 s.
+    - `test_qualquer_falha_na_conferencia_vira_false_com_motivo`: 10 entradas estranhas, mais `RecursionError` forçado dentro da conferência.
+    - `test_profundidade_medida_sem_parse_e_sem_recursao`: `[`×1 000 000 em < 2 s; colchetes dentro de string e aspas escapadas não contam.
+    - `TestGravacaoAProvaDeFalha` (5 testes): `.md` falha; montagem falha; `.json` falha uma vez; `.json` falha sempre; surrogate solto em `resumo`, achado e entrada de ferramenta.
+  - Em `test_redacao.py`, 2 testes:
+    - `test_jwt_colado_redigido_e_limiares_iguais`;
+    - `test_todo_padrao_linear_em_texto_gerado`: a PROPRIEDADE. São 14 prefixos literais, um ou mais por padrão, em 5 formas hostis de 128 KB cada (70 textos); cada redação tem de levar < 1 s.
+- **Mutações** (`n1/mutar_n1.py`, mesmo arnês: troca exata casando 1 vez, controle verde, `python -B` sem `__pycache__`, `sha256` restaurado) → `TOTAL 13 · VERMELHAS 13`, e `sha256sum -c` → 32/32 `OK`:
+
+| Mutação | O que tira | Teste | Vermelho medido |
+|---|---|---|---|
+| M-N1a | o teto de profundidade | `test_n1_citacao_aninhada_…` | `Ran 1` · `FAILED (failures=1)` |
+| M-N1b | os dois tetos de tamanho | idem | `Ran 1` · `FAILED (failures=1)` |
+| M-N1c | **toda** a pré-checagem (tamanho + profundidade) | idem | `Ran 1` · `FAILED (failures=1)` |
+| M-N1d | a pré-checagem **e** a rede da conferência (= o código do N1) | idem | `Ran 1` · `FAILED (failures=1)`: o `RecursionError` sobe, a rede da montagem (2) segura, e sai código 5 em vez de 0 |
+| M-N1e | a rede da conferência | `test_qualquer_falha_na_conferencia_…` | `Ran 1` · `FAILED (errors=1)` |
+| M-N1f | a rede da montagem | `test_montagem_falha_…` | `Ran 1` · `FAILED (errors=1)` |
+| M-N1g | a rede do `.md` | `test_md_falha_…` | `Ran 1` · `FAILED (errors=1)` |
+| M-N1h | a rede do `.json` | `test_json_falha_uma_vez_…`, `test_json_sempre_falha_…` | `Ran 2` · `FAILED (errors=2)` |
+| M-N1i | o código 5 em falha de artefato | `test_md_falha_…` | `Ran 1` · `FAILED (failures=1)` |
+| M-N1j | `backslashreplace` no `parecer.*` | `test_surrogate_solto_…` | `Ran 1` · `FAILED (failures=1)` |
+| M-N1k | `backslashreplace` na auditoria | idem | `Ran 1` · `FAILED (failures=1)` |
+| M-N1l | `backslashreplace` na medida de bytes da previsão | idem | `Ran 1` · `FAILED (failures=1)` |
+| M-N2 | volta o padrão antigo do JWT | `test_todo_padrao_linear_em_texto_gerado` | `Ran 1 test in 5.235s` · `FAILED (failures=1)` (controle: 1,365 s para os 70 textos) |
+
+- **N1 pela CLI** (`n1/cli_n1.py`, falsos da suíte, `revisar-pr 416` com a citação exata do revisor) → **exit 0**, `['auditoria.jsonl', 'parecer.json', 'parecer.md', 'resumo.json']`, worktree removido, `conferida False · não conferida: citação com mais de 8000 caracteres`, `parecer completo: veredito=aprovado`. Antes: exit 5, só `auditoria.jsonl`.
+- **Suíte, venv:** `.venv/Scripts/python.exe -B -m unittest discover -s tests -t .` → `Ran 170 tests in 8.162s` · `OK`; `-v` → 0 `skipped`.
+- **Suíte, Python global sem o SDK** (`find_spec('anthropic')` → `None`): `Ran 170 tests in 8.088s` · `OK`. `tests.test_suite` → OK.
+- `git diff --check` → exit 0. O arquivo novo de teste e este relatório: 0 linhas com espaço no fim.
+
+### N-4 — decisões, pendências e escopo
+| # | O quê | Por quê / dono |
+|---|---|---|
+| K1 | Falha de artefato sai com **código 5** (erro interno), e não com um código novo | O contrato já garante, para o 5, que parecer, auditoria e resumo existem; agora isso vale também quando um artefato falha. `parecer.json.falhas_de_gravacao` e `erro.txt` dizem qual etapa falhou. Se o orquestrador quiser distinguir "revisão completa com artefato falho" de "erro interno", um código próprio custa uma linha mais o README. |
+| K2 | O teto de profundidade é **2**, e não um número "folgado" | Argumento de ferramenta deste agente é sempre plano (objeto → lista → escalar). Uma citação mais funda não pode ser chamada executada; recusá-la não perde evidência. |
+| K3 | O tamanho (8000) é conferido antes da profundidade | A reprodução exata do N1 (18 008 caracteres) e a de 100 000 níveis param no tamanho; a forma `chave=valor` (6014) e a curta e funda (6008) param na profundidade. Cada teto tem caso próprio e mutação própria. |
+| K4 | `backslashreplace` em todo arquivo gravado e em toda medida de bytes | É o irmão do N1 medido aqui: um surrogate solto no texto do modelo suprimia os artefatos. Na medida de bytes, `backslashreplace` só aumenta o tamanho, então a previsão do A4 continua sendo de pior caso. |
+| K5 | O padrão do JWT exige Python ≥ 3.11 (grupo atômico e quantificador possessivo) | O venv e o Python global são 3.13.14; o README passou a dizer o mínimo. |
+| P-N4a | **Entrada de ferramenta aninhada** (o modelo manda `{"padrao": [[[…]]]}` com 3000 níveis) | Não é N1: já termina **com** todos os artefatos, mas com `codigo=5`. O `redigir_objeto` da auditoria recursa e o laço cai no 1º turno. Com `strict: true`, a API não entrega entrada fora do esquema; o caminho só existe com um modelo que viole o esquema. Fica declarado; dono: o próximo bloco do agente (limitar a profundidade em `redigir_objeto` e em `bytes_json`). |
+| P-N4b | **[H] 1 token ≤ 1 byte** (A4) | Continua aberta, sem mudança: conferir no 1º uso real (§4). |
+| N3 | CI do head (teste instável `san3-05-runtime-role-guard-db` T15) | Pré-existente, fora do escopo deste bloco; continua com o orquestrador e com o dono do #405. |
+
+- **Escopo** (`git status --short`):
+  - modificados: `agente_claude/{auditoria,ferramentas,laco,orcamento,parecer,redacao,tarefas}.py`, `README.md`, `tests/test_redacao.py` e este relatório;
+  - novo: `tests/test_parecer_resiliente.py`;
+  - nada fora de `scripts/agente-claude-api/**` e `docs/revisoes/GOV/`.
+- **Limpeza:**
+  - `git worktree list | grep -c w-ag-` → 0;
+  - `%TEMP%\agente-suite-*` → 0;
+  - `__pycache__` ausente.
+  - No scratchpad, `n1/` guarda os scripts de medição e de mutação, `mutacoes_n1.jsonl` e os `sha256`, tudo fora do repositório.
+- Nenhum comando foi barrado pelo classificador ou pela permissão. Sem chamada à API, sem ler a chave, sem commit nem push.
