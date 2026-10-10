@@ -7,7 +7,12 @@ MIG=20260873000000_add_stock_movements_unique_backstops
 cd /work
 psql "$ADMIN" -v ON_ERROR_STOP=1 -q -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB" || exit 91
 rm -rf /tmp/m02prisma && cp -r /work/prisma /tmp/m02prisma && rm -rf /tmp/m02prisma/migrations/$MIG
-DATABASE_URL="$URL" npx prisma migrate deploy --schema /tmp/m02prisma/schema.prisma > /tmp/m02-pre.log 2>&1; echo "== 0. migra SEM o bloco -> ec=$? · aplicadas=$(psql "$URL" -tAc "select count(*) from _prisma_migrations where finished_at is not null")"
+# Integracao 2: o prisma.config.ts da raiz fixa migrations.path = prisma/migrations, entao `--schema` da copia
+# NAO exclui a migracao do bloco (medido: 108 aplicadas no passo 0). A copia ganha um config proprio (Prisma 7 `--config`).
+cat > /tmp/m02prisma.config.ts <<'CFG'
+export default { schema: "/tmp/m02prisma/schema.prisma", migrations: { path: "/tmp/m02prisma/migrations" }, datasource: { url: process.env.DATABASE_URL } };
+CFG
+DATABASE_URL="$URL" npx prisma migrate deploy --config /tmp/m02prisma.config.ts > /tmp/m02-pre.log 2>&1; echo "== 0. migra SEM o bloco -> ec=$? · aplicadas=$(psql "$URL" -tAc "select count(*) from _prisma_migrations where finished_at is not null")"
 echo "== 1. semeia 21 grupos"; psql "$URL" -v ON_ERROR_STOP=1 -tA -F'|' -f /tmp/m02-seed.sql; echo "   seed ec=$?"
 for n in 1 2; do
   DATABASE_URL="$URL" npx prisma migrate deploy > /tmp/m02-deploy$n.log 2>&1; ec=$?
