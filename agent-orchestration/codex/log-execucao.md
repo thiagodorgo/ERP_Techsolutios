@@ -4871,3 +4871,10 @@ bloco mergear.
 - Fechou a E8: costura de estados sem mudança de comportamento (`ca29352f`), testes T1–T45 reforçados para medir o estado renderizado em vez do texto-fonte (`7644512c`), docs (`8007be1e`), registro com evidência `arquivo:linha` nas 6 pendências fechadas (`d73d421c`).
 - Bateria: `check` frontend verde; `test:smoke` 1313/1313 (baseline 1268, Δ +45); T1–T45 45/45; regressões 125/125; `smoke-flow` 22/22; build verde; testes da raiz que leem `frontend/src` 16/16; `check`/`lint` da raiz verdes após `prisma generate` local; 9/9 controles negativos externos vermelhos com restauro provado.
 - Divergências do plano registradas no relatório do dev (geradores não byte-idênticos aos apêndices, mas de saída equivalente; critério de docs da A18 com 2 menções verdadeiras, uma fora das linhas permitidas). `Kpis/*` intocado; nada de backend, banco ou porta.
+
+## Registro de 2026-10-10 (madrugada)
+
+- #405 mergeado (`a9fbe283`, 2026-10-09 22:01Z) depois de 3 tentativas de CI derrubadas pelo limite do Docker Hub (`P-CI-DOCKER-HUB-LIMITE`); porteiro LIBERADO COM RESSALVA (o parecer foi versionado neste PR).
+- #412 (KPI por marco, pedido do dono) e #411 (B-SAN3-06b) mergeados com revisor independente + CI, pela `D-GOV-PROPORCIONAL` (1).
+- Limpeza autorizada pelo dono (`D-LIMPEZA-2026-10-09`); esteira da API congelada (`D-API-ESTEIRA-CONGELADA`); ordem da noite (`D-ORDEM-NOITE-2026-10-10`).
+- Pendências novas: `P-CI-DOCKER-HUB-LIMITE`, `P-SAN3-06B-TESTES-RESIDUAIS`, `P-CLOUD-BILLING-ORG-SISTEMA`, `P-LINT-RAIZ-SEM-MJS`, `P-KPI-MARCO-2026-10-09-NOTAS`; donos nomeados para `P-SAN3-05-ATO2-CINCO-TAREFAS` e `P-SAN3-05-MENSAGEM-DA-RECUSA` (`B-SAN3-05-ATO2`).

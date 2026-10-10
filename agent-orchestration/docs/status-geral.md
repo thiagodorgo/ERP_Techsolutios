@@ -5022,3 +5022,10 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - Cinco geradores e 45 testes T1–T45 cobrem fabricação, rotas, menu, contratos e controles negativos.
 - KPI congelado: nenhum arquivo `Kpis/*` foi alterado. Aguarda revisor independente e CI; PR será aberto pelo orquestrador.
 - **Sucessor (2026-10-09):** E8 fechada por `dev-b-san3-06b-sucessor` (Claude Opus 5.5) depois da queda do Codex; `test:smoke` 1313/1313, T1–T45 45/45, regressões 125/125, build e `check` verdes; relatório em `docs/revisoes/SAN3/B-SAN3-06b-DEV-relatorio.md`.
+
+## Estado em 2026-10-10 (madrugada) — registro em dia
+
+- **Mergeados:** #405 B-SAN3-05 (`a9fbe283`; junta 4 APROVADA 3 × 0; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-05/PORTEIRO-405.md`) · #412 KPI por marco (`8a79532f`; revisor APROVADO) · #411 B-SAN3-06b console da plataforma sem ficção (`a2937bad`; revisor APROVADO na re-revisão; porteiro em curso).
+- **Em curso:** plano do Traccar no ramo `docs/plano-traccar` (`612d6650`, 7 blocos, B-TRC-01 detalhado) com a crítica r1 no Codex; plano de retomada do #389 (Fable).
+- **Congelados:** esteira da API (`D-API-ESTEIRA-CONGELADA`), Linux (`D-LINUX-CONGELADO`), #393. **Estacionado:** #388.
+- **Ordem do dono:** `D-ORDEM-NOITE-2026-10-10`.

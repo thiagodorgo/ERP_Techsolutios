@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **482** |
-| IDs distintos | 471 |
-| **ABERTAS** | **355** |
+| Cabecalhos `## P-` | **487** |
+| IDs distintos | 476 |
+| **ABERTAS** | **360** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **288** |
+| — das quais **ativas nesta rodada** | **293** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 124 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **482 cabecalhos para 471 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **487 cabecalhos para 476 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 159
+## ABERTAS · balde A — material — 161
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -233,8 +233,10 @@
 | `P-SAN3-06B-CLOUD-BILLING-ESCRITA` | 10444 | ALTA | sim | P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produ |
 | `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA` | 10451 | MÉDIA | sim | P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — M |
 | `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` | 10458 | MÉDIA | sim | P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros d |
+| `P-CI-DOCKER-HUB-LIMITE` | 10479 | MÉDIA | sim | P-CI-DOCKER-HUB-LIMITE (2026-10-09) — o CI baixa Postgres e Redis do Docker Hub sem logi |
+| `P-CLOUD-BILLING-ORG-SISTEMA` | 10493 | MÉDIA | sim | P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organ |
 
-## ABERTAS · balde B — processo/registro — 129
+## ABERTAS · balde B — processo/registro — 132
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -367,6 +369,9 @@
 | `P-SAN3-05-MENSAGEM-DA-RECUSA` | 10395 | BAIXA | sim | P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e n |
 | `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO` | 10465 | BAIXA | sim | P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console anti |
 | `P-SAN3-06B-HEALTH-FETCH-DIRETO` | 10472 | BAIXA | sim | P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAI |
+| `P-SAN3-06B-TESTES-RESIDUAIS` | 10486 | BAIXA | sim | P-SAN3-06B-TESTES-RESIDUAIS (2026-10-10) — lacunas de teste e um rótulo de Saúde deixado |
+| `P-LINT-RAIZ-SEM-MJS` | 10500 | BAIXA | sim | P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA |
+| `P-KPI-MARCO-2026-10-09-NOTAS` | 10507 | BAIXA | sim | P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412 |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 

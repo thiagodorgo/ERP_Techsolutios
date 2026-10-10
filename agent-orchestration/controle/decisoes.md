@@ -3048,3 +3048,39 @@ e a exigência de porteiro para PR de registro.
   matview cuja árvore alcance uma tabela com FORCE ROW LEVEL SECURITY, sem analisar dono nem privilégio. Hoje há 0
   views; nenhuma funcionalidade quebra. Ciclo 4 curto, só desse ponto; C2 e C3 da junta 3 não votam (a junta 3 fecha
   REPROVADA pela C1).
+
+## Registro de 08–10/10/2026 — decisões do dono e fatos de orquestração (PR de registro de 10/10)
+
+- **D-LINUX-CONGELADO (2026-10-08)** — o dono desistiu de mover a execução para o PC Ubuntu da sala (i5 7ª geração, 16 GB,
+  SSD): *"vamos congelar o linux, é muito trabalho para pouco ganho"*. Reaberto em 10/10 só para a esteira da API, que foi
+  congelada no mesmo dia (`D-API-ESTEIRA-CONGELADA`, abaixo).
+- **D-API-FORA-DESTE-PC (2026-10-09)** — *"ok, deixa quieto o uso da api neste pc. vou usar no linux mais tarde."* Causa
+  medida antes da decisão: com o login de assinatura presente, o Claude Code headless cobrava a assinatura e não a chave
+  (o campo `apiKeySource` do evento de início do stream provou isso), e a cota semanal foi consumida.
+- **D-CLAUDE-2-PROCESSOS (2026-10-09)** — *"a partir de agora, o claude pode ter ate 2 procesos simutaneo consumindo
+  tokens"*. O Codex segue com 1 sessão pesada por vez. Efeito declarado (ressalva do porteiro do #405): na junta 4 do
+  B-SAN3-05, a C2 e a C3 rodaram em paralelo, contra o R2 do inspetor (uma por vez, por disco), com o disco medido antes
+  (14 GB livres) e cada cadeira em worktree, cluster e rede próprios; a C2 mediu efeito nulo (nota C2c4-N5).
+- **D-KPI-MARCO-2026-10-09** — *"atualize kpis"*: a consolidação por marco que a `D-GOV-PROPORCIONAL` (5) prevê, feita no
+  PR #412 (revisor independente APROVADO, 3 notas). O KPI segue congelado para os PRs de bloco.
+- **D-LIMPEZA-2026-10-09** — *"autorizo a limpeza, os 'Precisa de decisão sua' pode apagar"*. Feito: 7 worktrees, 10
+  ramos locais (9 preservados no GitHub; `chore/ci-probe` apagado de vez), 53 corpos de jurado soltos (todos versionados),
+  o stash de 8 semanas, os caches de gradle e npm, o cache de build do Docker, 115 ramos remotos (109 mergeados + 6
+  provados contidos na `main` por `git merge-tree`; a lista com os SHAs fica fora do repositório, em
+  `erp-pausa-2026-10-03/RAMOS-REMOTOS-PARA-APAGAR.txt`) e `git gc --prune=now` (o stash e o `ci-probe` não têm mais volta).
+  O classificador de segurança do Claude Code barrou a remoção de 2 containers e 18 volumes Docker (um par é do projeto
+  pastrack) e a compactação do disco do Docker exige administrador: os comandos ficaram com o dono.
+- **D-API-ESTEIRA-CONGELADA (2026-10-10)** — o dono propôs a API num *"papel pequeno que seja verificável e retornável,
+  com um plano em fable"* e aprovou (*"vai"*); o classificador barrou a peça que roda o Claude sozinho com terminal livre
+  ("criar agente inseguro"), e o dono congelou: *"ok, congele isso, rodo o agente em um script python pq os creditos que
+  tenho nao eh pra claude"*. O kit nunca foi commitado; está arquivado fora do repositório
+  (`erp-pausa-2026-10-03/esteira-api-CONGELADA-2026-10-10/`), com o plano parcial do PKT-001 (B-SAN3-05T) para um dev normal.
+- **D-ORDEM-NOITE-2026-10-10** — antes de dormir, o dono aprovou (*"vai"*) a ordem: (1) fechar o #411; (2) fechar o #412;
+  (3) registro em dia; (4) plano do Traccar no Codex, a crítica e os blocos de ingestão com junta completa de segurança;
+  (5) destravar a produção — retomar o #389, depois `B-O6R-07c` e `B-O6R-03a`, e uma junta J-6R nova; (6) telas sem
+  placeholder (`B-SAN3-06a`, `B-SAN3-12/24/25`); (7) Ato 2. O bloco do Ato 2 fica nomeado `B-SAN3-05-ATO2`.
+- **Errata A-1 do revisor do #410** — em `D-ATO2-OPCAO-B` e em `P-SAN3-05-ATO2-CINCO-TAREFAS`, *"não bloqueia o Traccar"*
+  é leitura do orquestrador, não fala do dono. Medida do porteiro do #405: depois de `a9fbe283`, o boot de produção recusa
+  papel que escapa do RLS (`enforce` por padrão em produção), logo o Ato 2 bloqueia QUALQUER deploy de produção —
+  inclusive a ingestão do Traccar —, e não bloqueia o plano nem o desenvolvimento. O texto de 08/10 fica como estava
+  (append-only); a pendência foi atualizada com esta referência.
