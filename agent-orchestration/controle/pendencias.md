@@ -3424,6 +3424,9 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
 
 - **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
 - **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **Apenso 2026-10-10 (plano do `B-O6R-07c` v3, §R.4):** o despacho não grava a atribuição da OS
+  (`git grep -nF ".assign(" -- src/modules/field-dispatch` → 0); com o guard do 07a, o técnico despachado sem atribuição
+  não muda o status da OS. A resposta é a D1-07c (pergunta aberta ao dono em `decisoes.md`).
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -3867,6 +3870,9 @@ não entrega inteira.
 
 - **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **Apenso 2026-10-10 (plano do `B-O6R-07c` v3, §R.4; dono órfão em `PLANO_SAN3.md:400-401`):** não cabe no 07c
+  (superfície de identidade, fora do alcance do técnico: `/auth/identity-links*` responde 401 `jwt_required` na sonda);
+  ganha bloco próprio pós-gate, a nomear pelo estrategista.
 
 ## P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de candidatos é invisível
 
@@ -6756,7 +6762,8 @@ gestor moderando comentário ANTES de codar. **Consequências declaradas:** o ga
 continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
 fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
+- **status:** ABERTA — PARCIAL (2026-10-10, com o merge do PR #414, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
+  o resíduo é do `B-O6R-07c-b`). Antes: ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
   `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
   `B-O6R-07c`.
 
@@ -6792,6 +6799,13 @@ do razão para que ninguém volte a ele.
 **executou** em vez de ler. O `07c` que repita o método, não a lista.
 
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** o `Ω6R-SEC-002` e o item 51 fecham por **escopo provado**, não por dono (junta do ciclo 2, C2c2-03; plano SAN3 v5, §4.1 item 11; condição de entrada CE-2 do `B-O6R-07c`, §5.6): o censo é gerado por script das rotas mutantes dos routers da fronteira e do sync mobile, cruzadas com as permissões do `field_technician`; **toda** rota mutante que o técnico alcança tem teste de 403 `not_assigned_to_actor` com vermelho-controle — inclusive as 5 de comentário e as 2 de geocode desta entrada; o piso "1, 2 e 10" deixa de ser critério de fechamento; um guard fica vermelho quando surge rota mutante alcançável pelo técnico sem teste de escopo.
+- **Apenso 2026-10-10 (`B-O6R-07c-a`, PR #414; texto do plano do `B-O6R-07c` v3, §R.4):** "Bloco dividido pelo orquestrador
+  em 2026-10-10. O 07c-a fecha por escopo provado as 10 vias desta entrada e cumpre o item vinculante (o censo do sync,
+  agora gerado pelo gerador v3, que conta toda camada que pode responder e todo tipo que o despachante aceita). Resíduo:
+  as 23 entradas `·07c-b` do instantâneo `tests/fixtures/o6r07c-classificacao-vias.json` (18 de vistoria, 4 de evidência
+  de OS, 1 de despacho), dono `B-O6R-07c-b`, bloqueado pelas decisões D1-07c e D2-07c do dono. Status: PARCIAL. O
+  `Ω6R-SEC-002` segue `parcialmente_superado`."
+
 ## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
 
 **Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
@@ -10798,3 +10812,35 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Junto com o T15 do #405 (`P-SAN3-05-T15-TETO-DE-RELOGIO`), é a segunda falha intermitente que derruba o CI de PR que não toca o código dela.
 - **bloqueia:** não; custa re-execução de CI.
 - **teste de encerramento:** o A10 limpa na ordem das FKs (ou por banco próprio), verde em 10 rodadas do `backend-postgres`.
+
+## P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de forma permanente fica presa no aparelho, sem saída — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — o teto de reenvio e a falta de saída antecedem o 07c: a ação recusada fica `failed`, é reenviada no máximo 5 vezes (`sync_replay_service.dart:136,150,666,1367`; `evidence_sync.dart:297`) e depois fica presa no aparelho; só conflito zera o contador (`sync_conflict_resolver.dart:20-27`). Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** `B-SAN3-16`.
+- Sobe um grau de severidade se a resposta do dono à D2-07c for "recusar".
+- **bloqueia:** não o 07c-a; pesa no 07c-b conforme a D2-07c.
+- **teste de encerramento:** ação recusada de forma permanente aparece ao usuário com uma saída (descartar com aviso ou encaminhar), e nenhuma ação fica invisível na fila.
+
+## P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA (2026-10-10) — 10 vias aceitam `work_order_id` no corpo sem passar pelo escopo da OS — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — classe R do censo do plano do `B-O6R-07c` v3 (§R.4): `POST /damages`, `POST`/`PATCH /fuel-logs`, `POST`/`PATCH /expense-reports`, `POST /expense-reports/:reportId/items`, 3 ações `expense_*` do sync e `POST /mobile/telemetry` aceitam `work_order_id` no corpo sem passar pelo escopo da OS; a OS não muda nem os exibe · **dono:** fila pós-gate.
+- O efeito em dinheiro do `POST /damages` está na `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`, não aqui.
+- **bloqueia:** não.
+- **teste de encerramento:** cada uma das 10 vias recusa `work_order_id` de OS fora do escopo do ator (ou o vínculo passa a passar pelo escopo da OS), com um teste por via.
+
+## P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO (2026-10-10) — o técnico de campo dispara a varredura de alertas de frota da organização inteira — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`f47062ba`, 2026-07-09, #152) — `POST /notifications/fleet-alerts/run` responde 200 ao `field_technician` e ao `technician` e dispara a varredura da organização inteira com distribuição a destinatários (`notification.controller.ts:76-99`), sob `notifications:update`, que o `RBAC_MATRIX.md:86` diz ser da própria caixa. Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** fila pós-gate.
+- **bloqueia:** não.
+- **teste de encerramento:** a rota deixa de responder 200 ao técnico de campo, ou a matriz passa a autorizar isso por decisão escrita; com teste.
+
+## P-O6R-07CA-DB-FORA-DA-LISTA-CI (2026-10-10) — a suíte `tests/o6r07c-subresource-scope-db.test.ts` não roda no job `backend-postgres` do CI — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` quanto ao mecanismo — a lista do job `backend-postgres` é curada à mão em `.github/workflows/ci.yml`, escopo proibido do bloco; no job `backend` a suíte se declara pulada. Origem: proposta do dev do 07c-a (`docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md`, S4) · **dono:** o próximo bloco que tocar `ci.yml`.
+- **bloqueia:** não; a junta roda a suíte em cluster próprio.
+- **teste de encerramento:** o log do job `backend-postgres` mostra a suíte executada (ou a lista do job passa a ser gerada por padrão de nome, não curada).
+
+## P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (2026-10-10) — sub-app `express()` montado dentro de `Router` não é descido pelo censo v3 do 07c-a — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o censo v3 nasceu no 07c-a) — medido pelo dev por mutação (S7, MG3b): um `express()` com `POST /work-orders/:workOrderId/via-mg3` montado por `router.use(sub)` entra no instantâneo como `MIDDLEWARE … · app`, o walk não desce nele e o guard fica verde (`# tests 31 · pass 31 · fail 0`). A única barreira hoje é a revisão humana do diff do instantâneo. Origem: proposta do dev do 07c-a (`docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md`, S7) · **dono:** a decidir pela junta do 07c-a (proposta do orquestrador: `B-GOV-GUARDA-POR-PROPRIEDADE`).
+- **bloqueia:** quem decide é a cadeira C2 da junta do 07c-a.
+- **teste de encerramento:** a forma MG3b deixa o guard vermelho.
