@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **499** |
-| IDs distintos | 488 |
-| **ABERTAS** | **371** |
+| Cabecalhos `## P-` | **513** |
+| IDs distintos | 502 |
+| **ABERTAS** | **384** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **304** |
+| — das quais **ativas nesta rodada** | **317** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 125 |
+| FECHADAS | 126 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **499 cabecalhos para 488 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **513 cabecalhos para 502 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,11 +70,10 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 170
+## ABERTAS · balde A — material — 182
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
-| `P-020` | 247 | ALTA | sim | P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-0 |
 | `P-Ω3F3B-UPDATE-VALIDA4` | 722 | MÉDIA | sim | P-Ω3F3B-UPDATE-VALIDA4 - Validação #4 depende da imutabilidade de customer/service no up |
 | `P-Ω4-3-REFATURAR-DELTA` | 1058 | MÉDIA | sim | P-Ω4-3-REFATURAR-DELTA — Faturar o delta de itens adicionados após o 1º faturamento (BAI |
 | `P-Ω4-3-CURRENCY-BRL` | 1092 | MÉDIA | sim | P-Ω4-3-CURRENCY-BRL — Item da OS aceita moeda ≠ BRL, mas faturar exige BRL (MÉDIA-BAIXA) |
@@ -241,11 +240,24 @@
 | `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` | 10550 | MÉDIA | sim | P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N den |
 | `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` | 10569 | MÉDIA | sim | P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz qu |
 | `P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA` | 10628 | MÉDIA | sim | P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de es |
-| `P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER` | 10638 | MÉDIA | sim | P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a  |
-| `P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE` | 10647 | MÉDIA | sim | P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta públic |
-| `P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU` | 10656 | MÉDIA | sim | P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status |
+| `P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER` | 10636 | MÉDIA | sim | P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a  |
+| `P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE` | 10645 | MÉDIA | sim | P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta públic |
+| `P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU` | 10654 | MÉDIA | sim | P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status |
+| `P-TRC-FORMA-QUATRO-OU-SETE` | 10670 | ALTA | sim | P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decis |
+| `P-TRC-AWS-FLY-PRAZO` | 10682 | ALTA | sim | P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1  |
+| `P-TRC-CONVIVENCIA-APP` | 10691 | ALTA | sim | P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do té |
+| `P-TRC-ATRIBUICAO-PRODUTO` | 10702 | MÉDIA | sim | P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde |
+| `P-TRC-VINCULO-POSSE` | 10712 | ALTA | sim | P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALT |
+| `P-TRC-LGPD` | 10725 | ALTA | sim | P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e aces |
+| `P-TRC-TETO-ORGANIZACOES` | 10737 | MÉDIA | sim | P-TRC-TETO-ORGANIZACOES (2026-10-10) — teto de 500 organizações ativas na descoberta do  |
+| `P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO` | 10747 | MÉDIA | sim | P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO (2026-10-10) — reatribuição e evento em transações |
+| `P-PORTAL-LISTEN-SEM-TRATADOR` | 10759 | MÉDIA | sim | P-PORTAL-LISTEN-SEM-TRATADOR (2026-10-10) — falha do listen do portal derruba a API do E |
+| `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` | 10767 | ALTA | sim | P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar  |
+| `P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE` | 10776 | MÉDIA | sim | P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os gu |
+| `P-BLOCO-BAT-01` | 10783 | MÉDIA | sim | P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, |
+| `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10795 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
 
-## ABERTAS · balde B — processo/registro — 134
+## ABERTAS · balde B — processo/registro — 135
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -382,7 +394,8 @@
 | `P-LINT-RAIZ-SEM-MJS` | 10500 | BAIXA | sim | P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA |
 | `P-KPI-MARCO-2026-10-09-NOTAS` | 10507 | BAIXA | sim | P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412 |
 | `P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO` | 10616 | BAIXA | sim | P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor  |
-| `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10665 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
+| `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10663 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
+| `P-REG-GERADOR-SEVERIDADE-POR-PALAVRA` | 10789 | BAIXA | sim | P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior pal |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -456,7 +469,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3660 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3704 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 125
+## FECHADAS — 126
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -468,6 +481,7 @@
 | `P-012` | 139 | BAIXA | **a atribuir** | P-012 - F1: tile "km/L medio da frota" e agregado nao-clicavel (2026-07-08) |
 | `P-018` | 217 | — | **a atribuir** | P-018 - Attachments: allowlist de mime confia no Content-Type declarado (sem sniffing) ( |
 | `P-019` | 228 | MÉDIA | sim | P-019 - Ocorrencias residuais de persona demo "Marina Costa" fora do mapa (2026-07-08) |
+| `P-020` | 247 | ALTA | sim | P-020 - F7a: check de saldo sem SELECT FOR UPDATE (corrida teorica de debito) (2026-07-0 |
 | `P-021` | 260 | MÉDIA | **a atribuir** | P-021 - F7b: fechar contagem nao duplica ajustes em retry (RESOLVIDO no bloco) (2026-07- |
 | `P-022` | 272 | BAIXA | **a atribuir** | P-022 - F7b: AuditLog na contagem do item (RESOLVIDO no bloco) (2026-07-09) |
 | `P-024` | 293 | — | **a atribuir** | P-024 - F9/F11: vocabulario RBAC de usuarios (users:read x users.read) parcialmente reco |
