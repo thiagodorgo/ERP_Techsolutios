@@ -3182,3 +3182,13 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
   (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
   nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).
+
+## Registro do `B-O6R-07c-a` (PR #414), 2026-10-10
+
+- **D-07C-TRAVAS-REORDENADAS (2026-10-10, decisão do orquestrador; texto do plano do `B-O6R-07c` v3, §R.4/B6)** — "Com a
+  divisão do `B-O6R-07c` (2026-10-10): (1) a trava de `src/modules/work-orders/work-order.service.ts`,
+  `SAN3-13 → 07c → SAN3-23` (`PLANO_SAN3.md:356`), passa a `07c-a → SAN3-13 → SAN3-23`; o 07c-b só toca esse arquivo se a
+  D1-07c for (b) ou (c), e aí entra na fila depois do `SAN3-13`. (2) A trava de `src/modules/mobile/mobile-work-order-sync.ts`,
+  `07c → SAN3-16` (`PLANO_SAN3.md:357`), é satisfeita pelo **07c-a** (que não toca o arquivo) quando a D2-07c for (a), (b) ou
+  (c), e passa a `07c-b → SAN3-16` quando for (d), porque aí o 07c-b toca o arquivo. Com (a), a ordem é
+  `07c-a → SAN3-16 → 07c-b`: o `SAN3-16` constrói a saída do app que o 07c-b exige antes de mergear."
