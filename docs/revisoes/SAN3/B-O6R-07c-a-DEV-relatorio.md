@@ -163,3 +163,31 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 | M11 recibo consultado depois do `processAction` (`mobile-work-order-sync.ts`, temporária) | 23/1 | 6/0 | 8/0 | S-KM-RESTART, **1ª asserção**: "1º reenvio veio rejected not_assigned_to_actor" |
 
 - Toda restauração: sha == original; `git status --short` só com o relatório (em edição).
+
+### S6 — mutações do guard MG1–MG15 (mesmo arnês; `tests/o6r07c-census-guard.test.ts` inteiro por mutação, 70–117 s cada)
+
+Toda MG: guard `# tests 31`, ec=1; restauração sha == original; `git status --short` vazio depois de cada uma.
+MG5 (roteador de comentários), MG6–MG10 (`src/modules/mobile/mobile-work-order-sync.ts`) e MG15
+(`src/modules/attachments/attachment-entity-resolver.ts`) mutam **temporariamente** arquivos fora do PERMITIDO
+permanente: o plano manda executá-las (07c-a.6, "M1–M11 e MG1–MG16 uma a uma") e o 07c-a.5 já admite a mutação
+temporária revertida em `mobile-work-order-sync.ts` (M11). Nenhuma deixou diff.
+
+| mutação (forma aplicada) | T vermelho | violação que o derruba |
+|---|---|---|
+| MG1 `router.post("/work-orders/:workOrderId/x", requirePermission(update))` | T1 | `NAO-CLASSIFICADA (na propriedade): ROTA POST /api/v1/work-orders/:workOrderId/x` |
+| MG1b = MG1 + a rota inscrita como `N` no instantâneo | T6 | `CLASSE-INCOMPATIVEL: ROTA POST …/:workOrderId/x = N (na propriedade)` |
+| MG2 `router.use("/work-orders/:workOrderId/via-mg2", handler 200)` no roteador de OS | T1, T5 | `NAO-CLASSIFICADA: MIDDLEWARE /api/v1/work-orders/:workOrderId/via-mg2 · (anônima)` + 10 `MIDDLEWARE-RESPONDE-SUCESSO` (5 verbos × 2 papéis, 200). **T4 não cai nesta forma**: a chave é nova, nenhuma contagem existente muda |
+| MG2T4 (extra, para o T4) `router.use((q, s, next) => next())` anônimo a mais no roteador de OS | T4 | `CONTAGEM: MIDDLEWARE /api/v1 · (anônima) instantâneo 114 × vivo 115` |
+| MG3 `express()` com `POST /work-orders/:workOrderId/via-mg3`, montado por `router.use(sub)` no roteador de OS | T1 | `NAO-CLASSIFICADA: MIDDLEWARE /api/v1 · app` (sub-app dentro de `Router` não passa por `express.application.use`: o censo o conta como middleware de nome `app` e não desce nele — ver S7) |
+| MG4 `router.post(["/work-orders/:workOrderId/via-array-mg4"], …)` | T1, T3 | `SEM-CAMINHO: ROTA /api/v1 [...]` + `NAO-CLASSIFICADA: SEM-CAMINHO /api/v1` |
+| MG5 apagar `DELETE …/comments/:commentId/tags/:tagId` do roteador | T2 | `ENVELHECIDA: ROTA DELETE /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId` |
+| MG6 três tipos novos no lote de OS: `` `${MG6_PREFIX}odometro` ``, `MG6_FAM + ".reboque"`, `"km_rapida"` | T1 | `NAO-CLASSIFICADA (na propriedade): PAR … · work_order.odometro`, `… · work_order.reboque`, `NAO-CLASSIFICADA: PAR … · km_rapida` |
+| MG7 `action.type === WO_MILEAGE_V2`, constante importada de arquivo temporário cujo valor não se dobra (`?? "work_order.mg7"`) | T8 | `TIPO-NAO-RESOLVIDO: src/modules/mobile/mobile-work-order-sync.ts:261: action.type === WO_MILEAGE_V2` |
+| MG8 `work_order.vistoria_set` que recusa com `checklist_role_required` | T1 | `NAO-CLASSIFICADA (na propriedade): PAR … · work_order.vistoria_set` |
+| MG9 lote de OS aceita a família `checklist` por `action.type.split(".")[0] === "checklist"` (sem literal de tipo) | T1, T10 | 8 `NAO-CLASSIFICADA (na propriedade): PAR …work-order-actions · checklist.*` + `CURINGA-DINAMICO: … · checklist.__tipo_inexistente_07c_a__` |
+| MG10 `action.type.startsWith("work_order.mg10_")` | T9 | `CURINGA-ESTATICO: src/modules/mobile/mobile-work-order-sync.ts:260: action.type.startsWith(…)` |
+| MG11 instantâneo: `GET /work-orders/:workOrderId` como `LEITURA`; `POST …/comments` e `POST …/attachments` como `N` (as formas F1, F3/F4 do B3 aplicadas a chaves vivas; o B3 literal das formas injetadas está no T12) | T6 | 3 `CLASSE-INCOMPATIVEL` (`= LEITURA (esperado LEITURA-OS)`, `= N (na propriedade)` ×2) |
+| MG12 `GET …/timeline` passa a gravar o título da OS antes de responder | T7 | `LEITURA-ESCREVE: GET /api/v1/work-orders/:workOrderId/timeline […]` — e mais 185 leituras: a própria impressão digital lê a timeline, que agora escreve, então toda leitura medida aparece (vermelho certo, atribuição ruidosa) |
+| MG13 `checklist_runs:create` no `field_technician` (catálogo, temporária) | T6 | `CLASSE-INCOMPATIVEL: ROTA POST /api/v1/mobile/checklist-runs = SEM-ALCANCE-CAMPO mas o campo alcança` + os 2 pares `checklist*.run_create` (`OS·SEM-ALCANCE mas o campo alcança`) |
+| MG14 instantâneo: `POST …/comments` passa a `VISTORIA·07c-b` | T11 | 24 entradas `·07c-b` × as 23 literais |
+| MG15 `registry.set("work_order", …)` no resolvedor de `/attachments` | T13 | `entityTypes()` com 5 entidades |
