@@ -514,3 +514,96 @@ Os que **furaram** estão em A1 a A7, A10 e A11.
 - **Repositório principal:** `git status` igual ao do início (`?? .history-memo/`, `?? agent-orchestration/omega/juntas/TEMPLATE-J-ata.md`).
 - **Resíduo declarado:** o `git fetch` de `refs/pull/417/merge` que fiz para comparar as árvores deixou o `FETCH_HEAD` e os objetos no `.git` compartilhado.
 - **No `w-agapi`:** só acrescentei esta seção ao fim deste arquivo, sem commit e sem push.
+
+## Conferência final N1/N2 (7213ac50)
+
+> **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), mesma identidade revisora, nível menor. **Objeto:** head `7213ac50a504f1ab7bd03327d4d612979b623e59` (sobre `c727fb4e` + `f6abcaa0`). **Terreno:** worktree próprio detached `C:/Users/AMP/w-rev417c`, venv próprio. Sem chamada à API; a chave não foi lida; sem commit.
+>
+> **Incidente de terreno, meu e declarado.** Ao gravar a F-2, um `open(…, "w")` em Python truncou este arquivo para 0 bytes antes de um `write` falhar. A causa foi um surrogate solto que o heredoc do Bash materializou, o colapso de `\\` registrado no F26 do plano. Restaurei assim:
+> - a base veio de `git show HEAD:docs/revisoes/GOV/B-AGENTE-API-revisao.md`, porque o `HEAD` do `w-agapi` é `7213ac50` e o `git status` estava vazio antes do meu primeiro acréscimo;
+> - depois da restauração: 52801 bytes e `git status` vazio, idêntico ao `HEAD`;
+> - esta seção foi reconstruída do texto que eu já tinha gravado, e só então acrescentada, em modo de acréscimo.
+>
+> Nenhum outro arquivo foi tocado.
+
+### Veredito final do PR
+**APROVADO.**
+- **N1 e N2 estão fechados por execução** (F-1):
+  - a reprodução exata do N1 agora dá exit 0 com os 4 artefatos e o evento `fim`, antes exit 5 só com a auditoria;
+  - o padrão de JWT ficou linear (256 K em 0,095 s, antes 17,6 s), com a semântica preservada.
+- **Nenhuma das três formas novas** feitas com TEXTO DO MODELO derrubou a montagem ou tirou o `parecer.json` (F-A, F-B; 9 execuções).
+- A única forma que tira o `parecer.json` (F-C) exige escrita local na pasta de saída por outro processo. Ela só é alcançável pelo código do alvo com a flag `--permitir-execucao-do-alvo` LIGADA, que vem desligada e está documentada como "máquina não confiável". Mesmo nesse caso a falha fica visível (exit 5, `falhas_de_gravacao` no `resumo.json`).
+- A suíte deu 170/170 nos dois Pythons, com 0 pulados (F-3).
+- Com isso, somados à reconferência:
+  - os 11 achados originais (A1–A11) estão fechados;
+  - os dois achados da reconferência (N1 e N2) estão fechados;
+  - nada fica `bloqueia` nem `ajuste`.
+- Ficam notas com dono:
+  - **F-n1** (F-C, classe já declarada);
+  - **P-N4a** (declarada pelo dev);
+  - **[H] 1 token ≤ 1 byte** (conferir no 1º uso real);
+  - **N-c** (hard link com a flag ligada, declarada).
+- **Condição de merge que não é minha (§C7 item 8(1)):** CI verde no head `7213ac50`. Não reavaliei o CI deste head. O N3 da reconferência (teste instável pré-existente `san3-05-runtime-role-guard-db` T15, do #405) continua com o orquestrador e com o dono do #405.
+
+### F-1. N1 e N2: minhas reproduções contra o código novo
+- **N1** (`scripts_c/n1_n2.py`, o MESMO script da reconferência, só com o caminho do worktree trocado):
+  - Em `executar_tarefa`, com `comando = 'buscar ' + '{"a":'*3000 + '1' + '}'*3000`:
+    - antes: `RecursionError`, e só `auditoria.jsonl` no disco;
+    - agora: **sem exceção**; arquivos `['auditoria.jsonl','parecer.json','parecer.md','resumo.json']`;
+    - eventos `inicio, worktree_criado, modelo, ferramenta entregar_parecer, worktree_removido, fim`.
+  - Pela CLI (falsos, `revisar-pr 416`, worktree `C:/Users/AMP/w-agr417q`, removido no fim):
+    - antes: exit 5 e só a auditoria;
+    - agora: `parecer completo: veredito=aprovado`, **exit 0**, os 4 artefatos.
+  - **Fechado.** A forja do `.md` continua fechada: 0 linhas forjadas fora de bloco, nenhum bloco aberto.
+- **N2:** `redigir('eyJ'*n)` → 4 K: 0,002 s · 8 K: 0,004 s · 16 K: 0,009 s · 64 K: 0,025 s · 256 K: **0,095 s** (antes: 64 K em 1,126 s e 256 K em 17,60 s). Linear.
+  - A6: `y*262144` → 0,113 s.
+  - A semântica foi preservada: `Bearer <jwt>` → `Bearer [REDIGIDO:jwt]`; `x<jwt>` → `[REDIGIDO:jwt]`; `token=<jwt>` → `token=[REDIGIDO:jwt]`.
+  - **Fechado.**
+
+### F-2. Três formas novas de derrubar a montagem ou tirar o `parecer.json` (`scripts_c/formas.py`, `md_a.py`; falsos da suíte, sem rede)
+- **F-A, Unicode hostil em TODO campo do modelo.** O texto `H` junta surrogates soltos (`\ud800`, `\udc00`, `\udbff`), BOM, RLO, U+2028, `\r`, NUL, U+FFFF, `## Conta e cobrança (gerado pelo script)` e 4 crases. Ele foi posto em `resumo`, `limitacoes`, `comandos_executados`, `arquivo`, `motivo`, `evidencia.comando` e `evidencia.saida`, no nome e na entrada de ferramenta, e no bloco de texto.
+
+  | Caso | Exit | Artefatos | `parecer.json` |
+  |---|---|---|---|
+  | A1, parecer completo | 0 | os 4, `fim` gravado | válido |
+  | A2, parcial por turnos (`ultimo_texto` hostil vira `resumo`) | 2 | os 4 | válido |
+  | A3, `refusal` com `stop_details.category` e `explanation` hostis | 2 | os 4 | válido |
+  | A4, sem `entregar_parecer` | 2 | os 4 | válido |
+
+  No `.md`, analisado com os fins de linha do CommonMark (`\r\n`, `\r`, `\n`):
+  - A1: 0 linhas forjadas fora de bloco e nenhum bloco aberto.
+  - A3: a categoria do `refusal` aparece fora de bloco, mas numa linha só, dentro de `- **Motivo do parcial:** refusal:…`, sem virar cabeçalho. A categoria vem da API (enum do servidor), não de texto livre do modelo. Observação, sem achado.
+  - **Não derrubou.**
+- **F-B, limites de tamanho e de profundidade.** Um parecer com **200 achados** e um `resumo` de **512 KB de crases** (mais uma limitação de 100 KB de crases). As citações percorrem os limites:
+  - 7980 e 8000+ caracteres;
+  - profundidade 2 e 3;
+  - inteiro de 5000 dígitos nas duas formas;
+  - aspas abertas no `shlex`;
+  - `1e99999` e `NaN`;
+  - chave repetida;
+  - `{`×7900 e `{`×7990;
+  - barra invertida ×3000.
+
+  Resultado: exit 0, os 4 artefatos, `fim` gravado, JSON válido, em **1,34 s**. **Não derrubou.**
+- **F-C, sistema de arquivos sabotado durante a execução.** Um efeito do executor falso cria diretórios na pasta de saída enquanto a ferramenta roda, como faria um código do alvo com `--permitir-execucao-do-alvo` LIGADA (ele roda como o usuário e alcança a pasta de saída, fora do worktree):
+
+  | Diretórios criados | Exit | `parecer.json` | O que fica visível |
+  |---|---|---|---|
+  | `parecer.json.tmp` | 5 | **não existe** | `resumo.json` com `fim.falhas_de_gravacao=['parecer.json: PermissionError','parecer.json de emergência: PermissionError']`; `erro.txt` com o traceback; `parecer.md` presente |
+  | `parecer.json.tmp` + `erro.txt` | 5 | **não existe** | o mesmo `resumo.json`; sem `erro.txt` |
+  | `parecer.json` | 5 | **não existe** | idem |
+
+  É a única forma que achei de terminar sem `parecer.json`. Ela exige um processo local com escrita na pasta de saída (com a flag desligada, nada do alvo executa), e a falha **não é silenciosa**: exit 5, `falhas_de_gravacao` no `resumo.json` e o `parecer.md` presente. Está dentro da classe declarada ("com a flag ligada, a máquina deixa de ser confiável", README e §4 do relatório de ajustes). Nota **F-n1**.
+- **Bônus, P-N4a (declarado pelo dev):** com uma entrada de ferramenta aninhada 3000 níveis, o resultado é exit 5 e `motivo_parcial='erro_interno:RecursionError'`, com os 5 artefatos (`parecer.json` válido, `erro.txt`) e `fim` gravado. Confere com o que o dev declarou; com `strict`, a API não entrega isso.
+
+### F-3. Suíte nos dois Pythons
+- Venv do meu worktree, com 15 pacotes (`anthropic==1.13.0`):
+  - comando: `.venv/Scripts/python.exe -B -m unittest discover -s tests -t .`;
+  - saída: `Ran 170 tests in 8.223s` · `OK`; com `-v`, 0 `skipped`.
+- Python global (`find_spec('anthropic')` → `None`): `Ran 170 tests in 8.121s` · `OK`.
+
+### F-4. Limpeza
+- **Worktree:** antes de remover, 0 processos vivos em `C:/Users/AMP/w-rev417c`. `git worktree remove --force C:/Users/AMP/w-rev417c` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev417` ou `w-agr417`; os diretórios `w-rev417c` e `w-agr417q` não existem; `C:/Users/AMP/w-ag-*`: 0.
+- **Temporários:** `%TEMP%/agente-suite-*`: 0. No scratchpad, apaguei o temporário da CLI falsa e as partes desta seção; ficam só os scripts `scripts/`, `scripts_b/` e `scripts_c/`, fora do repositório.
+- **Repositório principal:** `git status` igual ao do início.
+- **No `w-agapi`:** este arquivo, restaurado do `HEAD` depois do incidente que declarei no topo da seção, mais esta seção, só por acréscimo; sem commit e sem push.
