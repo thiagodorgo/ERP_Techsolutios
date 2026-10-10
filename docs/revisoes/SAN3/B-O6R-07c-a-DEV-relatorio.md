@@ -135,3 +135,31 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 - **Fora do escopo, registrado:** o `-db` não entra na lista curada do job `backend-postgres` (`.github/workflows/ci.yml`), que é
   escopo proibido do bloco; no job `backend` ele se declara pulado. Proposta de pendência para o orquestrador:
   `P-O6R-07CA-DB-FORA-DA-LISTA-CI` (dono: o próximo bloco que tocar `ci.yml`).
+
+### S5 — mutações M1–M11 (arnês `mut.mjs` no scratchpad do sucessor)
+
+- Arnês: âncora escrita com `\n` e convertida para o EOL do arquivo (CRLF em `src/`), **contagem de ocorrências exigida**
+  antes de gravar (prova de aplicação), backup com sha256 e restauração conferida. Ensaio a seco das 34 mutações
+  (aplica + restaura, sem teste): todas casaram a contagem esperada e voltaram ao sha original; `git status` idêntico.
+- Para cada M: `tests/o6r07c-subresource-scope.test.ts` (memória) · `tests/o6r07c-subresource-scope-db.test.ts` (cluster
+  `dev07ca-pg`) · `tests/o6r07a-wo-object-scope.test.ts`; depois restauração (sha == original) e `git status --short` vazio.
+
+| mutação | memória (24) | `-db` (6) | 07a (8) | o que caiu |
+|---|---|---|---|---|
+| M1 `getForMutation` sem `assertMutationObjectScope` | 8/16 fail | 3/3 fail | 8/0 | G-NEG das 10 vias do 07c-a, S-ANX, S-KM, S-KM-RESTART, S-COM, S-GEO, S-ORDEM; os 3 negativos `-db`. As 3 do 07a seguem verdes (não passam por ele) |
+| M2 `setMileage` volta a `get` | 21/3 | 5/1 | 8/0 | G-NEG `work_order.mileage`, S-KM, S-KM-RESTART; `-db` `[negativo · km]` |
+| M3 geocodes voltam a `findById` | 21/3 | 6/0 | 8/0 | G-NEG `geocode` e `geocode-destination`, S-GEO (o `-db` não cobre geocode — o plano não o pede lá) |
+| M4 multipart antes do escopo | 22/2 | 6/0 | 8/0 | G-NEG `POST …/attachments`, S-ORDEM (o serviço ainda recusa; só a ORDEM muda) |
+| M5a `addComment` volta a `assertWorkOrder` | 22/2 | 5/1 | 8/0 | G-NEG `POST …/comments`, S-COM; `-db` `[negativo · comentário]` |
+| M5b `editComment` idem | 22/2 | 6/0 | 8/0 | G-NEG `PATCH …/comments/:commentId`, S-COM |
+| M5c `deleteComment` idem | 22/2 | 5/1 | 8/0 | G-NEG `DELETE …/comments/:commentId`, S-COM; `-db` `[negativo · comentário]` |
+| M5d `attachTag` idem | 22/2 | 6/0 | 8/0 | G-NEG `POST …/tags/:tagId`, S-COM |
+| M5e `detachTag` idem | 22/2 | 6/0 | 8/0 | G-NEG `DELETE …/tags/:tagId`, S-COM |
+| M6 moderação só do autor | 23/1 | 6/0 | 8/0 | S-MOD |
+| M7 nega tudo (`if (true \|\| …)`) | 7/17 | 2/4 | 4/4 | G-POS das 13 entradas, S-DUAL; e, por semente com o técnico A, S-KM-RESTART, S-COM, S-MOD, `-db` `[perfil]`/`[user id]` e os negativos de anexo/comentário; 4 do 07a |
+| M8 escopo também a `tenant_wide` (sem o `return` de `actorMutatesAssignedOnly`) | 7/17 | 6/0 | 6/2 | G-WIDE das 13 entradas, S-MOD, S-ROLES; e, por semente com o gestor, S-ANX e S-XT; 2 do 07a (gestão e dois papéis) |
+| M9 `resolveActorOperatorProfileId` → `undefined` | 8/16 | 3/3 | 6/2 | **`-db [perfil]` vermelho e `-db [user id]` verde**; os negativos de anexo/comentário do `-db` caem na semente (o técnico A é atribuído por perfil); na memória, G-POS das 13 e S-COM/S-MOD/S-KM-RESTART |
+| M10 `getForMutation` converte o 404 em 403 | 23/1 | 6/0 | 8/0 | S-XT |
+| M11 recibo consultado depois do `processAction` (`mobile-work-order-sync.ts`, temporária) | 23/1 | 6/0 | 8/0 | S-KM-RESTART, **1ª asserção**: "1º reenvio veio rejected not_assigned_to_actor" |
+
+- Toda restauração: sha == original; `git status --short` só com o relatório (em edição).
