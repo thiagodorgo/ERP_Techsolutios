@@ -215,3 +215,41 @@ pela 2ª). Decisões:
   território do `B-SAN3-10`: nasce `P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO` (MÉDIA, dono `B-SAN3-10`) — o `docs/deployment.md`
   passa a dizer que o censo de duplicatas roda antes do deploy e que a migração aborta se houver grupo duplicado, com a
   pré-condição de papel (o censo cega sob RLS quando o papel não enxerga as linhas).
+
+## Emenda 6 do orquestrador — a retomada de 2026-10-10 (ordem do dono)
+
+**Fonte da retomada (do dono, §A1.1):** `D-ORDEM-NOITE-2026-10-10` — *"Destravar a produção. Retomar o #389 (2 críticos),
+depois o B-O6R-07c … e por fim uma junta J-6R nova"*. Isso revoga, para o #389, o estacionamento de 08/10
+(`D-388-389-ESTACIONADOS`). O plano de retomada é a seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de
+`agent-orchestration/omega/planos/B-O6R-04a-plano.md` (Fable; commit `2bc24f75`). As decisões abaixo são **do
+orquestrador** — propostas pelo planejador e adotadas aqui —, **não do dono**:
+
+- **(aa) Integração por MERGE** da `main` (não rebase): preserva os 28 SHAs que o registro cita; o squash final vira um
+  commit só (forma do #393).
+- **(bb) `Kpis/*` = lado da `main`, inteiro** (`D-GOV-PROPORCIONAL` (5): PR de bloco não atualiza KPI).
+- **(cc) `achados.jsonl`:** Ω6R-DAT-002 e Ω6R-DAT-003 voltam a `ativo`, com `nota_criterio` mantida; no
+  `REGISTRO_ACHADOS_O6R.md` a frase de estado passa a "fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e
+  painel mudam no marco de KPI". Motivo: `tests/kpi-achados-paridade.test.ts` exige achados × painel iguais, e o painel
+  está congelado.
+- **(dd) Bateria do estoque:** só `3fb275ad` e `010742c0`, por cherry-pick nessa ordem. Os outros arquivos `inventory-*`
+  da `wip/bateria-estoque-preservacao` dependem do `pg-barrier` transversal e ficam com o `B-BAT-01`. O ramo
+  `wip/bateria-estoque-preservacao` é mantido.
+- **(ee) C3 da junta = `agente-ci-doutor`** (permanente; não votou neste bloco). `validador-mestre` votou na junta 1 e
+  está inelegível.
+- **(ff) Errata dos 4 corpos, nos 2 espelhos** (`P-GOV-CORPOS-EM-VOO-COM-TETO-REVOGADO`): o texto é o da linha 1-d do
+  plano de retomada, sem acréscimo — o "ciclo 2, o ÚLTIMO … dossiê ao dono" vira "ciclo 2, régua COMPLETA; reprovar abre
+  o ciclo 3, onde só defeito GRAVE de produto bloqueia". `sync-agent-agents.mjs --check` = 0 depois.
+- **(gg) Ata do ciclo 1 RECONSTITUÍDA e declarada** (`R-B-O6R-04a-ciclo1.md`): o conteúdo é o da linha 1-e do plano. É
+  afirmação do orquestrador a partir de registros versionados, porque os votos e o parecer originais da junta 1 nunca
+  foram versionados; ela diz isso no cabeçalho.
+- **(hh) Régua:** este é o **ciclo 2**, com régua COMPLETA (unanimidade de 3, dinheiro e dado; Fable nos gates; fallback
+  Opus DECLARADO; Opus esgotado → PARA). Se reprovar, o ciclo 3 só bloqueia o que perde dado, vaza entre organizações,
+  quebra permissão ou erra dinheiro (passo 3 do plano).
+- **(ii) Disco — correção ao passo 0 do plano:** o `DEEP_CLEAN=1` do `post-merge-cleanup.sh` roda `docker image prune -af`,
+  que apaga toda imagem sem container — inclusive a `erp-junta-node20-pg16:local`, o terreno das cadeiras. Ele **não
+  roda**. A limpeza já feita em 09–10/10 (`D-LIMPEZA-2026-10-09`) deixou 15 GB livres. O inspetor mede o disco antes de
+  cada jurado (≥ 10 GB) e os papéis são sequenciais (P5).
+- **(jj) A base viva** (`erp-postgres`, `erp-redis`, portas 5432/6379) está DE PÉ com o servidor do dono. Nenhum papel
+  aponta para ela; os containers do bloco usam os prefixos do plano.
+- **(kk) Ordem de início:** o dev de integração (passo 1) só começa depois que o PR de registro com a
+  `D-ORDEM-NOITE-2026-10-10` estiver na `main` (ressalva do porteiro do #411).
