@@ -3,6 +3,9 @@
 Regras que este módulo garante (plano §3.1, §3.2):
 - o catálogo é um dicionário EXPLÍCITO (nunca `getattr(self, nome)`): um nome
   como `__import__`, `bash` ou `git_push` não acha nada e volta negado;
+- a entrada é validada contra o esquema da ferramenta (`esquemas.erros_da_entrada`)
+  ANTES do tratador: fora do esquema, volta negada e nada executa (as ferramentas de
+  leitura não são `strict`, então o servidor não garante a forma);
 - a negação de caminho acontece ANTES de `open()`: conteúdo de caminho negado
   nunca é lido, logo nunca chega ao modelo, à auditoria nem ao redator;
 - o texto do resultado é o que o processo/arquivo devolveu; quem redige e
@@ -15,6 +18,7 @@ import os
 import stat
 from dataclasses import dataclass, field
 
+from . import esquemas
 from . import executor as _executor
 from .cerca import (
     COMPONENTES_NEGADOS,
@@ -36,6 +40,8 @@ MAX_ENTRADAS_LISTA = 500
 TETO_VARREDURA = 32 * 1024 * 1024
 TAMANHO_SONDA_BINARIO = 8192
 MOTIVO_HARD_LINK = "arquivo com mais de um link (hard link)"
+MOTIVO_FORA_DO_ESQUEMA = "entrada fora do esquema da ferramenta (corrija e chame de novo): "
+MAX_ERROS_ESQUEMA = 10
 
 
 @dataclass
@@ -88,6 +94,11 @@ class Ferramentas:
         tratador = self._catalogo.get(nome) if isinstance(nome, str) else None
         if tratador is None:
             return _negado("ferramenta desconhecida")
+        # Sem `strict` no servidor (só o parecer é estrito), a forma da entrada é garantida AQUI:
+        # validada contra o esquema da ferramenta ANTES do tratador — inválida nunca executa.
+        erros = esquemas.erros_da_entrada(nome, entrada)
+        if erros:
+            return _negado(MOTIVO_FORA_DO_ESQUEMA + "; ".join(erros[:MAX_ERROS_ESQUEMA]))
         try:
             return tratador(nome, entrada)
         except CercaNegada as e:
