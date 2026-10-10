@@ -3126,3 +3126,51 @@ via ser escrita como propriedade em vez de método).
 **O que a decisão NÃO muda.** O teto de dois ciclos segue valendo; esta é a segunda intervenção humana que ele
 prescreve no mesmo dia, e ela trocou "mais um ciclo por bloco" por "fechar a classe". As cinco dívidas que o porteiro
 do #390 nomeou continuam com o primeiro PR que mergear.
+
+## Registro de 10/10/2026 (tarde) — modelos, formato do estado e as perguntas abertas
+
+- **D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (2026-10-10)** — o dono fixou o modelo de cada papel em três passos:
+  - 13:40Z, perguntado sobre os papéis de topo em bloco de dinheiro: *"so o plano no topo, no fim do segundo fluxo entra a
+    inteligencia mais alta pra auditar e ver se esta tudo certo."*
+  - ~13:50Z, explicando "fluxo": *"roda o fluxo 1 e nao ficou pronto, vai para o fluxo 2, se nao ficar pronto a
+    inteligencia maior(fable/astra) entra no fluxo antes de começar o terceiro fluxo, audita e ver se esta tudo certo,
+    planeja o plano para fechar o fluxo e entrega para fazer o fluxo 3, a terceira passada. isso é para evitar ficar em
+    loop"*.
+  - ~14:30Z, generalizando: *"vamos refatorar o fluxo geral, numa reprovação de junta, EM TODA REPOVAÇÃO, o falbe/astra
+    entra audita, faz o plano com detalhes para resolver a reprovação e o resto segue o fluxo, isso é pra dificultar o
+    segundo loop em diante"*.
+  - ~15:50Z, como padrão: *"o modelo (\"topo só no plano e em toda reprovação de junta; resto no nível menor\") fica padrao
+    para nosso projeto, pra agregados e nossos agentes internos"*.
+
+  **A regra vigente:**
+  - **Modelo de topo** (Fable no Claude, GPT-6 Astra no Codex): (1) o plano inicial do bloco; (2) EM TODA reprovação de
+    junta, a auditoria (os achados são defeitos reais do produto ou artefato do processo?) e o plano detalhado de
+    resolução, com identidade nova — quem achou não planeja (§C7.4-bis).
+  - **Nível menor** (Opus no Claude, GPT-5.6 Sol no Codex), sempre DECLARADO no artefato: dev, crítico, inspetor,
+    cadeiras da junta, fábrica e porteiro.
+  - Devolução de CRÍTICO não aciona o topo; só reprovação de JUNTA aciona.
+
+  Esta decisão **substitui** a `D-FABLE-ASTRA-SO-DINHEIRO` (2026-10-08) e, enquanto o texto do contrato não muda, o
+  §C7.6/6-bis nos papéis de gate. A mudança do texto do CLAUDE.md e do AGENTS.md (§C7.4, §C7.6) e do `model:` fixado nos
+  corpos do inspetor e do porteiro vai num PR de governança próprio. Primeira aplicação: a reprovação do ciclo 2 do #389
+  foi auditada e replanejada em Fable, e a junta do ciclo 3 votou em Sol e Opus. O inspetor dessa junta rodou em Astra
+  porque foi lançado antes da decisão.
+- **D-FORMATO-DO-ESTADO (2026-10-10)** — *"quando eu pedir o estado vc me retorna onde estamos, o que estamos fazendo, como
+  estamos indo, onde nos estamos no cronograma, previsao do bloco atual e global tudo com checklists para eu acompanhar o
+  progresso, documente isso"*. O formato está em `agent-orchestration/docs/formato-do-estado.md`.
+- **Perguntas abertas ao dono** (texto do plano do `B-O6R-07c`, seção "Registro"; não são decisões):
+  - **D1-07c:** quem conta como "atribuído" para escrever em vistoria, evidência e km — (a) só `assigned_operator_id`;
+    (b) a atribuição da OS ou o alvo de um despacho ativo; (c) o despacho grava a atribuição. Também: a equipe da OS
+    (`teamId`) conta? Recomendação do orquestrador: (b).
+  - **D2-07c:** trabalho feito offline e sincronizado depois de redistribuição — o servidor recusa ou aceita? Se recusar,
+    a ação fica presa no aparelho (`retryCount < 5`). Recomendação do orquestrador: vira conflito para resolução manual
+    (B-107).
+  - **D3-07c:** o técnico pode lançar débito de dano no extrato de um colega? Hoje pode (−900 medido). Recomendação do
+    orquestrador: não — corrigir (pendência `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`).
+  - **Traccar 1–6:** forma da trilha, AWS × Fly, convivência app × rastreador, atribuição por despacho, vínculo e posse,
+    LGPD. As pendências estão em `pendencias.md` (`P-TRC-*`); a seção "Decisões do dono antes do B-TRC-01" do
+    `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` (ramo `docs/plano-traccar`) traz as recomendações.
+- **REGISTRO-07CA-TENSAO-COORDENADOR (§A2, 2026-10-10)** — o `PLANO_SAN3.md:254` pede *unanimidade +
+  coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
+  (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
+  nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).

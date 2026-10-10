@@ -5035,3 +5035,8 @@ nenhum**: nem na `main`, nem no head do ramo, nem na árvore principal, nem em c
 **verbatim, em commit separado** (`f4d5226d` na fila original), porque o rebase reescreveria a história por baixo dela
 e `git stash`/`checkout`/`reset` alheios são proibidos. É registro, não produto. **O orquestrador descarta sozinho se
 quiser: é um commit só, e nada mais do bloco depende dele.**
+
+## Registro de 2026-10-10 (tarde)
+
+- #389 mergeado (`ab52ec50`) depois de 3 ciclos: ciclo 2 REPROVADO 2 × 1 (forma do guard), ciclo 3 sem dev e APROVADO 3 × 0; quedas por limite de cota do Claude (inspetor, 07:00Z) e do Codex (C2, 14:33Z), relançadas na mesma identidade.
+- Registro: as ressalvas do porteiro do #389 (P-020 FECHADA, P-O6R-B04 PARCIAL, os blocos `B-GOV-GUARDA-POR-PROPRIEDADE` e `B-BAT-01` como pendências com dono), as 9 pendências do plano do Traccar, a pendência de dinheiro do 07c (`P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`), o defeito de severidade do gerador do índice, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` e `D-FORMATO-DO-ESTADO`.

@@ -251,7 +251,7 @@
   item podem, em teoria, passar ambos (nenhum ve o outro ainda nao commitado). Achado BAIXA do validador.
 - impacto: baixo — atende o contrato R7.1 declarado e e coerente com o resto do repo; janela de corrida
   estreita e o saldo negativo seria visivel/corrigivel por ajuste. Nao ha lock de linha.
-- status: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
+- status: FECHADA (2026-10-10, PR #389 `ab52ec50`: `FOR UPDATE` na linha do item antes de toda leitura que decide; conferido pelo porteiro, `votos/B-O6R-04a/PORTEIRO-389.md`). Antes: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
   create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: é o mesmo sítio do `Ω6R-DAT-002` (P0, J-6R 5×0) — a saída de estoque checa saldo por agregado e insere sem lock (`src/modules/inventory/inventory-prisma.repository.ts:214-216`); absorvida por `P-O6R-B04`.
 - **duplicata de:** achado `Ω6R-DAT-002`, via `P-O6R-B04` (inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-O6R-B04` (`B-O6R-04`, `fix/inventory-consistency`, que nunca começou).
@@ -2959,7 +2959,7 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
-- status: **ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.**
+- status: **ABERTA — PARCIAL (2026-10-10): Ω6R-DAT-002 e Ω6R-DAT-003 fechados pelo PR #389 (`ab52ec50`; porteiro em `votos/B-O6R-04a/PORTEIRO-389.md`); segue aberto o Ω6R-QUA-002 (P1, dono `B-O6R-04b`).** Antes: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: carrega 2 P0 (`Ω6R-DAT-002`, `Ω6R-DAT-003`) + 1 P1 (`Ω6R-QUA-002`) e o bloco nunca começou; o índice mostrava BAIXA porque lê a severidade por menção no corpo (ver `P-SAN3-INDICE-SEVERIDADE-POR-MENCAO`).
@@ -10670,3 +10670,135 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - bloqueia: não.
 - teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
 ```
+
+## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
+  dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
+  "Decisões do dono", decisão 1) · **dono:** o dono do produto.
+- Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
+  blocos, proposta). O B-TRC-01 só é o mesmo em B e C. Achados A2-09 da o crítico (r2) e B-07 da r1. A
+  `D-ORDEM-NOITE-2026-10-10` autoriza "os blocos de ingestão" sem fixar número.
+- **bloqueia:** o início do B-TRC-01 (na forma A ele muda) e tudo depois dele.
+- **teste de encerramento:** `decisoes.md` registra a escolha (A, B ou C) com a frase do dono, e o plano é ajustado
+  se a escolha for A.
+
+## P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1 do Traccar — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
+  plano v2, que levava a escolha para antes do B-TRC-06 sem registrar (achado A2-14) · **dono:** o dono do produto.
+- Opções: (a) ERP inteiro na AWS; (b) só o Traccar na AWS, ERP no Fly com ponte privada; (c) adiar a escolha para antes
+  do B-TRC-06, com aceite escrito. Recomendação do planejador: (c), com (a) como direção.
+- **bloqueia:** o B-TRC-01, até a escolha ou o aceite escrito do adiamento; o B-TRC-06, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra a escolha, ou o aceite do adiamento com o novo prazo.
+
+## P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do técnico — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
+  custo dos dois caminhos) × B-TRC-01, que grava a posição da viatura em `field_operator_locations` do técnico, com o
+  latest escolhendo por `recorded_at` sem olhar a fonte (achado A2-13) · **dono:** o dono do produto.
+- Opções e custo estimado: (a) vence o mais recente, nenhum custo agora; (b) preferência por fonte, 1–2 dias no
+  B-TRC-04; (c) dois pinos, bloco próprio de 4–7 dias. Recomendação: (a) só como modo provisório de dev no B-TRC-01;
+  escolher (b) ou (c) antes do B-TRC-04.
+- **bloqueia:** o B-TRC-01, até o aceite do modo provisório; o B-TRC-04 e a produção, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra o aceite do provisório e, antes do B-TRC-04, a escolha.
+
+## P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde no mapa — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
+  do plano): a viatura só aparece com despacho aceito pelo técnico atual; "atribuído → a caminho" sem aceite não mostra;
+  reatribuído só volta com novo aceite; viatura sem técnico não aparece · **dono:** o dono do produto.
+- Recomendação do planejador: manter a regra estrita no B-TRC-01; decidir antes do B-TRC-04 se o plano pago de
+  localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
+- **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
+- **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
+```
+
+
+```markdown
+## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
+  organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
+  retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 da o crítico (r2), E-02c/E-02d) ·
+  **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
+- Recomendação do planejador: só a plataforma vincula, a pedido da organização, para começar; depois, lista de
+  rastreadores liberados por organização. Vínculo vale do relógio do servidor em diante, sem retroativo; `EXCLUDE` com
+  faixas de validade (`btree_gist`) ou gatilho de `valid_from`.
+- **bloqueia:** o início do B-TRC-03; não bloqueia o B-TRC-01, onde só o teste e o demo vinculam.
+- **teste de encerramento:** `decisoes.md` registra quem vincula; o B-TRC-03 prova por teste que B não vincula
+  rastreador fora da sua lista (ou sem a plataforma) e que nenhum vínculo cobre fix anterior à desativação do anterior.
+
+## P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e acesso — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
+  `schema.prisma:1024`) recebe a posição da viatura sem o aviso e o consentimento do app; recibos (um por posição) e
+  quarentena (número do rastreador) sem guarda definida; `device.name/phone/contact` chegam e são descartados (nota
+  N2-05 e N2-08 da r2) · **dono:** o dono do produto.
+- Recomendação do planejador: base legal com aviso ao técnico; guarda curta (ex.: posição e recibo 90 dias,
+  quarentena resolvida 30 dias); acesso de despacho e gestão com trilha de consulta.
+- **bloqueia:** a produção (B-TRC-07) e o staging, se usar dado real; não bloqueia o B-TRC-01 (dado sintético).
+- **teste de encerramento:** `decisoes.md` registra base legal, prazos e quem vê; o bloco seguinte implementa o expurgo
+  com teste.
+
+## P-TRC-TETO-ORGANIZACOES (2026-10-10) — teto de 500 organizações ativas na descoberta do Traccar — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — o teto conta todas as organizações ativas, não só as com
+  rastreador; na 501ª, todo dispositivo sem dica vai à quarentena (achado A2-06 da r2) · **dono:** `B-TRC-06` (alarme e
+  medição com o número real) e a decisão do recurso pago (contar só organizações com o módulo).
+- O B-TRC-01 entrega a validade deslizante da dica e o aviso de 80 % (log e métrica).
+- **bloqueia:** não, abaixo de 400 organizações ativas.
+- **teste de encerramento:** alarme do B-TRC-06 dispara a 80 %, e o teto passa a contar só organizações com o módulo,
+  ou é re-medido e ajustado.
+
+## P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO (2026-10-10) — reatribuição e evento em transações separadas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `field-dispatch-prisma.repository.ts:170,174` e
+  `field-dispatch.service.ts:550-577`: `reassign` grava o operador novo e o status e, em outra transação, o evento
+  `field_dispatch_reassigned`; o `accepted_at` do operador antigo fica; `reassigned → on_route` dispensa novo aceite
+  (`field-dispatch.validators.ts:7-17`). Medido pela o crítico (r2) (E-3e) · **dono:** a nomear (próximo bloco que tocar
+  `field-dispatch.service.ts`).
+- O Traccar deixa de depender disso: o B-TRC-01 usa `operator_assigned_at`, gravado por gatilho na mesma instrução da
+  troca. Fica o defeito de auditoria: despacho reatribuído pode ficar sem o evento.
+- **bloqueia:** não.
+- **teste de encerramento:** troca de operador e evento na mesma transação, com teste de falha injetada no evento.
+
+## P-PORTAL-LISTEN-SEM-TRATADOR (2026-10-10) — falha do listen do portal derruba a API do ERP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/server.ts:39-44`: `portalApp.listen(env.PORTAL_PORT)` sem host
+  (todas as interfaces) e sem tratador de `error`; um `EADDRINUSE` na 3100 sai como `Unhandled 'error' event` e leva o
+  processo, com a API pública (medido para a ingestão pela r2, E-01d; mesmo mecanismo) · **dono:** a nomear (bloco do
+  portal).
+- **bloqueia:** não.
+- **teste de encerramento:** porta do portal ocupada não derruba a API; host do portal explícito.
+```
+
+## P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar um dano, lança débito no extrato de um colega e escolhe o valor — ALTA (dinheiro)
+
+- status: ABERTA (o crítico (r1) do plano do B-O6R-07c, achado A9, `critico-b-o6r-07c-r1`; reexecutado pelo planejador `planejador-b-o6r-07c` em `c1cfdabe`)
+- **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice da o crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
+- **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
+- **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
+- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa, Fable por decisão do dono de 08/10), depois da decisão D3.
+- **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
+- **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
+```
+
+## P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os guards que reconhecem forma ainda não existe — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — a classe "guard que reconhece forma em vez de enunciar a propriedade" (`D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`) reapareceu no #389 (`P-O6R-B04-GUARD-D1/D2/D7/D5`, `-CENSO-DETECTOR-DE-LITERAIS`) e no `B-O6R-07c` (críticas r1 e r2: formas de rota e de tipo de sync que escapavam). O nome `B-GOV-GUARDA-POR-PROPRIEDADE` foi dado pelo orquestrador na Emenda 8 do `B-O6R-04a`, mas o bloco não tem plano nem lugar no `PLANO_SAN3` (ressalva 2 do porteiro do #389) · **dono:** o orquestrador (abrir o plano do bloco com o `planejador-mestre`).
+- O custo medido: uma rodada de junta inteira por bloco, em dois blocos seguidos.
+- **bloqueia:** não. Cada bloco merge com a instância fechada; a classe continua aberta.
+- **teste de encerramento:** o plano do bloco existe e define um gerador/guard comum por propriedade (destino da escrita, camadas que respondem), com as formas das críticas e da C2 do #389 vermelhas por mutação.
+
+## P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, runner) ainda não virou bloco — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — a metade transversal da bateria do estoque está preservada em `origin/wip/bateria-estoque-preservacao` (`dee45faf`); o #389 levou só a metade `inventory-*` (`3fb275ad`, `010742c0`). O residual R3.4 do porteiro do #389: a bateria do estoque é determinística por MEDIÇÃO, não por CONSTRUÇÃO, porque as esperas fixas continuam nas suítes `-db` · **dono:** o orquestrador (abrir o `B-BAT-01` como bloco, com o desenho da Parte 5 do plano de 25/09).
+- **bloqueia:** não.
+- **teste de encerramento:** o `B-BAT-01` mergeado, e as suítes `-db` do estoque sem espera fixa, sincronizadas por portão causal.
+
+## P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior palavra de severidade do texto inteiro — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `agent-orchestration/controle/gerar-indice-pendencias.py:75-80` (`severidade(body)` procura as quatro palavras de severidade no corpo inteiro e devolve a de nível mais alto que achar); uma entrada que cita o crítico com o substantivo feminino sobe ao nível máximo no índice, mesmo com o título dizendo outro nível (o dev do B-SAN3-06b já tinha esbarrado nisso) · **dono:** `B-REG-GERADOR`.
+- **bloqueia:** não; o índice superestima severidade e o dono pode olhar a pendência errada primeiro.
+- **teste de encerramento:** uma entrada com o título de nível médio e o substantivo do crítico no corpo aparece com o nível do título no índice.
