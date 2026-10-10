@@ -2,11 +2,13 @@
 
 import io
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from agente_claude import executor
 from agente_claude.cerca import CercaNegada, ContextoComandos, Raiz, ambiente_limpo, validar_argv
@@ -24,7 +26,11 @@ class BaseComandos(unittest.TestCase):
         (self.raiz / "src" / "app.ts").write_text("x\n", encoding="utf-8")
         for nome in ("auth-jwt.test.ts", "auth-identity-links-db.test.ts", "permission-catalog-db-parity.test.ts"):
             (self.raiz / "tests" / nome).write_text("//\n", encoding="utf-8")
-        self.ctx = ContextoComandos(raiz=Raiz(self.raiz), executaveis=dict(EXE), repo_gh="dono/repo", npm_ci=True)
+        # Contexto com a execução do alvo LIGADA, para exercitar as regras de `teste` que vêm depois
+        # do portão do A1. O portão em si (desligado por padrão) tem a classe TestExecucaoDoAlvo.
+        self.ctx = ContextoComandos(
+            raiz=Raiz(self.raiz), executaveis=dict(EXE), repo_gh="dono/repo", npm_ci=True, permitir_execucao_alvo=True
+        )
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -87,7 +93,36 @@ class TestGit(BaseComandos):
     def test_git_show_objeto_com_pontopontos_negado(self):
         for objeto in ("HEAD:../x", "HEAD:src/../../x", "HEAD:..\\x", "--output=x", "HEAD:/etc/passwd"):
             self.negado("git_show", {"objeto": objeto})
-        self.assertEqual(self.argv("git_show", {"objeto": "HEAD:src/app.ts"})[-1], "HEAD:src/app.ts")
+        self.assertEqual(self.argv("git_show", {"objeto": "HEAD:src/app.ts"})[-2:], ["HEAD:src/app.ts", "--"])
+
+    def test_git_show_objeto_e_sempre_revisao(self):
+        # A5: `--` depois do objeto. Sem ele, `git show cfg/.env` caía no DWIM do git como CAMINHO.
+        for objeto in ("cfg/.env", "HEAD", "origin/main", "HEAD:src/app.ts"):
+            argv = self.argv("git_show", {"objeto": objeto, "formato": "stat"})
+            self.assertEqual(argv[-2:], [objeto, "--"], objeto)
+            self.assertEqual(argv.count("--"), 1, objeto)
+
+    def test_comandos_com_caminho_usam_pathspec_literal(self):
+        # A5: o git usa o caminho LITERAL que a cerca validou (glob não expande depois da cerca).
+        for ferramenta, campos in (
+            ("buscar", {"padrao": "x", "caminhos": ["src"]}),
+            ("git_log", {"caminhos": ["src"]}),
+            ("git_diff", {"caminhos": ["src"]}),
+            ("git_ls_files", {"caminhos": ["src"]}),
+        ):
+            argv = self.argv(ferramenta, campos)
+            self.assertEqual(argv[1], "--literal-pathspecs", ferramenta)
+
+    def test_diff_externo_e_textconv_desligados(self):
+        # A8: o D6 do dev (`--no-ext-diff --no-textconv`) preso por teste em git_diff, git_log e git_show.
+        for ferramenta, campos in (
+            ("git_diff", {}), ("git_diff", {"formato": "stat", "revs": ["origin/main...HEAD"]}),
+            ("git_log", {"formato": "stat"}), ("git_show", {"objeto": "HEAD", "formato": "patch"}),
+        ):
+            argv = self.argv(ferramenta, campos)
+            self.assertIn("--no-ext-diff", argv, ferramenta)
+            self.assertIn("--no-textconv", argv, ferramenta)
+            self.assertLess(argv.index("--no-textconv"), argv.index("--"), ferramenta)
 
     def test_git_show_arquivo_protegido_negado(self):
         for objeto in ("HEAD:.env", "HEAD:certs/x.pem", "HEAD:.git/config", "HEAD:node_modules/a/b.js", "HEAD:.env."):
@@ -129,7 +164,9 @@ class TestVerificar(BaseComandos):
 
     def test_verificar_sem_npm_ci_devolve_erro_ao_modelo(self):
         execf = ExecutorFalso()
-        ctx = ContextoComandos(raiz=self.ctx.raiz, executaveis=dict(EXE), repo_gh="dono/repo", npm_ci=False)
+        ctx = ContextoComandos(
+            raiz=self.ctx.raiz, executaveis=dict(EXE), repo_gh="dono/repo", npm_ci=False, permitir_execucao_alvo=True
+        )
         res = Ferramentas(ctx, executar_processo=execf).executar("verificar", {"nome": "teste", "arquivo": "auth-jwt.test.ts"})
         self.assertTrue(res.erro and res.negado)
         self.assertIn("--npm-ci", res.motivo_negacao)
@@ -147,9 +184,73 @@ class TestVerificar(BaseComandos):
             [EXE["node"], "--test", "--import", "tsx", "tests/auth-jwt.test.ts"],
         )
         execf = ExecutorFalso()
-        wt = WorktreeDescartavel("C:/repo", "a" * 40, str(self.raiz), dict(EXE), execf, npm_ci=True)
+        wt = WorktreeDescartavel("C:/repo", "a" * 40, str(self.raiz), dict(EXE), execf, npm_ci=True, permitir_execucao_alvo=True)
         wt.preparar()
         self.assertEqual([c["argv"] for c in execf.chamadas], [[EXE["npm"], "ci"]])
+
+
+class TestExecucaoDoAlvo(BaseComandos):
+    """A1: nada que execute código do commit alvo roda por padrão (espelho_codex, teste, npm ci)."""
+
+    def ctx_padrao(self, **kw) -> ContextoComandos:
+        # SEM passar permitir_execucao_alvo: vale o padrão do código.
+        return ContextoComandos(raiz=self.ctx.raiz, executaveis=dict(EXE), repo_gh="dono/repo", **kw)
+
+    def test_padrao_e_desligado(self):
+        from agente_claude.tarefas import Opcoes
+
+        self.assertIs(ContextoComandos(raiz=None).permitir_execucao_alvo, False)
+        self.assertIs(Opcoes().permitir_execucao_alvo, False)
+        self.assertIs(WorktreeDescartavel("C:/r", "a" * 40, "C:/w", dict(EXE)).permitir_execucao_alvo, False)
+
+    def test_desligado_recusa_espelho_e_teste_sem_processo(self):
+        execf = ExecutorFalso()
+        f = Ferramentas(self.ctx_padrao(npm_ci=True), executar_processo=execf)
+        for campos in ({"nome": "espelho_codex", "arquivo": None}, {"nome": "teste", "arquivo": "auth-jwt.test.ts"}):
+            res = f.executar("verificar", campos)
+            self.assertTrue(res.erro and res.negado, campos)
+            self.assertIn("não permitido nesta execução", res.motivo_negacao)
+            self.assertIn("--permitir-execucao-do-alvo", res.motivo_negacao)
+            self.assertIsNone(res.argv)
+        self.assertEqual(execf.chamadas, [])
+        ok = f.executar("verificar", {"nome": "diff_check", "arquivo": None})  # só git: segue liberado
+        self.assertFalse(ok.erro)
+        self.assertEqual(len(execf.chamadas), 1)
+
+    def test_ligado_libera_espelho_e_teste(self):
+        ctx = self.ctx_padrao(npm_ci=True, permitir_execucao_alvo=True)
+        self.assertEqual(self.argv("verificar", {"nome": "espelho_codex"}, ctx), [EXE["node"], "scripts/sync-agent-agents.mjs", "--check"])
+        self.assertEqual(self.argv("verificar", {"nome": "teste", "arquivo": "auth-jwt.test.ts"}, ctx)[-1], "tests/auth-jwt.test.ts")
+
+    def test_recusa_volta_ao_modelo_e_fica_na_auditoria(self):
+        modelo = ModeloFalso([resposta(uso("verificar", {"nome": "espelho_codex", "arquivo": None})), resposta_parecer()])
+        cen = Cenario(modelo, npm_ci=False).rodar()  # Opcoes padrão: execução do alvo desligada
+        try:
+            resultado = modelo.chamadas[1]["messages"][-1]["content"][0]
+            self.assertTrue(resultado["is_error"])
+            self.assertIn("não permitido nesta execução", resultado["content"])
+            linhas = [l for l in cen.linhas_auditoria() if l["tipo"] == "ferramenta" and l["ferramenta"] == "verificar"]
+            self.assertEqual(len(linhas), 1)
+            self.assertTrue(linhas[0]["negado"])
+            self.assertIsNone(linhas[0]["argv"])
+            self.assertIn("--permitir-execucao-do-alvo", linhas[0]["motivo_negacao"])
+            self.assertEqual(cen.executor.chamadas, [])
+            self.assertIs(cen.parecer["execucao"]["permitir_execucao_alvo"], False)
+            self.assertIn("NÃO permitidas nesta execução", modelo.chamadas[0]["messages"][0]["content"])
+        finally:
+            cen.limpar()
+
+    def test_npm_ci_sem_permissao_recusado_antes_de_criar(self):
+        from agente_claude.worktree import RecusaPrevia
+
+        execf = ExecutorFalso()
+        wt = WorktreeDescartavel("C:/repo", "a" * 40, str(self.raiz / "novo"), dict(EXE), execf, npm_ci=True)
+        with self.assertRaises(RecusaPrevia) as c:
+            wt.verificar_previo()
+        self.assertIn("--permitir-execucao-do-alvo", str(c.exception))
+        with self.assertRaises(RecusaPrevia):
+            wt.preparar()  # 2ª camada
+        self.assertEqual(execf.chamadas, [])
 
 
 class TestExecutor(BaseComandos):
@@ -189,6 +290,33 @@ class TestExecutor(BaseComandos):
         relativo = ContextoComandos(raiz=self.ctx.raiz, executaveis={"git": "git"}, repo_gh="dono/repo")
         self.assertIn("indisponível", self.negado("git_log", {}, relativo))
 
+    def test_taskkill_recebe_ambiente_limpo(self):
+        # A10: o taskkill herdava o os.environ do agente (com a chave, se ela veio do processo).
+        if os.name != "nt":
+            self.skipTest("taskkill só existe no Windows")
+        canario = "CANARIO-" + "TASKKILL-" + "9" * 12
+        capturado = {}
+
+        def run_falso(argv, **kw):
+            capturado["argv"], capturado["kw"] = argv, kw
+            return subprocess.CompletedProcess(argv, 0)
+
+        class Proc:
+            pid = 4242
+
+            def kill(self):
+                pass
+
+        with mock.patch.dict(os.environ, {"ERP_AGENTE_ANTHROPIC_KEY": canario, "FOO_SECRET": canario}), \
+                mock.patch.object(executor.subprocess, "run", run_falso):
+            executor.matar_arvore(Proc())
+        self.assertTrue(capturado["argv"][0].lower().endswith("taskkill.exe"))
+        env = capturado["kw"].get("env")
+        self.assertIsInstance(env, dict)
+        self.assertNotIn("ERP_AGENTE_ANTHROPIC_KEY", env)
+        self.assertNotIn(canario, " ".join(env.values()))
+        self.assertEqual(env, ambiente_limpo())
+
     def test_timeout_marca_expirou(self):
         ex = executor.executar(
             [sys.executable, "-c", "import time; time.sleep(8)"],
@@ -218,6 +346,48 @@ class TestExecutor(BaseComandos):
         self.assertEqual(ex.bytes_total, len(dados))
         self.assertTrue(ex.saida.startswith("A" * 48 * 1024 + "\n[... 100000 bytes omitidos ...]\n"))
         self.assertTrue(ex.saida.endswith("Z" * 16 * 1024))
+
+
+class TestGitReal(unittest.TestCase):
+    """A5 medido no git REAL, num repositório temporário (sem rede): o DWIM de `git show <caminho>`
+    e o glob no pathspec não alcançam mais um `.env` rastreado pelo nome que a cerca nega."""
+
+    def setUp(self) -> None:
+        git = shutil.which("git")
+        if not git:
+            self.skipTest("git ausente no PATH")
+        self.git = os.path.abspath(git)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.raiz = Path(self._tmp.name) / "repo"
+        (self.raiz / "cfg").mkdir(parents=True)
+        (self.raiz / "cfg" / ".env").write_text("CANARIO_ENV=valor-rastreado\n", encoding="utf-8")
+        (self.raiz / "cfg" / "app.txt").write_text("conteudo-livre\n", encoding="utf-8")
+        env = ambiente_limpo()
+        for args in (
+            ["init", "-q"],
+            ["add", "-A"],
+            ["-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "-m", "x"],
+        ):
+            r = executor.executar([self.git, *args], cwd=str(self.raiz), env=env, timeout_s=60)
+            self.assertEqual(r.codigo, 0, r.saida)
+        self.f = Ferramentas(ContextoComandos(raiz=Raiz(self.raiz), executaveis={"git": self.git}, repo_gh="dono/repo"))
+
+    def test_git_show_caminho_sem_dois_pontos_nao_le_conteudo(self):
+        res = self.f.executar("git_show", {"objeto": "cfg/.env", "formato": None})
+        self.assertNotIn("CANARIO", res.texto)
+        self.assertNotEqual(res.codigo, 0)
+        controle = self.f.executar("git_show", {"objeto": "HEAD:cfg/app.txt", "formato": None})
+        self.assertEqual(controle.codigo, 0, controle.texto)
+        self.assertIn("conteudo-livre", controle.texto)
+
+    def test_glob_no_caminho_nao_expande(self):
+        res = self.f.executar("buscar", {"padrao": "CANARIO", "caminhos": ["cfg/*.env"]})
+        self.assertNotIn("CANARIO", res.texto)
+        for caminhos in (["cfg/[.]env*"], ["cfg/.e?v"]):
+            self.assertNotIn("CANARIO", self.f.executar("buscar", {"padrao": "CANARIO", "caminhos": caminhos}).texto)
+        controle = self.f.executar("buscar", {"padrao": "conteudo", "caminhos": ["cfg"]})
+        self.assertIn("cfg/app.txt", controle.texto)
 
 
 class TestCatalogo(unittest.TestCase):

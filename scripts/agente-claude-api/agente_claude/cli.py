@@ -22,7 +22,7 @@ from .conta import ContaRecusada
 from .modelo import ErroDeModelo
 from .redacao import Redator
 from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, verificar_conta, versao_sdk
-from .worktree import RecusaPrevia
+from .worktree import MOTIVO_NPM_CI_SEM_PERMISSAO, RecusaPrevia
 
 SAIDA_COMPLETO, SAIDA_PARCIAL, SAIDA_RECUSA, SAIDA_API, SAIDA_INTERNO = 0, 2, 3, 4, 5
 _NUMERO_RE = re.compile(r"^[1-9][0-9]{0,6}$")
@@ -75,7 +75,21 @@ def _numero_pr(texto: str) -> str:
 
 def _comuns(p: argparse.ArgumentParser) -> None:
     p.add_argument("--sha", type=_sha, default=None)
-    p.add_argument("--npm-ci", action="store_true", help="npm ci próprio no worktree (≈ 488 MB enquanto dura)")
+    p.add_argument(
+        "--permitir-execucao-do-alvo",
+        action="store_true",
+        default=False,
+        help=(
+            "PERIGOSO: deixa rodar código do commit alvo (verificar espelho_codex/teste e npm ci). Esse código "
+            "roda como o seu usuário do Windows e alcança HKCU (onde está a chave), o keyring do gh e o disco "
+            "fora do worktree. Só para SHA de autoria confiável. Desligado por padrão."
+        ),
+    )
+    p.add_argument(
+        "--npm-ci",
+        action="store_true",
+        help="npm ci próprio no worktree (≈ 488 MB enquanto dura); exige --permitir-execucao-do-alvo",
+    )
     p.add_argument("--esforco", choices=("low", "medium", "high"), default="medium")
     p.add_argument("--max-turnos", type=_inteiro_entre(1, 200), default=30)
     p.add_argument("--max-ferramentas", type=_inteiro_entre(1, 500), default=60)
@@ -108,6 +122,8 @@ def construir_parser() -> argparse.ArgumentParser:
 def _opcoes(args) -> Opcoes:
     if args.simular_turnos and not args.simular:
         raise ArgumentoInvalido("--simular-turnos só vale com --simular")
+    if args.npm_ci and not args.permitir_execucao_do_alvo:
+        raise ArgumentoInvalido(MOTIVO_NPM_CI_SEM_PERMISSAO)
     return Opcoes(
         esforco=args.esforco,
         max_turnos=args.max_turnos,
@@ -120,6 +136,7 @@ def _opcoes(args) -> Opcoes:
         timeout_comando=float(args.timeout_comando),
         timeout_verificacao=float(args.timeout_verificacao),
         npm_ci=args.npm_ci,
+        permitir_execucao_alvo=args.permitir_execucao_do_alvo,
         manter_worktree=args.manter_worktree,
         simular=args.simular,
         simular_turnos=args.simular_turnos,

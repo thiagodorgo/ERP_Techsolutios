@@ -130,8 +130,10 @@ def carregar_credenciais(environ=None, ler_registro=None) -> Credenciais:
     chave, origem = _ler(VAR_CHAVE, environ, ler_registro)
     if chave is None:
         raise ContaRecusada(
-            f"{VAR_CHAVE} ausente no processo e em HKCU\\Environment. Grave com: "
-            f"setx {VAR_CHAVE} <chave> (numa janela nova; nunca no repositório)."
+            f"{VAR_CHAVE} ausente no processo e em HKCU\\Environment. Grave-a no ambiente do usuário SEM "
+            "digitá-la na linha de comando (PowerShell: Read-Host -AsSecureString + "
+            "[Environment]::SetEnvironmentVariable(..., 'User'); passo a passo no README do agente, seção "
+            "'A chave e o workspace'). Depois abra uma janela nova; nunca no repositório."
         )
     if not _CHAVE_RE.fullmatch(chave):
         prefixo = " (começa com sk-ant)" if chave.startswith("sk-ant") else ""

@@ -35,6 +35,7 @@ LINHAS_TETO = 2000
 MAX_ENTRADAS_LISTA = 500
 TETO_VARREDURA = 32 * 1024 * 1024
 TAMANHO_SONDA_BINARIO = 8192
+MOTIVO_HARD_LINK = "arquivo com mais de um link (hard link)"
 
 
 @dataclass
@@ -107,7 +108,16 @@ class Ferramentas:
             raise CercaNegada("arquivo inexistente")
         if not stat.S_ISREG(info.st_mode):
             raise CercaNegada("não é arquivo regular")
+        # A1 (hard link): o `realpath` não enxerga hard link — um arquivo dentro da raiz pode ser
+        # o MESMO arquivo que outro fora dela. Um checkout do git nunca cria hard link; só um
+        # processo que escreva no worktree o cria. Recusa-se arquivo com mais de um link, antes de
+        # abrir (lstat) e de novo no arquivo aberto (fstat: fecha a corrida entre checar e abrir).
+        if info.st_nlink > 1:
+            raise CercaNegada(MOTIVO_HARD_LINK)
         with self.abrir(caminho, "rb") as f:
+            aberto = os.fstat(f.fileno())
+            if aberto.st_nlink > 1 or not stat.S_ISREG(aberto.st_mode):
+                raise CercaNegada(MOTIVO_HARD_LINK)
             sonda = f.read(TAMANHO_SONDA_BINARIO)
             if b"\x00" in sonda:
                 raise CercaNegada("arquivo binário")
@@ -194,8 +204,15 @@ class Ferramentas:
         )
 
 
-def envelopar(nome: str, resultado: ResultadoFerramenta, texto_redigido: str) -> str:
-    """Envelope fixo do tool_result. O dado é escapado: não fecha o envelope (§3.9)."""
+AVISO_LIMITE_TURNO = "\n[truncado: limite de bytes de resultado por turno; peça o resto no próximo turno]"
+
+
+def envelopar(nome: str, resultado: ResultadoFerramenta, texto_redigido: str, limite_bytes: int | None = None) -> str:
+    """Envelope fixo do tool_result. O dado é escapado: não fecha o envelope (§3.9).
+
+    Com `limite_bytes` (achado A4: teto de bytes de resultado por turno), o envelope inteiro cabe
+    nesse limite: o corpo JÁ ESCAPADO é cortado (sem partir caractere nem entidade) e ganha aviso.
+    """
     atributos = (
         f'ferramenta="{_escapar(str(nome)[:80])}" codigo="{resultado.codigo}" '
         f'truncado="{str(resultado.truncado).lower()}" bytes="{resultado.bytes}"'
@@ -204,7 +221,20 @@ def envelopar(nome: str, resultado: ResultadoFerramenta, texto_redigido: str) ->
         atributos += ' expirou="true"'
     if resultado.negado:
         atributos += ' negado="true"'
-    return f"<resultado {atributos}>\n{_escapar(texto_redigido)}\n</resultado>"
+    abre, fecha = f"<resultado {atributos}>\n", "\n</resultado>"
+    corpo = _escapar(texto_redigido)
+    if limite_bytes is not None and len((abre + corpo + fecha).encode("utf-8")) > limite_bytes:
+        folga = limite_bytes - len((abre + AVISO_LIMITE_TURNO + fecha).encode("utf-8"))
+        corpo = _cortar_utf8(corpo, max(0, folga)) + AVISO_LIMITE_TURNO
+    return abre + corpo + fecha
+
+
+def _cortar_utf8(texto: str, n_bytes: int) -> str:
+    cortado = texto.encode("utf-8")[:n_bytes].decode("utf-8", errors="ignore")
+    amp = cortado.rfind("&")
+    if amp != -1 and ";" not in cortado[amp:]:
+        cortado = cortado[:amp]  # não deixa entidade (&lt; ...) pela metade
+    return cortado
 
 
 def _escapar(texto: str) -> str:

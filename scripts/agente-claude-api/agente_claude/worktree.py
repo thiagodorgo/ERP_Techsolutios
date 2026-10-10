@@ -33,6 +33,12 @@ TIMEOUT_NPM_CI = 1200
 # (P-AGENTE-CHECK-SEM-GENERATE) e `node --test` de teste sem -db roda sem ele ([H3c]).
 
 
+MOTIVO_NPM_CI_SEM_PERMISSAO = (
+    "--npm-ci executa código do commit alvo (scripts de instalação do package.json e das "
+    "dependências); exige --permitir-execucao-do-alvo"
+)
+
+
 class RecusaPrevia(Exception):
     """Recusa antes de criar qualquer coisa (código de saída 3)."""
 
@@ -56,6 +62,9 @@ class WorktreeDescartavel:
     executar: object = field(default=_executor.executar)
     uso_de_disco: object = field(default=shutil.disk_usage)
     npm_ci: bool = False
+    # A1: `npm ci` roda os scripts de ciclo de vida do `package.json` do commit alvo e das
+    # dependências — é execução de código do alvo. Só com a flag explícita da CLI.
+    permitir_execucao_alvo: bool = False
 
     def __post_init__(self) -> None:
         self.raiz: Raiz | None = None
@@ -70,6 +79,8 @@ class WorktreeDescartavel:
         return self.executar(argv, cwd=cwd or self.repo_raiz, env=ambiente_limpo(), timeout_s=timeout, teto_bytes=64 * 1024)
 
     def verificar_previo(self) -> None:
+        if self.npm_ci and self.permitir_execucao_alvo is not True:
+            raise RecusaPrevia(MOTIVO_NPM_CI_SEM_PERMISSAO)
         if len(self.pasta) > MAX_CHARS_PASTA:
             raise RecusaPrevia(f"caminho do worktree com mais de {MAX_CHARS_PASTA} caracteres: {self.pasta}")
         if os.path.lexists(self.pasta):
@@ -99,6 +110,8 @@ class WorktreeDescartavel:
         eventos: list[tuple[str, dict]] = []
         if not self.npm_ci:
             return eventos
+        if self.permitir_execucao_alvo is not True:  # 2ª camada: nunca chega aqui pela CLI
+            raise RecusaPrevia(MOTIVO_NPM_CI_SEM_PERMISSAO)
         r = self.executar(
             [self.executaveis["npm"], "ci"],
             cwd=self.pasta,

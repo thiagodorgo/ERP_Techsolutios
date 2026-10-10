@@ -243,6 +243,41 @@ class TestLeituraConfinada(BaseCaminhos):
         # motivo EXATO: "fora da raiz" também contém "raiz" e mascararia a ausência da checagem
         self.assertEqual(self.negado("alvo.txt", r), "raiz do worktree mudou desde a criação")
 
+    def test_hard_link_negado(self):
+        # A1: o `realpath` não enxerga hard link; um arquivo dentro da raiz pode ser o de fora.
+        try:
+            os.link(self.fora / "alvo.txt", self.raiz / "src" / "hl.txt")
+        except OSError as e:
+            self.skipTest(f"hard link indisponível: {e}")
+        aberturas = []
+
+        def abrir(caminho, modo="r", *a, **k):
+            aberturas.append(str(caminho))
+            return open(caminho, modo, *a, **k)
+
+        f = self.ferramentas(abrir=abrir)
+        res = f.executar("ler_arquivo", {"caminho": "src/hl.txt"})
+        self.assertTrue(res.negado)
+        self.assertIn("hard link", res.motivo_negacao)
+        self.assertNotIn("SEGREDO-DE-FORA", res.texto)
+        self.assertEqual(aberturas, [])  # negado ANTES de abrir (lstat)
+        # O alvo de fora também tem 2 links agora; dentro da raiz, um arquivo comum segue legível.
+        self.assertFalse(f.executar("ler_arquivo", {"caminho": "src/app.ts"}).erro)
+
+    def test_hard_link_criado_depois_do_lstat_negado_no_arquivo_aberto(self):
+        # A1, 2ª camada: o `fstat` do arquivo ABERTO recusa, mesmo que o link nasça entre checar e abrir.
+        destino = self.raiz / "src" / "app.ts"
+
+        def abrir_criando_link(caminho, modo="r", *a, **k):
+            os.link(destino, self.fora / "outro-nome.ts")
+            return open(caminho, modo, *a, **k)
+
+        res = self.ferramentas(abrir=abrir_criando_link).executar("ler_arquivo", {"caminho": "src/app.ts"})
+        self.assertTrue((self.fora / "outro-nome.ts").exists())  # o link nasceu de fato
+        self.assertTrue(res.negado)
+        self.assertIn("hard link", res.motivo_negacao)
+        self.assertNotIn("export const", res.texto)
+
     def test_conteudo_negado_nunca_e_lido(self):
         (self.raiz / ".env").write_text("SEGREDO=1\n", encoding="utf-8")
         criar_junction(self.raiz / "j", self.fora)

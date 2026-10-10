@@ -5,11 +5,27 @@ por milhão de tokens: entrada 4, saída 20, leitura de cache 0,20 (brief; skill
 README l.497, prompt-caching l.144). Escrita de cache 5,00 = 1,25 × entrada
 (prompt-caching l.144) — derivado, declarado.
 O teto é atingido com `>=`. Checagem ANTES de cada chamada ao modelo e ANTES de
-cada ferramenta; o custo tem previsão (não faz a chamada que estouraria).
+cada ferramenta.
+
+Previsão da PRÓXIMA chamada (achado A4 da revisão do PR #417): antes de chamar, o laço
+estima a entrada da chamada (o prompt medido da última resposta + o que entrou no histórico
+depois dela, inclusive os `tool_result` pendentes) e soma `max_tokens` de saída. Se o custo ou
+os tokens acumulados MAIS essa previsão passarem do teto, a chamada não é feita. A previsão é
+de pior caso:
+- tokens de entrada novos = bytes UTF-8 do JSON do que entrou (um token cobre pelo menos um
+  byte — [H] hipótese declarada, não medida: medir exigiria `count_tokens`, uma chamada à API);
+- todo token de entrada é cobrado pelo maior preço de entrada (escrita de cache, 5/MTok): o
+  cache pode ter expirado entre as chamadas;
+- a saída é cobrada inteira (`max_tokens`).
+Assim o custo final medido nunca passa do teto (o excesso antigo, de até uma chamada inteira,
+deixa de existir); o preço é parar um pouco antes do teto quando o histórico é grande.
+Por turno, o laço também limita quantas ferramentas executa e quantos bytes de resultado
+devolve, para a próxima chamada nunca crescer sem limite num turno só.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -17,7 +33,19 @@ PRECO_ENTRADA = Decimal("4")
 PRECO_SAIDA = Decimal("20")
 PRECO_CACHE_LEITURA = Decimal("0.20")
 PRECO_CACHE_ESCRITA = Decimal("5")
+PRECO_ENTRADA_PIOR_CASO = max(PRECO_ENTRADA, PRECO_CACHE_ESCRITA)
 MILHAO = Decimal(1_000_000)
+# Folga por chamada para o enquadramento que a API acrescenta (prompt de sistema de ferramentas,
+# marcadores de mensagem). O JSON contado já inclui chaves e aspas que nem viram token; a folga é
+# para o que não está no JSON.
+MARGEM_TOKENS_POR_CHAMADA = 2048
+FERRAMENTAS_POR_TURNO = 12
+BYTES_RESULTADO_POR_TURNO = 384 * 1024
+
+
+def bytes_json(obj: object) -> int:
+    """Bytes UTF-8 do JSON de `obj` — a unidade da previsão de pior caso (1 token <= 1 byte)."""
+    return len(json.dumps(obj, ensure_ascii=False, sort_keys=True, default=str).encode("utf-8"))
 
 
 @dataclass
@@ -26,6 +54,8 @@ class Tetos:
     ferramentas: int = 60
     tokens: int = 1_500_000
     custo_usd: Decimal = Decimal("6.00")
+    ferramentas_por_turno: int = FERRAMENTAS_POR_TURNO
+    bytes_resultado_por_turno: int = BYTES_RESULTADO_POR_TURNO
 
 
 def formatar_usd(valor: Decimal) -> str:
@@ -55,8 +85,11 @@ class Orcamento:
         self.cache_escrita = 0
         self.cache_leitura = 0
         self.saida = 0
-        self._custo_ultima = Decimal(0)
         self.usage_ausente = 0
+        # Tamanho MEDIDO do prompt da última chamada (entrada + cache escrita + cache leitura) e a
+        # saída dela. `None` = ainda não há medição (1ª chamada, ou resposta sem `usage`).
+        self.prompt_ultimo: int | None = None
+        self.saida_ultima = 0
 
     @staticmethod
     def custo_de(entrada: int, cache_escrita: int, cache_leitura: int, saida: int) -> Decimal:
@@ -84,7 +117,8 @@ class Orcamento:
         self.cache_escrita += ce
         self.cache_leitura += cl
         self.saida += s
-        self._custo_ultima = self.custo_de(e, ce, cl, s)
+        self.prompt_ultimo = None if usage is None else e + ce + cl
+        self.saida_ultima = s
 
     def registrar_ferramenta(self) -> None:
         self.chamadas_ferramenta += 1
@@ -98,15 +132,26 @@ class Orcamento:
     def custo_usd_texto(self) -> str:
         return formatar_usd(self.custo_usd())
 
-    def motivo_estouro_modelo(self) -> str | None:
-        """Antes de chamar o modelo: o primeiro teto atingido (>=), ou a previsão de custo."""
+    @staticmethod
+    def custo_previsto(entrada_prevista: int, max_tokens_resposta: int) -> Decimal:
+        """Pior caso de UMA chamada: toda a entrada ao maior preço de entrada + a saída inteira."""
+        return (
+            Decimal(entrada_prevista) * PRECO_ENTRADA_PIOR_CASO + Decimal(max_tokens_resposta) * PRECO_SAIDA
+        ) / MILHAO
+
+    def motivo_estouro_modelo(self, entrada_prevista: int = 0, max_tokens_resposta: int = 0) -> str | None:
+        """Antes de chamar o modelo: o primeiro teto atingido (>=) ou que a PRÓXIMA chamada pode
+        passar (acumulado + previsão > teto). Quem chama passa a entrada prevista (tokens) e o
+        `max_tokens` da chamada."""
         if self.turnos >= self.tetos.turnos:
             return "turnos"
-        if self.tokens_total() >= self.tetos.tokens:
+        total = self.tokens_total()
+        if total >= self.tetos.tokens or total + entrada_prevista + max_tokens_resposta > self.tetos.tokens:
             return "tokens"
-        if self.custo_usd() >= self.tetos.custo_usd:
+        custo = self.custo_usd()
+        if custo >= self.tetos.custo_usd:
             return "custo"
-        if self.custo_usd() + self._custo_ultima > self.tetos.custo_usd:
+        if custo + self.custo_previsto(entrada_prevista, max_tokens_resposta) > self.tetos.custo_usd:
             return "custo"
         return None
 

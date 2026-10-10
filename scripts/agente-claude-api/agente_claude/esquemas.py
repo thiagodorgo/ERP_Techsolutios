@@ -34,6 +34,12 @@ _BOOL = {"type": "boolean"}
 _LISTA_TEXTO = {"type": "array", "items": {"type": "string"}}
 
 VEREDITOS = ["aprovado", "aprovado_com_ressalvas", "reprovado", "respondido", "inconclusivo"]
+# A7(b): o enum do esquema é o mesmo para as duas tarefas (a lista de ferramentas é fixa, por
+# causa do cache); a restrição por tarefa (plano §2.3) é imposta pelo validador local.
+VEREDITOS_POR_TAREFA = {
+    "revisar-pr": ("aprovado", "aprovado_com_ressalvas", "reprovado", "inconclusivo"),
+    "investigar": ("respondido", "inconclusivo"),
+}
 GRAVIDADES = ["bloqueia", "ajuste", "nota"]
 ESCOPOS = ["dentro-do-bloco", "pre-existente"]
 
@@ -187,8 +193,9 @@ _FERRAMENTAS = [
         "description": (
             "Roda UMA verificação de lista fechada no worktree: 'diff_check' (git diff --check), 'espelho_codex' "
             "(node scripts/sync-agent-agents.mjs --check) ou 'teste' (node --test de tests/<arquivo>, nunca -db). "
-            "'teste' só funciona se a execução foi iniciada com --npm-ci. Chame para comprovar por execução o que "
-            "você afirma. (npm run check não está disponível: exige prisma generate com banco.)"
+            "'espelho_codex' e 'teste' EXECUTAM código do commit alvo: só rodam se a execução foi iniciada com "
+            "--permitir-execucao-do-alvo ('teste' exige também --npm-ci); senão voltam negadas. Chame para comprovar "
+            "por execução o que você afirma. (npm run check não está disponível: exige prisma generate com banco.)"
         ),
         "input_schema": _objeto(
             {

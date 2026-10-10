@@ -214,6 +214,16 @@ FORMATOS_DIFF = {"stat": "--stat", "name-only": "--name-only", "name-status": "-
 # `npm_check` saiu da lista fechada neste bloco (B9: `npm run check` precisa de `prisma generate`,
 # que exige DATABASE_URL — proibido no ambiente das verificações). Pendência P-AGENTE-CHECK-SEM-GENERATE.
 VERIFICACOES = ("diff_check", "espelho_codex", "teste")
+# Verificações que EXECUTAM código do commit alvo (achado A1 da revisão do PR #417): o script
+# `scripts/sync-agent-agents.mjs` e os `tests/*.test.ts` são do commit revisado. Esse código roda
+# como o usuário do Windows: o ambiente limpo não o impede de ler `HKCU\Environment` (onde mora a
+# chave), de usar o keyring do `gh` nem de escrever fora do worktree. Por isso elas ficam DESLIGADAS
+# por padrão e só rodam com a flag explícita `--permitir-execucao-do-alvo`. `diff_check` é só git.
+EXECUTAM_CODIGO_DO_ALVO = ("espelho_codex", "teste")
+MOTIVO_EXECUCAO_NAO_PERMITIDA = (
+    "não permitido nesta execução: esta verificação executa código do commit alvo "
+    "(só roda com --permitir-execucao-do-alvo, para SHA de autoria confiável)"
+)
 
 
 @dataclass
@@ -224,6 +234,7 @@ class ContextoComandos:
     executaveis: dict[str, str] = field(default_factory=dict)
     repo_gh: str | None = None
     npm_ci: bool = False
+    permitir_execucao_alvo: bool = False  # A1: desligado por padrão; só a CLI liga, com flag explícita
 
 
 def _exe(ctx: ContextoComandos, nome: str) -> str:
@@ -354,11 +365,17 @@ def _caminho_em_arvore(texto: str) -> str:
     return "/".join(partes)
 
 
+# Opções globais do git nos comandos que recebem caminhos. `--literal-pathspecs` (achado A5): sem
+# ela, o git expande glob DEPOIS da cerca (`cfg/*.env` passava pelo `resolver` e casava `cfg/.env`
+# rastreado); com ela, o git usa exatamente o caminho literal que a cerca validou (medido: git 2.53).
+_GIT_GLOBAIS = ("--literal-pathspecs", "--no-pager")
+
+
 def _argv_buscar(c: dict, ctx: ContextoComandos) -> list[str]:
     _conferir_campos(c, ("padrao", "ignorar_caixa", "palavra_inteira", "fixo", "caminhos"))
     padrao = _texto("padrao", c.get("padrao"))
     caminhos = _caminhos(ctx, c.get("caminhos"))
-    argv = [_exe(ctx, "git"), "--no-pager", "grep", "-n", "-I", "--max-count=200"]
+    argv = [_exe(ctx, "git"), *_GIT_GLOBAIS, "grep", "-n", "-I", "--max-count=200"]
     if _booleano("ignorar_caixa", c.get("ignorar_caixa")):
         argv.append("-i")
     if _booleano("palavra_inteira", c.get("palavra_inteira")):
@@ -378,7 +395,7 @@ def _argv_git_log(c: dict, ctx: ContextoComandos) -> list[str]:
         ),
     )
     n = _inteiro("max_entradas", c.get("max_entradas"), 1, 200, 20)
-    argv = [_exe(ctx, "git"), "--no-pager", "log", "--no-color", "--no-ext-diff", "--no-textconv", "-n", str(n)]
+    argv = [_exe(ctx, "git"), *_GIT_GLOBAIS, "log", "--no-color", "--no-ext-diff", "--no-textconv", "-n", str(n)]
     formato = _enum("formato", c.get("formato"), FORMATOS_LOG)
     if formato:
         argv.append(formato)
@@ -429,13 +446,16 @@ def _argv_git_show(c: dict, ctx: ContextoComandos) -> list[str]:
     formato = _enum("formato", c.get("formato"), FORMATOS_SHOW)
     if formato:
         argv.append(formato)
-    argv.append(objeto)
+    # `--` depois do objeto (achado A5): força o git a lê-lo como REVISÃO. Sem ele, `git show
+    # cfg/.env` (sem `:`) caía no DWIM do git como caminho e devolvia o conteúdo rastreado que a
+    # negação por nome barra em `HEAD:cfg/.env`. Medido: `git show cfg/.env --` -> "bad revision".
+    argv += [objeto, "--"]
     return argv
 
 
 def _argv_git_diff(c: dict, ctx: ContextoComandos) -> list[str]:
     _conferir_campos(c, ("formato", "contexto", "renomes", "revs", "caminhos"))
-    argv = [_exe(ctx, "git"), "--no-pager", "diff", "--no-color", "--no-ext-diff", "--no-textconv"]
+    argv = [_exe(ctx, "git"), *_GIT_GLOBAIS, "diff", "--no-color", "--no-ext-diff", "--no-textconv"]
     formato = _enum("formato", c.get("formato"), FORMATOS_DIFF)
     if formato:
         argv.append(formato)
@@ -461,7 +481,7 @@ def _argv_git_diff(c: dict, ctx: ContextoComandos) -> list[str]:
 
 def _argv_git_ls_files(c: dict, ctx: ContextoComandos) -> list[str]:
     _conferir_campos(c, ("caminhos",))
-    return [_exe(ctx, "git"), "--no-pager", "ls-files", "--", *_caminhos(ctx, c.get("caminhos"))]
+    return [_exe(ctx, "git"), *_GIT_GLOBAIS, "ls-files", "--", *_caminhos(ctx, c.get("caminhos"))]
 
 
 def _argv_gh_pr_view(c: dict, ctx: ContextoComandos) -> list[str]:
@@ -493,6 +513,9 @@ def _argv_verificar(c: dict, ctx: ContextoComandos) -> list[str]:
         raise CercaNegada("verificação fora da lista fechada")
     if nome == "diff_check":
         return [_exe(ctx, "git"), "--no-pager", "diff", "--check"]
+    # A1: o portão vem ANTES de qualquer outra checagem e de qualquer processo.
+    if nome in EXECUTAM_CODIGO_DO_ALVO and ctx.permitir_execucao_alvo is not True:
+        raise CercaNegada(MOTIVO_EXECUCAO_NAO_PERMITIDA)
     if nome == "espelho_codex":
         return [_exe(ctx, "node"), "scripts/sync-agent-agents.mjs", "--check"]
     # nome == "teste": precisa do node_modules do `npm ci` próprio do worktree.

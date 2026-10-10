@@ -68,6 +68,23 @@ class TestPadroes(unittest.TestCase):
         self.assertEqual(self.r.redigir("senha: '" + "abcdefghij" + "klmnop1234'"), "senha: '[REDIGIDO]'")
         self.assertEqual(self.r.redigir("CLIENT_SECRET=" + "q" * 24), "CLIENT_SECRET=[REDIGIDO]")
 
+    def test_url_com_senha_redigida_com_esquema_colado(self):
+        # A6: o esquema limitado a 32 caracteres não pode perder senha quando o esquema vem colado a
+        # outro texto (o lookbehind, alternativa medida, perdia estes dois primeiros casos).
+        for prefixo in ("conn: -", "1", "x" * 40, "a.b."):
+            saida = self.r.redigir(prefixo + "postgresql://" + "u:" + "senha" + "Secreta1@h/db")
+            self.assertNotIn("senhaSecreta1", saida, prefixo)
+            self.assertIn("u:[REDIGIDO]@h/db", saida, prefixo)
+
+    def test_redacao_linear_em_texto_hostil(self):
+        # A6 (medido pelo revisor): "y"*16000 levava 1 s e 256 KB ~4 min (padrão de URL quadrático).
+        import time
+
+        for hostil in ("y" * 65_536, "a1" * 32_768, "ab-" * 21_845, "a://" * 16_384, "a://" + "u:" * 32_000):
+            inicio = time.perf_counter()
+            self.r.redigir(hostil)
+            self.assertLess(time.perf_counter() - inicio, 1.0, hostil[:8])
+
     def test_texto_sem_segredo_intacto(self):
         texto = (
             "const akiaTokenizerFactory = 1; // identificador legítimo\n"

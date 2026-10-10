@@ -23,8 +23,13 @@ from dataclasses import dataclass, field
 
 from . import esquemas
 from .ferramentas import ResultadoFerramenta, envelopar
+from .orcamento import MARGEM_TOKENS_POR_CHAMADA, bytes_json, formatar_usd
 from .parecer import ParecerInvalido, validar
 from .prompts import MENSAGEM_REPROMPT_CURTO, MENSAGEM_REPROMPT_PARECER, PROMPT_SISTEMA
+
+# Abaixo disso de folga no turno, a ferramenta nem roda: o envelope com aviso já não caberia.
+FOLGA_MINIMA_BYTES_TURNO = 1024
+TEXTO_APOS_PARECER = "não executado: o parecer já foi entregue neste turno"
 
 
 @dataclass
@@ -53,6 +58,7 @@ class Laco:
         esforco: str,
         system: str = PROMPT_SISTEMA,
         tools: list[dict] | None = None,
+        tarefa: str | None = None,
     ) -> None:
         self.modelo = modelo
         self.ferramentas = ferramentas
@@ -63,7 +69,27 @@ class Laco:
         self.esforco = esforco
         self.system = system
         self.tools = tools if tools is not None else esquemas.ferramentas()
+        self.tarefa = tarefa
         self.resultado = ResultadoLaco()
+        self._n_medidas = 0  # quantas mensagens o prompt da última chamada tinha
+
+    def _entrada_prevista(self, messages: list[dict]) -> int:
+        """Entrada (tokens) de pior caso da PRÓXIMA chamada (achado A4; regra em `orcamento`).
+
+        Com medição: o prompt medido da última chamada + os bytes do que entrou depois dela (a
+        resposta do assistente — no mínimo a saída cobrada dela — e os `tool_result` pendentes).
+        Sem medição (1ª chamada, ou resposta sem `usage`): os bytes do pedido inteiro.
+        """
+        o = self.orcamento
+        if o.prompt_ultimo is None:
+            return bytes_json(self.system) + bytes_json(self.tools) + bytes_json(messages) + MARGEM_TOKENS_POR_CHAMADA
+        total = o.prompt_ultimo + MARGEM_TOKENS_POR_CHAMADA
+        for mensagem in messages[self._n_medidas :]:
+            tamanho = bytes_json(mensagem)
+            if mensagem.get("role") == "assistant":
+                tamanho = max(tamanho, o.saida_ultima)
+            total += tamanho
+        return total
 
     # -- auxiliares ------------------------------------------------------------
 
@@ -111,12 +137,24 @@ class Laco:
                 if self.auditoria.verificar_stop():
                     self._evento("stop_detectado", "antes da chamada ao modelo")
                     return self._parcial("STOP")
-                motivo = self.orcamento.motivo_estouro_modelo()
+                prevista = self._entrada_prevista(messages)
+                custo_previsto = formatar_usd(self.orcamento.custo_previsto(prevista, self.max_tokens_resposta))
+                motivo = self.orcamento.motivo_estouro_modelo(prevista, self.max_tokens_resposta)
                 if motivo:
-                    self._evento("orcamento_estourado", motivo)
+                    self._evento(
+                        "orcamento_estourado",
+                        {
+                            "motivo": motivo,
+                            "antes_da_chamada": True,
+                            "entrada_prevista_tokens": prevista,
+                            "custo_previsto_usd": custo_previsto,
+                            "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
+                        },
+                    )
                     return self._parcial(f"orcamento:{motivo}")
 
                 inicio = time.monotonic()
+                self._n_medidas = len(messages)
                 resp = self.modelo.responder(
                     system=self.system,
                     tools=self.tools,
@@ -139,6 +177,8 @@ class Laco:
                         "stop_reason": resp.stop_reason,
                         "usage": resp.usage,
                         "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
+                        "entrada_prevista_tokens": prevista,
+                        "custo_previsto_usd": custo_previsto,
                         "duracao_ms": int((time.monotonic() - inicio) * 1000),
                         "rate_limit": rate_limit,
                         "blocos": blocos,
@@ -213,9 +253,17 @@ class Laco:
                 pass
             raise
 
+    def _recusar(self, resultados: list[dict], nome, entrada, ident, texto: str, motivo: str) -> None:
+        res = ResultadoFerramenta(texto=texto, erro=True, negado=True, motivo_negacao=motivo)
+        self._auditar_ferramenta(nome, entrada, res)
+        resultados.append(self._resultado_erro(ident, texto))
+
     def _rodar_ferramentas(self, usos: list[dict]) -> tuple[list[dict], str | None]:
         resultados: list[dict] = []
         motivo_parada: str | None = None
+        tetos = self.orcamento.tetos
+        executadas_no_turno = 0
+        bytes_no_turno = 0
         for uso in usos:
             nome = uso.get("name")
             entrada = uso.get("input")
@@ -225,13 +273,15 @@ class Laco:
                 motivo_parada = "STOP"
             if motivo_parada is not None:
                 texto = "parada: STOP" if motivo_parada == "STOP" else "orçamento esgotado"
-                res = ResultadoFerramenta(texto=texto, erro=True, negado=True, motivo_negacao=motivo_parada)
-                self._auditar_ferramenta(nome, entrada, res)
-                resultados.append(self._resultado_erro(ident, texto))
+                self._recusar(resultados, nome, entrada, ident, texto, motivo_parada)
+                continue
+            # A7(a): depois de um `entregar_parecer` válido, nada mais executa neste turno.
+            if self.resultado.parecer_modelo is not None:
+                self._recusar(resultados, nome, entrada, ident, TEXTO_APOS_PARECER, "apos_parecer")
                 continue
             if nome == "entregar_parecer":
                 try:
-                    parecer = validar(entrada)
+                    parecer = validar(entrada, self.tarefa)
                 except ParecerInvalido as e:
                     res = ResultadoFerramenta(texto="parecer inválido", erro=True, codigo=1)
                     self._auditar_ferramenta(nome, {"erros": e.erros}, res)
@@ -248,10 +298,28 @@ class Laco:
             if motivo:
                 self._evento("orcamento_estourado", motivo)
                 motivo_parada = f"orcamento:{motivo}"
-                res = ResultadoFerramenta(texto="orçamento esgotado", erro=True, negado=True, motivo_negacao=motivo_parada)
-                self._auditar_ferramenta(nome, entrada, res)
-                resultados.append(self._resultado_erro(ident, "orçamento esgotado"))
+                self._recusar(resultados, nome, entrada, ident, "orçamento esgotado", motivo_parada)
                 continue
+            # A4: limites POR TURNO — quantas ferramentas rodam e quantos bytes de resultado voltam.
+            # Não encerram a execução: o modelo pode pedir o resto no turno seguinte (e a previsão
+            # de custo da próxima chamada já conta com o que voltou).
+            if executadas_no_turno >= tetos.ferramentas_por_turno:
+                self._recusar(
+                    resultados, nome, entrada, ident,
+                    f"não executado: limite de {tetos.ferramentas_por_turno} ferramentas por turno; peça de novo no próximo turno",
+                    "limite_por_turno:ferramentas",
+                )
+                continue
+            restante = tetos.bytes_resultado_por_turno - bytes_no_turno
+            if restante < FOLGA_MINIMA_BYTES_TURNO:
+                self._recusar(
+                    resultados, nome, entrada, ident,
+                    f"não executado: limite de {tetos.bytes_resultado_por_turno // 1024} KB de resultado por turno; "
+                    "peça de novo no próximo turno, com menos saída",
+                    "limite_por_turno:bytes",
+                )
+                continue
+            executadas_no_turno += 1
             self.orcamento.registrar_ferramenta()
             try:
                 res = self.ferramentas.executar(nome, entrada)
@@ -264,7 +332,12 @@ class Laco:
             if res.negado:
                 self.resultado.negadas += 1
             texto = self.redator.redigir(res.texto)
-            item = {"type": "tool_result", "tool_use_id": ident, "content": envelopar(nome, res, texto)}
+            conteudo = envelopar(nome, res, texto)
+            if len(conteudo.encode("utf-8")) > restante:
+                res.truncado = True
+                conteudo = envelopar(nome, res, texto, limite_bytes=restante)
+            bytes_no_turno += len(conteudo.encode("utf-8"))
+            item = {"type": "tool_result", "tool_use_id": ident, "content": conteudo}
             if res.erro:
                 item["is_error"] = True
             resultados.append(item)

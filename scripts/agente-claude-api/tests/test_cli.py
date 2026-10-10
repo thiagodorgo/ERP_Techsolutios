@@ -35,6 +35,34 @@ class TestCli(unittest.TestCase):
             codigo, _, erro = self.main(argv, deps)
             self.assertEqual(codigo, 3, argv)
 
+    def test_execucao_do_alvo_desligada_por_padrao_na_cli(self):
+        # A1: sem a flag, Opcoes.permitir_execucao_alvo é False; `--npm-ci` sozinho é recusado (3).
+        args = cli.construir_parser().parse_args(["revisar-pr", "416"])
+        self.assertIs(cli._opcoes(args).permitir_execucao_alvo, False)
+        args = cli.construir_parser().parse_args(["investigar", "x", "--permitir-execucao-do-alvo"])
+        self.assertIs(cli._opcoes(args).permitir_execucao_alvo, True)
+        ex = ExecutorRepoFalso(self.base)
+        codigo, _, erro = self.main(["revisar-pr", "416", "--npm-ci", "--saida", str(self.base / "s")],
+                                    deps_repo_falso(ex, dict(ENV_OK)))
+        self.assertEqual(codigo, 3)
+        self.assertIn("--permitir-execucao-do-alvo", erro)
+        self.assertEqual(ex.chamadas, [])
+        args = cli.construir_parser().parse_args(["revisar-pr", "416", "--npm-ci", "--permitir-execucao-do-alvo"])
+        opcoes = cli._opcoes(args)
+        self.assertTrue(opcoes.npm_ci and opcoes.permitir_execucao_alvo)
+
+    def test_parecer_registra_se_a_execucao_do_alvo_foi_permitida(self):
+        for extra, esperado in (([], False), (["--permitir-execucao-do-alvo"], True)):
+            base = self.base / ("p" if esperado else "n")
+            ex = ExecutorRepoFalso(base)
+            deps = deps_repo_falso(ex, dict(ENV_OK), modelo=ModeloFalso([resposta_parecer(veredito="aprovado")]))
+            codigo, _, _ = self.main(["revisar-pr", "416", "--saida", str(base / "s"), "--worktree-dir", str(base / "w"), *extra], deps)
+            self.assertEqual(codigo, 0)
+            p = json.loads((base / "s" / "parecer.json").read_text(encoding="utf-8"))
+            self.assertIs(p["execucao"]["permitir_execucao_alvo"], esperado)
+            md = (base / "s" / "parecer.md").read_text(encoding="utf-8")
+            self.assertIn("PERMITIDA" if esperado else "não permitida", md)
+
     def test_versao(self):
         codigo, saida, _ = self.main(["versao"], deps_repo_falso(ExecutorRepoFalso(self.base), {}))
         self.assertEqual(codigo, 0)

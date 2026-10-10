@@ -17,6 +17,8 @@ import threading
 import time
 from dataclasses import dataclass
 
+from .cerca import ambiente_limpo
+
 TETO_PADRAO = 64 * 1024
 TETO_VERIFICACAO = 128 * 1024
 _FLAGS = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
@@ -78,7 +80,12 @@ def _taskkill() -> str:
 
 
 def matar_arvore(proc) -> None:
-    """Mata o processo e seus descendentes. No Windows, `taskkill /T /F` (argv fixo)."""
+    """Mata o processo e seus descendentes. No Windows, `taskkill /T /F` (argv fixo).
+
+    O `taskkill` recebe o MESMO ambiente limpo dos outros filhos (achado A10): sem `env=`, ele
+    herdaria o `os.environ` do agente, que contém `ERP_AGENTE_ANTHROPIC_KEY` quando a chave veio
+    do processo.
+    """
     if os.name == "nt":
         try:
             subprocess.run(
@@ -87,6 +94,7 @@ def matar_arvore(proc) -> None:
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=ambiente_limpo(),
                 timeout=30,
             )
         except (OSError, subprocess.SubprocessError):

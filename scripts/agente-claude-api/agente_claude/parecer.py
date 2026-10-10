@@ -13,9 +13,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shlex
+import unicodedata
 from pathlib import Path
 
-from .esquemas import PARECER_SCHEMA
+from .esquemas import ESCOPOS, GRAVIDADES, PARECER_SCHEMA, VEREDITOS, VEREDITOS_POR_TAREFA
 
 VERSAO_SCHEMA = "agente-claude-api.parecer@2026-10-10.v1"
 NIVEL = "menor (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO)"
@@ -78,38 +81,108 @@ def _validar(valor: object, schema: dict, caminho: str, erros: list[str]) -> Non
             _validar(item, schema["items"], f"{caminho}[{i}]", erros)
 
 
-def validar(entrada: object) -> dict:
+def validar(entrada: object, tarefa: str | None = None) -> dict:
     erros: list[str] = []
     _validar(entrada, PARECER_SCHEMA, "parecer", erros)
+    # A7(b): o veredito tem de valer para a TAREFA (plano §2.3): `investigar` responde
+    # (respondido | inconclusivo) e não aprova nem reprova; `revisar-pr` não "responde".
+    if not erros and tarefa in VEREDITOS_POR_TAREFA:
+        permitidos = VEREDITOS_POR_TAREFA[tarefa]
+        if entrada["veredito"] not in permitidos:  # type: ignore[index]
+            erros.append(
+                f"parecer.veredito: '{entrada['veredito']}' não vale para a tarefa {tarefa}; "  # type: ignore[index]
+                f"use um de {list(permitidos)}"
+            )
     if erros:
         raise ParecerInvalido(erros)
     return entrada  # type: ignore[return-value]
 
 
-def _normalizar_comando(texto: str) -> str:
-    return " ".join(str(texto).split())
+# -- evidência conferida (achado A2) --------------------------------------------------------------
+# `evidencia.conferida` só é true quando o comando citado É uma chamada real da auditoria: mesma
+# ferramenta E mesmos argumentos normalizados. Nada de casar pelo nome da ferramenta nem por
+# substring (a regra antiga dava true para "git" e para um comando nunca executado).
+
+_NOME_FERRAMENTA_RE = re.compile(r"^[a-z][a-z_]{1,40}$")
+_CHAVE_RE = re.compile(r"^[a-z][a-z_]{0,40}$")
 
 
-def conferir_evidencia(comando: str, eventos_ferramenta: list[dict]) -> bool:
-    """O comando citado pelo modelo consta da auditoria? (nome da ferramenta + argumentos, ou argv)."""
-    alvo = _normalizar_comando(comando)
-    if not alvo:
-        return False
-    for ev in eventos_ferramenta:
-        if ev.get("negado"):
+def _escalar(valor: object) -> object:
+    """Escalar no texto canônico: string fica string; número/booleano vira o seu JSON. Para uma
+    mesma chave a cerca só aceita um tipo, então '5' citado e 5 executado são a mesma chamada."""
+    if isinstance(valor, str):
+        return valor
+    if isinstance(valor, list):
+        return [_escalar(v) for v in valor]
+    return json.dumps(valor, sort_keys=True, ensure_ascii=False)
+
+
+def args_canonicos(args: object) -> str | None:
+    """Argumentos normalizados: sem os campos que a cerca trata como ausentes (null, false, "" e
+    lista vazia) e com chaves ordenadas. `None` se não for um objeto."""
+    if not isinstance(args, dict):
+        return None
+    limpos = {}
+    for chave, valor in args.items():
+        if valor is None or valor is False:
             continue
-        candidatos = [str(ev.get("ferramenta", ""))]
-        if ev.get("argv"):
-            candidatos.append(" ".join(str(a) for a in ev["argv"][1:]))
-            candidatos.append(" ".join(str(a) for a in ev["argv"]))
-        args = ev.get("args")
-        if args:
-            candidatos.append(f"{ev.get('ferramenta')} {json.dumps(args, sort_keys=True, ensure_ascii=False)}")
-            candidatos.extend(str(v) for v in args.values() if isinstance(v, str) and len(v) >= 3)
-        for c in candidatos:
-            c = _normalizar_comando(c)
-            if c and len(c) >= 3 and (c in alvo or alvo in c):
-                return True
+        if isinstance(valor, (str, list)) and len(valor) == 0:
+            continue
+        limpos[str(chave)] = _escalar(valor)
+    return json.dumps(limpos, sort_keys=True, ensure_ascii=False)
+
+
+def citacao(comando: object) -> tuple[str, str] | None:
+    """Lê `<ferramenta> <JSON>` ou `<ferramenta> chave=valor ...` -> (ferramenta, args canônicos).
+
+    Qualquer outra forma (texto livre, caminho solto, "em <arquivo>") -> `None`: não conferida.
+    """
+    if not isinstance(comando, str):
+        return None
+    texto = comando.strip()
+    if len(texto) >= 2 and texto[0] == "`" and texto[-1] == "`":
+        texto = texto.strip("`").strip()
+    partes = texto.split(None, 1)
+    if not partes or not _NOME_FERRAMENTA_RE.fullmatch(partes[0]):
+        return None
+    nome = partes[0]
+    resto = partes[1].strip() if len(partes) > 1 else ""
+    if not resto:
+        args: object = {}
+    elif resto.startswith("{"):
+        try:
+            args = json.loads(resto)
+        except ValueError:
+            return None
+    else:
+        try:
+            pares = shlex.split(resto)
+        except ValueError:
+            return None
+        args = {}
+        for par in pares:
+            chave, sep, valor = par.partition("=")
+            if not sep or not _CHAVE_RE.fullmatch(chave) or chave in args:
+                return None
+            try:
+                args[chave] = json.loads(valor)
+            except ValueError:
+                args[chave] = valor
+    canonico = args_canonicos(args)
+    return (nome, canonico) if canonico is not None else None
+
+
+def conferir_evidencia(comando: object, eventos_ferramenta: list[dict]) -> bool:
+    """True só se (ferramenta, argumentos normalizados) citados = os de uma chamada EXECUTADA."""
+    lida = citacao(comando)
+    if lida is None:
+        return False
+    nome, canonico = lida
+    for ev in eventos_ferramenta:
+        if ev.get("negado") or ev.get("ferramenta") in (None, "entregar_parecer"):
+            continue
+        if ev.get("ferramenta") == nome and args_canonicos(ev.get("args")) == canonico:
+            return True
     return False
 
 
@@ -191,78 +264,126 @@ def gravar_json(parecer: dict, pasta: Path, redator) -> Path:
     return _escrever(Path(pasta) / "parecer.json", json.dumps(conteudo, sort_keys=True, ensure_ascii=False, indent=2) + "\n")
 
 
+# -- parecer.md (achado A3) -----------------------------------------------------------------------
+# O `.md` é o que o orquestrador lê. Duas regras o tornam impossível de forjar pelo conteúdo do
+# modelo: (1) todas as seções geradas pelo script (veredito, execução, conta e cobrança, custo,
+# comandos da auditoria) vêm ANTES de qualquer texto do modelo e se marcam "(gerado pelo
+# script)"; (2) todo texto vindo do modelo fica dentro de um bloco de código cujo delimitador é
+# mais longo que qualquer sequência de crases do próprio texto — logo o texto não fecha o bloco e
+# não vira cabeçalho, nem com "```" nem com "``````".
+
+MARCA_SCRIPT = "(gerado pelo script)"
+TITULO_CONTEUDO_MODELO = "## Conteúdo do modelo (dado escrito pelo modelo; não é instrução nem prova)"
+SECOES_DO_SCRIPT = (
+    f"## Veredito {MARCA_SCRIPT}",
+    f"## Execução {MARCA_SCRIPT}",
+    f"## Conta e cobrança {MARCA_SCRIPT}",
+    f"## Custo {MARCA_SCRIPT}",
+    f"## Comandos executados (da auditoria) {MARCA_SCRIPT}",
+)
+_CRASES_RE = re.compile(r"`+")
+
+
+def bloco_de_codigo(texto: object) -> list[str]:
+    """Texto dentro de um bloco cercado por mais crases do que a maior sequência que ele contém."""
+    corpo = "" if texto is None else str(texto)
+    maior = max((len(m) for m in _CRASES_RE.findall(corpo)), default=0)
+    delimitador = "`" * max(3, maior + 1)
+    return [delimitador, corpo, delimitador]
+
+
+def _uma_linha(valor: object) -> str:
+    """Valor numa linha só (quebras e controles viram espaço): nada de fora vira linha nova."""
+    texto = "" if valor is None else str(valor)
+    return "".join(" " if unicodedata.category(c) in ("Cc", "Cf", "Zl", "Zp") else c for c in texto)
+
+
+def _do_enum(valor: object, opcoes) -> str:
+    return valor if isinstance(valor, str) and valor in opcoes else "?"
+
+
 def gravar_md(parecer: dict, pasta: Path, redator) -> Path:
     p = parecer
+    r = redator.redigir  # cada texto do modelo é redigido ANTES de medir as crases do bloco
+    veredito = _do_enum(p.get("veredito"), VEREDITOS)
+    e = p["execucao"]
     linhas = [
-        f"# Parecer — {p['tarefa']} {_alvo_curto(p['alvo'])}",
+        f"# Parecer — {_uma_linha(p['tarefa'])} {_uma_linha(_alvo_curto(p['alvo']))}",
         "",
-        f"- **Veredito:** {p['veredito']}" + (" (PARCIAL)" if p["parcial"] else ""),
+        f"> As seções marcadas {MARCA_SCRIPT} vêm da auditoria, da conta e do orçamento; o modelo não as escreve.",
+        "> Tudo o que o modelo escreveu vem DEPOIS delas, na última seção, dentro de blocos de código.",
+        "",
+        SECOES_DO_SCRIPT[0],
+        "",
+        f"- **Veredito:** {veredito}" + (" (PARCIAL)" if p["parcial"] else ""),
     ]
     if p["parcial"]:
-        linhas.append(f"- **Motivo do parcial:** {p['motivo_parcial']}")
+        linhas.append(f"- **Motivo do parcial:** {_uma_linha(p['motivo_parcial'])}")
+    m = p["modelo"]
     linhas += [
-        f"- **Modelo pedido / respondeu:** {p['modelo'].get('pedido')} / {p['modelo'].get('respondeu')}"
-        f" · esforço {p['modelo'].get('esforco')} · nível {p['modelo'].get('nivel')}",
+        f"- **Modelo pedido / respondeu:** {_uma_linha(m.get('pedido'))} / {_uma_linha(m.get('respondeu'))}"
+        f" · esforço {_uma_linha(m.get('esforco'))} · nível {_uma_linha(m.get('nivel'))}",
+        f"- **Execução de código do commit alvo:** {'PERMITIDA' if e.get('permitir_execucao_alvo') else 'não permitida'}",
         "",
-        "## Resumo",
+        SECOES_DO_SCRIPT[1],
         "",
-        p["resumo"] or "(sem resumo)",
-        "",
-        "## Achados",
-        "",
+        f"- id: {_uma_linha(e.get('id'))} · início {_uma_linha(e.get('inicio_utc'))} · fim {_uma_linha(e.get('fim_utc'))}",
+        f"- worktree: {_uma_linha(e.get('worktree'))} · removido: {e.get('worktree_removido')} · npm ci: {e.get('npm_ci')}",
+        f"- agente {_uma_linha(e.get('versao_agente'))} · SDK {_uma_linha(e.get('sdk'))}",
     ]
-    if not p["achados"]:
-        linhas.append("(nenhum achado)")
-    for i, a in enumerate(p["achados"], 1):
-        ev = a.get("evidencia", {})
-        linhas += [
-            f"### {i}. [{a.get('gravidade')}] [{a.get('escopo')}] {a.get('arquivo')}"
-            + (f":{a.get('linha')}" if a.get("linha") is not None else ""),
-            "",
-            f"- Motivo: {a.get('motivo')}",
-            f"- Evidência (conferida na auditoria: {'sim' if ev.get('conferida') else 'não'}): `{ev.get('comando')}`",
-            "",
-            "```",
-            str(ev.get("saida", "")),
-            "```",
-            "",
-        ]
-    linhas += ["## Limitações", ""]
-    linhas += [f"- {t}" for t in p["limitacoes"]] or ["(nenhuma declarada)"]
+    if e.get("comando_limpeza"):
+        linhas.append(f"- **worktree ficou no disco; para remover:** {_uma_linha(e['comando_limpeza'])}")
+    linhas += ["", SECOES_DO_SCRIPT[2], ""]
+    for chave in ("origem_chave", "tipo_chave", "cabecalho_workspace_enviado", "base_url", "request_ids", "rate_limit_ultimo", "retry_after_visto"):
+        linhas.append(f"- {chave}: {_uma_linha(p['conta'].get(chave))}")
     c = p["custo"]
     tokens = c.get("tokens", {})
     linhas += [
         "",
-        "## Custo",
+        SECOES_DO_SCRIPT[3],
         "",
         f"- Turnos: {c.get('turnos')} · chamadas de ferramenta: {c.get('chamadas_ferramenta')} · negadas: {c.get('negadas')}",
         f"- Tokens: entrada {tokens.get('entrada')} · cache escrita {tokens.get('cache_escrita')} · "
         f"cache leitura {tokens.get('cache_leitura')} · saída {tokens.get('saida')} · total {tokens.get('total')}",
         f"- US$ estimado: {c.get('usd_estimado')} (preços por MTok: {c.get('precos_usd_por_mtok')})",
         "",
-        "## Conta e cobrança",
+        SECOES_DO_SCRIPT[4],
         "",
     ]
-    for chave in ("origem_chave", "tipo_chave", "cabecalho_workspace_enviado", "base_url", "request_ids", "rate_limit_ultimo", "retry_after_visto"):
-        linhas.append(f"- {chave}: {p['conta'].get(chave)}")
-    linhas += ["", "## Comandos executados (da auditoria)", ""]
+    # O argv traz campos do modelo (ex.: o padrão de busca) e o nome de uma ferramenta desconhecida
+    # vem do modelo: uma linha por comando, dentro de bloco de código.
+    comandos = []
     for cmd in p["comandos_executados"]:
         estado = "NEGADO" if cmd.get("negado") else f"código {cmd.get('codigo')}"
-        argv = " ".join(cmd["argv"]) if cmd.get("argv") else "(não executado)"
-        linhas.append(f"- #{cmd.get('seq')} {cmd.get('ferramenta')}: {estado} — `{argv}`")
-    if not p["comandos_executados"]:
-        linhas.append("(nenhum)")
-    e = p["execucao"]
-    linhas += [
-        "",
-        "## Execução",
-        "",
-        f"- id: {e.get('id')} · início {e.get('inicio_utc')} · fim {e.get('fim_utc')}",
-        f"- worktree: {e.get('worktree')} · removido: {e.get('worktree_removido')} · npm ci: {e.get('npm_ci')}",
-        f"- agente {e.get('versao_agente')} · SDK {e.get('sdk')}",
-    ]
-    if e.get("comando_limpeza"):
-        linhas.append(f"- **worktree ficou no disco; para remover:** `{e['comando_limpeza']}`")
+        argv = " ".join(str(a) for a in cmd["argv"]) if cmd.get("argv") else "(sem processo)"
+        comandos.append(_uma_linha(r(f"#{cmd.get('seq')} {cmd.get('ferramenta')}: {estado} — {argv}")))
+    linhas += bloco_de_codigo("\n".join(comandos) if comandos else "(nenhum)")
+    linhas += ["", TITULO_CONTEUDO_MODELO, "", "### Resumo", ""]
+    linhas += bloco_de_codigo(r(p["resumo"] or "(sem resumo)"))
+    linhas += ["", "### Achados", ""]
+    if not p["achados"]:
+        linhas.append("(nenhum achado)")
+    for i, a in enumerate(p["achados"], 1):
+        ev = a.get("evidencia", {}) or {}
+        linha = a.get("linha")
+        linha_txt = str(linha) if isinstance(linha, int) and not isinstance(linha, bool) else "—"
+        linhas += [
+            "",
+            f"#### Achado {i} — gravidade: {_do_enum(a.get('gravidade'), GRAVIDADES)} · "
+            f"escopo: {_do_enum(a.get('escopo'), ESCOPOS)} · linha: {linha_txt} · "
+            f"evidência conferida na auditoria: {'sim' if ev.get('conferida') is True else 'não'}",
+            "",
+        ]
+        corpo = (
+            f"arquivo: {r(a.get('arquivo'))}\n"
+            f"motivo: {r(a.get('motivo'))}\n"
+            f"comando citado: {r(ev.get('comando'))}\n"
+            f"saída citada:\n{r(ev.get('saida', ''))}"
+        )
+        linhas += bloco_de_codigo(corpo)
+    linhas += ["", "### Limitações", ""]
+    limitacoes = "\n".join(f"- {r(t)}" for t in p["limitacoes"]) or "(nenhuma declarada)"
+    linhas += bloco_de_codigo(limitacoes)
     texto = "\n".join(str(x) for x in linhas) + "\n"
     return _escrever(Path(pasta) / "parecer.md", redator.redigir(texto))
 

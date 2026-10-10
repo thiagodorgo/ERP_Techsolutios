@@ -22,7 +22,11 @@ _PADROES: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"gh[pousr]_[A-Za-z0-9]{20,}"), "[REDIGIDO:github]"),
     (re.compile(r"github_pat_[A-Za-z0-9_]{20,}"), "[REDIGIDO:github]"),
     (re.compile(r"AIza[0-9A-Za-z_-]{30,}"), "[REDIGIDO:google]"),
-    (re.compile(r"([a-z][a-z0-9+.-]*://[^/\s:@]+:)[^@\s/]+(@)", re.IGNORECASE), r"\1[REDIGIDO]\2"),
+    # URL com senha. O esquema tem no máximo 32 caracteres (achado A6): com `*` ilimitado, um texto
+    # como "yyyy…" custava O(n²) (16 KB = 1 s; 256 KB ≈ 4 min). Limitado, cada início testa no
+    # máximo 32 caracteres: linear (256 KB ≈ 0,07 s). Esquema real tem bem menos de 32; com um
+    # prefixo maior colado, o motor acha um início dentro dos 32 anteriores ao "://".
+    (re.compile(r"([a-z][a-z0-9+.-]{0,31}://[^/\s:@]+:)[^@\s/]+(@)", re.IGNORECASE), r"\1[REDIGIDO]\2"),
     (re.compile(r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"), "[REDIGIDO:jwt]"),
     (
         re.compile(r"((?:api[_-]?key|secret|token|password|senha)\s*[=:]\s*[\"']?)[A-Za-z0-9_\-/+=]{16,}", re.IGNORECASE),

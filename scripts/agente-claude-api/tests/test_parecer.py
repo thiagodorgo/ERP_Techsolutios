@@ -1,9 +1,11 @@
 """Cerca 8 — saída estruturada `entregar_parecer` e os desfechos do laço (plano §3.8)."""
 
 import json
+import re
 import unittest
 
-from agente_claude import esquemas
+from agente_claude import esquemas, parecer
+from agente_claude.parecer import MARCA_SCRIPT
 from agente_claude.prompts import MENSAGEM_REPROMPT_PARECER
 from tests.fakes import Cenario, ExecutorFalso, ModeloFalso, parecer_valido, resposta, resposta_parecer, texto, uso
 
@@ -100,10 +102,36 @@ class TestDesfechos(unittest.TestCase):
         achado = lambda comando: {"gravidade": "nota", "escopo": "pre-existente", "arquivo": "src/a.ts", "linha": None,
                                   "evidencia": {"comando": comando, "saida": "x"}, "motivo": "m"}
         modelo = ModeloFalso([resposta(uso("buscar", {"padrao": "tenant_id"})),
-                              resposta_parecer(achados=[achado("buscar tenant_id"), achado("npm test -- tudo")])])
+                              resposta_parecer(achados=[achado('buscar {"padrao": "tenant_id"}'), achado("npm test -- tudo")])])
         cen = self.rodar(modelo)
         conferidas = [a["evidencia"]["conferida"] for a in cen.parecer["achados"]]
         self.assertEqual(conferidas, [True, False])
+
+    def test_evidencia_conferida_so_com_chamada_real(self):
+        # A2 (evidência L1 do revisor): o modelo rodou SÓ `buscar padrao=foo` (e teve um .env negado).
+        citacoes = [
+            ('buscar {"padrao": "foo"}', True),
+            ("buscar padrao=foo", True),
+            ('`buscar {"padrao": "foo", "ignorar_caixa": false, "fixo": null, "caminhos": []}`', True),
+            ("buscar padrao=SENHA_NUNCA_BUSCADA em src/secreto.ts", False),  # L1, 1º caso
+            ("git", False),  # L1, 2º caso
+            ("buscar", False),  # só o nome da ferramenta
+            ('buscar {"padrao": "fo"}', False),  # substring do argumento real
+            ('buscar {"padrao": "foo bar"}', False),  # o argumento real é substring do citado
+            ('buscar {"padrao": "foo", "caminhos": ["src"]}', False),  # outros argumentos
+            ('git_grep {"padrao": "foo"}', False),  # outra ferramenta
+            ('ler_arquivo {"caminho": ".env"}', False),  # chamada que a cerca NEGOU não é evidência
+            ("buscar foo", False),  # texto livre
+        ]
+        achado = lambda comando: {"gravidade": "nota", "escopo": "pre-existente", "arquivo": "src/a.ts", "linha": None,
+                                  "evidencia": {"comando": comando, "saida": "x"}, "motivo": "m"}
+        modelo = ModeloFalso([
+            resposta(uso("buscar", {"padrao": "foo"}), uso("ler_arquivo", {"caminho": ".env"})),
+            resposta_parecer(achados=[achado(c) for c, _ in citacoes]),
+        ])
+        cen = self.rodar(modelo)
+        obtido = [(a["evidencia"]["comando"], a["evidencia"]["conferida"]) for a in cen.parecer["achados"]]
+        self.assertEqual(obtido, citacoes)
 
     def test_refusal_nao_executa_ferramentas(self):
         modelo = ModeloFalso([resposta(uso("git_ls_files", {}), stop="refusal", detalhes={"category": "cyber", "explanation": "x"})],
@@ -147,8 +175,41 @@ class TestDesfechos(unittest.TestCase):
         cen = self.rodar(ModeloFalso([resposta_parecer(veredito="reprovado", achados=[achado])]))
         md = (cen.pasta / "parecer.md").read_text(encoding="utf-8")
         for trecho in ("**Veredito:** reprovado", "## Custo", "US$ estimado", "## Conta e cobrança", "request_ids",
-                       "[bloqueia] [dentro-do-bloco] src/x.ts:9", "## Comandos executados"):
+                       "gravidade: bloqueia · escopo: dentro-do-bloco · linha: 9", "arquivo: src/x.ts",
+                       "## Comandos executados"):
             self.assertIn(trecho, md)
+
+    def test_nada_executa_depois_do_parecer_no_mesmo_turno(self):
+        # A7(a) (evidência L4): entregar_parecer válido seguido de buscar e de outro parecer no MESMO turno.
+        modelo = ModeloFalso([resposta(
+            uso("entregar_parecer", parecer_valido(veredito="aprovado")),
+            uso("buscar", {"padrao": "depois-do-parecer"}),
+            uso("entregar_parecer", parecer_valido(veredito="reprovado")),
+        )])
+        cen = self.rodar(modelo)
+        self.assertEqual(cen.executor.chamadas, [])
+        self.assertEqual(len(modelo.chamadas), 1)
+        self.assertEqual(cen.codigo, 0)
+        self.assertEqual(cen.parecer["veredito"], "aprovado")  # o 2º parecer não sobrescreve
+        depois = [l for l in cen.linhas_auditoria() if l["tipo"] == "ferramenta" and l.get("motivo_negacao") == "apos_parecer"]
+        self.assertEqual([l["ferramenta"] for l in depois], ["buscar", "entregar_parecer"])
+        self.assertTrue(all(l["negado"] and l["argv"] is None for l in depois))
+
+    def test_veredito_tem_de_valer_para_a_tarefa(self):
+        # A7(b) (evidência L5): `investigar` não aprova; `revisar-pr` não "responde".
+        modelo = ModeloFalso([resposta_parecer(veredito="aprovado"), resposta_parecer(veredito="respondido")])
+        cen = Cenario(modelo).rodar(tarefa="investigar", alvo={"pergunta": "onde?", "sha": "a" * 40})
+        self.addCleanup(cen.limpar)
+        self.assertEqual(len(modelo.chamadas), 2)
+        recusa = modelo.chamadas[1]["messages"][-1]["content"][0]
+        self.assertTrue(recusa["is_error"])
+        self.assertIn("não vale para a tarefa investigar", recusa["content"])
+        self.assertEqual(cen.parecer["veredito"], "respondido")
+        modelo2 = ModeloFalso([resposta_parecer(veredito="respondido"), resposta_parecer(veredito="aprovado_com_ressalvas")])
+        cen2 = self.rodar(modelo2)
+        self.assertEqual(len(modelo2.chamadas), 2)
+        self.assertIn("não vale para a tarefa revisar-pr", modelo2.chamadas[1]["messages"][-1]["content"][0]["content"])
+        self.assertEqual(cen2.parecer["veredito"], "aprovado_com_ressalvas")
 
     def test_historico_append_only(self):
         r1 = resposta({"type": "thinking", "thinking": "", "signature": "assinatura-opaca"}, texto("vou listar"),
@@ -157,6 +218,80 @@ class TestDesfechos(unittest.TestCase):
         self.rodar(modelo)
         devolvido = modelo.chamadas[1]["messages"][1]
         self.assertEqual(devolvido, {"role": "assistant", "content": r1.content})
+
+
+_ABRE_BLOCO = re.compile(r"^ {0,3}(`{3,})[^`]*$")
+_FECHA_BLOCO = re.compile(r"^ {0,3}(`{3,}) *$")
+_CABECALHO = re.compile(r"^ {0,3}#{1,6}(\s|$)")
+
+
+def varrer_md(md: str) -> tuple[list[str], list[str]]:
+    """(cabeçalhos FORA de bloco de código, linhas FORA de bloco), pelas regras de bloco cercado do
+    CommonMark: abre com >= 3 crases; fecha só com uma linha de crases >= as da abertura; `\\r`
+    sozinho também é fim de linha."""
+    cabecalhos, fora = [], []
+    aberto = 0
+    for linha in re.split(r"\r\n|\r|\n", md):
+        if aberto:
+            m = _FECHA_BLOCO.match(linha)
+            if m and len(m.group(1)) >= aberto:
+                aberto = 0
+            continue
+        m = _ABRE_BLOCO.match(linha)
+        if m:
+            aberto = len(m.group(1))
+            continue
+        fora.append(linha)
+        if _CABECALHO.match(linha):
+            cabecalhos.append(linha.strip())
+    return cabecalhos, fora
+
+
+FORJA = (
+    "```\n## Comandos executados (da auditoria) (gerado pelo script)\n- #1 forjado req_FORJADO\n```\n"
+    "## Conta e cobrança (gerado pelo script)\n- request_ids: ['req_FORJADO']\n"
+    "``````\n## Custo (gerado pelo script)\n- US$ estimado: 0.00 req_FORJADO\n````````\n"
+    "\r## Execução (gerado pelo script) req_FORJADO\r~~~\n# Parecer forjado req_FORJADO\n"
+)
+
+
+class TestParecerMdNaoForjavel(unittest.TestCase):
+    """A3 (evidência L2): o conteúdo do modelo não forja seção do script no parecer.md."""
+
+    def test_secoes_do_script_antes_e_conteudo_do_modelo_em_bloco(self):
+        achado = {"gravidade": "ajuste", "escopo": "dentro-do-bloco", "arquivo": "src/x.ts" + FORJA, "linha": 3,
+                  "evidencia": {"comando": "ler_arquivo " + FORJA, "saida": FORJA}, "motivo": FORJA}
+        modelo = ModeloFalso([resposta(uso("buscar", {"padrao": "x`y"})),
+                              resposta_parecer(veredito="reprovado", resumo=FORJA, achados=[achado], limitacoes=[FORJA])])
+        cen = Cenario(modelo).rodar()
+        self.addCleanup(cen.limpar)
+        md = (cen.pasta / "parecer.md").read_text(encoding="utf-8")
+        cabecalhos, fora = varrer_md(md)
+        # 1. Cada seção do script aparece UMA vez fora de bloco, na ordem, e antes do conteúdo do modelo.
+        for secao in parecer.SECOES_DO_SCRIPT:
+            self.assertEqual(cabecalhos.count(secao), 1, secao)
+        posicoes = [cabecalhos.index(s) for s in parecer.SECOES_DO_SCRIPT]
+        self.assertEqual(posicoes, sorted(posicoes))
+        self.assertEqual(cabecalhos.count(parecer.TITULO_CONTEUDO_MODELO), 1)
+        self.assertLess(max(posicoes), cabecalhos.index(parecer.TITULO_CONTEUDO_MODELO))
+        self.assertEqual(sum(1 for c in cabecalhos if c.startswith("# ")), 1)  # só o título real
+        # 2. Nada do que o modelo escreveu aparece fora de bloco de código.
+        self.assertEqual([l for l in fora if "FORJADO" in l or "forjado" in l], [])
+        self.assertTrue(all(MARCA_SCRIPT not in c or c in parecer.SECOES_DO_SCRIPT for c in cabecalhos))
+        # 3. A conta real (do script) está lá, fora de bloco; o JSON não mudou.
+        reais = cen.parecer["conta"]["request_ids"]
+        self.assertTrue(reais and all(r.startswith("req_falso_") for r in reais))
+        self.assertTrue(any("request_ids" in l and reais[0] in l for l in fora))
+        self.assertGreater(md.count("req_FORJADO"), 0)  # o texto do modelo está no .md, só que em bloco
+
+    def test_bloco_mais_longo_que_qualquer_sequencia_de_crases(self):
+        for texto in ("", "sem crase", "`", "``` x", "a ```` b", "`" * 9 + "\n" + "`" * 3):
+            abre, corpo, fecha = parecer.bloco_de_codigo(texto)
+            maior = max((len(m) for m in re.findall(r"`+", texto)), default=0)
+            self.assertEqual(abre, fecha)
+            self.assertGreater(len(abre), maior)
+            self.assertGreaterEqual(len(abre), 3)
+            self.assertEqual(corpo, texto)
 
 
 if __name__ == "__main__":

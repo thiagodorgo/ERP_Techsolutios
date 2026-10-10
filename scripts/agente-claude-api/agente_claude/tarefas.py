@@ -54,6 +54,9 @@ class Opcoes:
     timeout_comando: float = 120.0
     timeout_verificacao: float = 900.0
     npm_ci: bool = False
+    # A1: verificações que executam código do commit alvo (espelho_codex, teste, npm ci) ficam
+    # desligadas por padrão; só a flag explícita `--permitir-execucao-do-alvo` as liga.
+    permitir_execucao_alvo: bool = False
     manter_worktree: bool = False
     simular: bool = False
     simular_turnos: int = 0
@@ -194,6 +197,7 @@ def executar_tarefa(
             "conta": credenciais.resumo(),
             "simulado": opcoes.simular,
             "npm_ci": opcoes.npm_ci,
+            "permitir_execucao_alvo": opcoes.permitir_execucao_alvo,
         }
     )
     codigo = 0
@@ -212,6 +216,7 @@ def executar_tarefa(
             executaveis=contexto_base.executaveis,
             repo_gh=contexto_base.repo_gh,
             npm_ci=opcoes.npm_ci,
+            permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
         )
         ferramentas = Ferramentas(
             contexto,
@@ -228,8 +233,11 @@ def executar_tarefa(
             redator=redator,
             max_tokens_resposta=opcoes.max_tokens_resposta,
             esforco=opcoes.esforco,
+            tarefa=tarefa,
         )
-        resultado = laco.executar(mensagem_inicial(tarefa, alvo))
+        resultado = laco.executar(
+            mensagem_inicial(tarefa, alvo, permite_execucao_do_alvo=opcoes.permitir_execucao_alvo)
+        )
         parcial = resultado.parcial
         motivo = resultado.motivo_parcial
         codigo = 2 if parcial else 0
@@ -290,6 +298,7 @@ def executar_tarefa(
             "worktree_removido": removido,
             "comando_limpeza": comando_limpeza,
             "npm_ci": opcoes.npm_ci,
+            "permitir_execucao_alvo": opcoes.permitir_execucao_alvo,
             "pasta_saida": str(pasta_saida),
             "versao_agente": __version__,
             "sdk": versao_sdk(),
@@ -344,7 +353,10 @@ def revisar_pr(numero: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, di
     if not repo:
         raise RecusaPrevia("não foi possível derivar owner/repo do origin")
     pasta_saida = _pasta_saida(opcoes, deps, "revisar-pr", numero)
-    worktree = WorktreeDescartavel(raiz, "0" * 40, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, opcoes.npm_ci)
+    worktree = WorktreeDescartavel(
+        raiz, "0" * 40, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, opcoes.npm_ci,
+        permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
+    )
     worktree.verificar_previo()
     vista = _rodar(
         deps,
@@ -374,7 +386,10 @@ def revisar_pr(numero: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, di
         "titulo": dados.get("title"),
         "url": dados.get("url"),
     }
-    contexto = ContextoComandos(raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci)
+    contexto = ContextoComandos(
+        raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
+        permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
+    )
     codigo, parecer = executar_tarefa(
         tarefa="revisar-pr",
         alvo=alvo,
@@ -401,10 +416,16 @@ def investigar(pergunta: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, 
     if existe.codigo != 0:
         raise RecusaPrevia("o commit não existe localmente")
     pasta_saida = _pasta_saida(opcoes, deps, "investigar", sha[:8])
-    worktree = WorktreeDescartavel(raiz, sha, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, opcoes.npm_ci)
+    worktree = WorktreeDescartavel(
+        raiz, sha, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, opcoes.npm_ci,
+        permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
+    )
     worktree.verificar_previo()
     alvo = {"pergunta": pergunta, "sha": sha}
-    contexto = ContextoComandos(raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci)
+    contexto = ContextoComandos(
+        raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
+        permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
+    )
     codigo, parecer = executar_tarefa(
         tarefa="investigar",
         alvo=alvo,
