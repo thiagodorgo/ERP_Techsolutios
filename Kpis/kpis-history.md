@@ -3055,3 +3055,72 @@ relatório do dev `agent-orchestration/omega/juntas/votos/B-SAN3-01b/DEV-relator
 `P-SAN3-01B-GUARD-DE-ROTA-COM-ATALHO-DE-PLATAFORMA` (BAIXA, `B-SAN3-06a`).
 
 **Backfill §C3.5: nenhum devido** — a entrada do #397 já tem `merge_commit 513937b0…` e `approved_head 67c2c280…`, pagos pelo #398.
+
+## 2026-10-09 — KPI-MARCO-2026-10-09 (PR na autoria) — consolidação por marco: quatro entregas desde 02/10
+
+**Por que existe este registro.** O KPI está **congelado** desde 2026-10-04 (`D-GOV-PROPORCIONAL` (5), CLAUDE.md §C7 item
+8(5)): PR de bloco não atualiza `Kpis/*`, e a consolidação é por **marco**, num PR próprio, quando o dono pedir. O dono
+pediu em 2026-10-09 ("atualize kpis"). **O KPI segue congelado para os PRs de bloco.**
+
+**Forma.** O history ganha **uma entrada por entrega** (#401, #400, #409, #405), cada uma com os números da CI no
+**próprio merge commit** — e não uma entrada só para o marco. O gráfico "Entregas por rodada" conta registros, e um
+registro para quatro entregas é exatamente a distorção que o painel corta em 19/07 ("1 registro para 21 entregas"); uma
+entrada com versão `KPI-*` ainda cairia na barra "Correções". O `kpis-latest.json` descreve o marco (`version`
+`KPI-MARCO-2026-10-09`, `pr`/`merge_commit`/`approved_head` `null` na autoria).
+
+### Resultado (head da `origin/main` `a9fbe283`, CI run 37996854560, push, tentativa 1, 7/7 jobs `success`)
+
+| KPI | Antes (snapshot 2026-10-02, #402) | Depois | Fonte |
+|-----|-----|-----|-----|
+| Backend | 3052/3054 | **3171/3173** | job `backend` 114045007650, `npm test`: `# tests 3173 # pass 3171 # fail 0 # skipped 2`; runner `293 arquivo(s)` |
+| Console web (smoke) | 1214/1214 | **1268/1268** | job `frontend` 114045007712, `npm --prefix frontend run test:smoke` (Node 20.20.2): `# tests 1268 # pass 1268 # fail 0` |
+| App de campo | 864/864 (carregado) | **864/864 (medido)** | job `flutter` 114045007615, `flutter test --reporter compact` (Flutter 3.47.5): `+864: All tests passed!` |
+| Blocos entregues | 170 | **174** | +4 entregas de bloco (tabela abaixo) |
+| Contratos focados / módulos do app / contratos app↔servidor / contratos do núcleo | 34/34 · 17/17 · 18/18 · 21/21 | **CARREGADOS** com nota deste PR (§C3.3) | a CI não publica essas métricas em separado |
+| mvp_demo / mvp_vendável | 99% / 88% | **INTOCADOS** (§C3.4) | ver abaixo |
+
+Fora da métrica, para registro: o job `backend-postgres` (rotas contra PostgreSQL) deu **263/263** nas quatro runs.
+
+### As quatro entregas (uma entrada cada no `kpis-history.json`)
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-04 | `B-SAN3-11` — o dossiê rotula a vistoria substituída | #401 | `749a5cf8` | `dc63ff66` (revisor, ciclo 3) | 3052/3054 | 1242/1242 (+28) | 864/864 | 171 | 37251641822 |
+| 2026-10-08 | `B-SAN3-09` — caminho versionado para o 1º admin de plataforma | #400 | `026ff7b8` | `cc01c9c4` (junta 2) | 3090/3092 (+38) | 1242/1242 | 864/864 | 172 | 37841486912 |
+| 2026-10-08 | `B-OS-FILTRAR-EXPORTAR` — Filtrar e Exportar na lista de OS | #409 | `fea93281` | `585d178a` (revisor) | 3090/3092 | 1268/1268 (+26) | 864/864 | 173 | 37847916306 |
+| 2026-10-09 | `B-SAN3-05` — o papel de runtime não contorna o RLS | #405 | `a9fbe283` | `84831ad9` (junta 4) | 3171/3173 (+81) | 1268/1268 | 864/864 | 174 | 37996854560 |
+
+Cada delta é a diferença entre as runs de dois merges seguidos (entre eles só mergeou registro, sem teste). Arquivos de
+teste novos de cada PR: #401 `frontend/tests/patios-dossie-versao.smoke.test.tsx` (novo);
+#400 `tests/san3-09-bootstrap-platform-admin{,-db}.test.ts` (2 novos); #409 `frontend/tests/work-orders-list-tools.test.ts`
+(novo) e casos em 2 suítes da lista; #405 4 arquivos `tests/san3-05-*.test.ts`. Nenhum dos quatro toca `mobile/`.
+`approved_head` de cada um vem da ata ou da revisão independente (fonte no `backfill_note` da entrada); os arquivos de
+código do merge têm blob idêntico ao do `approved_head` (10/10, 4/4, 12/12 e 51/52 — no #405 o `docs/deployment.md`
+recebeu o Runbook B do #400 pela integração da `main` feita depois do voto).
+
+### PRs do intervalo que não contam bloco
+
+Registro: #403, #404, #406, #408, #410. Governança: #407 (`D-GOV-PROPORCIONAL` — sem ID de bloco, sem plano nem junta;
+mergeou pela própria regra (1)). Critério do history (#360): "governança e registro não contam como bloco de feature
+entregue"; os blocos de governança que contaram antes (#394, #397) tinham ID de bloco, plano e junta. Nenhum desses seis
+PRs toca código ou teste.
+
+### Métricas carregadas e `mvp_*`
+
+- As quatro métricas que a CI não publica em separado (`backend_contract_tests_focused` 34/34, `flutter_modules` 17/17,
+  `mobile_backend_contracts` 18/18, `mobile_core_saas_contracts` 21/21) seguem com o último valor oficial e passam a
+  carregar **nota deste PR** — o teste de encerramento da `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392`.
+- `mvp_demo`/`mvp_vendavel` **INTOCADOS**: o marco fecha defeito e guarda do gate SAN3 e acrescenta Filtrar e Exportar a
+  uma tela que já existia; a régua é estimativa com recálculo de dono nomeado (`B-SAN3-10`), e movê-la por julgamento
+  aqui seria inventar número.
+
+### Painel
+
+Nenhuma dimensão nova: nenhum PR do marco tocou `Kpis/*` nem criou métrica ou trilha, e `B-OS-*` cai na barra existente
+"Blocos B". No `app.js`: a cópia congelada regerada (`node scripts/kpi-freeze.mjs`) e o rótulo dos tipos `seguranca` e
+`qualidade` em "Últimas demandas" (a tela mostrava o identificador cru, sem acento). "Últimas demandas" ganha as quatro
+entregas.
+
+**Backfill §C3.5:** nenhum devido — a entrada do #402 já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos
+pelo #403. O `pr` desta consolidação é preenchido após `gh pr create`; `merge_commit`/`approved_head` dela recebem backfill
+pós-merge.
