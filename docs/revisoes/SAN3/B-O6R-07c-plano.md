@@ -1,907 +1,969 @@
-# B-O6R-07c — Plano: escopo por objeto nos subrecursos da OS e no sync mobile
+# B-O6R-07c — Plano v2: escopo por objeto nos subrecursos da OS — dividido em 07c-a e 07c-b
 
-> **Papel:** `planejador-mestre` · **identidade:** `planejador-b-o6r-07c` (nova).
+> **Papel:** `planejador-mestre` · **identidade:** `planejador-b-o6r-07c` (a mesma da v1).
 > **Modelo que rodou:** **Opus 5.5 — substituição DECLARADA** (§C7.6-bis, `D-FALLBACK-MODELO-FABLE-OPUS`).
 > **Por que o Fable faltou:** não faltou por cota — o dono **reservou o Fable a bloco de dinheiro**
-> (memória `feedback-fable-so-em-bloco-de-dinheiro`, 08/10); este bloco é de **PERMISSÃO**, não de dinheiro.
-> O frontmatter do `planejador-mestre` continua `fable`; a substituição é do invocador.
-> **Ref medida:** worktree `C:/Users/AMP/w-07c`, ramo `fix/o6r07c-subresource-scope`, HEAD = `origin/main` =
-> `c1cfdabe12c74b58f8393dbee4f333224c56b303` (medido por `git rev-parse HEAD origin/main`). Toda afirmação
-> abaixo sobre código foi medida nessa ref (§A7).
-> **Estado:** COMPLETO (gravado seção a seção; Apêndice A reexecutado a partir do próprio texto deste arquivo, com
-> as mesmas contagens).
+> (decisão de 08/10); este bloco é de **PERMISSÃO**. O frontmatter do `planejador-mestre` continua `fable`.
+> **Ref medida:** ramo `fix/o6r07c-subresource-scope`, head `8391dea801162d135234b38503b6a30cfb254b0b` (plano v1 +
+> crítica r1); código em `origin/main` = `c1cfdabe12c74b58f8393dbee4f333224c56b303` (o ramo não toca `src/`). Medido
+> por `git rev-parse HEAD origin/main` no worktree `C:/Users/AMP/w-07c` (§A7).
+> **Insumo:** `docs/revisoes/SAN3/B-O6R-07c-CRITICA-r1.md` (identidade `critico-b-o6r-07c-r1`), veredito **VOLTA AO
+> PLANO**. A v1 continua no histórico (`git show 00109988:docs/revisoes/SAN3/B-O6R-07c-plano.md`).
+> **Divisão:** decisão **do orquestrador**, não do dono: 07c-a (as 10 vias registradas + o guard) e 07c-b
+> (vistoria, evidência e despacho), este **esperando** as decisões D1 e D2 do dono.
+> **Estado:** COMPLETO (gravado seção a seção; Apêndice A reexecutado a partir do texto deste arquivo).
 
-**Resumo (para o orquestrador e o crítico).**
-- **Vias:** o gerador acha **61** vias mutantes alcançáveis pelo técnico; **36** estão na propriedade (31
-  canônicas), **3** já guardadas pelo 07a, **33 abertas**. O registro tinha **16** (10 + 6 do item 51) — todas
-  achadas; **17 novas** (12 canônicas): 7 tipos de vistoria pelo sync (+5 apelidos), o status do **despacho**, 3
-  evidências de OS pelo sync e o **upload** da evidência. Fora da propriedade e registradas: 10 de classe R
-  (vínculo por referência) e a anomalia `fleet-alerts/run`.
-- **Desenho:** porta pública `WorkOrderService.getForMutation` (o predicado do 07a, sem cópia); `ChecklistService.assertRunMutationScope`
-  (run → OS → mesmo predicado; run sem OS nega); despacho pelo alvo próprio; evidência pelo `getForMutation`. Sem
-  migração. Sync recusa por ação dentro de lote 200, sem recibo — o app mantém a ação (`failed`).
-- **Para decidir antes do código:** (1) a **ampliação** do §5.1 (despacho e upload de evidência; sem ela o
-  `Ω6R-SEC-002` não fecha); (2) `D-07c-DESPACHO-ALVO`; (3) `D-07c-IDEMP`; (4) a tensão `coordenador-de-acessos` ×
-  inelegibilidade (§5.4).
-- **Testes:** N = 8 → meta 16; desenho ≥ 60 (35 sondas geradas, 18 semânticos, 6 do guard, ≥ 5 `-db`), 14
-  mutações de produto e 6 do guard. **Tamanho G.** Régua: 44 suítes, 430 testes, 0 falha em `c1cfdabe`.
+## Resumo
 
-## 0. Objetivo · ator · fluxo
-
-**Objetivo.** Fechar o resíduo do `Ω6R-SEC-002` (`P-O6R-SUBRECURSO-OBJECT-SCOPE`, item 11) e o item 51
-(`P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`) **pela propriedade**, não pela lista: todo caminho de escrita que
-o técnico de campo alcança sobre uma OS — ou sobre algo que existe **por causa** de uma OS — passa pelo **mesmo**
-predicado de escopo por objeto que o `B-O6R-07a` criou. Por ordem do dono (`D-ORDEM-NOITE-2026-10-10`, `agent-orchestration/controle/decisoes.md:3080`), é um dos
-passos para destravar a produção (REPROVADA pela J-6R; o `Ω6R-SEC-002` é um dos 4 críticos abertos).
-
-**Ator.** `field_technician` (LEGACY) e `technician` (STANDARD) — os dois papéis que o 07a classifica como
-`assigned_only` (`src/modules/work-orders/work-order.types.ts:97-98`). Rótulo de UI: "Técnico de Campo".
-
-**Fluxo origem → destino.** App de campo (Flutter, fila offline) ou console web → `POST/PATCH/DELETE /api/v1/...`
-ou `POST /api/v1/mobile/sync/*` → middleware de RBAC (só permissão) → **serviço do agregado** (onde a decisão de
-escopo por objeto passa a morar, no ponto único de cada agregado) → repositório tenant-scoped.
-
-**Contrato que muda (e só este).** Técnico **não atribuído** que tenta escrever num subrecurso da OS recebe
-**403** `{ error: { code: "WORK_ORDER_NOT_ASSIGNED", reason: "not_assigned_to_actor" } }` — o mesmo corpo que o 07a
-já devolve em `PATCH /work-orders/:id` e `PATCH /work-orders/:id/status` (`work-order.service.ts:832-838`).
-No sync, a recusa é **por ação**, dentro de um HTTP 200: a ação sai em `rejected[]` com
-`error.reason = "not_assigned_to_actor"` (o envelope de lote não vira erro de rede — §3.5). **404 continua sendo do
-cross-tenant** (inalterado). Nenhum outro código muda: 409 duplicidade, 422 transição inválida e 400 de corpo
-seguem como estão, e o escopo é avaliado **antes** de qualquer parse de corpo ou efeito (mesma posição do 07a,
-`work-order.service.ts:851-852`).
-
-**Modelagem.** **Sem migração.** O vínculo run → OS já existe (`ChecklistRun.relatedEntityType/relatedEntityId`,
-`src/modules/checklists/checklist.types.ts:102-103`; o despacho grava `relatedEntityType: "work_order"`,
-`src/modules/field-dispatch/field-dispatch.service.ts:899`); o vínculo despacho → técnico também
-(`FieldDispatch.operatorUserId`); a atribuição da OS é `assigned_operator_id` (07a). Nada de `prisma/**`.
+- **Divisão (orquestrador):** **07c-a** = as 10 vias registradas (anexo ×2, comentário e tag ×5, geocode ×2, km pelo
+  sync) + o guard; não depende do dono; **tamanho M**. **07c-b** = vistoria (18), evidência de OS (4) e despacho (1);
+  **espera D1 e D2 do dono**; **tamanho G** (G+ se a D1 for "o despacho grava a atribuição").
+- **O `Ω6R-SEC-002` só fecha no 07c-b.** O 07c-a fecha as 10 vias e deixa a `P-O6R-SUBRECURSO-OBJECT-SCOPE` PARCIAL,
+  com o resíduo nomeado (as 23 entradas `·07c-b`).
+- **Gerador v2 (A3):** enumera pelo registro das rotas (não por literal), sonda todo método, acha lote pelo
+  comportamento, extrai tipo de ação com aspas simples, crase, template e maiúscula, e testa curinga. Em `c1cfdabe`:
+  409 rotas, 146 alcançadas pelo campo (104 leituras + 42 mutantes), 4 lotes, 23 pares de sync, 0 curinga; instantâneo
+  de 169 entradas. As 6 formas da crítica (F1 GET que escreve, F2 `router.all`, F3 sub-router com parâmetro, F4 `:id`,
+  F5 lote em sub-router, F6 despacho por prefixo) ficam **vermelhas** no guard v2 e escapavam ou saíam erradas no v1 —
+  provado por execução: F1–F5 com o `inject.mts` da própria crítica, F6 com o `inject-prefixo.mts` (Apêndice A).
+- **Para o dono:** D1 (quem é o técnico da OS: atribuição, atribuição ou despacho ativo, ou o despacho grava a
+  atribuição; e a equipe), D2 (trabalho offline depois de redistribuição: recusar, aceitar por relógio, aceitar ex-técnico,
+  ou recusar como conflito) e D3 (dano que debita o extrato de colega — fora do 07c, registrada como pendência ALTA de
+  dinheiro).
+- **Crítica r1:** 12 de 12 achados aceitos (§Resposta à crítica r1).
 
 
-## 1. A propriedade enunciada
+## Comum — a propriedade e o gerador v2
 
-> **P-07c.** *Nenhum ator cujo único acesso à OS é por papel de campo escreve em subrecurso de uma OS que não lhe
-> está atribuída* — subrecurso = o que mora sob `/work-orders/:workOrderId/**` (anexo, comentário, tag de
-> comentário, geocodificação, quilometragem, status, campos), as **vistorias da OS** (`ChecklistRun` com
-> `relatedEntityType = "work_order"`), o **despacho da OS** (`FieldDispatch`), as **evidências da OS** pelo sync
-> (`evidence.work_order_*`) e **toda ação de sync** que nomeia uma OS ou uma run. A recusa é 403
-> `not_assigned_to_actor`; o default de qualquer via **nova** é negar (§4.3).
+### C.1 A propriedade (inalterada no enunciado; o que muda é quem decide "atribuído")
 
-**Quem conta como "atribuído"** — reuso literal do 07a, sem regra nova:
+> **P-07c.** Nenhum ator cujo único acesso à OS é por papel de campo (`field_technician`, `technician` — os
+> `assigned_only` do 07a, `src/modules/work-orders/work-order.types.ts:90-104,124-129`) **escreve** em subrecurso de
+> uma OS que não lhe cabe. Recusa: **403** `not_assigned_to_actor` no REST; **por ação**, dentro do lote 200, no sync.
+> 404 segue sendo do cross-tenant. Toda via que o técnico alcança — de qualquer forma — tem de estar **classificada**;
+> a não classificada **falha o guard** (default negar).
 
-| sujeito | predicado | fonte |
-|---|---|---|
-| a OS | `assigned_operator_id` = perfil de operador do ator **ou** = `userId` do ator (dual-match) | `work-order.service.ts:828-832` (07a, ciclo 2) |
-| a vistoria | a OS da run (`relatedEntityType = "work_order"` → `relatedEntityId`) satisfaz a linha acima; run **sem** OS vinculada → **nega** (fail-closed, a mesma regra da OS órfã do 07a, `tests/o6r07a-wo-object-scope.test.ts:22-84`, negativo 2) | `checklist.service.ts:346` (a consulta por OS já existe) |
-| o despacho | `FieldDispatch.operatorUserId` = `userId` do ator (o despacho tem alvo próprio; ver §3.4 e R3) | `field-dispatch.service.ts:221,379` |
-| evidência de OS (sync) | o `work_order_id` do payload satisfaz a linha da OS (hoje o sync nem confere se a OS existe — `mobile-evidence-sync.ts:294-296`) | — |
+**"Lhe cabe" — o que é decisão e o que não é:**
+- **07c-a:** o predicado é **o do 07a, sem mudança** (`assigned_operator_id` = perfil **ou** user id do ator,
+  `work-order.service.ts:808-840`). As 10 vias do 07c-a são web (anexo, comentário, tag, geocode — o app não as chama:
+  `git grep -nE "/comments|/attachments|geocode" -- mobile/flutter_app/lib`, excluídas as de checklist, devolve 0
+  linhas) e a quilometragem, que segue a semântica que o 07a **já** aplica ao status pelo mesmo sync
+  (`work_order.status_change`, guardado, crítica E5). Nenhuma regra de negócio nova.
+- **07c-b:** para vistoria, evidência e despacho, "lhe cabe" **é a decisão D1 do dono**. A v1 escolheu sozinha
+  (atribuição da OS para a vistoria, alvo do despacho para o despacho) e a crítica mediu que isso **nega o técnico
+  despachado** no fluxo principal (A1, reexecutado por mim: `probe-dispatch.mts` → OS depois do despacho
+  `{"status":"open"}`, técnico despachado responde e conclui a vistoria hoje com 200/200). Escrevo as opções; não
+  escolho.
+- **Uma porta só:** qualquer resposta à D1 muda o predicado em **um** lugar (`WorkOrderService.getForMutation`,
+  §07c-a), e o 07c-a herda — inclusive o status do 07a. Se a D1 vier "atribuição **ou** despacho ativo", o técnico
+  despachado volta a poder mudar o status da OS, o que hoje o 07a nega (crítica E2: `403 not_assigned_to_actor`).
 
-**Quem cai no escopo e quem passa sempre** — a classificação é a do 07a (`WORK_ORDER_MUTATION_SCOPE`,
-`work-order.types.ts:90-104`), resolvida **por união de papéis** (`actorMutatesAssignedOnly`, `:124-129`):
+**Fronteiras declaradas (mantidas da v1, com as correções da crítica):** leitura fora (escopo de leitura é do
+`B-SAN3-13`); registro próprio que só **aponta** para uma OS (classe R) fora — **exceto** que o `POST /damages` não é
+só apontar: debita o extrato de um colega (A9, registro abaixo); moderação de comentário (`D-Ω3F-5-COMMENT`,
+`work-order-comment.service.ts:139-145`) intacta dentro da OS que cabe ao técnico. Os papéis de escritório
+`operator` e `manager` "passam sempre" **quanto à atribuição da OS**; na vistoria a matriz lhes dá "…-by-scope"
+(`RBAC_MATRIX.md:44`) — tensão **já registrada** em `P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO`
+(`agent-orchestration/controle/pendencias.md:9724`, dono `B-SAN3-22`), que este bloco não resolve (A8).
 
-- **escopados (`assigned_only`):** `field_technician`, `technician`. A matriz diz o mesmo:
-  `RBAC_MATRIX.md:45` (OS = `execute/update-assigned`), `:44` (execuções de checklist = `answer-assigned`),
-  `:66` (*"updates assigned operational flows"*); `docs/03-atores-papeis.md:154` (*"visualizar apenas serviços
-  atribuídos"*), `:290` (AUTH-007); `docs/04-regras-negocio.md:83` (RN-MOB-001).
-- **passam sempre (`tenant_wide`):** `super_admin`, `platform_admin`, `tenant_admin`, `manager`, `operator`,
-  `field_dispatcher` — quem despacha e redistribui trabalho (`RBAC_MATRIX.md:45`: `full`/`create/edit`). Basta
-  **um** papel `tenant_wide` para o ator não cair no guard (teste do 07a, `o6r07a-wo-object-scope.test.ts:103-131`).
-- **sem mutação de OS (`no_mutation`):** `viewer`, `finance`, `inventory`, `auditor`, `support` — o guard não os
-  alcança porque o RBAC já os barra antes (censo §2: `viewer` = 403 `permission_required` em todas as vias de OS).
-  **Exceção que o bloco herda e não resolve:** `inventory` × vistoria = `read/answer-by-scope`
-  (`RBAC_MATRIX.md:44`) está **negado** por fail-closed desde o `B-SAN3-04a`
-  (`P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`, `pendencias.md:9683`, dono este bloco). O escopo de vistoria que este
-  bloco cria é **por atribuição da OS**; o "escopo" do Estoque não é atribuição de OS e não tem definição escrita
-  em fonte nenhuma (`RBAC_MATRIX.md` não o define; `docs/03-atores-papeis.md` não o define). **Disposição:** a
-  pendência **não fecha aqui** — o bloco entrega o mecanismo (predicado por run) e a pendência ganha o append
-  "mecanismo pronto; falta a definição do escopo do Estoque — decisão de produto", com dono `fila pós-gate`
-  (§6, R6). Conceder `checklist_runs:update` ao `inventory` sem essa definição contrariaria
-  `D-SAN3-04A-FAIL-CLOSED-POR-ESCOPO`.
+### C.2 O gerador v2 — enuncia a propriedade, não a forma (A3)
 
-**O que a propriedade NÃO diz (fronteiras declaradas, para o crítico atacar):**
-1. **Leitura** não entra: `work_orders:read` segue tenant-wide (decisão do 07a, `work-order.service.ts:799-803`);
-   escopo de leitura é do `B-SAN3-13` (item 32, `PLANO_SAN3.md:525-527`).
-2. **Registro próprio que só aponta para uma OS** (avaria, abastecimento, despesa, telemetria com `work_order_id`
-   no corpo) **não** é subrecurso da OS: o registro tem sujeito próprio (o veículo, o gasto, a posição), a OS não o
-   exibe (git grep -il por damage, avaria, fuel, abastec, expense e despesa em `frontend/src/modules/work-orders`
-   devolve 0 arquivos) e nenhum dado da OS muda. É **outra propriedade** ("vínculo a OS alheia por referência"),
-   censada no §2 (classe R) e registrada como pendência nomeada com dono — não reprova nem fecha nada aqui.
-3. **Moderação de comentário** (`D-Ω3F-5-COMMENT`): dentro da OS **atribuída**, a regra "autor OU
-   `work_orders:update`" (`work-order-comment.service.ts:139-145`) fica **intacta** — este bloco põe o escopo da
-   OS **antes** dela, não a reescreve. Os papéis de escritório (`tenant_wide`) seguem moderando em qualquer OS.
-   Confirmação da hipótese do `PLANO_SAN3.md:529-531`: o guard do 07a escopa **só** `assigned_only`
-   (`work-order.service.ts:812`), logo `manager`/`operator`/`field_dispatcher`/`tenant_admin` não são tocados —
-   **confirmada no código**, e o teste C-MOD (§4) a prova por execução.
+**O que mudou, ponto a ponto contra o E4 da crítica** (texto integral no Apêndice A; reexecutável — P3):
+1. **Caminho verdadeiro de toda rota, de qualquer forma de montagem.** Antes de o app nascer, o `census-v2.mts`
+   intercepta `Router.prototype.use` e `Router.prototype.route` do pacote `router` que o Express 5 usa
+   (`node_modules/router/index.js:362,425`; `express/lib/application.js:190-222` delega a ele) e anota em cada camada
+   o caminho **no momento do registro**. Montagem com parâmetro, sub-router de sub-router e nome de parâmetro
+   qualquer saem com o caminho real — sem ler literal de `src/**` e sem `?NESTED?`. Camada sem caminho de texto
+   (regex) é contada e **falha** o guard; hoje são **0**.
+2. **Todo método.** GET e HEAD são sondados; rota `all` vira os 5 verbos. Resposta que não termina em 4 s (o fluxo
+   SSE de `/operations/field-events/stream`) conta pelos cabeçalhos.
+3. **Lote de sync por comportamento, não por caminho.** Lote = rota POST alcançável que, a um envelope com tipo
+   inexistente, devolve a ação num balde ou responde `unsupported_action*`. Nada de `/mobile/sync/` no código.
+4. **Tipos por extrator v2** (`tipos.mts`): aspas duplas, simples e crase; maiúscula, dígito e hífen; template com
+   `${CONSTANTE}` resolvida por `const X = "…"` do mesmo arquivo. Template **com forma de tipo** que não se resolve
+   volta numa lista — o guard falha em item novo dela.
+5. **Curinga:** cada lote tem de responder `unsupported` a um tipo inexistente nu **e** a `<família>.<inexistente>`
+   para cada família conhecida (147). Aceitar é despacho por prefixo → falha.
+6. **Classificação por instantâneo, regra só para marcar pertença.** O guard compara as vias vivas com um
+   instantâneo revisado (`tests/fixtures/o6r07c-classificacao-vias.json`): via viva fora dele = **NAO-CLASSIFICADA**
+   (falha, default negar); entrada que não está mais viva = **ENVELHECIDA** (falha). A regra de pertença é por
+   **recurso**, com parâmetro de **qualquer nome**: segmento `work-orders`, `checklist-runs` ou `dispatches` seguido de
+   `:qualquer`, mais `mobile/evidence-uploads` e os tipos `work_order.*`, `checklist*`, `evidence.work_order_*`.
 
-
-## 2. Enumeração GERADA das vias
-
-**Método — dois geradores, ambos sobre o código real de `c1cfdabe`, nenhum com lista digitada** (texto integral
-no Apêndice A; reexecutáveis por quem quiser conferir — P3):
-
-1. **`census.mts` (rotas).** Monta o app **real** (`createApp` de `src/app.ts`, modo `memory`, sem
-   `DATABASE_URL`/`REDIS_URL`), percorre a pilha de roteadores do Express 5 (`app.router.stack`, inclusive os
-   12 roteadores **aninhados**, cuja montagem é resolvida pelo matcher real contra os literais `"/x"` lidos de
-   `src/**`) e **sonda por HTTP** cada rota mutante (POST/PUT/PATCH/DELETE) como `field_technician`, `technician`
-   e `viewer` (controle), com corpo `{}` e ids aleatórios. **"Alcança"** = a resposta **não** é 401 nem 403
-   `permission_required|role_required|tenant_required|platform_permission_required` — o portão de RBAC deixou
-   passar; 400/404/422/200 já são o serviço respondendo.
-2. **`census-sync.mts` (ações de sync).** Endpoints = toda rota `POST /mobile/sync/*` **montada** (lida do mesmo
-   `createApp`); tipos = **todo** literal `"dominio.acao"` de **todo** `.ts` não-teste de `src/modules` (758
-   arquivos, 335 literais). Cada tipo é enviado a cada endpoint, nos dois papéis de campo, e o resultado da
-   **ação** é lido do lote. "Alcança" = não é `permission_required` nem `unsupported_action*`.
-3. **`classify.cjs`** cruza as duas saídas com regras de classe por prefixo/tipo; o que nenhuma regra cobre sai
-   `NAO-CLASSIFICADA` (contou **0**). A coluna "registro" vem do texto de `pendencias.md:6707-6800` (vias 1–10)
-   e `pendencias.md:9350-9360` (item 51 + emenda).
-
-**Comandos e saídas (cwd = `C:/Users/AMP/w-07c`, HEAD `c1cfdabe`, Node v20.19.5, `npm ci` próprio + `prisma
-generate` com URL fictícia na porta 1):**
+**Números em `c1cfdabe`** (cwd `C:/Users/AMP/w-07c`, Node v20.19.5, sem `DATABASE_URL`/`REDIS_URL`):
 
 ```
-node --import tsx census.mts census-out.json
-  → rotas montadas: 409 | routers aninhados: 12 | mutantes: 223 | mutantes que field_technician OU technician alcançam: 42
-node --import tsx census-sync.mts census-sync-out.json
-  → endpoints de sync montados: 5 | arquivos .ts lidos: 758 | literais: 335 | pares endpoint×tipo: 1675 | alcançados: 23
-node classify.cjs census-out.json census-sync-out.json
-  → CONTAGEM POR CLASSE: OS=13 · VISTORIA=18 · DESPACHO=1 · EVIDENCIA-OS=4 · R=10 · N=15 · NAO-CLASSIFICADA=0 · total=61
-  → NA PROPRIEDADE: 36 (guardadas pelo 07a: 3 · abertas: 33 · registradas: 16 · NOVAS: 17)
-  → REGISTRADAS QUE O CENSO NAO ACHOU: nenhuma
+node --import tsx census-v2.mts c2.json
+  → rotas registradas: 409 | camadas sem caminho de texto: 0 | alcançadas pelo campo: 146 (GET/HEAD 104 · mutantes 42)
+node --import tsx census-sync-v2.mts c2.json s2.json
+  → POST alcançáveis: 31 | lotes (por comportamento): 4 | arquivos: 758 | tipos: 439 | famílias: 147
+    | pares alcançados: 23 | tipo inexistente aceito (curinga): 0 | template de tipo não resolvido: 4
+node classify-v2.cjs c2.json s2.json --gravar-snapshot snapshot-base.json
+  → DESPACHO·07c-b=1 · EVIDENCIA-OS·07c-b=4 · LEITURA=104 · LOTE=4 · N=15 · OS·07a=3 · OS·07c-a=10 · R=10
+    · VISTORIA·07c-b=18 · total=169 · NA PROPRIEDADE (regra): 48 · NAO-CLASSIFICADA: 0
 ```
 
-O total 61 = 42 rotas − 4 envelopes de lote de sync (desdobrados por tipo de ação) + 23 pares de sync. As 18 de
-VISTORIA incluem **5 apelidos** de tipo de ação (`checklist_acknowledgement.create`, `checklist_attachment.attach`,
-`checklist_divergence.create`, `checklist_marker.create`, `checklist_run.complete`), mapeados para o mesmo tipo
-canônico por `ACTION_TYPE_ALIASES` (`src/modules/mobile/mobile-checklist-sync.ts:50-65`). **Em vias canônicas:
-31 na propriedade, 3 guardadas pelo 07a, 28 abertas, 16 registradas, 12 novas.** Os apelidos ficam na tabela e
-no guard mesmo assim: são entradas distintas que o app pode mandar, e cada uma tem de nascer negada.
+As 42 mutantes e os 23 pares são **os mesmos** da v1 (o censo v1 dava 42 + 23); o que entra de novo é a
+classificação explícita das **104 leituras** — é ela que faz um GET novo que escreva nascer vermelho. Os 4 lotes
+são os 4 endpoints de sync que o campo alcança (o de estoque é `permission_required` para os dois papéis). Os 4
+templates não resolvidos são falsos positivos **nomeados** (`aws-cur.repository.ts`, número formatado;
+`evidence-storage.ts`, nome de arquivo temporário; `service-quote.controller.ts` e `approval.service.ts`, nomes de
+evento de domínio) e entram numa lista literal do guard; item novo nela falha. As 48 "na propriedade" = 36 vias
+mutantes + 12 leituras sob `/work-orders/:p`, `/checklist-runs/:p` e `/dispatches/:p` (estas ficam `LEITURA` no
+instantâneo).
 
-**Classes:**
-- **OS** — mora sob `/work-orders/:workOrderId/**` ou é ação `work_order.*` do sync.
-- **VISTORIA** — `/mobile/checklist-runs/:runId/**` ou ação `checklist*` do sync; a run pertence à OS por
-  `relatedEntityId`.
-- **DESPACHO** — `/operations/dispatches/:dispatchId/**` (o despacho é a OS enviada a um técnico).
-- **EVIDENCIA-OS** — `evidence.work_order_*` do sync e o upload binário que depende do recibo dele.
-- **R** — registro **próprio** do técnico que aceita `work_order_id` **por referência** no corpo (fora da
-  propriedade — §1, fronteira 2).
-- **N** — não toca OS (sessão, inbox própria, posição própria, entidades de frota, evidência de campo).
+**A heurística sobre as 104 leituras é medida, não prova:** `git grep` dos handlers de `router.get` por nome de método
+com verbo de escrita (`create|update|delete|mark|run|accept|sync|record|set|apply|register|archive|…`) devolve só
+`compareChecklistRun`, `listRunsForWorkOrder`, `getAllocationRun`, `getCalculationRun`, `listAllocationRuns`,
+`listCalculationRuns` — todas leituras ("Run" no nome). Que nenhum GET **existente** escreva é hipótese sustentada por
+nome; o que o guard **garante** é que um GET **novo** não entra sem alguém classificá-lo (mandato da C2, §07c-a.7).
 
-### 2.1 A tabela gerada (61 linhas, sem edição manual)
+**Prova por execução — cada forma da crítica, gerador v1 × v2** (injeção = `inject.mts` do apêndice da crítica, sem
+edição; F6 = `inject-prefixo.mts`, Apêndice A deste plano):
 
-| # | via (método + caminho, ou endpoint · tipo de ação) | classe | field_technician | technician | registro | estado hoje |
-|---|---|---|---|---|---|---|
-| 1 | `PATCH /work-orders/:workOrderId` | OS | 404:not_found | 404:not_found |  | guardada pelo 07a |
-| 2 | `PATCH /work-orders/:workOrderId/status` | OS | 404:not_found | 404:not_found |  | guardada pelo 07a |
-| 3 | `POST /work-orders/:workOrderId/attachments` | OS | 400:multipart_required | 400:multipart_required | 1 | **ABERTA** |
-| 4 | `DELETE /work-orders/:workOrderId/attachments/:attachmentId` | OS | 404:work_order_not_found | 404:work_order_not_found | 2 | **ABERTA** |
-| 5 | `POST /work-orders/:workOrderId/geocode` | OS | 404:not_found | 404:not_found | 8 | **ABERTA** |
-| 6 | `POST /work-orders/:workOrderId/geocode-destination` | OS | 404:not_found | 404:not_found | 9 | **ABERTA** |
-| 7 | `POST /work-orders/:workOrderId/comments` | OS | 404:not_found | 404:not_found | 3 | **ABERTA** |
-| 8 | `PATCH /work-orders/:workOrderId/comments/:commentId` | OS | 404:not_found | 404:not_found | 4 | **ABERTA** |
-| 9 | `DELETE /work-orders/:workOrderId/comments/:commentId` | OS | 404:not_found | 404:not_found | 5 | **ABERTA** |
-| 10 | `POST /work-orders/:workOrderId/comments/:commentId/tags/:tagId` | OS | 404:not_found | 404:not_found | 6 | **ABERTA** |
-| 11 | `DELETE /work-orders/:workOrderId/comments/:commentId/tags/:tagId` | OS | 404:not_found | 404:not_found | 7 | **ABERTA** |
-| 12 | `/mobile/sync/work-order-actions` · `work_order.mileage` | OS | rejected:not_found | rejected:not_found | 10 | **ABERTA** |
-| 13 | `/mobile/sync/work-order-actions` · `work_order.status_change` | OS | rejected:not_found | rejected:not_found |  | guardada pelo 07a |
-| 14 | `PATCH /mobile/checklist-runs/:runId` | VISTORIA | 404:checklist_run_not_found | 404:checklist_run_not_found | 51a | **ABERTA** |
-| 15 | `POST /mobile/checklist-runs/:runId/attachments` | VISTORIA | 400:invalid_request | 400:invalid_request | 51d | **ABERTA** |
-| 16 | `POST /mobile/checklist-runs/:runId/markers` | VISTORIA | 400:invalid_request | 400:invalid_request | 51e | **ABERTA** |
-| 17 | `POST /mobile/checklist-runs/:runId/complete` | VISTORIA | 404:checklist_run_not_found | 404:checklist_run_not_found | 51b | **ABERTA** |
-| 18 | `POST /mobile/checklist-runs/:runId/divergence` | VISTORIA | 400:invalid_request | 400:invalid_request | 51f | **ABERTA** |
-| 19 | `POST /mobile/checklist-runs/:runId/acknowledgement` | VISTORIA | 400:invalid_request | 400:invalid_request | 51c | **ABERTA** |
-| 20 | `/mobile/sync/checklist-actions` · `checklist.acknowledgement_create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 21 | `/mobile/sync/checklist-actions` · `checklist.attachment_attach` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 22 | `/mobile/sync/checklist-actions` · `checklist.complete` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 23 | `/mobile/sync/checklist-actions` · `checklist.divergence_create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 24 | `/mobile/sync/checklist-actions` · `checklist.item_answer` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 25 | `/mobile/sync/checklist-actions` · `checklist.item_note` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 26 | `/mobile/sync/checklist-actions` · `checklist.marker_create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 27 | `/mobile/sync/checklist-actions` · `checklist_acknowledgement.create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 28 | `/mobile/sync/checklist-actions` · `checklist_attachment.attach` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 29 | `/mobile/sync/checklist-actions` · `checklist_divergence.create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 30 | `/mobile/sync/checklist-actions` · `checklist_marker.create` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 31 | `/mobile/sync/checklist-actions` · `checklist_run.complete` | VISTORIA | rejected:checklist_run_not_found | rejected:checklist_run_not_found |  | **ABERTA** |
-| 32 | `PATCH /operations/dispatches/:dispatchId/status` | DESPACHO | 404:not_found | 403:permission_required |  | **ABERTA** |
-| 33 | `POST /mobile/evidence-uploads` | EVIDENCIA-OS | 400:invalid_content_type | 400:invalid_content_type |  | **ABERTA** |
-| 34 | `/mobile/sync/evidence-actions` · `evidence.work_order_observation` | EVIDENCIA-OS | accepted:accepted | accepted:accepted |  | **ABERTA** |
-| 35 | `/mobile/sync/evidence-actions` · `evidence.work_order_photo` | EVIDENCIA-OS | rejected:required_field | rejected:required_field |  | **ABERTA** |
-| 36 | `/mobile/sync/evidence-actions` · `evidence.work_order_signature` | EVIDENCIA-OS | rejected:required_field | rejected:required_field |  | **ABERTA** |
-| 37 | `POST /mobile/telemetry` | R | 422:operator_profile_required | 422:operator_profile_required |  | fora da propriedade |
-| 38 | `POST /fuel-logs` | R | 400:required_field | 403:permission_required |  | fora da propriedade |
-| 39 | `PATCH /fuel-logs/:fuelLogId` | R | 404:not_found | 403:permission_required |  | fora da propriedade |
-| 40 | `POST /damages` | R | 400:required_field | 400:required_field |  | fora da propriedade |
-| 41 | `POST /expense-reports` | R | 403:permission_required | 400:required_field |  | fora da propriedade |
-| 42 | `PATCH /expense-reports/:reportId` | R | 403:permission_required | 404:not_found |  | fora da propriedade |
-| 43 | `POST /expense-reports/:reportId/items` | R | 403:permission_required | 404:not_found |  | fora da propriedade |
-| 44 | `/mobile/sync/expense-actions` · `expense_item.create` | R | 403:permission_required | 400:required_field |  | fora da propriedade |
-| 45 | `/mobile/sync/expense-actions` · `expense_report.create` | R | 403:permission_required | 400:required_field |  | fora da propriedade |
-| 46 | `/mobile/sync/expense-actions` · `expense_report.submit` | R | 403:permission_required | 400:required_field |  | fora da propriedade |
-| 47 | `POST /auth/login` | N | 400 | 400 |  | fora da propriedade |
-| 48 | `POST /auth/refresh` | N | 400 | 400 |  | fora da propriedade |
-| 49 | `POST /auth/logout` | N | 200 | 200 |  | fora da propriedade |
-| 50 | `POST /notifications/fleet-alerts/run` | N | 200 | 200 |  | fora da propriedade |
-| 51 | `POST /notifications/:notificationId/read` | N | 404:notification_not_found | 404:notification_not_found |  | fora da propriedade |
-| 52 | `POST /notifications/read-all` | N | 200 | 200 |  | fora da propriedade |
-| 53 | `POST /notifications/:notificationId/archive` | N | 404:notification_not_found | 404:notification_not_found |  | fora da propriedade |
-| 54 | `POST /mobile/field-locations` | N | 400:invalid_number | 400:invalid_number |  | fora da propriedade |
-| 55 | `POST /damages/:damageId/attachments` | N | 400:multipart_required | 400:multipart_required |  | fora da propriedade |
-| 56 | `POST /attachments` | N | 400:multipart_required | 400:multipart_required |  | fora da propriedade |
-| 57 | `DELETE /attachments/:attachmentId` | N | 404:attachment_not_found | 404:attachment_not_found |  | fora da propriedade |
-| 58 | `POST /expense-reports/:reportId/submit` | N | 403:permission_required | 404:not_found |  | fora da propriedade |
-| 59 | `/mobile/sync/evidence-actions` · `evidence.field_observation` | N | accepted:accepted | accepted:accepted |  | fora da propriedade |
-| 60 | `/mobile/sync/evidence-actions` · `evidence.field_photo` | N | rejected:required_field | rejected:required_field |  | fora da propriedade |
-| 61 | `/mobile/sync/evidence-actions` · `evidence.field_signature` | N | rejected:required_field | rejected:required_field |  | fora da propriedade |
-
-CONTAGEM POR CLASSE: OS=13 · VISTORIA=18 · DESPACHO=1 · EVIDENCIA-OS=4 · R=10 · N=15 · NAO-CLASSIFICADA=0 · total=61
-NA PROPRIEDADE: 36 (guardadas pelo 07a: 3 · abertas: 33 · registradas: 16 · NOVAS (abertas e fora do registro): 17)
-REGISTRADAS QUE O CENSO NAO ACHOU: nenhuma
-
-### 2.2 Gerado × registrado — **há mais, e são 12 vias canônicas novas**
-
-| conjunto | vias | onde |
+| forma | gerador v1 (Apêndice A da v1, rodado por mim) | gerador v2 + instantâneo de `c1cfdabe` |
 |---|---|---|
-| registradas, abertas | **16**: as 10 da `P-O6R-SUBRECURSO-OBJECT-SCOPE` (tabela, col. "registro" 1–10) + as 6 do item 51 com a emenda (51a–51f) | linhas 3–12 e 14–19 |
-| guardadas pelo 07a | **3**: `PATCH /work-orders/:id`, `PATCH /work-orders/:id/status`, sync `work_order.status_change` (o 07a guardou `changeStatus`, que o sync chama — `work-order.service.ts:1313-1319`) | linhas 1, 2, 13 |
-| **NOVAS** (abertas, fora do registro) | **12 canônicas / 17 entradas**: | |
-| · vistoria pelo **sync** | 7 tipos canônicos (`item_answer`, `item_note`, `marker_create`, `divergence_create`, `acknowledgement_create`, `attachment_attach`, `complete`) + 5 apelidos — chamam os **mesmos** métodos do `ChecklistService` que as rotas do item 51 (`mobile-checklist-sync.ts:425-443,453-474,497-515,535-552,575-583,616-625`) | linhas 20–31 |
-| · **despacho** | `PATCH /operations/dispatches/:dispatchId/status` — `changeStatus` não confere o alvo do despacho (`field-dispatch.service.ts:486-497`); alcançável só pelo `field_technician` (`field_dispatch:update`, `catalog.ts:950`); o app Flutter **não** chama esta rota (`git grep "operations/dispatches" -- mobile/flutter_app/lib` → 0) | linha 32 |
-| · **evidência de OS pelo sync** | `evidence.work_order_observation/_photo/_signature` — exige só `work_orders:update` e **nem confere se a OS existe** (`mobile-evidence-sync.ts:279-296`); sonda: `accepted` com `work_order_id` aleatório | linhas 34–36 |
-| · **upload da evidência** | `POST /mobile/evidence-uploads` — grava o binário de uma evidência de OS a partir do recibo do sync (`mobile-evidence-upload.ts:104-116`) | linha 33 |
+| F1 · GET que escreve, `/work-orders/:workOrderId/aceitar-por-link` | **ausente** (o v1 não sonda GET) | `NAO-CLASSIFICADA (na propriedade)` → **vermelho** |
+| F2 · `router.all`, `/work-orders/:workOrderId/via-all` | **ausente** (o v1 descarta `_all`) | 5 entradas `NAO-CLASSIFICADA (na propriedade)`, uma por verbo → **vermelho** |
+| F3 · sub-router montado com parâmetro, `/work-orders/:workOrderId/notas` | `POST /?NESTED?/`, sondada no caminho errado (404) | caminho verdadeiro, `NAO-CLASSIFICADA (na propriedade)` → **vermelho** |
+| F4 · `:id` em vez de `:workOrderId`, `/work-orders/:id/fechar` | `NAO-CLASSIFICADA`, mas **fora** da propriedade | `NAO-CLASSIFICADA (na propriedade)` → **vermelho** |
+| F5 · lote em sub-router `/mobile`, `/mobile/sync/novidade-actions` | `POST /?NESTED?/sync/novidade-actions`, 404 (com o literal `/mobile` emulado pela crítica, some como `SYNC(lote)`, E4) | caminho verdadeiro, `NAO-CLASSIFICADA` → **vermelho** |
+| F6 · lote que aceita qualquer `checklist.*` (despacho por prefixo) | vê os 8 tipos que já existem como literal, como `VISTORIA` aberta; **não vê** o curinga | endpoint `NAO-CLASSIFICADA` + **2** `CURINGA` (os dois papéis) → **vermelho** |
 
-**Nenhuma registrada ficou de fora do gerado** (`REGISTRADAS QUE O CENSO NAO ACHOU: nenhuma`). A fronteira do
-`PLANO_SAN3.md:254` já previa as duas primeiras famílias novas ("`mobile-evidence-sync.ts` e
-`mobile-checklist-sync.ts` (vias que o censo vai achar — C2-08)"); **o despacho e o upload de evidência estão
-fora dela** — tratamento no §5.1.
+Saídas: v1 com a injeção da crítica → `NAO-CLASSIFICADA=3 · total=64` (F3, F4, F5 mal sondadas ou fora; F1 e F2 sem
+linha); v2 com a mesma injeção → `rotas registradas: 418 | alcançadas: 155` e **9** `NAO-CLASSIFICADA` (as 9 linhas
+acima de F1–F5); v2 com F6 → `NAO-CLASSIFICADA=11 · CURINGA: 2`.
 
-**Por que o despacho é subrecurso da OS e não registro próprio:** o `FieldDispatch` só existe para uma OS
-(`workOrderId` obrigatório, `field-dispatch.service.ts:221-225` + o evento leva `work_order_id`, `:529-533`),
-e mudar o status dele escreve na **linha do tempo da OS** (`createEvent` com `workOrderId`, `:511-520`).
+**Tipos — v1 × v2** (`prova-tipos.mts`, Apêndice A): `'checklist.x'`, `` `${D}.via_template` `` (com `const D =
+"checklist"`), `"checklist.photo_v2"`, `"checklist-run.reopen"`, `"Checklist.PhotoAdd"` e
+`` `checklist.crase_sem_interpolacao` `` → **v1: não acha nenhum; v2: acha os seis**; `` `${desconhecida}.dinamico` ``
+volta como não resolvido (o guard falha).
 
-### 2.3 Fora da propriedade, mas medido — vira registro, não conserto
-
-**Classe R (10 entradas, 8 rotas/ações distintas por papel):** `POST /damages` (`work_order_id` validado só
-por existência no tenant, `damage.service.ts:116-118,446-455`), `POST`/`PATCH /fuel-logs` (`fuel-log.service.ts:170,234`),
-`POST`/`PATCH /expense-reports`, `POST /expense-reports/:id/items` e as 3 ações `expense_*` do sync (só
-`technician`; `expense-management.service.ts:108,228`), `POST /mobile/telemetry` (`telemetry.validators.ts:95-96`).
-O técnico **cria o próprio registro** apontando para uma OS que não é dele; a OS não muda e não o exibe.
-→ **pendência nova** `P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA` (MÉDIA, `pre-existente`, dono:
-`fila pós-gate`, a nomear pelo estrategista), com N=10, forma "sonda HTTP passa o RBAC" e causa "o `work_order_id`
-do corpo não passa pelo escopo da OS". **Não reprova nem fecha nada aqui** e **não segura o `Ω6R-SEC-002`**: o
-achado do SEC-002 é "o técnico muta a OS alheia" (`docs/revisoes/O6R/achados.jsonl`, linha do SEC-002) e nenhuma
-dessas vias muta a OS. Junto, como **hipótese a medir** (não fato): o `PATCH /fuel-logs/:id` do `field_technician`
-alcança registro de abastecimento de **qualquer** veículo (só sondado com id aleatório → 404; efeito não medido).
-
-**Classe N com uma anomalia:** `POST /notifications/fleet-alerts/run` responde **200** ao `field_technician` e ao
-`technician` (sonda), e dispara a varredura de alertas de frota da **organização inteira** com fan-out a
-destinatários (`notification.controller.ts:76-99`), sob `notifications:update` — que o `RBAC_MATRIX.md:86` diz ser
-da **própria caixa**. Origem `f47062ba` (2026-07-09, #152). → **pendência nova**
-`P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO` (MÉDIA, `pre-existente`, dono `fila pós-gate`). Fora da propriedade
-(não é OS); registrada porque o censo a mediu e calar seria escolher um lado em silêncio (§A2).
-
-**Dono órfão herdado (`PLANO_SAN3.md:400-401`):** `P-O6R-B01-RELIGACAO-SEM-REMEDIO` (`pendencias.md:3850`) é
-via de saída de **religação de identidade** entre organizações — superfície de `auth`/`identity-links`, que o
-censo mostra **fora** do alcance do técnico (`/auth/identity-links*` = 401 `jwt_required`) e sem relação com
-escopo por objeto de OS. **Não cabe no 07c** (mexer em `src/modules/auth/**` alargaria a fronteira de um bloco de
-permissão para identidade, que tem junta própria). → ganha **bloco próprio pós-gate** (`B-AUTH-RELIGACAO-SAIDA`, a
-nomear pelo estrategista); o 07c apenas apensa essa disposição à entrada.
+**O que o gerador v2 ainda não pega (risco residual, declarado):** um handler que escreva **sem** passar o RBAC do
+papel de campo não é "alcançável" pela sonda — mas aí a recusa já existe (não é a propriedade); uma escrita disparada
+por **outra** via que não seja requisição HTTP (job, evento) está fora do censo por construção; e o alcance é medido
+com as permissões do **catálogo em código**, que equivalem às do banco enquanto o guard de paridade
+`tests/permission-catalog-db-parity.test.ts` estiver verde no job `backend-postgres` (`.github/workflows/ci.yml:134,194`)
+— é por isso que o A12 é nota, não bloqueio.
 
 
-## 3. Desenho
+## 07c-a
 
-**Princípio:** **um** predicado (o do 07a), **um** ponto de decisão por agregado, chamado por **toda** entrada
-desse agregado (rota REST e ação de sync). Nada é duplicado: a classificação de papéis
-(`WORK_ORDER_MUTATION_SCOPE` + `actorMutatesAssignedOnly`, `work-order.types.ts:90-129`) e a comparação de
-atribuição (`assertMutationObjectScope`, `work-order.service.ts:808-840`) continuam onde estão e passam a ser
-**consumidas** por quem hoje as ignora. **Sem migração** (§0). `work-order.types.ts` fica **intocado** (§5).
+**Não depende de D1 nem de D2.** Pode ir ao dev assim que a rodada 2 da crítica aprovar. **O `Ω6R-SEC-002` NÃO fecha
+no 07c-a** — fecha só no 07c-b (CE-2, `PLANO_SAN3.md:325`: só com escopo provado em **todas** as vias do censo).
 
-### 3.1 OS — `WorkOrderService` ganha a porta pública
+### 07c-a.1 As 10 vias (as registradas na `P-O6R-SUBRECURSO-OBJECT-SCOPE`, `pendencias.md:6726-6747` e `:6771`)
 
-`work-order.service.ts`:
-- **novo** `async getForMutation(actor, workOrderId): Promise<WorkOrder>` = `this.get(actor, workOrderId)` (404
-  cross-tenant, inalterado) → `this.assertMutationObjectScope(actor, workOrder)` → devolve a OS. É a **única**
-  porta pública do predicado; o corpo do método privado do 07a não muda.
-- `setMileage` (`:1247`): logo após o `this.get` (`:1253`), antes de qualquer parse → fecha a **via 10** (o sync
-  `work_order.mileage` chama este método, `mobile-work-order-sync.ts:245-256`, que **não** muda).
-- `geocodeById` (`:194`) e `geocodeDestinationById` (`:283`): depois do `findById` (404) e **antes** do 409
-  `already_geocoded` → fecham as **vias 8 e 9**.
-- `update` e `changeStatus` **não mudam** (o 07a já os guarda).
+| registro | via | ponto único de decisão depois do 07c-a |
+|---|---|---|
+| 1 | `POST /work-orders/:workOrderId/attachments` | `WorkOrderAttachmentService.assertCanMutate`, chamado pelo controller **antes** do multipart |
+| 2 | `DELETE /work-orders/:workOrderId/attachments/:attachmentId` | `WorkOrderAttachmentService.deleteAttachment` → `getForMutation` |
+| 3–7 | `POST /comments`, `PATCH`/`DELETE /comments/:commentId`, `POST`/`DELETE /comments/:commentId/tags/:tagId` (todas sob `/work-orders/:workOrderId`) | `WorkOrderCommentService` → `getForMutation`, antes do parse e da busca do comentário |
+| 8 | `POST /work-orders/:workOrderId/geocode` | `WorkOrderService.geocodeById` → `getForMutation` |
+| 9 | `POST /work-orders/:workOrderId/geocode-destination` | `WorkOrderService.geocodeDestinationById` → `getForMutation` |
+| 10 | sync `POST /mobile/sync/work-order-actions` · `work_order.mileage` | `WorkOrderService.setMileage` → `getForMutation` |
 
-### 3.2 Anexo e comentário da OS — trocam `get` por `getForMutation` nos caminhos de escrita
+Mais as **3** que o 07a já guarda (`PATCH /work-orders/:workOrderId`, `PATCH …/status`, sync `work_order.status_change`)
+entram no laço de teste como **regressão** (crítica E5: guardadas por execução).
 
+### 07c-a.2 Desenho
+
+- `work-order.service.ts`: **novo** `async getForMutation(actor, workOrderId)` = `this.get` (404 cross-tenant,
+  inalterado) → `this.assertMutationObjectScope` (o do 07a, corpo intocado) → a OS. `setMileage` (`:1247`) troca
+  `this.get` (`:1253`) por `getForMutation`. `geocodeById` (`:194`) e `geocodeDestinationById` (`:283`) trocam o par
+  `parseRequiredUuid` + `repository.findById` pelo `getForMutation` (mesmo 404) — logo o escopo vem **antes** do 409
+  `already_geocoded`. `update` e `changeStatus` **não mudam**.
 - `work-order-attachment.service.ts`: `createUploadedAttachment` e `deleteAttachment` resolvem a OS por
-  `getForMutation` (listar e baixar seguem em `get`); expõe `assertCanMutate(actor, workOrderId)` (=
-  `getForMutation`, conversão 404 → `work_order_not_found` preservada). `work-order-attachment.controller.ts`:
-  `createAttachment` chama `assertCanMutate` **antes** do teste de multipart (`:35`) e do parse (`:40`) — o servidor
-  não lê nem verifica bytes de quem não pode gravar → **vias 1 e 2**.
-- `work-order-comment.service.ts`: `addComment`, `editComment`, `deleteComment`, `attachTag`, `detachTag` resolvem
-  a OS por um `assertWorkOrderForMutation` (= `workOrderService.getForMutation` com a mesma conversão 404 →
-  `commentNotFoundError` do `assertWorkOrder` atual, `:117-126`); o 403 do escopo **atravessa** sem conversão. A
-  checagem vem **antes** de `parseComment` e da busca do comentário — e antes de `assertCanMutate` (`:139-145`),
-  que **fica intacto** (`D-Ω3F-5-COMMENT`). `listComments` segue em `get` → **vias 3–7**.
+  `getForMutation` (a conversão 404 → `work_order_not_found` do `assertWorkOrder`, `:138-146`, é preservada; o 403
+  atravessa); expõe `assertCanMutate(actor, workOrderId)`. Listar e baixar seguem em `get`.
+- `work-order-attachment.controller.ts`: `createAttachment` chama `assertCanMutate` **antes** do teste de multipart
+  (`:35`) e do parse (`:40`) — o servidor não lê nem verifica bytes de quem não pode gravar.
+- `work-order-comment.service.ts`: `addComment`, `editComment`, `deleteComment`, `attachTag`, `detachTag` passam por
+  um `assertWorkOrderForMutation` (= `getForMutation` com a conversão 404 → `commentNotFoundError` de
+  `assertWorkOrder`, `:117-126`), **antes** de `parseComment` e da busca do comentário; `assertCanMutate`
+  (`:139-145`, `D-Ω3F-5-COMMENT`) **fica intacto** logo depois. `listComments` segue em `get`.
+- **Sem migração.** `mobile-work-order-sync.ts` **não muda** (a via 10 fecha no serviço).
 
-### 3.3 Vistoria — `ChecklistService.assertRunMutationScope`
+**Idempotência da quilometragem — a premissa corrigida (A4).** Os recibos do sync de OS são um `Map` em memória do
+processo (`mobile-work-order-sync.ts:65`); a km **não** tem chave durável. Consequências, declaradas: (i) reenvio do
+mesmo `client_action_id` no **mesmo** processo → `already_applied` pelo recibo (antes do escopo, como já é hoje para
+o status); (ii) depois de um **reinício** do servidor **e** de uma redistribuição, o reenvio de uma km já aplicada sai
+`rejected` `not_assigned_to_actor` — o valor **já está** no banco, nada se perde, e o app marca a ação `failed` (até 5
+tentativas, ver A2 no 07c-b). Não há decisão de idempotência nova no 07c-a; a D-07c-IDEMP da v1 vai, corrigida, para
+o 07c-b.
 
-`checklist.service.ts`:
-- `ActorContext` (`:49-52`) ganha `roles?: readonly string[]` (o controller já passa o `tenantContext` inteiro,
-  `checklist.controller.ts:338`; o sync passa o `AuthenticatedActor`). Ausente → tratado como `[]` → **não**
-  escopado, que é a regra do 07a para composição interna sem papel (`work-order.types.ts:118-123`); o HTTP nunca
-  chega com `roles: []` (o middleware recusa com `role_required`).
-- **novo** `async assertRunMutationScope(actor, runOrId)`: se `!actorMutatesAssignedOnly(actor)` → retorna (sem
-  I/O). Senão: `getRun` (404 tenant-scoped primeiro) → se `relatedEntityType === "work_order"` e há
-  `relatedEntityId` → `await this.scope.assertWorkOrderMutation(actor, relatedEntityId)`; **senão** →
-  `ChecklistError(403, "WORK_ORDER_NOT_ASSIGNED", "not_assigned_to_actor")` (run sem OS = nega, fail-closed). Sem
-  `scope` injetado → a mesma recusa (composição incompleta nunca vira permissão — idioma do 07a,
-  `work-order.service.ts:805-806`).
-- `scope` entra pelo **construtor** (segundo parâmetro, opcional); `createMemoryChecklistService` e
-  `createDefaultChecklistService` (`:828-851`) compõem com import **dinâmico** de `work-order.service.js` →
-  `getForMutation` (idioma dos resolvers vizinhos; sem ciclo de carga: `work-order.service.ts` só importa **tipos**
-  de `checklists/`, `:77`).
-- Chamado no **início** de `updateRun`, `createAttachment`, `createUploadedAttachment`, `createMarker`,
-  `completeRun`, `registerDivergence`, `acknowledgeRun` (as 7 alcançáveis) **e** de `reopenRun` e `createRun` (hoje
-  fora do alcance do técnico por permissão; guardados para que uma concessão futura não abra a via — `createRun`
-  usa o `relatedEntity*` do input).
-- `checklist.controller.ts`: `updateChecklistRun` (`:181`), `createChecklistAttachment` (`:194`, nos **dois**
-  ramos), `createChecklistMarker` (`:239`), `completeChecklistRun` (`:255`), `registerChecklistDivergence` (`:305`),
-  `acknowledgeChecklistRun` (`:318`) chamam `service.assertRunMutationScope(actor, runId)` **antes** de ler o corpo.
-  A dupla checagem (controller + serviço) é deliberada: o controller garante a ordem "escopo antes do parse"; o
-  serviço é o ponto único que o sync também atravessa. Só o ator `assigned_only` paga o I/O extra.
-- `mobile-checklist-sync.ts`: **nenhuma** chamada nova nos handlers que escrevem (eles chamam os métodos acima);
-  **uma** em `handleAttachmentAttach` (`:570-583`), que não escreve mas **promete** o endpoint de upload — mesma
-  lógica da trava de vistoria concluída já posta ali (`:577-583`): não prometer o que o upload vai recusar.
-  **Decisão D-07c-IDEMP:** a detecção de `already_applied` dos handlers (que lê e não escreve) **fica antes** do
-  escopo, de propósito: ação aplicada quando o técnico **era** atribuído e reenviada depois da redistribuição
-  responde `already_applied`, não `rejected` — recusar o que já está no banco faria o app repetir para sempre uma
-  ação cumprida. → **vias 14–31** (6 REST + 12 entradas de sync).
+### 07c-a.3 O guard que o 07c-a entrega (o mesmo que o 07c-b vai esvaziar)
 
-### 3.4 Despacho — `FieldDispatchService.changeStatus`
+- `tests/helpers/o6r07c-census.ts` — porta, sem mudança de algoritmo, do `census-v2.mts`, `census-sync-v2.mts`,
+  `tipos.mts` e `classify-v2.cjs` do Apêndice A (a C2 compara as contagens com o gerador dela).
+- `tests/fixtures/o6r07c-classificacao-vias.json` — o **instantâneo** (169 entradas em `c1cfdabe`), gerado por
+  `classify-v2.cjs --gravar-snapshot` e revisado; chave `MÉTODO caminho` ou `SYNC endpoint · tipo`, valor = a
+  classe. As 23 entradas `·07c-b` são as vias **abertas com dono 07c-b**.
+- `tests/o6r07c-census-guard.test.ts`, com estes testes:
 
-`field-dispatch.service.ts:486`: logo após `this.get` (`:487`) e antes de `parseFieldDispatchStatus` (`:488`): se
-`actorMutatesAssignedOnly(actor)` e `current.operatorUserId` difere de `actor.userId` → `FieldDispatchError(403,
-"FIELD_DISPATCH_NOT_ASSIGNED", "not_assigned_to_actor")`. **"Atribuído" aqui é o alvo do despacho**
-(`operatorUserId`), não o `assigned_operator_id` da OS: o despacho tem alvo próprio e **não** sincroniza a
-atribuição da OS (`git grep -nF ".assign(" -- src/modules/field-dispatch` → 0 linhas), então exigir a atribuição
-da OS travaria o técnico no **próprio** despacho — a classe do `C1-A4` do 07a. O predicado de **papel** é o do
-07a (reuso); a comparação de dono é uma igualdade. Nada mais do módulo muda → **via 32**.
-
-### 3.5 Evidência de OS — sync e upload
-
-- `mobile-evidence-sync.ts`: `syncMobileEvidenceActions` (`:95`, já `async`) ganha o parâmetro `resolveService`
-  (default `createDefaultWorkOrderService`, idioma de `mobile-work-order-sync.ts:67-71`); `processAction` (`:244`)
-  vira `async` e o laço passa a `await` (`:123`). Para escopo `work_order`, na ordem: permissão →
-  `assertSafePayload` → lê `payload.work_order_id` (ausente → o 400 `required_field` de hoje) →
-  `await service.getForMutation(actor, id)` → só então `validateAndNormalizeMetadata`. **Contrato que muda para
-  todos os papéis, declarado:** OS inexistente ou de outra organização deixa de ser `accepted` e passa a `rejected`
-  `not_found` (hoje o sync aceita qualquer string — sonda, §2.1 linha 34). Escopo `field` intocado.
-- `mobile-evidence-upload.ts`: depois do recibo (`:104-111`) e do 409 `work_order_mismatch` (`:113-116`), se
-  `receipt.workOrderId` → `getForMutation` → 403/404. Recibo concedido quando o técnico **era** atribuído não vira
-  passe livre depois da redistribuição. O app preserva o blob em todo status diferente de `stored` (B-108,
-  `CLAUDE.md` §6) → o 403 **não perde** a foto → **vias 33–36**.
-
-### 3.6 O sync recusa sem perder a ação (invariante do B-108) — medido no app, sem tocar no app
-
-- Os três syncs envolvidos capturam o erro **por ação** e devolvem lote 200 (`try/catch` → `actionErrorResult`:
-  `mobile-work-order-sync.ts:207-275,302-352`; `mobile-checklist-sync.ts:345-376`; `mobile-evidence-sync.ts:244-277,362`),
-  e o erro de escopo é reconhecido por forma (`statusCode`, `code`, `reason` — `mobile-checklist-sync.ts:1030-1040`)
-  → sai em `rejected[]` com `error.reason = "not_assigned_to_actor"`.
-- **Recibo só de `accepted`/`already_applied`** (`mobile-checklist-sync.ts:225-240`; `mobile-work-order-sync.ts:99-106`;
-  `mobile-evidence-sync.ts:125-126`) → a ação recusada **não** envenena o replay: redistribuída a OS ao técnico, o
-  mesmo `client_action_id` é aceito.
-- **No app** (só leitura; `mobile/**` é PROIBIDO): `rejected` → `failed` (`sync_replay_service.dart:507`); `failed`
-  mantém a ação **na fila** com `lastErrorCode` = o `reason` e `retryCount + 1` (`sync_replay_service.dart:763-768`;
-  `pendingForTenant` inclui `failed`, `sync_queue_repository.dart:36-46`). A ação **não** é descartada; a dívida de
-  UX (não perda de dado) está no R5.
-
-### 3.7 Avaliado e **rejeitado** (para o crítico não precisar redescobrir)
-
-- **Guard automático por `router.param`** nos parâmetros `workOrderId`, `runId` e `dispatchId` — faria toda rota
-  nova nascer negada em tempo de execução, mas o `param` roda **antes** do `requirePermission` da rota: o técnico
-  sem permissão passaria a receber `not_assigned_to_actor` em vez de `permission_required` (quebra asserções vivas,
-  ex.: `tests/work-order-mileage.test.ts`, que espera `permission_required` do técnico no `PATCH /mileage`) e o
-  evento de auditoria `permission.denied` (`rbac.middleware.ts:56-74`) deixaria de ser gravado. A garantia "via
-  nova nasce negada" fica no **guard de CI** (§4.3), que falha antes do merge.
-- **Escopo nos repositórios** (filtro por `assigned_operator_id` na consulta): espalharia o predicado por N
-  consultas e o devolveria como 404 — contrário ao contrato do 07a (403; a OS existe e é legível,
-  `work-order.service.ts:799-803`).
-- **Mexer em `WORK_ORDER_MUTATION_SCOPE`** para incluir ou excluir papéis: fora do mandato; a classificação é do 07a.
-
-
-## 4. Testes de encerramento + mutações
-
-**Baseline medido (N).** Em `c1cfdabe`, as 44 suítes não-`-db` que exercem as vias tocadas (lista gerada por
-`git grep` dos caminhos/handlers do §2 sobre `tests/` + as de nome `mobile|evidence|dispatch|checklist|comment|
-mileage|geocod|o6r07a-wo`) rodaram com `CORE_SAAS_PERSISTENCE=memory`, sem `DATABASE_URL`:
-`node --test --import tsx --test-reporter=tap <44 arquivos>` → **`# tests 430 · pass 427 · fail 0 · skipped 3`**
-(os 3 são auto-pulos **declarados** de suítes que exigem banco: `impound-checklist-link-autolink`,
-`impound-process-checklist-link-schema`, `o6r06-usage-fault-injection`), ec=0, 32 s. É a **régua de regressão**
-do bloco. Testes que hoje provam a propriedade: os **8** de `tests/o6r07a-wo-object-scope.test.ts` → **N = 8**,
-**meta M ≥ 2N = 16** testes novos; o desenho abaixo dá **≥ 60** (35 gerados + 18 semânticos + 6 do guard +
-≥ 5 `-db`). A suíte inteira (`npm test`) é medida pelo dev em cluster descartável **antes** de codar, na forma
-canônica (`DATABASE_URL`/`REDIS_URL` do cluster dele, `CORE_SAAS_PERSISTENCE` não exportada), e publicada com N
-e forma.
-
-**Arquivos novos de teste (nomes fixos):**
-- `tests/helpers/o6r07c-census.ts` — o gerador do §2 (o mesmo algoritmo do Apêndice A), exportado para os dois
-  arquivos abaixo. **Não** há lista digitada de vias.
-- `tests/o6r07c-subresource-scope.test.ts` — sondas geradas + semânticos (§4.1, §4.2).
-- `tests/o6r07c-census-guard.test.ts` — o guard de exaustividade (§4.3).
-- `tests/o6r07c-subresource-scope-db.test.ts` — o caminho Prisma (§4.4).
-
-**Vermelho-controle:** todo teste de **recusa** abaixo é rodado pelo dev em `c1cfdabe` (antes do conserto) e
-tem de sair **vermelho**, com a saída gravada na evidência do dev. Exceções esperadas e declaradas: as 3 vias
-já guardadas pelo 07a (§2.1 linhas 1, 2, 13) saem **verdes** no head-base, e os testes **positivos** (que provam
-que o guard não é "nega tudo") também — não são critério de fechamento, são controle.
-
-### 4.1 Uma sonda por via, gerada da enumeração (`o6r07c-subresource-scope.test.ts`, bloco G)
-
-Arnês: `createApp` real em memória (idioma de `tests/o6r07a-wo-object-scope.test.ts:360-419`), organização A com
-`managerA`, `tecnicoA` e `tecnicoB` (UUID cru + perfil de operador cada) e organização B com `tecnicoB2`;
-**semeados**: OS `osA` atribuída ao perfil do `tecnicoA`; modelo de checklist publicado com 1 componente e run
-`runA` com `relatedEntityType = "work_order"`, `relatedEntityId = osA`; run `runOrfa` **sem** OS; despacho
-`dispA` de `osA` com alvo `tecnicoA` (o `tecnicoA` precisa existir no core com papel de campo —
-`field-dispatch.service.ts:818-835`).
-
-Para **cada** via da propriedade devolvida pelo gerador (36 entradas hoje, 35 no laço — a exceção é o upload; nenhuma digitada), o laço cria um
-`test()` com o nome da via e faz **três** chamadas, substituindo `:workOrderId → osA`, `:runId → runA`,
-`:dispatchId → dispA` e os demais parâmetros por UUID aleatório:
-
-| ator | REST (corpo `{}`) | ação de sync (payload-superconjunto¹) | o que prova |
-|---|---|---|---|
-| `tecnicoB` (mesmo papel da via, **não** atribuído) | **403** e `error.reason === "not_assigned_to_actor"` | a ação em `rejected[]` com `error.reason === "not_assigned_to_actor"`; lote **200** | **G-NEG** — a propriedade |
-| `tecnicoA` (atribuído) | **não** é `not_assigned_to_actor` (400/404/409/422/2xx do domínio) | idem, fora de `rejected` por escopo | **G-POS** — não é "nega tudo" |
-| `managerA` (`tenant_wide`) | **não** é `not_assigned_to_actor` | idem | **G-WIDE** — gestão intocada |
-
-¹ `{ work_order_id: osA, run_id: runA, component_id: <componente de runA>, value: "x", note: "x",
-observation: "x", message: "x", file_name: "x.jpg", status: "accepted", mileage_start: 1 }` — os campos que os
-handlers exigem (`mobile-checklist-sync.ts:427,464,508-512,544-547,587`; `mobile-work-order-sync.ts:245-256`;
-`mobile-evidence-sync.ts:294-296`). Tipo de sync **novo** cujo handler exija campo fora do superconjunto sai
-`rejected` por `required_field` no `tecnicoB` → **vermelho** (o guard, §4.3, nomeia a causa).
-
-**Exceções explícitas do laço (com teste dedicado no §4.2):** `POST /mobile/evidence-uploads` (exige multipart +
-recibo do sync — teste E-UP); e o papel `technician` nas vias que só o `field_technician` alcança (o despacho:
-`technician` = 403 `permission_required`, §2.1 linha 32).
-
-**Ordem "escopo antes do parse" — consequência que o laço prova:** nas vias REST, o `tecnicoB` recebe 403 com
-corpo `{}`, o que só acontece se o escopo vier antes da validação do corpo e do teste de multipart (§3.2, §3.3).
-Nas ações de **sync** a ordem é outra, de propósito (D-07c-IDEMP): resolver a run (404) → parse → `already_applied`?
-→ escopo → escrita — por isso o payload-superconjunto.
-
-### 4.2 Testes semânticos (`o6r07c-subresource-scope.test.ts`, bloco S) — cada um vermelho no head-base
-
-| id | cenário | asserção de encerramento |
+| id | asserção | falha quando |
 |---|---|---|
-| S-ANX | `tecnicoB` apaga anexo da `osA` (anexo enviado pelo `tecnicoA`) | 403 `not_assigned_to_actor` **e** o download do anexo pelo `managerA` segue **200** (a recusa não deixou efeito; antes: 204 e 200→404, `pendencias.md:6729-6730`) |
-| S-KM | `tecnicoB` manda `work_order.mileage` da `osA` pelo sync | `rejected` `not_assigned_to_actor`, lote 200, **e** `mileageStart` da `osA` segue `null` (antes: `null → 111111`, `pendencias.md:6771`) |
-| S-COM | `tecnicoB` comenta, edita, apaga e (des)taggeia comentário na `osA` | 403 nas 5; o comentário do `tecnicoA` segue com o texto original e sem tag |
-| S-MOD | moderação `D-Ω3F-5-COMMENT` preservada | `managerA` edita e apaga comentário do `tecnicoA` na `osA` → 2xx; `tecnicoA` (atribuído, porta `work_orders:update`) edita comentário do `managerA` na `osA` → 2xx (a regra autor-OU-update fica intacta **dentro** da OS atribuída) |
-| S-GEO | `tecnicoB` chama `geocode` e `geocode-destination` da `osA` | 403 nas 2, com o provedor desligado (default) — o escopo vem antes do 409/422 e do provedor |
-| S-RUN | `tecnicoB` responde, marca avaria, anexa, registra divergência, conclui e dá ciência na `runA`, por REST **e** pelo sync | 403 / `rejected` `not_assigned_to_actor` nos 12 caminhos; respostas, marcadores e status da `runA` **iguais** aos de antes (leitura pelo `managerA`) |
-| S-RUN-OK | o mesmo roteiro pelo `tecnicoA` | responde → conclui → dá ciência → 2xx/`accepted` (o fluxo de campo real não quebrou) |
-| S-ORFA | `tecnicoA` e `tecnicoB` respondem a `runOrfa` (sem OS) | 403 para os dois; `managerA` → não-403 (fail-closed só para o campo) |
-| S-DISP | `tecnicoB` muda o status de `dispA` (alvo `tecnicoA`) | 403 `not_assigned_to_actor`; status de `dispA` inalterado; **e** `tecnicoA` muda o status do **próprio** despacho com a `osA` **sem** atribuição na OS → 2xx (o alvo do despacho é o critério, §3.4) |
-| S-EVI | `tecnicoB` registra `evidence.work_order_observation` da `osA` | `rejected` `not_assigned_to_actor`; e `managerA` com `work_order_id` inexistente → `rejected` `not_found` (contrato novo declarado, §3.5) |
-| E-UP | `tecnicoA` registra metadado da foto da `osA` (aceito) → `managerA` reatribui a `osA` ao `tecnicoB` → `tecnicoA` sobe o binário | upload **403** `not_assigned_to_actor`, nada gravado no storage de evidência |
-| S-MIX | um lote com 2 ações: uma na `osA` pelo `tecnicoA` (atribuído) e uma na `osB` (alheia) | **200**; `accepted: 1`, `rejected: 1` (`not_assigned_to_actor`); a aceita produziu efeito, a recusada não |
-| S-REPLAY | a ação recusada em S-MIX é reenviada com o **mesmo** `client_action_id` depois que o `managerA` atribui a `osB` ao técnico | `accepted` (a recusa não gravou recibo, §3.6) |
-| S-IDEMP | `tecnicoA` responde a `runA` pelo sync (aceito) → `managerA` reatribui a `osA` ao `tecnicoB` → `tecnicoA` reenvia a **mesma** ação | `already_applied`, **não** `rejected` (D-07c-IDEMP); e uma ação **nova** dele na `runA` → `rejected` `not_assigned_to_actor` |
-| S-XT | `tecnicoB2` (outra organização) em cada classe (anexo, comentário, run, despacho, evidência) | **404** (cross-tenant intocado; o 403 não vira oráculo de existência) |
-| S-DUAL | `osU` atribuída por **user id** (a forma que o app grava, `o6r07a-wo-object-scope.test.ts:199-222`) | o `tecnicoA` nomeado responde a run da `osU` e anexa nela → 2xx (o dual-match do 07a vale nos subrecursos) |
-| S-ROLES | ator com os papéis `field_technician` e `manager` em `osA` alheia | não-403 nas vias de anexo, comentário e run (união por presença, `work-order.types.ts:124-129`) |
-| S-SVC | `ChecklistService.createRun` e `reopenRun` chamados direto com contexto `field_technician` sobre a `osA` alheia; `createRun` com contexto **sem papel** (o do provisionamento do despacho, `field-dispatch.service.ts:878`) | 403 nos dois primeiros; o terceiro **cria** (composição interna não é escopada) |
+| T1 | nenhuma via viva fora do instantâneo | via nova de qualquer forma, inclusive GET (default negar) |
+| T2 | nenhuma entrada do instantâneo morta | rota removida ou renomeada sem atualizar a classificação |
+| T3 | zero camada sem caminho de texto | montagem por regex, que o censo não sabe compor |
+| T4 | zero curinga | lote que aceita tipo inexistente, nu ou com prefixo de família |
+| T5 | templates de tipo não resolvidos ⊆ a lista literal dos 4 de hoje | tipo de ação montado em template que o extrator não resolve |
+| T6 | o conjunto das entradas `·07c-b` é **exatamente** a lista literal das 23 de hoje | qualquer via nova empurrada para o 07c-b sem passar pela junta (catraca: só diminui) |
+| T7 | as 6 formas da crítica, injetadas num app novo, são achadas: F1–F5 como `NAO-CLASSIFICADA`, F6 como curinga | o gerador regride para reconhecer forma (é o teste que fica **vermelho com o gerador v1**) |
+| T8 | o extrator de tipos acha as 6 formas de tipo e devolve o template dinâmico | o extrator regride para a regex do v1 |
 
-### 4.3 O guard que faz a via nova nascer negada (`o6r07c-census-guard.test.ts`) — CE-2 e CE-G1
+No 07c-b, a lista do T6 tem de chegar **vazia** — é o critério de fechamento dele.
 
-- **(a) Fonte gerada:** o `tests/helpers/o6r07c-census.ts` monta o `createApp` **real**, percorre a pilha (com
-  os aninhados) e sonda; os tipos de sync são **todos** os literais `dominio.acao` de `src/modules/**/*.ts`. Nada
-  de lista de rotas.
-- **Regra de pertença à propriedade (por forma, não por nome):** via REST cujo caminho tem parâmetro
-  `:workOrderId`, `:runId` ou `:dispatchId`, **em qualquer roteador**; ação de sync de tipo `work_order.*`,
-  `checklist*` ou `evidence.work_order_*`. Toda via assim tem de passar no **G-NEG** do §4.1 — o laço do §4.1 a
-  recebe sozinho, pela mesma função.
-- **(b) Default do membro não previsto = NEGAR:** via mutante alcançável por `field_technician` ou `technician`
-  que **não** pertence à propriedade **e não** está na **allowlist literal de exceções** (as 25 entradas R e N do
-  §2.1, cada uma com classe, justificativa e arquivo:linha) → **falha** com a mensagem: via nova sem
-  classificação; o default é negar (escopo por objeto, ou entrada justificada na allowlist).
-- **Rede reversa:** entrada da allowlist que deixou de ser alcançável → **falha** (allowlist envelhecida). Classe
-  `NAO-CLASSIFICADA` com contagem maior que zero → **falha**.
-- **(c) Mutações que o deixam vermelho (o dev as executa e grava o vermelho):**
-  - **MG1** — rota nova `POST /work-orders/:workOrderId/mutacao-teste` sob `requirePermission(WORK_ORDER_PERMISSIONS.update)`, respondendo 200 → vermelho (pertence à propriedade e o G-NEG vê 200);
-  - **MG2** — rota nova `POST /rota-teste-07c` sob a mesma permissão → vermelho (não classificada);
-  - **MG3** — conceder `checklist_runs:create` ao `field_technician` no catálogo **sem** tocar no serviço → `POST /mobile/checklist-runs` vira alcançável e não está na allowlist → vermelho;
-  - **MG4** — tipo de sync novo `checklist.mutacao_teste` com handler que escreve sem passar pelo serviço → vermelho;
-  - **MG5** — apagar uma entrada da allowlist → vermelho (a via R/N vira não classificada);
-  - **MG6** — trocar o critério de alcance para tratar 400 como barrado → o censo encolhe e a rede reversa da allowlist fica vermelha.
+### 07c-a.4 Testes de encerramento e mutações
 
-### 4.4 O caminho Prisma (`o6r07c-subresource-scope-db.test.ts`)
+**Régua (baseline medido na v1, válido: o código não mudou):** 44 suítes não-`-db` das vias tocadas, em
+`c1cfdabe`, `CORE_SAAS_PERSISTENCE=memory` → `# tests 430 · pass 427 · fail 0 · skipped 3` (3 auto-pulos declarados).
+**N = 8** (os testes do 07a que provam a propriedade) → **M ≥ 16**; o 07c-a entrega ≥ 30 (13 do laço G + 10
+semânticos + 8 do guard + ≥ 4 `-db`).
 
-Com `DATABASE_URL` (no CI roda dentro do `npm test` do job `backend`, que sobe Postgres e Redis —
-`.github/workflows/ci.yml:40-60,109`; sem banco, auto-pulo **declarado** no padrão das `-db` vizinhas):
-repositórios Prisma reais; um caso positivo e um negativo para **OS** (anexo), **vistoria** (resposta pelo sync),
-**despacho** e **evidência**, mais **S-DUAL**. Obrigatório porque o mapeamento `related_entity_type` →
-`relatedEntityType` do repositório Prisma (`checklist-prisma.repository.ts:1338`) e o resolvedor de perfil em
-Prisma são os pontos em que um erro deixaria **todo** técnico negado em produção (`relatedEntityType` indefinido
-= run sem OS = 403) — e o modo memória não os exerce. As asserções de RLS seguem o drill do `B-O6R-06` (papel
-efêmero `NOSUPERUSER NOBYPASSRLS`), conforme `PLANO_SAN3.md` §6. O dev usa **cluster descartável próprio**
-(prefixo `dev07c-`, sem porta pública, removido pelo nome) — **nunca** 5432/6379 nem os contêineres `erp-*`.
+**Laço G** (`tests/o6r07c-subresource-scope.test.ts`): para **cada** entrada `OS·07a` e `OS·07c-a` do instantâneo (13
+hoje — lidas do instantâneo, não digitadas), com `osA` atribuída ao perfil do `tecnicoA`:
+- **G-NEG:** `tecnicoB` (mesmo papel, não atribuído) → 403 `not_assigned_to_actor` (REST, corpo `{}`) ou `rejected`
+  `not_assigned_to_actor` (sync, lote 200).
+- **G-POS:** `tecnicoA` → a resposta **não** é `not_assigned_to_actor`.
+- **G-WIDE (corrigido, A5):** um papel `tenant_wide` → a resposta **não** é `not_assigned_to_actor` **e não** é
+  `permission_required`; se for `permission_required`, o teste **falha** com "G-WIDE vazio — escolha um papel
+  `tenant_wide` que alcance a via". Nas 13 do 07c-a o `manager` alcança todas (`catalog.ts:430-435`: `read`,
+  `comment`, `create`, `update`, `status`), então o ator é o `managerA`.
 
-### 4.5 Mutações de produto (cada critério com a que o derruba)
+**Semânticos (vermelhos em `c1cfdabe`, exceto os positivos, que são controle):**
 
-| mutação no código de produção | derruba |
+| id | cenário | asserção |
+|---|---|---|
+| S-ANX | `tecnicoB` apaga anexo da `osA` | 403 e o download pelo `managerA` segue 200 (antes: 204 e 200→404, `pendencias.md:6730`) |
+| S-KM | `tecnicoB` manda `work_order.mileage` da `osA` | `rejected` `not_assigned_to_actor`, lote 200, `mileageStart` segue `null` (antes: `null → 111111`, `pendencias.md:6771`) |
+| S-KM-RESTART | `tecnicoA` manda km (aceita) → `managerA` reatribui a `osA` → reenvio do mesmo `client_action_id` no mesmo processo; depois `resetMobileWorkOrderSyncRuntimeForTests()` (simula reinício) e reenvio | 1º reenvio `already_applied`; 2º `rejected` `not_assigned_to_actor`; o km no banco é o aplicado (A4, declarado) |
+| S-COM | `tecnicoB` comenta, edita, apaga e (des)taggeia na `osA` | 403 nas 5; comentário do `tecnicoA` intacto |
+| S-MOD | moderação | `managerA` edita e apaga comentário do `tecnicoA` → 2xx; `tecnicoA` edita comentário do `managerA` na `osA` → 2xx |
+| S-GEO | `tecnicoB` em `geocode` e `geocode-destination` da `osA` | 403 nas 2, provedor desligado (o escopo vem antes do 409/422) |
+| S-ORDEM | `tecnicoB` faz `POST …/attachments` **sem** multipart na `osA` | 403 (não 400 `multipart_required`): escopo antes do parse |
+| S-XT | `tecnicoB2` (outra organização) em anexo, comentário e km | 404 (cross-tenant intocado) |
+| S-DUAL | `osU` atribuída por user id (a forma do app) | o `tecnicoA` anexa, comenta e manda km → 2xx/`accepted` |
+| S-ROLES | ator com os papéis `field_technician` e `manager` em `osA` alheia | não-403 em anexo e comentário (união por presença) |
+
+**`-db`** (`tests/o6r07c-subresource-scope-db.test.ts`, cluster descartável `dev07c-`, auto-pulo declarado sem
+banco): anexo, comentário e km por Prisma, positivo (atribuído por perfil **e** por user id) e negativo.
+
+**Mutações (cada uma derruba o que está ao lado; o dev grava o vermelho e a restauração):**
+
+| mutação | derruba |
 |---|---|
-| **M1** `getForMutation` sem a chamada a `assertMutationObjectScope` | G-NEG nas 13 de OS + S-ANX, S-KM, S-COM, S-GEO, S-EVI, E-UP |
-| **M2** `assertRunMutationScope` retorna cedo sempre | G-NEG nas 18 de vistoria + S-RUN, S-ORFA |
-| **M3** run sem OS tratada como permitida | S-ORFA |
-| **M4** escopo do despacho comparando com o `assigned_operator_id` da OS | S-DISP (o positivo do próprio despacho cai) |
-| **M5** escopo do despacho removido | G-NEG da via 32 + S-DISP |
-| **M6** evidência: escopo removido do sync ou do upload | G-NEG 34–36 + S-EVI, ou E-UP |
-| **M7** controller faz o parse **antes** do escopo (ordem invertida) | G-NEG das vias REST com corpo validado ou multipart (linhas 3, 15, 16, 18, 19 do §2.1) |
-| **M8** nega tudo (`assigned_only` sempre recusado) | G-POS, S-RUN-OK, S-DUAL, positivo de S-DISP |
-| **M9** escopo aplicado também a `tenant_wide` | G-WIDE, S-MOD |
-| **M10** a recusa grava recibo | S-REPLAY |
-| **M11** a recusa lança no lote (aborta o lote) | S-MIX |
-| **M12** escopo **antes** do `already_applied` no sync | S-IDEMP |
-| **M13** `assertCanMutate` de comentário passa a exigir só o autor (moderação quebrada) | S-MOD |
-| **M14** `ChecklistService` composto sem `scope` | G-POS de vistoria cai para o `tecnicoA` (fail-closed provado; o positivo denuncia a composição faltante) |
+| M1 `getForMutation` sem `assertMutationObjectScope` | G-NEG das **10** vias do 07c-a (as 3 do 07a não passam por ele e seguem verdes — correção do A6), S-ANX, S-KM, S-COM, S-GEO |
+| M2 `setMileage` volta a `this.get` | G-NEG da via 10, S-KM |
+| M3 `geocodeById`/`geocodeDestinationById` voltam a `findById` | G-NEG das vias 8 e 9, S-GEO |
+| M4 controller de anexo faz o multipart antes do escopo | S-ORDEM, G-NEG da via 1 |
+| M5 um dos 5 métodos de comentário volta a `assertWorkOrder` | G-NEG da via correspondente, S-COM |
+| M6 `assertCanMutate` de comentário passa a exigir só o autor | S-MOD |
+| M7 nega tudo (`assigned_only` sempre recusado) | G-POS, S-DUAL |
+| M8 escopo aplicado também a `tenant_wide` | G-WIDE, S-MOD |
+| M9 `resolveActorOperatorProfileId` devolve `undefined` (o R1 da v1, que não tinha mutação — A6) | `-db` positivo por perfil (o por user id segue verde, dual-match) |
+| MG1 rota nova `POST /work-orders/:workOrderId/x` com `work_orders:update` | T1 |
+| MG2 `GET` novo que escreve (F1) · MG3 `router.all` (F2) · MG4 sub-router montado com parâmetro (F3) · MG5 `:id` no lugar de `:workOrderId` (F4) · MG6 lote em sub-router (F5) | T1 em cada uma |
+| MG7 lote que aceita qualquer `checklist.*` (F6) | T4 |
+| MG8 conceder `checklist_runs:create` ao `field_technician` no catálogo | T1 (`POST /mobile/checklist-runs` vira alcançável e não está no instantâneo) |
+| MG9 apagar uma entrada do instantâneo · MG10 acrescentar uma entrada `·07c-b` | T1 · T6 |
+| MG11 tipo de ação montado em template novo com constante não resolvível | T5 |
+| MG12 trocar o extrator de tipos pela regex do v1 | T8 |
 
-### 4.6 Regressão — o que pode mudar em teste existente, e como
+### 07c-a.5 Escopo permitido e proibido
 
-Rodada a régua (as 44 suítes) **depois** do conserto, cada falha é classificada e publicada pelo dev: **(i)**
-fixture em que um técnico age em OS **sem atribuição** (o arnês não atribuía porque não precisava) → corrige-se
-**a fixture** (atribuir a OS ao técnico), **nunca** a asserção; **(ii)** teste que **afirmava** o defeito (técnico
-não atribuído com sucesso) → vira negativo, com nota; **(iii)** qualquer outra → é defeito do conserto. Medido
-hoje por `git grep` de papel de campo nos caminhos tocados: `checklist-runs` 7 arquivos, `dispatches/` 4,
-`sync/work-order-actions` 2, `sync/checklist-actions` 1, `sync/evidence-actions` 1, `evidence-uploads` 1,
-comentários, anexos e geocode 0. **Nenhuma** asserção de `permission_required` pode mudar (o desenho não mexe na
-precedência — §3.7).
+**Permitido (caminhos exatos):** `src/modules/work-orders/work-order.service.ts` (só `getForMutation`, `setMileage`,
+`geocodeById`, `geocodeDestinationById`) · `src/modules/work-orders/work-order-attachment.service.ts` ·
+`src/modules/work-orders/work-order-attachment.controller.ts` · `src/modules/work-order-comments/work-order-comment.service.ts`
+· `tests/helpers/o6r07c-census.ts`, `tests/fixtures/o6r07c-classificacao-vias.json`, `tests/o6r07c-census-guard.test.ts`,
+`tests/o6r07c-subresource-scope.test.ts`, `tests/o6r07c-subresource-scope-db.test.ts` (novos) · fixtures das suítes da
+régua só nas classes (i) OS sem atribuição no arnês → atribuir, e (ii) teste que afirmava o defeito → vira negativo,
+cada arquivo listado na evidência · `API_CONTRACTS.md` (as linhas de anexo, comentário, geocode e
+`/mobile/sync/work-order-actions`) · registro: `agent-orchestration/controle/pendencias.md` (APPEND),
+`pendencias-indice.md` (gerador), `agent-orchestration/codex/log-execucao.md`, `agent-orchestration/omega/juntas/**`.
+Os dois arquivos de anexo estão fora da linha do `PLANO_SAN3.md:254`, que em `work-orders/` nomeia só
+`work-order.routes.ts` e `work-order.service.ts`: as vias 1 e 2 moram neles — é a ampliação nominal que o CE-2 já
+exige (crítica, parágrafo da ampliação). `work-order.routes.ts` fica permitido **sem** mudança prevista.
 
+**Proibido:** `prisma/**`, `src/modules/work-orders/work-order.types.ts`, `src/modules/core-saas/permissions/catalog.ts`
+(fora da mutação MG8, revertida), `src/modules/checklists/**`, `src/modules/field-dispatch/**`, `src/modules/mobile/**`
+(07c-b), `mobile/**`, `frontend/**`, `Kpis/**` (KPI congelado, §C7.8(5)), `src/app.ts`, `.github/**`, `package.json`,
+`package-lock.json`, `.env*`, `RBAC_MATRIX.md` e os demais arquivos-base, as classes R e N (`damages`, `fuel-logs`,
+`expense-management`, `telemetry`, `notifications`, `attachments`). **Worktrees de outros agentes, intocáveis:**
+`C:/Users/AMP/w-389`, `C:/Users/AMP/w-insp389`, `C:/Users/AMP/w-traccar` (A10: a v1 nomeava `w-389j`, que não existe
+na saída de `git worktree list`).
 
-## 5. Escopo permitido / proibido · bateria · junta
+**Interseção com PRs abertos, medida (A10):** o #389 (head `ae863e1a`) toca, além de `src/modules/inventory/**` e
+testes de estoque, `prisma/schema.prisma`, `prisma/migrations/20260873000000_add_stock_movements_unique_backstops/`,
+`.github/workflows/ci.yml`, `tests/db-catalog-write-guard.test.ts` e `scripts/inventory-duplicates-census.sql`
+(`gh pr diff 389 --name-only`); o #388 (head `a24f58b5`) toca `mobile/**`, `Kpis/**` e corpos de agente. **Zero**
+interseção com o permitido do 07c-a em código; em registro, só arquivos de APPEND. A trava de
+`work-order.service.ts` (`SAN3-13 → 07c`, §6 do plano SAN3) não é violada: o `SAN3-13` não começou (depende do
+`B-O6R-11`, #388); a ordem passa a `07c-a → SAN3-13`.
 
-### 5.1 Escopo PERMITIDO (caminhos exatos)
+### 07c-a.6 Bateria exata
 
-**Da linha do bloco (`PLANO_SAN3.md:254`), usados:** `src/modules/work-orders/work-order.service.ts` ·
-`src/modules/work-order-comments/work-order-comment.service.ts` (o resto de `work-order-comments/**` fica
-permitido e **sem** mudança prevista) · `src/modules/checklists/checklist.service.ts` ·
-`src/modules/mobile/mobile-checklist-sync.ts` (só `handleAttachmentAttach`) · `src/modules/mobile/mobile-evidence-sync.ts`.
-**Da linha, permitidos e sem mudança prevista:** `src/modules/work-orders/work-order.routes.ts`,
-`src/modules/checklists/checklist.routes.ts`, `src/modules/mobile/mobile-work-order-sync.ts` (a via 10 fecha em
-`setMileage`, no serviço).
-
-**Ampliação nominal pedida por este plano (o censo achou; regra de saída do `PLANO_SAN3.md:254` e C2-08,
-`:598`)** — cada uma porque a via mora ali e não há como fechá-la de fora:
-- `src/modules/work-orders/work-order-attachment.service.ts` e `src/modules/work-orders/work-order-attachment.controller.ts` — vias 1 e 2 (o serviço é quem resolve a OS; o controller faz o parse multipart antes do serviço).
-- `src/modules/checklists/checklist.controller.ts` — a ordem "escopo antes do parse" das 6 rotas de vistoria (já dentro da trava `src/modules/checklists/**`, §6 do plano SAN3).
-- `src/modules/field-dispatch/field-dispatch.service.ts` — **só** `changeStatus` (via 32). Trava nova: `07c` → `B-O6R-09` (dono de `field-dispatch/**`, fila pós-gate, não iniciado).
-- `src/modules/mobile/mobile-evidence-upload.ts` — via 33.
-
-**Testes e registro:** `tests/helpers/o6r07c-census.ts`, `tests/o6r07c-subresource-scope.test.ts`,
-`tests/o6r07c-census-guard.test.ts`, `tests/o6r07c-subresource-scope-db.test.ts` (novos); **fixtures** das suítes
-da régua (§4.6), só nas classes (i) e (ii), cada arquivo listado na evidência do dev · `API_CONTRACTS.md` (linhas de
-`/work-orders/:id/**` em `:277-290`, das rotas de vistoria e despacho e de `/mobile/sync/*` em `:570`) ·
-`agent-orchestration/controle/pendencias.md` (APPEND) e `pendencias-indice.md` (**regenerado pelo gerador**, nunca à
-mão) · `docs/revisoes/O6R/achados.jsonl` (linha do `Ω6R-SEC-002`) · `agent-orchestration/codex/log-execucao.md` ·
-`agent-orchestration/omega/juntas/**` (orquestrador) · os corpos de jurado que a fábrica criar, nos **dois**
-espelhos (`.claude/agents/especialistas/` e `.agents/agents/especialistas/`, via `scripts/sync-agent-agents.mjs`).
-
-**Se a junta do plano recusar a ampliação**, as vias 32 e 33 viram pendência nomeada com dono e o `Ω6R-SEC-002`
-**não** fecha neste bloco (regra de saída do `PLANO_SAN3.md:254`: só fecha com **todas** as vias do censo com
-escopo provado). A ampliação é a recomendação deste plano: as duas são de uma linha cada, no mesmo idioma.
-
-### 5.2 Escopo PROIBIDO
-
-`prisma/**` e `prisma/migrations/**` (sem migração) · `src/modules/work-orders/work-order.types.ts` (a
-classificação do 07a é reusada, não editada) · `src/modules/core-saas/permissions/catalog.ts` e `scripts/provision-rbac.ts`
-(nenhuma permissão muda) · `RBAC_MATRIX.md`, `APPROVAL_LIMITS.md`, `PRODUCT_CONTEXT.md`, `CLAUDE.md`, `AGENTS.md` ·
-`mobile/**` (o app já preserva a ação recusada, §3.6) · `frontend/**` · `Kpis/**` (**KPI congelado**,
-`D-GOV-PROPORCIONAL` §C7.8(5)) · `src/app.ts` · `src/modules/field-dispatch/**` fora de `field-dispatch.service.ts#changeStatus` ·
-`src/modules/damages/**`, `src/modules/fuel-logs/**`, `src/modules/expense-management/**` (trava do `03a`),
-`src/modules/telemetry/**`, `src/modules/notifications/**`, `src/modules/attachments/**` (classes R e N — registro,
-não conserto) · `src/modules/auth/**` · `src/modules/checklists/*-prisma.repository.ts` e `checklist.repository.ts`
-(o vínculo run→OS já é lido) · `.github/**`, `infra/**`, `package.json`, `package-lock.json`, `.env*` · as worktrees
-`C:/Users/AMP/w-389j` e `C:/Users/AMP/w-traccar`.
-
-**Dependências e travas (§6 do plano SAN3), medidas em `origin/main` = `c1cfdabe`:** `07a` (#369) e `07b` (#380)
-mergeados. A agenda punha `SAN3-13` **antes** do `07c` em `work-order.service.ts`; o `SAN3-13` **não começou**
-(depende do `B-O6R-11`, PR #388 aberto, que só toca `mobile/**`, `Kpis/**` e corpos de jurado — `gh pr diff 388
---name-only`) → a trava (dois blocos não tocam o mesmo arquivo **ao mesmo tempo**) não é violada; a ordem passa a
-`07c → SAN3-13`, e o `SAN3-13` rebaseia sobre o `07c`. O #389 (`B-O6R-04a`) só toca `src/modules/inventory/**` e
-testes de estoque — sem interseção. O #388 **não** muda a retenção de ação `failed` na fila do app (só serializa as
-mutações de `sync_queue_repository.dart`) → o §3.6 vale antes e depois dele.
-
-### 5.3 Bateria exata (backend; frontend e Flutter não são tocados)
-
-Ambiente declarado no cabeçalho da evidência do dev (nenhuma variável de conveniência exportada no runner):
-worktree próprio com `npm ci` próprio (sem junction de `node_modules`), Node v20.19.5, cluster descartável
-`dev07c-pg`/`dev07c-redis` sem porta pública, removidos pelo nome; nunca 5432/6379/3000/5173/5050 nem `erp-*`.
+Cabeçalho da evidência do dev com o ambiente (nada exportado por conveniência no runner); worktree próprio com
+`npm ci` próprio; cluster descartável `dev07c-pg`/`dev07c-redis` sem porta pública, removido pelo nome; nunca
+5432/6379/3000/5173/5050 nem `erp-*`.
 
 ```
-DATABASE_URL=<cluster dev07c> npx prisma generate
-npx prisma migrate deploy                                  # no cluster descartável
+DATABASE_URL=URL_DO_CLUSTER_DEV07C npx prisma generate
+DATABASE_URL=URL_DO_CLUSTER_DEV07C npx prisma migrate deploy
 npm run check
 npm run lint
-node --test --import tsx tests/o6r07c-subresource-scope.test.ts tests/o6r07c-census-guard.test.ts
-node --test --import tsx tests/o6r07c-subresource-scope-db.test.ts           # DATABASE_URL do cluster
-node --test --import tsx --test-reporter=tap <as 44 suítes da régua, §4>      # memory; esperado 0 fail
-node --test --import tsx tests/o6r07a-wo-object-scope.test.ts                 # regressão do 07a: 8/8, sem edição
-npm test                                                   # forma canônica, cluster descartável; N e forma publicados
+node --test --import tsx tests/o6r07c-census-guard.test.ts tests/o6r07c-subresource-scope.test.ts
+DATABASE_URL=URL_DO_CLUSTER_DEV07C node --test --import tsx tests/o6r07c-subresource-scope-db.test.ts
+node --test --import tsx tests/o6r07a-wo-object-scope.test.ts          (8 de 8, arquivo sem edição)
+node --test --import tsx --test-reporter=tap AS_44_SUITES_DA_REGUA     (memory; 0 fail)
+npm test                                                              (forma canônica; N e forma publicados)
 npm run build
-node scripts/sync-agent-agents.mjs --check                 # se a fábrica criou corpos
+node scripts/sync-agent-agents.mjs --check                            (se a fábrica criar corpos)
 git diff --check
 ```
 
-Mais: **vermelho-controle** de cada teste de recusa em `c1cfdabe`; **M1–M14** e **MG1–MG6** executadas uma a uma,
-cada uma com o vermelho gravado e a restauração conferida (`git diff` vazio depois); limpeza §C5 dos
-`storage/checklist-attachments/<uuid>/` criados pelas passadas (o `.gitkeep` rastreado fica).
+Mais: vermelho-controle de cada teste de recusa em `c1cfdabe`; M1–M9 e MG1–MG12 uma a uma, com `git diff` vazio
+depois de cada restauração; limpeza §C5 (`storage/checklist-attachments/<uuid>/` das passadas; o `.gitkeep` fica).
 
-### 5.4 Junta — completa, unanimidade de 3, crítico no plano (`D-GOV-PROPORCIONAL` (1); §C7.1-ter(b))
+### 07c-a.7 Junta
 
-O bloco toca **permissão** → **inspetor de terreno + 3 cadeiras com veto + unanimidade**; **teto de 2 ciclos**
-(do 3º em diante só bloqueia defeito de produto grave — §C7.8(2)); **crítico adversarial no plano, antes do código**
-(máx. 2 rodadas); P1–P7 em todos; mandato forma A com pré-voo só para o inspetor e as cadeiras (§C7.8(3)).
-Quórum **não** é 5/5: zero dependência nova, zero serviço externo, zero deploy (`package*.json` proibido, §5.2).
+Permissão → **inspetor + 3 cadeiras com veto + unanimidade**, teto de 2 ciclos (§C7.8(1)(2)); crítico no plano (esta
+v2 vai à rodada 2). Corpos medidos em `git ls-tree c1cfdabe .claude/agents/`; a fábrica cria os 3 com identidade nova
+e o orquestrador os versiona nos dois espelhos.
 
-| papel | corpo (medido em `git ls-tree c1cfdabe .claude/agents/`) | identidade | mandato (≤ 3 itens, P4) |
+| cadeira | competência (corpo de origem) | identidade | mandato (no máximo 3 itens) |
 |---|---|---|---|
-| crítico do plano | `critico-adversarial.md` (existe) | **nova**, `critico-07c` | atacar a propriedade, a fronteira das classes R/N, o critério do despacho, a D-07c-IDEMP e a ampliação do §5.1 |
-| inspetor de terreno | `inspetor-de-terreno-da-junta.md` (existe) | por contrato | §C7.1-bis inteiro: SHA com check-runs concluídos, worktree e cluster por jurado, S0 do espelho Codex, inelegibilidade **por nome** |
-| **C1** · escopo por objeto e cadeia de acesso (veto) | competência do `coordenador-de-acessos.md` — **corpo novo pela fábrica**, derivado dele | **nova**, `jurado-07c-c1-escopo-por-objeto` | (1) G-NEG/G-POS/G-WIDE **re-executados por sonda própria** no head (não pelo teste do dev); (2) `RBAC_MATRIX.md:44,45,66` × catálogo × comportamento — `tenant_wide` intacto, S-MOD, 404 cross-tenant; (3) julgar as duas decisões: alvo do despacho (§3.4) e run sem OS = nega |
-| **C2** · censo fail-closed e guard (veto) | competência do `guardiao-fail-closed.md` + `inspetor-de-rotas.md` — **corpo novo pela fábrica** | **nova**, `jurado-07c-c2-censo-e-guard` | (1) **gerador próprio**, independente do helper do dev, e comparação das contagens (409/223/42; 23; 61/36/25); (2) executar MG1–MG6 e no mínimo M1, M2, M7, M8, M14 — vermelho em cada; (3) CE-G1 (a)(b)(c) e CE-2 conferidos na letra |
-| **C3** · sync B-108, regressão e escopo (veto) | **corpo novo pela fábrica** (contrato mobile + regressão + escopo/registro) | **nova**, `jurado-07c-c3-sync-regressao-escopo` | (1) S-MIX, S-REPLAY, S-IDEMP, E-UP e a leitura do app (`rejected` → `failed` mantido); (2) régua das 44 + `npm test` + a `-db` em cluster próprio; fixtures só das classes (i)/(ii); (3) diff dentro do §5.1, PROIBIDO vazio, registro (pendências, `achados.jsonl`, `API_CONTRACTS.md`) — **sem** cobrar KPI |
+| C1 · escopo por objeto | `coordenador-de-acessos.md` | `jurado-07ca-c1-escopo-por-objeto` | (1) G-NEG/G-POS/G-WIDE por sonda **própria** no head; (2) `RBAC_MATRIX.md:45,66` × catálogo × comportamento, S-MOD, 404 cross-tenant; (3) a km: a semântica é a do status do 07a, e o S-KM-RESTART |
+| C2 · censo e guard | `guardiao-fail-closed.md` + `inspetor-de-rotas.md` | `jurado-07ca-c2-censo-e-guard` | (1) gerador **próprio**; contagens 409/146/42/104, 4/439/147/23, 169; (2) reproduzir F1–F6 e executar MG1–MG12; (3) CE-G1 (a)(b)(c) e o T6 na letra |
+| C3 · regressão, escopo e registro | corpo novo | `jurado-07ca-c3-regressao-escopo` | (1) régua das 44 + `npm test` + `-db` em cluster próprio; (2) fixtures só (i)/(ii), diff no permitido, proibido vazio; (3) registro — **sem** cobrar KPI |
 
-**A fábrica cria 3 corpos** (C1, C2, C3) e o orquestrador os versiona nos dois espelhos (a fábrica não tem Bash) —
-e, por P3/P5, **um suplente por cadeira** com identidade própria. **Tensão registrada (§A2), não consolidada em
-silêncio:** `PLANO_SAN3.md:254` pede "unanimidade + `coordenador-de-acessos`", mas a **identidade**
-`coordenador-de-acessos` é a **achadora** do `C2-09` (o item 51), em
-`agent-orchestration/omega/juntas/votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`, e a casa não deixa quem
-achou votar no conserto (`J-B-O6R-07b.md:17`). Resolução proposta: a **competência** do corpo entra pela C1, com
-**identidade nova**. O orquestrador registra em `controle/` antes da junta.
+**Inelegíveis por nome:** `planejador-b-o6r-07c`; o dev do 07c-a; `critico-b-o6r-07c-r1` e a identidade da rodada 2;
+`jurado-b07a-autorizacao-e-alcada` (achou o `C1-A1`, `J-O6R-07a-ciclo1.md:13`); `jurado-b07a-c2-autorizacao-s` (achou o
+`S-A1`, `J-O6R-07a-ciclo2.md:13,60`); a identidade `coordenador-de-acessos` (achou o `C2-09`,
+`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`); a identidade `guardiao-fail-closed` (achou o `C2c2-03`,
+`votos/SAN3-plano-ciclo2/C2-guardiao-fail-closed-voto.json:30`); `porteiro-pos-merge` (reconfirmou o `S-A1`; não vota).
+**Tensão (§A2) para o orquestrador registrar:** o `PLANO_SAN3.md:254` pede *unanimidade + coordenador-de-acessos*, e
+essa identidade é achadora do item 51; a competência entra pela C1, com identidade nova.
 
-**Inelegíveis por nome** (o inspetor confere com `git log --all -S<nome>`):
+### 07c-a.8 Riscos, tamanho e o que fecha
 
-| nome | por quê |
-|---|---|
-| `planejador-b-o6r-07c` | planejou este bloco |
-| o dev do bloco (nome que o orquestrador der) e o crítico `critico-07c` | desenvolve / atacou o plano |
-| `jurado-b07a-autorizacao-e-alcada` | achou o `C1-A1` (as 9 rotas), `J-O6R-07a-ciclo1.md:13` |
-| `jurado-b07a-c2-autorizacao-s` | achou o `S-A1` (a décima via), `J-O6R-07a-ciclo2.md:13,60` |
-| `coordenador-de-acessos` (identidade) | achou o `C2-09` (item 51), `votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54` |
-| `guardiao-fail-closed` (identidade) | achou o `C2c2-03` (a CE-2 deste bloco), `votos/SAN3-plano-ciclo2/C2-guardiao-fail-closed-voto.json:30` |
-| `porteiro-pos-merge` | reconfirmou o `S-A1` (`00c-porteiro-pos-merge-369.md`, G1.8); não vota em junta |
-
-Os planejadores e devs do 07a e do 07b **não** são inelegíveis por regra (o 07c reusa o código deles, não
-conserta achado deles); se a junta quiser afastá-los por prudência, é decisão dela, escrita.
+- **R-a1** O guard pesa pouco: o censo leva **8 s** e o de sync **7 s** (medido no worktree). **R-a2** O instantâneo
+  de 169 entradas é uma lista a revisar; mitigação: ele nasce do gerador e só **classifica** (a enumeração é gerada),
+  e a C2 confere a classe de cada entrada. **R-a3** Fixtures quebrando: regra (i)/(ii)/(iii) da v1, mantida. **R-a4**
+  O técnico despachado sem atribuição perde a **km** pelo sync — mas já perdeu o **status** no 07a (crítica E2); a D1
+  muda os dois numa porta só.
+- **Rollback:** reverter o squash; sem migração e sem dado novo.
+- **Tamanho: M** — 4 arquivos de produção com mudança pequena; o volume é o guard (helper, instantâneo, 8 testes).
+- **Fecha:** as 10 vias da `P-O6R-SUBRECURSO-OBJECT-SCOPE`, por escopo provado, e o item vinculante dela (*censar o
+  sync antes de declarar o SEC-002 fechado*), cumprido pelo gerador v2. **Não fecha:** a pendência inteira (passa a
+  PARCIAL, resíduo = as 23 entradas `·07c-b`), o item 51 nem o `Ω6R-SEC-002`.
 
 
-## 6. Riscos · rollback · tamanho
+## 07c-b (espera D1/D2)
 
-| # | risco | probabilidade × dano | mitigação no plano |
+**Sem rodeio:** o 07c-b **não começa** antes de o dono responder D1 e D2. É nele — e **só** nele — que o
+`Ω6R-SEC-002` fecha (CE-2) e que o item 51 (`P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`) fecha. Até lá, o técnico de
+campo continua podendo responder, concluir e dar ciência em vistoria de OS que não é dele, registrar evidência de OS
+alheia pelo sync e mexer no status do despacho de um colega — as 23 entradas `·07c-b` do instantâneo, abertas, com
+dono.
+
+### 07c-b.1 O que está dentro (23 entradas do instantâneo, todas abertas hoje)
+
+- **Vistoria (18):** as 6 rotas REST `/mobile/checklist-runs/:runId` (responder, anexar, marcar avaria, concluir,
+  registrar divergência, dar ciência) e os 7 tipos canônicos do sync de vistoria mais os 5 apelidos
+  (`mobile-checklist-sync.ts:50-65`).
+- **Evidência de OS (4):** `evidence.work_order_observation`, `_photo`, `_signature` pelo sync e o upload binário
+  `POST /mobile/evidence-uploads`.
+- **Despacho (1):** `PATCH /operations/dispatches/:dispatchId/status`.
+
+### 07c-b.2 D1 — quem é "o técnico da OS" para escrever na vistoria, na evidência, na km e no status?
+
+Hoje, medido (`probe-dispatch.mts` da crítica, reexecutado por mim em `c1cfdabe`): o despacho pelo mapa **não** grava
+a atribuição na OS (OS depois do despacho: só `status: open`); o técnico despachado **responde e conclui** a vistoria
+que o despacho criou para ele (200 e 200), muda o status do **próprio** despacho (200, `accepted`) e **não** consegue
+mudar o status da OS (403, o 07a). As opções, com o efeito de cada uma em português claro:
+
+- **(a) Só quem foi atribuído na OS** (o que a v1 propunha). Efeito: o técnico mandado pelo mapa, sem a atribuição,
+  **deixa de conseguir** fazer a vistoria e mandar as fotos da OS para a qual foi mandado — o despachante passa a ter
+  de atribuir **e** despachar, sempre, senão o serviço trava no campo.
+- **(b) Quem foi atribuído na OS, ou o alvo de um despacho ativo dessa OS.** Efeito: o fluxo do mapa continua como
+  está; o técnico despachado faz vistoria, fotos, km **e passa a poder mudar o status da OS** (hoje o 07a nega); a
+  mudança é uma linha na porta única (`getForMutation`). Precisa definir "ativo" (proposta: despacho não cancelado,
+  não concluído, não reatribuído).
+- **(c) O despacho passa a gravar a atribuição da OS.** Efeito: um critério só (a atribuição); despachar = atribuir;
+  reatribuir o despacho troca a atribuição. Muda o fluxo de despacho (`field-dispatch.service.ts`, criação e
+  reatribuição), que é do `B-O6R-09`; sai deste bloco ou o amplia.
+- **E a equipe (`teamId` da OS)?** A equipe existe no banco (`prisma/schema.prisma:2264` `Team`, `:2288`
+  `TeamMember`). **Sim:** qualquer membro da equipe da OS escreve (o ajudante do guincho de duas pessoas faz a
+  vistoria). **Não:** só o técnico atribuído/despachado.
+
+**Dependência do Traccar (registrar):** o `B-TRC-01` atribui a posição ao técnico pelo `accepted_at` do despacho,
+gravado quando o status vai a `accepted` (`git show 9cb441bd:docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, linhas 485, 593
+e 605) — exatamente a via 32. Qualquer resposta à D1 tem de manter o técnico **alvo** aceitando o **próprio**
+despacho; a regra "atribuição da OS" aplicada ao despacho (a M4 da v1) quebraria a premissa do Traccar.
+
+### 07c-b.3 D2 — trabalho feito offline e sincronizado depois de uma redistribuição
+
+O caso: o técnico **era** o técnico da OS quando fez a vistoria e tirou as fotos sem sinal; quando o aparelho
+sincroniza, o despachante já passou a OS a outro. Hoje o servidor **aceita** (não há escopo). O que o app faz com uma
+recusa, medido em `origin/main` (leitura; `mobile/**` é proibido aqui):
+- a recusa vira `failed` (`sync_replay_service.dart:507`) e **fica na fila** (`sync_queue_repository.dart:36-46`);
+- **toda** replay só reenvia ação com `retryCount < 5` (`sync_replay_service.dart:136` define `maxRetry = 5`; filtros em
+  `:150`, `:666`, `:1367`; `evidence_sync.dart:297`);
+- nada zera o contador de uma ação `failed` — só o resolvedor de **conflito** (`sync_conflict_resolver.dart:20-27`);
+- logo, depois de 5 sincronizações, a ação **fica presa no aparelho, sem saída** (crítica A2). A v1 chamou isso de
+  "ruído"; é dado que não chega ao servidor.
+
+**Opções, com o efeito de cada uma:**
+- **(a) Recusar.** O trabalho offline de quem deixou de ser o técnico é recusado; o aparelho tenta 5 vezes e desiste,
+  e a vistoria/foto fica presa no aparelho. Só é aceitável **junto** com uma saída no app (avisar, descartar
+  conscientemente ou mandar ao gestor) — conserto de `mobile/**`.
+- **(b) Aceitar se ele era o técnico no momento da coleta.** Nada fica preso. Risco: o "momento da coleta" é o
+  relógio do aparelho (`local_created_at`), que o servidor não pode confiar; um relógio errado ou forjado escreve
+  numa OS que já é de outro.
+- **(c) Aceitar sempre de quem já foi técnico daquela OS alguma vez.** Nada fica preso; o escopo fica mais frouxo:
+  um ex-técnico continua escrevendo na OS para sempre.
+- **(d) Recusar como CONFLITO, não como recusa.** O servidor devolve a ação no balde `conflicts[]` com o motivo
+  `not_assigned_to_actor`. O app **já** mostra conflito na tela de sincronização (`sync_screen.dart`) com duas
+  saídas: *manter a minha* (reenvia e zera as tentativas — serve quando o despachante devolve a OS) e *usar a do
+  servidor* (descarta conscientemente). Nada fica preso em silêncio e o backend resolve sem mudar o app. **A
+  medir no plano do 07c-b antes de prometer:** que as replays de vistoria e de evidência no app levam conflito à
+  mesma tela (a de OS leva: `sync_replay_service.dart:755-762`).
+
+**Quem conserta o teto de 5 tentativas.** Ele é **pré-existente** e vale para **toda** recusa permanente, não só a
+de escopo. **Não** é o #388: o diff dele não mexe em `maxRetry`/`retryCount` (crítica, A2; e eu medi que o único
+arquivo de fila que ele toca, `sync_queue_repository.dart`, só serializa as mutações). **Não** é o 07c-b: `mobile/**`
+é proibido num bloco de backend. **Dono proposto:** o `B-SAN3-16` (`fix/mobile-fila-os-drenada`, já dono da fila do
+app e já depois do 07c na trava de `mobile-work-order-sync.ts`, `PLANO_SAN3.md:287,357`), ampliado com "ação recusada
+de forma permanente ganha saída visível". Se o dono escolher **(d)**, a urgência cai (o conflito tem saída) e o teto
+fica como pendência do `B-SAN3-16`; se escolher **(a)**, o 07c-b **só mergeia depois** dessa saída existir, ou o dono
+aceita por escrito a vistoria presa no aparelho.
+
+### 07c-b.4 O que vale qualquer que seja a resposta (desenho da v1, com as correções da crítica)
+
+- **Pontos únicos de decisão:** `ChecklistService.assertRunMutationScope` (run → OS → o predicado que a D1 definir,
+  pela porta `getForMutation`; run sem OS → nega, fail-closed), chamado no início de todo método que escreve run ou
+  filho (`updateRun`, `createAttachment`, `createUploadedAttachment`, `createMarker`, `completeRun`, `registerDivergence`,
+  `acknowledgeRun`, e também `reopenRun` e `createRun`); `checklist.controller.ts` chama-o **antes** do parse nas 6
+  rotas; `FieldDispatchService.changeStatus` confere o **alvo do despacho** (salvo resposta diferente da D1);
+  `mobile-evidence-sync.ts` passa o `work_order_id` pela mesma porta antes de validar o metadado;
+  `mobile-evidence-upload.ts` confere de novo depois do recibo. Mesma recusa: 403 no REST, por ação no lote.
+- **Despacho é subrecurso da OS — premissa corrigida (A7).** A v1 dizia que mudar o status do despacho escreve na
+  linha do tempo da OS; é falso: o evento vai para `fieldDispatchEvent` (`field-dispatch-prisma.repository.ts:117-118`),
+  que nada fora de `field-dispatch/` lê (`git grep "fieldDispatchEvent\|field_dispatch_events" -- src frontend/src`, fora
+  do módulo → 0). A conclusão se sustenta por outra evidência: o despacho é exibido **na OS** — a aba Mobile do
+  detalhe da OS lista os despachos dela (`frontend/src/modules/work-orders/components/tabs/MobileTab.tsx:5-7`).
+- **D-07c-IDEMP — premissa corrigida (A4).** Os recibos dos três syncs são `Map` em memória do processo
+  (`mobile-work-order-sync.ts:65`, `mobile-checklist-sync.ts:159`, `mobile-evidence-sync.ts:85`). Só o sync de vistoria
+  tem idempotência **durável**, e de dois jeitos: por `client_action_id` gravado no metadado (resposta e nota,
+  marcador, ciência — `mobile-checklist-sync.ts:429-432`, `:456-457`, `:538-539`) e por **estado** da run (divergência e conclusão,
+  `:502-507`, `:621-622`). Regra corrigida: **por `client_action_id`**, o `already_applied` vem antes do escopo (é a
+  mesma ação, já gravada); **por estado**, o escopo vem **antes** — o estado da run não diz quem agiu, e um técnico
+  que nunca foi o da OS não pode receber `already_applied` pela conclusão de outro. A justificativa da v1 ("o app
+  repetiria para sempre") era falsa: repete no máximo 5 vezes (D2).
+- **Escopo do 07c-b (a ampliação da v1, que o CE-2 já exige):** `src/modules/checklists/checklist.service.ts`,
+  `checklist.controller.ts`, `src/modules/mobile/mobile-checklist-sync.ts` (só `handleAttachmentAttach` e a ordem dos
+  handlers por estado), `mobile-evidence-sync.ts`, `mobile-evidence-upload.ts`, `src/modules/field-dispatch/field-dispatch.service.ts`
+  (só `changeStatus`; com a D1 (c), também criação e reatribuição — aí o 07c-b cresce e pede nova ampliação).
+
+### 07c-b.5 Testes do 07c-b (os da v1, corrigidos)
+
+- **Laço G** sobre as 23 entradas `·07c-b` (lidas do instantâneo), com **G-WIDE escolhido por sonda (A5):** o primeiro
+  papel `tenant_wide` que **não** recebe `permission_required` naquela via — na vistoria, o `manager` só alcança
+  `complete` (`catalog.ts`, bloco `manager:`; sem `checklist_runs:update` nem `:acknowledge` desde o `B-SAN3-04a`,
+  `pendencias.md:1803`), então o laço usa `operator` (update, complete) e `tenant_admin` (acknowledge); se nenhum
+  alcançar, o teste falha dizendo que o G-WIDE está vazio.
+- **S-ORFA corrigido (A5):** técnico (atribuído ou não) na run sem OS → 403 `not_assigned_to_actor`; `operator`
+  responde a mesma run → não-403 (a tensão "by-scope" do `operator` segue com o `B-SAN3-22`, A8).
+- **S-DESPACHADO (novo, A1):** o técnico alvo de despacho ativo, **sem** atribuição na OS, responde a vistoria que o
+  despacho provisionou. Esperado: **depende da D1** — (a) 403; (b) e (c) 2xx. O teste nasce com a resposta do dono.
+- **S-RECUSA-NO-APP (novo, A2):** depende da D2 — com (d), a ação recusada sai em `conflicts[]` com
+  `not_assigned_to_actor`; com (a), em `rejected[]`, e o teste de app do bloco dono (`B-SAN3-16`) prova a saída.
+- Mantidos da v1: S-RUN, S-RUN-OK, S-DISP (positivo do próprio despacho), S-EVI, E-UP, S-MIX, S-REPLAY, S-IDEMP (agora
+  separado em por-`client_action_id` e por-estado), S-XT, S-DUAL, S-ROLES, S-SVC; `-db` de vistoria, despacho e
+  evidência; o **T6 com a lista vazia** é o critério de fechamento.
+
+### 07c-b.6 Tamanho e o que fecha
+
+- **Tamanho: G** com D1 (a) ou (b); **G+** com D1 (c) (entra o fluxo de despacho). Mais o bloco de app da D2, se (a).
+- **Fecha:** o resíduo da `P-O6R-SUBRECURSO-OBJECT-SCOPE`, a `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` e o
+  **`Ω6R-SEC-002`**. Entrega o mecanismo de escopo por run que a `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE` espera (a
+  definição do escopo do Estoque segue sendo de produto).
+
+
+## Resposta à crítica r1
+
+Todos os 12 achados foram **aceitos**; nenhum recusado. Onde a crítica pedia decisão do dono, a v2 escreve as opções
+e não escolhe. As sondas dela que o plano usa como prova foram **reexecutadas por mim** em `c1cfdabe` (P3):
+`probe-dispatch.mts` e `probe-damage.mts` reproduziram as saídas do E2 e do E6, e o `inject.mts` foi usado sem edição
+na prova do gerador.
+
+| achado | gravidade | disposição | onde na v2 |
 |---|---|---|---|
-| R1 | **Técnico negado em tudo em produção** (o mapeamento Prisma de `related_entity_type` ou o resolvedor de perfil falha → "run sem OS"/"sem perfil" → 403 para quem é atribuído) | baixa × **alto** (o campo para) | `-db` obrigatório com positivos (§4.4); G-POS e S-RUN-OK; dual-match herdado do 07a (S-DUAL) |
-| R2 | Fixtures existentes quebram em massa e o dev "conserta" afrouxando asserção | média × alto | regra (i)/(ii)/(iii) do §4.6, cada arquivo listado; C3 confere a classe de cada mudança |
-| R3 | **Despacho × atribuição da OS divergem** (pré-existente): o despacho não atribui a OS, então o técnico despachado sem `assigned_operator_id` já leva 403 do 07a no status da OS e passará a levar nos subrecursos | média × médio | **não** é criado por este bloco nem resolvido por ele; S-DISP prova que o despacho usa o alvo próprio. O `Ω6R-QUA-004` (write do assign; dono `B-O6R-11`, PR #388 aberto, `pendencias.md:3377-3382`) é o dono; o 07c **apensa** à `P-O6R-B11` a observação de que o despacho também não escreve a atribuição |
-| R4 | Custo de I/O extra para o técnico (controller + serviço: até 2 leituras de run, 2 de OS, 2 de perfil por mutação REST de vistoria) | alta × baixo | só para `assigned_only`; `tenant_wide` sai sem I/O (§3.3). **Hipótese não medida** — o C3 pode pedir a medição |
-| R5 | A ação recusada fica `failed` na fila do app e é reenviada a cada sync, com "Servidor recusou a acao." — sem perda, mas com ruído | alta × baixo | backend não muda isso; **pendência nova** `P-O6R-07C-APP-RECUSA-DE-ESCOPO-SEM-SAIDA` (BAIXA, dono `B-SAN3-16`, que já é dono da fila do app e vem depois do 07c na trava de `mobile-work-order-sync.ts`) |
-| R6 | `inventory` × vistoria `answer-by-scope` segue negado | — | append à `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`: mecanismo pronto, falta a definição de escopo do Estoque (produto); dono passa a `fila pós-gate` (§1) |
-| R7 | O contrato do sync de evidência muda para **todos** (OS inexistente → `rejected` `not_found`) | baixa × baixo | declarado (§3.5), testado (S-EVI), documentado em `API_CONTRACTS.md` |
-| R8 | A junta recusa a ampliação do §5.1 | média × médio | o `Ω6R-SEC-002` não fecha; as vias 32/33 viram pendência com dono (§5.1) — o resto do bloco vale |
+| A1 · o predicado nega o técnico despachado | bloqueia | **aceito** — virou a decisão **D1** do dono, com 3 opções e a pergunta da equipe; teste S-DESPACHADO nasce com a resposta | 07c-b.2, 07c-b.5; Comum C.1 |
+| A2 · a ação recusada fica presa no aparelho depois de 5 tentativas | bloqueia | **aceito** — virou a decisão **D2**, com 4 opções (inclusive recusar como conflito, que usa a tela de conflito que o app já tem); dono do teto proposto: `B-SAN3-16`; não é o #388 nem o 07c-b | 07c-b.3 |
+| A3 · o gerador reconhece forma | bloqueia | **aceito** — gerador v2 por interceptação do registro, todo método, lote por comportamento, extrator de tipo v2 e sonda de curinga; F1–F6 provadas por execução, vermelhas no v1 e achadas no v2; guard T1–T8 | Comum C.2; 07c-a.3; Apêndice A |
+| A4 · a D-07c-IDEMP descreve mecanismo que não existe | ajuste | **aceito** — km sem chave durável (07c-a); IDEMP reescrita: por `client_action_id` antes do escopo, por estado depois | 07c-a.2; 07c-b.4 |
+| A5 · G-WIDE vazio e S-ORFA impossível | ajuste | **aceito** — G-WIDE falha se o ator recebe `permission_required`; no 07c-b o ator é escolhido por sonda (`operator`, `tenant_admin`); S-ORFA usa o `operator` | 07c-a.4; 07c-b.5 |
+| A6 · M1 inflada; R1 sem mutação | nota | **aceito** — M1 derruba 10, não 13; M9 (resolvedor de perfil) cobre o R1 do 07c-a; o da run fica com a `-db` do 07c-b | 07c-a.4 |
+| A7 · o despacho não escreve na linha do tempo da OS | ajuste | **aceito** — premissa trocada pela evidência certa (aba Mobile da OS) | 07c-b.4 |
+| A8 · `operator`/`manager` são by-scope na vistoria | nota | **aceito** — citada a `P-SAN3-04A-CHECKLIST-POR-ESCOPO-ESCRITORIO` (dono `B-SAN3-22`) | Comum C.1 |
+| A9 · `POST /damages` debita o extrato de um colega | nota | **aceito** — classe corrigida (dinheiro, não vínculo); pendência nova com severidade e dono; decisão **D3** do dono | Registro |
+| A10 · worktree errado e interseção do #389 incompleta | ajuste | **aceito** — `w-389`, `w-insp389`, `w-traccar`; o #389 toca `prisma/**`, `ci.yml`, o teste de escrita no catálogo e um script SQL | 07c-a.5 |
+| A11 · tamanho G, dividir | nota | **aceito** — divisão do orquestrador: 07c-a (**M**) e 07c-b (**G**) | 07c-a.8; 07c-b.6 |
+| A12 · alcance medido só com o catálogo em código | nota | **aceito como nota** — o guard de paridade catálogo × banco (`backend-postgres`) torna as duas medidas equivalentes enquanto estiver verde; declarado como risco residual | Comum C.2 |
 
-**Rollback.** Sem migração e sem dado novo: reverter o squash do PR devolve exatamente o comportamento de
-`c1cfdabe` (inclusive as 33 vias abertas). Nenhum registro gravado no banco depende do código novo.
-
-**Tamanho: G** (o `PLANO_SAN3.md:254` já o dimensiona G, 13 h na agenda do §6). Medido: **10 arquivos de
-produção com mudança** (§5.1) + 3 permitidos sem mudança prevista, **4 arquivos de teste novos** com ≥ 60 testes, ajustes
-de fixture em até **16** suítes (§4.6), 2 decisões para a junta (despacho, D-07c-IDEMP) e uma ampliação de
-fronteira.
-
-## 7. Registro que o PR entrega (APPEND, nunca reescrita)
-
-- `P-O6R-SUBRECURSO-OBJECT-SCOPE` → **FECHADA** (escopo provado nas 33 vias abertas + as 3 do 07a, com a tabela do
-  §2.1 e os testes do §4), valor anterior preservado.
-- `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` → **FECHADA** (S-RUN, S-ORFA, G-NEG das 18 de vistoria).
-- `Ω6R-SEC-002` em `docs/revisoes/O6R/achados.jsonl` → `fechado` **somente** se o §5.1 for aceito inteiro.
-- `P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE` → append (R6). `P-O6R-B11` (`Ω6R-QUA-004`) → append (R3).
-  `P-O6R-B01-RELIGACAO-SEM-REMEDIO` → append: não cabe no 07c; bloco próprio pós-gate (§2.3).
-- **Novas:** `P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA` (MÉDIA) · `P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO`
-  (MÉDIA) · `P-O6R-07C-APP-RECUSA-DE-ESCOPO-SEM-SAIDA` (BAIXA) — cada uma com N, forma, causa, escopo
-  `pre-existente` com evidência de data, dono e teste de encerramento.
-- **Decisões para `controle/decisoes.md`:** `D-07c-DESPACHO-ALVO` (§3.4), `D-07c-IDEMP` (§3.3), `D-07c-RUN-SEM-OS-NEGA`
-  (§1), a tensão `coordenador-de-acessos` × inelegibilidade (§5.4).
-- `pendencias-indice.md` **regenerado pelo gerador**. **KPI: nada** (congelado).
+**Fora dos achados, também resolvido:** a ampliação de fronteira da v1 (despacho e upload) fica no 07c-b; a
+D-07c-DESPACHO-ALVO vira o **default** do 07c-b, sujeito à D1, com a dependência do Traccar registrada; a tensão
+`coordenador-de-acessos` × inelegibilidade segue para o orquestrador registrar (07c-a.7).
 
 
-## Apêndice A — os geradores, verbatim (P3: roteiro de reexecução)
+## Registro — texto pronto para o orquestrador copiar
 
-Rodados com cwd = raiz do worktree (`C:/Users/AMP/w-07c`, HEAD `c1cfdabe`), depois de `npm ci` e `prisma generate`.
-Os arquivos ficaram no scratchpad da sessão do planejador; o texto abaixo é a cópia integral. O helper do dev
-(`tests/helpers/o6r07c-census.ts`) reimplementa o mesmo algoritmo — a C2 compara as contagens.
+### R.1 Pendência nova (A9) — `agent-orchestration/controle/pendencias.md`, APPEND
 
-### census.mts
+```
+## P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar um dano, lança débito no extrato de um colega e escolhe o valor — ALTA (dinheiro)
+
+- status: ABERTA (crítica r1 do plano do B-O6R-07c, achado A9, `critico-b-o6r-07c-r1`; reexecutado pelo planejador `planejador-b-o6r-07c` em `c1cfdabe`)
+- **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice da crítica r1): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
+- **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
+- **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
+- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa, Fable por decisão do dono de 08/10), depois da decisão D3.
+- **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
+- **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
+```
+
+### R.2 Decisões a pedir ao dono — `agent-orchestration/controle/decisoes.md`, como PERGUNTAS ABERTAS
+
+```
+- D1-07c (pergunta ao dono, 2026-10-10): quem é o técnico da OS para escrever na vistoria, na evidência, na km e no status?
+  (a) só quem foi atribuído na OS — o técnico mandado pelo mapa sem atribuição perde a vistoria e as fotos;
+  (b) atribuído OU alvo de despacho ativo da OS — o fluxo do mapa segue; o despachado passa também a mudar o status da OS;
+  (c) o despacho passa a gravar a atribuição — um critério só; muda o fluxo de despacho.
+  E: membros da equipe da OS (teamId) contam? Bloqueia o B-O6R-07c-b. Planos: docs/revisoes/SAN3/B-O6R-07c-plano.md (07c-b.2).
+- D2-07c (pergunta ao dono, 2026-10-10): trabalho feito offline por quem ERA o técnico, sincronizado depois de a OS ir para outro:
+  (a) recusar — o app tenta 5 vezes e a vistoria fica presa no aparelho, sem saída, até o app ganhar uma;
+  (b) aceitar se ele era o técnico na hora da coleta — pelo relógio do aparelho, que pode estar errado ou forjado;
+  (c) aceitar de quem já foi técnico da OS alguma vez — escopo frouxo;
+  (d) recusar como conflito — o app já mostra conflito com "manter a minha" e "usar a do servidor"; nada fica preso em silêncio.
+  Bloqueia o B-O6R-07c-b. Plano: 07c-b.3.
+- D3-07c (pergunta ao dono, 2026-10-10): o técnico de campo pode, ao registrar um dano, lançar débito no extrato de um colega e escolher o valor? Hoje pode (medido: -900). Fora do 07c; dono da pendência P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA.
+```
+
+### R.3 Dependência do Traccar — `decisoes.md` (decisão de desenho, não do dono) e nota no plano do Traccar
+
+```
+- D-07c-DESPACHO-ALVO (2026-10-10, planejador do B-O6R-07c; default do 07c-b, sujeito à D1-07c): o status do despacho (PATCH /operations/dispatches/:dispatchId/status) é escopado pelo ALVO do despacho (FieldDispatch.operatorUserId), não pela atribuição da OS. Dependência registrada: o B-TRC-01 atribui a posição ao técnico pelo accepted_at do despacho, gravado quando o status vai a accepted (git show 9cb441bd:docs/revisoes/TRACCAR/PLANO_TRACCAR.md, linhas 485, 593 e 605). Qualquer resposta à D1-07c tem de manter o técnico alvo aceitando o próprio despacho; trocar o critério do despacho pela atribuição da OS quebraria a premissa do Traccar.
+```
+
+### R.4 As demais entradas que o bloco deixa (APPEND; o 07c-a e o 07c-b gravam cada uma no PR que as produz)
+
+- **`P-O6R-SUBRECURSO-OBJECT-SCOPE`, append (no PR do 07c-a):** "Bloco dividido pelo orquestrador em 2026-10-10. O
+  07c-a fecha por escopo provado as 10 vias desta entrada e cumpre o item vinculante (o censo do sync, agora gerado
+  pelo gerador v2, que enumera toda forma de rota e de lote). Resíduo: as 23 entradas `·07c-b` do instantâneo
+  `tests/fixtures/o6r07c-classificacao-vias.json` (18 de vistoria, 4 de evidência de OS, 1 de despacho), dono
+  `B-O6R-07c-b`, bloqueado pelas decisões D1-07c e D2-07c do dono. Status: PARCIAL. O `Ω6R-SEC-002` segue
+  `parcialmente_superado`."
+- **Nova `P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA`** — MÉDIA (vira ALTA se a D2-07c for "recusar"): ação que o
+  servidor recusa de forma permanente fica `failed`, é reenviada no máximo 5 vezes (`sync_replay_service.dart:136,150,666,1367`;
+  `evidence_sync.dart:297`) e depois fica presa no aparelho, sem saída — só conflito zera o contador
+  (`sync_conflict_resolver.dart:20-27`). `pre-existente` (o teto e a falta de saída antecedem o 07c). Dono proposto:
+  `B-SAN3-16`. Teste de encerramento: ação recusada de forma permanente aparece ao usuário com uma saída (descartar
+  com aviso ou encaminhar), e nenhuma ação fica invisível na fila.
+- **Nova `P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA`** — MÉDIA, `pre-existente`, dono `fila pós-gate`: classe R do
+  censo (10 entradas: `POST /damages`, `POST`/`PATCH /fuel-logs`, `POST`/`PATCH /expense-reports`, `POST
+  /expense-reports/:reportId/items`, 3 ações `expense_*` do sync, `POST /mobile/telemetry`) aceitam `work_order_id` no
+  corpo sem passar pelo escopo da OS; a OS não muda nem os exibe. O efeito de **dinheiro** do `POST /damages` está
+  na pendência própria (R.1), não aqui.
+- **Nova `P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO`** — MÉDIA, `pre-existente` (`f47062ba`, 2026-07-09, #152): o
+  `POST /notifications/fleet-alerts/run` responde 200 ao `field_technician` e ao `technician` e dispara a varredura da
+  organização inteira com distribuição a destinatários (`notification.controller.ts:76-99`), sob `notifications:update`,
+  que o `RBAC_MATRIX.md:86` diz ser da própria caixa. Dono `fila pós-gate`.
+- **`P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE`, append:** o mecanismo de escopo por run nasce no 07c-b; a definição do
+  escopo do Estoque é de produto; dono passa a `fila pós-gate` depois do 07c-b.
+- **`P-O6R-B01-RELIGACAO-SEM-REMEDIO`, append (dono órfão, `PLANO_SAN3.md:400-401`):** não cabe no 07c (superfície de
+  identidade, fora do alcance do técnico: `/auth/identity-links*` responde 401 `jwt_required` na sonda); ganha bloco
+  próprio pós-gate, a nomear pelo estrategista.
+- **`P-O6R-B11`, append:** o despacho não grava a atribuição da OS (`git grep -nF ".assign(" -- src/modules/field-dispatch`
+  → 0); com o guard do 07a, o técnico despachado sem atribuição não muda o status da OS. A resposta é a D1-07c.
+- **Tensão (§A2):** `PLANO_SAN3.md:254` pede *unanimidade + coordenador-de-acessos* para o 07c; a identidade
+  `coordenador-de-acessos` é achadora do `C2-09` (item 51) e a casa não deixa quem achou votar no conserto
+  (`J-B-O6R-07b.md:17`). Resolução proposta: a competência entra pela C1 com identidade nova.
+
+
+## Apêndice A — os geradores v2, verbatim (P3: roteiro de reexecução)
+
+Rodados com cwd = `C:/Users/AMP/w-07c` (código de `c1cfdabe`), depois de `npm ci` e `prisma generate`, sem
+`DATABASE_URL`/`REDIS_URL`. Ordem: `node --import tsx census-v2.mts c2.json [injecao.mts]` → `node --import tsx
+census-sync-v2.mts c2.json s2.json [injecao.mts]` → `node classify-v2.cjs c2.json s2.json [instantaneo.json]`.
+A injeção F1–F5 é o `inject.mts` do apêndice da crítica r1 (`B-O6R-07c-CRITICA-r1.md`), sem edição; a F6 é a
+`inject-prefixo.mts` abaixo. O `tests/helpers/o6r07c-census.ts` do dev porta estes arquivos sem mudar o algoritmo.
+
+### census-v2.mts
 
 ```ts
-// Censo RUNTIME do B-O6R-07c: toda rota MONTADA pelo createApp real (src/app.ts), sondada por HTTP com o
-// contexto de cada papel. "Alcança" = a resposta NÃO é 403 permission_required/role_required/tenant_required
-// (o portão de RBAC deixou passar; o que vem depois — 400/404/422/200 — é o serviço).
-// Uso: (cwd = raiz do worktree) node --import tsx <este arquivo> <saida.json>
+// Censo v2 do B-O6R-07c — enuncia a PROPRIEDADE, não a forma (resposta ao A3 da crítica r1).
+// 1) Toda camada registrada em QUALQUER Router (use/route, inclusive app.use) é anotada com o caminho ORIGINAL no
+//    momento do registro (interceptação de Router.prototype.use/route do pacote `router` que o Express 5 usa) —
+//    montagem com parâmetro, sub-router de sub-router e nome de parâmetro qualquer saem com o caminho verdadeiro.
+// 2) TODO método é sondado, inclusive GET/HEAD; rota `all` é sondada nos 5 verbos.
+// 3) "Alcança" = a resposta não é 401 nem 403 de permissão/papel/tenant/plataforma (o RBAC deixou passar).
+// Uso (cwd = raiz do worktree): node --import tsx census-v2.mts <saida.json> [modulo-de-injecao.mts]
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-process.env.LOG_LEVEL = "silent";
-process.env.CORE_SAAS_PERSISTENCE = "memory";
+import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
+process.env.LOG_LEVEL = "silent"; process.env.CORE_SAAS_PERSISTENCE = "memory";
 delete process.env.DATABASE_URL; delete process.env.REDIS_URL;
-const { pathToFileURL } = await import("node:url");
+const req0 = createRequire(process.cwd() + "/package.json");
+const RouterPkg = createRequire(req0.resolve("express"))("router");
+const origUse = RouterPkg.prototype.use, origRoute = RouterPkg.prototype.route;
+RouterPkg.prototype.use = function (...args: any[]) {
+  const before = this.stack.length;
+  let path: any = "/";
+  if (typeof args[0] !== "function") { let a = args[0]; while (Array.isArray(a) && a.length) a = a[0]; if (typeof a !== "function") path = args[0]; }
+  const out = origUse.apply(this, args);
+  for (const l of this.stack.slice(before)) l.__mount = path;
+  return out;
+};
+RouterPkg.prototype.route = function (path: any) {
+  const before = this.stack.length;
+  const route = origRoute.call(this, path);
+  for (const l of this.stack.slice(before)) l.__path = path;
+  return route;
+};
 const root = new URL(pathToFileURL(process.cwd()).href + "/src/");
-const { createApp } = await import(new URL("app.ts", root).href);
-const { CoreSaasRegistry } = await import(new URL("modules/core-saas/services/core-saas.service.ts", root).href);
-const { MemoryCoreSaasAdapter } = await import(new URL("modules/core-saas/services/memory-core-saas.adapter.ts", root).href);
-const { InMemoryCoreSaasStore } = await import(new URL("modules/core-saas/store/core-saas.store.ts", root).href);
+const imp = (p: string) => import(new URL(p, root).href);
+const { createApp } = await imp("app.ts");
+const { CoreSaasRegistry } = await imp("modules/core-saas/services/core-saas.service.ts");
+const { MemoryCoreSaasAdapter } = await imp("modules/core-saas/services/memory-core-saas.adapter.ts");
+const { InMemoryCoreSaasStore } = await imp("modules/core-saas/store/core-saas.store.ts");
 const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
-const tenant = core.createTenant({ name: "Censo 07c", modules: ["work_orders"] });
+const tenant = core.createTenant({ name: "Censo v2 07c", modules: ["work_orders"] });
 const app = createApp(new MemoryCoreSaasAdapter(core));
-const PREFIXES = ["/api/v1", "/api/v1/auth", "/api/v1/platform", "/api/v1/navigation"];
-// Montagens ANINHADAS: candidatas lidas da fonte (toda chamada .use("/x", ...) em src/**), casadas pelo matcher real.
-const { execFileSync } = await import("node:child_process");
-const NESTED = [...new Set(execFileSync("git", ["grep", "-h", "-o", "-E", '"/[a-z-]+"', "--", "src"], { encoding: "utf8" }).split(String.fromCharCode(10)).map((l) => l.slice(1, -1)).filter((x) => x.length > 1))].sort((a, b) => b.length - a.length);
-console.log('literais candidatas a montagem aninhada (da fonte):', NESTED.length);
-type R = { method: string; path: string; mount: string };
-const routes: R[] = []; let nested = 0;
-function walk(stack: any[], mount: string, depth: number) {
+if (process.argv[3]) await (await import(pathToFileURL(process.argv[3]).href)).inject(app);
+const join = (a: string, b: string) => (a.replace(/[/]+$/, "") + "/" + String(b).replace(/^[/]+/, "")).replace(/[/]+$/, "") || "/";
+type R = { method: string; path: string };
+const routes: R[] = []; const semCaminho: string[] = [];
+(function walk(stack: any[], prefix: string) {
   for (const l of stack) {
     if (l.route) {
-      const paths = Array.isArray(l.route.path) ? l.route.path : [l.route.path];
-      for (const p of paths) for (const m of Object.keys(l.route.methods)) if (m !== "_all") routes.push({ method: m.toUpperCase(), path: mount + p, mount });
+      const p = l.__path ?? l.route.path;
+      if (typeof p !== "string") { semCaminho.push(String(p)); continue; }
+      const ms = Object.keys(l.route.methods).flatMap((m) => (m === "_all" ? ["get", "post", "put", "patch", "delete"] : [m]));
+      for (const m of new Set(ms)) routes.push({ method: m.toUpperCase(), path: join(prefix, p) });
     } else if (l.handle?.stack) {
-      if (depth > 0) nested++;
-      let pre = mount;
-      if (depth === 0) { pre = PREFIXES.find((c) => l.match(c + "/__p__")) ?? "?"; }
-      else { const raiz = l.match("/__zz_raiz__/__p__"); const c = raiz ? "" : NESTED.find((n) => l.match(n + "/__p__")); pre = mount + (c ?? "/?NESTED?"); }
-      walk(l.handle.stack, pre, depth + 1);
+      const mp = l.__mount;
+      if (typeof mp !== "string") { semCaminho.push(String(mp)); continue; }
+      walk(l.handle.stack, join(prefix, mp));
     }
   }
-}
-walk((app as any).router.stack, "", 0);
-const server = app.listen(0, "127.0.0.1");
-await new Promise((r) => server.once("listening", r));
+})((app as any).router.stack, "");
+const server = app.listen(0, "127.0.0.1"); await new Promise((r) => server.once("listening", r));
 const base = `http://127.0.0.1:${(server.address() as any).port}`;
-const ROLES = ["field_technician", "technician", "viewer"];
-const user = randomUUID();
-const out: any[] = [];
+const user = randomUUID(); const out: any[] = [];
 for (const r of routes) {
-  const url = base + r.path.replace(/:([A-Za-z_]+)/g, () => randomUUID());
+  const url = base + r.path.replace(/:([A-Za-z0-9_]+)/g, () => randomUUID());
   const row: any = { method: r.method, path: r.path };
-  for (const role of ROLES) {
-    if (r.method === "GET" || r.method === "HEAD") { row[role] = "-"; continue; }
-    const res = await fetch(url, { method: r.method, headers: { "content-type": "application/json", "x-tenant-id": tenant.id, "x-user-id": user, "x-role": role }, body: r.method === "DELETE" ? undefined : "{}" });
-    const text = await res.text(); let reason = "";
-    try { reason = JSON.parse(text)?.error?.reason ?? ""; } catch {}
-    row[role] = `${res.status}${reason ? ":" + reason : ""}`;
+  for (const role of ["field_technician", "technician", "viewer"]) {
+    const res = await fetch(url, { method: r.method, headers: { "content-type": "application/json", "x-tenant-id": tenant.id, "x-user-id": user, "x-role": role }, body: r.method === "GET" || r.method === "HEAD" || r.method === "DELETE" ? undefined : "{}", signal: AbortSignal.timeout(4000) }).catch((e: any) => ({ status: 0, text: async () => "", streamed: String(e?.name) }));
+    // Resposta que não termina em 4 s (fluxo SSE): os cabeçalhos chegaram, então o RBAC deixou passar → conta como alcance.
+    const text = await (res as any).text().catch(() => ""); let reason = ""; try { reason = JSON.parse(text)?.error?.reason ?? ""; } catch {}
+    row[role] = (res as any).status === 0 ? "sem-resposta-em-4s" : `${(res as any).status}${reason ? ":" + reason : ""}`;
   }
   out.push(row);
 }
 server.close();
-const gate = (s: string) => /^403:(permission_required|role_required|tenant_required|platform_permission_required)$/.test(s) || /^401/.test(s) || s === "-";
-const mut = out.filter((x) => x.method !== "GET" && x.method !== "HEAD");
-const reach = mut.filter((x) => !gate(x.field_technician) || !gate(x.technician));
-fs.writeFileSync(process.argv[2], JSON.stringify({ total: out.length, nested, mutating: mut.length, reach }, null, 1));
-console.log(`rotas montadas: ${out.length} | routers aninhados: ${nested} | mutantes: ${mut.length} | mutantes que field_technician OU technician alcançam: ${reach.length}`);
-for (const x of reach) console.log(`${x.method.padEnd(6)} ${x.path.padEnd(72)} ft=${x.field_technician.padEnd(34)} tech=${x.technician.padEnd(34)} viewer=${x.viewer}`);
+const barrado = (s: string) => /^403:(permission_required|role_required|tenant_required|platform_permission_required)$/.test(s) || /^401/.test(s);
+const reach = out.filter((x) => !barrado(x.field_technician) || !barrado(x.technician));
+fs.writeFileSync(process.argv[2], JSON.stringify({ total: out.length, semCaminho, reach }, null, 1));
+const por = (m: (x: any) => boolean) => reach.filter(m).length;
+console.log(`rotas registradas: ${out.length} | camadas sem caminho de texto: ${semCaminho.length} | alcançadas pelo campo: ${reach.length} (GET/HEAD ${por((x) => x.method === "GET" || x.method === "HEAD")} · mutantes ${por((x) => x.method !== "GET" && x.method !== "HEAD")})`);
 process.exit(0);
 ```
 
-### census-sync.mts
+### census-sync-v2.mts
 
 ```ts
-// Censo das AÇÕES de sync: endpoints = toda rota POST montada sob /api/v1/mobile/sync/ (lida do createApp real);
-// tipos = todo literal "dominio.acao" dos arquivos *sync*.ts de src/modules (lidos da fonte). Cada tipo é
-// enviado a cada endpoint, como field_technician e technician, com ids aleatórios no payload. "Alcança" = o
-// resultado da ação NÃO é permission_required (nem unsupported_action_type, que diz que o endpoint não o conhece).
+// Censo v2 das ações de sync. Lotes = toda rota POST que o censo v2 achou alcançável e que RESPONDE como lote
+// (devolve a ação num balde ou diz "unsupported_action*") a um envelope com tipo inexistente — sem olhar o caminho.
+// Tipos = extrator v2 (tipos.mts) sobre todo .ts não-teste de src/modules. Cada lote também tem de RECUSAR tipo
+// inexistente, nu e com o prefixo de cada família conhecida — senão há despacho por prefixo/curinga.
+// Uso: node --import tsx census-sync-v2.mts <c2.json> <saida.json> [modulo-de-injecao.mts]
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { extrairTipos } from "./tipos.mts";
 process.env.LOG_LEVEL = "silent"; process.env.CORE_SAAS_PERSISTENCE = "memory";
 delete process.env.DATABASE_URL; delete process.env.REDIS_URL;
 const root = new URL(pathToFileURL(process.cwd()).href + "/src/");
-const { createApp } = await import(new URL("app.ts", root).href);
-const { CoreSaasRegistry } = await import(new URL("modules/core-saas/services/core-saas.service.ts", root).href);
-const { MemoryCoreSaasAdapter } = await import(new URL("modules/core-saas/services/memory-core-saas.adapter.ts", root).href);
-const { InMemoryCoreSaasStore } = await import(new URL("modules/core-saas/store/core-saas.store.ts", root).href);
+const imp = (p: string) => import(new URL(p, root).href);
+const { createApp } = await imp("app.ts");
+const { CoreSaasRegistry } = await imp("modules/core-saas/services/core-saas.service.ts");
+const { MemoryCoreSaasAdapter } = await imp("modules/core-saas/services/memory-core-saas.adapter.ts");
+const { InMemoryCoreSaasStore } = await imp("modules/core-saas/store/core-saas.store.ts");
 const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
-const tenant = core.createTenant({ name: "Censo sync 07c", modules: ["work_orders"] });
+const tenant = core.createTenant({ name: "Censo sync v2", modules: ["work_orders"] });
 const app = createApp(new MemoryCoreSaasAdapter(core));
-const endpoints: string[] = [];
-(function walk(stack: any[], mount: string, depth: number) {
-  for (const l of stack) {
-    if (l.route) { for (const m of Object.keys(l.route.methods)) if (m === "post" && String(l.route.path).startsWith("/mobile/sync/")) endpoints.push("/api/v1" + l.route.path); }
-    else if (l.handle?.stack && depth === 0 && l.match("/api/v1/__p__")) walk(l.handle.stack, "/api/v1", 1);
-  }
-})((app as any).router.stack, "", 0);
-const files = execFileSync("git", ["ls-files", "src/modules"], { encoding: "utf8" }).split(String.fromCharCode(10)).filter((f) => /[.]ts$/.test(f) && !/test/.test(f));
-const types = new Set<string>();
-for (const f of files) for (const m of fs.readFileSync(f, "utf8").matchAll(/"([a-z_]+[.][a-z_.]+)"/g)) types.add(m[1]);
+if (process.argv[4]) await (await import(pathToFileURL(process.argv[4]).href)).inject(app);
 const server = app.listen(0, "127.0.0.1"); await new Promise((r) => server.once("listening", r));
 const base = `http://127.0.0.1:${(server.address() as any).port}`;
-const user = randomUUID(); const rows: any[] = [];
-for (const ep of endpoints) for (const type of [...types].sort()) {
-  const row: any = { endpoint: ep.replace("/api/v1", ""), type };
-  for (const role of ["field_technician", "technician"]) {
-    const id = randomUUID();
-    const payload = { work_order_id: randomUUID(), server_run_id: randomUUID(), run_id: randomUUID(), local_run_id: randomUUID(), component_id: randomUUID(), status: "accepted", mileage_start: 1, note: "x", caption: "x", answer: "x", value: "x" };
-    const body = { client_batch_id: randomUUID(), actions: [{ client_action_id: id, clientActionId: id, client_evidence_id: id, type, local_created_at: new Date().toISOString(), payload }] };
-    const res = await fetch(base + ep, { method: "POST", headers: { "content-type": "application/json", "x-tenant-id": tenant.id, "x-user-id": user, "x-role": role }, body: JSON.stringify(body) });
-    const j: any = await res.json().catch(() => ({}));
-    if (res.status !== 200) { row[role] = `${res.status}:${j?.error?.reason ?? ""}`; continue; }
-    const d = j.data ?? {}; let found: any;
-    for (const k of Object.keys(d)) if (Array.isArray(d[k])) for (const a of d[k]) if (a?.client_action_id === id || a?.client_evidence_id === id || a?.clientActionId === id) found = { bucket: k, a };
-    row[role] = found ? `${found.bucket}:${found.a?.error?.reason ?? found.a?.status ?? ""}` : `sem-resultado:${JSON.stringify(j).slice(0, 80)}`;
+const user = randomUUID();
+async function enviar(path: string, role: string, type: string) {
+  const id = randomUUID();
+  const payload = { work_order_id: randomUUID(), run_id: randomUUID(), local_run_id: randomUUID(), component_id: randomUUID(), status: "accepted", mileage_start: 1, note: "x", observation: "x", message: "x", value: "x" };
+  const body = { client_batch_id: randomUUID(), actions: [{ client_action_id: id, clientActionId: id, client_evidence_id: id, type, local_created_at: new Date().toISOString(), payload }] };
+  const res = await fetch(base + path.replace(/:([A-Za-z0-9_]+)/g, () => randomUUID()), { method: "POST", headers: { "content-type": "application/json", "x-tenant-id": tenant.id, "x-user-id": user, "x-role": role }, body: JSON.stringify(body), signal: AbortSignal.timeout(4000) }).catch(() => null);
+  if (!res) return { lote: false, r: "sem-resposta" };
+  const j: any = await res.json().catch(() => ({}));
+  const reason = j?.error?.reason ?? "";
+  let achou: any; const d = j?.data ?? {};
+  for (const k of Object.keys(d)) if (Array.isArray(d[k])) for (const a of d[k]) if (a?.client_action_id === id || a?.client_evidence_id === id || a?.clientActionId === id) achou = { k, a };
+  const lote = Boolean(achou) || /unsupported_action/.test(reason);
+  return { lote, r: achou ? `${achou.k}:${achou.a?.error?.reason ?? achou.a?.status ?? ""}` : `${res.status}:${reason}` };
+}
+const c2 = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const posts = c2.reach.filter((x: any) => x.method === "POST").map((x: any) => x.path);
+const INEX = "__tipo_inexistente_07c__";
+const lotes: string[] = [];
+for (const p of posts) { const a = await enviar(p, "field_technician", INEX + ".x"); const b = await enviar(p, "technician", INEX + ".x"); if (a.lote || b.lote) lotes.push(p); }
+const arquivos = execFileSync("git", ["ls-files", "src/modules"], { encoding: "utf8" }).split(String.fromCharCode(10)).filter((f) => /[.]ts$/.test(f) && !/test/.test(f));
+const tipos = new Set<string>(); const naoResolvidos: string[] = [];
+for (const f of arquivos) { const e = extrairTipos(fs.readFileSync(f, "utf8")); e.tipos.forEach((t) => tipos.add(t)); e.naoResolvidos.forEach((t) => naoResolvidos.push(f + ": " + t)); }
+const familias = [...new Set([...tipos].map((t) => t.split(".")[0]))].sort();
+const naoAlcanca = (s: string) => /permission_required|role_required|tenant_required|unsupported_action/.test(s);
+const curinga: string[] = []; const rows: any[] = [];
+for (const lote of lotes) {
+  for (const fam of ["", ...familias]) {
+    const t = (fam ? fam + "." : "") + INEX;
+    for (const role of ["field_technician", "technician"]) { const r = await enviar(lote, role, t); if (!naoAlcanca(r.r) && !/^403:/.test(r.r)) curinga.push(`${lote} · ${t} · ${role} → ${r.r}`); }
   }
-  rows.push(row);
+  for (const type of [...tipos].sort()) {
+    const row: any = { endpoint: lote, type };
+    for (const role of ["field_technician", "technician"]) row[role] = (await enviar(lote, role, type)).r;
+    rows.push(row);
+  }
 }
 server.close();
-const naoAlcanca = (s: string) => /permission_required|role_required|tenant_required|unsupported_action/.test(s);
 const reach = rows.filter((r) => !naoAlcanca(r.field_technician) || !naoAlcanca(r.technician));
-fs.writeFileSync(process.argv[2], JSON.stringify({ endpoints, files, types: [...types].sort(), rows }, null, 1));
-console.log(`endpoints de sync montados: ${endpoints.length} (${endpoints.join(", ")})`);
-console.log(`arquivos .ts de src/modules lidos: ${files.length} | literais de tipo: ${types.size} | pares endpoint×tipo: ${rows.length} | pares que field_technician OU technician alcançam: ${reach.length}`);
-for (const r of reach) console.log(`${r.endpoint.padEnd(32)} ${r.type.padEnd(40)} ft=${r.field_technician.padEnd(44)} tech=${r.technician}`);
+fs.writeFileSync(process.argv[3], JSON.stringify({ lotes, tiposN: tipos.size, familias: familias.length, naoResolvidos, curinga, reach }, null, 1));
+console.log(`POST alcançáveis: ${posts.length} | lotes (por comportamento): ${lotes.length} | arquivos: ${arquivos.length} | tipos: ${tipos.size} | famílias: ${familias.length} | pares alcançados: ${reach.length} | tipo inexistente aceito (curinga): ${curinga.length} | template de tipo não resolvido: ${naoResolvidos.length}`);
+for (const l of lotes) console.log("lote:", l);
+for (const c of curinga.slice(0, 10)) console.log("CURINGA:", c);
+for (const n of naoResolvidos.slice(0, 10)) console.log("NAO-RESOLVIDO:", n);
 process.exit(0);
 ```
 
-### classify.cjs
+### tipos.mts
+
+```ts
+// Extrator v2 de tipos de ação de sync (resposta ao A3, parte "regex de tipo"). Aceita aspas duplas, simples e
+// crase; maiúsculas, dígitos e hífen; e template com ${CONSTANTE} resolvida a partir de `const X = "..."` do mesmo
+// arquivo. Template com forma de tipo que NÃO se resolve volta em `naoResolvidos` (o guard o trata como falha).
+export const FORMA_TIPO = /^[A-Za-z][A-Za-z0-9_-]*([.][A-Za-z0-9_-]+)+$/;
+export function extrairTipos(fonte: string): { tipos: Set<string>; naoResolvidos: string[] } {
+  const tipos = new Set<string>(); const naoResolvidos: string[] = [];
+  const consts = new Map<string, string>();
+  for (const m of fonte.matchAll(/const ([A-Za-z_][A-Za-z0-9_]*)[ ]*(?::[^=;]+)?=[ ]*["'`]([^"'`$]*)["'`]/g)) consts.set(m[1], m[2]);
+  for (const m of fonte.matchAll(/"([^"]*)"|'([^']*)'|`([^`]*)`/g)) {
+    let v = m[1] ?? m[2] ?? m[3] ?? "";
+    if (m[3] !== undefined && v.includes("${")) {
+      const forma = v.replace(/[$][{][^}]*[}]/g, "X");
+      if (!FORMA_TIPO.test(forma)) continue;
+      const r = v.replace(/[$][{]([A-Za-z_][A-Za-z0-9_]*)[}]/g, (_t, n) => consts.get(n) ?? "${" + n + "}");
+      if (r.includes("${")) { naoResolvidos.push(v); continue; }
+      v = r;
+    }
+    if (FORMA_TIPO.test(v)) tipos.add(v);
+  }
+  return { tipos, naoResolvidos };
+}
+// O extrator do plano v1 (Apêndice A, census-sync.mts), para a prova comparativa.
+export function extrairTiposV1(fonte: string): Set<string> {
+  return new Set([...fonte.matchAll(/"([a-z_]+[.][a-z_.]+)"/g)].map((m) => m[1]));
+}
+```
+
+### classify-v2.cjs
 
 ```js
-// classify.cjs <census-out.json> <census-sync-out.json> : classifica TODA via alcançável pelo técnico.
-// Regras por prefixo/tipo; o que nenhuma regra cobre sai NAO-CLASSIFICADA (o guard do dev a trata como falha).
+// classify-v2.cjs <c2.json> <s2.json> [snapshot.json] [--gravar-snapshot <arquivo>]
+// Sem snapshot: classifica pelas REGRAS (é assim que o snapshot nasce, revisado pelo planejador).
+// Com snapshot: o snapshot DECIDE — via viva fora dele = NAO-CLASSIFICADA (default negar); entrada do snapshot que
+// não está mais viva = ENVELHECIDA. As regras continuam marcando quem PERTENCE à propriedade (coluna "prop").
 const fs = require("fs");
-const http = JSON.parse(fs.readFileSync(process.argv[2], "utf8")).reach;
-const sync = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
-const gate = (s) => /permission_required|role_required|tenant_required|unsupported_action/.test(s);
-const syncReach = sync.rows.filter((r) => !gate(r.field_technician) || !gate(r.technician));
-const G07A = new Set(["PATCH /api/v1/work-orders/:workOrderId", "PATCH /api/v1/work-orders/:workOrderId/status", "work_order.status_change"]);
-const REG = { // registro: P-O6R-SUBRECURSO-OBJECT-SCOPE (1..10) e item 51 + emenda (51a..51f)
-  "POST /api/v1/work-orders/:workOrderId/attachments": "1", "DELETE /api/v1/work-orders/:workOrderId/attachments/:attachmentId": "2",
-  "POST /api/v1/work-orders/:workOrderId/comments": "3", "PATCH /api/v1/work-orders/:workOrderId/comments/:commentId": "4",
-  "DELETE /api/v1/work-orders/:workOrderId/comments/:commentId": "5", "POST /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId": "6",
-  "DELETE /api/v1/work-orders/:workOrderId/comments/:commentId/tags/:tagId": "7", "POST /api/v1/work-orders/:workOrderId/geocode": "8",
-  "POST /api/v1/work-orders/:workOrderId/geocode-destination": "9", "work_order.mileage": "10",
-  "PATCH /api/v1/mobile/checklist-runs/:runId": "51a", "POST /api/v1/mobile/checklist-runs/:runId/complete": "51b",
-  "POST /api/v1/mobile/checklist-runs/:runId/acknowledgement": "51c", "POST /api/v1/mobile/checklist-runs/:runId/attachments": "51d",
-  "POST /api/v1/mobile/checklist-runs/:runId/markers": "51e", "POST /api/v1/mobile/checklist-runs/:runId/divergence": "51f",
-};
-function classeHttp(m, p) {
-  if (/^\/api\/v1\/work-orders\/:workOrderId/.test(p)) return "OS";
-  if (/^\/api\/v1\/mobile\/checklist-runs\/:runId/.test(p)) return "VISTORIA";
-  if (/^\/api\/v1\/operations\/dispatches\/:dispatchId/.test(p)) return "DESPACHO";
-  if (p === "/api/v1/mobile/evidence-uploads") return "EVIDENCIA-OS";
-  if (/^\/api\/v1\/mobile\/sync\//.test(p)) return "SYNC(lote)";
-  if (/^\/api\/v1\/(damages|fuel-logs|expense-reports)(\/|$)/.test(p) && !/attachments$/.test(p) && !/submit$/.test(p)) return "R";
-  if (p === "/api/v1/mobile/telemetry") return "R";
-  if (/^\/api\/v1\/auth\//.test(p) || /^\/api\/v1\/notifications\//.test(p) || p === "/api/v1/mobile/field-locations" || /^\/api\/v1\/attachments/.test(p) || /^\/api\/v1\/damages\/:damageId\/attachments$/.test(p) || /submit$/.test(p)) return "N";
+const args = process.argv.slice(2);
+const c2 = JSON.parse(fs.readFileSync(args[0], "utf8"));
+const s2 = JSON.parse(fs.readFileSync(args[1], "utf8"));
+const snapArg = args[2] && !args[2].startsWith("--") ? args[2] : null;
+const gi = args.indexOf("--gravar-snapshot"); const gravar = gi >= 0 ? args[gi + 1] : null;
+const snap = snapArg ? JSON.parse(fs.readFileSync(snapArg, "utf8")) : null;
+const lotes = new Set(s2.lotes);
+const OS_SEG = /[/](work-orders|checklist-runs|dispatches)[/]:[A-Za-z0-9_]+/;   // propriedade: recurso-da-OS + parâmetro de QUALQUER nome
+const propHttp = (m, p) => OS_SEG.test(p) || p.endsWith("/mobile/evidence-uploads");
+const propSync = (t) => /^work_order[.]/.test(t) || /^checklist/.test(t) || /^evidence[.]work_order_/.test(t);
+const G07A = new Set(["PATCH /api/v1/work-orders/:workOrderId", "PATCH /api/v1/work-orders/:workOrderId/status", "SYNC work_order.status_change"]);
+const R = new Set(["POST /api/v1/mobile/telemetry", "POST /api/v1/fuel-logs", "PATCH /api/v1/fuel-logs/:fuelLogId", "POST /api/v1/damages", "POST /api/v1/expense-reports", "PATCH /api/v1/expense-reports/:reportId", "POST /api/v1/expense-reports/:reportId/items", "SYNC expense_item.create", "SYNC expense_report.create", "SYNC expense_report.submit"]);
+const N = new Set(["POST /api/v1/auth/login", "POST /api/v1/auth/refresh", "POST /api/v1/auth/logout", "POST /api/v1/notifications/fleet-alerts/run", "POST /api/v1/notifications/:notificationId/read", "POST /api/v1/notifications/read-all", "POST /api/v1/notifications/:notificationId/archive", "POST /api/v1/mobile/field-locations", "POST /api/v1/damages/:damageId/attachments", "POST /api/v1/attachments", "DELETE /api/v1/attachments/:attachmentId", "POST /api/v1/expense-reports/:reportId/submit", "SYNC evidence.field_observation", "SYNC evidence.field_photo", "SYNC evidence.field_signature"]);
+function porRegra(k, m, p, t) {
+  if (G07A.has(k)) return "OS·07a";
+  if (t !== undefined) {
+    if (/^work_order[.]/.test(t)) return "OS·07c-a";
+    if (/^checklist/.test(t)) return "VISTORIA·07c-b";
+    if (/^evidence[.]work_order_/.test(t)) return "EVIDENCIA-OS·07c-b";
+  } else {
+    if (lotes.has(p)) return "LOTE";
+    if (m === "GET" || m === "HEAD") return "LEITURA";
+    if (/[/]work-orders[/]:[A-Za-z0-9_]+/.test(p)) return "OS·07c-a";
+    if (/[/]checklist-runs[/]:[A-Za-z0-9_]+/.test(p)) return "VISTORIA·07c-b";
+    if (/[/]dispatches[/]:[A-Za-z0-9_]+/.test(p)) return "DESPACHO·07c-b";
+    if (p.endsWith("/mobile/evidence-uploads")) return "EVIDENCIA-OS·07c-b";
+  }
+  if (R.has(k)) return "R";
+  if (N.has(k)) return "N";
   return "NAO-CLASSIFICADA";
 }
-function classeSync(t) {
-  if (/^work_order[.]/.test(t)) return "OS";
-  if (/^checklist/.test(t)) return "VISTORIA";
-  if (/^evidence[.]work_order_/.test(t)) return "EVIDENCIA-OS";
-  if (/^evidence[.]field_/.test(t)) return "N";
-  if (/^expense_/.test(t)) return "R";
-  return "NAO-CLASSIFICADA";
-}
-const linhas = []; const cont = {};
-for (const x of http) {
-  const k = `${x.method} ${x.path}`; const c = classeHttp(x.method, x.path);
-  if (c === "SYNC(lote)") continue; // o lote é desdobrado por tipo de ação abaixo
-  cont[c] = (cont[c] || 0) + 1;
-  linhas.push({ via: "`" + k.replace("/api/v1", "") + "`", c, ft: x.field_technician, tech: x.technician, reg: REG[k] ?? "", g: G07A.has(k) });
-}
-for (const r of syncReach) {
-  const c = classeSync(r.type); cont[c] = (cont[c] || 0) + 1;
-  linhas.push({ via: "`" + r.endpoint + "` · `" + r.type + "`", c, ft: r.field_technician, tech: r.technician, reg: REG[r.type] ?? "", g: G07A.has(r.type) });
-}
-const ordem = ["OS", "VISTORIA", "DESPACHO", "EVIDENCIA-OS", "R", "N", "NAO-CLASSIFICADA"];
-linhas.sort((a, b) => ordem.indexOf(a.c) - ordem.indexOf(b.c));
-let n = 0;
-console.log("| # | via (método + caminho, ou endpoint · tipo de ação) | classe | field_technician | technician | registro | estado hoje |");
-console.log("|---|---|---|---|---|---|---|");
-for (const l of linhas) console.log(`| ${++n} | ${l.via} | ${l.c} | ${l.ft} | ${l.tech} | ${l.reg} | ${l.g ? "guardada pelo 07a" : ["OS","VISTORIA","DESPACHO","EVIDENCIA-OS"].includes(l.c) ? "**ABERTA**" : "fora da propriedade"} |`);
-console.log("");
-console.log("CONTAGEM POR CLASSE: " + ordem.map((c) => `${c}=${cont[c] || 0}`).join(" · ") + ` · total=${n}`);
-const prop = linhas.filter((l) => ["OS","VISTORIA","DESPACHO","EVIDENCIA-OS"].includes(l.c));
-console.log(`NA PROPRIEDADE: ${prop.length} (guardadas pelo 07a: ${prop.filter((l) => l.g).length} · abertas: ${prop.filter((l) => !l.g).length} · registradas: ${prop.filter((l) => l.reg).length} · NOVAS (abertas e fora do registro): ${prop.filter((l) => !l.g && !l.reg).length})`);
-const regFaltando = Object.entries(REG).filter(([k]) => !linhas.some((l) => l.via.includes(k.replace("/api/v1", "")) || l.via.includes("`" + k + "`")));
-console.log("REGISTRADAS QUE O CENSO NAO ACHOU: " + (regFaltando.length ? regFaltando.map(([k, v]) => v + "=" + k).join("; ") : "nenhuma"));
+const vivas = [];
+for (const x of c2.reach) vivas.push({ k: `${x.method} ${x.path}`, m: x.method, p: x.path, ft: x.field_technician, tech: x.technician, prop: propHttp(x.method, x.path) });
+for (const r of s2.reach) vivas.push({ k: `SYNC ${r.endpoint} · ${r.type}`, kt: `SYNC ${r.type}`, m: "SYNC", p: r.endpoint, t: r.type, ft: r.field_technician, tech: r.technician, prop: propSync(r.type) });
+const linhas = vivas.map((v) => ({ ...v, c: snap ? (snap[v.k] ?? "NAO-CLASSIFICADA") : porRegra(v.kt ?? v.k, v.m, v.p, v.t) }));
+const envelhecidas = snap ? Object.keys(snap).filter((k) => !vivas.some((v) => v.k === k)) : [];
+const cont = {}; for (const l of linhas) cont[l.c] = (cont[l.c] || 0) + 1;
+console.log("CONTAGEM: " + Object.entries(cont).sort().map(([c, n]) => `${c}=${n}`).join(" · ") + ` · total=${linhas.length}`);
+console.log(`NA PROPRIEDADE (regra): ${linhas.filter((l) => l.prop).length} · ENVELHECIDAS: ${envelhecidas.length} · CURINGA: ${s2.curinga.length} · TEMPLATE-NAO-RESOLVIDO: ${s2.naoResolvidos.length}`);
+for (const l of linhas.filter((l) => l.c === "NAO-CLASSIFICADA")) console.log(`NAO-CLASSIFICADA${l.prop ? " (na propriedade)" : ""}: ${l.k} ft=${l.ft} tech=${l.tech}`);
+for (const e of envelhecidas) console.log("ENVELHECIDA: " + e);
+if (gravar) { const o = {}; for (const l of linhas) o[l.k] = l.c; fs.writeFileSync(gravar, JSON.stringify(o, null, 1)); console.log("snapshot gravado:", gravar, Object.keys(o).length, "entradas"); }
+if (process.env.TABELA) for (const l of linhas.filter((l) => l.c !== "LEITURA")) console.log(`| ${l.k.replace("/api/v1", "")} | ${l.c} | ${l.ft} | ${l.tech} |`);
 ```
+
+### inject-prefixo.mts
+
+```ts
+// Forma F6 (A3, "despacho por prefixo"): um lote de sync que aceita QUALQUER tipo `checklist.*` — nenhum literal
+// de tipo novo existe na fonte, então só a sonda de tipo inexistente por família o denuncia.
+import { pathToFileURL } from "node:url";
+import { createRequire } from "node:module";
+export async function inject(app: any) {
+  const root = new URL(pathToFileURL(process.cwd()).href + "/src/");
+  const imp = (p: string) => import(new URL(p, root).href);
+  const { Router } = createRequire(process.cwd() + "/package.json")("express");
+  const { attachAuthenticatedActor } = await imp("modules/auth/index.ts");
+  const { tenantContextMiddleware } = await imp("modules/core-saas/middleware/tenant-context.middleware.ts");
+  const { createPersistentRbacContextMiddleware } = await imp("modules/core-saas/middleware/persistent-rbac-context.middleware.ts");
+  const { requirePermission } = await imp("modules/core-saas/middleware/rbac.middleware.ts");
+  const r = Router();
+  r.use(tenantContextMiddleware); r.use(createPersistentRbacContextMiddleware());
+  r.post("/mobile/sync/prefixo-actions", requirePermission("work_orders:status"), (q: any, s: any) => {
+    const accepted: any[] = []; const rejected: any[] = [];
+    for (const a of q.body?.actions ?? []) {
+      if (String(a.type).startsWith("checklist.")) accepted.push({ client_action_id: a.client_action_id, status: "accepted" });
+      else rejected.push({ client_action_id: a.client_action_id, status: "rejected", error: { reason: "unsupported_action_type" } });
+    }
+    s.status(200).json({ data: { accepted, rejected } });
+  });
+  const st = app.router.stack; const before = st.length;
+  app.use("/api/v1", attachAuthenticatedActor(), r);
+  const added = st.splice(before, st.length - before);
+  st.splice(before - 1, 0, ...added);
+}
+```
+
+### prova-tipos.mts
+
+```ts
+// Prova do A3 (tipos): as formas que a crítica mediu como invisíveis ao extrator v1, num trecho de fonte de teste.
+import { extrairTipos, extrairTiposV1 } from "./tipos.mts";
+const D = "checklist";
+const fonte = [
+  "const D = " + JSON.stringify(D) + ";",
+  "if (t === 'checklist.x') {}",
+  "if (t === `${D}.via_template`) {}",
+  "if (t === \"checklist.photo_v2\") {}",
+  "if (t === \"checklist-run.reopen\") {}",
+  "if (t === \"Checklist.PhotoAdd\") {}",
+  "if (t === `checklist.crase_sem_interpolacao`) {}",
+  "if (t === `${desconhecida}.dinamico`) {}",
+].join(String.fromCharCode(10));
+const esperado = ["checklist.x", "checklist.via_template", "checklist.photo_v2", "checklist-run.reopen", "Checklist.PhotoAdd", "checklist.crase_sem_interpolacao"];
+const v1 = extrairTiposV1(fonte); const v2 = extrairTipos(fonte);
+for (const t of esperado) console.log(t.padEnd(34), "v1:", v1.has(t) ? "acha" : "NAO ACHA", "| v2:", v2.tipos.has(t) ? "acha" : "NAO ACHA");
+console.log("template dinâmico não resolvido (v2 devolve para o guard falhar):", JSON.stringify(v2.naoResolvidos));
+```
+
+## Apêndice B — a classificação gerada em `c1cfdabe` (o instantâneo, sem as leituras)
+
+Saída de `TABELA=1 node classify-v2.cjs c2.json s2.json`, sem edição: 65 entradas (as 169 do instantâneo menos as
+104 `LEITURA`, listadas depois). Colunas: via · classe · resposta ao `field_technician` · resposta ao `technician`.
+
+| via | classe | field_technician | technician |
+|---|---|---|---|
+| POST /auth/login | N | 400 | 400 |
+| POST /auth/refresh | N | 400 | 400 |
+| POST /auth/logout | N | 200 | 200 |
+| POST /mobile/sync/work-order-actions | LOTE | 400:invalid_envelope | 400:invalid_envelope |
+| POST /mobile/sync/checklist-actions | LOTE | 400:invalid_envelope | 400:invalid_envelope |
+| POST /mobile/sync/evidence-actions | LOTE | 400:invalid_envelope | 400:invalid_envelope |
+| POST /mobile/evidence-uploads | EVIDENCIA-OS·07c-b | 400:invalid_content_type | 400:invalid_content_type |
+| POST /mobile/telemetry | R | 422:operator_profile_required | 422:operator_profile_required |
+| POST /notifications/fleet-alerts/run | N | 200 | 200 |
+| POST /notifications/:notificationId/read | N | 404:notification_not_found | 404:notification_not_found |
+| POST /notifications/read-all | N | 200 | 200 |
+| POST /notifications/:notificationId/archive | N | 404:notification_not_found | 404:notification_not_found |
+| PATCH /mobile/checklist-runs/:runId | VISTORIA·07c-b | 404:checklist_run_not_found | 404:checklist_run_not_found |
+| POST /mobile/checklist-runs/:runId/attachments | VISTORIA·07c-b | 400:invalid_request | 400:invalid_request |
+| POST /mobile/checklist-runs/:runId/markers | VISTORIA·07c-b | 400:invalid_request | 400:invalid_request |
+| POST /mobile/checklist-runs/:runId/complete | VISTORIA·07c-b | 404:checklist_run_not_found | 404:checklist_run_not_found |
+| POST /mobile/checklist-runs/:runId/divergence | VISTORIA·07c-b | 400:invalid_request | 400:invalid_request |
+| POST /mobile/checklist-runs/:runId/acknowledgement | VISTORIA·07c-b | 400:invalid_request | 400:invalid_request |
+| POST /mobile/field-locations | N | 400:invalid_number | 400:invalid_number |
+| PATCH /work-orders/:workOrderId | OS·07a | 404:not_found | 404:not_found |
+| PATCH /work-orders/:workOrderId/status | OS·07a | 404:not_found | 404:not_found |
+| POST /work-orders/:workOrderId/attachments | OS·07c-a | 400:multipart_required | 400:multipart_required |
+| DELETE /work-orders/:workOrderId/attachments/:attachmentId | OS·07c-a | 404:work_order_not_found | 404:work_order_not_found |
+| POST /work-orders/:workOrderId/geocode | OS·07c-a | 404:not_found | 404:not_found |
+| POST /work-orders/:workOrderId/geocode-destination | OS·07c-a | 404:not_found | 404:not_found |
+| POST /fuel-logs | R | 400:required_field | 403:permission_required |
+| PATCH /fuel-logs/:fuelLogId | R | 404:not_found | 403:permission_required |
+| POST /damages | R | 400:required_field | 400:required_field |
+| POST /damages/:damageId/attachments | N | 400:multipart_required | 400:multipart_required |
+| POST /work-orders/:workOrderId/comments | OS·07c-a | 404:not_found | 404:not_found |
+| PATCH /work-orders/:workOrderId/comments/:commentId | OS·07c-a | 404:not_found | 404:not_found |
+| DELETE /work-orders/:workOrderId/comments/:commentId | OS·07c-a | 404:not_found | 404:not_found |
+| POST /work-orders/:workOrderId/comments/:commentId/tags/:tagId | OS·07c-a | 404:not_found | 404:not_found |
+| DELETE /work-orders/:workOrderId/comments/:commentId/tags/:tagId | OS·07c-a | 404:not_found | 404:not_found |
+| POST /attachments | N | 400:multipart_required | 400:multipart_required |
+| DELETE /attachments/:attachmentId | N | 404:attachment_not_found | 404:attachment_not_found |
+| PATCH /operations/dispatches/:dispatchId/status | DESPACHO·07c-b | 404:not_found | 403:permission_required |
+| POST /expense-reports | R | 403:permission_required | 400:required_field |
+| PATCH /expense-reports/:reportId | R | 403:permission_required | 404:not_found |
+| POST /expense-reports/:reportId/items | R | 403:permission_required | 404:not_found |
+| POST /expense-reports/:reportId/submit | N | 403:permission_required | 404:not_found |
+| POST /mobile/sync/expense-actions | LOTE | 403:permission_required | 400:invalid_actions |
+| SYNC /mobile/sync/work-order-actions · work_order.mileage | OS·07c-a | rejected:not_found | rejected:not_found |
+| SYNC /mobile/sync/work-order-actions · work_order.status_change | OS·07a | rejected:not_found | rejected:not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.acknowledgement_create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.attachment_attach | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.complete | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.divergence_create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.item_answer | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.item_note | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist.marker_create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist_acknowledgement.create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist_attachment.attach | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist_divergence.create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist_marker.create | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/checklist-actions · checklist_run.complete | VISTORIA·07c-b | rejected:checklist_run_not_found | rejected:checklist_run_not_found |
+| SYNC /mobile/sync/evidence-actions · evidence.field_observation | N | accepted:accepted | accepted:accepted |
+| SYNC /mobile/sync/evidence-actions · evidence.field_photo | N | rejected:required_field | rejected:required_field |
+| SYNC /mobile/sync/evidence-actions · evidence.field_signature | N | rejected:required_field | rejected:required_field |
+| SYNC /mobile/sync/evidence-actions · evidence.work_order_observation | EVIDENCIA-OS·07c-b | accepted:accepted | accepted:accepted |
+| SYNC /mobile/sync/evidence-actions · evidence.work_order_photo | EVIDENCIA-OS·07c-b | rejected:required_field | rejected:required_field |
+| SYNC /mobile/sync/evidence-actions · evidence.work_order_signature | EVIDENCIA-OS·07c-b | rejected:required_field | rejected:required_field |
+| SYNC /mobile/sync/expense-actions · expense_item.create | R | 403:permission_required | 400:required_field |
+| SYNC /mobile/sync/expense-actions · expense_report.create | R | 403:permission_required | 400:required_field |
+| SYNC /mobile/sync/expense-actions · expense_report.submit | R | 403:permission_required | 400:required_field |
+
+**As 104 `LEITURA`:** `GET /health` · `GET /health/ready` · `GET /health/worker` · `GET /me` · `GET /mobile/bootstrap` · `GET /mobile/inventory/availability` · `GET /navigation/menu` · `GET /notifications` · `GET /notifications/unread-count` · `GET /tenant/checklist-components` · `GET /tenant/checklists` · `GET /tenant/checklists/templates` · `GET /tenant/checklists/:checklistId` · `GET /mobile/checklists/available` · `GET /mobile/checklists/:checklistId/render` · `GET /mobile/checklist-runs` · `GET /mobile/checklist-runs/:runId/attachments/:attachmentId/download` · `GET /mobile/checklist-runs/:runId/comparison` · `GET /approvals/pending` · `GET /approvals/:approvalId` · `GET /work-orders` · `GET /work-orders/:workOrderId` · `GET /work-orders/:workOrderId/timeline` · `GET /work-orders/:workOrderId/attachments` · `GET /work-orders/:workOrderId/attachments/:attachmentId/download` · `GET /work-orders/:workOrderId/map-start-points` · `GET /dashboard/summary` · `GET /customers` · `GET /customers/:customerId` · `GET /vehicles` · `GET /vehicles/:vehicleId` · `GET /fuel-logs` · `GET /fuel-logs/:fuelLogId` · `GET /maintenance-orders` · `GET /maintenance-orders/odometer-suggestion` · `GET /maintenance-orders/:maintenanceOrderId` · `GET /maintenance-orders/:maintenanceOrderId/items` · `GET /fines` · `GET /fines/:fineId` · `GET /damages` · `GET /damages/:damageId` · `GET /damages/:damageId/attachments` · `GET /damages/:damageId/attachments/:attachmentId/download` · `GET /service-catalog` · `GET /service-catalog/:serviceId` · `GET /price-tables` · `GET /price-tables/:priceTableId` · `GET /tariffs` · `GET /tariffs/:tariffId` · `GET /yards` · `GET /yards/:yardId` · `GET /yards/:yardId/occupancy` · `GET /yards/:yardId/areas` · `GET /yard-areas/:areaId` · `GET /yard-areas/:areaId/spots` · `GET /yard-spots/:spotId` · `GET /jurisdiction-defaults` · `GET /jurisdiction-profiles` · `GET /jurisdiction-profiles/:profileId` · `GET /impound-processes` · `GET /impound-processes/:processId` · `GET /impound-processes/:processId/events` · `GET /impound-processes/:processId/verify` · `GET /impound-processes/:processId/inspection` · `GET /impound-processes/:processId/notifications` · `GET /impound-processes/:processId/checklist-runs` · `GET /impound-processes/:processId/custody-history` · `GET /impound-processes/:processId/charges` · `GET /impound-processes/:processId/charges/statement` · `GET /impound-processes/:processId/release` · `GET /impound-processes/:processId/auction` · `GET /impound-processes/:processId/auction/settlement` · `GET /patios/dashboard/summary` · `GET /vehicle-identities` · `GET /vehicle-identities/:identityId` · `GET /service-quotes` · `GET /service-quotes/:serviceQuoteId` · `GET /service-quotes/:serviceQuoteId/items` · `GET /work-orders/:workOrderId/financial-items` · `GET /work-orders/:workOrderId/comments` · `GET /work-orders/:workOrderId/audit-logs` · `GET /branches` · `GET /branches/:branchId` · `GET /suppliers` · `GET /suppliers/:supplierId` · `GET /tags` · `GET /tags/:tagId` · `GET /pois` · `GET /pois/:poiId` · `GET /operator-profiles` · `GET /operator-profiles/:profileId` · `GET /attachments` · `GET /attachments/:attachmentId/download` · `GET /teams` · `GET /teams/:teamId` · `GET /operations/dispatches` · `GET /operations/dispatches/:dispatchId` · `GET /operations/dispatches/:dispatchId/timeline` · `GET /operations/work-orders-timeseries` · `GET /commissions/calculations/mine` · `GET /commissions/statements/my-summary` · `GET /expense-categories` · `GET /expense-reports` · `GET /expense-reports/:reportId`
