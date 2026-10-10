@@ -18,8 +18,11 @@ import ts from "typescript";
 //
 //   D1  todo ESCRITOR de `stock_movements`: membro ∉ leitura de um receptor de tipo `StockMovementDelegate`
 //       (em qualquer forma sintática: alias, `?.`, `["…"]`, cadeia em N linhas), escrita ANINHADA pelo TIPO
-//       do input (`^StockMovement(Unchecked)?(Create|Update|Upsert|Delete)…`) e SQL cru pelo template
-//       inteiro (tabela dinâmica = NEGAR). Universo publicado = allowlist literal.
+//       do input (`^StockMovement(Unchecked)?(Create|Update|Upsert|Delete)…`) e (c) SQL cru: o template
+//       INTEIRO — no sítio **ou** na `const` de inicializador literal que o identificador resolve pelo
+//       SÍMBOLO (aliases/imports seguidos; até 3 saltos) — contra verbo-de-escrita + tabela; dinâmico na
+//       posição da tabela = negar; **tudo o que o programa não prova literal (`let`/`var`, parâmetro,
+//       chamada, concatenação, condicional) = negar**. Universo publicado = allowlist literal.
 //   D1′ o classificador contra as 16 formas do jurado + 4 controles, em fixture compilada EM MEMÓRIA.
 //   D2  R1–R6 sobre `PrismaInventoryRepository`, com o universo W (quem alcança `insertMovement`) GERADO.
 //   D2′ R1/R2/R5/R6 contra as formas do jurado, em fixture.
@@ -194,6 +197,18 @@ function templateText(node: ts.Node): string | undefined {
   return undefined;
 }
 
+function resolvedSqlText(node: ts.Node, checker: ts.TypeChecker, depth = 0): string | undefined {
+  const direct = templateText(node);
+  if (direct !== undefined) return direct;
+  if (!ts.isIdentifier(node) || depth > 3) return undefined;
+  let symbol = checker.getSymbolAtLocation(node);
+  if (symbol && (symbol.flags & ts.SymbolFlags.Alias)) symbol = checker.getAliasedSymbol(symbol);
+  const declaration = symbol?.valueDeclaration ?? symbol?.declarations?.[0];
+  if (!declaration || !ts.isVariableDeclaration(declaration) || !declaration.initializer) return undefined;
+  if (!(ts.getCombinedNodeFlags(declaration) & ts.NodeFlags.Const)) return undefined;
+  return resolvedSqlText(declaration.initializer, checker, depth + 1);
+}
+
 /** Quais modelos este SQL cru ESCREVE (tabela dinâmica após verbo de escrita = negar). */
 function rawWritesOf(sql: string): string[] {
   const hits: string[] = [];
@@ -211,7 +226,10 @@ const WRITE_INPUT = (model: string): RegExp => new RegExp(`^${model}(Unchecked)?
  *   (a) membro ∉ leitura de um receptor cujo tipo é `<Model>Delegate` (qualquer forma sintática);
  *   (b) escrita ANINHADA: o literal do argumento é caminhado contra o tipo declarado do parâmetro, e uma
  *       propriedade cujo tipo se chame `^<Model>(Unchecked)?(Create|Update|Upsert|Delete)…` é escritor;
- *   (c) SQL cru: o template INTEIRO contra verbo-de-escrita + tabela; dinâmico na posição da tabela = negar.
+ *   (c) SQL cru: o template INTEIRO — no sítio **ou** na `const` de inicializador literal que o identificador
+ *       resolve pelo SÍMBOLO (aliases/imports seguidos; até 3 saltos) — contra verbo-de-escrita + tabela;
+ *       dinâmico na posição da tabela = negar; **tudo o que o programa não prova literal (`let`/`var`,
+ *       parâmetro, chamada, concatenação, condicional) = negar**.
  * Argumento não literal, chave computada ou declaração não resolvida → NEGAR (`<literal não resolvido>`).
  */
 function collectWriters(program: ts.Program, checker: ts.TypeChecker): Writer[] {
@@ -318,8 +336,8 @@ function collectWriters(program: ts.Program, checker: ts.TypeChecker): Writer[] 
 
         // (c) SQL cru `*Unsafe` (argumento não literal = negar)
         if (ts.isPropertyAccessExpression(callee) && /^\$(executeRawUnsafe|queryRawUnsafe)$/.test(callee.name.text)) {
-          const text = node.arguments[0] ? templateText(node.arguments[0]!) : undefined;
-          if (text === undefined) add("<sql dinâmico>", node, `${callee.name.text}(<não literal>)`);
+          const text = node.arguments[0] ? resolvedSqlText(node.arguments[0]!, checker) : undefined;
+          if (text === undefined) add("<sql dinâmico>", node, `${callee.name.text}(<não literal: ${node.arguments[0] ? ts.SyntaxKind[node.arguments[0]!.kind] : "sem argumento"}>)`);
           else for (const model of rawWritesOf(text)) add(model, node, "raw");
         }
 
@@ -768,6 +786,21 @@ const D1_WRITERS: Readonly<Record<string, string>> = {
   "aninhado-createMany-array":
     `  return tx.tenant.update({ where: { id: tenantId }, data: { stock_movements: { createMany: { data: [` +
     `{ item_id: itemId, type: "saida", quantidade_sinalizada: -5 }, { item_id: itemId, type: "saida", quantidade_sinalizada: -1 }] } } } });`,
+  "const-insert":
+    `  const SQL = ${BACKTICK}INSERT INTO stock_movements (tenant_id, item_id) VALUES ($1::uuid, $2::uuid)${BACKTICK};\n` +
+    `  return tx.$executeRawUnsafe(SQL, tenantId, itemId);`,
+  "const-concat":
+    `  const SQL = "INSERT INTO " + "stock_movements" + " (tenant_id) VALUES ($1::uuid)";\n  return tx.$executeRawUnsafe(SQL, tenantId);`,
+  "let-reatribuido":
+    `  let SQL = "SELECT 1";\n  SQL = "INSERT INTO stock_movements (tenant_id) VALUES ($1::uuid)";\n  return tx.$executeRawUnsafe(SQL, tenantId);`,
+  "const-chamada": `  const montar = (): string => "SELECT 1";\n  const SQL = montar();\n  return tx.$queryRawUnsafe(SQL);`,
+  "const-condicional":
+    `  const SQL = ccId ? "SELECT 1" : "INSERT INTO stock_movements (tenant_id) VALUES ($1::uuid)";\n  return tx.$executeRawUnsafe(SQL, tenantId);`,
+  "const-tabela-interpolada-2-saltos":
+    `  const T = "stock_movements";\n  const SQL = ${BACKTICK}INSERT INTO ` +
+    "${T}" +
+    ` (tenant_id) VALUES ($1::uuid)${BACKTICK};\n  return tx.$executeRawUnsafe(SQL, tenantId);`,
+  "parametro": `  return tx.$queryRawUnsafe(ccId);`,
 };
 
 /** Controles: LEITURA (e um escritor que só existe dentro de comentário). NÃO são escritores. */
@@ -776,6 +809,11 @@ const D1_CONTROLS: Readonly<Record<string, string>> = {
   "ctl-include": `  return tx.inventoryItem.findFirst({ where: { tenant_id: tenantId, id: itemId }, include: { movements: { take: 5 } } });`,
   "ctl-where-some": `  return tx.inventoryItem.findMany({ where: { tenant_id: tenantId, movements: { some: { type: "saida" } } } });`,
   "ctl-so-comentario": `  // return tx.stockMovement.create({ data: ${ROW} });\n  return tx.stockMovement.count({ where: { tenant_id: tenantId } });`,
+  "ctl-const-catalogo": `  const SQL = "SELECT session_user::text AS s, current_user::text AS c";\n  return tx.$queryRawUnsafe(SQL);`,
+  "ctl-const-template-catalogo":
+    `  const SQL = ${BACKTICK}SELECT r.rolname FROM pg_roles r WHERE r.rolsuper${BACKTICK};\n  return tx.$queryRawUnsafe(SQL);`,
+  "ctl-const-select-stock":
+    `  const SQL = "SELECT count(*) FROM stock_movements WHERE tenant_id = $1::uuid";\n  return tx.$queryRawUnsafe(SQL, tenantId);`,
 };
 
 /** A fixture do D2′: a MESMA estrutura da classe real, com as formas que o jurado usou. */
@@ -944,7 +982,7 @@ test("D1 — todo escritor de stock_movements (delegate em qualquer forma, escri
   );
 });
 
-test("D1′ — o classificador contra as formas do jurado: 18 escritores flagrados em arquivo novo, 4 leituras de controle não", () => {
+test("D1′ — o classificador contra as formas do jurado: 25 escritores flagrados em arquivo novo, 7 leituras de controle não", () => {
   const files: Record<string, string> = {};
   for (const [name, body] of Object.entries(D1_WRITERS)) files[`zz-fixture-d1-${name}.ts`] = fixture(body);
   for (const [name, body] of Object.entries(D1_CONTROLS)) files[`zz-fixture-d1-${name}.ts`] = fixture(body);
@@ -958,7 +996,34 @@ test("D1′ — o classificador contra as formas do jurado: 18 escritores flagra
   for (const name of Object.keys(D1_CONTROLS)) {
     assert.equal(flagged.has(`zz-fixture-d1-${name}.ts`), false, `leitura flagrada por engano (falso positivo): ${name}`);
   }
-  assert.ok(Object.keys(D1_WRITERS).length >= 18, "as formas do jurado + as grafias conhecidas");
+  assert.ok(Object.keys(D1_WRITERS).length >= 25, "as formas do jurado + as grafias conhecidas");
+});
+
+test("D1″ — constante importada: o símbolo manda, o nome não", () => {
+  const files: Record<string, string> = {
+    "zz-fixture-d1-mod-sql.ts":
+      'export const INSERT_SQL = "INSERT INTO stock_movements (tenant_id) VALUES ($1::uuid)";\n' +
+      'export const CATALOG_SQL = "SELECT 1 FROM pg_roles";\n',
+    "zz-fixture-d1-import-insert.ts":
+      'import { INSERT_SQL } from "./zz-fixture-d1-mod-sql.js";\n' + fixture("  return tx.$executeRawUnsafe(INSERT_SQL, tenantId);"),
+    "zz-fixture-d1-import-renomeado.ts":
+      'import { INSERT_SQL as Q } from "./zz-fixture-d1-mod-sql.js";\n' + fixture("  return tx.$executeRawUnsafe(Q, tenantId);"),
+    "zz-fixture-d1-import-catalogo.ts":
+      'import { CATALOG_SQL } from "./zz-fixture-d1-mod-sql.js";\n' + fixture("  return tx.$queryRawUnsafe(CATALOG_SQL);"),
+  };
+  const analysis = fixtureAnalysis(files);
+  const flagged = new Set(analysis.writers.filter((writer) => writer.model === "StockMovement" || writer.model.startsWith("<")).map((writer) => writer.file));
+  const unresolved = analysis.writers.filter((writer) => writer.model.startsWith("<"));
+  console.log(`[D1″] fixture em memória: ${Object.keys(files).length} arquivos em ${analysis.ms} ms; flagradas: ${[...flagged].sort().join(", ")}`);
+
+  assert.ok(flagged.has("zz-fixture-d1-import-insert.ts"), "constante importada que escreve NÃO flagrada (escritor passaria): import-insert");
+  assert.ok(flagged.has("zz-fixture-d1-import-renomeado.ts"), "constante importada com alias NÃO flagrada (escritor passaria): import-renomeado");
+  assert.equal(flagged.has("zz-fixture-d1-import-catalogo.ts"), false, "leitura importada flagrada por engano (falso positivo): import-catalogo");
+  assert.deepEqual(
+    unresolved.map((writer) => `${writer.model} ${writer.file}:${writer.line} ${writer.why}`),
+    [],
+    "o resolvedor não leu as três constantes importadas pelo símbolo",
+  );
 });
 
 test("D2 — R1..R6 sobre PrismaInventoryRepository: universo gerado, 1 lock por transação, nada decide nem sobrevive ao lock", () => {
