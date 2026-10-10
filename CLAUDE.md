@@ -255,7 +255,7 @@ validação** e **rastreabilidade**. Tipos:
    §C7); o humano audita a posteriori pelo history.
 7. **Registrar** decisão/estado em `agent-orchestration/`.
 8. **PORTEIRO PÓS-MERGE — o gate do próximo start (decisão do dono, 2026-08-12, `D-PORTEIRO-POS-MERGE`).**
-   Concluído o merge, nasce o agente `porteiro-pos-merge` (Fable por contrato). Ele **revalida** o que foi
+   Concluído o merge, nasce o agente `porteiro-pos-merge` (nível menor, Opus declarado — §C7.6). Ele **revalida** o que foi
    entregue — promessa do PR × diff real, contagens **reexecutadas** (não copiadas), KPI com `merge_commit`/
    `approved_head` preenchidos, ata da junta, pendências abertas/fechadas conferidas por amostragem, limpeza
    §C5, e se alguma pendência que **BLOQUEIA** o próximo alvo continua aberta. Só então **autoriza o início
@@ -392,7 +392,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
    **1-bis. INSPEÇÃO DE TERRENO ANTES DE TODA JUNTA — fail-closed (decisão do dono, 2026-08-24,
    `D-INSPETOR-TERRENO-JUNTA`).** Antes de a junta votar, nasce o agente `inspetor-de-terreno-da-junta`
-   (Fable por contrato). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
+   (nível menor, Opus declarado — §C7.6). Ele **não julga o mérito** — julga se o TABULEIRO está limpo: árvore sem mutação
    viva; **worktree próprio para cada jurado que muta** e **cluster Postgres descartável por jurado** (a base
    viva não é alvo de ninguém); insumos do briefing presentes (do ciclo 4 em diante, o parecer da
    auditoria da máquina do §C7.4 e, se ela achou a máquina defeituosa, o registro do conserto);
@@ -420,6 +420,13 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    - **Reprovação de junta NÃO para o bloco.** Abre-se o ciclo seguinte, com os papéis recompostos pelo
      §C7.4-bis (quem achou ≠ quem planeja ≠ quem desenvolve), identidade nova nas cadeiras que votaram, e o
      registro `omega/reprovacoes/R-<entrega>-<ciclo>.md` de sempre.
+   - **EM TODA reprovação de junta, o modelo de TOPO audita e replaneja (decisão do dono, 2026-10-10 —
+     `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`).** Antes do ciclo seguinte, uma identidade nova em modelo de topo
+     (§C7.6) audita a reprovação — os achados são defeitos reais do produto ou artefatos do processo? — e
+     escreve o plano detalhado de resolução; o resto do fluxo segue no nível menor. Quem achou não planeja
+     (§C7.4-bis). Devolução de **crítico** não aciona o topo; só reprovação de **junta**. Nas palavras do dono:
+     *"numa reprovação de junta, EM TODA REPOVAÇÃO, o falbe/astra entra audita, faz o plano com detalhes para
+     resolver a reprovação e o resto segue o fluxo, isso é pra dificultar o segundo loop em diante"*.
    - **GATILHO NO CICLO 3 — auditoria da MÁQUINA, não do bloco.** Se o ciclo 3 também produzir achado
      `bloqueia`, **antes de abrir o ciclo 4** é OBRIGATÓRIA uma auditoria da **orquestração e da junta**, que
      responde **por execução**: (a) os achados são **defeitos reais do produto**, ou artefatos do processo
@@ -466,8 +473,22 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    decisão de junta + PD. Rodadas específicas podem somar uma parada temporária, ex.: falta de credencial/
    pagamento/domínio externo na trilha de infra — ver D-SAN-AUTONOMIA em `controle/decisoes.md`.)
 
-6. **Modelo do `planejador-mestre` (decisão do dono, 2026-08-11 — `D-PLANEJADOR-MODELO-FABLE`).** O
-   `planejador-mestre` roda em **Fable por padrão**. E, quando houve **correção de código e o fluxo volta
+6. **Modelo de cada papel — TOPO só no plano e em toda reprovação de junta; o resto no nível menor (decisão do
+   dono, 2026-10-10 — `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`, que substitui a `D-FABLE-ASTRA-SO-DINHEIRO`;
+   o planejador em Fable vem de 2026-08-11 — `D-PLANEJADOR-MODELO-FABLE`).** Nas palavras do dono: *"o modelo
+   ("topo só no plano e em toda reprovação de junta; resto no nível menor") fica padrao para nosso projeto, pra
+   agregados e nossos agentes internos"*.
+
+   | Nível | Claude Code | Codex | Papéis |
+   |---|---|---|---|
+   | **Topo** | Fable | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
+   | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
+
+   O `inspetor-de-terreno-da-junta` e o `porteiro-pos-merge` têm `model: opus` fixado no frontmatter (de
+   2026-08-24 e 2026-08-12 até 2026-10-10 eram Fable — `D-INSPETOR-TERRENO-JUNTA`, `D-PORTEIRO-POS-MERGE`).
+   Cadeiras, dev, crítico e fábrica rodam no modelo passado na invocação: o nível menor, declarado.
+
+   O `planejador-mestre` roda em **Fable por padrão**. E, quando houve **correção de código e o fluxo volta
    para ele** — o replanejamento do protocolo de dificuldade (§C7.4) e a **validação do código corrigido** —
    o **Fable é OBRIGATÓRIO**, não preferência: é o passo em que um plano fraco reintroduz o defeito que a
    junta acabou de pegar, e este bloco já viu isso acontecer (o plano do PR-04a citava o precedente do
@@ -478,9 +499,10 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    vira nota no registro da junta.
 
 6-bis. **ESGOTADO O FABLE, CAI PARA O OPUS. ESGOTADO O OPUS, PARA (decisão do dono, 2026-09-07, ampliada em
-   2026-09-08 — `D-FALLBACK-MODELO-FABLE-OPUS`).** Os gates da junta e o `planejador-mestre` têm `model: fable`
-   fixado no frontmatter. São exatamente os papéis que **decidem se o trabalho de todos os outros vale**. O
-   Fable tem limite de uso, e ele acaba no meio de rodadas longas.
+   2026-09-08 — `D-FALLBACK-MODELO-FABLE-OPUS`).** O `planejador-mestre` — o papel de topo (§C7.6) — tem
+   `model: fable` fixado no frontmatter. O Fable tem limite de uso, e ele acaba no meio de rodadas longas.
+   Os gates (inspetor, porteiro) e as cadeiras rodam no nível menor desde 2026-10-10 (§C7.6); para eles a
+   escada abaixo começa no segundo degrau: **Opus esgotado → PARA**.
 
    **A escada é de dois degraus, e o terceiro é uma parada.**
 
@@ -505,7 +527,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    **qual papel · qual modelo rodou · por que o Fable faltou**. Isto **estende** a cláusula do item 6, dando à
    nota **conteúdo obrigatório** e **destino nomeado**.
 
-   **O frontmatter continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo: trocar o `model:`
+   **O frontmatter do planejador continua dizendo `fable`.** O fallback é do **invocador**, não do arquivo: trocar o `model:`
    tornaria a degradação **permanente e invisível** para a próxima sessão — exatamente o que o
    `D-PLANEJADOR-MODELO-FABLE` existe para impedir. Quem caiu para Opus **volta ao Fable quando o limite
    renovar**.
@@ -515,8 +537,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
    | Papel de contrato | Claude Code | Codex |
    |---|---|---|
-   | Modelo fixado dos gates e do planejador | **Fable** | **GPT-6 Astra** — *equivalência declarada pelo dono* |
-   | Degrau único de fallback | **Opus** | **GPT-5.6 Sol** — *derivado da ordem do roster, não declarado nominalmente* |
+   | Modelo de topo (§C7.6) | **Fable** | **GPT-6 Astra** — *equivalência declarada pelo dono* |
+   | Nível menor (§C7.6) e degrau único de fallback do topo | **Opus** | **GPT-5.6 Sol** — *derivado da ordem do roster, não declarado nominalmente* |
    | Abaixo disso | **PARA** | **PARA** |
 
    A linha do Astra é **fato dito pelo dono**; a do Sol é **derivada** de ele ser o degrau imediatamente

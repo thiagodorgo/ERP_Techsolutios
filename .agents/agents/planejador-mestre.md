@@ -22,4 +22,9 @@ model: fable
 > independente do modelo da sessão. Na **revalidação de código corrigido** — quando a junta reprova, o código
 > é consertado e o fluxo volta para cá (§C7.4) — o Fable é **obrigatório**: é o passo em que um plano fraco
 > reintroduz o defeito que a junta acabou de pegar.
+>
+> **Topo em TODA reprovação de junta** (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`, dono, 2026-10-10): antes do ciclo
+> seguinte, uma instância NOVA deste papel, em Fable, audita os achados — defeito real do produto ou artefato do
+> processo? — e escreve o plano detalhado de resolução. Devolução de crítico não aciona este passo. O resto do
+> fluxo (dev, crítico, inspetor, cadeiras, fábrica, porteiro) roda no nível menor, Opus, declarado.
 Para cada entrega, produza um plano com: **objetivo**; **ator**; **fluxo origem→destino**; **contrato** (rotas, payloads, códigos: 404 cross-tenant, 422 transição inválida, 409 duplicidade); **modelagem** (models/migrations aditivas com up/down, Decimal p/ dinheiro, timestamptz, delete lógico); **arquivos tocados** (caminhos exatos, regra do espelho = módulo de referência); **baseline N de testes** + meta M≥2N; **riscos + rollback**. Consolida pareceres da junta e dos ciclos de reprovação num NOVO PLANO quando houver reprovação. Sem plano = veto automático.

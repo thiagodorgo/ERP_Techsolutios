@@ -3216,3 +3216,10 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   dev em Opus, um revisor independente com olhar de segurança (`agente-secops`, Opus) + CI verde, sem junta; KPI
   congelado. **Primeiro uso real:** só depois do merge, com a chave do dono, como revisor do PR #416 — o dono gravou
   `ERP_AGENTE_ANTHROPIC_WORKSPACE` (workspace "erp") em 2026-10-10 ~19:00Z, e `GET /v1/models` respondeu 200 (gratuito).
+- **Aplicação da `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` no contrato (2026-10-10)** — o PR de governança que a decisão
+  prescreve (`chore/gov-modelos-topo`): `CLAUDE.md` e `AGENTS.md` (hunks idênticos) ganham a regra no §C7.4 (topo audita e
+  replaneja em toda reprovação de junta), no §C7.6 (tabela topo × nível menor) e no §C7.6-bis (só o planejador fica em
+  `fable`; os gates descem para Opus, e para eles Opus esgotado → PARA); o §C2.8 e o §C7.1-bis deixam de dizer "Fable por
+  contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
+  `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
+  já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
