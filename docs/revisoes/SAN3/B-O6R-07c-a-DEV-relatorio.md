@@ -98,3 +98,40 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 - Fábricas: anexo e comentário usam `createDefaultWorkOrderService`/`createMemoryWorkOrderService`, ambas com
   `createDefaultReferenceResolvers()` → o `resolveActorOperatorProfileId` do 07a chega a `getForMutation` ✔.
 - **Estado:** WIP mantido inteiro (nada descartado), com a correção de comentário acima.
+
+### S2 — vermelho-controle das vias na base, reexecutado
+
+- Método (sem stash/checkout/reset): cópia byte a byte dos 4 arquivos de `src/` com `md5sum` → `git cat-file --filters
+  HEAD:<arq> > <arq>` (o blob de `99c5912d`, cujo `src/` é o de `c1cfdabe`) → teste → `cp -p` de volta → `md5sum -c` OK nos 4.
+- `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory node --test --import tsx --test-reporter=tap
+  tests/o6r07c-subresource-scope.test.ts` na base → `# tests 24 · pass 8 · fail 16`, ec=1: os mesmos 16 do passo 5 (laço G das
+  10 vias do 07c-a, S-ANX, S-KM, S-KM-RESTART, S-COM, S-GEO, S-ORDEM). Restauração: `md5sum -c` OK.
+
+### S3 — com a implementação
+
+- `npm run check` → ec=0.
+- `tests/o6r07c-subresource-scope.test.ts` → `# tests 24 · pass 24 · fail 0` (3,4 s).
+- `tests/o6r07c-census-guard.test.ts` → `# tests 31 · pass 31 · fail 0` (68 s; `base 63799 ms · grupo A 64479 ms · grupo B 63607 ms`).
+- `tests/o6r07a-wo-object-scope.test.ts` (sem edição) → `# tests 8 · pass 8 · fail 0`.
+- Commit `d8900248` `fix(work-orders): escopo por objeto nas escritas dos subrecursos da OS (B-O6R-07c-a)`, empurrado.
+
+### S4 — o `-db` (`tests/o6r07c-subresource-scope-db.test.ts`, novo)
+
+- Cluster próprio: `docker run --name dev07ca-pg … -p 127.0.0.1:47807:5432 postgres:16-alpine` e `--name dev07ca-redis …
+  -p 127.0.0.1:47808:6379 redis:7` (a primeira escolha, 55807, caiu numa faixa reservada do Windows — `netsh … excludedportrange`;
+  o container que não subiu foi removido pelo nome). `DATABASE_URL=… npx prisma generate` ec=0; `npx prisma migrate deploy` ec=0
+  ("All migrations have been successfully applied").
+- Desenho: composição de PRODUÇÃO (`CORE_SAAS_PERSISTENCE=prisma` antes dos imports dinâmicos; o `[modo]` afirma o modo) — as
+  fábricas default com o `resolveActorOperatorProfileId` real lendo `operator_profiles` (é o que a M9 derruba). Anexo, comentário
+  e km (pela `syncMobileWorkOrderActions`), positivo por perfil e por user id, e um negativo por via. Organização descartável por
+  caso, teardown escopado pelo id semeado + conferência de zero resíduo. Sem as palavras do ratchet de catálogo.
+- Head: `# tests 6 · pass 6 · fail 0`. Sem `DATABASE_URL`: `# tests 1 · skipped 1` (pulo declarado).
+- Base (mesmo método do S2, restauração `md5sum -c` OK): `# tests 6 · pass 3 · fail 3` — `[negativo · anexo]` "apagar anexo: o
+  técnico B não foi recusado", `[negativo · comentário]` "comentar: o técnico B não foi recusado", `[negativo · km]` "km do não
+  atribuído veio accepted"; `[modo]`, `[perfil]`, `[user id]` verdes (controle). Uma primeira versão com um negativo único ficava
+  vermelha na base pelo motivo ERRADO (`assertCanMutate is not a function`) — foi partida por via, começando pela chamada que já
+  existia na base.
+- Resíduo: `select count(*) from tenants where slug like 'o6r07c-db-%'` → 0; nenhum `o6r07c-*` em `%TEMP%`.
+- **Fora do escopo, registrado:** o `-db` não entra na lista curada do job `backend-postgres` (`.github/workflows/ci.yml`), que é
+  escopo proibido do bloco; no job `backend` ele se declara pulado. Proposta de pendência para o orquestrador:
+  `P-O6R-07CA-DB-FORA-DA-LISTA-CI` (dono: o próximo bloco que tocar `ci.yml`).
