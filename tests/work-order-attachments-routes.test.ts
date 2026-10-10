@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -141,7 +142,13 @@ test("[isolamento] a lista da org B nunca contém anexos da A", async () => {
 test("[RBAC] upload: field_technician e manager 201; auditor 403; viewer 403; sem auth 403", async () => {
   await withApi(async ({ baseUrl, seed }) => {
     const wo = await createWO(baseUrl, seed);
-    const asTech = await upload(baseUrl, `/api/v1/work-orders/${wo}/attachments`, { headers: h(seed, "field_technician"), fileName: "t.png", mimeType: "image/png", content: tinyPng });
+    // B-O6R-07c-a — escopo por objeto: o técnico de campo só grava anexo na OS atribuída a ele. A OS do arnês nascia
+    // sem atribuição (classe (i) do plano: atribuir). O `assign` exige UUID, então o técnico é um user id UUID cru (o
+    // formato de produção, como no arnês do 07a) e a OS é atribuída a ele.
+    const tecnico = randomUUID();
+    const atribuida = await req(baseUrl, `/api/v1/work-orders/${wo}/assign`, { method: "POST", headers: h(seed, "manager"), body: { userId: tecnico } });
+    assert.equal(atribuida.status, 200);
+    const asTech = await upload(baseUrl, `/api/v1/work-orders/${wo}/attachments`, { headers: { ...h(seed, "field_technician"), "x-user-id": tecnico }, fileName: "t.png", mimeType: "image/png", content: tinyPng });
     assert.equal(asTech.status, 201);
     const asAuditor = await upload(baseUrl, `/api/v1/work-orders/${wo}/attachments`, { headers: h(seed, "auditor"), fileName: "t.png", mimeType: "image/png", content: tinyPng });
     assert.equal(asAuditor.status, 403);
