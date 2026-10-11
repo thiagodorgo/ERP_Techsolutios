@@ -292,7 +292,7 @@ export function EstoquePage() {
   // Totais reais das janelas carregadas — renderizam mesmo vazio.
   const totals = useMemo(() => computeInventoryTotals(items, movements), [items, movements]);
   // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007). itemsSource/
-  // movementsSource vêm vivos dos hooks; o cta de "Precisam repor" é gateado por purchase_orders:read.
+  // movementsSource vêm vivos dos hooks; "Precisam repor" não tem mais cta para Pedidos (saiu em B-SAN3-06a).
   const kpiDetails = useMemo(
     () => buildInventoryKpiDetails(totals, items.length, movementsPagination.total, itemsSource, movementsSource),
     [totals, items.length, movementsPagination.total, itemsSource, movementsSource],

@@ -93,7 +93,7 @@ As regras iniciais do repositorio estao em `docs/04-regras-negocio.md`.
 
 - **R7.4 classe ABC**: recalculo (rota admin) por valor de consumo 12m (Pareto: A~80%/B~15%/C~5%).
 - **R7.5 ponto de pedido**: derivado (`consumo_medio_diario × lead_time + estoque_seguranca`); `saldo <=
-  ponto` -> chip "Repor" + aviso idempotente + sugestao `/purchase-orders` (link, sem comprar).
+  ponto` -> chip "Repor" + aviso idempotente + link para o item em `/inventory/<id>` (sem comprar; Pedidos saiu em `B-SAN3-06a`, `D-TELAS-SAN3-06a`).
 - **R7.6 contagem ciclica**: sessao por classe -> conta itens (contado vs sistema) -> fechar gera ajuste
   real (variancia) + relatorio; sessao concluida/cancelada e terminal (422).
 
