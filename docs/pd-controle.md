@@ -192,7 +192,7 @@ acumular % do valor total: **A = top ~80%**, **B = próximos ~15%**, **C = resto
 eazystock, netsuite/abc]
 
 **R7.5 — Ponto de pedido:** `uso_medio_diario × lead_time_dias + estoque_seguranca`; `saldo ≤ ponto` gera
-`Notification` idempotente (R-P3) e sugere reposição (link `/purchase-orders`, **sem automatizar compra**).
+`Notification` idempotente (R-P3) e sugere reposição (link `/purchase-orders`, **sem automatizar compra**). *Nota de 2026-10-11: Pedidos saiu em `B-SAN3-06a`, `D-TELAS-SAN3-06a`; o aviso passa a abrir o item em `/inventory/<id>`.*
 [wikipedia/reorder-point, inflow/reorder, netstock+fishbowl (safety stock)]
 
 **R7.6 — Contagem cíclica:** sessão lista itens da classe escolhida, registra `contado vs sistema`, gera

@@ -184,7 +184,8 @@ test("[item 38] inventory tem rótulo Estoque, kind próprio e o conjunto EXATO 
   assert.equal(kind, "inventory");
   assert.deepEqual(
     visible.map((v) => `${v.group}/${v.label}`),
-    ["OPERAÇÃO/Checklists", "GESTÃO/Estoque", "GESTÃO/Pedidos", "GESTÃO/Relatórios", "ADMINISTRAÇÃO/Notificações", "ADMINISTRAÇÃO/Modelos de Checklist"],
+    // B-SAN3-06a (D-TELAS-SAN3-06a): Pedidos e Relatórios saíram do menu e da rota (telas literais, sem servidor).
+    ["OPERAÇÃO/Checklists", "GESTÃO/Estoque", "ADMINISTRAÇÃO/Notificações", "ADMINISTRAÇÃO/Modelos de Checklist"],
   );
   assert.equal(visible.some((v) => v.path === "/dashboard"), false, "/dashboard é governado e o inventory ainda não tem dashboard:read (P-SAN3-04A-DASHBOARD-SCOPED → B-SAN3-04b)");
   assert.equal(ROLE_SUBTITLE.inventory, "Estoque");

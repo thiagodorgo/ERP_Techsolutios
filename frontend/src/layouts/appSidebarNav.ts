@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   Ban,
-  BarChart3,
   Bell,
   BellRing,
   BookUser,
@@ -34,7 +33,6 @@ import {
   Send,
   Settings,
   ShieldCheck,
-  ShoppingCart,
   Smartphone,
   Tablet,
   Tag,
@@ -89,9 +87,7 @@ const TARIFAS: NavItem = { label: "Tarifas", path: "/cadastros/tarifas", icon: T
 const TAGS: NavItem = { label: "Tags", path: "/cadastros/tags", icon: Tag };
 const PONTOS_INTERESSE: NavItem = { label: "Pontos de Interesse", path: "/cadastros/pontos-interesse", icon: MapPin };
 const ESTOQUE: NavItem = { label: "Estoque", path: "/inventory", icon: Package };
-const PEDIDOS: NavItem = { label: "Pedidos", path: "/purchase-orders", icon: ShoppingCart };
 const REMUNERACOES: NavItem = { label: "Remunerações", path: "/finance/commissions", icon: Wallet };
-const RELATORIOS: NavItem = { label: "Relatórios", path: "/reports", icon: BarChart3 };
 const FINANCEIRO: NavItem = { label: "Financeiro", path: "/finance", icon: Receipt };
 const COBRANCAS: NavItem = { label: "Cobranças", path: "/finance/charges", icon: HandCoins };
 const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance/payments", icon: CreditCard };
@@ -149,7 +145,7 @@ const G_FROTA_OPERACIONAL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -197,18 +193,18 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     // levava ao 403. O backend é a autoridade; esta camada só molda o menu.
     { label: "OPERAÇÃO", items: [OS, ORCAMENTOS, APROVACOES, CHECKLISTS] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL] },
-    { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, PEDIDOS, REMUNERACOES, RELATORIOS, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
+    { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
   ],
   // B-SAN3-04a (item 38, P-026) — Estoque (inventory): menu PRÓPRIO. Antes o papel não tinha rótulo, caía em "gestor"
   // e o backend negava 24 dos 28 itens que o menu oferecia. Cada item aqui tem guard que o papel TEM
-  // (inventory_items:read, purchase_orders:read, reports:read, notifications:read, checklist_runs:read,
-  // tenant_checklists:read). O Dashboard fica no grupo: o esconde-fino (path governado ausente do menu do backend) o
+  // (inventory_items:read, notifications:read, checklist_runs:read, tenant_checklists:read). B-SAN3-06a
+  // (D-TELAS-SAN3-06a): Pedidos e Relatórios saíram do menu e da rota — eram telas literais, sem servidor. O Dashboard fica no grupo: o esconde-fino (path governado ausente do menu do backend) o
   // oculta até o B-SAN3-04b conceder dashboard:read — e aí ele aparece sem mexer aqui.
   inventory: [
     G_VISAO_GERAL,
     { label: "OPERAÇÃO", items: [CHECKLISTS] },
-    { label: "GESTÃO", items: [ESTOQUE, PEDIDOS, RELATORIOS] },
+    { label: "GESTÃO", items: [ESTOQUE] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
   ],
   // support — apenas administração limitada (nunca Frota/Cadastros/Operação).
@@ -225,8 +221,8 @@ export const ROLE_SUBTITLE: Record<RoleKind, string> = {
 };
 
 // Allowlist do escopo web: só rotas com tela real entram na sidebar. F11 expande
-// a lista para as telas F1–F9 (frota, estoque, pedidos, relatórios, financeiro,
-// usuários, auditoria) — sem isto os itens novos não renderizam.
+// a lista para as telas F1–F9 (frota, estoque, financeiro, usuários, auditoria) — sem isto os itens novos não
+// renderizam. B-SAN3-06a: Pedidos e Relatórios saíram (sem tela real).
 export const MVP_NAV_PATHS = new Set<string>([
   "/dashboard",
   "/work-orders",
@@ -260,9 +256,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/fleet/damages",
   "/fleet/statement",
   "/inventory",
-  "/purchase-orders",
   "/finance/commissions",
-  "/reports",
   "/finance",
   "/finance/charges",
   "/finance/payments",

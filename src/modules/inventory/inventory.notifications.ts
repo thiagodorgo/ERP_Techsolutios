@@ -14,8 +14,10 @@ const MAX_ITEMS_PER_RUN = 100;
  * The date window makes the key stable within the SAME day: because the
  * notification repository de-duplicates on `(tenant_id, recipient_user_id,
  * idempotency_key)`, running this twice on the same day yields exactly one
- * notification per (item, recipient). The message suggests reposição and links to
- * `/purchase-orders` — it NEVER creates a purchase order (R7.5: no auto-purchase).
+ * notification per (item, recipient). The message suggests reposição and links to the
+ * item detail screen (`/inventory/<itemId>`) — it NEVER creates a purchase order (R7.5:
+ * no auto-purchase). B-SAN3-06a (D-TELAS-SAN3-06a): the purchase-orders screen left the
+ * menu and the routes, so the link no longer points there.
  *
  * Reuses existing storage only (Notification) — no new persistence.
  */
@@ -53,11 +55,11 @@ export async function runReorderPointNotifications(
         message:
           `O item ${item.sku} (${item.name}) atingiu o ponto de pedido ` +
           `(saldo ${item.saldo}, ponto ${item.reorderPoint ?? "-"}). ` +
-          "Considere repor o estoque em /purchase-orders.",
+          "Considere repor o estoque.",
         severity: "warning",
         sourceType: "inventory_item",
         sourceId: item.id,
-        actionUrl: "/purchase-orders",
+        actionUrl: `/inventory/${item.id}`,
         idempotencyKey: `reorder_point:${item.id}:${day}`,
         metadata: {
           itemId: item.id,
