@@ -175,7 +175,10 @@ class Cenario:
         self.parecer = None
 
     def rodar(self, tarefa: str = "revisar-pr", alvo: dict | None = None):
-        deps = Dependencias(executar=self.executor, environ={}, criar_modelo=lambda c, o: self.modelo)
+        deps = Dependencias(executar=self.executor,
+                            environ={"ERP_AGENTE_TETO_DIARIO_USD": str(max(self.opcoes.max_custo_usd, Decimal("100")))},
+                            criar_modelo=lambda c, o: self.modelo,
+                            saidas_raiz=self.pasta.parent)
         ctx = ContextoComandos(raiz=None, executaveis=dict(EXE), repo_gh="dono/repo", npm_ci=self.opcoes.npm_ci)
         self.codigo, self.parecer = executar_tarefa(
             tarefa=tarefa,
@@ -280,6 +283,7 @@ def deps_repo_falso(executor: ExecutorRepoFalso, environ: dict, modelo=None, liv
         criar_modelo=criar_modelo,
         uso_de_disco=lambda caminho: _Disco(livre),
         cwd=str(executor.repo),
+        saidas_raiz=executor.base,
     )
     deps.modelos_construidos = construidos
     return deps

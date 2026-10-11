@@ -258,3 +258,34 @@ python -m unittest discover -s tests -t .          # também no Python global, s
 A suíte é `unittest` da biblioteca padrão, **sem rede** (abrir socket falha), **sem o SDK** e **sem o
 registro real** (a leitura de `HKCU` é bloqueada na suíte). Junction, symlink e nome 8.3 são criados de
 verdade nos testes de caminho. Nenhum teste chama a API.
+# Braço de trabalho v2: contexto, redação, patches e fila
+
+Toda tarefa intelectual exige `--contexto <arquivo.md>`. O arquivo segue
+`pacotes/MODELO.md`, contém oito seções fixas e declara o SHA efetivo e o teto da
+execução. Ele é tratado como dado hostil: não muda o prompt de sistema, catálogo,
+permissões, terminal ou orçamento. O resultado registra MD5 e SHA-256, nunca o
+conteúdo cru na auditoria.
+
+Comandos novos:
+
+```text
+python -m agente_claude redigir --entregavel registro --contexto pacote.md
+python -m agente_claude propor-patch --contexto pacote.md
+python -m agente_claude.despachante --fila saidas/filas/fila.jsonl --lancador-codex run-codex-visivel.ps1
+```
+
+`redigir` aceita `registro`, `ata`, `corpo-pr`, `hipoteses-mandato`,
+`corpo-cadeira` e `rascunho-plano`; escreve somente `entregavel.md` e
+`fontes-lidas.json` na saída. `propor-patch` nunca aplica: publica
+`proposta.patch` e `patch.json` somente após `git apply --check
+--whitespace=error-all`, com o worktree inalterado.
+
+`--saida` é apenas um nome novo sob `scripts/agente-claude-api/saidas/`; caminhos
+absolutos, separadores e `..` são recusados. O teto diário vem de
+`ERP_AGENTE_TETO_DIARIO_USD` (padrão `15.00`), usa `Decimal`, reserva atômica e
+livro append-only. Simulação não reserva. Há três slots globais de API.
+
+O despachante aceita fila JSONL fechada sob `saidas/filas/`, no máximo três itens
+API e um Codex. O modelo Codex é fixo `gpt-5.6-sol`; não há argv livre, shell ou
+retentativa automática. `hit your usage limit` junto de `try again at` gera o
+estado terminal `aguardando-codex`.

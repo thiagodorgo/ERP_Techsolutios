@@ -26,6 +26,17 @@ class TestCli(unittest.TestCase):
             codigo = cli.main(argv, deps)
         return codigo, saida.getvalue(), erro.getvalue()
 
+    def contexto(self, ex):
+        p = ex.repo / "contexto.md"
+        secoes = ["OBJETIVO", "FONTE", "REGRAS", "JÁ MEDIDO", "HIPÓTESES", "FORA DO ESCOPO", "ACEITE", "ORÇAMENTO"]
+        linhas = ["# PACOTE DE CONTEXTO — teste"]
+        for s in secoes:
+            valor = "NENHUM" if s == "JÁ MEDIDO" else "- teto_execucao_usd: 0.50" if s == "ORÇAMENTO" else f"conteúdo {s}"
+            if s == "FONTE": valor = f"SHA: {ex.head}\n- x:1"
+            linhas += [f"## {s}", valor]
+        p.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+        return str(p)
+
     def test_argumento_invalido_sai_3(self):
         deps = deps_repo_falso(ExecutorRepoFalso(self.base), dict(ENV_OK))
         for argv in (["revisar-pr", "0"], ["revisar-pr", "416 --web"], ["revisar-pr", "416", "--esforco", "max"],
@@ -37,9 +48,9 @@ class TestCli(unittest.TestCase):
 
     def test_execucao_do_alvo_desligada_por_padrao_na_cli(self):
         # A1: sem a flag, Opcoes.permitir_execucao_alvo é False; `--npm-ci` sozinho é recusado (3).
-        args = cli.construir_parser().parse_args(["revisar-pr", "416"])
+        args = cli.construir_parser().parse_args(["revisar-pr", "416", "--contexto", "x"])
         self.assertIs(cli._opcoes(args).permitir_execucao_alvo, False)
-        args = cli.construir_parser().parse_args(["investigar", "x", "--permitir-execucao-do-alvo"])
+        args = cli.construir_parser().parse_args(["investigar", "x", "--contexto", "x", "--permitir-execucao-do-alvo"])
         self.assertIs(cli._opcoes(args).permitir_execucao_alvo, True)
         ex = ExecutorRepoFalso(self.base)
         codigo, _, erro = self.main(["revisar-pr", "416", "--npm-ci", "--saida", str(self.base / "s")],
@@ -47,7 +58,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(codigo, 3)
         self.assertIn("--permitir-execucao-do-alvo", erro)
         self.assertEqual(ex.chamadas, [])
-        args = cli.construir_parser().parse_args(["revisar-pr", "416", "--npm-ci", "--permitir-execucao-do-alvo"])
+        args = cli.construir_parser().parse_args(["revisar-pr", "416", "--contexto", "x", "--npm-ci", "--permitir-execucao-do-alvo"])
         opcoes = cli._opcoes(args)
         self.assertTrue(opcoes.npm_ci and opcoes.permitir_execucao_alvo)
 
@@ -56,7 +67,7 @@ class TestCli(unittest.TestCase):
             base = self.base / ("p" if esperado else "n")
             ex = ExecutorRepoFalso(base)
             deps = deps_repo_falso(ex, dict(ENV_OK), modelo=ModeloFalso([resposta_parecer(veredito="aprovado")]))
-            codigo, _, _ = self.main(["revisar-pr", "416", "--saida", str(base / "s"), "--worktree-dir", str(base / "w"), *extra], deps)
+            codigo, _, _ = self.main(["revisar-pr", "416", "--contexto", self.contexto(ex), "--saida", "s", "--worktree-dir", str(base / "w"), *extra], deps)
             self.assertEqual(codigo, 0)
             p = json.loads((base / "s" / "parecer.json").read_text(encoding="utf-8"))
             self.assertIs(p["execucao"]["permitir_execucao_alvo"], esperado)
@@ -81,7 +92,7 @@ class TestCli(unittest.TestCase):
                               resposta_parecer(veredito="aprovado")])
         deps = deps_repo_falso(ex, dict(ENV_OK), modelo=modelo)
         saida_dir, wt_dir = self.base / "s", self.base / "w"
-        codigo, saida, _ = self.main(["revisar-pr", "416", "--saida", str(saida_dir), "--worktree-dir", str(wt_dir)], deps)
+        codigo, saida, _ = self.main(["revisar-pr", "416", "--contexto", self.contexto(ex), "--saida", "s", "--worktree-dir", str(wt_dir)], deps)
         self.assertEqual(codigo, 0)
         self.assertIn("parecer completo", saida)
         sub = [c["argv"][1:4] for c in ex.chamadas]
@@ -99,8 +110,8 @@ class TestCli(unittest.TestCase):
     def test_simular_ponta_a_ponta(self):
         ex = ExecutorRepoFalso(self.base)
         deps = deps_repo_falso(ex, dict(ENV_OK), modelo=ModeloSimulado(turnos=2, espera_s=0))
-        codigo, saida, _ = self.main(["investigar", "onde fica o tenant?", "--simular", "--simular-turnos", "2",
-                                      "--saida", str(self.base / "s"), "--worktree-dir", str(self.base / "w")], deps)
+        codigo, saida, _ = self.main(["investigar", "onde fica o tenant?", "--contexto", self.contexto(ex), "--simular", "--simular-turnos", "2",
+                                      "--saida", "s", "--worktree-dir", str(self.base / "w")], deps)
         self.assertEqual(codigo, 0)
         p = json.loads((self.base / "s" / "parecer.json").read_text(encoding="utf-8"))
         self.assertEqual(p["modelo"]["respondeu"], "simulado")
@@ -111,7 +122,7 @@ class TestCli(unittest.TestCase):
     def test_pasta_de_saida_existente_recusa(self):
         (self.base / "s").mkdir()
         ex = ExecutorRepoFalso(self.base)
-        codigo, _, erro = self.main(["revisar-pr", "416", "--simular", "--saida", str(self.base / "s")],
+        codigo, _, erro = self.main(["revisar-pr", "416", "--contexto", self.contexto(ex), "--simular", "--saida", "s"],
                                     deps_repo_falso(ex, dict(ENV_OK)))
         self.assertEqual(codigo, 3)
         self.assertIn("já existe", erro)
@@ -119,7 +130,7 @@ class TestCli(unittest.TestCase):
     def test_worktree_dentro_do_repo_ou_existente_recusa(self):
         ex = ExecutorRepoFalso(self.base)
         for wt in (str(ex.repo / "dentro"), str(self.base)):
-            codigo, _, _ = self.main(["revisar-pr", "416", "--simular", "--saida", str(self.base / f"s{len(wt)}"),
+            codigo, _, _ = self.main(["revisar-pr", "416", "--contexto", self.contexto(ex), "--simular", "--saida", f"sn{len(wt)}",
                                       "--worktree-dir", wt], deps_repo_falso(ex, dict(ENV_OK)))
             self.assertEqual(codigo, 3, wt)
         self.assertFalse(any(" ".join(c["argv"][1:3]) == "worktree add" for c in ex.chamadas))
@@ -127,7 +138,7 @@ class TestCli(unittest.TestCase):
     def test_disco_insuficiente_recusa(self):
         ex = ExecutorRepoFalso(self.base)
         deps = deps_repo_falso(ex, dict(ENV_OK), livre=1024**3)
-        codigo, _, erro = self.main(["revisar-pr", "416", "--simular", "--saida", str(self.base / "s"),
+        codigo, _, erro = self.main(["revisar-pr", "416", "--contexto", self.contexto(ex), "--simular", "--saida", "s",
                                      "--worktree-dir", str(self.base / "w")], deps)
         self.assertEqual(codigo, 3)
         self.assertIn("disco", erro)

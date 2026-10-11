@@ -21,7 +21,8 @@ from . import __version__
 from .conta import ContaRecusada
 from .modelo import ErroDeModelo
 from .redacao import Redator
-from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, verificar_conta, versao_sdk
+from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, redigir, propor_patch, verificar_conta, versao_sdk
+from .entregas import TIPOS
 from .worktree import MOTIVO_NPM_CI_SEM_PERMISSAO, RecusaPrevia
 
 SAIDA_COMPLETO, SAIDA_PARCIAL, SAIDA_RECUSA, SAIDA_API, SAIDA_INTERNO = 0, 2, 3, 4, 5
@@ -74,6 +75,7 @@ def _numero_pr(texto: str) -> str:
 
 
 def _comuns(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--contexto", help="pacote Markdown de contexto obrigatório nas tarefas intelectuais")
     p.add_argument("--sha", type=_sha, default=None)
     p.add_argument(
         "--permitir-execucao-do-alvo",
@@ -114,6 +116,11 @@ def construir_parser() -> argparse.ArgumentParser:
     i = sub.add_parser("investigar", help="investiga uma pergunta só lendo")
     i.add_argument("pergunta")
     _comuns(i)
+    d = sub.add_parser("redigir", help="redige um artefato sem escrever no repositório")
+    d.add_argument("--entregavel", choices=TIPOS, required=True)
+    _comuns(d)
+    pp = sub.add_parser("propor-patch", help="propõe patch validado, sem aplicar")
+    _comuns(pp)
     sub.add_parser("verificar-conta", help="MANUAL: 1 chamada mínima para provar a conta")
     sub.add_parser("versao", help="versão do agente e do SDK")
     return p
@@ -141,6 +148,7 @@ def _opcoes(args) -> Opcoes:
         simular=args.simular,
         simular_turnos=args.simular_turnos,
         sha=args.sha,
+        contexto=args.contexto,
     )
 
 
@@ -165,7 +173,7 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
     try:
         try:
             args = construir_parser().parse_args(argv)
-            if args.comando in ("revisar-pr", "investigar"):
+            if args.comando in ("revisar-pr", "investigar", "redigir", "propor-patch"):
                 opcoes = _opcoes(args)
         except ArgumentoInvalido as e:
             _imprimir(f"argumento inválido: {e}", redator, erro=True)
@@ -180,8 +188,12 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
             return SAIDA_COMPLETO
         if args.comando == "revisar-pr":
             codigo, parecer, pasta = revisar_pr(args.numero, opcoes, deps)
-        else:
+        elif args.comando == "investigar":
             codigo, parecer, pasta = investigar(args.pergunta, opcoes, deps)
+        elif args.comando == "redigir":
+            codigo, parecer, pasta = redigir(args.entregavel, opcoes, deps)
+        else:
+            codigo, parecer, pasta = propor_patch(opcoes, deps)
         if parecer is not None:
             estado = "PARCIAL (" + str(parecer.get("motivo_parcial")) + ")" if parecer.get("parcial") else "completo"
             _imprimir(f"parecer {estado}: veredito={parecer.get('veredito')} · custo US$ {parecer['custo'].get('usd_estimado')}", redator)

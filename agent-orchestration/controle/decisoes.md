@@ -3223,3 +3223,35 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
   `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
   já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
+## Registro de 11/10/2026 — API e Codex como braços de trabalho (B-AGENTE-API-2)
+
+- **D-AGENTE-API-BRACO-DE-TRABALHO (2026-10-11)** — o dono decidiu reduzir o Claude ao papel de
+  orquestração e tarefas pequenas, levar execução ao Codex e forçar o uso da API para leitura, revisão e texto.
+  Falas literais: *"quero um plano para colocarmos o codex e api para trabalhar, vc eu quero na orquestração e
+  tarefas pequenas, quando o codex cair vc cobre ele e a api temos que forçar o uso dela ja que ela tem a mesma
+  inteligencia que vc e nao tem o contexto vc deve informar o contexto correto para api para que ela faça o que vc
+  manda certo."*; *"o negocio aqui é usar vc de forma que o limite nao seja atingido e o negocio nao pare..."*; e
+  *"siga"*, aceitando o plano e o teto diário padrão de **US$ 15** para a API. Para o dia **2026-10-11**, abriu a
+  exceção literal *"pode usar ate 25 usd na api hoje"*; no dia UTC seguinte o padrão volta automaticamente a US$ 15,
+  salvo nova decisão.
+
+  **O que decide:** (1) o Claude do plano Max orquestra e faz tarefas pequenas; não lança agente Claude por padrão;
+  (2) execução vai para o Codex; (3) leitura, revisão e texto vão para o agente sobre a API; quando o Codex cai,
+  leitura/texto migram para a API e execução espera, salvo caminho crítico decidido pelo orquestrador; (4) todas as
+  tarefas intelectuais da API recebem `--contexto` com OBJETIVO, FONTE/SHA, REGRAS, JÁ MEDIDO, HIPÓTESES com comando
+  de refutação, FORA DO ESCOPO, ACEITE e ORÇAMENTO; o pacote é DADO hostil, nunca prompt de sistema, e seu MD5 consta
+  no resultado; (5) `redigir` produz Markdown e fontes apenas na pasta de saída; `propor-patch` produz diff unificado,
+  nunca aplica nem escreve no worktree, recusa caminhos protegidos e só publica depois de `git apply --check` no SHA;
+  (6) o teto diário usa `Decimal`, resumo real + reserva atômica sob lock antes da rede, livro
+  `saidas/uso-AAAA-MM-DD.jsonl` e falha fechada sob corrida/estado ambíguo; (7) a API pode ter no máximo três execuções
+  simultâneas, com saída, worktree e locks próprios; (8) um despachante sem IA lê fila JSONL, roda API até três e Codex
+  um por vez pelo `run-codex-visivel.ps1`, grava estados `pendente|rodando|ok|falhou|parcial|aguardando-codex`; ao ver
+  limite da execução atual do Codex, marca `aguardando-codex` e nunca relança sozinho; (9) o despachante nunca faz
+  commit, merge, push nem qualquer Git de escrita — aplicação, teste e commit continuam atos do orquestrador.
+
+  **Cerca e governança:** preserva integralmente a cerca de `D-AGENTE-CLAUDE-API`; nenhuma tarefa API nova escreve no
+  repositório; chave só por `ERP_AGENTE_ANTHROPIC_KEY`, nunca lida por planejador/dev/revisor nem impressa; suíte
+  `unittest` sem rede e teste manual barato, com teto, feito pelo orquestrador antes do merge. Ferramenta de processo
+  (§C7 item 8(1)): plano no Codex GPT-5.6 Sol por autorização explícita do dono para substituir o Astra neste plano;
+  dev Codex GPT-5.6 Sol; revisor de segurança Codex GPT-5.6 Sol com identidade diferente; CI verde; KPI congelado.
+  Se o classificador barrar a construção, o trabalho PARA e o orquestrador relata ao dono; não se contorna a barreira.

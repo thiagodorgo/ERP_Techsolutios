@@ -59,6 +59,8 @@ class Laco:
         system: str = PROMPT_SISTEMA,
         tools: list[dict] | None = None,
         tarefa: str | None = None,
+        terminal_nome: str = "entregar_parecer",
+        terminal_validar=None,
     ) -> None:
         self.modelo = modelo
         self.ferramentas = ferramentas
@@ -70,6 +72,8 @@ class Laco:
         self.system = system
         self.tools = tools if tools is not None else esquemas.ferramentas()
         self.tarefa = tarefa
+        self.terminal_nome = terminal_nome
+        self.terminal_validar = terminal_validar or (lambda entrada: validar(entrada, self.tarefa))
         self.resultado = ResultadoLaco()
         self._n_medidas = 0  # quantas mensagens o prompt da última chamada tinha
 
@@ -279,15 +283,15 @@ class Laco:
             if self.resultado.parecer_modelo is not None:
                 self._recusar(resultados, nome, entrada, ident, TEXTO_APOS_PARECER, "apos_parecer")
                 continue
-            if nome == "entregar_parecer":
+            if nome == self.terminal_nome:
                 try:
-                    parecer = validar(entrada, self.tarefa)
-                except ParecerInvalido as e:
+                    parecer = self.terminal_validar(entrada)
+                except (ParecerInvalido, ValueError) as e:
+                    erros = getattr(e, "erros", [str(e)])
                     res = ResultadoFerramenta(texto="parecer inválido", erro=True, codigo=1)
-                    self._auditar_ferramenta(nome, {"erros": e.erros}, res)
-                    resultados.append(
-                        self._resultado_erro(ident, "parecer inválido; corrija e chame de novo: " + "; ".join(e.erros[:20]))
-                    )
+                    self._auditar_ferramenta(nome, {"erros": erros}, res)
+                    rotulo = "parecer inválido" if self.terminal_nome == "entregar_parecer" else "entrega inválida"
+                    resultados.append(self._resultado_erro(ident, rotulo + "; corrija e chame de novo: " + "; ".join(erros[:20])))
                     continue
                 self.resultado.parecer_modelo = parecer
                 res = ResultadoFerramenta(texto="parecer recebido", erro=False, codigo=0)
