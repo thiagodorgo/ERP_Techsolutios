@@ -10846,9 +10846,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** o B-TRC-03a (perfil por modelo, comandos por nível, prova com o aparelho real) e o `G-TRC-NLB`. Não bloqueia o B-TRC-01, que roda só com OsmAnd, em dev.
 - **teste de encerramento:** a lista de modelos registrada em `controle/` e ao menos um aparelho GT06 real disponível para o B-TRC-03a.
 
-## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — o overlay de dev mapeia a web do Traccar para a 8080, e o exemplo oficial usa a 8082 — BAIXA
+## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overlay de dev — FECHADA, NÃO PROCEDE
 
-- **status:** ABERTA · **escopo:** `pre-existente` (vem da v2.1, `9cb441bd`; achado 8 da emenda v2.3) · **dono:** o dev do B-TRC-01.
-- Na v2.1, a linha 885 do plano mapeia `127.0.0.1:${TRC_WEB_PORT:-18080}:8080`. O exemplo oficial citado na pesquisa (G-TRC-PD, linha 264) publica `80:8082`. O `traccar.xml` de dev (linha 1295) não define `web.port`.
-- **bloqueia:** o B-TRC-01, só até a porta ser conferida. O conserto é pequeno.
-- **teste de encerramento:** a porta medida no contêiner da imagem aprovada, e a mesma porta usada no overlay e nos grupos de segurança do achado A-1.
+- **status:** FECHADA (2026-10-11, no mesmo PR que a abriu, o #421): **premissa falsa**. A linha 885 do plano v2.1 não é a web do Traccar. É o serviço `web` do próprio ERP: o frontend, que expõe a 8080 (`frontend/Dockerfile:23`). O dono abre o mapa operacional por ele (linha 1215 do plano). O serviço `traccar` (linha 882) fica **sem `ports`**. Quem achou foi o revisor do #421, o agente da API (`saidas/20261011-162412Z-rev-421`, achado 1), e o orquestrador conferiu nas linhas 878–887 e 1213–1216. O erro nasceu no achado 8 da emenda v2.3 e foi copiado para esta pendência sem conferência.
+- **o que fica:** a porta interna da web/REST do Traccar (8082 por padrão) importa só para os grupos de segurança do achado A-1 da v2.3 (B-TRC-06). **Não mudar a porta do frontend.**

@@ -3286,9 +3286,10 @@ do #390 nomeou continuam com o primeiro PR que mergear.
 
 - **D-TRC-PD-APROVADA-2026-10-11** — o dono aprova por escrito a PD do Traccar, como pede o item 7 da
   `D-TRC-DECISOES-DO-DONO-2026-10-11` (G-TRC-PD pela aprovação do dono, no lugar da junta de 5). Fala literal:
-  - *"Traccar: seguir recomendações. Aprovo a PD do Traccar 6.16.0
-    (sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda), com os protocolos OsmAnd e GT06, sem
-    SMTP, sem OIDC, sem porta pública além das de protocolo e só com a conta de serviço do ERP."*
+  - *"Traccar: seguir recomendações.
+    Aprovo a PD do Traccar 6.16.0 (sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda),
+    com os protocolos OsmAnd e GT06, sem SMTP, sem OIDC, sem porta pública além das de protocolo e só com a conta de
+    serviço do ERP."* (A frase e o digest ficam numa linha só, para a conferência da linha 4 do §8.0, v2.2 A-2.)
 
   **Condições aprovadas** (a pesquisa está em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md`; o registro da PD está em
   `docs/omega-pd.md`, `PD-TRC-616`):

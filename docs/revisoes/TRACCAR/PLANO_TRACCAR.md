@@ -1,5 +1,11 @@
 # Plano da trilha do Traccar — v2.1
 
+> **EMENDADO pela v2.2 e pela v2.3** (`PLANO_TRACCAR-EMENDA-v2.2.md`, `PLANO_TRACCAR-EMENDA-v2.3.md`). Leia-se junto.
+> Onde divergirem, vale a emenda mais nova e, acima dela, `agent-orchestration/controle/decisoes.md`. Em especial, a
+> **linha 4 do gate §8.0** (G-TRC-PD) deixou de ser junta 5/5 e de exigir a ata `J-TRC-PD.md`: vale a aprovação escrita
+> do dono, `D-TRC-PD-APROVADA-2026-10-11`. A arquitetura e as respostas Q1–Q11 e F-1 a F-9 estão em
+> `D-TRC-ARQUITETURA-2026-10-11`.
+
 > **Estado:** v2.1 **FINAL** (ajustes da crítica r2; não há rodada 3). Não autoriza código sozinho: o B-TRC-01 começa
 > quando as sete linhas do gate de §8.0 estiverem verdes, inclusive as decisões 1, 2 e 3 do dono e o registro.
 > **v2.1:** a crítica r2 (`critico-traccar-r2`, `790c2084`) deu **PRONTO COM AJUSTES** — 0 `bloqueia`, 14 `ajuste`,

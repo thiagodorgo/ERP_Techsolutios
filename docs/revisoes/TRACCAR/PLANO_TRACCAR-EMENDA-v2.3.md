@@ -273,5 +273,9 @@ O dono respondeu *"Traccar: seguir recomendações"* e aprovou a PD com OsmAnd e
 - **F-9:** os modelos de rastreador seguem em aberto (`P-TRC-MODELOS-RASTREADOR`). Isso bloqueia o 03a e o `G-TRC-NLB`,
   mas não o B-TRC-01.
 
+**O achado 8 desta emenda NÃO PROCEDE.** A linha 885 da v2.1 é o serviço `web` do frontend do ERP (8080), não a web
+do Traccar, que fica sem `ports` (linha 882). Isso foi conferido na revisão do #421 (`P-TRC-PORTA-WEB-8080-8082`, fechada).
+A 8082 do Traccar importa só para os grupos de segurança do A-1.
+
 **[leitura do orquestrador]** A leitura dos 3 níveis, marcada "a confirmar" no cabeçalho desta emenda, está confirmada
 pela F-4.
