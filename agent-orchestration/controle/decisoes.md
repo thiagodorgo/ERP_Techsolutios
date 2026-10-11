@@ -3413,3 +3413,79 @@ do #390 nomeou continuam com o primeiro PR que mergear.
 
   **Isto não muda:** as regras do dono para o Traccar no §C7 item 8(4), e a pré-condição de ingestão em produção
   (`B-SAN3-05` mergeado).
+
+## Registro do `B-O6R-07c-a` (PR #414), 2026-10-10
+
+- **D-07C-TRAVAS-REORDENADAS (2026-10-10, decisão do orquestrador; texto do plano do `B-O6R-07c` v3, §R.4/B6)** — "Com a
+  divisão do `B-O6R-07c` (2026-10-10): (1) a trava de `src/modules/work-orders/work-order.service.ts`,
+  `SAN3-13 → 07c → SAN3-23` (`PLANO_SAN3.md:356`), passa a `07c-a → SAN3-13 → SAN3-23`; o 07c-b só toca esse arquivo se a
+  D1-07c for (b) ou (c), e aí entra na fila depois do `SAN3-13`. (2) A trava de `src/modules/mobile/mobile-work-order-sync.ts`,
+  `07c → SAN3-16` (`PLANO_SAN3.md:357`), é satisfeita pelo **07c-a** (que não toca o arquivo) quando a D2-07c for (a), (b) ou
+  (c), e passa a `07c-b → SAN3-16` quando for (d), porque aí o 07c-b toca o arquivo. Com (a), a ordem é
+  `07c-a → SAN3-16 → 07c-b`: o `SAN3-16` constrói a saída do app que o 07c-b exige antes de mergear."
+
+## Registro de 11/10/2026 (fim da tarde) — 03a, 07c-a, telas, celular do técnico e rastreadores
+
+Fala literal do dono, a mesma para as cinco entradas abaixo:
+*"03a: A. 07c-a: D. Telas: recomendação, /logistics ligar depois e escrever na memoria a pedencia. F9: ja tenho rastreadores da cantrack, modelos g500ls e j16-g900l um de cada. o Celular do técnico: pelo nosso app"*
+
+- **D-03a-MESMA-CHAVE-OUTRO-ATOR = A (2026-10-11).**
+  - **A regra:** a mesma ação de sincronização (o mesmo `client_action_id` gerado no celular) é **uma ação só** e pertence
+    a quem a enviou primeiro. Se outro usuário reenviar a mesma ação, o servidor responde **conflito** e não lança nada.
+  - **Por quê:** fecha o pagamento em dobro no celular compartilhado (achado A-04 da crítica r2 do `B-O6R-03a`). O conserto
+    fica só no servidor, sem migração e sem mexer no app.
+  - **O que muda:** o critério de `docs/revisoes/SAN3/PLANO_SAN3.md:243` ("2 usuários com a mesma chave local → 2
+    lançamentos") deixa de valer para o 03a, como propõe `B-O6R-03a-EMENDA-v3.md` (ramo `fix/expense-sync-atomic`,
+    `62c95170`).
+  - **Próximo passo:** o dev do 03a, com o plano v2 e a emenda v3. O 03a mexe em dinheiro: depois do dev vem a junta
+    completa (unanimidade de 3).
+
+- **D-07CA-OPCAO-D (2026-10-11).** O PR #414 (`B-O6R-07c-a`: técnico não atribuído não mexe em subrecurso de OS alheia)
+  **mergeia por decisão do dono**, acima da junta (§A1.1).
+  - **O que a junta decidiu:** reprovou o ciclo 1 por 2 × 1 (`omega/juntas/J-B-O6R-07c-a-ciclo1.md`). A C1 e a C3
+    aprovaram. A C2 reprovou com 3 `bloqueia`, todos sobre o **teste-vigia** do censo
+    (`tests/o6r07c-census-guard.test.ts`, que reconhece a FORMA da rota e não a propriedade). A própria ata diz:
+    "classe não grave: nenhum é defeito do produto hoje".
+  - **O que entra no merge:** o conserto do produto.
+  - **O que vira pendência:** o vigia por propriedade vira `P-GOV-GUARDA-POR-PROPRIEDADE`, com bloco dono
+    `B-GOV-GUARDA-POR-PROPRIEDADE`. O plano do ciclo 2 (`bd504cc4`) e a pré-crítica da API (`6a4ab8b9`) passam a ser
+    insumo desse bloco. O relatório parcial do dev do ciclo 2 é versionado como registro: ele não escreveu código.
+  - **Risco aceito pelo dono:** até o vigia novo existir, uma rota NOVA escrita de certo jeito pode passar sem o teste
+    avisar. As rotas que existem hoje estão cobertas pelo conserto e pelos testes do bloco.
+  - **Depois do merge:** o porteiro (merge de produto, §C7 item 8(3)).
+
+- **D-TELAS-SAN3-06a (2026-10-11)**, as recomendações aceitas para as telas com dado inventado (levantamento do
+  agente da API, item 39 do `PLANO_SAN3.md`, bloco `B-SAN3-06a`):
+  - **Relatórios** (`/reports`) e **Pedidos de compra** (`/purchase-orders`) saem do menu e da rota. São 100% literais,
+    sem servidor e sem tabela. Construí-los volta como bloco próprio, se o dono pedir.
+  - O **Console Dispatcher** (`/dispatch/console`) é ligado aos dados reais. O servidor já tem os despachos, o resumo, as
+    localizações e as OS.
+  - O **`/logistics`** fica para "ligar depois", na fala do dono, e vira `P-LOGISTICS-MOCK`. Ele não está no menu
+    lateral, mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts`.
+  - A ordem dos blocos que mexem no menu segue o `PLANO_SAN3.md` (l.351-352).
+
+- **D-TRC-CELULAR-PELO-APP (2026-10-11).**
+  - **Como funciona:** a posição do celular do técnico chega pelo **nosso app Flutter, direto ao ERP**, com o login do
+    técnico e a fila offline que já existem (`mobile/flutter_app/lib/core/location/`). O celular **nunca passa pelo
+    Traccar**.
+  - **O que o Traccar recebe:** só os rastreadores das viaturas.
+  - **Origem:** confirma o texto do plano v2.1 (§6.2, l.903; §3.2, l.486) e a opção (a) que o orquestrador apresentou ao
+    dono.
+  - **[rec] Consequência:** em produção não é preciso abrir a porta OsmAnd. O OsmAnd fica para o simulador de dev, e a
+    porta pública de cada protocolo se decide no `G-TRC-NLB`.
+
+- **D-TRC-MODELOS-CANTRACK (2026-10-11)**, a resposta à F-9. O dono complementou a fala acima com:
+  *"os gps sao todos gt06, g500ls é um modelo odb"*.
+  - **Aparelhos:** rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**. O G500LS é **OBD**: liga na porta OBD do
+    veículo.
+  - **Protocolo:** **os dois falam GT06**, pela palavra do dono. Cabem na PD aprovada (OsmAnd e GT06) **sem emenda**.
+  - **J16:** o fórum do Traccar (fonte EXTERNA, sem cópia no repositório) confirma GT06 na porta 5023 do Traccar. Ver
+    `traccar.org/forums/topic/problem-with-j16-using-the-wrong-protocol/` e
+    `traccar.org/forums/reply/108278`. O comando relatado é `SZCS#SERVIP=…#SERVPORT=5023#PTL_SEL=2#GT06SEL=1#`.
+    Ressalvas relatadas no fórum: há variantes GT06 V3/V4 e o consumo de dados é alto.
+  - **G500LS sendo OBD [leitura do orquestrador, HIPÓTESE a medir no B-TRC-03a]:**
+    - é alimentado pela porta OBD, sem instalação elétrica;
+    - o motorista pode desconectá-lo. Se o aparelho mandar o evento de corte de energia, isso vira alarme;
+    - os dados do OBD (ignição, odômetro) dependem do firmware e do decodificador GT06 do Traccar.
+  - **O que o B-TRC-03a confere com os aparelhos reais:** a variante GT06, a porta, o intervalo duplo nativo (parado e em
+    movimento) e os comandos de intervalo.

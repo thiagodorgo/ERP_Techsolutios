@@ -1,0 +1,141 @@
+{
+ "jurado": "jurado-07ca-c2-censo-e-guard (identidade nova; competência do guardiao-fail-closed, inelegível como identidade, e do inspetor-de-rotas; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C2 — censo e guard: gerador próprio e contagens no objeto; formas das duas críticas e MG1–MG16 (e o MG3b); CE-G1 (a)(b)(c), T6 e T11 na letra",
+ "mandato_md5": "05463375797dc4120d0f56f2bd9efc99 (cru = EOL-neutro) · declarado no disparo: 05463375797dc4120d0f56f2bd9efc99",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor · substituição (§C7.6-bis): o Fable não rodou por decisão do dono, não por cota · fonte: D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO, objeto:agent-orchestration/controle/decisoes.md:3132",
+ "corpo_md5": ".claude faff2d5cbef04f380dca1c3784887867 · .agents 84f42a56cc6cabb268480b5e54ea9fa7 (mesmo corpo + cabeçalho Codex) · recebido: blob do objeto, faff2d5cbef04f380dca1c3784887867",
+ "objeto": "4ca2be43c3b4b32b9bed670f02d78145620cdc2e (git ls-remote do ramo = gh pr view 414 headRefOid, no início 17:19Z e no fim 18:54Z: não andou; OPEN, rascunho, MERGEABLE) · B = merge-base com origin/main = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a = origin/main no início e no fim · o que a main trouxe ao src/ entre c1cfdabe e B: 8 arquivos src/modules/inventory/* (1322+/334-), nenhuma rota · objeto do inspetor c8bd4c28 → objeto: 12 arquivos, todos agent-orchestration/ (merge do #415, parecer e evidência do inspetor, 3 mandatos), 0 em src/tests/scripts/package* · head do mandato d7255263 → objeto: só os 3 mandatos",
+ "legalidade": "parecer do inspetor desta junta: votos/B-O6R-07c/insp-07ca-parecer.md (inspetor-de-terreno-da-junta, Opus 5.5 nível menor, medido 16:25–16:40Z) · LIBERADO COM RESSALVA (R1–R5) · confere este nome (3.1: 0 ocorrências no obituário), este corpo commitado (3.3: C2 faff2d5cbef04f380dca1c3784887867 = o meu) e worktree próprio por cadeira: sim (mandato renomeia para w-ciclo1-07ca-c2) · check-runs no objeto 4ca2be43: total 14 | não-verdes 1 | pendentes 0 — o não-verde é backend do run 38069987168 (push), # tests 3298 pass 3294 fail 2 skipped 2, as 2 linhas not ok são T15 do B-SAN3-05 (#405) e o pai, falha PRÉ-EXISTENTE declarada no mandato; o guard do bloco no mesmo log: ok T0…T13 e tempo · job backend do run 38069991906 (pull_request): success · S0 sync-agent-agents --check ec=0 (52 agentes)",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (ciclos 1–2: bloqueia dentro-do-bloco reprova)",
+ "leitura_de_outras_cadeiras": "Não abri, não li e não citei nenhum arquivo de outra cadeira desta junta. Vi só, na listagem do diretório votos/B-O6R-07c (17:25Z), que existiam 07ca-C1-evidencia.md e 07ca-C1-voto.json — não abertos. Li: o meu corpo (blob do objeto), o mandato C2c.md, o parecer do inspetor (insp-07ca-parecer.md), o plano v3 (C.1, C.2, 07c-a.3 a 07c-a.8, Apêndices A e B), as críticas r1 e r2 (veredito, achados e apêndices), o relatório do dev (S6, S7), PLANO_SAN3.md (CE-G1, CE-2) e as âncoras do CLAUDE.md no objeto e na main.",
+ "pausa": "nenhuma",
+ "voto": "REPROVADO",
+ "justificativa": "Terreno: worktree próprio C:/Users/AMP/w-ciclo1-07ca-c2 detached no objeto, npm ci próprio, git no ambiente do censo (Windows), ambiente declarado por comando (env -u DATABASE_URL -u REDIS_URL; MSYS_NO_PATHCONV=1 só na linha), disco 18 GB, base viva intocada, sem banco. Legalidade: inspetor LIBERADO COM RESSALVA (este nome, este corpo faff2d5c…, worktree próprio); objeto 4ca2be43 por ls-remote e gh, não andou; delta desde o objeto do inspetor só registro; check-runs 14/1 não-verde (T15 do #405, pré-existente), 0 pendentes; régua do ciclo 1: bloqueia dentro-do-bloco reprova. ITEM 1 VERDE — meu gerador (Layer + mount) = helper = fixture: ROTA 409 · ROTEADOR 75 · SUBAPP 0 · MIDDLEWARE 183/14 · SEM-CAMINHO 0; 438 chaves não-PAR com 0 diferença de n; AST textual 410 rotas, 9 fora do createApp (portal-app, nota); lotes 5 e pares 30 (20/23) por leitura dos despachantes e sonda própria, 0 diferença; 468 chaves, fixture = gravar byte a byte; guard 31/31; diferença com c1cfdabe só toca-por-caminho 32 × 31, explicada (o próprio bloco pôs o escopo antes do multipart). ITEM 2 VERMELHO — injeções = apêndices (6/6), 15/15 formas sozinhas vermelhas pela linha da C.2, MG1–MG16 todas vermelhas (divergências: MG2 sem T4; MG3 do dev = MG3b); MG3b: depois do gravar, guard e laço G verdes e a rota de dentro responde 200 ao campo (A3); três formas próprias (Map.get, in, sufixo com texto de curinga aceito) fazem um lote existente aceitar do campo um tipo novo de OS/evidência de OS com o instantâneo intocado e o guard verde (A1, A2). ITEM 3 VERMELHO — CE-G1(a) e (c) sustentados (enumerações geradas; catracas ENTIDADES e 07C_B; T0–T13 com mutação vermelha; T6 6/6; T11 igualdade nos dois sentidos, = Apêndice B); CE-G1(b) NÃO: o membro não previsto nasce permitido nas formas A1/A2 e depois do gravar na A3; o preguiçoso com rota é vermelho (laço G), com controle verde; com tipo de lote sem prefixo exige classe fora da propriedade escrita à mão (A4, ajuste). Controles de todos os itens acusaram. Nada ficou sem medir.\nVOTO: REPROVADO — o membro não previsto nasce permitido: um despacho por Map.get(action.type) ou pelo operador in, ou por sufixo com o mesmo texto de um curinga aceito, faz um lote existente aceitar do papel de campo um tipo novo de OS com o instantâneo intocado e o guard 31/31 verde (A1, A2), e um sub-app express() montado em Router, depois do gravar, deixa guard e laço G verdes com a rota de dentro respondendo 200 ao campo (A3) | escopo: dentro-do-bloco | classe: não grave | evidência: mutações C2a/C2c/C2b e MG3b no objeto 4ca2be43, guard ec=0 # tests 31 # pass 31, sonda HTTP accepted/200 a field_technician e technician, controle rejected no objeto sem mutação",
+ "item1_gerador_proprio": "VERDE. Três fontes no objeto: helper (censo/lotes/gravar), meu gerador c2gen.mts (troca do construtor Layer + evento mount; md5 063c3409141d238d3e7b5de06a4b6758) e inventário textual por AST c2txt.cjs (md5 20b44e2f7bfc5e7ff25b51b5e12d4e2c). ROTA 409 · ROTEADOR 75 · SUBAPP 0 · MIDDLEWARE 183 em 14 chaves · SEM-CAMINHO 0 nas duas fontes estruturais, 438 × 438 chaves não-PAR com 0 diferença de n; AST: 410 registros de rota, 0 ROTA do gerador sem registro textual, 9 registros sem ROTA = portal-app.ts (app separado, porta PORTAL_PORT, sem papel de tenant). Lotes por leitura dos despachantes (5; 30 tipos com arquivo:linha) e sonda HTTP própria c2lotes.mts (md5 123b2861dde98ea772ca044916bab541): 30 pares (field_technician 20 · technician 23), 0 diferença com s3.pares do helper; curingas estáticos = os 3 de mobile-evidence-sync.ts:327-328 por grep. Instantâneo regenerado pelo gravar = blob do fixture byte a byte (md5 1e11cd753ae1d06c542c5ae0d11c86e4), 468 chaves, 23 ·07c-b, 0 violações. Guard no objeto: 31/31, ec=0. Diferença com o plano (c1cfdabe): só toca-por-caminho 32 × 31, explicada (POST …/attachments passou a responder 404 ao id aleatório — escopo antes do multipart, do próprio bloco; as 32 casam o SEG, efeito 0 na classe); a main trouxe só src/modules/inventory/* (sem rota). Controles: cmp acusa 1 byte; meu gerador vê o N1 (MIDDLEWARE …/via-use + 200 aos dois papéis) e o sub-app dentro de Router (SUBAPP 1, ROTA 410, 200 aos dois papéis); o comparador de lotes acusou a si mesmo duas vezes antes do mascaramento do tipo ecoado.",
+ "item2_formas_e_MG": "VERMELHO (achados A1, A2, A3). (a) As 6 injeções de tests/fixtures/o6r07c-formas = apêndices r1/r2/plano (md5 EOL-neutro, 6/6 iguais); mk-malclass e prova-tipos-v3 reproduzidos dentro do T12; o grupo A não perde forma; mapa forma→subteste completo. (b) 15/15 formas SOZINHAS vermelhas pela linha da C.2 (F1, F2, F3, F4, F5, F6, N1, N2, N9, N3a, N3b, N3c, N10, F1′, B3) e N3d pelo prova-tipos-v3 (naoResolvidos 1). (c) MG1–MG16 uma a uma, rito provado (âncora 1, substituição provada, mutante carregado, restauro hash-object = blob, porcelain vazio): MG1 T1 · MG1b T6 · MG2 T1+T5 (o T4 do plano NÃO cai — chave nova) · MG2T4 T4 · MG3 do plano T1+T4 · MG4 T1+T3 · MG5 T2 · MG6 T1 · MG7 T8 · MG8 T1 · MG9 T1+T10 · MG10 T9 · MG11 T6 · MG12 T7 · MG13 T6 · MG14 T11 (MG14b T11+T2) · MG15 T13 · MG16a T2+T12 · MG16b T12. Controles: o guard verde no objeto e a 1ª MG vermelha; âncora inexistente e âncora LF em arquivo CRLF ABORTAM com contagem 0; restauro não feito é acusado (hash 76b91b9c × blob 0ee705e9). (d) MG3b: guard com o instantâneo do objeto cai só no T1 (MIDDLEWARE /api/v1 · app); depois do gravar, que escreve sozinho {\"MIDDLEWARE /api/v1 · app\": MIDDLEWARE}, guard 31/31 e laço G 24/24 VERDES, e POST /api/v1/work-orders/:workOrderId/via-mg3b responde 200 aos dois papéis de campo — graduado bloqueia (régua declarada no achado A3). Formas PRÓPRIAS novas: C2a (Map.get) e C2c (operador in) no lote de OS e C2b (sufixo com o mesmo texto de curinga aceito) no lote de evidência — instantâneo intocado, guard 31/31 VERDE, o campo recebe accepted para o tipo novo; no objeto sem mutação o mesmo tipo é rejected (controle).",
+ "item3_CEG1_T6_T11": "VERMELHO (CE-G1(b) não sustentado; achados A1–A4). (a) Fontes GERADAS: app montado em processo filho, alcance por diferencial no app, tipos por git ls-files + AST/checker, lotes por sonda, entidades de /attachments pelo registro real, instantâneo pelo gravar (= blob byte a byte). Listas literais achadas por varredor próprio (controle: acha ENTIDADES_ATTACHMENTS e nada num fixture de forma): ENTIDADES_ATTACHMENTS e LISTA_07C_B são CATRACAS (acrescentar → T13 / T11 vermelhos); CURINGAS_ACEITOS e NAO_RESOLVIDOS_ACEITOS são ALLOWLISTS ⊆ por desenho do plano (acrescentar → verde; o membro novo dispensa o T9/T8 — com a MG7 junto, o T8 fica verde), casando por arquivo+texto sem a linha; CATEGORIAS é pertença (acrescentar → verde). LISTA_07C_B = as 23 ·07c-b do Apêndice B = as 23 do fixture. (b) Preguiçoso com ROTA (MG1 + gravar): classe OS·07c-a, guard verde, laço G VERMELHO (G-NEG status 200); controle com escopo (getForMutation) + gravar: guard e laço G verdes. Preguiçoso com TIPO DE LOTE (km_rapida/km_c2): gravar dá NAO-CLASSIFICADA (T1 segura); a classe da propriedade é recusada pelo T6 (fora da propriedade); com R escrito à mão, guard 31/31 e laço G 24/24 verdes e o campo recebe accepted — classe do B3 (achado A4). Preguiçoso com sub-app em Router (MG3b): verde em tudo só com o gravar (achado A3). (c) T0–T13 com mutação vermelha medida (T0 por categoria fabricada; T10 também pela sub-propriedade lote instável, mutação própria); teste de tempo só afirma ms > 0 → nota. (d) T6: as 6 sub-regras vermelhas, cada uma com a linha CLASSE-INCOMPATIVEL certa e só o T6 caindo. (e) T11: código = igualdade de conjunto (deepEqual ordenado); acrescentar (MG14, L-07CB) e tirar (VISTORIA → OS·07c-a sem tocar a lista) VERMELHOS — na letra.",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/o6r07c-subresource-scope; gh pr view 414 --json headRefOid,…; gh api repos/thiagodorgo/ERP_Techsolutios/commits/4ca2be43…/check-runs?per_page=100; gh run view 38069987168 --job 114265250599 --log-failed",
+   "forma": "início 17:19Z e fim 18:54Z; saídas em arquivo",
+   "resultado": "objeto 4ca2be43 nas duas fontes, não andou; 14 check-runs, 1 não-verde (backend push: T15 do #405, pré-existente), 0 pendentes"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-ciclo1-07ca-c2 4ca2be43; npm ci --no-audit --no-fund; DATABASE_URL=<fictícia na linha> npx prisma generate",
+   "forma": "worktree próprio, sem junction",
+   "resultado": "ec=0; 326 pacotes"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL timeout 600 node --test --import tsx --test-reporter=tap tests/o6r07c-census-guard.test.ts",
+   "forma": "objeto, Windows, Node 20.19.5",
+   "resultado": "ec=0, # tests 31 # pass 31 # fail 0; censos 103,7 s / 104,3 s / 103,8 s"
+  },
+  {
+   "comando": "node --import tsx tests/helpers/o6r07c-census.ts gravar|censo|lotes …; cmp com git show 4ca2be43:tests/fixtures/o6r07c-classificacao-vias.json",
+   "forma": "helper do objeto",
+   "resultado": "ROTA 409 · ROTEADOR 75 · SUBAPP 0 · MIDDLEWARE 183 (14) · SEM-CAMINHO 0; 59 · 5 · 30 (20/23); 468 chaves, 23 ·07c-b, 0 violações; cmp ec=0 (md5 1e11cd75…)"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/gen/c2gen.mts; node $SCRATCH/gen/c2txt.cjs; node --import tsx $SCRATCH/gen/c2lotes.mts",
+   "forma": "geradores próprios (verbatim no apêndice da evidência)",
+   "resultado": "438 × 438 chaves não-PAR iguais ao helper; 410 rotas textuais, 0 ROTA sem texto, 9 textuais fora do createApp (portal-app); 30 pares (20/23) iguais ao helper; controles acusaram"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/gen/c2forma.mts <forma isolada> (15 formas)",
+   "forma": "injeções das críticas isoladas por sed, executarCenso + classificar contra o fixture",
+   "resultado": "15/15 vermelhas pela linha da C.2; N3d por prova-tipos-v3 (naoResolvidos 1)"
+  },
+  {
+   "comando": "bash $SCRATCH/gen/mgrun.sh|snaprun.sh|cadeia3-9.sh (mut.cjs/snapmut.cjs/delrota.cjs → guard.sh → rest.sh)",
+   "forma": "MG1–MG16, MG1b, MG2T4, MG3b, MG14b, T0, lote instável, 6 sub-regras do T6, T11 tirar, 5 listas literais, preguiçoso (MG1, controle com escopo, km_rapida, km_c2), formas próprias C2a/C2b/C2c com sonda HTTP",
+   "resultado": "tabela na evidência; todos os restauros hash-object = blob, porcelain vazio; C2a, C2b, C2c e MG3b+gravar verdes no guard com o campo recebendo accepted/200"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C2-07ca-A1",
+   "defeito": "Despacho por uma forma que o extrator não lista escapa em silêncio: um lote existente que passa a decidir por Map.get(action.type) (C2a) ou pelo operador in (C2c) aceita do papel de campo um tipo novo de OS, com o instantâneo intocado e o guard verde.",
+   "evidencia": "mobile-work-order-sync.ts, antes do teste de status_change (âncora 1, diff +5/+4): C2a — const MAPA_C2 = new Map([[\"work_order.c2_mapa\", true]]); if (MAPA_C2.get(action.type)) {…accepted}; C2c — if (action.type in ({ \"work_order.c2_in\": 1 })) {…accepted} → tests/o6r07c-census-guard.test.ts ec=0, # tests 31 # pass 31 # fail 0 nas duas; sonda HTTP: work_order.c2_mapa e work_order.c2_in → tenant_admin, field_technician e technician HTTP 200 accepted; controles: tipo inexistente → rejected unsupported_action_type; o mesmo tipo NO OBJETO sem mutação → rejected. Leitura no blob: o6r07c-census.ts:368-383 — pontos de decisão = igualdade, switch, includes/has/indexOf, acesso por chave e startsWith/endsWith/includes/test; .get(t) e in não são ponto de decisão: o tipo não vira candidato, não vai a naoResolvidos nem a curinga, e o curinga dinâmico (work_order.__tipo_inexistente_07c_a__) é recusado pelo Map/objeto.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — tests/helpers/o6r07c-census.ts, tests/o6r07c-census-guard.test.ts, o fixture e tests/o6r07c-subresource-scope.test.ts nasceram em 99c5912d (2026-10-10, guard v3 do censo … (B-O6R-07c-a)) no ramo; o helper não é ancestral da main (git merge-base --is-ancestor falso). O guard é entregável do 07c-a (07c-a.3; CE-2 e CE-G1 do PLANO_SAN3.md).",
+   "classe": "não grave (vigia via futura: exige mudança de código; nenhuma via de hoje fica aberta por ela)",
+   "motivo": "Propriedade ausente: um ponto em que o código decide pelo campo type numa forma não prevista nasce PERMITIDO (não vira candidato nem naoResolvidos) — o default do membro não previsto é permitir (CE-G1(b)); a propriedade que a r2 exigiu (todo tipo que um lote aceita do técnico entra no censo, ou faz o guard falhar, qualquer que seja a forma) vale só para as formas listadas. Não está entre os riscos residuais declarados na C.2."
+  },
+  {
+   "id": "C2-07ca-A2",
+   "defeito": "A lista de curingas estáticos aceitos casa por arquivo+texto sem a linha: um despacho NOVO por sufixo, escrito com o mesmo texto de um curinga aceito no mesmo arquivo, passa no T9 e faz o lote de evidência aceitar do campo um tipo novo de evidência de OS, com o instantâneo intocado e o guard verde (C2b).",
+   "evidencia": "mobile-evidence-sync.ts, antes de if (!isSupportedActionType(action.type)) { (âncora 1, diff +4): const type = action.type; if (type.endsWith(\"_photo\") && !isSupportedActionType(type)) { return {…accepted} } → guard ec=0, 31/31; sonda: evidence.work_order_extra_photo → os três papéis HTTP 200 accepted; controle evidence.work_order_extra_x → rejected; NO OBJETO evidence.work_order_extra_photo → rejected. Leitura: o6r07c-census.ts:409-414 e :487 — o curinga novo sai como mobile-evidence-sync.ts:<linha nova>: type.endsWith(\"_photo\"); semLinha() tira a linha e o texto é membro do Set CURINGAS_ACEITOS; o curinga dinâmico sonda evidence.__tipo_inexistente_07c_a__, que não termina em _photo. O plano (C.2) aceita os 3 por serem classificação DEPOIS de isSupportedActionType, não despacho (mobile-evidence-sync.ts:327-328); o casamento entregue não guarda nem linha nem posição.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — tests/helpers/o6r07c-census.ts, tests/o6r07c-census-guard.test.ts, o fixture e tests/o6r07c-subresource-scope.test.ts nasceram em 99c5912d (2026-10-10, guard v3 do censo … (B-O6R-07c-a)) no ramo; o helper não é ancestral da main (git merge-base --is-ancestor falso). O guard é entregável do 07c-a (07c-a.3; CE-2 e CE-G1 do PLANO_SAN3.md).",
+   "classe": "não grave (via futura; exige mudança de código)",
+   "motivo": "Propriedade ausente: a exceção aceita é identificada por (arquivo, texto), não pela ocorrência; uma ocorrência nova com o mesmo texto entra na allowlist sem passo humano — o membro não previsto nasce permitido (CE-G1(b))."
+  },
+  {
+   "id": "C2-07ca-A3",
+   "defeito": "Um sub-app express() montado por router.use(sub) dentro do roteador de OS (o residual MG3b) é contado como MIDDLEWARE /api/v1 · app e não é descido; o gravar que o próprio guard prescreve inscreve essa chave sozinho como MIDDLEWARE; com o instantâneo regenerado, guard e laço G ficam verdes e a rota de dentro escreve para o campo.",
+   "evidencia": "work-order.routes.ts (import express + { const sub = express(); …; sub.post(\"/work-orders/:workOrderId/via-mg3b\", requirePermission(status), …200); router.use(sub); }): guard com o instantâneo do objeto → ec=1, só T1 NAO-CLASSIFICADA: MIDDLEWARE /api/v1 · app; node --import tsx tests/helpers/o6r07c-census.ts gravar <fixture> → ec=0, 0 violações, diff do instantâneo = + \"MIDDLEWARE /api/v1 · app\": { \"classe\": \"MIDDLEWARE\", \"n\": 1 }; guard → ec=0 31/31; laço G → ec=0 24/24, 0 linhas via-mg3b; sonda do gerador próprio: field_technician e technician POST /api/v1/work-orders/:workOrderId/via-mg3b -> 200 por ROTA …/via-mg3b. Meu gerador (troca do construtor Layer + evento mount) vê SUBAPP 1 e ROTA 410 na mesma forma. Medido também pelo dev (relatório S7) e só proposto como pendência; continua presente no objeto.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — tests/helpers/o6r07c-census.ts, tests/o6r07c-census-guard.test.ts, o fixture e tests/o6r07c-subresource-scope.test.ts nasceram em 99c5912d (2026-10-10, guard v3 do censo … (B-O6R-07c-a)) no ramo; o helper não é ancestral da main (git merge-base --is-ancestor falso). O guard é entregável do 07c-a (07c-a.3; CE-2 e CE-G1 do PLANO_SAN3.md).",
+   "classe": "não grave (via futura)",
+   "motivo": "Propriedade ausente: o censo conta o que o gerador visita, não o que o app expõe — a rota de dentro de um sub-app montado em Router nunca vira chave, e o gravar a esconde atrás de uma chave MIDDLEWARE de classe única. Régua declarada: não é silêncio puro (a chave entra no diff), mas não é a classe do B3 (lá a chave inscrita nomeia a rota e a classe errada é escolha humana); aqui a chave não diz ao revisor que há rota de escrita, a classe é automática, e o T5 não sonda montagem em /. Pelo critério do caminho do preguiçoso (com o instantâneo regenerado pelo gravar, a via nova sem escopo passa no guard e no laço G), bloqueia."
+  },
+  {
+   "id": "C2-07ca-A4",
+   "defeito": "A pertença de um par de lote à propriedade é decidida só pelo prefixo do nome do tipo; um tipo novo do lote de OS sem o prefixo (km_c2/km_rapida, forma N3c) não pode ser inscrito na propriedade (o T6 recusa OS·07c-a como fora da propriedade), e a saída para o verde é uma classe fora da propriedade escrita à mão, que o laço G nunca exercita.",
+   "evidencia": "mobile-work-order-sync.ts if (action.type === \"km_c2\") {…accepted} sem escopo → gravar ec=1 (NAO-CLASSIFICADA) → guard T1; OS·07c-a escrito à mão → T6 CLASSE-INCOMPATIVEL: PAR … · km_rapida = OS·07c-a (fora da propriedade); R escrito à mão → guard ec=0 31/31, laço G 24/24 (0 linhas km_c2); sonda km_c2 → os três papéis accepted; diff visível: + \"PAR /api/v1/mobile/sync/work-order-actions · km_c2\": { \"classe\": \"R\" }. Regra no blob: o6r07c-census.ts:430 (prop do PAR = /^work_order[.]/ ou /^checklist/ ou /^evidence[.]work_order_/).",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — tests/helpers/o6r07c-census.ts, tests/o6r07c-census-guard.test.ts, o fixture e tests/o6r07c-subresource-scope.test.ts nasceram em 99c5912d (2026-10-10, guard v3 do censo … (B-O6R-07c-a)) no ramo; o helper não é ancestral da main (git merge-base --is-ancestor falso). O guard é entregável do 07c-a (07c-a.3; CE-2 e CE-G1 do PLANO_SAN3.md).",
+   "classe": "não grave",
+   "motivo": "Propriedade ausente: para par de lote não há o critério de comportamento que as rotas têm (toca-por-caminho); um tipo do lote de OS fora do padrão de nome fica fora da propriedade por construção. Exige inscrição visível no diff, nomeando o lote de OS (classe do B3)."
+  },
+  {
+   "id": "C2-07ca-N1",
+   "defeito": "A coluna derruba do 07c-a.4 diz MG2 → T1, T4, T5; medido: T1 e T5 (chave nova, nenhuma contagem existente muda). O T4 tem mutação vermelha (MG2T4 e a MG3 do plano).",
+   "evidencia": "guard da MG2: 31/29/2, not ok T1 e T5; MG2T4: só T4 (CONTAGEM: MIDDLEWARE /api/v1 · (anônima) 114 × 115); MG3 por app.use: T1+T4.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (tabela do plano v3, 07c-a.4)",
+   "classe": "não grave",
+   "motivo": "registro inexato; o critério tem mutação"
+  },
+  {
+   "id": "C2-07ca-N2",
+   "defeito": "O teste tempo do censo só afirma ms > 0 nos três censos; não pode falhar pela asserção (cai junto se um censo rejeitar).",
+   "evidencia": "tests/o6r07c-census-guard.test.ts:299-304 no blob.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "teste de publicação (R-a1), declarado assim no comentário"
+  },
+  {
+   "id": "C2-07ca-N3",
+   "defeito": "O censo cobre só o createApp; src/portal-app.ts monta 9 rotas (/portal/v1/owner e /portal/v1/authority) num app separado, porta PORTAL_PORT.",
+   "evidencia": "inventário textual por AST: 9 registros sem ROTA no gerador, todos em authority-portal.routes.ts e owner-portal.routes.ts; src/portal-app.ts:44,48; src/server.ts:38-39.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (alcance declarado do censo)",
+   "classe": "não grave",
+   "motivo": "app sem attachAuthenticatedActor nem papel de tenant: fora do alcance do papel de campo hoje; uma rota de OS nova ali ficaria fora do guard"
+  },
+  {
+   "id": "C2-07ca-N4",
+   "defeito": "A sub-propriedade lote instável do T10 não tem MG no plano.",
+   "evidencia": "mutação da C2 (motivo de unsupported_action_type passa a terminar em action.type.slice(-4)) → T10 com LOTE-INSTAVEL: /api/v1/mobile/sync/work-order-actions : …_a__ × …_b__ (e T1).",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o critério tem agora mutação medida; falta só na tabela do plano"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "teste tempo do censo (publicado, R-a1): a asserção ms > 0 não pode falhar sozinha — nota C2-07ca-N2; nenhum T0–T13 ficou sem mutação vermelha",
+  "nenhum controle deixou de acusar: cmp de 1 byte; meu gerador com N1 e com sub-app em Router; comparador de lotes (acusou a si mesmo 2 vezes antes do mascaramento do tipo ecoado); âncora inexistente e âncora LF em arquivo CRLF abortaram; restauro não feito acusado; varredor de listas; preguiçoso com escopo verde; md5 do instantâneo lido pelo guard = o mutado em todas as mutações de instantâneo"
+ ],
+ "pendencias_que_aceito": [
+  "C1 (jurado-07ca-c1-escopo-por-objeto): comportamento das 13 vias (G-NEG/G-POS/G-WIDE), matriz, moderação, 404 entre organizações, km",
+  "C3 (jurado-07ca-c3-regressao-escopo): régua das 44, npm test, -db, escopo do diff, registro",
+  "o 07c-b: as 23 entradas ·07c-b abertas, D1/D2 do dono, Ω6R-SEC-002 e item 51",
+  "riscos residuais declarados na C.2 (camada existente que passa a escrever, despacho por campo que não é type, toca-por-corpo, rota polimórfica nova)",
+  "o job backend vermelho do run 38069987168 (push) no objeto é o T15 do B-SAN3-05 (#405), pré-existente declarado no mandato; o guard do bloco passou no mesmo log (ok T0…T13 e tempo), e o backend do run 38069991906 (pull_request) está verde",
+  "KPI congelado (§C7 item 8(5))"
+ ],
+ "teardown": "Toda mutação restaurada e provada (git hash-object = git rev-parse 4ca2be43:<arquivo>; git status --porcelain vazio depois de cada uma; 0 .pristino pendentes; o arquivo temporário src/modules/mobile/__mg7.ts removido nas duas vezes) · 0 diretórios o6r07c-* no tmpdir no fim · worktree C:/Users/AMP/w-ciclo1-07ca-c2 removido por git worktree remove --force (ec=0) depois de contar 0 processos vivos com o caminho na linha de comando; diretório não existe mais e não aparece em git worktree list · nenhum container criado (0 j07ca-c2-*) · base viva (erp-postgres, erp-redis) e portas do dono nunca tocadas · em C:/Users/AMP/w-07ca escrevi só 07ca-C2-evidencia.md e 07ca-C2-voto.json, sem commit · scratch próprio apagado depois de gravar o voto (os geradores próprios ficam verbatim no apêndice da evidência) · resíduo ALHEIO só reportado: git worktree list mostrava C:/Users/AMP/w-ciclo1-07ca-c1 como prunable (17:19Z), não tocado."
+}
