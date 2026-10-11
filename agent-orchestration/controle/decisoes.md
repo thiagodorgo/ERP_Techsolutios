@@ -3281,3 +3281,134 @@ do #390 nomeou continuam com o primeiro PR que mergear.
     US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
   - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
   Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
+
+## Registro de 11/10/2026 (tarde) — Traccar: a PD aprovada e a arquitetura do dono
+
+- **D-TRC-PD-APROVADA-2026-10-11** — o dono aprova por escrito a PD do Traccar, como pede o item 7 da
+  `D-TRC-DECISOES-DO-DONO-2026-10-11` (G-TRC-PD pela aprovação do dono, no lugar da junta de 5). Fala literal:
+  - *"Traccar: seguir recomendações. Aprovo a PD do Traccar 6.16.0
+    (sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda), com os protocolos OsmAnd e GT06, sem
+    SMTP, sem OIDC, sem porta pública além das de protocolo e só com a conta de serviço do ERP."*
+
+  **Condições aprovadas** (a pesquisa está em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md`; o registro da PD está em
+  `docs/omega-pd.md`, `PD-TRC-616`):
+  1. **Versão e imagem:** Traccar **6.16.0**, só por digest: `traccar/traccar:6.16.0@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`. Tag sem
+     digest não vale, porque as tags do repositório são mutáveis. Versão abaixo da 6.16.0 é proibida, porque só ela restringe o
+     `forward.header` à URL global (commit `acd55bd0`, premissa P-04 do plano).
+  2. **Protocolos:** só **OsmAnd** e **GT06** (`protocols.enable` com esses dois). Isso emenda a condição
+     `protocols.enable=osmand` da pesquisa e a linha 1295 da v2.1, conforme o achado A-6 da emenda v2.3 (F-6). O
+     decodificador GT06 é superfície de DoS e entra no threat model. **O B-TRC-01 continua só com OsmAnd** (v2.3, A-7).
+     O GT06 entra no B-TRC-03a.
+  3. **Sem SMTP, sem OIDC, sem usuário além da conta de serviço do ERP.** Essas três condições, junto com a de portas abaixo, neutralizam as duas CVEs médias
+     abertas na 6.16.0 (CVE-2026-108737 e CVE-2026-108738). A PD é revista quando sair a 6.16.1.
+  4. **Porta pública só a de protocolo.** O painel e a API web do Traccar nunca ficam públicos. O dono fixou o TETO.
+     **[leitura do orquestrador]** A aprovação não abre as portas de protocolo: o NLB só nasce no gate `G-TRC-NLB`, com
+     decisão escrita, threat model e junta 5/5 (v2.3, A-2), como mandam as regras do dono para o Traccar (§C7 item 8(4)).
+  5. **Configuração confirmada no código da tag e obrigatória em todo ambiente:**
+     - `forward.type=json` (o padrão é `url`);
+     - `geocoder.enable=false` (o padrão chama a LocationIQ);
+     - `database.registerUnknown=false` fora de dev;
+     - o segredo do forward entra por variável de ambiente (`CONFIG_USE_ENVIRONMENT_VARIABLES=true`), nunca no
+       `traccar.xml`;
+     - o forward espera 5 s de conexão e 5 s de leitura (é o padrão da tag, `Keys.java:1064-1076`). A ingestão do ERP
+       responde dentro disso.
+
+  O gate §8.0 do plano exige na linha 4 a aprovação escrita do dono à PD. **Esta entrada é essa aprovação.**
+
+- **D-TRC-ARQUITETURA-2026-10-11** — a arquitetura do Traccar, definida pelo dono, e as respostas às perguntas das
+  emendas v2.2 (Q1–Q11) e v2.3 (F-1 a F-9). Falas literais do dono:
+  - *"Claude, eu, eu até aceito suas recomendações sobre o, a notícia de prazo e 11 perguntas do, do Tracar, mas eu
+    quero discutir com você como é que o Tracar vai funcionar. Minha ideia é ele funcionar como um, a gente só
+    consumir a API dele, ele ficar... Ele fica numa sub-rede sem acesso à, à internet no, na AWS e fica alimentando
+    uma API. Essa API eu vou alimentar meu sistema."*
+  - *"como o rastreador chega no Traccar: Entrada só nas portas dos rastreadores. Empurrar para o tempo real; puxar
+    para reconciliar o que se perdeu. e a frequencia de aquisição e de uso do bd vai ser variavel, quando estiver
+    com a tela aberta naquele dispositivo esse dispositivo responde mais rapido. um carro parado fica com o tempo
+    maior de resposta ate ele começar a se mover onde fica na media de respostas, mas quando o operador abre uma
+    tela que ele esta presente ele fica mais rapido na resposta, (vizualização tem dois niveis, o de visualizar o
+    mapa um pouco mais lento que o nivel de rastreamento que no mapa o caminho onde ele passar fica com uma linha )"*
+  - *"nivel 1= de 1 a 2 minutos. nivel 2= de 3 a 5 minutos. nivel 3 15 minutos. O "acelerar o rastreador quando abre a
+    tela" entra já (só modelos compatíveis, gasta dados) ou depois da camada 2? na hora de configuração do pgs no
+    sistema, o gps/sistema ja fica com a configuração, nos gps gt06 o sistema ja memoriza que deve enviar os comando
+    e quais comandos usar. nos que nao tem o protocolo gt06 o sistema ja guia o usuario de como configura-lo"*
+  - e, para as perguntas F da v2.3, a mesma fala da entrada anterior: *"Traccar: seguir recomendações."*
+
+  As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec]. O texto das emendas está em
+  `docs/revisoes/TRACCAR/PLANO_TRACCAR-EMENDA-v2.2.md` (`17f11f2f`) e `…-v2.3.md` (`f6f41e15`), no ramo `docs/plano-traccar`.
+
+  **Arquitetura:**
+  1. **Rede.** O Traccar fica numa sub-rede privada **sem saída para a internet**: sem NAT e sem rota `0.0.0.0/0`. A
+     imagem é espelhada num ECR privado com o mesmo digest; o B-TRC-06 prova que a cópia preserva o digest (hoje é
+     hipótese). O ERP fica na mesma VPC (F-1 [rec], coerente com a D2 = a). Uma ponte para o Fly furaria o "sem
+     saída".
+  2. **Entrada.** A internet só alcança as portas dos protocolos dos rastreadores, por um NLB. A web e a REST do
+     Traccar só aceitam o grupo de segurança do worker do ERP. A ingestão (porta 3200) só aceita o grupo do Traccar.
+  3. **Empurrar + puxar.**
+     - Empurrar: o forward JSON do Traccar vai, pela rede privada, à API de ingestão do ERP, a camada
+       anticorrupção. É o tempo real.
+     - Puxar: o worker do ERP chama a REST do Traccar para reconciliar o que se perdeu.
+     - O ERP **não recebe** a credencial do banco do Traccar. O trajeto vem **pela REST, nunca por SQL** (F-2 [rec]).
+  4. **Frequência adaptativa em 3 níveis** (F-4, confirmado nos números do dono):
+     - nível 1: de 1 a 2 min;
+     - nível 2: de 3 a 5 min, em movimento;
+     - nível 3: 15 min, parado.
+
+     O **nível 1 vale só na tela de rastreamento de UMA viatura e no detalhe dela** (F-3 [rec]). O mapa geral fica nos
+     níveis 2 e 3, porque nível 1 no mapa inteiro mandaria comando a todas as viaturas visíveis. A presença na tela
+     vai no Redis, com TTL de cerca de 90 s.
+  5. **Teto e histerese** (F-5 [rec]), com os valores iniciais do achado A-4 da v2.3:
+     - no mínimo 5 min entre comandos;
+     - até 2 subidas de nível por hora;
+     - até 6 comandos por dia por rastreador;
+     - cerca de 10 min de histerese para voltar ao nível base.
+
+     Ao bater o teto, o rastreador fica no nível base, com aviso na tela e métrica. **[leitura do orquestrador]** Os
+     valores são calibrados com o aparelho real no B-TRC-03a.
+  6. **Comandos por modelo, no cadastro do rastreador.**
+     - **GT06:** o sistema memoriza quais comandos enviar em cada nível.
+     - **Outros protocolos:** o sistema guia o usuário na configuração.
+     - O catálogo de perfis é global e só a plataforma o escreve (D5).
+     - **Exceção ao §9.2 da v2.1** (F-7 [rec]): o texto passa a dizer "comando remoto, exceto os comandos de
+       intervalo da allowlist aprovada pela plataforma". Nunca corte de motor, nem outro comando.
+     - O comportamento dos comandos GT06 na 6.16.0 é **HIPÓTESE** até o B-TRC-03a ler o encoder na tag, com
+       arquivo e linha, e provar com o aparelho real.
+     - **Quando entra:** a aceleração ao abrir a tela entra no B-TRC-03a/03b. O B-TRC-01 não muda.
+  7. **Dois níveis de visualização.**
+     - **Mapa:** níveis 2/3 e o polling de 30 s que já existe.
+     - **Rastreamento de uma viatura:** nível 1 e a linha do trajeto, puxada da REST do Traccar sob demanda. O
+       navegador nunca chama o Traccar: a chamada passa pelo ERP, que recorta pelas janelas de vínculo da organização
+       e pelas regras D4/D6.
+     - **O que o ERP guarda:** o último ponto, o trajeto resumido e os recibos, por 90 dias.
+     - **O que o Traccar guarda:** todos os pontos, por 90 dias.
+  8. **Backup do banco do Traccar: 14 dias** (F-8 [rec]). Depois do expurgo de 90 dias, o dado some de vez em no
+     máximo 90 + 14 dias.
+  9. **Blocos e prazo.**
+     - O B-TRC-03 se divide em **03a** (vínculo pela plataforma, vínculo fixo, expediente, perfil por modelo, comandos
+       por nível, código GT06 conferido, aparelho real) e **03b** (reconciliação pela REST, reconciliador de nível,
+       presença, teto, log de comandos, último ponto e trajeto resumido).
+     - Nasce o gate documental `G-TRC-NLB`.
+     - Estimativa: **~45–76 dias úteis**, ainda hipótese (Q1 e v2.3, A-7).
+     - **A primeira posição no mapa continua no B-TRC-01**, só OsmAnd, em dev.
+  10. **Os modelos de rastreador** (F-9) seguem em aberto. O dono não os informou. Viram a pendência
+      `P-TRC-MODELOS-RASTREADOR`, que bloqueia o B-TRC-03a e o `G-TRC-NLB`, mas não o B-TRC-01.
+
+  **Respostas da v2.2** (todas [rec]; a fala do dono é *"eu até aceito suas recomendações sobre o, a notícia de prazo e
+  11 perguntas"*):
+  - **Q1:** a estimativa passa a ~39–67 dias úteis, sem corte, com o B-TRC-03 dividido em dois. A v2.3 a refez para
+    ~45–76.
+  - **Q2:** D4 = b é o vínculo fixo, com o despacho aceito por cima.
+  - **Q3:** no B-TRC-01, só em dev, vale o ponto mais recente (provisório). Os dois pinos vêm no B-TRC-04.
+  - **Q4:** o técnico só com o app, sem viatura, aparece por padrão.
+  - **Q5:** quem configura o vínculo fixo é a gestão, com a permissão de editar viatura.
+  - **Q6:** despacho reatribuído sem aceite, ou ambíguo, aparece como frota sem nome.
+  - **Q7:** o expediente é da organização: um horário padrão que o admin ou a gestão configura. Por técnico, mais
+    tarde.
+  - **Q8:** num despacho aceito fora do expediente, o nome aparece.
+  - **Q9:** a guarda de 90 dias vale para o Traccar e para a posição do app. A parte do app é um bloco pequeno à parte.
+  - **Q10:** a trilha de consulta registra quem viu, quando, de quem (técnico ou viatura), em que tela e de que
+    período.
+  - **Q11:** ver a frota sem técnico é recurso pago, no plano pago de rastreamento de frota. É decisão comercial do dono,
+    tomada pela aceitação da recomendação.
+
+  **Isto não muda:** as regras do dono para o Traccar no §C7 item 8(4), e a pré-condição de ingestão em produção
+  (`B-SAN3-05` mergeado).

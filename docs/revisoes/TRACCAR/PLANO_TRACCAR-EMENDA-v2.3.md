@@ -255,3 +255,23 @@ useOperationsMap.ts:9: const POLL_INTERVAL_MS = 30_000;
 - A porta padrão do GT06, a fila de comandos, o commandResult e o expurgo nativo do Traccar não foram verificados.
 - As estimativas e os tetos são hipótese do revisor.
 ```
+
+## Respostas do dono (2026-10-11), escritas pelo orquestrador
+
+O dono respondeu *"Traccar: seguir recomendações"* e aprovou a PD com OsmAnd e GT06. O que vale para os blocos está em
+`agent-orchestration/controle/decisoes.md`: `D-TRC-PD-APROVADA-2026-10-11` (as condições da PD) e
+`D-TRC-ARQUITETURA-2026-10-11` (a arquitetura e as respostas). Em resumo:
+
+- **F-1:** o ERP fica na mesma VPC.
+- **F-2:** o trajeto vem pela REST, nunca por SQL.
+- **F-3:** o nível 1 vale só na tela de rastreamento de uma viatura e no detalhe dela.
+- **F-4:** os níveis são 1–2 min, 3–5 min e 15 min.
+- **F-5:** valem o teto e a histerese do A-4, calibrados no B-TRC-03a.
+- **F-6:** o GT06 entra na PD. O B-TRC-01 segue só com OsmAnd.
+- **F-7:** a exceção cobre só os comandos de intervalo da allowlist. Nunca corte de motor.
+- **F-8:** o backup guarda 14 dias.
+- **F-9:** os modelos de rastreador seguem em aberto (`P-TRC-MODELOS-RASTREADOR`). Isso bloqueia o 03a e o `G-TRC-NLB`,
+  mas não o B-TRC-01.
+
+**[leitura do orquestrador]** A leitura dos 3 níveis, marcada "a confirmar" no cabeçalho desta emenda, está confirmada
+pela F-4.
