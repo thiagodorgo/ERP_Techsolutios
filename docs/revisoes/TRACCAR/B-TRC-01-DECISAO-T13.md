@@ -1,4 +1,4 @@
-# B-TRC-01: decisão do orquestrador sobre o ratchet T13 (2026-10-11, ~21:15Z)
+# B-TRC-01: decisão do orquestrador sobre o ratchet T13 (2026-10-11, ~20:45Z; o "~21:10Z" do relatório do dev está adiantado)
 
 **Origem:** a PARADA do dev antes da fatia 7 (`B-TRC-01-dev.md`, seção "PARADA"). O plano não previa o ratchet
 `tests/san3-05-acessos-de-plataforma-guard.test.ts`, do B-SAN3-05. O desenho de §4.2–§4.5 cria entradas novas nele: o
@@ -34,3 +34,17 @@ saída do gerador depois do código. O desenho do plano se mantém.
   `traccar-sim`). A limpeza precisa passar os perfis.
 
 Quem decidiu: o orquestrador. O dono pode vetar.
+
+## Adendo (2026-10-11, ~23:00Z): o literal L0 do T13
+
+Depois das fatias 7–12, o único vermelho do bloco era o subteste "L0 exato" do T13
+(`tests/san3-05-acessos-de-plataforma-guard.test.ts`, l.241). Ele crava
+`tabelas ENABLE=109 FORCE=109 · acessores Prisma em FORCE=109`, e a migração `20260874000000_traccar_ingestion_foundation`
+cria **2 tabelas tenant-scoped com FORCE RLS**: `vehicle_tracking_bindings` (l.76) e `traccar_ingress_receipts` (l.121).
+A `traccar_quarantine_items` fica sem FORCE por desenho, porque é a quarentena SEM organização.
+
+**Decisão:** é a mesma natureza da opção (i), um ato consciente no arquivo do ratchet. O orquestrador trocou o literal
+para **111** nos três números. Medido: `npm test -- tests/san3-05-acessos-de-plataforma-guard.test.ts` → `# tests 35 ·
+# pass 35 · # fail 0`.
+
+A cadeira (a) da junta confere que o delta de +2 é EXATAMENTE essas duas tabelas e os dois modelos Prisma delas.

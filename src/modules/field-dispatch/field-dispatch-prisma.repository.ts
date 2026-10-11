@@ -10,11 +10,42 @@ import type {
   FieldDispatchStatus,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
+  FindOperatorsForVehicleAtInput,
+  OperatorAtFixTime,
+  OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
 } from "./field-dispatch.types.js";
-import type { CreateFieldDispatchEventInput, FieldDispatchRepository } from "./field-dispatch.repository.js";
+import {
+  classifyOperatorsAtFixTime,
+  type CreateFieldDispatchEventInput,
+  type FieldDispatchRepository,
+} from "./field-dispatch.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+// B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — o operador da viatura no instante do fix. Recebe o `tx` da fase 2
+// da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
+// despachos cuja janela contém o instante: `accepted_at ≤ at` e `at` antes do primeiro entre `completed_at`,
+// `cancelled_at` e `failed_at` que não for nulo. A regra de elegibilidade é `classifyOperatorsAtFixTime`.
+export async function findOperatorsForVehicleAt(
+  tx: Prisma.TransactionClient,
+  input: FindOperatorsForVehicleAtInput,
+): Promise<OperatorAtFixTime> {
+  const candidates = await tx.$queryRaw<OperatorAtFixTimeCandidate[]>`
+    SELECT d.operator_user_id::text AS "operatorUserId",
+           d.operator_assigned_at AS "operatorAssignedAt",
+           d.accepted_at AS "acceptedAt"
+      FROM field_dispatches d
+      JOIN work_orders wo ON wo.tenant_id = d.tenant_id AND wo.id = d.work_order_id
+     WHERE d.tenant_id = ${input.tenantId}::uuid
+       AND wo.vehicle_id = ${input.vehicleId}::uuid
+       AND d.accepted_at IS NOT NULL
+       AND d.accepted_at <= ${input.at}
+       AND (LEAST(d.completed_at, d.cancelled_at, d.failed_at) IS NULL
+            OR ${input.at} < LEAST(d.completed_at, d.cancelled_at, d.failed_at))`;
+
+  return classifyOperatorsAtFixTime(candidates);
+}
 
 export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
   constructor(private readonly client: PrismaExecutor) {}

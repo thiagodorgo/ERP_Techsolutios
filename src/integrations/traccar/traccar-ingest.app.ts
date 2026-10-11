@@ -61,6 +61,21 @@ function errorBody(code: string) {
   return { error: { code } };
 }
 
+/** §4.6 — o desfecho do serviço → status HTTP (corpo vazio em 2xx; só o código nos demais). Fonte única. */
+export function traccarIngestResponse(outcome: TraccarIngestOutcome): { readonly status: number; readonly code?: string } {
+  switch (outcome.kind) {
+    case "stored":
+    case "duplicate":
+      return { status: 204 };
+    case "quarantined":
+      return { status: 202 };
+    case "conflict":
+      return { status: 409, code: "traccar_idempotency_conflict" };
+    case "unavailable":
+      return { status: 503, code: "unavailable" };
+  }
+}
+
 const rejectQueryString: RequestHandler = (request, response, next) => {
   if (request.originalUrl.includes("?")) {
     response.status(400).json(errorBody("query_not_allowed"));
@@ -113,21 +128,12 @@ export function createTraccarIngestApp(deps: TraccarIngestAppDeps): Express {
     }
 
     const outcome = await withTimeout(deps.ingest(command), deps.timeoutMs);
-    switch (outcome.kind) {
-      case "stored":
-      case "duplicate":
-        response.status(204).end();
-        return;
-      case "quarantined":
-        response.status(202).end();
-        return;
-      case "conflict":
-        response.status(409).json(errorBody("traccar_idempotency_conflict"));
-        return;
-      case "unavailable":
-        response.status(503).json(errorBody("unavailable"));
-        return;
+    const { status, code } = traccarIngestResponse(outcome);
+    if (code === undefined) {
+      response.status(status).end();
+      return;
     }
+    response.status(status).json(errorBody(code));
   };
 
   app.post(
