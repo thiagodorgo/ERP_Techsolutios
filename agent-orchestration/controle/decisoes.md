@@ -3434,7 +3434,7 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     a quem a enviou primeiro. Se outro usuário reenviar a mesma ação, o servidor responde **conflito** e não lança nada.
   - **Por quê:** fecha o pagamento em dobro no celular compartilhado (achado A-04 da crítica r2 do `B-O6R-03a`). O conserto
     fica só no servidor, sem migração e sem mexer no app.
-  - **O que muda:** o critério de `docs/revisoes/SAN3/PLANO_SAN3.md:243` ("2 usuários com a mesma chave → 2
+  - **O que muda:** o critério de `docs/revisoes/SAN3/PLANO_SAN3.md:243` ("2 usuários com a mesma chave local → 2
     lançamentos") deixa de valer para o 03a, como propõe `B-O6R-03a-EMENDA-v3.md` (ramo `fix/expense-sync-atomic`,
     `62c95170`).
   - **Próximo passo:** o dev do 03a, com o plano v2 e a emenda v3. O 03a mexe em dinheiro: depois do dev vem a junta
@@ -3460,7 +3460,8 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     sem servidor e sem tabela. Construí-los volta como bloco próprio, se o dono pedir.
   - O **Console Dispatcher** (`/dispatch/console`) é ligado aos dados reais. O servidor já tem os despachos, o resumo, as
     localizações e as OS.
-  - O **`/logistics`** fica para "ligar depois", na fala do dono, e vira `P-LOGISTICS-MOCK`.
+  - O **`/logistics`** fica para "ligar depois", na fala do dono, e vira `P-LOGISTICS-MOCK`. Ele não está no menu
+    lateral, mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts`.
   - A ordem dos blocos que mexem no menu segue o `PLANO_SAN3.md` (l.351-352).
 
 - **D-TRC-CELULAR-PELO-APP (2026-10-11).**
@@ -3468,7 +3469,7 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     técnico e a fila offline que já existem (`mobile/flutter_app/lib/core/location/`). O celular **nunca passa pelo
     Traccar**.
   - **O que o Traccar recebe:** só os rastreadores das viaturas.
-  - **Origem:** confirma o texto do plano v2.1 (§2.3, l.903; §3, l.486) e a opção (a) que o orquestrador apresentou ao
+  - **Origem:** confirma o texto do plano v2.1 (§6.2, l.903; §3.2, l.486) e a opção (a) que o orquestrador apresentou ao
     dono.
   - **[rec] Consequência:** em produção não é preciso abrir a porta OsmAnd. O OsmAnd fica para o simulador de dev, e a
     porta pública de cada protocolo se decide no `G-TRC-NLB`.
@@ -3478,7 +3479,7 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - **Aparelhos:** rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**. O G500LS é **OBD**: liga na porta OBD do
     veículo.
   - **Protocolo:** **os dois falam GT06**, pela palavra do dono. Cabem na PD aprovada (OsmAnd e GT06) **sem emenda**.
-  - **J16:** o fórum do Traccar confirma GT06 na porta 5023 do Traccar. Ver
+  - **J16:** o fórum do Traccar (fonte EXTERNA, sem cópia no repositório) confirma GT06 na porta 5023 do Traccar. Ver
     `traccar.org/forums/topic/problem-with-j16-using-the-wrong-protocol/` e
     `traccar.org/forums/reply/108278`. O comando relatado é `SZCS#SERVIP=…#SERVPORT=5023#PTL_SEL=2#GT06SEL=1#`.
     Ressalvas relatadas no fórum: há variantes GT06 V3/V4 e o consumo de dados é alto.

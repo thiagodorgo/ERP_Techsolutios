@@ -10853,12 +10853,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não hoje.
 - **teste de encerramento:** `Idempotency-Key` (ou `client_action_id`) nas rotas que gravam, com teste de dois POSTs iguais = 1 linha.
 
-## P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação não foram informados (F-9) — ALTA
+## P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação (F-9) — FECHADA
 
-- **status:** ABERTA — MODELOS INFORMADOS (2026-10-11, `D-TRC-MODELOS-CANTRACK`): Cantrack G500LS e J16-G900L, um de cada, em mãos. Os dois falam GT06, pela palavra do dono; o G500LS é um modelo OBD. O fórum do Traccar confirma o J16 na porta 5023. Faltam, conferidos com os aparelhos, a variante GT06 (V3/V4), a porta e o chip (APN privada ou VPN). Antes: ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-ARQUITETURA-2026-10-11` item 10 · **dono:** o dono do produto (informar); o orquestrador cobra.
-- O protocolo está decidido (OsmAnd e GT06, `D-TRC-PD-APROVADA-2026-10-11`). Falta saber: fabricante e modelo de cada rastreador, a porta que cada um usa, se o chip tem APN privada ou VPN, e se o aparelho tem intervalo duplo nativo (parado e em movimento).
-- **bloqueia:** o B-TRC-03a (perfil por modelo, comandos por nível, prova com o aparelho real) e o `G-TRC-NLB`. Não bloqueia o B-TRC-01, que roda só com OsmAnd, em dev.
-- **teste de encerramento:** a lista de modelos registrada em `controle/` e ao menos um aparelho GT06 real disponível para o B-TRC-03a.
+- **status:** FECHADA (2026-10-11, `D-TRC-MODELOS-CANTRACK`). O teste de encerramento está cumprido:
+  - os modelos estão registrados em `controle/`: Cantrack G500LS (OBD) e J16-G900L, um de cada;
+  - os dois aparelhos GT06 estão em mãos, e o dono confirma: *"os gps sao todos gt06"*.
+  - O que ainda se confere é escopo do **B-TRC-03a**, com os aparelhos reais: a variante GT06 (V3/V4), a porta, o intervalo duplo nativo (parado e em movimento), os comandos de intervalo e o chip (APN privada ou VPN). Antes: ABERTA, aberta em 2026-10-11 pela F-9 da emenda v2.3.
+- **bloqueia:** nada mais. Os itens acima são entregas do B-TRC-03a, não condição de início dele.
 
 ## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overlay de dev — FECHADA, NÃO PROCEDE
 
@@ -10894,7 +10895,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (2026-10-10) — sub-app `express()` montado dentro de `Router` não é descido pelo censo v3 do 07c-a — MÉDIA
 
 - **status:** ABERTA — ABSORVIDA (2026-10-11, `D-07CA-OPCAO-D`): passa a ser instância de `P-GOV-GUARDA-POR-PROPRIEDADE`, com dono `B-GOV-GUARDA-POR-PROPRIEDADE`. Não bloqueia mais o 07c-a. Antes: ABERTA · **escopo:** `dentro-do-bloco` (o censo v3 nasceu no 07c-a) — medido pelo dev por mutação (S7, MG3b): um `express()` com `POST /work-orders/:workOrderId/via-mg3` montado por `router.use(sub)` entra no instantâneo como `MIDDLEWARE … · app`, o walk não desce nele e o guard fica verde (`# tests 31 · pass 31 · fail 0`). A única barreira hoje é a revisão humana do diff do instantâneo. Origem: proposta do dev do 07c-a (`docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md`, S7) · **dono:** a decidir pela junta do 07c-a (proposta do orquestrador: `B-GOV-GUARDA-POR-PROPRIEDADE`).
-- **bloqueia:** quem decide é a cadeira C2 da junta do 07c-a.
+- **bloqueia:** nada mais. Foi absorvida por `P-GOV-GUARDA-POR-PROPRIEDADE` em 2026-10-11. Antes: quem decidia era a cadeira C2 da junta do 07c-a.
 - **teste de encerramento:** a forma MG3b deixa o guard vermelho.
 
 ## P-GOV-GUARDA-POR-PROPRIEDADE (2026-10-11) — o vigia do censo de rotas do 07c-a reconhece a forma da rota, não a propriedade — ALTA
@@ -10909,11 +10910,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Formas que ainda escapariam do plano do ciclo 2:** a pré-crítica da API (`B-O6R-07c-a-ciclo2-PRECRITICA-api.md`) achou mais 6.
 - **Insumos:** a auditoria e o plano do ciclo 2 (`B-O6R-07c-a-ciclo2-auditoria-e-plano.md`, `bd504cc4`) e a pré-crítica (`6a4ab8b9`).
 - **bloqueia:** nada hoje, por decisão do dono. Risco aceito: até o fechamento, uma rota NOVA pode escapar do aviso do teste.
-- **teste de encerramento:** o guard enuncia a propriedade ("todo despacho alcançável pelo papel de campo passa pela checagem de escopo por objeto") e não uma lista de formas. Cada forma A1–A3, e as 6 da pré-crítica, deixa o guard vermelho por mutação. Uma forma NOVA, escrita por quem não fez o guard, também deixa.
+- **teste de encerramento:** o guard enuncia a propriedade ("todo despacho alcançável pelo papel de campo passa pela checagem de escopo por objeto") e não uma lista de formas. Cada instância deixa o guard vermelho por mutação: A1–A3, as 6 da pré-crítica e a A4, com a pertença decidida pela propriedade, não pelo prefixo do nome do tipo. Uma forma NOVA, escrita por quem não fez o guard, também deixa.
 
 ## P-LOGISTICS-MOCK (2026-10-11) — a tela `/logistics` serve dado inventado sempre, mesmo fora do modo mock — MÉDIA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (achado do levantamento das telas do agente da API em 2026-10-11; fora da fronteira do `B-SAN3-06a`) · **dono:** o orquestrador nomeia o bloco depois do `B-SAN3-06a`.
-- **Decisão do dono:** *"/logistics ligar depois"* (`D-TELAS-SAN3-06a`). A tela está fora do menu: só se chega a ela pela URL.
+- **Decisão do dono:** *"/logistics ligar depois"* (`D-TELAS-SAN3-06a`). A tela está fora do menu lateral (`appSidebarNav.ts`), mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts` (l.62-72).
 - **bloqueia:** nada hoje. Conta para a meta "telas sem placeholder, funcional".
 - **teste de encerramento:** a tela mostra dado real do servidor e um estado vazio honesto, e o teste prova que nenhum dado constante aparece fora do modo mock. Alternativa: a rota sai.
