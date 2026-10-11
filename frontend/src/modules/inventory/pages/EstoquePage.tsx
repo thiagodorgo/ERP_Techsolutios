@@ -294,8 +294,8 @@ export function EstoquePage() {
   // WS-CARDS-CHARTS-F2 — pop-ups dos indicadores, montados só de dado já carregado (D-007). itemsSource/
   // movementsSource vêm vivos dos hooks; o cta de "Precisam repor" é gateado por purchase_orders:read.
   const kpiDetails = useMemo(
-    () => buildInventoryKpiDetails(totals, items.length, movementsPagination.total, itemsSource, movementsSource, can),
-    [totals, items.length, movementsPagination.total, itemsSource, movementsSource, can],
+    () => buildInventoryKpiDetails(totals, items.length, movementsPagination.total, itemsSource, movementsSource),
+    [totals, items.length, movementsPagination.total, itemsSource, movementsSource],
   );
 
   return (
@@ -652,7 +652,8 @@ function ItemsTab({
       render: (item) => `${formatQuantity(item.minQuantity)} / ${item.maxQuantity != null ? formatQuantity(item.maxQuantity) : "—"}`,
     },
     {
-      // F7b — ponto de pedido (R7.5) + chip-link "Repor" (sugestão, sem automatizar compra).
+      // F7b — ponto de pedido (R7.5) + chip "Repor" (sugestão, sem automatizar compra). B-SAN3-06a: o chip deixou de
+      // ser link — a tela de Pedidos de compra saiu do menu e da rota (D-TELAS-SAN3-06a).
       key: "reorderPoint",
       header: "Ponto de pedido",
       sortable: true,
@@ -662,15 +663,7 @@ function ItemsTab({
       render: (item) => (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
           <span>{formatReorderPoint(item.reorderPoint)}</span>
-          {item.needsReorder ? (
-            <Link
-              to="/purchase-orders"
-              aria-label={`Sugerir reposição de ${item.sku} em Pedidos`}
-              style={{ textDecoration: "none" }}
-            >
-              <Chip tone={getReorderChipTone()}>{getReorderChipLabel()}</Chip>
-            </Link>
-          ) : null}
+          {item.needsReorder ? <Chip tone={getReorderChipTone()}>{getReorderChipLabel()}</Chip> : null}
         </span>
       ),
     },

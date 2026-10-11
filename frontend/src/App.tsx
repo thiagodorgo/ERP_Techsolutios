@@ -91,8 +91,6 @@ const DanosPage = lazy(() => import("./modules/fleet/damages/pages/DanosPage").t
 const ExtratoProfissionalPage = lazy(() => import("./modules/fleet/statement/pages/ExtratoProfissionalPage").then((m) => ({ default: m.ExtratoProfissionalPage })));
 const EstoquePage = lazy(() => import("./modules/inventory/pages/EstoquePage").then((m) => ({ default: m.EstoquePage })));
 const EstoqueDetailPage = lazy(() => import("./modules/inventory/pages/EstoqueDetailPage").then((m) => ({ default: m.EstoqueDetailPage })));
-const PedidosPage = lazy(() => import("./modules/purchase-orders/pages/PedidosPage").then((m) => ({ default: m.PedidosPage })));
-const ReportsPage = lazy(() => import("./modules/reports/pages/ReportsPage").then((m) => ({ default: m.ReportsPage })));
 const UsersPage = lazy(() => import("./modules/users/pages/UsersPage").then((m) => ({ default: m.UsersPage })));
 const AuditTenantPage = lazy(() => import("./modules/audit/pages/AuditTenantPage").then((m) => ({ default: m.AuditTenantPage })));
 const CentralNotificacoesPage = lazy(() =>
@@ -532,22 +530,8 @@ export function App() {
                 </PermissionGuard>
               }
             />
-            <Route
-              path="/purchase-orders"
-              element={
-                <PermissionGuard permissions={["purchase_orders:read"]}>
-                  <PedidosPage />
-                </PermissionGuard>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <PermissionGuard permissions={["reports:read"]}>
-                  <ReportsPage />
-                </PermissionGuard>
-              }
-            />
+            {/* B-SAN3-06a (D-TELAS-SAN3-06a) — Pedidos de compra e Relatórios saíram do menu e da rota: eram telas 100%
+                literais, sem servidor. Link salvo ou deep-link cai no `path="*"` (→ /login), como toda rota desconhecida. */}
             <Route
               path="/users"
               element={

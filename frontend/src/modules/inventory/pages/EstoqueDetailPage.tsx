@@ -218,9 +218,7 @@ export function EstoqueDetailPage() {
                 <strong>Abaixo do mínimo:</strong> {formatQuantity(item.saldo, item.unit)} disponíveis, abaixo do mínimo de{" "}
                 {formatQuantity(item.minQuantity, item.unit)}.
               </div>
-              <Link to="/purchase-orders" style={{ fontSize: 12.5, fontWeight: 700, color: "#2563EB" }}>
-                Ver pedidos de compra
-              </Link>
+              {/* B-SAN3-06a: sem link "Ver pedidos de compra" — a tela saiu do menu e da rota (D-TELAS-SAN3-06a). */}
             </div>
           ) : null}
 
