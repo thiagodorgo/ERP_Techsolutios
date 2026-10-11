@@ -338,7 +338,9 @@ test("[06a·C4] com a API da organização A o console mostra os dados de A — 
 
   const empty = visibleText(await renderConsole(consoleApiEmpty(), { tenantName: null }));
   assert.doesNotMatch(empty, CONSOLE_FICTION);
-  assert.doesNotMatch(empty, /\b14\b/, "o '14 na fila' literal não aparece");
+  // O "atualizado às HH:MM" é o relógio real: às 14h ou no minuto 14 ele casava o /\b14\b/ e o teste falhava
+  // por acaso (CI do #426, 2026-10-11 23:14). Tira-se o horário antes de procurar o número inventado.
+  assert.doesNotMatch(empty.replace(/\b\d{1,2}:\d{2}\b/g, " "), /\b14\b/, "o '14 na fila' literal não aparece");
   assert.match(empty, /Nenhuma OS na fila/);
   assert.match(empty, /Sem técnicos em campo/);
 });
