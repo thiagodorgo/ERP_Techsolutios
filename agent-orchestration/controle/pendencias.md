@@ -10708,7 +10708,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
 - **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
 - **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
-```markdown
+
 ## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
 
 - **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D5 = a, só a plataforma vincula); falta o teste do B-TRC-03. Antes: ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as

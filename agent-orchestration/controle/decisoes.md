@@ -3250,7 +3250,8 @@ do #390 nomeou continuam com o primeiro PR que mergear.
      "guincheiro") aparece pela opção do botão direito no mapa e pelo menu de visualização do mapa, que precisa existir.
      O "N minutos" da opção b deixa de existir. Custo no plano: bloco próprio de 4–7 dias, mais o menu de visualização.
   4. **D4 = b** [rec, achado 3]: vínculo FIXO viatura→técnico como padrão (a configuração inicial que amarra a viatura no
-     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Isso concilia a frase do dono com a regra de
+     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Viatura SEM técnico configurado e sem despacho
+     aparece como frota, sem nome de pessoa, sob o legítimo interesse da D6 [rec, derivado de D4 = b e D6]. Isso concilia a frase do dono com a regra de
      2026-10-10, "o vínculo pessoa↔viatura é pela janela do despacho" (`decisoes.md:2290-2292`), que segue valendo
      durante o serviço. O conflito foi registrado e resolvido aqui, pela regra §A2.
   5. **D5 = a**: só a plataforma (Admin Plataforma) vincula rastreador, a pedido da organização, com o rastreador
@@ -3260,7 +3261,8 @@ do #390 nomeou continuam com o primeiro PR que mergear.
      contrato. **Fora do expediente, a viatura aparece SEM o nome do técnico.** Guarda: posição e recibo 90 dias;
      quarentena resolvida 30 dias; depois, apagar ou anonimizar. Quem vê: despacho e gestão da organização, com trilha de
      consulta. Validar com advogado antes da produção.
-  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5, a PD do Traccar (versão, digest da imagem, licença, CVEs
+  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5 (quórum registrado em `decisoes.md:2283-2285`, "a PD e a decisão
+     de implantação vão a junta unânime de 5", que este item REVÊ para a PD; a decisão de implantação, B-TRC-06/07, segue 5/5), a PD do Traccar (versão, digest da imagem, licença, CVEs
      e semântica do forward conferida no código-fonte da tag) é PESQUISADA e o DONO a aprova por escrito. Decisão do
      dono, que está acima da junta (§A1.1). Pesquisa em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (ramo
      `docs/plano-traccar`).
@@ -3275,6 +3277,7 @@ do #390 nomeou continuam com o primeiro PR que mergear.
     texto vão para o agente da API, com pacote de contexto;
   - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
   - todo lançamento tem vigia;
-  - teto da API de US$ 15/dia (*"pode usar ate 25 usd na api hoje"* — US$ 25 em 11/10);
+  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+    US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
   - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
   Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
