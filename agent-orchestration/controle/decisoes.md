@@ -3489,3 +3489,24 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     - os dados do OBD (ignição, odômetro) dependem do firmware e do decodificador GT06 do Traccar.
   - **O que o B-TRC-03a confere com os aparelhos reais:** a variante GT06, a porta, o intervalo duplo nativo (parado e em
     movimento) e os comandos de intervalo.
+
+## Registro de 11/10/2026 (noite) — telas novas seguem o padrão do sistema
+
+- **D-TELAS-SEGUEM-O-PADRAO (2026-10-11)** — o dono: *"a construção de novas telas tem que acompanhar o padrao do sistema, importante usar as skills de frontend e deixar clarificado que o padrao que ja ha no sistema deve ser seguido, nada de fazer novas telas do inicio. documente e espalhe esse requesito"*.
+  Regra escrita no `CLAUDE.md` §4 (Web) e no item do DoD (§10), com espelho no `AGENTS.md`.
+
+  **Onde mais foi espalhada:**
+  - nas skills de frontend `ts-frontend-full` e `ui-ux-pro-max` (`.claude/skills/` e `.agents/skills/`);
+  - no `frontend-pixel-master` (restrição) e no `cognicao-visual` (veto 6, "tela feita do zero"), em `.claude/agents/`
+    e `.agents/agents/`;
+  - no `CLAUDE.md` §5 (mobile): a tela-modelo é a feature mais próxima em `lib/features/`;
+  - fora do repositório: na memória do orquestrador e nos prompts dos blocos de tela, a começar pelo `B-SAN3-06a`.
+
+  **Correção que veio junto:** as duas skills apontavam como modelo de lista a `WorkOrdersListPage.tsx`, que é legado
+  SEM rota (P-004; `P-SAN3-01-OS-LEGADO-MORTO`). A primeira versão desta regra herdou o erro, e a revisão do #422 o
+  pegou. O modelo passa a ser `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`, a lista padronizada no ar.
+
+  **Pergunta ao dono, que AINDA NÃO é regra:** onde a referência renderizada do §11 divergir do padrão do sistema em
+  ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do sistema? A referência continuaria valendo para o conteúdo
+  e a composição. Hoje vale o §11 ("PNG vence para layout/intenção"). O precedente `D-OS-CABECALHO-PADRONIZADO` trocou
+  a referência de 5 telas; ele não pôs o código acima dela.

@@ -12,12 +12,16 @@ description: "Engenharia frontend e mobile de produção para o ERP Techsolution
   features/<domínio>, shared}. PROIBIDO introduzir estrutura nova
   (atomic design, feature-sliced etc.).
 - Antes de criar qualquer arquivo, espelhar o equivalente existente:
-  página de lista → WorkOrdersListPage.tsx; service →
+  página de lista → frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx
+  (NUNCA frontend/src/pages/*: legado sem rota); service →
   frontend/src/modules/operations/dispatches/dispatches.service.ts;
   feature Flutter → a feature mais próxima em lib/features/.
 - Precedência em conflito: prompt em execução e arquivos do repo
   (DESIGN_SYSTEM.md, COMPONENT_LIBRARY.md, mobile-sync-contracts.md)
   > esta skill > julgamento próprio.
+- Tela nova segue a tela EXISTENTE mais parecida (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4): nada de
+  tela do zero; cite a tela-modelo (arquivo) no plano ou no relatório. Componente novo só sem equivalente,
+  e nasce na biblioteca.
 - Design system congelado: zero decisão de estilo aqui (ver skill
   ui-ux-pro-max). Fidelidade visual mobile = docs/claude-code-handoff/
   ERP Mobile.dc.html; web = padrões das páginas existentes.
