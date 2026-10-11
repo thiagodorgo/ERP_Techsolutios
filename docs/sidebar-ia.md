@@ -9,7 +9,7 @@
 ## Estado atual (a corrigir)
 - 4 RoleKinds (`gestor|dispatcher|admin|finance`) resolvidos por `roleKindFor`. Grupo **FINANCEIRO todo
   oculto** (finance só vê Aprovações). Vários itens roteados **sem entrada na sidebar** (`/inventory`,
-  `/reports`, `/users`, `/audit`, `/finance/*`, `/field-operators`, `/dispatch/console`).
+  `/users`, `/audit`, `/finance/*`, `/field-operators`, `/dispatch/console`).
 - **Badges hardcoded** (Aprovações=3, Notificações=4) → **P-011**. F11/F10 substituem por contagem real
   (`getUnreadNotificationCount` já existe; aprovações pendentes = contagem real).
 
@@ -20,7 +20,7 @@
 | **VISÃO GERAL** | Dashboard → `/dashboard` | existe |
 | **OPERAÇÃO** | Ordens de Serviço → `/work-orders` · Despachos → `/operations/dispatches` · Mapa Operacional → `/operations/map` (F6 real) · Aprovações → `/approvals` `[badge real]` · Checklists → `/operations/checklists` | existe |
 | **FROTA** | Viaturas → `/cadastros/viaturas` · Abastecimento → `/fleet/fuel` (F1) · Manutenção → `/fleet/maintenance` (F2) `[badge: vencendo]` · Multas → `/fleet/fines` (F3) `[badge: a vencer]` · Seguros → `/fleet/insurance` (F4) · Danos → `/fleet/damages` (F5) | F1–F5 novos |
-| **GESTÃO** | Clientes → `/cadastros/clientes` · Equipes → `/cadastros/equipes` · Serviços → `/cadastros/servicos` · Estoque → `/inventory` (F7 real) `[badge: reposição]` · Pedidos → `/purchase-orders` · Remunerações → `/finance/commissions` (F8) · Relatórios → `/reports` · Financeiro → `/finance` | mix |
+| **GESTÃO** | Clientes → `/cadastros/clientes` · Equipes → `/cadastros/equipes` · Serviços → `/cadastros/servicos` · Estoque → `/inventory` (F7 real) `[badge: reposição]` · Remunerações → `/finance/commissions` (F8) · Financeiro → `/finance` | mix |
 | **ADMINISTRAÇÃO** | Usuários → `/users` (F9) · Notificações → `/notifications` `[badge: sino real]` · Configurações → `/administrator/settings` · Auditoria → `/audit` | existe |
 
 > Rotas `/fleet/*` são novas (F1–F5) — mesmo padrão de `/cadastros/*`. Nomear FROTA agrupa
@@ -46,7 +46,7 @@
 ## Implementação (F11) — escopo cirúrgico
 1. Reestruturar `NAV_BY_ROLE` (grupos/itens acima) por RoleKind — só conteúdo do menu.
 2. Expandir `MVP_NAV_PATHS` com `/fleet/fuel|maintenance|fines|insurance|damages`, `/inventory`,
-   `/purchase-orders`, `/reports`, `/finance`, `/finance/commissions`, `/users`, `/audit`.
+   `/finance`, `/finance/commissions`, `/users`, `/audit`.
 3. Restaurar o RoleKind/grupo do **finance** (hoje pruned).
 4. Badges reais (substituir os hardcoded). Estilo/colapso/tokens **inalterados**.
 5. `tenantNavigation.ts` + `navigation.adapter.ts`: adicionar escopo/label **FROTA** (`fleet`) e itens

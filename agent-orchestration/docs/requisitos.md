@@ -55,7 +55,7 @@ Detalhe funcional por sub-modulo em `docs/pd-controle.md` e `docs/screen-element
   consumo vinculado a OS, custo medio movel na entrada, filtro "abaixo do minimo" real, telas
   `/inventory` (abas Itens|Movimentacoes) + `/inventory/:id` reais (shells fabricadas mortas).
 - **RF-FROTA-007b (F7b Estoque avancado)** — classe ABC recalculada por consumo 12m (Pareto); ponto de
-  pedido derivado + chip "Repor" + aviso idempotente com sugestao /purchase-orders (sem comprar); contagem
+  pedido derivado + chip "Repor" + aviso idempotente com link para o item em /inventory/<id> (sem comprar; Pedidos saiu em B-SAN3-06a); contagem
   ciclica (sessao por classe -> contado vs sistema -> ajuste + relatorio de variancia). Aba Contagem em
   `/inventory`.
 - **RF-FROTA-008 (F8 Remuneracoes)** — extrato de comissao por operador/periodo (rota agregada in-module
