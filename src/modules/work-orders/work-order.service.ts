@@ -196,11 +196,10 @@ export class WorkOrderService {
     workOrderId: string,
     force = false,
   ): Promise<{ readonly workOrder?: WorkOrder; readonly geocoded: boolean; readonly reason?: string }> {
-    const id = parseRequiredUuid(workOrderId, "workOrderId");
-    const workOrder = await this.repository.findById(actor.tenantId, id);
-    if (!workOrder) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
-    }
+    // B-O6R-07c-a — `getForMutation` faz o mesmo 404 (inexistente/cross-tenant) e põe o escopo por objeto ANTES
+    // do 409/422: o técnico não geocodifica a OS do colega.
+    const workOrder = await this.getForMutation(actor, workOrderId);
+    const id = workOrder.id;
 
     if (hasValidCoordinate(workOrder.serviceLatitude, workOrder.serviceLongitude) && !force) {
       throw new WorkOrderError(
@@ -285,11 +284,9 @@ export class WorkOrderService {
     workOrderId: string,
     force = false,
   ): Promise<{ readonly workOrder?: WorkOrder; readonly geocoded: boolean; readonly reason?: string }> {
-    const id = parseRequiredUuid(workOrderId, "workOrderId");
-    const workOrder = await this.repository.findById(actor.tenantId, id);
-    if (!workOrder) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
-    }
+    // B-O6R-07c-a (espelho) — mesmo 404, escopo por objeto antes do 409/422.
+    const workOrder = await this.getForMutation(actor, workOrderId);
+    const id = workOrder.id;
 
     if (hasValidCoordinate(workOrder.destinationLatitude, workOrder.destinationLongitude) && !force) {
       throw new WorkOrderError(
@@ -839,6 +836,20 @@ export class WorkOrderService {
     }
   }
 
+  /**
+   * B-O6R-07c-a (`P-O6R-SUBRECURSO-OBJECT-SCOPE`) — a OS para quem vai ESCREVER num subrecurso dela: anexo,
+   * comentário, tag de comentário, geocode e a km pela fila do app. É `get` (404 do cross-tenant, inalterado)
+   * seguido do escopo por objeto do 07a (`assertMutationObjectScope`, corpo intocado): o técnico de campo só
+   * escreve na OS atribuída a ele. Leitura (listar, baixar) segue em `get`.
+   *
+   * A porta da regra é `assertMutationObjectScope`, não este método: `update` e `changeStatus` a chamam direto.
+   */
+  async getForMutation(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
+    const workOrder = await this.get(actor, workOrderId);
+    await this.assertMutationObjectScope(actor, workOrder);
+    return workOrder;
+  }
+
   async update(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
     if ("status" in body) {
       throw new WorkOrderError(400, "WORK_ORDER_INVALID", "status_endpoint_required", "Use the status endpoint to change work order status.");
@@ -1250,7 +1261,9 @@ export class WorkOrderService {
     body: RawRecord,
     source: "app" | "base",
   ): Promise<WorkOrder> {
-    const current = await this.get(actor, workOrderId);
+    // B-O6R-07c-a — escopo por objeto ANTES de ler a km: o técnico só lança km na OS dele. A semântica é a do
+    // status pelo mesmo sync (`work_order.status_change`, já guardado pelo 07a).
+    const current = await this.getForMutation(actor, workOrderId);
 
     const mileageStart = parseOptionalMileage(body.mileage_start ?? body.mileageStart, "mileageStart");
     const mileageEnd = parseOptionalMileage(body.mileage_end ?? body.mileageEnd, "mileageEnd");

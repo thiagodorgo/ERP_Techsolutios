@@ -3182,3 +3182,331 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
   (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
   nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).
+
+## Registro de 10/10/2026 (noite) — agente Python sobre a API do Claude (B-AGENTE-API)
+
+- **D-AGENTE-CLAUDE-API (2026-10-10)** — o dono pediu um agente em Python sobre a API do Claude, com cerca e
+  autonomia limitada, versionado no repositório. Falas literais: *"vamos criar um agente, um script em python que
+  consiga usar a api do claude e nos ajudar aqui?"* e *"coloque guard rails, faça uma cerca e de mais autonomia a
+  esse agente, não muita, mas que ele consiga ajudar mais sem probabilidades altas de dar merda, pode fazer o
+  agente, coloque ele numa pasta para que possamos usar no repo e no git"*. Antes, o orquestrador condicionou:
+  chave só por variável de ambiente; nada de execução autônoma com escrita; provar qual conta paga.
+  **O que decide:** (1) nasce `scripts/agente-claude-api/` (pacote `agente_claude`, SDK `anthropic==1.13.0` num
+  venv local ignorado), com duas tarefas só-leitura — `revisar-pr <N>` e `investigar "<pergunta>"` — num laço
+  manual de ferramentas, em worktree descartável criado e removido pelo próprio script; (2) **autonomia nível 1**:
+  o agente decide o que ler e o que verificar (lista fechada: `git diff --check`, `sync-agent-agents --check`
+  e `node --test` de arquivo sem `-db`; o `npm run check` saiu na implementação, porque o `prisma generate` exige
+  `DATABASE_URL` — `P-AGENTE-CHECK-SEM-GENERATE`), e **não** conserta, commita, faz push, mergeia nem comenta;
+  (3) a **cerca** é do código, não do modelo: raiz confinada por `realpath` (junction, symlink, 8.3, UNC, `\\?\`,
+  ADS, dispositivos, `.env*`/`*.pem`/`*.key`/`id_*`/`.git`/`node_modules` negados), ferramentas nomeadas com argv
+  montado pelo script e `shell=False`, allowlist de flags, ambiente limpo por allowlist, orçamento (turnos,
+  ferramentas, tokens com cache, US$), redação de segredos em tudo o que sai, auditoria JSONL por execução,
+  `STOP`/Ctrl+C gravando parcial, parecer por ferramenta de schema estrito; (4) **conta e modelo**: a chave vem de
+  `ERP_AGENTE_ANTHROPIC_KEY` (processo ou `HKCU\Environment`), **nunca** de `ANTHROPIC_API_KEY` (com esse nome o
+  próprio Claude Code cobraria os créditos da API no lugar do plano Max); chave de usuário (`sk-ant-usr…`, medida
+  em 2026-10-10: 400 "not scoped to a workspace") exige `ERP_AGENTE_ANTHROPIC_WORKSPACE` e o cabeçalho
+  `anthropic-workspace-id`; sem isso o script para antes de qualquer chamada; modelo `claude-opus-5-5` com esforço
+  explícito (nível menor, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`); `request-id`, rate limit e o modelo que
+  respondeu vão ao parecer como prova de cobrança na conta da API.
+  **O que reabre:** reabre **parcialmente** a `D-API-ESTEIRA-CONGELADA` (2026-10-10) — só para este agente, com
+  esta cerca; o executor autônomo com terminal livre que o classificador barrou ("criar agente inseguro") **não
+  volta**. Se o classificador barrar a construção deste bloco, para-se e o orquestrador relata ao dono; nada de
+  contornar.
+  **Governança:** §C7 item 8(1) — ferramenta de processo: plano em Fable (`docs/revisoes/GOV/B-AGENTE-API-plano.md`),
+  dev em Opus, um revisor independente com olhar de segurança (`agente-secops`, Opus) + CI verde, sem junta; KPI
+  congelado. **Primeiro uso real:** só depois do merge, com a chave do dono, como revisor do PR #416 — o dono gravou
+  `ERP_AGENTE_ANTHROPIC_WORKSPACE` (workspace "erp") em 2026-10-10 ~19:00Z, e `GET /v1/models` respondeu 200 (gratuito).
+- **Aplicação da `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` no contrato (2026-10-10)** — o PR de governança que a decisão
+  prescreve (`chore/gov-modelos-topo`): `CLAUDE.md` e `AGENTS.md` (hunks idênticos) ganham a regra no §C7.4 (topo audita e
+  replaneja em toda reprovação de junta), no §C7.6 (tabela topo × nível menor) e no §C7.6-bis (só o planejador fica em
+  `fable`; os gates descem para Opus, e para eles Opus esgotado → PARA); o §C2.8 e o §C7.1-bis deixam de dizer "Fable por
+  contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
+  `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
+  já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
+
+## Registro de 11/10/2026 — Traccar (as 6 decisões), o Claude só orquestra e o agente da API em uso
+
+- **D-TRC-DECISOES-DO-DONO-2026-10-11** — as seis decisões do plano do Traccar v2.1
+  (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, seção "Decisões do dono antes do B-TRC-01", ramo `docs/plano-traccar`).
+  Falas literais do dono:
+  - *"Decisões traccar em D1=c. D2=a. D3=os dois, mas só o carro aparece default e celular do técnico é com a opção
+    mostra guincheiro com o botão direito do mouse no mapa e no menu de visualização que devemos ter no mapa. D4=a viatura
+    aparece com o nome do técnico que aquela viatura foi definida, temos que bolar uma configuração inicial para amarrar
+    a viatura no técnico. D5=a. D6=base legal, contrato de trabalho e legítimo interesse com aviso ao técnico. Guarda de
+    90 dias com recibo e quarentena resolvida 30 dias. Quem vê será o despacho e gestão com trilha de consulta."*
+  - *"Achados críticos. Achado 1, 2, 3, 4 e 5 preciso que vc analise e me retorne com opções, prós e contras. Preciso que
+    rode aqui e me responda sobre os achados só então as minhas decisões devem ser tratadas"*. O orquestrador analisou os
+    5 achados do material das decisões (`erp-pausa-2026-10-03/TRACCAR-DECISOES-para-o-dono.md`, preparado pelo agente da
+    API) e deu opções, prós e contras.
+  - *"pode seguir com as recomendações"*. As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec].
+
+  **Resultado:**
+  1. **D1 = C**, sete blocos (G-TRC-PD + B-TRC-01 a 07). Prazo de referência: **26–46 dias úteis** (§10.2). O "25–45" da
+     §7.2 é o número da v1 e sai na v2.2 do plano [rec, achado 1].
+  2. **D2 = a**, o ERP inteiro na AWS, como DIREÇÃO. Um estudo de custo e de migração vira tarefa nomeada com prazo
+     ANTES do B-TRC-06 (`P-TRC-AWS-ESTUDO-MIGRACAO`); do B-TRC-01 ao 05 tudo roda em dev. Contratar ou configurar serviço
+     pago segue como decisão crítica (§C7 item 1) [rec, achado 2].
+  3. **D3 = dois pinos (a opção c do plano), com camada:** por padrão só a viatura aparece. O celular do técnico (o
+     "guincheiro") aparece pela opção do botão direito no mapa e pelo menu de visualização do mapa, que precisa existir.
+     O "N minutos" da opção b deixa de existir. Custo no plano: bloco próprio de 4–7 dias, mais o menu de visualização.
+  4. **D4 = b** [rec, achado 3]: vínculo FIXO viatura→técnico como padrão (a configuração inicial que amarra a viatura no
+     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Viatura SEM técnico configurado e sem despacho
+     aparece como frota, sem nome de pessoa, sob o legítimo interesse da D6 [rec, derivado de D4 = b e D6]. Isso concilia a frase do dono com a regra de
+     2026-10-10, "o vínculo pessoa↔viatura é pela janela do despacho" (`decisoes.md:2290-2292`), que segue valendo
+     durante o serviço. O conflito foi registrado e resolvido aqui, pela regra §A2.
+  5. **D5 = a**: só a plataforma (Admin Plataforma) vincula rastreador, a pedido da organização, com o rastreador
+     registrado na compra ou na instalação.
+  6. **D6** [rec, achado 4]: **base legal por finalidade** — execução do contrato de trabalho para o rastreio em serviço;
+     legítimo interesse, com teste de balanceamento escrito, para a frota sem técnico. Aviso ao técnico no app e no
+     contrato. **Fora do expediente, a viatura aparece SEM o nome do técnico.** Guarda: posição e recibo 90 dias;
+     quarentena resolvida 30 dias; depois, apagar ou anonimizar. Quem vê: despacho e gestão da organização, com trilha de
+     consulta. Validar com advogado antes da produção.
+  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5 (quórum registrado em `decisoes.md:2283-2285`, "a PD e a decisão
+     de implantação vão a junta unânime de 5", que este item REVÊ para a PD; a decisão de implantação, B-TRC-06/07, segue 5/5), a PD do Traccar (versão, digest da imagem, licença, CVEs
+     e semântica do forward conferida no código-fonte da tag) é PESQUISADA e o DONO a aprova por escrito. Decisão do
+     dono, que está acima da junta (§A1.1). Pesquisa em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (ramo
+     `docs/plano-traccar`).
+  8. O gate do B-TRC-01 (plano §8.0) passa a exigir na linha 4 a aprovação escrita do dono à PD, não a junta 5/5. O plano
+     ganha a v2.2 com as decisões acima (`P-TRC-PLANO-V22`).
+
+- **D-CLAUDE-SO-ORQUESTRA (2026-10-11)** — o dono: *"vc eu quero na orquestração e tarefas pequenas, quando o codex cair vc
+  cobre ele e a api temos que forçar o uso dela"*; *"o negocio aqui é usar vc de forma que o limite nao seja atingido e
+  o negocio nao pare..."*; *"vc tem que colocar vigias para lhe informar que a execução parou, desse modo vc ja passa o
+  novo comando"*. Na prática:
+  - o Claude só orquestra e faz tarefas pequenas; a execução vai para o Codex; leitura, revisão, crítica sem banco e
+    texto vão para o agente da API, com pacote de contexto;
+  - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
+  - todo lançamento tem vigia;
+  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+    US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
+  - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
+  Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
+
+## Registro de 11/10/2026 (tarde) — Traccar: a PD aprovada e a arquitetura do dono
+
+- **D-TRC-PD-APROVADA-2026-10-11** — o dono aprova por escrito a PD do Traccar, como pede o item 7 da
+  `D-TRC-DECISOES-DO-DONO-2026-10-11` (G-TRC-PD pela aprovação do dono, no lugar da junta de 5). Fala literal:
+  - *"Traccar: seguir recomendações.
+    Aprovo a PD do Traccar 6.16.0 (sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda),
+    com os protocolos OsmAnd e GT06, sem SMTP, sem OIDC, sem porta pública além das de protocolo e só com a conta de
+    serviço do ERP."* (A frase e o digest ficam numa linha só, para a conferência da linha 4 do §8.0, v2.2 A-2.)
+
+  **Condições aprovadas** (a pesquisa está em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md`; o registro da PD está em
+  `docs/omega-pd.md`, `PD-TRC-616`):
+  1. **Versão e imagem:** Traccar **6.16.0**, só por digest: `traccar/traccar:6.16.0@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`. Tag sem
+     digest não vale, porque as tags do repositório são mutáveis. Versão abaixo da 6.16.0 é proibida, porque só ela restringe o
+     `forward.header` à URL global (commit `acd55bd0`, premissa P-04 do plano).
+  2. **Protocolos:** só **OsmAnd** e **GT06** (`protocols.enable` com esses dois). Isso emenda a condição
+     `protocols.enable=osmand` da pesquisa e a linha 1295 da v2.1, conforme o achado A-6 da emenda v2.3 (F-6). O
+     decodificador GT06 é superfície de DoS e entra no threat model. **O B-TRC-01 continua só com OsmAnd** (v2.3, A-7).
+     O GT06 entra no B-TRC-03a.
+  3. **Sem SMTP, sem OIDC, sem usuário além da conta de serviço do ERP.** Essas três condições, junto com a de portas abaixo, neutralizam as duas CVEs médias
+     abertas na 6.16.0 (CVE-2026-108737 e CVE-2026-108738). A PD é revista quando sair a 6.16.1.
+  4. **Porta pública só a de protocolo.** O painel e a API web do Traccar nunca ficam públicos. O dono fixou o TETO.
+     **[leitura do orquestrador]** A aprovação não abre as portas de protocolo: o NLB só nasce no gate `G-TRC-NLB`, com
+     decisão escrita, threat model e junta 5/5 (v2.3, A-2), como mandam as regras do dono para o Traccar (§C7 item 8(4)).
+  5. **Configuração confirmada no código da tag e obrigatória em todo ambiente:**
+     - `forward.type=json` (o padrão é `url`);
+     - `geocoder.enable=false` (o padrão chama a LocationIQ);
+     - `database.registerUnknown=false` fora de dev;
+     - o segredo do forward entra por variável de ambiente (`CONFIG_USE_ENVIRONMENT_VARIABLES=true`), nunca no
+       `traccar.xml`;
+     - o forward espera 5 s de conexão e 5 s de leitura (é o padrão da tag, `Keys.java:1064-1076`). A ingestão do ERP
+       responde dentro disso.
+
+  O gate §8.0 do plano exige na linha 4 a aprovação escrita do dono à PD. **Esta entrada é essa aprovação.**
+
+- **D-TRC-ARQUITETURA-2026-10-11** — a arquitetura do Traccar, definida pelo dono, e as respostas às perguntas das
+  emendas v2.2 (Q1–Q11) e v2.3 (F-1 a F-9). Falas literais do dono:
+  - *"Claude, eu, eu até aceito suas recomendações sobre o, a notícia de prazo e 11 perguntas do, do Tracar, mas eu
+    quero discutir com você como é que o Tracar vai funcionar. Minha ideia é ele funcionar como um, a gente só
+    consumir a API dele, ele ficar... Ele fica numa sub-rede sem acesso à, à internet no, na AWS e fica alimentando
+    uma API. Essa API eu vou alimentar meu sistema."*
+  - *"como o rastreador chega no Traccar: Entrada só nas portas dos rastreadores. Empurrar para o tempo real; puxar
+    para reconciliar o que se perdeu. e a frequencia de aquisição e de uso do bd vai ser variavel, quando estiver
+    com a tela aberta naquele dispositivo esse dispositivo responde mais rapido. um carro parado fica com o tempo
+    maior de resposta ate ele começar a se mover onde fica na media de respostas, mas quando o operador abre uma
+    tela que ele esta presente ele fica mais rapido na resposta, (vizualização tem dois niveis, o de visualizar o
+    mapa um pouco mais lento que o nivel de rastreamento que no mapa o caminho onde ele passar fica com uma linha )"*
+  - *"nivel 1= de 1 a 2 minutos. nivel 2= de 3 a 5 minutos. nivel 3 15 minutos. O "acelerar o rastreador quando abre a
+    tela" entra já (só modelos compatíveis, gasta dados) ou depois da camada 2? na hora de configuração do pgs no
+    sistema, o gps/sistema ja fica com a configuração, nos gps gt06 o sistema ja memoriza que deve enviar os comando
+    e quais comandos usar. nos que nao tem o protocolo gt06 o sistema ja guia o usuario de como configura-lo"*
+  - e, para as perguntas F da v2.3, a mesma fala da entrada anterior: *"Traccar: seguir recomendações."*
+
+  As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec]. O texto das emendas está em
+  `docs/revisoes/TRACCAR/PLANO_TRACCAR-EMENDA-v2.2.md` (`17f11f2f`) e `…-v2.3.md` (`f6f41e15`), no ramo `docs/plano-traccar`.
+
+  **Arquitetura:**
+  1. **Rede.** O Traccar fica numa sub-rede privada **sem saída para a internet**: sem NAT e sem rota `0.0.0.0/0`. A
+     imagem é espelhada num ECR privado com o mesmo digest; o B-TRC-06 prova que a cópia preserva o digest (hoje é
+     hipótese). O ERP fica na mesma VPC (F-1 [rec], coerente com a D2 = a). Uma ponte para o Fly furaria o "sem
+     saída".
+  2. **Entrada.** A internet só alcança as portas dos protocolos dos rastreadores, por um NLB. A web e a REST do
+     Traccar só aceitam o grupo de segurança do worker do ERP. A ingestão (porta 3200) só aceita o grupo do Traccar.
+  3. **Empurrar + puxar.**
+     - Empurrar: o forward JSON do Traccar vai, pela rede privada, à API de ingestão do ERP, a camada
+       anticorrupção. É o tempo real.
+     - Puxar: o worker do ERP chama a REST do Traccar para reconciliar o que se perdeu.
+     - O ERP **não recebe** a credencial do banco do Traccar. O trajeto vem **pela REST, nunca por SQL** (F-2 [rec]).
+  4. **Frequência adaptativa em 3 níveis** (F-4, confirmado nos números do dono):
+     - nível 1: de 1 a 2 min;
+     - nível 2: de 3 a 5 min, em movimento;
+     - nível 3: 15 min, parado.
+
+     O **nível 1 vale só na tela de rastreamento de UMA viatura e no detalhe dela** (F-3 [rec]). O mapa geral fica nos
+     níveis 2 e 3, porque nível 1 no mapa inteiro mandaria comando a todas as viaturas visíveis. A presença na tela
+     vai no Redis, com TTL de cerca de 90 s.
+  5. **Teto e histerese** (F-5 [rec]), com os valores iniciais do achado A-4 da v2.3:
+     - no mínimo 5 min entre comandos;
+     - até 2 subidas de nível por hora;
+     - até 6 comandos por dia por rastreador;
+     - cerca de 10 min de histerese para voltar ao nível base.
+
+     Ao bater o teto, o rastreador fica no nível base, com aviso na tela e métrica. **[leitura do orquestrador]** Os
+     valores são calibrados com o aparelho real no B-TRC-03a.
+  6. **Comandos por modelo, no cadastro do rastreador.**
+     - **GT06:** o sistema memoriza quais comandos enviar em cada nível.
+     - **Outros protocolos:** o sistema guia o usuário na configuração.
+     - O catálogo de perfis é global e só a plataforma o escreve (D5).
+     - **Exceção ao §9.2 da v2.1** (F-7 [rec]): o texto passa a dizer "comando remoto, exceto os comandos de
+       intervalo da allowlist aprovada pela plataforma". Nunca corte de motor, nem outro comando.
+     - O comportamento dos comandos GT06 na 6.16.0 é **HIPÓTESE** até o B-TRC-03a ler o encoder na tag, com
+       arquivo e linha, e provar com o aparelho real.
+     - **Quando entra:** a aceleração ao abrir a tela entra no B-TRC-03a/03b. O B-TRC-01 não muda.
+  7. **Dois níveis de visualização.**
+     - **Mapa:** níveis 2/3 e o polling de 30 s que já existe.
+     - **Rastreamento de uma viatura:** nível 1 e a linha do trajeto, puxada da REST do Traccar sob demanda. O
+       navegador nunca chama o Traccar: a chamada passa pelo ERP, que recorta pelas janelas de vínculo da organização
+       e pelas regras D4/D6.
+     - **O que o ERP guarda:** o último ponto, o trajeto resumido e os recibos, por 90 dias.
+     - **O que o Traccar guarda:** todos os pontos, por 90 dias.
+  8. **Backup do banco do Traccar: 14 dias** (F-8 [rec]). Depois do expurgo de 90 dias, o dado some de vez em no
+     máximo 90 + 14 dias.
+  9. **Blocos e prazo.**
+     - O B-TRC-03 se divide em **03a** (vínculo pela plataforma, vínculo fixo, expediente, perfil por modelo, comandos
+       por nível, código GT06 conferido, aparelho real) e **03b** (reconciliação pela REST, reconciliador de nível,
+       presença, teto, log de comandos, último ponto e trajeto resumido).
+     - Nasce o gate documental `G-TRC-NLB`.
+     - Estimativa: **~45–76 dias úteis**, ainda hipótese (Q1 e v2.3, A-7).
+     - **A primeira posição no mapa continua no B-TRC-01**, só OsmAnd, em dev.
+  10. **Os modelos de rastreador** (F-9) seguem em aberto. O dono não os informou. Viram a pendência
+      `P-TRC-MODELOS-RASTREADOR`, que bloqueia o B-TRC-03a e o `G-TRC-NLB`, mas não o B-TRC-01.
+
+  **Respostas da v2.2** (todas [rec]; a fala do dono é *"eu até aceito suas recomendações sobre o, a notícia de prazo e
+  11 perguntas"*):
+  - **Q1:** a estimativa passa a ~39–67 dias úteis, sem corte, com o B-TRC-03 dividido em dois. A v2.3 a refez para
+    ~45–76.
+  - **Q2:** D4 = b é o vínculo fixo, com o despacho aceito por cima.
+  - **Q3:** no B-TRC-01, só em dev, vale o ponto mais recente (provisório). Os dois pinos vêm no B-TRC-04.
+  - **Q4:** o técnico só com o app, sem viatura, aparece por padrão.
+  - **Q5:** quem configura o vínculo fixo é a gestão, com a permissão de editar viatura.
+  - **Q6:** despacho reatribuído sem aceite, ou ambíguo, aparece como frota sem nome.
+  - **Q7:** o expediente é da organização: um horário padrão que o admin ou a gestão configura. Por técnico, mais
+    tarde.
+  - **Q8:** num despacho aceito fora do expediente, o nome aparece.
+  - **Q9:** a guarda de 90 dias vale para o Traccar e para a posição do app. A parte do app é um bloco pequeno à parte.
+  - **Q10:** a trilha de consulta registra quem viu, quando, de quem (técnico ou viatura), em que tela e de que
+    período.
+  - **Q11:** ver a frota sem técnico é recurso pago, no plano pago de rastreamento de frota. É decisão comercial do dono,
+    tomada pela aceitação da recomendação.
+
+  **Isto não muda:** as regras do dono para o Traccar no §C7 item 8(4), e a pré-condição de ingestão em produção
+  (`B-SAN3-05` mergeado).
+
+## Registro do `B-O6R-07c-a` (PR #414), 2026-10-10
+
+- **D-07C-TRAVAS-REORDENADAS (2026-10-10, decisão do orquestrador; texto do plano do `B-O6R-07c` v3, §R.4/B6)** — "Com a
+  divisão do `B-O6R-07c` (2026-10-10): (1) a trava de `src/modules/work-orders/work-order.service.ts`,
+  `SAN3-13 → 07c → SAN3-23` (`PLANO_SAN3.md:356`), passa a `07c-a → SAN3-13 → SAN3-23`; o 07c-b só toca esse arquivo se a
+  D1-07c for (b) ou (c), e aí entra na fila depois do `SAN3-13`. (2) A trava de `src/modules/mobile/mobile-work-order-sync.ts`,
+  `07c → SAN3-16` (`PLANO_SAN3.md:357`), é satisfeita pelo **07c-a** (que não toca o arquivo) quando a D2-07c for (a), (b) ou
+  (c), e passa a `07c-b → SAN3-16` quando for (d), porque aí o 07c-b toca o arquivo. Com (a), a ordem é
+  `07c-a → SAN3-16 → 07c-b`: o `SAN3-16` constrói a saída do app que o 07c-b exige antes de mergear."
+
+## Registro de 11/10/2026 (fim da tarde) — 03a, 07c-a, telas, celular do técnico e rastreadores
+
+Fala literal do dono, a mesma para as cinco entradas abaixo:
+*"03a: A. 07c-a: D. Telas: recomendação, /logistics ligar depois e escrever na memoria a pedencia. F9: ja tenho rastreadores da cantrack, modelos g500ls e j16-g900l um de cada. o Celular do técnico: pelo nosso app"*
+
+- **D-03a-MESMA-CHAVE-OUTRO-ATOR = A (2026-10-11).**
+  - **A regra:** a mesma ação de sincronização (o mesmo `client_action_id` gerado no celular) é **uma ação só** e pertence
+    a quem a enviou primeiro. Se outro usuário reenviar a mesma ação, o servidor responde **conflito** e não lança nada.
+  - **Por quê:** fecha o pagamento em dobro no celular compartilhado (achado A-04 da crítica r2 do `B-O6R-03a`). O conserto
+    fica só no servidor, sem migração e sem mexer no app.
+  - **O que muda:** o critério de `docs/revisoes/SAN3/PLANO_SAN3.md:243` ("2 usuários com a mesma chave local → 2
+    lançamentos") deixa de valer para o 03a, como propõe `B-O6R-03a-EMENDA-v3.md` (ramo `fix/expense-sync-atomic`,
+    `62c95170`).
+  - **Próximo passo:** o dev do 03a, com o plano v2 e a emenda v3. O 03a mexe em dinheiro: depois do dev vem a junta
+    completa (unanimidade de 3).
+
+- **D-07CA-OPCAO-D (2026-10-11).** O PR #414 (`B-O6R-07c-a`: técnico não atribuído não mexe em subrecurso de OS alheia)
+  **mergeia por decisão do dono**, acima da junta (§A1.1).
+  - **O que a junta decidiu:** reprovou o ciclo 1 por 2 × 1 (`omega/juntas/J-B-O6R-07c-a-ciclo1.md`). A C1 e a C3
+    aprovaram. A C2 reprovou com 3 `bloqueia`, todos sobre o **teste-vigia** do censo
+    (`tests/o6r07c-census-guard.test.ts`, que reconhece a FORMA da rota e não a propriedade). A própria ata diz:
+    "classe não grave: nenhum é defeito do produto hoje".
+  - **O que entra no merge:** o conserto do produto.
+  - **O que vira pendência:** o vigia por propriedade vira `P-GOV-GUARDA-POR-PROPRIEDADE`, com bloco dono
+    `B-GOV-GUARDA-POR-PROPRIEDADE`. O plano do ciclo 2 (`bd504cc4`) e a pré-crítica da API (`6a4ab8b9`) passam a ser
+    insumo desse bloco. O relatório parcial do dev do ciclo 2 é versionado como registro: ele não escreveu código.
+  - **Risco aceito pelo dono:** até o vigia novo existir, uma rota NOVA escrita de certo jeito pode passar sem o teste
+    avisar. As rotas que existem hoje estão cobertas pelo conserto e pelos testes do bloco.
+  - **Depois do merge:** o porteiro (merge de produto, §C7 item 8(3)).
+
+- **D-TELAS-SAN3-06a (2026-10-11)**, as recomendações aceitas para as telas com dado inventado (levantamento do
+  agente da API, item 39 do `PLANO_SAN3.md`, bloco `B-SAN3-06a`):
+  - **Relatórios** (`/reports`) e **Pedidos de compra** (`/purchase-orders`) saem do menu e da rota. São 100% literais,
+    sem servidor e sem tabela. Construí-los volta como bloco próprio, se o dono pedir.
+  - O **Console Dispatcher** (`/dispatch/console`) é ligado aos dados reais. O servidor já tem os despachos, o resumo, as
+    localizações e as OS.
+  - O **`/logistics`** fica para "ligar depois", na fala do dono, e vira `P-LOGISTICS-MOCK`. Ele não está no menu
+    lateral, mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts`.
+  - A ordem dos blocos que mexem no menu segue o `PLANO_SAN3.md` (l.351-352).
+
+- **D-TRC-CELULAR-PELO-APP (2026-10-11).**
+  - **Como funciona:** a posição do celular do técnico chega pelo **nosso app Flutter, direto ao ERP**, com o login do
+    técnico e a fila offline que já existem (`mobile/flutter_app/lib/core/location/`). O celular **nunca passa pelo
+    Traccar**.
+  - **O que o Traccar recebe:** só os rastreadores das viaturas.
+  - **Origem:** confirma o texto do plano v2.1 (§6.2, l.903; §3.2, l.486) e a opção (a) que o orquestrador apresentou ao
+    dono.
+  - **[rec] Consequência:** em produção não é preciso abrir a porta OsmAnd. O OsmAnd fica para o simulador de dev, e a
+    porta pública de cada protocolo se decide no `G-TRC-NLB`.
+
+- **D-TRC-MODELOS-CANTRACK (2026-10-11)**, a resposta à F-9. O dono complementou a fala acima com:
+  *"os gps sao todos gt06, g500ls é um modelo odb"*.
+  - **Aparelhos:** rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**. O G500LS é **OBD**: liga na porta OBD do
+    veículo.
+  - **Protocolo:** **os dois falam GT06**, pela palavra do dono. Cabem na PD aprovada (OsmAnd e GT06) **sem emenda**.
+  - **J16:** o fórum do Traccar (fonte EXTERNA, sem cópia no repositório) confirma GT06 na porta 5023 do Traccar. Ver
+    `traccar.org/forums/topic/problem-with-j16-using-the-wrong-protocol/` e
+    `traccar.org/forums/reply/108278`. O comando relatado é `SZCS#SERVIP=…#SERVPORT=5023#PTL_SEL=2#GT06SEL=1#`.
+    Ressalvas relatadas no fórum: há variantes GT06 V3/V4 e o consumo de dados é alto.
+  - **G500LS sendo OBD [leitura do orquestrador, HIPÓTESE a medir no B-TRC-03a]:**
+    - é alimentado pela porta OBD, sem instalação elétrica;
+    - o motorista pode desconectá-lo. Se o aparelho mandar o evento de corte de energia, isso vira alarme;
+    - os dados do OBD (ignição, odômetro) dependem do firmware e do decodificador GT06 do Traccar.
+  - **O que o B-TRC-03a confere com os aparelhos reais:** a variante GT06, a porta, o intervalo duplo nativo (parado e em
+    movimento) e os comandos de intervalo.
+
+## Registro de 11/10/2026 (noite) — telas novas seguem o padrão do sistema
+
+- **D-TELAS-SEGUEM-O-PADRAO (2026-10-11)** — o dono: *"a construção de novas telas tem que acompanhar o padrao do sistema, importante usar as skills de frontend e deixar clarificado que o padrao que ja ha no sistema deve ser seguido, nada de fazer novas telas do inicio. documente e espalhe esse requesito"*.
+  Regra escrita no `CLAUDE.md` §4 (Web) e no item do DoD (§10), com espelho no `AGENTS.md`.
+
+  **Onde mais foi espalhada:**
+  - nas skills de frontend `ts-frontend-full` e `ui-ux-pro-max` (`.claude/skills/` e `.agents/skills/`);
+  - no `frontend-pixel-master` (restrição) e no `cognicao-visual` (veto 6, "tela feita do zero"), em `.claude/agents/`
+    e `.agents/agents/`;
+  - no `CLAUDE.md` §5 (mobile): a tela-modelo é a feature mais próxima em `lib/features/`;
+  - fora do repositório: na memória do orquestrador e nos prompts dos blocos de tela, a começar pelo `B-SAN3-06a`.
+
+  **Correção que veio junto:** as duas skills apontavam como modelo de lista a `WorkOrdersListPage.tsx`, que é legado
+  SEM rota (P-004; `P-SAN3-01-OS-LEGADO-MORTO`). A primeira versão desta regra herdou o erro, e a revisão do #422 o
+  pegou. O modelo passa a ser `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`, a lista padronizada no ar.
+
+  **Pergunta ao dono, que AINDA NÃO é regra:** onde a referência renderizada do §11 divergir do padrão do sistema em
+  ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do sistema? A referência continuaria valendo para o conteúdo
+  e a composição. Hoje vale o §11 ("PNG vence para layout/intenção"). O precedente `D-OS-CABECALHO-PADRONIZADO` trocou
+  a referência de 5 telas; ele não pôs o código acima dela.

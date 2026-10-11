@@ -1,0 +1,151 @@
+{
+ "jurado": "jurado-07ca-c3-regressao-escopo (identidade nova, corpo novo; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C3 — regressão, escopo e registro, sem KPI",
+ "mandato_md5": "6715c48de3066a5129c2eedaace0a12f (cru = EOL-neutro) · declarado no disparo: 6715c48de3066a5129c2eedaace0a12f",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor · substituição (§C7.6-bis): o Fable não rodou por decisão do dono D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (cadeiras de junta no nível menor), não por cota · fonte: agent-orchestration/controle/decisoes.md:3132 no objeto 4ca2be43 (e em origin/main 9b611468)",
+ "corpo_md5": "114a51ccaed1894a044123d93ca256ff (.claude, EOL-neutro, blob do objeto) · .agents f7fcbf9ac3d8cdbc7151c6fd2d109b2d (difere só pelo adaptador Codex) · recebido no prompt: n/a (lido do blob por git show)",
+ "objeto": "4ca2be43c3b4b32b9bed670f02d78145620cdc2e (git ls-remote do ramo = gh pr view 414 headRefOid; OPEN, rascunho, MERGEABLE) · B = merge-base com origin/main = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a · merges em B..objeto: 762ac5ad (pais c8bd4c28 + 9b611468, #415) e 054dada2 (pais d4cd35e3 + ab52ec50, #389) · origin/main no início = 9b611468 · cerca do mandato d7255263, delta = só os 3 mandatos · objeto do inspetor c8bd4c28, delta = 12 arquivos de agent-orchestration/ (registro) · objeto no fim: a conferir",
+ "legalidade": "parecer do inspetor desta junta: votos/B-O6R-07c/insp-07ca-parecer.md (inspetor-de-terreno-da-junta, Opus 5.5 declarado, medido 16:25Z–16:40Z) · LIBERADO COM RESSALVA (R1–R5) · confere este nome (0 no obituário), este corpo commitado nos dois espelhos (sync --check 52 ok), worktree e containers próprios com prefixo j07ca-c3-: sim · objeto do inspetor c8bd4c28; delta até 4ca2be43 = só registro (merge do #415 sem conteúdo próprio, parecer, mandatos) · check-runs no objeto às 17:47Z: total 14 | não-verdes 0 | pendentes 0 · backend: success nos dois runs (pull_request attempt 1; push attempt 2, re-executado 17:24→17:31) · backend-postgres: success nos dois · normas citadas: todas presentes no objeto e na main (§A1, §A2, §A7, §C4, §C5, §C7.1-bis l.393, 1-ter, 4-bis, 6-bis, P7, item 8(1)(2)(3)(5), §8; PLANO_SAN3 CE-2 l.325 e §6)",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (ciclos 1–2: bloqueia dentro-do-bloco reprova)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta",
+ "pausa": "nenhuma",
+ "item1_regressao": "MEDIDO (17:33Z–17:58Z, container j07ca-c3-node com árvore = objeto, tree e072733a): régua de 80 suítes (regra da v1 regenerada por script; o \"44\" não sai da regra: 32 entram só pelo padrão de /work-orders/:id) — objeto 785/779/2/4 = base (src/ do bloco trocado pelos blobs de B) 785/779/2/4, diff de nomes+status vazio; as 2 falhas são domain-events sem Redis pela forma da régua (pré-existente 2c37ce93; 4/4 com Redis). npm test na forma do job backend: 301 arquivos, 3298 testes, pass 3296, fail 0, skipped 2 (RBAC_DB_PARITY, = orçamento), ec 0 — igual ao job backend da CI nos dois runs do objeto. check/lint/build ec 0 (build com erro proposital → ec 2). o6r07a 8/8 sem diff; guard 31/31; vias 24/24. -db: objeto 6/6; base 3 negativos vermelhos pelo motivo certo (\"técnico B não foi recusado\", km accepted≠rejected) e 3 controles verdes; sem DATABASE_URL, skip declarado; resíduo 0 antes/depois (contador com controle positivo). CI (log): o -db roda com banco no job backend (ok 2037–2042, 164–3447 ms) nos dois runs; não roda no backend-postgres. Check-runs no objeto: 14, 0 não-verdes, 0 pendentes (17:47Z).",
+ "item2_escopo": "MEDIDO (17:41Z): diff do bloco (B..objeto) 38 arquivos: permitido 25, artefato do planejamento/junta/registro 12 (6 corpos jurado-07ca nos dois espelhos, 5 docs B-O6R-07c-*, decisoes.md mandado pelo R.4 do plano), PROIBIDO 0, fixture da régua 1 (tests/work-order-attachments-routes.test.ts, classe (i), asserções 42→43, esperado 201 igual). work-order.service.ts: 4 blocos em geocodeById, geocodeDestinationById, getForMutation (novo) e setMileage; update/changeStatus/assertMutationObjectScope com corpo idêntico (md5) em B e no objeto. API_CONTRACTS.md: só as 4 linhas nomeadas, texto antigo preservado. Registro: decisoes.md APPEND puro; pendencias.md 1 linha de status reescrita (P-O6R-SUBRECURSO-OBJECT-SCOPE → \"ABERTA — PARCIAL … Antes: ABERTA …\"), texto antigo preservado → nota. Mutações temporárias sem resto (sync de OS, catálogo, roteador de comentários, attachments: diff --quiet ec 0). Kpis/ sem diff. git diff --check ec 0. sync-agent-agents --check ec 0 (52). remerge-diff dos 2 merges: vazio. Controles: classificador 6/6, changeStatus/update acusados, contador de APPEND acusou 2/2, irmão não-vazio ec 1, base c1cfdabe acusa prisma 2/.github 1 e B dá 0, remerge-diff acusa em 4535ebb3/325030c8, espelho com 1 linha a mais ec 1.",
+ "item3_registro": "MEDIDO (17:45Z): nenhuma linha do diff do bloco, dos 20 commits, do título/corpo do PR #414 ou do API_CONTRACTS.md do objeto declara fechado o Ω6R-SEC-002, o item 51 ou a P-O6R-SUBRECURSO-OBJECT-SCOPE inteira (detector + leitura das 25 marcações: são texto de mandato dos corpos e o \"Fecha/Não fecha\" do plano). A pendência está \"ABERTA — PARCIAL\" (pendencias.md l.6765) com apenso l.6802 nomeando o resíduo de 23 ·07c-b e \"SEC-002 segue parcialmente_superado\"; o PR diz \"10 vias fechadas\" e \"o Ω6R-SEC-002 só fecha lá\" (07c-b). Registro \"no PR do 07c-a\" (R.4): apenso da pendência e D-07C-TRAVAS-REORDENADAS — AQUI. R.1/R.2 (DANO, D1/D2/D3-07c), tensão §A2 (REGISTRO-07CA-TENSAO-COORDENADOR) e D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO — na main (#415), logo no objeto. R.4 novas (APP-RECUSA, VINCULO, FLEET-ALERTS) e apensos B01/B11 — AQUI. Propostas do dev: DB-FORA-DA-LISTA-CI e SUBAPP-EM-ROUTER-INVISIVEL AQUI; T15 já na main desde #405 (dono B-ARNES-2). Ausentes: D-07c-DESPACHO-ALVO (R.3) e o apenso de P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE — ambos do 07c-b, com destino pela regra escrita do R.4 (\"cada um no PR que os produz\") → nota. Sem KPI. Controles: detector acusou 2/2 fabricados e não acusou \"parcialmente_superado\"; localizador acha ID real e 0 para fabricado.",
+ "voto": "APROVADO",
+ "justificativa": "Terreno: worktree próprio detached (w-ciclo1-07ca-c3); containers j07ca-c3-{pg,redis,node} numa rede própria, sem porta publicada; árvore no container = objeto (4014/4014 blobs por hash-object --no-filters; tree e072733a = 4ca2be43^{tree}); git no container (ajuste de terreno declarado) com git ls-files src = ls-tree src (781); npm ci, prisma generate e migrate deploy (108) ec 0; base viva intocada. ITEM 1 — régua: a regra da v1 regenerada por script dá 80 suítes (não 44: 32 entram só pelo padrão de /work-orders/:id), objeto 785/779/2/4 = base 785/779/2/4, nomes e status idênticos; as 2 falhas são domain-events sem Redis pela forma da régua (pré-existente 2c37ce93; 4/4 com Redis). npm test na forma do job backend: 301 arquivos, 3298, pass 3296, fail 0, skipped 2 (RBAC_DB_PARITY = orçamento), igual aos dois runs da CI. check/lint/build 0/0/0 (controle de build ec 2). o6r07a 8/8 sem diff; guard 31/31; vias 24/24. -db: objeto 6/6, base 3 negativos vermelhos pela propriedade + 3 controles verdes, skip declarado sem banco, resíduo 0. CI (log): o -db roda com banco no job backend (6 testes, 164–3447 ms), guard 31 e vias 24 também; não roda no backend-postgres. ITEM 2 — diff do bloco (base B = 9b611468) 38 arquivos: 25 permitidos, 12 artefatos (corpos jurado-07ca nos dois espelhos, plano/críticas/relatórios, decisoes.md mandado pelo R.4), PROIBIDO 0, 1 fixture da régua de classe (i) com asserções 42→43 e esperado igual; work-order.service.ts só em geocodeById, geocodeDestinationById, getForMutation (novo) e setMileage, com update/changeStatus/assertMutationObjectScope de corpo idêntico; API_CONTRACTS.md só nas 4 linhas nomeadas; registro por APPEND salvo 1 linha de status com o texto antigo preservado; mutações temporárias sem resto; Kpis/ sem diff; diff --check 0; espelho 52 ok; remerge-diff dos 2 merges vazio; índice gerado coerente (531/531). ITEM 3 — nada no diff, nos 20 commits, no PR ou no API_CONTRACTS declara fechado o SEC-002, o item 51 ou a pendência inteira; a pendência está ABERTA — PARCIAL com o resíduo das 23 ·07c-b nomeado; o registro 'no PR do 07c-a' está aqui; R.1/R.2/tensão §A2/D-TOPO na main e no objeto; 2 ausentes do 07c-b com destino pela regra do R.4. Vermelho-controle de cada item acusou. Achados: 1 ajuste (a P-O6R-07CA-DB-FORA-DA-LISTA-CI diz que o -db se pula no job backend; o log mostra que roda com banco) e 6 notas; nenhum bloqueia. Régua aplicada: ciclo 1, unanimidade de 3 com veto; só bloqueia dentro-do-bloco ou item não medido reprova — não há nenhum. Limpeza: containers, rede e worktree removidos pelo nome, contagem 0, scratch sem segredo.\nVOTO: APROVADO — régua 80 suítes (regra da v1; 44 não sai da regra: 32 entram só por /work-orders/:id) 785/779/2/4 no objeto = base (as 2 falhas: domain-events sem Redis pela forma, pré-existente 2c37ce93); npm test na forma da CI 3296/3298 (fail 0, skipped 2 ≤ 2); check/lint/build 0; o6r07a 8/8 sem diff; -db 6/6 no objeto, vermelho pelo motivo certo na base, skip sem banco; CI: o -db roda com banco no job backend (não no backend-postgres → P-O6R-07CA-DB-FORA-DA-LISTA-CI, cuja premissa 'se pula no backend' é falsa: ajuste); diff do bloco (B) ⊆ PERMITIDO + artefatos, PROIBIDO vazio, work-order.service.ts só nos 4 métodos, fixture (i) sem asserção mais fraca, APPEND (1 status preservado), Kpis/ sem diff, diff --check 0, espelho ok, merge sem conteúdo próprio; nada declara fechado o SEC-002, o item 51 ou a pendência; registro: aqui (o do 07c-a) e no PR do 07c-b (D-07c-DESPACHO-ALVO, apenso 04A); pendências: P-O6R-07CA-DB-FORA-DA-LISTA-CI (premissa a corrigir), T15/A10 pré-existentes, o 07c-b",
+ "o_que_executei": [
+  {
+   "comando": "git show 4ca2be43:.claude/agents/especialistas/jurado-07ca-c3-regressao-escopo.md | tr -d CR | md5sum; md5sum 00-mandatos/C3c.md",
+   "forma": "host, leitura",
+   "resultado": "114a51ccaed1894a044123d93ca256ff (= publicado); mandato 6715c48de3066a5129c2eedaace0a12f (= disparo)"
+  },
+  {
+   "comando": "git ls-remote origin refs/heads/fix/o6r07c-subresource-scope; gh pr view 414 --json headRefOid…; git merge-base origin/main O; git rev-list --merges --parents B..O",
+   "forma": "host, início e fim",
+   "resultado": "4ca2be43 nas duas fontes, igual no fim; B = 9b611468 = origin/main; merges 762ac5ad e 054dada2"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/4ca2be43/check-runs?per_page=100",
+   "forma": "host, 17:27Z e 17:47Z",
+   "resultado": "17:47Z: total 14, não-verdes 0, pendentes 0"
+  },
+  {
+   "comando": "node gera-regua.cjs plano-v1.md <wt> regua.txt",
+   "forma": "host; regra do §4 da v1; D1–D4 declaradas",
+   "resultado": "80 suítes (objeto e c1cfdabe)"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 900 node --test --import tsx --test-reporter=tap <80>",
+   "forma": "container j07ca-c3-node (erp-junta-node20-pg16:local), árvore = objeto (tree e072733a); src objeto e src trocado pelos blobs de B",
+   "resultado": "objeto 785/779/2/4 · base 785/779/2/4 · diff de nomes+status vazio; as 2 falhas = domain-events sem Redis"
+  },
+  {
+   "comando": "DATABASE_URL=<j07ca-c3-pg> REDIS_URL=redis://j07ca-c3-redis:6379 CORE_SAAS_PERSISTENCE=memory timeout 2400 npm test",
+   "forma": "container, forma do job backend, banco migrado (108 migrations)",
+   "resultado": "ec 0 · 301 arquivos · 3298 · pass 3296 · fail 0 · skipped 2 (RBAC_DB_PARITY)"
+  },
+  {
+   "comando": "npm run check / lint / build; build com erro de tipo proposital",
+   "forma": "container, objeto",
+   "resultado": "0/0/0; controle ec 2 (TS2322), restaurado md5 = blob"
+  },
+  {
+   "comando": "node --test --import tsx tests/o6r07a-wo-object-scope.test.ts | o6r07c-census-guard | o6r07c-subresource-scope",
+   "forma": "container, objeto, isolados",
+   "resultado": "8/8 · 31/31 · 24/24"
+  },
+  {
+   "comando": "DATABASE_URL=<j07ca-c3-pg> node --test --import tsx --test-reporter=tap tests/o6r07c-subresource-scope-db.test.ts",
+   "forma": "container; objeto, base (src trocado) e sem DATABASE_URL",
+   "resultado": "objeto 6/6 · base 3 pass + 3 fail pelo motivo certo · sem banco skip declarado · resíduo 0/0"
+  },
+  {
+   "comando": "gh api repos/…/actions/jobs/{114265262756,114269943972,114265262920,114269945223}/logs",
+   "forma": "host; log da CI, não YAML",
+   "resultado": "job backend executa o -db (6) com banco, guard 31 e vias 24; backend-postgres não executa o -db"
+  },
+  {
+   "comando": "git diff --name-only|-U0|--check B O; classifica.cjs; conta-append.cjs; git show --remerge-diff 054dada2 762ac5ad; sync-agent-agents.mjs --check",
+   "forma": "host + meu worktree",
+   "resultado": "38 arquivos: 25 permitidos, 12 artefatos, 0 proibidos, 1 fixture (i); 4 blocos do service nos 4 métodos; APPEND salvo 1 linha de status preservada; merges sem conteúdo próprio; diff --check 0; espelho 52 ok"
+  },
+  {
+   "comando": "detecta-fecho.cjs sobre diff+, commits, PR, API_CONTRACTS; grep -nF dos IDs em pendencias/decisoes do objeto e da main",
+   "forma": "host",
+   "resultado": "0 afirmação de fechamento falso; tabela de IDs: o 'no PR do 07c-a' está aqui; 2 ausentes do 07c-b com destino pela regra do R.4"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "a pendência P-O6R-07CA-DB-FORA-DA-LISTA-CI (pendencias.md l.10836 no objeto, gravada em d7255263) afirma que no job backend a suíte tests/o6r07c-subresource-scope-db.test.ts 'se declara pulada'; no log da CI do próprio objeto ela é EXECUTADA com banco no job backend",
+   "evidencia": "gh api repos/thiagodorgo/ERP_Techsolutios/actions/jobs/114265262756/logs (backend, pull_request) e .../114269943972/logs (backend, push attempt 2): ok 2037–2042 [modo] 164 ms, [perfil] 3447 ms, [user id] 823 ms, negativos 530/321/320 ms; 0 linha 'exige DATABASE_URL'; no backend-postgres (114265262920, 114269945223): 0 ocorrência. ci.yml do objeto: job backend com DATABASE_URL de serviço e prisma migrate deploy; o teste fixa CORE_SAAS_PERSISTENCE=prisma",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (a entrada nasceu no commit d7255263 deste ramo)",
+   "classe": "não grave",
+   "motivo": "o registro descreve o -db do bloco como não vigiado no job backend, quando ele é vigiado lá com banco; a falta real é só no backend-postgres (banco semeado)"
+  },
+  {
+   "defeito": "a régua '44 suítes' do plano (07c-a.4, medida na v1) não é reproduzível pela regra escrita no §4 da v1",
+   "evidencia": "gera-regua.cjs (md5 c9866822ab3594ba3d38cbe470a4c5f2) sobre tests/ do objeto → 80; sobre tests/ de c1cfdabe → 80; 32 dos 80 entram só pelo padrão da via 1 (PATCH /work-orders/:workOrderId); 80 − 32 = 48",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (artefato do planejamento; não é código)",
+   "classe": "não grave",
+   "motivo": "a regra não diz como grepar caminho com parâmetro nem quais 'handlers'; usei o superconjunto de 80, verde e idêntico no objeto e na base"
+  },
+  {
+   "defeito": "a forma da régua no plano (env -u REDIS_URL) faz tests/domain-events.test.ts falhar 2 por ECONNREFUSED 127.0.0.1:6379, no objeto e na base",
+   "evidencia": "régua objeto e base: fail 2, os dois em domain-events; isolado com REDIS_URL=redis://j07ca-c3-redis:6379 → 4/4; arquivo fora do diff do bloco; nasceu em 2c37ce93 (2026-06-08)",
+   "gravidade": "nota",
+   "escopo": "pre-existente (2c37ce93, 2026-06-08; forma de terreno da régua)",
+   "classe": "não grave",
+   "motivo": "o '0 fail' esperado da régua depende de Redis, que a forma escrita tira"
+  },
+  {
+   "defeito": "a linha de status da P-O6R-SUBRECURSO-OBJECT-SCOPE foi reescrita no lugar (1 linha '-' em pendencias.md), não por APPEND puro",
+   "evidencia": "git diff -U0 B O -- agent-orchestration/controle/pendencias.md: 1 linha '-'; conta-append.cjs (md5 c830f668f0bd21c272451b504b20a909): texto antigo PRESERVADO em ordem nas linhas '+' ('ABERTA — PARCIAL (…). Antes: ABERTA · **severidade:** ALTA · …'); a nova linha diz PARCIAL, não FECHADA",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (d7255263)",
+   "classe": "não grave",
+   "motivo": "nada do registro sumiu; é a própria entrada que o R.4 manda passar a PARCIAL neste PR"
+  },
+  {
+   "defeito": "controle/decisoes.md entra no diff do bloco sem estar na lista PERMITIDO do 07c-a.5",
+   "evidencia": "extrai-listas.cjs: decisoes.md ausente do parágrafo Permitido; o R.4 do mesmo plano manda gravar D-07C-TRAVAS-REORDENADAS 'em controle/decisoes.md … no PR do 07c-a'; diff do bloco em decisoes.md = APPEND puro de 10 linhas (0 '-')",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (artefato do planejamento: inconsistência interna do plano)",
+   "classe": "não grave",
+   "motivo": "o próprio plano manda o registro para decisoes.md; o bloco seguiu o R.4"
+  },
+  {
+   "defeito": "dois itens do texto de Registro do plano não estão no objeto: D-07c-DESPACHO-ALVO (R.3) e o apenso em P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE (R.4)",
+   "evidencia": "grep -nF no pendencias.md e decisoes.md do objeto e de origin/main → 0; git grep -i DESPACHO-ALVO no objeto e na main fora do plano e dos corpos → 0; a entrada 04A (l.9697) não tem apenso 2026-10-10",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "os dois são do 07c-b (default do despacho; escopo por run que nasce no 07c-b) e têm destino pela regra escrita do R.4: 'o 07c-a e o 07c-b gravam cada uma no PR que as produz'"
+  },
+  {
+   "defeito": "os números de teste do corpo do PR (npm test 3234/3230/2/2, falhas do T15) são do head do dev d4cd35e3, não do objeto julgado",
+   "evidencia": "corpo do PR: 'Validação (head d4cd35e3…)'; no objeto, meu npm test e o job backend da CI nos dois runs: 301 arquivos · 3298 · pass 3296 · fail 0 · skipped 2",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o PR declara o head da medição; não há afirmação divergente sobre o objeto, só defasagem depois dos dois merges da main"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum controle meu deixou de acusar: leitor de TAP (+1 not ok, +1 SKIP), classificador (6/6 proibidos), mapa de métodos (changeStatus e update FORA), contador de APPEND (2/2), irmão não-vazio (ec 1), base c1cfdabe × B (prisma 2/.github 1 × 0/0), remerge-diff (4535ebb3 e 325030c8 com conteúdo), espelho (+1 linha → ec 1), build (erro de tipo → ec 2), diff de nomes (−1 linha → ec 1), detector de fechamento (2/2 e não acusa parcialmente_superado), localizador (acha real, 0 no fabricado), contador de resíduo (insert de controle → 1), índice × pendencias de B (334 divergem)",
+  "critério que NÃO pode passar por construção, contra a régua do plano: o número '44 suítes' não sai da regra escrita (dá 80); medi o superconjunto (achado nota)"
+ ],
+ "pendencias_que_aceito": [
+  "C1: comportamento de acesso das vias (G-NEG/G-POS/G-WIDE), matriz RBAC × catálogo, moderação, 404 entre organizações, km e S-KM-RESTART",
+  "C2: censo e contagens do guard, formas das críticas, MG1–MG16, CE-G1, e a P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (escopo dentro-do-bloco, 'quem decide é a C2')",
+  "07c-b: as 23 entradas ·07c-b, D1/D2/D3-07c do dono, o fechamento do Ω6R-SEC-002, do item 51 e da pendência inteira",
+  "P-SAN3-05-T15-TETO-DE-RELOGIO (dono B-ARNES-2, desde a9fbe283/#405) e P-O6R06-A10-LIMPEZA-FK-INTERMITENTE — pré-existentes; nenhuma das duas falhou nas minhas medições nem nos dois runs da CI do objeto",
+  "D-07c-DESPACHO-ALVO e o apenso em P-SAN3-04A-CHECKLIST-ESCOPO-ESTOQUE: destino PR do 07c-b, pela regra do R.4",
+  "o -db fora do backend-postgres (P-O6R-07CA-DB-FORA-DA-LISTA-CI): .github/** é PROIBIDO ao bloco; o -db já é vigiado com banco no job backend",
+  "KPI congelado (§C7 item 8(5)): não cobro"
+ ],
+ "teardown": "src/ trocados restaurados (md5 no container = blob do objeto nos 4; git diff --quiet -- src ec 0) · containers j07ca-c3-node, j07ca-c3-pg, j07ca-c3-redis removidos por docker rm -f -v e rede j07ca-c3-net removida, contagem 0/0 · nenhuma imagem removida · árvore só dentro do container (destruída com ele); nenhum storage/checklist-attachments/<uuid>/ nem temporário o6r07c-* no host · worktree C:/Users/AMP/w-ciclo1-07ca-c3 removido por git worktree remove --force, com 0 processo vivo com o caminho antes, porcelain 0 · senha descartável e cópias do $SCRATCH apagadas (ficam 7 scripts com md5 na evidência, para P3) · base viva (erp-postgres/erp-redis) nunca tocada · w-07ca só com os meus dois arquivos de saída, sem commit · espaço no fim de linha nos dois arquivos = 0 · resíduo alheio: nenhum observado"
+}

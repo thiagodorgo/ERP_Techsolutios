@@ -1657,3 +1657,33 @@ Aprovar o ClamAV (clamd) como serviço separado, com cliente INSTREAM próprio e
 - S52 [OWASP ASVS 4.0.3 V12](https://github.com/OWASP/ASVS/blob/v4.0.3/4.0/en/0x20-V12-Files-Resources.md): 12.1.1, 12.2.1, 12.4.2.
 - S53 [OWASP: cheat sheet de upload](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html): antivírus, CDR, vazamento em serviços públicos.
 - S54 [OWASP Developer Guide: princípios](https://devguide.owasp.org/en/02-foundations/03-security-principles/): fail safe.
+
+---
+
+## PD-TRC-616 — Traccar 6.16.0 como servidor de rastreamento: versão, imagem, licença, CVEs e o forward (2026-10-11)
+
+**Contexto:** a trilha do Traccar (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, v2.1 + emendas v2.2 e v2.3) precisa de uma
+versão fixada, de uma imagem verificável e da semântica do forward conferida no código, antes do B-TRC-01. A
+`D-TRC-DECISOES-DO-DONO-2026-10-11` (item 7) trocou a junta de 5 da PD pela pesquisa e pela aprovação escrita do dono.
+**Pesquisa completa:** `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (`agente-pesquisador-web`, ≥3 fontes por fato quando
+houve, código-fonte da tag como fonte primária; acesso em 2026-10-11).
+
+**Fontes principais:**
+- `https://api.github.com/repos/traccar/traccar/releases/latest`: `v6.16.0`, de 2026-09-27, `prerelease=false`. A tag
+  aponta para o commit `cfab560c79ee9c9eaa41c79c6df351e820d6284b`.
+- `https://hub.docker.com/v2/repositories/traccar/traccar/tags/6.16.0` e o cabeçalho `docker-content-digest` do
+  registro: o digest do índice multiplataforma é `sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`.
+- `https://api.github.com/repos/traccar/traccar/commits/acd55bd0feebd9189213af362bbccbd01da62d29`: o commit "Limit
+  forwarding headers to configured URL". Só a partir da 6.16.0 o `forward.header` vai apenas à URL global.
+- `https://www.traccar.org/blog/traccar-6-16/`: as notas oficiais. O `LICENSE.txt` da tag é Apache-2.0.
+
+**Achado:**
+- A 6.16.0 é a versão estável mais recente, e a única segura para o forward com token.
+- A imagem oficial do projeto é construída pelo CI dele, com atestação SLSA. Ela não é assinada e roda como root.
+- A licença é Apache-2.0: o uso comercial em SaaS é permitido, e rodar a imagem não gera obrigação.
+- Há duas CVEs médias sem correção (CVE-2026-108737 e CVE-2026-108738). São neutralizadas sem SMTP, sem OIDC, sem
+  usuário extra e sem porta pública além das de protocolo.
+
+**Decisão:** aprovada por escrito pelo dono em 2026-10-11, com OsmAnd e GT06, sem SMTP, sem OIDC, sem porta pública
+além das de protocolo e só com a conta de serviço do ERP. As condições estão em `controle/decisoes.md`
+(`D-TRC-PD-APROVADA-2026-10-11`). Revisar quando sair a 6.16.1.
