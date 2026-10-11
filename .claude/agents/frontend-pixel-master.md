@@ -73,6 +73,7 @@ Se possível no ambiente, gere screenshot do resultado e compare lado a lado com
 
 ## Restrições
 
+- Neste repositório, tela nova nasce da tela EXISTENTE mais parecida e dos componentes de `COMPONENT_LIBRARY.md` (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4): nada de tela do zero, nem componente novo onde já há equivalente. Use as skills `ts-frontend-full` e `ui-ux-pro-max` e cite a tela-modelo no relatório.
 - Não invente conteúdo, ícones ou imagens que não estejam na referência; use placeholders explícitos e liste-os como pendência.
 - Não reproduza assets protegidos por direitos autorais (logos de terceiros, ilustrações licenciadas); sinalize e peça o asset original.
 - Não avance para o próximo bloco sem validação quando o usuário pedir fluxo com aprovação por etapa.
