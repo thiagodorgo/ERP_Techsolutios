@@ -3473,14 +3473,18 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - **[rec] Consequência:** em produção não é preciso abrir a porta OsmAnd. O OsmAnd fica para o simulador de dev, e a
     porta pública de cada protocolo se decide no `G-TRC-NLB`.
 
-- **D-TRC-MODELOS-CANTRACK (2026-10-11)**, a resposta à F-9.
-  - **Aparelhos:** o dono tem rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**.
-  - **J16:** pelo fórum do Traccar, fala **GT06**, na porta 5023 do Traccar. Ver
+- **D-TRC-MODELOS-CANTRACK (2026-10-11)**, a resposta à F-9. O dono complementou a fala acima com:
+  *"os gps sao todos gt06, g500ls é um modelo odb"*.
+  - **Aparelhos:** rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**. O G500LS é **OBD**: liga na porta OBD do
+    veículo.
+  - **Protocolo:** **os dois falam GT06**, pela palavra do dono. Cabem na PD aprovada (OsmAnd e GT06) **sem emenda**.
+  - **J16:** o fórum do Traccar confirma GT06 na porta 5023 do Traccar. Ver
     `traccar.org/forums/topic/problem-with-j16-using-the-wrong-protocol/` e
     `traccar.org/forums/reply/108278`. O comando relatado é `SZCS#SERVIP=…#SERVPORT=5023#PTL_SEL=2#GT06SEL=1#`.
     Ressalvas relatadas no fórum: há variantes GT06 V3/V4 e o consumo de dados é alto.
-  - **G500LS:** a busca não achou nada. O protocolo dele é **HIPÓTESE**.
-  - **Limite da pesquisa:** são duas buscas do orquestrador, não uma PD com 3 fontes. O B-TRC-03a confirma o protocolo
-    de cada aparelho com o manual e com o aparelho real.
-  - **Regra:** se algum dos dois não falar GT06, ligar outro protocolo é **emenda da PD**, com aprovação escrita do
-    dono.
+  - **G500LS sendo OBD [leitura do orquestrador, HIPÓTESE a medir no B-TRC-03a]:**
+    - é alimentado pela porta OBD, sem instalação elétrica;
+    - o motorista pode desconectá-lo. Se o aparelho mandar o evento de corte de energia, isso vira alarme;
+    - os dados do OBD (ignição, odômetro) dependem do firmware e do decodificador GT06 do Traccar.
+  - **O que o B-TRC-03a confere com os aparelhos reais:** a variante GT06, a porta, o intervalo duplo nativo (parado e em
+    movimento) e os comandos de intervalo.

@@ -10855,7 +10855,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação não foram informados (F-9) — ALTA
 
-- **status:** ABERTA — MODELOS INFORMADOS (2026-10-11, `D-TRC-MODELOS-CANTRACK`): Cantrack G500LS e J16-G900L, um de cada, em mãos. O J16 fala GT06 segundo o fórum do Traccar (a confirmar). O protocolo do G500LS é desconhecido. Faltam o protocolo de cada um, conferido com o aparelho, e o chip (APN privada ou VPN). Antes: ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-ARQUITETURA-2026-10-11` item 10 · **dono:** o dono do produto (informar); o orquestrador cobra.
+- **status:** ABERTA — MODELOS INFORMADOS (2026-10-11, `D-TRC-MODELOS-CANTRACK`): Cantrack G500LS e J16-G900L, um de cada, em mãos. Os dois falam GT06, pela palavra do dono; o G500LS é um modelo OBD. O fórum do Traccar confirma o J16 na porta 5023. Faltam, conferidos com os aparelhos, a variante GT06 (V3/V4), a porta e o chip (APN privada ou VPN). Antes: ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-ARQUITETURA-2026-10-11` item 10 · **dono:** o dono do produto (informar); o orquestrador cobra.
 - O protocolo está decidido (OsmAnd e GT06, `D-TRC-PD-APROVADA-2026-10-11`). Falta saber: fabricante e modelo de cada rastreador, a porta que cada um usa, se o chip tem APN privada ou VPN, e se o aparelho tem intervalo duplo nativo (parado e em movimento).
 - **bloqueia:** o B-TRC-03a (perfil por modelo, comandos por nível, prova com o aparelho real) e o `G-TRC-NLB`. Não bloqueia o B-TRC-01, que roda só com OsmAnd, em dev.
 - **teste de encerramento:** a lista de modelos registrada em `controle/` e ao menos um aparelho GT06 real disponível para o B-TRC-03a.
