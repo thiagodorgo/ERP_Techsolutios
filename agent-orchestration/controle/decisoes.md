@@ -3510,3 +3510,23 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do sistema? A referência continuaria valendo para o conteúdo
   e a composição. Hoje vale o §11 ("PNG vence para layout/intenção"). O precedente `D-OS-CABECALHO-PADRONIZADO` trocou
   a referência de 5 telas; ele não pôs o código acima dela.
+
+## Registro de 11/10/2026 (noite) — porteiro do #414 e um desvio do orquestrador
+
+- **Porteiro do #414:** `LIBERADO COM RESSALVA` (`omega/juntas/votos/B-O6R-07c/PORTEIRO-414.md`).
+  - **Quem rodou:** `porteiro-414-claude`, Claude Opus 5.5, nível menor. Ele substituiu o `porteiro-414-codex`, que parou
+    às 18:21Z no limite de uso do Codex. Ele reexecutou os comandos do caído e mediu a cauda (P3).
+  - **Contagens reexecutadas:** guard 31/31, vias 24/24, 07a 8/8, rotas de anexo 12/12, `-db` 6/6.
+  - **`npm test`:** 3288 testes; 6 falhas de ambiente do Windows, em 2 arquivos fora do bloco, que passam no CI. A conta fecha com
+    os 3298 do CI.
+  - **Ressalvas tratadas neste registro:** a ata e a reprovação apontam para `D-07CA-OPCAO-D`; a nota sobre o
+    `G-TRC-NLB` em `P-TRC-MODELOS-RASTREADOR`; a data do fechamento parcial do 07c-a; o índice de severidade
+    (`P-INDICE-SEVERIDADE-POR-SUBSTRING`); a limpeza do `w-pvpr`.
+  - **Ressalva que fica:** o disco tem 14 GB livres, então rodar o `DEEP_CLEAN` num dos próximos merges.
+  - **Gate:** com este parecer na `main`, a linha 6 do gate §8.0 do B-TRC-01 fica verde.
+- **Desvio do orquestrador, contra o §C2.8 (registrado, não escondido).** Às 18:15Z, o orquestrador lançou os devs do
+  `B-O6R-03a` e do `B-SAN3-06a-telas` junto com o porteiro do #414, antes do parecer.
+  - **Efeito:** nenhum. Os dois ramos só ganharam o relatório parcial do dev; nenhum código foi escrito antes de o Codex
+    parar.
+  - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
+    bloco que já estava no plano.
