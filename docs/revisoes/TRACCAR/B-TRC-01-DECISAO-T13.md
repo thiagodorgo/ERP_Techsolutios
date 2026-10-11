@@ -48,3 +48,14 @@ para **111** nos três números. Medido: `npm test -- tests/san3-05-acessos-de-p
 # pass 35 · # fail 0`.
 
 A cadeira (a) da junta confere que o delta de +2 é EXATAMENTE essas duas tabelas e os dois modelos Prisma delas.
+
+## Adendo 2 (2026-10-11, ~23:20Z): o contador `tabelas_com_dml` do T14a/b (B-SAN3-05)
+
+O CI do #426 (`d77a9e32`) ficou vermelho nas duas execuções, no MESMO teste: `tests/san3-05-runtime-role-guard-db.test.ts:1013` (T14a/b). O teste espera a linha final do `scripts/db-runtime-role.sh` com `…|0|0|115`; a execução dá `118`. A última coluna é `tabelas_com_dml` (`db-runtime-role.sh:123,143`): as tabelas de `public` em que o papel de runtime tem SELECT, INSERT, UPDATE e DELETE. O delta de +3 são as 3 tabelas da migração do B-TRC-01:
+- `vehicle_tracking_bindings`;
+- `traccar_ingress_receipts`;
+- `traccar_quarantine_items`. Esta é global e sem RLS, por desenho do plano §4.2/§4.5, e a ingestão a grava pelo mesmo papel.
+
+**Por que o dev não viu:** a suíte exige `psql`, que falta no Windows. Ela estava entre as "6 falhas de ambiente" e escondeu esta regressão real. **Lição:** "falha de ambiente" num teste que o bloco PODE afetar não é verde; só o CI em Linux decide.
+
+**Decisão do orquestrador**, da mesma natureza do L0: o literal passa de 115 para 118. As cadeiras (a) e (c) julgam se o papel de runtime DEVE ter DML na `traccar_quarantine_items`, que é global e sem RLS. A pergunta para elas é se isso é superfície de vazamento entre organizações (ela guarda dado de dispositivo sem dono). Podem recusar.
