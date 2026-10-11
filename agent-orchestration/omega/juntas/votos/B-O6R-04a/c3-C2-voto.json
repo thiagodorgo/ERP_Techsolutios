@@ -1,0 +1,80 @@
+{
+ "jurado": "jurado-o6r04a-c2-suplente-fail-closed-backend — cadeira C2, CICLO 3, instância 2 (RELANÇADA; a instância 1, Codex GPT-5.6 Sol, caiu às 14:33Z pelo limite de uso do Codex no meio do item 1) — modelo Claude Opus 5.5, nível menor, por decisão do dono de 2026-10-10 (modelo de topo só no plano e no replanejamento após reprovação). Nunca votei neste bloco; nada herdado de outra cadeira, do plano, do dev nem do orquestrador; a instância 1 só deixou registrado o head (re-executado e conferido).",
+ "motivo_do_acionamento": "Cadeira C2 do ciclo 3 (mandato 00-mandatos/C2c3.md, md5 EOL-neutro 6ff30b89401222b7932b076390d2f610). Relançamento da MESMA identidade após queda por limite de uso (P3).",
+ "head_medido": "622bf8453d2d60ecb6577aa611b2d87645a689ae (gh pr view + ls-remote refs/heads e refs/pull/389/head) · base c1cfdabe12c74b58f8393dbee4f333224c56b303 · 14/14 check-runs completed/success · código igual a 35ef85be (diff src/tests/prisma/scripts/.github vazio)",
+ "terreno": "Worktree C:/Users/AMP/w-ciclo3-389-c2 detached em 622bf845 (reutilizado da instância 1; status limpo salvo a pasta de sonda; sem .env) · npm ci próprio no volume j389c3-c2-node-modules (ec 0, 326 pacotes, sem junction) · cluster descartável j389c3-c2-pg (postgres 16.15, rede j389c3-c2-net, SEM porta publicada) com o banco erp_j389c3_c2 recriado por mim e 108 migrações aplicadas (ec 0) · runner j389c3-c2-runner (Linux, Node 20.20.2, psql 16.14) · DATABASE_URL só no env do comando; base viva e portas do dono nunca alvo · 3 mutações de produto (M-S1, M-S2, M-I1) restauradas com git hash-object = blob e w/crlf; git status pristino antes do teardown.",
+ "lente": "Ciclo 3, régua GRAVE (CLAUDE.md §C7 item 8(2) na ref; o mandato manda acima do corpo): só bloqueia defeito de produto que perde dado, vaza entre organizações, quebra permissão ou erra dinheiro, provado por execução. (1) varredura por DESTINO do produto; (2) status desconhecido por DADO fecha todas as decisões sem gravar; (3) duplicidade concorrente resolvida pela identidade do índice, um gravado e o outro recusado, sem sucesso silencioso, saldo exato. Não julga: C1 (banco/RLS/concorrência, migração) e C3 (rota/permissão/suíte/registro).",
+ "voto": "APROVADO",
+ "justificativa": "Nota do ciclo 3 aplicada (mandato acima do corpo): só defeito GRAVE de produto provado por execução bloqueia; forma de guard/teste/registro = ajuste ou nota. | ITEM 1 — varredura por DESTINO (programa TypeScript real, 788 .ts + 133 não-TS de src/prisma/scripts, sem excluir diretório; 0 em generated|dist): r1 escritas por assinatura resolvida = 17 -> 3 tabelas do ledger/contagem = 12 = allowlist (StockMovement 4: inventory-prisma.repository.ts:531 dentro de insertMovement sob ItemWriteLock + seed-fleet.ts:171-173; CycleCount 5: cycle-count-prisma.repository.ts:72,165,225,255,283; CycleCountEntry 3: :84,:142,:198), 0 fora; inventory_items 5, avg_cost em 2 (seed e :252 sob o lock); transições de status 4/4 com status no where (CAS) + create em aberta; r2 tipos Input 0 · r3 any/unknown 0 · r3b acesso dinâmico 0 · r4 SQL de escrita em literal nas tabelas vigiadas ou alvo dinâmico 0 (de 30) · r5 ref. indireta 0 · r5b insertMovement fora de this.x( 0 (7 diretas) · r6 delegate que escapa 0 · r7 escrita aninhada 0 · r10 porta-propriedade/getter 0 (17/17 e 12/12 portas por this.tx; UoW por withTenantRls) · r11 $extends/$use 0 · r12 driver direto 0 · r13 DML/função .sql 0. Controle positivo: 15/15 classes moveram com i2-ctrl.*; o controle achou um defeito do MEU detector (quantificador preguiçoso em UPDATE/DELETE), corrigido e re-executado antes do veredito. | ITEM 2 — status desconhecido por DADO: 5 status (suspensa, ABERTA, 'aberta ' com espaço, Fechando, vazio) x 9 decisões = 45/45 FECHADO, impressão digital do tenant inalterada (0 gravações): recordEntry/close/cancel 422, open sobreposto 409 (o desconhecido segura o item), beginClose/finishClose/recordEntryCount/cancelSession not_open, abortClose not_closing. Controle: com aberta a sonda vê gravação. M-S1 (isWritable permissivo) e M-S2 (overlap por allowlist) -> sonda vermelha, ec=1. | ITEM 3 — duplicidade concorrente (2 papéis, 2 pools, N=10 por via): V3 10/10 = 200 + 409, 1 compensação, saldo 10; V5 10/10 = movimento + undefined com a compensação presente, saldo 10; V4 10/10 = mesmo id, 1 EXIT, saldo 7; V6 close 10/10 = 200 + 422, 2 ajustes, concluida, saldos 7/12, total -2. TABELA DE RESTRIÇÕES (índice-sonda j389c3_c2_probe_reason_key só no meu cluster): X1 V3 direto -> outra -> erro propagado, 0 efeito · X2 V5 direto -> outra -> erro (nunca undefined), 0 efeito · X3 V4 direto -> outra -> erro (nunca releitura), 0 efeito · X4 V3 espera (blocked medido) -> outra pelo nome -> erro, 0 efeito · X5 V3 espera, índice real -> reversal pelo nome -> already_reversed (409), nunca 200. 25P02 = 0. M-I1 (classificar só pelo código) -> sonda vermelha, failures=3, X2 vira undefined com saldo 7 (o C2-04). | O QUE PASSOU: os 3 itens inteiros. O QUE REPROVA: nada. PROPRIEDADES AUSENTES no produto: nenhuma medida. NÃO MEDI (outra cadeira): RLS/locks no banco, drill de migração e censo (C1); rotas, permissão, suíte inteira, registro e KPI (C3). NÃO MEDI: os guards T-D (forma, já pendências P-O6R-B04-GUARD-D1/D2/D7/D5 e CENSO) nem o teste C9 citado no comentário de isUniqueViolationOf. | LIMPEZA: 2 containers + 1 volume + 1 rede j389c3-c2-* e o worktree removidos pelo nome; 0 resíduo; base viva intocada. | VOTO: APROVADO — no código de produto de 622bf845 não há defeito grave na lente C2: escritores por destino 12 = allowlist (0 fora, 15 classes com controle positivo), status desconhecido 45/45 fechado sem gravar, duplicidade concorrente 40/40 com um gravado e saldo exato, outra restrição propaga em 4/4 e a real é lida pelo nome (0 x 25P02); 3 mutações de produto (M-S1, M-S2, M-I1) deixaram as sondas vermelhas",
+ "o_que_executei": [
+  {
+   "comando": "node tests/_jurado_b04a_c3_c2/i2-sweep.mjs (e SWEEP_CONTROL=1)",
+   "forma": "runner Linux j389c3-c2-runner, /work = worktree detached em 622bf845, Node 20.20.2, sem DATABASE_URL",
+   "resultado": "base_ec=0, ctrl_ec=0; 788 .ts + 133 não-TS; N por classe na evidência"
+  },
+  {
+   "comando": "node --import tsx tests/_jurado_b04a_c3_c2/i2-status.mts (UNKNOWN/CONTROL; M-S1; M-S2)",
+   "forma": "runner Linux, DATABASE_URL só no env do comando (cluster j389c3-c2-pg descartável, trust), papel efêmero NOSUPERUSER sem BYPASSRLS, worktree em 622bf845 (mutações restauradas, hash = blob)",
+   "resultado": "st_ec=0 permissive=0 (45/45 FECHADO, 0 gravações); stc_ec=0 controle grava; ms1_ec=1 permissive=3; ms2_ec=1 permissive=1"
+  },
+  {
+   "comando": "node --import tsx tests/_jurado_b04a_c3_c2/i3-dup.mts (RACE_N=10; e M-I1 com RACE_N=1)",
+   "forma": "runner Linux, DATABASE_URL só no env, 2 papéis efêmeros (A/B) NOSUPERUSER sem BYPASSRLS com application_name próprio, índice-sonda criado e dropado no meu cluster, worktree em 622bf845",
+   "resultado": "dup_ec=0 failures=0 (46 verificações); mi1_ec=1 failures=3"
+  },
+  {
+   "comando": "docker rm -fv j389c3-c2-runner j389c3-c2-pg; docker volume rm j389c3-c2-node-modules; docker network rm j389c3-c2-net; git worktree remove --force C:/Users/AMP/w-ciclo3-389-c2",
+   "forma": "por nome, sem prune",
+   "resultado": "ec 0 em todos; worktree list / ps -a / volume ls / network ls = 0 resíduo"
+  }
+ ],
+ "mutacoes_novas": [
+  {
+   "id": "M-S1",
+   "classe": "o não classificado aceito como escrevível (cycle-count.types.ts isWritableCycleCountStatus)",
+   "forma": "!isTerminalCycleCountStatus(status) no lugar de WRITABLE.includes(status)",
+   "camada_que_negou": "sonda -db de produto (impressão digital)",
+   "cor": "vermelho",
+   "ec": 1
+  },
+  {
+   "id": "M-S2",
+   "classe": "sobreposição I9 por allowlist do lado aberto (cycle-count-prisma.repository.ts:64)",
+   "forma": "c.status IN (aberta,fechando) no lugar de NOT IN (terminais)",
+   "camada_que_negou": "sonda -db de produto (impressão digital)",
+   "cor": "vermelho",
+   "ec": 1
+  },
+  {
+   "id": "M-I1",
+   "classe": "violação de unicidade classificada só pelo código, sem a identidade do índice (inventory-prisma.repository.ts isUniqueViolationOf)",
+   "forma": "return isUniqueViolation(error); no lugar de if (!isUniqueViolation(error)) return false;",
+   "camada_que_negou": "sonda -db de produto (X1/X2/X4)",
+   "cor": "vermelho",
+   "ec": 1
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "Nenhum defeito de produto. Nota: com um escritor SEM o lock que grave a compensação de M noutro item (X5, plantado pelo admin), o produto responde already_reversed (409) e o saldo do item original não volta.",
+   "evidencia": "i3-dup.mts X5: blocked=true, o=already_reversed, compsNoItem=0, compsTotal=1, saldoI=6; item 1: escritores por destino 12 = allowlist, 0 fora (o escritor sem lock não existe no produto do head)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "o cinto de índice só responde por escritor sem lock, e esse escritor não tem instância no produto; a classe já é das pendências P-O6R-B04-GUARD-D1/D2 (bloco dono: o transversal da D-GUARDA-POR-PROPRIEDADE)"
+  },
+  {
+   "defeito": "Nota: nos 4 casos de outra restrição (X1-X4), inclusive no caminho direto, o driver não expôs o conjunto de colunas para o índice parcial; a identidade foi lida pelo NOME nos 4. O comentário de inventory-prisma.repository.ts (l.1108-1115) diz que o caminho direto expõe constraint.fields.",
+   "evidencia": "i3-dup.mts: X1/X2/X3/X4 o = {codes:[P2002,23505], name:j389c3_c2_probe_reason_key}, sem cols",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "motivo": "a classificação continua correta (pelo nome); só a promessa do comentário não vale para índice parcial, sem efeito no produto. A identidade por colunas segue sem ambiguidade no catálogo de hoje (6 índices únicos com conjuntos distintos)."
+  }
+ ],
+ "pendencias_que_aceito": [
+  "P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA, -D2-INDIRECAO-AO-LEDGER, -D7-PORTA-COMO-PROPRIEDADE, -D5-TRANSICAO-POR-SQL-CRU e P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS: forma de guard/detector, sem instância no produto (item 1: 0 em cada classe); não re-medidas por mim",
+  "C1: RLS/locks no banco, drill de migração e censo em BEGIN/ROLLBACK",
+  "C3: rota, permissão com login real, suíte inteira (denominador 3237) e registro",
+  "o teste C9 (pino nome x colunas do catálogo) citado no comentário de isUniqueViolationOf: [A RE-VERIFICAR], não medido por mim"
+ ],
+ "teardown": "Criado nesta instância: banco recriado dentro do cluster descartável, 2 papéis efêmeros por sonda (dropados), 1 índice-sonda (dropado no finally), sondas em tests/_jurado_b04a_c3_c2/ (cópia no scratchpad da sessão). Reutilizados e derrubados pelo nome: containers j389c3-c2-runner e j389c3-c2-pg (docker rm -fv, ec 0), volume j389c3-c2-node-modules e rede j389c3-c2-net (ec 0), worktree C:/Users/AMP/w-ciclo3-389-c2 (git worktree remove --force, ec 0). Conferência: worktree list 0, ps -a 0, volume ls 0, network ls 0. Mutações M-S1/M-S2/M-I1 restauradas com hash = blob antes da remoção. Nada escrito além de c3-C2-evidencia.md e c3-C2-voto.json em w-389; nada commitado. Base viva erp-postgres/erp-redis, portas do dono, w-07ca/dev07ca-*, w-pvpr, w-traccar não tocados (os dev07ca-* sumiram entre 14:36Z e 15:00Z sem ação minha, reportado). Disco 14 GB livres."
+}

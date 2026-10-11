@@ -1,0 +1,51 @@
+{
+  "OVL_headbase": {
+    "forma": "item 100; 2 sessoes abertas (open real) sobre o mesmo item; as duas contam 99 (fisico = 99); fecha as duas",
+    "snapshot": [
+      100,
+      100
+    ],
+    "saldoFinal": 98,
+    "s1": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -1,
+      "entries": 1,
+      "carimbadas": 1
+    },
+    "s2": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -1,
+      "entries": 1,
+      "carimbadas": 1
+    }
+  },
+  "OVL_v2": {
+    "forma": "item 100; 2 sessoes abertas (open real) sobre o mesmo item; as duas contam 99 (fisico = 99); fecha as duas",
+    "snapshot": [
+      100,
+      100
+    ],
+    "saldoFinal": 98,
+    "s1": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -1,
+      "entries": 1,
+      "carimbadas": 1
+    },
+    "s2": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -1,
+      "entries": 1,
+      "carimbadas": 1
+    }
+  },
+  "fimMs": 1270
+}

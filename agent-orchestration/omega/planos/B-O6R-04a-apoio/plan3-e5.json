@@ -1,0 +1,201 @@
+{
+  "E5": [
+    {
+      "n": 250,
+      "novo": {
+        "status": "concluida",
+        "totalMs": 3504,
+        "unit0Ms": 40,
+        "finalMs": 7,
+        "unitCount": 250,
+        "unitMaxMs": 67,
+        "unitAvgMs": 13.83,
+        "unitP95Ms": 19,
+        "skipped": 0,
+        "reusedLegacy": 0,
+        "totalVarianceValue": 0,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 250,
+          "itens": 250,
+          "soma": -750
+        },
+        "entries": {
+          "total": 250,
+          "carimbadas": 250
+        },
+        "itensComAjusteDuplicado": 0
+      },
+      "headBase": {
+        "ms": 3384,
+        "erro": null,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 250,
+          "itens": 250,
+          "soma": -750
+        },
+        "entries": {
+          "total": 250,
+          "carimbadas": 250
+        },
+        "itensComAjusteDuplicado": 0
+      }
+    },
+    {
+      "n": 500,
+      "novo": {
+        "status": "concluida",
+        "totalMs": 6338,
+        "unit0Ms": 10,
+        "finalMs": 9,
+        "unitCount": 500,
+        "unitMaxMs": 34,
+        "unitAvgMs": 12.63,
+        "unitP95Ms": 18,
+        "skipped": 0,
+        "reusedLegacy": 0,
+        "totalVarianceValue": 0,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 500,
+          "itens": 500,
+          "soma": -1500
+        },
+        "entries": {
+          "total": 500,
+          "carimbadas": 500
+        },
+        "itensComAjusteDuplicado": 0
+      },
+      "headBase": {
+        "ms": 7716,
+        "erro": null,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 500,
+          "itens": 500,
+          "soma": -1500
+        },
+        "entries": {
+          "total": 500,
+          "carimbadas": 500
+        },
+        "itensComAjusteDuplicado": 0
+      }
+    },
+    {
+      "n": 1000,
+      "novo": {
+        "status": "concluida",
+        "totalMs": 15019,
+        "unit0Ms": 10,
+        "finalMs": 11,
+        "unitCount": 1000,
+        "unitMaxMs": 101,
+        "unitAvgMs": 14.99,
+        "unitP95Ms": 21,
+        "skipped": 0,
+        "reusedLegacy": 0,
+        "totalVarianceValue": 0,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1000,
+          "itens": 1000,
+          "soma": -3000
+        },
+        "entries": {
+          "total": 1000,
+          "carimbadas": 1000
+        },
+        "itensComAjusteDuplicado": 0
+      },
+      "headBase": {
+        "ms": 36058,
+        "erro": null,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 1000,
+          "itens": 1000,
+          "soma": -3000
+        },
+        "entries": {
+          "total": 1000,
+          "carimbadas": 1000
+        },
+        "itensComAjusteDuplicado": 0
+      }
+    },
+    {
+      "n": 10000,
+      "novo": {
+        "status": "concluida",
+        "totalMs": 318473,
+        "unit0Ms": 43,
+        "finalMs": 14,
+        "unitCount": 10000,
+        "unitMaxMs": 1180,
+        "unitAvgMs": 31.84,
+        "unitP95Ms": 67,
+        "skipped": 0,
+        "reusedLegacy": 0,
+        "totalVarianceValue": 0,
+        "sessao": {
+          "status": "concluida",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 10000,
+          "itens": 10000,
+          "soma": -30000
+        },
+        "entries": {
+          "total": 10000,
+          "carimbadas": 10000
+        },
+        "itensComAjusteDuplicado": 0
+      },
+      "headBase": {
+        "ms": 332027,
+        "erro": {
+          "name": "PrismaClientKnownRequestError",
+          "code": "P2028",
+          "msg": " Invalid `this.client.cycleCountEntry.updateMany()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\cycle-count-prisma.repository.ts:105:41 102 if (!session) retu"
+        },
+        "sessao": {
+          "status": "aberta",
+          "is_active": true
+        },
+        "ajustes": {
+          "n": 10000,
+          "itens": 10000,
+          "soma": -30000
+        },
+        "entries": {
+          "total": 10000,
+          "carimbadas": 0
+        },
+        "itensComAjusteDuplicado": 0
+      }
+    }
+  ],
+  "fimMs": 726799
+}

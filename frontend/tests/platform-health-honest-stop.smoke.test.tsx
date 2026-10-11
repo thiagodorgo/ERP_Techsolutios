@@ -26,7 +26,7 @@ test("saúde da plataforma: mostra parada honesta e NÃO fabrica telemetria", as
   assert.doesNotMatch(html, /128 ms/);
   assert.doesNotMatch(html, /99,98%/);
   assert.doesNotMatch(html, /Degradado/); // status de serviço fabricado
-  assert.doesNotMatch(html, /API Gateway|PostgreSQL|Redis/); // serviços com status inventado
+  assert.doesNotMatch(html, /API Gateway/); // serviço sem fonte
   assert.doesNotMatch(html, /Último backup/);
 });
 

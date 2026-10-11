@@ -266,6 +266,15 @@ jobs:
           SUITES="$SUITES tests/pg-barrier-scoped-db.test.ts"
           # Fecha o LUGAR RESERVADO da main e P-O6R-B02-SUITES-LIST-CI, cujo dono é este PR.
           SUITES="$SUITES tests/financial-entry-delete-reverse-race-db.test.ts"
+          # B-O6R-04a (Ω6R-DAT-002 / DAT-003 / P-020) — estoque sob concorrência, contra o Postgres real e sob
+          # papéis efêmeros SEM BYPASSRLS: saldo nunca negativo em toda via que debita (T-A); fechamento de
+          # contagem aplicado exatamente uma vez, retomável e com o total da sessão inteira (T-B); os dois
+          # índices únicos parciais e o P2002 mapeado fora da transação (T-C); e o drill da migration numa base
+          # PRÓPRIA, criada e derrubada pela suíte — o DDL nunca toca a base das irmãs (T-C′).
+          SUITES="$SUITES tests/inventory-balance-lock-race-db.test.ts"
+          SUITES="$SUITES tests/inventory-cycle-count-close-units-db.test.ts"
+          SUITES="$SUITES tests/inventory-unique-backstops-db.test.ts"
+          SUITES="$SUITES tests/inventory-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

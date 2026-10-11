@@ -1,0 +1,24 @@
+
+### T-B `tests/inventory-cycle-count-close-units-db.test.ts` — V6/V7/V8/V9 (fecha `Ω6R-DAT-003`; S-01, S-02, T-01, T-03, N-OVL)
+
+| caso | forma | verde | vermelho-controle |
+|---|---|---|---|
+| B0 | postura + `read committed` + tag | como A0 | n/a |
+| **B1 [encerramento]** | sessão 1 item (10 → 7); `close` ×2 (A e B) × RACE_N | 1 × 200 + 1 × 422; **1** ajuste; saldo 7; 0 dup | v2 `[10-P6]`: 2 × 200, 2 ajustes |
+| **B2 [retomável]** | 20 itens; `close` com `beforeUnitCommit` lançando na unidade 8 (→ 7 aplicadas) | `fechando`, 7 ajustes, 7 carimbos; `cancel` → 422 `close_in_progress`; `recordEntry` de carimbada → 422; `close` por B → `concluida`, 20 ajustes, 0 dup, **total = Σ 20** | classe P-021 (head-base: `aberta` + `cancel` liberado) |
+| **B3 [recordEntry × fechamento] (T-01)** | admin: tx crua `FOR UPDATE` sessão + CAS `fechando` + ajuste + carimbo + `concluida`, sem commit; B: `recordEntry` real (contado 5); barreira **`fragment: "tenant_id"`**; admin commita | **1ª asserção:** entry final `contado 7 / variance −3` e B → 422; **2ª (só desenho):** texto bloqueado ∋ `cycle_counts` | `[04]` B3_headbase: barreira casou; B gravou `contado 5` → vermelho **pela invariante** |
+| **B4 [cancel × fechamento aplicado]** | idem com B = `cancel` real | B → 422 `close_in_progress`; sessão `concluida`, `is_active=true` | v2 `[10-E4-hb]`: `cancelada` + ajuste no ledger |
+| B5 [estado `fechando`] | sessão em `fechando` com carimbos (B2); `recordEntry` carimbada, `cancel`, `close` da instância antiga | 422 / 422 / `close` retoma | regressão |
+| B6 [cross-tenant] | `close`/`cancel`/`recordEntry`/`open` sob T1 contra T2 | 404; 0 linhas em T2 | n/a |
+| B7 [legado P-021] | `aberta` com 1 ajuste pré-gravado por SQL cru; `close` | reaproveita; 1 ajuste; 200; **total inclui o reaproveitado** | v2 `[10-LEGACY]` |
+| **B8 [I7 — controle embutido] (T-03)** | (i) **controle**: emulação v1 em SQL cru (sessão + X + Y `FOR UPDATE`, hold 1,5 s) × `open()` real e × `recalculateAbc()` real → `40P01`; (ii) **código real** com `beforeUnitCommit` segurando sessão + X 1,5 s **dentro da tx** × os dois | (i) `40P01` observado; (ii) **B bloqueia** (`waitForOwnBlockedStatement` casa `cycle_count_entries` / `inventory_items`), 0 × `40P01`, ambos concluem | `[07]` LO_*_v1ctrl = (i); LO_*_v3 = (ii) |
+| **B9 [N-OVL — um item, uma sessão]** | item 100; `open()` real ×2 concorrentes (largada comum) × RACE_N | **exatamente 1** sessão + 1 × 409 `items_in_open_session`; contar 99 e fechar → saldo **99** | `[07]` OVL_headbase: 2 sessões, saldo **98** |
+| B9b [I7 — sessões cruzadas] | `[X,Y]` e `[Y,X]` **semeadas por SQL cru** (o `open` recusa; estado só alcançável fora do módulo), fechadas em paralelo, hold 300 ms por item | as duas `concluida`, 0 × `40P01`, 0 dup por sessão — **sem asserção de saldo** (o valor 98 não é resultado esperado de negócio) | v2 `[10-V6V6]` (só concorrência) |
+| B10 [tamanho] | N=250; `close` | `concluida`, 250 ajustes/carimbos, 0 dup; **total = −3 × avg × 250**; duração e p95 logados | `[10]` (v3 literal conclui em todo N) |
+| **B11 [S-01 parcial]** | X (10→7) aplicado; Y com BASE 4 + viatura 6, contado 2 → 409 | 409; `fechando`, 1 carimbo; **recontar Y (não carimbada) → 200; recontar X → 422 `entry_already_adjusted`; `cancel` → 422 `close_in_progress`; `close` → `concluida`, 2 ajustes, total −5** | `[04]` STUCK_partial_v3; emulação v2 embutida: 422 na recontagem |
+| B12 [listagem] | `GET ?status=fechando` (memória e Prisma) | 200 | head-base: 400 `invalid_status` |
+| **B13 [S-01 — cenário STUCK do crítico]** | BASE 4 + viatura 6; `open()` real (system 10); contado 2; `close` → 409 | **sessão `aberta`**, 0 ajustes; `recordEntry` → 200; `cancel` → 200; e (2ª sessão) recontar 8 → `close` → `concluida`, −2, saldo BASE 2 | `[04]` STUCK_v2 embutida: `fechando`, `not_open` ×2, presa |
+| **B14 [S-02 — TVV_resume]** | 5 itens **avg 2**, 3º com BASE 1 → 409; entrada +9; `close` de novo | 200 com **`totalVarianceValue = −30`**; auditoria (`recordRequestAuditBestEffort` observada via o repositório de auditoria em memória do arnês, ou pela rota em B12′) com −30 | `[04]` v2 embutida: −18 |
+| **B15 [S-02 — TVV_concorrente]** | 10 itens avg 2; `close` ×2 intercalados (`beforeUnitCommit` dormindo 25 ms) × RACE_N | o único 200 traz **−60** em RACE_N/RACE_N; ledger 10 ajustes, 0 dup | `[04]` v2 embutida: −48/−30 |
+| **B16 [recontagem em `fechando` × unidade]** | A = `close` segurando X; B = `recordEntry` de Y (não carimbada) | B bloqueia no `FOR SHARE`, depois 200; a unidade de Y aplica o contado final; `variance = contado − sistema` em toda entry | `[07]` E34_recordEntry_naoCarimbada |
+| **B17 [cancel em `fechando` sem carimbos]** | sessão levada a `fechando` por SQL cru (crash antes da 1ª unidade); `cancel` | 200, `cancelada`; e com 1 carimbo semeado → 422 `close_in_progress` | regressão de estado |

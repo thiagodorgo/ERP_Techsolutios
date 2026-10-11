@@ -38,17 +38,13 @@ const PLATFORM_NAV: readonly PlatformNavGroup[] = [
     items: [
       { label: "Visão Geral", path: "/platform/overview", icon: LayoutDashboard },
       { label: "Organizações", path: "/platform/tenants", icon: Server },
-      { label: "Planos e Módulos", path: "/platform/plans-modules", icon: Box },
       { label: "Cloud Billing", path: "/platform/cloud-billing", icon: Cloud },
     ],
   },
   {
     label: "PLATAFORMA",
     items: [
-      { label: "Auditoria Global", path: "/platform/audit", icon: ShieldCheck },
-      { label: "Health do Sistema", path: "/platform/health", icon: Activity },
-      { label: "APIs e Credenciais", path: "/platform/apis", icon: KeyRound },
-      { label: "Configurações", path: "/platform/settings", icon: Settings },
+      { label: "Saúde do Sistema", path: "/platform/health", icon: Activity },
     ],
   },
 ];

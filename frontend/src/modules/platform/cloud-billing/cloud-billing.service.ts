@@ -1,4 +1,5 @@
-import { readFrontendEnv } from "../../../config/env";
+import { isMockMode } from "../../../config/env";
+import { ApiError } from "../../../services/api/client";
 import {
   calculateCloudChargesFromApi,
   createCloudChargeRuleFromApi,
@@ -14,156 +15,51 @@ import {
   runCloudAllocationFromApi,
   updateCloudChargeRuleFromApi,
 } from "./cloud-billing.adapter";
-import {
-  mockCloudAllocationRuns,
-  mockCloudAllocationSummary,
-  mockCloudChargeRules,
-  mockCloudChargeRuns,
-  mockCloudChargeSummary,
-  mockCloudCostImports,
-  mockCloudCostSummary,
-  mockCloudUsageSummary,
-} from "./cloud-billing.mock";
-import type {
-  CloudAllocationRun,
-  CloudChargeRule,
-  CloudChargeRun,
-  CloudCostImport,
-  UpsertCloudChargeRuleInput,
-} from "./cloud-billing.types";
+import type { CloudBillingData, CloudBillingPeriod, UpsertCloudChargeRuleInput } from "./cloud-billing.types";
+import { emptyCloudBilling } from "./cloud-billing.types";
 
-let costImports = [...mockCloudCostImports];
-let allocationRuns = [...mockCloudAllocationRuns];
-let chargeRuns = [...mockCloudChargeRuns];
-let chargeRules = [...mockCloudChargeRules];
-
-export async function getCloudUsageSummary() {
-  if (!shouldUseMocks()) return getCloudUsageSummaryFromApi();
-  await wait();
-  return mockCloudUsageSummary;
+export function periodForMonth(month: string): CloudBillingPeriod {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) throw new Error("Mês de consulta inválido.");
+  const year = Number(match[1]);
+  const monthNumber = Number(match[2]);
+  if (monthNumber < 1 || monthNumber > 12) throw new Error("Mês de consulta inválido.");
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  return { start: `${month}-01`, end: `${month}-${String(lastDay).padStart(2, "0")}` };
 }
 
-export async function listCloudCostImports() {
-  if (!shouldUseMocks()) return listCloudCostImportsFromApi();
-  await wait();
-  return costImports;
+export function currentBillingMonth(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: "America/Sao_Paulo" }).format(now);
 }
 
-export async function importCloudCosts(): Promise<CloudCostImport> {
-  if (!shouldUseMocks()) return importCloudCostsFromApi();
-  await wait();
-  const item: CloudCostImport = {
-    id: `cost-import-${Date.now()}`,
-    provider: "aws",
-    period: mockCloudCostSummary.period,
-    status: "processing",
-    importedAt: new Date().toISOString(),
-    fileName: "aws-cur-manual.csv",
-    records: 0,
-  };
-  costImports = [item, ...costImports];
-  return item;
-}
-
-export async function getCloudCostSummary() {
-  if (!shouldUseMocks()) return getCloudCostSummaryFromApi();
-  await wait();
-  return mockCloudCostSummary;
-}
-
-export async function listCloudAllocationRuns() {
-  if (!shouldUseMocks()) return listCloudAllocationRunsFromApi();
-  await wait();
-  return allocationRuns;
-}
-
-export async function getCloudAllocationSummary() {
-  if (!shouldUseMocks()) return getCloudAllocationSummaryFromApi();
-  await wait();
-  return mockCloudAllocationSummary;
-}
-
-export async function runCloudAllocation(): Promise<CloudAllocationRun> {
-  if (!shouldUseMocks()) return runCloudAllocationFromApi();
-  await wait();
-  const run: CloudAllocationRun = {
-    id: `allocation-run-${Date.now()}`,
-    status: "running",
-    period: mockCloudAllocationSummary.period,
-    startedAt: new Date().toISOString(),
-    allocatedCost: 0,
-    unallocatedCost: 0,
-    ruleCoveragePercent: 0,
-  };
-  allocationRuns = [run, ...allocationRuns];
-  return run;
-}
-
-export async function listCloudChargeRuns() {
-  if (!shouldUseMocks()) return listCloudChargeRunsFromApi();
-  await wait();
-  return chargeRuns;
-}
-
-export async function getCloudChargeSummary() {
-  if (!shouldUseMocks()) return getCloudChargeSummaryFromApi();
-  await wait();
-  return mockCloudChargeSummary;
-}
-
-export async function calculateCloudCharges(sourceAllocationRunId?: string): Promise<CloudChargeRun> {
-  if (!shouldUseMocks()) {
-    if (!sourceAllocationRunId) throw new Error("Run de rateio obrigatorio para calcular cobranca.");
-    return calculateCloudChargesFromApi(sourceAllocationRunId);
+export async function getCloudBilling(period: CloudBillingPeriod): Promise<CloudBillingData> {
+  if (isMockMode()) return emptyCloudBilling(period, "mock");
+  try {
+    const [usage, costs, allocation, charges, imports] = await Promise.all([
+      getCloudUsageSummaryFromApi(period),
+      getCloudCostSummaryFromApi(period),
+      getCloudAllocationSummaryFromApi(period),
+      getCloudChargeSummaryFromApi(period),
+      listCloudCostImportsFromApi(period),
+    ]);
+    return { period, usage, costs, allocation, charges, imports, source: "api", forbidden: false, stale: false };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 403) return { ...emptyCloudBilling(period, "fallback"), forbidden: true };
+    return emptyCloudBilling(period, "fallback");
   }
-  await wait();
-  const run: CloudChargeRun = {
-    id: `charge-run-${Date.now()}`,
-    status: "running",
-    period: mockCloudChargeSummary.period,
-    startedAt: new Date().toISOString(),
-    grossAmount: 0,
-    netCost: 0,
-    marginPercent: 0,
-  };
-  chargeRuns = [run, ...chargeRuns];
-  return run;
 }
 
-export async function listCloudChargeRules() {
-  if (!shouldUseMocks()) return listCloudChargeRulesFromApi();
-  await wait();
-  return chargeRules;
+export async function getCloudCostSummary(period = periodForMonth(currentBillingMonth())) {
+  if (isMockMode()) return { data: null, source: "mock" as const };
+  return { data: await getCloudCostSummaryFromApi(period), source: "api" as const };
 }
 
-export async function createCloudChargeRule(input: UpsertCloudChargeRuleInput): Promise<CloudChargeRule> {
-  if (!shouldUseMocks()) return createCloudChargeRuleFromApi(input);
-  await wait();
-  const rule: CloudChargeRule = {
-    id: `rule-${Date.now()}`,
-    ...input,
-    updatedAt: new Date().toISOString(),
-  };
-  chargeRules = [rule, ...chargeRules];
-  return rule;
-}
-
-export async function updateCloudChargeRule(ruleId: string, input: UpsertCloudChargeRuleInput): Promise<CloudChargeRule> {
-  if (!shouldUseMocks()) return updateCloudChargeRuleFromApi(ruleId, input);
-  await wait();
-  const updated: CloudChargeRule = {
-    id: ruleId,
-    ...input,
-    updatedAt: new Date().toISOString(),
-  };
-  chargeRules = chargeRules.map((rule) => (rule.id === ruleId ? updated : rule));
-  return updated;
-}
-
-function shouldUseMocks(): boolean {
-  return readFrontendEnv("VITE_USE_MOCKS", "true") !== "false";
-}
-
-async function wait() {
-  await new Promise((resolve) => window.setTimeout(resolve, 250));
-}
+// Escritas permanecem isoladas neste módulo e não têm consumidor na página do B-SAN3-06b.
+export const importCloudCosts = importCloudCostsFromApi;
+export const runCloudAllocation = runCloudAllocationFromApi;
+export const calculateCloudCharges = calculateCloudChargesFromApi;
+export const createCloudChargeRule = createCloudChargeRuleFromApi;
+export function updateCloudChargeRule(ruleId: string, input: UpsertCloudChargeRuleInput) { return updateCloudChargeRuleFromApi(ruleId, input); }
+export const listCloudAllocationRuns = listCloudAllocationRunsFromApi;
+export const listCloudChargeRuns = listCloudChargeRunsFromApi;
+export const listCloudChargeRules = listCloudChargeRulesFromApi;

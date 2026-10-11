@@ -366,7 +366,7 @@ Fonte backend oficial:
 - `status` informa maturidade da tela (`implemented`, `partial`, `mock`, `planned`, `backend-ready`, `frontend-ready`, `future`);
 - `relatedEndpoints` documenta rastreabilidade com APIs de dominio;
 - menus locais continuam apenas como fallback/mock de transicao.
-- implementação atual: `AppShell` e `PlatformLayout` consomem `useNavigationMenu`; o adapter mapeia ícones `lucide-react`, normaliza grupos e mantém active state via `NavLink`.
+- implementação atual: `AppShell` consome `useNavigationMenu`; `PlatformLayout` ainda usa o literal local `PLATFORM_NAV`, com apenas Visão Geral, Organizações, Cloud Billing e Saúde do Sistema.
 
 ## Performance — Route Splitting
 

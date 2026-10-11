@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-10-10 — B-O6R-04a: Retomada 2026-10-10
+
+Retomado por ordem do dono (`D-ORDEM-NOITE-2026-10-10`), que revoga para o #389 o estacionamento de 08/10. O plano é
+a seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de `agent-orchestration/omega/planos/B-O6R-04a-plano.md`;
+as decisões do orquestrador estão na Emenda 6 de `agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md`.
+O passo 1 (integração da `main`) é do dev de integração, com relatório em
+`agent-orchestration/omega/juntas/votos/B-O6R-04a/00-dev-integracao.md`. A ata do ciclo 1 está **reconstituída** em
+`agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md`. Próximo: inspetor de terreno e junta do ciclo 2 (régua completa).
+
 ## Atualização 2026-10-02 — B-SAN3-01b (tarefa de nuvem, dev): as guardas da propriedade que o B-SAN3-01 fechou — ENTREGUE no ramo, aguarda inspetor/junta/PR
 
 **Ramo `fix/web-guarda-por-alcance-e-estado-da-pagina`, desenvolvido na NUVEM** (claude.ai/code, Linux, Node 22.22.0 + Node 20.20.0
@@ -35,6 +44,66 @@ a 1ª versão do arnês vivo contaminava os casos seguintes de um caso vermelho 
 **Próximo passo (orquestrador local):** `gh pr create` (preencher `release.pr` no KPI) → `inspetor-de-terreno-da-junta` (check-runs
 concluídos no head) → junta C1 `guardiao-fail-closed` · C2 `coordenador-de-acessos` (inelegibilidade a conferir: achou o C2-05)
 · C3 `cognicao-visual` → CI verde → squash → §C5 → porteiro.
+
+## Atualização 2026-09-20 — B-O6R-04a CICLO 2 (o último): os guards viram propriedade e o censo do deploy recusa contar cego
+
+**Mesma branch `fix/inventory-consistency`, mesmo PR #389, commits sem push.** A junta do ciclo 1 **REPROVOU
+1 × 2** (`R-B-O6R-04a-ciclo1`): 5 bloqueios — C1-F1 (`agente-dba-guardiao`) e C2-01 a C2-04 (`guardiao-fail-closed`);
+a cadeira C3 (`validador-mestre`) aprovou com 1 ajuste. `D-TETO-DOIS-CICLOS`: **este ciclo é o último** — nova
+reprovação para o bloco e vira dossiê ao dono. Papéis (§C7.4-bis): **achou** = C1/C2 do ciclo 1; **planejou** =
+`planejador-mestre` em Fable (`PLANO-B-O6R-04a-ciclo2.md`); **desenvolveu** = agente novo (2 instâncias — a 1ª caiu
+por 429 sem commitar; a 2ª mediu o WIP dela item a item antes de continuar, sem herdar fato).
+
+**A lição única dos cinco bloqueios** é a de `feedback-correcao-por-instancia-nao-propriedade`, pela terceira vez
+na rodada: toda guarda estava escrita como **lista** — de nomes, de grafias, de status, de códigos de erro — e toda
+lista tinha um lado de fora. O ciclo 2 troca cada lista pela **propriedade gerada da fonte**:
+
+- **C1-F1** — `row_security = off` no bloco `DO` da migration e no `scripts/inventory-duplicates-census.sql`: sob
+  FORCE RLS, o papel sem superusuário/BYPASSRLS recebe **42501 do motor** e a migration **aborta** com “censo CEGO”;
+  nunca mais “0 grupos” com 17 grupos na tabela. **Consequência declarada:** na topologia “quem migra é quem serve”,
+  a migration só aplica depois de um ato do dono sobre o papel (passo **0** novo no roteiro da pendência do censo).
+- **C2-01 / C2-02** — o T-D passou a montar `ts.createProgram` + checker: escritor de `stock_movements` é **membro
+  não-leitor de um receptor de tipo `StockMovementDelegate`** em qualquer forma sintática, escrita aninhada vem do
+  **tipo do input**, SQL cru é lido no **template inteiro** e tabela interpolada nega. Sem `stripComments`.
+- **C2-03** — `CYCLE_COUNT_STATUS_KIND` com `satisfies`: status novo sem classificação **quebra o build**; o
+  desconhecido **segura** o item e **recusa** escrita.
+- **C2-04** — violação de unicidade classificada pela **identidade do índice**, pinada ao catálogo; índice alheio
+  **propaga** em vez de virar sucesso silencioso sem estorno.
+- **C2-05 / C2-06** — lock contado por **transação**; guard de contagem cíclica **global**.
+
+**Números por execução real:** `backend_tests` **3049/3051 → 3058/3060**; suítes `-db` do bloco **45 → 52**; T-D
+**9 → 11** casos em 17 s; estoque em memória **67/67** e consumidores **64/64** inalterados; `blocks_completed`
+**164 intocado** (é o mesmo bloco). Registro: passo 0 do censo, `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` **nasce**
+(pré-existente, dono `B-SAN3-15`), `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` **fecha** (a ratificação já
+existia na emenda 4-(t)), e a frase condicional do C3-A1 foi medida na hora — **o #387 mergeou primeiro**
+(2026-09-19 11:35Z), logo as dívidas do #386 já estão na `main` e a emenda 1-f não dispara.
+
+**Para o orquestrador:** com o #387 na `main`, o **#389 ficou `DIRTY`**. Conflitos previstos (`git merge-tree`,
+leitura pura): 7 arquivos, **todos de registro/KPI**, nenhum de código nem de teste.
+
+## Atualização 2026-09-18 — B-O6R-04a (PR na autoria): o estoque não fica negativo e a contagem fecha uma vez só
+
+**Branch `fix/inventory-consistency`, commits do desenvolvedor sem push** (o orquestrador empurra depois de
+conferir). Fecha, **na autoria**, os dois P0 de estoque do gate — `Ω6R-DAT-002` (saída concorrente deixava o
+saldo negativo: 20 de 20 aceitas sobre saldo 10 no head-base) e `Ω6R-DAT-003` (fechamento de contagem aplicado
+duas vezes) — com a `P-020` absorvida. O painel segue com **13** P0 corrigidos na `main`; os dois ficam em
+`aguardando_merge` até o backfill.
+
+**Desenho, em uma linha por via:** lock `FOR UPDATE` do item antes de toda decisão de saldo (V1–V5, como tipo
+`ItemWriteLock`); fechamento `aberta → fechando → concluida` com CAS em unidades por item, sem estado sem saída e
+com o total da sessão inteira; recontagem e cancelamento sob o lock da sessão; `open` serializado pela linha do
+tenant e recusando item já em contagem aberta. Uma migration aditiva, **fail-closed**, que nunca deduplica.
+
+**Números:** suíte plena **3049/3051** (era 2995/2997), `ec=0`; as 4 suítes `-db` do bloco 45/45 em três
+execuções; vermelho-controle executado no head-base. `blocks_completed` **164**.
+
+**Antes do deploy (não do merge):** o censo de duplicatas em staging e produção é **ato do dono** —
+`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`. Se a variável `STAGING_DEPLOY_ENABLED` for ligada, o merge na `main`
+já é o deploy de staging.
+
+**Para a junta (unanimidade de 3, dado/dinheiro):** dez divergências plano × código reportadas pelo
+desenvolvedor, nenhuma decidida por ele; a que pede ratificação explícita é a `D-1` (commit `cd055802`, teste
+de rota fora da lista do plano) — `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO`.
 
 ---
 
@@ -5012,3 +5081,27 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Depois do voto:** `main` `a9bbde38` integrada por merge (só registro em conflito, união main→ramo; índice regenerado); delta de produto contra a `main` idêntico ao aprovado (patch-id).
 - **Pendências novas (não graves):** `P-SAN3-05-VIEW-SOBRE-FUNCAO-INVOKER` (B-SAN3-10), `P-SAN3-05-SUITE-SEM-FORMAS-F1-F3` (B-SAN3-05T), `P-SAN3-05-T15-TETO-DE-RELOGIO` (B-ARNES-2), `P-SAN3-05-MENSAGEM-DA-RECUSA` (a nomear).
 - **Próximo:** CI do head novo → `gh pr ready 405` → squash merge com `--match-head-commit` → porteiro → trilha do Traccar (plano).
+
+## B-SAN3-06b — console da plataforma sem ficção — DESENVOLVIMENTO CONCLUÍDO (2026-10-09)
+
+- Organizações e Visão Geral usam o resumo real; `platform` recebe selo de sistema e fica fora das métricas de clientes.
+- Cloud Billing consome cinco leituras reais por período, sem cálculo ou ação monetária no frontend.
+- Saúde consome readiness de Postgres, Redis e Worker; observabilidade complementar permanece pendência parcial.
+- Auditoria Global, APIs e Credenciais, Planos e Módulos e Configurações são paradas honestas fora do menu.
+- Cinco geradores e 45 testes T1–T45 cobrem fabricação, rotas, menu, contratos e controles negativos.
+- KPI congelado: nenhum arquivo `Kpis/*` foi alterado. Aguarda revisor independente e CI; PR será aberto pelo orquestrador.
+- **Sucessor (2026-10-09):** E8 fechada por `dev-b-san3-06b-sucessor` (Claude Opus 5.5) depois da queda do Codex; `test:smoke` 1313/1313, T1–T45 45/45, regressões 125/125, build e `check` verdes; relatório em `docs/revisoes/SAN3/B-SAN3-06b-DEV-relatorio.md`.
+
+## Estado em 2026-10-10 (madrugada) — registro em dia
+
+- **Mergeados:** #405 B-SAN3-05 (`a9fbe283`; junta 4 APROVADA 3 × 0; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-05/PORTEIRO-405.md`) · #412 KPI por marco (`8a79532f`; revisor APROVADO) · #411 B-SAN3-06b console da plataforma sem ficção (`a2937bad`; revisor APROVADO na re-revisão; porteiro LIBERADO COM RESSALVA — `votos/B-SAN3-06b/PORTEIRO-411.md`; 1317/1317 no smoke, 49 testes do bloco, 54 arquivos).
+- **Em curso:** plano do Traccar no ramo `docs/plano-traccar` (`612d6650`, 7 blocos, B-TRC-01 detalhado) com a crítica r1 no Codex; plano de retomada do #389 (Fable).
+- **Congelados:** esteira da API (`D-API-ESTEIRA-CONGELADA`), Linux (`D-LINUX-CONGELADO`), #393. **Estacionado:** #388.
+- **Ordem do dono:** `D-ORDEM-NOITE-2026-10-10`.
+
+## Estado em 2026-10-10 (tarde)
+
+- **Mergeado:** #389 `B-O6R-04a` (`ab52ec50`) — junta do ciclo 3 APROVADA 3 × 0; fecha os críticos Ω6R-DAT-002 e Ω6R-DAT-003; porteiro LIBERADO COM RESSALVA (`votos/B-O6R-04a/PORTEIRO-389.md`).
+- **Em curso:** `B-O6R-07c-a` (PR #414, rascunho; a `main` foi integrada e o CI do head integrado estava em curso, com o T15 do #405 derrubando o job `backend` uma vez) — a fábrica escreve as 3 cadeiras novas; depois inspetor e junta de permissão.
+- **Esperando o dono:** Traccar 1–6 (`P-TRC-*`), D1/D2/D3 do 07c, e o censo de duplicatas do estoque antes de qualquer deploy (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+- **Regra de modelos:** `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`. **Formato do estado:** `agent-orchestration/docs/formato-do-estado.md`.

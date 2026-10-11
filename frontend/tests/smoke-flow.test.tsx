@@ -750,7 +750,7 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
   process.env.VITE_API_BASE_URL = "/api/v1";
   browser.clear();
   const calls = installFetchSequence([
-    { payload: { data: { metrics: [{ metricKey: "notification.created", quantity: 4 }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
+    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", metrics: [{ metricKey: "api_requests_count", quantity: 4, unit: "count" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
     {
       payload: {
         data: [
@@ -766,7 +766,7 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
         ],
       },
     },
-    { payload: { data: { totalUnblendedCost: 12.75, currency: "BRL", tenants: [] } } },
+    { payload: { data: { provider: "aws", periodStart: "2026-06-01", periodEnd: "2026-06-30", totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
     {
       payload: {
         data: [
@@ -781,7 +781,7 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
         ],
       },
     },
-    { payload: { data: { totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "tenant-a", totalAllocatedCost: 12 }] } } },
+    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", currency: "BRL", totalImportedCost: 12, totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "tenant-a", tenantName: "Org A", allocatedCost: 12, allocationRatio: 1 }], services: [], generatedAt: "2026-06-08T00:00:00.000Z" } } },
     {
       payload: {
         data: [
@@ -796,7 +796,7 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
         ],
       },
     },
-    { payload: { data: { totalChargeAmount: 18, totalAllocatedCost: 12, tenants: [{ tenantId: "tenant-a", totalChargeAmount: 18, totalAllocatedCost: 12 }] } } },
+    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", currency: "BRL", totalAllocatedCost: 12, totalChargeAmount: 18, totalMarginAmount: 6, totalDiscountAmount: 0, tenants: [{ tenantId: "tenant-a", tenantName: "Org A", allocatedCost: 12, finalChargeAmount: 18, marginAmount: 6, status: "ready" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
     {
       payload: {
         data: [
@@ -830,13 +830,14 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
     updateCloudChargeRuleFromApi,
   } = await import("../src/modules/platform/cloud-billing/cloud-billing.adapter");
 
-  const usage = await getCloudUsageSummaryFromApi();
-  const imports = await listCloudCostImportsFromApi();
-  const costs = await getCloudCostSummaryFromApi();
+  const period = { start: "2026-06-01", end: "2026-06-30" };
+  const usage = await getCloudUsageSummaryFromApi(period);
+  const imports = await listCloudCostImportsFromApi(period);
+  const costs = await getCloudCostSummaryFromApi(period);
   const allocationRuns = await listCloudAllocationRunsFromApi();
-  const allocation = await getCloudAllocationSummaryFromApi();
+  const allocation = await getCloudAllocationSummaryFromApi(period);
   const chargeRuns = await listCloudChargeRunsFromApi();
-  const charges = await getCloudChargeSummaryFromApi();
+  const charges = await getCloudChargeSummaryFromApi(period);
   const rules = await listCloudChargeRulesFromApi();
   const allocationRun = await runCloudAllocationFromApi();
   const chargeRun = await calculateCloudChargesFromApi("allocation-run-2");
@@ -855,26 +856,26 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
     active: false,
   });
 
-  assert.equal(calls[0].url, "/api/v1/platform/cloud-usage/summary");
-  assert.equal(calls[1].url, "/api/v1/platform/cloud-costs/imports");
-  assert.equal(calls[2].url, "/api/v1/platform/cloud-costs/summary");
+  assert.equal(calls[0].url, "/api/v1/platform/cloud-usage/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
+  assert.equal(calls[1].url, "/api/v1/platform/cloud-costs/imports?periodStart=2026-06-01&periodEnd=2026-06-30");
+  assert.equal(calls[2].url, "/api/v1/platform/cloud-costs/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[3].url, "/api/v1/platform/cloud-cost-allocations/runs");
-  assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/summary");
+  assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[5].url, "/api/v1/platform/cloud-charges/calculation-runs");
-  assert.equal(calls[6].url, "/api/v1/platform/cloud-charges/summary");
+  assert.equal(calls[6].url, "/api/v1/platform/cloud-charges/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[7].url, "/api/v1/platform/cloud-charge-rules");
   assert.equal(calls[8].url, "/api/v1/platform/cloud-cost-allocations/runs");
   assert.equal(calls[9].url, "/api/v1/platform/cloud-charges/calculation-runs");
   assert.equal(JSON.parse(String(calls[9].init.body)).sourceAllocationRunId, "allocation-run-2");
   assert.equal(calls[10].url, "/api/v1/platform/cloud-charge-rules");
   assert.equal(calls[11].url, "/api/v1/platform/cloud-charge-rules/rule-2");
-  assert.equal(usage.totalRequests, 4);
-  assert.equal(imports[0].records, 2);
-  assert.equal(costs.totalCost, 12.75);
+  assert.equal(usage.metrics[0].quantity, 4);
+  assert.equal(imports[0].rowCount, 2);
+  assert.equal(costs.totalUnblendedCost, 12.75);
   assert.equal(allocationRuns[0].allocatedCost, 12);
   assert.equal(allocation.tenants[0].allocatedCost, 12);
   assert.equal(chargeRuns[0].grossAmount, 18);
-  assert.equal(charges.tenants[0].amount, 18);
+  assert.equal(charges.tenants[0].finalChargeAmount, 18);
   assert.equal(rules[0].markupPercent, 50);
   assert.equal(allocationRun.allocatedCost, 12);
   assert.equal(chargeRun.grossAmount, 18);
@@ -1461,7 +1462,8 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   assert.match(workOrderDetailHtml, /OS-000101|Timeline|Alterar status/);
   assert.match(protectedHtml, /Checklists|Selecione um contexto/);
   assert.match(protectedHtml, /Configurações/);
-  assert.match(protectedHtml, /Tenants|tenant/i);
+  assert.match(protectedHtml, /Organizações/);
+  assert.match(protectedHtml, /Nenhuma organização/);
   assert.match(protectedHtml, /Cloud Billing/);
 });
 

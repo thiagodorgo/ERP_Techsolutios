@@ -1,0 +1,336 @@
+{
+  "C7_v3": {
+    "forma": "compensacao de m por SQL cru com item_id=Z (escritor sem o lock de X), NAO commitada; B = C7 v3; commit do cru durante o INSERT de B",
+    "B": {
+      "ok": {
+        "status": "already_reversed",
+        "via": "P2002 fora da tx"
+      },
+      "ms": 451
+    },
+    "B_bloqueadoEm": [
+      "INSERT INTO \"public\".\"stock_movements\" (\"tenant_id\",\"item_id\",\"type\",\"quantidade_sinalizada\",\"unit_cost\",\"work_order_id\",\"vehicle_id\",\"reaso"
+    ],
+    "compensacoesDepois": 1
+  },
+  "C8_v3": {
+    "forma": "compensacao de m por SQL cru com item_id=Z (escritor sem o lock de X), NAO commitada; B = C8 v3; commit do cru durante o INSERT de B",
+    "B": {
+      "ok": "undefined (P2002 fora da tx)",
+      "ms": 351
+    },
+    "B_bloqueadoEm": [
+      "INSERT INTO \"public\".\"stock_movements\" (\"tenant_id\",\"item_id\",\"type\",\"quantidade_sinalizada\",\"unit_cost\",\"work_order_id\",\"vehicle_id\",\"reaso"
+    ],
+    "compensacoesDepois": 1
+  },
+  "C7_headbase": {
+    "forma": "compensacao de m por SQL cru com item_id=Z (escritor sem o lock de X), NAO commitada; B = C7 headbase; commit do cru durante o INSERT de B",
+    "B": {
+      "ok": {
+        "status": "ok",
+        "movements": [
+          {
+            "id": "bcf54340-d84a-47cd-9d74-b04fd32ff98f",
+            "tenantId": "c78fdfa3-c674-4a45-9feb-a81293e49bca",
+            "itemId": "2cd899a4-304c-4ba2-b5da-815b310d67f6",
+            "type": "saida",
+            "quantidadeSinalizada": 3,
+            "custodyType": "base",
+            "reversesMovementId": "6f364869-e5cc-4259-b7f6-2ac04c772229",
+            "createdAt": "2026-09-18T12:51:36.061Z"
+          }
+        ]
+      },
+      "ms": 22
+    },
+    "B_bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ],
+    "compensacoesDepois": 2
+  },
+  "C8_headbase": {
+    "forma": "compensacao de m por SQL cru com item_id=Z (escritor sem o lock de X), NAO commitada; B = C8 headbase; commit do cru durante o INSERT de B",
+    "B": {
+      "ok": {
+        "compensou": "ec8e33f9-2c98-4a55-a0dd-84741dafa0ef"
+      },
+      "ms": 13
+    },
+    "B_bloqueadoEm": [
+      "<timeout: nao bloqueou>"
+    ],
+    "compensacoesDepois": 2
+  },
+  "LO_open_v3": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "entries=2"
+    },
+    "B_bloqueadoEm": [
+      "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updated_at\") VALUES ($1,$"
+    ],
+    "deadlock": false,
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -2,
+      "entries": 2,
+      "carimbadas": 2,
+      "dup": 0
+    }
+  },
+  "LO_open_v1ctrl": {
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      }
+    },
+    "B": {
+      "ok": "entries=2"
+    },
+    "B_bloqueadoEm": [
+      "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updated_at\") VALUES ($1,$"
+    ],
+    "deadlock": true
+  },
+  "LO_abc_v3": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}"
+    },
+    "B_bloqueadoEm": [
+      "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_items\".\"tenant_id\" ="
+    ],
+    "deadlock": false,
+    "final": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -2,
+      "entries": 2,
+      "carimbadas": 2,
+      "dup": 0
+    }
+  },
+  "LO_abc_v1ctrl": {
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      }
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}"
+    },
+    "B_bloqueadoEm": [
+      "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_items\".\"tenant_id\" ="
+    ],
+    "deadlock": true
+  },
+  "OVL_headbase": {
+    "sessoes": 2,
+    "saldoFinal": 98,
+    "fisico": 99
+  },
+  "OVL_v3": {
+    "open2": {
+      "name": "CycleCountError",
+      "code": "CYCLE_COUNT_CONFLICT",
+      "status": 409,
+      "reason": "items_in_open_session",
+      "msg": "1 item(ns) ja em sessao aberta"
+    },
+    "corrida": [
+      {
+        "resultados": [
+          "items_in_open_session",
+          "ok"
+        ],
+        "B_bloqueadoEm": [],
+        "sessoesCriadas": 1
+      },
+      {
+        "resultados": [
+          "ok",
+          "items_in_open_session"
+        ],
+        "B_bloqueadoEm": [
+          "SELECT id FROM tenants WHERE id=$1::uuid FOR NO KEY UPDATE"
+        ],
+        "sessoesCriadas": 1
+      },
+      {
+        "resultados": [
+          "ok",
+          "items_in_open_session"
+        ],
+        "B_bloqueadoEm": [
+          "SELECT id FROM tenants WHERE id=$1::uuid FOR NO KEY UPDATE"
+        ],
+        "sessoesCriadas": 1
+      },
+      {
+        "resultados": [
+          "ok",
+          "items_in_open_session"
+        ],
+        "B_bloqueadoEm": [
+          "SELECT id FROM tenants WHERE id=$1::uuid FOR NO KEY UPDATE"
+        ],
+        "sessoesCriadas": 1
+      },
+      {
+        "resultados": [
+          "items_in_open_session",
+          "ok"
+        ],
+        "B_bloqueadoEm": [],
+        "sessoesCriadas": 1
+      }
+    ],
+    "closeS1": {
+      "status": "concluida",
+      "beginStatus": "started",
+      "totalVarianceValue": 0,
+      "applied": 1,
+      "skipped": 0,
+      "reused": 0
+    },
+    "saldoFinal": 99,
+    "fisico": 99,
+    "openDepoisDeConcluida": "ok"
+  },
+  "E34_recordEntry_carimbada": {
+    "A": {
+      "ok": {
+        "status": "concluida",
+        "beginStatus": "started",
+        "totalVarianceValue": 0,
+        "applied": 1,
+        "skipped": 0,
+        "reused": 0
+      },
+      "at": 18969
+    },
+    "B": {
+      "status": "entry_adjusted",
+      "at": 18962
+    },
+    "B_bloqueadoEm": [
+      "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR SHARE"
+    ],
+    "entries": [
+      {
+        "item_id": "ae2f59cb-bc9c-4747-8f3b-ce80c1a2a245",
+        "contado": 7,
+        "sistema": 10,
+        "variance": -3
+      }
+    ],
+    "coerente": true,
+    "sessao": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 1,
+      "carimbadas": 1,
+      "dup": 0
+    }
+  },
+  "E34_cancel": {
+    "A": {
+      "ok": {
+        "status": "concluida",
+        "beginStatus": "started",
+        "totalVarianceValue": 0,
+        "applied": 1,
+        "skipped": 0,
+        "reused": 0
+      },
+      "at": 20552
+    },
+    "B": {
+      "status": "close_in_progress",
+      "stamped": 1,
+      "at": 20542
+    },
+    "B_bloqueadoEm": [
+      "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR UPDATE"
+    ],
+    "entries": [
+      {
+        "item_id": "1ff8f44b-c986-4fd2-b5b5-4ad6fefe5c86",
+        "contado": 7,
+        "sistema": 10,
+        "variance": -3
+      }
+    ],
+    "coerente": true,
+    "sessao": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 1,
+      "somaAjustes": -3,
+      "entries": 1,
+      "carimbadas": 1,
+      "dup": 0
+    }
+  },
+  "E34_recordEntry_naoCarimbada": {
+    "A": {
+      "ok": {
+        "status": "concluida",
+        "beginStatus": "started",
+        "totalVarianceValue": 0,
+        "applied": 2,
+        "skipped": 0,
+        "reused": 0
+      },
+      "at": 22172
+    },
+    "B": {
+      "status": "ok",
+      "phase": "fechando",
+      "at": 22145
+    },
+    "B_bloqueadoEm": [
+      "SELECT status FROM cycle_counts WHERE tenant_id=$1::uuid AND id=$2::uuid FOR SHARE"
+    ],
+    "entries": [
+      {
+        "item_id": "9a365621-c12f-4c85-880a-24862f6df323",
+        "contado": 7,
+        "sistema": 10,
+        "variance": -3
+      },
+      {
+        "item_id": "d7ca355e-3fad-4839-9555-376f0613a3d1",
+        "contado": 5,
+        "sistema": 10,
+        "variance": -5
+      }
+    ],
+    "coerente": true,
+    "sessao": {
+      "status": "concluida",
+      "is_active": true,
+      "ajustes": 2,
+      "somaAjustes": -8,
+      "entries": 2,
+      "carimbadas": 2,
+      "dup": 0
+    }
+  },
+  "fimMs": 22178,
+  "papeisOrfaos": 0
+}

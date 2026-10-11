@@ -2,6 +2,7 @@ import { apiRequest } from "../../../services/api/client";
 import type {
   CloudAllocationRun,
   CloudAllocationSummary,
+  CloudBillingPeriod,
   CloudChargeRule,
   CloudChargeRun,
   CloudChargeSummary,
@@ -11,16 +12,19 @@ import type {
   UpsertCloudChargeRuleInput,
 } from "./cloud-billing.types";
 
-type ApiResponse<T> = {
-  data: T;
-};
+type ApiResponse<T> = { readonly data: T };
 
-export function getCloudUsageSummaryFromApi() {
-  return apiRequest<ApiResponse<Record<string, unknown>>>("/platform/cloud-usage/summary").then((response) => mapUsageSummary(response.data));
+function withPeriod(path: string, period: CloudBillingPeriod): string {
+  const query = new URLSearchParams({ periodStart: period.start, periodEnd: period.end });
+  return `${path}?${query.toString()}`;
 }
 
-export function listCloudCostImportsFromApi() {
-  return apiRequest<ApiResponse<Record<string, unknown>[]>>("/platform/cloud-costs/imports").then((response) => response.data.map(mapCostImport));
+export function getCloudUsageSummaryFromApi(period: CloudBillingPeriod) {
+  return apiRequest<ApiResponse<Record<string, unknown>>>(withPeriod("/platform/cloud-usage/summary", period)).then((response) => mapUsageSummary(response.data));
+}
+
+export function listCloudCostImportsFromApi(period: CloudBillingPeriod) {
+  return apiRequest<ApiResponse<Record<string, unknown>[]>>(withPeriod("/platform/cloud-costs/imports", period)).then((response) => response.data.map(mapCostImport).filter((item) => item.id));
 }
 
 export function importCloudCostsFromApi() {
@@ -35,16 +39,16 @@ export function importCloudCostsFromApi() {
   }).then((response) => mapCostImport(response.data));
 }
 
-export function getCloudCostSummaryFromApi() {
-  return apiRequest<ApiResponse<Record<string, unknown>>>("/platform/cloud-costs/summary").then((response) => mapCostSummary(response.data));
+export function getCloudCostSummaryFromApi(period: CloudBillingPeriod) {
+  return apiRequest<ApiResponse<Record<string, unknown>>>(withPeriod("/platform/cloud-costs/summary", period)).then((response) => mapCostSummary(response.data));
 }
 
 export function listCloudAllocationRunsFromApi() {
   return apiRequest<ApiResponse<Record<string, unknown>[]>>("/platform/cloud-cost-allocations/runs").then((response) => response.data.map(mapAllocationRun));
 }
 
-export function getCloudAllocationSummaryFromApi() {
-  return apiRequest<ApiResponse<Record<string, unknown>>>("/platform/cloud-cost-allocations/summary").then((response) => mapAllocationSummary(response.data));
+export function getCloudAllocationSummaryFromApi(period: CloudBillingPeriod) {
+  return apiRequest<ApiResponse<Record<string, unknown>>>(withPeriod("/platform/cloud-cost-allocations/summary", period)).then((response) => mapAllocationSummary(response.data));
 }
 
 export function runCloudAllocationFromApi() {
@@ -58,8 +62,8 @@ export function listCloudChargeRunsFromApi() {
   return apiRequest<ApiResponse<Record<string, unknown>[]>>("/platform/cloud-charges/calculation-runs").then((response) => response.data.map(mapChargeRun));
 }
 
-export function getCloudChargeSummaryFromApi() {
-  return apiRequest<ApiResponse<Record<string, unknown>>>("/platform/cloud-charges/summary").then((response) => mapChargeSummary(response.data));
+export function getCloudChargeSummaryFromApi(period: CloudBillingPeriod) {
+  return apiRequest<ApiResponse<Record<string, unknown>>>(withPeriod("/platform/cloud-charges/summary", period)).then((response) => mapChargeSummary(response.data));
 }
 
 export function calculateCloudChargesFromApi(sourceAllocationRunId: string) {
@@ -90,217 +94,129 @@ export function updateCloudChargeRuleFromApi(ruleId: string, input: UpsertCloudC
   }).then((response) => mapChargeRule(response.data));
 }
 
-function mapUsageSummary(data: Record<string, unknown>): CloudUsageSummary {
-  const metrics = readArray(data.metrics);
-  const totalRequests = metrics.reduce((total, metric) => total + readNumber(metric.quantity), 0);
+export function mapUsageSummary(data: Record<string, unknown>): CloudUsageSummary {
   return {
-    generatedAt: readString(data.generatedAt) ?? readString(data.updatedAt) ?? new Date().toISOString(),
-    period: readPeriod(data),
-    totalComputeHours: readNumber(data.totalComputeHours),
-    totalStorageGb: readNumber(data.totalStorageGb),
-    totalRequests,
-    tenants: readArray(data.tenants).map((tenant) => ({
-      tenantId: readString(tenant.tenantId) ?? "unknown",
-      tenantName: readString(tenant.tenantName) ?? readString(tenant.tenantId) ?? "Tenant",
-      computeHours: readNumber(tenant.computeHours),
-      storageGb: readNumber(tenant.storageGb),
-      requests: readNumber(tenant.requests),
-      health: "healthy",
-    })),
+    periodStart: readString(data.periodStart) ?? "",
+    periodEnd: readString(data.periodEnd) ?? "",
+    metrics: readArray(data.metrics).map((metric) => ({
+      metricKey: readString(metric.metricKey) ?? "",
+      quantity: readNumber(metric.quantity),
+      unit: readString(metric.unit) ?? "",
+    })).filter((metric) => metric.metricKey),
+    generatedAt: readString(data.generatedAt) ?? "",
   };
 }
 
 function mapCostImport(data: Record<string, unknown>): CloudCostImport {
   return {
-    id: readString(data.id) ?? "cost-import",
-    provider: "aws",
-    period: readPeriod(data),
-    status: readStatus(data.status, ["completed", "processing", "failed"], "processing"),
-    importedAt: readString(data.importedAt) ?? readString(data.createdAt) ?? new Date().toISOString(),
-    fileName: readString(data.fileName) ?? readString(data.sourceUri) ?? "aws-cur.csv",
-    records: readNumber(data.records) || readNumber(data.rowCount),
+    id: readString(data.id) ?? "",
+    provider: readString(data.provider) ?? "",
+    sourceType: readString(data.sourceType),
+    status: readStatus(data.status, ["pending", "processing", "completed", "failed"], "pending"),
+    periodStart: readString(data.periodStart),
+    periodEnd: readString(data.periodEnd),
+    importedAt: readString(data.importedAt),
+    rowCount: readNumber(data.rowCount),
+    currency: readString(data.currency),
     errorMessage: readString(data.errorMessage),
   };
 }
 
-function mapCostSummary(data: Record<string, unknown>): CloudCostSummary {
-  const totalCost = readNumber(data.totalCost) || readNumber(data.totalUnblendedCost);
+export function mapCostSummary(data: Record<string, unknown>): CloudCostSummary {
   return {
-    generatedAt: readString(data.generatedAt) ?? readString(data.updatedAt) ?? new Date().toISOString(),
-    period: readPeriod(data),
-    provider: "aws",
-    totalCost,
-    currency: readCurrency(data.currency),
-    unallocatedCost: readNumber(data.unallocatedCost) || readNumber(data.totalUnallocatedCost),
+    provider: readString(data.provider) ?? "",
+    periodStart: readString(data.periodStart) ?? "",
+    periodEnd: readString(data.periodEnd) ?? "",
+    totalUnblendedCost: readNumber(data.totalUnblendedCost),
+    totalUnblendedCostExact: readString(data.totalUnblendedCostExact),
+    lineItemCount: readNumber(data.lineItemCount),
+    currencies: readStringArray(data.currencies),
+    services: readArray(data.services).map((service) => ({
+      serviceCode: readString(service.serviceCode) ?? "",
+      unblendedCost: readNumber(service.unblendedCost),
+      unblendedCostExact: readString(service.unblendedCostExact),
+      currency: readString(service.currency) ?? "",
+    })).filter((service) => service.serviceCode),
+    generatedAt: readString(data.generatedAt) ?? "",
+  };
+}
+
+export function mapAllocationSummary(data: Record<string, unknown>): CloudAllocationSummary {
+  return {
+    periodStart: readString(data.periodStart) ?? "",
+    periodEnd: readString(data.periodEnd) ?? "",
+    currency: readString(data.currency),
+    totalImportedCost: readNumber(data.totalImportedCost),
+    totalAllocatedCost: readNumber(data.totalAllocatedCost),
+    totalUnallocatedCost: readNumber(data.totalUnallocatedCost),
     tenants: readArray(data.tenants).map((tenant) => ({
-      tenantId: readString(tenant.tenantId) ?? "unknown",
-      tenantName: readString(tenant.tenantName) ?? readString(tenant.tenantId) ?? "Tenant",
-      cost: readNumber(tenant.cost) || readNumber(tenant.totalUnblendedCost),
-      marginPercent: readNumber(tenant.marginPercent) || readNumber(tenant.marginPercentage),
-      health: readHealth(tenant.health),
-    })),
+      tenantId: readString(tenant.tenantId) ?? "",
+      tenantName: readString(tenant.tenantName),
+      allocatedCost: readNumber(tenant.allocatedCost),
+      allocationRatio: readNumber(tenant.allocationRatio),
+    })).filter((tenant) => tenant.tenantId),
+    services: readArray(data.services).map((service) => ({
+      serviceCode: readString(service.serviceCode) ?? "",
+      allocatedCost: readNumber(service.allocatedCost),
+      unallocatedCost: readNumber(service.unallocatedCost),
+    })).filter((service) => service.serviceCode),
+    generatedAt: readString(data.generatedAt) ?? "",
+  };
+}
+
+export function mapChargeSummary(data: Record<string, unknown>): CloudChargeSummary {
+  return {
+    periodStart: readString(data.periodStart) ?? "",
+    periodEnd: readString(data.periodEnd) ?? "",
+    currency: readString(data.currency),
+    totalAllocatedCost: readNumber(data.totalAllocatedCost),
+    totalChargeAmount: readNumber(data.totalChargeAmount),
+    totalMarginAmount: readNumber(data.totalMarginAmount),
+    totalDiscountAmount: readNumber(data.totalDiscountAmount),
+    totalMarginPercentage: readOptionalNumber(data.totalMarginPercentage),
+    tenants: readArray(data.tenants).map((tenant) => ({
+      tenantId: readString(tenant.tenantId) ?? "",
+      tenantName: readString(tenant.tenantName),
+      allocatedCost: readNumber(tenant.allocatedCost),
+      finalChargeAmount: readNumber(tenant.finalChargeAmount),
+      marginAmount: readNumber(tenant.marginAmount),
+      marginPercentage: readOptionalNumber(tenant.marginPercentage),
+      status: readString(tenant.status) ?? "unknown",
+    })).filter((tenant) => tenant.tenantId),
+    generatedAt: readString(data.generatedAt) ?? "",
   };
 }
 
 function mapAllocationRun(data: Record<string, unknown>): CloudAllocationRun {
-  return {
-    id: readString(data.id) ?? "allocation-run",
-    status: readStatus(data.status, ["completed", "running", "failed"], "running"),
-    period: readPeriod(data),
-    startedAt: readString(data.startedAt) ?? readString(data.createdAt) ?? new Date().toISOString(),
-    completedAt: readString(data.completedAt),
-    allocatedCost: readNumber(data.allocatedCost) || readNumber(data.totalAllocatedCost),
-    unallocatedCost: readNumber(data.unallocatedCost) || readNumber(data.totalUnallocatedCost),
-    ruleCoveragePercent: readNumber(data.ruleCoveragePercent),
-    errorMessage: readString(data.errorMessage),
-  };
-}
-
-function mapAllocationSummary(data: Record<string, unknown>): CloudAllocationSummary {
-  const allocatedCost = readNumber(data.allocatedCost) || readNumber(data.totalAllocatedCost);
-  const unallocatedCost = readNumber(data.unallocatedCost) || readNumber(data.totalUnallocatedCost);
-  const total = allocatedCost + unallocatedCost;
-  return {
-    generatedAt: readString(data.generatedAt) ?? readString(data.updatedAt) ?? new Date().toISOString(),
-    period: readPeriod(data),
-    allocatedCost,
-    unallocatedCost,
-    coveragePercent: total > 0 ? (allocatedCost / total) * 100 : 0,
-    tenants: readArray(data.tenants).map((tenant) => ({
-      tenantId: readString(tenant.tenantId) ?? "unknown",
-      tenantName: readString(tenant.tenantName) ?? readString(tenant.tenantId) ?? "Tenant",
-      allocatedCost: readNumber(tenant.allocatedCost) || readNumber(tenant.totalAllocatedCost),
-      ruleKey: readString(tenant.ruleKey) ?? readString(tenant.allocationMethod),
-      health: readHealth(tenant.health),
-    })),
-  };
+  return { id: readString(data.id) ?? "", status: readStatus(data.status, ["completed", "running", "failed"], "running"), period: readLegacyPeriod(data), startedAt: readString(data.startedAt) ?? readString(data.createdAt) ?? "", completedAt: readString(data.completedAt), allocatedCost: readNumber(data.allocatedCost ?? data.totalAllocatedCost), unallocatedCost: readNumber(data.unallocatedCost ?? data.totalUnallocatedCost), ruleCoveragePercent: readNumber(data.ruleCoveragePercent), errorMessage: readString(data.errorMessage) };
 }
 
 function mapChargeRun(data: Record<string, unknown>): CloudChargeRun {
-  const grossAmount = readNumber(data.grossAmount) || readNumber(data.totalChargeAmount);
-  const netCost = readNumber(data.netCost) || readNumber(data.totalAllocatedCost);
-  return {
-    id: readString(data.id) ?? "charge-run",
-    status: readStatus(data.status, ["completed", "running", "failed"], "running"),
-    period: readPeriod(data),
-    startedAt: readString(data.startedAt) ?? readString(data.createdAt) ?? new Date().toISOString(),
-    completedAt: readString(data.completedAt),
-    grossAmount,
-    netCost,
-    marginPercent: readNumber(data.marginPercent) || readMarginPercent(grossAmount, netCost),
-    errorMessage: readString(data.errorMessage),
-  };
-}
-
-function mapChargeSummary(data: Record<string, unknown>): CloudChargeSummary {
-  const grossAmount = readNumber(data.grossAmount) || readNumber(data.totalChargeAmount);
-  const netCost = readNumber(data.netCost) || readNumber(data.totalAllocatedCost);
-  return {
-    generatedAt: readString(data.generatedAt) ?? readString(data.updatedAt) ?? new Date().toISOString(),
-    period: readPeriod(data),
-    currency: readCurrency(data.currency),
-    grossAmount,
-    netCost,
-    marginPercent: readNumber(data.marginPercent) || readMarginPercent(grossAmount, netCost),
-    tenants: readArray(data.tenants).map((tenant) => {
-      const amount = readNumber(tenant.amount) || readNumber(tenant.totalChargeAmount) || readNumber(tenant.finalChargeAmount);
-      const tenantCost = readNumber(tenant.netCost) || readNumber(tenant.totalAllocatedCost) || readNumber(tenant.allocatedCost);
-      return {
-        tenantId: readString(tenant.tenantId) ?? "unknown",
-        tenantName: readString(tenant.tenantName) ?? readString(tenant.tenantId) ?? "Tenant",
-        amount,
-        netCost: tenantCost,
-        marginPercent: readNumber(tenant.marginPercent) || readNumber(tenant.marginPercentage) || readMarginPercent(amount, tenantCost),
-        health: readHealth(tenant.health),
-      };
-    }),
-  };
+  return { id: readString(data.id) ?? "", status: readStatus(data.status, ["completed", "running", "failed"], "running"), period: readLegacyPeriod(data), startedAt: readString(data.startedAt) ?? readString(data.createdAt) ?? "", completedAt: readString(data.completedAt), grossAmount: readNumber(data.grossAmount ?? data.totalChargeAmount), netCost: readNumber(data.netCost ?? data.totalAllocatedCost), marginPercent: readNumber(data.marginPercent ?? data.totalMarginPercentage), errorMessage: readString(data.errorMessage) };
 }
 
 function mapChargeRule(data: Record<string, unknown>): CloudChargeRule {
-  return {
-    id: readString(data.id) ?? "rule",
-    name: readString(data.name) ?? "Regra cloud",
-    provider: "aws",
-    metric: "allocated_cost",
-    markupPercent: readNumber(data.markupPercent) || readNumber(data.markupValue),
-    active: readBoolean(data.active) ?? readBoolean(data.isActive) ?? false,
-    updatedAt: readString(data.updatedAt) ?? new Date().toISOString(),
-    appliesToTenantIds: readArray(data.appliesToTenantIds).map((item) => readStringValue(item)).filter((item): item is string => Boolean(item)),
-  };
+  return { id: readString(data.id) ?? "", name: readString(data.name) ?? "Regra cloud", provider: "aws", metric: "allocated_cost", markupPercent: readNumber(data.markupPercent ?? data.markupValue), active: readBoolean(data.active) ?? readBoolean(data.isActive) ?? false, updatedAt: readString(data.updatedAt) ?? "", appliesToTenantIds: readStringArray(data.appliesToTenantIds) };
 }
 
 function toRuleApiInput(input: UpsertCloudChargeRuleInput): Record<string, unknown> {
-  return {
-    name: input.name,
-    isActive: input.active,
-    planCode: "default",
-    priority: 100,
-    effectiveFrom: new Date().toISOString().slice(0, 10),
-    currency: "BRL",
-    markupType: "percentage",
-    markupValue: input.markupPercent,
-    roundingMode: "nearest_cent",
-    metadata: {
-      provider: input.provider,
-      metric: input.metric,
-      appliesToTenantIds: input.appliesToTenantIds ?? [],
-    },
-  };
+  return { name: input.name, isActive: input.active, planCode: "default", priority: 100, effectiveFrom: new Date().toISOString().slice(0, 10), currency: "BRL", markupType: "percentage", markupValue: input.markupPercent, roundingMode: "nearest_cent", metadata: { provider: input.provider, metric: input.metric, appliesToTenantIds: input.appliesToTenantIds ?? [] } };
 }
 
 function defaultPeriodBody(): Record<string, string> {
   const now = new Date();
   const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-  return {
-    periodStart: `${month}-01`,
-    periodEnd: `${month}-28`,
-  };
+  return { periodStart: `${month}-01`, periodEnd: `${month}-28` };
 }
 
-function readPeriod(data: Record<string, unknown>): string {
-  const explicit = readString(data.period);
-  if (explicit) return explicit;
-  const start = readString(data.periodStart) ?? readString(data.billingPeriodStart);
-  return start ? start.slice(0, 7) : new Date().toISOString().slice(0, 7);
+function readLegacyPeriod(data: Record<string, unknown>): string {
+  return readString(data.period) ?? readString(data.periodStart)?.slice(0, 7) ?? "";
 }
-
-function readArray(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value) ? value.filter(isRecord) : [];
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readStringValue(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim() ? value : undefined;
-}
-
-function readNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function readBoolean(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined;
-}
-
-function readCurrency(value: unknown): "BRL" | "USD" {
-  return value === "USD" ? "USD" : "BRL";
-}
-
-function readHealth(value: unknown) {
-  return value === "high_cost" || value === "unallocated" || value === "missing_rule" ? value : "healthy";
-}
-
-function readStatus<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
-  return typeof value === "string" && allowed.includes(value as T) ? (value as T) : fallback;
-}
-
-function readMarginPercent(amount: number, cost: number): number {
-  return amount > 0 ? ((amount - cost) / amount) * 100 : 0;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
+function readArray(value: unknown): Record<string, unknown>[] { return Array.isArray(value) ? value.filter(isRecord) : []; }
+function readStringArray(value: unknown): string[] { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : []; }
+function readString(value: unknown): string | undefined { return typeof value === "string" && value.trim() ? value : undefined; }
+function readNumber(value: unknown): number { return typeof value === "number" && Number.isFinite(value) ? value : 0; }
+function readOptionalNumber(value: unknown): number | undefined { return typeof value === "number" && Number.isFinite(value) ? value : undefined; }
+function readBoolean(value: unknown): boolean | undefined { return typeof value === "boolean" ? value : undefined; }
+function readStatus<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T { return typeof value === "string" && allowed.includes(value as T) ? value as T : fallback; }
+function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }

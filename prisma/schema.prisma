@@ -1506,6 +1506,12 @@ model StockMovement {
   @@index([tenant_id, item_id, custody_type, custody_operator_profile_id, custody_vehicle_id], map: "stock_movements_custody_lookup_idx")
   @@index([tenant_id, transfer_group_id], map: "stock_movements_tenant_id_transfer_group_id_idx")
   @@index([tenant_id, reverses_movement_id], map: "stock_movements_tenant_id_reverses_movement_id_idx")
+  // B-O6R-04a (Ω6R-DAT-002/003) — dois índices PARCIAIS ÚNICOS que o Prisma NÃO modela; vivem só na migration
+  // 20260873000000_add_stock_movements_unique_backstops (precedente: stock_movements_source_active_key):
+  //   stock_movements_reversal_active_key  (tenant_id, reverses_movement_id) WHERE reverses_movement_id IS NOT NULL
+  //     → no máximo UMA compensação por movimento original;
+  //   stock_movements_cycle_count_item_key (tenant_id, cycle_count_id, item_id) WHERE cycle_count_id IS NOT NULL
+  //     → no máximo UM ajuste por (sessão de contagem, item).
   @@map("stock_movements")
 }
 

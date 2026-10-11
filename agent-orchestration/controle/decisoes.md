@@ -3048,3 +3048,236 @@ e a exigência de porteiro para PR de registro.
   matview cuja árvore alcance uma tabela com FORCE ROW LEVEL SECURITY, sem analisar dono nem privilégio. Hoje há 0
   views; nenhuma funcionalidade quebra. Ciclo 4 curto, só desse ponto; C2 e C3 da junta 3 não votam (a junta 3 fecha
   REPROVADA pela C1).
+
+## Registro de 08–10/10/2026 — decisões do dono e fatos de orquestração (PR de registro de 10/10)
+
+- **D-LINUX-CONGELADO (2026-10-08)** — o dono desistiu de mover a execução para o PC Ubuntu da sala (i5 7ª geração, 16 GB,
+  SSD): *"vamos congelar o linux, é muito trabalho para pouco ganho"*. Reaberto em 10/10 só para a esteira da API, que foi
+  congelada no mesmo dia (`D-API-ESTEIRA-CONGELADA`, abaixo).
+- **D-API-FORA-DESTE-PC (2026-10-09)** — *"ok, deixa quieto o uso da api neste pc. vou usar no linuxmais tarde."* Causa
+  medida antes da decisão: o `claude` lançado de dentro da sessão herdava as variáveis `CLAUDE_CODE_*` da sessão-mãe e
+  usava a credencial dela — o `apiKeySource` do evento de início do stream veio `"none"` com a chave presente; com as
+  `CLAUDE_CODE_*` removidas, veio `ANTHROPIC_API_KEY`. Não foi o login vencendo a chave. Enquanto isso não era sabido,
+  trabalhadores que se julgavam na API consumiram a cota semanal da assinatura.
+- **D-CLAUDE-2-PROCESSOS (2026-10-09)** — *"a partir de agora, o claude pode ter ate 2 procesos simutaneo consumindo
+  tokens"*. O Codex segue com 1 sessão pesada por vez. Efeito declarado (ressalva do porteiro do #405): na junta 4 do
+  B-SAN3-05, a C2 e a C3 rodaram em paralelo, contra o R2 do inspetor (uma por vez, por disco), com o disco medido antes
+  (14 GB livres) e cada cadeira em worktree, cluster e rede próprios; a C2 mediu efeito nulo (nota C2c4-N5).
+- **D-KPI-MARCO-2026-10-09** — *"atualize kpis"*: a consolidação por marco que a `D-GOV-PROPORCIONAL` (5) prevê, feita no
+  PR #412 (revisor independente APROVADO, 3 notas). O KPI segue congelado para os PRs de bloco.
+- **D-LIMPEZA-2026-10-09** — *"autorizo a limpeza, os "Precisa de decisão sua (não apago sem você)" pode apagar"*. Feito: 7 worktrees, 10
+  ramos locais (9 preservados no GitHub; `chore/ci-probe` apagado de vez), 53 corpos de jurado soltos (todos versionados),
+  o stash de 8 semanas, os caches de gradle e npm, o cache de build do Docker, 115 ramos remotos (109 mergeados + 6
+  provados contidos na `main` por `git merge-tree`; a lista com os SHAs fica fora do repositório, em
+  `erp-pausa-2026-10-03/RAMOS-REMOTOS-PARA-APAGAR.txt`) e `git gc --prune=now` (o stash e o `ci-probe` não têm mais volta).
+  O classificador de segurança do Claude Code barrou a remoção de 2 containers e 18 volumes Docker (um par é do projeto
+  pastrack) e a compactação do disco do Docker exige administrador: os comandos ficaram com o dono.
+- **D-API-ESTEIRA-CONGELADA (2026-10-10)** — o dono propôs a API num *"papel pequeno que seja verificavel e retornavel,
+  com um plano em fable"* e aprovou (*"vai"*); o classificador barrou a peça que roda o Claude sozinho com terminal livre
+  ("criar agente inseguro"), e o dono congelou: *"ok, congele isso, rodo o agente em um script python pq os creditos que
+  tenho nao eh pra claude"*. O kit nunca foi commitado; está arquivado fora do repositório
+  (`erp-pausa-2026-10-03/esteira-api-CONGELADA-2026-10-10/`), com o plano parcial do PKT-001 (B-SAN3-05T) para um dev normal.
+- **D-ORDEM-NOITE-2026-10-10** — antes de dormir, o dono aprovou (*"vai"*) a ordem: (1) fechar o #411; (2) fechar o #412;
+  (3) registro em dia; (4) plano do Traccar no Codex, a crítica e os blocos de ingestão com junta completa de segurança;
+  (5) destravar a produção — retomar o #389, depois `B-O6R-07c` e `B-O6R-03a`, e uma junta J-6R nova; (6) telas sem
+  placeholder (`B-SAN3-06a`, `B-SAN3-12/24/25`); (7) Ato 2. O nome `B-SAN3-05-ATO2` para o bloco do Ato 2 é do
+  orquestrador (dado às 03:43Z, depois do "vai"), não do dono.
+- **Errata A-1 do revisor do #410** — em `D-ATO2-OPCAO-B` e em `P-SAN3-05-ATO2-CINCO-TAREFAS`, *"não bloqueia o Traccar"*
+  é leitura do orquestrador, não fala do dono. Medida do porteiro do #405: depois de `a9fbe283`, o boot de produção recusa
+  papel que escapa do RLS (`enforce` por padrão em produção), logo o Ato 2 bloqueia QUALQUER deploy de produção —
+  inclusive a ingestão do Traccar —, e não bloqueia o plano (o porteiro liberou o plano). Que o desenvolvimento em dev
+  também não dependa do Ato 2 é leitura do orquestrador: a trava só recusa o boot com `NODE_ENV=production`. O texto de
+  08/10 fica como estava
+  (append-only); a pendência foi atualizada com esta referência.
+
+---
+
+## `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` — a classe se resolve uma vez (decisão do dono, 2026-09-20)
+
+**Contexto.** Em 2026-09-20 **dois** blocos bateram no teto da `D-TETO-DOIS-CICLOS` **pela mesma causa**:
+`B-O6R-11` (#388, app de campo) e `B-O6R-04a` (#389, estoque). Em ambos, o ciclo 2 fechou as instâncias que os
+jurados do ciclo 1 nomearam, e em ambos a defesa continuou sendo **reconhecimento de forma** — lista de nomes,
+catálogo de tipos de nó, regex sobre texto, piso de censo que é igualdade disfarçada — em vez de **propriedade
+enunciada a partir do código**. No estoque, 10 de 26 mutações ficaram verdes com a mutação viva e três gravaram dado
+errado (saldo 0 → −15; e o defeito de concorrência do ciclo 1 voltou inteiro, saldo −9 em 3 de 3 corridas, só por a
+via ser escrita como propriedade em vez de método).
+
+**Decisão do dono: bloco transversal + conserto imediato da bateria.** Recusada a repetição de um ciclo por bloco.
+
+**O que a decisão faz.**
+
+1. **A bateria não-determinista do `B-O6R-04a` é consertada já**, porque não é risco futuro: é defeito real e a
+   classe **não antecede o bloco**. `npm test` deu 3057 · 3057 · 3058 em N=3, e as suítes de banco 52 · 51 · 52 — três
+   falhas distintas em seis execuções, todas por relógio. Os três arquivos pré-existentes de dinheiro que usam a mesma
+   espera têm **zero** `sleep` fixo (encontro de duas pontas, refém solto explicitamente); os dois deste bloco têm
+   **12** e **7**. O CI roda os mesmos 288 arquivos, **sem retry e em runner mais fraco**, e **nunca rodou** neste head.
+2. **A força do guarda sai dos blocos e vira UM bloco transversal:** a **norma escrita** de como se escreve um guarda
+   neste repositório (propriedade gerada do código — AST do TypeScript, AST do Dart, catálogo do banco — e não lista,
+   regex ou nome), mais o **mecanismo único** que a implementa, que o estoque e o app de campo **adotam**. A classe
+   se fecha uma vez.
+3. **O ciclo 3 do `B-O6R-11`** (`D-O6R-11-CICLO-3-POR-EXCECAO`) **continua**, e é onde o desenho está sendo forjado:
+   lista de **permitidos** sobre um token de escrita único, em vez de lista de proibidos. O que sair dele, depois de
+   sobreviver ao crítico, é a matéria-prima da norma.
+4. **Nada do #389 entra na `main`** até a bateria estar determinista. O que a cadeira de banco provou continua de pé
+   e não se reabre: o censo que respondia `0` com duplicatas agora aborta com o número e diz "censo cego" sob o papel
+   da aplicação; as 6 vias travam antes da primeira leitura que decide; a contagem retoma sem aplicar unidade duas
+   vezes, mesmo com a conexão morta no meio.
+
+**O que a decisão NÃO muda.** O teto de dois ciclos segue valendo; esta é a segunda intervenção humana que ele
+prescreve no mesmo dia, e ela trocou "mais um ciclo por bloco" por "fechar a classe". As cinco dívidas que o porteiro
+do #390 nomeou continuam com o primeiro PR que mergear.
+
+## Registro de 10/10/2026 (tarde) — modelos, formato do estado e as perguntas abertas
+
+- **D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (2026-10-10)** — o dono fixou o modelo de cada papel em quatro passos:
+  - 13:31Z, perguntado sobre os papéis de topo em bloco de dinheiro: *"so o plano no topo, no fim do segundo fluxo entra a
+    inteligencia mais alta pra auditar e ver se esta tudo certo."*
+  - 13:35Z, explicando "fluxo": *"roda o fluxo 1 e nao ficou pronto, vai para o fluxo 2, se nao ficar pronto a
+    inteligencia maior(fable/astra) entra no fluxo antes de começar o terceiro fluxo, audita e ver se esta tudo certo,
+    planeja o plano para fechar o fluxo e entrega para fazer o fluxo 3, a terceira passada. isso é para evitar ficar em
+    loop"*.
+  - 13:44Z, generalizando: *"vamos refatorar o fluxo geral, numa reprovação de junta, EM TODA REPOVAÇÃO, o falbe/astra
+    entra audita, faz o plano com detalhes para resolver a reprovação e o resto segue o fluxo, isso é pra dificultar o
+    segundo loop em diante"*.
+  - 15:41Z, como padrão: *"o modelo (\"topo só no plano e em toda reprovação de junta; resto no nível menor\") fica padrao
+    para nosso projeto, pra agregados e nossos agentes internos"*.
+
+  **A regra vigente:**
+  - **Modelo de topo** (Fable no Claude, GPT-6 Astra no Codex): (1) o plano inicial do bloco; (2) EM TODA reprovação de
+    junta, a auditoria (os achados são defeitos reais do produto ou artefato do processo?) e o plano detalhado de
+    resolução, com identidade nova — quem achou não planeja (§C7.4-bis).
+  - **Nível menor** (Opus no Claude, GPT-5.6 Sol no Codex), sempre DECLARADO no artefato: dev, crítico, inspetor,
+    cadeiras da junta, fábrica e porteiro.
+  - Devolução de CRÍTICO não aciona o topo; só reprovação de JUNTA aciona.
+
+  Esta decisão **substitui** a `D-FABLE-ASTRA-SO-DINHEIRO` (2026-10-08) e, enquanto o texto do contrato não muda, o
+  §C7.6/6-bis nos papéis de gate. A mudança do texto do CLAUDE.md e do AGENTS.md (§C7.4, §C7.6) e do `model:` fixado nos
+  corpos do inspetor e do porteiro vai num PR de governança próprio. Primeira aplicação: a reprovação do ciclo 2 do #389
+  foi auditada e replanejada em Fable, e a junta do ciclo 3 votou em Sol e Opus. O inspetor dessa junta rodou em Astra
+  porque foi lançado antes da decisão.
+- **D-FORMATO-DO-ESTADO (2026-10-10)** — *"quando eu pedir o estado vc me retorna onde estamos, o que estamos fazendo, como
+  estamos indo, onde nos estamos no cronograma, previsao do bloco atual e global tudo com checklists para eu acompanhar o
+  progresso, documente isso"*. O formato está em `agent-orchestration/docs/formato-do-estado.md`.
+- **Perguntas abertas ao dono** — não são decisões. O texto abaixo é LITERAL do plano do `B-O6R-07c` v3 (`5b16932e`,
+  §R.2); as recomendações que seguem são do ORQUESTRADOR, não do plano nem do dono:
+
+  > - D1-07c (pergunta ao dono, 2026-10-10): quem é o técnico da OS para escrever QUALQUER coisa nela — editar os campos da OS, mudar o status, comentar, anexar, geocodificar, lançar km, fazer a vistoria e mandar evidência? (A resposta entra numa porta só, assertMutationObjectScope, e vale para tudo isso de uma vez.)
+  >   (a) só quem foi atribuído na OS — o técnico mandado pelo mapa sem atribuição não faz nada disso, nem a vistoria e as fotos que hoje faz;
+  >   (b) atribuído OU alvo de despacho ativo da OS — o fluxo do mapa segue; o despachado passa a editar a OS, comentar, anexar, geocodificar, mudar status, lançar km, fazer a vistoria e mandar evidência, inclusive pelo console web;
+  >   (c) o despacho passa a gravar a atribuição — um critério só; o efeito é o de (b); muda o fluxo de despacho.
+  >   E: membros da equipe da OS (teamId) contam? Bloqueia o B-O6R-07c-b. Plano: docs/revisoes/SAN3/B-O6R-07c-plano.md (07c-b.2).
+  > - D2-07c (pergunta ao dono, 2026-10-10): trabalho feito offline por quem ERA o técnico — vistoria, evidência, status e km —, sincronizado depois de a OS ir para outro:
+  >   (a) recusar — o app tenta 5 vezes e o trabalho fica preso no aparelho, sem saída, até o app ganhar uma (B-SAN3-16);
+  >   (b) aceitar se ele era o técnico na hora da coleta — pelo relógio do aparelho, que pode estar errado ou forjado;
+  >   (c) aceitar de quem já foi técnico da OS alguma vez — escopo frouxo;
+  >   (d) recusar como conflito — o app já mostra conflito com "manter a minha" e "usar a do servidor"; para valer também para status e km, o 07c-b passa a mexer no lote de OS.
+  >   Bloqueia o B-O6R-07c-b. Plano: 07c-b.3.
+  > - D3-07c (pergunta ao dono, 2026-10-10): o técnico de campo pode, ao registrar um dano, lançar débito no extrato de um colega e escolher o valor? Hoje pode (medido: -900). Fora do 07c; dono da pendência P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA.
+
+  **Recomendações do orquestrador** (2026-10-10): D1 → (b), sabendo que o despachado passa a poder TUDO na OS listado
+  em (b), inclusive pelo console web; D2 → (d), sabendo que para valer também para status e km o 07c-b mexe no lote de
+  OS; D3 → não (o débito no extrato de terceiro vira correção). Traccar 1–6: as pendências `P-TRC-*` em `pendencias.md`
+  e a seção "Decisões do dono antes do B-TRC-01" do `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` (ramo `docs/plano-traccar`).
+- **REGISTRO-07CA-TENSAO-COORDENADOR (§A2, 2026-10-10)** — o `PLANO_SAN3.md:254` pede *unanimidade +
+  coordenador-de-acessos* na junta do `B-O6R-07c`, mas essa identidade achou o `C2-09`
+  (`votos/SAN3-plano/C2-coordenador-de-acessos-voto.json:54`) e é inelegível. A competência entra pela C1 com identidade
+  nova (`jurado-07ca-c1-escopo-por-objeto`), como o plano v3 do 07c-a manda (seção 07c-a.7).
+
+## Registro de 10/10/2026 (noite) — agente Python sobre a API do Claude (B-AGENTE-API)
+
+- **D-AGENTE-CLAUDE-API (2026-10-10)** — o dono pediu um agente em Python sobre a API do Claude, com cerca e
+  autonomia limitada, versionado no repositório. Falas literais: *"vamos criar um agente, um script em python que
+  consiga usar a api do claude e nos ajudar aqui?"* e *"coloque guard rails, faça uma cerca e de mais autonomia a
+  esse agente, não muita, mas que ele consiga ajudar mais sem probabilidades altas de dar merda, pode fazer o
+  agente, coloque ele numa pasta para que possamos usar no repo e no git"*. Antes, o orquestrador condicionou:
+  chave só por variável de ambiente; nada de execução autônoma com escrita; provar qual conta paga.
+  **O que decide:** (1) nasce `scripts/agente-claude-api/` (pacote `agente_claude`, SDK `anthropic==1.13.0` num
+  venv local ignorado), com duas tarefas só-leitura — `revisar-pr <N>` e `investigar "<pergunta>"` — num laço
+  manual de ferramentas, em worktree descartável criado e removido pelo próprio script; (2) **autonomia nível 1**:
+  o agente decide o que ler e o que verificar (lista fechada: `git diff --check`, `sync-agent-agents --check`
+  e `node --test` de arquivo sem `-db`; o `npm run check` saiu na implementação, porque o `prisma generate` exige
+  `DATABASE_URL` — `P-AGENTE-CHECK-SEM-GENERATE`), e **não** conserta, commita, faz push, mergeia nem comenta;
+  (3) a **cerca** é do código, não do modelo: raiz confinada por `realpath` (junction, symlink, 8.3, UNC, `\\?\`,
+  ADS, dispositivos, `.env*`/`*.pem`/`*.key`/`id_*`/`.git`/`node_modules` negados), ferramentas nomeadas com argv
+  montado pelo script e `shell=False`, allowlist de flags, ambiente limpo por allowlist, orçamento (turnos,
+  ferramentas, tokens com cache, US$), redação de segredos em tudo o que sai, auditoria JSONL por execução,
+  `STOP`/Ctrl+C gravando parcial, parecer por ferramenta de schema estrito; (4) **conta e modelo**: a chave vem de
+  `ERP_AGENTE_ANTHROPIC_KEY` (processo ou `HKCU\Environment`), **nunca** de `ANTHROPIC_API_KEY` (com esse nome o
+  próprio Claude Code cobraria os créditos da API no lugar do plano Max); chave de usuário (`sk-ant-usr…`, medida
+  em 2026-10-10: 400 "not scoped to a workspace") exige `ERP_AGENTE_ANTHROPIC_WORKSPACE` e o cabeçalho
+  `anthropic-workspace-id`; sem isso o script para antes de qualquer chamada; modelo `claude-opus-5-5` com esforço
+  explícito (nível menor, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`); `request-id`, rate limit e o modelo que
+  respondeu vão ao parecer como prova de cobrança na conta da API.
+  **O que reabre:** reabre **parcialmente** a `D-API-ESTEIRA-CONGELADA` (2026-10-10) — só para este agente, com
+  esta cerca; o executor autônomo com terminal livre que o classificador barrou ("criar agente inseguro") **não
+  volta**. Se o classificador barrar a construção deste bloco, para-se e o orquestrador relata ao dono; nada de
+  contornar.
+  **Governança:** §C7 item 8(1) — ferramenta de processo: plano em Fable (`docs/revisoes/GOV/B-AGENTE-API-plano.md`),
+  dev em Opus, um revisor independente com olhar de segurança (`agente-secops`, Opus) + CI verde, sem junta; KPI
+  congelado. **Primeiro uso real:** só depois do merge, com a chave do dono, como revisor do PR #416 — o dono gravou
+  `ERP_AGENTE_ANTHROPIC_WORKSPACE` (workspace "erp") em 2026-10-10 ~19:00Z, e `GET /v1/models` respondeu 200 (gratuito).
+- **Aplicação da `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` no contrato (2026-10-10)** — o PR de governança que a decisão
+  prescreve (`chore/gov-modelos-topo`): `CLAUDE.md` e `AGENTS.md` (hunks idênticos) ganham a regra no §C7.4 (topo audita e
+  replaneja em toda reprovação de junta), no §C7.6 (tabela topo × nível menor) e no §C7.6-bis (só o planejador fica em
+  `fable`; os gates descem para Opus, e para eles Opus esgotado → PARA); o §C2.8 e o §C7.1-bis deixam de dizer "Fable por
+  contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
+  `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
+  já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
+
+## Registro de 11/10/2026 — Traccar (as 6 decisões), o Claude só orquestra e o agente da API em uso
+
+- **D-TRC-DECISOES-DO-DONO-2026-10-11** — as seis decisões do plano do Traccar v2.1
+  (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, seção "Decisões do dono antes do B-TRC-01", ramo `docs/plano-traccar`).
+  Falas literais do dono:
+  - *"Decisões traccar em D1=c. D2=a. D3=os dois, mas só o carro aparece default e celular do técnico é com a opção
+    mostra guincheiro com o botão direito do mouse no mapa e no menu de visualização que devemos ter no mapa. D4=a viatura
+    aparece com o nome do técnico que aquela viatura foi definida, temos que bolar uma configuração inicial para amarrar
+    a viatura no técnico. D5=a. D6=base legal, contrato de trabalho e legítimo interesse com aviso ao técnico. Guarda de
+    90 dias com recibo e quarentena resolvida 30 dias. Quem vê será o despacho e gestão com trilha de consulta."*
+  - *"Achados críticos. Achado 1, 2, 3, 4 e 5 preciso que vc analise e me retorne com opções, prós e contras. Preciso que
+    rode aqui e me responda sobre os achados só então as minhas decisões devem ser tratadas"*. O orquestrador analisou os
+    5 achados do material das decisões (`erp-pausa-2026-10-03/TRACCAR-DECISOES-para-o-dono.md`, preparado pelo agente da
+    API) e deu opções, prós e contras.
+  - *"pode seguir com as recomendações"*. As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec].
+
+  **Resultado:**
+  1. **D1 = C**, sete blocos (G-TRC-PD + B-TRC-01 a 07). Prazo de referência: **26–46 dias úteis** (§10.2). O "25–45" da
+     §7.2 é o número da v1 e sai na v2.2 do plano [rec, achado 1].
+  2. **D2 = a**, o ERP inteiro na AWS, como DIREÇÃO. Um estudo de custo e de migração vira tarefa nomeada com prazo
+     ANTES do B-TRC-06 (`P-TRC-AWS-ESTUDO-MIGRACAO`); do B-TRC-01 ao 05 tudo roda em dev. Contratar ou configurar serviço
+     pago segue como decisão crítica (§C7 item 1) [rec, achado 2].
+  3. **D3 = dois pinos (a opção c do plano), com camada:** por padrão só a viatura aparece. O celular do técnico (o
+     "guincheiro") aparece pela opção do botão direito no mapa e pelo menu de visualização do mapa, que precisa existir.
+     O "N minutos" da opção b deixa de existir. Custo no plano: bloco próprio de 4–7 dias, mais o menu de visualização.
+  4. **D4 = b** [rec, achado 3]: vínculo FIXO viatura→técnico como padrão (a configuração inicial que amarra a viatura no
+     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Viatura SEM técnico configurado e sem despacho
+     aparece como frota, sem nome de pessoa, sob o legítimo interesse da D6 [rec, derivado de D4 = b e D6]. Isso concilia a frase do dono com a regra de
+     2026-10-10, "o vínculo pessoa↔viatura é pela janela do despacho" (`decisoes.md:2290-2292`), que segue valendo
+     durante o serviço. O conflito foi registrado e resolvido aqui, pela regra §A2.
+  5. **D5 = a**: só a plataforma (Admin Plataforma) vincula rastreador, a pedido da organização, com o rastreador
+     registrado na compra ou na instalação.
+  6. **D6** [rec, achado 4]: **base legal por finalidade** — execução do contrato de trabalho para o rastreio em serviço;
+     legítimo interesse, com teste de balanceamento escrito, para a frota sem técnico. Aviso ao técnico no app e no
+     contrato. **Fora do expediente, a viatura aparece SEM o nome do técnico.** Guarda: posição e recibo 90 dias;
+     quarentena resolvida 30 dias; depois, apagar ou anonimizar. Quem vê: despacho e gestão da organização, com trilha de
+     consulta. Validar com advogado antes da produção.
+  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5 (quórum registrado em `decisoes.md:2283-2285`, "a PD e a decisão
+     de implantação vão a junta unânime de 5", que este item REVÊ para a PD; a decisão de implantação, B-TRC-06/07, segue 5/5), a PD do Traccar (versão, digest da imagem, licença, CVEs
+     e semântica do forward conferida no código-fonte da tag) é PESQUISADA e o DONO a aprova por escrito. Decisão do
+     dono, que está acima da junta (§A1.1). Pesquisa em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (ramo
+     `docs/plano-traccar`).
+  8. O gate do B-TRC-01 (plano §8.0) passa a exigir na linha 4 a aprovação escrita do dono à PD, não a junta 5/5. O plano
+     ganha a v2.2 com as decisões acima (`P-TRC-PLANO-V22`).
+
+- **D-CLAUDE-SO-ORQUESTRA (2026-10-11)** — o dono: *"vc eu quero na orquestração e tarefas pequenas, quando o codex cair vc
+  cobre ele e a api temos que forçar o uso dela"*; *"o negocio aqui é usar vc de forma que o limite nao seja atingido e
+  o negocio nao pare..."*; *"vc tem que colocar vigias para lhe informar que a execução parou, desse modo vc ja passa o
+  novo comando"*. Na prática:
+  - o Claude só orquestra e faz tarefas pequenas; a execução vai para o Codex; leitura, revisão, crítica sem banco e
+    texto vão para o agente da API, com pacote de contexto;
+  - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
+  - todo lançamento tem vigia;
+  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+    US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
+  - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
+  Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).

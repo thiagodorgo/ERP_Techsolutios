@@ -1,0 +1,114 @@
+{
+  "SIZE": [
+    {
+      "N": 250,
+      "v3": {
+        "ms": 29676,
+        "status": "concluida",
+        "totalVarianceValue": -1500,
+        "esperado": -1500,
+        "unid_media": 115.98,
+        "unid_p95": 482,
+        "unid_max": 834,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 250,
+          "somaAjustes": -750,
+          "entries": 250,
+          "carimbadas": 250,
+          "dup": 0
+        }
+      },
+      "headbase": {
+        "ms": 4199,
+        "status": "concluida",
+        "totalVarianceValue": -1500,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 250,
+          "somaAjustes": -750,
+          "entries": 250,
+          "carimbadas": 250,
+          "dup": 0
+        }
+      }
+    },
+    {
+      "N": 500,
+      "v3": {
+        "ms": 9777,
+        "status": "concluida",
+        "totalVarianceValue": -3000,
+        "esperado": -3000,
+        "unid_media": 19.41,
+        "unid_p95": 29,
+        "unid_max": 70,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 500,
+          "somaAjustes": -1500,
+          "entries": 500,
+          "carimbadas": 500,
+          "dup": 0
+        }
+      },
+      "headbase": {
+        "ms": 61332,
+        "err": {
+          "name": "PrismaClientKnownRequestError",
+          "code": "P2028",
+          "msg": " Invalid `this.client.cycleCountEntry.updateMany()` invocation in C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\b04a\\src\\modules\\inventory\\cy"
+        },
+        "final": {
+          "status": "aberta",
+          "is_active": true,
+          "ajustes": 500,
+          "somaAjustes": -1500,
+          "entries": 500,
+          "carimbadas": 0,
+          "dup": 0
+        }
+      }
+    },
+    {
+      "N": 1000,
+      "v3": {
+        "ms": 66365,
+        "status": "concluida",
+        "totalVarianceValue": -6000,
+        "esperado": -6000,
+        "unid_media": 66.16,
+        "unid_p95": 259,
+        "unid_max": 559,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 1000,
+          "somaAjustes": -3000,
+          "entries": 1000,
+          "carimbadas": 1000,
+          "dup": 0
+        }
+      },
+      "headbase": {
+        "ms": 26389,
+        "status": "concluida",
+        "totalVarianceValue": -6000,
+        "final": {
+          "status": "concluida",
+          "is_active": true,
+          "ajustes": 1000,
+          "somaAjustes": -3000,
+          "entries": 1000,
+          "carimbadas": 1000,
+          "dup": 0
+        }
+      }
+    }
+  ],
+  "fimMs": 202077,
+  "papeisOrfaos": 0
+}

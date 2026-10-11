@@ -10,7 +10,7 @@ Implementacao atual:
 - adapter: `frontend/src/modules/navigation/navigation.adapter.ts`;
 - hook: `frontend/src/modules/navigation/useNavigationMenu.ts`;
 - mock/fallback: `frontend/src/modules/navigation/navigation.mock.ts`;
-- `PlatformLayout` consome `scope=platform`;
+- `PlatformLayout` ainda usa o literal local `PLATFORM_NAV`; no console, o menu real contém somente as quatro telas ligadas (Visão Geral, Organizações, Cloud Billing e Saúde do Sistema);
 - `AppShell`/`Sidebar` consomem o menu tenant/operations/logistics/finance sem `scope`;
 - `VITE_USE_MOCKS=true` usa fallback local seguro;
 - falha de API em runtime usa fallback local e marca `isFallback=true` no hook;

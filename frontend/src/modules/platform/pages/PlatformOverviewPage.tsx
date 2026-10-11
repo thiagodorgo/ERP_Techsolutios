@@ -4,7 +4,12 @@ import { useNavigate } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePlatformOverview } from "../usePlatformOverview";
-import type { PlatformOverviewData, PlatformOverviewOrg } from "../platform-overview.types";
+import {
+  customerOverviewMetrics,
+  isPlatformSystemOrg,
+  type PlatformOverviewData,
+  type PlatformOverviewOrg,
+} from "../platform-overview.types";
 
 // PR-SCALE-5a — "Visão Geral da Plataforma" (sc platformDashboard). Consome GET /api/v1/platform/overview
 // via usePlatformOverview. D-007: NENHUM número fabricado — KPIs e tabela vêm SÓ do endpoint real. O
@@ -94,11 +99,20 @@ function KpiCard({ icon: Icon, iconBg, iconColor, risk, riskBg, riskColor, value
 // teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
 export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
   const navigate = useNavigate();
-  const { activeOrgs, totalOrgs, totalUsers, orgs } = data;
+  const { activeOrgs, totalOrgs, totalUsers, systemOrg } = customerOverviewMetrics(data);
+  const { orgs } = data;
 
   return (
     <div style={{ color: "#0F172A" }}>
       <PlatformHeader />
+
+      {data.stale ? (
+        <div style={{ marginBottom: 14 }}>
+          <Alert title="Dados desatualizados" tone="warning">
+            A atualização mais recente falhou. Os últimos dados confirmados continuam visíveis enquanto a plataforma tenta novamente.
+          </Alert>
+        </div>
+      ) : null}
 
       {/* KPIs REAIS + SELO HONESTO (receita/uptime omitidos por não terem fonte — D-007) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 16 }}>
@@ -111,7 +125,7 @@ export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
           riskColor="#059669"
           value={formatCount(activeOrgs)}
           label="Organizações ativas"
-          sub={`de ${formatCount(totalOrgs)} organizações`}
+          sub={`de ${formatCount(totalOrgs)} organizações${systemOrg ? ", sem a organização de sistema" : ""}`}
           subColor="#64748B"
         />
         <KpiCard
@@ -123,7 +137,7 @@ export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
           riskColor="#059669"
           value={formatCount(totalUsers)}
           label="Usuários totais"
-          sub="somando todas as organizações"
+          sub={systemOrg ? "sem usuários da organização de sistema" : "somando todas as organizações"}
           subColor="#64748B"
         />
         {/* Selo §7: receita e disponibilidade não têm fonte real ainda — dito com honestidade, sem número
@@ -162,25 +176,29 @@ export function PlatformOverviewView({ data }: { data: PlatformOverviewData }) {
         </div>
         {orgs.map((org: PlatformOverviewOrg, index) => {
           const status = statusView(org.status);
+          const isSystemOrg = isPlatformSystemOrg(org);
           return (
             <div
               key={org.id}
-              onClick={() => navigate(`/platform/tenants/${org.id}`)}
-              role="button"
-              tabIndex={0}
+              onClick={isSystemOrg ? undefined : () => navigate(`/platform/tenants/${org.id}`)}
+              role={isSystemOrg ? undefined : "button"}
+              tabIndex={isSystemOrg ? undefined : 0}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (!isSystemOrg && (event.key === "Enter" || event.key === " ")) {
                   event.preventDefault();
                   navigate(`/platform/tenants/${org.id}`);
                 }
               }}
-              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === orgs.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10, cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", padding: "12px 18px", borderBottom: index === orgs.length - 1 ? "none" : "1px solid #F8FAFC", gap: 10, cursor: isSystemOrg ? "default" : "pointer" }}
             >
               <div style={{ flex: 2.4, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: "#EFF6FF", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563EB", flexShrink: 0 }}>
                   <Building2 size={14} />
                 </div>
-                <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{org.name}</span>
+                <div style={{ minWidth: 0 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{org.name}</span>
+                  {isSystemOrg ? <div style={{ marginTop: 2, fontSize: 10.5, fontWeight: 700, color: "#2563EB" }}>Organização de sistema</div> : null}
+                </div>
               </div>
               <div style={{ flex: 1.2, display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: status.dot, flexShrink: 0 }} />

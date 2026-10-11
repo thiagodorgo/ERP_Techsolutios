@@ -1,0 +1,59 @@
+{
+  "LO_open_v2": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "entries=2"
+    },
+    "bloqueadoEm": [
+      "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updated_at\") VALUES ($1,$"
+    ],
+    "deadlock": false
+  },
+  "LO_open_v1ctrl": {
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      }
+    },
+    "B": {
+      "ok": "entries=2"
+    },
+    "bloqueadoEm": [
+      "INSERT INTO \"public\".\"cycle_count_entries\" (\"tenant_id\",\"cycle_count_id\",\"item_id\",\"system_quantity\",\"created_at\",\"updated_at\") VALUES ($1,$"
+    ],
+    "deadlock": true
+  },
+  "LO_abc_v2": {
+    "A": {
+      "ok": "concluida"
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}"
+    },
+    "bloqueadoEm": [
+      "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_items\".\"tenant_id\" ="
+    ],
+    "deadlock": false
+  },
+  "LO_abc_v1ctrl": {
+    "A": {
+      "err": {
+        "name": "PrismaClientKnownRequestError",
+        "code": "P2010",
+        "msg": " Invalid `prisma.$queryRawUnsafe()` invocation: Raw query failed. Code: `40P01`. Message: `deadlock detected`"
+      }
+    },
+    "B": {
+      "ok": "{\"A\":1,\"B\":0,\"C\":1}"
+    },
+    "bloqueadoEm": [
+      "UPDATE \"public\".\"inventory_items\" SET \"abc_class\" = $1, \"updated_by\" = $2, \"updated_at\" = $3 WHERE (\"public\".\"inventory_items\".\"tenant_id\" ="
+    ],
+    "deadlock": true
+  },
+  "fimMs": 9406
+}

@@ -1,0 +1,19 @@
+## 5. Contrato (rotas, payloads e códigos — forma inalterada; um status novo e três códigos novos; semântica do total explicitada)
+
+| rota / seam | permissão exata | sucesso | recusas |
+|---|---|---|---|
+| `POST /api/v1/stock-movements` | `stock_movements:create` (`inventory.routes.ts:119`) | 201 | 409 `STOCK_INVALID/insufficient_balance` **decidido sob o lock**; 400 `invalid_item_reference`; 422 `invalid_custody`; 400 `invalid_custody_reference`; **503 `STOCK_UNAVAILABLE/stock_busy`** (contenção > 5 s / deadlock; nada gravado) |
+| `POST /api/v1/stock-movements/:movementId/reverse` | `stock_movements:create` (`:129`) | 200 (1 compensação por perna) | 404 cross-tenant; 409 `STOCK_MOVEMENT_CONFLICT/movement_already_reversed` (sob o lock; ou `23505` → 409 pelo wrapper, fora da tx); 409 `transfer_group_inconsistent`; 503 `stock_busy` |
+| **`POST /api/v1/cycle-counts`** (open) | `cycle_counts:create` (`cycle-count.routes.ts:49`) | 201 (sessão + entries) | **409 `CYCLE_COUNT_CONFLICT/items_in_open_session`** (N item(ns) já em sessão `aberta|fechando` — I9; mensagem com N, sem ids de tenant); 400 `invalid_abc_class`/notes como hoje; 503 `cycle_count_busy` |
+| `POST /api/v1/cycle-counts/:id/close` | `cycle_counts:create` (`:73`) | 200 **exatamente uma vez** por sessão; `totalVarianceValue` = **Σ variance carimbada × avg_cost vigente da sessão inteira** (I10), igual na 1ª chamada, na retomada e no vencedor concorrente; a auditoria `cycle_count.closed` grava o mesmo valor | 422 `invalid_status_transition` (`concluida`/`cancelada`, perdedor concorrente); 404; **erro numa unidade (409/400/503) propaga com o status de hoje e: 0 unidades aplicadas → sessão volta a `aberta`; ≥ 1 aplicada → sessão fica `fechando` (retomável; recontagem das pendentes aceita)**; 409 `close_incomplete` (defesa); 503 `cycle_count_busy` |
+| `PATCH /api/v1/cycle-counts/:id/entries/:entryId` | `cycle_counts:create` (`:65`) | 200 em `aberta`; **200 em `fechando` para entry não carimbada** (decidido sob `FOR SHARE` da sessão + predicado na linha) | **422 `CYCLE_COUNT_INVALID/entry_already_adjusted`** (entry carimbada — fechamento em curso/aplicado); 422 `invalid_status_transition` (`concluida`/`cancelada`); 404 |
+| `POST /api/v1/cycle-counts/:id/cancel` | `cycle_counts:create` (`:81`) | 200 de `aberta`; **200 de `fechando` com 0 ajustes aplicados** (CAS sob `FOR UPDATE`) | **422 `CYCLE_COUNT_INVALID/close_in_progress`** (`fechando` com ≥ 1 ajuste aplicado — a saída é recontar + `close`); 422 `invalid_status_transition` (`concluida`/`cancelada`); 404 |
+| `GET /api/v1/cycle-counts?status=` | `cycle_counts:read` | aceita `aberta`/`fechando`/`concluida`/`cancelada` | 400 `invalid_status` para outro valor |
+| seam `createExitForSource` / `removeExitForSource` | nenhuma própria | como no v2 (vencedor sem `25P02`; `undefined` idempotente, inclusive sob `23505`) | 409/422/503 como no v2 |
+
+**Mudanças de contrato (explícitas):** (a) valor novo `fechando`; (b) 503 `stock_busy`/`cycle_count_busy`; (c) `close` retomável, e **falha sem ajuste aplicado devolve `aberta`** (S-01); (d)
+`PATCH entry` aceito em `fechando` para entry não carimbada e **422 `entry_already_adjusted`** para carimbada (S-01); (e) `cancel` **422 `close_in_progress`** com ajustes aplicados, aceito em
+`fechando` sem ajustes (S-01); (f) **`POST /cycle-counts` 409 `items_in_open_session`** (N-OVL); (g) `totalVarianceValue` = total da sessão inteira (S-02 — hoje a semântica é a mesma, o v2 é
+que a quebrava); (h) `transfer_group_inconsistent`. Nenhuma rota, payload ou permissão nova. `API_CONTRACTS.md` (fora do escopo) **não muda**; o registro dos códigos novos vai na ata e na
+pendência de UI (§13-3), para o bloco de frontend levar ao contrato. Sem termo técnico em mensagem: "há N ajuste(s) aplicado(s); reconte as entradas pendentes e conclua o fechamento" /
+"N item(ns) já estão em uma contagem aberta" / "esta entrada já teve o ajuste aplicado".

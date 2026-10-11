@@ -234,7 +234,9 @@
 - impacto: telas de PLATAFORMA (fora do AppShell do tenant) e persona de login demo — nao violam o D-007
   operacional do tenant, mas sao dados estaticos que eventualmente devem virar reais (mesmo espirito do
   P-011). Renomear agora divergiria das referencias visuais aprovadas.
-- status: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
+- status: FECHADA — B-SAN3-06b removeu os eventos e indicadores fabricados da Auditoria Global; a persona do login em modo demonstração é intencional e não é dado operacional da tela.
+- evidência: `PlatformAuditPage.tsx` é parada honesta; T21–T22 e o gerador `san3-06b-literais-de-plataforma.mjs` provam ausência de linhas e números fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformAuditPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:18` (T22), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:79` (T33).
+- histórico: ABERTA (PARCIAL — fechado: "Marina Costa" saiu das telas (resta só a persona do login em modo mock, `frontend/src/mocks/auth/context.ts:18`) e o Detalhe da Organização virou dado real (`179b52c2`, #256); aberto: a Auditoria Global da plataforma (`frontend/src/modules/platform/pages/PlatformAuditPage.tsx:17-38`) segue 100% estática — `ROWS` com 6 eventos inventados e `KPIS` fixos, sem rótulo de demonstração, roteada em `/platform/audit`) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (tratar quando as telas de plataforma forem conectadas a dados reais; a persona demo do
   login e intencional em modo mock). Nao bloqueia F6."
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: a Auditoria Global da plataforma exibe trilha e contagens inventadas ("0 incidentes") sem rótulo de demonstração; bloqueia a demonstração do console.
 
@@ -249,7 +251,7 @@
   item podem, em teoria, passar ambos (nenhum ve o outro ainda nao commitado). Achado BAIXA do validador.
 - impacto: baixo — atende o contrato R7.1 declarado e e coerente com o resto do repo; janela de corrida
   estreita e o saldo negativo seria visivel/corrigivel por ajuste. Nao ha lock de linha.
-- status: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
+- status: FECHADA (2026-10-10, PR #389 `ab52ec50`: `FOR UPDATE` na linha do item antes de toda leitura que decide; conferido pelo porteiro, `votos/B-O6R-04a/PORTEIRO-389.md`). Antes: aberto (hardening futuro: `FOR UPDATE` no agregado por item, ou isolamento SERIALIZABLE no
   create de movimento, ou uma tabela de saldo materializado com advisory lock). Nao bloqueia F7a.
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: é o mesmo sítio do `Ω6R-DAT-002` (P0, J-6R 5×0) — a saída de estoque checa saldo por agregado e insere sem lock (`src/modules/inventory/inventory-prisma.repository.ts:214-216`); absorvida por `P-O6R-B04`.
 - **duplicata de:** achado `Ω6R-DAT-002`, via `P-O6R-B04` (inventário SAN3, fatia B1) — tratar junto; bloco dono = o de `P-O6R-B04` (`B-O6R-04`, `fix/inventory-consistency`, que nunca começou).
@@ -591,7 +593,8 @@
 #### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE
 - descricao: a organização `platform` criada pelo bootstrap aparece no console como se fosse cliente; precisa de tratamento visual e operacional próprio.
 - acao: cobrir na tela de Organizações/Detalhe do B-SAN3-06a ou bloco equivalente.
-- status: aberto
+- status: FECHADA — a organização de sistema continua visível, recebe selo próprio, não possui ação de cliente e é excluída das métricas de clientes nas duas telas.
+- evidência: T41–T43 validam lista, Visão Geral e igualdade com `PLATFORM_TENANT_SLUG` do bootstrap; o Detalhe usa a mesma constante. Ponteiros: `frontend/src/modules/platform/platform-overview.types.ts:12` (`PLATFORM_SYSTEM_ORG_SLUG`), `frontend/src/modules/platform/pages/PlatformTenantDetailPage.tsx:8`, `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:132` (T41), `:148` (T42), `:156` (T43).
 - severidade: MÉDIA — sem isso o `platform_admin` não vê o próprio tenant no console.
 - dono: B-SAN3-06b
 - adendo (junta 2, C1c2-06, 2026-10-08): a severidade e a ação desta entrada contradizem a descrição (dizem que o admin "não vê o próprio tenant" e apontam B-SAN3-06a); a descrição está certa e o dono é B-SAN3-06b. Vale a descrição.
@@ -1699,6 +1702,7 @@ PASSWORD para cobrir rota autenticada no smoke. Checklist ordenado (12 passos) +
   (agentes devops/observabilidade). So entao a tela ganha indicadores reais. Requer decisao de provedor/infra (possivel junta
   + PD se envolver servico tarifado).
 - status: ABERTA (parada honesta entregue; monitoramento real e trabalho de infra futuro).
+- parcial (2026-10-09): readiness real de Postgres, Redis e Worker ligado pela entrega do console; uptime, p95, profundidade de fila, integrações e backup continuam sem fonte e mantêm selo honesto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -2955,7 +2959,7 @@ em `const inventoryByTenant = new Map<...>()` (`:100`). Coordinator sem estoque:
 **Bloqueia:** feature em estoque (entradas/saídas, custódia, contagem cíclica, baixa automática) e a fatia
 mobile de inventário. Sem fila de trabalho **verificada por mim** hoje em estoque — a proibição vale igualmente
 se surgir.
-- status: **ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.**
+- status: **ABERTA — PARCIAL (2026-10-10): Ω6R-DAT-002 e Ω6R-DAT-003 fechados pelo PR #389 (`ab52ec50`; porteiro em `votos/B-O6R-04a/PORTEIRO-389.md`); segue aberto o Ω6R-QUA-002 (P1, dono `B-O6R-04b`).** Antes: ABERTA — 2 P0 (Ω6R-DAT-002, Ω6R-DAT-003) + 1 P1 (Ω6R-QUA-002). NÃO INICIADO.
   Dependência (B-O6R-01) **satisfeita** desde o #357 — é **frente livre**, e o porteiro pós-merge do #359
   a nomeia como tal ("B-04 e B-07 declaram dependência só do B-01").
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B1: carrega 2 P0 (`Ω6R-DAT-002`, `Ω6R-DAT-003`) + 1 P1 (`Ω6R-QUA-002`) e o bloco nunca começou; o índice mostrava BAIXA porque lê a severidade por menção no corpo (ver `P-SAN3-INDICE-SEVERIDADE-POR-MENCAO`).
@@ -8464,7 +8468,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com selo "IA"; dados e rotas órfãos — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Cloud Billing passou a consumir os cinco GETs reais por período, estritamente em leitura e sem dado monetário fabricado.
+- evidência: T10–T20 e T45; gerador de literais retorna 0 sítios; T44 prova que funções de escrita não chegam à página. Ponteiros: `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:35` (`getCloudBilling`), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:130` (T15), `:228` (T45), `frontend/tests/san3-06b-console-sem-ficcao.guard.test.ts:166` (T44).
 - **fonte (fatia AUSENTES, §2a):** sintese B1-B3, C1 (selo), C2 (registry), D8
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`: 245 l., 0 `useEffect/useState/await/fetch/.service`, 0 `onClick`, literal "48,2k", selo `IA` l.181, insights literais l.62; `cloud-billing.{adapter,service,mock}.ts` sem página importadora; `src/modules/navigation/navigation.registry.ts:41` `status: "implemented"`
@@ -8568,7 +8573,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e lista de Organizações exibem dado inventado — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Organizações consome o resumo real; Planos e Módulos, Auditoria Global e APIs e Credenciais são paradas honestas sem linhas ou números inventados.
+- evidência: T1–T9 e T21–T28; geradores de telas e literais retornam 0 telas sem fonte e 0 sítios fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformTenantsPage.tsx:12` (hook real), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:94` (T1), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:51` (T28).
 - **fonte (fatia AUSENTES, §2a):** sintese B17 (residual), B18, D9
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `modules/platform/pages/PlatformPlansModulesPage.tsx` (73 l.), `PlatformAuditPage.tsx` (90), `PlatformApisPage.tsx` (78): 0 hooks; `PlatformTenantsPage.tsx:18-19` ids `ten-sp`/`ten-agromax`, `:81` navega para id fabricado
@@ -8585,7 +8591,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram MFA e auditoria "ligados" por literal — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — Configurações da Plataforma virou parada honesta, sem toggle, estado ou ação de segurança simulados.
+- evidência: T27–T28 e `PLATFORM_HONEST_STOP`; censo de literais retorna 0 controles booleanos fabricados. Ponteiros: `frontend/src/modules/platform/pages/PlatformSettingsPage.tsx:4` (`PLATFORM_HONEST_STOP`), `frontend/tests/san3-06b-paradas-honestas.smoke.test.tsx:45` (T27).
 - **fonte (fatia AUSENTES, §2a):** sintese B19
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `PlatformSettingsPage.tsx:8` `function Toggle({ on }: { on: boolean })`; `:43` "MFA obrigatório para admins … `<Toggle on />`"; `:44` "Auditoria de operações críticas … `<Toggle on />`"
@@ -9543,7 +9550,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com padrões opostos: sem `VITE_USE_MOCKS` a plataforma mostra 3 organizações inventadas — MÉDIA
 
-- status: ABERTA (achado C4-08 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`, gravidade nota; registrada no ciclo 2)
+- status: FECHADA — os serviços da plataforma usam exclusivamente `isMockMode()`; modo demonstração devolve vazio/recusa honesta e os fixtures foram removidos.
+- evidência: T5, T19 e T39; a busca de `readFrontendEnv("VITE_USE_MOCKS"` encontra somente `frontend/src/config/env.ts`. Ponteiros: `frontend/src/modules/platform/platform.service.ts:1` e `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:1` (`isMockMode`), `frontend/tests/san3-06b-organizacoes.smoke.test.tsx:147` (T5), `frontend/tests/san3-06b-cloud-billing.smoke.test.tsx:205` (T19), `frontend/tests/san3-06b-navegacao-plataforma.test.ts:37` (T39).
 - **prova:** `frontend/src/config/env.ts` `isMockMode()` = `VITE_USE_MOCKS === "true"` (padrão REAL) × `shouldUseMocks()` = `readFrontendEnv("VITE_USE_MOCKS", "true") !== "false"` (padrão MOCK) em `frontend/src/modules/platform/cloud-billing/cloud-billing.service.ts:163-165` e `frontend/src/modules/platform/platform.service.ts:122-124`. Sonda da C4 com `VITE_USE_MOCKS` ausente ou `"0"`: a OS vai ao backend real, mas a plataforma NÃO chama a API e devolve 3 organizações inventadas. A promessa do `B-SAN3-01` (e o guard G1) confia em `isMockMode()` como O interruptor; na divergência, vence a ficção.
 - **escopo:** `pre-existente` — `git blame -L 163,165 …/cloud-billing.service.ts` → `4d6e1219` (2026-06-08); fora da fronteira do `B-SAN3-01`.
 - **dono:** `B-SAN3-06b` (`modules/platform/**` no §5 do `PLANO_SAN3.md`); cruza `P-WEB-PLATAFORMA-TELAS-FICCAO` (item 46).
@@ -10259,8 +10267,8 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
   nuvem têm cenário próprio no B4; dos 9 restantes, 5 usam banco com o contexto da organização aberto por `withTenantRls`
   — notificações, notificações agendadas, conciliação OS→custódia, avisos de custódia e diárias do pátio); leitura não é
   medição, e a falha seria silenciosa (cada varredura isola a organização em try/catch e só registra aviso).
-- **dono:** bloco a nomear, depois do merge do #405.
-- **bloqueia:** o Ato 2 em produção (não bloqueia o Traccar).
+- **dono:** `B-SAN3-05-ATO2` (nome dado pelo orquestrador em 2026-10-10 ao item 7 da `D-ORDEM-NOITE-2026-10-10`).
+- **bloqueia:** o Ato 2 e, por ele, QUALQUER deploy de produção — inclusive a ingestão do Traccar; não bloqueia o plano (porteiro do #405); o desenvolvimento em dev não depende dele (leitura do orquestrador: a trava só recusa com `NODE_ENV=production`) — errata A-1 do revisor do #410, 2026-10-10.
 - **teste de encerramento:** as 5 tarefas rodam sob `NOSUPERUSER NOBYPASSRLS` e sob o papel atual, mesmo seed, e produzem o
   mesmo efeito, não vazio.
 
@@ -10386,7 +10394,447 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-05-MENSAGEM-DA-RECUSA (2026-10-09) — o texto da recusa atribui a via ao papel e não chega ao log — BAIXA
 
-- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** a nomear pelo orquestrador; candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`.
+- **status:** ABERTA · **escopo:** misto — N3-a `dentro-do-bloco` (RAISE do MODO 6 em `scripts/db-runtime-role.sh` e message do `RuntimeRoleGuardError`); N3-b `pre-existente` (`src/server.ts:48`, origem `1a4a3f97`) · **dono:** `B-SAN3-05-ATO2` (nomeado em 2026-10-10: o operador do Ato 2 precisa ler a recusa no log; antes: a nomear, candidato o bloco de `P-SAN3-05-POSTURA-NO-HEALTH`).
 - O RAISE do MODO 6 ("papel … ainda escapa de RLS por 1 via(s): view:<view>") e o message do erro atribuem a via view ao papel, quando a regra `D-405-PROIBIR-VIEWS` recusa a view em si. E o message — o único texto que nomeia a view e o remédio — não chega ao log de produção: o operador lê só "runtime database role can bypass RLS — refusing to start".
 - **bloqueia:** não.
 - **teste de encerramento:** a recusa por view diz que a view existe e é proibida, e o log de produção da recusa nomeia a view.
+
+## P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda não persistem — ALTA
+
+- status: ABERTA.
+- **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
+- **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
+
+## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
+
+- status: ABERTA.
+- **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉDIA
+
+- status: ABERTA.
+- **prova:** nenhuma das 32 rotas inventariadas entrega auditoria global; a página é parada honesta.
+- **dono:** fila pós-gate, bloco de auditoria e observabilidade da plataforma.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CONFIG-PLATAFORMA-SEM-BACKEND (2026-10-09) — configuração global sem autoridade persistida — MÉDIA
+
+- status: ABERTA.
+- **prova:** MFA obrigatório, retenção, auditoria das operações sensíveis e modos globais não possuem endpoint; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto.
+- **bloqueia:** não.
+
+## P-SAN3-06B-APIS-CREDENCIAIS-SEM-BACKEND (2026-10-09) — credenciais administrativas sem contrato — MÉDIA
+
+- status: ABERTA.
+- **prova:** não há endpoint para catálogo, criação ou rotação de credenciais; a página é parada honesta.
+- **dono:** fila pós-gate, após decisão de produto e segurança.
+- **bloqueia:** não.
+
+## P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA
+
+- status: ABERTA.
+- **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
+- **dono:** `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
+
+- status: ABERTA.
+- **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
+- **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
+
+## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
+
+- status: ABERTA.
+- **prova:** fora de `PLATFORM_NAV`, busca, seletor de organização, sino e identidade do cabeçalho continuam estáticos.
+- **dono:** bloco de shell e navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES (2026-10-09) — menu ainda possui três registros divergentes — MÉDIA
+
+- status: ABERTA.
+- **prova:** `PLATFORM_NAV`, `platformNavigation.ts` e `navigation.registry.ts` não têm uma única autoridade; a documentação agora declara o estado real.
+- **dono:** bloco de navegação, candidato `B-SAN3-18`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console antigo — BAIXA
+
+- status: ABERTA.
+- **prova:** `critical-flows.spec.ts` ainda espera menu remoto e rótulos técnicos antigos; `tests/e2e/**` estava fora do escopo desta entrega.
+- **dono:** `B-SAN3-10`.
+- **bloqueia:** não.
+
+## P-SAN3-06B-HEALTH-FETCH-DIRETO (2026-10-09) — readiness exige resposta crua de 503 — BAIXA
+
+- status: ABERTA.
+- **prova:** Saúde usa `fetch` direto para preservar o corpo útil do 503; o cliente comum transforma a resposta em exceção.
+- **dono:** próximo bloco que precisar de resposta crua em `frontend/src/services/api/client.ts`.
+- **bloqueia:** não; reavaliar se surgir um segundo consumidor.
+
+## P-CI-DOCKER-HUB-LIMITE (2026-10-09) — o CI baixa Postgres e Redis do Docker Hub sem login e cai por limite — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `.github/workflows/ci.yml` (serviços `postgres:16` e `redis:7` e, no job `docker`, as imagens `node` e `nginx`, todos puxados anonimamente) · **dono:** `B-CI-ESPELHO-IMAGENS` (pipeline: revisão de segurança, `agente-secops`).
+- Em 2026-10-09 os jobs `backend` e `backend-postgres` falharam em "Initialize containers" com `toomanyrequests` em 3 de 4 tentativas no head do #405 (`c16bf9be`, runs com `run_attempt=4`) e em heads intermediários do #411 (`c29a1f8b`, `d73d421c`, `af6f345a`; o head do merge `6e5351e3` passou de primeira); só a re-execução passou. Nenhum teste chegou a rodar nessas tentativas: o vermelho não diz nada do código e atrasa merge.
+- **bloqueia:** não (a re-execução passa), mas custou ~40 min só no #405.
+- **teste de encerramento:** o CI não depende de pull anônimo do Docker Hub (espelho público ou login por segredo do repositório), verde em 3 pushes seguidos.
+
+## P-SAN3-06B-TESTES-RESIDUAIS (2026-10-10) — lacunas de teste e um rótulo de Saúde deixados pelo B-SAN3-06b — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (revisão e re-revisão do #411, `agent-orchestration/omega/juntas/REVISAO-PR-411.md`) · **dono:** `B-SAN3-06a`.
+- (N1) nenhum teste prova moeda diferente de BRL — todos os fixtures são BRL; a mutação "sempre BRL" passa 45/45. (N2) o selo "Organização de sistema" no Detalhe da Organização não tem teste (a mutação passa 52/52). (N3) Saúde: o backend emite `worker.status` `up|starting|stale|not_expected`; `starting` aparece como "Indisponível" com "Sistema pronto", e os fixtures usam `healthy`, que o backend não emite. (N8) o T44 não alcança porta-alias de escrita por `export default {…}` nem por `class` dentro do serviço do Cloud Billing (as duas formas passaram verdes na re-revisão). (Obs. do dev dos ajustes) T34/T35/T37/T43 deixam 5 pastas `san3-06b-*` no temp do sistema a cada `test:smoke` (o dev dos ajustes disse 6; o porteiro do #411 mediu 5). (Obs. 2 do dev dos ajustes) o estado de FALHA do Cloud Billing também não tem seletor de mês: não promete troca de mês, e o T17 exige zero dígitos nessa tela.
+- **bloqueia:** não — o Cloud Billing continua só de leitura (0 consumidor de escrita fora do adapter/serviço, medido).
+- **teste de encerramento:** cada item com o teste que fica vermelho sob a mutação da revisão, e `test:smoke` sem resíduo no temp.
+
+## P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organização de sistema — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
+- A organização `platform` (de sistema) pode aparecer como organização cobrada e entrar na contagem de organizações do Cloud Billing; o B-SAN3-06b a tirou das métricas de clientes nas telas, mas a regra de rateio é do backend. É pergunta de produto: a plataforma paga a própria nuvem?
+- **bloqueia:** não.
+- **teste de encerramento:** rateio com a organização de sistema semeada não a cobra (ou a decisão de cobrá-la está escrita).
+
+## P-LINT-RAIZ-SEM-MJS (2026-10-10) — o lint da raiz não cobre `scripts/*.mjs` — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tsconfig.json:15` (`include: src/**/*.ts`) e `package.json:33` (`lint` = `tsc`); nota N5 da revisão do #411 · **dono:** `B-REG-TYPECHECK-TESTS`.
+- Os geradores em `scripts/*.mjs` só passam por `node --check`; um plano que diga "o lint cobre os scripts" está errado.
+- **bloqueia:** não.
+- **teste de encerramento:** erro de tipo plantado num `scripts/*.mjs` deixa um comando da bateria vermelho.
+
+## P-KPI-MARCO-2026-10-09-NOTAS (2026-10-10) — três notas do revisor do KPI por marco (#412) — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (N-1, N-3) e `pre-existente` (N-2, guard de 19/09) — `agent-orchestration/omega/juntas/REVISAO-PR-412.md` · **dono:** a próxima consolidação de KPI por marco (N-1, N-3) e `B-SAN3-10` (N-2, guards do painel).
+- (N-1) a nota de `blocks_completed` diz que #394/#397 contaram por terem ID, plano e junta, mas #360/#361/#362 também tinham e não contaram: o precedente é inconsistente e a frase pode orientar mal a próxima consolidação. (N-2) os guards de KPI não comparam o latest com o último ponto do history (com 175 no history e 174 no latest seguiram 29/29). (N-3) `release.pr`, `merge_commit` e `approved_head` do marco seguem `null`; com o KPI congelado, o preenchimento vai na próxima consolidação.
+- **bloqueia:** não.
+- **teste de encerramento:** critério de contagem escrito sem contradição com o history; guard vermelho com latest ≠ último ponto; campos do marco preenchidos.
+
+## P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD (2026-09-18) — o censo de duplicatas do estoque em staging e produção, ANTES do próximo deploy — ALTA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, emenda 2-g do comando; plano do bloco §4.3 e §13-1)
+- **prova:** a migration `prisma/migrations/20260873000000_add_stock_movements_unique_backstops/migration.sql` cria dois índices únicos parciais em `stock_movements` — `stock_movements_reversal_active_key (tenant_id, reverses_movement_id) WHERE reverses_movement_id IS NOT NULL` e `stock_movements_cycle_count_item_key (tenant_id, cycle_count_id, item_id) WHERE cycle_count_id IS NOT NULL` — e, antes deles, um bloco `DO $censo$` **fail-closed** que ABORTA se houver duplicata de legado, com a contagem real de grupos e uma amostra de até 20 (drill `tests/inventory-migration-drill-db.test.ts`, C5′: 21 grupos → `P0001` "21 grupo(s) … Amostra (ate 20 de 21)", sem `tenant_id` no texto). A migration **nunca deduplica**: qual compensação/ajuste "vale" é dinheiro — decisão humana. O código do head-base produzia esse dado sob concorrência (vermelho-controle do bloco: estorno duplo → 2 compensações; fechamento duplo → 2 ajustes).
+- **roteiro (ato do dono), nesta ordem:**
+  0. **Papel (C1-F1, ciclo 2 da junta — fail-closed).** Rode o censo E o `migrate deploy` com um papel **SUPERUSUARIO ou BYPASSRLS**. Sob FORCE RLS, qualquer outro papel enxerga ZERO linha e o censo mentiria "0 grupos": desde o ciclo 2 o script e o bloco `DO $censo$` fazem `SET row_security = off`, e o Postgres **RECUSA** (`42501`) em vez de filtrar — o censo sai com erro e a migration ABORTA com `censo CEGO sob o papel "<papel>"`, **nunca** com "0 grupos". Se `STAGING_DATABASE_URL`/`PROD_DATABASE_URL` for a URL da aplicação (`NOSUPERUSER`, sem BYPASSRLS — `docs/deployment.md:447`), há duas saídas: usar a URL de superusuário do cluster, ou conceder `ALTER ROLE <papel_da_migracao> BYPASSRLS` (o runbook `docs/deployment.md` §3.8 já prevê uma role dona dedicada `BYPASSRLS` sem membros — decisão do dono). **Consequência declarada:** na topologia "quem migra é quem serve", esta migration **não aplica** até esse ato sobre o papel, e a fila de `prisma/` fica presa naquele ambiente — é o custo operacional escolhido para nunca contar cego.
+  1. Antes do próximo deploy de staging (`STAGING_DATABASE_URL`, migrado por `deploy-staging.yml:44`) e de produção (`PROD_DATABASE_URL`, `deploy-production.yml:136`): `psql "$URL" -f scripts/inventory-duplicates-census.sql` (somente leitura: o arquivo tem só `SELECT`; a saída traz `tenant_id` e fica com o dono, fora do repositório).
+  2. Zero linhas nas duas consultas de grupos → o deploy passa. N > 0 → decisão humana por grupo: a compensação/ajuste que não vale é **estornada por movimento compensatório**, nunca apagada (o razão é imutável).
+  3. **Se a migration abortar num ambiente** (censo não rodado, ou dado novo): ela fica em `_prisma_migrations` com `finished_at NULL` e **todo `migrate deploy` seguinte responde `P3009`, mesmo depois de sanear** (medido pelo planejador, `[08]` do plano: 3º deploy com dado limpo → `P3009`). Saída: sanear → `npx prisma migrate resolve --rolled-back 20260873000000_add_stock_movements_unique_backstops` (contra a mesma `DATABASE_URL`) → `migrate deploy`. Enquanto isso a fila de `prisma/` do SAN3 (`03a → SAN3-02 → SAN3-20 → B-O6R-12 → B-O6R-09`) fica presa naquele ambiente — o texto da exceção já nomeia o comando.
+  4. **Aviso do gatilho:** `deploy-staging.yml` dispara em `push: main` quando `vars.STAGING_DEPLOY_ENABLED == 'true'`; no dia em que a variável for ligada, **o merge deste bloco na `main` já é o deploy** — o censo tem de vir antes.
+- **anexo (R19 do plano) — sessões de contagem sobrepostas que JÁ existam:** o `open` novo recusa sobreposição (409 `items_in_open_session`), mas não desfaz a que já existe; rodar junto com o censo e decidir qual fecha primeiro. **Desde o ciclo 2 esta consulta é a 3ª do próprio `scripts/inventory-duplicates-census.sql`** (nunca SQL solto aqui), e o lado fechado é derivado — `c.status NOT IN ('concluida','cancelada')`, e não a allowlist `IN ('aberta','fechando')`: um status não classificado SEGURA o item em vez de liberá-lo (C2-03). Reproduzida aqui só para leitura:
+  `SELECT e.tenant_id, e.item_id, array_agg(DISTINCT c.id) AS sessoes FROM cycle_count_entries e JOIN cycle_counts c ON c.tenant_id = e.tenant_id AND c.id = e.cycle_count_id WHERE c.status NOT IN ('concluida', 'cancelada') GROUP BY e.tenant_id, e.item_id HAVING count(DISTINCT c.id) > 1;`
+- **escopo:** nasce no bloco (a migration é dele); o dado que ela pode encontrar é `pre-existente` (produzido pelo código anterior ao bloco).
+- **dono:** ato do dono (emenda 2-g). Entra na recontagem do `B-SAN3-10` (§4.2 do plano SAN3).
+- **bloqueia:** o próximo deploy de staging e de produção (não o merge).
+- **teste de encerramento:** a saída do censo nos dois ambientes (N por consulta), registrada fora do repositório e referida aqui por data; N = 0 ou cada grupo decidido e estornado; o `migrate deploy` seguinte aplica a `20260873000000`.
+
+## P-O6R-B04-CONSUMIDORES-503 (2026-09-18) — o 503 de estoque e de contagem é contrato novo que a web e o app ainda não tratam — MÉDIA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, plano §13-2)
+- **prova:** o bloco mapeia falha transitória de banco (espera de lock acima do timeout, impasse, serialização, fila de conexão) para **503** `STOCK_UNAVAILABLE/stock_busy` e `CYCLE_COUNT_UNAVAILABLE/cycle_count_busy`, com nada gravado (`src/modules/inventory/inventory-prisma.repository.ts`, `mapTransientDbFailure`; provado por A14 de `tests/inventory-balance-lock-race-db.test.ts`). Antes era 400 com a mensagem crua do banco. Que a web e o app tratem 503 genericamente é **hipótese, não medida**.
+- **escopo:** nasce no bloco (contrato novo); `API_CONTRACTS.md` está fora do escopo do `B-O6R-04a`.
+- **dono:** `B-O6R-04b` ou o bloco de frontend de estoque — a designar pelo orquestrador.
+- **bloqueia:** não bloqueia o gate por si; sem ela, o usuário vê erro genérico onde "tente de novo" resolve.
+- **teste de encerramento:** a web e o app recebem 503 `stock_busy`/`cycle_count_busy` e mostram mensagem de repetição (teste de adapter com o status real); `API_CONTRACTS.md` registra os dois códigos.
+- **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, risco R30 do plano) — um segundo caminho de erro chega aos mesmos consumidores.** O C2-04 fechou a classificação de violação de unicidade pela **identidade do índice** (`isUniqueViolationOf`): violação de um índice que os wrappers de V3/V4/V5 **não** conhecem deixa de virar "já estornado"/`undefined` de sucesso silencioso e **propaga**. Medido no ciclo 2 (C10′): com um índice único alheio sobre `stock_movements`, `removeExitForSource` e `reverseMovement` **rejeitam** e o chamador fica sabendo — antes devolviam sucesso com o saldo em 7 onde devia ser 10. Consequência para esta pendência: `src/modules/fuel-logs/fuel-log.service.ts:575` e `src/modules/maintenance-orders/maintenance-order.service.ts:720` (módulos FORA do escopo deste bloco) passam a poder receber **exceção** onde recebiam `undefined`; sem `statusCode`, o `sendRouteError` responde **400 com a mensagem crua** (a classe transversal já registrada nas notas deste arquivo). É o comportamento fail-closed desejado — nunca 2xx sobre estorno que não aconteceu — mas o texto de negócio dessa recusa entra no mesmo teste de encerramento acima. Hoje o caminho só ocorre com índice único alheio: os três índices conhecidos estão pinados ao catálogo pelo teste C9.
+
+## P-O6R-B04-UI-STATUS-FECHANDO (2026-09-18) — a web não conhece o status "fechando" nem os três códigos novos da contagem — MÉDIA
+
+- status: ABERTA (nasce na autoria do `B-O6R-04a`, plano §13-3)
+- **prova:** o backend passa a ter o status `fechando` em `CYCLE_COUNT_STATUSES` (`src/modules/inventory/cycle-count.types.ts`) e três recusas novas com mensagem de negócio: 422 `CYCLE_COUNT_INVALID/entry_already_adjusted` (recontar entrada já ajustada), 422 `CYCLE_COUNT_INVALID/close_in_progress` (cancelar contagem com ajuste aplicado — a saída é recontar as pendentes e concluir) e 409 `CYCLE_COUNT_CONFLICT/items_in_open_session` (abrir contagem com item já em outra contagem aberta). O `CycleCountStatus` do frontend não conhece `fechando` (o adapter mapeia desconhecido para "Aberta" e trata 422 com "Recarregue a lista" — plano §11 R8, não re-medido por este bloco).
+- **escopo:** nasce no bloco; `frontend/**` e `API_CONTRACTS.md` estão fora do escopo do `B-O6R-04a`.
+- **dono:** bloco de frontend de estoque, a designar (sugestão do plano: o próximo `B-SAN3-*` que tocar `frontend/src/modules/inventory/**`).
+- **bloqueia:** não bloqueia o gate por si; sem ela, a tela mostra "Aberta" para uma contagem em fechamento e esconde a saída do `close_in_progress`.
+- **teste de encerramento:** a tela de contagem exibe `fechando`, leva o usuário a recontar as pendentes no `close_in_progress` e mostra texto próprio para os três códigos; `API_CONTRACTS.md` atualizado no mesmo bloco.
+
+## P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT (2026-09-20) — a abertura de contagem cresce com N dentro de UMA transação e encosta no teto dos 5 s — MÉDIA
+
+- status: ABERTA (nasce na junta do ciclo 2 do `B-O6R-04a`, cadeira C1 `agente-dba-guardiao`, achado C1-N1; classificada como **pré-existente** pela regra `D-JUNTA-ESCOPO-E-CALIBRACAO` (a) — não reprova o bloco, vira pendência nomeada com bloco dono)
+- **prova (evidência de origem, conferida no ciclo 2):** `CycleCountService.open` monta o snapshot inteiro numa transação só e grava as entradas com um `cycleCountEntry.createMany` — desenho que existe desde `528e3601` (#149, 2026-07-09, "Estoque avançado — ABC, ponto de pedido e contagem cíclica (F7b)"), **anterior a este bloco**. O teto do snapshot é `SNAPSHOT_LIMIT = 10_000` (`src/modules/inventory/cycle-count.service.ts:41`, valor idêntico em `02bd7dab`, a `main` do momento). Medido pela cadeira C1: com N = 10 000 itens o `open` ocupa **1,6–3,3 s** de um timeout de 5 s — 32 % a 66 % do orçamento, sem margem para carga. O acréscimo deste bloco (o lock da linha do tenant + a consulta de sobreposição da I9) é **20–33 ms de 1 240–1 422 ms**: o bloco não é a causa, e removê-lo não devolveria a margem.
+- **escopo:** `pre-existente` — a transação única do `open` e o `SNAPSHOT_LIMIT` antecedem o `B-O6R-04a` (`528e3601`, #149) e estão fora do escopo permitido dele (o bloco só pôde tocar o predicado da sobreposição).
+- **dono:** `B-SAN3-15` (`fix/mobile-prestador-porta-e-estoque`) — é o **único bloco depois deste com `src/modules/inventory/**` no escopo** (`docs/revisoes/SAN3/PLANO_SAN3.md` §5 l.284: "backend: rota de estoque por custódia em `src/modules/inventory/**`"), e a trava de arquivo do §6 l.356 nomeia exatamente essa passagem: `src/modules/inventory/**` (`04a` → `SAN3-15`). O `B-O6R-04b` proposto pela cadeira **não** tem o arquivo (o escopo dele é `src/modules/mobile/mobile-inventory-sync.ts`).
+- **bloqueia:** não bloqueia o merge deste bloco nem o gate; sem ela, uma organização com o catálogo no teto vê a abertura de contagem falhar por timeout em máquina carregada — e o 503 de falha transitória não distingue "o banco está ocupado" de "esta operação não cabe no orçamento".
+- **teste de encerramento:** `open` de `SNAPSHOT_LIMIT` itens numa máquina sem carga com margem **≥ 50 %** do timeout; **ou** o `createMany` em lotes com estado retomável (o mesmo padrão de unidade retomável que a emenda 2-h já usa no fechamento), com a asserção de que abortar no meio não deixa sessão pela metade.
+
+## P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da lista do plano foi tocado para a I9 caber em memória — BAIXA
+
+- status: FECHADA — a ratificação que esta pendência esperava JÁ EXISTE, noutro documento: a **emenda 4-(t)** do comando (`agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:183`) ratifica o commit `cd055802` nominalmente (“o arquivo entra no escopo nominalmente”), e o registro da reprovação do ciclo 1 (`R-B-O6R-04a-ciclo1`) mostra a cadeira `validador-mestre` APROVANDO o objeto `c84a76a8`, que contém esse commit (ciclo 2 do `B-O6R-04a`, achado C3-N1, 2026-09-20). Nada a reverter: `cd055802` permanece. Valor anterior, preservado: “ABERTA (registrada na autoria do `B-O6R-04a` pelo desenvolvedor, §A2 — reportada, não decidida)”.
+- **prova:** o plano v3 manda a MESMA recusa de sobreposição de contagem (I9, `items_in_open_session`) no repositório em memória (§3.5) e exige 67 → 67 nas suítes de estoque em memória (§9). O caso `[isolamento]` de `tests/inventory-cycle-counts-routes.test.ts` — arquivo FORA da lista "PERMITIDO (e só isto)" do §8 — abre uma 2ª contagem sobre o mesmo item com a 1ª ainda aberta. Medido pelo desenvolvedor: com o arquivo como estava, `not ok … [isolamento] … 409 !== 201`. O commit isolado `cd055802` acrescenta só o cancelamento da sessão de A (200) antes da abertura com `tenant_id` forjado; nenhuma asserção removida ou afrouxada.
+- **escopo:** `dentro-do-bloco` (a I9 é do bloco; o teste é anterior).
+- **dono:** a junta do `B-O6R-04a` / o orquestrador — ratificar o commit `cd055802` ou descartá-lo (sem ele, ou a I9 some da memória, ou a contagem cai para 66/67).
+- **bloqueia:** o merge do bloco até a ratificação.
+- **teste de encerramento:** a decisão registrada na ata da junta, com o commit mantido ou revertido.
+- **APPEND (2026-09-20, ciclo 2 do `B-O6R-04a`, achado C3-N1 da cadeira `validador-mestre`) — FECHADA.** A ratificação que esta pendência esperava **já existe, noutro documento**: a **emenda 4-(t)** do comando (`agent-orchestration/codex/comandos/B-O6R-04a-inventory-consistency.md:183`) ratifica o commit `cd055802` nominalmente ("o arquivo entra no escopo nominalmente"), e o registro da reprovação do ciclo 1 (`R-B-O6R-04a-ciclo1`) mostra a C3 **aprovando** o objeto `c84a76a8`, que contém esse commit. Uma pendência que se declara "bloqueia: o merge até a ratificação" enquanto a ratificação já foi dada é um bloqueio fantasma — era exatamente o achado. **status: FECHADA** (o campo `status:` acima fica como nasceu; esta linha é a que vale, regra de append). Nada a reverter: o commit `cd055802` permanece.
+
+## P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO (2026-09-20) — o runbook de deploy não diz que o censo de duplicatas roda antes, nem sob qual papel — MÉDIA
+
+- status: ABERTA (divergência D-C2-6 do desenvolvedor do ciclo 2 do `B-O6R-04a`; emenda 5 (z) do orquestrador)
+- **prova:** o `B-O6R-04a` entrega `scripts/inventory-duplicates-census.sql` e uma migração que **aborta** se houver grupo duplicado (`23505` com a contagem), e o ato do dono `P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD` manda rodar o censo em staging e produção antes do deploy. O `docs/deployment.md` não menciona nem o censo nem a pré-condição de papel: sob FORCE RLS, um papel sem `BYPASSRLS` enumera um universo vazio e o censo responde "0 grupos" (achado C1-F1 do ciclo 1, fechado no código, mas não no runbook).
+- **escopo:** `pre-existente` quanto ao runbook; a necessidade nasce com este bloco. `docs/**` é escopo PROIBIDO do comando do `B-O6R-04a`.
+- **dono:** `B-SAN3-10` (roteiro de operação: deploy, restore, bootstrap, rotação de segredo).
+- **bloqueia:** não bloqueia o merge; **é pré-condição do próximo deploy**, junto do ato do dono.
+- **teste de encerramento:** o `docs/deployment.md` descreve o censo, o papel sob o qual ele tem de rodar e o que fazer quando a migração aborta (`prisma migrate resolve --rolled-back`), e o ensaio do roteiro cobre esse caminho.
+
+## EMENDAS DO `B-O6R-04a` a pendências existentes (2026-09-18) — APPEND, nunca reescrita
+
+**`P-O6R-B04` (a pendência-mãe, 2026-08-14) → PARCIAL na autoria.** Os dois P0 que ela carrega estão `fechado`
+no registro (`Ω6R-DAT-002`, `Ω6R-DAT-003`), com evidência por execução e o hash no backfill pós-merge (§C3.5).
+Segue aberto o `Ω6R-QUA-002` (P1, mobile/inventário), cujo dono é o `B-O6R-04b`. A linha de `status:` acima não
+muda na autoria — o fechamento só conta quando estiver na `main` (precedente do `B-O6R-06`).
+
+**`P-020` → fechada na autoria pelo `B-O6R-04a`; backfill pós-merge.** O "hardening futuro" que ela pedia (lock
+no agregado do item) é o conserto do `Ω6R-DAT-002`: `FOR UPDATE` na linha do item antes de toda leitura que
+decide, em toda via que debita. A corrida deixou de ser teórica e passou a ser medida: 20 saídas concorrentes
+sobre saldo 10 → 20 aceitas no head-base, exatamente 10 no bloco.
+
+**`P-021` → fechada na autoria pelo `B-O6R-04a`; backfill pós-merge.** O "hardening opcional" que ela citava
+(fechar tudo numa única transação) foi **substituído** pela emenda 2-h — unidades por item retomáveis, porque a
+transação única é impossível acima de ~650 itens sob o timeout de 5 s. A idempotência que ela introduziu
+(reaproveitar ajuste de legado da sessão) segue viva dentro da unidade, sob o lock, e o total do fechamento o
+inclui (caso B7).
+
+**Nota para o `B-O6R-12` (papel de menor privilégio).** `FOR UPDATE`/`FOR SHARE`/`FOR NO KEY UPDATE` exigem
+`UPDATE`/`SELECT` em `inventory_items`, `cycle_counts`, `cycle_count_entries` **e `tenants`** para o papel da
+aplicação (a linha do tenant é travada pelo `open` para serializar as aberturas de contagem).
+
+**Nota para o orquestrador (classe, fora deste bloco).** `sendRouteError` (`src/modules/core-saas/routes/http.ts`)
+responde 400 com a mensagem crua a qualquer `Error` sem `statusCode`. Este bloco fecha a **instância** no
+estoque (503 de domínio para falha transitória); a classe é candidata a pendência transversal — decisão do
+orquestrador.
+
+**Nota de classe (P4, T-04).** O drill de DDL em base PRÓPRIA (`tests/inventory-migration-drill-db.test.ts`)
+fecha a **instância** deste bloco; a classe "DDL na base compartilhada das suítes" (entradas com dono "a
+atribuir" neste arquivo) segue aberta e este bloco não a reabre nem a fecha — só declara, com o guard D9, que
+nenhuma suíte sua faz DDL na base compartilhada.
+
+**Não nascem** (plano §13): `P-O6R-B04-ABANDONO-DE-FECHAMENTO` (a saída do `fechando` está dentro do bloco:
+`abortClose`, recontagem em `fechando`, `cancel` sem ajuste aplicado), `P-O6R-B04-SUITES-LIST-CI` (as 4 suítes
+entraram na lista `SUITES` do `ci.yml` neste PR), o journal em memória da porta (emenda 1-e) e a pendência de
+sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo da
+`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
+
+## P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor e o plano do ciclo 2 da junta 1 do `B-O6R-04a` nunca foram versionados — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` — 2026-09-20 (registro da junta 1, feito pelo orquestrador, não pelo dev) · **dono:** orquestrador
+- **prova:** t17 da seção "## Retomada 2026-10-10 (planejador-retomada-b-o6r-04a)" de `agent-orchestration/omega/planos/B-O6R-04a-plano.md` (R1.3): `R-B-O6R-04a-ciclo1.md`, `PLANO-B-O6R-04a-ciclo2.md`, os 3 votos e o parecer do inspetor da junta 1 não existem em ref nenhuma nem em disco; os corpos das cadeiras do ciclo 2 mandam o jurado ler a ata do ciclo 1.
+- **paliativo:** ata reconstituída e declarada como tal em `agent-orchestration/omega/reprovacoes/R-B-O6R-04a-ciclo1.md` (emenda 6 (gg) do comando).
+- **bloqueia:** não (`pre-existente`, §C7.1-ter(a); risco r6 da retomada).
+- **teste de encerramento:** a definir pelo dono (a retomada não o fixa).
+
+## EMENDA DA RETOMADA DO `B-O6R-04a` a pendência existente (2026-10-10) — APPEND, nunca reescrita
+
+- **`P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT`**, linha de status (`pendencias.md:9810` na ref `bc3e736b`): onde se lê "nasce na junta do ciclo 2 do `B-O6R-04a`", leia-se "nasce na junta do ciclo 1 do `B-O6R-04a`" — numeração de R1.3 da retomada (junta 1 = ciclo 1, a que votou; correção = ciclo 2; a próxima junta = junta do ciclo 2). O texto original fica como está.
+
+## P-O6R-B04-GUARD-D1-ESCRITOR-POR-FORMA (2026-10-10) — o D1 do T-D deriva o universo de escritores do TIPO `<Model>Delegate` em callee, não do DESTINO da escrita — MÉDIA
+- status: ABERTA (nasce na junta do ciclo 2 do B-O6R-04a, cadeira C2 `jurado-o6r04a-c2-fail-closed-backend`; reclassificada no ciclo 3 pela régua GRAVE: forma de guard, não defeito de produto)
+- prova (N = 7 formas, por mutação executada e revertida; `c2-C2-evidencia.md` §1.3): N1 desestruturação do delegate (`const { create } = tx.stockMovement`), N2 `(tx as any)[m][c]`, N2b receptor de tipo estrutural anônimo, N3 `$executeRaw(Prisma.sql…)` em forma de CHAMADA, N3b `UPDATE ONLY stock_movements`, N5 arquivo em `src/**/generated/` (o `walk()` do guard pula `generated|dist`, l.86), N8 erasure por interface estrutural — todas compilam, passam verdes no D1 e GRAVAM sob o papel real (sonda F: 1 linha cada; N3b 5 linhas).
+- causa: `tests/inventory-write-paths-guard.test.ts` — (a) membro fora de READ_MEMBERS de receptor cujo TIPO se chama `<Model>Delegate` só em callee PropertyAccess/ElementAccess (l.308-317); (c) SQL cru só em `$…RawUnsafe` e tagged `$…Raw` (l.320-324, 377-380); superfície `walk()` exclui `generated|dist` (l.86).
+- produto hoje (ciclo 3, varredura por DESTINO — plano, §Ciclo 3 C3.0 u3/u5/u8/u11/u12): escritores das 3 tabelas por assinatura resolvida = 12 = a allowlist (`insertMovement` l.531, `prisma/seed-fleet.ts:171-173`, 8 do repositório dono da contagem); fora dela: 0; `any`/`unknown` com membro de escrita: 0; literal SQL de escrita em qualquer grafia: 0; `generated|dist`: 0; tipos `*Input` em `src`: 0. NÃO há instância no produto.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE`, o bloco transversal da `D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D1 enumera por (i) ASSINATURA RESOLVIDA da chamada (declaração em `<Model>Delegate`, qualquer sintaxe), (ii) TIPO do argumento `*Create/Update/Upsert/Delete*Input`, (iii) qualquer LITERAL com verbo de escrita + tabela normalizada (aspas/schema/ONLY), (iv) `any`/`unknown` com membro de escrita = negar; superfície = o `include` do `tsconfig` (sem pular `generated`); as 7 formas em `D1′` ficam VERMELHAS e os controles de leitura verdes.
+## P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a `insertMovement` só pela forma `this.x(`; indireção `.call/.apply/.bind`/cast sai do universo — MÉDIA
+- status: ABERTA (idem à anterior; reclassificada no ciclo 3: forma de guard)
+- prova (N = 1 forma, N9): via nova `consumeViaCall` decide pelo saldo ANTES do lock e chega a `insertMovement` por `this.insertMovement.call(this, …)`; D1/D2 verdes; a via aparece só em "NÃO identificação".
+- causa: `analyzeRepository` constrói W por `thisCalls` (chamadas `this.<m>(`), não por referência ao SÍMBOLO `insertMovement`.
+- produto hoje: 7 chamadas a `insertMovement`, 7 diretas (`inventory-prisma.repository.ts:264,282,295,364,456,490`); `.call/.apply/.bind`/cast sobre método de escrita: 0 (u6, u11-r5). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: W = fechamento transitivo das REFERÊNCIAS ao símbolo `insertMovement` (checker), inclusive `.call/.apply/.bind`, cast e alias; a mutação N9 fica VERMELHA em D2 (R1: decide antes do lock).
+
+## P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta pública" do wrapper RLS por `MethodDeclaration`; propriedade-arrow e getter escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N10): `readonly contarSemMapeamento = (tenantId) => withTenantRls(this.prismaClient, tenantId, …)` em `RlsPrismaInventoryRepository`, sem `this.tx` e sem mapeamento 503; D7 verde ("17/17 portas por this.tx").
+- causa: filtro `ts.isMethodDeclaration` (l.1229) e o pino "withTenantRls fora de tx" só em métodos (l.1240-1243).
+- produto hoje: 0 membros propriedade-arrow/getter nas 14 classes do módulo (u7); as 3 arrows do módulo são `resolveService` em `*.routes.ts:31,101` (opção de montagem). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D7 enumera `MethodDeclaration` + `PropertyDeclaration` com inicializador função/arrow + `GetAccessor`/`SetAccessor` (públicos por modificador ou ausência de `private`), e exige `this.tx`/mapeamento 503 em todos; N10 VERMELHA.
+
+## P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status por ORM como classe e a por SQL cru por grafia; schema qualificado + identificadores entre aspas escapam — MÉDIA
+- status: ABERTA (idem)
+- prova (N = 1 forma, N11): `UPDATE "public"."cycle_counts" SET "status" = 'concluida' WHERE tenant_id = … AND id = …` (tagged, sem `status` no WHERE) no repositório dono passa D5/D8; o controle N11b (mesmo UPDATE sem schema) fica vermelho — o pino é textual.
+- causa: D5 reconhece "UPDATE cru da contagem" por regex sobre a grafia da tabela, não pela tabela NORMALIZADA (aspas, schema, `ONLY`).
+- produto hoje: 4 transições, 4 com `status` no WHERE (CAS; l.165, 225, 255, 283) + `create` em `aberta`; UPDATE cru em `cycle_counts` em qualquer literal: 0 (u9, u3, u11-r4). NÃO há instância.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ID nomeado pelo orquestrador em 2026-10-10, Emenda 8 do comando do B-O6R-04a).
+- bloqueia: não o merge do #389 (§C7 item 8(2)); bloqueia o fechamento da classe "guard por forma" no bloco dono.
+- teste de encerramento: D5 normaliza o identificador da tabela em SQL cru (remove aspas/schema/`ONLY`, case-insensitive) antes de classificar e exige precondição de `status` no WHERE para todo UPDATE em `cycle_counts`; N11 VERMELHA, N11b continua vermelha.
+
+## P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo (T-C6) só reconhece aspas simples como literal; `"…--"`, `$$…$$` e `E'…'` escondem comando — BAIXA
+- status: ABERTA (nasce na junta do ciclo 2, cadeira C1 `jurado-o6r04a-c2-banco-rls`, achado A1 `ajuste`)
+- prova (N = 3 formas): `stripSqlComments`/`SQL_WRITE_WORD` (`tests/inventory-unique-backstops-db.test.ts:41-74`) descartam o resto da linha a partir de `--` dentro de identificador entre aspas duplas, de `$$…$$` ou de `E'…'` com escape; o Postgres executa (sonda da C1: `DELETE 2`).
+- produto hoje: `scripts/inventory-duplicates-census.sql` tem 0 verbos de escrita, 0 `$$`, 0 `E'`, aspas duplas só em comentário (u13). NÃO esconde nada.
+- **dono:** `B-GOV-GUARDA-POR-PROPRIEDADE` (ou `B-BAT-01`, se o transversal não nascer antes).
+- bloqueia: não.
+- teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
+## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
+
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D1 = C, sete blocos; prazo de referência 26–46 dias úteis; o plano ganha a v2.2). Antes: ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
+  dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
+  "Decisões do dono", decisão 1) · **dono:** o dono do produto.
+- Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
+  blocos, proposta). O B-TRC-01 só é o mesmo em B e C. Achados A2-09 do crítico (r2) e B-07 da r1. A
+  `D-ORDEM-NOITE-2026-10-10` autoriza "os blocos de ingestão" sem fixar número.
+- **bloqueia:** o início do B-TRC-01 (na forma A ele muda) e tudo depois dele.
+- **teste de encerramento:** `decisoes.md` registra a escolha (A, B ou C) com a frase do dono, e o plano é ajustado
+  se a escolha for A.
+
+## P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1 do Traccar — ALTA
+
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D2 = a, ERP inteiro na AWS como direção; o estudo de custo e migração passa a `P-TRC-AWS-ESTUDO-MIGRACAO`, com prazo antes do B-TRC-06). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
+  plano v2, que levava a escolha para antes do B-TRC-06 sem registrar (achado A2-14) · **dono:** o dono do produto.
+- Opções: (a) ERP inteiro na AWS; (b) só o Traccar na AWS, ERP no Fly com ponte privada; (c) adiar a escolha para antes
+  do B-TRC-06, com aceite escrito. Recomendação do planejador: (c), com (a) como direção.
+- **bloqueia:** o B-TRC-01, até a escolha ou o aceite escrito do adiamento; o B-TRC-06, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra a escolha, ou o aceite do adiamento com o novo prazo.
+
+## P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do técnico — ALTA
+
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D3 = dois pinos com camada — só a viatura por padrão; o celular do técnico pelo botão direito e pelo menu de visualização do mapa; requisito do B-TRC-04). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
+  custo dos dois caminhos) × B-TRC-01, que grava a posição da viatura em `field_operator_locations` do técnico, com o
+  latest escolhendo por `recorded_at` sem olhar a fonte (achado A2-13) · **dono:** o dono do produto.
+- Opções e custo estimado: (a) vence o mais recente, nenhum custo agora; (b) preferência por fonte, 1–2 dias no
+  B-TRC-04; (c) dois pinos, bloco próprio de 4–7 dias. Recomendação: (a) só como modo provisório de dev no B-TRC-01;
+  escolher (b) ou (c) antes do B-TRC-04.
+- **bloqueia:** o B-TRC-01, até o aceite do modo provisório; o B-TRC-04 e a produção, até a escolha.
+- **teste de encerramento:** `decisoes.md` registra o aceite do provisório e, antes do B-TRC-04, a escolha.
+
+## P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde no mapa — MÉDIA
+
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D4 = b — vínculo fixo viatura→técnico como padrão, o despacho aceito sobrepõe; fora do expediente, a viatura sem o nome do técnico; requisito do B-TRC-03/04). Antes: ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
+  do plano): a viatura só aparece com despacho aceito pelo técnico atual; "atribuído → a caminho" sem aceite não mostra;
+  reatribuído só volta com novo aceite; viatura sem técnico não aparece · **dono:** o dono do produto.
+- Recomendação do planejador: manter a regra estrita no B-TRC-01; decidir antes do B-TRC-04 se o plano pago de
+  localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
+- **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
+- **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
+
+## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
+
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D5 = a, só a plataforma vincula); falta o teste do B-TRC-03. Antes: ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
+  organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
+  retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 do crítico (r2), E-02c/E-02d) ·
+  **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
+- Recomendação do planejador: só a plataforma vincula, a pedido da organização, para começar; depois, lista de
+  rastreadores liberados por organização. Vínculo vale do relógio do servidor em diante, sem retroativo; `EXCLUDE` com
+  faixas de validade (`btree_gist`) ou gatilho de `valid_from`.
+- **bloqueia:** o início do B-TRC-03; não bloqueia o B-TRC-01, onde só o teste e o demo vinculam.
+- **teste de encerramento:** `decisoes.md` registra quem vincula; o B-TRC-03 prova por teste que B não vincula
+  rastreador fora da sua lista (ou sem a plataforma) e que nenhum vínculo cobre fix anterior à desativação do anterior.
+
+## P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e acesso — ALTA
+
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: base por finalidade, aviso, 90/30 dias, despacho e gestão com trilha; fora do expediente sem nome); falta implementar o expurgo e o aviso, e validar com advogado antes da produção. Antes: ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
+  `schema.prisma:1024`) recebe a posição da viatura sem o aviso e o consentimento do app; recibos (um por posição) e
+  quarentena (número do rastreador) sem guarda definida; `device.name/phone/contact` chegam e são descartados (nota
+  N2-05 e N2-08 da r2) · **dono:** o dono do produto.
+- Recomendação do planejador: base legal com aviso ao técnico; guarda curta (ex.: posição e recibo 90 dias,
+  quarentena resolvida 30 dias); acesso de despacho e gestão com trilha de consulta.
+- **bloqueia:** a produção (B-TRC-07) e o staging, se usar dado real; não bloqueia o B-TRC-01 (dado sintético).
+- **teste de encerramento:** `decisoes.md` registra base legal, prazos e quem vê; o bloco seguinte implementa o expurgo
+  com teste.
+
+## P-TRC-TETO-ORGANIZACOES (2026-10-10) — teto de 500 organizações ativas na descoberta do Traccar — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — o teto conta todas as organizações ativas, não só as com
+  rastreador; na 501ª, todo dispositivo sem dica vai à quarentena (achado A2-06 da r2) · **dono:** `B-TRC-06` (alarme e
+  medição com o número real) e a decisão do recurso pago (contar só organizações com o módulo).
+- O B-TRC-01 entrega a validade deslizante da dica e o aviso de 80 % (log e métrica).
+- **bloqueia:** não, abaixo de 400 organizações ativas.
+- **teste de encerramento:** alarme do B-TRC-06 dispara a 80 %, e o teto passa a contar só organizações com o módulo,
+  ou é re-medido e ajustado.
+
+## P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO (2026-10-10) — reatribuição e evento em transações separadas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `field-dispatch-prisma.repository.ts:170,174` e
+  `field-dispatch.service.ts:550-577`: `reassign` grava o operador novo e o status e, em outra transação, o evento
+  `field_dispatch_reassigned`; o `accepted_at` do operador antigo fica; `reassigned → on_route` dispensa novo aceite
+  (`field-dispatch.validators.ts:7-17`). Medido pelo crítico (r2) (E-3e) · **dono:** a nomear (próximo bloco que tocar
+  `field-dispatch.service.ts`).
+- O Traccar deixa de depender disso: o B-TRC-01 usa `operator_assigned_at`, gravado por gatilho na mesma instrução da
+  troca. Fica o defeito de auditoria: despacho reatribuído pode ficar sem o evento.
+- **bloqueia:** não.
+- **teste de encerramento:** troca de operador e evento na mesma transação, com teste de falha injetada no evento.
+
+## P-PORTAL-LISTEN-SEM-TRATADOR (2026-10-10) — falha do listen do portal derruba a API do ERP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `src/server.ts:39-44`: `portalApp.listen(env.PORTAL_PORT)` sem host
+  (todas as interfaces) e sem tratador de `error`; um `EADDRINUSE` na 3100 sai como `Unhandled 'error' event` e leva o
+  processo, com a API pública (medido para a ingestão pela r2, E-01d; mesmo mecanismo) · **dono:** a nomear (bloco do
+  portal).
+- **bloqueia:** não.
+- **teste de encerramento:** porta do portal ocupada não derruba a API; host do portal explícito.
+## P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar um dano, lança débito no extrato de um colega e escolhe o valor — ALTA (dinheiro)
+
+- status: ABERTA (o crítico (r1) do plano do B-O6R-07c, achado A9, `critico-b-o6r-07c-r1`; reexecutado pelo planejador `planejador-b-o6r-07c` em `c1cfdabe`)
+- **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice do crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
+- **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
+- **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
+- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), depois da decisão D3.
+- **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
+- **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
+## P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os guards que reconhecem forma ainda não existe — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — a classe "guard que reconhece forma em vez de enunciar a propriedade" (`D-GUARDA-POR-PROPRIEDADE-BLOCO-TRANSVERSAL`) reapareceu no #389 (`P-O6R-B04-GUARD-D1/D2/D7/D5`, `-CENSO-DETECTOR-DE-LITERAIS`) e no `B-O6R-07c` (críticas r1 e r2: formas de rota e de tipo de sync que escapavam). O nome `B-GOV-GUARDA-POR-PROPRIEDADE` foi dado pelo orquestrador na Emenda 8 do `B-O6R-04a`, mas o bloco não tem plano nem lugar no `PLANO_SAN3` (ressalva 2 do porteiro do #389) · **dono:** o orquestrador (abrir o plano do bloco com o `planejador-mestre`).
+- O custo medido: uma rodada de junta inteira por bloco, em dois blocos seguidos.
+- **bloqueia:** não. Cada bloco merge com a instância fechada; a classe continua aberta.
+- **teste de encerramento:** o plano do bloco existe e define um gerador/guard comum por propriedade (destino da escrita, camadas que respondem), com as formas das críticas e da C2 do #389 vermelhas por mutação.
+
+## P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, runner) ainda não virou bloco — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — a metade transversal da bateria do estoque está preservada em `origin/wip/bateria-estoque-preservacao` (`dee45faf`); o #389 levou só a metade `inventory-*` (`3fb275ad`, `010742c0`). O residual R3.4 do porteiro do #389: a bateria do estoque é determinística por MEDIÇÃO, não por CONSTRUÇÃO, porque as esperas fixas continuam nas suítes `-db` · **dono:** o orquestrador (abrir o `B-BAT-01` como bloco, com o desenho da Parte 5 do plano de 25/09).
+- **bloqueia:** não.
+- **teste de encerramento:** o `B-BAT-01` mergeado, e as suítes `-db` do estoque sem espera fixa, sincronizadas por portão causal.
+
+## P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior palavra de severidade do texto inteiro — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `agent-orchestration/controle/gerar-indice-pendencias.py:75-80` (`severidade(body)` procura as quatro palavras de severidade no corpo inteiro e devolve a de nível mais alto que achar); uma entrada que cita o crítico com o substantivo feminino sobe ao nível máximo no índice, mesmo com o título dizendo outro nível (o dev do B-SAN3-06b já tinha esbarrado nisso) · **dono:** `B-REG-GERADOR`.
+- **bloqueia:** não; o índice superestima severidade e o dono pode olhar a pendência errada primeiro.
+- **teste de encerramento:** uma entrada com o título de nível médio e o substantivo do crítico no corpo aparece com o nível do título no índice.
+
+## P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falha na limpeza por FK, às vezes — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tests/o6r06-usage-atomic-db.test.ts:740` (suíte do #385, `B-O6R-06`): no run `pull_request` do head `250c97de` do PR 415 (só registro), o `backend-postgres` deu 314/315 com o A10 falhando no teardown por `cloud_usage_events_tenant_id_fkey`; o mesmo job passou no run `push` do mesmo SHA (revisor do PR 415, `agent-orchestration/omega/juntas/REVISAO-PR-415.md`) · **dono:** `B-ARNES-2`.
+- Junto com o T15 do #405 (`P-SAN3-05-T15-TETO-DE-RELOGIO`), é a segunda falha intermitente que derruba o CI de PR que não toca o código dela.
+- **bloqueia:** não; custa re-execução de CI.
+- **teste de encerramento:** o A10 limpa na ordem das FKs (ou por banco próprio), verde em 10 rodadas do `backend-postgres`.
+
+## P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige prisma generate — BAIXA
+
+- **status:** ABERTA · **dono:** dono do projeto · **origem:** `B-AGENTE-API`, passo B9 (`docs/revisoes/GOV/B-AGENTE-API-dev.md`) · **escopo:** `dentro-do-bloco` (a lista fechada de verificações do agente).
+- **medido (2026-10-10):** num worktree descartável em `9b611468`, depois de `npm ci`, `npm run check` sai com código 2 (`@prisma/client` sem `Prisma`/`PrismaClient` nos `*-prisma.repository.ts`); `node node_modules/prisma/build/index.js generate` com o ambiente limpo do agente sai com código 1 (`PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL`). O brief proíbe `DATABASE_URL` no ambiente das verificações.
+- **efeito:** pela regra do plano (§0.7 [H3], §8), `npm_check` saiu da lista fechada do agente neste bloco; `verificar teste` (`node --test` sem `-db`) roda sem generate (`tests/auth-jwt.test.ts`: 6/6).
+- **bloqueia:** não.
+- **teste de encerramento:** uma forma, decidida pelo dono, de gerar o client do Prisma no worktree descartável sem `DATABASE_URL` real, e `npm_check` de volta à lista fechada com teste e mutação.
+
+## P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro para a AWS (D2 = a) — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-DECISOES-DO-DONO-2026-10-11` item 2 · **dono:** o orquestrador (estudo de custo pelo agente da API com pesquisa; tamanho da migração medido por um Codex).
+- **bloqueia:** o B-TRC-06 (staging na AWS). Não bloqueia do B-TRC-01 ao 05.
+- **teste de encerramento:** o estudo (custo mensal estimado ERP + Traccar na AWS × hoje; tamanho e etapas da migração; riscos) registrado e a decisão do dono sobre contratar, antes do B-TRC-06.
+
+## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRC-DECISOES-DO-DONO-2026-10-11` · **dono:** o planejador do Traccar.
+- A v2.2 incorpora: D3 (dois pinos com camada e menu de visualização), D4 = b (vínculo fixo + despacho aceito sobrepõe; regra de fora do expediente), D5 = a, D6 (bases por finalidade, prazos, expurgo), o gate §8.0 linha 4 com a aprovação escrita do dono à PD e o prazo de 26–46 dias.
+- **bloqueia:** o início do B-TRC-01.
+- **teste de encerramento:** o plano v2.2 no ramo `docs/plano-traccar`, com as seções afetadas mudadas e o gate atualizado.
+
+## P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 por sorte — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tests/owner-portal.test.ts` l.228-248: o caso `wrong_solution` usa a string fixa "definitely-not-a-solution" contra desafio com sal aleatório e dificuldade 2 (2 nibbles hex zero no sha256; `proof-of-work.ts:89-99`); medido no CI: run `push` de `7213ac50` do PR #417, `not ok 2071`, expected false / actual true · **dono:** `B-ARNES-2` (plano em `fix/arnes-2-testes-instaveis`).
+- **bloqueia:** não; custa re-execução de CI.
+- **teste de encerramento:** sal fixo no teste ou solução comprovadamente inválida para o sal emitido; 1000 execuções sem falha.
+
+## P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de ~600 níveis encerra a revisão inconclusiva — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do #418 (nota G1 do revisor) — sem `strict`, entrada aninhada a partir de ~600 níveis encerra com exit 5 e parecer inconclusivo; a falha é FECHADA, sem dano nem execução · **dono:** o próximo bloco do agente da API.
+- **bloqueia:** não.
+- **teste de encerramento:** limite de profundidade validado antes do parse, com teste.
+
+## P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatório e item numa repetição HTTP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — confirmada pela investigação do agente da API (`scripts/agente-claude-api/saidas/20261011-141636Z-inv-rest-idem`, US$ 0,79): POST /expense-reports (`expense-management.routes.ts:67`, `controller.ts:42`, `service.ts:85`) e as rotas de item e submissão não têm chave de idempotência, índice único natural nem middleware; dois POSTs iguais duplicam. O que duplica são valores DECLARADOS (rascunho, total recalculado): não há rota de aprovação nem de pagamento e nenhum outro módulo consome `expense_report`, então nenhum dinheiro sai hoje. Fora do escopo do `B-O6R-03a` (sync mobile) · **dono:** bloco de despesas pós-03a.
+- Sobe um grau de severidade quando existir aprovação ou pagamento de despesa.
+- **bloqueia:** não hoje.
+- **teste de encerramento:** `Idempotency-Key` (ou `client_action_id`) nas rotas que gravam, com teste de dois POSTs iguais = 1 linha.
