@@ -3223,3 +3223,58 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
   `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
   já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
+
+## Registro de 11/10/2026 — Traccar (as 6 decisões), o Claude só orquestra e o agente da API em uso
+
+- **D-TRC-DECISOES-DO-DONO-2026-10-11** — as seis decisões do plano do Traccar v2.1
+  (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, seção "Decisões do dono antes do B-TRC-01", ramo `docs/plano-traccar`).
+  Falas literais do dono:
+  - *"Decisões traccar em D1=c. D2=a. D3=os dois, mas só o carro aparece default e celular do técnico é com a opção
+    mostra guincheiro com o botão direito do mouse no mapa e no menu de visualização que devemos ter no mapa. D4=a viatura
+    aparece com o nome do técnico que aquela viatura foi definida, temos que bolar uma configuração inicial para amarrar
+    a viatura no técnico. D5=a. D6=base legal, contrato de trabalho e legítimo interesse com aviso ao técnico. Guarda de
+    90 dias com recibo e quarentena resolvida 30 dias. Quem vê será o despacho e gestão com trilha de consulta."*
+  - *"Achados críticos. Achado 1, 2, 3, 4 e 5 preciso que vc analise e me retorne com opções, prós e contras. Preciso que
+    rode aqui e me responda sobre os achados só então as minhas decisões devem ser tratadas"*. O orquestrador analisou os
+    5 achados do material das decisões (`erp-pausa-2026-10-03/TRACCAR-DECISOES-para-o-dono.md`, preparado pelo agente da
+    API) e deu opções, prós e contras.
+  - *"pode seguir com as recomendações"*. As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec].
+
+  **Resultado:**
+  1. **D1 = C**, sete blocos (G-TRC-PD + B-TRC-01 a 07). Prazo de referência: **26–46 dias úteis** (§10.2). O "25–45" da
+     §7.2 é o número da v1 e sai na v2.2 do plano [rec, achado 1].
+  2. **D2 = a**, o ERP inteiro na AWS, como DIREÇÃO. Um estudo de custo e de migração vira tarefa nomeada com prazo
+     ANTES do B-TRC-06 (`P-TRC-AWS-ESTUDO-MIGRACAO`); do B-TRC-01 ao 05 tudo roda em dev. Contratar ou configurar serviço
+     pago segue como decisão crítica (§C7 item 1) [rec, achado 2].
+  3. **D3 = dois pinos (a opção c do plano), com camada:** por padrão só a viatura aparece. O celular do técnico (o
+     "guincheiro") aparece pela opção do botão direito no mapa e pelo menu de visualização do mapa, que precisa existir.
+     O "N minutos" da opção b deixa de existir. Custo no plano: bloco próprio de 4–7 dias, mais o menu de visualização.
+  4. **D4 = b** [rec, achado 3]: vínculo FIXO viatura→técnico como padrão (a configuração inicial que amarra a viatura no
+     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Isso concilia a frase do dono com a regra de
+     2026-10-10, "o vínculo pessoa↔viatura é pela janela do despacho" (`decisoes.md:2290-2292`), que segue valendo
+     durante o serviço. O conflito foi registrado e resolvido aqui, pela regra §A2.
+  5. **D5 = a**: só a plataforma (Admin Plataforma) vincula rastreador, a pedido da organização, com o rastreador
+     registrado na compra ou na instalação.
+  6. **D6** [rec, achado 4]: **base legal por finalidade** — execução do contrato de trabalho para o rastreio em serviço;
+     legítimo interesse, com teste de balanceamento escrito, para a frota sem técnico. Aviso ao técnico no app e no
+     contrato. **Fora do expediente, a viatura aparece SEM o nome do técnico.** Guarda: posição e recibo 90 dias;
+     quarentena resolvida 30 dias; depois, apagar ou anonimizar. Quem vê: despacho e gestão da organização, com trilha de
+     consulta. Validar com advogado antes da produção.
+  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5, a PD do Traccar (versão, digest da imagem, licença, CVEs
+     e semântica do forward conferida no código-fonte da tag) é PESQUISADA e o DONO a aprova por escrito. Decisão do
+     dono, que está acima da junta (§A1.1). Pesquisa em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (ramo
+     `docs/plano-traccar`).
+  8. O gate do B-TRC-01 (plano §8.0) passa a exigir na linha 4 a aprovação escrita do dono à PD, não a junta 5/5. O plano
+     ganha a v2.2 com as decisões acima (`P-TRC-PLANO-V22`).
+
+- **D-CLAUDE-SO-ORQUESTRA (2026-10-11)** — o dono: *"vc eu quero na orquestração e tarefas pequenas, quando o codex cair vc
+  cobre ele e a api temos que forçar o uso dela"*; *"o negocio aqui é usar vc de forma que o limite nao seja atingido e
+  o negocio nao pare..."*; *"vc tem que colocar vigias para lhe informar que a execução parou, desse modo vc ja passa o
+  novo comando"*. Na prática:
+  - o Claude só orquestra e faz tarefas pequenas; a execução vai para o Codex; leitura, revisão, crítica sem banco e
+    texto vão para o agente da API, com pacote de contexto;
+  - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
+  - todo lançamento tem vigia;
+  - teto da API de US$ 15/dia (*"pode usar ate 25 usd na api hoje"* — US$ 25 em 11/10);
+  - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
+  Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).

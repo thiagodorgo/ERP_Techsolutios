@@ -10669,7 +10669,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
 ## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D1 = C, sete blocos; prazo de referência 26–46 dias úteis; o plano ganha a v2.2). Antes: ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
   dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
   "Decisões do dono", decisão 1) · **dono:** o dono do produto.
 - Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
@@ -10681,7 +10681,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1 do Traccar — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D2 = a, ERP inteiro na AWS como direção; o estudo de custo e migração passa a `P-TRC-AWS-ESTUDO-MIGRACAO`, com prazo antes do B-TRC-06). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
   plano v2, que levava a escolha para antes do B-TRC-06 sem registrar (achado A2-14) · **dono:** o dono do produto.
 - Opções: (a) ERP inteiro na AWS; (b) só o Traccar na AWS, ERP no Fly com ponte privada; (c) adiar a escolha para antes
   do B-TRC-06, com aceite escrito. Recomendação do planejador: (c), com (a) como direção.
@@ -10690,7 +10690,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do técnico — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D3 = dois pinos com camada — só a viatura por padrão; o celular do técnico pelo botão direito e pelo menu de visualização do mapa; requisito do B-TRC-04). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
   custo dos dois caminhos) × B-TRC-01, que grava a posição da viatura em `field_operator_locations` do técnico, com o
   latest escolhendo por `recorded_at` sem olhar a fonte (achado A2-13) · **dono:** o dono do produto.
 - Opções e custo estimado: (a) vence o mais recente, nenhum custo agora; (b) preferência por fonte, 1–2 dias no
@@ -10701,7 +10701,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde no mapa — MÉDIA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D4 = b — vínculo fixo viatura→técnico como padrão, o despacho aceito sobrepõe; fora do expediente, a viatura sem o nome do técnico; requisito do B-TRC-03/04). Antes: ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
   do plano): a viatura só aparece com despacho aceito pelo técnico atual; "atribuído → a caminho" sem aceite não mostra;
   reatribuído só volta com novo aceite; viatura sem técnico não aparece · **dono:** o dono do produto.
 - Recomendação do planejador: manter a regra estrita no B-TRC-01; decidir antes do B-TRC-04 se o plano pago de
@@ -10711,7 +10711,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ```markdown
 ## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D5 = a, só a plataforma vincula); falta o teste do B-TRC-03. Antes: ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
   organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
   retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 do crítico (r2), E-02c/E-02d) ·
   **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
@@ -10724,7 +10724,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e acesso — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: base por finalidade, aviso, 90/30 dias, despacho e gestão com trilha; fora do expediente sem nome); falta implementar o expurgo e o aviso, e validar com advogado antes da produção. Antes: ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
   `schema.prisma:1024`) recebe a posição da viatura sem o aviso e o consentimento do app; recibos (um por posição) e
   quarentena (número do rastreador) sem guarda definida; `device.name/phone/contact` chegam e são descartados (nota
   N2-05 e N2-08 da r2) · **dono:** o dono do produto.
@@ -10806,3 +10806,35 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **efeito:** pela regra do plano (§0.7 [H3], §8), `npm_check` saiu da lista fechada do agente neste bloco; `verificar teste` (`node --test` sem `-db`) roda sem generate (`tests/auth-jwt.test.ts`: 6/6).
 - **bloqueia:** não.
 - **teste de encerramento:** uma forma, decidida pelo dono, de gerar o client do Prisma no worktree descartável sem `DATABASE_URL` real, e `npm_check` de volta à lista fechada com teste e mutação.
+
+## P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro para a AWS (D2 = a) — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-DECISOES-DO-DONO-2026-10-11` item 2 · **dono:** o orquestrador (estudo de custo pelo agente da API com pesquisa; tamanho da migração medido por um Codex).
+- **bloqueia:** o B-TRC-06 (staging na AWS). Não bloqueia do B-TRC-01 ao 05.
+- **teste de encerramento:** o estudo (custo mensal estimado ERP + Traccar na AWS × hoje; tamanho e etapas da migração; riscos) registrado e a decisão do dono sobre contratar, antes do B-TRC-06.
+
+## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRC-DECISOES-DO-DONO-2026-10-11` · **dono:** o planejador do Traccar.
+- A v2.2 incorpora: D3 (dois pinos com camada e menu de visualização), D4 = b (vínculo fixo + despacho aceito sobrepõe; regra de fora do expediente), D5 = a, D6 (bases por finalidade, prazos, expurgo), o gate §8.0 linha 4 com a aprovação escrita do dono à PD e o prazo de 26–46 dias.
+- **bloqueia:** o início do B-TRC-01.
+- **teste de encerramento:** o plano v2.2 no ramo `docs/plano-traccar`, com as seções afetadas mudadas e o gate atualizado.
+
+## P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 por sorte — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tests/owner-portal.test.ts` l.228-248: o caso `wrong_solution` usa a string fixa "definitely-not-a-solution" contra desafio com sal aleatório e dificuldade 2 (2 nibbles hex zero no sha256; `proof-of-work.ts:89-99`); medido no CI: run `push` de `7213ac50` do PR #417, `not ok 2071`, expected false / actual true · **dono:** `B-ARNES-2` (plano em `fix/arnes-2-testes-instaveis`).
+- **bloqueia:** não; custa re-execução de CI.
+- **teste de encerramento:** sal fixo no teste ou solução comprovadamente inválida para o sal emitido; 1000 execuções sem falha.
+
+## P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de ~600 níveis encerra a revisão inconclusiva — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do #418 (nota G1 do revisor) — sem `strict`, entrada aninhada a partir de ~600 níveis encerra com exit 5 e parecer inconclusivo; a falha é FECHADA, sem dano nem execução · **dono:** o próximo bloco do agente da API.
+- **bloqueia:** não.
+- **teste de encerramento:** limite de profundidade validado antes do parse, com teste.
+
+## P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatório e item numa repetição HTTP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — confirmada pela investigação do agente da API (`scripts/agente-claude-api/saidas/20261011-141636Z-inv-rest-idem`, US$ 0,79): POST /expense-reports (`expense-management.routes.ts:67`, `controller.ts:42`, `service.ts:85`) e as rotas de item e submissão não têm chave de idempotência, índice único natural nem middleware; dois POSTs iguais duplicam. O que duplica são valores DECLARADOS (rascunho, total recalculado): não há rota de aprovação nem de pagamento e nenhum outro módulo consome `expense_report`, então nenhum dinheiro sai hoje. Fora do escopo do `B-O6R-03a` (sync mobile) · **dono:** bloco de despesas pós-03a.
+- Sobe um grau de severidade quando existir aprovação ou pagamento de despesa.
+- **bloqueia:** não hoje.
+- **teste de encerramento:** `Idempotency-Key` (ou `client_action_id`) nas rotas que gravam, com teste de dois POSTs iguais = 1 linha.
