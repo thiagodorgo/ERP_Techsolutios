@@ -225,6 +225,10 @@ Organização · Console Dispatcher · Cobranças.
    Componente novo só nasce quando não há equivalente, e nasce NA biblioteca, com registro.
 4. **Todo plano e todo prompt de dev de tela citam a tela-modelo (arquivo) e as skills.** O revisor e o
    `cognicao-visual` conferem.
+5. **Este item NÃO revoga o §11.** Onde a tela tem referência renderizada, ela continua sendo o alvo de layout e de
+   conteúdo ("PNG vence para layout/intenção"), até o dono responder a pergunta registrada em
+   `D-TELAS-SEGUEM-O-PADRAO`. O padrão do sistema rege o resto: componentes, tokens, camada de dados, estados e tudo
+   aquilo sobre o que a referência não diz nada.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
