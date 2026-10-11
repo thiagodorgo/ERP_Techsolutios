@@ -10815,7 +10815,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRC-DECISOES-DO-DONO-2026-10-11` · **dono:** o planejador do Traccar.
+- **status:** FECHADA (2026-10-11): a v2.2 (`17f11f2f`) e a v2.3 (`f6f41e15`) estão no ramo `docs/plano-traccar`; as respostas do dono estão em `D-TRC-ARQUITETURA-2026-10-11`, e a aprovação da PD em `D-TRC-PD-APROVADA-2026-10-11`. Antes: ABERTA · **escopo:** `dentro-do-plano` — `D-TRC-DECISOES-DO-DONO-2026-10-11` · **dono:** o planejador do Traccar.
 - A v2.2 incorpora: D3 (dois pinos com camada e menu de visualização), D4 = b (vínculo fixo + despacho aceito sobrepõe; regra de fora do expediente), D5 = a, D6 (bases por finalidade, prazos, expurgo), o gate §8.0 linha 4 com a aprovação escrita do dono à PD e o prazo de 26–46 dias.
 - **bloqueia:** o início do B-TRC-01.
 - **teste de encerramento:** o plano v2.2 no ramo `docs/plano-traccar`, com as seções afetadas mudadas e o gate atualizado.
@@ -10838,3 +10838,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Sobe um grau de severidade quando existir aprovação ou pagamento de despesa.
 - **bloqueia:** não hoje.
 - **teste de encerramento:** `Idempotency-Key` (ou `client_action_id`) nas rotas que gravam, com teste de dois POSTs iguais = 1 linha.
+
+## P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação não foram informados (F-9) — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-ARQUITETURA-2026-10-11` item 10 · **dono:** o dono do produto (informar); o orquestrador cobra.
+- O protocolo está decidido (OsmAnd e GT06, `D-TRC-PD-APROVADA-2026-10-11`). Falta saber: fabricante e modelo de cada rastreador, a porta que cada um usa, se o chip tem APN privada ou VPN, e se o aparelho tem intervalo duplo nativo (parado e em movimento).
+- **bloqueia:** o B-TRC-03a (perfil por modelo, comandos por nível, prova com o aparelho real) e o `G-TRC-NLB`. Não bloqueia o B-TRC-01, que roda só com OsmAnd, em dev.
+- **teste de encerramento:** a lista de modelos registrada em `controle/` e ao menos um aparelho GT06 real disponível para o B-TRC-03a.
+
+## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overlay de dev — FECHADA, NÃO PROCEDE
+
+- **status:** FECHADA (2026-10-11, no mesmo PR que a abriu, o #421): **premissa falsa**. A linha 885 do plano v2.1 não é a web do Traccar. É o serviço `web` do próprio ERP: o frontend, que expõe a 8080 (`frontend/Dockerfile:23`). O dono abre o mapa operacional por ele (linha 1215 do plano). O serviço `traccar` (linha 882) fica **sem `ports`**. Quem achou foi o revisor do #421, o agente da API (`saidas/20261011-162412Z-rev-421`, achado 1), e o orquestrador conferiu nas linhas 878–887 e 1213–1216. O erro nasceu no achado 8 da emenda v2.3 e foi copiado para esta pendência sem conferência.
+- **o que fica:** a porta interna da web/REST do Traccar (8082 por padrão) importa só para os grupos de segurança do achado A-1 da v2.3 (B-TRC-06). **Não mudar a porta do frontend.**
