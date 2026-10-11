@@ -235,7 +235,8 @@ Organização · Console Dispatcher · Cobranças.
 
 1. **Comece da tela-modelo.** Antes de criar, ligar ou refazer uma tela, ache a tela EXISTENTE mais parecida e parta
    dela:
-   - lista → `WorkOrdersListPage.tsx`;
+   - lista → `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`, a lista padronizada que está no ar.
+     `frontend/src/pages/WorkOrdersListPage.tsx` e as irmãs dela são legado SEM rota e nunca servem de modelo;
    - cabeçalho e página-padrão → as Telas Padronizadas de `D-OS-CABECALHO-PADRONIZADO` (§11);
    - detalhe, painel ou formulário → o equivalente do mesmo módulo, ou o mais próximo.
 
@@ -251,14 +252,11 @@ Organização · Console Dispatcher · Cobranças.
    Componente novo só nasce quando não há equivalente, e nasce NA biblioteca, com registro.
 4. **Todo plano e todo prompt de dev de tela citam a tela-modelo (arquivo) e as skills.** O revisor e o
    `cognicao-visual` conferem.
-5. **[leitura do orquestrador, a confirmar com o dono] Referência do §11 × padrão do sistema.** Onde a referência
-   renderizada do §11 divergir do padrão já adotado em ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do
-   sistema, como já se decidiu para o cabeçalho em `D-OS-CABECALHO-PADRONIZADO`. A referência continua valendo para o
-   conteúdo e a composição da tela.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
-Siga a estrutura do app existente (test/features já usa a convenção `bNNN_<slug>_test.dart`).
+Siga a estrutura do app existente (test/features já usa a convenção `bNNN_<slug>_test.dart`). A regra de
+tela nova do §4 (`D-TELAS-SEGUEM-O-PADRAO`) vale aqui também: a tela-modelo é a feature mais próxima em `lib/features/`.
 Persistência local para fila de sync/flags offline. **11 telas do MVP** detalhadas em
 `Handoff MVP Mobile.dc.html`; catálogo completo (37) no catálogo geral.
 

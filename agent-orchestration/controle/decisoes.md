@@ -3499,8 +3499,14 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - nas skills de frontend `ts-frontend-full` e `ui-ux-pro-max` (`.claude/skills/` e `.agents/skills/`);
   - no `frontend-pixel-master` (restrição) e no `cognicao-visual` (veto 6, "tela feita do zero"), em `.claude/agents/`
     e `.agents/agents/`;
-  - na memória do orquestrador;
-  - nos prompts dos blocos de tela, a começar pelo `B-SAN3-06a`.
+  - no `CLAUDE.md` §5 (mobile): a tela-modelo é a feature mais próxima em `lib/features/`;
+  - fora do repositório: na memória do orquestrador e nos prompts dos blocos de tela, a começar pelo `B-SAN3-06a`.
 
-  **[leitura do orquestrador, a confirmar]** O item 5 da regra diz que, onde a referência do §11 diverge do padrão do
-  sistema em estrutura, vale o padrão do sistema, como em `D-OS-CABECALHO-PADRONIZADO`.
+  **Correção que veio junto:** as duas skills apontavam como modelo de lista a `WorkOrdersListPage.tsx`, que é legado
+  SEM rota (P-004; `P-SAN3-01-OS-LEGADO-MORTO`). A primeira versão desta regra herdou o erro, e a revisão do #422 o
+  pegou. O modelo passa a ser `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`, a lista padronizada no ar.
+
+  **Pergunta ao dono, que AINDA NÃO é regra:** onde a referência renderizada do §11 divergir do padrão do sistema em
+  ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do sistema? A referência continuaria valendo para o conteúdo
+  e a composição. Hoje vale o §11 ("PNG vence para layout/intenção"). O precedente `D-OS-CABECALHO-PADRONIZADO` trocou
+  a referência de 5 telas; ele não pôs o código acima dela.

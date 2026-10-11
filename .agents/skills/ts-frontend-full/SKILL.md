@@ -12,7 +12,8 @@ description: "Engenharia frontend e mobile de produção para o ERP Techsolution
   features/<domínio>, shared}. PROIBIDO introduzir estrutura nova
   (atomic design, feature-sliced etc.).
 - Antes de criar qualquer arquivo, espelhar o equivalente existente:
-  página de lista → WorkOrdersListPage.tsx; service →
+  página de lista → frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx
+  (NUNCA frontend/src/pages/*: legado sem rota); service →
   frontend/src/modules/operations/dispatches/dispatches.service.ts;
   feature Flutter → a feature mais próxima em lib/features/.
 - Precedência em conflito: prompt em execução e arquivos do repo

@@ -34,7 +34,8 @@ implementação correta — não de direção de arte.
 ## Stack real do projeto (corrige a versão genérica)
 - Web: React 18 + TypeScript + Vite + Tailwind. Componentes de
   `frontend/src/components` e padrões de página espelhados das páginas
-  existentes (ex.: WorkOrdersListPage.tsx).
+  existentes (ex.: frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx;
+  nunca o legado sem rota de frontend/src/pages/).
 - Mobile: Flutter 3.x + Material 3 (app de campo, offline-first).
   Diretrizes de stack Flutter vêm das skills flutter-ai-architect /
   flutter-expert; esta skill cobre UX e QA visual.
