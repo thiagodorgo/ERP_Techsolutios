@@ -13,5 +13,6 @@ VETO (depois): rodar dev server, capturar a tela, comparar lado a lado. REPROVAR
 3. cheiro de mock: "Lorem/Test/Exemplo", número sem contexto de período, listas idênticas entre tenants do seed
 4. tela fixa: menos elementos clicáveis navegáveis que o screen-element-map da tela exige
 5. dado técnico cru visível (UUID, enum interno, JSON)
+6. tela feita do zero: layout, cabeçalho ou componente que não vem da tela existente equivalente nem de `COMPONENT_LIBRARY.md` (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4)
 
 Veredito: APROVADO | REPROVADO + achados com evidência arquivo:linha.

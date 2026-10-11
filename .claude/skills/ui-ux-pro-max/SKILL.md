@@ -17,6 +17,9 @@ O design system deste projeto está APROVADO e é IMUTÁVEL por esta skill:
   `color`, `typography`, `google-fonts`, `landing`, `product` e `prompt`
   do search.py como fonte de DECISÃO. Se consultados por curiosidade,
   nada do resultado pode sobrescrever os tokens do repo.
+- Tela nova segue a tela EXISTENTE mais parecida (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4): nada de
+  tela do zero; cite a tela-modelo (arquivo) no plano ou no relatório. Componente novo só sem equivalente,
+  e nasce na biblioteca.
 - Precedência em qualquer conflito:
   decisões do prompt em execução e arquivos do repo (DESIGN_SYSTEM.md,
   COMPONENT_LIBRARY.md, RBAC_MATRIX.md, mobile-sync-contracts.md)

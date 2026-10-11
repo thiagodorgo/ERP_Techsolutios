@@ -203,6 +203,32 @@ permanecem). Ícones: **lucide-react**. **37 telas web** em 5 papéis — índic
 Dashboard Operacional · OS Lista · OS Detalhe · Despachos · Estoque · Organizações · Detalhe da
 Organização · Console Dispatcher · Cobranças.
 
+**Tela nova segue o padrão que JÁ EXISTE no sistema: nada de tela do zero** (decisão do dono, 2026-10-11,
+`D-TELAS-SEGUEM-O-PADRAO`). Nas palavras do dono: *"a construção de novas telas tem que acompanhar o padrao do sistema, importante usar as skills de frontend e deixar clarificado que o padrao que ja ha no sistema deve ser seguido, nada de fazer novas telas do inicio. documente e espalhe esse requesito"*.
+
+1. **Comece da tela-modelo.** Antes de criar, ligar ou refazer uma tela, ache a tela EXISTENTE mais parecida e parta
+   dela:
+   - lista → `WorkOrdersListPage.tsx`;
+   - cabeçalho e página-padrão → as Telas Padronizadas de `D-OS-CABECALHO-PADRONIZADO` (§11);
+   - detalhe, painel ou formulário → o equivalente do mesmo módulo, ou o mais próximo.
+
+   Dela vêm o shell, o cabeçalho, os componentes de `COMPONENT_LIBRARY.md`, os tokens, a camada de dados (service e
+   hook) e os estados obrigatórios (§7).
+2. **Use as skills de frontend do repositório.** `ts-frontend-full` serve para implementar e `ui-ux-pro-max` para
+   revisar. No Codex, as duas ficam em `.agents/skills/`. As skills de "gosto" instaladas fora do repo NÃO criam
+   padrão: valem abaixo de `DESIGN_SYSTEM.md`, `COMPONENT_LIBRARY.md`, do §11 e deste item.
+3. **Proibido:**
+   - layout, componente, paleta, tipografia ou espaçamento novos quando o sistema já tem o equivalente;
+   - reescrever do zero uma tela que já existe.
+
+   Componente novo só nasce quando não há equivalente, e nasce NA biblioteca, com registro.
+4. **Todo plano e todo prompt de dev de tela citam a tela-modelo (arquivo) e as skills.** O revisor e o
+   `cognicao-visual` conferem.
+5. **[leitura do orquestrador, a confirmar com o dono] Referência do §11 × padrão do sistema.** Onde a referência
+   renderizada do §11 divergir do padrão já adotado em ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do
+   sistema, como já se decidiu para o cabeçalho em `D-OS-CABECALHO-PADRONIZADO`. A referência continua valendo para o
+   conteúdo e a composição da tela.
+
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
 Siga a estrutura do app existente (test/features já usa a convenção `bNNN_<slug>_test.dart`).
@@ -729,6 +755,8 @@ ao PR corrente**.
       artifacts + branches locais mergeadas + temporários; disco escasso — §C5).
 - [ ] PR aberto no GitHub; **KPIs atualizados no próprio PR** com contagens reais (C3).
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
+- [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
+      skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 
 ## 11. Fidelidade visual — referências renderizadas (`screen-refs/`)
