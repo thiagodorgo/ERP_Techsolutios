@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **514** |
-| IDs distintos | 503 |
-| **ABERTAS** | **385** |
+| Cabecalhos `## P-` | **519** |
+| IDs distintos | 508 |
+| **ABERTAS** | **386** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **318** |
+| — das quais **ativas nesta rodada** | **319** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 126 |
+| FECHADAS | 130 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **514 cabecalhos para 503 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **519 cabecalhos para 508 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 182
+## ABERTAS · balde A — material — 181
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -243,10 +243,6 @@
 | `P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER` | 10636 | MÉDIA | sim | P-O6R-B04-GUARD-D2-INDIRECAO-AO-LEDGER (2026-10-10) — o universo W do D2 mede alcance a  |
 | `P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE` | 10645 | MÉDIA | sim | P-O6R-B04-GUARD-D7-PORTA-COMO-PROPRIEDADE (2026-10-10) — o D7 enumera "toda porta públic |
 | `P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU` | 10654 | MÉDIA | sim | P-O6R-B04-GUARD-D5-TRANSICAO-POR-SQL-CRU (2026-10-10) — o D5 trata a transição de status |
-| `P-TRC-FORMA-QUATRO-OU-SETE` | 10670 | ALTA | sim | P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decis |
-| `P-TRC-AWS-FLY-PRAZO` | 10682 | ALTA | sim | P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1  |
-| `P-TRC-CONVIVENCIA-APP` | 10691 | ALTA | sim | P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do té |
-| `P-TRC-ATRIBUICAO-PRODUTO` | 10702 | MÉDIA | sim | P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde |
 | `P-TRC-VINCULO-POSSE` | 10712 | ALTA | sim | P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALT |
 | `P-TRC-LGPD` | 10725 | ALTA | sim | P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e aces |
 | `P-TRC-TETO-ORGANIZACOES` | 10737 | MÉDIA | sim | P-TRC-TETO-ORGANIZACOES (2026-10-10) — teto de 500 organizações ativas na descoberta do  |
@@ -256,8 +252,11 @@
 | `P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE` | 10776 | MÉDIA | sim | P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os gu |
 | `P-BLOCO-BAT-01` | 10783 | MÉDIA | sim | P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, |
 | `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10795 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
+| `P-TRC-AWS-ESTUDO-MIGRACAO` | 10810 | MÉDIA | sim | P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro pa |
+| `P-TRC-PLANO-V22` | 10816 | MÉDIA | sim | P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do don |
+| `P-EXPENSE-REST-SEM-IDEMPOTENCIA` | 10835 | MÉDIA | sim | P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatór |
 
-## ABERTAS · balde B — processo/registro — 136
+## ABERTAS · balde B — processo/registro — 138
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -397,6 +396,8 @@
 | `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10663 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
 | `P-REG-GERADOR-SEVERIDADE-POR-PALAVRA` | 10789 | BAIXA | sim | P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior pal |
 | `P-AGENTE-CHECK-SEM-GENERATE` | 10802 | BAIXA | sim | P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige p |
+| `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` | 10823 | BAIXA | sim | P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 |
+| `P-AGENTE-API-ANINHAMENTO-PROFUNDO` | 10829 | BAIXA | sim | P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -470,7 +471,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3660 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3704 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 126
+## FECHADAS — 130
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -600,3 +601,7 @@
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10056 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 | `P-OS-FILTRAR-EXPORTAR` | 10185 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
 | `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` | 10559 | BAIXA | sim | P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da li |
+| `P-TRC-FORMA-QUATRO-OU-SETE` | 10670 | ALTA | sim | P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decis |
+| `P-TRC-AWS-FLY-PRAZO` | 10682 | ALTA | sim | P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1  |
+| `P-TRC-CONVIVENCIA-APP` | 10691 | ALTA | sim | P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do té |
+| `P-TRC-ATRIBUICAO-PRODUTO` | 10702 | MÉDIA | sim | P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde |
