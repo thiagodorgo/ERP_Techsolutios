@@ -19,9 +19,6 @@ import { buildDamagesKpiDetails } from "../src/modules/fleet/damages/damages-kpi
 // já carregado: breakdown/explain honestos, source vivo do hook e NUNCA gráfico (nenhuma série real fora do
 // Dashboard). Telas mock → o modal supõe o selo "Dados de exemplo" e não renderiza chart (D-007).
 
-const canAll = () => true;
-const canNone = () => false;
-
 function renderModal(detail: KpiDetail): string {
   return renderToString(
     <MemoryRouter>
@@ -54,7 +51,7 @@ test("ClickableKpiCard envolve o card e vira alvo clicável (role=button + aria-
 const INV_TOTALS = { activeItems: 40, belowMinItems: 5, needsReorderItems: 3, movementsCount: 18 };
 
 test("Estoque: 4 cards com breakdown/explain honesto; nenhum chart; source vivo (api)", () => {
-  const d = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "api", "api", canAll);
+  const d = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "api", "api");
   assert.equal(d.activeItems.body.kind, "breakdown");
   assert.equal(d.belowMin.body.kind, "explain");
   assert.equal(d.needsReorder.body.kind, "explain");
@@ -71,24 +68,25 @@ test("Estoque: 4 cards com breakdown/explain honesto; nenhum chart; source vivo 
   assertNoChart(renderModal(d.movements));
 });
 
-test("Estoque: cta 'Precisam repor'→/purchase-orders SÓ com purchase_orders:read", () => {
-  const allowed = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "api", "api", (p) => p === "purchase_orders:read");
-  assert.equal(allowed.needsReorder.cta?.to, "/purchase-orders");
-
-  const denied = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "api", "api", canNone);
-  assert.equal(denied.needsReorder.cta, undefined);
-  // Sem cta cross-route, o pop-up segue útil (explain), sem oferecer rota bloqueada.
-  const html = renderModal(denied.needsReorder);
+// B-SAN3-06a (D-TELAS-SAN3-06a) — a tela de Pedidos de compra saiu do menu e da rota: o cta de "Precisam repor" sumiu
+// para TODO papel (antes só sumia sem purchase_orders:read). O pop-up segue útil (explain), sem oferecer rota morta.
+test("Estoque: 'Precisam repor' sem cta para Pedidos (tela retirada), pop-up segue explicando", () => {
+  const d = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "api", "api");
+  assert.equal(d.needsReorder.cta, undefined);
+  assert.equal(d.needsReorder.body.kind, "explain");
+  const html = renderModal(d.needsReorder);
   assert.doesNotMatch(html, /Ver pedidos de compra/);
+  assert.doesNotMatch(html, /purchase-orders/);
+  for (const detail of Object.values(d)) assert.notEqual(detail.cta?.to, "/purchase-orders");
 });
 
 test("Estoque: source mock/fallback é passthrough → modal mostra selo honesto, sem chart", () => {
-  const mock = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "mock", "mock", canAll);
+  const mock = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "mock", "mock");
   const html = renderModal(mock.activeItems);
   assert.match(html, /Dados de exemplo/);
   assertNoChart(html);
 
-  const fb = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "fallback", "fallback", canAll);
+  const fb = buildInventoryKpiDetails(INV_TOTALS, 42, 120, "fallback", "fallback");
   assert.match(renderModal(fb.belowMin), /último dado local/);
 });
 

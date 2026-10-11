@@ -142,7 +142,10 @@ test("[R7.5] runReorderPointNotifications é idempotente: rodar 2× no mesmo dia
   assert.equal(first.length, 1);
   assert.equal(second.length, 1);
   assert.equal(first[0]?.id, second[0]?.id, "a segunda execução deve retornar o MESMO aviso (dedup por dia)");
-  assert.equal(first[0]?.actionUrl, "/purchase-orders"); // sugere reposição, sem automatizar compra
+  // B-SAN3-06a (PARE 1, opção (b)): o aviso leva ao DETALHE do item no Estoque (rota /inventory/:id que existe), não mais à
+  // tela de Pedidos de compra, que saiu do menu e da rota. Sugere reposição, sem automatizar compra.
+  assert.equal(first[0]?.actionUrl, `/inventory/${item.id}`);
+  assert.doesNotMatch(first[0]?.message ?? "", /purchase-orders/);
   assert.equal(first[0]?.type, "inventory.reorder_point");
 
   resetNotificationRuntimeForTests();

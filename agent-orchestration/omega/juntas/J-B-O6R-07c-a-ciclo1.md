@@ -54,3 +54,12 @@ md5 igual). Nenhuma cadeira caiu (P6 sem linha).
 **Próximo (decisão do dono `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`):** o modelo de topo audita a reprovação — os achados são
 defeitos reais do produto ou artefato do processo? — e escreve o plano detalhado do ciclo 2. Ciclo 2 é o último em que achado
 não grave reprova (`CLAUDE.md` §C7 item 8(2)). Registro: `omega/reprovacoes/R-B-O6R-07c-a-1.md`.
+
+## Desfecho (2026-10-11): não houve ciclo 2
+
+O dono decidiu pela **opção D** (`D-07CA-OPCAO-D`, em `controle/decisoes.md`):
+- o conserto do produto mergeou no PR #414 (`86ea8a81`), sem junta verde;
+- os 3 `bloqueia` da C2 viraram `P-GOV-GUARDA-POR-PROPRIEDADE`, com bloco dono `B-GOV-GUARDA-POR-PROPRIEDADE`;
+- o plano do ciclo 2 e a pré-crítica passaram a ser insumo desse bloco.
+
+O porteiro do merge foi `LIBERADO COM RESSALVA` (`votos/B-O6R-07c/PORTEIRO-414.md`).

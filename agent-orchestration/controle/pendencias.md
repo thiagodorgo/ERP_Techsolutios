@@ -6763,7 +6763,7 @@ gestor moderando comentário ANTES de codar. **Consequências declaradas:** o ga
 continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
 fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
 
-- **status:** ABERTA — PARCIAL (2026-10-10, com o merge do PR #414, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
+- **status:** ABERTA — PARCIAL (2026-10-11, com o merge do PR #414, `86ea8a81`, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
   o resíduo é do `B-O6R-07c-b`). Antes: ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
   `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
   `B-O6R-07c`.
@@ -10861,6 +10861,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - os dois aparelhos GT06 estão em mãos, e o dono confirma: *"os gps sao todos gt06"*.
   - O que ainda se confere é escopo do **B-TRC-03a**, com os aparelhos reais: a variante GT06 (V3/V4), a porta, o intervalo duplo nativo (parado e em movimento), os comandos de intervalo e o chip (APN privada ou VPN). Antes: ABERTA, aberta em 2026-10-11 pela F-9 da emenda v2.3.
 - **bloqueia:** nada mais. Os itens acima são entregas do B-TRC-03a, não condição de início dele.
+- **nota (2026-10-11, ressalva do porteiro do #414):** este fechamento foi escrito no lugar, e a versão anterior dizia "bloqueia o B-TRC-03a e o `G-TRC-NLB`". O que o `G-TRC-NLB` exige vem da pergunta F-9 da emenda v2.3: "G-TRC-NLB: modelo, porta e se há APN/VPN" (plano §9.1, l.1669-1671). O modelo está respondido. A porta e o APN/VPN continuam pendentes e saem das medições do B-TRC-03a com os aparelhos.
+  **[leitura do orquestrador]** O `G-TRC-NLB` segue dependendo dessas medições. Só a lista de modelos, que era o objeto desta pendência, está fechada.
 
 ## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overlay de dev — FECHADA, NÃO PROCEDE
 
@@ -10919,6 +10921,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Decisão do dono:** *"/logistics ligar depois"* (`D-TELAS-SAN3-06a`). A tela está fora do menu lateral (`appSidebarNav.ts`), mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts` (l.62-72).
 - **bloqueia:** nada hoje. Conta para a meta "telas sem placeholder, funcional".
 - **teste de encerramento:** a tela mostra dado real do servidor e um estado vazio honesto, e o teste prova que nenhum dado constante aparece fora do modo mock. Alternativa: a rota sai.
+
+## P-INDICE-SEVERIDADE-POR-SUBSTRING (2026-10-11) — o gerador do índice tira a severidade de palavra solta no corpo da entrada — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`agent-orchestration/controle/gerar-indice-pendencias.py`, função `severidade()`, l.60-80; achado do porteiro do #414 e da revisão do #423) · **dono:** o próximo bloco de registro que mexer no gerador.
+- **O defeito:** `severidade()` procura as palavras de severidade no CORPO inteiro da entrada, na ordem da mais grave para a mais leve, e o `` da regex casa a palavra dentro de um termo hifenizado.
+- **O caso medido:** `P-GOV-GUARDA-POR-PROPRIEDADE` declara no cabeçalho o segundo grau da escala, mas o índice a mostra no primeiro. O corpo dela (l.10911 e 10914) cita a revisão prévia da API, cujo nome contém a palavra.
+- Esta entrada evita a palavra de propósito, para não cair no próprio defeito.
+- **bloqueia:** não. Se divergir, vale o `pendencias.md`, como diz o cabeçalho do índice.
+- **teste de encerramento:** a severidade vem do sufixo `— <SEVERIDADE>` do cabeçalho. Um caso de teste com o termo hifenizado no corpo e `— BAIXA` no cabeçalho dá BAIXA.
 
 ## P-O6R-B03-UUID-PATTERN-INVALIDO (2026-10-11) — a regex de UUID do módulo de despesa recusava todo UUID canônico — ALTA
 

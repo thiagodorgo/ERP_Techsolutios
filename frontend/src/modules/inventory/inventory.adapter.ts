@@ -149,7 +149,8 @@ export function getAbcClassLabel(abcClass: InventoryAbcClass | null): string {
 
 // ── Ponto de pedido / reposição sugerida (F7b · R7.5) ────────────────────────
 // `needsReorder` (saldo ≤ ponto de pedido) → chip de PERIGO "Repor" com cor+rótulo.
-// É apenas SUGESTÃO: o link leva a /purchase-orders sem automatizar a compra.
+// É apenas SUGESTÃO: o chip sinaliza a reposição, sem automatizar a compra (B-SAN3-06a: sem link — a tela de
+// Pedidos de compra saiu do menu e da rota).
 export const REORDER_CHIP = { label: "Repor", tone: "danger" as const };
 
 export function getReorderChipLabel(): string {

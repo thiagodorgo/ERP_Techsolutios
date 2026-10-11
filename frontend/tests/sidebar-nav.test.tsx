@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import type { NavigationAccessContext } from "../src/navigation/types";
 
@@ -26,9 +29,7 @@ const GESTAO_PATHS = [
   "/cadastros/equipes",
   "/cadastros/servicos",
   "/inventory",
-  "/purchase-orders",
   "/finance/commissions",
-  "/reports",
   "/finance",
 ];
 // Núcleo de ADMINISTRAÇÃO (exclui Notificações, que é ubíqua) para asserção limpa de grupo.
@@ -190,7 +191,7 @@ const ROLE_CASES: readonly RoleCase[] = [
       ],
       "operation",
     ),
-    mustSee: ["/dashboard", "/fleet/fines", "/fleet/insurance", "/finance/commissions", "/finance", "/reports"],
+    mustSee: ["/dashboard", "/fleet/fines", "/fleet/insurance", "/finance/commissions", "/finance"],
     mustNotSee: [
       "/cadastros/clientes",
       "/cadastros/viaturas",
@@ -208,7 +209,7 @@ const ROLE_CASES: readonly RoleCase[] = [
     // Nota: `inventory` sem rotulo UserRole nao casa com o allowedRoles de Notificacoes
     // (gap de vocabulario do front — STOP no relatorio); Estoque/Pedidos gate por permissao.
     context: ctx([], ["dashboard:read", "inventory_items:read", "purchase_orders:read", "notifications:read"], "operation"),
-    mustSee: ["/dashboard", "/inventory", "/purchase-orders"],
+    mustSee: ["/dashboard", "/inventory"],
     mustNotSee: ["/fleet/fuel", "/cadastros/clientes", "/operations/dispatches", "/users", "/audit", "/administrator/settings"],
     frota: false,
     gestao: true,
@@ -398,4 +399,106 @@ test("sidebar visual: gestor/admin recebem os grupos aprovados; dispatcher tem F
   assert.equal(dispatcherPaths.includes("/users"), false, "dispatcher nao ve Usuarios");
   assert.equal(dispatcherPaths.includes("/administrator/settings"), false, "dispatcher nao ve Configuracoes");
   assert.equal(dispatcherPaths.includes("/audit"), false, "dispatcher nao ve Auditoria");
+});
+
+// ── B-SAN3-06a (D-TELAS-SAN3-06a) — Pedidos de compra e Relatórios saem do menu E da rota ──────────────────────────
+// Eram telas 100% literais, sem servidor. A propriedade (plano, §0 P2): nenhum Route nem import das duas telas no
+// App.tsx (o deep-link cai no catch-all, como toda rota desconhecida), nenhuma entrada de menu em NENHUM RoleKind, na
+// allowlist MVP ou no registro tenantNavigation, nenhum literal de caminho em frontend/src, e a matriz de navegação sem
+// as duas linhas — conferida contra as rotas reais do App.tsx (toda rota da matriz precisa responder).
+// Mutações que cada caso derruba (executadas no relatório do dev): C1 devolver o Route; C2 devolver PEDIDOS ao grupo
+// inventory; C3 devolver o Link da EstoquePage; C9 devolver a linha de Pedidos à matriz.
+
+const FRONTEND_DIR = fileURLToPath(new URL("../", import.meta.url));
+const REPO_DIR = path.dirname(FRONTEND_DIR);
+const RETIRED_PATHS: readonly string[] = ["/purchase-orders", "/reports"];
+const RETIRED_LABELS: readonly string[] = ["Pedidos", "Relatórios"];
+
+function appRoutePaths(): string[] {
+  const appText = readFileSync(path.join(FRONTEND_DIR, "src/App.tsx"), "utf8");
+  return [...appText.matchAll(/\bpath="([^"]+)"/g)].map((m) => m[1]);
+}
+
+function sourceFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const target = path.join(directory, name);
+    return statSync(target).isDirectory() ? sourceFiles(target) : /\.(ts|tsx)$/.test(name) ? [target] : [];
+  });
+}
+
+test("[06a·C1] App.tsx sem Route nem import das duas telas; o deep-link só casa com o catch-all, que leva a /login", async () => {
+  const { matchRoutes } = await import("react-router-dom");
+  const appText = readFileSync(path.join(FRONTEND_DIR, "src/App.tsx"), "utf8");
+  const paths = appRoutePaths();
+  assert.ok(paths.length > 50, `leitura das rotas do App.tsx suspeita: ${paths.length}`);
+  assert.match(appText, /<Route path="\*" element=\{<Navigate to="\/login" replace \/>\} \/>/, "o catch-all leva a /login");
+  const routes = paths.map((routePath) => ({ path: routePath }));
+  for (const retired of RETIRED_PATHS) {
+    assert.equal(paths.includes(retired), false, `Route ${retired} ainda declarado`);
+    for (const target of [retired, `${retired}/qualquer`]) {
+      const matched = (matchRoutes(routes, target) ?? []).map((match) => match.route.path);
+      assert.deepEqual(matched, ["*"], `${target} deveria cair só no catch-all; casou com ${JSON.stringify(matched)}`);
+    }
+  }
+  assert.doesNotMatch(appText, /modules\/(purchase-orders|reports)\/|PedidosPage|ReportsPage/);
+  for (const dir of ["src/modules/purchase-orders", "src/modules/reports"]) {
+    assert.equal(existsSync(path.join(FRONTEND_DIR, dir)), false, `${dir} deveria ter sido apagado`);
+  }
+});
+
+test("[06a·C2] nenhum RoleKind, a allowlist MVP nem o registro tenantNavigation oferecem as duas telas", async () => {
+  const { NAV_BY_ROLE, MVP_NAV_PATHS, buildSidebarNav } = await import("../src/layouts/appSidebarNav");
+  const { tenantNavigation } = await import("../src/navigation/tenantNavigation");
+  assert.deepEqual(Object.keys(NAV_BY_ROLE).sort(), ["admin", "dispatcher", "finance", "gestor", "inventory", "support"]);
+  for (const [kind, groups] of Object.entries(NAV_BY_ROLE)) {
+    for (const group of groups) {
+      for (const item of group.items) {
+        assert.equal(RETIRED_PATHS.includes(item.path), false, `${kind}/${group.label} oferece ${item.path}`);
+        assert.equal(RETIRED_LABELS.includes(item.label), false, `${kind}/${group.label} oferece "${item.label}"`);
+      }
+    }
+  }
+  for (const retired of RETIRED_PATHS) assert.equal(MVP_NAV_PATHS.has(retired), false, `MVP_NAV_PATHS ainda tem ${retired}`);
+  const registryPaths = flattenPaths(tenantNavigation);
+  for (const retired of RETIRED_PATHS) assert.equal(registryPaths.includes(retired), false, `tenantNavigation ainda tem ${retired}`);
+  for (const labels of [["Administrador"], ["Gestor Operacional"], ["Financeiro"], ["Estoque"], ["Operação de Campo"], ["Supervisor"], []]) {
+    const visible = buildSidebarNav(labels).flatMap((group) => group.items.map((item) => item.path));
+    for (const retired of RETIRED_PATHS) assert.equal(visible.includes(retired), false, `${JSON.stringify(labels)} vê ${retired}`);
+  }
+});
+
+test("[06a·C3] nenhum literal de caminho para as duas telas em frontend/src", () => {
+  const literal = /["'`]\/(purchase-orders|reports)(?=["'`?#/])/;
+  const hits: string[] = [];
+  for (const file of sourceFiles(path.join(FRONTEND_DIR, "src"))) {
+    readFileSync(file, "utf8")
+      .split(/\r?\n/)
+      .forEach((line, index) => {
+        if (literal.test(line)) hits.push(`${path.relative(FRONTEND_DIR, file).replace(/\\/g, "/")}:${index + 1}`);
+      });
+  }
+  assert.deepEqual(hits, []);
+});
+
+// Pré-existente, fora deste bloco: a matriz documenta a timeline do despacho como rota, mas ela não é uma rota do
+// App.tsx. Entrada morta (passar a responder) também falha — a exceção não apodrece.
+const MATRIX_ROUTES_WITHOUT_SCREEN: Record<string, string> = {
+  "/operations/dispatches/:id/timeline": "pré-existente (Ω3-b): a timeline é um painel dentro de /operations/dispatches",
+};
+
+test("[06a·C9] navigation-matrix sem as duas telas, e toda rota da matriz responde no App.tsx", async () => {
+  const { matchRoutes } = await import("react-router-dom");
+  const matrix = readFileSync(path.join(REPO_DIR, "docs/navigation-matrix.md"), "utf8");
+  for (const retired of RETIRED_PATHS) assert.equal(matrix.includes(`\`${retired}\``), false, `a matriz ainda lista ${retired}`);
+  const routes = appRoutePaths().map((routePath) => ({ path: routePath }));
+  const matrixRoutes = matrix
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("|"))
+    .flatMap((line) => [...(line.split("|")[1] ?? "").matchAll(/`(\/[^`\s]*)`/g)].map((m) => m[1]));
+  assert.ok(matrixRoutes.length >= 40, `leitura da matriz suspeita: ${matrixRoutes.length}`);
+  const withoutScreen = matrixRoutes.filter((route) => {
+    const matched = (matchRoutes(routes, route) ?? []).map((match) => match.route.path);
+    return matched.length === 0 || matched.every((routePath) => routePath === "*");
+  });
+  assert.deepEqual(withoutScreen.sort(), Object.keys(MATRIX_ROUTES_WITHOUT_SCREEN).sort());
 });

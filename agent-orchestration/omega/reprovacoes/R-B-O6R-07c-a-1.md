@@ -9,3 +9,5 @@
   (o #389 e as críticas r1/r2 do 07c).
 - **Ciclo 2:** auditoria + plano pelo modelo de topo (Fable), identidade nova; dev novo; junta nova. É o último ciclo em que
   achado não grave reprova.
+- **Desfecho (2026-10-11):** NÃO houve ciclo 2. O dono decidiu pela opção D (`D-07CA-OPCAO-D`): o conserto do produto mergeou
+  no #414 (`86ea8a81`), e o guard por propriedade virou `P-GOV-GUARDA-POR-PROPRIEDADE`, com bloco dono.
