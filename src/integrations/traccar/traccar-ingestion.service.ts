@@ -126,12 +126,20 @@ export class TraccarIngestionService {
     return this.resolver.reportCapacity();
   }
 
-  async ingest(command: TraccarPositionCommand): Promise<TraccarIngestOutcome> {
+  async ingest(command: TraccarPositionCommand, deadline?: TraccarIngestDeadline): Promise<TraccarIngestOutcome> {
     const key: TraccarDeviceKey = { instanceKey: command.instanceKey, externalDeviceKey: command.externalDeviceKey };
-    const deadline = Date.now() + this.options.timeoutMs;
+    const effectiveDeadline = deadline ?? createTraccarCommitGate(Date.now() + this.options.timeoutMs).deadline;
+
+    if (effectiveDeadline.expired) {
+      return { kind: "unavailable", reason: "timeout" };
+    }
 
     try {
-      const resolved = await this.resolver.resolve(key, (tenantId) => this.phaseTwo(tenantId, command), deadline);
+      const resolved = await this.resolver.resolve(
+        key,
+        (tenantId) => this.phaseTwo(tenantId, command, effectiveDeadline),
+        effectiveDeadline.at,
+      );
 
       switch (resolved.kind) {
         case "confirmed": {
@@ -143,22 +151,32 @@ export class TraccarIngestionService {
           return result.kind === "duplicate" ? { kind: "duplicate" } : result;
         }
         case "unmapped":
-          await this.quarantineWithoutTenant(command, "unmapped_device");
+          await this.quarantineWithoutTenant(command, "unmapped_device", effectiveDeadline);
           return { kind: "quarantined", reason: "unmapped_device" };
         case "budget_exceeded":
-          await this.quarantineWithoutTenant(command, "resolution_budget_exceeded");
+          await this.quarantineWithoutTenant(command, "resolution_budget_exceeded", effectiveDeadline);
           return { kind: "quarantined", reason: "resolution_budget_exceeded" };
         case "unavailable":
           return { kind: "unavailable", reason: resolved.reason };
       }
     } catch (error) {
+      if (error instanceof TraccarIngestDeadlineExpiredError) {
+        return { kind: "unavailable", reason: "timeout" };
+      }
       // Só o código: nunca a mensagem do driver (pode citar a URL), nunca o payload.
       this.options.logger?.error({ code: errorCode(error) }, "Traccar ingestion failed before commit");
       return { kind: "unavailable", reason: "database" };
     }
   }
 
-  private phaseTwo(tenantId: string, command: TraccarPositionCommand): Promise<TraccarConfirmResult<PhaseTwoResult>> {
+  private phaseTwo(
+    tenantId: string,
+    command: TraccarPositionCommand,
+    deadline: TraccarIngestDeadline,
+  ): Promise<TraccarConfirmResult<PhaseTwoResult>> {
+    if (deadline.expired) {
+      throw new TraccarIngestDeadlineExpiredError();
+    }
     // Tudo que toca o banco na fase 2 nasce DENTRO deste callback, sobre o tx que o helper entrega já sob o GUC da
     // candidata (setter como 1ª instrução da transação, src/database/rls.ts, withTenantRlsBudget).
     const budget = this.options.budgets?.phaseTwo ?? TRACCAR_PHASE_TWO_BUDGET;
@@ -166,7 +184,11 @@ export class TraccarIngestionService {
       const repository = new TraccarIngestionRepository(tx, this.options.hooks);
       const locations = new PrismaFieldLocationRepository(tx);
       const operatorAt = (at: Date, vehicleId: string) => findOperatorsForVehicleAt(tx, { tenantId, vehicleId, at });
-      return this.phaseTwoSteps({ repository, locations, operatorAt }, tenantId, command);
+      const outcome = await this.phaseTwoSteps({ repository, locations, operatorAt }, tenantId, command);
+      if (outcome.kind === "confirmed") {
+        claimTraccarCommitOrThrow(deadline);
+      }
+      return outcome;
     });
   }
 
@@ -283,7 +305,12 @@ export class TraccarIngestionService {
    * Não abre transação interativa: com o mesmo episódio disputado por várias entregas, as gravações se serializam na
    * trava da linha, e uma transação interativa seguraria a conexão do pool enquanto espera.
    */
-  private async quarantineWithoutTenant(command: TraccarPositionCommand, reason: TraccarQuarantineReason): Promise<void> {
+  private async quarantineWithoutTenant(
+    command: TraccarPositionCommand,
+    reason: TraccarQuarantineReason,
+    deadline: TraccarIngestDeadline,
+  ): Promise<void> {
+    claimTraccarCommitOrThrow(deadline);
     await new TraccarIngestionRepository(this.options.client).recordQuarantine(command, reason);
   }
 }
@@ -328,7 +355,7 @@ export async function createTraccarIngestAppFromEnv(context: { readonly logger: 
       burst: env.TRACCAR_INGEST_BURST,
       maxConcurrency: env.TRACCAR_INGEST_MAX_CONCURRENCY,
     }),
-    ingest: (command) => service.ingest(command),
+    ingest: (command, deadline) => service.ingest(command, deadline),
     instanceKey: env.TRACCAR_INSTANCE_KEY,
     timeoutMs: env.TRACCAR_INGEST_TIMEOUT_MS,
     logger: context.logger,
