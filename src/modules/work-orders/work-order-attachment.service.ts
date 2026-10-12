@@ -33,6 +33,14 @@ export class WorkOrderAttachmentService {
   }
 
   /**
+   * B-O6R-07c-a — o controller chama ANTES do multipart: quem não pode gravar nesta OS (técnico de campo numa OS
+   * que não é dele) recebe 403 sem o servidor ler nem verificar um byte do upload. 404 do cross-tenant preservado.
+   */
+  async assertCanMutate(actor: WorkOrderAttachmentActorContext, workOrderId: string): Promise<void> {
+    await this.assertWorkOrderForMutation(actor, workOrderId);
+  }
+
+  /**
    * Ω3-d — upload: SCAN antes de STORE (R2). infected → 422 / failed → 503 (nada persistido, sem blob).
    * clean → store no provider de checklist (D-014) → grava a row status='stored'. Cleanup de órfão:
    * se o insert falha após o store, o blob é removido.
@@ -42,7 +50,8 @@ export class WorkOrderAttachmentService {
     workOrderId: string,
     upload: WorkOrderAttachmentUpload,
   ): Promise<WorkOrderAttachment> {
-    const workOrder = await this.assertWorkOrder(actor, workOrderId);
+    // B-O6R-07c-a — escopo por objeto também aqui (o serviço não confia em quem o chama).
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
 
     // Idempotência tenant-scoped (§6/R5): duplicado ativo com o mesmo client_action_id → 409, ANTES
     // de escanear/armazenar (não gasta scan nem storage num retry já resolvido).
@@ -123,7 +132,9 @@ export class WorkOrderAttachmentService {
     workOrderId: string,
     attachmentId: string,
   ): Promise<WorkOrderAttachment> {
-    const attachment = await this.getAttachmentEntity(actor, workOrderId, attachmentId);
+    // B-O6R-07c-a — escopo por objeto ANTES de buscar o anexo: o técnico não apaga anexo da OS do colega.
+    const workOrder = await this.assertWorkOrderForMutation(actor, workOrderId);
+    const attachment = await this.findAttachment(actor, workOrder.id, attachmentId);
     const removed = await this.repository.deleteAttachment(actor.tenantId, attachment.workOrderId, attachment.id);
     if (!removed) {
       throw new WorkOrderAttachmentError(404, "WORK_ORDER_ATTACHMENT_NOT_FOUND", "attachment_not_found", "Work order attachment was not found.");
@@ -139,10 +150,17 @@ export class WorkOrderAttachmentService {
     try {
       return await this.workOrderService.get(actor, workOrderId);
     } catch (error) {
-      if (error instanceof WorkOrderError && error.statusCode === 404) {
-        throw new WorkOrderAttachmentError(404, "WORK_ORDER_NOT_FOUND", "work_order_not_found", "Work order was not found.");
-      }
-      throw error;
+      throw toAttachmentWorkOrderError(error);
+    }
+  }
+
+  // B-O6R-07c-a — a OS para ESCREVER: `getForMutation` (404 do cross-tenant + escopo por objeto do 07a). A conversão
+  // do 404 é a mesma de `assertWorkOrder`; o 403 `not_assigned_to_actor` atravessa como está.
+  private async assertWorkOrderForMutation(actor: WorkOrderAttachmentActorContext, workOrderId: string) {
+    try {
+      return await this.workOrderService.getForMutation(actor, workOrderId);
+    } catch (error) {
+      throw toAttachmentWorkOrderError(error);
     }
   }
 
@@ -152,7 +170,15 @@ export class WorkOrderAttachmentService {
     attachmentId: string,
   ): Promise<WorkOrderAttachment> {
     const workOrder = await this.assertWorkOrder(actor, workOrderId);
-    const attachment = await this.repository.findAttachmentById(actor.tenantId, workOrder.id, attachmentId);
+    return this.findAttachment(actor, workOrder.id, attachmentId);
+  }
+
+  private async findAttachment(
+    actor: WorkOrderAttachmentActorContext,
+    workOrderId: string,
+    attachmentId: string,
+  ): Promise<WorkOrderAttachment> {
+    const attachment = await this.repository.findAttachmentById(actor.tenantId, workOrderId, attachmentId);
     if (!attachment) {
       throw new WorkOrderAttachmentError(404, "WORK_ORDER_ATTACHMENT_NOT_FOUND", "attachment_not_found", "Work order attachment was not found.");
     }
@@ -189,6 +215,13 @@ async function createPrismaWorkOrderAttachmentService(): Promise<WorkOrderAttach
   const repository = await createPrismaWorkOrderAttachmentRepository();
   const workOrderService = await createDefaultWorkOrderService();
   return new WorkOrderAttachmentService(repository, workOrderService);
+}
+
+function toAttachmentWorkOrderError(error: unknown): unknown {
+  if (error instanceof WorkOrderError && error.statusCode === 404) {
+    return new WorkOrderAttachmentError(404, "WORK_ORDER_NOT_FOUND", "work_order_not_found", "Work order was not found.");
+  }
+  return error;
 }
 
 /**

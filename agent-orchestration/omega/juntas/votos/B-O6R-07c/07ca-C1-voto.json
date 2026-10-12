@@ -1,0 +1,87 @@
+{
+ "jurado": "jurado-07ca-c1-escopo-por-objeto (identidade nova; competência do coordenador-de-acessos, inelegível como identidade — tensão §A2 com o PLANO_SAN3.md:254; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do inspetor ou do corpo herdado como fato: tudo re-medido)",
+ "cadeira": "C1 — escopo por objeto: G-NEG/G-POS/G-WIDE nas 13 entradas pelos dois papéis de campo (status, motivo, efeito); matriz × catálogo × comportamento, S-MOD e 404 entre organizações; a km com a semântica do status do 07a e o S-KM-RESTART",
+ "mandato_md5": "5679184d44bcb0020aad05857fec3787 (cru = EOL-neutro, medido) · declarado no disparo: 5679184d44bcb0020aad05857fec3787",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor · substituição (§C7.6-bis): o Fable não rodou por decisão do dono D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO (topo só no plano e em toda reprovação), não por cota · fonte da decisão citada pelo invocador: agent-orchestration/controle/decisoes.md:3132 no objeto 4ca2be43 (entrou com o #415); D-FABLE-ASTRA-SO-DINHEIRO também presente no objeto (3 ocorrências)",
+ "corpo_md5": "23594fb3194c0802651edd8299b8433e (.claude/agents/especialistas no objeto, EOL-neutro) · a2b9192c86ab7cd40968875d276917f2 (.agents/agents/especialistas; difere só pelo cabeçalho Papel para o Codex e pela ausência da linha tools:, forma do espelho) · corpo recebido no prompt (general-purpose): o mesmo blob, md5 23594fb3194c0802651edd8299b8433e = publicado pelo inspetor",
+ "objeto": "4ca2be43c3b4b32b9bed670f02d78145620cdc2e (git ls-remote do ramo = gh pr view 414 headRefOid, no início 17:01Z e no fim 17:18Z) · B = merge-base com origin/main = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a · pai único d7255263 (cerca do mandato); merge de integração 762ac5ad (pais c8bd4c28 + 9b611468) · origin/main no início/fim 9b611468/9b611468 · delta cerca→objeto = só os 3 mandatos; delta objeto-do-inspetor c8bd4c28→objeto = 12 arquivos, todos agent-orchestration/, 0 em src/ e tests/ · objeto no fim: igual · src/ do bloco (B..objeto) = 4 arquivos (work-order-comment.service.ts, work-order-attachment.controller.ts, work-order-attachment.service.ts, work-order.service.ts)",
+ "legalidade": "parecer votos/B-O6R-07c/insp-07ca-parecer.md (inspetor-de-terreno-da-junta, Opus 5.5, 16:25–16:40Z) · LIBERADO COM RESSALVA (R1–R5) · confere este nome (0 no obituário), este corpo commitado nos dois espelhos (md5 23594fb3) e worktree próprio (mandato: w-ciclo1-07ca-c1, que vale sobre o w-j07cac1 do corpo): sim · o código julgado é o mesmo que o inspetor liberou (delta só registro) · check-runs no objeto às 17:18Z: total 14 | não-verdes 1 | pendentes 0 — o não-verde é o T15 do B-SAN3-05 (tests/san3-05-runtime-role-guard-db.test.ts, nascido em a9fbe283/#405 em 2026-10-09, 0 linha no diff do bloco; processo filho não encerrou em 9847ms) no backend do run push 38069987168; o mesmo backend no run pull_request 38069991906 = success; os testes do bloco (laço G 14 e S-* 10) ok no log",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (ciclos 1–2: bloqueia dentro-do-bloco reprova) — §C7 item 8(1)(2) do CLAUDE.md do objeto; bloco de permissão",
+ "tensao_A2": "competência do coordenador-de-acessos ocupada por esta cadeira · registro da tensão no objeto: agent-orchestration/controle/decisoes.md:3181 (REGISTRO-07CA-TENSAO-COORDENADOR)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta (nem C2c/C3c nem votos/evidências C2/C3) antes de gravar este voto · li: meu corpo (blob do objeto), meu mandato C1c.md, o parecer do inspetor, o código e os fixtures do objeto, RBAC_MATRIX.md, decisoes.md (âncoras), o teste do bloco só para aprender a semear (não importado, asserções não copiadas)",
+ "pausa": "nenhuma",
+ "item1": "VERDE — 13 entradas (instantâneo do objeto, OS·07a=3 + OS·07c-a=10) × tecnicoB(field_technician)+tecnicoT(technician) não atribuídos × corpo vazio e válido (geocode: OS sem endereço, OS com coordenada e válido): 56/56 403 ou lote 200 + rejected, motivo not_assigned_to_actor, estado da OS idêntico (anexo+binário, comentários+tags, título, status, km, geo origem/destino, eventos), inclusive com provedor de geocodificação habilitado (dublê) e com corpo vazio (escopo antes de 400/404/409/422). G-POS (perfil, USER ID, technician por perfil) 84 linhas sem escopo e com efeito; G-WIDE manager/operator 56 sem not_assigned nem permission_required; S-ROLES 28 sem escopo. Vermelho-controle na base 9b611468 (troca provada por hash-object 4/4, restauro 4/4, porcelain 0): as 10 vias 07c-a escrevem (204/201/200/accepted, estado muda) e o corpo vazio revela formato/estado (400/404/409/422), as 3 do 07a recusam; diff base×objeto = 44 linhas, todas G-NEG. Controles: leitor de efeito acusa (G-WIDE válido muda 13/13), leitor de motivo (auditor e x-permissions:read → permission_required 56/56), régua do objeto aplicada à base → 44 falhas, comparador objeto×objeto → 0. Medido 17:11–17:15Z.",
+ "item2": "VERDE — matriz efetiva 13 entradas × 11 papéis (OS não atribuída, corpo válido, permissões só do catálogo) base×objeto: 20 células mudaram, todas field_technician/technician, todas 2xx→403 not_assigned_to_actor; 0 célula de papel não assigned_only mudou; conforme RBAC_MATRIX.md:45 (full/create-edit escrevem; read/material-view/support-view = permission_required) e :66; incoerências catálogo×comportamento = 0 (CE-G2). S-MOD: linhas 1,2,4,5 idênticas base×objeto e com efeito; 3 (field_dispatcher) 403 comment_forbidden nas duas (tem comment, falta update, não é autor); 6 (tecnicoB) 200/201/204/204 → 403 not_assigned_to_actor ×4 sem efeito; CTRL auditor 403 permission_required. 404 entre organizações: 13/13 404/rejected WORK_ORDER_NOT_FOUND, corpo byte-igual à base e ao do id inexistente; controle mesma org 403 13/13. Controles: comparador fabricado aponta só a célula diferente; leitor do catálogo true/false. Medido 17:16Z.",
+ "item3": "VERDE — (a) tecnicoB e tecnicoT, status_change+mileage no mesmo lote: HTTP 200, as 2 ações rejected WORK_ORDER_NOT_ASSIGNED/not_assigned_to_actor, forma e erro idênticos, sem efeito; km inválida → not_assigned_to_actor (base: mileage_required; base aceita a km do não atribuído). (b) tecnicoA: própria osA accepted (km 1000) + osX alheia rejected not_assigned_to_actor sem efeito, lote 200. (c) S-KM-RESTART: accepted → reatribuição 200 → already_applied → (reset) rejected not_assigned_to_actor → km 500 preservada (base: p4 accepted). Controles: leitor da km acha (31 base, 32 app); reset real (accepted→already_applied→accepted); leitor do lote, extraído da própria sonda, separa resposta fabricada 1/1. R-a4: o app não produz work_order.mileage (git grep -F = 0, log -S --all = 0; controle status_change = 3). Medido 17:17Z.",
+ "voto": "APROVADO",
+ "justificativa": "Terreno: worktree próprio C:/Users/AMP/w-ciclo1-07ca-c1 detached no objeto, npm ci próprio (ec=0), prisma generate com DATABASE_URL placeholder só no ambiente do comando, sem banco, sem Redis, sem container; sonda própria (sonda.mts md5 3d967e579aa51160b923f3d6ca1e2f59, verbatim na evidência) monta createApp(new MemoryCoreSaasAdapter(...)) em porta efêmera 127.0.0.1 e fala só HTTP; modo memória declarado por comando (env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory NODE_ENV=test LOG_LEVEL=silent); permissões do ator vêm do catálogo pelo x-role (x-permissions só no controle de motivo, onde filtra para baixo); dublê só do provedor de geocodificação (estágio depois da decisão de acesso), declarado; disco 20G→19G livres; base viva intocada. As 13 entradas lidas do blob, com a permissão de cada uma (comment; create|update; update; status; lote por ação status). Tabela G (308 linhas por execução, 4 execuções: objeto puro/dublê, base puro/dublê): G-NEG 56/56 conforme no objeto, 44 linhas viram defeito na base (só as 10 vias do 07c-a), G-POS/G-WIDE/S-ROLES/CTRL idênticos base×objeto. Matriz efetiva: só os assigned_only mudam, só para escopo, conforme l.45/l.66, CE-G2 sem incoerência. Moderação 1–5 igual à base; 6 fechada. 404 entre organizações intacto e indistinguível do inexistente. km: forma e motivo iguais ao status do 07a no mesmo lote, isolada por ação, S-KM-RESTART already_applied → rejected com a km aplicada. Cada item com vermelho-controle que acusou. Nada ficou sem medir. Limpeza: 4 arquivos de src/ trocados e restaurados (hash-object = blob do objeto 4/4, porcelain 0), 0 processo com o caminho, worktree removido por git worktree remove --force (worktree list = 0), 0 container j07ca-c1-, scratchpad c1 apagado.\nVOTO: APROVADO — 13 entradas × field_technician e technician não atribuídos: 403/rejected not_assigned_to_actor nos dois corpos, estado da OS idêntico, vermelho-controle na base com o defeito nas 10 do 07c-a; atribuído por perfil e por user id, dois papéis, manager e operator passam; matriz efetiva só muda nos assigned_only, conforme a l.45; moderação (linhas 1–5) igual à base; 404 entre organizações intacto; km = status do 07a no mesmo lote, isolada por ação, S-KM-RESTART already_applied → rejected com a km aplicada; pendências: T15 do #405 (pre-existente, não-verde no CI do push), R-a5 (D1 do dono), 07c-b (D1/D2), pendencias.md:6753 medida (dispatcher não modera), matéria da C2/C3",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/o6r07c-subresource-scope · gh pr view 414 --json headRefOid,baseRefName,state,isDraft,mergeable (início e fim)",
+   "forma": "duas fontes, 2 vezes",
+   "resultado": "4ca2be43c3b4b32b9bed670f02d78145620cdc2e nas 4 leituras; OPEN, rascunho, MERGEABLE"
+  },
+  {
+   "comando": "git merge-base origin/main 4ca2be43 · git rev-list --parents -n1 · git diff --name-only c8bd4c28|d7255263 4ca2be43 · git diff --name-only B objeto -- src/",
+   "forma": "no repositório principal (só fetch e leitura de refs)",
+   "resultado": "B=9b611468; deltas só agent-orchestration/; 4 arquivos de src/"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/4ca2be43.../check-runs?per_page=100 · gh api .../actions/jobs/114265250599/logs",
+   "forma": "17:01Z e 17:18Z",
+   "resultado": "17:01Z total 12 | 0 não-verdes | 8 pendentes; 17:18Z total 14 | 1 não-verde (T15 do #405) | 0 pendentes"
+  },
+  {
+   "comando": "node --import tsx catalogo.mts <wt> (import de src/modules/core-saas/permissions/catalog.ts)",
+   "forma": "objeto, 13 papéis × 7 permissões work_orders:*",
+   "resultado": "ec=0; field_technician/technician = read, update, status, comment; controle status=true, inventada=false"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory NODE_ENV=test LOG_LEVEL=silent C1_TMP=SCRATCH node --import tsx [--import geo-registro.mjs] sonda.mts <wt> <rótulo> <instantâneo> 123 <saída>",
+   "forma": "src do objeto (puro e dublê geo) e src de B trocado (puro e dublê geo); por execução: 308 linhas do item 1, 143 células do item 2a, 7 casos S-MOD, 13 linhas cross-tenant, 7 casos de km",
+   "resultado": "ec=0 nas 4 (a 1ª tentativa caiu por falta de prisma generate e foi re-executada); erros de semente 0"
+  },
+  {
+   "comando": "git cat-file --filters 9b611468:<f> > <f> (4 arquivos) · git hash-object vs git rev-parse B:<f> · restauro da cópia · git hash-object vs rev-parse objeto:<f> · git status --porcelain",
+   "forma": "só no meu worktree",
+   "resultado": "troca 4/4 = B; restauro 4/4 = objeto; porcelain 0"
+  },
+  {
+   "comando": "node checa1.cjs · compara1.cjs · matriz2.cjs (e modo fabricado) · ctrl-lote.mts",
+   "forma": "verificadores próprios, verbatim na evidência",
+   "resultado": "falhas 0 no objeto; 44 na base sob a régua do objeto; diff base×objeto 44 linhas (G-NEG) e 20 células (assigned_only); fabricado aponta 1 célula; lote fabricado 1/1"
+  },
+  {
+   "comando": "git grep -nF work_order.mileage 4ca2be43 -- mobile · git log --all --oneline -S (token work_order.mileage entre aspas duplas) -- mobile",
+   "forma": "R-a4, com controle -F work_order.status_change",
+   "resultado": "0 e 0; controle 3"
+  },
+  {
+   "comando": "powershell Get-CimInstance (processos com w-ciclo1-07ca-c1) · git worktree remove --force C:/Users/AMP/w-ciclo1-07ca-c1",
+   "forma": "teardown",
+   "resultado": "0 processos; ec=0; worktree list = 0"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "check-run backend do run push 38069987168 no objeto 4ca2be43 = failure: 1 teste (T15 · boot real recusa super antes do Redis e aceita papel limpo) + o pai dele (B-SAN3-05 · o papel de runtime não contorna FORCE RLS); # tests 3298, # pass 3294, # fail 2",
+   "evidencia": "gh api repos/thiagodorgo/ERP_Techsolutios/actions/jobs/114265250599/logs: not ok 11 em tests/san3-05-runtime-role-guard-db.test.ts:17, error 'processo filho não encerrou em 9847ms'; o mesmo job backend no run pull_request 38069991906 (mesmo head) = success; os 14 laço G e os 10 S-* do bloco = ok no log com falha",
+   "gravidade": "nota",
+   "escopo": "pre-existente — o arquivo nasceu em a9fbe283 (fix(database) B-SAN3-05, #405, 2026-10-09; git log --diff-filter=A); git diff --name-only 9b611468 4ca2be43 -- tests/san3-05-runtime-role-guard-db.test.ts = 0 linhas; o mandato declara o T15 do #405 pre-existente; bloco dono: B-SAN3-05",
+   "classe": "não grave",
+   "motivo": "o teste de boot real do #405 nem sempre encerra o processo filho dentro do prazo no runner; não toca escopo por objeto nem os arquivos do bloco"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum: todo critério foi visto acusando — a régua do item 1 aplicada à base acusou 44 falhas; o comparador base×objeto acusou 44 linhas e, objeto×objeto, 0; o leitor de efeito acusou as escritas legítimas do manager; o leitor de motivo separou permission_required de not_assigned_to_actor; o comparador da matriz apontou a única célula fabricada diferente; o leitor do lote separou 1 accepted e 1 rejected fabricados; o reset do sync reprocessou a ação de quem continua atribuído",
+  "limite declarado (não é critério impossível): no modo memória o geocoder é sempre o Noop; o efeito do geocode foi medido com um dublê do provedor carregado por hook de resolução (só a classe NoopGeocoder importada por src/modules/work-orders/*), nas duas refs"
+ ],
+ "pendencias_que_aceito": [
+  "T15 do B-SAN3-05 (tests/san3-05-runtime-role-guard-db.test.ts) vermelho no backend do run push do objeto — pre-existente (a9fbe283, #405, 2026-10-09; 0 linha no diff do bloco), como o mandato declara; o run pull_request do mesmo head passou",
+  "R-a5: o técnico despachado sem atribuição perde comentar e anexar pela via REST — conforme RBAC_MATRIX.md:45 (execute/update-assigned); matéria da D1 do dono",
+  "07c-b (vistoria 18, evidência 4, despacho 1) e as decisões D1/D2/D3 — não são deste PR; não medidos como item",
+  "pendencias.md:6753 (medir o despachante e o gestor moderando comentário): medido — o gestor e o operador moderam (base = objeto); o field_dispatcher recebe 403 comment_forbidden em base e objeto (tem work_orders:comment, falta work_orders:update, não é autor). Comportamento anterior ao bloco e inalterado; informação para o dono da pendência",
+  "completude do censo, guard v3, formas e mutações MG — da C2; régua de regressão, npm test, -db, escopo do diff e registro — da C3"
+ ],
+ "teardown": "arquivos de src/ trocados restaurados (hash-object = blob do objeto 4/4) e git status --porcelain vazio no meu worktree · servidor da sonda fechado no próprio processo (0 processos com o caminho) · worktree C:/Users/AMP/w-ciclo1-07ca-c1 removido por git worktree remove --force (worktree list = 0) · nenhum container criado (j07ca-c1-* = 0) · sondas, cópias, JSON e logs do scratchpad c1 apagados (scripts preservados verbatim na evidência) · base viva (erp-postgres/erp-redis) nunca tocada, nenhuma porta publicada · w-07ca só com os meus dois arquivos de saída, nenhuma ferramenta rodada lá · espaço no fim de linha nos dois arquivos = 0 · resíduo alheio: nenhum observado no meu caminho"
+}

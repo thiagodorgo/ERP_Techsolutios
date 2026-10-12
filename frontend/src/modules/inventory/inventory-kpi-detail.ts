@@ -14,10 +14,9 @@ export type InventoryKpiKey = "activeItems" | "belowMin" | "needsReorder" | "mov
 const nf = (value: number) => value.toLocaleString("pt-BR");
 
 /**
- * `can(permission)` gateia o ÚNICO cta cross-route desta superfície (Precisam repor → /purchase-orders,
- * gateado por `purchase_orders:read`, a permissão exata do PermissionGuard da rota em App.tsx). Sem a
- * permissão o botão é omitido — o pop-up fica sem cta, nunca oferecendo uma rota que cairia no guard.
- * Os demais cards ficam na própria tela do usuário (/inventory), então não recebem cta.
+ * B-SAN3-06a (D-TELAS-SAN3-06a) — a tela de Pedidos de compra saiu do menu e da rota (era literal, sem servidor), e
+ * com ela o ÚNICO cta cross-route desta superfície (Precisam repor → Pedidos) e o `can` que o gateava. O
+ * pop-up de "Precisam repor" segue útil sem cta (explain), como já era para quem não tinha `purchase_orders:read`.
  */
 export function buildInventoryKpiDetails(
   totals: InventoryTotals,
@@ -25,7 +24,6 @@ export function buildInventoryKpiDetails(
   movementsTotal: number,
   itemsSource: KpiSourceTag,
   movementsSource: KpiSourceTag,
-  can: (permission: string) => boolean,
 ): Record<InventoryKpiKey, KpiDetail> {
   return {
     activeItems: {
@@ -63,7 +61,6 @@ export function buildInventoryKpiDetails(
         kind: "explain",
         text: "Itens que atingiram o ponto de pedido e precisam de reposição. A sugestão de reposição não automatiza a compra.",
       },
-      cta: can("purchase_orders:read") ? { label: "Ver pedidos de compra", to: "/purchase-orders" } : undefined,
     },
     movements: {
       title: "Movimentações no período",

@@ -31,12 +31,16 @@ export class WorkOrderAttachmentController {
 
   async createAttachment(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const workOrderId = readRouteParam(request.params.workOrderId);
+
+    // B-O6R-07c-a — escopo por objeto ANTES do multipart e do parse: o servidor não lê nem verifica bytes de quem
+    // não pode gravar nesta OS (técnico de campo numa OS que não é dele → 403; outra organização → 404).
+    await service.assertCanMutate(actor, workOrderId);
 
     if (!isMultipartWorkOrderAttachmentRequest(request)) {
       throw new WorkOrderAttachmentError(400, "WORK_ORDER_ATTACHMENT_INVALID", "multipart_required", "Attachment upload must be a multipart/form-data request with a file field.");
     }
 
-    const workOrderId = readRouteParam(request.params.workOrderId);
     const upload = await parseMultipartWorkOrderAttachmentRequest(request);
     const attachment = await service.createUploadedAttachment(actor, workOrderId, upload);
 

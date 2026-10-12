@@ -70,7 +70,7 @@ Vínculos: **dano → OS de origem `/work-orders/:id`**; **viatura → `/cadastr
 Abas Itens | Movimentações | Contagem. Item: saldo (derivado), classe ABC, mín/máx, status reposição,
 **ponto de pedido** (F7b, `reorderPoint`). Elementos: "+ Movimento" (entrada/saída/consumo/ajuste);
 **consumo → OS `/work-orders/:id`**; chip-alerta **"Repor"** quando `needsReorder` + filtro "Precisa repor"
-→ sugestão **`/purchase-orders`** (link, sem comprar); "Recalcular ABC" (gated `inventory_items:update`,
+→ o item em **`/inventory/<id>`** (sem comprar; Pedidos saiu em `B-SAN3-06a`, `D-TELAS-SAN3-06a`); "Recalcular ABC" (gated `inventory_items:update`,
 confirmação → resumo A/B/C); "Nova contagem" (por classe, gated `cycle_counts:create`) → sessão (drawer,
 contado editável PATCH on blur) → "Fechar contagem" → relatório de variância + N ajustes gerados / "Cancelar".
 
@@ -95,6 +95,6 @@ Item com `actionUrl` (ex.: `work_order_id?` → `/work-orders/:id`, `maintenance
 navega ao clicar/abrir — sem link morto.
 
 > **Cobertura:** telas herdadas sem elemento novo (Aprovações, Despachos, Checklists, Configurações,
-> Auditoria, Relatórios, Financeiro, Pedidos) mantêm seus elementos atuais; F12 (cera) aplica cabeçalho
+> Auditoria, Financeiro; Relatórios e Pedidos saíram em `B-SAN3-06a`) mantêm seus elementos atuais; F12 (cera) aplica cabeçalho
 > fixo/tabulares/Ctrl+K sem alterar destinos. Qualquer elemento novo introduzido por F1–F12 deve **entrar
 > neste arquivo na PR** (o validador-mestre confere o diff contra o mapa).

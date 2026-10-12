@@ -318,16 +318,6 @@ export const tenantNavigation: NavigationItem[] = [
     status: "implemented",
   },
   {
-    id: "tenant-purchase-orders",
-    label: "Pedidos",
-    path: "/purchase-orders",
-    scope: "tenant",
-    mode: "operation",
-    requiredPermissions: ["purchase_orders:read"],
-    icon: "ShoppingCart",
-    status: "implemented",
-  },
-  {
     id: "tenant-commissions",
     label: "Remunerações",
     path: "/finance/commissions",
@@ -336,16 +326,6 @@ export const tenantNavigation: NavigationItem[] = [
     // F8: adaptativo — `commissions:read` (todos) ou `commissions:read_own` (próprio extrato).
     requiredPermissions: ["commissions:read", "commissions:read_own"],
     icon: "Wallet",
-    status: "implemented",
-  },
-  {
-    id: "tenant-reports",
-    label: "Relatórios",
-    path: "/reports",
-    scope: "tenant",
-    mode: "operation",
-    requiredPermissions: ["reports:read"],
-    icon: "BarChart3",
     status: "implemented",
   },
   {
