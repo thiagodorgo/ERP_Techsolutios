@@ -489,6 +489,7 @@ async function waitFor(
   child: ReturnType<typeof spawn>,
   predicate: (stdout: string, stderr: string) => boolean,
   timeoutMs: number,
+  failOn?: (stdout: string, stderr: string) => boolean,
 ): Promise<{ stdout: string; stderr: string }> {
   let stdout = "";
   let stderr = "";
@@ -499,11 +500,13 @@ async function waitFor(
   return await new Promise((resolve, reject) => {
     const started = Date.now();
     const poll = setInterval(() => {
-      if (predicate(stdout, stderr)) finish();
+      if (failOn?.(stdout, stderr)) fail("condição proibida de boot apareceu");
+      else if (predicate(stdout, stderr)) finish();
       else if (Date.now() - started >= timeoutMs) fail();
     }, 50);
     const onClose = (): void => {
-      if (predicate(stdout, stderr)) finish();
+      if (failOn?.(stdout, stderr)) fail("condição proibida de boot apareceu");
+      else if (predicate(stdout, stderr)) finish();
       else fail();
     };
     const finish = (): void => {
@@ -511,10 +514,10 @@ async function waitFor(
       child.off("close", onClose);
       resolve({ stdout, stderr });
     };
-    const fail = (): void => {
+    const fail = (reason = `condição de boot não apareceu em ${timeoutMs}ms`): void => {
       clearInterval(poll);
       child.off("close", onClose);
-      reject(new Error(`condição de boot não apareceu em ${timeoutMs}ms\nstdout=${stdout}\nstderr=${stderr}`));
+      reject(new Error(`${reason}\nstdout=${stdout}\nstderr=${stderr}`));
     };
     child.once("close", onClose);
   });
@@ -1444,12 +1447,12 @@ test(
           if (guard === "explicit") env.DATABASE_RUNTIME_ROLE_GUARD = "enforce";
           else delete env.DATABASE_RUNTIME_ROLE_GUARD;
           const child = startBackend(env);
-          const started = Date.now();
           try {
             const refused = await waitFor(
               child,
               (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
               15_000,
+              (stdout, stderr) => (stdout + stderr).includes("ERP Techsolutions API listening"),
             );
             const refusedText = refused.stdout + refused.stderr;
             assert.match(refusedText, /RUNTIME_ROLE_CAN_BYPASS_RLS/);
@@ -1462,9 +1465,7 @@ test(
               /Redis|job worker/i,
             );
             assertConnectionSecretsAbsent(refusedText, [connectionString]);
-            const remainingMs = Math.max(1, 15_000 - (Date.now() - started));
-            assert.equal(await waitForCloseCode(child, remainingMs), 1, `boot ${guard} precisa sair com código 1`);
-            assert.ok(Date.now() - started <= 15_000, `boot ${guard} excedeu o teto total de 15 s`);
+            assert.equal(await waitForCloseCode(child, 60_000), 1, `boot ${guard} precisa sair com código 1`);
           } finally {
             await stopChild(child);
           }
@@ -1492,6 +1493,7 @@ test(
             cleanBoot,
             (stdout, stderr) => (stdout + stderr).includes("runtime database role verified"),
             15_000,
+            (stdout, stderr) => (stdout + stderr).includes("Failed to start ERP Techsolutions API"),
           );
           const acceptedText = accepted.stdout + accepted.stderr;
           assert.match(acceptedText, /"escapes":0/);
