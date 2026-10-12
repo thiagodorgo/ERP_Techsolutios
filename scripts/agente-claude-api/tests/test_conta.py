@@ -186,9 +186,12 @@ class TestModeloEConta(unittest.TestCase):
         ex = ExecutorRepoFalso(base)
         deps = deps_repo_falso(ex, {"ERP_AGENTE_ANTHROPIC_KEY": CHAVE_FALSA, "ERP_AGENTE_ANTHROPIC_WORKSPACE": WORKSPACE_FALSO},
                                modelo=ModeloFalso([erro_api]))
+        contexto = ex.repo / "contexto.md"
+        contexto.write_text("# PACOTE DE CONTEXTO — teste\n## OBJETIVO\nx\n## FONTE\nSHA: " + ex.head +
+                             "\n- x:1\n## REGRAS\nx\n## JÁ MEDIDO\nNENHUM\n## HIPÓTESES\nx\n## FORA DO ESCOPO\nx\n## ACEITE\nx\n## ORÇAMENTO\n- teto_execucao_usd: 0.50\n", encoding="utf-8")
         saida, erro = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(saida), contextlib.redirect_stderr(erro):
-            codigo = cli.main(["revisar-pr", "416", "--saida", str(base / "s"), "--worktree-dir", str(base / "w")], deps)
+            codigo = cli.main(["revisar-pr", "416", "--contexto", str(contexto), "--saida", "s", "--worktree-dir", str(base / "w")], deps)
         self.assertEqual(codigo, 4)
         tudo = saida.getvalue() + erro.getvalue()
         self.assertNotIn(CHAVE_FALSA, tudo)
@@ -205,7 +208,7 @@ class TestModeloEConta(unittest.TestCase):
                                 modelo=ModeloFalso())
         saida2, erro2 = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(saida2), contextlib.redirect_stderr(erro2):
-            codigo2 = cli.main(["revisar-pr", "416", "--saida", str(base / "s2"), "--worktree-dir", str(base / "w2")], deps2)
+            codigo2 = cli.main(["revisar-pr", "416", "--saida", "s2", "--worktree-dir", str(base / "w2")], deps2)
         self.assertEqual(codigo2, 5)
         self.assertNotIn(CHAVE_FALSA, saida2.getvalue() + erro2.getvalue())
         self.assertIn("RuntimeError", erro2.getvalue())

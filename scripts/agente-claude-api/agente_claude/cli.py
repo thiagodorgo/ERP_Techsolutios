@@ -13,24 +13,48 @@ ela imprime passa pelo redator; exceção vira `erro.txt` redigido, nunca traceb
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
+import uuid
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from . import __version__
 from .conta import ContaRecusada
+from .contexto import ContextoRecusado
 from .modelo import ErroDeModelo
+from .patches import PatchRecusado
 from .redacao import Redator
-from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, verificar_conta, versao_sdk
+from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, redigir, propor_patch, verificar_conta, versao_sdk
+from .entregas import EntregaRecusada, TIPOS
+from .uso_diario import UsoRecusado
 from .worktree import MOTIVO_NPM_CI_SEM_PERMISSAO, RecusaPrevia
 
 SAIDA_COMPLETO, SAIDA_PARCIAL, SAIDA_RECUSA, SAIDA_API, SAIDA_INTERNO = 0, 2, 3, 4, 5
 _NUMERO_RE = re.compile(r"^[1-9][0-9]{0,6}$")
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+CUSTO_PADRAO_POR_TAREFA = {
+    "revisar-pr": Decimal("3.00"),
+    "investigar": Decimal("2.00"),
+    "redigir": Decimal("2.50"),
+    "propor-patch": Decimal("2.00"),
+}
 
 
 class ArgumentoInvalido(Exception):
     pass
+
+
+RECUSAS = (
+    ArgumentoInvalido,
+    ContaRecusada,
+    RecusaPrevia,
+    ContextoRecusado,
+    EntregaRecusada,
+    PatchRecusado,
+    UsoRecusado,
+)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -74,6 +98,7 @@ def _numero_pr(texto: str) -> str:
 
 
 def _comuns(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--contexto", help="pacote Markdown de contexto obrigatório nas tarefas intelectuais")
     p.add_argument("--sha", type=_sha, default=None)
     p.add_argument(
         "--permitir-execucao-do-alvo",
@@ -94,7 +119,7 @@ def _comuns(p: argparse.ArgumentParser) -> None:
     p.add_argument("--max-turnos", type=_inteiro_entre(1, 200), default=30)
     p.add_argument("--max-ferramentas", type=_inteiro_entre(1, 500), default=60)
     p.add_argument("--max-tokens", type=_inteiro_entre(1000, 100_000_000), default=1_500_000)
-    p.add_argument("--max-custo-usd", type=_decimal_positivo, default=Decimal("6.00"))
+    p.add_argument("--max-custo-usd", type=_decimal_positivo, default=None)
     p.add_argument("--max-tokens-resposta", type=_inteiro_entre(256, 32000), default=8000)
     p.add_argument("--saida", default=None)
     p.add_argument("--worktree-dir", default=None)
@@ -114,6 +139,11 @@ def construir_parser() -> argparse.ArgumentParser:
     i = sub.add_parser("investigar", help="investiga uma pergunta só lendo")
     i.add_argument("pergunta")
     _comuns(i)
+    d = sub.add_parser("redigir", help="redige um artefato sem escrever no repositório")
+    d.add_argument("--entregavel", choices=TIPOS, required=True)
+    _comuns(d)
+    pp = sub.add_parser("propor-patch", help="propõe patch validado, sem aplicar")
+    _comuns(pp)
     sub.add_parser("verificar-conta", help="MANUAL: 1 chamada mínima para provar a conta")
     sub.add_parser("versao", help="versão do agente e do SDK")
     return p
@@ -129,7 +159,7 @@ def _opcoes(args) -> Opcoes:
         max_turnos=args.max_turnos,
         max_ferramentas=args.max_ferramentas,
         max_tokens=args.max_tokens,
-        max_custo_usd=args.max_custo_usd,
+        max_custo_usd=args.max_custo_usd or CUSTO_PADRAO_POR_TAREFA[args.comando],
         max_tokens_resposta=args.max_tokens_resposta,
         saida=args.saida,
         worktree_dir=args.worktree_dir,
@@ -141,6 +171,7 @@ def _opcoes(args) -> Opcoes:
         simular=args.simular,
         simular_turnos=args.simular_turnos,
         sha=args.sha,
+        contexto=args.contexto,
     )
 
 
@@ -158,18 +189,30 @@ def _saida_utf8() -> None:
             pass
 
 
+def _gravar_recusa(deps: Dependencias, redator: Redator, classe: str, motivo: str) -> Path | None:
+    """Toda recusa da CLI deixa o motivo redigido em pasta própria, sem traceback."""
+    try:
+        carimbo = deps.agora().strftime("%Y%m%d-%H%M%SZ")
+        pasta = Path(deps.saidas_raiz) / f"{carimbo}-recusa-{uuid.uuid4().hex}"
+        pasta.mkdir(parents=True, exist_ok=False)
+        texto = redator.redigir(f"{classe}: {motivo}\n")
+        with open(pasta / "erro.txt", "w", encoding="utf-8", newline="\n", errors="backslashreplace") as f:
+            f.write(texto)
+            f.flush()
+            os.fsync(f.fileno())
+        return pasta
+    except Exception:  # noqa: BLE001 — a recusa original ainda sai na tela
+        return None
+
+
 def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int:
     _saida_utf8()
     deps = deps or Dependencias()
     redator = Redator()
     try:
-        try:
-            args = construir_parser().parse_args(argv)
-            if args.comando in ("revisar-pr", "investigar"):
-                opcoes = _opcoes(args)
-        except ArgumentoInvalido as e:
-            _imprimir(f"argumento inválido: {e}", redator, erro=True)
-            return SAIDA_RECUSA
+        args = construir_parser().parse_args(argv)
+        if args.comando in ("revisar-pr", "investigar", "redigir", "propor-patch"):
+            opcoes = _opcoes(args)
         if args.comando == "versao":
             _imprimir(f"agente_claude {__version__} · {versao_sdk()}", redator)
             return SAIDA_COMPLETO
@@ -180,8 +223,12 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
             return SAIDA_COMPLETO
         if args.comando == "revisar-pr":
             codigo, parecer, pasta = revisar_pr(args.numero, opcoes, deps)
-        else:
+        elif args.comando == "investigar":
             codigo, parecer, pasta = investigar(args.pergunta, opcoes, deps)
+        elif args.comando == "redigir":
+            codigo, parecer, pasta = redigir(args.entregavel, opcoes, deps)
+        else:
+            codigo, parecer, pasta = propor_patch(opcoes, deps)
         if parecer is not None:
             estado = "PARCIAL (" + str(parecer.get("motivo_parcial")) + ")" if parecer.get("parcial") else "completo"
             _imprimir(f"parecer {estado}: veredito={parecer.get('veredito')} · custo US$ {parecer['custo'].get('usd_estimado')}", redator)
@@ -189,9 +236,15 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
             limpeza = parecer.get("execucao", {}).get("comando_limpeza")
             if limpeza:
                 _imprimir(f"o worktree ficou no disco; para remover: {limpeza}", redator, erro=True)
+            for falha in parecer.get("motivos_de_falha", parecer.get("falhas_de_gravacao", [])):
+                _imprimir(f"recusado: {falha}", redator, erro=True)
         return codigo
-    except (ContaRecusada, RecusaPrevia) as e:
-        _imprimir(f"recusado antes de começar: {e}", redator, erro=True)
+    except RECUSAS as e:
+        motivo = str(e) or "sem motivo informado"
+        pasta = _gravar_recusa(deps, redator, type(e).__name__, motivo)
+        _imprimir(f"recusado antes de começar: {type(e).__name__}: {motivo}", redator, erro=True)
+        if pasta is not None:
+            _imprimir(f"pasta: {pasta}", redator, erro=True)
         return SAIDA_RECUSA
     except ErroDeModelo as e:
         _imprimir(f"erro de API: {e.classe} status={e.status} request_id={e.request_id}", redator, erro=True)

@@ -4,4 +4,4 @@ O pacote se chama `agente_claude` (identificador Python) porque a pasta que o co
 tem hífen e `python -m` exige um identificador.
 """
 
-__version__ = "2026.10.10"
+__version__ = "2026.10.11"

@@ -17,6 +17,7 @@ import re
 import shutil
 import time
 import traceback
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -28,7 +29,11 @@ from . import executor as _executor
 from .auditoria import Auditoria
 from .cerca import ContextoComandos, ambiente_gh, ambiente_limpo
 from .conta import ContaRecusada, Credenciais, carregar_credenciais
+from .contexto import carregar as carregar_contexto, envelope as envelope_contexto
 from .ferramentas import Ferramentas
+from . import esquemas
+from .entregas import publicar as publicar_redacao, validar as validar_redacao
+from .patches import publicar as publicar_patch, validar as validar_patch
 from .laco import Laco
 from .modelo import MODELO, ErroDeModelo, ModeloAnthropic, ModeloSimulado, fallback_servidor
 from .orcamento import Orcamento, Tetos
@@ -36,6 +41,8 @@ from .parecer import NIVEL, VERSAO_SCHEMA, gravar_json, gravar_md, montar
 from .prompts import mensagem_inicial
 from .redacao import Redator
 from .worktree import RecusaPrevia, WorktreeDescartavel
+from .travas import slot_api
+from .uso_diario import ControladorUso, teto_do_ambiente
 
 PASTA_PACOTE = Path(__file__).resolve().parent.parent
 PASTA_SAIDAS = PASTA_PACOTE / "saidas"
@@ -63,6 +70,8 @@ class Opcoes:
     simular: bool = False
     simular_turnos: int = 0
     sha: str | None = None
+    contexto: str | None = None
+    pacote_contexto: object | None = None
 
 
 @dataclass
@@ -77,12 +86,15 @@ class Dependencias:
     uso_de_disco: object = field(default=shutil.disk_usage)
     agora: object = None
     cwd: str | None = None
+    saidas_raiz: object = None
 
     def __post_init__(self) -> None:
         if self.environ is None:
             self.environ = os.environ
         if self.agora is None:
             self.agora = lambda: datetime.now(timezone.utc)
+        if self.saidas_raiz is None:
+            self.saidas_raiz = PASTA_SAIDAS
 
 
 def _iso(dt: datetime) -> str:
@@ -131,10 +143,13 @@ def repo_github(deps: Dependencias, exe: dict, raiz: str) -> str | None:
 
 
 def _pasta_saida(opcoes: Opcoes, deps: Dependencias, tarefa: str, rotulo: str) -> Path:
+    raiz = Path(deps.saidas_raiz).resolve()
     if opcoes.saida:
-        pasta = Path(opcoes.saida)
+        if Path(opcoes.saida).name != opcoes.saida or opcoes.saida in (".", ".."):
+            raise RecusaPrevia("--saida deve ser somente um nome de pasta nova")
+        pasta = raiz / opcoes.saida
     else:
-        pasta = PASTA_SAIDAS / f"{_carimbo(deps.agora())}-{tarefa}-{rotulo}"
+        pasta = raiz / f"{_carimbo(deps.agora())}-{tarefa}-{uuid.uuid4().hex}"
     if os.path.lexists(pasta):
         raise RecusaPrevia(f"a pasta de saída já existe: {pasta}")
     return pasta
@@ -144,7 +159,7 @@ def _pasta_worktree(opcoes: Opcoes, deps: Dependencias) -> str:
     if opcoes.worktree_dir:
         return os.path.normpath(opcoes.worktree_dir)
     base = deps.environ.get("USERPROFILE") or os.path.expanduser("~")
-    return os.path.normpath(os.path.join(base, f"w-ag-{deps.agora().strftime('%Y%m%d-%H%M%S')}"))
+    return os.path.normpath(os.path.join(base, f"w-ag-{uuid.uuid4().hex}"))
 
 
 def _criar_modelo(deps: Dependencias, credenciais: Credenciais | None, opcoes: Opcoes):
@@ -201,6 +216,7 @@ def executar_tarefa(
             "simulado": opcoes.simular,
             "npm_ci": opcoes.npm_ci,
             "permitir_execucao_alvo": opcoes.permitir_execucao_alvo,
+            "contexto": opcoes.pacote_contexto.metadados() if opcoes.pacote_contexto else None,
         }
     )
     codigo = 0
@@ -209,7 +225,16 @@ def executar_tarefa(
     laco: Laco | None = None
     removido = False
     comando_limpeza: str | None = None
+    slot_cm = None
+    controlador = None
+    reservado = False
     try:
+        if not opcoes.simular:
+            slot_cm = slot_api(Path(deps.saidas_raiz), timeout_s=opcoes.timeout_comando)
+            slot_cm.__enter__()
+            controlador = ControladorUso(Path(deps.saidas_raiz), teto=teto_do_ambiente(deps.environ), agora=deps.agora)
+            controlador.reservar(execucao_id, opcoes.max_custo_usd, pasta_saida)
+            reservado = True
         worktree.criar()
         auditoria.registrar({"tipo": "evento", "nome": "worktree_criado", "detalhe": {"caminho": worktree.caminho, "sha": alvo.get("sha")}})
         for nome, detalhe in worktree.preparar():
@@ -228,6 +253,13 @@ def executar_tarefa(
             timeout_verificacao=opcoes.timeout_verificacao,
         )
         modelo = _criar_modelo(deps, credenciais, opcoes)
+        terminal = {"redigir": "entregar_redacao", "propor-patch": "entregar_patch"}.get(tarefa, "entregar_parecer")
+        if tarefa == "redigir":
+            validador = lambda entrada: validar_redacao(entrada, alvo["entregavel"])
+        elif tarefa == "propor-patch":
+            validador = lambda entrada: validar_patch(entrada, alvo["sha"])
+        else:
+            validador = None
         laco = Laco(
             modelo=modelo,
             ferramentas=ferramentas,
@@ -237,10 +269,14 @@ def executar_tarefa(
             max_tokens_resposta=opcoes.max_tokens_resposta,
             esforco=opcoes.esforco,
             tarefa=tarefa,
+            terminal_nome=terminal,
+            terminal_validar=validador,
+            tools=esquemas.ferramentas_para(terminal),
         )
-        resultado = laco.executar(
-            mensagem_inicial(tarefa, alvo, permite_execucao_do_alvo=opcoes.permitir_execucao_alvo)
-        )
+        inicial = mensagem_inicial(tarefa, alvo, permite_execucao_do_alvo=opcoes.permitir_execucao_alvo)
+        if opcoes.pacote_contexto:
+            inicial += "\n\n" + envelope_contexto(opcoes.pacote_contexto)
+        resultado = laco.executar(inicial)
         parcial = resultado.parcial
         motivo = resultado.motivo_parcial
         codigo = 2 if parcial else 0
@@ -312,10 +348,14 @@ def executar_tarefa(
         # falha, o `parecer.json` diz qual (`falhas_de_gravacao`), o `erro.txt` traz o traceback
         # redigido, o evento `fim` e o `resumo.json` são gravados, e o código de saída vira 5.
         falhas: list[str] = []
+        motivos_falha: list[str] = []
         detalhes: list[str] = []
 
         def _registrar_falha(etapa: str, e: BaseException) -> None:
+            motivo_falha = str(e).strip()
+            sufixo = f": {motivo_falha}" if motivo_falha else ""
             falhas.append(f"{etapa}: {type(e).__name__}")
+            motivos_falha.append(f"{etapa}: {type(e).__name__}{sufixo}")
             detalhes.append(f"## {etapa}\n{traceback.format_exc()}")
 
         dados = {
@@ -326,29 +366,44 @@ def executar_tarefa(
             "custo": custo,
             "execucao": execucao,
         }
-        eventos = [ev for ev in auditoria.eventos_ferramenta if ev.get("ferramenta") != "entregar_parecer"]
+        eventos = [ev for ev in auditoria.eventos_ferramenta if ev.get("ferramenta") not in ("entregar_parecer", "entregar_redacao", "entregar_patch")]
         try:
-            parecer = montar(
-                parecer_modelo=r.parecer_modelo if r else None,
-                eventos_ferramenta=eventos,
-                parcial=parcial,
-                motivo_parcial=motivo,
-                ultimo_texto=r.ultimo_texto if r else None,
-                **dados,
-            )
+            if tarefa == "redigir" and r and r.parecer_modelo and not parcial:
+                manifesto = publicar_redacao(entrega=r.parecer_modelo, tipo_esperado=alvo["entregavel"], pasta_saida=pasta_saida,
+                    sha=alvo["sha"], contexto_md5=opcoes.pacote_contexto.md5, eventos=eventos, redator=redator)
+                parecer = {**dados, **manifesto, "veredito": "entregue", "parcial": False, "motivo_parcial": None}
+            elif tarefa == "propor-patch" and r and r.parecer_modelo and not parcial:
+                manifesto = publicar_patch(entrega=r.parecer_modelo, sha_efetivo=alvo["sha"], contexto_md5=opcoes.pacote_contexto.md5,
+                    pasta_saida=pasta_saida, worktree=Path(worktree.caminho), git=contexto_base.executaveis["git"], executar=deps.executar,
+                    fontes=r.parecer_modelo.get("fontes_lidas", []))
+                parecer = {**dados, **manifesto, "veredito": "proposto", "parcial": False, "motivo_parcial": None}
+            else:
+                parecer = montar(
+                    parecer_modelo=r.parecer_modelo if r else None,
+                    eventos_ferramenta=eventos,
+                    parcial=parcial,
+                    motivo_parcial=motivo,
+                    ultimo_texto=r.ultimo_texto if r else None,
+                    **dados,
+                )
         except Exception as e:  # noqa: BLE001
             _registrar_falha("montagem do parecer", e)
             parecer = parecer_de_emergencia(dados, f"falha_na_montagem:{type(e).__name__}", r.parecer_modelo if r else None)
         parecer["falhas_de_gravacao"] = list(falhas)
-        json_ok = _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
-        try:
-            gravar_md(parecer, pasta_saida, redator)
-        except Exception as e:  # noqa: BLE001
-            _registrar_falha("parecer.md", e)
+        parecer["motivos_de_falha"] = list(motivos_falha)
+        if tarefa in ("redigir", "propor-patch") and not falhas:
+            json_ok = True
+        else:
+            json_ok = _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
+            try:
+                gravar_md(parecer, pasta_saida, redator)
+            except Exception as e:  # noqa: BLE001
+                _registrar_falha("parecer.md", e)
         if falhas:
             if codigo in (0, 2):
                 codigo = 5  # o parecer existe, mas um artefato falhou: erro interno (README, "Códigos de saída")
             parecer["falhas_de_gravacao"] = list(falhas)
+            parecer["motivos_de_falha"] = list(motivos_falha)
             if json_ok:  # regrava, agora com a lista completa de falhas (substituição atômica)
                 _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
             try:
@@ -376,6 +431,13 @@ def executar_tarefa(
             pass
         finally:
             auditoria.fechar()
+        if reservado and controlador is not None and codigo in (0, 2):
+            try:
+                controlador.concluir(execucao_id, opcoes.max_custo_usd, Decimal(str(custo["usd_estimado"])), pasta_saida)
+            except Exception:
+                codigo = 5
+        if slot_cm is not None:
+            slot_cm.__exit__(None, None, None)
     return codigo, parecer
 
 
@@ -468,6 +530,12 @@ def revisar_pr(numero: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, di
         "titulo": dados.get("title"),
         "url": dados.get("url"),
     }
+    if not opcoes.contexto:
+        raise RecusaPrevia("--contexto é obrigatório")
+    opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=head, repo_raiz=raiz,
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
+    opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
     contexto = ContextoComandos(
         raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
         permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
@@ -504,6 +572,12 @@ def investigar(pergunta: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, 
     )
     worktree.verificar_previo()
     alvo = {"pergunta": pergunta, "sha": sha}
+    if not opcoes.contexto:
+        raise RecusaPrevia("--contexto é obrigatório")
+    opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=sha, repo_raiz=raiz,
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
+    opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
     contexto = ContextoComandos(
         raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
         permitir_execucao_alvo=opcoes.permitir_execucao_alvo,
@@ -522,6 +596,34 @@ def investigar(pergunta: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, 
     return codigo, parecer, pasta_saida
 
 
+def _tarefa_sha(tarefa: str, opcoes: Opcoes, deps: Dependencias, entregavel: str | None = None):
+    credenciais, redator, exe, raiz, repo = _preparar_comum(opcoes, deps)
+    sha = opcoes.sha or _rodar(deps, [exe["git"], "rev-parse", "origin/main"], raiz).saida.strip()
+    if not _SHA_RE.fullmatch(sha or ""): raise RecusaPrevia("SHA inválido")
+    if not opcoes.contexto: raise RecusaPrevia("--contexto é obrigatório")
+    opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=sha, repo_raiz=raiz,
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
+    opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
+    pasta_saida = _pasta_saida(opcoes, deps, tarefa, sha[:8])
+    worktree = WorktreeDescartavel(raiz, sha, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, False)
+    worktree.verificar_previo()
+    alvo = {"sha": sha}
+    if entregavel: alvo["entregavel"] = entregavel
+    contexto = ContextoComandos(raiz=None, executaveis=exe, repo_gh=repo, npm_ci=False)
+    codigo, parecer = executar_tarefa(tarefa=tarefa, alvo=alvo, credenciais=credenciais, opcoes=opcoes,
+        pasta_saida=pasta_saida, worktree=worktree, contexto_base=contexto, deps=deps, redator=redator)
+    return codigo, parecer, pasta_saida
+
+
+def redigir(entregavel: str, opcoes: Opcoes, deps: Dependencias):
+    return _tarefa_sha("redigir", opcoes, deps, entregavel)
+
+
+def propor_patch(opcoes: Opcoes, deps: Dependencias):
+    return _tarefa_sha("propor-patch", opcoes, deps)
+
+
 SYSTEM_VERIFICACAO = "Verificação de conta do agente ERP (chamada mínima, sem ferramentas)."
 
 
@@ -529,10 +631,16 @@ def verificar_conta(deps: Dependencias) -> tuple[dict, Redator]:
     """MANUAL, fora da suíte: UMA chamada mínima com max_tokens=0 (plano §4.4)."""
     credenciais = carregar_credenciais(deps.environ, deps.ler_registro)
     redator = Redator([(credenciais.chave, "chave")])
-    modelo = ModeloAnthropic(credenciais) if deps.criar_modelo is None else deps.criar_modelo(credenciais, None)
-    resp = modelo.contar_minimo(SYSTEM_VERIFICACAO)
-    return (
-        {
+    execucao_id = f"{_carimbo(deps.agora())}-verificar-conta-{uuid.uuid4().hex}"
+    pasta = Path(deps.saidas_raiz) / execucao_id
+    pasta.mkdir(parents=True, exist_ok=False)
+    controlador = ControladorUso(Path(deps.saidas_raiz), teto=teto_do_ambiente(deps.environ), agora=deps.agora)
+    reserva = Decimal("0.01")
+    with slot_api(Path(deps.saidas_raiz), timeout_s=120):
+        controlador.reservar(execucao_id, reserva, pasta)
+        modelo = ModeloAnthropic(credenciais) if deps.criar_modelo is None else deps.criar_modelo(credenciais, None)
+        resp = modelo.contar_minimo(SYSTEM_VERIFICACAO)
+        dados = {
             "request_id": resp.request_id,
             "modelo_respondeu": resp.modelo_respondeu,
             "stop_reason": resp.stop_reason,
@@ -542,9 +650,19 @@ def verificar_conta(deps: Dependencias) -> tuple[dict, Redator]:
             "tipo_chave": credenciais.tipo_chave,
             "cabecalho_workspace_enviado": credenciais.cabecalho_workspace,
             "ignoradas": credenciais.ignoradas,
-        },
-        redator,
-    )
+        }
+        uso = resp.usage or {}
+        # A chamada mínima reserva US$ 0,01; sem uso mensurável a reserva permanece ativa.
+        custo = Decimal("0") if uso else None
+        if custo is not None:
+            resumo = {"inicio": {"inicio_utc": _iso(deps.agora()), "execucao_id": execucao_id},
+                      "fim": {"custo": {"usd_estimado": str(custo)}}}
+            tmp = pasta / "resumo.json.tmp"
+            tmp.write_text(json.dumps(resumo, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+            os.replace(tmp, pasta / "resumo.json")
+            controlador.concluir(execucao_id, reserva, custo, pasta)
+        dados["pasta"] = str(pasta)
+        return dados, redator
 
 
 __all__ = [

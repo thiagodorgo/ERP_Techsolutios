@@ -18,6 +18,7 @@ Desfechos (plano §3.8):
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -59,6 +60,8 @@ class Laco:
         system: str = PROMPT_SISTEMA,
         tools: list[dict] | None = None,
         tarefa: str | None = None,
+        terminal_nome: str = "entregar_parecer",
+        terminal_validar=None,
     ) -> None:
         self.modelo = modelo
         self.ferramentas = ferramentas
@@ -70,6 +73,8 @@ class Laco:
         self.system = system
         self.tools = tools if tools is not None else esquemas.ferramentas()
         self.tarefa = tarefa
+        self.terminal_nome = terminal_nome
+        self.terminal_validar = terminal_validar or (lambda entrada: validar(entrada, self.tarefa))
         self.resultado = ResultadoLaco()
         self._n_medidas = 0  # quantas mensagens o prompt da última chamada tinha
 
@@ -102,6 +107,25 @@ class Laco:
         return self.resultado
 
     def _auditar_ferramenta(self, nome, entrada, res: ResultadoFerramenta) -> None:
+        fontes_resultado: list[dict] = []
+        linhas_resultado: list[int] = []
+        if nome == "buscar" and not res.erro and not res.negado:
+            # `git grep -n` devolve `caminho:linha:texto`. Só os caminhos efetivamente
+            # retornados e suas linhas são persistidos; conteúdo não entra na auditoria.
+            for linha in res.texto.splitlines():
+                m = re.match(r"^([^:\r\n]+):(\d+):", linha)
+                if m:
+                    fontes_resultado.append(
+                        {
+                            "arquivo": m.group(1).replace("\\", "/").removeprefix("./"),
+                            "linha": int(m.group(2)),
+                        }
+                    )
+        elif nome == "ler_arquivo" and not res.erro and not res.negado:
+            for linha in res.texto.splitlines():
+                m = re.match(r"^\s*(\d+)\t", linha)
+                if m:
+                    linhas_resultado.append(int(m.group(1)))
         self.auditoria.registrar(
             {
                 "tipo": "ferramenta",
@@ -118,6 +142,10 @@ class Laco:
                 "expirou": res.expirou,
                 "interrompido": res.interrompido,
                 "erro": res.erro,
+                "fontes_resultado": [
+                    dict(item) for item in sorted({tuple(sorted(item.items())) for item in fontes_resultado})
+                ],
+                "linhas_resultado": sorted(set(linhas_resultado)),
             }
         )
 
@@ -138,8 +166,11 @@ class Laco:
                     self._evento("stop_detectado", "antes da chamada ao modelo")
                     return self._parcial("STOP")
                 prevista = self._entrada_prevista(messages)
-                custo_previsto = formatar_usd(self.orcamento.custo_previsto(prevista, self.max_tokens_resposta))
-                motivo = self.orcamento.motivo_estouro_modelo(prevista, self.max_tokens_resposta)
+                custo_pior = formatar_usd(self.orcamento.custo_previsto(prevista, self.max_tokens_resposta))
+                motivo, max_tokens_efetivo, previsao = self.orcamento.planejar_chamada(
+                    prevista, self.max_tokens_resposta
+                )
+                custo_previsto = formatar_usd(previsao)
                 if motivo:
                     self._evento(
                         "orcamento_estourado",
@@ -148,7 +179,10 @@ class Laco:
                             "antes_da_chamada": True,
                             "entrada_prevista_tokens": prevista,
                             "custo_previsto_usd": custo_previsto,
+                            "custo_pior_caso_usd": custo_pior,
                             "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
+                            "turnos_concluidos": self.orcamento.turnos,
+                            "ferramentas_concluidas": self.orcamento.chamadas_ferramenta,
                         },
                     )
                     return self._parcial(f"orcamento:{motivo}")
@@ -159,11 +193,11 @@ class Laco:
                     system=self.system,
                     tools=self.tools,
                     messages=messages,
-                    max_tokens=self.max_tokens_resposta,
+                    max_tokens=max_tokens_efetivo,
                     esforco=self.esforco,
                 )
                 self.orcamento.novo_turno()
-                self.orcamento.registrar_resposta(resp.usage, self.max_tokens_resposta)
+                self.orcamento.registrar_resposta(resp.usage, max_tokens_efetivo)
                 blocos: dict[str, int] = {}
                 for b in resp.content:
                     blocos[b.get("type", "?")] = blocos.get(b.get("type", "?"), 0) + 1
@@ -179,6 +213,9 @@ class Laco:
                         "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
                         "entrada_prevista_tokens": prevista,
                         "custo_previsto_usd": custo_previsto,
+                        "custo_pior_caso_usd": custo_pior,
+                        "max_tokens_resposta_solicitado": self.max_tokens_resposta,
+                        "max_tokens_resposta_efetivo": max_tokens_efetivo,
                         "duracao_ms": int((time.monotonic() - inicio) * 1000),
                         "rate_limit": rate_limit,
                         "blocos": blocos,
@@ -279,15 +316,15 @@ class Laco:
             if self.resultado.parecer_modelo is not None:
                 self._recusar(resultados, nome, entrada, ident, TEXTO_APOS_PARECER, "apos_parecer")
                 continue
-            if nome == "entregar_parecer":
+            if nome == self.terminal_nome:
                 try:
-                    parecer = validar(entrada, self.tarefa)
-                except ParecerInvalido as e:
+                    parecer = self.terminal_validar(entrada)
+                except (ParecerInvalido, ValueError) as e:
+                    erros = getattr(e, "erros", [str(e)])
                     res = ResultadoFerramenta(texto="parecer inválido", erro=True, codigo=1)
-                    self._auditar_ferramenta(nome, {"erros": e.erros}, res)
-                    resultados.append(
-                        self._resultado_erro(ident, "parecer inválido; corrija e chame de novo: " + "; ".join(e.erros[:20]))
-                    )
+                    self._auditar_ferramenta(nome, {"erros": erros}, res)
+                    rotulo = "parecer inválido" if self.terminal_nome == "entregar_parecer" else "entrega inválida"
+                    resultados.append(self._resultado_erro(ident, rotulo + "; corrija e chame de novo: " + "; ".join(erros[:20])))
                     continue
                 self.resultado.parecer_modelo = parecer
                 res = ResultadoFerramenta(texto="parecer recebido", erro=False, codigo=0)

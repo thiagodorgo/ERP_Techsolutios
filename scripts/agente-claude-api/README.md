@@ -127,7 +127,7 @@ Rode de dentro de qualquer checkout/worktree do repositório: o repositório é 
 | `--max-turnos` | 30 | teto de chamadas ao modelo (1..200) |
 | `--max-ferramentas` | 60 | teto de chamadas de ferramenta (1..500) |
 | `--max-tokens` | 1 500 000 | teto de tokens somados (entrada + cache + saída) |
-| `--max-custo-usd` | 6.00 | teto de custo estimado |
+| `--max-custo-usd` | por tarefa | `revisar-pr` 3.00 · `investigar` 2.00 · `redigir` 2.50 · `propor-patch` 2.00 |
 | `--max-tokens-resposta` | 8000 | `max_tokens` de cada chamada (256..32000) |
 | `--permitir-execucao-do-alvo` | **desligado** | deixa rodar código do commit alvo (`espelho_codex`, `teste`, `npm ci`). Leia a seção abaixo antes de ligar |
 | `--npm-ci` | desligado | `npm ci` próprio no worktree (habilita `verificar teste`); **exige** `--permitir-execucao-do-alvo` |
@@ -258,3 +258,62 @@ python -m unittest discover -s tests -t .          # também no Python global, s
 A suíte é `unittest` da biblioteca padrão, **sem rede** (abrir socket falha), **sem o SDK** e **sem o
 registro real** (a leitura de `HKCU` é bloqueada na suíte). Junction, symlink e nome 8.3 são criados de
 verdade nos testes de caminho. Nenhum teste chama a API.
+# Braço de trabalho v2: contexto, redação, patches e fila
+
+Toda tarefa intelectual exige `--contexto <arquivo.md>`. O arquivo segue
+`pacotes/MODELO.md`, contém oito seções fixas e declara o SHA efetivo e o teto da
+execução. Ele é tratado como dado hostil: não muda o prompt de sistema, catálogo,
+permissões, terminal ou orçamento. O resultado registra MD5 e SHA-256, nunca o
+conteúdo cru na auditoria.
+
+Um `--contexto` relativo é resolvido a partir da **pasta atual em que a CLI foi
+invocada**, não da raiz Git. Depois de resolvido, ele só é aceito dentro de uma
+destas raízes:
+
+- o checkout/worktree Git atual;
+- `scripts/agente-claude-api/saidas/pacotes/` do agente.
+
+Arquivo inexistente ou fora delas é recusado, e a mensagem enumera as duas raízes.
+Caminho absoluto segue a mesma allowlist.
+
+Comandos novos:
+
+```text
+python -m agente_claude redigir --entregavel registro --contexto pacote.md
+python -m agente_claude propor-patch --contexto pacote.md
+python -m agente_claude.despachante --fila saidas/filas/fila.jsonl --lancador-codex run-codex-visivel.ps1
+```
+
+`redigir` aceita `registro`, `ata`, `corpo-pr`, `hipoteses-mandato`,
+`corpo-cadeira` e `rascunho-plano`; escreve somente `entregavel.md` e
+`fontes-lidas.json` na saída. `propor-patch` nunca aplica: publica
+`proposta.patch` e `patch.json` somente após `git apply --check
+--whitespace=error-all`, com o worktree inalterado.
+
+`--saida` é apenas um nome novo sob `scripts/agente-claude-api/saidas/`; caminhos
+absolutos, separadores e `..` são recusados. O teto diário vem de
+`ERP_AGENTE_TETO_DIARIO_USD` (padrão `15.00`), usa `Decimal`, reserva atômica e
+livro append-only. Simulação não reserva. Há três slots globais de API.
+
+### Previsão por turno e regra prática de custo
+
+O teto da execução continua absoluto. No primeiro turno, sem histórico, a previsão
+usa o pior caso completo. A partir do segundo, usa o maior entre a média real dos
+turnos concluídos com margem de 50% e o último turno com margem de 25%. Essa
+previsão evita encerrar uma tarefa de US$ 1 depois de só dois ou três turnos de
+US$ 0,05–0,10.
+
+A garantia dura não depende da média: antes de cada chamada, o agente reduz o
+`max_tokens` enviado à API ao máximo que ainda cabe no saldo, considerando toda a
+entrada ao preço mais caro. Se nem 256 tokens couberem, para antes da chamada. O
+parecer parcial preserva texto já apurado, comandos executados, custo e auditoria.
+
+Regra prática: use o padrão da tarefa; para trabalho excepcionalmente longo, estime
+`turnos esperados × custo médio observado × 1,5`, sem esquecer que o teto declarado
+no pacote e o `--max-custo-usd` são combinados pelo menor valor. Aumentar o teto não
+substitui aumentar `--max-turnos` quando a tarefa precisa de mais chamadas.
+
+O despachante aceita fila JSONL fechada sob `saidas/filas/`, no máximo três itens
+API e um Codex. O modelo Codex é fixo `gpt-5.6-sol`; não há argv livre, shell ou
+retentativa automática. `hit your usage limit` junto de `try again at` gera o
+estado terminal `aguardando-codex`.

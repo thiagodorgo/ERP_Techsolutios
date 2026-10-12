@@ -79,6 +79,12 @@ PARECER_SCHEMA = _objeto(
     }
 )
 
+FONTE_SCHEMA = _objeto({"arquivo": _TEXTO, "linha_inicial": _INTEIRO, "linha_final": _INTEIRO, "evidencia": _TEXTO})
+REDACAO_SCHEMA = _objeto({"tipo": {"type": "string", "enum": ["registro", "ata", "corpo-pr", "hipoteses-mandato", "corpo-cadeira", "rascunho-plano"]},
+                           "texto_markdown": _TEXTO, "fontes_lidas": {"type": "array", "items": FONTE_SCHEMA}, "limitacoes": _LISTA_TEXTO})
+PATCH_SCHEMA = _objeto({"base_sha": _TEXTO, "diff_unificado": _TEXTO,
+                         "fontes_lidas": {"type": "array", "items": FONTE_SCHEMA}, "limitacoes": _LISTA_TEXTO})
+
 _CAMINHOS = {
     "type": "array",
     "items": {"type": "string"},
@@ -250,6 +256,19 @@ _ESQUEMA_POR_NOME = {f["name"]: f["input_schema"] for f in _FERRAMENTAS}
 def ferramentas() -> list[dict]:
     """Cópia profunda, em ordem fixa (o laço manda a MESMA lista em todo turno)."""
     return copy.deepcopy(_FERRAMENTAS)
+
+
+def ferramentas_para(terminal: str) -> list[dict]:
+    """Mesmo catálogo de leitura, com exatamente uma ferramenta terminal estrita."""
+    if terminal == "entregar_parecer":
+        return ferramentas()
+    schemas = {"entregar_redacao": REDACAO_SCHEMA, "entregar_patch": PATCH_SCHEMA}
+    if terminal not in schemas:
+        raise ValueError("terminal desconhecido")
+    base = [f for f in ferramentas() if f["name"] != "entregar_parecer"]
+    base.append({"name": terminal, "description": "Entrega final e encerra o trabalho.",
+                 "input_schema": copy.deepcopy(schemas[terminal]), "strict": True})
+    return base
 
 
 def serializar(obj: object) -> str:
