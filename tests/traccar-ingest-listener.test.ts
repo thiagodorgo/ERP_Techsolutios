@@ -6,6 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import type { PrismaClient } from "@prisma/client";
 import type { Express } from "express";
 import pino from "pino";
 
@@ -17,6 +18,10 @@ import {
   type TraccarIngestHandler,
 } from "../src/integrations/traccar/traccar-ingest.app.js";
 import { startTraccarIngestListenerIfEnabled } from "../src/integrations/traccar/traccar-ingest.bootstrap.js";
+import {
+  createTraccarIngestionService,
+  type TraccarIngestionService,
+} from "../src/integrations/traccar/traccar-ingestion.service.js";
 import { createTraccarIngestLimiter } from "../src/integrations/traccar/traccar-rate-limit.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -405,40 +410,62 @@ test("listener: TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL a mais de 72 h reprova o e
   );
 });
 
-// Conserto do 503 (pré-revisão do #426, Achado 1) — o prazo é UM estado dividido entre o listener e o trabalho:
-//   - gravação já na porta do commit quando o tempo esgota → nada de 503: a resposta espera e diz o desfecho real;
-//   - tempo esgotado antes da porta → 503, e a porta fica FECHADA para sempre (o trabalho tem de desistir).
-test("listener: tempo esgotado com o commit já em andamento espera o desfecho real (204), nunca 503", { timeout: 30_000 }, async () => {
-  const { app } = ingestApp({
-    ingest: async (_command, deadline) => {
-      assert.equal(deadline.claimCommit(), true, "dentro do prazo a porta abre");
-      await new Promise((resolve) => setTimeout(resolve, 300)); // o COMMIT demora além do prazo de 100 ms
-      return { kind: "stored" };
+// Conserto do 503 (pré-revisão do #426, Achado 1). A PROPRIEDADE, medida por fora, sem depender de como o listener e o
+// serviço combinam o prazo entre si:
+//   - 503 por tempo ⇒ NADA gravado, nem na hora nem depois (o trabalho que segue rodando não pode gravar);
+//   - gravação já em curso quando o tempo esgota ⇒ a resposta diz o desfecho real, nunca 503 com dado gravado;
+//   - a vaga do limitador só volta quando o TRABALHO termina, mesmo com o cliente já desconectado.
+// Os dois primeiros usam o SERVIÇO REAL de ingestão (`TraccarIngestionService`) com a descoberta e o executor falsos: o
+// caminho exercido é o do dispositivo não mapeado, cuja quarentena é a única gravação (uma instrução em autocommit no
+// `client`). O executor falso conta as gravações; nada aqui sabe o nome da API do prazo — o listener só repassa os
+// argumentos ao serviço.
+function recordingExecutor(writeDelayMs = 0): { client: PrismaClient; writes: string[] } {
+  const writes: string[] = [];
+  const client = {
+    async $queryRaw(strings: TemplateStringsArray) {
+      if (writeDelayMs > 0) await pause(writeDelayMs);
+      writes.push(strings.join("?").trim().split(/\s+/).slice(0, 3).join(" "));
+      return [{ id: "q-1" }];
     },
-    timeoutMs: 100,
-  });
-  const { server, base } = await listen(app);
-  try {
-    const response = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
-    assert.equal(response.status, 204, "a posição FOI gravada: 503 aqui faria o Traccar achar que não");
-    await response.arrayBuffer();
-  } finally {
-    await close(server);
-  }
-});
+    $transaction() {
+      throw new Error("a fase 2 não roda neste teste: o dispositivo não está mapeado");
+    },
+  };
+  return { client: client as unknown as PrismaClient, writes };
+}
 
-test("listener: tempo esgotado antes da porta do commit dá 503 e a porta não abre mais", { timeout: 30_000 }, async () => {
-  let lateClaim: boolean | undefined;
-  let workEnded!: () => void;
-  const ended = new Promise<void>((resolve) => {
-    workEnded = resolve;
+function unmappedService(client: PrismaClient, discoveryDelayMs = 0): { service: TraccarIngestionService; discoveryEnded: () => boolean } {
+  let ended = false;
+  const service = createTraccarIngestionService({
+    client,
+    timeoutMs: 3_000,
+    resolver: { maxTenants: 500, hintTtlMs: 600_000, negativeTtlMs: 60_000, cacheMax: 10_000 },
+    discoveryPorts: {
+      countActiveTenants: async () => 1,
+      listActiveTenantIds: async () => ["00000000-0000-4000-8000-000000000001"],
+      findBoundTenant: async () => {
+        if (discoveryDelayMs > 0) await pause(discoveryDelayMs);
+        ended = true;
+        return null; // nenhuma organização tem o dispositivo → quarentena `unmapped_device`
+      },
+    },
   });
+  return { service, discoveryEnded: () => ended };
+}
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+test("listener: 503 por tempo esgotado ⇒ nada gravado, nem depois de o trabalho terminar", { timeout: 30_000 }, async () => {
+  const { client, writes } = recordingExecutor();
+  const { service, discoveryEnded } = unmappedService(client, 300); // a descoberta passa do prazo de 100 ms
+  let work: Promise<unknown> | undefined;
   const { app } = ingestApp({
-    ingest: async (_command, deadline) => {
-      await new Promise((resolve) => setTimeout(resolve, 300)); // o trabalho chega à porta DEPOIS do prazo
-      lateClaim = deadline.claimCommit();
-      workEnded();
-      return lateClaim ? { kind: "stored" } : { kind: "unavailable", reason: "timeout" };
+    ingest: (...args: Parameters<TraccarIngestHandler>) => {
+      const running = service.ingest(...args);
+      work = running;
+      return running;
     },
     timeoutMs: 100,
   });
@@ -447,9 +474,88 @@ test("listener: tempo esgotado antes da porta do commit dá 503 e a porta não a
     const response = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
     assert.equal(response.status, 503);
     assert.deepEqual(await response.json(), { error: { code: "unavailable" } });
-    await ended;
-    assert.equal(lateClaim, false, "depois do 503 a gravação é recusada na porta");
+    assert.equal(discoveryEnded(), false, "controle: o 503 saiu com o trabalho ainda rodando");
   } finally {
+    await close(server);
+  }
+  assert.ok(work, "o serviço foi chamado");
+  await work!.catch(() => undefined); // espera o FIM do trabalho, não só a resposta
+  assert.equal(discoveryEnded(), true, "controle: o trabalho foi até o fim");
+  assert.deepEqual(writes, [], "nenhuma quarentena gravada depois do 503");
+});
+
+test("listener: gravação já em curso quando o tempo esgota ⇒ a resposta diz o desfecho real (202), nunca 503", { timeout: 30_000 }, async () => {
+  const { client, writes } = recordingExecutor(300); // a gravação começa no prazo e termina depois dele
+  const { service } = unmappedService(client);
+  const { app } = ingestApp({
+    ingest: (...args: Parameters<TraccarIngestHandler>) => service.ingest(...args),
+    timeoutMs: 100,
+  });
+  const { server, base } = await listen(app);
+  try {
+    const response = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
+    await response.arrayBuffer();
+    assert.equal(writes.length, 1, "a quarentena FOI gravada");
+    assert.equal(response.status, 202, "gravado ⇒ não pode ser 503 (o Traccar acharia que nada foi gravado)");
+  } finally {
+    await close(server);
+  }
+});
+
+test("listener: a vaga só volta quando o TRABALHO termina, mesmo com o cliente desconectado", { timeout: 30_000 }, async () => {
+  let started!: () => void;
+  const workStarted = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  let finishWork!: () => void;
+  const workMayEnd = new Promise<void>((resolve) => {
+    finishWork = resolve;
+  });
+  let calls = 0;
+  const limiter = createTraccarIngestLimiter({ ratePerSecond: 1_000, burst: 1_000, maxConcurrency: 1 });
+  const app = createTraccarIngestApp({
+    authenticator: createTraccarForwardAuthenticator({ current: SECRET }),
+    limiter,
+    // Trabalho que IGNORA o cliente e o prazo, como o real que segue no banco.
+    ingest: async () => {
+      calls += 1;
+      if (calls === 1) {
+        started();
+        await workMayEnd;
+      }
+      return { kind: "stored" };
+    },
+    instanceKey: "erp-dev",
+    timeoutMs: 2_000,
+    logger: silent,
+  });
+  const { server, base } = await listen(app);
+  try {
+    const abort = new AbortController();
+    const aborted = fetch(`${base}${TRACCAR_INGEST_PATH}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-traccar-forward-token": SECRET },
+      body: FIXTURE,
+      signal: abort.signal,
+    }).catch(() => undefined);
+    void aborted;
+    await workStarted;
+    abort.abort(); // o cliente desiste: o servidor vê `close` com o trabalho ainda rodando
+    await pause(150);
+    assert.equal(limiter.inFlight(), 1, "o trabalho ainda roda: a vaga continua ocupada depois do `close`");
+    const second = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
+    await second.arrayBuffer();
+    assert.equal(second.status, 429, "com o trabalho no ar, a seguinte não entra");
+
+    finishWork();
+    for (let spin = 0; spin < 100 && limiter.inFlight() !== 0; spin++) await pause(10);
+    assert.equal(limiter.inFlight(), 0, "o trabalho terminou: a vaga voltou");
+    const third = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
+    await third.arrayBuffer();
+    assert.equal(third.status, 204, "com a vaga de volta, a seguinte passa");
+  } finally {
+    finishWork();
+    server.closeAllConnections();
     await close(server);
   }
 });

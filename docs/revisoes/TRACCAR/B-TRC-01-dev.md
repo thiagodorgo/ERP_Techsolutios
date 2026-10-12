@@ -710,3 +710,17 @@ Leituras: o mandato inteiro; `PRE-REVISAO-426-api.md` (Achado 1); `PLANO_TRACCAR
 **abaixo** do `client.readTimeout` de 5000 do Traccar, com margem); `traccar-ingest.app.ts`, `traccar-rate-limit.ts`,
 `traccar-ingestion.service.ts`, `traccar-resolution.ts`, `src/database/rls.ts`; os testes do listener, dos logs, do
 limitador e da ingestão `-db`.
+
+### Passo 0 (retomada 2, depois da cota) — terreno (2026-10-12T19:02Z) — **OK**
+
+| # | Comando | Saída | Estado |
+|---|---|---|---|
+| 0.8 | `git fetch; git rev-parse HEAD; git branch --show-current` | `ed414fb8f0fd6024bee31c451989932874227605` · `feat/traccar-b-trc-01` | ok: é o WIP local dos testes, por cima de `31cdd030` (o mandato da retomada manda partir dele) |
+| 0.9 | `git status --short` | 54 linhas, todas ` M .agents/agents/**`; `git diff --stat --ignore-cr-at-eol` vazio (só fim de linha, de outro trabalho, intocados) | ok |
+| 0.10 | `git show --stat ed414fb8` | 4 arquivos: este relatório e os 3 de `tests/` (listener, `-db`, limitador) | ok |
+
+Leituras da retomada: `DESENHO-503-api.md` (porta de commit com claim: open → claimed / expired, sem volta) e
+`REV-TESTES-503-api.md` (os testes `-db` e do limitador enunciam a propriedade; os 2 do listener testam a forma
+`deadline.claimCommit()` e falhariam por `TypeError`; lacunas: quarentena gravada depois do 503 e vaga devolvida no
+`close`); de novo `traccar-ingest.app.ts`, `traccar-rate-limit.ts`, `traccar-ingestion.service.ts`,
+`traccar-ingestion.repository.ts`, `traccar-resolution.ts`, `rls.ts` (`withTenantRlsBudget`).

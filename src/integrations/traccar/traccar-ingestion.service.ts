@@ -13,6 +13,12 @@
 //   COMMIT → só depois, e só na primeira gravação: `field_location.updated` (sem coordenada).
 // Quarentena sem organização resolvida (dispositivo não mapeado; teto de organizações) é transação própria, sem GUC.
 // Qualquer falha antes do commit (banco, trava, orçamento) → `unavailable` (503) e nada gravado.
+// 503 POR TEMPO = nada gravado, nem na hora nem DEPOIS: o trabalho segue rodando depois do 503, mas toda gravação (o
+// tx da fase 2 com resultado `confirmed` e a quarentena sem organização) toma a PORTA DE COMMIT (`TraccarIngestDeadline`,
+// traccar-ingest.app.ts) antes do commit. O listener só responde 503 se fechar a porta primeiro; o trabalho que a
+// encontra fechada lança, o tx volta (rollback) e não sai evento. Se o trabalho tomou a porta primeiro, o listener
+// espera o desfecho real em vez de responder 503. Fica fora (HIPÓTESE, não medida): o COMMIT ambíguo — a confirmação
+// se perde depois de o PostgreSQL gravar, o serviço responde 503 e o reenvio do Traccar vira 204 pelo recibo.
 
 import type { PrismaClient } from "@prisma/client";
 import type { Express } from "express";
@@ -30,7 +36,11 @@ import {
 import { createTraccarIngestPrismaClient } from "./traccar-db.js";
 import { createTraccarForwardAuthenticator } from "./traccar-forward-auth.js";
 import {
+  claimTraccarCommitOrThrow,
+  createTraccarCommitGate,
   createTraccarIngestApp,
+  TraccarIngestDeadlineExpiredError,
+  type TraccarIngestDeadline,
   type TraccarIngestOutcome,
   type TraccarQuarantineReason,
 } from "./traccar-ingest.app.js";

@@ -10,7 +10,9 @@
 //   (4) `express.json({ limit: "64kb", strict: true })` → 413 ou 400 invalid_json;
 //   (5) taxa e concorrência → 429;
 //   (6) schema allowlist → 422;
-//   (7) serviço com orçamento de tempo → 204 / 202 / 409 / 503.
+//   (7) serviço com orçamento de tempo → 204 / 202 / 409 / 503. O 503 por tempo só sai se o listener fechar a PORTA
+//       DE COMMIT antes de o trabalho tomá-la (`createTraccarCommitGate`): 503 = nada gravado, nem depois. A vaga do
+//       limitador (5) só volta quando o TRABALHO termina, não quando a resposta sai.
 // Todo o resto: 404 `{"error":{"code":"NOT_FOUND"}}`. Corpo vazio em 2xx; `{"error":{"code":"…"}}` nos demais, sem
 // detalhe.
 
@@ -21,7 +23,7 @@ import { buildTraccarPositionCommand, type TraccarPositionCommand } from "./trac
 import { parseTraccarPositionEnvelope, TraccarPayloadError } from "./traccar-position.schema.js";
 import { traccarForwardAuthMiddleware, type TraccarForwardAuthenticator } from "./traccar-forward-auth.js";
 import { createTraccarIngestHttpLogger } from "./traccar-ingest.logger.js";
-import { traccarRateLimitMiddleware, type TraccarIngestLimiter } from "./traccar-rate-limit.js";
+import { holdTraccarSlotUntil, traccarRateLimitMiddleware, type TraccarIngestLimiter } from "./traccar-rate-limit.js";
 
 export const TRACCAR_INGEST_PATH = "/ingest/traccar/v1/positions";
 export const TRACCAR_INGEST_BODY_LIMIT = "64kb";
@@ -45,7 +47,62 @@ export type TraccarIngestOutcome =
   | { readonly kind: "conflict"; readonly reason: "digest_mismatch" | "owned_elsewhere" }
   | { readonly kind: "unavailable"; readonly reason: string };
 
-export type TraccarIngestHandler = (command: TraccarPositionCommand) => Promise<TraccarIngestOutcome>;
+/**
+ * Conserto do 503 (pré-revisão do #426, Achado 1) — a PORTA DE COMMIT, um estado só dividido entre o listener e o
+ * trabalho que ele disparou. Vai de `open` para `claimed` (o trabalho vai gravar) OU para `expired` (o listener
+ * respondeu 503 por tempo), e nunca volta. Quem chegar primeiro decide:
+ *   - o listener só responde 503 se conseguir trocar `open` por `expired`; daí em diante nenhuma gravação passa;
+ *   - toda gravação toma a porta (`claimCommit()`) ANTES do commit; recebendo `false`, desiste (rollback);
+ *   - se o trabalho já tomou a porta quando o tempo esgota, o listener espera o desfecho real (nunca 503 com dado
+ *     gravado). Depois de tomada, só falta o COMMIT da transação (ou a instrução única da quarentena sem organização).
+ */
+export type TraccarIngestDeadline = {
+  /** Instante (epoch ms) em que o listener desiste. */
+  readonly at: number;
+  /** O listener já respondeu 503 por tempo: nada mais pode ser gravado. */
+  readonly expired: boolean;
+  /** Pede a porta para gravar: `true` = pode gravar (o listener espera o desfecho); `false` = o 503 já saiu. */
+  claimCommit(): boolean;
+};
+
+export class TraccarIngestDeadlineExpiredError extends Error {
+  readonly code = "traccar_ingest_deadline_expired";
+
+  constructor() {
+    super("traccar ingest: o listener já respondeu 503 por tempo; nada é gravado.");
+    this.name = "TraccarIngestDeadlineExpiredError";
+  }
+}
+
+export function createTraccarCommitGate(at: number): { readonly deadline: TraccarIngestDeadline; expire(): boolean } {
+  let state: "open" | "claimed" | "expired" = "open";
+  return {
+    deadline: {
+      at,
+      get expired() {
+        return state === "expired";
+      },
+      claimCommit() {
+        if (state === "open") state = "claimed";
+        return state === "claimed";
+      },
+    },
+    expire() {
+      if (state === "open") state = "expired";
+      return state === "expired";
+    },
+  };
+}
+
+/** Toma a porta de commit ou lança: dentro de uma transação, o lançamento vira rollback. */
+export function claimTraccarCommitOrThrow(deadline: TraccarIngestDeadline): void {
+  if (!deadline.claimCommit()) throw new TraccarIngestDeadlineExpiredError();
+}
+
+export type TraccarIngestHandler = (
+  command: TraccarPositionCommand,
+  deadline: TraccarIngestDeadline,
+) => Promise<TraccarIngestOutcome>;
 
 export type TraccarIngestAppDeps = {
   readonly authenticator: TraccarForwardAuthenticator;
@@ -92,15 +149,28 @@ const requireJsonContentType: RequestHandler = (request, response, next) => {
   next();
 };
 
-function withTimeout(work: Promise<TraccarIngestOutcome>, timeoutMs: number): Promise<TraccarIngestOutcome> {
-  let timer: NodeJS.Timeout | undefined;
-  const timeout = new Promise<TraccarIngestOutcome>((resolve) => {
-    timer = setTimeout(() => resolve({ kind: "unavailable", reason: "timeout" }), timeoutMs);
-  });
-  // O trabalho que perdeu a corrida não pode virar rejeição sem tratador.
-  work.catch(() => undefined);
-  return Promise.race([work, timeout]).finally(() => {
-    if (timer) clearTimeout(timer);
+function answerWithinDeadline(
+  work: Promise<TraccarIngestOutcome>,
+  gate: { expire(): boolean },
+  timeoutMs: number,
+): Promise<TraccarIngestOutcome> {
+  return new Promise<TraccarIngestOutcome>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      // 503 só se a porta estava aberta e FECHOU agora: daqui em diante o trabalho não grava mais nada. Com a porta
+      // já tomada, o trabalho está gravando: espera o desfecho real (um 503 aqui mentiria para o Traccar).
+      if (gate.expire()) resolve({ kind: "unavailable", reason: "timeout" });
+    }, timeoutMs);
+    // O trabalho que perdeu a corrida não vira rejeição sem tratador: os dois ramos estão presos aqui.
+    work.then(
+      (outcome) => {
+        clearTimeout(timer);
+        resolve(outcome);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
   });
 }
 
@@ -127,7 +197,11 @@ export function createTraccarIngestApp(deps: TraccarIngestAppDeps): Express {
       throw error;
     }
 
-    const outcome = await withTimeout(deps.ingest(command), deps.timeoutMs);
+    const gate = createTraccarCommitGate(Date.now() + deps.timeoutMs);
+    const work = (async () => deps.ingest(command, gate.deadline))();
+    // A vaga do limitador cobre o TRABALHO, não só a resposta: o 503 por tempo sai antes de ele terminar.
+    holdTraccarSlotUntil(response, work);
+    const outcome = await answerWithinDeadline(work, gate, deps.timeoutMs);
     const { status, code } = traccarIngestResponse(outcome);
     if (code === undefined) {
       response.status(status).end();
