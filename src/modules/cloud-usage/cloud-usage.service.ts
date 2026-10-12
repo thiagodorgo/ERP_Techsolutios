@@ -189,7 +189,7 @@ export function recordCloudUsageBestEffort(input: RecordUsageEventInput, logger:
  * produção, que continua sem esperar por cobrança (é o ponto de ser best-effort).
  */
 export async function drainCloudUsageBestEffortForTests(): Promise<void> {
-  return;
+  await gravacoesEmVoo;
 }
 
 export function isCloudUsageMetricKey(value: string): value is CloudUsageMetricKey {
