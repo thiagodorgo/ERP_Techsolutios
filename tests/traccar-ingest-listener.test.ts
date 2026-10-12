@@ -33,7 +33,7 @@ const FIXTURE = readFileSync(path.join(ROOT, "infra", "traccar", "fixtures", "6.
 const silent = pino({ level: "silent" });
 
 function ingestApp(
-  overrides: { ingest?: TraccarIngestHandler; burst?: number; maxConcurrency?: number; now?: () => number } = {},
+  overrides: { ingest?: TraccarIngestHandler; burst?: number; maxConcurrency?: number; now?: () => number; timeoutMs?: number } = {},
 ) {
   const calls: unknown[] = [];
   const ingest: TraccarIngestHandler =
@@ -52,7 +52,7 @@ function ingestApp(
     }),
     ingest,
     instanceKey: "erp-dev",
-    timeoutMs: 2_000,
+    timeoutMs: overrides.timeoutMs ?? 2_000,
     logger: silent,
   });
   return { app, calls };
@@ -403,4 +403,53 @@ test("listener: TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL a mais de 72 h reprova o e
   assert.ok(
     traccarIssues(baseEnv({ TRACCAR_FORWARD_SECRET_PREVIOUS: previous })).includes("TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL"),
   );
+});
+
+// Conserto do 503 (pré-revisão do #426, Achado 1) — o prazo é UM estado dividido entre o listener e o trabalho:
+//   - gravação já na porta do commit quando o tempo esgota → nada de 503: a resposta espera e diz o desfecho real;
+//   - tempo esgotado antes da porta → 503, e a porta fica FECHADA para sempre (o trabalho tem de desistir).
+test("listener: tempo esgotado com o commit já em andamento espera o desfecho real (204), nunca 503", { timeout: 30_000 }, async () => {
+  const { app } = ingestApp({
+    ingest: async (_command, deadline) => {
+      assert.equal(deadline.claimCommit(), true, "dentro do prazo a porta abre");
+      await new Promise((resolve) => setTimeout(resolve, 300)); // o COMMIT demora além do prazo de 100 ms
+      return { kind: "stored" };
+    },
+    timeoutMs: 100,
+  });
+  const { server, base } = await listen(app);
+  try {
+    const response = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
+    assert.equal(response.status, 204, "a posição FOI gravada: 503 aqui faria o Traccar achar que não");
+    await response.arrayBuffer();
+  } finally {
+    await close(server);
+  }
+});
+
+test("listener: tempo esgotado antes da porta do commit dá 503 e a porta não abre mais", { timeout: 30_000 }, async () => {
+  let lateClaim: boolean | undefined;
+  let workEnded!: () => void;
+  const ended = new Promise<void>((resolve) => {
+    workEnded = resolve;
+  });
+  const { app } = ingestApp({
+    ingest: async (_command, deadline) => {
+      await new Promise((resolve) => setTimeout(resolve, 300)); // o trabalho chega à porta DEPOIS do prazo
+      lateClaim = deadline.claimCommit();
+      workEnded();
+      return lateClaim ? { kind: "stored" } : { kind: "unavailable", reason: "timeout" };
+    },
+    timeoutMs: 100,
+  });
+  const { server, base } = await listen(app);
+  try {
+    const response = await post(base, TRACCAR_INGEST_PATH, FIXTURE);
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: { code: "unavailable" } });
+    await ended;
+    assert.equal(lateClaim, false, "depois do 503 a gravação é recusada na porta");
+  } finally {
+    await close(server);
+  }
 });

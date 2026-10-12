@@ -472,6 +472,72 @@ if (!connectionString) {
     assert.equal(mine().length, 1, "rollback não publica");
   });
 
+  // Conserto do 503 (pré-revisão do #426, Achado 1). O trabalho chega ao ponto de commit DEPOIS de o listener desistir
+  // (gancho `beforeCommit` lento). Sem o prazo propagado, o listener responde 503 e o trabalho grava mesmo assim: a
+  // posição, o recibo e o evento saem depois do 503. A propriedade: 503 = nada gravado, nem agora nem depois.
+  test("ingestão: tempo esgotado → 503 e, depois do fim do trabalho, 0 posição, 0 recibo e 0 evento", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "tmo");
+    const published: string[] = [];
+    let reachedCommitPoint = false;
+    const slowService = (await import("../src/integrations/traccar/traccar-ingestion.service.js")).createTraccarIngestionService({
+      client: h.role.client as PrismaClient,
+      timeoutMs: 3_000,
+      resolver: { maxTenants: 500, hintTtlMs: 600_000, negativeTtlMs: 60_000, cacheMax: 10_000 },
+      budgets: RELAXED_BUDGETS,
+      hooks: {
+        beforeCommit: async () => {
+          reachedCommitPoint = true;
+          await pause(1_500); // o listener desiste aos 400 ms; o trabalho só chega à porta do commit depois
+        },
+      },
+      publish: (async (name: string) => {
+        published.push(name);
+        return { event: {} as never, published: true };
+      }) as never,
+    });
+    let work: Promise<unknown> | undefined;
+    const app = h.app.createTraccarIngestApp({
+      authenticator: h.auth.createTraccarForwardAuthenticator({ current: SECRET }),
+      limiter: h.limit.createTraccarIngestLimiter({ ratePerSecond: 20, burst: 100, maxConcurrency: 10 }),
+      ingest: (cmd, deadline) => {
+        const running = slowService.ingest(cmd, deadline);
+        work = running;
+        return running;
+      },
+      instanceKey: INSTANCE,
+      timeoutMs: 400,
+      logger: (await import("pino")).default({ level: "silent" }),
+    });
+    const fix = await fixNow();
+    const server: Server = createServer(app);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    try {
+      const { port } = server.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${port}/ingest/traccar/v1/positions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-traccar-forward-token": SECRET },
+        body: JSON.stringify(envelope(w.device, fix, -23.51, -46.61)),
+      });
+      assert.equal(response.status, 503);
+      assert.deepEqual(await response.json(), { error: { code: "unavailable" } });
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+
+    assert.ok(work, "o serviço foi chamado");
+    await work!.catch(() => undefined); // espera o FIM do trabalho, não só a resposta
+    assert.equal(reachedCommitPoint, true, "controle: o trabalho chegou à porta do commit depois do 503");
+    assert.equal(await locationsOf(h, w.tenantId), 0, "nenhuma posição gravada depois do 503");
+    assert.equal(await count(h, "traccar_ingress_receipts", "tenant_id = $1::uuid", w.tenantId), 0, "nenhum recibo gravado depois do 503");
+    assert.deepEqual(published, [], "nenhum `field_location.updated` depois do 503");
+
+    // A nova entrega do Traccar grava pela PRIMEIRA vez (não é duplicata): o 503 não deixou nada para trás.
+    const retry = await h.ingestion.ingest(command(h, w.device, fix, -23.51, -46.61));
+    assert.equal(retry.kind, "stored");
+    assert.equal(await locationsOf(h, w.tenantId), 1);
+  });
+
   test("ingestão: a organização B não lê localização, recibo nem vínculo de A", { timeout: 120_000 }, async () => {
     const h = await harness();
     const a = await world(h, "isoa");

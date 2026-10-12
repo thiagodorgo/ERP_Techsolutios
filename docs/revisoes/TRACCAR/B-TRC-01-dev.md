@@ -670,3 +670,43 @@ integrar a `main` no ramo deve re-rodar o T13 (o #424 pode ter mexido no invent�
 **Próximo passo:** o orquestrador decide o item 1 (literal 109 → 111, ou outra regra), versiona o ramo, convoca o
 `agente-dba-guardiao` para a migração e, depois, o `inspetor-de-terreno-da-junta` e a junta de segurança 3/3 de
 §8.10 (cadeiras (a), (b), (c)); as evidências para re-execução estão em `docs/revisoes/TRACCAR/B-TRC-01-evidencias/`.
+
+## Conserto do 503 (Antigravity)
+
+> **Identidade:** `dev-trc01-503-agy` (nova). **Ferramenta/modelo:** Antigravity CLI, Claude Opus 5.5 (high), nível menor.
+> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt`. **Achado:** `PRE-REVISAO-426-api.md`, Achado 1 (`ajuste`).
+
+### Passo 0 — terreno (2026-10-12T13:50Z) — **BARRADO**
+
+| # | Comando | Saída | Estado |
+|---|---|---|---|
+| 0.1 | `timeout 120 git fetch; git rev-parse HEAD; git branch --show-current` (Cwd `C:\Users\AMP\w-trc01`) | `exec: "C:\\Users\\AMP\\w-trc01\\powershell": executable file not found in %PATH%` | barrado |
+| 0.2 | `git rev-parse HEAD` (Cwd com `/`) | mesmo erro | barrado |
+| 0.3 | `echo ok` (Cwd `C:\Users\AMP\erp-pausa-2026-10-03`) | `exec: "...\\erp-pausa-2026-10-03\\powershell": executable file not found in %PATH%` | barrado |
+
+**Diagnóstico (fato):** a ferramenta de execução do Antigravity não acha o `powershell` no `PATH` do processo e tenta
+resolvê-lo no diretório de trabalho; nenhum comando executa (nem `echo`). Sem execução não há `git fetch`, nem conferência
+do head `31cdd0300b653b50b9ebd795c294ccdb37442491`, nem bateria no container, nem mutações em worktree descartável.
+
+**Decisão:** pela regra do mandato ("Se algo for barrado, PARE e relate"), parei antes de tocar código. Nenhum arquivo
+de `src/` ou `tests/` foi alterado; a única escrita é esta seção. Leituras feitas: o mandato e o Achado 1 da pré-revisão.
+
+**Para destravar:** relançar o Antigravity CLI com `C:\Windows\System32\WindowsPowerShell\v1.0` no `PATH` do processo
+(ou o lançador que hoje põe o `bash` no PATH passar a preservar o `PATH` do sistema) e redisparar o mesmo mandato.
+
+### Passo 0 (retomada) — terreno (2026-10-12T13:54Z) — **OK**
+
+Relançado com a execução funcionando; o bloqueio acima não se repete.
+
+| # | Comando | Saída | Estado |
+|---|---|---|---|
+| 0.4 | `git fetch; git rev-parse HEAD; git branch --show-current` | `31cdd0300b653b50b9ebd795c294ccdb37442491` · `feat/traccar-b-trc-01` | ok, head = mandato |
+| 0.5 | `git rev-parse origin/feat/traccar-b-trc-01` | `31cdd0300b65…` (igual ao local) | ok |
+| 0.6 | `git status --short` (fora de `.agents/`/`.claude/`) | ` M docs/revisoes/TRACCAR/B-TRC-01-dev.md` (esta seção) e 2 votos `??` do inspetor em `agent-orchestration/omega/juntas/votos/B-TRC-01/` (de outro trabalho, intocados) | ok |
+| 0.7 | `node --version` | `v20.19.5` | ok |
+
+Leituras: o mandato inteiro; `PRE-REVISAO-426-api.md` (Achado 1); `PLANO_TRACCAR.md` §4.1 (l.497-550), §4.2 (l.552-583),
+§4.6 (l.758-797); as emendas v2.2 e v2.3 inteiras (só a v2.2 A-9 toca o tempo: `TRACCAR_INGEST_TIMEOUT_MS` = 3000 fica
+**abaixo** do `client.readTimeout` de 5000 do Traccar, com margem); `traccar-ingest.app.ts`, `traccar-rate-limit.ts`,
+`traccar-ingestion.service.ts`, `traccar-resolution.ts`, `src/database/rls.ts`; os testes do listener, dos logs, do
+limitador e da ingestão `-db`.
