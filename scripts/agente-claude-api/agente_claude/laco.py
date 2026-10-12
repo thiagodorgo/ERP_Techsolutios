@@ -18,6 +18,7 @@ Desfechos (plano §3.8):
 
 from __future__ import annotations
 
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -106,6 +107,14 @@ class Laco:
         return self.resultado
 
     def _auditar_ferramenta(self, nome, entrada, res: ResultadoFerramenta) -> None:
+        fontes_resultado: list[str] = []
+        if nome == "buscar" and not res.erro and not res.negado:
+            # `git grep -n` devolve `caminho:linha:texto`. Só os caminhos efetivamente
+            # retornados são persistidos; conteúdo não entra na auditoria.
+            for linha in res.texto.splitlines():
+                m = re.match(r"^([^:\r\n]+):(\d+):", linha)
+                if m:
+                    fontes_resultado.append(m.group(1).replace("\\", "/").removeprefix("./"))
         self.auditoria.registrar(
             {
                 "tipo": "ferramenta",
@@ -122,6 +131,7 @@ class Laco:
                 "expirou": res.expirou,
                 "interrompido": res.interrompido,
                 "erro": res.erro,
+                "fontes_resultado": sorted(set(fontes_resultado)),
             }
         )
 
@@ -142,8 +152,11 @@ class Laco:
                     self._evento("stop_detectado", "antes da chamada ao modelo")
                     return self._parcial("STOP")
                 prevista = self._entrada_prevista(messages)
-                custo_previsto = formatar_usd(self.orcamento.custo_previsto(prevista, self.max_tokens_resposta))
-                motivo = self.orcamento.motivo_estouro_modelo(prevista, self.max_tokens_resposta)
+                custo_pior = formatar_usd(self.orcamento.custo_previsto(prevista, self.max_tokens_resposta))
+                motivo, max_tokens_efetivo, previsao = self.orcamento.planejar_chamada(
+                    prevista, self.max_tokens_resposta
+                )
+                custo_previsto = formatar_usd(previsao)
                 if motivo:
                     self._evento(
                         "orcamento_estourado",
@@ -152,7 +165,10 @@ class Laco:
                             "antes_da_chamada": True,
                             "entrada_prevista_tokens": prevista,
                             "custo_previsto_usd": custo_previsto,
+                            "custo_pior_caso_usd": custo_pior,
                             "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
+                            "turnos_concluidos": self.orcamento.turnos,
+                            "ferramentas_concluidas": self.orcamento.chamadas_ferramenta,
                         },
                     )
                     return self._parcial(f"orcamento:{motivo}")
@@ -163,11 +179,11 @@ class Laco:
                     system=self.system,
                     tools=self.tools,
                     messages=messages,
-                    max_tokens=self.max_tokens_resposta,
+                    max_tokens=max_tokens_efetivo,
                     esforco=self.esforco,
                 )
                 self.orcamento.novo_turno()
-                self.orcamento.registrar_resposta(resp.usage, self.max_tokens_resposta)
+                self.orcamento.registrar_resposta(resp.usage, max_tokens_efetivo)
                 blocos: dict[str, int] = {}
                 for b in resp.content:
                     blocos[b.get("type", "?")] = blocos.get(b.get("type", "?"), 0) + 1
@@ -183,6 +199,9 @@ class Laco:
                         "custo_acumulado_usd": self.orcamento.custo_usd_texto(),
                         "entrada_prevista_tokens": prevista,
                         "custo_previsto_usd": custo_previsto,
+                        "custo_pior_caso_usd": custo_pior,
+                        "max_tokens_resposta_solicitado": self.max_tokens_resposta,
+                        "max_tokens_resposta_efetivo": max_tokens_efetivo,
                         "duracao_ms": int((time.monotonic() - inicio) * 1000),
                         "rate_limit": rate_limit,
                         "blocos": blocos,

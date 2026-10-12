@@ -348,10 +348,14 @@ def executar_tarefa(
         # falha, o `parecer.json` diz qual (`falhas_de_gravacao`), o `erro.txt` traz o traceback
         # redigido, o evento `fim` e o `resumo.json` são gravados, e o código de saída vira 5.
         falhas: list[str] = []
+        motivos_falha: list[str] = []
         detalhes: list[str] = []
 
         def _registrar_falha(etapa: str, e: BaseException) -> None:
+            motivo_falha = str(e).strip()
+            sufixo = f": {motivo_falha}" if motivo_falha else ""
             falhas.append(f"{etapa}: {type(e).__name__}")
+            motivos_falha.append(f"{etapa}: {type(e).__name__}{sufixo}")
             detalhes.append(f"## {etapa}\n{traceback.format_exc()}")
 
         dados = {
@@ -386,6 +390,7 @@ def executar_tarefa(
             _registrar_falha("montagem do parecer", e)
             parecer = parecer_de_emergencia(dados, f"falha_na_montagem:{type(e).__name__}", r.parecer_modelo if r else None)
         parecer["falhas_de_gravacao"] = list(falhas)
+        parecer["motivos_de_falha"] = list(motivos_falha)
         if tarefa in ("redigir", "propor-patch") and not falhas:
             json_ok = True
         else:
@@ -398,6 +403,7 @@ def executar_tarefa(
             if codigo in (0, 2):
                 codigo = 5  # o parecer existe, mas um artefato falhou: erro interno (README, "Códigos de saída")
             parecer["falhas_de_gravacao"] = list(falhas)
+            parecer["motivos_de_falha"] = list(motivos_falha)
             if json_ok:  # regrava, agora com a lista completa de falhas (substituição atômica)
                 _gravar_parecer_json(parecer, dados, pasta_saida, redator, _registrar_falha, falhas)
             try:
@@ -527,7 +533,8 @@ def revisar_pr(numero: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, di
     if not opcoes.contexto:
         raise RecusaPrevia("--contexto é obrigatório")
     opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=head, repo_raiz=raiz,
-                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes")
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
     opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
     contexto = ContextoComandos(
         raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
@@ -568,7 +575,8 @@ def investigar(pergunta: str, opcoes: Opcoes, deps: Dependencias) -> tuple[int, 
     if not opcoes.contexto:
         raise RecusaPrevia("--contexto é obrigatório")
     opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=sha, repo_raiz=raiz,
-                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes")
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
     opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
     contexto = ContextoComandos(
         raiz=None, executaveis=exe, repo_gh=repo, npm_ci=opcoes.npm_ci,
@@ -594,7 +602,8 @@ def _tarefa_sha(tarefa: str, opcoes: Opcoes, deps: Dependencias, entregavel: str
     if not _SHA_RE.fullmatch(sha or ""): raise RecusaPrevia("SHA inválido")
     if not opcoes.contexto: raise RecusaPrevia("--contexto é obrigatório")
     opcoes.pacote_contexto = carregar_contexto(opcoes.contexto, sha_alvo=sha, repo_raiz=raiz,
-                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes")
+                                                pacotes_raiz=Path(deps.saidas_raiz) / "pacotes",
+                                                base_relativa=deps.cwd or os.getcwd())
     opcoes.max_custo_usd = min(opcoes.max_custo_usd, opcoes.pacote_contexto.teto_execucao_usd)
     pasta_saida = _pasta_saida(opcoes, deps, tarefa, sha[:8])
     worktree = WorktreeDescartavel(raiz, sha, _pasta_worktree(opcoes, deps), exe, deps.executar, deps.uso_de_disco, False)

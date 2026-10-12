@@ -22,6 +22,28 @@ class TestEntregas(unittest.TestCase):
         self.s=self.r/"nul";e=self.entrega();e["texto_markdown"]="x\0y"
         with self.assertRaises(EntregaRecusada):self.pub(e)
     def test_redigir_nao_escreve_no_repo(self):self.pub();self.assertEqual({p.name for p in self.s.iterdir()},{"entregavel.md","fontes-lidas.json"})
+    def test_e4_reproducao_execucao_4_confere_as_dez_fontes_reais(self):
+        fixture=json.loads((Path(__file__).parent/"fixtures/e4_execucao_4.json").read_text(encoding="utf-8"))
+        resultado=conferir_fontes(fixture["fontes_lidas"],fixture["eventos"])
+        self.assertEqual(10,len(resultado));self.assertTrue(all(f["conferida"] for f in resultado),resultado)
+    def test_e4_normaliza_ponto_barra_separador_intervalo_e_busca(self):
+        fontes=[{"arquivo":"./src\\modulo\\x.ts","linha_inicial":10,"linha_final":12,"evidencia":"livre"}]
+        leitura={"ferramenta":"ler_arquivo","args":{"caminho":"src/modulo/x.ts","linha_inicial":10,"max_linhas":3},"codigo_saida":0,"truncado":True}
+        busca={"ferramenta":"buscar","args":{"caminhos":["src/modulo"],"padrao":"x"},"codigo_saida":0,
+               "fontes_resultado":["src/modulo/x.ts"]}
+        self.assertTrue(conferir_fontes(fontes,[leitura])[0]["conferida"])
+        fontes[0]["linha_final"]=999
+        self.assertFalse(conferir_fontes(fontes,[leitura])[0]["conferida"])
+        self.assertTrue(conferir_fontes(fontes,[busca])[0]["conferida"])
+        busca["fontes_resultado"]=["src/modulo/outro.ts"]
+        self.assertFalse(conferir_fontes(fontes,[busca])[0]["conferida"])
+    def test_e4_fonte_nunca_lida_permanece_recusada(self):
+        fixture=json.loads((Path(__file__).parent/"fixtures/e4_execucao_4.json").read_text(encoding="utf-8"))
+        falsa={"arquivo":"docs/nunca-lido.md","linha_inicial":1,"linha_final":2,"evidencia":"inventada"}
+        self.assertFalse(conferir_fontes([falsa],fixture["eventos"])[0]["conferida"])
+        entrega=self.entrega();entrega["fontes_lidas"]=[falsa]
+        with self.assertRaisesRegex(EntregaRecusada,"fonte não conferida"):
+            self.pub(entrega,eventos=fixture["eventos"])
 
 def _ok(nome,tipo,texto):
  def teste(self):

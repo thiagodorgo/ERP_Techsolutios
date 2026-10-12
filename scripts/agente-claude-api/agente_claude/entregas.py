@@ -5,11 +5,13 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from pathlib import PurePosixPath
 
 TIPOS = ("registro", "ata", "corpo-pr", "hipoteses-mandato", "corpo-cadeira", "rascunho-plano")
 FALHA_FECHADA = frozenset(("registro", "ata", "corpo-cadeira"))
 MAX_TEXTO = 256 * 1024
 FONTES = frozenset(("ler_arquivo", "git_show", "git_diff", "buscar", "gh_pr_view", "gh_pr_diff", "gh_pr_checks"))
+LINHAS_PADRAO = 400
 
 
 class EntregaRecusada(ValueError):
@@ -26,18 +28,107 @@ def validar(entrada: object, tipo_esperado: str) -> dict:
     return dict(entrada)
 
 
+def _caminho_normalizado(valor: object) -> str | None:
+    if not isinstance(valor, str) or not valor.strip():
+        return None
+    texto = valor.strip().replace("\\", "/")
+    while texto.startswith("./"):
+        texto = texto[2:]
+    caminho = PurePosixPath(texto)
+    if ":" in texto or caminho.is_absolute() or not caminho.parts or any(p in ("", ".", "..") for p in caminho.parts):
+        return None
+    return caminho.as_posix()
+
+
+def _argumentos(evento: dict) -> dict:
+    # `args` é a forma persistida; `entrada` mantém compatibilidade com fixtures anteriores.
+    valor = evento.get("args", evento.get("entrada", {}))
+    return valor if isinstance(valor, dict) else {}
+
+
+def _evento_executado(evento: dict) -> bool:
+    return (
+        evento.get("ferramenta") in FONTES
+        and not evento.get("negado")
+        and not evento.get("erro")
+        and not evento.get("expirou")
+        and not evento.get("interrompido")
+        and evento.get("codigo_saida", evento.get("codigo", 0)) in (0, None)
+    )
+
+
+def _fonte_coberta(fonte: dict, evento: dict) -> bool:
+    arquivo = _caminho_normalizado(fonte.get("arquivo"))
+    inicio, fim = fonte.get("linha_inicial"), fonte.get("linha_final")
+    if arquivo is None or type(inicio) is not int or type(fim) is not int or inicio < 1 or fim < inicio:
+        return False
+    nome, args = evento.get("ferramenta"), _argumentos(evento)
+    if nome == "ler_arquivo":
+        lido = _caminho_normalizado(args.get("caminho"))
+        if lido != arquivo:
+            return False
+        primeira = args.get("linha_inicial", 1)
+        max_linhas = args.get("max_linhas", LINHAS_PADRAO)
+        if type(primeira) is not int or type(max_linhas) is not int:
+            return False
+        max_linhas = min(max_linhas, 2000)
+        # Sem truncamento a leitura chegou ao EOF. Com truncamento, somente o intervalo pedido
+        # é demonstrável. O intervalo declarado precisa caber inteiro no que foi solicitado.
+        ultima = primeira + max_linhas - 1 if evento.get("truncado") else None
+        return inicio >= primeira and (ultima is None or fim <= ultima)
+    if nome == "buscar":
+        retornados = evento.get("fontes_resultado")
+        if not isinstance(retornados, list):
+            return False
+        # Escopo da busca não basta: a auditoria grava os caminhos que `git grep -n`
+        # efetivamente devolveu, sem persistir o conteúdo das linhas.
+        return arquivo in {_caminho_normalizado(p) for p in retornados}
+    if nome == "git_show":
+        objeto = args.get("objeto")
+        if not isinstance(objeto, str) or ":" not in objeto:
+            return False
+        return _caminho_normalizado(objeto.split(":", 1)[1]) == arquivo
+    return False
+
+
+def _fonte_coberta_por_leituras(fonte: dict, eventos: list[dict]) -> bool:
+    """Une trechos contíguos do mesmo arquivo (a execução 4 leu 150–194 + 195–234)."""
+    arquivo = _caminho_normalizado(fonte.get("arquivo"))
+    inicio, fim = fonte.get("linha_inicial"), fonte.get("linha_final")
+    if arquivo is None or type(inicio) is not int or type(fim) is not int or inicio < 1 or fim < inicio:
+        return False
+    intervalos: list[tuple[int, int]] = []
+    for evento in eventos:
+        if evento.get("ferramenta") != "ler_arquivo":
+            continue
+        args = _argumentos(evento)
+        if _caminho_normalizado(args.get("caminho")) != arquivo:
+            continue
+        primeira = args.get("linha_inicial", 1)
+        max_linhas = args.get("max_linhas", LINHAS_PADRAO)
+        if type(primeira) is not int or type(max_linhas) is not int:
+            continue
+        ultima = primeira + min(max_linhas, 2000) - 1 if evento.get("truncado") else 100_000_000
+        intervalos.append((primeira, ultima))
+    cursor = inicio
+    for primeira, ultima in sorted(intervalos):
+        if primeira > cursor:
+            break
+        if ultima >= cursor:
+            cursor = ultima + 1
+        if cursor > fim:
+            return True
+    return False
+
+
 def conferir_fontes(fontes: list[dict], eventos: list[dict]) -> list[dict]:
-    executadas = {(e.get("ferramenta"), json.dumps(e.get("entrada", {}), sort_keys=True, ensure_ascii=False))
-                  for e in eventos if e.get("ferramenta") in FONTES and not e.get("negado")}
+    executadas = [e for e in eventos if _evento_executado(e)]
     saida = []
     for fonte in fontes:
         item = dict(fonte)
-        evidencia = str(item.get("evidencia", ""))
-        confere = False
-        for nome, entrada in executadas:
-            if evidencia == f"{nome} {entrada}" or evidencia == f"{nome} {entrada.replace(': ', '=')}":
-                confere = True
-                break
+        confere = _fonte_coberta_por_leituras(item, executadas) or any(
+            _fonte_coberta(item, evento) for evento in executadas
+        )
         item["conferida"] = confere
         saida.append(item)
     return saida

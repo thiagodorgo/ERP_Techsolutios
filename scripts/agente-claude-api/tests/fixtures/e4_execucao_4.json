@@ -1,0 +1,30 @@
+{
+  "origem": "saidas/20261011-141321Z-redigir-799e49d2caf648b0bebdd86e7362ba5c (campos sem segredo)",
+  "fontes_lidas": [
+    {"arquivo": "tests/owner-portal.test.ts", "linha_inicial": 228, "linha_final": 248, "evidencia": "issueChallenge(store, 2, ...) e solução fixa / wrong_solution"},
+    {"arquivo": "src/modules/portal-shared/proof-of-work.ts", "linha_inicial": 89, "linha_final": 139, "evidencia": "hasLeadingZeroNibbles, powDigest e wrong_solution"},
+    {"arquivo": "src/modules/expense-management/expense-management.routes.ts", "linha_inicial": 67, "linha_final": 116, "evidencia": "4 rotas REST sem chave; sync mobile separado"},
+    {"arquivo": "src/modules/expense-management/expense-management.service.ts", "linha_inicial": 85, "linha_final": 164, "evidencia": "createReport/updateReport/addItem/submitReport"},
+    {"arquivo": "src/modules/expense-management/expense-management-prisma.repository.ts", "linha_inicial": 70, "linha_final": 148, "evidencia": "create de report/item; recalculatePersistedReport"},
+    {"arquivo": "src/modules/cloud-usage/cloud-usage.service.ts", "linha_inicial": 150, "linha_final": 229, "evidencia": "gravacoesEmVoo e drainCloudUsageBestEffortForTests"},
+    {"arquivo": "src/modules/cloud-usage/cloud-usage.events.ts", "linha_inicial": 97, "linha_final": 115, "evidencia": "eventos via best-effort"},
+    {"arquivo": "tests/o6r06-usage-atomic-db.test.ts", "linha_inicial": 343, "linha_final": 391, "evidencia": "A10 e teardown"},
+    {"arquivo": "tests/o6r06-usage-atomic-db.test.ts", "linha_inicial": 714, "linha_final": 744, "evidencia": "teardown apaga cloudUsageEvent e tenant"},
+    {"arquivo": "agent-orchestration/controle/pendencias.md", "linha_inicial": 10747, "linha_final": 10808, "evidencia": "entrada P-O6R06-A10"}
+  ],
+  "eventos": [
+    {"seq": 5, "ferramenta": "ler_arquivo", "args": {"caminho": "tests/owner-portal.test.ts", "linha_inicial": 220, "max_linhas": 35}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 11, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/cloud-usage/cloud-usage.service.ts", "linha_inicial": 150, "max_linhas": 45}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 12, "ferramenta": "ler_arquivo", "args": {"caminho": "tests/o6r06-usage-atomic-db.test.ts", "linha_inicial": 700, "max_linhas": 60}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": false},
+    {"seq": 14, "ferramenta": "ler_arquivo", "args": {"caminho": "agent-orchestration/controle/pendencias.md", "linha_inicial": 10700, "max_linhas": 200}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": false},
+    {"seq": 16, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/expense-management/expense-management.routes.ts"}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": false},
+    {"seq": 18, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/cloud-usage/cloud-usage.service.ts", "linha_inicial": 195, "max_linhas": 40}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 20, "ferramenta": "buscar", "args": {"caminhos": ["src/modules/expense-management"], "ignorar_caixa": true, "padrao": "idempoten|client_action_id|clientActionId|receipt|async (createReport|addItem|submitReport|updateReport)"}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": false},
+    {"seq": 22, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/expense-management/expense-management.service.ts", "linha_inicial": 80, "max_linhas": 85}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 23, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/expense-management/expense-management-prisma.repository.ts", "linha_inicial": 68, "max_linhas": 82}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 24, "ferramenta": "ler_arquivo", "args": {"caminho": "tests/o6r06-usage-atomic-db.test.ts", "linha_inicial": 343, "max_linhas": 60}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 27, "ferramenta": "buscar", "args": {"caminhos": ["src"], "padrao": "export function (issueChallenge|verifySolution|solveChallenge)|function meetsDifficulty|wrong_solution"}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": false},
+    {"seq": 28, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/cloud-usage/cloud-usage.events.ts", "linha_inicial": 25, "max_linhas": 95}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true},
+    {"seq": 30, "ferramenta": "ler_arquivo", "args": {"caminho": "src/modules/portal-shared/proof-of-work.ts", "linha_inicial": 85, "max_linhas": 55}, "negado": false, "codigo_saida": 0, "erro": false, "expirou": false, "interrompido": false, "truncado": true}
+  ]
+}

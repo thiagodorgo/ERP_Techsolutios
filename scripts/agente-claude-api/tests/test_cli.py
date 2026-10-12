@@ -5,6 +5,7 @@ import io
 import json
 import tempfile
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 from agente_claude import cli
@@ -45,6 +46,20 @@ class TestCli(unittest.TestCase):
                      ["revisar-pr", "416", "--simular-turnos", "2"], []):
             codigo, _, erro = self.main(argv, deps)
             self.assertEqual(codigo, 3, argv)
+
+    def test_tetos_de_custo_padrao_por_tarefa(self):
+        casos = {
+            ("revisar-pr", "416"): Decimal("3.00"),
+            ("investigar", "x"): Decimal("2.00"),
+            ("redigir",): Decimal("2.50"),
+            ("propor-patch",): Decimal("2.00"),
+        }
+        for prefixo, esperado in casos.items():
+            argv=list(prefixo)
+            if prefixo[0]=="redigir":argv += ["--entregavel","registro"]
+            argv += ["--contexto","x"]
+            with self.subTest(tarefa=prefixo[0]):
+                self.assertEqual(cli._opcoes(cli.construir_parser().parse_args(argv)).max_custo_usd,esperado)
 
     def test_execucao_do_alvo_desligada_por_padrao_na_cli(self):
         # A1: sem a flag, Opcoes.permitir_execucao_alvo é False; `--npm-ci` sozinho é recusado (3).
@@ -142,6 +157,43 @@ class TestCli(unittest.TestCase):
                                      "--worktree-dir", str(self.base / "w")], deps)
         self.assertEqual(codigo, 3)
         self.assertIn("disco", erro)
+
+    def test_e1_contexto_recusado_mostra_motivo_e_grava_erro(self):
+        ex=ExecutorRepoFalso(self.base);deps=deps_repo_falso(ex,dict(ENV_OK))
+        codigo,_,erro=self.main(["redigir","--entregavel","registro","--sha",ex.head,
+                                 "--contexto","ausente.md","--simular"],deps)
+        self.assertEqual(codigo,3);self.assertIn("ContextoRecusado",erro);self.assertIn("raízes permitidas",erro)
+        erros=list(self.base.glob("*-recusa-*/erro.txt"));self.assertEqual(1,len(erros))
+        gravado=erros[0].read_text(encoding="utf-8");self.assertIn("ContextoRecusado",gravado);self.assertIn("raízes permitidas",gravado)
+
+    def test_e1_entrega_e_patch_recusados_mostram_motivo_na_tela_e_erro(self):
+        casos=[]
+        ex1=ExecutorRepoFalso(self.base/"r")
+        redacao={"tipo":"registro","texto_markdown":"x","fontes_lidas":[{"arquivo":"nunca.md","linha_inicial":1,"linha_final":2,"evidencia":"x"}],"limitacoes":[]}
+        casos.append((ex1,["redigir","--entregavel","registro"],ModeloFalso([resposta(uso("entregar_redacao",redacao))]),"EntregaRecusada","fonte não conferida"))
+        ex2=ExecutorRepoFalso(self.base/"p")
+        responder_original=ex2._responder
+        ex2.por_argv=lambda argv:("check vermelho",1) if "apply" in argv else responder_original(argv)
+        diff="diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-# repo\n+# repo2\n"
+        patch={"base_sha":ex2.head,"diff_unificado":diff,"fontes_lidas":[],"limitacoes":[]}
+        casos.append((ex2,["propor-patch"],ModeloFalso([resposta(uso("entregar_patch",patch))]),"PatchRecusado","git apply --check falhou"))
+        for n,(ex,prefixo,modelo,classe,motivo) in enumerate(casos):
+            deps=deps_repo_falso(ex,dict(ENV_OK),modelo=modelo)
+            codigo,_,erro=self.main([*prefixo,"--sha",ex.head,"--contexto",self.contexto(ex),"--saida","s",
+                                      "--worktree-dir",str(ex.base/"w")],deps)
+            with self.subTest(classe=classe):
+                self.assertEqual(codigo,5);self.assertIn(classe,erro);self.assertIn(motivo,erro)
+                gravado=(ex.base/"s"/"erro.txt").read_text(encoding="utf-8")
+                self.assertIn(classe,gravado);self.assertIn(motivo,gravado)
+
+    def test_e2_contexto_relativo_usa_a_pasta_atual(self):
+        ex=ExecutorRepoFalso(self.base/"rel");sub=ex.repo/"sub";sub.mkdir()
+        origem=Path(self.contexto(ex));(sub/"pacote.md").write_text(origem.read_text(encoding="utf-8"),encoding="utf-8")
+        deps=deps_repo_falso(ex,dict(ENV_OK),modelo=ModeloFalso([resposta(uso("entregar_redacao",{"tipo":"registro","texto_markdown":"ok","fontes_lidas":[],"limitacoes":[]}))]))
+        deps.cwd=str(sub)
+        codigo,_,erro=self.main(["redigir","--entregavel","registro","--sha",ex.head,"--contexto","pacote.md",
+                                  "--saida","s","--worktree-dir",str(ex.base/"w")],deps)
+        self.assertEqual(codigo,0,erro)
 
 
 if __name__ == "__main__":

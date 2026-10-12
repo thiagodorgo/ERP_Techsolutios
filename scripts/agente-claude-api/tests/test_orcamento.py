@@ -13,7 +13,7 @@ from decimal import Decimal
 from agente_claude.modelo import Resposta, montar_pedido
 from agente_claude.orcamento import BYTES_RESULTADO_POR_TURNO, FERRAMENTAS_POR_TURNO, Orcamento, Tetos
 from agente_claude.tarefas import Opcoes
-from tests.fakes import Cenario, ExecutorFalso, ModeloFalso, resposta, resposta_parecer, usage, uso
+from tests.fakes import Cenario, ExecutorFalso, ModeloFalso, resposta, resposta_parecer, texto, usage, uso
 
 SAIDA_64K = "abc def\n" * 8192  # 65 536 bytes por resultado (L3 do revisor: 60 x 64 KB num turno)
 
@@ -87,10 +87,15 @@ class TestOrcamento(unittest.TestCase):
         self.assertEqual(Orcamento.custo_previsto(150_000, 8000), Decimal("0.91"))
         self.assertIsNone(o.motivo_estouro_modelo(150_000, 8000))
         o.registrar_resposta(usage(0, 0, 0, 5000), 8000)  # gastou 0,10
-        self.assertEqual(o.motivo_estouro_modelo(150_000, 8000), "custo")  # 0,10 + 0,91 > 1
+        motivo, max_tokens, previsao = o.planejar_chamada(150_000, 8000)
+        self.assertIsNone(motivo)  # média real + margem permite continuar
+        self.assertEqual(previsao, Decimal("0.15"))
+        self.assertLess(max_tokens, 8000)  # a cerca dura reduz a saída para nunca passar de US$ 1
         t = Orcamento(Tetos(tokens=100_000))
         self.assertIsNone(t.motivo_estouro_modelo(92_000, 8000))  # = teto: cabe
-        self.assertEqual(t.motivo_estouro_modelo(92_001, 8000), "tokens")
+        motivo, max_tokens, _ = t.planejar_chamada(92_001, 8000)
+        self.assertIsNone(motivo);self.assertEqual(max_tokens,7999)
+        self.assertEqual(t.motivo_estouro_modelo(99_745, 8000), "tokens")
 
 
 class TestOrcamentoNoLaco(unittest.TestCase):
@@ -177,7 +182,7 @@ class TestOrcamentoNoLaco(unittest.TestCase):
                     u = linha["usage"]
                     real = Orcamento.custo_de(u["input_tokens"], u["cache_creation_input_tokens"],
                                               u["cache_read_input_tokens"], u["output_tokens"])
-                    self.assertLessEqual(real, Decimal(linha["custo_previsto_usd"]), linha["turno"])
+                    self.assertLessEqual(real, Decimal(linha["custo_pior_caso_usd"]), linha["turno"])
 
     def test_limite_de_ferramentas_por_turno(self):
         usos = [uso("git_ls_files", {"caminhos": []}) for _ in range(FERRAMENTAS_POR_TURNO + 8)]
@@ -213,6 +218,26 @@ class TestOrcamentoNoLaco(unittest.TestCase):
         self.assertEqual(len(modelo.chamadas), 1)
         self.assertEqual(cen.parecer["motivo_parcial"], "orcamento:custo")
         self.assertEqual(cen.parecer["custo"]["usd_estimado"], "0.40")
+
+    def test_e3_teto_um_dolar_com_turnos_de_centavos_vai_alem_do_terceiro(self):
+        barato = resposta(uso("git_ls_files", {"caminhos": []}), u=usage(0, 0, 0, 3500))  # US$ 0,07
+        modelo = ModeloFalso([barato] * 5 + [resposta_parecer()])
+        cen = self.rodar(modelo, max_custo_usd=Decimal("1"), max_tokens=10_000_000)
+        self.assertEqual(cen.codigo, 0)
+        self.assertGreater(len(modelo.chamadas), 3)
+        self.assertLessEqual(Decimal(cen.parecer["custo"]["usd_estimado"]), Decimal("1"))
+
+    def test_e3_corte_preserva_o_texto_ja_apurado_e_nao_fura_teto(self):
+        def parcial(messages, n):
+            return resposta(texto(f"APURADO-ATE-O-TURNO-{n}"), uso("git_ls_files", {"caminhos": []}),
+                            u=usage(0, 0, 0, 7000))  # US$ 0,14 por turno
+        modelo = ModeloFalso(padrao=parcial)
+        cen = self.rodar(modelo, max_custo_usd=Decimal("0.50"), max_tokens=10_000_000)
+        self.assertEqual(cen.codigo, 2)
+        self.assertEqual(cen.parecer["motivo_parcial"], "orcamento:custo")
+        self.assertIn("APURADO-ATE-O-TURNO", cen.parecer["resumo"])
+        self.assertGreater(cen.parecer["custo"]["chamadas_ferramenta"], 0)
+        self.assertLessEqual(Decimal(cen.parecer["custo"]["usd_estimado"]), Decimal("0.50"))
 
 
 if __name__ == "__main__":

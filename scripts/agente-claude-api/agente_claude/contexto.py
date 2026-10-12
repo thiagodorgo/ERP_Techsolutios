@@ -46,17 +46,23 @@ def _dentro(caminho: Path, raiz: Path) -> bool:
 
 
 def carregar(caminho: str | os.PathLike[str], *, sha_alvo: str, repo_raiz: str | os.PathLike[str],
-             pacotes_raiz: str | os.PathLike[str]) -> PacoteContexto:
+             pacotes_raiz: str | os.PathLike[str],
+             base_relativa: str | os.PathLike[str] | None = None) -> PacoteContexto:
+    raiz_repo = Path(repo_raiz).resolve()
+    raiz_pacotes = Path(pacotes_raiz).resolve()
+    raizes_texto = f"raízes permitidas: {raiz_repo} ; {raiz_pacotes}"
     p = Path(caminho)
     if not p.is_absolute():
-        p = Path(repo_raiz) / p
+        # Caminho relativo segue a semântica do shell: nasce no diretório atual. O parâmetro
+        # injetável evita `chdir` nos testes, sem mudar as raízes de segurança.
+        p = Path(base_relativa) / p if base_relativa is not None else Path.cwd() / p
     try:
         resolvido = p.resolve(strict=True)
     except (OSError, RuntimeError) as e:
-        raise ContextoRecusado("pacote inexistente ou caminho inválido") from e
-    raizes = (Path(repo_raiz).resolve(), Path(pacotes_raiz).resolve())
+        raise ContextoRecusado(f"pacote inexistente ou caminho inválido; {raizes_texto}") from e
+    raizes = (raiz_repo, raiz_pacotes)
     if not any(_dentro(resolvido, r) for r in raizes):
-        raise ContextoRecusado("pacote fora das raízes permitidas")
+        raise ContextoRecusado(f"pacote fora das raízes permitidas; {raizes_texto}")
     st = os.lstat(resolvido)
     if not resolvido.is_file() or st.st_nlink != 1:
         raise ContextoRecusado("pacote deve ser arquivo regular com um único link")

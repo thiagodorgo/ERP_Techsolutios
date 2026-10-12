@@ -13,21 +13,34 @@ ela imprime passa pelo redator; exceção vira `erro.txt` redigido, nunca traceb
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
+import uuid
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from . import __version__
 from .conta import ContaRecusada
+from .contexto import ContextoRecusado
 from .modelo import ErroDeModelo
+from .patches import PatchRecusado
 from .redacao import Redator
 from .tarefas import Dependencias, Opcoes, investigar, revisar_pr, redigir, propor_patch, verificar_conta, versao_sdk
-from .entregas import TIPOS
+from .entregas import EntregaRecusada, TIPOS
+from .uso_diario import UsoRecusado
 from .worktree import MOTIVO_NPM_CI_SEM_PERMISSAO, RecusaPrevia
 
 SAIDA_COMPLETO, SAIDA_PARCIAL, SAIDA_RECUSA, SAIDA_API, SAIDA_INTERNO = 0, 2, 3, 4, 5
 _NUMERO_RE = re.compile(r"^[1-9][0-9]{0,6}$")
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+CUSTO_PADRAO_POR_TAREFA = {
+    "revisar-pr": Decimal("3.00"),
+    "investigar": Decimal("2.00"),
+    "redigir": Decimal("2.50"),
+    "propor-patch": Decimal("2.00"),
+}
+RECUSAS = (ContaRecusada, RecusaPrevia, ContextoRecusado, EntregaRecusada, PatchRecusado, UsoRecusado)
 
 
 class ArgumentoInvalido(Exception):
@@ -96,7 +109,7 @@ def _comuns(p: argparse.ArgumentParser) -> None:
     p.add_argument("--max-turnos", type=_inteiro_entre(1, 200), default=30)
     p.add_argument("--max-ferramentas", type=_inteiro_entre(1, 500), default=60)
     p.add_argument("--max-tokens", type=_inteiro_entre(1000, 100_000_000), default=1_500_000)
-    p.add_argument("--max-custo-usd", type=_decimal_positivo, default=Decimal("6.00"))
+    p.add_argument("--max-custo-usd", type=_decimal_positivo, default=None)
     p.add_argument("--max-tokens-resposta", type=_inteiro_entre(256, 32000), default=8000)
     p.add_argument("--saida", default=None)
     p.add_argument("--worktree-dir", default=None)
@@ -136,7 +149,7 @@ def _opcoes(args) -> Opcoes:
         max_turnos=args.max_turnos,
         max_ferramentas=args.max_ferramentas,
         max_tokens=args.max_tokens,
-        max_custo_usd=args.max_custo_usd,
+        max_custo_usd=args.max_custo_usd or CUSTO_PADRAO_POR_TAREFA[args.comando],
         max_tokens_resposta=args.max_tokens_resposta,
         saida=args.saida,
         worktree_dir=args.worktree_dir,
@@ -164,6 +177,22 @@ def _saida_utf8() -> None:
             fluxo.reconfigure(encoding="utf-8", errors="replace")
         except (AttributeError, ValueError):
             pass
+
+
+def _gravar_recusa(deps: Dependencias, redator: Redator, classe: str, motivo: str) -> Path | None:
+    """Toda recusa da CLI deixa o motivo redigido em pasta própria, sem traceback."""
+    try:
+        carimbo = deps.agora().strftime("%Y%m%d-%H%M%SZ")
+        pasta = Path(deps.saidas_raiz) / f"{carimbo}-recusa-{uuid.uuid4().hex}"
+        pasta.mkdir(parents=True, exist_ok=False)
+        texto = redator.redigir(f"{classe}: {motivo}\n")
+        with open(pasta / "erro.txt", "w", encoding="utf-8", newline="\n", errors="backslashreplace") as f:
+            f.write(texto)
+            f.flush()
+            os.fsync(f.fileno())
+        return pasta
+    except Exception:  # noqa: BLE001 — a recusa original ainda sai na tela
+        return None
 
 
 def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int:
@@ -201,9 +230,15 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
             limpeza = parecer.get("execucao", {}).get("comando_limpeza")
             if limpeza:
                 _imprimir(f"o worktree ficou no disco; para remover: {limpeza}", redator, erro=True)
+            for falha in parecer.get("motivos_de_falha", parecer.get("falhas_de_gravacao", [])):
+                _imprimir(f"recusado: {falha}", redator, erro=True)
         return codigo
-    except (ContaRecusada, RecusaPrevia) as e:
-        _imprimir(f"recusado antes de começar: {e}", redator, erro=True)
+    except RECUSAS as e:
+        motivo = str(e) or "sem motivo informado"
+        pasta = _gravar_recusa(deps, redator, type(e).__name__, motivo)
+        _imprimir(f"recusado antes de começar: {type(e).__name__}: {motivo}", redator, erro=True)
+        if pasta is not None:
+            _imprimir(f"pasta: {pasta}", redator, erro=True)
         return SAIDA_RECUSA
     except ErroDeModelo as e:
         _imprimir(f"erro de API: {e.classe} status={e.status} request_id={e.request_id}", redator, erro=True)

@@ -27,6 +27,13 @@ class TestContexto(unittest.TestCase):
         src=(Path(__file__).parents[1]/"agente_claude/tarefas.py").read_text(encoding="utf-8");self.assertNotIn('"conteudo_contexto"',src);self.assertIn(".metadados()",src)
     def test_contexto_vai_na_mensagem_nao_no_system(self):
         src=(Path(__file__).parents[1]/"agente_claude/tarefas.py").read_text(encoding="utf-8");self.assertIn('inicial += "\\n\\n" + envelope_contexto',src);self.assertNotIn("laco.system +=",src)
+    def test_contexto_relativo_parte_da_pasta_atual(self):
+        atual=self.r/"subpasta";atual.mkdir();p=atual/"p.md";p.write_text(texto(),encoding="utf-8")
+        pacote=carregar("p.md",sha_alvo=SHA,repo_raiz=self.r,pacotes_raiz=self.r/"pacotes",base_relativa=atual)
+        self.assertEqual(pacote.caminho,p.resolve())
+    def test_contexto_inexistente_informa_as_raizes_permitidas(self):
+        with self.assertRaisesRegex(ContextoRecusado,r"raízes permitidas:.*pacotes"):
+            carregar("ausente.md",sha_alvo=SHA,repo_raiz=self.r,pacotes_raiz=self.r/"pacotes",base_relativa=self.r)
 
 def _caso(nome,transform):
     def teste(self):
