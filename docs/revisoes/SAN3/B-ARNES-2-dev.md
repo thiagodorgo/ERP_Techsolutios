@@ -407,3 +407,63 @@ Reexecução do arquivo A10/A11 (`N=1`, limite 300 s):
 # duration_ms 14732.3947
 exit=0
 ```
+
+## RETOMADA 2 — 2026-10-12 17:52:45Z
+
+Identidade mantida: `dev-arnes2-codex`. Execução declarada: Codex em GPT-5.6 Sol, nível menor.
+
+### Estado real e revisão de API
+
+Comandos:
+
+```text
+git branch --show-current
+git rev-parse HEAD
+git diff --name-status c1d745c8 --
+git diff --exit-code c1d745c8 -- src
+Get-Content -Raw C:/Users/AMP/erp-pausa-2026-10-03/REV-ARNES2-api.md
+```
+
+Saída resumida:
+
+```text
+branch=fix/arnes-2-testes-instaveis
+HEAD=8ad4a77ebca2bfc51cb65ff7fa81ee7f738b1413
+delta desde c1d745c8=relatório + os 3 arquivos de teste permitidos
+src/**=sem diff (exit=0)
+revisão=APROVADO COM RESSALVAS
+```
+
+A seção `## PAUSA 2026-10-12 12:22:25Z` acima foi mantida como registro histórico, mas não era uma ordem de pausa; esta retomada segue a ordem expressa do orquestrador.
+
+Ressalvas tratadas antes da bateria:
+
+- `tests/o6r06-usage-atomic-db.test.ts`: a transação interativa do `LOCK TABLE` recebeu `{ timeout: 30_000, maxWait: 10_000 }`, removendo o relógio implícito padrão sob carga;
+- a rejeição da transação ganhou handler imediato (`void transaction.catch(reject)`), enquanto a promessa original continua sendo aguardada e conserva o erro, evitando `unhandledRejection` sem mascarar falha;
+- o nome do canário PoW foi mantido porque descreve o resultado do verificador — a precondição explicita que o literal antigo seria aceito para o sal fixo e `wrongSolutionFor` é o valor rejeitado;
+- os resíduos do T15 (janela de reserva de porta e rede de segurança de 60 s) são riscos já declarados pelo plano; não foram ampliados fora do escopo.
+
+Conferência após o ajuste:
+
+```text
+git diff --check => exit=0
+git diff c1d745c8 -- src => vazio
+```
+
+### Prisma Client revalidado nesta retomada
+
+Comando (Git Bash, `timeout 180s`, URL deliberadamente inalcançável):
+
+```text
+DATABASE_URL='postgresql://postgres:***@127.0.0.1:1/arnes2_unreachable?schema=public' npm run db:generate
+```
+
+Saída:
+
+```text
+Prisma schema loaded from prisma/schema.prisma
+Generated Prisma Client (v7.8.0) em node_modules/@prisma/client em 2.56 s
+exit=0
+```
+
+Nenhuma conexão com PostgreSQL foi aberta; a porta 1 em loopback é inalcançável por desenho.

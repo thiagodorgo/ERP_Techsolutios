@@ -455,16 +455,16 @@ if (!connectionString) {
       const actor = { tenantId: seed.tenantId, userId: seed.userId };
       const run = await ctx.service.createRun(actor, { checklistId: seed.templateId, answers: [] });
       const lockHeld = new Promise<void>((resolve, reject) => {
-        lockTransaction = ctx.client
-          .$transaction(async (tx) => {
+        const transaction = ctx.client.$transaction(
+          async (tx) => {
             await tx.$executeRawUnsafe("LOCK TABLE cloud_usage_events IN EXCLUSIVE MODE");
             resolve();
             await lockGate;
-          })
-          .catch((error) => {
-            reject(error);
-            throw error;
-          });
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+        void transaction.catch(reject);
+        lockTransaction = transaction;
       });
       await lockHeld;
 
