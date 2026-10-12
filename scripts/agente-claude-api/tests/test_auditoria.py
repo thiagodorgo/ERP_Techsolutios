@@ -9,7 +9,7 @@ from agente_claude.auditoria import Auditoria
 from agente_claude.laco import Laco
 from agente_claude.orcamento import Orcamento, Tetos
 from agente_claude.redacao import Redator
-from tests.fakes import Cenario, ModeloFalso, resposta, resposta_parecer, texto, uso
+from tests.fakes import Cenario, ExecutorFalso, ModeloFalso, resposta, resposta_parecer, texto, uso
 
 # Cópia LITERAL da tabela do plano §2.4 (independente do módulo, de propósito).
 CAMPOS_DO_PLANO = {
@@ -115,6 +115,24 @@ class TestAuditoria(unittest.TestCase):
         linha = next(l for l in cen.linhas_auditoria() if l["tipo"] == "ferramenta" and l["ferramenta"] == "ler_arquivo")
         self.assertGreater(linha["bytes_saida"], 0)
         self.assertNotIn(sentinela, (cen.pasta / "resumo.json").read_text(encoding="utf-8"))
+
+    def test_e4_auditoria_guarda_linhas_sem_guardar_conteudo(self):
+        executor = ExecutorFalso(por_argv=lambda argv: ("./src/a.ts:2:SEGREDO-DA-LINHA\n", 0))
+        cen = self.rodar(
+            ModeloFalso([
+                resposta(uso("ler_arquivo", {"caminho": "src/a.ts"}), uso("buscar", {"padrao": "beta"})),
+                resposta_parecer(),
+            ]),
+            executor=executor,
+            arquivos={"src/a.ts": "alfa\nbeta\ngama\n"},
+        )
+        eventos = [e for e in cen.linhas_auditoria() if e["tipo"] == "ferramenta"]
+        leitura = next(e for e in eventos if e["ferramenta"] == "ler_arquivo")
+        busca = next(e for e in eventos if e["ferramenta"] == "buscar")
+        self.assertEqual(leitura["linhas_resultado"], [1, 2, 3])
+        self.assertEqual(busca["fontes_resultado"], [{"arquivo": "src/a.ts", "linha": 2}])
+        bruto = (cen.pasta / "auditoria.jsonl").read_text(encoding="utf-8")
+        self.assertNotIn("SEGREDO-DA-LINHA", bruto)
 
 
 if __name__ == "__main__":

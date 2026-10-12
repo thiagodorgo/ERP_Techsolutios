@@ -7,9 +7,16 @@ import tempfile
 import unittest
 from decimal import Decimal
 from pathlib import Path
+from unittest import mock
 
 from agente_claude import cli
+from agente_claude.conta import ContaRecusada
+from agente_claude.contexto import ContextoRecusado
+from agente_claude.entregas import EntregaRecusada
 from agente_claude.modelo import ModeloSimulado
+from agente_claude.patches import PatchRecusado
+from agente_claude.uso_diario import UsoRecusado
+from agente_claude.worktree import RecusaPrevia
 from tests.fakes import CHAVE_FALSA_2, WORKSPACE_FALSO, ExecutorRepoFalso, ModeloFalso, deps_repo_falso, resposta, resposta_parecer, uso
 
 ENV_OK = {"ERP_AGENTE_ANTHROPIC_KEY": CHAVE_FALSA_2, "ERP_AGENTE_ANTHROPIC_WORKSPACE": WORKSPACE_FALSO}
@@ -46,6 +53,41 @@ class TestCli(unittest.TestCase):
                      ["revisar-pr", "416", "--simular-turnos", "2"], []):
             codigo, _, erro = self.main(argv, deps)
             self.assertEqual(codigo, 3, argv)
+
+    def test_e1_argumento_invalido_mostra_motivo_e_grava_erro(self):
+        deps = deps_repo_falso(ExecutorRepoFalso(self.base), dict(ENV_OK))
+        codigo, _, erro = self.main(["revisar-pr", "0"], deps)
+        self.assertEqual(codigo, 3)
+        self.assertIn("ArgumentoInvalido", erro)
+        self.assertIn("número de PR", erro)
+        arquivos = list(self.base.glob("*-recusa-*/erro.txt"))
+        self.assertEqual(1, len(arquivos))
+        self.assertIn("número de PR", arquivos[0].read_text(encoding="utf-8"))
+
+    def test_e1_demais_recusas_mostram_classe_motivo_e_erro_sem_segredo(self):
+        classes = (ContaRecusada, RecusaPrevia, ContextoRecusado, EntregaRecusada, PatchRecusado, UsoRecusado)
+        segredo = "sk-ant-" + "teste-e1-" + "X" * 24
+        for indice, classe in enumerate(classes):
+            base = self.base / str(indice)
+            ex = ExecutorRepoFalso(base)
+            deps = deps_repo_falso(ex, dict(ENV_OK))
+            motivo = f"motivo-e1 {segredo}"
+            with self.subTest(classe=classe.__name__), mock.patch.object(
+                cli, "redigir", side_effect=classe(motivo)
+            ):
+                codigo, _, erro = self.main(
+                    ["redigir", "--entregavel", "registro", "--contexto", "x"], deps
+                )
+                self.assertEqual(codigo, 3)
+                self.assertIn(classe.__name__, erro)
+                self.assertIn("motivo-e1", erro)
+                self.assertNotIn(segredo, erro)
+                arquivos = list(base.glob("*-recusa-*/erro.txt"))
+                self.assertEqual(1, len(arquivos))
+                gravado = arquivos[0].read_text(encoding="utf-8")
+                self.assertIn(classe.__name__, gravado)
+                self.assertIn("motivo-e1", gravado)
+                self.assertNotIn(segredo, gravado)
 
     def test_tetos_de_custo_padrao_por_tarefa(self):
         casos = {

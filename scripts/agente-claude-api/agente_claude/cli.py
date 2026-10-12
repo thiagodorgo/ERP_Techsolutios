@@ -40,11 +40,21 @@ CUSTO_PADRAO_POR_TAREFA = {
     "redigir": Decimal("2.50"),
     "propor-patch": Decimal("2.00"),
 }
-RECUSAS = (ContaRecusada, RecusaPrevia, ContextoRecusado, EntregaRecusada, PatchRecusado, UsoRecusado)
 
 
 class ArgumentoInvalido(Exception):
     pass
+
+
+RECUSAS = (
+    ArgumentoInvalido,
+    ContaRecusada,
+    RecusaPrevia,
+    ContextoRecusado,
+    EntregaRecusada,
+    PatchRecusado,
+    UsoRecusado,
+)
 
 
 class _Parser(argparse.ArgumentParser):
@@ -200,13 +210,9 @@ def main(argv: list[str] | None = None, deps: Dependencias | None = None) -> int
     deps = deps or Dependencias()
     redator = Redator()
     try:
-        try:
-            args = construir_parser().parse_args(argv)
-            if args.comando in ("revisar-pr", "investigar", "redigir", "propor-patch"):
-                opcoes = _opcoes(args)
-        except ArgumentoInvalido as e:
-            _imprimir(f"argumento inválido: {e}", redator, erro=True)
-            return SAIDA_RECUSA
+        args = construir_parser().parse_args(argv)
+        if args.comando in ("revisar-pr", "investigar", "redigir", "propor-patch"):
+            opcoes = _opcoes(args)
         if args.comando == "versao":
             _imprimir(f"agente_claude {__version__} · {versao_sdk()}", redator)
             return SAIDA_COMPLETO

@@ -107,14 +107,25 @@ class Laco:
         return self.resultado
 
     def _auditar_ferramenta(self, nome, entrada, res: ResultadoFerramenta) -> None:
-        fontes_resultado: list[str] = []
+        fontes_resultado: list[dict] = []
+        linhas_resultado: list[int] = []
         if nome == "buscar" and not res.erro and not res.negado:
             # `git grep -n` devolve `caminho:linha:texto`. Só os caminhos efetivamente
-            # retornados são persistidos; conteúdo não entra na auditoria.
+            # retornados e suas linhas são persistidos; conteúdo não entra na auditoria.
             for linha in res.texto.splitlines():
                 m = re.match(r"^([^:\r\n]+):(\d+):", linha)
                 if m:
-                    fontes_resultado.append(m.group(1).replace("\\", "/").removeprefix("./"))
+                    fontes_resultado.append(
+                        {
+                            "arquivo": m.group(1).replace("\\", "/").removeprefix("./"),
+                            "linha": int(m.group(2)),
+                        }
+                    )
+        elif nome == "ler_arquivo" and not res.erro and not res.negado:
+            for linha in res.texto.splitlines():
+                m = re.match(r"^\s*(\d+)\t", linha)
+                if m:
+                    linhas_resultado.append(int(m.group(1)))
         self.auditoria.registrar(
             {
                 "tipo": "ferramenta",
@@ -131,7 +142,10 @@ class Laco:
                 "expirou": res.expirou,
                 "interrompido": res.interrompido,
                 "erro": res.erro,
-                "fontes_resultado": sorted(set(fontes_resultado)),
+                "fontes_resultado": [
+                    dict(item) for item in sorted({tuple(sorted(item.items())) for item in fontes_resultado})
+                ],
+                "linhas_resultado": sorted(set(linhas_resultado)),
             }
         )
 

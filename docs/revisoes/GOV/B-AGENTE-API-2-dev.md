@@ -16,7 +16,7 @@
 | H1/H2 | FEITO — ambas verdadeiras |
 | Implementação e testes | FEITO; bateria final em curso |
 | 28 mutações | FEITO — 28/28 vermelhas e restauradas por SHA-256 |
-| Bateria final | PENDENTE |
+| Bateria final | FEITO — 408/408 nos dois Pythons; 4/4 mutações novas vermelhas |
 
 ## Log incremental — comando → saída → veredito
 
@@ -122,3 +122,92 @@ typing_extensions==4.16.0
 ## Não executado
 
 - Ensaio manual contra a API real: reservado ao ORQUESTRADOR pelo plano e proibido ao DEV.
+
+## Conserto do ensaio (E1–E4)
+
+Retomada P3 pela mesma identidade `dev-agapi2-codex`, Codex GPT-5.6 Sol, nível menor. O
+`git fetch origin` confirmou `HEAD = origin/chore/agente-api-2 = 0ec77339`; o diff parcial
+`0ec77339^..0ec77339`, este relatório, o plano e o ensaio foram relidos antes de confiar no
+parcial. A primeira reexecução do venv mediu `402/402 OK`.
+
+### E1 — motivo de toda recusa
+
+- A CLI agora trata `ArgumentoInvalido`, `ContaRecusada`, `RecusaPrevia`,
+  `ContextoRecusado`, `EntregaRecusada`, `PatchRecusado` e `UsoRecusado` pelo mesmo caminho:
+  classe + motivo redigido na tela e em `erro.txt`.
+- Recusas durante a montagem paga continuam com código 5, mas `motivos_de_falha` carrega a
+  classe e a mensagem; a CLI as imprime e o `erro.txt` preserva o diagnóstico.
+- Teste com segredo falso no motivo confirmou que o valor não aparece nem na tela nem no
+  arquivo.
+
+### E2 — contexto relativo e raízes
+
+- Caminho relativo parte de `Dependencias.cwd`/pasta atual; caminho inexistente ou fora da
+  allowlist enumera a raiz do checkout e `scripts/agente-claude-api/saidas/pacotes/`.
+- O README documenta a semântica e as duas raízes.
+
+### E3 — previsão calibrada sem furar o teto
+
+- A auditoria de `20261011-165842Z-rev-reg-414b` parou em US$ 0,859992/1,50 porque o pior
+  caso seguinte era US$ 0,646975 para 97.395 tokens previstos. A de
+  `20261011-172311Z-plano-06a` parou em US$ 1,612301/2,50 porque o pior caso seguinte era
+  US$ 0,921770 para 152.354 tokens previstos. Os dois casos agora continuam pela média dos
+  turnos com margem de 50% e pelo último turno com margem de 25%.
+- O primeiro turno ainda usa o pior caso. Em todos os turnos, o `max_tokens` efetivo é reduzido
+  ao saldo calculado pelo pior preço de entrada e saída; abaixo de 256 tokens seguros a chamada
+  não nasce. O cenário de estouro real continua parando antes da chamada.
+- A morte `20261011-164547Z-rev-reg-414` não tinha processo/resumo, mas deixou auditoria
+  incremental até `seq=30`, após 6 turnos e US$ 0,593492; o corte normal mantém texto parcial,
+  ferramentas, custo, auditoria e resumo.
+- Tetos padrão documentados e testados: `revisar-pr` US$ 3,00; `investigar` US$ 2,00;
+  `redigir` US$ 2,50; `propor-patch` US$ 2,00.
+
+### E4 — reprodução real e fail-closed
+
+Na execução 4 o modelo declarou dez fontes. A auditoria real sustentava todas por leitura,
+mas a versão antiga comparava literalmente o texto livre de `evidencia` com os argumentos da
+ferramenta. Mapeamento medido:
+
+| Fonte declarada | Chamada real que a cobre |
+|---|---|
+| `tests/owner-portal.test.ts:228-248` | `seq 5`, leitura `220 + 35` |
+| `src/modules/portal-shared/proof-of-work.ts:89-139` | `seq 30`, leitura `85 + 55` |
+| `expense-management.routes.ts:67-116` | `seq 16`, arquivo inteiro |
+| `expense-management.service.ts:85-164` | `seq 22`, leitura `80 + 85` |
+| `expense-management-prisma.repository.ts:70-148` | `seq 23`, leitura `68 + 82` |
+| `cloud-usage.service.ts:150-229` | união contígua de `seq 11` (`150-194`) e `seq 18` (`195-234`) |
+| `cloud-usage.events.ts:97-115` | `seq 28`, leitura `25 + 95` |
+| `o6r06-usage-atomic-db.test.ts:343-391` | `seq 24`, leitura `343 + 60` |
+| `o6r06-usage-atomic-db.test.ts:714-744` | `seq 12`, leitura `700 + 60`, até EOF |
+| `agent-orchestration/controle/pendencias.md:10747-10808` | `seq 14`, leitura `10700 + 200`, até EOF |
+
+A fixture sem segredo copia essas entradas e mede `10/10 conferidas`. Caminhos normalizam
+`./` e `\\`; leituras podem cobrir trechos contíguos em mais de uma chamada. Auditorias novas
+registram somente números de linha devolvidos e pares `arquivo+linha` de `buscar`, nunca o
+conteúdo. Busca só confere as linhas efetivamente retornadas; citar apenas o arquivo não libera
+um intervalo arbitrário. Evento negado/erro, linha fora do trecho e fonte nunca lida continuam
+`conferida:false`, e `registro|ata|corpo-cadeira` recusam a entrega.
+
+### Bateria e mutações novas
+
+- `.venv/Scripts/python -m compileall -q agente_claude tests` → exit 0.
+- venv: `Ran 408 tests in 14.172s` · `OK`.
+- Python global 3.13.14: `Ran 408 tests in 13.856s` · `OK`; `anthropic` ausente de
+  `sys.modules` no processo controlador.
+- Mutações 4/4 VERMELHAS e restauração SHA-256 idêntica: E1 remove motivo da tela; E2 volta a
+  resolver relativo pela raiz Git; E3 volta ao pior caso em todos os turnos; E4 marca toda fonte
+  como conferida. Controles verdes após restauração.
+- `git diff --check` → exit 0. Nenhuma API foi chamada; chave não foi lida; nenhum commit/push.
+- Limpeza: nenhum worktree/saída temporário do bloco foi criado; caches `__pycache__` são ignorados
+  e regeneráveis; o pacote untracked pré-existente foi preservado.
+
+## PAUSA 04:26Z
+
+- Head medido: `0ec77339e49133f0f6c3688ad8ddb9772c23532b`; ramo
+  `chore/agente-api-2`, alinhado a `origin/chore/agente-api-2` no último fetch.
+- Feito: E1–E4 corrigidos; evidências reais de E3/E4 medidas; 408/408 nos dois Pythons;
+  quatro mutações novas vermelhas e restauradas; relatório atualizado.
+- Falta: somente o orquestrador versionar e, se decidir, reensaiar contra a API; o DEV não chama
+  a API e não commita.
+- Próximo comando exato: `git -C C:/Users/AMP/w-agapi2 diff --check`.
+- Arquivos meio-escritos: nenhum.

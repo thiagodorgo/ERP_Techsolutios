@@ -97,6 +97,30 @@ class TestOrcamento(unittest.TestCase):
         self.assertIsNone(motivo);self.assertEqual(max_tokens,7999)
         self.assertEqual(t.motivo_estouro_modelo(99_745, 8000), "tokens")
 
+    def test_e3_evidencias_reais_nao_param_em_086_de_150_nem_161_de_250(self):
+        casos = (
+            (Decimal("1.50"), [4800] * 8 + [4600], 97_395),
+            (Decimal("2.50"), [2368] * 33 + [2356], 152_354),
+        )
+        for teto, saidas, entrada_prevista in casos:
+            o = Orcamento(Tetos(turnos=50, custo_usd=teto, tokens=10_000_000))
+            for saida in saidas:
+                o.novo_turno();o.registrar_resposta(usage(0,0,0,saida),8000)
+            with self.subTest(teto=teto, gasto=o.custo_usd()):
+                motivo, max_tokens, previsao = o.planejar_chamada(entrada_prevista,8000)
+                self.assertIsNone(motivo)
+                self.assertGreaterEqual(max_tokens,256)
+                self.assertLess(o.custo_usd()+previsao,teto)
+
+    def test_e3_estouro_real_ainda_para_antes_da_chamada(self):
+        o = Orcamento(Tetos(custo_usd=Decimal("1.00"), tokens=10_000_000))
+        for _ in range(10):
+            o.novo_turno();o.registrar_resposta(usage(0,0,0,4700),8000)
+        motivo, max_tokens, _ = o.planejar_chamada(20_000,8000)
+        self.assertEqual(motivo,"custo")
+        self.assertEqual(max_tokens,0)
+        self.assertLessEqual(o.custo_usd(),Decimal("1.00"))
+
 
 class TestOrcamentoNoLaco(unittest.TestCase):
     def rodar(self, modelo, executor=None, **opcoes):

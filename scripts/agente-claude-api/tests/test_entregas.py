@@ -28,15 +28,28 @@ class TestEntregas(unittest.TestCase):
         self.assertEqual(10,len(resultado));self.assertTrue(all(f["conferida"] for f in resultado),resultado)
     def test_e4_normaliza_ponto_barra_separador_intervalo_e_busca(self):
         fontes=[{"arquivo":"./src\\modulo\\x.ts","linha_inicial":10,"linha_final":12,"evidencia":"livre"}]
-        leitura={"ferramenta":"ler_arquivo","args":{"caminho":"src/modulo/x.ts","linha_inicial":10,"max_linhas":3},"codigo_saida":0,"truncado":True}
+        leitura={"ferramenta":"ler_arquivo","args":{"caminho":"src/modulo/x.ts","linha_inicial":10,"max_linhas":3},
+                 "codigo_saida":0,"truncado":True,"linhas_resultado":[10,11,12]}
         busca={"ferramenta":"buscar","args":{"caminhos":["src/modulo"],"padrao":"x"},"codigo_saida":0,
-               "fontes_resultado":["src/modulo/x.ts"]}
+               "fontes_resultado":[{"arquivo":"./src\\modulo\\x.ts","linha":12}]}
         self.assertTrue(conferir_fontes(fontes,[leitura])[0]["conferida"])
         fontes[0]["linha_final"]=999
         self.assertFalse(conferir_fontes(fontes,[leitura])[0]["conferida"])
-        self.assertTrue(conferir_fontes(fontes,[busca])[0]["conferida"])
-        busca["fontes_resultado"]=["src/modulo/outro.ts"]
         self.assertFalse(conferir_fontes(fontes,[busca])[0]["conferida"])
+        fontes[0]["linha_inicial"]=fontes[0]["linha_final"]=12
+        self.assertTrue(conferir_fontes(fontes,[busca])[0]["conferida"])
+        busca["fontes_resultado"]=[{"arquivo":"src/modulo/outro.ts","linha":12}]
+        self.assertFalse(conferir_fontes(fontes,[busca])[0]["conferida"])
+    def test_e4_arquivo_inteiro_trecho_e_evento_negado_ficam_fail_closed(self):
+        fonte={"arquivo":"src/x.ts","linha_inicial":1,"linha_final":3,"evidencia":"x"}
+        leitura={"ferramenta":"ler_arquivo","args":{"caminho":"src/x.ts"},"codigo_saida":0,
+                 "truncado":False,"linhas_resultado":[1,2,3]}
+        self.assertTrue(conferir_fontes([fonte],[leitura])[0]["conferida"])
+        fonte["linha_final"]=4
+        self.assertFalse(conferir_fontes([fonte],[leitura])[0]["conferida"])
+        fonte["linha_final"]=3
+        leitura["negado"]=True
+        self.assertFalse(conferir_fontes([fonte],[leitura])[0]["conferida"])
     def test_e4_fonte_nunca_lida_permanece_recusada(self):
         fixture=json.loads((Path(__file__).parent/"fixtures/e4_execucao_4.json").read_text(encoding="utf-8"))
         falsa={"arquivo":"docs/nunca-lido.md","linha_inicial":1,"linha_final":2,"evidencia":"inventada"}

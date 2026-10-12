@@ -67,22 +67,33 @@ def _fonte_coberta(fonte: dict, evento: dict) -> bool:
         lido = _caminho_normalizado(args.get("caminho"))
         if lido != arquivo:
             return False
+        linhas_resultado = evento.get("linhas_resultado")
+        if isinstance(linhas_resultado, list) and linhas_resultado:
+            linhas = {n for n in linhas_resultado if type(n) is int and inicio <= n <= fim}
+            return len(linhas) == fim - inicio + 1
         primeira = args.get("linha_inicial", 1)
         max_linhas = args.get("max_linhas", LINHAS_PADRAO)
         if type(primeira) is not int or type(max_linhas) is not int:
             return False
         max_linhas = min(max_linhas, 2000)
-        # Sem truncamento a leitura chegou ao EOF. Com truncamento, somente o intervalo pedido
-        # é demonstrável. O intervalo declarado precisa caber inteiro no que foi solicitado.
-        ultima = primeira + max_linhas - 1 if evento.get("truncado") else None
-        return inicio >= primeira and (ultima is None or fim <= ultima)
+        # Auditorias antigas não trazem as linhas devolvidas. Mesmo nelas nunca se atribui à
+        # leitura mais que o intervalo solicitado, tenha ela alcançado o EOF ou truncado.
+        ultima = primeira + max_linhas - 1
+        return inicio >= primeira and fim <= ultima
     if nome == "buscar":
         retornados = evento.get("fontes_resultado")
         if not isinstance(retornados, list):
             return False
-        # Escopo da busca não basta: a auditoria grava os caminhos que `git grep -n`
-        # efetivamente devolveu, sem persistir o conteúdo das linhas.
-        return arquivo in {_caminho_normalizado(p) for p in retornados}
+        linhas = {
+            item.get("linha")
+            for item in retornados
+            if isinstance(item, dict) and _caminho_normalizado(item.get("arquivo")) == arquivo
+            and type(item.get("linha")) is int
+        }
+        # Escopo da busca não basta. Cada linha declarada precisa ter sido devolvida pelo
+        # `git grep -n`; só o caminho, ou um match fora do intervalo, continua fail-closed.
+        linhas_no_intervalo = {n for n in linhas if inicio <= n <= fim}
+        return len(linhas_no_intervalo) == fim - inicio + 1
     if nome == "git_show":
         objeto = args.get("objeto")
         if not isinstance(objeto, str) or ":" not in objeto:
@@ -108,8 +119,21 @@ def _fonte_coberta_por_leituras(fonte: dict, eventos: list[dict]) -> bool:
         max_linhas = args.get("max_linhas", LINHAS_PADRAO)
         if type(primeira) is not int or type(max_linhas) is not int:
             continue
-        ultima = primeira + min(max_linhas, 2000) - 1 if evento.get("truncado") else 100_000_000
-        intervalos.append((primeira, ultima))
+        linhas_resultado = evento.get("linhas_resultado")
+        if isinstance(linhas_resultado, list) and linhas_resultado:
+            validas = sorted({n for n in linhas_resultado if type(n) is int and n >= 1})
+            if not validas:
+                continue
+            bloco_inicio = bloco_fim = validas[0]
+            for numero in validas[1:]:
+                if numero == bloco_fim + 1:
+                    bloco_fim = numero
+                else:
+                    intervalos.append((bloco_inicio, bloco_fim))
+                    bloco_inicio = bloco_fim = numero
+            intervalos.append((bloco_inicio, bloco_fim))
+        else:
+            intervalos.append((primeira, primeira + min(max_linhas, 2000) - 1))
     cursor = inicio
     for primeira, ultima in sorted(intervalos):
         if primeira > cursor:
