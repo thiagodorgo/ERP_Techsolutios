@@ -538,6 +538,105 @@ if (!connectionString) {
     assert.equal(await locationsOf(h, w.tenantId), 1);
   });
 
+  // Conserto do 503 (Retomada 7, Achado pré-revisão): cobre quarentena DENTRO da organização (ex.: fix inválido) e
+  // conflito (markConflict) com prazo esgotado (503). A mutação "claim só vale para value.kind === 'stored'"
+  // (service.ts:188) deve quebrar (ficar VERMELHA) em ambos: se o claim for omitido em quarentena ou conflito, o
+  // trabalho persiste o registro após o 503 ser enviado. A propriedade: 503 = nada gravado, nem agora nem depois.
+  test("ingestão: tempo esgotado → 503 e, depois do fim do trabalho, quarentena interna e conflito não gravam nada", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "tmoqc");
+    let delayWork = false;
+    let hookExecuted = false;
+    const slowService = (await import("../src/integrations/traccar/traccar-ingestion.service.js")).createTraccarIngestionService({
+      client: h.role.client as PrismaClient,
+      timeoutMs: 3_000,
+      resolver: { maxTenants: 500, hintTtlMs: 600_000, negativeTtlMs: 60_000, cacheMax: 10_000 },
+      budgets: RELAXED_BUDGETS,
+      hooks: {
+        afterBindingLocked: async () => {
+          if (delayWork) {
+            hookExecuted = true;
+            await pause(1_500); // listener desiste aos 400 ms; o trabalho chega ao commit depois
+          }
+        },
+      },
+    });
+    let work: Promise<unknown> | undefined;
+    const app = h.app.createTraccarIngestApp({
+      authenticator: h.auth.createTraccarForwardAuthenticator({ current: SECRET }),
+      limiter: h.limit.createTraccarIngestLimiter({ ratePerSecond: 20, burst: 100, maxConcurrency: 10 }),
+      ingest: (cmd, deadline) => {
+        const running = slowService.ingest(cmd, deadline);
+        work = running;
+        return running;
+      },
+      instanceKey: INSTANCE,
+      timeoutMs: 400,
+      logger: (await import("pino")).default({ level: "silent" }),
+    });
+    const server: Server = createServer(app);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    const { port } = server.address() as AddressInfo;
+    const postPosition = async (body: Record<string, unknown>) => {
+      const response = await fetch(`http://127.0.0.1:${port}/ingest/traccar/v1/positions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-traccar-forward-token": SECRET },
+        body: JSON.stringify(body),
+      });
+      const data = (await response.json()) as { error?: { code?: string } };
+      return { status: response.status, data };
+    };
+
+    try {
+      // 1. Quarentena interna: fix inválido (valid: false) com vínculo ativo na organização.
+      delayWork = true;
+      hookExecuted = false;
+      const fixInvalid = await fixNow();
+      const resQuarantine = await postPosition(envelope(w.device, fixInvalid, -23.51, -46.61, { valid: false }));
+      assert.equal(resQuarantine.status, 503, "tempo esgotado no listener");
+      assert.deepEqual(resQuarantine.data, { error: { code: "unavailable" } });
+      assert.ok(work, "o trabalho foi disparado");
+      await work!.catch(() => undefined);
+      assert.equal(hookExecuted, true, "controle: o trabalho passou pelo lockActiveBinding após o 503");
+      assert.equal(await quarantineOf(h, w.device, "invalid_fix"), 0, "nenhuma quarentena gravada depois do 503");
+
+      // 2. Prepara o recibo no banco com digest original (sem atraso).
+      delayWork = false;
+      const fixConflict = await fixNow();
+      const resOriginal = await fetch(`http://127.0.0.1:${port}/ingest/traccar/v1/positions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-traccar-forward-token": SECRET },
+        body: JSON.stringify(envelope(w.device, fixConflict, -23.52, -46.62, { course: 90 })),
+      });
+      assert.equal(resOriginal.status, 204, "primeira entrega gravada com sucesso");
+      await work!.catch(() => undefined);
+      assert.equal(await count(h, "traccar_ingress_receipts", "tenant_id = $1::uuid", w.tenantId), 1);
+
+      const getConflictCount = async () => {
+        const rows = await h.admin.$queryRawUnsafe<Array<{ conflict_count: number }>>(
+          `SELECT conflict_count FROM traccar_ingress_receipts WHERE tenant_id = $1::uuid AND instance_key = $2`,
+          w.tenantId,
+          INSTANCE,
+        );
+        return rows[0]?.conflict_count ?? 0;
+      };
+      assert.equal(await getConflictCount(), 0, "controle: antes da reentrega conflitante, 0 conflitos");
+
+      // 3. markConflict: mesma chave de evento, digest diferente (course: 180), tempo esgotado.
+      delayWork = true;
+      hookExecuted = false;
+      const resConflict = await postPosition(envelope(w.device, fixConflict, -23.52, -46.62, { course: 180 }));
+      assert.equal(resConflict.status, 503, "tempo esgotado no listener na reentrega conflitante");
+      assert.deepEqual(resConflict.data, { error: { code: "unavailable" } });
+      assert.ok(work, "o trabalho de conflito foi disparado");
+      await work!.catch(() => undefined);
+      assert.equal(hookExecuted, true, "controle: o trabalho passou pelo lockActiveBinding após o 503");
+      assert.equal(await getConflictCount(), 0, "nenhum conflito gravado depois do 503");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
+
   test("ingestão: a organização B não lê localização, recibo nem vínculo de A", { timeout: 120_000 }, async () => {
     const h = await harness();
     const a = await world(h, "isoa");

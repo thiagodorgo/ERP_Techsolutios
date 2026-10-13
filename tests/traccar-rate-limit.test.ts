@@ -144,3 +144,61 @@ test("concorrência: a vaga só volta quando o TRABALHO termina, não quando o 5
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });
+
+// Conserto do 503 (Retomada 7, Achado pré-revisão): a vaga do limitador deve ser liberada mesmo quando o trabalho
+// assíncrono é rejeitado com erro (`work.then(release, release)` em traccar-rate-limit.ts:93). Se a devolução na
+// rejeição for omitida (`work.then(release)`), a vaga vaza na falha e bloqueia requisições seguintes com 429.
+test("concorrência: a vaga volta mesmo se o trabalho for REJEITADO com erro (`work.then(release, release)`)", { timeout: 30_000 }, async () => {
+  let failFirstWork!: (error: Error) => void;
+  const firstWorkMayFail = new Promise<never>((_, reject) => {
+    failFirstWork = reject;
+  });
+  let calls = 0;
+  const instance = createTraccarIngestLimiter({ ratePerSecond: 1_000, burst: 1_000, maxConcurrency: 1 });
+  const app = createTraccarIngestApp({
+    authenticator: createTraccarForwardAuthenticator({ current: SECRET }),
+    limiter: instance,
+    // Serviço cujo 1º trabalho estoura o prazo e depois REJEITA com erro.
+    ingest: async () => {
+      calls += 1;
+      if (calls === 1) await firstWorkMayFail;
+      return { kind: "stored" };
+    },
+    instanceKey: "erp-dev",
+    timeoutMs: 100,
+    logger: pino({ level: "silent" }),
+  });
+  const server = createServer(app);
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  const { port } = server.address() as AddressInfo;
+  const send = async () => {
+    const response = await fetch(`http://127.0.0.1:${port}${TRACCAR_INGEST_PATH}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-traccar-forward-token": SECRET },
+      body: FIXTURE,
+    });
+    await response.arrayBuffer();
+    return response.status;
+  };
+  try {
+    assert.equal(await send(), 503, "a 1ª estoura o prazo");
+    assert.equal(instance.inFlight(), 1, "o trabalho da 1ª ainda roda: a vaga continua ocupada depois do 503");
+    assert.equal(await send(), 429, "com o trabalho da 1ª no ar, a 2ª não entra");
+    assert.equal(calls, 1, "a 2ª nem chegou ao serviço");
+
+    failFirstWork(new Error("falha simulada no trabalho"));
+    for (let spin = 0; spin < 100 && instance.inFlight() !== 0; spin++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    assert.equal(instance.inFlight(), 0, "o trabalho rejeitado terminou: a vaga voltou");
+    assert.equal(await send(), 204, "com a vaga de volta, a seguinte passa");
+    assert.equal(calls, 2);
+  } finally {
+    try {
+      failFirstWork(new Error("cleanup"));
+    } catch {
+      // noop
+    }
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});

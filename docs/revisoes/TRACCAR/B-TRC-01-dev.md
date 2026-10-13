@@ -819,3 +819,53 @@ As duas mutações foram testadas em worktree descartável isolado (`C:/Users/AM
    - Prova: Devolver a vaga no término da resposta permite que uma requisição subsequente fure a concorrência enquanto o trabalho assíncrono da anterior ainda executa.
 
 Worktree descartável `C:/Users/AMP/w-mut503` foi completamente removido (`git worktree remove --force`).
+
+### Retomada 7 — Dois testes faltantes apontados pela pré-revisão da API (13/10 ~03:35Z)
+
+> **Identidade:** `dev-trc01-503-flash`. **Modelo:** Gemini 3.8 Flash (high).
+> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADA 7).
+> **Ponto de partida:** `b5adc306` na `w-trc01`.
+
+#### 1. Testes Implementados
+
+1. **Ajuste (`tests/traccar-position-ingestion-db.test.ts`):**
+   - Teste `ingestão: tempo esgotado → 503 e, depois do fim do trabalho, quarentena interna e conflito não gravam nada` (timeout 120s).
+   - Cobre com prazo curto (503) tanto a **quarentena DENTRO da organização** (`valid: false`, motivo `invalid_fix`) quanto o **`markConflict`** (mesma chave canônica de evento com digest diferente, `course: 180`).
+   - Propriedade provada: quando o listener esgota o tempo e responde 503, nenhuma quarentena e nenhum conflito são gravados no banco após a conclusão do trabalho assíncrono.
+2. **Nota (`tests/traccar-rate-limit.test.ts`):**
+   - Teste `concorrência: a vaga volta mesmo se o trabalho for REJEITADO com erro (work.then(release, release))` (timeout 30s).
+   - Valida que a vaga do limitador é devolvida fielmente quando o trabalho assíncrono rejeita com erro (`work.then(release, release)` em `traccar-rate-limit.ts:93`), sem vazar vaga de concorrência.
+
+#### 2. Mutações Provadas em Cópia Descartável (`w-mut503`)
+
+As mutações foram provadas em worktree descartável (`git worktree add --detach C:/Users/AMP/w-mut503 HEAD`), executando via `teste-linux.sh`:
+
+1. **Mutação 1 — Claim da porta de commit restrito a `value.kind === 'stored'` (`service.ts:188`):**
+   - Alteração: `if (outcome.kind === "confirmed" && outcome.value.kind === "stored") { claimTraccarCommitOrThrow(deadline); }`
+   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
+   - Resultado: **VERMELHO** (`# pass 16`, `# fail 1`).
+   - Saída: `not ok 16 - ingestão: tempo esgotado → 503 e, depois do fim do trabalho, quarentena interna e conflito não gravam nada` falhou com:
+     `AssertionError [ERR_ASSERTION]: nenhuma quarentena gravada depois do 503: 1 !== 0` em `tests/traccar-position-ingestion-db.test.ts:601:14`.
+   - Prova: Se o claim for restrito a `stored`, a quarentena interna e o conflito não acionam rollback após o 503, gravando indevidamente no banco.
+   - Restauração: Código restaurado e suíte reexecutada: **VERDE** (17/17).
+2. **Mutação 2 — Omissão da liberação da vaga na rejeição (`traccar-rate-limit.ts:93`):**
+   - Alteração: `work.then(release)` (sem o tratador de rejeição).
+   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"`
+   - Resultado: **VERMELHO** (`# pass 5`, `# fail 1`).
+   - Saída: `not ok 6 - concorrência: a vaga volta mesmo se o trabalho for REJEITADO com erro (work.then(release, release))` falhou com `ERR_TEST_FAILURE` (falha na liberação / rejeição não tratada).
+   - Prova: Sem `release` na rejeição, a vaga do limitador vaza em falhas do trabalho assíncrono.
+   - Restauração: Código restaurado e suíte reexecutada: **VERDE** (6/6).
+
+Worktree descartável `C:/Users/AMP/w-mut503` completamente removido (`git worktree remove --force`).
+
+#### 3. Bateria de Testes no Container Linux (`teste-linux.sh`)
+
+| Arquivo de Teste | Forma / Ambiente | Resultado |
+|---|---|---|
+| `tests/traccar-rate-limit.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 6`, `# pass 6`, `# fail 0` |
+| `tests/traccar-position-ingestion-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 17`, `# pass 17`, `# fail 0` |
+| `tests/traccar-idempotency-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 8`, `# pass 8`, `# fail 0` |
+| `tests/traccar-quarantine-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 6`, `# pass 6`, `# fail 0` |
+| `tests/traccar-resolution-race-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 5`, `# pass 5`, `# fail 0` |
+| `tests/traccar-binding-uniqueness-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 6`, `# pass 6`, `# fail 0` |
+| `tests/traccar-ingest-pool-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 2`, `# pass 2`, `# fail 0` |
