@@ -3565,3 +3565,20 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     - o catálogo do Codex agora tem o `gpt-6.1-sol`; trocar o padrão para ele é pergunta ao dono.
 - **Teto da API (dono, 13/10 ~01:30Z):** *"a api claude hoje, nas proximas 1:30 hora tera um limite de 15 uss"*. O
   agente não tem teto diário no código: o teto é a soma dos `-MaxUsd` das execuções lançadas na janela.
+
+## Registro de 13/10/2026 (madrugada) — provedor AWS e 3 opções por tela
+
+- **`D-INFRA-PROVIDER-AWS` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"o provedor é o aws, documente , memorize e difunda"*.
+  - **Substitui** a `D-INFRA-PROVIDER` (2026-07-13, junta J-SAN-4 5/5: Fly.io 1º, AWS 2º). Confirma como definitiva a direção que a `D-TRC-DECISOES-DO-DONO-2026-10-11` (D2 = a, ERP inteiro na AWS) já tinha dado.
+  - **Difundida em:** `PROJECT_MEMORY.md`, `docs/demo-credentials.md`, `PLANO_SAN3.md` §4.2 (linha "Provedor") e na nota da `P-TRC-AWS-ESTUDO-MIGRACAO`. Essa pendência passa de "se" para "como": custo, etapas e o destino dos `fly.*.toml`.
+  - **O que NÃO muda:** os `fly.*.toml` e o resto da config da Fly ficam inertes, e não são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção seguem exigindo a junta de 5 unânime (§C7.1). O `B-AV-REAL` usa o desenho AWS da PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`), e não o `fly.clamav.toml`.
+- **`D-TELAS-TRES-OPCOES` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em toda tela que sair pronta eu quero tres opções para aprovar"*.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md, §4 item 7, e um item novo na DoD do §10; nas skills `ts-frontend-full` e `ui-ux-pro-max` (`.claude/` e `.agents/`); e no `screen-refs/README.md`.
+  - **A regra:** toda tela nova ou refeita passa por uma maquete com 3 opções (A, B, C), no padrão do sistema, com um quadro de notas fora da tela. O dono escolhe, ou pede a mistura, e a escolhida vira a referência em `screen-refs/`.
+  - **Leitura do orquestrador, declarada (§A6):** as opções vêm ANTES do dev, e a tela pronta é conferida contra a escolhida. Se o dono quiser as opções também depois da tela pronta, isto se corrige numa linha.
+  - **Agora:** as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) ganham 3 opções cada, montadas pelo Gemini 3.8 Flash (maquete, fora de gate) e conferidas por verificador automático.
+- **Revisão do #428 (API, `aprovado_com_ressalvas`):**
+  - o §11 ganhou a exceção do Financeiro;
+  - o `README` do screen-refs diz que a referência usa fontes do Google;
+  - o paginador da maquete diz "1–12 de 12" desde a abertura;
+  - o merge espera o CI verde.

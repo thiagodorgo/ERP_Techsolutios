@@ -243,6 +243,19 @@ Organização · Console Dispatcher · Cobranças.
    Vale para tela nova e para tela que for refeita. Os componentes nascem NA biblioteca (item 3) no primeiro bloco
    que usar o padrão. As telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (§11), cujas linhas levam a uma página de
    detalhe, continuam como estão até o dono responder a pergunta registrada em `D-PADRAO-BLOCOS-CLICAVEIS`.
+7. **Toda tela sai em 3 opções para o dono aprovar** (decisão do dono, 2026-10-13, `D-TELAS-TRES-OPCOES`). Nas
+   palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em
+   toda tela que sair pronta eu quero tres opções para aprovar"*.
+   - **A maquete:** toda tela nova ou refeita, web ou mobile, passa por uma maquete com **3 opções visuais** (A, B e C,
+     com seletor para trocar entre elas). Ela é montada a partir da tela-modelo e do padrão do sistema (itens 1 a 6) e
+     traz, fora da tela, um quadro com o que já tem dado, o que falta no backend e os prós e contras de cada opção.
+   - **A escolha:** o dono escolhe uma ou pede a mistura (no Financeiro foi "uma junção de a com b"). A escolhida vai
+     para `screen-refs/` como referência da tela, e o plano do bloco a cita.
+   - **Leitura do orquestrador, declarada como tal (§A6):** as 3 opções vêm ANTES do dev, porque refazer tela pronta
+     custa mais, e a tela implementada é conferida contra a opção aprovada. Se o dono quiser as opções também depois
+     da tela pronta, isto se corrige numa linha.
+   - **As 5 telas padronizadas** de `D-OS-CABECALHO-PADRONIZADO` ganham as 3 opções agora; até a escolha, ficam como
+     estão.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
@@ -773,6 +786,8 @@ ao PR corrente**.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
+- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela segue a opção que o dono escolheu entre as 3,
+      registrada em `screen-refs/`.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 
 ## 11. Fidelidade visual — referências renderizadas (`screen-refs/`)
@@ -806,6 +821,8 @@ Referências disponíveis (índice completo em **`screen-refs/README.md`**):
   **Exceção (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`):** para as 5 telas padronizadas
   (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência é `ERP Web - Telas Padronizadas.dc.html`
   (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
+  **Exceção (decisão do dono, 2026-10-12, `D-PADRAO-BLOCOS-CLICAVEIS`):** o Financeiro tem como referência
+  `financeiro-ab.reference.html`, não o `financeiro.png`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**

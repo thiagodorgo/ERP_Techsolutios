@@ -25,7 +25,9 @@
 dono em 2026-10-12 (`D-PADRAO-BLOCOS-CLICAVEIS`, CLAUDE.md §4 item 6): indicadores e blocos de resumo clicáveis que
 filtram a lista, linhas de uma linha, detalhe que abre embaixo da linha. É a referência do Financeiro no lugar de
 `financeiro.png`. A seção escura no rodapé ("camada de revisão") é nota para o dono, não faz parte da tela, e os
-números são de exemplo.
+números são de exemplo. A página carrega as fontes do Google Fonts; sem rede, cai na fonte do sistema.
+
+**Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.
 
 ---
 
