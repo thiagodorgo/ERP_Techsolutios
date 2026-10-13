@@ -229,6 +229,20 @@ Organização · Console Dispatcher · Cobranças.
    conteúdo ("PNG vence para layout/intenção"), até o dono responder a pergunta registrada em
    `D-TELAS-SEGUEM-O-PADRAO`. O padrão do sistema rege o resto: componentes, tokens, camada de dados, estados e tudo
    aquilo sobre o que a referência não diz nada.
+6. **Painel com lista: blocos clicáveis e linha que abre o detalhe** (decisão do dono, 2026-10-12,
+   `D-PADRAO-BLOCOS-CLICAVEIS`). Nas palavras do dono, ao aprovar a tela do Financeiro: *"a ultima tela do biling foi
+   aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*. A referência é
+   `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`:
+   - todo indicador e todo bloco de resumo é clicável (botão, com foco visível) e leva à lista já filtrada; o filtro
+     aparece acima da lista e sai com um clique;
+   - a linha da lista tem UMA linha de altura (até 44 px) e nenhum botão de ação; texto longo corta com reticências e
+     mostra o texto inteiro ao passar o mouse;
+   - clicar na linha, ou Enter/Espaço com foco nela, abre logo abaixo o detalhe, com as propriedades e as ações; um
+     detalhe aberto por vez.
+
+   Vale para tela nova e para tela que for refeita. Os componentes nascem NA biblioteca (item 3) no primeiro bloco
+   que usar o padrão. As telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (§11), cujas linhas levam a uma página de
+   detalhe, continuam como estão até o dono responder a pergunta registrada em `D-PADRAO-BLOCOS-CLICAVEIS`.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 

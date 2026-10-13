@@ -3530,3 +3530,38 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     parar.
   - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
     bloco que já estava no plano.
+
+## Registro de 12/10/2026 (noite) — padrão de painel com lista, executores e teto da API
+
+- **`D-PADRAO-BLOCOS-CLICAVEIS` (decisão do dono, 2026-10-12).** Nas palavras do dono: *"a ultima tela do biling foi
+  aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*.
+  - **Onde ficou escrito:** CLAUDE.md e AGENTS.md, §4 item 6; a referência é
+    `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`, indexada no `screen-refs/README.md` no lugar
+    de `financeiro.png`.
+  - **O padrão:** indicador e bloco de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e
+    removível; linha de uma linha só (até 44 px), sem botão de ação; o clique na linha abre o detalhe embaixo dela,
+    com as propriedades e as ações, um por vez.
+  - **Como a tela nasceu:** a especificação veio da API (`spec-financeiro`, US$ 1,77). O Gemini 3.8 Flash montou três
+    opções: A por abas, B pelo resultado do mês, C por OS. O dono pediu *"uma junção de a com b, com blocos clicaveis e
+    linhas menores com tamanho de 1 linha sendo essas linhas clicaveis abrindo os detalhes de cada linha"*. Um
+    verificador automático conferiu, no navegador:
+    - cada bloco abre a aba certa, com o filtro;
+    - as linhas têm até 44 px, sem ação dentro;
+    - o detalhe abre, fica um aberto por vez e o Enter fecha;
+    - não há rolagem lateral a 1440 nem a 1280 px.
+  - **Pergunta ao dono, aberta (§A2):** as telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (Dashboard, Ordens de
+    Serviço, Usuários, Auditoria, Pátios), cujas linhas levam a uma página de detalhe, migram para o padrão novo? Até a
+    resposta, ficam como estão.
+- **Executores (decisão do dono, 12/10 ~23:45Z):** *"o gemini pro foi gasto o seu limite, cancele a busca. vamos usar
+  agora, api claude, antgravity com gemini flash higt, codex sol 5.6"*.
+  - **Divisão de papéis em uso, proposta pelo orquestrador e ainda não confirmada pelo dono:**
+    - Codex GPT-5.6 Sol: cadeiras, inspetor, porteiro e dev de bloco de risco;
+    - Gemini 3.8 Flash: dev fora de gate e maquete, nunca jurado;
+    - API: plano, crítica e revisão. O agente tem o Opus 5.5 fixo no código, então o plano sai em Opus, com a
+      substituição do Fable declarada no próprio plano.
+  - **Medido em 12/10:**
+    - o limite semanal do Codex é da conta: às 23:3xZ o `gpt-6.1-sol` e o `gpt-6-sol` deram o mesmo "usage limit";
+    - à 00:0xZ de 13/10, o `gpt-5.6-sol` voltou a responder;
+    - o catálogo do Codex agora tem o `gpt-6.1-sol`; trocar o padrão para ele é pergunta ao dono.
+- **Teto da API (dono, 13/10 ~01:30Z):** *"a api claude hoje, nas proximas 1:30 hora tera um limite de 15 uss"*. O
+  agente não tem teto diário no código: o teto é a soma dos `-MaxUsd` das execuções lançadas na janela.
