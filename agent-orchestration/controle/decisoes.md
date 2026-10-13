@@ -3594,8 +3594,8 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - **Gasto da v3:** ~US$ 4,75.
   - **Antes de congelar,** o dono tinha autorizado *"Create Unsafe Agents"* com cercas e ambiente isolado, e pedido *"coloque a api claude para cobrir o codex"*.
 - **`D-GEMINI-PRO-NIVEL-CODEX` (declaração do dono, 2026-10-13):** *"tome cuidado que so o gemini pro esta no mesmo nivel do codex, deixe o google pro configurado do mesmo modo do codex quando ele voltar"*.
-  - O Gemini 3.1 Pro fica no nível menor do §C7.6, igual ao GPT-5.6 Sol. O Gemini Flash fica abaixo e não ocupa cadeira, inspetor, porteiro nem dev de bloco de risco.
+  - O Gemini 3.1 Pro fica no nível menor do §C7.6, igual ao GPT-5.6 Sol. **Leitura do orquestrador, declarada como tal (§A6):** o Gemini Flash fica abaixo, e por isso não ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Essa lista é derivação, não fala do dono, e se corrige numa linha.
   - **Sem faturamento novo** (dono: *"nao posso ligar o faturamento, ja uso 3 ia paga aqui"*): o Pro só entra pela assinatura, no Antigravity. A chave gratuita da API do Gemini (`ERP_AGENTE_GEMINI_KEY`) serve só para o Flash.
-  - A linha na tabela do §C7.6 fica para o PR de governança da v3, hoje congelada.
+  - A linha do Gemini na tabela do §C7.6 (CLAUDE.md e AGENTS.md) entra no PRÓXIMO PR de governança, qualquer que seja, e não depende da v3. Até lá, vale esta entrada.
 - **Pedido do dono (2026-10-13):** a simulação navegável do app de campo, *"para assim quando partimos para o mobile eu ja ter um norte"*. Ficou pronta fora do repositório (`erp-pausa-2026-10-03/app-campo/`), com verificador e gabarito gerados do código.
   - **Ressalva do orquestrador:** 3 itens do gabarito (`/approvals`, `/checklists`, `/inventory`) são rotas de tela, não endpoints.
