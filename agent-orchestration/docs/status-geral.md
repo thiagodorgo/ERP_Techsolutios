@@ -5105,3 +5105,36 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 - **Em curso:** `B-O6R-07c-a` (PR #414, rascunho; a `main` foi integrada e o CI do head integrado estava em curso, com o T15 do #405 derrubando o job `backend` uma vez) — a fábrica escreve as 3 cadeiras novas; depois inspetor e junta de permissão.
 - **Esperando o dono:** Traccar 1–6 (`P-TRC-*`), D1/D2/D3 do 07c, e o censo de duplicatas do estoque antes de qualquer deploy (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`).
 - **Regra de modelos:** `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`. **Formato do estado:** `agent-orchestration/docs/formato-do-estado.md`.
+
+## Estado em 2026-10-13 (07:00, Brasília) — relatório da noite de 12 → 13/10
+
+Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026-10-13/index.html` (fora do repositório, com as imagens das maquetes).
+
+**Feito:**
+- **#428 mergeado** (`bdd7c3b5`): `D-PADRAO-BLOCOS-CLICAVEIS`, `D-TELAS-TRES-OPCOES` e `D-INFRA-PROVIDER-AWS`.
+- **Traccar (#426):**
+  - conserto do 503 fechado (Gemini 3.8 Flash), com os dois testes que a pré-revisão da API pediu; as mutações ficaram vermelhas;
+  - CI 14/14 em `e38b47ea`;
+  - mandatos da junta de segurança regerados, com pré-voo OK nos 4: o objeto agora é `5abdf83b`, também com CI 14/14.
+- **Maquetes, fora do repositório, todas aprovadas no verificador:** as 3 opções das 5 telas padronizadas e a simulação navegável do app de campo (37 telas, 53 endpoints, 10 fluxos, 18 ideias, análise).
+- **API v3:** o Claude da API, cercado num container. Construída; as cercas de rede (E1) e do lançador (E2) foram provadas. O ataque às cercas (E3) não foi feito: a trava de segurança interrompeu duas vezes. Está **congelada** pelo dono.
+- **Máquina:**
+  - o disco caiu para 0,1 GB porque a paginação do Windows cresceu sob falta de RAM;
+  - foi recuperado para 22 GB com limpeza de caches e temporários, a compactação do Docker (−5,4 GB) e a remoção do `gradle-cache-erp` pelo dono;
+  - agora há um monitor de memória e disco com semáforo, e as filas só lançam no verde.
+
+**Alertas:**
+- **Capacidade do Codex nas juntas:** cada janela curta rende uns 20 minutos de jurado, e cada substituto refaz por P3 os itens do anterior. A C1 do 03a refez os itens 1 e 2 três vezes e não chegou ao item 3. Decisão D2 do relatório.
+- **O #425 está em conflito com a `main`** (registros). Na hora do merge, a `main` entra no ramo por merge, sem conteúdo próprio.
+- **Janelas de execução morreram sem rastro** 4 vezes. A hipótese é o terminal PowerShell da ferramenta; com execuções vivas, o orquestrador passou a usar só o Bash.
+
+**Decisões que esperam o dono:**
+- D1: escolher as opções das 5 telas.
+- D2: capacidade de jurados. Créditos ou Pro do Codex (recomendado), a v3 só para o 03a, cadeiras no Claude, ou esperar.
+- D3: tirar o #388 do estacionamento.
+- D4: reiniciar com a paginação fixa em 8 GB.
+- D5: limite de gasto no Console da Anthropic.
+- D6: a v3 continua congelada (recomendado).
+- D7: teto diário da API.
+- D8: estudo de migração para a AWS.
+- D9: as ideias novas do app de campo.

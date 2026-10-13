@@ -3584,3 +3584,18 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - o `README` do screen-refs diz que a referência usa fontes do Google;
   - o paginador da maquete diz "1–12 de 12" desde a abertura;
   - o merge espera o CI verde.
+
+## Registro de 13/10/2026 (manhã) — decisões da madrugada
+
+- **`D-API-V3-CONGELADA` (decisão do dono, 2026-10-13 ~04:07Z):** *"vamos congelar a v3"* e *"pare tudo na v3, congelar onde esta"*.
+  - **O que foi parado:** a C3 do 03a na API v3 (Opus 5.5 num container cercado). Ela não atendeu a tempo à pausa por arquivo (P7) e foi parada às 04:08Z com `docker stop`. A evidência dela passou ao Codex como roteiro de sucessão (P3).
+  - **O que fica guardado:** imagens, rede, lançador e provas (`erp-pausa-2026-10-03/PLANO-API-V3.md` e `PROVAS-API-V3.md`).
+  - **O que falta:** a E3, o ataque às cercas, não foi feita; a trava de segurança do Claude Code interrompeu duas vezes, e não se contorna.
+  - **Gasto da v3:** ~US$ 4,75.
+  - **Antes de congelar,** o dono tinha autorizado *"Create Unsafe Agents"* com cercas e ambiente isolado, e pedido *"coloque a api claude para cobrir o codex"*.
+- **`D-GEMINI-PRO-NIVEL-CODEX` (declaração do dono, 2026-10-13):** *"tome cuidado que so o gemini pro esta no mesmo nivel do codex, deixe o google pro configurado do mesmo modo do codex quando ele voltar"*.
+  - O Gemini 3.1 Pro fica no nível menor do §C7.6, igual ao GPT-5.6 Sol. O Gemini Flash fica abaixo e não ocupa cadeira, inspetor, porteiro nem dev de bloco de risco.
+  - **Sem faturamento novo** (dono: *"nao posso ligar o faturamento, ja uso 3 ia paga aqui"*): o Pro só entra pela assinatura, no Antigravity. A chave gratuita da API do Gemini (`ERP_AGENTE_GEMINI_KEY`) serve só para o Flash.
+  - A linha na tabela do §C7.6 fica para o PR de governança da v3, hoje congelada.
+- **Pedido do dono (2026-10-13):** a simulação navegável do app de campo, *"para assim quando partimos para o mobile eu ja ter um norte"*. Ficou pronta fora do repositório (`erp-pausa-2026-10-03/app-campo/`), com verificador e gabarito gerados do código.
+  - **Ressalva do orquestrador:** 3 itens do gabarito (`/approvals`, `/checklists`, `/inventory`) são rotas de tela, não endpoints.
