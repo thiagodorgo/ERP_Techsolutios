@@ -819,4 +819,3 @@ As duas mutações foram testadas em worktree descartável isolado (`C:/Users/AM
    - Prova: Devolver a vaga no término da resposta permite que uma requisição subsequente fure a concorrência enquanto o trabalho assíncrono da anterior ainda executa.
 
 Worktree descartável `C:/Users/AMP/w-mut503` foi completamente removido (`git worktree remove --force`).
-
