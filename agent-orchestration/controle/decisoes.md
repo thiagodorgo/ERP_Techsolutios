@@ -420,6 +420,8 @@
   (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.
 
 ## D-INFRA-PROVIDER — Fly.io (gru/São Paulo) 1º · AWS 2º (2026-07-13) [Ω-INFRA-1, junta J-SAN-4 5/5]
+> **SUBSTITUÍDA em 2026-10-13 por `D-INFRA-PROVIDER-AWS`** (decisão do dono: *"o provedor é o aws"*), registrada no
+> "Registro de 13/10/2026 (madrugada)" deste arquivo. O texto abaixo fica como histórico.
 - Decisão (junta de 5 UNÂNIME, pré-autorizada por D-SAN-AUTONOMIA; PD-INFRA-1 em docs/omega-pd.md): provedor de
   deploy = **Fly.io, região gru (São Paulo)**; fallback pré-aprovado = **AWS (Lightsail→RDS/ECS, sa-east-1)**.
   Racional: única dupla com região BR real; Fly vence por menor lock-in (imagem OCI + fly.toml; sair = pg_dump +
@@ -2297,7 +2299,7 @@ código, a **unanimidade de 3** (§C7.1-ter(b)).
 
 ### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
 
-`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+(**substituída em 2026-10-13 por `D-INFRA-PROVIDER-AWS`: o provedor é a AWS**) `D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
 como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
 nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
 não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na

@@ -109,6 +109,7 @@ Cada achado: severidade, arquivo/trecho, impacto, correção, teste.
 - [ ] Zero número inventado: todo KPI ligado a endpoint real
 - [ ] Nenhuma dependência nova sem aprovação
 - [ ] Testes proporcionais ao risco (cota 150% do prompt em execução)
+
 ## Regras do dono para toda tela (CLAUDE.md §4, itens 6 e 7)
 - **Padrão de painel com lista (`D-PADRAO-BLOCOS-CLICAVEIS`, 2026-10-12):**
   - indicadores e blocos de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e removível;
