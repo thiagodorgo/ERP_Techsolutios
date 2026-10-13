@@ -10827,6 +10827,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** o B-TRC-06 (staging na AWS). Não bloqueia do B-TRC-01 ao 05.
 - **teste de encerramento:** o estudo (custo mensal estimado ERP + Traccar na AWS × hoje; tamanho e etapas da migração; riscos) registrado e a decisão do dono sobre contratar, antes do B-TRC-06.
 - **nota (2026-10-13, `D-INFRA-PROVIDER-AWS`):** o dono fixou a AWS como provedor: *"o provedor é o aws"*. O estudo deixa de responder SE e passa a responder COMO: custo, tamanho e etapas da migração, e o destino dos `fly.*.toml`, que ficam inertes e NÃO são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção continuam exigindo a junta de 5 unânime (§C7.1).
+- **estudo entregue (2026-10-13):** `docs/infra/estudo-aws-migracao.md` — custo estimado ~US$ 255–320/mês (produção, sa-east-1), etapas em 7 blocos e as decisões do dono (conta, NAT, banco do Traccar, teto do orçamento). Fica ABERTA até o dono decidir a conta e o teto.
 
 ## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
 
