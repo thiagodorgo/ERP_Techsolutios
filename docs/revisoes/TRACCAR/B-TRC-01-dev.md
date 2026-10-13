@@ -724,3 +724,99 @@ Leituras da retomada: `DESENHO-503-api.md` (porta de commit com claim: open → 
 `deadline.claimCommit()` e falhariam por `TypeError`; lacunas: quarentena gravada depois do 503 e vaga devolvida no
 `close`); de novo `traccar-ingest.app.ts`, `traccar-rate-limit.ts`, `traccar-ingestion.service.ts`,
 `traccar-ingestion.repository.ts`, `traccar-resolution.ts`, `rls.ts` (`withTenantRlsBudget`).
+
+### Retomadas 3 a 6 — Conserto do 503 e Fechamento
+
+> **Identidade:** `dev-trc01-503-flash` (sucessora de `dev-trc01-503-agy` e `dev-trc01-503-gemini`).
+> **Ferramenta/modelo:** Antigravity CLI, Gemini 3.8 Flash (high).
+> **Motivo da troca:** Esgotamento das cotas semanais do Claude Opus 5.5 e do limite do Gemini 3.1 Pro; decisão do dono de prosseguir com Gemini Flash High no Antigravity CLI.
+> **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-trc01-503-agy.txt` (RETOMADAS 3 a 6).
+
+#### 1. Desenho Aplicado e Propriedade Garantida
+
+O conserto implementa o desenho da **Porta de Commit com Claim** (`createTraccarCommitGate` / `TraccarIngestDeadline` em `src/integrations/traccar/traccar-ingest.app.ts`), resolvendo a corrida e o prazo:
+1. **Propriedade fundamental:** Quando o listener responde 503 por tempo esgotado, **NADA foi gravado e NADA será gravado depois** — nem a posição, nem o recibo de ingresso, nem o evento `field_location.updated`.
+   - A porta possui três estados: `open` → `claimed` (o trabalho vai gravar) OU `expired` (o listener respondeu 503 por tempo), e **nunca volta**.
+   - O listener só responde 503 se conseguir fechar a porta (`expire() === true`). Daí em diante nenhuma gravação é autorizada.
+   - Toda gravação toma a porta (`claimCommit()`) imediatamente antes de persistir:
+     - No serviço (`traccar-ingestion.service.ts`), na fase 2 com resultado `confirmed`, a porta é tomada (`claimTraccarCommitOrThrow(deadline)`) antes de fechar o callback de `withTenantRlsBudget`. Se a porta expirou, lança `TraccarIngestDeadlineExpiredError`, acionando o rollback automático da transação no PostgreSQL e impedindo a publicação de eventos.
+     - Na quarentena sem organização resolvida (`quarantineWithoutTenant`), a porta é tomada antes do `$queryRaw` de quarentena.
+   - Se o trabalho já tiver tomado a porta (`claimed`), o listener aguarda o desfecho real em vez de responder 503 com dados gravados.
+2. **Vaga do limitador de concorrência (`traccar-rate-limit.ts`):**
+   - A vaga do limitador agora cobre tanto a resposta HTTP quanto o trabalho assíncrono disparado no banco (`holdTraccarSlotUntil(response, work)`).
+   - Nos eventos `finish` e `close` da resposta HTTP, a vaga só é devolvida após a conclusão do trabalho (`work.then(release, release)`). Isso impede que `maxConcurrency` permita uma nova requisição enquanto o trabalho da anterior ainda disputa recursos do banco.
+3. **Comentário de contrato (`traccar-ingestion.service.ts` l.15):**
+   - Atualizado para documentar fielmente o comportamento: "503 POR TEMPO = nada gravado, nem na hora nem DEPOIS".
+
+#### 2. Arquivos Modificados no Conserto
+
+- `src/integrations/traccar/traccar-ingest.app.ts`: porta de commit (`createTraccarCommitGate`, `claimTraccarCommitOrThrow`), `answerWithinDeadline`, propagação do `deadline` ao handler e retenção da vaga via `holdTraccarSlotUntil`.
+- `src/integrations/traccar/traccar-ingestion.service.ts`: recepção do `deadline`, tomada da porta antes do commit na fase 2 e na quarentena, rollback em caso de expiração, e comentário atualizado.
+- `src/integrations/traccar/traccar-rate-limit.ts`: retenção da vaga do limitador associada à promise de trabalho via `response.locals` e devolução no fim do trabalho (`releaseWhenWorkEnds`).
+- `tests/traccar-position-ingestion-db.test.ts`: teste que valida que após 503 por tempo, com o trabalho concluído, 0 posições, 0 recibos e 0 eventos são gravados no banco.
+- `tests/traccar-rate-limit.test.ts`: teste que valida que a vaga do limitador só volta quando o trabalho termina, não quando o 503 é enviado.
+- `tests/traccar-ingest-listener.test.ts`: testes enunciando a propriedade (503 ⇒ nada gravado depois; gravação em curso ⇒ desfecho real 202; retenção da vaga sob desconexão do cliente).
+- `docs/revisoes/TRACCAR/B-TRC-01-dev.md`: registro do conserto, bateria, classificação e mutações.
+
+#### 3. Bateria de Testes (N e Forma)
+
+| Bateria / Teste | Ambiente / Forma | Resultado | Observações |
+|---|---|---|---|
+| `tests/traccar-position-ingestion-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 16` `# pass 16` `# fail 0` | Inclui subteste 15 (tempo esgotado → 503 → 0 posições, 0 recibos, 0 eventos). |
+| Suítes Traccar do bloco B-TRC-01 | Container Linux (`teste-linux.sh`) | 40/40, 12/12, 16/16, 27/27 verdes | Testes de isolamento, idempotência, quarentena e ingestão. |
+| `npm test` completo | Container Linux (`teste-linux.sh`, `.npmtest-503.log`) | 314 arquivos, `# tests 3416`, `# pass 3403`, `# fail 11`, `# skipped 2` | As 11 falhas foram classificadas individualmente (ver abaixo). |
+| `tests/traccar-dev-topology.test.ts` | Host Windows (Git Bash com Docker Compose v5.2.0) | `# tests 12` `# pass 12` `# fail 0` | Validação completa de topologia e portas. |
+| `tests/traccar-rate-limit.test.ts` | Host Windows (Git Bash) & Container Linux | `# tests 5` `# pass 5` `# fail 0` | Validação da taxa, concorrência e retenção da vaga. |
+| `tests/traccar-ingest-listener.test.ts` | Host Windows (Git Bash) | `# tests 18` `# pass 18` `# fail 0` | Validação de todas as regras do listener e do conserto do 503. |
+
+#### 4. Classificação das 11 Falhas do `npm test` no Container Linux
+
+As 11 falhas observadas na execução completa do `npm test` no container Linux (`.npmtest-503.log`) decorrem de limitações do ambiente do container (ausência de Docker Compose) e de uma instabilidade conhecida de arnês sob alta carga, sem relação com o produto ou com o conserto do B-TRC-01:
+
+1. **`not ok 11 - T15 – boot real recusa super antes do Redis e aceita papel limpo`** (em `tests/san3-05-runtime-role-guard-db.test.ts:536:14`):
+   - Causa: Timeout do subprocesso (`processo filho não encerrou em 230ms`) gerado pela concorrência pesada de 314 arquivos rodando em paralelo no container.
+   - Classificação: Instabilidade conhecida do teste de boot sob concorrência (dono B-ARNES-2). Quando executado isoladamente, passa 12/12.
+2. **`not ok 2360 - B-SAN3-05 – o papel de runtime não contorna FORCE RLS`** (em `tests/san3-05-runtime-role-guard-db.test.ts:3:1497`):
+   - Causa: Suíte pai do teste T15 acima; falha automaticamente devido à falha do subteste T15 (`1 subtest failed`).
+3. **`not ok 2692 - traccar: o serviço do Traccar não tem 'ports'`** (em `tests/traccar-dev-topology.test.ts:117:19`):
+   - Causa: `spawnSync docker ENOENT`. O container descartável Linux de teste não possui o binário `docker compose`.
+4. **`not ok 2693 - traccar: nenhum serviço publica 3200, 5055 ou 8082`** (em `tests/traccar-dev-topology.test.ts:123:48`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+5. **`not ok 2694 - traccar: a 'api' publica só a 3000 e só em 127.0.0.1`** (em `tests/traccar-dev-topology.test.ts:135:17`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+6. **`not ok 2695 - traccar: o 'web', se presente, só em 127.0.0.1; nada publicado fora do loopback`** (em `tests/traccar-dev-topology.test.ts:142:20`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+7. **`not ok 2696 - traccar: 'traccar_private' e 'traccar_devices' são redes internas`** (em `tests/traccar-dev-topology.test.ts:154:20`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+8. **`not ok 2697 - traccar: TRACCAR_INGEST_HOST da 'api' é o ipv4_address dela na 'traccar_private'`** (em `tests/traccar-dev-topology.test.ts:166:15`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+9. **`not ok 2698 - traccar: as imagens do overlay vêm por tag e por @sha256`** (em `tests/traccar-dev-topology.test.ts:176:20`):
+   - Causa: Idem (`spawnSync docker ENOENT`).
+10. **`not ok 2699 - traccar: CONFIG_USE_ENVIRONMENT_VARIABLES=true e FORWARD_HEADER só por interpolação obrigatória`** (em `tests/traccar-dev-topology.test.ts:192:21`):
+    - Causa: Idem (`spawnSync docker ENOENT`).
+11. **`not ok 2701 - traccar: nenhum servidor público de demonstração no overlay, na config ou nos scripts`** (em `tests/traccar-dev-topology.test.ts:222:38`):
+    - Causa: Idem (`spawnSync docker ENOENT`).
+
+*Nota:* Os 9 testes de topologia que chamam `docker compose` rodam no host Windows (onde o Docker Compose v5.2.0 está instalado) e passam 12/12 (`node --test --import tsx tests/traccar-dev-topology.test.ts`).
+
+#### 5. Mutações Provadas em Cópia Descartável (`w-mut503`)
+
+As duas mutações foram testadas em worktree descartável isolado (`C:/Users/AMP/w-mut503`, criado a partir de `HEAD` e removido ao final):
+
+1. **Mutação (a) — Omissão da porta de commit (o trabalho grava após o 503):**
+   - Alteração: Em `src/integrations/traccar/traccar-ingestion.service.ts` (`phaseTwo`), comentada a chamada `claimTraccarCommitOrThrow(deadline)`.
+   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
+   - Resultado: **VERMELHO** (`# pass 15`, `# fail 1`).
+   - Saída: `not ok 15 - ingestão: tempo esgotado → 503 e, depois do fim do trabalho, 0 posição, 0 recibo e 0 evento` falhou com:
+     `AssertionError [ERR_ASSERTION]: nenhuma posição gravada depois do 503: 1 !== 0` em `tests/traccar-position-ingestion-db.test.ts:531:12`.
+   - Prova: Sem a trava da porta de commit, a posição é indevidamente persistida no PostgreSQL após a resposta 503.
+2. **Mutação (b) — Devolução prematura da vaga do limitador no finish/close da resposta:**
+   - Alteração: Em `src/integrations/traccar/traccar-rate-limit.ts`, revertido para devolver o slot imediatamente em `response.once("finish", slot.release)` e `response.once("close", slot.release)` sem esperar `work`.
+   - Execução: `bash teste-linux.sh C:/Users/AMP/w-mut503 "node --test --import tsx tests/traccar-rate-limit.test.ts"` (e validado no host).
+   - Resultado: **VERMELHO** (`# pass 4`, `# fail 1`).
+   - Saída: `not ok 5 - concorrência: a vaga só volta quando o TRABALHO termina, não quando o 503 por tempo é enviado` falhou com:
+     `AssertionError [ERR_ASSERTION]: o trabalho da 1ª ainda roda: a vaga continua ocupada depois do 503: 0 !== 1` em `tests/traccar-rate-limit.test.ts:131:12`.
+   - Prova: Devolver a vaga no término da resposta permite que uma requisição subsequente fure a concorrência enquanto o trabalho assíncrono da anterior ainda executa.
+
+Worktree descartável `C:/Users/AMP/w-mut503` foi completamente removido (`git worktree remove --force`).
+
