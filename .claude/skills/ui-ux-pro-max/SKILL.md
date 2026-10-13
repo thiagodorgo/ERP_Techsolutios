@@ -155,3 +155,15 @@ Flutter (quando aplicável):
 - [ ] Estados offline/fila de sync visíveis e testados
 - [ ] Sem emoji como ícone; família única de ícones
 - [ ] reduced-motion e escala de fonte do sistema sem quebra de layout
+
+## Regras do dono para toda tela (CLAUDE.md §4, itens 6 e 7)
+- **Padrão de painel com lista (`D-PADRAO-BLOCOS-CLICAVEIS`, 2026-10-12):**
+  - indicadores e blocos de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e removível;
+  - linha de UMA linha (até 44 px), sem botão de ação;
+  - o clique na linha abre o detalhe embaixo dela, com as propriedades e as ações, um aberto por vez.
+  - Referência: `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
+- **3 opções antes do dev (`D-TELAS-TRES-OPCOES`, 2026-10-13):**
+  - toda tela nova ou refeita nasce de uma maquete com 3 opções (A, B, C) no padrão do sistema, com um quadro de notas fora da tela;
+  - o dono escolhe, e a escolhida vira a referência em `screen-refs/`;
+    - [ ] o plano cita a opção escolhida;
+    - [ ] a tela pronta é conferida contra ela.

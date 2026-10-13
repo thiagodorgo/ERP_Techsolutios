@@ -192,7 +192,7 @@ o `B-GOV-GUARD-DERIVADOS`. **`Ω6R-DIN-005` e `Ω6R-DIN-007`** fecharam na
 | Papel de banco da produção | trava de boot e procedimento (`B-SAN3-05`) | criar o papel `NOSUPERUSER NOBYPASSRLS` no banco gerenciado e trocar o secret — os itens 9 e 10 só fecham com a trava verde no ambiente |
 | 1º admin real | script testado (`B-SAN3-09`) | executá-lo em produção |
 | Portal público (`Ω6R-PERF-003`) | a condição escrita no roteiro | expor em container separado, ou não expor |
-| Provedor | nada muda sem decisão | Fly × AWS (§10.2) |
+| Provedor | nada muda sem decisão | **decidido: AWS** (dono, 2026-10-13, `D-INFRA-PROVIDER-AWS`); antes, Fly × AWS (§10.2) |
 
 ### 4.3 Fora do gate — com a condição medida de cada um
 

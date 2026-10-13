@@ -420,6 +420,8 @@
   (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.
 
 ## D-INFRA-PROVIDER — Fly.io (gru/São Paulo) 1º · AWS 2º (2026-07-13) [Ω-INFRA-1, junta J-SAN-4 5/5]
+> **SUBSTITUÍDA em 2026-10-13 por `D-INFRA-PROVIDER-AWS`** (decisão do dono: *"o provedor é o aws"*), registrada no
+> "Registro de 13/10/2026 (madrugada)" deste arquivo. O texto abaixo fica como histórico.
 - Decisão (junta de 5 UNÂNIME, pré-autorizada por D-SAN-AUTONOMIA; PD-INFRA-1 em docs/omega-pd.md): provedor de
   deploy = **Fly.io, região gru (São Paulo)**; fallback pré-aprovado = **AWS (Lightsail→RDS/ECS, sa-east-1)**.
   Racional: única dupla com região BR real; Fly vence por menor lock-in (imagem OCI + fly.toml; sair = pg_dump +
@@ -2297,7 +2299,7 @@ código, a **unanimidade de 3** (§C7.1-ter(b)).
 
 ### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
 
-`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+(**substituída em 2026-10-13 por `D-INFRA-PROVIDER-AWS`: o provedor é a AWS**) `D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
 como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
 nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
 não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na
@@ -3530,3 +3532,55 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     parar.
   - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
     bloco que já estava no plano.
+
+## Registro de 12/10/2026 (noite) — padrão de painel com lista, executores e teto da API
+
+- **`D-PADRAO-BLOCOS-CLICAVEIS` (decisão do dono, 2026-10-12).** Nas palavras do dono: *"a ultima tela do biling foi
+  aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*.
+  - **Onde ficou escrito:** CLAUDE.md e AGENTS.md, §4 item 6; a referência é
+    `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`, indexada no `screen-refs/README.md` no lugar
+    de `financeiro.png`.
+  - **O padrão:** indicador e bloco de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e
+    removível; linha de uma linha só (até 44 px), sem botão de ação; o clique na linha abre o detalhe embaixo dela,
+    com as propriedades e as ações, um por vez.
+  - **Como a tela nasceu:** a especificação veio da API (`spec-financeiro`, US$ 1,77). O Gemini 3.8 Flash montou três
+    opções: A por abas, B pelo resultado do mês, C por OS. O dono pediu *"uma junção de a com b, com blocos clicaveis e
+    linhas menores com tamanho de 1 linha sendo essas linhas clicaveis abrindo os detalhes de cada linha"*. Um
+    verificador automático conferiu, no navegador:
+    - cada bloco abre a aba certa, com o filtro;
+    - as linhas têm até 44 px, sem ação dentro;
+    - o detalhe abre, fica um aberto por vez e o Enter fecha;
+    - não há rolagem lateral a 1440 nem a 1280 px.
+  - **Pergunta ao dono, aberta (§A2):** as telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (Dashboard, Ordens de
+    Serviço, Usuários, Auditoria, Pátios), cujas linhas levam a uma página de detalhe, migram para o padrão novo? Até a
+    resposta, ficam como estão.
+- **Executores (decisão do dono, 12/10 ~23:45Z):** *"o gemini pro foi gasto o seu limite, cancele a busca. vamos usar
+  agora, api claude, antgravity com gemini flash higt, codex sol 5.6"*.
+  - **Divisão de papéis em uso, proposta pelo orquestrador e ainda não confirmada pelo dono:**
+    - Codex GPT-5.6 Sol: cadeiras, inspetor, porteiro e dev de bloco de risco;
+    - Gemini 3.8 Flash: dev fora de gate e maquete, nunca jurado;
+    - API: plano, crítica e revisão. O agente tem o Opus 5.5 fixo no código, então o plano sai em Opus, com a
+      substituição do Fable declarada no próprio plano.
+  - **Medido em 12/10:**
+    - o limite semanal do Codex é da conta: às 23:3xZ o `gpt-6.1-sol` e o `gpt-6-sol` deram o mesmo "usage limit";
+    - à 00:0xZ de 13/10, o `gpt-5.6-sol` voltou a responder;
+    - o catálogo do Codex agora tem o `gpt-6.1-sol`; trocar o padrão para ele é pergunta ao dono.
+- **Teto da API (dono, 13/10 ~01:30Z):** *"a api claude hoje, nas proximas 1:30 hora tera um limite de 15 uss"*. O
+  agente não tem teto diário no código: o teto é a soma dos `-MaxUsd` das execuções lançadas na janela.
+
+## Registro de 13/10/2026 (madrugada) — provedor AWS e 3 opções por tela
+
+- **`D-INFRA-PROVIDER-AWS` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"o provedor é o aws, documente , memorize e difunda"*.
+  - **Substitui** a `D-INFRA-PROVIDER` (2026-07-13, junta J-SAN-4 5/5: Fly.io 1º, AWS 2º). Confirma como definitiva a direção que a `D-TRC-DECISOES-DO-DONO-2026-10-11` (D2 = a, ERP inteiro na AWS) já tinha dado.
+  - **Difundida em:** `PROJECT_MEMORY.md`, `docs/demo-credentials.md`, `PLANO_SAN3.md` §4.2 (linha "Provedor") e na nota da `P-TRC-AWS-ESTUDO-MIGRACAO`. Essa pendência passa de "se" para "como": custo, etapas e o destino dos `fly.*.toml`.
+  - **O que NÃO muda:** os `fly.*.toml` e o resto da config da Fly ficam inertes, e não são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção seguem exigindo a junta de 5 unânime (§C7.1). O `B-AV-REAL` usa o desenho AWS da PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`), e não o `fly.clamav.toml`.
+- **`D-TELAS-TRES-OPCOES` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em toda tela que sair pronta eu quero tres opções para aprovar"*.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md, §4 item 7, e um item novo na DoD do §10; nas skills `ts-frontend-full` e `ui-ux-pro-max` (`.claude/` e `.agents/`); e no `screen-refs/README.md`.
+  - **A regra:** toda tela nova ou refeita passa por uma maquete com 3 opções (A, B, C), no padrão do sistema, com um quadro de notas fora da tela. O dono escolhe, ou pede a mistura, e a escolhida vira a referência em `screen-refs/`.
+  - **Leitura do orquestrador, declarada (§A6):** as opções vêm ANTES do dev, e a tela pronta é conferida contra a escolhida. Se o dono quiser as opções também depois da tela pronta, isto se corrige numa linha.
+  - **Agora:** as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) ganham 3 opções cada, montadas pelo Gemini 3.8 Flash (maquete, fora de gate) e conferidas por verificador automático.
+- **Revisão do #428 (API, `aprovado_com_ressalvas`):**
+  - o §11 ganhou a exceção do Financeiro;
+  - o `README` do screen-refs diz que a referência usa fontes do Google;
+  - o paginador da maquete diz "1–12 de 12" desde a abertura;
+  - o merge espera o CI verde.

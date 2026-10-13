@@ -10826,6 +10826,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-DECISOES-DO-DONO-2026-10-11` item 2 · **dono:** o orquestrador (estudo de custo pelo agente da API com pesquisa; tamanho da migração medido por um Codex).
 - **bloqueia:** o B-TRC-06 (staging na AWS). Não bloqueia do B-TRC-01 ao 05.
 - **teste de encerramento:** o estudo (custo mensal estimado ERP + Traccar na AWS × hoje; tamanho e etapas da migração; riscos) registrado e a decisão do dono sobre contratar, antes do B-TRC-06.
+- **nota (2026-10-13, `D-INFRA-PROVIDER-AWS`):** o dono fixou a AWS como provedor: *"o provedor é o aws"*. O estudo deixa de responder SE e passa a responder COMO: custo, tamanho e etapas da migração, e o destino dos `fly.*.toml`, que ficam inertes e NÃO são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção continuam exigindo a junta de 5 unânime (§C7.1).
 
 ## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
 

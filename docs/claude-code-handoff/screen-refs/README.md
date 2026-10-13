@@ -21,6 +21,14 @@
 **Padrão-ouro (HTML):** `Cloud Billing.reference.html` é a única tela também exportada como
 **HTML estático isolado** — use-a como exemplo do nível de fidelidade esperado em todas as demais.
 
+**Padrão aprovado de painel com lista (HTML):** `financeiro-ab.reference.html`, a tela do Financeiro aprovada pelo
+dono em 2026-10-12 (`D-PADRAO-BLOCOS-CLICAVEIS`, CLAUDE.md §4 item 6): indicadores e blocos de resumo clicáveis que
+filtram a lista, linhas de uma linha, detalhe que abre embaixo da linha. É a referência do Financeiro no lugar de
+`financeiro.png`. A seção escura no rodapé ("camada de revisão") é nota para o dono, não faz parte da tela, e os
+números são de exemplo. A página carrega as fontes do Google Fonts; sem rede, cai na fonte do sistema.
+
+**Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.
+
 ---
 
 ## ERP Web — 35 telas · fonte `ERP Web.dc.html`
@@ -76,7 +84,7 @@ Navegação no protótipo: estado `screen` (+ `role`, que define a sidebar). Agr
 ### Financeiro · `role: finance`
 | Arquivo | Tela | `screen` |
 |---|---|---|
-| `financeiro.png` | Financeiro | `financeiro` |
+| `financeiro.png` *(substituído por `financeiro-ab.reference.html`)* | Financeiro | `financeiro` |
 | `cobrancas.png` | Cobranças | `charges` |
 | `faturas.png` | Faturas | `invoices` |
 | `pagamentos.png` | Pagamentos | `payments` |
