@@ -121,5 +121,5 @@ Cada achado: severidade, arquivo/trecho, impacto, correção, teste.
   - o dono aprova, e a aprovada vira a referência em `screen-refs/`. Desde 2026-10-14 (`D-APARENCIA-POR-USUARIO`), as 3 aprovadas ficam TODAS, como aparências que cada usuário escolhe em Configurações;
   - a maquete é feita pelo Claude, nunca pelo Gemini (`D-DESIGN-SO-CLAUDE`, 2026-10-13);
   - a tela implementada SAI com as 3 aparências, não só com uma (`D-TELAS-SAEM-COM-TRES`, 2026-10-14); o seletor em Configurações (`P-APARENCIA-POR-USUARIO`) vem antes ou junto da primeira;
-    - [ ] o plano cita a opção escolhida;
-    - [ ] a tela pronta é conferida contra ela.
+    - [ ] o plano cita as 3 opções aprovadas (a referência em `screen-refs/`);
+    - [ ] a tela pronta é conferida contra cada uma delas.
