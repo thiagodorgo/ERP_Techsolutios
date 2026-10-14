@@ -109,3 +109,15 @@ Cada achado: severidade, arquivo/trecho, impacto, correção, teste.
 - [ ] Zero número inventado: todo KPI ligado a endpoint real
 - [ ] Nenhuma dependência nova sem aprovação
 - [ ] Testes proporcionais ao risco (cota 150% do prompt em execução)
+
+## Regras do dono para toda tela (CLAUDE.md §4, itens 6 e 7)
+- **Padrão de painel com lista (`D-PADRAO-BLOCOS-CLICAVEIS`, 2026-10-12):**
+  - indicadores e blocos de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e removível;
+  - linha de UMA linha (até 44 px), sem botão de ação;
+  - o clique na linha abre o detalhe embaixo dela, com as propriedades e as ações, um aberto por vez.
+  - Referência: `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
+- **3 opções antes do dev (`D-TELAS-TRES-OPCOES`, 2026-10-13):**
+  - toda tela nova ou refeita nasce de uma maquete com 3 opções (A, B, C) no padrão do sistema, com um quadro de notas fora da tela;
+  - o dono escolhe, e a escolhida vira a referência em `screen-refs/`;
+    - [ ] o plano cita a opção escolhida;
+    - [ ] a tela pronta é conferida contra ela.

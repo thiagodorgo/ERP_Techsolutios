@@ -43,6 +43,9 @@ demo), o `operator` ganhando `field_location:read` para operar o mapa, e o sideb
 
 ## Staging (Fly.io/gru — Ω-INFRA-2, config-as-code)
 
+> **O provedor mudou (2026-10-13, `D-INFRA-PROVIDER-AWS`):** o provedor é a AWS. O staging na Fly descrito abaixo é
+> configuração antiga e inerte; o staging novo nasce na AWS (B-TRC-06 e `P-TRC-AWS-ESTUDO-MIGRACAO`).
+
 O CD `deploy-staging.yml` roda `db:seed:demo` no banco de staging a cada push na `main` (gated por
 `STAGING_DEPLOY_ENABLED=true`), então os **mesmos usuários/senha acima** valem no staging. A **URL do staging**
 (`https://erp-techsolutions-web-staging.fly.dev` ou domínio próprio) entra aqui após o primeiro deploy verde —
