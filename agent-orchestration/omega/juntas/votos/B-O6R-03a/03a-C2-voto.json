@@ -1,0 +1,94 @@
+{
+  "jurado": "jurado-o6r03a-v2-replay-cdx2",
+  "cadeira": "C2 — replay e prova por ator",
+  "ciclo": 1,
+  "modelo": "GPT-5.6 Sol",
+  "esforco": "medium",
+  "fast": false,
+  "nivel_contratual": "menor (§C7.6)",
+  "objeto": "b75a0c2e96a80b2f54cc629fe856d16660ccbe86",
+  "pr": 425,
+  "bloco": "B-O6R-03a",
+  "mandato_md5_cru": "a29a5283c316fab588401c86eb51aed9",
+  "corpo_md5_eol_neutro": "8ef06bc866bef9987f28e32c4b70b213",
+  "parecer_inspetor": "LIBERADO COM RESSALVA",
+  "legalidade": {
+    "git_head": "b75a0c2e96a80b2f54cc629fe856d16660ccbe86",
+    "gh_head": "b75a0c2e96a80b2f54cc629fe856d16660ccbe86",
+    "pr_state": "OPEN",
+    "draft": false,
+    "mergeable_observado_no_fechamento": "CONFLICTING",
+    "check_runs_total": 14,
+    "check_runs_incompletos": 0,
+    "check_runs_nao_verdes": 0,
+    "observacao": "O estado CONFLICTING surgiu externamente sem mover o head; a cadeira julgou exclusivamente o SHA fixado, com todos os check-runs concluídos e verdes."
+  },
+  "sucessao_p3": {
+    "ocupante": 3,
+    "evidencia_anterior_lida_integralmente": true,
+    "comandos_registrados_reexecutados": true,
+    "item_1_comparacao": "Coincidência material com os dois ocupantes anteriores; denominadores completos foram obtidos após repetir duas quedas transitórias npm ECONNRESET.",
+    "conclusoes_sem_comando_usadas": false
+  },
+  "itens": [
+    {
+      "item": 1,
+      "tema": "legado, namespace, rollout/rollback e M11/M12/M13",
+      "veredito": "VERDE",
+      "medicao": "Legado real de 7 formas criado pelo binário anterior; 42 replays cruzados sem escrita; 18 estados adversariais sem escrita; gerador próprio com 258 ids, 173 normalizados distintos e zero colisão/inversão; A11c 0/3 capturas; reinício preserva idempotência. O rollback para writer antigo relança e dobra, confirmado como risco já atribuído à publicação sem writer antigo, não defeito criado pelo bloco.",
+      "mutacoes": "7/7 detectadas: M11 +7 efeitos, M11′ +5, M11″ +2, M13 +14, M16 +7 efeitos e 14 refs vazados, M12 f4=165/f5=5 e 3/3 capturas, M18 segundo efeito após reinício.",
+      "achado_bloqueante": false
+    },
+    {
+      "item": 2,
+      "tema": "identidade da prova, dono A3′/B1′, A12′/A12b/A13 e M10 isolada/combinada",
+      "veredito": "VERDE",
+      "medicao": "Serviço Postgres/RLS e HTTP real provaram conflict/action_owned_by_other_actor para outro ator, resultRef nulo e zero efeito; prova de evento errada ou nula falhou fechada; cada identidade e campo consumido altera o hash; agregado divergente falha como payload_mismatch; forma de ator em caixa alta também falha fechada.",
+      "mutacoes": "8/8 detectadas: M10c, M10i, C3mut, M15, M17, M17+M10c, FIXdev e A13mut; todas restauradas com hash igual ao blob e árvore limpa.",
+      "achado_bloqueante": false
+    },
+    {
+      "item": 3,
+      "tema": "contrato HTTP, normalização e códigos 400/403/404/409/422/503",
+      "veredito": "VERDE COM AJUSTE",
+      "medicao": "Forma 200 de novo/replay/conflito, recibo imutável, 403, 404 de work order sem capturar FK alheia, 409, 422 e 503 sync_busy foram reproduzidos. Entradas 400 não abriram transação; lote confirmou commit por ação; normalização e todos os campos consumidos foram exercidos; runtime e contrato têm as mesmas cinco razões de conflito, todas observadas. Lock real retornou 503 sem efeito parcial e o retry processou uma única vez.",
+      "mutacoes": "7/7 detectadas: m8, A4hash, A4field, A10mut, A7bmut, A7bwide e A9mut; todas restauradas com hash igual ao blob e árvore limpa.",
+      "achado_bloqueante": false
+    }
+  ],
+  "achados": [
+    {
+      "id": "C2-AJ-01",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Mutação NEWTYPE aplicada ao enum EXPENSE_SYNC_ACTION_TYPES no objeto julgado.",
+      "defeito": "A inclusão de expense_report.delete no enum deixou npm run check, T-A 24/24 e T-B/C 23/23 verdes. O runtime recusou 400/unsupported_action e o instantâneo permaneceu idêntico: há falha fechada operacional, mas a expansão do enum não é denunciada antecipadamente pelo build/teste.",
+      "impacto": "Não houve autorização indevida, escrita, efeito financeiro nem perda de dado; por isso o achado não exerce veto."
+    }
+  ],
+  "controles_vermelhos": {
+    "item_1": "Legado classificado de modo próprio; M11/M12/M13 produziram os efeitos proibidos esperados.",
+    "item_2": "M17+M10c processou sob outro ator; hash-controle distinguiu cada campo.",
+    "item_3": "m8 distinguiu ordem recursiva; A10mut abriu transação indevida; A7bmut/A7bwide confundiram classes de FK; A9mut removeu o 503 contratual."
+  },
+  "ambiente": {
+    "base_viva_tocada": false,
+    "portas_proibidas_tocadas": false,
+    "cluster": "PostgreSQL 16 descartável j03a-c2-pg em 127.0.0.1:60072, papel runtime NOSUPERUSER/NOBYPASSRLS/NOINHERIT.",
+    "suites_db": "Sempre pelo teste-linux.sh em contêiner Linux isolado.",
+    "worktree_proprio": "C:/Users/AMP/w-j03a-c2",
+    "restauro_final": "Status limpo antes da remoção; worktree removido; container removido; zero recurso com prefixo C2.",
+    "disco_livre_final_gib": 25.84
+  },
+  "pendencias_aceitas": [
+    "P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO: o binário antigo relança diante da K2t; risco pré-existente e deliberadamente fora do mérito corretivo deste bloco.",
+    "P-SAN3-05-T15-TETO-DE-RELOGIO, dono B-ARNES-2: tentativa CI anterior instável; tentativa 2 e push passaram, e 14/14 check-runs do objeto estão concluídos e verdes.",
+    "O PR passou a aparecer CONFLICTING contra a main durante a junta, sem alteração do head; não altera o mérito do SHA julgado."
+  ],
+  "criterios_nao_mensuraveis": [],
+  "voto": "APROVADO",
+  "veto": false,
+  "justificativa": "Os três itens do mandato foram medidos por execução independente, inclusive replay por ator, legado real, prova adulterada, códigos HTTP, lock concorrente, Postgres/RLS e 22 mutações no total. Nenhuma mutação permaneceu viva e nenhum caminho medido abriu escrita financeira, autorização cruzada ou perda de dado no objeto. O único ajuste é a ausência de denúncia antecipada para NEWTYPE, cujo runtime permaneceu fail-closed e sem escrita.\nVOTO: APROVADO",
+  "finalizado_utc": "2026-10-13T22:26:33Z",
+  "evidencia": "C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C2-evidencia.md"
+}

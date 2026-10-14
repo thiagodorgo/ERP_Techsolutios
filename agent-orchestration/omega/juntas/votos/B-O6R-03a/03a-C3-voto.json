@@ -1,0 +1,59 @@
+{
+  "jurado": "jurado-o6r03a-v2-regressao-cdx2",
+  "sucessao": "terceiro ocupante da C3; sucessor P3 com identidade nova",
+  "cadeira": "C3 — regressão, escopo e registro — ciclo 1",
+  "modelo": "GPT-5.6 Sol · esforço medium · sem Fast · nível menor",
+  "mandato_md5": "182184fa7a3a880fbc618bffd0c92e20",
+  "corpo_md5_eol_neutro": "1fdfb5c1108376ebdcc4f49b102166e9",
+  "objeto": "b75a0c2e96a80b2f54cc629fe856d16660ccbe86",
+  "pr": 425,
+  "ciclo": 1,
+  "voto": "APROVADO",
+  "gravidade": "sem bloqueante dentro-do-bloco",
+  "escopo": "dentro-do-bloco medido; pendências aceitas classificadas como pre-existentes com origem",
+  "itens": {
+    "legalidade": {
+      "veredito": "VERDE",
+      "evidencia": "head resolvido por git e gh; 14 check-runs completed/success; corpo e mandato conferidos por md5"
+    },
+    "item1_regressao_banco_ci": {
+      "veredito": "VERDE",
+      "evidencia": "baseline 3298/3296/0/2; objeto repetido 3339/3337/0/2; 41 testes novos sem título removido; T-A 24/24 três vezes; T-B 14/14; T-C 9/9; forma backend-postgres 339/339 três vezes"
+    },
+    "item2_escopo_mutacoes": {
+      "veredito": "VERDE",
+      "evidencia": "33 caminhos, zero caminho proibido; 36/36 especificações aplicáveis; 34 mutantes mortos e m1/m6 sobreviventes previstos; controles m9b/M14/M14r vermelhos"
+    },
+    "item3_registro_numeros": {
+      "veredito": "VERDE",
+      "evidencia": "pendências e passo 0 presentes; guard limpo 6/6 e adulteração acusada; zero diff Kpis; 108 migrações existentes e zero nova; PR não inventa approved_head/merge_commit"
+    }
+  },
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [
+    "nenhum teste anterior removido",
+    "T-A executado em Postgres descartável três vezes com zero skip",
+    "34 mutantes exigidos mortos e dois sobreviventes previstos",
+    "nenhum caminho proibido, KPI ou migração novo",
+    "registro coerente e controle adversarial do guard vermelho"
+  ],
+  "pendencias_que_aceito": [
+    {
+      "id": "P-SAN3-05-T15-TETO-DE-RELOGIO",
+      "escopo": "pre-existente",
+      "dono": "B-ARNES-2",
+      "evidencia": "arquivo não tocado pelo bloco; passou isolado 3x e na repetição integral; pendência anterior ao bloco"
+    },
+    {
+      "id": "P-O6R-ARNES-ISOLAMENTO",
+      "escopo": "pre-existente",
+      "dono": "bloco próprio ainda não aberto",
+      "evidencia": "resíduo somente após SIGKILL/timeout 1; pendência de 2026-08-18 documenta ausência de varredor"
+    }
+  ],
+  "notas_nao_bloqueantes": [
+    "Sem DATABASE_URL, T-A declara skip; o guard do backend-postgres e o Guard required env recusam esse estado, e com URL fechada a suíte falha 24/24."
+  ],
+  "teardown": "CONCLUÍDO — worktree C:/Users/AMP/w-j03a-c3 removido limpo; nenhum container tl* ativo; head remoto selado sem mudança",
+  "evidencia": "C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C3-evidencia.md"
+}

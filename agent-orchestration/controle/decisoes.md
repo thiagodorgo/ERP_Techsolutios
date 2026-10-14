@@ -3533,6 +3533,27 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
     bloco que já estava no plano.
 
+## Registro de 11/10/2026 (noite) — B-O6R-03a: passo 0 da emenda v3 (conflitos de fonte, §A2)
+
+Este registro é do orquestrador, e a emenda v3 (`docs/revisoes/SAN3/B-O6R-03a-EMENDA-v3.md`, l.80) o exige antes do merge.
+A decisão do dono que o fundamenta é a `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, registrada acima.
+
+1. **`PLANO_SAN3.md:243` × a decisão do dono.** O critério "2 usuários com a mesma chave local → 2 lançamentos" é
+   SUBSTITUÍDO, no 03a, por "a mesma ação vale uma vez e pertence a quem a enviou primeiro; outro ator recebe conflito".
+   Vale a decisão do dono (§A1.1). O §6 do `CLAUDE.md` continua compatível: idempotência por organização + usuário +
+   `client_action_id`, com resolução manual dos conflitos.
+2. **Runbook A × o 03a.** O Runbook A (`docs/deployment.md:243-253`) define o rollback como redeploy simétrico da
+   imagem anterior, e a trava (c) do CD (`.github/workflows/deploy-production.yml:34-38,109-121`) segue a mesma lógica.
+   **Isso não vale através da fronteira do 03a.** O binário anterior, diante de um recibo com a chave nova, lança de
+   novo: o drill 3a do dev mediu a ida de 1 para 2 relatórios.
+   - **Até o `docs/deployment.md` ser emendado:** voltar para uma imagem anterior ao 03a só com a API parada, ou por
+     fix-forward. Publicar o 03a exige drenar e substituir todas as réplicas antes de reabrir o sync de despesas.
+   - **Dono:** `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`, que bloqueia a ativação em produção e não o desenvolvimento.
+3. **Quem implementou:** o dev do 03a rodou no Claude Opus 5.5 (`dev-03a-claude`), cobrindo o Codex, que estava no
+   limite. Ele retomou o relatório do dev do Codex (P3). O relatório registra um incidente do próprio dev: uma rodada de
+   mutação em paralelo contaminou dois arquivos. O incidente foi desfeito e conferido por sha256 (13/13; seção R11a do
+   relatório). A junta deve saber disso.
+
 ## Registro de 12/10/2026 (noite) — padrão de painel com lista, executores e teto da API
 
 - **`D-PADRAO-BLOCOS-CLICAVEIS` (decisão do dono, 2026-10-12).** Nas palavras do dono: *"a ultima tela do biling foi

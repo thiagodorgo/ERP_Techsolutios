@@ -1,25 +1,48 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import {
+  SyncActionAlreadyClaimedError,
+  findCompatibleSyncReceipts,
+  isSyncReceiptKeyViolation,
+  isWorkOrderForeignKeyViolation,
+  issueSyncClaim,
+  workOrderNotFoundError,
+  type ClaimMobileActionReceiptInput,
+  type SyncClaim,
+  type SyncReceiptLookup,
+} from "./expense-sync.js";
 import type {
+  CompleteMobileActionReceiptInput,
+  CountExpenseEventsInput,
   CreateExpenseEventInput,
   CreateExpenseItemInput,
   CreateExpenseReportInput,
-  CreateMobileActionReceiptInput,
   ExpenseEvent,
   ExpenseItem,
   ExpensePolicy,
   ExpenseReport,
+  FindExpenseEventInput,
   ListExpenseReportsInput,
   ListResult,
   MobileActionReceipt,
   UpdateExpenseReportInput,
 } from "./expense-management.types.js";
-import type { ExpenseManagementRepository } from "./expense-management.repository.js";
+import type {
+  ExpenseManagementRepository,
+  ExpenseSyncTransactionRepository,
+} from "./expense-management.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaExpenseManagementRepository implements ExpenseManagementRepository {
+// Formato de UUID em qualquer versão — só para não mandar ao banco um `result_ref` que não é id (A11d).
+const anyUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Repositório sobre um executor Prisma. Na transação de sync ele é construído com o `tx` de `withTenantRls`
+ * (B-O6R-03a): claim, efeito, recibo e eventos passam pelo MESMO cliente transacional.
+ */
+export class PrismaExpenseManagementRepository implements ExpenseSyncTransactionRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
   async listPolicies(input: { readonly tenantId: string; readonly limit: number; readonly offset: number }): Promise<ListResult<ExpensePolicy>> {
@@ -87,7 +110,7 @@ export class PrismaExpenseManagementRepository implements ExpenseManagementRepos
         created_by: input.createdBy,
       },
       include: reportInclude,
-    });
+    }).catch(rethrowWorkOrderForeignKey);
 
     return mapReportRecord(report);
   }
@@ -110,7 +133,7 @@ export class PrismaExpenseManagementRepository implements ExpenseManagementRepos
         ...(input.policyVersion !== undefined ? { policy_version: input.policyVersion } : {}),
       },
       include: reportInclude,
-    });
+    }).catch(rethrowWorkOrderForeignKey);
 
     return this.recalculateReport(mapReportRecord(report));
   }
@@ -160,23 +183,87 @@ export class PrismaExpenseManagementRepository implements ExpenseManagementRepos
     return receipt ? mapMobileActionReceiptRecord(receipt) : undefined;
   }
 
-  async createMobileActionReceipt(input: CreateMobileActionReceiptInput): Promise<MobileActionReceipt> {
-    const existing = await this.findMobileActionReceipt(input);
-    if (existing) return existing;
+  findSyncActionReceipts(input: { readonly tenantId: string; readonly clientActionId: string }): Promise<SyncReceiptLookup> {
+    return findCompatibleSyncReceipts((exact) => this.findMobileActionReceipt(exact), input);
+  }
 
-    const receipt = await this.client.mobileActionReceipt.create({
-      data: {
+  async claimMobileActionReceipt(input: ClaimMobileActionReceiptInput): Promise<SyncClaim> {
+    try {
+      await this.client.mobileActionReceipt.create({
+        data: {
+          tenant_id: input.tenantId,
+          client_action_id: input.receiptKey,
+          actor_user_id: input.actorUserId,
+          action_type: input.actionType,
+          status: "processed",
+          result_ref: null,
+          processed_at: null,
+        },
+      });
+    } catch (error) {
+      // P2002 da PK: RELANÇA sem SQL adicional — a transação está abortada; a releitura acontece fora dela.
+      if (isSyncReceiptKeyViolation(error)) throw new SyncActionAlreadyClaimedError(input.receiptKey);
+      throw error;
+    }
+
+    return issueSyncClaim(input);
+  }
+
+  async completeMobileActionReceipt(claim: SyncClaim, completion: CompleteMobileActionReceiptInput): Promise<void> {
+    const updated = await this.client.mobileActionReceipt.updateMany({
+      where: {
+        tenant_id: claim.tenantId,
+        client_action_id: claim.receiptKey,
+        actor_user_id: claim.actorUserId,
+        result_ref: null,
+      },
+      data: { result_ref: completion.resultRef, processed_at: completion.processedAt },
+    });
+    if (updated.count !== 1) throw new Error("Sync claim is not pending in this transaction.");
+  }
+
+  async findExpenseEvent(input: FindExpenseEventInput): Promise<ExpenseEvent | undefined> {
+    const event = await this.client.expenseEvent.findFirst({
+      where: {
         tenant_id: input.tenantId,
-        client_action_id: input.clientActionId,
         actor_user_id: input.actorUserId,
-        action_type: input.actionType,
-        status: input.status,
-        result_ref: input.resultRef ?? null,
-        processed_at: input.processedAt ?? null,
+        aggregate_id: input.aggregateId,
+        event_type: input.eventType,
+        payload_hash: input.payloadHash,
       },
     });
 
-    return mapMobileActionReceiptRecord(receipt);
+    return event ? mapEventRecord(event) : undefined;
+  }
+
+  countExpenseEvents(input: CountExpenseEventsInput): Promise<number> {
+    return this.client.expenseEvent.count({
+      where: {
+        tenant_id: input.tenantId,
+        actor_user_id: input.actorUserId,
+        aggregate_id: input.aggregateId,
+        event_type: input.eventType,
+      },
+    });
+  }
+
+  async findSyncReceiptAggregate(input: { readonly tenantId: string; readonly receipt: MobileActionReceipt }): Promise<string | undefined> {
+    const resultRef = input.receipt.resultRef;
+    if (!resultRef || !anyUuidPattern.test(resultRef)) return undefined;
+
+    if (input.receipt.actionType === "expense_item.create") {
+      const item = await this.client.expenseItem.findFirst({
+        where: { tenant_id: input.tenantId, id: resultRef },
+        select: { report_id: true },
+      });
+      return item?.report_id;
+    }
+
+    const report = await this.client.expenseReport.findFirst({
+      where: { tenant_id: input.tenantId, id: resultRef },
+      select: { id: true },
+    });
+    return report?.id;
   }
 
   async createEvent(input: CreateExpenseEventInput): Promise<ExpenseEvent> {
@@ -266,12 +353,9 @@ export class RlsPrismaExpenseManagementRepository implements ExpenseManagementRe
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).submitReport(input));
   }
 
-  findMobileActionReceipt(input: { readonly tenantId: string; readonly clientActionId: string }) {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findMobileActionReceipt(input));
-  }
-
-  createMobileActionReceipt(input: CreateMobileActionReceiptInput) {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).createMobileActionReceipt(input));
+  // B-O6R-03a — UMA transação RLS por ação de sync: o callback recebe o repositório ligado ao `tx`.
+  withSyncTransaction<T>(tenantId: string, work: (repository: ExpenseSyncTransactionRepository) => Promise<T>): Promise<T> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => work(new PrismaExpenseManagementRepository(tx)));
   }
 
   createEvent(input: CreateExpenseEventInput) {
@@ -377,6 +461,10 @@ function mapEventRecord(record: Prisma.ExpenseEventGetPayload<Record<string, nev
     actorUserId: record.actor_user_id ?? undefined,
     createdAt: record.created_at,
   };
+}
+
+function rethrowWorkOrderForeignKey(error: unknown): never {
+  throw isWorkOrderForeignKeyViolation(error) ? workOrderNotFoundError() : error;
 }
 
 function toJsonObject(value: Record<string, unknown>): Prisma.InputJsonObject {
