@@ -118,6 +118,7 @@ Cada achado: severidade, arquivo/trecho, impacto, correção, teste.
   - Referência: `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
 - **3 opções antes do dev (`D-TELAS-TRES-OPCOES`, 2026-10-13):**
   - toda tela nova ou refeita nasce de uma maquete com 3 opções (A, B, C) no padrão do sistema, com um quadro de notas fora da tela;
-  - o dono escolhe, e a escolhida vira a referência em `screen-refs/`;
+  - o dono aprova, e a aprovada vira a referência em `screen-refs/`. Desde 2026-10-14 (`D-APARENCIA-POR-USUARIO`), as 3 aprovadas ficam TODAS, como aparências que cada usuário escolhe em Configurações;
+  - a maquete é feita pelo Claude, nunca pelo Gemini (`D-DESIGN-SO-CLAUDE`, 2026-10-13);
     - [ ] o plano cita a opção escolhida;
     - [ ] a tela pronta é conferida contra ela.

@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ordens de Serviço · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (mesma da maquete aprovada de Pátios) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css:3017-3760 ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--engaged{border-color:#2563eb;color:#2563eb}
+.pat-btn--perigo{color:#b91c1c;border-color:#fecaca}
+.pat-btn--perigo:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.pat-btn--ambar{background:#fffbeb;border-color:#fde68a;color:#b45309}
+.pat-btn--ambar:hover{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-btn__count{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:#2563eb;color:#fff;font-size:10px;font-weight:800}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-os-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-os-toolbar{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-os-search{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;width:280px;color:#94a3b8}
+.pat-os-search:focus-within{border-color:#2563eb}
+.pat-os-search input{border:none;outline:none;background:transparent;font-size:12.5px;color:#0f172a;width:100%}
+.pat-os-tabs{display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b}
+.pat-os-tab--active{background:#fff;color:#2563eb}
+.pat-os-count{margin-left:auto;font-size:11.5px;color:#64748b;font-weight:600;font-variant-numeric:tabular-nums}
+.pat-os-noclient{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#b45309;white-space:nowrap}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{display:flex;align-items:center;gap:9px;font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__size select{padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;color:#334155;background:#fff}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-os-tab:focus-visible,.pat-pager__btn:focus-visible,.pat-os-search input:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Padrão aprovado: linha de 1 linha + resumo embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:10px 18px 4px;display:flex;align-items:center}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip}
+.pat-ab-row.realce-nova td:first-child{box-shadow:inset 3px 0 0 #2563eb}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:16px 20px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.25fr 1.1fr 1fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.grupo-row td{padding:9px 14px 7px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.grupo-row td span.grupo-n{display:inline-flex;margin-left:8px;padding:1px 8px;border-radius:99px;font-size:10.5px;letter-spacing:0}
+
+/* Células da linha de OS (WorkOrdersPage.tsx:407-497, resumidas a 1 linha) */
+.os-code{font-family:var(--font-mono);font-size:12px;font-weight:700;color:#2563eb}
+.os-pr{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font-size:10.5px;font-weight:700;vertical-align:middle}
+.os-pr i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.os-cli{font-size:13px;font-weight:700;color:#0f172a}
+.os-svc{color:#94a3b8;font-size:11.5px}
+.os-ck{font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;margin-left:6px;vertical-align:middle}
+.os-tec{display:inline-flex;align-items:center;gap:7px;line-height:1.2;vertical-align:middle;font-size:12.5px;font-weight:600;color:#334155}
+.os-tec i{width:22px;height:22px;border-radius:50%;background:#eff6ff;color:#2563eb;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.os-semtec{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:#fffbeb;border:1px solid #fde68a;color:#b45309}
+.os-delay{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;margin-left:6px;line-height:1.3;vertical-align:middle}
+.os-hora{font-family:var(--font-mono);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ─── Componentes ui-* (app.css:390-805) ─── */
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button:disabled{cursor:not-allowed;opacity:.55}
+.ui-button--primary{background:var(--color-core-primary);color:var(--text-inverse)}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-chip{display:inline-flex;align-items:center;gap:4px;width:fit-content;min-height:22px;border:1px solid var(--border-subtle);border-radius:999px;padding:0 var(--space-8);font-size:var(--text-xs);font-weight:800;background:var(--surface-panel-muted);color:var(--text-secondary);white-space:nowrap}
+.ui-tone-info{background:#e9f5fb;color:var(--color-status-info);border-color:#b6dcee}
+.ui-tone-warning{background:#fff3d8;color:var(--color-status-warning);border-color:#f4d38b}
+.ui-card{background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:var(--radius-8);box-shadow:var(--shadow-surface);padding:var(--space-16);min-width:0}
+.ui-card__header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--space-12)}
+.ui-card__header h2{font-size:var(--text-lg)}
+.ui-field{display:grid;gap:var(--space-6);font-size:13px;font-weight:700;color:#334155}
+.ui-field small{font-weight:500;color:#64748b;font-size:11.5px}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:8px 10px;font:inherit;font-weight:400;font-size:13px;width:100%;background:#fff;color:#0f172a}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+textarea.ui-input{resize:vertical;min-height:72px}
+.ui-alert{display:flex;gap:var(--space-10);padding:var(--space-12);border:1px solid #f4d38b;border-radius:var(--radius-6);background:#fff8e9;color:var(--color-status-warning);font-size:13px}
+.ui-menu-item{background:transparent}
+.ui-menu-item:hover,.ui-menu-item:focus-visible{background:#f1f5f9;outline:none}
+
+/* Estado (StatePanel.tsx) */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:50px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel--embedded{border:0;border-radius:0}
+.state-panel--erro{border-color:#fecaca}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8}
+.state-panel--erro .state-panel__icon{background:#fef2f2;color:#dc2626}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#94a3b8;max-width:340px;line-height:1.5}
+
+/* Card de filtros (WorkOrdersListFilterCard.tsx) */
+.filtros-card{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.filtros-card label,.filtros-card .grupo{display:flex;flex-direction:column;gap:6px;font-size:11.5px;font-weight:700;color:#64748b}
+.filtros-card select{padding:7px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;font-weight:600;color:#334155;background:#fff;min-width:190px}
+.chips-periodo{display:flex;gap:4px;flex-wrap:wrap}
+.chips-periodo button{padding:6px 11px;border:1px solid #e2e8f0;border-radius:99px;background:#fff;font-size:12px;font-weight:700;color:#475569;cursor:pointer}
+.chips-periodo button[aria-pressed="true"]{border-color:#2563eb;color:#2563eb;background:#eff6ff}
+.chips-periodo button:focus-visible,.filtros-card select:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Grades de KPIs e blocos ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:14px}
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+
+/* ─── Opção B: faixa analítica (barras em botão, padrão do financeiro-ab) ─── */
+.analitico{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.barra-btn{display:grid;grid-template-columns:118px minmax(0,1fr) 34px;align-items:center;gap:10px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left}
+.barra-btn:hover{background:#f8fafc}
+.barra-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.barra-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.barra-btn__rot{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-btn__rot i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.barra-btn__trilho{height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.barra-btn__trilho b{display:block;height:100%;border-radius:99px}
+.barra-btn__n{font-size:12px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums}
+.colunas{display:flex;align-items:flex-end;gap:8px;height:128px;padding:0 2px}
+.coluna-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 2px 6px;min-width:0}
+.coluna-btn:hover{background:#f8fafc}
+.coluna-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.coluna-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.coluna-btn b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.coluna-btn i{display:block;width:70%;max-width:38px;border-radius:6px 6px 2px 2px;min-height:3px}
+.coluna-btn span{font-size:10.5px;font-weight:700;color:#64748b;text-align:center;line-height:1.2}
+.donut-wrap{display:flex;align-items:center;gap:14px}
+.lg-list{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.lg-btn{display:flex;align-items:center;gap:7px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:7px;background:none;cursor:pointer;font-size:12px;color:#475569;text-align:left}
+.lg-btn:hover{background:#f8fafc}
+.lg-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.lg-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.lg-btn b{margin-left:auto;color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.atencao{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.atencao button{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:9px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;text-align:left}
+.atencao button[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.atencao button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.atencao b{font-size:17px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums}
+.atencao span{font-size:11px;font-weight:700;color:#92400e}
+
+/* ─── Opção C: fila por agenda ─── */
+.blocos-c{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.bloco-c{display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:11px 12px;cursor:pointer;text-align:left;min-width:0}
+.bloco-c:hover{border-color:#93c5fd}
+.bloco-c[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.bloco-c:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.bloco-c b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.bloco-c span{font-size:11.5px;font-weight:700;color:#334155;line-height:1.25}
+.bloco-c small{font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ciclo{display:flex;align-items:flex-start;gap:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;overflow:hidden}
+.ciclo__passo{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;min-width:0;text-align:center}
+.ciclo__passo::before{content:"";position:absolute;top:9px;left:-50%;width:100%;height:2px;background:#e2e8f0;z-index:0}
+.ciclo__passo:first-child::before{display:none}
+.ciclo__passo.feito::before,.ciclo__passo.atual::before{background:#2563eb}
+.ciclo__bola{width:20px;height:20px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;z-index:1;display:flex;align-items:center;justify-content:center;color:#fff}
+.ciclo__passo.feito .ciclo__bola{background:#2563eb;border-color:#2563eb}
+.ciclo__passo.atual .ciclo__bola{background:#fff;border-color:#2563eb;box-shadow:0 0 0 4px #dbeafe}
+.ciclo__passo.desvio .ciclo__bola{background:#fff;border-color:#d97706;box-shadow:0 0 0 4px #fef3c7}
+.ciclo__passo b{font-size:11px;font-weight:700;color:#64748b;white-space:nowrap}
+.ciclo__passo.feito b,.ciclo__passo.atual b{color:#0f172a}
+.ciclo__passo small{font-size:10.5px;color:#94a3b8;font-family:var(--font-mono);white-space:nowrap}
+
+/* ─── HUB DA OS (WorkOrderDetailPage + WorkOrderTabsShell) — corpo de altura FIXA ─── */
+.back-link{display:inline-flex;align-items:center;gap:8px;color:#2563EB;font-size:13px;font-weight:700;background:none;border:0;cursor:pointer;width:fit-content;padding:0;margin-bottom:14px}
+.back-link:hover{text-decoration:underline}
+.back-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.hub{display:flex;flex-direction:column;min-height:0}
+.hub-cabeca{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;flex:none}
+.hub-id{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.hub-tile{width:46px;height:46px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;color:#2563EB;flex-shrink:0}
+.hub-titulo{font-size:20px;font-weight:800;letter-spacing:-.3px;color:#0f172a}
+.hub-sub{font-size:13px;color:#64748B;margin-top:3px}
+.hub-acoes{display:flex;gap:8px;position:relative}
+.hub-btn{display:flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;border:1px solid #E2E8F0;color:#334155;white-space:nowrap}
+.hub-btn:hover{border-color:#2563eb;color:#2563eb}
+.hub-btn--primario{background:#2563EB;border-color:#2563EB;color:#fff}
+.hub-btn--primario:hover{background:#1d4ed8;color:#fff}
+.hub-btn--ok{color:#059669;border-color:#A7F3D0}
+.hub-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.hub-menu-pop{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 8px 24px rgba(15,23,42,.10);padding:6px;z-index:20;min-width:230px}
+.hub-menu-pop button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-align:left;color:#334155}
+.hub-menu-pop hr{border:0;height:1px;background:#F1F5F9;margin:5px 4px}
+.hub-corpo{display:grid;grid-template-columns:216px minmax(0,1fr);gap:20px;min-height:0}
+.hub-nav{background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:8px;align-self:start}
+.hub-nav button{display:block;width:100%;text-align:left;padding:10px 14px;border-radius:10px;border:none;background:transparent;color:#334155;font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px}
+.hub-nav button:hover:not([aria-current="page"]){background:#f8fafc}
+.hub-nav button[aria-current="page"]{background:#2563EB;color:#fff;font-weight:700}
+.hub-nav button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.hub-conteudo{min-height:0;height:100%;overflow-y:auto;padding:0 4px 4px 0;scrollbar-gutter:stable}
+.hub-painel{display:flex;flex-direction:column;gap:14px}
+/* página (opção A): o corpo tem altura fixa — trocar de aba não mexe no tamanho */
+.tela-os .hub-corpo{height:clamp(540px, calc(100vh - 250px), 760px)}
+/* janela (opções B e C): proposta sobre .ui-modal--lg — mesmo padrão aprovado do dossiê de Pátios */
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.os-janela{width:min(1180px,96vw);height:min(820px,92vh);background:#f1f5f9;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.os-janela > header{flex:none;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 10px 8px 20px}
+.os-janela > header h2{font-size:14px;font-weight:800;color:#334155}
+.os-janela > header button{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.os-janela > header button:hover{background:#f1f5f9}
+.os-janela > header button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.os-janela__miolo{flex:1;min-height:0;display:flex;flex-direction:column;padding:18px 20px 16px}
+.os-janela .hub{flex:1}
+.os-janela .hub-corpo{flex:1}
+
+/* conteúdo das abas (estilos inline dos componentes viraram classes — mesmos valores) */
+.card{background:#fff;border:1px solid #E2E8F0;border-radius:14px}
+.card--p{padding:20px}
+.sec-tit{font-size:15px;font-weight:800;color:#0f172a}
+.sec-sub{font-size:12.5px;color:#64748B;margin-top:3px;line-height:1.45}
+.cel-rot{font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:4px}
+.cel-val{font-size:14px;font-weight:700;color:#0F172A}
+.cel-dica{font-size:11.5px;color:#94A3B8;margin-top:3px;font-weight:600}
+.grade-info{display:grid;grid-template-columns:1fr 1fr}
+.grade-info > div{padding:16px;border-bottom:1px solid #F1F5F9}
+.grade-info > div:nth-child(odd){border-right:1px solid #F1F5F9}
+.grade-info > div:nth-last-child(-n+2){border-bottom:0}
+.vazio-tracejado{margin-top:16px;padding:26px 20px;text-align:center;border:1px dashed #E2E8F0;border-radius:12px}
+.vazio-tracejado b{display:block;font-size:13.5px;font-weight:700;color:#334155}
+.vazio-tracejado span{display:block;font-size:12.5px;color:#94A3B8;margin-top:4px}
+.tab-tabela{width:100%;border-collapse:collapse}
+.tab-tabela th{font-size:11.5px;color:#94A3B8;font-weight:700;text-align:left;padding:10px 14px;text-transform:uppercase;letter-spacing:.3px}
+.tab-tabela td{font-size:13px;color:#0F172A;padding:12px 14px;border-top:1px solid #F1F5F9;vertical-align:middle}
+.tab-tabela tfoot td{font-weight:800}
+.num{text-align:right!important;font-variant-numeric:tabular-nums}
+.btn-azul{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;background:#2563EB;border:none;border-radius:10px;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
+.btn-azul:hover{background:#1d4ed8}
+.btn-claro{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;background:#fff;border:1px solid #BFDBFE;border-radius:10px;font-size:13px;font-weight:700;color:#2563EB;cursor:pointer}
+.btn-cinza{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;font-size:13px;font-weight:700;color:#475569;cursor:pointer}
+.btn-icone{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;cursor:pointer}
+.btn-icone--perigo{color:#DC2626}
+.btn-icone:disabled{color:#CBD5E1;cursor:not-allowed}
+.btn-azul:focus-visible,.btn-claro:focus-visible,.btn-cinza:focus-visible,.btn-icone:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pill-s{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;display:inline-block}
+.caixa-form{margin-top:16px;padding:14px;border:1px solid #E2E8F0;border-radius:12px;background:#F8FAFC}
+.erro-faixa{padding:10px 13px;background:#FEF2F2;border:1px solid #FECACA;border-radius:9px;font-size:12.5px;color:#B91C1C}
+.ok-faixa{padding:10px 13px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:9px;font-size:12.5px;color:#166534}
+.linha-tempo{list-style:none}
+.linha-tempo li{display:flex;gap:12px;padding-bottom:14px}
+.linha-tempo li:last-child{padding-bottom:0}
+.linha-tempo .marco{display:flex;flex-direction:column;align-items:center}
+.linha-tempo .marco i{width:9px;height:9px;border-radius:50%;background:#2563EB;margin-top:4px}
+.linha-tempo .marco u{width:2px;flex:1;background:#E2E8F0;margin-top:2px;text-decoration:none}
+.linha-tempo li:last-child .marco u{display:none}
+.etapas{list-style:none;margin-top:16px}
+.etapas li{display:flex;gap:12px;align-items:flex-start;padding-bottom:16px;position:relative}
+.etapas li:last-child{padding-bottom:0}
+.etapas li::after{content:"";position:absolute;left:8px;top:20px;bottom:0;width:2px;background:#E2E8F0}
+.etapas li:last-child::after{display:none}
+.etapas .ico{z-index:1;background:#fff;margin-top:1px}
+.cmt-tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px}
+/* Fotos em LINHA com quebra — faixa única (flex-wrap), nunca uma por linha (aprovado em Pátios) */
+.galeria{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.foto{width:120px;border:0;background:none;padding:0;cursor:zoom-in;text-align:left}
+.foto__img{width:120px;height:90px;border-radius:8px;border:1px solid #E2E8F0;overflow:hidden;display:block}
+.foto__img svg{display:block;width:100%;height:100%}
+.foto__cap{display:block;font-size:12px;font-weight:700;color:#0f172a;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.foto__set{display:block;font-size:11px;color:#64748b}
+.foto:focus-visible .foto__img{outline:2px solid #2563eb;outline-offset:2px}
+.mapa-svg{display:block;width:100%;height:260px;border-radius:12px;border:1px solid #E2E8F0}
+.pontos{border:1px solid #F1F5F9;border-radius:12px;overflow:hidden}
+.pontos div{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid #F1F5F9}
+.pontos div:first-child{border-top:0}
+.pontos i{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pontos b{font-size:11.5px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;width:64px;flex-shrink:0}
+.pontos span{font-size:13px;color:#0f172a}
+
+/* ─── Nova OS (WorkOrderCreatePage + WorkOrderForm) ─── */
+.page-stack{display:grid;gap:var(--space-16)}
+.page-heading span.kick{color:var(--color-core-accent);font-size:var(--text-xs);font-weight:800;text-transform:uppercase}
+.page-heading h1{margin:var(--space-8) 0;font-size:var(--text-title);display:flex;align-items:center;gap:10px}
+.page-heading p{color:var(--text-secondary);line-height:1.5;font-size:14px}
+.form-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.form-sec{display:grid;gap:12px}
+.form-sec--2{grid-template-columns:1fr 1fr}
+.form-sec .larga{grid-column:1 / -1}
+.campo-novo{display:flex;align-items:flex-end;gap:8px}
+.campo-novo .ui-field{flex:1}
+.barra-fixa{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;background:rgba(255,255,255,.96);border:1px solid #e2e8f0;border-radius:10px}
+
+/* ─── Diálogo pequeno (Revogar envio · Cancelar · Duplicar) e lightbox ─── */
+.dlg{background:#fff;border-radius:10px;box-shadow:var(--shadow-overlay);width:min(520px,94vw);padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.dlg h2{font-size:16px;font-weight:800;color:#0f172a}
+.dlg p{font-size:13px;color:#475569;line-height:1.5}
+.dlg .opcoes{display:flex;flex-direction:column;gap:8px}
+.dlg .opcoes label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #e2e8f0;border-radius:9px;cursor:pointer;font-size:13px;color:#334155}
+.dlg .opcoes label small{display:block;color:#64748b;font-size:12px;margin-top:2px}
+.dlg .rodape{display:flex;justify-content:flex-end;gap:8px}
+#dlg-overlay{z-index:85}
+.lightbox{position:fixed;inset:0;background:rgb(15 23 42 / 92%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:95}
+.lightbox__img{width:min(720px,80vw);aspect-ratio:4/3;border-radius:10px;overflow:hidden}
+.lightbox__img svg{width:100%;height:100%;display:block}
+.lightbox__bar{display:flex;align-items:center;gap:12px;color:#e2e8f0;font-size:14px;font-weight:700}
+.lightbox__bar button{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}
+.lightbox__bar button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:1.15fr 1fr}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .analitico{grid-template-columns:1fr 1fr}.analitico .an-prio{grid-column:1 / -1}
+  .blocos-c{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Ordens de Serviço · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">MC</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Mariana Costa</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Gestor de operações</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Ordens de Serviço</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar OS, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"><div class="tela-lista"></div><div class="tela-os" hidden></div><div class="tela-nova" hidden></div></div>
+        <div data-view="b" style="display:none"><div class="tela-lista"></div><div class="tela-os" hidden></div><div class="tela-nova" hidden></div></div>
+        <div data-view="c" style="display:none"><div class="tela-lista"></div><div class="tela-os" hidden></div><div class="tela-nova" hidden></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela que está no ar (<code style="color:#7dd3fc">WorkOrdersPage.tsx</code>, a tela-modelo de lista) e preservam o fluxo do sistema — <strong>lista → resumo da OS embaixo da linha → detalhe da OS com as 9 seções → voltar à lista com o filtro mantido</strong>. O que muda entre elas é a composição da lista e onde o detalhe abre (A: página, como hoje; B e C: janela fixa, o padrão aprovado no dossiê de Pátios). O conteúdo do detalhe é o MESMO nas três. Termos técnicos, rotas e arquivos ficam só neste quadro.</p>
+    <div class="estados-bar">Estado da lista nesta opção:
+      <button type="button" class="rv-btn" data-estado-lista="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado-lista="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado-lista="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado-lista="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado-lista="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado-lista="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar">Ver como (o papel vem da sessão; aqui só para revisar):
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="true">Gestor</button>
+      <button type="button" class="rv-btn" data-papel="despacho" aria-pressed="false">Operação de Campo</button>
+      <button type="button" class="rv-btn" data-papel="tecnico" aria-pressed="false">Técnico de Campo</button>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="false">Financeiro</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete — medido em <code>origin/main</code>, módulo idêntico ao da <code>main</code> local)</h3>
+        <ul class="review-list">
+          <li><strong>Lista:</strong> rota <code>/work-orders</code> com guarda <code>work_orders:read</code> (<code>App.tsx:751-758</code>) → <code>WorkOrdersPage</code>. Cabeçalho OPERAÇÃO + Filtrar/Exportar/Nova OS (<code>WorkOrdersPage.tsx:267-315</code>); 4 KPIs derivados da lista (<code>:202-214</code>, <code>:557-637</code>); abas Todas/Sem técnico/Em campo/Concluídas (<code>:80-85</code>); busca por código, cliente ou endereço (<code>:229-232</code>); paginação 20 (<code>:155-156</code>, <code>:503-516</code>).</li>
+          <li><strong>Linha:</strong> clique no corpo navega ao detalhe (<code>:413</code>). Dentro dela há hoje 5 alvos: Vincular (<code>:430-437</code>), Atribuir → Despachos (<code>:461-470</code>, gate <code>field_dispatch:create</code> <code>:242</code>), Dar andamento → próximo estado, Abrir e ⋮ Revogar envio (<code>WorkOrderRowActions.tsx:129-170</code>; regras em <code>work-orders-row.logic.ts:43-89</code>).</li>
+          <li><strong>Detalhe:</strong> <code>/work-orders/:workOrderId</code> (<code>App.tsx:767-774</code>) → <code>WorkOrderDetailPage</code>: "← Voltar às ordens" (<code>:157</code>), cabeçalho ícone + "código · título" + "cliente · endereço" + barra de ações (<code>:166-177</code>): Abrir checklist (<code>WorkOrderActionBar.tsx:117</code>), Copiar, Imprimir, ⋮ com Copiar texto p/ WhatsApp · Duplicar (<code>work_orders:create</code>) · Cancelar (<code>work_orders:cancel</code> + estado cancelável, <code>:40-57</code>). Menu lateral de 216 px (<code>WorkOrderTabsShell.tsx:40-53</code>) com as 9 seções visíveis na ordem de <code>tabs.config.ts:35-47</code> (Estoque e Base seguem ocultas até serem entregues).</li>
+          <li><strong>Criação:</strong> <code>/work-orders/new</code> com guarda <code>work_orders:create</code> (<code>App.tsx:759-766</code>) → <code>WorkOrderCreatePage</code> + <code>WorkOrderForm</code> (cartões Identificação, Vínculos de cadastro, Cliente, Origem do atendimento e os condicionais Destino do reboque / Detalhes do socorro, <code>WorkOrderForm.tsx:175-307</code>); ao salvar abre a OS criada (<code>work-orders-create.handlers.ts:24</code>).</li>
+          <li><strong>Estados §7:</strong> carregando, vazio (com e sem filtro), erro com "Tentar novamente", acesso não permitido (<code>WorkOrdersPage.tsx:648-693</code>) e faixa de dados desatualizados (<code>:330-333</code>, <code>StaleDataBanner.tsx</code>) — todos alternáveis acima.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>Linha de 1 linha, sem botão:</strong> os 5 alvos de dentro da linha (Vincular, Atribuir, Dar andamento, Abrir, Revogar envio) descem para o resumo embaixo — mesmos rótulos e mesmas regras de exibição. O clique na linha abre o resumo; "Abrir OS" leva ao detalhe (padrão aprovado de painel com lista).</li>
+          <li><strong>KPI filtra a lista</strong> (chip removível) em vez de abrir o pop-up de participação (<code>ClickableKpiCard</code>, <code>WorkOrdersPage.tsx:572-579</code>).</li>
+          <li><strong>Detalhe com corpo de altura fixa:</strong> cabeçalho e menu lateral ficam parados e só o conteúdo da seção rola — trocar de seção não muda o tamanho. Hoje a página cresce e encolhe a cada aba.</li>
+          <li><strong>Arquivos:</strong> acima da tabela (que segue igual), as imagens aparecem numa faixa de miniaturas que quebra no fim da área; clique amplia. Hoje só existe a tabela (<code>AttachmentsTab.tsx:196-223</code>).</li>
+          <li><strong>Acentos na criação:</strong> hoje saem "Ordens de Servico", "Titulo", "Descricao", "Identificacao" e "Revise os campos obrigatorios" (<code>WorkOrderCreatePage.tsx:45</code>, <code>WorkOrderForm.tsx:170-180</code>, <code>work-orders.adapter.ts:255-259</code>) — corrigidos aqui (§11.3).</li>
+          <li><strong>"← Voltar às ordens"</strong> hoje é um <code>div</code> com clique (<code>WorkOrderDetailPage.tsx:157</code>), fora do teclado. Aqui é botão.</li>
+          <li><strong>"Vincular" cliente</strong> leva ao detalhe em Informações gerais (<code>:434</code>), mas o detalhe não tem edição de vínculo — a edição existe no serviço (<code>work-orders.service.ts:105</code>) e não tem tela. Mantive o destino real e deixo a pendência.</li>
+          <li><strong>Mantido como hoje, mas sinalizado:</strong> o selo "Aguardando decisão" da Aprovação operacional aparece mesmo quando a OS não tem aprovação (<code>GeneralInfoTab.tsx:269</code>) — ao lado de "Nenhuma aprovação pendente". Sugiro esconder o selo nesse caso (só front).</li>
+          <li><strong>Fidelidade de rótulos:</strong> a lista usa os tons de situação de <code>WorkOrdersPage.tsx:51-62</code> e o detalhe os de <code>GeneralInfoTab.tsx:25-36</code> (são diferentes hoje — "Em rota" verde na lista, azul no detalhe). Reproduzi as duas fontes; unificar é decisão de design.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Tudo da linha e do resumo vem do DTO da lista: código, título, prioridade, situação, cliente/telefone, endereço/cidade/UF, agenda, criada em, início/chegada/conclusão, checklist, cancelamento com motivo e decisão financeira (<code>work-orders.types.ts:19-57</code>).</li>
+          <li>KPIs: exatamente as 4 contagens de hoje (<code>WorkOrdersPage.tsx:202-214</code>), mesmos selos.</li>
+          <li>Detalhe: as mesmas 9 seções e serviços de hoje (detalhe, histórico, aprovação, financeiro, orçamentos, comentários, anexos, despacho, km, pontos do mapa, auditoria).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Nome do técnico</strong> na lista e no detalhe: o DTO só traz o identificador (<code>work-orders.types.ts:34</code>) → "Atribuído" / "Atribuída" (<code>GeneralInfoTab.tsx:144</code>). Pendência já aberta: <code>P-WO-LIST-TECH-NAME</code>.</li>
+          <li><strong>Técnico ver só as OS dele:</strong> a matriz diz "execute/update-assigned", mas a leitura <code>work_orders:read</code> é da organização inteira (<code>work-order.service.ts:797-799</code>); só a ALTERAÇÃO é restrita à OS atribuída (<code>:805-830</code>). Na maquete o papel Técnico vê só as dele — falta o recorte de leitura (ou o filtro por técnico atribuído na consulta, campo já previsto em <code>work-orders.types.ts:196</code>).</li>
+          <li><strong>Miniatura de foto:</strong> o anexo só oferece o download do original (<code>attachments.types.ts:17</code>); para a faixa de miniaturas sem baixar cada original, falta um tamanho reduzido.</li>
+          <li>"Atualizado há X min": o hook não expõe a hora (<code>WorkOrdersPage.tsx:44</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> menor custo; é a tela de hoje com o padrão aprovado; detalhe continua com endereço próprio (dá para compartilhar o link da OS e abrir em outra aba); quem usa hoje não reaprende nada.</li>
+          <li><strong>Contras:</strong> abrir uma OS ainda tira a lista da frente; não mostra onde está a pressão do dia (agenda, SLA, prioridade); o resumo repete parte do que está na linha.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Gráficos e KPIs são contas sobre a lista já carregada: situação, prioridade, agenda, técnico atribuído e cliente (<code>work-orders.types.ts:19-57</code>) — mesma fonte dos KPIs de hoje.</li>
+          <li><strong>Prazo de SLA real:</strong> o DTO já traz <code>slaDueAt</code> quando há política de SLA (<code>work-order.dto.ts:86</code>, <code>work-orders.types.ts:42-46</code>). O KPI "SLA vencido" e a coluna SLA só contam OS com prazo — OS sem política aparecem como "sem prazo", nunca como "no prazo".</li>
+          <li>Detalhe na janela fixa: o mesmo conteúdo; a janela é a do dossiê aprovado em Pátios.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Resumo agregado:</strong> KPIs e gráficos contam só as OS carregadas; com mais OS que a página, o número fica parcial. O tipo <code>WorkOrdersSummary</code> existe (<code>work-orders.types.ts:279</code>) mas não há rota de resumo (<code>work-order.routes.ts</code> não tem). Precisa de um resumo por situação, prioridade, faixa de agenda e SLA.</li>
+          <li>Nome do técnico, recorte de leitura do técnico e miniatura de foto (iguais à opção A).</li>
+          <li>Front: barras e rosca em SVG/HTML sem biblioteca (regra PD-004), como os gráficos do Dashboard.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> a linha que o dono escolheu em Pátios; mostra a pressão do dia antes da lista (atrasos, SLA, OS sem técnico, sem cliente); todo número filtra a lista; a OS abre por cima da lista sem perder o lugar.</li>
+          <li><strong>Contras:</strong> tela mais longa; números parciais enquanto não houver resumo no servidor; a janela não tem endereço próprio (para compartilhar segue o "Copiar" do detalhe).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Grupos pela agenda real (<code>scheduledFor</code>) e pela mesma regra de atraso de hoje (<code>work-orders-row.logic.ts:105-114</code>).</li>
+          <li>Linha do ciclo de vida no resumo: a ordem dos estados espelha as transições do backend (<code>work-orders-row.logic.ts:38-53</code>); horários de criação, início, chegada e conclusão vêm da OS (<code>work-orders.types.ts:47-50</code>).</li>
+          <li>Detalhe na janela fixa, igual à B.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li>Horário de <strong>atribuição, aceite e saída</strong> no DTO da OS: hoje só existem no despacho (<code>MobileTab.tsx:26-33</code>) — o resumo mostraria esses passos sem hora ou pediria 1 consulta ao despacho por linha aberta.</li>
+          <li>Resumo agregado por faixa de agenda (contagem completa, não só da página).</li>
+          <li>Nome do técnico, recorte de leitura do técnico e miniatura de foto (iguais à A).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> lê-se como a fila do despachante: o que está atrasado, o que vence nas próximas 2 horas, o que é para mais tarde; o ciclo de vida mostra onde cada OS travou; sem paginação dentro do dia.</li>
+          <li><strong>Contras:</strong> agrupar muda a ordem que o usuário conhece (por criação); finalizadas ficam no fim; com muitas OS, os grupos crescem e pedem paginação por grupo.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Comportamento por papel (permissões medidas em <code>src/modules/core-saas/permissions/catalog.ts</code>; a tela só molda — o backend decide)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Papel</th><th>Vê</th><th>Pode na lista / resumo</th><th>Pode no detalhe</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Gestor</strong> (<code>manager</code>, <code>:414</code>)</td><td>todas as OS</td><td>Nova OS, Filtrar, Exportar, Atribuir técnico, Dar andamento, Revogar envio</td><td>Duplicar, Cancelar (estado cancelável), Aprovar/Reprovar a aprovação operacional, lançar e editar financeiro, aprovar e compartilhar orçamento, comentar, enviar e excluir arquivo, corrigir km</td></tr>
+          <tr><td><strong>Operação de Campo</strong> (<code>field_dispatcher</code>, <code>:628</code>)</td><td>todas as OS</td><td>Nova OS, Atribuir técnico, Dar andamento, Revogar envio</td><td>Duplicar, comentar, enviar arquivo (não exclui); financeiro e orçamento só leitura; não cancela nem decide aprovação; não corrige km</td></tr>
+          <tr><td><strong>Técnico de Campo</strong> (<code>field_technician</code>, <code>:912</code>)</td><td>só as atribuídas a ele (ver "falta no backend")</td><td>Dar andamento nas dele</td><td>comentar, enviar e excluir arquivo (tem <code>work_orders:update</code>); lê Financeiro e Orçamento da OS — <strong>confirmar se o técnico deve ver valores</strong></td></tr>
+          <tr><td><strong>Financeiro</strong> (<code>finance</code>, <code>:812</code>)</td><td>todas as OS</td><td>só consulta (sem Nova OS, sem andamento)</td><td>lançar e editar itens financeiros, aprovar e compartilhar orçamento; não comenta nem anexa</td></tr>
+          <tr><td><strong>Auditor</strong> (<code>auditor</code>, <code>:963</code>)</td><td>todas as OS</td><td>só consulta</td><td>só leitura em todas as seções, inclusive Logs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="review-box">
+      <h3>Pendências para o dono</h3>
+      <ul class="review-list">
+        <li>Escolher A, B ou C — ou juntar (por exemplo, a faixa analítica de B com os grupos por agenda de C).</li>
+        <li>Detalhe em página (A) ou em janela fixa (B/C)? A página mantém o link próprio da OS; a janela mantém a lista atrás.</li>
+        <li>O técnico de campo deve ver o Financeiro e o Orçamento da OS? Hoje vê (só leitura).</li>
+        <li>Fotos, mapa e nomes de clientes são exemplos (desenhos e dados fictícios), não dados reais.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Fila por agenda</button>
+</div>
+
+<div class="ui-overlay" id="os-overlay" hidden>
+  <section class="os-janela" role="dialog" aria-modal="true" aria-labelledby="os-janela-tit" data-janela-os>
+    <header><h2 id="os-janela-tit">Ordem de serviço</h2><button type="button" data-fechar-os aria-label="Fechar e voltar à lista"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="os-janela__miolo" id="os-janela-miolo"></div>
+  </section>
+</div>
+<div class="ui-overlay" id="dlg-overlay" hidden><section class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-tit" id="dlg"></section></div>
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
+  <div class="lightbox__img" id="lightbox-img"></div>
+  <div class="lightbox__bar"><button type="button" id="lb-ant">‹ Anterior</button><span id="lightbox-cap"></span><button type="button" id="lb-prox">Próxima ›</button><button type="button" id="lb-fechar">Fechar foto</button></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  circle:'<circle cx="12" cy="12" r="10"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+  listChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  chevronRight:'<path d="m9 18 6-6-6-6"/>',
+  arrowLeft:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  printer:'<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+  more:'<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>',
+  copyPlus:'<line x1="15" x2="15" y1="12" y2="18"/><line x1="12" x2="18" y1="15" y2="15"/><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  user:'<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  smartphone:'<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+  gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  route:'<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  navigation:'<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
+  history:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+  fileText:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  pencil:'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  msgPlus:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h8"/><path d="M12 8v8"/>',
+  badgeCheck:'<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
+  xCircle:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ── Tempo da maquete: "agora" fixo para os dados de exemplo serem estáveis ── */
+const AGORA = new Date(2026, 9, 14, 10, 0);
+const em = m => (m == null ? null : new Date(AGORA.getTime() + m * 60000));
+const pad = n => String(n).padStart(2, '0');
+const fData = d => pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const fDH = d => d ? fData(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes()) : '—';
+const fHM = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const fMoeda = n => Number(n).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const fKm = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + ' km';
+const mesmoDia = (a, b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+
+/* ── Rótulos e tons — fontes: work-orders-row.logic.ts:11-29 · WorkOrdersPage.tsx:51-71 · GeneralInfoTab.tsx:25-38 ── */
+const ST = { open:'Aberta', assigned:'Atribuída', accepted:'Aceita', on_route:'Em rota', on_site:'No local', in_progress:'Em atendimento', paused:'Pausada', completed:'Concluída', cancelled:'Cancelada', rejected:'Recusada' };
+const PR = { low:'Baixa', medium:'Média', high:'Alta', urgent:'Urgente' };
+const ST_TOM = { open:['#EFF6FF','#2563EB'], assigned:['#EFF6FF','#2563EB'], accepted:['#EFF6FF','#2563EB'], on_route:['#DCFCE7','#15803D'], on_site:['#DCFCE7','#15803D'], in_progress:['#DCFCE7','#15803D'], paused:['#FEF3C7','#B45309'], completed:['#F1F5F9','#475569'], cancelled:['#FEE2E2','#B91C1C'], rejected:['#FEE2E2','#B91C1C'] };
+const PR_TOM = { low:['#94A3B8','#64748B'], medium:['#F59E0B','#B45309'], high:['#DC2626','#B91C1C'], urgent:['#DC2626','#B91C1C'] };
+const ST_META = { open:['#F1F5F9','#475569'], assigned:['#EFF6FF','#2563EB'], accepted:['#EFF6FF','#2563EB'], on_route:['#EFF6FF','#2563EB'], on_site:['#ECFDF5','#059669'], in_progress:['#FFFBEB','#D97706'], paused:['#FFFBEB','#D97706'], completed:['#ECFDF5','#059669'], cancelled:['#FEF2F2','#DC2626'], rejected:['#FEF2F2','#DC2626'] };
+const PR_COR = { low:'#059669', medium:'#2563EB', high:'#D97706', urgent:'#DC2626' };
+const FINAL = s => s === 'completed' || s === 'cancelled' || s === 'rejected';
+const CAMPO = s => s === 'on_route' || s === 'on_site' || s === 'in_progress' || s === 'paused';
+const AVANCO = { assigned:'accepted', accepted:'on_route', on_route:'on_site', on_site:'in_progress', paused:'in_progress' };
+const CANCELAVEL = ['open','assigned','accepted','on_route','on_site','in_progress'];
+const REVOGAVEL = ['assigned','accepted','on_route','on_site','in_progress','paused'];
+
+/* ── Papéis (permissões medidas em src/modules/core-saas/permissions/catalog.ts) ── */
+const PAPEIS = {
+  gestor:{ nome:'Mariana Costa', sub:'Gestor de operações', ini:'MC', nav:'gestor', p:['work_orders:read','work_orders:comment','work_orders:create','work_orders:update','work_orders:assign','work_orders:status','work_orders:cancel','work_orders:mileage_correct','work_orders:approve','service_quotes:read','service_quotes:create','service_quotes:update','service_quotes:approve','work_order_financials:read','work_order_financials:create','work_order_financials:update','field_dispatch:read','field_dispatch:create','field_dispatch:update','field_dispatch:cancel','customers:create','vehicles:create','teams:create','service_catalog:create'] },
+  despacho:{ nome:'Rafael Souza', sub:'Operação de campo', ini:'RS', nav:'campo', p:['work_orders:read','work_orders:comment','work_orders:create','work_orders:assign','work_orders:status','service_quotes:read','work_order_financials:read','field_dispatch:read','field_dispatch:create','field_dispatch:update','field_dispatch:cancel'] },
+  tecnico:{ nome:'Carlos Mendes', sub:'Técnico de Campo', ini:'CM', nav:'campo', p:['work_orders:read','work_orders:comment','work_orders:update','work_orders:status','service_quotes:read','work_order_financials:read','field_dispatch:read','field_dispatch:update'] },
+  financeiro:{ nome:'Juliana Prado', sub:'Financeiro', ini:'JP', nav:'financeiro', p:['work_orders:read','service_quotes:read','service_quotes:create','service_quotes:update','service_quotes:approve','work_order_financials:read','work_order_financials:create','work_order_financials:update'] },
+  auditor:{ nome:'Paulo Teixeira', sub:'Auditor', ini:'PT', nav:'gestor', p:['work_orders:read','service_quotes:read','work_order_financials:read','field_dispatch:read'] }
+};
+let papel = 'gestor';
+const pode = k => PAPEIS[papel].p.includes(k);
+
+/* ── Menu (appSidebarNav.ts:58-101 e NAV_BY_ROLE :160-208 — resumido) ── */
+const NAV = {
+  gestor:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço',1],['send','Despachos'],['mapPin','Mapa Operacional'],['calculator','Orçamentos'],['checkCircle','Aprovações'],['listChecks','Checklists']]],['FROTA',[['truck','Viaturas']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['wrench','Serviços'],['receipt','Financeiro']]],['ADMINISTRAÇÃO',[['users','Usuários'],['scroll','Auditoria'],['settings','Configurações']]]],
+  campo:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço',1],['send','Despachos'],['mapPin','Mapa Operacional'],['calculator','Orçamentos'],['checkCircle','Aprovações'],['listChecks','Checklists']]],['FROTA',[['truck','Viaturas']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['wrench','Serviços']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  financeiro:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço',1],['calculator','Orçamentos'],['checkCircle','Aprovações'],['listChecks','Checklists']]],['GESTÃO',[['contact','Clientes'],['wrench','Serviços'],['receipt','Financeiro'],['coins','Cobranças']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+function renderSidebar(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => '<a class="app-sidebar__item'+(it[2]?' app-sidebar__item--active':'')+'" href="#" '+(it[2]?'aria-current="page"':'')+' data-menu="'+it[1]+'">'+ic(it[0],17)+it[1]+'</a>').join('')+'</div>').join('');
+  $('#sb-ini').textContent = P.ini; $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Catálogo de serviços (Cadastros › Serviços) ── */
+const SERV = {
+  reboque_leve:{ nome:'Reboque leve', preco:280, destino:true, tipo:'socorro' },
+  reboque_pesado:{ nome:'Reboque pesado', preco:890, destino:true, tipo:null },
+  socorro:{ nome:'Socorro mecânico', preco:180, destino:false, tipo:'socorro' },
+  pneu:{ nome:'Troca de pneu', preco:120, destino:false, tipo:'socorro' },
+  bateria:{ nome:'Carga de bateria', preco:110, destino:false, tipo:'socorro' },
+  pane:{ nome:'Pane seca', preco:150, destino:false, tipo:'socorro' },
+  chaveiro:{ nome:'Chaveiro automotivo', preco:140, destino:false, tipo:null },
+  remocao:{ nome:'Remoção para pátio', preco:320, destino:true, tipo:null }
+};
+const CIDADE_GEO = { 'São Paulo':[-23.55,-46.63], 'Guarulhos':[-23.46,-46.53], 'Osasco':[-23.53,-46.79], 'Santo André':[-23.66,-46.53], 'Barueri':[-23.5,-46.87], 'São Bernardo do Campo':[-23.69,-46.56], 'Jundiaí':[-23.19,-46.88], 'Embu das Artes':[-23.65,-46.85] };
+const VIATURAS = [['FQX4J21','Volkswagen Delivery 11.180 — plataforma'],['GHT7B03','Ford Cargo 816 — plataforma'],['EMV2C88','Mercedes-Benz Atego 2430 — guincho pesado'],['RKD9F14','Iveco Daily 70C17 — asa-delta']];
+const EQUIPES = ['Equipe Norte','Equipe Sul','Equipe Pesados','Equipe Leste'];
+
+/* ── OS de exemplo — Guincho Exemplo Ltda (campos do DTO real: work-orders.types.ts:19-57) ──
+   [nº, serviço, veículo do cliente, prioridade, situação, cliente, telefone, documento, endereço, cidade, CEP,
+    agenda (min), atribuída, do técnico logado, vistorias, prazo SLA (min), criada (min), destino, aprovação] */
+const RAW = [
+  [101,'reboque_leve','VW Gol prata','high','on_route','Seguradora Horizonte Auto','(11) 3003-4100','12.345.678/0001-90','Av. Paulista, 1.578 — Bela Vista','São Paulo','01310-200',10,1,0,'cd',40,-150,'Autocenter Vila Mariana — R. Domingos de Morais, 2.200',null],
+  [102,'socorro','Fiat Strada branca','urgent','open',null,null,null,'Rod. Presidente Dutra, km 210','Guarulhos','07034-000',-45,0,0,'',-5,-70,null,null],
+  [103,'pneu','Chevrolet Onix preto','medium','assigned','Rota Locadora de Veículos','(11) 4002-8922','23.456.789/0001-01','R. Augusta, 900 — Consolação','São Paulo','01304-001',30,1,1,'',90,-40,null,null],
+  [104,'reboque_pesado','Scania R 450 com semirreboque','high','in_progress','Transportadora Rápido Sul Ltda','(11) 2604-7700','34.567.890/0001-12','Rod. Anhanguera, km 26 — Perus','São Paulo','05201-000',-1600,1,0,'c',null,-1700,'Garagem da transportadora — Av. Raimundo P. de Magalhães, 11.000','none'],
+  [105,'bateria','Hyundai HB20 vermelho','low','completed','Marcos Vinícius Pereira','(11) 98765-1234','123.456.789-09','R. das Figueiras, 120 — Jardim','Santo André','09080-300',-300,1,1,'g',null,-420,null,'p'],
+  [106,'chaveiro','Renault Kwid branco','medium','accepted','Rota Locadora de Veículos','(11) 4002-8922','23.456.789/0001-01','Av. dos Autonomistas, 1.400 — Centro','Osasco','06020-010',75,1,1,'',120,-60,null,null],
+  [107,'reboque_leve','Toyota Corolla cinza','urgent','open','Seguradora Horizonte Auto','(11) 3003-4100','12.345.678/0001-90','Av. Marginal do Tietê, 2.400 — Vila Maria','São Paulo','02170-000',15,0,0,'',25,-12,'Concessionária Toyota Santana — Av. Cruzeiro do Sul, 3.200',null],
+  [108,'remocao','Fiat Uno vermelho','medium','on_site','Frota Municipal de Osasco','(11) 3652-9000','46.523.015/0001-35','R. Antônio Agu, 255 — Centro','Osasco','06013-000',-10,1,0,'c',50,-95,'Pátio Osasco — Av. dos Autonomistas, 3.300',null],
+  [109,'pane','Jeep Renegade azul','high','paused','Locar Frotas e Serviços','(11) 3333-2020','45.678.901/0001-23','Rod. dos Bandeirantes, km 72','Jundiaí','13212-240',-200,1,1,'',-30,-260,null,null],
+  [110,'socorro','Honda Civic prata','low','completed','Brasil Assist 24h','(11) 4004-2424','56.789.012/0001-34','Av. Kennedy, 700 — Jardim do Mar','São Bernardo do Campo','09726-250',-1500,1,0,'g',null,-1560,null,'a'],
+  [111,'reboque_leve','Nissan Kicks branco','medium','open','Seguradora Horizonte Auto','(11) 3003-4100','12.345.678/0001-90','Al. Rio Negro, 500 — Alphaville','Barueri','06454-000',240,0,0,'',300,-30,'Oficina credenciada Alphaville — Al. Araguaia, 1.000',null],
+  [112,'pneu','VW Saveiro prata','low','assigned',null,null,null,'Av. Jacu-Pêssego, 1.900 — Itaquera','São Paulo','08260-000',1410,1,0,'',null,-90,null,null],
+  [113,'bateria','Fiat Argo cinza','medium','on_route','Rota Locadora de Veículos','(11) 4002-8922','23.456.789/0001-01','R. Vergueiro, 3.000 — Vila Mariana','São Paulo','04102-000',20,1,1,'',60,-35,null,null],
+  [114,'reboque_pesado','Mercedes-Benz Atego 1719','urgent','in_progress','Transportadora Rápido Sul Ltda','(11) 2604-7700','34.567.890/0001-12','Rod. Castello Branco, km 32','Barueri','06420-000',-90,1,0,'cd',-15,-180,'Oficina Diesel Barueri — Av. Andrômeda, 885','none'],
+  [115,'chaveiro','Honda Fit preto','low','completed','Ana Beatriz Lopes','(11) 97654-3210','987.654.321-00','R. Harmonia, 410 — Vila Madalena','São Paulo','05435-000',-2900,1,1,'',null,-3000,null,null],
+  [116,'socorro','Chevrolet S10 branca','high','cancelled','Locar Frotas e Serviços','(11) 3333-2020','45.678.901/0001-23','Av. Interlagos, 6.800 — Interlagos','São Paulo','04777-000',-600,0,0,'',null,-700,null,null],
+  [117,'remocao','VW Fox azul','medium','rejected','Frota Municipal de Osasco','(11) 3652-9000','46.523.015/0001-35','Av. Santo Antônio, 1.200 — Vila Osasco','Osasco','06086-075',-1300,1,0,'',null,-1400,'Pátio Osasco — Av. dos Autonomistas, 3.300',null],
+  [118,'pane','Ford Ka prata','medium','open','Brasil Assist 24h','(11) 4004-2424','56.789.012/0001-34','Rod. Régis Bittencourt, km 280','Embu das Artes','06803-000',null,0,0,'',null,-25,null,null],
+  [119,'reboque_leve','Renault Duster marrom','high','assigned','Condomínio Jardim das Acácias','(11) 3088-1500','67.890.123/0001-45','R. Pamplona, 1.100 — Jardim Paulista','São Paulo','01405-001',50,1,0,'c',10,-140,'Oficina Pamplona — R. Pamplona, 300',null],
+  [120,'bateria','Peugeot 208 branco','low','accepted','Seguradora Horizonte Auto','(11) 3003-4100','12.345.678/0001-90','Av. Brás Leme, 1.000 — Santana','São Paulo','02511-000',2760,1,0,'',null,-50,null,null],
+  [121,'pneu','Toyota Hilux prata','medium','completed','Rota Locadora de Veículos','(11) 4002-8922','23.456.789/0001-01','R. Oscar Freire, 300 — Jardins','São Paulo','01426-001',-180,1,0,'g',null,-260,null,'p'],
+  [122,'reboque_leve','Hyundai Creta cinza','medium','in_progress','Seguradora Horizonte Auto','(11) 3003-4100','12.345.678/0001-90','Av. Ibirapuera, 3.100 — Moema','São Paulo','04028-003',-40,1,1,'cd',35,-120,'Oficina Moema — Av. Jamaris, 410',null],
+  [123,'socorro','Fiat Toro vermelha','urgent','open','Locar Frotas e Serviços','(11) 3333-2020','45.678.901/0001-23','Av. do Estado, 5.500 — Cambuci','São Paulo','01516-000',60,0,0,'',45,-20,null,null],
+  [124,'chaveiro','Chevrolet Prisma prata','low','completed',null,null,null,'R. Teodoro Sampaio, 1.020 — Pinheiros','São Paulo','05406-050',-4400,1,0,'',null,-4500,null,null]
+];
+function rngFrom(n){ let s = (n * 2654435761) >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+let OS = RAW.map(r => {
+  const sv = SERV[r[1]]; const geo = CIDADE_GEO[r[9]]; const rnd = rngFrom(r[0]);
+  const created = em(r[16]); const sched = em(r[11]);
+  const o = { id:'os'+r[0], n:r[0], code:'OS-000'+r[0], serv:r[1], title:sv.nome+' — '+r[2], veiculoCliente:r[2], priority:r[3], status:r[4],
+    customerName:r[5], customerPhone:r[6], customerDocument:r[7], address:r[8], city:r[9], uf:'SP', cep:r[10],
+    scheduledFor:sched, assigned:!!r[12], mine:!!r[13], checklists:r[14] ? r[14].split('').map(c => ({ role: c==='c'?'collection':c==='d'?'delivery':'generic', source: c==='g'?'manual':'resolved' })) : [],
+    slaDueAt:em(r[15]), createdAt:created, destination:r[17], approvalSeed:r[18],
+    lat: geo[0] + (rnd()-.5)*0.08, lng: geo[1] + (rnd()-.5)*0.08,
+    vehicle: r[12] ? VIATURAS[r[0] % VIATURAS.length] : null, team: r[12] ? EQUIPES[r[0] % EQUIPES.length] : null };
+  o.dlat = o.lat + (rnd()-.4)*0.09; o.dlng = o.lng + (rnd()-.4)*0.09;
+  definirMarcos(o);
+  if (o.status === 'cancelled') { o.cancelledAt = em(-560); o.cancellationReason = 'Cliente resolveu a pane antes do deslocamento.'; o.financialDecision = 'Zerar itens'; }
+  return o;
+});
+function definirMarcos(o){
+  const base = o.scheduledFor && o.scheduledFor < AGORA ? o.scheduledFor : o.createdAt;
+  o.startedAt = ['on_route','on_site','in_progress','paused','completed'].includes(o.status) ? new Date(base.getTime() + 5*60000) : null;
+  o.arrivedAt = ['on_site','in_progress','paused','completed'].includes(o.status) ? new Date(base.getTime() + 38*60000) : null;
+  o.completedAt = o.status === 'completed' ? new Date(base.getTime() + 95*60000) : null;
+}
+const byId = id => OS.find(o => o.id === id);
+
+/* ── Regras de exibição (WorkOrdersPage.tsx:100-122 e work-orders-row.logic.ts:105-114) ── */
+function atraso(o){
+  if (!o.scheduledFor || FINAL(o.status)) return null;
+  if (o.scheduledFor >= AGORA) return null;
+  return (AGORA - o.scheduledFor) > 86400000 ? 'critical' : 'warn';
+}
+function agenda(o){
+  const d = o.scheduledFor;
+  if (!d) return { text:'Sem agenda', cor:'#94A3B8', peso:600 };
+  const am = new Date(AGORA); am.setDate(am.getDate()+1); const on = new Date(AGORA); on.setDate(on.getDate()-1);
+  const dia = mesmoDia(d, AGORA) ? 'Hoje' : mesmoDia(d, am) ? 'Amanhã' : mesmoDia(d, on) ? 'Ontem' : pad(d.getDate())+'/'+pad(d.getMonth()+1);
+  const text = dia + ', ' + fHM(d);
+  if (FINAL(o.status)) return { text, cor:'#94A3B8', peso:600 };
+  const diff = (d - AGORA) / 60000;
+  if (diff <= 0) return { text, cor:'#DC2626', peso:700 };
+  if (diff <= 120) return { text, cor:'#B45309', peso:700 };
+  return { text, cor:'#334155', peso:600 };
+}
+function delayBadge(o){ const s = atraso(o); if (!s) return ''; const t = s === 'critical' ? ['#FEF2F2','#DC2626','Ordem de serviço atrasada há mais de um dia'] : ['#FFFBEB','#D97706','Ordem de serviço atrasada']; return '<span class="os-delay" style="background:'+t[0]+';color:'+t[1]+'" aria-label="'+t[2]+'">Atrasada</span>'; }
+function pill(s){ const t = ST_TOM[s]; return '<span class="pat-pill" style="background:'+t[0]+';color:'+t[1]+'">'+ST[s]+'</span>'; }
+function prio(p){ const t = PR_TOM[p]; return '<span class="os-pr" style="color:'+t[1]+'"><i style="background:'+t[0]+'"></i>'+PR[p]+'</span>'; }
+function local(o){ return o.city + '/' + o.uf; }
+function servLinha(o){ return o.title + ' · ' + local(o); }
+function slaInfo(o){
+  if (!o.slaDueAt || FINAL(o.status)) return { text: FINAL(o.status) ? '—' : 'Sem prazo', cor:'#94A3B8', risco:null };
+  const m = Math.round((o.slaDueAt - AGORA) / 60000);
+  const dur = x => x >= 60 ? Math.floor(x/60)+' h'+(x%60 ? ' '+(x%60)+' min' : '') : x+' min';
+  if (m < 0) return { text:'Vencido há '+dur(-m), cor:'#B91C1C', risco:'vencido' };
+  if (m <= 60) return { text:'Vence em '+dur(m), cor:'#B45309', risco:'1h' };
+  return { text:'Vence em '+dur(m), cor:'#15803D', risco:null };
+}
+function faixaAgenda(o){
+  if (FINAL(o.status)) return 'finalizadas';
+  if (!o.scheduledFor) return 'semagenda';
+  const diff = (o.scheduledFor - AGORA) / 60000;
+  if (diff <= 0) return 'atrasadas';
+  if (diff <= 120) return 'prox2h';
+  if (mesmoDia(o.scheduledFor, AGORA)) return 'hoje';
+  return 'depois';
+}
+const CHEV = '<span data-chevron class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+
+/* ── Estado por opção ── */
+const novoEstado = () => ({ aba:'all', alvo:null, busca:'', estado:'normal', pagina:0, filtrosAbertos:false, prioridade:'all', periodo:'all', aberta:null, tela:'lista', osAberta:null });
+const S = { a:novoEstado(), b:novoEstado(), c:novoEstado() };
+let opcao = 'a';
+
+/* ── Base da lista: o que o papel enxerga + filtros do servidor (Prioridade, Data de abertura) ── */
+function base(v){
+  const st = S[v];
+  if (st.estado === 'vazio' || st.estado === 'erro' || st.estado === 'proibido' || st.estado === 'carregando') return [];
+  let arr = OS.slice().sort((x, y) => y.createdAt - x.createdAt);
+  if (papel === 'tecnico') arr = arr.filter(o => o.mine);
+  if (st.prioridade !== 'all') arr = arr.filter(o => o.priority === st.prioridade);
+  if (st.periodo !== 'all') { const lim = st.periodo === 'today' ? new Date(AGORA.getFullYear(), AGORA.getMonth(), AGORA.getDate()) : new Date(AGORA.getTime() - (st.periodo === '7d' ? 7 : 30) * 86400000); arr = arr.filter(o => o.createdAt >= lim); }
+  return arr;
+}
+const TABS = [['all','Todas',() => true],['unassigned','Sem técnico',o => !FINAL(o.status) && !o.assigned],['field','Em campo',o => CAMPO(o.status)],['done','Concluídas',o => o.status === 'completed']];
+const ALVOS = {
+  abertas:{ rot:'OS abertas', f:o => !FINAL(o.status) },
+  andamento:{ rot:'Em andamento', f:o => CAMPO(o.status) },
+  atrasadas:{ rot:'Atrasadas', f:o => !!atraso(o) },
+  concluidas:{ rot:'Concluídas', f:o => o.status === 'completed' },
+  semtecnico:{ rot:'Sem técnico', f:o => !FINAL(o.status) && !o.assigned },
+  semcliente:{ rot:'Sem cliente vinculado', f:o => !FINAL(o.status) && !o.customerName },
+  slavencido:{ rot:'SLA vencido', f:o => slaInfo(o).risco === 'vencido' },
+  fila:{ rot:'Na fila (não finalizadas)', f:o => !FINAL(o.status) },
+  'ag-atrasadas':{ rot:'Agenda: atrasadas', f:o => faixaAgenda(o) === 'atrasadas' },
+  'ag-prox2h':{ rot:'Agenda: próximas 2 horas', f:o => faixaAgenda(o) === 'prox2h' },
+  'ag-hoje':{ rot:'Agenda: ainda hoje', f:o => faixaAgenda(o) === 'hoje' },
+  'ag-depois':{ rot:'Agenda: amanhã em diante', f:o => faixaAgenda(o) === 'depois' },
+  'ag-semagenda':{ rot:'Sem agenda', f:o => faixaAgenda(o) === 'semagenda' },
+  'ag-finalizadas':{ rot:'Finalizadas', f:o => faixaAgenda(o) === 'finalizadas' }
+};
+Object.keys(ST).forEach(s => ALVOS['st-'+s] = { rot:'Situação: '+ST[s], f:o => o.status === s });
+Object.keys(PR).forEach(p => ALVOS['pr-'+p] = { rot:'Prioridade '+PR[p]+' (abertas)', f:o => o.priority === p && !FINAL(o.status) });
+function linhas(v){
+  const st = S[v]; let arr = base(v);
+  const tab = TABS.find(t => t[0] === st.aba) || TABS[0]; arr = arr.filter(tab[2]);
+  if (st.alvo && ALVOS[st.alvo]) arr = arr.filter(ALVOS[st.alvo].f);
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(o => [o.code, o.title, o.customerName, o.address].some(x => (x || '').toLowerCase().includes(q))); }
+  return arr;
+}
+function contagens(arr){
+  return { abertas:arr.filter(o => !FINAL(o.status)).length, andamento:arr.filter(o => CAMPO(o.status)).length, atrasadas:arr.filter(o => atraso(o)).length,
+    concluidas:arr.filter(o => o.status === 'completed').length, semTecnico:arr.filter(o => !FINAL(o.status) && !o.assigned).length,
+    atrasadasCampo:arr.filter(o => CAMPO(o.status) && atraso(o)).length, semCliente:arr.filter(o => !FINAL(o.status) && !o.customerName).length,
+    slaVencido:arr.filter(o => slaInfo(o).risco === 'vencido').length, sla1h:arr.filter(o => slaInfo(o).risco === '1h').length };
+}
+
+/* ═════════ CABEÇALHO, FILTROS, KPIs (comuns) ═════════ */
+function headerHTML(v, kicker, sub){
+  const proib = S[v].estado === 'proibido'; const nf = (S[v].prioridade !== 'all' ? 1 : 0) + (S[v].periodo !== 'all' ? 1 : 0);
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kicker+'</div><h1 class="pat-page-header__title">Ordens de Serviço</h1><p class="pat-page-header__subtitle">'+sub+'</p></div>'+
+    '<div class="pat-page-header__actions">'+
+    (proib ? '' : '<button type="button" class="pat-btn'+(nf?' pat-btn--engaged':'')+'" data-filtrar aria-expanded="'+S[v].filtrosAbertos+'">'+ic('filter',15)+' Filtrar'+(nf?'<span class="pat-btn__count" aria-hidden="true">'+nf+'</span><span class="sr">, '+nf+(nf>1?' filtros ativos':' filtro ativo')+'</span>':'')+'</button>'+
+      '<button type="button" class="pat-btn" data-exportar>'+ic('download',15)+' Exportar</button>')+
+    (pode('work_orders:create') ? '<button type="button" class="pat-btn pat-btn--primary" data-nova-os>'+ic('plus',15)+' Nova OS</button>' : '')+
+    '</div></div>';
+}
+function filtrosHTML(v){
+  const st = S[v]; if (!st.filtrosAbertos || st.estado === 'proibido') return '';
+  return '<div class="filtros-card" role="group" aria-label="Filtros da lista de ordens de serviço">'+
+    '<label>Prioridade<select data-f-prioridade><option value="all">Todas as prioridades</option>'+Object.keys(PR).map(p => '<option value="'+p+'"'+(st.prioridade===p?' selected':'')+'>'+PR[p]+'</option>').join('')+'</select></label>'+
+    '<div class="grupo">Data de abertura<div class="chips-periodo">'+[['all','Qualquer data'],['today','Hoje'],['7d','Últimos 7 dias'],['30d','Últimos 30 dias']].map(x => '<button type="button" data-f-periodo="'+x[0]+'" aria-pressed="'+(st.periodo===x[0])+'">'+x[1]+'</button>').join('')+'</div></div>'+
+    '<button type="button" class="pat-link" data-f-limpar style="margin-bottom:8px">Limpar filtros</button></div>';
+}
+function bannerHTML(v){
+  const e = S[v].estado;
+  if (e === 'desatualizado') return '<div role="status" class="pat-banner pat-banner--warning">'+ic('alert',14)+'<span>Dados desatualizados — última atualização às 09:41</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  return '';
+}
+function kpi(alvo, icone, cor, bg, valor, rot, dica, tag, borda, clicavel){
+  const tagH = tag ? '<span class="pat-kpi__tag" style="background:'+tag[1]+';color:'+tag[2]+'">'+tag[0]+'</span>' : '';
+  const corpo = '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(icone,16)+'</span>'+tagH+'</div><div class="pat-kpi__value">'+valor+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint">'+dica+'</div>';
+  if (!clicavel) return '<div class="pat-kpi">'+corpo+'</div>';
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="'+alvo+'" aria-pressed="'+(S[opcao] && S[opcaoAtualRender].alvo===alvo)+'" aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'"'+(borda?' style="border-color:'+borda+'"':'')+'>'+corpo+'</button>';
+}
+let opcaoAtualRender = 'a';
+function kpisSkel(n){ return Array.from({length:n}, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisPadrao(v, extra){
+  const st = S[v]; opcaoAtualRender = v;
+  if (st.estado === 'carregando') return kpisSkel(extra ? 5 : 4);
+  const deg = st.estado === 'erro' || st.estado === 'proibido';
+  const c = contagens(base(v)); const val = n => deg ? '—' : n;
+  const tone = (cor, bg) => deg ? ['#94A3B8','#F1F5F9'] : [cor, bg];
+  const k = [];
+  let t = tone('#2563EB','#EFF6FF'); k.push(kpi('abertas','wrench',t[0],t[1],val(c.abertas),'OS abertas','ainda não concluídas nem canceladas', !deg && c.semTecnico ? [c.semTecnico+' sem técnico','#FEF3C7','#B45309'] : null, null, !deg));
+  t = tone('#0369A1','#F0F9FF'); k.push(kpi('andamento','send',t[0],t[1],val(c.andamento),'Em andamento','técnico em campo agora', deg ? null : c.atrasadasCampo ? ['há atrasos','#FEF3C7','#B45309'] : ['no prazo','#DCFCE7','#15803D'], null, !deg));
+  t = tone(c.atrasadas ? '#DC2626' : '#15803D', c.atrasadas ? '#FEF2F2' : '#F0FDF4'); k.push(kpi('atrasadas','alert',t[0],t[1],val(c.atrasadas),'Atrasadas','agenda vencida e sem conclusão', deg ? null : c.atrasadas ? ['agir agora','#FEE2E2','#B91C1C'] : ['sob controle','#DCFCE7','#15803D'], !deg && c.atrasadas ? '#FCA5A5' : null, !deg));
+  if (extra) { t = tone(c.slaVencido ? '#B91C1C' : '#15803D', c.slaVencido ? '#FEF2F2' : '#F0FDF4'); k.push(kpi('slavencido','clock',t[0],t[1],val(c.slaVencido),'SLA vencido','só OS com prazo de SLA definido', deg ? null : c.sla1h ? [c.sla1h+' vencem em 1 h','#FEF3C7','#B45309'] : ['sem risco','#DCFCE7','#15803D'], null, !deg)); }
+  t = tone('#15803D','#F0FDF4'); k.push(kpi('concluidas','checkCircle',t[0],t[1],val(c.concluidas),'Concluídas','no total da lista', deg ? null : ['finalizadas','#DCFCE7','#15803D'], null, !deg));
+  return k.join('');
+}
+
+/* ═════════ TABELA (comum às 3) ═════════ */
+function toolbarHTML(v){
+  return '<div class="pat-os-toolbar"><div class="pat-os-search">'+ic('search',15)+'<input type="search" data-busca="'+v+'" placeholder="Buscar por código, cliente ou endereço…" aria-label="Buscar por código, cliente ou endereço"></div>'+
+    (v === 'c' ? '' : '<div class="pat-os-tabs" role="group" aria-label="Recorte da lista">'+TABS.map(t => '<button type="button" class="pat-os-tab" data-aba-lista="'+t[0]+'">'+t[1]+'</button>').join('')+'</div>')+
+    '<span class="pat-os-count" data-count></span></div>';
+}
+function estadoPainel(tipo, embutido, v){
+  const P = {
+    vazio:['empty', ic('clipboard',28), 'Nenhuma ordem de serviço', 'As ordens atribuídas à sua organização aparecem aqui.', pode('work_orders:create') ? '<button type="button" class="pat-btn pat-btn--primary" data-nova-os style="margin-top:6px;padding:10px 18px;border-radius:10px;font-size:13px">Nova OS</button>' : ''],
+    filtrado:['empty', ic('clipboard',28), 'Nenhuma OS para os filtros atuais', 'Ajuste a busca ou os filtros acima — ou crie uma nova ordem de serviço.', ''],
+    erro:['erro', ic('alert',28), 'Não foi possível carregar as ordens', 'A consulta às ordens de serviço falhou. Tente novamente em instantes.', '<button type="button" class="pat-btn pat-btn--primary" data-tentar style="margin-top:6px;padding:10px 20px;border-radius:10px;font-size:13px">Tentar novamente</button>'],
+    proibido:['forbidden', ic('shield',26), 'Sem permissão para ver ordens de serviço', 'Seu perfil não inclui o módulo de OS nesta organização. Solicite acesso ao administrador da organização.', '']
+  }[tipo];
+  return '<div class="state-panel'+(embutido?' state-panel--embedded':'')+(P[0]==='erro'?' state-panel--erro':'')+'"'+(P[0]==='erro'?' role="alert"':'')+'><div class="state-panel__icon" aria-hidden="true">'+P[1]+'</div><div class="state-panel__title">'+P[2]+'</div><div class="state-panel__detail">'+P[3]+'</div>'+(P[4]?'<div>'+P[4]+'</div>':'')+'</div>';
+}
+function renderTabela(v){
+  const st = S[v], root = $('[data-view="'+v+'"] .tela-lista');
+  $$('[data-aba-lista]', root).forEach(b => { const on = b.dataset.abaLista === st.aba; b.classList.toggle('pat-os-tab--active', on); b.setAttribute('aria-pressed', on); });
+  const card = $('[data-os-card]', root), painel = $('[data-estado-painel]', root);
+  if (st.estado === 'erro' || st.estado === 'proibido') { card.hidden = true; painel.hidden = false; painel.innerHTML = estadoPainel(st.estado, false, v); return; }
+  card.hidden = false; painel.hidden = true;
+  const tb = $('[data-tbody]', root), cnt = $('[data-count]', root), chip = $('[data-chip]', root), pager = $('[data-pager]', root);
+  const cols = $$('thead th', root).length;
+  const al = st.alvo && ALVOS[st.alvo] && ALVOS[st.alvo].rot;
+  chip.innerHTML = al ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+al+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : '';
+  if (st.estado === 'carregando') {
+    tb.innerHTML = [0,1,2,3].map(() => '<tr class="pat-ab-row" aria-hidden="true" style="cursor:default">'+Array.from({length:cols}, () => '<td><span class="pat-skel" style="width:78%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join('');
+    cnt.innerHTML = '<span class="pat-skel" style="width:70px;height:11px"></span>'; if (pager) pager.hidden = true; return;
+  }
+  const arr = linhas(v);
+  cnt.textContent = arr.length === 1 ? '1 ordem' : arr.length + ' ordens';
+  if (!arr.length) {
+    const filtrado = base(v).length > 0 || st.prioridade !== 'all' || st.periodo !== 'all';
+    tb.innerHTML = '<tr><td colspan="'+cols+'" style="padding:0">'+estadoPainel(filtrado ? 'filtrado' : 'vazio', true, v)+'</td></tr>'; if (pager) pager.hidden = true; return;
+  }
+  if (v === 'c') { tb.innerHTML = linhasAgrupadasC(arr); return; }
+  const porPag = 20, maxP = Math.max(0, Math.ceil(arr.length / porPag) - 1); st.pagina = Math.min(st.pagina, maxP);
+  const ini = st.pagina * porPag, fim = Math.min(ini + porPag, arr.length);
+  tb.innerHTML = arr.slice(ini, fim).map(o => (v === 'a' ? linhaA(o) : linhaB(o)) + resumoHTML(o, v, cols)).join('');
+  pager.hidden = false;
+  $('[data-range]', pager).textContent = (ini+1)+'–'+fim+' de '+arr.length;
+  $('[data-pg="ant"]', pager).disabled = st.pagina === 0; $('[data-pg="prox"]', pager).disabled = fim >= arr.length;
+  if (st.aberta) { const r = $('[data-linha="'+st.aberta+'"]', root); if (r) abrirResumo(r, true); else st.aberta = null; }
+}
+function cardTabelaHTML(v, colgroup, cabecalho, comPager){
+  return '<div data-estado-painel hidden></div><div class="pat-os-card" data-os-card>'+toolbarHTML(v)+'<div data-chip></div>'+
+    '<table class="pat-ab-table">'+colgroup+'<thead><tr>'+cabecalho.map(h => '<th>'+h+'</th>').join('')+'<th><span class="sr">Abrir resumo</span></th></tr></thead><tbody data-tbody></tbody></table>'+
+    (comPager ? '<div class="pat-pager" data-pager><label class="pat-pager__size">Itens por página <select aria-label="Itens por página"><option>20</option><option>50</option></select></label><div class="pat-pager__nav"><span class="pat-pager__range" data-range></span><button type="button" class="pat-pager__btn" data-pg="ant">'+ic('arrowLeft',12)+' Anterior</button><button type="button" class="pat-pager__btn" data-pg="prox">Próxima '+ic('chevronRight',12)+'</button></div></div>' : '')+'</div>';
+}
+
+/* Células de 1 linha */
+function celCliente(o){
+  const ck = o.checklists.length ? '<span class="os-ck">Checklist</span>' : '';
+  return o.customerName ? '<span class="os-cli">'+esc(o.customerName)+'</span> <span class="os-svc">· '+esc(servLinha(o))+'</span>'+ck : '<span class="pat-os-noclient">Sem cliente vinculado</span> <span class="os-svc">'+esc(servLinha(o))+'</span>'+ck;
+}
+function celTecnico(o){
+  if (o.assigned) return '<span class="os-tec"><i>'+ic('user',12)+'</i>Atribuído</span>';
+  if (!FINAL(o.status)) return '<span class="os-semtec">Sem técnico</span>';
+  return '<span style="color:#94A3B8">Sem técnico</span>';
+}
+function celAgenda(o){ const a = agenda(o); return '<span style="color:'+a.cor+';font-weight:'+a.peso+';font-size:12.5px;font-variant-numeric:tabular-nums">'+a.text+'</span>'+delayBadge(o); }
+function trLinha(id, o, celulas){ return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row'+(o.nova?' realce-nova':'')+'" data-os="'+o.id+'" title="'+esc(o.code+' · '+(o.customerName||'Sem cliente vinculado')+' · '+servLinha(o))+'">'+celulas.map(c => '<td>'+c+'</td>').join('')+'<td style="text-align:right">'+CHEV+'</td></tr>'; }
+
+/* ── Resumo embaixo da linha (o que a linha de hoje oferece, com os mesmos gates) ── */
+function acoesResumo(o){
+  const b = ['<button type="button" class="pat-btn pat-btn--primary" data-abrir-os="'+o.id+'">'+ic('arrowRight',14)+' Abrir OS</button>'];
+  const prox = AVANCO[o.status];
+  if (prox && pode('work_orders:status') && (papel !== 'tecnico' || o.mine)) b.push('<button type="button" class="pat-btn" data-andamento="'+o.id+'" aria-label="Dar andamento → '+ST[prox]+'">Dar andamento → '+ST[prox]+'</button>');
+  if (!o.assigned && !FINAL(o.status) && pode('field_dispatch:create')) b.push('<button type="button" class="pat-btn pat-btn--ambar" data-atribuir="'+o.id+'">'+ic('send',13)+' Atribuir técnico</button>');
+  if (!o.customerName) b.push('<button type="button" class="pat-btn" data-vincular="'+o.id+'">Vincular cliente</button>');
+  if (REVOGAVEL.includes(o.status) && pode('field_dispatch:cancel') && pode('field_dispatch:read')) b.push('<button type="button" class="pat-btn pat-btn--perigo" data-revogar="'+o.id+'">'+ic('ban',13)+' Revogar envio</button>');
+  return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+}
+function ciclo(o){
+  const passos = [['open','Aberta',o.createdAt],['assigned','Atribuída',null],['accepted','Aceita',null],['on_route','Em rota',o.startedAt],['on_site','No local',o.arrivedAt],['in_progress','Em atendimento',null],['completed','Concluída',o.completedAt]];
+  const ordem = passos.map(p => p[0]); let idx = ordem.indexOf(o.status === 'paused' ? 'in_progress' : o.status);
+  const desvio = o.status === 'cancelled' || o.status === 'rejected';
+  if (desvio) idx = o.assigned ? 1 : 0;
+  return '<div class="ciclo" role="list" aria-label="Ciclo de vida da OS">'+passos.map((p, i) => {
+    const cls = i < idx || (i === idx && o.status === 'completed') ? 'feito' : i === idx ? (desvio ? 'feito' : 'atual') : '';
+    const extra = i === idx && o.status === 'paused' ? ' · pausada' : '';
+    return '<div class="ciclo__passo '+cls+'" role="listitem"><span class="ciclo__bola">'+(cls==='feito'?ic('check',11):'')+'</span><b>'+p[1]+extra+'</b><small>'+(p[2] && (cls==='feito'||cls==='atual') ? fHM(p[2]) : (cls ? 'sem hora' : '—'))+'</small></div>';
+  }).join('')+(desvio ? '<div class="ciclo__passo desvio" role="listitem"><span class="ciclo__bola"></span><b>'+ST[o.status]+'</b><small>'+(o.cancelledAt ? fHM(o.cancelledAt) : 'sem hora')+'</small></div>' : '')+'</div>';
+}
+function resumoHTML(o, v, cols){
+  const id = v + '-' + o.id;
+  const a = agenda(o), s = slaInfo(o);
+  const col1 = campo('Cliente', o.customerName ? esc(o.customerName) : '<span class="pat-os-noclient">Sem cliente vinculado</span>') + (o.customerPhone ? campo('Telefone', '<span class="pat-mono">'+o.customerPhone+'</span>') : '') + campo('Origem', esc(o.address)+' · '+local(o)) + (o.destination ? campo('Destino', esc(o.destination)) : '');
+  const col2 = campo('Situação', ST[o.status]) + campo('Prioridade', '<span style="color:'+PR_COR[o.priority]+';font-weight:700">'+PR[o.priority]+'</span>') + campo('Agenda', a.text === 'Sem agenda' ? 'Sem agenda' : fDH(o.scheduledFor) + (atraso(o) ? ' <b style="color:#DC2626">· atrasada</b>' : '')) + (v === 'b' ? campo('Prazo de SLA', '<span style="color:'+s.cor+';font-weight:700">'+s.text+'</span>') : '') + campo('Técnico', o.assigned ? 'Atribuído' : 'A atribuir');
+  const col3 = campo('Serviço', esc(o.title)) + campo('Checklists', o.checklists.length ? o.checklists.map(c => ({collection:'Vistoria de coleta',delivery:'Vistoria de entrega',generic:'Vistoria geral'})[c.role]).join(', ') : '—') + campo('Criada em', fDH(o.createdAt)) +
+    (o.completedAt ? campo('Concluída em', fDH(o.completedAt)) : o.arrivedAt ? campo('Chegada', fDH(o.arrivedAt)) : o.startedAt ? campo('Início', fDH(o.startedAt)) : '') +
+    (o.status === 'cancelled' ? campo('Motivo', esc(o.cancellationReason)) + campo('Decisão financeira', o.financialDecision) : '');
+  return '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="display:none"><td colspan="'+cols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+(v === 'c' ? ciclo(o) : '')+
+    '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+col1+'</div><div class="pat-ab-detail-col">'+col2+'</div><div class="pat-ab-detail-col">'+col3+'</div></div>'+acoesResumo(o)+'</div></td></tr>';
+}
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL ═════════ */
+function linhaA(o){ return trLinha('a-'+o.id, o, ['<span class="os-code">'+o.code+'</span>'+prio(o.priority), celCliente(o), celTecnico(o), celAgenda(o), pill(o.status)]); }
+function montarA(){
+  $('[data-view="a"] .tela-lista').innerHTML = '<div data-cabecalho></div><div data-filtros></div><div data-banner></div><div class="kpi-grid kpi-grid--4" data-kpis aria-live="polite"></div>'+
+    cardTabelaHTML('a', '<colgroup><col style="width:150px"><col><col style="width:132px"><col style="width:178px"><col style="width:126px"><col style="width:44px"></colgroup>', ['CÓDIGO','CLIENTE / SERVIÇO','TÉCNICO','AGENDA','SITUAÇÃO'], true);
+}
+function renderA(){
+  const r = $('[data-view="a"] .tela-lista');
+  $('[data-cabecalho]', r).innerHTML = headerHTML('a','OPERAÇÃO','Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo.');
+  $('[data-filtros]', r).innerHTML = filtrosHTML('a'); $('[data-banner]', r).innerHTML = bannerHTML('a');
+  $('[data-kpis]', r).innerHTML = kpisPadrao('a', false);
+  renderTabela('a');
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA ═════════ */
+function linhaB(o){ const s = slaInfo(o); return trLinha('b-'+o.id, o, ['<span class="os-code">'+o.code+'</span>', celCliente(o), prio(o.priority).replace('margin-left:8px',''), '<span style="color:'+s.cor+';font-weight:700;font-size:12px">'+s.text+'</span>', celAgenda(o), pill(o.status)]); }
+function montarB(){
+  $('[data-view="b"] .tela-lista').innerHTML = '<div data-cabecalho></div><div data-filtros></div><div data-banner></div><div class="kpi-grid kpi-grid--5" data-kpis aria-live="polite"></div><div class="analitico" data-analitico></div>'+
+    cardTabelaHTML('b', '<colgroup><col style="width:112px"><col><col style="width:96px"><col style="width:150px"><col style="width:172px"><col style="width:124px"><col style="width:44px"></colgroup>', ['CÓDIGO','CLIENTE / SERVIÇO','PRIORIDADE','SLA','AGENDA','SITUAÇÃO'], true);
+}
+function barraBtn(alvo, rot, cor, n, max){ return '<button type="button" class="barra-btn" data-alvo="'+alvo+'" aria-pressed="'+(S.b.alvo===alvo)+'" aria-label="'+esc(rot+': '+n+' — filtrar a lista')+'"><span class="barra-btn__rot"><i style="background:'+cor+'"></i>'+rot+'</span><span class="barra-btn__trilho"><b style="width:'+(max ? n/max*100 : 0).toFixed(1)+'%;background:'+cor+'"></b></span><span class="barra-btn__n">'+n+'</span></button>'; }
+function analiticoB(){
+  const arr = base('b'); if (!arr.length) return '';
+  const cont = {}; arr.forEach(o => cont[o.status] = (cont[o.status]||0) + 1);
+  const ordem = ['open','assigned','accepted','on_route','on_site','in_progress','paused','completed','cancelled','rejected'].filter(s => cont[s]);
+  const maxS = Math.max(...ordem.map(s => cont[s]));
+  const situacao = '<div class="an-card"><div class="an-card__title"><span>Situação das OS</span><small>clique para filtrar</small></div>'+ordem.map(s => barraBtn('st-'+s, ST[s], ST_TOM[s][1], cont[s], maxS)).join('')+'</div>';
+  const fx = [['ag-atrasadas','Atrasadas','#DC2626'],['ag-prox2h','Próximas 2 h','#F59E0B'],['ag-hoje','Ainda hoje','#2563EB'],['ag-depois','Amanhã em diante','#0369A1'],['ag-semagenda','Sem agenda','#94A3B8']].map(x => [x[0], x[1], x[2], arr.filter(ALVOS[x[0]].f).length]);
+  const maxF = Math.max(1, ...fx.map(x => x[3]));
+  const agendaC = '<div class="an-card"><div class="an-card__title"><span>Agenda das OS na fila</span><small>a partir de agora · '+fHM(AGORA)+'</small></div><div class="colunas" role="group" aria-label="OS por faixa de agenda">'+fx.map(x => '<button type="button" class="coluna-btn" data-alvo="'+x[0]+'" aria-pressed="'+(S.b.alvo===x[0])+'" aria-label="'+esc(x[1]+': '+x[3]+' — filtrar a lista')+'"><b style="color:'+x[2]+'">'+x[3]+'</b><i style="height:'+Math.max(3, x[3]/maxF*82)+'px;background:'+x[2]+'"></i><span>'+x[1]+'</span></button>').join('')+'</div>'+
+    '<div style="font-size:11px;color:#94a3b8;margin-top:8px">Mesma regra de atraso da lista: agenda vencida e sem conclusão.</div></div>';
+  const ab = arr.filter(o => !FINAL(o.status)); const pr = ['urgent','high','medium','low'].map(p => [p, ab.filter(o => o.priority === p).length]);
+  const cores = { urgent:'#B91C1C', high:'#F97316', medium:'#F59E0B', low:'#94A3B8' };
+  const tot = ab.length || 1, R = 38, C = 2*Math.PI*R; let off = 0;
+  const arcos = pr.filter(x => x[1]).map(x => { const len = x[1]/tot*C; const el = '<circle cx="50" cy="50" r="'+R+'" fill="none" stroke="'+cores[x[0]]+'" stroke-width="14" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 50 50)"/>'; off += len; return el; }).join('');
+  const c = contagens(arr);
+  const prioC = '<div class="an-card an-prio"><div class="an-card__title"><span>Prioridade das OS abertas</span><small>'+ab.length+' na fila</small></div><div class="donut-wrap"><svg width="100" height="100" viewBox="0 0 100 100" role="img" aria-label="Prioridade das OS abertas"><circle cx="50" cy="50" r="'+R+'" fill="none" stroke="#f1f5f9" stroke-width="14"/>'+arcos+'<text x="50" y="49" text-anchor="middle" font-size="19" font-weight="800" fill="#0f172a">'+ab.length+'</text><text x="50" y="63" text-anchor="middle" font-size="9.5" fill="#64748b">abertas</text></svg>'+
+    '<div class="lg-list">'+pr.map(x => '<button type="button" class="lg-btn" data-alvo="pr-'+x[0]+'" aria-pressed="'+(S.b.alvo==='pr-'+x[0])+'"><span class="lg-sw" style="background:'+cores[x[0]]+'"></span>'+PR[x[0]]+'<b>'+x[1]+'</b></button>').join('')+'</div></div>'+
+    '<div class="atencao"><button type="button" data-alvo="semtecnico" aria-pressed="'+(S.b.alvo==='semtecnico')+'"><b>'+c.semTecnico+'</b><span>OS sem técnico</span></button><button type="button" data-alvo="semcliente" aria-pressed="'+(S.b.alvo==='semcliente')+'"><b>'+c.semCliente+'</b><span>Sem cliente vinculado</span></button></div></div>';
+  return situacao + agendaC + prioC;
+}
+function renderB(){
+  const r = $('[data-view="b"] .tela-lista');
+  $('[data-cabecalho]', r).innerHTML = headerHTML('b','OPERAÇÃO · VISÃO ANALÍTICA','Onde está a pressão do dia — atrasos, prazo de SLA, OS sem técnico — e a lista logo abaixo.');
+  $('[data-filtros]', r).innerHTML = filtrosHTML('b'); $('[data-banner]', r).innerHTML = bannerHTML('b');
+  $('[data-kpis]', r).innerHTML = kpisPadrao('b', true);
+  const an = $('[data-analitico]', r); const html = ['normal','desatualizado'].includes(S.b.estado) ? analiticoB() : ''; an.innerHTML = html; an.hidden = !html;
+  renderTabela('b');
+}
+
+/* ═════════ OPÇÃO C — FILA POR AGENDA ═════════ */
+const GRUPOS_C = [['atrasadas','Atrasadas','#B91C1C','#FEE2E2'],['prox2h','Próximas 2 horas','#B45309','#FEF3C7'],['hoje','Ainda hoje','#1D4ED8','#DBEAFE'],['depois','Amanhã em diante','#0369A1','#E0F2FE'],['semagenda','Sem agenda','#475569','#F1F5F9'],['finalizadas','Finalizadas','#475569','#F1F5F9']];
+function linhaC(o){
+  const a = agenda(o); const d = o.scheduledFor;
+  const hora = !d ? '—' : mesmoDia(d, AGORA) ? fHM(d) : pad(d.getDate())+'/'+pad(d.getMonth()+1)+' '+fHM(d);
+  return trLinha('c-'+o.id, o, ['<span class="os-hora" style="color:'+a.cor+'">'+hora+'</span>', '<span class="os-code">'+o.code+'</span>'+prio(o.priority), celCliente(o), esc(local(o)), celTecnico(o), pill(o.status)]);
+}
+function linhasAgrupadasC(arr){
+  return GRUPOS_C.map(g => {
+    const it = arr.filter(o => faixaAgenda(o) === g[0]).sort((x, y) => (x.scheduledFor||0) - (y.scheduledFor||0) || (g[0]==='finalizadas' ? 0 : 0));
+    if (!it.length) return '';
+    return '<tr class="grupo-row"><td colspan="7" style="color:'+g[2]+'">'+g[1]+'<span class="grupo-n" style="background:'+g[3]+';color:'+g[2]+'">'+it.length+'</span></td></tr>'+it.map(o => linhaC(o) + resumoHTML(o, 'c', 7)).join('');
+  }).join('');
+}
+function montarC(){
+  $('[data-view="c"] .tela-lista').innerHTML = '<div data-cabecalho></div><div data-filtros></div><div data-banner></div><div class="blocos-c" data-kpis aria-live="polite"></div>'+
+    cardTabelaHTML('c', '<colgroup><col style="width:100px"><col style="width:158px"><col><col style="width:150px"><col style="width:120px"><col style="width:124px"><col style="width:44px"></colgroup>', ['HORA','CÓDIGO','CLIENTE / SERVIÇO','CIDADE','TÉCNICO','SITUAÇÃO'], false);
+}
+function renderC(){
+  const r = $('[data-view="c"] .tela-lista'), st = S.c;
+  $('[data-cabecalho]', r).innerHTML = headerHTML('c','OPERAÇÃO · FILA DO DIA','A fila de atendimento pela agenda: o que está atrasado, o que vence nas próximas horas e o que fica para depois.');
+  $('[data-filtros]', r).innerHTML = filtrosHTML('c'); $('[data-banner]', r).innerHTML = bannerHTML('c');
+  const k = $('[data-kpis]', r);
+  if (st.estado === 'carregando') k.innerHTML = Array.from({length:7}, () => '<div class="bloco-c" aria-hidden="true" style="cursor:default"><span class="pat-skel" style="width:30px;height:20px"></span><span class="pat-skel" style="width:80%;height:11px"></span></div>').join('');
+  else {
+    const deg = st.estado === 'erro' || st.estado === 'proibido'; const arr = base('c');
+    const n = f => deg ? '—' : arr.filter(f).length;
+    const blocos = [['fila','Na fila','não finalizadas','#2563EB'],['ag-atrasadas','Atrasadas','agenda vencida','#B91C1C'],['ag-prox2h','Próximas 2 h','até '+fHM(new Date(AGORA.getTime()+7200000)),'#B45309'],['ag-hoje','Ainda hoje','depois de 2 h','#1D4ED8'],['ag-depois','Amanhã em diante','próximos dias','#0369A1'],['ag-semagenda','Sem agenda','sem horário marcado','#475569'],['ag-finalizadas','Finalizadas','concluídas, canceladas, recusadas','#475569']];
+    k.innerHTML = blocos.map(b => deg ? '<div class="bloco-c" style="cursor:default"><b style="color:#94A3B8">—</b><span>'+b[1]+'</span><small>dados indisponíveis</small></div>' :
+      '<button type="button" class="bloco-c" data-alvo="'+b[0]+'" aria-pressed="'+(st.alvo===b[0])+'" aria-label="'+esc(b[1]+': '+n(ALVOS[b[0]].f)+' — filtrar a lista')+'"><b style="color:'+b[3]+'">'+n(ALVOS[b[0]].f)+'</b><span>'+b[1]+'</span><small>'+b[2]+'</small></button>').join('');
+  }
+  renderTabela('c');
+}
+const RENDER = { a:renderA, b:renderB, c:renderC };
+
+/* ── Linhas: um resumo aberto por vez ── */
+function abrirResumo(row, forcar){
+  const view = row.closest('[data-view]'); const v = view.dataset.view; const id = row.dataset.linha;
+  const abrir = forcar || row.getAttribute('aria-expanded') !== 'true';
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded','false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded','true'); const d = $('[data-detalhe-de="'+id+'"]', view); if (d) d.style.display = ''; S[v].aberta = id; }
+  else S[v].aberta = null;
+}
+
+/* ═════════ DETALHE DA OS — WorkOrderDetailPage + abas (tabs.config.ts:35-47) ═════════ */
+const ABAS = [['informacoes-gerais','Informações gerais'],['financeiro','Financeiro'],['orcamento','Orçamento'],['comentarios','Comentários'],['arquivos','Arquivos'],['mobile','Mobile'],['quilometragem','Quilometragem'],['mapa','Mapa'],['logs','Logs']];
+const DET = {};
+function det(o){
+  if (DET[o.id]) return DET[o.id];
+  const r = rngFrom(o.n + 7); const t0 = o.createdAt;
+  const d = { comentarios:[], arquivos:[], financeiro:[], orcamentos:[], logs:[], historico:[] };
+  // Histórico (eventos da OS) e Logs (auditoria)
+  const caminho = ['open','assigned','accepted','on_route','on_site','in_progress'];
+  const passosAte = s => { if (s === 'paused') return caminho.concat(['paused']); if (s === 'completed') return caminho.concat(['completed']); const i = caminho.indexOf(s); return i >= 0 ? caminho.slice(0, i+1) : (o.assigned ? caminho.slice(0,2) : caminho.slice(0,1)); };
+  const passos = passosAte(o.status); let tt = new Date(t0);
+  d.historico.push(['Ordem de serviço criada', new Date(t0)]); d.logs.push(['OS criada', o.n % 2 ? 'Rafael Souza' : 'Mariana Costa', new Date(t0)]);
+  passos.slice(1).forEach((s, i) => { tt = new Date(tt.getTime() + (8 + i*9)*60000); d.historico.push([s === 'assigned' ? 'Operador atribuído à ordem' : 'Situação alterada: '+ST[passos[i]]+' → '+ST[s], new Date(tt)]); if (s === 'assigned') d.logs.push(['OS atribuída','Rafael Souza',new Date(tt)]); else d.logs.push(['OS atualizada', CAMPO(s) || s === 'accepted' || s === 'completed' ? 'Carlos Mendes' : 'Rafael Souza', new Date(tt)]); });
+  if (o.status === 'cancelled') { d.historico.push(['Ordem cancelada — '+o.cancellationReason, o.cancelledAt]); d.logs.push(['OS cancelada','Mariana Costa',o.cancelledAt]); }
+  if (o.status === 'rejected') { d.historico.push(['Situação alterada: Atribuída → Recusada', new Date(t0.getTime()+30*60000)]); d.logs.push(['OS atualizada','Carlos Mendes',new Date(t0.getTime()+30*60000)]); }
+  // Financeiro
+  if (o.assigned || o.status === 'completed') {
+    const sv = SERV[o.serv]; d.financeiro.push({ desc:sv.nome, origem:'tariff', qtd:1, unit:sv.preco, obs:'Tabela de valores do cliente' });
+    if (sv.destino) d.financeiro.push({ desc:'Quilômetro excedente', origem:'tariff', qtd:12, unit:6.5, obs:'acima de 30 km' });
+    if (['in_progress','paused','completed'].includes(o.status) && r() > .35) d.financeiro.push({ desc:'Pedágio — Rod. dos Bandeirantes', origem:'manual', qtd:2, unit:18.9, obs:'ida e volta' });
+    d.logs.push(['Item financeiro lançado','Juliana Prado',new Date(t0.getTime()+15*60000)]);
+  }
+  // Orçamentos
+  if (o.serv === 'reboque_pesado' || o.n === 107 || o.n === 111) {
+    const aprov = o.serv === 'reboque_pesado'; const sv = SERV[o.serv];
+    d.orcamentos.push({ numero:'ORC-2026-0'+(400+o.n), status: aprov ? 'Aprovado' : 'Rascunho', tom: aprov ? ['#16A34A','#F0FDF4'] : ['#2563EB','#EFF6FF'], validade: fData(new Date(AGORA.getTime() + 6*86400000)),
+      itens:[[sv.nome,1,sv.preco],['Quilômetro excedente',aprov?40:12,6.5],aprov?['Hora parada do equipamento',2,210]:['Patins para veículo travado',1,90]] });
+  }
+  // Comentários
+  const tags = { vip:['Cliente prioritário','#7C3AED'], peca:['Aguardando peça','#F59E0B'], seg:['Seguradora','#2563EB'], acesso:['Acesso difícil','#DC2626'] };
+  if (o.customerName && o.customerName.indexOf('Seguradora') === 0) d.comentarios.push({ autor:'Rafael Souza', quando:new Date(t0.getTime()+6*60000), msg:'Sinistro aberto pela seguradora; segurado aguarda no local com o pisca-alerta ligado.', tags:[tags.seg] });
+  if (CAMPO(o.status) || o.status === 'completed') d.comentarios.push({ autor:'Carlos Mendes', quando:new Date(t0.getTime()+52*60000), msg: o.status === 'paused' ? 'Pausado: aguardando chave reserva trazida pelo cliente.' : 'Veículo embarcado na plataforma, cintas conferidas.', tags: o.status === 'paused' ? [tags.peca] : [], editado: o.n % 3 === 0 });
+  if (o.address.indexOf('Rod.') === 0) d.comentarios.push({ autor:'Mariana Costa', quando:new Date(t0.getTime()+20*60000), msg:'Acostamento estreito — acionar a concessionária da rodovia para sinalização.', tags:[tags.acesso] });
+  d.comentarios.forEach(() => d.logs.push(['Comentário adicionado','Carlos Mendes',new Date(t0.getTime()+52*60000)]));
+  // Arquivos (fotos e documentos)
+  if (['on_site','in_progress','paused','completed'].includes(o.status)) {
+    const fotos = [['frente','foto-frente.jpg','Frente'],['lado','foto-lateral-esquerda.jpg','Lateral esquerda'],['tras','foto-traseira.jpg','Traseira'],['painel','painel-hodometro.jpg','Painel e hodômetro'],['avaria','avaria-parachoque.jpg','Avaria no para-choque'],['embarque','embarque-plataforma.jpg','Embarque na plataforma'],['pneu','pneu-dianteiro.jpg','Pneu dianteiro'],['assinatura','assinatura-cliente.png','Assinatura do cliente']];
+    const nF = o.status === 'completed' ? 8 : o.status === 'on_site' ? 4 : 6;
+    fotos.slice(0, nF).forEach((f, i) => d.arquivos.push({ nome:f[1], tipo:f[1].endsWith('.png')?'Imagem PNG':'Imagem JPEG', img:f[0], leg:f[2], tam: 380 + Math.floor(r()*1900), status: i === nF-1 && o.status !== 'completed' ? 'pending_review' : 'stored', por:'Carlos Mendes', quando:new Date(t0.getTime()+(45+i*3)*60000) }));
+    d.arquivos.push({ nome:'termo-de-retirada.pdf', tipo:'PDF', tam:212, status:'stored', por:'Carlos Mendes', quando:new Date(t0.getTime()+70*60000) });
+    if (o.n === 104) d.arquivos.push({ nome:'boletim-de-ocorrencia.pdf', tipo:'PDF', tam:640, status:'rejected', por:'Rafael Souza', quando:new Date(t0.getTime()+30*60000) });
+    d.logs.push(['Arquivo anexado','Carlos Mendes',new Date(t0.getTime()+45*60000)]);
+  }
+  // Despacho (aba Mobile)
+  if (o.assigned && !['open','cancelled'].includes(o.status)) {
+    const ord = ['assigned','accepted','on_route','on_site','in_progress','completed']; const idx = Math.max(ord.indexOf(o.status === 'paused' ? 'in_progress' : o.status), o.status === 'rejected' ? 0 : -1);
+    let tm = new Date(t0.getTime()+8*60000); const est = [];
+    for (let i = 0; i < 6; i++) { est.push(i <= idx ? new Date(tm) : null); tm = new Date(tm.getTime() + (i===2?28:9)*60000); }
+    d.despacho = { etapas:est, situacao: o.status === 'rejected' ? 'Cancelado' : ({assigned:'Atribuído',accepted:'Aceito',on_route:'Em deslocamento',on_site:'No local',in_progress:'Em atendimento',paused:'Em atendimento',completed:'Concluído'})[o.status], cancelado: o.status === 'rejected' ? new Date(t0.getTime()+30*60000) : null };
+  }
+  if (['in_progress','paused','completed'].includes(o.status) && o.checklists.length) d.checklistApp = { titulo: o.serv === 'reboque_pesado' ? 'Checklist de remoção — veículo pesado' : 'Checklist de remoção — veículo leve', linhas:[['Veículo com chave','Sim'],['Documento no veículo','Sim'],['Avarias aparentes','Riscos no para-choque dianteiro'],['Nível de combustível','1/4'],['Objetos no interior','Cadeirinha infantil no banco traseiro'],['Cliente acompanhou o embarque','Sim']] };
+  // Quilometragem
+  if (['in_progress','paused','completed'].includes(o.status)) { const ini = 182000 + Math.floor(r()*9000) + Math.round(r()*10)/10; d.km = { ini, fim: o.status === 'completed' ? Math.round((ini + 14 + r()*30)*10)/10 : null, origem: o.n === 110 ? 'base' : 'app', corrigido: o.n === 110 ? new Date(t0.getTime()+200*60000) : null }; d.logs.push(['Quilometragem atualizada','Carlos Mendes',new Date(t0.getTime()+40*60000)]); }
+  // Aprovação operacional
+  if (o.approvalSeed === 'p' || o.approvalSeed === 'a') d.aprov = { status: o.approvalSeed === 'p' ? 'pending_approval' : 'approved', pendencia:'Execução concluída — conferir checklist e evidências antes do faturamento', por:'Carlos Mendes', em:o.completedAt || new Date(t0.getTime()+100*60000), decididoPor: o.approvalSeed === 'a' ? 'Mariana Costa' : null, decididoEm: o.approvalSeed === 'a' ? new Date(t0.getTime()+160*60000) : null, motivo:null };
+  d.logs.sort((x, y) => y[2] - x[2]);
+  DET[o.id] = d; return d;
+}
+
+/* Fotos de exemplo (desenhos SVG — não são fotos reais) */
+let uid = 0;
+function fotoSVG(tipo, o){
+  const g = 'fg' + (++uid); const W = 'rgba(255,255,255,.88)', D = '#0f172a';
+  const placa = 'ABC1D23';
+  const lado = '<path d="M18 80 L32 62 Q40 52 56 50 L98 50 Q112 50 122 60 L138 70 Q146 72 146 80 L146 88 L18 88 Z" fill="'+W+'"/><path d="M44 62 L56 54 L78 54 L78 64 Z M84 54 L100 54 Q108 55 114 64 L84 64 Z" fill="#94a3b8"/><circle cx="48" cy="90" r="11" fill="'+D+'"/><circle cx="48" cy="90" r="5" fill="#cbd5e1"/><circle cx="120" cy="90" r="11" fill="'+D+'"/><circle cx="120" cy="90" r="5" fill="#cbd5e1"/>';
+  const pl = '<rect x="62" y="80" width="36" height="11" rx="2" fill="#fff" stroke="#1e3a8a"/><text x="80" y="88.5" text-anchor="middle" font-size="7.5" font-weight="700" font-family="monospace" fill="#0f172a">'+placa+'</text>';
+  let s = '', f = ['#334155','#64748b'];
+  switch (tipo) {
+    case 'frente': s = '<path d="M50 52 L60 32 L100 32 L110 52 Z" fill="#94a3b8"/><rect x="36" y="50" width="88" height="42" rx="10" fill="'+W+'"/><rect x="42" y="58" width="18" height="8" rx="3" fill="#fde68a"/><rect x="100" y="58" width="18" height="8" rx="3" fill="#fde68a"/>'+pl; break;
+    case 'tras': s = '<path d="M52 52 L62 34 L98 34 L108 52 Z" fill="#94a3b8"/><rect x="36" y="50" width="88" height="42" rx="10" fill="'+W+'"/><rect x="42" y="58" width="20" height="9" rx="3" fill="#ef4444"/><rect x="98" y="58" width="20" height="9" rx="3" fill="#ef4444"/>'+pl; break;
+    case 'lado': s = lado; break;
+    case 'painel': f = ['#44403c','#78716c']; s = '<rect x="20" y="40" width="120" height="50" rx="14" fill="#1f2937"/><circle cx="58" cy="65" r="17" fill="none" stroke="#e5e7eb" stroke-width="3"/><circle cx="102" cy="65" r="17" fill="none" stroke="#e5e7eb" stroke-width="3"/><path d="M58 65 L68 55" stroke="#f87171" stroke-width="2.5"/><path d="M102 65 L94 54" stroke="#f87171" stroke-width="2.5"/>'; break;
+    case 'avaria': f = ['#7f1d1d','#57534e']; s = lado + '<circle cx="138" cy="78" r="13" fill="none" stroke="#f87171" stroke-width="3" stroke-dasharray="4 3"/>'; break;
+    case 'embarque': f = ['#1e3a8a','#475569']; s = '<rect x="8" y="78" width="146" height="8" fill="#cbd5e1"/><path d="M8 86 L4 100 L150 100 L154 86 Z" fill="#64748b"/><g transform="translate(0 -10)">'+lado+'</g><path d="M30 74 L30 86 M130 74 L130 86" stroke="#facc15" stroke-width="3"/>'; break;
+    case 'pneu': f = ['#7f1d1d','#57534e']; s = '<circle cx="80" cy="62" r="34" fill="'+D+'"/><circle cx="80" cy="62" r="18" fill="#94a3b8"/><circle cx="80" cy="62" r="5" fill="#475569"/><path d="M104 40 l8 -6" stroke="#f87171" stroke-width="3"/>'; break;
+    case 'assinatura': f = ['#e2e8f0','#cbd5e1']; s = '<rect x="14" y="20" width="132" height="80" rx="6" fill="#fff"/><path d="M28 74 C40 50, 52 86, 64 62 S 86 50, 96 70 S 120 60, 132 56" fill="none" stroke="#1e3a8a" stroke-width="2.5"/><line x1="24" y1="84" x2="136" y2="84" stroke="#94a3b8"/>'; break;
+  }
+  return '<svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Foto de exemplo"><defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+f[0]+'"/><stop offset="1" stop-color="'+f[1]+'"/></linearGradient></defs><rect width="160" height="120" fill="url(#'+g+')"/>'+s+'</svg>';
+}
+
+/* ── Abas ── */
+function vazioT(t, d){ return '<div class="vazio-tracejado"><b>'+t+'</b><span>'+d+'</span></div>'; }
+function abaInfo(o){
+  const d = det(o), m = ST_META[o.status];
+  const ck = o.checklists.length ? o.checklists.map(c => '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span class="cel-val">'+({collection:'Vistoria de coleta',delivery:'Vistoria de entrega',generic:'Vistoria geral'})[c.role]+'</span><span class="ui-chip'+(c.source==='resolved'?' ui-tone-info':'')+'">'+(c.source==='resolved'?'definida por regra':'sem regra registrada')+'</span></div>').join('') : '<div class="cel-val">—</div>';
+  const temCoord = true;
+  const sv = SERV[o.serv];
+  const esquerda = '<div class="card" style="overflow:hidden"><div class="grade-info">'+
+      '<div><div class="cel-rot">Status</div><span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:'+m[0]+';color:'+m[1]+'">'+ST[o.status]+'</span></div>'+
+      '<div><div class="cel-rot">Prioridade</div><div class="cel-val" style="color:'+PR_COR[o.priority]+'">'+PR[o.priority]+'</div></div>'+
+      '<div><div class="cel-rot">Técnico</div><div class="cel-val">'+(o.assigned?'Atribuída':'A atribuir')+'</div></div>'+
+      '<div><div class="cel-rot">Agenda</div><div class="cel-val">'+fDH(o.scheduledFor)+'</div></div>'+
+      '<div><div class="cel-rot">Criada em</div><div class="cel-val">'+fDH(o.createdAt)+'</div></div>'+
+      '<div><div class="cel-rot">Checklists</div><div style="display:flex;flex-direction:column;gap:7px">'+ck+'</div></div></div></div>'+
+    '<div class="card card--p"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="sec-tit">Cliente e endereço</div>'+(temCoord?'<button type="button" class="pat-link" data-toast="Abre o Mapa Operacional centrado nesta OS." style="display:flex;align-items:center;gap:5px;font-size:12.5px">'+ic('mapPin',14)+'Abrir no mapa</button>':'')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div style="width:40px;height:40px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#2563EB;flex-shrink:0">'+esc((o.customerName||'OS').slice(0,2).toUpperCase())+'</div><div><div style="font-size:14.5px;font-weight:700">'+esc(o.customerName||'Cliente não informado')+'</div>'+(o.customerPhone?'<div class="pat-mono" style="font-size:12px;color:#64748B">'+o.customerPhone+'</div>':'')+'</div></div>'+
+      '<div style="font-size:13px;color:#475569;line-height:1.6">'+esc([o.address,o.city,o.uf,o.cep].join(' · '))+'</div></div>'+
+    '<div class="card card--p"><div class="sec-tit" style="margin-bottom:4px">Cadastros vinculados</div><div class="sec-sub" style="margin:0 0 6px">Cliente, viatura, equipe e serviço ligados a esta ordem.</div>'+
+      linkRow('user','Cliente', o.customerName ? '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="cel-val">'+esc(o.customerName)+'</span><span class="ui-chip ui-tone-info">Vinculado ao cadastro</span></div><div class="pat-mono" style="font-size:12px;color:#64748B;margin-top:3px">'+[o.customerDocument,o.customerPhone].filter(Boolean).join(' · ')+'</div><div style="font-size:11px;color:#94A3B8;margin-top:4px">Dados no momento da criação</div>' : '<span style="font-size:13.5px;font-weight:600;color:#94A3B8">Sem cliente vinculado</span>')+
+      linkRow('truck','Viatura', o.vehicle ? '<span class="cel-val">'+o.vehicle[0]+' · '+o.vehicle[1]+'</span>' : '<span style="font-size:13.5px;font-weight:600;color:#94A3B8">Sem viatura vinculada</span>')+
+      linkRow('users','Equipe', o.team ? '<span class="cel-val">'+o.team+'</span>' : '<span style="font-size:13.5px;font-weight:600;color:#94A3B8">Sem equipe vinculada</span>')+
+      linkRow('wrench','Serviço', '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="cel-val">'+sv.nome+'</span><span class="pat-mono" style="font-size:13px;font-weight:700;color:#059669">'+fMoeda(sv.preco)+'</span></div>', true)+'</div>'+
+    '<div class="card card--p"><div class="sec-tit" style="margin-bottom:14px">Histórico</div><ol class="linha-tempo">'+d.historico.map(h => '<li><div class="marco"><i></i><u></u></div><div><div style="font-size:13px;font-weight:600;color:#0F172A">'+esc(h[0])+'</div><div style="font-size:11.5px;color:#94A3B8;margin-top:1px">'+fDH(h[1])+'</div></div></li>').join('')+'</ol></div>';
+  return '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start"><div style="display:flex;flex-direction:column;gap:16px;min-width:0">'+esquerda+'</div>'+painelAprovacao(o)+'</div>';
+}
+function linkRow(icone, rot, corpo, ultimo){ return '<div style="padding:14px 0;'+(ultimo?'':'border-bottom:1px solid #F1F5F9')+'"><div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#94A3B8;font-weight:600;margin-bottom:5px">'+ic(icone,13)+rot+'</div>'+corpo+'</div>'; }
+function painelAprovacao(o){
+  const a = det(o).aprov; const decide = pode('work_orders:cancel') || pode('work_orders:approve');
+  const chip = !a || a.status === 'pending_approval' ? ['Aguardando decisão','#FFFBEB','#D97706'] : a.status === 'approved' ? ['Aprovada','#ECFDF5','#059669'] : ['Reprovada','#FEF2F2','#DC2626'];
+  let corpo;
+  if (!a) corpo = '<div style="font-size:13px;color:#475569">Nenhuma aprovação pendente para esta OS.</div>';
+  else {
+    const linhasA = [['Entidade','Ordem de serviço · '+o.code],['Pendência',a.pendencia],['Solicitado por',a.por+' · '+fDH(a.em)]].concat(a.decididoPor ? [['Decidido por',a.decididoPor+' · '+fDH(a.decididoEm)]] : []).concat(a.motivo ? [['Motivo',a.motivo]] : []);
+    corpo = '<div style="border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:16px">'+linhasA.map((l, i) => '<div style="display:flex;gap:10px;padding:11px 14px;'+(i<linhasA.length-1?'border-bottom:1px solid #F1F5F9':'')+'"><span style="font-size:12px;color:#94A3B8;width:100px;flex-shrink:0">'+l[0]+'</span><span style="font-size:13px;font-weight:600;color:#0F172A">'+esc(l[1])+'</span></div>').join('')+'</div>';
+    if (a.msg) corpo += '<div style="font-size:12.5px;color:#059669;font-weight:600;margin-bottom:12px">'+a.msg+'</div>';
+    if (a.status === 'pending_approval' && decide) corpo += a.reprovando ?
+      '<div><textarea class="ui-input" data-motivo-reprova rows="3" placeholder="Motivo da reprovação (obrigatório)" aria-label="Motivo da reprovação" style="margin-bottom:10px"></textarea><div data-erro-reprova></div><div style="display:flex;gap:10px"><button type="button" data-aprov="confirmar" data-os-id="'+o.id+'" style="flex:1;padding:11px;background:#DC2626;border:none;border-radius:10px;font-size:13.5px;font-weight:700;color:#fff;cursor:pointer">Confirmar reprovação</button><button type="button" class="btn-cinza" data-aprov="cancelar" data-os-id="'+o.id+'">Cancelar</button></div></div>' :
+      '<div style="display:flex;gap:10px"><button type="button" data-aprov="aprovar" data-os-id="'+o.id+'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;background:#059669;border:none;border-radius:10px;font-size:13.5px;font-weight:700;color:#fff;cursor:pointer">'+ic('checkCircle',16)+'Aprovar</button><button type="button" data-aprov="reprovar" data-os-id="'+o.id+'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;background:#fff;border:1px solid #FECACA;border-radius:10px;font-size:13.5px;font-weight:700;color:#DC2626;cursor:pointer">'+ic('xCircle',16)+'Reprovar</button></div>';
+    else if (a.status === 'pending_approval') corpo += '<div style="font-size:12px;color:#94A3B8;text-align:center">Você não tem permissão para decidir esta aprovação.</div>';
+  }
+  return '<div class="card card--p" style="align-self:flex-start" data-painel-aprov><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px"><div class="sec-tit">Aprovação operacional</div><span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:'+chip[1]+';color:'+chip[2]+';white-space:nowrap">'+chip[0]+'</span></div><div class="sec-sub" style="margin:0 0 16px">Decisão sobre a execução desta OS antes de liberar o faturamento.</div>'+corpo+'</div>';
+}
+function abaFin(o){
+  const d = det(o), cria = pode('work_order_financials:create'), edita = pode('work_order_financials:update');
+  const tot = d.financeiro.reduce((s, i) => s + i.qtd*i.unit, 0);
+  return '<div class="card card--p"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="sec-tit">Itens financeiros</div><div class="sec-sub">Serviços da tabela de valores do cliente (valor congelado no lançamento) e itens avulsos.</div></div>'+
+    (cria ? '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-azul" data-toast="Abre o lançamento de serviço da tabela de valores do cliente: serviço, quantidade e observação.">'+ic('plus',16)+' Lançar da tabela</button><button type="button" class="btn-claro" data-toast="Abre o item avulso: descrição, valor unitário, quantidade e observação.">'+ic('plus',16)+' Item avulso</button></div>' : '')+'</div>'+
+    (!d.financeiro.length ? vazioT('Nenhum item financeiro lançado','Lance serviços da tabela do cliente ou um item avulso para compor o valor da OS.') :
+    '<div style="margin-top:16px;overflow-x:auto"><table class="tab-tabela" style="min-width:600px"><thead><tr><th>Descrição</th><th>Origem</th><th class="num">Qtd</th><th class="num">Valor unit.</th><th class="num">Total</th><th class="num" style="width:90px">Ações</th></tr></thead><tbody>'+
+    d.financeiro.map(i => '<tr><td><div style="font-weight:600">'+esc(i.desc)+'</div>'+(i.obs?'<div style="font-size:11.5px;color:#94A3B8;margin-top:3px">'+esc(i.obs)+'</div>':'')+'</td><td><span class="pill-s" style="background:'+(i.origem==='tariff'?'#EFF6FF':'#F1F5F9')+';color:'+(i.origem==='tariff'?'#2563EB':'#475569')+'">'+(i.origem==='tariff'?'Tabela':'Avulso')+'</span></td><td class="num">'+String(i.qtd).replace('.',',')+'</td><td class="num">'+fMoeda(i.unit)+'</td><td class="num" style="font-weight:700">'+fMoeda(i.qtd*i.unit)+'</td><td class="num">'+(edita ? '<span style="display:inline-flex;gap:6px"><button type="button" class="btn-icone" aria-label="Editar item" data-toast="Edição em linha: quantidade, valor (só avulso) e observação.">'+ic('pencil',15)+'</button><button type="button" class="btn-icone btn-icone--perigo" aria-label="Excluir item" data-toast="Exclui o item financeiro desta OS.">'+ic('trash',15)+'</button></span>' : '<span style="font-size:11.5px;color:#CBD5E1">—</span>')+'</td></tr>').join('')+
+    '</tbody><tfoot><tr><td colspan="4">Total</td><td class="num" style="font-size:14px">'+fMoeda(tot)+'</td><td></td></tr></tfoot></table></div>')+'</div>';
+}
+function abaOrc(o){
+  const d = det(o), aprova = pode('service_quotes:approve'), compart = pode('service_quotes:update');
+  let h = '<div class="card card--p"><div class="sec-tit">Orçamentos da OS</div><div class="sec-sub">Documentos de preço congelado vinculados a esta ordem de serviço. O total vem do sistema.</div></div>';
+  if (!d.orcamentos.length) return h + '<div class="card" style="padding:28px 20px;text-align:center;border-style:dashed"><div style="font-size:13.5px;font-weight:700;color:#334155">Nenhum orçamento para esta OS</div><div style="font-size:12.5px;color:#94A3B8;margin-top:4px">Crie um orçamento e vincule-o a esta ordem de serviço para vê-lo aqui.</div></div>';
+  return h + d.orcamentos.map(q => { const tot = q.itens.reduce((s, i) => s + i[1]*i[2], 0);
+    return '<div class="card" style="padding:18px"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:14.5px;font-weight:800">'+q.numero+'</span><span class="pill-s" style="color:'+q.tom[0]+';background:'+q.tom[1]+'">'+q.status+'</span></div><div style="font-size:12px;color:#64748B;margin-top:4px">Validade: '+q.validade+'</div></div><div style="text-align:right"><div style="font-size:11px;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:.3px">Total</div><div style="font-size:17px;font-weight:800;font-variant-numeric:tabular-nums">'+fMoeda(tot)+'</div></div></div>'+
+      '<div style="margin-top:14px;overflow-x:auto"><table class="tab-tabela" style="min-width:500px"><thead><tr><th>Descrição</th><th class="num">Qtd</th><th class="num">Valor unit.</th><th class="num">Total</th></tr></thead><tbody>'+q.itens.map(i => '<tr><td style="font-weight:600">'+i[0]+'</td><td class="num">'+i[1]+'</td><td class="num">'+fMoeda(i[2])+'</td><td class="num" style="font-weight:700">'+fMoeda(i[1]*i[2])+'</td></tr>').join('')+'</tbody><tfoot><tr><td colspan="3">Total do orçamento</td><td class="num">'+fMoeda(tot)+'</td></tr></tfoot></table></div>'+
+      ((aprova && q.status === 'Rascunho') || compart ? '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'+(aprova && q.status === 'Rascunho' ? '<button type="button" class="btn-azul" data-toast="Aprova o orçamento: o preço fica congelado e a OS segue com estes valores.">'+ic('badgeCheck',15)+' Aprovar</button>' : '')+(compart ? '<button type="button" class="btn-claro" data-toast="Gera o link de compartilhamento do orçamento para o cliente.">'+ic('share',15)+' Compartilhar</button>' : '')+'</div>' : '')+'</div>'; }).join('');
+}
+function abaCom(o){
+  const d = det(o), comenta = pode('work_orders:comment'), modera = pode('work_orders:update');
+  let h = '<div class="card card--p"><div class="sec-tit">Comentários</div><div class="sec-sub">Anotações internas da equipe sobre esta ordem de serviço, com etiquetas para organização.</div>'+
+    (comenta ? '<div class="caixa-form"><textarea class="ui-input" data-novo-comentario placeholder="Escreva um comentário…" aria-label="Novo comentário"></textarea><div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn-cinza" data-toast="Mostra as etiquetas ativas da organização para marcar o comentário.">Adicionar etiquetas</button></div><div data-erro-comentario style="margin-top:10px"></div><div style="display:flex;gap:8px;margin-top:2px"><button type="button" class="btn-azul" data-comentar="'+o.id+'">'+ic('msgPlus',16)+' Comentar</button></div></div>' : '')+'</div>';
+  if (!d.comentarios.length) return h + '<div class="card" style="padding:28px 20px;text-align:center;border-style:dashed"><div style="font-size:13.5px;font-weight:700;color:#334155">Nenhum comentário ainda</div><div style="font-size:12.5px;color:#94A3B8;margin-top:4px">Registre a primeira anotação da equipe sobre esta ordem de serviço.</div></div>';
+  return h + d.comentarios.map(c => { const mod = modera || (papel === 'tecnico' && c.autor === 'Carlos Mendes') || (papel === 'despacho' && c.autor === 'Rafael Souza');
+    return '<div class="card" style="padding:16px"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap"><div style="font-size:12.5px;color:#64748B"><span style="font-weight:700;color:#334155">'+c.autor+'</span> · '+fDH(c.quando)+(c.editado?'<span style="color:#94A3B8"> · editado</span>':'')+'</div>'+
+      (mod ? '<div style="display:inline-flex;gap:6px"><button type="button" class="btn-icone" aria-label="Editar comentário" data-toast="Edita o texto do comentário.">'+ic('pencil',15)+'</button><button type="button" class="btn-icone btn-icone--perigo" aria-label="Excluir comentário" data-toast="Pede confirmação e exclui o comentário.">'+ic('trash',15)+'</button></div>' : '')+'</div>'+
+      '<div style="font-size:13.5px;color:#0F172A;margin-top:8px;white-space:pre-wrap;line-height:1.5">'+esc(c.msg)+'</div>'+(c.tags.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">'+c.tags.map(t => '<span class="cmt-tag" style="background:'+t[1]+';color:#fff">'+t[0]+'</span>').join('')+'</div>' : '')+'</div>'; }).join('');
+}
+const ARQ_ST = { stored:['Disponível','#16A34A','#F0FDF4'], pending_review:['Em análise','#B45309','#FFFBEB'], rejected:['Rejeitado','#DC2626','#FEF2F2'], scan_failed:['Falha na verificação','#475569','#F1F5F9'] };
+let fotosAtuais = [], fotoIdx = 0, osFotos = null;
+function abaArq(o){
+  const d = det(o), envia = pode('work_orders:create') || pode('work_orders:update'), exclui = pode('work_orders:update');
+  const imgs = d.arquivos.filter(a => a.img);
+  let h = '<div class="card card--p"><div><div class="sec-tit">Arquivos</div><div class="sec-sub">Documentos e evidências anexados a esta ordem de serviço. O download é liberado após a verificação.</div></div>';
+  if (envia) h += '<div class="caixa-form"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="ui-field" style="font-size:12px;font-weight:600;color:#475569">Arquivo<span class="ui-input" style="display:flex;align-items:center;gap:10px;padding:5px 8px;cursor:pointer"><input type="file" class="sr" data-arquivo><span class="btn-cinza" style="padding:5px 11px;font-size:12px">Escolher arquivo</span><span data-arquivo-nome style="color:#64748b;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Nenhum arquivo escolhido</span></span></label><label class="ui-field" style="font-size:12px;font-weight:600;color:#475569">Tipo/descrição (opcional)<input class="ui-input" placeholder="Ex.: Foto do veículo"></label></div><div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="btn-azul" data-toast="Envia o arquivo; ele fica Em análise até a verificação terminar.">'+ic('upload',16)+' Enviar arquivo</button></div></div>';
+  if (!d.arquivos.length) return h + vazioT('Nenhum arquivo anexado','Envie documentos ou evidências para vê-los aqui.') + (!envia ? '<div style="margin-top:14px;font-size:12px;color:#94A3B8">Você pode visualizar e baixar arquivos, mas não tem permissão para enviar novos.</div>' : '') + '</div>';
+  if (imgs.length) h += '<div style="margin-top:18px;font-size:13px;font-weight:800;color:#0F172A">Fotos e evidências · '+imgs.length+'</div><div class="galeria">'+imgs.map((a, i) => '<button type="button" class="foto" data-foto="'+i+'" aria-label="Ampliar '+esc(a.leg)+'"><span class="foto__img">'+fotoSVG(a.img, o)+'</span><span class="foto__cap">'+esc(a.leg)+'</span><span class="foto__set">'+ARQ_ST[a.status][0]+'</span></button>').join('')+'</div>';
+  h += '<div style="margin-top:18px;overflow-x:auto"><table class="tab-tabela" style="min-width:700px"><thead><tr><th>Arquivo</th><th>Tipo</th><th class="num">Tamanho</th><th>Situação</th><th>Enviado por</th><th>Data</th><th class="num" style="width:100px">Ações</th></tr></thead><tbody>'+
+    d.arquivos.map(a => { const s = ARQ_ST[a.status], ok = a.status === 'stored'; return '<tr><td><div style="display:flex;align-items:center;gap:8px"><span style="color:#94A3B8;display:inline-flex">'+ic('fileText',16)+'</span><span style="font-weight:600;word-break:break-word">'+a.nome+'</span></div></td><td>'+a.tipo+'</td><td class="num">'+(a.tam >= 1000 ? (a.tam/1000).toFixed(1).replace('.',',')+' MB' : a.tam+' KB')+'</td><td><span class="pill-s" style="color:'+s[1]+';background:'+s[2]+'">'+s[0]+'</span></td><td>'+a.por+'</td><td>'+fDH(a.quando)+'</td><td class="num"><span style="display:inline-flex;gap:6px"><button type="button" class="btn-icone" '+(ok?'style="border-color:#2563EB;color:#2563EB" data-toast="Baixa o arquivo '+a.nome+'."':'disabled title="Disponível após verificação"')+' aria-label="Baixar arquivo">'+ic('download',15)+'</button>'+(exclui?'<button type="button" class="btn-icone btn-icone--perigo" aria-label="Excluir arquivo" data-toast="Pede confirmação e exclui o arquivo '+a.nome+'.">'+ic('trash',15)+'</button>':'')+'</span></td></tr>'; }).join('')+'</tbody></table></div>';
+  if (!envia) h += '<div style="margin-top:14px;font-size:12px;color:#94A3B8">Você pode visualizar e baixar arquivos, mas não tem permissão para enviar novos.</div>';
+  return h + '</div>';
+}
+function abaMob(o){
+  const d = det(o);
+  const rot = ['Enviado ao app','Aceito pelo técnico','Em deslocamento','Chegada à origem','Em atendimento','Concluído no destino'];
+  let tl;
+  if (!d.despacho) tl = '<div class="vazio-tracejado"><b>Esta OS ainda não foi despachada ao app</b><span>Quando um técnico for designado, as etapas aparecerão aqui.</span></div>';
+  else tl = '<div style="margin-top:16px;font-size:12px;color:#64748B">Situação atual: <span style="font-weight:700;color:#334155">'+d.despacho.situacao+'</span></div><ol class="etapas">'+rot.map((r, i) => { const t = d.despacho.etapas[i]; return '<li><span class="ico" style="color:'+(t?'#16A34A':'#CBD5E1')+'">'+ic(t?'checkCircle':'circle',17)+'</span><div><div style="font-size:13px;font-weight:700;color:'+(t?'#0F172A':'#94A3B8')+'">'+r+'</div><div style="font-size:12px;color:'+(t?'#64748B':'#CBD5E1')+';margin-top:2px">'+(t?fDH(t):'Aguardando')+'</div></div></li>'; }).join('')+
+    (d.despacho.cancelado ? '<li><span class="ico" style="color:#DC2626">'+ic('checkCircle',17)+'</span><div><div style="font-size:13px;font-weight:700;color:#B91C1C">Cancelado</div><div style="font-size:12px;color:#64748B;margin-top:2px">'+fDH(d.despacho.cancelado)+'</div></div></li>' : '')+'</ol>';
+  const ck = d.checklistApp;
+  return '<div class="card card--p"><div style="display:flex;align-items:center;gap:9px"><span style="color:#2563EB;display:inline-flex">'+ic('smartphone',18)+'</span><div class="sec-tit">Acompanhamento no app</div></div><div class="sec-sub">Etapas registradas pelo técnico no app de campo, na ordem em que aconteceram.</div>'+tl+'</div>'+
+    '<div class="card card--p"><div style="display:flex;align-items:center;gap:9px"><span style="color:#2563EB;display:inline-flex">'+ic('listChecks',18)+'</span><div class="sec-tit">Checklist do atendimento</div></div><div class="sec-sub">Molde preenchido pelo técnico no app, congelado no momento do atendimento.</div>'+
+    (!ck ? '<div class="vazio-tracejado"><span style="margin:0">Nenhum checklist preenchido no app.</span></div>' : '<div style="margin-top:14px"><div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px">'+ck.titulo+'</div><div style="border:1px solid #F1F5F9;border-radius:12px;overflow:hidden">'+ck.linhas.map((l, i) => '<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 14px;'+(i?'border-top:1px solid #F1F5F9;':'')+'background:'+(i%2?'#F8FAFC':'#fff')+'"><span style="font-size:12.5px;color:#64748B;font-weight:600">'+l[0]+'</span><span style="font-size:12.5px;color:#0F172A;font-weight:600;text-align:right">'+l[1]+'</span></div>').join('')+'</div></div>')+'</div>';
+}
+function abaKm(o){
+  const k = det(o).km, corrige = pode('work_orders:mileage_correct');
+  const stat = (r, val, az) => '<div style="padding:14px;border:1px solid '+(az?'#DBEAFE':'#F1F5F9')+';border-radius:12px;background:'+(az?'#EFF6FF':'#F8FAFC')+'"><div style="font-size:11px;color:'+(az?'#3B82F6':'#94A3B8')+';font-weight:700;text-transform:uppercase;letter-spacing:.3px">'+r+'</div><div style="font-size:20px;font-weight:800;color:'+(az?'#1E40AF':'#0F172A')+';margin-top:4px;font-variant-numeric:tabular-nums">'+val+'</div></div>';
+  let h = '<div class="card card--p"><div style="display:flex;align-items:center;gap:9px"><span style="color:#2563EB;display:inline-flex">'+ic('gauge',18)+'</span><div class="sec-tit">Quilometragem da OS</div></div><div class="sec-sub">Distância percorrida no atendimento, preenchida pelo app e corrigível pela base.</div>';
+  if (!k) h += '<div class="vazio-tracejado" style="margin-top:18px"><b>Quilometragem ainda não informada</b><span>O app registra os valores no atendimento; a base pode corrigi-los aqui.</span></div>';
+  else h += '<div style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">'+stat('Km inicial',fKm(k.ini))+stat('Km final',k.fim?fKm(k.fim):'—')+stat('Distância',k.fim?fKm(Math.round((k.fim-k.ini)*10)/10):'—',true)+'</div>'+
+    '<div style="margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#64748B"><span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;padding:3px 10px;border-radius:99px;background:'+(k.origem==='base'?'#FEF3C7':'#EFF6FF')+';color:'+(k.origem==='base'?'#92400E':'#2563EB')+'">'+ic('route',13)+(k.origem==='base'?' Corrigido pela base':' Preenchido pelo app')+'</span>'+(k.corrigido?'<span>Corrigido em '+fDH(k.corrigido)+'</span>':'')+'</div>';
+  h += '</div>';
+  if (corrige) h += '<div class="card card--p"><div style="font-size:14px;font-weight:800">Corrigir quilometragem</div><div class="sec-sub">Ajuste os valores informados pelo app. A correção fica registrada como feita pela base.</div><div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="ui-field" style="font-size:12px;font-weight:600;color:#475569">Km inicial<input class="ui-input" inputmode="decimal" data-km-ini value="'+(k?String(k.ini).replace('.',','):'')+'" placeholder="0"></label><label class="ui-field" style="font-size:12px;font-weight:600;color:#475569">Km final<input class="ui-input" inputmode="decimal" data-km-fim value="'+(k&&k.fim?String(k.fim).replace('.',','):'')+'" placeholder="0"></label></div><div data-km-msg style="margin-top:12px"></div><div style="display:flex;gap:8px;margin-top:2px"><button type="button" class="btn-azul" data-salvar-km="'+o.id+'">'+ic('gauge',16)+' Salvar correção</button></div></div>';
+  return h;
+}
+function haversine(a, b){ const R = 6371, rad = x => x*Math.PI/180; const dl = rad(b[0]-a[0]), dg = rad(b[1]-a[1]); const h = Math.sin(dl/2)**2 + Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dg/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
+function abaMapa(o, partida){
+  const tecnico = o.assigned && CAMPO(o.status);
+  const opcoes = [];
+  if (tecnico) opcoes.push(['tecnico','Posição do técnico',[o.lat - 0.035, o.lng - 0.03]]);
+  opcoes.push(['origem','Sair da origem da OS',null]);
+  opcoes.push(['base','Base · Pátio Central — Marginal Tietê',[-23.515,-46.59]]);
+  const sel = opcoes.find(x => x[0] === partida) || opcoes[0];
+  const pts = []; if (sel[2]) pts.push(['Partida','#2563EB',sel[2]]); pts.push(['Origem','#16A34A',[o.lat,o.lng]]); if (o.destination) pts.push(['Destino','#DC2626',[o.dlat,o.dlng]]);
+  let km = 0; for (let i = 1; i < pts.length; i++) km += haversine(pts[i-1][2], pts[i][2]);
+  const lats = pts.map(p => p[2][0]), lngs = pts.map(p => p[2][1]); const pad2 = 0.02;
+  const minLa = Math.min(...lats)-pad2, maxLa = Math.max(...lats)+pad2, minLo = Math.min(...lngs)-pad2, maxLo = Math.max(...lngs)+pad2;
+  const W = 640, H = 260; const sx = lo => 30 + (lo - minLo)/(maxLo - minLo || 1)*(W-60), sy = la => 20 + (maxLa - la)/(maxLa - minLa || 1)*(H-40);
+  const ruas = []; for (let i = 0; i < 9; i++) ruas.push('<path d="M'+(i*80-20)+' 0 L'+(i*80+40)+' '+H+'" stroke="#fff" stroke-width="'+(i%3?3:6)+'"/>'); for (let j = 0; j < 5; j++) ruas.push('<path d="M0 '+(j*60+10)+' L'+W+' '+(j*60+30)+'" stroke="#fff" stroke-width="'+(j%2?3:5)+'"/>');
+  const linha = pts.map((p, i) => (i?'L':'M')+sx(p[2][1]).toFixed(1)+' '+sy(p[2][0]).toFixed(1)).join(' ');
+  const svg = '<svg class="mapa-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mapa de exemplo com partida, origem e destino"><rect width="'+W+'" height="'+H+'" fill="#e8eef3"/><path d="M0 200 C120 170 220 230 360 196 S 560 150 640 178" stroke="#bfdbfe" stroke-width="14" fill="none"/><rect x="420" y="40" width="90" height="56" rx="10" fill="#dcfce7"/><rect x="70" y="120" width="70" height="48" rx="10" fill="#dcfce7"/>'+ruas.join('')+
+    '<path d="'+linha+'" stroke="#2563EB" stroke-width="3" stroke-dasharray="7 6" fill="none"/>'+pts.map(p => '<g><circle cx="'+sx(p[2][1]).toFixed(1)+'" cy="'+sy(p[2][0]).toFixed(1)+'" r="9" fill="'+p[1]+'" stroke="#fff" stroke-width="3"/><text x="'+(sx(p[2][1])+13).toFixed(1)+'" y="'+(sy(p[2][0])+4).toFixed(1)+'" font-size="12" font-weight="700" fill="#0f172a">'+p[0]+'</text></g>').join('')+'</svg>';
+  return '<div class="card card--p"><div style="display:flex;align-items:center;gap:9px"><span style="color:#2563EB;display:inline-flex">'+ic('route',18)+'</span><div class="sec-tit">Mapa da ordem de serviço</div></div><div class="sec-sub">Partida, origem e destino com a distância estimada do trajeto.</div>'+
+    '<div style="margin-top:16px;display:flex;flex-direction:column;gap:14px">'+
+    (opcoes.length > 1 ? '<label style="display:flex;flex-direction:column;gap:6px;max-width:360px"><span style="font-size:12px;font-weight:700;color:#334155">Partida</span><select class="ui-input" data-partida="'+o.id+'">'+opcoes.map(x => '<option value="'+x[0]+'"'+(x===sel?' selected':'')+'>'+x[1]+'</option>').join('')+'</select></label>' : '')+
+    (tecnico ? '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:9px;font-size:12.5px;color:#15803D;max-width:420px">'+ic('mapPin',15)+'<span>Posição do técnico ao vivo · '+fDH(new Date(AGORA.getTime()-120000))+'</span></div>' : '')+svg+
+    (pts.length < 2 ? '<div style="padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:12.5px;color:#64748B">Informe origem e destino para estimar a distância do trajeto.</div>' :
+    '<div style="padding:14px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;display:flex;align-items:center;gap:12px"><span style="color:#2563EB;display:inline-flex">'+ic('navigation',20)+'</span><div><div style="font-size:18px;font-weight:800;color:#1D4ED8">≈ '+fKm(Math.round(km*10)/10)+'</div><div style="font-size:12px;color:#3B82F6;font-weight:600">distância aproximada em linha reta</div><div style="font-size:11.5px;color:#64748B;margin-top:2px">A rota por vias reais costuma ser maior que a linha reta.</div></div></div>')+
+    '<div class="pontos">'+(sel[2]?'<div><i style="background:#2563EB"></i><b>Partida</b><span>'+sel[1]+'</span></div>':'')+'<div><i style="background:#16A34A"></i><b>Origem</b><span>'+esc(o.address+' · '+local(o))+'</span></div>'+(o.destination?'<div><i style="background:#DC2626"></i><b>Destino</b><span>'+esc(o.destination)+'</span></div>':'')+'</div></div></div>';
+}
+function abaLogs(o){
+  const d = det(o);
+  return '<div class="card card--p"><div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;color:#2563EB;flex-shrink:0">'+ic('history',19)+'</div><div><div class="sec-tit">Logs</div><div class="sec-sub" style="margin-top:2px">Trilha de auditoria desta ordem de serviço: quem fez, o quê e quando.</div></div></div></div>'+
+    '<div class="card" style="padding:6px"><ul style="list-style:none">'+d.logs.map((l, i) => '<li style="display:flex;align-items:flex-start;gap:12px;padding:13px 14px;'+(i?'border-top:1px solid #F1F5F9':'')+'"><span style="width:8px;height:8px;border-radius:99px;background:#2563EB;margin-top:6px;flex-shrink:0"></span><div><div style="font-size:13.5px;font-weight:700;color:#0F172A">'+l[0]+'</div><div style="font-size:12px;color:#64748B;margin-top:3px"><span style="font-weight:600;color:#475569">'+l[1]+'</span> · '+fDH(l[2])+'</div></div></li>').join('')+'</ul></div>';
+}
+const PAINEIS = { 'informacoes-gerais':abaInfo, financeiro:abaFin, orcamento:abaOrc, comentarios:abaCom, arquivos:abaArq, mobile:abaMob, quilometragem:abaKm, mapa:abaMapa, logs:abaLogs };
+
+let hubOS = null, hubAba = 'informacoes-gerais', hubAlvo = null, hubOrigem = null, hubView = null, menuAberto = false, copiado = false;
+function hubHTML(o){
+  const acoes = [];
+  if (o.checklists.length) acoes.push('<button type="button" class="hub-btn hub-btn--primario" data-toast="Abre a execução do checklist desta OS.">'+ic('clipboard',15)+'Abrir checklist</button>');
+  acoes.push('<button type="button" class="hub-btn'+(copiado?' hub-btn--ok':'')+'" data-copiar aria-label="Copiar link da ordem de serviço">'+ic('copy',14)+(copiado?'Copiado!':'Copiar')+'</button>');
+  acoes.push('<button type="button" class="hub-btn" data-toast="Abre a impressão da OS com as seções que você pode ver.">'+ic('printer',14)+'Imprimir</button>');
+  acoes.push('<button type="button" class="hub-btn" style="padding:9px 11px" data-mais aria-label="Mais ações" aria-haspopup="menu" aria-expanded="'+menuAberto+'">'+ic('more',16)+'</button>');
+  if (menuAberto) acoes.push('<div class="hub-menu-pop" role="menu"><button type="button" role="menuitem" class="ui-menu-item" data-toast="Texto da OS copiado para colar no WhatsApp.">'+ic('share',14)+'Copiar texto p/ WhatsApp</button>'+
+    (pode('work_orders:create') ? '<button type="button" role="menuitem" class="ui-menu-item" data-duplicar="'+o.id+'">'+ic('copyPlus',14)+'Duplicar</button>' : '')+
+    (pode('work_orders:cancel') && CANCELAVEL.includes(o.status) ? '<hr><button type="button" role="menuitem" class="ui-menu-item" style="color:#DC2626" data-cancelar-os="'+o.id+'">'+ic('ban',14)+'Cancelar</button>' : '')+'</div>');
+  return '<div class="hub" data-hub><div class="hub-cabeca"><div class="hub-id"><div class="hub-tile">'+ic('clipboard',22)+'</div><div><div class="hub-titulo">'+o.code+' · '+esc(o.title)+'</div><div class="hub-sub">'+esc([o.customerName, o.address].filter(Boolean).join(' · ') || 'Sem cliente/endereço informado')+'</div></div></div><div class="hub-acoes">'+acoes.join('')+'</div></div>'+
+    '<div class="hub-corpo"><nav class="hub-nav" aria-label="Seções da ordem de serviço">'+ABAS.map(a => '<button type="button" data-aba="'+a[0]+'"'+(a[0]===hubAba?' aria-current="page"':'')+'>'+a[1]+'</button>').join('')+'</nav>'+
+    '<div class="hub-conteudo" data-hub-conteudo tabindex="-1">'+ABAS.map(a => '<div class="hub-painel" data-aba-conteudo="'+a[0]+'"'+(a[0]===hubAba?'':' hidden')+'>'+PAINEIS[a[0]](o)+'</div>').join('')+'</div></div></div>';
+}
+function hubContainer(){ return hubView === 'a' ? $('[data-view="a"] .tela-os') : $('#os-janela-miolo'); }
+function renderHub(manterScroll){
+  const o = byId(hubOS); if (!o) return; const cont = hubContainer();
+  const sc = manterScroll && $('[data-hub-conteudo]', cont) ? $('[data-hub-conteudo]', cont).scrollTop : 0;
+  cont.innerHTML = (hubView === 'a' ? '<button type="button" class="back-link" data-voltar-lista>← Voltar às ordens</button>' : '') + hubHTML(o);
+  const ct = $('[data-hub-conteudo]', cont); if (ct) ct.scrollTop = sc;
+  fotosAtuais = det(o).arquivos.filter(a => a.img); osFotos = o;
+}
+function abrirOS(v, id, aba){
+  hubOS = id; hubAba = aba || 'informacoes-gerais'; hubView = v; menuAberto = false; copiado = false; hubOrigem = document.activeElement;
+  S[v].osAberta = id;
+  if (v === 'a') {
+    const view = $('[data-view="a"]'); $('.tela-lista', view).hidden = true; $('.tela-nova', view).hidden = true; $('.tela-os', view).hidden = false; S.a.tela = 'os';
+    renderHub(); window.scrollTo(0, 0); const b = $('[data-voltar-lista]', view); if (b) b.focus({ preventScroll:true });
+  } else {
+    renderHub(); $('#os-overlay').hidden = false; document.body.style.overflow = 'hidden'; $('[data-fechar-os]').focus();
+  }
+}
+function fecharOS(){
+  const v = hubView; if (!v) return;
+  if (v === 'a') { const view = $('[data-view="a"]'); $('.tela-os', view).hidden = true; $('.tela-lista', view).hidden = false; S.a.tela = 'lista'; RENDER.a(); }
+  else { $('#os-overlay').hidden = true; document.body.style.overflow = ''; RENDER[v](); }
+  const id = S[v].osAberta; S[v].osAberta = null; hubView = null; hubOS = null;
+  const row = $('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]');
+  if (row) { if (row.getAttribute('aria-expanded') !== 'true') abrirResumo(row, true); row.scrollIntoView({ block:'center' }); row.focus({ preventScroll:true }); }
+}
+function trocarAba(id){
+  hubAba = id; const cont = hubContainer();
+  $$('[data-aba]', cont).forEach(b => { if (b.dataset.aba === id) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  $$('[data-aba-conteudo]', cont).forEach(p => p.hidden = p.dataset.abaConteudo !== id);
+  $('[data-hub-conteudo]', cont).scrollTop = 0;
+}
+
+/* ═════════ NOVA OS — WorkOrderCreatePage + WorkOrderForm ═════════ */
+function abrirNova(v){
+  const view = $('[data-view="'+v+'"]'); $('.tela-lista', view).hidden = true; $('.tela-os', view).hidden = true; const t = $('.tela-nova', view); t.hidden = false; S[v].tela = 'nova';
+  const sel = (rot, nome, ops, novoRot, novoPerm) => '<div class="campo-novo"><label class="ui-field">'+rot+'<select class="ui-input" data-nf="'+nome+'">'+ops+'</select></label>'+(pode(novoPerm)?'<button type="button" class="ui-button ui-button--secondary" style="min-height:36px" aria-label="'+novoRot+'" data-toast="Abre o cadastro rápido e já seleciona o novo registro.">'+ic('plus',14)+' Novo</button>':'')+'</div>';
+  const clientes = ['Seguradora Horizonte Auto','Rota Locadora de Veículos','Transportadora Rápido Sul Ltda','Locar Frotas e Serviços','Brasil Assist 24h','Frota Municipal de Osasco'];
+  t.innerHTML = '<section class="page-stack"><button type="button" class="back-link" data-cancelar-nova style="margin:0">← Voltar às ordens</button><header class="page-heading"><span class="kick">Ordens de Serviço</span><h1>'+ic('clipboard',24)+' Nova OS</h1><p>Crie uma ordem operacional para despacho, checklist futuro e acompanhamento no mapa.</p></header>'+
+    '<div data-nf-erros></div><div class="form-grade">'+
+    '<section class="ui-card"><header class="ui-card__header"><h2>Identificação</h2></header><div class="form-sec"><label class="ui-field">Título<input class="ui-input" data-nf="titulo" placeholder="Ex.: Reboque leve — Fiat Argo prata"></label><label class="ui-field">Descrição<textarea class="ui-input" data-nf="descricao"></textarea></label><label class="ui-field">Prioridade<select class="ui-input" data-nf="prioridade">'+['low','medium','high','urgent'].map(p => '<option value="'+p+'"'+(p==='medium'?' selected':'')+'>'+PR[p]+'</option>').join('')+'</select></label></div></section>'+
+    '<section class="ui-card"><header class="ui-card__header"><h2>Vínculos de cadastro</h2></header><div class="form-sec">'+
+      sel('Cliente','cliente','<option value="">Sem cliente vinculado</option>'+clientes.map(c => '<option>'+c+'</option>').join(''),'Cadastrar novo cliente','customers:create')+
+      sel('Viatura','viatura','<option value="">Sem viatura</option>'+VIATURAS.map(x => '<option>'+x[0]+' - '+x[1]+'</option>').join(''),'Cadastrar nova viatura','vehicles:create')+
+      sel('Equipe','equipe','<option value="">Sem equipe</option>'+EQUIPES.map(x => '<option>'+x+'</option>').join(''),'Cadastrar nova equipe','teams:create')+
+      sel('Serviço','servico','<option value="">Sem serviço</option>'+Object.keys(SERV).map(k => '<option value="'+k+'">'+SERV[k].nome+'</option>').join(''),'Cadastrar novo serviço','service_catalog:create')+'</div></section>'+
+    '<section class="ui-card"><header class="ui-card__header"><h2>Cliente</h2></header><div class="form-sec" data-nf-cliente></div></section>'+
+    '<section class="ui-card"><header class="ui-card__header"><h2>Origem do atendimento</h2></header><div class="form-sec form-sec--2"><label class="ui-field larga">Endereço de origem<input class="ui-input" data-nf="endereco"></label><label class="ui-field">Cidade<input class="ui-input" data-nf="cidade"></label><label class="ui-field">Estado<input class="ui-input" maxlength="2" data-nf="uf"></label><label class="ui-field">CEP<input class="ui-input"></label><label class="ui-field">Agendada para<input class="ui-input" type="datetime-local" data-nf="agenda"></label><label class="ui-field">Latitude<input class="ui-input" inputmode="decimal"></label><label class="ui-field">Longitude<input class="ui-input" inputmode="decimal"></label></div></section>'+
+    '<section class="ui-card" data-nf-destino hidden><header class="ui-card__header"><h2>Destino do reboque</h2></header><div class="form-sec form-sec--2"><label class="ui-field larga">Endereço de destino<input class="ui-input" data-nf="destino"></label><label class="ui-field">Cidade<input class="ui-input"></label><label class="ui-field">Estado<input class="ui-input" maxlength="2"></label><label class="ui-field">CEP<input class="ui-input"></label><label class="ui-field">Latitude<input class="ui-input" inputmode="decimal"></label><label class="ui-field">Longitude<input class="ui-input" inputmode="decimal"></label></div></section>'+
+    '<section class="ui-card" data-nf-socorro hidden><header class="ui-card__header"><h2>Detalhes do socorro</h2></header><div class="form-sec form-sec--2"><label class="ui-field">Placa do veículo<input class="ui-input" maxlength="10"></label><label class="ui-field">Veículo<input class="ui-input"></label><label class="ui-field">Cor<input class="ui-input" maxlength="30"></label></div></section>'+
+    '</div><div class="barra-fixa"><button type="button" class="ui-button ui-button--secondary" data-cancelar-nova>Cancelar</button><button type="button" class="ui-button ui-button--primary" data-salvar-nova>Salvar OS</button></div></section>';
+  atualizarClienteNova(t); window.scrollTo(0, 0); const f = $('[data-nf="titulo"]', t); if (f) f.focus();
+}
+function atualizarClienteNova(t){
+  const c = $('[data-nf="cliente"]', t).value; const box = $('[data-nf-cliente]', t);
+  box.innerHTML = c ? '<label class="ui-field">Nome do cliente<input class="ui-input" readonly value="'+esc(c)+'"><small>Copiado do cadastro ao salvar.</small></label><label class="ui-field">Documento<input class="ui-input" readonly placeholder="Não informado"><small>Copiado do cadastro ao salvar.</small></label><label class="ui-field">Telefone do cliente<input class="ui-input" readonly placeholder="Não informado"><small>Copiado do cadastro ao salvar.</small></label>'
+    : '<label class="ui-field">Nome do cliente<input class="ui-input" data-nf="nomecli"></label><label class="ui-field">Telefone do cliente<input class="ui-input" inputmode="tel" data-nf="telcli"></label>';
+  const sv = SERV[$('[data-nf="servico"]', t).value];
+  $('[data-nf-destino]', t).hidden = !(sv && sv.destino); $('[data-nf-socorro]', t).hidden = !(sv && sv.tipo === 'socorro');
+}
+function salvarNova(v){
+  const t = $('[data-view="'+v+'"] .tela-nova'); const val = n => { const e = $('[data-nf="'+n+'"]', t); return e ? e.value.trim() : ''; };
+  const erros = []; if (!val('titulo')) erros.push('Título obrigatório.');
+  if (erros.length) { $('[data-nf-erros]', t).innerHTML = '<div class="ui-alert" role="alert"><strong>Revise os campos obrigatórios</strong>&nbsp;'+erros.join(' ')+'</div>'; $('[data-nf="titulo"]', t).focus(); return; }
+  const n = 100 + OS.length + 1; const sk = val('servico') || 'socorro'; const ag = val('agenda');
+  const o = { id:'os'+n, n, code:'OS-000'+n, serv:sk, title:val('titulo'), priority:val('prioridade'), status:'open', customerName: val('cliente') || val('nomecli') || null, customerPhone: val('telcli') || null, customerDocument:null,
+    address: val('endereco') || 'Endereço não informado', city: val('cidade') || 'São Paulo', uf: (val('uf') || 'SP').toUpperCase(), cep:'', scheduledFor: ag ? new Date(ag) : null, assigned:false, mine:false, checklists:[], slaDueAt:null, createdAt:new Date(AGORA), destination: val('destino') || null,
+    lat:-23.55, lng:-46.63, dlat:-23.5, dlng:-46.6, vehicle:null, team: val('equipe') || null, nova:true };
+  definirMarcos(o); OS.unshift(o);
+  const view = $('[data-view="'+v+'"]'); t.hidden = true; t.innerHTML = ''; $('.tela-lista', view).hidden = false; S[v].tela = 'lista';
+  S[v].aba = 'all'; S[v].alvo = null; S[v].busca = ''; S[v].pagina = 0; const inp = $('[data-busca]', view); if (inp) inp.value = '';
+  S[v].aberta = v+'-'+o.id; RENDER[v]();
+  toast('OS '+o.code+' criada.'); abrirOS(v, o.id);
+}
+function cancelarNova(v){ const view = $('[data-view="'+v+'"]'); const t = $('.tela-nova', view); t.hidden = true; t.innerHTML = ''; $('.tela-lista', view).hidden = false; S[v].tela = 'lista'; RENDER[v](); const b = $('[data-nova-os]', view); if (b) b.focus(); }
+
+/* ═════════ Diálogos pequenos (RevokeDispatchPrompt · CancelWorkOrderModal · DuplicateWorkOrderModal) ═════════ */
+let dlgOrigem = null;
+function abrirDlg(html){ dlgOrigem = document.activeElement; $('#dlg').innerHTML = html; $('#dlg-overlay').hidden = false; const f = $('#dlg textarea, #dlg input, #dlg button'); if (f) f.focus(); }
+function fecharDlg(){ $('#dlg-overlay').hidden = true; if (dlgOrigem && document.contains(dlgOrigem)) dlgOrigem.focus(); }
+function dlgRevogar(o){ abrirDlg('<h2 id="dlg-tit">Revogar envio</h2><p>A OS '+o.code+' volta a ficar sem técnico e o envio ao app é cancelado. Informe o motivo.</p><label class="ui-field">Motivo *<textarea class="ui-input" data-dlg-motivo placeholder="Ex.: cliente remarcou o atendimento"></textarea></label><div data-dlg-erro></div><div class="rodape"><button type="button" class="btn-cinza" data-dlg-fechar>Voltar</button><button type="button" class="btn-azul" style="background:#DC2626" data-dlg-ok="revogar" data-os-id="'+o.id+'">Revogar envio</button></div>'); }
+function dlgCancelar(o){ abrirDlg('<h2 id="dlg-tit">Cancelar ordem de serviço</h2><p>'+o.code+' · '+esc(o.title)+'</p><div class="ui-field">Decisão financeira *<div class="opcoes" role="radiogroup">'+[['Manter valores','os itens financeiros e o total desta OS continuam como estão'],['Manter sem remunerar o profissional','os valores da OS continuam, mas o profissional que atendeu não recebe por ela'],['Zerar itens','os itens financeiros desta OS são removidos e o total vai a zero']].map((x, i) => '<label><input type="radio" name="dec" value="'+x[0]+'"'+(i?'':'')+'><span>'+x[0]+'<small>'+x[1]+'</small></span></label>').join('')+'</div></div><label class="ui-field">Motivo *<textarea class="ui-input" data-dlg-motivo placeholder="Ex.: cliente desistiu do atendimento antes do deslocamento"></textarea></label><div data-dlg-erro></div><div class="rodape"><button type="button" class="btn-cinza" data-dlg-fechar>Voltar</button><button type="button" class="btn-azul" style="background:#DC2626" data-dlg-ok="cancelar" data-os-id="'+o.id+'">Cancelar OS</button></div>'); }
+function dlgDuplicar(o){ abrirDlg('<h2 id="dlg-tit">Duplicar ordem de serviço</h2><p>A cópia de '+o.code+' nasce como OS nova, aberta e sem valores.</p><div class="ui-field">O que copiar junto<label style="display:flex;gap:8px;font-weight:500"><input type="checkbox" checked> Copiar comentários</label><label style="display:flex;gap:8px;font-weight:500"><input type="checkbox" checked> Copiar checklist</label></div><div class="rodape"><button type="button" class="btn-cinza" data-dlg-fechar>Voltar</button><button type="button" class="btn-azul" data-dlg-ok="duplicar" data-os-id="'+o.id+'">Duplicar OS</button></div>'); }
+
+/* ── Lightbox das fotos ── */
+function abrirFoto(i){ fotoIdx = (i + fotosAtuais.length) % fotosAtuais.length; const f = fotosAtuais[fotoIdx]; $('#lightbox-img').innerHTML = fotoSVG(f.img, osFotos); $('#lightbox-cap').textContent = f.leg + ' (' + (fotoIdx+1) + ' de ' + fotosAtuais.length + ')'; $('#lightbox').hidden = false; $('#lb-fechar').focus(); }
+function fecharFoto(){ $('#lightbox').hidden = true; const b = $('[data-foto="'+fotoIdx+'"]', hubContainer()); if (b) b.focus(); }
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3600); }
+
+/* ── Opções ── */
+const ROT = { a:'Opção A — Padrão fiel (detalhe em página, como hoje)', b:'Opção B — Analítica (KPIs + gráficos + lista; detalhe em janela fixa)', c:'Opção C — Fila por agenda (grupos por horário + ciclo de vida; detalhe em janela fixa)' };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Ordens de Serviço · Opção ' + o.toUpperCase();
+  $$('[data-estado-lista]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estadoLista === S[o].estado));
+}
+function voltarTodasParaLista(){
+  if (!$('#os-overlay').hidden) { $('#os-overlay').hidden = true; document.body.style.overflow = ''; }
+  hubView = null; hubOS = null;
+  ['a','b','c'].forEach(v => { const view = $('[data-view="'+v+'"]'); $('.tela-os', view).hidden = true; $('.tela-nova', view).hidden = true; $('.tela-nova', view).innerHTML = ''; $('.tela-lista', view).hidden = false; S[v].tela = 'lista'; S[v].osAberta = null; });
+}
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Ordens de Serviço') toast('Na maquete só a tela de Ordens de Serviço está montada.'); return; }
+  if ((x = el('[data-estado-lista]'))) { const v = opcao; voltarTodasParaLista(); S[v].estado = x.dataset.estadoLista; S[v].aberta = null; RENDER[v](); trocarOpcao(v); $('[data-view="'+v+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-papel]'))) { papel = x.dataset.papel; $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.papel === papel)); voltarTodasParaLista(); renderSidebar(); ['a','b','c'].forEach(v => { S[v].aberta = null; S[v].pagina = 0; RENDER[v](); }); toast('Vendo como '+x.textContent+'.'); return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', !c.hidden); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  /* lightbox */
+  if (t.id === 'lb-fechar' || t.id === 'lightbox') { fecharFoto(); return; }
+  if (t.id === 'lb-ant') { abrirFoto(fotoIdx - 1); return; }
+  if (t.id === 'lb-prox') { abrirFoto(fotoIdx + 1); return; }
+  /* diálogo pequeno */
+  if (t.id === 'dlg-overlay' || el('[data-dlg-fechar]')) { fecharDlg(); return; }
+  if ((x = el('[data-dlg-ok]'))) {
+    const o = byId(x.dataset.osId), k = x.dataset.dlgOk, mot = $('#dlg [data-dlg-motivo]'), err = $('#dlg [data-dlg-erro]');
+    if (k === 'revogar') { if (!mot.value.trim()) { err.innerHTML = '<div class="erro-faixa">Informe o motivo para revogar o envio.</div>'; mot.focus(); return; } o.assigned = false; o.status = 'open'; o.mine = false; delete DET[o.id]; fecharDlg(); RENDER[opcao](); toast('Envio da '+o.code+' revogado. A OS voltou para Aberta, sem técnico.'); return; }
+    if (k === 'cancelar') { const dec = $('#dlg input[name="dec"]:checked'); if (!dec) { err.innerHTML = '<div class="erro-faixa">Selecione a decisão financeira.</div>'; return; } if (!mot.value.trim()) { err.innerHTML = '<div class="erro-faixa">Informe o motivo do cancelamento.</div>'; mot.focus(); return; }
+      o.status = 'cancelled'; o.cancelledAt = new Date(AGORA); o.cancellationReason = mot.value.trim(); o.financialDecision = dec.value; delete DET[o.id]; fecharDlg(); menuAberto = false; renderHub(); toast('OS '+o.code+' cancelada.'); return; }
+    if (k === 'duplicar') { fecharDlg(); menuAberto = false; renderHub(true); toast('Cópia criada a partir da '+o.code+' — abre a OS nova.'); return; }
+  }
+  /* hub (detalhe) */
+  if ((x = el('[data-fechar-os]')) || t.id === 'os-overlay' || el('[data-voltar-lista]')) { fecharOS(); return; }
+  if ((x = el('[data-aba]'))) { trocarAba(x.dataset.aba); return; }
+  if ((x = el('[data-mais]'))) { menuAberto = !menuAberto; renderHub(true); const b = $('[data-mais]', hubContainer()); if (b) b.focus(); return; }
+  if (menuAberto && !el('.hub-menu-pop')) { menuAberto = false; renderHub(true); }
+  if ((x = el('[data-copiar]'))) { copiado = true; renderHub(true); $('[data-copiar]', hubContainer()).focus(); setTimeout(() => { copiado = false; if (hubOS) renderHub(true); }, 2000); return; }
+  if ((x = el('[data-duplicar]'))) { dlgDuplicar(byId(x.dataset.duplicar)); return; }
+  if ((x = el('[data-cancelar-os]'))) { dlgCancelar(byId(x.dataset.cancelarOs)); return; }
+  if ((x = el('[data-foto]'))) { abrirFoto(+x.dataset.foto); return; }
+  if ((x = el('[data-aprov]'))) { const o = byId(x.dataset.osId), a = det(o).aprov, k = x.dataset.aprov;
+    if (k === 'aprovar') { a.status = 'approved'; a.decididoPor = PAPEIS[papel].nome; a.decididoEm = new Date(AGORA); a.msg = 'Aprovação registrada.'; }
+    if (k === 'reprovar') a.reprovando = true;
+    if (k === 'cancelar') a.reprovando = false;
+    if (k === 'confirmar') { const m = $('[data-motivo-reprova]', hubContainer()).value.trim(); if (!m) { $('[data-erro-reprova]', hubContainer()).innerHTML = '<div style="font-size:12.5px;color:#DC2626;font-weight:600;margin-bottom:12px">Informe o motivo da reprovação.</div>'; return; } a.status = 'rejected'; a.motivo = m; a.reprovando = false; a.decididoPor = PAPEIS[papel].nome; a.decididoEm = new Date(AGORA); a.msg = 'Reprovação registrada.'; }
+    renderHub(true); return; }
+  if ((x = el('[data-comentar]'))) { const o = byId(x.dataset.comentar), cont = hubContainer(), tx = $('[data-novo-comentario]', cont).value.trim();
+    if (!tx) { $('[data-erro-comentario]', cont).innerHTML = '<div class="erro-faixa">Escreva uma mensagem para comentar.</div>'; return; }
+    det(o).comentarios.unshift({ autor:PAPEIS[papel].nome, quando:new Date(AGORA), msg:tx, tags:[] }); det(o).logs.unshift(['Comentário adicionado', PAPEIS[papel].nome, new Date(AGORA)]); renderHub(true); return; }
+  if ((x = el('[data-salvar-km]'))) { const o = byId(x.dataset.salvarKm), cont = hubContainer(), msg = $('[data-km-msg]', cont); const num = s => { const v = s.trim().replace(/\./g,'').replace(',','.'); return v ? Number(v) : undefined; };
+    const a = num($('[data-km-ini]', cont).value), b = num($('[data-km-fim]', cont).value);
+    if (a === undefined && b === undefined) { msg.innerHTML = '<div class="erro-faixa">Informe ao menos um valor.</div>'; return; }
+    if ([a, b].some(v => v !== undefined && (!isFinite(v) || v < 0))) { msg.innerHTML = '<div class="erro-faixa">Valor de km inválido.</div>'; return; }
+    if (a !== undefined && b !== undefined && b < a) { msg.innerHTML = '<div class="erro-faixa">O km final não pode ser menor que o inicial.</div>'; return; }
+    const d = det(o); d.km = { ini: a ?? (d.km && d.km.ini) ?? 0, fim: b ?? (d.km && d.km.fim) ?? null, origem:'base', corrigido:new Date(AGORA) }; d.logs.unshift(['Quilometragem atualizada', PAPEIS[papel].nome, new Date(AGORA)]);
+    renderHub(true); const m2 = $('[data-km-msg]', hubContainer()); if (m2) m2.innerHTML = '<div class="ok-faixa">Quilometragem corrigida.</div>'; return; }
+  if ((x = el('[data-toast]'))) { toast(x.dataset.toast); return; }
+  /* nova OS */
+  if ((x = el('[data-nova-os]'))) { abrirNova(x.closest('[data-view]').dataset.view); return; }
+  if ((x = el('[data-cancelar-nova]'))) { cancelarNova(x.closest('[data-view]').dataset.view); return; }
+  if ((x = el('[data-salvar-nova]'))) { salvarNova(x.closest('[data-view]').dataset.view); return; }
+  /* resumo da linha */
+  if ((x = el('[data-abrir-os]'))) { abrirOS(x.closest('[data-view]').dataset.view, x.dataset.abrirOs); return; }
+  if ((x = el('[data-vincular]'))) { abrirOS(x.closest('[data-view]').dataset.view, x.dataset.vincular, 'informacoes-gerais'); return; }
+  if ((x = el('[data-andamento]'))) { const o = byId(x.dataset.andamento), v = x.closest('[data-view]').dataset.view, de = o.status, para = AVANCO[de]; o.status = para; definirMarcos(o); delete DET[o.id]; RENDER[v](); const b = $('[data-view="'+v+'"] [data-detalhe-de="'+v+'-'+o.id+'"] .pat-btn--primary'); if (b) b.focus(); toast(o.code+': '+ST[de]+' → '+ST[para]+'.'); return; }
+  if ((x = el('[data-atribuir]'))) { toast('Abre Despachos com a '+byId(x.dataset.atribuir).code+' pré-selecionada para escolher o técnico.'); return; }
+  if ((x = el('[data-revogar]'))) { dlgRevogar(byId(x.dataset.revogar)); return; }
+  /* lista */
+  if ((x = el('[data-linha]'))) { abrirResumo(x); return; }
+  if ((x = el('[data-alvo]'))) { const v = x.closest('[data-view]').dataset.view, a = x.dataset.alvo; S[v].alvo = S[v].alvo === a ? null : a; S[v].aberta = null; S[v].pagina = 0; RENDER[v](); const b = $('[data-view="'+v+'"] [data-alvo="'+a+'"]'); if (b) b.focus({ preventScroll:true }); return; }
+  if ((x = el('[data-limpar-filtro]'))) { const v = x.closest('[data-view]').dataset.view; S[v].alvo = null; S[v].aberta = null; RENDER[v](); return; }
+  if ((x = el('[data-aba-lista]'))) { const v = x.closest('[data-view]').dataset.view; S[v].aba = x.dataset.abaLista; S[v].aberta = null; S[v].pagina = 0; RENDER[v](); return; }
+  if ((x = el('[data-pg]'))) { const v = x.closest('[data-view]').dataset.view; S[v].pagina += x.dataset.pg === 'prox' ? 1 : -1; S[v].aberta = null; renderTabela(v); return; }
+  if ((x = el('[data-filtrar]'))) { const v = x.closest('[data-view]').dataset.view; S[v].filtrosAbertos = !S[v].filtrosAbertos; RENDER[v](); const b = $('[data-view="'+v+'"] [data-filtrar]'); if (b) b.focus(); return; }
+  if ((x = el('[data-f-periodo]'))) { const v = x.closest('[data-view]').dataset.view; S[v].periodo = x.dataset.fPeriodo; S[v].pagina = 0; RENDER[v](); const b = $('[data-view="'+v+'"] [data-f-periodo="'+S[v].periodo+'"]'); if (b) b.focus(); return; }
+  if ((x = el('[data-f-limpar]'))) { const v = x.closest('[data-view]').dataset.view; S[v].periodo = 'all'; S[v].prioridade = 'all'; RENDER[v](); return; }
+  if ((x = el('[data-exportar]'))) { const v = x.closest('[data-view]').dataset.view; toast('Baixa um arquivo CSV com as '+linhas(v).length+' ordens visíveis.'); return; }
+  if ((x = el('[data-tentar]'))) { const v = x.closest('[data-view]').dataset.view; S[v].estado = 'normal'; RENDER[v](); trocarOpcao(v); return; }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.matches('[data-f-prioridade]')) { const v = t.closest('[data-view]').dataset.view; S[v].prioridade = t.value; S[v].pagina = 0; RENDER[v](); const s = $('[data-view="'+v+'"] [data-f-prioridade]'); if (s) s.focus(); }
+  if (t.matches('[data-partida]')) { const o = byId(t.dataset.partida); const p = t.closest('[data-aba-conteudo]'); p.innerHTML = abaMapa(o, t.value); const s = $('[data-partida]', p); if (s) s.focus(); }
+  if (t.matches('[data-nf="cliente"], [data-nf="servico"]')) atualizarClienteNova(t.closest('.tela-nova'));
+  if (t.matches('[data-arquivo]')) { const n = t.parentNode.querySelector('[data-arquivo-nome]'); n.textContent = t.files && t.files[0] ? t.files[0].name : 'Nenhum arquivo escolhido'; }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.busca) { const v = t.dataset.busca; S[v].busca = t.value.trim(); S[v].pagina = 0; S[v].aberta = null; renderTabela(v); }
+});
+document.addEventListener('keydown', e => {
+  const lb = !$('#lightbox').hidden, dlg = !$('#dlg-overlay').hidden, janela = !$('#os-overlay').hidden;
+  if (e.key === 'Escape') {
+    if (lb) { fecharFoto(); return; }
+    if (dlg) { fecharDlg(); return; }
+    if (menuAberto) { menuAberto = false; renderHub(true); const b = $('[data-mais]', hubContainer()); if (b) b.focus(); return; }
+    if (janela) { fecharOS(); return; }
+    return;
+  }
+  if (lb && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { abrirFoto(fotoIdx + (e.key === 'ArrowRight' ? 1 : -1)); return; }
+  const trap = lb ? $('#lightbox') : dlg ? $('#dlg') : janela ? $('[data-janela-os]') : null;
+  if (trap && e.key === 'Tab') { const f = $$('button:not([disabled]), [href], input, select, textarea, [tabindex="0"]', trap).filter(n => n.offsetParent !== null); if (!f.length) return; const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length-1].focus(); } else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); } return; }
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); abrirResumo(t); }
+});
+
+/* ── Inicialização ── */
+renderSidebar();
+montarA(); montarB(); montarC();
+renderA(); renderB(); renderC();
+trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

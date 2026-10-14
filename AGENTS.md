@@ -283,6 +283,19 @@ Organização · Console Dispatcher · Cobranças.
      da tela pronta, isto se corrige numa linha.
    - **As 5 telas padronizadas** de `D-OS-CABECALHO-PADRONIZADO` ganham as 3 opções agora; até a escolha, ficam como
      estão.
+   - **As 3 opções aprovadas ficam TODAS, como aparências que cada usuário escolhe** (decisão do dono, 2026-10-14,
+     `D-APARENCIA-POR-USUARIO`; atualiza "A escolha", acima). Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+     - Cada tela tem as 3 aparências aprovadas, e cada usuário escolhe a sua num modo em Configurações. É preferência
+       PESSOAL do usuário, não da organização.
+     - Já têm as 3 aprovadas: Pátios, Dashboard e Ordens de Serviço (`screen-refs/*-3opcoes.reference.html`). Todas as
+       outras telas passam pelo mesmo ajuste.
+     - **Por enquanto, só documentado.** O seletor em Configurações e o lugar onde a preferência fica guardada são um
+       bloco próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** até
+       esse bloco existir, a tela implementada segue a opção que o dono apontou como preferida (em Pátios, a B,
+       "Analítica"); onde ele não apontou, o plano do bloco escolhe e declara.
+   - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
+     o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
+     tela.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
@@ -814,7 +827,7 @@ ao PR corrente**.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
-- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela segue a opção que o dono escolheu entre as 3,
+- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela segue as 3 opções aprovadas pelo dono (todas, como aparências por usuário, `D-APARENCIA-POR-USUARIO`),
       registrada em `screen-refs/`.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 

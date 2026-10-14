@@ -3599,3 +3599,13 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
   - A linha do Gemini na tabela do §C7.6 (CLAUDE.md e AGENTS.md) entra no PRÓXIMO PR de governança, qualquer que seja, e não depende da v3. Até lá, vale esta entrada.
 - **Pedido do dono (2026-10-13):** a simulação navegável do app de campo, *"para assim quando partimos para o mobile eu ja ter um norte"*. Ficou pronta fora do repositório (`erp-pausa-2026-10-03/app-campo/`), com verificador e gabarito gerados do código.
   - **Ressalva do orquestrador:** 3 itens do gabarito (`/approvals`, `/checklists`, `/inventory`) são rotas de tela, não endpoints.
+
+## Registro de 14/10/2026 — telas: 3 aparências por usuário
+
+- **`D-APARENCIA-POR-USUARIO` (decisão do dono, 2026-10-14).** Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+  - **A regra:** as 3 opções aprovadas de cada tela ficam TODAS. Cada usuário escolhe a aparência num modo em Configurações; a preferência é pessoal, não da organização. Atualiza o "a escolhida vai para `screen-refs/`" da `D-TELAS-TRES-OPCOES`.
+  - **Já aprovadas com as 3:** Pátios, Dashboard e Ordens de Serviço, nas maquetes do Claude (`screen-refs/{patios,dashboard,ordens-de-servico}-3opcoes.reference.html`). Em Pátios o dono aprovou antes a B (Analítica) "com ressalva", atendida: Mover · Liberar · Editar numa linha no cartão da vaga.
+  - **As demais telas** passam pelo mesmo ajuste (3 opções, todas aprovadas como aparências).
+  - **Só documentado por ora** (*"por enquanto so documente"*). A implementação é a `P-APARENCIA-POR-USUARIO`.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md §4 item 7 e DoD §10; skills `ts-frontend-full` e `ui-ux-pro-max` nos dois espelhos; README do `screen-refs`.
+- **`D-DESIGN-SO-CLAUDE` (decisão do dono, 2026-10-13).** *"nao use o gemini free para essas coisas, eu so confio no claude desing"*. Maquete, opção visual e trabalho de tela são feitos pelo Claude, nunca pelo Gemini. No mesmo pedido o dono mandou voltar à Pátios v1 (a do Gemini) para comparar, e depois pediu as versões do Claude, que foram as aprovadas.
