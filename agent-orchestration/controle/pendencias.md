@@ -2914,6 +2914,7 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - status: ABERTA — 1 P0 + 1 P1.
 - **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
+- **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -10930,3 +10931,65 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Esta entrada evita a palavra de propósito, para não cair no próprio defeito.
 - **bloqueia:** não. Se divergir, vale o `pendencias.md`, como diz o cabeçalho do índice.
 - **teste de encerramento:** a severidade vem do sufixo `— <SEVERIDADE>` do cabeçalho. Um caso de teste com o termo hifenizado no corpo e `— BAIXA` no cabeçalho dá BAIXA.
+
+## P-O6R-B03-UUID-PATTERN-INVALIDO (2026-10-11) — a regex de UUID do módulo de despesa recusava todo UUID canônico — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11; PR e head a preencher pelo orquestrador ao versionar) · **escopo:** `pre-existente` (a regex com o último grupo de 13 caracteres sem hífen já estava em `94002580`) · **dono:** `B-O6R-03a`.
+- **A falha:** `expense-management.validators.ts:10` exigia `…-[89ab][0-9a-f]{12}`: item e submit pelo sync e `workOrderId` no REST saíam `400 invalid_uuid` para qualquer UUID 8-4-4-4-12 (vermelho-controle do dev, VC3).
+- **teste de encerramento:** A7/B3 (item e submit com `reportId` canônico processam e fazem replay), A7b (work order), com a mutação `m9a` (regex antiga) vermelha.
+
+## P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK (2026-10-11) — o evento de sync do item apontava o ITEM, mas a FK do evento é para o relatório — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `pre-existente` (`94002580`) · **dono:** `B-O6R-03a`.
+- **teste de encerramento:** A7 (os três eventos de prova apontam o relatório; zero P2003) e a mutação `m9b` (agregado = item) vermelha em A7 e B3.
+
+## P-O6R-B03-COMPATIBILIDADE-LEGADA (2026-10-11) — recibo gravado pela versão anterior (chave crua, sem prova do payload) não pode produzir efeito novo — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `dentro-do-bloco` (A-01 da crítica r1) · **dono:** `B-O6R-03a`.
+- **Como fecha:** a leitura da chave crua é SEMPRE feita, em toda forma de id; legado do próprio ator → `conflict legacy_payload_unverifiable` (ou `payload_mismatch` se o tipo diverge), sem escrita; legado de outro ator → `conflict action_owned_by_other_actor`; a chave nova (K2t, prefixo de 161 caracteres) é disjunta de todo id legado.
+- **teste de encerramento:** A11 nas 4 formas (UUID v4, `local:42`, 160 sem `:`, `<uuid>:x`), A11b′, A11c, A11d, B6, C7, C8; mutações M11, M11′, M11″, M12, M13 e M16 vermelhas.
+
+## P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode autenticar o replay de outro — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `dentro-do-bloco` (A-02 da r1; A-04/A-06 da r2) · **dono:** `B-O6R-03a`.
+- **Como fecha:** o fingerprint v2 tem o ator, a busca da prova exige o ator no predicado, e — pela v3 + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A` — a ação pertence a quem a enviou primeiro: outro ator recebe conflito antes de qualquer prova.
+- **teste de encerramento:** A3′, A3c, A12′, A12b, B1′, B7′, C3, C9; mutações M10 (combinada e isolada), C3-mut, M15, M17 e M17+M10c vermelhas.
+
+## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-O6R-03b`.
+- **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
+- **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
+- **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
+
+## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
+
+- **status:** ABERTA · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`.
+- **O que consumir:** `status: conflict` por ação com `errorCode` `payload_mismatch` · `legacy_payload_unverifiable` · `receipt_unverifiable` · `receipt_ambiguous` · `action_owned_by_other_actor`; e `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro. Legado sem prova exige resolução manual, nunca troca de id para lançar de novo.
+- **Inclui a nota N-03 da r2:** hoje o conflito volta à fila em todo ciclo (`pendingForTenant` inclui `conflict`, o `retryCount` não sobe) e o controller grava uma auditoria "success" por lote.
+- **teste de encerramento:** o Flutter preserva a ação em conflito para resolução manual, diferencia 503 e não perde a intenção; o laço sem fim deixa de existir.
+
+## P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_receipt.attach`, que o servidor recusa — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`.
+- **teste de encerramento:** o app não enfileira tipo recusado (ou o servidor passa a suportá-lo por contrato), e o lote drena.
+
+## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (a duplicação NASCE no `B-O6R-03a`: `expense-sync.ts`, `TRANSIENT_SYNC_DB_CODES` e `syncDatabaseErrorCodes`; a lista de referência é pré-existente em `inventory-prisma.repository.ts`) · **dono:** `B-ARNES-2` (a confirmar na ata da junta).
+- **teste de encerramento:** um helper compartilhado, em bloco próprio, usado pelos dois módulos.
+
+## P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena todo escritor da versão anterior — ALTA
+
+- **status:** ABERTA · **escopo:** operação de publicação · **dono:** o orquestrador de publicação.
+- **Por quê (medido):** o binário anterior, diante de um recibo K2t, lança de novo (drill 3a do dev: relatórios 1 → 2).
+- **O que exige:** drenar e substituir todas as réplicas antes de reabrir o sync de despesas; rollback só com a API parada ou fix-forward (emenda v3, A-07). A prova de "rota inacessível no binário antigo" saiu do dev pela v3 e vem para cá. O conflito com o Runbook A (`docs/deployment.md:243-255`, rollback simétrico N-1 com tráfego) e com a trava (c) do CD (`deploy-production.yml`) é registrado pelo orquestrador (passo 0 da v3).
+- **bloqueia:** a ativação da versão em produção; não o desenvolvimento.
+- **teste de encerramento:** evidência de drenagem, substituição de todas as réplicas, drill de replay e rollback seguro.
+
+## P-O6R-03A-ENUM-SEM-DENUNCIA (2026-10-14) — tipo novo no enum do sync de despesa não é denunciado pelo build nem pelo teste — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (ajuste C2-AJ-01 da junta do B-O6R-03a, ata `omega/juntas/J-B-O6R-03a-ciclo1.md`) · **dono:** o próximo bloco que tocar `EXPENSE_SYNC_ACTION_TYPES` (o 03b)
+- **O achado:** incluir `expense_report.delete` em `EXPENSE_SYNC_ACTION_TYPES` deixou `npm run check`, T-A 24/24 e T-B/C 23/23 verdes. O runtime recusa `400/unsupported_action` e o instantâneo fica idêntico: a falha é fechada na operação, mas a expansão do enum passa calada pelo build e pelos testes.
+- **bloqueia:** nada (sem autorização indevida, escrita, efeito financeiro nem perda de dado; a cadeira não vetou).
+- **teste de encerramento:** a mutação NEWTYPE (um tipo novo no enum sem tratador) deixa um teste ou o build vermelho, nomeando o tipo.

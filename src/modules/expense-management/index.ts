@@ -5,3 +5,4 @@ export * from "./expense-management.routes.js";
 export * from "./expense-management.service.js";
 export * from "./expense-management.types.js";
 export * from "./expense-management.validators.js";
+export * from "./expense-sync.js";

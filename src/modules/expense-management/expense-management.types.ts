@@ -184,22 +184,38 @@ export type CreateExpenseEventInput = {
   readonly actorUserId?: string;
 };
 
-export type CreateMobileActionReceiptInput = {
+// B-O6R-03a — a prova de replay é buscada com o ATOR obrigatório no predicado (v2 §2.2, M10).
+export type FindExpenseEventInput = {
   readonly tenantId: string;
-  readonly clientActionId: string;
   readonly actorUserId: string;
-  readonly actionType: string;
-  readonly status: MobileActionReceiptStatus;
-  readonly resultRef?: string;
-  readonly processedAt?: Date;
+  readonly aggregateId: string;
+  readonly eventType: string;
+  readonly payloadHash: string;
 };
+
+export type CountExpenseEventsInput = {
+  readonly tenantId: string;
+  readonly actorUserId: string;
+  readonly aggregateId: string;
+  readonly eventType: string;
+};
+
+export type CompleteMobileActionReceiptInput = {
+  readonly resultRef: string;
+  readonly processedAt: Date;
+};
+
+/** Status por ação no lote de sync (v2 §4.2). Conflito é a resposta da TENTATIVA, nunca o estado gravado do recibo. */
+export type SyncExpenseActionStatus = "processed" | "conflict";
 
 export type SyncExpenseActionResult = {
   readonly clientActionId: string;
   readonly type: string;
-  readonly status: MobileActionReceiptStatus;
+  readonly status: SyncExpenseActionStatus;
   readonly resultRef?: string;
   readonly replayed: boolean;
+  /** `null` no sucesso; no conflito, um dos `EXPENSE_SYNC_CONFLICT_CODES` de `expense-sync.ts`. */
+  readonly errorCode: string | null;
 };
 
 export type SyncExpenseActionsResult = {
