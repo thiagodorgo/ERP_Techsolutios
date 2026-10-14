@@ -276,13 +276,29 @@ Organização · Console Dispatcher · Cobranças.
    - **A maquete:** toda tela nova ou refeita, web ou mobile, passa por uma maquete com **3 opções visuais** (A, B e C,
      com seletor para trocar entre elas). Ela é montada a partir da tela-modelo e do padrão do sistema (itens 1 a 6) e
      traz, fora da tela, um quadro com o que já tem dado, o que falta no backend e os prós e contras de cada opção.
-   - **A escolha:** o dono escolhe uma ou pede a mistura (no Financeiro foi "uma junção de a com b"). A escolhida vai
-     para `screen-refs/` como referência da tela, e o plano do bloco a cita.
+   - **A escolha** *(superada em 2026-10-14 pelos itens `D-APARENCIA-POR-USUARIO` e `D-TELAS-SAEM-COM-TRES`, abaixo)*: o dono
+     escolhia uma ou pedia a mistura (no Financeiro foi "uma junção de a com b"). Hoje o dono aprova as 3, que vão
+     todas para `screen-refs/`, e o plano do bloco cita as 3.
    - **Leitura do orquestrador, declarada como tal (§A6):** as 3 opções vêm ANTES do dev, porque refazer tela pronta
-     custa mais, e a tela implementada é conferida contra a opção aprovada. Se o dono quiser as opções também depois
+     custa mais, e a tela implementada é conferida contra as opções aprovadas. Se o dono quiser as opções também depois
      da tela pronta, isto se corrige numa linha.
    - **As 5 telas padronizadas** de `D-OS-CABECALHO-PADRONIZADO` ganham as 3 opções agora; até a escolha, ficam como
      estão.
+   - **As 3 opções aprovadas ficam TODAS, como aparências que cada usuário escolhe** (decisão do dono, 2026-10-14,
+     `D-APARENCIA-POR-USUARIO`; atualiza "A escolha", acima). Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+     - Cada tela tem as 3 aparências aprovadas, e cada usuário escolhe a sua num modo em Configurações. É preferência
+       PESSOAL do usuário, não da organização.
+     - Já têm as 3 aprovadas: Pátios, Dashboard e Ordens de Serviço (`screen-refs/*-3opcoes.reference.html`). Todas as
+       outras telas passam pelo mesmo ajuste.
+     - **Toda tela sai com as 3 opções** (decisão do dono, 2026-10-14, `D-TELAS-SAEM-COM-TRES`): *"As telas aparti de
+       agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só
+       uma.
+     - **O seletor ainda não existe.** O modo em Configurações e o lugar onde a preferência fica guardada são um bloco
+       próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** o seletor é
+       pré-requisito da primeira tela que sair com as 3; ou esse bloco vem antes, ou a primeira tela o entrega junto.
+   - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
+     o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
+     tela.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
@@ -567,6 +583,12 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    | **Topo** | Fable | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
    | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
 
+   **Gemini, pelo Antigravity** (declaração do dono, 2026-10-13, `D-GEMINI-PRO-NIVEL-CODEX`; e decisão do dono,
+   2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e só entra pela assinatura, sem
+   faturamento novo. **Leitura do orquestrador, declarada (§A6):** o **Gemini Flash** fica abaixo do nível menor e não
+   ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Como revisor de PR, o Gemini entra **só como segundo
+   revisor**, e o achado dele é conferido antes de valer; e não faz design (`D-DESIGN-SO-CLAUDE`).
+
    O `inspetor-de-terreno-da-junta` e o `porteiro-pos-merge` têm `model: opus` fixado no frontmatter (de
    2026-08-24 e 2026-08-12 até 2026-10-10 eram Fable — `D-INSPETOR-TERRENO-JUNTA`, `D-PORTEIRO-POS-MERGE`).
    Cadeiras, dev, crítico e fábrica rodam no modelo passado na invocação: o nível menor, declarado.
@@ -725,7 +747,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só
      quando o bloco mexe em **dinheiro, segurança, permissão ou perda de dado**. Todo o resto (telas e textos sem
      regra de negócio nova, documentação, registro, KPI, governança, ferramentas de processo) mergeia com **um
-     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta.
+     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta. Esse revisor não é o Gemini: ele entra só como segundo revisor (`D-GEMINI-SEGUNDO-REVISOR`, 2026-10-14).
    - **(2) Teto de 2 ciclos.** Nos ciclos 1 e 2 a junta funciona como hoje. **A partir do ciclo 3, só bloqueia
      defeito de produto grave**: perde dado, vaza dado entre organizações, quebra permissão ou erra dinheiro. Todo
      outro achado — inclusive de processo, registro, mandato, KPI, forma de teste — vira **pendência com dono** e o
@@ -814,7 +836,7 @@ ao PR corrente**.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
-- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela segue a opção que o dono escolheu entre as 3,
+- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela sai com as 3 opções aprovadas pelo dono, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`),
       registrada em `screen-refs/`.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 

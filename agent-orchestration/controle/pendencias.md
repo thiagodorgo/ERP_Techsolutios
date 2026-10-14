@@ -10994,3 +10994,37 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **O achado:** incluir `expense_report.delete` em `EXPENSE_SYNC_ACTION_TYPES` deixou `npm run check`, T-A 24/24 e T-B/C 23/23 verdes. O runtime recusa `400/unsupported_action` e o instantâneo fica idêntico: a falha é fechada na operação, mas a expansão do enum passa calada pelo build e pelos testes.
 - **bloqueia:** nada (sem autorização indevida, escrita, efeito financeiro nem perda de dado; a cadeira não vetou).
 - **teste de encerramento:** a mutação NEWTYPE (um tipo novo no enum sem tratador) deixa um teste ou o build vermelho, nomeando o tipo.
+
+## P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário — MÉDIA
+
+- **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
+- **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
+- **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
+- **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
+
+## P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao montar as maquetes de Dashboard e Ordens de Serviço — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (medido na `main` 684e9afd pelos agentes de maquete; nenhum bloco o criou) · **dono:** o orquestrador (distribuir em blocos)
+- **Dashboard:**
+  - Financeiro e Estoque não têm `dashboard:read`, mas depois de escolher a organização todos vão para `/dashboard` (`ContextSelectionPage.tsx:44`): a primeira tela deles é "Acesso não permitido".
+  - "Nova OS" aparece para todos os perfis (`DashboardPage.tsx:365`); o clique no cartão leva a `/work-orders` sem filtro (`DashboardPage.tsx:419`), e o detalhe do indicador (`buildDashboardKpiDetail`) está sem uso desde o #331; o Suporte cai no bloqueio ao clicar num cartão.
+  - A fila de urgentes do painel inclui OS de prioridade elevada já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
+- **Ordens de Serviço:**
+  - "Vincular cliente" leva ao detalhe, mas o detalhe não tem onde editar o vínculo.
+  - A criação de OS tem texto sem acento ("Titulo", "Descricao", "Ordens de Servico").
+  - "← Voltar às ordens" não funciona pelo teclado.
+  - O selo "Aguardando decisão" aparece em OS sem aprovação.
+- **Falta no backend (para as telas aprovadas):** nome do técnico na lista e no detalhe (`P-WO-LIST-TECH-NAME`); rota do resumo agregado de OS (`WorkOrdersSummary`, `work-orders.types.ts:279`, sem rota); filtro "atrasadas" e de várias situações na listagem (`work-order.service.ts:403-411`); contagem "sem técnico" e recorte por perfil no agregado do dashboard; código da OS e acento nos eventos recentes; nome do operador no despacho; miniatura de foto do anexo; horários de atribuição, aceite e saída na OS.
+- **Respondida pelo dono em 2026-10-14 (`D-TECNICO-LE-SO-ATRIBUIDAS`), ver `P-TECNICO-LE-SO-ATRIBUIDAS`:** *"o técnico de campo só deve ler as OS atribuídas a ele"*. A pergunta era: o técnico de campo deve LER só as OS atribuídas a ele? Hoje lê todas da organização e só altera as dele — de propósito (`work-order.service.ts`, B-O6R-07a: `work_orders:read` é da organização inteira e a lista do app depende disso). Mudar é bloco de permissão com junta de segurança. E sobre valores, respondido pelo dono em 2026-10-14 (`D-TECNICO-SO-VALORES-PROPRIOS`): o técnico vê só a própria prestação de contas e as próprias comissões; na OS vê peças e serviços sem valores.
+- **bloqueia:** nada hoje. Os itens de perfil do Dashboard contam para a meta "telas funcionais".
+- **teste de encerramento:** cada item vira teste no bloco que o fechar (perfil × tela inicial; "Nova OS" só para quem cria; fila de urgentes sem OS finalizada).
+
+## P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da organização — ALTA
+
+- **status:** ABERTA · **escopo:** novo (decisão do dono `D-TECNICO-LE-SO-ATRIBUIDAS`; hoje o comportamento é de propósito, B-O6R-07a) · **dono:** bloco de permissão a planejar (junta completa: permissão, unanimidade de 3)
+- **Hoje:** `work_orders:read` vale para a organização inteira; o técnico só tem a ALTERAÇÃO limitada às OS atribuídas a ele (`work-order.service.ts`, comentário do B-O6R-07a: "a lista do app depende disso").
+- **O que o dono decidiu:** o técnico de campo só LÊ as OS atribuídas a ele — na lista, no detalhe e nos subrecursos.
+- **O que o bloco precisa cobrir:** a listagem e o detalhe do backend recortados por atribuição para os papéis de campo (403 ou 404 conforme o contrato do 07a para OS da mesma organização não atribuída); o app de campo (lista, sync e cache local) sem depender de ler OS alheia; o web; o que acontece com a OS que é desatribuída enquanto está no cache do celular; e os VALORES que o técnico vê (respondido pelo dono em 2026-10-14, `D-TECNICO-SO-VALORES-PROPRIOS`: na OS ele vê as peças aplicadas e os serviços, SEM valores; os únicos valores que vê são os da própria prestação de contas e das próprias comissões).
+- **bloqueia:** nada hoje; conta para a versão vendável (isolamento entre técnicos).
+- **teste de encerramento:** técnico A lista e abre só as suas; GET da OS do técnico B devolve a recusa do contrato; o app sincroniza sem erro; vermelho-controle no código de hoje.

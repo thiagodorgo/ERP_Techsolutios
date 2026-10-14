@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **539** |
-| IDs distintos | 528 |
-| **ABERTAS** | **398** |
+| Cabecalhos `## P-` | **542** |
+| IDs distintos | 531 |
+| **ABERTAS** | **401** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **331** |
+| — das quais **ativas nesta rodada** | **334** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 138 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **539 cabecalhos para 528 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **542 cabecalhos para 531 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 190
+## ABERTAS · balde A — material — 193
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -264,6 +264,9 @@
 | `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` | 10966 | MÉDIA | sim | P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito po |
 | `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` | 10973 | MÉDIA | sim | P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_recei |
 | `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO` | 10983 | ALTA | sim | P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena |
+| `P-APARENCIA-POR-USUARIO` | 10998 | MÉDIA | sim | P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não  |
+| `P-TELAS-ACHADOS-MAQUETES-14-10` | 11006 | MÉDIA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
+| `P-TECNICO-LE-SO-ATRIBUIDAS` | 11023 | ALTA | sim | P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da org |
 
 ## ABERTAS · balde B — processo/registro — 141
 
