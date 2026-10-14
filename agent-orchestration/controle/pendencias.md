@@ -10986,3 +10986,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **O que exige:** drenar e substituir todas as réplicas antes de reabrir o sync de despesas; rollback só com a API parada ou fix-forward (emenda v3, A-07). A prova de "rota inacessível no binário antigo" saiu do dev pela v3 e vem para cá. O conflito com o Runbook A (`docs/deployment.md:243-255`, rollback simétrico N-1 com tráfego) e com a trava (c) do CD (`deploy-production.yml`) é registrado pelo orquestrador (passo 0 da v3).
 - **bloqueia:** a ativação da versão em produção; não o desenvolvimento.
 - **teste de encerramento:** evidência de drenagem, substituição de todas as réplicas, drill de replay e rollback seguro.
+
+## P-O6R-03A-ENUM-SEM-DENUNCIA (2026-10-14) — tipo novo no enum do sync de despesa não é denunciado pelo build nem pelo teste — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (ajuste C2-AJ-01 da junta do B-O6R-03a, ata `omega/juntas/J-B-O6R-03a-ciclo1.md`) · **dono:** o próximo bloco que tocar `EXPENSE_SYNC_ACTION_TYPES` (o 03b)
+- **O achado:** incluir `expense_report.delete` em `EXPENSE_SYNC_ACTION_TYPES` deixou `npm run check`, T-A 24/24 e T-B/C 23/23 verdes. O runtime recusa `400/unsupported_action` e o instantâneo fica idêntico: a falha é fechada na operação, mas a expansão do enum passa calada pelo build e pelos testes.
+- **bloqueia:** nada (sem autorização indevida, escrita, efeito financeiro nem perda de dado; a cadeira não vetou).
+- **teste de encerramento:** a mutação NEWTYPE (um tipo novo no enum sem tratador) deixa um teste ou o build vermelho, nomeando o tipo.
