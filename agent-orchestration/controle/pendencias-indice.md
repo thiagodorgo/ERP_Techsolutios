@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **531** |
-| IDs distintos | 520 |
-| **ABERTAS** | **394** |
+| Cabecalhos `## P-` | **532** |
+| IDs distintos | 521 |
+| **ABERTAS** | **395** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **327** |
+| — das quais **ativas nesta rodada** | **328** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 134 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **531 cabecalhos para 520 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **532 cabecalhos para 521 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 188
+## ABERTAS · balde A — material — 189
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -262,6 +262,7 @@
 | `P-LOGISTICS-MOCK` | 10918 | MÉDIA | sim | P-LOGISTICS-MOCK (2026-10-11) — a tela `/logistics` serve dado inventado sempre, mesmo f |
 | `P-APARENCIA-POR-USUARIO` | 10934 | MÉDIA | sim | P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não  |
 | `P-TELAS-ACHADOS-MAQUETES-14-10` | 10942 | CRÍTICA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
+| `P-TECNICO-LE-SO-ATRIBUIDAS` | 10959 | ALTA | sim | P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da org |
 
 ## ABERTAS · balde B — processo/registro — 139
 

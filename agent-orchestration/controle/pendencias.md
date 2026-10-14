@@ -10952,6 +10952,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - "← Voltar às ordens" não funciona pelo teclado.
   - O selo "Aguardando decisão" aparece em OS sem aprovação.
 - **Falta no backend (para as telas aprovadas):** nome do técnico na lista e no detalhe (`P-WO-LIST-TECH-NAME`); rota do resumo agregado de OS (`WorkOrdersSummary`, `work-orders.types.ts:279`, sem rota); filtro "atrasadas" e de várias situações na listagem (`work-order.service.ts:403-411`); contagem "sem técnico" e recorte por perfil no agregado do dashboard; código da OS e acento nos eventos recentes; nome do operador no despacho; miniatura de foto do anexo; horários de atribuição, aceite e saída na OS.
-- **Pergunta ao dono (permissão):** o técnico de campo deve LER só as OS atribuídas a ele? Hoje lê todas da organização e só altera as dele — de propósito (`work-order.service.ts`, B-O6R-07a: `work_orders:read` é da organização inteira e a lista do app depende disso). Mudar é bloco de permissão com junta de segurança. E: o técnico deve ver o Financeiro e o Orçamento da OS (hoje vê, só leitura)?
+- **Respondida pelo dono em 2026-10-14 (`D-TECNICO-LE-SO-ATRIBUIDAS`), ver `P-TECNICO-LE-SO-ATRIBUIDAS`:** *"o técnico de campo só deve ler as OS atribuídas a ele"*. A pergunta era: o técnico de campo deve LER só as OS atribuídas a ele? Hoje lê todas da organização e só altera as dele — de propósito (`work-order.service.ts`, B-O6R-07a: `work_orders:read` é da organização inteira e a lista do app depende disso). Mudar é bloco de permissão com junta de segurança. E: o técnico deve ver o Financeiro e o Orçamento da OS (hoje vê, só leitura)?
 - **bloqueia:** nada hoje. Os itens de perfil do Dashboard contam para a meta "telas funcionais".
 - **teste de encerramento:** cada item vira teste no bloco que o fechar (perfil × tela inicial; "Nova OS" só para quem cria; fila crítica sem OS finalizada).
+
+## P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da organização — ALTA
+
+- **status:** ABERTA · **escopo:** novo (decisão do dono `D-TECNICO-LE-SO-ATRIBUIDAS`; hoje o comportamento é de propósito, B-O6R-07a) · **dono:** bloco de permissão a planejar (junta completa: permissão, unanimidade de 3)
+- **Hoje:** `work_orders:read` vale para a organização inteira; o técnico só tem a ALTERAÇÃO limitada às OS atribuídas a ele (`work-order.service.ts`, comentário do B-O6R-07a: "a lista do app depende disso").
+- **O que o dono decidiu:** o técnico de campo só LÊ as OS atribuídas a ele — na lista, no detalhe e nos subrecursos.
+- **O que o bloco precisa cobrir:** a listagem e o detalhe do backend recortados por atribuição para os papéis de campo (403 ou 404 conforme o contrato do 07a para OS da mesma organização não atribuída); o app de campo (lista, sync e cache local) sem depender de ler OS alheia; o web; o que acontece com a OS que é desatribuída enquanto está no cache do celular; e se o técnico vê Financeiro e Orçamento da OS (pergunta ainda aberta).
+- **bloqueia:** nada hoje; conta para a versão vendável (isolamento entre técnicos).
+- **teste de encerramento:** técnico A lista e abre só as suas; GET da OS do técnico B devolve a recusa do contrato; o app sincroniza sem erro; vermelho-controle no código de hoje.
