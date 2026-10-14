@@ -609,6 +609,21 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Pausar writer após open-check, fechar período e retomá-lo; ele deve falhar ou integrar snapshot, jamais commitar fora dele.
 
 ### [Ω6R-DIN-009] Receipt de despesas é persistido depois do efeito monetário e não vincula usuário/payload
+- Status: fechado NA AUTORIA do B-O6R-03a (2026-10-11; PR e head a preencher pelo orquestrador ao versionar — o dev não commita); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+  **Uma transação por ação, com o recibo como primeira escrita.** Claim do recibo (INSERT puro na PK atual
+  `(tenant_id, client_action_id)`), efeito (relatório/item/total/status e eventos de domínio), resultado no recibo e
+  evento de prova saem no MESMO commit; quem perde a corrida na PK relê FORA da transação abortada e nunca refaz o
+  efeito; transitório → `503 sync_busy`. **A ação é UMA só por organização + id e pertence a quem a enviou primeiro**
+  (emenda v3 + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`): a chave interna K2t = prefixo ASCII de 161 caracteres +
+  `JSON([client_action_id])`, disjunta de todo id legado (≤160), sem migração; outro ator → `conflict
+  action_owned_by_other_actor`, zero escrita. **Leitura legada sempre ligada:** recibo da versão anterior nunca produz
+  efeito novo e responde conflito (`legacy_payload_unverifiable`), em toda forma de id. **Prova de replay** = fingerprint
+  v2 (`{v:2, tenantId, actorUserId, clientActionId, type, normalized}`) aceita só por evento do MESMO ator no agregado
+  ORIGINAL do recibo. UUID canônico aceito (regex) e evento de sync do item apontando o relatório (FK). Testes: T-A
+  `tests/expense-sync-atomic-db.test.ts` (Postgres, papéis sem BYPASSRLS), T-B `tests/expense-management-routes.test.ts`,
+  T-C `tests/expense-sync-fingerprint.test.ts`; N, forma e mutações (M10/M11/M15–M18 e a matriz do §5) em
+  `docs/revisoes/SAN3/B-O6R-03a-dev.md`. Publicação exige tirar todo escritor antigo (`P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`);
+  o lado do app é do B-O6R-03b (`P-O6R-B03-FILA-POR-USUARIO`, `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO`).
 - Severidade: P0        Confiança: 1.00
 - Categoria: DIN
 - Módulo: expense-management        Lente: A3

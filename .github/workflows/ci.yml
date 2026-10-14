@@ -275,6 +275,11 @@ jobs:
           SUITES="$SUITES tests/inventory-cycle-count-close-units-db.test.ts"
           SUITES="$SUITES tests/inventory-unique-backstops-db.test.ts"
           SUITES="$SUITES tests/inventory-migration-drill-db.test.ts"
+          # B-O6R-03a (Ω6R-DIN-009) — sync de despesas atômico e sem lançamento em dobro, contra o Postgres real e sob
+          # papéis efêmeros SEM BYPASSRLS: claim + efeito + recibo + prova no mesmo commit (falha injetada nos três tipos),
+          # corrida na PK com barreira escopada, a mesma ação reenviada por outro ator é conflito, recibo legado nunca
+          # lança de novo e a chave interna é reconhecida por outro processo. Sem DATABASE_URL a suíte pula declarando.
+          SUITES="$SUITES tests/expense-sync-atomic-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
