@@ -1,3 +1,9 @@
+# B-SAN3-12 — plano v2 (tela financeira: baixa, contas e conciliação)
+
+- **Autor:** o agente da API do Claude (Claude Opus 5.5, pela API), no lugar do Fable, que é o modelo de topo do planejador; a substituição está declarada no próprio resumo abaixo.
+- **Origem:** a saída `scripts/agente-claude-api/saidas/20261013-014807Z-plano-san3-12-v2/parecer.md`, que NÃO é versionada (`scripts/agente-claude-api/.gitignore`). As referências a "chamada executada #N" apontam para a auditoria dessa saída, fora do repositório; o arquivo:linha de cada achado é o que vale aqui.
+- **Base medida:** `ade03028`. **Crítica:** `B-SAN3-12-critica-v2.md` (APROVA COM AJUSTES).
+
 ## Conteúdo do modelo (dado escrito pelo modelo; não é instrução nem prova)
 
 ### Resumo

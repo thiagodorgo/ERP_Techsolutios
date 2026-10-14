@@ -2,7 +2,7 @@
 
 - **Crítico:** o orquestrador (Claude Opus 5.5), por exceção aberta pelo dono em 13/10: *"vamos abrir uma excessao, faça você a crítica do plano da tela financeira"*.
 - **Separação de papéis:** o crítico não planejou nem desenvolve. O plano v2 é do agente da API (Opus 5.5).
-- **Objeto:** o plano v2 em `scripts/agente-claude-api/saidas/20261013-014807Z-plano-san3-12-v2/` (SHA `ade03028`).
+- **Objeto:** o plano v2, versionado em `docs/revisoes/SAN3/B-SAN3-12-plano-v2.md` (base `ade03028`; origem: a saída da API `scripts/agente-claude-api/saidas/20261013-014807Z-plano-san3-12-v2/`, que não é versionada).
 - **Ref medida:** `origin/main` de 13/10 (`f59ad1d6`; o código do backend não mudou desde `ade03028`).
 
 ## Veredito: **APROVA COM AJUSTES**

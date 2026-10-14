@@ -9,14 +9,14 @@
 |---|---|---|
 | API Node.js (Express, Prisma) | imagem Docker; na Fly, `shared-cpu-1x` com 512 MB, 1 máquina sempre ligada | `Dockerfile`, `fly.production.toml:32-80` |
 | Frontend React (build estático) | na Fly, `shared-cpu-1x` com 256 MB servindo o build | `frontend/fly.production.toml:10-39` |
-| PostgreSQL 16 | container no compose; na Fly, Postgres gerenciado | `docker-compose.prod.yml:6` |
-| Redis 7 | container | `docker-compose.prod.yml:30` |
+| PostgreSQL 16 | container no compose; na Fly, Postgres gerenciado | `docker-compose.prod.yml:7` |
+| Redis 7 | container | `docker-compose.prod.yml:31` |
 | Anexos, checklists e evidências | provedor `local` ou **`s3`** (já suportado, com bucket, região e endpoint) | `src/config/env.ts:246-253` |
 | Traccar | desenho aprovado: **ECS/Fargate em subnet privada, RDS PostgreSQL dedicado, Secrets Manager, sem porta pública** | `docs/revisoes/TRACCAR/PLANO_TRACCAR.md:899-912` |
 | Antivírus (ClamAV) | `B-AV-REAL`: o desenho AWS está na PD `PD-O6R-B07B-CLAMD-INSTREAM` | `decisoes.md` (D-INFRA-PROVIDER-AWS) |
 | Produção hoje | **nenhuma**: a config da Fly está inerte (`D-INFRA-PROVIDER` e o hand-off nunca ativado) | `PROJECT_MEMORY.md:132` |
 
-**Hoje o custo de hospedagem é US$ 0**, porque não há produção no ar. A comparação útil é a AWS contra o que a Fly custaria. A PD anterior tinha o Traccar em ~US$ 26–67/mês na Fly e ~US$ 38–73/mês no Fargate com NAT (`docs/omega-pd.md:1333,1593`).
+**Hoje o custo de hospedagem é US$ 0**, porque não há produção no ar. A comparação útil é a AWS contra o que a Fly custaria. A base da Fly está em `docs/go-live-readiness.md` §2: **~US$ 47–52/mês no mínimo e ~US$ 90–110/mês no típico**, só com API, web, Postgres e Redis (sem Traccar e sem antivírus). Os valores de ~US$ 26–67/mês na Fly e ~US$ 38–73/mês no Fargate com NAT (`docs/omega-pd.md:1333,1593`) são do **antivírus** (ClamAV, `PD-O6R-B07B-CLAMD-INSTREAM`), não do Traccar. **A comparação não é de igual para igual:** o total da AWS abaixo já inclui Traccar, antivírus, NAT e balanceador; a base da Fly não.
 
 ## 2. Desenho proposto (região `sa-east-1`, São Paulo: dado no Brasil, LGPD)
 - **VPC** com 2 zonas de disponibilidade.
@@ -90,7 +90,7 @@
 6. **Produção:**
    - repetir em produção o que o staging provou;
    - 1º admin pelo script do `B-SAN3-09`;
-   - go-live com os 12 passos de `docs/go-live-readiness.md`.
+   - go-live pelo checklist de `docs/go-live-readiness.md` §3. Os 12 passos de lá foram escritos para a Fly (apps Fly, `FLY_API_TOKEN`, TLS da Fly): servem de base, e o `B-INFRA-AWS-01` os reescreve para a AWS (conta, ECS, ACM, Secrets Manager, OIDC).
 7. **A Fly sai:** depois de o staging AWS estar verde, os `fly.*.toml` vão para um PR de limpeza (ou ficam como referência de rollback, decisão do dono).
 
 **Tamanho:** de 5 a 7 blocos de infra, M ou G cada, com juntas de segurança e de serviço pago. Corre **em paralelo** com o gate de produção, porque não toca os mesmos arquivos de produto.
@@ -106,7 +106,7 @@
 1. **Conta AWS:** quem abre e qual cartão. É ato do dono.
 2. **NAT gateway ou instância NAT.** Recomendo a instância no começo.
 3. **Banco do Traccar dedicado ou compartilhado.** O plano do Traccar diz dedicado; recomendo manter.
-4. **Teto do orçamento mensal da AWS,** para o alerta. Sugestão: US$ 350 com staging.
+4. **Teto do orçamento mensal da AWS,** para o alerta. Produção sozinha fica em ~US$ 255–320; com staging (~US$ 80–120), a soma vai a **~US$ 335–440**. Sugestão: **US$ 450 com staging** (ou US$ 350 só para produção).
 
 ## Fontes
 - AWS Price List API, sa-east-1: `https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/{AmazonECS,AWSELB,AmazonElastiCache}/current/sa-east-1/index.json` (lida em 13/10/2026)
