@@ -11008,7 +11008,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Dashboard:**
   - Financeiro e Estoque não têm `dashboard:read`, mas depois de escolher a organização todos vão para `/dashboard` (`ContextSelectionPage.tsx:44`): a primeira tela deles é "Acesso não permitido".
   - "Nova OS" aparece para todos os perfis (`DashboardPage.tsx:365`); o clique no cartão leva a `/work-orders` sem filtro (`DashboardPage.tsx:419`), e o detalhe do indicador (`buildDashboardKpiDetail`) está sem uso desde o #331; o Suporte cai no bloqueio ao clicar num cartão.
-  - A fila de urgentes do painel inclui OS de prioridade alta já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
+  - A fila de urgentes do painel inclui OS de prioridade elevada já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
 - **Ordens de Serviço:**
   - "Vincular cliente" leva ao detalhe, mas o detalhe não tem onde editar o vínculo.
   - A criação de OS tem texto sem acento ("Titulo", "Descricao", "Ordens de Servico").

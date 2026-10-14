@@ -265,7 +265,7 @@
 | `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` | 10972 | MÉDIA | sim | P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_recei |
 | `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO` | 10982 | ALTA | sim | P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena |
 | `P-APARENCIA-POR-USUARIO` | 10997 | MÉDIA | sim | P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não  |
-| `P-TELAS-ACHADOS-MAQUETES-14-10` | 11005 | ALTA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
+| `P-TELAS-ACHADOS-MAQUETES-14-10` | 11005 | MÉDIA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
 | `P-TECNICO-LE-SO-ATRIBUIDAS` | 11022 | ALTA | sim | P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da org |
 
 ## ABERTAS · balde B — processo/registro — 141
