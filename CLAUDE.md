@@ -262,10 +262,12 @@ Organização · Console Dispatcher · Cobranças.
        PESSOAL do usuário, não da organização.
      - Já têm as 3 aprovadas: Pátios, Dashboard e Ordens de Serviço (`screen-refs/*-3opcoes.reference.html`). Todas as
        outras telas passam pelo mesmo ajuste.
-     - **Por enquanto, só documentado.** O seletor em Configurações e o lugar onde a preferência fica guardada são um
-       bloco próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** até
-       esse bloco existir, a tela implementada segue a opção que o dono apontou como preferida (em Pátios, a B,
-       "Analítica"); onde ele não apontou, o plano do bloco escolhe e declara.
+     - **Toda tela sai com as 3 opções** (decisão do dono, 2026-10-14, `D-TELAS-SAEM-COM-TRES`): *"As telas aparti de
+       agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só
+       uma.
+     - **O seletor ainda não existe.** O modo em Configurações e o lugar onde a preferência fica guardada são um bloco
+       próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** o seletor é
+       pré-requisito da primeira tela que sair com as 3; ou esse bloco vem antes, ou a primeira tela o entrega junto.
    - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
      o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
      tela.
@@ -799,7 +801,7 @@ ao PR corrente**.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
-- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela segue as 3 opções aprovadas pelo dono (todas, como aparências por usuário, `D-APARENCIA-POR-USUARIO`),
+- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela sai com as 3 opções aprovadas pelo dono, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`),
       registrada em `screen-refs/`.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 

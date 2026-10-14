@@ -29,7 +29,7 @@ números são de exemplo. A página carrega as fontes do Google Fonts; sem rede,
 
 **Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.
 
-**As 3 opções ficam todas, como aparências por usuário (`D-APARENCIA-POR-USUARIO`, 2026-10-14):** o dono aprovou as 3 opções de cada tela; cada usuário vai escolher a sua em Configurações. Referências com as 3 aprovadas (maquetes feitas pelo Claude, `D-DESIGN-SO-CLAUDE`; troque a opção no seletor do topo; o quadro de notas no rodapé não faz parte da tela, e os números são de exemplo):
+**As 3 opções ficam todas, como aparências por usuário (`D-APARENCIA-POR-USUARIO`, 2026-10-14):** o dono aprovou as 3 opções de cada tela; cada usuário vai escolher a sua em Configurações, e desde 2026-10-14 toda tela implementada sai com as 3 (`D-TELAS-SAEM-COM-TRES`). Referências com as 3 aprovadas (maquetes feitas pelo Claude, `D-DESIGN-SO-CLAUDE`; troque a opção no seletor do topo; o quadro de notas no rodapé não faz parte da tela, e os números são de exemplo):
 - `patios-3opcoes.reference.html` — Pátios: lista → vagas (`OccupancyMap`) → dossiê do veículo em 8 abas, janela fixa, fotos em linha com quebra, Mover · Liberar · Editar numa linha. Preferida do dono: B (Analítica).
 - `dashboard-3opcoes.reference.html` — Dashboard: A fiel, B analítica, C central de prioridades.
 - `ordens-de-servico-3opcoes.reference.html` — Ordens de Serviço: A fiel, B analítica (com SLA vencido), C fila por agenda; lista → resumo → detalhe da OS.

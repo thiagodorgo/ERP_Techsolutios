@@ -10999,7 +10999,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
-- **bloqueia:** nada hoje. Até o bloco existir, a tela segue a opção preferida pelo dono (Pátios: B).
+- **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
 - **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
 
 ## P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao montar as maquetes de Dashboard e Ordens de Serviço — MÉDIA
@@ -11008,7 +11008,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Dashboard:**
   - Financeiro e Estoque não têm `dashboard:read`, mas depois de escolher a organização todos vão para `/dashboard` (`ContextSelectionPage.tsx:44`): a primeira tela deles é "Acesso não permitido".
   - "Nova OS" aparece para todos os perfis (`DashboardPage.tsx:365`); o clique no cartão leva a `/work-orders` sem filtro (`DashboardPage.tsx:419`), e o detalhe do indicador (`buildDashboardKpiDetail`) está sem uso desde o #331; o Suporte cai no bloqueio ao clicar num cartão.
-  - A fila crítica inclui OS de prioridade alta já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
+  - A fila de urgentes do painel inclui OS de prioridade alta já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
 - **Ordens de Serviço:**
   - "Vincular cliente" leva ao detalhe, mas o detalhe não tem onde editar o vínculo.
   - A criação de OS tem texto sem acento ("Titulo", "Descricao", "Ordens de Servico").
@@ -11017,7 +11017,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Falta no backend (para as telas aprovadas):** nome do técnico na lista e no detalhe (`P-WO-LIST-TECH-NAME`); rota do resumo agregado de OS (`WorkOrdersSummary`, `work-orders.types.ts:279`, sem rota); filtro "atrasadas" e de várias situações na listagem (`work-order.service.ts:403-411`); contagem "sem técnico" e recorte por perfil no agregado do dashboard; código da OS e acento nos eventos recentes; nome do operador no despacho; miniatura de foto do anexo; horários de atribuição, aceite e saída na OS.
 - **Respondida pelo dono em 2026-10-14 (`D-TECNICO-LE-SO-ATRIBUIDAS`), ver `P-TECNICO-LE-SO-ATRIBUIDAS`:** *"o técnico de campo só deve ler as OS atribuídas a ele"*. A pergunta era: o técnico de campo deve LER só as OS atribuídas a ele? Hoje lê todas da organização e só altera as dele — de propósito (`work-order.service.ts`, B-O6R-07a: `work_orders:read` é da organização inteira e a lista do app depende disso). Mudar é bloco de permissão com junta de segurança. E: o técnico deve ver o Financeiro e o Orçamento da OS (hoje vê, só leitura)?
 - **bloqueia:** nada hoje. Os itens de perfil do Dashboard contam para a meta "telas funcionais".
-- **teste de encerramento:** cada item vira teste no bloco que o fechar (perfil × tela inicial; "Nova OS" só para quem cria; fila crítica sem OS finalizada).
+- **teste de encerramento:** cada item vira teste no bloco que o fechar (perfil × tela inicial; "Nova OS" só para quem cria; fila de urgentes sem OS finalizada).
 
 ## P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da organização — ALTA
 
