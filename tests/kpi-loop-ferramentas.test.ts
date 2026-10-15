@@ -46,11 +46,23 @@ test("kpi-history-append: acrescenta no JSON sem reformatar o resto e mantendo o
   assert.ok(!/[^\r]\n/.test(depois), "todo fim de linha continua CRLF");
 });
 
-test("kpi-history-append: a linha entra no fim da ÚLTIMA tabela de entregas, antes do texto que a segue", () => {
-  const md = ["# Histórico", CABECALHO_TABELA, "|-----|", "| antiga |", "", CABECALHO_TABELA, "|-----|", "| a |", "| b |", "", "Texto depois."].join("\n");
-  const out = acrescentarNaTabela(md, "| nova |").split("\n");
-  assert.equal(out[out.indexOf("| b |") + 1], "| nova |");
-  assert.equal(out[out.indexOf("| antiga |") + 1], "");
+test("kpi-history-append: a linha NUNCA entra na tabela de um marco anterior — cria a seção do marco", () => {
+  const md = ["# Histórico", "## As quatro entregas", CABECALHO_TABELA, "|-----|", "| antiga |", "", "Texto depois."].join("\n");
+  const out = acrescentarNaTabela(md, "| nova |", "KPI-MARCO-X").split("\n");
+  assert.equal(out[out.indexOf("| antiga |") + 1], "", "a tabela do marco anterior não ganhou linha");
+  const s = out.indexOf("## Entregas do KPI-MARCO-X");
+  assert.ok(s > out.indexOf("Texto depois."), "a seção nova vem no fim");
+  assert.equal(out[s + 4], "| nova |");
+});
+
+test("kpi-history-append: na segunda entrega do mesmo marco, a linha vai para a tabela dessa seção", () => {
+  const md = ["# H", "## Entregas do M1", "", CABECALHO_TABELA, "|---|", "| a |", "", "## Outra", "texto"].join("\n");
+  const out = acrescentarNaTabela(md, "| b |", "M1").split("\n");
+  assert.equal(out[out.indexOf("| a |") + 1], "| b |");
+});
+
+test("kpi-history-append: sem --secao é erro", () => {
+  assert.throws(() => acrescentarNaTabela(CABECALHO_TABELA, "| x |", ""), /secao/);
 });
 
 test("kpi-check-refs: extrai commit, rodada de CI e PR, sem confundir palavra com hash", () => {
@@ -58,6 +70,11 @@ test("kpi-check-refs: extrai commit, rodada de CI e PR, sem confundir palavra co
   assert.deepEqual(r.hashes.sort(), ["302b130e", "d910c97f"]);
   assert.deepEqual(r.runs, ["38574848019"]);
   assert.deepEqual(r.prs, ["425"]);
+});
+
+test("kpi-check-refs: pega a rodada escrita com crase e o id solto na coluna da tabela", () => {
+  const r = extrairReferencias("run `35409352362`\n| 2026-10-14 | `B-X` — y | #425 | `d910c97f` | `b75a0c2e` | 1/1 | 1/1 | 1/1 | 180 | 38574848019 (tentativa 1) |");
+  assert.deepEqual(r.runs.sort(), ["35409352362", "38574848019"]);
 });
 
 test("kpi-check-refs: só conta as linhas acrescentadas do diff", () => {

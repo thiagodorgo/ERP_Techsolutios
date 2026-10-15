@@ -31,7 +31,12 @@ export function extrairReferencias(texto) {
     if (/[0-9]/.test(h) && /[a-f]/.test(h)) hashes.add(h);
   }
   const runs = new Set();
-  for (const m of texto.matchAll(/\bruns?\s*(?:id\s*)?#?(\d{9,12})\b/gi)) runs.add(m[1]);
+  for (const m of texto.matchAll(/\bruns?\s*(?:id\s*)?[#`]?(\d{9,12})/gi)) runs.add(m[1]);
+  // Na tabela do histórico a coluna da CI traz o id solto: célula que é só um número de 9 a 12 dígitos.
+  for (const l of texto.split(/\r?\n/)) {
+    if (!l.trimStart().startsWith("|")) continue;
+    for (const c of l.split("|")) { const m = c.trim().match(/^(\d{9,12})(?:\s*\(tentativa \d+\))?$/); if (m) runs.add(m[1]); }
+  }
   const prs = new Set();
   for (const m of texto.matchAll(/(?<![\w&])#(\d{2,5})\b/g)) prs.add(m[1]);
   return { hashes: [...hashes], runs: [...runs], prs: [...prs] };

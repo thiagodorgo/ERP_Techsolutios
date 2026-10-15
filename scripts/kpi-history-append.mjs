@@ -13,7 +13,9 @@
 //
 // Uso:
 //   node scripts/kpi-history-append.mjs --pr 425 --descricao "o sync de despesa ficou atômico" \
-//        [--approved-head <sha>] [--consolidacao "<texto>"] [--sem-bloco] [--dry-run]
+//        --secao KPI-MARCO-2026-10-14 [--approved-head <sha>] [--consolidacao "<texto>"] [--sem-bloco] [--dry-run]
+//   --secao         : o marco. A linha entra na tabela da seção "## Entregas do <secao>" do .md, criada no fim do
+//                     arquivo se não existir; nunca na tabela de um marco anterior.
 //   --approved-head : quando o objeto aprovado pela junta difere do head mergeado (o sha é conferido no git).
 //   --sem-bloco     : a entrega não conta como bloco (blocks_completed não sobe).
 //   --dry-run       : mostra a entrada e a linha da tabela, sem gravar.
@@ -76,12 +78,19 @@ export function acrescentarNoJson(texto, entrada) {
   return novo;
 }
 
-/** Insere a linha logo depois da última linha da ÚLTIMA tabela com o cabeçalho das entregas. */
-export function acrescentarNaTabela(texto, linha) {
+/** Insere a linha na tabela da seção do MARCO ("## Entregas do <secao>"); cria a seção no fim se não existir. */
+export function acrescentarNaTabela(texto, linha, secao) {
+  if (!secao) throw new Error("falta --secao (o marco): a linha não entra na tabela de um marco anterior");
   const eol = texto.includes("\r\n") ? "\r\n" : "\n";
+  const titulo = `## Entregas do ${secao}`;
   const linhas = texto.split(eol);
-  const ini = linhas.lastIndexOf(CABECALHO_TABELA);
-  if (ini < 0) throw new Error("kpis-history.md sem a tabela de entregas");
+  const s = linhas.indexOf(titulo);
+  if (s < 0) {
+    const base = texto.replace(/(\r?\n)+$/, "");
+    return [base, "", titulo, "", CABECALHO_TABELA, "|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|", linha, ""].join(eol);
+  }
+  const ini = linhas.indexOf(CABECALHO_TABELA, s);
+  if (ini < 0) throw new Error(`a seção "${titulo}" não tem a tabela de entregas`);
   let fim = ini + 1;
   while (fim + 1 < linhas.length && linhas[fim + 1].startsWith("|")) fim++;
   linhas.splice(fim + 1, 0, linha);
@@ -121,7 +130,7 @@ function args(argv) {
 
 function main() {
   const o = args(process.argv.slice(2));
-  if (!o.pr || !o.descricao) throw new Error('uso: --pr <n> --descricao "<texto>" [--approved-head <sha>] [--consolidacao "<texto>"] [--sem-bloco] [--dry-run]');
+  if (!o.pr || !o.descricao || !o.secao) throw new Error('uso: --pr <n> --descricao "<texto>" --secao <marco> [--approved-head <sha>] [--consolidacao "<texto>"] [--sem-bloco] [--dry-run]');
   const pr = Number(o.pr);
   const textoJson = readFileSync(HIST_JSON, "utf8");
   const hist = JSON.parse(textoJson);
@@ -152,11 +161,15 @@ function main() {
     description: `${bloco} — ${o.descricao}. NÚMEROS DA CI no merge commit \`${f.merge.slice(0, 8)}\` (push na \`main\`), workflow \`ci\`, run ${ci.id}, tentativa ${ci.tentativa}: backend \`${c.backendResumo}\`; frontend ${c.frontend}; flutter ${c.flutter}. \`blocks_completed\` ${anterior.blocks_completed} -> ${blocos}.`,
     backfill_note: `Gerada por \`scripts/kpi-history-append.mjs\`: pr, merge_commit, data e approved_head de \`gh pr view ${pr}\`${o["approved-head"] ? " (approved_head informado e conferido no git)" : ""}; números do log da rodada ${ci.id}. Nada fica \`null\`.`,
   };
-  const linha = `| ${data} | \`${bloco}\` — ${o.descricao} | #${pr} | \`${f.merge.slice(0, 8)}\` | \`${aprovado.slice(0, 8)}\` | ${c.backend} | ${c.frontend} | ${c.flutter} | ${blocos} | ${ci.id} |`;
+  const desc = String(o.descricao).replace(/\|/g, "\\|");
+  const linha = `| ${data} | \`${bloco}\` — ${desc} | #${pr} | \`${f.merge.slice(0, 8)}\` | \`${aprovado.slice(0, 8)}\` | ${c.backend} | ${c.frontend} | ${c.flutter} | ${blocos} | ${ci.id} (tentativa ${ci.tentativa}) |`;
 
+  // Os DOIS textos são montados antes de gravar qualquer um: se um falhar, nenhum arquivo muda.
+  const novoJson = acrescentarNoJson(textoJson, entrada);
+  const novoMd = acrescentarNaTabela(readFileSync(HIST_MD, "utf8"), linha, o.secao);
   if (o["dry-run"]) { console.log(JSON.stringify(entrada, null, 2)); console.log(linha); return; }
-  writeFileSync(HIST_JSON, acrescentarNoJson(textoJson, entrada));
-  writeFileSync(HIST_MD, acrescentarNaTabela(readFileSync(HIST_MD, "utf8"), linha));
+  writeFileSync(HIST_JSON, novoJson);
+  writeFileSync(HIST_MD, novoMd);
   console.log(`kpi-history-append: #${pr} (${bloco}) entrou no histórico — ${data}, blocos ${blocos}, run ${ci.id}.`);
 }
 
