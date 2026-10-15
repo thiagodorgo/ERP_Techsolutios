@@ -307,7 +307,7 @@
         "severidade": "P0",
         "modulo": "work-orders / approvals / RBAC",
         "status": "parcialmente_superado",
-        "resumo": "O técnico de campo podia aprovar a própria ordem de serviço; papel, SoD e escopo nas duas rotas guardadas foram fechados, mas 9 rotas mutantes (anexos, comentários, geocode) seguem alcançáveis sobre OS alheia.",
+        "resumo": "O técnico de campo podia aprovar a própria ordem de serviço e mexer em OS alheia. Papel, SoD e escopo das duas rotas guardadas foram fechados pelo B-O6R-07a; o B-O6R-07c-a (#414) fechou as 10 vias de subrecurso conhecidas (anexos, comentários, etiquetas, localização e km). As 23 vias restantes (vistoria, evidência e despacho) ficam com o B-O6R-07c-b, já com plano emendado.",
         "bloco": "B-O6R-07"
       },
       {

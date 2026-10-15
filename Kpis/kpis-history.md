@@ -3089,12 +3089,6 @@ Fora da métrica, para registro: o job `backend-postgres` (rotas contra PostgreS
 | 2026-10-08 | `B-SAN3-09` — caminho versionado para o 1º admin de plataforma | #400 | `026ff7b8` | `cc01c9c4` (junta 2) | 3090/3092 (+38) | 1242/1242 | 864/864 | 172 | 37841486912 |
 | 2026-10-08 | `B-OS-FILTRAR-EXPORTAR` — Filtrar e Exportar na lista de OS | #409 | `fea93281` | `585d178a` (revisor) | 3090/3092 | 1268/1268 (+26) | 864/864 | 173 | 37847916306 |
 | 2026-10-09 | `B-SAN3-05` — o papel de runtime não contorna o RLS | #405 | `a9fbe283` | `84831ad9` (junta 4) | 3171/3173 (+81) | 1268/1268 | 864/864 | 174 | 37996854560 |
-| 2026-10-10 | `B-SAN3-06b` — o console da plataforma mostra dado real em vez de informação inventada | #411 | `a2937bad` | `6e5351e3` | 3171/3173 | 1317/1317 | 864/864 | 175 | 38021418893 |
-| 2026-10-10 | `B-O6R-04a` — o estoque fica consistente sob concorrência (fecha os P0 DAT-002 e DAT-003) | #389 | `ab52ec50` | `e852304c` | 3235/3237 | 1317/1317 | 864/864 | 176 | 38062881147 |
-| 2026-10-10 | `B-AGENTE-API` — ferramenta interna: o agente de linha de comando sobre a API do Claude, com cerca | #417 | `3a0d1990` | `9e4e375e` | 3235/3237 | 1317/1317 | 864/864 | 177 | 38087922506 |
-| 2026-10-11 | `B-O6R-07c-a` — o técnico não atribuído não mexe em subrecurso de OS alheia (10 vias do P0 SEC-002) | #414 | `86ea8a81` | `09084d30` | 3296/3298 | 1317/1317 | 864/864 | 178 | 38159315930 |
-| 2026-10-11 | `B-SAN3-06a-telas` — o menu sai sem tela fictícia e o Console Dispatcher passa a mostrar dado real | #424 | `9566d55b` | `2f7a0573` | 3296/3298 | 1327/1327 | 864/864 | 179 | 38177861573 |
-| 2026-10-14 | `B-O6R-03a` — o sync de despesa ficou atômico e sem lançamento em dobro (fecha o P0 DIN-009) | #425 | `d910c97f` | `b75a0c2e` | 3337/3339 | 1327/1327 | 864/864 | 180 | 38574848019 |
 
 Cada delta é a diferença entre as runs de dois merges seguidos (entre eles só mergeou registro, sem teste). Arquivos de
 teste novos de cada PR: #401 `frontend/tests/patios-dossie-versao.smoke.test.tsx` (novo);
@@ -3130,3 +3124,14 @@ entregas.
 **Backfill §C3.5:** nenhum devido — a entrada do #402 já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos
 pelo #403. O `pr` desta consolidação é preenchido após `gh pr create`; `merge_commit`/`approved_head` dela recebem backfill
 pós-merge.
+
+## Entregas do KPI-MARCO-2026-10-14
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-10 | `B-SAN3-06b` — o console da plataforma mostra dado real em vez de informação inventada | #411 | `a2937bad` | `6e5351e3` | 3171/3173 | 1317/1317 | 864/864 | 175 | 38021418893 (tentativa 1) |
+| 2026-10-10 | `B-O6R-04a` — o estoque fica consistente sob concorrência (fecha os P0 DAT-002 e DAT-003) | #389 | `ab52ec50` | `e852304c` | 3235/3237 | 1317/1317 | 864/864 | 176 | 38062881147 (tentativa 1) |
+| 2026-10-10 | `B-AGENTE-API` — ferramenta interna: o agente de linha de comando sobre a API do Claude, com cerca | #417 | `3a0d1990` | `9e4e375e` | 3235/3237 | 1317/1317 | 864/864 | 177 | 38087922506 (tentativa 1) |
+| 2026-10-11 | `B-O6R-07c-a` — o técnico não atribuído não mexe em subrecurso de OS alheia (10 vias do P0 SEC-002) | #414 | `86ea8a81` | `09084d30` | 3296/3298 | 1317/1317 | 864/864 | 178 | 38159315930 (tentativa 1) |
+| 2026-10-11 | `B-SAN3-06a-telas` — o menu sai sem tela fictícia e o Console Dispatcher passa a mostrar dado real | #424 | `9566d55b` | `2f7a0573` | 3296/3298 | 1327/1327 | 864/864 | 179 | 38177861573 (tentativa 1) |
+| 2026-10-14 | `B-O6R-03a` — o sync de despesa ficou atômico e sem lançamento em dobro (fecha o P0 DIN-009) | #425 | `d910c97f` | `b75a0c2e` | 3337/3339 | 1327/1327 | 864/864 | 180 | 38574848019 (tentativa 1) |
