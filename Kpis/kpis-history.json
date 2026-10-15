@@ -2572,7 +2572,7 @@
     "version": "B-SAN3-06b",
     "pr": 411,
     "merge_commit": "a2937bada1661e678b36a42e4742c2a92bf5d949",
-    "approved_head": "5cf7e2d53bfad1dd42ea0ae723fbfae1c3a647d3",
+    "approved_head": "6e5351e3caff2bfe3f8bf59ad2ec04b67602c144",
     "status": "published_per_pr",
     "flutter_tests": "864/864",
     "backend_tests": "3171/3173",
@@ -2580,7 +2580,7 @@
     "blocks_completed": 175,
     "consolidation": "KPI-MARCO-2026-10-14 — consolidação por marco pedida pelo dono em 2026-10-14; KPI segue congelado para os PRs de bloco (`D-GOV-PROPORCIONAL` (5), CLAUDE.md §C7 item 8(5)). Esta entrada foi escrita pelo PR da consolidação, depois do merge do bloco — o PR do bloco não tocou `Kpis/*`.",
     "description": "B-SAN3-06b — o console da plataforma sem ficção: as telas da plataforma passam a mostrar dado real em vez de informação inventada (PR #411).",
-    "backfill_note": "`pr`/`merge_commit` de `gh pr view 411 --json mergeCommit` (squash de 2026-10-10T02:00:23Z). `approved_head` = head aprovado `5cf7e2d5…`. Escrita depois do merge: nada fica `null` e nenhum backfill fica devido nesta entrada."
+    "backfill_note": "`pr`/`merge_commit` de `gh pr view 411 --json mergeCommit` (squash de 2026-10-10T02:00:23Z). `approved_head` = head aprovado `6e5351e3…`. Escrita depois do merge: nada fica `null` e nenhum backfill fica devido nesta entrada."
   },
   {
     "snapshot_date": "2026-10-10",

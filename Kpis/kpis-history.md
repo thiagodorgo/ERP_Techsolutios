@@ -3153,7 +3153,7 @@ Fora da métrica TypeScript, para registro: o PR #417 (B-AGENTE-API) introduziu 
 
 | Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
 |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-| 2026-10-10 | `B-SAN3-06b` — console da plataforma sem ficção | #411 | `a2937bad` | `5cf7e2d5` (revisor) | 3171/3173 | 1317/1317 (+49) | 864/864 | 175 | 38021418893 |
+| 2026-10-10 | `B-SAN3-06b` — console da plataforma sem ficção | #411 | `a2937bad` | `6e5351e3` (revisor) | 3171/3173 | 1317/1317 (+49) | 864/864 | 175 | 38021418893 |
 | 2026-10-10 | `B-O6R-04a` — saldo de estoque e contagem cíclica | #389 | `ab52ec50` | `622bf845` (junta 2) | 3235/3237 (+64) | 1317/1317 | 864/864 | 176 | 38062881147 |
 | 2026-10-10 | `B-AGENTE-API` — serviço de IA e agentes | #417 | `3a0d1990` | `c876e6b0` (revisor) | 3235/3237 | 1317/1317 | 864/864 | 177 | 38087922506 |
 | 2026-10-11 | `B-O6R-07c-a` — escopo de objeto em anexos de OS | #414 | `86ea8a81` | `09084d30` (junta) | 3296/3298 (+61) | 1317/1317 | 864/864 | 178 | 38159315930 |
