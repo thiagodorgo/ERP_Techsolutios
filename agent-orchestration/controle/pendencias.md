@@ -11052,3 +11052,16 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Decisões do dono que o bloco implementa:** `D-AUDIT-RECORTE-POR-PERFIL`, `D-AUDIT-ORIGEM`, `D-AUDIT-EXPORTACAO`, `D-AUDIT-REGRAS-CRITICO`, `D-AUDIT-FORA-DO-HORARIO`.
 - **bloqueia:** a versão vendável (auditoria que não mostra acesso negado não serve para investigar).
 - **teste de encerramento:** acesso negado aparece rotulado; "Hoje" no fuso de Brasília; a resposta sem `tenant_id`; cada perfil vê só a trilha das suas telas; exportar gera evento; cada regra de Crítico com um caso vermelho-controle.
+
+## P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do dono antes do dev — ALTA
+
+- **status:** ABERTA · **escopo:** novo (decisões `D1-07c` = c, `D2-07c` = d com autorização superior, `D3-07c` = não, em `decisoes.md`) · **dono:** `B-O6R-07c-b`
+- **O que muda no plano:** (1) o despacho grava a atribuição (`D1-07c` c) e o critério de escrita na OS fica um só; (2) o trabalho offline de quem era o técnico vira conflito resolvido por um perfil acima do operacional que alocou, e o plano propõe se a troca de técnico com atendimento iniciado passa a exigir essa mesma autorização; (3) o débito de dano em extrato de colega sai (`D3-07c` não).
+- **bloqueia:** o fechamento do último P0, `Ω6R-SEC-002` (23 vias).
+- **teste de encerramento:** a emenda do plano aprovada pelo crítico; depois, os testes do 07c-b com vermelho-controle em cada uma das 23 vias.
+
+## P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar atualizado — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (medição da API de 15/10) · **dono:** o orquestrador
+- `docs/revisoes/SAN3/PLANO_SAN3.md:28` ainda diz "Nenhum dos 37 blocos começou", mas 9 blocos estão mergeados. O `Kpis/kpis-latest.json:133-135` diz 4 P0 abertos (são 0 abertos e 1 em parte). Os itens 8, 14, 15, 17, 39 e 46 do gate têm bloco mergeado e não tiveram a linha de status conferida.
+- **teste de encerramento:** um placar do gate gerado a partir do registro (não digitado), com cada item ligado ao PR que o fechou; e o KPI de P0 igual à contagem do `achados.jsonl` (entra no loop de KPI do Gemini).
