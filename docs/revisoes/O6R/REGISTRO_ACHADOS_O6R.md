@@ -609,7 +609,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Pausar writer após open-check, fechar período e retomá-lo; ele deve falhar ou integrar snapshot, jamais commitar fora dele.
 
 ### [Ω6R-DIN-009] Receipt de despesas é persistido depois do efeito monetário e não vincula usuário/payload
-- Status: fechado NA AUTORIA do B-O6R-03a (2026-10-11; PR e head a preencher pelo orquestrador ao versionar — o dev não commita); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+- Status: **fechado** em 2026-10-14 pelo B-O6R-03a (PR #425, d910c97f; junta de dinheiro APROVADO 3×0, ata `J-B-O6R-03a-ciclo1`). Antes: fechado NA AUTORIA (2026-10-11); registro de achados e painel atualizados no marco de KPI de 14/10.
   **Uma transação por ação, com o recibo como primeira escrita.** Claim do recibo (INSERT puro na PK atual
   `(tenant_id, client_action_id)`), efeito (relatório/item/total/status e eventos de domínio), resultado no recibo e
   evento de prova saem no MESMO commit; quem perde a corrida na PK relê FORA da transação abortada e nunca refaz o
@@ -644,7 +644,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Crash effect→receipt, duas chamadas concorrentes, dois usuários com mesma chave e mesma chave/payload diferente; exatamente um efeito correto deve persistir.
 
 ### [Ω6R-DAT-002] Saldo de estoque usa check-then-insert sem serialização
-- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+- Status: **fechado** em 2026-10-10 pelo B-O6R-04a (PR #389, ab52ec50). Antes: fechado NA AUTORIA; registro de achados e painel atualizados no marco de KPI de 14/10.
   **A saída decide sob o lock do item.** Toda via que chega a `insertMovement`/`avg_cost` (saída, transferência,
   estorno, baixa e estorno de baixa por fonte — V1–V5) toma `SELECT … FOR UPDATE` na linha
   `inventory_items(tenant_id, id)` **antes** da primeira leitura que decide; saldo da custódia, custo médio e
@@ -680,7 +680,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Vinte retiradas concorrentes e N reversões no PostgreSQL; saldo nunca negativo e exatamente uma compensação por origem.
 
 ### [Ω6R-DAT-003] Fechamento de contagem cíclica pode duplicar ajustes e ficar parcial
-- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+- Status: **fechado** em 2026-10-10 pelo B-O6R-04a (PR #389, ab52ec50). Antes: fechado NA AUTORIA; registro de achados e painel atualizados no marco de KPI de 14/10.
   **O fechamento virou máquina de estados com CAS, em unidades por item.** `aberta → fechando → concluida`:
   `beginClose` (sessão `FOR UPDATE` + CAS), uma unidade por item divergente (sessão `FOR UPDATE` → item
   `FOR UPDATE` → ajuste → carimbo, numa transação só) e `finishClose` (total da sessão **inteira** somado no
