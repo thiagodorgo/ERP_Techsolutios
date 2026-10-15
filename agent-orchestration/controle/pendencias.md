@@ -11028,3 +11028,27 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **O que o bloco precisa cobrir:** a listagem e o detalhe do backend recortados por atribuição para os papéis de campo (403 ou 404 conforme o contrato do 07a para OS da mesma organização não atribuída); o app de campo (lista, sync e cache local) sem depender de ler OS alheia; o web; o que acontece com a OS que é desatribuída enquanto está no cache do celular; e os VALORES que o técnico vê (respondido pelo dono em 2026-10-14, `D-TECNICO-SO-VALORES-PROPRIOS`: na OS ele vê as peças aplicadas e os serviços, SEM valores; os únicos valores que vê são os da própria prestação de contas e das próprias comissões).
 - **bloqueia:** nada hoje; conta para a versão vendável (isolamento entre técnicos).
 - **teste de encerramento:** técnico A lista e abre só as suas; GET da OS do técnico B devolve a recusa do contrato; o app sincroniza sem erro; vermelho-controle no código de hoje.
+
+## P-USERS-DEFEITOS-14-10 (2026-10-14) — a tela de Usuários tem defeitos de acesso e de segurança — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Usuários e medidos na `main` 9c7784b4 pelo plano `docs/revisoes/TELAS/B-USERS-ACESSO-plano.md`) · **dono:** `B-USERS-ACESSO`
+- "Novo usuário" cria um cadastro que não consegue entrar: `POST /users` não cria credencial nem convite.
+- Técnico de Campo e Estoque não podem ser cadastrados pela tela (`users.adapter.ts:54-62`), embora o servidor aceite.
+- Desativar não encerra as sessões abertas (`revokeAllActiveByUserForTenant` existe e não é chamado).
+- Nada impede desativar o último Administrador ou o administrador se desativar.
+- Menores: `user.updated` sem antes/depois; `GET /users` ignora busca e limite; o Gestor vê "Sessões" no menu e cai no bloqueio; rótulos ("Acesso nao autorizado", Suporte como "Supervisor", "Papéis").
+- **bloqueia:** a meta "telas funcionais" (criar usuário não funciona de ponta a ponta).
+- **teste de encerramento:** os critérios de aceite do plano, cada um com o vermelho-controle.
+
+## P-AUDIT-SEGURANCA-15-10 (2026-10-15) — a Auditoria esconde o que mais importa e não tem recorte por perfil — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Auditoria, lendo o código na `main`) · **dono:** bloco `B-AUDIT-SEGURANCA`, a planejar (segurança: junta completa)
+- O acesso negado (`permission.denied`) e outros 10 tipos aparecem como "Atividade registrada no sistema" (`audit-events.presenter.ts:22-43, 110-125`).
+- O filtro de data usa o fuso errado: "Hoje" vai das 21h de ontem às 20h59 (`audit-events.service.ts:51-57`).
+- Login recusado aparece como "Sistema · ação automática" (`local-auth-login.service.ts:363`, `audit-events.adapter.ts:53`); "Sessão encerrada pelo sistema" inclui revogação feita por administrador (`session-admin.service.ts:105-118`).
+- A consulta lê a trilha inteira da organização a cada 30 s e filtra em memória (`audit.routes.ts:50-55`), e devolve `tenant_id` (`audit.routes.ts:75`), contra a regra de allowlist (CLAUDE.md §2.8).
+- Os indicadores dizem "no período" mas contam só os 50 eventos carregados (`AuditTenantPage.tsx:118`).
+- Recurso, resultado e origem são gravados e não saem; exportar não deixa rastro; "Tipo de evento" só lista os tipos já vistos.
+- **Decisões do dono que o bloco implementa:** `D-AUDIT-RECORTE-POR-PERFIL`, `D-AUDIT-ORIGEM`, `D-AUDIT-EXPORTACAO`, `D-AUDIT-REGRAS-CRITICO`, `D-AUDIT-FORA-DO-HORARIO`.
+- **bloqueia:** a versão vendável (auditoria que não mostra acesso negado não serve para investigar).
+- **teste de encerramento:** acesso negado aparece rotulado; "Hoje" no fuso de Brasília; a resposta sem `tenant_id`; cada perfil vê só a trilha das suas telas; exportar gera evento; cada regra de Crítico com um caso vermelho-controle.
