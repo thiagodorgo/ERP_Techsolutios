@@ -33,6 +33,8 @@ números são de exemplo. A página carrega as fontes do Google Fonts; sem rede,
 - `patios-3opcoes.reference.html` — Pátios: lista → vagas (`OccupancyMap`) → dossiê do veículo em 8 abas, janela fixa, fotos em linha com quebra, Mover · Liberar · Editar numa linha. Preferida do dono: B (Analítica).
 - `dashboard-3opcoes.reference.html` — Dashboard: A fiel, B analítica, C central de prioridades.
 - `ordens-de-servico-3opcoes.reference.html` — Ordens de Serviço: A fiel, B analítica (com SLA vencido), C fila por agenda; lista → resumo → detalhe da OS.
+- `usuarios-3opcoes.reference.html` — Usuários (2026-10-14), BI nas três: A fiel com indicadores e barras, B analítica (entradas por dia, perfis, último acesso), C saúde do acesso (nota 0–100, mapa de calor dia × hora, matriz perfil × módulo).
+- `auditoria-3opcoes.reference.html` — Auditoria (2026-10-15), BI nas três: A fiel com indicadores e eventos sensíveis, B analítica (comparação com o período anterior, "O que mudou?"), C radar de risco (Crítico, Atenção, Rotina e trilha de investigação).
 
 ---
 
