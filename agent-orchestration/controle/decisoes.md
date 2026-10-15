@@ -3662,5 +3662,5 @@ A decisão do dono que o fundamenta é a `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, reg
   - **P4:** membros da equipe (`teamId`) NÃO escrevem no 07c-b; o ajudante entra por despacho próprio ou bloco futuro.
   - **P5:** autorização NOMINAL de `prisma/**` e `migrations/**` para o `B-O6R-07c-b2` (fila durável de aprovações e conflitos). O 07c-b se divide em **b1** (o despacho grava a atribuição, as 23 vias com escopo, o servidor responde com conflito: fecha o `Ω6R-SEC-002`) e **b2** (a fila de conflito durável, a decisão do superior, a troca com autorização).
   - **P6:** a migração de dados que preenche a atribuição dos despachos ativos de antes do 07c-b, idempotente, contando antes os casos em que o atribuído e o alvo divergem (autorização nominal de `migrations/**` para isso).
-  - **P7:** a D3-07c vira bloco à parte, `B-DANO-ALCADA` (dinheiro: junta completa).
+  - **P7:** a D3-07c vira bloco à parte, `B-DANO-ALCADA` (dinheiro: junta completa), dono da pendência que já existia, `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`.
   - **P8:** a emenda não tinha recomendação; **leitura do orquestrador (§A6):** ela segue para o crítico como está, e só volta ao modelo de topo se o crítico a derrubar (o mesmo gatilho de "topo em toda reprovação", `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). O dono pode mandar refazer em Fable quando quiser.

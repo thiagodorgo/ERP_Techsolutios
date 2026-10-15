@@ -10785,8 +10785,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice do crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
 - **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
 - **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
-- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), depois da decisão D3.
-- **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
+- **dono:** o bloco `B-DANO-ALCADA` (dinheiro: junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), nomeado em 2026-10-15 pela resposta P7 da emenda do 07c-b (`D-07CB-EMENDA-RECOMENDACOES`).
+- **D3-07c respondida pelo dono em 2026-10-15: NÃO** — o técnico de campo não lança débito no extrato de um colega nem escolhe o valor (`decisoes.md`). **bloqueia:** proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
 - **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
 ## P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os guards que reconhecem forma ainda não existe — MÉDIA
 
@@ -11072,8 +11072,3 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Com uma pessoa só acima do operacional, a regra "o superior não é quem alocou" não tem quem a cumpra. Saídas possíveis: deixar a mesma pessoa decidir com justificativa obrigatória e registro na auditoria (marcado como Crítico, `D-AUDIT-REGRAS-CRITICO`); ou exigir uma segunda pessoa cadastrada.
 - **bloqueia:** o `B-O6R-07c-b2`, não o b1.
 - **teste de encerramento:** a regra escolhida pelo dono com teste para a organização de uma pessoa só.
-
-## P-B-DANO-ALCADA (2026-10-15) — o técnico lança débito de dano no extrato de colega e escolhe o valor — ALTA (dinheiro)
-
-- **status:** ABERTA · **escopo:** `pre-existente` (`P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`); decisão do dono `D3-07c` = não · **dono:** bloco `B-DANO-ALCADA` (P7 da emenda do 07c-b; dinheiro: junta completa)
-- **teste de encerramento:** o técnico de campo não lança débito no extrato de outro nem escolhe o valor; vermelho-controle no código de hoje (o -900 medido).
