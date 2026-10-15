@@ -771,6 +771,20 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    - **(5) KPI congelado.** Até segunda ordem do dono, **PR nenhum atualiza `Kpis/*`** (revoga, enquanto vigorar,
      a `D-KPI-PER-PR` do §C3); o painel fica no último snapshot publicado e a consolidação é por **marco**, num PR
      próprio, quando o dono pedir. A junta não cobra KPI.
+
+     **O loop de KPI** (decisão do dono, 2026-10-15, `D-KPI-LOOP-GEMINI`: *"siga esse loop"*) é a consolidação por
+     marco **uma vez por dia, ou quando o dono pedir**, num PR próprio:
+     1. o Gemini lê o que entrou na `main` desde a última entrada do histórico e **propõe** só a descrição de cada
+        entrega, em linguagem de dono (não edita nada);
+     2. o orquestrador confere a proposta e grava cada entrada com `scripts/kpi-history-append.mjs` (PR, merge, data,
+        head, rodada de CI e números vêm por comando; ninguém digita referência) e atualiza o `kpis-latest.json`
+        só com fato conferido;
+     3. **etapa fixa antes do merge:** `scripts/kpi-check-refs.mjs` confere todo commit, rodada de CI e PR
+        acrescentado, e os testes do painel (`tests/kpi-*.test.ts`) passam;
+     4. um revisor independente e CI verde, e o merge.
+
+     O Gemini não edita o painel: no 1º teste (#435) a proposta dele acertou os números, mas a edição trouxe
+     referências e textos inventados.
    - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
      (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
      congelado pela regra (3).
