@@ -41,7 +41,7 @@
 - nos testes o6r07a/o6r07c, só as linhas de expectativa se P1 mudar o código de resposta, e declarado;
 - no app: `mobile/flutter_app/lib/features/work_orders/data/*`, `lib/core/local_db/drift_work_order_local_store.dart`, `lib/shared/ui/home_screen.dart` e `test/features/bNNN_tecnico_escopo_test.dart`;
 - na web: estados de `frontend/src/modules/work-orders/**`;
-- documentação e registro: RBAC_MATRIX.md, docs/03-atores-papeis.md, Kpis/* e agent-orchestration/controle/*.
+- documentação e registro: RBAC_MATRIX.md, docs/03-atores-papeis.md e agent-orchestration/controle/*. (`Kpis/*` fica FORA: KPI congelado, `D-GOV-PROPORCIONAL` item 8(5); correção do orquestrador na revisão do #432.)
 
 **a, proibido:** prisma/**, migrations/**, infra/**, .env, lockfiles, pubspec.yaml/lock, catalog.ts e o algoritmo de o6r07c-census.ts.
 
@@ -79,7 +79,7 @@ O bloco a não cria nem refaz tela: só estados do §7, a partir de `frontend/sr
 - CA10 (b). Papel de campo recebe 403 nas 4 rotas de valor, o detalhe da OS sai sem basePrice e as rotas "mine" e "own" seguem 200. Mutação: devolver a chave ou o campo.
 
 ## Bateria (§9)
-- Backend: npm run check · lint · test · build · `node --test --import tsx tests/tecnico-escopo-*.test.ts` + o6r07a/o6r07c + `-db` · `node --check Kpis/app.js` · `git diff --check`.
+- Backend: npm run check · lint · test · build · `node --test --import tsx tests/tecnico-escopo-*.test.ts` + o6r07a/o6r07c + `-db` · `git diff --check`.
 - Flutter: pub get · dart format --set-exit-if-changed · analyze · teste do bloco · suíte inteira.
 - Frontend: check · build.
 

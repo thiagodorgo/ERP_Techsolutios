@@ -11046,7 +11046,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - O acesso negado (`permission.denied`) e outros 10 tipos aparecem como "Atividade registrada no sistema" (`audit-events.presenter.ts:22-43, 110-125`).
 - O filtro de data usa o fuso errado: "Hoje" vai das 21h de ontem às 20h59 (`audit-events.service.ts:51-57`).
 - Login recusado aparece como "Sistema · ação automática" (`local-auth-login.service.ts:363`, `audit-events.adapter.ts:53`); "Sessão encerrada pelo sistema" inclui revogação feita por administrador (`session-admin.service.ts:105-118`).
-- A consulta lê a trilha inteira da organização a cada 30 s e filtra em memória (`audit.routes.ts:50-55`), e devolve `tenant_id` (`audit.routes.ts:75`), contra a regra de allowlist (CLAUDE.md §2.8).
+- A consulta lê a trilha inteira da organização a cada 30 s e filtra em memória (`audit.routes.ts:50-55`), e devolve o `tenant_id` da própria organização do ator (`audit.routes.ts:75`). Não é o `tenant_id` EXTERNO que o §2.8 do CLAUDE.md proíbe (revisão do #432), mas é um identificador técnico que a tela não usa: o bloco decide se sai da resposta.
 - Os indicadores dizem "no período" mas contam só os 50 eventos carregados (`AuditTenantPage.tsx:118`).
 - Recurso, resultado e origem são gravados e não saem; exportar não deixa rastro; "Tipo de evento" só lista os tipos já vistos.
 - **Decisões do dono que o bloco implementa:** `D-AUDIT-RECORTE-POR-PERFIL`, `D-AUDIT-ORIGEM`, `D-AUDIT-EXPORTACAO`, `D-AUDIT-REGRAS-CRITICO`, `D-AUDIT-FORA-DO-HORARIO`.
