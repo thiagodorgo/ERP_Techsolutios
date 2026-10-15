@@ -3124,3 +3124,60 @@ entregas.
 **Backfill §C3.5:** nenhum devido — a entrada do #402 já tem `merge_commit 3e40a256…` e `approved_head cdf370dc…`, pagos
 pelo #403. O `pr` desta consolidação é preenchido após `gh pr create`; `merge_commit`/`approved_head` dela recebem backfill
 pós-merge.
+
+## 2026-10-14 — KPI-MARCO-2026-10-14 (PR na autoria) — consolidação por marco: seis entregas desde 09/10
+
+**Por que existe este registro.** O KPI está **congelado** desde 2026-10-04 (`D-GOV-PROPORCIONAL` (5), CLAUDE.md §C7 item
+8(5)): PR de bloco não atualiza `Kpis/*`, e a consolidação é por **marco**, num PR próprio, quando o dono pedir. O dono
+pediu em 2026-10-14 ("atualize os kpis"). **O KPI segue congelado para os PRs de bloco.**
+
+**Forma.** O history ganha **uma entrada por entrega** (#411, #389, #417, #414, #424, #425), cada uma com os números da CI no
+**próprio merge commit** — e não uma entrada só para o marco. O gráfico "Entregas por rodada" conta registros, e um
+registro para seis entregas geraria distorção. O `kpis-latest.json` descreve o marco (`version`
+`KPI-MARCO-2026-10-14`, `pr`/`merge_commit`/`approved_head` `null` na autoria).
+
+### Resultado (head da `origin/main` `b53ba1b1`, CI run 38613235755, push, tentativa 1, 7/7 jobs `success`)
+
+| KPI | Antes (snapshot 2026-10-09, #405) | Depois | Fonte |
+|-----|-----|-----|-----|
+| Backend | 3171/3173 | **3337/3339** | job `backend` 115998132959, `npm test`: `# tests 3339 # pass 3337 # fail 0 # skipped 2`; runner `305 arquivo(s)` |
+| Console web (smoke) | 1268/1268 | **1327/1327** | job `frontend` 115998133501, `npm --prefix frontend run test:smoke` (Node 20.20.2): `# tests 1327 # pass 1327 # fail 0` |
+| App de campo | 864/864 (carregado) | **864/864 (medido)** | job `flutter` 115998133615, `flutter test --reporter compact` (Flutter 3.47.5): `+864: All tests passed!` |
+| Blocos entregues | 174 | **180** | +6 entregas de bloco (tabela abaixo) |
+| Contratos focados / módulos do app / contratos app↔servidor / contratos do núcleo | 34/34 · 17/17 · 18/18 · 21/21 | **CARREGADOS** com nota deste PR (§C3.3) | a CI não publica essas métricas em separado |
+| mvp_demo / mvp_vendável | 99% / 88% | **INTOCADOS** (§C3.4) | estimativas anteriores com recálculo no B-SAN3-10 |
+
+Fora da métrica TypeScript, para registro: o PR #417 (B-AGENTE-API) introduziu a suíte de testes de IA em Python com **170/170** testes passando no job `python-tests`, sem impactar os denominadores do monólito.
+
+### As seis entregas (uma entrada cada no `kpis-history.json`)
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-10 | `B-SAN3-06b` — console da plataforma sem ficção | #411 | `a2937bad` | `5cf7e2d5` (revisor) | 3171/3173 | 1317/1317 (+49) | 864/864 | 175 | 38021418893 |
+| 2026-10-10 | `B-O6R-04a` — saldo de estoque e contagem cíclica | #389 | `ab52ec50` | `622bf845` (junta 2) | 3235/3237 (+64) | 1317/1317 | 864/864 | 176 | 38062881147 |
+| 2026-10-10 | `B-AGENTE-API` — serviço de IA e agentes | #417 | `3a0d1990` | `c876e6b0` (revisor) | 3235/3237 | 1317/1317 | 864/864 | 177 | 38087922506 |
+| 2026-10-11 | `B-O6R-07c-a` — escopo de objeto em anexos de OS | #414 | `86ea8a81` | `09084d30` (junta) | 3296/3298 (+61) | 1317/1317 | 864/864 | 178 | 38159315930 |
+| 2026-10-11 | `B-SAN3-06a-telas` — menu sem tela fictícia; Console Dispatcher com dado real | #424 | `9566d55b` | `2f7a0573` (revisor) | 3296/3298 | 1327/1327 (+10) | 864/864 | 179 | 38177861573 |
+| 2026-10-14 | `B-O6R-03a` — sincronização atômica de despesa (RDV) | #425 | `d910c97f` | `b75a0c2e` (junta) | 3337/3339 (+41) | 1327/1327 | 864/864 | 180 | 38613235755 |
+
+Cada delta é a diferença entre as runs de merges seguidos.
+Destaques:
+- **Três achados P0 da auditoria Ω6R fechados:** `Ω6R-DAT-002` (saldo concorrente) e `Ω6R-DAT-003` (contagem cíclica) pelo PR #389, e `Ω6R-DIN-009` (RDV sem comprovante/corrida) pelo PR #425. O total de P0 fechados sobe de 13 para 16 (restando apenas 1 aberto: `Ω6R-SEC-002` parcialmente superado).
+- **Opções visuais:** entregues as 3 opções para Lista de OS (#411) e Pátios/Dashboard (#424), com seletor de aparência pessoal por usuário e suíte smoke dedicada.
+- **Segurança de sub-recursos:** PR #414 fecha brecha de escopo de objeto em anexos de OS.
+- **Serviço FastAPI de IA:** PR #417 adiciona o serviço de agentes com 170 testes unitários próprios.
+
+### PRs do intervalo que não contam bloco
+
+PRs de governança e registro (#412, #413, #415, #416, #418, #419, #420, #421, #422, #423, #426, #427, #428, #429, #430, #431, #432, #433) não movem contagem de bloco de feature entregue.
+
+### Métricas carregadas e `mvp_*`
+
+- As quatro métricas que a CI não publica em separado (`backend_contract_tests_focused` 34/34, `flutter_modules` 17/17, `mobile_backend_contracts` 18/18, `mobile_core_saas_contracts` 21/21) seguem com o último valor oficial e passam a carregar nota deste PR (§C3.3).
+- `mvp_demo`/`mvp_vendavel` seguem **INTOCADOS** (99% e 88%), preservando a regra de não arbitrar estimativas de escopo sem decisão de junta/dono.
+
+### Painel
+
+A cópia congelada em `Kpis/app.js` é regerada via `node scripts/kpi-freeze.mjs`. "Últimas demandas" ganha as seis entregas de bloco, com fechamento explícito dos 3 P0.
+
+**Backfill §C3.5:** nenhum devido — os seis blocos foram consolidados pós-merge com seus respectivos commits definitivos e approved_heads já auditados.
