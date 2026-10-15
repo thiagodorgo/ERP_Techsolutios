@@ -3655,6 +3655,16 @@ A decisão do dono que o fundamenta é a `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, reg
 - **`D2-07c` = (d), com a regra do dono (decisão do dono, 2026-10-15).** *"tratar como conflito: a alteração de um tecnico cujo o atendimento ja começou é uma coisa anomala, em geral não pode acontecer, alguem superior ao operacional que alocou tem que autorizar e validar o conflito."* O trabalho feito offline por quem ERA o técnico e sincronizado depois da troca vira CONFLITO, e quem resolve não é o operacional que alocou: é alguém acima dele, que autoriza e valida. **Leitura do orquestrador, declarada (§A6):** a frase também diz que trocar o técnico de uma OS com atendimento já iniciado é anomalia; o plano do 07c-b propõe se essa troca passa a exigir a mesma autorização superior (e qual perfil é "superior ao operacional": a matriz tem Gestor e Administrador da organização acima de Operador), e o dono confirma.
 - **`D3-07c` = não (decisão do dono, 2026-10-15).** *"D3-07c: não"*. O técnico de campo NÃO lança débito no extrato de um colega nem escolhe o valor ao registrar um dano. A `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` vira correção (dinheiro: junta completa).
 - **Efeito:** o `B-O6R-07c-b` (as 23 vias do último P0) fica DESBLOQUEADO; o plano dele (`docs/revisoes/SAN3/B-O6R-07c-plano.md`, 07c-b.2 e 07c-b.3) precisa de emenda com as três respostas antes do dev.
+- **`D-07CB-EMENDA-RECOMENDACOES` (decisão do dono, 2026-10-15).** *"sigo as recomendações"*, sobre as perguntas P1–P8 da emenda do 07c-b (`docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md`):
+  - **P1:** o "superior" é quem tem `work_orders:approve` (Gestor, Administrador da organização) e NÃO foi quem alocou, nem o técnico antigo, nem o novo; se o único Gestor alocou, decide o Administrador. A sub-pergunta "e se a empresa tiver uma pessoa só nessas funções?" segue ABERTA (`P-07CB-SUPERIOR-UNICO`).
+  - **P2:** trocar o técnico com atendimento iniciado exige essa autorização, em dois passos (pedido e aprovação), inclusive quando quem pede é o Gestor.
+  - **P3:** atendimento iniciado = a partir de `on_route` ("saiu para o atendimento"), no despacho ou na OS.
+  - **P4:** membros da equipe (`teamId`) NÃO escrevem no 07c-b; o ajudante entra por despacho próprio ou bloco futuro.
+  - **P5:** autorização NOMINAL de `prisma/**` e `migrations/**` para o `B-O6R-07c-b2` (fila durável de aprovações e conflitos). O 07c-b se divide em **b1** (o despacho grava a atribuição, as 23 vias com escopo, o servidor responde com conflito: fecha o `Ω6R-SEC-002`) e **b2** (a fila de conflito durável, a decisão do superior, a troca com autorização).
+  - **P6:** a migração de dados que preenche a atribuição dos despachos ativos de antes do 07c-b, idempotente, contando antes os casos em que o atribuído e o alvo divergem (autorização nominal de `migrations/**` para isso).
+  - **P7:** a D3-07c vira bloco à parte, `B-DANO-ALCADA` (dinheiro: junta completa), dono da pendência que já existia, `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`.
+  - **P8:** a emenda não tinha recomendação; **leitura do orquestrador (§A6):** ela segue para o crítico como está, e só volta ao modelo de topo se o crítico a derrubar (o mesmo gatilho de "topo em toda reprovação", `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). O dono pode mandar refazer em Fable quando quiser.
+
 
 ## Registro de 15/10/2026 — ferramentas do loop de KPI
 
