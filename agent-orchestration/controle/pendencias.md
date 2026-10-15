@@ -11065,3 +11065,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (medição da API de 15/10) · **dono:** o orquestrador
 - `docs/revisoes/SAN3/PLANO_SAN3.md:28` ainda diz "Nenhum dos 37 blocos começou", mas 9 blocos estão mergeados. O `Kpis/kpis-latest.json:133-135` diz 4 P0 abertos (são 0 abertos e 1 em parte). Os itens 8, 14, 15, 17, 39 e 46 do gate têm bloco mergeado e não tiveram a linha de status conferida.
 - **teste de encerramento:** um placar do gate gerado a partir do registro (não digitado), com cada item ligado ao PR que o fechou; e o KPI de P0 igual à contagem do `achados.jsonl` (entra no loop de KPI do Gemini).
+
+## P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só como Gestor e Administrador — MÉDIA
+
+- **status:** ABERTA · **escopo:** novo (sub-pergunta da P1 da emenda do 07c-b) · **dono:** o dono responde; o `B-O6R-07c-b2` implementa
+- Com uma pessoa só acima do operacional, a regra "o superior não é quem alocou" não tem quem a cumpra. Saídas possíveis: deixar a mesma pessoa decidir com justificativa obrigatória e registro na auditoria (marcado como Crítico, `D-AUDIT-REGRAS-CRITICO`); ou exigir uma segunda pessoa cadastrada.
+- **bloqueia:** o `B-O6R-07c-b2`, não o b1.
+- **teste de encerramento:** a regra escolhida pelo dono com teste para a organização de uma pessoa só.
+
+## P-B-DANO-ALCADA (2026-10-15) — o técnico lança débito de dano no extrato de colega e escolhe o valor — ALTA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`); decisão do dono `D3-07c` = não · **dono:** bloco `B-DANO-ALCADA` (P7 da emenda do 07c-b; dinheiro: junta completa)
+- **teste de encerramento:** o técnico de campo não lança débito no extrato de outro nem escolhe o valor; vermelho-controle no código de hoje (o -900 medido).

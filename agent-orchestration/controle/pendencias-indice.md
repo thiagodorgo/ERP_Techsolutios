@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **546** |
-| IDs distintos | 535 |
-| **ABERTAS** | **405** |
+| Cabecalhos `## P-` | **548** |
+| IDs distintos | 537 |
+| **ABERTAS** | **407** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **338** |
+| — das quais **ativas nesta rodada** | **340** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 138 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **546 cabecalhos para 535 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **548 cabecalhos para 537 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 197
+## ABERTAS · balde A — material — 199
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -271,6 +271,8 @@
 | `P-AUDIT-SEGURANCA-15-10` | 11043 | ALTA | sim | P-AUDIT-SEGURANCA-15-10 (2026-10-15) — a Auditoria esconde o que mais importa e não tem  |
 | `P-O6R-07CB-EMENDA-DECISOES` | 11056 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
 | `P-REGISTRO-GATE-SEM-PLACAR-VIVO` | 11063 | MÉDIA | sim | P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar  |
+| `P-07CB-SUPERIOR-UNICO` | 11069 | MÉDIA | sim | P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só co |
+| `P-B-DANO-ALCADA` | 11076 | ALTA | sim | P-B-DANO-ALCADA (2026-10-15) — o técnico lança débito de dano no extrato de colega e esc |
 
 ## ABERTAS · balde B — processo/registro — 141
 
