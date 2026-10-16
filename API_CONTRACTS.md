@@ -69,6 +69,32 @@ montado em **`/portal/v1/owner/*`** (`app.use("/portal/v1/owner", createOwnerPor
 > `src/modules/owner-portal/owner-portal.service.ts`. Existe também um **authority-portal**
 > (PWA credenciado) previsto na mesma família de superfícies isoladas — **(a mapear)** aqui.
 
+### 2.1-bis Ingestão do Traccar — rota de SERVIÇO, **não é API de cliente** (B-TRC-01)
+
+**Contrato:** `traccar_position_ingest@2026-10-11.b-trc-01`. **App Express SEPARADO**
+(`src/integrations/traccar/traccar-ingest.app.ts` → `createTraccarIngestApp()`), num **listener próprio**
+(`TRACCAR_INGEST_PORT`, default 3200) ligado SÓ a `TRACCAR_INGEST_HOST` (endereço privado; default `127.0.0.1`) e
+**desligado por padrão** (`TRACCAR_INGEST_ENABLED=false`). Nada disto existe em `src/app.ts` nem sob `/api/v1`; sem
+CORS, sem `attachAuthenticatedActor` (não há usuário). Quem chama é só o forward JSON do Traccar 6.16.0, pela rede
+privada (dev: `docker-compose.traccar.yml`; AWS: Security Group só a partir do Traccar).
+
+| Método | Caminho | Autorização | Descrição |
+|---|---|---|---|
+| POST | `/ingest/traccar/v1/positions` | header `X-Traccar-Forward-Token` (segredo de 32 bytes; SHA-256 + `timingSafeEqual`; current e previous com prazo ≤ 72 h) | Recebe `{position, device}` do forward do Traccar; a organização vem SÓ do vínculo ativo do dispositivo, confirmado sob RLS com `FOR SHARE`, nunca do payload. Grava a posição em `field_operator_locations` (`source='traccar'`) para o técnico que aceitou o despacho da viatura antes do fix, e publica `field_location.updated` (sem coordenada). |
+
+Ordem fixa: query string presente → `400 query_not_allowed`; header ausente/errado/repetido, ou qualquer
+`Authorization` → `401 unauthorized`; `Content-Type` ≠ `application/json` → `415`; corpo > 64 KiB → `413`; JSON
+inválido → `400 invalid_json`; taxa (20/s, rajada 100) ou concorrência (10) → `429 rate_limited`; schema fora da
+allowlist, chave reservada (`tenantId`, `tenant_id`, `token`, `secret`, `authorization`, `path`, `bucket`,
+`storageKey`) → `422 invalid_payload`. Desfechos do serviço: posição gravada ou reenvio idêntico → `204` (corpo
+vazio); quarentena durável (dispositivo não mapeado, sem técnico no fix, histórico ambíguo, organização inativa,
+fix inválido/futuro/anterior ao vínculo, teto de organizações) → `202` (corpo vazio); mesma chave com conteúdo
+diferente, ou chave de outra organização → `409 traccar_idempotency_conflict`; falha antes do commit (banco, trava,
+orçamento de 3 s) → `503 unavailable`. Respostas sem detalhe; o log da ingestão só conhece método, caminho sem query
+e status.
+
+> Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2.
+
 ### 2.2 Health / readiness (infra)
 
 `src/routes/health.routes.ts`, montado em `/api/v1` **sem** auth (probes de orquestrador).

@@ -1,0 +1,46 @@
+// Medição do dev do B-TRC-01: as formas de acesso que o plano v2.1 prescreve (§4.2, §4.3, §4.5), servidas ao gerador
+// do T13 como arquivo VIRTUAL (--mutant). Não é código de produto e não entra no repositório.
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient as Client, type Prisma, type PrismaClient } from "@prisma/client";
+
+import { setTenantRlsContext } from "../../database/rls.js";
+
+// forma 1 — quarentena global quando nem a descoberta acha organização (§4.2: "transação própria, sem GUC"; §4.5 SQL)
+const ingestClient = new Client({ adapter: new PrismaPg({ connectionString: "postgresql://x" }) });
+export async function quarantineWithoutTenant(device: string): Promise<void> {
+  await ingestClient.$queryRaw`INSERT INTO traccar_quarantine_items (instance_key, external_device_key, reason) VALUES ('i', ${device}, 'unmapped_device') ON CONFLICT (instance_key, external_device_key, reason) WHERE resolved_at IS NULL DO UPDATE SET delivery_count = traccar_quarantine_items.delivery_count + 1`;
+}
+
+// forma 2 — sondagem da descoberta pelo helper novo de §4.3, findFirstTenantRls(client, tenantIds, probe)
+declare function findFirstTenantRls<T>(
+  client: PrismaClient,
+  tenantIds: readonly string[],
+  probe: (tx: Prisma.TransactionClient, tenantId: string) => Promise<T | null>,
+): Promise<T | null>;
+export function discover(client: PrismaClient, tenantIds: readonly string[]) {
+  return findFirstTenantRls(client, tenantIds, (tx) => tx.$queryRaw`SELECT id FROM field_dispatches WHERE id IS NULL`);
+}
+
+// forma 3 — fase 2 pelo helper novo de §4.2/A2-03, withTenantRlsBudget(client, tenantId, { maxWait, timeout }, work)
+declare function withTenantRlsBudget<T>(
+  client: PrismaClient,
+  tenantId: string,
+  budget: { readonly maxWait: number; readonly timeout: number },
+  work: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T>;
+export function phaseTwo(client: PrismaClient, tenantId: string) {
+  return withTenantRlsBudget(client, tenantId, { maxWait: 250, timeout: 1750 }, (tx) => tx.$queryRaw`SELECT id FROM field_dispatches FOR SHARE`);
+}
+
+// forma 4 — findOperatorsForVehicleAt(tx, …), que "recebe o tx da fase 2 e não abre transação" (§4.2)
+export function findOperatorsForVehicleAt(tx: Prisma.TransactionClient, vehicleId: string) {
+  return tx.$queryRaw`SELECT d.operator_user_id FROM field_dispatches d JOIN work_orders wo ON wo.id = d.work_order_id WHERE wo.vehicle_id = ${vehicleId}::uuid`;
+}
+
+// controle — a mesma consulta dentro de $transaction com o setter como 1ª instrução: SOB-CONTEXTO, sem chave
+export function control(client: PrismaClient, tenantId: string) {
+  return client.$transaction(async (tx) => {
+    await setTenantRlsContext(tx, tenantId);
+    return tx.$queryRaw`SELECT id FROM field_dispatches`;
+  });
+}

@@ -305,6 +305,28 @@ export const envSchema = z.object({
   // Binding de tenant do deploy (host→tenant / var). O portal só enxerga ESTE operador → mata a enumeração
   // cross-tenant (D-Ω5P-PORTAL-02). Obrigatório em produção; em dev/test pode vir vazio (injetado por teste).
   PORTAL_TENANT_ID: z.string().trim().default(""),
+  // ── B-TRC-01 — ingestão do Traccar (plano v2.1 §4.1, §4.3, §4.6) ──────────────────────────────────────────────
+  // Listener PRÓPRIO (src/integrations/traccar/), porta própria, endereço privado, DESLIGADO por padrão. Nada disto
+  // é montado em src/app.ts. O segredo do forward vem do ambiente/gerenciador, nunca de código; sem default.
+  TRACCAR_INGEST_ENABLED: booleanFlag(false),
+  TRACCAR_INGEST_HOST: z.string().trim().min(1).default("127.0.0.1"),
+  TRACCAR_INGEST_PORT: z.coerce.number().int().positive().max(65_535).default(3200),
+  TRACCAR_INSTANCE_KEY: z.string().trim().default(""),
+  TRACCAR_FORWARD_SECRET_CURRENT: z.string().trim().default(""),
+  TRACCAR_FORWARD_SECRET_PREVIOUS: z.string().trim().default(""),
+  // ISO 8601; o previous só vale até este instante, e no máximo 72 h adiante (gate abaixo).
+  TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL: z.string().trim().default(""),
+  TRACCAR_INGEST_RATE_PER_SECOND: z.coerce.number().positive().default(20),
+  TRACCAR_INGEST_BURST: z.coerce.number().int().positive().default(100),
+  TRACCAR_INGEST_MAX_CONCURRENCY: z.coerce.number().int().positive().default(10),
+  // Pool PRÓPRIO da ingestão (A2-07): o app público fica com o dele.
+  TRACCAR_DB_POOL_MAX: z.coerce.number().int().positive().default(5),
+  // Orçamento por requisição; fica abaixo do `client.readTimeout` de 5 s do Traccar, com margem (v2.2 A-9).
+  TRACCAR_INGEST_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
+  TRACCAR_RESOLVE_MAX_TENANTS: z.coerce.number().int().positive().default(500),
+  TRACCAR_RESOLVE_HINT_TTL_MS: z.coerce.number().int().positive().default(600_000),
+  TRACCAR_RESOLVE_NEGATIVE_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  TRACCAR_RESOLVE_CACHE_MAX: z.coerce.number().int().positive().default(10_000),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
@@ -316,7 +338,61 @@ export const envSchema = z.object({
     "dev-only-portal-log-change-me",
     // Ω5P PR-18a — default de dev do authority-portal (rejeitado em produção).
     "dev-only-portal-authority-session-change-me",
+    // B-TRC-01 — o rótulo de exemplo do segredo de forward do Traccar (recusado em qualquer ambiente com a flag).
+    "dev-only-traccar-forward-secret-change-me",
   ]);
+
+  // B-TRC-01 (plano §4.1) — gates da ingestão do Traccar, em QUALQUER ambiente com a flag ligada. Em produção, flag
+  // ligada sem segredo forte não boota.
+  if (value.TRACCAR_INGEST_ENABLED) {
+    if (!/^[a-z0-9-]{3,40}$/.test(value.TRACCAR_INSTANCE_KEY)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["TRACCAR_INSTANCE_KEY"],
+        message: "TRACCAR_INSTANCE_KEY é obrigatória com a ingestão ligada e precisa casar ^[a-z0-9-]{3,40}$.",
+      });
+    }
+    if (
+      value.TRACCAR_FORWARD_SECRET_CURRENT.length < 32 ||
+      developmentOnlySecrets.has(value.TRACCAR_FORWARD_SECRET_CURRENT)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["TRACCAR_FORWARD_SECRET_CURRENT"],
+        message:
+          "TRACCAR_FORWARD_SECRET_CURRENT precisa de ao menos 32 caracteres e não pode ser um default de dev (gere com randomBytes(32).toString('base64url')).",
+      });
+    }
+    if (value.TRACCAR_FORWARD_SECRET_PREVIOUS) {
+      const until = Date.parse(value.TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL);
+      const now = Date.now();
+      if (!value.TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL || Number.isNaN(until) || until <= now || until > now + 72 * 60 * 60 * 1000) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL"],
+          message:
+            "TRACCAR_FORWARD_SECRET_PREVIOUS exige TRACCAR_FORWARD_SECRET_PREVIOUS_UNTIL (ISO 8601) no futuro e no máximo 72 h adiante.",
+        });
+      }
+      if (
+        value.TRACCAR_FORWARD_SECRET_PREVIOUS.length < 32 ||
+        developmentOnlySecrets.has(value.TRACCAR_FORWARD_SECRET_PREVIOUS)
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["TRACCAR_FORWARD_SECRET_PREVIOUS"],
+          message: "TRACCAR_FORWARD_SECRET_PREVIOUS precisa de ao menos 32 caracteres e não pode ser um default de dev.",
+        });
+      }
+    }
+    if (value.TRACCAR_INGEST_PORT === value.PORT || value.TRACCAR_INGEST_PORT === value.PORTAL_PORT) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["TRACCAR_INGEST_PORT"],
+        message: "TRACCAR_INGEST_PORT precisa ser diferente de PORT e de PORTAL_PORT (listener próprio, porta própria).",
+      });
+    }
+  }
 
   if (
     value.NODE_ENV === "production" &&

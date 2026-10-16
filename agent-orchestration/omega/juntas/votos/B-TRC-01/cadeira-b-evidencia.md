@@ -1,0 +1,87 @@
+papel: cadeira (b) | identidade: jurado-trc01-b-superficie-e-segredo-cdx2 | modelo: GPT-5.6 Sol (medium; nível menor, §C7.6; substituição P3 da identidade cdx caída por limite curto) | mandato_md5: 740b083341bb756373f2f3518ce7d4c9 EOL-neutro / 17bc2b78d0ac77eb9e9bac3d7a4b422e cru (declarado no disparo: 17bc2b78d0ac77eb9e9bac3d7a4b422e cru) | corpo_md5: b7c63c7d058361a4dddb31b3f2191037 EOL-neutro do blob no objeto (recebido no prompt: instrução para carregar o blob; conferido antes de medir)
+
+# Evidência — cadeira (b), B-TRC-01, ciclo 1
+
+Objeto previsto: `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91` — a resolver por Git e GitHub.
+
+## Legalidade e terreno — FECHADA (sucessor P3)
+
+- Comando: `git ls-remote origin refs/heads/feat/traccar-b-trc-01`; `gh pr view 426 --json headRefOid,baseRefName,state,isDraft,mergeable`; `git rev-parse origin/feat/traccar-b-trc-01 origin/main`; `git merge-base <objeto> origin/main`; `git diff --name-only e38b47e... <objeto>`.
+- Saída resumida: Git remoto, ref local e GitHub convergem em `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; PR OPEN, não draft, MERGEABLE, base `main`; `origin/main` inicial `4fe7524ecbcc68b3e69336453cc774ed5937cb1c`; merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`; delta `e38b47e...→5abdf83...` = exatamente os quatro mandatos em `agent-orchestration/omega/juntas/votos/B-TRC-01/00-mandatos/`.
+- Veredito parcial: objeto e cerca do mandato legais.
+
+- Comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs?per_page=100` + filtro Node; hash EOL-neutro dos corpos `.claude` e `.agents`; busca da identidade no obituário; leitura do parecer do inspetor.
+- Saída resumida: check-runs `14 total | 0 não-verdes | 0 pendentes`; corpo `.claude` = `b7c63c7d058361a4dddb31b3f2191037`; corpo `.agents` = `6a425a94006038156b74089cf0df895d` (espelho Codex contém preâmbulo próprio; comparação estrutural ainda pendente); identidade completa `jurado-trc01-b-superficie-e-segredo-cdx` ocorre 0 vezes no obituário; parecer `insp-trc01-parecer.md` = `LIBERADO COM RESSALVA`, ciclo 1 e R-CORPO/R-DBA registrados.
+- Veredito parcial: CI e inelegibilidade verdes; consistência semântica do espelho Codex ainda a fechar. O parecer nomeia a cadeira/corpo, não a identidade sufixada; o disparo do dono fixa esta identidade nova.
+
+- Comando: `df -h /c` com `timeout -k 5 20`; alternativa Windows `Get-PSDrive C`; `netsh interface ipv4 show excludedportrange protocol=tcp`; `docker ps -a --format ...`.
+- Saída resumida: `df` do Git Bash travou e foi morto (ec 137); medição nativa independente: `10,68 GB` livres antes do worktree, acima do piso de 10 GB. Portas excluídas publicadas; `47473` não pertence às faixas. Recursos alheios encontrados e intocados: `jtrc01-a-cdx2-{redis,pg}` e `jtrc01-a-{redis,pg}`; nenhum `jtrc01-b-*`.
+- Veredito parcial: piso de disco satisfeito por medição nativa; candidato `C:/Users/AMP/w-jtrc-b` ausente e reservado para esta cadeira. A falha específica do `df` fica declarada, não é verde herdado.
+
+## Item 1 — Listener próprio e nenhuma porta pública — FECHADO (sucessor P3)
+
+### 1A — baseline, sonda própria e topologia
+
+- Comando: `REDIS_URL=redis://127.0.0.1:47473 DATABASE_URL='' timeout -k 15 300 npm test -- tests/traccar-ingest-listener.test.ts tests/traccar-forward-auth.test.ts tests/traccar-ingest-logs.test.ts tests/traccar-rate-limit.test.ts tests/traccar-dev-topology.test.ts`.
+- Saída resumida: ec 0; `54 tests | 54 pass | 0 fail | 0 skipped`; duração TAP 30.788 ms. Forma: Node 20.19.5, runner oficial, cinco arquivos explícitos, Redis próprio `jtrc01-b-redis`.
+- Veredito parcial: baseline próprio verde; nenhum verde vazio.
+
+- Comando: sonda própria `probe-item1.mjs` (scratch, MD5 final a registrar no fechamento), executada por `tsx` com timeout 180 s e Redis próprio; sockets sempre `listen(0, "127.0.0.1")`. A primeira execução acusou 400 vazio no caso sem Content-Type porque a própria sonda, ao usar `rawHeaders`, omitira `Host`; corrigida a construção HTTP, a segunda execução discriminou 415. Nenhuma conclusão foi herdada da execução inválida.
+- Saída resumida válida: ec 0; app público real `[404,404]` para as duas rotas candidatas com token correto; app de ingestão: GET/OPTIONS/outro caminho `404/404/404`, CORS ausente, `x-powered-by` ausente; query e `?` vazio `400/400`; tipo errado e ausente `415/415`; 64 KiB+1 `413`, 64 KiB exatos `204`; chamadas do serviço = 1 apenas no limite válido. Rajada: 100 aceitas e 101ª = 429, chamadas = 100. Concorrência: 10 trabalhos presos, 11ª = 429, `inFlight=10`. Bootstrap: flag off = disabled e socket ausente; ligado = endereço `127.0.0.1`/porta pedida; host `192.0.2.1` = `bind_failed/EADDRNOTAVAIL`; API pública no mesmo processo continuou `200`.
+- Veredito parcial: separação, ordem fixa, limites, bind e sobrevivência da API verdes por sonda independente.
+
+- Comando: `docker compose -p jtrc01-b-topo -f docker-compose.prod.yml -f docker-compose.traccar.yml --profile tools --profile capture config --format json` com placeholders descartáveis apenas no ambiente; filtro próprio de todas as portas, redes e imagens; `git grep` de demos públicas; leitura do XML.
+- Saída resumida: ec 0; únicas publicações: `api 3000→127.0.0.1:3102` e `web 8080→127.0.0.1:18080`; zero publicação 3200/5055/8082; `traccar_private` e `traccar_devices` internas; host da ingestão da API = IPv4 privado da rede; Traccar = `6.16.0@sha256:03ebb7ed…951eda`; sim/capture também tag+digest; zero host `demo*.traccar.org`. XML: `web.address=127.0.0.1`, `geocoder.enable=false`, sem `forward.header`; contém apenas o identificador DTD padrão `http://java.sun.com/dtd/properties.dtd`, que não é servidor de demonstração nem segredo. `src/app.ts`/portal sem diff contra a base e `src/app.ts` tem 0 ocorrências de Traccar.
+- Veredito parcial: nenhuma porta proibida ou publicação fora de loopback; nenhuma demo pública; topologia verde.
+
+## Item 2 — Autenticação, rotação e segredo — FECHADO (sucessor P3)
+
+## Item 3 — Logs — FECHADO (sucessor P3)
+
+## Sucessor 2026-10-16T11:41:04Z (Codex 2)
+
+- Identidade nova: `jurado-trc01-b-superficie-e-segredo-cdx2`; modelo declarado pelo disparo: `GPT-5.6 Sol (medium)`, nível menor (§C7.6. Substitui `jurado-trc01-b-superficie-e-segredo-cdx`, que caiu por limite curto após deixar os itens pendentes.
+- P3: nenhum verde da ocupante anterior será herdado. Reexecução curta obrigatória: head Git/GitHub, check-runs, MD5 do corpo e mandato, parecer do inspetor; em seguida, os três itens serão medidos no objeto fixo.
+- Disco antes da retomada: `df -h /c` = 12 GB disponíveis (95% usado), acima do piso de 10 GB. Worktree próprio `C:/Users/AMP/w-jtrc-b` já existe; será medido antes de confiar.
+
+### Reexecução curta P3 — legalidade
+
+- Comando: `git ls-remote origin refs/heads/feat/traccar-b-trc-01`; `gh pr view 426 --json headRefOid,baseRefName,state,isDraft,mergeable`; `git rev-parse origin/feat/traccar-b-trc-01 origin/main`; `git merge-base <objeto> origin/main`; `git diff --name-only e38b47e... <objeto>`.
+- Saída resumida: remoto Git, ref local e GitHub convergem em `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`; PR OPEN, não draft, MERGEABLE, base `main`; `origin/main=4fe7524ecbcc68b3e69336453cc774ed5937cb1c`; merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`; delta desde `e38b47e...` = somente os quatro mandatos. Worktree próprio está detached no objeto, limpo e sem `.env`.
+- Comando: `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs?per_page=100 --jq <filtro>`; MD5 EOL-neutro dos dois corpos; MD5 cru/EOL-neutro do mandato; busca literal da identidade nova no obituário; leitura do parecer.
+- Saída resumida: check-runs `14 total | 0 não-verdes | 0 pendentes`; `.claude=b7c63c7d058361a4dddb31b3f2191037`; `.agents=6a425a94006038156b74089cf0df895d` (preâmbulo Codex próprio); mandato `17bc2b78d0ac77eb9e9bac3d7a4b422e` cru / `740b083341bb756373f2f3518ce7d4c9` EOL-neutro; identidade `jurado-trc01-b-superficie-e-segredo-cdx2` ocorre 0 vezes no obituário; parecer `inspetor-trc01-cdx` = `LIBERADO COM RESSALVA`, com R-CICLO, R-CORPO e R-DBA satisfeitas/registradas conforme o disparo.
+- Veredito parcial: legalidade reexecutada e verde para iniciar o mérito. O `jtrc01-b-redis` da ocupante anterior está parado (`Exited (0)`); nenhum processo referencia o worktree. Será validado/recriado pelo nome antes dos testes.
+
+### Fechamento do sucessor — item 1
+
+- Comando reexecutado: `REDIS_URL=redis://127.0.0.1:47473 DATABASE_URL='' timeout -k 15 300 npm test -- tests/traccar-ingest-listener.test.ts tests/traccar-forward-auth.test.ts tests/traccar-ingest-logs.test.ts tests/traccar-rate-limit.test.ts tests/traccar-dev-topology.test.ts`. Redis próprio confirmado em `127.0.0.1:47473`. Primeira repetição: ec 1, `54 tests | 52 pass | 0 fail | 2 cancelled`, ambos timeout interno de 30 s; repetição imediata: ec 0, `54/54 pass`, `0 fail/cancelled/skipped`, 3,433 s.
+- Comando reexecutado: `REDIS_URL=redis://127.0.0.1:47473 timeout -k 15 180 npx tsx .../probe-item1.mjs`; sonda `9990 bytes`, MD5 `96565388ce06eeee0419c57e187f03eb`. ec 0: app público `[404,404]`; app ingestão GET/OPTIONS/outro `404/404/404`, CORS e `x-powered-by` ausentes; query/`?` vazio `400/400`; tipo errado/ausente `415/415`; 64 KiB+1 `413`, 64 KiB `204`, espião 1; rajada `100×204`, 101ª `429`, espião 100; concorrência 10 ativa, 11ª `429`; flag off sem socket; listener em `127.0.0.1`/porta pedida; host inexistente `bind_failed/EADDRNOTAVAIL`; API pública seguiu `200`.
+- Comando reexecutado: `docker compose -p jtrc01-b-topo ... --profile tools --profile capture config --format json`. ec 0; publicações: `api 3000→127.0.0.1:3102`, `web 8080→127.0.0.1:18080`; nenhuma 3200/5055/8082; redes privadas internas; host da ingestão igual ao IPv4 privado da API; Traccar/sim/capture por digest. Busca de demos públicas: zero. XML: loopback, geocoder desligado, sem header/segredo.
+- Mutações: `timeout -k 15 900 node .../run-mutations.mjs ... MUT-01,MUT-02,MUT-03,MUT-26,MUT-28,MUT-30,MUT-31,MUT-32,MUT-33,MUT-39`; runner ec 0; todas `red=true`, `restoredOk=true`, diff não vazio e worktree limpo. MUT-02/MUT-31/MUT-39 exibiram a asserção discriminante `not ok` antes do SIGTERM; não foram consideradas vermelhas apenas pelo kill. Vermelhos-controle MUT-01 (rota pública 204), MUT-26 (porta 5055 aparece) e MUT-31 (bind curinga) acusaram.
+- Veredito parcial do item 1: `APROVADO`; nenhuma propriedade ausente medida. Demo vivo não rodado: as sondas em processo provam separação/bind/ordem/limites; o `config` prova publicação/redes/imagens. Sockets internos do compose não foram usados como fato.
+
+### Fechamento do sucessor — item 2
+
+- Leitura do objeto: `traccar-forward-auth.ts:37-39` faz SHA-256; `:41-47` conta `rawHeaders` case-insensitive; `:63-72` recusa qualquer Authorization, header ausente/repetido/vazio; `:74-78` chama o comparador injetável com `presentedDigest/currentDigest` e, enquanto aberto, `presentedDigest/previousDigest`; todos são digests de 32 bytes. Não há comparação de texto nem desvio por tamanho do valor. `env.ts:345-390` adiciona gates do bloco, sem remover gates anteriores.
+- Comando: `REDIS_URL=redis://127.0.0.1:47473 timeout -k 15 180 npx tsx .../probe-item2.mjs`; sonda final MD5 `f63b554da0a77178e9acd4729126ac4b`, ec 0. Direto: current/previous antes do prazo aceitos; errado mesmo/diferente tamanho, ausente, vazio, repetido mesma/mista caixa, Authorization isolado/junto e previous vencido recusados. Espião: 9 chamadas, todas `[32,32]`. HTTP real: `204/401/401/401/401/422` para current/wrong/repetido misto/Authorization/Authorization+header/token no corpo; espião do serviço = 1; todo 401 exatamente `{"error":{"code":"unauthorized"}}`, sem sentinela.
+- Gates por execução da mesma sonda: flag off e configuração forte aceitas; sem segredo, 31 caracteres, default de dev, previous sem prazo/no passado/>72 h/fraco, instance key inválida e porta igual recusados nos caminhos TRACCAR correspondentes. As mensagens/resultados não continham o sentinela.
+- Busca/classificação: `.env.example` traz os três campos de segredo vazios; overlay usa `${TRC_FORWARD_SECRET:?...}` e `${TRC_FORWARD_HEADER:?...}` obrigatórios, com `CONFIG_USE_ENVIRONMENT_VARIABLES=true`; XML não contém segredo/header; fixture contém somente nome/telefone/contato explicitamente sintéticos; diff de `frontend/` vazio. A busca ampla no diff encontrou hashes/SHA, IDs de migração, documentação e sentinelas/placeholders de teste, mas nenhum valor de credencial real; nenhum foi tratado como segredo operacional.
+- Mutações: `MUT-15,17,18,19,37,38`, runner ec 0; todas `red=true`, restauração íntegra e worktree limpo. Casos: CONFIG env ausente; previous vencido aceito; espião de 32 bytes não chamado; repetido aceito; prazo >72 h aceito; Authorization autenticou/401 deixou de ser uniforme. Vermelhos-controle: current válido deu 204/espião 1; MUT-18 zerou o caminho do comparador e falhou o caso; segredo 31 com flag on recusado e flag off aceito. Todos discriminaram.
+- Veredito parcial do item 2: `APROVADO`; nenhuma propriedade ausente ou segredo real exposto foi medida.
+
+### Fechamento do sucessor — item 3
+
+- Leitura do objeto: `traccar-ingest.logger.ts:16-27` serializa req `{method,path sem query}`, res `{statusCode}`, err `{type}`; `:30-49` mantém redact como cinto e instala serializers de allowlist. `traccar-ingest.app.ts:227-242` registra somente `{code}` no erro, nunca `err/body/stack`. O bootstrap registra somente `enabled/code/host/port`; o serviço registra somente código na falha de contagem; `server.ts` entrega o mesmo logger Pino raiz ao bootstrap/fábrica.
+- Comando: `REDIS_URL=redis://127.0.0.1:47473 timeout -k 15 180 npx tsx .../probe-item3.mjs`; sonda com Pino real gravando arquivos, `5768 bytes`, MD5 `33a09dd6729585f05fbae2b3e424839a`, ec 0. Treze cenários: 204, 202, 400-query, 401, 400-JSON inválido, 413, 415, 422, 409, 503-timeout, 503-erro com sentinelas na mensagem, sequência 204/429 e 404-path. Foram 17 linhas HTTP ao todo; nos 12 cenários que representam protocolo da ingestão: `segredo=0`, `valor errado=0`, `coordenada=0`, `nome do header=0`, `body=0`, `stack=0`, resposta com sentinela=0. `bind_failed`: 1 linha, zero sentinelas. Boot inválido em produção: ec 1; nomeou apenas os caminhos de configuração, `sentinela=0`, `coordenada=0`.
+- O 404 com sentinela deliberadamente no caminho gerou 1 ocorrência no log e zero na resposta. Isso é o vermelho-controle pedido: o serializador registra o caminho; não é vazamento do segredo de forward pelo listener, pois o cliente inventou esse path e o Traccar não transporta o segredo no caminho. Query real com segredo foi reduzida ao path sem query e teve contagem zero.
+- Vermelhos-controle: arquivo escrito pelo mesmo logger com o sentinela contou 1. MUT-16 oficial ficou vermelho (`9 testes`, falhas por perda da allowlist) e restaurou. Como o redact secundário corretamente ainda censura o valor na forma oficial, uma forma própria de controle removeu serializers e o caminho de redact em duas âncoras únicas: `tsc` verde, sonda real vermelha no caso 204 e contagem do sentinela = 1; restauração `hash-object=blob`. MUT-28 já reexecutada no item 1 ficou vermelha nas metades listener/log e restaurou. Assim, a sonda demonstrou que acusa o vazamento quando ambas as barreiras da propriedade são retiradas, sem penalizar a defesa em profundidade.
+- Veredito parcial do item 3: `APROVADO`; nenhum segredo, coordenada, corpo bruto, header de autenticação ou stack foi emitido nos caminhos válidos medidos.
+
+### Fechamento, ref final e limpeza
+
+- Normas medidas no objeto e em `origin/main`: âncoras aplicadas de §A7, §2.8, inspetor, escopo/calibração, proibição de junction, topologia de modelos, `D-GOV-PROPORCIONAL`, Traccar e KPI presentes com contagens coincidentes; decisões `D-TRACCAR-HTTP-PRIVADO-AWS`, `D-TRC-PD-APROVADA-2026-10-11` e `D-TRC-ARQUITETURA-2026-10-11` = 1/1. A frase tentativa `Protocolo contra perda de contexto` deu 0/0 por não ser âncora literal e não foi usada como norma. `sync-agent-agents.mjs --check`: 55 agentes, espelho consistente.
+- Ref final: Git remoto e GitHub continuam em `5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91`. `origin/main` avançou de `4fe7524ecbcc68b3e69336453cc774ed5937cb1c` para `b0fba1250a3aae8f7bd51a152d0190c1776b1048` durante a cadeira; o objeto julgado não andou e a base usada nos diffs permaneceu o merge-base `9566d55bd719ce7d7a545281c57923a25f883ed3`.
+- Limpeza: zero processo com `w-jtrc-b`; `jtrc01-b-redis` removido por nome com volume, contagem `jtrc01-b-* = 0`; worktree próprio removido por `git worktree remove --force`; scratch validado sem subdiretórios e 56 arquivos removidos, diretório ausente; mutações restauradas antes da remoção (`status --porcelain` vazio, hashes iguais aos blobs); disco final 18 GB livres. Base viva, recursos `j03a-*`, `jtrc01-a-*`, `jtrc01-c-*` e `trc01-*` nunca foram alvo; nenhum envio externo, commit ou push.
+- R2/R-DBA: a aprovação separada do `agente-dba-guardiao` não foi contada como existente. Ela não bloqueia este voto, mas permanece condição do DoD/merge.
+
+VOTO: APROVADO — ingestão só no listener próprio; fronteira, bind, limites e topologia fechados; autenticação por digests de 32 bytes e rotação/gates intactos; zero segredo/coordenada nos caminhos válidos; todas as 16 mutações mandatadas vermelhas pela propriedade indicada e restauradas. Ressalva externa ao voto: aprovação DBA separada ainda necessária para o merge.

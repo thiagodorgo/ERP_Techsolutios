@@ -5,6 +5,7 @@ import { createPortalApp } from "./portal-app.js";
 import { env } from "./config/env.js";
 import { assertRuntimeDatabaseRoleIfEnforced } from "./database/runtime-role.bootstrap.js";
 import { startJobWorkerIfEnabled } from "./infra/jobs/job-worker.bootstrap.js";
+import { startTraccarIngestListenerIfEnabled } from "./integrations/traccar/traccar-ingest.bootstrap.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
 
 const logger = pino({ level: env.LOG_LEVEL });
@@ -42,6 +43,11 @@ async function main(): Promise<void> {
       "ERP Techsolutions owner-portal (public BFF) listening",
     );
   });
+
+  // B-TRC-01 — ingestão do Traccar num listener PRÓPRIO (porta e endereço privados, desligado por padrão; nada em
+  // src/app.ts). A falha do listen dela não derruba a API pública: o bootstrap devolve `bind_failed` e loga só
+  // código, host e porta.
+  await startTraccarIngestListenerIfEnabled({ logger });
 }
 
 main().catch((error) => {
