@@ -11088,3 +11088,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 10. Duas portas para os mesmos títulos no menu (Cobranças e Pagamentos), sem a baixa (`appSidebarNav.ts:92-93`) — o ajuste A1 da crítica do B-SAN3-12.
 - **bloqueia:** a meta "telas funcionais" (o Financeiro mostra títulos mas não registra pagamento).
 - **teste de encerramento:** a baixa ponta a ponta pela tela; "Recebidas no mês" pela data do pagamento; nenhuma soma de dinheiro no front; o técnico de campo com a própria prestação de contas e sem valores da OS.
+
+## P-ESTOQUE-DEFEITOS-16-10 (2026-10-16) — a tela de Estoque conta errado, esconde a custódia e tem aba que não abre — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Estoque, lendo o código na `origin/main` 4fe7524e; nada executado) · **dono:** bloco de refino da tela de Estoque, a planejar
+1. A aba Contagem não abre pelo clique: `switchTab` só grava a aba Movimentações (`frontend/src/modules/inventory/pages/EstoquePage.tsx:236`).
+2. Os indicadores contam a janela filtrada e limitada a 100 itens (`EstoquePage.tsx:163-174`, `:293`; `components/dense-list/logic.ts:5`).
+3. "Abaixo do mínimo" e "Precisam repor" contam itens inativos (`inventory.adapter.ts:774-777`).
+4. "Movimentações no período" não tem período (`EstoquePage.tsx:440-442`).
+5. O motivo da baixa automática aparece como código (`baixa_manutencao`) (`inventory.types.ts:324-327` → `EstoquePage.tsx:929`, `EstoqueDetailPage.tsx:298`).
+6. A transferência aparece como duas linhas sem origem e destino, e o filtro não tem Vincular nem Desvincular (`EstoquePage.tsx:852-931`; `inventory.adapter.ts:50`).
+7. "Onde está" só aparece dentro de Editar (`InventoryItemFormModal.tsx:206-227`), com o botão exigindo `inventory_items:update` (`EstoquePage.tsx:705`): o Operador, que movimenta, nunca vê onde o estoque está.
+8. Depois de Vincular ou Saída na janela do item, a lista não recarrega o saldo (`ItemMovimentacaoTab.tsx:85-92`).
+9. O app de campo lê um estoque em memória, semeado com 3 itens fixos (`src/modules/mobile/mobile-inventory-sync.ts:99-100`, `:503-509`, `:537-560`). **Já registrado:** é o `Ω6R-QUA-002` (P1), item 31 do gate, bloco `B-O6R-04b`.
+10. O menu da Operação de Campo e do Técnico mostra Estoque sem `inventory_items:read` (`appSidebarNav.ts:181` × `catalog.ts:628-675`, `:912-962`) — o mesmo achado do inventário de fluxos (#438).
+11. RBAC × catálogo divergem no Estoque: `RBAC_MATRIX.md:47` dá só leitura ao Gestor e o `catalog.ts:529-537` dá tudo; ao Técnico a matriz dá "consume/confirm" e o catálogo nada.
+12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
+- **Perguntas ao dono:** o Operador vê valores (a entrada exige custo unitário)? Para o Gestor vale a matriz (leitura) ou o catálogo (tudo)? O Técnico vê "o que está comigo"? Entram vários locais (depósitos)?
+- **teste de encerramento:** cada item vira teste no bloco que o fechar.
