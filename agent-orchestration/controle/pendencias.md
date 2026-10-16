@@ -10997,7 +10997,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário — MÉDIA
 
-- **respondida pelo dono (16/10):** (a)–(d) em `D-APARENCIA-RESPOSTAS` — navegador na v1, B em Pátios e A nas demais, escolha no menu do usuário, Pátios estreia junto.
+- **respondida pelo dono (16/10):** (a)–(d) em `D-APARENCIA-RESPOSTAS` — navegador na v1, B em Pátios e A nas demais, escolha no menu do usuário, Pátios estreia junto. **A resposta (c) substitui o "em Configurações" do "O que falta" e do "teste de encerramento" abaixo: a escolha fica no menu do usuário.**
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
