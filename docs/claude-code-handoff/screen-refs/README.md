@@ -35,6 +35,8 @@ números são de exemplo. A página carrega as fontes do Google Fonts; sem rede,
 - `ordens-de-servico-3opcoes.reference.html` — Ordens de Serviço: A fiel, B analítica (com SLA vencido), C fila por agenda; lista → resumo → detalhe da OS.
 - `usuarios-3opcoes.reference.html` — Usuários (2026-10-14), BI nas três: A fiel com indicadores e barras, B analítica (entradas por dia, perfis, último acesso), C saúde do acesso (nota 0–100, mapa de calor dia × hora, matriz perfil × módulo).
 - `auditoria-3opcoes.reference.html` — Auditoria (2026-10-15), BI nas três: A fiel com indicadores e eventos sensíveis, B analítica (comparação com o período anterior, "O que mudou?"), C radar de risco (Crítico, Atenção, Rotina e trilha de investigação).
+- `financeiro-3opcoes.reference.html` — Financeiro (2026-10-16), parte da `financeiro-ab.reference.html` aprovada: A fiel com BI, B analítica (fluxo de caixa de 6 meses, aging em 7 faixas, recebido × pago), C agenda de caixa (15 dias com saldo projetado e a mesa do dia); a baixa em janela fixa com as mensagens do plano do B-SAN3-12.
+- `estoque-3opcoes.reference.html` — Estoque (2026-10-16): A fiel com BI (onde está o estoque, movimentações por tipo), B analítica (saúde do estoque, curva ABC, quem está com o estoque), C mapa de custódia (grade item × Base, profissional e viatura).
 
 ---
 
