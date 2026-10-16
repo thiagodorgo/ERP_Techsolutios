@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estoque · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+
+/* ─── MOLDURA (padrão financeiro-ab.reference.html) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:860px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:8px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:12px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;min-height:38px}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--danger{color:#B91C1C;border-color:#fecaca}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a;min-width:0}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px;line-height:1.4}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%}
+.pat-table{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-table__topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-table__count{font-size:11.5px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-table__sort{border:none;background:none;padding:0;font:inherit;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#64748b;cursor:pointer}
+.pat-table__sort:hover{color:#2563eb}
+.pat-table__empty{padding:48px 18px;text-align:center;white-space:normal;line-height:1.5}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-os-tabs{display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{padding:6px 12px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;min-height:30px}
+.pat-os-tab--active{background:#fff;color:#2563eb}
+.pat-header-search{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;width:250px;color:#94a3b8}
+.pat-header-search:focus-within{border-color:#2563eb}
+.pat-header-search input{border:none;outline:none;background:transparent;font-size:12.5px;color:#0f172a;width:100%}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;min-height:34px}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-os-tab:focus-visible,.pat-table__sort:focus-visible,.pat-pager__btn:focus-visible,[data-alvo]:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Linha de 1 linha + detalhe embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:10px 18px 4px;display:flex;align-items:center}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-ab-table thead th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 10px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip}
+.pat-ab-row td b{color:#0f172a}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:16px 20px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.1fr 1.15fr 1fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4,.b-card h4{font-size:11px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b;display:inline-flex;align-items:center;gap:6px}
+
+/* ─── ui-* (app.css) ─── */
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button:disabled{cursor:not-allowed;opacity:.55}
+.ui-button--primary{background:var(--color-core-primary);color:var(--text-inverse)}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button--ghost{background:transparent;color:var(--color-core-primary)}
+.ui-button--danger{background:var(--color-status-danger);color:var(--text-inverse)}
+.ui-button--sm{min-height:32px;padding:0 var(--space-10);font-size:12.5px}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-chip{display:inline-flex;align-items:center;gap:4px;width:fit-content;min-height:24px;border:1px solid var(--border-subtle);border-radius:999px;padding:0 var(--space-8);font-size:var(--text-xs);font-weight:800;background:var(--surface-panel-muted);color:var(--text-secondary);vertical-align:middle;white-space:nowrap;line-height:1.2}
+.chip-sm{min-height:20px;font-size:10.5px;padding:0 7px}
+.ui-tone-success{background:#e8f7ef;color:var(--color-status-success);border-color:#b7e2ca}
+.ui-tone-warning{background:#fff3d8;color:var(--color-status-warning);border-color:#f4d38b}
+.ui-tone-danger{background:#fff0ef;color:var(--color-status-danger);border-color:#f0b6b0}
+.ui-tone-info{background:#e9f5fb;color:var(--color-status-info);border-color:#b6dcee}
+.ui-tone-pending{background:#f1ebff;color:var(--color-status-pending);border-color:#d8c6ff}
+.ui-card{background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:var(--radius-8);box-shadow:var(--shadow-surface);padding:var(--space-16);min-width:0}
+.ui-card__header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--space-12);flex-wrap:wrap}
+.ui-card__header h2{font-size:15px;font-weight:800}
+.ui-state{border:1px dashed var(--border-strong);border-radius:var(--radius-8);padding:var(--space-24);background:var(--surface-panel);color:var(--text-secondary)}
+.ui-state strong{display:block;color:var(--text-primary);margin-bottom:4px}
+.ui-state p{font-size:var(--text-sm)}
+.ui-tabs{display:inline-flex;padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel-muted);flex-wrap:wrap}
+.ui-tabs button{border:0;border-radius:var(--radius-4);padding:var(--space-8) var(--space-10);background:transparent;cursor:pointer;font-size:13.5px;color:var(--text-primary);white-space:nowrap;min-height:36px}
+.ui-tabs button.is-active{background:var(--surface-panel);color:var(--color-core-primary);font-weight:900}
+.ui-tabs button:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-field{display:grid;gap:var(--space-6);font-size:13px;font-weight:700;color:#334155}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:8px 10px;font:inherit;font-weight:400;min-height:38px;background:#fff;color:#0f172a;width:100%}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-input[aria-invalid="true"]{border-color:#DC2626}
+.form-error{font-size:12px;color:#B91C1C;font-weight:600}
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.ui-modal{background:var(--surface-panel);box-shadow:var(--shadow-overlay);padding:var(--space-16) 20px 20px;border-radius:var(--radius-8)}
+.ui-modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ui-modal header h2{font-size:var(--text-lg);font-weight:800}
+.ui-modal header button,.ficha > header button.fx{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.ui-modal header button:hover,.ficha > header button.fx:hover{background:#f1f5f9}
+.ui-modal header button:focus-visible,.ficha > header button:focus-visible{outline:2px solid #2563eb}
+
+/* ─── Estados e marcas ─── */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+body.sem-marcas .falta{display:none}
+.val-falta{border-bottom:1px dashed #f59e0b}
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:50px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#94a3b8;max-width:420px;line-height:1.5}
+.sec-bloq{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;font-size:12px;color:#64748b}
+
+/* ─── Grades de indicadores ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:14px}
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi-grid--6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi-grid--6 .pat-kpi{padding:13px 12px}
+.kpi-grid--6 .pat-kpi__value{font-size:22px}
+@media (max-width:1360px){.kpi-grid--6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ─── Cartões analíticos (SVG/HTML sem biblioteca — PD-004) ─── */
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;flex-wrap:wrap;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.an-card__foot{font-size:11px;color:#64748b;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bi-a{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-bottom:14px}
+.bi-b{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.bi-c{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.stack{display:flex;height:18px;border-radius:99px;overflow:hidden;background:#f1f5f9;margin:4px 0 10px;gap:2px}
+.stack button{border:0;padding:0;cursor:pointer;height:100%;min-width:6px}
+.stack button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #0f172a}
+.legenda-alvo{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.lg-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;border:1px solid #e2e8f0;background:#fff;font-size:11.5px;font-weight:700;color:#475569;cursor:pointer;min-height:28px}
+.lg-btn b{color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-btn[aria-pressed="true"],.cust-chip[aria-pressed="true"],.col-btn[aria-pressed="true"],.hbar[aria-pressed="true"],.lst-btn[aria-pressed="true"],.mx-h button[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block}
+.cust-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cust-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;padding:5px 8px;cursor:pointer;text-align:left;min-width:0;min-height:44px}
+.cust-chip span{font-size:11px;color:#64748b;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;align-items:center;gap:4px}
+.cust-chip b{font-size:12.5px;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cust-chip:hover,.lg-btn:hover,.hbar:hover,.lst-btn:hover{border-color:#93c5fd}
+.cols{display:flex;align-items:stretch;gap:6px;height:128px}
+.col-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;border:1px solid transparent;background:none;cursor:pointer;border-radius:8px;padding:3px 0 4px;min-width:0}
+.col-btn:hover{background:#f8fafc}
+.col-btn i{display:block;width:62%;border-radius:5px 5px 2px 2px;min-height:2px}
+.col-btn b{font-size:11.5px;color:#0f172a;font-variant-numeric:tabular-nums}
+.col-btn span{font-size:10.5px;color:#64748b;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.col-btn .pilha{display:flex;flex-direction:column-reverse;width:62%;border-radius:5px 5px 2px 2px;overflow:hidden}
+.col-btn .pilha i{width:100%;border-radius:0;min-height:0}
+.dias{display:flex;align-items:flex-end;gap:2px;height:96px;border-bottom:1px solid #e2e8f0;padding-bottom:1px}
+.dia-btn{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;border:1px solid transparent;background:none;border-radius:4px;cursor:pointer;padding:0 1px}
+.dia-btn i{display:block;width:100%;background:#93c5fd;border-radius:3px 3px 0 0;min-height:2px}
+.dia-btn:hover i{background:#2563eb}
+.dia-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.dia-btn[aria-pressed="true"] i{background:#1d4ed8}
+.dias-eixo{display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8;margin-top:4px}
+.hbars{display:flex;flex-direction:column;gap:5px}
+.hbar{display:grid;grid-template-columns:118px minmax(0,1fr) 92px;align-items:center;gap:8px;border:1px solid transparent;background:none;border-radius:8px;padding:3px 6px;cursor:pointer;text-align:left;min-height:30px}
+.hbar span{font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.hbar i{display:block;height:9px;border-radius:99px;background:#f1f5f9;position:relative;overflow:hidden}
+.hbar i em{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.hbar b{font-size:11.5px;text-align:right;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.donut-svg g[role="button"]{cursor:pointer}
+.donut-svg g[role="button"]:hover circle{opacity:.82}
+.donut-svg g[role="button"]:focus{outline:none}
+.donut-svg g[role="button"]:focus-visible circle{stroke-width:20}
+.donut-svg g[aria-pressed="true"] circle{stroke-width:21}
+.lst{display:flex;flex-direction:column;gap:6px}
+.lst-btn{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;border:1px solid #e2e8f0;background:#fff;border-radius:9px;padding:7px 10px;cursor:pointer;text-align:left;min-height:44px}
+.lst-btn span{font-size:12px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lst-btn b{font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lst-btn small{grid-column:1 / -1;font-size:10.5px;color:#94a3b8;font-weight:600}
+.prog{display:inline-flex;align-items:center;gap:8px;width:100%;vertical-align:middle;line-height:1.2}
+.prog i{flex:1;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden;min-width:40px}
+.prog i em{display:block;height:100%;background:#2563eb;border-radius:99px}
+.prog span{font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap}
+.lst-btn .prog{grid-column:1 / -1}
+.blocos-c{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.bloco-c{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;min-width:0}
+.bloco-c:hover{border-color:#93c5fd}
+.bloco-c[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.bloco-c > span:last-child{min-width:0}
+.bloco-c b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.bloco-c small{display:block;font-size:12px;font-weight:600;color:#334155;line-height:1.3;margin-top:3px}
+.bloco-c em{display:block;font-style:normal;font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ─── Abas da tela (pílula azul, como hoje — EstoquePage.tsx:132-145) ─── */
+.abas-tela{display:flex;gap:2px;background:#e2e8f0;border-radius:10px;padding:4px;margin-bottom:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.abas-tela button{padding:6px 14px;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;background:transparent;color:#64748b;min-height:32px;display:inline-flex;align-items:center;gap:6px}
+.abas-tela button[aria-selected="true"]{background:#2563EB;color:#fff}
+.abas-tela button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.abas-tela .cnt{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:99px;background:rgba(15,23,42,.08)}
+.abas-tela button[aria-selected="true"] .cnt{background:rgba(255,255,255,.22)}
+
+/* ─── Itens: células ─── */
+.sku{font-size:11.5px;font-weight:700;color:#0f172a}
+.nome{font-weight:700;color:#0f172a}
+.minibar{display:inline-flex;align-items:center;gap:8px;width:100%;vertical-align:middle;line-height:1.2}
+.minibar i{flex:1;height:7px;border-radius:99px;background:#f1f5f9;position:relative;overflow:hidden;min-width:50px}
+.minibar i em{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.minibar i u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#0f172a;opacity:.55}
+.minibar span{font-size:12px;font-weight:700;color:#0f172a;white-space:nowrap;min-width:58px;text-align:right}
+.onde{display:flex;flex-direction:column;gap:4px}
+.onde-l{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:6px;font-size:12px;color:#334155}
+.onde-l b{font-variant-numeric:tabular-nums;color:#0f172a}
+.onde-ic{color:#64748b;display:inline-flex}
+.onde-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ult{display:flex;flex-direction:column;gap:4px}
+.ult-l{display:grid;grid-template-columns:44px auto 1fr;align-items:center;gap:8px;font-size:12px}
+.ult-l b{text-align:right;font-variant-numeric:tabular-nums}
+.b-detalhe{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px}
+.c-detalhe{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+.b-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mini-t{width:100%;border-collapse:collapse;font-size:12px}
+.mini-t th{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:5px 6px;border-bottom:1px solid #e2e8f0}
+.mini-t td{padding:6px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+.mini-t td.r,.mini-t th.r{text-align:right}
+.mini-t tr:last-child td{border-bottom:0}
+
+/* ─── Opção C: grade de custódia ─── */
+.mx-table thead th{white-space:normal}
+.mx-table thead th.mx-h{padding:4px 3px;text-align:center}
+.mx-h button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:3px 2px;min-height:44px}
+.mx-h button:hover{border-color:#93c5fd}
+.mx-h button > span{font-size:10.5px;font-weight:800;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.02em;display:flex;align-items:center;gap:3px}
+.mx-h button small{font-size:10px;color:#94a3b8;font-weight:600;white-space:nowrap;letter-spacing:0}
+.pat-ab-row td.mx-cell{text-align:center;padding:0 3px;font-variant-numeric:tabular-nums}
+.mx-cell span{display:inline-block;min-width:38px;padding:0 5px;line-height:24px;border-radius:6px;font-weight:700;font-size:12px;vertical-align:middle}
+.mx-cell span.z{color:#cbd5e1;font-weight:600}
+.mx-sep{border-left:2px solid #e2e8f0}
+.pat-ab-row td.mx-sel,.mx-table th.mx-sel{background:rgba(37,99,235,.06)}
+
+/* ─── Ficha do item — janela de tamanho FIXO ─── */
+.ficha{width:min(1080px,96vw);height:min(720px,90vh);background:#f1f5f9;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.ficha > header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-bottom:1px solid #e2e8f0;padding:6px 10px 6px 12px}
+.ficha > header h2{font-size:14px;font-weight:800;color:#334155;flex:1}
+.voltar{display:inline-flex;align-items:center;gap:6px;color:#2563EB;font-size:13px;font-weight:700;background:none;border:0;cursor:pointer;padding:0 10px;min-height:44px;border-radius:8px}
+.voltar:hover{background:#eff6ff}
+.ficha__cabeca{flex:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px 10px}
+.ficha__tile{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ficha__nome{font-size:18px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ficha__sub{font-size:12.5px;color:#64748b;font-family:var(--font-mono)}
+.ficha__acoes{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.ficha__abas{flex:none;padding:0 20px 10px}
+.ficha__corpo{flex:1;min-height:0;overflow-y:auto;padding:4px 20px 20px;scrollbar-gutter:stable}
+.f-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.f-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-width:0}
+.f-card h3{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.f-card.larga{grid-column:1 / -1}
+.f-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.f-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:0}
+.f-kpi b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:#0f172a;white-space:nowrap}
+.f-kpi span{font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.f-alerta{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:11px 14px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:13px}
+.f-tab{width:100%;border-collapse:collapse;font-size:12.5px}
+.f-tab th{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:7px 8px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.f-tab td{padding:8px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+.f-tab td.r,.f-tab th.r{text-align:right}
+.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.info span{font-size:11px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.info b{font-size:13.5px;color:#0F172A;font-weight:500}
+
+/* ─── Janela de formulário ─── */
+.dlg{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
+.dlg-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dlg-form .larga{grid-column:1 / -1}
+.dlg-form footer{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.dlg-nota{grid-column:1 / -1;font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px}
+.dlg-erro{grid-column:1 / -1;font-size:12.5px;color:#B91C1C;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 10px;font-weight:600}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;min-height:40px}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:18px}
+.review-layer p.desc strong{color:#e2e8f0}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:1.15fr 1fr}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:95;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media (max-width:1100px){.f-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Estoque · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">BL</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Bruno Lima</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Estoque</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Estoque</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar itens, ordens de serviço, clientes…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações" role="img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel com BI</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela que está no ar — <code>frontend/src/modules/inventory/pages/EstoquePage.tsx</code> (rota <code>/inventory</code>, <code>App.tsx:516-523</code>, guarda <code>inventory_items:read</code>) e o detalhe <code>EstoqueDetailPage.tsx</code> (<code>/inventory/:id</code>, <code>App.tsx:525-532</code>) — e do padrão aprovado em Pátios (a B, preferida) e Usuários: <strong>blocos e gráficos que filtram a lista → linha de 1 linha → resumo embaixo (um aberto por vez) → as ações reais → ficha do item em janela de tamanho fixo → voltar com o filtro e a linha mantidos</strong>. Tela-modelo da lista: <code>frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx</code>; componentes do <code>COMPONENT_LIBRARY.md</code> (<code>PageHeader</code>, <code>KpiStatCard</code>/<code>ClickableKpiCard</code>, <code>DenseTable</code>, <code>DenseListPagination</code>, <code>Chip</code>, <code>Modal</code>) e classes reais de <code>app.css</code> (<code>.pat-*</code>, <code>.ui-*</code>). Skills: <code>ts-frontend-full</code> (implementar) e <code>ui-ux-pro-max</code> (revisar). Medido em <code>origin/main</code> <code>4fe7524e</code>. Nomes, placas e números são de exemplo; cada número tem a fonte indicada abaixo, e o que o sistema não fornece está marcado <strong>falta no backend</strong> (na tela, em âmbar tracejado; o botão abaixo esconde as marcas).</p>
+    <div class="estados-bar">Estado desta opção:
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar">Ver como (o perfil vem da sessão; aqui é só para revisar — vale para as 3 opções):
+      <button type="button" class="rv-btn" data-papel="estoque" aria-pressed="true">Estoque</button>
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="false">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="operador" aria-pressed="false">Operador Logístico</button>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="false">Financeiro</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="tecnico" aria-pressed="false">Técnico de Campo (sem acesso)</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="false">Esconder as marcas “falta no backend”</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete)</h3>
+        <ul class="review-list">
+          <li><strong>Cabeçalho:</strong> título “Estoque” + subtítulo, busca, <strong>Novo item</strong> (<code>inventory_items:create</code>) e <strong>Movimento</strong> (<code>stock_movements:create</code>) — <code>EstoquePage.tsx:304-338</code>, com estilos soltos, sem o <code>pat-page-header</code>. Abas em pílula Itens | Movimentações | Contagem (<code>:341-363</code>). Quatro indicadores com pop-up: Itens ativos, Abaixo do mínimo, Precisam repor, Movimentações no período (<code>:398-447</code>; textos em <code>inventory-kpi-detail.ts:28-74</code>).</li>
+          <li><strong>Itens:</strong> <code>GET /inventory-items</code> (<code>inventory.routes.ts:39-45</code>) numa janela de 100 (<code>components/dense-list/logic.ts:5</code>). Colunas SKU, Nome, Unidade, Saldo, Mín/Máx, Ponto de pedido + “Repor”, Custo médio, Classe ABC, Situação de reposição, Situação, Ações (Editar, Desativar) — <code>:614-728</code>. Filtros Todos/Ativos/Inativos, Abaixo do mínimo, Precisa repor e Recalcular ABC (<code>:740-768</code>; confirmação <code>:529-544</code>).</li>
+          <li><strong>Movimentações:</strong> <code>GET /stock-movements</code> (<code>inventory.routes.ts:109-115</code>); colunas Data, Tipo, Item, Quantidade, Custo unit., OS, Motivo (<code>EstoquePage.tsx:852-931</code>); filtros Item e Tipo (<code>:960-984</code>). Razão imutável: correção é estorno compensatório (<code>inventory.routes.ts:94-133</code>). Consumo exige OS (<code>inventory.service.ts:255-261</code>).</li>
+          <li><strong>Contagem:</strong> <code>/cycle-counts</code> abrir, contar, fechar, cancelar (<code>cycle-count.routes.ts:39-85</code>); lista <code>EstoquePage.tsx:1085-1128</code>; a contagem fotografa o saldo e o fechamento vira ajuste (só dos itens contados — <code>cycle-count.service.ts:185-195</code>).</li>
+          <li><strong>Detalhe do item:</strong> <code>/inventory/:id</code> — voltar (<code>EstoqueDetailPage.tsx:133-136</code>), aviso de abaixo do mínimo (<code>:202-223</code>), Saldo atual · Estoque mínimo · Custo médio · Movimentações 30d (<code>:226-231</code>) e o histórico (<code>:233-319</code>).</li>
+          <li><strong>Onde está (custódia):</strong> só dentro de <strong>Editar</strong>, na janela “Item” com abas Editar | Resumo | Movimentação (<code>InventoryItemFormModal.tsx:206-227</code>). Resumo = Qtd. Base / Profissional / Viatura + nomes e placas (<code>CustodySummaryPanel.tsx:73-105</code>), de <code>GET /inventory-items/:id/custody-summary</code> (<code>inventory.routes.ts:67-73</code>). Movimentação = Entrada, Vincular, Desvincular, Saída e Estorno (<code>ItemMovimentacaoTab.tsx:94-151</code>).</li>
+          <li><strong>Baixa automática:</strong> abastecimento interno e manutenção baixam a Base sozinhos, sem permissão própria (<code>inventory.service.ts:414-460</code>; origens em <code>src/modules/inventory/inventory.types.ts:316-327</code>).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>Linha de 1 linha, sem botões:</strong> Editar/Desativar (<code>EstoquePage.tsx:700-727</code>) e “Abrir” da contagem (<code>:1117-1127</code>) saem da linha e vão para o resumo embaixo.</li>
+          <li><strong>Ficha do item em janela de tamanho fixo</strong> (1080 × 720, cabeçalho e abas parados, só o corpo rola), com Resumo · Onde está · Movimentações · Contagens · Cadastro. Junta a página <code>/inventory/:id</code> e a janela “Item” (que hoje só abre por Editar). “Voltar à lista” devolve o foco à linha, com o filtro e a página mantidos.</li>
+          <li><strong>“Onde está” para quem lê o estoque</strong> — hoje só quem edita item vê (defeito 7).</li>
+          <li><strong>Transferência numa linha só</strong> (“Base → Carlos M.”, ⇄ 2 un): hoje o par Vincular aparece como duas linhas, + e −, sem dizer onde. O agrupamento usa o <code>transferGroupId</code> que já vem (<code>frontend/src/modules/inventory/inventory.types.ts:75</code>).</li>
+          <li><strong>Indicadores contam os itens ativos do estoque inteiro</strong>, e não a janela carregada nem os inativos (defeitos 2 e 3). Os botões “Abaixo do mínimo” e “Precisa repor” viraram os próprios indicadores clicáveis.</li>
+          <li><strong>Motivo da baixa automática em português</strong> (“Baixa automática · manutenção da viatura GHB7C33”) e a origem no resumo; a baixa automática não tem “Estornar” — ela é desfeita pela origem (<code>removeExitForSource</code>, <code>inventory.service.ts:462-476</code>).</li>
+          <li><strong>Cabeçalho padronizado</strong> (<code>pat-page-header</code> com o grupo “GESTÃO” em cima), como nas Telas Padronizadas.</li>
+          <li><strong>Valores só para quem pode ver valores</strong>: custo médio, valor em estoque e custo do movimento somem para quem não tem (aqui, o Operador Logístico — pendência).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>Itens com saldo, mínimo/máximo, ponto de pedido, “precisa repor”, custo médio e classe ABC, todos calculados no servidor (<code>frontend/src/modules/inventory/inventory.types.ts:22-50</code>). Valor do item = saldo × custo médio, dois campos que já vêm.</li>
+          <li>Contagens em aberto: <code>GET /cycle-counts?status=aberta</code> (o filtro já existe, <code>EstoquePage.tsx:1060-1069</code>).</li>
+          <li>Onde está, no resumo da linha: <code>custody-summary</code> do item — 1 chamada só quando a linha abre.</li>
+          <li>Movimentações por tipo: <code>GET /stock-movements</code> aceita <code>type</code>, <code>from</code> e <code>to</code> (<code>inventory.service.ts:205-220</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Resumo do estoque no servidor</strong> (itens ativos, abaixo do mínimo, precisam repor, valor total): hoje os números saem da janela de 100 itens.</li>
+          <li><strong>“Onde está o estoque” da organização inteira</strong>: o <code>custody-summary</code> é por item; para o cartão seria preciso 1 chamada por item.</li>
+          <li><strong>Contagem por tipo no período</strong> pronta no servidor (hoje: lista paginada de 100).</li>
+          <li>Nome de quem registrou o movimento e de quem abriu a contagem: vem só o identificador (<code>createdBy</code>).</li>
+          <li>Front: trocar a <code>DenseTable</code> com ações por linha de 1 linha + resumo; a ficha do item vira componente da biblioteca.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> menor custo; é a tela de hoje com o padrão aprovado; quem usa não reaprende nada; os dois cartões de BI respondem “onde está” e “o que mexeu” sem tirar a lista do lugar.</li>
+          <li><strong>Contras:</strong> o BI é enxuto (dois cartões); giro e cobertura não aparecem; seis indicadores viram 3 × 2 em telas de até 1360 px.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>Saúde do estoque: abaixo do mínimo (<code>belowMin</code>), no ponto de pedido (<code>needsReorder</code>) e acima do máximo (<code>maxQuantity</code>) — tudo vem do servidor.</li>
+          <li>Classe ABC por valor de consumo de 12 meses (Pareto, <code>inventory.service.ts:149-157</code>); valor por classe = saldo × custo médio somado na tela.</li>
+          <li>Saldo dos últimos 30 dias do item: reconstruído do razão do item (<code>GET /stock-movements?item_id=</code>), sem nada novo.</li>
+          <li>Movimentações por semana: a mesma lista com <code>from</code>/<code>to</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Cobertura em dias e giro:</strong> o servidor já calcula o uso médio diário de 90 dias para o ponto de pedido (<code>inventory.calculations.ts:59-68</code>, <code>:76-86</code>) mas não o devolve — bastaria um campo no item.</li>
+          <li>Resumo de custódia da organização (cartão “Quem está com o estoque”) e resumo por tipo e semana — iguais à A.</li>
+          <li>Front: gráficos em SVG/HTML sem biblioteca (PD-004), como os do Dashboard.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> responde de uma vez “quanto vale”, “o que está acabando”, “quem está com o quê” e “como o estoque se move”; todo gráfico filtra a lista; o resumo da linha mostra a curva do saldo contra o mínimo.</li>
+          <li><strong>Contras:</strong> tela mais longa; mais chamadas; a rosca só tem 3 classes; giro e cobertura dependem do campo novo.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>A grade se monta com o <code>custody-summary</code> de cada item: Base, cada profissional (pelo nome, nunca CNH) e cada viatura (pela placa) — <code>CustodySummaryPanel.tsx:19-21</code>.</li>
+          <li>“Devolver à Base” e “Vincular” = <code>POST /stock-movements</code> com <code>link</code>/<code>unlink</code> (<code>ItemMovimentacaoTab.tsx:109-122</code>).</li>
+          <li>Último movimento de cada pessoa ou viatura com o item: sai do razão do item.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Custódia da organização numa chamada</strong> (sem ela, 1 chamada por item — aguenta dezenas, não centenas).</li>
+          <li>Escolher quais pessoas e viaturas viram coluna quando a frota crescer (componente novo na biblioteca).</li>
+          <li>Movimentações por dia: a mesma lista com <code>from</code>/<code>to</code>; o total pronto falta (igual à A).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> responde “quem está com o quê” de um olhar; serve para a conferência de fim de turno; devolver à Base fica no resumo da linha; cada coluna filtra.</li>
+          <li><strong>Contras:</strong> grade larga — com mais de ~10 pessoas e viaturas precisa escolher colunas; quantidades de unidades diferentes lado a lado; componente novo para manter.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Comportamento por perfil de quem vê a tela (permissões medidas em <code>src/modules/core-saas/permissions/catalog.ts</code>; a tela só molda — o servidor decide)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Perfil</th><th>Vê</th><th>Pode</th><th>Não pode</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Estoque</strong> (<code>inventory</code>, <code>:884-896</code>)</td><td>tudo, com valores</td><td>Novo item, Editar, Desativar, Movimento, Vincular/Devolver, Estornar, contagem, Recalcular ABC</td><td>—</td></tr>
+          <tr><td><strong>Administrador</strong> (<code>tenant_admin</code>, herda)</td><td>tudo, com valores</td><td>igual ao Estoque</td><td>—</td></tr>
+          <tr><td><strong>Gestor Operacional</strong> (<code>manager</code>, <code>:529-537</code>)</td><td>tudo, com valores</td><td>igual ao Estoque</td><td>— (mas a <code>RBAC_MATRIX.md:47</code> diz “read” para movimentos: pendência)</td></tr>
+          <tr><td><strong>Operador Logístico</strong> (<code>operator</code>, <code>:773-778</code>)</td><td>itens, movimentos, contagens — <strong>sem valores nesta maquete</strong> (<code>RBAC_MATRIX.md:49</code>: Finance = none)</td><td>Movimento, Vincular/Devolver, Estornar, contagem</td><td>cadastrar ou editar item; Recalcular ABC. Hoje o servidor devolve o custo a ele (falta no backend)</td></tr>
+          <tr><td><strong>Financeiro</strong> (<code>finance</code>, <code>:836-839</code>)</td><td>tudo, com valores</td><td>nenhuma ação (“Seu perfil só consulta o estoque.”)</td><td>movimentar, contar, editar</td></tr>
+          <tr><td><strong>Auditor</strong> (<code>auditor</code>, <code>:1008-1011</code>)</td><td>tudo, com valores</td><td>nenhuma ação</td><td>alterar qualquer coisa</td></tr>
+          <tr><td><strong>Técnico de Campo</strong> (<code>field_technician</code>, <code>:912-962</code>)</td><td>“Acesso não permitido” (sem <code>inventory_items:read</code>)</td><td>—</td><td>nunca vê valores (<code>D-TECNICO-SO-VALORES-PROPRIOS</code>); a <code>RBAC_MATRIX.md:47</code> diz “consume/confirm”</td></tr>
+          <tr><td><strong>Suporte</strong> e <strong>Operação de Campo</strong></td><td>“Acesso não permitido”</td><td>—</td><td>— (o menu da Operação de Campo mostra Estoque: defeito 10)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Defeitos do sistema de hoje achados nesta leitura (por leitura de código; nenhum executado)</h3>
+        <ul class="review-list">
+          <li><strong>1. A aba Contagem não abre pelo clique.</strong> <code>switchTab</code> só grava <code>tab=movimentacoes</code> (<code>EstoquePage.tsx:232-240</code>, linha 236); clicar em “Contagem” deixa a URL sem aba e a tela volta para Itens. Só se chega por <code>?tab=contagem</code>. Nenhum teste cobre.</li>
+          <li><strong>2. Indicadores contam a janela filtrada.</strong> Com “Abaixo do mínimo” ligado a busca vai com <code>below_min=true</code> (<code>EstoquePage.tsx:163-174</code>) e “Itens ativos” passa a contar só esses (<code>:293</code>); e tudo é limitado aos 100 primeiros (<code>dense-list/logic.ts:5</code>; teto no servidor <code>inventory.validators.ts:293</code>).</li>
+          <li><strong>3. “Abaixo do mínimo” e “Precisam repor” contam itens inativos</strong> (<code>inventory.adapter.ts:774-777</code>).</li>
+          <li><strong>4. “Movimentações no período” não tem período:</strong> é a quantidade carregada (<code>EstoquePage.tsx:440-442</code>).</li>
+          <li><strong>5. Motivo da baixa automática aparece como código</strong> — <code>baixa_manutencao</code>, <code>baixa_abastecimento_interno</code> (<code>src/modules/inventory/inventory.types.ts:324-327</code>) — na coluna Motivo (<code>EstoquePage.tsx:929</code>, <code>EstoqueDetailPage.tsx:298</code>).</li>
+          <li><strong>6. Transferência sem custódia:</strong> o par Vincular/Desvincular vira duas linhas (+ e −) sem dizer de onde para onde (<code>EstoquePage.tsx:852-931</code>), e o filtro de tipo não tem Vincular nem Desvincular (<code>inventory.adapter.ts:50</code>).</li>
+          <li><strong>7. “Onde está” só para quem edita:</strong> Resumo e Movimentação existem só dentro de Editar (<code>InventoryItemFormModal.tsx:206-227</code>), e o botão só aparece com <code>inventory_items:update</code> (<code>EstoquePage.tsx:705</code>). O Operador, que movimenta, o Financeiro e o Auditor nunca veem onde o estoque está; a página do item (<code>EstoqueDetailPage.tsx</code>) não mostra custódia.</li>
+          <li><strong>8. Depois de Vincular ou Saída na janela “Item”, a lista não recarrega o saldo</strong> — <code>ItemMovimentacaoTab.tsx:85-92</code> só recarrega o próprio razão; a lista espera o recarregamento automático.</li>
+          <li><strong>9. O aplicativo de campo lê um estoque fictício:</strong> <code>src/modules/mobile/mobile-inventory-sync.ts:99-100</code> e <code>:503-509</code> guardam o estoque em memória, semeado com itens fixos (<code>:537-560</code>), separado do razão real. O que o técnico vê ou baixa no aplicativo não chega ao Estoque da web.</li>
+          <li><strong>10. Menu mostra Estoque a quem não pode abrir:</strong> o grupo GESTÃO da Operação de Campo e do Técnico tem Estoque (<code>appSidebarNav.ts:181</code>), mas nem <code>field_dispatcher</code> (<code>catalog.ts:628-675</code>) nem <code>field_technician</code> (<code>:912-962</code>) têm <code>inventory_items:read</code> → cai no bloqueio.</li>
+          <li><strong>11. RBAC × catálogo:</strong> <code>RBAC_MATRIX.md:47</code> dá “read” ao Gestor e “consume/confirm” ao Técnico; o catálogo dá tudo ao Gestor (<code>catalog.ts:529-537</code>) e nada ao Técnico.</li>
+          <li><strong>12. A busca da Contagem procura pelo identificador interno da sessão</strong> (<code>EstoquePage.tsx:1134</code>).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Pendências para o dono</h3>
+        <ul class="review-list">
+          <li>Aprovar as três aparências (cada usuário escolhe a sua em Configurações — <code>D-APARENCIA-POR-USUARIO</code>).</li>
+          <li><strong>O Operador Logístico vê valores?</strong> A RBAC diz que não (Finance = none), mas a Entrada exige custo unitário (<code>StockEntryModal.tsx:81</code>) — se esconder, quem lança a entrada com custo?</li>
+          <li><strong>Gestor:</strong> a RBAC diz só leitura de movimentos; o catálogo deixa cadastrar, editar e movimentar. Qual vale?</li>
+          <li><strong>Técnico de Campo:</strong> ver “o que está comigo” (sem valores) na web ou só no aplicativo? E ligar o aplicativo ao razão real (defeito 9) — bloco com junta completa (perda de dado).</li>
+          <li>Vários locais (depósitos por filial) entram no plano? Hoje só existe a Base e as custódias.</li>
+          <li>O protótipo do Estoque (<code>screen-refs/web/estoque.png</code>) pedia reservas para OS, notas de entrada e ajustes em aprovação — nada disso existe no servidor; não desenhei.</li>
+          <li>Limiar de “giro baixo” (aqui: menos de 1 vez em 90 dias) e cobertura em dias — dependem do campo novo.</li>
+          <li>Nomes, placas, códigos de OS e números são exemplos.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel com BI</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Mapa de custódia</button>
+</div>
+
+<div class="ui-overlay" id="ficha-overlay" hidden>
+  <section class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-tit" data-ficha-win>
+    <header><button type="button" class="voltar" data-voltar-ficha><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Voltar à lista</button><h2 id="ficha-tit">Ficha do item</h2><button type="button" class="fx" data-voltar-ficha aria-label="Fechar e voltar à lista"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="ficha__cabeca" id="ficha-cabeca"></div>
+    <div class="ficha__abas"><div class="ui-tabs" role="tablist" id="ficha-abas" aria-label="Seções da ficha"></div></div>
+    <div class="ficha__corpo" id="ficha-corpo"></div>
+  </section>
+</div>
+<div class="ui-overlay" id="dlg-overlay" hidden style="z-index:85"><section class="ui-modal dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-tit" id="dlg"></section></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  clipCheck:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  listChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  fuel:'<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  factory:'<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>',
+  idCard:'<path d="M16 10h2"/><path d="M16 14h2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><circle cx="9" cy="11" r="2"/><rect x="2" y="5" width="20" height="14" rx="2"/>',
+  package:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  swap:'<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  archive:'<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+  rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  pencil:'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>',
+  trend:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const FALTA = t => '<span class="falta" title="'+esc(t)+'">falta no backend</span>';
+
+/* ── Formatação pt-BR ── */
+const nf = new Intl.NumberFormat('pt-BR', { maximumFractionDigits:2 });
+const nf1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits:1, minimumFractionDigits:1 });
+const fN = n => nf.format(n);
+const fQ = (n, un) => nf.format(n) + (un ? ' ' + un : '');
+const fMoeda = n => n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const fMil = n => n >= 1000 ? 'R$ ' + (n / 1000).toLocaleString('pt-BR', { maximumFractionDigits:1 }) + ' mil' : fMoeda(n);
+const pad = n => String(n).padStart(2, '0');
+const fData = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+const fDM = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+const fDH = d => fData(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+const round2 = n => Math.round(n * 100) / 100;
+const soma = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+
+/* ── Relógio da maquete: 15/10/2026 10:30 ── */
+const NOW = new Date(2026, 9, 15, 10, 30);
+const DIA0 = new Date(2026, 9, 15);
+const dias = d => Math.round((DIA0 - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+const diaData = n => new Date(2026, 9, 15 - n);
+function rngFrom(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+
+/* ── Quem guarda o estoque: a Base, os profissionais (pelo nome, nunca CNH) e as viaturas (pela placa) ── */
+const PROF = [['p1','Carlos Mendes'],['p2','João Batista'],['p3','Rafael Souza'],['p4','Ana Paula Lima']].map(x => { const n = x[1].split(' '); return { id:x[0], nome:x[1], curto:n[0] + ' ' + n[n.length - 1][0] + '.' }; });
+const VIAT = [['v1','FTX4B21','Guincho plataforma'],['v2','GHB7C33','Guincho asa-delta'],['v3','RKT2D45','Auto-socorro pesado']].map(x => ({ id:x[0], placa:x[1], modelo:x[2] }));
+const VIAT_BY = Object.fromEntries(VIAT.map(x => [x.id, x]));
+const CUSTS = [{ k:'base', tipo:'base', rot:'Base', curto:'Base' }]
+  .concat(PROF.map(p => ({ k:p.id, tipo:'prof', rot:p.nome, curto:p.curto })))
+  .concat(VIAT.map(x => ({ k:x.id, tipo:'viat', rot:x.placa + ' · ' + x.modelo, curto:x.placa })));
+const custBy = k => CUSTS.find(c => c.k === k);
+const TIPO_CUST = { base:'Na Base', prof:'Com profissionais', viat:'Em viaturas' };
+const COR_CUST = { base:'#2563EB', prof:'#7E22CE', viat:'#0EA5E9' };
+const icCust = c => ic(c.tipo === 'base' ? 'warehouse' : c.tipo === 'prof' ? 'user' : 'truck', 12);
+
+/* ── Itens (campos de GET /inventory-items; saldo, abaixo do mínimo e ponto de pedido vêm do servidor) ──
+   [sku, nome, unidade, tipo p/e, combustível, mín, máx, prazo (dias), segurança, custo médio, classe, ativo, uso em 90 dias, custódia] */
+const RAW = [
+  ['CABO-REB-5T','Cabo de reboque 5 t','un','e',0,6,20,15,2,189.90,'B',1,9,{base:4,p1:1,p2:1,v1:2,v2:2,v3:1}],
+  ['CINTA-CAT-3T','Cinta com catraca 3 t','un','p',0,20,60,10,6,74.50,'A',1,64,{base:9,p1:2,p2:2,p3:2,p4:1,v1:4,v2:4,v3:3}],
+  ['CORR-G8-10','Corrente grau 8 · 10 mm','m','p',0,30,120,20,10,58.00,'B',1,42,{base:18,v1:10,v2:10,v3:12}],
+  ['CONE-75','Cone de sinalização 75 cm','un','e',0,30,90,7,8,32.00,'C',1,38,{base:22,p1:2,p2:2,p3:2,p4:2,v1:6,v2:6,v3:6}],
+  ['TRIANG-SIN','Triângulo de sinalização','un','e',0,10,30,7,3,28.90,'C',1,12,{base:3,v1:1,v2:1,v3:1}],
+  ['EXT-PQS-4','Extintor PQS 4 kg','un','e',0,6,12,20,2,119.00,'C',1,3,{base:2,v1:1,v2:1,v3:1}],
+  ['DIESEL-S10','Óleo diesel S10','L','p',1,2000,8000,3,800,6.19,'A',1,31500,{base:3420}],
+  ['ARLA-32','ARLA 32','L','p',0,200,800,5,60,3.45,'C',1,1450,{base:130}],
+  ['OLEO-15W40','Óleo de motor 15W40','L','p',0,60,240,7,20,31.90,'B',1,310,{base:84}],
+  ['FLUIDO-HID68','Fluido hidráulico ISO 68','L','p',0,40,160,10,15,22.50,'B',1,260,{base:36}],
+  ['FILTRO-OLEO-P','Filtro de óleo · linha pesada','un','p',0,8,24,12,4,64.00,'B',1,54,{base:11}],
+  ['FILTRO-AR-P','Filtro de ar · linha pesada','un','p',0,6,18,12,3,142.00,'B',1,21,{base:9}],
+  ['LAMP-H4-24','Lâmpada H4 24 V','un','p',0,20,60,7,6,18.40,'C',1,70,{base:26,p1:2,p2:2,p3:2,p4:2}],
+  ['FUSIVEL-KIT','Kit de fusíveis lâmina','cx','p',0,10,30,7,3,29.90,'C',1,36,{base:3,p1:1,p2:1,p3:1,p4:1}],
+  ['LUVA-VAQ','Luva de vaqueta','par','p',0,40,60,7,12,16.80,'C',1,150,{base:52,p1:3,p2:3,p3:3,p4:3}],
+  ['COLETE-REF','Colete refletivo','un','e',0,12,30,10,4,24.00,'C',1,14,{base:6,p1:1,p2:1,p3:1,p4:1,v1:2,v2:2,v3:2}],
+  ['BAT-60AH','Bateria auxiliar 60 Ah','un','p',0,4,10,15,2,489.00,'A',1,15,{base:3,v1:1}],
+  ['CABO-AUX-600','Cabo auxiliar de partida 600 A','un','e',0,6,12,15,2,156.00,'B',1,6,{base:2,p1:1,p3:1,v1:1,v2:1,v3:1}],
+  ['MACACO-3T','Macaco jacaré 3 t','un','e',0,3,6,20,1,649.00,'B',1,2,{base:1,v1:1,v2:1,v3:1}],
+  ['CALCO-RODA','Calço de roda','un','e',0,12,14,10,4,39.90,'C',1,8,{base:4,v1:4,v2:4,v3:4}],
+  ['ABRAC-NYLON','Abraçadeira de nylon 300 mm','pct','p',0,15,60,5,5,12.90,'C',1,58,{base:31}],
+  ['GRAXA-LITIO','Graxa de lítio 1 kg','kg','p',0,10,40,7,4,34.00,'C',1,24,{base:14}],
+  ['PNEU-275-225','Pneu 275/80 R22,5','un','p',0,4,12,25,2,2290.00,'A',1,10,{base:6}],
+  ['KIT-SOCORRO','Kit de primeiros socorros','un','e',0,5,10,10,1,89.00,'C',1,4,{base:1,v1:1,v2:1,v3:1}],
+  ['LONA-4X6','Lona de proteção 4 × 6 m','un','e',0,0,null,null,null,79.00,null,0,0,{base:3}],
+  ['ESTOPA-KG','Estopa branca','kg','p',0,5,20,5,2,14.50,'C',0,0,{base:2}]
+];
+function deriv(i){
+  i.saldo = round2(soma(Object.values(i.cust), x => x));
+  i.base = i.cust.base || 0; i.prof = soma(PROF, p => i.cust[p.id] || 0); i.viat = soma(VIAT, x => i.cust[x.id] || 0);
+  const diario = i.uso90 / 90;
+  i.rp = i.lead == null ? null : Math.round(diario * i.lead + i.seg);
+  i.abaixo = i.saldo < i.min; i.repor = i.rp != null && i.saldo <= i.rp;
+  i.valor = round2(i.saldo * i.custo);
+  i.cobertura = diario > 0 ? Math.round(i.saldo / diario) : null;
+  i.giro = i.saldo > 0 ? i.uso90 / i.saldo : null;
+}
+const ITENS = RAW.map((r, n) => { const i = { id:'i' + (n + 1), sku:r[0], nome:r[1], un:r[2], tipo:r[3], comb:!!r[4], min:r[5], max:r[6], lead:r[7], seg:r[8], custo:r[9], abc:r[10], ativo:!!r[11], uso90:r[12], cust:Object.assign({}, r[13]) }; deriv(i); return i; });
+const bySku = s => ITENS.find(i => i.sku === s);
+const byId = id => ITENS.find(i => i.id === id);
+function saude(i){ return i.abaixo ? 'abaixo' : i.repor ? 'repor' : (i.max != null && i.saldo > i.max) ? 'acima' : 'ok'; }
+const SAUDE = { abaixo:{ rot:'Abaixo do mínimo', cor:'#DC2626' }, repor:{ rot:'No ponto de pedido', cor:'#F59E0B' }, ok:{ rot:'Saudável', cor:'#22C55E' }, acima:{ rot:'Acima do máximo', cor:'#0EA5E9' } };
+
+/* ── Movimentações (razão imutável; transferência = par Vincular/Desvincular agrupado numa linha) ── */
+const TIPOS = {
+  entrada:{ rot:'Entrada', tom:'success', cor:'#16A34A' }, saida:{ rot:'Saída', tom:'danger', cor:'#DC2626' },
+  consumo:{ rot:'Consumo', tom:'warning', cor:'#F59E0B' }, ajuste:{ rot:'Ajuste', tom:'default', cor:'#64748B' },
+  vincular:{ rot:'Vincular', tom:'info', cor:'#2563EB' }, desvincular:{ rot:'Desvincular', tom:'success', cor:'#0EA5E9' }
+};
+const ORDEM_TIPOS = ['entrada','saida','consumo','ajuste','vincular','desvincular'];
+const ehTransf = m => m.tipo === 'vincular' || m.tipo === 'desvincular';
+const FORN = ['Auto Peças Paulista','Distribuidora Rodoforte','EPI Center','Posto Rede Sul','Casa dos Filtros'];
+const POR = ['Bruno Lima','Bruno Lima','Paulo Henrique','Mariana Costa'];
+const MOVS = []; let mid = 0;
+function novoMov(o){ o.id = 'm' + (++mid); MOVS.push(o); return o; }
+function qtd(r, it){ if (it.un === 'L') return 4 + Math.floor(r() * 16); if (it.un === 'm') return 2 + Math.floor(r() * 6); if (it.un === 'kg') return 1 + Math.floor(r() * 2); return 1 + Math.floor(r() * 3); }
+function entQ(r, it){ if (it.sku === 'DIESEL-S10') return 3000; if (it.un === 'L') return 60 + Math.floor(r() * 6) * 20; if (it.un === 'm') return 30; return Math.max(2, Math.round(it.min * (0.6 + r() * 0.8))); }
+(function gerar(){
+  const r = rngFrom('estoque-guincho');
+  const ativos = ITENS.filter(i => i.ativo);
+  const consumiveis = ['CINTA-CAT-3T','CORR-G8-10','LAMP-H4-24','FUSIVEL-KIT','LUVA-VAQ','ABRAC-NYLON','GRAXA-LITIO','FLUIDO-HID68','OLEO-15W40','ARLA-32'].map(bySku);
+  const kit = ativos.filter(i => i.tipo === 'e').concat(['CINTA-CAT-3T','LAMP-H4-24','FUSIVEL-KIT','LUVA-VAQ'].map(bySku));
+  const custs = ['p1','p2','p3','p4','v1','v2','v3'];
+  for (let d = 44; d >= 0; d--) {
+    const fimDeSemana = [0, 6].includes(diaData(d).getDay());
+    const n = fimDeSemana ? (r() < .5 ? 1 : 0) : 1 + Math.floor(r() * 3);
+    for (let k = 0; k < n; k++) {
+      const q = diaData(d); const quando = new Date(q.getFullYear(), q.getMonth(), q.getDate(), 7 + Math.floor(r() * 11), Math.floor(r() * 60));
+      if (quando > NOW) continue;
+      const x = r(); let o;
+      if (x < .30) { const it = pick(r, consumiveis); const c = pick(r, custs.concat(['base'])); o = { tipo:'consumo', item:it, q:-qtd(r, it), de:c, os:'OS-2026-0' + (380 + Math.floor(r() * 70)), motivo:'' }; }
+      else if (x < .46) {
+        const y = r(), vv = pick(r, VIAT);
+        if (y < .4) o = { tipo:'saida', item:bySku('DIESEL-S10'), q:-(80 + Math.floor(r() * 140)), de:'base', viat:vv.id, auto:'abastecimento', motivo:'Baixa automática · abastecimento interno da viatura ' + vv.placa };
+        else if (y < .8) { const it = pick(r, ['FILTRO-OLEO-P','FILTRO-AR-P','OLEO-15W40','FLUIDO-HID68'].map(bySku)); o = { tipo:'saida', item:it, q:-qtd(r, it), de:'base', viat:vv.id, auto:'manutencao', motivo:'Baixa automática · manutenção da viatura ' + vv.placa }; }
+        else { const it = pick(r, ['LUVA-VAQ','LAMP-H4-24','CONE-75'].map(bySku)); o = { tipo:'saida', item:it, q:-qtd(r, it), de:'base', motivo:'Venda direta' }; }
+      }
+      else if (x < .60) { const it = pick(r, ativos.filter(i => i.tipo === 'p')); o = { tipo:'entrada', item:it, q:entQ(r, it), de:'base', custoUn:round2(it.custo * (0.94 + r() * 0.1)), motivo:'Compra · NF ' + (4300 + Math.floor(r() * 600)) + ' · ' + pick(r, FORN) }; }
+      else if (x < .86) { const it = pick(r, kit); const c = pick(r, custs); o = { tipo:'vincular', item:it, q:1 + Math.floor(r() * 2), de:'base', para:c, motivo:custBy(c).tipo === 'viat' ? 'Reposição do kit da viatura' : 'Retirada para o turno' }; }
+      else { const it = pick(r, kit); const c = pick(r, custs); o = { tipo:'desvincular', item:it, q:1, de:c, para:'base', motivo:'Devolução ao fim do turno' }; }
+      o.quando = quando; o.por = pick(r, POR); if (o.custoUn == null) o.custoUn = o.item.custo;
+      novoMov(o);
+    }
+  }
+  /* ajustes gerados no fechamento das contagens (só dos itens contados) */
+  novoMov({ tipo:'ajuste', item:bySku('FLUIDO-HID68'), q:-2, de:'base', quando:new Date(2026, 9, 6, 11, 2), por:'Paulo Henrique', custoUn:22.50, motivo:'Contagem cíclica de 06/10/2026 · diferença apurada', cc:'c4' });
+  novoMov({ tipo:'ajuste', item:bySku('FILTRO-AR-P'), q:1, de:'base', quando:new Date(2026, 9, 6, 11, 2), por:'Paulo Henrique', custoUn:142.00, motivo:'Contagem cíclica de 06/10/2026 · diferença apurada', cc:'c4' });
+  novoMov({ tipo:'ajuste', item:bySku('LUVA-VAQ'), q:-3, de:'base', quando:new Date(2026, 8, 29, 16, 20), por:'Bruno Lima', custoUn:16.80, motivo:'Contagem cíclica de 29/09/2026 · diferença apurada', cc:'c3' });
+  /* um estorno: nota de entrada lançada duas vezes */
+  const ent = MOVS.filter(m => m.tipo === 'entrada' && dias(m.quando) > 8 && dias(m.quando) < 20)[0];
+  if (ent) { ent.estornado = true; novoMov({ tipo:'entrada', item:ent.item, q:-ent.q, de:'base', quando:new Date(ent.quando.getTime() + 26 * 3600000), por:'Bruno Lima', custoUn:ent.custoUn, motivo:'Estorno · nota lançada em duplicidade', estornoDe:ent.id }); }
+  MOVS.sort((a, b) => b.quando - a.quando);
+})();
+const movById = id => MOVS.find(m => m.id === id);
+
+/* ── Contagens cíclicas (a sessão fotografa o saldo; o fechamento vira ajuste) ── */
+const CCS = [];
+(function(){
+  const at = ITENS.filter(i => i.ativo);
+  const ent = (arr, f) => arr.map((i, k) => ({ item:i, sis:i.saldo, cont:f(i, k) }));
+  CCS.push({ id:'c6', quando:new Date(2026, 9, 14, 8, 10), classe:'A', st:'aberta', por:'Bruno Lima', entradas:ent(at.filter(i => i.abc === 'A'), (i, k) => k === 0 ? i.saldo : k === 1 ? i.saldo - 1 : null) });
+  CCS.push({ id:'c5', quando:new Date(2026, 9, 13, 16, 40), classe:null, st:'aberta', por:'Bruno Lima', entradas:ent(at, (i, k) => k < 11 ? i.saldo + (k === 4 ? -1 : k === 8 ? 2 : 0) : null) });
+  CCS.push({ id:'c4', quando:new Date(2026, 9, 6, 9, 15), classe:'B', st:'concluida', por:'Paulo Henrique', fechada:new Date(2026, 9, 6, 11, 2), entradas:ent(at.filter(i => i.abc === 'B'), i => i.sku === 'FLUIDO-HID68' ? i.saldo - 2 : i.sku === 'FILTRO-AR-P' ? i.saldo + 1 : i.saldo) });
+  CCS.push({ id:'c3', quando:new Date(2026, 8, 29, 14, 0), classe:'C', st:'concluida', por:'Bruno Lima', fechada:new Date(2026, 8, 29, 16, 20), entradas:ent(at.filter(i => i.abc === 'C'), i => i.sku === 'LUVA-VAQ' ? i.saldo - 3 : i.saldo) });
+  CCS.push({ id:'c2', quando:new Date(2026, 8, 22, 9, 30), classe:'A', st:'cancelada', por:'Mariana Costa', entradas:ent(at.filter(i => i.abc === 'A'), () => null) });
+  CCS.push({ id:'c1', quando:new Date(2026, 8, 8, 10, 0), classe:'B', st:'concluida', por:'Bruno Lima', fechada:new Date(2026, 8, 8, 11, 40), entradas:ent(at.filter(i => i.abc === 'B'), i => i.saldo) });
+})();
+const ccById = id => CCS.find(c => c.id === id);
+const CC_ST = { aberta:{ rot:'Aberta', tom:'info' }, concluida:{ rot:'Concluída', tom:'success' }, cancelada:{ rot:'Cancelada', tom:'default' } };
+const ccContadas = c => c.entradas.filter(e => e.cont != null).length;
+const ccDif = c => c.entradas.filter(e => e.cont != null && round2(e.cont - e.sis) !== 0);
+const ccClasse = c => c.classe ? 'Classe ' + c.classe : 'Todas as classes';
+
+/* ── Quem vê a tela (o perfil vem da sessão; o seletor do quadro de notas é só para revisar) ──
+   permissões medidas em src/modules/core-saas/permissions/catalog.ts */
+const TUDO = ['ler','criar','editar','mover','contar','valores'];
+const PAPEIS = {
+  estoque:{ nome:'Bruno Lima', sub:'Estoque', nav:'estoque', p:TUDO },
+  admin:{ nome:'Thiago Andrade', sub:'Administrador', nav:'admin', p:TUDO },
+  gestor:{ nome:'Mariana Costa', sub:'Gestor Operacional', nav:'admin', p:TUDO },
+  operador:{ nome:'Paulo Henrique', sub:'Operador Logístico', nav:'operacao', p:['ler','mover','contar'] },
+  financeiro:{ nome:'Sandra Melo', sub:'Financeiro', nav:'financeiro', p:['ler','valores'] },
+  auditor:{ nome:'Helena Duarte', sub:'Auditor', nav:'admin', p:['ler','valores'] },
+  tecnico:{ nome:'Carlos Mendes', sub:'Técnico de Campo', nav:'operacao', p:[] }
+};
+let papel = 'estoque';
+const pode = k => PAPEIS[papel].p.includes(k);
+const NAV = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['check','Aprovações']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['factory','Fornecedores'],['idCard','Profissionais'],['package','Estoque'],['receipt','Financeiro']]],['ADMINISTRAÇÃO',[['users','Usuários'],['scroll','Auditoria'],['settings','Configurações']]]],
+  estoque:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['listChecks','Checklists']]],['GESTÃO',[['package','Estoque']]],['ADMINISTRAÇÃO',[['bell','Notificações'],['clipboard','Modelos de Checklist']]]],
+  operacao:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['listChecks','Checklists']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['package','Estoque']]]],
+  financeiro:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['check','Aprovações']]],['GESTÃO',[['contact','Clientes'],['package','Estoque'],['wallet','Remunerações'],['receipt','Financeiro']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
+function renderNav(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Estoque'; return '<a class="app-sidebar__item'+(on ? ' app-sidebar__item--active' : '')+'" href="#" '+(on ? 'aria-current="page" ' : '')+'data-menu="'+it[1]+'">'+ic(it[0], 17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Estado por opção ── */
+const novoEstado = () => ({ estado:'normal', tab:'itens', alvo:null, busca:'', sit:'all', mtipo:'all', cst:'all', pag:0, aberta:null, sort:{ k:'sku', d:1 } });
+const S = { a:novoEstado(), b:novoEstado(), c:novoEstado() };
+let opcao = 'a';
+const TAM = 10;
+const comDados = v => S[v].estado === 'normal' || S[v].estado === 'desatualizado';
+const AT = () => ITENS.filter(i => i.ativo);
+const movsN = n => MOVS.filter(m => dias(m.quando) < n);
+const semana = d => Math.floor(dias(d) / 7);
+
+/* ── Filtros: cada indicador, bloco, barra, fatia, coluna ou dia vira um filtro da lista ── */
+function filtro(key){
+  const p = key.indexOf(':'); const k = p < 0 ? key : key.slice(0, p); const a = p < 0 ? '' : key.slice(p + 1);
+  switch (k) {
+    case 'ativos': return { rot:'Itens ativos', tab:'itens', fi:i => i.ativo };
+    case 'abaixo': return { rot:'Abaixo do mínimo', tab:'itens', fi:i => i.ativo && i.abaixo };
+    case 'repor': return { rot:'Precisam repor (no ponto de pedido)', tab:'itens', fi:i => i.ativo && i.repor };
+    case 'valor': return { rot:'Itens com saldo, do maior valor para o menor', tab:'itens', fi:i => i.ativo && i.saldo > 0, ord:(x, y) => y.valor - x.valor };
+    case 'giro': return { rot:'Giro baixo (menos de 1 vez em 90 dias)', tab:'itens', fi:i => i.ativo && i.giro != null && i.giro < 1, ord:(x, y) => x.giro - y.giro };
+    case 'ctipo': return { rot:{ base:'Com saldo na Base', prof:'Com profissionais', viat:'Em viaturas' }[a], tab:'itens', fi:i => i.ativo && i[a] > 0, ord:(x, y) => y[a] - x[a] };
+    case 'cust': { const c = custBy(a); return { rot:c.tipo === 'base' ? 'Com saldo na Base' : c.tipo === 'prof' ? 'Com ' + c.rot : 'Na viatura ' + c.curto, tab:'itens', fi:i => (i.cust[a] || 0) > 0, ord:(x, y) => (y.cust[a] || 0) - (x.cust[a] || 0), cust:a }; }
+    case 'abc': return { rot:'Classe ' + a, tab:'itens', fi:i => i.ativo && i.abc === a };
+    case 'saude': return { rot:SAUDE[a].rot, tab:'itens', fi:i => i.ativo && saude(i) === a };
+    case 'contab': return { rot:'Contagens em aberto', tab:'contagens', fc:c => c.st === 'aberta' };
+    case 'cc': { const c = ccById(a); return { rot:'Contagem de ' + fData(c.quando) + ' · ' + ccClasse(c), tab:'contagens', fc:x => x.id === a }; }
+    case 'mov30': return { rot:'Movimentações dos últimos 30 dias', tab:'movs', fm:m => dias(m.quando) < 30 };
+    case 'tipo': return { rot:TIPOS[a].rot + ' · últimos 30 dias', tab:'movs', fm:m => m.tipo === a && dias(m.quando) < 30 };
+    case 'auto': return { rot:'Baixas automáticas · últimos 30 dias', tab:'movs', fm:m => !!m.auto && dias(m.quando) < 30 };
+    case 'sem': { const ini = diaData(+a * 7 + 6), fim = diaData(+a * 7); return { rot:'Semana de ' + fDM(ini) + ' a ' + fDM(fim), tab:'movs', fm:m => semana(m.quando) === +a }; }
+    case 'dia': return { rot:'Movimentações de ' + fData(diaData(+a)), tab:'movs', fm:m => dias(m.quando) === +a };
+    case 'item': { const i = byId(a); return { rot:'Movimentações do item ' + i.sku, tab:'movs', fm:m => m.item === i }; }
+  }
+  return null;
+}
+const ap = (v, key) => 'aria-pressed="' + (S[v].alvo === key) + '"';
+
+/* ── Listas ── */
+function itensDe(v){
+  const st = S[v]; if (st.estado === 'vazio') return [];
+  let arr = ITENS.slice();
+  if (st.sit === 'ativos') arr = arr.filter(i => i.ativo);
+  if (st.sit === 'inativos') arr = arr.filter(i => !i.ativo);
+  const f = st.alvo && filtro(st.alvo);
+  if (f && f.fi) arr = arr.filter(f.fi);
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(i => (i.sku + ' ' + i.nome).toLowerCase().includes(q)); }
+  if (f && f.ord) arr.sort(f.ord);
+  else { const k = st.sort.k, d = st.sort.d; arr.sort((x, y) => { const a = x[k], b = y[k]; if (a == null && b == null) return 0; if (a == null) return 1; if (b == null) return -1; return (typeof a === 'string' ? a.localeCompare(b, 'pt-BR') : a - b) * d; }); }
+  return arr;
+}
+function movsDe(v){
+  const st = S[v]; if (st.estado === 'vazio') return [];
+  let arr = MOVS.slice();
+  if (st.mtipo !== 'all') arr = arr.filter(m => m.tipo === st.mtipo);
+  const f = st.alvo && filtro(st.alvo); if (f && f.fm) arr = arr.filter(f.fm);
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(m => (m.item.sku + ' ' + m.item.nome + ' ' + (m.os || '') + ' ' + (m.motivo || '')).toLowerCase().includes(q)); }
+  return arr;
+}
+function ccsDe(v){
+  const st = S[v]; if (st.estado === 'vazio') return [];
+  let arr = CCS.slice();
+  if (st.cst !== 'all') arr = arr.filter(c => c.st === st.cst);
+  const f = st.alvo && filtro(st.alvo); if (f && f.fc) arr = arr.filter(f.fc);
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(c => (CC_ST[c.st].rot + ' ' + ccClasse(c) + ' ' + c.por).toLowerCase().includes(q)); }
+  return arr;
+}
+
+/* ── Peças comuns ── */
+const CHEV = '<span data-chevron class="pat-chevron-icon">' + ic('chevron', 15) + '</span>';
+const chip = (tom, txt) => '<span class="ui-chip chip-sm' + (tom && tom !== 'default' ? ' ui-tone-' + tom : '') + '">' + txt + '</span>';
+const chipRep = i => i.abaixo ? chip('warning', 'Abaixo do mínimo') : chip('success', 'OK');
+const pillAtivo = i => i.ativo ? '<span class="pat-pill" style="background:#DCFCE7;color:#15803D"><span class="pat-pill__dot" style="background:#22C55E"></span>Ativo</span>' : '<span class="pat-pill" style="background:#F1F5F9;color:#64748B"><span class="pat-pill__dot" style="background:#94A3B8"></span>Inativo</span>';
+function chipTipo(m){ return chip(TIPOS[m.tipo].tom, TIPOS[m.tipo].rot) + (m.estornoDe ? ' ' + chip('pending', 'Estorno') : '') + (m.estornado ? ' ' + chip('default', 'Estornado') : '') + (m.auto ? ' ' + chip('default', 'Automática') : ''); }
+const txtQ = m => ehTransf(m) ? '⇄ ' + fQ(m.q, m.item.un) : (m.q >= 0 ? '+' : '−') + fQ(Math.abs(m.q), m.item.un);
+const corQ = m => ehTransf(m) ? '#2563EB' : m.q >= 0 ? '#059669' : '#DC2626';
+function onde(m){ if (ehTransf(m)) return custBy(m.de).curto + ' → ' + custBy(m.para).curto; return custBy(m.de).curto + (m.viat && m.de === 'base' ? ' · para ' + VIAT_BY[m.viat].placa : ''); }
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function detRow(id, cols, html){ return '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="display:none"><td colspan="'+cols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+html+'</div></td></tr>'; }
+const semValores = '<span class="pat-ab-detail-note">' + ic('lock', 13) + ' Seu perfil não vê valores.</span>';
+function kpi(v, alvo, icon, cor, bg, valor, rot, hint, tag){
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="'+alvo+'" '+ap(v, alvo)+' aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'">'+
+    '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(icon, 16)+'</span><span class="pat-kpi__tag" style="background:'+tag[1]+';color:'+tag[2]+'">'+tag[0]+'</span></div>'+
+    '<div class="pat-kpi__value" style="color:'+(tag[3] || '#0f172a')+'">'+valor+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint">'+hint+'</div></button>';
+}
+function kpisSkeleton(n){ return Array.from({ length:n }, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisIndisp(rots, txt){ return rots.map(r => '<div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:#F1F5F9;color:#94A3B8">'+ic('package', 16)+'</span></div><div class="pat-kpi__value" style="color:#94A3B8">—</div><div class="pat-kpi__label">'+r+'</div><div class="pat-kpi__hint">'+(txt || 'dados indisponíveis')+'</div></div>').join(''); }
+function totais(){
+  const at = AT();
+  return { ativos:at.length, inativos:ITENS.length - at.length, abaixo:at.filter(i => i.abaixo).length, repor:at.filter(i => i.repor).length,
+    contab:CCS.filter(c => c.st === 'aberta').length, faltam:soma(CCS.filter(c => c.st === 'aberta'), c => c.entradas.length - ccContadas(c)),
+    mov30:movsN(30).length, valor:soma(at, i => i.valor), giroBaixo:at.filter(i => i.giro != null && i.giro < 1).length };
+}
+
+/* ═════════ CABEÇALHO, ESTADOS E ABAS (iguais nas três) ═════════ */
+const KICK = { a:'GESTÃO', b:'GESTÃO · VISÃO ANALÍTICA', c:'GESTÃO · MAPA DE CUSTÓDIA' };
+function cabecalho(v, comAcoes){
+  const st = S[v];
+  const sub = { a:pode('valores') ? 'Itens, saldos, custo médio e movimentações do estoque — e onde cada item está.' : 'Itens, saldos e movimentações do estoque — e onde cada item está.',
+    b:'Quanto vale o estoque, o que está acabando, quem está com o quê e como ele se move.',
+    c:'Quem está com cada item — Base, profissionais e viaturas — numa grade só.' }[v];
+  const ph = st.tab === 'itens' ? 'Buscar por SKU ou nome…' : st.tab === 'movs' ? 'Buscar por item, OS ou motivo…' : 'Buscar por situação, classe ou pessoa…';
+  let h = '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+KICK[v]+'</div><h1 class="pat-page-header__title">Estoque</h1><p class="pat-page-header__subtitle">'+(comAcoes ? sub : 'Itens, saldos e movimentações do estoque da organização.')+'</p></div>';
+  if (comAcoes) h += '<div class="pat-page-header__actions"><div class="pat-header-search">'+ic('search', 15)+'<input type="search" data-busca="'+v+'" value="'+esc(st.busca)+'" placeholder="'+ph+'" aria-label="'+ph.replace('…', '')+'"></div>'+
+    (pode('criar') ? '<button type="button" class="pat-btn" data-toast="Abre o cadastro de item: SKU, nome, unidade, tipo, mínimo e máximo, prazo de reposição, estoque de segurança, preços de compra e venda e descrição. O saldo não é digitado: vem das movimentações.">'+ic('plus', 15)+'Novo item</button>' : '')+
+    (pode('mover') ? '<button type="button" class="pat-btn pat-btn--primary" data-dlg-mov="">'+ic('plus', 15)+'Movimento</button>' : '')+'</div>';
+  return h + '</div>';
+}
+function banners(v){
+  const e = S[v].estado;
+  if (e === 'erro') return '<div role="alert" class="pat-banner pat-banner--warning">'+ic('alert', 14)+'<span>Não foi possível carregar o estoque.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  if (e === 'desatualizado') return '<div role="status" class="pat-banner pat-banner--info">'+ic('refresh', 14)+'<span>Mostrando os dados de 10:12. A atualização automática falhou e tenta de novo a cada 30 segundos.</span><button type="button" class="pat-link" data-tentar>Atualizar agora</button></div>';
+  return '';
+}
+function proibido(){
+  return '<div class="state-panel" role="alert"><div class="state-panel__icon">'+ic('lock', 26)+'</div><div class="state-panel__title">Acesso não permitido</div><div class="state-panel__detail">Seu perfil não pode ver o estoque desta organização. Fale com o administrador da organização se precisar deste acesso.</div></div>';
+}
+function abas(v){
+  const st = S[v]; const ab = CCS.filter(c => c.st === 'aberta').length;
+  const L = [['itens', v === 'c' ? 'Mapa de custódia' : 'Itens', ''], ['movs', 'Movimentações', ''], ['contagens', 'Contagens', comDados(v) && ab ? '<span class="cnt">'+ab+' em aberto</span>' : '']];
+  return '<div class="abas-tela" role="tablist" aria-label="Seções do estoque">'+L.map(t => '<button type="button" role="tab" data-tab="'+t[0]+'" aria-selected="'+(st.tab === t[0])+'">'+t[1]+t[2]+'</button>').join('')+'</div>';
+}
+
+/* ═════════ LISTA (tabela com linha de 1 linha + resumo embaixo) ═════════ */
+function th(rot, w, cls){ return { rot, w, cls }; }
+function colsItens(v){
+  const val = pode('valores');
+  if (v === 'a') return [th('SKU', 116), th('NOME'), th('SALDO', 88, 'r'), th('MÍN/MÁX', 88, 'r'), th('PONTO DE PEDIDO', 132, 'r')].concat(val ? [th('CUSTO MÉDIO', 104, 'r')] : []).concat([th('ABC', 46), th('REPOSIÇÃO', 140), th('SITUAÇÃO', 84), th('', 40)]);
+  if (v === 'b') return [th('ITEM'), th('SALDO × MÍNIMO', 190), th('FORA DA BASE', 112, 'r'), th('ABC', 46)].concat(val ? [th('VALOR EM ESTOQUE', 136, 'r')] : []).concat([th('COBERTURA', 100, 'r'), th('REPOSIÇÃO', 140), th('', 40)]);
+  return null;
+}
+const SORTAVEL = { 'SKU':'sku', 'NOME':'nome', 'SALDO':'saldo', 'CUSTO MÉDIO':'custo', 'ABC':'abc', 'ITEM':'nome', 'VALOR EM ESTOQUE':'valor' };
+function thead(v, cols){
+  return '<colgroup>'+cols.map(c => '<col'+(c.w ? ' style="width:'+c.w+'px"' : '')+'>').join('')+'</colgroup><thead><tr>'+cols.map(c => { const k = S[v].tab === 'itens' && SORTAVEL[c.rot]; const s = S[v].sort; const seta = k && s.k === k ? (s.d > 0 ? ' ↑' : ' ↓') : '';
+    return '<th'+(c.cls ? ' class="'+c.cls+'"' : '')+'>'+(c.rot === '' ? '<span class="sr">Abrir resumo</span>' : k ? '<button type="button" class="pat-table__sort" data-sort="'+k+'" aria-label="Ordenar por '+c.rot.toLowerCase()+'">'+c.rot+seta+'</button>' : c.rot)+'</th>'; }).join('')+'</tr></thead>';
+}
+const COLS_MOV = () => [th('DATA', 100), th('TIPO', 120), th('ITEM'), th('QUANTIDADE', 96, 'r'), th('ONDE', 128), th('OS', 104), th('MOTIVO', 150)].concat(pode('valores') ? [th('CUSTO UNIT.', 96, 'r')] : []).concat([th('', 40)]);
+const COLS_CC = () => [th('ABERTA EM', 134), th('CLASSE', 130), th('SITUAÇÃO', 110), th('PROGRESSO'), th('DIFERENÇAS', 170), th('ABERTA POR', 150), th('', 40)];
+
+function lista(v){
+  const st = S[v];
+  let topo = '', cols, linhasHTML = '', total = 0, arr = [], pager = true, tabela = 'pat-ab-table', vazio;
+  if (st.tab === 'itens') {
+    topo = '<div class="pat-os-tabs" role="group" aria-label="Filtrar itens por situação">'+[['all','Todos'],['ativos','Ativos'],['inativos','Inativos']].map(t => '<button type="button" class="pat-os-tab'+(st.sit === t[0] ? ' pat-os-tab--active' : '')+'" data-sit="'+t[0]+'" aria-pressed="'+(st.sit === t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+    arr = itensDe(v); total = ITENS.length;
+    if (v === 'c') { cols = null; pager = false; tabela = 'pat-ab-table mx-table'; }
+    else cols = colsItens(v);
+    vazio = ['Nenhum item encontrado', st.estado === 'vazio' ? 'Cadastre o primeiro item para controlar saldo, custo médio e reposição.' : 'Ajuste a busca, a situação ou o filtro para encontrar itens.'];
+  } else if (st.tab === 'movs') {
+    topo = '<div class="pat-os-tabs" role="group" aria-label="Filtrar por tipo de movimento">'+[['all','Todos']].concat(ORDEM_TIPOS.map(t => [t, TIPOS[t].rot])).map(t => '<button type="button" class="pat-os-tab'+(st.mtipo === t[0] ? ' pat-os-tab--active' : '')+'" data-mtipo="'+t[0]+'" aria-pressed="'+(st.mtipo === t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+    arr = movsDe(v); total = MOVS.length; cols = COLS_MOV();
+    vazio = ['Nenhuma movimentação encontrada', st.estado === 'vazio' ? 'Registre o primeiro movimento (entrada, saída, consumo ou ajuste) pelo botão Movimento.' : 'Ajuste a busca, o tipo ou o filtro para encontrar movimentações.'];
+  } else {
+    topo = '<div class="pat-os-tabs" role="group" aria-label="Filtrar contagens por situação">'+[['all','Todas'],['aberta','Abertas'],['concluida','Concluídas'],['cancelada','Canceladas']].map(t => '<button type="button" class="pat-os-tab'+(st.cst === t[0] ? ' pat-os-tab--active' : '')+'" data-cst="'+t[0]+'" aria-pressed="'+(st.cst === t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+    arr = ccsDe(v); total = CCS.length; cols = COLS_CC(); pager = false;
+    vazio = ['Nenhuma contagem encontrada', st.estado === 'vazio' ? 'Abra a primeira contagem por classe (A, B, C ou todas) — a diferença apurada vira ajuste ao fechar.' : 'Ajuste a busca, a situação ou o filtro para encontrar contagens.'];
+  }
+  const f = st.alvo && filtro(st.alvo);
+  const chipF = f ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+esc(f.rot)+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : '';
+  const nomes = { itens:['item','itens'], movs:['movimentação','movimentações'], contagens:['contagem','contagens'] }[st.tab];
+  let direita = '';
+  if (st.tab === 'itens' && pode('editar') && comDados(v)) direita = '<button type="button" class="pat-btn" data-dlg-abc>'+ic('layers', 14)+'Recalcular ABC</button>';
+  if (st.tab === 'contagens' && pode('contar') && comDados(v)) direita = '<button type="button" class="pat-btn pat-btn--primary" data-dlg-nova-cc>'+ic('plus', 14)+'Nova contagem</button>';
+  if (st.tab === 'movs') direita = '<span class="pat-table__count">Movimentações são definitivas — correção entra como estorno ou ajuste.</span>';
+  const contagem = st.estado === 'carregando' ? '<span class="pat-skel" style="width:110px;height:12px"></span>' : st.estado === 'erro' ? '—' : (arr.length !== total ? arr.length + ' de ' + total + ' ' + nomes[1] : total + ' ' + (total === 1 ? nomes[0] : nomes[1]));
+  let h = '<div class="pat-table"><div class="pat-table__topbar">'+topo+'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="pat-table__count" data-count>'+contagem+'</span>'+direita+'</div></div>'+chipF;
+  let head, ncols;
+  if (st.tab === 'itens' && v === 'c') { const m = theadMatriz(v); head = m.html; ncols = m.n; }
+  else { head = thead(v, cols); ncols = cols.length; }
+  if (st.estado === 'carregando') linhasHTML = [0, 1, 2, 3].map(() => '<tr class="pat-ab-row" aria-hidden="true">'+Array.from({ length:ncols }, () => '<td><span class="pat-skel" style="width:80%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join('');
+  else if (st.estado === 'erro') linhasHTML = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">Não foi possível carregar o estoque</div><div class="pat-table__empty-detail">Verifique a conexão e tente novamente — <button type="button" class="pat-link" data-tentar>Tentar novamente</button></div></div></td></tr>';
+  else if (!arr.length) linhasHTML = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">'+vazio[0]+'</div><div class="pat-table__empty-detail">'+vazio[1]+'</div></div></td></tr>';
+  else {
+    const paginas = Math.max(1, Math.ceil(arr.length / TAM)); if (st.pag >= paginas) st.pag = paginas - 1;
+    const fatia = pager ? arr.slice(st.pag * TAM, st.pag * TAM + TAM) : arr;
+    linhasHTML = fatia.map(x => st.tab === 'itens' ? (v === 'a' ? linhaItemA(v, x, ncols) : v === 'b' ? linhaItemB(v, x, ncols) : linhaItemC(v, x, ncols)) : st.tab === 'movs' ? linhaMov(v, x, ncols) : linhaCC(v, x, ncols)).join('');
+  }
+  h += '<table class="'+tabela+'">'+head+'<tbody>'+linhasHTML+'</tbody></table>';
+  if (pager && comDados(v) && arr.length) {
+    const paginas = Math.ceil(arr.length / TAM), ini = st.pag * TAM + 1, fim = Math.min(arr.length, ini + TAM - 1);
+    h += '<div class="pat-pager"><span class="pat-pager__size">10 por página</span><div class="pat-pager__nav"><span class="pat-pager__range">'+ini+'–'+fim+' de '+arr.length+'</span><button type="button" class="pat-pager__btn" data-pag="-1" '+(st.pag === 0 ? 'disabled' : '')+'>Anterior</button><button type="button" class="pat-pager__btn" data-pag="1" '+(st.pag >= paginas - 1 ? 'disabled' : '')+'>Próxima</button></div></div>';
+  }
+  return h + '</div>';
+}
+
+/* ── Linhas de item ── */
+function linhaItemA(v, i, n){
+  const id = v + '-it-' + i.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row" data-iid="'+i.id+'">'+
+    '<td><span class="pat-mono sku">'+i.sku+'</span></td><td title="'+esc(i.nome)+'"><span class="nome">'+esc(i.nome)+'</span></td>'+
+    '<td class="r"><b>'+fQ(i.saldo, i.un)+'</b></td><td class="r">'+fN(i.min)+' / '+(i.max == null ? '—' : fN(i.max))+'</td>'+
+    '<td class="r">'+(i.repor ? chip('danger', 'Repor') + ' ' : '')+(i.rp == null ? '—' : fN(i.rp))+'</td>'+
+    (pode('valores') ? '<td class="r">'+fMoeda(i.custo)+'</td>' : '')+
+    '<td>'+(i.abc || '—')+'</td><td>'+chipRep(i)+'</td><td>'+pillAtivo(i)+'</td><td class="r">'+CHEV+'</td></tr>'+
+    detRow(id, n, '<div class="pat-ab-detail-grid">'+colCadastro(i)+'<div class="pat-ab-detail-col"><h4>Onde está · '+fQ(i.saldo, i.un)+'</h4>'+ondeLista(i)+'</div>'+
+      '<div class="pat-ab-detail-col"><h4>'+(pode('valores') ? 'Valores e últimos movimentos' : 'Últimos movimentos')+'</h4>'+(pode('valores') ? campo('Custo médio', fMoeda(i.custo)) + campo('Valor em estoque', '<b>'+fMoeda(i.valor)+'</b>') : '')+ultimos(i, 3)+'</div></div>'+acoesItem(v, i));
+}
+function colCadastro(i){
+  return '<div class="pat-ab-detail-col"><h4>Cadastro</h4>'+campo('SKU', '<span class="pat-mono">'+i.sku+'</span>')+campo('Tipo', (i.tipo === 'e' ? 'Equipamento' : 'Produto') + (i.comb ? ' · combustível' : ''))+campo('Unidade', i.un)+campo('Classe ABC', i.abc ? 'Classe ' + i.abc : '—')+
+    campo('Ponto de pedido', i.rp == null ? '—' : fQ(i.rp, i.un) + ' · reposição em ' + i.lead + ' dias')+campo('Estoque de segurança', i.seg == null ? '—' : fQ(i.seg, i.un))+'</div>';
+}
+function ondeLista(i){
+  const L = CUSTS.filter(c => (i.cust[c.k] || 0) > 0).map(c => '<div class="onde-l"><span class="onde-ic">'+icCust(c)+'</span><span class="onde-n">'+esc(c.tipo === 'viat' ? c.curto + ' · ' + VIAT_BY[c.k].modelo : c.rot)+'</span><b>'+fQ(i.cust[c.k], i.un)+'</b></div>');
+  return L.length ? '<div class="onde">'+L.join('')+'</div>' : '<span class="pat-ab-detail-note">Sem saldo em nenhum lugar.</span>';
+}
+function ultimos(i, n){
+  const ms = MOVS.filter(m => m.item === i).slice(0, n);
+  if (!ms.length) return '<span class="pat-ab-detail-note">Nenhuma movimentação registrada.</span>';
+  return '<div class="ult">'+ms.map(m => '<div class="ult-l"><span class="pat-mono" style="color:#64748b">'+fDM(m.quando)+'</span><span>'+chip(TIPOS[m.tipo].tom, TIPOS[m.tipo].rot)+'</span><b style="color:'+corQ(m)+'">'+txtQ(m)+'</b></div>').join('')+'</div>';
+}
+function acoesItem(v, i){
+  const b = ['<button type="button" class="pat-btn pat-btn--primary" data-ficha="'+i.id+'">'+ic('package', 14)+'Abrir ficha do item</button>'];
+  if (pode('mover') && i.ativo) { b.push('<button type="button" class="pat-btn" data-dlg-mov="'+i.id+'">'+ic('plus', 14)+'Registrar movimento</button>'); b.push('<button type="button" class="pat-btn" data-dlg-vinc="'+i.id+'">'+ic('swap', 14)+'Vincular a profissional ou viatura</button>'); }
+  b.push('<button type="button" class="pat-btn" data-ver-movs="'+i.id+'">Ver movimentações do item</button>');
+  if (pode('editar')) { b.push('<button type="button" class="pat-btn" data-toast="Abre a edição do item '+i.sku+': nome, unidade, tipo, mínimo e máximo, prazo de reposição, estoque de segurança, preços e descrição.">'+ic('pencil', 13)+'Editar item</button>'); b.push('<button type="button" class="pat-btn" data-ativo="'+i.id+'">'+ic('archive', 13)+(i.ativo ? 'Desativar item' : 'Reativar item')+'</button>'); }
+  if (!pode('mover') && !pode('editar')) b.push('<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta o estoque.</span>');
+  return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+}
+function minibar(i){
+  const teto = Math.max(i.max || 0, i.saldo, i.min) || 1; const cor = SAUDE[saude(i)].cor;
+  return '<span class="minibar"><i><em style="width:'+Math.min(100, i.saldo / teto * 100).toFixed(1)+'%;background:'+cor+'"></em>'+(i.min ? '<u style="left:'+(i.min / teto * 100).toFixed(1)+'%"></u>' : '')+'</i><span>'+fQ(i.saldo, i.un)+'</span></span>';
+}
+const fCob = i => i.cobertura == null ? '—' : '<span class="val-falta">≈ '+fN(i.cobertura)+' dias</span>';
+const fGiro = i => i.giro == null ? '—' : '<span class="val-falta">'+nf1.format(i.giro)+'×</span>';
+function linhaItemB(v, i, n){
+  const id = v + '-it-' + i.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row" data-iid="'+i.id+'">'+
+    '<td title="'+esc(i.sku+' · '+i.nome)+'"><span class="pat-mono sku" style="margin-right:8px">'+i.sku+'</span><span class="nome">'+esc(i.nome)+'</span></td>'+
+    '<td>'+minibar(i)+'</td><td class="r">'+(i.prof + i.viat ? fQ(i.prof + i.viat, i.un) : '<span style="color:#cbd5e1">—</span>')+'</td><td>'+(i.abc || '—')+'</td>'+
+    (pode('valores') ? '<td class="r"><b>'+fMoeda(i.valor)+'</b></td>' : '')+'<td class="r">'+fCob(i)+'</td><td>'+(i.ativo ? chip(saude(i) === 'abaixo' ? 'warning' : saude(i) === 'repor' ? 'danger' : saude(i) === 'acima' ? 'info' : 'success', saude(i) === 'repor' ? 'Repor' : SAUDE[saude(i)].rot) : chip('default', 'Inativo'))+'</td><td class="r">'+CHEV+'</td></tr>'+
+    detRow(id, n, '<div class="b-detalhe"><div class="b-card"><h4>Onde está · '+fQ(i.saldo, i.un)+'</h4>'+barrasOnde(i)+'</div>'+
+      '<div class="b-card"><h4>Saldo nos últimos 30 dias</h4>'+spark(i)+'<span class="pat-ab-detail-note">Refeito a partir das movimentações do item; tracejado = mínimo.</span></div>'+
+      '<div class="b-card"><h4>Indicadores do item</h4>'+campo('Mínimo / máximo', fN(i.min)+' / '+(i.max == null ? '—' : fN(i.max))+' '+i.un)+campo('Ponto de pedido', i.rp == null ? '—' : fQ(i.rp, i.un))+
+        campo('Cobertura', fCob(i)+' '+FALTA('O servidor calcula o uso médio de 90 dias para o ponto de pedido, mas não o devolve'))+campo('Giro em 90 dias', fGiro(i)+' '+FALTA('Mesmo campo: uso médio de 90 dias'))+
+        (pode('valores') ? campo('Valor em estoque', '<b>'+fMoeda(i.valor)+'</b> · custo médio '+fMoeda(i.custo)) : campo('Valores', semValores))+'</div></div>'+acoesItem(v, i));
+}
+function barrasOnde(i){
+  const L = CUSTS.filter(c => (i.cust[c.k] || 0) > 0); if (!L.length) return '<span class="pat-ab-detail-note">Sem saldo em nenhum lugar.</span>';
+  const mx = Math.max.apply(null, L.map(c => i.cust[c.k]));
+  return '<div class="hbars">'+L.map(c => '<div class="hbar" style="cursor:default;grid-template-columns:104px minmax(0,1fr) 70px"><span>'+icCust(c)+esc(c.curto)+'</span><i><em style="width:'+(i.cust[c.k] / mx * 100).toFixed(1)+'%;background:'+COR_CUST[c.tipo]+'"></em></i><b>'+fQ(i.cust[c.k], i.un)+'</b></div>').join('')+'</div>';
+}
+function serieSaldo(i){
+  const s = [i.saldo];
+  for (let d = 0; d < 30; d++) { const delta = soma(MOVS.filter(m => m.item === i && !ehTransf(m) && dias(m.quando) === d), m => m.q); s.push(Math.max(0, round2(s[s.length - 1] - delta))); }
+  return s.reverse();
+}
+function spark(i, W, H){
+  W = W || 300; H = H || 70; const s = serieSaldo(i); const mx = Math.max.apply(null, s.concat([i.min, 1])) * 1.1;
+  const x = k => (k / (s.length - 1) * (W - 8) + 4).toFixed(1), y = val => (H - 6 - val / mx * (H - 14)).toFixed(1);
+  const pts = s.map((val, k) => x(k) + ',' + y(val)).join(' ');
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" role="img" aria-label="Saldo de '+esc(i.nome)+' nos últimos 30 dias: de '+fQ(s[0], i.un)+' para '+fQ(s[s.length - 1], i.un)+'">'+
+    (i.min ? '<line x1="4" x2="'+(W - 4)+'" y1="'+y(i.min)+'" y2="'+y(i.min)+'" stroke="#F59E0B" stroke-dasharray="4 3"/>' : '')+
+    '<polyline points="'+pts+'" fill="none" stroke="#2563EB" stroke-width="2" stroke-linejoin="round"/><circle cx="'+x(s.length - 1)+'" cy="'+y(s[s.length - 1])+'" r="3" fill="#2563EB"/>'+
+    '<text x="4" y="'+(H - 1)+'" font-size="9" fill="#94a3b8">'+fDM(diaData(30))+'</text><text x="'+(W - 4)+'" y="'+(H - 1)+'" font-size="9" fill="#94a3b8" text-anchor="end">hoje</text></svg>';
+}
+/* ── Opção C: grade item × quem guarda ── */
+function theadMatriz(v){
+  const st = S[v], f = st.alvo && filtro(st.alvo), sel = f && f.cust;
+  const val = pode('valores'); const at = AT();
+  const cab = CUSTS.map((c, n) => { const k = 'cust:' + c.k; const nItens = at.filter(i => (i.cust[c.k] || 0) > 0).length; const valor = soma(at, i => (i.cust[c.k] || 0) * i.custo);
+    return '<th class="mx-h'+(n === 1 || n === 1 + PROF.length ? ' mx-sep' : '')+(sel === c.k ? ' mx-sel' : '')+'"><button type="button" data-alvo="'+k+'" '+ap(v, k)+' aria-label="'+esc(c.rot+': '+nItens+' itens — filtrar a lista')+'" title="'+esc(c.rot)+'"><span>'+icCust(c)+esc(c.curto)+'</span><small>'+(val ? fMil(valor) : nItens + ' itens')+'</small></button></th>'; }).join('');
+  const html = '<colgroup><col><col style="width:96px">'+CUSTS.map(() => '<col style="width:72px">').join('')+'<col style="width:36px"></colgroup><thead><tr><th>'+'<button type="button" class="pat-table__sort" data-sort="nome" aria-label="Ordenar por item">ITEM'+(st.sort.k === 'nome' ? (st.sort.d > 0 ? ' ↑' : ' ↓') : '')+'</button></th><th class="r"><button type="button" class="pat-table__sort" data-sort="saldo" aria-label="Ordenar por saldo">SALDO'+(st.sort.k === 'saldo' ? (st.sort.d > 0 ? ' ↑' : ' ↓') : '')+'</button></th>'+cab+'<th><span class="sr">Abrir resumo</span></th></tr></thead>';
+  return { html, n:CUSTS.length + 3 };
+}
+function linhaItemC(v, i, n){
+  const id = v + '-it-' + i.id; const f = S[v].alvo && filtro(S[v].alvo), sel = f && f.cust;
+  const cel = CUSTS.map((c, k) => { const q = i.cust[c.k] || 0; const share = i.saldo ? q / i.saldo : 0;
+    return '<td class="mx-cell'+(k === 1 || k === 1 + PROF.length ? ' mx-sep' : '')+(sel === c.k ? ' mx-sel' : '')+'">'+(q ? '<span style="background:rgba('+(c.tipo === 'base' ? '37,99,235' : c.tipo === 'prof' ? '126,34,206' : '14,165,233')+','+(0.08 + share * 0.42).toFixed(2)+');color:#0f172a">'+fN(q)+'</span>' : '<span class="z">·</span>')+'</td>'; }).join('');
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row" data-iid="'+i.id+'">'+
+    '<td title="'+esc(i.sku+' · '+i.nome)+'">'+(i.abaixo && i.ativo ? '<span style="color:#D97706;vertical-align:-2px;margin-right:6px" title="Abaixo do mínimo">'+ic('alert', 13)+'</span>' : '')+'<span class="nome">'+esc(i.nome)+'</span>'+(i.ativo ? '' : ' '+chip('default', 'Inativo'))+'</td>'+
+    '<td class="r"><b>'+fQ(i.saldo, i.un)+'</b></td>'+cel+'<td class="r">'+CHEV+'</td></tr>'+
+    detRow(id, n, '<div class="c-detalhe"><div class="b-card"><h4>Com quem está · '+fQ(i.saldo, i.un)+'</h4>'+tabelaCustodia(i, true)+'</div>'+
+      '<div class="b-card"><h4>Item</h4>'+campo('SKU', '<span class="pat-mono">'+i.sku+'</span>')+campo('Classe ABC', i.abc || '—')+campo('Mínimo', fQ(i.min, i.un))+campo('Ponto de pedido', i.rp == null ? '—' : fQ(i.rp, i.un) + (i.repor ? ' ' + chip('danger', 'Repor') : ''))+
+      (pode('valores') ? campo('Valor em estoque', '<b>'+fMoeda(i.valor)+'</b>') : campo('Valores', semValores))+'</div></div>'+acoesItem(v, i));
+}
+function ultimoCom(i, k){ const m = MOVS.find(x => x.item === i && (x.de === k || x.para === k)); return m ? fDM(m.quando) + ' · ' + TIPOS[m.tipo].rot.toLowerCase() : '—'; }
+function tabelaCustodia(i, compacta){
+  const L = CUSTS.filter(c => (i.cust[c.k] || 0) > 0 || (!compacta && c.tipo === 'base'));
+  if (!L.length) return '<span class="pat-ab-detail-note">Sem saldo em nenhum lugar.</span>';
+  return '<table class="'+(compacta ? 'mini-t' : 'f-tab')+'"><thead><tr><th>Onde</th><th class="r">Quantidade</th><th>Último movimento aqui</th><th class="r"><span class="sr">Ação</span></th></tr></thead><tbody>'+
+    L.map(c => '<tr><td><span style="display:inline-flex;align-items:center;gap:6px">'+icCust(c)+esc(c.rot)+'</span></td><td class="r"><b>'+fQ(i.cust[c.k] || 0, i.un)+'</b></td><td>'+ultimoCom(i, c.k)+'</td><td class="r">'+
+      (pode('mover') && c.tipo !== 'base' && (i.cust[c.k] || 0) > 0 ? '<button type="button" class="ui-button ui-button--ghost ui-button--sm" data-dlg-devolver="'+i.id+'|'+c.k+'">'+ic('rotate', 13)+'Devolver à Base</button>' : '')+'</td></tr>').join('')+'</tbody></table>';
+}
+
+/* ── Linhas de movimentação (iguais nas três) ── */
+function linhaMov(v, m, n){
+  const id = v + '-mv-' + m.id; const val = pode('valores');
+  const pode_estornar = pode('mover') && !m.estornado && !m.estornoDe && !m.auto;
+  const acoes = ['<button type="button" class="pat-btn pat-btn--primary" data-ficha="'+m.item.id+'" data-ficha-aba="movs">'+ic('package', 14)+'Abrir ficha do item</button>'];
+  if (m.os) acoes.push('<button type="button" class="pat-btn" data-toast="Abre a '+m.os+' (Ordens de Serviço), na aba de peças aplicadas.">Abrir '+m.os+'</button>');
+  if (pode_estornar) acoes.push('<button type="button" class="pat-btn pat-btn--danger" data-dlg-estorno="'+m.id+'">'+ic('rotate', 13)+'Estornar movimento</button>');
+  if (m.auto) acoes.push('<span class="pat-ab-detail-note">'+ic(m.auto === 'abastecimento' ? 'fuel' : 'wrench', 13)+' Baixa automática: é desfeita pela origem ('+(m.auto === 'abastecimento' ? 'o abastecimento interno' : 'a ordem de manutenção')+'), não por estorno.</span>');
+  else if (!pode('mover')) acoes.push('<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta o estoque.</span>');
+  const original = m.estornoDe && movById(m.estornoDe);
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row">'+
+    '<td class="pat-mono">'+fDH(m.quando).slice(0, 16).replace('/2026', '')+'</td><td>'+chipTipo(m)+'</td><td title="'+esc(m.item.sku+' · '+m.item.nome)+'"><span class="nome">'+esc(m.item.nome)+'</span></td>'+
+    '<td class="r"><b style="color:'+corQ(m)+'">'+txtQ(m)+'</b></td><td title="'+esc(onde(m))+'">'+esc(onde(m))+'</td><td class="pat-mono">'+(m.os || '<span style="color:#cbd5e1">—</span>')+'</td>'+
+    '<td title="'+esc(m.motivo || '')+'">'+(m.motivo ? esc(m.motivo) : '<span style="color:#cbd5e1">—</span>')+'</td>'+(val ? '<td class="r">'+(ehTransf(m) ? '<span style="color:#cbd5e1">—</span>' : fMoeda(m.custoUn))+'</td>' : '')+'<td class="r">'+CHEV+'</td></tr>'+
+    detRow(id, n, '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col"><h4>Movimento</h4>'+campo('Tipo', TIPOS[m.tipo].rot + (m.auto ? ' · automática' : ''))+campo('Quando', fDH(m.quando))+campo('Item', esc(m.item.sku+' · '+m.item.nome))+campo('Quantidade', '<b style="color:'+corQ(m)+'">'+txtQ(m)+'</b>')+campo('Onde', esc(ehTransf(m) ? custBy(m.de).rot + ' → ' + custBy(m.para).rot : custBy(m.de).rot))+'</div>'+
+      '<div class="pat-ab-detail-col"><h4>Origem e registro</h4>'+campo('Motivo', m.motivo ? esc(m.motivo) : '—')+(m.os ? campo('OS', m.os) : '')+(m.viat ? campo('Viatura', VIAT_BY[m.viat].placa + ' · ' + VIAT_BY[m.viat].modelo) : '')+
+        campo('Registrado por', esc(m.por)+' '+FALTA('A movimentação devolve só o identificador de quem registrou, sem o nome'))+(original ? campo('Estorna', 'o movimento de '+fDH(original.quando)) : '')+(m.estornado ? campo('Situação', 'estornado por movimento compensatório') : '')+(m.cc ? campo('Contagem', 'ajuste gerado no fechamento') : '')+'</div>'+
+      '<div class="pat-ab-detail-col"><h4>Valores</h4>'+(val ? (ehTransf(m) ? '<span class="pat-ab-detail-note">Transferência entre a Base e a custódia: não muda o saldo total nem o valor.</span>' : campo('Custo unitário', fMoeda(m.custoUn))+campo('Total', '<b>'+fMoeda(Math.abs(m.q) * m.custoUn)+'</b>')+(m.tipo === 'entrada' && m.q > 0 ? '<span class="pat-ab-detail-note">A entrada recalcula o custo médio do item.</span>' : '')) : semValores)+'</div></div>'+
+      '<div class="pat-ab-detail-actions">'+acoes.join('')+'</div>');
+}
+/* ── Linhas de contagem (iguais nas três) ── */
+function linhaCC(v, c, n){
+  const id = v + '-cc-' + c.id; const cont = ccContadas(c), tot = c.entradas.length, dif = ccDif(c);
+  const pct = tot ? cont / tot * 100 : 0;
+  const difTxt = c.st === 'cancelada' ? '—' : c.st === 'concluida' ? (dif.length ? dif.length + ' itens · ' + dif.length + ' ajustes' : 'sem diferença') : (dif.length ? dif.length + ' até agora' : 'nenhuma até agora');
+  const acoes = [];
+  if (c.st === 'aberta' && pode('contar')) { acoes.push('<button type="button" class="pat-btn pat-btn--primary" data-dlg-contar="'+c.id+'">'+ic('clipCheck', 14)+'Continuar contagem</button>'); acoes.push('<button type="button" class="pat-btn" data-dlg-fechar="'+c.id+'">Fechar contagem</button>'); acoes.push('<button type="button" class="pat-btn pat-btn--danger" data-dlg-cancelar="'+c.id+'">Cancelar contagem</button>'); }
+  if (c.st === 'concluida' && dif.length) acoes.push('<button type="button" class="pat-btn" data-alvo-mov-cc="'+c.id+'">Ver ajustes gerados</button>');
+  if (!acoes.length) acoes.push('<span class="pat-ab-detail-note">'+(c.st === 'aberta' ? ic('lock', 13)+' Seu perfil só consulta as contagens.' : c.st === 'cancelada' ? 'Contagem cancelada: nenhum ajuste foi gerado.' : 'Contagem fechada sem diferença: nenhum ajuste foi gerado.')+'</span>');
+  const lin = c.entradas.slice().sort((x, y) => (y.cont != null && round2(y.cont - y.sis) !== 0) - (x.cont != null && round2(x.cont - x.sis) !== 0)).slice(0, 6);
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row">'+
+    '<td class="pat-mono">'+fDH(c.quando)+'</td><td>'+ccClasse(c)+'</td><td>'+chip(CC_ST[c.st].tom, CC_ST[c.st].rot)+'</td>'+
+    '<td><span class="prog"><i><em style="width:'+pct.toFixed(0)+'%;background:'+(c.st === 'cancelada' ? '#cbd5e1' : c.st === 'concluida' ? '#22C55E' : '#2563EB')+'"></em></i><span>'+cont+' de '+tot+' itens</span></span></td>'+
+    '<td>'+(dif.length && c.st !== 'cancelada' ? '<b style="color:#B45309">'+difTxt+'</b>' : difTxt)+'</td><td>'+esc(c.por)+'</td><td class="r">'+CHEV+'</td></tr>'+
+    detRow(id, n, '<div class="c-detalhe"><div class="b-card"><h4>Itens da contagem · '+(dif.length ? 'diferenças primeiro' : 'amostra')+'</h4><table class="mini-t"><thead><tr><th>Item</th><th class="r">Sistema</th><th class="r">Contado</th><th class="r">Diferença</th></tr></thead><tbody>'+
+      lin.map(e => { const d = e.cont == null ? null : round2(e.cont - e.sis); return '<tr><td>'+esc(e.item.nome)+'</td><td class="r">'+fQ(e.sis, e.item.un)+'</td><td class="r">'+(e.cont == null ? '<span style="color:#94a3b8">a contar</span>' : fQ(e.cont, e.item.un))+'</td><td class="r">'+(d == null ? '—' : d === 0 ? '<span style="color:#059669">0</span>' : '<b style="color:'+(d > 0 ? '#059669' : '#DC2626')+'">'+(d > 0 ? '+' : '−')+fN(Math.abs(d))+'</b>')+'</td></tr>'; }).join('')+
+      '</tbody></table>'+(tot > 6 ? '<span class="pat-ab-detail-note">… e mais '+(tot - 6)+' itens.</span>' : '')+'</div>'+
+      '<div class="b-card"><h4>Sessão</h4>'+campo('Classe', ccClasse(c))+campo('Situação', CC_ST[c.st].rot)+campo('Aberta em', fDH(c.quando))+(c.fechada ? campo('Fechada em', fDH(c.fechada)) : '')+campo('Aberta por', esc(c.por)+' '+FALTA('A contagem devolve só o identificador de quem abriu, sem o nome'))+campo('Progresso', cont+' de '+tot+' itens contados')+
+      (c.st === 'aberta' ? '<span class="pat-ab-detail-note">Ao fechar, cada diferença dos itens contados vira um ajuste; os não contados ficam sem ajuste.</span>' : '')+'</div></div><div class="pat-ab-detail-actions">'+acoes.join('')+'</div>');
+}
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL COM BI ═════════ */
+function topoA(v){
+  const st = S[v], val = pode('valores');
+  const rots = ['Itens ativos','Abaixo do mínimo','Precisam repor','Contagens em aberto','Movimentações · 30 dias'].concat(val ? ['Valor do estoque'] : []);
+  let k;
+  if (st.estado === 'carregando') k = kpisSkeleton(rots.length);
+  else if (st.estado === 'erro') k = kpisIndisp(rots);
+  else if (st.estado === 'vazio') k = kpisIndisp(rots, 'nenhum item cadastrado');
+  else { const t = totais();
+    k = kpi(v,'ativos','package','#2563EB','#EFF6FF',fN(t.ativos),'Itens ativos',fN(t.inativos)+' inativos · '+fN(ITENS.length)+' cadastrados',['cadastro','#EFF6FF','#2563EB']) +
+      kpi(v,'abaixo','alert','#D97706','#FFFBEB',fN(t.abaixo),'Abaixo do mínimo','saldo menor que o mínimo cadastrado',[t.abaixo ? 'atenção' : 'OK',t.abaixo ? '#FFFBEB' : '#ECFDF5',t.abaixo ? '#B45309' : '#059669']) +
+      kpi(v,'repor','cart','#DC2626','#FEF2F2',fN(t.repor),'Precisam repor','saldo no ponto de pedido ou abaixo',[t.repor ? 'repor' : 'OK',t.repor ? '#FEF2F2' : '#ECFDF5',t.repor ? '#B91C1C' : '#059669']) +
+      kpi(v,'contab','clipCheck','#7652B7','#F1EBFF',fN(t.contab),'Contagens em aberto',fN(t.faltam)+' itens ainda sem contagem',['em andamento','#F1EBFF','#7652B7']) +
+      kpi(v,'mov30','swap','#7C3AED','#F5F3FF',fN(t.mov30),'Movimentações · 30 dias','entradas, saídas, consumos, ajustes e transferências',['30 dias','#F5F3FF','#7C3AED']) +
+      (val ? kpi(v,'valor','coins','#15803D','#ECFDF5',fMil(t.valor),'Valor do estoque','saldo × custo médio '+FALTA('A soma sai dos itens carregados (até 100 por vez); falta um total no servidor'),['custo médio','#ECFDF5','#15803D']) : ''); }
+  let bi = '';
+  if (comDados(v)) bi = '<div class="bi-a">'+cardOnde(v)+cardTipos(v)+'</div>';
+  else if (st.estado === 'vazio') bi = '<div class="bi-a"><div class="an-card"><div class="an-card__title"><span>Onde está o estoque</span></div><p class="pat-ab-detail-note">Sem itens cadastrados.</p></div><div class="an-card"><div class="an-card__title"><span>Movimentações por tipo · 30 dias</span></div><p class="pat-ab-detail-note">Sem movimentações.</p></div></div>';
+  return '<div class="kpi-grid kpi-grid--'+rots.length+'" aria-live="polite">'+k+'</div>'+bi;
+}
+function medidaCust(k, val){ const at = AT(); return val ? soma(at, i => (i.cust[k] || 0) * i.custo) : at.filter(i => (i.cust[k] || 0) > 0).length; }
+function cardOnde(v){
+  const val = pode('valores'); const at = AT();
+  const seg = ['base','prof','viat'].map(t => ({ t, n:val ? soma(at, i => i[t] * i.custo) : at.filter(i => i[t] > 0).length }));
+  const tot = soma(seg, s => s.n) || 1; const fmt = n => val ? fMil(n) : n + (n === 1 ? ' item' : ' itens');
+  return '<div class="an-card"><div class="an-card__title"><span>Onde está o estoque</span><small>'+(val ? 'em valor · ' + fMil(soma(at, i => i.valor)) : 'itens com saldo em cada lugar')+' '+FALTA('O saldo por custódia só existe item a item; falta o resumo da organização')+'</small></div>'+
+    '<div class="stack" role="group" aria-label="Estoque por lugar — clique para filtrar">'+seg.map(s => '<button type="button" data-alvo="ctipo:'+s.t+'" '+ap(v, 'ctipo:' + s.t)+' style="width:'+(s.n / tot * 100).toFixed(1)+'%;background:'+COR_CUST[s.t]+'" aria-label="'+esc(TIPO_CUST[s.t]+': '+fmt(s.n)+' — filtrar a lista')+'" title="'+esc(TIPO_CUST[s.t]+': '+fmt(s.n))+'"></button>').join('')+'</div>'+
+    '<div class="legenda-alvo">'+seg.map(s => '<button type="button" class="lg-btn" data-alvo="ctipo:'+s.t+'" '+ap(v, 'ctipo:' + s.t)+'><span class="lg-sw" style="background:'+COR_CUST[s.t]+'"></span>'+TIPO_CUST[s.t]+' <b>'+fmt(s.n)+'</b></button>').join('')+'</div>'+
+    '<div class="cust-grid">'+CUSTS.map(c => '<button type="button" class="cust-chip" data-alvo="cust:'+c.k+'" '+ap(v, 'cust:' + c.k)+' title="'+esc(c.rot)+'"><span>'+icCust(c)+esc(c.curto)+'</span><b>'+fmt(medidaCust(c.k, val))+'</b></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Só existe uma Base por organização '+FALTA('Não há cadastro de depósitos ou locais; o estoque fica na Base ou com quem está')+'</div></div>';
+}
+function cardTipos(v){
+  const m30 = movsN(30); const c = ORDEM_TIPOS.map(t => [t, m30.filter(m => m.tipo === t).length]); const mx = Math.max.apply(null, c.map(x => x[1]).concat([1]));
+  const auto = m30.filter(m => m.auto).length;
+  return '<div class="an-card"><div class="an-card__title"><span>Movimentações por tipo · 30 dias</span><small><button type="button" class="lg-btn" data-alvo="mov30" '+ap(v, 'mov30')+'>todas <b>'+m30.length+'</b></button> '+FALTA('A conta sai das movimentações carregadas (até 100 por vez); falta um resumo por tipo e período')+'</small></div>'+
+    '<div class="cols" role="group" aria-label="Movimentações por tipo — clique para filtrar">'+c.map(x => '<button type="button" class="col-btn" data-alvo="tipo:'+x[0]+'" '+ap(v, 'tipo:' + x[0])+' aria-label="'+esc(TIPOS[x[0]].rot+': '+x[1]+' — filtrar as movimentações')+'"><b>'+x[1]+'</b><i style="height:'+Math.max(3, x[1] / mx * 72).toFixed(0)+'px;background:'+TIPOS[x[0]].cor+'"></i><span>'+TIPOS[x[0]].rot+'</span></button>').join('')+'</div>'+
+    '<div class="an-card__foot"><button type="button" class="lg-btn" data-alvo="auto" '+ap(v, 'auto')+'>'+ic('zap', 12)+'Baixas automáticas (abastecimento e manutenção) <b>'+auto+'</b></button></div></div>';
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA ═════════ */
+function topoB(v){
+  const st = S[v], val = pode('valores');
+  const rots = [val ? 'Valor do estoque' : 'Itens ativos','Abaixo do mínimo','Precisam repor','Giro baixo · 90 dias','Contagens em aberto'];
+  let k;
+  if (st.estado === 'carregando') k = kpisSkeleton(5);
+  else if (st.estado === 'erro') k = kpisIndisp(rots);
+  else if (st.estado === 'vazio') k = kpisIndisp(rots, 'nenhum item cadastrado');
+  else { const t = totais();
+    k = (val ? kpi(v,'valor','coins','#15803D','#ECFDF5',fMil(t.valor),'Valor do estoque',fN(t.ativos)+' itens ativos · saldo × custo médio '+FALTA('A soma sai dos itens carregados; falta um total no servidor'),['custo médio','#ECFDF5','#15803D'])
+           : kpi(v,'ativos','package','#2563EB','#EFF6FF',fN(t.ativos),'Itens ativos',fN(t.inativos)+' inativos',['cadastro','#EFF6FF','#2563EB'])) +
+      kpi(v,'abaixo','alert','#D97706','#FFFBEB',fN(t.abaixo),'Abaixo do mínimo',AT().filter(i => i.abaixo).map(i => i.nome.split(' ')[0]).slice(0, 4).join(' · '),['atenção','#FFFBEB','#B45309','#B45309']) +
+      kpi(v,'repor','cart','#DC2626','#FEF2F2',fN(t.repor),'Precisam repor','no ponto de pedido — comprar agora',['repor','#FEE2E2','#B91C1C','#B91C1C']) +
+      kpi(v,'giro','trend','#475569','#F1F5F9',fN(t.giroBaixo),'Giro baixo · 90 dias','itens parados: menos de 1 vez '+FALTA('O uso médio de 90 dias é calculado no servidor e não é devolvido'),['parado','#F1F5F9','#475569']) +
+      kpi(v,'contab','clipCheck','#7652B7','#F1EBFF',fN(t.contab),'Contagens em aberto',fN(t.faltam)+' itens ainda sem contagem',['em andamento','#F1EBFF','#7652B7']); }
+  let bi = '';
+  if (comDados(v)) bi = '<div class="bi-b">'+cardSaude(v)+cardAbc(v)+cardQuem(v)+cardSemanas(v)+'</div>';
+  return '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+k+'</div>'+bi;
+}
+function cardSaude(v){
+  const at = AT(); const g = ['abaixo','repor','ok','acima'].map(s => [s, at.filter(i => saude(i) === s).length]); const tot = at.length || 1;
+  return '<div class="an-card"><div class="an-card__title"><span>Saúde do estoque</span><small>'+at.length+' itens ativos</small></div>'+
+    '<div class="stack" role="group" aria-label="Saúde do estoque — clique para filtrar">'+g.filter(x => x[1]).map(x => '<button type="button" data-alvo="saude:'+x[0]+'" '+ap(v, 'saude:' + x[0])+' style="width:'+(x[1] / tot * 100).toFixed(1)+'%;background:'+SAUDE[x[0]].cor+'" aria-label="'+esc(SAUDE[x[0]].rot+': '+x[1]+' itens — filtrar a lista')+'" title="'+esc(SAUDE[x[0]].rot+': '+x[1])+'"></button>').join('')+'</div>'+
+    '<div class="legenda-alvo">'+g.map(x => '<button type="button" class="lg-btn" data-alvo="saude:'+x[0]+'" '+ap(v, 'saude:' + x[0])+'><span class="lg-sw" style="background:'+SAUDE[x[0]].cor+'"></span>'+SAUDE[x[0]].rot+' <b>'+x[1]+'</b></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Abaixo do mínimo e no ponto de pedido vêm do servidor; acima do máximo compara o saldo com o máximo cadastrado.</div></div>';
+}
+function cardAbc(v){
+  const val = pode('valores'); const at = AT(); const cores = { A:'#1D4ED8', B:'#60A5FA', C:'#BFDBFE' };
+  const g = ['A','B','C'].map(c => { const its = at.filter(i => i.abc === c); return [c, val ? soma(its, i => i.valor) : its.length, its.length]; });
+  const tot = soma(g, x => x[1]) || 1; const R = 42, C = 2 * Math.PI * R; let off = 0;
+  const arcs = g.map(x => { const len = x[1] / tot * C; const el = '<g role="button" tabindex="0" data-alvo="abc:'+x[0]+'" '+ap(v, 'abc:' + x[0])+' aria-label="'+esc('Classe '+x[0]+': '+(val ? fMil(x[1]) : x[1]+' itens')+' — filtrar a lista')+'"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+cores[x[0]]+'" stroke-width="18" stroke-dasharray="'+len.toFixed(2)+' '+(C - len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"><title>Classe '+x[0]+'</title></circle></g>'; off += len; return el; }).join('');
+  const a = g[0];
+  return '<div class="an-card"><div class="an-card__title"><span>'+(val ? 'Valor por classe ABC' : 'Itens por classe ABC')+'</span><small>curva de consumo de 12 meses</small></div><div class="donut-wrap">'+
+    '<svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120" role="group" aria-label="Classes ABC"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="#f1f5f9" stroke-width="18"/>'+arcs+'<text x="60" y="58" text-anchor="middle" font-size="17" font-weight="800" fill="#0f172a">'+Math.round(a[1] / tot * 100)+'%</text><text x="60" y="73" text-anchor="middle" font-size="9.5" fill="#64748b">na classe A</text></svg>'+
+    '<div class="legenda-alvo" style="flex-direction:column;align-items:stretch;flex:1">'+g.map(x => '<button type="button" class="lg-btn" data-alvo="abc:'+x[0]+'" '+ap(v, 'abc:' + x[0])+' style="justify-content:flex-start"><span class="lg-sw" style="background:'+cores[x[0]]+'"></span>Classe '+x[0]+' · '+x[2]+' itens<b style="margin-left:auto">'+(val ? fMil(x[1]) : Math.round(x[1] / tot * 100) + '%')+'</b></button>').join('')+'</div></div>'+
+    '<div class="an-card__foot">A classe vem do último recálculo (Pareto do valor consumido em 12 meses).</div></div>';
+}
+function cardQuem(v){
+  const val = pode('valores'); const L = CUSTS.map(c => [c, medidaCust(c.k, val)]); const mx = Math.max.apply(null, L.map(x => x[1]).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Quem está com o estoque</span><small>'+(val ? 'em valor' : 'itens com saldo')+' '+FALTA('O saldo por custódia só existe item a item; falta o resumo da organização')+'</small></div>'+
+    '<div class="hbars" role="group" aria-label="Estoque por pessoa e viatura — clique para filtrar">'+L.map(x => '<button type="button" class="hbar" data-alvo="cust:'+x[0].k+'" '+ap(v, 'cust:' + x[0].k)+' aria-label="'+esc(x[0].rot+': '+(val ? fMil(x[1]) : x[1]+' itens')+' — filtrar a lista')+'"><span>'+icCust(x[0])+esc(x[0].tipo === 'viat' ? x[0].curto : x[0].rot)+'</span><i><em style="width:'+(x[1] / mx * 100).toFixed(1)+'%;background:'+COR_CUST[x[0].tipo]+'"></em></i><b>'+(val ? fMil(x[1]) : x[1] + ' itens')+'</b></button>').join('')+'</div></div>';
+}
+function cardSemanas(v){
+  const sem = [5, 4, 3, 2, 1, 0].map(s => [s, MOVS.filter(m => semana(m.quando) === s)]); const mx = Math.max.apply(null, sem.map(x => x[1].length).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Movimentações por semana e tipo</span><small>6 semanas '+FALTA('A conta sai das movimentações carregadas; falta um resumo por tipo e período')+'</small></div>'+
+    '<div class="cols" role="group" aria-label="Movimentações por semana — clique para filtrar">'+sem.map(x => '<button type="button" class="col-btn" data-alvo="sem:'+x[0]+'" '+ap(v, 'sem:' + x[0])+' aria-label="'+esc('Semana de '+fDM(diaData(x[0] * 7 + 6))+' a '+fDM(diaData(x[0] * 7))+': '+x[1].length+' movimentações — filtrar')+'"><b>'+x[1].length+'</b><span class="pilha" style="height:'+Math.max(3, x[1].length / mx * 72).toFixed(0)+'px">'+ORDEM_TIPOS.map(t => { const n = x[1].filter(m => m.tipo === t).length; return n ? '<i style="height:'+(n / x[1].length * 100).toFixed(1)+'%;background:'+TIPOS[t].cor+'"></i>' : ''; }).join('')+'</span><span>'+(x[0] === 0 ? 'atual' : fDM(diaData(x[0] * 7 + 6)))+'</span></button>').join('')+'</div>'+
+    '<div class="legenda-alvo" style="margin:8px 0 0">'+ORDEM_TIPOS.map(t => '<button type="button" class="lg-btn" data-alvo="tipo:'+t+'" '+ap(v, 'tipo:' + t)+'><span class="lg-sw" style="background:'+TIPOS[t].cor+'"></span>'+TIPOS[t].rot+'</button>').join('')+'</div></div>';
+}
+
+/* ═════════ OPÇÃO C — MAPA DE CUSTÓDIA ═════════ */
+function bloco(v, alvo, cor, bg, icon, valor, rot, dica){ return '<button type="button" class="bloco-c" data-alvo="'+alvo+'" '+ap(v, alvo)+' aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+';width:34px;height:34px">'+ic(icon, 16)+'</span><span><b style="color:'+cor+'">'+valor+'</b><small>'+rot+'</small><em>'+dica+'</em></span></button>'; }
+function topoC(v){
+  const st = S[v]; const ok = comDados(v); const at = AT(); const val = pode('valores');
+  const n = t => ok ? fN(at.filter(i => i[t] > 0).length) : '—';
+  let h;
+  if (st.estado === 'carregando') h = '<div class="blocos-c">'+kpisSkeleton(5)+'</div>';
+  else h = '<div class="blocos-c">'+bloco(v,'ativos','#2563EB','#EFF6FF','package',ok ? fN(at.length) : '—','Itens ativos',ok ? (val ? fMil(soma(at, i => i.valor)) + ' em estoque' : fN(ITENS.length) + ' cadastrados') : 'sem dados')+
+    bloco(v,'ctipo:base','#1D4ED8','#EFF6FF','warehouse',n('base'),'Com saldo na Base',ok ? (val ? fMil(medidaCustTipo('base')) : 'itens') : '')+
+    bloco(v,'ctipo:prof','#7E22CE','#FAF5FF','user',n('prof'),'Com profissionais',ok ? (val ? fMil(medidaCustTipo('prof')) : PROF.length + ' pessoas') : '')+
+    bloco(v,'ctipo:viat','#0369A1','#F0F9FF','truck',n('viat'),'Em viaturas',ok ? (val ? fMil(medidaCustTipo('viat')) : VIAT.length + ' viaturas') : '')+
+    bloco(v,'repor','#B91C1C','#FEF2F2','cart',ok ? fN(at.filter(i => i.repor).length) : '—','Precisam repor',ok ? 'no ponto de pedido' : '')+'</div>';
+  if (ok) h += '<div class="bi-c">'+cardDias(v)+cardContagens(v)+cardOlhar(v)+'</div>';
+  return h;
+}
+function medidaCustTipo(t){ return soma(AT(), i => i[t] * i.custo); }
+function cardDias(v){
+  const L = []; for (let d = 29; d >= 0; d--) L.push([d, MOVS.filter(m => dias(m.quando) === d).length]); const mx = Math.max.apply(null, L.map(x => x[1]).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Movimentações por dia · 30 dias</span><small>'+soma(L, x => x[1])+' no período '+FALTA('A conta sai das movimentações carregadas; falta um resumo por período')+'</small></div>'+
+    '<div class="dias" role="group" aria-label="Movimentações por dia — clique num dia para filtrar">'+L.map(x => '<button type="button" class="dia-btn" data-alvo="dia:'+x[0]+'" '+ap(v, 'dia:' + x[0])+' aria-label="'+esc(fData(diaData(x[0]))+': '+x[1]+' movimentações — filtrar')+'" title="'+fDM(diaData(x[0]))+' · '+x[1]+'"><i style="height:'+(x[1] ? Math.max(6, x[1] / mx * 100) : 3).toFixed(0)+'%'+(x[1] ? '' : ';background:#e2e8f0')+'"></i></button>').join('')+'</div>'+
+    '<div class="dias-eixo"><span>'+fDM(diaData(29))+'</span><span>'+fDM(diaData(15))+'</span><span>hoje</span></div></div>';
+}
+function cardContagens(v){
+  const ab = CCS.filter(c => c.st === 'aberta');
+  return '<div class="an-card"><div class="an-card__title"><span>Contagens em aberto</span><small><button type="button" class="lg-btn" data-alvo="contab" '+ap(v, 'contab')+'>todas <b>'+ab.length+'</b></button></small></div><div class="lst">'+
+    (ab.length ? ab.map(c => { const k = 'cc:' + c.id, cont = ccContadas(c), tot = c.entradas.length; return '<button type="button" class="lst-btn" data-alvo="'+k+'" '+ap(v, k)+'><span>'+ccClasse(c)+' · '+fDM(c.quando)+'</span><b>'+cont+'/'+tot+'</b><span class="prog"><i><em style="width:'+(cont / tot * 100).toFixed(0)+'%"></em></i></span></button>'; }).join('') : '<p class="pat-ab-detail-note">Nenhuma contagem aberta.</p>')+'</div></div>';
+}
+function cardOlhar(v){
+  const at = AT(); const val = pode('valores');
+  const L = [['abaixo','Abaixo do mínimo', at.filter(i => i.abaixo).length, ''], ['saude:acima','Acima do máximo', at.filter(i => saude(i) === 'acima').length, ''], ['auto','Baixas automáticas · 30 dias', movsN(30).filter(m => m.auto).length, ''], ['giro','Giro baixo · 90 dias', at.filter(i => i.giro != null && i.giro < 1).length, FALTA('O uso médio de 90 dias é calculado no servidor e não é devolvido')]];
+  if (val) L.unshift(['valor','Maior valor parado', fMil(Math.max.apply(null, at.map(i => i.valor))), '']);
+  return '<div class="an-card"><div class="an-card__title"><span>Para olhar hoje</span></div><div class="lst">'+L.map(x => '<button type="button" class="lst-btn" data-alvo="'+x[0]+'" '+ap(v, x[0])+' style="min-height:36px;padding:5px 10px"><span>'+x[1]+'</span><b>'+x[2]+'</b>'+(x[3] ? '<small>'+x[3]+'</small>' : '')+'</button>').join('')+'</div></div>';
+}
+
+/* ═════════ RENDER ═════════ */
+const TOPO = { a:topoA, b:topoB, c:topoC };
+function render(v){
+  const st = S[v], root = $('[data-view="'+v+'"]');
+  if (papel === 'tecnico' || st.estado === 'proibido') { root.innerHTML = cabecalho(v, false) + proibido(); return; }
+  root.innerHTML = cabecalho(v, true) + banners(v) + TOPO[v](v) + abas(v) + lista(v);
+  if (st.aberta) { const row = $('[data-linha="'+st.aberta+'"]', root); if (row) abrirLinha(row, true); else st.aberta = null; }
+}
+const renderTudo = () => ['a','b','c'].forEach(render);
+function abrirLinha(row, abrir){
+  const view = row.closest('[data-view]');
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded', 'false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded', 'true'); const d = $('[data-detalhe-de="'+row.dataset.linha+'"]', view); if (d) d.style.display = ''; }
+  S[view.dataset.view].aberta = abrir ? row.dataset.linha : null;
+}
+function toggleLinha(row){ abrirLinha(row, row.getAttribute('aria-expanded') !== 'true'); }
+function aplicarAlvo(v, a){
+  const st = S[v];
+  if (st.alvo === a) st.alvo = null;
+  else { const f = filtro(a); st.alvo = a; if (f && f.tab !== st.tab) { st.tab = f.tab; st.sit = 'all'; st.mtipo = 'all'; st.cst = 'all'; st.busca = ''; } }
+  st.pag = 0; st.aberta = null; render(v);
+  const b = $('[data-view="'+v+'"] [data-alvo="'+a+'"]'); if (b) b.focus({ preventScroll:true });
+}
+
+/* ═════════ FICHA DO ITEM — janela de tamanho fixo ═════════ */
+const FABAS = [['resumo','Resumo'],['onde','Onde está'],['movs','Movimentações'],['contagens','Contagens'],['cadastro','Cadastro']];
+let ficha = { iid:null, aba:'resumo', origem:null, v:'a' };
+function abrirFicha(v, iid, aba, origem){ ficha = { iid, aba:aba || 'resumo', origem, v }; renderFicha(); $('#ficha-overlay').hidden = false; document.body.style.overflow = 'hidden'; $('[data-ficha-win] .voltar').focus(); }
+function fecharFicha(){
+  $('#ficha-overlay').hidden = true; document.body.style.overflow = ''; const v = ficha.v; ficha.iid = null;
+  ['#ficha-cabeca', '#ficha-abas', '#ficha-corpo'].forEach(s => { $(s).innerHTML = ''; });
+  const o = ficha.origem; if (o && document.contains(o)) { o.focus({ preventScroll:true }); return; }
+  const st = S[v]; const row = st.aberta && $('[data-view="'+v+'"] [data-linha="'+st.aberta+'"]'); if (row) row.focus({ preventScroll:true });
+}
+const fCard = (t, corpo, larga, extra) => '<section class="f-card'+(larga ? ' larga' : '')+'"><h3><span>'+t+'</span>'+(extra || '')+'</h3>'+corpo+'</section>';
+const fKpi = (val, rot) => '<div class="f-kpi"><b>'+val+'</b><span>'+rot+'</span></div>';
+const FICHA = {
+  resumo:i => (i.abaixo && i.ativo ? '<div class="f-alerta">'+ic('alert', 18)+'<span><strong>Abaixo do mínimo:</strong> '+fQ(i.saldo, i.un)+' no estoque, abaixo do mínimo de '+fQ(i.min, i.un)+'.'+(i.repor ? ' Já está no ponto de pedido ('+fQ(i.rp, i.un)+').' : '')+'</span></div>' : '')+
+    '<div class="f-kpis">'+fKpi(fQ(i.saldo, i.un), 'Saldo atual')+fKpi(fQ(i.min, i.un), 'Estoque mínimo')+(pode('valores') ? fKpi(fMoeda(i.custo), 'Custo médio un.') : fKpi(i.rp == null ? '—' : fQ(i.rp, i.un), 'Ponto de pedido'))+fKpi(fN(MOVS.filter(m => m.item === i && dias(m.quando) < 30).length), 'Movimentações 30 dias')+fKpi(i.cobertura == null ? '—' : '≈ '+fN(i.cobertura)+' dias', 'Cobertura estimada '+FALTA('O uso médio de 90 dias é calculado no servidor e não é devolvido'))+'</div>'+
+    '<div class="f-grid">'+fCard('Saldo nos últimos 30 dias', spark(i, 460, 110)+'<p class="pat-ab-detail-note" style="margin-top:6px">Refeito a partir das movimentações do item; tracejado = mínimo.</p>')+fCard('Onde está · '+fQ(i.saldo, i.un), ondeLista(i))+'</div>',
+  onde:i => fCard('Com quem está', tabelaCustodia(i, false), true, pode('mover') && i.ativo ? '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-dlg-vinc="'+i.id+'">'+ic('swap', 13)+'Vincular a profissional ou viatura</button>' : '')+
+    '<p class="pat-ab-detail-note" style="margin-top:10px">Profissional aparece pelo nome e viatura pela placa — nunca pela CNH. Vincular tira da Base; devolver volta para a Base. O saldo total não muda.</p>',
+  movs:i => { const ms = MOVS.filter(m => m.item === i); return fCard('Movimentações do item · '+ms.length, ms.length ? '<div style="overflow-x:auto"><table class="f-tab"><thead><tr><th>Data</th><th>Tipo</th><th class="r">Quantidade</th><th>Onde</th><th>OS</th><th>Motivo</th>'+(pode('valores') ? '<th class="r">Custo unit.</th>' : '')+'<th class="r"><span class="sr">Ação</span></th></tr></thead><tbody>'+
+      ms.map(m => '<tr><td class="pat-mono" style="white-space:nowrap">'+fDH(m.quando)+'</td><td style="white-space:nowrap">'+chipTipo(m)+'</td><td class="r" style="white-space:nowrap"><b style="color:'+corQ(m)+'">'+txtQ(m)+'</b></td><td>'+esc(onde(m))+'</td><td class="pat-mono">'+(m.os || '—')+'</td><td>'+esc(m.motivo || '—')+'</td>'+(pode('valores') ? '<td class="r">'+(ehTransf(m) ? '—' : fMoeda(m.custoUn))+'</td>' : '')+
+        '<td class="r">'+(pode('mover') && !m.estornado && !m.estornoDe && !m.auto ? '<button type="button" class="ui-button ui-button--ghost ui-button--sm" data-dlg-estorno="'+m.id+'">Estornar</button>' : '')+'</td></tr>').join('')+'</tbody></table></div>' : '<div class="ui-state"><strong>Nenhuma movimentação registrada</strong><p>Registre uma entrada, saída, consumo ou ajuste pelo botão Registrar movimento — o saldo é calculado a partir delas.</p></div>', true); },
+  contagens:i => { const L = CCS.map(c => [c, c.entradas.find(e => e.item === i)]).filter(x => x[1]); return fCard('Contagens que incluíram o item · '+L.length, L.length ? '<table class="f-tab"><thead><tr><th>Aberta em</th><th>Classe</th><th>Situação</th><th class="r">Sistema</th><th class="r">Contado</th><th class="r">Diferença</th></tr></thead><tbody>'+
+      L.map(x => { const e = x[1], d = e.cont == null ? null : round2(e.cont - e.sis); return '<tr><td class="pat-mono">'+fDH(x[0].quando)+'</td><td>'+ccClasse(x[0])+'</td><td>'+chip(CC_ST[x[0].st].tom, CC_ST[x[0].st].rot)+'</td><td class="r">'+fQ(e.sis, i.un)+'</td><td class="r">'+(e.cont == null ? '—' : fQ(e.cont, i.un))+'</td><td class="r">'+(d == null ? '—' : d === 0 ? '0' : '<b style="color:'+(d > 0 ? '#059669' : '#DC2626')+'">'+(d > 0 ? '+' : '−')+fN(Math.abs(d))+'</b>')+'</td></tr>'; }).join('')+'</tbody></table>' : '<div class="ui-state"><strong>Nenhuma contagem com este item</strong><p>O item entra na próxima contagem da classe '+(i.abc || '—')+' ou de todas as classes.</p></div>', true); },
+  cadastro:i => fCard('Cadastro do item', '<div class="info-grid">'+[['SKU', i.sku], ['Nome', esc(i.nome)], ['Unidade', i.un], ['Tipo', i.tipo === 'e' ? 'Equipamento' : 'Produto'], ['Combustível', i.comb ? 'Sim — usado no abastecimento interno' : 'Não'], ['Situação', i.ativo ? 'Ativo' : 'Inativo'], ['Estoque mínimo', fQ(i.min, i.un)], ['Estoque máximo', i.max == null ? '—' : fQ(i.max, i.un)], ['Prazo de reposição', i.lead == null ? '—' : i.lead + ' dias'], ['Estoque de segurança', i.seg == null ? '—' : fQ(i.seg, i.un)], ['Ponto de pedido', i.rp == null ? '—' : fQ(i.rp, i.un) + ' (calculado)'], ['Classe ABC', i.abc || '—']].concat(pode('valores') && i.tipo === 'p' ? [['Preço de compra', fMoeda(i.custo)], ['Preço de venda', fMoeda(round2(i.custo * 1.45))]] : []).map(x => '<div class="info"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div>'+
+    '<p class="pat-ab-detail-note" style="margin-top:12px">O saldo não é digitado: é a soma das movimentações. O ponto de pedido é calculado pelo servidor (uso médio de 90 dias × prazo + segurança).</p>', true,
+    pode('editar') ? '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-toast="Abre a edição do item '+i.sku+' (mesma janela de cadastro de hoje).">'+ic('pencil', 13)+'Editar item</button>' : '')
+};
+function renderFicha(){
+  const i = byId(ficha.iid); if (!i) return;
+  const acoes = [];
+  if (pode('mover') && i.ativo) acoes.push('<button type="button" class="pat-btn pat-btn--primary" data-dlg-mov="'+i.id+'">'+ic('plus', 14)+'Registrar movimento</button>');
+  if (pode('editar')) acoes.push('<button type="button" class="pat-btn" data-toast="Abre a edição do item '+i.sku+'.">'+ic('pencil', 13)+'Editar</button>');
+  $('#ficha-cabeca').innerHTML = '<div class="ficha__tile" style="background:'+(i.abaixo ? '#FFFBEB' : '#EFF6FF')+';color:'+(i.abaixo ? '#D97706' : '#2563EB')+'">'+ic('package', 22)+'</div><div style="min-width:0"><div class="ficha__nome">'+esc(i.nome)+' '+chipRep(i)+(i.repor ? ' '+chip('danger', 'Repor') : '')+(i.ativo ? '' : ' '+chip('default', 'Inativo'))+'</div><div class="ficha__sub">'+i.sku+' · '+i.un+' · Classe ABC: '+(i.abc || '—')+'</div></div><div class="ficha__acoes">'+acoes.join('')+'</div>';
+  $('#ficha-abas').innerHTML = FABAS.map(a => '<button type="button" role="tab" data-ficha-tab="'+a[0]+'" aria-selected="'+(a[0] === ficha.aba)+'" tabindex="'+(a[0] === ficha.aba ? 0 : -1)+'" class="'+(a[0] === ficha.aba ? 'is-active' : '')+'">'+a[1]+'</button>').join('');
+  $('#ficha-corpo').innerHTML = '<div role="tabpanel" aria-label="'+FABAS.find(a => a[0] === ficha.aba)[1]+'">'+FICHA[ficha.aba](i)+'</div>';
+  $('#ficha-corpo').scrollTop = 0;
+}
+
+/* ═════════ JANELAS DE FORMULÁRIO ═════════ */
+let dlgOrigem = null;
+const X_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+function abrirDlg(titulo, corpo, origem){
+  dlgOrigem = origem || document.activeElement;
+  $('#dlg').innerHTML = '<header><h2 id="dlg-tit">'+titulo+'</h2><button type="button" data-fechar-dlg aria-label="Fechar">'+X_SVG+'</button></header>'+corpo;
+  $('#dlg-overlay').hidden = false; document.body.style.overflow = 'hidden';
+  const f = $('#dlg [data-autofoco]') || $('#dlg select, #dlg input, #dlg textarea') || $('#dlg [data-fechar-dlg]'); f.focus();
+}
+function fecharDlg(){
+  $('#dlg-overlay').hidden = true; $('#dlg').innerHTML = '';
+  if ($('#ficha-overlay').hidden) document.body.style.overflow = '';
+  if (dlgOrigem && document.contains(dlgOrigem)) { dlgOrigem.focus({ preventScroll:true }); return; }
+  if (!$('#ficha-overlay').hidden) { $('[data-ficha-win] .voltar').focus(); return; }
+  const st = S[opcao]; const row = st.aberta && $('[data-view="'+opcao+'"] [data-linha="'+st.aberta+'"]'); if (row) row.focus({ preventScroll:true });
+}
+const fld = (rot, nome, ctrl, larga, extra) => '<label class="ui-field'+(larga ? ' larga' : '')+'" data-campo="'+nome+'"'+(extra || '')+'><span>'+rot+'</span>'+ctrl+'<small class="form-error" data-erro="'+nome+'"></small></label>';
+const optItens = sel => AT().map(i => '<option value="'+i.id+'"'+(i.id === sel ? ' selected' : '')+'>'+i.sku+' — '+esc(i.nome)+'</option>').join('');
+function dlgMov(iid, origem){
+  const OS = Array.from(new Set(MOVS.filter(m => m.os).map(m => m.os))).sort().slice(-12);
+  abrirDlg('Novo movimento', '<form class="dlg-form" data-form="mov" novalidate>'+
+    fld('Tipo *', 'tipo', '<select class="ui-input" name="tipo" data-autofoco><option value="">Selecione o tipo…</option>'+['entrada','saida','consumo','ajuste'].map(t => '<option value="'+t+'">'+TIPOS[t].rot+'</option>').join('')+'</select>')+
+    fld('Item *', 'iid', '<select class="ui-input" name="iid"><option value="">Selecione o item…</option>'+optItens(iid)+'</select>')+
+    fld('Direção do ajuste *', 'dir', '<select class="ui-input" name="dir"><option value="">Selecione a direção…</option><option value="entrada">Entrada de ajuste (credita +)</option><option value="saida">Saída de ajuste (debita −)</option></select>', false, ' hidden')+
+    fld('Quantidade *', 'qtd', '<input class="ui-input" name="qtd" inputmode="decimal" autocomplete="off">')+
+    fld('<span data-rot-custo>Custo unitário (R$)</span>', 'custo', '<input class="ui-input" name="custo" inputmode="decimal" autocomplete="off">')+
+    fld('<span data-rot-os>OS</span>', 'os', '<select class="ui-input" name="os"><option value="">Sem OS vinculada</option>'+OS.map(o => '<option>'+o+'</option>').join('')+'</select>')+
+    fld('Viatura', 'viat', '<select class="ui-input" name="viat"><option value="">Sem viatura</option>'+VIAT.map(x => '<option value="'+x.id+'">'+x.placa+' — '+x.modelo+'</option>').join('')+'</select>')+
+    fld('Motivo', 'motivo', '<textarea class="ui-input" name="motivo" rows="2" maxlength="500"></textarea>', true)+
+    '<p class="dlg-nota">O movimento sai da Base e é definitivo: correção entra como estorno ou ajuste. Para levar o item a um profissional ou viatura, use Vincular.</p>'+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button><button type="submit" class="ui-button ui-button--primary">Registrar movimento</button></footer></form>', origem);
+}
+function dlgVinc(iid, modo, custK, origem){
+  const i = byId(iid); const dev = modo === 'devolver'; const c = custK && custBy(custK);
+  const tipoSel = c ? c.tipo : '';
+  abrirDlg(dev ? 'Devolver à Base' : 'Vincular a profissional ou viatura', '<form class="dlg-form" data-form="vinc" data-modo="'+modo+'" data-iid="'+iid+'" novalidate>'+
+    '<p class="dlg-nota"><b>'+esc(i.nome)+'</b> · '+(dev ? 'volta para a Base' : 'sai da Base ('+fQ(i.base, i.un)+' disponíveis)')+'. O saldo total do item não muda.</p>'+
+    fld('Custódia *', 'ctipo', '<select class="ui-input" name="ctipo" data-autofoco><option value="">Selecione a custódia…</option><option value="prof"'+(tipoSel === 'prof' ? ' selected' : '')+'>Profissional</option><option value="viat"'+(tipoSel === 'viat' ? ' selected' : '')+'>Viatura</option></select>')+
+    fld('Profissional ou viatura *', 'quem', '<select class="ui-input" name="quem">'+optQuem(tipoSel, custK)+'</select>')+
+    fld('Quantidade *', 'qtd', '<input class="ui-input" name="qtd" inputmode="decimal" autocomplete="off" value="'+(dev && c ? fN(i.cust[c.k]) : '')+'">')+
+    fld('Motivo', 'motivo', '<input class="ui-input" name="motivo" maxlength="500" placeholder="'+(dev ? 'Devolução ao fim do turno' : 'Retirada para o turno')+'">')+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button><button type="submit" class="ui-button ui-button--primary">'+(dev ? 'Devolver à Base' : 'Vincular')+'</button></footer></form>', origem);
+}
+function optQuem(tipo, sel){ if (!tipo) return '<option value="">Escolha a custódia primeiro</option>'; const L = tipo === 'prof' ? PROF.map(p => [p.id, p.nome]) : VIAT.map(x => [x.id, x.placa + ' — ' + x.modelo]); return '<option value="">'+(tipo === 'prof' ? 'Selecione o profissional…' : 'Selecione a viatura…')+'</option>'+L.map(x => '<option value="'+x[0]+'"'+(x[0] === sel ? ' selected' : '')+'>'+x[1]+'</option>').join(''); }
+function dlgEstorno(mid, origem){
+  const m = movById(mid);
+  abrirDlg('Estornar movimento', '<form class="dlg-form" data-form="estorno" data-mid="'+mid+'" novalidate><p class="dlg-nota larga">'+TIPOS[m.tipo].rot+' de <b>'+txtQ(m)+'</b> de '+esc(m.item.nome)+' em '+fDH(m.quando)+'. O estorno lança um movimento com o sinal contrário; o original continua no histórico, marcado como estornado.</p>'+
+    fld('Motivo do estorno *', 'motivo', '<textarea class="ui-input" name="motivo" rows="3" maxlength="500" data-autofoco></textarea>', true)+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button><button type="submit" class="ui-button ui-button--danger">Estornar</button></footer></form>', origem);
+}
+function dlgContar(ccid, origem){
+  const c = ccById(ccid);
+  abrirDlg('Contagem · '+ccClasse(c)+' · '+fDM(c.quando), '<form class="dlg-form" data-form="contar" data-cc="'+ccid+'" novalidate><p class="dlg-nota">Informe o que foi contado na Base. O saldo do sistema foi fotografado em '+fDH(c.quando)+'.</p>'+
+    '<div class="larga" style="max-height:340px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px"><table class="mini-t"><thead><tr><th>Item</th><th class="r">Sistema</th><th class="r" style="width:130px">Contado</th></tr></thead><tbody>'+
+    c.entradas.map((e, k) => '<tr><td>'+esc(e.item.nome)+'</td><td class="r">'+fQ(e.sis, e.item.un)+'</td><td class="r"><input class="ui-input" style="min-height:32px;padding:4px 8px;text-align:right" name="e'+k+'" inputmode="decimal" aria-label="Quantidade contada de '+esc(e.item.nome)+'" value="'+(e.cont == null ? '' : fN(e.cont))+'"'+(k === 0 ? ' data-autofoco' : '')+'></td></tr>').join('')+'</tbody></table></div>'+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button><button type="submit" class="ui-button ui-button--primary">Salvar contagem</button></footer></form>', origem);
+}
+function dlgFechar(ccid, origem){
+  const c = ccById(ccid); const dif = ccDif(c); const falta = c.entradas.length - ccContadas(c);
+  abrirDlg('Fechar contagem', '<form class="dlg-form" data-form="fechar" data-cc="'+ccid+'" novalidate><p class="dlg-nota larga">'+ccClasse(c)+' · aberta em '+fDH(c.quando)+'. '+(dif.length ? dif.length+' itens com diferença viram '+dif.length+' ajustes.' : 'Nenhuma diferença até agora: nenhum ajuste será gerado.')+(falta ? ' <b>'+falta+' itens ainda não foram contados e ficam sem ajuste.</b>' : '')+'</p>'+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg data-autofoco>Voltar</button><button type="submit" class="ui-button ui-button--primary">Fechar e gerar ajustes</button></footer></form>', origem);
+}
+function dlgCancelar(ccid, origem){
+  abrirDlg('Cancelar contagem', '<form class="dlg-form" data-form="cancelar" data-cc="'+ccid+'" novalidate><p class="dlg-nota larga">A contagem é cancelada sem gerar ajuste. O que já foi contado fica registrado na sessão.</p><footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg data-autofoco>Voltar</button><button type="submit" class="ui-button ui-button--danger">Cancelar contagem</button></footer></form>', origem);
+}
+function dlgNovaCC(origem){
+  abrirDlg('Nova contagem', '<form class="dlg-form" data-form="novacc" novalidate>'+fld('Classe *', 'classe', '<select class="ui-input" name="classe" data-autofoco><option value="">Todas as classes</option><option>A</option><option>B</option><option>C</option></select>', true)+
+    '<p class="dlg-nota">A sessão fotografa o saldo de cada item da classe agora. Quem conta informa a quantidade; ao fechar, a diferença vira ajuste.</p><footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button><button type="submit" class="ui-button ui-button--primary">Abrir contagem</button></footer></form>', origem);
+}
+function dlgAbc(origem){
+  abrirDlg('Recalcular classes ABC', '<form class="dlg-form" data-form="abc" novalidate><p class="dlg-nota larga" style="font-size:13px;color:#334155">O recálculo reordena os itens por <b>valor de consumo dos últimos 12 meses</b> (curva de Pareto) e <b>reescreve a classe ABC de todos os itens</b> desta organização. Esta ação substitui as classes atuais.</p><footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg data-autofoco>Cancelar</button><button type="submit" class="ui-button ui-button--primary">Recalcular ABC</button></footer></form>', origem);
+}
+const num = s => { const t = String(s || '').trim().replace(/\./g, '').replace(',', '.'); if (!t) return NaN; return Number(t); };
+function erro(form, campo, msg){ const e = $('[data-erro="'+campo+'"]', form); if (e) e.textContent = msg; const c = $('[name="'+campo+'"]', form); if (c) c.setAttribute('aria-invalid', 'true'); }
+function limparErros(form){ $$('[data-erro]', form).forEach(e => e.textContent = ''); $$('[aria-invalid]', form).forEach(e => e.removeAttribute('aria-invalid')); }
+function depoisDeMudar(msg){
+  fecharDlg(); renderTudo(); if (!$('#ficha-overlay').hidden) renderFicha(); toast(msg);
+}
+function lancar(o){ o.quando = new Date(NOW.getTime() + (++mid) * 60000); o.por = PAPEIS[papel].nome; o.id = 'm' + mid; MOVS.unshift(o); }
+function efeito(m){ const i = m.item; if (ehTransf(m)) { i.cust[m.de] = round2((i.cust[m.de] || 0) - m.q); i.cust[m.para] = round2((i.cust[m.para] || 0) + m.q); } else i.cust[m.de] = round2((i.cust[m.de] || 0) + m.q); deriv(i); }
+function enviar(form){
+  limparErros(form); const t = form.dataset.form; const g = n => (form.elements[n] || {}).value;
+  if (t === 'mov') {
+    const tipo = g('tipo'), i = byId(g('iid')), q = num(g('qtd')), cu = num(g('custo')), dir = g('dir'); let ok = true;
+    if (!tipo) { erro(form, 'tipo', 'Selecione o tipo do movimento.'); ok = false; }
+    if (!i) { erro(form, 'iid', 'Selecione o item.'); ok = false; }
+    if (!(q > 0)) { erro(form, 'qtd', 'Informe uma quantidade maior que zero.'); ok = false; }
+    if (tipo === 'entrada' && !(cu > 0)) { erro(form, 'custo', 'Na entrada, informe o custo unitário (ele recalcula o custo médio).'); ok = false; }
+    if (tipo === 'consumo' && !g('os')) { erro(form, 'os', 'Consumo é sempre ligado a uma OS.'); ok = false; }
+    if (tipo === 'ajuste' && !dir) { erro(form, 'dir', 'Escolha se o ajuste credita ou debita.'); ok = false; }
+    const debita = tipo === 'saida' || tipo === 'consumo' || (tipo === 'ajuste' && dir === 'saida');
+    if (ok && debita && q > i.base) { erro(form, 'qtd', 'Saldo insuficiente na Base: há '+fQ(i.base, i.un)+'.'); ok = false; }
+    if (!ok) { const f = $('[aria-invalid="true"]', form); if (f) f.focus(); return; }
+    if (tipo === 'entrada') i.custo = round2((i.saldo * i.custo + q * cu) / (i.saldo + q));
+    const m = { tipo, item:i, q:debita ? -q : q, de:'base', os:g('os') || undefined, viat:g('viat') || undefined, custoUn:tipo === 'entrada' ? cu : i.custo, motivo:g('motivo').trim() };
+    lancar(m); efeito(m); depoisDeMudar(TIPOS[tipo].rot+' de '+fQ(q, i.un)+' registrada. O saldo de '+i.nome+' agora é '+fQ(i.saldo, i.un)+'.');
+  } else if (t === 'vinc') {
+    const i = byId(form.dataset.iid), dev = form.dataset.modo === 'devolver', quem = g('quem'), q = num(g('qtd')); let ok = true;
+    if (!g('ctipo')) { erro(form, 'ctipo', 'Escolha Profissional ou Viatura.'); ok = false; }
+    if (!quem) { erro(form, 'quem', 'Escolha quem.'); ok = false; }
+    if (!(q > 0)) { erro(form, 'qtd', 'Informe uma quantidade maior que zero.'); ok = false; }
+    const origem = dev ? quem : 'base'; const disp = quem || !dev ? (i.cust[origem] || 0) : 0;
+    if (ok && q > disp) { erro(form, 'qtd', 'Saldo insuficiente '+(dev ? 'com '+custBy(quem).rot : 'na Base')+': há '+fQ(disp, i.un)+'.'); ok = false; }
+    if (!ok) { const f = $('[aria-invalid="true"]', form); if (f) f.focus(); return; }
+    const m = { tipo:dev ? 'desvincular' : 'vincular', item:i, q, de:dev ? quem : 'base', para:dev ? 'base' : quem, custoUn:i.custo, motivo:g('motivo').trim() || (dev ? 'Devolução ao fim do turno' : 'Retirada para o turno') };
+    lancar(m); efeito(m); depoisDeMudar((dev ? 'Devolvido à Base: ' : 'Vinculado a '+custBy(quem).rot+': ')+fQ(q, i.un)+' de '+i.nome+'.');
+  } else if (t === 'estorno') {
+    const m = movById(form.dataset.mid), mot = g('motivo').trim(); if (!mot) { erro(form, 'motivo', 'Informe o motivo do estorno.'); $('[name="motivo"]', form).focus(); return; }
+    const r = { tipo:m.tipo, item:m.item, q:ehTransf(m) ? m.q : -m.q, de:ehTransf(m) ? m.para : m.de, para:ehTransf(m) ? m.de : undefined, custoUn:m.custoUn, motivo:'Estorno · ' + mot, estornoDe:m.id, os:m.os };
+    const precisa = ehTransf(r) ? r.q : (r.q < 0 ? -r.q : 0); const disp = m.item.cust[r.de] || 0;
+    if (precisa > disp) { erro(form, 'motivo', 'Não dá para estornar: o item já saiu de '+custBy(r.de).rot+' (há '+fQ(disp, m.item.un)+').'); return; }
+    m.estornado = true; lancar(r); efeito(r); depoisDeMudar('Movimento estornado: o original continua no histórico, marcado como estornado.');
+  } else if (t === 'contar') {
+    const c = ccById(form.dataset.cc); let ok = true;
+    c.entradas.forEach((e, k) => { const s = g('e' + k); if (String(s).trim() === '') { e.cont = null; return; } const n = num(s); if (!(n >= 0)) { ok = false; const el = form.elements['e' + k]; el.setAttribute('aria-invalid', 'true'); } else e.cont = n; });
+    if (!ok) { toast('Corrija as quantidades marcadas em vermelho (número igual ou maior que zero).'); return; }
+    depoisDeMudar('Contagem salva: '+ccContadas(c)+' de '+c.entradas.length+' itens contados.');
+  } else if (t === 'fechar') {
+    const c = ccById(form.dataset.cc); const dif = ccDif(c);
+    dif.forEach(e => { const d = round2(e.cont - e.sis); const m = { tipo:'ajuste', item:e.item, q:d, de:'base', custoUn:e.item.custo, motivo:'Contagem cíclica de '+fData(c.quando)+' · diferença apurada', cc:c.id }; if (d < 0 && -d > e.item.base) m.q = -e.item.base; lancar(m); efeito(m); });
+    c.st = 'concluida'; c.fechada = new Date(NOW.getTime() + mid * 60000); depoisDeMudar('Contagem fechada: '+dif.length+' ajustes gerados.');
+  } else if (t === 'cancelar') { ccById(form.dataset.cc).st = 'cancelada'; depoisDeMudar('Contagem cancelada, sem ajuste.'); }
+  else if (t === 'novacc') {
+    const cl = g('classe') || null; const its = AT().filter(i => !cl || i.abc === cl);
+    CCS.unshift({ id:'c' + (CCS.length + 1) + 'n' + mid, quando:new Date(NOW.getTime() + (++mid) * 60000), classe:cl, st:'aberta', por:PAPEIS[papel].nome, entradas:its.map(i => ({ item:i, sis:i.saldo, cont:null })) });
+    depoisDeMudar('Contagem aberta: '+its.length+' itens fotografados.');
+  } else if (t === 'abc') { const at = AT(); depoisDeMudar('Classes ABC recalculadas. A: '+at.filter(i => i.abc === 'A').length+' · B: '+at.filter(i => i.abc === 'B').length+' · C: '+at.filter(i => i.abc === 'C').length+'.'); }
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3800); }
+
+/* ── Opções ── */
+const ROT = { a:'Opção A — Padrão fiel com BI', b:'Opção B — Analítica', c:'Opção C — Mapa de custódia (quem está com o quê)' };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Estoque · Opção ' + o.toUpperCase();
+  $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estado === S[o].estado));
+}
+const vw = x => x.closest('[data-view]') ? x.closest('[data-view]').dataset.view : opcao;
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Estoque') toast('Na maquete só a tela de Estoque está montada.'); return; }
+  if ((x = el('[data-estado]'))) { S[opcao].estado = x.dataset.estado; S[opcao].aberta = null; render(opcao); trocarOpcao(opcao); $('[data-view="'+opcao+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-papel]'))) { papel = x.dataset.papel; $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.papel === papel)); if (!$('#ficha-overlay').hidden) fecharFicha(); renderNav(); ['a','b','c'].forEach(v => S[v].aberta = null); renderTudo(); return; }
+  if ((x = el('[data-marcas]'))) { const on = document.body.classList.toggle('sem-marcas'); x.setAttribute('aria-pressed', on); x.textContent = on ? 'Mostrar as marcas “falta no backend”' : 'Esconder as marcas “falta no backend”'; return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', !c.hidden); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  /* janelas */
+  if ((x = el('[data-fechar-dlg]'))) { fecharDlg(); return; }
+  if (t.id === 'dlg-overlay') { fecharDlg(); return; }
+  if ((x = el('[data-voltar-ficha]'))) { fecharFicha(); return; }
+  if (t.id === 'ficha-overlay') { fecharFicha(); return; }
+  if ((x = el('[data-ficha-tab]'))) { ficha.aba = x.dataset.fichaTab; renderFicha(); const b = $('#ficha-abas [data-ficha-tab="'+ficha.aba+'"]'); if (b) b.focus(); return; }
+  if ((x = el('[data-ficha]'))) { abrirFicha(vw(x), x.dataset.ficha, x.dataset.fichaAba, x); return; }
+  if ((x = el('[data-dlg-mov]'))) { dlgMov(x.dataset.dlgMov || null, x); return; }
+  if ((x = el('[data-dlg-vinc]'))) { dlgVinc(x.dataset.dlgVinc, 'vincular', null, x); return; }
+  if ((x = el('[data-dlg-devolver]'))) { const p = x.dataset.dlgDevolver.split('|'); dlgVinc(p[0], 'devolver', p[1], x); return; }
+  if ((x = el('[data-dlg-estorno]'))) { dlgEstorno(x.dataset.dlgEstorno, x); return; }
+  if ((x = el('[data-dlg-contar]'))) { dlgContar(x.dataset.dlgContar, x); return; }
+  if ((x = el('[data-dlg-fechar]'))) { dlgFechar(x.dataset.dlgFechar, x); return; }
+  if ((x = el('[data-dlg-cancelar]'))) { dlgCancelar(x.dataset.dlgCancelar, x); return; }
+  if ((x = el('[data-dlg-nova-cc]'))) { dlgNovaCC(x); return; }
+  if ((x = el('[data-dlg-abc]'))) { dlgAbc(x); return; }
+  if ((x = el('[data-toast]'))) { toast(x.dataset.toast); return; }
+  if ((x = el('[data-ativo]'))) { const i = byId(x.dataset.ativo); i.ativo = !i.ativo; renderTudo(); toast('Item '+i.sku+' '+(i.ativo ? 'reativado' : 'desativado')+'. Ele '+(i.ativo ? 'volta' : 'sai')+' das contas e dos seletores de movimento.'); return; }
+  if ((x = el('[data-ver-movs]'))) { aplicarAlvo(vw(x), 'item:' + x.dataset.verMovs); return; }
+  if ((x = el('[data-alvo-mov-cc]'))) { const v = vw(x); const c = ccById(x.dataset.alvoMovCc); S[v].tab = 'movs'; S[v].alvo = null; S[v].mtipo = 'ajuste'; S[v].busca = fData(c.quando).slice(0, 5); S[v].pag = 0; S[v].aberta = null; render(v); toast('Movimentações do tipo Ajuste geradas pela contagem de '+fData(c.quando)+'.'); return; }
+  /* lista */
+  if ((x = el('[data-tab]'))) { const v = vw(x); const st = S[v]; if (st.tab !== x.dataset.tab) { st.tab = x.dataset.tab; st.alvo = null; st.busca = ''; st.sit = 'all'; st.mtipo = 'all'; st.cst = 'all'; st.pag = 0; st.aberta = null; render(v); const b = $('[data-view="'+v+'"] [data-tab="'+st.tab+'"]'); if (b) b.focus(); } return; }
+  if ((x = el('[data-sit]'))) { const v = vw(x); S[v].sit = x.dataset.sit; S[v].pag = 0; S[v].aberta = null; render(v); return; }
+  if ((x = el('[data-mtipo]'))) { const v = vw(x); S[v].mtipo = x.dataset.mtipo; S[v].pag = 0; S[v].aberta = null; render(v); return; }
+  if ((x = el('[data-cst]'))) { const v = vw(x); S[v].cst = x.dataset.cst; S[v].pag = 0; S[v].aberta = null; render(v); return; }
+  if ((x = el('[data-pag]'))) { const v = vw(x); S[v].pag += +x.dataset.pag; S[v].aberta = null; render(v); const b = $('[data-view="'+v+'"] [data-pag="'+x.dataset.pag+'"]'); if (b && !b.disabled) b.focus(); return; }
+  if ((x = el('[data-sort]'))) { const v = vw(x); const k = x.dataset.sort; const st = S[v]; st.sort = { k, d:st.sort.k === k ? -st.sort.d : 1 }; if (st.alvo && filtro(st.alvo).ord) st.alvo = null; st.pag = 0; st.aberta = null; render(v); return; }
+  if ((x = el('[data-limpar-filtro]'))) { const v = vw(x); S[v].alvo = null; S[v].pag = 0; S[v].aberta = null; render(v); return; }
+  if ((x = el('[data-tentar]'))) { const v = vw(x); S[v].estado = 'normal'; render(v); trocarOpcao(opcao); return; }
+  if ((x = el('[data-alvo]'))) { const v = vw(x); if (!comDados(v) && S[v].estado !== 'vazio') return; aplicarAlvo(v, x.dataset.alvo); return; }
+  if ((x = el('[data-linha]'))) { toggleLinha(x); return; }
+});
+document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (f) { e.preventDefault(); enviar(f); } });
+document.addEventListener('change', e => {
+  const t = e.target; const f = t.closest('[data-form]'); if (!f) return;
+  if (f.dataset.form === 'mov' && t.name === 'tipo') { $('[data-campo="dir"]', f).hidden = t.value !== 'ajuste'; $('[data-rot-custo]', f).textContent = t.value === 'entrada' ? 'Custo unitário (R$) *' : 'Custo unitário (R$)'; $('[data-rot-os]', f).textContent = t.value === 'consumo' ? 'OS *' : 'OS'; }
+  if (f.dataset.form === 'vinc' && t.name === 'ctipo') { f.elements.quem.innerHTML = optQuem(t.value, null); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.busca) { const v = t.dataset.busca; S[v].busca = t.value.trim(); S[v].pag = 0; S[v].aberta = null; render(v); const n = $('[data-view="'+v+'"] [data-busca]'); if (n) { n.focus(); const l = n.value.length; try { n.setSelectionRange(l, l); } catch (_) {} } }
+});
+function prender(e, raiz){ const f = $$('button:not([disabled]), [href], input, select, textarea, [tabindex="0"]', raiz).filter(n => n.offsetParent !== null && !n.closest('[hidden]')); if (!f.length) return; const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } }
+document.addEventListener('keydown', e => {
+  const dlgAberto = !$('#dlg-overlay').hidden, fichaAberta = !$('#ficha-overlay').hidden;
+  if (e.key === 'Escape') { if (dlgAberto) { fecharDlg(); return; } if (fichaAberta) { fecharFicha(); return; } return; }
+  if (dlgAberto) { if (e.key === 'Tab') prender(e, $('#dlg')); return; }
+  if (fichaAberta) {
+    if (e.key === 'Tab') { prender(e, $('[data-ficha-win]')); return; }
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.matches('[data-ficha-tab]')) { const ids = FABAS.map(a => a[0]); const i = ids.indexOf(ficha.aba); ficha.aba = ids[(i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length]; renderFicha(); $('#ficha-abas [data-ficha-tab="'+ficha.aba+'"]').focus(); e.preventDefault(); }
+    return;
+  }
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); toggleLinha(t); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g[data-alvo]')) { e.preventDefault(); aplicarAlvo(vw(t), t.dataset.alvo); }
+});
+
+/* ── Inicialização ── */
+renderNav(); renderTudo(); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>
