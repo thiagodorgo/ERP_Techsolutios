@@ -10997,6 +10997,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário — MÉDIA
 
+- **respondida pelo dono (16/10):** (a)–(d) em `D-APARENCIA-RESPOSTAS` — navegador na v1, B em Pátios e A nas demais, escolha no menu do usuário, Pátios estreia junto.
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
@@ -11031,6 +11032,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-USERS-DEFEITOS-14-10 (2026-10-14) — a tela de Usuários tem defeitos de acesso e de segurança — ALTA
 
+- **respondida pelo dono (16/10):** P1–P6 e a política de reset em `D-USERS-ACESSO-RESPOSTAS` (P1 autoriza a coluna aditiva `must_change_password`). Os defeitos seguem abertos até o `B-USERS-ACESSO`.
 - **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Usuários e medidos na `main` 9c7784b4 pelo plano `docs/revisoes/TELAS/B-USERS-ACESSO-plano.md`) · **dono:** `B-USERS-ACESSO`
 - "Novo usuário" cria um cadastro que não consegue entrar: `POST /users` não cria credencial nem convite.
 - Técnico de Campo e Estoque não podem ser cadastrados pela tela (`users.adapter.ts:54-62`), embora o servidor aceite.
@@ -11068,6 +11070,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só como Gestor e Administrador — MÉDIA
 
+- **respondida pelo dono (16/10):** `D-07CB-SUPERIOR-UNICO` — a mesma pessoa autoriza, com justificativa obrigatória e evento Crítico na auditoria. Fica aberta até o `B-O6R-07c-b2` implementar com teste.
 - **status:** ABERTA · **escopo:** novo (sub-pergunta da P1 da emenda do 07c-b) · **dono:** o dono responde; o `B-O6R-07c-b2` implementa
 - Com uma pessoa só acima do operacional, a regra "o superior não é quem alocou" não tem quem a cumpra. Saídas possíveis: deixar a mesma pessoa decidir com justificativa obrigatória e registro na auditoria (marcado como Crítico, `D-AUDIT-REGRAS-CRITICO`); ou exigir uma segunda pessoa cadastrada.
 - **bloqueia:** o `B-O6R-07c-b2`, não o b1.
@@ -11091,6 +11094,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ESTOQUE-DEFEITOS-16-10 (2026-10-16) — a tela de Estoque conta errado, esconde a custódia e tem aba que não abre — MÉDIA
 
+- **respondida pelo dono (16/10):** as quatro perguntas, em `D-ESTOQUE-RESPOSTAS` (`decisoes.md`, registro de 16/10). Os defeitos seguem abertos até o bloco de refino do Estoque.
 - **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Estoque, lendo o código na `origin/main` 4fe7524e; nada executado) · **dono:** bloco de refino da tela de Estoque, a planejar
 1. A aba Contagem não abre pelo clique: `switchTab` só grava a aba Movimentações (`frontend/src/modules/inventory/pages/EstoquePage.tsx:236`).
 2. Os indicadores contam a janela filtrada e limitada a 100 itens (`EstoquePage.tsx:163-174`, `:293`; `components/dense-list/logic.ts:5`).
