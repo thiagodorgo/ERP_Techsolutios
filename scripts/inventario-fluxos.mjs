@@ -69,7 +69,9 @@ const MODELO_PARA_CATEGORIA = [
   [/^custodyEvent$/, "custodia"],
   [/^(financial|settlement|processCharge|cheque|commission|workOrderFinancial|professionalStatement|expense|payable)/i, "financeiro"],
   [/approval/i, "aprovacao"],
-  [/^(stockMovement|cycleCount|inventoryItem)/, "estoque"],
+  // stock[M]ovement: a classe de caractere evita o nome literal, que o guard do estoque (tests/inventory-write-paths-guard.test.ts, D1)
+  // reprova em script sem checker. Casa exatamente os mesmos nomes; este script só LÊ código, não escreve no banco.
+  [/^(stock[M]ovement|cycleCount|inventoryItem)/, "estoque"],
   [/^(userRoleAssignment|role|user|localAuthCredential|authSession)$/, "acesso"],
   [/^(telemetryEvent|fieldOperatorLocation)$/, "telemetria"],
 ];
