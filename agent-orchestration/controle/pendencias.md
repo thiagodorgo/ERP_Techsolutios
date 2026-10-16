@@ -11072,3 +11072,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - Com uma pessoa só acima do operacional, a regra "o superior não é quem alocou" não tem quem a cumpra. Saídas possíveis: deixar a mesma pessoa decidir com justificativa obrigatória e registro na auditoria (marcado como Crítico, `D-AUDIT-REGRAS-CRITICO`); ou exigir uma segunda pessoa cadastrada.
 - **bloqueia:** o `B-O6R-07c-b2`, não o b1.
 - **teste de encerramento:** a regra escolhida pelo dono com teste para a organização de uma pessoa só.
+
+## P-FINANCEIRO-DEFEITOS-16-10 (2026-10-16) — o Financeiro de hoje não faz a baixa e soma dinheiro no front — ALTA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete do Financeiro, lendo o código na `origin/main` 4fe7524e) · **dono:** `B-SAN3-12a` (os itens 1–7 e 10) e `B-TECNICO-ESCOPO` (o item 8); o item 9 é do padrão de tela
+1. O front não chama a baixa, as contas nem os lançamentos: nenhum `/pay`, `/financial-accounts` ou `/financial-entries` em `frontend/src`.
+2. "Recebidas no mês" é calculado pela competência do título, não pela data do pagamento (`financial-titles.adapter.ts:209`).
+3. Cobranças e Pagamentos somam dinheiro no front, só sobre as linhas carregadas (`financial-titles.adapter.ts:197-211`).
+4. O título parcial some das abas "Em aberto" e "A pagar" e não tem ação (`TitlesListView.tsx:41,48`; `financial-titles.adapter.ts:22`).
+5. A aba "Vencendo" de Pagamentos mostra os vencidos (`TitlesListView.tsx:50`).
+6. Sem conexão, a lista aparece vazia em vez de mostrar erro (`TitlesListView.tsx:189-193`).
+7. O total de comissões é somado no front quando o servidor não manda (`commissions.adapter.ts:143-144`).
+8. O `field_technician` não tem `expense_report:read_own`, embora a `D-TECNICO-SO-VALORES-PROPRIOS` diga que ele vê a própria prestação de contas, e ainda tem `work_order_financials:read` (`catalog.ts:912-962`, `:936`).
+9. O cabeçalho do Financeiro está fora do `PageHeader` (`FinanceiroPage.tsx:132-137`), e o `KpiStatCard` não tem `aria-pressed` (`:52`).
+10. Duas portas para os mesmos títulos no menu (Cobranças e Pagamentos), sem a baixa (`appSidebarNav.ts:92-93`) — o ajuste A1 da crítica do B-SAN3-12.
+- **bloqueia:** a meta "telas funcionais" (o Financeiro mostra títulos mas não registra pagamento).
+- **teste de encerramento:** a baixa ponta a ponta pela tela; "Recebidas no mês" pela data do pagamento; nenhuma soma de dinheiro no front; o técnico de campo com a própria prestação de contas e sem valores da OS.

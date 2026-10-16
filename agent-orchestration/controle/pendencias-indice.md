@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **547** |
-| IDs distintos | 536 |
-| **ABERTAS** | **406** |
+| Cabecalhos `## P-` | **548** |
+| IDs distintos | 537 |
+| **ABERTAS** | **407** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **339** |
+| — das quais **ativas nesta rodada** | **340** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 138 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **547 cabecalhos para 536 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **548 cabecalhos para 537 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 198
+## ABERTAS · balde A — material — 199
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -272,6 +272,7 @@
 | `P-O6R-07CB-EMENDA-DECISOES` | 11056 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
 | `P-REGISTRO-GATE-SEM-PLACAR-VIVO` | 11063 | MÉDIA | sim | P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar  |
 | `P-07CB-SUPERIOR-UNICO` | 11069 | MÉDIA | sim | P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só co |
+| `P-FINANCEIRO-DEFEITOS-16-10` | 11076 | CRÍTICA | sim | P-FINANCEIRO-DEFEITOS-16-10 (2026-10-16) — o Financeiro de hoje não faz a baixa e soma d |
 
 ## ABERTAS · balde B — processo/registro — 141
 
