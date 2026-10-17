@@ -3701,3 +3701,11 @@ A maquete de Despachos com 3 opções (`despachos-claude.html`, design Claude Op
 - **`D-DESP-QUEM-AUTORIZA-GESTOR`.** Quando quem pede a troca já é Gestor e existe outra pessoa acima da operação, **a outra pessoa (o Administrador) autoriza**: quem pede não autoriza. A exceção da organização com uma pessoa só segue a `D-07CB-SUPERIOR-UNICO`.
 - **`D-DESP-LIMITE-POR-ETAPA`.** Limite de tempo por etapa: **sim, configurável, depois da versão vendável**. Até lá, "atrasado" segue sendo o prazo da OS.
 - **`D-DESP-TECNICO-SEM-TELA-WEB`.** O Técnico de Campo **não** usa a tela de Despachos na web: ele usa o app. Na web, a tela é da Operação de Campo e dos perfis acima.
+
+## Registro de 17/10/2026 — as três perguntas do dev do `B-O6R-07c-b1` (PR #440)
+
+O dev sucessor (`dev-b-o6r-07c-b1-opus`) deixou três perguntas no relatório; o orquestrador deu recomendação e motivo, e o dono respondeu: ***"decisões do 07c-b1 vou nas recomendações"***.
+
+- **`D-07CB1-TRAVA-ATE-B2`.** Até o `B-O6R-07c-b2` existir (a fila de conflitos e a autorização do superior), a troca de técnico de um despacho **a partir de "No local"** (o início do atendimento, `D-DESP-INICIO-ATENDIMENTO`) é **recusada** com a mensagem de que precisa de autorização. Antes de "No local", a reatribuição vale na hora. O b1 implementa a trava; o b2 troca a recusa pelo pedido de autorização.
+- **`D-07CB1-DESPACHO-OS-ENCERRADA`.** Despachar OS encerrada passa a responder **409** (antes era aceito sem efeito na OS — erro silencioso). Aceito.
+- **`D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO`.** O técnico de campo **não ativa** o próprio rascunho. Aceito.
