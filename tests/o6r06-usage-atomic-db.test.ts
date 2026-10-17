@@ -39,7 +39,13 @@ import {
 const rawConnectionString = process.env.DATABASE_URL;
 const applicationName = buildApplicationName("o6r06-usage-atomic");
 const connectionString = rawConnectionString ? withApplicationName(rawConnectionString, applicationName) : undefined;
-if (connectionString) process.env.DATABASE_URL = connectionString;
+if (connectionString) {
+  process.env.DATABASE_URL = connectionString;
+  // Esta bateria é exclusivamente Postgres e importa `src/**` dinamicamente mais abaixo. Fixar o
+  // modo aqui impede que o runner completo, cujo default é `memory`, transforme A10-drain em uma
+  // espera por INSERT que nunca existirá.
+  process.env.CORE_SAAS_PERSISTENCE = "prisma";
+}
 
 if (!connectionString) {
   test("B-O6R-06 usage atomicity requires DATABASE_URL and a migrated database", {
