@@ -556,8 +556,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
 
    **Gemini, pelo Antigravity** (declaração do dono, 2026-10-13, `D-GEMINI-PRO-NIVEL-CODEX`; e decisão do dono,
-   2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e só entra pela assinatura, sem
-   faturamento novo. **Leitura do orquestrador, declarada (§A6):** o **Gemini Flash** fica abaixo do nível menor e não
+   2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e entra pela assinatura ou, desde 2026-10-17, pela **API paga com
+   teto em dólar por tarefa autorizado pelo dono** (`D-GEMINI-PRO-API-TETO`). **Leitura do orquestrador, declarada (§A6):** o **Gemini Flash** fica abaixo do nível menor e não
    ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Como revisor de PR, o Gemini entra **só como segundo
    revisor**, e o achado dele é conferido antes de valer; e não faz design (`D-DESIGN-SO-CLAUDE`).
 
@@ -757,6 +757,15 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
      O Gemini não edita o painel: no 1º teste (#435) a proposta dele acertou os números, mas a edição trouxe
      referências e textos inventados.
+
+     **O loop não se esquece (decisão do dono, 2026-10-17, `D-KPI-LOOP-NAO-ESQUECER`: *"rode o loop do gemini para os
+     kpis, nao esquecer... documente e difunda"*).** Em 15 e 16/10 o loop não rodou e o painel ficou no marco de 14/10.
+     O mecanismo é **leitura do orquestrador, declarada** (o dono pediu "não esquecer" e "documente e difunda"):
+     **toda sessão do orquestrador começa conferindo a data do último marco** (`release.block` de
+     `Kpis/kpis-latest.json` na `origin/main`); se passou um dia sem marco, o loop é a **primeira** tarefa da sessão,
+     antes de bloco novo. O orquestrador também o dispara no **fim do dia** e logo depois de **merge que mova P0 ou
+     escopo** (ex.: o último P0) — isto amplia o "uma vez por dia" acima, e o dono pode desfazer. A data do último marco vai
+     no "estado" que o dono recebe.
    - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
      (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
      congelado pela regra (3).
