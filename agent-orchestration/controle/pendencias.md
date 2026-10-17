@@ -10402,7 +10402,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carga — MÉDIA
 
-- **fechamento (2026-10-17):** FECHADA pelo merge do `B-ARNES-2` (PR #442). **Merge do #442 em 2026-10-17: `2a49b015`.** Teste de encerramento cumprido: o T15 assere a
+- **fechamento (2026-10-17):** FECHADA pelo merge do `B-ARNES-2` (PR #442). **Merge do #442 em 2026-10-17: `2a49b015`.** O job `backend` da CI passou com os testes na versão final em `f4886680` (push e PR) e em `2a49b015` (push). Teste de encerramento cumprido (o "3/3" abaixo é 2/2 provado por sha + 1 por indício de mtime, Ajuste 3 do relatório): o T15 assere a
   recusa e o encerramento pelo evento `close` com código 1 (rede de 60 s, sem teto de relógio de 15 s; decisão D-3
   do plano), e a suíte inteira saiu verde em 3/3 rodadas, na forma da CI, em Linux
   (`docs/revisoes/SAN3/B-ARNES-2-dev.md`, RETOMADAS 5 e 7). Também saiu 10/10 isolado, e as mutações M-T15a/b/c
@@ -10821,8 +10821,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `backend-postgres`". O que há: 10/10 do SUBCONJUNTO backend-postgres (42 arquivos, `skipped=0`), rodado
   LOCALMENTE em Linux/container, não no job da CI, e com a versão do teste ANTERIOR ao ajuste
   `CORE_SAAS_PERSISTENCE` (RETOMADA 3, sha e985c225…); 20/20 do arquivo sob carga; e 3/3 do `npm test` na versão
-  final. Não há 10 rodadas do job `backend-postgres` na CI. Se o orquestrador não aceitar o subconjunto local como
-  equivalente, a pendência fica ABERTA até essas 10 rodadas do job.
+  final. Não há 10 rodadas do job `backend-postgres` na CI. (Texto herdado do registro sugerido; o orquestrador ACEITOU o subconjunto local como equivalente — ver a linha de status. Quem pode reabrir é o dono.)
 
 - **status:** FECHADA em 2026-10-17, com ressalva declarada (merge do #442, `2a49b015`; ver "fechamento") · **escopo:** `pre-existente` — `tests/o6r06-usage-atomic-db.test.ts:740` (suíte do #385, `B-O6R-06`): no run `pull_request` do head `250c97de` do PR 415 (só registro), o `backend-postgres` deu 314/315 com o A10 falhando no teardown por `cloud_usage_events_tenant_id_fkey`; o mesmo job passou no run `push` do mesmo SHA (revisor do PR 415, `agent-orchestration/omega/juntas/REVISAO-PR-415.md`) · **dono:** `B-ARNES-2`.
 - Junto com o T15 do #405 (`P-SAN3-05-T15-TETO-DE-RELOGIO`), é a segunda falha intermitente que derruba o CI de PR que não toca o código dela.
@@ -10860,7 +10859,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   falha. O teste de encerramento pede "1000 execuções sem falha": em verificações, o laço passa disso, mas o arquivo
   rodou 20 vezes, não 1000. As mutações PoW-1/PoW-2 ficaram vermelhas.
 
-- **status:** FECHADA em 2026-10-17 (merge do #442, `2a49b015`; ver "fechamento") · **escopo:** `pre-existente` — `tests/owner-portal.test.ts` l.228-248: o caso `wrong_solution` usa a string fixa "definitely-not-a-solution" contra desafio com sal aleatório e dificuldade 2 (2 nibbles hex zero no sha256; `proof-of-work.ts:89-99`); medido no CI: run `push` de `7213ac50` do PR #417, `not ok 2071`, expected false / actual true · **dono:** `B-ARNES-2` (plano em `fix/arnes-2-testes-instaveis`).
+- **status:** FECHADA em 2026-10-17, com ressalva declarada — o arquivo rodou 20 vezes (100.000 verificações), não 1000 (merge do #442, `2a49b015`; ver "fechamento") · **escopo:** `pre-existente` — `tests/owner-portal.test.ts` l.228-248: o caso `wrong_solution` usa a string fixa "definitely-not-a-solution" contra desafio com sal aleatório e dificuldade 2 (2 nibbles hex zero no sha256; `proof-of-work.ts:89-99`); medido no CI: run `push` de `7213ac50` do PR #417, `not ok 2071`, expected false / actual true · **dono:** `B-ARNES-2` (plano em `fix/arnes-2-testes-instaveis`).
 - **bloqueia:** não; custa re-execução de CI.
 - **teste de encerramento:** sal fixo no teste ou solução comprovadamente inválida para o sal emitido; 1000 execuções sem falha.
 
@@ -11163,7 +11162,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE (2026-10-17) — o B16 de `inventory-cycle-count-close-units-db` falhou 1 vez — BAIXA
 
 - **status:** ABERTA · **escopo:** NÃO CLASSIFICADO — não há prova a favor nem contra a causa ser o `B-ARNES-2` (o
-  A10-drain quebrado na mesma rodada) · **dono:** a nomear.
+  A10-drain quebrado na mesma rodada) · **dono:** o orquestrador (triagem por execução: N ≥ 20 rodadas do arquivo concorrendo com a suíte; nomeia o bloco dono pela causa achada).
 - **medido:** `tests/inventory-cycle-count-close-units-db.test.ts`, B16 ("recontar Y enquanto a unidade de X segura a
   sessão…"): esperava `ok` e recebeu `422|entry_already_adjusted`. Falhou 1/3 no `npm test` da RETOMADA 4 do
   `B-ARNES-2`, antes do ajuste A10 (log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
@@ -11174,6 +11173,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
 
-- **status:** ABERTA · **escopo:** achado na auditoria do ciclo 2 do `B-O6R-07c-b1` (Fable) · **dono:** `B-O6R-07c-b2` (ou `B-TECNICO-ESCOPO-a`), por `D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2`.
+- **status:** ABERTA · **escopo:** `pre-existente` — o `assign` web nunca tocou despachos (`51238552`, 2026-06-09), achado na auditoria do ciclo 2 do `B-O6R-07c-b1` (Fable, plano §2.5) · **dono:** `B-O6R-07c-b2` (ou `B-TECNICO-ESCOPO-a`), por `D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2`.
 - **o que fazer:** antes de "No local", a atribuição pela web/lote reatribui o despacho ativo junto; a partir de "No local", vale a trava única.
 - **teste de encerramento:** atribuir pela web uma OS com despacho ativo de A para B deixa despacho e OS em B, numa transação, com evento; vermelho-controle no código de hoje.
+
+## P-07CB1-CANCELAR-EM-NO-LOCAL (2026-10-17) — cancelar ou falhar despacho em "No local" entra na fila de autorização? — BAIXA
+
+- **status:** ABERTA · **escopo:** novo (pergunta Q1 do plano do ciclo 2 do `B-O6R-07c-b1`, §2.5/§2.8) · **dono:** `B-O6R-07c-b2`
+- **decidido para o b1 (`D-07CB1-CANCELAR-NO-LOCAL-SEM-AUTORIZACAO`):** não exige autorização; a OS não muda de técnico por causa do encerramento.
+- **o b2 decide:** se o cancelamento em No local entra na mesma fila de autorização do superior.
+- **teste de encerramento:** a regra do b2 escrita no plano dele, com teste.

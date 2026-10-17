@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **554** |
-| IDs distintos | 543 |
-| **ABERTAS** | **409** |
+| Cabecalhos `## P-` | **555** |
+| IDs distintos | 544 |
+| **ABERTAS** | **410** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **342** |
+| — das quais **ativas nesta rodada** | **343** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 141 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **554 cabecalhos para 543 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **555 cabecalhos para 544 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -64,7 +64,7 @@
 | `P-INFRA-RLS` | 495 | — | sim | P-INFRA-RLS (transversal — apontado pelo coordenador no Ω3-d) — RLS não enforçada em run |
 | `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` | 7520 | ALTA | sim | P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS (2026-09-07) — leituras de plataforma sem ten |
 | `P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT` | 10143 | MÉDIA | sim | P-O6R-07B-TESTE-DO-DEFAULT-CEGO-AO-EXPORT (2026-09-06) — teste reescreve a regra do defa |
-| `P-CONFLITO-INICIO-ATENDIMENTO` | 11142 | ALTA | sim | P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o " |
+| `P-CONFLITO-INICIO-ATENDIMENTO` | 11141 | ALTA | sim | P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o " |
 
 ## CONTRADITORIAS — cabecalho e linha de status se opoem — 0
 
@@ -251,32 +251,32 @@
 | `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` | 10789 | ALTA | sim | P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar  |
 | `P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE` | 10798 | MÉDIA | sim | P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os gu |
 | `P-BLOCO-BAT-01` | 10805 | MÉDIA | sim | P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, |
-| `P-TRC-AWS-ESTUDO-MIGRACAO` | 10840 | MÉDIA | sim | P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro pa |
-| `P-EXPENSE-REST-SEM-IDEMPOTENCIA` | 10873 | MÉDIA | sim | P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatór |
-| `P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA` | 10895 | MÉDIA | sim | P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de f |
-| `P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA` | 10902 | MÉDIA | sim | P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA (2026-10-10) — 10 vias aceitam `work_order_ |
-| `P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO` | 10909 | MÉDIA | sim | P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO (2026-10-10) — o técnico de campo dispara a varred |
-| `P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL` | 10921 | MÉDIA | sim | P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (2026-10-10) — sub-app `express()` montado dentro  |
-| `P-GOV-GUARDA-POR-PROPRIEDADE` | 10927 | CRÍTICA | sim | P-GOV-GUARDA-POR-PROPRIEDADE (2026-10-11) — o vigia do censo de rotas do 07c-a reconhece |
-| `P-LOGISTICS-MOCK` | 10941 | MÉDIA | sim | P-LOGISTICS-MOCK (2026-10-11) — a tela `/logistics` serve dado inventado sempre, mesmo f |
-| `P-O6R-B03-FILA-POR-USUARIO` | 10980 | CRÍTICA | sim | P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a  |
-| `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` | 10987 | MÉDIA | sim | P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito po |
-| `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` | 10994 | MÉDIA | sim | P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_recei |
-| `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO` | 11004 | ALTA | sim | P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena |
-| `P-APARENCIA-POR-USUARIO` | 11019 | MÉDIA | sim | P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não  |
-| `P-TELAS-ACHADOS-MAQUETES-14-10` | 11028 | MÉDIA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
-| `P-TECNICO-LE-SO-ATRIBUIDAS` | 11045 | ALTA | sim | P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da org |
-| `P-USERS-DEFEITOS-14-10` | 11054 | ALTA | sim | P-USERS-DEFEITOS-14-10 (2026-10-14) — a tela de Usuários tem defeitos de acesso e de seg |
-| `P-AUDIT-SEGURANCA-15-10` | 11066 | ALTA | sim | P-AUDIT-SEGURANCA-15-10 (2026-10-15) — a Auditoria esconde o que mais importa e não tem  |
-| `P-O6R-07CB-EMENDA-DECISOES` | 11079 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
-| `P-REGISTRO-GATE-SEM-PLACAR-VIVO` | 11086 | MÉDIA | sim | P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar  |
-| `P-07CB-SUPERIOR-UNICO` | 11092 | MÉDIA | sim | P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só co |
-| `P-FINANCEIRO-DEFEITOS-16-10` | 11100 | CRÍTICA | sim | P-FINANCEIRO-DEFEITOS-16-10 (2026-10-16) — o Financeiro de hoje não faz a baixa e soma d |
-| `P-ESTOQUE-DEFEITOS-16-10` | 11116 | MÉDIA | sim | P-ESTOQUE-DEFEITOS-16-10 (2026-10-16) — a tela de Estoque conta errado, esconde a custód |
-| `P-DESP-TECNICO-VE-DESPACHO-ALHEIO` | 11135 | ALTA | sim | P-DESP-TECNICO-VE-DESPACHO-ALHEIO (2026-10-17) — o Técnico de Campo vê e muda a situação |
-| `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO` | 11175 | MÉDIA | sim | P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que te |
+| `P-TRC-AWS-ESTUDO-MIGRACAO` | 10839 | MÉDIA | sim | P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro pa |
+| `P-EXPENSE-REST-SEM-IDEMPOTENCIA` | 10872 | MÉDIA | sim | P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatór |
+| `P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA` | 10894 | MÉDIA | sim | P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de f |
+| `P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA` | 10901 | MÉDIA | sim | P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA (2026-10-10) — 10 vias aceitam `work_order_ |
+| `P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO` | 10908 | MÉDIA | sim | P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO (2026-10-10) — o técnico de campo dispara a varred |
+| `P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL` | 10920 | MÉDIA | sim | P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (2026-10-10) — sub-app `express()` montado dentro  |
+| `P-GOV-GUARDA-POR-PROPRIEDADE` | 10926 | CRÍTICA | sim | P-GOV-GUARDA-POR-PROPRIEDADE (2026-10-11) — o vigia do censo de rotas do 07c-a reconhece |
+| `P-LOGISTICS-MOCK` | 10940 | MÉDIA | sim | P-LOGISTICS-MOCK (2026-10-11) — a tela `/logistics` serve dado inventado sempre, mesmo f |
+| `P-O6R-B03-FILA-POR-USUARIO` | 10979 | CRÍTICA | sim | P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a  |
+| `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` | 10986 | MÉDIA | sim | P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito po |
+| `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` | 10993 | MÉDIA | sim | P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_recei |
+| `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO` | 11003 | ALTA | sim | P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena |
+| `P-APARENCIA-POR-USUARIO` | 11018 | MÉDIA | sim | P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não  |
+| `P-TELAS-ACHADOS-MAQUETES-14-10` | 11027 | MÉDIA | sim | P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao mon |
+| `P-TECNICO-LE-SO-ATRIBUIDAS` | 11044 | ALTA | sim | P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da org |
+| `P-USERS-DEFEITOS-14-10` | 11053 | ALTA | sim | P-USERS-DEFEITOS-14-10 (2026-10-14) — a tela de Usuários tem defeitos de acesso e de seg |
+| `P-AUDIT-SEGURANCA-15-10` | 11065 | ALTA | sim | P-AUDIT-SEGURANCA-15-10 (2026-10-15) — a Auditoria esconde o que mais importa e não tem  |
+| `P-O6R-07CB-EMENDA-DECISOES` | 11078 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
+| `P-REGISTRO-GATE-SEM-PLACAR-VIVO` | 11085 | MÉDIA | sim | P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar  |
+| `P-07CB-SUPERIOR-UNICO` | 11091 | MÉDIA | sim | P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só co |
+| `P-FINANCEIRO-DEFEITOS-16-10` | 11099 | CRÍTICA | sim | P-FINANCEIRO-DEFEITOS-16-10 (2026-10-16) — o Financeiro de hoje não faz a baixa e soma d |
+| `P-ESTOQUE-DEFEITOS-16-10` | 11115 | MÉDIA | sim | P-ESTOQUE-DEFEITOS-16-10 (2026-10-16) — a tela de Estoque conta errado, esconde a custód |
+| `P-DESP-TECNICO-VE-DESPACHO-ALHEIO` | 11134 | ALTA | sim | P-DESP-TECNICO-VE-DESPACHO-ALHEIO (2026-10-17) — o Técnico de Campo vê e muda a situação |
+| `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO` | 11174 | MÉDIA | sim | P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que te |
 
-## ABERTAS · balde B — processo/registro — 142
+## ABERTAS · balde B — processo/registro — 143
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -415,13 +415,14 @@
 | `P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO` | 10638 | BAIXA | sim | P-O6R-B04-REGISTRO-CICLO1-NAO-VERSIONADO (2026-10-10) — os votos, o parecer do inspetor  |
 | `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10685 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
 | `P-REG-GERADOR-SEVERIDADE-POR-PALAVRA` | 10811 | BAIXA | sim | P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior pal |
-| `P-AGENTE-CHECK-SEM-GENERATE` | 10832 | BAIXA | sim | P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige p |
-| `P-AGENTE-API-ANINHAMENTO-PROFUNDO` | 10867 | BAIXA | sim | P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de  |
-| `P-INDICE-SEVERIDADE-POR-SUBSTRING` | 10948 | BAIXA | sim | P-INDICE-SEVERIDADE-POR-SUBSTRING (2026-10-11) — o gerador do índice tira a severidade d |
-| `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS` | 10999 | BAIXA | sim | P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do s |
-| `P-O6R-03A-ENUM-SEM-DENUNCIA` | 11012 | BAIXA | sim | P-O6R-03A-ENUM-SEM-DENUNCIA (2026-10-14) — tipo novo no enum do sync de despesa não é de |
-| `P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO` | 11151 | BAIXA | sim | P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO (2026-10-17) — o que mantinha vivo por ~10 s o proc |
-| `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE` | 11163 | BAIXA | sim | P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE (2026-10-17) — o B16 de `inventory-cycle-count- |
+| `P-AGENTE-CHECK-SEM-GENERATE` | 10831 | BAIXA | sim | P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige p |
+| `P-AGENTE-API-ANINHAMENTO-PROFUNDO` | 10866 | BAIXA | sim | P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de  |
+| `P-INDICE-SEVERIDADE-POR-SUBSTRING` | 10947 | BAIXA | sim | P-INDICE-SEVERIDADE-POR-SUBSTRING (2026-10-11) — o gerador do índice tira a severidade d |
+| `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS` | 10998 | BAIXA | sim | P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do s |
+| `P-O6R-03A-ENUM-SEM-DENUNCIA` | 11011 | BAIXA | sim | P-O6R-03A-ENUM-SEM-DENUNCIA (2026-10-14) — tipo novo no enum do sync de despesa não é de |
+| `P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO` | 11150 | BAIXA | sim | P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO (2026-10-17) — o que mantinha vivo por ~10 s o proc |
+| `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE` | 11162 | BAIXA | sim | P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE (2026-10-17) — o B16 de `inventory-cycle-count- |
+| `P-07CB1-CANCELAR-EM-NO-LOCAL` | 11180 | BAIXA | sim | P-07CB1-CANCELAR-EM-NO-LOCAL (2026-10-17) — cancelar ou falhar despacho em "No local" en |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -631,12 +632,12 @@
 | `P-TRC-CONVIVENCIA-APP` | 10713 | ALTA | sim | P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do té |
 | `P-TRC-ATRIBUICAO-PRODUTO` | 10724 | MÉDIA | sim | P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde |
 | `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10817 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
-| `P-TRC-PLANO-V22` | 10848 | MÉDIA | sim | P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do don |
-| `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` | 10855 | BAIXA | sim | P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 |
-| `P-TRC-MODELOS-RASTREADOR` | 10880 | — | **a atribuir** | P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação (F-9) — FEC |
-| `P-TRC-PORTA-WEB-8080-8082` | 10890 | — | **a atribuir** | P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overl |
-| `P-O6R-07CA-DB-FORA-DA-LISTA-CI` | 10915 | MÉDIA | sim | P-O6R-07CA-DB-FORA-DA-LISTA-CI (2026-10-10) — a suíte `tests/o6r07c-subresource-scope-db |
-| `P-O6R-B03-UUID-PATTERN-INVALIDO` | 10957 | ALTA | sim | P-O6R-B03-UUID-PATTERN-INVALIDO (2026-10-11) — a regex de UUID do módulo de despesa recu |
-| `P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK` | 10963 | ALTA | sim | P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK (2026-10-11) — o evento de sync do item apontava o ITE |
-| `P-O6R-B03-COMPATIBILIDADE-LEGADA` | 10968 | CRÍTICA | sim | P-O6R-B03-COMPATIBILIDADE-LEGADA (2026-10-11) — recibo gravado pela versão anterior (cha |
-| `P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR` | 10974 | ALTA | sim | P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode  |
+| `P-TRC-PLANO-V22` | 10847 | MÉDIA | sim | P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do don |
+| `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` | 10854 | BAIXA | sim | P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 |
+| `P-TRC-MODELOS-RASTREADOR` | 10879 | — | **a atribuir** | P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação (F-9) — FEC |
+| `P-TRC-PORTA-WEB-8080-8082` | 10889 | — | **a atribuir** | P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overl |
+| `P-O6R-07CA-DB-FORA-DA-LISTA-CI` | 10914 | MÉDIA | sim | P-O6R-07CA-DB-FORA-DA-LISTA-CI (2026-10-10) — a suíte `tests/o6r07c-subresource-scope-db |
+| `P-O6R-B03-UUID-PATTERN-INVALIDO` | 10956 | ALTA | sim | P-O6R-B03-UUID-PATTERN-INVALIDO (2026-10-11) — a regex de UUID do módulo de despesa recu |
+| `P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK` | 10962 | ALTA | sim | P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK (2026-10-11) — o evento de sync do item apontava o ITE |
+| `P-O6R-B03-COMPATIBILIDADE-LEGADA` | 10967 | CRÍTICA | sim | P-O6R-B03-COMPATIBILIDADE-LEGADA (2026-10-11) — recibo gravado pela versão anterior (cha |
+| `P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR` | 10973 | ALTA | sim | P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode  |
