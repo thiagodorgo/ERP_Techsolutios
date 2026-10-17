@@ -11120,9 +11120,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o "atendimento iniciado" — ALTA (permissão; registro §A2)
 
-- **status:** FECHADA em 2026-10-17 pelo dono (`D-INICIO-ATENDIMENTO-CONFIRMADO`: "No local") · **escopo:** novo (achado pela `agente-fabrica` ao escrever os corpos da junta do 07c-b1; conferido pelo orquestrador em `decisoes.md`) · **dono:** o DONO responde; o `B-O6R-07c-b1` (#440) e o `B-O6R-07c-b2` aplicam
+- **status:** RESPONDIDA em 2026-10-17 pelo dono (`D-INICIO-ATENDIMENTO-CONFIRMADO`: "No local"); FECHA com o merge do #440 (a trava no estado escolhido) · **escopo:** novo (achado pela `agente-fabrica` ao escrever os corpos da junta do 07c-b1; conferido pelo orquestrador em `decisoes.md`) · **dono:** o DONO responde; o `B-O6R-07c-b1` (#440) e o `B-O6R-07c-b2` aplicam
 - **`D-07CB-EMENDA-RECOMENDACOES`, P3 (15/10):** "atendimento iniciado = a partir de `on_route` ('saiu para o atendimento'), no despacho ou na OS".
 - **`D-DESP-INICIO-ATENDIMENTO` (17/10):** "começa em **No local**". O orquestrador recomendou isto sem conferir a P3 de 15/10 — o erro de origem é do orquestrador, não do dono.
 - **Diferença prática:** com o despacho "A caminho", trocar o técnico é imediato (17/10) ou exige autorização (15/10).
-- **Enquanto o dono não responde (provisório, declarado):** vale a mais nova (17/10, "No local"), que é a que a trava `D-07CB1-TRAVA-ATE-B2` do #440 implementa. Se o dono escolher a de 15/10, a mudança no #440 é a etapa de início da trava (`on_route` passa a recusar) e um caso de teste.
+- **(Histórico, até a resposta do dono)** Enquanto o dono não responde (provisório, declarado): vale a mais nova (17/10, "No local"), que é a que a trava `D-07CB1-TRAVA-ATE-B2` do #440 implementa. Se o dono escolher a de 15/10, a mudança no #440 é a etapa de início da trava (`on_route` passa a recusar) e um caso de teste.
 - **teste de encerramento:** a resposta do dono gravada em `decisoes.md`; a trava e o teste do 07c-b1 no estado escolhido.
