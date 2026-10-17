@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Despachos · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+
+/* ─── MOLDURA (padrão financeiro-ab.reference.html) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:860px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:8px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:12px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;min-height:38px}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--danger{color:#B91C1C;border-color:#fecaca}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a;min-width:0}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px;line-height:1.4}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%}
+.pat-table{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-table__topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-table__count{font-size:11.5px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-table__sort{border:none;background:none;padding:0;font:inherit;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#64748b;cursor:pointer}
+.pat-table__sort:hover{color:#2563eb}
+.pat-table__empty{padding:48px 18px;text-align:center;white-space:normal;line-height:1.5}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-os-tabs{display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{padding:6px 12px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;min-height:30px}
+.pat-os-tab--active{background:#fff;color:#2563eb}
+.pat-header-search{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;width:250px;color:#94a3b8}
+.pat-header-search:focus-within{border-color:#2563eb}
+.pat-header-search input{border:none;outline:none;background:transparent;font-size:12.5px;color:#0f172a;width:100%}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;min-height:34px}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-os-tab:focus-visible,.pat-table__sort:focus-visible,.pat-pager__btn:focus-visible,[data-alvo]:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Linha de 1 linha + detalhe embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:10px 18px 4px;display:flex;align-items:center}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-ab-table thead th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 10px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip}
+.pat-ab-row td b{color:#0f172a}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:16px 20px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.1fr 1.15fr 1fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4,.b-card h4{font-size:11px;font-weight:800;color:#334155;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b;display:inline-flex;align-items:center;gap:6px}
+
+/* ─── ui-* (app.css) ─── */
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button:disabled{cursor:not-allowed;opacity:.55}
+.ui-button--primary{background:var(--color-core-primary);color:var(--text-inverse)}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button--ghost{background:transparent;color:var(--color-core-primary)}
+.ui-button--danger{background:var(--color-status-danger);color:var(--text-inverse)}
+.ui-button--sm{min-height:32px;padding:0 var(--space-10);font-size:12.5px}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-chip{display:inline-flex;align-items:center;gap:4px;width:fit-content;min-height:24px;border:1px solid var(--border-subtle);border-radius:999px;padding:0 var(--space-8);font-size:var(--text-xs);font-weight:800;background:var(--surface-panel-muted);color:var(--text-secondary);vertical-align:middle;white-space:nowrap;line-height:1.2}
+.chip-sm{min-height:20px;font-size:10.5px;padding:0 7px}
+.ui-tone-success{background:#e8f7ef;color:var(--color-status-success);border-color:#b7e2ca}
+.ui-tone-warning{background:#fff3d8;color:var(--color-status-warning);border-color:#f4d38b}
+.ui-tone-danger{background:#fff0ef;color:var(--color-status-danger);border-color:#f0b6b0}
+.ui-tone-info{background:#e9f5fb;color:var(--color-status-info);border-color:#b6dcee}
+.ui-tone-pending{background:#f1ebff;color:var(--color-status-pending);border-color:#d8c6ff}
+.ui-card{background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:var(--radius-8);box-shadow:var(--shadow-surface);padding:var(--space-16);min-width:0}
+.ui-card__header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--space-12);flex-wrap:wrap}
+.ui-card__header h2{font-size:15px;font-weight:800}
+.ui-state{border:1px dashed var(--border-strong);border-radius:var(--radius-8);padding:var(--space-24);background:var(--surface-panel);color:var(--text-secondary)}
+.ui-state strong{display:block;color:var(--text-primary);margin-bottom:4px}
+.ui-state p{font-size:var(--text-sm)}
+.ui-tabs{display:inline-flex;padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel-muted);flex-wrap:wrap}
+.ui-tabs button{border:0;border-radius:var(--radius-4);padding:var(--space-8) var(--space-10);background:transparent;cursor:pointer;font-size:13.5px;color:var(--text-primary);white-space:nowrap;min-height:36px}
+.ui-tabs button.is-active{background:var(--surface-panel);color:var(--color-core-primary);font-weight:900}
+.ui-tabs button:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-field{display:grid;gap:var(--space-6);font-size:13px;font-weight:700;color:#334155}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:8px 10px;font:inherit;font-weight:400;min-height:38px;background:#fff;color:#0f172a;width:100%}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-input[aria-invalid="true"]{border-color:#DC2626}
+.form-error{font-size:12px;color:#B91C1C;font-weight:600}
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.ui-modal{background:var(--surface-panel);box-shadow:var(--shadow-overlay);padding:var(--space-16) 20px 20px;border-radius:var(--radius-8)}
+.ui-modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ui-modal header h2{font-size:var(--text-lg);font-weight:800}
+.ui-modal header button,.ficha > header button.fx{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.ui-modal header button:hover,.ficha > header button.fx:hover{background:#f1f5f9}
+.ui-modal header button:focus-visible,.ficha > header button:focus-visible{outline:2px solid #2563eb}
+
+/* ─── Estados e marcas ─── */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+body.sem-marcas .falta{display:none}
+.val-falta{border-bottom:1px dashed #f59e0b}
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:50px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#94a3b8;max-width:420px;line-height:1.5}
+.sec-bloq{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed #cbd5e1;border-radius:10px;font-size:12px;color:#64748b}
+
+/* ─── Grades de indicadores ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:14px}
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi-grid--6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi-grid--6 .pat-kpi{padding:13px 12px}
+.kpi-grid--6 .pat-kpi__value{font-size:22px}
+@media (max-width:1360px){.kpi-grid--6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ─── Cartões analíticos (SVG/HTML sem biblioteca — PD-004) ─── */
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;flex-wrap:wrap;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.an-card__foot{font-size:11px;color:#64748b;margin-top:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bi-a{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-bottom:14px}
+.bi-b{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.bi-c{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.stack{display:flex;height:18px;border-radius:99px;overflow:hidden;background:#f1f5f9;margin:4px 0 10px;gap:2px}
+.stack button{border:0;padding:0;cursor:pointer;height:100%;min-width:6px}
+.stack button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #0f172a}
+.legenda-alvo{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.lg-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:99px;border:1px solid #e2e8f0;background:#fff;font-size:11.5px;font-weight:700;color:#475569;cursor:pointer;min-height:28px}
+.lg-btn b{color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-btn[aria-pressed="true"],.cust-chip[aria-pressed="true"],.col-btn[aria-pressed="true"],.hbar[aria-pressed="true"],.lst-btn[aria-pressed="true"],.mx-h button[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block}
+.cust-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.cust-chip{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;padding:5px 8px;cursor:pointer;text-align:left;min-width:0;min-height:44px}
+.cust-chip span{font-size:11px;color:#64748b;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;align-items:center;gap:4px}
+.cust-chip b{font-size:12.5px;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cust-chip:hover,.lg-btn:hover,.hbar:hover,.lst-btn:hover{border-color:#93c5fd}
+.cols{display:flex;align-items:stretch;gap:6px;height:128px}
+.col-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;border:1px solid transparent;background:none;cursor:pointer;border-radius:8px;padding:3px 0 4px;min-width:0}
+.col-btn:hover{background:#f8fafc}
+.col-btn i{display:block;width:62%;border-radius:5px 5px 2px 2px;min-height:2px}
+.col-btn b{font-size:11.5px;color:#0f172a;font-variant-numeric:tabular-nums}
+.col-btn span{font-size:10.5px;color:#64748b;font-weight:700;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.col-btn .pilha{display:flex;flex-direction:column-reverse;width:62%;border-radius:5px 5px 2px 2px;overflow:hidden}
+.col-btn .pilha i{width:100%;border-radius:0;min-height:0}
+.dias{display:flex;align-items:flex-end;gap:2px;height:96px;border-bottom:1px solid #e2e8f0;padding-bottom:1px}
+.dia-btn{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;border:1px solid transparent;background:none;border-radius:4px;cursor:pointer;padding:0 1px}
+.dia-btn i{display:block;width:100%;background:#93c5fd;border-radius:3px 3px 0 0;min-height:2px}
+.dia-btn:hover i{background:#2563eb}
+.dia-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.dia-btn[aria-pressed="true"] i{background:#1d4ed8}
+.dias-eixo{display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8;margin-top:4px}
+.hbars{display:flex;flex-direction:column;gap:5px}
+.hbar{display:grid;grid-template-columns:118px minmax(0,1fr) 92px;align-items:center;gap:8px;border:1px solid transparent;background:none;border-radius:8px;padding:3px 6px;cursor:pointer;text-align:left;min-height:30px}
+.hbar span{font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.hbar i{display:block;height:9px;border-radius:99px;background:#f1f5f9;position:relative;overflow:hidden}
+.hbar i em{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.hbar b{font-size:11.5px;text-align:right;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.donut-wrap{display:flex;align-items:center;gap:16px}
+.donut-svg g[role="button"]{cursor:pointer}
+.donut-svg g[role="button"]:hover circle{opacity:.82}
+.donut-svg g[role="button"]:focus{outline:none}
+.donut-svg g[role="button"]:focus-visible circle{stroke-width:20}
+.donut-svg g[aria-pressed="true"] circle{stroke-width:21}
+.lst{display:flex;flex-direction:column;gap:6px}
+.lst-btn{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 10px;border:1px solid #e2e8f0;background:#fff;border-radius:9px;padding:7px 10px;cursor:pointer;text-align:left;min-height:44px}
+.lst-btn span{font-size:12px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lst-btn b{font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lst-btn small{grid-column:1 / -1;font-size:10.5px;color:#94a3b8;font-weight:600}
+.prog{display:inline-flex;align-items:center;gap:8px;width:100%;vertical-align:middle;line-height:1.2}
+.prog i{flex:1;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden;min-width:40px}
+.prog i em{display:block;height:100%;background:#2563eb;border-radius:99px}
+.prog span{font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap}
+.lst-btn .prog{grid-column:1 / -1}
+.blocos-c{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.bloco-c{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;min-width:0}
+.bloco-c:hover{border-color:#93c5fd}
+.bloco-c[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.bloco-c > span:last-child{min-width:0}
+.bloco-c b{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.bloco-c small{display:block;font-size:12px;font-weight:600;color:#334155;line-height:1.3;margin-top:3px}
+.bloco-c em{display:block;font-style:normal;font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ─── Abas da tela (pílula azul, como hoje — EstoquePage.tsx:132-145) ─── */
+.abas-tela{display:flex;gap:2px;background:#e2e8f0;border-radius:10px;padding:4px;margin-bottom:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.abas-tela button{padding:6px 14px;border:none;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;background:transparent;color:#64748b;min-height:32px;display:inline-flex;align-items:center;gap:6px}
+.abas-tela button[aria-selected="true"]{background:#2563EB;color:#fff}
+.abas-tela button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.abas-tela .cnt{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:99px;background:rgba(15,23,42,.08)}
+.abas-tela button[aria-selected="true"] .cnt{background:rgba(255,255,255,.22)}
+
+/* ─── Itens: células ─── */
+.sku{font-size:11.5px;font-weight:700;color:#0f172a}
+.nome{font-weight:700;color:#0f172a}
+.minibar{display:inline-flex;align-items:center;gap:8px;width:100%;vertical-align:middle;line-height:1.2}
+.minibar i{flex:1;height:7px;border-radius:99px;background:#f1f5f9;position:relative;overflow:hidden;min-width:50px}
+.minibar i em{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.minibar i u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#0f172a;opacity:.55}
+.minibar span{font-size:12px;font-weight:700;color:#0f172a;white-space:nowrap;min-width:58px;text-align:right}
+.onde{display:flex;flex-direction:column;gap:4px}
+.onde-l{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:6px;font-size:12px;color:#334155}
+.onde-l b{font-variant-numeric:tabular-nums;color:#0f172a}
+.onde-ic{color:#64748b;display:inline-flex}
+.onde-n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ult{display:flex;flex-direction:column;gap:4px}
+.ult-l{display:grid;grid-template-columns:44px auto 1fr;align-items:center;gap:8px;font-size:12px}
+.ult-l b{text-align:right;font-variant-numeric:tabular-nums}
+.b-detalhe{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:12px}
+.c-detalhe{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+.b-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mini-t{width:100%;border-collapse:collapse;font-size:12px}
+.mini-t th{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.05em;text-transform:uppercase;text-align:left;padding:5px 6px;border-bottom:1px solid #e2e8f0}
+.mini-t td{padding:6px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+.mini-t td.r,.mini-t th.r{text-align:right}
+.mini-t tr:last-child td{border-bottom:0}
+
+/* ─── Opção C: grade de custódia ─── */
+.mx-table thead th{white-space:normal}
+.mx-table thead th.mx-h{padding:4px 3px;text-align:center}
+.mx-h button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:3px 2px;min-height:44px}
+.mx-h button:hover{border-color:#93c5fd}
+.mx-h button > span{font-size:10.5px;font-weight:800;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;letter-spacing:.02em;display:flex;align-items:center;gap:3px}
+.mx-h button small{font-size:10px;color:#94a3b8;font-weight:600;white-space:nowrap;letter-spacing:0}
+.pat-ab-row td.mx-cell{text-align:center;padding:0 3px;font-variant-numeric:tabular-nums}
+.mx-cell span{display:inline-block;min-width:38px;padding:0 5px;line-height:24px;border-radius:6px;font-weight:700;font-size:12px;vertical-align:middle}
+.mx-cell span.z{color:#cbd5e1;font-weight:600}
+.mx-sep{border-left:2px solid #e2e8f0}
+.pat-ab-row td.mx-sel,.mx-table th.mx-sel{background:rgba(37,99,235,.06)}
+
+/* ─── Ficha do item — janela de tamanho FIXO ─── */
+.ficha{width:min(1080px,96vw);height:min(720px,90vh);background:#f1f5f9;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.ficha > header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-bottom:1px solid #e2e8f0;padding:6px 10px 6px 12px}
+.ficha > header h2{font-size:14px;font-weight:800;color:#334155;flex:1}
+.voltar{display:inline-flex;align-items:center;gap:6px;color:#2563EB;font-size:13px;font-weight:700;background:none;border:0;cursor:pointer;padding:0 10px;min-height:44px;border-radius:8px}
+.voltar:hover{background:#eff6ff}
+.ficha__cabeca{flex:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px 10px}
+.ficha__tile{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ficha__nome{font-size:18px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ficha__sub{font-size:12.5px;color:#64748b;font-family:var(--font-mono)}
+.ficha__acoes{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.ficha__abas{flex:none;padding:0 20px 10px}
+.ficha__corpo{flex:1;min-height:0;overflow-y:auto;padding:4px 20px 20px;scrollbar-gutter:stable}
+.f-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.f-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;min-width:0}
+.f-card h3{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.f-card.larga{grid-column:1 / -1}
+.f-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.f-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;min-width:0}
+.f-kpi b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:#0f172a;white-space:nowrap}
+.f-kpi span{font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.f-alerta{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:11px 14px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:13px}
+.f-tab{width:100%;border-collapse:collapse;font-size:12.5px}
+.f-tab th{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:7px 8px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.f-tab td{padding:8px;border-bottom:1px solid #f1f5f9;color:#334155;vertical-align:middle}
+.f-tab td.r,.f-tab th.r{text-align:right}
+.info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.info span{font-size:11px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.info b{font-size:13.5px;color:#0F172A;font-weight:500}
+
+/* ─── Janela de formulário ─── */
+.dlg{width:min(620px,94vw);max-height:90vh;overflow-y:auto}
+.dlg-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.dlg-form .larga{grid-column:1 / -1}
+.dlg-form footer{grid-column:1 / -1;display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.dlg-nota{grid-column:1 / -1;font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px}
+.dlg-erro{grid-column:1 / -1;font-size:12.5px;color:#B91C1C;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 10px;font-weight:600}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;min-height:40px}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:18px}
+.review-layer p.desc strong{color:#e2e8f0}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;min-height:34px}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:1.15fr 1fr}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:95;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media (max-width:1100px){.f-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ─── Despachos: peças próprias desta maquete (sobre a base do Estoque) ─── */
+.bi-a3{display:grid;grid-template-columns:1.05fr 1.25fr 1fr;gap:12px;margin-bottom:14px}
+.pri{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.4}
+.pri i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.tdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.cust-chip span .tdot{width:7px;height:7px}
+.cust-chip em{font-style:normal;font-size:10.5px;color:#64748b;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.prazo-v{color:#B91C1C;font-weight:800}
+.prazo-a{color:#B45309;font-weight:700}
+.passos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:2px}
+.passo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+.passo i{display:block;width:100%;height:5px;border-radius:99px;background:#e2e8f0}
+.passo.ok i{background:#2563EB}
+.passo.agora i{background:repeating-linear-gradient(90deg,#2563EB 0 6px,#93c5fd 6px 10px)}
+.passo span{font-size:10px;font-weight:700;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.passo b{font-size:11px;color:#0f172a;font-variant-numeric:tabular-nums}
+.passo.nao b{color:#cbd5e1}
+.etapas-mini{display:inline-flex;align-items:center;gap:3px;vertical-align:middle}
+.etapas-mini i{display:inline-block;width:20px;height:6px;border-radius:99px;background:#e2e8f0}
+.etapas-mini i.ok{background:#2563EB}
+.etapas-mini i.agora{background:#60a5fa}
+.etapas-mini span{font-size:11.5px;font-weight:700;color:#334155;margin-left:6px}
+.ev{display:flex;flex-direction:column;gap:5px}
+.ev-l{display:grid;grid-template-columns:40px minmax(0,1fr);gap:8px;font-size:12px;color:#334155;line-height:1.35}
+.ev-l b{font-family:var(--font-mono);font-size:11px;color:#64748b;font-weight:600}
+.ev-l small{display:block;color:#94a3b8;font-size:11px}
+.aviso-troca{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:9px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:12.5px;line-height:1.45}
+.aviso-crit{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:9px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:12.5px;line-height:1.45}
+.chega{display:inline-flex;align-items:center;gap:6px;width:100%;line-height:1.2;vertical-align:middle}
+.chega i{flex:1;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden;min-width:40px;position:relative}
+.chega i em{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.chega span{font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap;min-width:52px;text-align:right}
+.cols-media{position:relative}
+.cols-media .linha-media{position:absolute;left:0;right:0;border-top:2px dashed #F59E0B;pointer-events:none}
+.tend{display:inline-flex;align-items:center;gap:4px;font-weight:800}
+.tend--bom{color:#15803D}.tend--ruim{color:#B91C1C}
+
+/* ─── Opção C: quadro por etapa com os técnicos ao lado ─── */
+.quadro{display:grid;grid-template-columns:minmax(0,1fr) 212px;gap:12px;margin-bottom:12px;align-items:start}
+.colunas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;min-width:0}
+.coluna{background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;flex-direction:column;min-width:0;min-height:300px}
+.coluna--sel{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.coluna__topo{display:flex;flex-direction:column;gap:2px;padding:9px 10px 8px;border-bottom:1px solid #f1f5f9;border-top:4px solid var(--cor);border-radius:12px 12px 0 0}
+.coluna__topo b{font-size:12.5px;font-weight:800;color:#0f172a;display:flex;align-items:center;justify-content:space-between;gap:6px;white-space:nowrap}
+.coluna__topo b em{font-style:normal;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.coluna__topo b span{font-size:12px;font-variant-numeric:tabular-nums;background:#f1f5f9;border-radius:99px;padding:1px 8px}
+.coluna__topo small{font-size:10.5px;color:#94a3b8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coluna__lista{display:flex;flex-direction:column;gap:5px;padding:6px}
+.coluna__vazia{font-size:11.5px;color:#94a3b8;text-align:center;padding:18px 6px;line-height:1.4}
+.cartao{height:40px;display:grid;grid-template-columns:4px minmax(0,1fr) auto;align-items:center;gap:6px;padding:0 7px 0 0;border:1px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;outline:none;overflow:hidden}
+.cartao:hover{border-color:#93c5fd}
+.cartao:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.cartao[aria-expanded="true"]{border-color:#2563eb;background:#eff6ff}
+.cartao > i{align-self:stretch;display:block}
+.cartao__txt{min-width:0;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden}
+.cartao__txt b{font-family:var(--font-mono);font-size:11.5px;color:#0f172a}
+.cartao__txt span{font-size:11.5px;color:#475569;overflow:hidden;text-overflow:ellipsis}
+.cartao__t{font-size:11px;font-weight:700;color:#64748b;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cartao__t.v{color:#B91C1C}
+.cartao .pat-chevron-icon{width:16px;height:16px}
+.cartao[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.tecs{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0;max-height:440px;overflow-y:auto;scrollbar-gutter:stable}
+.coluna{max-height:440px}
+.coluna__lista{overflow-y:auto}
+.tecs h3{font-size:12.5px;font-weight:800;color:#0f172a;display:flex;align-items:center;justify-content:space-between}
+.tecs h4{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin-top:6px}
+.tec-btn{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:4px 8px;border:1px solid #e2e8f0;background:#fff;border-radius:9px;padding:5px 8px;cursor:pointer;text-align:left;min-height:44px}
+.tec-btn:hover{border-color:#93c5fd}
+.tec-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.tec-btn b{font-size:12px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tec-btn small{grid-column:2 / -1;font-size:10.5px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tec-btn em{font-style:normal;font-size:10.5px;font-weight:700;color:#475569;white-space:nowrap}
+.detalhe-quadro{margin-bottom:14px}
+.detalhe-quadro > div{background:#f8fafc;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px}
+.detalhe-quadro__tit{font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sec-tit{font-size:13px;font-weight:800;color:#0f172a;margin:4px 0 8px;display:flex;align-items:center;gap:8px}
+@media (max-width:1360px){.bi-a3{grid-template-columns:1fr 1.3fr}.bi-a3 > :last-child{grid-column:1 / -1}}
+
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Despachos · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">PH</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Paulo Henrique</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Operação de Campo</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Despachos</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens de serviço, clientes, técnicos…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações" role="img"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Despachos de hoje no padrão aprovado, com BI</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem das telas que estão no ar — a lista <code>frontend/src/modules/operations/dispatches/pages/OperationsDispatchesPage.tsx</code> (menu “Despachos” → <code>/operations/dispatches</code>, <code>appSidebarNav.ts:61</code>; rota <code>App.tsx:709-711</code>, guarda <code>field_dispatch:read</code>), o Console <code>frontend/src/modules/dispatch/pages/DispatchConsolePage.tsx</code> (<code>/dispatch/console</code>, <code>App.tsx:632-634</code>, só por link) e Operadores de Campo (<code>/field-operators</code>, <code>App.tsx:624-626</code>) — e do padrão aprovado (Pátios B, Usuários, Estoque): <strong>indicadores e gráficos que filtram → linha de 1 linha → resumo embaixo (um aberto por vez) → as ações reais → ficha do despacho em janela de tamanho fixo → voltar com o filtro e a linha mantidos</strong>. Tela-modelo da lista: <code>frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx</code>; componentes do <code>COMPONENT_LIBRARY.md</code> (<code>PageHeader</code>, <code>ClickableKpiCard</code>, <code>DenseTable</code>, <code>DenseListPagination</code>, <code>Chip</code>, <code>Modal</code>) e classes reais de <code>app.css</code> (<code>.pat-*</code>, <code>.ui-*</code>). Skills: <code>ts-frontend-full</code> (implementar) e <code>ui-ux-pro-max</code> (revisar). Código medido em <code>4fe7524e</code> (worktree <code>w-design</code>); decisões e inventário em <code>origin/main</code> <code>a2506458</code>. Relógio da maquete: 16/10/2026 10:30. Nomes, placas, códigos de OS e números são de exemplo; o que o sistema não fornece está marcado <strong>falta no backend</strong> (na tela, em âmbar tracejado; o botão abaixo esconde as marcas).</p>
+    <div class="estados-bar">Estado desta opção:
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar">Ver como (o perfil vem da sessão; aqui é só para revisar — vale para as 3 opções):
+      <button type="button" class="rv-btn" data-papel="campo" aria-pressed="true">Operação de Campo</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="false">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="operador" aria-pressed="false">Operador Logístico</button>
+      <button type="button" class="rv-btn" data-papel="tecnico" aria-pressed="false">Técnico de Campo</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="false">Financeiro (sem acesso)</button>
+    </div>
+    <div class="estados-bar">
+      <button type="button" class="rv-btn" data-unico aria-pressed="false">Organização com uma pessoa só acima da Operação de Campo</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="false">Esconder as marcas “falta no backend”</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete)</h3>
+        <ul class="review-list">
+          <li><strong>Lista:</strong> cabeçalho “Operação / Despachos” com o selo “AO VIVO” e o subtítulo “Envios em rota — origem, paradas e destino” (<code>OperationsDispatchesPage.tsx:81-101</code>), botão <strong>Novo despacho</strong> com <code>field_dispatch:create</code> (<code>:94-100</code>). Sete indicadores com pop-up — Total, Atribuídos, Em rota, Em atendimento, Concluídos, Cancelados, Urgentes (<code>DispatchesSummaryCards.tsx:8-16</code>). Filtros: busca, Status, Prioridade, Operador e “Operador manual” (<code>DispatchesFilters.tsx:17-46</code>). Tabela OS, Título, Status, Prioridade, Operador, Criado em e as ações Detalhe / Status / Reatribuir na linha (<code>DispatchesTable.tsx:27-58</code>); o detalhe abre num painel ao lado (<code>DispatchDetailPanel.tsx</code>).</li>
+          <li><strong>Servidor:</strong> <code>GET/POST /operations/dispatches</code>, <code>GET …/:id</code>, <code>GET …/:id/timeline</code>, <code>PATCH …/:id/status</code>, <code>PATCH …/:id/reassign</code> (<code>field-dispatch.routes.ts:36-86</code>). Situações e transições permitidas em <code>field-dispatch.validators.ts:7-18</code>; carimbos de cada etapa (<code>acceptedAt</code>, <code>onRouteAt</code>, <code>arrivedAt</code>, <code>inServiceAt</code>, <code>completedAt</code>) em <code>field-dispatch.types.ts:56-62</code>. Criar o despacho prepara a vistoria do técnico (<code>field-dispatch.service.ts:219-470</code>); reatribuir troca o técnico do despacho e refaz a vistoria se ela tinha falhado (<code>:542-598</code>).</li>
+          <li><strong>Console:</strong> fila = OS ativas na ordem de triagem do Mapa, com prazo e técnico (<code>dispatch-console.logic.ts:152-181</code>); técnicos = posições do Mapa, sem coordenada (<code>:264-279</code>; situações em <code>field-operators.adapter.ts:17-26</code>); “Despachar” e “Atribuir agora” levam à lista com <code>?workOrderId=</code> (<code>DispatchConsolePage.tsx:146</code>, <code>:189</code>, <code>:550-556</code>).</li>
+          <li><strong>OS:</strong> a OS tem <code>assignedOperatorId</code>/<code>assignedUserId</code> e <code>slaDueAt</code> (<code>work-orders.types.ts:34-46</code>) — é daí que vêm “sem técnico” e o prazo.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>A fila sem técnico entra na tela de Despachos</strong> (hoje só existe no Console): OS aberta sem despacho é a primeira etapa do fluxo, e “Despachar” sai do resumo da linha.</li>
+          <li><strong>Despachar grava o técnico na OS</strong> (<code>D1-07c</code> = c): a janela diz “Carlos passa a ser o técnico responsável pela OS” e reatribuir troca o técnico da OS junto. Hoje nenhum caminho de criar ou reatribuir mexe na OS (defeito 7).</li>
+          <li><strong>Troca de técnico com atendimento iniciado vira pedido de autorização</strong> (<code>D2-07c</code> = d): quem aloca pede; Gestor ou Administrador autoriza ou recusa com justificativa. Na organização com uma pessoa só acima da Operação de Campo, ela mesma autoriza, com justificativa obrigatória e evento <strong>Crítico</strong> na auditoria (decisão do dono de 16/10, no PR #439 — ainda não está na <code>main</code>). O botão “Organização com uma pessoa só…” acima simula isso.</li>
+          <li><strong>Técnico pelo nome, situação em português, só as transições válidas</strong>: a janela “Avançar situação” oferece só o que <code>field-dispatch.validators.ts:7-18</code> aceita (hoje oferece as 10 — defeito 4).</li>
+          <li><strong>Etapa “Atribuído”</strong> entre “sem técnico” e “a caminho”: o servidor tem rascunho, atribuído, aceito e reatribuído antes da saída; juntei os quatro numa etapa só (pergunta 2). “A caminho” é o nome do dono; o sistema diz “Em deslocamento” (<code>dispatches.adapter.ts:18</code>).</li>
+          <li><strong>Linha de 1 linha, sem botões</strong>; o detalhe deixa de ser painel ao lado e vira resumo embaixo + ficha em janela de tamanho fixo (1080 × 720).</li>
+          <li><strong>Indicadores contam o dia inteiro</strong>, e não os 20 primeiros (defeito 2).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>Situação, técnico, OS e carimbos de cada etapa de cada despacho; a linha do tempo do despacho (<code>GET …/:id/timeline</code>).</li>
+          <li>Cliente, serviço, prioridade e prazo vêm da OS (a tela já junta despacho e OS — <code>dispatches.service.ts:140</code>).</li>
+          <li>Situação de cada técnico (disponível, a caminho, no local, em atendimento, pausado, fora de operação) e “localização antiga”: as posições do Mapa, como no Console.</li>
+          <li>Fila sem técnico: OS ativas sem <code>assignedOperatorId</code> (<code>dispatch-console.logic.ts:159</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Resumo do dia no servidor</strong> (contagem por etapa, atrasados, tempo médio até chegar): hoje a lista vem em páginas de 20 (no máximo 100).</li>
+          <li><strong>Nome do técnico no despacho</strong>: o servidor devolve só o identificador; o nome sai da posição (quem está fora de operação fica sem nome).</li>
+          <li><strong>Busca por OS, cliente e técnico</strong> no servidor (defeito 1).</li>
+          <li><strong>Gravar o técnico na OS</strong> ao despachar e reatribuir (D1-07c) e o <strong>pedido de autorização de troca</strong> (D2-07c) — os dois com junta completa (permissão).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é a tela de hoje no padrão aprovado; a fila sem técnico e o “quem está livre” ficam no mesmo lugar que a lista; os três cartões respondem “onde está cada despacho”, “quem pode pegar o próximo” e “estamos chegando mais rápido?”.</li>
+          <li><strong>Contras:</strong> seis indicadores viram 3 × 2 em telas de até 1360 px; o quadro de técnicos cresce com a frota (13 aqui).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>Tempo até chegar de cada despacho = chegada − despacho, os dois carimbos já gravados; no prazo = concluído antes do prazo da OS.</li>
+          <li>Despachos dos últimos 14 dias: a mesma lista, por data (o servidor ainda não filtra por período — falta).</li>
+          <li>Situação dos técnicos: as posições do Mapa.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Série diária do tempo até chegar e do “no prazo”</strong> pronta no servidor; sem ela, 14 dias = centenas de despachos baixados em páginas de 100.</li>
+          <li>Filtro por período (<code>from</code>/<code>to</code>) na lista de despachos: não existe (<code>field-dispatch.service.ts:205-217</code>).</li>
+          <li>Os mesmos itens da A (nome do técnico, busca, D1-07c, D2-07c).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> mostra tendência (14 dias), cumprimento de prazo e carga por técnico; cada barra, fatia e dia filtra a lista; a linha mostra as etapas e o tempo até chegar comparado à média.</li>
+          <li><strong>Contras:</strong> tela mais longa; mais dados para baixar; a série depende do resumo novo no servidor.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>As colunas são as situações do despacho agrupadas por etapa; o cartão mostra há quanto tempo está na etapa (carimbo da etapa).</li>
+          <li>Técnicos ao lado: a mesma fonte do Console e de Operadores de Campo (sem coordenada).</li>
+          <li>Concluídos por hora: o carimbo <code>completedAt</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li><strong>Tempo médio em cada etapa</strong> e <strong>atrasados por etapa</strong> prontos no servidor.</li>
+          <li>Aviso de “parado na etapa” precisa de limite por etapa (hoje só existe o prazo da OS) — pergunta 4.</li>
+          <li>Arrastar o cartão de coluna <strong>não</strong> entra: quem muda a etapa é o técnico pelo aplicativo; o escritório só corrige pelo resumo.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> responde de um olhar onde está cada despacho e quem está livre; a fila sem técnico fica ao lado de quem pode atendê-la; os encerrados do dia ficam embaixo.</li>
+          <li><strong>Contras:</strong> com mais de ~10 despachos por coluna precisa rolar dentro da coluna; componente novo (quadro) para a biblioteca.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Comportamento por perfil de quem vê a tela (permissões medidas em <code>src/modules/core-saas/permissions/catalog.ts</code>; a tela só molda — o servidor decide)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Perfil</th><th>Vê</th><th>Pode</th><th>Não pode</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Operação de Campo</strong> (<code>field_dispatcher</code>, <code>:664-668</code>)</td><td>todos os despachos e a fila</td><td>despachar, avançar situação, reatribuir antes de o atendimento começar, pedir troca depois, cancelar</td><td>autorizar a troca com atendimento iniciado (D2-07c)</td></tr>
+          <tr><td><strong>Gestor Operacional</strong> (<code>manager</code>, <code>:546-550</code>)</td><td>tudo</td><td>tudo da Operação de Campo + <strong>autorizar ou recusar a troca</strong> (permissão nova — falta no backend)</td><td>autorizar o próprio pedido, salvo na organização com uma pessoa só acima da operação</td></tr>
+          <tr><td><strong>Administrador</strong> (<code>tenant_admin</code>, herda)</td><td>tudo</td><td>igual ao Gestor</td><td>—</td></tr>
+          <tr><td><strong>Operador Logístico</strong> (<code>operator</code>, <code>:798-799</code>)</td><td>todos os despachos</td><td>avançar situação</td><td>despachar, reatribuir, cancelar</td></tr>
+          <tr><td><strong>Técnico de Campo</strong> (<code>field_technician</code>, <code>:949-950</code>)</td><td><strong>só os despachos dele</strong> nesta maquete (<code>D-TECNICO-LE-SO-ATRIBUIDAS</code>)</td><td>avançar a situação dos dele</td><td>ver a fila, outros técnicos, despachar, trocar. Hoje o servidor lhe entrega e deixa mudar os de todos (defeito 9)</td></tr>
+          <tr><td><strong>Auditor</strong> (<code>auditor</code>, <code>:1020</code>)</td><td>tudo</td><td>nenhuma ação</td><td>alterar qualquer coisa</td></tr>
+          <tr><td><strong>Financeiro, Estoque, Suporte</strong></td><td>“Acesso não permitido” (sem <code>field_dispatch:read</code>)</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Defeitos do sistema de hoje (por leitura de código em <code>4fe7524e</code>; nenhum executado)</h3>
+        <ul class="review-list">
+          <li><strong>1. A busca some com os despachos.</strong> O front manda <code>search</code> (<code>dispatches.service.ts:149</code>) com o texto “Buscar por OS, código ou operador” (<code>DispatchesFilters.tsx:23</code>), mas o servidor só procura em observação e motivo (<code>field-dispatch-prisma.repository.ts:194-200</code>); o repositório em memória procura em despacho, OS e operador (<code>field-dispatch.repository.ts:156-162</code>) — os testes passam onde a base real falha. E o “Despachar”/“Atribuir agora” do Console abre <code>?workOrderId=</code> (<code>DispatchConsolePage.tsx:146</code>), que a página põe também na busca (<code>OperationsDispatchesPage.tsx:39</code>): a lista volta vazia.</li>
+          <li><strong>2. Lista e indicadores limitados a 20.</strong> A lista não manda <code>limit</code> (<code>dispatches.service.ts:146-152</code>), o servidor usa 20 (<code>field-dispatch.validators.ts:94</code>) e os sete indicadores contam só esses 20 (<code>OperationsDispatchesPage.tsx:51</code>).</li>
+          <li><strong>3. Identificador interno na tela.</strong> Coluna e filtro Operador mostram o identificador (<code>DispatchesTable.tsx:33</code>, <code>:84</code>; <code>DispatchesFilters.tsx:40-44</code>; <code>DispatchDetailPanel.tsx:26</code>); criar e reatribuir pedem o identificador digitado, com as dicas “workOrderId”, “operatorUserId”, “UUID ou user ID” (<code>DispatchCreateForm.tsx:52-53</code>, <code>DispatchReassignForm.tsx:33</code>); “Operador manual” diz “Nome do operador” mas filtra por identificador (<code>DispatchesFilters.tsx:44</code>).</li>
+          <li><strong>4. “Status” oferece as 10 situações</strong> (<code>DispatchStatusActions.tsx:22</code>); o servidor só aceita as de <code>field-dispatch.validators.ts:7-18</code> → erro.</li>
+          <li><strong>5. Linha do tempo com código e identificador:</strong> mostra o tipo do evento cru (<code>DispatchDetailPanel.tsx:59</code>) e o identificador de quem fez (<code>:61</code>).</li>
+          <li><strong>6. Texto sem acento e andaime:</strong> “Atribuido” (<code>DispatchCreateForm.tsx:55</code>), “Titulo nao carregado”, “Sem observacao”, “Nao informado”, “Timeline carregada no detalhe da API quando disponivel” (<code>DispatchDetailPanel.tsx:22</code>, <code>:42</code>, <code>:46</code>, <code>:66</code>), “Atribuidos/Concluidos” (<code>DispatchesSummaryCards.tsx:10</code>, <code>:13</code>), “Status atualizado pela operacao.” (<code>DispatchStatusActions.tsx:19</code>), “Despacho reatribuido pela operacao.” (<code>DispatchReassignForm.tsx:15</code>) e as mensagens da linha do tempo gravadas pelo servidor (“atribuido”, “execucao”, “concluido” — <code>field-dispatch.service.ts:1110-1119</code>). O aviso de erro se chama “Dados demonstrativos” (<code>OperationsDispatchesPage.tsx:104</code>) e o subtítulo fala de “paradas”, que o despacho não tem (<code>:92</code>).</li>
+          <li><strong>7. Despachar e reatribuir não mexem na OS:</strong> o repositório só troca o técnico do despacho (<code>field-dispatch-prisma.repository.ts:99-112</code>), e nenhum arquivo de <code>src/modules/field-dispatch/</code> grava <code>assigned*</code> na OS — é o que a D1-07c muda.</li>
+          <li><strong>8. Troca com atendimento iniciado passa direto:</strong> “no local” e “em atendimento” podem ir para “reatribuído” sem autorização (<code>field-dispatch.validators.ts:12-13</code>; <code>field-dispatch.service.ts:542-545</code>), e “reatribuído” só volta a “aceito” ou “a caminho” (<code>validators.ts:14</code>): o novo técnico some do local no registro. É o que a D2-07c muda.</li>
+          <li><strong>9. O Técnico de Campo lê e muda a situação de despachos de outros técnicos:</strong> tem <code>field_dispatch:read</code> e <code>:update</code> (<code>catalog.ts:949-950</code>), e nem a lista (<code>field-dispatch.service.ts:205-217</code>) nem a mudança de situação (<code>:486-493</code>) olham de quem é o despacho. Contraria <code>D-TECNICO-LE-SO-ATRIBUIDAS</code>. Bloco de permissão, junta completa; confirmar por execução.</li>
+          <li><strong>10. Inventário do PR #438 sem a Operação de Campo:</strong> lista quem cria e reatribui despacho como Administrador da plataforma, Administrador e Gestor (<code>docs/refino/inventario-fluxos.md:3229</code>, <code>:3233</code>), mas o catálogo também dá à Operação de Campo (<code>catalog.ts:664-668</code>). O inventário só considera os nove papéis da <code>RBAC_MATRIX.md</code>.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Perguntas ao dono</h3>
+        <ul class="review-list">
+          <li>Aprovar as três aparências (cada usuário escolhe a sua em Configurações — <code>D-APARENCIA-POR-USUARIO</code>).</li>
+          <li><strong>1. “Atendimento iniciado” começa em “no local” ou só em “em atendimento”?</strong> A maquete pede autorização desde a chegada ao local (o técnico já está na cena e a vistoria já pode ter começado).</li>
+          <li><strong>2. A etapa “Atribuído”</strong> (rascunho, atribuído, aceito, reatribuído) fica separada, como aqui, ou entra em “sem técnico” / “a caminho”?</li>
+          <li><strong>3. Quem autoriza quando quem pede já é Gestor</strong> e há outra pessoa acima da operação (Administrador)? A maquete manda para a outra pessoa; só na organização com uma pessoa só ela autoriza o próprio pedido, com justificativa e evento Crítico.</li>
+          <li><strong>4. Limite por etapa</strong> para “parado demais” (ex.: 15 min sem aceitar, 45 min a caminho)? Hoje “atrasado” é só o prazo da OS.</li>
+          <li><strong>5. O Técnico de Campo usa esta tela na web</strong> (só os dele) ou só o aplicativo?</li>
+          <li>Membros da equipe da OS como técnicos (pergunta aberta na D1-07c): fora desta maquete.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão com BI</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Quadro por etapa</button>
+</div>
+
+<div class="ui-overlay" id="ficha-overlay" hidden>
+  <section class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-tit" data-ficha-win>
+    <header><button type="button" class="voltar" data-voltar-ficha><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Voltar à lista</button><h2 id="ficha-tit">Ficha do despacho</h2><button type="button" class="fx" data-voltar-ficha aria-label="Fechar e voltar à lista"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="ficha__cabeca" id="ficha-cabeca"></div>
+    <div class="ficha__abas"><div class="ui-tabs" role="tablist" id="ficha-abas" aria-label="Seções da ficha"></div></div>
+    <div class="ficha__corpo" id="ficha-corpo"></div>
+  </section>
+</div>
+<div class="ui-overlay" id="dlg-overlay" hidden style="z-index:85"><section class="ui-modal dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-tit" id="dlg"></section></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  clipCheck:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  listChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  fuel:'<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  factory:'<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>',
+  idCard:'<path d="M16 10h2"/><path d="M16 14h2"/><path d="M6.17 15a3 3 0 0 1 5.66 0"/><circle cx="9" cy="11" r="2"/><rect x="2" y="5" width="20" height="14" rx="2"/>',
+  package:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M8 14h.01"/><path d="M12 14h.01"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  userCheck:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+  route:'<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
+  wrenchClock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  trend:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  swap:'<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const FALTA = t => '<span class="falta" title="'+esc(t)+'">falta no backend</span>';
+
+/* ── Formatação pt-BR e relógio da maquete: 16/10/2026 10:30 ── */
+const pad = n => String(n).padStart(2, '0');
+const fData = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+const fDM = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+const fHM = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const fDH = d => fData(d) + ' ' + fHM(d);
+const fN = n => new Intl.NumberFormat('pt-BR').format(n);
+const fMin = n => n == null ? '—' : n < 60 ? n + ' min' : Math.floor(n / 60) + ' h ' + pad(n % 60);
+const soma = (arr, f) => arr.reduce((s, x) => s + f(x), 0);
+const media = arr => arr.length ? Math.round(soma(arr, x => x) / arr.length) : null;
+const NOW = new Date(2026, 9, 16, 10, 30);
+const DIA0 = new Date(2026, 9, 16);
+let tick = 0; const agora = () => new Date(NOW.getTime() + (++tick) * 60000);
+const T = s => s ? new Date(2026, 9, 16, +s.slice(0, 2), +s.slice(3, 5)) : null;
+const add = (d, m) => new Date(d.getTime() + m * 60000);
+const dia0 = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const dias = d => Math.round((DIA0 - dia0(d)) / 864e5);
+const diaData = n => new Date(2026, 9, 16 - n);
+const mins = (a, b) => Math.max(0, Math.round((b - a) / 60000));
+function rngFrom(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+
+/* ── Técnicos de Campo (pelo nome; viatura pela placa; posição sem coordenada) ──
+   [id, nome, equipe, placa, viatura, situação fora de despacho, minutos desde a última posição] */
+const TECS = [
+  ['t1','Carlos Mendes','Equipe Norte','FTX4B21','Guincho plataforma','livre',2],
+  ['t2','João Batista','Equipe Norte','GHB7C33','Guincho asa-delta','livre',1],
+  ['t3','Rafael Souza','Equipe Sul','RKT2D45','Auto-socorro pesado','livre',22],
+  ['t4','Ana Paula Lima','Equipe Sul','QWE1F23','Guincho plataforma','livre',3],
+  ['t5','Diego Ramos','Equipe Centro','BRA2E19','Guincho leve','pausa',9],
+  ['t6','Marcos Vieira','Equipe Centro','PLM8H40','Guincho plataforma','livre',1],
+  ['t7','Felipe Andrade','Pesados','KTZ5J77','Auto-socorro pesado','livre',4],
+  ['t8','Luana Prado','Equipe Norte','MNO3K52','Guincho leve','fora',95],
+  ['t9','Bruno Tavares','Equipe Sul','HJK6L81','Guincho leve','livre',2],
+  ['t10','Igor Matos','Pesados','RTY4M09','Auto-socorro pesado','livre',5],
+  ['t11','Thales Rocha','Equipe Centro','VBN7P26','Guincho plataforma','livre',1],
+  ['t12','Vinícius Costa','Equipe Sul','CDE9Q14','Guincho asa-delta','livre',3],
+  ['t13','Renata Sampaio','Equipe Norte','XSA2R63','Guincho leve','livre',6]
+].map(x => { const n = x[1].split(' '); return { id:x[0], nome:x[1], curto:n[0] + ' ' + n[n.length - 1][0] + '.', equipe:x[2], placa:x[3], viat:x[4], base:x[5], visto:x[6] }; });
+const tecBy = id => TECS.find(t => t.id === id);
+
+/* ── Prioridade da OS e prazo (prazo = abertura + janela da prioridade; o real vem de slaDueAt da OS) ── */
+const PRI = { urgente:{ rot:'Urgente', bg:'#FEE2E2', c:'#B91C1C', min:60, o:0 }, alta:{ rot:'Alta', bg:'#FFEDD5', c:'#C2410C', min:90, o:1 }, media:{ rot:'Média', bg:'#EFF6FF', c:'#1D4ED8', min:180, o:2 }, baixa:{ rot:'Baixa', bg:'#F1F5F9', c:'#475569', min:240, o:3 } };
+
+/* ── Situações do despacho (field-dispatch.validators.ts:7-18) e etapas da tela ── */
+const SIT = { semtec:['Sem técnico','danger'], draft:['Rascunho','default'], assigned:['Atribuído','pending'], accepted:['Aceito','pending'], reassigned:['Reatribuído','pending'], on_route:['A caminho','info'], arrived:['No local','warning'], in_service:['Em atendimento','info'], completed:['Concluído','success'], cancelled:['Cancelado','default'], failed:['Falhou','danger'] };
+const TRANS = { draft:['assigned','cancelled'], assigned:['accepted','on_route','reassigned','cancelled','failed'], accepted:['on_route','arrived','reassigned','cancelled','failed'], on_route:['arrived','reassigned','cancelled','failed'], arrived:['in_service','reassigned','cancelled','failed'], in_service:['completed','reassigned','cancelled','failed'], reassigned:['accepted','on_route','cancelled','failed'] };
+const ACAO = { assigned:'Enviar ao técnico', accepted:'Marcar como aceito', on_route:'Marcar saída para o local', arrived:'Marcar chegada ao local', in_service:'Iniciar atendimento', completed:'Concluir atendimento', failed:'Registrar falha no atendimento' };
+const ETAPAS = { semtec:{ rot:'Sem técnico', cor:'#DC2626', bg:'#FEF2F2', ic:'inbox' }, atribuido:{ rot:'Atribuído', cor:'#7652B7', bg:'#F1EBFF', ic:'userCheck' }, caminho:{ rot:'A caminho', cor:'#0284C7', bg:'#F0F9FF', ic:'route' }, local:{ rot:'No local', cor:'#D97706', bg:'#FFFBEB', ic:'mapPin' }, atendimento:{ rot:'Em atendimento', cor:'#2563EB', bg:'#EFF6FF', ic:'wrench' }, concluido:{ rot:'Concluído', cor:'#16A34A', bg:'#ECFDF5', ic:'check' }, encerrado:{ rot:'Cancelado ou falhou', cor:'#94A3B8', bg:'#F1F5F9', ic:'x' } };
+const ORDEM_AT = ['semtec','atribuido','caminho','local','atendimento'];
+const TERM = new Set(['completed','cancelled','failed']);
+const ativo = d => !TERM.has(d.st);
+function etapa(d){ if (d.st === 'semtec') return 'semtec'; if (['draft','assigned','accepted','reassigned'].includes(d.st)) return 'atribuido'; if (d.st === 'on_route') return 'caminho'; if (d.st === 'arrived') return 'local'; if (d.st === 'in_service') return 'atendimento'; if (d.st === 'completed') return 'concluido'; return 'encerrado'; }
+const iniciado = d => d.st === 'arrived' || d.st === 'in_service';
+
+/* ── Situação de cada técnico agora (posição do Mapa + despacho em curso) ── */
+const TST = { livre:{ rot:'Disponível', cor:'#16A34A' }, atribuido:{ rot:'Com despacho a sair', cor:'#7652B7' }, caminho:{ rot:'A caminho', cor:'#0284C7' }, local:{ rot:'No local', cor:'#D97706' }, atendimento:{ rot:'Em atendimento', cor:'#2563EB' }, pausa:{ rot:'Pausado', cor:'#94A3B8' }, fora:{ rot:'Fora de operação', cor:'#475569' } };
+const ORDEM_TST = ['livre','atribuido','caminho','local','atendimento','pausa','fora'];
+
+/* ── Despachos e OS de hoje ── */
+const ENDS = ['Av. Norte-Sul, 1450 · Cambuí · Campinas','Rod. Anhanguera, km 98 · Sumaré','Rua Barão de Jaguara, 820 · Centro · Campinas','Av. John Boyd Dunlop, 3300 · Jardim Ipaussurama · Campinas','Rua das Palmeiras, 220 · Nova Campinas · Campinas','Rod. Dom Pedro I, km 131 · Campinas','Av. Amoreiras, 560 · Parque Itália · Campinas','Rua Maria Monteiro, 77 · Cambuí · Campinas','Av. Brasil, 2100 · Jardim Guanabara · Campinas','Estrada da Rhodia, 4100 · Barão Geraldo · Campinas'];
+const DS = [];
+function D(os, cli, serv, pri, st, tec, h, x){
+  const d = Object.assign({ id:'d' + os.slice(-4), os, cli, serv, pri, st, tec, aberta:T(h[0]), criado:T(h[1]), aceito:T(h[2]), saiu:T(h[3]), chegou:T(h[4]), iniciou:T(h[5]), fim:T(h[6]), por:'Paulo Henrique', ev:[], end:ENDS[+os.slice(-2) % ENDS.length] }, x || {});
+  DS.push(d); return d;
+}
+D('OS-2026-0414','Maria Oliveira','Carga de bateria','media','semtec',null,['10:22']);
+D('OS-2026-0413','Transportes Rota Sul','Reboque pesado','alta','semtec',null,['10:05']);
+D('OS-2026-0402','Assistência Viva Seguros','Reboque leve','urgente','semtec',null,['09:20']);
+D('OS-2026-0415','Roberto Nunes','Troca de pneu','baixa','semtec',null,['10:28']);
+D('OS-2026-0406','Locadora Pista Livre','Remoção para pátio','media','semtec',null,['09:48']);
+D('OS-2026-0416','Condomínio Jardim das Acácias','Abertura de veículo','alta','semtec',null,['10:29']);
+D('OS-2026-0411','Fernanda Rocha','Pane seca','media','draft','t8',['10:10','10:15'], { obs:'Aguardando a Luana entrar no turno.' });
+D('OS-2026-0410','Assistência Viva Seguros','Reboque pesado','alta','assigned','t10',['10:18','10:26']);
+D('OS-2026-0409','Gustavo Lemos','Reboque leve','urgente','accepted','t4',['10:16','10:19','10:24']);
+D('OS-2026-0405','Patrícia Gomes','Reboque leve','alta','on_route','t2',['09:58','10:03','10:06','10:12']);
+D('OS-2026-0408','Transportes Rota Sul','Troca de pneu','media','on_route','t11',['10:02','10:09','10:11','10:17']);
+D('OS-2026-0401','Luiz Fernando Prado','Carga de bateria','media','arrived','t3',['09:30','09:41','09:44','09:50','10:20']);
+D('OS-2026-0403','Locadora Pista Livre','Reboque leve','alta','arrived','t12',['09:35','09:47','09:49','09:55','10:21']);
+D('OS-2026-0398','Assistência Viva Seguros','Reboque leve','alta','in_service','t1',['09:05','09:12','09:14','09:20','09:44','09:52']);
+D('OS-2026-0396','Cláudia Martins','Reboque leve','alta','in_service','t6',['08:55','09:04','09:08','09:12','09:38','09:40']);
+const d393 = D('OS-2026-0393','Transportes Rota Sul','Reboque pesado','media','in_service','t7',['08:30','08:41','08:44','08:52','09:05','09:15']);
+d393.troca = { st:'pendente', de:'t7', para:'t9', por:'Paulo Henrique', q:T('10:18'), motivo:'Pane no hidráulico do auto-socorro do Felipe; o Bruno assume com a viatura reserva.' };
+d393.ev.push({ q:T('10:18'), txt:'Troca de técnico pedida: Felipe Andrade → Bruno Tavares. Aguarda autorização.', por:'Paulo Henrique' });
+D('OS-2026-0389','Clínica Bem-Estar','Carga de bateria','baixa','completed','t5',['07:10','07:14','07:15','07:18','07:32','07:34','07:58']);
+D('OS-2026-0390','Marcelo Antunes','Reboque leve','media','completed','t9',['07:25','07:31','07:33','07:38','08:02','08:05','08:51']);
+D('OS-2026-0391','Locadora Pista Livre','Troca de pneu','alta','completed','t13',['07:40','07:46','07:48','07:52','08:10','08:12','08:40']);
+D('OS-2026-0392','Assistência Viva Seguros','Reboque leve','urgente','completed','t1',['07:55','08:00','08:01','08:04','08:21','08:24','08:58']);
+D('OS-2026-0394','Juliana Ferraz','Pane seca','media','completed','t2',['08:20','08:26','08:28','08:33','09:02','09:05','09:41']);
+D('OS-2026-0395','Ricardo Pires','Abertura de veículo','media','completed','t13',['08:45','08:52','08:55','08:59','09:21','09:23','09:50']);
+D('OS-2026-0397','Transportes Rota Sul','Reboque leve','alta','completed','t9',['09:00','09:06','09:07','09:12','09:46','09:49','10:22']);
+D('OS-2026-0399','Sílvia Moraes','Carga de bateria','media','completed','t5',['09:10','09:15','09:16','09:20','09:38','09:40','10:05']);
+D('OS-2026-0400','Assistência Viva Seguros','Troca de pneu','baixa','completed','t11',['09:15','09:18','09:19','09:24','09:44','09:46','10:08']);
+D('OS-2026-0387','Eduardo Lacerda','Reboque leve','media','cancelled','t12',['07:05','07:09','07:10',null,null,null,'07:40'], { motivo:'Cliente resolveu por conta própria.' });
+D('OS-2026-0388','Locadora Pista Livre','Remoção para pátio','alta','failed','t6',['07:20','07:24','07:26','07:30','08:05',null,'08:15'], { motivo:'Veículo não estava no endereço informado.' });
+DS.find(d => d.os === 'OS-2026-0397').por = 'Mariana Costa';
+/* histórico dos últimos 13 dias (concluídos e alguns cancelados) */
+(function(){
+  const r = rngFrom('despachos-guincho'); let n = 386;
+  const CLI = ['Assistência Viva Seguros','Transportes Rota Sul','Locadora Pista Livre','Maria Oliveira','Roberto Nunes','Juliana Ferraz','Clínica Bem-Estar','Marcelo Antunes'];
+  const SERV = ['Reboque leve','Reboque leve','Reboque pesado','Troca de pneu','Carga de bateria','Pane seca','Abertura de veículo','Remoção para pátio'];
+  const ativos = TECS.filter(t => t.id !== 't8');
+  for (let dd = 1; dd <= 13; dd++) {
+    const base = 21 + dd * 0.8, q = 9 + Math.floor(r() * 6), dia = diaData(dd), L = [];
+    for (let k = 0; k < q; k++) L.push(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), 7 + Math.floor(r() * 11), Math.floor(r() * 60)));
+    L.sort((a, b) => b - a).forEach(ab => {
+      const fila = 3 + Math.floor(r() * 9), cr = add(ab, fila), ac = add(cr, 1 + Math.floor(r() * 4)), sa = add(ac, 2 + Math.floor(r() * 5));
+      const chegada = Math.max(9, Math.round(base + (r() - .5) * 16)), ch = add(cr, chegada), ini = add(ch, 2 + Math.floor(r() * 6)), fim = add(ini, 18 + Math.floor(r() * 32));
+      const canc = r() < .06; const os = 'OS-2026-0' + n--;
+      DS.push({ id:'h' + os.slice(-3), os, cli:pick(r, CLI), serv:pick(r, SERV), pri:pick(r, ['urgente','alta','alta','media','media','media','baixa']), st:canc ? 'cancelled' : 'completed', tec:pick(r, ativos).id, aberta:ab, criado:cr, aceito:ac,
+        saiu:canc ? null : sa, chegou:canc ? null : ch, iniciou:canc ? null : ini, fim:canc ? add(cr, 14) : fim, por:r() < .8 ? 'Paulo Henrique' : 'Mariana Costa', ev:[], end:ENDS[n % ENDS.length], motivo:canc ? 'Cliente desistiu do atendimento.' : undefined });
+    });
+  }
+})();
+const dsBy = id => DS.find(d => d.id === id);
+
+/* ── Contas de cada despacho ── */
+const prazo = d => add(d.aberta, PRI[d.pri].min);
+const atrasado = d => ativo(d) ? prazo(d) < NOW : (d.st === 'completed' && d.fim > prazo(d));
+const ateChegar = d => d.chegou && d.criado ? mins(d.criado, d.chegou) : null;
+const ref = d => d.criado || d.aberta;
+const deHoje = d => ativo(d) || dias(ref(d)) === 0;
+function inicioEtapa(d){ return { semtec:d.aberta, atribuido:d.aceito || d.criado, caminho:d.saiu, local:d.chegou, atendimento:d.iniciou }[etapa(d)]; }
+const naEtapa = d => { const m = inicioEtapa(d); return m ? mins(m, NOW) : null; };
+function tSt(t){ const a = DS.find(d => d.tec === t.id && ativo(d) && d.st !== 'draft'); return a ? etapa(a) : t.base; }
+const tAtual = t => DS.find(d => d.tec === t.id && ativo(d) && d.st !== 'draft');
+const grupo = s => s === 'livre' ? 'disp' : (s === 'pausa' || s === 'fora') ? 'fora' : 'ocup';
+const velha = t => t.visto > 15 && tSt(t) !== 'fora';
+const HOJE = () => DS.filter(d => dias(ref(d)) === 0 && d.st !== 'semtec');
+const chegadasDia = n => DS.filter(d => d.chegou && dias(d.criado) === n).map(ateChegar);
+const tmChegada = n => media(chegadasDia(n));
+
+/* ── Quem vê a tela (o perfil vem da sessão; o seletor do quadro de notas é só para revisar) ──
+   permissões medidas em src/modules/core-saas/permissions/catalog.ts; “autorizar” é permissão nova (D2-07c) */
+const TUDO = ['ler','criar','situacao','cancelar','trocar'];
+const PAPEIS = {
+  campo:{ nome:'Paulo Henrique', sub:'Operação de Campo', nav:'operacao', p:TUDO },
+  gestor:{ nome:'Mariana Costa', sub:'Gestor Operacional', nav:'admin', p:TUDO.concat(['autorizar']) },
+  admin:{ nome:'Thiago Andrade', sub:'Administrador', nav:'admin', p:TUDO.concat(['autorizar']) },
+  operador:{ nome:'Sérgio Lima', sub:'Operador Logístico', nav:'operacao', p:['ler','situacao'] },
+  tecnico:{ nome:'Carlos Mendes', sub:'Técnico de Campo', nav:'tecnico', p:['ler','situacao'], tec:'t1' },
+  auditor:{ nome:'Helena Duarte', sub:'Auditor', nav:'admin', p:['ler'] },
+  financeiro:{ nome:'Sandra Melo', sub:'Financeiro', nav:'financeiro', p:[] }
+};
+let papel = 'campo', unico = false;
+const pode = k => PAPEIS[papel].p.includes(k);
+const proprio = () => PAPEIS[papel].tec || null;
+const NAV = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['check','Aprovações']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['factory','Fornecedores'],['idCard','Profissionais'],['package','Estoque'],['receipt','Financeiro']]],['ADMINISTRAÇÃO',[['users','Usuários'],['scroll','Auditoria'],['settings','Configurações']]]],
+  operacao:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['listChecks','Checklists']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['contact','Clientes'],['users','Equipes']]]],
+  tecnico:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['listChecks','Checklists']]]],
+  financeiro:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['check','Aprovações']]],['GESTÃO',[['contact','Clientes'],['wallet','Remunerações'],['receipt','Financeiro']]]]
+};
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
+function renderNav(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Despachos'; return '<a class="app-sidebar__item'+(on ? ' app-sidebar__item--active' : '')+'" href="#" '+(on ? 'aria-current="page" ' : '')+'data-menu="'+it[1]+'">'+ic(it[0], 17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Estado por opção ── */
+const novoEstado = () => ({ estado:'normal', tab:'ativos', alvo:null, busca:'', pag:0, aberta:null });
+const S = { a:novoEstado(), b:novoEstado(), c:novoEstado() };
+let opcao = 'a';
+const TAM = 10;
+const comDados = v => S[v].estado === 'normal' || S[v].estado === 'desatualizado';
+function base(){ let arr = DS.slice(); const t = proprio(); if (t) arr = arr.filter(d => d.tec === t); return arr; }
+
+/* ── Filtros: cada indicador, barra, fatia, coluna, dia ou técnico vira um filtro da lista ── */
+function filtro(key){
+  const p = key.indexOf(':'); const k = p < 0 ? key : key.slice(0, p); const a = p < 0 ? '' : key.slice(p + 1);
+  switch (k) {
+    case 'et': return { rot:a === 'concluido' ? 'Concluídos hoje' : a === 'encerrado' ? 'Cancelados ou com falha hoje' : ETAPAS[a].rot, tab:(a === 'concluido' || a === 'encerrado') ? 'hoje' : 'ativos', fd:d => etapa(d) === a && deHoje(d), et:a };
+    case 'atrasados': return { rot:'Atrasados — passaram do prazo da OS', tab:'ativos', fd:d => ativo(d) && atrasado(d) };
+    case 'atr': return { rot:'Atrasados em “' + ETAPAS[a].rot + '”', tab:'ativos', fd:d => ativo(d) && atrasado(d) && etapa(d) === a, et:a };
+    case 'hoje': return { rot:'Tudo de hoje', tab:'hoje', fd:deHoje };
+    case 'tec': { const t = tecBy(a); return { rot:'Despachos de ' + t.nome + ' · hoje', tab:'hoje', fd:d => d.tec === a && deHoje(d), tec:a }; }
+    case 'tst': return { rot:'Despachos de hoje de quem está: ' + TST[a].rot.toLowerCase(), tab:'hoje', fd:d => d.tec && tSt(tecBy(d.tec)) === a && deHoje(d), tst:a };
+    case 'dia': return { rot:'Despachos de ' + fData(diaData(+a)), tab:'hist', fd:d => d.st !== 'semtec' && dias(ref(d)) === +a };
+    case 'hora': return { rot:'Concluídos hoje entre ' + a + 'h e ' + (+a + 1) + 'h', tab:'hoje', fd:d => d.st === 'completed' && dias(d.fim) === 0 && d.fim.getHours() === +a };
+    case 'prazo': return { rot:a === 'ok' ? 'Concluídos hoje dentro do prazo da OS' : 'Concluídos hoje fora do prazo da OS', tab:'hoje', fd:d => d.st === 'completed' && dias(ref(d)) === 0 && (a === 'ok' ? !atrasado(d) : atrasado(d)) };
+    case 'chegada': return { rot:'Chegadas de hoje, da mais demorada para a mais rápida', tab:'hoje', fd:d => dias(ref(d)) === 0 && ateChegar(d) != null, ord:(x, y) => ateChegar(y) - ateChegar(x) };
+    case 'troca': return { rot:'Trocas de técnico aguardando autorização', tab:'ativos', fd:d => !!(d.troca && d.troca.st === 'pendente') };
+  }
+  return null;
+}
+const ap = (v, key) => 'aria-pressed="' + (S[v].alvo === key) + '"';
+
+/* ── Lista ── */
+function itensDe(v, tabForcada){
+  const st = S[v]; if (st.estado === 'vazio') return [];
+  let arr = base(); const tab = tabForcada || st.tab;
+  if (tab === 'ativos') arr = arr.filter(ativo); else if (tab === 'hoje') arr = arr.filter(deHoje); else arr = arr.filter(d => dias(ref(d)) < 14);
+  const f = st.alvo && filtro(st.alvo); if (f && f.fd) arr = arr.filter(f.fd);
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(d => (d.os + ' ' + d.cli + ' ' + d.serv + ' ' + (d.tec ? tecBy(d.tec).nome : '')).toLowerCase().includes(q)); }
+  if (f && f.ord) arr.sort(f.ord);
+  else if (tab === 'ativos') arr.sort((x, y) => (atrasado(y) - atrasado(x)) || (PRI[x.pri].o - PRI[y.pri].o) || (x.aberta - y.aberta));
+  else arr.sort((x, y) => ref(y) - ref(x));
+  return arr;
+}
+
+/* ── Peças comuns ── */
+const CHEV = '<span data-chevron class="pat-chevron-icon">' + ic('chevron', 15) + '</span>';
+const chip = (tom, txt) => '<span class="ui-chip chip-sm' + (tom && tom !== 'default' ? ' ui-tone-' + tom : '') + '">' + txt + '</span>';
+const sitChip = d => chip(SIT[d.st][1], SIT[d.st][0]) + (d.troca && d.troca.st === 'pendente' ? ' ' + chip('warning', 'Troca pedida') : '');
+const priPill = d => '<span class="pri" style="background:'+PRI[d.pri].bg+';color:'+PRI[d.pri].c+'"><i style="background:'+PRI[d.pri].c+'"></i>'+PRI[d.pri].rot+'</span>';
+const tecNome = d => d.tec ? tecBy(d.tec).nome : null;
+function prazoTxt(d){
+  const p = prazo(d);
+  if (ativo(d)) { const m = Math.round((p - NOW) / 60000); return m < 0 ? '<span class="prazo-v">vencido há '+fMin(-m)+'</span>' : m <= 20 ? '<span class="prazo-a">em '+fMin(m)+'</span>' : 'até '+fHM(p); }
+  if (d.st === 'completed') return atrasado(d) ? '<span class="prazo-a">fora do prazo</span>' : 'no prazo';
+  return '<span style="color:#cbd5e1">—</span>';
+}
+function etapaTxt(d){
+  if (ativo(d)) return fMin(naEtapa(d));
+  if (d.st === 'completed') return 'às ' + fHM(d.fim);
+  return '<span style="color:#cbd5e1">—</span>';
+}
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function detRow(id, cols, html){ return '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="display:none"><td colspan="'+cols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+html+'</div></td></tr>'; }
+const nomeFalta = () => FALTA('O despacho devolve só o identificador do técnico; o nome sai da posição no mapa');
+function passos(d){
+  const P = [['Despacho', d.st === 'draft' ? null : d.criado], ['Aceite', d.aceito], ['Saída', d.saiu], ['Chegada', d.chegou], ['Atendimento', d.iniciou]];
+  let ultimo = -1; P.forEach((x, k) => { if (x[1]) ultimo = k; });
+  return '<div class="passos" aria-label="Etapas do despacho">'+P.map((x, k) => '<div class="passo'+(x[1] ? ' ok' : ativo(d) && k === ultimo + 1 ? ' agora' : ' nao')+'"><i></i><span>'+x[0]+'</span><b>'+(x[1] ? fHM(x[1]) : '—')+'</b></div>').join('')+'</div>';
+}
+function eventos(d){
+  const E = [{ q:d.aberta, txt:'OS aberta', por:'Central de atendimento' }];
+  const t = tecNome(d);
+  if (d.criado) E.push({ q:d.criado, txt:d.st === 'draft' ? 'Despacho em rascunho para ' + t : 'Despachado para ' + t + ' — passa a ser o técnico da OS', por:d.por });
+  if (d.aceito) E.push({ q:d.aceito, txt:'Aceito pelo técnico', por:t });
+  if (d.saiu) E.push({ q:d.saiu, txt:'Saiu para o local', por:t });
+  if (d.chegou) E.push({ q:d.chegou, txt:'Chegou ao local', por:t });
+  if (d.iniciou) E.push({ q:d.iniciou, txt:'Atendimento iniciado', por:t });
+  if (d.fim) E.push({ q:d.fim, txt:d.st === 'completed' ? 'Atendimento concluído' : d.st === 'cancelled' ? 'Despacho cancelado · ' + (d.motivo || '') : 'Atendimento não realizado · ' + (d.motivo || ''), por:d.st === 'completed' || d.st === 'failed' ? t : d.por });
+  return E.concat(d.ev).sort((a, b) => b.q - a.q);
+}
+function evHTML(d, n){
+  const E = eventos(d).slice(0, n || 99);
+  return '<div class="ev">'+E.map(e => '<div class="ev-l"><b>'+fHM(e.q)+'</b><span>'+esc(e.txt)+(e.crit ? ' '+chip('danger', 'Crítico') : '')+'<small>'+esc(e.por || '')+'</small></span></div>').join('')+'</div>';
+}
+function avisoTroca(d){
+  const tr = d.troca; if (!tr || tr.st !== 'pendente') return '';
+  return '<div class="aviso-troca">'+ic('alert', 15)+'<span><strong>Troca de técnico aguardando autorização.</strong> '+esc(tecBy(tr.de).nome)+' → '+esc(tecBy(tr.para).nome)+', pedida por '+esc(tr.por)+' às '+fHM(tr.q)+'. O atendimento já começou: até Gestor ou Administrador decidir, '+esc(tecBy(tr.de).nome)+' segue como técnico da OS. '+FALTA('Não existe pedido de autorização de troca no servidor (D2-07c)')+'</span></div>';
+}
+function rotTrocar(d){ if (!iniciado(d)) return 'Reatribuir técnico'; return pode('autorizar') && unico ? 'Trocar técnico (autorização própria)' : 'Pedir troca de técnico'; }
+function acoes(v, d){
+  const b = [];
+  if (d.st === 'semtec') {
+    if (pode('criar')) b.push('<button type="button" class="pat-btn pat-btn--primary" data-dlg-despachar="'+d.id+'">'+ic('send', 14)+'Despachar</button>');
+    b.push('<button type="button" class="pat-btn" data-toast="Abre a '+d.os+' em Ordens de Serviço.">Abrir '+d.os+'</button>');
+    if (!pode('criar')) b.push('<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil não despacha.</span>');
+    return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+  }
+  b.push('<button type="button" class="pat-btn pat-btn--primary" data-ficha="'+d.id+'">'+ic('clipboard', 14)+'Abrir ficha do despacho</button>');
+  if (ativo(d)) {
+    if (pode('situacao') && (TRANS[d.st] || []).some(s => ACAO[s])) b.push('<button type="button" class="pat-btn" data-dlg-sit="'+d.id+'">'+ic('arrowRight', 14)+(d.st === 'draft' ? 'Enviar ao técnico' : 'Avançar situação')+'</button>');
+    if (d.troca && d.troca.st === 'pendente') {
+      if (pode('autorizar')) b.push('<button type="button" class="pat-btn" data-dlg-autorizar="'+d.id+'">'+ic('shield', 14)+'Analisar pedido de troca</button>');
+      else if (pode('trocar')) b.push('<span class="pat-ab-detail-note">'+ic('lock', 13)+' Troca pedida: aguarda Gestor ou Administrador.</span>');
+    } else if (pode('trocar') && d.st !== 'draft') b.push('<button type="button" class="pat-btn" data-dlg-trocar="'+d.id+'">'+ic('swap', 14)+rotTrocar(d)+'</button>');
+    if (pode('cancelar')) b.push('<button type="button" class="pat-btn pat-btn--danger" data-dlg-cancelar="'+d.id+'">Cancelar despacho</button>');
+  }
+  b.push('<button type="button" class="pat-btn" data-toast="Abre a '+d.os+' em Ordens de Serviço.">Abrir '+d.os+'</button>');
+  if (!pode('situacao') && !pode('criar')) b.push('<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só acompanha os despachos.</span>');
+  return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+}
+function livresHTML(){
+  const L = TECS.filter(t => tSt(t) === 'livre');
+  return L.length ? '<div class="onde">'+L.map(t => '<div class="onde-l"><span class="tdot" style="background:'+TST.livre.cor+'"></span><span class="onde-n">'+esc(t.nome)+' · '+t.viat+'</span><b>há '+t.visto+' min</b></div>').join('')+'</div>' : '<span class="pat-ab-detail-note">Nenhum técnico disponível agora.</span>';
+}
+/* resumo embaixo da linha (o mesmo conteúdo nas três opções; a B troca a coluna do meio) */
+function resumo(v, d, meio){
+  const t = d.tec && tecBy(d.tec);
+  const c1 = '<div class="pat-ab-detail-col"><h4>Atendimento</h4>'+campo('OS', '<span class="pat-mono">'+d.os+'</span>')+campo('Cliente', esc(d.cli))+campo('Serviço', esc(d.serv))+campo('Endereço', esc(d.end))+campo('Prioridade', priPill(d))+campo('Prazo da OS', fHM(prazo(d)) + (ativo(d) && atrasado(d) ? ' · <span class="prazo-v">vencido</span>' : ''))+'</div>';
+  const c2 = meio || (d.st === 'semtec'
+    ? '<div class="pat-ab-detail-col"><h4>Sem técnico · aberta há '+fMin(mins(d.aberta, NOW))+'</h4><span class="pat-ab-detail-note">Disponíveis agora:</span>'+livresHTML()+'</div>'
+    : '<div class="pat-ab-detail-col"><h4>Técnico e etapas</h4>'+campo('Técnico', esc(t.nome)+' '+nomeFalta())+campo('Viatura', t.placa+' · '+t.viat)+campo('Equipe', t.equipe)+campo('Alocado por', esc(d.por))+passos(d)+(ateChegar(d) != null ? campo('Até chegar', '<b>'+fMin(ateChegar(d))+'</b>') : '')+'</div>');
+  const c3 = '<div class="pat-ab-detail-col"><h4>Linha do tempo</h4>'+evHTML(d, 4)+'</div>';
+  return '<div class="pat-ab-detail-grid">'+c1+c2+c3+'</div>'+avisoTroca(d)+(d.motivo && !ativo(d) ? '<span class="pat-ab-detail-note">Motivo: '+esc(d.motivo)+'</span>' : '')+acoes(v, d);
+}
+function kpi(v, alvo, icon, cor, bg, valor, rot, hint, tag){
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="'+alvo+'" '+ap(v, alvo)+' aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'">'+
+    '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(icon, 16)+'</span><span class="pat-kpi__tag" style="background:'+tag[1]+';color:'+tag[2]+'">'+tag[0]+'</span></div>'+
+    '<div class="pat-kpi__value" style="color:'+(tag[3] || '#0f172a')+'">'+valor+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint">'+hint+'</div></button>';
+}
+function kpisSkeleton(n){ return Array.from({ length:n }, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisIndisp(rots, txt){ return rots.map(r => '<div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:#F1F5F9;color:#94A3B8">'+ic('send', 16)+'</span></div><div class="pat-kpi__value" style="color:#94A3B8">—</div><div class="pat-kpi__label">'+r+'</div><div class="pat-kpi__hint">'+(txt || 'dados indisponíveis')+'</div></div>').join(''); }
+const contaEt = e => base().filter(d => etapa(d) === e && deHoje(d)).length;
+
+/* ═════════ CABEÇALHO, ESTADOS E ABAS (iguais nas três) ═════════ */
+const KICK = { a:'OPERAÇÃO', b:'OPERAÇÃO · VISÃO ANALÍTICA', c:'OPERAÇÃO · QUADRO POR ETAPA' };
+function cabecalho(v, comAcoes){
+  const st = S[v];
+  const sub = proprio() ? 'Os seus despachos de hoje: para onde ir, o que falta e o prazo de cada um.' : { a:'Quem está indo, quem chegou e quem está atendendo — e o que ainda não tem técnico.',
+    b:'Como os despachos andam hoje e nos últimos 14 dias: tempo até chegar, prazo e carga de cada técnico.',
+    c:'Cada despacho na sua etapa, da fila sem técnico ao atendimento, com os técnicos ao lado.' }[v];
+  let h = '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+KICK[v]+'</div><h1 class="pat-page-header__title">Despachos</h1><p class="pat-page-header__subtitle">'+(comAcoes ? sub : 'Despachos da operação de campo da organização.')+'</p></div>';
+  if (comAcoes) h += '<div class="pat-page-header__actions"><div class="pat-header-search">'+ic('search', 15)+'<input type="search" data-busca="'+v+'" value="'+esc(st.busca)+'" placeholder="Buscar por OS, cliente ou técnico…" aria-label="Buscar por OS, cliente ou técnico"></div>'+
+    (pode('criar') ? '<button type="button" class="pat-btn pat-btn--primary" data-dlg-despachar="">'+ic('plus', 15)+'Novo despacho</button>' : '')+'</div>';
+  return h + '</div>';
+}
+function banners(v){
+  const e = S[v].estado; let h = '';
+  if (e === 'erro') h += '<div role="alert" class="pat-banner pat-banner--warning">'+ic('alert', 14)+'<span>Não foi possível carregar os despachos.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  if (e === 'desatualizado') h += '<div role="status" class="pat-banner pat-banner--info">'+ic('refresh', 14)+'<span>Mostrando os dados de 10:12. A atualização automática falhou e tenta de novo a cada 30 segundos.</span><button type="button" class="pat-link" data-tentar>Atualizar agora</button></div>';
+  return h;
+}
+function bannerTroca(v){
+  if (!comDados(v) || proprio()) return '';
+  const n = DS.filter(d => d.troca && d.troca.st === 'pendente').length; if (!n) return '';
+  return '<div role="status" class="pat-banner pat-banner--warning">'+ic('shield', 14)+'<span>'+n+(n === 1 ? ' troca de técnico com atendimento iniciado aguarda' : ' trocas de técnico com atendimento iniciado aguardam')+' autorização de Gestor ou Administrador.</span><button type="button" class="pat-link" data-ver-trocas>'+(pode('autorizar') ? 'Analisar agora' : 'Ver')+'</button></div>';
+}
+function proibido(){
+  return '<div class="state-panel" role="alert"><div class="state-panel__icon">'+ic('lock', 26)+'</div><div class="state-panel__title">Acesso não permitido</div><div class="state-panel__detail">Seu perfil não pode ver os despachos desta organização. Fale com o administrador da organização se precisar deste acesso.</div></div>';
+}
+
+/* ═════════ LISTA (tabela com linha de 1 linha + resumo embaixo) ═════════ */
+function th(rot, w, cls){ return { rot, w, cls }; }
+const COLS = {
+  a:() => [th('OS', 112), th('CLIENTE'), th('SERVIÇO', 132), th('PRIORIDADE', 96), th('TÉCNICO', 138), th('SITUAÇÃO', 150), th('NA ETAPA HÁ', 92, 'r'), th('PRAZO', 118), th('', 40)],
+  b:() => [th('OS', 112), th('CLIENTE'), th('ETAPAS', 196), th('TÉCNICO', 138), th('ATÉ CHEGAR', 150), th('PRAZO', 118), th('', 40)],
+  c:() => [th('OS', 112), th('CLIENTE'), th('SERVIÇO', 132), th('TÉCNICO', 138), th('SITUAÇÃO', 120), th('ENCERRADO', 92, 'r'), th('PRAZO', 118), th('', 40)]
+};
+function thead(cols){ return '<colgroup>'+cols.map(c => '<col'+(c.w ? ' style="width:'+c.w+'px"' : '')+'>').join('')+'</colgroup><thead><tr>'+cols.map(c => '<th'+(c.cls ? ' class="'+c.cls+'"' : '')+'>'+(c.rot === '' ? '<span class="sr">Abrir resumo</span>' : c.rot)+'</th>').join('')+'</tr></thead>'; }
+function lista(v, opts){
+  const st = S[v]; opts = opts || {};
+  const tab = opts.tab || st.tab;
+  const tabs = opts.semAbas ? '<span class="sec-tit" style="margin:0">'+opts.titulo+'</span>' : '<div class="pat-os-tabs" role="group" aria-label="Período da lista">'+[['ativos','Em andamento'],['hoje','Hoje'],['hist','Últimos 14 dias']].map(t => '<button type="button" class="pat-os-tab'+(tab === t[0] ? ' pat-os-tab--active' : '')+'" data-tab="'+t[0]+'" aria-pressed="'+(tab === t[0])+'">'+t[1]+'</button>').join('')+'</div>';
+  let arr = itensDe(v, opts.tab); if (opts.so) arr = arr.filter(opts.so);
+  const total = opts.so ? base().filter(d => deHoje(d) && opts.so(d)).length : base().filter(d => tab === 'ativos' ? ativo(d) : tab === 'hoje' ? deHoje(d) : dias(ref(d)) < 14).length;
+  const cols = (opts.cols || COLS[v])(); const ncols = cols.length;
+  const f = st.alvo && filtro(st.alvo);
+  const chipF = f && !opts.semChip ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+esc(f.rot)+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : '';
+  const contagem = st.estado === 'carregando' ? '<span class="pat-skel" style="width:110px;height:12px"></span>' : st.estado === 'erro' ? '—' : (arr.length !== total ? arr.length + ' de ' + total : total) + ' ' + (total === 1 ? 'item' : 'itens');
+  const direita = tab === 'hist' ? FALTA('A lista de despachos não filtra por período; 14 dias exigem baixar tudo em páginas de 100') : FALTA('A lista vem em páginas de 20 (até 100) e a busca do servidor só procura em observação e motivo');
+  let h = '<div class="pat-table"><div class="pat-table__topbar">'+tabs+'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="pat-table__count" data-count>'+contagem+'</span>'+direita+'</div></div>'+chipF;
+  let linhas;
+  if (st.estado === 'carregando') linhas = [0, 1, 2, 3].map(() => '<tr class="pat-ab-row" aria-hidden="true">'+Array.from({ length:ncols }, () => '<td><span class="pat-skel" style="width:80%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join('');
+  else if (st.estado === 'erro') linhas = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">Não foi possível carregar os despachos</div><div class="pat-table__empty-detail">Verifique a conexão e tente novamente — <button type="button" class="pat-link" data-tentar>Tentar novamente</button></div></div></td></tr>';
+  else if (!arr.length) linhas = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">'+(opts.vazio || 'Nenhum despacho encontrado')+'</div><div class="pat-table__empty-detail">'+(st.estado === 'vazio' ? 'Nenhuma OS foi aberta nem despachada hoje. As novas OS aparecem aqui assim que abertas.' : 'Ajuste a busca, o período ou o filtro.')+'</div></div></td></tr>';
+  else { const pags = Math.max(1, Math.ceil(arr.length / TAM)); if (st.pag >= pags) st.pag = pags - 1;
+    const fatia = opts.semPager ? arr : arr.slice(st.pag * TAM, st.pag * TAM + TAM);
+    linhas = fatia.map(d => (opts.linha || LINHA[v])(v, d, ncols)).join(''); }
+  h += '<table class="pat-ab-table">'+thead(cols)+'<tbody>'+linhas+'</tbody></table>';
+  if (!opts.semPager && comDados(v) && arr.length > TAM) { const pags = Math.ceil(arr.length / TAM), ini = st.pag * TAM + 1, fim = Math.min(arr.length, ini + TAM - 1);
+    h += '<div class="pat-pager"><span class="pat-pager__size">10 por página</span><div class="pat-pager__nav"><span class="pat-pager__range">'+ini+'–'+fim+' de '+arr.length+'</span><button type="button" class="pat-pager__btn" data-pag="-1" '+(st.pag === 0 ? 'disabled' : '')+'>Anterior</button><button type="button" class="pat-pager__btn" data-pag="1" '+(st.pag >= pags - 1 ? 'disabled' : '')+'>Próxima</button></div></div>'; }
+  return h + '</div>';
+}
+function tecCell(d){ return d.tec ? '<span title="'+esc(tecNome(d))+'">'+esc(tecNome(d))+'</span>' : '<span style="color:#cbd5e1">—</span>'; }
+function linhaA(v, d, n){
+  const id = v + '-' + d.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row">'+
+    '<td><span class="pat-mono sku">'+d.os+'</span></td><td title="'+esc(d.cli)+'"><span class="nome">'+esc(d.cli)+'</span></td><td title="'+esc(d.serv)+'">'+esc(d.serv)+'</td><td>'+priPill(d)+'</td><td>'+tecCell(d)+'</td>'+
+    '<td>'+sitChip(d)+'</td><td class="r">'+etapaTxt(d)+'</td><td>'+prazoTxt(d)+'</td><td class="r">'+CHEV+'</td></tr>'+detRow(id, n, resumo(v, d));
+}
+const LINHA = { a:linhaA, b:linhaA, c:linhaA };
+
+/* ═════════ OPÇÃO A — DESPACHOS DE HOJE NO PADRÃO APROVADO, COM BI ═════════ */
+function topoA(v){
+  const st = S[v];
+  const rots = ['Sem técnico','Atribuídos','A caminho','No local','Em atendimento','Atrasados'];
+  let k;
+  if (st.estado === 'carregando') k = kpisSkeleton(6);
+  else if (st.estado === 'erro') k = kpisIndisp(rots);
+  else if (st.estado === 'vazio') k = kpisIndisp(rots, 'nenhum despacho hoje');
+  else {
+    const fila = base().filter(d => d.st === 'semtec'); const velhaFila = fila.length ? Math.max.apply(null, fila.map(d => mins(d.aberta, NOW))) : 0;
+    const atr = base().filter(d => ativo(d) && atrasado(d)).length; const tm = tmChegada(0);
+    k = kpi(v,'et:semtec','inbox',ETAPAS.semtec.cor,ETAPAS.semtec.bg,fN(contaEt('semtec')),'Sem técnico',fila.length ? 'OS esperando despacho · a mais antiga há '+fMin(velhaFila) : 'nenhuma OS esperando',['fila','#FEF2F2','#B91C1C']) +
+      kpi(v,'et:atribuido','userCheck',ETAPAS.atribuido.cor,ETAPAS.atribuido.bg,fN(contaEt('atribuido')),'Atribuídos','esperando o técnico aceitar ou sair',['a sair','#F1EBFF','#7652B7']) +
+      kpi(v,'et:caminho','route',ETAPAS.caminho.cor,ETAPAS.caminho.bg,fN(contaEt('caminho')),'A caminho','até chegar hoje: '+fMin(tm)+' em média '+FALTA('A média sai dos despachos carregados; falta um resumo do dia no servidor'),['em rota','#F0F9FF','#0369A1']) +
+      kpi(v,'et:local','mapPin',ETAPAS.local.cor,ETAPAS.local.bg,fN(contaEt('local')),'No local','chegaram e ainda não começaram',['no local','#FFFBEB','#B45309']) +
+      kpi(v,'et:atendimento','wrench',ETAPAS.atendimento.cor,ETAPAS.atendimento.bg,fN(contaEt('atendimento')),'Em atendimento','técnico trabalhando na OS',['atendendo','#EFF6FF','#1D4ED8']) +
+      kpi(v,'atrasados','clock','#B91C1C','#FEF2F2',fN(atr),'Atrasados','passaram do prazo da OS',[atr ? 'atenção' : 'OK',atr ? '#FEE2E2' : '#ECFDF5',atr ? '#B91C1C' : '#059669',atr ? '#B91C1C' : '']);
+  }
+  let bi = '';
+  if (comDados(v)) bi = '<div class="bi-a3">'+cardEtapas(v)+(proprio() ? cardMeusTempos(v) : cardTecnicos(v))+cardTendencia(v, 7)+'</div>';
+  return '<div class="kpi-grid kpi-grid--6" aria-live="polite">'+k+'</div>'+bannerTroca(v)+bi;
+}
+function cardEtapas(v){
+  const g = ORDEM_AT.map(e => [e, contaEt(e)]); const tot = soma(g, x => x[1]) || 1;
+  const conc = contaEt('concluido'), enc = contaEt('encerrado');
+  return '<div class="an-card"><div class="an-card__title"><span>Agora, por etapa</span><small>'+soma(g, x => x[1])+' em andamento</small></div>'+
+    '<div class="stack" role="group" aria-label="Despachos por etapa — clique para filtrar">'+g.filter(x => x[1]).map(x => '<button type="button" data-alvo="et:'+x[0]+'" '+ap(v, 'et:' + x[0])+' style="width:'+(x[1] / tot * 100).toFixed(1)+'%;background:'+ETAPAS[x[0]].cor+'" aria-label="'+esc(ETAPAS[x[0]].rot+': '+x[1]+' — filtrar a lista')+'" title="'+esc(ETAPAS[x[0]].rot+': '+x[1])+'"></button>').join('')+'</div>'+
+    '<div class="legenda-alvo">'+g.map(x => '<button type="button" class="lg-btn" data-alvo="et:'+x[0]+'" '+ap(v, 'et:' + x[0])+'><span class="lg-sw" style="background:'+ETAPAS[x[0]].cor+'"></span>'+ETAPAS[x[0]].rot+' <b>'+x[1]+'</b></button>').join('')+'</div>'+
+    '<div class="an-card__foot"><button type="button" class="lg-btn" data-alvo="et:concluido" '+ap(v, 'et:concluido')+'><span class="lg-sw" style="background:'+ETAPAS.concluido.cor+'"></span>Concluídos hoje <b>'+conc+'</b></button><button type="button" class="lg-btn" data-alvo="et:encerrado" '+ap(v, 'et:encerrado')+'><span class="lg-sw" style="background:'+ETAPAS.encerrado.cor+'"></span>Cancelados ou com falha <b>'+enc+'</b></button></div></div>';
+}
+function cardTecnicos(v){
+  const n = g => TECS.filter(t => grupo(tSt(t)) === g).length;
+  return '<div class="an-card"><div class="an-card__title"><span>Técnicos agora</span><small><button type="button" class="lg-btn" data-alvo="tst:livre" '+ap(v, 'tst:livre')+'><span class="lg-sw" style="background:'+TST.livre.cor+'"></span>Disponíveis <b>'+n('disp')+'</b></button><span>ocupados <b style="color:#0f172a">'+n('ocup')+'</b> · fora '+n('fora')+'</span></small></div>'+
+    '<div class="cust-grid" role="group" aria-label="Técnicos — clique para ver os despachos de cada um">'+TECS.map(t => { const s = tSt(t); const a = tAtual(t);
+      return '<button type="button" class="cust-chip" data-alvo="tec:'+t.id+'" '+ap(v, 'tec:' + t.id)+' title="'+esc(t.nome+' · '+TST[s].rot+(a ? ' · '+a.os : '')+(velha(t) ? ' · localização antiga ('+t.visto+' min)' : ''))+'"><span><i class="tdot" style="background:'+TST[s].cor+'"></i>'+esc(t.curto)+(velha(t) ? ' '+ic('alert', 11) : '')+'</span><em>'+TST[s].rot+(a ? ' · '+a.os.slice(-4) : '')+'</em></button>'; }).join('')+'</div>'+
+    '<div class="an-card__foot">Situação pela posição do aplicativo, sem coordenada; '+ic('alert', 11)+' = posição com mais de 15 min.</div></div>';
+}
+function cardMeusTempos(v){
+  const meus = base().filter(d => dias(ref(d)) === 0 && ateChegar(d) != null);
+  return '<div class="an-card"><div class="an-card__title"><span>Meus tempos hoje</span><small>'+meus.length+' chegadas</small></div><div class="lst">'+
+    (meus.length ? meus.map(d => '<button type="button" class="lst-btn" data-alvo="chegada" '+ap(v, 'chegada')+'><span>'+d.os+' · '+esc(d.serv)+'</span><b>'+fMin(ateChegar(d))+'</b></button>').join('') : '<p class="pat-ab-detail-note">Nenhuma chegada ainda hoje.</p>')+'</div></div>';
+}
+function cardTendencia(v, n){
+  const L = []; for (let d = n - 1; d >= 0; d--) L.push([d, tmChegada(d)]);
+  const mx = Math.max.apply(null, L.map(x => x[1] || 0).concat([1]));
+  const hoje = L[L.length - 1][1], ant = media(L.slice(0, -1).map(x => x[1]).filter(x => x != null)); const dif = hoje - ant;
+  return '<div class="an-card"><div class="an-card__title"><span>Tempo médio até chegar · '+n+' dias</span><small>'+FALTA('Média por dia calculada na tela; falta a série no servidor')+'</small></div>'+
+    '<div class="cols" role="group" aria-label="Tempo médio até chegar por dia — clique num dia para filtrar" style="height:112px">'+L.map(x => '<button type="button" class="col-btn" data-alvo="dia:'+x[0]+'" '+ap(v, 'dia:' + x[0])+' aria-label="'+esc(fData(diaData(x[0]))+': '+fMin(x[1])+' em média até chegar — filtrar')+'"><b>'+(x[1] == null ? '—' : x[1])+'</b><i style="height:'+Math.max(3, (x[1] || 0) / mx * 62).toFixed(0)+'px;background:'+(x[0] === 0 ? '#2563EB' : '#93C5FD')+'"></i><span>'+(x[0] === 0 ? 'hoje' : fDM(diaData(x[0])))+'</span></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Hoje <b style="color:#0f172a">'+fMin(hoje)+'</b> · média dos '+(n - 1)+' dias anteriores '+fMin(ant)+' <span class="tend '+(dif <= 0 ? 'tend--bom' : 'tend--ruim')+'">'+(dif <= 0 ? '↓ ' : '↑ ')+Math.abs(dif)+' min</span></div></div>';
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA ═════════ */
+const media14 = () => media(DS.filter(d => d.chegou && dias(d.criado) < 14 && dias(d.criado) > 0).map(ateChegar));
+function topoB(v){
+  const st = S[v];
+  const rots = ['Despachos hoje','Tempo médio até chegar','No prazo','Atrasados','Técnicos disponíveis'];
+  let k;
+  if (st.estado === 'carregando') k = kpisSkeleton(5);
+  else if (st.estado === 'erro') k = kpisIndisp(rots);
+  else if (st.estado === 'vazio') k = kpisIndisp(rots, 'nenhum despacho hoje');
+  else {
+    const hoje = base().filter(deHoje); const conc = hoje.filter(d => d.st === 'completed'); const noPrazo = conc.filter(d => !atrasado(d)).length;
+    const tm = tmChegada(0), m14 = media14(), dif = tm - m14; const atr = base().filter(d => ativo(d) && atrasado(d)).length;
+    const n = g => TECS.filter(t => grupo(tSt(t)) === g).length;
+    k = kpi(v,'hoje','send','#2563EB','#EFF6FF',fN(hoje.length),'Despachos hoje',conc.length+' concluídos · '+hoje.filter(d => ativo(d) && d.st !== 'semtec').length+' em andamento · '+hoje.filter(d => d.st === 'semtec').length+' sem técnico · '+hoje.filter(d => d.st === 'cancelled' || d.st === 'failed').length+' cancelados ou com falha',['hoje','#EFF6FF','#2563EB']) +
+      kpi(v,'chegada','route','#0284C7','#F0F9FF',fMin(tm),'Tempo médio até chegar','<span class="tend '+(dif <= 0 ? 'tend--bom' : 'tend--ruim')+'">'+(dif <= 0 ? '↓ ' : '↑ ')+Math.abs(dif)+' min</span> contra a média de 13 dias '+FALTA('Média calculada na tela; falta o resumo no servidor'),['do despacho à chegada','#F0F9FF','#0369A1']) +
+      kpi(v,'prazo:ok','check','#15803D','#ECFDF5',(conc.length ? Math.round(noPrazo / conc.length * 100) : 0)+'%','No prazo',noPrazo+' de '+conc.length+' concluídos hoje dentro do prazo da OS',['prazo da OS','#ECFDF5','#15803D']) +
+      kpi(v,'atrasados','clock','#B91C1C','#FEF2F2',fN(atr),'Atrasados','em andamento, com o prazo da OS vencido',[atr ? 'atenção' : 'OK',atr ? '#FEE2E2' : '#ECFDF5',atr ? '#B91C1C' : '#059669',atr ? '#B91C1C' : '']) +
+      kpi(v,'tst:livre','userCheck','#16A34A','#ECFDF5',n('disp')+' de '+TECS.length,'Técnicos disponíveis',n('ocup')+' ocupados · '+n('fora')+' fora de operação',['agora','#ECFDF5','#15803D']);
+  }
+  let bi = '';
+  if (comDados(v)) bi = '<div class="bi-b">'+cardFunil(v)+cardChegada14(v)+(proprio() ? cardMeusTempos(v) + cardPrazoHoje(v) : cardTecSit(v) + cardPorTec(v))+'</div>';
+  return '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+k+'</div>'+bannerTroca(v)+bi;
+}
+function cardFunil(v){
+  const L = ORDEM_AT.concat(['concluido','encerrado']).map(e => [e, contaEt(e)]); const mx = Math.max.apply(null, L.map(x => x[1]).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Onde estão os despachos de hoje</span><small>da fila à conclusão</small></div>'+
+    '<div class="hbars" role="group" aria-label="Despachos por etapa — clique para filtrar">'+L.map(x => '<button type="button" class="hbar" data-alvo="et:'+x[0]+'" '+ap(v, 'et:' + x[0])+' aria-label="'+esc(ETAPAS[x[0]].rot+': '+x[1]+' — filtrar a lista')+'"><span><i class="tdot" style="background:'+ETAPAS[x[0]].cor+'"></i>'+(x[0] === 'encerrado' ? 'Cancelado/falhou' : ETAPAS[x[0]].rot)+'</span><i><em style="width:'+(x[1] / mx * 100).toFixed(1)+'%;background:'+ETAPAS[x[0]].cor+'"></em></i><b>'+x[1]+'</b></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Sem técnico = OS abertas sem despacho; atribuído = rascunho, atribuído, aceito ou reatribuído.</div></div>';
+}
+function cardChegada14(v){
+  const L = []; for (let d = 13; d >= 0; d--) L.push([d, tmChegada(d), DS.filter(x => x.st === 'completed' && dias(ref(x)) === d)]);
+  const mx = Math.max.apply(null, L.map(x => x[1] || 0).concat([1]));
+  const s1 = media(L.slice(0, 7).map(x => x[1]).filter(x => x != null)), s2 = media(L.slice(7).map(x => x[1]).filter(x => x != null));
+  const pz = x => x[2].length ? Math.round(x[2].filter(d => !atrasado(d)).length / x[2].length * 100) : null;
+  return '<div class="an-card"><div class="an-card__title"><span>Tempo médio até chegar · 14 dias</span><small>clique num dia para ver os despachos '+FALTA('Série calculada na tela; falta a série diária no servidor e o filtro por período')+'</small></div>'+
+    '<div class="cols" role="group" aria-label="Tempo médio até chegar por dia — clique para filtrar">'+L.map(x => '<button type="button" class="col-btn" data-alvo="dia:'+x[0]+'" '+ap(v, 'dia:' + x[0])+' aria-label="'+esc(fData(diaData(x[0]))+': '+fMin(x[1])+' até chegar, '+(pz(x) == null ? 'sem concluídos' : pz(x)+'% no prazo')+' — filtrar')+'" title="'+fDM(diaData(x[0]))+' · '+fMin(x[1])+(pz(x) == null ? '' : ' · '+pz(x)+'% no prazo')+'"><b>'+(x[1] == null ? '—' : x[1])+'</b><i style="height:'+Math.max(3, (x[1] || 0) / mx * 72).toFixed(0)+'px;background:'+(x[0] === 0 ? '#2563EB' : (x[1] || 0) > s1 ? '#FCD34D' : '#93C5FD')+'"></i><span>'+(x[0] === 0 ? 'hoje' : fDM(diaData(x[0])).slice(0, 2))+'</span></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Semana anterior '+fMin(s1)+' → últimos 7 dias '+fMin(s2)+' <span class="tend '+(s2 <= s1 ? 'tend--bom' : 'tend--ruim')+'">'+(s2 <= s1 ? '↓ ' : '↑ ')+Math.abs(s2 - s1)+' min</span> · <span class="lg-sw" style="background:#FCD34D"></span> acima da média da semana anterior</div></div>';
+}
+function cardTecSit(v){
+  const g = ORDEM_TST.map(s => [s, TECS.filter(t => tSt(t) === s).length]).filter(x => x[1]); const tot = TECS.length;
+  const R = 42, C = 2 * Math.PI * R; let off = 0;
+  const arcs = g.map(x => { const len = x[1] / tot * C; const el = '<g role="button" tabindex="0" data-alvo="tst:'+x[0]+'" '+ap(v, 'tst:' + x[0])+' aria-label="'+esc(TST[x[0]].rot+': '+x[1]+' técnicos — filtrar os despachos deles')+'"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+TST[x[0]].cor+'" stroke-width="18" stroke-dasharray="'+len.toFixed(2)+' '+(C - len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"><title>'+TST[x[0]].rot+'</title></circle></g>'; off += len; return el; }).join('');
+  const livres = g.filter(x => x[0] === 'livre').reduce((s, x) => s + x[1], 0);
+  return '<div class="an-card"><div class="an-card__title"><span>Técnicos por situação agora</span><small>'+tot+' técnicos · posição do aplicativo</small></div><div class="donut-wrap">'+
+    '<svg class="donut-svg" width="120" height="120" viewBox="0 0 120 120" role="group" aria-label="Técnicos por situação"><circle cx="60" cy="60" r="'+R+'" fill="none" stroke="#f1f5f9" stroke-width="18"/>'+arcs+'<text x="60" y="58" text-anchor="middle" font-size="19" font-weight="800" fill="#0f172a">'+livres+'</text><text x="60" y="73" text-anchor="middle" font-size="9.5" fill="#64748b">disponíveis</text></svg>'+
+    '<div class="legenda-alvo" style="flex-direction:column;align-items:stretch;flex:1">'+g.map(x => '<button type="button" class="lg-btn" data-alvo="tst:'+x[0]+'" '+ap(v, 'tst:' + x[0])+' style="justify-content:flex-start"><span class="lg-sw" style="background:'+TST[x[0]].cor+'"></span>'+TST[x[0]].rot+'<b style="margin-left:auto">'+x[1]+'</b></button>').join('')+'</div></div>'+
+    '<div class="an-card__foot">'+ic('alert', 11)+' '+TECS.filter(velha).length+' com localização antiga (mais de 15 min): '+TECS.filter(velha).map(t => esc(t.curto)).join(', ')+'.</div></div>';
+}
+function cardPorTec(v){
+  const L = TECS.map(t => { const h = DS.filter(d => d.tec === t.id && deHoje(d)); return [t, h.filter(d => d.st === 'completed').length, h.filter(ativo).length, media(h.filter(d => ateChegar(d) != null).map(ateChegar))]; }).filter(x => x[1] + x[2]).sort((a, b) => (b[1] + b[2]) - (a[1] + a[2]));
+  const mx = Math.max.apply(null, L.map(x => x[1] + x[2]).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Despachos por técnico · hoje</span><small><span class="lg-sw" style="background:#16A34A"></span> concluídos <span class="lg-sw" style="background:#2563EB"></span> em andamento</small></div>'+
+    '<div class="hbars" role="group" aria-label="Despachos por técnico — clique para filtrar">'+L.map(x => '<button type="button" class="hbar" data-alvo="tec:'+x[0].id+'" '+ap(v, 'tec:' + x[0].id)+' aria-label="'+esc(x[0].nome+': '+x[1]+' concluídos e '+x[2]+' em andamento — filtrar')+'" style="grid-template-columns:104px minmax(0,1fr) 112px"><span><i class="tdot" style="background:'+TST[tSt(x[0])].cor+'"></i>'+esc(x[0].curto)+'</span><i><em style="width:'+(x[1] / mx * 100).toFixed(1)+'%;background:#16A34A"></em><em style="left:'+(x[1] / mx * 100).toFixed(1)+'%;width:'+(x[2] / mx * 100).toFixed(1)+'%;background:#2563EB;border-radius:0 99px 99px 0"></em></i><b>'+(x[1] + x[2])+' · '+(x[3] == null ? '—' : x[3] + ' min')+'</b></button>').join('')+'</div>'+
+    '<div class="an-card__foot">Número = despachos hoje · tempo médio até chegar de cada um.</div></div>';
+}
+function cardPrazoHoje(v){
+  const c = base().filter(d => d.st === 'completed' && dias(ref(d)) === 0); const ok = c.filter(d => !atrasado(d)).length;
+  return '<div class="an-card"><div class="an-card__title"><span>Meus prazos hoje</span></div><div class="lst">'+
+    '<button type="button" class="lst-btn" data-alvo="prazo:ok" '+ap(v, 'prazo:ok')+'><span>Concluídos no prazo</span><b>'+ok+'</b></button><button type="button" class="lst-btn" data-alvo="prazo:fora" '+ap(v, 'prazo:fora')+'><span>Concluídos fora do prazo</span><b>'+(c.length - ok)+'</b></button></div></div>';
+}
+function etapasMini(d){
+  const S5 = [d.st === 'draft' ? null : d.criado, d.aceito, d.saiu, d.chegou, d.iniciou]; let ult = -1; S5.forEach((x, k) => { if (x) ult = k; });
+  const rot = d.st === 'semtec' ? 'Sem técnico' : SIT[d.st][0];
+  return '<span class="etapas-mini" title="'+esc(rot)+'">'+S5.map((x, k) => '<i class="'+(x ? 'ok' : ativo(d) && k === ult + 1 ? 'agora' : '')+'"></i>').join('')+'<span>'+rot+'</span></span>';
+}
+function chegaCell(d){
+  const m = ateChegar(d), ref14 = media14();
+  if (m != null) return '<span class="chega"><i><em style="width:'+Math.min(100, m / 60 * 100).toFixed(0)+'%;background:'+(m <= ref14 ? '#22C55E' : '#F59E0B')+'"></em></i><span>'+fMin(m)+'</span></span>';
+  if (d.st === 'on_route') return '<span style="color:#0369A1;font-weight:700">a caminho há '+fMin(mins(d.saiu, NOW))+'</span>';
+  return '<span style="color:#cbd5e1">—</span>';
+}
+function linhaB(v, d, n){
+  const id = v + '-' + d.id; const m = ateChegar(d), m14 = media14();
+  const meio = d.st === 'semtec' ? null : '<div class="pat-ab-detail-col"><h4>Tempos deste despacho</h4>'+passos(d)+
+    campo('Até aceitar', entre(d.criado, d.aceito))+campo('Até sair', entre(d.aceito, d.saiu))+campo('Até chegar', m == null ? '—' : '<b>'+fMin(m)+'</b> · média de 13 dias '+fMin(m14)+' <span class="tend '+(m <= m14 ? 'tend--bom' : 'tend--ruim')+'">'+(m <= m14 ? '↓ ' : '↑ ')+Math.abs(m - m14)+' min</span>')+
+    campo('Técnico', esc(tecNome(d))+' · '+tecBy(d.tec).placa+' '+nomeFalta())+'</div>';
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row">'+
+    '<td><span class="pat-mono sku">'+d.os+'</span></td><td title="'+esc(d.cli+' · '+d.serv)+'"><span class="nome">'+esc(d.cli)+'</span> <span style="color:#94a3b8">· '+esc(d.serv)+'</span></td><td>'+etapasMini(d)+'</td><td>'+tecCell(d)+'</td><td>'+chegaCell(d)+'</td><td>'+prazoTxt(d)+'</td><td class="r">'+CHEV+'</td></tr>'+detRow(id, n, resumo(v, d, meio));
+}
+LINHA.b = linhaB;
+
+
+/* ═════════ OPÇÃO C — QUADRO POR ETAPA ═════════ */
+function bloco(v, alvo, cor, bg, icon, valor, rot, dica){ return '<button type="button" class="bloco-c" data-alvo="'+alvo+'" '+ap(v, alvo)+' aria-label="'+esc(rot+': '+valor+' — filtrar o quadro')+'"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+';width:34px;height:34px">'+ic(icon, 16)+'</span><span><b style="color:'+cor+'">'+valor+'</b><small>'+rot+'</small><em>'+dica+'</em></span></button>'; }
+function maisAntigo(e){ const L = base().filter(d => ativo(d) && etapa(d) === e).map(naEtapa).filter(x => x != null); return L.length ? Math.max.apply(null, L) : null; }
+function topoC(v){
+  const st = S[v]; const ok = comDados(v);
+  let h;
+  if (st.estado === 'carregando') h = '<div class="blocos-c">'+kpisSkeleton(5)+'</div>';
+  else h = '<div class="blocos-c">'+ORDEM_AT.map(e => { const E = ETAPAS[e]; const m = ok ? maisAntigo(e) : null;
+    return bloco(v, 'et:' + e, E.cor, E.bg, E.ic, ok ? fN(contaEt(e)) : '—', E.rot, ok ? (m == null ? 'nenhum agora' : 'mais antigo há ' + fMin(m)) : 'sem dados'); }).join('')+'</div>';
+  if (ok) h += bannerTroca(v) + '<div class="bi-c">'+cardPassos(v)+cardAtrasoEtapa(v)+cardHoras(v)+'</div>';
+  return h;
+}
+function cardPassos(v){
+  const H = base().filter(d => dias(ref(d)) === 0 || ativo(d));
+  const P = [['Na fila sem técnico','semtec',d => d.criado ? mins(d.aberta, d.criado) : null],['Até o técnico aceitar','atribuido',d => d.aceito && d.criado ? mins(d.criado, d.aceito) : null],['Até sair','atribuido',d => d.saiu && d.aceito ? mins(d.aceito, d.saiu) : null],['Deslocamento','caminho',d => d.chegou && d.saiu ? mins(d.saiu, d.chegou) : null],['No local até começar','local',d => d.iniciou && d.chegou ? mins(d.chegou, d.iniciou) : null],['Atendimento','atendimento',d => d.fim && d.iniciou && d.st === 'completed' ? mins(d.iniciou, d.fim) : null]]
+    .map(p => [p[0], p[1], media(H.map(p[2]).filter(x => x != null))]);
+  const mx = Math.max.apply(null, P.map(x => x[2] || 0).concat([1]));
+  return '<div class="an-card"><div class="an-card__title"><span>Tempo médio de cada passo · hoje</span><small>'+FALTA('Calculado na tela a partir dos carimbos; falta o resumo por etapa no servidor')+'</small></div>'+
+    '<div class="hbars" role="group" aria-label="Tempo médio de cada passo — clique para filtrar o quadro pela etapa">'+P.map(x => '<button type="button" class="hbar" data-alvo="et:'+x[1]+'" '+ap(v, 'et:' + x[1])+' style="grid-template-columns:136px minmax(0,1fr) 60px" aria-label="'+esc(x[0]+': '+fMin(x[2])+' em média — filtrar a etapa')+'"><span>'+x[0]+'</span><i><em style="width:'+((x[2] || 0) / mx * 100).toFixed(1)+'%;background:'+ETAPAS[x[1]].cor+'"></em></i><b>'+fMin(x[2])+'</b></button>').join('')+'</div></div>';
+}
+function cardAtrasoEtapa(v){
+  const L = ORDEM_AT.map(e => [e, base().filter(d => ativo(d) && atrasado(d) && etapa(d) === e).length]); const tot = soma(L, x => x[1]);
+  return '<div class="an-card"><div class="an-card__title"><span>Atrasados por etapa</span><small><button type="button" class="lg-btn" data-alvo="atrasados" '+ap(v, 'atrasados')+'>todos <b>'+tot+'</b></button></small></div><div class="lst">'+
+    L.map(x => '<button type="button" class="lst-btn" data-alvo="atr:'+x[0]+'" '+ap(v, 'atr:' + x[0])+' style="min-height:34px;padding:4px 10px"><span><i class="tdot" style="background:'+ETAPAS[x[0]].cor+';margin-right:6px"></i>'+ETAPAS[x[0]].rot+'</span><b style="color:'+(x[1] ? '#B91C1C' : '#94a3b8')+'">'+x[1]+'</b></button>').join('')+
+    '</div><div class="an-card__foot">Atrasado = prazo da OS vencido. Limite por etapa '+FALTA('Não há limite de tempo por etapa; só o prazo da OS')+'</div></div>';
+}
+function cardHoras(v){
+  const HS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const hoje = h => base().filter(d => d.st === 'completed' && dias(d.fim) === 0 && d.fim.getHours() === h).length;
+  const hist = h => Math.round(base().filter(d => d.st === 'completed' && dias(d.fim) > 0 && dias(d.fim) < 14 && d.fim.getHours() === h).length / 13 * 10) / 10;
+  const mx = Math.max.apply(null, HS.map(h => Math.max(hoje(h), hist(h))).concat([1]));
+  const ateAgora = soma(HS.filter(h => h <= NOW.getHours()), hoje), histAte = Math.round(soma(HS.filter(h => h < NOW.getHours()), hist) + hist(NOW.getHours()) / 2);
+  return '<div class="an-card"><div class="an-card__title"><span>Concluídos por hora · hoje</span><small>média dos 13 dias em cinza</small></div>'+
+    '<div class="dias" role="group" aria-label="Concluídos por hora — clique numa hora para filtrar" style="gap:4px">'+HS.map(h => { const n = hoje(h), m = hist(h), fut = h > NOW.getHours();
+      return fut ? '<span class="dia-btn" style="cursor:default;position:relative" title="'+h+'h · média '+String(m).replace('.', ',')+'"><i style="height:'+Math.max(3, m / mx * 100).toFixed(0)+'%;background:#e2e8f0"></i></span>'
+        : '<button type="button" class="dia-btn" data-alvo="hora:'+h+'" '+ap(v, 'hora:' + h)+' aria-label="'+esc(h+'h: '+n+' concluídos hoje, média '+String(m).replace('.', ',')+' — filtrar')+'" title="'+h+'h · hoje '+n+' · média '+String(m).replace('.', ',')+'" style="gap:1px;align-items:flex-end"><i style="height:'+Math.max(3, m / mx * 100).toFixed(0)+'%;background:#e2e8f0;width:45%"></i><i style="height:'+(n ? Math.max(6, n / mx * 100) : 3).toFixed(0)+'%;width:45%"></i></button>'; }).join('')+'</div>'+
+    '<div class="dias-eixo"><span>7h</span><span>12h</span><span>18h</span></div>'+
+    '<div class="an-card__foot">Até as '+fHM(NOW)+': <b style="color:#0f172a">'+ateAgora+'</b> concluídos hoje; nos 13 dias anteriores, <b style="color:#0f172a">'+histAte+'</b> em média até esse horário <span class="tend '+(ateAgora >= histAte ? 'tend--bom' : 'tend--ruim')+'">'+(ateAgora >= histAte ? '↑ ' : '↓ ')+Math.abs(ateAgora - histAte)+'</span></div></div>';
+}
+function cartao(v, d){
+  const id = v + '-' + d.id; const m = naEtapa(d); const t = d.tec && tecBy(d.tec);
+  const txt = d.st === 'semtec' ? esc(d.cli) : esc(t.curto);
+  return '<div class="cartao" data-linha="'+id+'" tabindex="0" role="button" aria-expanded="false" aria-label="'+esc(d.os+' · '+d.cli+' · '+d.serv+(t ? ' · '+t.nome : '')+' · '+SIT[d.st][0]+' há '+fMin(m)+(atrasado(d) ? ' · atrasado' : ''))+'" title="'+esc(d.os+' · '+d.cli+' · '+d.serv+(t ? ' · '+t.nome : '')+' · '+SIT[d.st][0]+(d.troca && d.troca.st === 'pendente' ? ' · troca pedida' : ''))+'">'+
+    '<i style="background:'+PRI[d.pri].c+'"></i><span class="cartao__txt"><b>'+d.os.slice(-4)+'</b><span>'+txt+'</span>'+(d.troca && d.troca.st === 'pendente' ? '<span style="color:#B45309">'+ic('swap', 11)+'</span>' : '')+'</span><span class="cartao__t'+(atrasado(d) ? ' v' : '')+'">'+fMin(m)+'</span></div>';
+}
+function linhaEncC(v, d, n){
+  const id = v + '-' + d.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row">'+
+    '<td><span class="pat-mono sku">'+d.os+'</span></td><td title="'+esc(d.cli)+'"><span class="nome">'+esc(d.cli)+'</span></td><td title="'+esc(d.serv)+'">'+esc(d.serv)+'</td><td>'+tecCell(d)+'</td><td>'+chip(SIT[d.st][1], SIT[d.st][0])+'</td><td class="r">'+(d.fim ? fHM(d.fim) : '—')+'</td><td>'+prazoTxt(d)+'</td><td class="r">'+CHEV+'</td></tr>'+detRow(id, n, resumo(v, d));
+}
+LINHA.c = linhaEncC;
+function quadroC(v){
+  const st = S[v]; const f = st.alvo && filtro(st.alvo);
+  const chipF = f ? '<div class="pat-filtro-chip-bar" style="padding:0 0 10px"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+esc(f.rot)+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : '';
+  if (st.estado === 'carregando') return '<div class="quadro"><div class="colunas">'+ORDEM_AT.map(e => '<div class="coluna" aria-hidden="true"><div class="coluna__topo" style="--cor:'+ETAPAS[e].cor+'"><b>'+ETAPAS[e].rot+'</b></div><div class="coluna__lista">'+[0, 1, 2].map(() => '<span class="pat-skel" style="height:40px;width:100%"></span>').join('')+'</div></div>').join('')+'</div><div class="tecs" aria-hidden="true"><span class="pat-skel" style="height:200px;width:100%"></span></div></div>';
+  if (st.estado === 'erro') return '<div class="pat-table"><div class="pat-table__empty"><div class="pat-table__empty-title">Não foi possível carregar os despachos</div><div class="pat-table__empty-detail">Verifique a conexão e tente novamente — <button type="button" class="pat-link" data-tentar>Tentar novamente</button></div></div></div>';
+  let ativos = st.estado === 'vazio' ? [] : base().filter(ativo);
+  if (f && f.fd) ativos = ativos.filter(f.fd);
+  if (st.busca) { const q = st.busca.toLowerCase(); ativos = ativos.filter(d => (d.os + ' ' + d.cli + ' ' + d.serv + ' ' + (d.tec ? tecBy(d.tec).nome : '')).toLowerCase().includes(q)); }
+  const cols = ORDEM_AT.map(e => { const L = ativos.filter(d => etapa(d) === e).sort((x, y) => (naEtapa(y) || 0) - (naEtapa(x) || 0)); const tot = st.estado === 'vazio' ? 0 : contaEt(e); const m = st.estado === 'vazio' ? null : maisAntigo(e);
+    return '<section class="coluna'+(f && f.et === e ? ' coluna--sel' : '')+'" aria-label="'+ETAPAS[e].rot+'"><div class="coluna__topo" style="--cor:'+ETAPAS[e].cor+'"><b><em title="'+ETAPAS[e].rot+'">'+ETAPAS[e].rot+'</em> <span>'+(L.length !== tot ? L.length + '/' + tot : tot)+'</span></b><small>'+(m == null ? 'nenhum agora' : 'mais antigo há ' + fMin(m))+'</small></div>'+
+      '<div class="coluna__lista">'+(L.length ? L.map(d => cartao(v, d)).join('') : '<div class="coluna__vazia">'+(st.estado === 'vazio' ? (e === 'semtec' ? 'Nenhuma OS esperando técnico.' : 'Nenhum despacho.') : tot ? 'Fora do filtro.' : e === 'semtec' ? 'Nenhuma OS esperando técnico.' : 'Nenhum despacho nesta etapa.')+'</div>')+'</div></section>'; }).join('');
+  const tecs = proprio() ? '<aside class="tecs">'+'<h3>Meus tempos hoje</h3>'+cardMeusTemposLista(v)+'</aside>' : painelTecs(v);
+  const det = '<div class="detalhe-quadro">'+ativos.map(d => '<div data-detalhe-de="'+v+'-'+d.id+'" style="display:none"><div class="detalhe-quadro__tit">'+ic(ETAPAS[etapa(d)].ic, 15)+d.os+' · '+esc(d.serv)+' · '+esc(d.cli)+' '+sitChip(d)+' '+priPill(d)+'</div>'+resumo(v, d)+'</div>').join('')+'</div>';
+  const enc = lista(v, { tab:'hoje', so:d => !ativo(d), semAbas:true, semChip:true, titulo:'Encerrados hoje · concluídos, cancelados e com falha', vazio:'Nenhum encerrado neste filtro', cols:COLS.c, linha:linhaEncC });
+  return chipF + '<div class="quadro"><div class="colunas" role="group" aria-label="Despachos por etapa">'+cols+'</div>'+tecs+'</div>' + det + enc;
+}
+function painelTecs(v){
+  const G = [['disp','Disponíveis'],['ocup','Ocupados'],['fora','Fora de operação']];
+  return '<aside class="tecs" aria-label="Técnicos"><h3>Técnicos <span style="font-size:11px;color:#64748b;font-weight:600">'+TECS.length+'</span></h3>'+G.map(g => { const L = TECS.filter(t => grupo(tSt(t)) === g[0]); return L.length ? '<h4>'+g[1]+' · '+L.length+'</h4>'+L.map(t => { const s = tSt(t), a = tAtual(t);
+    return '<button type="button" class="tec-btn" data-alvo="tec:'+t.id+'" '+ap(v, 'tec:' + t.id)+' aria-label="'+esc(t.nome+' · '+TST[s].rot+(a ? ' · '+a.os : '')+' — filtrar o quadro')+'"><i class="tdot" style="background:'+TST[s].cor+'"></i><b>'+esc(t.curto)+'</b><em>'+(a ? a.os.slice(-4) : TST[s].rot)+'</em><small>'+(a ? TST[s].rot + ' · ' : '')+t.placa+' · '+(velha(t) ? '<span style="color:#B45309">posição há '+t.visto+' min</span>' : 'posição há '+t.visto+' min')+'</small></button>'; }).join('') : ''; }).join('')+
+    '<p class="pat-ab-detail-note" style="font-size:11px">Situação pela posição do aplicativo, sem coordenada.</p></aside>';
+}
+function cardMeusTemposLista(v){
+  const meus = base().filter(d => dias(ref(d)) === 0 && ateChegar(d) != null);
+  return '<div class="lst">'+(meus.length ? meus.map(d => '<button type="button" class="lst-btn" data-alvo="chegada" '+ap(v, 'chegada')+'><span>'+d.os.slice(-4)+' · até chegar</span><b>'+fMin(ateChegar(d))+'</b></button>').join('') : '<p class="pat-ab-detail-note">Nenhuma chegada ainda hoje.</p>')+'</div>';
+}
+
+
+/* ═════════ RENDER ═════════ */
+const TOPO = { a:topoA, b:typeof topoB === 'function' ? topoB : topoA, c:typeof topoC === 'function' ? topoC : topoA };
+function render(v){
+  const st = S[v], root = $('[data-view="'+v+'"]');
+  if (!pode('ler') || st.estado === 'proibido') { root.innerHTML = cabecalho(v, false) + proibido(); return; }
+  const corpo = v === 'c' && typeof quadroC === 'function' ? quadroC(v) : lista(v);
+  root.innerHTML = cabecalho(v, true) + banners(v) + TOPO[v](v) + corpo;
+  if (st.aberta) { const row = $('[data-linha="'+st.aberta+'"]', root); if (row) abrirLinha(row, true); else st.aberta = null; }
+}
+const renderTudo = () => ['a','b','c'].forEach(render);
+function abrirLinha(row, abrir){
+  const view = row.closest('[data-view]');
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded', 'false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded', 'true'); const d = $('[data-detalhe-de="'+row.dataset.linha+'"]', view); if (d) { d.style.display = ''; if (row.classList.contains('cartao') && d.scrollIntoView) d.scrollIntoView({ block:'nearest' }); } }
+  S[view.dataset.view].aberta = abrir ? row.dataset.linha : null;
+}
+function toggleLinha(row){ abrirLinha(row, row.getAttribute('aria-expanded') !== 'true'); }
+function aplicarAlvo(v, a){
+  const st = S[v];
+  if (st.alvo === a) st.alvo = null;
+  else { const f = filtro(a); st.alvo = a; if (f && f.tab !== st.tab) { st.tab = f.tab; st.busca = ''; } }
+  st.pag = 0; st.aberta = null; render(v);
+  const b = $('[data-view="'+v+'"] [data-alvo="'+a+'"]'); if (b) b.focus({ preventScroll:true });
+}
+
+/* ═════════ FICHA DO DESPACHO — janela de tamanho fixo ═════════ */
+const FABAS = [['resumo','Resumo'],['linha','Linha do tempo'],['tecnico','Técnico'],['vistoria','Vistoria']];
+let ficha = { id:null, aba:'resumo', origem:null, v:'a' };
+function abrirFicha(v, id, aba, origem){ ficha = { id, aba:aba || 'resumo', origem, v }; renderFicha(); $('#ficha-overlay').hidden = false; document.body.style.overflow = 'hidden'; $('[data-ficha-win] .voltar').focus(); }
+function fecharFicha(){
+  $('#ficha-overlay').hidden = true; document.body.style.overflow = ''; const v = ficha.v; ficha.id = null;
+  ['#ficha-cabeca', '#ficha-abas', '#ficha-corpo'].forEach(s => { $(s).innerHTML = ''; });
+  const o = ficha.origem; if (o && document.contains(o)) { o.focus({ preventScroll:true }); return; }
+  const st = S[v]; const row = st.aberta && $('[data-view="'+v+'"] [data-linha="'+st.aberta+'"]'); if (row) row.focus({ preventScroll:true });
+}
+const fCard = (t, corpo, larga, extra) => '<section class="f-card'+(larga ? ' larga' : '')+'"><h3><span>'+t+'</span>'+(extra || '')+'</h3>'+corpo+'</section>';
+const fKpi = (val, rot) => '<div class="f-kpi"><b>'+val+'</b><span>'+rot+'</span></div>';
+const entre = (a, b) => a && b ? fMin(mins(a, b)) : '—';
+const FICHA = {
+  resumo:d => { const t = tecBy(d.tec);
+    return (ativo(d) && atrasado(d) ? '<div class="f-alerta">'+ic('clock', 18)+'<span><strong>Atrasado:</strong> o prazo da OS venceu às '+fHM(prazo(d))+' e o despacho ainda está em “'+ETAPAS[etapa(d)].rot+'”.</span></div>' : '')+(avisoTroca(d) ? '<div style="margin-bottom:12px">'+avisoTroca(d)+'</div>' : '')+
+    '<div class="f-kpis">'+fKpi(d.criado ? fHM(d.criado) : '—', 'Despachado às')+fKpi(entre(d.criado, d.aceito), 'Até aceitar')+fKpi(entre(d.aceito, d.saiu), 'Até sair')+fKpi(ateChegar(d) == null ? '—' : fMin(ateChegar(d)), 'Até chegar')+fKpi(d.iniciou ? fMin(mins(d.iniciou, d.st === 'completed' ? d.fim : NOW)) : '—', d.st === 'completed' ? 'Duração do atendimento' : 'Em atendimento há')+'</div>'+
+    '<div class="f-grid">'+fCard('Atendimento', '<div class="info-grid">'+[['OS', d.os], ['Cliente', esc(d.cli)], ['Serviço', esc(d.serv)], ['Prioridade', PRI[d.pri].rot], ['Aberta às', fHM(d.aberta)], ['Prazo da OS', fHM(prazo(d))]].map(x => '<div class="info"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div><p class="pat-ab-detail-note" style="margin-top:10px">'+ic('mapPin', 13)+' '+esc(d.end)+'</p>')+
+      fCard('Etapas', passos(d)+'<p class="pat-ab-detail-note" style="margin-top:10px">Cada etapa é marcada pelo técnico no aplicativo; o escritório só corrige quando o aplicativo não marcou.</p>'+(t ? '<p class="pat-ab-detail-note" style="margin-top:6px">'+ic('user', 13)+' '+esc(t.nome)+' · '+t.placa+' · '+t.equipe+'</p>' : ''))+'</div>'; },
+  linha:d => fCard('Linha do tempo do despacho', evHTML(d)+'<p class="pat-ab-detail-note" style="margin-top:10px">Cada mudança fica registrada com quem fez e quando. Trocas autorizadas pela própria pessoa, na organização com uma pessoa só acima da operação, aparecem como Crítico na auditoria.</p>', true),
+  tecnico:d => { const t = tecBy(d.tec); if (!t) return fCard('Técnico', '<div class="ui-state"><strong>Ainda sem técnico</strong><p>Despache a OS para um técnico disponível.</p></div>', true);
+    const s = tSt(t); const outros = DS.filter(x => x.tec === t.id && x !== d && deHoje(x));
+    const hist = eventos(d).filter(e => /Troca|Reatribuído|Despachado/.test(e.txt));
+    return '<div class="f-grid">'+fCard('Técnico da OS', '<div class="info-grid">'+[['Nome', esc(t.nome)], ['Equipe', t.equipe], ['Viatura', t.placa + ' · ' + t.viat], ['Situação agora', TST[s].rot], ['Última posição', 'há ' + t.visto + ' min' + (velha(t) ? ' (antiga)' : '')], ['Alocado por', esc(d.por)]].map(x => '<div class="info"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div><p class="pat-ab-detail-note" style="margin-top:10px">Sem coordenada nesta tela. Ao despachar, o técnico passa a ser o técnico responsável pela OS. '+FALTA('Hoje o despacho não grava o técnico na OS (D1-07c)')+'</p>')+
+      fCard('Histórico de técnicos desta OS', hist.length ? '<table class="f-tab"><thead><tr><th>Quando</th><th>O quê</th><th>Por</th></tr></thead><tbody>'+hist.map(e => '<tr><td class="pat-mono">'+fHM(e.q)+'</td><td>'+esc(e.txt)+(e.crit ? ' '+chip('danger', 'Crítico') : '')+'</td><td>'+esc(e.por || '')+'</td></tr>').join('')+'</tbody></table>' : '<p class="pat-ab-detail-note">Sem trocas.</p>')+
+      fCard('Outros despachos de '+esc(t.curto)+' hoje · '+outros.length, outros.length ? '<table class="f-tab"><thead><tr><th>OS</th><th>Serviço</th><th>Situação</th><th class="r">Até chegar</th></tr></thead><tbody>'+outros.map(x => '<tr><td class="pat-mono">'+x.os+'</td><td>'+esc(x.serv)+'</td><td>'+chip(SIT[x.st][1], SIT[x.st][0])+'</td><td class="r">'+fMin(ateChegar(x))+'</td></tr>').join('')+'</tbody></table>' : '<p class="pat-ab-detail-note">Nenhum outro despacho hoje.</p>', true)+'</div>'; },
+  vistoria:d => { const feitos = d.st === 'completed' ? 18 : d.st === 'in_service' ? 11 : d.st === 'arrived' ? 4 : 0;
+    return fCard('Vistoria do atendimento', '<div class="info-grid">'+[['Modelo', d.serv.startsWith('Reboque') || d.serv.startsWith('Remoção') ? 'Vistoria de remoção' : 'Vistoria de socorro no local'], ['Preparada em', d.criado && d.st !== 'draft' ? fHM(d.criado) + ' (no despacho)' : 'ao enviar o despacho'], ['Respostas', feitos + ' de 18 itens']].map(x => '<div class="info"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('')+'</div>'+
+      '<div class="prog" style="margin-top:12px"><i><em style="width:'+(feitos / 18 * 100).toFixed(0)+'%;background:'+(feitos === 18 ? '#22C55E' : '#2563EB')+'"></em></i><span>'+feitos+'/18</span></div>'+
+      '<p class="pat-ab-detail-note" style="margin-top:12px">Ao despachar, a vistoria é preparada para o técnico com o modelo publicado do serviço. Se o modelo não estiver publicado, quem despachou é avisado. Numa troca de técnico, a vistoria passa para quem assume; o que o técnico anterior respondeu fica registrado.</p>', true); }
+};
+function renderFicha(){
+  const d = dsBy(ficha.id); if (!d) return;
+  const acs = [];
+  if (ativo(d) && pode('situacao') && (TRANS[d.st] || []).some(s => ACAO[s])) acs.push('<button type="button" class="pat-btn pat-btn--primary" data-dlg-sit="'+d.id+'">'+ic('arrowRight', 14)+(d.st === 'draft' ? 'Enviar ao técnico' : 'Avançar situação')+'</button>');
+  if (ativo(d) && d.troca && d.troca.st === 'pendente' && pode('autorizar')) acs.push('<button type="button" class="pat-btn" data-dlg-autorizar="'+d.id+'">'+ic('shield', 14)+'Analisar pedido de troca</button>');
+  else if (ativo(d) && !(d.troca && d.troca.st === 'pendente') && pode('trocar') && d.st !== 'draft') acs.push('<button type="button" class="pat-btn" data-dlg-trocar="'+d.id+'">'+ic('swap', 14)+rotTrocar(d)+'</button>');
+  const E = ETAPAS[etapa(d)];
+  $('#ficha-cabeca').innerHTML = '<div class="ficha__tile" style="background:'+E.bg+';color:'+E.cor+'">'+ic(E.ic, 22)+'</div><div style="min-width:0"><div class="ficha__nome">'+d.os+' · '+esc(d.serv)+' '+sitChip(d)+' '+priPill(d)+'</div><div class="ficha__sub">'+esc(d.cli)+(d.tec ? ' · ' + esc(tecNome(d)) : '')+'</div></div><div class="ficha__acoes">'+acs.join('')+'</div>';
+  $('#ficha-abas').innerHTML = FABAS.map(a => '<button type="button" role="tab" data-ficha-tab="'+a[0]+'" aria-selected="'+(a[0] === ficha.aba)+'" tabindex="'+(a[0] === ficha.aba ? 0 : -1)+'" class="'+(a[0] === ficha.aba ? 'is-active' : '')+'">'+a[1]+'</button>').join('');
+  $('#ficha-corpo').innerHTML = '<div role="tabpanel" aria-label="'+FABAS.find(a => a[0] === ficha.aba)[1]+'">'+FICHA[ficha.aba](d)+'</div>';
+  $('#ficha-corpo').scrollTop = 0;
+}
+
+/* ═════════ JANELAS DE FORMULÁRIO ═════════ */
+let dlgOrigem = null;
+const X_SVG = ic('x', 18);
+function abrirDlg(titulo, corpo, origem){
+  dlgOrigem = origem || document.activeElement;
+  $('#dlg').innerHTML = '<header><h2 id="dlg-tit">'+titulo+'</h2><button type="button" data-fechar-dlg aria-label="Fechar">'+X_SVG+'</button></header>'+corpo;
+  $('#dlg-overlay').hidden = false; document.body.style.overflow = 'hidden';
+  const f = $('#dlg [data-autofoco]') || $('#dlg select, #dlg input, #dlg textarea') || $('#dlg [data-fechar-dlg]'); f.focus();
+}
+function fecharDlg(){
+  $('#dlg-overlay').hidden = true; $('#dlg').innerHTML = '';
+  if ($('#ficha-overlay').hidden) document.body.style.overflow = '';
+  if (dlgOrigem && document.contains(dlgOrigem)) { dlgOrigem.focus({ preventScroll:true }); return; }
+  if (!$('#ficha-overlay').hidden) { $('[data-ficha-win] .voltar').focus(); return; }
+  const st = S[opcao]; const row = st.aberta && $('[data-view="'+opcao+'"] [data-linha="'+st.aberta+'"]'); if (row) row.focus({ preventScroll:true });
+}
+const fld = (rot, nome, ctrl, larga, extra) => '<label class="ui-field'+(larga ? ' larga' : '')+'" data-campo="'+nome+'"'+(extra || '')+'><span>'+rot+'</span>'+ctrl+'<small class="form-error" data-erro="'+nome+'"></small></label>';
+function optTecs(excluir){
+  return '<option value="">Selecione o técnico…</option>'+ORDEM_TST.map(s => { const L = TECS.filter(t => tSt(t) === s && t.id !== excluir); return L.length ? '<optgroup label="'+TST[s].rot+'">'+L.map(t => '<option value="'+t.id+'">'+esc(t.nome)+' · '+t.viat+(tAtual(t) ? ' · em '+tAtual(t).os : '')+'</option>').join('')+'</optgroup>' : ''; }).join('');
+}
+const BTN_CANCELAR = '<button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Cancelar</button>';
+function dlgDespachar(id, origem){
+  const fila = DS.filter(d => d.st === 'semtec').sort((x, y) => PRI[x.pri].o - PRI[y.pri].o || x.aberta - y.aberta);
+  abrirDlg('Novo despacho', '<form class="dlg-form" data-form="despachar" novalidate>'+
+    fld('OS *', 'os', '<select class="ui-input" name="os"'+(id ? '' : ' data-autofoco')+'><option value="">Selecione a OS sem técnico…</option>'+fila.map(d => '<option value="'+d.id+'"'+(d.id === id ? ' selected' : '')+'>'+d.os+' · '+esc(d.cli)+' · '+esc(d.serv)+' · '+PRI[d.pri].rot+'</option>').join('')+'</select>', true)+
+    fld('Técnico *', 'tec', '<select class="ui-input" name="tec"'+(id ? ' data-autofoco' : '')+'>'+optTecs()+'</select>')+
+    fld('Enviar', 'modo', '<select class="ui-input" name="modo"><option value="assigned">Agora — o técnico recebe no aplicativo</option><option value="draft">Guardar como rascunho</option></select>')+
+    fld('Observação para o técnico', 'obs', '<textarea class="ui-input" name="obs" rows="2" maxlength="500"></textarea>', true)+
+    '<p class="dlg-nota" data-nota-tec>Ao despachar, o técnico escolhido passa a ser o técnico responsável pela OS e a vistoria do serviço é preparada para ele.</p>'+
+    '<footer>'+BTN_CANCELAR+'<button type="submit" class="ui-button ui-button--primary">Despachar</button></footer></form>', origem);
+}
+function proxs(d){ return (TRANS[d.st] || []).filter(s => ACAO[s]); }
+function dlgSit(id, origem){
+  const d = dsBy(id); const P = proxs(d);
+  abrirDlg((d.st === 'draft' ? 'Enviar ao técnico' : 'Avançar situação') + ' · ' + d.os, '<form class="dlg-form" data-form="sit" data-id="'+id+'" novalidate>'+
+    '<p class="dlg-nota larga">Agora: <b>'+SIT[d.st][0]+'</b>'+(d.tec ? ' com '+esc(tecNome(d)) : '')+'. Só aparecem as próximas situações que o sistema aceita a partir daqui.</p>'+
+    '<fieldset class="larga" style="border:0;display:grid;gap:6px"><legend class="sr">Próxima situação</legend>'+P.map((s, k) => '<label style="display:flex;align-items:center;gap:8px;font-size:13px;min-height:36px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer"><input type="radio" name="prox" value="'+s+'"'+(k === 0 ? ' checked data-autofoco' : '')+'> '+ACAO[s]+'</label>').join('')+'</fieldset>'+
+    fld('Observação', 'obs', '<textarea class="ui-input" name="obs" rows="2" maxlength="500" placeholder="Ex.: o aplicativo do técnico estava sem sinal"></textarea>', true)+
+    '<footer>'+BTN_CANCELAR+'<button type="submit" class="ui-button ui-button--primary">Confirmar</button></footer></form>', origem);
+}
+function dlgTrocar(id, origem){
+  const d = dsBy(id); const t = tecBy(d.tec); const ini = iniciado(d); const auto = ini && pode('autorizar') && unico;
+  const nota = !ini ? '<p class="dlg-nota">O atendimento ainda não começou: a troca vale na hora. '+esc(t.nome)+' deixa de ser o técnico da OS e o novo técnico recebe o despacho no aplicativo.</p>'
+    : auto ? '<div class="aviso-crit dlg-nota" style="background:#FEF2F2;border-color:#FECACA;color:#991B1B">'+ic('shield', 15)+'<span><strong>Você é a única pessoa acima da Operação de Campo nesta organização.</strong> O atendimento já começou com '+esc(t.nome)+': a troca é autorizada por você mesmo, a justificativa é obrigatória e o registro entra como evento <b>Crítico</b> na auditoria.</span></div>'
+    : '<div class="aviso-troca dlg-nota">'+ic('alert', 15)+'<span><strong>O atendimento já começou</strong> ('+SIT[d.st][0].toLowerCase()+' desde '+fHM(d.st === 'arrived' ? d.chegou : d.iniciou)+'). Trocar o técnico agora é exceção: '+(pode('autorizar') ? 'outra pessoa acima da Operação de Campo' : 'Gestor ou Administrador')+' precisa autorizar. Até lá, '+esc(t.nome)+' segue como técnico da OS. O que ele sincronizar depois da troca chega como conflito para quem autorizou resolver.</span></div>';
+  abrirDlg(!ini ? 'Reatribuir técnico · ' + d.os : auto ? 'Trocar técnico com autorização própria · ' + d.os : 'Pedir troca de técnico · ' + d.os, '<form class="dlg-form" data-form="trocar" data-id="'+id+'" data-modo="'+(!ini ? 'direto' : auto ? 'proprio' : 'pedido')+'" novalidate>'+
+    '<p class="dlg-nota larga">Técnico atual: <b>'+esc(t.nome)+'</b> · '+t.placa+' · '+SIT[d.st][0]+'</p>'+
+    fld('Novo técnico *', 'tec', '<select class="ui-input" name="tec" data-autofoco>'+optTecs(t.id)+'</select>', true)+
+    fld(auto ? 'Justificativa * (mínimo 20 caracteres)' : 'Motivo *', 'motivo', '<textarea class="ui-input" name="motivo" rows="3" maxlength="500"></textarea>', true)+nota+
+    '<footer>'+BTN_CANCELAR+'<button type="submit" class="ui-button '+(auto ? 'ui-button--danger' : 'ui-button--primary')+'">'+(!ini ? 'Reatribuir' : auto ? 'Trocar e registrar como Crítico' : 'Enviar pedido')+'</button></footer></form>', origem);
+}
+function dlgAutorizar(id, origem){
+  const d = dsBy(id); const tr = d.troca; const de = tecBy(tr.de), para = tecBy(tr.para);
+  const mesmo = tr.por === PAPEIS[papel].nome; const auto = mesmo && unico;
+  if (mesmo && !unico) { abrirDlg('Pedido de troca · ' + d.os, '<div class="dlg-form"><p class="dlg-nota larga">Você fez este pedido. Quem autoriza é outra pessoa acima da Operação de Campo (Gestor ou Administrador).</p><footer><button type="button" class="ui-button ui-button--primary" data-fechar-dlg data-autofoco>Entendi</button></footer></div>', origem); return; }
+  abrirDlg('Autorizar troca de técnico · ' + d.os, '<form class="dlg-form" data-form="autorizar" data-id="'+id+'" novalidate>'+
+    '<div class="larga" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+      '<div class="b-card"><h4>Pedido</h4>'+campo('De', esc(de.nome))+campo('Para', esc(para.nome)+' · '+TST[tSt(para)].rot)+campo('Pedido por', esc(tr.por)+' às '+fHM(tr.q))+campo('Motivo', esc(tr.motivo))+'</div>'+
+      '<div class="b-card"><h4>O que já foi feito por '+esc(de.curto)+'</h4>'+campo('Chegou ao local', d.chegou ? fHM(d.chegou) : '—')+campo('Atendimento desde', d.iniciou ? fHM(d.iniciou) : '—')+campo('Vistoria', (d.st === 'in_service' ? 11 : 4)+' de 18 itens respondidos')+'<span class="pat-ab-detail-note">Isso fica na OS e na auditoria. O que '+esc(de.curto)+' sincronizar depois da troca chega a você como conflito.</span></div>'+
+    '</div>'+
+    fld('Justificativa *'+(auto ? ' (mínimo 20 caracteres)' : ''), 'just', '<textarea class="ui-input" name="just" rows="3" maxlength="500" data-autofoco></textarea>', true)+
+    (auto ? '<div class="aviso-crit dlg-nota">'+ic('shield', 15)+'<span>Você fez o pedido e é a única pessoa acima da Operação de Campo: a decisão é sua, com justificativa, e entra como evento <b>Crítico</b> na auditoria.</span></div>' : '')+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Voltar</button><button type="submit" class="ui-button ui-button--secondary" data-decisao="recusar">Recusar</button><button type="submit" class="ui-button ui-button--primary" data-decisao="autorizar">Autorizar troca</button></footer></form>', origem);
+}
+function dlgCancelar(id, origem){
+  const d = dsBy(id);
+  abrirDlg('Cancelar despacho · ' + d.os, '<form class="dlg-form" data-form="cancelar" data-id="'+id+'" novalidate><p class="dlg-nota larga">'+(d.tec ? esc(tecNome(d))+' é avisado no aplicativo e ' : '')+'a OS volta para a fila sem técnico. O cancelamento fica na linha do tempo.</p>'+
+    fld('Motivo do cancelamento *', 'motivo', '<textarea class="ui-input" name="motivo" rows="3" maxlength="500" data-autofoco></textarea>', true)+
+    '<footer><button type="button" class="ui-button ui-button--ghost" data-fechar-dlg>Voltar</button><button type="submit" class="ui-button ui-button--danger">Cancelar despacho</button></footer></form>', origem);
+}
+function erro(form, campo, msg){ const e = $('[data-erro="'+campo+'"]', form); if (e) e.textContent = msg; const c = $('[name="'+campo+'"]', form); if (c) c.setAttribute('aria-invalid', 'true'); }
+function limparErros(form){ $$('[data-erro]', form).forEach(e => e.textContent = ''); $$('[aria-invalid]', form).forEach(e => e.removeAttribute('aria-invalid')); }
+function depoisDeMudar(msg){ fecharDlg(); renderTudo(); if (!$('#ficha-overlay').hidden) renderFicha(); toast(msg); }
+const quem = () => PAPEIS[papel].nome;
+function enviar(form, decisao){
+  limparErros(form); const t = form.dataset.form; const g = n => (form.elements[n] || {}).value || '';
+  const falha = () => { const f = $('[aria-invalid="true"]', form); if (f) f.focus(); };
+  if (t === 'despachar') {
+    const d = dsBy(g('os')), tec = g('tec'); let ok = true;
+    if (!d) { erro(form, 'os', 'Selecione a OS.'); ok = false; }
+    if (!tec) { erro(form, 'tec', 'Selecione o técnico.'); ok = false; }
+    if (!ok) return falha();
+    const q = agora(); d.st = g('modo'); d.tec = tec; d.criado = q; d.por = quem(); if (g('obs').trim()) d.obs = g('obs').trim();
+    depoisDeMudar(d.os + (d.st === 'draft' ? ' guardada como rascunho para ' : ' despachada para ') + tecBy(tec).nome + '. ' + (d.st === 'draft' ? '' : tecBy(tec).nome + ' passa a ser o técnico da OS.'));
+  } else if (t === 'sit') {
+    const d = dsBy(form.dataset.id), s = (form.querySelector('[name="prox"]:checked') || {}).value; if (!s) return;
+    const q = agora();
+    if (s === 'accepted') d.aceito = q; if (s === 'on_route') { d.saiu = q; if (!d.aceito) d.aceito = q; } if (s === 'arrived') d.chegou = q; if (s === 'in_service') d.iniciou = q; if (s === 'completed' || s === 'failed') d.fim = q; if (s === 'assigned') d.criado = q;
+    if (s === 'failed') d.motivo = g('obs').trim() || 'Não informado pelo técnico.';
+    if (g('obs').trim() && s !== 'failed') d.ev.push({ q, txt:'Observação: ' + g('obs').trim(), por:quem() });
+    if (s !== 'assigned' && s !== 'completed' && s !== 'failed') d.ev.push({ q, txt:'Situação corrigida pelo escritório: ' + SIT[s][0], por:quem() });
+    d.st = s; depoisDeMudar(d.os + ': ' + SIT[s][0] + '.');
+  } else if (t === 'trocar') {
+    const d = dsBy(form.dataset.id), modo = form.dataset.modo, novo = g('tec'), mot = g('motivo').trim(); let ok = true;
+    if (!novo) { erro(form, 'tec', 'Selecione o novo técnico.'); ok = false; }
+    if (!mot) { erro(form, 'motivo', modo === 'proprio' ? 'A justificativa é obrigatória.' : 'Informe o motivo da troca.'); ok = false; }
+    else if (modo === 'proprio' && mot.length < 20) { erro(form, 'motivo', 'Escreva ao menos 20 caracteres: a justificativa vai para a auditoria.'); ok = false; }
+    if (!ok) return falha();
+    const q = agora(); const de = tecBy(d.tec), para = tecBy(novo);
+    if (modo === 'pedido') { d.troca = { st:'pendente', de:de.id, para:novo, por:quem(), q, motivo:mot }; d.ev.push({ q, txt:'Troca de técnico pedida: ' + de.nome + ' → ' + para.nome + '. Aguarda autorização.', por:quem() }); depoisDeMudar('Pedido enviado. Gestor ou Administrador decide; até lá ' + de.nome + ' segue na OS.'); return; }
+    d.ev.push({ q, txt:(modo === 'proprio' ? 'Troca autorizada pela própria pessoa: ' : 'Reatribuído: ') + de.nome + ' → ' + para.nome + ' · ' + mot, por:quem(), crit:modo === 'proprio' });
+    d.tec = novo; d.por = quem(); if (modo === 'direto') d.st = 'reassigned';
+    depoisDeMudar(para.nome + ' agora é o técnico da ' + d.os + (modo === 'proprio' ? '. Registrado como Crítico na auditoria.' : '.'));
+  } else if (t === 'autorizar') {
+    const d = dsBy(form.dataset.id), j = g('just').trim(), tr = d.troca; const auto = tr.por === quem() && unico;
+    if (!j) { erro(form, 'just', 'A justificativa é obrigatória.'); return falha(); }
+    if (auto && j.length < 20) { erro(form, 'just', 'Escreva ao menos 20 caracteres: a justificativa vai para a auditoria.'); return falha(); }
+    const q = agora(); const de = tecBy(tr.de), para = tecBy(tr.para);
+    if (decisao === 'recusar') { tr.st = 'recusada'; d.ev.push({ q, txt:'Troca recusada (' + de.nome + ' → ' + para.nome + ') · ' + j, por:quem() }); depoisDeMudar('Troca recusada. ' + de.nome + ' segue como técnico da ' + d.os + '.'); return; }
+    tr.st = 'autorizada'; d.ev.push({ q, txt:'Troca autorizada: ' + de.nome + ' → ' + para.nome + ' · ' + j, por:quem(), crit:auto }); d.tec = tr.para;
+    depoisDeMudar('Troca autorizada: ' + para.nome + ' agora é o técnico da ' + d.os + '. O que ' + de.nome + ' sincronizar depois chega como conflito.');
+  } else if (t === 'cancelar') {
+    const d = dsBy(form.dataset.id), m = g('motivo').trim(); if (!m) { erro(form, 'motivo', 'Informe o motivo do cancelamento.'); return falha(); }
+    const q = agora(); d.ev.push({ q, txt:'Despacho cancelado · ' + m + (d.tec ? ' (técnico: ' + tecNome(d) + ')' : ''), por:quem() });
+    d.st = 'semtec'; d.tec = null; d.criado = null; d.aceito = d.saiu = d.chegou = d.iniciou = null; d.troca = null;
+    depoisDeMudar('Despacho cancelado. A ' + d.os + ' voltou para a fila sem técnico.');
+  }
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 4200); }
+
+/* ── Opções ── */
+const ROT = { a:'Opção A — Despachos de hoje no padrão aprovado, com BI', b:'Opção B — Analítica', c:'Opção C — Quadro por etapa, com os técnicos ao lado' };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Despachos · Opção ' + o.toUpperCase();
+  $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estado === S[o].estado));
+}
+const vw = x => x.closest('[data-view]') ? x.closest('[data-view]').dataset.view : opcao;
+
+/* ── Eventos ── */
+let decisao = null;
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Despachos') toast('Na maquete só a tela de Despachos está montada.'); return; }
+  if ((x = el('[data-estado]'))) { S[opcao].estado = x.dataset.estado; S[opcao].aberta = null; render(opcao); trocarOpcao(opcao); $('[data-view="'+opcao+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-papel]'))) { papel = x.dataset.papel; $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.papel === papel)); if (!$('#ficha-overlay').hidden) fecharFicha(); renderNav(); ['a','b','c'].forEach(v => { S[v].aberta = null; S[v].alvo = null; }); renderTudo(); return; }
+  if ((x = el('[data-unico]'))) { unico = !unico; x.setAttribute('aria-pressed', unico); renderTudo(); toast(unico ? 'Simulando: uma pessoa só acima da Operação de Campo. Veja como Gestor uma troca com atendimento iniciado.' : 'Simulando: mais de uma pessoa acima da Operação de Campo.'); return; }
+  if ((x = el('[data-marcas]'))) { const on = document.body.classList.toggle('sem-marcas'); x.setAttribute('aria-pressed', on); x.textContent = on ? 'Mostrar as marcas “falta no backend”' : 'Esconder as marcas “falta no backend”'; return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', !c.hidden); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  if ((x = el('[data-decisao]'))) { decisao = x.dataset.decisao; return; }
+  if ((x = el('[data-fechar-dlg]'))) { fecharDlg(); return; }
+  if (t.id === 'dlg-overlay') { fecharDlg(); return; }
+  if ((x = el('[data-voltar-ficha]'))) { fecharFicha(); return; }
+  if (t.id === 'ficha-overlay') { fecharFicha(); return; }
+  if ((x = el('[data-ficha-tab]'))) { ficha.aba = x.dataset.fichaTab; renderFicha(); const b = $('#ficha-abas [data-ficha-tab="'+ficha.aba+'"]'); if (b) b.focus(); return; }
+  if ((x = el('[data-ficha]'))) { abrirFicha(vw(x), x.dataset.ficha, x.dataset.fichaAba, x); return; }
+  if ((x = el('[data-dlg-despachar]'))) { dlgDespachar(x.dataset.dlgDespachar || null, x); return; }
+  if ((x = el('[data-dlg-sit]'))) { dlgSit(x.dataset.dlgSit, x); return; }
+  if ((x = el('[data-dlg-trocar]'))) { dlgTrocar(x.dataset.dlgTrocar, x); return; }
+  if ((x = el('[data-dlg-autorizar]'))) { dlgAutorizar(x.dataset.dlgAutorizar, x); return; }
+  if ((x = el('[data-dlg-cancelar]'))) { dlgCancelar(x.dataset.dlgCancelar, x); return; }
+  if ((x = el('[data-toast]'))) { toast(x.dataset.toast); return; }
+  if ((x = el('[data-ver-trocas]'))) { const v = vw(x); S[v].alvo = null; aplicarAlvo(v, 'troca'); return; }
+  if ((x = el('[data-tab]'))) { const v = vw(x); const st = S[v]; if (st.tab !== x.dataset.tab) { st.tab = x.dataset.tab; st.alvo = null; st.pag = 0; st.aberta = null; render(v); const b = $('[data-view="'+v+'"] [data-tab="'+st.tab+'"]'); if (b) b.focus(); } return; }
+  if ((x = el('[data-pag]'))) { const v = vw(x); S[v].pag += +x.dataset.pag; S[v].aberta = null; render(v); const b = $('[data-view="'+v+'"] [data-pag="'+x.dataset.pag+'"]'); if (b && !b.disabled) b.focus(); return; }
+  if ((x = el('[data-limpar-filtro]'))) { const v = vw(x); S[v].alvo = null; S[v].pag = 0; S[v].aberta = null; render(v); return; }
+  if ((x = el('[data-tentar]'))) { const v = vw(x); S[v].estado = 'normal'; render(v); trocarOpcao(opcao); return; }
+  if ((x = el('[data-alvo]'))) { const v = vw(x); if (!comDados(v)) return; aplicarAlvo(v, x.dataset.alvo); return; }
+  if ((x = el('[data-linha]'))) { toggleLinha(x); return; }
+});
+document.addEventListener('submit', e => { const f = e.target.closest('[data-form]'); if (f) { e.preventDefault(); const sub = e.submitter && e.submitter.dataset.decisao; enviar(f, sub || decisao); decisao = null; } });
+document.addEventListener('change', e => {
+  const t = e.target; const f = t.closest('[data-form]'); if (!f) return;
+  if (f.dataset.form === 'despachar' && t.name === 'tec') { const tc = tecBy(t.value); $('[data-nota-tec]', f).textContent = tc ? 'Ao despachar, ' + tc.nome + ' passa a ser o técnico responsável pela OS e a vistoria do serviço é preparada para ' + (tc.nome.endsWith('a') ? 'ela' : 'ele') + '.' + (tAtual(tc) ? ' Atenção: ' + tc.curto + ' está com a ' + tAtual(tc).os + ' (' + TST[tSt(tc)].rot.toLowerCase() + ').' : '') : 'Ao despachar, o técnico escolhido passa a ser o técnico responsável pela OS e a vistoria do serviço é preparada para ele.'; }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.busca) { const v = t.dataset.busca; S[v].busca = t.value.trim(); S[v].pag = 0; S[v].aberta = null; render(v); const n = $('[data-view="'+v+'"] [data-busca]'); if (n) { n.focus(); const l = n.value.length; try { n.setSelectionRange(l, l); } catch (_) {} } }
+});
+function prender(e, raiz){ const f = $$('button:not([disabled]), [href], input, select, textarea, [tabindex="0"]', raiz).filter(n => n.offsetParent !== null && !n.closest('[hidden]')); if (!f.length) return; const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } }
+document.addEventListener('keydown', e => {
+  const dlgAberto = !$('#dlg-overlay').hidden, fichaAberta = !$('#ficha-overlay').hidden;
+  if (e.key === 'Escape') { if (dlgAberto) { fecharDlg(); return; } if (fichaAberta) { fecharFicha(); return; } return; }
+  if (dlgAberto) { if (e.key === 'Tab') prender(e, $('#dlg')); return; }
+  if (fichaAberta) {
+    if (e.key === 'Tab') { prender(e, $('[data-ficha-win]')); return; }
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.matches('[data-ficha-tab]')) { const ids = FABAS.map(a => a[0]); const i = ids.indexOf(ficha.aba); ficha.aba = ids[(i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length]; renderFicha(); $('#ficha-abas [data-ficha-tab="'+ficha.aba+'"]').focus(); e.preventDefault(); }
+    return;
+  }
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); toggleLinha(t); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g[data-alvo]')) { e.preventDefault(); aplicarAlvo(vw(t), t.dataset.alvo); }
+});
+
+/* ── Inicialização ── */
+renderNav(); renderTudo(); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

@@ -11110,3 +11110,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
 - **Perguntas ao dono:** o Operador vê valores (a entrada exige custo unitário)? Para o Gestor vale a matriz (leitura) ou o catálogo (tudo)? O Técnico vê "o que está comigo"? Entram vários locais (depósitos)?
 - **teste de encerramento:** cada item vira teste no bloco que o fechar.
+
+## P-DESP-TECNICO-VE-DESPACHO-ALHEIO (2026-10-17) — o Técnico de Campo vê e muda a situação de despachos de outros técnicos — ALTA (permissão)
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achado pelo agente da maquete de Despachos, por LEITURA de código na `main` `4fe7524e`; não executado) · **dono:** bloco de permissão a planejar (junta completa, unanimidade de 3), junto ou depois do bloco de `P-TECNICO-LE-SO-ATRIBUIDAS`
+- Nem a lista de despachos nem a mudança de situação olham de quem é o despacho (`src/modules/field-dispatch/field-dispatch.service.ts:205-217`, `:486-493`). Contraria a `D-TECNICO-LE-SO-ATRIBUIDAS` e, na web, a `D-DESP-TECNICO-SEM-TELA-WEB`.
+- **Primeiro passo do bloco:** confirmar por EXECUÇÃO (técnico A lista e muda situação de despacho do técnico B), com vermelho-controle.
+- **teste de encerramento:** técnico A não lista nem altera despacho do técnico B (recusa no contrato do 07a); técnico A segue mudando a situação dos seus.
+
+## P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o "atendimento iniciado" — ALTA (permissão; registro §A2)
+
+- **status:** RESPONDIDA em 2026-10-17 pelo dono (`D-INICIO-ATENDIMENTO-CONFIRMADO`: "No local"); FECHA com o merge do #440 (a trava no estado escolhido) · **escopo:** novo (achado pela `agente-fabrica` ao escrever os corpos da junta do 07c-b1; conferido pelo orquestrador em `decisoes.md`) · **dono:** o DONO responde; o `B-O6R-07c-b1` (#440) e o `B-O6R-07c-b2` aplicam
+- **`D-07CB-EMENDA-RECOMENDACOES`, P3 (15/10):** "atendimento iniciado = a partir de `on_route` ('saiu para o atendimento'), no despacho ou na OS".
+- **`D-DESP-INICIO-ATENDIMENTO` (17/10):** "começa em **No local**". O orquestrador recomendou isto sem conferir a P3 de 15/10 — o erro de origem é do orquestrador, não do dono.
+- **Diferença prática:** com o despacho "A caminho", trocar o técnico é imediato (17/10) ou exige autorização (15/10).
+- **(Histórico, até a resposta do dono)** Enquanto o dono não responde (provisório, declarado): vale a mais nova (17/10, "No local"), que é a que a trava `D-07CB1-TRAVA-ATE-B2` do #440 implementa. Se o dono escolher a de 15/10, a mudança no #440 é a etapa de início da trava (`on_route` passa a recusar) e um caso de teste.
+- **teste de encerramento:** a resposta do dono gravada em `decisoes.md`; a trava e o teste do 07c-b1 no estado escolhido.
