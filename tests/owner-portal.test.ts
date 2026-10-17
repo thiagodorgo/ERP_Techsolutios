@@ -14,7 +14,9 @@ import {
   AntiAbuse,
   InMemoryChallengeStore,
   InMemoryPortalAccessLogRepository,
+  hasLeadingZeroNibbles,
   issueChallenge,
+  powDigest,
   solveChallenge,
   verifySolution,
   type AntiAbuseConfig,
@@ -42,6 +44,17 @@ const TENANT = randomUUID();
 const LOG_SECRET = "test-portal-log-secret";
 const SESSION_SECRET = "test-portal-session-secret";
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+function wrongSolutionFor(salt: string, difficulty: number): string {
+  for (let attempt = 0; attempt < 10_000; attempt += 1) {
+    const candidate = `wrong-${attempt}`;
+    if (!hasLeadingZeroNibbles(powDigest(salt, candidate), difficulty)) {
+      assert.equal(hasLeadingZeroNibbles(powDigest(salt, candidate), difficulty), false);
+      return candidate;
+    }
+  }
+  assert.fail("não foi possível construir uma solução comprovadamente errada em 10.000 tentativas");
+}
 
 function actor(tenantId = TENANT): ImpoundActorContext {
   return {
@@ -235,8 +248,17 @@ test("PoW: solução errada → wrong_solution; expirada → expired; reusada �
     "expired",
   );
 
+  for (let attempt = 0; attempt < 5_000; attempt += 1) {
+    const challenge = issueChallenge(store, 2, 100_000, 0);
+    const solution = wrongSolutionFor(challenge.salt, challenge.difficulty);
+    const wrong = verifySolution(store, { challengeId: challenge.challengeId, solution }, 1);
+    assert.equal(wrong.ok, false);
+    assert.equal(wrong.reason, "wrong_solution");
+  }
+
   const c = issueChallenge(store, 2, 100_000, 0);
-  const wrong = verifySolution(store, { challengeId: c.challengeId, solution: "definitely-not-a-solution" }, 1);
+  const wrongSolution = wrongSolutionFor(c.salt, c.difficulty);
+  const wrong = verifySolution(store, { challengeId: c.challengeId, solution: wrongSolution }, 1);
   assert.equal(wrong.ok, false);
   assert.equal(wrong.reason, "wrong_solution");
   // uso único: mesmo com a solução CORRETA agora, o desafio já foi consumido.
@@ -245,6 +267,18 @@ test("PoW: solução errada → wrong_solution; expirada → expired; reusada �
 
   // desconhecido/forjado → unknown.
   assert.equal(verifySolution(store, { challengeId: "forged", solution: "0" }, 1).reason, "unknown");
+});
+
+test("PoW: o literal antigo é rejeitado pelo canário de sal fixo", () => {
+  const store = new InMemoryChallengeStore();
+  const salt = "pow-canary-268";
+  const difficulty = 2;
+  assert.equal(hasLeadingZeroNibbles(powDigest(salt, "definitely-not-a-solution"), difficulty), true);
+  store.put("fixed-salt-canary", { salt, difficulty, expiresAtMs: 100_000, consumed: false });
+
+  const result = verifySolution(store, { challengeId: "fixed-salt-canary", solution: wrongSolutionFor(salt, difficulty) }, 1);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "wrong_solution");
 });
 
 test("PoW no lookup: challengeId forjado → 400 CHALLENGE_FAILED + log + dificuldade do IP SOBE", async () => {
