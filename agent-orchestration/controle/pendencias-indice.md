@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **554** |
 | IDs distintos | 543 |
-| **ABERTAS** | **412** |
+| **ABERTAS** | **409** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **345** |
+| — das quais **ativas nesta rodada** | **342** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 138 |
+| FECHADAS | 141 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **554 cabecalhos para 543 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 202
+## ABERTAS · balde A — material — 200
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -223,7 +223,6 @@
 | `P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES` | 10347 | MÉDIA | sim | P-SAN3-05-CENARIO-JOB-CLOUD-CHARGES (2026-10-09) — cenário lê efeito da rota, não do job |
 | `P-SAN3-05-TIMEOUT-MATA-SO-O-BASH` | 10354 | MÉDIA | sim | P-SAN3-05-TIMEOUT-MATA-SO-O-BASH (2026-10-09) — timeout do helper não mata o grupo — MÉD |
 | `P-SAN3-05-REGRA-EM-TABELA` | 10382 | ALTA | sim | P-SAN3-05-REGRA-EM-TABELA (2026-10-09) — regra INSTEAD/ALSO em tabela escapa da trava —  |
-| `P-SAN3-05-T15-TETO-DE-RELOGIO` | 10403 | MÉDIA | sim | P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carg |
 | `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` | 10424 | ALTA | sim | P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA (2026-10-09) — organizações da plataforma ainda nã |
 | `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` | 10431 | MÉDIA | sim | P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organi |
 | `P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT` | 10438 | MÉDIA | sim | P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉD |
@@ -252,7 +251,6 @@
 | `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` | 10789 | ALTA | sim | P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA (2026-10-10) — o técnico de campo, ao registrar  |
 | `P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE` | 10798 | MÉDIA | sim | P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os gu |
 | `P-BLOCO-BAT-01` | 10805 | MÉDIA | sim | P-BLOCO-BAT-01 (2026-10-10) — o arnês transversal da bateria (`pg-barrier`/`createGate`, |
-| `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10817 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
 | `P-TRC-AWS-ESTUDO-MIGRACAO` | 10840 | MÉDIA | sim | P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro pa |
 | `P-EXPENSE-REST-SEM-IDEMPOTENCIA` | 10873 | MÉDIA | sim | P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatór |
 | `P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA` | 10895 | MÉDIA | sim | P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de f |
@@ -278,7 +276,7 @@
 | `P-DESP-TECNICO-VE-DESPACHO-ALHEIO` | 11135 | ALTA | sim | P-DESP-TECNICO-VE-DESPACHO-ALHEIO (2026-10-17) — o Técnico de Campo vê e muda a situação |
 | `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO` | 11175 | MÉDIA | sim | P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que te |
 
-## ABERTAS · balde B — processo/registro — 143
+## ABERTAS · balde B — processo/registro — 142
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -418,7 +416,6 @@
 | `P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS` | 10685 | BAIXA | sim | P-O6R-B04-CENSO-DETECTOR-DE-LITERAIS (2026-10-10) — o detector somente-leitura do censo  |
 | `P-REG-GERADOR-SEVERIDADE-POR-PALAVRA` | 10811 | BAIXA | sim | P-REG-GERADOR-SEVERIDADE-POR-PALAVRA (2026-10-10) — o gerador do índice toma a maior pal |
 | `P-AGENTE-CHECK-SEM-GENERATE` | 10832 | BAIXA | sim | P-AGENTE-CHECK-SEM-GENERATE (2026-10-10) — npm run check no worktree descartável exige p |
-| `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` | 10855 | BAIXA | sim | P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 |
 | `P-AGENTE-API-ANINHAMENTO-PROFUNDO` | 10867 | BAIXA | sim | P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de  |
 | `P-INDICE-SEVERIDADE-POR-SUBSTRING` | 10948 | BAIXA | sim | P-INDICE-SEVERIDADE-POR-SUBSTRING (2026-10-11) — o gerador do índice tira a severidade d |
 | `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS` | 10999 | BAIXA | sim | P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do s |
@@ -498,7 +495,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3664 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3708 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 138
+## FECHADAS — 141
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -627,12 +624,15 @@
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9671 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10071 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 | `P-OS-FILTRAR-EXPORTAR` | 10200 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
+| `P-SAN3-05-T15-TETO-DE-RELOGIO` | 10403 | MÉDIA | sim | P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carg |
 | `P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO` | 10581 | BAIXA | sim | P-O6R-B04-DIVERGENCIA-ESCOPO-TESTE-ISOLAMENTO (2026-09-18) — um teste de rota fora da li |
 | `P-TRC-FORMA-QUATRO-OU-SETE` | 10692 | ALTA | sim | P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decis |
 | `P-TRC-AWS-FLY-PRAZO` | 10704 | ALTA | sim | P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1  |
 | `P-TRC-CONVIVENCIA-APP` | 10713 | ALTA | sim | P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do té |
 | `P-TRC-ATRIBUICAO-PRODUTO` | 10724 | MÉDIA | sim | P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde |
+| `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE` | 10817 | MÉDIA | sim | P-O6R06-A10-LIMPEZA-FK-INTERMITENTE (2026-10-10) — o A10 de `o6r06-usage-atomic-db` falh |
 | `P-TRC-PLANO-V22` | 10848 | MÉDIA | sim | P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do don |
+| `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` | 10855 | BAIXA | sim | P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 |
 | `P-TRC-MODELOS-RASTREADOR` | 10880 | — | **a atribuir** | P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação (F-9) — FEC |
 | `P-TRC-PORTA-WEB-8080-8082` | 10890 | — | **a atribuir** | P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overl |
 | `P-O6R-07CA-DB-FORA-DA-LISTA-CI` | 10915 | MÉDIA | sim | P-O6R-07CA-DB-FORA-DA-LISTA-CI (2026-10-10) — a suíte `tests/o6r07c-subresource-scope-db |
