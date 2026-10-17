@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
@@ -66,6 +67,14 @@ export interface WorkOrderRepository {
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
   assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
+  assignFromDispatch(
+    input: AssignWorkOrderFromDispatchInput,
+  ): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
+  hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean>;
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent>;
   listTimeline(tenantId: string, workOrderId: string): Promise<readonly WorkOrderEvent[]>;
   reset?(): void;
@@ -442,6 +451,59 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     this.assignments.set(assignment.id, assignment);
 
     return { workOrder, assignment };
+  }
+
+  async assignFromDispatch(
+    input: AssignWorkOrderFromDispatchInput,
+  ): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+    const now = new Date();
+    const nextStatus: WorkOrderStatus = current.status === "open" ? "assigned" : current.status;
+    const workOrder: WorkOrder = {
+      ...current,
+      assignedOperatorId: input.operatorId,
+      assignedUserId: input.userId,
+      status: nextStatus,
+      updatedBy: input.assignedBy,
+      updatedAt: now,
+    };
+    const metadata: Record<string, unknown> = { source: input.source, dispatchId: input.dispatchId };
+    const assignment: WorkOrderAssignment = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      operatorId: input.operatorId,
+      userId: input.userId,
+      status: "assigned",
+      assignedBy: input.assignedBy,
+      assignedAt: now,
+      metadata,
+    };
+    this.workOrders.set(workOrder.id, workOrder);
+    this.assignments.set(assignment.id, assignment);
+
+    return { workOrder, assignment };
+  }
+
+  async hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    for (const assignment of this.assignments.values()) {
+      if (assignment.tenantId !== tenantId || assignment.workOrderId !== workOrderId) {
+        continue;
+      }
+      if (
+        assignment.userId === identity.userId ||
+        assignment.operatorId === identity.userId ||
+        (Boolean(identity.operatorProfileId) && assignment.operatorId === identity.operatorProfileId)
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {

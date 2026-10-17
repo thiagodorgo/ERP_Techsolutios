@@ -1,0 +1,124 @@
+{
+ "jurado": "jurado-07cb1-c2-opus — SUCESSOR (P3, identidade NOVA, R4 do orquestrador) do ocupante Gemini 3.1 Pro caído às 05:14Z (teto mensal da API; deixou só o cabeçalho de c2-evidencia.md, sem comando registrado → nada a re-executar). Corpo jurado-07cb1-c2-mobile-e-conflito. Nenhum número, SHA, linha ou trecho da emenda, do plano, da crítica, do relatório do dev, do inspetor ou do corpo herdado como fato.",
+ "cadeira": "C2 — mobile/offline e conflito: o contrato de conflito nas 4 famílias e o destino no app; o upload pela OS do recibo, o 409 no app e a evidência field_* com work_order_id; a idempotência por client_action_id e por estado, o 'manter a minha', o reinício e o S-KM-RESTART",
+ "mandato_md5": "83c4674ca32e948b683d9d40438f39c5 (EOL-neutro, medido) · declarado no disparo: 83c4674ca32e948b683d9d40438f39c5",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor · autorização: CLAUDE.md §C7.6 (objeto b198fe35 e origin/main 2a49b015) — Opus é o nível menor; disparo do orquestrador (sucessão P3)",
+ "corpo_md5": ".claude fc06a7d5351e0c4bbe1e225251dd2645 · .agents 3d45cc3b21aff08d913d1dd0a3a01e5f (blob do objeto, EOL-neutro) · recebido: lido do blob por git show, = fc06a7d5… declarado no disparo",
+ "objeto": "b198fe358b41186b2598ab258ccb735da8c04cbc (git ls-remote do ramo = gh pr view 440 headRefOid, OPEN, no início e no fim) · B = merge-base 4fe7524ecbcc68b3e69336453cc774ed5937cb1c · merges em B..objeto: 0 · origin/main início/fim 2a49b015 (além de 79599143; #441 mergeado) · mobile/ no diff do bloco: vazio (0) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor: insp-07cb1-parecer.md, instância inspetor-07cb1-opus, 03:30–03:40Z · LIBERADO COM RESSALVA (R1 decisões lidas em 79599143/origin/main; R2 executor Opus no nível menor; R4 sucessor com identidade nova; R7 db:generate antes; R8 N e forma declarados) · confere a cadeira e o corpo commitado nos dois espelhos; o executor nomeado era Gemini, a sucessão por Opus e o worktree w-j07cb1c2o vêm do disparo do orquestrador · check-runs 14 | 0 não-verdes | 0 pendentes (flutter 2× success)",
+ "decisoes_do_dono": "D2-07c: objeto e origin/main 3171,3425,3655 | D1-07c: 3166,3424,3654 nas duas | D-07CB-EMENDA-RECOMENDACOES: objeto 3658 · origin/main 3658,3719 | D-07CB1-TRAVA-ATE-B2: objeto ausente · 79599143 e origin/main 3709,3719 | D-INICIO-ATENDIMENTO-CONFIRMADO: origin/main 3719 (substitui a P3 da emenda)",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (ciclos 1–2: bloqueia + dentro-do-bloco reprova, de qualquer classe)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo c1-*/c3-* desta junta (só vi os nomes no ls) · li: corpo (blob), mandato cadeira-c2.md, parecer do inspetor, c2-evidencia.md do caído (2 linhas), 00-quedas.md, plano 07c-b.4 (l.550-557), relatório do dev (l.67, l.167), código do servidor e do app no objeto",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "item1": "MEDIDO — VERDE: ex-técnico (despacho e sem despacho) 17/17 conflicts assignment_changed_pending_review/await_supervisor_review nas 4 famílias, lote 200, estado igual; nunca-técnico 17/17 rejected not_assigned_to_actor, resposta igual à de OS sem ex-técnico; tecZ (org B) igual a inexistente; S-MIX 3 baldes; parser do app → conflito fora do reenvio nas 3 famílias emitidas; base acusa; 3 controles acusam. 1 ajuste (useServer) e 1 nota (km).",
+ "item2": "MEDIDO — VERDE: upload do ex-técnico 409 nas 3 formas (F1/F2 assignment_changed_pending_review, F3 work_order_mismatch), nada gravado; base F1/F2 = 201; app preserva o blob no 409 (evidence_upload.dart:219-225); field_* do nunca-técnico igual à base, sem leitor por OS (nota pré-existente 366e82da); tenant_wide igual à base.",
+ "item3": "MEDIDO — VERDE: K1-K4 already_applied no mesmo processo; após reset K1 already_applied, K2/K3/K4 conflito sem efeito (estado igual); nunca-técnico rejected por estado (base: already_applied); K5 8/8×3 conflito, nada aplicado, payload diferente mantém o conflito; S-KM-RESTART objeto conflict × base rejected, km 500 preservada; 3 controles acusam.",
+ "justificativa": "Terreno: worktree próprio detached C:/Users/AMP/w-j07cb1c2o, npm ci próprio sem junction, db:generate com URL fictícia, sonda própria (8 arquivos, verbatim e md5 no apêndice da evidência) montando createApp do objeto em memória, listen(0), env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory por comando; app lido no blob do objeto (Flutter não executado); sem container; base viva intocada. ITEM 1: tecA (ex por despacho) e tecW (ex pela rota web, por perfil) 17/17 ações (12 pares de vistoria, 3 evidências, status e km) em conflicts[] assignment_changed_pending_review / await_supervisor_review / error.reason not_assigned_to_actor, lote 200, estado da OS e da run igual antes/depois, 0 recibos; tecB (técnico de outra OS) e tecT (technician) 17/17 rejected not_assigned_to_actor, resposta idêntica à de uma OS que nunca teve outro técnico; tecZ (org B) contra a OS da org A = resposta de OS inexistente; S-MIX 3 baldes, a legítima aplicada. Parser do app (sync_replay_service.dart:331-339, :755-762, :1450-1463; evidence_sync.dart:212-232, :361-366) leva as 3 famílias que o app emite a SyncStatus.conflict fora do reenvio (:665, :1366, :296), payload mantido. Base (src = B): ex e nunca-técnico escrevem na vistoria e na evidência; a sonda acusa; 3 controles acusam. ITEM 2: upload do ex-técnico 409 nas 3 formas (sem campo e campo=osU: assignment_changed_pending_review; campo = OS dele: work_order_mismatch), storage e audit inalterados; base: 201 gravado sem campo e com campo=osU; app: 409 → ApiConflictError, blob mantido (evidence_upload.dart:219-225; delete só em stored :199-207); field_* do nunca-técnico igual à base e ausente de toda leitura da OS; tenant_admin em OS inexistente igual à base. ITEM 3: K1–K4 legítimas no mesmo processo = already_applied; após reset K1 already_applied, K2/K3/K4 conflito sem efeito; nunca-técnico por estado = rejected (base: already_applied); K5 6× + reset + payload diferente = 8/8 conflito × 3 famílias, nada aplicado; S-KM-RESTART objeto conflict × base rejected, km 500 preservada. Nenhum achado bloqueia. Limpeza completa.\nVOTO: APROVADO — ex-técnico (por despacho e sem despacho) em conflicts[] assignment_changed_pending_review nas 4 famílias, lote 200, nada aplicado; nunca-técnico rejected sem revelar a OS; o parser do app leva as famílias que ele emite a conflito fora do reenvio, com o payload guardado (km sem emissor no app); upload decide pela OS do recibo (409 nas 3 formas, nada gravado) e o app preserva o blob; evidência field_* não aparece na OS (pre-existente, 366e82da); tenant_wide igual à base; already_applied antes do escopo por client_action_id, escopo antes por estado; conflito reenviado 6× e após reset segue conflito sem efeito; S-KM-RESTART = D2-07c; pendências: useServer descarta por escolha (B-SAN3-16), K2 pós-reinício vira conflito (B-O6R-07c-b2), R5 não registrado em controle/, cid durável sem ator (nota)",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/fix/o6r07cb1-despacho-atribui; gh pr view 440 --json headRefOid,baseRefName,state,isDraft,mergeable",
+   "forma": "início e fim",
+   "resultado": "b198fe35… nas duas, OPEN, MERGEABLE"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs?per_page=100",
+   "forma": "1×",
+   "resultado": "14 | 0 | 0"
+  },
+  {
+   "comando": "git show <ref>:agent-orchestration/controle/decisoes.md | grep -n <id>; git show <ref>:CLAUDE.md | grep -c <âncora>",
+   "forma": "7 ids × 3 refs (objeto, 79599143, origin/main); 12 âncoras × 2 refs",
+   "resultado": "ver decisoes_do_dono; âncoras ≥1 nas duas refs"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-j07cb1c2o <objeto>; npm ci --no-audit --no-fund; DATABASE_URL=postgresql://x:y@127.0.0.1:1/none npm run db:generate",
+   "forma": "Windows, Node 20.19.5",
+   "resultado": "ec 0/0/0"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory timeout 300 node --import tsx <SCRATCH>/sonda/item1.mts <wt> <out> obj|base",
+   "forma": "src objeto; src = B (13 arquivos por git cat-file --filters, provados por hash-object, restaurados e provados)",
+   "resultado": "ec 0 nas duas; 8 atores × 17 ações; S-MIX; controle 1"
+  },
+  {
+   "comando": "node --import tsx <SCRATCH>/sonda/controles1.mts",
+   "forma": "respostas fabricadas",
+   "resultado": "baldes 1/1/1; regra do app acusa 5 formas"
+  },
+  {
+   "comando": "env … node --import tsx <SCRATCH>/sonda/item2.mts <wt> <out> obj|base",
+   "forma": "src objeto; src = B",
+   "resultado": "ec 0; objeto 409×3 nada gravado; base 201×2"
+  },
+  {
+   "comando": "env … node --import tsx <SCRATCH>/sonda/item3.mts <wt> <out> obj|base; item3b.mts obj",
+   "forma": "src objeto; src = B",
+   "resultado": "ec 0; tabelas K1–K5 e S-KM-RESTART"
+  },
+  {
+   "comando": "git log --diff-filter=A / git log -S / git blame -L",
+   "forma": "mobile-evidence-sync.ts:92,:291; mobile-work-order-sync.ts:71; mobile-checklist-sync.ts:437; mobile-evidence-upload.ts:117",
+   "resultado": "366e82da 2026-06-15; 34807d67 2026-06-14; 8a938414 2026-08-01; ad228aee 2026-06-17"
+  },
+  {
+   "comando": "git worktree remove --force C:/Users/AMP/w-j07cb1c2o",
+   "forma": "após 0 processos com o caminho",
+   "resultado": "ec 0"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "'usar a do servidor' no conflito de troca de técnico marca a ação local como sincronizada sem haver estado do servidor para pôr no lugar: o trabalho offline sai da fila",
+   "evidencia": "sync_conflict_resolver.dart:20-35 (useServer → SyncStatus.synced); sync_screen.dart:100-107 oferece o botão a todo conflito; work_order_conflict_resolution_service.dart:60-80 (acceptServer exige server_id, que o conflito traz)",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente — código do app anterior ao bloco (git diff --name-only B objeto -- mobile/ = 0 arquivos); dono B-SAN3-16",
+   "classe": "não grave",
+   "motivo": "a perda só acontece por escolha explícita do técnico (perda consciente) e o app não avisa que não há estado do servidor para usar"
+  },
+  {
+   "defeito": "K2 (conclusão da vistoria) já aplicada, reenviada após reinício do processo e depois da troca, volta como conflito em vez de already_applied",
+   "evidencia": "item3.mts: objeto p3_apos_reset K2 = conflicts/assignment_changed_pending_review; base = already_applied; run completed e resposta preservadas (e2 == e3); consequência da regra do plano 07c-b.4 l.550-557 (por estado, o escopo antes)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (consequência declarada da D-07c-IDEMP)",
+   "classe": "não grave",
+   "motivo": "uma ação legítima já gravada aparece ao ex-técnico como pendência após reinício; nada se perde nem duplica; a saída é a decisão do superior (B-O6R-07c-b2)"
+  },
+  {
+   "defeito": "evidência field_* aceita com work_order_id de OS alheia, ecoado no recibo",
+   "evidencia": "item2.mts: tecB (nunca) field_photo/observation/signature com work_order_id=osA → 3/3 accepted, recibo work_order_id=<osA>, scope field, upload 201; 0 ocorrências em GET /work-orders/<osA>, /timeline, /attachments, /mobile/checklist-runs; base idêntica; git grep: só mobile-evidence-sync/upload e evidence-storage tocam o store",
+   "gravidade": "nota",
+   "escopo": "pre-existente — tipos e eco desde 366e82da (2026-06-15)",
+   "classe": "não grave",
+   "motivo": "rótulo livre sem leitor por OS; não é escrita na OS alheia"
+  },
+  {
+   "defeito": "a idempotência durável por client_action_id da vistoria não confere o ator: quem reenvia o cid de outro recebe already_applied com server_state{run,answers}",
+   "evidencia": "item3b.mts: tecC grava resposta; tecB reenvia o mesmo cid → already_applied, server_state run,answers, answers continua 1; base igual; lookup em mobile-checklist-sync.ts:437 desde 8a938414 (2026-08-01)",
+   "gravidade": "nota",
+   "escopo": "pre-existente — 8a938414, 2026-08-01; leitura de OS alheia não é deste PR (C1)",
+   "classe": "não grave",
+   "motivo": "nada é aplicado; exige conhecer um UUID alheio; a D-07c-IDEMP pressupõe a mesma ação do mesmo ator"
+  },
+  {
+   "defeito": "o app não emite work_order.mileage pela fila: o ramo de conflito de km do servidor não tem consumidor no app hoje",
+   "evidencia": "api_contracts.dart:49-61 (WorkOrderSyncActionTypes sem mileage); sync_replay_service.dart:641-653 (replay só create/status_update/assign)",
+   "gravidade": "nota",
+   "escopo": "pre-existente — contrato do app anterior ao bloco (mobile/ fora do diff)",
+   "classe": "não grave",
+   "motivo": "a forma do conflito de km é a do lote de OS, que o parser reconhece; sem emissor, nada a perder hoje"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "R5 (ex-técnico só de despacho reatribuído antes do deploy) não é medível em memória: exige estado anterior ao deploy e o backfill (C3); declarado, sem N",
+  "os 3 controles de cada item acusaram; o controle 3 do item 2 foi adaptado: não existe leitor de evidência móvel por OS, e o varredor achou os 2 únicos leitores do store (recibo e storage)"
+ ],
+ "pendencias_que_aceito": [
+  "B-O6R-07c-b2: fila durável, decisão do superior, saída do conflito (inclui o K2 pós-reinício)",
+  "B-SAN3-16: teto de 5 para rejected (P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA) e o aviso do 'usar a do servidor'",
+  "R5: declarado no relatório do dev (B-O6R-07c-b1-dev.md:67, :167) e não registrado em agent-orchestration/controle/ no objeto nem na origin/main — registro é matéria da C3/orquestrador",
+  "C1: 404 × 403 entre OS inexistente e OS existente da mesma org nos lotes; leitura de OS alheia (cid durável sem ator)",
+  "pre-existentes: field_* rótulo livre (366e82da); recibos em Map (34807d67, 366e82da)"
+ ],
+ "teardown": "src/ trocado e restaurado 3× (hash-object = blob do objeto 13/13; porcelain 0) · servidor da sonda fechado em cada execução (0 processos com w-j07cb1c2o) · storage j07cb1-c2o-* apagado (0 no tmp) · worktree C:/Users/AMP/w-j07cb1c2o removido por git worktree remove --force (ec 0) · nenhum container j07cb1-c2* (0) · subpasta do scratch c2o-07cb1 apagada (sondas verbatim no apêndice da evidência) · base viva intocada · w-07cb1 só com c2-opus-evidencia.md e c2-voto.json · espaço no fim de linha = 0 nos dois · resíduo alheio: nenhum mexido"
+}

@@ -37,32 +37,35 @@ import {
 
 const INSTANTANEO: Instantaneo = lerInstantaneo();
 
-// A lista literal das 23 entradas `·07c-b` de hoje (plano, Apêndice B). Catraca: só diminui; no 07c-b chega a vazio.
-const LISTA_07C_B = [
-  "ROTA PATCH /api/v1/mobile/checklist-runs/:runId",
-  "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/status",
-  "ROTA POST /api/v1/mobile/checklist-runs/:runId/acknowledgement",
-  "ROTA POST /api/v1/mobile/checklist-runs/:runId/attachments",
-  "ROTA POST /api/v1/mobile/checklist-runs/:runId/complete",
-  "ROTA POST /api/v1/mobile/checklist-runs/:runId/divergence",
-  "ROTA POST /api/v1/mobile/checklist-runs/:runId/markers",
-  "ROTA POST /api/v1/mobile/evidence-uploads",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.acknowledgement_create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.attachment_attach",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.complete",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.divergence_create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_answer",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_note",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist.marker_create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist_acknowledgement.create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist_attachment.attach",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist_divergence.create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist_marker.create",
-  "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.complete",
-  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_observation",
-  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_photo",
-  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_signature",
-];
+// A lista literal das entradas `·07c-b` (plano, Apêndice B). Catraca: só diminui; no 07c-b chega a vazio.
+// B-O6R-07c-b1 (CA11 da emenda) — CHEGOU A VAZIO: as 23 vias abaixo ganharam escopo por objeto neste bloco e, no
+// instantâneo, passaram às classes do critério que as guarda (`VISTORIA·ESCOPO`, `EVIDENCIA-OS·ESCOPO`, `DESPACHO·ALVO`);
+// o laço G delas está em `tests/o6r07c-b-scope.test.ts`. Devolver qualquer uma a `·07c-b` deixa este T11 vermelho.
+//   Eram:
+//   "ROTA PATCH /api/v1/mobile/checklist-runs/:runId"
+//   "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/status"
+//   "ROTA POST /api/v1/mobile/checklist-runs/:runId/acknowledgement"
+//   "ROTA POST /api/v1/mobile/checklist-runs/:runId/attachments"
+//   "ROTA POST /api/v1/mobile/checklist-runs/:runId/complete"
+//   "ROTA POST /api/v1/mobile/checklist-runs/:runId/divergence"
+//   "ROTA POST /api/v1/mobile/checklist-runs/:runId/markers"
+//   "ROTA POST /api/v1/mobile/evidence-uploads"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.acknowledgement_create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.attachment_attach"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.complete"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.divergence_create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_answer"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_note"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist.marker_create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist_acknowledgement.create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist_attachment.attach"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist_divergence.create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist_marker.create"
+//   "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.complete"
+//   "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_observation"
+//   "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_photo"
+//   "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_signature"
+const LISTA_07C_B: readonly string[] = [];
 
 // As entidades da rota polimórfica `/attachments` hoje (B8 da r2): entidade nova no registro é via nova com a
 // mesma chave de rota — o T1 não a vê, o T13 vê.
@@ -169,7 +172,7 @@ test("T10 — zero curinga dinâmico e zero lote instável", async () => {
   assert.deepEqual(daCategoria(cl, "CURINGA-DINAMICO", "LOTE-INSTAVEL"), []);
 });
 
-test("T11 — as entradas ·07c-b do instantâneo são EXATAMENTE as 23 de hoje (catraca)", () => {
+test("T11 — as entradas ·07c-b do instantâneo são EXATAMENTE a lista literal (catraca; vazia desde o 07c-b1)", () => {
   const atuais = Object.entries(INSTANTANEO)
     .filter(([, v]) => /07c-b/.test(v.classe))
     .map(([k]) => k)

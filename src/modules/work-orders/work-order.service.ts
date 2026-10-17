@@ -17,6 +17,7 @@ import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
 import type {
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
@@ -33,7 +34,7 @@ import type {
   WorkOrderTeamLink,
   WorkOrderVehicleLink,
 } from "./work-order.types.js";
-import { actorMutatesAssignedOnly, WorkOrderError } from "./work-order.types.js";
+import { actorMutatesAssignedOnly, WorkOrderError, workOrderNotAssignedError } from "./work-order.types.js";
 import {
   assertNonEmptyString,
   assertStatusTransition,
@@ -827,12 +828,17 @@ export class WorkOrderService {
     const atribuidoPorUsuario = workOrder.assignedOperatorId === actor.userId;
 
     if (!atribuidoPorPerfil && !atribuidoPorUsuario) {
-      throw new WorkOrderError(
-        403,
-        "WORK_ORDER_NOT_ASSIGNED",
-        "not_assigned_to_actor",
-        "Field actors can only change work orders assigned to them.",
-      );
+      // B-O6R-07c-b1 (D2-07c (d), `D-07CB-EMENDA-RECOMENDACOES`) — a recusa é a MESMA (403
+      // `not_assigned_to_actor`) e o critério é o mesmo casamento duplo acima; o que muda é a MARCA que a
+      // recusa carrega: o ator JÁ FOI técnico desta OS (tem linha em `work_order_assignments`, que desde
+      // este bloco o despacho também grava)? Os lotes do app leem a marca e devolvem a ação em `conflicts[]`
+      // (`assignment_changed_pending_review`) em vez de `rejected`. O REST não muda: 403. A consulta só roda
+      // no caminho da recusa.
+      const wasPreviouslyAssigned = await this.repository.hasActorBeenAssigned(actor.tenantId, workOrder.id, {
+        userId: actor.userId,
+        operatorProfileId,
+      });
+      throw workOrderNotAssignedError(wasPreviouslyAssigned);
     }
   }
 
@@ -1723,6 +1729,92 @@ export class WorkOrderService {
         vehicleId: input.vehicleId,
         teamId: input.teamId,
         assignmentId: result.assignment.id,
+      },
+    });
+
+    return result.workOrder;
+  }
+
+  /**
+   * B-O6R-07c-b1 (Ω6R-SEC-002, `D1-07c` = (c)) — DESPACHAR É ATRIBUIR. Chamado pelo `FieldDispatchService` no
+   * `create` (despacho que nasce `assigned`), na passagem `draft → assigned` e no `reassign`; e, ao cancelar ou
+   * falhar um despacho, para devolver a OS ao despacho ativo que sobrou.
+   *
+   * - NÃO passa pela trava `open → assigned` do `assign` (`assertStatusTransition`): a OS em `open` vai a
+   *   `assigned`; em qualquer outro status NÃO terminal, o status fica como está (só a atribuição muda).
+   * - OS terminal (`completed`, `cancelled`, `rejected` — sem transição de saída) → 409
+   *   `invalid_status_transition`: uma OS encerrada não ganha técnico novo.
+   * - Grava `assigned_user_id` = o usuário alvo e `assigned_operator_id` = o PERFIL de campo dele, ou, sem
+   *   perfil, o próprio user id (a mesma forma que o app já grava; o predicado do 07a casa as duas — o
+   *   `Ω6R-QUA-004` segue aberto). Uma linha nova em `work_order_assignments` com
+   *   `metadata {source, dispatchId}` — é ela que, depois, prova "esta pessoa JÁ FOI técnica desta OS".
+   *   A OS e a linha são gravadas na MESMA transação (repositório); o evento `work_order_assigned` vem
+   *   depois, como no `assign`.
+   */
+  async assignFromDispatch(
+    actor: WorkOrderActorContext,
+    input: {
+      readonly workOrderId: string;
+      readonly operatorUserId: string;
+      readonly dispatchId: string;
+      readonly source: AssignWorkOrderFromDispatchInput["source"];
+      readonly message?: string;
+    },
+  ): Promise<WorkOrder> {
+    const current = await this.get(actor, input.workOrderId);
+    if (WORK_ORDER_STATUS_TRANSITIONS[current.status].length === 0) {
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_STATUS_INVALID",
+        "invalid_status_transition",
+        `Cannot assign a terminal work order in status ${current.status}.`,
+      );
+    }
+
+    // Os ids vêm do despacho, que já os validou com a regra DELE (`field-dispatch.validators.ts`: não vazio — o
+    // modo memória usa ids que não são UUID). Exigir UUID aqui quebraria o despacho fora do Postgres.
+    const userId = assertNonEmptyString(input.operatorUserId, "operatorUserId");
+    const dispatchId = assertNonEmptyString(input.dispatchId, "dispatchId");
+    const resolver = this.references.resolveActorOperatorProfileId;
+    const operatorProfileId = resolver
+      ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
+      : undefined;
+    const operatorId = operatorProfileId ?? userId;
+    const message =
+      optionalString(input.message) ??
+      (input.source === "field_dispatch_reassign"
+        ? "Ordem de serviço reatribuída pelo despacho."
+        : "Ordem de serviço atribuída pelo despacho.");
+
+    const result = await this.repository.assignFromDispatch({
+      tenantId: actor.tenantId,
+      workOrderId: current.id,
+      operatorId,
+      userId,
+      assignedBy: actor.userId,
+      dispatchId,
+      source: input.source,
+      message,
+    });
+
+    if (!result) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+
+    await this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: current.id,
+      eventType: "work_order_assigned",
+      fromStatus: current.status,
+      toStatus: result.workOrder.status,
+      actorUserId: actor.userId,
+      message,
+      metadata: {
+        operatorId,
+        userId,
+        assignmentId: result.assignment.id,
+        source: input.source,
+        dispatchId,
       },
     });
 

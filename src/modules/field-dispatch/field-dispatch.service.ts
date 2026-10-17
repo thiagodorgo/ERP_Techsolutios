@@ -1,7 +1,10 @@
+import pino from "pino";
+
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
-import { WorkOrderError, type WorkOrder } from "../work-orders/work-order.types.js";
+import { actorMutatesAssignedOnly, WorkOrderError, type WorkOrder } from "../work-orders/work-order.types.js";
+import { WORK_ORDER_STATUS_TRANSITIONS } from "../work-orders/work-order.validators.js";
 import {
   createDefaultWorkOrderService,
   createMemoryWorkOrderService,
@@ -47,6 +50,27 @@ import {
 } from "./field-dispatch.validators.js";
 
 type RawRecord = Record<string, unknown>;
+
+// B-O6R-07c-b1 — os status em que um despacho ainda é "o trabalho em curso" de alguém (a devolução da
+// atribuição ao despacho que sobrou, crítica ajuste 4). `draft` não conta: rascunho não atribui.
+const ACTIVE_DISPATCH_STATUSES: ReadonlySet<FieldDispatchStatus> = new Set<FieldDispatchStatus>([
+  "assigned",
+  "accepted",
+  "on_route",
+  "arrived",
+  "in_service",
+  "reassigned",
+]);
+
+const dispatchLogger = pino({ level: env.LOG_LEVEL });
+
+// `D-07CB1-TRAVA-ATE-B2` + `D-DESP-INICIO-ATENDIMENTO` (decisões do dono, 17/10) — o atendimento começa em "No local":
+// no DESPACHO é `arrived` (e o que vem depois, `in_service`); na OS é `on_site` (e `in_progress`, `paused`). As duas
+// máquinas são separadas, então qualquer uma das duas marca o atendimento como iniciado. Até o `B-O6R-07c-b2` existir,
+// trocar o técnico daí em diante é RECUSADO (409), com a mensagem de que precisa de autorização; antes de "No local"
+// (inclusive `on_route`), a troca vale na hora. O b2 troca a recusa pelo pedido de autorização.
+const DISPATCH_SERVICE_STARTED: ReadonlySet<FieldDispatchStatus> = new Set<FieldDispatchStatus>(["arrived", "in_service"]);
+const WORK_ORDER_SERVICE_STARTED: ReadonlySet<WorkOrder["status"]> = new Set<WorkOrder["status"]>(["on_site", "in_progress", "paused"]);
 
 // Ω3-c (port do crítico, Req C) — resolve o snapshot congelável de um checklist SEM que este módulo
 // importe `checklists` diretamente (dependency-inverted; a raiz de composição injeta o resolver).
@@ -223,6 +247,12 @@ export class FieldDispatchService {
 
     const workOrder = await this.assertWorkOrderBelongsToTenant(actor, workOrderId);
     await this.assertOperatorBelongsToTenant(actor.tenantId, operatorUserId);
+    // B-O6R-07c-b1 (crítica, ajuste 3) — o despacho que nasce `assigned` atribui a OS: OS encerrada é recusada
+    // ANTES de qualquer escrita (freeze, vistoria, despacho). O rascunho não atribui e passa.
+    if (status !== "draft") {
+      this.assertWorkOrderNotTerminal(workOrder);
+      this.assertNewTargetAllowed(workOrder, operatorUserId);
+    }
 
     // Ω3-c (E1/E3) — congela o snapshot ANTES de criar o despacho (freeze→create; falha após o freeze deixa a
     // OS com snapshot órfão, inócuo — nunca despacho sem checklist). Idempotente: re-despacho re-congela com o
@@ -385,6 +415,26 @@ export class FieldDispatchService {
       metadata: {},
     });
 
+    // B-O6R-07c-b1 (`D1-07c` = (c); crítica, ajuste 2) — DESPACHAR É ATRIBUIR. Ordem declarada: depois da checagem
+    // do operador e da OS (acima), depois de o despacho existir (a linha de atribuição leva o `dispatchId`), antes
+    // do evento e do evento de domínio. Compensação: se a atribuição falhar, o despacho recém-criado é apagado e a
+    // recusa atravessa — não sobra despacho apontando um técnico que não é o da OS. O que já foi feito antes
+    // (snapshot congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do
+    // freeze: inócuo, e idempotente no próximo despacho.
+    if (dispatch.status !== "draft") {
+      try {
+        await this.assignWorkOrderForDispatch(actor, {
+          workOrderId: dispatch.workOrderId,
+          operatorUserId: dispatch.operatorUserId,
+          dispatchId: dispatch.id,
+          source: "field_dispatch",
+        });
+      } catch (error) {
+        await this.repository.deleteById(actor.tenantId, dispatch.id);
+        throw error;
+      }
+    }
+
     await this.repository.createEvent({
       tenantId: actor.tenantId,
       dispatchId: dispatch.id,
@@ -485,6 +535,10 @@ export class FieldDispatchService {
 
   async changeStatus(actor: FieldDispatchActorContext, dispatchId: string, body: RawRecord): Promise<FieldDispatch> {
     const current = await this.get(actor, dispatchId);
+    // B-O6R-07c-b1 (CA8, D-07c-DESPACHO-ALVO) — escopo por objeto ANTES da máquina de estados: o técnico de
+    // campo só transiciona o despacho cujo `operatorUserId` é ele mesmo.
+    this.assertDispatchMutationScope(actor, current);
+
     const nextStatus = parseFieldDispatchStatus(body.status);
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const reason = optionalString(body.reason);
@@ -493,6 +547,14 @@ export class FieldDispatchService {
     assertStatusTransition(current.status, nextStatus);
     if (nextStatus === "cancelled" && !reason) {
       throw new FieldDispatchError(400, "FIELD_DISPATCH_INVALID", "cancel_reason_required", "reason is required when cancelling a dispatch.");
+    }
+
+    // B-O6R-07c-b1 — ativar o rascunho atribui a OS: só quem despacha, e nunca numa OS encerrada.
+    if (current.status === "draft" && nextStatus === "assigned") {
+      this.assertMayActivateDraft(actor);
+      const workOrder = await this.assertWorkOrderBelongsToTenant(actor, current.workOrderId);
+      this.assertWorkOrderNotTerminal(workOrder);
+      this.assertNewTargetAllowed(workOrder, current.operatorUserId);
     }
 
     const updated = await this.repository.changeStatus({
@@ -506,6 +568,25 @@ export class FieldDispatchService {
 
     if (!updated) {
       throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+    }
+
+    // B-O6R-07c-b1 — ordem e compensação (crítica, ajuste 2): o despacho muda primeiro; se a atribuição da OS
+    // falhar, o despacho volta ao estado de antes (`restoreState`) e a recusa atravessa. Os dois repositórios não
+    // dividem transação; a compensação é o que torna o par atômico do ponto de vista de quem chama.
+    if (current.status === "draft" && nextStatus === "assigned") {
+      try {
+        await this.assignWorkOrderForDispatch(actor, {
+          workOrderId: updated.workOrderId,
+          operatorUserId: updated.operatorUserId,
+          dispatchId: updated.id,
+          source: "field_dispatch",
+        });
+      } catch (error) {
+        await this.repository.restoreState(actor.tenantId, current);
+        throw error;
+      }
+    } else if (nextStatus === "cancelled" || nextStatus === "failed") {
+      await this.moveAssignmentToRemainingDispatch(actor, updated);
     }
 
     await this.repository.createEvent({
@@ -546,6 +627,14 @@ export class FieldDispatchService {
 
     const operatorUserId = parseRequiredUuid(body.operatorUserId ?? body.operatorId ?? body.userId, "operatorUserId");
     await this.assertOperatorBelongsToTenant(actor.tenantId, operatorUserId);
+    // B-O6R-07c-b1 — reatribuir o despacho reatribui a OS (`D1-07c` = (c)); OS encerrada é recusada antes.
+    const workOrder = await this.assertWorkOrderBelongsToTenant(actor, current.workOrderId);
+    this.assertWorkOrderNotTerminal(workOrder);
+    // `D-07CB1-TRAVA-ATE-B2` — com o atendimento iniciado (despacho em "No local" ou depois, ou a OS), trocar o
+    // técnico é recusado até o b2. Reatribuir à MESMA pessoa não troca ninguém.
+    if (operatorUserId !== current.operatorUserId) {
+      this.assertTechnicianChangeAllowed(workOrder, current.status);
+    }
 
     const updated = await this.repository.reassign({
       tenantId: actor.tenantId,
@@ -558,6 +647,22 @@ export class FieldDispatchService {
 
     if (!updated) {
       throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+    }
+
+    // Compensação (crítica, ajuste 2): a OS não aceitou o técnico novo → o despacho volta ao alvo e ao status de
+    // antes, e a recusa atravessa. O técnico antigo continua com a linha em `work_order_assignments` (é ex-técnico
+    // da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
+    try {
+      await this.assignWorkOrderForDispatch(actor, {
+        workOrderId: updated.workOrderId,
+        operatorUserId: updated.operatorUserId,
+        dispatchId: updated.id,
+        source: "field_dispatch_reassign",
+        reason: optionalString(body.reason),
+      });
+    } catch (error) {
+      await this.repository.restoreState(actor.tenantId, current);
+      throw error;
     }
 
     await this.repository.createEvent({
@@ -796,6 +901,149 @@ export class FieldDispatchService {
       });
     } catch {
       // Notificação é best-effort — nunca bloqueia/500 o despacho.
+    }
+  }
+
+  // B-O6R-07c-b1 (Ω6R-SEC-002, a via `PATCH /operations/dispatches/:dispatchId/status`) — ESCOPO DO DESPACHO
+  // PELO ALVO, não pela atribuição da OS (`D-07c-DESPACHO-ALVO`, mantida pela emenda): o técnico de campo só
+  // transiciona o despacho cujo `operatorUserId` é ele. É a premissa do Traccar (`B-TRC-01` lê o `accepted_at`
+  // que esta via grava). Papel `tenant_wide` (gestão, despacho) não passa por aqui; a união de papéis segue a
+  // regra de presença de `actorMutatesAssignedOnly`.
+  private assertDispatchMutationScope(actor: FieldDispatchActorContext, dispatch: FieldDispatch): void {
+    if (!actorMutatesAssignedOnly(actor)) return;
+
+    if (dispatch.operatorUserId !== actor.userId) {
+      throw new FieldDispatchError(
+        403,
+        "FIELD_DISPATCH_NOT_ASSIGNED",
+        "not_assigned_to_actor",
+        "Field actors can only change dispatches assigned to them.",
+      );
+    }
+  }
+
+  // B-O6R-07c-b1 (crítica, ajuste 3) — tirar um despacho do rascunho (`draft → assigned`) passou a ATRIBUIR a OS.
+  // O papel de campo não tem `work_orders:assign` nem `field_dispatch:create`; deixá-lo ativar o próprio
+  // rascunho seria deixá-lo atribuir a OS a si mesmo. Fica com quem despacha.
+  private assertMayActivateDraft(actor: FieldDispatchActorContext): void {
+    if (!actorMutatesAssignedOnly(actor)) return;
+
+    throw new FieldDispatchError(
+      403,
+      "FIELD_DISPATCH_FORBIDDEN",
+      "dispatch_activation_requires_dispatcher",
+      "Only dispatchers can activate a draft dispatch.",
+    );
+  }
+
+  // `D-07CB1-TRAVA-ATE-B2` — a trava da troca de técnico com o atendimento iniciado. Recebe o status do despacho que
+  // muda de alvo (no `reassign`) e a OS; para um despacho novo ou um rascunho ativado, só a OS conta (o despacho
+  // novo não começou nada). Quem chama decide se HÁ troca (alvo diferente do técnico atual).
+  private assertTechnicianChangeAllowed(workOrder: WorkOrder, dispatchStatus?: FieldDispatchStatus): void {
+    const started =
+      (dispatchStatus !== undefined && DISPATCH_SERVICE_STARTED.has(dispatchStatus)) ||
+      WORK_ORDER_SERVICE_STARTED.has(workOrder.status);
+    if (!started) return;
+
+    throw new FieldDispatchError(
+      409,
+      "FIELD_DISPATCH_CHANGE_REQUIRES_AUTHORIZATION",
+      "technician_change_requires_authorization",
+      "O atendimento já começou (No local): a troca de técnico precisa de autorização de um superior.",
+    );
+  }
+
+  // Um despacho novo (ou a ativação de um rascunho) para OUTRA pessoa troca o técnico da OS (`D1-07c`): mesma trava.
+  private assertNewTargetAllowed(workOrder: WorkOrder, operatorUserId: string): void {
+    const currentTechnician = workOrder.assignedUserId ?? workOrder.assignedOperatorId;
+    if (!currentTechnician || currentTechnician === operatorUserId) return;
+    this.assertTechnicianChangeAllowed(workOrder);
+  }
+
+  // B-O6R-07c-b1 (crítica, ajuste 3) — despachar passou a atribuir, e a OS encerrada (`completed`, `cancelled`,
+  // `rejected`: sem transição de saída) não ganha técnico novo. O rascunho não atribui, então não é barrado aqui:
+  // a trava roda quando ele for ativado.
+  private assertWorkOrderNotTerminal(workOrder: WorkOrder): void {
+    if (WORK_ORDER_STATUS_TRANSITIONS[workOrder.status].length === 0) {
+      throw new FieldDispatchError(
+        409,
+        "FIELD_DISPATCH_WORK_ORDER_TERMINAL",
+        "invalid_status_transition",
+        `Cannot dispatch or reassign a terminal work order in status ${workOrder.status}.`,
+      );
+    }
+  }
+
+  // `D1-07c` = (c) — despachar é atribuir. A recusa da OS (404, 409) atravessa como `FieldDispatchError` com o
+  // mesmo status/código/motivo, e quem chama desfaz o despacho (compensação; ver `create`, `changeStatus`,
+  // `reassign`).
+  private async assignWorkOrderForDispatch(
+    actor: FieldDispatchActorContext,
+    input: {
+      readonly workOrderId: string;
+      readonly operatorUserId: string;
+      readonly dispatchId: string;
+      readonly source: "field_dispatch" | "field_dispatch_reassign";
+      readonly reason?: string;
+    },
+  ): Promise<void> {
+    try {
+      await this.workOrderService.assignFromDispatch(actor, {
+        workOrderId: input.workOrderId,
+        operatorUserId: input.operatorUserId,
+        dispatchId: input.dispatchId,
+        source: input.source,
+        message: input.reason,
+      });
+    } catch (error) {
+      if (error instanceof WorkOrderError) {
+        throw new FieldDispatchError(error.statusCode, error.code, error.reason, error.message);
+      }
+      throw error;
+    }
+  }
+
+  // B-O6R-07c-b1 (crítica, ajuste 4) — cancelar ou falhar o despacho cujo alvo É o técnico atual da OS, havendo
+  // outro despacho ativo da mesma OS: a atribuição passa ao alvo do despacho ativo mais recente. Sem outro ativo, a
+  // atribuição FICA (a OS não volta a `open` nem perde o técnico por um cancelamento; quem redistribui é o
+  // despachante). Despacho cancelado de alvo que já não é o técnico da OS não mexe em nada.
+  //
+  // Best-effort e DECLARADO: o cancelamento já foi gravado; uma falha aqui não o desfaz nem vira 500 — vai para o
+  // log com o motivo (nunca o erro cru), e o despachante corrige reatribuindo.
+  private async moveAssignmentToRemainingDispatch(
+    actor: FieldDispatchActorContext,
+    closed: FieldDispatch,
+  ): Promise<void> {
+    try {
+      const workOrder = await this.workOrderService.get(actor, closed.workOrderId);
+      if (WORK_ORDER_STATUS_TRANSITIONS[workOrder.status].length === 0) return;
+      if (workOrder.assignedUserId !== closed.operatorUserId) return;
+      // `D-07CB1-TRAVA-ATE-B2` — com o atendimento iniciado, a OS não muda de técnico sozinha: fica como está.
+      if (WORK_ORDER_SERVICE_STARTED.has(workOrder.status)) return;
+
+      const { items } = await this.repository.list({
+        tenantId: actor.tenantId,
+        workOrderId: closed.workOrderId,
+        limit: 100,
+        offset: 0,
+      });
+      const remaining = items.find((candidate) => candidate.id !== closed.id && ACTIVE_DISPATCH_STATUSES.has(candidate.status));
+      if (!remaining || remaining.operatorUserId === closed.operatorUserId) return;
+
+      await this.assignWorkOrderForDispatch(actor, {
+        workOrderId: remaining.workOrderId,
+        operatorUserId: remaining.operatorUserId,
+        dispatchId: remaining.id,
+        source: "field_dispatch_reassign",
+      });
+    } catch (error) {
+      dispatchLogger.warn(
+        {
+          dispatchId: closed.id,
+          reason: error instanceof FieldDispatchError || error instanceof WorkOrderError ? error.reason : "unexpected",
+        },
+        "b-o6r-07c-b1: assignment not moved to the remaining active dispatch",
+      );
     }
   }
 
