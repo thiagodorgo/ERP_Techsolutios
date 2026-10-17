@@ -64,6 +64,14 @@ const ACTIVE_DISPATCH_STATUSES: ReadonlySet<FieldDispatchStatus> = new Set<Field
 
 const dispatchLogger = pino({ level: env.LOG_LEVEL });
 
+// `D-07CB1-TRAVA-ATE-B2` + `D-DESP-INICIO-ATENDIMENTO` (decisões do dono, 17/10) — o atendimento começa em "No local":
+// no DESPACHO é `arrived` (e o que vem depois, `in_service`); na OS é `on_site` (e `in_progress`, `paused`). As duas
+// máquinas são separadas, então qualquer uma das duas marca o atendimento como iniciado. Até o `B-O6R-07c-b2` existir,
+// trocar o técnico daí em diante é RECUSADO (409), com a mensagem de que precisa de autorização; antes de "No local"
+// (inclusive `on_route`), a troca vale na hora. O b2 troca a recusa pelo pedido de autorização.
+const DISPATCH_SERVICE_STARTED: ReadonlySet<FieldDispatchStatus> = new Set<FieldDispatchStatus>(["arrived", "in_service"]);
+const WORK_ORDER_SERVICE_STARTED: ReadonlySet<WorkOrder["status"]> = new Set<WorkOrder["status"]>(["on_site", "in_progress", "paused"]);
+
 // Ω3-c (port do crítico, Req C) — resolve o snapshot congelável de um checklist SEM que este módulo
 // importe `checklists` diretamente (dependency-inverted; a raiz de composição injeta o resolver).
 // Retorna null quando não há template publicado — o despacho segue sem checklist.
@@ -243,6 +251,7 @@ export class FieldDispatchService {
     // ANTES de qualquer escrita (freeze, vistoria, despacho). O rascunho não atribui e passa.
     if (status !== "draft") {
       this.assertWorkOrderNotTerminal(workOrder);
+      this.assertNewTargetAllowed(workOrder, operatorUserId);
     }
 
     // Ω3-c (E1/E3) — congela o snapshot ANTES de criar o despacho (freeze→create; falha após o freeze deixa a
@@ -545,6 +554,7 @@ export class FieldDispatchService {
       this.assertMayActivateDraft(actor);
       const workOrder = await this.assertWorkOrderBelongsToTenant(actor, current.workOrderId);
       this.assertWorkOrderNotTerminal(workOrder);
+      this.assertNewTargetAllowed(workOrder, current.operatorUserId);
     }
 
     const updated = await this.repository.changeStatus({
@@ -620,6 +630,11 @@ export class FieldDispatchService {
     // B-O6R-07c-b1 — reatribuir o despacho reatribui a OS (`D1-07c` = (c)); OS encerrada é recusada antes.
     const workOrder = await this.assertWorkOrderBelongsToTenant(actor, current.workOrderId);
     this.assertWorkOrderNotTerminal(workOrder);
+    // `D-07CB1-TRAVA-ATE-B2` — com o atendimento iniciado (despacho em "No local" ou depois, ou a OS), trocar o
+    // técnico é recusado até o b2. Reatribuir à MESMA pessoa não troca ninguém.
+    if (operatorUserId !== current.operatorUserId) {
+      this.assertTechnicianChangeAllowed(workOrder, current.status);
+    }
 
     const updated = await this.repository.reassign({
       tenantId: actor.tenantId,
@@ -921,6 +936,30 @@ export class FieldDispatchService {
     );
   }
 
+  // `D-07CB1-TRAVA-ATE-B2` — a trava da troca de técnico com o atendimento iniciado. Recebe o status do despacho que
+  // muda de alvo (no `reassign`) e a OS; para um despacho novo ou um rascunho ativado, só a OS conta (o despacho
+  // novo não começou nada). Quem chama decide se HÁ troca (alvo diferente do técnico atual).
+  private assertTechnicianChangeAllowed(workOrder: WorkOrder, dispatchStatus?: FieldDispatchStatus): void {
+    const started =
+      (dispatchStatus !== undefined && DISPATCH_SERVICE_STARTED.has(dispatchStatus)) ||
+      WORK_ORDER_SERVICE_STARTED.has(workOrder.status);
+    if (!started) return;
+
+    throw new FieldDispatchError(
+      409,
+      "FIELD_DISPATCH_CHANGE_REQUIRES_AUTHORIZATION",
+      "technician_change_requires_authorization",
+      "O atendimento já começou (No local): a troca de técnico precisa de autorização de um superior.",
+    );
+  }
+
+  // Um despacho novo (ou a ativação de um rascunho) para OUTRA pessoa troca o técnico da OS (`D1-07c`): mesma trava.
+  private assertNewTargetAllowed(workOrder: WorkOrder, operatorUserId: string): void {
+    const currentTechnician = workOrder.assignedUserId ?? workOrder.assignedOperatorId;
+    if (!currentTechnician || currentTechnician === operatorUserId) return;
+    this.assertTechnicianChangeAllowed(workOrder);
+  }
+
   // B-O6R-07c-b1 (crítica, ajuste 3) — despachar passou a atribuir, e a OS encerrada (`completed`, `cancelled`,
   // `rejected`: sem transição de saída) não ganha técnico novo. O rascunho não atribui, então não é barrado aqui:
   // a trava roda quando ele for ativado.
@@ -979,6 +1018,8 @@ export class FieldDispatchService {
       const workOrder = await this.workOrderService.get(actor, closed.workOrderId);
       if (WORK_ORDER_STATUS_TRANSITIONS[workOrder.status].length === 0) return;
       if (workOrder.assignedUserId !== closed.operatorUserId) return;
+      // `D-07CB1-TRAVA-ATE-B2` — com o atendimento iniciado, a OS não muda de técnico sozinha: fica como está.
+      if (WORK_ORDER_SERVICE_STARTED.has(workOrder.status)) return;
 
       const { items } = await this.repository.list({
         tenantId: actor.tenantId,

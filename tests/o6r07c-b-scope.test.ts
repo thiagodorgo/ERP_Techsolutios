@@ -470,6 +470,71 @@ test("compensação (crítica, ajuste 2) — falha injetada na atribuição: o c
   });
 });
 
+test("D-07CB1-TRAVA-ATE-B2 — antes de No local a troca de técnico vale na hora (inclusive A caminho)", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+    const aCaminho = await ctx.req(`/api/v1/operations/dispatches/${s.dispatchId}/status`, { method: "PATCH", headers: hA, body: { status: "on_route" } });
+    assert.equal(aCaminho.status, 200, JSON.stringify(aCaminho.body));
+    await ctx.reatribuir(s.dispatchId, seed.tecnicoC);
+    assert.equal((await ctx.os(s.workOrderId)).assignedUserId, seed.tecnicoC.id);
+  });
+});
+
+test("D-07CB1-TRAVA-ATE-B2 — a partir de No local (despacho `arrived`/`in_service` ou OS `on_site` em diante) a troca é RECUSADA com o pedido de autorização", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+    const hG = ctx.h(seed.gestorA, "manager");
+    const recusada = (r: { status: number; body: any }, via: string) => {
+      assert.equal(r.status, 409, `${via}: ${r.status} ${JSON.stringify(r.body)}`);
+      assert.equal(r.body.error.reason, "technician_change_requires_authorization", via);
+      assert.match(r.body.error.message, /autoriza/i, `${via}: a mensagem não diz que precisa de autorização`);
+    };
+
+    // (1) DESPACHO em "No local" (`arrived`), OS ainda em `assigned`: o reassign é recusado; nada muda.
+    const s1 = await ctx.semente(seed.tecnicoA);
+    for (const etapa of ["on_route", "arrived"]) {
+      const r = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+      assert.equal(r.status, 200, `${etapa}: ${JSON.stringify(r.body)}`);
+    }
+    const r1 = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoC.id } });
+    recusada(r1, "reassign com o despacho em arrived");
+    const d1 = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}`, { headers: hG });
+    assert.equal(d1.body.data.operatorUserId, seed.tecnicoA.id, "o despacho mudou de alvo apesar da recusa");
+    assert.equal(d1.body.data.status, "arrived");
+    assert.equal((await ctx.os(s1.workOrderId)).assignedUserId, seed.tecnicoA.id, "a OS mudou de técnico apesar da recusa");
+    // Reatribuir à MESMA pessoa não troca ninguém: segue permitido.
+    const mesma = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoA.id } });
+    assert.equal(mesma.status, 200, JSON.stringify(mesma.body));
+
+    // (2) OS em "No local" (`on_site`), despacho ainda em `assigned`: reassign, despacho novo e rascunho ativado para
+    // OUTRO técnico são recusados; o despacho novo para o MESMO técnico passa.
+    const s2 = await ctx.semente(seed.tecnicoA);
+    for (const etapa of ["accepted", "on_route", "on_site"]) {
+      const r = await ctx.req(`/api/v1/work-orders/${s2.workOrderId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+      assert.equal(r.status, 200, `${etapa}: ${JSON.stringify(r.body)}`);
+    }
+    recusada(await ctx.req(`/api/v1/operations/dispatches/${s2.dispatchId}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoC.id } }), "reassign com a OS em on_site");
+    const antes = (await ctx.despachos(s2.workOrderId)).length;
+    recusada(await ctx.despachar(s2.workOrderId, seed.tecnicoC), "despacho novo para outro técnico com a OS em on_site");
+    assert.equal((await ctx.despachos(s2.workOrderId)).length, antes, "o despacho recusado ficou gravado");
+    const rascunho = await ctx.despachar(s2.workOrderId, seed.tecnicoC, "draft");
+    assert.equal(rascunho.status, 201, "rascunho não troca ninguém");
+    recusada(
+      await ctx.req(`/api/v1/operations/dispatches/${rascunho.body.data.id}/status`, { method: "PATCH", headers: hG, body: { status: "assigned" } }),
+      "ativar rascunho de outro técnico com a OS em on_site",
+    );
+    assert.equal((await ctx.os(s2.workOrderId)).assignedUserId, seed.tecnicoA.id);
+    const mesmoTecnico = await ctx.despachar(s2.workOrderId, seed.tecnicoA);
+    assert.equal(mesmoTecnico.status, 201, `despacho novo para o mesmo técnico: ${JSON.stringify(mesmoTecnico.body)}`);
+    const os2 = await ctx.os(s2.workOrderId);
+    assert.equal(os2.status, "on_site", "o despacho rebaixou o status da OS");
+    assert.equal(os2.assignedUserId, seed.tecnicoA.id);
+  });
+});
+
 // ------------------------------------------------------------------------------------------------
 // Receitas e arnês
 // ------------------------------------------------------------------------------------------------

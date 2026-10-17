@@ -165,3 +165,35 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 - **Pergunta ao dono que a crítica deixou aberta e o b1 NÃO decidiu:** travar o `reassign` a partir de `on_route` até o b2 existir (P2/P3)? O b1 não trava; hoje reatribuir com atendimento iniciado faz o ex-técnico cair em conflito (sem saída no servidor até o b2).
 - **Decisão de desenho tomada pelo dev, a confirmar:** despachar OS encerrada passou a dar 409 (antes era aceito, sem efeito na OS). E o papel de campo não ativa mais o próprio rascunho (`dispatch_activation_requires_dispatcher`).
 - **Pendências novas sugeridas:** (a) ex-técnico só de despacho reatribuído ANTES do deploy recebe `rejected`, não conflito (R5); (b) divergentes do backfill ficam como estão e só aparecem como total no `RAISE NOTICE` — o despachante não tem lista (R5); (c) `B-SAN3-05 · o papel de runtime…` vermelho só sob a suíte inteira no container (R8), a confirmar na CI do PR; (d) Docker desta máquina caindo sob a suíte inteira (R8/R11).
+
+## DECISÕES DO DONO (17/10)
+
+### D0 — terreno e leitura
+- Ramo `fix/o6r07cb1-despacho-atribui` em `67e5cb1c` (o orquestrador commitou o trabalho anterior; PR #440). `git status` limpo antes desta etapa.
+- Decisões lidas em `origin/docs/registro-17-10:agent-orchestration/controle/decisoes.md:3699,3707-3711`: `D-DESP-INICIO-ATENDIMENTO` (o atendimento começa em **No local**), `D-07CB1-TRAVA-ATE-B2`, `D-07CB1-DESPACHO-OS-ENCERRADA` e `D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO` (as duas últimas confirmam o que já está no #440; sem código novo).
+- "No local" medido no código: é o rótulo de `arrived` no DESPACHO (`frontend/src/modules/operations/dispatches/dispatches.adapter.ts:19`) e de `on_site` na OS (`work-orders-row.logic.ts:16`). As duas máquinas são separadas (emenda, M3).
+- **Leitura do dev, declarada (§A6):** "a partir de No local" = despacho em `arrived`/`in_service` **ou** OS em `on_site`/`in_progress`/`paused` (a mensagem do orquestrador cita `on_site`; a decisão cita o despacho). E a trava vale para toda via que TROCA o técnico de uma OS com atendimento iniciado: `reassign`, um despacho NOVO para outro técnico (que move a atribuição, `D1-07c`) e a ativação de rascunho para outro técnico; sem isso a trava seria contornada pelo `create`. Na devolução automática ao cancelar/falhar, a OS com atendimento iniciado NÃO muda de técnico (fica como está).
+
+### D1 — a trava (código) e o teste
+- `src/modules/field-dispatch/field-dispatch.service.ts`: `DISPATCH_SERVICE_STARTED` (`arrived`, `in_service`) e `WORK_ORDER_SERVICE_STARTED` (`on_site`, `in_progress`, `paused`); `assertTechnicianChangeAllowed` → 409 `FIELD_DISPATCH_CHANGE_REQUIRES_AUTHORIZATION` / `technician_change_requires_authorization`, mensagem "O atendimento já começou (No local): a troca de técnico precisa de autorização de um superior."; aplicada no `reassign` (quando o alvo muda), no `create` não-rascunho e na ativação do rascunho quando o alvo é OUTRO técnico (`assertNewTargetAllowed`); a devolução automática ao cancelar/falhar não troca o técnico de OS com atendimento iniciado. Antes de qualquer escrita (a trava roda antes do `repository.reassign`/`create`/`changeStatus`).
+- Limite declarado: `assertNewTargetAllowed` compara com `assignedUserId` (ou, na falta, `assignedOperatorId`). OS atribuída só pelo PERFIL na web (`assign` sem `userId`) e com atendimento iniciado: um despacho novo para a mesma pessoa é tratado como troca e recusado (falso positivo seguro; nunca falso negativo).
+- `tests/o6r07c-b-scope.test.ts`: 2 testes novos — antes de No local (`on_route`) a troca vale; a partir de No local, (1) despacho `arrived` → reassign 409, nada muda, reatribuir à mesma pessoa passa; (2) OS `on_site` → reassign 409, despacho novo para outro 409 (sem gravar), rascunho criado mas ativação 409, despacho novo para o mesmo técnico 201 sem rebaixar a OS.
+- `npm run check` → ec 0. `node --test --import tsx tests/o6r07c-b-scope.test.ts` → **41/41**.
+
+### D2 — vermelho-controle e mutações (cópia descartável `w-07cb1-mut`, detached em `67e5cb1c`, `npm ci` próprio, removida com `git worktree remove --force` ao fim; conferido que não existe mais)
+- Sem a trava (o `src/` de `67e5cb1c` + o teste novo): `tests/o6r07c-b-scope.test.ts` → 40 pass / **1 fail**: o teste de No local, `reassign com o despacho em arrived: 200` (a troca acontecia). O teste "antes de No local" fica verde nos dois lados (controle positivo).
+- Com a trava (espelho conferido EOL-neutro) e cada mutação aplicada por âncora única e restaurada byte-idêntica:
+  | mutação | resultado |
+  |---|---|
+  | MT1 trava desligada | vermelho: `reassign com o despacho em arrived: 200` |
+  | MT2 só o despacho conta (OS `on_site` ignorada) | vermelho: `reassign com a OS em on_site: 200` |
+  | MT3 despacho novo sem trava | vermelho: `despacho novo para outro técnico com a OS em on_site: 201` |
+  | MT4 trava já em "A caminho" (`on_route`) | vermelho: o teste "antes de No local" (`409 … technician_change_requires_authorization`) |
+
+### D3 — retomada depois da reinicialização das extensões, e a bateria
+- Medido antes de confiar: `git status` = só os 3 arquivos desta etapa (`field-dispatch.service.ts` +41, `tests/o6r07c-b-scope.test.ts` +65, este relatório); D0–D2 inteiros no arquivo (nenhuma linha meio-escrita); `git worktree list` e `C:/Users/AMP` sem `w-07cb1-mut`.
+- `npm run check` → ec 0 · `npm run lint` → ec 0 · `git diff --check` → ec 0.
+- Testes do bloco sem banco (Windows, `--test-concurrency=4`, 12 arquivos: 07c-b1, censo, 07c-a, 07a, despacho ×6, snapshot de vistoria, contratos mobile, ratchet SAN3-05) → `201 · pass 198 · fail 3`; as 3 são do censo (`T0`, `T12`, tempo), com `Fatal process out of memory: Zone` no processo filho do censo — falta de memória do Windows com 4 arquivos em paralelo, não teste. `tests/o6r07c-census-guard.test.ts` sozinho → **31/31**. Logo: 201/201 verdes, medido em duas rodadas.
+- `-db` do bloco no container (0 grupos `tl*` de outros trabalhos no `docker ps`): `tests/o6r07c-b-scope-db.test.ts` → **7/7**, ec 0.
+- `npm test` inteiro: NÃO rodado (a CI do PR o faz, por ordem do orquestrador).
+- Limpeza: logs meus em `/tmp` removidos; nenhum container meu sobrando (o grupo `tl17922039075308-*`, criado às 23:25 −03, depois do fim da minha rodada, é de outro trabalho e não foi tocado); os dois corpos novos de jurado em `.claude/agents/especialistas/` (`jurado-07cb1-c1-…`, `jurado-07cb1-c2-…`) NÃO são meus e não foram tocados; nada commitado.
