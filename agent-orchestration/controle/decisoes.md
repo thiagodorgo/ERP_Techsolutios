@@ -3691,3 +3691,13 @@ O dono pediu *"detalhe as minhas decisoes com recomendação e porque"*; o orque
 **Do mesmo dia, antes:**
 - **`D-GEMINI-ARGON-USO` (16/10, manhã).** O orquestrador relatou que o Gemini 4 Argon estava disponível no Antigravity e perguntou se o usava; o dono respondeu *"sim, use o argon"*. Ele foi usado como **dev** do `B-O6R-07c-b1`. **Leitura do orquestrador, declarada (§A6, §C7.6-bis):** o Argon foi tratado no nível menor do contrato, por analogia com a `D-GEMINI-PRO-NIVEL-CODEX`; o dono não declarou essa equivalência com estas palavras. Os limites da `D-GEMINI-SEGUNDO-REVISOR` (Gemini só como segundo revisor, nunca revisor único, e nunca no design) continuam valendo.
 - **`D-API-CLAUDE-SUSPENSA` (16/10, noite).** *"o uso da api claude esta suspenso, vc cobre a api claude no mesmo nivel, codex e argon so rodam uma tarefa paga por vez"*. Enquanto vigorar: nada roda com a chave da API; planos não-topo, críticas e revisões passam a agentes Claude da sessão em Opus (declarado). Sobre o Codex e o Argon, a regra é a frase do dono: *"so rodam uma tarefa paga por vez"*. **Leitura do orquestrador, declarada:** uma tarefa paga por vez em cada um deles, e os dois podem rodar ao mesmo tempo. Se o dono quis dizer uma tarefa por vez somando os dois, corrige-se nesta linha.
+
+## Registro de 17/10/2026 — Despachos: as 5 perguntas da maquete
+
+A maquete de Despachos com 3 opções (`despachos-claude.html`, design Claude Opus, verificador `checar-3opcoes.cjs`: PASSOU) trouxe cinco perguntas. O orquestrador deu recomendação e motivo para cada uma, e o dono respondeu: ***"as 5 perguntas eu vou na sua recomendação"***.
+
+- **`D-DESP-INICIO-ATENDIMENTO`.** O "atendimento iniciado" da `D2-07c` começa em **No local** (o técnico já está no cliente; trocar a partir daí já afeta quem está sendo atendido). Dali em diante a troca de técnico é pedido que exige autorização.
+- **`D-DESP-ETAPA-ATRIBUIDO`.** A etapa **Atribuído** fica separada de "A caminho": é onde o despacho espera o técnico aceitar, e juntá-las esconde quem ainda não saiu.
+- **`D-DESP-QUEM-AUTORIZA-GESTOR`.** Quando quem pede a troca já é Gestor e existe outra pessoa acima da operação, **a outra pessoa (o Administrador) autoriza**: quem pede não autoriza. A exceção da organização com uma pessoa só segue a `D-07CB-SUPERIOR-UNICO`.
+- **`D-DESP-LIMITE-POR-ETAPA`.** Limite de tempo por etapa: **sim, configurável, depois da versão vendável**. Até lá, "atrasado" segue sendo o prazo da OS.
+- **`D-DESP-TECNICO-SEM-TELA-WEB`.** O Técnico de Campo **não** usa a tela de Despachos na web: ele usa o app. Na web, a tela é da Operação de Campo e dos perfis acima.

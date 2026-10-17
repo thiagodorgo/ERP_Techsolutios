@@ -11110,3 +11110,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
 - **Perguntas ao dono:** o Operador vê valores (a entrada exige custo unitário)? Para o Gestor vale a matriz (leitura) ou o catálogo (tudo)? O Técnico vê "o que está comigo"? Entram vários locais (depósitos)?
 - **teste de encerramento:** cada item vira teste no bloco que o fechar.
+
+## P-DESP-TECNICO-VE-DESPACHO-ALHEIO (2026-10-17) — o Técnico de Campo vê e muda a situação de despachos de outros técnicos — ALTA (permissão)
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achado pelo agente da maquete de Despachos, por LEITURA de código na `main` `4fe7524e`; não executado) · **dono:** bloco de permissão a planejar (junta completa, unanimidade de 3), junto ou depois do bloco de `P-TECNICO-LE-SO-ATRIBUIDAS`
+- Nem a lista de despachos nem a mudança de situação olham de quem é o despacho (`src/modules/field-dispatch/field-dispatch.service.ts:205-217`, `:486-493`). Contraria a `D-TECNICO-LE-SO-ATRIBUIDAS` e, na web, a `D-DESP-TECNICO-SEM-TELA-WEB`.
+- **Primeiro passo do bloco:** confirmar por EXECUÇÃO (técnico A lista e muda situação de despacho do técnico B), com vermelho-controle.
+- **teste de encerramento:** técnico A não lista nem altera despacho do técnico B (recusa no contrato do 07a); técnico A segue mudando a situação dos seus.
