@@ -114,6 +114,31 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     return updated[0] ? mapFieldDispatchRecord(updated[0]) : undefined;
   }
 
+  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    await this.client.fieldDispatch.deleteMany({
+      where: {
+        tenant_id: tenantId,
+        id: dispatchId,
+      },
+    });
+  }
+
+  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    await this.client.fieldDispatch.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: snapshot.id,
+      },
+      data: {
+        operator_user_id: snapshot.operatorUserId,
+        status: snapshot.status,
+        reason: snapshot.reason ?? null,
+        observation: snapshot.observation ?? null,
+        updated_by: snapshot.updatedBy ?? null,
+      },
+    });
+  }
+
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
     const event = await this.client.fieldDispatchEvent.create({
       data: {
@@ -168,6 +193,18 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
 
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).reassign(input));
+  }
+
+  deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaFieldDispatchRepository(tx).deleteById(tenantId, dispatchId),
+    );
+  }
+
+  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaFieldDispatchRepository(tx).restoreState(tenantId, snapshot),
+    );
   }
 
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {

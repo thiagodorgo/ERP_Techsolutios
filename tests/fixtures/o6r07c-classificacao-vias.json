@@ -968,7 +968,7 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/mobile/checklist-runs/:runId": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/reassign": {
@@ -976,7 +976,7 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/operations/dispatches/:dispatchId/status": {
-  "classe": "DESPACHO·07c-b",
+  "classe": "DESPACHO·ALVO",
   "n": 1
  },
  "ROTA PATCH /api/v1/operator-profiles/:profileId": {
@@ -1428,23 +1428,23 @@
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/acknowledgement": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/attachments": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/complete": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/divergence": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/markers": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/checklist-runs/:runId/reopen": {
@@ -1452,7 +1452,7 @@
   "n": 1
  },
  "ROTA POST /api/v1/mobile/evidence-uploads": {
-  "classe": "EVIDENCIA-OS·07c-b",
+  "classe": "EVIDENCIA-OS·ESCOPO",
   "n": 1
  },
  "ROTA POST /api/v1/mobile/field-locations": {
@@ -1768,31 +1768,31 @@
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.acknowledgement_create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.attachment_attach": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.complete": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.divergence_create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_answer": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.item_note": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.marker_create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.run_create": {
@@ -1800,23 +1800,23 @@
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_acknowledgement.create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_attachment.attach": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_divergence.create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_marker.create": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.complete": {
-  "classe": "VISTORIA·07c-b",
+  "classe": "VISTORIA·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist_run.create": {
@@ -1848,15 +1848,15 @@
   "n": 1
  },
  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_observation": {
-  "classe": "EVIDENCIA-OS·07c-b",
+  "classe": "EVIDENCIA-OS·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_photo": {
-  "classe": "EVIDENCIA-OS·07c-b",
+  "classe": "EVIDENCIA-OS·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/evidence-actions · evidence.work_order_signature": {
-  "classe": "EVIDENCIA-OS·07c-b",
+  "classe": "EVIDENCIA-OS·ESCOPO",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/expense-actions · expense_item.create": {

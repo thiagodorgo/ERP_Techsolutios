@@ -419,14 +419,57 @@ export type AssignWorkOrderInput = {
   readonly assignedBy?: string;
 };
 
+// B-O6R-07c-b1 (Ω6R-SEC-002, `D1-07c` = (c)) — atribuição originada pelo despacho (`FieldDispatchService`:
+// `create`, `draft → assigned`, `reassign`, e a devolução ao despacho ativo restante quando um é cancelado ou
+// falha). Grava `assigned_operator_id` (perfil, ou o user id sem perfil) e `assigned_user_id`, e cria uma linha
+// em `work_order_assignments` com `metadata {source, dispatchId}`. OS em `open` vai a `assigned`; em outro
+// status não terminal, o status fica.
+export type AssignWorkOrderFromDispatchInput = {
+  readonly tenantId: string;
+  readonly workOrderId: string;
+  readonly operatorId: string;
+  readonly userId: string;
+  readonly assignedBy: string;
+  readonly dispatchId: string;
+  readonly source: "field_dispatch" | "field_dispatch_reassign";
+  readonly message: string;
+};
+
 export class WorkOrderError extends Error {
   constructor(
     readonly statusCode: number,
     readonly code: string,
     readonly reason: string,
     message: string,
+    readonly wasPreviouslyAssigned = false,
   ) {
     super(message);
     this.name = "WorkOrderError";
   }
+}
+
+// B-O6R-07c-b1 (D2-07c (d)) — a recusa de escopo por objeto do 07a, com a marca "o ator JÁ FOI técnico desta OS"
+// (linha em `work_order_assignments`). A recusa HTTP é a mesma 403; a marca só muda o balde nos lotes do app.
+export function workOrderNotAssignedError(wasPreviouslyAssigned = false): WorkOrderError {
+  return new WorkOrderError(
+    403,
+    "WORK_ORDER_NOT_ASSIGNED",
+    "not_assigned_to_actor",
+    "Field actors can only change work orders assigned to them.",
+    wasPreviouslyAssigned,
+  );
+}
+
+// O tipo de conflito que os lotes do app devolvem ao ex-técnico (`conflicts[]`), e quem decide o que fazer com o
+// trabalho: um superior (`D2-07c`). A fila durável e a decisão são do `B-O6R-07c-b2`; até lá, a ação fica em
+// conflito no aparelho, sem se perder.
+export const ASSIGNMENT_CHANGED_CONFLICT_TYPE = "assignment_changed_pending_review";
+export const ASSIGNMENT_CHANGED_NEXT_ACTION = "await_supervisor_review";
+
+// A recusa é a de escopo por objeto E o ator já foi técnico da OS? Lido pelos lotes (OS, vistoria, evidência)
+// e pelo upload de evidência. Estrutural de propósito: o checklist relança a recusa como `ChecklistError`.
+export function isPreviouslyAssignedRefusal(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { readonly reason?: unknown; readonly wasPreviouslyAssigned?: unknown };
+  return candidate.reason === "not_assigned_to_actor" && candidate.wasPreviouslyAssigned === true;
 }

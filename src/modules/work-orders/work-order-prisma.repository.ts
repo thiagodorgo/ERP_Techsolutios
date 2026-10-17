@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type {
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
@@ -558,6 +559,75 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return result;
   }
 
+  async assignFromDispatch(
+    input: AssignWorkOrderFromDispatchInput,
+  ): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+    const result = await this.client.$transaction(async (tx) => {
+      const current = await tx.workOrder.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          id: input.workOrderId,
+        },
+        select: {
+          status: true,
+        },
+      });
+      if (!current) return undefined;
+      const nextStatus = current.status === "open" ? "assigned" : current.status;
+      const updated = await tx.workOrder.updateManyAndReturn({
+        where: {
+          tenant_id: input.tenantId,
+          id: input.workOrderId,
+        },
+        data: {
+          assigned_operator_id: input.operatorId,
+          assigned_user_id: input.userId,
+          status: nextStatus,
+          updated_by: input.assignedBy,
+        },
+      });
+      if (!updated[0]) return undefined;
+      const assignment = await tx.workOrderAssignment.create({
+        data: {
+          tenant_id: input.tenantId,
+          work_order_id: input.workOrderId,
+          operator_id: input.operatorId,
+          user_id: input.userId,
+          assigned_by: input.assignedBy,
+          metadata: toJsonObject({ source: input.source, dispatchId: input.dispatchId }),
+        },
+      });
+
+      return {
+        workOrder: mapWorkOrderRecord(updated[0]),
+        assignment: mapWorkOrderAssignmentRecord(assignment),
+      };
+    });
+
+    return result;
+  }
+
+  async hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    const operatorMatches = [
+      { operator_id: identity.userId },
+      ...(identity.operatorProfileId ? [{ operator_id: identity.operatorProfileId }] : []),
+    ];
+    const found = await this.client.workOrderAssignment.findFirst({
+      where: {
+        tenant_id: tenantId,
+        work_order_id: workOrderId,
+        OR: [{ user_id: identity.userId }, ...operatorMatches],
+      },
+      select: { id: true },
+    });
+
+    return Boolean(found);
+  }
+
   async createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {
     const event = await this.client.workOrderEvent.create({
       data: {
@@ -667,6 +737,24 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).assign(input));
+  }
+
+  assignFromDispatch(
+    input: AssignWorkOrderFromDispatchInput,
+  ): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).assignFromDispatch(input),
+    );
+  }
+
+  hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).hasActorBeenAssigned(tenantId, workOrderId, identity),
+    );
   }
 
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {

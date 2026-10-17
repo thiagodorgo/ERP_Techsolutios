@@ -22,6 +22,8 @@ import {
   type EvidenceStorageProvider,
 } from "../evidence/evidence-storage.js";
 import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
+import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
+import { actorMutatesAssignedOnly, isPreviouslyAssignedRefusal } from "../work-orders/work-order.types.js";
 import { findMobileEvidenceSyncReceiptForUpload } from "./mobile-evidence-sync.js";
 
 const CONTRACT_NAME = "mobile_evidence_file_upload";
@@ -80,6 +82,7 @@ export async function resetMobileEvidenceUploadRuntimeForTests(): Promise<void> 
 export async function uploadMobileEvidenceFile(
   actor: AuthenticatedActor | undefined,
   request: Request,
+  resolveWorkOrderService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
 ): Promise<MobileEvidenceUploadResponse> {
   assertUploadActor(actor);
   if (request.is("multipart/form-data") !== "multipart/form-data") {
@@ -113,6 +116,32 @@ export async function uploadMobileEvidenceFile(
   const uploadWorkOrderId = parsed.fields.get("work_order_id")?.trim();
   if (uploadWorkOrderId && receipt.workOrderId && uploadWorkOrderId !== receipt.workOrderId) {
     throw routeError(409, "MOBILE_EVIDENCE_CONFLICT", "work_order_mismatch", "work_order_id does not match synced evidence metadata.");
+  }
+
+  // B-O6R-07c-b1 (Ω6R-SEC-002, entrada `POST /mobile/evidence-uploads`; crítica, ajuste 5) — o escopo por objeto é
+  // conferido DE NOVO aqui, depois do recibo e antes de qualquer validação de bytes ou gravação: a OS pode ter mudado
+  // de técnico entre o metadado e o binário. A OS vem do RECIBO (`receipt.workOrderId`, gravado pelo servidor quando
+  // o metadado passou pelo escopo), nunca do campo `work_order_id` do formulário, que é opcional e do cliente.
+  // Só a evidência DA OS (`scope === "work_order"`); a `field_*` fica fora pela mesma razão do lote.
+  //   - ex-técnico (`D2-07c`): 409 `assignment_changed_pending_review` — o app trata 409 como conflito e PRESERVA
+  //     o blob (`evidence_upload.dart`, `on ApiConflictError`); nada se perde até o `B-O6R-07c-b2`.
+  //   - quem nunca foi técnico: 403 `not_assigned_to_actor`. OS que sumiu: 404 da OS.
+  //   - papel `tenant_wide`: não cai no escopo (regra de presença do 07a), como no lote.
+  if (receipt.scope === "work_order" && receipt.workOrderId && actorMutatesAssignedOnly(actor)) {
+    const workOrderService = await resolveWorkOrderService();
+    try {
+      await workOrderService.getForMutation(actor, receipt.workOrderId);
+    } catch (error) {
+      if (isPreviouslyAssignedRefusal(error)) {
+        throw routeError(
+          409,
+          "MOBILE_EVIDENCE_CONFLICT",
+          "assignment_changed_pending_review",
+          "The work order was reassigned; this evidence awaits supervisor review.",
+        );
+      }
+      throw error;
+    }
   }
 
   if (!/^[a-f0-9]{64}$/.test(declaredSha256)) {

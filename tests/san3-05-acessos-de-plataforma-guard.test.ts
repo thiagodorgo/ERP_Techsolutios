@@ -110,6 +110,18 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
 // O que este bloco ACRESCENTOU ao inventário, com o motivo (nenhuma é acesso a tabela FORCE sem contexto).
 const NOVAS: ReadonlyMap<string, string> = new Map([
   [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrder", "workOrder.findFirst", "work_orders", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrder", "workOrder.updateManyAndReturn", "work_orders", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrderAssignment", "workOrderAssignment.create", "work_order_assignments", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
     k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
     "B3/C3E: a relação aninhada `select.role` toca a tabela FORCE `roles` pela mesma consulta já congelada como suspeita; relação FORCE não pode desaparecer só porque a operação raiz é `userRoleAssignment.findMany`.",
   ],
