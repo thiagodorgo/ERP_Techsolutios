@@ -1,11 +1,14 @@
 # B-ARNES-2 — relatório do DEV
 
-- Identidade: `dev-arnes2-codex`
-- Execução declarada: Codex em GPT-5.6 Sol, nível menor
+- Identidades: `dev-arnes2-codex` (execuções Codex em GPT-5.6 Sol, nível menor, de 12/10 a 17/10: RETOMADAS até a 6)
+  e `dev-arnes2-opus` (Claude Opus, nível menor, RETOMADA 7, 17/10)
 - Worktree: `C:/Users/AMP/w-arnes2`
 - Ramo: `fix/arnes-2-testes-instaveis`
-- HEAD medido: `c1d745c857fc73281623ba37d5c63b904fe90225`
-- Estado: pausado antes de instalação, mutações e testes
+- Base do bloco: `c1d745c857fc73281623ba37d5c63b904fe90225`; head versionado pelo orquestrador ao fim da RETOMADA 7:
+  `d3414c33ff9b244dc815a8080ba2f72886ca97ac` (PR #442)
+- Estado (atualizado na RETOMADA 7): bateria do plano completa e verde — ver "Passo 5" e "Ajustes da revisão do
+  PR #442", no fim. O registro incremental logo abaixo NÃO está em ordem cronológica: ver a nota de procedência antes
+  de "SHA-256 de restauração antes das mutações".
 
 ## Registro incremental
 
@@ -27,6 +30,17 @@ branch=fix/arnes-2-testes-instaveis
 report_exists=false
 exit=0
 ```
+
+> **Nota de procedência (RETOMADA 7, ajuste 2 da revisão do PR #442).** O trecho "SHA-256 de restauração" e as
+> mutações PoW-1, PoW-2 e A10-1 abaixo **não são de 12:22:25Z** nem de uma "RETOMADA 1": foram inseridos aqui, fora
+> de ordem, pela execução Codex que seguiu a "RETOMADA 2026-10-12 12:30Z" (a que o mandato chama `dev-arnes2c`),
+> entre 12:30Z e o corte das 12:41Z de 12/10, no Windows. Medido em 17/10: (i) o trecho já está no primeiro commit
+> do relatório, `377cbf59` (12:41:41Z); (ii) os sha de restauração registrados (`70E99B…` do `o6r06`, `32F79DB…` do
+> `owner-portal`) são os sha das versões CRLF desses arquivos em `377cbf59` (`git show 377cbf59:<arq> | sed
+> 's/$/\r/' | sha256sum`); (iii) o A10-1 relata `# tests 17`, isto é, com o caso A10-ordem, que só nasceu na seção
+> "Complemento A10-ordem" da retomada de 12:30Z. O **banco** usado pelo A10-1 (`-db`) **não foi registrado**; o
+> único banco preparado naquela execução era o `arnes2-pg` (`127.0.0.1:58482/erp_arnes2`) — inferência, não medição.
+> Ver também, na RETOMADA 7, a errata da mutação `return;` que ficou commitada (`377cbf59`, desfeita em `8ad4a77e`).
 
 ### SHA-256 de restauração antes das mutações
 
@@ -728,9 +742,13 @@ Classificação de cada `not ok`, pela mensagem e stack do TAP:
   commit `15ef3fbe`, 2026-09-11; não tocado por B-ARNES-2): B11 falhou **1/3** por expiração da transação
   interativa de teardown (timeout 5 s; 15.147 s transcorridos); B1 e B2′ falharam **2/3** com
   `expected 30, actual 24`; B7 e B8 falharam **2/3** com `expected 2, actual 3`. Não corrigido.
+  **→ RECLASSIFICADO na RETOMADA 7 (ajuste 1 da revisão do PR #442): consequência do A10-drain quebrado (risco r4
+  do plano), não pre-existente.** A data do arquivo não decide a classe; ver "Ajustes da revisão do PR #442".
 - `tests/inventory-cycle-count-close-units-db.test.ts` — **fora do bloco/pre-existente** (arquivo no
   commit `ab52ec50`, 2026-10-10; não tocado por B-ARNES-2): B16 falhou **1/3**, esperava `ok` e recebeu
   `422|entry_already_adjusted`. Não corrigido.
+  **→ Na RETOMADA 7: SEM CLASSIFICAÇÃO** — não há prova a favor nem contra a causa ser o bloco; vira pendência
+  sugerida com o N (ver "Registro sugerido").
 
 O ajuste permitido para a falha do bloco foi feito somente em `tests/o6r06-usage-atomic-db.test.ts`:
 quando existe `DATABASE_URL`, o arquivo agora fixa `CORE_SAAS_PERSISTENCE=prisma` junto com o
@@ -1191,9 +1209,9 @@ Veredito parcial: **verde**.
 | PoW isolado | Linux, arquivo sozinho, 5.000 desafios por rodada (RETOMADA 3) | 20 | 20/20 verde (100.000 verificações) |
 | A10/A11 sob carga | Linux, 1 laço ocupado por CPU (RETOMADA 3) | 20 | 20/20 verde |
 | Subconjunto `backend-postgres` da CI | Linux, 42 arquivos, `skipped=0` (RETOMADA 3) | 10 | 10/10 verde |
-| `npm test` completo pós-ajuste A10 | Linux, forma da CI (`CORE_SAAS_PERSISTENCE=memory`) | 3 | 3/3 verde — 3240 tests · 3238 pass · 0 fail · 2 skip (paridade RBAC) em cada; 0 `not ok` |
+| `npm test` completo pós-ajuste A10 | Linux, forma da CI (`CORE_SAAS_PERSISTENCE=memory`) | 3 | 3/3 verde — 3240 tests · 3238 pass · 0 fail · 2 skip (paridade RBAC) em cada; 0 `not ok`. R2/R3 com os 3 testes nos sha medidos nesta retomada; **R1 sem sha registrado** — ver ajuste 3 |
 | Mutações em cópia descartável | M-T15a (exitCode 0) · M-T15b (sem a trava) · M-T15c (`setInterval` pendurado) · M-A10-drain (`return`) | 4 | 4/4 VERMELHAS pelo motivo certo (l.1468 em 2,4 s · l.1458 em 7,4 s · rede de 60 s em 62,2 s · l.491 em 0,2 s); 4/4 restauradas por sha cru |
-| Mutações anteriores (RETOMADA 1) | PoW-1 · PoW-2 · A10-1 | 3 | 3/3 vermelhas, restauradas |
+| Mutações anteriores (execução da retomada de 12:30Z de 12/10, `dev-arnes2c`, Windows; registradas fora de ordem no topo — ver a nota de procedência) | PoW-1 · PoW-2 · A10-1 (banco do A10-1 não registrado) | 3 | 3/3 vermelhas, restauradas |
 | `npm run check` / `lint` / `build` / `git diff --check` | Windows | 1 cada | todos ec=0 |
 | `src/**` × `c1d745c8` | `git diff --exit-code` | — | 0 (D-1 cumprida) |
 
@@ -1206,8 +1224,186 @@ Fora do mandato desta retomada e ainda abertos (não feitos por mim): a mediçã
 pelo D-3 (dado lateral: no Linux, sob M-T15a, o processo recusado fechou em ≈2,4 s, sem o resíduo de ~10 s); o
 registro em `agent-orchestration/controle/pendencias.md` (fechar `P-SAN3-05-T15-TETO-DE-RELOGIO` e
 `P-O6R06-A10-LIMPEZA-FK-INTERMITENTE`, abrir e fechar a do PoW) e o índice; commit/push (do orquestrador); CI do PR.
-Pre-existentes vistos só na RETOMADA 4 (antes do ajuste) e ausentes nas 3 rodadas finais:
-`tests/o6r06-allocation-basis-rls-db.test.ts` e `tests/inventory-cycle-count-close-units-db.test.ts`.
+Vistos só na RETOMADA 4 (antes do ajuste) e ausentes nas 3 rodadas finais:
+`tests/o6r06-allocation-basis-rls-db.test.ts` (reclassificado: consequência do A10-drain quebrado) e
+`tests/inventory-cycle-count-close-units-db.test.ts` (sem classificação) — ver "Ajustes da revisão do PR #442".
 
 **Veredito do DEV: bateria do plano COMPLETA e VERDE** — `npm test` N=3/3 verde, mutações N=4/4 vermelhas pelo motivo
 certo, gates finais verdes, `src/**` intocado.
+
+## Ajustes da revisão do PR #442 — RETOMADA 7 (`dev-arnes2-opus`, Claude Opus, nível menor), 17/10
+
+Revisor: `rev-441-442-opus`, APROVADO COM AJUSTES. Head versionado: `d3414c33`. Só este relatório mudou (ver o
+ajuste 4 sobre `pendencias.md`).
+
+### Ajuste 1 — `o6r06-allocation-basis-rls-db` reclassificado; B16 sem classificação
+
+**Reclassificação.** As falhas de `tests/o6r06-allocation-basis-rls-db.test.ts` na RETOMADA 4 passam de "fora do
+bloco/pre-existente" para **consequência do A10-drain quebrado** (risco r4 do plano: "o LOCK EXCLUSIVE atrasa suítes
+paralelas que escrevem em `cloud_usage_events`"). A data de origem do arquivo não decide a classe. A evidência foi
+relida em 17/10 no TAP `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log` (sha256 `6B03918B…7D9D`) e no
+código:
+
+```text
+- A10-drain quebrado nas 3 rodadas (memory): segurou `LOCK TABLE cloud_usage_events IN EXCLUSIVE MODE` até o
+  timeout da espera — duração 15.619 / 16.281 / 16.310 ms; bloqueios no cluster 1 / 0 / 0.
+- R1: B11 falhou em 16.480 ms com "Transaction API error: … timeout … 5000 ms, however 15147 ms passed" —
+  15,1 s ≈ o tempo em que o A10-drain segurou o LOCK; e houve exatamente 1 statement bloqueado no cluster.
+- R2/R3: B1/B2′ "24 !== 30" (B1 em 6.517 / 5.989 ms, contra 3,2–4,4 s nas rodadas verdes) e B7/B8 "expected 2,
+  actual 3" ("o replace varre TODOS os tenants": um tenant a mais na base).
+- O allocation-basis escreve e apaga `cloud_usage_events`: tests/o6r06-allocation-basis-rls-db.test.ts:266
+  (DELETE), :497 (UPDATE occurred_at), :681 (deleteMany no teardown).
+- Os dois arquivos estão no `npm test` e no job backend-postgres (.github/workflows/ci.yml:245 e :248).
+- Depois do conserto do A10 (o arquivo fixa prisma; A10-drain em 1.493 / 831 / 691 ms): 0 falha do allocation-basis
+  em 3/3 rodadas do `npm test` (R1 da RETOMADA 5, R2 e R3 da RETOMADA 7).
+```
+
+O que está **medido** é a coincidência de tempo no R1 (B11 em 15,1 s com 1 bloqueio) e o sumiço das falhas junto com
+o conserto: 0/3 depois, contra 2–3/3 antes.
+
+O que é **hipótese, não medida**, é o mecanismo das R2/R3, que tiveram 0 bloqueio no cluster. A leitura proposta: o
+A10-drain fica parado por ~15 s e adia o teardown do próprio caso. Nesse intervalo, a run e as unidades do tenant dele
+continuam vivas em `cloud_usage_events`. O rateio do allocation-basis "varre TODOS os tenants" e vê um tenant e uma
+unidade a mais: 3 tenants em vez de 2, e 3/5 de 40 = 24 em vez de 3/4 = 30.
+
+**Comando que derruba a hipótese** (não executado). Cada caso roda numa cópia descartável, no container, com o default
+`CORE_SAAS_PERSISTENCE=memory` do invólucro e os dois arquivos concorrentes no mesmo `node --test`:
+
+```text
+# (a) teste do A10 na versão QUEBRADA (08937165, sha CRLF e985c225…), N=10:
+bash …/ferramentas/teste-linux.sh <copia-com-o6r06-de-08937165> \
+  'set +e; for i in $(seq 1 10); do node --test --import tsx tests/o6r06-usage-atomic-db.test.ts tests/o6r06-allocation-basis-rls-db.test.ts >/tmp/p-$i.tap 2>&1; echo "R$i"; grep -E "^\s*not ok" /tmp/p-$i.tap; done'
+# (b) o mesmo com a versão CONSERTADA (d3414c33, c2ba1cd1…), N=10
+# (c) controle: só o allocation-basis, N=10
+```
+
+A hipótese prevê falhas B só em (a), sempre junto com o A10-drain vermelho. Ela cai se aparecer falha B em (b) ou em
+(c), ou se (a) der 0 falha B em 10 rodadas.
+
+**B16 de `tests/inventory-cycle-count-close-units-db.test.ts` — SEM CLASSIFICAÇÃO** (ordem do orquestrador). Os N:
+
+- 1/3 no `npm test` da RETOMADA 4, antes do ajuste A10: na rodada 3, esperava `ok` e recebeu
+  `422|entry_already_adjusted`, em 1.860 ms;
+- 0/3 no `npm test` depois do ajuste (R1–R3);
+- 0/10 no subconjunto backend-postgres da RETOMADA 3, que contém o arquivo (ci.yml:275) e saiu 10/10 verde com
+  `skipped=0`.
+
+Não há prova a favor nem contra a causa ser o bloco. Fica como pendência sugerida (ver "Registro sugerido").
+
+### Ajuste 2 — ordem, cabeçalho, banco do A10-1 e a mutação commitada
+
+- **Ordem:** antes de "SHA-256 de restauração antes das mutações" entrou uma nota de procedência medida. As mutações
+  PoW-1, PoW-2 e A10-1 são da execução da retomada de 12:30Z de 12/10 (12:30Z–12:41Z), não de 12:22:25Z nem de uma
+  "RETOMADA 1". Medição:
+  - `git show 377cbf59:docs/revisoes/SAN3/B-ARNES-2-dev.md | grep -n 'Mutação PoW-1'` → l.43;
+  - `git show 377cbf59:tests/o6r06-usage-atomic-db.test.ts | sed 's/$/\r/' | sha256sum` → `70e99b25…`, igual ao sha
+    de restauração do A10-1.
+
+  A linha da tabela do Passo 5 foi corrigida.
+- **A10-1 (`-db`):** o banco não foi registrado. A nota declara a inferência (`arnes2-pg`, `127.0.0.1:58482`) como
+  não medida.
+- **Cabeçalho:** atualizado, com as duas identidades, a base, o head `d3414c33` e o estado atual. A frase "pausado
+  antes de… mutações e testes" saiu.
+- **Errata — a mutação `return;` foi commitada.** O commit `377cbf59` (wip, 12/10 12:41:41Z) levou para a branch a
+  mutação de drill do A10-drain no produto: `src/modules/cloud-usage/cloud-usage.service.ts`,
+  `-  await gravacoesEmVoo;` / `+  return;` (conferido com `git show 377cbf59 -- src`). O Codex foi cortado com ela
+  aplicada. O orquestrador a desfez no `8ad4a77e` (12/10 12:42:01Z, 1 linha). Desde então,
+  `git diff --exit-code c1d745c8 -- src` = 0, medido de novo agora em `d3414c33`. Daí a regra de mutar só em cópia
+  descartável, cumprida nas 4 mutações da RETOMADA 7.
+
+### Ajuste 3 — procedência da R1 do N=3
+
+A R1 (RETOMADA 5, log `arnes2-full-n3-retomada5.tap.log`, terminado às 00:41:39Z de 17/10) **não registrou o sha dos
+3 testes**. Os sha das R2/R3 (esta retomada) são `o6r06=c2ba1cd1…`, `owner-portal=32f79db3…` e `san3-05=3d794ea7…`.
+
+Indícios de que a R1 usou os mesmos bytes:
+
+- os mtimes dos arquivos no `w-arnes2` são anteriores ao início da R1 (≈00:34Z): `o6r06` às 00:05:37Z de 17/10 (o
+  ajuste da RETOMADA 4), `owner-portal` às 12:39Z de 12/10 e `san3-05` às 12:25Z de 12/10;
+- a RETOMADA 6 declara que não editou nada;
+- a lista de testes do TAP da R1 tem os mesmos nomes: A10-ordem, A10-drain, canário PoW e T15.
+
+Mesmo assim, **não está provado criptograficamente** que os bytes da R1 eram os das R2/R3. Provado por sha, o N é 2/2
+(R2, R3); com o indício de mtime, 3/3.
+
+### Ajuste 4 — registro: o PERMITIDO inclui `pendencias.md`, mas não gravei (divergência registrada, §A2)
+
+O PERMITIDO do plano inclui `agent-orchestration/controle/pendencias.md` (só append) e o índice regenerado. Não
+gravei na branch, por dois motivos medidos agora:
+
+- (i) a branch nasce de `1d4d2834`, e a `P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO` **não existe** no `pendencias.md`
+  da branch. Existe só na `origin/main` (`af89abbb`, l.10840; `git show origin/main:agent-orchestration/controle/pendencias.md`).
+  Fechá-la na branch exigiria criar a seção, e o merge ficaria com ID duplicado;
+- (ii) o arquivo tem 10.808 linhas na branch e 11.112 na `origin/main`. Um append no fim dos dois lados é conflito
+  garantido, num PR que hoje não conflita.
+
+O texto pronto vai abaixo. O orquestrador grava sobre a `main`, no PR de registro (§C7.8(3)), ou nesta branch depois
+de trazer a `main`.
+
+#### Registro sugerido (texto pronto)
+
+Acrescentar como linha de status dentro de cada seção existente (append, sem editar o texto antigo):
+
+```text
+## P-SAN3-05-T15-TETO-DE-RELOGIO
+- **status (2026-10-17):** FECHA NO MERGE do `B-ARNES-2` (PR #442). Teste de encerramento cumprido: o T15 assere a
+  recusa e o encerramento pelo evento `close` com código 1 (rede de 60 s, sem teto de relógio de 15 s; decisão D-3
+  do plano), e a suíte inteira saiu verde em 3/3 rodadas, na forma da CI, em Linux
+  (`docs/revisoes/SAN3/B-ARNES-2-dev.md`, RETOMADAS 5 e 7). Também saiu 10/10 isolado, e as mutações M-T15a/b/c
+  ficaram vermelhas pelo motivo certo. Resíduo: a `P-SAN3-05-T15-FALSO-VERMELHO-PORTA` segue aberta (risco r1), e a
+  medição de handles do D-3 virou a `P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO`.
+
+## P-O6R06-A10-LIMPEZA-FK-INTERMITENTE
+- **status (2026-10-17):** FECHA NO MERGE do `B-ARNES-2` (PR #442), COM RESSALVA. O teardown drena antes do
+  1.º DELETE (A10-ordem e A10-drain, com mutações vermelhas). O teste de encerramento pede "verde em 10 rodadas do
+  `backend-postgres`". O que há: 10/10 do SUBCONJUNTO backend-postgres (42 arquivos, `skipped=0`), rodado
+  LOCALMENTE em Linux/container, não no job da CI, e com a versão do teste ANTERIOR ao ajuste
+  `CORE_SAAS_PERSISTENCE` (RETOMADA 3, sha e985c225…); 20/20 do arquivo sob carga; e 3/3 do `npm test` na versão
+  final. Não há 10 rodadas do job `backend-postgres` na CI. Se o orquestrador não aceitar o subconjunto local como
+  equivalente, a pendência fica ABERTA até essas 10 rodadas do job.
+
+## P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO
+- **status (2026-10-17):** FECHA NO MERGE do `B-ARNES-2` (PR #442). A solução usada agora é comprovadamente
+  inválida (`wrongSolutionFor`, com teto de 10.000), e há um canário de sal fixo (`pow-canary-268`). Medição:
+  20/20 execuções do arquivo em Linux, cada uma com o laço de 5.000 desafios, ou seja, 100.000 verificações sem
+  falha. O teste de encerramento pede "1000 execuções sem falha": em verificações, o laço passa disso, mas o arquivo
+  rodou 20 vezes, não 1000. As mutações PoW-1/PoW-2 ficaram vermelhas.
+```
+
+Pendências novas:
+
+```text
+## P-ARNES2-D3-HANDLES-DO-BOOT-RECUSADO (2026-10-17) — o que mantinha vivo por ~10 s o processo recusado pela trava — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o D-3 do plano do `B-ARNES-2` mandou medir os handles ativos do
+  processo filho recusado e anotar no PR; não foi medido) · **dono:** `B-ARNES-2` (follow-up), ou o bloco de produto
+  do boot da trava, se o dono abrir um.
+- **dado lateral (2026-10-17):** sob a mutação M-T15a, em Linux/container, o processo recusado fechou em ≈2,4 s
+  (duração do T15 até a asserção de código), sem o resíduo de ~10 s visto no Docker/WSL2 em 2026-10-09.
+- **bloqueia:** não.
+- **teste de encerramento:** a lista de handles ativos do filho recusado (`process._getActiveHandles()` ou
+  equivalente), medida em Linux e no Windows do dono e anotada no PR/relatório, com a decisão: nada a fazer, ou um
+  bloco de produto com junta.
+
+## P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE (2026-10-17) — o B16 de `inventory-cycle-count-close-units-db` falhou 1 vez — BAIXA
+
+- **status:** ABERTA · **escopo:** NÃO CLASSIFICADO — não há prova a favor nem contra a causa ser o `B-ARNES-2` (o
+  A10-drain quebrado na mesma rodada) · **dono:** a nomear.
+- **medido:** `tests/inventory-cycle-count-close-units-db.test.ts`, B16 ("recontar Y enquanto a unidade de X segura a
+  sessão…"): esperava `ok` e recebeu `422|entry_already_adjusted`. Falhou 1/3 no `npm test` da RETOMADA 4 do
+  `B-ARNES-2`, antes do ajuste A10 (log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
+  `npm test` depois do ajuste e 0/10 no subconjunto backend-postgres local (RETOMADA 3).
+- **bloqueia:** não.
+- **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
+  falha.
+```
+
+Depois de gravar, o orquestrador regenera o índice com `gerar-indice-pendencias.py`.
+
+### Estado ao fim dos ajustes
+
+- `git status`: só `docs/revisoes/SAN3/B-ARNES-2-dev.md` está modificado.
+- `git diff --exit-code c1d745c8 -- src` = 0.
+- Nada foi commitado.
+- Não sobrou nenhum container nem cópia descartável.
+- O texto desta seção foi montado numa subpasta minha do scratchpad (`dev-arnes2-opus/`), que removi depois.
