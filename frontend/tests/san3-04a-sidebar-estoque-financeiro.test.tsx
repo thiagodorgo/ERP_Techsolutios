@@ -45,7 +45,7 @@ test("[item 38] buildSidebarNav([\"Estoque\"], hidden={/dashboard}) = grupos e i
     nav.map((g) => ({ label: g.label, items: g.items.map((i) => i.label) })),
     [
       { label: "OPERAÇÃO", items: ["Checklists"] },
-      { label: "GESTÃO", items: ["Estoque", "Pedidos", "Relatórios"] },
+      { label: "GESTÃO", items: ["Estoque"] },
       { label: "ADMINISTRAÇÃO", items: ["Notificações", "Modelos de Checklist"] },
     ],
   );
@@ -71,7 +71,7 @@ test("[item 38] o Estoque nunca vê Frota, Cadastros mestres, Pátios, Telemetri
 test("[P1/P2/item 13] Financeiro vê OS, Clientes, Serviços, Checklists, Financeiro, Cobranças e Pagamentos — e não vê Auditoria", () => {
   const nav = buildSidebarNav(["Financeiro"]);
   const labels = labelsOf(nav);
-  for (const l of ["Ordens de Serviço", "Orçamentos", "Aprovações", "Checklists", "Clientes", "Serviços", "Estoque", "Pedidos", "Remunerações", "Relatórios", "Financeiro", "Cobranças", "Pagamentos", "Notificações", "Modelos de Checklist"]) {
+  for (const l of ["Ordens de Serviço", "Orçamentos", "Aprovações", "Checklists", "Clientes", "Serviços", "Estoque", "Remunerações", "Financeiro", "Cobranças", "Pagamentos", "Notificações", "Modelos de Checklist"]) {
     assert.ok(labels.includes(l), `Financeiro sem "${l}"`);
   }
   assert.equal(labels.includes("Auditoria"), false, "Auditoria saiu do menu do Financeiro (audit:read não concedido; matriz l.56 scoped)");

@@ -17,6 +17,9 @@ O design system deste projeto está APROVADO e é IMUTÁVEL por esta skill:
   `color`, `typography`, `google-fonts`, `landing`, `product` e `prompt`
   do search.py como fonte de DECISÃO. Se consultados por curiosidade,
   nada do resultado pode sobrescrever os tokens do repo.
+- Tela nova segue a tela EXISTENTE mais parecida (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4): nada de
+  tela do zero; cite a tela-modelo (arquivo) no plano ou no relatório. Componente novo só sem equivalente,
+  e nasce na biblioteca.
 - Precedência em qualquer conflito:
   decisões do prompt em execução e arquivos do repo (DESIGN_SYSTEM.md,
   COMPONENT_LIBRARY.md, RBAC_MATRIX.md, mobile-sync-contracts.md)
@@ -31,7 +34,8 @@ implementação correta — não de direção de arte.
 ## Stack real do projeto (corrige a versão genérica)
 - Web: React 18 + TypeScript + Vite + Tailwind. Componentes de
   `frontend/src/components` e padrões de página espelhados das páginas
-  existentes (ex.: WorkOrdersListPage.tsx).
+  existentes (ex.: frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx;
+  nunca o legado sem rota de frontend/src/pages/).
 - Mobile: Flutter 3.x + Material 3 (app de campo, offline-first).
   Diretrizes de stack Flutter vêm das skills flutter-ai-architect /
   flutter-expert; esta skill cobre UX e QA visual.
@@ -151,3 +155,17 @@ Flutter (quando aplicável):
 - [ ] Estados offline/fila de sync visíveis e testados
 - [ ] Sem emoji como ícone; família única de ícones
 - [ ] reduced-motion e escala de fonte do sistema sem quebra de layout
+
+## Regras do dono para toda tela (CLAUDE.md §4, itens 6 e 7)
+- **Padrão de painel com lista (`D-PADRAO-BLOCOS-CLICAVEIS`, 2026-10-12):**
+  - indicadores e blocos de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e removível;
+  - linha de UMA linha (até 44 px), sem botão de ação;
+  - o clique na linha abre o detalhe embaixo dela, com as propriedades e as ações, um aberto por vez.
+  - Referência: `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
+- **3 opções antes do dev (`D-TELAS-TRES-OPCOES`, 2026-10-13):**
+  - toda tela nova ou refeita nasce de uma maquete com 3 opções (A, B, C) no padrão do sistema, com um quadro de notas fora da tela;
+  - o dono aprova, e a aprovada vira a referência em `screen-refs/`. Desde 2026-10-14 (`D-APARENCIA-POR-USUARIO`), as 3 aprovadas ficam TODAS, como aparências que cada usuário escolhe em Configurações;
+  - a maquete é feita pelo Claude, nunca pelo Gemini (`D-DESIGN-SO-CLAUDE`, 2026-10-13);
+  - a tela implementada SAI com as 3 aparências, não só com uma (`D-TELAS-SAEM-COM-TRES`, 2026-10-14); o seletor em Configurações (`P-APARENCIA-POR-USUARIO`) vem antes ou junto da primeira;
+    - [ ] o plano cita as 3 opções aprovadas (a referência em `screen-refs/`);
+    - [ ] a tela pronta é conferida contra cada uma delas.

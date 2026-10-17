@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoria · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (a mesma das maquetes aprovadas de Pátios, Dashboard, OS e Usuários) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css:3017-4026 ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a;min-width:0}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-table{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-table__topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-table__title{font-size:14px;font-weight:800;color:#0f172a}
+.pat-table__subtitle{font-size:11.5px;color:#94a3b8;margin-top:2px}
+.pat-table__count{font-size:11.5px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-table__empty{padding:48px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-select{padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer}
+.pat-cell-main{font-size:13px;font-weight:700;color:#0f172a}
+.pat-cell-sub{font-size:11.5px;color:#94a3b8}
+.pat-role-chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap;line-height:1.35;vertical-align:middle}
+.pat-avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;vertical-align:middle}
+/* Card de filtros da Auditoria (app.css:3950-3998) */
+.pat-filter-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:15px 18px;margin-bottom:14px}
+.pat-filter-grid{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr auto;gap:12px;align-items:end}
+.pat-filter-field label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px}
+.pat-filter-field input,.pat-filter-field select{width:100%;padding:9px 11px;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;background:#fff;font-family:inherit}
+.pat-filter-field select{cursor:pointer}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-select:focus-visible,.pat-filter-field input:focus-visible,.pat-filter-field select:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Padrão aprovado: linha de 1 linha + resumo embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:10px 18px 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden}
+.pat-ab-row{height:42px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:42px;max-height:42px;line-height:42px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:16px 20px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.1fr 1.25fr 1.15fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+/* faixa de dia (pat-table__daybar, app.css:3851) e faixa de grupo, como linha da tabela */
+.grupo-row td{padding:8px 18px;background:#fbfcfe;border-bottom:1px solid #f1f5f9;font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#64748b;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grupo-row td span.grupo-n{display:inline-flex;margin-left:8px;padding:1px 8px;border-radius:99px;font-size:10.5px;letter-spacing:0;background:#f1f5f9;color:#475569}
+.grupo-row td small{margin-left:10px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#94a3b8}
+
+/* Células da trilha (1 linha) */
+.usr{display:inline-flex;align-items:center;gap:9px;max-width:100%;vertical-align:middle;line-height:1.2}
+.usr .pat-avatar{width:26px;height:26px;font-size:10px}
+.usr__txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.usr__txt .pat-cell-sub{margin-left:7px}
+.oq{display:inline-flex;align-items:center;gap:9px;max-width:100%;vertical-align:middle;line-height:1.2}
+.oq i{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.oq span{font-size:12.5px;font-weight:600;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oq svg{flex-shrink:0}
+.hora{font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:#334155;font-variant-numeric:tabular-nums}
+.hora small{font-weight:600;color:#94a3b8;margin-right:6px;font-size:11.5px}
+.modcel{display:inline-flex;align-items:center;gap:7px;vertical-align:middle;line-height:1.2;font-weight:600;color:#334155}
+.modcel i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.reccel{font-family:var(--font-mono);font-size:11.5px;color:#334155;font-weight:600}
+.sinal{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;line-height:1.3;vertical-align:middle;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sinais{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Marca "falta no backend" (anotação da maquete; o quadro de notas esconde) */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+body.sem-marcas .falta{display:none}
+
+/* Resumo do evento: faixa das 24 horas do autor naquele dia + sequência */
+.dia24{display:block;width:100%;height:30px}
+.dia24-eixo{display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:2px;font-variant-numeric:tabular-nums}
+.seq{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.seq div{display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;min-width:0}
+.seq div b{font-family:var(--font-mono);font-size:11.5px;color:#64748b;font-weight:700;flex-shrink:0}
+.seq div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seq div.atual{color:#0f172a;font-weight:700}
+.seq div.atual b{color:#2563eb}
+.motivo{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.45}
+
+/* Voltar ao filtro anterior */
+.voltar-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px 0}
+.back-link{display:inline-flex;align-items:center;gap:7px;color:#2563EB;font-size:12.5px;font-weight:700;background:none;border:0;cursor:pointer;width:fit-content;padding:0}
+.back-link:hover{text-decoration:underline}
+.back-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.voltar-bar small{font-size:11.5px;color:#94a3b8}
+.mais-bar{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;border-top:1px solid #f1f5f9}
+.mais-bar small{font-size:11.5px;color:#94a3b8}
+
+/* ─── Opção A: KPIs + faixa de composição ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:14px}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kpi-spark{display:block;width:100%;height:22px;margin-top:6px}
+.comp{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.comp-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;min-width:0}
+.comp-card__t{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:800;color:#0f172a;margin-bottom:8px;flex-wrap:wrap}
+.comp-card__t small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.comp-sub{font-size:11px;font-weight:700;color:#64748b;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+.pilha{display:flex;height:20px;border-radius:7px;overflow:hidden;gap:2px;background:#fff}
+.pilha button{border:0;padding:0;cursor:pointer;min-width:10px;color:#fff;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:.92}
+.pilha button:hover{opacity:1}
+.pilha button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #0f172a;opacity:1}
+.pilha button:focus-visible{outline:2px solid #2563eb;outline-offset:2px;position:relative;z-index:1}
+.pilha-leg{display:flex;flex-wrap:wrap;gap:3px 10px;margin-top:6px;font-size:11px;color:#475569}
+.pilha-leg span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pilha-leg b{color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block}
+.pico-btn{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 8px;border:1px solid #e2e8f0;border-radius:99px;background:#fff;font-size:11px;font-weight:700;color:#475569;cursor:pointer}
+.pico-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
+.pico-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Opção B: faixa analítica (padrão de Pátios B, a preferida do dono) ─── */
+.analitico{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card--2{grid-column:span 2}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;flex-wrap:wrap}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.an-leitura{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#475569}
+.an-leitura b{color:#0f172a}
+.dias-svg{display:block;width:100%;height:150px}
+.svg-clic g[role="button"]{cursor:pointer}
+.svg-clic g[role="button"]:focus{outline:none}
+.svg-clic g[role="button"]:hover rect.bg,.svg-clic g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.svg-clic g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.svg-clic g[role="button"]:focus-visible .alvo-foco{stroke:#2563eb;stroke-width:2}
+.eixo{display:flex;justify-content:space-between;margin-top:4px;font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums}
+.horas-svg{display:block;width:100%;height:118px}
+.donut-wrap{display:flex;align-items:center;gap:12px}
+.lg-list{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.lg-btn{display:flex;align-items:center;gap:7px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:7px;background:none;cursor:pointer;font-size:12px;color:#475569;text-align:left;white-space:nowrap}
+.lg-btn:hover{background:#f8fafc}
+.lg-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.lg-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.lg-btn span.t{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lg-btn b{margin-left:auto;color:#0f172a;font-variant-numeric:tabular-nums}
+.barra-btn{display:grid;grid-template-columns:minmax(0,132px) minmax(0,1fr) 34px;align-items:center;gap:8px;width:100%;padding:3px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:24px}
+.barra-btn:hover{background:#f8fafc}
+.barra-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.barra-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.barra-btn__rot{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.barra-btn__rot i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.barra-btn__rot .pat-avatar{width:18px;height:18px;font-size:8px}
+.barra-btn__rot span{overflow:hidden;text-overflow:ellipsis}
+.barra-btn__trilho{display:flex;height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.barra-btn__trilho b{display:block;height:100%}
+.barra-btn__n{font-size:12px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums}
+.higiene{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.higiene button{display:flex;flex-direction:column;gap:2px;padding:9px 10px;border-radius:9px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;text-align:left;min-height:62px}
+.higiene button.crit{border-color:#fecaca;background:#fef2f2}
+.higiene button.ok{border-color:#bbf7d0;background:#f0fdf4}
+.higiene button.roxo{border-color:#e9d5ff;background:#faf5ff}
+.higiene button[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.higiene button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.higiene b{font-size:18px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums;line-height:1.1}
+.higiene .crit b{color:#b91c1c}.higiene .ok b{color:#15803d}.higiene .roxo b{color:#7e22ce}
+.higiene span{font-size:11px;font-weight:700;color:#92400e;line-height:1.25}
+.higiene .crit span{color:#991b1b}.higiene .ok span{color:#166534}.higiene .roxo span{color:#6b21a8}
+.higiene small{font-size:10.5px;font-weight:600;color:#64748b}
+
+/* ─── Opção C: radar de risco + linha do tempo + mapa de horário + investigação ─── */
+.c-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:12px;margin-bottom:12px}
+.c-meio{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.radar{display:grid;grid-template-columns:260px minmax(0,1fr);gap:10px;align-items:start}
+.radar-svg{display:block;width:260px;height:206px}
+.radar-svg g[role="button"]{cursor:pointer}
+.radar-svg g[role="button"]:focus{outline:none}
+.radar-svg g[role="button"] rect.bg{fill:transparent}
+.radar-svg g[role="button"]:hover rect.bg,.radar-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.radar-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.checks{display:flex;flex-direction:column;gap:2px}
+.check-btn{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;align-items:center;gap:8px;width:100%;padding:5px 8px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;font-size:12px;color:#334155;min-height:30px}
+.check-btn:hover{background:#f8fafc}
+.check-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.check-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.check-btn i{width:9px;height:9px;border-radius:50%}
+.check-btn b{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.check-btn .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.check-btn small{font-size:10.5px;font-weight:700;min-width:46px;text-align:right}
+.todos-btn{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:99px;background:#fff;cursor:pointer;font-size:11.5px;font-weight:700;color:#475569}
+.todos-btn:hover{border-color:#2563eb;color:#2563eb}
+.todos-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.lanes-svg{display:block;width:100%;height:auto;max-height:200px}
+.hm{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed}
+.hm th{font-size:9.5px;font-weight:700;color:#64748b;text-align:center;padding:0 0 2px;white-space:nowrap;overflow:hidden}
+.hm th.dia{text-align:left;width:30px}
+.hm td{padding:0}
+.hm-cell{width:100%;height:24px;border:1px solid transparent;border-radius:5px;cursor:pointer;font-size:10px;font-weight:800;font-variant-numeric:tabular-nums;color:#1e3a8a}
+.hm-cell:hover{border-color:#93c5fd}
+.hm-cell[aria-pressed="true"]{border-color:#0f172a}
+.hm-cell:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.hm-cell.zero{cursor:default;color:transparent;display:block}
+.hm-leg{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#94a3b8;margin-top:6px;flex-wrap:wrap}
+.hm-leg i{width:16px;height:9px;border-radius:2px;display:inline-block}
+.mx{width:100%;border-collapse:collapse;table-layout:fixed}
+.mx thead th{font-size:10px;font-weight:800;color:#64748b;text-align:center;padding:2px 2px 6px;letter-spacing:.04em;text-transform:uppercase}
+.mx thead th:first-child{text-align:left;width:46%}
+.mx tbody td{padding:2px;border-top:1px solid #f1f5f9;text-align:center}
+.mx tbody td:first-child{text-align:left;padding:2px 4px 2px 0}
+.mx-mod{display:flex;align-items:center;gap:7px;width:100%;border:1px solid transparent;border-radius:7px;background:none;cursor:pointer;padding:3px 6px;text-align:left;min-height:26px;font-size:11.5px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden}
+.mx-mod span{overflow:hidden;text-overflow:ellipsis}
+.mx-mod:hover{background:#f8fafc}
+.mx-mod[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.mx-mod:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.mx-cell{width:100%;height:24px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.mx-cell:hover{border-color:#93c5fd}
+.mx-cell[aria-pressed="true"]{border-color:#0f172a}
+.mx-cell:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.mx-zero{display:flex;align-items:center;justify-content:center;height:24px;color:#cbd5e1;font-size:11px}
+.foco-lista{display:flex;flex-direction:column;gap:3px}
+.foco-btn{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:9px;width:100%;padding:5px 8px;border:1px solid transparent;border-radius:9px;background:none;cursor:pointer;text-align:left;min-height:40px}
+.foco-btn:hover{background:#f8fafc}
+.foco-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.foco-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.foco-btn .pat-avatar{width:26px;height:26px;font-size:10px}
+.foco-btn__txt{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.foco-btn__txt b{font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.foco-btn__txt small{font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.foco-btn__n{display:flex;gap:4px}
+.mini-tag{font-size:10px;font-weight:800;padding:2px 6px;border-radius:99px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.invest{background:#fff;border:1px solid #bfdbfe;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 0 0 3px #eff6ff}
+.invest__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.invest__t{font-size:14px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px}
+.invest__sub{font-size:12px;color:#64748b;margin-top:2px}
+.invest-svg{display:block;width:100%;height:150px}
+.invest-svg g[role="button"]{cursor:pointer}
+.invest-svg g[role="button"]:focus{outline:none}
+.invest-svg g[role="button"]:focus-visible circle,.invest-svg g[role="button"]:hover circle{stroke:#0f172a;stroke-width:2}
+.invest-kpis{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ─── Estado (StatePanel) ─── */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:50px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#94a3b8;max-width:420px;line-height:1.5}
+.vazio-curto{font-size:12.5px;color:#94a3b8;padding:12px 0}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.rv-tabela code{font-family:var(--font-mono);font-size:11px;color:#7dd3fc}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .analitico{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analitico .an-card--2{grid-column:1 / -1}
+  .pat-kpi{padding:13px 12px}
+  .pat-kpi__value{font-size:24px}
+  .comp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .comp .comp-card--larga{grid-column:1 / -1}
+  .c-topo{grid-template-columns:1fr}
+  .c-meio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .c-meio .an-card--foco{grid-column:1 / -1}
+  .analitico .an-card--pico{grid-column:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Auditoria · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">TA</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Thiago Andrade</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Administrador</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Auditoria</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"><div class="tela"></div></div>
+        <div data-view="b" style="display:none"><div class="tela"></div></div>
+        <div data-view="c" style="display:none"><div class="tela"></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel com BI</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela que está no ar — <code>frontend/src/modules/audit/pages/AuditTenantPage.tsx</code>, rota <code>/audit</code> (<code>App.tsx:544-551</code>, guarda <code>audit:read</code>/<code>audit.read</code>/<code>audit:view</code>), com o hook <code>useAuditEvents.ts</code>, o serviço <code>audit-events.service.ts</code>, o adaptador e o apresentador — e do padrão aprovado em Pátios (a B foi a preferida), Dashboard, OS e Usuários: <strong>indicadores e gráficos que filtram a lista → linha de 1 linha → resumo do evento embaixo (um aberto por vez) → “Ver tudo deste usuário / deste recurso / deste tipo” → voltar à lista anterior com a linha reaberta</strong>. As três têm BI, cada uma de um jeito. Componentes de <code>COMPONENT_LIBRARY.md</code> (<code>PageHeader</code>, <code>KpiStatCard</code>, <code>InitialsAvatar</code>, <code>ErrorState</code>) e as classes reais do <code>app.css</code> (<code>.pat-*</code>, <code>.pat-filter-card</code>, <code>.pat-table__daybar</code>). Skills: <code>ts-frontend-full</code> para implementar, <code>ui-ux-pro-max</code> para revisar. Medido em <code>origin/main</code> (<code>9c7784b4</code>); os arquivos lidos são idênticos aos da <code>main</code> local (<code>684e9afd</code>). Nomes, horários e números são de exemplo; o que não existe está marcado <strong>falta no backend</strong> (na tela, em âmbar tracejado; o botão abaixo esconde as marcas).</p>
+    <div class="estados-bar">Estado desta opção:
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar">Ver como (o perfil vem da sessão; aqui é só para revisar — vale para as 3 opções):
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="true">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="suporte" aria-pressed="false">Suporte</button>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="false">Financeiro (sem acesso)</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="true">Esconder as marcas “falta no backend”</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete)</h3>
+        <ul class="review-list">
+          <li><strong>Consulta:</strong> <code>GET /audit-events</code> com <code>audit.read</code> (<code>src/modules/core-saas/routes/audit.routes.ts:43-63</code>). Devolve só <code>{id, action, actor_user_id, tenant_id, timestamp}</code> (<code>:70-78</code>). Filtros exatos <code>action</code>, <code>actorId</code>, <code>from</code>/<code>to</code>; <code>limit</code> 1–200 (padrão 50) e <code>offset</code>, com <code>nextOffset</code> quando há mais (<code>:20-21, :51-56</code>).</li>
+          <li><strong>Tela:</strong> cabeçalho ADMINISTRAÇÃO · Auditoria + período (Todo o período/Hoje/7/30 dias) + Filtros + <strong>Exportar</strong> (CSV dos eventos carregados) — <code>AuditTenantPage.tsx:157-199, :39-43</code>. 4 KPIs (Eventos no período, Entradas no sistema, Sessões encerradas, Tentativas recusadas) contados no navegador sobre os eventos carregados — <code>:118, :213-261</code>; <strong>nenhum filtra a lista</strong>.</li>
+          <li><strong>Filtros:</strong> Tipo de evento, Usuário (campo de identificador), De, Até, Limpar — <code>:267-319</code>. Lista agrupada por dia (“HOJE · 14 DE OUTUBRO”) com QUANDO / QUEM / O QUE ACONTECEU / AÇÕES (<code>:348-427</code>); a única ação é o ícone “Ver só os eventos deste usuário” (<code>:409-420</code>); “Carregar mais eventos” sobe a janela de 50 em 50 (<code>useAuditEvents.ts:483, :548</code>).</li>
+          <li><strong>Não há detalhe do evento:</strong> o protótipo padronizado tinha a coluna ORIGEM e o botão DETALHE sem destino; a tela real tirou os dois (<code>:18-29</code>). Entrada por Usuários: <code>/audit?actorId=</code> (<code>:96-105</code>). 403 → “Acesso não permitido” (<code>:132-142</code>); falha → faixa “Não foi possível carregar a auditoria” (<code>:321-332</code>); recarrega sozinha a cada 30 s (<code>useAutoRefresh.ts:4</code>).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>Linha de 1 linha, sem botão:</strong> o ícone “ver só os eventos deste usuário” desce para o resumo, ao lado de “Ver tudo deste recurso” e “Ver só este tipo”.</li>
+          <li><strong>Resumo do evento</strong> (não existe hoje): mostra o que a consulta já traz (quando, quem, o quê) e, marcado, o que o registro guarda e não sai (recurso, resultado, origem, antes e depois).</li>
+          <li><strong>Nome e perfil de quem fez</strong> no lugar de “Usuário” para todos (pendência <code>P-AUD-ACTOR-NAME</code> do próprio código, <code>audit-events.presenter.ts:244-247</code>).</li>
+          <li><strong>Filtro de usuário por nome</strong>, não pelo identificador técnico (<code>AuditTenantPage.tsx:297-303</code>).</li>
+          <li><strong>Período padrão: últimos 30 dias</strong> (hoje: todo o período) — o BI precisa de uma janela para comparar com a anterior.</li>
+          <li><strong>Rótulos corrigidos:</strong> “Sessão encerrada” sem “pelo sistema” (a revogação pode ser de um administrador); rótulos próprios para acesso negado, itens financeiros, anexos, comentários, vagas, liberações e cobranças, que hoje caem em “Atividade registrada no sistema”.</li>
+          <li><strong>Tentativa de login recusada</strong> aparece como “Não identificado · sem login”, não como “Sistema · ação automática”.</li>
+          <li><strong>Resultado</strong> (sucesso, recusado, erro) e <strong>sensível</strong> (perfis e permissões, financeiro, exclusões, acesso negado) são deduzidos do tipo de evento; o módulo, do prefixo do tipo; volume e horário, da data. “Fora do horário” = entre 22h e 5h (proposta). Gráficos em SVG sem biblioteca (PD-004); rosca só com 3 categorias (skill <code>ui-ux-pro-max</code>).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Lista, período, filtros, “Carregar mais”, Exportar e o filtro por usuário: tudo de hoje (<code>AuditTenantPage.tsx</code> + <code>/audit-events</code>).</li>
+          <li>Os 4 KPIs de hoje (<code>computeAuditKpis</code>, <code>audit-events.presenter.ts:138-162</code>) + “Eventos sensíveis”, contado pelo tipo de evento. Agora todos filtram a lista.</li>
+          <li>Faixa de composição: volume por dia e pico de horário (pela data), módulo (pelo prefixo do tipo), resultado e sensíveis (pelo tipo), quem mais registrou (pelo autor) e tipos mais frequentes.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Contagem do período no servidor:</strong> hoje os KPIs contam só os 50 eventos carregados, mas se chamam “no período”.</li>
+          <li><strong>Nome e perfil do autor</strong> na resposta (o registro tem o vínculo com o usuário, <code>schema.prisma:372</code>).</li>
+          <li><strong>Recurso e filtro por recurso:</strong> <code>entity</code>/<code>entity_id</code> são gravados (<code>audit-log.service.ts:41-48</code>) mas não saem, e a consulta não filtra por eles. Só a OS tem trilha própria por recurso (<code>audit-log.repository.ts:33-45</code>).</li>
+          <li><strong>Resultado exato e origem:</strong> ficam em <code>metadata</code> (<code>:96-108</code>), que nunca sai.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é a tela de hoje com o padrão aprovado; o BI cabe em uma faixa fina; quem usa hoje não reaprende nada; o card de filtros continua aberto, como hoje.</li>
+          <li><strong>Contras:</strong> não compara com o período anterior; os segmentos pequenos das barras são alvos estreitos (a legenda ajuda); sem a contagem no servidor, o BI mente quando há mais de 50 eventos.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Os mesmos dados da A; a comparação com o período anterior é a mesma consulta com <code>from</code>/<code>to</code> deslocados.</li>
+          <li>Pessoas com atividade = autores distintos; recusas e erros, sensíveis e fora do horário = tipo de evento + data.</li>
+          <li>“Ver tudo deste usuário” e “Ver só este tipo” usam os filtros <code>actorId</code> e <code>action</code>, que já existem no servidor.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Resumos prontos no servidor</strong> (por dia, hora, módulo, tipo, autor e resultado): hoje montar estes gráficos exige baixar a trilha inteira, de 200 em 200.</li>
+          <li><strong>A consulta lê a trilha inteira da organização</strong> a cada chamada e filtra em memória (<code>audit.routes.ts:50-55</code>; <code>listByTenant</code> sem limite). Com volume, os resumos precisam de consulta própria e índice por data (já previsto como PR-11b).</li>
+          <li>Coluna RECURSO e os itens da opção A (nome, resultado exato, origem).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> a linha que o dono escolheu em Pátios; responde “quando, onde, quem e com que resultado” antes da lista; tendência contra o período anterior em todo KPI; todo gráfico filtra; o resumo mostra o que a pessoa fez antes e depois.</li>
+          <li><strong>Contras:</strong> tela mais longa; o custo de montar os gráficos é alto até existirem os resumos no servidor; o filtro de período fica escondido atrás de “Filtros”.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li><strong>Radar de risco</strong> (6 eixos contra o período anterior): tipo de evento + data. <strong>Linha do tempo de risco</strong> e <strong>mapa de horário</strong>: data. <strong>Módulo × resultado</strong>: tipo. <strong>Pessoas em foco</strong>: autor + tipo.</li>
+          <li><strong>Trilha de investigação</strong> de uma pessoa: o filtro <code>actorId</code> que a tela de Usuários já usa.</li>
+          <li>Lista agrupada por nível de atenção (Crítico, Atenção, Rotina), com o motivo de cada evento no resumo.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Trilha de um recurso</strong> (ex.: tudo o que aconteceu com a OS-2026-004812): falta o recurso na resposta e o filtro por ele.</li>
+          <li><strong>Tentativas sem login separadas das ações automáticas:</strong> as duas chegam sem autor e a tela de hoje junta tudo em “Sistema”. O e-mail digitado fica só no <code>metadata</code>.</li>
+          <li><strong>Antes e depois</strong> das alterações de perfil (<code>user.updated</code> sem <code>metadata</code>, <code>prisma-core-saas.store.ts:225-230</code>).</li>
+          <li>Os resumos no servidor (iguais à opção B).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é a tela de quem investiga (Auditor, Administrador): mostra primeiro o que precisa de revisão, compara com o período anterior e transforma “ver tudo deste usuário” numa trilha visual que abre cada evento.</li>
+          <li><strong>Contras:</strong> as regras de “Crítico” e o horário de 22h às 5h precisam de aprovação do dono; mais densa para quem só quer achar um evento (o filtro resolve); a lista fica fora da ordem cronológica (dentro de cada grupo, continua do mais recente para o mais antigo).</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Comportamento por perfil de quem vê a tela (permissões medidas em <code>src/modules/core-saas/permissions/catalog.ts</code>; a tela só molda — o servidor decide)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Perfil</th><th>Vê</th><th>Pode</th><th>Divergência com <code>RBAC_MATRIX.md:56</code> (linha “Audit logs”)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Administrador</strong> (<code>tenant_admin</code>, catálogo inteiro menos plataforma, <code>catalog.ts:407-413</code>)</td><td>a trilha inteira da organização</td><td>filtrar, ver tudo de um usuário/tipo, exportar</td><td>matriz diz “read” — igual</td></tr>
+          <tr><td><strong>Gestor Operacional</strong> (<code>manager</code>, <code>audit.read</code> em <code>:417</code>)</td><td>a trilha inteira, inclusive o que o Administrador fez</td><td>igual ao Administrador</td><td>matriz diz <strong>“scoped”</strong>; o catálogo não recorta nada</td></tr>
+          <tr><td><strong>Auditor</strong> (<code>auditor</code>, <code>:966</code>)</td><td>a trilha inteira</td><td>igual ao Administrador</td><td>matriz diz “full-read” — igual</td></tr>
+          <tr><td><strong>Suporte</strong> (<code>support</code>, <code>:1033</code>; menu só ADMINISTRAÇÃO, <code>appSidebarNav.ts:211</code>)</td><td>a trilha inteira</td><td>igual ao Administrador</td><td>matriz diz <strong>“support-scoped”</strong>; o catálogo não recorta nada</td></tr>
+          <tr><td><strong>Financeiro, Estoque</strong></td><td>“Acesso não permitido”; o menu não mostra Auditoria (<code>appSidebarNav.ts:192-194</code>)</td><td>—</td><td>matriz diz <strong>“scoped”</strong>; o catálogo não dá <code>audit.read</code></td></tr>
+          <tr><td><strong>Operador Logístico, Operação de Campo, Técnico de Campo</strong></td><td>“Acesso não permitido”; sem item no menu</td><td>—</td><td>matriz diz “none” — igual</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Defeitos do sistema de hoje achados nesta leitura (por leitura de código, não por execução)</h3>
+        <ul class="review-list">
+          <li><strong>O acesso negado é invisível.</strong> O servidor grava <code>permission.denied</code> (<code>rbac.middleware.ts:61-73</code>), mas o apresentador não conhece o tipo e a tela mostra “Atividade registrada no sistema” (<code>audit-events.presenter.ts:22-43, :110-125</code>). O mesmo acontece com 10 outros tipos usados nesta maquete: itens financeiros e anexos da OS, comentários, vaga alocada, liberação iniciada/aprovada, cobrança liquidada e alertas da frota — o verbo depois do último ponto não está no dicionário.</li>
+          <li><strong>Os KPIs contam só a janela carregada</strong> (50 eventos) e se chamam “no período” (<code>AuditTenantPage.tsx:118, :217-219</code>).</li>
+          <li><strong>O filtro de data usa o fuso errado:</strong> <code>toIsoStart</code>/<code>toIsoEnd</code> colam <code>Z</code> na data escolhida (<code>audit-events.service.ts:51-57</code>). “Hoje” vira das 21h de ontem às 20h59 de hoje (Brasília): o que acontece depois das 21h some, e a noite de ontem entra.</li>
+          <li><strong>Tentativa de login recusada aparece como “Sistema · ação automática”</strong>: o evento é gravado sem autor (<code>local-auth-login.service.ts:363</code>) e o adaptador troca “sem autor” por “Sistema” (<code>audit-events.adapter.ts:53</code>).</li>
+          <li><strong>“Sessão encerrada pelo sistema” conta revogação feita por administrador:</strong> a revogação manual grava o mesmo tipo com o administrador como autor (<code>session-admin.service.ts:105-118</code>); rótulo e KPI dizem “pelo sistema” (<code>audit-events.presenter.ts:29, :150</code>).</li>
+          <li><strong>A consulta lê a trilha inteira da organização</strong> a cada chamada, a cada 30 s, e filtra em memória (<code>audit.routes.ts:50-55</code>, <code>audit-log.repository.ts:19-28</code>).</li>
+          <li><strong>Recurso, resultado, severidade e origem são gravados e não saem</strong> (<code>audit-log.service.ts:41-48, :96-108</code>): não dá para ver o histórico de uma OS pela Auditoria, nem separar recusa de erro.</li>
+          <li><strong>Exportar não deixa rastro</strong> (o arquivo é gerado no navegador) e leva o código técnico do evento e o identificador do autor (<code>AuditTenantPage.tsx:39-43</code>).</li>
+          <li><strong>A resposta leva <code>tenant_id</code></strong> (<code>audit.routes.ts:75</code>). A tela descarta, mas o §2.8 pede não expor; o comentário justifica como “do próprio ator” — vale registrar a decisão.</li>
+          <li><strong>“Tipo de evento” só lista os tipos já vistos na sessão</strong> (<code>AuditTenantPage.tsx:107-115</code>): quem chega filtrado por um usuário não acha os outros tipos.</li>
+          <li><strong>Recorte “scoped” da matriz não existe</strong> no catálogo (tabela acima).</li>
+          <li>A Auditoria da Plataforma é só uma parada honesta, sem trilha (<code>PlatformAuditPage.tsx</code>).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Pendências para o dono</h3>
+        <ul class="review-list">
+          <li>Aprovar as três aparências (cada usuário escolhe a sua em Configurações — <code>D-APARENCIA-POR-USUARIO</code>).</li>
+          <li><strong>Origem (navegador e endereço de rede):</strong> mostrar ou não? O registro guarda e o código decidiu não expor. Endereço de rede é dado pessoal (LGPD); a decisão é do dono.</li>
+          <li><strong>Recorte da trilha</strong> para Gestor e Suporte (“scoped”) e se Financeiro e Estoque ganham uma visão recortada.</li>
+          <li><strong>Exportar</strong> deve ter permissão própria e ficar registrado na trilha?</li>
+          <li>Regras de “Crítico” e o horário “fora do horário” (22h às 5h) da opção C.</li>
+          <li>“Sessão renovada” é gravada a cada renovação (~15 min por pessoa logada) e deve dominar a trilha real: agrupar ou esconder por padrão?</li>
+          <li>Nomes, horários, recursos e quantidades são de exemplo.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel com BI</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Radar de risco</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide-react, traço 2 — os mesmos da AuditTenantPage.tsx:1) ── */
+const I = {
+  fileText:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  key:'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  userSearch:'<circle cx="10" cy="7" r="4"/><path d="M10.3 15H7a4 4 0 0 0-4 4v2"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/>',
+  box:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  list:'<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  arrowLeft:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  radar:'<path d="M19.07 4.93A10 10 0 0 0 6.99 3.34"/><path d="M4 6h.01"/><path d="M2.29 9.62A10 10 0 1 0 21.31 8.35"/><path d="M16.24 7.76A6 6 0 1 0 8.23 16.67"/><path d="M12 18h.01"/><path d="M17.99 11.66A6 6 0 0 1 15.77 16.67"/><circle cx="12" cy="12" r="2"/><path d="m13.41 10.59 5.66-5.66"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  logIn:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
+  monitor:'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span data-chevron class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+const FALTA = (t) => '<span class="falta" title="'+esc(t || 'Dado que o sistema ainda não fornece')+'">falta no backend</span>';
+const fN = n => Number(n).toLocaleString('pt-BR');
+
+/* ── Tempo da maquete: "agora" fixo (quarta, 14/10/2026 10:00) para os dados serem estáveis ── */
+const NOW = new Date(2026, 9, 14, 10, 0, 0);
+const HOJE0 = new Date(2026, 9, 14);
+const DIA = 86400000, ND = 60; // 60 dias: o período de 30 + o período anterior para comparar
+const pad = n => String(n).padStart(2, '0');
+const fData = d => pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const fDM = d => pad(d.getDate())+'/'+pad(d.getMonth()+1);
+const fHM = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const fHMS = d => fHM(d)+':'+pad(d.getSeconds());
+const fISO = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const SEMANA = ['dom','seg','ter','qua','qui','sex','sáb'];
+const SEMANA_DIA = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const diaData = i => new Date(2026, 9, 14 - (ND - 1 - i));
+function idxDe(d){ const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return ND - 1 - Math.round((HOJE0 - d0) / DIA); }
+function minAtras(d){ const m = Math.max(0, Math.round((NOW - d) / 60000)); if (m < 1) return 'agora'; if (m < 60) return 'há '+m+' min'; const h = Math.round(m/60); if (h < 24) return 'há '+h+' h'; const dd = Math.round((HOJE0 - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / DIA); return dd === 1 ? 'ontem' : 'há '+dd+' dias'; }
+function rng(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+function rotDia(i){ const d = diaData(i); const base = d.getDate()+' de '+MESES[d.getMonth()]; return (i === ND-1 ? 'Hoje · ' : i === ND-2 ? 'Ontem · ' : SEMANA_DIA[d.getDay()]+' · ')+base; }
+
+/* ── Perfis (rótulos da tela, §3) e pessoas de exemplo ── */
+const PERFIS = {
+  tenant_admin:['Administrador','#F3E8FF','#7E22CE'], manager:['Gestor Operacional','#EFF6FF','#2563EB'], operator:['Operador Logístico','#F0F9FF','#0369A1'],
+  field_dispatcher:['Operação de Campo','#F0FDF4','#15803D'], field_technician:['Técnico de Campo','#F0FDF4','#15803D'], finance:['Financeiro','#F0FDF4','#15803D'],
+  inventory:['Estoque','#FFFBEB','#B45309'], auditor:['Auditor','#F1F5F9','#475569'], support:['Suporte','#EFF6FF','#2563EB']
+};
+const PESSOAS = {
+  u01:{ nome:'Thiago Andrade', role:'tenant_admin' }, u02:{ nome:'Mariana Costa', role:'manager' }, u03:{ nome:'Rafael Souza', role:'field_dispatcher' },
+  u04:{ nome:'Juliana Prado', role:'field_dispatcher' }, u05:{ nome:'Carlos Mendes', role:'field_technician' }, u07:{ nome:'Lucas Ferreira', role:'field_technician' },
+  u08:{ nome:'Marcos Lima', role:'field_technician' }, u10:{ nome:'Rogério Pires', role:'operator' }, u11:{ nome:'Larissa Gomes', role:'operator' },
+  u12:{ nome:'Sandra Melo', role:'finance' }, u13:{ nome:'Bruno Teixeira', role:'finance' }, u14:{ nome:'Fernanda Lopes', role:'inventory' },
+  u15:{ nome:'Helena Duarte', role:'auditor' }, u16:{ nome:'Fábio Rocha', role:'support' }, u24:{ nome:'Eduardo Santos', role:'field_dispatcher', inativoDesde:50 }
+};
+const ehPessoa = a => !!PESSOAS[a];
+function nomeAutor(a){ return PESSOAS[a] ? PESSOAS[a].nome : a === 'sis' ? 'Sistema' : 'Não identificado'; }
+function subAutor(a){ return PESSOAS[a] ? PERFIS[PESSOAS[a].role][0] : a === 'sis' ? 'ação automática' : 'sem login'; }
+function rotAutorFiltro(a){ return PESSOAS[a] ? PESSOAS[a].nome : a === 'sis' ? 'Ações automáticas' : 'Tentativas sem login'; }
+/* InitialsAvatar.tsx — mesma paleta e mesmo índice; Sistema e sem login em cinza (auditActorPresentation) */
+const PALETA = [['#EFF6FF','#2563EB'],['#F0FDF4','#15803D'],['#FAF5FF','#7E22CE'],['#FFFBEB','#B45309'],['#F0F9FF','#0369A1']];
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase(); }
+function avatar(a){
+  if (!PESSOAS[a]) return '<span class="pat-avatar" style="background:#F1F5F9;color:#475569" aria-hidden="true">'+(a === 'sis' ? ic('settings',13) : '?')+'</span>';
+  const nome = PESSOAS[a].nome; let s = 0; for (let i = 0; i < nome.length; i++) s = (s + nome.charCodeAt(i)) % PALETA.length; const p = PALETA[s];
+  return '<span class="pat-avatar" style="background:'+p[0]+';color:'+p[1]+'" aria-hidden="true">'+iniciais(nome)+'</span>';
+}
+function chipPerfil(role){ const p = PERFIS[role]; return '<span class="pat-role-chip" style="background:'+p[1]+';color:'+p[2]+'">'+p[0]+'</span>'; }
+
+/* ── Catálogo de eventos: tipos REAIS gravados no servidor (rótulo, módulo pelo prefixo, resultado e sensível pelo tipo) ── */
+const MOD = { acesso:['Acesso','#2563EB'], usuarios:['Usuários e perfis','#7E22CE'], os:['Ordens de serviço','#0369A1'], despacho:['Despacho','#0EA5E9'], financeiro:['Financeiro','#15803D'],
+  patios:['Pátios','#B45309'], orcamentos:['Orçamentos','#22C55E'], evidencias:['Evidências','#64748B'], config:['Configurações','#475569'], notif:['Notificações','#94A3B8'] };
+const ORDEM_MOD = Object.keys(MOD);
+const RES = { sucesso:['Sucesso','#60A5FA','#EFF6FF','#1D4ED8'], recusa:['Recusado','#F59E0B','#FEF3C7','#B45309'], erro:['Erro','#B91C1C','#FEE2E2','#B91C1C'] };
+const ORDEM_RES = ['sucesso','recusa','erro'];
+const SENS = { negado:['Acesso negado','#DC2626','#FEE2E2','#B91C1C'], permissao:['Perfis e permissões','#7E22CE','#F3E8FF','#7E22CE'], exclusao:['Exclusões e cancelamentos','#B45309','#FEF3C7','#B45309'], financeiro:['Financeiro','#15803D','#DCFCE7','#15803D'] };
+const ORDEM_SENS = ['negado','permissao','exclusao','financeiro'];
+const ACOES = {
+  'auth.login.success':['Entrou no sistema','acesso','sucesso',[],'#22C55E'],
+  'auth.login.failed':['Tentativa de acesso recusada','acesso','recusa',['negado'],'#DC2626'],
+  'auth.logout':['Saiu do sistema','acesso','sucesso',[],'#64748B'],
+  'auth.refresh.success':['Sessão renovada','acesso','sucesso',[],'#2563EB'],
+  'auth.refresh.failed':['Falha ao renovar a sessão','acesso','recusa',['negado'],'#DC2626'],
+  'auth.session.revoked':['Sessão encerrada','acesso','sucesso',[],'#F59E0B'],
+  'permission.denied':['Acesso negado a uma função','acesso','recusa',['negado'],'#DC2626'],
+  'user.created':['Usuário criado','usuarios','sucesso',['permissao'],'#2563EB'],
+  'user.updated':['Perfil de usuário alterado','usuarios','sucesso',['permissao'],'#7E22CE'],
+  'team.member_added':['Integrante adicionado à equipe','usuarios','sucesso',[],'#2563EB'],
+  'team.member_removed':['Integrante removido da equipe','usuarios','sucesso',['exclusao'],'#F59E0B'],
+  'work_order.created':['Ordem de serviço criada','os','sucesso',[],'#2563EB'],
+  'work_order.updated':['Ordem de serviço alterada','os','sucesso',[],'#64748B'],
+  'work_order.assigned':['Ordem de serviço atribuída','os','sucesso',[],'#2563EB'],
+  'work_order.cancelled':['Ordem de serviço cancelada','os','sucesso',['exclusao'],'#DC2626'],
+  'work_order.invoiced':['Ordem de serviço faturada','os','sucesso',['financeiro'],'#22C55E'],
+  'work_order.financial_item_added':['Item financeiro lançado na OS','os','sucesso',['financeiro'],'#22C55E'],
+  'work_order.financial_item_deleted':['Item financeiro excluído da OS','os','sucesso',['financeiro','exclusao'],'#DC2626'],
+  'work_order.attachment_uploaded':['Anexo enviado na OS','os','sucesso',[],'#2563EB'],
+  'work_order.attachment_deleted':['Anexo excluído da OS','os','sucesso',['exclusao'],'#DC2626'],
+  'work_order.comment_added':['Comentário adicionado na OS','os','sucesso',[],'#2563EB'],
+  'field_dispatch.created':['Despacho de campo criado','despacho','sucesso',[],'#2563EB'],
+  'field_dispatch.reassigned':['Despacho reatribuído','despacho','sucesso',[],'#F59E0B'],
+  'financial_account.updated':['Conta financeira alterada','financeiro','sucesso',['financeiro'],'#64748B'],
+  'financial_account.deleted':['Conta financeira excluída','financeiro','sucesso',['financeiro','exclusao'],'#DC2626'],
+  'charging.settled':['Cobrança liquidada','financeiro','sucesso',['financeiro'],'#22C55E'],
+  'commission.settled':['Comissão paga','financeiro','sucesso',['financeiro'],'#22C55E'],
+  'impound.created':['Processo de pátio aberto','patios','sucesso',[],'#2563EB'],
+  'impound.spot_assigned':['Veículo alocado em vaga','patios','sucesso',[],'#2563EB'],
+  'release.started':['Liberação de veículo iniciada','patios','sucesso',[],'#2563EB'],
+  'release.authority_approved':['Liberação aprovada pela autoridade','patios','sucesso',[],'#22C55E'],
+  'service_quote.created':['Orçamento criado','orcamentos','sucesso',[],'#2563EB'],
+  'service_quote.approved':['Orçamento aprovado','orcamentos','sucesso',['financeiro'],'#22C55E'],
+  'evidence.upload.stored':['Evidência armazenada','evidencias','sucesso',[],'#22C55E'],
+  'evidence.upload.rejected':['Evidência recusada','evidencias','erro',[],'#DC2626'],
+  'evidence.upload.scan_failed':['Falha na verificação de evidência','evidencias','erro',[],'#F59E0B'],
+  'tenant_setting.upserted':['Configuração da organização alterada','config','sucesso',['permissao'],'#7E22CE'],
+  'notifications.fleet_alerts_ran':['Alertas da frota processados','notif','sucesso',[],'#64748B']
+};
+const ALTERACAO = { 'user.updated':1, 'work_order.updated':1, 'financial_account.updated':1, 'tenant_setting.upserted':1, 'field_dispatch.reassigned':1 };
+
+/* ── Gerador determinístico dos eventos de exemplo (60 dias: 16/08 a 14/10/2026 10:00) ── */
+const r = rng('auditoria · Guincho Exemplo Ltda');
+const ri = (a, b) => a + Math.floor(r() * (b - a + 1));
+const pk = arr => arr[Math.floor(r() * arr.length)];
+const EV = []; let SEQ = 0;
+const RC = {
+  os: n => ({ tipo:'Ordem de serviço', rot:'OS-2026-00'+n, key:'os-'+n }),
+  dsp: n => ({ tipo:'Despacho', rot:'DSP-2026-0'+n, key:'dsp-'+n }),
+  proc: n => ({ tipo:'Processo de pátio', rot:'PR-2026-00'+n, key:'pr-'+n }),
+  orc: n => ({ tipo:'Orçamento', rot:'ORC-2026-0'+n, key:'orc-'+n }),
+  cob: n => ({ tipo:'Cobrança', rot:'COB-2026-0'+n, key:'cob-'+n }),
+  ses: u => ({ tipo:'Sessão', rot:'Sessão de '+PESSOAS[u].nome, key:'ses-'+u }),
+  usr: (k, nome) => ({ tipo:'Usuário', rot:nome, key:'usr-'+k }),
+  conta: (k, rot) => ({ tipo:'Conta financeira', rot, key:'cf-'+k }),
+  cfg: (k, rot) => ({ tipo:'Configuração', rot, key:'cfg-'+k }),
+  tela: (k, rot) => ({ tipo:'Tela do sistema', rot, key:'tela-'+k }),
+  equipe: (k, rot) => ({ tipo:'Equipe', rot, key:'eq-'+k }),
+  com: (k, rot) => ({ tipo:'Comissão', rot, key:'com-'+k }),
+  login: { tipo:'Entrada no sistema', rot:'Tela de entrada', key:'login' },
+  rotina: { tipo:'Rotina automática', rot:'Alertas da frota', key:'rot-frota' }
+};
+let osSeq = 4699, dspSeq = 3100, procSeq = 1180, orcSeq = 900, cobSeq = 2200;
+const osPool = []; for (let n = 4670; n <= 4699; n++) osPool.push(n);
+const procPool = [1170, 1171, 1172, 1175, 1178];
+const orcPool = [890, 893, 897];
+const novaOS = () => { osPool.push(++osSeq); return osSeq; };
+const osRecente = () => osPool[Math.max(0, osPool.length - 1 - Math.floor(r() * Math.min(16, osPool.length)))];
+const osAntiga = () => osPool[Math.max(0, osPool.length - 8 - Math.floor(r() * Math.min(26, osPool.length)))];
+function add(i, h, actor, code, rec){
+  const d = diaData(i); const hh = Math.max(0, Math.min(23.98, h));
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(hh), Math.floor((hh % 1) * 60), Math.floor(r() * 60));
+  if (t > NOW) return null;
+  const A = ACOES[code];
+  const e = { id:'e'+(++SEQ), t, i, h:t.getHours() + t.getMinutes()/60, w:t.getDay(), actor, code, rot:A[0], mod:A[1], res:A[2], sens:A[3].slice(), dot:A[4], rec };
+  EV.push(e); return e;
+}
+function entrar(i, u, h){ add(i, h, u, 'auth.login.success', RC.ses(u)); const n = ri(0, 2); for (let k = 0; k < n; k++) add(i, h + 1.2 + k * 2.3 + r(), u, 'auth.refresh.success', RC.ses(u)); }
+function sair(i, u, h){ add(i, h, u, 'auth.logout', RC.ses(u)); }
+const CONTAS = [['itau','Conta Itaú · ag. 0457'],['bb','Conta Banco do Brasil · ag. 3310'],['bradesco','Conta Bradesco · ag. 1120']];
+const CONFIGS = [['expediente','Horário de expediente'],['prazo-lib','Prazo de liberação de veículo'],['alcada','Alçada de aprovação de orçamento']];
+const ALVOS_USER = [['u05','Carlos Mendes'],['u11','Larissa Gomes'],['u13','Bruno Teixeira'],['u14','Fernanda Lopes'],['u26','Beatriz Freitas'],['u27','Ricardo Lemos']];
+for (let i = 0; i < ND; i++) {
+  const w = diaData(i).getDay(), U = w >= 1 && w <= 5, SAB = w === 6;
+  add(i, 6, 'sis', 'notifications.fleet_alerts_ran', RC.rotina);
+  /* Operadores logísticos: abrem as OS, processos de pátio e orçamentos */
+  ['u10','u11'].forEach(u => { if (!U) return; const h0 = 7.2 + r() * 1.3; entrar(i, u, h0); let h = h0;
+    for (let k = 0, n = ri(3, 5); k < n; k++) { h += .5 + r() * 1.3; const os = novaOS(); add(i, h, u, 'work_order.created', RC.os(os)); if (r() < .35) { orcPool.push(++orcSeq); add(i, h + .1, u, 'service_quote.created', RC.orc(orcSeq)); } }
+    if (r() < .55) { const p = ++procSeq; procPool.push(p); add(i, h + .4, u, 'impound.created', RC.proc(p)); add(i, h + .5, u, 'impound.spot_assigned', RC.proc(p)); }
+    if (r() < .3 && procPool.length > 3) add(i, h + .7, u, 'release.started', RC.proc(pk(procPool.slice(0, -2))));
+    sair(i, u, Math.min(h + 1.4, 18.6)); });
+  /* Operação de Campo: despacha e atribui */
+  ['u03','u04','u24'].forEach(u => { if (!U) return; if (u === 'u24' && i > 50) return;
+    const h0 = u === 'u24' && i === 50 ? 7.75 : 6.6 + r() * 1.4; entrar(i, u, h0); let h = h0;
+    for (let k = 0, n = ri(3, 5); k < n; k++) { h += .4 + r() * 1.3; const os = osRecente(); add(i, h, u, 'field_dispatch.created', RC.dsp(++dspSeq)); add(i, h + .02, u, 'work_order.assigned', RC.os(os)); if (r() < .22) add(i, h + .6, u, 'field_dispatch.reassigned', RC.dsp(dspSeq)); }
+    if (r() < .6) sair(i, u, h + .8); });
+  /* Técnicos de Campo: atualizam a OS, mandam fotos (evidências) e comentam */
+  ['u05','u07','u08'].forEach(u => { if (!(U || (SAB && r() < .55))) return; const h0 = 5.3 + r() * 2.2; entrar(i, u, h0); let h = h0;
+    for (let k = 0, n = ri(3, 5); k < n; k++) { h += .5 + r() * 1.1; const os = osRecente(); add(i, h, u, 'work_order.updated', RC.os(os));
+      if (r() < .65) { add(i, h + .03, u, 'work_order.attachment_uploaded', RC.os(os)); const x = r(); if (x < .05) add(i, h + .04, 'sis', 'evidence.upload.scan_failed', RC.os(os)); else if (x < .08) add(i, h + .04, 'sis', 'evidence.upload.rejected', RC.os(os)); else add(i, h + .04, u, 'evidence.upload.stored', RC.os(os)); }
+      if (r() < .2) add(i, h + .08, u, 'work_order.comment_added', RC.os(os));
+      if (r() < .03) add(i, h + .1, u, 'work_order.attachment_deleted', RC.os(os)); }
+    if (r() < .5) sair(i, u, h + .3); });
+  /* Financeiro: Sandra todo dia útil; Bruno de vez em quando */
+  if (U) { const u = 'u12', h0 = 8 + r() * .6; entrar(i, u, h0); let h = h0;
+    for (let k = 0, n = ri(2, 4); k < n; k++) { h += .4 + r() * .9; add(i, h, u, 'work_order.financial_item_added', RC.os(osAntiga())); }
+    if (r() < .8) add(i, h + .3, u, 'work_order.invoiced', RC.os(osAntiga()));
+    if (r() < .6) add(i, h + .5, u, 'charging.settled', RC.cob(++cobSeq));
+    if (r() < .07) add(i, h + .7, u, 'work_order.financial_item_deleted', RC.os(osAntiga()));
+    if (w === 5) add(i, 16 + r(), u, 'commission.settled', RC.com('s'+i, 'Comissões da semana '+fDM(diaData(i))));
+    if (r() < .05) { const c = pk(CONTAS); add(i, h + .9, u, 'financial_account.updated', RC.conta(c[0], c[1])); }
+    sair(i, u, Math.min(h + 1.6, 18)); }
+  if (U && i % 6 === 2) { entrar(i, 'u13', 9.1); add(i, 9.5, 'u13', 'work_order.invoiced', RC.os(osAntiga())); add(i, 9.8, 'u13', 'work_order.invoiced', RC.os(osAntiga())); sair(i, 'u13', 10.4); }
+  /* Gestor Operacional: aprova orçamentos e liberações, cancela OS */
+  if (U) { const u = 'u02', h0 = 8.4 + r() * .4; entrar(i, u, h0);
+    for (let k = 0, n = ri(1, 2); k < n; k++) add(i, h0 + .5 + k * 1.7 + r(), u, 'service_quote.approved', RC.orc(pk(orcPool.slice(-8))));
+    if (r() < .3 && procPool.length > 3) add(i, h0 + 3 + r() * 3, u, 'release.authority_approved', RC.proc(pk(procPool.slice(0, -2))));
+    if (r() < .22) add(i, h0 + 2 + r() * 4, u, 'work_order.cancelled', RC.os(osRecente()));
+    if (r() < .05) add(i, h0 + 5, u, r() < .5 ? 'team.member_added' : 'team.member_removed', RC.equipe('norte', 'Equipe Guincho Norte')); }
+  /* Administrador */
+  if (U) { const u = 'u01', h0 = 9 + r() * .5; entrar(i, u, h0);
+    if (r() < .12) { const a = pk(ALVOS_USER); add(i, h0 + 1 + r() * 5, u, 'user.updated', RC.usr(a[0], a[1])); }
+    if (r() < .06) add(i, h0 + 2 + r() * 4, u, 'user.created', RC.usr('n'+i, pk(['Renata Campos','Vinícius Araújo','Camila Nunes'])));
+    if (r() < .04) { const c = pk(CONFIGS); add(i, h0 + 3, u, 'tenant_setting.upserted', RC.cfg(c[0], c[1])); } }
+  /* Suporte: entra dia sim, dia não e às vezes tenta abrir uma tela que o perfil não permite */
+  if (U && i % 2 === 0) { const h0 = 14 + r(); entrar(i, 'u16', h0); if (r() < .45) add(i, h0 + .1, 'u16', 'permission.denied', RC.tela('os', 'Tela de Ordens de Serviço')); }
+  /* Estoque: o menu oferece o Dashboard, que o perfil não pode abrir */
+  if (U && r() < .7) { const h0 = 8.5 + r() * .5; entrar(i, 'u14', h0); if (r() < .3) add(i, h0 + .05, 'u14', 'permission.denied', RC.tela('dash', 'Tela do Dashboard')); }
+  /* Auditor: entra poucas vezes */
+  if (i === 21 || i === 29 || i === 38) { entrar(i, 'u15', 10.4); }
+  /* Tentativas recusadas avulsas (senha errada) */
+  if (r() < .3) add(i, 8 + r() * 10, 'anon', 'auth.login.failed', RC.login);
+  /* Eduardo foi desativado (dia 50), mas a sessão ficou aberta: o aparelho segue tentando renovar */
+  if (i > 50) for (let k = 0, n = ri(1, 2); k < n; k++) add(i, 7 + r() * 10, 'u24', 'auth.refresh.failed', RC.ses('u24'));
+}
+/* Casos que contam uma história (para o BI ter o que mostrar) */
+add(50, 16.34, 'u01', 'user.updated', RC.usr('u24', 'Eduardo Santos'));
+add(55, 9.67, 'u01', 'auth.session.revoked', RC.ses('u07'));
+add(52, 22.69, 'u12', 'auth.login.success', RC.ses('u12'));
+add(52, 22.79, 'u12', 'financial_account.deleted', RC.conta('bradesco', 'Conta Bradesco · ag. 1120'));
+add(52, 22.86, 'u12', 'work_order.financial_item_deleted', RC.os(4851));
+add(52, 22.89, 'u12', 'work_order.financial_item_deleted', RC.os(4853));
+add(52, 22.97, 'u12', 'auth.logout', RC.ses('u12'));
+for (let k = 0; k < 7; k++) add(57, 23.63 + k * .035, 'anon', 'auth.login.failed', RC.login);
+add(57, 19.69, 'u01', 'user.updated', RC.usr('u26', 'Beatriz Freitas'));
+add(58, 23.2, 'u07', 'auth.login.success', RC.ses('u07'));
+add(58, 23.4, 'u07', 'work_order.attachment_deleted', RC.os(4890));
+EV.sort((a, b) => b.t - a.t);
+const byEv = {}; EV.forEach(e => byEv[e.id] = e);
+/* Derivados: fora do horário (22h às 5h), nível de atenção e motivo (opção C) */
+EV.forEach(e => {
+  e.fora = e.actor !== 'sis' && (e.h < 5 || e.h >= 22);
+  const inativo = PESSOAS[e.actor] && PESSOAS[e.actor].inativoDesde != null && e.i > PESSOAS[e.actor].inativoDesde;
+  if (e.sens.includes('exclusao') && e.sens.includes('financeiro')) { e.nivel = 'critico'; e.motivo = 'Exclusão de registro financeiro.'; }
+  else if (e.fora && (e.sens.length || e.res !== 'sucesso')) { e.nivel = 'critico'; e.motivo = e.code === 'auth.login.failed' ? 'Tentativa de acesso recusada de madrugada.' : 'Ação sensível fora do horário (entre 22h e 5h).'; }
+  else if (inativo) { e.nivel = 'critico'; e.motivo = 'Usuário inativo tentando manter a sessão aberta.'; }
+  else if (e.sens.length) { e.nivel = 'atencao'; e.motivo = 'Evento sensível: '+e.sens.map(s => SENS[s][0].toLowerCase()).join(' e ')+'.'; }
+  else if (e.res !== 'sucesso') { e.nivel = 'atencao'; e.motivo = e.res === 'erro' ? 'Falha registrada pelo sistema.' : 'Ação recusada.'; }
+  else if (e.fora) { e.nivel = 'atencao'; e.motivo = 'Feito fora do horário (entre 22h e 5h).'; }
+  else { e.nivel = 'rotina'; e.motivo = 'Operação do dia a dia.'; }
+});
+const NIVEL = { critico:['Crítico · revisar agora','#B91C1C','#FEE2E2','exclusões financeiras, ações sensíveis de madrugada e usuário inativo tentando entrar'], atencao:['Atenção','#B45309','#FEF3C7','eventos sensíveis, recusas e erros'], rotina:['Rotina','#475569','#F1F5F9','operação do dia a dia'] };
+const ORDEM_NIVEL = ['critico','atencao','rotina'];
+
+/* ── Quem vê a tela (o perfil vem da sessão; o seletor do quadro de notas é só para revisar) ── */
+const PAPEIS = {
+  admin:{ nome:'Thiago Andrade', sub:'Administrador', nav:'admin', p:['audit.read'] },
+  gestor:{ nome:'Mariana Costa', sub:'Gestor Operacional', nav:'admin', p:['audit.read'] },
+  auditor:{ nome:'Helena Duarte', sub:'Auditor', nav:'admin', p:['audit.read'] },
+  suporte:{ nome:'Fábio Rocha', sub:'Suporte', nav:'suporte', p:['audit.read'] },
+  financeiro:{ nome:'Sandra Melo', sub:'Financeiro', nav:'financeiro', p:[] }
+};
+let papel = 'admin';
+const pode = k => PAPEIS[papel].p.includes(k);
+/* ── Menu (appSidebarNav.ts:150-211, resumido) ── */
+const NAV = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['receipt','Financeiro']]],['PÁTIOS',[['warehouse','Pátios']]],['ADMINISTRAÇÃO',[['users','Usuários'],['logIn','Acessos'],['monitor','Sessões'],['bell','Notificações'],['settings','Configurações'],['scroll','Auditoria']]]],
+  suporte:[['ADMINISTRAÇÃO',[['users','Usuários'],['bell','Notificações'],['scroll','Auditoria']]]],
+  financeiro:[['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['wrench','Serviços'],['receipt','Financeiro'],['coins','Cobranças']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+function renderNav(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Auditoria'; return '<a class="app-sidebar__item'+(on?' app-sidebar__item--active':'')+'" href="#" '+(on?'aria-current="page"':'')+' data-menu="'+it[1]+'">'+ic(it[0],17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Estado por opção ── */
+const PASSO = 50; // useAuditEvents.ts:483 — a janela cresce de 50 em 50
+const novoEstado = (filtros) => ({ estado:'normal', alvo:null, aberta:null, limite:PASSO, periodo:'30d', f:{ tipo:'', ator:'', de:'', ate:'' }, filtrosAbertos:filtros, hist:[] });
+const S = { a:novoEstado(true), b:novoEstado(false), c:novoEstado(false) };
+let opcao = 'a';
+const semDados = v => ['carregando','vazio','erro','proibido'].includes(S[v].estado);
+const proibido = v => S[v].estado === 'proibido' || !pode('audit.read');
+const PERIODOS = [['todo','Todo o período'],['hoje','Hoje'],['7d','Últimos 7 dias'],['30d','Últimos 30 dias']];
+const PERIODO_DICA = { todo:'todo o período registrado', hoje:'eventos de hoje', '7d':'últimos 7 dias', '30d':'últimos 30 dias', custom:'período personalizado' };
+function idxDeISO(s){ const p = s.split('-').map(Number); return Math.max(0, Math.min(ND - 1, idxDe(new Date(p[0], p[1] - 1, p[2])))); }
+function janela(v){
+  const st = S[v];
+  if (st.f.de || st.f.ate) { const ini = st.f.de ? idxDeISO(st.f.de) : 0, fim = st.f.ate ? idxDeISO(st.f.ate) : ND - 1; return { ini:Math.min(ini, fim), fim:Math.max(ini, fim), per:'custom' }; }
+  const ini = st.periodo === 'hoje' ? ND - 1 : st.periodo === '7d' ? ND - 7 : st.periodo === '30d' ? ND - 30 : 0;
+  return { ini, fim:ND - 1, per:st.periodo };
+}
+const nDias = j => j.fim - j.ini + 1;
+function filtraCard(v, e){ const f = S[v].f; return (!f.tipo || e.code === f.tipo) && (!f.ator || e.actor === f.ator); }
+function base(v){ if (semDados(v)) return []; const j = janela(v); return EV.filter(e => e.i >= j.ini && e.i <= j.fim && filtraCard(v, e)); }
+function anterior(v){ if (semDados(v)) return null; const j = janela(v), n = nDias(j); if (j.ini - n < 0) return null; return EV.filter(e => e.i >= j.ini - n && e.i < j.ini && filtraCard(v, e)); }
+
+/* ── Filtros (indicadores, gráficos e células filtram a mesma lista) ── */
+const HM_FAIXAS = [['antes das 5h',0,5],['5h–8h',5,8],['8h–10h',8,10],['10h–12h',10,12],['12h–14h',12,14],['14h–18h',14,18],['18h–22h',18,22],['depois das 22h',22,24]];
+const SEMANA_PLURAL = ['aos domingos','às segundas','às terças','às quartas','às quintas','às sextas','aos sábados'];
+function alvoInfo(k){
+  if (!k) return null;
+  const [t, a, b] = k.split(':');
+  const D = {
+    login:['Entradas no sistema', e => e.code === 'auth.login.success'],
+    encerradas:['Sessões encerradas', e => e.code === 'auth.logout' || e.code === 'auth.session.revoked'],
+    recusas:['Tentativas recusadas', e => e.code === 'auth.login.failed' || e.code === 'auth.refresh.failed'],
+    sens:['Eventos sensíveis', e => e.sens.length > 0],
+    fora:['Fora do horário (22h às 5h)', e => e.fora],
+    humanos:['Feitos por pessoas', e => ehPessoa(e.actor)],
+    naosucesso:['Recusas e erros', e => e.res !== 'sucesso']
+  };
+  if (D[t] && a === undefined) return { rot:D[t][0], f:D[t][1] };
+  if (t === 'acao') return { rot:'Tipo: '+ACOES[a][0], f:e => e.code === a };
+  if (t === 'mod') return { rot:'Módulo: '+MOD[a][0], f:e => e.mod === a };
+  if (t === 'res') return { rot:'Resultado: '+RES[a][0].toLowerCase(), f:e => e.res === a };
+  if (t === 'sens') return { rot:'Sensível: '+SENS[a][0].toLowerCase(), f:e => e.sens.includes(a) };
+  if (t === 'ator') return { rot:'Usuário: '+rotAutorFiltro(a), f:e => e.actor === a };
+  if (t === 'recurso') { const ex = EV.find(e => e.rec.key === a); return { rot:'Recurso: '+(ex ? ex.rec.tipo+' '+ex.rec.rot : a), f:e => e.rec.key === a }; }
+  if (t === 'dia') { const i = +a; return { rot:'Dia '+fDM(diaData(i))+' ('+SEMANA[diaData(i).getDay()]+')', f:e => e.i === i }; }
+  if (t === 'hora') { const h = +a; return { rot:'Entre '+h+'h e '+(h + 1)+'h', f:e => Math.floor(e.h) === h }; }
+  if (t === 'hm') { const w = +a, fx = HM_FAIXAS[+b]; return { rot:'Feitos '+SEMANA_PLURAL[w]+', '+fx[0], f:e => e.w === w && e.h >= fx[1] && e.h < fx[2] }; }
+  if (t === 'lane') { const i = +b; return { rot:SENS[a][0]+' em '+fDM(diaData(i)), f:e => e.sens.includes(a) && e.i === i }; }
+  if (t === 'mx') return { rot:MOD[a][0]+' · '+RES[b][0].toLowerCase(), f:e => e.mod === a && e.res === b };
+  if (t === 'erro') return { rot:'Erros do sistema', f:e => e.res === 'erro' };
+  return null;
+}
+function linhas(v, arr){
+  const al = alvoInfo(S[v].alvo); let out = al ? arr.filter(al.f) : arr.slice();
+  if (v === 'c') out.sort((x, y) => ORDEM_NIVEL.indexOf(x.nivel) - ORDEM_NIVEL.indexOf(y.nivel) || y.t - x.t);
+  return out;
+}
+
+/* ── Contagens (no navegador, a partir do tipo, do autor e da data) ── */
+function contar(arr){
+  const c = { total:arr.length, logins:0, encerradas:0, revogadas:0, recusas:0, sens:0, fora:0, naoSucesso:0, erros:0, criticos:0,
+    loginAtores:new Set(), pessoas:new Set(), porRes:{}, porMod:{}, porAcao:{}, porAtor:{}, porSens:{}, porHora:Array(24).fill(0) };
+  ORDEM_RES.forEach(k => c.porRes[k] = 0); ORDEM_MOD.forEach(k => c.porMod[k] = 0); ORDEM_SENS.forEach(k => c.porSens[k] = 0);
+  arr.forEach(e => {
+    if (e.code === 'auth.login.success') { c.logins++; c.loginAtores.add(e.actor); }
+    if (e.code === 'auth.logout' || e.code === 'auth.session.revoked') c.encerradas++;
+    if (e.code === 'auth.session.revoked') c.revogadas++;
+    if (e.code === 'auth.login.failed' || e.code === 'auth.refresh.failed') c.recusas++;
+    if (e.sens.length) c.sens++; e.sens.forEach(s => c.porSens[s]++);
+    if (e.fora) c.fora++; if (e.res !== 'sucesso') c.naoSucesso++; if (e.res === 'erro') c.erros++; if (e.nivel === 'critico') c.criticos++;
+    if (ehPessoa(e.actor)) c.pessoas.add(e.actor);
+    c.porRes[e.res]++; c.porMod[e.mod]++; c.porAcao[e.code] = (c.porAcao[e.code] || 0) + 1; c.porAtor[e.actor] = (c.porAtor[e.actor] || 0) + 1; c.porHora[Math.floor(e.h)]++;
+  });
+  return c;
+}
+function porDia(arr, j){ const n = nDias(j); const out = Array.from({length:n}, (_, k) => ({ i:j.ini + k, tot:0, sucesso:0, recusa:0, erro:0, pessoas:new Set() })); arr.forEach(e => { const b = out[e.i - j.ini]; if (!b) return; b.tot++; b[e.res]++; if (ehPessoa(e.actor)) b.pessoas.add(e.actor); }); return out; }
+function delta(cur, prev){ if (prev == null) return null; if (!prev) return cur ? 100 : 0; return Math.round((cur - prev) / prev * 100); }
+function tagDelta(d, ruimSubir){ if (d === null) return ['sem comparação','#F1F5F9','#475569']; if (ruimSubir === null) return [(d > 0 ? '▲ ' : d < 0 ? '▼ ' : '= ')+Math.abs(d)+'% vs. anterior','#EFF6FF','#1D4ED8']; const sobe = d > 0; const ruim = ruimSubir ? sobe : !sobe && d !== 0; return [(d > 0 ? '▲ ' : d < 0 ? '▼ ' : '= ')+Math.abs(d)+'% vs. anterior', d === 0 ? '#F1F5F9' : ruim ? '#FEE2E2' : '#DCFCE7', d === 0 ? '#475569' : ruim ? '#B91C1C' : '#15803D']; }
+
+/* ═════════ PEÇAS COMUNS ═════════ */
+function kpi(v, alvo, icone, cor, bg, valor, rot, dica, tag, extra){
+  const tagH = tag ? '<span class="pat-kpi__tag" style="background:'+tag[1]+';color:'+tag[2]+'">'+tag[0]+'</span>' : '';
+  const corpo = '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(icone,16)+'</span>'+tagH+'</div><div class="pat-kpi__value"'+(tag && tag[3] ? ' style="color:'+tag[3]+'"' : '')+'>'+valor+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint" title="'+esc(dica)+'">'+dica+'</div>'+(extra||'');
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="'+alvo+'" aria-pressed="'+(S[v].alvo===alvo)+'" aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'">'+corpo+'</button>';
+}
+function kpisSkel(n){ return Array.from({length:n}, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisIndisp(rots){ return rots.map(r => '<div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:#F1F5F9;color:#94A3B8">'+ic('fileText',16)+'</span></div><div class="pat-kpi__value" style="color:#94A3B8">—</div><div class="pat-kpi__label">'+r+'</div><div class="pat-kpi__hint">dados indisponíveis</div></div>').join(''); }
+function cardSkel(h, cls){ return '<div class="an-card'+(cls ? ' '+cls : '')+'" aria-hidden="true"><span class="pat-skel" style="width:40%;height:12px"></span><span class="pat-skel" style="display:block;height:'+(h||110)+'px;margin-top:12px"></span></div>'; }
+function sparkLinha(vals, cor){ if (vals.length < 2) return ''; const W = 120, H = 22, max = Math.max(...vals), min = Math.min(...vals), n = vals.length; const pts = vals.map((val, i) => (i*W/(n-1)).toFixed(1)+','+(H - 2 - (H-4)*(val - min)/Math.max(1, max - min)).toFixed(1)).join(' '); return '<svg class="kpi-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+cor+'" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>'; }
+function pillRes(res){ const R = RES[res]; return '<span class="pat-pill" style="background:'+R[2]+';color:'+R[3]+'"><span class="pat-pill__dot" style="background:'+R[1]+'"></span>'+R[0]+'</span>'; }
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function sinalHTML(cat, comIcone){ const s = SENS[cat]; return '<span class="sinal" style="background:'+s[2]+';color:'+s[3]+'">'+(comIcone ? ic('shield',11) : '')+s[0]+'</span>'; }
+function sinaisDe(e){ const out = e.sens.map(s => sinalHTML(s, true)); if (e.fora) out.push('<span class="sinal" style="background:#DBEAFE;color:#1D4ED8">'+ic('clock',11)+'Fora do horário</span>'); if (e.res === 'erro') out.push('<span class="sinal" style="background:#FEE2E2;color:#B91C1C">'+ic('alert',11)+'Erro do sistema</span>'); return out; }
+
+/* Cabeçalho: o mesmo da tela de hoje (PageHeader + período + Filtros + Exportar) */
+const CABEC = {
+  a:['ADMINISTRAÇÃO','Trilha de acessos, alterações sensíveis e eventos críticos da organização.'],
+  b:['ADMINISTRAÇÃO · VISÃO ANALÍTICA','Quanto acontece, quando, em quais módulos, por quem e com que resultado — com a trilha logo abaixo.'],
+  c:['ADMINISTRAÇÃO · RADAR DE RISCO','O que pede revisão primeiro, comparado com o período anterior — e a trilha de cada pessoa para investigar.']
+};
+function headerHTML(v){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+CABEC[v][0]+'</div><h1 class="pat-page-header__title">Auditoria</h1><p class="pat-page-header__subtitle">'+CABEC[v][1]+'</p></div>'+
+    '<div class="pat-page-header__actions"><select class="pat-select" data-periodo="'+v+'" aria-label="Filtrar por período"></select>'+
+    '<button type="button" class="pat-btn" data-filtros="'+v+'" aria-controls="filtros-'+v+'">'+ic('filter',15)+' Filtros</button>'+
+    '<button type="button" class="pat-btn pat-btn--primary" data-exportar="'+v+'">'+ic('download',15)+' Exportar</button></div></div>';
+}
+function atualizaHeader(v){
+  const root = $('[data-view="'+v+'"] .tela'), st = S[v], j = janela(v);
+  const sel = $('[data-periodo]', root); if (sel) sel.innerHTML = PERIODOS.map(p => '<option value="'+p[0]+'"'+(j.per === p[0] ? ' selected' : '')+'>'+p[1]+'</option>').join('')+(j.per === 'custom' ? '<option value="custom" selected>Período personalizado</option>' : '');
+  const fb = $('[data-filtros]', root); if (fb) { fb.setAttribute('aria-expanded', String(st.filtrosAbertos)); fb.classList.toggle('pat-btn--ativo', st.filtrosAbertos); }
+  const ex = $('[data-exportar]', root); if (ex) { const pode = !semDados(v) && base(v).length > 0; ex.disabled = !pode; ex.title = pode ? 'Exportar os eventos carregados' : 'Nenhum evento carregado para exportar.'; }
+}
+function filtrosHTML(v){
+  const st = S[v]; if (!st.filtrosAbertos) return '';
+  const tipos = Object.keys(ACOES).filter(k => EV.some(e => e.code === k)).sort((a, b) => ACOES[a][0].localeCompare(ACOES[b][0], 'pt-BR'));
+  const autores = Object.keys(PESSOAS).sort((a, b) => PESSOAS[a].nome.localeCompare(PESSOAS[b].nome, 'pt-BR'));
+  const algum = !!(st.f.tipo || st.f.ator || st.f.de || st.f.ate);
+  return '<div class="pat-filter-card" id="filtros-'+v+'"><div class="pat-filter-grid">'+
+    '<div class="pat-filter-field"><label for="f-tipo-'+v+'">Tipo de evento</label><select id="f-tipo-'+v+'" data-f="tipo"><option value="">Todos os eventos</option>'+tipos.map(k => '<option value="'+k+'"'+(st.f.tipo === k ? ' selected' : '')+'>'+ACOES[k][0]+'</option>').join('')+'</select></div>'+
+    '<div class="pat-filter-field"><label for="f-ator-'+v+'">Usuário</label><select id="f-ator-'+v+'" data-f="ator"><option value="">Todos os usuários</option>'+autores.map(a => '<option value="'+a+'"'+(st.f.ator === a ? ' selected' : '')+'>'+PESSOAS[a].nome+' · '+PERFIS[PESSOAS[a].role][0]+'</option>').join('')+'<option value="sis"'+(st.f.ator === 'sis' ? ' selected' : '')+'>Ações automáticas</option><option value="anon"'+(st.f.ator === 'anon' ? ' selected' : '')+'>Tentativas sem login</option></select></div>'+
+    '<div class="pat-filter-field"><label for="f-de-'+v+'">De</label><input id="f-de-'+v+'" type="date" data-f="de" min="'+fISO(diaData(0))+'" max="'+fISO(HOJE0)+'" value="'+st.f.de+'"></div>'+
+    '<div class="pat-filter-field"><label for="f-ate-'+v+'">Até</label><input id="f-ate-'+v+'" type="date" data-f="ate" min="'+fISO(diaData(0))+'" max="'+fISO(HOJE0)+'" value="'+st.f.ate+'"></div>'+
+    '<button type="button" class="pat-btn" data-f-limpar'+(algum ? '' : ' disabled')+'>Limpar</button></div></div>';
+}
+function bannerHTML(v){
+  const e = S[v].estado;
+  if (e === 'erro') return '<div role="alert" class="pat-banner pat-banner--warning">'+ic('alert',14)+'<span>Não foi possível carregar a auditoria. A tela volta a tentar automaticamente — nenhum dado é exibido enquanto isso para não apresentar informação que ainda não existe.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  if (e === 'desatualizado') return '<div role="status" class="pat-banner pat-banner--warning">'+ic('clock',14)+'<span>Dados desatualizados — última atualização às 09:41. A tela recarrega sozinha a cada 30 segundos.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  return '';
+}
+function proibidoHTML(){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">ADMINISTRAÇÃO</div><h1 class="pat-page-header__title">Auditoria</h1><p class="pat-page-header__subtitle">Trilha de acessos, alterações sensíveis e eventos críticos da organização.</p></div></div>'+
+    '<div class="state-panel" role="alert"><div class="state-panel__icon">'+ic('lock',26)+'</div><div class="state-panel__title">Acesso não permitido</div><div class="state-panel__detail">Seu perfil não tem permissão para consultar a trilha de auditoria desta organização. Fale com um administrador se precisar deste acesso.</div></div>';
+}
+
+/* ═════════ GRÁFICOS (SVG/HTML, sem biblioteca — PD-004) ═════════ */
+function pilha(v, itens, aria){
+  const tot = itens.reduce((s, x) => s + x[1], 0) || 1;
+  return '<div class="pilha" role="group" aria-label="'+esc(aria)+'">'+itens.filter(x => x[1]).map(x => { const pct = x[1]/tot; return '<button type="button" data-alvo="'+x[0]+'" aria-pressed="'+(S[v].alvo===x[0])+'" style="flex:'+x[1]+' 1 0;background:'+x[3]+'" aria-label="'+esc(x[2]+': '+x[1]+' — filtrar a lista')+'" title="'+esc(x[2]+': '+fN(x[1]))+'">'+(pct >= .09 ? fN(x[1]) : '')+'</button>'; }).join('')+'</div>'+
+    '<div class="pilha-leg">'+itens.filter(x => x[1]).map(x => '<span><i class="lg-sw" style="background:'+x[3]+'"></i>'+x[2]+' <b>'+fN(x[1])+'</b></span>').join('')+'</div>';
+}
+function barras(v, itens, aria){
+  const max = Math.max(1, ...itens.map(x => x.n));
+  return '<div role="group" aria-label="'+esc(aria)+'">'+itens.map(x => '<button type="button" class="barra-btn" data-alvo="'+x.alvo+'" aria-pressed="'+(S[v].alvo===x.alvo)+'" aria-label="'+esc(x.rot+': '+x.n+' eventos — filtrar a lista')+'" title="'+esc(x.rot)+'"><span class="barra-btn__rot">'+(x.pre || '<i style="background:'+x.cor+'"></i>')+'<span>'+esc(x.rot)+'</span></span><span class="barra-btn__trilho">'+(x.partes ? x.partes.map(p => '<b style="width:'+(p[0]/max*100).toFixed(1)+'%;background:'+p[1]+'"></b>').join('') : '<b style="width:'+(x.n/max*100).toFixed(1)+'%;background:'+x.cor+'"></b>')+'</span><span class="barra-btn__n">'+fN(x.n)+'</span></button>').join('')+'</div>';
+}
+/* Volume no tempo: por dia (empilhado por resultado) ou, em "Hoje", por hora */
+function tempoSVG(v, arr, j, H, comLinha){
+  const W = 600, pb = 4;
+  let col;
+  if (nDias(j) === 1) { col = Array.from({length:24}, (_, h) => ({ alvo:'hora:'+h, rot:h+'h', tot:0, sucesso:0, recusa:0, erro:0, pessoas:new Set(), destaque:h === NOW.getHours() })); arr.forEach(e => { const b = col[Math.floor(e.h)]; b.tot++; b[e.res]++; if (ehPessoa(e.actor)) b.pessoas.add(e.actor); }); }
+  else col = porDia(arr, j).map(b => Object.assign(b, { alvo:'dia:'+b.i, rot:fDM(diaData(b.i))+' ('+SEMANA[diaData(b.i).getDay()]+')', destaque:b.i === ND - 1 }));
+  const n = col.length, bw = W / n, max = Math.max(4, ...col.map(x => x.tot)); const y = val => H - pb - (H - pb - 6) * val / max;
+  const g = col.map((x, k) => { const on = S[v].alvo === x.alvo; let y0 = H - pb, seg = '';
+    ORDEM_RES.forEach(rk => { if (!x[rk]) return; const h = (H - pb - 6) * x[rk] / max; y0 -= h; seg += '<rect x="'+(k*bw + Math.min(3, bw*.15)).toFixed(1)+'" y="'+y0.toFixed(1)+'" width="'+Math.max(1, bw - 2*Math.min(3, bw*.15)).toFixed(1)+'" height="'+h.toFixed(1)+'" fill="'+(rk === 'sucesso' ? (x.destaque ? '#1D4ED8' : '#60A5FA') : RES[rk][1])+'"/>'; });
+    const inner = '<rect class="bg" x="'+(k*bw).toFixed(1)+'" y="0" width="'+bw.toFixed(1)+'" height="'+H+'" fill="'+(on ? '#dbeafe' : 'transparent')+'"/>'+seg+'<title>'+x.rot+' · '+x.tot+' eventos ('+x.recusa+' recusados, '+x.erro+' com erro) · '+x.pessoas.size+' pessoas</title>';
+    return x.tot ? '<g role="button" tabindex="0" data-alvo="'+x.alvo+'" aria-pressed="'+on+'" aria-label="'+esc(x.rot+': '+x.tot+' eventos — filtrar a lista')+'">'+inner+'</g>' : '<g>'+inner+'</g>'; }).join('');
+  const maxP = Math.max(1, ...col.map(x => x.pessoas.size));
+  const linha = comLinha ? '<path d="'+col.map((x, k) => (k ? 'L' : 'M')+(k*bw + bw/2).toFixed(1)+' '+(H - pb - (H - pb - 10) * x.pessoas.size / maxP).toFixed(1)).join(' ')+'" fill="none" stroke="#7E22CE" stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/>' : '';
+  const marcas = n === 24 ? [0,6,12,18,23].map(h => '<span>'+h+'h</span>') : [0, Math.floor(n/4), Math.floor(n/2), Math.floor(3*n/4), n - 1].filter((x, k, a) => a.indexOf(x) === k).map(k => '<span>'+(col[k].i === ND - 1 ? 'hoje' : fDM(diaData(col[k].i)))+'</span>');
+  return '<svg class="dias-svg svg-clic" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px" role="group" aria-label="'+(n === 24 ? 'Eventos por hora, hoje' : 'Eventos por dia')+'">'+g+linha+'</svg><div class="eixo">'+marcas.join('')+'</div>';
+}
+function horasSVG(v, c){
+  const W = 480, H = 104, bw = W / 24, max = Math.max(1, ...c.porHora); const pico = c.porHora.indexOf(Math.max(...c.porHora));
+  const g = c.porHora.map((n, h) => { const a = 'hora:'+h, on = S[v].alvo === a, hh = n ? Math.max(3, (H - 26) * n / max) : 2, fora = h < 5 || h >= 22;
+    const inner = '<rect class="bg" x="'+(h*bw).toFixed(1)+'" y="0" width="'+bw.toFixed(1)+'" height="'+H+'" rx="3" fill="'+(on ? '#dbeafe' : 'transparent')+'"/><rect x="'+(h*bw + 3).toFixed(1)+'" y="'+(H - 16 - hh).toFixed(1)+'" width="'+(bw - 6).toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="2" fill="'+(h === pico ? '#1D4ED8' : fora ? '#C4B5FD' : '#60A5FA')+'"/>'+(h % 3 === 0 ? '<text x="'+(h*bw + bw/2).toFixed(1)+'" y="'+(H - 3)+'" text-anchor="middle" font-size="9" fill="#94a3b8">'+h+'h</text>' : '')+'<title>'+h+'h às '+(h+1)+'h · '+n+' eventos</title>';
+    return n ? '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc('Entre '+h+'h e '+(h+1)+'h: '+n+' eventos — filtrar a lista')+'">'+inner+'</g>' : '<g>'+inner+'</g>'; }).join('');
+  return '<svg class="horas-svg svg-clic" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="group" aria-label="Eventos por hora do dia">'+g+'</svg>';
+}
+function donutRes(v, c){
+  const tot = c.total || 1, R = 40; let ini = 0;
+  const pto = f => [54 + R*Math.cos(2*Math.PI*f - Math.PI/2), 54 + R*Math.sin(2*Math.PI*f - Math.PI/2)];
+  const arcs = ORDEM_RES.map(k => { const n = c.porRes[k]; if (!n) return ''; const fr = n/tot, a = 'res:'+k, on = S[v].alvo === a; const f0 = ini, f1 = ini + fr - (fr < 1 ? .004 : .0001); ini += fr;
+    const p0 = pto(f0), p1 = pto(f1), d = 'M'+p0[0].toFixed(2)+' '+p0[1].toFixed(2)+' A'+R+' '+R+' 0 '+(f1 - f0 > .5 ? 1 : 0)+' 1 '+p1[0].toFixed(2)+' '+p1[1].toFixed(2);
+    return '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc(RES[k][0]+': '+n+' — filtrar a lista')+'"><path d="'+d+'" fill="none" stroke="'+RES[k][1]+'" stroke-width="'+(on ? 20 : 15)+'"><title>'+RES[k][0]+': '+n+'</title></path></g>'; }).join('');
+  const pct = c.total ? Math.round(c.porRes.sucesso / c.total * 1000) / 10 : 0;
+  return '<div class="donut-wrap"><svg width="108" height="108" viewBox="0 0 108 108" role="group" aria-label="Eventos por resultado" style="flex-shrink:0;cursor:pointer"><circle cx="54" cy="54" r="40" fill="none" stroke="#f1f5f9" stroke-width="15"/>'+arcs+'<text pointer-events="none" x="54" y="52" text-anchor="middle" font-size="17" font-weight="800" fill="#0f172a">'+String(pct).replace('.', ',')+'%</text><text pointer-events="none" x="54" y="67" text-anchor="middle" font-size="9.5" fill="#64748b">com sucesso</text></svg>'+
+    '<div class="lg-list">'+ORDEM_RES.map(k => { const a = 'res:'+k; return '<button type="button" class="lg-btn" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'"><i class="lg-sw" style="background:'+RES[k][1]+'"></i><span class="t">'+RES[k][0]+'</span><b>'+fN(c.porRes[k])+'</b></button>'; }).join('')+'</div></div>';
+}
+function sensTiles(v, c){
+  const cls = { negado:'crit', permissao:'roxo', exclusao:'', financeiro:'ok' };
+  return '<div class="higiene">'+ORDEM_SENS.map(k => { const a = 'sens:'+k, n = c.porSens[k]; return '<button type="button" class="'+cls[k]+'" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(SENS[k][0]+': '+n+' — filtrar a lista')+'"><b>'+fN(n)+'</b><span>'+SENS[k][0]+'</span></button>'; }).join('')+'</div>';
+}
+function itensModulo(c){ return ORDEM_MOD.filter(m => c.porMod[m]).sort((a, b) => c.porMod[b] - c.porMod[a]).map(m => ({ alvo:'mod:'+m, rot:MOD[m][0], n:c.porMod[m], cor:MOD[m][1] })); }
+function itensAcao(c, n){ return Object.keys(c.porAcao).sort((a, b) => c.porAcao[b] - c.porAcao[a]).slice(0, n).map(k => ({ alvo:'acao:'+k, rot:ACOES[k][0], n:c.porAcao[k], cor:ACOES[k][4] })); }
+function itensAtor(c, n, arr){ return Object.keys(c.porAtor).sort((a, b) => c.porAtor[b] - c.porAtor[a]).slice(0, n).map(a => { const sens = arr.filter(e => e.actor === a && e.sens.length).length; return { alvo:'ator:'+a, rot:nomeAutor(a)+(PESSOAS[a] ? '' : ' ('+subAutor(a)+')'), n:c.porAtor[a], pre:avatar(a), partes:[[c.porAtor[a] - sens, '#60A5FA'], [sens, '#7E22CE']] }; }); }
+
+/* ═════════ LISTA (comum às 3; colunas e agrupamento mudam) ═════════ */
+const FQUEM = FALTA('Hoje a consulta só traz o identificador: a tela mostra “Usuário” para todos. O nome e o perfil precisam vir na resposta');
+const FREC = FALTA('O recurso (ex.: qual OS) é gravado no registro, mas não sai na consulta');
+const COLS = {
+  a:[['QUANDO',78],['QUEM '+FQUEM,250],['O QUE ACONTECEU',null],['RESULTADO',112]],
+  b:[['QUANDO',70],['QUEM '+FQUEM,214],['O QUE ACONTECEU',null],['MÓDULO',142],['RECURSO '+FREC,186],['RESULTADO',108]],
+  c:[['QUANDO',104],['QUEM '+FQUEM,214],['O QUE ACONTECEU',null],['SINAL DE ATENÇÃO',190],['RESULTADO',108]]
+};
+function celQuem(e){ return '<span class="usr">'+avatar(e.actor)+'<span class="usr__txt"><span class="pat-cell-main">'+esc(nomeAutor(e.actor))+'</span><span class="pat-cell-sub">'+esc(subAutor(e.actor))+'</span></span></span>'; }
+function celOque(e){ return '<span class="oq"><i style="background:'+e.dot+'"></i><span>'+esc(e.rot)+'</span>'+(e.sens.length ? '<span style="color:'+SENS[e.sens[0]][1]+';display:inline-flex" title="Evento sensível">'+ic('shield',12)+'</span>' : '')+'</span>'; }
+function celulas(v, e){
+  if (v === 'a') return ['<span class="hora">'+fHM(e.t)+'</span>', celQuem(e), celOque(e), pillRes(e.res)];
+  if (v === 'b') return ['<span class="hora">'+fHM(e.t)+'</span>', celQuem(e), celOque(e), '<span class="modcel"><i style="background:'+MOD[e.mod][1]+'"></i>'+MOD[e.mod][0]+'</span>', '<span class="reccel" title="'+esc(e.rec.tipo+' · '+e.rec.rot)+'">'+esc(e.rec.rot)+'</span>', pillRes(e.res)];
+  const s = sinaisDe(e)[0];
+  return ['<span class="hora"><small>'+fDM(e.t)+'</small>'+fHM(e.t)+'</span>', celQuem(e), celOque(e), s || '<span style="color:#94a3b8">—</span>', pillRes(e.res)];
+}
+function trLinha(v, e){
+  const id = v+'-'+e.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row" data-ev="'+e.id+'" aria-label="'+esc(fData(e.t)+' '+fHM(e.t)+' · '+nomeAutor(e.actor)+' · '+e.rot+' · '+RES[e.res][0])+'">'+celulas(v, e).map(c => '<td>'+c+'</td>').join('')+'<td>'+CHEV+'</td></tr>';
+}
+/* Faixa das 24 horas do autor naquele dia (o evento aberto em destaque) */
+function dia24(e){
+  const mesmos = EV.filter(x => x.actor === e.actor && x.i === e.i); const s = Array(24).fill(0); mesmos.forEach(x => s[Math.floor(x.h)]++); const max = Math.max(1, ...s), W = 240, H = 30, bw = W/24, hE = Math.floor(e.h);
+  return '<svg class="dia24" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="'+mesmos.length+' eventos deste autor neste dia">'+s.map((n, h) => { const hh = n ? Math.max(4, (H-2)*n/max) : 2; return '<rect x="'+(h*bw + .8).toFixed(1)+'" y="'+(H - hh).toFixed(1)+'" width="'+(bw - 1.6).toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="1.5" fill="'+(h === hE ? '#1D4ED8' : n ? '#93C5FD' : (h < 5 || h >= 22) ? '#F3E8FF' : '#E2E8F0')+'"><title>'+h+'h · '+n+' eventos</title></rect>'; }).join('')+'</svg><div class="dia24-eixo"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>';
+}
+function sequencia(e){
+  const mesmos = EV.filter(x => x.actor === e.actor && x.i === e.i).sort((a, b) => a.t - b.t); const k = mesmos.indexOf(e);
+  return '<div class="seq">'+mesmos.slice(Math.max(0, k - 2), k + 3).map(x => '<div class="'+(x === e ? 'atual' : '')+'"><b>'+fHM(x.t)+'</b><span>'+esc(x.rot)+(x.rec ? ' · '+esc(x.rec.rot) : '')+'</span></div>').join('')+'</div>';
+}
+function colQuem(e){
+  const pes = ehPessoa(e.actor);
+  return campo('Quando', fData(e.t)+' às '+fHMS(e.t)+' · '+minAtras(e.t)) + campo('Dia', SEMANA_DIA[e.w]) +
+    campo('Quem', pes ? '<b>'+esc(nomeAutor(e.actor))+'</b> '+FALTA('O nome não vem na consulta; hoje aparece “Usuário”') : e.actor === 'sis' ? 'Sistema · ação automática' : 'Não identificado · sem login '+FALTA('O e-mail digitado fica guardado no registro e não sai na consulta; hoje a tela mostra “Sistema · ação automática”')) +
+    (pes ? campo('Perfil', chipPerfil(PESSOAS[e.actor].role)+(PESSOAS[e.actor].inativoDesde != null && e.i > PESSOAS[e.actor].inativoDesde ? ' <b style="color:#B91C1C">usuário inativo</b>' : '')) : '');
+}
+function colOque(e){
+  return campo('Evento', '<b>'+esc(e.rot)+'</b>') + campo('Módulo', '<span class="modcel"><i style="background:'+MOD[e.mod][1]+'"></i>'+MOD[e.mod][0]+'</span>') +
+    campo('Recurso', esc(e.rec.tipo)+' · <span class="reccel">'+esc(e.rec.rot)+'</span> '+FREC) +
+    campo('Resultado', pillRes(e.res)+' '+FALTA('O resultado exato é gravado, mas não sai na consulta; aqui ele é deduzido do tipo de evento')) +
+    (e.sens.length || e.fora ? '<div class="sinais">'+sinaisDe(e).join('')+'</div>' : '');
+}
+function colContexto(e, extra){
+  return campo('Origem', '— '+FALTA('Navegador e endereço de rede ficam guardados no registro e não saem na consulta (decisão de privacidade pendente)')) +
+    (ALTERACAO[e.code] ? campo('O que mudou', '— '+FALTA('A alteração é gravada sem o antes e o depois')) : '') + (extra || '');
+}
+function acoesResumo(e){
+  const b = [];
+  if (ehPessoa(e.actor)) b.push('<button type="button" class="pat-btn pat-btn--primary" data-ver-ator="'+e.actor+'">'+ic('userSearch',14)+' Ver tudo deste usuário</button>');
+  else if (e.actor === 'sis') b.push('<button type="button" class="pat-btn pat-btn--primary" data-ver-ator="sis">'+ic('userSearch',14)+' Ver todas as ações automáticas</button>');
+  else b.push('<button type="button" class="pat-btn pat-btn--primary" data-ver-ator="anon">'+ic('userSearch',14)+' Ver todas as tentativas sem login '+FALTA('Sem autor, a consulta não separa estas tentativas das ações automáticas')+'</button>');
+  b.push('<button type="button" class="pat-btn" data-ver-recurso="'+e.rec.key+'">'+ic('box',14)+' Ver tudo deste recurso '+FALTA('A consulta não filtra por recurso')+'</button>');
+  b.push('<button type="button" class="pat-btn" data-ver-tipo="'+e.code+'">'+ic('list',14)+' Ver só “'+esc(e.rot)+'”</button>');
+  return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+}
+function resumo(v, e, ncols){
+  let corpo;
+  const rot24 = '<span class="pat-ab-detail-label">'+(ehPessoa(e.actor) ? 'Atividade de '+esc(nomeAutor(e.actor).split(' ')[0])+' neste dia' : 'Eventos deste autor neste dia')+'</span>'+dia24(e);
+  if (v === 'a') corpo = '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colQuem(e)+'</div><div class="pat-ab-detail-col">'+colOque(e)+'</div><div class="pat-ab-detail-col">'+colContexto(e, rot24)+'</div></div>'+acoesResumo(e);
+  else if (v === 'b') corpo = '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colQuem(e)+colContexto(e)+'</div><div class="pat-ab-detail-col">'+colOque(e)+'</div><div class="pat-ab-detail-col">'+rot24+'<span class="pat-ab-detail-label" style="margin-top:6px">Antes e depois, do mesmo autor</span>'+sequencia(e)+'</div></div>'+acoesResumo(e);
+  else { const N = NIVEL[e.nivel];
+    corpo = '<div class="motivo" style="background:'+N[2]+';color:'+N[1]+'">'+ic(e.nivel === 'rotina' ? 'checkCircle' : 'alert',15)+'<span><b>'+N[0].split(' · ')[0]+':</b> '+esc(e.motivo)+'</span></div>'+
+      '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colQuem(e)+'</div><div class="pat-ab-detail-col">'+colOque(e)+'</div><div class="pat-ab-detail-col">'+colContexto(e, rot24)+'</div></div>'+acoesResumo(e); }
+  return '<tr data-detalhe-de="'+v+'-'+e.id+'" class="pat-ab-detail-row" style="display:none"><td colspan="'+ncols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+corpo+'</div></td></tr>';
+}
+function chipHTML(v){
+  const st = S[v], al = alvoInfo(st.alvo); let h = '';
+  if (st.hist.length) { const ant = alvoInfo(st.hist[st.hist.length - 1].alvo); h += '<div class="voltar-bar"><button type="button" class="back-link" data-voltar-filtro>'+ic('arrowLeft',15)+' Voltar à lista anterior</button><small>'+(ant ? 'filtro anterior: '+esc(ant.rot) : 'sem filtro')+' · o evento de onde você saiu volta aberto</small></div>'; }
+  if (al) h += '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+esc(al.rot)+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>';
+  return h;
+}
+function renderLista(v, arr){
+  const st = S[v], box = $('[data-view="'+v+'"] [data-lista]'); if (!box) return;
+  const C = COLS[v], ncols = C.length + 1;
+  const thead = '<colgroup>'+C.map(c => '<col'+(c[1] ? ' style="width:'+c[1]+'px"' : '')+'>').join('')+'<col style="width:42px"></colgroup><thead><tr>'+C.map(c => '<th>'+c[0]+'</th>').join('')+'<th><span class="sr">Abrir resumo</span></th></tr></thead>';
+  let corpo, cont = '', mais = '';
+  if (st.estado === 'carregando') { corpo = [0,1,2,3,4].map(() => '<tr class="pat-ab-row" aria-hidden="true" style="cursor:default">'+Array.from({length:ncols}, () => '<td><span class="pat-skel" style="width:78%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join(''); cont = '<span class="pat-skel" style="width:110px;height:11px"></span>'; }
+  else if (st.estado === 'erro') { corpo = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">Não foi possível carregar a auditoria</div><div class="pat-table__empty-detail">Nenhum evento é exibido enquanto isso. <button type="button" class="pat-link" data-tentar>Tentar novamente</button></div></div></td></tr>'; cont = '—'; }
+  else {
+    const lista = linhas(v, arr); const mostra = lista.slice(0, st.limite); const filtrado = !!(st.alvo || st.f.tipo || st.f.ator || st.f.de || st.f.ate);
+    cont = (lista.length === 1 ? '1 evento no período' : fN(lista.length)+' eventos no período')+(lista.length > mostra.length ? ' · '+fN(mostra.length)+' carregados · há mais' : '');
+    if (!lista.length) corpo = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">'+(filtrado ? 'Nenhum evento para o filtro' : 'Sem eventos de auditoria')+'</div><div class="pat-table__empty-detail">'+(filtrado ? 'Nenhum evento de auditoria corresponde aos filtros. Ajuste o tipo, o usuário ou o período.' : 'Ainda não há registros de auditoria para esta organização. Assim que ações auditáveis acontecerem, elas aparecerão aqui.')+'</div></div></td></tr>';
+    else if (v === 'c') corpo = ORDEM_NIVEL.map(k => { const it = mostra.filter(e => e.nivel === k); if (!it.length) return ''; const N = NIVEL[k], tot = lista.filter(e => e.nivel === k).length; return '<tr class="grupo-row"><td colspan="'+ncols+'" style="color:'+N[1]+'">'+N[0]+'<span class="grupo-n" style="background:'+N[2]+';color:'+N[1]+'">'+fN(tot)+'</span><small>'+N[3]+'</small></td></tr>'+it.map(e => trLinha(v, e) + resumo(v, e, ncols)).join(''); }).join('');
+    else { let dia = null; corpo = mostra.map(e => { let g = ''; if (e.i !== dia) { dia = e.i; const tot = lista.filter(x => x.i === dia).length; g = '<tr class="grupo-row"><td colspan="'+ncols+'">'+rotDia(dia)+'<span class="grupo-n">'+fN(tot)+'</span></td></tr>'; } return g + trLinha(v, e) + resumo(v, e, ncols); }).join(''); }
+    if (lista.length > mostra.length) mais = '<div class="mais-bar"><button type="button" class="pat-btn" data-mais>Carregar mais eventos</button><small>mais '+Math.min(PASSO, lista.length - mostra.length)+' de '+fN(lista.length - mostra.length)+' restantes</small></div>';
+  }
+  const titulo = v === 'c' ? 'Eventos por nível de atenção' : 'Eventos';
+  const sub = v === 'c' ? 'Crítico primeiro; em cada grupo, do mais recente para o mais antigo' : 'Ordenados do mais recente para o mais antigo';
+  box.innerHTML = '<div class="pat-table"><div class="pat-table__topbar"><div><div class="pat-table__title">'+titulo+'</div><div class="pat-table__subtitle">'+sub+'</div></div><span class="pat-table__count">'+cont+'</span></div>'+chipHTML(v)+'<table class="pat-ab-table">'+thead+'<tbody>'+corpo+'</tbody></table>'+mais+'</div>';
+  if (st.aberta) { const r = $('[data-linha="'+st.aberta+'"]', box); if (r) abrirResumo(r, true); else st.aberta = null; }
+}
+function abrirResumo(row, forcar){
+  const view = row.closest('[data-view]'); const v = view.dataset.view; const id = row.dataset.linha;
+  const abrir = forcar || row.getAttribute('aria-expanded') !== 'true';
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded','false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded','true'); const d = $('[data-detalhe-de="'+id+'"]', view); if (d) d.style.display = ''; S[v].aberta = id; }
+  else S[v].aberta = null;
+}
+
+/* ═════════ MONTAGEM ═════════ */
+function montar(v){
+  const root = $('[data-view="'+v+'"] .tela');
+  root.innerHTML = headerHTML(v) + '<div data-filtros-card></div><div data-banner></div><div data-kpis></div><div data-bi></div><div data-invest></div><div data-lista></div>';
+  root.dataset.montado = '1';
+}
+function render(v){
+  const root = $('[data-view="'+v+'"] .tela');
+  if (proibido(v)) { root.innerHTML = proibidoHTML(); root.dataset.montado = ''; return; }
+  if (!root.dataset.montado) montar(v);
+  atualizaHeader(v);
+  $('[data-filtros-card]', root).innerHTML = filtrosHTML(v);
+  $('[data-banner]', root).innerHTML = bannerHTML(v);
+  const arr = base(v), ant = anterior(v), j = janela(v);
+  ({ a:renderA, b:renderB, c:renderC })[v](root, arr, ant, j);
+  renderLista(v, arr);
+}
+function renderTudo(){ ['a','b','c'].forEach(v => { $('[data-view="'+v+'"] .tela').dataset.montado = ''; render(v); }); }
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL COM BI (os 4 KPIs de hoje + sensíveis, todos filtram; faixa de composição) ═════════ */
+function renderA(root, arr, ant, j){
+  const v = 'a', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root); $('[data-invest]', root).innerHTML = '';
+  if (st.estado === 'carregando') { k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+kpisSkel(5)+'</div>'; bi.innerHTML = '<div class="comp">'+cardSkel(70, 'comp-card--larga')+cardSkel(70)+cardSkel(70)+'</div>'; return; }
+  if (st.estado === 'erro') { k.innerHTML = '<div class="kpi-grid kpi-grid--5">'+kpisIndisp(['Eventos no período','Entradas no sistema','Sessões encerradas','Tentativas recusadas','Eventos sensíveis'])+'</div>'; bi.innerHTML = ''; return; }
+  const c = contar(arr), d = porDia(arr, j), lista = linhas(v, arr);
+  k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+
+    kpi(v,'todos','fileText','#2563EB','#EFF6FF',fN(c.total),'Eventos no período',PERIODO_DICA[j.per], lista.length > st.limite ? ['há mais para carregar','#FEF3C7','#B45309'] : ['tudo carregado','#EFF6FF','#2563EB'], (arr.length && nDias(j) > 1 ? sparkLinha(d.map(x => x.tot), '#2563EB') : '')+'<div style="margin-top:6px">'+FALTA('Hoje a conta usa só os 50 eventos carregados; o total do período precisa vir pronto do servidor')+'</div>')+
+    kpi(v,'login','key','#15803D','#F0FDF4',fN(c.logins),'Entradas no sistema',c.loginAtores.size+' usuário(s) distinto(s)', c.recusas ? [c.recusas+' recusada(s)','#FEF3C7','#B45309'] : ['sem recusas','#DCFCE7','#15803D'])+
+    kpi(v,'encerradas','ban','#B45309','#FFFBEB',fN(c.encerradas),'Sessões encerradas',c.revogadas+' por um administrador', c.revogadas ? ['revisar','#FEF3C7','#B45309'] : null)+
+    kpi(v,'recusas','alert',c.recusas ? '#DC2626' : '#15803D',c.recusas ? '#FEF2F2' : '#F0FDF4',fN(c.recusas),c.recusas === 1 ? 'Tentativa recusada' : 'Tentativas recusadas','acessos e renovações negados', c.recusas ? ['atenção','#FEE2E2','#B91C1C'] : ['nenhuma','#DCFCE7','#15803D'])+
+    kpi(v,'sens','shield','#7E22CE','#FAF5FF',fN(c.sens),'Eventos sensíveis','perfis, dinheiro, exclusões e acessos negados', c.criticos ? [c.criticos+' críticos','#FEE2E2','#B91C1C'] : ['nenhum crítico','#DCFCE7','#15803D'])+'</div>';
+  if (!arr.length) { bi.innerHTML = '<div class="comp"><div class="comp-card comp-card--larga"><div class="comp-card__t"><span>Volume no período</span></div><div class="vazio-curto">Sem eventos no período.</div></div></div>'; return; }
+  const pico = c.porHora.indexOf(Math.max(...c.porHora)), aPico = 'hora:'+pico;
+  bi.innerHTML = '<div class="comp">'+
+    '<div class="comp-card comp-card--larga"><div class="comp-card__t"><span>'+(nDias(j) === 1 ? 'Eventos por hora · hoje' : 'Eventos por dia')+'</span><small>clique num '+(nDias(j) === 1 ? 'horário' : 'dia')+' para ver os eventos</small></div>'+tempoSVG(v, arr, j, 70, false)+
+      '<button type="button" class="pico-btn" data-alvo="'+aPico+'" aria-pressed="'+(st.alvo === aPico)+'">'+ic('clock',12)+' Horário de pico: '+pico+'h às '+(pico + 1)+'h · '+fN(c.porHora[pico])+' eventos</button></div>'+
+    '<div class="comp-card"><div class="comp-card__t"><span>Composição</span><small>clique para filtrar</small></div>'+
+      '<div class="comp-sub">Por módulo</div>'+pilha(v, itensModulo(c).map(x => [x.alvo, x.n, x.rot, x.cor]), 'Eventos por módulo')+
+      '<div class="comp-sub">Por resultado</div>'+pilha(v, ORDEM_RES.map(r => ['res:'+r, c.porRes[r], RES[r][0], RES[r][1]]), 'Eventos por resultado')+
+      '<div class="comp-sub">Sensíveis</div>'+pilha(v, ORDEM_SENS.map(s => ['sens:'+s, c.porSens[s], SENS[s][0], SENS[s][1]]), 'Eventos sensíveis por categoria')+'</div>'+
+    '<div class="comp-card"><div class="comp-card__t"><span>Em destaque</span><small>quem e o quê</small></div>'+
+      '<div class="comp-sub">Quem mais registrou eventos</div>'+barras(v, itensAtor(c, 4, arr), 'Quem mais registrou eventos')+
+      '<div class="comp-sub">Tipos mais frequentes</div>'+barras(v, itensAcao(c, 4), 'Tipos de evento mais frequentes')+'</div></div>';
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA (a linha escolhida em Pátios) ═════════ */
+function renderB(root, arr, ant, j){
+  const v = 'b', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root); $('[data-invest]', root).innerHTML = '';
+  if (st.estado === 'carregando') { k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+kpisSkel(5)+'</div>'; bi.innerHTML = '<div class="analitico"><div class="an-card an-card--2" aria-hidden="true"><span class="pat-skel" style="display:block;height:170px"></span></div>'+cardSkel(150)+cardSkel(150)+cardSkel(150)+cardSkel(150)+'</div>'; return; }
+  if (st.estado === 'erro') { k.innerHTML = '<div class="kpi-grid kpi-grid--5">'+kpisIndisp(['Eventos no período','Pessoas com atividade','Recusas e erros','Eventos sensíveis','Fora do horário'])+'</div>'; bi.innerHTML = ''; return; }
+  const c = contar(arr), p = ant ? contar(ant) : null, d = porDia(arr, j), um = nDias(j) === 1;
+  const uteis = d.filter(x => ![0,6].includes(diaData(x.i).getDay()) && x.i < ND - 1); const media = uteis.length ? Math.round(uteis.reduce((s, x) => s + x.tot, 0) / uteis.length) : c.total;
+  k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+
+    kpi(v,'todos','fileText','#2563EB','#EFF6FF',fN(c.total),'Eventos no período',um ? 'até as '+fHM(NOW)+' de hoje' : fN(media)+' por dia útil, em média', tagDelta(p ? delta(c.total, p.total) : null, null), !um && arr.length ? sparkLinha(d.map(x => x.tot), '#2563EB') : '')+
+    kpi(v,'humanos','users','#0369A1','#F0F9FF',fN(c.pessoas.size),'Pessoas com atividade','usuários que registraram algum evento', tagDelta(p ? delta(c.pessoas.size, p.pessoas.size) : null, null), !um && arr.length ? sparkLinha(d.map(x => x.pessoas.size), '#0369A1') : '')+
+    kpi(v,'naosucesso','alert','#B45309','#FFFBEB',fN(c.naoSucesso),'Recusas e erros',fN(c.naoSucesso - c.erros)+' recusados · '+fN(c.erros)+' com erro', tagDelta(p ? delta(c.naoSucesso, p.naoSucesso) : null, true))+
+    kpi(v,'sens','shield','#7E22CE','#FAF5FF',fN(c.sens),'Eventos sensíveis','perfis, dinheiro, exclusões, acessos negados', tagDelta(p ? delta(c.sens, p.sens) : null, true))+
+    kpi(v,'fora','clock','#1D4ED8','#EFF6FF',fN(c.fora),'Fora do horário','entre 22h e 5h, feitos por pessoas', tagDelta(p ? delta(c.fora, p.fora) : null, true))+'</div>';
+  if (!arr.length) { bi.innerHTML = '<div class="analitico"><div class="an-card an-card--2"><div class="an-card__title"><span>Eventos por dia</span></div><div class="vazio-curto">Sem eventos no período.</div></div><div class="an-card"><div class="an-card__title"><span>Resultado</span></div><div class="vazio-curto">Sem eventos no período.</div></div></div>'; return; }
+  const sel = st.alvo && st.alvo.indexOf('dia:') === 0 ? +st.alvo.slice(4) : ND - 1, dsel = d.find(x => x.i === sel) || d[d.length - 1];
+  const pico = c.porHora.indexOf(Math.max(...c.porHora));
+  bi.innerHTML = '<div class="analitico">'+
+    '<div class="an-card an-card--2"><div class="an-card__title"><span>'+(um ? 'Eventos por hora · hoje' : 'Eventos por dia')+'</span><small><i class="lg-sw" style="background:#60A5FA"></i> sucesso &nbsp;<i class="lg-sw" style="background:#F59E0B"></i> recusado &nbsp;<i class="lg-sw" style="background:#B91C1C"></i> erro &nbsp;<i class="lg-sw" style="background:#7E22CE"></i> pessoas distintas &nbsp;'+FALTA('Os gráficos precisam de resumos prontos no servidor; hoje seria preciso baixar a trilha inteira, de 200 em 200')+'</small></div>'+tempoSVG(v, arr, j, 150, !um)+
+      (um ? '' : '<div class="an-leitura" aria-live="polite"><b>'+(dsel.i === ND - 1 ? 'Hoje (até '+fHM(NOW)+')' : fDM(diaData(dsel.i))+' · '+SEMANA[diaData(dsel.i).getDay()])+'</b><span>'+fN(dsel.tot)+' eventos</span><span>'+dsel.recusa+' recusados · '+dsel.erro+' com erro</span><span>'+dsel.pessoas.size+' pessoas</span><span style="color:#94a3b8">· média de dia útil: '+fN(media)+' · clique num dia para ver a trilha dele</span></div>')+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Resultado</span><small>'+(p ? 'sucesso no anterior: '+(p.total ? String(Math.round(p.porRes.sucesso / p.total * 1000) / 10).replace('.', ',') : '0')+'%' : '')+'</small></div>'+donutRes(v, c)+'<div class="an-card__title" style="margin:12px 0 6px"><span style="font-size:12px">Eventos sensíveis</span><small>clique para ver</small></div>'+sensTiles(v, c)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Por módulo</span><small>'+itensModulo(c).length+' módulos</small></div>'+barras(v, itensModulo(c), 'Eventos por módulo')+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Tipos de evento mais frequentes</span><small>8 de '+Object.keys(c.porAcao).length+'</small></div>'+barras(v, itensAcao(c, 8), 'Tipos de evento mais frequentes')+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Quem mais registrou eventos</span><small><i class="lg-sw" style="background:#7E22CE"></i> sensíveis</small></div>'+barras(v, itensAtor(c, 8, arr), 'Quem mais registrou eventos')+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>O que mudou?</span><small>contra o período anterior</small></div>'+mudancasHTML(v, c, p)+'</div>'+
+    '<div class="an-card an-card--2 an-card--pico"><div class="an-card__title"><span>Horário de pico</span><small><i class="lg-sw" style="background:#1D4ED8"></i> pico: '+pico+'h às '+(pico + 1)+'h &nbsp;<i class="lg-sw" style="background:#C4B5FD"></i> fora do horário (22h às 5h)</small></div>'+horasSVG(v, c)+'</div></div>';
+}
+function mudancasHTML(v, c, p){
+  if (!p) return '<div class="vazio-curto">Sem período anterior para comparar.</div>';
+  const itens = [];
+  ORDEM_SENS.forEach(s => itens.push({ alvo:'sens:'+s, rot:SENS[s][0], cur:c.porSens[s], ant:p.porSens[s], ruim:true }));
+  itens.push({ alvo:'fora', rot:'Fora do horário', cur:c.fora, ant:p.fora, ruim:true });
+  itens.push({ alvo:'res:erro', rot:'Erros do sistema', cur:c.porRes.erro, ant:p.porRes.erro, ruim:true });
+  itens.sort((a, b) => Math.abs(delta(b.cur, b.ant)) - Math.abs(delta(a.cur, a.ant)));
+  return '<div class="checks">'+itens.slice(0, 5).map(x => { const d = delta(x.cur, x.ant); const t = tagDelta(d, x.ruim); return '<button type="button" class="check-btn" data-alvo="'+x.alvo+'" aria-pressed="'+(S[v].alvo===x.alvo)+'" aria-label="'+esc(x.rot+': '+x.cur+', antes '+x.ant+' — filtrar a lista')+'"><i style="background:'+t[2]+'"></i><span class="t">'+x.rot+'</span><b>'+fN(x.cur)+'</b><small style="color:'+t[2]+'">'+(d > 0 ? '▲' : d < 0 ? '▼' : '=')+' '+Math.abs(d)+'%</small></button>'; }).join('')+'</div><p class="pat-ab-detail-note" style="margin-top:6px">Leitura automática dos números; a explicação em texto (resumo por IA) seria um serviço novo.</p>';
+}
+
+/* ═════════ OPÇÃO C — RADAR DE RISCO (radar + linha do tempo de risco + mapa de horário + módulos × resultado + pessoas em foco + trilha de investigação) ═════════ */
+const EIXOS = [['sens:negado','Acesso negado','#DC2626', c => c.porSens.negado, 'Acesso negado'],['sens:permissao','Perfis e permissões','#7E22CE', c => c.porSens.permissao, 'Perfis'],['sens:exclusao','Exclusões','#B45309', c => c.porSens.exclusao, 'Exclusões'],
+  ['sens:financeiro','Financeiro','#15803D', c => c.porSens.financeiro, 'Financeiro'],['fora','Fora do horário','#1D4ED8', c => c.fora, 'Madrugada'],['erro','Erros do sistema','#B91C1C', c => c.porRes.erro, 'Erros']];
+function radarHTML(v, c, p){
+  const cx = 130, cy = 103, R = 62, n = EIXOS.length, ang = k => -Math.PI/2 + k * 2*Math.PI/n;
+  const pt = (k, f) => [cx + Math.cos(ang(k)) * R * f, cy + Math.sin(ang(k)) * R * f];
+  const vals = EIXOS.map(x => x[3](c)), prev = EIXOS.map(x => p ? x[3](p) : 0), esc_ = EIXOS.map((x, k) => Math.max(1, vals[k], prev[k]) * 1.12);
+  const poly = arr => arr.map((val, k) => pt(k, val / esc_[k]).map(z => z.toFixed(1)).join(',')).join(' ');
+  let s = '';
+  [.33, .66, 1].forEach(f => s += '<polygon points="'+EIXOS.map((_, k) => pt(k, f).map(z => z.toFixed(1)).join(',')).join(' ')+'" fill="none" stroke="#e2e8f0"/>');
+  EIXOS.forEach((_, k) => { const e = pt(k, 1); s += '<line x1="'+cx+'" y1="'+cy+'" x2="'+e[0].toFixed(1)+'" y2="'+e[1].toFixed(1)+'" stroke="#e2e8f0"/>'; });
+  if (p) s += '<polygon points="'+poly(prev)+'" fill="#94a3b8" fill-opacity=".12" stroke="#94a3b8" stroke-dasharray="4 3" stroke-width="1.5"/>';
+  s += '<polygon points="'+poly(vals)+'" fill="#DC2626" fill-opacity=".14" stroke="#DC2626" stroke-width="2" pointer-events="none"/>';
+  EIXOS.forEach((x, k) => { const a = x[0], on = S[v].alvo === a, q = pt(k, vals[k] / esc_[k]), L = pt(k, 1.2); const anchor = Math.abs(L[0] - cx) < 8 ? 'middle' : L[0] > cx ? 'start' : 'end';
+    const tw = Math.round(x[4].length * 5.6 + 10), tx = anchor === 'middle' ? L[0] - tw/2 : anchor === 'start' ? L[0] - 4 : L[0] - tw + 4;
+    s += '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc(x[1]+': '+vals[k]+' no período, '+prev[k]+' no anterior — filtrar a lista')+'"><rect class="bg" x="'+tx.toFixed(1)+'" y="'+(L[1] - 12).toFixed(1)+'" width="'+tw+'" height="26" rx="6"/>'+
+      '<text x="'+L[0].toFixed(1)+'" y="'+(L[1] - 1).toFixed(1)+'" text-anchor="'+anchor+'" font-size="9.5" font-weight="700" fill="#475569">'+x[4]+'</text><text x="'+L[0].toFixed(1)+'" y="'+(L[1] + 10).toFixed(1)+'" text-anchor="'+anchor+'" font-size="10.5" font-weight="800" fill="'+x[2]+'">'+vals[k]+'</text>'+
+      '<title>'+x[1]+': '+vals[k]+(p ? ' (antes: '+prev[k]+')' : '')+'</title></g><circle cx="'+q[0].toFixed(1)+'" cy="'+q[1].toFixed(1)+'" r="'+(on ? 5.5 : 4)+'" fill="'+x[2]+'" stroke="#fff" stroke-width="1.5" pointer-events="none"/>'; });
+  const lista = '<div class="checks">'+EIXOS.map((x, k) => { const d = p ? delta(vals[k], prev[k]) : null; const t = tagDelta(d, true); return '<button type="button" class="check-btn" data-alvo="'+x[0]+'" aria-pressed="'+(S[v].alvo===x[0])+'" aria-label="'+esc(x[1]+': '+vals[k]+' — filtrar a lista')+'"><i style="background:'+x[2]+'"></i><span class="t">'+x[1]+'</span><b style="color:'+x[2]+'">'+fN(vals[k])+'</b><small style="color:'+t[2]+'">'+(d === null ? '—' : (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '= ')+Math.abs(d)+'%')+'</small></button>'; }).join('')+'</div>';
+  return '<div class="radar"><svg class="radar-svg" viewBox="0 0 260 206" role="group" aria-label="Radar de risco do período comparado ao anterior">'+s+'</svg><div>'+lista+'<div class="pilha-leg" style="margin-top:6px"><span><i class="lg-sw" style="background:#DC2626;opacity:.5"></i>este período</span>'+(p ? '<span><i class="lg-sw" style="background:#94a3b8;opacity:.5"></i>período anterior</span>' : '')+'</div></div></div>';
+}
+function lanesHTML(v, arr, j){
+  const n = nDias(j), LW = 112, W = 640, top = 34, LH = 26, H = top + ORDEM_SENS.length * LH + 16, cw = (W - LW) / n;
+  const vol = Array(n).fill(0), M = {}; ORDEM_SENS.forEach(s => M[s] = Array(n).fill(0));
+  arr.forEach(e => { const k = e.i - j.ini; if (k < 0 || k >= n) return; vol[k]++; e.sens.forEach(s => M[s][k]++); });
+  const maxV = Math.max(1, ...vol), maxS = Math.max(1, ...ORDEM_SENS.map(s => Math.max(...M[s])));
+  let s = '<text x="0" y="14" font-size="9.5" font-weight="700" fill="#94a3b8">VOLUME TOTAL</text>';
+  vol.forEach((x, k) => { const h = x ? Math.max(2, 24 * x / maxV) : 0; s += '<rect x="'+(LW + k*cw + cw*.15).toFixed(1)+'" y="'+(top - 6 - h).toFixed(1)+'" width="'+(cw*.7).toFixed(1)+'" height="'+h.toFixed(1)+'" fill="#e2e8f0"/>'; });
+  ORDEM_SENS.forEach((cat, li) => { const y = top + li * LH + LH/2;
+    s += '<line x1="'+LW+'" y1="'+y+'" x2="'+W+'" y2="'+y+'" stroke="#f1f5f9"/><text x="0" y="'+(y + 3.5)+'" font-size="10.5" font-weight="700" fill="'+SENS[cat][1]+'">'+SENS[cat][0].replace(' e cancelamentos', '')+'</text>';
+    M[cat].forEach((x, k) => { if (!x) return; const i = j.ini + k, a = 'lane:'+cat+':'+i, on = S[v].alvo === a, rr = 3 + 7 * Math.sqrt(x / maxS);
+      s += '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc(SENS[cat][0]+' em '+fDM(diaData(i))+': '+x+' eventos — filtrar a lista')+'"><rect class="bg" x="'+(LW + k*cw).toFixed(1)+'" y="'+(y - LH/2).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+LH+'" fill="'+(on ? '#dbeafe' : 'transparent')+'"/><circle class="alvo-foco" cx="'+(LW + k*cw + cw/2).toFixed(1)+'" cy="'+y+'" r="'+rr.toFixed(1)+'" fill="'+SENS[cat][1]+'" fill-opacity="'+(on ? 1 : .75)+'"/><title>'+SENS[cat][0]+' · '+fDM(diaData(i))+' · '+x+'</title></g>'; }); });
+  const marcas = n === 1 ? ['hoje'] : [0, Math.floor(n/3), Math.floor(2*n/3), n - 1].map(k => j.ini + k === ND - 1 ? 'hoje' : fDM(diaData(j.ini + k)));
+  return '<svg class="lanes-svg svg-clic" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Linha do tempo dos eventos sensíveis">'+s+'</svg><div class="eixo" style="margin-left:'+(LW/W*100).toFixed(1)+'%">'+marcas.map(m => '<span>'+m+'</span>').join('')+'</div>';
+}
+function heatmapHTML(v, arr){
+  const M = Array.from({length:7}, () => Array(HM_FAIXAS.length).fill(0)); let max = 0, pico = null;
+  arr.forEach(e => { const f = HM_FAIXAS.findIndex(fx => e.h >= fx[1] && e.h < fx[2]); M[e.w][f]++; });
+  M.forEach((row, w) => row.forEach((n, f) => { if (n > max) { max = n; pico = [w, f]; } }));
+  const ordem = [1,2,3,4,5,6,0], rot = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const cor = n => { if (!n) return '#f8fafc'; const t = n / max; const a = [239,246,255], b = [29,78,216]; return 'rgb('+a.map((x, i) => Math.round(x + (b[i]-x)*Math.pow(t,.6))).join(',')+')'; };
+  return '<table class="hm" aria-label="Eventos por dia da semana e horário"><thead><tr><th class="dia"></th>'+HM_FAIXAS.map(f => '<th scope="col" title="'+f[0]+'">'+f[0].replace('antes das ','<').replace('depois das ','>')+'</th>').join('')+'</tr></thead><tbody>'+
+    ordem.map(w => '<tr><th class="dia" scope="row">'+rot[w]+'</th>'+HM_FAIXAS.map((f, fi) => { const n = M[w][fi], a = 'hm:'+w+':'+fi, on = S[v].alvo === a;
+      return '<td>'+(n ? '<button type="button" class="hm-cell" data-alvo="'+a+'" aria-pressed="'+on+'" style="background:'+cor(n)+';color:'+(n/max > .5 ? '#fff' : '#1e3a8a')+(fi === 0 || fi === 7 ? ';box-shadow:inset 0 0 0 1px #c4b5fd' : '')+'" aria-label="'+esc(rot[w]+', '+f[0]+': '+n+' eventos — filtrar a lista')+'">'+n+'</button>' : '<span class="hm-cell zero" style="background:#f8fafc"></span>')+'</td>'; }).join('')+'</tr>').join('')+'</tbody></table>'+
+    '<div class="hm-leg"><span>menos</span><i style="background:#eff6ff"></i><i style="background:#93c5fd"></i><i style="background:#3b82f6"></i><i style="background:#1d4ed8"></i><span>mais</span><span style="margin-left:6px"><i style="background:#fff;box-shadow:inset 0 0 0 1px #c4b5fd"></i> fora do horário</span>'+(pico ? '<span style="margin-left:auto;color:#475569;font-weight:600">pico: '+SEMANA_PLURAL[pico[0]]+', '+HM_FAIXAS[pico[1]][0]+'</span>' : '')+'</div>';
+}
+function matrizHTML(v, c, arr){
+  const mods = ORDEM_MOD.filter(m => c.porMod[m]);
+  const cont = {}; arr.forEach(e => { const k = e.mod+':'+e.res; cont[k] = (cont[k] || 0) + 1; });
+  const tom = { sucesso:['#EFF6FF','#1D4ED8'], recusa:['#FEF3C7','#B45309'], erro:['#FEE2E2','#B91C1C'] };
+  return '<table class="mx"><thead><tr><th>Módulo</th>'+ORDEM_RES.map(r => '<th>'+RES[r][0]+'</th>').join('')+'</tr></thead><tbody>'+mods.map(m => { const a = 'mod:'+m;
+    return '<tr><td><button type="button" class="mx-mod" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(MOD[m][0]+': '+c.porMod[m]+' eventos — filtrar a lista')+'"><i class="lg-sw" style="background:'+MOD[m][1]+'"></i><span>'+MOD[m][0]+'</span></button></td>'+
+      ORDEM_RES.map(r => { const n = cont[m+':'+r] || 0, ax = 'mx:'+m+':'+r; return '<td>'+(n ? '<button type="button" class="mx-cell" data-alvo="'+ax+'" aria-pressed="'+(S[v].alvo===ax)+'" style="background:'+tom[r][0]+';color:'+tom[r][1]+'" aria-label="'+esc(MOD[m][0]+', '+RES[r][0].toLowerCase()+': '+n+' — filtrar a lista')+'">'+fN(n)+'</button>' : '<span class="mx-zero">—</span>')+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>';
+}
+function focoHTML(v, arr){
+  const sc = {}; arr.forEach(e => { if (e.actor === 'sis') return; const s = (e.sens.length ? 3 : 0) + (e.res !== 'sucesso' ? 2 : 0) + (e.fora ? 2 : 0); if (!s) return; sc[e.actor] = sc[e.actor] || { s:0, sens:0, rec:0, fora:0 }; sc[e.actor].s += s; if (e.sens.length) sc[e.actor].sens++; if (e.res !== 'sucesso') sc[e.actor].rec++; if (e.fora) sc[e.actor].fora++; });
+  const top = Object.keys(sc).sort((a, b) => sc[b].s - sc[a].s).slice(0, 6);
+  if (!top.length) return '<div class="vazio-curto">Ninguém com sinal de atenção no período.</div>';
+  return '<div class="foco-lista">'+top.map(a => { const x = sc[a], al = 'ator:'+a; return '<button type="button" class="foco-btn" data-alvo="'+al+'" aria-pressed="'+(S[v].alvo===al)+'" aria-label="'+esc(nomeAutor(a)+': '+x.sens+' sensíveis, '+x.rec+' recusas, '+x.fora+' fora do horário — abrir a trilha')+'">'+avatar(a)+'<span class="foco-btn__txt"><b>'+esc(nomeAutor(a))+'</b><small>'+esc(subAutor(a))+'</small></span><span class="foco-btn__n">'+
+    (x.sens ? '<span class="mini-tag" style="background:#F3E8FF;color:#7E22CE" title="sensíveis">'+x.sens+'</span>' : '')+(x.rec ? '<span class="mini-tag" style="background:#FEF3C7;color:#B45309" title="recusas e erros">'+x.rec+'</span>' : '')+(x.fora ? '<span class="mini-tag" style="background:#DBEAFE;color:#1D4ED8" title="fora do horário">'+x.fora+'</span>' : '')+'</span></button>'; }).join('')+'</div>'+
+    '<div class="pilha-leg" style="margin-top:6px"><span><i class="lg-sw" style="background:#F3E8FF;border:1px solid #d8b4fe"></i>sensíveis</span><span><i class="lg-sw" style="background:#FEF3C7;border:1px solid #fcd34d"></i>recusas e erros</span><span><i class="lg-sw" style="background:#DBEAFE;border:1px solid #93c5fd"></i>fora do horário</span></div>';
+}
+/* Trilha de investigação: aparece quando a lista é filtrada por uma pessoa ou por um recurso */
+function investHTML(v, arr, j){
+  const al = S[v].alvo; if (!al || !(al.indexOf('ator:') === 0 || al.indexOf('recurso:') === 0)) return '';
+  const info = alvoInfo(al), evs = arr.filter(info.f); const ehRec = al.indexOf('recurso:') === 0;
+  const n = nDias(j), W = 640, H = 150, LW = 30, top = 8, bot = 18, cw = (W - LW) / n, yh = h => top + (H - top - bot) * h / 24;
+  let s = '<rect x="'+LW+'" y="'+yh(22).toFixed(1)+'" width="'+(W - LW)+'" height="'+(yh(24) - yh(22)).toFixed(1)+'" fill="#F3E8FF"/><rect x="'+LW+'" y="'+yh(0).toFixed(1)+'" width="'+(W - LW)+'" height="'+(yh(5) - yh(0)).toFixed(1)+'" fill="#F3E8FF"/>';
+  [0, 6, 12, 18, 24].forEach(h => s += '<line x1="'+LW+'" x2="'+W+'" y1="'+yh(h).toFixed(1)+'" y2="'+yh(h).toFixed(1)+'" stroke="#e2e8f0"/><text x="'+(LW - 4)+'" y="'+(yh(h) + 3).toFixed(1)+'" text-anchor="end" font-size="9" fill="#94a3b8">'+h+'h</text>');
+  const porDiaInv = {}; evs.forEach(e => (porDiaInv[e.i] = porDiaInv[e.i] || []).push(e));
+  evs.slice().reverse().forEach(e => { const dd = porDiaInv[e.i], rk = dd.length - 1 - dd.indexOf(e), x = LW + (e.i - j.ini) * cw + cw * (.12 + .76 * (dd.length > 1 ? rk / (dd.length - 1) : .5)), y = yh(e.h); const cor = e.sens.length ? SENS[e.sens[0]][1] : RES[e.res][1];
+    s += '<g role="button" tabindex="0" data-ir="'+e.id+'" aria-label="'+esc(fData(e.t)+' '+fHM(e.t)+' · '+e.rot+' — abrir o evento na lista')+'"><circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(e.sens.length || e.res !== 'sucesso' ? 5.5 : 3.5)+'" fill="'+cor+'" fill-opacity=".85" stroke="#fff" stroke-width="1"/><title>'+fDM(e.t)+' '+fHM(e.t)+' · '+e.rot+'</title></g>'; });
+  const sens = evs.filter(e => e.sens.length).length, rec = evs.filter(e => e.res !== 'sucesso').length, fora = evs.filter(e => e.fora).length;
+  const ult = evs[0], pri = evs[evs.length - 1];
+  return '<div class="invest" aria-live="polite"><div class="invest__head"><div><div class="invest__t">'+ic('radar',16)+' Trilha de investigação · '+esc(info.rot.replace(/^(Usuário|Recurso): /, ''))+(ehRec ? ' '+FALTA('A consulta não filtra por recurso') : '')+'</div>'+
+    '<div class="invest__sub">'+(evs.length ? fN(evs.length)+' eventos de '+fDM(pri.t)+' '+fHM(pri.t)+' a '+fDM(ult.t)+' '+fHM(ult.t)+' · cada ponto é um evento (dia × hora); clique para abrir na lista' : 'Nenhum evento no período.')+'</div></div>'+
+    '<div class="invest-kpis"><span class="sinal" style="background:#F3E8FF;color:#7E22CE">'+sens+' sensíveis</span><span class="sinal" style="background:#FEF3C7;color:#B45309">'+rec+' recusas e erros</span><span class="sinal" style="background:#DBEAFE;color:#1D4ED8">'+fora+' fora do horário</span></div></div>'+
+    '<svg class="invest-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="group" aria-label="Eventos por dia e hora">'+s+'</svg><div class="eixo" style="margin-left:'+(LW/W*100).toFixed(1)+'%"><span>'+fDM(diaData(j.ini))+'</span><span>'+(n > 1 ? fDM(diaData(j.ini + Math.floor(n/2))) : '')+'</span><span>hoje</span></div></div>';
+}
+function renderC(root, arr, ant, j){
+  const v = 'c', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root), inv = $('[data-invest]', root);
+  k.innerHTML = ''; inv.innerHTML = '';
+  if (st.estado === 'carregando') { bi.innerHTML = '<div class="c-topo">'+cardSkel(190)+cardSkel(190)+'</div><div class="c-meio">'+cardSkel(200)+cardSkel(200)+cardSkel(200, 'an-card--foco')+'</div>'; return; }
+  if (st.estado === 'erro') { bi.innerHTML = '<div class="c-topo"><div class="an-card"><div class="an-card__title"><span>Radar de risco</span></div><div class="vazio-curto">Dados indisponíveis no momento.</div></div><div class="an-card"><div class="an-card__title"><span>Linha do tempo de risco</span></div><div class="vazio-curto">Dados indisponíveis no momento.</div></div></div>'; return; }
+  const c = contar(arr), p = ant ? contar(ant) : null;
+  if (!arr.length) { bi.innerHTML = '<div class="c-topo"><div class="an-card"><div class="an-card__title"><span>Radar de risco</span></div><div class="vazio-curto">Sem eventos no período.</div></div><div class="an-card"><div class="an-card__title"><span>Linha do tempo de risco</span></div><div class="vazio-curto">Sem eventos no período.</div></div></div>'; return; }
+  bi.innerHTML = '<div class="c-topo">'+
+    '<div class="an-card"><div class="an-card__title"><span>Radar de risco</span><button type="button" class="todos-btn" data-alvo="todos" aria-pressed="false">'+ic('list',13)+' Ver todos os '+fN(c.total)+' eventos</button></div>'+radarHTML(v, c, p)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Linha do tempo de risco</span><small>cada bolha = eventos sensíveis do dia · clique para ver</small></div>'+lanesHTML(v, arr, j)+
+      '<div class="an-leitura"><span><b>'+fN(c.criticos)+'</b> eventos críticos no período</span><span><b>'+fN(c.sens)+'</b> sensíveis</span><span><b>'+fN(c.fora)+'</b> fora do horário</span><span style="color:#94a3b8">'+FALTA('Os resumos por dia precisam vir prontos do servidor')+'</span></div></div></div>'+
+    '<div class="c-meio">'+
+    '<div class="an-card"><div class="an-card__title"><span>Quando acontece</span><small>dia da semana × horário</small></div>'+heatmapHTML(v, arr)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Módulos e resultado</span><small>clique no módulo ou no número</small></div>'+matrizHTML(v, c, arr)+'</div>'+
+    '<div class="an-card an-card--foco"><div class="an-card__title"><span>Pessoas em foco</span><small>clique para abrir a trilha</small></div>'+focoHTML(v, arr)+'</div></div>';
+  inv.innerHTML = investHTML(v, arr, j);
+}
+
+/* ═════════ AÇÕES DA LISTA: ver tudo deste usuário / recurso / tipo, voltar ═════════ */
+function irPara(v, alvo, origem){
+  const st = S[v]; st.hist.push({ alvo:st.alvo, aberta:origem, limite:st.limite }); st.alvo = alvo; st.aberta = null; st.limite = PASSO; render(v);
+  const lista = $('[data-view="'+v+'"] [data-lista]'); if (lista) lista.scrollIntoView({ block:'start' });
+  const b = $('[data-view="'+v+'"] [data-voltar-filtro]'); if (b) b.focus({ preventScroll:true });
+}
+function voltarFiltro(v){
+  const st = S[v], h = st.hist.pop(); if (!h) return; st.alvo = h.alvo; st.limite = h.limite; st.aberta = h.aberta; render(v);
+  const row = h.aberta && $('[data-view="'+v+'"] [data-linha="'+h.aberta+'"]'); if (row) { row.scrollIntoView({ block:'center' }); row.focus({ preventScroll:true }); }
+}
+function abrirEvento(v, evId){
+  const st = S[v], arr = linhas(v, base(v)), k = arr.findIndex(e => e.id === evId); if (k < 0) return;
+  if (k >= st.limite) st.limite = Math.ceil((k + 1) / PASSO) * PASSO;
+  st.aberta = v+'-'+evId; render(v);
+  const row = $('[data-view="'+v+'"] [data-linha="'+v+'-'+evId+'"]'); if (row) { row.scrollIntoView({ block:'center' }); row.focus({ preventScroll:true }); }
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 4200); }
+/* ── Opções ── */
+const ROT = { a:'Opção A — Padrão fiel com BI (os KPIs de hoje filtram + faixa de composição)', b:'Opção B — Analítica (tendência, resultado, módulo, tipo, pessoas, horário e o que mudou)', c:'Opção C — Radar de risco (radar, linha do tempo de risco, mapa de horário e trilha de investigação)' };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Auditoria · Opção ' + o.toUpperCase();
+  $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estado === S[o].estado));
+}
+const viewDe = el => { const w = el.closest('[data-view]'); return w ? w.dataset.view : opcao; };
+function refocar(v, sel){ const b = $('[data-view="'+v+'"] '+sel); if (b) b.focus({ preventScroll:true }); }
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Auditoria') toast('Na maquete só a tela de Auditoria está montada.'); return; }
+  if ((x = el('[data-estado]'))) { const v = opcao; Object.assign(S[v], { estado:x.dataset.estado, aberta:null, alvo:null, hist:[], limite:PASSO }); render(v); trocarOpcao(v); $('[data-view="'+v+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-papel]'))) { papel = x.dataset.papel; $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.papel === papel)); ['a','b','c'].forEach(v => Object.assign(S[v], { alvo:null, aberta:null, hist:[] })); renderNav(); renderTudo(); trocarOpcao(opcao); $('[data-view="'+opcao+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-marcas]'))) { const sem = document.body.classList.toggle('sem-marcas'); x.setAttribute('aria-pressed', String(!sem)); x.textContent = sem ? 'Mostrar as marcas “falta no backend”' : 'Esconder as marcas “falta no backend”'; return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', String(!c.hidden)); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  /* cabeçalho e filtros */
+  if ((x = el('[data-filtros]'))) { const v = viewDe(x); S[v].filtrosAbertos = !S[v].filtrosAbertos; render(v); refocar(v, '[data-filtros]'); return; }
+  if ((x = el('[data-exportar]'))) { const v = viewDe(x); const n = Math.min(S[v].limite, linhas(v, base(v)).length); toast('Arquivo auditoria.csv gerado com os '+n+' eventos carregados (Quando · Usuário · Evento).'); return; }
+  if ((x = el('[data-f-limpar]'))) { const v = viewDe(x); S[v].f = { tipo:'', ator:'', de:'', ate:'' }; S[v].aberta = null; S[v].limite = PASSO; render(v); return; }
+  if ((x = el('[data-tentar]'))) { const v = viewDe(x); S[v].estado = 'normal'; render(v); trocarOpcao(v); toast('Dados recarregados.'); return; }
+  if ((x = el('[data-mais]'))) { const v = viewDe(x); S[v].limite += PASSO; render(v); return; }
+  /* resumo do evento */
+  if ((x = el('[data-ver-ator]'))) { const v = viewDe(x); irPara(v, 'ator:'+x.dataset.verAtor, S[v].aberta); return; }
+  if ((x = el('[data-ver-recurso]'))) { const v = viewDe(x); irPara(v, 'recurso:'+x.dataset.verRecurso, S[v].aberta); return; }
+  if ((x = el('[data-ver-tipo]'))) { const v = viewDe(x); irPara(v, 'acao:'+x.dataset.verTipo, S[v].aberta); return; }
+  if ((x = el('[data-voltar-filtro]'))) { voltarFiltro(viewDe(x)); return; }
+  if ((x = el('[data-ir]'))) { abrirEvento(viewDe(x), x.dataset.ir); return; }
+  /* lista */
+  if ((x = el('[data-limpar-filtro]'))) { const v = viewDe(x); Object.assign(S[v], { alvo:null, aberta:null, hist:[], limite:PASSO }); render(v); return; }
+  if ((x = el('[data-linha]'))) { abrirResumo(x); return; }
+  if ((x = el('[data-alvo]'))) { const v = viewDe(x); const a = x.dataset.alvo; S[v].alvo = (a === 'todos' || S[v].alvo === a) ? null : a; S[v].limite = PASSO; S[v].aberta = null; S[v].hist = []; render(v); refocar(v, '[data-alvo="'+a+'"]');
+    const lista = $('[data-view="'+v+'"] [data-lista]'); if (lista && S[v].alvo && lista.getBoundingClientRect().top > window.innerHeight) lista.scrollIntoView({ block:'start', behavior:'smooth' }); return; }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t.closest) return; const v = viewDe(t);
+  if (t.dataset.periodo) { if (t.value === 'custom') return; S[v].periodo = t.value; S[v].f.de = ''; S[v].f.ate = ''; Object.assign(S[v], { alvo:null, aberta:null, hist:[], limite:PASSO }); render(v); refocar(v, '[data-periodo]'); return; }
+  if (t.dataset.f) { S[v].f[t.dataset.f] = t.value; Object.assign(S[v], { aberta:null, limite:PASSO }); render(v); refocar(v, '[data-f="'+t.dataset.f+'"]'); }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); abrirResumo(t); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g[role="button"]')) { e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles:true })); }
+});
+
+/* ── Inicialização ── */
+renderNav(); ['a','b','c'].forEach(render); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

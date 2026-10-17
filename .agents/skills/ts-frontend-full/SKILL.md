@@ -12,12 +12,16 @@ description: "Engenharia frontend e mobile de produção para o ERP Techsolution
   features/<domínio>, shared}. PROIBIDO introduzir estrutura nova
   (atomic design, feature-sliced etc.).
 - Antes de criar qualquer arquivo, espelhar o equivalente existente:
-  página de lista → WorkOrdersListPage.tsx; service →
+  página de lista → frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx
+  (NUNCA frontend/src/pages/*: legado sem rota); service →
   frontend/src/modules/operations/dispatches/dispatches.service.ts;
   feature Flutter → a feature mais próxima em lib/features/.
 - Precedência em conflito: prompt em execução e arquivos do repo
   (DESIGN_SYSTEM.md, COMPONENT_LIBRARY.md, mobile-sync-contracts.md)
   > esta skill > julgamento próprio.
+- Tela nova segue a tela EXISTENTE mais parecida (`D-TELAS-SEGUEM-O-PADRAO`, CLAUDE.md §4): nada de
+  tela do zero; cite a tela-modelo (arquivo) no plano ou no relatório. Componente novo só sem equivalente,
+  e nasce na biblioteca.
 - Design system congelado: zero decisão de estilo aqui (ver skill
   ui-ux-pro-max). Fidelidade visual mobile = docs/claude-code-handoff/
   ERP Mobile.dc.html; web = padrões das páginas existentes.
@@ -105,3 +109,17 @@ Cada achado: severidade, arquivo/trecho, impacto, correção, teste.
 - [ ] Zero número inventado: todo KPI ligado a endpoint real
 - [ ] Nenhuma dependência nova sem aprovação
 - [ ] Testes proporcionais ao risco (cota 150% do prompt em execução)
+
+## Regras do dono para toda tela (CLAUDE.md §4, itens 6 e 7)
+- **Padrão de painel com lista (`D-PADRAO-BLOCOS-CLICAVEIS`, 2026-10-12):**
+  - indicadores e blocos de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e removível;
+  - linha de UMA linha (até 44 px), sem botão de ação;
+  - o clique na linha abre o detalhe embaixo dela, com as propriedades e as ações, um aberto por vez.
+  - Referência: `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
+- **3 opções antes do dev (`D-TELAS-TRES-OPCOES`, 2026-10-13):**
+  - toda tela nova ou refeita nasce de uma maquete com 3 opções (A, B, C) no padrão do sistema, com um quadro de notas fora da tela;
+  - o dono aprova, e a aprovada vira a referência em `screen-refs/`. Desde 2026-10-14 (`D-APARENCIA-POR-USUARIO`), as 3 aprovadas ficam TODAS, como aparências que cada usuário escolhe em Configurações;
+  - a maquete é feita pelo Claude, nunca pelo Gemini (`D-DESIGN-SO-CLAUDE`, 2026-10-13);
+  - a tela implementada SAI com as 3 aparências, não só com uma (`D-TELAS-SAEM-COM-TRES`, 2026-10-14); o seletor em Configurações (`P-APARENCIA-POR-USUARIO`) vem antes ou junto da primeira;
+    - [ ] o plano cita as 3 opções aprovadas (a referência em `screen-refs/`);
+    - [ ] a tela pronta é conferida contra cada uma delas.

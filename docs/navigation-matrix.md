@@ -53,12 +53,10 @@
 | **Seguros `/fleet/insurance` (F4)** | `insurance_policies:read` | F | E | E | R | E | — | — | R | — |
 | **Danos `/fleet/damages` (F5)** | `damages:read` | F | E | E | E | R | — | M/E | R | — |
 | **Estoque `/inventory` (F7)** | `inventory_items:read` | F | E | E | E(mov) | R | F | — | R | — |
-| Pedidos `/purchase-orders` | `purchase_orders:read`* | F | E | E | R | R | E | — | R | — |
 | **Remunerações `/finance/commissions` (F8)** | `commissions:read` / `read_own` | F | F | R | own | F | — | own | R | — |
 | Financeiro `/finance` | `finance:read` | F | F | R | — | F | — | — | R | — |
 | Cobranças `/finance/charges` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
 | Pagamentos `/finance/payments` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
-| Relatórios `/reports` | `reports:read`* | F | F | F | R | R | R | — | R | — |
 | Usuários `/users` (F9) | `users.read`/`users.manage` | F | F(manage) | R | — | — | — | — | R | limited |
 | Notificações `/notifications` | `notifications:read` | F | F | F | R | R | R | M | R | R |
 | Central de Notificações `/controle/notificacoes` (Ω4C PR-20) | `notifications:create` | F | F | E | E | — | — | — | — | — |
@@ -77,7 +75,9 @@ auditor; `support` nenhuma), ajustadas pela coluna acima.
   limitadas.
 - **auditor**: leitura forte em tudo + Auditoria full; nunca executa.
 - **operator vê SÓ o próprio extrato** de comissão (F8 `read_own`) — teste obrigatório.
-- **finance** ganha de volta o grupo (hoje pruned): Multas, Seguros, Remunerações, Financeiro, Relatórios.
+- **finance** ganha de volta o grupo (hoje pruned): Multas, Seguros, Remunerações, Financeiro. (B-SAN3-06a: Pedidos
+  e Relatórios saíram do menu e da rota — eram telas literais, sem servidor; `purchase_orders:read`/`reports:read`
+  seguem no catálogo, sem tela.)
 - **inventory** é dono do Estoque (F7) e move; lê o resto operacional pertinente.
 - **platform_admin** entra só em fluxos de plataforma; nas telas de tenant aparece como F por herança do
   catálogo, mas opera pela console de plataforma (fora da AppShell).

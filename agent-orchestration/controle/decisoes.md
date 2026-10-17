@@ -420,6 +420,8 @@
   (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.
 
 ## D-INFRA-PROVIDER — Fly.io (gru/São Paulo) 1º · AWS 2º (2026-07-13) [Ω-INFRA-1, junta J-SAN-4 5/5]
+> **SUBSTITUÍDA em 2026-10-13 por `D-INFRA-PROVIDER-AWS`** (decisão do dono: *"o provedor é o aws"*), registrada no
+> "Registro de 13/10/2026 (madrugada)" deste arquivo. O texto abaixo fica como histórico.
 - Decisão (junta de 5 UNÂNIME, pré-autorizada por D-SAN-AUTONOMIA; PD-INFRA-1 em docs/omega-pd.md): provedor de
   deploy = **Fly.io, região gru (São Paulo)**; fallback pré-aprovado = **AWS (Lightsail→RDS/ECS, sa-east-1)**.
   Racional: única dupla com região BR real; Fly vence por menor lock-in (imagem OCI + fly.toml; sair = pg_dump +
@@ -2297,7 +2299,7 @@ código, a **unanimidade de 3** (§C7.1-ter(b)).
 
 ### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
 
-`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+(**substituída em 2026-10-13 por `D-INFRA-PROVIDER-AWS`: o provedor é a AWS**) `D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
 como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
 nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
 não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na
@@ -3223,3 +3225,469 @@ do #390 nomeou continuam com o primeiro PR que mergear.
   contrato". O `model:` do `inspetor-de-terreno-da-junta` e do `porteiro-pos-merge` passa a `opus` (com o espelho
   `.agents/agents/` regenerado) e o `MODELO_FIXADO` de `scripts/audit-agents-skills.mjs` acompanha. As 12 cadeiras de juntas
   já encerradas que trazem `model: fable` ficam como registro histórico: cadeira nasce com identidade nova a cada junta.
+
+## Registro de 11/10/2026 — Traccar (as 6 decisões), o Claude só orquestra e o agente da API em uso
+
+- **D-TRC-DECISOES-DO-DONO-2026-10-11** — as seis decisões do plano do Traccar v2.1
+  (`docs/revisoes/TRACCAR/PLANO_TRACCAR.md`, seção "Decisões do dono antes do B-TRC-01", ramo `docs/plano-traccar`).
+  Falas literais do dono:
+  - *"Decisões traccar em D1=c. D2=a. D3=os dois, mas só o carro aparece default e celular do técnico é com a opção
+    mostra guincheiro com o botão direito do mouse no mapa e no menu de visualização que devemos ter no mapa. D4=a viatura
+    aparece com o nome do técnico que aquela viatura foi definida, temos que bolar uma configuração inicial para amarrar
+    a viatura no técnico. D5=a. D6=base legal, contrato de trabalho e legítimo interesse com aviso ao técnico. Guarda de
+    90 dias com recibo e quarentena resolvida 30 dias. Quem vê será o despacho e gestão com trilha de consulta."*
+  - *"Achados críticos. Achado 1, 2, 3, 4 e 5 preciso que vc analise e me retorne com opções, prós e contras. Preciso que
+    rode aqui e me responda sobre os achados só então as minhas decisões devem ser tratadas"*. O orquestrador analisou os
+    5 achados do material das decisões (`erp-pausa-2026-10-03/TRACCAR-DECISOES-para-o-dono.md`, preparado pelo agente da
+    API) e deu opções, prós e contras.
+  - *"pode seguir com as recomendações"*. As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec].
+
+  **Resultado:**
+  1. **D1 = C**, sete blocos (G-TRC-PD + B-TRC-01 a 07). Prazo de referência: **26–46 dias úteis** (§10.2). O "25–45" da
+     §7.2 é o número da v1 e sai na v2.2 do plano [rec, achado 1].
+  2. **D2 = a**, o ERP inteiro na AWS, como DIREÇÃO. Um estudo de custo e de migração vira tarefa nomeada com prazo
+     ANTES do B-TRC-06 (`P-TRC-AWS-ESTUDO-MIGRACAO`); do B-TRC-01 ao 05 tudo roda em dev. Contratar ou configurar serviço
+     pago segue como decisão crítica (§C7 item 1) [rec, achado 2].
+  3. **D3 = dois pinos (a opção c do plano), com camada:** por padrão só a viatura aparece. O celular do técnico (o
+     "guincheiro") aparece pela opção do botão direito no mapa e pelo menu de visualização do mapa, que precisa existir.
+     O "N minutos" da opção b deixa de existir. Custo no plano: bloco próprio de 4–7 dias, mais o menu de visualização.
+  4. **D4 = b** [rec, achado 3]: vínculo FIXO viatura→técnico como padrão (a configuração inicial que amarra a viatura no
+     técnico); durante um despacho ACEITO, aparece o técnico que aceitou. Viatura SEM técnico configurado e sem despacho
+     aparece como frota, sem nome de pessoa, sob o legítimo interesse da D6 [rec, derivado de D4 = b e D6]. Isso concilia a frase do dono com a regra de
+     2026-10-10, "o vínculo pessoa↔viatura é pela janela do despacho" (`decisoes.md:2290-2292`), que segue valendo
+     durante o serviço. O conflito foi registrado e resolvido aqui, pela regra §A2.
+  5. **D5 = a**: só a plataforma (Admin Plataforma) vincula rastreador, a pedido da organização, com o rastreador
+     registrado na compra ou na instalação.
+  6. **D6** [rec, achado 4]: **base legal por finalidade** — execução do contrato de trabalho para o rastreio em serviço;
+     legítimo interesse, com teste de balanceamento escrito, para a frota sem técnico. Aviso ao técnico no app e no
+     contrato. **Fora do expediente, a viatura aparece SEM o nome do técnico.** Guarda: posição e recibo 90 dias;
+     quarentena resolvida 30 dias; depois, apagar ou anonimizar. Quem vê: despacho e gestão da organização, com trilha de
+     consulta. Validar com advogado antes da produção.
+  7. **G-TRC-PD** [rec, achado 5 = b]: no lugar da junta de 5 (quórum registrado em `decisoes.md:2283-2285`, "a PD e a decisão
+     de implantação vão a junta unânime de 5", que este item REVÊ para a PD; a decisão de implantação, B-TRC-06/07, segue 5/5), a PD do Traccar (versão, digest da imagem, licença, CVEs
+     e semântica do forward conferida no código-fonte da tag) é PESQUISADA e o DONO a aprova por escrito. Decisão do
+     dono, que está acima da junta (§A1.1). Pesquisa em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md` (ramo
+     `docs/plano-traccar`).
+  8. O gate do B-TRC-01 (plano §8.0) passa a exigir na linha 4 a aprovação escrita do dono à PD, não a junta 5/5. O plano
+     ganha a v2.2 com as decisões acima (`P-TRC-PLANO-V22`).
+
+- **D-CLAUDE-SO-ORQUESTRA (2026-10-11)** — o dono: *"vc eu quero na orquestração e tarefas pequenas, quando o codex cair vc
+  cobre ele e a api temos que forçar o uso dela"*; *"o negocio aqui é usar vc de forma que o limite nao seja atingido e
+  o negocio nao pare..."*; *"vc tem que colocar vigias para lhe informar que a execução parou, desse modo vc ja passa o
+  novo comando"*. Na prática:
+  - o Claude só orquestra e faz tarefas pequenas; a execução vai para o Codex; leitura, revisão, crítica sem banco e
+    texto vão para o agente da API, com pacote de contexto;
+  - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
+  - todo lançamento tem vigia;
+  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+    US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
+  - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
+  Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
+
+## Registro de 11/10/2026 (tarde) — Traccar: a PD aprovada e a arquitetura do dono
+
+- **D-TRC-PD-APROVADA-2026-10-11** — o dono aprova por escrito a PD do Traccar, como pede o item 7 da
+  `D-TRC-DECISOES-DO-DONO-2026-10-11` (G-TRC-PD pela aprovação do dono, no lugar da junta de 5). Fala literal:
+  - *"Traccar: seguir recomendações.
+    Aprovo a PD do Traccar 6.16.0 (sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda),
+    com os protocolos OsmAnd e GT06, sem SMTP, sem OIDC, sem porta pública além das de protocolo e só com a conta de
+    serviço do ERP."* (A frase e o digest ficam numa linha só, para a conferência da linha 4 do §8.0, v2.2 A-2.)
+
+  **Condições aprovadas** (a pesquisa está em `docs/revisoes/TRACCAR/G-TRC-PD-pesquisa.md`; o registro da PD está em
+  `docs/omega-pd.md`, `PD-TRC-616`):
+  1. **Versão e imagem:** Traccar **6.16.0**, só por digest: `traccar/traccar:6.16.0@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`. Tag sem
+     digest não vale, porque as tags do repositório são mutáveis. Versão abaixo da 6.16.0 é proibida, porque só ela restringe o
+     `forward.header` à URL global (commit `acd55bd0`, premissa P-04 do plano).
+  2. **Protocolos:** só **OsmAnd** e **GT06** (`protocols.enable` com esses dois). Isso emenda a condição
+     `protocols.enable=osmand` da pesquisa e a linha 1295 da v2.1, conforme o achado A-6 da emenda v2.3 (F-6). O
+     decodificador GT06 é superfície de DoS e entra no threat model. **O B-TRC-01 continua só com OsmAnd** (v2.3, A-7).
+     O GT06 entra no B-TRC-03a.
+  3. **Sem SMTP, sem OIDC, sem usuário além da conta de serviço do ERP.** Essas três condições, junto com a de portas abaixo, neutralizam as duas CVEs médias
+     abertas na 6.16.0 (CVE-2026-108737 e CVE-2026-108738). A PD é revista quando sair a 6.16.1.
+  4. **Porta pública só a de protocolo.** O painel e a API web do Traccar nunca ficam públicos. O dono fixou o TETO.
+     **[leitura do orquestrador]** A aprovação não abre as portas de protocolo: o NLB só nasce no gate `G-TRC-NLB`, com
+     decisão escrita, threat model e junta 5/5 (v2.3, A-2), como mandam as regras do dono para o Traccar (§C7 item 8(4)).
+  5. **Configuração confirmada no código da tag e obrigatória em todo ambiente:**
+     - `forward.type=json` (o padrão é `url`);
+     - `geocoder.enable=false` (o padrão chama a LocationIQ);
+     - `database.registerUnknown=false` fora de dev;
+     - o segredo do forward entra por variável de ambiente (`CONFIG_USE_ENVIRONMENT_VARIABLES=true`), nunca no
+       `traccar.xml`;
+     - o forward espera 5 s de conexão e 5 s de leitura (é o padrão da tag, `Keys.java:1064-1076`). A ingestão do ERP
+       responde dentro disso.
+
+  O gate §8.0 do plano exige na linha 4 a aprovação escrita do dono à PD. **Esta entrada é essa aprovação.**
+
+- **D-TRC-ARQUITETURA-2026-10-11** — a arquitetura do Traccar, definida pelo dono, e as respostas às perguntas das
+  emendas v2.2 (Q1–Q11) e v2.3 (F-1 a F-9). Falas literais do dono:
+  - *"Claude, eu, eu até aceito suas recomendações sobre o, a notícia de prazo e 11 perguntas do, do Tracar, mas eu
+    quero discutir com você como é que o Tracar vai funcionar. Minha ideia é ele funcionar como um, a gente só
+    consumir a API dele, ele ficar... Ele fica numa sub-rede sem acesso à, à internet no, na AWS e fica alimentando
+    uma API. Essa API eu vou alimentar meu sistema."*
+  - *"como o rastreador chega no Traccar: Entrada só nas portas dos rastreadores. Empurrar para o tempo real; puxar
+    para reconciliar o que se perdeu. e a frequencia de aquisição e de uso do bd vai ser variavel, quando estiver
+    com a tela aberta naquele dispositivo esse dispositivo responde mais rapido. um carro parado fica com o tempo
+    maior de resposta ate ele começar a se mover onde fica na media de respostas, mas quando o operador abre uma
+    tela que ele esta presente ele fica mais rapido na resposta, (vizualização tem dois niveis, o de visualizar o
+    mapa um pouco mais lento que o nivel de rastreamento que no mapa o caminho onde ele passar fica com uma linha )"*
+  - *"nivel 1= de 1 a 2 minutos. nivel 2= de 3 a 5 minutos. nivel 3 15 minutos. O "acelerar o rastreador quando abre a
+    tela" entra já (só modelos compatíveis, gasta dados) ou depois da camada 2? na hora de configuração do pgs no
+    sistema, o gps/sistema ja fica com a configuração, nos gps gt06 o sistema ja memoriza que deve enviar os comando
+    e quais comandos usar. nos que nao tem o protocolo gt06 o sistema ja guia o usuario de como configura-lo"*
+  - e, para as perguntas F da v2.3, a mesma fala da entrada anterior: *"Traccar: seguir recomendações."*
+
+  As recomendações do ORQUESTRADOR que o dono aceitou estão marcadas [rec]. O texto das emendas está em
+  `docs/revisoes/TRACCAR/PLANO_TRACCAR-EMENDA-v2.2.md` (`17f11f2f`) e `…-v2.3.md` (`f6f41e15`), no ramo `docs/plano-traccar`.
+
+  **Arquitetura:**
+  1. **Rede.** O Traccar fica numa sub-rede privada **sem saída para a internet**: sem NAT e sem rota `0.0.0.0/0`. A
+     imagem é espelhada num ECR privado com o mesmo digest; o B-TRC-06 prova que a cópia preserva o digest (hoje é
+     hipótese). O ERP fica na mesma VPC (F-1 [rec], coerente com a D2 = a). Uma ponte para o Fly furaria o "sem
+     saída".
+  2. **Entrada.** A internet só alcança as portas dos protocolos dos rastreadores, por um NLB. A web e a REST do
+     Traccar só aceitam o grupo de segurança do worker do ERP. A ingestão (porta 3200) só aceita o grupo do Traccar.
+  3. **Empurrar + puxar.**
+     - Empurrar: o forward JSON do Traccar vai, pela rede privada, à API de ingestão do ERP, a camada
+       anticorrupção. É o tempo real.
+     - Puxar: o worker do ERP chama a REST do Traccar para reconciliar o que se perdeu.
+     - O ERP **não recebe** a credencial do banco do Traccar. O trajeto vem **pela REST, nunca por SQL** (F-2 [rec]).
+  4. **Frequência adaptativa em 3 níveis** (F-4, confirmado nos números do dono):
+     - nível 1: de 1 a 2 min;
+     - nível 2: de 3 a 5 min, em movimento;
+     - nível 3: 15 min, parado.
+
+     O **nível 1 vale só na tela de rastreamento de UMA viatura e no detalhe dela** (F-3 [rec]). O mapa geral fica nos
+     níveis 2 e 3, porque nível 1 no mapa inteiro mandaria comando a todas as viaturas visíveis. A presença na tela
+     vai no Redis, com TTL de cerca de 90 s.
+  5. **Teto e histerese** (F-5 [rec]), com os valores iniciais do achado A-4 da v2.3:
+     - no mínimo 5 min entre comandos;
+     - até 2 subidas de nível por hora;
+     - até 6 comandos por dia por rastreador;
+     - cerca de 10 min de histerese para voltar ao nível base.
+
+     Ao bater o teto, o rastreador fica no nível base, com aviso na tela e métrica. **[leitura do orquestrador]** Os
+     valores são calibrados com o aparelho real no B-TRC-03a.
+  6. **Comandos por modelo, no cadastro do rastreador.**
+     - **GT06:** o sistema memoriza quais comandos enviar em cada nível.
+     - **Outros protocolos:** o sistema guia o usuário na configuração.
+     - O catálogo de perfis é global e só a plataforma o escreve (D5).
+     - **Exceção ao §9.2 da v2.1** (F-7 [rec]): o texto passa a dizer "comando remoto, exceto os comandos de
+       intervalo da allowlist aprovada pela plataforma". Nunca corte de motor, nem outro comando.
+     - O comportamento dos comandos GT06 na 6.16.0 é **HIPÓTESE** até o B-TRC-03a ler o encoder na tag, com
+       arquivo e linha, e provar com o aparelho real.
+     - **Quando entra:** a aceleração ao abrir a tela entra no B-TRC-03a/03b. O B-TRC-01 não muda.
+  7. **Dois níveis de visualização.**
+     - **Mapa:** níveis 2/3 e o polling de 30 s que já existe.
+     - **Rastreamento de uma viatura:** nível 1 e a linha do trajeto, puxada da REST do Traccar sob demanda. O
+       navegador nunca chama o Traccar: a chamada passa pelo ERP, que recorta pelas janelas de vínculo da organização
+       e pelas regras D4/D6.
+     - **O que o ERP guarda:** o último ponto, o trajeto resumido e os recibos, por 90 dias.
+     - **O que o Traccar guarda:** todos os pontos, por 90 dias.
+  8. **Backup do banco do Traccar: 14 dias** (F-8 [rec]). Depois do expurgo de 90 dias, o dado some de vez em no
+     máximo 90 + 14 dias.
+  9. **Blocos e prazo.**
+     - O B-TRC-03 se divide em **03a** (vínculo pela plataforma, vínculo fixo, expediente, perfil por modelo, comandos
+       por nível, código GT06 conferido, aparelho real) e **03b** (reconciliação pela REST, reconciliador de nível,
+       presença, teto, log de comandos, último ponto e trajeto resumido).
+     - Nasce o gate documental `G-TRC-NLB`.
+     - Estimativa: **~45–76 dias úteis**, ainda hipótese (Q1 e v2.3, A-7).
+     - **A primeira posição no mapa continua no B-TRC-01**, só OsmAnd, em dev.
+  10. **Os modelos de rastreador** (F-9) seguem em aberto. O dono não os informou. Viram a pendência
+      `P-TRC-MODELOS-RASTREADOR`, que bloqueia o B-TRC-03a e o `G-TRC-NLB`, mas não o B-TRC-01.
+
+  **Respostas da v2.2** (todas [rec]; a fala do dono é *"eu até aceito suas recomendações sobre o, a notícia de prazo e
+  11 perguntas"*):
+  - **Q1:** a estimativa passa a ~39–67 dias úteis, sem corte, com o B-TRC-03 dividido em dois. A v2.3 a refez para
+    ~45–76.
+  - **Q2:** D4 = b é o vínculo fixo, com o despacho aceito por cima.
+  - **Q3:** no B-TRC-01, só em dev, vale o ponto mais recente (provisório). Os dois pinos vêm no B-TRC-04.
+  - **Q4:** o técnico só com o app, sem viatura, aparece por padrão.
+  - **Q5:** quem configura o vínculo fixo é a gestão, com a permissão de editar viatura.
+  - **Q6:** despacho reatribuído sem aceite, ou ambíguo, aparece como frota sem nome.
+  - **Q7:** o expediente é da organização: um horário padrão que o admin ou a gestão configura. Por técnico, mais
+    tarde.
+  - **Q8:** num despacho aceito fora do expediente, o nome aparece.
+  - **Q9:** a guarda de 90 dias vale para o Traccar e para a posição do app. A parte do app é um bloco pequeno à parte.
+  - **Q10:** a trilha de consulta registra quem viu, quando, de quem (técnico ou viatura), em que tela e de que
+    período.
+  - **Q11:** ver a frota sem técnico é recurso pago, no plano pago de rastreamento de frota. É decisão comercial do dono,
+    tomada pela aceitação da recomendação.
+
+  **Isto não muda:** as regras do dono para o Traccar no §C7 item 8(4), e a pré-condição de ingestão em produção
+  (`B-SAN3-05` mergeado).
+
+## Registro do `B-O6R-07c-a` (PR #414), 2026-10-10
+
+- **D-07C-TRAVAS-REORDENADAS (2026-10-10, decisão do orquestrador; texto do plano do `B-O6R-07c` v3, §R.4/B6)** — "Com a
+  divisão do `B-O6R-07c` (2026-10-10): (1) a trava de `src/modules/work-orders/work-order.service.ts`,
+  `SAN3-13 → 07c → SAN3-23` (`PLANO_SAN3.md:356`), passa a `07c-a → SAN3-13 → SAN3-23`; o 07c-b só toca esse arquivo se a
+  D1-07c for (b) ou (c), e aí entra na fila depois do `SAN3-13`. (2) A trava de `src/modules/mobile/mobile-work-order-sync.ts`,
+  `07c → SAN3-16` (`PLANO_SAN3.md:357`), é satisfeita pelo **07c-a** (que não toca o arquivo) quando a D2-07c for (a), (b) ou
+  (c), e passa a `07c-b → SAN3-16` quando for (d), porque aí o 07c-b toca o arquivo. Com (a), a ordem é
+  `07c-a → SAN3-16 → 07c-b`: o `SAN3-16` constrói a saída do app que o 07c-b exige antes de mergear."
+
+## Registro de 11/10/2026 (fim da tarde) — 03a, 07c-a, telas, celular do técnico e rastreadores
+
+Fala literal do dono, a mesma para as cinco entradas abaixo:
+*"03a: A. 07c-a: D. Telas: recomendação, /logistics ligar depois e escrever na memoria a pedencia. F9: ja tenho rastreadores da cantrack, modelos g500ls e j16-g900l um de cada. o Celular do técnico: pelo nosso app"*
+
+- **D-03a-MESMA-CHAVE-OUTRO-ATOR = A (2026-10-11).**
+  - **A regra:** a mesma ação de sincronização (o mesmo `client_action_id` gerado no celular) é **uma ação só** e pertence
+    a quem a enviou primeiro. Se outro usuário reenviar a mesma ação, o servidor responde **conflito** e não lança nada.
+  - **Por quê:** fecha o pagamento em dobro no celular compartilhado (achado A-04 da crítica r2 do `B-O6R-03a`). O conserto
+    fica só no servidor, sem migração e sem mexer no app.
+  - **O que muda:** o critério de `docs/revisoes/SAN3/PLANO_SAN3.md:243` ("2 usuários com a mesma chave local → 2
+    lançamentos") deixa de valer para o 03a, como propõe `B-O6R-03a-EMENDA-v3.md` (ramo `fix/expense-sync-atomic`,
+    `62c95170`).
+  - **Próximo passo:** o dev do 03a, com o plano v2 e a emenda v3. O 03a mexe em dinheiro: depois do dev vem a junta
+    completa (unanimidade de 3).
+
+- **D-07CA-OPCAO-D (2026-10-11).** O PR #414 (`B-O6R-07c-a`: técnico não atribuído não mexe em subrecurso de OS alheia)
+  **mergeia por decisão do dono**, acima da junta (§A1.1).
+  - **O que a junta decidiu:** reprovou o ciclo 1 por 2 × 1 (`omega/juntas/J-B-O6R-07c-a-ciclo1.md`). A C1 e a C3
+    aprovaram. A C2 reprovou com 3 `bloqueia`, todos sobre o **teste-vigia** do censo
+    (`tests/o6r07c-census-guard.test.ts`, que reconhece a FORMA da rota e não a propriedade). A própria ata diz:
+    "classe não grave: nenhum é defeito do produto hoje".
+  - **O que entra no merge:** o conserto do produto.
+  - **O que vira pendência:** o vigia por propriedade vira `P-GOV-GUARDA-POR-PROPRIEDADE`, com bloco dono
+    `B-GOV-GUARDA-POR-PROPRIEDADE`. O plano do ciclo 2 (`bd504cc4`) e a pré-crítica da API (`6a4ab8b9`) passam a ser
+    insumo desse bloco. O relatório parcial do dev do ciclo 2 é versionado como registro: ele não escreveu código.
+  - **Risco aceito pelo dono:** até o vigia novo existir, uma rota NOVA escrita de certo jeito pode passar sem o teste
+    avisar. As rotas que existem hoje estão cobertas pelo conserto e pelos testes do bloco.
+  - **Depois do merge:** o porteiro (merge de produto, §C7 item 8(3)).
+
+- **D-TELAS-SAN3-06a (2026-10-11)**, as recomendações aceitas para as telas com dado inventado (levantamento do
+  agente da API, item 39 do `PLANO_SAN3.md`, bloco `B-SAN3-06a`):
+  - **Relatórios** (`/reports`) e **Pedidos de compra** (`/purchase-orders`) saem do menu e da rota. São 100% literais,
+    sem servidor e sem tabela. Construí-los volta como bloco próprio, se o dono pedir.
+  - O **Console Dispatcher** (`/dispatch/console`) é ligado aos dados reais. O servidor já tem os despachos, o resumo, as
+    localizações e as OS.
+  - O **`/logistics`** fica para "ligar depois", na fala do dono, e vira `P-LOGISTICS-MOCK`. Ele não está no menu
+    lateral, mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts`.
+  - A ordem dos blocos que mexem no menu segue o `PLANO_SAN3.md` (l.351-352).
+
+- **D-TRC-CELULAR-PELO-APP (2026-10-11).**
+  - **Como funciona:** a posição do celular do técnico chega pelo **nosso app Flutter, direto ao ERP**, com o login do
+    técnico e a fila offline que já existem (`mobile/flutter_app/lib/core/location/`). O celular **nunca passa pelo
+    Traccar**.
+  - **O que o Traccar recebe:** só os rastreadores das viaturas.
+  - **Origem:** confirma o texto do plano v2.1 (§6.2, l.903; §3.2, l.486) e a opção (a) que o orquestrador apresentou ao
+    dono.
+  - **[rec] Consequência:** em produção não é preciso abrir a porta OsmAnd. O OsmAnd fica para o simulador de dev, e a
+    porta pública de cada protocolo se decide no `G-TRC-NLB`.
+
+- **D-TRC-MODELOS-CANTRACK (2026-10-11)**, a resposta à F-9. O dono complementou a fala acima com:
+  *"os gps sao todos gt06, g500ls é um modelo odb"*.
+  - **Aparelhos:** rastreadores **Cantrack**, um **G500LS** e um **J16-G900L**. O G500LS é **OBD**: liga na porta OBD do
+    veículo.
+  - **Protocolo:** **os dois falam GT06**, pela palavra do dono. Cabem na PD aprovada (OsmAnd e GT06) **sem emenda**.
+  - **J16:** o fórum do Traccar (fonte EXTERNA, sem cópia no repositório) confirma GT06 na porta 5023 do Traccar. Ver
+    `traccar.org/forums/topic/problem-with-j16-using-the-wrong-protocol/` e
+    `traccar.org/forums/reply/108278`. O comando relatado é `SZCS#SERVIP=…#SERVPORT=5023#PTL_SEL=2#GT06SEL=1#`.
+    Ressalvas relatadas no fórum: há variantes GT06 V3/V4 e o consumo de dados é alto.
+  - **G500LS sendo OBD [leitura do orquestrador, HIPÓTESE a medir no B-TRC-03a]:**
+    - é alimentado pela porta OBD, sem instalação elétrica;
+    - o motorista pode desconectá-lo. Se o aparelho mandar o evento de corte de energia, isso vira alarme;
+    - os dados do OBD (ignição, odômetro) dependem do firmware e do decodificador GT06 do Traccar.
+  - **O que o B-TRC-03a confere com os aparelhos reais:** a variante GT06, a porta, o intervalo duplo nativo (parado e em
+    movimento) e os comandos de intervalo.
+
+## Registro de 11/10/2026 (noite) — telas novas seguem o padrão do sistema
+
+- **D-TELAS-SEGUEM-O-PADRAO (2026-10-11)** — o dono: *"a construção de novas telas tem que acompanhar o padrao do sistema, importante usar as skills de frontend e deixar clarificado que o padrao que ja ha no sistema deve ser seguido, nada de fazer novas telas do inicio. documente e espalhe esse requesito"*.
+  Regra escrita no `CLAUDE.md` §4 (Web) e no item do DoD (§10), com espelho no `AGENTS.md`.
+
+  **Onde mais foi espalhada:**
+  - nas skills de frontend `ts-frontend-full` e `ui-ux-pro-max` (`.claude/skills/` e `.agents/skills/`);
+  - no `frontend-pixel-master` (restrição) e no `cognicao-visual` (veto 6, "tela feita do zero"), em `.claude/agents/`
+    e `.agents/agents/`;
+  - no `CLAUDE.md` §5 (mobile): a tela-modelo é a feature mais próxima em `lib/features/`;
+  - fora do repositório: na memória do orquestrador e nos prompts dos blocos de tela, a começar pelo `B-SAN3-06a`.
+
+  **Correção que veio junto:** as duas skills apontavam como modelo de lista a `WorkOrdersListPage.tsx`, que é legado
+  SEM rota (P-004; `P-SAN3-01-OS-LEGADO-MORTO`). A primeira versão desta regra herdou o erro, e a revisão do #422 o
+  pegou. O modelo passa a ser `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`, a lista padronizada no ar.
+
+  **Pergunta ao dono, que AINDA NÃO é regra:** onde a referência renderizada do §11 divergir do padrão do sistema em
+  ESTRUTURA (shell, cabeçalho, componentes), vale o padrão do sistema? A referência continuaria valendo para o conteúdo
+  e a composição. Hoje vale o §11 ("PNG vence para layout/intenção"). O precedente `D-OS-CABECALHO-PADRONIZADO` trocou
+  a referência de 5 telas; ele não pôs o código acima dela.
+
+## Registro de 11/10/2026 (noite) — porteiro do #414 e um desvio do orquestrador
+
+- **Porteiro do #414:** `LIBERADO COM RESSALVA` (`omega/juntas/votos/B-O6R-07c/PORTEIRO-414.md`).
+  - **Quem rodou:** `porteiro-414-claude`, Claude Opus 5.5, nível menor. Ele substituiu o `porteiro-414-codex`, que parou
+    às 18:21Z no limite de uso do Codex. Ele reexecutou os comandos do caído e mediu a cauda (P3).
+  - **Contagens reexecutadas:** guard 31/31, vias 24/24, 07a 8/8, rotas de anexo 12/12, `-db` 6/6.
+  - **`npm test`:** 3288 testes; 6 falhas de ambiente do Windows, em 2 arquivos fora do bloco, que passam no CI. A conta fecha com
+    os 3298 do CI.
+  - **Ressalvas tratadas neste registro:** a ata e a reprovação apontam para `D-07CA-OPCAO-D`; a nota sobre o
+    `G-TRC-NLB` em `P-TRC-MODELOS-RASTREADOR`; a data do fechamento parcial do 07c-a; o índice de severidade
+    (`P-INDICE-SEVERIDADE-POR-SUBSTRING`); a limpeza do `w-pvpr`.
+  - **Ressalva que fica:** o disco tem 14 GB livres, então rodar o `DEEP_CLEAN` num dos próximos merges.
+  - **Gate:** com este parecer na `main`, a linha 6 do gate §8.0 do B-TRC-01 fica verde.
+- **Desvio do orquestrador, contra o §C2.8 (registrado, não escondido).** Às 18:15Z, o orquestrador lançou os devs do
+  `B-O6R-03a` e do `B-SAN3-06a-telas` junto com o porteiro do #414, antes do parecer.
+  - **Efeito:** nenhum. Os dois ramos só ganharam o relatório parcial do dev; nenhum código foi escrito antes de o Codex
+    parar.
+  - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
+    bloco que já estava no plano.
+
+## Registro de 11/10/2026 (noite) — B-O6R-03a: passo 0 da emenda v3 (conflitos de fonte, §A2)
+
+Este registro é do orquestrador, e a emenda v3 (`docs/revisoes/SAN3/B-O6R-03a-EMENDA-v3.md`, l.80) o exige antes do merge.
+A decisão do dono que o fundamenta é a `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, registrada acima.
+
+1. **`PLANO_SAN3.md:243` × a decisão do dono.** O critério "2 usuários com a mesma chave local → 2 lançamentos" é
+   SUBSTITUÍDO, no 03a, por "a mesma ação vale uma vez e pertence a quem a enviou primeiro; outro ator recebe conflito".
+   Vale a decisão do dono (§A1.1). O §6 do `CLAUDE.md` continua compatível: idempotência por organização + usuário +
+   `client_action_id`, com resolução manual dos conflitos.
+2. **Runbook A × o 03a.** O Runbook A (`docs/deployment.md:243-253`) define o rollback como redeploy simétrico da
+   imagem anterior, e a trava (c) do CD (`.github/workflows/deploy-production.yml:34-38,109-121`) segue a mesma lógica.
+   **Isso não vale através da fronteira do 03a.** O binário anterior, diante de um recibo com a chave nova, lança de
+   novo: o drill 3a do dev mediu a ida de 1 para 2 relatórios.
+   - **Até o `docs/deployment.md` ser emendado:** voltar para uma imagem anterior ao 03a só com a API parada, ou por
+     fix-forward. Publicar o 03a exige drenar e substituir todas as réplicas antes de reabrir o sync de despesas.
+   - **Dono:** `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`, que bloqueia a ativação em produção e não o desenvolvimento.
+3. **Quem implementou:** o dev do 03a rodou no Claude Opus 5.5 (`dev-03a-claude`), cobrindo o Codex, que estava no
+   limite. Ele retomou o relatório do dev do Codex (P3). O relatório registra um incidente do próprio dev: uma rodada de
+   mutação em paralelo contaminou dois arquivos. O incidente foi desfeito e conferido por sha256 (13/13; seção R11a do
+   relatório). A junta deve saber disso.
+
+## Registro de 12/10/2026 (noite) — padrão de painel com lista, executores e teto da API
+
+- **`D-PADRAO-BLOCOS-CLICAVEIS` (decisão do dono, 2026-10-12).** Nas palavras do dono: *"a ultima tela do biling foi
+  aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*.
+  - **Onde ficou escrito:** CLAUDE.md e AGENTS.md, §4 item 6; a referência é
+    `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`, indexada no `screen-refs/README.md` no lugar
+    de `financeiro.png`.
+  - **O padrão:** indicador e bloco de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e
+    removível; linha de uma linha só (até 44 px), sem botão de ação; o clique na linha abre o detalhe embaixo dela,
+    com as propriedades e as ações, um por vez.
+  - **Como a tela nasceu:** a especificação veio da API (`spec-financeiro`, US$ 1,77). O Gemini 3.8 Flash montou três
+    opções: A por abas, B pelo resultado do mês, C por OS. O dono pediu *"uma junção de a com b, com blocos clicaveis e
+    linhas menores com tamanho de 1 linha sendo essas linhas clicaveis abrindo os detalhes de cada linha"*. Um
+    verificador automático conferiu, no navegador:
+    - cada bloco abre a aba certa, com o filtro;
+    - as linhas têm até 44 px, sem ação dentro;
+    - o detalhe abre, fica um aberto por vez e o Enter fecha;
+    - não há rolagem lateral a 1440 nem a 1280 px.
+  - **Pergunta ao dono, aberta (§A2):** as telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (Dashboard, Ordens de
+    Serviço, Usuários, Auditoria, Pátios), cujas linhas levam a uma página de detalhe, migram para o padrão novo? Até a
+    resposta, ficam como estão.
+- **Executores (decisão do dono, 12/10 ~23:45Z):** *"o gemini pro foi gasto o seu limite, cancele a busca. vamos usar
+  agora, api claude, antgravity com gemini flash higt, codex sol 5.6"*.
+  - **Divisão de papéis em uso, proposta pelo orquestrador e ainda não confirmada pelo dono:**
+    - Codex GPT-5.6 Sol: cadeiras, inspetor, porteiro e dev de bloco de risco;
+    - Gemini 3.8 Flash: dev fora de gate e maquete, nunca jurado;
+    - API: plano, crítica e revisão. O agente tem o Opus 5.5 fixo no código, então o plano sai em Opus, com a
+      substituição do Fable declarada no próprio plano.
+  - **Medido em 12/10:**
+    - o limite semanal do Codex é da conta: às 23:3xZ o `gpt-6.1-sol` e o `gpt-6-sol` deram o mesmo "usage limit";
+    - à 00:0xZ de 13/10, o `gpt-5.6-sol` voltou a responder;
+    - o catálogo do Codex agora tem o `gpt-6.1-sol`; trocar o padrão para ele é pergunta ao dono.
+- **Teto da API (dono, 13/10 ~01:30Z):** *"a api claude hoje, nas proximas 1:30 hora tera um limite de 15 uss"*. O
+  agente não tem teto diário no código: o teto é a soma dos `-MaxUsd` das execuções lançadas na janela.
+
+## Registro de 13/10/2026 (madrugada) — provedor AWS e 3 opções por tela
+
+- **`D-INFRA-PROVIDER-AWS` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"o provedor é o aws, documente , memorize e difunda"*.
+  - **Substitui** a `D-INFRA-PROVIDER` (2026-07-13, junta J-SAN-4 5/5: Fly.io 1º, AWS 2º). Confirma como definitiva a direção que a `D-TRC-DECISOES-DO-DONO-2026-10-11` (D2 = a, ERP inteiro na AWS) já tinha dado.
+  - **Difundida em:** `PROJECT_MEMORY.md`, `docs/demo-credentials.md`, `PLANO_SAN3.md` §4.2 (linha "Provedor") e na nota da `P-TRC-AWS-ESTUDO-MIGRACAO`. Essa pendência passa de "se" para "como": custo, etapas e o destino dos `fly.*.toml`.
+  - **O que NÃO muda:** os `fly.*.toml` e o resto da config da Fly ficam inertes, e não são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção seguem exigindo a junta de 5 unânime (§C7.1). O `B-AV-REAL` usa o desenho AWS da PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`), e não o `fly.clamav.toml`.
+- **`D-TELAS-TRES-OPCOES` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em toda tela que sair pronta eu quero tres opções para aprovar"*.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md, §4 item 7, e um item novo na DoD do §10; nas skills `ts-frontend-full` e `ui-ux-pro-max` (`.claude/` e `.agents/`); e no `screen-refs/README.md`.
+  - **A regra:** toda tela nova ou refeita passa por uma maquete com 3 opções (A, B, C), no padrão do sistema, com um quadro de notas fora da tela. O dono escolhe, ou pede a mistura, e a escolhida vira a referência em `screen-refs/`.
+  - **Leitura do orquestrador, declarada (§A6):** as opções vêm ANTES do dev, e a tela pronta é conferida contra a escolhida. Se o dono quiser as opções também depois da tela pronta, isto se corrige numa linha.
+  - **Agora:** as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) ganham 3 opções cada, montadas pelo Gemini 3.8 Flash (maquete, fora de gate) e conferidas por verificador automático.
+- **Revisão do #428 (API, `aprovado_com_ressalvas`):**
+  - o §11 ganhou a exceção do Financeiro;
+  - o `README` do screen-refs diz que a referência usa fontes do Google;
+  - o paginador da maquete diz "1–12 de 12" desde a abertura;
+  - o merge espera o CI verde.
+
+## Registro de 13/10/2026 (manhã) — decisões da madrugada
+
+- **`D-API-V3-CONGELADA` (decisão do dono, 2026-10-13 ~04:07Z):** *"vamos congelar a v3"* e *"pare tudo na v3, congelar onde esta"*.
+  - **O que foi parado:** a C3 do 03a na API v3 (Opus 5.5 num container cercado). Ela não atendeu a tempo à pausa por arquivo (P7) e foi parada às 04:08Z com `docker stop`. A evidência dela passou ao Codex como roteiro de sucessão (P3).
+  - **O que fica guardado:** imagens, rede, lançador e provas (`erp-pausa-2026-10-03/PLANO-API-V3.md` e `PROVAS-API-V3.md`).
+  - **O que falta:** a E3, o ataque às cercas, não foi feita; a trava de segurança do Claude Code interrompeu duas vezes, e não se contorna.
+  - **Gasto da v3:** ~US$ 4,75.
+  - **Antes de congelar,** o dono tinha autorizado *"Create Unsafe Agents"* com cercas e ambiente isolado, e pedido *"coloque a api claude para cobrir o codex"*.
+- **`D-GEMINI-PRO-NIVEL-CODEX` (declaração do dono, 2026-10-13):** *"tome cuidado que so o gemini pro esta no mesmo nivel do codex, deixe o google pro configurado do mesmo modo do codex quando ele voltar"*.
+  - O Gemini 3.1 Pro fica no nível menor do §C7.6, igual ao GPT-5.6 Sol. **Leitura do orquestrador, declarada como tal (§A6):** o Gemini Flash fica abaixo, e por isso não ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Essa lista é derivação, não fala do dono, e se corrige numa linha.
+  - **Sem faturamento novo** (dono: *"nao posso ligar o faturamento, ja uso 3 ia paga aqui"*): o Pro só entra pela assinatura, no Antigravity. A chave gratuita da API do Gemini (`ERP_AGENTE_GEMINI_KEY`) serve só para o Flash.
+  - A linha do Gemini na tabela do §C7.6 (CLAUDE.md e AGENTS.md) entra no PRÓXIMO PR de governança, qualquer que seja, e não depende da v3. Até lá, vale esta entrada.
+- **Pedido do dono (2026-10-13):** a simulação navegável do app de campo, *"para assim quando partimos para o mobile eu ja ter um norte"*. Ficou pronta fora do repositório (`erp-pausa-2026-10-03/app-campo/`), com verificador e gabarito gerados do código.
+  - **Ressalva do orquestrador:** 3 itens do gabarito (`/approvals`, `/checklists`, `/inventory`) são rotas de tela, não endpoints.
+
+## Registro de 14/10/2026 — telas: 3 aparências por usuário
+
+- **`D-APARENCIA-POR-USUARIO` (decisão do dono, 2026-10-14).** Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+  - **A regra:** as 3 opções aprovadas de cada tela ficam TODAS. Cada usuário escolhe a aparência num modo em Configurações; a preferência é pessoal, não da organização. Atualiza o "a escolhida vai para `screen-refs/`" da `D-TELAS-TRES-OPCOES`.
+  - **Já aprovadas com as 3:** Pátios, Dashboard e Ordens de Serviço, nas maquetes do Claude (`screen-refs/{patios,dashboard,ordens-de-servico}-3opcoes.reference.html`). Em Pátios o dono aprovou antes a B (Analítica) "com ressalva", atendida: Mover · Liberar · Editar numa linha no cartão da vaga.
+  - **As demais telas** passam pelo mesmo ajuste (3 opções, todas aprovadas como aparências).
+  - **Só documentado por ora** (*"por enquanto so documente"*). A implementação é a `P-APARENCIA-POR-USUARIO`.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md §4 item 7 e DoD §10; skills `ts-frontend-full` e `ui-ux-pro-max` nos dois espelhos; README do `screen-refs`.
+- **`D-DESIGN-SO-CLAUDE` (decisão do dono, 2026-10-13).** *"nao use o gemini free para essas coisas, eu so confio no claude desing"*. Maquete, opção visual e trabalho de tela são feitos pelo Claude, nunca pelo Gemini. No mesmo pedido o dono mandou voltar à Pátios v1 (a do Gemini) para comparar, e depois pediu as versões do Claude, que foram as aprovadas.
+- **`D-TECNICO-LE-SO-ATRIBUIDAS` (decisão do dono, 2026-10-14).** *"o técnico de campo só deve ler as OS atribuídas a ele"*. Muda o comportamento deliberado do B-O6R-07a (`work_orders:read` da organização inteira). É mudança de permissão: bloco próprio com junta completa (`P-TECNICO-LE-SO-ATRIBUIDAS`).
+- **Ordem do Codex aprovada pelo dono (2026-10-14):** (1) junta do Traccar; (2) porteiro do 03a; (3) correções do Dashboard por perfil (Financeiro e Estoque sem tela inicial, "Nova OS" para quem não cria, fila crítica com OS finalizada); (4) B-SAN3-12a, a tela financeira; (5) próximos blocos do Traccar; (6) aparência por usuário, depois de planejada.
+- **`D-TELAS-SAEM-COM-TRES` (decisão do dono, 2026-10-14).** *"As telas aparti de agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só a preferida. Resolve a contradição que a revisão do #431 achou entre a DoD (as 3) e o §4 (só a preferida até o seletor): vale "as 3". O seletor (`P-APARENCIA-POR-USUARIO`) é pré-requisito da primeira tela que sair assim. Onde ficou escrita: CLAUDE.md e AGENTS.md §4 item 7 e DoD §10, as skills de frontend nos dois espelhos e o README do `screen-refs`.
+- **`D-GEMINI-SEGUNDO-REVISOR` (decisão do dono, 2026-10-14).** *"Gemini segundo revisor"*. Teste medido: o Gemini 3.8 Flash High revisou o #430 e o #431, e a API Claude avaliou o trabalho (US$ 1,32; `scripts/agente-claude-api/saidas/20261014-160603Z-avalia-gemini/`, não versionada). Notas 4/10 e 5/10: declarou conferidas coisas falsas (CI "100% verde" com o backend vermelho; linhas do compose), aprovou o #431 com conflito e não achou nenhum dos 3 erros do gabarito do #430; acertou 2 achados que ninguém tinha visto. **A regra:** o Gemini nunca é o revisor independente ÚNICO da §C7 item 8(1); ele entra só como segundo revisor, e o achado dele é conferido antes de valer.
+- **Codex pausado até o limite semanal renovar (ordem do dono, 2026-10-14):** *"Códex retorno após o limite semanal"*. A fila `fila-juntas-codex.ps1` (cadeiras a, b, c do Traccar, porteiro do 03a em esforço baixo, B-ARNES-2) volta quando o limite semanal renovar.
+- **Revisão do #431 (API Claude, `aprovado_com_ressalvas`), ajustes feitos no próprio PR:** a linha do Gemini no §C7.6 que a `D-GEMINI-PRO-NIVEL-CODEX` prometia ao próximo PR de governança entrou aqui, com a `D-GEMINI-SEGUNDO-REVISOR` no §C7 item 8(1); o item "A escolha" do §4 item 7 ficou marcado como superado; o checklist das skills passou a citar as 3 opções.
+- **`D-TECNICO-SO-VALORES-PROPRIOS` (decisão do dono, 2026-10-14, "vamos analisar").** *"o tecnico ver somente a prestação de contas, e sua comissao, vamos analisar. valores financeiro fora do das permissoes dele ele nao ver, por exemplo ele ver as peças aplicadas e os servicos da OS mas nao ver valores. os valores que ele pode ver sua prestação de contas e as comissoes."* O técnico de campo vê **valores** só da própria prestação de contas e das próprias comissões. Na OS, vê as peças aplicadas e os serviços, **sem valores** (hoje vê Financeiro e Orçamento da OS, só leitura). É restrição de PERMISSÃO no backend (a UI esconder não basta, `CLAUDE.md` §2.4) e entra na análise do bloco da `P-TECNICO-LE-SO-ATRIBUIDAS`, com junta completa.
+
+## Registro de 15/10/2026 — Usuários, Auditoria e os planos dos próximos blocos
+
+- **Usuários e Auditoria aprovadas com as 3 opções** (regra geral do dono, `D-APARENCIA-POR-USUARIO`): referências em `screen-refs/usuarios-3opcoes.reference.html` e `auditoria-3opcoes.reference.html`. As 5 telas padronizadas têm agora as 3 opções feitas pelo Claude. Pedido do dono para Usuários: *"tenha em mente que eu amo bi e analitics nas telas"* — BI nas três opções de toda tela.
+- **`D-AUDIT-RECORTE-POR-PERFIL` (decisão do dono, 2026-10-15).** *"sim, cada perfil tem as telas e suas trilhas"*. Cada perfil vê a trilha de auditoria das telas que usa (hoje o Gestor e o Suporte veem tudo e o Financeiro e o Estoque não veem nada; o recorte "scoped" do `RBAC_MATRIX.md:56` não existe no catálogo).
+- **`D-AUDIT-FORA-DO-HORARIO` (dono, 2026-10-15):** "fora do horário" = das 22h às 5h (*"o fora do horario esta ok"*).
+- **`D-AUDIT-ORIGEM` (dono, 2026-10-15, *"SIGO COM SUAS RECOMENDAÇÃO"*):** a Auditoria mostra a origem de cada evento (endereço de rede e navegador/aparelho), que hoje é gravada e não sai, só para o Administrador da organização e o Auditor. O dono registrou *"NÃO É dado pessoal"*. **Nota do orquestrador (§A6):** a LGPD costuma tratar o endereço de rede como dado pessoal; a finalidade de segurança sustenta mostrá-lo a quem investiga, e a restrição aos dois perfis vale de qualquer modo. Não muda a decisão.
+- **`D-AUDIT-EXPORTACAO` (dono, 2026-10-15, mesma frase):** exportar a trilha passa a ter permissão própria (separada de ver) e cada exportação vira um evento na própria trilha.
+- **`D-AUDIT-REGRAS-CRITICO` (dono, 2026-10-15):** *"as regras do critico é de suma importancia para segurança e deve entrar"*. Crítico = (1) exclusão ou cancelamento de algo financeiro; (2) evento sensível ou recusado entre 22h e 5h; (3) usuário desativado com sessão em uso; (4) alguém mudar o próprio perfil; (5) acessos negados seguidos do mesmo usuário; (6) alteração de valor em OS já fechada. Atenção = evento sensível em horário normal, ação recusada ou com erro, qualquer ação fora do horário. Rotina = o resto. **Leitura do orquestrador (§A6):** as regras 4 a 6 foram sugeridas pelo orquestrador e entram pelo "sigo com suas recomendações"; o limiar de "seguidos" na regra 5 fica para o plano propor e o dono aprovar. Tudo isso é regra de SEGURANÇA e roda no backend (a tela só mostra).
+- **Codex:** limite SEMANAL esgotado às 00:57Z de 15/10 ("try again at Oct 20th, 2026 3:22 AM", BRT = 20/10 06:22Z). Antes de parar, ele escreveu o plano do `B-DASH-PERFIL`; os de `B-USERS-ACESSO`, `B-TECNICO-ESCOPO` e `B-APARENCIA-USUARIO` foram feitos pela API Claude (US$ 4,10), por ordem do dono. Os 4 estão em `docs/revisoes/TELAS/`.
+
+## Registro de 15/10/2026 — as três perguntas do 07c respondidas, e o último P0
+
+- **Medição dos P0 (API Claude, 15/10, `origin/main` 9c7784b4, saída não versionada `scripts/agente-claude-api/saidas/20261015-020723Z-medir-p0/`):** 17 P0 (15 da auditoria + DIN-010 e DIN-011 achados pela junta do B-O6R-02), **16 fechados por PR mergeado, 0 abertos, 1 fechado em parte** (`Ω6R-SEC-002`: o 07c-a fechou as 10 vias conhecidas; 23 vias ficaram com o `B-O6R-07c-b`). P1: 15 (2 fechados, 2 em parte, 11 abertos). Gate do `PLANO_SAN3`: 9 blocos mergeados cobrem 18 dos 56 itens; 38 itens sem bloco mergeado; dos 6 atos do dono, 1 feito (o provedor). O `achados.jsonl` dava DIN-009, DAT-002 e DAT-003 como ativos; a correção vai no PR do KPI do marco de 14/10, junto com o painel, porque `tests/kpi-achados-paridade.test.ts` exige que os dois mudem juntos.
+- **`D1-07c` = (c) (decisão do dono, 2026-10-15).** *"quem pode alterar uma OS: c."* O despacho passa a gravar a atribuição: despachou, virou o técnico da OS. Um critério só para escrever na OS (editar, status, comentar, anexar, geocodificar, km, vistoria, evidência), coerente com `D-TECNICO-LE-SO-ATRIBUIDAS` (o técnico só lê as OS atribuídas a ele). Muda o fluxo de despacho. A pergunta sobre os membros da equipe da OS (`teamId`) segue aberta para o plano do 07c-b propor.
+- **`D2-07c` = (d), com a regra do dono (decisão do dono, 2026-10-15).** *"tratar como conflito: a alteração de um tecnico cujo o atendimento ja começou é uma coisa anomala, em geral não pode acontecer, alguem superior ao operacional que alocou tem que autorizar e validar o conflito."* O trabalho feito offline por quem ERA o técnico e sincronizado depois da troca vira CONFLITO, e quem resolve não é o operacional que alocou: é alguém acima dele, que autoriza e valida. **Leitura do orquestrador, declarada (§A6):** a frase também diz que trocar o técnico de uma OS com atendimento já iniciado é anomalia; o plano do 07c-b propõe se essa troca passa a exigir a mesma autorização superior (e qual perfil é "superior ao operacional": a matriz tem Gestor e Administrador da organização acima de Operador), e o dono confirma.
+- **`D3-07c` = não (decisão do dono, 2026-10-15).** *"D3-07c: não"*. O técnico de campo NÃO lança débito no extrato de um colega nem escolhe o valor ao registrar um dano. A `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` vira correção (dinheiro: junta completa).
+- **Efeito:** o `B-O6R-07c-b` (as 23 vias do último P0) fica DESBLOQUEADO; o plano dele (`docs/revisoes/SAN3/B-O6R-07c-plano.md`, 07c-b.2 e 07c-b.3) precisa de emenda com as três respostas antes do dev.
+- **`D-07CB-EMENDA-RECOMENDACOES` (decisão do dono, 2026-10-15).** *"sigo as recomendações"*, sobre as perguntas P1–P8 da emenda do 07c-b (`docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md`):
+  - **P1:** o "superior" é quem tem `work_orders:approve` (Gestor, Administrador da organização) e NÃO foi quem alocou, nem o técnico antigo, nem o novo; se o único Gestor alocou, decide o Administrador. A sub-pergunta "e se a empresa tiver uma pessoa só nessas funções?" segue ABERTA (`P-07CB-SUPERIOR-UNICO`).
+  - **P2:** trocar o técnico com atendimento iniciado exige essa autorização, em dois passos (pedido e aprovação), inclusive quando quem pede é o Gestor.
+  - **P3:** atendimento iniciado = a partir de `on_route` ("saiu para o atendimento"), no despacho ou na OS.
+  - **P4:** membros da equipe (`teamId`) NÃO escrevem no 07c-b; o ajudante entra por despacho próprio ou bloco futuro.
+  - **P5:** autorização NOMINAL de `prisma/**` e `migrations/**` para o `B-O6R-07c-b2` (fila durável de aprovações e conflitos). O 07c-b se divide em **b1** (o despacho grava a atribuição, as 23 vias com escopo, o servidor responde com conflito: fecha o `Ω6R-SEC-002`) e **b2** (a fila de conflito durável, a decisão do superior, a troca com autorização).
+  - **P6:** a migração de dados que preenche a atribuição dos despachos ativos de antes do 07c-b, idempotente, contando antes os casos em que o atribuído e o alvo divergem (autorização nominal de `migrations/**` para isso).
+  - **P7:** a D3-07c vira bloco à parte, `B-DANO-ALCADA` (dinheiro: junta completa), dono da pendência que já existia, `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`.
+  - **P8:** a emenda não tinha recomendação; **leitura do orquestrador (§A6):** ela segue para o crítico como está, e só volta ao modelo de topo se o crítico a derrubar (o mesmo gatilho de "topo em toda reprovação", `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). O dono pode mandar refazer em Fable quando quiser.
+
+
+## Registro de 15/10/2026 — ferramentas do loop de KPI
+
+- **`D-KPI-LOOP-FERRAMENTAS` (decisão do dono, 2026-10-15).** Depois do 1º teste do loop de KPI com o Gemini (PR #435), o dono mandou: *"faça Um script que acrescenta a entrada no histórico, para o Gemini não precisar ler os 496 KB"* e *"Eu confiro toda referência (commit, rodada de CI) com um comando antes do merge … passa a ser etapa fixa"*.
+  - `scripts/kpi-history-append.mjs`: acrescenta UMA entrada no `Kpis/kpis-history.json` e a linha na tabela do `Kpis/kpis-history.md`. Tudo o que é fato vem de comando (`gh pr view`: PR, merge, data em Brasília, head; o título: o bloco; o log da rodada `ci` de push do merge commit: os números; a última entrada + 1: os blocos). Quem chama só escreve a descrição. Recusa PR repetido, rodada vermelha e log sem contagem.
+  - `scripts/kpi-check-refs.mjs`: **etapa FIXA antes do merge de todo PR de KPI.** Confere cada commit, rodada de CI e PR das linhas acrescentadas (git local, e o GitHub para heads de ramo apagado). No #435 ele pegou, além das referências inventadas já corrigidas, um `approved_head` inexistente no #411 (`5cf7e2d5`; o real é `6e5351e3`).
+  - Testes: `tests/kpi-loop-ferramentas.test.ts` (9 casos: data em Brasília, bloco do título, contagens do log, recusa de rodada vermelha, JSON sem reformatar com CRLF, linha na última tabela, extração de referências sem confundir palavra com hash).
+  - **O loop de KPI com o Gemini vira regra diária (`D-KPI-LOOP-GEMINI`) só quando o dono aprovar** o resultado; até lá, é usado quando o dono pedir.
+- **`D-KPI-LOOP-GEMINI` (decisão do dono, 2026-10-15).** *"siga esse loop e me apresente os kpis, suba o server"* — depois de ver o resultado do 1º teste (#435) e as ferramentas (#436). O loop de KPI vira regra: **uma vez por dia ou quando o dono pedir**, o Gemini propõe só as descrições, o orquestrador grava os fatos por `scripts/kpi-history-append.mjs`, confere toda referência por `scripts/kpi-check-refs.mjs` (etapa fixa antes do merge), e o PR de marco passa por um revisor independente e CI verde. O Gemini não edita o painel. Escrito no §C7 item 8(5) do CLAUDE.md e do AGENTS.md. O painel é servido por `node scripts/kpi-serve.mjs 8899` (http://localhost:8899).
+
+## Registro de 16/10/2026 — decisões do dono da noite
+
+O dono pediu *"detalhe as minhas decisoes com recomendação e porque"*; o orquestrador listou oito decisões com recomendação e motivo, e o dono respondeu: ***"todas as decisões nas suas recomendações"***. Cada linha abaixo é a recomendação aprovada, inclusive os prazos e as consequências que ela já trazia ("o servidor vem junto com a AWS", "A nas demais até o dono escolher", "vários depósitos depois da versão vendável", "o próprio usuário troca a senha"). Os horários do Argon (limite às 12:59Z, volta ~23/10) foram medidos no log do `agy` (`RESOURCE_EXHAUSTED … Resets in 166h53m`).
+
+- **`D-TRC01-VEHICLE-ASSIGNED-AT` (autorização NOMINAL de migração).** Autorizada, no ciclo 2 do B-TRC-01 (PR #426), a migração aditiva `20260876000000_work_orders_vehicle_assigned_at`: coluna `work_orders.vehicle_assigned_at timestamptz NULL` + função/gatilho `SECURITY INVOKER`, rollback comentado, gravada só pelo banco, para que a posição vá ao técnico pela viatura que a OS tinha no instante do fix. **Opção (i):** linhas antigas ficam nulas e inelegíveis até a próxima atribuição/UPDATE da OS (falha fechada, igual ao `operator_assigned_at`). O histórico por períodos fica para o B-TRC-03. Origem do pedido: §2.4.6 do plano do ciclo 2 (auditoria e plano do modelo de topo).
+- **`D-07CB1-DEV-OPUS`.** O Gemini 4 Argon bateu o limite semanal às 12:59Z de 16/10 (volta ~23/10) com o dev do `B-O6R-07c-b1` pela metade e sem nenhum teste executado. O dev continua com um agente Claude Opus de identidade nova (nível menor, declarado), que mede o código herdado antes de confiar nele. **Medido depois, às ~23:55Z de 16/10:** o Argon (low, medium e high) respondeu a uma tarefa curta real (ler `CLAUDE.md` e contar as linhas) — o "Resets in 166h53m" do log não se confirmou. O 07c-b1 segue com o agente Opus (já em curso); o Argon volta a ser um braço disponível, uma tarefa paga por vez. Ressalva: tarefa curta que passa não prova tarefa longa (lição de 15/10).
+- **`D-CODEX-ORDEM-16-10`.** Ordem do Codex: T15 (`B-ARNES-2`) → ciclo 2 do Traccar → `B-DASH-PERFIL`.
+- **`D-USERS-ACESSO-RESPOSTAS` (P1–P6 do `B-USERS-ACESSO`):** P1 — autorizada a coluna aditiva `must_change_password` em `local_auth_credentials` (autorização nominal); P2 — senha provisória mostrada uma vez na tela, não link por e-mail; P3 — aceita a janela de até 15 min do token de acesso após desativar (as sessões são revogadas na hora); P4 — dois blocos (segurança com junta completa; tela com um revisor + CI); P5 — Técnico de Campo e Estoque entram no formulário; `viewer` só se for papel canônico da `RBAC_MATRIX.md` (conferir no código; se não for, fica fora); P6 ("a refação com 3 aparências espera o seletor?") — resposta recomendada e aprovada: *"Não. Os defeitos de acesso e segurança não dependem da aparência. A troca visual vem junto com o seletor."* **Conciliação declarada (§A2):** o "não" vale para os consertos de acesso e segurança; a troca visual da tela de Usuários chega junto com o seletor, o que é coerente com o "bloqueia" da `P-APARENCIA-POR-USUARIO`. **Reset por administrador de identidade com vínculo em 2 ou mais organizações: RECUSADO**, e o próprio usuário troca a senha (falha fechada contra tomada de conta entre organizações).
+- **`D-APARENCIA-RESPOSTAS` ((a)–(d) do `B-APARENCIA-USUARIO`):** (a) v1 guarda no navegador, por organização e usuário; o servidor vem depois, junto da AWS; (b) padrão B em Pátios, A nas demais até o dono escolher; (c) a escolha fica no menu do usuário, não em Configurações; (d) Pátios estreia junto com o seletor.
+- **`D-ESTOQUE-RESPOSTAS` (perguntas de `P-ESTOQUE-DEFEITOS-16-10`):** o Operador digita o custo unitário na entrada e não vê totais em dinheiro; o Gestor só lê o Estoque, como a `RBAC_MATRIX.md` (o catálogo que dá tudo é o defeito); o Técnico vê só o que está sob a guarda dele; vários depósitos ficam para depois da versão vendável.
+- **`D-07CB-SUPERIOR-UNICO` (responde `P-07CB-SUPERIOR-UNICO`):** na organização com uma pessoa só acima do operacional, a mesma pessoa autoriza, com justificativa obrigatória, e a ação fica marcada como Crítica na auditoria (`D-AUDIT-REGRAS-CRITICO`). Implementa o `B-O6R-07c-b2`.
+- **`D-CAMINHO-CRITICO-16-10`.** Ordem confirmada: Traccar → `B-O6R-07c-b1` → app de campo (#388, 03b, 04b) → teste de campo. O refino das telas segue em paralelo; a AWS vem depois do refino (decisão de 15/10).
+
+**Do mesmo dia, antes:**
+- **`D-GEMINI-ARGON-USO` (16/10, manhã).** O orquestrador relatou que o Gemini 4 Argon estava disponível no Antigravity e perguntou se o usava; o dono respondeu *"sim, use o argon"*. Ele foi usado como **dev** do `B-O6R-07c-b1`. **Leitura do orquestrador, declarada (§A6, §C7.6-bis):** o Argon foi tratado no nível menor do contrato, por analogia com a `D-GEMINI-PRO-NIVEL-CODEX`; o dono não declarou essa equivalência com estas palavras. Os limites da `D-GEMINI-SEGUNDO-REVISOR` (Gemini só como segundo revisor, nunca revisor único, e nunca no design) continuam valendo.
+- **`D-API-CLAUDE-SUSPENSA` (16/10, noite).** *"o uso da api claude esta suspenso, vc cobre a api claude no mesmo nivel, codex e argon so rodam uma tarefa paga por vez"*. Enquanto vigorar: nada roda com a chave da API; planos não-topo, críticas e revisões passam a agentes Claude da sessão em Opus (declarado). Sobre o Codex e o Argon, a regra é a frase do dono: *"so rodam uma tarefa paga por vez"*. **Leitura do orquestrador, declarada:** uma tarefa paga por vez em cada um deles, e os dois podem rodar ao mesmo tempo. Se o dono quis dizer uma tarefa por vez somando os dois, corrige-se nesta linha.

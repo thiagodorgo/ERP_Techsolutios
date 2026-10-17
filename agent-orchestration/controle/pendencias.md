@@ -2914,6 +2914,7 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - status: ABERTA — 1 P0 + 1 P1.
 - **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
+- **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -3424,6 +3425,9 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
 
 - **emenda (inventário SAN3, fatia B2, 2026-09-11):** o plano SAN3 (`docs/revisoes/SAN3/PLANO_SAN3.md`, §4.1 item 3, bloco `B-O6R-11`) a classifica como **BLOQUEIA** pelo critério 5 do dono ("nenhum risco **conhecido** de perda de dados"); o inventário Ω6R a dava como risco declarado. O conflito está registrado no plano (conflitos mantidos, §A2) e não foi consolidado em silêncio.
 - **dono:** `B-O6R-11` (plano SAN3, §4.1 item 3 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **Apenso 2026-10-10 (plano do `B-O6R-07c` v3, §R.4):** o despacho não grava a atribuição da OS
+  (`git grep -nF ".assign(" -- src/modules/field-dispatch` → 0); com o guard do 07a, o técnico despachado sem atribuição
+  não muda o status da OS. A resposta é a D1-07c (pergunta aberta ao dono em `decisoes.md`).
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -3867,6 +3871,9 @@ não entrega inteira.
 
 - **status:** ABERTA · **severidade:** ALTA · **dono:** a atribuir
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
+- **Apenso 2026-10-10 (plano do `B-O6R-07c` v3, §R.4; dono órfão em `PLANO_SAN3.md:400-401`):** não cabe no 07c
+  (superfície de identidade, fora do alcance do técnico: `/auth/identity-links*` responde 401 `jwt_required` na sonda);
+  ganha bloco próprio pós-gate, a nomear pelo estrategista.
 
 ## P-O6R-B01-LOGERROR-MORTO (2026-08-19) — **ALTA (observabilidade)** · a falha da fonte de candidatos é invisível
 
@@ -6756,7 +6763,8 @@ gestor moderando comentário ANTES de codar. **Consequências declaradas:** o ga
 continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
 fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
+- **status:** ABERTA — PARCIAL (2026-10-11, com o merge do PR #414, `86ea8a81`, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
+  o resíduo é do `B-O6R-07c-b`). Antes: ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
   `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
   `B-O6R-07c`.
 
@@ -6792,6 +6800,13 @@ do razão para que ninguém volte a ele.
 **executou** em vez de ler. O `07c` que repita o método, não a lista.
 
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** o `Ω6R-SEC-002` e o item 51 fecham por **escopo provado**, não por dono (junta do ciclo 2, C2c2-03; plano SAN3 v5, §4.1 item 11; condição de entrada CE-2 do `B-O6R-07c`, §5.6): o censo é gerado por script das rotas mutantes dos routers da fronteira e do sync mobile, cruzadas com as permissões do `field_technician`; **toda** rota mutante que o técnico alcança tem teste de 403 `not_assigned_to_actor` com vermelho-controle — inclusive as 5 de comentário e as 2 de geocode desta entrada; o piso "1, 2 e 10" deixa de ser critério de fechamento; um guard fica vermelho quando surge rota mutante alcançável pelo técnico sem teste de escopo.
+- **Apenso 2026-10-10 (`B-O6R-07c-a`, PR #414; texto do plano do `B-O6R-07c` v3, §R.4):** "Bloco dividido pelo orquestrador
+  em 2026-10-10. O 07c-a fecha por escopo provado as 10 vias desta entrada e cumpre o item vinculante (o censo do sync,
+  agora gerado pelo gerador v3, que conta toda camada que pode responder e todo tipo que o despachante aceita). Resíduo:
+  as 23 entradas `·07c-b` do instantâneo `tests/fixtures/o6r07c-classificacao-vias.json` (18 de vistoria, 4 de evidência
+  de OS, 1 de despacho), dono `B-O6R-07c-b`, bloqueado pelas decisões D1-07c e D2-07c do dono. Status: PARCIAL. O
+  `Ω6R-SEC-002` segue `parcialmente_superado`."
+
 ## P-AUTH-KDF-ROTACAO-V2 (registro 3/7, 2026-09-03) — rotação de KDF `v=2` é promessa sem mecanismo — **MÉDIA**
 
 **Dono nomeado: `B-AUTH-KDF-V2`** (bloco de auth a agendar pós-O6R). Consolida dois achados da
@@ -10669,7 +10684,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - teste de encerramento: o detector tokeniza SQL (ou usa `pg_query`) em vez de regex — ou o censo passa a ser provado por EXECUÇÃO: `BEGIN; …; ROLLBACK` com `pg_stat_xact_user_tables` (n_tup_ins/upd/del) = 0; as 3 formas em fixture ficam VERMELHAS.
 ## P-TRC-FORMA-QUATRO-OU-SETE (2026-10-10) — conflito §A2 entre a forma do Traccar na decisão do dono e a do plano — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D1 = C, sete blocos; prazo de referência 26–46 dias úteis; o plano ganha a v2.2). Antes: ABERTA · **escopo:** `dentro-do-plano` — `D-TRACCAR-HTTP-PRIVADO-AWS` (`decisoes.md:2275-2279`: quatro
   dias por assunto, "cada dia é bloco", Dia 1 = contrato e infraestrutura, sem ingestão) × `PLANO_TRACCAR.md` v2.1 (§7.2,
   "Decisões do dono", decisão 1) · **dono:** o dono do produto.
 - Três formas na mesa: A (a literal do dono), B (Q1–Q4 do planejador, Q1 = B-TRC-01 inteiro) e C (G-TRC-PD + sete
@@ -10681,7 +10696,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-AWS-FLY-PRAZO (2026-10-10) — escolha AWS × Fly, que o registro pôs antes do Dia 1 do Traccar — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D2 = a, ERP inteiro na AWS como direção; o estudo de custo e migração passa a `P-TRC-AWS-ESTUDO-MIGRACAO`, com prazo antes do B-TRC-06). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2306` ("por escrito, antes do Dia 1 do Traccar") ×
   plano v2, que levava a escolha para antes do B-TRC-06 sem registrar (achado A2-14) · **dono:** o dono do produto.
 - Opções: (a) ERP inteiro na AWS; (b) só o Traccar na AWS, ERP no Fly com ponte privada; (c) adiar a escolha para antes
   do B-TRC-06, com aceite escrito. Recomendação do planejador: (c), com (a) como direção.
@@ -10690,7 +10705,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-CONVIVENCIA-APP (2026-10-10) — app e Traccar disputam o mesmo "último ponto" do técnico — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D3 = dois pinos com camada — só a viatura por padrão; o celular do técnico pelo botão direito e pelo menu de visualização do mapa; requisito do B-TRC-04). Antes: ABERTA · **escopo:** `dentro-do-plano` — `decisoes.md:2295-2296` (convivência em aberto, o dono pediu o
   custo dos dois caminhos) × B-TRC-01, que grava a posição da viatura em `field_operator_locations` do técnico, com o
   latest escolhendo por `recorded_at` sem olhar a fonte (achado A2-13) · **dono:** o dono do produto.
 - Opções e custo estimado: (a) vence o mais recente, nenhum custo agora; (b) preferência por fonte, 1–2 dias no
@@ -10701,17 +10716,17 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-ATRIBUICAO-PRODUTO (2026-10-10) — o que a atribuição por despacho mostra e esconde no mapa — MÉDIA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
+- **status:** FECHADA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D4 = b — vínculo fixo viatura→técnico como padrão, o despacho aceito sobrepõe; fora do expediente, a viatura sem o nome do técnico; requisito do B-TRC-03/04). Antes: ABERTA · **escopo:** `dentro-do-plano` — regra do dono (`decisoes.md:2290-2292`) aplicada no B-TRC-01 (§4.2
   do plano): a viatura só aparece com despacho aceito pelo técnico atual; "atribuído → a caminho" sem aceite não mostra;
   reatribuído só volta com novo aceite; viatura sem técnico não aparece · **dono:** o dono do produto.
 - Recomendação do planejador: manter a regra estrita no B-TRC-01; decidir antes do B-TRC-04 se o plano pago de
   localização de veículos (`decisoes.md:2293-2294`) exige ver viatura sem técnico (modelo novo, bloco próprio).
 - **bloqueia:** o B-TRC-04 e a oferta comercial do rastreamento; não bloqueia o B-TRC-01.
 - **teste de encerramento:** `decisoes.md` registra a regra de exibição e o destino da viatura sem técnico.
-```markdown
+
 ## P-TRC-VINCULO-POSSE (2026-10-10) — quem vincula rastreador e como prova que é dono — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: D5 = a, só a plataforma vincula); falta o teste do B-TRC-03. Antes: ABERTA · **escopo:** `dentro-do-plano` (B-TRC-03) — instância única do Traccar para todas as
   organizações; o índice global garante um dono por vez, não o dono certo; o 23505 é oráculo de 1 bit; e validade
   retroativa entrega a B fix de quando o rastreador estava em A (achados A2-04 e A2-05 do crítico (r2), E-02c/E-02d) ·
   **dono:** o dono do produto (regra de posse) e o `agente-dba-guardiao` (a construção temporal).
@@ -10724,7 +10739,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-LGPD (2026-10-10) — posição da viatura como dado pessoal do técnico, guarda e acesso — ALTA
 
-- **status:** ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
+- **status:** ABERTA — DECIDIDA (2026-10-11, `D-TRC-DECISOES-DO-DONO-2026-10-11`: base por finalidade, aviso, 90/30 dias, despacho e gestão com trilha; fora do expediente sem nome); falta implementar o expurgo e o aviso, e validar com advogado antes da produção. Antes: ABERTA · **escopo:** `dentro-do-plano` — `FieldOperatorLocation.operator_user_id` (NOT NULL,
   `schema.prisma:1024`) recebe a posição da viatura sem o aviso e o consentimento do app; recibos (um por posição) e
   quarentena (número do rastreador) sem guarda definida; `device.name/phone/contact` chegam e são descartados (nota
   N2-05 e N2-08 da r2) · **dono:** o dono do produto.
@@ -10770,8 +10785,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **prova (N = 2 papéis · forma: execução):** `field_technician` (`catalog.ts:943`) e `technician` (`catalog.ts:608`) têm `damages:create`; no `POST /damages`, `responsible_operator_profile_id` + `responsible_amount` (`src/modules/damages/damage.service.ts:121-143`) levam a `applyResponsibleStatementEffect` (`:171-173`, corpo em `:496`), que lança o débito no extrato do profissional. Sonda `probe-damage.mts` (apêndice do crítico (r1)): `field_technician` cria dano num veículo com o perfil de um colega e `responsible_amount: 900` → 201; extrato do colega antes `currentBalance 0, count 0`, depois `currentBalance -900, totalDebits 900, count 1`.
 - **causa:** o efeito de dinheiro do dano (Ω4C PR-09) não tem alçada nem restrição de papel sobre QUEM é o responsável e QUANTO; o RBAC só pergunta se o ator pode criar dano.
 - **escopo:** `pre-existente` — `f7219abf`, 2026-07-22, PR #270; anterior ao B-O6R-07c e fora da fronteira dele. Nenhum registro anterior (`grep` por `responsible_operator_profile`, `damages:create`, `POST /damages` em `pendencias.md` e `docs/revisoes/O6R/achados.jsonl` → 0).
-- **dono:** a nomear pelo estrategista — bloco de **dinheiro** (junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), depois da decisão D3.
-- **bloqueia:** a decidir pelo dono (D3). Proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
+- **dono:** o bloco `B-DANO-ALCADA` (dinheiro: junta completa; modelos pela `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), nomeado em 2026-10-15 pela resposta P7 da emenda do 07c-b (`D-07CB-EMENDA-RECOMENDACOES`).
+- **D3-07c respondida pelo dono em 2026-10-15: NÃO** — o técnico de campo não lança débito no extrato de um colega nem escolhe o valor (`decisoes.md`). **bloqueia:** proposta do planejador: entra no gate da versão vendável (dinheiro lançado contra terceiro sem aprovação).
 - **teste de encerramento:** depende da D3. Se o campo não pode: papel de campo com `responsible_*` no `POST /damages` → 403 (ou o débito fica pendente de aprovação de quem tem alçada), extrato do colega inalterado, com vermelho-controle no head-base. Se pode com limite: acima do limite de `APPROVAL_LIMITS.md` → pendente de aprovação.
 ## P-BLOCO-GOV-GUARDA-POR-PROPRIEDADE (2026-10-10) — o bloco transversal que conserta os guards que reconhecem forma ainda não existe — MÉDIA
 
@@ -10806,3 +10821,292 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **efeito:** pela regra do plano (§0.7 [H3], §8), `npm_check` saiu da lista fechada do agente neste bloco; `verificar teste` (`node --test` sem `-db`) roda sem generate (`tests/auth-jwt.test.ts`: 6/6).
 - **bloqueia:** não.
 - **teste de encerramento:** uma forma, decidida pelo dono, de gerar o client do Prisma no worktree descartável sem `DATABASE_URL` real, e `npm_check` de volta à lista fechada com teste e mutação.
+
+## P-TRC-AWS-ESTUDO-MIGRACAO (2026-10-11) — estudo de custo e de migração do ERP inteiro para a AWS (D2 = a) — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-plano` do Traccar — `D-TRC-DECISOES-DO-DONO-2026-10-11` item 2 · **dono:** o orquestrador (estudo de custo pelo agente da API com pesquisa; tamanho da migração medido por um Codex).
+- **bloqueia:** o B-TRC-06 (staging na AWS). Não bloqueia do B-TRC-01 ao 05.
+- **teste de encerramento:** o estudo (custo mensal estimado ERP + Traccar na AWS × hoje; tamanho e etapas da migração; riscos) registrado e a decisão do dono sobre contratar, antes do B-TRC-06.
+- **nota (2026-10-13, `D-INFRA-PROVIDER-AWS`):** o dono fixou a AWS como provedor: *"o provedor é o aws"*. O estudo deixa de responder SE e passa a responder COMO: custo, tamanho e etapas da migração, e o destino dos `fly.*.toml`, que ficam inertes e NÃO são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção continuam exigindo a junta de 5 unânime (§C7.1).
+- **estudo entregue (2026-10-13):** `docs/infra/estudo-aws-migracao.md` — custo estimado ~US$ 255–320/mês (produção, sa-east-1), etapas em 7 blocos e as decisões do dono (conta, NAT, banco do Traccar, teto do orçamento). Fica ABERTA até o dono decidir a conta e o teto.
+
+## P-TRC-PLANO-V22 (2026-10-11) — o plano do Traccar precisa da v2.2 com as decisões do dono de 11/10 — MÉDIA
+
+- **status:** FECHADA (2026-10-11): a v2.2 (`17f11f2f`) e a v2.3 (`f6f41e15`) estão no ramo `docs/plano-traccar`; as respostas do dono estão em `D-TRC-ARQUITETURA-2026-10-11`, e a aprovação da PD em `D-TRC-PD-APROVADA-2026-10-11`. Antes: ABERTA · **escopo:** `dentro-do-plano` — `D-TRC-DECISOES-DO-DONO-2026-10-11` · **dono:** o planejador do Traccar.
+- A v2.2 incorpora: D3 (dois pinos com camada e menu de visualização), D4 = b (vínculo fixo + despacho aceito sobrepõe; regra de fora do expediente), D5 = a, D6 (bases por finalidade, prazos, expurgo), o gate §8.0 linha 4 com a aprovação escrita do dono à PD e o prazo de 26–46 dias.
+- **bloqueia:** o início do B-TRC-01.
+- **teste de encerramento:** o plano v2.2 no ramo `docs/plano-traccar`, com as seções afetadas mudadas e o gate atualizado.
+
+## P-OWNER-PORTAL-POW-TESTE-PROBABILISTICO (2026-10-10) — o teste de PoW falha 1 vez em 256 por sorte — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — `tests/owner-portal.test.ts` l.228-248: o caso `wrong_solution` usa a string fixa "definitely-not-a-solution" contra desafio com sal aleatório e dificuldade 2 (2 nibbles hex zero no sha256; `proof-of-work.ts:89-99`); medido no CI: run `push` de `7213ac50` do PR #417, `not ok 2071`, expected false / actual true · **dono:** `B-ARNES-2` (plano em `fix/arnes-2-testes-instaveis`).
+- **bloqueia:** não; custa re-execução de CI.
+- **teste de encerramento:** sal fixo no teste ou solução comprovadamente inválida para o sal emitido; 1000 execuções sem falha.
+
+## P-AGENTE-API-ANINHAMENTO-PROFUNDO (2026-10-10) — entrada de ferramenta aninhada além de ~600 níveis encerra a revisão inconclusiva — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do #418 (nota G1 do revisor) — sem `strict`, entrada aninhada a partir de ~600 níveis encerra com exit 5 e parecer inconclusivo; a falha é FECHADA, sem dano nem execução · **dono:** o próximo bloco do agente da API.
+- **bloqueia:** não.
+- **teste de encerramento:** limite de profundidade validado antes do parse, com teste.
+
+## P-EXPENSE-REST-SEM-IDEMPOTENCIA (2026-10-11) — as rotas REST de despesa duplicam relatório e item numa repetição HTTP — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — confirmada pela investigação do agente da API (`scripts/agente-claude-api/saidas/20261011-141636Z-inv-rest-idem`, US$ 0,79): POST /expense-reports (`expense-management.routes.ts:67`, `controller.ts:42`, `service.ts:85`) e as rotas de item e submissão não têm chave de idempotência, índice único natural nem middleware; dois POSTs iguais duplicam. O que duplica são valores DECLARADOS (rascunho, total recalculado): não há rota de aprovação nem de pagamento e nenhum outro módulo consome `expense_report`, então nenhum dinheiro sai hoje. Fora do escopo do `B-O6R-03a` (sync mobile) · **dono:** bloco de despesas pós-03a.
+- Sobe um grau de severidade quando existir aprovação ou pagamento de despesa.
+- **bloqueia:** não hoje.
+- **teste de encerramento:** `Idempotency-Key` (ou `client_action_id`) nas rotas que gravam, com teste de dois POSTs iguais = 1 linha.
+
+## P-TRC-MODELOS-RASTREADOR (2026-10-11) — os modelos de rastreador da operação (F-9) — FECHADA
+
+- **status:** FECHADA (2026-10-11, `D-TRC-MODELOS-CANTRACK`). O teste de encerramento está cumprido:
+  - os modelos estão registrados em `controle/`: Cantrack G500LS (OBD) e J16-G900L, um de cada;
+  - os dois aparelhos GT06 estão em mãos, e o dono confirma: *"os gps sao todos gt06"*.
+  - O que ainda se confere é escopo do **B-TRC-03a**, com os aparelhos reais: a variante GT06 (V3/V4), a porta, o intervalo duplo nativo (parado e em movimento), os comandos de intervalo e o chip (APN privada ou VPN). Antes: ABERTA, aberta em 2026-10-11 pela F-9 da emenda v2.3.
+- **bloqueia:** nada mais. Os itens acima são entregas do B-TRC-03a, não condição de início dele.
+- **nota (2026-10-11, ressalva do porteiro do #414):** este fechamento foi escrito no lugar, e a versão anterior dizia "bloqueia o B-TRC-03a e o `G-TRC-NLB`". O que o `G-TRC-NLB` exige vem da pergunta F-9 da emenda v2.3: "G-TRC-NLB: modelo, porta e se há APN/VPN" (plano §9.1, l.1669-1671). O modelo está respondido. A porta e o APN/VPN continuam pendentes e saem das medições do B-TRC-03a com os aparelhos.
+  **[leitura do orquestrador]** O `G-TRC-NLB` segue dependendo dessas medições. Só a lista de modelos, que era o objeto desta pendência, está fechada.
+
+## P-TRC-PORTA-WEB-8080-8082 (2026-10-11) — divergência de porta da web do Traccar no overlay de dev — FECHADA, NÃO PROCEDE
+
+- **status:** FECHADA (2026-10-11, no mesmo PR que a abriu, o #421): **premissa falsa**. A linha 885 do plano v2.1 não é a web do Traccar. É o serviço `web` do próprio ERP: o frontend, que expõe a 8080 (`frontend/Dockerfile:23`). O dono abre o mapa operacional por ele (linha 1215 do plano). O serviço `traccar` (linha 882) fica **sem `ports`**. Quem achou foi o revisor do #421, o agente da API (`saidas/20261011-162412Z-rev-421`, achado 1), e o orquestrador conferiu nas linhas 878–887 e 1213–1216. O erro nasceu no achado 8 da emenda v2.3 e foi copiado para esta pendência sem conferência.
+- **o que fica:** a porta interna da web/REST do Traccar (8082 por padrão) importa só para os grupos de segurança do achado A-1 da v2.3 (B-TRC-06). **Não mudar a porta do frontend.**
+
+## P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de forma permanente fica presa no aparelho, sem saída — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — o teto de reenvio e a falta de saída antecedem o 07c: a ação recusada fica `failed`, é reenviada no máximo 5 vezes (`sync_replay_service.dart:136,150,666,1367`; `evidence_sync.dart:297`) e depois fica presa no aparelho; só conflito zera o contador (`sync_conflict_resolver.dart:20-27`). Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** `B-SAN3-16`.
+- Sobe um grau de severidade se a resposta do dono à D2-07c for "recusar".
+- **bloqueia:** não o 07c-a; pesa no 07c-b conforme a D2-07c.
+- **teste de encerramento:** ação recusada de forma permanente aparece ao usuário com uma saída (descartar com aviso ou encaminhar), e nenhuma ação fica invisível na fila.
+
+## P-O6R-07C-VINCULO-A-OS-ALHEIA-POR-REFERENCIA (2026-10-10) — 10 vias aceitam `work_order_id` no corpo sem passar pelo escopo da OS — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` — classe R do censo do plano do `B-O6R-07c` v3 (§R.4): `POST /damages`, `POST`/`PATCH /fuel-logs`, `POST`/`PATCH /expense-reports`, `POST /expense-reports/:reportId/items`, 3 ações `expense_*` do sync e `POST /mobile/telemetry` aceitam `work_order_id` no corpo sem passar pelo escopo da OS; a OS não muda nem os exibe · **dono:** fila pós-gate.
+- O efeito em dinheiro do `POST /damages` está na `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`, não aqui.
+- **bloqueia:** não.
+- **teste de encerramento:** cada uma das 10 vias recusa `work_order_id` de OS fora do escopo do ator (ou o vínculo passa a passar pelo escopo da OS), com um teste por via.
+
+## P-O6R-07C-FLEET-ALERTS-RUN-PELO-CAMPO (2026-10-10) — o técnico de campo dispara a varredura de alertas de frota da organização inteira — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`f47062ba`, 2026-07-09, #152) — `POST /notifications/fleet-alerts/run` responde 200 ao `field_technician` e ao `technician` e dispara a varredura da organização inteira com distribuição a destinatários (`notification.controller.ts:76-99`), sob `notifications:update`, que o `RBAC_MATRIX.md:86` diz ser da própria caixa. Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** fila pós-gate.
+- **bloqueia:** não.
+- **teste de encerramento:** a rota deixa de responder 200 ao técnico de campo, ou a matriz passa a autorizar isso por decisão escrita; com teste.
+
+## P-O6R-07CA-DB-FORA-DA-LISTA-CI (2026-10-10) — a suíte `tests/o6r07c-subresource-scope-db.test.ts` não roda no job `backend-postgres` do CI — MÉDIA
+
+- **status:** FECHADA — NÃO PROCEDE (2026-10-11): a C3 da junta do ciclo 1 mediu no log que a suíte `-db` roda no job `backend`, com 6 testes executados nos dois runs (`J-B-O6R-07c-a-ciclo1.md`, ajuste da C3). Antes: ABERTA · **escopo:** `pre-existente` quanto ao mecanismo — a lista do job `backend-postgres` é curada à mão em `.github/workflows/ci.yml`, escopo proibido do bloco; no job `backend` a suíte se declara pulada. Origem: proposta do dev do 07c-a (`docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md`, S4) · **dono:** o próximo bloco que tocar `ci.yml`.
+- **bloqueia:** não; a junta roda a suíte em cluster próprio.
+- **teste de encerramento:** o log do job `backend-postgres` mostra a suíte executada (ou a lista do job passa a ser gerada por padrão de nome, não curada).
+
+## P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL (2026-10-10) — sub-app `express()` montado dentro de `Router` não é descido pelo censo v3 do 07c-a — MÉDIA
+
+- **status:** ABERTA — ABSORVIDA (2026-10-11, `D-07CA-OPCAO-D`): passa a ser instância de `P-GOV-GUARDA-POR-PROPRIEDADE`, com dono `B-GOV-GUARDA-POR-PROPRIEDADE`. Não bloqueia mais o 07c-a. Antes: ABERTA · **escopo:** `dentro-do-bloco` (o censo v3 nasceu no 07c-a) — medido pelo dev por mutação (S7, MG3b): um `express()` com `POST /work-orders/:workOrderId/via-mg3` montado por `router.use(sub)` entra no instantâneo como `MIDDLEWARE … · app`, o walk não desce nele e o guard fica verde (`# tests 31 · pass 31 · fail 0`). A única barreira hoje é a revisão humana do diff do instantâneo. Origem: proposta do dev do 07c-a (`docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md`, S7) · **dono:** a decidir pela junta do 07c-a (proposta do orquestrador: `B-GOV-GUARDA-POR-PROPRIEDADE`).
+- **bloqueia:** nada mais. Foi absorvida por `P-GOV-GUARDA-POR-PROPRIEDADE` em 2026-10-11. Antes: quem decidia era a cadeira C2 da junta do 07c-a.
+- **teste de encerramento:** a forma MG3b deixa o guard vermelho.
+
+## P-GOV-GUARDA-POR-PROPRIEDADE (2026-10-11) — o vigia do censo de rotas do 07c-a reconhece a forma da rota, não a propriedade — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do 07c-a, transferido pelo dono (`D-07CA-OPCAO-D`) · **dono:** o bloco `B-GOV-GUARDA-POR-PROPRIEDADE`.
+- **A falha:** o guard `tests/o6r07c-census-guard.test.ts` fica verde quando uma rota nova dá ao papel de campo acesso a subrecurso de OS alheia, desde que a rota esteja escrita numa forma que o extrator não lista.
+- **Instâncias medidas na junta do ciclo 1 (C2):**
+  - A1: `Map.get(action.type)` ou o operador `in`;
+  - A2: curinga casado por arquivo e texto, sem a linha;
+  - A3: sub-app `express()` montado por `router.use(sub)` (`P-O6R-07CA-SUBAPP-EM-ROUTER-INVISIVEL`);
+  - A4 (ajuste): pertença decidida pelo prefixo do nome.
+- **Formas que ainda escapariam do plano do ciclo 2:** a pré-crítica da API (`B-O6R-07c-a-ciclo2-PRECRITICA-api.md`) achou mais 6.
+- **Insumos:** a auditoria e o plano do ciclo 2 (`B-O6R-07c-a-ciclo2-auditoria-e-plano.md`, `bd504cc4`) e a pré-crítica (`6a4ab8b9`).
+- **bloqueia:** nada hoje, por decisão do dono. Risco aceito: até o fechamento, uma rota NOVA pode escapar do aviso do teste.
+- **teste de encerramento:** o guard enuncia a propriedade ("todo despacho alcançável pelo papel de campo passa pela checagem de escopo por objeto") e não uma lista de formas. Cada instância deixa o guard vermelho por mutação: A1–A3, as 6 da pré-crítica e a A4, com a pertença decidida pela propriedade, não pelo prefixo do nome do tipo. Uma forma NOVA, escrita por quem não fez o guard, também deixa.
+
+## P-LOGISTICS-MOCK (2026-10-11) — a tela `/logistics` serve dado inventado sempre, mesmo fora do modo mock — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achado do levantamento das telas do agente da API em 2026-10-11; fora da fronteira do `B-SAN3-06a`) · **dono:** o orquestrador nomeia o bloco depois do `B-SAN3-06a`.
+- **Decisão do dono:** *"/logistics ligar depois"* (`D-TELAS-SAN3-06a`). A tela está fora do menu lateral (`appSidebarNav.ts`), mas a entrada "Painel Logistico" ainda existe no registro `frontend/src/navigation/tenantNavigation.ts` (l.62-72).
+- **bloqueia:** nada hoje. Conta para a meta "telas sem placeholder, funcional".
+- **teste de encerramento:** a tela mostra dado real do servidor e um estado vazio honesto, e o teste prova que nenhum dado constante aparece fora do modo mock. Alternativa: a rota sai.
+
+## P-INDICE-SEVERIDADE-POR-SUBSTRING (2026-10-11) — o gerador do índice tira a severidade de palavra solta no corpo da entrada — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`agent-orchestration/controle/gerar-indice-pendencias.py`, função `severidade()`, l.60-80; achado do porteiro do #414 e da revisão do #423) · **dono:** o próximo bloco de registro que mexer no gerador.
+- **O defeito:** `severidade()` procura as palavras de severidade no CORPO inteiro da entrada, na ordem da mais grave para a mais leve, e o `` da regex casa a palavra dentro de um termo hifenizado.
+- **O caso medido:** `P-GOV-GUARDA-POR-PROPRIEDADE` declara no cabeçalho o segundo grau da escala, mas o índice a mostra no primeiro. O corpo dela (l.10911 e 10914) cita a revisão prévia da API, cujo nome contém a palavra.
+- Esta entrada evita a palavra de propósito, para não cair no próprio defeito.
+- **bloqueia:** não. Se divergir, vale o `pendencias.md`, como diz o cabeçalho do índice.
+- **teste de encerramento:** a severidade vem do sufixo `— <SEVERIDADE>` do cabeçalho. Um caso de teste com o termo hifenizado no corpo e `— BAIXA` no cabeçalho dá BAIXA.
+
+## P-O6R-B03-UUID-PATTERN-INVALIDO (2026-10-11) — a regex de UUID do módulo de despesa recusava todo UUID canônico — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11; PR e head a preencher pelo orquestrador ao versionar) · **escopo:** `pre-existente` (a regex com o último grupo de 13 caracteres sem hífen já estava em `94002580`) · **dono:** `B-O6R-03a`.
+- **A falha:** `expense-management.validators.ts:10` exigia `…-[89ab][0-9a-f]{12}`: item e submit pelo sync e `workOrderId` no REST saíam `400 invalid_uuid` para qualquer UUID 8-4-4-4-12 (vermelho-controle do dev, VC3).
+- **teste de encerramento:** A7/B3 (item e submit com `reportId` canônico processam e fazem replay), A7b (work order), com a mutação `m9a` (regex antiga) vermelha.
+
+## P-O6R-B03-EVENTO-DE-ITEM-VIOLA-FK (2026-10-11) — o evento de sync do item apontava o ITEM, mas a FK do evento é para o relatório — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `pre-existente` (`94002580`) · **dono:** `B-O6R-03a`.
+- **teste de encerramento:** A7 (os três eventos de prova apontam o relatório; zero P2003) e a mutação `m9b` (agregado = item) vermelha em A7 e B3.
+
+## P-O6R-B03-COMPATIBILIDADE-LEGADA (2026-10-11) — recibo gravado pela versão anterior (chave crua, sem prova do payload) não pode produzir efeito novo — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `dentro-do-bloco` (A-01 da crítica r1) · **dono:** `B-O6R-03a`.
+- **Como fecha:** a leitura da chave crua é SEMPRE feita, em toda forma de id; legado do próprio ator → `conflict legacy_payload_unverifiable` (ou `payload_mismatch` se o tipo diverge), sem escrita; legado de outro ator → `conflict action_owned_by_other_actor`; a chave nova (K2t, prefixo de 161 caracteres) é disjunta de todo id legado.
+- **teste de encerramento:** A11 nas 4 formas (UUID v4, `local:42`, 160 sem `:`, `<uuid>:x`), A11b′, A11c, A11d, B6, C7, C8; mutações M11, M11′, M11″, M12, M13 e M16 vermelhas.
+
+## P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode autenticar o replay de outro — ALTA
+
+- **status:** FECHADA NA AUTORIA do `B-O6R-03a` (2026-10-11) · **escopo:** `dentro-do-bloco` (A-02 da r1; A-04/A-06 da r2) · **dono:** `B-O6R-03a`.
+- **Como fecha:** o fingerprint v2 tem o ator, a busca da prova exige o ator no predicado, e — pela v3 + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A` — a ação pertence a quem a enviou primeiro: outro ator recebe conflito antes de qualquer prova.
+- **teste de encerramento:** A3′, A3c, A12′, A12b, B1′, B7′, C3, C9; mutações M10 (combinada e isolada), C3-mut, M15, M17 e M17+M10c vermelhas.
+
+## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-O6R-03b`.
+- **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
+- **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
+- **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
+
+## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
+
+- **status:** ABERTA · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`.
+- **O que consumir:** `status: conflict` por ação com `errorCode` `payload_mismatch` · `legacy_payload_unverifiable` · `receipt_unverifiable` · `receipt_ambiguous` · `action_owned_by_other_actor`; e `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro. Legado sem prova exige resolução manual, nunca troca de id para lançar de novo.
+- **Inclui a nota N-03 da r2:** hoje o conflito volta à fila em todo ciclo (`pendingForTenant` inclui `conflict`, o `retryCount` não sobe) e o controller grava uma auditoria "success" por lote.
+- **teste de encerramento:** o Flutter preserva a ação em conflito para resolução manual, diferencia 503 e não perde a intenção; o laço sem fim deixa de existir.
+
+## P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_receipt.attach`, que o servidor recusa — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`.
+- **teste de encerramento:** o app não enfileira tipo recusado (ou o servidor passa a suportá-lo por contrato), e o lote drena.
+
+## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (a duplicação NASCE no `B-O6R-03a`: `expense-sync.ts`, `TRANSIENT_SYNC_DB_CODES` e `syncDatabaseErrorCodes`; a lista de referência é pré-existente em `inventory-prisma.repository.ts`) · **dono:** `B-ARNES-2` (a confirmar na ata da junta).
+- **teste de encerramento:** um helper compartilhado, em bloco próprio, usado pelos dois módulos.
+
+## P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO (2026-10-11) — publicar o 03a exige tirar de cena todo escritor da versão anterior — ALTA
+
+- **status:** ABERTA · **escopo:** operação de publicação · **dono:** o orquestrador de publicação.
+- **Por quê (medido):** o binário anterior, diante de um recibo K2t, lança de novo (drill 3a do dev: relatórios 1 → 2).
+- **O que exige:** drenar e substituir todas as réplicas antes de reabrir o sync de despesas; rollback só com a API parada ou fix-forward (emenda v3, A-07). A prova de "rota inacessível no binário antigo" saiu do dev pela v3 e vem para cá. O conflito com o Runbook A (`docs/deployment.md:243-255`, rollback simétrico N-1 com tráfego) e com a trava (c) do CD (`deploy-production.yml`) é registrado pelo orquestrador (passo 0 da v3).
+- **bloqueia:** a ativação da versão em produção; não o desenvolvimento.
+- **teste de encerramento:** evidência de drenagem, substituição de todas as réplicas, drill de replay e rollback seguro.
+
+## P-O6R-03A-ENUM-SEM-DENUNCIA (2026-10-14) — tipo novo no enum do sync de despesa não é denunciado pelo build nem pelo teste — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (ajuste C2-AJ-01 da junta do B-O6R-03a, ata `omega/juntas/J-B-O6R-03a-ciclo1.md`) · **dono:** o próximo bloco que tocar `EXPENSE_SYNC_ACTION_TYPES` (o 03b)
+- **O achado:** incluir `expense_report.delete` em `EXPENSE_SYNC_ACTION_TYPES` deixou `npm run check`, T-A 24/24 e T-B/C 23/23 verdes. O runtime recusa `400/unsupported_action` e o instantâneo fica idêntico: a falha é fechada na operação, mas a expansão do enum passa calada pelo build e pelos testes.
+- **bloqueia:** nada (sem autorização indevida, escrita, efeito financeiro nem perda de dado; a cadeira não vetou).
+- **teste de encerramento:** a mutação NEWTYPE (um tipo novo no enum sem tratador) deixa um teste ou o build vermelho, nomeando o tipo.
+
+## P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário — MÉDIA
+
+- **respondida pelo dono (16/10):** (a)–(d) em `D-APARENCIA-RESPOSTAS` — navegador na v1, B em Pátios e A nas demais, escolha no menu do usuário, Pátios estreia junto. **A resposta (c) substitui o "em Configurações" do "O que falta" e do "teste de encerramento" abaixo: a escolha fica no menu do usuário.**
+- **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
+- **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
+- **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
+- **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
+
+## P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao montar as maquetes de Dashboard e Ordens de Serviço — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (medido na `main` 684e9afd pelos agentes de maquete; nenhum bloco o criou) · **dono:** o orquestrador (distribuir em blocos)
+- **Dashboard:**
+  - Financeiro e Estoque não têm `dashboard:read`, mas depois de escolher a organização todos vão para `/dashboard` (`ContextSelectionPage.tsx:44`): a primeira tela deles é "Acesso não permitido".
+  - "Nova OS" aparece para todos os perfis (`DashboardPage.tsx:365`); o clique no cartão leva a `/work-orders` sem filtro (`DashboardPage.tsx:419`), e o detalhe do indicador (`buildDashboardKpiDetail`) está sem uso desde o #331; o Suporte cai no bloqueio ao clicar num cartão.
+  - A fila de urgentes do painel inclui OS de prioridade elevada já concluída ou cancelada (`dashboard-prisma.repository.ts:79-82`, `dashboard.repository.ts:85-95`).
+- **Ordens de Serviço:**
+  - "Vincular cliente" leva ao detalhe, mas o detalhe não tem onde editar o vínculo.
+  - A criação de OS tem texto sem acento ("Titulo", "Descricao", "Ordens de Servico").
+  - "← Voltar às ordens" não funciona pelo teclado.
+  - O selo "Aguardando decisão" aparece em OS sem aprovação.
+- **Falta no backend (para as telas aprovadas):** nome do técnico na lista e no detalhe (`P-WO-LIST-TECH-NAME`); rota do resumo agregado de OS (`WorkOrdersSummary`, `work-orders.types.ts:279`, sem rota); filtro "atrasadas" e de várias situações na listagem (`work-order.service.ts:403-411`); contagem "sem técnico" e recorte por perfil no agregado do dashboard; código da OS e acento nos eventos recentes; nome do operador no despacho; miniatura de foto do anexo; horários de atribuição, aceite e saída na OS.
+- **Respondida pelo dono em 2026-10-14 (`D-TECNICO-LE-SO-ATRIBUIDAS`), ver `P-TECNICO-LE-SO-ATRIBUIDAS`:** *"o técnico de campo só deve ler as OS atribuídas a ele"*. A pergunta era: o técnico de campo deve LER só as OS atribuídas a ele? Hoje lê todas da organização e só altera as dele — de propósito (`work-order.service.ts`, B-O6R-07a: `work_orders:read` é da organização inteira e a lista do app depende disso). Mudar é bloco de permissão com junta de segurança. E sobre valores, respondido pelo dono em 2026-10-14 (`D-TECNICO-SO-VALORES-PROPRIOS`): o técnico vê só a própria prestação de contas e as próprias comissões; na OS vê peças e serviços sem valores.
+- **bloqueia:** nada hoje. Os itens de perfil do Dashboard contam para a meta "telas funcionais".
+- **teste de encerramento:** cada item vira teste no bloco que o fechar (perfil × tela inicial; "Nova OS" só para quem cria; fila de urgentes sem OS finalizada).
+
+## P-TECNICO-LE-SO-ATRIBUIDAS (2026-10-14) — o técnico de campo ainda lê todas as OS da organização — ALTA
+
+- **status:** ABERTA · **escopo:** novo (decisão do dono `D-TECNICO-LE-SO-ATRIBUIDAS`; hoje o comportamento é de propósito, B-O6R-07a) · **dono:** bloco de permissão a planejar (junta completa: permissão, unanimidade de 3)
+- **Hoje:** `work_orders:read` vale para a organização inteira; o técnico só tem a ALTERAÇÃO limitada às OS atribuídas a ele (`work-order.service.ts`, comentário do B-O6R-07a: "a lista do app depende disso").
+- **O que o dono decidiu:** o técnico de campo só LÊ as OS atribuídas a ele — na lista, no detalhe e nos subrecursos.
+- **O que o bloco precisa cobrir:** a listagem e o detalhe do backend recortados por atribuição para os papéis de campo (403 ou 404 conforme o contrato do 07a para OS da mesma organização não atribuída); o app de campo (lista, sync e cache local) sem depender de ler OS alheia; o web; o que acontece com a OS que é desatribuída enquanto está no cache do celular; e os VALORES que o técnico vê (respondido pelo dono em 2026-10-14, `D-TECNICO-SO-VALORES-PROPRIOS`: na OS ele vê as peças aplicadas e os serviços, SEM valores; os únicos valores que vê são os da própria prestação de contas e das próprias comissões).
+- **bloqueia:** nada hoje; conta para a versão vendável (isolamento entre técnicos).
+- **teste de encerramento:** técnico A lista e abre só as suas; GET da OS do técnico B devolve a recusa do contrato; o app sincroniza sem erro; vermelho-controle no código de hoje.
+
+## P-USERS-DEFEITOS-14-10 (2026-10-14) — a tela de Usuários tem defeitos de acesso e de segurança — ALTA
+
+- **respondida pelo dono (16/10):** P1–P6 e a política de reset em `D-USERS-ACESSO-RESPOSTAS` (P1 autoriza a coluna aditiva `must_change_password`). Os defeitos seguem abertos até o `B-USERS-ACESSO`.
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Usuários e medidos na `main` 9c7784b4 pelo plano `docs/revisoes/TELAS/B-USERS-ACESSO-plano.md`) · **dono:** `B-USERS-ACESSO`
+- "Novo usuário" cria um cadastro que não consegue entrar: `POST /users` não cria credencial nem convite.
+- Técnico de Campo e Estoque não podem ser cadastrados pela tela (`users.adapter.ts:54-62`), embora o servidor aceite.
+- Desativar não encerra as sessões abertas (`revokeAllActiveByUserForTenant` existe e não é chamado).
+- Nada impede desativar o último Administrador ou o administrador se desativar.
+- Menores: `user.updated` sem antes/depois; `GET /users` ignora busca e limite; o Gestor vê "Sessões" no menu e cai no bloqueio; rótulos ("Acesso nao autorizado", Suporte como "Supervisor", "Papéis").
+- **bloqueia:** a meta "telas funcionais" (criar usuário não funciona de ponta a ponta).
+- **teste de encerramento:** os critérios de aceite do plano, cada um com o vermelho-controle.
+
+## P-AUDIT-SEGURANCA-15-10 (2026-10-15) — a Auditoria esconde o que mais importa e não tem recorte por perfil — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Auditoria, lendo o código na `main`) · **dono:** bloco `B-AUDIT-SEGURANCA`, a planejar (segurança: junta completa)
+- O acesso negado (`permission.denied`) e outros 10 tipos aparecem como "Atividade registrada no sistema" (`audit-events.presenter.ts:22-43, 110-125`).
+- O filtro de data usa o fuso errado: "Hoje" vai das 21h de ontem às 20h59 (`audit-events.service.ts:51-57`).
+- Login recusado aparece como "Sistema · ação automática" (`local-auth-login.service.ts:363`, `audit-events.adapter.ts:53`); "Sessão encerrada pelo sistema" inclui revogação feita por administrador (`session-admin.service.ts:105-118`).
+- A consulta lê a trilha inteira da organização a cada 30 s e filtra em memória (`audit.routes.ts:50-55`), e devolve o `tenant_id` da própria organização do ator (`audit.routes.ts:75`). Não é o `tenant_id` EXTERNO que o §2.8 do CLAUDE.md proíbe (revisão do #432), mas é um identificador técnico que a tela não usa: o bloco decide se sai da resposta.
+- Os indicadores dizem "no período" mas contam só os 50 eventos carregados (`AuditTenantPage.tsx:118`).
+- Recurso, resultado e origem são gravados e não saem; exportar não deixa rastro; "Tipo de evento" só lista os tipos já vistos.
+- **Decisões do dono que o bloco implementa:** `D-AUDIT-RECORTE-POR-PERFIL`, `D-AUDIT-ORIGEM`, `D-AUDIT-EXPORTACAO`, `D-AUDIT-REGRAS-CRITICO`, `D-AUDIT-FORA-DO-HORARIO`.
+- **bloqueia:** a versão vendável (auditoria que não mostra acesso negado não serve para investigar).
+- **teste de encerramento:** acesso negado aparece rotulado; "Hoje" no fuso de Brasília; a resposta sem `tenant_id`; cada perfil vê só a trilha das suas telas; exportar gera evento; cada regra de Crítico com um caso vermelho-controle.
+
+## P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do dono antes do dev — ALTA
+
+- **status:** ABERTA · **escopo:** novo (decisões `D1-07c` = c, `D2-07c` = d com autorização superior, `D3-07c` = não, em `decisoes.md`) · **dono:** `B-O6R-07c-b`
+- **O que muda no plano:** (1) o despacho grava a atribuição (`D1-07c` c) e o critério de escrita na OS fica um só; (2) o trabalho offline de quem era o técnico vira conflito resolvido por um perfil acima do operacional que alocou, e o plano propõe se a troca de técnico com atendimento iniciado passa a exigir essa mesma autorização; (3) o débito de dano em extrato de colega sai (`D3-07c` não).
+- **bloqueia:** o fechamento do último P0, `Ω6R-SEC-002` (23 vias).
+- **teste de encerramento:** a emenda do plano aprovada pelo crítico; depois, os testes do 07c-b com vermelho-controle em cada uma das 23 vias.
+
+## P-REGISTRO-GATE-SEM-PLACAR-VIVO (2026-10-15) — o gate da versão vendável não tem placar atualizado — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (medição da API de 15/10) · **dono:** o orquestrador
+- `docs/revisoes/SAN3/PLANO_SAN3.md:28` ainda diz "Nenhum dos 37 blocos começou", mas 9 blocos estão mergeados. O `Kpis/kpis-latest.json:133-135` diz 4 P0 abertos (são 0 abertos e 1 em parte). Os itens 8, 14, 15, 17, 39 e 46 do gate têm bloco mergeado e não tiveram a linha de status conferida.
+- **teste de encerramento:** um placar do gate gerado a partir do registro (não digitado), com cada item ligado ao PR que o fechou; e o KPI de P0 igual à contagem do `achados.jsonl` (entra no loop de KPI do Gemini).
+
+## P-07CB-SUPERIOR-UNICO (2026-10-15) — quem autoriza quando a empresa tem uma pessoa só como Gestor e Administrador — MÉDIA
+
+- **respondida pelo dono (16/10):** `D-07CB-SUPERIOR-UNICO` — a mesma pessoa autoriza, com justificativa obrigatória e evento Crítico na auditoria. Fica aberta até o `B-O6R-07c-b2` implementar com teste.
+- **status:** ABERTA · **escopo:** novo (sub-pergunta da P1 da emenda do 07c-b) · **dono:** o dono responde; o `B-O6R-07c-b2` implementa
+- Com uma pessoa só acima do operacional, a regra "o superior não é quem alocou" não tem quem a cumpra. Saídas possíveis: deixar a mesma pessoa decidir com justificativa obrigatória e registro na auditoria (marcado como Crítico, `D-AUDIT-REGRAS-CRITICO`); ou exigir uma segunda pessoa cadastrada.
+- **bloqueia:** o `B-O6R-07c-b2`, não o b1.
+- **teste de encerramento:** a regra escolhida pelo dono com teste para a organização de uma pessoa só.
+
+## P-FINANCEIRO-DEFEITOS-16-10 (2026-10-16) — o Financeiro de hoje não faz a baixa e soma dinheiro no front — ALTA (dinheiro)
+
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete do Financeiro, lendo o código na `origin/main` 4fe7524e) · **dono:** `B-SAN3-12a` (os itens 1–7 e 10) e `B-TECNICO-ESCOPO` (o item 8); o item 9 é do padrão de tela
+1. O front não chama a baixa, as contas nem os lançamentos: nenhum `/pay`, `/financial-accounts` ou `/financial-entries` em `frontend/src`.
+2. "Recebidas no mês" é calculado pela competência do título, não pela data do pagamento (`financial-titles.adapter.ts:209`).
+3. Cobranças e Pagamentos somam dinheiro no front, só sobre as linhas carregadas (`financial-titles.adapter.ts:197-211`).
+4. O título parcial some das abas "Em aberto" e "A pagar" e não tem ação (`TitlesListView.tsx:41,48`; `financial-titles.adapter.ts:22`).
+5. A aba "Vencendo" de Pagamentos mostra os vencidos (`TitlesListView.tsx:50`).
+6. Sem conexão, a lista aparece vazia em vez de mostrar erro (`TitlesListView.tsx:189-193`).
+7. O total de comissões é somado no front quando o servidor não manda (`commissions.adapter.ts:143-144`).
+8. O `field_technician` não tem `expense_report:read_own`, embora a `D-TECNICO-SO-VALORES-PROPRIOS` diga que ele vê a própria prestação de contas, e ainda tem `work_order_financials:read` (`catalog.ts:912-962`, `:936`).
+9. O cabeçalho do Financeiro está fora do `PageHeader` (`FinanceiroPage.tsx:132-137`), e o `KpiStatCard` não tem `aria-pressed` (`:52`).
+10. Duas portas para os mesmos títulos no menu (Cobranças e Pagamentos), sem a baixa (`appSidebarNav.ts:92-93`) — o ajuste A1 da crítica do B-SAN3-12.
+- **bloqueia:** a meta "telas funcionais" (o Financeiro mostra títulos mas não registra pagamento).
+- **teste de encerramento:** a baixa ponta a ponta pela tela; "Recebidas no mês" pela data do pagamento; nenhuma soma de dinheiro no front; o técnico de campo com a própria prestação de contas e sem valores da OS.
+
+## P-ESTOQUE-DEFEITOS-16-10 (2026-10-16) — a tela de Estoque conta errado, esconde a custódia e tem aba que não abre — MÉDIA
+
+- **respondida pelo dono (16/10):** as quatro perguntas, em `D-ESTOQUE-RESPOSTAS` (`decisoes.md`, registro de 16/10). Os defeitos seguem abertos até o bloco de refino do Estoque.
+- **status:** ABERTA · **escopo:** `pre-existente` (achados pelo agente da maquete de Estoque, lendo o código na `origin/main` 4fe7524e; nada executado) · **dono:** bloco de refino da tela de Estoque, a planejar
+1. A aba Contagem não abre pelo clique: `switchTab` só grava a aba Movimentações (`frontend/src/modules/inventory/pages/EstoquePage.tsx:236`).
+2. Os indicadores contam a janela filtrada e limitada a 100 itens (`EstoquePage.tsx:163-174`, `:293`; `components/dense-list/logic.ts:5`).
+3. "Abaixo do mínimo" e "Precisam repor" contam itens inativos (`inventory.adapter.ts:774-777`).
+4. "Movimentações no período" não tem período (`EstoquePage.tsx:440-442`).
+5. O motivo da baixa automática aparece como código (`baixa_manutencao`) (`inventory.types.ts:324-327` → `EstoquePage.tsx:929`, `EstoqueDetailPage.tsx:298`).
+6. A transferência aparece como duas linhas sem origem e destino, e o filtro não tem Vincular nem Desvincular (`EstoquePage.tsx:852-931`; `inventory.adapter.ts:50`).
+7. "Onde está" só aparece dentro de Editar (`InventoryItemFormModal.tsx:206-227`), com o botão exigindo `inventory_items:update` (`EstoquePage.tsx:705`): o Operador, que movimenta, nunca vê onde o estoque está.
+8. Depois de Vincular ou Saída na janela do item, a lista não recarrega o saldo (`ItemMovimentacaoTab.tsx:85-92`).
+9. O app de campo lê um estoque em memória, semeado com 3 itens fixos (`src/modules/mobile/mobile-inventory-sync.ts:99-100`, `:503-509`, `:537-560`). **Já registrado:** é o `Ω6R-QUA-002` (P1), item 31 do gate, bloco `B-O6R-04b`.
+10. O menu da Operação de Campo e do Técnico mostra Estoque sem `inventory_items:read` (`appSidebarNav.ts:181` × `catalog.ts:628-675`, `:912-962`) — o mesmo achado do inventário de fluxos (#438).
+11. RBAC × catálogo divergem no Estoque: `RBAC_MATRIX.md:47` dá só leitura ao Gestor e o `catalog.ts:529-537` dá tudo; ao Técnico a matriz dá "consume/confirm" e o catálogo nada.
+12. A busca da Contagem procura pelo identificador interno da sessão (`EstoquePage.tsx:1134`).
+- **Perguntas ao dono:** o Operador vê valores (a entrada exige custo unitário)? Para o Gestor vale a matriz (leitura) ou o catálogo (tudo)? O Técnico vê "o que está comigo"? Entram vários locais (depósitos)?
+- **teste de encerramento:** cada item vira teste no bloco que o fechar.

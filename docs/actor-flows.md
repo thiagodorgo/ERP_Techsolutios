@@ -87,7 +87,7 @@ sem `*:read` de cadastro). Visão de suporte limitada, sem quebrar segregação.
 | "Consumo médio da frota" | Dashboard/F1 | `/fleet/fuel` (filtrado) | gestor, finance |
 | Pin "sem seguro" | Mapa (F6) | `/fleet/insurance?vehicle=:id` | despachante, gestor |
 | Pin "em manutenção" | Mapa (F6) | `/fleet/maintenance?vehicle=:id` | despachante, gestor |
-| Alerta "ponto de pedido" | Notificações (F7) | `/inventory?status=reposicao` → sugestão `/purchase-orders` | inventory, manager |
+| Alerta "ponto de pedido" | Notificações (F7) | `/inventory?status=reposicao` → o item em `/inventory/<id>` (Pedidos saiu em `B-SAN3-06a`, `D-TELAS-SAN3-06a`) | inventory, manager |
 | Badge do sino | Topbar | `/notifications` (contagem real, F10) | todos |
 
 > **Regra de ouro (screen-element-map):** todo elemento clicável tem destino navegável e papel(is)

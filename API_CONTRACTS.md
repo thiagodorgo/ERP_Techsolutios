@@ -282,12 +282,12 @@ colidir com o router base.
 | POST | `/work-orders/:workOrderId/duplicate` | `work_orders:create` | Duplica OS. |
 | POST | `/work-orders/:workOrderId/assign` | `work_orders:assign` | Atribui técnico/equipe. |
 | GET | `/work-orders/:workOrderId/timeline` | `work_orders:read` | Linha do tempo da OS. |
-| GET/POST | `/work-orders/:workOrderId/attachments` | `work_orders:read` / (`create`\|`update`) | Anexos da OS (+ download `/:attachmentId/download`, DELETE `/:attachmentId` → `work_orders:update`). |
-| POST | `/work-orders/:workOrderId/geocode` · `/geocode-destination` | `work_orders:update` | Geocodifica origem/destino. |
+| GET/POST | `/work-orders/:workOrderId/attachments` | `work_orders:read` / (`create`\|`update`) | Anexos da OS (+ download `/:attachmentId/download`, DELETE `/:attachmentId` → `work_orders:update`). **B-O6R-07c-a:** o POST e o DELETE (escrita) seguem o escopo por objeto do `PATCH /work-orders/:id` — ator só de campo escreve apenas na OS **atribuída a ele**; OS de outro ou sem atribuição → **403 `not_assigned_to_actor`**, verificado **antes** do multipart (o servidor não lê o upload de quem não pode gravar); 404 segue do cross-tenant. Listar e baixar inalterados. |
+| POST | `/work-orders/:workOrderId/geocode` · `/geocode-destination` | `work_orders:update` | Geocodifica origem/destino. **B-O6R-07c-a:** mesmo escopo por objeto (403 `not_assigned_to_actor` para ator só de campo em OS que não é dele), **antes** do 409 `already_geocoded` e do 422 de endereço. |
 | GET | `/work-orders/:workOrderId/map-start-points` | `work_orders:read` | Pontos de partida para o mapa. |
 | GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/financial-items` (+ `/:itemId`) | `work_order_financials:read`/`create`/`update` | Itens financeiros da OS. |
 | POST | `/work-orders/:workOrderId/invoice` | `financial_titles:create` | Fatura a OS (gera título financeiro). |
-| GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/comments` (+ `/:commentId`, `/:commentId/tags/:tagId`) | `work_orders:read` / `work_orders:comment` | Comentários da OS e marcação por tag. |
+| GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/comments` (+ `/:commentId`, `/:commentId/tags/:tagId`) | `work_orders:read` / `work_orders:comment` | Comentários da OS e marcação por tag. **B-O6R-07c-a:** as cinco escritas (comentar, editar, apagar, marcar e desmarcar tag) seguem o escopo por objeto do `PATCH /work-orders/:id` — 403 `not_assigned_to_actor` para ator só de campo em OS que não é dele, **antes** do parse e da busca do comentário; dentro da OS que lhe cabe, a moderação (autor OU `work_orders:update`, D-Ω3F-5-COMMENT) segue igual. 404 do cross-tenant inalterado. |
 | GET | `/work-orders/:workOrderId/audit-logs` | `work_orders:read` | Auditoria filtrada pela OS. |
 | GET | `/approvals/pending` · `/approvals/:approvalId` | `work_orders:read` | Aprovações pendentes / detalhe (alçadas). |
 | POST | `/approvals/:approvalId/approve` · `/reject` | **`work_orders:approve`** | Decide (aprova/rejeita) a alçada. **B-O6R-07a (Ω6R-SEC-002, P0):** a chave é DEDICADA — até este bloco as duas rotas exigiam `work_orders:update`, a mesma guarda do `PATCH /work-orders/:id`, que `technician` e `field_technician` têm. Quem NÃO decide recebe **403** (papéis de campo, `operator`, `auditor`, `support`; `finance`/`inventory` aguardam política de valor — `P-O6R-B07-APPROVAL-BY-POLICY`). **SoD:** o próprio solicitante decidindo → **403 `self_decision`** (rastro `approval.self_decision_denied`, `outcome: denied`). Preservados: `404` cross-tenant e `409 APPROVAL_ALREADY_DECIDED`. Ler não decide — `GET /approvals/*` seguem em `work_orders:read`. |
@@ -441,7 +441,7 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | GET | `/financial-summary` | `financial_entries:read` | Agregado financeiro do dashboard (somas no backend). |
 | GET/POST | `/commissions/policies` · `/basis-events` · `/calculations` · `/statements` (+ `/summary`, `/mine`, `/my-summary`) · `/settlements` | `commissions:read`/`read_own`/`manage_policy`/`calculate`/`settle` | Políticas, base, cálculo, extratos e liquidação de comissões. |
 | GET/POST/PATCH | `/expense-reports` (+ `/:id`, `/:id/items`, `/:id/submit`) · `/expense-policies` · `/expense-categories` | `expense_report:read`/`create`/`update`/`submit`, `expense_policy:read` | Relatórios de despesa (RDV). |
-| POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile). |
+| POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile) — atômico por ação, conflito por ação (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
 
 **Invariantes de mutação de título (`financial_title_mutation@2026-08-20.b-o6r-02-f6`):**
@@ -508,6 +508,50 @@ nomeadas aqui ficam vermelhas — o contrato não sobrevive sozinho: `tests/fina
 (corrida em memória e HTTP, as DUAS ordens de disparo) e `tests/financial-entry-delete-reverse-race-db.test.ts`
 (barreira determinística + SQL cru contra os triggers, FK, `[RLS real]` e censo, sob Postgres).
 
+**Contrato do sync de despesas (`mobile_expense_sync@2026-10-11.b-o6r-03a`):**
+
+`POST /mobile/sync/expense-actions` recebe `{actions:[{clientActionId, type, payload}]}` (aliases já aceitos
+permanecem; `tenantId`, `retryCount` e `createdAt` do envelope NÃO autenticam nada — organização e ator vêm só da
+sessão). Tipos aceitos: `expense_report.create`, `expense_item.create`, `expense_report.submit`; qualquer outro
+(inclusive `expense_receipt.attach`) → `400 EXPENSE_SYNC_INVALID unsupported_action`.
+
+- **Uma transação por ação, não por lote.** Na mesma transação: o recibo da ação (primeira escrita), o efeito
+  (relatório/item/total/status e os eventos de domínio), o resultado no recibo e o evento de prova. Falha em
+  qualquer ponto → nada persiste. Erro na ação *k* deixa 1..*k*−1 confirmadas, como antes; o reenvio delas é
+  reconhecido como replay.
+- **Uma ação é uma só, por organização + `clientActionId`, e pertence a quem a enviou primeiro**
+  (`D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, 2026-10-11). Outro usuário que reenviar a mesma ação recebe conflito e
+  nada é lançado. (Substitui, para este endpoint, o critério antigo "2 usuários com a mesma chave → 2 lançamentos".)
+- **Validação antes de qualquer escrita.** Erro sintático sai `400` sem abrir transação.
+
+Resposta `200 {data:{results:[...]}}`; cada item traz `clientActionId` (o id externo enviado, normalizado),
+`type`, `status`, `resultRef`, `replayed` e **`errorCode`** (`null` no sucesso):
+
+| Situação | `status` | `replayed` | `errorCode` | `resultRef` |
+|---|---|---|---|---|
+| Ação nova válida | `processed` | `false` | `null` | novo |
+| Replay fiel, com prova do mesmo ator no agregado original | `processed` | `true` | `null` | original |
+| Mesma ação com comando ou tipo diferente | `conflict` | `true` | `payload_mismatch` | original do próprio ator |
+| Ação gravada pela versão anterior (sem prova do payload) | `conflict` | `true` | `legacy_payload_unverifiable` | original do próprio ator, ou `null` |
+| Recibo ou prova incompletos/contraditórios | `conflict` | `true` | `receipt_unverifiable` | `null` |
+| Recibo antigo e novo do mesmo ator para a mesma ação | `conflict` | `true` | `receipt_ambiguous` | `null` |
+| A ação pertence a outro usuário | `conflict` | `true` | `action_owned_by_other_actor` | `null` |
+
+Conflito não aborta o lote, não grava nada e não altera o recibo original — é a resposta da TENTATIVA. Ação
+legada sem prova do payload exige resolução manual (B-O6R-03b), nunca troca de id para lançar de novo.
+
+Erros do lote: `400 EXPENSE_SYNC_INVALID` (`invalid_actions`/`invalid_action`/`unsupported_action`) · `400
+EXPENSE_INVALID` (sintaxe, inclusive `invalid_uuid`) · `403` de leitura sem permissão · `404 EXPENSE_NOT_FOUND`
+(`not_found`; `work_order_not_found` para work order inexistente ou de outra organização, também no create/update
+REST) · `409 EXPENSE_REPORT_LOCKED` · `422 EXPENSE_REPORT_INVALID` · **`503 EXPENSE_SYNC_UNAVAILABLE sync_busy`**
+para falha transitória (contenção, prazo da transação, impasse): reenviar a MESMA ação é seguro.
+
+**Publicação:** sem migração, mas com dado de protocolo novo (chave interna e prova v2). O binário anterior, com a
+rota aberta, lança de novo uma ação já gravada pela versão nova — publicação e rollback só com o sync de despesas
+fechado (na prática, API parada) ou fix-forward (`P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`). Suítes que travam este
+contrato: `tests/expense-sync-atomic-db.test.ts` (Postgres, papel sem BYPASSRLS), `tests/expense-management-routes.test.ts`
+e `tests/expense-sync-fingerprint.test.ts`.
+
 ### 3.12 Custódia / Pátios de Recolhimento (SIGPRV — Ω5P)
 
 Fontes: `yard/`, `jurisdiction/`, `tariffs/`, `impound/`, `charging/`, `release/`, `auction/`.
@@ -566,7 +610,7 @@ sync não declaram `requirePermission` no router (autorização resolvida no ser
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
 | GET | `/mobile/bootstrap` | Autenticado (ator do JWT) | Estado inicial do app (dados + flags de sync). |
-| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. |
+| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). |
 | POST | `/mobile/sync/checklist-actions` | Autenticado (idempotente) | Replay de ações de checklist. |
 | POST | `/mobile/sync/inventory-actions` | Autenticado (idempotente) | Replay de ações de estoque. |
 | POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. |
