@@ -757,6 +757,13 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
      O Gemini não edita o painel: no 1º teste (#435) a proposta dele acertou os números, mas a edição trouxe
      referências e textos inventados.
+
+     **O loop não se esquece (decisão do dono, 2026-10-17, `D-KPI-LOOP-NAO-ESQUECER`: *"rode o loop do gemini para os
+     kpis, nao esquecer... documente e difunda"*).** Em 15 e 16/10 o loop não rodou e o painel ficou no marco de 14/10.
+     Daí em diante: **toda sessão do orquestrador começa conferindo a data do último marco** (`release.block` de
+     `Kpis/kpis-latest.json` na `origin/main`); se passou um dia sem marco, o loop é a **primeira** tarefa da sessão,
+     antes de bloco novo. O orquestrador também o dispara no **fim do dia** e logo depois de **merge que mova P0 ou
+     escopo** (ex.: o último P0). A data do último marco vai no "estado" que o dono recebe.
    - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
      (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
      congelado pela regra (3).
