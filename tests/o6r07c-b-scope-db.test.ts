@@ -17,7 +17,7 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 //                 teve cai em `rejected`. O banco não muda.
 //   [status]      OS fora de `open` mantém o status; OS encerrada recusa (409).
 //   [despacho]    `deleteById` e `restoreState` (as compensações do create e do reassign) no banco.
-//   [backfill P6] o corpo REAL da migração 20260874000000, escopado às organizações da fixture pela âncora
+//   [backfill P6] o corpo REAL da migração 20260877000000, escopado às organizações da fixture pela âncora
 //                 `SELECT id FROM tenants ORDER BY id`: conta ANTES (coerentes / a preencher / divergentes), preenche
 //                 só a OS sem atribuição com o alvo do despacho ativo MAIS RECENTE, não toca divergentes, é
 //                 idempotente — e funciona sob papel NOSUPERUSER sem BYPASSRLS (FORCE RLS), porque seta o GUC por
@@ -33,7 +33,7 @@ const MIGRACAO = path.join(
   "..",
   "prisma",
   "migrations",
-  "20260874000000_backfill_work_order_assignment_from_active_dispatches",
+  "20260877000000_backfill_work_order_assignment_from_active_dispatches",
   "migration.sql",
 );
 const ANCORA = "SELECT id FROM tenants ORDER BY id";

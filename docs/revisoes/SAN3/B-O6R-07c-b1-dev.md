@@ -63,7 +63,7 @@
 - `tests/o6r07c-subresource-scope.test.ts` → `S-KM-RESTART` 2º reenvio: esperado `rejected`, veio `conflict`. É a D2(d) do dono (ex-técnico → conflito, inclusive km). **Asserção ajustada** (classe (ii): o teste afirmava o comportamento que a decisão muda), com comentário; **arquivo do 07c-a, fora da lista PERMITIDA da emenda — declarado (§A2)**. A alternativa (o desvio herdado em `setMileage`) foi rejeitada em R1.
 
 ### R5 — backfill P6 (escrito; teste em R7)
-- `prisma/migrations/20260874000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` (NOVO; autorização nominal P6 de `D-07CB-EMENDA-RECOMENDACOES`). Um `DO $$` só: por organização (GUC setado a cada volta, funciona sob FORCE RLS sem BYPASSRLS), CONTA antes (coerentes / a preencher / divergentes, `RAISE NOTICE` só com totais), PREENCHE só a OS sem atribuição com o alvo do despacho ativo mais recente (perfil ou user id; `open → assigned`; linha em `work_order_assignments` e evento `work_order_assigned` com `metadata.source = field_dispatch_backfill`), NÃO toca divergentes. Idempotente (só escreve onde `assigned_operator_id IS NULL`). Rollback no cabeçalho.
+- `prisma/migrations/20260877000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` (NOVO; autorização nominal P6 de `D-07CB-EMENDA-RECOMENDACOES`). Um `DO $$` só: por organização (GUC setado a cada volta, funciona sob FORCE RLS sem BYPASSRLS), CONTA antes (coerentes / a preencher / divergentes, `RAISE NOTICE` só com totais), PREENCHE só a OS sem atribuição com o alvo do despacho ativo mais recente (perfil ou user id; `open → assigned`; linha em `work_order_assignments` e evento `work_order_assigned` com `metadata.source = field_dispatch_backfill`), NÃO toca divergentes. Idempotente (só escreve onde `assigned_operator_id IS NULL`). Rollback no cabeçalho.
 - **Residual declarado (crítica, ajuste 5):** "ex-técnico" = linha em `work_order_assignments`. A partir deste bloco o despacho grava a linha em todo `create`/`reassign`; o alvo de despacho reatribuído ANTES do deploy (só no metadado do evento do despacho) não vira ex-técnico — recebe `rejected`, não conflito. O backfill cobre os ATIVOS (P6), não a história.
 
 ### R6 — `tests/o6r07c-b-scope.test.ts` (NOVO, modo memória, app HTTP real)
@@ -147,13 +147,13 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 | `src/modules/mobile/mobile-work-order-sync.ts` | acrescentado (conflito do ex-técnico para status e km) |
 | `src/modules/mobile/mobile-evidence-sync.ts` | acrescentado (porta da OS para `evidence.work_order_*` do papel de campo; conflito; `scope` no recibo) |
 | `src/modules/mobile/mobile-evidence-upload.ts` | acrescentado (escopo pela OS do recibo; 409 ao ex-técnico) |
-| `prisma/migrations/20260874000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` | acrescentado (P6) |
+| `prisma/migrations/20260877000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` | acrescentado (P6) |
 | `tests/o6r07c-b-scope.test.ts`, `tests/o6r07c-b-scope-db.test.ts` | acrescentados |
 | `tests/fixtures/o6r07c-classificacao-vias.json`, `tests/helpers/o6r07c-census.ts` (só a tabela de classes), `tests/o6r07c-census-guard.test.ts` (T11 vazio) | acrescentados (CA11) |
 | `tests/o6r07c-subresource-scope.test.ts` (S-KM-RESTART), `tests/san3-05-acessos-de-plataforma-guard.test.ts` (3 `NOVAS`) | **fora da lista PERMITIDA da emenda, declarados (§A2)** — ver R4 |
 
 ## Ajustes da crítica — onde cada um foi aplicado
-1. P6 no b1 → migração `20260874000000` + [backfill P6] e [FORCE RLS] no `-db`.
+1. P6 no b1 → migração `20260877000000` + [backfill P6] e [FORCE RLS] no `-db`.
 2. Ordem e compensação → `create`: atribui depois de criar o despacho, compensa apagando; `reassign` e `draft→assigned`: compensam restaurando; testes de falha injetada.
 3. Rascunho e OS encerrada → rascunho não atribui (e o técnico não o ativa); OS encerrada recusada 409 antes de qualquer escrita; rascunho sobre OS encerrada passa e só é barrado ao ativar.
 4. Cancelar/falhar/dois ativos → devolução ao despacho ativo mais recente; atribuição fica se não sobrar ativo; dois ativos: vence o último despachado.
@@ -197,3 +197,9 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 - `-db` do bloco no container (0 grupos `tl*` de outros trabalhos no `docker ps`): `tests/o6r07c-b-scope-db.test.ts` → **7/7**, ec 0.
 - `npm test` inteiro: NÃO rodado (a CI do PR o faz, por ordem do orquestrador).
 - Limpeza: logs meus em `/tmp` removidos; nenhum container meu sobrando (o grupo `tl17922039075308-*`, criado às 23:25 −03, depois do fim da minha rodada, é de outro trabalho e não foi tocado); os dois corpos novos de jurado em `.claude/agents/especialistas/` (`jurado-07cb1-c1-…`, `jurado-07cb1-c2-…`) NÃO são meus e não foram tocados; nada commitado.
+
+## Carimbo da migração (17/10)
+- Achado (redator de mandatos, conferido pelo orquestrador): o #426 (Traccar, mergeia antes) cria `20260874000000_traccar_ingestion_foundation`, `20260875000000_…` e `20260876000000_…`. Medido em `origin/feat/traccar-b-trc-01`: `20260874000000_traccar_ingestion_foundation` e `20260875000000_validate_location_source_check` existem lá; carimbo repetido com o backfill deste bloco.
+- `git mv prisma/migrations/20260874000000_backfill_work_order_assignment_from_active_dispatches prisma/migrations/20260877000000_backfill_work_order_assignment_from_active_dispatches` (conteúdo intocado; o rename ficou no índice, sem commit).
+- Referências atualizadas (`20260874000000` → `20260877000000`): `tests/o6r07c-b-scope-db.test.ts` (2), este relatório (3), e o corpo do jurado `jurado-07cb1-c3-despacho-censo-persistencia.md` nos DOIS espelhos (`.claude/` e `.agents/`, 4 cada). `git grep -n 20260874000000` (fora dos votos não rastreados) → 0 linhas. `node scripts/sync-agent-agents.mjs --check` → OK, 58 agentes, espelho consistente. Os 5 arquivos não rastreados em `agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/` não foram tocados; os ` M` de `.agents/agents/*` que já estavam no `git status` são fantasmas de fim de linha (`git diff --ignore-cr-at-eol` vazio) e não são meus.
+- Bateria: `npm run check` ec 0; `git diff --check` ec 0; testes do bloco sem banco (11 arquivos, Windows) **186/186** + censo sozinho **31/31**; `-db` no container (0 grupos `tl*`/`j*` de outros no `docker ps`), com a migração aplicada pelo `prisma migrate deploy` no carimbo novo → `tests/o6r07c-b-scope-db.test.ts` **7/7**.

@@ -41,7 +41,7 @@ objeto. Afirmação da emenda, do plano, da crítica, do relatório do dev ou de
 - `docs/revisoes/SAN3/B-O6R-07c-b1-dev.md`: R4 (os 2 arquivos fora da lista, "declarados §A2"), R5 (o backfill e o residual), R7 (o
   `-db` 7/7, o corpo da migração "escopado pela âncora do laço"), R8 (`npm test` 3397/3393/2/2, a falha `san3-05-runtime-role-guard-db`
   só sob a suíte inteira; o Docker caindo), R10 (M01–M04, M09, M17–M20, M25, MDB1–MDB4), R11, e "DECISÕES DO DONO (17/10)". É roteiro;
-- `prisma/migrations/20260874000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` (no disco, l.1-41 é o
+- `prisma/migrations/20260877000000_backfill_work_order_assignment_from_active_dispatches/migration.sql` (no disco, l.1-41 é o
   cabeçalho: conta, preenche, não mexe nos divergentes, idempotente, rollback; l.51: `FOR v_tenant IN SELECT id FROM tenants`; l.52:
   `set_config('app.current_tenant_id', …, true)`);
 - `tests/helpers/o6r07c-census.ts` (no disco, l.416-468: a tabela de classes `IN_PROP` e o `porRegra`, que agora classifica
@@ -327,7 +327,7 @@ atribui (OS segue `open`, sem linha nem evento), e o despacho de OS encerrada é
 irredutível); relatório do dev (R5, R7, MDB1–MDB4).*
 
 **Comando.** No **seu** cluster `j07cb1-c3-pg`, com `prisma migrate deploy` da árvore do objeto (publique a lista de migrações aplicadas e
-a posição da `20260874000000_…` na ordem lexicográfica: depois da última da `main` em `B`, sem colidir).
+a posição da `20260877000000_…` na ordem lexicográfica: depois da última da `main` em `B`, sem colidir).
 
 **(a) O `-db` do bloco.** `DATABASE_URL=<o seu> node --test --import tsx --test-reporter=tap tests/o6r07c-b-scope-db.test.ts`
 (`timeout 600`, TAP para arquivo): no **objeto**, verde com o N publicado; na **base** (`src/` trocado; a migração e o teste são do bloco
@@ -340,7 +340,7 @@ de evento da OS (ou da linha de histórico), chame a criação de despacho pela 
 estado das três tabelas **e** do despacho depois. Remova o gatilho e prove (`\dS` ou consulta ao catálogo).
 
 **(c) O backfill com o corpo REAL.** Num banco **seu, separado** (para a migração rodar sobre dados de antes), aplique as migrações até
-a anterior à `20260874000000`, semeie **duas ou mais organizações** com: OS sem atribuição e um despacho ativo; OS sem atribuição e **dois**
+a anterior à `20260877000000`, semeie **duas ou mais organizações** com: OS sem atribuição e um despacho ativo; OS sem atribuição e **dois**
 despachos ativos; OS atribuída ao alvo (coerente); OS atribuída a **outro** (divergente); OS **encerrada** com despacho ativo; despacho em
 cada status ativo da lista do cabeçalho (inclusive `reassigned`) e um **não** ativo; alvo **com** e **sem** perfil. Então rode o **corpo
 inalterado** do `migration.sql` (sem a troca de âncora que o teste faz; prove por md5 que é o blob do objeto):
@@ -417,7 +417,7 @@ bloco; publique a regra, o script e o N) no objeto e na base, com o **diff dos n
 PROIBIDO extraídos do blob da emenda (publique o extrator e o md5), somado ao §C4:
 - **permitido**, por qual trecho; **artefato** do planejamento e da junta (a emenda, o relatório do dev, os corpos `jurado-07cb1-*` nos
   **dois** espelhos, os votos e o parecer desta junta), com commit e autor; **fora**;
-- `prisma/**`: **só** o diretório `20260874000000_…` (autorização nominal P6); `prisma/schema.prisma` sem diff;
+- `prisma/**`: **só** o diretório `20260877000000_…` (autorização nominal P6); `prisma/schema.prisma` sem diff;
 - os **dois arquivos fora da lista declarados** (`tests/o6r07c-subresource-scope.test.ts`, o S-KM-RESTART; `tests/san3-05-acessos-de-plataforma-guard.test.ts`,
   3 chaves em `NOVAS`): o diff de cada um é **só** o que o dev declarou? Conte as linhas `assert`/`expect` antes e depois e leia cada bloco:
   a asserção do S-KM-RESTART mudou só o balde esperado pela `D2-07c` (classe (ii))? as 3 chaves novas do ratchet nomeiam exatamente os
