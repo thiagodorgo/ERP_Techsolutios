@@ -5,6 +5,12 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  waitForOwnBlockedStatement,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-06 · Ω6R-DIN-005 — A UNIDADE FATURÁVEL COMMITA COM A RUN, contra o Postgres REAL.
@@ -30,7 +36,16 @@ import { fileURLToPath } from "node:url";
 // DB-gated: sem DATABASE_URL o arquivo inteiro DECLARA o pulo (padrão das demais `-db`).
 // -----------------------------------------------------------------------------------------------
 
-const connectionString = process.env.DATABASE_URL;
+const rawConnectionString = process.env.DATABASE_URL;
+const applicationName = buildApplicationName("o6r06-usage-atomic");
+const connectionString = rawConnectionString ? withApplicationName(rawConnectionString, applicationName) : undefined;
+if (connectionString) {
+  process.env.DATABASE_URL = connectionString;
+  // Esta bateria é exclusivamente Postgres e importa `src/**` dinamicamente mais abaixo. Fixar o
+  // modo aqui impede que o runner completo, cujo default é `memory`, transforme A10-drain em uma
+  // espera por INSERT que nunca existirá.
+  process.env.CORE_SAAS_PERSISTENCE = "prisma";
+}
 
 if (!connectionString) {
   test("B-O6R-06 usage atomicity requires DATABASE_URL and a migrated database", {
@@ -419,6 +434,79 @@ if (!connectionString) {
     }
   });
 
+  test("A10-ordem · o dreno resolve antes do primeiro DELETE do teardown", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    let drainResolved = false;
+
+    await teardown(ctx, seed.tenantId, {
+      drain: async () => {
+        drainResolved = true;
+      },
+      beforeFirstDelete: () => {
+        assert.equal(drainResolved, true, "o primeiro DELETE não pode preceder o dreno best-effort");
+      },
+    });
+  });
+
+  test("A10-drain · o dreno espera a escrita best-effort bloqueada antes da limpeza", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    let releaseLock!: () => void;
+    const lockGate = new Promise<void>((resolve) => (releaseLock = resolve));
+    let lockTransaction: Promise<unknown> | undefined;
+
+    try {
+      await assertApplicationNamePropagated(ctx.client, applicationName);
+      const actor = { tenantId: seed.tenantId, userId: seed.userId };
+      const run = await ctx.service.createRun(actor, { checklistId: seed.templateId, answers: [] });
+      const lockHeld = new Promise<void>((resolve, reject) => {
+        const transaction = ctx.client.$transaction(
+          async (tx) => {
+            await tx.$executeRawUnsafe("LOCK TABLE cloud_usage_events IN EXCLUSIVE MODE");
+            resolve();
+            await lockGate;
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+        void transaction.catch(reject);
+        lockTransaction = transaction;
+      });
+      await lockHeld;
+
+      await ctx.service.registerDivergence(actor, run.id, {
+        componentId: seed.observationId,
+        observation: "Divergência com escrita best-effort bloqueada",
+      });
+      await waitForOwnBlockedStatement(ctx.client, {
+        applicationName,
+        fragment: "cloud_usage_events",
+        label: "A10-drain",
+      });
+
+      const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");
+      let drained = false;
+      const drain = drainCloudUsageBestEffortForTests().then(() => (drained = true));
+      await Promise.resolve();
+      assert.equal(drained, false, "o dreno não pode resolver enquanto o INSERT segue bloqueado");
+      releaseLock();
+      await lockTransaction;
+      await drain;
+
+      const rows = await rawQuery<{ total: bigint }>(
+        ctx,
+        seed.tenantId,
+        "SELECT count(*)::bigint AS total FROM cloud_usage_events WHERE tenant_id = $1::uuid AND metric_key = $2",
+        [seed.tenantId, "checklist_run.divergence_reported"],
+      );
+      assert.equal(Number(rows[0]?.total ?? 0n), 1);
+    } finally {
+      releaseLock?.();
+      await lockTransaction;
+      await teardown(ctx, seed.tenantId);
+    }
+  });
+
   test("A12′ · o ALVO do ON CONFLICT é explícito no SQL da captura (guarda de texto — ver a nota sobre M-19)", () => {
     // NOTA HONESTA (achado R2-D do `critico-adversarial`, rodada 2): a mutação M-19 (omitir o alvo do
     // `ON CONFLICT`) é INOBSERVÁVEL por comportamento. `RecordUsageEventInput` não tem campo `id` e
@@ -714,11 +802,20 @@ async function rawQuery<T>(ctx: BootstrapContext, tenantId: string, sql: string,
 async function teardown(
   ctx: BootstrapContext,
   tenantId: string,
-  options?: { readonly skipDisconnect?: boolean },
+  options?: {
+    readonly skipDisconnect?: boolean;
+    readonly drain?: () => Promise<void>;
+    readonly beforeFirstDelete?: () => void;
+  },
 ): Promise<void> {
   const { withTenantRls } = await import("../src/database/rls.js");
 
   try {
+    const drain =
+      options?.drain ??
+      (await import("../src/modules/cloud-usage/cloud-usage.service.js")).drainCloudUsageBestEffortForTests;
+    await drain();
+    options?.beforeFirstDelete?.();
     await withTenantRls(ctx.client, tenantId, async (tx) => {
       await tx.checklistMarker.deleteMany({ where: { tenant_id: tenantId } });
       await tx.checklistAttachment.deleteMany({ where: { tenant_id: tenantId } });
