@@ -176,13 +176,20 @@ if (!connectionString) {
     operatorId: string,
     vehicleId: string,
   ): Promise<void> {
-    const assigned = await new h.workOrders.RlsPrismaWorkOrderRepository(h.role.client as PrismaClient).assign({
+    // O #440 (P-ATOMICA) exige o evento `work_order_assigned` na própria escrita: `fromStatus` é o status ATUAL da OS,
+    // lido pelo mesmo repositório, sob o RLS da mesma organização.
+    const repo = new h.workOrders.RlsPrismaWorkOrderRepository(h.role.client as PrismaClient);
+    const current = await repo.findById(tenantId, workOrderId);
+    if (!current) throw new Error(`OS ${workOrderId} não encontrada sob o RLS da organização antes da troca da viatura`);
+    const message = "B-TRC-01 ciclo 2 — troca sintética da viatura";
+    const assigned = await repo.assign({
       tenantId,
       workOrderId,
       operatorId,
       vehicleId,
-      message: "B-TRC-01 ciclo 2 — troca sintética da viatura",
+      message,
       assignedBy: operatorId,
+      event: { fromStatus: current.status, actorUserId: operatorId, message, metadata: {} },
     });
     assert.ok(assigned, "a atribuição da OS existe");
     await pause(STEP_MS);
