@@ -1,0 +1,116 @@
+{
+ "jurado": "jurado-07cb1-c3-opus, corpo jurado-07cb1-c3-despacho-censo-persistencia (identidade nova; nenhum número, SHA, linha ou trecho da emenda, do plano, da crítica, do relatório do dev, do inspetor ou do corpo herdado como fato)",
+ "cadeira": "C3 — despacho e atribuição (todos os caminhos, a falha no meio, o Traccar); persistência (-db, atomicidade no Postgres, backfill P6 com o corpo real sob FORCE RLS); censo/T11, régua de regressão e escopo do diff do bloco — sem KPI",
+ "mandato_md5": "f1d55dff6f9eaace7a35c33559d60f5f (medido EOL-neutro) · declarado no disparo: f1d55dff6f9eaace7a35c33559d60f5f",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor DECLARADO · autorização: CLAUDE.md §C7.6 (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO), ref b198fe35 e origin/main 79599143",
+ "corpo_md5": ".claude 58eae26641485cef270b7dfb6bc37284 · .agents 74c95ad4dc26087731d7419fb4d7715c (blob b198fe35) · recebido no prompt: n/a (lido do blob; o disparo declarou 58eae266…)",
+ "objeto": "b198fe358b41186b2598ab258ccb735da8c04cbc (git ls-remote do ramo = gh pr view 440 headRefOid) · B = merge-base 4fe7524ecbcc68b3e69336453cc774ed5937cb1c · 0 merges em B..objeto · origin/main início 795991438a0b07c20602b41e42583580ebb70906 · fim: ver evidência",
+ "legalidade": "parecer insp-07cb1-parecer.md (inspetor-07cb1-opus, 03:30–03:40Z) LIBERADO COM RESSALVA · confere nome, corpo nos dois espelhos, worktree w-j07cb1c3 e prefixo j07cb1-c3-: sim · check-runs 14 | 0 não-verdes | 0 pendentes · backend success x2, backend-postgres success x2",
+ "decisoes_do_dono": "D1-07c: objeto e 79599143 decisoes.md:3654 · D-07CB-EMENDA-RECOMENDACOES (P4,P5,P6): :3658 · D-07CB1-TRAVA-ATE-B2: 79599143:3709 (ausente no objeto) · D-07CB1-DESPACHO-OS-ENCERRADA: 79599143:3710 · D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO: 79599143:3711 · D-INICIO-ATENDIMENTO-CONFIRMADO: 79599143:3719 · D-BRACOS-E-DOCKER-17-10: 79599143:3716 · D-07c-DESPACHO-ALVO: ausente de decisoes.md nas duas refs; regra escrita na emenda l.28 do objeto (aplicada como regra do plano)",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (ciclos 1–2: bloqueia dentro-do-bloco reprova, qualquer classe)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo de outra cadeira desta junta (vi só o nome c2-evidencia.md num ls da pasta, sem abrir) · li: corpo C3 (blob), mandato C3, parecer do inspetor, emenda, relatório do dev, PR 440, ci.yml, logs da CI",
+ "pausa": "nenhuma PAUSA · INTERRUPÇÃO ~04:20Z (VS Code fechou; aviso do orquestrador) · retomada 04:51Z pela MESMA identidade · re-executado: M25 (2 execuções com falha de terreno do censo filho, 1 limpa) · medido de novo: estado do worktree e dos containers",
+ "voto": "REPROVADO",
+ "justificativa": "Terreno: worktree próprio C:/Users/AMP/w-j07cb1c3 detached no objeto, npm ci próprio, sem junction; containers j07cb1-c3-pg (postgres 16.14) e j07cb1-c3-node (imagem própria j07cb1-c3-img:local, construída do Dockerfile da receita, md5 igual) numa rede própria, sem porta publicada; 1 grupo alheio (tl…) de pé antes de subir, o meu foi o 2º trabalho com container; árvore = 4136/4136 blobs, md5sum -c no container; base viva nunca tocada; senhas só por ambiente. Item 1 (sonda própria em memória por HTTP, 28 casos + base): criar (dispatcher e manager) leva open→assigned com 1 linha source/dispatchId e 1 evento; fora de open preserva o status; OS encerrada 409 sem gravar despacho; rascunho não atribui, o técnico não ativa (403), o despachante ativa; reassign move; cancelar/falhar devolve ao ativo de criação mais recente; cancelar o último mantém; dois ativos = o último; Traccar: o alvo aceita e põe on_route o próprio despacho (acceptedAt gravado) com a OS já de outro, e o não-alvo recebe 403. Base (src de B): o despacho não atribui (OS open) e OS encerrada é aceita (201) — controle acusou. Item 1(b) e 2(b) — A1: com falha injetada no INSERT do evento work_order_assigned (memória: substituição de método; Postgres: gatilho temporário no MEU cluster), a transação OS+linha já commitou e a compensação só desfaz o despacho: create → OS atribuída sem despacho (a linha aponta um despacho apagado); reassign → o despacho volta ao técnico A e a OS fica com C; ativar rascunho → o rascunho volta a draft com a OS atribuída. Efeito medido: C (alvo de despacho nenhum) muda o status da OS 200; A (alvo do despacho ativo) 403. Gatilho no INSERT da linha: a OS fica open (OS+linha atômicas). Gatilhos removidos (catálogo 0). Item 2: -db 7/7 no objeto; na base 3/7 (vermelho estrutural por método ausente — nota N1: o -db chama assignFromDispatch direto, não o despacho); sem DATABASE_URL, skip declarado. Backfill com o corpo REAL (blob e8275cb0…, laço SELECT id FROM tenants intacto), em bancos com as 108 migrações anteriores e 2 organizações, como postgres e como c3_rt NOSUPERUSER NOBYPASSRLS: tenants sem RLS (o laço vê 2); NOTICE 2/8/4 = a minha contagem por NOT EXISTS; preenche só as 8 a preencher (perfil quando há, user id sem perfil, o mais recente de dois ativos, open→assigned, accepted preservado); divergentes, encerradas, cancelado e rascunho intactos; 0 linha cruzada; 2ª execução sem escrita (diff vazio); GUC não vaza; NOTICE só com totais; 0 DDL/DELETE. Controles: NOTICE capturado; c3_rt sem GUC 0 linhas, com GUC só a organização; a mutação sem a guarda escreve na 2ª execução (12). Item 3: instantâneo 468=468, só as 23 reclassificadas (18/4/1); T11 lista vazia por igualdade; o helper muda só a tabela; M25 → só o T11 (3ª execução; as 2 anteriores caíram por falha de terreno do censo filho); preguiçoso (vistoria e despacho): o gravar classifica sozinho como ESCOPO/ALVO e o censo fica verde, mas o laço G (exatamente 23 + receita obrigatória) acende; o gravar do objeto gera 3 classes diferentes do commitado (A2). CI: backend 3399/3397/0/2 (push) e 3409/3407/0/2 (PR), backend-postgres 339/339; o -db do bloco roda com banco no job backend (7 ok); B-SAN3-05 runtime-role ok; nomes objeto × base: só o T11 renomeado sumiu. check/lint/build 0. Escopo B..O: 28 arquivos = 13+2 permitidos, P6, instantâneo, helper (tabela), 7 artefatos, 2 declarados com diff igual ao declarado (asserts 60=60, 20=20) e o census-guard (T11, exigido pelo CA11; nota N3); prisma só a P6, schema sem diff, Kpis/ e proibidos sem diff, registro com 0 linha removida, diff --check 0, espelho OK. Limpeza: ver o campo teardown. VOTO: REPROVADO — a falha no INSERT do evento work_order_assigned, depois da transação OS+linha, deixa a OS atribuída a quem não é o alvo do despacho ativo (reassign) ou sem despacho (create, ativação de rascunho), porque a compensação desfaz só o despacho | escopo: dentro-do-bloco (assignFromDispatch e a compensação nascem em 67e5cb1c; 0 ocorrências na base) | classe: grave: quebra de permissão | evidência: gatilho BEFORE INSERT ON work_order_events no meu Postgres 16 (N=1 por caminho, 3 caminhos) e substituição de createEvent em memória com efeito de acesso medido (C 200, A 403)",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote; gh pr view 440; gh api check-runs; git merge-base; git rev-list --merges",
+   "forma": "Windows, git 2.53",
+   "resultado": "objeto b198fe35 por duas fontes; 14/0/0; B 4fe7524e; 0 merges"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/sonda-item1.mts (v2 md5 6fb90d731b4286ad4836e1c055682b6d)",
+   "forma": "memória, HTTP porta efêmera; objeto, e CASOS=base com src de B",
+   "resultado": "ec 0; 28 casos no objeto; a base mostra o defeito; restauro hash = blob"
+  },
+  {
+   "comando": "node --import tsx c3sonda/sonda-pg.mts (md5 d942f123f02fc30aacd52b45a853e2c8)",
+   "forma": "container j07cb1-c3-node, prisma, Postgres j07cb1-c3-pg, gatilhos temporários",
+   "resultado": "ec 0; A1 confirmado; atomicidade OS+linha confirmada; gatilhos removidos (0)"
+  },
+  {
+   "comando": "node --test --import tsx --test-reporter=tap tests/o6r07c-b-scope-db.test.ts",
+   "forma": "container; objeto / src de B / sem DATABASE_URL",
+   "resultado": "7/7 · 3/7 (4 not ok TypeError) · skip 1"
+  },
+  {
+   "comando": "psql -f /c3/mig877.sql (blob e8275cb0…) + snap.sql",
+   "forma": "c3_bf1 como postgres, c3_bf2 como c3_rt NOBYPASSRLS; 2 execuções cada; mutação sem a guarda",
+   "resultado": "NOTICE 2/8/4/8 e 10/0/4/0; snapshots iguais entre os papéis; 2ª execução sem escrita; a mutação escreve 12"
+  },
+  {
+   "comando": "node --test tests/o6r07c-census-guard.test.ts; gravar; mut-rota.cjs; rodada-guard.sh",
+   "forma": "Windows, meu worktree, env -u DATABASE_URL -u REDIS_URL",
+   "resultado": "31/31; regen difere em 3 chaves (N=2); M25 só T11; preguiçoso acende só o b-scope"
+  },
+  {
+   "comando": "gh run view --job <id> --log (4 jobs do objeto + backend da base)",
+   "forma": "logs em arquivo",
+   "resultado": "fail 0 em todos; -db executado no backend; 1 nome sumido = T11 renomeado"
+  },
+  {
+   "comando": "npm run check / lint / build",
+   "forma": "meu worktree, depois do db:generate fictício",
+   "resultado": "0 / 0 / 0"
+  },
+  {
+   "comando": "git diff --name-only B O | classifica.sh; git diff --quiet; git diff --check; sync-agent-agents --check",
+   "forma": "Windows",
+   "resultado": "28 arquivos classificados; proibidos ec 0; diff --check 0; espelho OK"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A1 — a compensação do despacho não desfaz a atribuição da OS quando a falha vem depois da transação OS+linha (no INSERT do evento work_order_assigned): create deixa a OS atribuída sem despacho; reassign deixa o despacho com o técnico antigo e a OS com o novo; ativar rascunho deixa o rascunho em draft e a OS atribuída",
+   "evidencia": "Postgres (gatilho c3_trg_evento): create → OS assigned perfil(tA), linha field_dispatch:a708f1, 0 despacho; reassign tA→tC → OS tC, despacho 13cd77 com tA assigned; ativar → OS perfil(tA), despacho 20d0cf draft. Memória: o mesmo estado; efeito: tC muda o status da OS 200, tA 403 not_assigned_to_actor. Leitura: work-order.service.ts assignFromDispatch grava o evento fora do $transaction do repositório; field-dispatch.service.ts compensa com deleteById/restoreState só do despacho. Controles: gatilho na linha → OS open (transação OS+linha atômica); sem gatilho, grava",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco — git log -S «async assignFromDispatch» 4fe7524e..b198fe35 = só 67e5cb1c (2026-10-16 22:54 -0300); 0 ocorrências de assignFromDispatch em src na base",
+   "classe": "grave: quebra de permissão",
+   "motivo": "propriedade ausente: depois de qualquer falha num caminho do despacho, a OS fica atribuída ao alvo do despacho ativo mais recente (ou como estava) — hoje o despacho e a OS podem contar histórias diferentes, e quem tem escrita na OS deixa de ser o alvo do despacho"
+  },
+  {
+   "defeito": "A2 — o instantâneo commitado não é o que o gravar do objeto gera: as 3 vias de evidência por lote (evidence.work_order_observation/photo/signature) estão commitadas EVIDENCIA-OS·ESCOPO e o gerador as classifica OS·SEM-ALCANCE; nenhum T do censo acusa a divergência",
+   "evidencia": "node --import tsx tests/helpers/o6r07c-census.ts gravar $SCRATCH/regen-clean.json, N=2 byte-idênticos, 3 diferenças; o T6 só acusa SEM-ALCANCE quando o campo alcança; o laço G (exatamente 23) é o único que acenderia; não declarado no relatório do dev",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco — a reclassificação do instantâneo nasce neste bloco (diff B..O do fixture)",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: o instantâneo do censo é regenerável pelas regras do helper, e a próxima regeneração não tira vias do laço G em silêncio no censo"
+  },
+  {
+   "defeito": "N1 — o -db do bloco chama assignFromDispatch/restoreState direto; o caso [atribuição] diz «na mesma transação» sem injetar falha; na base o vermelho é por método ausente",
+   "evidencia": "tap-db-base: 4 not ok TypeError",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o -db não exerce o caminho do despacho no Postgres"
+  },
+  {
+   "defeito": "N2 — o corpo do PR cita a migração 20260874000000 (o objeto tem 20260877000000) e a pergunta 1 em on_route (substituída por No local)",
+   "evidencia": "gh pr view 440 --json body",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "texto do PR desatualizado"
+  },
+  {
+   "defeito": "N3 — tests/o6r07c-census-guard.test.ts está fora da lista PERMITIDA e não foi declarado entre os fora da lista; o diff é só a lista do T11 esvaziada (exigida pelo CA11 da mesma emenda), asserts 23=23",
+   "evidencia": "classifica.sh; git diff B O -- tests/o6r07c-census-guard.test.ts",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "declaração §A2 incompleta; sem efeito"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "Controle do preguiçoso com escopo (corpo: a mesma rota com escopo passa no laço G): impossível por construção — o laço G exige exatamente 23 chaves e receita por chave; acende para qualquer rota nova, com ou sem escopo. O laço G é catraca de contagem, não detector de escopo.",
+  "M25 «T11 e só ele»: 2 de 3 execuções caíram por falha de terreno do processo filho do censo (lotes); só a 3ª é medida válida."
+ ],
+ "pendencias_que_aceito": [
+  "C1: 403/404 nas 23 vias, matriz, segregação e a trava por papel; C2: forma do conflito, upload, idempotência, app",
+  "b2: fila durável, decisão do superior, CA6/CA7, approval.*",
+  "Residuais R5 do dev: ex-técnico só de despacho reatribuído antes do deploy recebe rejected; divergentes do backfill só como total no NOTICE (medido: 4 divergentes no meu cenário, nenhum tocado)",
+  "2 skips RBAC_DB_PARITY no job backend (iguais na base 4fe7524e: 3351/3349/0/2)",
+  "Fonte secundária da régua (suíte inteira no meu container) não executada: a CI do objeto responde com fail 0 nos 4 jobs"
+ ],
+ "teardown": "src trocados e mutações restaurados e provados (hash-object = blob do objeto; porcelain 0) antes da remoção · gatilhos temporários c3_trg_evento/c3_trg_linha e funções removidos e provados (pg_trigger/pg_proc = 0) · containers j07cb1-c3-node e j07cb1-c3-pg removidos por docker rm -f -v, rede j07cb1-c3-net removida, contagem j07cb1-c3 = 0 (containers e redes) · imagens que EU criei/puxei removidas: j07cb1-c3-img:local e node:20-trixie-slim (0 containers usando) · árvore temporária /c/Users/AMP/t-j07cb1c3 removida no passo do archive · temporários o6r07c* no TEMP: 0 · worktree C:/Users/AMP/w-j07cb1c3 removido por git worktree remove --force (0 processos com o caminho antes; ec 0; ausente no worktree list) · subpasta do scratchpad j07cb1c3 (logs, sondas, senhas pw/pwrt) apagada · base viva (erp-postgres/erp-redis) nunca tocada nem religada · OCORRÊNCIA DE TERRENO: às ~04:55Z o daemon Docker reiniciou e TODOS os containers pararam com Exited (255) — inclusive erp-postgres, erp-redis e o grupo alheio tl179221234520038; não religuei nada que não é meu; o orquestrador decide · w-07cb1 só com os meus dois arquivos de saída · resíduo ALHEIO apenas reportado (jtrc01-*, agv3-proxy, pastrack-*, tl179221234520038-*) · disco livre C: 11G no fim"
+}

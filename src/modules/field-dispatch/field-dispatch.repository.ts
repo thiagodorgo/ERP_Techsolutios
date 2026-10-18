@@ -46,6 +46,8 @@ export interface FieldDispatchRepository {
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined>;
   changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined>;
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined>;
+  deleteById(tenantId: string, dispatchId: string): Promise<void>;
+  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void>;
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent>;
   listTimeline(tenantId: string, dispatchId: string): Promise<readonly FieldDispatchEvent[]>;
   reset?(): void;
@@ -144,6 +146,22 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     this.dispatches.set(updated.id, updated);
 
     return updated;
+  }
+
+  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    const current = await this.findById(tenantId, dispatchId);
+    if (!current) return;
+    this.dispatches.delete(dispatchId);
+    for (const [id, event] of this.events.entries()) {
+      if (event.tenantId === tenantId && event.dispatchId === dispatchId) {
+        this.events.delete(id);
+      }
+    }
+  }
+
+  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    if (snapshot.tenantId !== tenantId) return;
+    this.dispatches.set(snapshot.id, snapshot);
   }
 
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {

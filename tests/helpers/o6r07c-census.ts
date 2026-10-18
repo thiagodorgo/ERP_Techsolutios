@@ -413,7 +413,11 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
   ].map((x) => x.split("QQ").join(String.fromCharCode(34))));
   const semLinha = (x: string) => x.replace(/:[0-9]+: /, ": ");
   const SEG = /[/](work-orders|checklist-runs|dispatches)[/]:[A-Za-z0-9_]+/;
-  const IN_PROP = new Set(["OS·07a", "OS·07c-a", "VISTORIA·07c-b", "DESPACHO·07c-b", "EVIDENCIA-OS·07c-b", "OS·SEM-ALCANCE", "LOTE"]);
+  // B-O6R-07c-b1 — só a TABELA de classes muda (o censo, os tipos e o diferencial ficam intocados): as 23 vias que o
+  // 07c-b guardou saem de `·07c-b` ("aberta, esperando o 07c-b", o que o T11 conta) para a classe do critério que as
+  // guarda — `VISTORIA·ESCOPO` e `EVIDENCIA-OS·ESCOPO` (a porta da OS) e `DESPACHO·ALVO` (o alvo do despacho,
+  // D-07c-DESPACHO-ALVO). As `·07c-b` seguem aceitas aqui para que reabrir uma via acenda o T11, e não outro T.
+  const IN_PROP = new Set(["OS·07a", "OS·07c-a", "VISTORIA·07c-b", "DESPACHO·07c-b", "EVIDENCIA-OS·07c-b", "VISTORIA·ESCOPO", "DESPACHO·ALVO", "EVIDENCIA-OS·ESCOPO", "OS·SEM-ALCANCE", "LOTE"]);
   const G07A = new Set(["ROTA PATCH /api/v1/work-orders/:workOrderId", "ROTA PATCH /api/v1/work-orders/:workOrderId/status", "PAR /api/v1/mobile/sync/work-order-actions · work_order.status_change"]);
   const R = new Set(["ROTA POST /api/v1/mobile/telemetry", "ROTA POST /api/v1/fuel-logs", "ROTA PATCH /api/v1/fuel-logs/:fuelLogId", "ROTA POST /api/v1/damages", "ROTA POST /api/v1/expense-reports", "ROTA PATCH /api/v1/expense-reports/:reportId", "ROTA POST /api/v1/expense-reports/:reportId/items"]);
   const N = new Set(["ROTA POST /api/v1/auth/login", "ROTA POST /api/v1/auth/refresh", "ROTA POST /api/v1/auth/logout", "ROTA POST /api/v1/notifications/fleet-alerts/run", "ROTA POST /api/v1/notifications/:notificationId/read", "ROTA POST /api/v1/notifications/read-all", "ROTA POST /api/v1/notifications/:notificationId/archive", "ROTA POST /api/v1/mobile/field-locations", "ROTA POST /api/v1/damages/:damageId/attachments", "ROTA POST /api/v1/attachments", "ROTA DELETE /api/v1/attachments/:attachmentId", "ROTA POST /api/v1/expense-reports/:reportId/submit"]);
@@ -440,9 +444,9 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
       if (v.prop) {
         if (v.semAlcance) return "OS·SEM-ALCANCE";
         if (/[/]work-orders[/]:/.test(p)) return "OS·07c-a";
-        if (/[/]checklist-runs[/]:/.test(p)) return "VISTORIA·07c-b";
-        if (/[/]dispatches[/]:/.test(p)) return "DESPACHO·07c-b";
-        if (p.endsWith("/mobile/evidence-uploads")) return "EVIDENCIA-OS·07c-b";
+        if (/[/]checklist-runs[/]:/.test(p)) return "VISTORIA·ESCOPO";
+        if (/[/]dispatches[/]:/.test(p)) return "DESPACHO·ALVO";
+        if (p.endsWith("/mobile/evidence-uploads")) return "EVIDENCIA-OS·ESCOPO";
         return "NAO-CLASSIFICADA";
       }
       if (R.has(v.k)) return "R";
@@ -454,8 +458,8 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
     if (v.prop) {
       if (v.semAlcance) return "OS·SEM-ALCANCE";
       if (/^work_order[.]/.test(t)) return "OS·07c-a";
-      if (/^checklist/.test(t)) return "VISTORIA·07c-b";
-      return "EVIDENCIA-OS·07c-b";
+      if (/^checklist/.test(t)) return "VISTORIA·ESCOPO";
+      return "EVIDENCIA-OS·ESCOPO";
     }
     if (/^expense_/.test(t)) return "R";
     if (/^evidence[.]field_/.test(t)) return "N";

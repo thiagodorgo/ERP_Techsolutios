@@ -33,6 +33,13 @@ import {
   type ChecklistRepository,
   type RepositoryRunDetails,
 } from "./checklist.repository.js";
+import type { WorkOrderService } from "../work-orders/work-order.service.js";
+import {
+  actorMutatesAssignedOnly,
+  isPreviouslyAssignedRefusal,
+  WorkOrderError,
+  type WorkOrderActorContext,
+} from "../work-orders/work-order.types.js";
 import type {
   CompleteChecklistRunInput,
   CreateChecklistAcknowledgementInput,
@@ -49,6 +56,11 @@ import type {
 type ActorContext = {
   readonly tenantId: string;
   readonly userId: string;
+  // B-O6R-07c-b1 — o escopo por objeto da vistoria decide pelos papéis do ator (`actorMutatesAssignedOnly`). O
+  // ator HTTP (`requireTenantContext`) e o do lote os carregam; chamadores internos sem papel (o provisionamento
+  // do despacho) não caem no escopo — a mesma regra de presença do 07a.
+  readonly roles?: WorkOrderActorContext["roles"];
+  readonly permissions?: WorkOrderActorContext["permissions"];
 };
 
 export type ChecklistRenderSchema = {
@@ -61,8 +73,25 @@ export type ChecklistRenderSchema = {
   readonly components: readonly ChecklistTemplateComponent[];
 };
 
+// B-O6R-07c-b1 (Ω6R-SEC-002, item 51 `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`) — a recusa de escopo da
+// vistoria: 403 `not_assigned_to_actor`, como a da OS; carrega a marca "já foi técnico da OS" (`D2-07c`) para o
+// lote devolver conflito em vez de recusa.
+export class ChecklistRunNotAssignedError extends ChecklistError {
+  constructor(readonly wasPreviouslyAssigned: boolean) {
+    super(
+      403,
+      "CHECKLIST_RUN_NOT_ASSIGNED",
+      "not_assigned_to_actor",
+      "Field actors can only change checklist runs linked to a work order assigned to them.",
+    );
+  }
+}
+
 export class ChecklistService {
-  constructor(private readonly repository: ChecklistRepository) {}
+  constructor(
+    private readonly repository: ChecklistRepository,
+    private readonly resolveWorkOrderServiceFn?: () => Promise<WorkOrderService>,
+  ) {}
 
   listComponents() {
     return CHECKLIST_COMPONENT_CATALOG;
@@ -239,6 +268,25 @@ export class ChecklistService {
     actor: ActorContext,
     input: CreateChecklistRunInput & { readonly role?: ChecklistRunRole },
   ): Promise<ChecklistRun> {
+    // B-O6R-07c-b1 (plano 07c-b.4: `createRun` também passa pelo escopo) — hoje o papel de campo não tem
+    // `checklist_runs:create` (a entrada do lote é `OS·SEM-ALCANCE`); se vier a ter, a vistoria que ele abre numa OS
+    // passa pela mesma porta da OS. Criar vistoria avulsa (sem OS) não é escrita em OS e fica fora da P-07c.
+    if (
+      actorMutatesAssignedOnly(toWorkOrderActor(actor)) &&
+      input.relatedEntityType === "work_order" &&
+      typeof input.relatedEntityId === "string"
+    ) {
+      const workOrderService = await this.resolveWorkOrderService();
+      try {
+        await workOrderService.getForMutation(toWorkOrderActor(actor), input.relatedEntityId);
+      } catch (error) {
+        if (error instanceof WorkOrderError && error.reason === "not_assigned_to_actor") {
+          throw new ChecklistRunNotAssignedError(isPreviouslyAssignedRefusal(error));
+        }
+        throw error;
+      }
+    }
+
     const template = await this.getTemplate(actor, input.checklistId);
 
     if (template.status !== "published") {
@@ -349,11 +397,59 @@ export class ChecklistService {
     return checklistId ? runs.filter((run) => run.templateId === checklistId) : runs;
   }
 
+  /**
+   * B-O6R-07c-b1 (Ω6R-SEC-002; item 51 `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO`) — O PONTO ÚNICO de escopo por
+   * objeto da vistoria. Quem escreve numa execução (responder, anotar, anexar, marcar avaria, concluir, registrar
+   * divergência, dar ciência — e reabrir) passa por aqui ANTES de qualquer outra regra.
+   *
+   * run (404 do cross-tenant, inalterado) → OS da run → a porta da OS (`WorkOrderService.getForMutation`, o mesmo
+   * casamento duplo do 07a, sem ramo de despacho: `D1-07c` = (c), despachar já atribui).
+   * - Papel `tenant_wide` (e chamador interno sem papel): passa — a mesma regra de presença do 07a.
+   * - Run SEM OS, para o papel de campo: NEGA (fail-closed, S-ORFA). A vistoria avulsa não tem dono provável.
+   * - OS da run que não se acha (apagada, outra organização): NEGA com o mesmo 403 — a run existe e é desta
+   *   organização; dizer 404 mentiria sobre ela.
+   * - Recusa de escopo da OS: vira `ChecklistRunNotAssignedError`, levando a marca de ex-técnico (`D2-07c`).
+   */
+  async assertRunMutationScope(actor: ActorContext, runId: string): Promise<RepositoryRunDetails> {
+    const details = await this.getRun(actor, runId);
+    const woActor = toWorkOrderActor(actor);
+
+    if (!actorMutatesAssignedOnly(woActor)) {
+      return details;
+    }
+
+    const workOrderId =
+      details.run.relatedEntityType === "work_order" && typeof details.run.relatedEntityId === "string"
+        ? details.run.relatedEntityId.trim()
+        : "";
+
+    if (!workOrderId) {
+      throw new ChecklistRunNotAssignedError(false);
+    }
+
+    const workOrderService = await this.resolveWorkOrderService();
+
+    try {
+      await workOrderService.getForMutation(woActor, workOrderId);
+    } catch (error) {
+      if (error instanceof WorkOrderError && error.reason === "not_assigned_to_actor") {
+        throw new ChecklistRunNotAssignedError(isPreviouslyAssignedRefusal(error));
+      }
+      if (error instanceof WorkOrderError && (error.statusCode === 404 || error.statusCode === 400)) {
+        throw new ChecklistRunNotAssignedError(false);
+      }
+      throw error;
+    }
+
+    return details;
+  }
+
   async updateRun(actor: ActorContext, runId: string, input: UpdateChecklistRunInput): Promise<RepositoryRunDetails> {
     // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — a vistoria concluída é a prova do estado do veículo:
     // nenhuma escrita passa. Corrigir = reabrir (nova versão). O repositório repete a trava (defesa em
     // profundidade); aqui ela vale para QUALQUER repositório, inclusive os de teste.
-    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+    const existing = await this.assertRunMutationScope(actor, runId);
+    assertChecklistRunFieldWritable(existing.run);
     assertChecklistRunStatusTransition(input.status);
 
     const run = await this.repository.updateRun({
@@ -512,7 +608,8 @@ export class ChecklistService {
   }
 
   async createMarker(actor: ActorContext, runId: string, input: CreateChecklistMarkerInput): Promise<ChecklistMarker> {
-    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+    const existing = await this.assertRunMutationScope(actor, runId);
+    assertChecklistRunFieldWritable(existing.run);
 
     const marker = await this.repository.createMarker(actor.tenantId, runId, actor.userId, input);
 
@@ -533,12 +630,14 @@ export class ChecklistService {
     runId: string,
     input: CompleteChecklistRunInput,
   ): Promise<RepositoryRunDetails> {
+    const existing = await this.assertRunMutationScope(actor, runId);
+
     if (input.hasDivergence && !input.observation?.trim()) {
       throw new ChecklistError(422, "DIVERGENCE_OBSERVATION_REQUIRED", "divergence_observation_required", "Divergence requires an observation.");
     }
 
     // Concluir de novo o que já está concluído (ou cancelado) é mutação de prova assinada → 409.
-    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+    assertChecklistRunFieldWritable(existing.run);
 
     const status = input.hasDivergence ? "pending_acknowledgement" : "completed";
     // B-O6R-06 / EMENDA E1.2 — ESTE e o unico dos tres chamadores de `repository.completeRun` que
@@ -611,6 +710,8 @@ export class ChecklistService {
     readonly run: RepositoryRunDetails;
     readonly previousRunId: string;
   }> {
+    await this.assertRunMutationScope(actor, runId);
+
     const result = await this.repository.reopenRun({
       tenantId: actor.tenantId,
       runId,
@@ -677,7 +778,8 @@ export class ChecklistService {
     // P0a — anexo de divergência só é criado quando há fileUrl (caminho REST). O sync do mobile registra a
     // divergência SEM arquivo (componente + observação): pula a criação de anexo para NUNCA gerar "anexo
     // fantasma" (schema exige file_url NOT NULL) e apenas marca a run como pending_acknowledgement.
-    assertChecklistRunFieldWritable((await this.getRun(actor, runId)).run);
+    const existing = await this.assertRunMutationScope(actor, runId);
+    assertChecklistRunFieldWritable(existing.run);
 
     let attachment: ChecklistAttachment | null = null;
 
@@ -740,7 +842,7 @@ export class ChecklistService {
     readonly acknowledgement: ChecklistAcknowledgement;
     readonly run: RepositoryRunDetails;
   }> {
-    const existing = await this.getRun(actor, runId);
+    const existing = await this.assertRunMutationScope(actor, runId);
 
     if (existing.run.status !== "pending_acknowledgement") {
       throw new ChecklistError(409, "ACKNOWLEDGEMENT_NOT_REQUIRED", "acknowledgement_not_required", "Checklist run is not pending acknowledgement.");
@@ -805,11 +907,11 @@ export class ChecklistService {
     });
   }
 
-  // Pré-condição comum das escritas de anexo: a run existe no tenant, AINDA aceita escrita (PR-03) e o campo
-  // pertence ao modelo dela. A ordem importa no caminho multipart: a trava roda ANTES de gravar o binário —
-  // vistoria travada nunca chega a escrever arquivo no armazenamento.
+  // Pré-condição comum das escritas de anexo: a run existe no tenant, o ator tem escopo de objeto (07c-b),
+  // AINDA aceita escrita (PR-03) e o campo pertence ao modelo dela. A ordem importa no caminho multipart:
+  // a trava roda ANTES de gravar o binário — vistoria travada ou fora de escopo nunca chega a escrever arquivo.
   private async assertRunComponent(actor: ActorContext, runId: string, componentId: string): Promise<void> {
-    const details = await this.getRun(actor, runId);
+    const details = await this.assertRunMutationScope(actor, runId);
 
     assertChecklistRunFieldWritable(details.run);
 
@@ -820,6 +922,23 @@ export class ChecklistService {
       throw new ChecklistError(404, "CHECKLIST_COMPONENT_NOT_FOUND", "checklist_component_not_found", "Checklist component not found.");
     }
   }
+
+  private async resolveWorkOrderService(): Promise<WorkOrderService> {
+    if (this.resolveWorkOrderServiceFn) {
+      return this.resolveWorkOrderServiceFn();
+    }
+    const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
+    return createDefaultWorkOrderService();
+  }
+}
+
+function toWorkOrderActor(actor: ActorContext): WorkOrderActorContext {
+  return {
+    tenantId: actor.tenantId,
+    userId: actor.userId,
+    roles: actor.roles ?? [],
+    permissions: actor.permissions ?? [],
+  };
 }
 
 const memoryRepository = new InMemoryChecklistRepository();

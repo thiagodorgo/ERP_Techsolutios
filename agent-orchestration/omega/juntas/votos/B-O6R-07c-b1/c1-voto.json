@@ -1,0 +1,103 @@
+{
+ "jurado": "jurado-07cb1-c1-opus — SUCESSOR (P3, identidade nova) de jurado-07cb1-c1-argon (caído 07:55Z sem voto); corpo jurado-07cb1-c1-escopo-e-rbac; ocupo a competência do coordenador-de-acessos (inelegível como identidade); nenhum número, SHA, linha ou trecho da emenda, do plano, do relatório do dev, do inspetor, do caído ou do corpo herdado como fato",
+ "cadeira": "C1 — escopo por objeto e RBAC: 403/404 por papel e objeto nas 23 vias; matriz x catálogo x comportamento, segregação e b1 sem decisor; a trava D-07CB1-TRAVA-ATE-B2 por papel, estado e via",
+ "mandato_md5": "fa118ae5593163d8d63f951aea03e225 (EOL-neutro, medido) · declarado no disparo: fa118ae5593163d8d63f951aea03e225",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor · autorização: CLAUDE.md §C7.6 (objeto b198fe35 e origin/main 2a49b015: nível menor = Opus) e disparo do orquestrador de 17/10 (sucessão R4)",
+ "corpo_md5": ".claude 1a5e17a56621860cdc3113831e166e4e (blob do objeto, EOL-neutro) · declarado no disparo: 1a5e17a56621860cdc3113831e166e4e · lido do blob por git show",
+ "objeto": "b198fe358b41186b2598ab258ccb735da8c04cbc (git ls-remote do ramo = gh pr view 440 headRefOid, no início e no fim) · B = merge-base 4fe7524ecbcc68b3e69336453cc774ed5937cb1c · merges em B..objeto: 0 · origin/main início/fim 2a49b0159c83a6019a63b4d2af4d119fe7410972 / 2a49b0159c83a6019a63b4d2af4d119fe7410972 · objeto no fim: igual",
+ "legalidade": "parecer insp-07cb1-parecer.md (inspetor-07cb1-opus, 03:30–03:40Z) LIBERADO COM RESSALVA, nomeia a cadeira C1 e o corpo nos dois espelhos; executor e worktree trocados por sucessão pelo orquestrador (R4) · check-runs 14 | 0 não-verdes | 0 pendentes",
+ "decisoes_do_dono": "objeto: D1-07c 3166,3424,3654 · D2-07c 3171,3425,3655 · D-07CB-EMENDA-RECOMENDACOES 3658; as de 17/10 ausentes no objeto e presentes em origin/main 2a49b015 e 79599143 (R1): D-DESP-INICIO-ATENDIMENTO 3699,3709 · D-07CB1-TRAVA-ATE-B2 3709,3719 · D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO 3711 · D-INICIO-ATENDIMENTO-CONFIRMADO 3719 · tensão P3 (on_route) x No local: registrada e resolvida em origin/main:decisoes.md:3719 (No local)",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (bloqueia + dentro-do-bloco reprova, de qualquer classe)",
+ "leitura_de_outras_cadeiras": "não li nenhum arquivo c2-*/c3-* desta junta · li: corpo (blob), mandato C1, parecer do inspetor, 00-quedas.md, c1-evidencia.md e c1-voto.json do caído (roteiro P3), emenda e decisoes.md por git show, blobs de src/ e tests/",
+ "pausa": "nenhuma",
+ "sucessao_p3": "re-executado do caído: 04-item1a.mts (23=23, saída idêntica), 07-run-item1-all.sh (sonda objeto/base/M22/M24 + testes) — os 4 logs da sonda IGUAIS aos dele, contagens de teste iguais (40/1, 41/0, 7/17); medido de novo (cauda): comparador 1(a) com vermelho-controle, mutação dupla M22+M24 (G-WIDE acusa 18/23; b-scope 21/20), todo o item 2 (253+110 células, base e objeto) e todo o item 3 (384 células, base e objeto, + efeito e vias fora do despacho). Conclusões do caído sem comando registrado (controle 1(a) 'SIMULATION_DIFF_COUNT', 09-sonda-item2) NÃO usadas.",
+ "voto": "REPROVADO",
+ "justificativa": "Terreno: worktree próprio w-j07cb1c1o detached no objeto, npm ci próprio sem symlink, db:generate com URL fictícia, check verde; sondas no app real em memória (env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory), HTTP listen(0), permissões do CATÁLOGO pelo x-role (sem x-permissions; resolver persistente nulo em memória). Sucessão P3: roteiro do caído re-executado com saída idêntica. Item 1: as 23 chaves do objeto = as 23 ·07c-b de B; G-NEG por field_technician e technician nos dois corpos → rejected/403 not_assigned_to_actor sem efeito; ex-técnico 403 no REST; recibo alheio 409 evidence_metadata_required e 0 arquivo; despachado, perfil, user id, technician despachado, dual e escritório escrevem com efeito; S-ORFA, S-ORDEM e 404 entre organizações intactos; base mostra o defeito nas 23; G-WIDE visto acusando sob M22+M24. Item 2: só os assigned_only mudam nas 23 vias; o técnico não se atribui; b1 sem decisor de conflito; RBAC_MATRIX intacta; ajuste A3 (operator). Item 3: a trava recusa o reassign direto a partir de arrived e tudo com a OS em on_site+, mas é contornada com o «No local» só no despacho por 5 vias do bloco e pela atribuição web/lote (A1, A2), para os 4 papéis que alocam; vermelho-controles: leitor de estado acusa a troca em on_route, grade não constante, varredor acha a via web em B, base mostra o reassign de arrived passando.\nVOTO: REPROVADO — o papel que aloca troca o técnico de uma OS cujo despacho está em «No local» (arrived/in_service) por reassign em dois passos no mesmo despacho, despacho novo, ativação de rascunho e devolução no cancelamento/falha (e pela atribuição web/lote) | escopo: dentro-do-bloco | classe: grave: quebra de permissão | evidência: sonda-c1o-item3.mts object, N=384, 4 papéis: DS=arrived/in_service X1 200>200, V2 201, V3 201>200, V4/V5 200, osUser tecA->tecC; sonda-c1o-item3b: tecA no cliente perde a escrita (403)",
+ "o_que_executei": [
+  {
+   "comando": "git show <objeto>:<corpo> | tr -d CR | md5sum; tr -d CR < cadeira-c1.md | md5sum; git ls-remote; gh pr view 440; gh api .../check-runs; git merge-base; git show <ref>:decisoes.md | grep -n <ID>; git show <ref>:CLAUDE.md | grep -c <âncora>",
+   "forma": "legalidade, objeto e origin/main",
+   "resultado": "md5 iguais ao disparo; objeto = b198fe35 nas duas fontes; 14/0/0; B = 4fe7524e; decisões e âncoras na evidência §0"
+  },
+  {
+   "comando": "npm ci --no-audit --no-fund; DATABASE_URL=<fictícia> npm run db:generate; env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check (worktree C:/Users/AMP/w-j07cb1c1o)",
+   "forma": "Windows, Node 20.19.5, N=1",
+   "resultado": "ec 0/0/0; 0 symlink em node_modules"
+  },
+  {
+   "comando": "P3: npx tsx p3/04-item1a.mts; bash p3/07-run-item1-all.sh (sonda do caído, só o caminho trocado)",
+   "forma": "objeto, B trocado (13 arquivos, hash-object = blob B), M22, M24; N=1 cada",
+   "resultado": "ec 0; logs da sonda iguais aos do caído; b-scope M22 41/40/1, M24 41/41/0; subresource M24 24/7/17; restauro provado"
+  },
+  {
+   "comando": "node ctl-1a.mjs <objeto> <B>; mutação dupla M22+M24 + sonda + tsx --test tests/o6r07c-b-scope.test.ts",
+   "forma": "objeto; mutação nova; N=1",
+   "resultado": "23=23 com vermelho-controle acusando; sob a dupla G-WIDE vermelho em 18/23 e b-scope 41/21/20; restauro provado"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npx tsx sonda-c1o-item2-main.mts object|base",
+   "forma": "253 células (23 vias x 11 papéis) + 110 de alocação + upload G-NEG + falso positivo; objeto e B trocado",
+   "resultado": "ec 0/0; 45 células mudam, todas field_technician/technician para not_assigned_to_actor; alocação: códigos mudam só para field_technician; efeito novo do operator em ativação e falha"
+  },
+  {
+   "comando": "env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npx tsx sonda-c1o-item3.mts object|base; npx tsx sonda-c1o-item3b.mts",
+   "forma": "384 células (12 estados x 8 vias x 4 papéis), objeto e B trocado; efeito sobre o técnico No local; vias fora do despacho",
+   "resultado": "ec 0; objeto: com despacho arrived/in_service e OS antes de on_site, X1/V2/V3/V4/V5 trocam tecA->tecC para os 4 papéis; V1 direto 409; OS on_site+ todas 409; base: reassign de arrived passa (controle)"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "A1 — a trava D-07CB1-TRAVA-ATE-B2 é contornada quando o «No local» está no DESPACHO (arrived/in_service) e a OS ainda está antes de on_site: o papel que aloca (manager, field_dispatcher, tenant_admin, platform_admin — os 4) troca o técnico da OS por (i) reassign em dois passos no MESMO despacho (a reatribuição à mesma pessoa leva o despacho de arrived a «reassigned»; a 2a reatribuição passa), (ii) despacho novo para outro técnico, (iii) rascunho para outro técnico ativado, (iv) cancelamento e (v) falha do despacho com devolução automática ao outro despacho ativo.",
+   "evidencia": "sonda-c1o-item3.mts object (ec 0, N=384, 4 papéis idênticos): DS=arrived e DS=in_service → V1 reassign direto 409 technician_change_requires_authorization (a trava existe), mas X1 200 > 200 [osUser tecA->tecC, d1 tecA:arrived->tecC:reassigned, linhas 1->3], V2 201 [tecA->tecC], V3 201 > 200 [tecA->tecC], V4/V5 200 [tecA->tecC]. sonda-c1o-item3b.mts: o PRÓPRIO tecA marca arrived (200) e responde a vistoria (200); após o X1 do manager, tecA (no cliente) recebe 403 not_assigned_to_actor no despacho e na vistoria; tecC escreve 200. Causa no blob field-dispatch.service.ts: assertTechnicianChangeAllowed recebe o status do despacho só no reassign direto; create/ativação (assertNewTargetAllowed) e moveAssignmentToRemainingDispatch olham só a OS; o status reassigned não está em DISPATCH_SERVICE_STARTED; o comentário do bloco declara que qualquer das duas máquinas marca o atendimento iniciado. Base (src trocado): DS=arrived V1 → 200 (o defeito que a trava fecha); a trava é nova do bloco.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "grave: quebra de permissão",
+   "motivo": "o papel que aloca troca o técnico de uma OS cujo despacho está em «No local» (arrived/in_service) por reassign em dois passos, despacho novo, ativação de rascunho e devolução no cancelamento/falha; o técnico que está no cliente perde a escrita"
+  },
+  {
+   "defeito": "A2 — com o despacho em arrived e a OS em assigned, a atribuição pela OS (POST /work-orders/:id/assign e o lote work_order.assign) troca o técnico da OS sem a recusa da trava.",
+   "evidencia": "sonda-c1o-item3b.mts (manager): D_arrived_OS_assigned → POST /assign 200 e lote work_order.assign accepted, OS tecA->tecC (linhas 1->3), d1 segue tecA:arrived. Com a OS em on_site → 409 invalid_status_transition (máquina da OS). Varredor (git grep) acha repository.assign via service.assign (controller:199, mobile-work-order-sync:235). Origem do método assign: git log -S → 51238552 2026-06-09; git blame -L 1688,1712 → 51238552/f5d9770c, anteriores ao bloco; MAS work-order.service.ts está no PERMITIDO da emenda (B-O6R-07c-b-emenda-2026-10-15.md:52) — pela régua do corpo, sem «fora do PERMITIDO» não é pre-existente.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco (régua do corpo: arquivo no PERMITIDO; método anterior ao bloco, evidência de data 51238552 2026-06-09 publicada para o planejador e o orquestrador)",
+   "classe": "grave: quebra de permissão",
+   "motivo": "existe via de atribuição fora do despacho que troca o técnico de OS cujo despacho está em «No local»; a trava vale o que vale a via mais frouxa"
+  },
+  {
+   "defeito": "A3 — o operator (sem work_orders:assign nem field_dispatch:create/reassign) passa a mudar o técnico da OS ao ativar um rascunho e ao falhar um despacho (field_dispatch:update), efeito novo do b1; a emenda M4 (l.20) registra «o Operador NÃO aloca».",
+   "evidencia": "sonda-c1o-item2-main.mts: ALOC operator AL3 ativar rascunho de tecC 200 nos dois, os=null na base → os=tecC no objeto; AL5 falhar 200 nos dois e, com outro despacho ativo, a devolução troca o técnico (item 3, V5). O operator não escolhe o alvo (o rascunho e o 2o despacho vêm de quem aloca).",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "papel não assigned_only que não aloca passou a alterar a atribuição da OS por ativação e falha de despacho, sem decisão do dono que o peça"
+  },
+  {
+   "defeito": "N1 — o technician (papel de campo STANDARD) não tem field_dispatch:update: despachado, não muda o status do PRÓPRIO despacho (403 permission_required).",
+   "evidencia": "item 1 posT2 no status do despacho 403 permission_required no objeto e na base; catálogo do technician desde 3ffec005 2026-05-21; catalog.ts está no PROIBIDO da emenda (l.59).",
+   "gravidade": "nota",
+   "escopo": "pre-existente (3ffec005 2026-05-21; catalog.ts fora do alcance do bloco)",
+   "classe": "não grave",
+   "motivo": "o technician despachado não alcança a via de status do despacho"
+  },
+  {
+   "defeito": "N2 — upload com evidence_id de outra organização responde 403 evidence_tenant_mismatch (não 404), igual para recibo alheio e inexistente.",
+   "evidencia": "item 1 CA10_XT_UPLOAD no objeto e na base: alheio = inexistente = 403 evidence_tenant_mismatch; sem oráculo de existência.",
+   "gravidade": "nota",
+   "escopo": "pre-existente (mesma resposta na base 4fe7524e)",
+   "classe": "não grave",
+   "motivo": "a recusa entre organizações no upload não é 404, mas é constante e não revela existência"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "M22 e M24 isoladas são mutantes equivalentes nas 23 vias (cada guarda de tenant_wide é mascarada pela outra): o G-WIDE da sonda não pode acender com uma só; medi com a dupla M22+M24 (acende 18/23).",
+  "G-NEG do technician no status do despacho não pode dar not_assigned_to_actor: o catálogo nega a permissão antes (permission_required, pré-existente).",
+  "Linhas OS=* da grade do item 3 na base dão SETUP_FAIL por construção (na base o despacho não atribui a OS); o controle da base usa as linhas DS=*."
+ ],
+ "pendencias_que_aceito": [
+  "C2: forma do conflito no sync (conflicts[], conflict_type, idempotência), 409 do upload para o ex-técnico (visto de passagem: 409 assignment_changed_pending_review), residual R5 do dev.",
+  "C3: o que o despacho grava (linha de histórico, evento, compensação, OS encerrada, rascunho, Traccar), backfill P6, censo/T11, suíte, escopo do diff.",
+  "b2: fila durável, decisão do superior, CA6/CA7, approval.* — não cobrado.",
+  "N1 (technician sem field_dispatch:update) e N2 (upload entre organizações = 403) — pré-existentes; bloco dono a registrar pelo orquestrador.",
+  "Resíduo ALHEIO reportado, não varrido: worktree C:/Users/AMP/w-j07cb1c1 do caído; 3 diretórios C:/Users/AMP/AppData/Local/Temp/c1-sonda-anexos-* do caído (anteriores ao meu início)."
+ ],
+ "teardown": "src trocados e mutações restaurados (RESTORE_OK count=13 all_match_O=true status_clean=true em todas as trocas) · servidores das sondas fechados no finally, 0 processo com w-j07cb1c1o · worktree C:/Users/AMP/w-j07cb1c1o removido por git worktree remove --force (ec 0, ausente do worktree list) · nenhum container criado · diretórios temporários c1o-* das sondas: 0 restantes · subpasta do scratch c1o-07cb1 apagada ao fim · base viva nunca tocada · w-07cb1 só com c1-opus-evidencia.md e c1-voto.json · espaço no fim de linha nos dois arquivos = 0 (conferido) · disco C: 8.1G livres no fim"
+}

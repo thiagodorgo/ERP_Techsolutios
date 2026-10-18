@@ -1700,6 +1700,9 @@ test("mobile inventory action sync validates envelope, actor context, permission
 test("mobile evidence sync accepts supported metadata, rejects invalid actions and isolates tenant context", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    // B-O6R-07c-b1 ciclo 2 (arnês, classe (iii)): `evidence.work_order_*` passou a exigir a OS desta organização para
+    // TODOS os papéis (`D1-07c`, um critério só) — o `work_order_id` deixa de ser um rótulo inventado e vira uma OS real.
+    const workOrderId = await createWorkOrderForEvidence(baseUrl, headers);
     const response = await requestJson(baseUrl, "/api/v1/mobile/sync/evidence-actions", {
       method: "POST",
       headers,
@@ -1713,7 +1716,7 @@ test("mobile evidence sync accepts supported metadata, rejects invalid actions a
             local_created_at: "2026-06-15T12:00:00.000Z",
             payload: {
               tenant_id: seed.tenantB.id,
-              work_order_id: "work-order-1",
+              work_order_id: workOrderId,
               kind: "photo",
               file_name: "panel-before.jpg",
               content_type: "image/jpeg",
@@ -1785,12 +1788,15 @@ test("mobile evidence sync accepts supported metadata, rejects invalid actions a
 test("mobile evidence sync is idempotent by tenant, user and client evidence id", async () => {
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    // B-O6R-07c-b1 ciclo 2 (arnês, classe (iii)): `evidence.work_order_*` passou a exigir a OS desta organização para
+    // TODOS os papéis (`D1-07c`, um critério só) — o `work_order_id` deixa de ser um rótulo inventado e vira uma OS real.
+    const workOrderId = await createWorkOrderForEvidence(baseUrl, headers);
     const action = {
       client_evidence_id: "evidence-idempotent-1",
       type: "evidence.work_order_observation",
       local_created_at: "2026-06-15T13:00:00.000Z",
       payload: {
-        work_order_id: "work-order-idempotency",
+        work_order_id: workOrderId,
         note: "Equipment isolated before service.",
       },
     };
@@ -1809,7 +1815,7 @@ test("mobile evidence sync is idempotent by tenant, user and client evidence id"
           {
             ...action,
             payload: {
-              work_order_id: "work-order-idempotency",
+              work_order_id: workOrderId,
               note: "Different offline observation.",
             },
           },
@@ -1885,6 +1891,9 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
   await withMobileContractApi(async ({ baseUrl, seed }) => {
     const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
     const clientEvidenceId = "woevid-local-upload-1";
+    // B-O6R-07c-b1 ciclo 2 (arnês, classe (iii)): `evidence.work_order_*` passou a exigir a OS desta organização para
+    // TODOS os papéis (`D1-07c`, um critério só) — o `work_order_id` deixa de ser um rótulo inventado e vira uma OS real.
+    const workOrderId = await createWorkOrderForEvidence(baseUrl, headers);
     // B-O6R-07b: troca de FIXTURE (nenhuma assercao mudou). A string "fake-jpeg-bytes" nao tem
     // assinatura JPEG e o gate a recusa com 415 `content_unrecognized`. O caso NOVO "bytes falsos
     // declarados jpeg -> 415" nasce em tests/o6r07b-mime-sniff-routes.test.ts; esta suite de contrato
@@ -1913,7 +1922,7 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
             type: "evidence.work_order_photo",
             local_created_at: "2026-06-17T12:00:00.000Z",
             payload: {
-              work_order_id: "work-order-upload-1",
+              work_order_id: workOrderId,
               kind: "photo",
               file_name: "panel-before.jpg",
               content_type: "image/jpeg",
@@ -1956,7 +1965,7 @@ test("mobile evidence file upload stores binary metadata safely and enforces ten
         tenant_id: seed.tenantB.id,
         evidence_id: evidenceId,
         client_evidence_id: clientEvidenceId,
-        work_order_id: "work-order-upload-1",
+        work_order_id: workOrderId,
         sha256,
         size_bytes: String(bytes.length),
         content_type: "image/jpeg",
@@ -2172,6 +2181,17 @@ test("permission error contract uses stable message for one or many required per
     assertNoStackTrace(checklistRun.body);
   });
 });
+
+// B-O6R-07c-b1 ciclo 2 — uma OS real da organização do ator, para as evidências `evidence.work_order_*`.
+async function createWorkOrderForEvidence(baseUrl: string, headers: Record<string, string>): Promise<string> {
+  const created = await requestJson(baseUrl, "/api/v1/work-orders", {
+    method: "POST",
+    headers,
+    body: { title: "OS da evidência mobile" },
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  return created.body.data.id as string;
+}
 
 async function withMobileContractApi(
   callback: (context: ApiContext) => Promise<void>,
