@@ -1,0 +1,178 @@
+{
+ "jurado": "jurado-trc01c3-b-escopo-superficie-registro (identidade nova; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, do orquestrador, do inspetor, das atas dos ciclos 1 e 2 ou deste corpo herdado como fato)",
+ "cadeira": "(b″) ciclo 3 — escopo, superfície e registro: escopo por laço e por função; superfície, rotas, motivos, contrato e Ω6R-SEC-002; registro",
+ "mandato_md5": "dd1d08cd57b9210945b311cf5dce794b (EOL-neutro, medido) · declarado no disparo: dd1d08cd57b9210945b311cf5dce794b",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · executor Claude Code, general-purpose limitado a Read/Grep/Glob/Bash · nível menor (§C7.6) · substituição: nenhuma · sucessora de: ninguém",
+ "corpo_md5": "370d771dd16bdb3a52934d5e7bbb1ff4 (.claude, blob do objeto) · 7663620fc679db6c4479af639e2e12fc (.agents, blob do objeto; difere pela forma do sync) · recebido: lido do blob por git show; esperado no disparo 370d771d… = igual",
+ "objeto": "7c220467f754341a699c18c241fa9965c1a35638 (o do disparo e da cerca do mandato) · ls-remote = gh headRefOid = ce20aa3fc5a4f58e1f8e446d6c6ffa265ec91b52 no início e no fim (objeto + 1 commit só de registro: 8 arquivos — 4 mandatos, 00-quedas, evidência e parecer do inspetor, R-B-TRC-01-ciclo2.md) · h2 2043c584… ancestral: sim · e6b4a33a delta: só registro do ciclo 2 (18 arquivos em omega/juntas) · main integrada: não (merge-base(objeto, origin/main) = merge-base(h2, origin/main) = c260d362…; 3 commits lineares; 0 arquivos atribuídos à main) · origin/main início = fim = a26f8afe… · objeto no fim: igual",
+ "legalidade": "inspetor do ciclo 3 inspetor-trc01c3-opus (executor trocado e declarado; o mandato nomeava inspetor-trc01c3-cdx): insp-trc01c3-parecer.md · LIBERADO COM RESSALVA (R-1..R-10, nenhuma bloqueia) · confere nome, corpo nos dois espelhos (370d771d…/7663620f…), worktree C:/Users/AMP/w-jc3-b e prefixo jtrc01c3-b-: sim · diff sem prisma/**: sim (medido: 0) · w-jc2-b/w-jc2-b3: declarados (R-3, worktrees registrados inertes, remoção do orquestrador) · mandatos com A RE-VERIFICAR: sim · check-runs no objeto medidos por mim: 14 | 0 não-verdes | 0 pendentes · normas aplicadas existem no objeto e na origin/main com o mesmo N (§A7)",
+ "quorum": "unanimidade de 3, com veto · ciclo 3 (só grave reprova; o resto vira pendência com dono)",
+ "docker": "trabalhos de outros contados antes de subir (19:47:47Z e de novo imediatamente antes do docker run): 1 (jtrc01c3-c-*); j07cb1c2-* ausente nesse instante · erp-postgres/erp-redis ignorados na contagem e listados à parte · subi 1 container: jtrc01c3-b-redis em 127.0.0.1:47772 (porta testada: fora das faixas excluídas, sem listener); sem Postgres",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a″)/(c″) deste ciclo · li: o mandato, o meu corpo (blob), o parecer do inspetor do ciclo 3, o plano do ciclo 3 (§3.1–§3.10, §4), o relatório do dev do ciclo 3 e a seção Ciclo 3 de B-TRC-01-dev.md, R-B-TRC-01-ciclo2.md, a seção Ω6R-SEC-002 de pendencias.md, o apêndice zz-jtrc01c-rotas.mts da evidência da (c) do ciclo 1",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "escopo": "36 arquivos no delta 2043c584..7c220467 · cobertos 35 · SEM COBERTURA 0 · SEM COBERTURA LITERAL (registro) 1: docs/revisoes/TRACCAR/B-TRC-01-ciclo3-plano.md · PROIBIDO tocado 0 em 10 padrões (prisma/migrations, ci.yml, src/integrations/traccar, rls.ts, work-orders, field-dispatch.service.ts, outro src, outro teste, Kpis, package/lockfiles) · faixas por parse (comentário líder até o fim do nó): findOperatorsForVehicleAt 26–50→26–54, classifyOperatorsAtFixTime 17–39→17–41, OperatorAtFixTimeCandidate 136–142→136–147; linhas fora = 0; 0 import/export novo · testes: 20/21 iguais byte a byte + T-C1 (título + motivos de a1 e a6, mensagens) + T-P1/T-P2 novos; unitário 4 iguais + (e) novo, candidate() só ganha vehicleAssignedAfterFix: false; helpers novos/editados no -db 0 · mutations.mjs: só M-C1 (re-derivada), M-P1a, M-P1b (55→57 ids) · diff --check ec 0 · Kpis/prisma/.github 0 · sync --check ec 0 (64 agentes) · 3 corpos nos 2 espelhos (6 blobs) · corpos dos ciclos 1/2 intactos",
+ "superficie": "listener/segredo/topologia/env sem diff (0) · 9 suítes sem banco (7 sem -db do ciclo 1, incl. dev-topology, + 2 unitárias; o número 5 do plano não se reproduz) 82/82 no objeto, fail 0, skipped 0; por arquivo objeto >= h2 (só operator-at-fix-time 5 vs 4), 0 título de h2 sumido · rotas do app público 395 md5 48bc87377b435f93e2d2b6141ed8c431 em h2 = objeto; OS/aprovação/despacho/RBAC 43 md5 c8d72733e314259d71c70f0cbdf7963c iguais; traccar no app público 0 · permissões/RBAC/APPROVAL/navegação/frontend 0 · motivos: CHECK = union = 10, mapa 3, ocorrências iguais h2 = objeto · vehicleAssignedAfterFix: 6 ocorrências, todas nas 3 faixas; não chega ao tipo de saída OperatorAtFixTime · API_CONTRACTS.md: 1 hunk, só a frase de operator_history_ambiguous · Ω6R-SEC-002: FORA, parte a parte",
+ "registro": "relatório: números com comando, hora e log do dev (forma diferente do protótipo §3.9), amostra 3/3 confere (5, 1, 12) · vermelho-controle publicado (23/27 com expected→actual por asserção) · nada reescrito: presente · limpeza presente · §4: 0/11 IDs gravados (objeto, ce20aa3f, origin/main, todo ramo remoto, nenhum PR de registro) · P-CI-LISTA-CURADA-6 = 6 medidas, exatamente as nomeadas, todas nascidas fora do bloco · R-B-TRC-01-ciclo2.md: no ramo em ce20aa3f (não no objeto); achou/planejou/desenvolveu distintos · autoria medida: commits da conta do orquestrador; identidade do dev registrada no relatório = dev-trc01-c3-opus, distinta do achador, do planejador e dos devs do ciclo 2",
+ "justificativa": "TERRENO: worktree próprio detached C:/Users/AMP/w-jc3-b no objeto, npm ci próprio (ec 0, 326 pacotes) e prisma generate com URL inerte, sem junction; .env ausente; comparação com h2 trocando de commit dentro do mesmo worktree (package/lock sem diff; disco 9,8 GB), restaurado e provado (HEAD = objeto, porcelain 0, hash-object = blob); Redis próprio jtrc01c3-b-redis em 127.0.0.1:47772, REDIS_URL só como prefixo; base viva, w-07cb1, w-jc2-b, w-jc2-b3 intocados; 1 trabalho docker de outros contado antes de subir. ITEM 1 (VERDE): laço 35/36 cobertos + 1 registro sem cobertura literal (nota); PROIBIDO 0; src/ 0 linhas fora das 3 faixas por parse do TypeScript; só T-C1 editado; mutations só as 3 previstas; diff --check e sync --check verdes. ITEM 2 (VERDE): superfície sem diff; 82/82 nas suítes sem banco; rotas 395 e md5 iguais a h2; nenhum motivo, permissão, tela ou rota nova; flag interna; contrato só a frase; Ω6R-SEC-002 fora. ITEM 3 (VERDE com notas): contagens de execução, vermelho-controle e nada reescrito publicados; §4 do plano não gravado (0/11) — repete a classe da nota 1 da (b′) do ciclo 2, com as mesmas duas pendências daquela nota (P-TRC-VIATURA-PERIODOS, P-CI-LISTA-CURADA-6) mais nove; R-ciclo2 fora do objeto e sem a pergunta (a); corpo do PR sem o ciclo 3. VERMELHOS-CONTROLE, todos acusaram: item 1 — caminhos fictícios em src/integrations/traccar e Kpis marcados (PROIBIDO 1 e 1); linha alterada fora de classifyOperatorsAtFixTime → fora [66]; espaço a mais num caso não-T-C1 → editado. item 2 — rota extra → 396 e md5 802c3784…; vehicleAssignedAfterFix num DTO de OS → fora_das_3=1; motivo zz no union → conjunto difere. item 3 — ID fictício 0 e IDs de outro bloco 15/5; comparador 5×6 e 12×11 → DIVERGE. SEM MEDIR: nada do meu mandato. CLASSE: nenhum achado grave — nenhum arquivo de permissão/RBAC/rotas, nenhuma migração, nenhum segredo ou coordenada exposta; todos os achados são registro/régua, não graves, não reprovam no ciclo 3 (§C7 8(2)). Isolamento da consulta nova sob RLS = (a″); tabela §3.4, mutações e 15 suítes = (c″): não julgados por mim. LIMPEZA: jtrc01c3-b-redis removido (docker rm -f -v; 0 restantes); 0 processos com w-jc3-b, worktree removido por git worktree remove --force; cópias de controle apagadas; subpasta do scratchpad apagada; em w-trc01 só os meus 2 arquivos.\nVOTO: APROVADO — delta do ciclo 3 36 arquivos, todos no PERMITIDO (registro sem cobertura literal: docs/revisoes/TRACCAR/B-TRC-01-ciclo3-plano.md), PROIBIDO 0; src/ só dentro de findOperatorsForVehicleAt, classifyOperatorsAtFixTime e OperatorAtFixTimeCandidate (0 linhas fora); só T-C1 editado, T-P1/T-P2/T-C4(e) acrescentados; diff --check limpo; sync --check ec 0, 3 corpos nos 2 espelhos; superfície sem diff; 7 sem banco + 2 unitárias 82/82; rotas 395 md5 igual a h2; nenhuma permissão, tela ou motivo novo; contrato só na frase de operator_history_ambiguous; Ω6R-SEC-002 fora; registro: contagens de execução, vermelho-controle e nada reescrito publicados, §4 não gravado ; pendências (não graves, com dono): §4 do plano 0/11 em pendencias.md (orquestrador, PR de registro), R-B-TRC-01-ciclo2.md fora do objeto e sem a pergunta (a) da §C7.4-bis (orquestrador), corpo do PR #426 sem o ciclo 3 (orquestrador), plano sem cobertura literal no próprio §3.2 e 5 suítes sem banco não reproduzível (nota de régua)",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/feat/traccar-b-trc-01; gh pr view 426 --json headRefOid,baseRefName,state,isDraft,mergeable; git diff --name-only 7c220467 ce20aa3f; git log 7c220467..ce20aa3f",
+   "forma": "w-trc01 (só leitura), início e fim",
+   "resultado": "ce20aa3f nas duas fontes; delta = 1 commit, 8 arquivos de registro"
+  },
+  {
+   "comando": "git merge-base --is-ancestor 2043c584 7c220467; git merge-base <objeto|h2> origin/main; git log --format=%H %P 2043c584..7c220467",
+   "forma": "w-trc01",
+   "resultado": "ancestral ec 0; merge-bases iguais c260d362; 3 commits lineares; main não entrou"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/7c220467/check-runs?per_page=100 > $S/checkruns.json",
+   "forma": "contagem por node",
+   "resultado": "14 | 0 | 0"
+  },
+  {
+   "comando": "git show <ref>:CLAUDE.md|decisoes.md|pendencias.md|OBITUARIO-IDENTIDADES.md | grep -c <âncora>",
+   "forma": "objeto e origin/main",
+   "resultado": "N iguais nas duas refs; meu nome 0 no obituário"
+  },
+  {
+   "comando": "git worktree add --detach C:/Users/AMP/w-jc3-b 7c220467; npm ci --no-audit --no-fund; DATABASE_URL=<inerte> npx prisma generate",
+   "forma": "timeout -k 15 900/300",
+   "resultado": "ec 0 / ec 0"
+  },
+  {
+   "comando": "node $S/zz-jtrc01c3b-laco.mjs $S/delta.txt (+ EXTRA de controle)",
+   "forma": "sonda md5 ddc7e6a6…, PERMITIDO/PROIBIDO do §3.2 no objeto",
+   "resultado": "36: 35 cobertos, 1 registro sem literal, PROIBIDO 0; controle acusa 2"
+  },
+  {
+   "comando": "git diff -U0 2043c584 7c220467 -- src/ ; node $S/zz-jtrc01c3b-faixas.cjs <typescript> <blob> <nome> <linhas>",
+   "forma": "blobs de h2 e do objeto, TS do worktree",
+   "resultado": "fora 0 nos 3 arquivos; imports/exports iguais; controle fora [66]"
+  },
+  {
+   "comando": "node $S/zz-jtrc01c3b-testes.cjs <typescript> <h2.ts> <obj.ts> (2 arquivos de teste); zz-jtrc01c3b-tc1.cjs",
+   "forma": "AST, EOL-neutro",
+   "resultado": "-db 21→23, 20 iguais, só T-C1 muda (+T-P1, T-P2); unit 4 iguais + (e); controle editado acusa"
+  },
+  {
+   "comando": "ids de mutations.mjs em h2 × objeto (grep + comm)",
+   "forma": "git show dos blobs",
+   "resultado": "55→57; só M-P1a/M-P1b novos; M-C1 trocada"
+  },
+  {
+   "comando": "git diff --check 2043c584 7c220467; git diff --name-only -- Kpis prisma .github; node scripts/sync-agent-agents.mjs --check; git ls-tree especialistas",
+   "forma": "worktree no objeto",
+   "resultado": "ec 0; 0; OK 64 ec 0; 6 blobs"
+  },
+  {
+   "comando": "docker ps (2×); netsh excludedportrange; docker run -d --name jtrc01c3-b-redis -p 127.0.0.1:47772:6379 redis:7; docker port; redis-cli ping",
+   "forma": "contagem por prefixo, erp-* à parte",
+   "resultado": "1 trabalho de outros; 127.0.0.1:47772; PONG"
+  },
+  {
+   "comando": "REDIS_URL=redis://127.0.0.1:47772 node --test --test-reporter=tap --import tsx <9 suítes sem banco> (juntas e uma por arquivo), no objeto e em h2",
+   "forma": "mesmo worktree, checkout do commit dentro dele, restaurado",
+   "resultado": "objeto 82/82 fail 0 skipped 0; h2 81; 0 título sumido; 1 novo"
+  },
+  {
+   "comando": "node --import tsx $S/zz-jtrc01c3b-rotas.mts [extra]",
+   "forma": "cópia verbatim (md5 da extração 37547cdb…) com W trocado; h2 e objeto",
+   "resultado": "395 md5 48bc8737… e 43 md5 c8d72733… nas duas; controle 396 md5 802c3784…"
+  },
+  {
+   "comando": "git diff --name-only -- routes/app/portal-app; -- permissions/RBAC/APPROVAL/navigation/frontend",
+   "forma": "h2..objeto",
+   "resultado": "0 e 0"
+  },
+  {
+   "comando": "bash $S/zz-jtrc01c3b-motivos.sh <wt> <ref> [controle]",
+   "forma": "CHECK + union + mapa + git grep -c em src",
+   "resultado": "h2 = objeto (10/10/3); controle difere"
+  },
+  {
+   "comando": "git grep -n vehicleAssignedAfterFix 7c220467 -- src frontend (+ controle num DTO de OS)",
+   "forma": "objeto e h2",
+   "resultado": "6, todas nas 3 faixas; h2 0; controle fora_das_3=1"
+  },
+  {
+   "comando": "git diff 2043c584 7c220467 -- API_CONTRACTS.md",
+   "forma": "diff inteiro",
+   "resultado": "1 hunk, só a frase de operator_history_ambiguous"
+  },
+  {
+   "comando": "git show <objeto|ce20aa3f|origin/main>:agent-orchestration/controle/pendencias.md | grep -c <11 IDs + fictício + Ω6R-SEC-002/003>; git grep em refs/remotes/origin/*; gh pr list --state open",
+   "forma": "3 refs + ramos remotos + PRs abertos",
+   "resultado": "0/11 em todas; fictício 0; Ω6R-SEC-002 15, -003 5; nenhum PR de registro"
+  },
+  {
+   "comando": "git ls-tree tests -db × nomes -db no ci.yml; git log --diff-filter=A",
+   "forma": "objeto, CR removido do ci.yml",
+   "resultado": "48 vs 42; faltam exatamente as 6 nomeadas; origens dc8168b9/86ea8a81/aadaa6d5/a9fbe283×2/026ff7b8"
+  },
+  {
+   "comando": "git show ce20aa3f:agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo2.md | tr -d CR | md5sum; git log --format=%h %an 2043c584..7c220467; gh pr view 426 --json body",
+   "forma": "leitura + grep",
+   "resultado": "md5 8d572cd2…; 3 commits da conta do orquestrador; dev registrado = dev-trc01-c3-opus; corpo do PR sem o ciclo 3"
+  },
+  {
+   "comando": "bash $S/zz-jtrc01c3b-cmp.sh 5 5 | 1 1 | 12 12 | 5 6 | 12 11",
+   "forma": "amostra do item 2(b) × relatório",
+   "resultado": "confere ×3; DIVERGE ×2 (controle)"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "o §4 do plano do ciclo 3 (11 pendências com ID e dono) não está gravado em agent-orchestration/controle/pendencias.md em ref nenhuma (objeto, head ce20aa3f, origin/main, todo ramo remoto) nem em PR de registro apontado",
+   "evidencia": "git show <ref>:agent-orchestration/controle/pendencias.md | grep -c -- <ID> = 0 para os 11 IDs nas 3 refs; git grep em refs/remotes/origin/* = 0; gh pr list --state open: nenhum PR de registro; controle: fictício 0, Ω6R-SEC-002 15",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_no_ciclo_3": "não (vira pendência: orquestrador, PR de registro §C7 8(3) — o próprio §4 e o R-ciclo2 o nomeiam)",
+   "repete_classe_de_ciclo_anterior": "sim, sem informação nova de fundo — é a nota 1 da (b′) do ciclo 2 (pendência que o plano mandava registrar e não existe), com as mesmas P-TRC-VIATURA-PERIODOS e P-CI-LISTA-CURADA-6; a novidade é só de forma (agora têm ID e dono no plano)",
+   "motivo": "as pendências do §4 não existem como registro; o texto delas é verdadeiro (P-CI-LISTA-CURADA-6 medida: exatamente as 6)"
+  },
+  {
+   "defeito": "R-B-TRC-01-ciclo2.md não está no objeto 7c220467 (entrou no ramo em ce20aa3f, commit só de registro) e não responde por escrito a pergunta (a) da §C7.4-bis (a composição cobre a competência que o achado exige?)",
+   "evidencia": "git ls-tree -r --name-only 7c220467 | grep -c R-B-TRC-01-ciclo2 = 0; git show ce20aa3f:agent-orchestration/omega/reprovacoes/R-B-TRC-01-ciclo2.md, md5 EOL-neutro 8d572cd2…; seções Auditoria de topo e Separação de papéis sem a pergunta (a)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_no_ciclo_3": "não (vira pendência: orquestrador)",
+   "repete_classe_de_ciclo_anterior": "não",
+   "motivo": "o registro da reprovação está no ramo mas fora da ref julgada, e incompleto numa das três perguntas"
+  },
+  {
+   "defeito": "o corpo do PR #426 e a mensagem do commit ebdf6374 não descrevem o ciclo 3 (objetivo, bateria, vermelho-controle, nada reescrito), como o §3.7 item 12 do plano pede",
+   "evidencia": "gh pr view 426 --json body: 2411 bytes, 0 ocorrências de ciclo 3, dev-trc01-c3-opus, nada reescrito; git log -1 --format=%B ebdf6374 = descrição geral do bloco",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_no_ciclo_3": "não (vira pendência: orquestrador)",
+   "repete_classe_de_ciclo_anterior": "não",
+   "motivo": "a superfície do PR não diz o que o ciclo 3 fez; o relatório do dev no repo diz"
+  },
+  {
+   "defeito": "régua: o PERMITIDO do §3.2 não nomeia literalmente o próprio plano docs/revisoes/TRACCAR/B-TRC-01-ciclo3-plano.md; e o §3.10 item 2 fala em 5 suítes sem banco (a árvore tem 7 sem -db do ciclo 1) e em 2 arquivos de src/ (são 3)",
+   "evidencia": "sonda do laço: SEM COBERTURA LITERAL 1; git ls-tree tests: 7 traccar sem -db + 2 unitárias; git diff --name-only -- src: 3 arquivos",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_no_ciclo_3": "não (nota de régua; dono: planejador do próximo ciclo/bloco)",
+   "repete_classe_de_ciclo_anterior": "não",
+   "motivo": "a régua escrita não fecha com a árvore em três números/nomes; nenhum efeito em produto"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum: todo controle acusou (8 controles nos 3 itens). O critério Ω6R-SEC-002 fora pode falhar (rota/permissão/arquivo de OS no diff) — medido. O critério 5 suítes sem banco do plano não se aplica literalmente porque o número não corresponde à árvore — substituído pelo superconjunto 9, declarado."
+ ],
+ "pendencias_que_aceito": [
+  "(a″): isolamento da consulta nova (o predicado OR vehicle_assigned_at > at lê mais OS da MESMA organização sob RLS), CI como execução, backend-postgres 3×, regressão de banco — não julgados por mim",
+  "(c″): tabela §3.4, T-P1/T-P2/T-C1/T-C4(e) por execução, mutações, as 15 suítes do Traccar — não julgados por mim (só conferi a forma do relatório)",
+  "§4 do plano inteiro (P-TRC-CI-COMENTARIO-DENOMINADOR … P-TRC-AUTORIZACAO-EM-BLOCO) a gravar pelo orquestrador",
+  "inspetor R-2 (soltos alheios em w-trc01), R-3 (w-jc2-b/w-jc2-b3), R-5 (ataque só a c fora de decisoes.md), R-6 (obituário sem o B-TRC-01) — registro do orquestrador",
+  "nota de forma do dev: npm run check não compila tests/ (o guard candidate sem a flag não compila só vale em src) — já declarada no relatório"
+ ],
+ "teardown": "container jtrc01c3-b-redis removido (docker rm -f -v), docker ps -a --filter name=jtrc01c3-b- = 0 · sem Postgres, sem senha · processos vivos com w-jc3-b = 0 antes da remoção · worktree C:/Users/AMP/w-jc3-b removido por git worktree remove --force (ec 0; diretório ausente; worktree list sem ele) · cópias de controle apagadas (porcelain 0 e hash-object = blob antes da remoção) · subpasta do scratchpad jtrc01c3-b apagada · base viva nunca tocada · w-trc01 só com os meus dois arquivos de saída · resíduo ALHEIO apenas reportado: w-jc2-b, w-jc2-b3, .npmtest-503.log, check_md5.cjs/.js"
+}

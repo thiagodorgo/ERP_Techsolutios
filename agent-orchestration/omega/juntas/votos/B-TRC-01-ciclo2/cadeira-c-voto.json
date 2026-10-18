@@ -1,0 +1,187 @@
+{
+ "jurado": "jurado-trc01c2-c-viatura-no-tempo (instância jurado-trc01c2-c-opus; identidade nova; nada do plano, do relatório do dev, dos pareceres, do orquestrador, da ata do ciclo 1 ou do corpo herdado como fato)",
+ "cadeira": "(c′) ciclo 2 — contrato e atribuição no tempo: a tabela de cenários; os testes e mutações novos; a regressão",
+ "mandato_md5": "41ad811105b46808fe2eea92353f5b57 (EOL-neutro medido) · declarado no disparo: 41ad811105b46808fe2eea92353f5b57",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · executor Claude Code · nível menor (§C7.6) · substituição: nenhuma · sucessora de: ninguém (retomada da MESMA identidade após reinício do PC, registrada)",
+ "corpo_md5": "2e42d71774a6c10a80371bb1b1d5117f (.claude, blob do objeto) · 9f863a44faf13ffa56b77eed3921bb68 (.agents, blob do objeto) · recebido no disparo: 2e42d71774a6c10a80371bb1b1d5117f",
+ "objeto": "2043c5840c8f60fe91538840aaefb3420a11cfe3 (ls-remote = gh headRefOid, início e fim) · h1 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91 ancestral: sim · merge-base c260d36201f6e835799e7f96a14bc9eb8889ca5a · origin/main a26f8afe no início (após fetch) e no fim · objeto no fim: igual",
+ "legalidade": "inspetor inspetor-trc01c2-cdx: insp-trc01c2-parecer.md · LIBERADO COM RESSALVA · confere nome, instância, corpo nos dois espelhos, worktrees e prefixo: sim · autorização do dono: D-TRC01-VEHICLE-ASSIGNED-AT (decisoes.md l.3682, objeto e origin/main), opção (i) · check-runs 14 | não-verdes 0 | pendentes 0",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova; o último)",
+ "docker": "trabalhos de outros contados antes de subir: 0 (só erp-postgres/erp-redis, base viva, listada à parte); um trabalho meu (jtrc01c2-c-pg 127.0.0.1:47663, jtrc01c2-c-redis 127.0.0.1:47673); após o reinício do PC, containers parados removidos pelo nome e subidos de novo; recontagem de outros = 0",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a′)/(b′) deste ciclo · li: plano do ciclo 2 (md5 dd6e9074), mandato, parecer do inspetor, 00-quedas, evidência da cadeira (c) do ciclo 1 (sondas como roteiro), catálogo de mutações do dev; não li o relatório do dev nem o parecer R-DBA além do que o mandato cita",
+ "pausa": "nenhuma PAUSA · INTERRUPÇÃO por reinício do PC (registrada na evidência às 03:39Z): nenhum item de mérito aberto; terreno refeito pelos mesmos comandos (setup.sh)",
+ "voto": "REPROVADO",
+ "item1": "REPROVADO — C1–C9 + P2/P3 iguais nas formas P e S (C1: quarentena no objeto, 204→A no h1); OS legada (i) history_ambiguous → 204 após 1º UPDATE; forja ignorada; P1 (própria) grava no trajeto de B o fix tirado quando as 2 OS tinham V1",
+ "item2": "APROVADO — T-C1..T-C4, T-B1, T-B2 existem e asserem o que o título promete; -db 3× 20/20 e 9/9 skipped 0; M-C1, M-C2, M-C3, M-C4, M-B2a, M-B2b, OWN-TC2 (controle T-C2), OWN-TC4 (controle T-C4), MUT-10c vermelhas pela asserção do caso indicado; M-B1 vermelha no T-B1 pelo controle interno terminated (l.316) e nos irmãos #7/#8 por receipts:1; todas restauradas (hash=blob)",
+ "item3": "APROVADO — 15 suítes Traccar 129/129 skipped 0 (h1: 13 suítes, 120/120); títulos do h1 ⊆ objeto, verdes; field-dispatch*/work-order* 0 diff e 366/366 skipped 0; 21 transições (com troca de viatura no meio) sem recusa e md5 iguais fora de *_assigned_at; corpos dos casos do ciclo 1 intactos byte a byte",
+ "cenarios": [
+  {
+   "id": "C1",
+   "forma": "P e S",
+   "esperado": "202/no_operator_at_fix_time, locA 0",
+   "medido_objeto": "202/no_operator · locA 0 · rec 0 · B 0/0",
+   "medido_h1": "204 · locA 1 (o achado do ciclo 1)",
+   "igual": "sim"
+  },
+  {
+   "id": "C2",
+   "forma": "P e S",
+   "esperado": "204 → A",
+   "medido_objeto": "204 · locA 1",
+   "medido_h1": "204",
+   "igual": "sim"
+  },
+  {
+   "id": "C3",
+   "forma": "P e S",
+   "esperado": "202/no_operator",
+   "medido_objeto": "202/no_operator",
+   "medido_h1": "202/no_operator",
+   "igual": "sim"
+  },
+  {
+   "id": "C4",
+   "forma": "P e S",
+   "esperado": "202/no_operator (perda aceita, nunca 204 para outro)",
+   "medido_objeto": "202/no_operator · locA inalterada",
+   "medido_h1": "202/no_operator",
+   "igual": "sim"
+  },
+  {
+   "id": "C5",
+   "forma": "P e S",
+   "esperado": "202/no_operator; depois da volta 204",
+   "medido_objeto": "202/no_operator; 204",
+   "medido_h1": "204 → A",
+   "igual": "sim"
+  },
+  {
+   "id": "C6",
+   "forma": "P (assign com a mesma viatura) e S (UPDATE title); OS legada por migração em 2 etapas",
+   "esperado": "202/operator_history_ambiguous; após o 1º UPDATE: posterior 204, anterior 202/no_operator",
+   "medido_objeto": "idem, 6/6",
+   "medido_h1": "o h1 não distingue OS sem data (204, como C2/C8)",
+   "igual": "sim"
+  },
+  {
+   "id": "C7",
+   "forma": "P (client Prisma updateMany/create pelo papel) e S (SQL pelo papel)",
+   "esperado": "forja ignorada; fix segue em quarentena; INSERT forjado → now()",
+   "medido_objeto": "inalterada=true; 202/no_operator; INSERT recente",
+   "medido_h1": "controle-3: coluna sem gatilho, a forja FICA",
+   "igual": "sim"
+  },
+  {
+   "id": "C8",
+   "forma": "P e S",
+   "esperado": "vaa inalterada; 204",
+   "medido_objeto": "inalterada=true; 204",
+   "medido_h1": "204",
+   "igual": "sim"
+  },
+  {
+   "id": "C9",
+   "forma": "S (P n/a: o assign não aceita nulo)",
+   "esperado": "vaa NULL; 202/no_operator; na volta: anterior 202, posterior 204",
+   "medido_objeto": "idem",
+   "medido_h1": "202; 204; 204",
+   "igual": "sim"
+  },
+  {
+   "id": "P1 (própria)",
+   "forma": "P e S",
+   "esperado": "202/ambiguous_operator_at_fix_time (as 2 OS tinham V1 no instante)",
+   "medido_objeto": "204 · locB 1 · locA 0 (o mesmo período, entregue antes da troca, deu ambiguous)",
+   "medido_h1": "204 → B",
+   "igual": "NÃO"
+  },
+  {
+   "id": "P2 (própria)",
+   "forma": "P e S",
+   "esperado": "T1/T2 202/no_operator (nunca B); T3 204 → B",
+   "medido_objeto": "idem",
+   "medido_h1": "204 → B nos três",
+   "igual": "sim"
+  },
+  {
+   "id": "P3 (própria)",
+   "forma": "S",
+   "esperado": "borda <=: ms truncado (resto 910 µs) 202; +1 ms 204",
+   "medido_objeto": "idem",
+   "medido_h1": "n/a",
+   "igual": "sim"
+  }
+ ],
+ "testes_e_mutacoes": "T-C1..T-C4, T-B1, T-B2 existem e asserem o que o título promete; -db 3×: ingestion 20/20, idempotency 9/9, skipped 0; at-fix-time 4/4; budget-order 1/1 · M-C1 → T-C1 1ª asserção (+stored); M-C2 → T-C4(a) e T-C2; M-C3 → T-C1 e T-C3 l.511 (a troca regrava); M-C4 → T-C3 l.500 (946684800000); OWN-TC2 (controle de T-C2) → T-C2 l.474; OWN-TC4 (controle de T-C4) → T-C4(c)(d); M-B1 → T-B1 pelo controle terminated (l.316) e irmãos #7/#8 por receipts:1; M-B2a/M-B2b → T-B2 asserção (1); MUT-10c → idempotency #5 (+204 −409) · tsc ec 0 em todas as .ts; migrações mutadas em banco novo (111 aplicadas); âncora 1, numstat não vazio, hash≠blob antes, restauro hash=blob e porcelain 0",
+ "regressao": "APROVADO — 15 suítes Traccar 129/129 skipped 0 (h1: 13 suítes, 120/120); títulos do h1 ⊆ objeto, verdes; field-dispatch*/work-order* 0 diff e 366/366 skipped 0; 21 transições (com troca de viatura no meio) sem recusa e md5 iguais fora de *_assigned_at; corpos dos casos do ciclo 1 intactos byte a byte",
+ "justificativa": "terreno: worktrees próprios detached w-jc2-c (objeto) e w-jc2-c-h1 (h1), npm ci próprio em cada, sem junction, .env ausente; containers jtrc01c2-c-* só em 127.0.0.1:47663/47673, fora das faixas excluídas; senha só por ambiente; REDIS_URL próprio em todo comando; base viva e w-07cb1 intocados; trabalhos de outros = 0 antes de subir e depois do reinício; disco 16G → 15G.\nItem 1: C1–C9 iguais ao esperado nas formas P e S. Controles: (1) C1 dá 204 → A no h1, o achado do ciclo 1 reproduz; (2) dispositivo sem vínculo → unmapped_device e 0 recibo; (3) coluna sem gatilho no h1 deixa a forja ficar. A forma própria P1 mostra que a OS que tinha a viatura no instante do fix e a perdeu depois sai do cálculo, e o ambíguo vira único (204 → B), nas duas formas, no objeto e no h1.\nItem 2: testes verdes 3×; todas as mutações vermelhas pela asserção. Controles: arnês verde sem mutação; hash≠blob antes e =blob depois.\nItem 3: 129/129, 120/120 no h1, 366/366, 21 transições iguais com troca de viatura, corpos intactos. Controles: um gatilho meu diverge o md5; a cópia editada acusa EDITADO.\nFicou sem medir: nada do mandato. Repete a classe do (c)-1 COM informação nova: o caminho é a OS concorrente que PERDE a viatura (o conserto C cobre a OS que a ganha).\nLimpeza: bancos, papel, containers jtrc01c2-c-* (0), worktrees removidos por git worktree remove --force, scratch meu apagado. Desvio declarado: o texto das sondas auxiliares não foi colado (só md5); a sonda do achado foi reconstruída com md5 igual e colada.\nVOTO: REPROVADO — o fix de V1 tirado quando duas OS (A e B, despachos aceitos) tinham V1, entregue depois de a OS de A trocar V1→V2, grava 204 no trajeto de B em vez de ir à quarentena ambiguous_operator_at_fix_time | escopo: dentro-do-bloco | classe: não grave | ciclo 2 | repete classe do (c)-1: sim, com: o caminho da OS concorrente que perde a viatura | evidência: zz-jtrc01c2c-db.mts P1 (md5 2c30ca24), P1-atrasado 204 · locB=1 · locA=0 nas formas P e S (2/2), no objeto e no h1",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote / gh pr view 426 / gh api …/check-runs",
+   "forma": "no início e no fim",
+   "resultado": "objeto 2043c584 igual; 14 | 0 | 0"
+  },
+  {
+   "comando": "setup.sh: docker run jtrc01c2-c-pg/redis; CREATE DATABASE _obj/_h1/_old; CREATE ROLE jtrc01c2c_rt NOSUPERUSER NOBYPASSRLS; migrate deploy objeto 111 / h1 110 / old 110 → seed → +1; GRANT DML",
+   "forma": "duas vezes (antes e depois do reinício do PC)",
+   "resultado": "ec 0; OS legada com vaa nulo=true"
+  },
+  {
+   "comando": "JW=obj|h1 withdb.sh <wt> <db> node --import tsx zz-jtrc01c2c-db.mts [seções]",
+   "forma": "objeto em jtrc01c2_c_obj (33 linhas), h1 em jtrc01c2_c_h1 (29 linhas)",
+   "resultado": "objeto 31/33 iguais (P1 ×2 diferentes); h1 27/29 (P1 ×2)"
+  },
+  {
+   "comando": "JW=obj withdb.sh obj jtrc01c2_c_old node --import tsx zz-jtrc01c2c-old.mts",
+   "forma": "OS legada em duas etapas",
+   "resultado": "6/6"
+  },
+  {
+   "comando": "tap.sh obj jtrc01c2_c_obj … (os -db 3×) e node zz-jtrc01c2c-mut.mjs <ids>",
+   "forma": "worktree w-jc2-c, TAP para arquivo",
+   "resultado": "testes verdes; 10 mutações vermelhas pelo caso; restauro hash=blob"
+  },
+  {
+   "comando": "tap.sh por arquivo nas 15 suítes (objeto) e nas 13 (h1); tap.sh reg-fdwo (34 arquivos); psql < zz-jtrc01c2c-trans.sql (obj, h1, controle); node zz-jtrc01c2c-corpos.mjs",
+   "forma": "cluster próprio",
+   "resultado": "129/129, 120/120, 366/366, md5 iguais, controle diverge, 18/18 corpos intactos"
+  }
+ ],
+ "achados": [
+  {
+   "id": "P1",
+   "defeito": "a OS que tinha a viatura no instante do fix e depois a perdeu sai da janela: o fix de V1 tirado quando duas OS (A e B, despachos aceitos) tinham V1, entregue depois de a OS de A trocar V1→V2, grava 204 no trajeto de B em vez de ir à quarentena ambiguous_operator_at_fix_time (o mesmo período, entregue antes da troca, deu ambiguous)",
+   "evidencia": "JW=obj withdb.sh obj jtrc01c2_c_obj node --import tsx zz-jtrc01c2c-db.mts (md5 2c30ca24…) → P1-antes 202/ambiguous; P1-atrasado 204 · locB=1 locA=0, formas P (RlsPrismaWorkOrderRepository.assign) e S (UPDATE pelo papel NOSUPERUSER NOBYPASSRLS); idem no h1; field-dispatch-prisma.repository.ts:42 (wo.vehicle_id = vínculo, estado atual)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "escopo_evidencia": "git blame -L 39,43 objeto → d5a4f25b3 (2026-10-11, B-TRC-01) e c32bd2cd6 (2026-10-17, ciclo 2); findOperatorsForVehicleAt 0 na merge-base c260d362",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "sim, com informação nova: o caminho é a OS concorrente que PERDE a viatura (o conserto C só cobre a OS que a ganha)",
+   "motivo": "vínculo ambíguo no instante do fix não falha fechado quando a outra OS deixa a viatura antes da entrega; regra do dono (3) e janela de tempo de 2026-09-08",
+   "comando": "JW=obj bash withdb.sh obj jtrc01c2_c_obj node --import tsx zz-jtrc01c2c-db.mts P1"
+  },
+  {
+   "id": "N-MB1",
+   "defeito": "sob M-B1 o T-B1 não chega à asserção receipts:1 que o plano §2.3.2 previu; cai no controle interno terminated===1 (l.316, 0 !== 1)",
+   "evidencia": "node zz-jtrc01c2c-mut.mjs M-B1 → idempotency 6/9; msg.sh mut-M-B1-traccar-idempotency-db",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "a propriedade (recibo e localização atômicos) é vigiada pelos irmãos #7/#8 (receipts: 1); o T-B1 falha fechado pelo próprio controle",
+   "comando": "cd $SCRATCH && node zz-jtrc01c2c-mut.mjs M-B1"
+  }
+ ],
+ "escopo": "achado P1 dentro-do-bloco (git blame -L 39,43 no objeto → d5a4f25b3 2026-10-11 B-TRC-01 e c32bd2cd6 2026-10-17 ciclo 2; findOperatorsForVehicleAt 0 na merge-base c260d362); nota N-MB1 dentro-do-bloco",
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum controle deixou de acusar",
+  "nota contra o plano §2.3.2: a previsão 'M-B1 → T-B1 receipts: 1' não se realiza (o T-B1 cai no controle terminated); não é critério que não pode falhar, porque a propriedade é vigiada por #7/#8"
+ ],
+ "pendencias_que_aceito": [
+  "(b′) registro: P-TRC-VIATURA-PERIODOS, citada pelo plano e pelo corpo como pendência com dono B-TRC-03, tem 0 ocorrências em agent-orchestration/controle/pendencias.md no objeto e na origin/main (só aparece nos corpos das cadeiras) — conferir",
+  "(a′) RLS, término real, rollback, migração como banco, L0, CI: não julgados por mim; T-C3/M-C3/M-C4 também medidos por mim (verdes/vermelhas como indicado)",
+  "reprovação por construção, não cobrada: perda aceita C4 (vai à quarentena, medida), histórico por períodos, OS de dev mudas até o 1º UPDATE, relógios misturados (não medi caso concreto de desalinhamento; no meu cluster o Node e o Postgres compartilham o host)",
+  "nota N-MB1 (M-B1 × T-B1) — vigilância, sem bloqueio"
+ ],
+ "teardown": "log_statement none (nunca ligado) · bancos jtrc01c2_c_* e papel jtrc01c2c_rt removidos pelo nome (0) · containers jtrc01c2-c-* removidos (docker rm -f -v), contagem 0 · processos com w-jc2-c = 0 antes da remoção · worktrees w-jc2-c e w-jc2-c-h1 removidos por git worktree remove --force · mutações restauradas (porcelain 0, hash-object = blob) · sondas e senha do $SCRATCH apagadas (subpasta minha), grep da senha = 0 · base viva e w-07cb1 nunca tocados · w-trc01 só com os meus dois arquivos de saída · resíduo alheio: nenhum encontrado"
+}
