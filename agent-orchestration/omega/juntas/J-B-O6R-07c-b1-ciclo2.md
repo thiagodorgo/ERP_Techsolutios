@@ -48,6 +48,8 @@
 - K2 depois de reinício;
 - CA6/CA7, o superior autoriza a troca.
 
+> **Errata (2026-10-18, PR de registro `docs/registro-2026-10-18`; o texto acima fica como estava, §A2):** "já registradas" não era verdade para as duas últimas. Na ref `40c3651f`, `controle/pendencias.md` tinha `P-07CB1-CANCELAR-EM-NO-LOCAL` e `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO`, mas não tinha "K2 depois de reinício" nem "CA6/CA7". Quem mediu: o porteiro pós-merge do #440 (`votos/B-O6R-07c-b1-ciclo2/porteiro-440-parecer.md`, item 6). A afirmação também contradizia o C3c2-A2 desta mesma ata (l.37). As duas entram agora por APPEND, junto com as 8 do C3c2-A2: `P-07CB1-K2-CONCLUSAO-APOS-REINICIO` e `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA`, ambas com dono `B-O6R-07c-b2`.
+
 ## Terreno, quedas e substituições (P6, `votos/B-O6R-07c-b1-ciclo2/00-quedas.md`)
 - **C2:** o Codex (`jurado-07cb1c2-c2-cdx`) caiu no limite de uso às 19:41Z, com 13 linhas de evidência e o voto "EM APURAÇÃO". O orquestrador removeu o container `j07cb1c2-c2-pg` pelo nome. O sucessor Opus, com identidade nova, re-executou o roteiro registrado com saída igual e mediu a cauda.
 - No Docker, nunca houve mais de 2 trabalhos ao mesmo tempo. A base viva `erp-*` não foi tocada.

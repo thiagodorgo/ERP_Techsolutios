@@ -3153,6 +3153,7 @@ endurecido, nas **5 vias** medidas (mobile evidence, attachments, checklists, da
 **Consequência de gate, dita em voz alta:** o título "1 P0 + 2 P1" só zera com o 07b, e o gate da CHECKLIST P1
 (`J-CHK-04C-EMENDA`) exige **`B-O6R-06` E os DOIS sub-blocos do `B-O6R-07`** mergeados. O `Bloqueia:` de
 auth/OS/aprovações/RBAC **cai** com o merge do 07a; o de evidências/anexos/upload mobile **permanece** até o 07b.
+- status: ABERTA (PARCIAL — fechados: `Ω6R-SEC-003` (#369) e, desde 2026-10-18, o residual do `Ω6R-SEC-002` (merge do PR #440, `40c3651f`, `B-O6R-07c-b1`; `P-O6R-SUBRECURSO-OBJECT-SCOPE` FECHADA; `docs/revisoes/O6R/achados.jsonl:9` = `fechado`); a entrada segue ABERTA só pelo `Ω6R-SEC-004` (residual em `P-O6R-B07B-SCANNER-AV-REAL`, dono `B-AV-REAL`)) (registro de 2026-10-18). A linha seguinte fica preservada (§A2) e está superada por esta.
 - status: ABERTA (PARCIAL — fechado: `Ω6R-SEC-003`, lockout de conta (`src/modules/auth/repositories/local-auth-credential.repository.ts:108-118`, #369); `Ω6R-SEC-002` e `Ω6R-SEC-004` só parcialmente superados (#369, #380); aberto: residual do `Ω6R-SEC-002` = `P-O6R-SUBRECURSO-OBJECT-SCOPE` (10 vias, aberta) e residual do `Ω6R-SEC-004` = `P-O6R-B07B-SCANNER-AV-REAL` (produção e staging respondem 503 a todo upload, aberta)) (inventário SAN3, fatia A1, 2026-09-11). Valor anterior, preservado: "ABERTA — resta 1 P1 (`Ω6R-SEC-004`, sub-bloco 07b). Os outros 2 (1 P0 + 1 P1) fecharam no 07a."
 - status: FECHADA — 1 P0 + 2 P1: Omega6R-SEC-002 parcialmente superado no 07a (#369, dc8168b; residual P0 em
   P-O6R-SUBRECURSO-OBJECT-SCOPE, dono B-O6R-07c) · Omega6R-SEC-003 fechado no 07a (#369) · Omega6R-SEC-004
@@ -6763,7 +6764,8 @@ gestor moderando comentário ANTES de codar. **Consequências declaradas:** o ga
 continua *"07a E 07b (e B-O6R-06) mergeados"* (a deliberação J-6R fala de BLOCOS, não de achados);
 fatia de P1 que amplie superfície de anexo/comentário de OS **herda a trava** desta pendência.
 
-- **status:** ABERTA — PARCIAL (2026-10-11, com o merge do PR #414, `86ea8a81`, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
+- **status:** FECHADA em 2026-10-18, com o merge do PR #440 (`40c3651f`, `B-O6R-07c-b1`): o resíduo das 23 entradas `·07c-b` fechou por escopo provado (CE-2, `docs/revisoes/SAN3/PLANO_SAN3.md:325`) — T11 com a lista `·07c-b` vazia e T14 "gerado == instantâneo", reexecutados pelo porteiro do #440 (`votos/B-O6R-07c-b1-ciclo2/porteiro-440-parecer.md`, item 3); junta do ciclo 2 APROVADA 3×0 (`J-B-O6R-07c-b1-ciclo2.md`); `Ω6R-SEC-002` → `fechado` em `docs/revisoes/O6R/achados.jsonl:9`. A autorização do superior (CA6/CA7) segue em `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` (dono `B-O6R-07c-b2`). Fechamento no papel pelo PR de registro de 18/10.
+  Antes: ABERTA — PARCIAL (2026-10-11, com o merge do PR #414, `86ea8a81`, `B-O6R-07c-a`: as 10 vias fechadas por escopo provado;
   o resíduo é do `B-O6R-07c-b`). Antes: ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` (origens `bf456b0` #173 e
   `D-Ω3F-5-COMMENT`, ambas anteriores ao bloco; evidência de data na própria causa) · **dono:**
   `B-O6R-07c`.
@@ -11077,7 +11079,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do dono antes do dev — ALTA
 
-- **status:** ABERTA · **escopo:** novo (decisões `D1-07c` = c, `D2-07c` = d com autorização superior, `D3-07c` = não, em `decisoes.md`) · **dono:** `B-O6R-07c-b`
+- **status:** FECHADA em 2026-10-18, com o merge do PR #440 (`40c3651f`, `B-O6R-07c-b1`). A emenda foi aprovada pelo crítico (`docs/revisoes/SAN3/B-O6R-07c-b1-critica.md:12`, "APROVA COM AJUSTES"); as três respostas entraram no b1: `D1-07c` (o despacho grava a atribuição, critério único de escrita na OS); `D2-07c` como a trava `D-07CB1-TRAVA-ATE-B2` a partir de "No local", com a autorização do superior passada ao `B-O6R-07c-b2` (`P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA`); `D3-07c` sem código (`src/modules/damages/**` ficou PROIBIDO, `docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md:61`). As 23 vias: T11 com a lista `·07c-b` vazia e T14 "gerado == instantâneo", reexecutados pelo porteiro do #440 (item 3); junta do ciclo 2 APROVADA 3×0.
+  Antes: ABERTA · **escopo:** novo (decisões `D1-07c` = c, `D2-07c` = d com autorização superior, `D3-07c` = não, em `decisoes.md`) · **dono:** `B-O6R-07c-b`
 - **O que muda no plano:** (1) o despacho grava a atribuição (`D1-07c` c) e o critério de escrita na OS fica um só; (2) o trabalho offline de quem era o técnico vira conflito resolvido por um perfil acima do operacional que alocou, e o plano propõe se a troca de técnico com atendimento iniciado passa a exigir essa mesma autorização; (3) o débito de dano em extrato de colega sai (`D3-07c` não).
 - **bloqueia:** o fechamento do último P0, `Ω6R-SEC-002` (23 vias).
 - **teste de encerramento:** a emenda do plano aprovada pelo crítico; depois, os testes do 07c-b com vermelho-controle em cada uma das 23 vias.
@@ -11140,7 +11143,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o "atendimento iniciado" — ALTA (permissão; registro §A2)
 
-- **status:** RESPONDIDA em 2026-10-17 pelo dono (`D-INICIO-ATENDIMENTO-CONFIRMADO`: "No local"); FECHA com o merge do #440 (a trava no estado escolhido) · **escopo:** novo (achado pela `agente-fabrica` ao escrever os corpos da junta do 07c-b1; conferido pelo orquestrador em `decisoes.md`) · **dono:** o DONO responde; o `B-O6R-07c-b1` (#440) e o `B-O6R-07c-b2` aplicam
+- **status:** FECHADA em 2026-10-18, com o merge do PR #440 (`40c3651f`): a trava está no estado escolhido pelo dono — `DISPATCH_SERVICE_STARTED = {arrived, in_service}`, sem `on_route` (`field-dispatch.service.ts:81`), e o resolver ligado em `work-order.service.ts:2205-2208` (amostra conferida pelo porteiro do #440, `votos/B-O6R-07c-b1-ciclo2/porteiro-440-parecer.md`, item 6).
+  Antes: RESPONDIDA em 2026-10-17 pelo dono (`D-INICIO-ATENDIMENTO-CONFIRMADO`: "No local"); FECHA com o merge do #440 (a trava no estado escolhido) · **escopo:** novo (achado pela `agente-fabrica` ao escrever os corpos da junta do 07c-b1; conferido pelo orquestrador em `decisoes.md`) · **dono:** o DONO responde; o `B-O6R-07c-b1` (#440) e o `B-O6R-07c-b2` aplicam
 - **`D-07CB-EMENDA-RECOMENDACOES`, P3 (15/10):** "atendimento iniciado = a partir de `on_route` ('saiu para o atendimento'), no despacho ou na OS".
 - **`D-DESP-INICIO-ATENDIMENTO` (17/10):** "começa em **No local**". O orquestrador recomendou isto sem conferir a P3 de 15/10 — o erro de origem é do orquestrador, não do dono.
 - **Diferença prática:** com o despacho "A caminho", trocar o técnico é imediato (17/10) ou exige autorização (15/10).
@@ -11183,3 +11187,173 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **decidido para o b1 (`D-07CB1-CANCELAR-NO-LOCAL-SEM-AUTORIZACAO`):** não exige autorização; a OS não muda de técnico por causa do encerramento.
 - **o b2 decide:** se o cancelamento em No local entra na mesma fila de autorização do superior.
 - **teste de encerramento:** a regra do b2 escrita no plano dele, com teste.
+
+## P-TRC-CI-COMENTARIO-DENOMINADOR (2026-10-18) — o comentário da lista curada do `ci.yml` diz 363 e o job executa 391 — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do `B-TRC-01` (ajuste da (a′) do ciclo 2; §4 do plano do ciclo 3, `docs/revisoes/TRACCAR/B-TRC-01-ciclo3-plano.md:468`) · **dono:** o próximo bloco de governança/CI que tocar a lista curada do `backend-postgres`
+- `.github/workflows/ci.yml:282` (na `main` `c1485c94`) diz *"363/363 no total do job"*. A (a″) do ciclo 3 mediu o job `backend-postgres` do objeto `7c220467` com **391/391**, skipped 0 (`votos/B-TRC-01-ciclo3/cadeira-a-voto.json`, campo `ci`).
+- **bloqueia:** não.
+- **teste de encerramento:** o número do comentário é igual ao `# tests` da execução do job, medido no PR que corrigir.
+
+## P-TRC-VIATURA-PERIODOS (2026-10-18) — histórico OS↔viatura por períodos — MÉDIA
+
+- **status:** ABERTA · **escopo:** novo (plano do ciclo 2 §2.4.2; nota 1 da (b′) do ciclo 2: a pendência não existia; §4 do plano do ciclo 3, l.469) · **dono:** `B-TRC-03`
+- **O que é:** tabela `work_order_vehicle_periods` (FORCE RLS, gatilho, backfill; L0 111→112). Fecha o C4 (atribui ao técnico A o ponto real tirado antes da troca), o N1 (fim da quarentena conservadora, `P-TRC-QUARENTENA-CONSERVADORA`) e o N3 (`→ NULL`, `P-TRC-VIATURA-NULL-SEM-SINAL`). É também onde a (c″) do ciclo 3 propôs resolver o `P-TRC-F1-DESPACHO-REACEITE`.
+- **bloqueia:** não o dev; é o histórico que o `B-TRC-03` precisa.
+- **teste de encerramento:** C4 → 204 → A; N1 → 204 → A; N3 → `ambiguous`; P1 → `ambiguous_operator_at_fix_time` (motivo exato, não mais `history_ambiguous`).
+
+## P-TRC-VIATURA-NULL-SEM-SINAL (2026-10-18) — a OS que perde a viatura para NULL por SQL não deixa sinal — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do `B-TRC-01`, resíduo declarado (plano do ciclo 3 §3.8-(a) e §4, l.470) · **dono:** `B-TRC-03` (absorvido pelos períodos)
+- O gatilho zera `vehicle_assigned_at`; uma OS que perdeu V1 para NULL depois do instante T não entra na janela, e um competidor com V1 vira dono (N3). Não é alcançável pelo `assign` (`parseOptionalUuid`), só por UPDATE direto: a (c″) do ciclo 3 mediu *"inalcançável pelo produto (2 escritores de vehicle_id, nenhum zera; FK Restrict)"* (`cadeira-c-voto.json`, `pendencias_que_aceito`).
+- **Alternativa ao período, NÃO pedir agora** (texto pronto no §3.8-(a) do plano): o gatilho carimbar `now()` também no `→ NULL`, por migração aditiva no `B-TRC-03`.
+- **bloqueia:** não.
+- **teste de encerramento:** N3 → quarentena.
+
+## P-TRC-QUARENTENA-CONSERVADORA (2026-10-18) — troca de viatura depois do instante quarentena todo fix desse instante — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do `B-TRC-01`, falha fechada por desenho (plano do ciclo 3 §3.8-(b) e §4, l.471) · **dono:** `B-TRC-03` (resolve) · `B-TRC-05` (opera: os episódios aparecem na tela da quarentena)
+- Toda OS com despacho ativo que troca de viatura depois de T torna todo fix em T da organização `operator_history_ambiguous` até haver histórico por período. Em tempo real a janela é de segundos; com rastreador bufferizado, pode quarentenar fixes que o `B-TRC-03` depois atribui.
+- **bloqueia:** não.
+- **teste de encerramento:** com períodos, N1 → 204 → A.
+
+## P-TRC-AMBIGUIDADE-MESMO-OPERADOR (2026-10-18) — OS desconhecida do mesmo operador não precisaria gerar ambiguidade — BAIXA
+
+- **status:** ABERTA · **escopo:** novo (regra nova, fora do P1; plano do ciclo 3 §3.8-(c) e §4, l.472) · **dono:** `B-TRC-03`
+- O caso N2: a OS desconhecida é do **mesmo** operador que o único dono; hoje gera ambiguidade.
+- **bloqueia:** não.
+- **teste de encerramento:** N2 → 204 → A, com teste unitário no classificador.
+
+## P-CI-LISTA-CURADA-6-PRE-EXISTENTES (2026-10-18) — 6 suítes `-db` pré-existentes fora da lista curada do `backend-postgres` — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (plano do ciclo 2 §2.2; nota 1 da (b′) do ciclo 2: a pendência não existia; §4 do plano do ciclo 3, l.473; suítes nascidas em `dc8168b9`/`86ea8a81`/`aadaa6d5`/`a9fbe283`/`026ff7b8`) · **dono:** governança/CI
+- As 6: `o6r07a-anon-lockout-db`, `o6r07c-subresource-scope-db`, `san3-04a-menu-com-permissoes-do-banco-db`, `san3-05-leituras-de-plataforma-db`, `san3-05-runtime-role-guard-db`, `san3-09-bootstrap-platform-admin-db`. A (b″) do ciclo 3 mediu *"exatamente as 6"* (`cadeira-b-voto.json`, `achados[0].motivo`).
+- **bloqueia:** não.
+- **teste de encerramento:** as 6 na lista, 3× `skipped 0`; guard "toda `-db` está na lista" verde na `main`.
+
+## P-TRC-OWN-ONCE-SEM-VIGIA (2026-10-18) — a propriedade OWN-ONCE (o evento sai uma vez) não tem teste-vigia próprio — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do `B-TRC-01` (nota da (c) do ciclo 1 / nota 2 da (b′) do ciclo 2; §4 do plano do ciclo 3, l.474) · **dono:** `B-TRC-03`
+- **bloqueia:** não.
+- **teste de encerramento:** teste nomeado no catálogo e uma mutação que o derruba.
+
+## P-TRC-RELOGIOS-NODE-POSTGRES (2026-10-18) — hipótese: relógio do Node × relógio do Postgres em hosts distintos — BAIXA
+
+- **status:** ABERTA · **escopo:** hipótese (nota da (c) do ciclo 1 / nota 2 da (b′) do ciclo 2; §4 do plano do ciclo 3, l.475) · **dono:** `B-TRC-03` (medir com relógio deslocado)
+- `fixTime` (Node, ms) × `vehicle_assigned_at`/`accepted_at` (Postgres, µs, `now()` da transação) em hosts distintos. O P3 da (c′) mediu só a borda no mesmo host; a (c″) do ciclo 3 registra *"não exercido: mesmo host"* (`cadeira-c-voto.json`, `pendencias_que_aceito`).
+- **bloqueia:** não.
+- **teste de encerramento:** caso medido com `clock_timestamp` deslocado, ou declarado não reproduzível.
+
+## P-TRC-TETO-REDUNDANTE (2026-10-18) — redundância do teto de organizações na descoberta — BAIXA
+
+- **status:** ABERTA · **escopo:** nota de forma (nota da (c) do ciclo 1 / nota 2 da (b′) do ciclo 2; §4 do plano do ciclo 3, l.476) · **dono:** `B-TRC-03`
+- **bloqueia:** não.
+- **teste de encerramento:** 1 linha de decisão: mantém ou remove.
+
+## P-TRC-M-B1-CONTROLE-TERMINATED (2026-10-18) — sob a mutação M-B1 o T-B1 cai no controle interno antes da asserção prevista — BAIXA
+
+- **status:** ABERTA · **escopo:** forma de teste (nota N-MB1 da (c′) do ciclo 2; §4 do plano do ciclo 3, l.477) · **dono:** `B-TRC-03`
+- Sob M-B1, o T-B1 cai no controle interno `terminated === 1` (l.316) antes da asserção `receipts: 1` prevista; a propriedade é vigiada pelos irmãos #7/#8.
+- **bloqueia:** não.
+- **teste de encerramento:** o T-B1 cai pela asserção prevista, ou o plano §2.3.2 do ciclo 2 é emendado.
+
+## P-TRC-AUTORIZACAO-EM-BLOCO (2026-10-18) — a `D-TRC01-VEHICLE-ASSIGNED-AT` foi aprovada por frase coletiva, não por frase própria do dono — BAIXA
+
+- **status:** ABERTA · **escopo:** registro de forma, sem ação de código (nota 4 da (b′) do ciclo 2; §4 do plano do ciclo 3, l.478) · **dono:** o orquestrador
+- A autorização nominal de migração `D-TRC01-VEHICLE-ASSIGNED-AT` (`decisoes.md`, registro de 16/10) veio da frase *"todas as decisões nas suas recomendações"*.
+- **bloqueia:** não.
+- **teste de encerramento:** 1 linha em `decisoes.md` declarando a forma válida, ou o dono reafirma.
+
+## P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fix manda o fix ambíguo ao técnico concorrente — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` do `B-TRC-01` — a janela nasceu em `d5a4f25b` (`git log -S`, medido pela (c″)); o ciclo 3 não a tocou · **classe:** não grave no ciclo 3 (mesma organização, nada perdido, sem permissão, sem dinheiro) · **dono:** `B-TRC-03` (proposto pela (c″)), junto de `P-TRC-VIATURA-PERIODOS`
+- **Origem:** achado (c″)-F1 da junta do ciclo 3 (`agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-c-voto.json`, `achados[0]`; ata `agent-orchestration/omega/juntas/J-B-TRC-01-ciclo3.md:29-35`). No §4 do plano do ciclo 3 não havia entrada própria.
+- **O que acontece:** as duas OS têm V1 e despacho aceito, e o fix de um instante é ambíguo. Se esse fix for entregue depois de o despacho de A ser **re-aceito** (`accepted→accepted`), ou reatribuído a C e aceito, ele grava 204 no trajeto de B. Medido no objeto `7c220467`: `F1-reaceite-atrasado` 204 ΔlocB=1 e `F1-reassign+aceite-atrasado` 204 ΔlocB=1; a outra organização da sonda não foi tocada (`B(0,0,0)`).
+- **Por quê:** a janela `d.accepted_at <= at` (`src/modules/field-dispatch/field-dispatch-prisma.repository.ts:48-49`) usa o `accepted_at` que o `changeStatus` regrava a cada aceite (`:123`). Um re-aceite depois de T apaga que o despacho já estava aceito em T. Contraria "vínculo ambíguo falha fechado".
+- **bloqueia:** não o dev; o `B-TRC-03` não fecha sem ele.
+- **teste de encerramento** (redigido pelo redator a partir do achado; a fonte não traz um): os dois cenários F1 da (c″) (re-aceite atrasado e reatribuição + aceite atrasado) vão à quarentena `operator_history_ambiguous`, com vermelho-controle no `src/` de `c1485c94`.
+
+## P-TRC01-CENSUS-GUARD-SEM-REEXECUCAO (2026-10-18) — o `o6r07c-census-guard` não roda inteiro fora da CI por falta de memória — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a suíte é do `B-O6R-07c-a`, #414, `86ea8a81`; o ciclo 3 do `B-TRC-01` não toca nenhum insumo dela) · **dono:** o orquestrador / governança-CI (como a (a″) propôs)
+- **Origem:** nota N-A1 da (a″) do ciclo 3 (`votos/B-TRC-01-ciclo3/cadeira-a-voto.json`, `achados`, `N-A1`: *"vira pendência: orquestrador/governança-CI"*; ata `J-B-TRC-01-ciclo3.md:38`). No Windows o processo filho do censo morre por memória (`Fatal process out of memory`); no Linux faltava `.git`; a reexecução com `git init` parou na queda do motor do Docker.
+- **Mesma forma no porteiro do #440:** T12 e "tempo do censo" não puderam ser medidos por OOM local (`votos/B-O6R-07c-b1-ciclo2/porteiro-440-parecer.md`, item 3).
+- **bloqueia:** não; o insumo hoje é o check-run `backend` (fail 0).
+- **teste de encerramento:** o arquivo roda verde inteiro (T0–T14 e "tempo do censo") num terreno local medido, com N e memória livre publicados, ou a decisão escrita de confiar só no check-run.
+
+## P-TRC01-R-CICLO2-PERGUNTA-A (2026-10-18) — o `R-B-TRC-01-ciclo2.md` não responde por escrito a pergunta (a) da §C7.4-bis — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (registro) · **dono:** o orquestrador
+- **Origem:** nota 2 da (b″) do ciclo 3 (`votos/B-TRC-01-ciclo3/cadeira-b-voto.json`, `achados[1]`: *"vira pendência: orquestrador"*; ata `J-B-TRC-01-ciclo3.md:44`). O arquivo não estava no objeto `7c220467` (entrou em `ce20aa3f`) e não diz se a composição cobriu a competência que o achado exigia.
+- **bloqueia:** não.
+- **teste de encerramento:** o `R-B-TRC-01-ciclo2.md` responde a pergunta (a) por apenso datado, apontando o §1.4 do plano do ciclo 3.
+
+## P-07CB1-K2-CONCLUSAO-APOS-REINICIO (2026-10-18) — a conclusão de vistoria já aplicada volta como conflito depois de reinício e troca — BAIXA
+
+- **status:** ABERTA · **escopo:** artefato de desenho declarado, consequência de regra aceita (`D-07c-IDEMP`, plano 07c-b.4 l.550-557) · **dono:** `B-O6R-07c-b2`
+- **Origem:** C2-K2 da junta do ciclo 1 do `B-O6R-07c-b1` (`J-B-O6R-07c-b1-ciclo1.md:22`); auditoria e destino no plano do ciclo 2 (`docs/revisoes/SAN3/B-O6R-07c-b1-ciclo2-plano.md`, §1.4 e §2.5); ajuste C3c2-A2 da junta do ciclo 2 (`votos/B-O6R-07c-b1-ciclo2/c3-voto.json`, `achados`). A ata do ciclo 2 (l.48) dá esta pendência como "já registrada"; não estava (porteiro do #440, item 6).
+- **Texto do plano (§2.5):** "por estado, o escopo vem antes (D-07c-IDEMP) faz a conclusão já gravada pelo próprio ex-técnico voltar como conflito depois de reinício do processo; a run guarda `completedBy` (checklist.types.ts:125) — o b2 decide se «por estado COM autor = o próprio ator» vira `already_applied` ou se a saída é a decisão do superior; nada se perde nem duplica (C2, N=3)".
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator; o plano dá a decisão, não o teste): a regra do b2 escrita no plano dele, com teste de reinício + reenvio da conclusão pelo próprio autor.
+
+## P-07CB1-RESIDUAL-BACKFILL (2026-10-18) — ex-técnico só de despacho reatribuído antes do deploy recebe `rejected`; divergentes do backfill só como total — BAIXA
+
+- **status:** ABERTA · **escopo:** residual declarado (relatório do dev, R5) · **dono:** `B-O6R-07c-b2`
+- **Origem:** plano do ciclo 2 do `B-O6R-07c-b1`, §1.5 (última linha) e §2.5 ("registrar; o backfill não muda"); ajuste C3c2-A2 (`c3-voto.json`). O backfill é a migração `20260877000000_backfill_…`.
+- O ex-técnico só de despacho, reatribuído ANTES do deploy, recebe `rejected`, não conflito; e os divergentes do backfill aparecem só como total no NOTICE.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): o b2 decide, por escrito, se o caso pede tratamento; se pedir, um teste com o ex-técnico reatribuído antes do backfill.
+
+## P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a troca de técnico (CA6 e CA7) não foi implementada — ALTA (permissão)
+
+- **status:** ABERTA · **escopo:** do `B-O6R-07c-b2` por desenho (crítica do 07c-b1, ajuste 7: *"CA6, CA7 e approval.* são do b2"*, `docs/revisoes/SAN3/B-O6R-07c-b1-critica.md:12,84`; relatório do dev: *"CA6/CA7 não implementados (b2)"*, `docs/revisoes/SAN3/B-O6R-07c-b1-dev.md:161`) · **dono:** `B-O6R-07c-b2`
+- **Os critérios** (emenda do 07c-b, `docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md:69-70`): **CA6** — quem alocou não decide o conflito (403); **CA7** — um `field_dispatcher` não decide.
+- **Por que só agora:** a ata do ciclo 2 (`J-B-O6R-07c-b1-ciclo2.md:49`) e a C2 do ciclo 2 (`c2-voto.json`, `pendencias_que_aceito`) a aceitam como do b2; a ata diz "já registrada", e não estava (porteiro do #440, item 6). Enquanto ela não fecha, vale a recusa da `D-07CB1-TRAVA-ATE-B2` a partir de "No local".
+- **Decisões do dono que o b2 aplica:** `D-07CB-SUPERIOR-UNICO`, `D-DESP-QUEM-AUTORIZA-GESTOR`.
+- **bloqueia:** não o que está mergeado; é o núcleo do `B-O6R-07c-b2`.
+- **teste de encerramento:** CA6 e CA7 com as mutações da emenda (tirar a comparação com quem alocou; trocar a permissão para `field_dispatch:create`), cada uma vermelha.
+
+## P-07CB1-TECHNICIAN-SEM-FIELD-DISPATCH-UPDATE (2026-10-18) — o `technician` despachado não muda o próprio despacho (403) — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (catálogo do `technician` desde `3ffec005`, 2026-05-21; `catalog.ts` era PROIBIDO no bloco) · **dono:** bloco de catálogo/RBAC (`B-SAN3-04a` ou sucessor)
+- **Origem:** nota C1-N1 da junta do ciclo 1 do `B-O6R-07c-b1` (`J-B-O6R-07c-b1-ciclo1.md:24`); tabela da §1.5 do plano do ciclo 2; ajuste C3c2-A2 (`c3-voto.json`). O ID é do redator: a tabela da §1.5 não dá ID.
+- O `technician` (papel de campo STANDARD) não tem `field_dispatch:update`: despachado, recebe 403 `permission_required` ao mudar o próprio despacho.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): a célula do `technician` em `RBAC_MATRIX.md` decidida, e o catálogo igual a ela com teste de papel.
+
+## P-07CB1-UPLOAD-EVIDENCE-TENANT-MISMATCH-403 (2026-10-18) — upload com `evidence_id` de outra organização responde 403, não 404 — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (igual na base `4fe7524e`) · **dono:** `B-O6R-07b` (upload) ou sucessor
+- **Origem:** nota C1-N2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
+- O upload com `evidence_id` de outra organização responde 403 `evidence_tenant_mismatch` (não 404), igual para alheio e inexistente.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): a resposta para outra organização segue o contrato de 404 cross-tenant, ou a exceção fica escrita no `API_CONTRACTS.md`.
+
+## P-07CB1-USAR-DO-SERVIDOR-SEM-ESTADO (2026-10-18) — "usar a do servidor" marca a ação local como sincronizada sem o estado do servidor — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`mobile/` fora do diff do bloco) · **dono:** `B-SAN3-16`
+- **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): no app, "usar a do servidor" grava o estado do servidor na cópia local, com teste.
+
+## P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA (2026-10-18) — evidência `field_*` aceita `work_order_id` alheio e o ecoa — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`366e82da`, 2026-06-15) · **dono:** `B-SAN3-16` ou bloco de evidência
+- **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
+- O `work_order_id` na evidência `field_*` é rótulo livre, sem leitor por OS.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): evidência `field_*` com `work_order_id` de OS alheia ou inexistente é recusada ou não ecoa o identificador, com teste.
+
+## P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `client_action_id` não confere o ator — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`8a938414`, 2026-08-01) · **dono:** `B-O6R-07c-b2`
+- **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): o mesmo `client_action_id` enviado por outro ator não devolve o resultado gravado do primeiro, com teste.
+
+## P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela fila — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (contrato do app anterior ao bloco) · **dono:** `B-SAN3-16` / trilha do app
+- **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
+- **bloqueia:** não.
+- **teste de encerramento** (redigido pelo redator): o app emite `work_order.mileage` pela fila offline e o replay chega ao servidor, com teste do app.

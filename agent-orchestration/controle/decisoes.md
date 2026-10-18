@@ -3740,3 +3740,22 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Conflito registrado (§A2):** esta decisão AFROUXA a `D-CLAUDE-SO-ORQUESTRA` (11/10: agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez) e muda a `D-API-CLAUDE-SUSPENSA` (16/10: revisões e críticas para agentes Claude em Opus). Ela é posterior e explícita, então VALE sobre as duas: revisão e crítica também vão primeiro para uma IA externa com limite, respeitada a `D-GEMINI-SEGUNDO-REVISOR` (Gemini nunca revisor único).
 - **Compactação do disco do Docker (17/10, ~21:55 BRT; nível 3 de `docs/limpeza-de-disco.md`).** O dono mandou *"ajeite isso"*, depois *"pode fazer a compactação do docker"*, e aprovou a elevação de administrador. Resultado: `docker_data.vhdx` de 24,04 GB para 5,04 GB; disco C: de 7,35 GB para 26,51 GB livres. A base voltou sozinha.
 - **Nota para a próxima rodada da apresentação (não é decisão):** o dono avaliou a apresentação de 17/10 como *"muito fraca, o ator principal era o traccar e ele nao apareceu"* e mandou *"nao fazer agora a apresentação"*. Quando ela voltar, o Traccar é o protagonista: rastreador e celular, ingestão privada, quarentena, viatura no tempo e mapa ao vivo.
+
+## Registro de 18/10/2026 — o ciclo 3 do Traccar, o teto do Gemini e o marco de KPI antes da demonstração
+
+- **`D-TRC01-C3-SO-A-C` (decisão do dono, 2026-10-18).** ***"ataque so a c"***. O ciclo 3 do `B-TRC-01` (PR #426) consertou só o (c′)-P1 do ciclo 2. As notas da (a′) e da (b′) viraram pendências com dono (§4 de `docs/revisoes/TRACCAR/B-TRC-01-ciclo3-plano.md`), gravadas em `controle/pendencias.md` pelo PR de registro de 18/10. A ordem está citada na ata `agent-orchestration/omega/juntas/J-B-TRC-01-ciclo3.md:5` e no `R-B-TRC-01-ciclo2.md`. Fecha a ressalva R-5 do inspetor do ciclo 3 ("ataque só a c" fora de `decisoes.md`). O ciclo 3 foi APROVADO 3×0 e o #426 mergeou em `c1485c94`.
+- **`D-GEMINI-TETO-MENSAL-MAIS-10` (decisão do dono, 2026-10-18).** O dono pediu ***"pode subir o teto do gemini pra 10uss"*** e confirmou ***"limite alterado"***.
+  - Ele subiu em US$ 10 o teto MENSAL de gasto da API Gemini, na conta Google dele, fora do repositório.
+  - O teto POR TAREFA continua US$ 5 (`D-GEMINI-TRACCAR-TETO`).
+  - **Fato do mesmo dia, medido pelo orquestrador:** às 23:24Z o teto mensal esgotou de novo (*"exceeded its monthly spending cap"*), depois de três tarefas (US$ 0,52 + 0,31 + 0,39). Não há arquivo no repositório com essa medição; a fonte é o relato do orquestrador ao registro.
+  - Os limites da `D-GEMINI-SEGUNDO-REVISOR` continuam: nunca revisor único, nunca o design.
+- **`D-KPI-ANTES-DA-DEMO` (decisão do dono, 2026-10-18).** ***"o 'Marco de KPI pelo loop' vem antes de 'Demonstracao…' os kpis nao refletem o estado do sistema a bastante tempo"***. E sobre o `mvp_vendavel`: ***"a uns dois meses a produção esta parada e em 88%, quero essa medição bem realista"***.
+  - **A regra:** o marco de KPI pelo loop (`D-KPI-LOOP-GEMINI`, `D-KPI-LOOP-NAO-ESQUECER`) vem antes de demonstração, de apresentação e de bloco novo.
+  - **DERIVADO, não é fala do dono (§A6):** a palavra do dono põe o marco antes da "Demonstração". Estender a regra a "apresentação" e a "bloco novo" é leitura do orquestrador, e corrige-se nesta linha se o dono quis só a demonstração.
+  - **O método do recálculo** é recomendação do orquestrador, seguida pelo dono por omissão. Ele não a aprovou com palavras próprias:
+    - `mvp_vendavel = floor(100 × fechados / 62)`;
+    - o denominador 62 são os 56 bloqueantes do `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (l.105) mais os 6 atos do dono do §4.2 (l.186);
+    - item parcial conta como aberto;
+    - o `mvp_demo` fica "não medido" até existir o roteiro de demonstração.
+  - **DERIVADO:** a fórmula, o denominador, a regra do parcial e o "não medido". O dono não disse nenhum deles. O que é dele: o marco antes da demonstração e o "bem realista". O 88% atual vem de 2026-07-18 (`Kpis/kpis-latest.json`, nota `D-Ω4-KPI-RELATORIO`: "mvp_vendavel 83→88 movidos por escopo") e é anterior ao inventário SAN3 (nota da l.127 do mesmo arquivo).
+  - **Estado:** a medição realista do gate está em andamento (registro de 18/10 em `agent-orchestration/docs/status-geral.md`).
