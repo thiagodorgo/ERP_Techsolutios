@@ -418,7 +418,7 @@ if (!connectionString) {
     assert.equal(await locationsOf(h, w.tenantId, w.techA), 0, "nada do período de B foi para A");
   });
 
-  test("ingestão: a viatura da OS é a do instante do fix — fix atrasado da viatura nova vai à quarentena", { timeout: 120_000 }, async () => {
+  test("ingestão: a viatura da OS é a do instante do fix — fix atrasado da viatura nova vai à quarentena (histórico ambíguo)", { timeout: 120_000 }, async () => {
     const h = await harness();
     const w = await world(h, "vehicle-window");
     const vehicle2 = await newVehicle(h, w.tenantId);
@@ -429,21 +429,25 @@ if (!connectionString) {
     await assignVehicle(h, w.tenantId, w.workOrderId, w.techA, vehicle2);
     const afterSwap = await fixNow();
 
-    assert.deepEqual(await h.ingestion.ingest(command(h, device2, beforeSwap)), {
-      kind: "quarantined",
-      reason: "no_operator_at_fix_time",
-    });
-    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0);
-    assert.equal((await h.ingestion.ingest(command(h, device2, afterSwap))).kind, "stored");
-    assert.equal(await locationsOf(h, w.tenantId, w.techA), 1);
-    assert.deepEqual(await h.ingestion.ingest(command(h, w.device, afterSwap, -23.61)), {
-      kind: "quarantined",
-      reason: "no_operator_at_fix_time",
-    });
-    assert.deepEqual(await h.ingestion.ingest(command(h, w.device, beforeSwap, -23.62)), {
-      kind: "quarantined",
-      reason: "no_operator_at_fix_time",
-    });
+    // Ciclo 3 ((c′)-P1): a OS ganhou V2 depois de `beforeSwap` — o que ela tinha naquele instante é desconhecido, não "ninguém".
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, device2, beforeSwap)),
+      { kind: "quarantined", reason: "operator_history_ambiguous" },
+      "T-C1 a1 (C1): fix da viatura NOVA anterior à troca → histórico ambíguo",
+    );
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0, "T-C1 a2: nada gravado para A pelo fix anterior à troca");
+    assert.equal((await h.ingestion.ingest(command(h, device2, afterSwap))).kind, "stored", "T-C1 a3 (C2): fix da viatura nova depois da troca → A");
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 1, "T-C1 a4: um ponto de A");
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, w.device, afterSwap, -23.61)),
+      { kind: "quarantined", reason: "no_operator_at_fix_time" },
+      "T-C1 a5 (C3): fix da viatura ANTIGA depois da troca → sabe-se que ninguém a tinha",
+    );
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, w.device, beforeSwap, -23.62)),
+      { kind: "quarantined", reason: "operator_history_ambiguous" },
+      "T-C1 a6 (C4): fix da viatura ANTIGA anterior à troca, entregue depois → histórico ambíguo (perda aceita, motivo honesto)",
+    );
     assert.equal(await locationsOf(h, w.tenantId, w.techA), 1, "a viatura antiga fica sem dono após a troca");
   });
 
@@ -525,6 +529,74 @@ if (!connectionString) {
       w.workOrderId,
     );
     assert.deepEqual(await readAssignedAt(), { vehicle_id: null, vehicle_assigned_at: null });
+  });
+
+  // B-TRC-01 ciclo 3 (J-B-TRC-01-ciclo2, (c′)-P1) — o cenário exato da sonda da cadeira (c′): duas OS com a MESMA viatura,
+  // uma troca de viatura, e um fix tirado antes da troca e entregue depois. A OS que perdeu a viatura continua na janela
+  // como "desconhecida no instante"; o fix vai à quarentena, nunca ao outro técnico pelo estado de agora.
+  test("ingestão: a OS que tinha a viatura no instante do fix e a perdeu depois continua na janela — o fix ambíguo vai à quarentena, não ao outro técnico", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "p1-lost-vehicle");
+    const vehicle2 = await newVehicle(h, w.tenantId);
+    const workOrderB = await newWorkOrder(h, w.tenantId, w.vehicleId);
+    const dispatchB = await createDispatch(h, w.tenantId, workOrderB, w.techB);
+    await setStatus(h, w.tenantId, dispatchB, "accepted");
+    const whileBothHadV1 = await fixNow();
+    const stillBothHadV1 = await fixNow();
+
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, w.device, whileBothHadV1)),
+      { kind: "quarantined", reason: "ambiguous_operator_at_fix_time" },
+      "T-P1 a1 (controle): antes da troca, as duas OS têm V1 → ambíguo",
+    );
+
+    await assignVehicle(h, w.tenantId, w.workOrderId, w.techA, vehicle2);
+    const afterSwap = await fixNow();
+
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, w.device, stillBothHadV1, -23.64)),
+      { kind: "quarantined", reason: "operator_history_ambiguous" },
+      "T-P1 a2 (P1): fix de V1 do período em que as duas OS a tinham, entregue depois da troca → quarentena, não B",
+    );
+    assert.equal(await locationsOf(h, w.tenantId, w.techB), 0, "T-P1 a3: o fix ambíguo NÃO foi para B");
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0, "T-P1 a4: nem para A");
+
+    assert.equal(
+      (await h.ingestion.ingest(command(h, w.device, afterSwap, -23.65))).kind,
+      "stored",
+      "T-P1 a5: depois da troca só a OS de B tem V1 → B",
+    );
+    assert.equal(await locationsOf(h, w.tenantId, w.techB), 1, "T-P1 a6: um ponto de B, o posterior à troca");
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0, "T-P1 a7: nada para A");
+  });
+
+  test("ingestão: OS de OUTRA viatura que trocou de viatura depois do fix torna o instante desconhecido — quarentena, nunca atribuição pelo estado de agora", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "p2-other-vehicle");
+    const vehicle2 = await newVehicle(h, w.tenantId);
+    const vehicle3 = await newVehicle(h, w.tenantId);
+    const workOrderB = await newWorkOrder(h, w.tenantId, vehicle3);
+    const dispatchB = await createDispatch(h, w.tenantId, workOrderB, w.techB);
+    await setStatus(h, w.tenantId, dispatchB, "accepted");
+    const beforeSwap = await fixNow();
+
+    await assignVehicle(h, w.tenantId, workOrderB, w.techB, vehicle2);
+    const afterSwap = await fixNow();
+
+    assert.deepEqual(
+      await h.ingestion.ingest(command(h, w.device, beforeSwap)),
+      { kind: "quarantined", reason: "operator_history_ambiguous" },
+      "T-P2 a1 (N1): a OS de B trocou V3→V2 depois do fix — o que ela tinha no instante é desconhecido → quarentena",
+    );
+    assert.equal(await locationsOf(h, w.tenantId), 0, "T-P2 a2: nada gravado pelo fix de instante desconhecido");
+
+    assert.equal(
+      (await h.ingestion.ingest(command(h, w.device, afterSwap, -23.66))).kind,
+      "stored",
+      "T-P2 a3: depois da troca, sabe-se que só A tem V1 → A",
+    );
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 1, "T-P2 a4: um ponto de A");
+    assert.equal(await locationsOf(h, w.tenantId, w.techB), 0, "T-P2 a5: nada para B");
   });
 
   test("ingestão: organização suspensa com dica válida — `tenant_inactive`", { timeout: 120_000 }, async () => {

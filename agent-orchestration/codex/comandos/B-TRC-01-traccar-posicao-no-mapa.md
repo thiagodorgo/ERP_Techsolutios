@@ -168,3 +168,17 @@ git diff --check
 - Validação: os 12 passos da §2.7, com suítes `-db` e `npm test` na forma Linux via `teste-linux.sh`; meta ≥129 casos
   Traccar executados, fail 0, skipped 0.
 - Relatório incremental: `docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md`.
+
+## Ciclo 3 — só o (c′)-P1
+
+- Plano vinculante: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo3-auditoria-e-plano.md`, §3 (auditoria e
+  plano Fable, `planejador-trc01-ciclo3`). Ordem do dono: *"ataque so a c"* — nada do §4 do plano entra no código.
+- Sem migração: `prisma/**` e `migrations/**` proibidos; `.github/workflows/ci.yml`, `src/integrations/traccar/**`,
+  `src/database/rls.ts`, `src/modules/work-orders/**`, `field-dispatch.service.ts`, `Kpis/**` intocados (§3.2).
+- Entrega: `findOperatorsForVehicleAt` inclui a OS cuja viatura foi (re)atribuída depois do fix
+  (`vehicle_assigned_at > at`, flag `vehicleAssignedAfterFix` nascida no SQL) e `classifyOperatorsAtFixTime` a trata
+  como histórico ambíguo; T-P1, T-P2, T-C1 (motivos), T-C4(e); M-C1 re-derivada (M-C1′), M-P1a, M-P1b.
+- Validação: §3.7 do plano — `check`/`lint`, as 15 suítes Traccar (≥ 132), vermelho-controle no src do objeto
+  `2043c584`, mutações, `field-dispatch*`/`work-order*`, `npm test` na forma Linux, `git diff --check`.
+- Relatório incremental: `docs/revisoes/TRACCAR/B-TRC-01-ciclo3-dev.md` (DEV `dev-trc01-c3-opus`, Claude Opus, nível
+  menor declarado).

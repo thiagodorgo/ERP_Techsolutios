@@ -94,7 +94,8 @@ orçamento de 3 s) → `503 unavailable`. Respostas sem detalhe; o log da ingest
 e status.
 
 `operator_history_ambiguous` cobre tanto despacho sem data confiável da atribuição do operador quanto OS sem
-`vehicle_assigned_at`; linhas anteriores à migração ficam inelegíveis até o próximo `UPDATE`/atribuição da OS.
+`vehicle_assigned_at`, ou OS com despacho ativo cuja viatura foi (re)atribuída depois do instante do fix (B-TRC-01
+ciclo 3); linhas anteriores à migração ficam inelegíveis até o próximo `UPDATE`/atribuição da OS.
 
 > Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2.
 

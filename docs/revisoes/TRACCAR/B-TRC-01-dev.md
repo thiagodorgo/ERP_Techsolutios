@@ -878,3 +878,12 @@ Worktree descartável `C:/Users/AMP/w-mut503` completamente removido (`git workt
 - Implementação e bateria detalhadas, gravadas incrementalmente, em
   `docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md`.
 - KPI permanece congelado; este ciclo não toca `Kpis/*`.
+
+## Ciclo 3 — 2026-10-18
+
+> DEV: `dev-trc01-c3-opus` · Claude Opus, nível menor (§C7.6), declarado. Implementa o plano Fable do ciclo 3 (só o
+> (c′)-P1, ordem do dono "ataque so a c"); não achou o defeito, não planejou e não vota.
+
+- Implementação, bateria, vermelho-controle e mutações, gravados incrementalmente, em
+  `docs/revisoes/TRACCAR/B-TRC-01-ciclo3-dev.md`.
+- Sem migração; KPI permanece congelado; este ciclo não toca `Kpis/*`.

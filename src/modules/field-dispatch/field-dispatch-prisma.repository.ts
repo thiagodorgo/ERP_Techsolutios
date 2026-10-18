@@ -27,6 +27,10 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 // da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
 // despachos cuja janela contém o instante: `accepted_at ≤ at` e `at` antes do primeiro entre `completed_at`,
 // `cancelled_at` e `failed_at` que não for nulo. A regra de elegibilidade é `classifyOperatorsAtFixTime`.
+// Ciclo 3 (J-B-TRC-01-ciclo2, (c′)-P1) — a OS entra como candidata se tem a viatura AGORA ou se a viatura dela foi
+// (re)atribuída DEPOIS do instante (`vehicle_assigned_at > at`): o que ela tinha no instante é desconhecido — pode ter
+// sido esta — e o classificador a trata como histórico ambíguo. `vehicleAssignedAfterFix` nasce no SQL, da MESMA
+// expressão que a inclui, para a borda de microssegundos não divergir entre o banco e o Node.
 export async function findOperatorsForVehicleAt(
   tx: Prisma.TransactionClient,
   input: FindOperatorsForVehicleAtInput,
@@ -35,12 +39,12 @@ export async function findOperatorsForVehicleAt(
     SELECT d.operator_user_id::text AS "operatorUserId",
            d.operator_assigned_at AS "operatorAssignedAt",
            d.accepted_at AS "acceptedAt",
-           wo.vehicle_assigned_at AS "vehicleAssignedAt"
+           wo.vehicle_assigned_at AS "vehicleAssignedAt",
+           (wo.vehicle_assigned_at > ${input.at}) AS "vehicleAssignedAfterFix"
       FROM field_dispatches d
       JOIN work_orders wo ON wo.tenant_id = d.tenant_id AND wo.id = d.work_order_id
      WHERE d.tenant_id = ${input.tenantId}::uuid
-       AND wo.vehicle_id = ${input.vehicleId}::uuid
-       AND (wo.vehicle_assigned_at IS NULL OR wo.vehicle_assigned_at <= ${input.at})
+       AND (wo.vehicle_id = ${input.vehicleId}::uuid OR wo.vehicle_assigned_at > ${input.at})
        AND d.accepted_at IS NOT NULL
        AND d.accepted_at <= ${input.at}
        AND (LEAST(d.completed_at, d.cancelled_at, d.failed_at) IS NULL

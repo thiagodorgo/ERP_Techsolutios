@@ -133,12 +133,17 @@ export type FindOperatorsForVehicleAtInput = {
   readonly at: Date;
 };
 
-/** Um despacho da viatura cuja janela contém o instante: aceito até o instante e não encerrado nele. */
+/**
+ * Um despacho cuja janela contém o instante (aceito até ele e não encerrado nele) de uma OS que tem a viatura AGORA ou
+ * cuja viatura foi (re)atribuída DEPOIS do instante. `vehicleAssignedAfterFix` é calculado no SQL (`vehicle_assigned_at
+ * > at`; `null` quando a OS não tem data): `true` = o que a OS tinha no instante é desconhecido → histórico ambíguo.
+ */
 export type OperatorAtFixTimeCandidate = {
   readonly operatorUserId: string;
   readonly operatorAssignedAt: Date | null;
   readonly acceptedAt: Date;
   readonly vehicleAssignedAt: Date | null;
+  readonly vehicleAssignedAfterFix: boolean | null;
 };
 
 export type OperatorAtFixTime =

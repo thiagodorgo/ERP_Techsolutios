@@ -19,12 +19,14 @@ import type {
 // `operator_assigned_at ≤ accepted_at` — o técnico que está HOJE no despacho aceitou-o DEPOIS de recebê-lo. Um
 // despacho na janela com `operator_assigned_at` ou `vehicle_assigned_at` nulo (linha anterior à migração), ou com a
 // atribuição do operador posterior ao aceite (reatribuído sem novo aceite), torna o histórico ambíguo e manda a posição
-// à quarentena, mesmo que haja outro elegível. Zero
+// à quarentena, mesmo que haja outro elegível. Idem a OS cuja viatura foi (re)atribuída DEPOIS do instante
+// (`vehicleAssignedAfterFix`, ciclo 3): o que ela tinha no instante é desconhecido. Zero
 // operador elegível → nenhum; mais de um operador distinto → ambíguo; exatamente um → ele.
 export function classifyOperatorsAtFixTime(candidates: readonly OperatorAtFixTimeCandidate[]): OperatorAtFixTime {
   if (
     candidates.some(
       (candidate) =>
+        candidate.vehicleAssignedAfterFix === true ||
         candidate.vehicleAssignedAt === null ||
         candidate.operatorAssignedAt === null ||
         candidate.operatorAssignedAt.getTime() > candidate.acceptedAt.getTime(),
