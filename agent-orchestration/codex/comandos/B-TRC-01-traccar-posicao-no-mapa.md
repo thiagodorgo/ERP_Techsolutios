@@ -156,3 +156,15 @@ git diff --check
   backfill · **Gate:** §8.0 do plano (7 linhas, verdes em 2026-10-11) · **Status:** `published_per_pr`
 - **Contrato:** `traccar_position_ingest@2026-10-11.b-trc-01` (rota de serviço, não é API de cliente)
 - **Evidência do dev:** `docs/revisoes/TRACCAR/B-TRC-01-dev.md`
+
+## Ciclo 2 — janela temporal da viatura e provas permanentes
+
+- Plano vinculante: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`, Parte 2.
+- Autorização nominal do dono: opção (i) da §2.4.6; migração aditiva
+  `20260876000000_work_orders_vehicle_assigned_at`, sem backfill, linhas antigas inelegíveis até o próximo UPDATE.
+- Escopo e proibições: §2.1; `Kpis/*` congelado. O TRC-01 mergeia antes do 07c-b1 (§2.5).
+- Entrega: lista curada das seis suítes `-db`; T-B1/T-B2; `vehicle_assigned_at` por gatilho; T-C1..T-C4; mutações
+  M-C1..M-C4, M-B1 e M-B2a/b.
+- Validação: os 12 passos da §2.7, com suítes `-db` e `npm test` na forma Linux via `teste-linux.sh`; meta ≥129 casos
+  Traccar executados, fail 0, skipped 0.
+- Relatório incremental: `docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md`.

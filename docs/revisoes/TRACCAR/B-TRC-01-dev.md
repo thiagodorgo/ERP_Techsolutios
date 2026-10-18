@@ -869,3 +869,12 @@ Worktree descartável `C:/Users/AMP/w-mut503` completamente removido (`git workt
 | `tests/traccar-resolution-race-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 5`, `# pass 5`, `# fail 0` |
 | `tests/traccar-binding-uniqueness-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 6`, `# pass 6`, `# fail 0` |
 | `tests/traccar-ingest-pool-db.test.ts` | Container Linux (`teste-linux.sh`) | `# tests 2`, `# pass 2`, `# fail 0` |
+
+## Ciclo 2 — 2026-10-16
+
+> DEV: `dev-trc01-c2-codex` · Codex GPT-5.6 Sol, esforço médio, nível menor (§C7.6). Implementa o plano Fable do ciclo
+> 2; não reescreve o plano, não julga achados e não vota. Não foi cadeira nem DEV do ciclo 1.
+
+- Implementação e bateria detalhadas, gravadas incrementalmente, em
+  `docs/revisoes/TRACCAR/B-TRC-01-ciclo2-dev.md`.
+- KPI permanece congelado; este ciclo não toca `Kpis/*`.

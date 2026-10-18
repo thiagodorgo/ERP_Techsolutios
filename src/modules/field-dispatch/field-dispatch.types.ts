@@ -138,6 +138,7 @@ export type OperatorAtFixTimeCandidate = {
   readonly operatorUserId: string;
   readonly operatorAssignedAt: Date | null;
   readonly acceptedAt: Date;
+  readonly vehicleAssignedAt: Date | null;
 };
 
 export type OperatorAtFixTime =

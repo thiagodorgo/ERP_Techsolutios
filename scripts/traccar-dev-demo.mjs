@@ -336,6 +336,8 @@ try {
       `SELECT (operator_assigned_at IS NOT NULL AND operator_assigned_at <= accepted_at)::text FROM field_dispatches WHERE id = '${dispatchId}';`,
     );
     if (check !== "true") throw new Error("o despacho não ficou com operator_assigned_at <= accepted_at");
+    if (psql(`SELECT (vehicle_assigned_at IS NOT NULL)::text FROM work_orders WHERE id = '${workOrderId}';`) !== "true")
+      throw new Error("a OS não ficou com vehicle_assigned_at preenchido pelo gatilho");
   });
 
   const dispatcherToken = signAccessToken(jwtSecret, {

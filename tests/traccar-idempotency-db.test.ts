@@ -289,4 +289,37 @@ if (!connectionString) {
     assert.equal(status(h, await failing.ingest(command(h, w.device, await fixNow()))), 503);
     assert.deepEqual(await counts(h, w.tenantId), { receipts: 0, locations: 0, conflicts: 0 });
   });
+
+  test("idempotência: conexão TERMINADA pelo admin depois do recibo — rollback total e retry grava 1 e 1", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "terminated");
+    const fix = await fixNow();
+    let terminated = 0;
+    const failing = h.makeService({
+      afterReceiptInsert: async () => {
+        const rows = await h.admin.$queryRawUnsafe<Array<{ terminated: boolean }>>(
+          `SELECT pg_terminate_backend(pid) AS terminated
+             FROM pg_stat_activity
+            WHERE usename = $1
+              AND state = 'idle in transaction'
+              AND query ILIKE '%traccar_ingress_receipts%'
+              AND pid <> pg_backend_pid()`,
+          h.role.roleName,
+        );
+        terminated = rows.filter((row) => row.terminated).length;
+        assert.equal(terminated, 1, "o controle exige terminar exatamente a conexão que inseriu o recibo");
+      },
+    });
+
+    const beforeEvents = eventsOf(h, w.tenantId);
+    const outcome = await failing.ingest(command(h, w.device, fix));
+    assert.equal(terminated, 1);
+    assert.deepEqual(outcome, { kind: "unavailable", reason: "database" });
+    assert.equal(status(h, outcome), 503);
+    assert.deepEqual(await counts(h, w.tenantId), { receipts: 0, locations: 0, conflicts: 0 });
+    assert.equal(eventsOf(h, w.tenantId), beforeEvents);
+
+    assert.equal(status(h, await h.ingestion.ingest(command(h, w.device, fix))), 204);
+    assert.deepEqual(await counts(h, w.tenantId), { receipts: 1, locations: 1, conflicts: 0 });
+  });
 }

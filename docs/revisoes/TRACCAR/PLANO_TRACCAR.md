@@ -466,6 +466,11 @@ datas em `timestamptz(6)`. O rollback SQL é comentado no topo da migração, co
    papel sem bypass (§11 M-38): `prosecdef = false`, forja ignorada, reatribuição sem evento detectada. Não é `RULE` (não
    reabre `P-SAN3-05-REGRA-EM-TABELA`). Linhas antigas ficam com nulo, e nulo é inelegível. O rollback remove gatilho,
    função e coluna, e só antes de dado real. Nada mais em `field_dispatches` muda.
+6. **Ciclo 2 — `work_orders.vehicle_assigned_at`** (`timestamptz(6)`, nulo) + função/gatilho
+   `SECURITY INVOKER`: o banco grava `now()` no INSERT com viatura e em toda troca de `vehicle_id`, preserva o valor
+   quando a viatura não muda e ignora valor enviado pelo cliente. Linhas anteriores à migração ficam nulas e
+   inelegíveis até o próximo `UPDATE`/atribuição da OS (opção (i), autorizada pelo dono em 2026-10-16). O histórico
+   completo por períodos permanece no B-TRC-03.
 
 No código: `FIELD_LOCATION_SOURCES` (`field-location.types.ts:3`) **não muda** — é a lista que `parseSource` aceita do
 cliente (`field-location.service.ts:160-169`); nasce `FIELD_LOCATION_STORED_SOURCES` com `traccar`, usada só no tipo
@@ -582,9 +587,10 @@ Quando a decisão é quarentena dentro da fase 2, a linha de quarentena (tabela 
 transação e nada de domínio é escrito; quando nem a descoberta acha organização, a quarentena é uma transação
 própria, sem GUC.
 
-**Operador no instante (regra fail-closed do B-TRC-01, refeita na v2.1 para fechar A2-12).** Elegível é o despacho `d`
-da OS `wo` com `wo.vehicle_id = vínculo.vehicle_id` e
+**Operador no instante (regra fail-closed do B-TRC-01, refeita na v2.1 e completada no ciclo 2).** Elegível é o
+despacho `d` da OS `wo` com `wo.vehicle_id = vínculo.vehicle_id` e
 
+- `wo.vehicle_assigned_at ≤ fixTime` (nulo torna o histórico ambíguo),
 - `d.operator_assigned_at ≤ d.accepted_at ≤ fixTime`, e
 - `fixTime` antes do primeiro entre `completed_at`, `cancelled_at` e `failed_at` que não for nulo.
 
@@ -613,6 +619,10 @@ deixa de depender dela.
 - zero dá `no_operator_at_fix_time`; mais de um dá `ambiguous_operator_at_fix_time`;
 - despacho na janela com `accepted_at` anterior a `operator_assigned_at`, ou com `operator_assigned_at` nulo, dá
   `operator_history_ambiguous`.
+
+`vehicle_assigned_at` é o eixo temporal OS→viatura, também gravado somente por gatilho. Depois de uma troca V1→V2,
+um fix atrasado de V2 anterior à troca não é atribuído ao técnico. Sem a tabela completa de períodos, um fix atrasado
+de V1 também falha fechado; a reconciliação por janela pertence ao B-TRC-03.
 
 Despachos anteriores à migração têm `operator_assigned_at` nulo e ficam inelegíveis até nova atribuição ou novo aceite
 (falha fechada). A consulta mora no `field-dispatch` (`findOperatorsForVehicleAt(tx, { tenantId, vehicleId, at })`),
@@ -1459,6 +1469,10 @@ segunda; falha antes do commit — 503 e nada gravado, e a nova entrega dá 204;
 do `INSERT` do recibo e antes do da localização (porta de falha injetada no repositório) — nem recibo nem localização
 ficam.
 
+**Ciclo 2:** a suíte ganha o término real da conexão por `pg_terminate_backend` depois do INSERT do recibo (rollback
+total + retry 1/1); `traccar-position-ingestion-db` ganha três casos da janela da viatura/gatilho; e nascem
+`traccar-operator-at-fix-time.test.ts` (4 casos) e `traccar-rls-budget-order.test.ts` (ordem setter→timeouts→work).
+
 `tests/traccar-quarantine-db.test.ts` (6): dispositivo sem vínculo — 202, uma linha aberta, nenhuma localização nem
 recibo; 20 entregas concorrentes — 1 linha, `delivery_count = 20`; episódio resolvido não reabre; `fixTime` anterior
 ao `valid_from` — `fix_before_active_binding`; `valid=false` — `invalid_fix`; `first_fix_at`/`last_fix_at` acompanham
@@ -1625,6 +1639,13 @@ pelo menos as de segurança (MUT-01 a MUT-15, MUT-17 a MUT-22, MUT-30 a MUT-45).
 | MUT-43 | operador no instante (A2-12) | regra sem `operator_assigned_at` (só `accepted_at ≤ fixTime`) | `traccar-position-ingestion-db` (A→B sem evento; A→B→A) |
 | MUT-44 | organização suspensa (N2-07) | fase 2 sem conferir `tenants.status` | `traccar-position-ingestion-db` (`tenant_inactive`) |
 | MUT-45 | recibo antes do operador (N2-03) | resolver o operador antes do `SELECT` do recibo | `traccar-position-ingestion-db` (reenvio depois de reatribuição → 204) |
+| M-C1 | janela temporal da viatura | remover o predicado de `vehicle_assigned_at` | `traccar-position-ingestion-db` (fix atrasado da viatura nova) |
+| M-C2 | legado falha fechado | ignorar `vehicleAssignedAt = null` | unitário + `traccar-position-ingestion-db` |
+| M-C3 | troca regrava a janela | preservar o timestamp antigo na troca | `traccar-position-ingestion-db` |
+| M-C4 | valor só do banco | honrar `NEW.vehicle_assigned_at` quando a viatura não muda | `traccar-position-ingestion-db` |
+| M-B1 | término real reverte tudo | MUT-35: recibo em transação própria | `traccar-idempotency-db` |
+| M-B2a | setter primeiro | executar `work` antes do setter | `traccar-rls-budget-order` |
+| M-B2b | setter local | `set_config(..., false)` | `traccar-rls-budget-order` |
 
 O jurado também lê o código e confirma que `timingSafeEqual` recebe dois buffers de 32 bytes: estatística de tempo em
 CI não é prova.
@@ -1752,6 +1773,8 @@ ao fim do B-TRC-01, sem esperar as telas e a nuvem completas.
 - **B-TRC-01:** `TRACCAR_INGEST_ENABLED=false` (o listener nem sobe) e remover `FORWARD_URL`/`FORWARD_HEADER` do
   Traccar; promover imagem anterior. Tabelas aditivas ficam inertes para investigação; rollback SQL manual só em ambiente
   sem dado, nunca como rollback produtivo automático.
+  A migração do ciclo 2 documenta, nesta ordem: remover o gatilho `work_orders_vehicle_assigned_at`, remover a função
+  e remover a coluna `work_orders.vehicle_assigned_at`; somente em ambiente sem dado real.
 - **B-TRC-02:** desligar `event.forward.url` e leitura da fonte veicular; conservar eventos já
   recebidos. Nenhuma OS/quilometragem manual foi sobrescrita.
 - **B-TRC-03:** desabilitar worker REST e ações de vínculo; segredo é revogado/rotacionado. Forward

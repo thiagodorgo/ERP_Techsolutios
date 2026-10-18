@@ -275,6 +275,17 @@ jobs:
           SUITES="$SUITES tests/inventory-cycle-count-close-units-db.test.ts"
           SUITES="$SUITES tests/inventory-unique-backstops-db.test.ts"
           SUITES="$SUITES tests/inventory-migration-drill-db.test.ts"
+          # B-TRC-01 ciclo 2 (J-B-TRC-01-ciclo1, (a)-1) — as seis suítes `-db` da ingestão do Traccar. Elas JÁ rodam no
+          # job `backend` (medido no head 5abdf83b: 44/44 no log do run 38352262796), mas a convenção da lista curada
+          # (SAN2-2, B-O6R-06) é que toda suíte `-db` nova entre AQUI, sob o guard de zero pulos, medida 3× antes.
+          # Medido antes de entrar: 3 execuções na forma deste job, 0 falha, 0 pulo, denominador constante (6+9+2+20+6+5 = 48
+          # casos nas 6 suítes; 363/363 no total do job).
+          SUITES="$SUITES tests/traccar-binding-uniqueness-db.test.ts"
+          SUITES="$SUITES tests/traccar-idempotency-db.test.ts"
+          SUITES="$SUITES tests/traccar-ingest-pool-db.test.ts"
+          SUITES="$SUITES tests/traccar-position-ingestion-db.test.ts"
+          SUITES="$SUITES tests/traccar-quarantine-db.test.ts"
+          SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

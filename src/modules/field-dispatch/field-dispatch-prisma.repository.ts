@@ -34,11 +34,13 @@ export async function findOperatorsForVehicleAt(
   const candidates = await tx.$queryRaw<OperatorAtFixTimeCandidate[]>`
     SELECT d.operator_user_id::text AS "operatorUserId",
            d.operator_assigned_at AS "operatorAssignedAt",
-           d.accepted_at AS "acceptedAt"
+           d.accepted_at AS "acceptedAt",
+           wo.vehicle_assigned_at AS "vehicleAssignedAt"
       FROM field_dispatches d
       JOIN work_orders wo ON wo.tenant_id = d.tenant_id AND wo.id = d.work_order_id
      WHERE d.tenant_id = ${input.tenantId}::uuid
        AND wo.vehicle_id = ${input.vehicleId}::uuid
+       AND (wo.vehicle_assigned_at IS NULL OR wo.vehicle_assigned_at <= ${input.at})
        AND d.accepted_at IS NOT NULL
        AND d.accepted_at <= ${input.at}
        AND (LEAST(d.completed_at, d.cancelled_at, d.failed_at) IS NULL

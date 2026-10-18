@@ -50,12 +50,13 @@ if (!connectionString) {
   const harness = (): Promise<Harness> => (harnessPromise ??= bootstrap());
 
   async function bootstrap() {
-    const [{ PrismaPg }, { PrismaClient }, rls, dispatch, location, service, schema, adapter, app, auth, limit] =
+    const [{ PrismaPg }, { PrismaClient }, rls, dispatch, workOrders, location, service, schema, adapter, app, auth, limit] =
       await Promise.all([
         import("@prisma/adapter-pg"),
         import("@prisma/client"),
         import("../src/database/rls.js"),
         import("../src/modules/field-dispatch/field-dispatch-prisma.repository.js"),
+        import("../src/modules/work-orders/work-order-prisma.repository.js"),
         import("../src/modules/field-location/index.js"),
         import("../src/integrations/traccar/traccar-ingestion.service.js"),
         import("../src/integrations/traccar/traccar-position.schema.js"),
@@ -84,7 +85,7 @@ if (!connectionString) {
         return { event: {} as never, published: true };
       }) as never,
     });
-    return { admin, role, rls, dispatch, location, ingestion, schema, adapter, app, auth, limit, events, errorCodes, tenants: [] as string[] };
+    return { admin, role, rls, dispatch, workOrders, location, ingestion, schema, adapter, app, auth, limit, events, errorCodes, tenants: [] as string[] };
   }
 
   after(async () => {
@@ -166,6 +167,24 @@ if (!connectionString) {
   }
   async function reassign(h: Harness, tenantId: string, dispatchId: string, operatorUserId: string): Promise<void> {
     await dispatchRepo(h, tenantId, (repo) => repo.reassign({ tenantId, dispatchId, operatorUserId }));
+    await pause(STEP_MS);
+  }
+  async function assignVehicle(
+    h: Harness,
+    tenantId: string,
+    workOrderId: string,
+    operatorId: string,
+    vehicleId: string,
+  ): Promise<void> {
+    const assigned = await new h.workOrders.RlsPrismaWorkOrderRepository(h.role.client as PrismaClient).assign({
+      tenantId,
+      workOrderId,
+      operatorId,
+      vehicleId,
+      message: "B-TRC-01 ciclo 2 — troca sintética da viatura",
+      assignedBy: operatorId,
+    });
+    assert.ok(assigned, "a atribuição da OS existe");
     await pause(STEP_MS);
   }
   async function bind(h: Harness, tenantId: string, vehicleId: string, device: string): Promise<void> {
@@ -397,6 +416,115 @@ if (!connectionString) {
     const afterAReaccepts = await h.ingestion.ingest(command(h, w.device, fixOfB, -23.8));
     assert.deepEqual(afterAReaccepts, { kind: "quarantined", reason: "no_operator_at_fix_time" });
     assert.equal(await locationsOf(h, w.tenantId, w.techA), 0, "nada do período de B foi para A");
+  });
+
+  test("ingestão: a viatura da OS é a do instante do fix — fix atrasado da viatura nova vai à quarentena", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "vehicle-window");
+    const vehicle2 = await newVehicle(h, w.tenantId);
+    const device2 = `dev${randomUUID().slice(0, 8)}`;
+    await bind(h, w.tenantId, vehicle2, device2);
+    const beforeSwap = await fixNow();
+
+    await assignVehicle(h, w.tenantId, w.workOrderId, w.techA, vehicle2);
+    const afterSwap = await fixNow();
+
+    assert.deepEqual(await h.ingestion.ingest(command(h, device2, beforeSwap)), {
+      kind: "quarantined",
+      reason: "no_operator_at_fix_time",
+    });
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0);
+    assert.equal((await h.ingestion.ingest(command(h, device2, afterSwap))).kind, "stored");
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 1);
+    assert.deepEqual(await h.ingestion.ingest(command(h, w.device, afterSwap, -23.61)), {
+      kind: "quarantined",
+      reason: "no_operator_at_fix_time",
+    });
+    assert.deepEqual(await h.ingestion.ingest(command(h, w.device, beforeSwap, -23.62)), {
+      kind: "quarantined",
+      reason: "no_operator_at_fix_time",
+    });
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 1, "a viatura antiga fica sem dono após a troca");
+  });
+
+  test("ingestão: OS anterior à migração fica ambígua até a próxima atribuição", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "legacy-vehicle-window");
+    await h.admin.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL session_replication_role = replica");
+      await tx.$executeRawUnsafe(
+        "UPDATE work_orders SET vehicle_assigned_at = NULL WHERE tenant_id = $1::uuid AND id = $2::uuid",
+        w.tenantId,
+        w.workOrderId,
+      );
+    });
+
+    assert.deepEqual(await h.ingestion.ingest(command(h, w.device, await fixNow())), {
+      kind: "quarantined",
+      reason: "operator_history_ambiguous",
+    });
+    assert.equal(await locationsOf(h, w.tenantId, w.techA), 0);
+
+    await assignVehicle(h, w.tenantId, w.workOrderId, w.techA, w.vehicleId);
+    const assignedAt = await h.admin.$queryRawUnsafe<Array<{ vehicle_assigned_at: Date | null }>>(
+      "SELECT vehicle_assigned_at FROM work_orders WHERE tenant_id = $1::uuid AND id = $2::uuid",
+      w.tenantId,
+      w.workOrderId,
+    );
+    assert.ok(assignedAt[0]!.vehicle_assigned_at, "o primeiro UPDATE torna a OS elegível dali em diante");
+    assert.equal((await h.ingestion.ingest(command(h, w.device, await fixNow(), -23.63))).kind, "stored");
+  });
+
+  test("gatilho: vehicle_assigned_at é do banco — forja ignorada, troca regrava, repetição preserva e nulo zera", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const w = await world(h, "vehicle-trigger");
+    const vehicle2 = await newVehicle(h, w.tenantId);
+    const readAssignedAt = async () => {
+      const rows = await h.admin.$queryRawUnsafe<Array<{ vehicle_id: string | null; vehicle_assigned_at: Date | null }>>(
+        "SELECT vehicle_id::text, vehicle_assigned_at FROM work_orders WHERE tenant_id = $1::uuid AND id = $2::uuid",
+        w.tenantId,
+        w.workOrderId,
+      );
+      return rows[0]!;
+    };
+    const update = (sql: string, ...values: unknown[]) =>
+      h.rls.withTenantRls(h.role.client as PrismaClient, w.tenantId, (tx) => tx.$executeRawUnsafe(sql, ...values));
+    const initial = await readAssignedAt();
+    assert.ok(initial.vehicle_assigned_at);
+
+    await update(
+      "UPDATE work_orders SET vehicle_assigned_at = '2000-01-01'::timestamptz WHERE tenant_id = $1::uuid AND id = $2::uuid",
+      w.tenantId,
+      w.workOrderId,
+    );
+    assert.equal((await readAssignedAt()).vehicle_assigned_at?.getTime(), initial.vehicle_assigned_at!.getTime());
+
+    await pause(STEP_MS);
+    await update(
+      "UPDATE work_orders SET vehicle_id = $3::uuid WHERE tenant_id = $1::uuid AND id = $2::uuid",
+      w.tenantId,
+      w.workOrderId,
+      vehicle2,
+    );
+    const swapped = await readAssignedAt();
+    assert.equal(swapped.vehicle_id, vehicle2);
+    assert.ok(swapped.vehicle_assigned_at!.getTime() > initial.vehicle_assigned_at!.getTime());
+
+    await pause(STEP_MS);
+    await update(
+      "UPDATE work_orders SET vehicle_id = $3::uuid WHERE tenant_id = $1::uuid AND id = $2::uuid",
+      w.tenantId,
+      w.workOrderId,
+      vehicle2,
+    );
+    assert.equal((await readAssignedAt()).vehicle_assigned_at?.getTime(), swapped.vehicle_assigned_at!.getTime());
+
+    await update(
+      "UPDATE work_orders SET vehicle_id = NULL WHERE tenant_id = $1::uuid AND id = $2::uuid",
+      w.tenantId,
+      w.workOrderId,
+    );
+    assert.deepEqual(await readAssignedAt(), { vehicle_id: null, vehicle_assigned_at: null });
   });
 
   test("ingestão: organização suspensa com dica válida — `tenant_inactive`", { timeout: 120_000 }, async () => {

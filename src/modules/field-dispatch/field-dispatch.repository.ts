@@ -17,13 +17,15 @@ import type {
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — a regra FAIL-CLOSED do operador no instante do fix, sobre os
 // despachos da viatura cuja janela contém o instante (aceito até ele e não encerrado nele). Elegível é o despacho com
 // `operator_assigned_at ≤ accepted_at` — o técnico que está HOJE no despacho aceitou-o DEPOIS de recebê-lo. Um
-// despacho na janela com `operator_assigned_at` nulo (linha anterior à migração) ou posterior ao aceite (reatribuído
-// sem novo aceite) torna o histórico ambíguo e manda a posição à quarentena, mesmo que haja outro elegível. Zero
+// despacho na janela com `operator_assigned_at` ou `vehicle_assigned_at` nulo (linha anterior à migração), ou com a
+// atribuição do operador posterior ao aceite (reatribuído sem novo aceite), torna o histórico ambíguo e manda a posição
+// à quarentena, mesmo que haja outro elegível. Zero
 // operador elegível → nenhum; mais de um operador distinto → ambíguo; exatamente um → ele.
 export function classifyOperatorsAtFixTime(candidates: readonly OperatorAtFixTimeCandidate[]): OperatorAtFixTime {
   if (
     candidates.some(
       (candidate) =>
+        candidate.vehicleAssignedAt === null ||
         candidate.operatorAssignedAt === null ||
         candidate.operatorAssignedAt.getTime() > candidate.acceptedAt.getTime(),
     )

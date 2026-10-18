@@ -93,6 +93,9 @@ diferente, ou chave de outra organização → `409 traccar_idempotency_conflict
 orçamento de 3 s) → `503 unavailable`. Respostas sem detalhe; o log da ingestão só conhece método, caminho sem query
 e status.
 
+`operator_history_ambiguous` cobre tanto despacho sem data confiável da atribuição do operador quanto OS sem
+`vehicle_assigned_at`; linhas anteriores à migração ficam inelegíveis até o próximo `UPDATE`/atribuição da OS.
+
 > Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2.
 
 ### 2.2 Health / readiness (infra)

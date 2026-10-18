@@ -2434,6 +2434,8 @@ model WorkOrder {
   checklist_snapshot              Json?
   customer_id                     String?               @db.Uuid
   vehicle_id                      String?               @db.Uuid
+  // B-TRC-01 ciclo 2 — gravada SÓ pelo gatilho `work_orders_vehicle_assigned_at`; nunca por cliente/Prisma.
+  vehicle_assigned_at             DateTime?             @db.Timestamptz(6)
   team_id                         String?               @db.Uuid
   service_catalog_id              String?               @db.Uuid
   scheduled_for                   DateTime?             @db.Timestamptz(6)
