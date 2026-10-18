@@ -1,0 +1,28 @@
+{
+  "jurado": "jurado-o6r03a-v2-banco-cdx5 (identidade nova; sucessor P3; nunca votou, planejou nem desenvolveu neste bloco)",
+  "cadeira": "C1 — banco: A1/A5/A6 + A3c com barreira causal; crash nos três tipos e pontos; tenant-first/RLS e PK sem schema novo",
+  "mandato_md5": "EOL-neutro 26dd48775a5236186956515c5f2f62a7 · cru 0afcf0f948a8e2e3ba1b31421d3afa84 · declarado no disparo (cru): confere",
+  "modelo": "GPT-5.6 Sol (gpt-5.6-sol), esforço high · nível menor · fonte: decisoes.md:3132 no objeto e CLAUDE.md §C7.6",
+  "corpo_md5": ".claude EOL-neutro 4afc985059608ce41053a15d9366578f · recebido do blob: igual ao publicado",
+  "objeto": "b75a0c2e96a80b2f54cc629fe856d16660ccbe86 (git ls-remote = gh PR 425 no início e no fim) · B 9566d55bd719ce7d7a545281c57923a25f883ed3 · origin/main final f59ad1d6caaa9da3f451f1ad57e5b9e3ea8a235a · cerca 5cee8e5754888ef138d8d8b2bcb9ad9c37907ad5 com delta só mandatos",
+  "legalidade": "insp-03a-parecer.md: LIBERADO COM RESSALVA · identidade/corpo/worktree/cluster conferidos · check-runs 14 total | 0 não-verdes | 0 pendentes · backend-postgres completed/success em 2 runs",
+  "quorum": "unanimidade de 3, com veto · ciclo 1 · bloqueia+dentro-do-bloco reprova",
+  "leitura_de_outras_cadeiras": "não li voto nem evidência de C2/C3; li corpo C1, mandato C1, parecer do inspetor, contrato da ref e a evidência sucessória C1",
+  "pausa": "sucessão P3 Codex 5 iniciada em 2026-10-13T16:33:23Z; itens 1, 2 e 3 reexecutados",
+  "voto": "APROVADO",
+  "item1": "VERDE — objeto 195/195; VC1/VC2/VC3 acusaram; base B dobrou; m5 e A1noclaim mortos; nenhum achado",
+  "item2": "VERDE — objeto 12/12 falhas injetadas e 6/6 kills sem resíduo; m2/m3/m4/m7 mortos; nenhum achado",
+  "item3": "VERDE — sem diff de schema; 19/19 chamadas Prisma reais tenant-first; RLS real; K2t 1125/325/201 bytes com round-trip; A8mut/A0super mortos; nenhum achado",
+  "o_que_executei": [
+    {"comando": "item1.mts no objeto", "forma": "N=10 por cenário×tipo; A6=5 rodadas×10; papel sem BYPASSRLS; ref objeto", "resultado": "ec=0; 195/195; 197 linhas; md5 69daa2a4093701279cd311f7256d7fdb"},
+    {"comando": "swapbase + item1/item2; m5; A1noclaim", "forma": "controles negativos e testes do autor em container Linux", "resultado": "todos acusaram; restauração byte-idêntica"},
+    {"comando": "item2.mts no objeto", "forma": "3 tipos × 4 pontos + 3 tipos × 2 kills", "resultado": "ec=0; 12/12 + 6/6 sem resíduo; md5 8bbd4b35bc384839cb19a28f05d8186b"},
+    {"comando": "m2/m3/m4/m7 + testes do autor", "forma": "uma mutação por vez; container Linux isolado", "resultado": "todos acusaram; restauração byte-idêntica"},
+    {"comando": "extrator AST + item3 modo object/A8mut/A0super", "forma": "8 blobs; papel real e admin; cluster j03a-c1-pg", "resultado": "19/19 tenant-first; RLS isolou; K2t round-trip; mutantes acusados"}
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": ["matérias C2/C3 e 03b não foram julgadas; T15 é pré-existente com dono B-ARNES-2; R11a e drill 3a não foram herdados nem usados"],
+  "teardown": "gatilhos/função/tabela de sonda removidos; fixtures 0; fontes hash-object = blobs e worktree limpo; container j03a-c1-pg removido com -v; worktree removido por git worktree remove --force; 0 processos restantes; base viva e recursos alheios intocados. Scratch temporário C1 permaneceu porque duas tentativas de remoção, após validação do caminho absoluto, foram recusadas pela política de execução antes de excluir qualquer coisa",
+  "justificativa": "Itens 1–3 medidos por execução própria no objeto, com controles negativos capazes de acusar, papel sem BYPASSRLS e restauração byte-idêntica após cada mutação.\nVOTO: APROVADO — A1/A5/A6/A3c com barreira observada, N=10 por cenário × 3 tipos: 1 efeito por ação, perdedor relê sem 25P02 e u2 sai action_owned_by_other_actor; crash em p1/p2/p3a/p3b × 3 tipos e kill real: zero resíduo, total e status intactos, reenvio = 1 efeito; RLS sob papel sem BYPASSRLS (0 entre organizações), tenant-first em 19/19 chamadas Prisma reais, PK e CHECK intactos sem diff de prisma; m2/m3/m4/m5/m7/A1noclaim/A8mut/A0super vistos pela sonda; vermelhos-controle acusaram; pendências aceitas: matérias C2/C3/03b e T15 pré-existente"
+}

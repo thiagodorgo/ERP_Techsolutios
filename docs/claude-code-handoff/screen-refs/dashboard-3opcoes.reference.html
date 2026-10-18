@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (padrão de patios-claude.html / financeiro-ab.reference.html) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:860px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:8px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:12px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css:3017-3630 ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill--sm{font-size:10px;padding:3px 8px}
+.pat-table{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-table__topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-table__count{font-size:11.5px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-table__empty{padding:36px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-os-tabs{display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b}
+.pat-os-tab--active{background:#fff;color:#2563eb}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;min-width:0}
+.pat-card__head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.pat-card__title{margin:0;font-size:14.5px;font-weight:800;color:#0f172a}
+.pat-card__subtitle{font-size:12px;color:#94a3b8;margin-top:2px}
+.pat-card__subtitle--gap{margin-bottom:6px}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-os-tab:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* Dashboard (sc_dash) — app.css:3355-3620 */
+.pat-dash-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+@media (max-width:1280px){.pat-dash-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pat-dash-cads{display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:14px;flex-wrap:wrap}
+.pat-dash-cads__label{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748b;margin-right:2px}
+.pat-dash-cads__pill{display:flex;align-items:baseline;gap:6px;padding:4px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:99px;font-family:inherit;cursor:pointer}
+.pat-dash-cads__pill:hover{border-color:#93c5fd}
+.pat-dash-cads__pill[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.pat-dash-cads__pill:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-dash-cads__n{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:#0f172a}
+.pat-dash-cads__name{font-size:11.5px;font-weight:600;color:#64748b}
+.pat-dash-cads__spacer{flex:1}
+.pat-dash-charts{display:grid;grid-template-columns:1.55fr 1fr;gap:14px;margin-bottom:14px}
+.pat-dash-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.pat-dash-chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.pat-dash-legend{display:flex;gap:12px;flex-wrap:wrap}
+.pat-dash-legend__item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#475569}
+.pat-dash-legend__swatch{width:8px;height:8px;border-radius:2px}
+.pat-dash-axis{display:flex;justify-content:space-between;margin-top:7px;font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums}
+.pat-dash-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;vertical-align:middle}
+.pat-dash-count{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#f1f5f9;color:#475569;flex-shrink:0;white-space:nowrap}
+.pat-dash-empty{font-size:12.5px;color:#94a3b8;padding:10px 0}
+.pat-dash-code{font-size:11.5px;font-weight:700;color:#2563eb}
+.vol-svg{display:block;width:100%;height:168px;border-bottom:1px solid #e2e8f0}
+.vol-svg g[role="button"]{cursor:pointer}
+.vol-svg g[role="button"]:focus{outline:none}
+.vol-svg g[role="button"]:focus-visible rect.dia-bg,.vol-svg g[role="button"]:hover rect.dia-bg{fill:#eff6ff}
+
+/* ─── Padrão aprovado: linha de 1 linha + detalhe embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:8px 0 6px;display:flex;align-items:center}
+.pat-table .pat-filtro-chip-bar{padding:10px 18px 4px}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10.5px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 6px;text-overflow:clip;text-align:right}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:14px 16px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.3fr 1fr 1.2fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-grid--2{grid-template-columns:1fr 1fr}
+.pat-ab-detail-grid--1{grid-template-columns:1fr}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+/* tabela dentro de cartão (fila, despachos, campo, eventos) */
+.card-tab{margin:6px -8px 0;width:calc(100% + 16px)}
+.card-tab .pat-ab-row td{padding:0 8px}
+.card-tab .pat-ab-row td:last-child{padding:0 4px}
+.cel-main{font-size:12.5px;font-weight:700;color:#0f172a}
+.cel-meta{font-size:11px;color:#94a3b8;font-weight:500;margin-left:6px}
+.cd{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1;vertical-align:middle;width:100%}
+.cd b{font-family:var(--font-mono);font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.cd small{font-size:8.5px;color:#94a3b8;letter-spacing:.06em;font-weight:700}
+.prio{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1.3}
+.prio i{width:7px;height:7px;border-radius:50%}
+.prio b{font-size:12px;font-weight:700}
+.av{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:10px;font-weight:800;vertical-align:middle;margin-right:8px;flex-shrink:0}
+.etapas{display:flex;align-items:center;gap:0;flex-wrap:wrap;font-size:11px}
+.etapa{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:74px;color:#94a3b8;font-weight:600;text-align:center}
+.etapa i{width:10px;height:10px;border-radius:50%;border:2px solid #cbd5e1;background:#fff}
+.etapa--feita{color:#334155}.etapa--feita i{background:#2563eb;border-color:#2563eb}
+.etapa--atual i{background:#fff;border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.etapa small{font-family:var(--font-mono);font-size:10.5px;color:#64748b}
+.etapa-sep{flex:1;min-width:10px;height:2px;background:#e2e8f0;margin-bottom:22px}
+.mini-tl{list-style:none;display:flex;flex-direction:column;gap:6px}
+.mini-tl li{display:flex;gap:8px;font-size:12px;color:#334155;align-items:baseline}
+.mini-tl li small{font-family:var(--font-mono);color:#94a3b8;font-size:11px;flex-shrink:0}
+
+/* Painel do indicador (substitui o pop-up KpiDetailModal — dashboard-kpi-detail.ts) */
+.kpi-painel{display:grid;grid-template-columns:minmax(190px,240px) minmax(0,1fr) auto;gap:20px;align-items:start;background:#fff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 18px;margin:0 0 14px;box-shadow:0 0 0 3px #eff6ff}
+.kpi-painel__t{font-size:15px;font-weight:800;color:#0f172a}
+.kpi-painel__v{font-size:22px;font-weight:800;color:#0f172a;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi-painel__c{font-size:12px;color:#64748b;margin-top:2px}
+.kpi-painel__txt{font-size:13px;color:#475569;line-height:1.5}
+.kpi-painel__acoes{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.kpi-painel--rail{grid-template-columns:1fr;gap:10px;margin:10px 0 0;box-shadow:none;padding:12px 14px}
+.kpi-painel--rail .kpi-painel__acoes{flex-direction:row;align-items:center;justify-content:space-between}
+.fonte-nota{font-size:11.5px;font-weight:700;color:#a96b00;background:#FEF9EC;border:1px solid #F5E6C8;border-radius:8px;padding:6px 10px;margin-bottom:8px}
+.quebra{display:flex;flex-direction:column}
+.quebra div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;font-weight:600}
+.quebra b{font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+
+/* ─── ui-* (app.css:390-805) ─── */
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button--primary{background:var(--color-core-primary);color:var(--text-inverse)}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button--danger{background:var(--color-status-danger);color:var(--text-inverse)}
+.ui-button--sm{min-height:32px;padding:0 var(--space-10);font-size:var(--text-sm)}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-state{border:1px dashed var(--border-strong);border-radius:var(--radius-8);padding:var(--space-24);background:var(--surface-panel);color:var(--text-secondary)}
+.ui-state strong{display:block;color:var(--text-primary);margin-bottom:4px}
+.ui-state p{font-size:var(--text-sm)}
+.ui-field{display:grid;gap:var(--space-6);font-size:13px;font-weight:700;color:#334155}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:8px 10px;font:inherit;font-weight:400;resize:vertical}
+
+/* ─── Opção B: faixa analítica ─── */
+.b-ana{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.spark{display:block;width:100%;height:26px;margin-top:8px}
+.dia-leitura{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#475569}
+.dia-leitura b{color:#0f172a}
+.etapa-svg g[role="button"]{cursor:pointer}
+.etapa-svg g[role="button"]:hover rect.bar-bg,.etapa-svg g[role="button"]:focus-visible rect.bar-bg{fill:#eff6ff}
+.etapa-svg g[role="button"]:focus{outline:none}
+.etapa-svg g[aria-pressed="true"] rect.bar-bg{fill:#dbeafe}
+.donut-wrap{display:flex;align-items:center;gap:14px}
+.leg-btns{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.leg-btns button{display:flex;align-items:center;gap:7px;border:0;background:none;padding:5px 6px;border-radius:7px;font-size:12px;color:#475569;cursor:pointer;text-align:left}
+.leg-btns button:hover{background:#f8fafc}
+.leg-btns button[aria-pressed="true"]{background:#eff6ff;color:#1d4ed8;font-weight:700}
+.leg-btns button:focus-visible{outline:2px solid #2563eb}
+.leg-btns b{margin-left:auto;color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+
+/* ─── Opção C: central de prioridades ─── */
+.c-blocos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.bloco-c{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:11px 12px;cursor:pointer;text-align:left;min-height:56px}
+.bloco-c:hover{border-color:#93c5fd}
+.bloco-c[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.bloco-c:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.bloco-c b{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;display:block}
+.bloco-c span.rot{font-size:11.5px;font-weight:600;color:#334155;line-height:1.25;display:block;margin-top:3px}
+.c-mesa{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+.c-rail{position:sticky;top:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.c-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.c-kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid #e2e8f0;background:#fff;border-radius:10px;padding:9px 11px;cursor:pointer;text-align:left;min-height:44px}
+.c-kpi:hover{border-color:#93c5fd}
+.c-kpi[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.c-kpi:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.c-kpi b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05}
+.c-kpi span{font-size:11.5px;font-weight:600;color:#475569}
+.c-kpi--full{grid-column:1 / -1;flex-direction:row;align-items:center;gap:10px}
+.c-cads{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:11.5px;color:#64748b}
+.c-cads span b{color:#0f172a;font-variant-numeric:tabular-nums}
+.tipo{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap;vertical-align:middle;letter-spacing:.01em;line-height:1.3}
+.rail-lista{display:flex;flex-direction:column;margin-top:6px}
+.rail-item{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;padding:6px 4px;border:0;border-top:1px solid #f1f5f9;background:none;text-align:left;cursor:pointer;font-family:inherit}
+.rail-item:hover{background:#f8fafc}
+.rail-item:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.rail-item__txt{flex:1;min-width:0}
+.rail-item__t{display:block;font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-item__m{display:block;font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail-item__r{font-size:11px;font-weight:700;flex-shrink:0;text-align:right}
+
+/* ─── Detalhe da OS (WorkOrderDetailPage) ─── */
+.back-link{display:inline-flex;align-items:center;gap:8px;color:#2563EB;font-size:13px;font-weight:700;background:none;border:0;cursor:pointer;padding:0;margin-bottom:14px}
+.back-link:hover{text-decoration:underline}
+.back-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.os-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+.os-head__l{display:flex;align-items:flex-start;gap:14px}
+.os-tile{width:46px;height:46px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;color:#2563EB;flex-shrink:0}
+.os-head__t{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.os-head__s{font-size:13px;color:#64748B;margin-top:3px}
+.os-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.os-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;min-width:0}
+.os-card h3{font-size:14px;font-weight:800;color:#0f172a;margin-bottom:10px}
+.os-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.os-campo span{display:block;font-size:11px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.os-campo b{display:block;font-size:13.5px;color:#0F172A;font-weight:500;margin-top:2px}
+.timeline{list-style:none;position:relative}
+.timeline li{position:relative;padding-left:22px;padding-bottom:14px;border-left:2px solid #E2E8F0;margin-left:6px}
+.timeline li:last-child{padding-bottom:0}
+.timeline .dot{position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid #fff}
+.timeline strong{font-size:13px;color:#0f172a}
+.timeline .data{font-size:12px;color:var(--text-secondary)}
+.timeline .msg{font-size:12.5px;color:#475569;margin-top:2px}
+
+/* ─── Acesso não permitido (PermissionGuard) ─── */
+.acesso{max-width:560px;margin:60px auto;text-align:center;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:36px 30px}
+.acesso__ic{width:52px;height:52px;border-radius:14px;background:#FEF2F2;color:#B91C1C;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.acesso h2{font-size:18px;font-weight:800;margin-bottom:6px}
+.acesso p{font-size:13.5px;color:#64748b;line-height:1.5}
+.sec-bloq{display:flex;align-items:center;gap:10px;padding:14px;border:1px dashed #cbd5e1;border-radius:10px;font-size:12.5px;color:#64748b;margin-top:8px}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:18px}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:1.2fr 1fr}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:90;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1300px){.b-ana{grid-template-columns:1fr 1fr}.b-ana .b-vol{grid-column:1 / -1}.c-blocos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:1100px){.pat-dash-charts,.pat-dash-duo{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Dashboard · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">MC</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Mariana Costa</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Gestor de operações</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title" id="topbar-title">Dashboard</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"><div class="tela-dash"></div><div class="tela-os" hidden></div></div>
+        <div data-view="b" style="display:none"><div class="tela-dash"></div><div class="tela-os" hidden></div></div>
+        <div data-view="c" style="display:none"><div class="tela-dash"></div><div class="tela-os" hidden></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela que está no ar (<code style="color:#7dd3fc">frontend/src/pages/DashboardPage.tsx</code>, rota <code style="color:#7dd3fc">/dashboard</code> em <code style="color:#7dd3fc">App.tsx:270-276</code>) e do padrão aprovado em Pátios (blocos clicáveis que filtram, linha de 1 linha que abre o detalhe embaixo, um aberto por vez). O caminho até a OS é o do sistema: <strong>linha → detalhe → “Abrir OS” → tela da OS</strong>. Todos os números são de exemplo, mas cada um tem fonte real indicada abaixo; o que não existe está marcado como <strong>falta no backend</strong>. Termos técnicos só neste quadro.</p>
+    <div class="estados-bar">Estados desta opção:
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+    </div>
+    <div class="estados-bar">Simular o perfil (vale para as 3 opções — o sistema NÃO tem seletor de visão; o papel vem da sessão):
+      <button type="button" class="rv-btn" data-perfil="gestor" aria-pressed="true">Gestor</button>
+      <button type="button" class="rv-btn" data-perfil="campo" aria-pressed="false">Operação de Campo / Operador</button>
+      <button type="button" class="rv-btn" data-perfil="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-perfil="suporte" aria-pressed="false">Suporte</button>
+      <button type="button" class="rv-btn" data-perfil="financeiro" aria-pressed="false">Financeiro / Estoque</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete)</h3>
+        <ul class="review-list">
+          <li><strong>Dados:</strong> <code>useDashboardData.ts:78-82</code> faz 3 chamadas em paralelo — agregado <code>GET /dashboard/summary</code> (<code>dashboard.routes.ts:29-35</code>, <code>dashboard:read</code>), <code>GET /operations/dispatches</code> (<code>field_dispatch:read</code>, <code>field-dispatch.routes.ts:37-38</code>) e <code>GET /field-locations/latest</code> (<code>field_location:read</code>, <code>field-location.routes.ts:41</code>). O gráfico usa <code>GET /operations/work-orders-timeseries?days=30</code> (<code>work_orders:read</code>, <code>DashboardPage.tsx:261</code>). Tudo recarrega sozinho (<code>:263-264</code>).</li>
+          <li><strong>Cartões:</strong> <code>summaryToKpis</code> (<code>dashboard.adapter.ts:763-787</code>) → 5 cartões (<code>DashboardPage.tsx:280-327</code>) + faixa CADASTROS (<code>:329-342</code>, <code>:426-440</code>). Clique no cartão: <code>navigate("/work-orders")</code> SEM filtro (<code>:419</code>).</li>
+          <li><strong>Detalhe do cartão:</strong> <code>buildDashboardKpiDetail</code> (<code>dashboard-kpi-detail.ts:62-180</code>) monta título, valor, legenda, texto/gráfico e o botão (“Ver ordens de serviço”, “Ver fila”, “Ver clientes”…). <strong>Está sem uso desde o PR #331</strong> (0a38f1be): a página antiga o abria num pop-up (<code>ClickableKpiCard</code>); hoje só o teste <code>frontend/tests/kpi-cards-clickable.test.tsx</code> o chama. A maquete reaproveita os mesmos rótulos e destinos.</li>
+          <li><strong>Fila “Exige ação agora”:</strong> o servidor manda até 8 (<code>dashboard.types.ts:28</code>), a tela corta em 4 (<code>DashboardPage.tsx:344</code>); o clique abre <code>/work-orders/:id</code> (<code>:463</code>). Despachos (<code>:486-514</code>), Status de campo (<code>:516-538</code>) e Últimos eventos (<code>:541-568</code>, até 10 — <code>dashboard.types.ts:31</code>).</li>
+          <li><strong>Tela da OS:</strong> <code>/work-orders/:workOrderId</code> (<code>App.tsx:768</code>) → <code>WorkOrderDetailPage</code>; abas de <code>tabs.config.ts:36-46</code>; conteúdo “Informações gerais” (<code>GeneralInfoTab.tsx</code>, inclui o cartão de aprovação).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>Pop-up → painel embaixo dos cartões.</strong> O detalhe do cartão (mesmo texto do <code>buildDashboardKpiDetail</code>) abre sob os cartões e não cobre a lista que ele filtra.</li>
+          <li><strong>Linhas de 1 linha + detalhe</strong> no lugar das linhas-botão que navegavam direto (<code>:459-481</code>). Ir à OS fica no botão “Abrir OS” do detalhe.</li>
+          <li><strong>Fila crítica completa:</strong> mostra as 8 que o servidor manda (hoje 4).</li>
+          <li><strong>Fila só com OS em aberto.</strong> Achado: o servidor põe na fila OS de prioridade alta/urgente MESMO concluída ou cancelada — o ramo de prioridade não filtra situação (<code>dashboard-prisma.repository.ts:79-82</code>; <code>dashboard.repository.ts:85-95</code>). Correção de backend (pendência).</li>
+          <li><strong>Eventos com acento e com o código da OS.</strong> Hoje a mensagem vem do servidor sem acento (“Ordem de servico criada.” — <code>work-order.service.ts:521</code>, <code>:2271-2286</code>) e sem dizer qual OS (o evento só traz <code>workOrderId</code>, <code>dashboard.types.ts:60-66</code>).</li>
+          <li><strong>“Nova OS” só para quem cria OS</strong> (hoje aparece para todos — <code>DashboardPage.tsx:365</code>; o servidor exige <code>work_orders:create</code>).</li>
+          <li><strong>“Acesso não permitido” por seção</strong> quando o perfil não lê despachos/localização (hoje o 403 vira a faixa genérica “Alguns dados de campo estão indisponíveis”, <code>:381-385</code>).</li>
+          <li><strong>Voltar da OS volta ao Dashboard</strong> (hoje “Voltar às ordens” vai sempre à lista — <code>WorkOrderDetailPage.tsx:157</code>).</li>
+          <li>Mantidos como hoje: selo neutro “em fila” no cartão OS abertas (sem contagem “sem técnico” — <code>DashboardPage.tsx:30</code>) e sem botão “Exportar” (<code>:360</code>). Menu lateral resumido na maquete.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Comportamento por perfil (use “Simular o perfil” acima)</h3>
+        <ul class="review-list">
+          <li><strong>Gestor</strong> (<code>manager</code>, <code>catalog.ts:414-415</code>): tela inteira, “Nova OS”, todos os botões do detalhe.</li>
+          <li><strong>Operação de Campo / Operador</strong> (<code>field_dispatcher</code> <code>:628-629</code>, <code>operator</code> <code>:730-731</code>): igual ao gestor (leem OS, despachos e localização e criam OS). Menu de despacho (<code>appSidebarNav.ts:175-183</code>).</li>
+          <li><strong>Auditor</strong> (<code>:963-964</code>): lê tudo; sem “Nova OS” (sem <code>work_orders:create</code>) e sem Aprovar/Reprovar na OS. O menu cai no do gestor (<code>roleKindFor</code>, <code>appSidebarNav.ts:281-288</code>).</li>
+          <li><strong>Suporte</strong> (<code>:1033</code>, só <code>dashboard:read</code>): vê cartões, cadastros, fila crítica e eventos (vêm do agregado); gráfico “Acesso não permitido” (<code>DashboardPage.tsx:216-217</code>); despachos e campo bloqueados; detalhe do cartão sem botão (<code>dashboard-kpi-detail.ts:70</code>) e linha sem “Abrir OS”. <strong>Defeito de hoje:</strong> o clique no cartão leva a <code>/work-orders</code> e cai no bloqueio (<code>DashboardPage.tsx:419</code>). Não tem “Dashboard” no menu (<code>appSidebarNav.ts:197</code>), mas é a tela de entrada.</li>
+          <li><strong>Financeiro e Estoque</strong> (<code>:812</code>, <code>:884</code>): sem <code>dashboard:read</code>. <strong>Defeito de hoje:</strong> depois de escolher a organização todo mundo vai para <code>/dashboard</code> (<code>ContextSelectionPage.tsx:44</code>), então a 1ª tela deles é “Acesso não permitido”. O menu do front lista Dashboard (<code>appSidebarNav.ts:184,191</code>); o menu do servidor o esconde (<code>navigation.registry.ts:72</code>). Pendência: tela inicial por perfil.</li>
+          <li><strong>Técnico de campo</strong> (<code>:912-913</code>): lê OS e despachos, não lê localização → “Status de campo” bloqueado. Os números são da organização inteira, não “do técnico” (RBAC diz <em>scoped</em>, <code>RBAC_MATRIX.md:34</code>).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Falta no backend (consolidado)</h3>
+        <ul class="review-list">
+          <li><strong>Contagem “sem técnico” no agregado</strong> — o resumo não traz (<code>dashboard.types.ts:35-41</code>; comentário em <code>DashboardPage.tsx:30</code>). Sem ela o selo do cartão OS abertas fica neutro.</li>
+          <li><strong>Data de criação e técnico nas OS críticas</strong> — a projeção só tem código, título, situação, prioridade, agenda e cliente (<code>dashboard.types.ts:50-58</code>). Sem isso “OS hoje” não filtra a fila e o técnico do detalhe custa 1 chamada a <code>GET /work-orders/:id</code>.</li>
+          <li><strong>Código da OS no evento recente</strong> (<code>dashboard.types.ts:60-66</code>) e mensagens com acento (<code>work-order.service.ts:2271-2286</code>).</li>
+          <li><strong>Fila crítica sem finalizadas</strong> no ramo de prioridade (<code>dashboard-prisma.repository.ts:79-82</code>).</li>
+          <li><strong>Filtro “atrasadas” e várias situações na listagem de OS</strong> — <code>GET /work-orders</code> aceita só uma situação, prioridade, operador, período e busca (<code>work-order.service.ts:403-411</code>). Sem isso “Ver fila” não pode abrir a lista já filtrada.</li>
+          <li><strong>Recorte por perfil</strong> (técnico vê só o dele) — o agregado conta a organização inteira (<code>dashboard-prisma.repository.ts:53-98</code>).</li>
+          <li><strong>Nome do operador no despacho</strong> — <code>DispatchListItem</code> só traz <code>operatorUserId</code> (<code>dispatches.types.ts</code>); a maquete cruza com a localização.</li>
+          <li><em>Só de front (não é backend):</em> a lista de OS não lê filtro da URL (aba é estado local, <code>WorkOrdersPage.tsx:154</code>); “+3 vs ontem” dá para tirar da série; tela inicial por perfil.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li>Tudo o que aparece: agregado (cartões, cadastros, 8 OS críticas, 10 eventos), série de 30 dias, despachos ativos (<code>deriveActiveDispatchRows</code>, <code>dashboard.adapter.ts:412-427</code>) e campo (<code>deriveFieldStatusRows</code>, <code>:393-409</code>; “sem sinal” &gt; 15 min já vem pronto em <code>isStale</code>).</li>
+          <li>Texto, legenda, gráfico e botão do detalhe de cada cartão: <code>buildDashboardKpiDetail</code> (já escrito e testado).</li>
+          <li>Linha do despacho: horários de cada etapa (<code>acceptedAt</code>, <code>onRouteAt</code>, <code>arrivedAt</code>, <code>inServiceAt</code>) já vêm na lista.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li>Front: ligar de novo o <code>buildDashboardKpiDetail</code> num painel; trocar as linhas-botão por linha + detalhe; filtro local da fila pelo cartão (sobre as 8 OS).</li>
+          <li>Front: esconder “Nova OS” sem <code>work_orders:create</code>; não navegar para OS sem <code>work_orders:read</code>.</li>
+          <li>Backend: só se o dono quiser “OS hoje” filtrando a fila (data de criação na OS crítica).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> menor custo; é a tela de hoje com o padrão aprovado; nenhum endpoint novo; quem já usa não reaprende.</li>
+          <li><strong>Contras:</strong> o filtro do cartão só alcança as 8 OS críticas (não “todas as abertas”); “OS hoje” e “Concluídas” só explicam, não filtram; a fila divide meia largura com o gráfico.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li><strong>Carteira ativa por etapa:</strong> <code>workOrders.byStatus</code> já vem no agregado com as 10 situações (<code>dashboard.adapter.ts:666-679</code>) — hoje só vira 2 somas. Clique filtra a fila.</li>
+          <li><strong>Mini-gráficos nos cartões</strong> só onde há série real (OS hoje = abertas por dia; Concluídas = concluídas por dia), como o <code>buildDashboardKpiDetail</code> já fazia. Decomposição de OS abertas/Em andamento: mesmos números do <code>byStatus</code> (corpo <code>breakdown</code> já previsto em <code>kpi-detail.types.ts</code>).</li>
+          <li><strong>Campo agora:</strong> situação de cada operador (<code>fieldStatusMeta</code>, <code>:212-219</code>). <strong>Atividade da OS</strong> no detalhe: os eventos do agregado filtrados pela OS.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li>Endereço e técnico no detalhe da linha: 1 chamada a <code>GET /work-orders/:id</code> ao abrir (como o minimapa de Pátios B) ou campos novos na OS crítica (falta no backend).</li>
+          <li>Front: barras clicáveis e rosca SVG sem biblioteca (PD-004), na biblioteca de gráficos (<code>components/charts</code>, que já tem o <code>TrendChart</code>).</li>
+          <li>Clique no dia do gráfico mostra o dia; filtrar a lista por dia exigiria a lista de OS por data (falta no backend: data de criação na OS crítica).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> mesma linha que o dono escolheu em Pátios; mostra onde a carteira trava (etapa) antes da lista; todo gráfico filtra; fila com largura cheia e colunas próprias.</li>
+          <li><strong>Contras:</strong> tela mais longa; números da etapa repetem os cartões; 1 chamada a mais por linha aberta.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list">
+          <li><strong>Fila única pronta e sem uso:</strong> <code>buildCriticalQueue</code> (<code>dashboard.adapter.ts:295-390</code>) — junta OS atrasada, OS prioritária, operador sem sinal, aprovação pendente e OS sem operador, ordenadas por criticidade, uma vez por item, com os botões “Abrir OS / Abrir mapa / Ver aprovação”. Também sem uso: <code>deriveDashboardAlerts</code> (<code>:430-491</code>).</li>
+          <li>Aprovações: <code>GET /approvals/pending</code> (<code>work-order.routes.ts:71-72</code>, <code>work_orders:read</code>). Sem técnico: da lista <code>GET /work-orders</code> (mesma regra da aba “Sem técnico”, <code>WorkOrdersPage.tsx:82</code>).</li>
+          <li>Coluna da direita: os mesmos 5 cartões + série + despachos + campo de hoje.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list">
+          <li>Carregar no Dashboard mais 2 listas (aprovações pendentes e OS) — ou o agregado ganhar as contagens “sem técnico” e “aprovações pendentes” (falta no backend).</li>
+          <li>Front: duas colunas com coluna de resumo fixa; selo de tipo na linha (componente novo na biblioteca).</li>
+          <li>Para o Suporte a fila fica só com o que o agregado traz (atrasadas e prioritárias).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> responde “o que eu faço agora” numa fila só; junta pessoas (sem sinal) e decisões (aprovações) às OS; números e campo sempre à vista ao rolar; reaproveita código já escrito.</li>
+          <li><strong>Contras:</strong> 2 chamadas a mais; os 5 cartões perdem destaque (coluna menor); gráfico de volume vira miniatura; componente novo para manter.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="review-box">
+      <h3>Pendências para o dono</h3>
+      <ul class="review-list">
+        <li>Escolher A, B ou C (ou juntar: por exemplo B + a fila única de C).</li>
+        <li>Tela inicial por perfil: Financeiro e Estoque hoje entram numa tela bloqueada.</li>
+        <li>Aprovar as correções de backend da lista acima (fila sem finalizadas, código da OS no evento, contagem “sem técnico”).</li>
+        <li>Nomes de clientes, técnicos e viaturas são exemplos.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Central de prioridades</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  map:'<path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/>',
+  calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  list:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  fuel:'<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  files:'<path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  arrowLeft:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  wifiOff:'<path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/>',
+  userX:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="8" y2="13"/><line x1="22" x2="17" y1="8" y2="13"/>',
+  fileCheck:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span data-chevron class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+
+/* ── Tempo (referência fixa: quarta, 14/10/2026 09:40) ── */
+const NOW = new Date(2026, 9, 14, 9, 40);
+const pad = n => String(n).padStart(2,'0');
+const ago = m => new Date(NOW.getTime() - m*60000);
+const fHM = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const fDM = d => pad(d.getDate())+'/'+pad(d.getMonth()+1);
+const fDH = d => fDM(d)+'/'+d.getFullYear()+' '+fHM(d);
+function rel(d){ const m = Math.max(0, Math.round((NOW - d)/60000)); if (m < 1) return 'agora'; if (m < 60) return 'há '+m+' min'; const h = Math.round(m/60); if (h < 24) return 'há '+h+' h'; return 'há '+Math.round(h/24)+' d'; }
+/* agendaCountdown (DashboardPage.tsx:87-97) */
+function countdown(d){ if (!d) return { t:'—', c:'#94A3B8', s:1e12 }; const m = Math.round((d - NOW)/60000); if (m <= 0) return { t:'vencida', c:'#DC2626', s:m }; return { t: pad(Math.floor(m/60))+':'+pad(m%60), c: m <= 120 ? '#DC2626' : m <= 240 ? '#B45309' : '#64748B', s:m }; }
+function agendaTxt(d){ if (!d) return 'Sem agenda'; const m = Math.round((d - NOW)/60000); return fDM(d)+' '+fHM(d)+' · '+(m <= 0 ? 'vencida '+rel(d) : 'em '+pad(Math.floor(m/60))+':'+pad(m%60)); }
+
+/* ── Tons (DashboardPage.tsx:37-44) e situações (dashboard.adapter.ts:167-191) ── */
+const TONE = { info:{bg:'#EFF6FF',fg:'#2563EB',dot:'#2563EB'}, success:{bg:'#DCFCE7',fg:'#15803D',dot:'#22C55E'}, warning:{bg:'#FEF3C7',fg:'#B45309',dot:'#F59E0B'}, danger:{bg:'#FEE2E2',fg:'#B91C1C',dot:'#DC2626'}, accent:{bg:'#F3E8FF',fg:'#7E22CE',dot:'#7E22CE'}, neutral:{bg:'#F1F5F9',fg:'#475569',dot:'#94A3B8'} };
+const ST = { open:['Aberta','neutral'], assigned:['Atribuída','info'], accepted:['Aceita','info'], on_route:['Em rota','info'], on_site:['No local','success'], in_progress:['Em atendimento','warning'], paused:['Pausada','warning'], completed:['Concluída','success'], cancelled:['Cancelada','danger'], rejected:['Recusada','danger'] };
+const PRIO = { urgent:['Urgente','#DC2626','#B91C1C'], high:['Alta','#DC2626','#B91C1C'], medium:['Média','#F59E0B','#B45309'], low:['Baixa','#94A3B8','#64748B'] };
+const OPEN_ST = ['open','assigned','accepted'], FIELD_ST = ['on_route','on_site','in_progress','paused'], FINAL_ST = ['completed','cancelled','rejected'];
+function pill(label, tone, sm){ const t = TONE[tone]; return '<span class="pat-pill'+(sm?' pat-pill--sm':'')+'" style="background:'+t.bg+';color:'+t.fg+'">'+label+'</span>'; }
+const pillSt = (s, sm) => pill(ST[s][0], ST[s][1], sm);
+function prioTxt(p){ const x = PRIO[p]; return '<span class="prio"><i style="background:'+x[1]+'"></i><b style="color:'+x[2]+'">'+x[0]+'</b></span>'; }
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase(); }
+
+/* ── Dados de exemplo: Guincho Exemplo Ltda ── */
+const OS = {};
+function os(code, title, cliente, status, prio, agendaMin, criadaMin, end, servico, tecnico, equipe, viatura){
+  OS[code] = { code, title, cliente, status, prio, agenda: agendaMin === null ? null : new Date(NOW.getTime() + agendaMin*60000), criada: ago(criadaMin), end, servico, tecnico, equipe, viatura };
+}
+os('OS-2026-0418','Remoção de veículo leve','Seguradora Aliança Sul','assigned','urgent',-130,170,'Av. Industrial, 1.240 — Santo André/SP','Remoção — guincho leve','Pedro Alves','Equipe Norte','Guincho plataforma 07');
+os('OS-2026-0415','Reboque de caminhão baú','Transportadora Ômega','on_route','high',-85,210,'Rod. Anhanguera, km 31 — Cajamar/SP','Reboque — guincho pesado','Carlos Mendes','Equipe Norte','Guincho pesado 02');
+os('OS-2026-0409','Socorro mecânico — pane elétrica','Locadora Via Rápida','open','high',-50,300,'Rua Vergueiro, 3.150 — Vila Mariana, São Paulo/SP','Socorro mecânico',null,null,null);
+os('OS-2026-0421','Troca de pneu em rodovia','Ana Ribeiro (particular)','accepted','medium',-20,95,'Rod. dos Imigrantes, km 18 — São Bernardo do Campo/SP','Troca de pneu','Lucas Ferreira','Equipe Sul','Utilitário de apoio 04');
+os('OS-2026-0423','Remoção para pátio — apreensão','Departamento de Trânsito Municipal','open','urgent',50,40,'Av. Kennedy, 700 — Santo André/SP','Remoção — guincho leve',null,null,null);
+os('OS-2026-0425','Guincho de motocicleta','Seguradora Aliança Sul','assigned','high',95,60,'Rua Augusta, 2.010 — Jardins, São Paulo/SP','Remoção — motocicleta','Marcos Lima','Equipe Leste','Guincho plataforma 03');
+os('OS-2026-0426','Transporte de veículo sinistrado','Oficina Mecânica Central','open','high',200,35,'Av. do Estado, 4.800 — Cambuci, São Paulo/SP','Transporte — plataforma',null,null,null);
+os('OS-2026-0427','Remoção de veículo pesado','Construtora Horizonte','in_progress','urgent',null,260,'Av. Jacu-Pêssego, 2.300 — Itaquera, São Paulo/SP','Reboque — guincho pesado','Juliana Prado','Equipe Sul','Guincho pesado 01');
+os('OS-2026-0411','Remoção de veículo leve','Seguradora Aliança Sul','on_site','medium',null,150,'Av. Paulista, 1.578 — Bela Vista, São Paulo/SP','Remoção — guincho leve','Rafael Souza','Equipe Centro','Guincho plataforma 05');
+os('OS-2026-0402','Socorro mecânico — superaquecimento','Locadora Via Rápida','accepted','medium',30,120,'Av. dos Bandeirantes, 900 — Campo Belo, São Paulo/SP','Socorro mecânico','Diego Martins','Equipe Centro','Utilitário de apoio 02');
+os('OS-2026-0429','Remoção de veículo leve','Bruno Teixeira (particular)','open','medium',320,33,'Rua Domingos de Morais, 2.200 — Vila Mariana, São Paulo/SP','Remoção — guincho leve',null,null,null);
+os('OS-2026-0430','Socorro mecânico — bateria','Condomínio Jardim das Acácias','open','low',null,31,'Rua das Acácias, 85 — Osasco/SP','Socorro mecânico',null,null,null);
+os('OS-2026-0398','Remoção de veículo leve','Locadora Via Rápida','completed','medium',-200,400,'Av. Rebouças, 1.020 — Pinheiros, São Paulo/SP','Remoção — guincho leve','Rafael Souza','Equipe Centro','Guincho plataforma 05');
+os('OS-2026-0390','Guincho de motocicleta','Paulo Nogueira (particular)','cancelled','low',-90,320,'Rua Tuiuti, 400 — Tatuapé, São Paulo/SP','Remoção — motocicleta',null,null,null);
+const isOverdue = o => !!o.agenda && o.agenda < NOW && !FINAL_ST.includes(o.status);
+/* criticalWorkOrders (dashboard.types.ts:28 — até 8), só OS em aberto (divergência consciente) */
+const CRIT = ['OS-2026-0418','OS-2026-0415','OS-2026-0409','OS-2026-0421','OS-2026-0423','OS-2026-0425','OS-2026-0426','OS-2026-0427'].map(c => OS[c]);
+
+/* agregado GET /dashboard/summary */
+const BY = { open:9, assigned:6, accepted:3, on_route:5, on_site:3, in_progress:7, paused:2, completed:412, cancelled:21, rejected:4 };
+const SUM = { total:472, by:BY, createdToday:14, overdue:4, reg:{ customers:186, vehicles:23, teams:7, services:34 } };
+/* summaryToKpis (dashboard.adapter.ts:763-787) */
+function kpisDe(s){
+  const b = s.by;
+  return { open:{ label:'OS abertas', value: b.open+b.assigned+b.accepted, delta:'aguardando início' },
+    in_progress:{ label:'Em andamento', value: b.on_route+b.on_site+b.in_progress+b.paused, delta:'em campo agora' },
+    completed:{ label:'Concluídas', value: b.completed, delta:'no total' },
+    overdue:{ label:'Atrasadas', value: s.overdue, delta: s.overdue > 0 ? 'agenda vencida' : 'sem atrasos' },
+    created_today:{ label:'OS hoje', value: s.createdToday, delta:'criadas hoje' },
+    customers:{ label:'Clientes', value:s.reg.customers }, vehicles:{ label:'Viaturas', value:s.reg.vehicles }, teams:{ label:'Equipes', value:s.reg.teams }, services:{ label:'Serviços', value:s.reg.services } };
+}
+const ZERO = { total:0, by:{ open:0, assigned:0, accepted:0, on_route:0, on_site:0, in_progress:0, paused:0, completed:0, cancelled:0, rejected:0 }, createdToday:0, overdue:0, reg:{ customers:0, vehicles:0, teams:0, services:0 } };
+
+/* série diária (GET /operations/work-orders-timeseries?days=30) */
+function rngFrom(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const SERIES = (function(){ const r = rngFrom('guincho-exemplo'); const out = []; for (let i = 29; i >= 0; i--) { const d = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate() - i); const wk = d.getDay() === 0 ? .55 : d.getDay() === 6 ? .75 : 1; let created = Math.round((11 + r()*9) * wk), completed = Math.max(0, created - 2 + Math.round(r()*4)), cancelled = Math.round(r()*2); if (i === 0) { created = 14; completed = 6; cancelled = 1; } out.push({ d, created, completed, cancelled }); } return out; })();
+const SERIES_ZERO = SERIES.map(p => ({ d:p.d, created:0, completed:0, cancelled:0 }));
+
+/* despachos ativos (GET /operations/dispatches) — status + horários de cada etapa */
+const DSP = { draft:['Rascunho','neutral'], assigned:['Atribuído','info'], accepted:['Aceito','info'], on_route:['Em rota','info'], arrived:['No local','success'], in_service:['Em atendimento','warning'], reassigned:['Reatribuído','warning'] };
+const DISP = [
+  { id:'d5', os:'OS-2026-0402', status:'accepted', prio:'medium', obs:'Cliente aguarda no estacionamento do mercado.', t:{ assigned:-10, accepted:-3 } },
+  { id:'d2', os:'OS-2026-0411', status:'arrived', prio:'medium', obs:'Veículo na faixa da direita, sinalizado.', t:{ assigned:-70, accepted:-62, on_route:-35, arrived:-6 } },
+  { id:'d1', os:'OS-2026-0415', status:'on_route', prio:'high', obs:'Acesso pela marginal; motorista aguarda no posto.', t:{ assigned:-48, accepted:-40, on_route:-12 } },
+  { id:'d3', os:'OS-2026-0418', status:'assigned', prio:'urgent', obs:'Aguardando aceite do operador.', t:{ assigned:-25 } },
+  { id:'d4', os:'OS-2026-0427', status:'in_service', prio:'urgent', obs:'Carga a transferir antes do reboque.', t:{ assigned:-150, accepted:-142, on_route:-120, arrived:-75, in_service:-52 } }
+];
+DISP.forEach(d => { const ks = Object.keys(d.t); d.upd = ago(-d.t[ks[ks.length-1]]); });
+/* localizações (GET /field-locations/latest) — deriveFieldStatusRows: sem sinal primeiro, depois mais recente */
+const LOCS = [
+  { id:'l1', nome:'Pedro Alves', equipe:'Equipe Norte', status:'available', stale:true, cap:38, os:'OS-2026-0418', vel:null, bat:41, prec:25 },
+  { id:'l2', nome:'Carlos Mendes', equipe:'Equipe Norte', status:'on_route', stale:false, cap:1, os:'OS-2026-0415', vel:42, bat:76, prec:8 },
+  { id:'l3', nome:'Rafael Souza', equipe:'Equipe Centro', status:'on_site', stale:false, cap:2, os:'OS-2026-0411', vel:0, bat:63, prec:6 },
+  { id:'l4', nome:'Marcos Lima', equipe:'Equipe Leste', status:'available', stale:false, cap:3, os:null, vel:0, bat:92, prec:10 },
+  { id:'l5', nome:'Juliana Prado', equipe:'Equipe Sul', status:'in_service', stale:false, cap:4, os:'OS-2026-0427', vel:0, bat:88, prec:5 }
+];
+const LOC_ST = { available:['Disponível','success'], on_route:['Em rota','success'], on_site:['No local','success'], in_service:['Em atendimento','warning'] };
+/* fieldStatusMeta (dashboard.adapter.ts:212-219) */
+const locMeta = l => l.stale ? ['Sem sinal recente','warning'] : LOC_ST[l.status];
+/* aprovações pendentes (GET /approvals/pending) — só na opção C */
+const APR = [
+  { id:'ap2', ent:'Checklist', os:'OS-2026-0411', motivo:'Avaria não prevista registrada no checklist de remoção.', por:'Rafael Souza', em:9 },
+  { id:'ap1', ent:'Ordem de serviço', os:'OS-2026-0409', motivo:'Orçamento acima da alçada do atendimento (R$ 1.850,00).', por:'Larissa Gomes', em:22 }
+];
+/* eventos recentes (agregado, até 10) — mensagens do servidor, aqui com acento e com o código da OS */
+const EVT_META = { status:['Status alterado','warning'], approval:['Aprovação solicitada','accent'], assigned:['OS atribuída','info'], created:['OS criada','info'], completed:['OS concluída','success'], cancelled:['OS cancelada','danger'] };
+const EVTS_RAW = [
+  { id:'e1', tipo:'status', os:'OS-2026-0411', msg:'Operador chegou ao local.', em:6 },
+  { id:'e2', tipo:'approval', os:'OS-2026-0411', msg:'Aprovação solicitada: avaria não prevista no checklist.', em:9 },
+  { id:'e3', tipo:'status', os:'OS-2026-0415', msg:'Operador em deslocamento.', em:12 },
+  { id:'e4', tipo:'approval', os:'OS-2026-0409', msg:'Aprovação solicitada: orçamento acima da alçada.', em:22 },
+  { id:'e5', tipo:'assigned', os:'OS-2026-0418', msg:'Ordem de serviço atribuída.', em:25 },
+  { id:'e6', tipo:'created', os:'OS-2026-0430', msg:'Ordem de serviço criada.', em:31 },
+  { id:'e7', tipo:'created', os:'OS-2026-0429', msg:'Ordem de serviço criada.', em:33 },
+  { id:'e8', tipo:'status', os:'OS-2026-0427', msg:'Atendimento iniciado.', em:52 },
+  { id:'e9', tipo:'completed', os:'OS-2026-0398', msg:'Ordem de serviço concluída.', em:58 },
+  { id:'e10', tipo:'cancelled', os:'OS-2026-0390', msg:'Ordem de serviço cancelada.', em:75 }
+];
+/* groupRecentEvents (DashboardPage.tsx:142-160): idênticos consecutivos viram "N eventos" */
+const EVTS = (function(){ const rows = []; EVTS_RAW.forEach(e => { const p = rows[rows.length-1]; if (p && p.tipo === e.tipo && p.msg === e.msg) { p.oss.push(e.os); p.ems.push(e.em); return; } rows.push({ id:e.id, tipo:e.tipo, msg:e.msg, oss:[e.os], ems:[e.em] }); }); return rows; })();
+
+/* ── Perfis (catalog.ts) e menus (appSidebarNav.ts) ── */
+const PERFIS = {
+  gestor:{ rot:'Gestor de operações', nome:'Mariana Costa', dash:1, wo:1, cria:1, aprova:1, disp:1, loc:1, cad:1, nav:'gestor' },
+  campo:{ rot:'Operação de campo', nome:'Rogério Pires', dash:1, wo:1, cria:1, aprova:0, disp:1, loc:1, cad:1, nav:'dispatcher' },
+  auditor:{ rot:'Auditor', nome:'Helena Duarte', dash:1, wo:1, cria:0, aprova:0, disp:1, loc:1, cad:1, nav:'gestor' },
+  suporte:{ rot:'Suporte', nome:'Fábio Rocha', dash:1, wo:0, cria:0, aprova:0, disp:0, loc:0, cad:0, nav:'support' },
+  financeiro:{ rot:'Financeiro', nome:'Sandra Melo', dash:0, wo:1, cria:0, aprova:0, disp:0, loc:0, cad:1, nav:'finance' }
+};
+const NAVS = {
+  gestor:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['calc','Orçamentos'],['checkCircle','Aprovações'],['list','Checklists']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['list','Serviços']]],['PÁTIOS',[['layout','Painel'],['warehouse','Pátios'],['files','Processos']]],['ADMINISTRAÇÃO',[['users','Usuários'],['scroll','Auditoria'],['settings','Configurações']]]],
+  dispatcher:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['calc','Orçamentos'],['checkCircle','Aprovações'],['list','Checklists']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['list','Serviços']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  support:[['ADMINISTRAÇÃO',[['users','Usuários'],['bell','Notificações'],['scroll','Auditoria']]]],
+  finance:[['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calc','Orçamentos'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['list','Serviços'],['receipt','Financeiro'],['receipt','Cobranças']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+let PERFIL = 'gestor';
+const P = () => PERFIS[PERFIL];
+function renderNav(){
+  $('#sidebar-nav').innerHTML = NAVS[P().nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Dashboard'; return '<a class="app-sidebar__item'+(on?' app-sidebar__item--active':'')+'" href="#" '+(on?'aria-current="page"':'')+' data-menu="'+it[1]+'">'+ic(it[0],17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-nome').textContent = P().nome; $('#sb-papel').textContent = P().rot; $('#sb-ini').textContent = iniciais(P().nome);
+}
+
+/* ── Estado por opção ── */
+const S = {
+  a:{ estado:'normal', kpi:null, aberta:null, os:null, origem:null },
+  b:{ estado:'normal', kpi:null, aberta:null, os:null, origem:null, aba:'todas', etapa:null, dia:29, campo:null },
+  c:{ estado:'normal', kpi:null, aberta:null, os:null, origem:null, bloco:'todas', rail:'campo' }
+};
+/* contexto de dados conforme estado + perfil */
+function ctx(v){
+  const st = S[v].estado, p = P();
+  if (st === 'carregando') return { loading:true };
+  if (st === 'erro') return { error:true, p };
+  const vazio = st === 'vazio';
+  return { p, sum: vazio ? ZERO : SUM, crit: vazio ? [] : CRIT, evts: vazio ? [] : EVTS,
+    series: !p.wo ? 'bloq' : (vazio ? SERIES_ZERO : SERIES),
+    disp: !p.disp ? 'bloq' : (vazio ? [] : DISP), locs: !p.loc ? 'bloq' : (vazio ? [] : LOCS),
+    apr: !p.wo ? 'bloq' : (vazio ? [] : APR), vazio };
+}
+
+/* ═════════ Peças comuns ═════════ */
+function greeting(){ const h = NOW.getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
+function headerHTML(kicker, sub){
+  const p = P();
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kicker+'</div><h1 class="pat-page-header__title">'+greeting()+', '+p.nome.split(' ')[0]+'</h1><p class="pat-page-header__subtitle">'+sub+'</p></div>'+
+    '<div class="pat-page-header__actions">'+(p.loc ? '<button type="button" class="pat-btn" data-toast="Abre o Mapa Operacional.">'+ic('map',15)+' Mapa operacional</button>' : '')+
+    (p.cria ? '<button type="button" class="pat-btn pat-btn--primary" data-toast="Abre o cadastro de nova ordem de serviço.">'+ic('plus',15)+' Nova OS</button>' : '')+'</div></div>';
+}
+const SUB = 'Operação, SLA e cadastros · Guincho Exemplo Ltda · quarta, 14 de outubro';
+function acessoNegado(){ return '<div class="acesso" role="alert"><span class="acesso__ic">'+ic('lock',24)+'</span><h2>Acesso não permitido</h2><p>Seu perfil não tem acesso ao Dashboard. Fale com o administrador da organização se precisar destes indicadores.</p></div>'; }
+function secBloq(txt){ return '<div class="sec-bloq">'+ic('lock',16)+'<span><b style="color:#334155">Acesso não permitido.</b> '+txt+'</span></div>'; }
+function banners(c){
+  if (c.error) return '<div role="alert" class="pat-banner pat-banner--error"><span>Não foi possível carregar os indicadores do painel agora.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div><div role="status" class="pat-banner pat-banner--warning">Alguns dados de campo estão indisponíveis agora. Exibindo o que foi possível carregar.</div>';
+  return '';
+}
+
+/* KPI (KpiStatCard clicável — DashboardPage.tsx:280-327) */
+const KPI_DEF = {
+  open:{ icon:'wrench', cor:'#2563EB', bg:'#EFF6FF', tag:()=>['em fila','#F1F5F9','#475569'] },
+  in_progress:{ icon:'send', cor:'#0369A1', bg:'#F0F9FF', tag:s=> s.overdue === 0 ? ['no prazo','#DCFCE7','#15803D'] : ['há atrasos','#FEF3C7','#B45309'] },
+  overdue:{ icon:'alert', cor:s=> s.overdue>0?'#DC2626':'#15803D', bg:s=> s.overdue>0?'#FEF2F2':'#F0FDF4', tag:s=> s.overdue>0 ? ['agir agora','#FEE2E2','#B91C1C'] : ['sob controle','#DCFCE7','#15803D'] },
+  created_today:{ icon:'clock', cor:'#B45309', bg:'#FFFBEB', tag:()=>['no dia','#F1F5F9','#475569'] },
+  completed:{ icon:'checkCircle', cor:'#15803D', bg:'#F0FDF4', tag:()=>['finalizadas','#DCFCE7','#15803D'] }
+};
+const KPI_ORDEM = ['open','in_progress','overdue','created_today','completed'];
+function kpiCard(v, id, s, extra){
+  const k = kpisDe(s)[id], d = KPI_DEF[id]; const cor = typeof d.cor === 'function' ? d.cor(s) : d.cor, bg = typeof d.bg === 'function' ? d.bg(s) : d.bg, tg = d.tag(s);
+  const borda = id === 'overdue' && s.overdue > 0 ? 'border-color:#FCA5A5;' : '';
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="kpi:'+id+'" aria-pressed="'+(S[v].kpi===id)+'" style="'+borda+'" aria-label="'+esc(k.label+': '+k.value+' — ver detalhes')+'">'+
+    '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(d.icon,16)+'</span><span class="pat-kpi__tag" style="background:'+tg[1]+';color:'+tg[2]+'">'+tg[0]+'</span></div>'+
+    '<div class="pat-kpi__value">'+k.value.toLocaleString('pt-BR')+'</div><div class="pat-kpi__label">'+k.label+'</div><div class="pat-kpi__hint">'+k.delta+'</div>'+(extra||'')+'</button>';
+}
+function kpisSkeleton(n){ return Array.from({length:n}, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisGrid(v, c, extraFn){
+  if (c.loading) return '<div class="pat-dash-kpis" aria-live="polite">'+kpisSkeleton(5)+'</div>';
+  if (c.error) return '<div class="pat-dash-kpis"><div class="pat-card pat-dash-empty" style="grid-column:1 / -1">Indicadores indisponíveis no momento.</div></div>';
+  return '<div class="pat-dash-kpis" aria-live="polite">'+KPI_ORDEM.map(id => kpiCard(v, id, c.sum, extraFn ? extraFn(id) : '')).join('')+'</div>';
+}
+const REG = [['customers','clientes','Clientes','Ver clientes','Total de clientes ativos no cadastro da organização.','cadastro de clientes'],['vehicles','viaturas','Viaturas','Ver viaturas','Total de viaturas no cadastro da organização.','cadastro de viaturas'],['teams','equipes','Equipes','Ver equipes','Total de equipes cadastradas na organização.','cadastro de equipes'],['services','serviços','Serviços','Ver serviços','Total de serviços no catálogo da organização.','catálogo de serviços']];
+function cadsHTML(v, c){
+  if (c.loading || c.error) return '';
+  return '<div class="pat-dash-cads"><span class="pat-dash-cads__label">CADASTROS</span>'+REG.map(r => '<button type="button" class="pat-dash-cads__pill" data-alvo="kpi:'+r[0]+'" aria-pressed="'+(S[v].kpi===r[0])+'" aria-label="'+r[2]+': '+c.sum.reg[r[0]]+' — ver detalhes"><span class="pat-dash-cads__n">'+c.sum.reg[r[0]]+'</span><span class="pat-dash-cads__name">'+r[1]+'</span></button>').join('')+
+    '<span class="pat-dash-cads__spacer"></span>'+(c.p.cad ? '<button type="button" class="pat-link" data-toast="Abre o cadastro de clientes.">Gerenciar cadastros</button>' : '')+'</div>';
+}
+
+/* Detalhe do indicador — buildDashboardKpiDetail (dashboard-kpi-detail.ts:62-180) */
+function detalheKpi(id, c){
+  const k = kpisDe(c.sum)[id]; const wo = c.p.wo; const serieOk = Array.isArray(c.series) && c.series.some(p => p.created || p.completed);
+  const cta = wo ? { label:'Ver ordens de serviço', toast:'Abre Ordens de Serviço.' } : null;
+  switch (id) {
+    case 'open': return { title:'OS abertas', value:k.value, caption:k.delta, text:'Ordens aguardando início — soma de abertas, atribuídas e aceitas. Recarrega sozinho com o painel.', cta, parts:[['Aberta',c.sum.by.open],['Atribuída',c.sum.by.assigned],['Aceita',c.sum.by.accepted]] };
+    case 'in_progress': return { title:'Em andamento', value:k.value, caption:k.delta, text:'OS em campo agora — em rota, no local, em execução ou pausadas.', cta, parts:[['Em rota',c.sum.by.on_route],['No local',c.sum.by.on_site],['Em atendimento',c.sum.by.in_progress],['Pausada',c.sum.by.paused]] };
+    case 'completed': return serieOk ? { title:'Concluídas', value:k.value, caption:'Concluídas por dia · últimos 30 dias', chart:{ key:'completed', cor:'#22C55E', rot:'Concluídas' }, cta } : { title:'Concluídas', value:k.value, caption:k.delta, text:'Concluídas no total. A série diária fica indisponível enquanto os dados não vêm do servidor.', cta };
+    case 'overdue': return { title:'Atrasadas', value:k.value, caption:k.delta, text:'OS com agenda vencida e status não final. Priorize a fila crítica.', cta: wo ? { label:'Ver fila', toast:'Abre Ordens de Serviço (a fila completa).' } : null };
+    case 'created_today': return serieOk ? { title:'OS hoje', value:k.value, caption:'Aberturas por dia · últimos 30 dias', chart:{ key:'created', cor:'#2563EB', rot:'Abertas' }, cta } : { title:'OS hoje', value:k.value, caption:k.delta, text:'Aberturas de hoje. A série diária fica indisponível enquanto os dados não vêm do servidor.', cta };
+    default: { const r = REG.find(x => x[0] === id); return { title:r[2], value:k.value, caption:'no cadastro', text:r[4], cta: c.p.cad ? { label:r[3], toast:'Abre o '+r[5]+'.' } : null }; }
+  }
+}
+/* gráfico de área (TrendChart type="area") */
+function areaSVG(vals, cor, rot){
+  const W = 440, H = 132, pl = 26, pb = 18, pt = 8; const max = Math.max(4, Math.ceil(Math.max(...vals)/4)*4); const n = vals.length;
+  const x = i => pl + i*(W-pl-6)/(n-1), y = val => pt + (H-pt-pb)*(1 - val/max);
+  const line = vals.map((val,i) => (i?'L':'M')+x(i).toFixed(1)+' '+y(val).toFixed(1)).join(' ');
+  const grid = [0, max/2, max].map(g => '<line x1="'+pl+'" x2="'+(W-6)+'" y1="'+y(g)+'" y2="'+y(g)+'" stroke="#f1f5f9"/><text x="'+(pl-6)+'" y="'+(y(g)+3)+'" text-anchor="end" font-size="9" fill="#94a3b8">'+g+'</text>').join('');
+  const labs = [0, 7, 14, 21, 29].map(i => '<text x="'+x(i)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="#94a3b8">'+fDM(SERIES[i].d)+'</text>').join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="'+rot+' por dia nos últimos 30 dias">'+grid+'<path d="'+line+' L'+x(n-1)+' '+y(0)+' L'+x(0)+' '+y(0)+' Z" fill="'+cor+'" fill-opacity=".14"/><path d="'+line+'" fill="none" stroke="'+cor+'" stroke-width="2"/>'+labs+'</svg>';
+}
+function painelKpi(v, c, opts){
+  const id = S[v].kpi; if (!id || c.loading || c.error) return '';
+  const d = detalheKpi(id, c); opts = opts || {};
+  let corpo;
+  if (d.chart) corpo = areaSVG(c.series.map(p => p[d.chart.key]), d.chart.cor, d.chart.rot);
+  else if (opts.quebra && d.parts) corpo = '<p class="kpi-painel__txt" style="margin-bottom:8px">'+d.text+'</p><div class="quebra">'+d.parts.map(p => '<div><span>'+p[0]+'</span><b>'+p[1]+'</b></div>').join('')+'</div>';
+  else corpo = '<p class="kpi-painel__txt">'+d.text+'</p>';
+  const filtra = { open:1, in_progress:1, overdue:1 }[id] && opts.filtraTxt;
+  const acoes = (d.cta ? '<button type="button" class="ui-button ui-button--secondary ui-button--sm" data-toast="'+esc(d.cta.toast)+'">'+d.cta.label+'</button>' : '')+'<button type="button" class="pat-link" data-fechar-kpi>Fechar</button>';
+  return '<section class="kpi-painel'+(opts.rail?' kpi-painel--rail':'')+'" aria-label="Detalhes de '+esc(d.title)+'"><div><div class="kpi-painel__t">'+d.title+'</div><div class="kpi-painel__v">'+Number(d.value).toLocaleString('pt-BR')+'</div><div class="kpi-painel__c">'+d.caption+'</div>'+(filtra ? '<div class="kpi-painel__c" style="color:#2563eb;font-weight:700;margin-top:6px">'+opts.filtraTxt+'</div>' : '')+'</div><div style="min-width:0">'+corpo+'</div><div class="kpi-painel__acoes">'+acoes+'</div></section>';
+}
+
+/* Volume de OS — barras empilhadas (VolumeChartCard, DashboardPage.tsx:189-250) */
+function volumeSVG(points, opts){
+  opts = opts || {}; const n = points.length, bw = 20, H = 168; const max = Math.max(1, ...points.map(p => p.created + p.completed + p.cancelled));
+  const k = (H - 4) / max;
+  const bars = points.map((p, i) => { const x = i*bw + 3, w = bw - 6; const ho = p.created*k, hd = p.completed*k, hc = p.cancelled*k; const yo = H - ho, yd = yo - hd - (hd?1:0), yc = yd - hc - (hc?1:0);
+    const sel = opts.sel === i;
+    const tit = '<title>'+fDM(p.d)+' · '+p.created+' abertas · '+p.completed+' concluídas · '+p.cancelled+' canceladas</title>';
+    const inner = '<rect class="dia-bg" x="'+(i*bw)+'" y="0" width="'+bw+'" height="'+H+'" fill="'+(sel?'#dbeafe':'transparent')+'"/>'+(hc?'<rect x="'+x+'" y="'+yc+'" width="'+w+'" height="'+hc+'" rx="1.5" fill="#E2E8F0"/>':'')+(hd?'<rect x="'+x+'" y="'+yd+'" width="'+w+'" height="'+hd+'" fill="#22C55E"/>':'')+(ho?'<rect x="'+x+'" y="'+yo+'" width="'+w+'" height="'+ho+'" rx="1.5" fill="#2563EB"/>':'');
+    return opts.click ? '<g role="button" tabindex="0" data-dia="'+i+'" aria-pressed="'+sel+'" aria-label="'+fDM(p.d)+': '+p.created+' abertas, '+p.completed+' concluídas, '+p.cancelled+' canceladas">'+tit+inner+'</g>' : '<g>'+tit+inner+'</g>'; }).join('');
+  return '<svg class="vol-svg" viewBox="0 0 '+(n*bw)+' '+H+'" preserveAspectRatio="none" role="'+(opts.click?'group':'img')+'" aria-label="Volume diário de ordens de serviço nos últimos '+n+' dias">'+bars+'</svg>';
+}
+function eixo(points){ const n = points.length, c = Math.min(5, n); const idx = Array.from({length:c}, (_, i) => Math.round(i*(n-1)/(c-1))); return '<div class="pat-dash-axis" aria-hidden="true">'+idx.map(i => '<span>'+fDM(points[i].d).replace(/\/(\d\d)$/, (m, mm) => ' '+['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'][+mm-1])+'</span>').join('')+'</div>'; }
+const LEGENDA_VOL = '<div class="pat-dash-legend" aria-hidden="true"><span class="pat-dash-legend__item"><span class="pat-dash-legend__swatch" style="background:#2563EB"></span>Abertas</span><span class="pat-dash-legend__item"><span class="pat-dash-legend__swatch" style="background:#22C55E"></span>Concluídas</span><span class="pat-dash-legend__item"><span class="pat-dash-legend__swatch" style="background:#E2E8F0"></span>Canceladas</span></div>';
+function volumeCard(c, opts){
+  opts = opts || {};
+  let corpo;
+  if (c.loading) corpo = '<span class="pat-skel" style="display:block;height:168px"></span>';
+  else if (c.error) corpo = '<div class="pat-banner pat-banner--warning" style="margin:0">Não foi possível carregar o gráfico. Tentaremos novamente na próxima atualização.</div>';
+  else if (c.series === 'bloq') corpo = secBloq('Seu perfil não tem permissão para ver o volume de ordens de serviço.');
+  else if (!c.series.some(p => p.created + p.completed + p.cancelled)) corpo = '<div class="pat-dash-empty">Sem ordens no período.</div>';
+  else { corpo = volumeSVG(c.series, opts) + eixo(c.series); if (opts.leitura) corpo += opts.leitura; }
+  return '<section class="pat-card'+(opts.cls?' '+opts.cls:'')+'"><div class="pat-dash-chart-head"><div><h2 class="pat-card__title">Volume de ordens de serviço</h2><div class="pat-card__subtitle">'+(opts.sub||'Últimos 30 dias · abertas, concluídas e canceladas')+'</div></div>'+LEGENDA_VOL+'</div>'+corpo+'</section>';
+}
+
+/* ── linhas: fila crítica ── */
+function linhaCrit(v, o, modo){
+  const id = v+'-os-'+o.code.slice(-4); const cd = countdown(o.agenda); const p = P(); const aberta = S[v].aberta === id;
+  let tds;
+  if (modo === 'larga') tds = '<td><span class="cd"><b style="color:'+cd.c+'">'+cd.t+'</b><small>AGENDA</small></span></td><td><span class="pat-dash-code pat-mono">'+o.code+'</span></td><td><span class="cel-main">'+esc(o.cliente)+'</span></td><td>'+esc(o.title)+'</td><td>'+prioTxt(o.prio)+'</td><td>'+pillSt(o.status,true)+'</td><td>'+CHEV+'</td>';
+  else tds = '<td><span class="cd"><b style="color:'+cd.c+'">'+cd.t+'</b><small>AGENDA</small></span></td><td><span class="pat-dash-code pat-mono">'+o.code.replace('OS-2026-','OS-')+'</span> <span class="cel-main" style="margin-left:4px">'+esc(o.cliente)+'</span></td><td style="text-align:right">'+pillSt(o.status,true)+'</td><td>'+CHEV+'</td>';
+  const cols = modo === 'larga' ? 7 : 4;
+  const evs = EVTS_RAW.filter(e => e.os === o.code);
+  let grid;
+  if (modo === 'larga') grid = '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+campo('Cliente',esc(o.cliente))+campo('Serviço',esc(o.title))+campo('Endereço',esc(o.end))+'</div>'+
+      '<div class="pat-ab-detail-col">'+campo('Agenda','<b style="color:'+cd.c+'">'+agendaTxt(o.agenda)+'</b>')+campo('Prioridade',prioTxt(o.prio))+campo('Situação',pillSt(o.status,true))+campo('Técnico',o.tecnico ? esc(o.tecnico)+' · '+o.equipe : '<b style="color:#B45309">A atribuir</b>')+'</div>'+
+      '<div class="pat-ab-detail-col"><span class="pat-ab-detail-label">Atividade recente desta OS</span>'+(evs.length ? '<ul class="mini-tl">'+evs.map(e => '<li><small>'+fHM(ago(e.em))+'</small><span>'+EVT_META[e.tipo][0]+' — '+esc(e.msg)+'</span></li>').join('')+'</ul>' : '<span class="pat-ab-detail-note">Sem eventos desta OS entre os últimos do painel.</span>')+'</div></div>';
+  else grid = '<div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('OS','<span class="pat-mono">'+o.code+'</span>')+campo('Cliente',esc(o.cliente))+campo('Serviço',esc(o.title))+'</div><div class="pat-ab-detail-col">'+campo('Agenda','<b style="color:'+cd.c+'">'+agendaTxt(o.agenda)+'</b>')+campo('Prioridade',prioTxt(o.prio))+campo('Situação',pillSt(o.status,true))+'</div></div>';
+  const disp = DISP.find(d => d.os === o.code);
+  const acoes = p.wo ? '<button type="button" class="pat-btn pat-btn--primary" data-abrir-os="'+o.code+'">'+ic('arrowRight',14)+' Abrir OS</button>'+(p.loc ? '<button type="button" class="pat-btn" data-toast="Abre o Mapa Operacional centrado na '+o.code+'.">'+ic('map',14)+' Ver no mapa</button>' : '')+(disp && p.disp ? '<button type="button" class="pat-btn" data-toast="Abre Despachos filtrado pela '+o.code+'.">'+ic('send',14)+' Abrir despacho</button>' : '')
+    : '<span class="pat-ab-detail-note">Seu perfil vê esta OS no painel, mas não abre ordens de serviço.</span>';
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="'+aberta+'" class="pat-ab-row" aria-label="'+esc(o.code+' · '+o.cliente+' · '+ST[o.status][0])+'">'+tds+'</tr>'+
+    '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="'+(aberta?'':'display:none')+'"><td colspan="'+cols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+grid+'<div class="pat-ab-detail-actions">'+acoes+'</div></div></td></tr>';
+}
+function vazioLinha(cols, titulo, detalhe){ return '<tr><td colspan="'+cols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">'+titulo+'</div>'+(detalhe?'<div class="pat-table__empty-detail">'+detalhe+'</div>':'')+'</div></td></tr>'; }
+function skelLinhas(cols, n){ return Array.from({length:n||3}, () => '<tr class="pat-ab-row" aria-hidden="true">'+Array.from({length:cols}, () => '<td><span class="pat-skel" style="width:80%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join(''); }
+function chipFiltro(txt){ return txt ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+txt+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : ''; }
+const KPI_FILTRO = { open:['OS abertas', o => OPEN_ST.includes(o.status)], in_progress:['Em andamento', o => FIELD_ST.includes(o.status)], overdue:['Atrasadas', isOverdue] };
+
+/* ── linhas: despachos ── */
+function linhaDisp(v, d){
+  const id = v+'-dp-'+d.id; const o = OS[d.os]; const m = DSP[d.status]; const aberta = S[v].aberta === id; const p = P();
+  const loc = LOCS.find(l => l.os === d.os);
+  const etapas = [['assigned','Atribuído'],['accepted','Aceito'],['on_route','Em rota'],['arrived','No local'],['in_service','Em atendimento']];
+  const ult = Object.keys(d.t).pop();
+  const linhaEt = '<div class="etapas" aria-label="Etapas do despacho">'+etapas.map((e, i) => { const t = d.t[e[0]]; const cls = t === undefined ? '' : e[0] === ult ? 'etapa--feita etapa--atual' : 'etapa--feita'; return (i ? '<span class="etapa-sep"></span>' : '')+'<span class="etapa '+cls+'"><i></i>'+e[1]+'<small>'+(t === undefined ? '—' : fHM(ago(-t)))+'</small></span>'; }).join('')+'</div>';
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="'+aberta+'" class="pat-ab-row" aria-label="'+esc('Despacho da '+d.os+' · '+m[0])+'"><td><span class="pat-dash-dot" style="background:'+TONE[m[1]].dot+';margin-right:8px"></span><span class="pat-mono" style="font-weight:700;color:#334155">'+d.os.replace('OS-2026-','OS-')+'</span></td><td>'+esc(o.title)+'</td><td style="font-weight:700;color:'+TONE[m[1]].fg+'">'+m[0]+'</td><td style="color:#94a3b8;font-size:11px">'+rel(d.upd)+'</td><td>'+CHEV+'</td></tr>'+
+    '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="'+(aberta?'':'display:none')+'"><td colspan="5" class="pat-ab-detail-cell"><div class="pat-ab-detail-content"><div class="pat-ab-detail-grid pat-ab-detail-grid--1"><div class="pat-ab-detail-col">'+linhaEt+'</div><div class="pat-ab-detail-col">'+campo('OS','<span class="pat-mono">'+d.os+'</span> · '+esc(o.title))+campo('Operador',loc ? esc(loc.nome)+' · '+loc.equipe : esc(o.tecnico || '—'))+campo('Prioridade',prioTxt(d.prio))+campo('Observação',esc(d.obs))+'</div></div>'+
+    '<div class="pat-ab-detail-actions"><button type="button" class="pat-btn pat-btn--primary" data-toast="Abre Despachos com este despacho em destaque.">'+ic('send',14)+' Abrir despacho</button>'+(p.wo ? '<button type="button" class="pat-btn" data-abrir-os="'+d.os+'">'+ic('arrowRight',14)+' Abrir OS</button>' : '')+'</div></div></td></tr>';
+}
+/* ── linhas: status de campo ── */
+function linhaLoc(v, l){
+  const id = v+'-lc-'+l.id; const m = locMeta(l); const aberta = S[v].aberta === id; const o = l.os ? OS[l.os] : null; const p = P();
+  const det = o ? o.code.replace('OS-2026-','OS-')+' · '+o.title : 'atualizado '+rel(ago(l.cap));
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="'+aberta+'" class="pat-ab-row" aria-label="'+esc(l.nome+' · '+m[0])+'"><td><span class="av" style="background:'+TONE[m[1]].bg+';color:'+TONE[m[1]].fg+'">'+iniciais(l.nome)+'</span><span class="cel-main">'+esc(l.nome)+'</span><span class="cel-meta">'+esc(det)+'</span></td><td style="text-align:right">'+pill(m[0],m[1],true)+'</td><td>'+CHEV+'</td></tr>'+
+    '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="'+(aberta?'':'display:none')+'"><td colspan="3" class="pat-ab-detail-cell"><div class="pat-ab-detail-content"><div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('Equipe',l.equipe)+campo('Situação',pill(m[0],m[1],true))+campo('OS atual',o ? '<span class="pat-mono">'+o.code+'</span> · '+esc(o.title) : 'nenhuma')+'</div>'+
+    '<div class="pat-ab-detail-col">'+campo('Última posição',rel(ago(l.cap))+' · '+fHM(ago(l.cap))+' · precisão '+l.prec+' m')+campo('Velocidade',l.vel === null ? '—' : l.vel+' km/h')+campo('Bateria',l.bat+'%')+'</div></div>'+
+    '<div class="pat-ab-detail-actions"><button type="button" class="pat-btn pat-btn--primary" data-toast="Abre o Mapa Operacional na última posição de '+esc(l.nome)+'.">'+ic('map',14)+' Abrir mapa</button>'+(o && p.wo ? '<button type="button" class="pat-btn" data-abrir-os="'+o.code+'">'+ic('arrowRight',14)+' Abrir OS</button>' : '')+'</div></div></td></tr>';
+}
+/* ── linhas: últimos eventos ── */
+function linhaEvt(v, e){
+  const id = v+'-ev-'+e.id; const m = EVT_META[e.tipo]; const aberta = S[v].aberta === id; const p = P();
+  const quem = e.oss.map(c => c.replace('OS-2026-','OS-')).join(', ');
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="'+aberta+'" class="pat-ab-row" aria-label="'+esc(m[0]+' · '+quem)+'"><td><span class="pat-dash-dot" style="background:'+TONE[m[1]].dot+';margin-right:9px"></span><span class="cel-main">'+m[0]+'</span><span class="cel-meta">'+quem+' · '+esc(e.msg)+'</span></td><td style="text-align:right">'+(e.oss.length > 1 ? '<span class="pat-dash-count">'+e.oss.length+' eventos</span>' : '')+'</td><td style="color:#94a3b8;font-size:11px;text-align:right">'+rel(ago(e.ems[0]))+'</td><td>'+CHEV+'</td></tr>'+
+    '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="'+(aberta?'':'display:none')+'"><td colspan="4" class="pat-ab-detail-cell"><div class="pat-ab-detail-content"><div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('Evento',m[0])+campo('Mensagem',esc(e.msg))+(e.oss.length > 1 ? campo('Agrupado',e.oss.length+' eventos iguais em sequência') : '')+'</div>'+
+    '<div class="pat-ab-detail-col">'+e.oss.map((c, i) => campo('OS','<span class="pat-mono">'+c+'</span> · '+esc(OS[c].title)+' · '+fHM(ago(e.ems[i])))).join('')+'</div></div>'+
+    '<div class="pat-ab-detail-actions">'+(p.wo ? e.oss.map((c, i) => '<button type="button" class="pat-btn'+(i?'':' pat-btn--primary')+'" data-abrir-os="'+c+'">'+ic('arrowRight',14)+' Abrir '+c.replace('OS-2026-','OS-')+'</button>').join('') : '<span class="pat-ab-detail-note">Seu perfil não abre ordens de serviço.</span>')+'</div></div></td></tr>';
+}
+function tabela(cols, linhasHTML){ return '<table class="pat-ab-table card-tab"><colgroup>'+cols.map(w => '<col'+(w?' style="width:'+w+'px"':'')+'>').join('')+'</colgroup><tbody>'+linhasHTML+'</tbody></table>'; }
+
+function cardDisp(v, c){
+  let corpo;
+  if (c.loading) corpo = tabela([110,null,110,64,28], skelLinhas(5,3));
+  else if (c.error) corpo = '<div class="pat-dash-empty">Não foi possível carregar os despachos.</div>';
+  else if (c.disp === 'bloq') corpo = secBloq('Seu perfil não acompanha despachos.');
+  else if (!c.disp.length) corpo = '<div class="pat-dash-empty">Nenhum despacho ativo no momento.</div>';
+  else corpo = tabela([108,null,112,66,28], c.disp.map(d => linhaDisp(v, d)).join(''));
+  return '<section class="pat-card"><div class="pat-card__head"><h2 class="pat-card__title">Despachos ativos</h2>'+(c.disp && c.disp !== 'bloq' ? '<button type="button" class="pat-link" data-toast="Abre Despachos.">Ver despachos</button>' : '')+'</div><div class="pat-card__subtitle pat-card__subtitle--gap">Do envio ao atendimento</div>'+corpo+'</section>';
+}
+function cardCampo(v, c, filtro){
+  let corpo;
+  if (c.loading) corpo = tabela([null,120,28], skelLinhas(3,3));
+  else if (c.error) corpo = '<div class="pat-dash-empty">Não foi possível carregar as localizações.</div>';
+  else if (c.locs === 'bloq') corpo = secBloq('Seu perfil não vê a localização dos operadores.');
+  else { const arr = filtro ? c.locs.filter(l => locMeta(l)[0] === filtro) : c.locs; corpo = (filtro ? chipFiltro(filtro) : '') + (arr.length ? tabela([null,128,28], arr.map(l => linhaLoc(v, l)).join('')) : '<div class="pat-dash-empty">Nenhum operador com localização recente.</div>'); }
+  return '<section class="pat-card"><div class="pat-card__head"><h2 class="pat-card__title">Status de campo</h2>'+(c.locs && c.locs !== 'bloq' ? '<button type="button" class="pat-link" data-toast="Abre o Mapa Operacional.">Abrir mapa</button>' : '')+'</div><div class="pat-card__subtitle pat-card__subtitle--gap">Última localização recebida de cada operador</div>'+corpo+'</section>';
+}
+function cardEventos(v, c){
+  let corpo;
+  if (c.loading) corpo = tabela([null,90,70,28], skelLinhas(4,3));
+  else if (c.error) corpo = '<div class="pat-dash-empty">Não foi possível carregar os eventos recentes.</div>';
+  else if (!c.evts.length) corpo = '<div class="pat-dash-empty">Sem atividade recente.</div>';
+  else corpo = tabela([null,96,72,28], c.evts.map(e => linhaEvt(v, e)).join(''));
+  return '<section class="pat-card" style="margin-bottom:14px"><div class="pat-card__head"><div><h2 class="pat-card__title">Últimos eventos</h2><div class="pat-card__subtitle">Atividade recente das ordens de serviço</div></div>'+(c.p && c.p.wo ? '<button type="button" class="pat-link" data-toast="Abre Ordens de Serviço.">Ver tudo</button>' : '')+'</div>'+corpo+'</section>';
+}
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL ═════════ */
+function renderA(){
+  const v = 'a', st = S[v], c = ctx(v), root = $('[data-view="a"] .tela-dash');
+  if (!c.loading && !c.error && !c.p.dash) { root.innerHTML = acessoNegado(); return; }
+  const kf = st.kpi && KPI_FILTRO[st.kpi];
+  let fila;
+  if (c.loading) fila = tabela([60,null,112,28], skelLinhas(4,4));
+  else if (c.error) fila = '<div class="pat-dash-empty">Não foi possível carregar a fila crítica.</div>';
+  else { const arr = kf ? c.crit.filter(kf[1]) : c.crit; fila = chipFiltro(kf ? kf[0] : '') + (arr.length ? tabela([60,null,112,28], arr.map(o => linhaCrit(v, o)).join('')) : '<div class="pat-dash-empty">'+(kf ? 'Nenhuma OS crítica neste filtro.' : 'Nenhuma OS crítica no momento.')+'</div>'); }
+  root.innerHTML = headerHTML('VISÃO GERAL', SUB) + banners(c) + kpisGrid(v, c) + cadsHTML(v, c) +
+    painelKpi(v, c, { filtraTxt:'A fila “Exige ação agora” está filtrada por este indicador.' }) +
+    '<div class="pat-dash-charts">' + volumeCard(c) +
+    '<section class="pat-card"><div class="pat-card__head"><h2 class="pat-card__title">Exige ação agora</h2>'+(c.p && c.p.wo ? '<button type="button" class="pat-link" data-toast="Abre Ordens de Serviço.">Ver todas</button>' : '')+'</div><div class="pat-card__subtitle pat-card__subtitle--gap">Fila crítica por prioridade e agenda</div>'+fila+'</section></div>' +
+    '<div class="pat-dash-duo">'+cardDisp(v, c)+cardCampo(v, c)+'</div>' + cardEventos(v, c);
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA ═════════ */
+function spark(vals, cor){ const W = 120, H = 26, max = Math.max(1, ...vals), n = vals.length; const pts = vals.map((val, i) => (i*W/(n-1)).toFixed(1)+','+(H - 2 - (H-4)*val/max).toFixed(1)).join(' '); return '<svg class="spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+cor+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>'; }
+const ETAPAS = [['open','Aberta','#94A3B8'],['assigned','Atribuída','#60A5FA'],['accepted','Aceita','#2563EB'],['on_route','Em rota','#0EA5E9'],['on_site','No local','#22C55E'],['in_progress','Em atendimento','#F59E0B'],['paused','Pausada','#B45309']];
+function etapasSVG(c){
+  const W = 300, rowH = 24, top = 4, left = 102, bw = W - left - 34; const max = Math.max(1, ...ETAPAS.map(e => c.sum.by[e[0]])); const h = top + ETAPAS.length*rowH;
+  return '<svg class="etapa-svg" viewBox="0 0 '+W+' '+h+'" width="100%" role="group" aria-label="Carteira ativa por etapa">'+ETAPAS.map((e, i) => { const y = top + i*rowH, n = c.sum.by[e[0]], on = S.b.etapa === e[0];
+    return '<g role="button" tabindex="0" data-etapa="'+e[0]+'" aria-pressed="'+on+'" aria-label="'+e[1]+': '+n+' OS — filtrar a fila"><rect class="bar-bg" x="0" y="'+y+'" width="'+W+'" height="'+(rowH-3)+'" rx="5" fill="'+(on?'#dbeafe':'transparent')+'"/><text x="6" y="'+(y+15)+'" font-size="11.5" font-weight="600" fill="#334155">'+e[1]+'</text><rect x="'+left+'" y="'+(y+6)+'" width="'+bw+'" height="9" rx="4.5" fill="#f1f5f9"/><rect x="'+left+'" y="'+(y+6)+'" width="'+(bw*n/max).toFixed(1)+'" height="9" rx="4.5" fill="'+e[2]+'"/><text x="'+(W-4)+'" y="'+(y+15)+'" text-anchor="end" font-size="11.5" font-weight="800" fill="#0f172a">'+n+'</text></g>'; }).join('')+'</svg>';
+}
+const CAMPO_SEG = [['Em rota','#2563EB'],['No local','#22C55E'],['Em atendimento','#F59E0B'],['Disponível','#94A3B8'],['Sem sinal recente','#DC2626']];
+function campoDonut(c){
+  if (c.locs === 'bloq') return secBloq('Seu perfil não vê a localização dos operadores.');
+  const cont = CAMPO_SEG.map(s => [s[0], s[1], c.locs.filter(l => locMeta(l)[0] === s[0]).length]); const tot = cont.reduce((a, x) => a + x[2], 0);
+  if (!tot) return '<div class="pat-dash-empty">Nenhum operador com localização recente.</div>';
+  const R = 36, C = 2*Math.PI*R; let off = 0;
+  const arcs = cont.filter(x => x[2]).map(x => { const len = x[2]/tot*C; const el = '<circle data-seg="'+x[0]+'" cx="48" cy="48" r="'+R+'" fill="none" stroke="'+x[1]+'" stroke-width="'+(S.b.campo===x[0]?18:14)+'" stroke-dasharray="'+(len-1.5).toFixed(2)+' '+(C-len+1.5).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 48 48)" style="cursor:pointer"><title>'+x[0]+': '+x[2]+'</title></circle>'; off += len; return el; }).join('');
+  return '<div class="donut-wrap"><svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="'+tot+' operadores por situação"><circle cx="48" cy="48" r="'+R+'" fill="none" stroke="#f1f5f9" stroke-width="14"/>'+arcs+'<text x="48" y="47" text-anchor="middle" font-size="18" font-weight="800" fill="#0f172a">'+tot+'</text><text x="48" y="61" text-anchor="middle" font-size="9" fill="#64748b">operadores</text></svg>'+
+    '<div class="leg-btns" role="group" aria-label="Filtrar o status de campo">'+cont.map(x => '<button type="button" data-seg="'+x[0]+'" aria-pressed="'+(S.b.campo===x[0])+'"><span class="lg-sw" style="background:'+x[1]+'"></span>'+x[0]+'<b>'+x[2]+'</b></button>').join('')+'</div></div>';
+}
+const ABAS_B = [['todas','Todas',() => true],['atrasadas','Atrasadas',isOverdue],['prioridade','Urgentes e altas',o => o.prio === 'urgent' || o.prio === 'high'],['inicio','Aguardando início',o => OPEN_ST.includes(o.status)],['campo','Em campo',o => FIELD_ST.includes(o.status)]];
+function renderB(){
+  const v = 'b', st = S[v], c = ctx(v), root = $('[data-view="b"] .tela-dash');
+  if (!c.loading && !c.error && !c.p.dash) { root.innerHTML = acessoNegado(); return; }
+  const serieOk = Array.isArray(c.series);
+  const extra = id => (serieOk && id === 'created_today') ? spark(c.series.map(p => p.created), '#2563EB') : (serieOk && id === 'completed') ? spark(c.series.map(p => p.completed), '#22C55E') : '';
+  let ana = '';
+  if (!c.loading && !c.error) {
+    const dia = Array.isArray(c.series) ? c.series[st.dia] : null;
+    const leitura = dia ? '<div class="dia-leitura" aria-live="polite"><b>'+(st.dia === 29 ? 'Hoje' : fDM(dia.d))+'</b><span><span class="pat-dash-dot" style="background:#2563EB"></span> '+dia.created+' abertas</span><span><span class="pat-dash-dot" style="background:#22C55E"></span> '+dia.completed+' concluídas</span><span><span class="pat-dash-dot" style="background:#CBD5E1"></span> '+dia.cancelled+' canceladas</span><span style="color:#94a3b8">· clique num dia</span></div>' : '';
+    ana = '<div class="b-ana">' + volumeCard(c, { click:true, sel:st.dia, leitura, cls:'b-vol' }) +
+      '<section class="pat-card"><div class="pat-card__head"><h2 class="pat-card__title">Carteira ativa por etapa</h2></div><div class="pat-card__subtitle pat-card__subtitle--gap">'+(c.sum.total ? (kpisDe(c.sum).open.value + kpisDe(c.sum).in_progress.value)+' OS em aberto · clique filtra a fila' : 'Sem OS em aberto')+'</div>'+etapasSVG(c)+'</section>' +
+      '<section class="pat-card"><div class="pat-card__head"><h2 class="pat-card__title">Campo agora</h2></div><div class="pat-card__subtitle pat-card__subtitle--gap">Situação dos operadores pela última posição</div>'+campoDonut(c)+'</section></div>';
+  }
+  const aba = ABAS_B.find(a => a[0] === st.aba);
+  const kf = st.kpi && KPI_FILTRO[st.kpi]; const et = st.etapa && ETAPAS.find(e => e[0] === st.etapa);
+  let corpo, cnt = '';
+  if (c.loading) corpo = '<table class="pat-ab-table"><tbody>'+skelLinhas(7,4)+'</tbody></table>';
+  else if (c.error) corpo = '<table class="pat-ab-table"><tbody>'+vazioLinha(7,'Não foi possível carregar a fila crítica','Tentaremos novamente na próxima atualização — <button type="button" class="pat-link" data-tentar>Tentar novamente</button>')+'</tbody></table>';
+  else {
+    let arr = c.crit.filter(aba[2]); if (kf) arr = arr.filter(kf[1]); if (et) arr = arr.filter(o => o.status === et[0]);
+    cnt = (arr.length !== c.crit.length ? arr.length+' de ' : '')+c.crit.length+' OS críticas';
+    corpo = chipFiltro(kf ? kf[0] : et ? 'Etapa '+et[1] : '') + '<table class="pat-ab-table"><colgroup><col style="width:84px"><col style="width:118px"><col><col><col style="width:104px"><col style="width:128px"><col style="width:40px"></colgroup><thead><tr><th>AGENDA</th><th>OS</th><th>CLIENTE</th><th>SERVIÇO</th><th>PRIORIDADE</th><th>SITUAÇÃO</th><th><span class="sr">Abrir detalhe</span></th></tr></thead><tbody>'+
+      (arr.length ? arr.map(o => linhaCrit(v, o, 'larga')).join('') : vazioLinha(7, c.crit.length ? 'Nenhuma OS crítica neste filtro' : 'Nenhuma OS crítica no momento', c.crit.length ? 'Limpe o filtro ou troque a aba.' : 'Quando uma OS vencer a agenda ou tiver prioridade alta, ela aparece aqui.'))+'</tbody></table>';
+  }
+  const lista = '<section class="pat-table" style="margin-bottom:14px"><div class="pat-table__topbar"><div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h2 class="pat-card__title">OS que exigem atenção</h2><div class="pat-os-tabs" role="group" aria-label="Filtrar a fila">'+ABAS_B.map(a => '<button type="button" class="pat-os-tab'+(a[0]===st.aba?' pat-os-tab--active':'')+'" data-aba-b="'+a[0]+'" aria-pressed="'+(a[0]===st.aba)+'">'+a[1]+'</button>').join('')+'</div></div><span class="pat-table__count">'+cnt+'</span></div>'+corpo+'</section>';
+  root.innerHTML = headerHTML('VISÃO GERAL · ANALÍTICA', 'Onde a operação trava, o que vence primeiro e quem está em campo · Guincho Exemplo Ltda · quarta, 14 de outubro') + banners(c) + kpisGrid(v, c, extra) + cadsHTML(v, c) +
+    painelKpi(v, c, { quebra:true, filtraTxt:'A fila abaixo está filtrada por este indicador.' }) + ana + lista +
+    '<div class="pat-dash-duo">'+cardDisp(v, c)+cardCampo(v, c, st.campo)+'</div>' + cardEventos(v, c);
+}
+
+/* ═════════ OPÇÃO C — CENTRAL DE PRIORIDADES ═════════ */
+/* buildCriticalQueue (dashboard.adapter.ts:295-390): 1 atrasada · 2 prioritária · 3 sem sinal · 4 aprovação · 5 sem operador */
+const KIND = { os_atrasada:['OS atrasada','danger','alert'], os_prioritaria:['Prioridade alta','warning','alert'], campo_sem_sinal:['Sem sinal','warning','wifiOff'], aprovacao_pendente:['Aprovação','accent','fileCheck'], os_sem_operador:['Sem técnico','neutral','userX'] };
+function filaC(c){
+  const out = []; const lista = c.p.wo ? Object.values(OS).filter(o => !FINAL_ST.includes(o.status)) : c.crit;
+  if (c.vazio) return [];
+  lista.forEach(o => { const base = { os:o, key:'os'+o.code.slice(-4) };
+    if (isOverdue(o)) out.push(Object.assign({ kind:'os_atrasada', rank:1, desc:'Agenda vencida '+rel(o.agenda)+' · '+o.title, tb:o.agenda }, base));
+    else if (o.prio === 'urgent' || o.prio === 'high') out.push(Object.assign({ kind:'os_prioritaria', rank:2, urgente:o.prio === 'urgent', desc:'Prioridade '+PRIO[o.prio][0]+' · '+o.title, tb:o.agenda || o.criada }, base));
+    else if (c.p.wo && !o.tecnico) out.push(Object.assign({ kind:'os_sem_operador', rank:5, desc:'Sem operador atribuído · '+o.title, tb:o.agenda || o.criada }, base)); });
+  if (c.locs !== 'bloq') c.locs.filter(l => l.stale).forEach(l => out.push({ kind:'campo_sem_sinal', rank:3, loc:l, key:'lc'+l.id, desc:'Sem sinal '+rel(ago(l.cap))+(l.os ? ' · em '+l.os : ' · última posição no mapa'), tb:ago(l.cap) }));
+  if (c.apr !== 'bloq') c.apr.forEach(a => out.push({ kind:'aprovacao_pendente', rank:4, apr:a, key:a.id, desc:a.motivo, tb:ago(a.em) }));
+  return out.sort((a, b) => a.rank - b.rank || (+a.tb) - (+b.tb));
+}
+const BLOCOS_C = [['todas','Todas as prioridades','layout','#2563EB','#EFF6FF'],['os_atrasada','Atrasadas','alert','#B91C1C','#FEF2F2'],['os_prioritaria','Prioridade alta/urgente','alert','#B45309','#FFFBEB'],['campo_sem_sinal','Sem sinal recente','wifiOff','#B45309','#FFFBEB'],['aprovacao_pendente','Pendentes de aprovação','fileCheck','#7E22CE','#FAF5FF'],['os_sem_operador','Sem técnico','userX','#475569','#F1F5F9']];
+function linhaFila(v, it){
+  const id = v+'-q-'+it.key; const k = KIND[it.kind]; const aberta = S[v].aberta === id; const p = P();
+  const rotTipo = it.kind === 'os_prioritaria' && it.urgente ? 'Urgente' : k[0];
+  const titulo = it.os ? it.os.code+' · '+it.os.cliente : it.loc ? it.loc.nome : (it.apr.ent === 'Ordem de serviço' ? 'Aprovação de OS pendente' : 'Aprovação pendente');
+  const sit = it.os ? pillSt(it.os.status,true) : it.loc ? pill('Sem sinal recente','warning',true) : pill('Aguardando decisão','accent',true);
+  let grid, acoes;
+  if (it.os) { const o = it.os, cd = countdown(o.agenda);
+    grid = '<div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('Cliente',esc(o.cliente))+campo('Serviço',esc(o.title))+campo('Endereço',esc(o.end))+'</div><div class="pat-ab-detail-col">'+campo('Agenda','<b style="color:'+cd.c+'">'+agendaTxt(o.agenda)+'</b>')+campo('Prioridade',prioTxt(o.prio))+campo('Técnico',o.tecnico ? esc(o.tecnico)+' · '+o.equipe : '<b style="color:#B45309">A atribuir</b>')+'</div></div>';
+    acoes = p.wo ? '<button type="button" class="pat-btn pat-btn--primary" data-abrir-os="'+o.code+'">'+ic('arrowRight',14)+' Abrir OS</button>'+(it.kind === 'os_sem_operador' && p.cria ? '<button type="button" class="pat-btn" data-toast="Abre Despachos para escolher o operador da '+o.code+'.">'+ic('send',14)+' Despachar</button>' : '')+(p.loc ? '<button type="button" class="pat-btn" data-toast="Abre o Mapa Operacional centrado na '+o.code+'.">'+ic('map',14)+' Abrir mapa</button>' : '') : '<span class="pat-ab-detail-note">Seu perfil vê esta OS no painel, mas não abre ordens de serviço.</span>';
+  } else if (it.loc) { const l = it.loc, o = l.os ? OS[l.os] : null;
+    grid = '<div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('Operador',esc(l.nome)+' · '+l.equipe)+campo('OS atual',o ? '<span class="pat-mono">'+o.code+'</span> · '+esc(o.title) : 'nenhuma')+'</div><div class="pat-ab-detail-col">'+campo('Última posição',rel(ago(l.cap))+' · '+fHM(ago(l.cap))+' · precisão '+l.prec+' m')+campo('Bateria',l.bat+'% na última posição')+'</div></div>';
+    acoes = '<button type="button" class="pat-btn pat-btn--primary" data-toast="Abre o Mapa Operacional na última posição de '+esc(l.nome)+'.">'+ic('map',14)+' Abrir mapa</button>'+(o && p.wo ? '<button type="button" class="pat-btn" data-abrir-os="'+o.code+'">'+ic('arrowRight',14)+' Abrir OS</button>' : '');
+  } else { const a = it.apr;
+    grid = '<div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+campo('Entidade',a.ent)+campo('Pendência',esc(a.motivo))+'</div><div class="pat-ab-detail-col">'+campo('Solicitado por',esc(a.por))+campo('Solicitado em',fHM(ago(a.em))+' · '+rel(ago(a.em)))+campo('Vinculado','<span class="pat-mono">'+a.os+'</span> · '+esc(OS[a.os].title))+'</div></div>';
+    acoes = '<button type="button" class="pat-btn pat-btn--primary" data-abrir-os="'+a.os+'">'+ic('fileCheck',14)+' Ver aprovação</button>';
+  }
+  const t = TONE[k[1]];
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="'+aberta+'" class="pat-ab-row" aria-label="'+esc(rotTipo+' · '+titulo)+'"><td><span class="tipo" style="background:'+t.bg+';color:'+t.fg+'">'+ic(k[2],12)+rotTipo+'</span></td><td><span class="cel-main">'+esc(titulo)+'</span><span class="cel-meta">'+esc(it.desc)+'</span></td><td style="text-align:right">'+sit+'</td><td>'+CHEV+'</td></tr>'+
+    '<tr data-detalhe-de="'+id+'" class="pat-ab-detail-row" style="'+(aberta?'':'display:none')+'"><td colspan="4" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+grid+'<div class="pat-ab-detail-actions">'+acoes+'</div></div></td></tr>';
+}
+function railC(c){
+  const st = S.c;
+  if (c.loading) return '<aside class="c-rail"><section class="pat-card"><span class="pat-skel" style="display:block;height:180px"></span></section></aside>';
+  if (c.error) return '<aside class="c-rail"><section class="pat-card"><h2 class="pat-card__title">Resumo</h2><div class="pat-dash-empty">Indicadores indisponíveis no momento.</div></section></aside>';
+  const ks = kpisDe(c.sum);
+  const tile = (id, full) => { const k = ks[id]; const cor = id === 'overdue' && c.sum.overdue > 0 ? '#B91C1C' : '#0f172a'; return '<button type="button" class="c-kpi'+(full?' c-kpi--full':'')+'" data-alvo="kpi:'+id+'" aria-pressed="'+(st.kpi===id)+'" aria-label="'+esc(k.label+': '+k.value+' — ver detalhes')+'"><b style="color:'+cor+'">'+k.value.toLocaleString('pt-BR')+'</b><span>'+k.label+'</span></button>'; };
+  const resumo = '<section class="pat-card" style="padding:14px 16px"><div class="pat-card__head"><h2 class="pat-card__title">Resumo do dia</h2><span class="pat-card__subtitle" style="margin:0">recarrega sozinho</span></div><div class="c-kpis">'+tile('open')+tile('in_progress')+tile('overdue')+tile('created_today')+tile('completed', true)+'</div>'+
+    painelKpi('c', c, { rail:true, filtraTxt:'A fila está filtrada por “Atrasadas”.' })+
+    '<div class="c-cads">'+REG.map(r => '<span><b>'+c.sum.reg[r[0]]+'</b> '+r[1]+'</span>').join(' · ')+'</div></section>';
+  let vol;
+  if (c.series === 'bloq') vol = secBloq('Seu perfil não vê o volume de OS.');
+  else { const pts = c.series.slice(-14); vol = pts.some(p => p.created + p.completed + p.cancelled) ? volumeSVG(pts) + eixo(pts) : '<div class="pat-dash-empty">Sem ordens no período.</div>'; }
+  const volume = '<section class="pat-card" style="padding:14px 16px"><div class="pat-dash-chart-head" style="margin-bottom:10px"><div><h2 class="pat-card__title">Volume · 14 dias</h2><div class="pat-card__subtitle">abertas, concluídas e canceladas</div></div></div>'+vol+'</section>';
+  let itens;
+  if (st.rail === 'campo') itens = c.locs === 'bloq' ? secBloq('Seu perfil não vê a localização.') : !c.locs.length ? '<div class="pat-dash-empty">Nenhum operador com localização recente.</div>' : c.locs.map(l => { const m = locMeta(l); return '<button type="button" class="rail-item" data-toast="Abre o Mapa Operacional na última posição de '+esc(l.nome)+'."><span class="av" style="background:'+TONE[m[1]].bg+';color:'+TONE[m[1]].fg+';margin:0">'+iniciais(l.nome)+'</span><span class="rail-item__txt"><span class="rail-item__t">'+esc(l.nome)+'</span><span class="rail-item__m">'+(l.os ? l.os.replace('OS-2026-','OS-')+' · '+OS[l.os].title : 'atualizado '+rel(ago(l.cap)))+'</span></span><span class="rail-item__r" style="color:'+TONE[m[1]].fg+'">'+m[0]+'</span></button>'; }).join('');
+  else if (st.rail === 'desp') itens = c.disp === 'bloq' ? secBloq('Seu perfil não acompanha despachos.') : !c.disp.length ? '<div class="pat-dash-empty">Nenhum despacho ativo no momento.</div>' : c.disp.map(d => { const m = DSP[d.status]; return '<button type="button" class="rail-item" '+(c.p.wo ? 'data-abrir-os="'+d.os+'"' : 'data-toast="Abre Despachos."')+'><span class="pat-dash-dot" style="background:'+TONE[m[1]].dot+'"></span><span class="rail-item__txt"><span class="rail-item__t">'+d.os.replace('OS-2026-','OS-')+' · '+esc(OS[d.os].title)+'</span><span class="rail-item__m">'+rel(d.upd)+'</span></span><span class="rail-item__r" style="color:'+TONE[m[1]].fg+'">'+m[0]+'</span></button>'; }).join('');
+  else itens = !c.evts.length ? '<div class="pat-dash-empty">Sem atividade recente.</div>' : c.evts.map(e => { const m = EVT_META[e.tipo]; return '<button type="button" class="rail-item" '+(c.p.wo ? 'data-abrir-os="'+e.oss[0]+'"' : 'data-toast="Seu perfil não abre ordens de serviço."')+'><span class="pat-dash-dot" style="background:'+TONE[m[1]].dot+'"></span><span class="rail-item__txt"><span class="rail-item__t">'+m[0]+(e.oss.length > 1 ? ' · '+e.oss.length+' eventos' : '')+'</span><span class="rail-item__m">'+e.oss.map(x => x.replace('OS-2026-','OS-')).join(', ')+' · '+esc(e.msg)+'</span></span><span class="rail-item__r" style="color:#94a3b8;font-weight:600">'+rel(ago(e.ems[0]))+'</span></button>'; }).join('');
+  const agora = '<section class="pat-card" style="padding:14px 16px"><div class="pat-card__head"><h2 class="pat-card__title">Agora</h2></div><div class="pat-os-tabs" role="group" aria-label="O que mostrar" style="margin-top:6px">'+[['campo','Campo'],['desp','Despachos'],['evt','Eventos']].map(t => '<button type="button" class="pat-os-tab'+(st.rail===t[0]?' pat-os-tab--active':'')+'" data-rail="'+t[0]+'" aria-pressed="'+(st.rail===t[0])+'">'+t[1]+'</button>').join('')+'</div><div class="rail-lista">'+itens+'</div></section>';
+  return '<aside class="c-rail" aria-label="Resumo e campo">'+resumo+volume+agora+'</aside>';
+}
+function renderC(){
+  const v = 'c', st = S[v], c = ctx(v), root = $('[data-view="c"] .tela-dash');
+  if (!c.loading && !c.error && !c.p.dash) { root.innerHTML = acessoNegado(); return; }
+  let blocos, corpo, cnt = '';
+  if (c.loading) { blocos = '<div class="c-blocos">'+Array.from({length:6}, () => '<div class="bloco-c" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px"></span><span class="pat-skel" style="width:60%;height:12px"></span></div>').join('')+'</div>'; corpo = '<table class="pat-ab-table"><tbody>'+skelLinhas(4,5)+'</tbody></table>'; }
+  else if (c.error) { blocos = ''; corpo = '<table class="pat-ab-table"><tbody>'+vazioLinha(4,'Não foi possível carregar a fila de prioridades','Tentaremos novamente na próxima atualização — <button type="button" class="pat-link" data-tentar>Tentar novamente</button>')+'</tbody></table>'; }
+  else {
+    const fila = filaC(c);
+    const disponivel = b => b === 'todas' || b === 'os_atrasada' || b === 'os_prioritaria' || (b === 'campo_sem_sinal' && c.locs !== 'bloq') || ((b === 'aprovacao_pendente' || b === 'os_sem_operador') && c.p.wo);
+    blocos = '<div class="c-blocos">'+BLOCOS_C.filter(b => disponivel(b[0])).map(b => { const n = b[0] === 'todas' ? fila.length : fila.filter(x => x.kind === b[0]).length; return '<button type="button" class="bloco-c" data-alvo="'+b[0]+'" aria-pressed="'+(st.bloco===b[0])+'"><span class="pat-kpi__tile" style="background:'+b[4]+';color:'+b[3]+';width:32px;height:32px;flex-shrink:0">'+ic(b[2],16)+'</span><span><b style="color:'+(n && b[0] !== 'todas' ? b[3] : '#0f172a')+'">'+n+'</b><span class="rot">'+b[1]+'</span></span></button>'; }).join('')+'</div>';
+    const arr = st.bloco === 'todas' ? fila : fila.filter(x => x.kind === st.bloco);
+    const rotB = st.bloco !== 'todas' ? BLOCOS_C.find(b => b[0] === st.bloco)[1] : '';
+    cnt = (arr.length !== fila.length ? arr.length+' de ' : '')+fila.length+' itens';
+    corpo = chipFiltro(rotB) + '<table class="pat-ab-table"><colgroup><col style="width:138px"><col><col style="width:132px"><col style="width:40px"></colgroup><thead><tr><th>TIPO</th><th>ITEM</th><th>SITUAÇÃO</th><th><span class="sr">Abrir detalhe</span></th></tr></thead><tbody>'+
+      (arr.length ? arr.map(it => linhaFila(v, it)).join('') : vazioLinha(4, fila.length ? 'Nada neste filtro' : 'Nenhuma prioridade no momento', fila.length ? 'Escolha outro bloco acima.' : 'Atrasos, prioridades, operadores sem sinal e aprovações aparecem aqui.'))+'</tbody></table>';
+  }
+  root.innerHTML = headerHTML('VISÃO GERAL · CENTRAL DE PRIORIDADES', 'O que pede decisão agora, numa fila só — e o resumo do dia ao lado · Guincho Exemplo Ltda · quarta, 14 de outubro') + banners(c) + blocos +
+    '<div class="c-mesa"><section class="pat-table"><div class="pat-table__topbar"><h2 class="pat-card__title">Fila de prioridades</h2><span class="pat-table__count">'+cnt+'</span></div>'+corpo+'</section>'+railC(c)+'</div>';
+}
+
+/* ═════════ TELA DA OS — réplica de WorkOrderDetailPage (aba Informações gerais) ═════════ */
+const ABAS_OS = ['Informações gerais','Financeiro','Orçamento','Comentários','Arquivos','Mobile','Quilometragem','Mapa','Logs'];
+function abrirOS(v, code, origem){
+  S[v].os = code; S[v].origem = origem || null;
+  const view = $('[data-view="'+v+'"]'); $('.tela-dash', view).hidden = true; const t = $('.tela-os', view); t.hidden = false;
+  renderOS(v); window.scrollTo(0, 0); $('#topbar-title').textContent = 'Ordens de Serviço';
+  const b = $('[data-voltar]', t); if (b) b.focus({ preventScroll:true });
+}
+function voltarDash(v){
+  const view = $('[data-view="'+v+'"]'); S[v].os = null; $('.tela-os', view).hidden = true; $('.tela-dash', view).hidden = false; $('#topbar-title').textContent = 'Dashboard';
+  const o = S[v].origem && $('[data-linha="'+S[v].origem+'"]', view); if (o) { o.scrollIntoView({ block:'center' }); o.focus({ preventScroll:true }); }
+}
+function renderOS(v){
+  const o = OS[S[v].os], p = P(), t = $('[data-view="'+v+'"] .tela-os'); const cd = countdown(o.agenda);
+  const evs = EVTS_RAW.filter(e => e.os === o.code).slice().reverse();
+  const hist = [{ t:'OS criada', m:'Ordem de serviço criada.', d:o.criada, c:'#2563EB' }].concat(evs.map(e => ({ t:EVT_META[e.tipo][0], m:e.msg, d:ago(e.em), c:TONE[EVT_META[e.tipo][1]].dot })));
+  const apr = APR.find(a => a.os === o.code);
+  let h = '<button type="button" class="back-link" data-voltar>'+ic('arrowLeft',16)+' Voltar ao Dashboard</button>';
+  h += '<div class="os-head"><div class="os-head__l"><span class="os-tile">'+ic('clipboard',22)+'</span><div><div class="os-head__t">'+o.code+' · '+esc(o.title)+'</div><div class="os-head__s">'+esc(o.cliente)+' · '+esc(o.end)+'</div></div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="pat-btn" data-toast="Link da '+o.code+' copiado.">'+ic('link',14)+' Copiar link</button><button type="button" class="pat-btn" data-toast="Abre: duplicar, imprimir, copiar texto para WhatsApp e cancelar.">'+ic('more',14)+' Mais ações</button></div></div>';
+  h += '<div class="pat-os-tabs" role="tablist" aria-label="Seções da ordem de serviço">'+ABAS_OS.map((a, i) => '<button type="button" role="tab" class="pat-os-tab'+(i?'':' pat-os-tab--active')+'" aria-selected="'+(i===0)+'" '+(i ? 'data-toast="Abre a aba '+a+' desta OS."' : '')+'>'+a+'</button>').join('')+'</div>';
+  h += '<div class="os-grid">';
+  h += '<section class="os-card"><h3>Status</h3><div class="os-campos"><div class="os-campo"><span>Situação</span><b>'+pillSt(o.status)+'</b></div><div class="os-campo"><span>Prioridade</span><b>'+prioTxt(o.prio)+'</b></div><div class="os-campo"><span>Agenda</span><b style="color:'+cd.c+'">'+agendaTxt(o.agenda)+'</b></div><div class="os-campo"><span>Criada em</span><b>'+fDH(o.criada)+'</b></div></div></section>';
+  h += '<section class="os-card"><h3>Cliente e endereço</h3><div class="os-campos"><div class="os-campo"><span>Cliente</span><b>'+esc(o.cliente)+'</b></div><div class="os-campo"><span>Serviço</span><b>'+esc(o.servico)+'</b></div><div class="os-campo" style="grid-column:1 / -1"><span>Endereço</span><b>'+esc(o.end)+'</b></div></div><div style="margin-top:10px"><button type="button" class="pat-link" data-toast="Abre o endereço no mapa.">Abrir no mapa</button></div></section>';
+  h += '<section class="os-card"><h3>Técnico</h3><div class="os-campos"><div class="os-campo"><span>Técnico</span><b>'+(o.tecnico ? esc(o.tecnico) : 'A atribuir')+'</b></div><div class="os-campo"><span>Equipe</span><b>'+(o.equipe || '—')+'</b></div><div class="os-campo"><span>Viatura</span><b>'+(o.viatura || '—')+'</b></div></div></section>';
+  if (apr) h += '<section class="os-card" style="border-color:#d8c6ff"><h3>Aprovação operacional</h3><div class="os-campos"><div class="os-campo"><span>Pendência</span><b>'+esc(apr.motivo)+'</b></div><div class="os-campo"><span>Solicitado por</span><b>'+esc(apr.por)+' · '+fHM(ago(apr.em))+'</b></div></div>'+(p.aprova ? '<div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="ui-button ui-button--primary ui-button--sm" data-toast="Aprovação registrada na maquete.">Aprovar</button><button type="button" class="ui-button ui-button--danger ui-button--sm" data-toast="Abre o motivo da reprovação (obrigatório).">Reprovar</button></div>' : '<p class="pat-ab-detail-note" style="margin-top:10px">Aguardando decisão de quem aprova pela alçada.</p>')+'</section>';
+  h += '<section class="os-card"'+(apr ? '' : ' style="grid-column:1 / -1"')+'><h3>Histórico</h3><ol class="timeline">'+hist.map(x => '<li><span class="dot" style="background:'+x.c+'"></span><strong>'+x.t+'</strong> <span class="data">· '+fDH(x.d)+'</span><div class="msg">'+esc(x.m)+'</div></li>').join('')+'</ol></section>';
+  h += '</div>';
+  t.innerHTML = h;
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3400); }
+
+/* ── Linhas: 1 aberta por vez ── */
+function toggleLinha(row){
+  const view = row.closest('[data-view]'); const v = view.dataset.view; const id = row.dataset.linha; const abrir = row.getAttribute('aria-expanded') !== 'true';
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded','false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded','true'); $('[data-detalhe-de="'+id+'"]', view).style.display = ''; }
+  S[v].aberta = abrir ? id : null;
+}
+
+/* ── Opções ── */
+let opcao = 'a';
+const ROT = { a:'Opção A — Padrão fiel', b:'Opção B — Analítica', c:'Opção C — Central de prioridades (fila única + resumo ao lado)' };
+const RENDER = { a:renderA, b:renderB, c:renderC };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Dashboard · Opção ' + o.toUpperCase();
+  $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estado === S[o].estado));
+  $('#topbar-title').textContent = S[o].os ? 'Ordens de Serviço' : 'Dashboard';
+}
+function rerender(v, foco){ RENDER[v](); if (foco) { const b = $('[data-view="'+v+'"] '+foco); if (b) b.focus({ preventScroll:true }); } }
+function renderTudo(){ renderNav(); ['a','b','c'].forEach(v => { if (S[v].os) { $('[data-view="'+v+'"] .tela-os').hidden = true; $('[data-view="'+v+'"] .tela-dash').hidden = false; S[v].os = null; } S[v].aberta = null; RENDER[v](); }); trocarOpcao(opcao); }
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Dashboard') toast('Na maquete só o Dashboard está montado.'); else if (S[opcao].os) voltarDash(opcao); return; }
+  if ((x = el('[data-estado]'))) { const v = opcao; S[v].estado = x.dataset.estado; S[v].aberta = null; if (S[v].os) voltarDash(v); RENDER[v](); trocarOpcao(v); $('[data-view="'+v+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-perfil]'))) { PERFIL = x.dataset.perfil; $$('[data-perfil]').forEach(b => b.setAttribute('aria-pressed', b.dataset.perfil === PERFIL)); ['a','b','c'].forEach(v => { S[v].kpi = null; }); renderTudo(); $('[data-view="'+opcao+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', !c.hidden); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  if ((x = el('[data-voltar]'))) { voltarDash(x.closest('[data-view]').dataset.view); return; }
+  if ((x = el('[data-abrir-os]'))) { const v = x.closest('[data-view]').dataset.view; const row = x.closest('tr') && x.closest('tr').previousElementSibling; abrirOS(v, x.dataset.abrirOs, S[v].aberta || (row && row.dataset.linha) || null); return; }
+  if ((x = el('[data-toast]'))) { toast(x.dataset.toast); return; }
+  if ((x = el('[data-tentar]'))) { const v = x.closest('[data-view]').dataset.view; S[v].estado = 'normal'; RENDER[v](); trocarOpcao(v); return; }
+  if ((x = el('[data-fechar-kpi]'))) { const v = x.closest('[data-view]').dataset.view; const k = S[v].kpi; S[v].kpi = null; if (v === 'c' && k === 'overdue') S.c.bloco = 'todas'; rerender(v, '[data-alvo="kpi:'+k+'"]'); return; }
+  if ((x = el('[data-limpar-filtro]'))) { const v = x.closest('[data-view]').dataset.view; const sec = x.closest('.pat-card'); if (v === 'b' && sec && S.b.campo && !x.closest('.pat-table')) S.b.campo = null; else { S[v].kpi = null; if (v === 'b') S.b.etapa = null; if (v === 'c') S.c.bloco = 'todas'; } RENDER[v](); return; }
+  if ((x = el('[data-linha]'))) { toggleLinha(x); return; }
+  if ((x = el('[data-alvo]'))) { const v = x.closest('[data-view]').dataset.view; const a = x.dataset.alvo;
+    if (a.indexOf('kpi:') === 0) { const id = a.slice(4); S[v].kpi = S[v].kpi === id ? null : id; if (v === 'b' && S.b.kpi) S.b.etapa = null; if (v === 'c') S.c.bloco = S.c.kpi === 'overdue' ? 'os_atrasada' : (S.c.bloco === 'os_atrasada' && id === 'overdue' ? 'todas' : S.c.bloco); }
+    else { S.c.bloco = (S.c.bloco === a || a === 'todas') ? 'todas' : a; if (S.c.kpi === 'overdue' && S.c.bloco !== 'os_atrasada') S.c.kpi = null; }
+    S[v].aberta = null; rerender(v, '[data-alvo="'+a+'"]'); return; }
+  if ((x = el('[data-aba-b]'))) { S.b.aba = x.dataset.abaB; S.b.aberta = null; rerender('b', '[data-aba-b="'+S.b.aba+'"]'); return; }
+  if ((x = el('[data-etapa]'))) { S.b.etapa = S.b.etapa === x.dataset.etapa ? null : x.dataset.etapa; if (S.b.etapa) S.b.kpi = null; S.b.aberta = null; rerender('b', '[data-etapa="'+x.dataset.etapa+'"]'); return; }
+  if ((x = el('[data-seg]'))) { S.b.campo = S.b.campo === x.dataset.seg ? null : x.dataset.seg; S.b.aberta = null; rerender('b', 'button[data-seg="'+x.dataset.seg+'"]'); return; }
+  if ((x = el('[data-dia]'))) { S.b.dia = +x.dataset.dia; rerender('b', '[data-dia="'+x.dataset.dia+'"]'); return; }
+  if ((x = el('[data-rail]'))) { S.c.rail = x.dataset.rail; rerender('c', '[data-rail="'+S.c.rail+'"]'); return; }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); toggleLinha(t); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g[role="button"]')) { e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles:true })); return; }
+  if (e.key === 'Escape' && S[opcao].os) voltarDash(opcao);
+});
+
+/* ── Inicialização ── */
+renderNav(); renderA(); renderB(); renderC(); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

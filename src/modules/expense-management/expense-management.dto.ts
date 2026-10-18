@@ -84,6 +84,8 @@ export function toSyncExpenseActionsDto(result: SyncExpenseActionsResult) {
       status: item.status,
       resultRef: item.resultRef ?? null,
       replayed: item.replayed,
+      // B-O6R-03a: `null` no sucesso; motivo do conflito por ação (v2 §4.2). O id devolvido é sempre o externo.
+      errorCode: item.errorCode,
     })),
   };
 }

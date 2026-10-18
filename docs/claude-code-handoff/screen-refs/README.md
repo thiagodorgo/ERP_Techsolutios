@@ -21,6 +21,24 @@
 **Padrão-ouro (HTML):** `Cloud Billing.reference.html` é a única tela também exportada como
 **HTML estático isolado** — use-a como exemplo do nível de fidelidade esperado em todas as demais.
 
+**Padrão aprovado de painel com lista (HTML):** `financeiro-ab.reference.html`, a tela do Financeiro aprovada pelo
+dono em 2026-10-12 (`D-PADRAO-BLOCOS-CLICAVEIS`, CLAUDE.md §4 item 6): indicadores e blocos de resumo clicáveis que
+filtram a lista, linhas de uma linha, detalhe que abre embaixo da linha. É a referência do Financeiro no lugar de
+`financeiro.png`. A seção escura no rodapé ("camada de revisão") é nota para o dono, não faz parte da tela, e os
+números são de exemplo. A página carrega as fontes do Google Fonts; sem rede, cai na fonte do sistema.
+
+**Toda tela passa por 3 opções (`D-TELAS-TRES-OPCOES`, CLAUDE.md §4 item 7):** antes do dev, uma maquete com as opções A, B e C no padrão do sistema; a escolhida pelo dono entra nesta pasta como referência da tela.
+
+**As 3 opções ficam todas, como aparências por usuário (`D-APARENCIA-POR-USUARIO`, 2026-10-14):** o dono aprovou as 3 opções de cada tela; cada usuário vai escolher a sua em Configurações, e desde 2026-10-14 toda tela implementada sai com as 3 (`D-TELAS-SAEM-COM-TRES`). Referências com as 3 aprovadas (maquetes feitas pelo Claude, `D-DESIGN-SO-CLAUDE`; troque a opção no seletor do topo; o quadro de notas no rodapé não faz parte da tela, e os números são de exemplo):
+- `patios-3opcoes.reference.html` — Pátios: lista → vagas (`OccupancyMap`) → dossiê do veículo em 8 abas, janela fixa, fotos em linha com quebra, Mover · Liberar · Editar numa linha. Preferida do dono: B (Analítica).
+- `dashboard-3opcoes.reference.html` — Dashboard: A fiel, B analítica, C central de prioridades.
+- `ordens-de-servico-3opcoes.reference.html` — Ordens de Serviço: A fiel, B analítica (com SLA vencido), C fila por agenda; lista → resumo → detalhe da OS.
+- `usuarios-3opcoes.reference.html` — Usuários (2026-10-14), BI nas três: A fiel com indicadores e barras, B analítica (entradas por dia, perfis, último acesso), C saúde do acesso (nota 0–100, mapa de calor dia × hora, matriz perfil × módulo).
+- `auditoria-3opcoes.reference.html` — Auditoria (2026-10-15), BI nas três: A fiel com indicadores e eventos sensíveis, B analítica (comparação com o período anterior, "O que mudou?"), C radar de risco (Crítico, Atenção, Rotina e trilha de investigação).
+- `financeiro-3opcoes.reference.html` — Financeiro (2026-10-16), parte da `financeiro-ab.reference.html` aprovada: A fiel com BI, B analítica (fluxo de caixa de 6 meses, aging em 7 faixas, recebido × pago), C agenda de caixa (15 dias com saldo projetado e a mesa do dia); a baixa em janela fixa com as mensagens do plano do B-SAN3-12.
+- `estoque-3opcoes.reference.html` — Estoque (2026-10-16): A fiel com BI (onde está o estoque, movimentações por tipo), B analítica (saúde do estoque, curva ABC, quem está com o estoque), C mapa de custódia (grade item × Base, profissional e viatura).
+- `despachos-3opcoes.reference.html` — Despachos (2026-10-17, aprovada pelo dono: *"aprovado o despacho"*), BI nas três: A fiel com indicadores que filtram (sem técnico, atribuídos, a caminho, no local, em atendimento, atrasados) e tempo até chegar, B analítica (% no prazo, tempo até chegar em 14 dias, técnicos por situação, carga por técnico), C quadro por etapa com os técnicos ao lado. Reflete `D1-07c`, `D2-07c` e `D-07CB-SUPERIOR-UNICO`. **As 5 perguntas da camada de revisão foram respondidas DEPOIS da maquete (`D-DESP-*`, 17/10) e a maquete não foi redesenhada**: onde ela diverge (o Técnico de Campo na tela web, a escolha da aparência "em Configurações"), valem as decisões (`D-DESP-TECNICO-SEM-TELA-WEB`, `D-APARENCIA-RESPOSTAS` (c)). A camada de revisão lista 10 defeitos do sistema de hoje.
+
 ---
 
 ## ERP Web — 35 telas · fonte `ERP Web.dc.html`
@@ -76,7 +94,7 @@ Navegação no protótipo: estado `screen` (+ `role`, que define a sidebar). Agr
 ### Financeiro · `role: finance`
 | Arquivo | Tela | `screen` |
 |---|---|---|
-| `financeiro.png` | Financeiro | `financeiro` |
+| `financeiro.png` *(substituído por `financeiro-ab.reference.html`)* | Financeiro | `financeiro` |
 | `cobrancas.png` | Cobranças | `charges` |
 | `faturas.png` | Faturas | `invoices` |
 | `pagamentos.png` | Pagamentos | `payments` |

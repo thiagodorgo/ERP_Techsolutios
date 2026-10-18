@@ -420,6 +420,8 @@
   (item de estoque automotivo — arrefecimento de veículo), sem relação com refrigeração/SCADA.
 
 ## D-INFRA-PROVIDER — Fly.io (gru/São Paulo) 1º · AWS 2º (2026-07-13) [Ω-INFRA-1, junta J-SAN-4 5/5]
+> **SUBSTITUÍDA em 2026-10-13 por `D-INFRA-PROVIDER-AWS`** (decisão do dono: *"o provedor é o aws"*), registrada no
+> "Registro de 13/10/2026 (madrugada)" deste arquivo. O texto abaixo fica como histórico.
 - Decisão (junta de 5 UNÂNIME, pré-autorizada por D-SAN-AUTONOMIA; PD-INFRA-1 em docs/omega-pd.md): provedor de
   deploy = **Fly.io, região gru (São Paulo)**; fallback pré-aprovado = **AWS (Lightsail→RDS/ECS, sa-east-1)**.
   Racional: única dupla com região BR real; Fly vence por menor lock-in (imagem OCI + fly.toml; sair = pg_dump +
@@ -2297,7 +2299,7 @@ código, a **unanimidade de 3** (§C7.1-ter(b)).
 
 ### Conflito com decisão anterior, registrado e não consolidado em silêncio (§A2)
 
-`D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
+(**substituída em 2026-10-13 por `D-INFRA-PROVIDER-AWS`: o provedor é a AWS**) `D-INFRA-PROVIDER` (2026-07-13, Ω-INFRA-1, **junta J-SAN-4 unânime 5/5**) escolheu **Fly.io (gru/São Paulo)
 como provedor primário** e AWS como segundo; o repositório tem `fly.staging.toml` e `fly.production.toml` e
 nenhum IaC de AWS (medido em `15ef3fbe`: `git ls-files` só acha o importador de custo AWS CUR, que é dado,
 não infraestrutura). Uma decisão de junta 5/5 é revista aqui por **decisão do dono**, que está acima dela na
@@ -3530,3 +3532,199 @@ Fala literal do dono, a mesma para as cinco entradas abaixo:
     parar.
   - **Regra daqui em diante:** dev de bloco só depois do parecer do porteiro do último merge de produto, inclusive para
     bloco que já estava no plano.
+
+## Registro de 11/10/2026 (noite) — B-O6R-03a: passo 0 da emenda v3 (conflitos de fonte, §A2)
+
+Este registro é do orquestrador, e a emenda v3 (`docs/revisoes/SAN3/B-O6R-03a-EMENDA-v3.md`, l.80) o exige antes do merge.
+A decisão do dono que o fundamenta é a `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`, registrada acima.
+
+1. **`PLANO_SAN3.md:243` × a decisão do dono.** O critério "2 usuários com a mesma chave local → 2 lançamentos" é
+   SUBSTITUÍDO, no 03a, por "a mesma ação vale uma vez e pertence a quem a enviou primeiro; outro ator recebe conflito".
+   Vale a decisão do dono (§A1.1). O §6 do `CLAUDE.md` continua compatível: idempotência por organização + usuário +
+   `client_action_id`, com resolução manual dos conflitos.
+2. **Runbook A × o 03a.** O Runbook A (`docs/deployment.md:243-253`) define o rollback como redeploy simétrico da
+   imagem anterior, e a trava (c) do CD (`.github/workflows/deploy-production.yml:34-38,109-121`) segue a mesma lógica.
+   **Isso não vale através da fronteira do 03a.** O binário anterior, diante de um recibo com a chave nova, lança de
+   novo: o drill 3a do dev mediu a ida de 1 para 2 relatórios.
+   - **Até o `docs/deployment.md` ser emendado:** voltar para uma imagem anterior ao 03a só com a API parada, ou por
+     fix-forward. Publicar o 03a exige drenar e substituir todas as réplicas antes de reabrir o sync de despesas.
+   - **Dono:** `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`, que bloqueia a ativação em produção e não o desenvolvimento.
+3. **Quem implementou:** o dev do 03a rodou no Claude Opus 5.5 (`dev-03a-claude`), cobrindo o Codex, que estava no
+   limite. Ele retomou o relatório do dev do Codex (P3). O relatório registra um incidente do próprio dev: uma rodada de
+   mutação em paralelo contaminou dois arquivos. O incidente foi desfeito e conferido por sha256 (13/13; seção R11a do
+   relatório). A junta deve saber disso.
+
+## Registro de 12/10/2026 (noite) — padrão de painel com lista, executores e teto da API
+
+- **`D-PADRAO-BLOCOS-CLICAVEIS` (decisão do dono, 2026-10-12).** Nas palavras do dono: *"a ultima tela do biling foi
+  aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*.
+  - **Onde ficou escrito:** CLAUDE.md e AGENTS.md, §4 item 6; a referência é
+    `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`, indexada no `screen-refs/README.md` no lugar
+    de `financeiro.png`.
+  - **O padrão:** indicador e bloco de resumo clicáveis, que levam à lista já filtrada, com o filtro visível e
+    removível; linha de uma linha só (até 44 px), sem botão de ação; o clique na linha abre o detalhe embaixo dela,
+    com as propriedades e as ações, um por vez.
+  - **Como a tela nasceu:** a especificação veio da API (`spec-financeiro`, US$ 1,77). O Gemini 3.8 Flash montou três
+    opções: A por abas, B pelo resultado do mês, C por OS. O dono pediu *"uma junção de a com b, com blocos clicaveis e
+    linhas menores com tamanho de 1 linha sendo essas linhas clicaveis abrindo os detalhes de cada linha"*. Um
+    verificador automático conferiu, no navegador:
+    - cada bloco abre a aba certa, com o filtro;
+    - as linhas têm até 44 px, sem ação dentro;
+    - o detalhe abre, fica um aberto por vez e o Enter fecha;
+    - não há rolagem lateral a 1440 nem a 1280 px.
+  - **Pergunta ao dono, aberta (§A2):** as telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (Dashboard, Ordens de
+    Serviço, Usuários, Auditoria, Pátios), cujas linhas levam a uma página de detalhe, migram para o padrão novo? Até a
+    resposta, ficam como estão.
+- **Executores (decisão do dono, 12/10 ~23:45Z):** *"o gemini pro foi gasto o seu limite, cancele a busca. vamos usar
+  agora, api claude, antgravity com gemini flash higt, codex sol 5.6"*.
+  - **Divisão de papéis em uso, proposta pelo orquestrador e ainda não confirmada pelo dono:**
+    - Codex GPT-5.6 Sol: cadeiras, inspetor, porteiro e dev de bloco de risco;
+    - Gemini 3.8 Flash: dev fora de gate e maquete, nunca jurado;
+    - API: plano, crítica e revisão. O agente tem o Opus 5.5 fixo no código, então o plano sai em Opus, com a
+      substituição do Fable declarada no próprio plano.
+  - **Medido em 12/10:**
+    - o limite semanal do Codex é da conta: às 23:3xZ o `gpt-6.1-sol` e o `gpt-6-sol` deram o mesmo "usage limit";
+    - à 00:0xZ de 13/10, o `gpt-5.6-sol` voltou a responder;
+    - o catálogo do Codex agora tem o `gpt-6.1-sol`; trocar o padrão para ele é pergunta ao dono.
+- **Teto da API (dono, 13/10 ~01:30Z):** *"a api claude hoje, nas proximas 1:30 hora tera um limite de 15 uss"*. O
+  agente não tem teto diário no código: o teto é a soma dos `-MaxUsd` das execuções lançadas na janela.
+
+## Registro de 13/10/2026 (madrugada) — provedor AWS e 3 opções por tela
+
+- **`D-INFRA-PROVIDER-AWS` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"o provedor é o aws, documente , memorize e difunda"*.
+  - **Substitui** a `D-INFRA-PROVIDER` (2026-07-13, junta J-SAN-4 5/5: Fly.io 1º, AWS 2º). Confirma como definitiva a direção que a `D-TRC-DECISOES-DO-DONO-2026-10-11` (D2 = a, ERP inteiro na AWS) já tinha dado.
+  - **Difundida em:** `PROJECT_MEMORY.md`, `docs/demo-credentials.md`, `PLANO_SAN3.md` §4.2 (linha "Provedor") e na nota da `P-TRC-AWS-ESTUDO-MIGRACAO`. Essa pendência passa de "se" para "como": custo, etapas e o destino dos `fly.*.toml`.
+  - **O que NÃO muda:** os `fly.*.toml` e o resto da config da Fly ficam inertes, e não são apagados antes de o equivalente na AWS existir. A contratação e o deploy de produção seguem exigindo a junta de 5 unânime (§C7.1). O `B-AV-REAL` usa o desenho AWS da PD do antivírus (`PD-O6R-B07B-CLAMD-INSTREAM`), e não o `fly.clamav.toml`.
+- **`D-TELAS-TRES-OPCOES` (decisão do dono, 2026-10-13).** Nas palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em toda tela que sair pronta eu quero tres opções para aprovar"*.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md, §4 item 7, e um item novo na DoD do §10; nas skills `ts-frontend-full` e `ui-ux-pro-max` (`.claude/` e `.agents/`); e no `screen-refs/README.md`.
+  - **A regra:** toda tela nova ou refeita passa por uma maquete com 3 opções (A, B, C), no padrão do sistema, com um quadro de notas fora da tela. O dono escolhe, ou pede a mistura, e a escolhida vira a referência em `screen-refs/`.
+  - **Leitura do orquestrador, declarada (§A6):** as opções vêm ANTES do dev, e a tela pronta é conferida contra a escolhida. Se o dono quiser as opções também depois da tela pronta, isto se corrige numa linha.
+  - **Agora:** as 5 telas padronizadas (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) ganham 3 opções cada, montadas pelo Gemini 3.8 Flash (maquete, fora de gate) e conferidas por verificador automático.
+- **Revisão do #428 (API, `aprovado_com_ressalvas`):**
+  - o §11 ganhou a exceção do Financeiro;
+  - o `README` do screen-refs diz que a referência usa fontes do Google;
+  - o paginador da maquete diz "1–12 de 12" desde a abertura;
+  - o merge espera o CI verde.
+
+## Registro de 13/10/2026 (manhã) — decisões da madrugada
+
+- **`D-API-V3-CONGELADA` (decisão do dono, 2026-10-13 ~04:07Z):** *"vamos congelar a v3"* e *"pare tudo na v3, congelar onde esta"*.
+  - **O que foi parado:** a C3 do 03a na API v3 (Opus 5.5 num container cercado). Ela não atendeu a tempo à pausa por arquivo (P7) e foi parada às 04:08Z com `docker stop`. A evidência dela passou ao Codex como roteiro de sucessão (P3).
+  - **O que fica guardado:** imagens, rede, lançador e provas (`erp-pausa-2026-10-03/PLANO-API-V3.md` e `PROVAS-API-V3.md`).
+  - **O que falta:** a E3, o ataque às cercas, não foi feita; a trava de segurança do Claude Code interrompeu duas vezes, e não se contorna.
+  - **Gasto da v3:** ~US$ 4,75.
+  - **Antes de congelar,** o dono tinha autorizado *"Create Unsafe Agents"* com cercas e ambiente isolado, e pedido *"coloque a api claude para cobrir o codex"*.
+- **`D-GEMINI-PRO-NIVEL-CODEX` (declaração do dono, 2026-10-13):** *"tome cuidado que so o gemini pro esta no mesmo nivel do codex, deixe o google pro configurado do mesmo modo do codex quando ele voltar"*.
+  - O Gemini 3.1 Pro fica no nível menor do §C7.6, igual ao GPT-5.6 Sol. **Leitura do orquestrador, declarada como tal (§A6):** o Gemini Flash fica abaixo, e por isso não ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Essa lista é derivação, não fala do dono, e se corrige numa linha.
+  - **Sem faturamento novo** (dono: *"nao posso ligar o faturamento, ja uso 3 ia paga aqui"*): o Pro só entra pela assinatura, no Antigravity. A chave gratuita da API do Gemini (`ERP_AGENTE_GEMINI_KEY`) serve só para o Flash.
+  - A linha do Gemini na tabela do §C7.6 (CLAUDE.md e AGENTS.md) entra no PRÓXIMO PR de governança, qualquer que seja, e não depende da v3. Até lá, vale esta entrada.
+- **Pedido do dono (2026-10-13):** a simulação navegável do app de campo, *"para assim quando partimos para o mobile eu ja ter um norte"*. Ficou pronta fora do repositório (`erp-pausa-2026-10-03/app-campo/`), com verificador e gabarito gerados do código.
+  - **Ressalva do orquestrador:** 3 itens do gabarito (`/approvals`, `/checklists`, `/inventory`) são rotas de tela, não endpoints.
+
+## Registro de 14/10/2026 — telas: 3 aparências por usuário
+
+- **`D-APARENCIA-POR-USUARIO` (decisão do dono, 2026-10-14).** Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+  - **A regra:** as 3 opções aprovadas de cada tela ficam TODAS. Cada usuário escolhe a aparência num modo em Configurações; a preferência é pessoal, não da organização. Atualiza o "a escolhida vai para `screen-refs/`" da `D-TELAS-TRES-OPCOES`.
+  - **Já aprovadas com as 3:** Pátios, Dashboard e Ordens de Serviço, nas maquetes do Claude (`screen-refs/{patios,dashboard,ordens-de-servico}-3opcoes.reference.html`). Em Pátios o dono aprovou antes a B (Analítica) "com ressalva", atendida: Mover · Liberar · Editar numa linha no cartão da vaga.
+  - **As demais telas** passam pelo mesmo ajuste (3 opções, todas aprovadas como aparências).
+  - **Só documentado por ora** (*"por enquanto so documente"*). A implementação é a `P-APARENCIA-POR-USUARIO`.
+  - **Onde ficou escrita:** CLAUDE.md e AGENTS.md §4 item 7 e DoD §10; skills `ts-frontend-full` e `ui-ux-pro-max` nos dois espelhos; README do `screen-refs`.
+- **`D-DESIGN-SO-CLAUDE` (decisão do dono, 2026-10-13).** *"nao use o gemini free para essas coisas, eu so confio no claude desing"*. Maquete, opção visual e trabalho de tela são feitos pelo Claude, nunca pelo Gemini. No mesmo pedido o dono mandou voltar à Pátios v1 (a do Gemini) para comparar, e depois pediu as versões do Claude, que foram as aprovadas.
+- **`D-TECNICO-LE-SO-ATRIBUIDAS` (decisão do dono, 2026-10-14).** *"o técnico de campo só deve ler as OS atribuídas a ele"*. Muda o comportamento deliberado do B-O6R-07a (`work_orders:read` da organização inteira). É mudança de permissão: bloco próprio com junta completa (`P-TECNICO-LE-SO-ATRIBUIDAS`).
+- **Ordem do Codex aprovada pelo dono (2026-10-14):** (1) junta do Traccar; (2) porteiro do 03a; (3) correções do Dashboard por perfil (Financeiro e Estoque sem tela inicial, "Nova OS" para quem não cria, fila crítica com OS finalizada); (4) B-SAN3-12a, a tela financeira; (5) próximos blocos do Traccar; (6) aparência por usuário, depois de planejada.
+- **`D-TELAS-SAEM-COM-TRES` (decisão do dono, 2026-10-14).** *"As telas aparti de agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só a preferida. Resolve a contradição que a revisão do #431 achou entre a DoD (as 3) e o §4 (só a preferida até o seletor): vale "as 3". O seletor (`P-APARENCIA-POR-USUARIO`) é pré-requisito da primeira tela que sair assim. Onde ficou escrita: CLAUDE.md e AGENTS.md §4 item 7 e DoD §10, as skills de frontend nos dois espelhos e o README do `screen-refs`.
+- **`D-GEMINI-SEGUNDO-REVISOR` (decisão do dono, 2026-10-14).** *"Gemini segundo revisor"*. Teste medido: o Gemini 3.8 Flash High revisou o #430 e o #431, e a API Claude avaliou o trabalho (US$ 1,32; `scripts/agente-claude-api/saidas/20261014-160603Z-avalia-gemini/`, não versionada). Notas 4/10 e 5/10: declarou conferidas coisas falsas (CI "100% verde" com o backend vermelho; linhas do compose), aprovou o #431 com conflito e não achou nenhum dos 3 erros do gabarito do #430; acertou 2 achados que ninguém tinha visto. **A regra:** o Gemini nunca é o revisor independente ÚNICO da §C7 item 8(1); ele entra só como segundo revisor, e o achado dele é conferido antes de valer.
+- **Codex pausado até o limite semanal renovar (ordem do dono, 2026-10-14):** *"Códex retorno após o limite semanal"*. A fila `fila-juntas-codex.ps1` (cadeiras a, b, c do Traccar, porteiro do 03a em esforço baixo, B-ARNES-2) volta quando o limite semanal renovar.
+- **Revisão do #431 (API Claude, `aprovado_com_ressalvas`), ajustes feitos no próprio PR:** a linha do Gemini no §C7.6 que a `D-GEMINI-PRO-NIVEL-CODEX` prometia ao próximo PR de governança entrou aqui, com a `D-GEMINI-SEGUNDO-REVISOR` no §C7 item 8(1); o item "A escolha" do §4 item 7 ficou marcado como superado; o checklist das skills passou a citar as 3 opções.
+- **`D-TECNICO-SO-VALORES-PROPRIOS` (decisão do dono, 2026-10-14, "vamos analisar").** *"o tecnico ver somente a prestação de contas, e sua comissao, vamos analisar. valores financeiro fora do das permissoes dele ele nao ver, por exemplo ele ver as peças aplicadas e os servicos da OS mas nao ver valores. os valores que ele pode ver sua prestação de contas e as comissoes."* O técnico de campo vê **valores** só da própria prestação de contas e das próprias comissões. Na OS, vê as peças aplicadas e os serviços, **sem valores** (hoje vê Financeiro e Orçamento da OS, só leitura). É restrição de PERMISSÃO no backend (a UI esconder não basta, `CLAUDE.md` §2.4) e entra na análise do bloco da `P-TECNICO-LE-SO-ATRIBUIDAS`, com junta completa.
+
+## Registro de 15/10/2026 — Usuários, Auditoria e os planos dos próximos blocos
+
+- **Usuários e Auditoria aprovadas com as 3 opções** (regra geral do dono, `D-APARENCIA-POR-USUARIO`): referências em `screen-refs/usuarios-3opcoes.reference.html` e `auditoria-3opcoes.reference.html`. As 5 telas padronizadas têm agora as 3 opções feitas pelo Claude. Pedido do dono para Usuários: *"tenha em mente que eu amo bi e analitics nas telas"* — BI nas três opções de toda tela.
+- **`D-AUDIT-RECORTE-POR-PERFIL` (decisão do dono, 2026-10-15).** *"sim, cada perfil tem as telas e suas trilhas"*. Cada perfil vê a trilha de auditoria das telas que usa (hoje o Gestor e o Suporte veem tudo e o Financeiro e o Estoque não veem nada; o recorte "scoped" do `RBAC_MATRIX.md:56` não existe no catálogo).
+- **`D-AUDIT-FORA-DO-HORARIO` (dono, 2026-10-15):** "fora do horário" = das 22h às 5h (*"o fora do horario esta ok"*).
+- **`D-AUDIT-ORIGEM` (dono, 2026-10-15, *"SIGO COM SUAS RECOMENDAÇÃO"*):** a Auditoria mostra a origem de cada evento (endereço de rede e navegador/aparelho), que hoje é gravada e não sai, só para o Administrador da organização e o Auditor. O dono registrou *"NÃO É dado pessoal"*. **Nota do orquestrador (§A6):** a LGPD costuma tratar o endereço de rede como dado pessoal; a finalidade de segurança sustenta mostrá-lo a quem investiga, e a restrição aos dois perfis vale de qualquer modo. Não muda a decisão.
+- **`D-AUDIT-EXPORTACAO` (dono, 2026-10-15, mesma frase):** exportar a trilha passa a ter permissão própria (separada de ver) e cada exportação vira um evento na própria trilha.
+- **`D-AUDIT-REGRAS-CRITICO` (dono, 2026-10-15):** *"as regras do critico é de suma importancia para segurança e deve entrar"*. Crítico = (1) exclusão ou cancelamento de algo financeiro; (2) evento sensível ou recusado entre 22h e 5h; (3) usuário desativado com sessão em uso; (4) alguém mudar o próprio perfil; (5) acessos negados seguidos do mesmo usuário; (6) alteração de valor em OS já fechada. Atenção = evento sensível em horário normal, ação recusada ou com erro, qualquer ação fora do horário. Rotina = o resto. **Leitura do orquestrador (§A6):** as regras 4 a 6 foram sugeridas pelo orquestrador e entram pelo "sigo com suas recomendações"; o limiar de "seguidos" na regra 5 fica para o plano propor e o dono aprovar. Tudo isso é regra de SEGURANÇA e roda no backend (a tela só mostra).
+- **Codex:** limite SEMANAL esgotado às 00:57Z de 15/10 ("try again at Oct 20th, 2026 3:22 AM", BRT = 20/10 06:22Z). Antes de parar, ele escreveu o plano do `B-DASH-PERFIL`; os de `B-USERS-ACESSO`, `B-TECNICO-ESCOPO` e `B-APARENCIA-USUARIO` foram feitos pela API Claude (US$ 4,10), por ordem do dono. Os 4 estão em `docs/revisoes/TELAS/`.
+
+## Registro de 15/10/2026 — as três perguntas do 07c respondidas, e o último P0
+
+- **Medição dos P0 (API Claude, 15/10, `origin/main` 9c7784b4, saída não versionada `scripts/agente-claude-api/saidas/20261015-020723Z-medir-p0/`):** 17 P0 (15 da auditoria + DIN-010 e DIN-011 achados pela junta do B-O6R-02), **16 fechados por PR mergeado, 0 abertos, 1 fechado em parte** (`Ω6R-SEC-002`: o 07c-a fechou as 10 vias conhecidas; 23 vias ficaram com o `B-O6R-07c-b`). P1: 15 (2 fechados, 2 em parte, 11 abertos). Gate do `PLANO_SAN3`: 9 blocos mergeados cobrem 18 dos 56 itens; 38 itens sem bloco mergeado; dos 6 atos do dono, 1 feito (o provedor). O `achados.jsonl` dava DIN-009, DAT-002 e DAT-003 como ativos; a correção vai no PR do KPI do marco de 14/10, junto com o painel, porque `tests/kpi-achados-paridade.test.ts` exige que os dois mudem juntos.
+- **`D1-07c` = (c) (decisão do dono, 2026-10-15).** *"quem pode alterar uma OS: c."* O despacho passa a gravar a atribuição: despachou, virou o técnico da OS. Um critério só para escrever na OS (editar, status, comentar, anexar, geocodificar, km, vistoria, evidência), coerente com `D-TECNICO-LE-SO-ATRIBUIDAS` (o técnico só lê as OS atribuídas a ele). Muda o fluxo de despacho. A pergunta sobre os membros da equipe da OS (`teamId`) segue aberta para o plano do 07c-b propor.
+- **`D2-07c` = (d), com a regra do dono (decisão do dono, 2026-10-15).** *"tratar como conflito: a alteração de um tecnico cujo o atendimento ja começou é uma coisa anomala, em geral não pode acontecer, alguem superior ao operacional que alocou tem que autorizar e validar o conflito."* O trabalho feito offline por quem ERA o técnico e sincronizado depois da troca vira CONFLITO, e quem resolve não é o operacional que alocou: é alguém acima dele, que autoriza e valida. **Leitura do orquestrador, declarada (§A6):** a frase também diz que trocar o técnico de uma OS com atendimento já iniciado é anomalia; o plano do 07c-b propõe se essa troca passa a exigir a mesma autorização superior (e qual perfil é "superior ao operacional": a matriz tem Gestor e Administrador da organização acima de Operador), e o dono confirma.
+- **`D3-07c` = não (decisão do dono, 2026-10-15).** *"D3-07c: não"*. O técnico de campo NÃO lança débito no extrato de um colega nem escolhe o valor ao registrar um dano. A `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA` vira correção (dinheiro: junta completa).
+- **Efeito:** o `B-O6R-07c-b` (as 23 vias do último P0) fica DESBLOQUEADO; o plano dele (`docs/revisoes/SAN3/B-O6R-07c-plano.md`, 07c-b.2 e 07c-b.3) precisa de emenda com as três respostas antes do dev.
+- **`D-07CB-EMENDA-RECOMENDACOES` (decisão do dono, 2026-10-15).** *"sigo as recomendações"*, sobre as perguntas P1–P8 da emenda do 07c-b (`docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md`):
+  - **P1:** o "superior" é quem tem `work_orders:approve` (Gestor, Administrador da organização) e NÃO foi quem alocou, nem o técnico antigo, nem o novo; se o único Gestor alocou, decide o Administrador. A sub-pergunta "e se a empresa tiver uma pessoa só nessas funções?" segue ABERTA (`P-07CB-SUPERIOR-UNICO`).
+  - **P2:** trocar o técnico com atendimento iniciado exige essa autorização, em dois passos (pedido e aprovação), inclusive quando quem pede é o Gestor.
+  - **P3:** atendimento iniciado = a partir de `on_route` ("saiu para o atendimento"), no despacho ou na OS.
+  - **P4:** membros da equipe (`teamId`) NÃO escrevem no 07c-b; o ajudante entra por despacho próprio ou bloco futuro.
+  - **P5:** autorização NOMINAL de `prisma/**` e `migrations/**` para o `B-O6R-07c-b2` (fila durável de aprovações e conflitos). O 07c-b se divide em **b1** (o despacho grava a atribuição, as 23 vias com escopo, o servidor responde com conflito: fecha o `Ω6R-SEC-002`) e **b2** (a fila de conflito durável, a decisão do superior, a troca com autorização).
+  - **P6:** a migração de dados que preenche a atribuição dos despachos ativos de antes do 07c-b, idempotente, contando antes os casos em que o atribuído e o alvo divergem (autorização nominal de `migrations/**` para isso).
+  - **P7:** a D3-07c vira bloco à parte, `B-DANO-ALCADA` (dinheiro: junta completa), dono da pendência que já existia, `P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`.
+  - **P8:** a emenda não tinha recomendação; **leitura do orquestrador (§A6):** ela segue para o crítico como está, e só volta ao modelo de topo se o crítico a derrubar (o mesmo gatilho de "topo em toda reprovação", `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). O dono pode mandar refazer em Fable quando quiser.
+
+
+## Registro de 15/10/2026 — ferramentas do loop de KPI
+
+- **`D-KPI-LOOP-FERRAMENTAS` (decisão do dono, 2026-10-15).** Depois do 1º teste do loop de KPI com o Gemini (PR #435), o dono mandou: *"faça Um script que acrescenta a entrada no histórico, para o Gemini não precisar ler os 496 KB"* e *"Eu confiro toda referência (commit, rodada de CI) com um comando antes do merge … passa a ser etapa fixa"*.
+  - `scripts/kpi-history-append.mjs`: acrescenta UMA entrada no `Kpis/kpis-history.json` e a linha na tabela do `Kpis/kpis-history.md`. Tudo o que é fato vem de comando (`gh pr view`: PR, merge, data em Brasília, head; o título: o bloco; o log da rodada `ci` de push do merge commit: os números; a última entrada + 1: os blocos). Quem chama só escreve a descrição. Recusa PR repetido, rodada vermelha e log sem contagem.
+  - `scripts/kpi-check-refs.mjs`: **etapa FIXA antes do merge de todo PR de KPI.** Confere cada commit, rodada de CI e PR das linhas acrescentadas (git local, e o GitHub para heads de ramo apagado). No #435 ele pegou, além das referências inventadas já corrigidas, um `approved_head` inexistente no #411 (`5cf7e2d5`; o real é `6e5351e3`).
+  - Testes: `tests/kpi-loop-ferramentas.test.ts` (9 casos: data em Brasília, bloco do título, contagens do log, recusa de rodada vermelha, JSON sem reformatar com CRLF, linha na última tabela, extração de referências sem confundir palavra com hash).
+  - **O loop de KPI com o Gemini vira regra diária (`D-KPI-LOOP-GEMINI`) só quando o dono aprovar** o resultado; até lá, é usado quando o dono pedir.
+- **`D-KPI-LOOP-GEMINI` (decisão do dono, 2026-10-15).** *"siga esse loop e me apresente os kpis, suba o server"* — depois de ver o resultado do 1º teste (#435) e as ferramentas (#436). O loop de KPI vira regra: **uma vez por dia ou quando o dono pedir**, o Gemini propõe só as descrições, o orquestrador grava os fatos por `scripts/kpi-history-append.mjs`, confere toda referência por `scripts/kpi-check-refs.mjs` (etapa fixa antes do merge), e o PR de marco passa por um revisor independente e CI verde. O Gemini não edita o painel. Escrito no §C7 item 8(5) do CLAUDE.md e do AGENTS.md. O painel é servido por `node scripts/kpi-serve.mjs 8899` (http://localhost:8899).
+
+## Registro de 16/10/2026 — decisões do dono da noite
+
+O dono pediu *"detalhe as minhas decisoes com recomendação e porque"*; o orquestrador listou oito decisões com recomendação e motivo, e o dono respondeu: ***"todas as decisões nas suas recomendações"***. Cada linha abaixo é a recomendação aprovada, inclusive os prazos e as consequências que ela já trazia ("o servidor vem junto com a AWS", "A nas demais até o dono escolher", "vários depósitos depois da versão vendável", "o próprio usuário troca a senha"). Os horários do Argon (limite às 12:59Z, volta ~23/10) foram medidos no log do `agy` (`RESOURCE_EXHAUSTED … Resets in 166h53m`).
+
+- **`D-TRC01-VEHICLE-ASSIGNED-AT` (autorização NOMINAL de migração).** Autorizada, no ciclo 2 do B-TRC-01 (PR #426), a migração aditiva `20260876000000_work_orders_vehicle_assigned_at`: coluna `work_orders.vehicle_assigned_at timestamptz NULL` + função/gatilho `SECURITY INVOKER`, rollback comentado, gravada só pelo banco, para que a posição vá ao técnico pela viatura que a OS tinha no instante do fix. **Opção (i):** linhas antigas ficam nulas e inelegíveis até a próxima atribuição/UPDATE da OS (falha fechada, igual ao `operator_assigned_at`). O histórico por períodos fica para o B-TRC-03. Origem do pedido: §2.4.6 do plano do ciclo 2 (auditoria e plano do modelo de topo).
+- **`D-07CB1-DEV-OPUS`.** O Gemini 4 Argon bateu o limite semanal às 12:59Z de 16/10 (volta ~23/10) com o dev do `B-O6R-07c-b1` pela metade e sem nenhum teste executado. O dev continua com um agente Claude Opus de identidade nova (nível menor, declarado), que mede o código herdado antes de confiar nele. **Medido depois, às ~23:55Z de 16/10:** o Argon (low, medium e high) respondeu a uma tarefa curta real (ler `CLAUDE.md` e contar as linhas) — o "Resets in 166h53m" do log não se confirmou. O 07c-b1 segue com o agente Opus (já em curso); o Argon volta a ser um braço disponível, uma tarefa paga por vez. Ressalva: tarefa curta que passa não prova tarefa longa (lição de 15/10).
+- **`D-CODEX-ORDEM-16-10`.** Ordem do Codex: T15 (`B-ARNES-2`) → ciclo 2 do Traccar → `B-DASH-PERFIL`.
+- **`D-USERS-ACESSO-RESPOSTAS` (P1–P6 do `B-USERS-ACESSO`):** P1 — autorizada a coluna aditiva `must_change_password` em `local_auth_credentials` (autorização nominal); P2 — senha provisória mostrada uma vez na tela, não link por e-mail; P3 — aceita a janela de até 15 min do token de acesso após desativar (as sessões são revogadas na hora); P4 — dois blocos (segurança com junta completa; tela com um revisor + CI); P5 — Técnico de Campo e Estoque entram no formulário; `viewer` só se for papel canônico da `RBAC_MATRIX.md` (conferir no código; se não for, fica fora); P6 ("a refação com 3 aparências espera o seletor?") — resposta recomendada e aprovada: *"Não. Os defeitos de acesso e segurança não dependem da aparência. A troca visual vem junto com o seletor."* **Conciliação declarada (§A2):** o "não" vale para os consertos de acesso e segurança; a troca visual da tela de Usuários chega junto com o seletor, o que é coerente com o "bloqueia" da `P-APARENCIA-POR-USUARIO`. **Reset por administrador de identidade com vínculo em 2 ou mais organizações: RECUSADO**, e o próprio usuário troca a senha (falha fechada contra tomada de conta entre organizações).
+- **`D-APARENCIA-RESPOSTAS` ((a)–(d) do `B-APARENCIA-USUARIO`):** (a) v1 guarda no navegador, por organização e usuário; o servidor vem depois, junto da AWS; (b) padrão B em Pátios, A nas demais até o dono escolher; (c) a escolha fica no menu do usuário, não em Configurações; (d) Pátios estreia junto com o seletor.
+- **`D-ESTOQUE-RESPOSTAS` (perguntas de `P-ESTOQUE-DEFEITOS-16-10`):** o Operador digita o custo unitário na entrada e não vê totais em dinheiro; o Gestor só lê o Estoque, como a `RBAC_MATRIX.md` (o catálogo que dá tudo é o defeito); o Técnico vê só o que está sob a guarda dele; vários depósitos ficam para depois da versão vendável.
+- **`D-07CB-SUPERIOR-UNICO` (responde `P-07CB-SUPERIOR-UNICO`):** na organização com uma pessoa só acima do operacional, a mesma pessoa autoriza, com justificativa obrigatória, e a ação fica marcada como Crítica na auditoria (`D-AUDIT-REGRAS-CRITICO`). Implementa o `B-O6R-07c-b2`.
+- **`D-CAMINHO-CRITICO-16-10`.** Ordem confirmada: Traccar → `B-O6R-07c-b1` → app de campo (#388, 03b, 04b) → teste de campo. O refino das telas segue em paralelo; a AWS vem depois do refino (decisão de 15/10).
+
+**Do mesmo dia, antes:**
+- **`D-GEMINI-ARGON-USO` (16/10, manhã).** O orquestrador relatou que o Gemini 4 Argon estava disponível no Antigravity e perguntou se o usava; o dono respondeu *"sim, use o argon"*. Ele foi usado como **dev** do `B-O6R-07c-b1`. **Leitura do orquestrador, declarada (§A6, §C7.6-bis):** o Argon foi tratado no nível menor do contrato, por analogia com a `D-GEMINI-PRO-NIVEL-CODEX`; o dono não declarou essa equivalência com estas palavras. Os limites da `D-GEMINI-SEGUNDO-REVISOR` (Gemini só como segundo revisor, nunca revisor único, e nunca no design) continuam valendo.
+- **`D-API-CLAUDE-SUSPENSA` (16/10, noite).** *"o uso da api claude esta suspenso, vc cobre a api claude no mesmo nivel, codex e argon so rodam uma tarefa paga por vez"*. Enquanto vigorar: nada roda com a chave da API; planos não-topo, críticas e revisões passam a agentes Claude da sessão em Opus (declarado). Sobre o Codex e o Argon, a regra é a frase do dono: *"so rodam uma tarefa paga por vez"*. **Leitura do orquestrador, declarada:** uma tarefa paga por vez em cada um deles, e os dois podem rodar ao mesmo tempo. Se o dono quis dizer uma tarefa por vez somando os dois, corrige-se nesta linha.
+
+## Registro de 17/10/2026 — Despachos: as 5 perguntas da maquete
+
+A maquete de Despachos com 3 opções (`despachos-claude.html`, design Claude Opus, verificador `checar-3opcoes.cjs`: PASSOU) trouxe cinco perguntas. O orquestrador deu recomendação e motivo para cada uma, e o dono respondeu: ***"as 5 perguntas eu vou na sua recomendação"***. Cada linha abaixo é a recomendação aprovada, inclusive as consequências e os porquês que ela já trazia (ex.: "até lá, atrasado segue sendo o prazo da OS"; "na web, a tela é da Operação de Campo e dos perfis acima").
+
+- **`D-DESP-INICIO-ATENDIMENTO`.** O "atendimento iniciado" da `D2-07c` começa em **No local** (o técnico já está no cliente; trocar a partir daí já afeta quem está sendo atendido). Dali em diante a troca de técnico é pedido que exige autorização.
+- **`D-DESP-ETAPA-ATRIBUIDO`.** A etapa **Atribuído** fica separada de "A caminho": é onde o despacho espera o técnico aceitar, e juntá-las esconde quem ainda não saiu.
+- **`D-DESP-QUEM-AUTORIZA-GESTOR`.** Quando quem pede a troca já é Gestor e existe outra pessoa acima da operação, **a outra pessoa (o Administrador) autoriza**: quem pede não autoriza. A exceção da organização com uma pessoa só segue a `D-07CB-SUPERIOR-UNICO`.
+- **`D-DESP-LIMITE-POR-ETAPA`.** Limite de tempo por etapa: **sim, configurável, depois da versão vendável**. Até lá, "atrasado" segue sendo o prazo da OS.
+- **`D-DESP-TECNICO-SEM-TELA-WEB`.** O Técnico de Campo **não** usa a tela de Despachos na web: ele usa o app. Na web, a tela é da Operação de Campo e dos perfis acima.
+
+## Registro de 17/10/2026 — as três perguntas do dev do `B-O6R-07c-b1` (PR #440)
+
+O dev sucessor (`dev-b-o6r-07c-b1-opus`) deixou três perguntas no relatório; o orquestrador deu recomendação e motivo, e o dono respondeu: ***"decisões do 07c-b1 vou nas recomendações"***. Cada linha é a recomendação aprovada; o que vai além do texto recomendado está marcado como leitura do orquestrador.
+
+- **`D-07CB1-TRAVA-ATE-B2`.** Até o `B-O6R-07c-b2` existir (a fila de conflitos e a autorização do superior), a troca de técnico de um despacho **a partir de "No local"** (o início do atendimento, `D-DESP-INICIO-ATENDIMENTO`) é **recusada** com a mensagem de que precisa de autorização. **Leitura do orquestrador, declarada:** antes de "No local", a reatribuição vale na hora (é o complemento da trava; o dono não o disse com estas palavras). O b1 implementa a trava; o b2 troca a recusa pelo pedido de autorização.
+- **`D-07CB1-DESPACHO-OS-ENCERRADA`.** Despachar OS encerrada passa a responder **409** (o porquê da recomendação aprovada: antes era aceito sem efeito na OS — erro silencioso). Aceito.
+- **`D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO`.** O técnico de campo **não ativa** o próprio rascunho. Aceito.
+
+## Registro de 16–17/10/2026 (noite) — os braços de trabalho e os tetos
+
+- **`D-GEMINI-PRO-API-TETO`.** A chave `ERP_AGENTE_GEMINI_KEY` passou a responder aos modelos Pro e Argon (medido às ~01:40Z de 17/10; antes dava 429). O dono: *"com o custo de 5 uss, use o gemini pro em Dev do B-DASH agora"* e, depois, *"pode usar o Gemini 3.1 Pro em 1 das 3 cadeiras, com mais US$ 5 de teto"*. Teto por tarefa: **US$ 5 no dev do `B-DASH-PERFIL`** e **US$ 5 numa cadeira da junta do `B-O6R-07c-b1`**. O lançador (`run-gemini-visivel.ps1`, fora do repo) roda em etapas de 20 turnos, soma o custo de cada uma e não abre a seguinte se ela passaria do teto. Preço usado é estimativa do orquestrador (entrada US$ 2/M, cache US$ 0,20/M, saída US$ 12/M); a fatura é a fonte. O login pessoal do Gemini não é usado (home isolado com `selectedType=gemini-api-key`). Os limites da `D-GEMINI-SEGUNDO-REVISOR` (nunca revisor único, nunca design) continuam.
+- **`D-BRACOS-E-DOCKER-17-10`.** O dono: *"rode vc, gemini cli pro, antigravity argon no maximo 3 trabalhos por vez no docker"* e *"gemini 3.1 pro, antigravity argon e vc, entendido?"*. **Leitura do orquestrador, declarada:** o dono falou com o Codex no limite (volta ~04:15Z de 17/10); a lista de braços vale para esse período, e o Codex volta à rotação quando a cota renovar. Os braços nomeados são o Claude da sessão, o Gemini 3.1 Pro (CLI) e o Argon (Antigravity); **no máximo 3 trabalhos com container Docker ao mesmo tempo na máquina** (medido em 16/10: com 4, o Docker caiu duas vezes e levou a base viva junto). O Argon rodou mais de uma tarefa ao mesmo tempo **por autorização caso a caso do dono**: *"pode executar duas operaçoes nessa solicitação"* (o Traccar e o plano da apresentação) e, perguntado se uma terceira cadeira do Argon na apresentação daria certo, *"me passe a previsao com o estado, pode lançar"*. **Conflito registrado (§A2):** a `D-API-CLAUDE-SUSPENSA` diz "codex e argon so rodam uma tarefa paga por vez"; as autorizações acima são posteriores e específicas, e valem só para as tarefas nomeadas — fora delas, segue uma tarefa por vez.
+- **`D-APRESENTACAO-SO-PLANO`.** *"a apresentação fica so no plano, nao mexer em codigo"*: o plano da apresentação e o arquivo da apresentação (fora do repositório) não alteram o código do sistema.
+
+- **`D-INICIO-ATENDIMENTO-CONFIRMADO` (decisão do dono, 2026-10-17, ~02:45Z).** Perguntado sobre o conflito `P-CONFLITO-INICIO-ATENDIMENTO` (15/10 dizia `on_route`; 17/10, "No local"), o dono respondeu: ***"no local..."***. O "atendimento iniciado" começa em **No local** e **substitui a P3 de `D-07CB-EMENDA-RECOMENDACOES`** nesse ponto. A trava do #440 (`D-07CB1-TRAVA-ATE-B2`) já implementa isto; o `B-O6R-07c-b2` também segue "No local".
+
+- **`D-KPI-LOOP-NAO-ESQUECER` (decisão do dono, 2026-10-17).** *"rode o loop do gemini para os kpis, nao esquecer... documente e difunda"*. O loop de KPI (`D-KPI-LOOP-GEMINI`) não rodou em 15 e 16/10. O dono pediu que o loop não seja esquecido e que isso fique documentado e difundido. **O mecanismo é leitura do orquestrador, declarada:** toda sessão do orquestrador começa conferindo a data do último marco (`release.block` de `Kpis/kpis-latest.json` na `origin/main`); se passou um dia sem marco, o loop é a primeira tarefa da sessão. Também roda no fim do dia e logo depois de merge que mova P0 ou escopo (isto AMPLIA o "uma vez por dia ou quando o dono pedir" da `D-KPI-LOOP-GEMINI`; o dono pode desfazer), e a data do último marco entra no "estado" que o dono recebe. Escrito no §C7 item 8(5) do CLAUDE.md e do AGENTS.md (mesmo texto).
+
+- **Conflito registrado e resolvido (§A2), 17/10:** o §C7.6 do CLAUDE.md/AGENTS.md dizia que o Gemini Pro "só entra pela assinatura, sem faturamento novo" (de `D-GEMINI-PRO-NIVEL-CODEX`, 13/10). A `D-GEMINI-PRO-API-TETO` (17/10) é decisão posterior e explícita do dono com custo nomeado (*"com o custo de 5 uss"*; *"com mais US$ 5 de teto"*), fonte §A1.1. O texto dos dois contratos passa a dizer "pela assinatura ou pela API paga com teto em dólar por tarefa autorizado pelo dono". Achado pelo redator de mandatos da junta do 07c-b1.
+
+## Registro de 17/10/2026 (manhã) — as três perguntas do plano do ciclo 2 do `B-O6R-07c-b1`
+
+A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md` §2.8) deixaram três perguntas com recomendação; o dono respondeu: ***"as 3 perguntas sigo suas recomendações"***.
+- **`D-07CB1-CANCELAR-NO-LOCAL-SEM-AUTORIZACAO`.** Cancelar ou falhar um despacho que está em "No local", sem trocar o técnico, **não** exige autorização do superior no b1: encerramento não é troca; é ato explícito e auditado do despachante (ou do próprio técnico, no `failed`); **o b2 decide se o cancelamento em No local entra na mesma fila de autorização** (`P-07CB1-CANCELAR-EM-NO-LOCAL`, dono b2). No ciclo 2, a OS não muda de técnico por causa dele.
+- **`D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2`.** A atribuição pela web/lote de uma OS que tem despacho ativo em OUTRO técnico (antes de "No local") passará a **reatribuir o despacho junto**, no `B-O6R-07c-b2` (ou no `B-TECNICO-ESCOPO-a`); no b1, a via web passa pela trava única do ciclo 2. Pendência `P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO` (dono: b2).
+- **`D-07CB1-EVIDENCIA-EXIGE-OS`.** `evidence.work_order_*` passa a exigir OS existente nesta organização para TODOS os papéis (inexistente ou alheia → `rejected not_found`) — o "um critério só" da `D1-07c`.

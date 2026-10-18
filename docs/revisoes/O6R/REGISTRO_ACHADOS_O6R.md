@@ -609,6 +609,21 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Pausar writer após open-check, fechar período e retomá-lo; ele deve falhar ou integrar snapshot, jamais commitar fora dele.
 
 ### [Ω6R-DIN-009] Receipt de despesas é persistido depois do efeito monetário e não vincula usuário/payload
+- Status: **fechado** em 2026-10-14 pelo B-O6R-03a (PR #425, d910c97f; junta de dinheiro APROVADO 3×0, ata `J-B-O6R-03a-ciclo1`). Antes: fechado NA AUTORIA (2026-10-11); registro de achados e painel atualizados no marco de KPI de 14/10.
+  **Uma transação por ação, com o recibo como primeira escrita.** Claim do recibo (INSERT puro na PK atual
+  `(tenant_id, client_action_id)`), efeito (relatório/item/total/status e eventos de domínio), resultado no recibo e
+  evento de prova saem no MESMO commit; quem perde a corrida na PK relê FORA da transação abortada e nunca refaz o
+  efeito; transitório → `503 sync_busy`. **A ação é UMA só por organização + id e pertence a quem a enviou primeiro**
+  (emenda v3 + `D-03a-MESMA-CHAVE-OUTRO-ATOR = A`): a chave interna K2t = prefixo ASCII de 161 caracteres +
+  `JSON([client_action_id])`, disjunta de todo id legado (≤160), sem migração; outro ator → `conflict
+  action_owned_by_other_actor`, zero escrita. **Leitura legada sempre ligada:** recibo da versão anterior nunca produz
+  efeito novo e responde conflito (`legacy_payload_unverifiable`), em toda forma de id. **Prova de replay** = fingerprint
+  v2 (`{v:2, tenantId, actorUserId, clientActionId, type, normalized}`) aceita só por evento do MESMO ator no agregado
+  ORIGINAL do recibo. UUID canônico aceito (regex) e evento de sync do item apontando o relatório (FK). Testes: T-A
+  `tests/expense-sync-atomic-db.test.ts` (Postgres, papéis sem BYPASSRLS), T-B `tests/expense-management-routes.test.ts`,
+  T-C `tests/expense-sync-fingerprint.test.ts`; N, forma e mutações (M10/M11/M15–M18 e a matriz do §5) em
+  `docs/revisoes/SAN3/B-O6R-03a-dev.md`. Publicação exige tirar todo escritor antigo (`P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`);
+  o lado do app é do B-O6R-03b (`P-O6R-B03-FILA-POR-USUARIO`, `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO`).
 - Severidade: P0        Confiança: 1.00
 - Categoria: DIN
 - Módulo: expense-management        Lente: A3
@@ -629,7 +644,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Crash effect→receipt, duas chamadas concorrentes, dois usuários com mesma chave e mesma chave/payload diferente; exatamente um efeito correto deve persistir.
 
 ### [Ω6R-DAT-002] Saldo de estoque usa check-then-insert sem serialização
-- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+- Status: **fechado** em 2026-10-10 pelo B-O6R-04a (PR #389, ab52ec50). Antes: fechado NA AUTORIA; registro de achados e painel atualizados no marco de KPI de 14/10.
   **A saída decide sob o lock do item.** Toda via que chega a `insertMovement`/`avg_cost` (saída, transferência,
   estorno, baixa e estorno de baixa por fonte — V1–V5) toma `SELECT … FOR UPDATE` na linha
   `inventory_items(tenant_id, id)` **antes** da primeira leitura que decide; saldo da custódia, custo médio e
@@ -665,7 +680,7 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 - Teste recomendado: Vinte retiradas concorrentes e N reversões no PostgreSQL; saldo nunca negativo e exatamente uma compensação por origem.
 
 ### [Ω6R-DAT-003] Fechamento de contagem cíclica pode duplicar ajustes e ficar parcial
-- Status: fechado NA AUTORIA do B-O6R-04a (PR #389); registro de achados e painel mudam no marco de KPI (`D-GOV-PROPORCIONAL` (5)).
+- Status: **fechado** em 2026-10-10 pelo B-O6R-04a (PR #389, ab52ec50). Antes: fechado NA AUTORIA; registro de achados e painel atualizados no marco de KPI de 14/10.
   **O fechamento virou máquina de estados com CAS, em unidades por item.** `aberta → fechando → concluida`:
   `beginClose` (sessão `FOR UPDATE` + CAS), uma unidade por item divergente (sessão `FOR UPDATE` → item
   `FOR UPDATE` → ajuste → carimbo, numa transação só) e `finishClose` (total da sessão **inteira** somado no

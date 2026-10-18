@@ -229,6 +229,49 @@ Organização · Console Dispatcher · Cobranças.
    conteúdo ("PNG vence para layout/intenção"), até o dono responder a pergunta registrada em
    `D-TELAS-SEGUEM-O-PADRAO`. O padrão do sistema rege o resto: componentes, tokens, camada de dados, estados e tudo
    aquilo sobre o que a referência não diz nada.
+6. **Painel com lista: blocos clicáveis e linha que abre o detalhe** (decisão do dono, 2026-10-12,
+   `D-PADRAO-BLOCOS-CLICAVEIS`). Nas palavras do dono, ao aprovar a tela do Financeiro: *"a ultima tela do biling foi
+   aprovada e fica como base do sistema os boxs clicaveis as linhas abrindo propriedades, gostei"*. A referência é
+   `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`:
+   - todo indicador e todo bloco de resumo é clicável (botão, com foco visível) e leva à lista já filtrada; o filtro
+     aparece acima da lista e sai com um clique;
+   - a linha da lista tem UMA linha de altura (até 44 px) e nenhum botão de ação; texto longo corta com reticências e
+     mostra o texto inteiro ao passar o mouse;
+   - clicar na linha, ou Enter/Espaço com foco nela, abre logo abaixo o detalhe, com as propriedades e as ações; um
+     detalhe aberto por vez.
+
+   Vale para tela nova e para tela que for refeita. Os componentes nascem NA biblioteca (item 3) no primeiro bloco
+   que usar o padrão. As telas padronizadas de `D-OS-CABECALHO-PADRONIZADO` (§11), cujas linhas levam a uma página de
+   detalhe, continuam como estão até o dono responder a pergunta registrada em `D-PADRAO-BLOCOS-CLICAVEIS`.
+7. **Toda tela sai em 3 opções para o dono aprovar** (decisão do dono, 2026-10-13, `D-TELAS-TRES-OPCOES`). Nas
+   palavras do dono: *"as cinco telas padronizada quero 3 opççoes para cada. documente, memorize e difunda para todos em
+   toda tela que sair pronta eu quero tres opções para aprovar"*.
+   - **A maquete:** toda tela nova ou refeita, web ou mobile, passa por uma maquete com **3 opções visuais** (A, B e C,
+     com seletor para trocar entre elas). Ela é montada a partir da tela-modelo e do padrão do sistema (itens 1 a 6) e
+     traz, fora da tela, um quadro com o que já tem dado, o que falta no backend e os prós e contras de cada opção.
+   - **A escolha** *(superada em 2026-10-14 pelos itens `D-APARENCIA-POR-USUARIO` e `D-TELAS-SAEM-COM-TRES`, abaixo)*: o dono
+     escolhia uma ou pedia a mistura (no Financeiro foi "uma junção de a com b"). Hoje o dono aprova as 3, que vão
+     todas para `screen-refs/`, e o plano do bloco cita as 3.
+   - **Leitura do orquestrador, declarada como tal (§A6):** as 3 opções vêm ANTES do dev, porque refazer tela pronta
+     custa mais, e a tela implementada é conferida contra as opções aprovadas. Se o dono quiser as opções também depois
+     da tela pronta, isto se corrige numa linha.
+   - **As 5 telas padronizadas** de `D-OS-CABECALHO-PADRONIZADO` ganham as 3 opções agora; até a escolha, ficam como
+     estão.
+   - **As 3 opções aprovadas ficam TODAS, como aparências que cada usuário escolhe** (decisão do dono, 2026-10-14,
+     `D-APARENCIA-POR-USUARIO`; atualiza "A escolha", acima). Nas palavras do dono: *"eu aprovo as telas, todas as tres de toda tela, vamos usar um modo em configuração para mudar o aspecto do sistema de caracter pessoal de cada usuario, as que ja foram feitas as tres versoes, otimo, as demais telas, todas tem que passarem por esse ajuste. por enquanto so documente."*
+     - Cada tela tem as 3 aparências aprovadas, e cada usuário escolhe a sua num modo em Configurações. É preferência
+       PESSOAL do usuário, não da organização.
+     - Já têm as 3 aprovadas: Pátios, Dashboard e Ordens de Serviço (`screen-refs/*-3opcoes.reference.html`). Todas as
+       outras telas passam pelo mesmo ajuste.
+     - **Toda tela sai com as 3 opções** (decisão do dono, 2026-10-14, `D-TELAS-SAEM-COM-TRES`): *"As telas aparti de
+       agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só
+       uma.
+     - **O seletor ainda não existe.** O modo em Configurações e o lugar onde a preferência fica guardada são um bloco
+       próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** o seletor é
+       pré-requisito da primeira tela que sair com as 3; ou esse bloco vem antes, ou a primeira tela o entrega junto.
+   - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
+     o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
+     tela.
 
 ## 5. Mobile (Flutter em `mobile/flutter_app/`)
 
@@ -512,6 +555,12 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    | **Topo** | Fable | GPT-6 Astra | o plano inicial do bloco; em TODA reprovação de junta, a auditoria e o plano de resolução (§C7.4) |
    | **Menor**, sempre DECLARADO no artefato | Opus | GPT-5.6 Sol (§C7.6-bis) | dev, crítico, inspetor, cadeiras da junta, fábrica e porteiro |
 
+   **Gemini, pelo Antigravity** (declaração do dono, 2026-10-13, `D-GEMINI-PRO-NIVEL-CODEX`; e decisão do dono,
+   2026-10-14, `D-GEMINI-SEGUNDO-REVISOR`): o **Gemini Pro** equivale ao nível menor e entra pela assinatura ou, desde 2026-10-17, pela **API paga com
+   teto em dólar por tarefa autorizado pelo dono** (`D-GEMINI-PRO-API-TETO`). **Leitura do orquestrador, declarada (§A6):** o **Gemini Flash** fica abaixo do nível menor e não
+   ocupa cadeira, inspetor, porteiro nem dev de bloco de risco. Como revisor de PR, o Gemini entra **só como segundo
+   revisor**, e o achado dele é conferido antes de valer; e não faz design (`D-DESIGN-SO-CLAUDE`).
+
    O `inspetor-de-terreno-da-junta` e o `porteiro-pos-merge` têm `model: opus` fixado no frontmatter (de
    2026-08-24 e 2026-08-12 até 2026-10-10 eram Fable — `D-INSPETOR-TERRENO-JUNTA`, `D-PORTEIRO-POS-MERGE`).
    Cadeiras, dev, crítico e fábrica rodam no modelo passado na invocação: o nível menor, declarado.
@@ -670,7 +719,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só
      quando o bloco mexe em **dinheiro, segurança, permissão ou perda de dado**. Todo o resto (telas e textos sem
      regra de negócio nova, documentação, registro, KPI, governança, ferramentas de processo) mergeia com **um
-     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta.
+     revisor independente** (quem não escreveu nem planejou) **e CI verde**, sem inspetor, sem ata de junta. Esse revisor não é o Gemini: ele entra só como segundo revisor (`D-GEMINI-SEGUNDO-REVISOR`, 2026-10-14).
    - **(2) Teto de 2 ciclos.** Nos ciclos 1 e 2 a junta funciona como hoje. **A partir do ciclo 3, só bloqueia
      defeito de produto grave**: perde dado, vaza dado entre organizações, quebra permissão ou erra dinheiro. Todo
      outro achado — inclusive de processo, registro, mandato, KPI, forma de teste — vira **pendência com dono** e o
@@ -694,6 +743,29 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    - **(5) KPI congelado.** Até segunda ordem do dono, **PR nenhum atualiza `Kpis/*`** (revoga, enquanto vigorar,
      a `D-KPI-PER-PR` do §C3); o painel fica no último snapshot publicado e a consolidação é por **marco**, num PR
      próprio, quando o dono pedir. A junta não cobra KPI.
+
+     **O loop de KPI** (decisão do dono, 2026-10-15, `D-KPI-LOOP-GEMINI`: *"siga esse loop"*) é a consolidação por
+     marco **uma vez por dia, ou quando o dono pedir**, num PR próprio:
+     1. o Gemini lê o que entrou na `main` desde a última entrada do histórico e **propõe** só a descrição de cada
+        entrega, em linguagem de dono (não edita nada);
+     2. o orquestrador confere a proposta e grava cada entrada com `scripts/kpi-history-append.mjs` (PR, merge, data,
+        head, rodada de CI e números vêm por comando; ninguém digita referência) e atualiza o `kpis-latest.json`
+        só com fato conferido;
+     3. **etapa fixa antes do merge:** `scripts/kpi-check-refs.mjs` confere todo commit, rodada de CI e PR
+        acrescentado, e os testes do painel (`tests/kpi-*.test.ts`) passam;
+     4. um revisor independente e CI verde, e o merge.
+
+     O Gemini não edita o painel: no 1º teste (#435) a proposta dele acertou os números, mas a edição trouxe
+     referências e textos inventados.
+
+     **O loop não se esquece (decisão do dono, 2026-10-17, `D-KPI-LOOP-NAO-ESQUECER`: *"rode o loop do gemini para os
+     kpis, nao esquecer... documente e difunda"*).** Em 15 e 16/10 o loop não rodou e o painel ficou no marco de 14/10.
+     O mecanismo é **leitura do orquestrador, declarada** (o dono pediu "não esquecer" e "documente e difunda"):
+     **toda sessão do orquestrador começa conferindo a data do último marco** (`release.block` de
+     `Kpis/kpis-latest.json` na `origin/main`); se passou um dia sem marco, o loop é a **primeira** tarefa da sessão,
+     antes de bloco novo. O orquestrador também o dispara no **fim do dia** e logo depois de **merge que mova P0 ou
+     escopo** (ex.: o último P0) — isto amplia o "uma vez por dia" acima, e o dono pode desfazer. A data do último marco vai
+     no "estado" que o dono recebe.
    - **Para os PRs em voo em 2026-10-04:** `#400` (B-SAN3-09) e `#405` (B-SAN3-05) seguem com junta completa
      (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
      congelado pela regra (3).
@@ -759,6 +831,8 @@ ao PR corrente**.
 - [ ] A11y: alvo de toque ≥44px (mobile), foco visível, aria em ícones-ação.
 - [ ] **Padrão do sistema (§4, `D-TELAS-SEGUEM-O-PADRAO`):** a tela nasce da tela-modelo existente citada no plano, com as
       skills `ts-frontend-full` e `ui-ux-pro-max`; nada de layout ou componente novo onde o sistema já tem o equivalente.
+- [ ] **3 opções aprovadas (§4 item 7, `D-TELAS-TRES-OPCOES`):** a tela sai com as 3 opções aprovadas pelo dono, como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`),
+      registrada em `screen-refs/`.
 - [ ] **Fidelidade visual (§11):** a tela bate com a referência renderizada em `screen-refs/` (quando existir) — sem simplificar, sem inventar abas, sem andaime de dev na UI.
 
 ## 11. Fidelidade visual — referências renderizadas (`screen-refs/`)
@@ -792,6 +866,8 @@ Referências disponíveis (índice completo em **`screen-refs/README.md`**):
   **Exceção (decisão do dono, 2026-10-08, `D-OS-CABECALHO-PADRONIZADO`):** para as 5 telas padronizadas
   (Dashboard, Ordens de Serviço, Usuários, Auditoria, Pátios) a referência é `ERP Web - Telas Padronizadas.dc.html`
   (`docs/juntas/J-TELAS-PADRONIZADAS.md`), não os PNGs — ver o índice `docs/claude-code-handoff/screen-refs/README.md`.
+  **Exceção (decisão do dono, 2026-10-12, `D-PADRAO-BLOCOS-CLICAVEIS`):** o Financeiro tem como referência
+  `financeiro-ab.reference.html`, não o `financeiro.png`.
 - **`screen-refs/mobile/`** — **39 PNGs** (todas as telas do ERP Mobile: sessão/nav, fluxo Guincho,
   fluxo Prestador, Despesas/RDV/Comissões). Aparelho 390×812 inteiro.
 - **`screen-refs/Cloud Billing.reference.html`** — padrão-ouro em **HTML estático isolado**

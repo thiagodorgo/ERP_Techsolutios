@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usuários · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (mesma das maquetes aprovadas de Pátios, Dashboard e OS) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css:3017-3995 ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--perigo{color:#b91c1c;border-color:#fecaca}
+.pat-btn--perigo:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 16px;text-align:left;color:#0f172a;min-width:0}
+.pat-kpi--clickable{cursor:pointer}
+.pat-kpi--clickable:hover{border-color:#93c5fd}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:9px}
+.pat-kpi__tile{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;font-variant-numeric:tabular-nums}
+.pat-kpi__label{font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pat-kpi__hint{font-size:11px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:inline-block}
+.pat-table{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.pat-table__topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-table__count{font-size:11.5px;font-weight:600;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-table__empty{padding:44px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-os-tabs{display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{padding:6px 13px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b}
+.pat-os-tab--active{background:#fff;color:#2563eb}
+.pat-header-search{display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;width:240px;color:#94a3b8}
+.pat-header-search:focus-within{border-color:#2563eb}
+.pat-header-search input{border:none;outline:none;background:transparent;font-size:12.5px;color:#0f172a;width:100%}
+.pat-select{padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{display:flex;align-items:center;gap:9px;font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__size select{padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;color:#334155;background:#fff}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:700;color:#475569;cursor:pointer}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+.pat-cell-main{font-size:13px;font-weight:700;color:#0f172a}
+.pat-cell-sub{font-size:11.5px;color:#94a3b8}
+.pat-role-chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:7px;white-space:nowrap;line-height:1.35;vertical-align:middle}
+.pat-admin-badge{font-size:10px;font-weight:700;color:#7e22ce;background:#f3e8ff;padding:2px 7px;border-radius:6px;white-space:nowrap;vertical-align:middle;line-height:1.4}
+.pat-avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;vertical-align:middle}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-kpi--clickable:focus-visible,.pat-os-tab:focus-visible,.pat-pager__btn:focus-visible,.pat-select:focus-visible,.pat-header-search input:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ─── Padrão aprovado: linha de 1 linha + resumo embaixo (financeiro-ab.reference.html) ─── */
+.pat-filtro-chip-bar{padding:10px 18px 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 5px;border-radius:50%;font-size:11px;line-height:1}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden}
+.pat-ab-row{height:42px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:42px;max-height:42px;line-height:42px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#475569}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:16px 20px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.15fr 1.25fr 1.2fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+.grupo-row td{padding:9px 14px 7px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.grupo-row td span.grupo-n{display:inline-flex;margin-left:8px;padding:1px 8px;border-radius:99px;font-size:10.5px;letter-spacing:0}
+.grupo-row td small{margin-left:10px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#94a3b8}
+
+/* Célula do usuário em 1 linha (avatar 26 + nome + e-mail) */
+.usr{display:inline-flex;align-items:center;gap:9px;max-width:100%;vertical-align:middle;line-height:1.2}
+.usr .pat-avatar{width:26px;height:26px;font-size:10px}
+.usr__txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.usr__txt .pat-cell-sub{margin-left:7px}
+.rec{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1.2}
+.rec i{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.rec b{font-size:12px;font-weight:700;color:#334155;font-variant-numeric:tabular-nums}
+.rec small{font-size:11px;color:#94a3b8}
+.mais-perfil{font-size:10.5px;font-weight:700;color:#64748b;margin-left:4px}
+.spark-cel{display:inline-flex;align-items:center;gap:8px;vertical-align:middle;line-height:1}
+.spark-cel b{font-size:12px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums;min-width:20px;text-align:right}
+.ses-n{font-family:var(--font-mono);font-size:12px;font-weight:700}
+
+/* Marca "falta no backend" (anotação da maquete; some pelo quadro de notas) */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4}
+body.sem-marcas .falta{display:none}
+
+/* Mini gráfico de atividade (30 dias) no resumo */
+.ativ-svg{display:block;width:100%;height:46px}
+.ativ-eixo{display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:3px;font-variant-numeric:tabular-nums}
+.ses-lista{display:flex;flex-direction:column;gap:4px}
+.ses-item{display:flex;align-items:center;gap:8px;font-size:12px;color:#334155}
+.ses-item small{color:#94a3b8;font-size:11px}
+.sinais{display:flex;flex-wrap:wrap;gap:6px}
+.sinal{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;line-height:1.3;vertical-align:middle;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+
+/* ─── Opção A: faixa de composição (barras empilhadas clicáveis) ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:14px}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.comp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.comp-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;min-width:0}
+.comp-card__t{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:800;color:#0f172a;margin-bottom:8px}
+.comp-card__t small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.pilha{display:flex;height:22px;border-radius:7px;overflow:hidden;gap:2px;background:#fff}
+.pilha button{border:0;padding:0;cursor:pointer;min-width:12px;color:#fff;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;overflow:hidden;opacity:.92}
+.pilha button:hover{opacity:1}
+.pilha button[aria-pressed="true"]{box-shadow:inset 0 0 0 2px #0f172a;opacity:1}
+.pilha button:focus-visible{outline:2px solid #2563eb;outline-offset:2px;position:relative;z-index:1}
+.pilha-leg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:8px;font-size:11.5px;color:#475569}
+.pilha-leg span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pilha-leg b{color:#0f172a;font-variant-numeric:tabular-nums}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block}
+.kpi-spark{display:block;width:100%;height:22px;margin-top:6px}
+
+/* ─── Opção B: faixa analítica (padrão de Pátios B + OS B) ─── */
+.analitico{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card--2{grid-column:span 2}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;flex-wrap:wrap}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.an-leitura{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#475569}
+.an-leitura b{color:#0f172a}
+.dias-svg{display:block;width:100%;height:150px}
+.dias-svg g[role="button"],.mes-svg g[role="button"]{cursor:pointer}
+.dias-svg g[role="button"]:focus,.mes-svg g[role="button"]:focus{outline:none}
+.dias-svg g[role="button"]:hover rect.bg,.dias-svg g[role="button"]:focus-visible rect.bg,.mes-svg g[role="button"]:hover rect.bg,.mes-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.dias-svg g[aria-pressed="true"] rect.bg,.mes-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.eixo{display:flex;justify-content:space-between;margin-top:4px;font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums}
+.mes-svg{display:block;width:100%;height:120px}
+.donut-wrap{display:flex;align-items:center;gap:12px}
+.lg-list{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.lg-btn{display:flex;align-items:center;gap:7px;width:100%;padding:3px 6px;border:1px solid transparent;border-radius:7px;background:none;cursor:pointer;font-size:11.5px;color:#475569;text-align:left;white-space:nowrap}
+.lg-btn:hover{background:#f8fafc}
+.lg-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.lg-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.lg-btn span.t{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.lg-btn b{margin-left:auto;color:#0f172a;font-variant-numeric:tabular-nums}
+.barra-btn{display:grid;grid-template-columns:minmax(0,128px) minmax(0,1fr) 26px;align-items:center;gap:8px;width:100%;padding:3px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:24px}
+.barra-btn:hover{background:#f8fafc}
+.barra-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.barra-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.barra-btn__rot{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-btn__rot i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.barra-btn__trilho{display:flex;height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.barra-btn__trilho b{display:block;height:100%}
+.barra-btn__n{font-size:12px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums}
+.colunas{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 2px}
+.coluna-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 2px 6px;min-width:0}
+.coluna-btn:hover{background:#f8fafc}
+.coluna-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.coluna-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.coluna-btn b{font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.coluna-btn i{display:block;width:70%;max-width:36px;border-radius:6px 6px 2px 2px;min-height:3px}
+.coluna-btn span{font-size:10.5px;font-weight:700;color:#64748b;text-align:center;line-height:1.2}
+.higiene{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.higiene button{display:flex;flex-direction:column;gap:2px;padding:9px 10px;border-radius:9px;border:1px solid #fde68a;background:#fffbeb;cursor:pointer;text-align:left;min-height:62px}
+.higiene button.crit{border-color:#fecaca;background:#fef2f2}
+.higiene button.ok{border-color:#bbf7d0;background:#f0fdf4}
+.higiene button[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.higiene button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.higiene b{font-size:18px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums;line-height:1.1}
+.higiene .crit b{color:#b91c1c}.higiene .ok b{color:#15803d}
+.higiene span{font-size:11px;font-weight:700;color:#92400e;line-height:1.25}
+.higiene .crit span{color:#991b1b}.higiene .ok span{color:#166534}
+.delta{font-size:10.5px;font-weight:700;margin-left:6px}
+
+/* ─── Opção C: saúde do acesso + mapa de entradas + matriz perfil × módulo ─── */
+.c-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.saude{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}
+.gauge-btn{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid transparent;border-radius:12px;background:none;cursor:pointer;padding:4px 2px 8px}
+.gauge-btn:hover{background:#f8fafc}
+.gauge-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.gauge-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.gauge-btn span{font-size:11px;font-weight:700;color:#64748b;text-align:center;line-height:1.3}
+.checks{display:flex;flex-direction:column;gap:3px}
+.check-btn{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;font-size:12px;color:#334155;min-height:32px}
+.check-btn:hover{background:#f8fafc}
+.check-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.check-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.check-btn i{width:9px;height:9px;border-radius:50%}
+.check-btn b{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.check-btn .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.check-inf{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;font-size:12px;color:#64748b;min-height:32px}
+.check-inf i{width:9px;height:9px;border-radius:50%;background:#cbd5e1}
+.hm{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed}
+.hm th{font-size:10px;font-weight:700;color:#64748b;text-align:center;padding:0 0 2px;white-space:nowrap}
+.hm th.dia{text-align:left;width:34px}
+.hm td{padding:0}
+.hm-cell{width:100%;height:26px;border:1px solid transparent;border-radius:5px;cursor:pointer;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums;color:#1e3a8a}
+.hm-cell:hover{border-color:#93c5fd}
+.hm-cell[aria-pressed="true"]{border-color:#0f172a;box-shadow:0 0 0 2px #fff inset}
+.hm-cell:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.hm-cell.zero{cursor:default;color:transparent}
+.hm-leg{display:flex;align-items:center;gap:6px;font-size:10.5px;color:#94a3b8;margin-top:6px}
+.hm-leg i{width:16px;height:9px;border-radius:2px;display:inline-block}
+.mx{width:100%;border-collapse:collapse;table-layout:fixed}
+.mx thead th{font-size:10.5px;font-weight:800;color:#64748b;text-align:center;padding:6px 2px;white-space:normal;line-height:1.2;vertical-align:bottom}
+.mx thead th:first-child{text-align:left;width:172px}
+.mx thead th button{border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:3px 4px;border-radius:6px;line-height:1.2}
+.mx thead th button:hover{color:#2563eb;background:#eff6ff}
+.mx thead th button[aria-pressed="true"]{color:#1d4ed8;background:#dbeafe}
+.mx thead th button:focus-visible{outline:2px solid #2563eb}
+.mx tbody td{padding:2px;border-top:1px solid #f1f5f9;text-align:center}
+.mx tbody td:first-child{text-align:left;padding:2px 6px 2px 0}
+.mx-perfil{display:flex;align-items:center;gap:8px;width:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 6px;text-align:left;min-height:32px}
+.mx-perfil:hover{background:#f8fafc}
+.mx-perfil[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.mx-perfil:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.mx-perfil b{margin-left:auto;font-size:12px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.mx-cell{width:100%;height:28px;border:1px solid transparent;border-radius:6px;cursor:pointer;font-size:10.5px;font-weight:800}
+.mx-cell:hover{border-color:#93c5fd}
+.mx-cell[aria-pressed="true"]{border-color:#0f172a}
+.mx-cell:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.mx-cell.nv-E{background:#dbeafe;color:#1d4ed8}
+.mx-cell.nv-L{background:#f0f9ff;color:#0369a1}
+.mx-cell.nv-0{background:#f8fafc;color:#cbd5e1;cursor:default}
+.mx-cell.nv-T{background:#f3e8ff;color:#7e22ce}
+.mx-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-top:8px}
+.mx-leg span{display:inline-flex;align-items:center;gap:6px}
+
+/* ─── Auditoria filtrada pelo usuário (deeplink real /audit?actorId=) ─── */
+.back-link{display:inline-flex;align-items:center;gap:8px;color:#2563EB;font-size:13px;font-weight:700;background:none;border:0;cursor:pointer;width:fit-content;padding:0;margin-bottom:14px}
+.back-link:hover{text-decoration:underline}
+.back-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.aud-tab{width:100%;border-collapse:collapse}
+.aud-tab th{font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;padding:9px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.aud-tab td{font-size:12.5px;color:#334155;padding:10px 14px;border-bottom:1px solid #f1f5f9}
+
+/* ─── Estado (StatePanel) ─── */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:50px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#94a3b8;max-width:380px;line-height:1.5}
+.sec-bloq{display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed #cbd5e1;border-radius:10px;font-size:12px;color:#64748b}
+.vazio-curto{font-size:12.5px;color:#94a3b8;padding:12px 0}
+
+/* ─── Componentes ui-* (app.css:390-805) ─── */
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button:disabled{cursor:not-allowed;opacity:.55}
+.ui-button--primary{background:var(--color-core-primary);color:var(--text-inverse)}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button--ghost{background:transparent;color:var(--color-core-primary)}
+.ui-button--danger{background:var(--color-status-danger);color:var(--text-inverse)}
+.ui-button--sm{min-height:32px;padding:0 var(--space-10);font-size:var(--text-sm)}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-field{display:grid;gap:var(--space-6);font-size:13px;font-weight:700;color:#334155}
+.ui-field small{font-weight:500;color:#64748b;font-size:11.5px}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:8px 10px;font:inherit;font-weight:400;font-size:13px;width:100%;background:#fff;color:#0f172a}
+.ui-input:disabled{background:#f1f5f9;color:#64748b}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-alert{display:flex;flex-direction:column;gap:4px;padding:var(--space-12);border:1px solid #f4d38b;border-radius:var(--radius-6);background:#fff8e9;color:var(--color-status-warning);font-size:13px}
+.ui-alert--danger{border-color:#f0b6b0;background:#fff0ef;color:var(--color-status-danger)}
+.form-error{color:#b91c1c;font-size:12px;font-weight:600}
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.ui-modal{background:var(--surface-panel);box-shadow:var(--shadow-overlay);padding:var(--space-16) 18px 18px;border-radius:var(--radius-8);width:min(620px,94vw);max-height:92vh;overflow-y:auto}
+.ui-modal--sm{width:min(480px,94vw)}
+.ui-modal > header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ui-modal > header h2{font-size:var(--text-lg)}
+.ui-modal > header button{width:40px;height:40px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.ui-modal > header button:hover{background:#f1f5f9}
+.ui-modal > header button:focus-visible{outline:2px solid #2563eb}
+.form-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-12)}
+.form-grade .larga{grid-column:1 / -1}
+.perfis-fs{border:1px solid var(--border-subtle);border-radius:var(--radius-6);padding:var(--space-10);margin:0}
+.perfis-fs legend{font-size:var(--text-sm);font-weight:700;padding:0 var(--space-6)}
+.perfis-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--space-6);margin-top:var(--space-6)}
+.perfis-grade label{display:flex;align-items:center;gap:var(--space-8);min-height:44px;cursor:pointer;font-size:13px;font-weight:600;color:#334155}
+.perfis-grade label.novo{color:#1d4ed8}
+.convite{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#64748b;flex-wrap:wrap}
+.rodape{display:flex;justify-content:flex-end;gap:var(--space-8);margin-top:var(--space-16)}
+.dl{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:13px;margin-bottom:12px}
+.dl dt{color:#64748b;font-weight:700}
+
+/* ─── FICHA DO USUÁRIO — janela de tamanho FIXO (padrão aprovado do dossiê de Pátios) ─── */
+.ficha{width:min(1080px,96vw);height:min(720px,90vh);background:#f1f5f9;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.ficha > header{flex:none;display:flex;align-items:center;justify-content:space-between;background:#fff;border-bottom:1px solid #e2e8f0;padding:8px 10px 8px 20px}
+.ficha > header h2{font-size:14px;font-weight:800;color:#334155}
+.ficha > header button{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.ficha > header button:hover{background:#f1f5f9}
+.ficha > header button:focus-visible{outline:2px solid #2563eb}
+.ficha__cabeca{flex:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 20px 10px}
+.ficha__cabeca .pat-avatar{width:44px;height:44px;font-size:15px}
+.ficha__nome{font-size:18px;font-weight:800;color:#0f172a}
+.ficha__mail{font-size:12.5px;color:#64748b}
+.ficha__acoes{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.ficha__abas{flex:none;padding:0 20px 10px}
+.ficha__corpo{flex:1;min-height:0;overflow-y:auto;padding:4px 20px 20px;scrollbar-gutter:stable}
+.ui-tabs{display:inline-flex;padding:var(--space-4);border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel-muted);flex-wrap:wrap}
+.ui-tabs button{border:0;border-radius:var(--radius-4);padding:var(--space-8) var(--space-10);background:transparent;cursor:pointer;font-size:13px;color:var(--text-primary);white-space:nowrap}
+.ui-tabs button.is-active{background:var(--surface-panel);color:var(--color-core-primary);font-weight:900}
+.ui-tabs button:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.f-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.f-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;min-width:0}
+.f-card h3{font-size:13.5px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.f-card--full{grid-column:1 / -1}
+.f-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.f-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px}
+.f-kpi b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:#0f172a}
+.f-kpi span{font-size:11.5px;color:#64748b;font-weight:600}
+.f-tab{width:100%;border-collapse:collapse}
+.f-tab th{font-size:10.5px;font-weight:800;color:#64748b;text-align:left;padding:7px 8px;border-bottom:1px solid #e2e8f0;letter-spacing:.05em;text-transform:uppercase}
+.f-tab td{font-size:12.5px;color:#334155;padding:8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.rv-tabela code{font-family:var(--font-mono);font-size:11px;color:#7dd3fc}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .analitico{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analitico .an-card--2{grid-column:1 / -1}
+  .kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .pat-kpi{padding:13px 12px}
+  .pat-kpi__value{font-size:24px}
+  .c-topo{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Usuários · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">TA</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Thiago Andrade</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Administrador</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title" id="topbar-title">Usuários</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"><div class="tela-lista"></div><div class="tela-aud" hidden></div></div>
+        <div data-view="b" style="display:none"><div class="tela-lista"></div><div class="tela-aud" hidden></div></div>
+        <div data-view="c" style="display:none"><div class="tela-lista"></div><div class="tela-aud" hidden></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel com BI</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela que está no ar (<code>frontend/src/modules/users/pages/UsersPage.tsx</code>, rota <code>/users</code> em <code>App.tsx:536</code> com guarda <code>users.read</code>/<code>users:read</code>) e do padrão aprovado em Pátios, Dashboard e OS: <strong>blocos e gráficos que filtram a lista → linha de 1 linha → resumo embaixo (um aberto por vez) → as ações reais da tela → janela de edição ou auditoria filtrada → voltar com o filtro mantido</strong>. As três trazem BI, cada uma de um jeito. Tela-modelo: a própria <code>UsersPage.tsx</code> + a lista padronizada <code>WorkOrdersPage.tsx</code>; componentes do <code>COMPONENT_LIBRARY.md</code> (<code>PageHeader</code>, <code>KpiStatCard</code>, <code>StatusPill</code>, <code>InitialsAvatar</code>, <code>TablePager</code>, <code>Modal</code>) e classes reais de <code>app.css</code> (<code>.pat-*</code>, <code>.pat-role-chip</code>, <code>.pat-admin-badge</code>). Medido em <code>origin/main</code> (<code>d910c97f</code>); os arquivos lidos são idênticos aos da <code>main</code> local (<code>684e9afd</code>). Nomes e números são de exemplo; cada número tem fonte real indicada abaixo, e o que não existe está marcado <strong>falta no backend</strong> (na tela, em âmbar tracejado; o botão abaixo esconde as marcas).</p>
+    <div class="estados-bar">Estado desta opção:
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar">Ver como (o perfil vem da sessão; aqui é só para revisar — vale para as 3 opções):
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="true">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="suporte" aria-pressed="false">Suporte</button>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="false">Financeiro (sem acesso)</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="true">Esconder as marcas “falta no backend”</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (fonte desta maquete)</h3>
+        <ul class="review-list">
+          <li><strong>Lista:</strong> <code>GET /users</code> com <code>users.read</code> (<code>src/modules/core-saas/routes/users.routes.ts:16-27</code>) devolve id, nome, e-mail, perfis, filiais, situação e criado em (<code>users.types.ts:63-72</code>). Cabeçalho ADMINISTRAÇÃO + busca + “Todos os perfis” + <strong>Novo usuário</strong> só com <code>users.manage</code> (<code>UsersPage.tsx:207-249</code>).</li>
+          <li><strong>KPIs:</strong> Usuários com acesso · Ativos · Inativos · Com acesso total; os três primeiros filtram por situação (<code>UsersPage.tsx:252-315</code>). Colunas USUÁRIO / PERFIL DE ACESSO / SITUAÇÃO / CRIADO EM / AÇÕES (<code>:336-342</code>).</li>
+          <li><strong>Ações na linha (3 ícones):</strong> Editar usuário e Desativar/Reativar acesso (<code>users.manage</code>), Ver auditoria deste usuário (<code>audit.read</code>, deeplink <code>/audit?actorId=</code>) — <code>UsersPage.tsx:409-445</code>.</li>
+          <li><strong>Edição:</strong> <code>UserFormModal.tsx:96-173</code> — Nome, E-mail (travado na edição), Papéis em caixas, Situação; Cancelar / Salvar alterações ou Criar usuário → <code>POST</code>/<code>PATCH /users</code> (<code>users.routes.ts:29-75</code>). Desativar pede confirmação “Desativar usuário” (<code>UsersPage.tsx:480-505</code>).</li>
+          <li><strong>No mesmo grupo do menu, em outras telas:</strong> Acessos (<code>GET /sessions/access-history</code>, último login por usuário, <code>audit.read</code>) e Sessões (<code>GET /sessions</code>, <code>sessions:read</code>; <code>POST /sessions/:id/revoke</code>, <code>sessions:revoke</code>) — <code>session-admin.routes.ts:35-89</code>, <code>appSidebarNav.ts:150</code>. A maquete traz esses dados para dentro da tela de Usuários.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas 3 opções)</h3>
+        <ul class="review-list">
+          <li><strong>Linha de 1 linha, sem botão:</strong> os 3 ícones descem para o resumo, com os mesmos rótulos e as mesmas portas de permissão.</li>
+          <li><strong>“Usuários cadastrados”</strong> no lugar de “Usuários com acesso”: hoje o número conta também os inativos (<code>UsersPage.tsx:159-167</code>, <code>:267-268</code>).</li>
+          <li><strong>ÚLTIMO ACESSO no lugar de CRIADO EM</strong> (o protótipo padronizado já pedia último acesso). O dado existe em <code>/sessions/access-history</code>, mas a resposta só traz o e-mail, sem o id do usuário (<code>session-admin.service.ts:41-44</code>) — a junção seria pelo e-mail. “Criado em” foi para o resumo.</li>
+          <li><strong>“Com acesso total” passa a filtrar</strong> (hoje é só informativo, <code>UsersPage.tsx:304-312</code>).</li>
+          <li><strong>Formulário com os 9 perfis atribuíveis:</strong> hoje faltam Técnico de Campo e Estoque (<code>users.adapter.ts:54-62</code>), que o servidor aceita (<code>catalog.ts:329-343</code>). Legenda “Perfis de acesso” e mensagem “Selecione ao menos um perfil” no lugar de “Papéis” (§3: <code>role</code> → perfil).</li>
+          <li><strong>“Suporte” no lugar de “Supervisor”:</strong> hoje o papel <code>support</code> aparece como Supervisor (<code>auth.adapter.ts:235</code>), mas é o suporte interno (<code>docs/03-atores-papeis.md:22</code>).</li>
+          <li><strong>“Acesso não permitido” com acento:</strong> hoje o bloqueio diz “Acesso nao autorizado / Seu usuario nao possui permissao” (<code>PermissionGuard.tsx:29-30</code>).</li>
+          <li><strong>Faixa de dados desatualizados</strong> como na lista de OS; hoje Usuários não tem (o <code>useUsers.ts</code> não expõe a hora da última carga).</li>
+          <li><strong>Gráficos em SVG/HTML sem biblioteca</strong> (PD-004), cores das séries tiradas dos tons de perfil do <code>UsersPage.tsx:42-57</code>; onde dois perfis tinham o mesmo verde, a série usa outro tom já usado nas maquetes aprovadas (<code>#0EA5E9</code>, <code>#22C55E</code>, <code>#94A3B8</code>). Rosca só até 5 categorias (skill <code>ui-ux-pro-max</code> §6) — por isso os 9 perfis viram barras.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li>Lista, perfis, situação, filial e criado em: <code>GET /users</code>. Os 5 KPIs e as duas barras de composição são contas no front sobre essa lista + o último acesso.</li>
+          <li>Último acesso, “Nunca acessaram” e a barra de recência: <code>GET /sessions/access-history</code> (<code>audit.read</code>) — último login derivado de <code>auth_sessions.created_at</code>.</li>
+          <li>Sessões no resumo: <code>GET /sessions?userId=</code> (<code>sessions:read</code>). Entradas de 30 dias: <code>GET /audit-events?actorId=&amp;action=auth.login.success&amp;from=&amp;to=</code> (filtros em <code>audit.routes.ts:11, 85, 105</code>).</li>
+          <li>Ações: as três de hoje, mesmas portas.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Id do usuário em <code>access-history</code></strong> (hoje só e-mail ou nome — <code>session-admin.service.ts:140-145</code>).</li>
+          <li><strong>Convite / primeiro acesso:</strong> criar usuário não cria credencial nem envia convite; a credencial só nasce por seed e script (<code>prisma/seed*.ts</code>, <code>scripts/bootstrap-platform-admin.ts</code>). Sem isso, “Reenviar convite” não existe.</li>
+          <li><strong>Verificação em duas etapas:</strong> não existe no sistema.</li>
+          <li><strong>Tentativas recusadas e bloqueio por usuário:</strong> <code>failed_attempts</code> e <code>locked_until</code> existem em <code>local_auth_credentials</code> (<code>schema.prisma:266-268</code>) mas não saem em nenhuma rota.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> menor custo; é a tela de hoje com o padrão aprovado; o BI cabe em duas faixas finas e responde “quem é de qual perfil” e “quem parou de entrar” sem endpoint novo; quem usa hoje não reaprende nada.</li>
+          <li><strong>Contras:</strong> não mostra tendência de uso; segmentos pequenos das barras são alvos estreitos (a legenda ajuda); 2 a 3 chamadas a mais por carga (acessos, sessões, auditoria).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li><strong>Entradas por dia, usuários distintos por dia, “semana vs. semana anterior”:</strong> eventos <code>auth.login.success</code> da auditoria com <code>from</code>/<code>to</code> (<code>audit.read</code>).</li>
+          <li><strong>Perfis, último acesso, cadastros por mês, higiene:</strong> <code>/users</code> + <code>access-history</code> + <code>/sessions</code>, contados no front.</li>
+          <li><strong>Ficha do usuário</strong> (janela de tamanho fixo, padrão do dossiê de Pátios): mesmos dados; Revogar sessão = <code>POST /sessions/:id/revoke</code> com o texto real do <code>RevokeSessionDialog.tsx</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Resumo diário de entradas no servidor:</strong> hoje a conta exige ler a auditoria página por página (<code>limit</code>/<code>offset</code>).</li>
+          <li><strong>Dispositivo de cada entrada:</strong> o <code>metadata</code> da auditoria nunca sai (<code>audit.routes.ts:13-14</code>); só as sessões abertas têm o dispositivo.</li>
+          <li><strong>“Alterações feitas neste usuário”:</strong> a auditoria filtra só pelo ator, não pelo usuário alterado, e <code>user.updated</code> não grava o antes e o depois (<code>prisma-core-saas.store.ts:225-230</code>).</li>
+          <li>Os itens da opção A (id no histórico de acessos, convite, duas etapas, tentativas por usuário).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> a linha que o dono escolheu em Pátios; mostra tendência e quem parou de entrar antes da lista; todo gráfico filtra; a ficha junta acessos, sessões, perfis e auditoria sem sair da lista.</li>
+          <li><strong>Contras:</strong> tela mais longa; ler a auditoria para montar os gráficos custa caro até existir o resumo no servidor; a ficha é componente novo na biblioteca (a janela fixa é a já aprovada).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que existe (backend + front)</h3><ul class="review-list">
+          <li><strong>Matriz perfil × módulo:</strong> <code>GET /roles</code> e <code>/roles/:role</code> devolvem a definição de cada perfil (<code>roles.routes.ts:10-27</code>, <code>roles.manage</code> — só o Administrador). Os níveis desta maquete foram medidos no <code>catalog.ts</code> (<code>ROLE_PERMISSIONS</code>) em 14/10/2026.</li>
+          <li><strong>Pontuação de saúde:</strong> conta no front sobre dados que existem. Pesos propostos: −10 por acesso total parado há 30+ dias, −10 por inativo com sessão aberta, −3 por ativo parado, −3 por cadastro há 7+ dias sem primeiro acesso.</li>
+          <li><strong>Mapa de entradas (dia × horário):</strong> eventos <code>auth.login.success</code>. <strong>Total de tentativas recusadas:</strong> <code>auth.login.failed</code> (<code>local-auth-login.service.ts:361-375</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>Tentativas recusadas por usuário:</strong> o evento grava ator nulo e o e-mail só no <code>metadata</code>, que não sai.</li>
+          <li><strong>Leitura da definição de perfis para o Auditor:</strong> a RBAC dá “read” ao auditor em atribuição de usuários e perfis (<code>RBAC_MATRIX.md:33</code>), mas <code>/roles</code> exige <code>roles.manage</code> — hoje só o Administrador vê a matriz.</li>
+          <li>Resumo por dia e horário no servidor; convite; duas etapas (iguais às outras opções).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> responde “quem pode o quê” e “o que revisar agora”; serve de base para a revisão periódica de acesso; a lista agrupada pelo último acesso deixa evidente quem parou de entrar e quem nunca entrou.</li>
+          <li><strong>Contras:</strong> a matriz só aparece para o Administrador; a pontuação depende de pesos que o dono precisa aprovar; mais densa para quem só quer achar uma pessoa (a busca resolve); sem paginação dentro dos grupos.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Comportamento por perfil de quem vê a tela (permissões medidas em <code>src/modules/core-saas/permissions/catalog.ts</code>; a tela só molda — o servidor decide)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Perfil</th><th>Vê</th><th>Pode</th><th>Não pode</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Administrador</strong> (<code>tenant_admin</code>, herda tudo que não é de plataforma, <code>:407</code>)</td><td>tudo, inclusive sessões e a matriz</td><td>Novo usuário, Editar usuário, Desativar/Reativar acesso, Ver auditoria, Revogar sessão</td><td>atribuir perfil de plataforma (bloqueado no servidor, <code>catalog.ts:306-316</code>)</td></tr>
+          <tr><td><strong>Gestor Operacional</strong> (<code>manager</code>, <code>:414-418</code>)</td><td>lista, KPIs, gráficos, último acesso, atividade</td><td>Ver auditoria deste usuário</td><td>cadastrar, editar, desativar (a RBAC diz “limited” — <code>RBAC_MATRIX.md:33</code> — mas o catálogo só dá leitura); sessões (sem <code>sessions:read</code>); matriz</td></tr>
+          <tr><td><strong>Auditor</strong> (<code>auditor</code>, <code>:963-970</code>)</td><td>lista, gráficos, sessões (só leitura)</td><td>Ver auditoria deste usuário</td><td>alterar qualquer coisa; revogar sessão; matriz (sem <code>roles.manage</code>)</td></tr>
+          <tr><td><strong>Suporte</strong> (<code>support</code>, <code>:1033</code>)</td><td>igual ao Gestor; menu só com ADMINISTRAÇÃO (<code>appSidebarNav.ts:211</code>)</td><td>Ver auditoria deste usuário</td><td>alterar; sessões; matriz</td></tr>
+          <tr><td><strong>Demais</strong> (Operador Logístico, Operação de Campo, Técnico de Campo, Financeiro, Estoque)</td><td>“Acesso não permitido” (sem <code>users.read</code>); o menu não mostra Usuários</td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Defeitos do sistema de hoje achados nesta leitura</h3>
+        <ul class="review-list">
+          <li><strong>“Novo usuário” cria um cadastro que não consegue entrar.</strong> <code>POST /users</code> não cria credencial nem convite; <code>createCredentialForUser</code>/<code>upsertCredentialForUser</code> só são chamados por <code>prisma/seed*.ts</code> e <code>scripts/bootstrap-platform-admin.ts</code>; não há rota de convite nem de definir senha.</li>
+          <li><strong>Não dá para cadastrar Técnico de Campo nem Estoque pela tela</strong> (<code>users.adapter.ts:54-62</code>), embora o servidor aceite.</li>
+          <li><strong>KPI “Usuários com acesso” conta inativos</strong> (<code>UsersPage.tsx:159-167</code>).</li>
+          <li><strong>Desativar não encerra as sessões abertas:</strong> a renovação passa a falhar (<code>auth-session.service.ts:192</code>, <code>inactive_user</code>), mas a sessão segue “ativa” na tela Sessões até expirar, e o acesso em voo vale até ~15 min.</li>
+          <li><strong>Sem trava contra se desativar ou tirar o último Administrador</strong> — nada em <code>core-saas.service.ts:250-300</code> nem em <code>prisma-core-saas.store.ts:175-240</code> confere isso (hipótese por leitura, não por execução).</li>
+          <li><strong>Auditoria de alteração sem o antes e o depois</strong> (<code>user.updated</code> sem <code>metadata</code>, <code>prisma-core-saas.store.ts:225-230</code>): não se sabe quem mudou qual perfil.</li>
+          <li><strong><code>GET /users</code> ignora <code>search</code> e <code>limit</code></strong> (<code>users.routes.ts:16-27</code> × <code>users.service.ts:47-52</code>): sem paginação no servidor; a “janela parcial” da tela nunca acontece.</li>
+          <li><strong>Menu do Gestor mostra “Sessões”</strong> sem <code>sessions:read</code> (<code>appSidebarNav.ts:150, 173</code>) → cai no bloqueio.</li>
+          <li>Rótulos: bloqueio sem acento (<code>PermissionGuard.tsx:29-30</code>), <code>support</code> como “Supervisor” (<code>auth.adapter.ts:235</code>), “Papéis” no formulário (§3).</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Pendências para o dono</h3>
+        <ul class="review-list">
+          <li>Aprovar as três aparências (cada usuário escolhe a sua em Configurações — <code>D-APARENCIA-POR-USUARIO</code>).</li>
+          <li><strong>Convite de primeiro acesso:</strong> sem ele o “Novo usuário” não serve para quem não é criado por script. Envio de e-mail é serviço externo → junta de 5 + pesquisa antes (§C7.1).</li>
+          <li>Pesos da pontuação de saúde (opção C).</li>
+          <li>O Gestor Operacional pode cadastrar e editar usuários? A RBAC diz “limited”; o catálogo diz só leitura.</li>
+          <li>Verificação em duas etapas entra no plano? (em produção o login é Cognito, que oferece).</li>
+          <li>O Auditor deve ver a matriz perfil × módulo? (precisa de leitura da definição de perfis sem <code>roles.manage</code>).</li>
+          <li>Nomes, e-mails, horários e o total de tentativas recusadas são exemplos.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel com BI</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Saúde do acesso</button>
+</div>
+
+<div class="ui-overlay" id="ficha-overlay" hidden>
+  <section class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-tit" data-ficha>
+    <header><h2 id="ficha-tit">Ficha do usuário</h2><button type="button" data-fechar-ficha aria-label="Fechar e voltar à lista"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="ficha__cabeca" id="ficha-cabeca"></div>
+    <div class="ficha__abas"><div class="ui-tabs" role="tablist" id="ficha-abas" aria-label="Seções da ficha"></div></div>
+    <div class="ficha__corpo" id="ficha-corpo"></div>
+  </section>
+</div>
+<div class="ui-overlay" id="dlg-overlay" hidden style="z-index:85"><section class="ui-modal" role="dialog" aria-modal="true" aria-labelledby="dlg-tit" id="dlg"></section></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide-react, traço 2 — os mesmos da UsersPage.tsx:1) ── */
+const I = {
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  userCheck:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+  userX:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="8" y2="13"/><line x1="22" x2="17" y1="8" y2="13"/>',
+  userPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  shieldCheck:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  pencil:'<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  arrowLeft:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  logIn:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>',
+  monitor:'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  idCard:'<rect width="20" height="14" x="2" y="5" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4"/><path d="M14 14h4"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span data-chevron class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+const FALTA = (t) => '<span class="falta" title="'+esc(t || 'Dado que o sistema ainda não fornece')+'">falta no backend</span>';
+
+/* ── Tempo da maquete: "agora" fixo (quarta, 14/10/2026 10:00) para os dados serem estáveis ── */
+const NOW = new Date(2026, 9, 14, 10, 0);
+const HOJE0 = new Date(2026, 9, 14);
+const DIA = 86400000;
+const pad = n => String(n).padStart(2, '0');
+const fData = d => pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const fDM = d => pad(d.getDate())+'/'+pad(d.getMonth()+1);
+const fHM = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const fDH = d => fData(d)+' '+fHM(d);
+const SEMANA = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const diaData = i => new Date(2026, 9, 14 - (29 - i));
+function idxDe(d){ const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return 29 - Math.round((HOJE0 - d0) / DIA); }
+function diasAtras(d){ const d0 = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return Math.round((HOJE0 - d0) / DIA); }
+/* relativeSince (UsersPage.tsx:65-77) — mesmo texto */
+function relativo(d){ const days = diasAtras(d); if (days < 0) return ''; if (days === 0) return 'hoje'; if (days === 1) return 'há 1 dia'; if (days < 30) return 'há '+days+' dias'; const m = Math.floor(days/30); if (m < 12) return m === 1 ? 'há 1 mês' : 'há '+m+' meses'; const y = Math.floor(days/365); return y <= 1 ? 'há 1 ano' : 'há '+y+' anos'; }
+function minAtras(d){ const m = Math.max(0, Math.round((NOW - d) / 60000)); if (m < 1) return 'agora'; if (m < 60) return 'há '+m+' min'; const h = Math.round(m/60); if (h < 24) return 'há '+h+' h'; return relativo(d); }
+function rng(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+
+/* ── Perfis: rótulos da tela (users.adapter.ts:40-50 + auth.adapter.ts:225-236; §3) e tons (UsersPage.tsx:42-57) ── */
+const PERFIS = {
+  tenant_admin:{ rot:'Administrador', bg:'#F3E8FF', fg:'#7E22CE', cor:'#7E22CE' },
+  manager:{ rot:'Gestor Operacional', bg:'#EFF6FF', fg:'#2563EB', cor:'#2563EB' },
+  operator:{ rot:'Operador Logístico', bg:'#F0F9FF', fg:'#0369A1', cor:'#0369A1' },
+  field_dispatcher:{ rot:'Operação de Campo', bg:'#F0FDF4', fg:'#15803D', cor:'#0EA5E9' },
+  field_technician:{ rot:'Técnico de Campo', bg:'#F0FDF4', fg:'#15803D', cor:'#15803D' },
+  finance:{ rot:'Financeiro', bg:'#F0FDF4', fg:'#15803D', cor:'#22C55E' },
+  inventory:{ rot:'Estoque', bg:'#FFFBEB', fg:'#B45309', cor:'#B45309' },
+  auditor:{ rot:'Auditor', bg:'#F1F5F9', fg:'#475569', cor:'#475569' },
+  support:{ rot:'Suporte', bg:'#EFF6FF', fg:'#2563EB', cor:'#94A3B8' }
+};
+const ORDEM_PERFIS = ['tenant_admin','manager','operator','field_dispatcher','field_technician','finance','inventory','auditor','support'];
+const STATUS = { active:{ rot:'Ativo', bg:'#DCFCE7', fg:'#15803D', dot:'#22C55E' }, inactive:{ rot:'Inativo', bg:'#F1F5F9', fg:'#64748B', dot:'#94A3B8' } };
+/* InitialsAvatar.tsx:6-30 — mesma paleta e mesmo índice */
+const PALETA = [['#EFF6FF','#2563EB'],['#F0FDF4','#15803D'],['#FAF5FF','#7E22CE'],['#FFFBEB','#B45309'],['#F0F9FF','#0369A1']];
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0,2).map(x => x[0]).join('').toUpperCase(); }
+function avatar(nome, cls){ let s = 0; for (let i = 0; i < nome.length; i++) s = (s + nome.charCodeAt(i)) % PALETA.length; const p = PALETA[s]; return '<span class="pat-avatar'+(cls?' '+cls:'')+'" style="background:'+p[0]+';color:'+p[1]+'" aria-hidden="true">'+iniciais(nome)+'</span>'; }
+function chipPerfil(r){ const p = PERFIS[r]; return '<span class="pat-role-chip" style="background:'+p.bg+';color:'+p.fg+'">'+p.rot+'</span>'; }
+function pillSit(s){ const t = STATUS[s]; return '<span class="pat-pill" style="background:'+t.bg+';color:'+t.fg+'"><span class="pat-pill__dot" style="background:'+t.dot+'"></span>'+t.rot+'</span>'; }
+
+/* ── Dados de exemplo: Guincho Exemplo Ltda (campos do DTO real users.types.ts:63-72 + último acesso e sessões) ──
+   [id, nome, e-mail, perfis, situação, criado há (dias), último acesso [dias, h, min] | null, filial, ritmo, sessões abertas [dispositivo, dias, h, min, última atividade há (min)]] */
+const RAW = [
+  ['u01','Thiago Andrade','thiago.andrade',['tenant_admin'],'active',410,[0,9,12],'Matriz — São Paulo','escritorio',[['Chrome · Windows',0,9,12,3],['Safari · iOS',1,19,40,840]]],
+  ['u02','Mariana Costa','mariana.costa',['manager'],'active',380,[0,8,47],'Matriz — São Paulo','escritorio',[['Chrome · Windows',0,8,47,6]]],
+  ['u03','Rafael Souza','rafael.souza',['field_dispatcher'],'active',300,[0,7,58],'Matriz — São Paulo','escritorio',[['Chrome · Windows',0,7,58,2],['Chrome · Android',0,6,40,95]]],
+  ['u04','Juliana Prado','juliana.prado',['field_dispatcher'],'active',210,[0,6,30],'Filial ABC — Santo André','escritorio',[['Edge · Windows',0,6,30,12]]],
+  ['u05','Carlos Mendes','carlos.mendes',['field_technician'],'active',260,[0,9,40],'Matriz — São Paulo','campo',[['Chrome · Android',0,9,40,1]]],
+  ['u06','Pedro Alves','pedro.alves',['field_technician'],'active',240,[2,6,15],'Matriz — São Paulo','campo',[]],
+  ['u07','Lucas Ferreira','lucas.ferreira',['field_technician'],'active',190,[1,7,5],'Filial ABC — Santo André','campo',[['Chrome · Android',1,7,5,1500]]],
+  ['u08','Marcos Lima','marcos.lima',['field_technician'],'active',150,[0,5,50],'Filial Campinas','campo',[['Chrome · Android',0,5,50,20]]],
+  ['u09','Diego Martins','diego.martins',['field_technician'],'active',120,[3,6,40],'Filial Campinas','campo',[]],
+  ['u10','Rogério Pires','rogerio.pires',['operator'],'active',330,[0,7,30],'Matriz — São Paulo','escritorio',[['Firefox · Linux',0,7,30,15]]],
+  ['u11','Larissa Gomes','larissa.gomes',['operator'],'active',95,[1,13,20],'Filial ABC — Santo André','escritorio',[['Chrome · Windows',1,13,20,1000]]],
+  ['u12','Sandra Melo','sandra.melo',['finance'],'active',360,[0,8,15],'Matriz — São Paulo','escritorio',[['Chrome · macOS',0,8,15,30]]],
+  ['u13','Bruno Teixeira','bruno.teixeira',['finance'],'active',45,[12,9,5],'Matriz — São Paulo','raro',[]],
+  ['u14','Fernanda Lopes','fernanda.lopes',['inventory'],'active',200,[6,8,40],'Filial Campinas','raro',[]],
+  ['u15','Helena Duarte','helena.duarte',['auditor'],'active',140,[21,10,30],'Matriz — São Paulo','raro',[]],
+  ['u16','Fábio Rocha','fabio.rocha',['support'],'active',90,[2,14,10],'Matriz — São Paulo','raro',[]],
+  ['u17','Paula Nogueira','paula.nogueira',['manager'],'active',280,[38,8,20],'Filial ABC — Santo André','escritorio',[]],
+  ['u18','Gustavo Ramos','gustavo.ramos',['tenant_admin'],'active',500,[64,11,0],'Matriz — São Paulo','raro',[]],
+  ['u19','Camila Nunes','camila.nunes',['field_technician'],'active',4,null,'Filial Campinas','campo',[]],
+  ['u20','Vinícius Araújo','vinicius.araujo',['field_technician'],'active',9,null,'Filial ABC — Santo André','campo',[]],
+  ['u21','Renata Campos','renata.campos',['operator'],'active',2,null,'Matriz — São Paulo','escritorio',[]],
+  ['u22','Diego Ferreira','diego.ferreira',['field_technician'],'inactive',420,[95,6,30],'Matriz — São Paulo','campo',[]],
+  ['u23','Patrícia Moura','patricia.moura',['finance'],'inactive',380,[140,9,0],'Matriz — São Paulo','escritorio',[]],
+  ['u24','Eduardo Santos','eduardo.santos',['field_dispatcher'],'inactive',260,[9,7,45],'Filial ABC — Santo André','escritorio',[['Chrome · Windows',9,7,45,12960]]],
+  ['u25','André Batista','andre.batista',['field_technician'],'active',330,[47,6,10],'Filial Campinas','campo',[]],
+  ['u26','Beatriz Freitas','beatriz.freitas',['manager','finance'],'active',170,[0,8,5],'Matriz — São Paulo','escritorio',[['Chrome · Windows',0,8,5,40]]],
+  ['u27','Ricardo Lemos','ricardo.lemos',['operator','field_dispatcher'],'active',60,[1,18,30],'Filial ABC — Santo André','escritorio',[['Edge · Windows',1,18,30,900]]],
+  ['u28','Aline Barros','aline.barros',['support'],'inactive',300,[200,15,0],'Matriz — São Paulo','raro',[]]
+];
+const emDia = (dias, h, m) => new Date(2026, 9, 14 - dias, h, m);
+const PROB = { escritorio:[.92,.2,.05], campo:[.88,.65,.3], raro:[.22,.02,0] };
+function horaDe(tipo, r, tarde){
+  if (tipo === 'campo') return tarde ? 12 + r()*1.5 : 5.4 + r()*2.4;
+  if (tipo === 'escritorio') return tarde ? 13 + r()*1.4 : 7.3 + r()*1.9;
+  return 8.5 + r()*8;
+}
+let USERS = RAW.map(r => {
+  const u = { id:r[0], nome:r[1], email:r[2]+'@guinchoexemplo.com.br', roles:r[3].slice(), status:r[4], criado:emDia(r[5], 10, 0),
+    ult: r[6] ? emDia(r[6][0], r[6][1], r[6][2]) : null, filial:r[7], tipo:r[8],
+    sessoes: r[9].map(s => { const ent = emDia(s[1], s[2], s[3]); return { id:r[0]+'-s'+s[1]+s[2], disp:s[0], entrada:ent, ativ:new Date(NOW.getTime() - s[4]*60000) }; }) };
+  gerarLogins(u); return u;
+});
+function gerarLogins(u){
+  u.logins = [];
+  if (!u.ult) return;
+  const L = idxDe(u.ult), C = Math.max(0, idxDe(u.criado)); const r = rng(u.id + u.nome);
+  for (let i = C; i <= Math.min(29, L); i++) {
+    if (i === L) { u.logins.push({ i, h:u.ult.getHours() + u.ult.getMinutes()/60 }); continue; }
+    const w = diaData(i).getDay(); const p = PROB[u.tipo][w === 0 ? 2 : w === 6 ? 1 : 0];
+    if (r() < p) { u.logins.push({ i, h:horaDe(u.tipo, r, false) }); if (u.tipo !== 'raro' && r() < .28) u.logins.push({ i, h:horaDe(u.tipo, r, true) }); }
+  }
+}
+const byId = id => USERS.find(u => u.id === id);
+const isAdmin = u => u.roles.includes('tenant_admin');
+/* Recência do último acesso (dado: /sessions/access-history, último login por usuário) */
+function recencia(u){
+  if (u.status === 'inactive') return 'inativo';
+  if (!u.ult) return 'nunca';
+  const d = diasAtras(u.ult);
+  return d === 0 ? 'hoje' : d <= 7 ? '7d' : d <= 30 ? '30d' : 'dormente';
+}
+const REC = { hoje:['Hoje','#22C55E'], '7d':['1 a 7 dias','#2563EB'], '30d':['8 a 30 dias','#F59E0B'], dormente:['Mais de 30 dias','#DC2626'], nunca:['Nunca acessou','#7E22CE'], inativo:['Inativos','#94A3B8'] };
+const ORDEM_REC = ['hoje','7d','30d','dormente','nunca','inativo'];
+const logins30 = u => u.logins.length;
+function serie(u){ const s = Array(30).fill(0); u.logins.forEach(l => s[l.i]++); return s; }
+
+/* ── Quem vê a tela (o perfil vem da sessão; o seletor do quadro de notas é só para revisar) ──
+   permissões medidas em src/modules/core-saas/permissions/catalog.ts (tenant_admin herda tudo que não é de plataforma) */
+const PAPEIS = {
+  admin:{ nome:'Thiago Andrade', sub:'Administrador', nav:'admin', p:['users.read','users.manage','audit.read','sessions:read','sessions:revoke','roles.manage'] },
+  gestor:{ nome:'Mariana Costa', sub:'Gestor Operacional', nav:'admin', p:['users.read','audit.read'] },
+  auditor:{ nome:'Helena Duarte', sub:'Auditor', nav:'admin', p:['users.read','audit.read','sessions:read'] },
+  suporte:{ nome:'Fábio Rocha', sub:'Suporte', nav:'suporte', p:['users.read','audit.read'] },
+  financeiro:{ nome:'Sandra Melo', sub:'Financeiro', nav:'financeiro', p:[] }
+};
+let papel = 'admin';
+const pode = k => PAPEIS[papel].p.includes(k);
+
+/* ── Menu (appSidebarNav.ts:150-211, resumido) ── */
+const NAV = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['users','Equipes'],['receipt','Financeiro']]],['PÁTIOS',[['warehouse','Pátios']]],['ADMINISTRAÇÃO',[['users','Usuários'],['logIn','Acessos'],['monitor','Sessões'],['bell','Notificações'],['settings','Configurações'],['scroll','Auditoria']]]],
+  suporte:[['ADMINISTRAÇÃO',[['users','Usuários'],['bell','Notificações'],['scroll','Auditoria']]]],
+  financeiro:[['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['wrench','Serviços'],['receipt','Financeiro'],['coins','Cobranças']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+let menuAtivo = 'Usuários';
+function renderNav(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === menuAtivo; return '<a class="app-sidebar__item'+(on?' app-sidebar__item--active':'')+'" href="#" '+(on?'aria-current="page"':'')+' data-menu="'+it[1]+'">'+ic(it[0],17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+/* ── Estado por opção ── */
+const novoEstado = () => ({ estado:'normal', alvo:null, busca:'', perfil:'all', aberta:null, pagina:0, tela:'lista', audUser:null });
+const S = { a:novoEstado(), b:novoEstado(), c:novoEstado() };
+let opcao = 'a';
+const semDados = v => ['carregando','vazio','erro','proibido'].includes(S[v].estado);
+const proibido = v => S[v].estado === 'proibido' || !pode('users.read');
+
+/* ── Matriz perfil × módulo — níveis medidos no catálogo (catalog.ts ROLE_PERMISSIONS) em 14/10/2026 ──
+   E = altera · L = consulta · 0 = sem acesso · T = acesso total (Administrador) */
+const MODULOS = [['os','Ordens de serviço'],['despacho','Despacho'],['frota','Frota'],['cadastros','Cadastros'],['financeiro','Financeiro'],['patios','Pátios'],['estoque','Estoque'],['usuarios','Usuários'],['auditoria','Auditoria'],['sessoes','Sessões'],['config','Configura­ções']];
+const MATRIZ = {
+  tenant_admin:     'T T T T T T T T L T T',
+  manager:          'E E E E E E E L L 0 L',
+  operator:         'E E L L E L L 0 0 0 0',
+  field_dispatcher: 'E E L L L L 0 0 0 0 0',
+  field_technician: 'E E L L L L 0 0 0 0 0',
+  finance:          'L 0 0 L E 0 L 0 0 0 0',
+  inventory:        '0 0 0 0 0 0 E 0 0 0 0',
+  auditor:          'L L L L L L L L L L L',
+  support:          '0 0 0 0 0 0 0 L L 0 0'
+};
+const nivel = (role, mi) => MATRIZ[role].split(' ')[mi];
+const NV_ROT = { T:'Total', E:'Altera', L:'Consulta', '0':'—' };
+const NV_PESO = { T:3, E:2, L:1, '0':0 };
+function nivelUser(u, mi){ let best = '0'; u.roles.forEach(r => { const n = nivel(r, mi); if (NV_PESO[n] > NV_PESO[best]) best = n; }); return best; }
+
+/* ── Filtros (blocos, gráficos e células filtram a mesma lista) ── */
+function alvoInfo(k){
+  if (!k) return null;
+  const [t, a, b] = k.split(':');
+  const D = {
+    ativos:['Situação: ativos', u => u.status === 'active'],
+    inativos:['Situação: inativos', u => u.status === 'inactive'],
+    nunca:['Nunca acessaram', u => recencia(u) === 'nunca'],
+    admins:['Com acesso total', u => isAdmin(u)],
+    hoje:['Acessaram hoje', u => recencia(u) === 'hoje'],
+    semana:['Acessaram nos últimos 7 dias', u => ['hoje','7d'].includes(recencia(u))],
+    dormentes:['Ativos sem acesso há mais de 30 dias', u => recencia(u) === 'dormente'],
+    comsessao:['Com sessão aberta', u => u.sessoes.length > 0],
+    'inativo-sessao':['Inativos com sessão aberta', u => u.status === 'inactive' && u.sessoes.length > 0],
+    'admin-dormente':['Acesso total sem uso há mais de 30 dias', u => isAdmin(u) && u.status === 'active' && (!u.ult || diasAtras(u.ult) > 30)],
+    'sem-primeiro':['Cadastrados há 7 dias ou mais sem primeiro acesso', u => u.status === 'active' && !u.ult && diasAtras(u.criado) >= 7],
+    multi:['Com mais de um perfil', u => u.roles.length > 1],
+    novos:['Cadastrados nos últimos 30 dias', u => diasAtras(u.criado) <= 30]
+  };
+  if (D[t]) return { rot:D[t][0], f:D[t][1] };
+  if (t === 'perfil') return { rot:'Perfil: '+PERFIS[a].rot, f:u => u.roles.includes(a) };
+  if (t === 'rec') return { rot:'Último acesso: '+REC[a][0].toLowerCase(), f:u => recencia(u) === a };
+  if (t === 'dia') { const i = +a; return { rot:'Acessaram em '+fDM(diaData(i))+' ('+SEMANA[diaData(i).getDay()]+')', f:u => u.logins.some(l => l.i === i) }; }
+  if (t === 'mes') { const m = mesesJanela()[+a]; return { rot:'Cadastrados em '+m.rot, f:u => u.criado >= m.ini && u.criado < m.fim }; }
+  if (t === 'hm') { const w = +a, fx = FAIXAS[+b]; return { rot:'Entraram '+SEMANA_LONGA[w]+', '+fx[0], f:u => u.logins.some(l => diaData(l.i).getDay() === w && l.h >= fx[1] && l.h < fx[2]) }; }
+  if (t === 'mx') { const mi = +b; return { rot:PERFIS[a].rot+' · '+MODULOS[mi][1]+': '+NV_ROT[nivel(a, mi)].toLowerCase(), f:u => u.roles.includes(a) }; }
+  if (t === 'mod') { const mi = +a; return { rot:'Quem altera '+MODULOS[mi][1], f:u => NV_PESO[nivelUser(u, mi)] >= 2 }; }
+  return null;
+}
+const SEMANA_LONGA = ['aos domingos','às segundas','às terças','às quartas','às quintas','às sextas','aos sábados'];
+const FAIXAS = [['antes das 6h',0,6],['6h–8h',6,8],['8h–10h',8,10],['10h–12h',10,12],['12h–14h',12,14],['14h–18h',14,18],['depois das 18h',18,24]];
+function mesesJanela(){ const out = []; for (let k = 11; k >= 0; k--) { const ini = new Date(2026, 9 - k, 1), fim = new Date(2026, 10 - k, 1); out.push({ ini, fim, rot:MESES[ini.getMonth()]+'/'+String(ini.getFullYear()).slice(2) }); } return out; }
+
+function base(v){ return semDados(v) ? [] : USERS.slice(); }
+function linhas(v){
+  const st = S[v]; let arr = base(v).sort((x, y) => x.nome.localeCompare(y.nome, 'pt-BR'));
+  const al = alvoInfo(st.alvo); if (al) arr = arr.filter(al.f);
+  if (st.perfil !== 'all') arr = arr.filter(u => u.roles.includes(st.perfil));
+  if (st.busca) { const q = st.busca.toLowerCase(); arr = arr.filter(u => (u.nome+' '+u.email+' '+u.roles.map(r => PERFIS[r].rot).join(' ')).toLowerCase().includes(q)); }
+  return arr;
+}
+function contagens(arr){
+  const c = { total:arr.length, ativos:0, inativos:0, nunca:0, admins:0, novos:0, hoje:0, semana:0, dormentes:0, sessoes:0, comSessao:0, inativoSessao:0, adminDormente:0, semPrimeiro:0, multi:0, logins:0 };
+  arr.forEach(u => {
+    if (u.status === 'active') c.ativos++; else c.inativos++;
+    const r = recencia(u); if (r === 'nunca') c.nunca++; if (r === 'hoje') c.hoje++; if (r === 'hoje' || r === '7d') c.semana++; if (r === 'dormente') c.dormentes++;
+    if (isAdmin(u)) c.admins++; if (diasAtras(u.criado) <= 30) c.novos++;
+    c.sessoes += u.sessoes.length; if (u.sessoes.length) c.comSessao++;
+    if (u.status === 'inactive' && u.sessoes.length) c.inativoSessao++;
+    if (alvoInfo('admin-dormente').f(u)) c.adminDormente++;
+    if (alvoInfo('sem-primeiro').f(u)) c.semPrimeiro++;
+    if (u.roles.length > 1) c.multi++;
+    c.logins += u.logins.length;
+  });
+  return c;
+}
+
+/* ── Peças comuns da tela ── */
+function headerHTML(v, kicker, sub){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kicker+'</div><h1 class="pat-page-header__title">Usuários</h1><p class="pat-page-header__subtitle">'+sub+'</p></div>'+
+    '<div class="pat-page-header__actions"><div class="pat-header-search">'+ic('search',15)+'<input type="search" data-busca="'+v+'" value="'+esc(S[v].busca)+'" placeholder="Buscar por nome ou e-mail…" aria-label="Buscar por nome ou e-mail"></div>'+
+    '<select class="pat-select" data-perfil-sel="'+v+'" aria-label="Filtrar por perfil de acesso"><option value="all">Todos os perfis</option>'+ORDEM_PERFIS.filter(r => USERS.some(u => u.roles.includes(r))).map(r => '<option value="'+r+'"'+(S[v].perfil===r?' selected':'')+'>'+PERFIS[r].rot+'</option>').join('')+'</select>'+
+    (pode('users.manage') ? '<button type="button" class="pat-btn pat-btn--primary" data-novo-usuario>'+ic('plus',15)+' Novo usuário</button>' : '')+'</div></div>';
+}
+function bannerHTML(v){
+  const e = S[v].estado;
+  if (e === 'erro') return '<div role="alert" class="pat-banner pat-banner--warning">'+ic('alert',14)+'<span>Não foi possível carregar os usuários.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  if (e === 'desatualizado') return '<div role="status" class="pat-banner pat-banner--warning">'+ic('clock',14)+'<span>Dados desatualizados — última atualização às 09:41. A lista recarrega sozinha a cada 30 segundos.</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>';
+  return '';
+}
+function proibidoHTML(){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">ADMINISTRAÇÃO</div><h1 class="pat-page-header__title">Usuários</h1><p class="pat-page-header__subtitle">Quem acessa a organização, com qual perfil e desde quando — com trilha de auditoria.</p></div></div>'+
+    '<div class="state-panel" role="alert"><div class="state-panel__icon">'+ic('lock',26)+'</div><div class="state-panel__title">Acesso não permitido</div><div class="state-panel__detail">Seu perfil não pode ver os usuários desta organização. Fale com o administrador da organização se precisar deste acesso.</div></div>';
+}
+function chipHTML(v){ const al = alvoInfo(S[v].alvo); return al ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip" data-filtro-ativo><span>Filtro: '+esc(al.rot)+'</span><button type="button" data-limpar-filtro aria-label="Limpar filtro">✕</button></div></div>' : ''; }
+function kpi(v, alvo, icone, cor, bg, valor, rot, dica, tag, extra){
+  const tagH = tag ? '<span class="pat-kpi__tag" style="background:'+tag[1]+';color:'+tag[2]+'">'+tag[0]+'</span>' : '';
+  const corpo = '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+bg+';color:'+cor+'">'+ic(icone,16)+'</span>'+tagH+'</div><div class="pat-kpi__value"'+(tag && tag[3] ? ' style="color:'+tag[3]+'"' : '')+'>'+valor+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint" title="'+esc(dica)+'">'+dica+'</div>'+(extra||'');
+  if (!alvo) return '<div class="pat-kpi">'+corpo+'</div>';
+  return '<button type="button" class="pat-kpi pat-kpi--clickable" data-alvo="'+alvo+'" aria-pressed="'+(S[v].alvo===alvo)+'" aria-label="'+esc(rot+': '+valor+' — filtrar a lista')+'">'+corpo+'</button>';
+}
+function kpisSkel(n){ return Array.from({length:n}, () => '<div class="pat-kpi" aria-hidden="true"><span class="pat-skel" style="width:30px;height:30px;border-radius:9px"></span><br><span class="pat-skel" style="width:54px;height:24px;margin-top:12px"></span><br><span class="pat-skel" style="width:70%;height:12px;margin-top:8px"></span></div>').join(''); }
+function kpisIndisp(rots){ return rots.map(r => '<div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:#F1F5F9;color:#94A3B8">'+ic('users',16)+'</span></div><div class="pat-kpi__value" style="color:#94A3B8">—</div><div class="pat-kpi__label">'+r+'</div><div class="pat-kpi__hint">dados indisponíveis</div></div>').join(''); }
+function cardSkel(h){ return '<div class="an-card" aria-hidden="true"><span class="pat-skel" style="width:40%;height:12px"></span><span class="pat-skel" style="display:block;height:'+(h||110)+'px;margin-top:12px"></span></div>'; }
+
+/* Célula do usuário em 1 linha + último acesso */
+function celUser(u){ return '<span class="usr">'+avatar(u.nome)+'<span class="usr__txt"><span class="pat-cell-main">'+esc(u.nome)+'</span><span class="pat-cell-sub">'+esc(u.email)+'</span></span></span>'; }
+function celPerfis(u){ return chipPerfil(u.roles[0])+(u.roles.length > 1 ? '<span class="mais-perfil" title="'+esc(u.roles.slice(1).map(r => PERFIS[r].rot).join(', '))+'">+'+(u.roles.length-1)+'</span>' : '')+(isAdmin(u) ? ' <span class="pat-admin-badge">acesso total</span>' : ''); }
+function celUltimo(u){
+  const r = recencia(u);
+  if (!u.ult) return '<span class="rec"><i style="background:'+REC.nunca[1]+'"></i><b style="color:#7E22CE">Nunca acessou</b></span>';
+  const cor = r === 'inativo' ? '#94A3B8' : REC[r][1];
+  return '<span class="rec"><i style="background:'+cor+'"></i><b>'+(diasAtras(u.ult) === 0 ? 'Hoje, '+fHM(u.ult) : fDM(u.ult)+' '+fHM(u.ult))+'</b><small>'+(diasAtras(u.ult) === 0 ? minAtras(u.ult) : relativo(u.ult))+'</small></span>';
+}
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+/* Atividade dos últimos 30 dias (entradas por dia) */
+function ativSVG(u, alto){
+  const s = serie(u), max = Math.max(1, ...s), W = 300, H = alto || 46, bw = W/30;
+  const bars = s.map((n, i) => { const h = n ? Math.max(4, (H-4) * n / max) : 2; const w = diaData(i).getDay(); const fds = w === 0 || w === 6; return '<rect x="'+(i*bw+1).toFixed(1)+'" y="'+(H-h).toFixed(1)+'" width="'+(bw-2).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="1.5" fill="'+(n ? (i === 29 ? '#1D4ED8' : '#60A5FA') : (fds ? '#F1F5F9' : '#E2E8F0'))+'"><title>'+fDM(diaData(i))+' · '+n+(n === 1 ? ' entrada' : ' entradas')+'</title></rect>'; }).join('');
+  return '<svg class="ativ-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:'+H+'px" role="img" aria-label="'+u.logins.length+' entradas nos últimos 30 dias">'+bars+'</svg><div class="ativ-eixo"><span>'+fDM(diaData(0))+'</span><span>'+fDM(diaData(14))+'</span><span>hoje</span></div>';
+}
+function sparkMini(u){
+  const s = serie(u), max = Math.max(1, ...s), W = 64, H = 16, bw = W/30;
+  return '<svg width="64" height="16" viewBox="0 0 64 16" aria-hidden="true">'+s.map((n, i) => { const h = n ? Math.max(3, (H-1)*n/max) : 1.2; return '<rect x="'+(i*bw).toFixed(2)+'" y="'+(H-h).toFixed(2)+'" width="'+(bw-.6).toFixed(2)+'" height="'+h.toFixed(2)+'" fill="'+(n ? '#60A5FA' : '#E2E8F0')+'"/>'; }).join('')+'</svg>';
+}
+function sessoesHTML(u){
+  if (!pode('sessions:read')) return '<span class="pat-ab-detail-note">Seu perfil não vê as sessões.</span>';
+  if (!u.sessoes.length) return '<span class="pat-ab-detail-note">Nenhuma sessão aberta.</span>';
+  return '<div class="ses-lista">'+u.sessoes.map(s => '<div class="ses-item">'+ic('monitor',13)+'<span>'+s.disp+'</span><small>entrou '+(diasAtras(s.entrada) === 0 ? 'hoje '+fHM(s.entrada) : fDM(s.entrada)+' '+fHM(s.entrada))+' · ativa '+minAtras(s.ativ)+'</small></div>').join('')+'</div>';
+}
+/* Ações reais do resumo — mesmos rótulos e mesmas portas da UsersPage.tsx:409-445 */
+function acoesResumo(u, comFicha){
+  const b = [];
+  if (comFicha) b.push('<button type="button" class="pat-btn pat-btn--primary" data-abrir-ficha="'+u.id+'">'+ic('idCard',14)+' Abrir ficha</button>');
+  if (pode('users.manage')) {
+    b.push('<button type="button" class="pat-btn'+(comFicha?'':' pat-btn--primary')+'" data-editar="'+u.id+'">'+ic('pencil',14)+' Editar usuário</button>');
+    b.push(u.status === 'active' ? '<button type="button" class="pat-btn pat-btn--perigo" data-alternar="'+u.id+'">'+ic('ban',14)+' Desativar acesso</button>' : '<button type="button" class="pat-btn" data-alternar="'+u.id+'">'+ic('rotate',14)+' Reativar acesso</button>');
+  }
+  if (pode('audit.read')) b.push('<button type="button" class="pat-btn" data-auditoria="'+u.id+'">'+ic('scroll',14)+' Ver auditoria deste usuário</button>');
+  if (!b.length) b.push('<span class="pat-ab-detail-note">Seu perfil só consulta os usuários.</span>');
+  return '<div class="pat-ab-detail-actions">'+b.join('')+'</div>';
+}
+function colIdentidade(u){
+  return campo('Nome', esc(u.nome)) + campo('E-mail', esc(u.email)) + campo('Filial', esc(u.filial)) + campo('Criado em', fData(u.criado)+' · '+relativo(u.criado));
+}
+function colAcesso(u){
+  return campo('Perfis', u.roles.map(chipPerfil).join(' ')+(isAdmin(u) ? ' <span class="pat-admin-badge">acesso total</span>' : '')) + campo('Situação', pillSit(u.status)) +
+    campo('Último acesso', u.ult ? fDH(u.ult)+' · '+(diasAtras(u.ult) === 0 ? minAtras(u.ult) : relativo(u.ult)) : '<b style="color:#7E22CE">Nunca acessou</b> · cadastrado '+relativo(u.criado)) +
+    (u.status === 'inactive' && u.sessoes.length ? campo('Atenção', '<b style="color:#B91C1C">inativo com sessão ainda aberta</b>') : '');
+}
+function colSeguranca(u){
+  return campo('Verificação em duas etapas', '— '+FALTA('O sistema não oferece verificação em duas etapas')) + campo('Tentativas recusadas (7 dias)', '— '+FALTA('A auditoria grava a recusa sem o usuário; só pelo e-mail, que não é devolvido')) + campo('Bloqueio por tentativas', '— '+FALTA('O bloqueio de 15 min existe na credencial, mas não é devolvido'));
+}
+/* ═════════ MONTAGEM (cabeçalho fica parado; o resto é redesenhado) ═════════ */
+const CABEC = {
+  a:['ADMINISTRAÇÃO','Quem acessa a organização, com qual perfil e desde quando — com trilha de auditoria.'],
+  b:['ADMINISTRAÇÃO · VISÃO ANALÍTICA','Quem entra, quando entra e onde o acesso pede revisão — com a lista logo abaixo.'],
+  c:['ADMINISTRAÇÃO · SAÚDE DO ACESSO','Quem tem acesso a quê, quem não usa mais e quando a equipe entra — para revisar o acesso antes que vire risco.']
+};
+function montar(v){
+  const root = $('[data-view="'+v+'"] .tela-lista');
+  root.innerHTML = headerHTML(v, CABEC[v][0], CABEC[v][1]) + '<div data-banner></div><div data-kpis></div><div data-bi></div><div data-lista></div>';
+  root.dataset.montado = '1';
+}
+function render(v){
+  const view = $('[data-view="'+v+'"]'), root = $('.tela-lista', view), aud = $('.tela-aud', view);
+  if (S[v].tela === 'aud' && !proibido(v)) { root.hidden = true; aud.hidden = false; renderAud(v); return; }
+  root.hidden = false; aud.hidden = true;
+  if (proibido(v)) { root.innerHTML = proibidoHTML(); root.dataset.montado = ''; return; }
+  if (!root.dataset.montado) montar(v);
+  $('[data-banner]', root).innerHTML = bannerHTML(v);
+  ({ a:renderA, b:renderB, c:renderC })[v](root);
+  renderLista(v);
+}
+function renderTudo(){ ['a','b','c'].forEach(v => { const r = $('[data-view="'+v+'"] .tela-lista'); r.dataset.montado = ''; render(v); }); }
+
+/* ═════════ LISTA (comum às 3; colunas e agrupamento mudam) ═════════ */
+const COLS = {
+  a:{ cols:[['USUÁRIO',null],['PERFIL DE ACESSO',240],['SITUAÇÃO',100],['ÚLTIMO ACESSO',196]], pager:true },
+  b:{ cols:[['USUÁRIO',null],['PERFIL DE ACESSO',200],['SITUAÇÃO',92],['ÚLTIMO ACESSO',176],['ENTRADAS · 30 DIAS',126],['SESSÕES',74]], pager:true },
+  c:{ cols:[['USUÁRIO',null],['PERFIL DE ACESSO',196],['ÚLTIMO ACESSO',168],['SINAL DE ATENÇÃO',210],['SITUAÇÃO',92]], pager:false }
+};
+function celulas(v, u){
+  if (v === 'a') return [celUser(u), celPerfis(u), pillSit(u.status), celUltimo(u)];
+  if (v === 'b') return [celUser(u), celPerfis(u), pillSit(u.status), celUltimo(u), '<span class="spark-cel">'+sparkMini(u)+'<b>'+u.logins.length+'</b></span>', pode('sessions:read') ? '<span class="ses-n" style="color:'+(u.sessoes.length ? (u.status === 'inactive' ? '#B91C1C' : '#0f172a') : '#94a3b8')+'">'+u.sessoes.length+'</span>' : '<span style="color:#cbd5e1">—</span>'];
+  const s = sinais(u)[0];
+  return [celUser(u), celPerfis(u), celUltimo(u), s ? '<span class="sinal" style="background:'+s[1]+';color:'+s[2]+'">'+s[0]+'</span>' : '<span style="color:#94a3b8">—</span>', pillSit(u.status)];
+}
+function trLinha(v, u){
+  const id = v+'-'+u.id;
+  return '<tr data-linha="'+id+'" tabindex="0" aria-expanded="false" class="pat-ab-row" data-uid="'+u.id+'" aria-label="'+esc(u.nome+' · '+u.roles.map(r => PERFIS[r].rot).join(', ')+' · '+STATUS[u.status].rot)+'">'+celulas(v, u).map(c => '<td>'+c+'</td>').join('')+'<td>'+CHEV+'</td></tr>';
+}
+function resumo(v, u, ncols){
+  let corpo;
+  if (v === 'a') corpo = '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colIdentidade(u)+'</div><div class="pat-ab-detail-col">'+colAcesso(u)+campo('Sessões abertas', sessoesHTML(u))+'</div><div class="pat-ab-detail-col"><span class="pat-ab-detail-label">Entradas nos últimos 30 dias · '+u.logins.length+'</span>'+(u.ult ? ativSVG(u) : '<span class="pat-ab-detail-note">Ainda não entrou no sistema. Reenviar o convite de primeiro acesso '+FALTA('Não existe convite: o cadastro é criado sem senha e sem aviso')+'</span>')+campo('Verificação em duas etapas', '— '+FALTA('O sistema não oferece verificação em duas etapas'))+'</div></div>'+acoesResumo(u, false);
+  else if (v === 'b') corpo = '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colIdentidade(u)+campo('Sessões abertas', sessoesHTML(u))+'</div><div class="pat-ab-detail-col">'+colAcesso(u)+colSeguranca(u)+'</div><div class="pat-ab-detail-col"><span class="pat-ab-detail-label">Entradas por dia · 30 dias</span>'+(u.ult ? ativSVG(u, 58)+'<span class="pat-ab-detail-note">'+leituraAtividade(u)+'</span>' : '<span class="pat-ab-detail-note">Ainda não entrou no sistema desde o cadastro ('+fData(u.criado)+').</span>')+'</div></div>'+acoesResumo(u, true);
+  else { const ss = sinais(u);
+    corpo = (ss.length ? '<div class="sinais" aria-label="Sinais de atenção">'+ss.map(s => '<span class="sinal" style="background:'+s[1]+';color:'+s[2]+'">'+ic('alert',12)+s[0]+'</span>').join('')+'</div>' : '<div class="sinais"><span class="sinal" style="background:#DCFCE7;color:#15803D">'+ic('checkCircle',12)+'Sem sinal de atenção</span></div>')+
+      '<div class="pat-ab-detail-grid"><div class="pat-ab-detail-col">'+colIdentidade(u)+'</div><div class="pat-ab-detail-col">'+colAcesso(u)+campo('Sessões abertas', sessoesHTML(u))+'</div><div class="pat-ab-detail-col"><span class="pat-ab-detail-label">O que este acesso permite</span>'+permiteHTML(u)+'</div></div>'+acoesResumo(u, true); }
+  return '<tr data-detalhe-de="'+v+'-'+u.id+'" class="pat-ab-detail-row" style="display:none"><td colspan="'+ncols+'" class="pat-ab-detail-cell"><div class="pat-ab-detail-content">'+corpo+'</div></td></tr>';
+}
+function leituraAtividade(u){
+  if (!u.logins.length) return 'Sem entradas nos últimos 30 dias.';
+  const dias = new Set(u.logins.map(l => l.i)).size; const hs = u.logins.map(l => l.h).sort((a, b) => a - b); const med = hs[Math.floor(hs.length/2)];
+  return u.logins.length+' entradas em '+dias+' dias · costuma entrar por volta das '+pad(Math.floor(med))+'h';
+}
+function permiteHTML(u){
+  if (!pode('roles.manage')) return '<span class="pat-ab-detail-note">Seu perfil não vê a definição dos perfis.</span>';
+  const alt = [], con = [];
+  MODULOS.forEach((m, mi) => { const n = nivelUser(u, mi); if (n === 'T' || n === 'E') alt.push(m[1]); else if (n === 'L') con.push(m[1]); });
+  return campo(isAdmin(u) ? 'Acesso total' : 'Altera', alt.length ? alt.join(', ') : '—') + campo('Só consulta', con.length ? con.join(', ') : '—');
+}
+function sinais(u){
+  const out = [];
+  if (u.status === 'inactive' && u.sessoes.length) out.push(['Inativo com sessão aberta','#FEE2E2','#B91C1C']);
+  if (isAdmin(u) && u.status === 'active' && u.ult && diasAtras(u.ult) > 30) out.push(['Acesso total sem uso há '+diasAtras(u.ult)+' dias','#FEE2E2','#B91C1C']);
+  else if (recencia(u) === 'dormente') out.push(['Sem acesso há '+diasAtras(u.ult)+' dias','#FEF3C7','#B45309']);
+  if (u.status === 'active' && !u.ult) out.push(diasAtras(u.criado) >= 7 ? ['Sem primeiro acesso há '+diasAtras(u.criado)+' dias','#FEF3C7','#B45309'] : ['Aguardando primeiro acesso','#EFF6FF','#1D4ED8']);
+  if (u.roles.length > 1) out.push([u.roles.length+' perfis','#EFF6FF','#1D4ED8']);
+  return out;
+}
+function renderLista(v){
+  const st = S[v], box = $('[data-view="'+v+'"] .tela-lista [data-lista]'); if (!box) return;
+  const C = COLS[v], ncols = C.cols.length + 1;
+  const thead = '<colgroup>'+C.cols.map(c => '<col'+(c[1]?' style="width:'+c[1]+'px"':'')+'>').join('')+'<col style="width:42px"></colgroup><thead><tr>'+C.cols.map(c => '<th>'+c[0]+'</th>').join('')+'<th><span class="sr">Abrir resumo</span></th></tr></thead>';
+  let corpo, cont = '', pager = '';
+  if (st.estado === 'carregando') { corpo = [0,1,2,3,4].map(() => '<tr class="pat-ab-row" aria-hidden="true" style="cursor:default">'+Array.from({length:ncols}, () => '<td><span class="pat-skel" style="width:78%;height:12px;vertical-align:middle"></span></td>').join('')+'</tr>').join(''); cont = '<span class="pat-skel" style="width:90px;height:11px"></span>'; }
+  else if (st.estado === 'erro') { corpo = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">Não foi possível carregar os usuários</div><div class="pat-table__empty-detail">A consulta falhou. <button type="button" class="pat-link" data-tentar>Tentar novamente</button></div></div></td></tr>'; cont = '—'; }
+  else {
+    const arr = linhas(v); const total = base(v).length;
+    cont = (arr.length !== total ? arr.length+' de '+total : total)+(total === 1 ? ' usuário' : ' usuários');
+    const filtrado = !!(st.alvo || st.busca || st.perfil !== 'all');
+    if (!arr.length) corpo = '<tr><td colspan="'+ncols+'"><div class="pat-table__empty"><div class="pat-table__empty-title">Nenhum usuário encontrado</div><div class="pat-table__empty-detail">'+(filtrado ? 'Ajuste a busca ou os filtros para encontrar usuários.' : 'Cadastre o primeiro usuário para dar acesso à organização.')+'</div></div></td></tr>';
+    else if (v === 'c') corpo = ORDEM_REC.map(k => { const it = arr.filter(u => recencia(u) === k); if (!it.length) return ''; const g = GRUPOS_C[k]; return '<tr class="grupo-row"><td colspan="'+ncols+'" style="color:'+g[1]+'">'+g[0]+'<span class="grupo-n" style="background:'+g[2]+';color:'+g[1]+'">'+it.length+'</span><small>'+g[3]+'</small></td></tr>'+it.map(u => trLinha(v, u) + resumo(v, u, ncols)).join(''); }).join('');
+    else {
+      const porPag = 20, maxP = Math.max(0, Math.ceil(arr.length/porPag) - 1); st.pagina = Math.min(st.pagina, maxP);
+      const ini = st.pagina * porPag, fim = Math.min(ini + porPag, arr.length);
+      corpo = arr.slice(ini, fim).map(u => trLinha(v, u) + resumo(v, u, ncols)).join('');
+      pager = '<div class="pat-pager"><label class="pat-pager__size">Itens por página <select aria-label="Itens por página"><option>20</option><option>50</option></select></label><div class="pat-pager__nav"><span class="pat-pager__range">'+(ini+1)+'–'+fim+' de '+arr.length+'</span><button type="button" class="pat-pager__btn" data-pg="-1"'+(st.pagina === 0 ? ' disabled' : '')+'>'+ic('arrowLeft',12)+' Anterior</button><button type="button" class="pat-pager__btn" data-pg="1"'+(fim >= arr.length ? ' disabled' : '')+'>Próxima '+ic('arrowRight',12)+'</button></div></div>';
+    }
+  }
+  const titulo = v === 'c' ? 'Usuários pelo último acesso' : 'Usuários da organização';
+  box.innerHTML = '<div class="pat-table"><div class="pat-table__topbar"><span class="pat-card__title" style="font-size:13.5px;font-weight:800;color:#0f172a">'+titulo+'</span><span class="pat-table__count">'+cont+'</span></div>'+chipHTML(v)+'<table class="pat-ab-table">'+thead+'<tbody>'+corpo+'</tbody></table>'+(C.pager ? pager : '')+'</div>';
+  if (st.aberta) { const r = $('[data-linha="'+st.aberta+'"]', box); if (r) abrirResumo(r, true); else st.aberta = null; }
+}
+const GRUPOS_C = {
+  hoje:['Entraram hoje','#15803D','#DCFCE7','em uso agora'],
+  '7d':['Entraram nos últimos 7 dias','#1D4ED8','#DBEAFE','uso regular'],
+  '30d':['Último acesso entre 8 e 30 dias','#B45309','#FEF3C7','uso esporádico'],
+  dormente:['Sem acesso há mais de 30 dias','#B91C1C','#FEE2E2','revisar: o acesso ainda é necessário?'],
+  nunca:['Nunca acessaram','#7E22CE','#F3E8FF','cobrar o primeiro acesso'],
+  inativo:['Inativos','#475569','#F1F5F9','sem acesso até serem reativados']
+};
+function abrirResumo(row, forcar){
+  const view = row.closest('[data-view]'); const v = view.dataset.view; const id = row.dataset.linha;
+  const abrir = forcar || row.getAttribute('aria-expanded') !== 'true';
+  $$('[data-linha]', view).forEach(r => { r.setAttribute('aria-expanded','false'); const d = $('[data-detalhe-de="'+r.dataset.linha+'"]', view); if (d) d.style.display = 'none'; });
+  if (abrir) { row.setAttribute('aria-expanded','true'); const d = $('[data-detalhe-de="'+id+'"]', view); if (d) d.style.display = ''; S[v].aberta = id; }
+  else S[v].aberta = null;
+}
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL COM BI (KPIs clicáveis + faixa de composição) ═════════ */
+function crescimento(){
+  const ms = mesesJanela(); let acum = USERS.filter(u => u.criado < ms[0].ini).length;
+  return ms.map((m, k) => { const n = USERS.filter(u => u.criado >= m.ini && u.criado < m.fim).length; acum += n; return { k, rot:m.rot, novos:n, total:acum }; });
+}
+function sparkLinha(vals, cor){ const W = 120, H = 22, max = Math.max(...vals), min = Math.min(...vals), n = vals.length; const pts = vals.map((val, i) => (i*W/(n-1)).toFixed(1)+','+(H - 2 - (H-4)*(val - min)/Math.max(1, max - min)).toFixed(1)).join(' '); return '<svg class="kpi-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+cor+'" stroke-width="1.8" vector-effect="non-scaling-stroke"/></svg>'; }
+function pilha(v, itens, prefixo, rotFn){
+  const tot = itens.reduce((s, x) => s + x[1], 0) || 1;
+  return '<div class="pilha" role="group" aria-label="'+esc(rotFn)+'">'+itens.filter(x => x[1]).map(x => { const a = prefixo+':'+x[0]; const pct = x[1]/tot; return '<button type="button" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" style="flex:'+x[1]+' 1 0;background:'+x[3]+'" aria-label="'+esc(x[2]+': '+x[1]+' — filtrar a lista')+'" title="'+esc(x[2]+': '+x[1])+'">'+(pct >= .07 ? x[1] : '')+'</button>'; }).join('')+'</div>'+
+    '<div class="pilha-leg">'+itens.map(x => '<span><i class="lg-sw" style="background:'+x[3]+'"></i>'+x[2]+' <b>'+x[1]+'</b></span>').join('')+'</div>';
+}
+function contaPerfis(arr){ return ORDEM_PERFIS.map(r => [r, arr.filter(u => u.roles.includes(r)).length, PERFIS[r].rot, PERFIS[r].cor]).filter(x => x[1]).sort((a, b) => b[1] - a[1]); }
+function contaRec(arr){ return ORDEM_REC.map(k => [k, arr.filter(u => recencia(u) === k).length, REC[k][0], REC[k][1]]); }
+function renderA(root){
+  const v = 'a', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root);
+  if (st.estado === 'carregando') { k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+kpisSkel(5)+'</div>'; bi.innerHTML = '<div class="comp">'+cardSkel(40)+cardSkel(40)+'</div>'; return; }
+  if (st.estado === 'erro') { k.innerHTML = '<div class="kpi-grid kpi-grid--5">'+kpisIndisp(['Usuários cadastrados','Ativos','Inativos','Nunca acessaram','Com acesso total'])+'</div>'; bi.innerHTML = ''; return; }
+  const arr = base(v), c = contagens(arr), cr = crescimento();
+  k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+
+    kpi(v,'todos','users','#2563EB','#EFF6FF',c.total,'Usuários cadastrados','na organização Guincho Exemplo Ltda', c.novos ? ['+'+c.novos+' no mês','#DCFCE7','#15803D'] : null, c.total ? sparkLinha(cr.map(x => x.total), '#2563EB') : '')+
+    kpi(v,'ativos','userCheck','#15803D','#F0FDF4',c.ativos,'Ativos','com situação ativa na organização', c.total ? [Math.round(c.ativos/c.total*100)+'% do total','#DCFCE7','#15803D'] : null)+
+    kpi(v,'inativos','userX','#B45309','#FFFBEB',c.inativos,'Inativos','sem acesso até serem reativados', c.inativoSessao ? [c.inativoSessao+' com sessão aberta','#FEE2E2','#B91C1C'] : c.inativos ? ['revisar','#FEF3C7','#B45309'] : ['nenhum','#DCFCE7','#15803D'])+
+    kpi(v,'nunca','logIn','#7E22CE','#FAF5FF',c.nunca,'Nunca acessaram','cadastrados que ainda não entraram', c.semPrimeiro ? [c.semPrimeiro+' há 7+ dias','#FEF3C7','#B45309'] : c.nunca ? ['aguardando','#F3E8FF','#7E22CE'] : ['nenhum','#DCFCE7','#15803D'])+
+    kpi(v,'admins','shieldCheck','#7E22CE','#FAF5FF',c.admins,'Com acesso total','perfis administrativos', c.adminDormente ? [c.adminDormente+' sem uso há 30+ dias','#FEE2E2','#B91C1C'] : c.admins ? ['revisar','#F3E8FF','#7E22CE'] : null)+'</div>';
+  bi.innerHTML = !arr.length ? '' : '<div class="comp">'+
+    '<div class="comp-card"><div class="comp-card__t"><span>Perfis de acesso</span><small>'+c.total+' usuários · '+(c.multi ? c.multi+' com mais de um perfil (contam nos dois)' : 'um perfil cada')+'</small></div>'+pilha(v, contaPerfis(arr), 'perfil', 'Usuários por perfil de acesso — clique para filtrar')+'</div>'+
+    '<div class="comp-card"><div class="comp-card__t"><span>Último acesso</span><small>último login de cada usuário · clique para filtrar</small></div>'+pilha(v, contaRec(arr), 'rec', 'Usuários pelo último acesso — clique para filtrar')+'</div></div>';
+}
+/* ═════════ OPÇÃO B — ANALÍTICA (a linha escolhida em Pátios) ═════════ */
+function porDia(arr){ return Array.from({length:30}, (_, i) => { let ent = 0; const quem = new Set(); arr.forEach(u => u.logins.forEach(l => { if (l.i === i) { ent++; quem.add(u.id); } })); return { i, ent, users:quem.size }; }); }
+function diasSVG(v, arr){
+  const d = porDia(arr), W = 600, H = 150, pb = 4, n = 30, bw = W/n; const max = Math.max(4, ...d.map(x => x.ent));
+  const y = val => H - pb - (H - pb - 6) * val / max;
+  const linha = d.map((x, i) => (i ? 'L' : 'M')+(i*bw + bw/2).toFixed(1)+' '+y(x.users).toFixed(1)).join(' ');
+  const g = d.map((x, i) => { const a = 'dia:'+i; const on = S[v].alvo === a; const fds = [0,6].includes(diaData(i).getDay()); const h = H - pb - y(x.ent);
+    const inner = '<rect class="bg" x="'+(i*bw)+'" y="0" width="'+bw+'" height="'+H+'" fill="'+(on ? '#dbeafe' : 'transparent')+'"/><rect x="'+(i*bw+3).toFixed(1)+'" y="'+y(x.ent).toFixed(1)+'" width="'+(bw-6).toFixed(1)+'" height="'+Math.max(0,h).toFixed(1)+'" rx="2" fill="'+(i === 29 ? '#1D4ED8' : fds ? '#BFDBFE' : '#60A5FA')+'"/><title>'+fDM(diaData(i))+' ('+SEMANA[diaData(i).getDay()]+') · '+x.ent+' entradas · '+x.users+' usuários</title>';
+    return x.ent ? '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc(fDM(diaData(i))+': '+x.ent+' entradas de '+x.users+' usuários — filtrar a lista')+'">'+inner+'</g>' : '<g>'+inner+'</g>'; }).join('');
+  return '<svg class="dias-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="group" aria-label="Entradas por dia nos últimos 30 dias">'+g+'<path d="'+linha+'" fill="none" stroke="#7E22CE" stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/></svg>'+
+    '<div class="eixo">'+[0,7,14,21,29].map(i => '<span>'+(i === 29 ? 'hoje' : fDM(diaData(i)))+'</span>').join('')+'</div>';
+}
+function leituraDia(v, arr){
+  const d = porDia(arr); const al = S[v].alvo && S[v].alvo.indexOf('dia:') === 0 ? +S[v].alvo.slice(4) : 29; const x = d[al];
+  const uteis = d.filter(z => ![0,6].includes(diaData(z.i).getDay()) && z.i < 29); const media = uteis.length ? Math.round(uteis.reduce((s, z) => s + z.users, 0)/uteis.length) : 0;
+  return '<div class="an-leitura" aria-live="polite"><b>'+(al === 29 ? 'Hoje (até '+fHM(NOW)+')' : fDM(diaData(al))+' · '+SEMANA[diaData(al).getDay()])+'</b><span><i class="lg-sw" style="background:#60A5FA"></i> '+x.ent+' entradas</span><span><i class="lg-sw" style="background:#7E22CE"></i> '+x.users+' usuários distintos</span><span style="color:#94a3b8">· média de dia útil: '+media+' usuários · clique num dia para ver quem entrou</span></div>';
+}
+/* 9 perfis → barras (a skill ui-ux-pro-max §6 limita rosca a 5 categorias); ativos × inativos na mesma barra */
+function barrasPerfis(v, arr){
+  const cont = contaPerfis(arr), max = Math.max(1, ...cont.map(x => x[1]));
+  return '<div role="group" aria-label="Usuários por perfil — clique para filtrar">'+cont.map(x => { const a = 'perfil:'+x[0]; const at = arr.filter(u => u.roles.includes(x[0]) && u.status === 'active').length;
+    return '<button type="button" class="barra-btn" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(x[2]+': '+x[1]+' usuários, '+at+' ativos — filtrar a lista')+'"><span class="barra-btn__rot"><i style="background:'+x[3]+'"></i>'+x[2]+'</span><span class="barra-btn__trilho"><b style="width:'+(at/max*100).toFixed(1)+'%;background:'+x[3]+'"></b><b style="width:'+((x[1]-at)/max*100).toFixed(1)+'%;background:'+x[3]+';opacity:.3"></b></span><span class="barra-btn__n">'+x[1]+'</span></button>'; }).join('')+
+    '</div><div class="pilha-leg" style="margin-top:6px"><span><i class="lg-sw" style="background:#475569"></i>ativos</span><span><i class="lg-sw" style="background:#475569;opacity:.3"></i>inativos</span></div>';
+}
+function colunasRec(v, arr){
+  const cont = contaRec(arr), max = Math.max(1, ...cont.map(x => x[1]));
+  return '<div class="colunas" role="group" aria-label="Usuários pelo último acesso">'+cont.map(x => { const a = 'rec:'+x[0]; return '<button type="button" class="coluna-btn" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(x[2]+': '+x[1]+' — filtrar a lista')+'"><b style="color:'+x[3]+'">'+x[1]+'</b><i style="height:'+Math.max(3, x[1]/max*72)+'px;background:'+x[3]+'"></i><span>'+x[2]+'</span></button>'; }).join('')+'</div>';
+}
+function mesesSVG(v){
+  const cr = crescimento(), W = 300, H = 104, bw = W/12, max = Math.max(1, ...cr.map(x => x.novos));
+  const g = cr.map(x => { const a = 'mes:'+x.k; const on = S[v].alvo === a; const h = x.novos ? Math.max(6, (H-30) * x.novos / max) : 2; const yb = H - 16 - h;
+    const inner = '<rect class="bg" x="'+(x.k*bw)+'" y="0" width="'+bw+'" height="'+H+'" rx="4" fill="'+(on ? '#dbeafe' : 'transparent')+'"/><rect x="'+(x.k*bw+5).toFixed(1)+'" y="'+yb.toFixed(1)+'" width="'+(bw-10).toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3" fill="'+(x.novos ? '#2563EB' : '#E2E8F0')+'"/>'+(x.novos ? '<text x="'+(x.k*bw+bw/2).toFixed(1)+'" y="'+(yb-4).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="800" fill="#0f172a">'+x.novos+'</text>' : '')+'<text x="'+(x.k*bw+bw/2).toFixed(1)+'" y="'+(H-3)+'" text-anchor="middle" font-size="8.5" fill="#94a3b8">'+x.rot.slice(0,3)+'</text><title>'+x.rot+' · '+x.novos+' cadastrados · '+x.total+' no fim do mês</title>';
+    return x.novos ? '<g role="button" tabindex="0" data-alvo="'+a+'" aria-pressed="'+on+'" aria-label="'+esc(x.rot+': '+x.novos+' cadastrados — filtrar a lista')+'">'+inner+'</g>' : '<g>'+inner+'</g>'; }).join('');
+  return '<svg class="mes-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="group" aria-label="Usuários cadastrados por mês">'+g+'</svg>';
+}
+function higieneHTML(v, c){
+  const t = (a, n, rot, cls) => '<button type="button" class="'+(n ? cls : 'ok')+'" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(rot+': '+n+' — filtrar a lista')+'"><b>'+n+'</b><span>'+rot+'</span></button>';
+  return '<div class="higiene">'+t('admin-dormente', c.adminDormente, 'Acesso total sem uso há 30+ dias', 'crit')+
+    (pode('sessions:read') ? t('inativo-sessao', c.inativoSessao, 'Inativos com sessão aberta', 'crit') : '<div class="sec-bloq" style="padding:8px;font-size:11px">'+ic('lock',13)+'Sessões: seu perfil não vê</div>')+
+    t('sem-primeiro', c.semPrimeiro, 'Cadastrados há 7+ dias sem primeiro acesso', '')+t('multi', c.multi, 'Com mais de um perfil — confira se é intencional', '')+'</div>';
+}
+function renderB(root){
+  const v = 'b', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root);
+  if (st.estado === 'carregando') { k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+kpisSkel(5)+'</div>'; bi.innerHTML = '<div class="analitico"><div class="an-card an-card--2" aria-hidden="true"><span class="pat-skel" style="display:block;height:170px"></span></div>'+cardSkel(150)+cardSkel(110)+cardSkel(110)+cardSkel(110)+'</div>'; return; }
+  if (st.estado === 'erro') { k.innerHTML = '<div class="kpi-grid kpi-grid--5">'+kpisIndisp(['Acessaram hoje','Ativos nos últimos 7 dias','Sem acesso há 30+ dias','Nunca acessaram','Sessões abertas agora'])+'</div>'; bi.innerHTML = ''; return; }
+  const arr = base(v), c = contagens(arr), d = porDia(arr);
+  const ses = pode('sessions:read') ? kpi(v,'comsessao','monitor','#0369A1','#F0F9FF',c.sessoes,'Sessões abertas agora', c.comSessao+' usuários conectados', c.inativoSessao ? [c.inativoSessao+' de inativo','#FEE2E2','#B91C1C'] : ['em ordem','#DCFCE7','#15803D'])
+    : '<div class="pat-kpi"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:#F1F5F9;color:#94A3B8">'+ic('lock',16)+'</span></div><div class="pat-kpi__value" style="color:#94A3B8">—</div><div class="pat-kpi__label">Sessões abertas agora</div><div class="pat-kpi__hint">seu perfil não vê as sessões</div></div>';
+  const s7 = d.slice(23).reduce((s, x) => s + x.ent, 0), s7a = d.slice(16, 23).reduce((s, x) => s + x.ent, 0); const var7 = s7a ? Math.round((s7 - s7a)/s7a*100) : 0;
+  k.innerHTML = '<div class="kpi-grid kpi-grid--5" aria-live="polite">'+
+    kpi(v,'hoje','logIn','#15803D','#F0FDF4',c.hoje,'Acessaram hoje','de '+c.ativos+' ativos · até '+fHM(NOW), c.ativos ? [Math.round(c.hoje/c.ativos*100)+'% dos ativos','#DCFCE7','#15803D'] : null, arr.length ? sparkLinha(d.map(x => x.users), '#15803D') : '')+
+    kpi(v,'semana','activity','#2563EB','#EFF6FF',c.semana,'Ativos nos últimos 7 dias', s7+' entradas · vs. 7 dias antes', [(var7 >= 0 ? '▲ ' : '▼ ')+Math.abs(var7)+'% na semana', var7 >= 0 ? '#DCFCE7' : '#FEF3C7', var7 >= 0 ? '#15803D' : '#B45309'], arr.length ? sparkLinha(d.map(x => x.ent), '#2563EB') : '')+
+    kpi(v,'dormentes','clock','#B45309','#FFFBEB',c.dormentes,'Sem acesso há 30+ dias','ativos que pararam de entrar', c.dormentes ? ['revisar','#FEF3C7','#B45309'] : ['nenhum','#DCFCE7','#15803D'])+
+    kpi(v,'nunca','userPlus','#7E22CE','#FAF5FF',c.nunca,'Nunca acessaram','cadastrados sem primeiro acesso', c.semPrimeiro ? [c.semPrimeiro+' há 7+ dias','#FEF3C7','#B45309'] : c.nunca ? ['aguardando','#F3E8FF','#7E22CE'] : ['nenhum','#DCFCE7','#15803D'])+ses+'</div>';
+  if (!arr.length) { bi.innerHTML = '<div class="analitico"><div class="an-card an-card--2"><div class="an-card__title"><span>Entradas por dia · últimos 30 dias</span></div><div class="vazio-curto">Sem entradas no período.</div></div><div class="an-card"><div class="an-card__title"><span>Perfis de acesso</span></div><div class="vazio-curto">Nenhum usuário cadastrado.</div></div></div>'; return; }
+  bi.innerHTML = '<div class="analitico">'+
+    '<div class="an-card an-card--2"><div class="an-card__title"><span>Entradas por dia · últimos 30 dias</span><small><i class="lg-sw" style="background:#60A5FA"></i> entradas &nbsp; <i class="lg-sw" style="background:#7E22CE"></i> usuários distintos &nbsp; '+FALTA('A conta sai da auditoria lida página por página; falta um resumo diário pronto')+'</small></div>'+diasSVG(v, arr)+leituraDia(v, arr)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Perfis de acesso</span><small>'+(c.multi ? c.multi+' com 2 perfis (contam nos dois)' : '')+'</small></div>'+barrasPerfis(v, arr)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Último acesso</span><small>clique para filtrar</small></div>'+colunasRec(v, arr)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Cadastros por mês</span><small>'+arr.length+' hoje · +'+c.novos+' em 30 dias</small></div>'+mesesSVG(v)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Higiene do acesso</span><small>o que revisar</small></div>'+higieneHTML(v, c)+'</div></div>';
+}
+
+/* ═════════ OPÇÃO C — SAÚDE DO ACESSO (pontuação + mapa de entradas + matriz perfil × módulo) ═════════ */
+function pontuacao(c){ return Math.max(0, 100 - 10*c.adminDormente - 10*c.inativoSessao - 3*c.dormentes - 3*c.semPrimeiro); }
+function gaugeSVG(p){
+  const cor = p >= 85 ? '#15803D' : p >= 60 ? '#B45309' : '#B91C1C'; const R = 52, L = Math.PI*R;
+  return '<svg width="132" height="78" viewBox="0 0 132 78" aria-hidden="true"><path d="M14 70 A52 52 0 0 1 118 70" fill="none" stroke="#f1f5f9" stroke-width="12" stroke-linecap="round"/><path d="M14 70 A52 52 0 0 1 118 70" fill="none" stroke="'+cor+'" stroke-width="12" stroke-linecap="round" stroke-dasharray="'+(L*p/100).toFixed(1)+' '+L.toFixed(1)+'"/><text x="66" y="62" text-anchor="middle" font-size="26" font-weight="800" fill="#0f172a">'+p+'</text><text x="66" y="76" text-anchor="middle" font-size="9.5" fill="#64748b">de 100</text></svg>';
+}
+function saudeHTML(v, c){
+  const p = pontuacao(c); const faixa = p >= 85 ? ['saudável','#15803D'] : p >= 60 ? ['atenção','#B45309'] : ['crítico','#B91C1C'];
+  const chk = (a, n, rot, cor) => '<button type="button" class="check-btn" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(rot+': '+n+' — filtrar a lista')+'"><i style="background:'+(n ? cor : '#22C55E')+'"></i><span class="t">'+rot+'</span><b style="color:'+(n ? cor : '#15803D')+'">'+n+'</b></button>';
+  const inf = (rot, val) => '<div class="check-inf"><i></i><span class="t">'+rot+'</span><span>'+val+'</span></div>';
+  return '<div class="saude"><button type="button" class="gauge-btn" data-alvo="todos" aria-pressed="false" aria-label="Pontuação de saúde do acesso: '+p+' de 100 — mostrar todos os usuários">'+gaugeSVG(p)+'<span style="color:'+faixa[1]+';font-size:12px;font-weight:800">'+faixa[0]+'</span><span>ver todos os usuários</span></button>'+
+    '<div class="checks">'+chk('admin-dormente', c.adminDormente, 'Acesso total sem uso há mais de 30 dias', '#B91C1C')+
+    (pode('sessions:read') ? chk('inativo-sessao', c.inativoSessao, 'Inativos com sessão aberta', '#B91C1C') : inf('Inativos com sessão aberta', '<span style="font-size:11px">seu perfil não vê</span>'))+
+    chk('dormentes', c.dormentes, 'Ativos sem acesso há mais de 30 dias', '#B45309')+chk('sem-primeiro', c.semPrimeiro, 'Cadastrados há 7+ dias sem primeiro acesso', '#B45309')+chk('multi', c.multi, 'Com mais de um perfil', '#2563EB')+
+    inf('Tentativas de entrada recusadas · 7 dias', '<b style="color:#334155">9</b> '+FALTA('O total sai da auditoria; por usuário, não'))+
+    inf('Verificação em duas etapas', FALTA('O sistema não oferece verificação em duas etapas'))+
+    inf('Convites aguardando aceite', FALTA('Não existe convite: o cadastro é criado sem senha e sem aviso'))+'</div></div>';
+}
+function heatmapHTML(v, arr){
+  const M = Array.from({length:7}, () => Array(FAIXAS.length).fill(0)); let max = 0, pico = null;
+  arr.forEach(u => u.logins.forEach(l => { const w = diaData(l.i).getDay(); const f = FAIXAS.findIndex(fx => l.h >= fx[1] && l.h < fx[2]); M[w][f]++; }));
+  M.forEach((row, w) => row.forEach((n, f) => { if (n > max) { max = n; pico = [w, f]; } }));
+  const ordem = [1,2,3,4,5,6,0], rotDia = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const cor = n => { if (!n) return '#f8fafc'; const t = n / max; const a = [239,246,255], b = [29,78,216]; return 'rgb('+a.map((x, i) => Math.round(x + (b[i]-x)*Math.pow(t,.7))).join(',')+')'; };
+  return '<table class="hm" role="grid" aria-label="Entradas por dia da semana e horário"><thead><tr><th class="dia"></th>'+FAIXAS.map(f => '<th scope="col">'+f[0].replace('antes das ','<').replace('depois das ','>')+'</th>').join('')+'</tr></thead><tbody>'+
+    ordem.map(w => '<tr><th class="dia" scope="row">'+rotDia[w]+'</th>'+FAIXAS.map((f, fi) => { const n = M[w][fi]; const a = 'hm:'+w+':'+fi; const on = S[v].alvo === a;
+      return '<td>'+(n ? '<button type="button" class="hm-cell" data-alvo="'+a+'" aria-pressed="'+on+'" style="background:'+cor(n)+';color:'+(n/max > .55 ? '#fff' : '#1e3a8a')+'" aria-label="'+esc(rotDia[w]+', '+f[0]+': '+n+' entradas — filtrar a lista')+'">'+n+'</button>' : '<span class="hm-cell zero" style="display:block;background:#f8fafc"></span>')+'</td>'; }).join('')+'</tr>').join('')+'</tbody></table>'+
+    '<div class="hm-leg"><span>menos</span><i style="background:#eff6ff"></i><i style="background:#93c5fd"></i><i style="background:#3b82f6"></i><i style="background:#1d4ed8"></i><span>mais</span>'+(pico ? '<span style="margin-left:auto;color:#475569;font-weight:600">pico: '+SEMANA_LONGA[pico[0]]+', '+FAIXAS[pico[1]][0]+'</span>' : '')+'</div>';
+}
+function matrizHTML(v, arr){
+  if (!pode('roles.manage')) return '<div class="sec-bloq">'+ic('lock',16)+'<span><b style="color:#334155">Acesso não permitido.</b> Seu perfil não vê a definição dos perfis; a matriz aparece para quem administra a organização.</span></div>';
+  const perfis = ORDEM_PERFIS.filter(r => arr.some(u => u.roles.includes(r)));
+  return '<table class="mx"><thead><tr><th>Perfil · usuários</th>'+MODULOS.map((m, mi) => { const a = 'mod:'+mi; return '<th scope="col"><button type="button" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" title="Quem altera '+m[1]+'" aria-label="'+esc('Quem altera '+m[1]+' — filtrar a lista')+'">'+m[1]+'</button></th>'; }).join('')+'</tr></thead><tbody>'+
+    perfis.map(r => { const n = arr.filter(u => u.roles.includes(r)).length; const a = 'perfil:'+r;
+      return '<tr><td><button type="button" class="mx-perfil" data-alvo="'+a+'" aria-pressed="'+(S[v].alvo===a)+'" aria-label="'+esc(PERFIS[r].rot+': '+n+' usuários — filtrar a lista')+'"><i class="lg-sw" style="background:'+PERFIS[r].cor+'"></i><span style="font-size:12px;font-weight:700;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+PERFIS[r].rot+'</span><b>'+n+'</b></button></td>'+
+        MODULOS.map((m, mi) => { const nv = nivel(r, mi); const ax = 'mx:'+r+':'+mi; return '<td>'+(nv === '0' ? '<span class="mx-cell nv-0" style="display:flex;align-items:center;justify-content:center">—</span>' : '<button type="button" class="mx-cell nv-'+nv+'" data-alvo="'+ax+'" aria-pressed="'+(S[v].alvo===ax)+'" aria-label="'+esc(PERFIS[r].rot+' em '+m[1]+': '+NV_ROT[nv]+' — ver os '+n+' usuários')+'">'+NV_ROT[nv]+'</button>')+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>'+
+    '<div class="mx-leg"><span><i class="lg-sw" style="background:#f3e8ff;border:1px solid #d8b4fe"></i>Total — tudo, inclusive usuários e configurações</span><span><i class="lg-sw" style="background:#dbeafe"></i>Altera — cria e edita</span><span><i class="lg-sw" style="background:#f0f9ff;border:1px solid #bae6fd"></i>Consulta — só lê</span><span>Clique no perfil, na célula ou no nome do módulo para filtrar a lista.</span></div>';
+}
+function renderC(root){
+  const v = 'c', st = S[v], k = $('[data-kpis]', root), bi = $('[data-bi]', root);
+  k.innerHTML = '';
+  if (st.estado === 'carregando') { bi.innerHTML = '<div class="c-topo">'+cardSkel(170)+cardSkel(170)+'</div><div class="an-card" aria-hidden="true" style="margin-bottom:12px"><span class="pat-skel" style="display:block;height:200px"></span></div>'; return; }
+  if (st.estado === 'erro') { bi.innerHTML = '<div class="c-topo"><div class="an-card"><div class="an-card__title"><span>Saúde do acesso</span></div><div class="vazio-curto">Dados indisponíveis no momento.</div></div><div class="an-card"><div class="an-card__title"><span>Quando a equipe entra</span></div><div class="vazio-curto">Dados indisponíveis no momento.</div></div></div>'; return; }
+  const arr = base(v), c = contagens(arr);
+  if (!arr.length) { bi.innerHTML = '<div class="c-topo"><div class="an-card"><div class="an-card__title"><span>Saúde do acesso</span></div><div class="vazio-curto">Nenhum usuário cadastrado.</div></div><div class="an-card"><div class="an-card__title"><span>Quando a equipe entra</span></div><div class="vazio-curto">Sem entradas no período.</div></div></div>'; return; }
+  bi.innerHTML = '<div class="c-topo"><div class="an-card"><div class="an-card__title"><span>Saúde do acesso</span><small>clique num item para ver quem é</small></div>'+saudeHTML(v, c)+'</div>'+
+    '<div class="an-card"><div class="an-card__title"><span>Quando a equipe entra · últimos 30 dias</span><small>'+c.logins+' entradas '+FALTA('A conta sai da auditoria lida página por página; falta um resumo pronto')+'</small></div>'+heatmapHTML(v, arr)+'</div></div>'+
+    '<div class="an-card" style="margin-bottom:12px"><div class="an-card__title"><span>Quem pode o quê · perfil × módulo</span><small>pela definição atual de cada perfil</small></div>'+matrizHTML(v, arr)+'</div>';
+}
+/* ═════════ AUDITORIA filtrada pelo usuário — o deeplink real /audit?actorId= (UsersPage.tsx:434-443) ═════════ */
+const ACOES_PAPEL = {
+  field_technician:['Alterou a situação de uma ordem de serviço', 25], field_dispatcher:['Criou um despacho', 18], operator:['Criou uma ordem de serviço', 30],
+  finance:['Lançou um item financeiro', 40], manager:['Aprovou uma aprovação operacional', 55], inventory:['Movimentou o estoque', 35]
+};
+function eventosDe(u){
+  const ev = [];
+  u.logins.forEach(l => { const d = diaData(l.i); const t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), Math.floor(l.h), Math.round((l.h % 1)*60)); ev.push({ t, acao:'Entrou no sistema', u });
+    const ap = ACOES_PAPEL[u.roles[0]]; if (ap && t < NOW && l.h < 22) { const t2 = new Date(t.getTime() + ap[1]*60000); if (t2 < NOW) ev.push({ t:t2, acao:ap[0], u }); } });
+  if (u.ult && idxDe(u.ult) < 0) ev.push({ t:u.ult, acao:'Entrou no sistema', u });
+  if (u.id === 'u01') [[2,16,5,'Criou um usuário'],[4,10,20,'Criou um usuário'],[9,11,0,'Criou um usuário'],[2,16,20,'Alterou um usuário'],[5,9,40,'Revogou uma sessão'],[1,19,41,'Entrou no sistema']].forEach(x => ev.push({ t:emDia(x[0], x[1], x[2]), acao:x[3], u }));
+  return ev.filter(e => e.t <= NOW).sort((a, b) => b.t - a.t);
+}
+function abrirAuditoria(v, uid){ S[v].tela = 'aud'; S[v].audUser = uid; menuAtivo = 'Auditoria'; renderNav(); $('#topbar-title').textContent = 'Auditoria'; fecharFicha(true); render(v); window.scrollTo(0, 0); const b = $('[data-view="'+v+'"] [data-voltar]'); if (b) b.focus({ preventScroll:true }); }
+function voltarLista(v){ const uid = S[v].audUser; S[v].tela = 'lista'; menuAtivo = 'Usuários'; renderNav(); $('#topbar-title').textContent = 'Usuários'; render(v); const r = $('[data-view="'+v+'"] [data-linha="'+v+'-'+uid+'"]'); if (r) { r.scrollIntoView({ block:'center' }); r.focus({ preventScroll:true }); } }
+function renderAud(v){
+  const box = $('[data-view="'+v+'"] .tela-aud'); const u = S[v].audUser ? byId(S[v].audUser) : null;
+  const evs = (u ? eventosDe(u) : USERS.flatMap(eventosDe).sort((a, b) => b.t - a.t)).slice(0, 14);
+  box.innerHTML = '<button type="button" class="back-link" data-voltar>'+ic('arrowLeft',16)+' Voltar aos usuários</button>'+
+    '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">ADMINISTRAÇÃO</div><h1 class="pat-page-header__title">Auditoria</h1><p class="pat-page-header__subtitle">Trilha de acessos, alterações sensíveis e eventos críticos da organização.</p></div></div>'+
+    '<div class="pat-table"><div class="pat-table__topbar"><span style="font-size:13.5px;font-weight:800;color:#0f172a">Eventos'+(u ? ' de '+esc(u.nome) : '')+'</span><span class="pat-table__count">'+evs.length+' mais recentes</span></div>'+
+    (u ? '<div class="pat-filtro-chip-bar"><div class="pat-filtro-chip"><span>Filtrando por 1 usuário</span><button type="button" data-aud-limpar aria-label="Limpar o filtro de usuário">✕</button></div></div>' : '')+
+    '<table class="aud-tab"><thead><tr><th style="width:170px">QUANDO</th><th style="width:260px">USUÁRIO</th><th>AÇÃO</th></tr></thead><tbody>'+
+    (evs.length ? evs.map(e => '<tr><td class="pat-mono">'+fDH(e.t)+'</td><td>'+celUser(e.u)+'</td><td>'+e.acao+'</td></tr>').join('') : '<tr><td colspan="3"><div class="pat-table__empty"><div class="pat-table__empty-title">Nenhum evento registrado</div><div class="pat-table__empty-detail">'+(u && !u.ult ? 'Este usuário ainda não entrou no sistema.' : 'Nenhum evento no período.')+'</div></div></td></tr>')+'</tbody></table></div>';
+}
+
+/* ═════════ FICHA DO USUÁRIO — janela de tamanho FIXO (opções B e C) ═════════ */
+const ABAS_F = [['geral','Visão geral'],['acessos','Acessos'],['sessoes','Sessões'],['perfis','Perfis e permissões'],['auditoria','Auditoria']];
+let ficha = null, fichaAba = 'geral', fichaOrigem = null;
+function abrirFicha(uid, origem){ ficha = uid; fichaAba = 'geral'; fichaOrigem = origem || document.activeElement; renderFicha(); $('#ficha-overlay').hidden = false; document.body.style.overflow = 'hidden'; $('[data-fechar-ficha]').focus(); }
+function fecharFicha(silencioso){ if ($('#ficha-overlay').hidden) return; $('#ficha-overlay').hidden = true; document.body.style.overflow = ''; ficha = null; if (!silencioso && fichaOrigem && document.contains(fichaOrigem)) fichaOrigem.focus({ preventScroll:true }); }
+function renderFicha(){
+  const u = byId(ficha); if (!u) return;
+  const ac = []; if (pode('users.manage')) { ac.push('<button type="button" class="pat-btn" data-editar="'+u.id+'">'+ic('pencil',14)+' Editar usuário</button>'); ac.push(u.status === 'active' ? '<button type="button" class="pat-btn pat-btn--perigo" data-alternar="'+u.id+'">'+ic('ban',14)+' Desativar acesso</button>' : '<button type="button" class="pat-btn" data-alternar="'+u.id+'">'+ic('rotate',14)+' Reativar acesso</button>'); }
+  if (pode('audit.read')) ac.push('<button type="button" class="pat-btn" data-auditoria="'+u.id+'">'+ic('scroll',14)+' Ver auditoria deste usuário</button>');
+  $('#ficha-cabeca').innerHTML = avatar(u.nome)+'<div style="min-width:0"><div class="ficha__nome">'+esc(u.nome)+'</div><div class="ficha__mail">'+esc(u.email)+' · '+esc(u.filial)+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+u.roles.map(chipPerfil).join('')+(isAdmin(u) ? '<span class="pat-admin-badge">acesso total</span>' : '')+pillSit(u.status)+'</div><div class="ficha__acoes">'+ac.join('')+'</div>';
+  $('#ficha-abas').innerHTML = ABAS_F.map(a => '<button type="button" role="tab" id="ftab-'+a[0]+'" aria-controls="fpainel" data-ficha-aba="'+a[0]+'" aria-selected="'+(a[0]===fichaAba)+'" tabindex="'+(a[0]===fichaAba?0:-1)+'" class="'+(a[0]===fichaAba?'is-active':'')+'">'+a[1]+'</button>').join('');
+  $('#ficha-corpo').innerHTML = '<div role="tabpanel" id="fpainel" aria-labelledby="ftab-'+fichaAba+'">'+PAINEIS_F[fichaAba](u)+'</div>';
+  $('#ficha-corpo').scrollTop = 0;
+}
+const fCard = (t, corpo, full, extra) => '<section class="f-card'+(full?' f-card--full':'')+'"><h3><span>'+t+'</span>'+(extra||'')+'</h3>'+corpo+'</section>';
+const fBloq = t => '<div class="state-panel" style="padding:34px 24px"><div class="state-panel__icon">'+ic('lock',24)+'</div><div class="state-panel__title">Acesso não permitido</div><div class="state-panel__detail">'+t+'</div></div>';
+const PAINEIS_F = {
+  geral:u => '<div class="f-kpis"><div class="f-kpi"><b>'+u.logins.length+'</b><span>entradas em 30 dias</span></div><div class="f-kpi"><b style="font-size:15px;line-height:1.75">'+(u.ult ? (diasAtras(u.ult) === 0 ? 'Hoje, '+fHM(u.ult) : fDM(u.ult)+' · '+relativo(u.ult)) : 'Nunca')+'</b><span>último acesso</span></div><div class="f-kpi"><b>'+(pode('sessions:read') ? u.sessoes.length : '—')+'</b><span>sessões abertas</span></div><div class="f-kpi"><b>'+u.roles.length+'</b><span>'+(u.roles.length > 1 ? 'perfis' : 'perfil')+'</span></div></div>'+
+    '<div class="f-grid">'+fCard('Identificação', '<div class="pat-ab-detail-col">'+colIdentidade(u)+'</div>')+fCard('Acesso', '<div class="pat-ab-detail-col">'+colAcesso(u)+colSeguranca(u)+'</div>')+
+    fCard('Entradas por dia · últimos 30 dias', u.ult ? ativSVG(u, 96)+'<p class="pat-ab-detail-note" style="margin-top:6px">'+leituraAtividade(u)+'</p>' : '<p class="pat-ab-detail-note">Ainda não entrou no sistema desde o cadastro ('+fData(u.criado)+').</p>', true)+'</div>',
+  acessos:u => { const ent = u.logins.slice().sort((a, b) => b.i - a.i || b.h - a.h).slice(0, 12);
+    return '<div class="f-grid">'+fCard('Quando entra', heatmapUser(u))+fCard('Entradas recentes', ent.length ? '<table class="f-tab"><thead><tr><th>Data</th><th>Dia</th><th>Hora</th></tr></thead><tbody>'+ent.map(l => { const d = diaData(l.i); return '<tr><td class="pat-mono">'+fData(d)+'</td><td>'+SEMANA[d.getDay()]+'</td><td class="pat-mono">'+pad(Math.floor(l.h))+':'+pad(Math.round((l.h % 1)*60) % 60)+'</td></tr>'; }).join('')+'</tbody></table>' : '<p class="pat-ab-detail-note">Sem entradas nos últimos 30 dias.</p>', false, FALTA('O dispositivo de cada entrada não é devolvido; só o das sessões abertas'))+'</div>'; },
+  sessoes:u => { if (!pode('sessions:read')) return fBloq('Seu perfil não vê as sessões dos usuários.');
+    return fCard('Sessões abertas', u.sessoes.length ? '<table class="f-tab"><thead><tr><th>Dispositivo</th><th>Entrada</th><th>Última atividade</th><th>Situação</th><th></th></tr></thead><tbody>'+u.sessoes.map(s => '<tr><td>'+ic('monitor',13)+' '+s.disp+'</td><td class="pat-mono">'+fDH(s.entrada)+'</td><td>'+minAtras(s.ativ)+'</td><td>'+(u.status === 'inactive' ? '<span class="pat-pill" style="background:#FEE2E2;color:#B91C1C">Aberta · usuário inativo</span>' : '<span class="pat-pill" style="background:#DCFCE7;color:#15803D">Ativa</span>')+'</td><td style="text-align:right">'+(pode('sessions:revoke') ? '<button type="button" class="pat-btn pat-btn--perigo" data-revogar="'+s.id+'">'+ic('ban',13)+' Revogar</button>' : '')+'</td></tr>').join('')+'</tbody></table><p class="pat-ab-detail-note" style="margin-top:10px">Revogar não desconecta na hora: a pessoa sai na próxima renovação do acesso, em até ~15 minutos.</p>' : '<p class="pat-ab-detail-note">Nenhuma sessão ativa.</p>', true); },
+  perfis:u => { if (!pode('roles.manage')) return fBloq('Seu perfil não vê a definição dos perfis.');
+    return fCard('O que os perfis de '+esc(u.nome.split(' ')[0])+' permitem', '<table class="f-tab"><thead><tr><th>Módulo</th><th>Nível</th><th>Vem do perfil</th></tr></thead><tbody>'+MODULOS.map((m, mi) => { const n = nivelUser(u, mi); const de = u.roles.filter(r => nivel(r, mi) === n && n !== '0').map(r => PERFIS[r].rot).join(', '); return '<tr><td>'+m[1]+'</td><td>'+(n === '0' ? '<span style="color:#94a3b8">Sem acesso</span>' : '<span class="mx-cell nv-'+n+'" style="display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;padding:3px 10px">'+NV_ROT[n]+'</span>')+'</td><td>'+(de || '—')+'</td></tr>'; }).join('')+'</tbody></table>', true); },
+  auditoria:u => { const ev = eventosDe(u).slice(0, 10);
+    return '<div class="f-grid">'+fCard('O que '+esc(u.nome.split(' ')[0])+' fez', ev.length ? '<table class="f-tab"><thead><tr><th>Quando</th><th>Ação</th></tr></thead><tbody>'+ev.map(e => '<tr><td class="pat-mono">'+fDH(e.t)+'</td><td>'+e.acao+'</td></tr>').join('')+'</tbody></table>' : '<p class="pat-ab-detail-note">Nenhum evento registrado.</p>', false, pode('audit.read') ? '<button type="button" class="pat-link" data-auditoria="'+u.id+'">Ver auditoria deste usuário</button>' : '')+
+      fCard('Alterações feitas neste cadastro', '<p class="pat-ab-detail-note">Quem criou, quem mudou o perfil e quem desativou este usuário — com o antes e o depois.</p>', false, FALTA('A auditoria registra a alteração sem o antes e o depois, e não filtra pelo usuário alterado'))+'</div>'; }
+};
+function heatmapUser(u){
+  const M = Array.from({length:7}, () => Array(FAIXAS.length).fill(0)); let max = 1;
+  u.logins.forEach(l => { const w = diaData(l.i).getDay(); const f = FAIXAS.findIndex(fx => l.h >= fx[1] && l.h < fx[2]); M[w][f]++; max = Math.max(max, M[w][f]); });
+  const rot = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  return '<table class="hm" aria-label="Entradas de '+esc(u.nome)+' por dia da semana e horário"><thead><tr><th class="dia"></th>'+FAIXAS.map(f => '<th>'+f[0].replace('antes das ','<').replace('depois das ','>')+'</th>').join('')+'</tr></thead><tbody>'+
+    [1,2,3,4,5,6,0].map(w => '<tr><th class="dia">'+rot[w]+'</th>'+M[w].map(n => '<td><span class="hm-cell zero" style="display:flex;align-items:center;justify-content:center;cursor:default;background:'+(n ? 'rgba(37,99,235,'+(0.15 + .85*n/max).toFixed(2)+')' : '#f8fafc')+';color:'+(n ? (n/max > .55 ? '#fff' : '#1e3a8a') : 'transparent')+'">'+n+'</span></td>').join('')+'</tr>').join('')+'</tbody></table>';
+}
+
+/* ═════════ JANELAS (UserFormModal.tsx, confirmação de UsersPage.tsx:480-505, RevokeSessionDialog.tsx) ═════════ */
+let dlgOrigem = null;
+function abrirDlg(html, peq){ dlgOrigem = document.activeElement; const d = $('#dlg'); d.className = 'ui-modal'+(peq ? ' ui-modal--sm' : ''); d.innerHTML = html; $('#dlg-overlay').hidden = false; const f = $('#dlg input:not([disabled]), #dlg button[data-dlg-ok], #dlg button'); if (f) f.focus(); }
+function fecharDlg(){ if ($('#dlg-overlay').hidden) return; $('#dlg-overlay').hidden = true; $('#dlg').innerHTML = ''; if (dlgOrigem && document.contains(dlgOrigem)) dlgOrigem.focus({ preventScroll:true }); }
+const X_FECHAR = '<button type="button" data-dlg-fechar aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>';
+function abrirForm(uid){
+  const u = uid ? byId(uid) : null; const ed = !!u;
+  abrirDlg('<header><h2 id="dlg-tit">'+(ed ? 'Editar usuário' : 'Novo usuário')+'</h2>'+X_FECHAR+'</header><form data-form-usuario="'+(uid||'')+'" novalidate>'+
+    '<div data-form-erro></div><div class="form-grade">'+
+    '<label class="ui-field">Nome *<input class="ui-input" id="f-nome" maxlength="160" autocomplete="off" value="'+esc(u ? u.nome : '')+'" aria-required="true"><small class="form-error" data-erro="nome"></small></label>'+
+    '<label class="ui-field">E-mail *<input class="ui-input" id="f-email" type="email" maxlength="254" autocomplete="off" value="'+esc(u ? u.email : '')+'"'+(ed ? ' disabled' : '')+' aria-required="true">'+(ed ? '<small>O e-mail não pode ser alterado.</small>' : '')+'<small class="form-error" data-erro="email"></small></label>'+
+    '<fieldset class="perfis-fs larga"><legend>Perfis de acesso *</legend><div class="perfis-grade">'+ORDEM_PERFIS.map(r => '<label><input type="checkbox" name="perfil" value="'+r+'"'+(u && u.roles.includes(r) ? ' checked' : '')+'><span>'+PERFIS[r].rot+'</span></label>').join('')+'</div><small style="font-size:var(--text-sm);color:var(--text-secondary)" data-erro-hint>Selecione um ou mais perfis de acesso.</small><small class="form-error" data-erro="roles"></small></fieldset>'+
+    '<label class="ui-field">Situação<select class="ui-input" id="f-status"><option value="active"'+(!u || u.status === 'active' ? ' selected' : '')+'>Ativo</option><option value="inactive"'+(u && u.status === 'inactive' ? ' selected' : '')+'>Inativo</option></select></label>'+
+    (ed ? '' : '<div class="convite larga"><label style="display:flex;align-items:center;gap:8px;min-height:44px"><input type="checkbox" disabled> Enviar o convite de primeiro acesso por e-mail</label>'+FALTA('Hoje o cadastro é criado sem senha e sem convite: a pessoa não consegue entrar')+'</div>')+
+    '</div><footer class="rodape"><button type="button" class="ui-button ui-button--ghost" data-dlg-fechar>Cancelar</button><button type="submit" class="ui-button ui-button--primary" data-dlg-ok>'+(ed ? 'Salvar alterações' : 'Criar usuário')+'</button></footer></form>');
+}
+function salvarForm(form){
+  const uid = form.dataset.formUsuario; const u = uid ? byId(uid) : null;
+  const nome = $('#f-nome').value.trim(), email = $('#f-email').value.trim(), roles = $$('input[name="perfil"]:checked', form).map(i => i.value), status = $('#f-status').value;
+  const erros = {};
+  if (!nome) erros.nome = 'Nome é obrigatório.';
+  if (!u) { if (!email) erros.email = 'E-mail é obrigatório.'; else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) erros.email = 'E-mail inválido.'; else if (USERS.some(x => x.email.toLowerCase() === email.toLowerCase())) erros.email = 'Já existe um usuário com este e-mail.'; }
+  if (!roles.length) erros.roles = 'Selecione ao menos um perfil.';
+  $$('[data-erro]', form).forEach(s => s.textContent = erros[s.dataset.erro] || '');
+  $('[data-erro-hint]', form).hidden = !!erros.roles;
+  if (Object.keys(erros).length) { const prim = erros.nome ? '#f-nome' : erros.email ? '#f-email' : 'input[name="perfil"]'; const f = $(prim, form); if (f) f.focus(); return; }
+  if (u) { u.nome = nome; u.roles = roles; u.status = status; toast('Usuário '+nome+' atualizado.'); }
+  else { const nu = { id:'u'+(USERS.length + 1 + Math.floor(Math.random()*900)), nome, email, roles, status, criado:new Date(NOW), ult:null, filial:'Matriz — São Paulo', tipo:'escritorio', sessoes:[], logins:[] }; USERS.push(nu); toast('Usuário '+nome+' criado. Ele ainda não tem como entrar: falta o convite de primeiro acesso.'); }
+  fecharDlg(); renderTudo(); if (ficha) renderFicha();
+}
+function abrirAlternar(uid){
+  const u = byId(uid); const at = u.status === 'active';
+  abrirDlg('<header><h2 id="dlg-tit">'+(at ? 'Desativar usuário' : 'Ativar usuário')+'</h2>'+X_FECHAR+'</header><p style="font-size:14px;color:#334155;line-height:1.5">'+(at ? 'Desativar o acesso de '+esc(u.nome)+'? A pessoa deixa de entrar na organização até ser reativada.' : 'Reativar o acesso de '+esc(u.nome)+'?')+'</p>'+
+    (at && u.sessoes.length && pode('sessions:read') ? '<div class="ui-alert" style="margin-top:12px"><b>'+u.sessoes.length+(u.sessoes.length > 1 ? ' sessões continuam abertas' : ' sessão continua aberta')+'</b><span>Desativar não encerra as sessões: elas seguem na lista até expirar. Revogue-as na ficha do usuário.</span></div>' : '')+
+    '<footer class="rodape"><button type="button" class="ui-button ui-button--ghost" data-dlg-fechar>Cancelar</button><button type="button" class="ui-button ui-button--'+(at ? 'danger' : 'primary')+'" data-dlg-ok data-confirmar-alternar="'+uid+'">'+(at ? 'Desativar' : 'Ativar')+'</button></footer>', true);
+}
+function abrirRevogar(sid){
+  const u = USERS.find(x => x.sessoes.some(s => s.id === sid)); const s = u.sessoes.find(z => z.id === sid);
+  abrirDlg('<header><h2 id="dlg-tit">Revogar sessão</h2>'+X_FECHAR+'</header><dl class="dl"><dt>Usuário</dt><dd>'+esc(u.email)+'</dd><dt>Dispositivo</dt><dd>'+s.disp+'</dd></dl><div class="ui-alert"><b>Encerramento não é instantâneo</b><span>Encerrar esta sessão vai revogar o acesso do usuário. Ele será desconectado no próximo ciclo de renovação, em até ~15 minutos. Deseja continuar?</span></div>'+
+    '<footer class="rodape"><button type="button" class="ui-button ui-button--secondary" data-dlg-fechar>Cancelar</button><button type="button" class="ui-button ui-button--danger" data-dlg-ok data-confirmar-revogar="'+sid+'">Revogar sessão</button></footer>', true);
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3800); }
+/* ── Opções ── */
+const ROT = { a:'Opção A — Padrão fiel com BI (KPIs clicáveis + composição por perfil e por último acesso)', b:'Opção B — Analítica (tendência de entradas, perfis, recência, cadastros e higiene do acesso)', c:'Opção C — Saúde do acesso (pontuação, mapa de entradas e matriz perfil × módulo)' };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => v.style.display = v.dataset.view === o ? '' : 'none');
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => n.hidden = n.dataset.nota !== o);
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Usuários · Opção ' + o.toUpperCase();
+  $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', b.dataset.estado === S[o].estado));
+  const aud = S[o].tela === 'aud'; menuAtivo = aud ? 'Auditoria' : 'Usuários'; renderNav(); $('#topbar-title').textContent = aud ? 'Auditoria' : 'Usuários';
+}
+const viewDe = el => { const w = el.closest('[data-view]'); return w ? w.dataset.view : opcao; };
+function refocar(v, sel){ const b = $('[data-view="'+v+'"] '+sel); if (b) b.focus({ preventScroll:true }); }
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); const m = x.dataset.menu; if (m === 'Usuários') { if (S[opcao].tela === 'aud') voltarLista(opcao); } else if (m === 'Auditoria' && pode('audit.read')) abrirAuditoria(opcao, null); else toast('Na maquete só a tela de Usuários (e a Auditoria filtrada) está montada.'); return; }
+  if ((x = el('[data-estado]'))) { const v = opcao; S[v].estado = x.dataset.estado; S[v].aberta = null; S[v].tela = 'lista'; S[v].alvo = null; render(v); trocarOpcao(v); $('[data-view="'+v+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-papel]'))) { papel = x.dataset.papel; $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.papel === papel)); fecharFicha(true); ['a','b','c'].forEach(v => { S[v].alvo = null; S[v].aberta = null; S[v].tela = 'lista'; }); renderTudo(); trocarOpcao(opcao); $('[data-view="'+opcao+'"]').scrollIntoView({ block:'start' }); return; }
+  if ((x = el('[data-marcas]'))) { const sem = document.body.classList.toggle('sem-marcas'); x.setAttribute('aria-pressed', String(!sem)); x.textContent = sem ? 'Mostrar as marcas “falta no backend”' : 'Esconder as marcas “falta no backend”'; return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', String(!c.hidden)); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  /* janelas */
+  if ((x = el('[data-dlg-fechar]')) || t.id === 'dlg-overlay') { fecharDlg(); return; }
+  if ((x = el('[data-confirmar-alternar]'))) { const u = byId(x.dataset.confirmarAlternar); u.status = u.status === 'active' ? 'inactive' : 'active'; toast(u.status === 'active' ? 'Acesso de '+u.nome+' reativado.' : 'Acesso de '+u.nome+' desativado.'); fecharDlg(); renderTudo(); if (ficha) renderFicha(); return; }
+  if ((x = el('[data-confirmar-revogar]'))) { const sid = x.dataset.confirmarRevogar; const u = USERS.find(z => z.sessoes.some(s => s.id === sid)); u.sessoes = u.sessoes.filter(s => s.id !== sid); toast('Sessão revogada. O acesso cai na próxima renovação, em até ~15 minutos.'); fecharDlg(); renderTudo(); if (ficha) renderFicha(); return; }
+  if ((x = el('[data-fechar-ficha]')) || t.id === 'ficha-overlay') { fecharFicha(); return; }
+  if ((x = el('[data-ficha-aba]'))) { fichaAba = x.dataset.fichaAba; renderFicha(); const b = $('#ficha-abas [data-ficha-aba="'+fichaAba+'"]'); if (b) b.focus(); return; }
+  /* ações */
+  if ((x = el('[data-novo-usuario]'))) { abrirForm(null); return; }
+  if ((x = el('[data-editar]'))) { abrirForm(x.dataset.editar); return; }
+  if ((x = el('[data-alternar]'))) { abrirAlternar(x.dataset.alternar); return; }
+  if ((x = el('[data-revogar]'))) { abrirRevogar(x.dataset.revogar); return; }
+  if ((x = el('[data-auditoria]'))) { abrirAuditoria(viewDe(x), x.dataset.auditoria); return; }
+  if ((x = el('[data-abrir-ficha]'))) { abrirFicha(x.dataset.abrirFicha, x); return; }
+  if ((x = el('[data-voltar]'))) { voltarLista(viewDe(x)); return; }
+  if ((x = el('[data-aud-limpar]'))) { const v = viewDe(x); S[v].audUser = null; renderAud(v); return; }
+  if ((x = el('[data-tentar]'))) { const v = viewDe(x); S[v].estado = 'normal'; render(v); trocarOpcao(v); toast('Dados recarregados.'); return; }
+  if ((x = el('[data-pg]'))) { const v = viewDe(x); S[v].pagina += +x.dataset.pg; S[v].aberta = null; renderLista(v); return; }
+  /* lista */
+  if ((x = el('[data-limpar-filtro]'))) { const v = viewDe(x); S[v].alvo = null; S[v].aberta = null; S[v].pagina = 0; render(v); return; }
+  if ((x = el('[data-linha]'))) { abrirResumo(x); return; }
+  if ((x = el('[data-alvo]'))) { const v = viewDe(x); const a = x.dataset.alvo; S[v].alvo = (a === 'todos' || S[v].alvo === a) ? null : a; S[v].pagina = 0; S[v].aberta = null; render(v); refocar(v, '[data-alvo="'+a+'"]'); const lista = $('[data-view="'+v+'"] [data-lista]'); if (lista && S[v].alvo && lista.getBoundingClientRect().top > window.innerHeight) lista.scrollIntoView({ block:'start', behavior:'smooth' }); return; }
+});
+document.addEventListener('submit', e => { const f = e.target.closest('[data-form-usuario]'); if (f) { e.preventDefault(); salvarForm(f); } });
+document.addEventListener('input', e => { const t = e.target; if (t.dataset && t.dataset.busca) { const v = t.dataset.busca; S[v].busca = t.value.trim(); S[v].pagina = 0; S[v].aberta = null; renderLista(v); } });
+document.addEventListener('change', e => { const t = e.target; if (t.dataset && t.dataset.perfilSel) { const v = t.dataset.perfilSel; S[v].perfil = t.value; S[v].pagina = 0; S[v].aberta = null; renderLista(v); } });
+function prenderFoco(e, cont){ const f = $$('button:not([disabled]), input:not([disabled]), select, [tabindex="0"], [href]', cont).filter(n => n.offsetParent !== null); if (!f.length) return; const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length-1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } }
+document.addEventListener('keydown', e => {
+  const t = e.target; const dlgAberto = !$('#dlg-overlay').hidden, fichaAberta = !$('#ficha-overlay').hidden;
+  if (e.key === 'Escape') { if (dlgAberto) { fecharDlg(); return; } if (fichaAberta) { fecharFicha(); return; } if (S[opcao].tela === 'aud') voltarLista(opcao); return; }
+  if (e.key === 'Tab') { if (dlgAberto) prenderFoco(e, $('#dlg')); else if (fichaAberta) prenderFoco(e, $('[data-ficha]')); return; }
+  if (fichaAberta && !dlgAberto && (e.key === 'ArrowRight' || e.key === 'ArrowLeft') && t.matches('[data-ficha-aba]')) { const ids = ABAS_F.map(a => a[0]); const i = ids.indexOf(fichaAba); fichaAba = ids[(i + (e.key === 'ArrowRight' ? 1 : -1) + ids.length) % ids.length]; renderFicha(); $('#ficha-abas [data-ficha-aba="'+fichaAba+'"]').focus(); e.preventDefault(); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('[data-linha]')) { e.preventDefault(); abrirResumo(t); return; }
+  if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g[role="button"]')) { e.preventDefault(); t.dispatchEvent(new MouseEvent('click', { bubbles:true })); }
+});
+
+/* ── Inicialização ── */
+renderNav(); ['a','b','c'].forEach(render); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

@@ -130,7 +130,8 @@ Trilha resumida (fonte: `Kpis/kpis-history.json` + `agent-orchestration/controle
 - **Rodada Saneamento (2026-07-13/14, PRs #174–#183):** Ω-GATE/GOV/DOCS/INFRA-1..4 — suíte inteira no CI
   (backend 766/766), **política KPI-por-PR** (D-KPI-PER-PR revoga o gate humano por PR), descontaminação
   Kryos (D-DOCS-KRYOS), config-as-code de infra **inerte** até hand-off (provedor **Fly.io** gru/SP 1º,
-  AWS 2º — D-INFRA-PROVIDER).
+  AWS 2º — D-INFRA-PROVIDER). **Substituído em 2026-10-13: o provedor é a AWS (`D-INFRA-PROVIDER-AWS`,
+  decisão do dono); a config da Fly fica inerte até a migração.**
 - **Ω3F — Hub operacional da OS (Fase 1, PRs #184–#205):** orçamento→OS, despacho endurecido,
   timeline/comentários, checklist congelado no despacho, anexos de OS. backend →989, smoke →486.
 - **Ω4 — Financeiro do tenant ×1,5 (PRs #206–#226):** 8 agregados (Contas, Títulos AR/AP + chokepoint,
