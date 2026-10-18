@@ -319,7 +319,8 @@ validação** e **rastreabilidade**. Tipos:
    **Decisão nova no meio do bloco vira EMENDA do plano antes do código (decisão do dono, 2026-10-17,
    `D-EMENDA-ANTES-DO-CODIGO`; respondida "nas recomendações").** Quando o dono decide algo que muda um bloco já em
    desenvolvimento, a decisão entra primeiro como emenda escrita do plano (com o critério de aceite e os caminhos
-   afetados), passa pela crítica, e só então o dev mexe no código. Por quê: no `B-O6R-07c-b1` a trava "No local" entrou
+   afetados), passa pela revisão do plano (o `critico-adversarial` nos blocos de invariante, §C7.1-ter(b); nos demais, um
+   revisor independente), e só então o dev mexe no código. Por quê: no `B-O6R-07c-b1` a trava "No local" entrou
    direto no código, sem plano nem crítica; foi posta num caminho só, e a junta achou 5 desvios (ciclo 1 reprovado).
 3. **Validar** com a **bateria exata** do comando (formato → analyze → testes do bloco →
    regressões dos blocos anteriores → suíte → `npm run check/lint/test/build` →
@@ -571,8 +572,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    todo limite, ajudar para acelerar o desenvolvimento. se so uma tarefa se fazer necessaria, use outra ia com limite ok,
    se todas ias estao ocupada e falta uma tarefa fazer num bloco, vc faz"*. Ao distribuir uma tarefa (dev, cadeira,
    inspetor, redator, revisor), o orquestrador escolhe primeiro uma IA externa com limite (Codex, Gemini Pro pela API
-   com teto por tarefa, Argon); o Claude da sessão só entra para cobrir limite esgotado, acelerar o caminho crítico ou
-   quando todas as externas estão ocupadas. Valem acima disto: design só Claude, Gemini nunca revisor único, topo no
+   com teto por tarefa, Argon); o Claude da sessão "pode até ajudar": entra para acelerar o desenvolvimento, para cobrir
+   uma IA que usou todo o limite, ou para fazer a tarefa que falta num bloco quando todas as externas estão ocupadas. Valem acima disto: design só Claude, Gemini nunca revisor único, topo no
    plano e em toda reprovação, e todo braço externo com vigia que acorde a sessão quando ele para.
 
    O `inspetor-de-terreno-da-junta` e o `porteiro-pos-merge` têm `model: opus` fixado no frontmatter (de
