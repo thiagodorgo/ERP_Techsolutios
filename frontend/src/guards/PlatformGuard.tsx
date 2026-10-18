@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import { isPlatformAdmin } from "../navigation/types";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
+import { resolveContextLandingRoute } from "../modules/context/landing-route";
 
 export function PlatformGuard({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -18,7 +19,8 @@ export function PlatformGuard({ children }: { children: ReactNode }) {
   }
 
   if (!isPlatformAdmin({ permissions, roles })) {
-    return <Navigate to="/dashboard" replace />;
+    const landing = resolveContextLandingRoute(permissions);
+    return <Navigate to={landing ?? "/select-context"} replace />;
   }
 
   return <>{children}</>;

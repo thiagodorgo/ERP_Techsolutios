@@ -18,9 +18,9 @@ export const tenantNavigation: NavigationItem[] = [
     path: "/dashboard",
     scope: "tenant",
     mode: "operation",
-    // Recon §4: vocabulário do backend (`dashboard:read`) é a autoridade; mantém-se o
-    // alias legado (`dashboard:view`) que a sessão mock/JWT ainda emite.
-    requiredPermissions: ["dashboard:read", "dashboard:view"],
+    // O catálogo do backend (`dashboard:read`) é a autoridade; alias de apresentação
+    // não concede alcance à rota.
+    requiredPermissions: ["dashboard:read"],
     icon: "dashboard",
     moduleKey: "dashboard",
   },

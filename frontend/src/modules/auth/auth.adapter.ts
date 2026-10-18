@@ -241,14 +241,14 @@ function mapBackendRole(role: string): UserRole | null {
 export function resolveFrontendPermissions(backendRoles: readonly string[]): string[] {
   const backendPermissions = backendRoles.flatMap((role) => rolePermissions[role.trim().toLowerCase()] ?? []);
 
-  return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
+  return [...new Set(backendPermissions.flatMap(mapBackendPermission))];
 }
 
 // Recebe as permissões REAIS do backend (catálogo) e expande os aliases de UI
-// (ex.: dashboard:read→dashboard:view, work_orders:read→work-orders:view), para
+// (ex.: dashboard:read -> dashboard:view, work_orders:read -> work-orders:view), para
 // que os guards que usam vocabulário mock e os que usam o real funcionem.
 export function resolveFrontendPermissionsFromBackend(backendPermissions: readonly string[]): string[] {
-  return [...new Set(["dashboard:view", ...backendPermissions.flatMap(mapBackendPermission)])];
+  return [...new Set(backendPermissions.flatMap(mapBackendPermission))];
 }
 
 function mapBackendPermission(permission: string): string[] {
@@ -373,5 +373,5 @@ const frontendPermissionAliases: Record<string, string[]> = {
     "work-orders:update",
     "logistics:dispatch",
   ],
-  "os.read": ["work_orders:read", "work-orders:view"],
+  "os.read": ["work-orders:view"],
 };

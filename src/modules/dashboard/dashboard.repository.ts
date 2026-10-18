@@ -86,6 +86,10 @@ export function isCriticalWorkOrder(
   workOrder: { readonly scheduledFor?: Date; readonly status: WorkOrderStatus; readonly priority: WorkOrderPriority },
   now: Date,
 ): boolean {
+  if (DASHBOARD_TERMINAL_STATUSES.includes(workOrder.status)) {
+    return false;
+  }
+
   return (
     isWorkOrderOverdue(workOrder, now) ||
     workOrder.priority === "high" ||

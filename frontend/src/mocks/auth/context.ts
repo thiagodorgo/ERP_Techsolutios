@@ -49,7 +49,7 @@ export const mockSession: AuthSession = {
 const PLATFORM_PERMS = mockSession.user.permissions;
 
 const OPERATIONAL_PERMS = [
-  "dashboard:view",
+  "dashboard:read",
   "work_orders:read",
   "work_orders:create",
   "work_orders:update",
@@ -88,7 +88,7 @@ const MOCK_PROFILES: Record<string, MockProfile> = {
   dispatcher: { name: "Diego Rocha", roles: ["Operador Logistico"], permissions: OPERATIONAL_PERMS },
   finance: { name: "Fernanda Dias", roles: ["Financeiro"], permissions: OPERATIONAL_PERMS },
   admin: { name: "Alice Prado", roles: ["Administrador"], permissions: OPERATIONAL_PERMS },
-  auditor: { name: "Auro Lima", roles: ["Auditor"], permissions: ["dashboard:view", "work_orders:read", "audit:view"] },
+  auditor: { name: "Auro Lima", roles: ["Auditor"], permissions: ["dashboard:read", "work_orders:read", "audit:view"] },
 };
 
 function profileForEmail(email: string): MockProfile {
@@ -126,7 +126,7 @@ export const mockTenantContexts: TenantContext[] = [
     branchName: "São Paulo - Campo",
     role: "Gestor Operacional",
     permissions: [
-      "dashboard:view",
+      "dashboard:read",
       "work_orders:read",
       "work_orders:create",
       "work_orders:update",
@@ -170,7 +170,7 @@ export const mockTenantContexts: TenantContext[] = [
     branchId: "fil-mg-02",
     branchName: "Contagem - Planta",
     role: "Auditor",
-    permissions: ["dashboard:view", "work_orders:read", "audit:view"],
+    permissions: ["dashboard:read", "work_orders:read", "audit:view"],
     enabledModules: ["dashboard", "work-orders"],
     scope: "tenant",
   },

@@ -303,13 +303,13 @@ async function renderNotifications(permissions: readonly string[]): Promise<stri
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { mockSessionForEmail } = await import("../src/mocks/auth/context");
-  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
   const { NotificationsPage } = await import("../src/modules/notifications/pages/NotificationsPage");
 
-  setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
+  setStoredSessionPermissions(mockSessionForEmail("gestor.web@techsolutions.example"), permissions);
   seedContext(permissions);
 
   return renderToString(

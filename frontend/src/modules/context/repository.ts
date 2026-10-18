@@ -1,6 +1,10 @@
 import { isMockMode, readFrontendEnv } from "../../config/env";
 import { mockTenantContexts } from "../../mocks/auth/context";
-import { resolveFrontendPermissions, resolveFrontendRoles } from "../auth/auth.adapter";
+import {
+  resolveFrontendPermissions,
+  resolveFrontendPermissionsFromBackend,
+  resolveFrontendRoles,
+} from "../auth/auth.adapter";
 import { getStoredAuthSession, getStoredToken, setStoredAuthSession } from "../auth/auth.storage";
 import type { AuthSession } from "../auth/types";
 import type { TenantContext } from "./types";
@@ -27,6 +31,7 @@ type ActiveTenantResponse = {
     readonly tenant: { readonly id: string; readonly name: string };
     readonly user: { readonly id: string; readonly name: string; readonly email: string };
     readonly roles: readonly string[];
+    readonly permissions: readonly string[];
   };
 };
 
@@ -95,6 +100,8 @@ export async function switchTenantContext(tenantId: string): Promise<AuthSession
   }
 
   const backendRoles = [...d.roles];
+  const permissions = resolveFrontendPermissionsFromBackend(d.permissions);
+
   const nextSession: AuthSession = {
     ...currentSession,
     accessToken,
@@ -111,7 +118,7 @@ export async function switchTenantContext(tenantId: string): Promise<AuthSession
       email: d.user.email,
       backendRoles,
       roles: resolveFrontendRoles(backendRoles),
-      permissions: resolveFrontendPermissions(backendRoles),
+      permissions,
     },
   };
 
