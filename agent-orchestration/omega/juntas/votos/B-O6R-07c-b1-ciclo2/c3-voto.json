@@ -1,0 +1,65 @@
+{
+  "jurado": "jurado-07cb1c2-c3-censo-escopo-e-regressao — identidade nova jurado-07cb1c2-c3-opus",
+  "cadeira": "C3 — censo, regressão/CI, escopo e registro",
+  "modelo": "Claude Opus 5.5 (claude-opus-5-5), nível menor (§C7.6), reserva declarada (Codex com 1 tarefa; Gemini/Argon sem limite — D-IAS-EXTERNAS-PRIMEIRO)",
+  "objeto": "7ff1e0039c07b22b84acf8007eef6835560e823a (ls-remote refs/pull/440/head = gh pr view headRefOid, no início e no fim); B = merge-base = c260d36201f6e835799e7f96a14bc9eb8889ca5a; origin/main início = fim = a26f8afe74b73d9379b4fae5deba312875c2427b; merge b14478ab sem conteúdo próprio (diff-tree --cc vazio); objeto do ciclo 1 = b198fe35; base do ciclo 1 = 4fe7524e",
+  "legalidade": "inspetor insp-07cb1c2 LIBERADO nomeando a C3 e o terreno w-j07cb1c2-c3-*/j07cb1c2-c3-*; corpo md5 EOL-neutro 44db36af06f249c1507324fe9da0d2a1 (blob do objeto) = esperado; mandato md5 42b41847d49773ef445a99ae6291b84c = esperado; 14/14 check-runs completed/success; worktree próprio C:/Users/AMP/w-j07cb1c2-c3 (o caminho do disparo), npm ci próprio, 0 junction; decisões medidas em origin/main e no objeto (D-GOV-PROPORCIONAL l.2940, D-07CB1-TRAVA-ATE-B2 l.3709, D-INICIO-ATENDIMENTO-CONFIRMADO l.3719, D-07CB1-* l.3728-3730); ata do ciclo 1 tratada como A RE-VERIFICAR",
+  "quorum": "unanimidade de 3 com veto; ciclo 2",
+  "voto": "APROVADO",
+  "itens": {
+    "item1": "VERDE — gravar N=2 byte-idêntico entre si e ao blob (md5 3ee5cd16, blob c2ff01fd, 468 chaves); T14 e T11 verdes no objeto (guard sozinho 32/32); MT11 → T6+T14 vermelhos, T14 nomeia a chave; M25 → T11 com a chave nova contra [] (+T14); src de b198fe35 → só T14 vermelho, N=3 diferenças por chave (evidence.work_order_* EVIDENCIA-OS·ESCOPO → OS·SEM-ALCANCE = C3-A2), controle negativo N=0; helper intocado no ciclo 2",
+    "item2": "VERDE — 14/14 success (push e pull_request); backend 3565/3563/0/2 e backend-postgres 341/341/0/0; o -db do bloco (13 casos) executado com banco no job backend, sem o caso de pulo; check/lint/build ec 0; bloco 187/187 em memória; regressão do plano 296/295/0/1 (o skip é o pulo canônico de um -db); nomes: B→objeto falta só o T11 renomeado no ciclo 1 (par novo presente); ciclo1→objeto falta só o [despacho] substituído pelos [atômica ·] (declarado no §2.4); backend-postgres 0 ausência",
+    "item3": "VERDE no escopo e nos espelhos, com 2 ajustes de registro — delta do ciclo 2 = 38 (6 código + 5 teste permitidos, 24 registro, 3 fora declarados como arnês sem asserção enfraquecida), PROIBIDO 0, migração 20260877 intocada (blob e7a53906), controle/* sem remoção, S0 OK 61, diff --check ec 0, sem KPI"
+  },
+  "o_que_executei": [
+    "git show <obj>:<corpo> | tr -d CR | md5sum; tr -d CR < cadeira-c3.md | md5sum",
+    "git ls-remote origin refs/pull/440/head; gh pr view 440 --json headRefOid,state; git merge-base origin/main <obj> (início e fim)",
+    "git worktree add --detach C:/Users/AMP/w-j07cb1c2-c3 <obj>; npm ci; find node_modules -maxdepth 1 -type l | wc -l → 0",
+    "node --import tsx tests/helpers/o6r07c-census.ts gravar regen{1,2}.json; cmp regen1 regen2; cmp regenN blob-do-fixture; git hash-object --no-filters regen1",
+    "node --test --import tsx --test-reporter=tap tests/o6r07c-census-guard.test.ts (sozinho): objeto, MT11, M25, src de b198fe35 (checkout com core.autocrlf=false; restauro por hash)",
+    "gravar com o src de b198fe35 + comparação chave a chave contra o blob (N=3) e controle regen1 × blob (N=0)",
+    "gh api repos/.../commits/<sha>/check-runs (objeto, B, b198fe35, 4fe7524e); gh api .../actions/jobs/<id>/logs; parser TAP próprio (ok/not ok/SKIP/nomes); LC_ALL=C comm -23",
+    "npm run check; npm run lint; npm run build; tests/o6r07c-b-scope.test.ts em memória; regressão do §2.6 passo 5 (23 arquivos)",
+    "vermelho-controle do parser (TAP + not ok + SKIP), da comparação de nomes (lista fabricada com remoção e renome sem par) e de git diff --quiet (irmão ec 1)",
+    "git diff-tree --cc b14478ab; recorte do delta do ciclo 2 (b198fe35..obj menos os 24 da main); classifica.sh com controle fabricado; contagem de asserts por arquivo",
+    "git diff --quiet nos caminhos PROIBIDOS (C1..obj e B..obj) com irmãos positivos; blob da migração 20260877 nos dois; numstat de controle/*; git diff --check; sync-agent-agents --check no objeto e em árvore descartável divergente (ec 1)",
+    "git show <obj>:agent-orchestration/controle/{decisoes,pendencias}.md | grep por id e por texto; gh pr view 440 --json body; git log -3 --format=%b origin/main"
+  ],
+  "achados": [
+    {
+      "id": "C3c2-A1",
+      "propriedade_ausente": "o corpo do PR #440 usa os números e os fatos do head",
+      "evidencia": "gh pr view 440 --json body: cita prisma/migrations/20260874000000_… (objeto: 20260877000000_…), 39/39 e 7/7 e '3397 testes, 2 falhas' (head: b-scope 187/187, -db 13, CI backend 3565/3563/0/2), pergunta 1 em on_route (superada por D-INICIO-ATENDIMENTO-CONFIRMADO, 'No local'); não descreve o ciclo 2 (trava única por OS, 409 pela web/lote, 403 na ativação por quem não despacha, rejected not_found de evidência sem OS, reassign à mesma pessoa = no-op) nem os 3 arquivos fora da lista do ciclo 2. O plano §2.5 (C3-N2) dava o corpo como 'corrigido no ciclo 2'; o relatório do dev (l.341) atribui o corpo ao orquestrador. Não declara b2 pronto.",
+      "comando": "gh pr view 440 -R thiagodorgo/ERP_Techsolutios --json body -q .body | grep -n -E '20260874|39/39|7/7|on_route|ciclo 2'",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "classe": "registro — honestidade do corpo do PR",
+      "N_forma": "4 afirmações desatualizadas (migração, 2 contagens, pergunta 1) + omissão do ciclo 2 inteiro, num artefato mutável que não é o objeto julgado",
+      "porque_nao_bloqueia": "consequência medida: o corpo não está no SHA julgado e não entra na história da main (o squash usa os assuntos dos commits — git log -3 --format=%b origin/main); não declara b2 concluído nem número inventado (são medidas reais do ciclo 1, defasadas). Sem efeito em produto, permissão ou dado."
+    },
+    {
+      "id": "C3c2-A2",
+      "propriedade_ausente": "as pendências da §1.5/§2.5 do plano registradas por APPEND em controle/pendencias.md 'antes da junta'",
+      "evidencia": "objeto = origin/main: presentes P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (l.11174) e P-07CB1-CANCELAR-EM-NO-LOCAL (l.11180); ausentes P-07CB1-K2-CONCLUSAO-APOS-REINICIO, P-07CB1-RESIDUAL-BACKFILL e as 6 pré-existentes da §1.5 (C1-N1, C1-N2, C2 ×4), por id e por texto. Cada uma tem dono e evidência de data no plano versionado no objeto (§1.5, tabela; §2.5).",
+      "comando": "git show 7ff1e003:agent-orchestration/controle/pendencias.md | grep -n -E 'P-07CB1-|evidence_tenant_mismatch|usar a do servidor|completedBy|field_dispatch:update'",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco",
+      "classe": "registro — pendência nomeada sem entrada em controle/",
+      "N_forma": "8 pendências (2 nomeadas no §2.5 + 6 da §1.5) só no plano; 2 registradas",
+      "porque_nao_bloqueia": "nada se perde: dono e evidência estão no plano dentro do objeto; D-GOV-PROPORCIONAL (3) põe o registro em PR semanal; o registro é do orquestrador (§2.11), não do produto."
+    }
+  ],
+  "notas": [
+    "3 arquivos fora da lista fechada do §2.3 (tests/field-dispatch-routes.test.ts, tests/field-dispatch.test.ts, tests/o6r07b-mime-sniff-routes.test.ts): declarados pelo dev com motivo antes da junta, classe prevista no R1/R4 do plano; asserts iguais (24/37/56), 0 assert removido — conferido, não é achado.",
+    "Relatório do dev gravado como seção de B-O6R-07c-b1-dev.md em vez de B-O6R-07c-b1-ciclo2-dev.md, e plano copiado como -ciclo2-plano.md em vez de -ciclo2-auditoria-e-plano.md: trocas de nome; a primeira está declarada (l.211).",
+    "Com o T14 novo, a M25 do ciclo 1 acende o T11 e também o T14 (coerente: o fixture deixa de ser o gerado); 'somente o T11' era a forma do ciclo 1, sem T14."
+  ],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [
+    "C3c2-A1 — corpo do PR #440 reflete o head antes do merge (dono: orquestrador)",
+    "C3c2-A2 — K2, RESIDUAL-BACKFILL e as 6 da §1.5 entram em controle/pendencias.md por APPEND (dono: orquestrador, PR semanal ou o do bloco)",
+    "P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO e P-07CB1-CANCELAR-EM-NO-LOCAL (dono B-O6R-07c-b2), já registradas"
+  ],
+  "teardown": "mutações restauradas por hash (fixture c2ff01fd; 6 arquivos de src = blobs do objeto; porcelain 0); dist removido; worktree C:/Users/AMP/w-j07cb1c2-c3 removido por git worktree remove --force (ec 0); subpasta do scratchpad apagada; j07cb1c2-c3-* = 0 (nenhum container criado); base viva e portas proibidas intocadas",
+  "justificativa": "Censo regenerável e determinístico, T14/T11 com vermelho provado; CI 14/14 e suíte sem teste sumido, -db executado com banco; escopo do ciclo 2 contido, PROIBIDO vazio, espelhos consistentes e registro sem remoção. Os dois achados são de registro do orquestrador, fora do objeto, sem efeito em produto, graduados como ajuste pela consequência medida. VOTO: APROVADO — censo byte-idêntico ao gerador com T14 que falha, CI e regressão sem perda de teste, diff do ciclo 2 dentro do PERMITIDO com 3 extras declarados; ajustes C3c2-A1 (corpo do PR desatualizado) e C3c2-A2 (8 pendências só no plano) ficam como pendência do orquestrador."
+}

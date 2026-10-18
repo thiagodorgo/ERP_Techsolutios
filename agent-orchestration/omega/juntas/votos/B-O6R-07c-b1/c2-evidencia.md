@@ -1,0 +1,2 @@
+papel: C2 | identidade: jurado-07cb1-c2-mobile-e-conflito | modelo: Gemini 3.1 Pro · nível menor (autorização: API paga D-GEMINI-PRO-API-TETO; D-GEMINI-SEGUNDO-REVISOR) | mandato_md5: 83c4674ca32e948b683d9d40438f39c5 (declarado no disparo: 83c4674ca32e948b683d9d40438f39c5) | corpo_md5: fc06a7d5351e0c4bbe1e225251dd2645 (recebido no prompt: n/a)
+objeto: b198fe358b41186b2598ab258ccb735da8c04cbc | base: 4fe7524e

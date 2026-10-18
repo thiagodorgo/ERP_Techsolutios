@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
@@ -12,6 +13,8 @@ import type {
   SystemRemovalWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
+  WorkOrderAssignmentEventInput,
+  WorkOrderAssignmentWriteResult,
   WorkOrderEvent,
   WorkOrderEventType,
   WorkOrderStatus,
@@ -65,7 +68,15 @@ export interface WorkOrderRepository {
   updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
-  assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined>;
+  // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS (`assigned_*`), linha em `work_order_assignments` e evento
+  // `work_order_assigned` numa escrita só: falha em qualquer parte deixa a OS como estava.
+  assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined>;
+  assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined>;
+  hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean>;
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent>;
   listTimeline(tenantId: string, workOrderId: string): Promise<readonly WorkOrderEvent[]>;
   reset?(): void;
@@ -412,7 +423,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     return updated;
   }
 
-  async assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+  async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
     const now = new Date();
@@ -438,10 +449,88 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       assignedAt: now,
       metadata: {},
     };
+    const event = this.buildAssignedEvent(input.tenantId, input.workOrderId, workOrder.status, assignment.id, input.event);
     this.workOrders.set(workOrder.id, workOrder);
     this.assignments.set(assignment.id, assignment);
+    this.events.set(event.id, event);
 
-    return { workOrder, assignment };
+    return { workOrder, assignment, event };
+  }
+
+  async assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+    const now = new Date();
+    const nextStatus: WorkOrderStatus = current.status === "open" ? "assigned" : current.status;
+    const workOrder: WorkOrder = {
+      ...current,
+      assignedOperatorId: input.operatorId,
+      assignedUserId: input.userId,
+      status: nextStatus,
+      updatedBy: input.assignedBy,
+      updatedAt: now,
+    };
+    const metadata: Record<string, unknown> = { source: input.source, dispatchId: input.dispatchId };
+    const assignment: WorkOrderAssignment = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      operatorId: input.operatorId,
+      userId: input.userId,
+      status: "assigned",
+      assignedBy: input.assignedBy,
+      assignedAt: now,
+      metadata,
+    };
+    const event = this.buildAssignedEvent(input.tenantId, input.workOrderId, workOrder.status, assignment.id, input.event);
+    this.workOrders.set(workOrder.id, workOrder);
+    this.assignments.set(assignment.id, assignment);
+    this.events.set(event.id, event);
+
+    return { workOrder, assignment, event };
+  }
+
+  // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — o evento da atribuição nasce DENTRO do método que grava a OS e a linha (não
+  // por `createEvent`, que é a escrita avulsa): as três escritas acontecem juntas, depois de tudo montado.
+  private buildAssignedEvent(
+    tenantId: string,
+    workOrderId: string,
+    toStatus: WorkOrderStatus,
+    assignmentId: string,
+    input: WorkOrderAssignmentEventInput,
+  ): WorkOrderEvent {
+    return {
+      id: randomUUID(),
+      tenantId,
+      workOrderId,
+      eventType: "work_order_assigned",
+      fromStatus: input.fromStatus,
+      toStatus,
+      actorUserId: input.actorUserId,
+      message: input.message,
+      metadata: { ...input.metadata, assignmentId },
+      createdAt: new Date(),
+    };
+  }
+
+  async hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    for (const assignment of this.assignments.values()) {
+      if (assignment.tenantId !== tenantId || assignment.workOrderId !== workOrderId) {
+        continue;
+      }
+      if (
+        assignment.userId === identity.userId ||
+        assignment.operatorId === identity.userId ||
+        (Boolean(identity.operatorProfileId) && assignment.operatorId === identity.operatorProfileId)
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {

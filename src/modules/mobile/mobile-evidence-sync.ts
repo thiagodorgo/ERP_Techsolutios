@@ -1,4 +1,11 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
+import {
+  actorMutatesAssignedOnly,
+  ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+  ASSIGNMENT_CHANGED_NEXT_ACTION,
+  isPreviouslyAssignedRefusal,
+} from "../work-orders/work-order.types.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -95,9 +102,11 @@ const supportedActionTypes: readonly EvidenceActionType[] = [
 export async function syncMobileEvidenceActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
+  resolveService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
 ): Promise<MobileEvidenceSyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
+  const service = await resolveService();
   const accepted: MobileEvidenceActionResult[] = [];
   const rejected: MobileEvidenceActionResult[] = [];
   const conflicts: MobileEvidenceActionResult[] = [];
@@ -120,7 +129,7 @@ export async function syncMobileEvidenceActions(
       continue;
     }
 
-    const result = processAction(actor, action);
+    const result = await processAction(service, actor, action);
 
     if (result.status === "accepted") {
       syncReceipts.set(receiptKey, { fingerprint, result });
@@ -165,6 +174,8 @@ export function findMobileEvidenceSyncReceiptForUpload(
 ): {
   evidenceId: string;
   type?: string;
+  // B-O6R-07c-b1 — o escopo que o servidor deu ao metadado (`work_order` | `field`); o upload decide por ele.
+  scope?: EvidenceScope;
   workOrderId?: string;
 } | undefined {
   const receipt = syncReceipts.get(`${actor.tenantId}:${actor.userId}:${clientEvidenceId}`);
@@ -176,6 +187,7 @@ export function findMobileEvidenceSyncReceiptForUpload(
   return {
     evidenceId,
     type: result.type,
+    scope: result.server_state?.scope,
     workOrderId: result.work_order_id,
   };
 }
@@ -241,10 +253,11 @@ function parseAction(value: unknown): MobileEvidenceAction {
   };
 }
 
-function processAction(
+async function processAction(
+  service: WorkOrderService,
   actor: AuthenticatedActor,
   action: MobileEvidenceAction,
-): MobileEvidenceActionResult {
+): Promise<MobileEvidenceActionResult> {
   try {
     if (!isSupportedActionType(action.type)) {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
@@ -253,6 +266,28 @@ function processAction(
     const descriptor = describeAction(action.type);
     assertActionPermission(actor, descriptor.scope);
     assertSafePayload(action.payload);
+    // B-O6R-07c-b1 (Ω6R-SEC-002, as 3 entradas `evidence.work_order_*`) — a evidência DA OS mandada pelo papel de
+    // campo passa pela porta da OS (`getForMutation`: 404/400 se a OS não existe nesta organização, depois o escopo
+    // por objeto do 07a) ANTES de validar o metadado. O técnico que nunca foi da OS recebe `rejected`
+    // `not_assigned_to_actor`; o ex-técnico, `conflicts[]` (`D2-07c`). Papel `tenant_wide` não cai no escopo (a mesma
+    // regra de presença do 07a).
+    //
+    // Ciclo 2 (achado C3-A2, `D1-07c` "um critério só") — a OS tem de EXISTIR nesta organização para TODOS os papéis:
+    // o `tenant_wide` passa por `get` (404 → `rejected not_found`, inclusive OS de outra organização, igual ao
+    // inexistente). Antes, só o papel de campo consultava a OS, e a gestão registrava evidência de uma OS que não existe.
+    //
+    // Fora, e por quê (crítica, nota 7): os 3 `evidence.field_*` são evidência do PRÓPRIO técnico (permissão
+    // `field_location:send`, classe `N` no instantâneo do censo). Um `work_order_id` no metadado deles é rótulo
+    // livre, ecoado no recibo, que nada no servidor liga à OS (não há leitor de evidência por OS); escopá-lo seria
+    // regra nova, não uma das 23 vias. O upload binário segue a mesma linha (ver `mobile-evidence-upload.ts`).
+    if (descriptor.scope === "work_order") {
+      const workOrderId = parseRequiredString(readWorkOrderId(action), "work_order_id");
+      if (actorMutatesAssignedOnly(actor)) {
+        await service.getForMutation(actor, workOrderId);
+      } else {
+        await service.get(actor, workOrderId);
+      }
+    }
     const metadata = validateAndNormalizeMetadata(action, descriptor.scope, descriptor.kind);
     const evidenceId = `evidence:${actor.tenantId}:${action.client_evidence_id}`;
 
@@ -360,6 +395,28 @@ function findUnsafePayloadKey(value: unknown): string | undefined {
 }
 
 function actionErrorResult(action: MobileEvidenceAction, error: unknown): MobileEvidenceActionResult {
+  // B-O6R-07c-b1 (`D2-07c` = (d)) — o ex-técnico da OS: conflito à espera de um superior (`B-O6R-07c-b2`). Antes
+  // deste bloco este lote não tinha ramo de conflito nenhum (emenda, M6).
+  if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
+    return {
+      client_evidence_id: action.client_evidence_id,
+      type: action.type,
+      status: "conflict",
+      ...(readWorkOrderId(action) ? { work_order_id: readWorkOrderId(action) } : {}),
+      conflict: {
+        conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+        server_id: readWorkOrderId(action),
+        local: sanitizeActionForConflict(action),
+        next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
+      },
+      error: {
+        code: error.code,
+        reason: error.reason,
+        message: error.message,
+      },
+    };
+  }
+
   const normalized = isRouteLikeError(error)
     ? error
     : routeError(
