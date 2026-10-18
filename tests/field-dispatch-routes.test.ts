@@ -43,7 +43,9 @@ test("field dispatch routes enforce RBAC and expose create/list/detail/status/re
       method: "PATCH",
       headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
       body: {
-        operatorUserId: seed.operatorA.id,
+        // B-O6R-07c-b1 ciclo 2 (classe (ii), contrato muda por desenho): reatribuir à MESMA pessoa virou no-op (não escreve,
+        // não vai a `reassigned`). Para seguir provando a reatribuição, o alvo passa a ser OUTRO técnico da organização.
+        operatorUserId: seed.operatorA2.id,
         reason: "Confirmacao de operador.",
       },
     });
@@ -131,6 +133,7 @@ type SeedData = {
   readonly managerB: User;
   readonly operatorA: User;
   readonly operatorB: User;
+  readonly operatorA2: User;
   readonly viewerA: User;
   readonly workOrderId: string;
 };
@@ -228,6 +231,12 @@ function seedCoreSaas(service: {
     email: "field-dispatch-operator-b@example.com",
     roles: ["technician"],
   });
+  const operatorA2 = service.createUser({
+    tenantId: tenantA.id,
+    name: "Operator A2",
+    email: "field-dispatch-operator-a2@example.com",
+    roles: ["technician"],
+  });
   const viewerA = service.createUser({
     tenantId: tenantA.id,
     name: "Viewer A",
@@ -235,7 +244,7 @@ function seedCoreSaas(service: {
     roles: ["viewer"],
   });
 
-  return { tenantA, tenantB, managerA, managerB, operatorA, operatorB, viewerA };
+  return { tenantA, tenantB, managerA, managerB, operatorA, operatorB, operatorA2, viewerA };
 }
 
 function authHeaders(tenant: Tenant, user: User, role: string): Record<string, string> {

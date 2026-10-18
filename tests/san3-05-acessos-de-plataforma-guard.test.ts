@@ -122,6 +122,14 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
   ],
   [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assign", "tx.workOrderEvent", "workOrderEvent.create", "work_order_events", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1 ciclo 2 (P-ATOMICA): o evento `work_order_assigned` passou a ser gravado DENTRO do `$transaction` que já grava a OS e a linha de `work_order_assignments` (`tx.workOrderEvent.create`), em vez de uma segunda transação; mesmo `$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes — herda a classificação suspeita das 3 chaves irmãs, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrderEvent", "workOrderEvent.create", "work_order_events", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1 ciclo 2 (P-ATOMICA): o evento `work_order_assigned` passou a ser gravado DENTRO do `$transaction` que já grava a OS e a linha de `work_order_assignments` (`tx.workOrderEvent.create`), em vez de uma segunda transação; mesmo `$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes — herda a classificação suspeita das 3 chaves irmãs, sem acesso novo sem contexto.",
+  ],
+  [
     k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
     "B3/C3E: a relação aninhada `select.role` toca a tabela FORCE `roles` pela mesma consulta já congelada como suspeita; relação FORCE não pode desaparecer só porque a operação raiz é `userRoleAssignment.findMany`.",
   ],

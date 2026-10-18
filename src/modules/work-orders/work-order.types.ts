@@ -417,7 +417,40 @@ export type AssignWorkOrderInput = {
   readonly teamId?: string;
   readonly message: string;
   readonly assignedBy?: string;
+  // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — o evento `work_order_assigned` é gravado DENTRO da mesma transação da OS e
+  // da linha de atribuição (ver `WorkOrderAssignmentEventInput`).
+  readonly event: WorkOrderAssignmentEventInput;
 };
+
+// B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — os campos do evento `work_order_assigned` que o serviço conhece antes da escrita.
+// O repositório completa o resto dentro da transação: `toStatus` = o status gravado na OS, e `metadata.assignmentId` =
+// o id da linha de `work_order_assignments` recém-criada. OS, linha e evento nascem juntos ou não nascem.
+export type WorkOrderAssignmentEventInput = {
+  readonly fromStatus: WorkOrderStatus;
+  readonly actorUserId: string;
+  readonly message: string;
+  readonly metadata: JsonRecord;
+};
+
+// O que `assign` e `assignFromDispatch` devolvem: a OS, a linha de atribuição e o evento, todos da MESMA transação.
+export type WorkOrderAssignmentWriteResult = {
+  readonly workOrder: WorkOrder;
+  readonly assignment: WorkOrderAssignment;
+  readonly event: WorkOrderEvent;
+};
+
+// B-O6R-07c-b1 ciclo 2 (P-TRAVA) — "atendimento iniciado" pela máquina da OS: "No local" (`on_site`) e o que vem
+// depois (`in_progress`, `paused`). O outro lado do predicado é o despacho ATIVO desta OS em `arrived`/`in_service`,
+// que o `WorkOrderService` pergunta ao despacho por `hasActiveDispatchAtSite` (resolver injetado).
+export const WORK_ORDER_SERVICE_STARTED: ReadonlySet<WorkOrderStatus> = new Set<WorkOrderStatus>([
+  "on_site",
+  "in_progress",
+  "paused",
+]);
+
+// B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a pergunta que só o despacho sabe responder: existe despacho ATIVO desta OS em
+// "No local" (`arrived`) ou depois (`in_service`)? Falha de leitura PROPAGA (nunca vira "não há").
+export type ActiveDispatchAtSiteResolver = (tenantId: string, workOrderId: string) => Promise<boolean>;
 
 // B-O6R-07c-b1 (Ω6R-SEC-002, `D1-07c` = (c)) — atribuição originada pelo despacho (`FieldDispatchService`:
 // `create`, `draft → assigned`, `reassign`, e a devolução ao despacho ativo restante quando um é cancelado ou
@@ -433,6 +466,7 @@ export type AssignWorkOrderFromDispatchInput = {
   readonly dispatchId: string;
   readonly source: "field_dispatch" | "field_dispatch_reassign";
   readonly message: string;
+  readonly event: WorkOrderAssignmentEventInput;
 };
 
 export class WorkOrderError extends Error {

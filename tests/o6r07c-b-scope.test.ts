@@ -505,9 +505,12 @@ test("D-07CB1-TRAVA-ATE-B2 — a partir de No local (despacho `arrived`/`in_serv
     assert.equal(d1.body.data.operatorUserId, seed.tecnicoA.id, "o despacho mudou de alvo apesar da recusa");
     assert.equal(d1.body.data.status, "arrived");
     assert.equal((await ctx.os(s1.workOrderId)).assignedUserId, seed.tecnicoA.id, "a OS mudou de técnico apesar da recusa");
-    // Reatribuir à MESMA pessoa não troca ninguém: segue permitido.
+    // Reatribuir à MESMA pessoa não troca ninguém: segue permitido — e (ciclo 2, via X1) não escreve nada: o despacho
+    // CONTINUA em "No local" (antes ia a `reassigned` e a marca de atendimento iniciado sumia).
     const mesma = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoA.id } });
     assert.equal(mesma.status, 200, JSON.stringify(mesma.body));
+    const d1Mesma = await ctx.req(`/api/v1/operations/dispatches/${s1.dispatchId}`, { headers: hG });
+    assert.equal(d1Mesma.body.data.status, "arrived", "reatribuir à mesma pessoa tirou o despacho de No local");
 
     // (2) OS em "No local" (`on_site`), despacho ainda em `assigned`: reassign, despacho novo e rascunho ativado para
     // OUTRO técnico são recusados; o despacho novo para o MESMO técnico passa.
@@ -532,6 +535,397 @@ test("D-07CB1-TRAVA-ATE-B2 — a partir de No local (despacho `arrived`/`in_serv
     const os2 = await ctx.os(s2.workOrderId);
     assert.equal(os2.status, "on_site", "o despacho rebaixou o status da OS");
     assert.equal(os2.assignedUserId, seed.tecnicoA.id);
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
+// CICLO 2 (plano `B-O6R-07c-b1-ciclo2-auditoria-e-plano.md`, Parte 2, §2.4) — as propriedades P-TRAVA, P-ALOCA,
+// P-ATOMICA e o "um critério só" da evidência, cada teste com o vermelho-controle contra o objeto do ciclo 1
+// (`b198fe35`) e a mutação nomeada; registro em docs/revisoes/SAN3/B-O6R-07c-b1-dev.md, seção CICLO 2.
+// ------------------------------------------------------------------------------------------------
+
+// T-TRAVA — estados (atendimento iniciado) × vias que escrevem o técnico × papéis que alocam = 120 células.
+// Cenário de cada célula: OS com DOIS despachos ativos — d2 do técnico C (antes) e d1 do técnico A (depois, a OS é
+// de A) — e então o atendimento começa pelo DESPACHO de A (`arrived`/`in_service`, a OS segue `assigned`) ou pela OS
+// (`on_site`/`in_progress`/`paused`, o despacho segue `assigned`). O d2 ativo é o que dá às vias V4/V5 (cancelar/falhar
+// o d1) um despacho restante para onde a OS seria devolvida.
+const ESTADOS_TRAVA = ["d1 arrived", "d1 in_service", "OS on_site", "OS in_progress", "OS paused"] as const;
+const VIAS_TRAVA = [
+  "reassign direto",
+  "X1 mesma pessoa e depois outra",
+  "V2 despacho novo",
+  "V3 ativar rascunho",
+  "V4 cancelar d1",
+  "V5 falhar d1",
+  "web POST /assign",
+  "lote work_order.assign",
+] as const;
+const PAPEIS_QUE_ALOCAM = ["manager", "field_dispatcher", "tenant_admin"] as const;
+const ESTADO_PRE_NO_LOCAL = "d1 on_route";
+
+type EstadoTrava = (typeof ESTADOS_TRAVA)[number] | typeof ESTADO_PRE_NO_LOCAL;
+type ViaTrava = (typeof VIAS_TRAVA)[number];
+type CenarioTrava = { osId: string; d1: string; d2: string };
+
+async function cenarioTrava(ctx: Ctx, estado: EstadoTrava): Promise<CenarioTrava> {
+  const { seed } = ctx;
+  const osId = await ctx.criarOs();
+  const d2 = await ctx.despachar(osId, seed.tecnicoC);
+  assert.equal(d2.status, 201, JSON.stringify(d2.body));
+  const d1 = await ctx.despachar(osId, seed.tecnicoA);
+  assert.equal(d1.status, 201, JSON.stringify(d1.body));
+  assert.equal((await ctx.os(osId)).assignedUserId, seed.tecnicoA.id, "cenário: a OS tinha de ser do técnico A");
+  const hA = ctx.h(seed.tecnicoA, "field_technician");
+  const etapasDespacho: Record<string, string[]> = {
+    "d1 on_route": ["on_route"],
+    "d1 arrived": ["on_route", "arrived"],
+    "d1 in_service": ["on_route", "arrived", "in_service"],
+  };
+  const etapasOs: Record<string, string[]> = {
+    "OS on_site": ["accepted", "on_route", "on_site"],
+    "OS in_progress": ["accepted", "on_route", "on_site", "in_progress"],
+    "OS paused": ["accepted", "on_route", "on_site", "in_progress", "paused"],
+  };
+  for (const etapa of etapasDespacho[estado] ?? []) {
+    const r = await ctx.req(`/api/v1/operations/dispatches/${d1.body.data.id}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+    assert.equal(r.status, 200, `cenário ${estado} (${etapa}): ${JSON.stringify(r.body)}`);
+  }
+  for (const etapa of etapasOs[estado] ?? []) {
+    const r = await ctx.req(`/api/v1/work-orders/${osId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+    assert.equal(r.status, 200, `cenário ${estado} (${etapa}): ${JSON.stringify(r.body)}`);
+  }
+  return { osId, d1: d1.body.data.id as string, d2: d2.body.data.id as string };
+}
+
+// O retrato que tem de ficar INTACTO depois de uma recusa: técnico (as duas colunas), status, linhas de atribuição e
+// cada despacho (alvo e status).
+async function retrato(ctx: Ctx, osId: string) {
+  const os = await ctx.os(osId);
+  const despachos = (await ctx.despachos(osId)).map((d: any) => `${d.id}:${d.operatorUserId}:${d.status}`).sort();
+  return {
+    tecnico: os.assignedUserId ?? null,
+    operador: os.assignedOperatorId ?? null,
+    status: os.status,
+    atribuicoes: ctx.atribuicoes(osId),
+    despachos,
+  };
+}
+
+function recusadaPelaTrava(r: { status: number; body: any }, via: string): void {
+  assert.equal(r.status, 409, `${via}: ${r.status} ${JSON.stringify(r.body)}`);
+  assert.equal(r.body.error.reason, "technician_change_requires_authorization", via);
+  assert.match(r.body.error.message, /autoriza/i, `${via}: a mensagem não diz que precisa de autorização`);
+}
+
+async function despachoDe(ctx: Ctx, dispatchId: string): Promise<any> {
+  const r = await ctx.req(`/api/v1/operations/dispatches/${dispatchId}`, { headers: ctx.h(ctx.seed.gestorA, "manager") });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  return r.body.data;
+}
+
+for (const estado of ESTADOS_TRAVA) {
+  for (const via of VIAS_TRAVA) {
+    for (const papel of PAPEIS_QUE_ALOCAM) {
+      test(`T-TRAVA [${estado}] ${via} · ${papel} — a troca de técnico a partir de No local é recusada e nada é gravado`, async () => {
+        await withApi(async (ctx) => {
+          const { seed } = ctx;
+          const c = await cenarioTrava(ctx, estado);
+          const hP = ctx.h(seed.gestorA, papel);
+          const statusD1 = (await despachoDe(ctx, c.d1)).status as string;
+
+          if (via === "reassign direto") {
+            const antes = await retrato(ctx, c.osId);
+            recusadaPelaTrava(await ctx.req(`/api/v1/operations/dispatches/${c.d1}/reassign`, { method: "PATCH", headers: hP, body: { operatorUserId: seed.tecnicoC.id } }), via);
+            assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa`);
+            return;
+          }
+
+          if (via === "X1 mesma pessoa e depois outra") {
+            const antes = await retrato(ctx, c.osId);
+            const mesma = await ctx.req(`/api/v1/operations/dispatches/${c.d1}/reassign`, { method: "PATCH", headers: hP, body: { operatorUserId: seed.tecnicoA.id } });
+            assert.equal(mesma.status, 200, JSON.stringify(mesma.body));
+            const d1 = await despachoDe(ctx, c.d1);
+            assert.equal(d1.status, statusD1, `X1: reatribuir à MESMA pessoa mudou o status do despacho (${statusD1} → ${d1.status})`);
+            assert.deepEqual(await retrato(ctx, c.osId), antes, "X1: reatribuir à mesma pessoa gravou alguma coisa");
+            recusadaPelaTrava(await ctx.req(`/api/v1/operations/dispatches/${c.d1}/reassign`, { method: "PATCH", headers: hP, body: { operatorUserId: seed.tecnicoC.id } }), via);
+            assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa`);
+            return;
+          }
+
+          if (via === "V2 despacho novo") {
+            const antes = await retrato(ctx, c.osId);
+            recusadaPelaTrava(
+              await ctx.req("/api/v1/operations/dispatches", { method: "POST", headers: hP, body: { workOrderId: c.osId, operatorUserId: seed.tecnicoB.id } }),
+              via,
+            );
+            assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa`);
+            return;
+          }
+
+          if (via === "V3 ativar rascunho") {
+            const rascunho = await ctx.despachar(c.osId, seed.tecnicoB, "draft");
+            assert.equal(rascunho.status, 201, `o rascunho não troca ninguém: ${JSON.stringify(rascunho.body)}`);
+            const antes = await retrato(ctx, c.osId);
+            recusadaPelaTrava(
+              await ctx.req(`/api/v1/operations/dispatches/${rascunho.body.data.id}/status`, { method: "PATCH", headers: hP, body: { status: "assigned" } }),
+              via,
+            );
+            assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa (o rascunho tem de seguir draft)`);
+            return;
+          }
+
+          if (via === "V4 cancelar d1" || via === "V5 falhar d1") {
+            const destino = via === "V4 cancelar d1" ? "cancelled" : "failed";
+            const antes = await retrato(ctx, c.osId);
+            const r = await ctx.req(`/api/v1/operations/dispatches/${c.d1}/status`, { method: "PATCH", headers: hP, body: { status: destino, reason: "teste da trava" } });
+            assert.equal(r.status, 200, `${via}: fechar o despacho é permitido: ${JSON.stringify(r.body)}`);
+            const depois = await retrato(ctx, c.osId);
+            assert.equal(depois.tecnico, seed.tecnicoA.id, `${via}: a OS saiu do técnico que está no cliente (foi para ${depois.tecnico})`);
+            assert.equal(depois.operador, antes.operador, `${via}: a OS mudou de operador`);
+            assert.equal(depois.status, antes.status, `${via}: a OS mudou de status`);
+            assert.equal(depois.atribuicoes, antes.atribuicoes, `${via}: uma atribuição nova foi gravada`);
+            assert.equal((await despachoDe(ctx, c.d1)).status, destino);
+            const d2 = await despachoDe(ctx, c.d2);
+            assert.equal(`${d2.operatorUserId}:${d2.status}`, `${seed.tecnicoC.id}:assigned`, `${via}: o despacho restante mudou`);
+            return;
+          }
+
+          if (via === "web POST /assign") {
+            const antes = await retrato(ctx, c.osId);
+            recusadaPelaTrava(await ctx.req(`/api/v1/work-orders/${c.osId}/assign`, { method: "POST", headers: hP, body: { operatorId: randomUUID() } }), via);
+            assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa`);
+            return;
+          }
+
+          // lote work_order.assign — o 409 da trava vira conflito por ação (a forma que o lote já dá a todo 409).
+          const antes = await retrato(ctx, c.osId);
+          const lote = await ctx.lote(LOTE_OS, hP, "work_order.assign", { work_order_id: c.osId, operator_id: randomUUID() });
+          assert.equal(lote.status, 200, `${via}: o lote responde 200 (a recusa é POR AÇÃO)`);
+          assert.equal(lote.acao, "conflict", `${via}: ação ${lote.acao} ${lote.reason}`);
+          assert.equal(lote.reason, "technician_change_requires_authorization", `${via}: reason ${lote.reason}`);
+          assert.equal(lote.conflictType, "technician_change_requires_authorization", `${via}: conflict_type ${lote.conflictType}`);
+          assert.deepEqual(await retrato(ctx, c.osId), antes, `${via}: algo foi gravado apesar da recusa`);
+        });
+      });
+    }
+  }
+}
+
+// T-TRAVA controle positivo — ANTES de No local (d1 `on_route`, a OS `assigned`) as 8 vias trocam (ou movem) o técnico.
+for (const via of VIAS_TRAVA) {
+  test(`T-TRAVA controle positivo [${ESTADO_PRE_NO_LOCAL}] ${via} — antes de No local a troca vale na hora`, async () => {
+    await withApi(async (ctx) => {
+      const { seed } = ctx;
+      const c = await cenarioTrava(ctx, ESTADO_PRE_NO_LOCAL);
+      const hG = ctx.h(seed.gestorA, "manager");
+      const tecnico = async () => (await ctx.os(c.osId)).assignedUserId ?? null;
+
+      if (via === "reassign direto" || via === "X1 mesma pessoa e depois outra") {
+        if (via === "X1 mesma pessoa e depois outra") {
+          const mesma = await ctx.req(`/api/v1/operations/dispatches/${c.d1}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoA.id } });
+          assert.equal(mesma.status, 200, JSON.stringify(mesma.body));
+          assert.equal((await despachoDe(ctx, c.d1)).status, "on_route", "X1: reatribuir à mesma pessoa mudou o status do despacho");
+        }
+        const r = await ctx.req(`/api/v1/operations/dispatches/${c.d1}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoC.id } });
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.equal(await tecnico(), seed.tecnicoC.id);
+      } else if (via === "V2 despacho novo") {
+        const r = await ctx.despachar(c.osId, seed.tecnicoB);
+        assert.equal(r.status, 201, JSON.stringify(r.body));
+        assert.equal(await tecnico(), seed.tecnicoB.id);
+      } else if (via === "V3 ativar rascunho") {
+        const rascunho = await ctx.despachar(c.osId, seed.tecnicoB, "draft");
+        assert.equal(rascunho.status, 201);
+        const r = await ctx.req(`/api/v1/operations/dispatches/${rascunho.body.data.id}/status`, { method: "PATCH", headers: hG, body: { status: "assigned" } });
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.equal(await tecnico(), seed.tecnicoB.id);
+      } else if (via === "V4 cancelar d1" || via === "V5 falhar d1") {
+        const destino = via === "V4 cancelar d1" ? "cancelled" : "failed";
+        const r = await ctx.req(`/api/v1/operations/dispatches/${c.d1}/status`, { method: "PATCH", headers: hG, body: { status: destino, reason: "controle" } });
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.equal(await tecnico(), seed.tecnicoC.id, `${via}: a OS não voltou ao despacho ativo restante (d2, técnico C)`);
+      } else if (via === "web POST /assign") {
+        const novo = randomUUID();
+        const r = await ctx.req(`/api/v1/work-orders/${c.osId}/assign`, { method: "POST", headers: hG, body: { operatorId: novo } });
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.equal((await ctx.os(c.osId)).assignedOperatorId, novo);
+      } else {
+        const novo = randomUUID();
+        const lote = await ctx.lote(LOTE_OS, hG, "work_order.assign", { work_order_id: c.osId, operator_id: novo });
+        assert.equal(lote.acao, "accepted", `${lote.acao} ${lote.reason}`);
+        assert.equal((await ctx.os(c.osId)).assignedOperatorId, novo);
+      }
+    });
+  });
+}
+
+// T-COMPOSICAO — a composição única tem o resolver da trava, e ele responde pelo despacho real.
+test("T-COMPOSICAO — a composição padrão do WorkOrderService tem `hasActiveDispatchAtSite`, que lê o despacho em No local", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const { createMemoryWorkOrderService, createDefaultWorkOrderService } = await import("../src/modules/work-orders/work-order.service.js");
+    for (const servico of [createMemoryWorkOrderService(), await createDefaultWorkOrderService()]) {
+      assert.equal(typeof (servico as any).references?.hasActiveDispatchAtSite, "function", "a composição não injeta o resolver da trava");
+    }
+    const resolver = (createMemoryWorkOrderService() as any).references.hasActiveDispatchAtSite as (t: string, o: string) => Promise<boolean>;
+    const s = await ctx.semente(seed.tecnicoA);
+    assert.equal(await resolver(seed.tenantA.id, s.workOrderId), false, "despacho `assigned` não está em No local");
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+    for (const etapa of ["on_route", "arrived"]) {
+      const r = await ctx.req(`/api/v1/operations/dispatches/${s.dispatchId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+    }
+    assert.equal(await resolver(seed.tenantA.id, s.workOrderId), true, "despacho `arrived` está em No local");
+    assert.equal(await resolver(seed.tenantB.id, s.workOrderId), false, "outra organização não enxerga o despacho");
+  });
+});
+
+test("T-COMPOSICAO — WorkOrderService montado SEM o resolver recusa toda troca de técnico (fail-closed); com o resolver, troca", async () => {
+  const { WorkOrderService } = await import("../src/modules/work-orders/work-order.service.js");
+  const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
+  const { resolvePermissionsForRoles } = await import("../src/modules/core-saas/permissions/catalog.js");
+  const ator = { tenantId: randomUUID(), userId: randomUUID(), roles: ["manager"], permissions: resolvePermissionsForRoles(["manager"]) } as never;
+
+  const semResolver = new WorkOrderService(new InMemoryWorkOrderRepository(), {});
+  const os1 = await semResolver.create(ator, { title: "fail-closed" });
+  await semResolver.assign(ator, os1.id, { operatorId: randomUUID() }); // sem técnico: não há troca
+  await assert.rejects(semResolver.assign(ator, os1.id, { operatorId: randomUUID() }), (e: any) => e.statusCode === 409 && e.reason === "technician_change_requires_authorization");
+  await assert.rejects(
+    semResolver.assignFromDispatch(ator, { workOrderId: os1.id, operatorUserId: randomUUID(), dispatchId: randomUUID(), source: "field_dispatch" }),
+    (e: any) => e.statusCode === 409 && e.reason === "technician_change_requires_authorization",
+  );
+
+  const comResolver = new WorkOrderService(new InMemoryWorkOrderRepository(), { hasActiveDispatchAtSite: async () => false });
+  const os2 = await comResolver.create(ator, { title: "controle" });
+  await comResolver.assign(ator, os2.id, { operatorId: randomUUID() });
+  const novo = randomUUID();
+  const trocada = await comResolver.assign(ator, os2.id, { operatorId: novo });
+  assert.equal(trocada.assignedOperatorId, novo, "controle: com o resolver dizendo 'ninguém no local', a troca vale");
+});
+
+// T-ALOCA — ativar rascunho atribui a OS: só quem tem `field_dispatch:create`.
+for (const caso of [
+  { papel: "operator", permite: false },
+  { papel: "field_technician", permite: false },
+  { papel: "manager", permite: true },
+  { papel: "field_dispatcher", permite: true },
+  { papel: "tenant_admin", permite: true },
+] as const) {
+  test(`T-ALOCA — ativar rascunho como ${caso.papel}: ${caso.permite ? "200 e a OS atribuída" : "403 dispatch_activation_requires_dispatcher e a OS intacta"}`, async () => {
+    await withApi(async (ctx) => {
+      const { seed } = ctx;
+      const osId = await ctx.criarOs();
+      const rascunho = await ctx.despachar(osId, seed.tecnicoA, "draft");
+      assert.equal(rascunho.status, 201);
+      const ator = caso.papel === "field_technician" ? seed.tecnicoA : seed.gestorA; // o técnico tenta o PRÓPRIO rascunho
+      const r = await ctx.req(`/api/v1/operations/dispatches/${rascunho.body.data.id}/status`, {
+        method: "PATCH",
+        headers: ctx.h(ator, caso.papel),
+        body: { status: "assigned" },
+      });
+      if (caso.permite) {
+        assert.equal(r.status, 200, JSON.stringify(r.body));
+        assert.equal((await ctx.os(osId)).assignedUserId, seed.tecnicoA.id);
+      } else {
+        assert.equal(r.status, 403, JSON.stringify(r.body));
+        assert.equal(r.body.error.reason, "dispatch_activation_requires_dispatcher");
+        assert.equal((await ctx.os(osId)).assignedUserId ?? null, null, "a OS foi atribuída por quem não aloca");
+        assert.equal((await despachoDe(ctx, rascunho.body.data.id)).status, "draft");
+      }
+    });
+  });
+}
+
+// T-ATOMICA-MEM — o evento `work_order_assigned` nasce DENTRO do método que grava a OS e a linha: nenhum caminho de
+// atribuição chama `createEvent` (a escrita avulsa) para ele, e a linha do tempo tem o evento.
+for (const caminho of ["create", "reassign", "ativação", "web"] as const) {
+  test(`T-ATOMICA-MEM [${caminho}] — o evento da atribuição é gravado com a OS e a linha, não por createEvent avulso`, async () => {
+    await withApi(async (ctx) => {
+      const { seed } = ctx;
+      const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
+      const original = InMemoryWorkOrderRepository.prototype.createEvent;
+      const avulsos: string[] = [];
+      InMemoryWorkOrderRepository.prototype.createEvent = function (this: unknown, input: any) {
+        if (input.eventType === "work_order_assigned") avulsos.push(input.workOrderId);
+        return original.call(this as never, input);
+      };
+      let osId: string;
+      let fonte: string | undefined;
+      try {
+        osId = await ctx.criarOs();
+        if (caminho === "create") {
+          const d = await ctx.despachar(osId, seed.tecnicoA);
+          assert.equal(d.status, 201, JSON.stringify(d.body));
+          fonte = "field_dispatch";
+        } else if (caminho === "reassign") {
+          const d = await ctx.despachar(osId, seed.tecnicoA);
+          assert.equal(d.status, 201);
+          await ctx.reatribuir(d.body.data.id, seed.tecnicoC);
+          fonte = "field_dispatch_reassign";
+        } else if (caminho === "ativação") {
+          const d = await ctx.despachar(osId, seed.tecnicoA, "draft");
+          const r = await ctx.req(`/api/v1/operations/dispatches/${d.body.data.id}/status`, { method: "PATCH", headers: ctx.h(seed.gestorA, "manager"), body: { status: "assigned" } });
+          assert.equal(r.status, 200, JSON.stringify(r.body));
+          fonte = "field_dispatch";
+        } else {
+          const r = await ctx.req(`/api/v1/work-orders/${osId}/assign`, { method: "POST", headers: ctx.h(seed.gestorA, "manager"), body: { operatorId: randomUUID() } });
+          assert.equal(r.status, 200, JSON.stringify(r.body));
+        }
+      } finally {
+        InMemoryWorkOrderRepository.prototype.createEvent = original;
+      }
+      assert.deepEqual(avulsos, [], `[${caminho}] o evento da atribuição foi gravado por createEvent avulso (fora da escrita da OS)`);
+      const eventos = (await ctx.timeline(osId)).filter((e: any) => e.eventType === "work_order_assigned");
+      assert.ok(eventos.length >= 1, `[${caminho}] a linha do tempo não tem o evento da atribuição`);
+      const ultimo = eventos[eventos.length - 1];
+      assert.equal(typeof ultimo.metadata.assignmentId, "string", `[${caminho}] o evento não aponta a linha de atribuição`);
+      assert.equal(ultimo.metadata.source, fonte);
+      assert.equal(eventos.length, ctx.atribuicoes(osId), `[${caminho}] número de eventos ≠ número de linhas de atribuição`);
+    });
+  });
+}
+
+// T-EVID-EXISTE — `evidence.work_order_*` exige a OS desta organização para TODOS os papéis (`D1-07c`, um critério só).
+const TIPOS_EVIDENCIA_OS = ["evidence.work_order_photo", "evidence.work_order_observation", "evidence.work_order_signature"] as const;
+for (const papel of ["tenant_admin", "manager"] as const) {
+  for (const caso of ["inexistente", "de outra organização", "real"] as const) {
+    test(`T-EVID-EXISTE [${papel}] OS ${caso} — ${caso === "real" ? "accepted" : "rejected not_found"} nos 3 tipos`, async () => {
+      await withApi(async (ctx) => {
+        const { seed } = ctx;
+        let workOrderId: string;
+        if (caso === "inexistente") {
+          workOrderId = randomUUID();
+        } else if (caso === "de outra organização") {
+          const criada = await ctx.req("/api/v1/work-orders", { method: "POST", headers: ctx.h(seed.tecnicoX, "manager", seed.tenantB), body: { title: "OS da outra organização" } });
+          assert.equal(criada.status, 201, JSON.stringify(criada.body));
+          workOrderId = criada.body.data.id as string;
+        } else {
+          workOrderId = await ctx.criarOs();
+        }
+        for (const tipo of TIPOS_EVIDENCIA_OS) {
+          const r = await ctx.lote(LOTE_EVIDENCIA, ctx.h(seed.gestorA, papel), tipo, ctx.payloadEvidencia(tipo, { workOrderId } as Semente));
+          assert.equal(r.status, 200);
+          if (caso === "real") {
+            assert.equal(r.acao, "accepted", `${tipo}: ${r.acao} ${r.reason}`);
+          } else {
+            assert.equal(r.acao, "rejected", `${tipo}: ${r.acao} ${r.reason}`);
+            assert.equal(r.reason, "not_found", `${tipo}: reason ${r.reason}`);
+          }
+        }
+      });
+    });
+  }
+}
+
+test("T-EVID-EXISTE [field_technician não atribuído] — rejected not_assigned_to_actor nos 3 tipos (inalterado)", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    for (const tipo of TIPOS_EVIDENCIA_OS) {
+      const r = await ctx.lote(LOTE_EVIDENCIA, ctx.h(seed.tecnicoB, "field_technician"), tipo, ctx.payloadEvidencia(tipo, s));
+      assert.equal(r.acao, "rejected", `${tipo}: ${r.acao} ${r.reason}`);
+      assert.equal(r.reason, "not_assigned_to_actor");
+    }
   });
 });
 
@@ -617,6 +1011,7 @@ type Ctx = {
   eventosEvidencia(): readonly any[];
   respostas(runId: string): Promise<readonly unknown[]>;
   reiniciarLotes(): void;
+  atribuicoes(workOrderId: string): number;
 };
 
 async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
@@ -843,6 +1238,12 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
       checklistSync.resetMobileChecklistSyncRuntimeForTests();
       evidenceSync.resetMobileEvidenceSyncRuntimeForTests();
       workOrderSync.resetMobileWorkOrderSyncRuntimeForTests();
+    },
+    // Ciclo 2 — linhas de `work_order_assignments` da OS, lidas do repositório em memória do mesmo processo (o REST não
+    // expõe a tabela). É o que a T-TRAVA usa para provar que a recusa não gravou atribuição nenhuma.
+    atribuicoes(workOrderId) {
+      const repositorio = workOrders.getMemoryWorkOrderRepositoryForTests() as unknown as { assignments: Map<string, { workOrderId: string }> };
+      return [...repositorio.assignments.values()].filter((a) => a.workOrderId === workOrderId).length;
     },
   };
 

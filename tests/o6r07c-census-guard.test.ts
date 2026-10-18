@@ -299,6 +299,16 @@ test("T13 — a rota polimórfica /attachments resolve exatamente as 4 entidades
   assert.deepEqual([...createDefaultAttachmentEntityResolver().entityTypes()].sort(), [...ENTIDADES_ATTACHMENTS].sort());
 });
 
+// B-O6R-07c-b1 ciclo 2 (P-CENSO, achado C3-A2) — o instantâneo commitado é EXATAMENTE o que `classificar` gera no
+// objeto (`gerado`, a classe de cada chave viva pela regra + a contagem viva). Antes isto era um passo da bateria
+// (`gravar` + `cmp`), e o ciclo 1 entregou um instantâneo com 3 classes que o gerador do próprio objeto não produz;
+// o T6 só acusava `SEM-ALCANCE` no sentido "o campo alcança", não no inverso. Regenerável: quem muda o app regenera
+// pelo `gravar` e este teste diz se o arquivo é o gerado.
+test("T14 — o instantâneo commitado é o que o gerador produz no objeto (gerado == instantâneo)", async () => {
+  const { cl } = await classificacaoDaBase();
+  assert.deepEqual(cl.gerado, INSTANTANEO);
+});
+
 test("tempo do censo (publicado, R-a1) — os três censos terminaram", async (t) => {
   const [b, a, bb] = await Promise.all([base, grupoA, grupoB]);
   // Não é limite: é o número que o plano manda medir e publicar (o arquivo pesa no `npm test`).

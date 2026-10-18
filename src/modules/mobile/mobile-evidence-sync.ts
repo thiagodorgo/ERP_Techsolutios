@@ -270,15 +270,23 @@ async function processAction(
     // campo passa pela porta da OS (`getForMutation`: 404/400 se a OS não existe nesta organização, depois o escopo
     // por objeto do 07a) ANTES de validar o metadado. O técnico que nunca foi da OS recebe `rejected`
     // `not_assigned_to_actor`; o ex-técnico, `conflicts[]` (`D2-07c`). Papel `tenant_wide` não cai no escopo (a mesma
-    // regra de presença do 07a) e o lote segue como era para ele: registro de metadado sem consulta à OS — mudar
-    // isso não é desta propriedade.
+    // regra de presença do 07a).
+    //
+    // Ciclo 2 (achado C3-A2, `D1-07c` "um critério só") — a OS tem de EXISTIR nesta organização para TODOS os papéis:
+    // o `tenant_wide` passa por `get` (404 → `rejected not_found`, inclusive OS de outra organização, igual ao
+    // inexistente). Antes, só o papel de campo consultava a OS, e a gestão registrava evidência de uma OS que não existe.
     //
     // Fora, e por quê (crítica, nota 7): os 3 `evidence.field_*` são evidência do PRÓPRIO técnico (permissão
     // `field_location:send`, classe `N` no instantâneo do censo). Um `work_order_id` no metadado deles é rótulo
     // livre, ecoado no recibo, que nada no servidor liga à OS (não há leitor de evidência por OS); escopá-lo seria
     // regra nova, não uma das 23 vias. O upload binário segue a mesma linha (ver `mobile-evidence-upload.ts`).
-    if (descriptor.scope === "work_order" && actorMutatesAssignedOnly(actor)) {
-      await service.getForMutation(actor, parseRequiredString(readWorkOrderId(action), "work_order_id"));
+    if (descriptor.scope === "work_order") {
+      const workOrderId = parseRequiredString(readWorkOrderId(action), "work_order_id");
+      if (actorMutatesAssignedOnly(actor)) {
+        await service.getForMutation(actor, workOrderId);
+      } else {
+        await service.get(actor, workOrderId);
+      }
     }
     const metadata = validateAndNormalizeMetadata(action, descriptor.scope, descriptor.kind);
     const evidenceId = `evidence:${actor.tenantId}:${action.client_evidence_id}`;

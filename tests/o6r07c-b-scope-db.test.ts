@@ -16,7 +16,10 @@ import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 //   [ex-técnico]  `hasActorBeenAssigned` lido do banco: quem já teve linha cai em conflito (km pelo lote), quem nunca
 //                 teve cai em `rejected`. O banco não muda.
 //   [status]      OS fora de `open` mantém o status; OS encerrada recusa (409).
-//   [despacho]    `deleteById` e `restoreState` (as compensações do create e do reassign) no banco.
+//   [atômica]     (ciclo 2, substitui o antigo [despacho]) OS + linha + evento numa transação só: falha injetada no
+//                 INSERT do evento por gatilho temporário escopado pela organização; o despacho é compensado
+//                 (`deleteById`/`restoreState`) pelo `FieldDispatchService` REAL, não chamado direto.
+//   [composição]  (ciclo 2) a trava no Prisma: o resolver `hasActiveDispatchAtSite` lê o despacho no banco.
 //   [backfill P6] o corpo REAL da migração 20260877000000, escopado às organizações da fixture pela âncora
 //                 `SELECT id FROM tenants ORDER BY id`: conta ANTES (coerentes / a preencher / divergentes), preenche
 //                 só a OS sem atribuição com o alvo do despacho ativo MAIS RECENTE, não toca divergentes, é
@@ -143,21 +146,131 @@ if (!connectionString) {
     });
   });
 
-  test("[despacho] as compensações no banco: deleteById apaga o despacho; restoreState devolve alvo e status", async () => {
+  // ----------------------------------------------------------------------------------------------
+  // CICLO 2 — T-ATOMICA-DB (plano do ciclo 2, §2.4; substitui o antigo caso [despacho], que chamava `deleteById` e
+  // `restoreState` direto, sem falha injetada — nota N1 da C3). A falha é injetada no ÚLTIMO INSERT do caminho (o
+  // evento `work_order_assigned`), por um gatilho temporário ESCOPADO pela organização descartável do caso (a CI roda
+  // outras suítes `-db` em paralelo no mesmo banco). Caminhos REAIS: `FieldDispatchService` da composição Prisma
+  // (create, reassign, ativação do rascunho) e `WorkOrderService.assign` (web/lote).
+  // ----------------------------------------------------------------------------------------------
+
+  test("[atômica · create] o INSERT do evento falha: OS intacta, 0 linha, 0 evento e o despacho compensado (apagado)", async () => {
     await comCenario(connection, async (c) => {
-      const { RlsPrismaFieldDispatchRepository } = await import("../src/modules/field-dispatch/field-dispatch-prisma.repository.js");
-      const { prisma } = await import("../src/database/prisma.js");
-      const repo = new RlsPrismaFieldDispatchRepository(prisma);
+      const despachos = await servicoDeDespacho();
       const os1 = await c.criarOs();
-      const criado = await repo.create({ tenantId: c.tenantId, workOrderId: os1, operatorUserId: c.tecnicoA, status: "assigned", metadata: {} });
-      const reatribuido = await repo.reassign({ tenantId: c.tenantId, dispatchId: criado.id, operatorUserId: c.tecnicoC });
-      assert.equal(reatribuido?.operatorUserId, c.tecnicoC);
-      await repo.restoreState(c.tenantId, criado);
-      const voltou = await repo.findById(c.tenantId, criado.id);
-      assert.equal(voltou?.operatorUserId, c.tecnicoA);
-      assert.equal(voltou?.status, "assigned");
-      await repo.deleteById(c.tenantId, criado.id);
-      assert.equal(await repo.findById(c.tenantId, criado.id), undefined);
+      await comGatilho(c, "work_order_events", async () => {
+        await assert.rejects(despachos.create(c.gestao as never, { workOrderId: os1, operatorUserId: c.tecnicoA }), injetado("O6R07CB1_INJ_EVENTO"));
+      });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["open", null, null], "a OS ficou atribuída sem o evento");
+      assert.equal((await c.atribuicoes(os1)).length, 0, "sobrou linha de atribuição");
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 0);
+      assert.equal(await contarDespachos(c, os1), 0, "a compensação não apagou o despacho");
+    });
+  });
+
+  test("[atômica · reassign] o INSERT do evento falha: a OS segue com o técnico anterior e o despacho volta ao alvo e ao status", async () => {
+    await comCenario(connection, async (c) => {
+      const despachos = await servicoDeDespacho();
+      const os1 = await c.criarOs();
+      const criado = await despachos.create(c.gestao as never, { workOrderId: os1, operatorUserId: c.tecnicoA });
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 1);
+      await comGatilho(c, "work_order_events", async () => {
+        await assert.rejects(despachos.reassign(c.gestao as never, criado.id, { operatorUserId: c.tecnicoC }), injetado("O6R07CB1_INJ_EVENTO"));
+      });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["assigned", c.perfilA, c.tecnicoA], "a OS mudou de técnico sem o evento");
+      assert.equal((await c.atribuicoes(os1)).length, 1, "sobrou a linha do técnico C");
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 1);
+      const [d] = await c.sql("SELECT operator_user_id::text, status FROM field_dispatches WHERE tenant_id = $1::uuid AND id = $2::uuid", [c.tenantId, criado.id]);
+      assert.deepEqual([d.operator_user_id, d.status], [c.tecnicoA, "assigned"], "a compensação não devolveu o despacho");
+    });
+  });
+
+  test("[atômica · ativação] o INSERT do evento falha: a OS segue sem técnico e o rascunho volta a draft", async () => {
+    await comCenario(connection, async (c) => {
+      const despachos = await servicoDeDespacho();
+      const os1 = await c.criarOs();
+      const rascunho = await despachos.create(c.gestao as never, { workOrderId: os1, operatorUserId: c.tecnicoA, status: "draft" });
+      await comGatilho(c, "work_order_events", async () => {
+        await assert.rejects(despachos.changeStatus(c.gestao as never, rascunho.id, { status: "assigned" }), injetado("O6R07CB1_INJ_EVENTO"));
+      });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["open", null, null], "a OS ficou atribuída sem o evento");
+      assert.equal((await c.atribuicoes(os1)).length, 0);
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 0);
+      const [d] = await c.sql("SELECT status FROM field_dispatches WHERE tenant_id = $1::uuid AND id = $2::uuid", [c.tenantId, rascunho.id]);
+      assert.equal(d.status, "draft", "a compensação não devolveu o rascunho");
+    });
+  });
+
+  test("[atômica · web] o INSERT do evento falha no `assign` (web/lote): OS intacta, 0 linha, 0 evento", async () => {
+    await comCenario(connection, async (c) => {
+      const os1 = await c.criarOs();
+      await comGatilho(c, "work_order_events", async () => {
+        await assert.rejects(c.ordens.assign(c.gestao as never, os1, { operatorId: c.perfilA }), injetado("O6R07CB1_INJ_EVENTO"));
+      });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["open", null, null], "a OS ficou atribuída sem o evento");
+      assert.equal((await c.atribuicoes(os1)).length, 0);
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 0);
+    });
+  });
+
+  test("[atômica · controle 1] o gatilho na LINHA de atribuição: mesmo resultado (OS + linha já eram uma transação)", async () => {
+    await comCenario(connection, async (c) => {
+      const despachos = await servicoDeDespacho();
+      const os1 = await c.criarOs();
+      await comGatilho(c, "work_order_assignments", async () => {
+        await assert.rejects(despachos.create(c.gestao as never, { workOrderId: os1, operatorUserId: c.tecnicoA }), injetado("O6R07CB1_INJ_LINHA"));
+      });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["open", null, null]);
+      assert.equal((await c.atribuicoes(os1)).length, 0);
+      assert.equal(await c.eventos(os1, "work_order_assigned"), 0);
+      assert.equal(await contarDespachos(c, os1), 0);
+    });
+  });
+
+  test("[atômica · controle 2] sem gatilho: 1 OS atribuída + 1 linha + 1 evento que aponta a linha", async () => {
+    await comCenario(connection, async (c) => {
+      const despachos = await servicoDeDespacho();
+      const os1 = await c.criarOs();
+      const criado = await despachos.create(c.gestao as never, { workOrderId: os1, operatorUserId: c.tecnicoA });
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.status, linha.assigned_operator_id, linha.assigned_user_id], ["assigned", c.perfilA, c.tecnicoA]);
+      const atribuicoes = await c.sql("SELECT id::text FROM work_order_assignments WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid", [c.tenantId, os1]);
+      assert.equal(atribuicoes.length, 1);
+      const eventos = await c.sql(
+        "SELECT metadata FROM work_order_events WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid AND event_type = 'work_order_assigned'",
+        [c.tenantId, os1],
+      );
+      assert.equal(eventos.length, 1);
+      assert.equal(eventos[0].metadata.assignmentId, atribuicoes[0].id, "o evento não aponta a linha da mesma transação");
+      assert.equal(eventos[0].metadata.dispatchId, criado.id);
+      assert.equal(await contarDespachos(c, os1), 1);
+    });
+  });
+
+  test("[composição] a trava no Prisma: o resolver `hasActiveDispatchAtSite` lê o despacho no banco e a troca a partir de No local é recusada", async () => {
+    await comCenario(connection, async (c) => {
+      const resolver = (c.ordens as any).references?.hasActiveDispatchAtSite as ((t: string, o: string) => Promise<boolean>) | undefined;
+      assert.equal(typeof resolver, "function", "a composição Prisma não injeta o resolver da trava");
+      const os1 = await c.criarOs();
+      await c.ordens.assign(c.gestao as never, os1, { operatorId: c.perfilA, userId: c.tecnicoA });
+      const despacho = await c.client.fieldDispatch.create({
+        data: { tenant_id: c.tenantId, work_order_id: os1, operator_user_id: c.tecnicoA, status: "on_route", metadata: {} },
+      });
+      assert.equal(await resolver!(c.tenantId, os1), false, "`on_route` ainda não é No local");
+      await c.sql("UPDATE field_dispatches SET status = 'arrived' WHERE tenant_id = $1::uuid AND id = $2::uuid", [c.tenantId, despacho.id]);
+      assert.equal(await resolver!(c.tenantId, os1), true, "`arrived` é No local");
+      await assert.rejects(
+        c.ordens.assign(c.gestao as never, os1, { operatorId: c.tecnicoC }),
+        (e: any) => e.statusCode === 409 && e.reason === "technician_change_requires_authorization",
+      );
+      const linha = await c.os(os1);
+      assert.deepEqual([linha.assigned_operator_id, linha.assigned_user_id], [c.perfilA, c.tecnicoA], "a OS mudou de técnico apesar da recusa");
+      assert.equal((await c.atribuicoes(os1)).length, 1);
     });
   });
 
@@ -214,6 +327,56 @@ if (!connectionString) {
       assert.equal((await c.os(fx.divergente)).assigned_operator_id, c.perfilB);
     });
   });
+}
+
+// Ciclo 2 — o `FieldDispatchService` da composição de PRODUÇÃO (Prisma), com o núcleo trocado por um stub que diz que
+// todo alvo é técnico de campo (o que o despacho consulta do núcleo é só isso).
+async function servicoDeDespacho() {
+  const despacho = await import("../src/modules/field-dispatch/field-dispatch.service.js");
+  despacho.resetFieldDispatchRuntimeForTests();
+  const nucleo = { getUserForTenant: async (id: string, tenantId: string) => ({ id, tenantId, roles: ["field_technician"] }) };
+  return despacho.createDefaultFieldDispatchService(nucleo as never);
+}
+
+// Ciclo 2 — gatilho TEMPORÁRIO que faz o INSERT falhar, escopado pela organização descartável do caso (o `WHEN` filtra
+// o `tenant_id`; no evento, também o tipo). Nome único por execução; `DROP` no `finally`; e a prova de que não sobrou
+// nada no catálogo (`pg_trigger`/`pg_proc` = 0 pelo nome).
+async function comGatilho(c: Cenario, tabela: "work_order_events" | "work_order_assignments", corpo: () => Promise<void>): Promise<void> {
+  assert.match(c.tenantId, UUID);
+  const nome = `o6r07cb1_inj_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+  const marca = tabela === "work_order_events" ? "O6R07CB1_INJ_EVENTO" : "O6R07CB1_INJ_LINHA";
+  const quando =
+    tabela === "work_order_events"
+      ? `NEW.event_type = 'work_order_assigned' AND NEW.tenant_id = '${c.tenantId}'::uuid`
+      : `NEW.tenant_id = '${c.tenantId}'::uuid`;
+  await c.client.$executeRawUnsafe(`CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RAISE EXCEPTION '${marca}'; END $f$`);
+  try {
+    await c.client.$executeRawUnsafe(`CREATE TRIGGER ${nome} BEFORE INSERT ON ${tabela} FOR EACH ROW WHEN (${quando}) EXECUTE FUNCTION ${nome}()`);
+    await corpo();
+  } finally {
+    await c.client.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`);
+    await c.client.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${nome}()`);
+  }
+  const [{ gatilhos }] = await c.sql("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", [nome]);
+  const [{ funcoes }] = await c.sql("SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = $1", [nome]);
+  assert.deepEqual([gatilhos, funcoes], [0, 0], `o gatilho ${nome} sobrou no catálogo`);
+}
+
+// A recusa é a da falha injetada (e não outra coisa que também rejeitasse).
+function injetado(marca: string) {
+  return (erro: unknown) => {
+    const texto = String((erro as { message?: unknown })?.message ?? erro);
+    assert.ok(texto.includes(marca), `a recusa não veio da falha injetada (${marca}): ${texto.slice(0, 300)}`);
+    return true;
+  };
+}
+
+async function contarDespachos(c: Cenario, workOrderId: string): Promise<number> {
+  const [{ n }] = await c.sql("SELECT count(*)::int AS n FROM field_dispatches WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid", [
+    c.tenantId,
+    workOrderId,
+  ]);
+  return n;
 }
 
 async function montarCenario(connection: string) {

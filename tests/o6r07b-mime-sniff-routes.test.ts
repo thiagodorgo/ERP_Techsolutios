@@ -382,6 +382,9 @@ async function prepareV1(ctx: UploadApiContext): Promise<UploadTarget> {
 
   const register = async (bytes: Buffer): Promise<void> => {
     const sha256 = createHash("sha256").update(bytes).digest("hex");
+    // B-O6R-07c-b1 ciclo 2 (arnês, classe (iii)): `evidence.work_order_*` exige a OS desta organização para TODOS os
+    // papéis (`D1-07c`, um critério só) — o recibo nasce de uma OS real, não de um rótulo inventado.
+    const workOrderId = await createWorkOrder(ctx);
     const response = await requestJson(ctx.baseUrl, "/api/v1/mobile/sync/evidence-actions", {
       method: "POST",
       headers: headers(ctx),
@@ -393,7 +396,7 @@ async function prepareV1(ctx: UploadApiContext): Promise<UploadTarget> {
             type: "evidence.work_order_photo",
             local_created_at: "2026-09-06T12:00:00.000Z",
             payload: {
-              work_order_id: "wo-o6r07b-1",
+              work_order_id: workOrderId,
               kind: "photo",
               file_name: "foto.png",
               content_type: "image/png",
