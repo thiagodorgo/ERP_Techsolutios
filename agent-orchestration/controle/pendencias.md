@@ -11357,3 +11357,38 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): o app emite `work_order.mileage` pela fila offline e o replay chega ao servidor, com teste do app.
+
+## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
+- **Origem:** plano do `B-SAN3-02` v2, §1.2 (a) e §11. O faturamento trava os ITENS, não a OS.
+- **bloqueia:** não.
+- **teste de encerramento:** cancelar a OS com um faturamento em voo nunca deixa título novo numa OS cancelada, com teste `-db` de corrida.
+
+## P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pai do delta — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (comportamento declarado, decisão de produto pendente) · **dono:** `SAN3-25`
+- **Origem:** crítica A5 da rodada 1; plano v2 D3 (ii); teste T-C10. "Ativo" é `deleted_at IS NULL`, o status não entra (semântica do índice desde 2026-08-11). Para ter um original novo, remove-se o cancelado.
+- **bloqueia:** não.
+- **teste de encerramento:** o produto decide se "cancelar" um título de OS deve liberar um original novo; a regra decidida ganha teste.
+
+## P-SAN3-02-DEADLOCK-RESIDUAL (2026-10-19) — deadlock entre escritores de itens de OS sem teste determinístico geral — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-ARNES-2` ou pós-gate
+- **Origem:** crítica A4 da rodada 1 e B3 da rodada 2. O ciclo conhecido (fatura × `zero`) foi removido pela ordem total `(created_at, id)`, provada pelo T-Z3/M19 (ver `docs/revisoes/SAN3/B-SAN3-02-dev.md`). Outro escritor futuro pode reintroduzir um ciclo; o 40P01/40001 residual vira 503 `invoice_transient_conflict` no faturamento.
+- **bloqueia:** não.
+- **teste de encerramento:** todo escritor multi-linha de `work_order_financial_items` trava na ordem `(created_at, id)`, com guarda que falha ao surgir um sem ordem.
+
+## P-SAN3-02-DOWN-COM-COMPLEMENTAR (2026-10-19) — o down da 20260878 para na ponta B se houver complementar ativo — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (operação) · **dono:** operação (pós-gate)
+- **Origem:** plano v2 §5 e §11; drill T-D(d). Recriar `financial_titles_wo_direction_active_key` falha com 23505 se existir complementar ativo, e o índice novo fica. Remover linha é decisão humana (§C7.5), nunca automática.
+- **bloqueia:** não.
+- **teste de encerramento:** runbook de rollback com o passo humano da ponta B escrito e ensaiado em base própria.
+
+## P-SAN3-02-TELA-DELTA (2026-10-19) — a tela de faturar não mostra complementares nem repete no 503 — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (consumidor futuro) · **dono:** `SAN3-25`
+- **Origem:** plano v2 §6.2 e §11. A API já devolve `parentTitleId`, o 201 complementar e o 503 `invoice_transient_conflict` repetível. A tela de faturar ainda não existe.
+- **bloqueia:** não.
+- **teste de encerramento:** a tela mostra o original e os complementares de uma OS e repete a chamada no 503, com teste de tela.
