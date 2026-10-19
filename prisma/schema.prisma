@@ -83,6 +83,9 @@ model Tenant {
   teams                         Team[]
   team_members                  TeamMember[]
   field_operator_locations      FieldOperatorLocation[]
+  // B-TRC-01 — relações reversas exigidas pelo Prisma para os dois modelos novos do Traccar (sem coluna em tenants).
+  vehicle_tracking_bindings     VehicleTrackingBinding[]
+  traccar_ingress_receipts      TraccarIngressReceipt[]
   field_dispatch_events         FieldDispatchEvent[]
   field_dispatches              FieldDispatch[]
   work_order_assignments        WorkOrderAssignment[]
@@ -1034,12 +1037,90 @@ model FieldOperatorLocation {
   metadata                Json
   operator_user           User     @relation(fields: [tenant_id, operator_user_id], references: [tenant_id, id], onDelete: Cascade)
   tenant                  Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  // B-TRC-01 — relação reversa exigida pelo Prisma (recibo do Traccar que gravou esta posição; sem coluna aqui).
+  traccar_ingress_receipts TraccarIngressReceipt[]
 
   @@unique([tenant_id, id])
   @@index([tenant_id])
   @@index([tenant_id, operator_user_id, recorded_at])
   @@index([tenant_id, recorded_at])
   @@map("field_operator_locations")
+}
+
+// B-TRC-01 (plano do Traccar v2.1 §3.1) — vínculo rastreador → viatura, por organização (ENABLE + FORCE RLS).
+// Índices PARCIAIS que o Prisma NÃO modela; vivem só na migração 20260874000000_traccar_ingestion_foundation:
+//   vehicle_tracking_bindings_active_device_key  (instance_key, external_device_key) WHERE valid_to IS NULL — ÚNICO e
+//     GLOBAL, sem tenant_id de propósito: um vínculo ativo por dispositivo no banco todo;
+//   vehicle_tracking_bindings_active_vehicle_key (tenant_id, vehicle_id) WHERE valid_to IS NULL — uma viatura, um ativo;
+//   vehicle_tracking_bindings_tenant_probe_idx   (tenant_id, instance_key, external_device_key) WHERE valid_to IS NULL.
+// Desativar = gravar valid_to (delete lógico). CHECK valid_to IS NULL OR valid_to > valid_from.
+model VehicleTrackingBinding {
+  id                  String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String                  @db.Uuid
+  vehicle_id          String                  @db.Uuid
+  instance_key        String
+  external_device_key String
+  valid_from          DateTime                @default(now()) @db.Timestamptz(6)
+  valid_to            DateTime?               @db.Timestamptz(6)
+  created_by          String?                 @db.Uuid
+  created_at          DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime                @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant              Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  vehicle             Vehicle                 @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  receipts            TraccarIngressReceipt[]
+
+  @@unique([tenant_id, id])
+  @@map("vehicle_tracking_bindings")
+}
+
+// B-TRC-01 (plano do Traccar v2.1 §3.1, §4.4) — recibo por posição recebida do Traccar (ENABLE + FORCE RLS).
+// ÚNICO GLOBAL (instance_key, message_kind, external_event_key): uma posição nunca vira linha em duas organizações.
+// CHECK message_kind IN ('position'); não guarda JSON bruto. location_id fica nulo até a localização ser gravada.
+model TraccarIngressReceipt {
+  id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id          String                 @db.Uuid
+  instance_key       String
+  message_kind       String
+  external_event_key String
+  payload_digest     String
+  binding_id         String                 @db.Uuid
+  vehicle_id         String                 @db.Uuid
+  location_id        String?                @db.Uuid
+  traccar_device_id  String
+  fix_time           DateTime               @db.Timestamptz(6)
+  received_at        DateTime               @default(now()) @db.Timestamptz(6)
+  conflict_count     Int                    @default(0)
+  last_conflict_at   DateTime?              @db.Timestamptz(6)
+  tenant             Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  binding            VehicleTrackingBinding @relation(fields: [tenant_id, binding_id], references: [tenant_id, id], onDelete: Restrict)
+  location           FieldOperatorLocation? @relation(fields: [tenant_id, location_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@unique([instance_key, message_kind, external_event_key], map: "traccar_ingress_receipts_event_key")
+  @@index([tenant_id, binding_id])
+  @@map("traccar_ingress_receipts")
+}
+
+// B-TRC-01 (plano do Traccar v2.1 §3.1, §4.5) — quarentena GLOBAL: sem RLS, sem tenant_id, sem coordenada, sem payload.
+// Índice ÚNICO PARCIAL que o Prisma NÃO modela (só na migração): traccar_quarantine_items_open_episode_key
+// (instance_key, external_device_key, reason) WHERE resolved_at IS NULL — um episódio aberto por dispositivo e motivo.
+// CHECK do motivo, delivery_count >= 1 e first_fix_at <= last_fix_at também só na migração.
+model TraccarQuarantineItem {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  instance_key        String
+  external_device_key String
+  reason              String
+  first_seen_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at        DateTime  @default(now()) @db.Timestamptz(6)
+  first_fix_at        DateTime  @db.Timestamptz(6)
+  last_fix_at         DateTime  @db.Timestamptz(6)
+  delivery_count      Int       @default(1)
+  last_event_key      String
+  last_payload_digest String
+  resolved_at         DateTime? @db.Timestamptz(6)
+  resolution          String?
+
+  @@map("traccar_quarantine_items")
 }
 
 model Customer {
@@ -1095,6 +1176,8 @@ model Vehicle {
   // Ω4C PR-08 — movimentos de estoque em CUSTÓDIA desta viatura (custody_type=vehicle). onDelete Restrict:
   // viatura com itens em custódia não é apagada. DISTINTO das FKs legadas (custódia detida ≠ atribuição).
   stock_custody      StockMovement[]    @relation("StockMovementCustodyVehicle")
+  // B-TRC-01 — relação reversa exigida pelo Prisma (vínculos de rastreador desta viatura; sem coluna em vehicles).
+  tracking_bindings  VehicleTrackingBinding[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])
@@ -2351,6 +2434,8 @@ model WorkOrder {
   checklist_snapshot              Json?
   customer_id                     String?               @db.Uuid
   vehicle_id                      String?               @db.Uuid
+  // B-TRC-01 ciclo 2 — gravada SÓ pelo gatilho `work_orders_vehicle_assigned_at`; nunca por cliente/Prisma.
+  vehicle_assigned_at             DateTime?             @db.Timestamptz(6)
   team_id                         String?               @db.Uuid
   service_catalog_id              String?               @db.Uuid
   scheduled_for                   DateTime?             @db.Timestamptz(6)
@@ -2491,6 +2576,9 @@ model FieldDispatch {
   completed_at     DateTime?            @db.Timestamptz(6)
   cancelled_at     DateTime?            @db.Timestamptz(6)
   failed_at        DateTime?            @db.Timestamptz(6)
+  // B-TRC-01 (A2-12) — gravada SÓ pelo gatilho field_dispatches_operator_assigned_at, na mesma instrução que cria o
+  // despacho ou troca operator_user_id; o valor que o cliente mandar é ignorado. Nulo nas linhas anteriores à migração.
+  operator_assigned_at DateTime?        @db.Timestamptz(6)
   metadata         Json
   created_at       DateTime             @default(now()) @db.Timestamptz(6)
   updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz(6)

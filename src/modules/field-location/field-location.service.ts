@@ -15,6 +15,30 @@ import {
   type RecordFieldLocationInput,
 } from "./field-location.types.js";
 
+export type FieldLocationEventPublisher = typeof publishDomainEvent;
+
+// B-TRC-01 (plano do Traccar v2.1 §3.2, §4.8) — a publicação de `field_location.updated`, reutilizável pela rota
+// móvel e pela ingestão do Traccar. O payload é o de sempre (`entity_type`, `entity_id`, `operator_user_id`,
+// `source`): nenhuma coordenada viaja no aviso; o mapa relê a posição por `/field-locations/latest`. Quem grava
+// dentro de uma transação chama isto SÓ DEPOIS do commit. `actorId` é o usuário quando há um (rota móvel); a
+// ingestão do Traccar não tem usuário e não passa nenhum.
+export async function publishFieldLocationUpdated(
+  location: Pick<FieldOperatorLocation, "id" | "tenantId" | "operatorUserId" | "source">,
+  context: { readonly actorId?: string } = {},
+  publish: FieldLocationEventPublisher = publishDomainEvent,
+): Promise<void> {
+  await publish(
+    "field_location.updated",
+    {
+      entity_type: "field_operator_location",
+      entity_id: location.id,
+      operator_user_id: location.operatorUserId,
+      source: location.source,
+    },
+    { tenantId: location.tenantId, actorId: context.actorId },
+  );
+}
+
 export class FieldLocationService {
   constructor(private readonly repository: FieldLocationRepository) {}
 
@@ -38,16 +62,7 @@ export class FieldLocationService {
       metadata: sanitizeLocationMetadata(input.metadata),
     });
 
-    await publishDomainEvent(
-      "field_location.updated",
-      {
-        entity_type: "field_operator_location",
-        entity_id: location.id,
-        operator_user_id: actor.userId,
-        source: location.source,
-      },
-      { tenantId: actor.tenantId, actorId: actor.userId },
-    );
+    await publishFieldLocationUpdated(location, { actorId: actor.userId });
 
     return location;
   }

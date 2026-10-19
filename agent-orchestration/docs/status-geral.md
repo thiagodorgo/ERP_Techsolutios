@@ -5138,3 +5138,20 @@ Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026
 - D7: teto diário da API.
 - D8: estudo de migração para a AWS.
 - D9: as ideias novas do app de campo.
+
+## Estado em 2026-10-18 — #440 e #426 mergeados; P0 = 0 no papel
+
+- **Mergeado:** #440 `B-O6R-07c-b1` (`40c3651f`). A junta do ciclo 2 foi APROVADA 3 × 0 (`J-B-O6R-07c-b1-ciclo2.md`), e o porteiro deu LIBERADO COM RESSALVA (`votos/B-O6R-07c-b1-ciclo2/porteiro-440-parecer.md`).
+- **Mergeado:** #426 `B-TRC-01` (`c1485c94`), com o Traccar em dev, a ingestão privada e a quarentena. A junta do ciclo 3 foi APROVADA 3 × 0 (`J-B-TRC-01-ciclo3.md`), e o porteiro deu LIBERADO COM RESSALVA (`votos/B-TRC-01-ciclo3/porteiro-426-parecer.md`). Nada disso autoriza staging nem produção.
+- **P0 = 0 no papel, por este PR de registro:**
+  - `Ω6R-SEC-002` passou a `fechado` em `docs/revisoes/O6R/achados.jsonl:9`, e os 17 P0 do arquivo estão fechados;
+  - foram fechadas `P-O6R-SUBRECURSO-OBJECT-SCOPE`, `P-O6R-07CB-EMENDA-DECISOES` e `P-CONFLITO-INICIO-ATENDIMENTO`;
+  - `P-O6R-B07` continua aberta só pelo `Ω6R-SEC-004`.
+  - O `p0_abertos` do KPI (congelado) fica para o marco.
+- **Registro:**
+  - as pendências do §4 do plano do ciclo 3 do Traccar, o (c″)-F1 e as do C3c2-A2 do #440, mais CA6/CA7, foram gravadas por APPEND;
+  - foi criado o `R-B-O6R-07c-b1-1.md`;
+  - a ata do ciclo 2 do 07c-b1 ganhou uma errata;
+  - entraram as decisões `D-TRC01-C3-SO-A-C`, `D-GEMINI-TETO-MENSAL-MAIS-10` e `D-KPI-ANTES-DA-DEMO`.
+  - Relatório: `docs/revisoes/REGISTRO-2026-10-18.md`.
+- **Em andamento:** a medição realista do gate da versão vendável (`D-KPI-ANTES-DA-DEMO`). O marco de KPI pelo loop vem antes da demonstração.

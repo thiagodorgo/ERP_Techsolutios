@@ -12,6 +12,11 @@ import {
   createDefaultChecklistService,
   type ChecklistService,
 } from "../checklists/checklist.service.js";
+import {
+  ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+  ASSIGNMENT_CHANGED_NEXT_ACTION,
+  isPreviouslyAssignedRefusal,
+} from "../work-orders/work-order.types.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -436,6 +441,10 @@ async function handleAnswer(
     return alreadyAppliedResult(action, details);
   }
 
+  // B-O6R-07c-b1 (D-07c-IDEMP) — idempotência por `client_action_id` ANTES do escopo (é a mesma ação, já gravada
+  // por quem podia); o escopo vem antes de qualquer escrita.
+  await service.assertRunMutationScope(actor, runId);
+
   const existingAnswer = details.answers.find((answer) => answer.componentId === componentId);
   const answer = canonicalType === "checklist.item_answer"
     ? buildAnswerPayload(action, componentId)
@@ -461,6 +470,7 @@ async function handleMarkerCreate(
     return alreadyAppliedResult(action, details);
   }
 
+  await service.assertRunMutationScope(actor, runId);
   const componentId = parseRequiredString(readComponentId(action), "component_id");
   const markerType =
     parseOptionalString(action.payload.marker_type) ?? parseOptionalString(action.payload.type) ?? "damage";
@@ -495,10 +505,11 @@ async function handleDivergenceCreate(
   action: MobileChecklistAction,
 ): Promise<MobileChecklistActionResult> {
   const runId = await resolveRunId(service, actor, action);
-  const details = await service.getRun(actor, runId);
+  const details = await service.assertRunMutationScope(actor, runId);
 
   // Divergência é um FLAG de estado (não uma entidade acumulável): se a run já está em pending_acknowledgement
   // ou completed_with_divergence, a divergência já foi registrada → idempotente (already_applied).
+  // D-07c-IDEMP: idempotência por ESTADO roda DEPOIS do escopo por objeto.
   if (
     details.run.status === "pending_acknowledgement" ||
     details.run.status === "completed_with_divergence"
@@ -543,6 +554,8 @@ async function handleAcknowledgementCreate(
     return alreadyAppliedResult(action, details);
   }
 
+  await service.assertRunMutationScope(actor, runId);
+
   const message = parseRequiredString(
     (action.payload.message ?? action.payload.observation) as unknown,
     "message",
@@ -573,7 +586,7 @@ async function handleAttachmentAttach(
   action: MobileChecklistAction,
 ): Promise<MobileChecklistActionResult> {
   const runId = await resolveRunId(service, actor, action);
-  const details = await service.getRun(actor, runId);
+  const details = await service.assertRunMutationScope(actor, runId);
 
   // CHECKLIST P1 PR-03 (junta, MÉDIA-5) — a recusa da foto acontece AQUI, não lá no upload. Esta ação não
   // grava nada: ela PROMETE um endpoint para o binário subir depois, e numa vistoria travada essa promessa é
@@ -614,10 +627,11 @@ async function handleComplete(
   action: MobileChecklistAction,
 ): Promise<MobileChecklistActionResult> {
   const runId = await resolveRunId(service, actor, action);
-  const current = await service.getRun(actor, runId);
+  const current = await service.assertRunMutationScope(actor, runId);
 
   // Idempotente por estado: se a run já é terminal-completa (completed / completed_with_divergence), não
   // rebaixa o status — devolve o estado atual como already_applied.
+  // D-07c-IDEMP: idempotência por ESTADO roda DEPOIS do escopo por objeto.
   if (current.run.status === "completed" || current.run.status === "completed_with_divergence") {
     return alreadyAppliedResult(action, current);
   }
@@ -756,6 +770,31 @@ function actionErrorResult(
   action: MobileChecklistAction,
   error: unknown,
 ): MobileChecklistActionResult {
+  // B-O6R-07c-b1 (`D2-07c` = (d)) — quem JÁ FOI técnico da OS e não é mais: a ação NÃO é aplicada e volta em
+  // `conflicts[]` (o app a tira da fila de reenvio e mostra na tela de conflito), à espera de um superior
+  // (`B-O6R-07c-b2`). Quem nunca foi técnico cai no `rejected` abaixo, com o mesmo `not_assigned_to_actor`.
+  if (error instanceof ChecklistError && isPreviouslyAssignedRefusal(error)) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "conflict",
+      checklist_run_id: readRunId(action),
+      conflict: {
+        conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+        server_id: readRunId(action),
+        local: sanitizeActionForConflict(action),
+        next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
+        // Reenviar a mesma ação devolve o mesmo conflito: quem decide é um superior, não uma nova tentativa.
+        retriable: false,
+      },
+      error: {
+        code: error.code,
+        reason: error.reason,
+        message: error.message,
+      },
+    };
+  }
+
   if (isConflictError(error)) {
     const terminalNextAction = TERMINAL_CONFLICT_NEXT_ACTIONS[error.reason];
 

@@ -1,0 +1,58 @@
+{
+  "jurado": "jurado-07cb1c2-c1-cdx — identidade nova",
+  "cadeira": "C1 — trava única por OS, censo de escritores e RBAC de ativação",
+  "modelo": "Codex GPT-5.6 Sol, esforço médio, nível menor (§C7.6), autorizado pelo mandato e nomeado pelo inspetor",
+  "objeto": "7ff1e0039c07b22b84acf8007eef6835560e823a; B=c260d36201f6e835799e7f96a14bc9eb8889ca5a no início e ao fim; origin/main observado ao fim=a26f8afe74b73d9379b4fae5deba312875c2427b (tip inicial não capturado separadamente, sem invenção); ramo remoto e PR #440 no objeto; cerca ciclo1 b198fe358b41186b2598ab258ccb735da8c04cbc→objeto",
+  "legalidade": "Inspetor LIBERADO nomeando jurado-07cb1c2-c1-cdx, worktree próprio e 14/14 checks concluídos/verdes; corpo Claude md5 EOL-neutro 4817c69d4de3e037c0083ea50680fd9f; espelho Codex 0d990b1c48f6c18aa6ef84fbb13dc817; mandato df627d9923c9b72798a217f8616235ae; árvore detached no objeto; npm ci próprio; ata e plano A RE-VERIFICAR; nenhum voto alheio do ciclo 2 lido",
+  "quorum": "unanimidade de 3 com veto; ciclo 2, último em que achado não grave bloqueante dentro do bloco reprova",
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "APROVADO",
+      "resultado": "Grade própria no app real em memória: 120 células (5 estados × 8 vias × 3 papéis), 8 controles positivos, 2 composições e 5 células de alocação; execução focada 135/135, falha 0. Censo: 2 portas autoritativas de escrita e 0 escritor fora de WorkOrderService.assertTechnicianChangeAllowed."
+    },
+    {
+      "item": 2,
+      "estado": "APROVADO",
+      "resultado": "Vermelho no ciclo 1: 70 falhas focadas reproduziram A1/A2. MT1–MT5: respectivamente 37, 16, 12, 31 e 8 falhas nas propriedades esperadas; cada mutação restaurada por hash e árvore limpa."
+    },
+    {
+      "item": 3,
+      "estado": "APROVADO",
+      "resultado": "T-ALOCA 5/5; operator e field_technician 403, manager/field_dispatcher/tenant_admin 200 segundo o catálogo. Resolver ausente/erro falha fechado; MT6/MT7 vermelhos. Operator/field_technician encerram por failed sem trocar a OS; dispatcher cancela sem trocar; V4b posterior permanece residual do b2. Scanner do b2: 0 hit real e 1 controle positivo."
+    }
+  ],
+  "o_que_executei": [
+    "Legalidade: git ls-remote, gh pr view 440, MD5 EOL-neutro, merge-base e leitura do parecer do inspetor.",
+    "Grade focada: CORE_SAAS_PERSISTENCE=memory node --test --import tsx --test-name-pattern='T-TRAVA|T-COMPOSICAO|T-ALOCA' tests/o6r07c-b-scope.test.ts.",
+    "Censo por git grep/Select-String de assigned_*, repository.assign/assignFromDispatch e chamadores, mais import do catálogo de permissões.",
+    "Vermelho: checkout EOL-neutro de src no b198fe35, execução T-TRAVA, restauração no objeto e comparação hash-object.",
+    "Mutações MT1–MT7 uma por vez com testes focados e restauração byte-idêntica.",
+    "Sondas temporárias V4b/V5/operator no arnês real, restauradas por hash; sonda direta de erro do resolver.",
+    "Localização das nove decisões em origin/main e no objeto; scanner b1/b2 com irmão positivo; teardown do worktree."
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [
+    "Objeto do ciclo 1: fail 70 na fatia T-TRAVA, incluindo X1, V2, V3, V4, V5, web e lote.",
+    "MT1 resolver falso: fail 37; MT2 sem no-op: fail 16; MT3 sem guarda V4/V5: fail 12; MT4 sem gate web/lote: fail 31; MT5 on_route iniciado: fail 8.",
+    "MT6 resolver ausente permissivo: fail 1 em T-COMPOSICAO; MT7 critério por papel: fail 1 exatamente em operator.",
+    "Scanner b2 reconheceu 1 irmão positivo fabricado e 0 ocorrência no delta real; comparador reconheceu 1 arquivo alterado e 0 alteração no proibido de controle."
+  ],
+  "pendencias_que_aceito": [
+    {
+      "id": "P-07CB1-CANCELAR-EM-NO-LOCAL",
+      "dono": "B-O6R-07c-b2",
+      "escopo": "pre-existente/fora-do-b1",
+      "evidencia": "D-07CB1-CANCELAR-NO-LOCAL-SEM-AUTORIZACAO em origin/main e no objeto; sonda V4b mostrou cancelamento sem troca e redistribuição apenas no novo despacho posterior."
+    },
+    {
+      "id": "P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO",
+      "dono": "B-O6R-07c-b2",
+      "escopo": "pre-existente/fora-do-b1",
+      "evidencia": "D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2 em origin/main:3729 e no objeto; o b1 somente passa web/lote pela trava única."
+    }
+  ],
+  "teardown": "Todas as mutações e sondas restauradas por hash; git status vazio; processos próprios 0; containers j07cb1c2-c1-* 0; worktree C:/Users/AMP/w-j07cb1c2-c1-cdx removido por git worktree remove --force e registro ausente; base viva intocada; nenhuma porta publicada/usada.",
+  "justificativa": "VOTO: APROVADO — a única trava por OS recusou antes da escrita todas as trocas a partir de No local, preservou o no-op e a fronteira on_route, cobriu web/lote/despacho sem escritor escapando, falhou fechado na composição e aplicou field_dispatch:create na ativação; vermelho do ciclo 1 e MT1–MT7 discriminaram as propriedades, e Q1/Q2 permaneceram dentro da cerca b1/b2"
+}

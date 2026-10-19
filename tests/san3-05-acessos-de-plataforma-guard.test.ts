@@ -110,6 +110,26 @@ const SUMIDAS: ReadonlyMap<string, string> = new Map([
 // O que este bloco ACRESCENTOU ao inventário, com o motivo (nenhuma é acesso a tabela FORCE sem contexto).
 const NOVAS: ReadonlyMap<string, string> = new Map([
   [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrder", "workOrder.findFirst", "work_orders", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrder", "workOrder.updateManyAndReturn", "work_orders", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrderAssignment", "workOrderAssignment.create", "work_order_assignments", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1: `assignFromDispatch` (o despacho grava a atribuição, `D1-07c`) repete, linha a linha, o desenho de `PrismaWorkOrderRepository.assign` já congelado acima (`$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes); herda a mesma classificação suspeita, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assign", "tx.workOrderEvent", "workOrderEvent.create", "work_order_events", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1 ciclo 2 (P-ATOMICA): o evento `work_order_assigned` passou a ser gravado DENTRO do `$transaction` que já grava a OS e a linha de `work_order_assignments` (`tx.workOrderEvent.create`), em vez de uma segunda transação; mesmo `$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes — herda a classificação suspeita das 3 chaves irmãs, sem acesso novo sem contexto.",
+  ],
+  [
+    k("L1", "src/modules/work-orders/work-order-prisma.repository.ts", "PrismaWorkOrderRepository.assignFromDispatch", "tx.workOrderEvent", "workOrderEvent.create", "work_order_events", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-O6R-07c-b1 ciclo 2 (P-ATOMICA): o evento `work_order_assigned` passou a ser gravado DENTRO do `$transaction` que já grava a OS e a linha de `work_order_assignments` (`tx.workOrderEvent.create`), em vez de uma segunda transação; mesmo `$transaction` interno, chamado só pelo `RlsPrismaWorkOrderRepository` dentro de `withTenantRls`, que seta o GUC antes — herda a classificação suspeita das 3 chaves irmãs, sem acesso novo sem contexto.",
+  ],
+  [
     k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
     "B3/C3E: a relação aninhada `select.role` toca a tabela FORCE `roles` pela mesma consulta já congelada como suspeita; relação FORCE não pode desaparecer só porque a operação raiz é `userRoleAssignment.findMany`.",
   ],
@@ -132,6 +152,32 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   [
     k("L2", "src/modules/cloud-charges/cloud-charge-prisma.repository.ts", "new RlsPrismaCloudChargeRepository(prisma)", "CRU", "×1"),
     "a fábrica do envoltório de cobrança recebe o client raiz por desenho (a mesma forma da chave `new RlsPrismaCloudUsageRepository(prisma) CRU` que existia): o envoltório é quem abre o contexto por organização.",
+  ],
+  // B-TRC-01 (decisão do orquestrador em docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md, opção (i)): as 6 chaves que a
+  // ingestão do Traccar acrescenta, medidas pelo gerador no head do bloco. Gerador e WRAPPERS intocados.
+  [
+    k("L1", "src/modules/field-dispatch/field-dispatch-prisma.repository.ts", "-.findOperatorsForVehicleAt", "tx", "RAW-SQL($queryRaw)", "field_dispatches", "PARAMETRO(tx)", "×1"),
+    "B-TRC-01: a leitura do operador no instante do fix (l.34) recebe o `tx` da fase 2 e não abre transação; o único chamador é o callback de `withTenantRlsBudget` em traccar-ingestion.service.ts l.158, cujo helper põe o setter do GUC como 1ª instrução da transação (src/database/rls.ts l.128).",
+  ],
+  [
+    k("L1", "src/modules/field-dispatch/field-dispatch-prisma.repository.ts", "-.findOperatorsForVehicleAt", "tx", "RAW-SQL($queryRaw)", "work_orders", "PARAMETRO(tx)", "×1"),
+    "B-TRC-01: a mesma consulta (l.34) junta `work_orders` à `field_dispatches` pela viatura do vínculo; mesmo `tx` da fase 2 (traccar-ingestion.service.ts l.158), sob o setter de `withTenantRlsBudget` (src/database/rls.ts l.128).",
+  ],
+  [
+    k("L2", "src/integrations/traccar/traccar-ingestion.service.ts", "new PrismaFieldLocationRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-TRC-01: a localização `source='traccar'` é gravada pelo repositório existente no MESMO tx do recibo (l.157, atomicidade de §4.2 passo 7); o `tx` vem de `withTenantRlsBudget`, cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128).",
+  ],
+  [
+    k("L2", "src/integrations/traccar/traccar-ingestion.service.ts", "new TraccarIngestionRepository(this.options.client)", "OUTRO(this.options.client)", "×1"),
+    "B-TRC-01: a quarentena SEM organização resolvida (l.277; dispositivo não mapeado ou teto de organizações) é uma instrução em autocommit, sem GUC, só na tabela GLOBAL `traccar_quarantine_items` (sem RLS, sem tenant_id, sem coordenada, sem payload — nota N-02 do plano); não toca tabela FORCE.",
+  ],
+  [
+    k("L2", "src/integrations/traccar/traccar-ingestion.service.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-TRC-01: o SQL da fase 2 (vínculo FOR SHARE, recibo, quarentena por organização) é instanciado no callback de `withTenantRlsBudget` (l.156); o helper põe o setter do GUC da candidata como 1ª instrução da transação (src/database/rls.ts l.128) e o canário confere o tenant do vínculo e do recibo.",
+  ],
+  [
+    k("L2", "src/integrations/traccar/traccar-resolution.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de findFirstTenantRls)", "×1"),
+    "B-TRC-01: a sondagem da descoberta (l.238) roda no callback de `findFirstTenantRls`, que troca o GUC antes de cada volta (src/database/rls.ts l.156 e l.160), em transação somente leitura, e passa as linhas pelo canário `assertRowsBelongToTenant` antes de usá-las.",
   ],
 ]);
 
@@ -212,7 +258,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     ]);
     assert.equal(f2.status, 0, `o gerador das grafias C3-F2 falhou:\n${f2.stderr}`);
     assert.equal(f2.stderr, "");
-    assert.match(f2.stdout, /tabelas ENABLE=109 FORCE=109 · acessores Prisma em FORCE=109/);
+    assert.match(f2.stdout, /tabelas ENABLE=111 FORCE=111 · acessores Prisma em FORCE=111/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

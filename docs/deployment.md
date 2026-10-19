@@ -372,6 +372,60 @@ connection string inteira).
 commit — carregada no daemon local com `cache-from: type=gha`, sem rebuild. O `web` não sobe: o smoke é do
 backend, e buildar o frontend ali custaria minutos sem provar nada deste bloco.
 
+#### Traccar em DEV — ingestão privada e o demo vertical (B-TRC-01)
+
+O Traccar 6.16.0 entra só por **digest** (`traccar/traccar:6.16.0@sha256:03ebb7ed…1eda`, PD aprovada pelo dono em
+`D-TRC-PD-APROVADA-2026-10-11`) e só em **dev**, pelo overlay `docker-compose.traccar.yml`, sempre junto do
+`docker-compose.prod.yml` e sob projeto fixo. A ingestão é um **listener próprio** da `api` (não é rota de
+`src/app.ts`), desligado por padrão:
+
+| Variável | Default | Papel |
+|---|---|---|
+| `TRACCAR_INGEST_ENABLED` | `false` | liga o listener da ingestão |
+| `TRACCAR_INGEST_HOST` / `TRACCAR_INGEST_PORT` | `127.0.0.1` / `3200` | endereço privado e porta própria (≠ `PORT`, ≠ `PORTAL_PORT`) |
+| `TRACCAR_INSTANCE_KEY` | — | identifica a instância do Traccar (`^[a-z0-9-]{3,40}$`) |
+| `TRACCAR_FORWARD_SECRET_CURRENT` | — | segredo do header `X-Traccar-Forward-Token` (32+ caracteres; nunca no repositório) |
+| `TRACCAR_FORWARD_SECRET_PREVIOUS` / `…_PREVIOUS_UNTIL` | vazio | rotação: o anterior vale até o prazo (ISO 8601, no máximo 72 h adiante) |
+| `TRACCAR_INGEST_RATE_PER_SECOND` / `_BURST` / `_MAX_CONCURRENCY` | 20 / 100 / 10 | limite de taxa e de concorrência (`429`) |
+| `TRACCAR_DB_POOL_MAX` | 5 | pool PRÓPRIO da ingestão (`application_name=erp-traccar-ingest`); o app público fica com o dele |
+| `TRACCAR_INGEST_TIMEOUT_MS` | 3000 | orçamento por requisição, abaixo dos 5 s de leitura do forward do Traccar |
+| `TRACCAR_RESOLVE_MAX_TENANTS` / `_HINT_TTL_MS` / `_NEGATIVE_TTL_MS` / `_CACHE_MAX` | 500 / 600000 / 60000 / 10000 | descoberta do dispositivo: teto, dica deslizante, cache negativo |
+
+Com a flag ligada, o boot recusa (em qualquer ambiente) instance key fora do formato, segredo curto ou de exemplo,
+`previous` sem prazo ou com prazo acima de 72 h, e porta igual à da API ou do portal. A falha do `listen` da
+ingestão (`EADDRNOTAVAIL`, `EADDRINUSE`, `EACCES`) **não derruba** a API pública: o bootstrap loga
+`{ code, host, port }` e segue.
+
+**Rede do overlay:** `traccar_private` e `traccar_devices` são `internal` (sem saída para a internet); a `api` escuta
+a 3200 só no IP fixo dela na `traccar_private` (`172.31.250.10` por padrão); o Traccar, o simulador e o receptor de
+captura não publicam porta nenhuma; a `api` publica só `127.0.0.1:${TRC_API_PORT:-3102}` e o `web`, se subir, só
+`127.0.0.1:${TRC_WEB_PORT:-18080}`. A web/REST do Traccar fica presa ao `127.0.0.1` do próprio contêiner
+(`web.address`). Do host Linux (ou da VM do Docker Desktop) o IP da rede interna é alcançável: ali a barreira é o
+segredo, sorteado a cada rodada do demo.
+
+```bash
+node scripts/traccar-capture-fixture.mjs   # captura o corpo real do forward (projeto erp-trc01-capture) e derruba
+node scripts/traccar-dev-demo.mjs          # o smoke vertical: OsmAnd → Traccar → ingestão → mapa; derruba no fim
+node scripts/traccar-dev-demo.mjs --keep   # deixa de pé (o script imprime o comando de derrubar)
+TRC_DEMO_PASSWORD=… node scripts/traccar-dev-demo.mjs --keep --with-web   # opcional: web em 127.0.0.1:18080
+```
+
+O demo confere o terreno (Docker, sub-rede livre, ≥ 10 GB), sobe `postgres redis migrate api traccar`, provisiona o
+RBAC pelo script oficial, semeia uma organização com `field_operations`, um técnico e um operador de despacho, uma
+viatura com OS e despacho aceito e o vínculo `trcdemo01`, abre o SSE do mapa, manda uma posição OsmAnd e só fica
+verde se o `latest` devolver o técnico na coordenada enviada com `source: "traccar"`, o SSE receber
+`field_location.updated` sem coordenada, o banco tiver 1 recibo, 1 localização e 0 quarentena, e o reenvio do mesmo
+ponto não duplicar nada. Imprime só nome de passo e estado. **Derrubar à mão** exige os perfis, senão o simulador e o
+receptor de captura sobrevivem:
+
+```bash
+docker compose -p erp-trc01-demo -f docker-compose.prod.yml -f docker-compose.traccar.yml --profile tools --profile capture down -v --remove-orphans
+```
+
+Produção e staging do Traccar NÃO estão ligados aqui: dependem do Ato 2, dos gates de produção e dos blocos
+B-TRC-06/07 (plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md`). Nunca usar os servidores públicos de demonstração do
+Traccar, em ambiente nenhum.
+
 ### Fronteira de provisionamento (hand-off humano — D-SAN-AUTONOMIA)
 
 A `D-SAN-AUTONOMIA` pre-autoriza a **decisao**/gasto de provedor, mas nao fabrica credencial. O go-live real exige,

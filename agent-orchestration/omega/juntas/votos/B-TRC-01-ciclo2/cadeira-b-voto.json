@@ -1,0 +1,159 @@
+{
+ "jurado": "jurado-trc01c2-b-opus (identidade nova; sucessora P3 de jurado-trc01c2-b-cdx, que sucedeu dois Gemini caídos sem artefato; corpo jurado-trc01c2-b-escopo-superficie-e-trava; nenhum número, SHA, linha ou trecho do plano, do relatório do dev, dos pareceres, do orquestrador, da ata do ciclo 1 ou do corpo herdado como fato)",
+ "cadeira": "(b′) ciclo 2 — escopo, superfície e trava: escopo por laço; superfície e Ω6R-SEC-002; registro",
+ "mandato_md5": "71ee13440a9d7af9ad92e1e8cbd2271c (EOL-neutro, medido) · declarado no disparo: 71ee13440a9d7af9ad92e1e8cbd2271c",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5), executor Claude Code · nível menor (§C7.6) · substituição: Gemini 3.1 Pro (teto mensal da API) → Codex GPT-5.6 Sol (limite de uso às 03:48Z) → Opus, mesmo nível, sem rebaixamento · sucessora de: jurado-trc01c2-b-cdx",
+ "corpo_md5": "2c5f801a86a14ef4f0e5521f0fc7c4a8 (.claude, blob do objeto) · a1a2c76480c748631f233c722bc7fba5 (.agents, forma do sync; sync --check ec 0) · recebido no disparo: 2c5f801a86a14ef4f0e5521f0fc7c4a8",
+ "objeto": "2043c5840c8f60fe91538840aaefb3420a11cfe3 (ls-remote = gh headRefOid, início e fim) · h1 5abdf83bfcfcac9f70cb1e1aad1c7a7a7cecbf91 ancestral: sim (ec 0) · objeto = merge de c32bd2cd (ciclo 2) com c260d36201f6e835799e7f96a14bc9eb8889ca5a (main) · laço do bloco = h1..c32bd2cd (37 arquivos), com o merge provado sem conteúdo próprio além da união · origin/main a26f8afe74b73d9379b4fae5deba312875c2427b no início e no fim · cerca do mandato = objeto (delta vazio) · objeto no fim: igual",
+ "legalidade": "inspetor inspetor-trc01c2-cdx (jtrc01c2-insp): insp-trc01c2-parecer.md (disco de w-trc01, 00:04 local) · LIBERADO COM RESSALVA · confere nome da cadeira, corpo nos dois espelhos (md5 iguais aos meus), prefixo jtrc01c2-b- e portas; executor e worktree trocados por sucessão P3 ordenada no disparo (declarado) · check-runs 14 | não-verdes 0 | pendentes 0",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova; o último) · item 3 só nota salvo registro falso",
+ "docker": "antes de subir: outros = 1 grupo (jtrc01c2-c-*), erp-postgres/erp-redis listados à parte como base viva · subi jtrc01c2-b-pg (postgres:16) e jtrc01c2-b-redis (redis:7) em 127.0.0.1:47662/47672",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a′)/(c′) deste ciclo · li: plano do ciclo 2 (md5 dd6e9074…), ata J-B-TRC-01-ciclo1.md, votos/B-TRC-01/cadeira-c-evidencia.md (sondas do apêndice) e cadeira-c-voto.json do ciclo 1, R-B-TRC-01-ciclo1.md, B-TRC-01-ciclo2-dev.md e B-TRC-01-dev.md, insp-trc01c2-parecer.md, 00-quedas.md, a evidência e o voto-esqueleto do Codex desta cadeira, controle/decisoes.md e pendencias.md (objeto e main)",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "escopo": "37 arquivos no laço do bloco (h1..c32bd2cd) · 37 cobertos · SEM COBERTURA: [] · PROIBIDO tocado: [] (os 93 restantes de h1..objeto vieram da main com blob == c260d362, inclusive 4 Kpis/* de 7243c842 e frontend/tests/field-operators.smoke.test.tsx de 684e9afd) · ci.yml só SUITES: sim (1 hunk +11 em l.278–288, dentro de l.193–294 do passo do backend-postgres; 5 comentários + 6 SUITES traccar-*-db) · funções permitidas só: sim (0 linhas fora de findOperatorsForVehicleAt / classifyOperatorsAtFixTime / OperatorAtFixTimeCandidate) · testes existentes intactos: sim (ingestion-db 18→21, idempotency-db 9→10, 0 removido, 0 editado) · 1 migração nova (20260876000000_work_orders_vehicle_assigned_at), antigas intactas · autorização: D-TRC01-VEHICLE-ASSIGNED-AT, decisoes.md l.3682, registro de 16/10 aprovado pelo dono ('todas as decisões nas suas recomendações'), opção (i), commit af89abbb 2026-10-16T21:21-03:00 antecede a migração (c32bd2cd 2026-10-17T22:45-03:00): sim · Kpis do bloco: 0 · diff --check h1..objeto: vazio, ec 0 · sync --check: ec 0, 61 agentes · 3 corpos trc01c2 nos dois espelhos; corpos do ciclo 1 intocados",
+ "superficie_e_trava": "diff da superfície (src/integrations/traccar, rls.ts, server.ts, env.ts, docker-compose.traccar.yml, infra/traccar, .env.example): vazio · sem banco: h1 7 suítes 76/76, objeto as mesmas 76/76 + operator-at-fix-time 4/4 + rls-budget-order 1/1 = 81/81, skipped 0 (dev-topology com Docker presente, 12/12) · rotas h1 = objeto = 395 md5 48bc87377b435f93e2d2b6141ed8c431 · OS/aprov/desp/RBAC 43 md5 c8d72733e314259d71c70f0cbdf7963c · traccar no app público 0 · permissão/tela: 0 arquivos do bloco; permissions 198 / roles 7 / role_permissions 709 com md5 por chave natural iguais em banco h1 × objeto · vehicle_assigned_at: 5 ocorrências em src, todas nas 3 funções/tipo de field-dispatch; 0 em work-orders/DTO/frontend; 0 em 34 respostas do app público real (create/assign/status/patch/cancel/detalhe/lista) com a coluna preenchida no banco · transições de OS com/sem gatilho: 34 passos, steps_md5 aff5a22edbfb8133da3ac494e07af113 e rows_md5 (sem a coluna) 17a2bb31b0339805a5f0affd358f4694 iguais no código+banco de h1 e do objeto · escrita da ingestão em OS: 0 (6 suítes -db 48/48 skipped 0 com log_statement=all; os 6 UPDATE work_orders + 2 INSERT work_order_assignments do log são o semeador do teste — assignVehicle l.179 e T-C3 l.496–523 — em transações sem comando de ingestão; erp-traccar-ingest 0 escrita em work_order*) · conclusão: FORA",
+ "registro": "4 notas do ciclo 1: formas 10c/23c/OWN-13b fechadas por execução (MUT-23c vermelha por mim: not ok 2, 9/8/1/0); OWN-ONCE, relógios e teto SEM pendência com dono (nota) · P-TRC-VIATURA-PERIODOS: ID ausente de pendencias.md, conteúdo registrado com dono B-TRC-03 no PLANO_TRACCAR §3.1/§4.2 e na D-TRC01 (nota) · P-CI-LISTA-CURADA-6-PRE-EXISTENTES: ID ausente (nota); 6 = medido (48 -db × 42 na lista; os 6 nomes do plano, todos nascidos fora do bloco) · relatório ciclo 2 (B-TRC-01-ciclo2-dev.md) com execução: 48 / 81 / 129 conferidos por amostra; '3427 passados' já corrigido no próprio arquivo; 'posições já gravadas: nada reescrito' não declarado (nota) · R-B-TRC-01-ciclo1.md existe, achou ≠ planejou ≠ desenvolveu por identidade; as 3 perguntas respondidas na ata l.29–32",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote origin refs/heads/feat/traccar-b-trc-01; gh pr view 426 --json headRefOid,baseRefName,state,isDraft,mergeable",
+   "forma": "Git Bash, w-trc01 (só leitura de refs)",
+   "resultado": "2043c584… nos dois, OPEN, não draft, MERGEABLE; igual no fim"
+  },
+  {
+   "comando": "gh api repos/thiagodorgo/ERP_Techsolutios/commits/<objeto>/check-runs?per_page=100",
+   "forma": "arquivo no $SCRATCH, contado por node",
+   "resultado": "14 | 0 não-verdes | 0 pendentes"
+  },
+  {
+   "comando": "git diff --name-only h1 c32bd2cd / 9566d55b c260d362 / h1 objeto / c32bd2cd objeto; git merge-file -p ours base theirs (ci.yml, API_CONTRACTS.md, san3-05-runtime-role-guard-db)",
+   "forma": "worktree C:/Users/AMP/w-jc2-b4 detached no objeto",
+   "resultado": "A=37, B=95, D=130, D−(A∪B)=∅; merge sem conteúdo próprio (2 merges limpos iguais; ci.yml = união sem marcador)"
+  },
+  {
+   "comando": "bash zz-jtrc01c2b-laco.sh A.txt (md5 ddf1498d051ba732934c2ebf8c7bc2c4) + controle com 2 caminhos fictícios",
+   "forma": "regras = PERMITIDO/PROIBIDO do plano §2.1 + §8.3",
+   "resultado": "TOTAL=37 SEM_COBERTURA=0 PROIBIDO=0; controle: 2/2 acusados"
+  },
+  {
+   "comando": "bash zz-jtrc01c2b-hunks.sh (md5 ec1a675c21f694706b7f6951ee946883) main→objeto, h1→c32bd2cd e controle no env: do job backend",
+   "forma": "delimitação por job backend-postgres → 1º SUITES= → node --test $SUITES",
+   "resultado": "1 hunk DENTRO (l.278–288), 0 fora; controle: FORA @@ -34 +34 @@"
+  },
+  {
+   "comando": "node zz-jtrc01c2b-ranges.cjs (md5 138f6a2747a19254933192d63b1457fb) + git diff -U0 h1 objeto -- src/modules/field-dispatch/",
+   "forma": "compilador TypeScript do meu worktree",
+   "resultado": "todos os hunks dentro das 3 faixas; 0 linha fora"
+  },
+  {
+   "comando": "node zz-jtrc01c2b-titulos.cjs (md5 11b79b0fbc9da06475ee7f66103941aa) h1×objeto dos 2 -db editados + 2 controles",
+   "forma": "AST, corpo EOL-neutro",
+   "resultado": "removidos 0 editados 0 novos 3/1; controles: removidos=1, editados=1"
+  },
+  {
+   "comando": "git log -S'D-TRC01-VEHICLE-ASSIGNED-AT' origin/main -- decisoes.md; git log --diff-filter=A -- <pasta da migração>; git diff --check h1 objeto; node scripts/sync-agent-agents.mjs --check",
+   "forma": "w-jc2-b4",
+   "resultado": "af89abbb 16/10 21:21 antes de c32bd2cd 17/10 22:45; diff --check ec 0 vazio; sync ec 0 (61)"
+  },
+  {
+   "comando": "prisma migrate deploy + db:seed em erp_jc2b (objeto, 111) e erp_jc2b_h1 (h1, 110)",
+   "forma": "jtrc01c2-b-pg postgres:16.14 em 127.0.0.1:47662, DATABASE_URL só por ambiente (***)",
+   "resultado": "ec 0; coluna+gatilho 1/1 no objeto, 0/0 em h1"
+  },
+  {
+   "comando": "node --import tsx zz-jtrc01c2b-rotas.mts (md5 1c624d87827e17caf0741d45fbd4cae7) normal/extra em h1 e objeto",
+   "forma": "pilha do roteador do app público, REDIS_URL=redis://127.0.0.1:47672",
+   "resultado": "395/48bc8737… e 43/c8d72733… iguais; controle extra 396/e9489d78…"
+  },
+  {
+   "comando": "env -u DATABASE_URL REDIS_URL=… node --test --import tsx tests/traccar-<sem -db>.test.ts (um por vez)",
+   "forma": "w-jc2-b4-h1 e w-jc2-b4",
+   "resultado": "h1 76/76; objeto 81/81; skipped 0; fail 0"
+  },
+  {
+   "comando": "psql -f zz-jtrc01c2b-perm2.sql (md5 8a2b7e5d53bac28a5d483a57688ae114) em erp_jc2b_h1 × erp_jc2b + controle begin/insert/rollback",
+   "forma": "chave natural",
+   "resultado": "iguais (198/7/709/2/0); controle 199"
+  },
+  {
+   "comando": "node --import tsx zz-jtrc01c2b-os.mts <wt> <saída> [expor] — h1→erp_jc2b_h1, objeto→erp_jc2b, objeto expor, h1 com gatilho de controle",
+   "forma": "app público real, CORE_SAAS_PERSISTENCE=prisma, JWT HS256 de dev, organização descartável por execução",
+   "resultado": "34 passos iguais (aff5a22e…), rows iguais (17a2bb31…), exposição 0; controles: exposição 4; DIVERGE on_route 400×200"
+  },
+  {
+   "comando": "log_statement=all; node --test --import tsx <6 suítes -db do Traccar>; docker logs --since/--until; node zz-jtrc01c2b-log.mjs writes (md5 109ba849…) + controle UPDATE por papel meu com application_name=erp-traccar-ingest",
+   "forma": "CORE_SAAS_PERSISTENCE=prisma RBAC_DB_PARITY=1 LOG_LEVEL=silent JWT_SECRET=dev-only-change-me",
+   "resultado": "48/48 skipped 0; ingestão 0 escrita em work_order*; as 8 do log = semeador do teste; controle contado 1"
+  },
+  {
+   "comando": "node zz-jtrc01c2b-mut.mjs <wt> MUT-23c (md5 ac8c3a402921e1f9bcfa955322deb890); tsc --noEmit; node --test tests/traccar-idempotency-db.test.ts; git checkout -- <arquivo>",
+   "forma": "meu worktree e meu banco",
+   "resultado": "âncora 1, tsc 0, not ok 2 (9/8/1/0); restaurado porcelain 0, hash-object = blob"
+  },
+  {
+   "comando": "git ls-tree -r tests | grep -- -db.test.ts × nomes -db no job backend-postgres; git log --diff-filter=A por arquivo; grep -c -F <ID> pendencias.md (com ID fictício e ID de outro bloco)",
+   "forma": "blobs do objeto",
+   "resultado": "48 × 42 → 6 fora, todos pré-existentes; P-TRC-VIATURA-PERIODOS 0, P-CI-LISTA-CURADA-6-PRE-EXISTENTES 0; controle 0/1"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "As pendências P-TRC-VIATURA-PERIODOS e P-CI-LISTA-CURADA-6-PRE-EXISTENTES, que o plano do ciclo 2 (§2.1, §2.2, §2.4.4) manda registrar, não existem em agent-orchestration/controle/pendencias.md do objeto nem da origin/main",
+   "evidencia": "MSYS_NO_PATHCONV=1 git show <objeto>:agent-orchestration/controle/pendencias.md | grep -c -F '<ID>' → 0 e 0 (idem origin/main a26f8afe); git grep -c -F só acha os 6 corpos de jurado. O conteúdo de P-TRC-VIATURA-PERIODOS está com dono B-TRC-03 no PLANO_TRACCAR §3.1 item 6/§4.2 e na D-TRC01-VEHICLE-ASSIGNED-AT; o de P-CI-LISTA-CURADA está só no plano externo (fora do repositório). O número (6) confere com a execução.",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "a entrada de pendência com ID e dono não está no registro de controle; quem lê pendencias.md não vê as duas"
+  },
+  {
+   "defeito": "Três notas da cadeira (c) do ciclo 1 (OWN-ONCE sem vigia, relógios Node×Postgres, redundância do teto) não têm pendência com dono no objeto",
+   "evidencia": "grep -c -i -E 'OWN-ONCE|rel[oó]gios? misturad|redund' em pendencias.md do objeto → 0/0/0; a ata l.24 e o voto da (c) do ciclo 1 as listam sem dono",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "nota do ciclo anterior sem destino registrado"
+  },
+  {
+   "defeito": "O relatório do dev do ciclo 2 não declara o que acontece com as posições já gravadas ('nada reescrito'), que o plano §2.4.4 diz que ele declara",
+   "evidencia": "grep -i -E 'já gravad|reescrit|cenário 4|perda aceita' em B-TRC-01-ciclo2-dev.md, B-TRC-01-dev.md, comando B-TRC-01 e PLANO_TRACCAR.md do objeto → 0 (a perda aceita do cenário 4 está descrita no PLANO_TRACCAR §4.2 sem o rótulo)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "declaração prevista no plano ausente do registro"
+  },
+  {
+   "defeito": "A autorização D-TRC01-VEHICLE-ASSIGNED-AT é a recomendação do orquestrador aprovada em bloco pelo dono ('todas as decisões nas suas recomendações'), não uma frase do dono sobre a migração",
+   "evidencia": "git show <objeto>:agent-orchestration/controle/decisoes.md | sed -n 3676,3682p",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "a autorização existe, cobre nome/coluna/SECURITY INVOKER/opção (i) e antecede a migração; registro apenas da forma"
+  },
+  {
+   "defeito": "tests/traccar-position-ingestion-db.test.ts ganhou, além dos casos T-C1..T-C3 e do import, um helper assignVehicle no harness",
+   "evidencia": "git diff -U0 h1 objeto -- tests/traccar-position-ingestion-db.test.ts → hunk @@ -170,0 +172,18 @@; usado só pelos casos novos; 0 caso existente editado",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "repete_classe_do_ciclo_anterior": "não",
+   "motivo": "linha do PERMITIDO diz 'T-C1..T-C3 e o import'; o helper é suporte dos casos novos"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum — todo controle dos 3 itens acusou (laço 2/2, hunk FORA, títulos removido/editado; rota +1, exposição 4 e grep, transição DIVERGE, escrita 1, permissão 199; pendência 0/1, amostra DIVERGE). Nota contra o plano (não contra o objeto): o plano diz '5 suítes sem banco … 54'; medi 7 suítes sem banco em h1 (76 casos; 64 sem a topologia)"
+ ],
+ "pendencias_que_aceito": [
+  "da (a′): RLS, log por transação, pg_terminate_backend, rollback, a migração como banco (aditividade, prosecdef, L0), a CI como execução — não julgados",
+  "da (c′): cenários do vínculo no tempo, T-C*, M-C*/M-B*, regressão das 13+2 e as 21 transições do despacho — não julgados; observação para a (c′): o gatilho também carimba now() no 1º UPDATE qualquer de uma OS antiga com viatura (ramo OLD.vehicle_assigned_at IS NULL), conforme a opção (i)",
+  "as 6 suítes -db pré-existentes fora da lista curada (pre-existente, nascidas em dc8168b9/86ea8a81/aadaa6d5/a9fbe283/026ff7b8)",
+  "P-FIELD-DISPATCH-REASSIGN-NAO-ATOMICO, P-PORTAL-LISTEN-SEM-TRATADOR, P-SAN3-05-REGRA-EM-TABELA, P-SAN3-05-SECURITY-DEFINER-INVENTARIO (pré-existentes com dono)",
+  "as 5 notas acima, que viram pendência com dono",
+  "resíduo alheio: worktrees C:/Users/AMP/w-jc2-b e C:/Users/AMP/w-jc2-b3 dos ocupantes caídos desta cadeira, apenas reportados"
+ ],
+ "teardown": "log_statement resetado e provado (none) · papéis o6r_b01_%/jc2b_% e gatilho de controle: 0 · containers jtrc01c2-b-pg e jtrc01c2-b-redis removidos (docker rm -f -v), contagem 0 · processos vivos com w-jc2-b4 = 0 · worktrees C:/Users/AMP/w-jc2-b4 e C:/Users/AMP/w-jc2-b4-h1 removidos por git worktree remove --force (ec 0) · controles de código restaurados (porcelain 0, hash-object = blob) · subpastas do $SCRATCH apagadas; grep da senha na evidência e no voto = 0 · base viva, w-07cb1 e containers de outras cadeiras nunca tocados · w-trc01 só com os meus dois arquivos de saída · resíduo ALHEIO (w-jc2-b, w-jc2-b3) apenas reportado",
+ "justificativa": "Terreno: worktrees próprios C:/Users/AMP/w-jc2-b4 (objeto) e C:/Users/AMP/w-jc2-b4-h1 (h1), detached, sem .env, npm ci próprio cada (326 pacotes), sem junction; w-jc2-b e w-jc2-b3 (dos caídos) não usados; containers jtrc01c2-b-pg/redis em 127.0.0.1:47662/47672 testadas antes; REDIS_URL próprio em todo node --test; base viva e w-07cb1 intocados; Docker: 1 trabalho de outros antes de subir; disco 16 GB. Sucessão P3: a evidência do Codex não tinha comando literal — re-executei cada conclusão dela (head por duas fontes, check-runs 14/0/0, md5 de corpo/mandato/plano, inspetor, obituário) e conferem; o resto é cauda medida por mim. Item 1: laço do bloco 37/37 no PERMITIDO, PROIBIDO 0, separado da main pela base certa (merge provado sem conteúdo próprio); ci.yml só no SUITES= do backend-postgres; field-dispatch só nas 3 funções/tipo; nenhum caso existente editado; uma migração nova, autorizada (opção i) antes dela; Kpis do bloco 0; diff --check limpo; sync ec 0. Item 2: superfície do listener/segredo sem diff (não reaberta); 81/81 sem banco; rotas 395 md5 igual em h1 e no objeto; permissões iguais por chave natural; vehicle_assigned_at fora de OS e ausente de 34 respostas do app real; transições de OS idênticas com e sem gatilho (código e banco de cada ref); ingestão 0 escrita em OS — Ω6R-SEC-002 FORA, parte a parte. Item 3: nada declara fechado o que não fecha; 48/81/129 conferidos; R-B-TRC-01-ciclo1 com três identidades distintas; ausências de registro (2 IDs de pendência, 3 notas do ciclo 1 sem dono, 'nada reescrito') são nota pela regra do item. Vermelho-controle: todos os 9 acusaram (ver criterios_que_nao_puderam_falhar). Sem medir: nada do meu mandato. Nenhum achado repete classe do ciclo 1. Limpeza: containers, worktrees, log e scratch removidos; resíduo alheio reportado.\nVOTO: APROVADO — laço h1..h2: 37/37 arquivos do bloco no PERMITIDO, PROIBIDO 0, ci.yml só no SUITES do backend-postgres, migração única com autorização do dono (opção i) anterior a ela, Kpis sem diff do bloco, sync --check verde; superfície do listener sem diff, 76/76 sem banco + T-C4 4/4 + T-B2 1/1, rotas 395 md5 igual, nenhuma permissão/tela, vehicle_assigned_at fora de OS/JSON, transições de OS iguais com e sem gatilho, ingestão 0 escrita em OS — Ω6R-SEC-002 FORA; registro: 4 notas (1 fechada por execução, 3 sem dono = nota), 2 pendências novas sem entrada em pendencias.md (nota; o 6 medido confere), R-B-TRC-01-ciclo1 com 3 identidades; pendências: as 5 notas deste voto, as 6 -db pré-existentes, as 4 pré-existentes com dono"
+}

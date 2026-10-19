@@ -25,6 +25,7 @@ test("field dispatch service cria, lista, muda status, reatribui e isola tenants
   const managerB = core.createUser({ tenantId: tenantB.id, name: "Manager B", email: "dispatch-manager-b@example.com", roles: ["manager"] });
   const operatorA = core.createUser({ tenantId: tenantA.id, name: "Operator A", email: "dispatch-operator-a@example.com", roles: ["technician"] });
   const operatorB = core.createUser({ tenantId: tenantB.id, name: "Operator B", email: "dispatch-operator-b@example.com", roles: ["technician"] });
+  const operatorA2 = core.createUser({ tenantId: tenantA.id, name: "Operator A2", email: "dispatch-operator-a2@example.com", roles: ["technician"] });
   const workOrderService = createMemoryWorkOrderService();
   const dispatchService = createMemoryFieldDispatchService(new MemoryCoreSaasAdapter(core));
 
@@ -56,7 +57,9 @@ test("field dispatch service cria, lista, muda status, reatribui e isola tenants
     assert.equal(onRoute.status, "on_route");
 
     const reassigned = await dispatchService.reassign(actor(tenantA.id, managerA.id), dispatch.id, {
-      operatorUserId: operatorA.id,
+      // B-O6R-07c-b1 ciclo 2 (classe (ii), contrato muda por desenho): reatribuir à MESMA pessoa virou no-op (não escreve,
+      // não vai a `reassigned`). Para seguir provando a reatribuição, o alvo passa a ser OUTRO técnico da organização.
+      operatorUserId: operatorA2.id,
       reason: "Ajuste operacional.",
     });
     assert.equal(reassigned.status, "reassigned");

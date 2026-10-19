@@ -1,0 +1,58 @@
+{
+  "jurado": "jurado-trc01c2-a-cdx (identidade nova; nenhum fato herdado)",
+  "cadeira": "(a′) ciclo 2 — RLS, banco e CI",
+  "mandato_md5": "91dc62018ce3b621e233061f46c37795 · declarado no disparo: igual",
+  "modelo": "Codex GPT-5.6 Sol, esforço médio · nível menor (§C7.6) · substituição: nenhuma · sucessora de: ninguém",
+  "corpo_md5": "1d4ef521aeab60d8a9af040225ae81f3 (.claude) · 0631089c1856f76d0ad95bb7906dd2b2 (.agents) · recebido no prompt: 1d4ef521aeab60d8a9af040225ae81f3",
+  "objeto": "2043c5840c8f60fe91538840aaefb3420a11cfe3 · re-resolvido no início e no fim por ls-remote e gh pr view; não andou",
+  "legalidade": "VÁLIDA · inspetor LIBERADO COM RESSALVA; PR #426 aberto, não draft, base main, MERGEABLE; 14/14 check-runs concluídos verdes; head do ciclo 1 ancestral; autorização nominal D-TRC01-VEHICLE-ASSIGNED-AT opção (i); decisões do dono conferidas na ref indicada",
+  "quorum": "unanimidade de 3, com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova; o último)",
+  "docker": "limite operacional de 2 trabalhos respeitado; outros grupos antes de subir=0; containers próprios jtrc01c2-a-pg/redis removidos; próprios finais=0",
+  "leitura_de_outras_cadeiras": "não li arquivos das cadeiras (b′)/(c′) deste ciclo; li plano do ciclo 2, R-DBA e inspetor",
+  "pausa": "nenhuma",
+  "voto": "APROVADO",
+  "submedicoes_ciclo1": {
+    "guc_por_v": "145/145 transações-alvo com setter em 1º; 32/32 ingestões com ordem tenant→lock_timeout→statement_timeout; igualdade com vínculo confirmado: sim; fora de contexto: 0; dica velha/envenenada A=1 e B=0; controle sem setter contado fora de contexto",
+    "terminate": "pids=1; pg_terminate_backend=true; erro de cliente PostgreSQL classe 57P01; resposta 503/unavailable/database; 0 recibo/0 localização/0 evento; seguinte 204 e 1/1; T-B1 isolado 9/9 e contido nas 3 rodadas; M-B1 vermelho 3 asserções; usuário inexistente 0 pid/0 término",
+    "rollback_pg_dump": "diff normalizado vazio (3707/3707 linhas); md5 antes=depois: work_orders 0e7c3137226a063d30d8a756420ab0ba, field_dispatches 2e2e048290f3b62f3f297ff4fb67481f, field_operator_locations 5e8b2c45b750d12d3ac96428bcf01d90; colunas novas nulas pela opção (i); source=traccar 0; controles de dado e esquema acusaram"
+  },
+  "migracao_20260876": "aditiva sim; timestamptz nullable; prosecdef=false; RULE 0; work_orders ENABLE+FORCE e políticas iguais (digest 2876bf9d59dc30b4cd7fc5c2fcde5da9); gatilho não forjável pelos 7 casos; T-C3 20/20 nas 3 rodadas e isolado; M-C3 18/20 e M-C4 19/20 pelas asserções esperadas; L0 fixture 111/111 (catálogo real 108/108 + 3 fixtures); tabelas_com_dml=118; escapes=0; T13 35/35; R-DBA coerente",
+  "ci": "diff contém as 6 suítes Traccar; contribuição=48; lista exata de 49 arquivos executada 3× com tests=389/pass=389/fail=0/skipped=0; job oficial backend-postgres 389/389; M-CI1 sem DATABASE_URL skipped=6 e guard EC=1; controle sem binding caiu 389→383; backend oficial tests=3493/pass=3491/fail=0/skipped=2, os dois skips RBAC nomeados e cobertos no job de banco",
+  "justificativa": "Terreno próprio detached, npm ci próprio sem junction, PostgreSQL 16 e Redis 7 em 127.0.0.1:47661/47671, .env ausente, base viva intocada. Item 1 fechou por execução %v, término real e rollback das três migrações; item 2 fechou catálogo, comportamento, mutações e guards; item 3 fechou a lista curada três vezes, controles e os dois jobs oficiais. Cada item teve controle vermelho que acusou. Nada ficou sem medir. O único achado é ajuste de comentário numérico desatualizado, não bloqueia e não repete classe do ciclo 1. Logging restaurado, containers/worktree/scratch removidos, disco final 14,93 GB. VOTO: APROVADO.",
+  "o_que_executei": [
+    {
+      "comando": "ALTER SYSTEM log_statement/log_line_prefix; teste position e parser do log %v; teste idempotency; M-B1/M-B2a/M-B2b; pg_dump A×B após rollback literal 76→75→74",
+      "forma": "objeto fixo, papel efêmero, PostgreSQL próprio; parâmetros de tenant nunca publicados; logs extensos ficaram somente na evidência durante a medição",
+      "resultado": "145/145 setter primeiro, 0 fora; T-B1 9/9; mutações vermelhas; dumps 3707/3707 diff 0 e MD5 de dados iguais"
+    },
+    {
+      "comando": "migrate deploy 2×; consultas de catálogo; T-C3/T13/runtime-role; M-C3/M-C4; controles sem trigger, SECURITY DEFINER e sem FORCE",
+      "forma": "bancos descartáveis no cluster próprio; runtime guard dentro de container Linux postgres:16 ligado somente ao cluster da cadeira",
+      "resultado": "aditiva; prosecdef=false; RULE=0; RLS/FORCE/políticas iguais; T-C3/T13 verdes; 118 DML e 0 escape; todos os controles acusaram"
+    },
+    {
+      "comando": "extração literal de SUITES; subset 3×; M-CI1; retirada de uma suíte; npm test; gh api check-runs; gh run view jobs 117557731847 e 117557731997",
+      "forma": "CORE_SAAS_PERSISTENCE=prisma, RBAC_DB_PARITY=1 e Redis/PostgreSQL próprios para o subset; CI oficial Linux para a forma backend",
+      "resultado": "3× 389/389/0/0; M-CI1 skipped=6 e guard EC=1; denominador caiu 6; backend oficial 3493/3491/0/2; 14/14 checks verdes"
+    }
+  ],
+  "achados": [
+    {
+      "defeito": "o comentário da lista curada em .github/workflows/ci.yml:282 afirma 363/363 no total do job, mas o objeto executa 389/389",
+      "evidencia": "git diff 5abdf83b 2043c584 -- .github/workflows/ci.yml + execução literal do SUITES três vezes (389 cada) + job oficial 117557731847 (389); retirar binding reduz para 383",
+      "gravidade": "ajuste",
+      "escopo": "dentro-do-bloco · evidência: a linha 282 foi adicionada no diff do ciclo 2 e é julgada no objeto atual",
+      "classe": "não grave",
+      "repete_classe_do_ciclo_anterior": "não",
+      "motivo": "a documentação inline do denominador não corresponde à lista efetivamente executada; a execução e o guard permanecem corretos",
+      "comando_que_mede": "extrair SUITES de 2043c584:.github/workflows/ci.yml e executar a lista; conferir TAP # tests e gh run view 39087734991 --job 117557731847 --log"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [
+    "ajuste não grave do comentário 363/363; dono: próximo bloco de governança/CI que tocar a lista curada",
+    "P-CI-LISTA-CURADA-6-PRE-EXISTENTES, explicitamente fora do veredito pelo corpo, permanece com governança/CI",
+    "superfície/listener/segredo/trava Ω6R-SEC-002 pertencem à cadeira (b′); cenários funcionais completos da atribuição pertencem à (c′)"
+  ],
+  "teardown": "log_statement=none e prefixo padrão restaurado; containers próprios=0; worktree C:/Users/AMP/w-jc2-a removido por git worktree remove --force; scratch próprio removido; sem prune; base viva intocada; disco final 14,93 GB livres"
+}

@@ -147,10 +147,14 @@ test("S-KM-RESTART — recibo antes do escopo no mesmo processo; depois de rein�
     const reenvio = await ctx.sync(headersA, "work_order.mileage", { work_order_id: osA, mileage_start: 500 }, acao);
     assert.equal(reenvio.acao, "already_applied", `1º reenvio veio ${reenvio.acao} ${reenvio.reason}`);
 
-    // Reinício do servidor (o recibo é por processo): o reenvio cai no escopo e é recusado.
+    // Reinício do servidor (o recibo é por processo): o reenvio cai no escopo e NÃO é aplicado.
+    // B-O6R-07c-b1 (`D2-07c` = (d), decisão do dono de 15/10) — o técnico A JÁ FOI o técnico desta OS (linha em
+    // `work_order_assignments`), então a ação volta em `conflicts[]`, à espera de um superior, e não mais em
+    // `rejected`. O motivo segue `not_assigned_to_actor`; nada é gravado. (Asserção do 07c-a ajustada pela decisão
+    // do dono que o 07c-b1 implementa; quem NUNCA foi técnico continua `rejected` — S-KM e o laço G acima.)
     ctx.reiniciarSync();
     const aposReinicio = await ctx.sync(headersA, "work_order.mileage", { work_order_id: osA, mileage_start: 500 }, acao);
-    assert.equal(aposReinicio.acao, "rejected", `2º reenvio veio ${aposReinicio.acao} ${aposReinicio.reason}`);
+    assert.equal(aposReinicio.acao, "conflict", `2º reenvio veio ${aposReinicio.acao} ${aposReinicio.reason}`);
     assert.equal(aposReinicio.reason, "not_assigned_to_actor");
 
     // Nada se perdeu: o valor aplicado está no banco.

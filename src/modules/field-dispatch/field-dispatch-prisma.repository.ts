@@ -10,11 +10,48 @@ import type {
   FieldDispatchStatus,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
+  FindOperatorsForVehicleAtInput,
+  OperatorAtFixTime,
+  OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
 } from "./field-dispatch.types.js";
-import type { CreateFieldDispatchEventInput, FieldDispatchRepository } from "./field-dispatch.repository.js";
+import {
+  classifyOperatorsAtFixTime,
+  type CreateFieldDispatchEventInput,
+  type FieldDispatchRepository,
+} from "./field-dispatch.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+// B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — o operador da viatura no instante do fix. Recebe o `tx` da fase 2
+// da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
+// despachos cuja janela contém o instante: `accepted_at ≤ at` e `at` antes do primeiro entre `completed_at`,
+// `cancelled_at` e `failed_at` que não for nulo. A regra de elegibilidade é `classifyOperatorsAtFixTime`.
+// Ciclo 3 (J-B-TRC-01-ciclo2, (c′)-P1) — a OS entra como candidata se tem a viatura AGORA ou se a viatura dela foi
+// (re)atribuída DEPOIS do instante (`vehicle_assigned_at > at`): o que ela tinha no instante é desconhecido — pode ter
+// sido esta — e o classificador a trata como histórico ambíguo. `vehicleAssignedAfterFix` nasce no SQL, da MESMA
+// expressão que a inclui, para a borda de microssegundos não divergir entre o banco e o Node.
+export async function findOperatorsForVehicleAt(
+  tx: Prisma.TransactionClient,
+  input: FindOperatorsForVehicleAtInput,
+): Promise<OperatorAtFixTime> {
+  const candidates = await tx.$queryRaw<OperatorAtFixTimeCandidate[]>`
+    SELECT d.operator_user_id::text AS "operatorUserId",
+           d.operator_assigned_at AS "operatorAssignedAt",
+           d.accepted_at AS "acceptedAt",
+           wo.vehicle_assigned_at AS "vehicleAssignedAt",
+           (wo.vehicle_assigned_at > ${input.at}) AS "vehicleAssignedAfterFix"
+      FROM field_dispatches d
+      JOIN work_orders wo ON wo.tenant_id = d.tenant_id AND wo.id = d.work_order_id
+     WHERE d.tenant_id = ${input.tenantId}::uuid
+       AND (wo.vehicle_id = ${input.vehicleId}::uuid OR wo.vehicle_assigned_at > ${input.at})
+       AND d.accepted_at IS NOT NULL
+       AND d.accepted_at <= ${input.at}
+       AND (LEAST(d.completed_at, d.cancelled_at, d.failed_at) IS NULL
+            OR ${input.at} < LEAST(d.completed_at, d.cancelled_at, d.failed_at))`;
+
+  return classifyOperatorsAtFixTime(candidates);
+}
 
 export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
   constructor(private readonly client: PrismaExecutor) {}
@@ -114,6 +151,31 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     return updated[0] ? mapFieldDispatchRecord(updated[0]) : undefined;
   }
 
+  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    await this.client.fieldDispatch.deleteMany({
+      where: {
+        tenant_id: tenantId,
+        id: dispatchId,
+      },
+    });
+  }
+
+  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    await this.client.fieldDispatch.updateMany({
+      where: {
+        tenant_id: tenantId,
+        id: snapshot.id,
+      },
+      data: {
+        operator_user_id: snapshot.operatorUserId,
+        status: snapshot.status,
+        reason: snapshot.reason ?? null,
+        observation: snapshot.observation ?? null,
+        updated_by: snapshot.updatedBy ?? null,
+      },
+    });
+  }
+
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
     const event = await this.client.fieldDispatchEvent.create({
       data: {
@@ -168,6 +230,18 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
 
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).reassign(input));
+  }
+
+  deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaFieldDispatchRepository(tx).deleteById(tenantId, dispatchId),
+    );
+  }
+
+  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaFieldDispatchRepository(tx).restoreState(tenantId, snapshot),
+    );
   }
 
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {

@@ -180,9 +180,11 @@ export class ChecklistController {
 
   async updateChecklistRun(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
     const details = await service.updateRun(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseUpdateChecklistRunDto(request.body as Record<string, unknown>),
     );
 
@@ -193,11 +195,13 @@ export class ChecklistController {
 
   async createChecklistAttachment(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
 
     if (isMultipartChecklistAttachmentRequest(request)) {
       const attachment = await service.createUploadedAttachment(
         actor,
-        readRouteParam(request.params.runId),
+        runId,
         await parseMultipartChecklistAttachmentRequest(request),
       );
 
@@ -211,7 +215,7 @@ export class ChecklistController {
 
     const attachment = await service.createAttachment(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseCreateChecklistAttachmentDto(request.body as Record<string, unknown>),
     );
 
@@ -238,9 +242,11 @@ export class ChecklistController {
 
   async createChecklistMarker(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
     const marker = await service.createMarker(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseCreateChecklistMarkerDto(request.body as Record<string, unknown>),
     );
 
@@ -254,9 +260,11 @@ export class ChecklistController {
 
   async completeChecklistRun(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
     const details = await service.completeRun(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseCompleteChecklistRunDto(request.body as Record<string, unknown>),
     );
 
@@ -304,9 +312,11 @@ export class ChecklistController {
 
   async registerChecklistDivergence(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
     const details = await service.registerDivergence(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseRegisterDivergenceDto(request.body as Record<string, unknown>),
     );
 
@@ -317,9 +327,11 @@ export class ChecklistController {
 
   async acknowledgeChecklistRun(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
+    const runId = readRouteParam(request.params.runId);
+    await service.assertRunMutationScope(actor, runId);
     const result = await service.acknowledgeRun(
       actor,
-      readRouteParam(request.params.runId),
+      runId,
       parseCreateChecklistAcknowledgementDto(request.body as Record<string, unknown>),
     );
 

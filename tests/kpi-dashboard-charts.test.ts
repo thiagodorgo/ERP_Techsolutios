@@ -384,35 +384,156 @@ test("painel: quebra de medida declarada existe no histórico e é DESENHADA com
   assert.match(svg, /quebra|mudan[çc]a de medida/i, "o leitor precisa da explicação da quebra junto ao gráfico");
 });
 
+// Auxiliares LOCAIS do caso da estimativa (abaixo). Os cartões são onde o painel põe as métricas; a prosa
+// da conclusão (`conclusion-text`) entra na lista desde 2026-10-18: ela dizia "percentual estimado de escopo"
+// para o 29% medido (achado em `docs/revisoes/KPI-GUARD-ESTIMATIVA-2026-10-18.md`) e passou a seguir a fonte
+// em `Kpis/app.js`. Fica por último para não roubar a busca do cartão do número no cenário estimado.
+const CARTOES_DE_METRICA = ["card-scope", "card-readiness", "kpi-cards", "kpi-secondary", "conclusion-text"] as const;
+type MetricaFonte = { note?: string; caveat?: string; display?: unknown; value?: unknown };
+const ESTIMAD = /estimad/i;
+/** O mesmo escape do `esc()` do app.js, reescrito aqui: o HTML do cartão traz o texto escapado. */
+const escHtml = (v: string) =>
+  v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+const metricasDe = (latest: Record<string, unknown>) => (latest.metrics ?? {}) as Record<string, MetricaFonte>;
+/** Métricas que a FONTE declara estimadas — o critério é o `note`, como sempre foi neste guard. */
+const estimadasDe = (latest: Record<string, unknown>) =>
+  Object.keys(metricasDe(latest))
+    .filter((k) => ESTIMAD.test(String(metricasDe(latest)[k]?.note ?? "")))
+    .sort();
+const clonar = (v: unknown) => JSON.parse(JSON.stringify(v)) as Record<string, unknown>;
+
+/** Cópia do latest REAL com as duas métricas de escopo declaradas estimadas — a forma do 88%/99% de antes. */
+function latestComEstimativa(): Record<string, unknown> {
+  const copia = clonar(LATEST);
+  const m = metricasDe(copia);
+  m.mvp_vendavel = { ...m.mvp_vendavel, value: 88, display: "88%", note: "[sintético] percentual estimado à mão, não medido.", caveat: "Percentual estimado, sujeito a revisão humana — escopo vendável." };
+  m.mvp_demo = { ...m.mvp_demo, value: 99, display: "99%", note: "[sintético] percentual estimado por escopo da rodada.", caveat: "Percentual estimado, sujeito a revisão humana — escopo demonstrável." };
+  return copia;
+}
+
+/** Cópia do latest REAL sem nenhuma métrica estimada: quem declarava estimativa passa a declarar medição. */
+function latestSemEstimativa(): Record<string, unknown> {
+  const copia = clonar(LATEST);
+  const m = metricasDe(copia);
+  for (const k of Object.keys(m)) {
+    if (ESTIMAD.test(String(m[k]?.note ?? "")) || ESTIMAD.test(String(m[k]?.caveat ?? ""))) {
+      m[k] = { ...m[k], note: "[sintético] medido por execução.", caveat: "Medição estrita por execução." };
+    }
+  }
+  return copia;
+}
+
+/** Direto: cada métrica estimada leva a ressalva para o MESMO cartão onde o seu número aparece, depois dele. */
+function confereRessalvaNoCartao(cenario: string, latest: Record<string, unknown>, els: Map<string, FakeEl>, estimadas: readonly string[]) {
+  const metrics = metricasDe(latest);
+  for (const k of estimadas) {
+    const caveat = String(metrics[k].caveat ?? "");
+    assert.match(
+      caveat,
+      ESTIMAD,
+      `${cenario} · metrics.${k}: a fonte diz que é estimativa no campo \`note\`, que o painel NÃO renderiza — a ressalva precisa estar no \`caveat\`.`,
+    );
+    const numero = escHtml(String(metrics[k].display ?? metrics[k].value ?? ""));
+    const cartao = CARTOES_DE_METRICA.map((id) => els.get(id)).find((e) => e && numero !== "" && e.innerHTML.includes(numero));
+    assert.ok(cartao, `${cenario} · metrics.${k}: o número "${numero}" não aparece em cartão nenhum — o guard não tem onde procurar a ressalva.`);
+    // POR MÉTRICA e POR CARTÃO, e não uma busca global: a versão de antes deste guard fazia um único
+    // `match(superficie, /estimad/i)` que o 88% satisfazia sozinho, enquanto o 99% chegava à tela sem
+    // ressalva alguma no mesmo cartão — e a mensagem de falha afirmava um resultado que a execução não produzia.
+    const iNumero = cartao.innerHTML.indexOf(numero);
+    const iRessalva = cartao.innerHTML.indexOf(escHtml(caveat), iNumero);
+    assert.ok(
+      iRessalva > iNumero,
+      `${cenario} · metrics.${k}: a fonte declara o número estimado e a ressalva NÃO chegou ao cartão #${cartao.id}, depois do número.`,
+    );
+  }
+}
+
+/**
+ * Direto, na PROSA: se a fonte declara o `mvp_vendavel` estimado, a frase da conclusão também diz "estimad".
+ * A prosa escolhe o texto por ramo (`Kpis/app.js`, `mvEstimado`); sem esta checagem, um ramo que chamasse um
+ * palpite de "medição estrita" passaria verde (conferência do KPI de 18/10, mutação `mvEstimado = false`).
+ */
+function confereProsaEstimada(cenario: string, latest: Record<string, unknown>, els: Map<string, FakeEl>) {
+  if (!ESTIMAD.test(String(metricasDe(latest).mvp_vendavel?.note ?? ""))) return;
+  const prosa = els.get("conclusion-text");
+  assert.ok(prosa && prosa.textContent !== "", `${cenario}: a conclusão não foi renderizada — a prosa não teria o que medir.`);
+  assert.match(
+    `${prosa.textContent} ${prosa.innerHTML}`,
+    ESTIMAD,
+    `${cenario}: a fonte declara o mvp_vendavel estimado e a conclusão não diz "estimad" — a prosa devolveu ao palpite a autoridade de medição.`,
+  );
+}
+
+/**
+ * O TÍTULO do cartão de escopo segue a fonte nos dois sentidos. Estimativa de escopo e itens do gate fechados são
+ * grandezas diferentes: com a fonte estimada o cartão diz "Escopo construído"; com a fonte medida ele diz
+ * "Versão vendável" e o `label` da métrica, e NUNCA "Escopo construído" (reconferência do KPI de 18/10: com o
+ * kicker fixo em "Escopo construído", a tela voltava a mostrar "Escopo construído 29%" e o guard passava).
+ */
+function confereTituloDoEscopo(cenario: string, latest: Record<string, unknown>, els: Map<string, FakeEl>) {
+  const mv = metricasDe(latest).mvp_vendavel;
+  if (!mv) return;
+  const cartao = els.get("card-scope")?.innerHTML ?? "";
+  assert.notEqual(cartao, "", `${cenario}: o cartão de escopo não foi renderizado — o título não teria o que medir.`);
+  if (ESTIMAD.test(String(mv.note ?? ""))) {
+    assert.match(cartao, /Escopo construído/, `${cenario}: a fonte declara o mvp_vendavel estimado e o cartão não diz "Escopo construído".`);
+  } else {
+    assert.doesNotMatch(cartao, /Escopo construído/, `${cenario}: a fonte declara o mvp_vendavel MEDIDO e o cartão ainda o chama de "Escopo construído".`);
+    assert.match(cartao, /Versão vendável/, `${cenario}: a fonte declara o mvp_vendavel medido e o cartão não diz "Versão vendável".`);
+    const label = String((mv as { label?: unknown }).label ?? "");
+    if (label) assert.ok(cartao.includes(escHtml(label)), `${cenario}: o rótulo da métrica medida ("${label}") não chegou ao cartão de escopo.`);
+  }
+}
+
+/** Inverso: se a fonte não declara estimativa em métrica nenhuma, nenhum cartão diz "estimad" na tela. */
+function confereCartoesSemEstimativa(cenario: string, els: Map<string, FakeEl>) {
+  const escopo = els.get("card-scope")?.innerHTML ?? "";
+  assert.notEqual(escopo, "", `${cenario}: o cartão de escopo não foi renderizado — o inverso não teria o que medir.`);
+  for (const id of CARTOES_DE_METRICA) {
+    const e = els.get(id);
+    assert.doesNotMatch(
+      `${e?.textContent ?? ""} ${e?.innerHTML ?? ""}`,
+      ESTIMAD,
+      `${cenario} · #${id}: a fonte não declara estimativa em métrica nenhuma e o cartão ainda diz "estimad" — ressalva velha mentindo.`,
+    );
+  }
+}
+
 test("painel: número declarado ESTIMATIVA na fonte chega à tela dizendo que é estimativa", async () => {
   // Regressão real, pega por revisão adversarial: o painel anterior mostrava "Percentual estimado,
   // sujeito a revisão humana" como texto visível. A reconstrução tirou a ressalva da tela E promoveu
   // o número a manchete de 44px com barra de progresso — dando a um palpite a mesma gramática visual
   // de "2 de 15 achados críticos corrigidos", que é contagem real. Este guard fecha a classe: se a
-  // fonte declara o número estimado, a palavra tem de sobreviver até o HTML.
-  const metrics = (LATEST.metrics ?? {}) as Record<string, { note?: string; caveat?: string }>;
-  const estimadas = Object.keys(metrics).filter((k) => /estimad/i.test(String(metrics[k]?.note ?? "")));
-  assert.ok(estimadas.length > 0, "o kpis-latest.json real tem métricas declaradas estimadas; se não tem mais, revise este guard");
+  // fonte declara o número estimado, a palavra tem de sobreviver até o HTML do MESMO cartão.
+  //
+  // Revisto em 2026-10-18: o marco de 18/10 MEDIU o `mvp_vendavel` (29%) e tirou o percentual do
+  // `mvp_demo` ("NÃO MEDIDO"), e o latest real ficou sem métrica estimada — a pré-condição antiga
+  // ("o real tem estimadas") passou a falhar. A propriedade não depende do dado do dia: ela roda
+  // SEMPRE contra uma cópia sintética com o 88%/99% estimados, e o caso soma o inverso — sem
+  // estimativa na fonte, nenhum cartão diz "estimad". O dado real entra pelo ramo que lhe couber.
+  const sintetico = latestComEstimativa();
+  const estimadasSinteticas = estimadasDe(sintetico);
+  assert.deepEqual(estimadasSinteticas, ["mvp_demo", "mvp_vendavel"], "a cópia sintética tem de declarar as duas métricas de escopo estimadas");
+  const comEstimativa = await runDashboard({ withFetch: true, serve: { latest: sintetico, history: HISTORY } });
+  confereRessalvaNoCartao("cópia com estimativa", sintetico, comEstimativa.els, estimadasSinteticas);
+  confereProsaEstimada("cópia com estimativa", sintetico, comEstimativa.els);
+  confereTituloDoEscopo("cópia com estimativa", sintetico, comEstimativa.els);
 
-  const { els } = await runDashboard({ withFetch: true });
-  const superficie = [...els.values()].map((e) => `${e.textContent} ${e.innerHTML}`).join(" ");
+  const neutro = latestSemEstimativa();
+  assert.deepEqual(estimadasDe(neutro), [], "a cópia neutra não pode declarar estimativa");
+  const semEstimativa = await runDashboard({ withFetch: true, serve: { latest: neutro, history: HISTORY } });
+  confereCartoesSemEstimativa("cópia sem estimativa", semEstimativa.els);
+  confereTituloDoEscopo("cópia sem estimativa", neutro, semEstimativa.els);
 
-  for (const k of estimadas) {
-    const caveat = String(metrics[k].caveat ?? "");
-    assert.match(
-      caveat,
-      /estimad/i,
-      `metrics.${k}: a fonte diz que é estimativa no campo \`note\`, que o painel NÃO renderiza — a ressalva precisa estar no \`caveat\`.`,
-    );
-    // POR MÉTRICA, e não uma busca global: a versão anterior deste guard fazia um único
-    // `match(superficie, /estimad/i)` que o 88% satisfazia sozinho, enquanto o 99% chegava à tela
-    // sem ressalva alguma no mesmo cartão. O guard passava verde e a mensagem de falha dizia que o
-    // `caveat` "chega à tela" — afirmando um resultado que a execução não produzia, dentro do teste
-    // escrito para matar exatamente essa classe.
-    assert.ok(
-      superficie.includes(caveat),
-      `metrics.${k}: a fonte declara o número estimado e a ressalva NÃO chegou ao HTML renderizado.`,
-    );
+  const estimadasReais = estimadasDe(LATEST);
+  const real = await runDashboard({ withFetch: true });
+  if (estimadasReais.length > 0) {
+    confereRessalvaNoCartao("painel real", LATEST, real.els, estimadasReais);
+    confereProsaEstimada("painel real", LATEST, real.els);
+    confereTituloDoEscopo("painel real", LATEST, real.els);
+  } else {
+    confereCartoesSemEstimativa("painel real", real.els);
+    confereTituloDoEscopo("painel real", LATEST, real.els);
   }
 });
 
