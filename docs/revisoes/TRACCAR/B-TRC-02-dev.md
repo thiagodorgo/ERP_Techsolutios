@@ -164,11 +164,38 @@ M-E11, M-E12, M-E13, M-E36, M-E44 e as do 01 re-executadas com a suíte C (passo
 
 ## Passo 9 — demo
 
-EM APURAÇÃO
+**Terreno — teto de Docker estourado (registro, 19/10 ~23:00Z).** O orquestrador mediu 3 trabalhos Docker (teto 2) e 3,2 GB de
+commit livre: eu estava com DOIS ao mesmo tempo — o container das mutações de banco (`dtrc02-17924499475569-*`) e o demo
+(`dtrc02-demo-*`) —, mais um de outro agente (B-SAN3-02). Eu tinha medido "só o meu" antes de subir o demo, mas contei por
+trabalho alheio e não limitei os MEUS a um. **Regra aplicada daqui em diante: no máximo UM trabalho Docker meu por vez.** O demo
+já tinha terminado (falha no passo 19, abaixo) e foi derrubado na hora com o `down -v` do próprio compose (`docker ps -a` →
+0 contêineres `dtrc02-demo`); o container das mutações seguiu sozinho.
+
+| Comando | Saída | Veredito |
+|---|---|---|
+| `TRC_DEMO_PROJECT=dtrc02-demo TRC_DEMO_API_IMAGE=dtrc02-demo-api:local timeout -k 60 3600 node scripts/traccar-dev-demo.mjs --with-web` (1ª rodada) | passos 1–18 OK (inclui o 12 do 01 — agora contando só recibos `position` — e os novos 14–18: 1 `device_online`, ignição off→on = 1 `ignition_on` + 2 amostras, `alarm/sos`, reenvio do mesmo corpo = 1 linha, tipo forjado 204/0 linha, sem vínculo 202/1 episódio/0 linha); **FAIL 19**: "uma amostra nasceu do power=-1" | vermelho do ARRANJO |
+| `psql … SELECT … FROM vehicle_telemetry_events WHERE kind='sample' ORDER BY occurred_at DESC LIMIT 3` (antes do `down -v`) | a amostra do fix com `power=-1`: `motion f, total_distance_m 0, power_mv NULL` | o produto está certo: o Traccar calcula `motion`/`totalDistance` em TODA posição, então a amostra existe; o parser descartou só a tensão fora do domínio. A asserção do passo do demo é que estava errada |
+| correção do passo 19: exige 1 amostra nova **com `power_mv` NULL** | `node --check` ok | re-execução abaixo |
 
 ## Passo 10 — vermelho-controle
 
-EM APURAÇÃO
+Retrato = `git archive HEAD` (`226aef21`) com o `src/` INTEIRO trocado pelo de `c1485c94` (merge do B-TRC-01); container Linux
+`dtrc02-`, cada suíte isolada.
+
+| Suíte | Saída com o `src/` do 01 | Veredito |
+|---|---|---|
+| A `traccar-event-contract` | `ERR_MODULE_NOT_FOUND … traccar-event.adapter.js` (`# fail 1`) | vermelho |
+| B `traccar-event-sample` | `ERR_MODULE_NOT_FOUND … vehicle-telemetry.bounds.js` | vermelho |
+| C `traccar-event-listener` / D `traccar-event-logs` | `SyntaxError … does not provide an export named 'TRACCAR_EVENT_INGEST_PATH'` | vermelho |
+| E `traccar-event-ingestion-db` | `# tests 21 # fail 21` | vermelho |
+| F `traccar-event-sample-db` | `# tests 14 # fail 14` | vermelho |
+| I `traccar-event-sample-quarantine-db` | `# tests 15 # fail 15` | vermelho |
+| G `traccar-event-rls-db` | `# tests 10 # pass 10` | verde **declarado**: G mede o BANCO (as migrações estão no retrato); o vermelho de G é o do passo 5 (retrato sem as 2 migrações: 9 de 10 vermelhos) |
+| caso §9.4 de `traccar-position-contract` | `# tests 13 # pass 12 # fail 1` — `not ok 4 - contrato: attributes só alimenta a allowlist veicular …` | vermelho EXATAMENTE na asserção nova; os 12 outros casos do 01 verdes |
+
+Nas suítes E/F/I o vermelho é `ERR_MODULE_NOT_FOUND` por caso (import dinâmico do arnês), não a asserção de cada critério: o
+vermelho POR ASSERÇÃO de cada critério vem das mutações (passo 11), uma por propriedade. (Os `# tests` das suítes `-db` contam
+também o `test()` de "exige DATABASE_URL", que só existe sem banco: E 20, F 13, G 10, I 14 casos reais.)
 
 ## Passo 11 — mutações
 

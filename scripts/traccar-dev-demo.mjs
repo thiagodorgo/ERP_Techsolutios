@@ -30,7 +30,7 @@
 //  13. o 1º fix gerou 1 device_online;  14. ignição off → on: 1 ignition_on e 2 amostras novas;  15. alarm=sos: 1 alarm/sos;
 //  16. o MESMO corpo de evento entregue 2× direto no listener (de dentro da api): 1 linha;  17. tipo forjado → 204 e 0 linha;
 //      dispositivo sem vínculo → 202 e 1 episódio de quarentena, 0 linha;  18. fix com power=-1 → a localização entra e
-//      nenhuma amostra nova (o domínio fechado descarta o atributo no parser);  19. rajada de 120 posições + 1 evento: o evento
+//      a amostra nova vem SEM tensão (o domínio fechado descarta o atributo no parser; motion/totalDistance seguem);  19. rajada de 120 posições + 1 evento: o evento
 //      entra (204) enquanto posições levam 429 — o bucket é por rota; depois: SELECT sem coordenada/JSON/nome na tabela,
 //      log da api sem segredo, coordenada nem tipo forjado, e o md5 da OS igual.
 //  --with-web [Q2 = SIM, D-TRC02-RESPOSTAS]: o passo nomeado do EXECUTE em auth_login_candidates ao papel de runtime, SÓ na
@@ -557,7 +557,7 @@ try {
     if (unmapped !== 202 || episodes !== "1" || rows() !== before) throw new Error(`sem vínculo: ${unmapped}, episódios ${episodes}`);
   });
 
-  await step("amostra: fix com power=-1 → a localização entra e nenhuma amostra nova (o parser descarta o atributo fora do domínio)", async () => {
+  await step("amostra: fix com power=-1 → a localização entra e a amostra nova NÃO tem tensão (o parser descarta só o atributo fora do domínio)", async () => {
     const locations = () => Number(psql(`SELECT count(*) FROM field_operator_locations WHERE tenant_id = '${seed.tenantId}' AND source = 'traccar';`));
     const beforeLocations = locations();
     const beforeSamples = kindCount("sample");
@@ -569,7 +569,12 @@ try {
       },
       30_000,
     );
-    if (kindCount("sample") !== beforeSamples) throw new Error("uma amostra nasceu do power=-1");
+    // O Traccar calcula motion/totalDistance em TODA posição: a amostra existe; o que não pode existir é a tensão inválida.
+    if (kindCount("sample") !== beforeSamples + 1) throw new Error(`amostras novas = ${kindCount("sample") - beforeSamples}`);
+    const power = psql(
+      `SELECT coalesce(power_mv::text, 'NULL') FROM vehicle_telemetry_events WHERE tenant_id = '${seed.tenantId}' AND kind = 'sample' ORDER BY occurred_at DESC LIMIT 1;`,
+    );
+    if (power !== "NULL") throw new Error(`a amostra do power=-1 gravou power_mv = ${power}`);
   });
 
   await step("limitador por rota: 120 posições em rajada e 1 evento — o evento entra (204) enquanto posições levam 429", async () => {
