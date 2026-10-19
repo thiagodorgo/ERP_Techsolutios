@@ -81,7 +81,20 @@ que o próprio bloco cria.
 
 ## Passo 4 — contrato (A, B)
 
-EM APURAÇÃO
+| Comando | Saída | Veredito |
+|---|---|---|
+| `curl -sS --max-time 25 https://raw.githubusercontent.com/traccar/traccar/v6.16.0/src/main/java/org/traccar/model/{Position,Event}.java` → scratchpad; `grep -n 'ALARM_' Position.java`; `grep -n 'TYPE_' Event.java` | 38 `ALARM_*` (l.116-153); tipos l.42-72 → 9 conservados + 14 ignorados | catálogo medido na tag (Q3) |
+| `tests/traccar-event-contract.test.ts` (A1–A17) e `tests/traccar-event-sample.test.ts` (B1–B11) escritos; `node --test --import tsx --test-reporter=tap <A> <B>` | `ERR_MODULE_NOT_FOUND … traccar-event.adapter.js` / `… vehicle-telemetry.bounds.js` — `# tests 2 # fail 2` | vermelho |
+| código: `src/modules/telemetry/vehicle-telemetry.types.ts`, `vehicle-telemetry.bounds.ts` (fonte única dos limites; `normalizeVehicleTelemetry`), `src/integrations/traccar/traccar-telemetry-catalog.ts`, `traccar-event.schema.ts`, `traccar-event.adapter.ts`; `traccar-position.schema.ts` lê as 7 chaves de `position.attributes` → `telemetry` (+ `telemetryDiscarded`); `traccar-position.adapter.ts` → `TraccarPositionCommand.telemetry?` e `coordinate()` exportada | — | — |
+| mesmo comando | `# tests 28 # pass 28 # fail 0` | verde |
+| §9.4: `tests/traccar-position-contract.test.ts` — o título do caso l.88 passa ao da v2 e ganha `assert.deepEqual(cmd.telemetry, { ignition: true, odometerM: 99 })`; `git diff --numstat` → `2 1` (título trocado + 1 asserção); `node --test … traccar-position-contract.test.ts` | `# tests 13 # pass 13` | verde; os 12 outros casos intocados |
+| `timeout -k 15 600 npm run check` | ec 0 | verde |
+
+**Desvio declarado (§6.6, "não muda"):** `traccar-position.schema.ts` passa a **exportar** cinco helpers já existentes (`isObject`,
+`assertNoReservedKeys`, `present`, `isoDate`, `positiveInteger`) e `UNIQUE_ID_PATTERN`, e a união `TraccarPayloadErrorReason` ganha 4
+motivos do envelope de evento (`event_missing`, `event_id_invalid`, `type_invalid`, `alarm_missing`). A régua das chaves
+reservadas, o `id` ignorado e os limites da posição não mudam; o parser de evento **reusa** a régua em vez de copiá-la (uma fonte).
+O comentário de cabeçalho deixa de dizer "o objeto [attributes] é ignorado por inteiro", que deixou de ser verdade.
 
 ## Passo 5 — migração (G) e 5b (arnês do 01)
 

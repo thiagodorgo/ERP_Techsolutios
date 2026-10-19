@@ -8,9 +8,12 @@
 //   accuracy.
 // Mesma identidade com velocidade, rumo, precisão ou validade diferentes é CONFLITO (409), não reenvio (§4.4).
 // Velocidade: o Traccar manda em NÓS (`Position.java:267`); o ERP grava m/s = nós × 1852 / 3600.
+// B-TRC-02 (plano v2 §6.6): o comando ganha `telemetry?` (os atributos veiculares allowlisted); a chave e o digest da posição
+// NÃO mudam (C-15). `coordinate()` passa a ser exportada: a chave do EVENTO usa a mesma (§6.5).
 
 import { createHash } from "node:crypto";
 
+import type { VehicleTelemetrySample } from "../../modules/telemetry/vehicle-telemetry.types.js";
 import type { ParsedTraccarPosition } from "./traccar-position.schema.js";
 
 export type TraccarPositionCommand = {
@@ -29,6 +32,8 @@ export type TraccarPositionCommand = {
   readonly headingDegrees?: number;
   readonly speedMetersPerSecond?: number;
   readonly valid: boolean;
+  /** B-TRC-02 — atributos veiculares allowlisted e normalizados (fora da chave e do digest). */
+  readonly telemetry?: VehicleTelemetrySample;
 };
 
 export type TraccarFixQuarantineReason = "invalid_fix" | "fix_in_future";
@@ -40,7 +45,7 @@ function sha256Hex(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
-function coordinate(value: number): string {
+export function coordinate(value: number): string {
   return value.toFixed(7);
 }
 
@@ -98,6 +103,7 @@ export function buildTraccarPositionCommand(
     speedMetersPerSecond:
       parsed.speedKnots === undefined ? undefined : parsed.speedKnots * KNOT_TO_METERS_PER_SECOND,
     valid: parsed.valid,
+    telemetry: parsed.telemetry,
   };
 }
 
