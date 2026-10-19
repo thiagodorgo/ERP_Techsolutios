@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **578** |
-| IDs distintos | 567 |
-| **ABERTAS** | **431** |
+| Cabecalhos `## P-` | **584** |
+| IDs distintos | 573 |
+| **ABERTAS** | **437** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **364** |
+| — das quais **ativas nesta rodada** | **370** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 144 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **578 cabecalhos para 567 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **584 cabecalhos para 573 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 202
+## ABERTAS · balde A — material — 205
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -276,8 +276,11 @@
 | `P-CI-LISTA-CURADA-6-PRE-EXISTENTES` | 11227 | MÉDIA | sim | P-CI-LISTA-CURADA-6-PRE-EXISTENTES (2026-10-18) — 6 suítes `-db` pré-existentes fora da  |
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
+| `P-SAN3-02-PAI-CANCELADO` | 11376 | CRÍTICA | sim | P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pa |
+| `P-SAN3-02-DEADLOCK-RESIDUAL` | 11383 | CRÍTICA | sim | P-SAN3-02-DEADLOCK-RESIDUAL (2026-10-19) — deadlock entre escritores de itens de OS sem  |
+| `P-SAN3-02-TELA-DELTA` | 11397 | MÉDIA | sim | P-SAN3-02-TELA-DELTA (2026-10-19) — a tela de faturar não mostra complementares nem repe |
 
-## ABERTAS · balde B — processo/registro — 162
+## ABERTAS · balde B — processo/registro — 165
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -443,6 +446,9 @@
 | `P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA` | 11339 | BAIXA | sim | P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA (2026-10-18) — evidência `field_*` aceita `work |
 | `P-07CB1-IDEMP-VISTORIA-SEM-ATOR` | 11347 | BAIXA | sim | P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `c |
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
+| `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
+| `P-SAN3-02-OS-NAO-TRAVADA` | 11369 | BAIXA | sim | P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo cont |
+| `P-SAN3-02-DOWN-COM-COMPLEMENTAR` | 11390 | BAIXA | sim | P-SAN3-02-DOWN-COM-COMPLEMENTAR (2026-10-19) — o down da 20260878 para na ponta B se hou |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 

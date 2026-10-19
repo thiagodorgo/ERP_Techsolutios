@@ -11358,6 +11358,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): o app emite `work_order.mileage` pela fila offline e o replay chega ao servidor, com teste do app.
 
+## P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organização fica inerte — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a demo `scripts/traccar-dev-demo.mjs` nasceu no `B-TRC-01`, #426; o login sem organização é do `B-O6R-01`) · **dono:** `B-TRC-02` (ou bloco da demo)
+- **Origem:** demonstração do Traccar de 18/10 (orquestrador), com `--with-web`. A API da demo registrou `loginWithoutOrgOutcome: "inert_no_execute"` ("Login sem organização INATIVO — causa no desfecho da sonda"): o papel de runtime da demo não tem EXECUTE na função `auth_login_candidates`, porque a demo não roda o script de papéis do `B-SAN3-05`. O sistema falhou fechado e logou a causa, como deve.
+- **Efeito:** na tela da demo, o operador de despacho não entra pelo formulário (401); com a organização informada (login direcionado), entra (HTTP 200). Os prints de 18/10 foram tirados assim.
+- **bloqueia:** não (só a demo; nada em produção).
+- **teste de encerramento:** a demo com `--with-web` permite o login pelo formulário (sem organização) do operador de despacho criado por ela, com o passo conferido no próprio script.
+
 ## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
