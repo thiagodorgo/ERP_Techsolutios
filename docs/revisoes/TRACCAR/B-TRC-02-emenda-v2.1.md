@@ -560,4 +560,3 @@ da sessão ficam `emenda/assemble.py` e as 13 fatias `s*.md` (insumos desta mont
 6. **Nova decisão do dono: NENHUMA.** Registros para o orquestrador: `P-TRC02-FIX-CONTESTADO-ENTRE-KINDS` (dono B-TRC-03); duas frases em `D-TRC02-Q1-AMOSTRA-SEM-OPERADOR` (§1.8, §2.5); `D-TRC02-ESCOPO` ganha o caminho #14.
 7. **Ref medida:** `origin/main` = `bf83cda8` (18 premissas com comando e saída em §0); a emenda não toca o repositório.
 8. **Papéis:** quem planejou a emenda = `planejador-trc02-emenda-fable` (Fable, sem fallback); inelegível para dev, cadeira e crítica deste bloco, como os planejadores da v1/v2 e os críticos r1/r2.
-

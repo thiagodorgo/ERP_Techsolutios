@@ -1,13 +1,13 @@
 # Crítica de Segurança e Arquitetura — Bloco B-TRC-02 (Ciclo 1)
 
-> **Crítico:** `critico-trc02-flash` (2º Crítico em paralelo com Claude Opus; nível menor declarado).  
-> **Modelo:** Gemini 3.8 Flash High via Antigravity.  
-> **Papel:** Revisor adversarial independente de Segurança e Arquitetura. Só lê; não desenvolve; sem voto final de junta.  
-> **Objeto julgado:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (Plano inicial do bloco B-TRC-02, pelo `planejador-trc02-fable`).  
-> **Ref medida no repositório (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (após `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch -q origin`).  
-> **Referência canônica do bloco:** `origin/main:docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §7 (B-TRC-02, ~l.1018).  
-> **Data:** 2026-10-19.  
-> **Regime:** Bloco de Ingestão do Traccar (Segurança máxima; junta 3/3 com poder de veto; §C7 item 8(4)).  
+> **Crítico:** `critico-trc02-flash` (2º Crítico em paralelo com Claude Opus; nível menor declarado).
+> **Modelo:** Gemini 3.8 Flash High via Antigravity.
+> **Papel:** Revisor adversarial independente de Segurança e Arquitetura. Só lê; não desenvolve; sem voto final de junta.
+> **Objeto julgado:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (Plano inicial do bloco B-TRC-02, pelo `planejador-trc02-fable`).
+> **Ref medida no repositório (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (após `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch -q origin`).
+> **Referência canônica do bloco:** `origin/main:docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §7 (B-TRC-02, ~l.1018).
+> **Data:** 2026-10-19.
+> **Regime:** Bloco de Ingestão do Traccar (Segurança máxima; junta 3/3 com poder de veto; §C7 item 8(4)).
 
 ---
 
