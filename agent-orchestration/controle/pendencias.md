@@ -11357,3 +11357,20 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): o app emite `work_order.mileage` pela fila offline e o replay chega ao servidor, com teste do app.
+
+## P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou do contexto ativo) passa por cima das permissões na UI — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`011632f1`, 2026-06-07; o diff do `B-DASH-PERFIL` não toca a linha) · **dono:** `B-SAN3-06a` (ou bloco próprio, se o dono preferir)
+- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
+- `PermissionProvider.can`/`hasAny` fazem `|| isPlatformAdmin({ roles, permissions })`, e `isPlatformAdmin` aceita o RÓTULO `"Super Admin"`; `roles` une `session.user.roles` com `activeContext.role`. Efeito medido: sessão sintética `roles=["Super Admin"], permissions=[]` responde `can(<qualquer>)=true` (2/2 permissões sintéticas, S1), e contexto obsoleto com `role:"Super Admin"` no `localStorage` libera a UI do Financeiro (1/1, S4). Só UI: o backend continua negando, e `platform_admin`/`super_admin` recebem o catálogo inteiro (`catalog.ts:412/729`), então o fluxo real não produz o estado.
+- **Decisão que é do dono:** derivar "admin de plataforma" só de `permissions` (`platform:tenants:read`) e derivar `roles` só da sessão.
+- **bloqueia:** não.
+- **teste de encerramento:** com sessão `roles=["Super Admin"], permissions=[]`, ou com contexto ativo `role:"Super Admin"` sobre sessão do Financeiro, `can("work_orders:create")` responde `false`, com teste de comportamento do provider.
+
+## P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organização não tem teste executado — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` na falta de arnês de interação (`renderToString` não exercita `onClick`) · **dono:** o primeiro bloco de frontend que introduzir arnês de interação (candidato: o bloco das 3 aparências do Dashboard, `P-APARENCIA-POR-USUARIO`)
+- **Origem:** nota C2-opus-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), mutação M3b; Parte 3 item 2 do plano do ciclo 2. A troca em si (M1a) passou a ter teste no ciclo 2 (`frontend/tests/dashboard-profile-provider.test.tsx`).
+- `ContextSelectionPage.handleActivate` faz `navigate(landing)`; a mutação M3b (`navigate("/dashboard")`) não fica vermelha em teste executado. Hoje só a guarda de forma de `dashboard-profile-behavior.test.tsx` vigia; no ciclo 1 a C2 provou o comportamento por navegador real.
+- **bloqueia:** não.
+- **teste de encerramento:** teste que clica em "ativar" na seleção de contexto e afirma a rota de destino derivada das permissões da sessão nova, vermelho sob M3b.
