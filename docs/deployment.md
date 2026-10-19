@@ -391,6 +391,15 @@ O Traccar 6.16.0 entra só por **digest** (`traccar/traccar:6.16.0@sha256:03ebb7
 | `TRACCAR_INGEST_TIMEOUT_MS` | 3000 | orçamento por requisição, abaixo dos 5 s de leitura do forward do Traccar |
 | `TRACCAR_RESOLVE_MAX_TENANTS` / `_HINT_TTL_MS` / `_NEGATIVE_TTL_MS` / `_CACHE_MAX` | 500 / 600000 / 60000 / 10000 | descoberta do dispositivo: teto, dica deslizante, cache negativo |
 
+**Eventos do Traccar (B-TRC-02).** O `event.forward` usa o MESMO segredo do forward de posição (um segredo, uma rotação).
+No Traccar 6.16.0 as chaves entram por variável de ambiente (`CONFIG_USE_ENVIRONMENT_VARIABLES=true`; `.` vira `_` em
+maiúsculas): `EVENT_FORWARD_URL` (dev: `http://api:3200/ingest/traccar/v1/events`) e `EVENT_FORWARD_HEADER` (só por
+interpolação obrigatória de `TRC_FORWARD_HEADER`, nunca no `traccar.xml`). Os eventos de status (online/sem sinal) só saem
+com `EVENT_STATUS_ENABLE=true`, e o "sem sinal" depois de `STATUS_TIMEOUT` segundos de silêncio: no overlay de DEV,
+`true` e `60`; **produção = decisão do B-TRC-06** (`P-TRC02-STATUS-TIMEOUT-PROD`), nunca no `docker-compose.prod.yml`. A rota
+de eventos tem bucket e concorrência PRÓPRIOS com os mesmos valores de `TRACCAR_INGEST_*` (nenhuma variável nova); os
+valores de produção dos dois buckets ficam para o B-TRC-06 (`P-TRC02-LIMITES-POR-ROTA-PROD`).
+
 Com a flag ligada, o boot recusa (em qualquer ambiente) instance key fora do formato, segredo curto ou de exemplo,
 `previous` sem prazo ou com prazo acima de 72 h, e porta igual à da API ou do portal. A falha do `listen` da
 ingestão (`EADDRNOTAVAIL`, `EADDRINUSE`, `EACCES`) **não derruba** a API pública: o bootstrap loga
@@ -415,7 +424,13 @@ RBAC pelo script oficial, semeia uma organização com `field_operations`, um t�
 viatura com OS e despacho aceito e o vínculo `trcdemo01`, abre o SSE do mapa, manda uma posição OsmAnd e só fica
 verde se o `latest` devolver o técnico na coordenada enviada com `source: "traccar"`, o SSE receber
 `field_location.updated` sem coordenada, o banco tiver 1 recibo, 1 localização e 0 quarentena, e o reenvio do mesmo
-ponto não duplicar nada. Imprime só nome de passo e estado. **Derrubar à mão** exige os perfis, senão o simulador e o
+ponto não duplicar nada. Desde o B-TRC-02 ele também confere os eventos e a telemetria veicular (passos 13-19: 1
+`device_online`, ignição off→on com 2 amostras, `alarm/sos`, reenvio sem duplicar, tipo forjado sem linha, dispositivo sem
+vínculo em quarentena, `power=-1` sem amostra, rajada de posições sem calar o evento, log sem segredo/coordenada/tipo, OS
+intacta) e, com `--with-web`, executa o passo nomeado `GRANT EXECUTE ON FUNCTION … auth_login_candidates` ao papel de runtime
+**só na demonstração** (Q2 = SIM, `D-TRC02-RESPOSTAS`; produção continua sendo o passo 5 do runbook acima, ato do dono).
+`TRC_DEMO_PROJECT`/`TRC_CAPTURE_PROJECT` trocam o nome do projeto compose; `--kind event` na captura grava as fixtures de evento.
+Imprime só nome de passo e estado. **Derrubar à mão** exige os perfis, senão o simulador e o
 receptor de captura sobrevivem:
 
 ```bash
