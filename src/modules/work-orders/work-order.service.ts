@@ -17,6 +17,8 @@ import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
 import type {
+  ActiveDispatchAtSiteResolver,
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
@@ -33,7 +35,12 @@ import type {
   WorkOrderTeamLink,
   WorkOrderVehicleLink,
 } from "./work-order.types.js";
-import { actorMutatesAssignedOnly, WorkOrderError } from "./work-order.types.js";
+import {
+  actorMutatesAssignedOnly,
+  WORK_ORDER_SERVICE_STARTED,
+  WorkOrderError,
+  workOrderNotAssignedError,
+} from "./work-order.types.js";
 import {
   assertNonEmptyString,
   assertStatusTransition,
@@ -173,6 +180,10 @@ export type WorkOrderReferenceResolvers = {
   // quando o usuário não tem perfil profissional — e, para um ator de campo, "sem perfil" significa
   // "nenhuma ordem é dele", que é a recusa correta.
   readonly resolveActorOperatorProfileId?: (actor: WorkOrderActorContext) => Promise<string | undefined>;
+  // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — existe despacho ATIVO desta OS em "No local" (`arrived`/`in_service`)? É a
+  // metade do predicado "atendimento iniciado" que só o despacho sabe. AUSENTE = a trava RECUSA toda troca de técnico
+  // (fail-closed por composição incompleta, como `assertMutationObjectScope`). Sem `catch`: erro de leitura propaga.
+  readonly hasActiveDispatchAtSite?: ActiveDispatchAtSiteResolver;
 };
 
 type ServiceCatalogTypeInfo = { readonly serviceType: string | null; readonly requiresDestination: boolean } | null;
@@ -827,12 +838,17 @@ export class WorkOrderService {
     const atribuidoPorUsuario = workOrder.assignedOperatorId === actor.userId;
 
     if (!atribuidoPorPerfil && !atribuidoPorUsuario) {
-      throw new WorkOrderError(
-        403,
-        "WORK_ORDER_NOT_ASSIGNED",
-        "not_assigned_to_actor",
-        "Field actors can only change work orders assigned to them.",
-      );
+      // B-O6R-07c-b1 (D2-07c (d), `D-07CB-EMENDA-RECOMENDACOES`) — a recusa é a MESMA (403
+      // `not_assigned_to_actor`) e o critério é o mesmo casamento duplo acima; o que muda é a MARCA que a
+      // recusa carrega: o ator JÁ FOI técnico desta OS (tem linha em `work_order_assignments`, que desde
+      // este bloco o despacho também grava)? Os lotes do app leem a marca e devolvem a ação em `conflicts[]`
+      // (`assignment_changed_pending_review`) em vez de `rejected`. O REST não muda: 403. A consulta só roda
+      // no caminho da recusa.
+      const wasPreviouslyAssigned = await this.repository.hasActorBeenAssigned(actor.tenantId, workOrder.id, {
+        userId: actor.userId,
+        operatorProfileId,
+      });
+      throw workOrderNotAssignedError(wasPreviouslyAssigned);
     }
   }
 
@@ -1691,15 +1707,29 @@ export class WorkOrderService {
     await this.assertReferenceExists("vehicle", this.references.resolveVehicle, actor, vehicleId);
     await this.assertReferenceExists("team", this.references.resolveTeam, actor, teamId);
 
+    // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a atribuição pela OS (`POST /work-orders/:id/assign` e o lote
+    // `work_order.assign`) passa pela MESMA trava que o despacho, antes de qualquer escrita.
+    const operatorId = parseRequiredUuid(body.operatorId ?? body.userId, "operatorId");
+    const userId = parseOptionalUuid(body.userId, "userId");
+    await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId });
+
+    const message = optionalString(body.message) ?? "Ordem de servico atribuida.";
     const input: AssignWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
-      operatorId: parseRequiredUuid(body.operatorId ?? body.userId, "operatorId"),
-      userId: parseOptionalUuid(body.userId, "userId"),
+      operatorId,
+      userId,
       vehicleId,
       teamId,
-      message: optionalString(body.message) ?? "Ordem de servico atribuida.",
+      message,
       assignedBy: actor.userId,
+      // P-ATOMICA — o evento é gravado pelo repositório, na transação da OS e da linha.
+      event: {
+        fromStatus: current.status,
+        actorUserId: actor.userId,
+        message,
+        metadata: { operatorId, userId, vehicleId, teamId },
+      },
     };
 
     assertStatusTransition(current.status, "assigned");
@@ -1709,22 +1739,122 @@ export class WorkOrderService {
       throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
     }
 
-    await this.repository.createEvent({
+    return result.workOrder;
+  }
+
+  /**
+   * B-O6R-07c-b1 ciclo 2 (P-TRAVA, `D-07CB1-TRAVA-ATE-B2`) — A TRAVA, num ponto só. Nenhuma via troca o técnico de
+   * uma OS com o atendimento iniciado sem autorização do superior; "atendimento iniciado" é uma pergunta sobre a OS
+   * INTEIRA: a OS está em `on_site`/`in_progress`/`paused` OU existe despacho ATIVO dela em `arrived`/`in_service`.
+   * Até o `B-O6R-07c-b2` a troca é recusada com 409 `technician_change_requires_authorization`, antes de qualquer
+   * escrita. Chamada pelo `assign` (web e lote) e pelo `assignFromDispatch` (a chamada autoritativa do despacho);
+   * o `FieldDispatchService` a chama também como pré-checagem, antes de congelar ou gravar o despacho.
+   *
+   * - OS sem técnico → passa (não há troca).
+   * - Alvo igual ao técnico atual (`assignedUserId ?? assignedOperatorId` contra `target.userId`/`target.operatorId`)
+   *   → passa (não há troca).
+   * - Sem o resolver `hasActiveDispatchAtSite` → RECUSA (fail-closed por composição incompleta). Erro do resolver
+   *   propaga: falha de leitura nunca vira permissão.
+   */
+  async assertTechnicianChangeAllowed(
+    _actor: WorkOrderActorContext,
+    current: WorkOrder,
+    target: { readonly userId?: string; readonly operatorId: string },
+  ): Promise<void> {
+    const currentTechnician = current.assignedUserId ?? current.assignedOperatorId;
+    if (!currentTechnician) return;
+    if (currentTechnician === target.userId || currentTechnician === target.operatorId) return;
+
+    const resolver = this.references.hasActiveDispatchAtSite;
+    const started =
+      WORK_ORDER_SERVICE_STARTED.has(current.status) ||
+      !resolver ||
+      (await resolver(current.tenantId, current.id));
+    if (!started) return;
+
+    throw new WorkOrderError(
+      409,
+      "WORK_ORDER_TECHNICIAN_CHANGE_REQUIRES_AUTHORIZATION",
+      "technician_change_requires_authorization",
+      "O atendimento já começou (No local): a troca de técnico precisa de autorização de um superior.",
+    );
+  }
+
+  /**
+   * B-O6R-07c-b1 (Ω6R-SEC-002, `D1-07c` = (c)) — DESPACHAR É ATRIBUIR. Chamado pelo `FieldDispatchService` no
+   * `create` (despacho que nasce `assigned`), na passagem `draft → assigned` e no `reassign`; e, ao cancelar ou
+   * falhar um despacho, para devolver a OS ao despacho ativo que sobrou.
+   *
+   * - NÃO passa pela trava `open → assigned` do `assign` (`assertStatusTransition`): a OS em `open` vai a
+   *   `assigned`; em qualquer outro status NÃO terminal, o status fica como está (só a atribuição muda).
+   * - OS terminal (`completed`, `cancelled`, `rejected` — sem transição de saída) → 409
+   *   `invalid_status_transition`: uma OS encerrada não ganha técnico novo.
+   * - Grava `assigned_user_id` = o usuário alvo e `assigned_operator_id` = o PERFIL de campo dele, ou, sem
+   *   perfil, o próprio user id (a mesma forma que o app já grava; o predicado do 07a casa as duas — o
+   *   `Ω6R-QUA-004` segue aberto). Uma linha nova em `work_order_assignments` com
+   *   `metadata {source, dispatchId}` — é ela que, depois, prova "esta pessoa JÁ FOI técnica desta OS".
+   *   A OS, a linha e o evento `work_order_assigned` são gravados na MESMA transação (repositório; ciclo 2,
+   *   P-ATOMICA): falha em qualquer parte deixa a OS como estava.
+   * - Passa pela trava `assertTechnicianChangeAllowed` (ciclo 2, P-TRAVA) antes de qualquer escrita.
+   */
+  async assignFromDispatch(
+    actor: WorkOrderActorContext,
+    input: {
+      readonly workOrderId: string;
+      readonly operatorUserId: string;
+      readonly dispatchId: string;
+      readonly source: AssignWorkOrderFromDispatchInput["source"];
+      readonly message?: string;
+    },
+  ): Promise<WorkOrder> {
+    const current = await this.get(actor, input.workOrderId);
+    if (WORK_ORDER_STATUS_TRANSITIONS[current.status].length === 0) {
+      throw new WorkOrderError(
+        409,
+        "WORK_ORDER_STATUS_INVALID",
+        "invalid_status_transition",
+        `Cannot assign a terminal work order in status ${current.status}.`,
+      );
+    }
+
+    // Os ids vêm do despacho, que já os validou com a regra DELE (`field-dispatch.validators.ts`: não vazio — o
+    // modo memória usa ids que não são UUID). Exigir UUID aqui quebraria o despacho fora do Postgres.
+    const userId = assertNonEmptyString(input.operatorUserId, "operatorUserId");
+    const dispatchId = assertNonEmptyString(input.dispatchId, "dispatchId");
+    // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a chamada AUTORITATIVA: toda escrita do técnico pelo despacho passa por aqui.
+    await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId: userId });
+    const resolver = this.references.resolveActorOperatorProfileId;
+    const operatorProfileId = resolver
+      ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
+      : undefined;
+    const operatorId = operatorProfileId ?? userId;
+    const message =
+      optionalString(input.message) ??
+      (input.source === "field_dispatch_reassign"
+        ? "Ordem de serviço reatribuída pelo despacho."
+        : "Ordem de serviço atribuída pelo despacho.");
+
+    const result = await this.repository.assignFromDispatch({
       tenantId: actor.tenantId,
       workOrderId: current.id,
-      eventType: "work_order_assigned",
-      fromStatus: current.status,
-      toStatus: "assigned",
-      actorUserId: actor.userId,
-      message: input.message,
-      metadata: {
-        operatorId: input.operatorId,
-        userId: input.userId,
-        vehicleId: input.vehicleId,
-        teamId: input.teamId,
-        assignmentId: result.assignment.id,
+      operatorId,
+      userId,
+      assignedBy: actor.userId,
+      dispatchId,
+      source: input.source,
+      message,
+      // P-ATOMICA — o evento é gravado pelo repositório, na transação da OS e da linha.
+      event: {
+        fromStatus: current.status,
+        actorUserId: actor.userId,
+        message,
+        metadata: { operatorId, userId, source: input.source, dispatchId },
       },
     });
+
+    if (!result) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
 
     return result.workOrder;
   }
@@ -2067,6 +2197,15 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
       } catch {
         return undefined;
       }
+    },
+    // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a metade "despacho em No local" do predicado da trava. Import DINÂMICO
+    // (field-dispatch importa work-orders estaticamente; o estático aqui fecharia o ciclo), no idioma do resolver de
+    // perfil acima. SEM `catch`, de propósito e ao contrário dos vizinhos: falha de leitura propaga e a atribuição não
+    // acontece — erro nunca vira permissão para trocar o técnico.
+    hasActiveDispatchAtSite: async (tenantId, workOrderId) => {
+      const { hasActiveDispatchAtSite } = await import("../field-dispatch/field-dispatch.service.js");
+
+      return hasActiveDispatchAtSite(tenantId, workOrderId);
     },
     // Ω3F-8b — bases = POIs de categoria "base" (Ω2-d; zero migration). Reusa PoiService (mesmo singleton
     // que a rota /pois). Falha → lista vazia (o mapa degrada sem quebrar).

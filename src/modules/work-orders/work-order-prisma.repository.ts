@@ -3,6 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type {
+  AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
@@ -13,6 +14,8 @@ import type {
   UpdateWorkOrderInput,
   WorkOrder,
   WorkOrderAssignment,
+  WorkOrderAssignmentEventInput,
+  WorkOrderAssignmentWriteResult,
   WorkOrderEvent,
   WorkOrderEventType,
   WorkOrderFinancialCancellationDecision,
@@ -520,7 +523,10 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
-  async assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+  async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
+    // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS, linha de atribuição e evento `work_order_assigned` no MESMO
+    // `$transaction`: se o INSERT do evento falhar, a OS e a linha voltam junto (antes, o evento era uma segunda
+    // transação, e a OS ficava atribuída sem ele).
     const result = await this.client.$transaction(async (tx) => {
       const updated = await tx.workOrder.updateManyAndReturn({
         where: {
@@ -548,14 +554,92 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
           metadata: {},
         },
       });
+      const workOrder = mapWorkOrderRecord(updated[0]);
+      const event = await tx.workOrderEvent.create({
+        data: assignedEventData(input.tenantId, input.workOrderId, workOrder.status, assignment.id, input.event),
+      });
 
       return {
-        workOrder: mapWorkOrderRecord(updated[0]),
+        workOrder,
         assignment: mapWorkOrderAssignmentRecord(assignment),
+        event: mapWorkOrderEventRecord(event),
       };
     });
 
     return result;
+  }
+
+  async assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
+    // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — mesma regra do `assign`: o evento entra na transação da OS e da linha.
+    const result = await this.client.$transaction(async (tx) => {
+      const current = await tx.workOrder.findFirst({
+        where: {
+          tenant_id: input.tenantId,
+          id: input.workOrderId,
+        },
+        select: {
+          status: true,
+        },
+      });
+      if (!current) return undefined;
+      const nextStatus = current.status === "open" ? "assigned" : current.status;
+      const updated = await tx.workOrder.updateManyAndReturn({
+        where: {
+          tenant_id: input.tenantId,
+          id: input.workOrderId,
+        },
+        data: {
+          assigned_operator_id: input.operatorId,
+          assigned_user_id: input.userId,
+          status: nextStatus,
+          updated_by: input.assignedBy,
+        },
+      });
+      if (!updated[0]) return undefined;
+      const assignment = await tx.workOrderAssignment.create({
+        data: {
+          tenant_id: input.tenantId,
+          work_order_id: input.workOrderId,
+          operator_id: input.operatorId,
+          user_id: input.userId,
+          assigned_by: input.assignedBy,
+          metadata: toJsonObject({ source: input.source, dispatchId: input.dispatchId }),
+        },
+      });
+      const workOrder = mapWorkOrderRecord(updated[0]);
+      const event = await tx.workOrderEvent.create({
+        data: assignedEventData(input.tenantId, input.workOrderId, workOrder.status, assignment.id, input.event),
+      });
+
+      return {
+        workOrder,
+        assignment: mapWorkOrderAssignmentRecord(assignment),
+        event: mapWorkOrderEventRecord(event),
+      };
+    });
+
+    return result;
+  }
+
+  async hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    const operatorMatches = [
+      { operator_id: identity.userId },
+      ...(identity.operatorProfileId ? [{ operator_id: identity.operatorProfileId }] : []),
+    ];
+    const found = await this.client.workOrderAssignment.findFirst({
+      where: {
+        tenant_id: tenantId,
+        work_order_id: workOrderId,
+        OR: [{ user_id: identity.userId }, ...operatorMatches],
+      },
+      select: { id: true },
+    });
+
+    return Boolean(found);
   }
 
   async createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {
@@ -665,8 +749,24 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).changeStatus(input));
   }
 
-  assign(input: AssignWorkOrderInput): Promise<{ readonly workOrder: WorkOrder; readonly assignment: WorkOrderAssignment } | undefined> {
+  assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).assign(input));
+  }
+
+  assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).assignFromDispatch(input),
+    );
+  }
+
+  hasActorBeenAssigned(
+    tenantId: string,
+    workOrderId: string,
+    identity: { readonly userId: string; readonly operatorProfileId?: string },
+  ): Promise<boolean> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).hasActorBeenAssigned(tenantId, workOrderId, identity),
+    );
   }
 
   createEvent(input: CreateWorkOrderEventInput): Promise<WorkOrderEvent> {
@@ -901,6 +1001,27 @@ function isChecklistLinkUniqueViolation(error: unknown): boolean {
     (code === "23505" || code === "P2002" || message.includes("23505")) &&
     (message.includes("work_order_checklists") || message.includes("work_order_checklists_unique"))
   );
+}
+
+// B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — a linha de `work_order_events` da atribuição, montada dentro da transação:
+// `to_status` é o status que a OS acabou de receber e `metadata.assignmentId` a linha recém-criada.
+function assignedEventData(
+  tenantId: string,
+  workOrderId: string,
+  toStatus: WorkOrderStatus,
+  assignmentId: string,
+  input: WorkOrderAssignmentEventInput,
+) {
+  return {
+    tenant_id: tenantId,
+    work_order_id: workOrderId,
+    event_type: "work_order_assigned" as const,
+    from_status: input.fromStatus,
+    to_status: toStatus,
+    actor_user_id: input.actorUserId,
+    message: input.message,
+    metadata: toJsonObject({ ...input.metadata, assignmentId }),
+  };
 }
 
 function mapWorkOrderEventRecord(record: {

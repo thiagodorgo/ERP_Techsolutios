@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import type {
-  FieldLocationSource,
+  FieldLocationStoredSource,
   FieldOperatorLocation,
   ListFieldLocationHistoryInput,
   ListLatestFieldLocationsInput,
@@ -146,7 +146,7 @@ function mapFieldLocationRecord(record: {
     id: record.id,
     tenantId: record.tenant_id,
     operatorUserId: record.operator_user_id,
-    source: record.source as FieldLocationSource,
+    source: record.source as FieldLocationStoredSource,
     latitude: record.latitude,
     longitude: record.longitude,
     accuracyMeters: record.accuracy_meters ?? undefined,

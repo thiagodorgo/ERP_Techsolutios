@@ -126,6 +126,32 @@ export type ReassignFieldDispatchInput = {
   readonly actorUserId?: string;
 };
 
+// B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — quem dirigia a viatura no instante do fix.
+export type FindOperatorsForVehicleAtInput = {
+  readonly tenantId: string;
+  readonly vehicleId: string;
+  readonly at: Date;
+};
+
+/**
+ * Um despacho cuja janela contém o instante (aceito até ele e não encerrado nele) de uma OS que tem a viatura AGORA ou
+ * cuja viatura foi (re)atribuída DEPOIS do instante. `vehicleAssignedAfterFix` é calculado no SQL (`vehicle_assigned_at
+ * > at`; `null` quando a OS não tem data): `true` = o que a OS tinha no instante é desconhecido → histórico ambíguo.
+ */
+export type OperatorAtFixTimeCandidate = {
+  readonly operatorUserId: string;
+  readonly operatorAssignedAt: Date | null;
+  readonly acceptedAt: Date;
+  readonly vehicleAssignedAt: Date | null;
+  readonly vehicleAssignedAfterFix: boolean | null;
+};
+
+export type OperatorAtFixTime =
+  | { readonly kind: "single"; readonly operatorUserId: string }
+  | { readonly kind: "none" }
+  | { readonly kind: "ambiguous" }
+  | { readonly kind: "history_ambiguous" };
+
 // CHECKLIST P1 PR-04c (§7 do plano) — uma vistoria do CONJUNTO da ordem de serviço, na visão do despacho.
 //
 // A ordem deixou de ter "o checklist" (singular) e passou a ter um conjunto: a mesma ordem pode carregar a

@@ -1,7 +1,13 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
-import { WorkOrderError, type WorkOrder } from "../work-orders/work-order.types.js";
+import {
+  ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+  ASSIGNMENT_CHANGED_NEXT_ACTION,
+  isPreviouslyAssignedRefusal,
+  WorkOrderError,
+  type WorkOrder,
+} from "../work-orders/work-order.types.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -303,6 +309,28 @@ function actionErrorResult(
   action: MobileWorkOrderAction,
   error: unknown,
 ): MobileWorkOrderActionResult {
+  // B-O6R-07c-b1 (`D2-07c` = (d)) — status e km de quem JÁ FOI técnico da OS e não é mais: conflito à espera de um
+  // superior (`B-O6R-07c-b2`), não recusa. Quem nunca foi técnico segue no `rejected` `not_assigned_to_actor`.
+  if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "conflict",
+      work_order_id: readWorkOrderId(action),
+      conflict: {
+        conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+        server_id: readWorkOrderId(action),
+        local: sanitizeActionForConflict(action),
+        next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
+      },
+      error: {
+        code: error.code,
+        reason: error.reason,
+        message: error.message,
+      },
+    };
+  }
+
   if (isConflictError(error)) {
     return {
       client_action_id: action.client_action_id,

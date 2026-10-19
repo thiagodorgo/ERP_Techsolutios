@@ -252,7 +252,8 @@ Regra: append-only; um achado só existe após verificação do Relator e regist
 
 ### [Ω6R-SEC-002] Técnico de campo pode alterar OS alheia e decidir aprovações do tenant
 - Severidade: P0        Confiança: 1.00
-- Status: **parcialmente superado** pelo B-O6R-07a (PR #369, ciclo 2). **NÃO está fechado** — a
+- Status: **fechado** em 2026-10-18 pelo B-O6R-07c-b1 (PR #440, `40c3651f`; junta de permissão APROVADO 3×0, ata `agent-orchestration/omega/juntas/J-B-O6R-07c-b1-ciclo2.md`). O despacho grava o técnico na OS; técnico não atribuído não altera vistoria, evidência, despacho nem as demais vias censadas; a partir de "No local", uma trava única por OS impede trocar o técnico; a atribuição, a linha de histórico e o evento `work_order_assigned` são atômicos. Prova: `tests/o6r07c-b-scope.test.ts` 187/187 e `tests/o6r07c-b-scope-db.test.ts` 13/13 (reexecutados pelo porteiro do #440). Fechar o último P0 não revoga por si só o veredito de produção da junta J-6R. O estado anterior fica abaixo, preservado (§A2).
+- Antes (até 2026-10-18): Status **parcialmente superado** pelo B-O6R-07a (PR #369, ciclo 2). **NÃO está fechado** — a
   declaração de fechamento da autoria foi REVERTIDA no ciclo 2, depois que a junta mediu 9 rotas mutantes
   ainda alcançáveis pelo técnico sobre OS alheia (achado `C1-A1`). O que o bloco PROVOU e o que segue
   ABERTO, separados:

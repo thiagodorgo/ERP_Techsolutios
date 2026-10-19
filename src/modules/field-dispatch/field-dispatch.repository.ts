@@ -9,8 +9,36 @@ import type {
   FieldDispatchStatus,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
+  OperatorAtFixTime,
+  OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
 } from "./field-dispatch.types.js";
+
+// B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — a regra FAIL-CLOSED do operador no instante do fix, sobre os
+// despachos da viatura cuja janela contém o instante (aceito até ele e não encerrado nele). Elegível é o despacho com
+// `operator_assigned_at ≤ accepted_at` — o técnico que está HOJE no despacho aceitou-o DEPOIS de recebê-lo. Um
+// despacho na janela com `operator_assigned_at` ou `vehicle_assigned_at` nulo (linha anterior à migração), ou com a
+// atribuição do operador posterior ao aceite (reatribuído sem novo aceite), torna o histórico ambíguo e manda a posição
+// à quarentena, mesmo que haja outro elegível. Idem a OS cuja viatura foi (re)atribuída DEPOIS do instante
+// (`vehicleAssignedAfterFix`, ciclo 3): o que ela tinha no instante é desconhecido. Zero
+// operador elegível → nenhum; mais de um operador distinto → ambíguo; exatamente um → ele.
+export function classifyOperatorsAtFixTime(candidates: readonly OperatorAtFixTimeCandidate[]): OperatorAtFixTime {
+  if (
+    candidates.some(
+      (candidate) =>
+        candidate.vehicleAssignedAfterFix === true ||
+        candidate.vehicleAssignedAt === null ||
+        candidate.operatorAssignedAt === null ||
+        candidate.operatorAssignedAt.getTime() > candidate.acceptedAt.getTime(),
+    )
+  ) {
+    return { kind: "history_ambiguous" };
+  }
+  const operators = new Set(candidates.map((candidate) => candidate.operatorUserId));
+  if (operators.size === 0) return { kind: "none" };
+  if (operators.size > 1) return { kind: "ambiguous" };
+  return { kind: "single", operatorUserId: [...operators][0]! };
+}
 
 export interface FieldDispatchRepository {
   create(input: CreateFieldDispatchInput): Promise<FieldDispatch>;
@@ -18,6 +46,8 @@ export interface FieldDispatchRepository {
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined>;
   changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined>;
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined>;
+  deleteById(tenantId: string, dispatchId: string): Promise<void>;
+  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void>;
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent>;
   listTimeline(tenantId: string, dispatchId: string): Promise<readonly FieldDispatchEvent[]>;
   reset?(): void;
@@ -116,6 +146,22 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     this.dispatches.set(updated.id, updated);
 
     return updated;
+  }
+
+  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
+    const current = await this.findById(tenantId, dispatchId);
+    if (!current) return;
+    this.dispatches.delete(dispatchId);
+    for (const [id, event] of this.events.entries()) {
+      if (event.tenantId === tenantId && event.dispatchId === dispatchId) {
+        this.events.delete(id);
+      }
+    }
+  }
+
+  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
+    if (snapshot.tenantId !== tenantId) return;
+    this.dispatches.set(snapshot.id, snapshot);
   }
 
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {

@@ -1,36 +1,35 @@
 {
-  "snapshot_date": "2026-10-14",
-  "version": "KPI-MARCO-2026-10-14",
+  "snapshot_date": "2026-10-18",
+  "version": "KPI-MARCO-2026-10-18",
   "source": "Kpis/kpis-latest.json",
   "scope": "root_project_kpis_reflecting_mobile_and_web",
   "release": {
-    "block": "KPI-MARCO-2026-10-14 (consolidação de KPI por marco, pedida pelo dono em 2026-10-14; o KPI segue CONGELADO para os PRs de bloco — `D-GOV-PROPORCIONAL` (5), CLAUDE.md §C7 item 8(5)).",
-    "title": "Consolidação por marco: seis entregas desde 09/10",
-    "pr": null,
+    "block": "KPI-MARCO-2026-10-18 (consolidação de KPI por marco; o dono pôs o marco antes da demonstração do Traccar e pediu a medição realista do produto vendável em 2026-10-18 — `D-KPI-ANTES-DA-DEMO`; o KPI segue CONGELADO para os PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
+    "title": "Marco de 18/10: o último P0 fecha, o Traccar entra em dev e o produto vendável é medido de verdade",
+    "pr": 445,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
-    "summary": "KPI-MARCO-2026-10-14 — o painel sai do snapshot de 2026-10-09 para a `origin/main` de 14/10 (CI no head `9c7784b4`, run 38613235755): backend 3337/3339 (2 pulados), frontend 1327/1327, Flutter 864/864, 180 blocos. Seis entregas: #411 `B-SAN3-06b`, #389 `B-O6R-04a`, #417 `B-AGENTE-API`, #414 `B-O6R-07c-a`, #424 `B-SAN3-06a-telas`, #425 `B-O6R-03a`. Achados críticos: 17, 16 fechados na main (DAT-002 e DAT-003 pelo #389, DIN-009 pelo #425), 1 em parte (Ω6R-SEC-002, que o 07c-a fechou em 10 vias; 23 vias ficam com o B-O6R-07c-b). O veredito \"REPROVADO PARA PRODUÇÃO\" fica: o gate da versão vendável segue aberto. Feito no 1º teste do loop de KPI com o Gemini; as entradas do history foram regeneradas por `scripts/kpi-history-append.mjs` e as referências conferidas por `scripts/kpi-check-refs.mjs`.",
-    "backfill_note": "`pr`/`merge_commit`/`approved_head` deste marco ficam `null` na autoria e recebem backfill pós-merge (§C3.5). As seis entradas do history nascem completas, porque foram escritas depois do merge de cada bloco."
+    "summary": "KPI-MARCO-2026-10-18 — o painel sai do marco de 14/10 para a `origin/main` de 18/10 (CI no head `c1485c94`, run 39173912182): backend 3695/3697 (2 pulados), frontend 1327/1327, Flutter 864/864, 182 blocos. Dez entregas no histórico; contam como bloco o #440 `B-O6R-07c-b1` (fecha o último P0, `Ω6R-SEC-002`: P0 17 de 17 fechados na main) e o #426 `B-TRC-01` (Traccar em dev). `mvp_vendavel` deixa a estimativa de 88% (posta à mão em 2026-07-18) e passa à medição do gate SAN3: 18 de 62 itens fechados = 29%. `mvp_demo` fica NÃO MEDIDO até existir o roteiro de demonstração."
   },
   "metrics": {
     "flutter_tests": {
       "value": 864,
       "total": 864,
       "display": "864/864",
-      "note": "[KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `flutter`: `+864: All tests passed!` — nenhum PR do intervalo tocou `mobile/`.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `flutter` 114045007615, passo `flutter test --reporter compact` (Flutter 3.47.5, canal stable): `+864: All tests passed!`. O mesmo número nas runs dos quatro merges do marco (37251641822, 37841486912, 37847916306, 37996854560); nenhum desses PRs toca `mobile/`. Deixa de ser valor carregado: passa a ser a medição da CI no head.]"
+      "note": "[KPI-MARCO-2026-10-18 (2026-10-18): EXECUÇÃO REAL da CI no head da `origin/main` `c1485c94` (merge do #426) — run 39173912182 (workflow `ci`, push na `main`), job `flutter`: `+864: All tests passed!`.] [KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `flutter`: `+864: All tests passed!` — nenhum PR do intervalo tocou `mobile/`.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `flutter` 114045007615, passo `flutter test --reporter compact` (Flutter 3.47.5, canal stable): `+864: All tests passed!`. O mesmo número nas runs dos quatro merges do marco (37251641822, 37841486912, 37847916306, 37996854560); nenhum desses PRs toca `mobile/`. Deixa de ser valor carregado: passa a ser a medição da CI no head.]"
     },
     "frontend_smoke_tests": {
       "value": 1327,
       "total": 1327,
       "display": "1327/1327",
-      "note": "[KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `frontend`: `# tests 1327 # pass 1327 # fail 0`. Δ desde 09/10 (1268/1268): +59, das entregas #411 e #424.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `frontend` 114045007712, passo `npm --prefix frontend run test:smoke` (Node 20.20.2): `# tests 1268 # pass 1268 # fail 0 # cancelled 0 # skipped 0`. Δ desde o snapshot anterior (1214/1214, #402): +28 do #401 (`frontend/tests/patios-dossie-versao.smoke.test.tsx`, novo; run 37251641822 → 1242) e +26 do #409 (`frontend/tests/work-orders-list-tools.test.ts`, novo, e casos novos em duas suítes da lista; run 37847916306 → 1268). O #400 e o #405 não tocam `frontend/` (run 37841486912 → 1242; run 37996854560 → 1268).]"
+      "note": "[KPI-MARCO-2026-10-18 (2026-10-18): EXECUÇÃO REAL da CI no head da `origin/main` `c1485c94` (merge do #426) — run 39173912182 (workflow `ci`, push na `main`), job `frontend`: `# tests 1327 # pass 1327 # fail 0`.] [KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `frontend`: `# tests 1327 # pass 1327 # fail 0`. Δ desde 09/10 (1268/1268): +59, das entregas #411 e #424.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `frontend` 114045007712, passo `npm --prefix frontend run test:smoke` (Node 20.20.2): `# tests 1268 # pass 1268 # fail 0 # cancelled 0 # skipped 0`. Δ desde o snapshot anterior (1214/1214, #402): +28 do #401 (`frontend/tests/patios-dossie-versao.smoke.test.tsx`, novo; run 37251641822 → 1242) e +26 do #409 (`frontend/tests/work-orders-list-tools.test.ts`, novo, e casos novos em duas suítes da lista; run 37847916306 → 1268). O #400 e o #405 não tocam `frontend/` (run 37841486912 → 1242; run 37996854560 → 1268).]"
     },
     "backend_tests": {
-      "value": 3337,
-      "total": 3339,
-      "display": "3337/3339",
-      "note": "[KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `backend`, passo `npm test`: `303 arquivo(s) · 3339 teste(s) · pass 3337 · fail 0 · skipped 2`. Δ desde o marco de 09/10 (3171/3173): +166 testes, das entregas #389, #414 e #425; cada uma com o número da CI do próprio merge no history.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` (merge do #405) — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `backend` 114045007650, passo `npm test` (Node 20.20.2, Postgres e Redis de serviço): `# tests 3173 # pass 3171 # fail 0 # cancelled 0 # skipped 2`; resumo do runner `293 arquivo(s) · 3173 teste(s) · pass 3171 · fail 0 · skipped 2`. Δ desde o snapshot anterior (3052/3054, 287 arquivos — valor publicado pelo B-SAN3-00 #392 e confirmado pela CI no merge do #401, run 37251641822): +38 do #400 (2 arquivos novos; run 37841486912 → 3092, 289 arquivos) e +81 do #405 (4 arquivos novos; run 37996854560 → 3173, 293 arquivos); o #401 e o #409 não tocam `tests/` da raiz (run 37847916306 → 3092). Fora da métrica, para registro: o job `backend-postgres` (rotas contra PostgreSQL) deu 263/263 nas quatro runs.]"
+      "value": 3695,
+      "total": 3697,
+      "display": "3695/3697",
+      "note": "[KPI-MARCO-2026-10-18 (2026-10-18): EXECUÇÃO REAL da CI no head da `origin/main` `c1485c94` (merge do #426) — run 39173912182 (workflow `ci`, push na `main`), job `backend`, passo `npm test`: `322 arquivo(s) · 3697 teste(s) · pass 3695 · fail 0 · skipped 2`.] [KPI-MARCO-2026-10-14 (2026-10-14): EXECUÇÃO REAL da CI no head da `origin/main` `9c7784b4` (merge do #431) — run 38613235755 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `backend`, passo `npm test`: `303 arquivo(s) · 3339 teste(s) · pass 3337 · fail 0 · skipped 2`. Δ desde o marco de 09/10 (3171/3173): +166 testes, das entregas #389, #414 e #425; cada uma com o número da CI do próprio merge no history.] [KPI-MARCO-2026-10-09 (2026-10-09): EXECUÇÃO REAL da CI no head da `origin/main` `a9fbe283` (merge do #405) — run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`), job `backend` 114045007650, passo `npm test` (Node 20.20.2, Postgres e Redis de serviço): `# tests 3173 # pass 3171 # fail 0 # cancelled 0 # skipped 2`; resumo do runner `293 arquivo(s) · 3173 teste(s) · pass 3171 · fail 0 · skipped 2`. Δ desde o snapshot anterior (3052/3054, 287 arquivos — valor publicado pelo B-SAN3-00 #392 e confirmado pela CI no merge do #401, run 37251641822): +38 do #400 (2 arquivos novos; run 37841486912 → 3092, 289 arquivos) e +81 do #405 (4 arquivos novos; run 37996854560 → 3173, 293 arquivos); o #401 e o #409 não tocam `tests/` da raiz (run 37847916306 → 3092). Fora da métrica, para registro: o job `backend-postgres` (rotas contra PostgreSQL) deu 263/263 nas quatro runs.]"
     },
     "backend_contract_tests_focused": {
       "value": 34,
@@ -45,25 +44,25 @@
       "note": "[KPI-MARCO-2026-10-09 (2026-10-09): valor CARREGADO, com nota DESTE PR (§C3.3) — a CI não publica esta métrica em separado: a run 37996854560 (workflow `ci`, push na `main`, tentativa 1, 7/7 jobs `success`) publica só os totais das suítes (`backend`, `backend-postgres`, `frontend`, `flutter`; `owner-portal` e `authority-portal` não têm suíte de teste, só check e build; `docker` é o smoke de contêiner), e esta consolidação não reexecutou a métrica. Último valor oficial: 17/17. Nenhum PR do marco toca `mobile/`. Esta nota cumpre o teste de encerramento da `P-KPI-NOTAS-CARREGADAS-REGRESSAO-392` (nota do PR corrente).] [B-SAN3-04a §C3.3 (2026-09-18): valor CARREGADO — este PR não toca `mobile/` (`git diff --name-only origin/main -- mobile` vazio); sem reexecução desta trilha neste PR.] [B-O6R-06 §C3.3 (2026-09-11): valor CARREGADO — este PR nao toca `mobile/` nem `frontend/`: arvores identicas entre o head julgado 0f0a872a e o head do delta e26eb9e5 (mobile `3a2ac028`, frontend `24be761e`, medido pela cadeira C3 por `git rev-parse <ref>:<path>`); sem reexecucao desta trilha neste PR. O marcador anterior nomeava B-GOV-ELENCO/SAN2-4b, blocos anteriores.]  [SAN2-4b: valor CARREGADO — o PR nao toca esta trilha; sem reexecucao (§C3.3). Prova medida nas DUAS pontas (commitado e arvore de trabalho): `git diff --name-only 45c3b97...HEAD` e `git status --porcelain` sobre `mobile/` e `frontend/` saem VAZIOS. O diff de codigo deste bloco sao 5 arquivos: `src/modules/authority/authority-password.ts` e quatro em `tests/`.] \n[B-O6R-07a: valor CARREGADO — o ultimo valor oficial, NAO reexecutado por este PR (§C3.3). O bloco corrige autorizacao e autenticacao no backend: o diff nao toca `frontend/` nem `mobile/`, provado nas DUAS pontas (`git diff --name-only origin/main...HEAD -- frontend/ mobile/` e `git status --porcelain` saem os DOIS VAZIOS). `npm --prefix frontend run check` e `npm --prefix frontend run build` rodaram VERDES (`ec=0`) como regressao, sem mover a contagem de smoke. A nota acima descreve execucao de bloco anterior, NAO deste PR.] [B-O6R-07b: valor CARREGADO — o ultimo valor oficial, NAO reexecutado por este PR (§C3.3). O bloco e backend-only: fecha o Omega6R-SEC-004 em src/modules/{evidence,attachments,checklists,damages,work-orders,mobile} e em tests/. Prova medida nas DUAS pontas: `git diff --name-only origin/main...HEAD -- frontend/ mobile/` e `git status --porcelain -- frontend/ mobile/` saem os DOIS VAZIOS. `npm --prefix frontend run check` e `npm --prefix frontend run build` rodaram VERDES (ec=0) como regressao, sem mover a contagem de smoke. A nota acima descreve execucao de bloco anterior, NAO deste PR.] [B-GOV-ELENCO-ENXUTO: valor CARREGADO — o ultimo valor oficial, NAO reexecutado por este PR (§C3.3). O diff deste bloco nao toca `src/`, `tests/`, `prisma/`, `frontend/` nem `mobile/`: sao 5 arquivos — `scripts/audit-agents-skills.mjs`, `Kpis/kpis-latest.json`, `Kpis/kpis-history.json`, `Kpis/kpis-history.md`, `Kpis/app.js` — mais 3 de registro em `agent-orchestration/`. Prova medida nas DUAS pontas: `git diff --name-only <base>...HEAD -- src/ tests/ prisma/ frontend/ mobile/` e `git status --porcelain -- src/ tests/ prisma/ frontend/ mobile/` saem os DOIS VAZIOS. A nota acima descreve execucao de bloco anterior, NAO deste PR.]"
     },
     "mvp_demo": {
-      "value": 99,
-      "unit": "%",
-      "display": "99%",
-      "note": "Ω4 fechou o modulo Financeiro do tenant completo (Contas, Titulos AR/AP, Faturamento anti-refaturamento, Caixa/Extrato, Conciliacao, Fechamento com trava retroativa, Cheque, Dashboard real) sobre o hub da OS da Fase 1. +1 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.] [SAN3 plano (PR #386): INTOCADO — o PR nao move escopo de produto (§C3.4). O inventario SAN3 (2026-09-11) mediu telas de menu e do console da plataforma exibindo dado inventado e fluxos do app sem porta de entrada (docs/revisoes/SAN3/PLANO_SAN3.md §4.1): este 99% e estimativa ANTERIOR ao inventario e sera recalculado no B-SAN3-10.] [KPI-MARCO-2026-10-09: INTOCADO (§C3.4) — as quatro entregas do marco fecham defeito e guarda do gate SAN3 (#401 rótulo da vistoria substituída, #400 caminho do 1º admin, #405 papel de runtime sem bypass de RLS) e acrescentam Filtrar e Exportar a uma tela que já existia (#409). A régua é estimativa com recálculo de dono nomeado (`B-SAN3-10`); movê-la por julgamento nesta consolidação seria inventar número.]",
-      "label": "Escopo demonstrável entregue",
-      "caveat": "Também estimado, pela mesma régua."
+      "value": null,
+      "unit": null,
+      "display": "NÃO MEDIDO",
+      "note": "[KPI-MARCO-2026-10-18] Não há medição de mvp_demo: o roteiro de demonstração e operação não existe (item 44, `P-SAN3-ROTEIRO-DEMO-OPERACAO`, ABERTO na medição de 18/10). O valor anterior, 99%, era estimativa por escopo da rodada Ω4 (2026-07-18). Nenhum percentual é publicado até existir régua e execução do roteiro.",
+      "label": "Roteiro de demonstração",
+      "caveat": "Sem roteiro executável, não há base para calcular percentual de demonstração."
     },
     "mvp_vendavel": {
-      "value": 88,
+      "value": 29,
       "unit": "%",
-      "display": "88%",
-      "note": "Ω4 entregou o pilar Financeiro (AR/AP com chokepoint, faturamento idempotente, caixa/extrato, conciliacao, fechamento de periodo, cheque, dashboard agregado) — nucleo vendavel de gestao financeira. +5 por escopo. Percentual estimado, sujeito a revisao humana. [SAN2-4b: INTOCADO — o PR nao move escopo: conserta arnes de teste e endurece um primitivo de autenticacao, sem entregar funcionalidade nova ao usuario (§C3.4).] [SAN2-6: INTOCADO — o bloco não move escopo de produto] [B-O6R-07a: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de autorizacao e autenticacao, sem entregar funcionalidade nova ao usuario.] [B-O6R-07b: INTOCADO — o bloco nao move escopo de produto (§C3.4): fecha defeito de SEGURANCA (verificacao de conteudo de upload e endurecimento do download), sem entregar funcionalidade nova ao usuario.] [B-GOV-ELENCO-ENXUTO: INTOCADO — o bloco nao move escopo de produto (§C3.4): encolhe uma ferramenta de governanca (o auditor de elenco e skills), sem entregar nem retirar funcionalidade ao usuario.] [SAN3 plano (PR #386): INTOCADO — o PR nao move escopo de produto (§C3.4). MAS o gate da versao vendavel do plano SAN3 v5 (inventario de 2026-09-11 + junta do PR #386) tem 56 bloqueantes em 37 blocos e 6 atos que dependem do dono (docs/revisoes/SAN3/PLANO_SAN3.md §4). Este 88% e estimativa ANTERIOR ao inventario e sera recalculado no B-SAN3-10, o bloco que declara o gate.] [KPI-MARCO-2026-10-09: INTOCADO (§C3.4) — as quatro entregas do marco fecham defeito e guarda do gate SAN3 (#401 rótulo da vistoria substituída, #400 caminho do 1º admin, #405 papel de runtime sem bypass de RLS) e acrescentam Filtrar e Exportar a uma tela que já existia (#409). A régua é estimativa com recálculo de dono nomeado (`B-SAN3-10`); movê-la por julgamento nesta consolidação seria inventar número.]",
-      "label": "Escopo do produto vendável entregue",
-      "caveat": "Percentual ESTIMADO, sujeito a revisão humana — não é medição. Mede escopo funcional construído; prontidão para produção é a outra dimensão do painel, medida ao lado."
+      "display": "29%",
+      "note": "[KPI-MARCO-2026-10-18] MEDIÇÃO REALISTA pedida pelo dono em 18/10/2026 (\"quero essa medição bem realista\"; `D-KPI-ANTES-DA-DEMO`). Régua: os 56 bloqueantes de código do `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 mais os 6 atos do dono do §4.2, total 62; só FECHADO conta (PR mergeado na main + teste ou guarda que prova, ou ato do dono registrado); PARCIAL vale zero. Resultado conferido por duas cadeiras independentes: 18 FECHADOS, 5 PARCIAIS e 39 ABERTOS; floor(100 × 18 / 62) = 29%. Medido na `origin/main` `c1485c94` pelo `medidor-gate-san3-cdx` (Codex) e conferido pelo `conferidor-gate-a-opus` (A6 Provedor: PARCIAL → FECHADO) e pelo `conferidor-gate-b-opus` (item 41: ABERTO → PARCIAL). O valor anterior, 88%, era estimativa posta à mão em 2026-07-18 (+5 por escopo do Financeiro) e não foi medido desde então.",
+      "label": "Itens do gate da versão vendável fechados",
+      "caveat": "Medição estrita do gate SAN3: itens parciais valem zero; prontidão de produção continua sujeita aos gates e à junta."
     },
     "blocks_completed": {
-      "value": 180,
-      "display": "180",
-      "note": "[KPI-MARCO-2026-10-14 (2026-10-14): **174 -> 180**, uma entrada no history por entrega, cada uma gerada por `scripts/kpi-history-append.mjs` a partir do próprio merge: #411 `B-SAN3-06b` (175), #389 `B-O6R-04a` (176), #417 `B-AGENTE-API` (177; bloco de ferramenta, contado pelo precedente do #394 e do #397, que contaram 168 e 169), #414 `B-O6R-07c-a` (178), #424 `B-SAN3-06a-telas` (179), #425 `B-O6R-03a` (180). Os demais PRs do intervalo são registro, documentação ou governança e não contam bloco.] [KPI-MARCO-2026-10-09 (2026-10-09): **170 -> 174**, contado a partir do valor publicado na `origin/main` (`a9fbe283`; o último PR que contou bloco foi o #402 = 170). +4 entregas de bloco mergeadas depois do snapshot, cada uma com entrada própria no history: #401 `B-SAN3-11` (171), #400 `B-SAN3-09` (172), #409 `B-OS-FILTRAR-EXPORTAR` (173), #405 `B-SAN3-05` (174). NÃO contam, pelo critério do history (#360: \"governança e registro não contam como bloco de feature entregue\"): os registros #403, #404, #406, #408 e #410, e a governança #407 (`D-GOV-PROPORCIONAL` — sem ID de bloco, sem plano nem junta; mergeou pela própria regra (1)). Os blocos de governança que contaram antes (#394 `B-GOV-SEM-TETO`, #397 `B-GOV-PAUSA`) tinham ID de bloco, plano e junta. Se outro PR de bloco mergear antes desta consolidação, RECONTA no pré-merge a partir da `main` de então.]"
+      "value": 182,
+      "display": "182",
+      "note": "[KPI-MARCO-2026-10-18 (2026-10-18): **180 -> 182**, uma entrada no history por entrega, cada uma gerada por `scripts/kpi-history-append.mjs` a partir do próprio merge: #440 `B-O6R-07c-b1` (181) e #426 `B-TRC-01` (182). As outras oito entradas do marco (#436–#439, #441–#444) são ferramenta, registro, governança e arnês: entram no history com `--sem-bloco`.] [KPI-MARCO-2026-10-14 (2026-10-14): **174 -> 180**, uma entrada no history por entrega, cada uma gerada por `scripts/kpi-history-append.mjs` a partir do próprio merge: #411 `B-SAN3-06b` (175), #389 `B-O6R-04a` (176), #417 `B-AGENTE-API` (177; bloco de ferramenta, contado pelo precedente do #394 e do #397, que contaram 168 e 169), #414 `B-O6R-07c-a` (178), #424 `B-SAN3-06a-telas` (179), #425 `B-O6R-03a` (180). Os demais PRs do intervalo são registro, documentação ou governança e não contam bloco.] [KPI-MARCO-2026-10-09 (2026-10-09): **170 -> 174**, contado a partir do valor publicado na `origin/main` (`a9fbe283`; o último PR que contou bloco foi o #402 = 170). +4 entregas de bloco mergeadas depois do snapshot, cada uma com entrada própria no history: #401 `B-SAN3-11` (171), #400 `B-SAN3-09` (172), #409 `B-OS-FILTRAR-EXPORTAR` (173), #405 `B-SAN3-05` (174). NÃO contam, pelo critério do history (#360: \"governança e registro não contam como bloco de feature entregue\"): os registros #403, #404, #406, #408 e #410, e a governança #407 (`D-GOV-PROPORCIONAL` — sem ID de bloco, sem plano nem junta; mergeou pela própria regra (1)). Os blocos de governança que contaram antes (#394 `B-GOV-SEM-TETO`, #397 `B-GOV-PAUSA`) tinham ID de bloco, plano e junta. Se outro PR de bloco mergear antes desta consolidação, RECONTA no pré-merge a partir da `main` de então.]"
     },
     "mobile_backend_contracts": {
       "value": 18,
@@ -132,8 +131,8 @@
     "data_veredito": "2026-08-12",
     "deploy_bloqueado": true,
     "p0_total": 17,
-    "p0_fechados": 16,
-    "p0_abertos": 1,
+    "p0_fechados": 17,
+    "p0_abertos": 0,
     "p1_total": 15,
     "p1_fechados": 2,
     "p1_abertos": 13,
@@ -227,15 +226,20 @@
         "id": "Ω6R-DIN-009",
         "por": "B-O6R-03a (PR #425, d910c97f)",
         "em": "2026-10-14"
+      },
+      {
+        "id": "Ω6R-SEC-002",
+        "por": "B-O6R-07c-b1 (PR #440, 40c3651f)",
+        "em": "2026-10-18"
       }
     ],
-    "as_of": "2026-10-14",
+    "as_of": "2026-10-18",
     "source": "docs/revisoes/O6R/achados.jsonl",
     "aguardando_merge": [],
-    "nota_aguardando": "Nenhum achado aguardando merge em 2026-10-14. Os achados Ω6R-DAT-002 e Ω6R-DAT-003 foram fechados pelo B-O6R-04a (PR #389) e o Ω6R-DIN-009 pelo B-O6R-03a (PR #425)."
+    "nota_aguardando": "Nenhum achado aguardando merge em 2026-10-18. O último P0, Ω6R-SEC-002, foi fechado pelo B-O6R-07c-b1 (PR #440, 40c3651f); os 17 de 17 P0 estão fechados na main. Zerar os P0 não muda o veredito de produção: ele continua com a junta."
   },
   "findings": {
-    "as_of": "2026-10-14",
+    "as_of": "2026-10-18",
     "source": "docs/revisoes/O6R/achados.jsonl",
     "itens": [
       {
@@ -306,9 +310,9 @@
         "id": "Ω6R-SEC-002",
         "severidade": "P0",
         "modulo": "work-orders / approvals / RBAC",
-        "status": "parcialmente_superado",
-        "resumo": "O técnico de campo podia aprovar a própria ordem de serviço e mexer em OS alheia. Papel, SoD e escopo das duas rotas guardadas foram fechados pelo B-O6R-07a; o B-O6R-07c-a (#414) fechou as 10 vias de subrecurso conhecidas (anexos, comentários, etiquetas, localização e km). As 23 vias restantes (vistoria, evidência e despacho) ficam com o B-O6R-07c-b, já com plano emendado.",
-        "bloco": "B-O6R-07"
+        "status": "fechado",
+        "resumo": "O técnico de campo podia aprovar a própria ordem de serviço e mexer em OS alheia. O B-O6R-07a fechou papel, SoD e escopo das rotas guardadas; o B-O6R-07c-a (#414) fechou as 10 vias de subrecurso; o B-O6R-07c-b1 (#440) fechou as 23 vias restantes (vistoria, evidência e despacho): o despacho grava o técnico na OS, técnico não atribuído não altera nada da OS alheia e, a partir de \"No local\", uma trava única impede trocar o técnico.",
+        "bloco": "B-O6R-07c-b1"
       },
       {
         "id": "Ω6R-ARQ-001",
@@ -689,9 +693,23 @@
     }
   },
   "recent": {
-    "as_of": "2026-10-14",
+    "as_of": "2026-10-18",
     "source": "git log main + agent-orchestration/omega/juntas/",
     "itens": [
+      {
+        "pr": 426,
+        "data": "2026-10-18",
+        "tipo": "feature",
+        "titulo": "O Traccar entra em desenvolvimento",
+        "resumo": "Uma posição do Traccar chega ao mapa operacional por uma ingestão privada, sem porta pública. Aparelho que não tem viatura vai para a quarentena, e a viatura é atribuída conforme o instante da posição; caso ambíguo também vai para a quarentena. Só em desenvolvimento: staging e produção dependem de decisão e junta próprias. Junta de segurança: aprovado 3 × 0 no ciclo 3."
+      },
+      {
+        "pr": 440,
+        "data": "2026-10-18",
+        "tipo": "correcao_critica",
+        "titulo": "O último achado crítico de segurança fecha",
+        "resumo": "O despacho passa a gravar quem atende a OS, e o técnico não atribuído deixa de alterar OS alheia pelas 23 vias que faltavam. A partir de \"No local\", ninguém troca o técnico sem passar pela trava. Fecha o Ω6R-SEC-002: P0 17 de 17. Junta de permissão: aprovado 3 × 0 no ciclo 2."
+      },
       {
         "pr": 425,
         "data": "2026-10-14",
