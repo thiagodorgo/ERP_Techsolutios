@@ -115,3 +115,25 @@ Nomeados novos: **42** (+11 gerados); o plano previa 41. O 42º é o **T-C8d**: 
 ## Limpeza
 
 `tmp-san302/` saiu do worktree (cópia em `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san302/tmp-san302-copia/`). Os 3 contêineres `tl*` foram removidos pelo nome (sem `prune`); `dist/` do host removido. Base viva e portas 5432/6379/3000/5173/5050/8899 intocadas.
+
+## Ciclo de revisão (19/10)
+
+### Achado 1 — suítes novas na CI PostgreSQL
+
+- **Comando:** duas rodadas adicionais de `tests/work-order-invoicing-migration-drill-db.test.ts` via `teste-linux.sh`, depois `git diff -U0 -- .github/workflows/ci.yml` e `git diff --check`.
+- **Saída:** drill `5/5 · 5/5`, `fail 0`, `skip 0`; com a rodada `5/5` anterior, denominador constante em 3×. A atômica já tinha `17/17 · 17/17 · 17/17`, 0 skip. O diff local da CI mostrou somente:
+
+  ```diff
+  +          SUITES="$SUITES tests/work-order-invoicing-atomic-db.test.ts"
+  +          SUITES="$SUITES tests/work-order-invoicing-migration-drill-db.test.ts"
+  ```
+
+- **Veredito:** regra de estabilidade do §7.6 atendida antes da edição; as duas suítes foram apensadas somente à lista `SUITES` do job `backend-postgres`; `git diff --check` verde.
+
+### Achado 3 — M19 e T-Z3 em cópia isolada
+
+- **Comando:** `git worktree add C:/Users/AMP/w-fix302 HEAD --detach`; `npm ci` próprio; M19 aplicada somente na cópia; suíte `work-order-invoicing-atomic-db` 3×; `EXPLAIN` do `UPDATE`; sonda 3× com `PGOPTIONS="-c enable_indexscan=off -c enable_bitmapscan=off"`; restauração; suíte 3×; `git worktree remove --force`.
+- **Saída padrão com M19:** `17 tests · 17 pass · 0 fail · 0 skipped` nas três rodadas; T-Z3 ficou verde. O `EXPLAIN` mostrou `Index Scan using work_order_financial_items_tenant_id_work_order_id_idx`; o PATCH só de `notes` pode ser HOT e preservar o TID-raiz, logo a premissa física “i1 vai ao fim” não se materializou nesse plano.
+- **Saída controlada com M19 e Seq Scan:** nas três rodadas, `17 tests · 16 pass · 1 fail · 0 skipped`; teste vermelho nominal nas três: `[T-Z3] ordem total do zero: com i1 movido para o fim do heap, o vencedor trava só i1; o zero espera em i1 (não em i2); sem 40P01/503`; falha por `deadlock detected` na asserção “nenhum 40P01/P2034/503”.
+- **Saída após restauração, sem opção de planner:** `17 tests · 17 pass · 0 fail · 0 skipped` nas três rodadas; T-Z3 verde 3×; `git status --short` e `git diff --check` vazios na cópia antes de removê-la.
+- **Veredito:** M19 ficou vermelha 3× seguidas quando a premissa (b) da emenda B3 foi materializada por Seq Scan, e o head restaurado ficou verde 3×. Fica registrado, sem esconder, que a forma padrão do cluster escolheu Index Scan e deixou a M19 sobreviver 3×; portanto o vermelho-controle depende do plano físico e não é prova independente do planner.
