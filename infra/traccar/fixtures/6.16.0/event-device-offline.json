@@ -1,0 +1,30 @@
+{
+  "_sintetica": "fixture SINTÉTICA (B-TRC-02 §3.4): derivada da event-device-unknown capturada, só com event.type trocado para deviceOffline — o OsmAnd nunca gera deviceOffline (S-E9)",
+  "event": {
+    "id": 4,
+    "attributes": {},
+    "deviceId": 1,
+    "type": "deviceOffline",
+    "eventTime": "2026-10-19T10:35:48.655+00:00",
+    "positionId": 0,
+    "geofenceId": 0,
+    "maintenanceId": 0
+  },
+  "device": {
+    "id": 1,
+    "attributes": {},
+    "groupId": 0,
+    "calendarId": 0,
+    "name": "Viatura Sintetica TRC01",
+    "uniqueId": "trcdemo01",
+    "status": "online",
+    "lastUpdate": "2026-10-19T10:34:44.919+00:00",
+    "positionId": 3,
+    "phone": "+550000000000",
+    "model": null,
+    "contact": "Contato Sintetico",
+    "category": null,
+    "disabled": false,
+    "expirationTime": null
+  }
+}

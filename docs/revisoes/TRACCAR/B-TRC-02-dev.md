@@ -42,7 +42,7 @@ Medido em 2026-10-19, ref `origin/main` = `bf83cda8a9acdc92f05f29397d1860bed9be5
 | `timeout -k 10 180 node --test --import tsx tests/traccar-dev-topology.test.ts` (host Windows, com Docker) | `# tests 12` `# pass 12` `# fail 0` | verde — os casos que exigem Docker reexecutam isolados onde há Docker, como no 01 (v2 §9.7 passo 3) |
 | `not ok 48 - idempotência: duas entregas idênticas concorrentes — ambas 2xx, 1 recibo, 1 localização` | `actual [204, 503]` em `traccar-idempotency-db.test.ts:219` | **pré-existente** (código da `main`, nada mudado): uma das duas entregas concorrentes saiu 503 sob a carga do lote paralelo. Frequência medida abaixo (snapshot limpo de `bf83cda8` por `git archive`) |
 
-EM APURAÇÃO: frequência do vermelho pré-existente (`baseline-flake.txt`).
+| frequência: `git archive bf83cda8` num diretório limpo → `teste-linux-dtrc02.sh <snapshot> 'for i in 1 2 3; do node --test … tests/traccar-idempotency-db.test.ts; done; for i in 1 2 3; do node --test … $(ls tests/traccar-*-db.test.ts); done'` | isolada: 3× `# tests 9 # pass 9 # fail 0`; lote `-db` (6 arquivos): 3× `# tests 50 # pass 50 # fail 0` | **1 vermelho em 7 execuções** da suíte (1/4 no lote com as 16 suítes); pré-existente, fora do escopo (o bloco não toca a concorrência do 01). Se reaparecer nas rodadas do bloco, é registrado com N e forma, nunca "consertado" aqui |
 
 ## Passo 1 — comando do bloco e cópias
 
@@ -71,7 +71,13 @@ que o próprio bloco cria.
 
 ## Passo 3 — captura das fixtures reais
 
-EM APURAÇÃO
+| Comando | Saída | Veredito |
+|---|---|---|
+| `scripts/traccar-capture-fixture.mjs` ganha `--kind event` (mesmo teto, mesma sanitização, `down -v` sempre; `TRC_CAPTURE_PROJECT` para o nome do projeto) — editado por script com âncoras únicas; `node --check` → ok; topologia do 01 → `# pass 12 # fail 0` | diff 139+/5− | — |
+| `docker ps … | grep -v '^erp-'` → só o meu `dtrc02-…` (baseline); `Win32_OperatingSystem` → FreeVirtual 7,80 GB | 2 trabalhos Docker, ambos meus; ≥ 3 GB | pode subir |
+| `TRC_CAPTURE_PROJECT=dtrc02-capture timeout -k 30 900 node scripts/traccar-capture-fixture.mjs --kind event` | 13 passos OK; ec 0; `projeto derrubado (down -v --remove-orphans)`; `docker ps -a`/`docker network ls` sem `dtrc02-capture` | verde |
+| fatos (headers, `event.id`, coordenadas, `eventTime` × `deviceTime`, 2ª entrega) | em `docs/revisoes/TRACCAR/B-TRC-02-evento-captura.md` | **H-1, H-3..H-7 e H-12 fechadas**; sem parada |
+| suíte H de novo | `# tests 9 # pass 7 # fail 2` (H8 verde; H7 e H9 esperam os passos 9 e 5b) | verde onde o passo alcança |
 
 ## Passo 4 — contrato (A, B)
 
