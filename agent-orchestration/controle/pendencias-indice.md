@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **580** |
-| IDs distintos | 569 |
-| **ABERTAS** | **433** |
+| Cabecalhos `## P-` | **581** |
+| IDs distintos | 570 |
+| **ABERTAS** | **434** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **366** |
+| — das quais **ativas nesta rodada** | **367** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 144 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **580 cabecalhos para 569 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **581 cabecalhos para 570 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -277,7 +277,7 @@
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
 
-## ABERTAS · balde B — processo/registro — 164
+## ABERTAS · balde B — processo/registro — 165
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -443,8 +443,9 @@
 | `P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA` | 11339 | BAIXA | sim | P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA (2026-10-18) — evidência `field_*` aceita `work |
 | `P-07CB1-IDEMP-VISTORIA-SEM-ATOR` | 11347 | BAIXA | sim | P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `c |
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
-| `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11361 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
-| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11370 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
+| `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
+| `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11369 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
+| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11378 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
