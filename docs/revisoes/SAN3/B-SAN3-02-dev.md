@@ -77,7 +77,7 @@
 | M14 | a auditoria vaza `amount` | T-C8d | VERMELHA 1/17 |
 | M15 | `markInvoiced` sem `invoiced_at: null` | T-K4b | VERMELHA 1/17 |
 | M17 | decidir original × complementar ANTES do `FOR UPDATE` | T-A4 | VERMELHA 1/17 |
-| M19 | `softDeleteAllByWorkOrder` volta ao `updateMany` sem ordem (forma da ref) | T-Z3 | VERMELHA 1/17; a premissa (b) do B3 valeu neste cluster |
+| M19 | `softDeleteAllByWorkOrder` volta ao `updateMany` sem ordem (forma da ref) | T-Z3 | VERMELHA 1/17 3× no planner padrão (Index Scan), com o T-Z3 plano-independente da emenda v2.2 §6 — ver a seção de 19/10 abaixo |
 | M22 | FK do pai de 2 colunas (migração; base nova) | T-D(a), T-D(e) | VERMELHA 2/5 |
 | M27 | `parent_title_id` fora do `schema.prisma` | critério de drift (B4) | VERMELHA (`DROP COLUMN` no delta) |
 
@@ -148,3 +148,54 @@ Nomeados novos: **42** (+11 gerados); o plano previa 41. O 42º é o **T-C8d**: 
 - **Restauração — comando:** migração restaurada por cópia conferida por SHA; suíte integral do drill no mesmo lote, já sem a mutação; `git status --short -- prisma/schema.prisma prisma/migrations/20260878000000_invoice_complementary_title/migration.sql tests/work-order-invoicing-migration-drill-db.test.ts`; `git diff --check`. **Saída:** T-D(a)–(e) `5 tests · 5 pass · 0 fail · 0 skipped`; status e diff sem saída. **Veredito:** cópia restaurada e head novamente verde; T-Z3 e M19 não foram tocados.
 - **Contagem:** era 28; com M27b e M28 passa a **30/30 mutações vermelhas** (M11 continua contada pela forma M11b).
 - **Retomada P3 após a pausa — comando:** nova cópia `w-fix302d` no mesmo head, `npm ci` próprio e novo lote por `teste-linux.sh`, sem aproveitar conclusão não reexecutada. **Saída:** B4 repetiu `71` sentenças na main e `72` no head, delta só-head exatamente a FK nominal; controle dos parciais `0`; M27b acrescentou o `DROP INDEX` esperado; M28 morreu nominalmente em T-D(c) pela ausência do `23514`; drill restaurado `5/5`; SHA original/restaurado `c8a806…`. **Veredito:** conteúdo da seção confirmado. O SHA mutante acima foi corrigido para o valor desta reexecução (`3591b24…`); a diferença era só a forma textual de retirar a mesma sentença, não o comportamento medido.
+
+## Emenda v2.2 §6 — T-Z3 independente do planner (19/10)
+
+- **Por quê:** com o T-Z3 antigo (PATCH HOT em i1), a M19 sobrevivia 3× no planner padrão (Index Scan segue o TID-raiz da cadeia HOT) e só morria com Seq Scan forçado (seção "Achado 3" acima). A emenda v2.2 §6 manda consertar a PROVA, não o produto, e retira o fallback "M19 não derrubada → revisão estática" da v2.1 B3. Esse fallback não estava escrito neste relatório; não havia o que remover.
+- **Conserto, só em `tests/work-order-invoicing-atomic-db.test.ts`:**
+  - sai o PATCH;
+  - `addItem` ganha `createdAt?`, passado ao `create`;
+  - i1 nasce primeiro com `created_at` T0+1s e i2 depois com T0;
+  - a premissa `ctid(i1) < ctid(i2)` é medida (página e lp, comparados como números), com até 5 tentativas e DELETE físico do par inválido; esgotadas as tentativas, o teste falha com `assert.ok` e a mensagem "arranjo físico não alcançado em 5 tentativas" (falha de verdade, nunca skip);
+  - o vencedor trava i2, o 1º da ordem total, passa a barreira e depois trava i1;
+  - as asserções ficam como estavam; o teste imprime os `ctid` e o `EXPLAIN (COSTS OFF)` da trava ordenada.
+
+  Produto, Prisma e CI não mudam.
+- **Verde, sem mutação — comando:** `teste-linux.sh C:/Users/AMP/w-san3-02 'for i in 1 2 3; do … node --test --import tsx --test-reporter=tap tests/work-order-invoicing-atomic-db.test.ts; done; PGOPTIONS=-c\ enable_indexscan=off\ -c\ enable_bitmapscan=off node --test … tests/work-order-invoicing-atomic-db.test.ts'`.
+- **Saída:**
+  - planner padrão: `17 tests · 17 pass · 0 fail · 0 skipped` ×3;
+  - Seq Scan forçado: `17/17`, 0 skip;
+  - T-Z3 `ok` nas 4 rodadas;
+  - `ctid` na 1ª tentativa: `(0,28)<(0,29)`, `(0,49)<(0,51)`, `(0,28)<(0,29)`, `(0,49)<(0,51)`.
+
+  Plano da trava ordenada:
+
+  ```text
+  LockRows
+    ->  Sort
+          Sort Key: created_at, id
+          ->  Index Scan using work_order_financial_items_tenant_id_work_order_id_idx on work_order_financial_items   (padrão, rodadas 1-2)
+          ->  Seq Scan on work_order_financial_items                                                                 (padrão rodada 3; Seq Scan forçado)
+  ```
+
+  **Veredito:** conserto VERDE 3× no planner padrão e 1× com Seq Scan forçado; `# tests` = 17 em todas as rodadas.
+- **M19 — comando:** cópia isolada `w-fix302d` com o mesmo teste (`git hash-object` `e892e820…` nos dois worktrees) e a M19 na forma da ref (`softDeleteAllByWorkOrder` sem o `SELECT … ORDER BY created_at, id FOR UPDATE`, só o `updateMany`; hash `ff1eba3b…`). Rodei `teste-linux.sh C:/Users/AMP/w-fix302d 'for i in 1 2 3; do node --test … tests/work-order-invoicing-atomic-db.test.ts || echo …; done; node <sonda EXPLAIN>'` **sem `PGOPTIONS`**.
+- **Saída:**
+  - nas 3 rodadas, `17 tests · 16 pass · 1 fail · 0 skipped`;
+  - o único vermelho nas 3 é `[T-Z3] ordem total do zero: ordem física (TID) ≠ ordem total (created_at, id) em qualquer plano; o vencedor trava o 1º da ordem total; o zero espera nele; sem 40P01/503`, por `DriverAdapterError: deadlock detected` na asserção "nenhum 40P01/P2034/503";
+  - `ctid`: `(0,28)<(0,29)`, `(0,50)<(0,52)`, `(0,91)<(0,93)`;
+  - o plano do cluster nas 3 foi Index Scan.
+
+  Plano do `UPDATE` sem ordem, observado no cluster da suíte (para a ata):
+
+  ```text
+  Update on work_order_financial_items
+    ->  Index Scan using work_order_financial_items_tenant_id_work_order_id_idx on work_order_financial_items
+          Index Cond: ((tenant_id = …) AND (work_order_id = …))
+          Filter: ((deleted_at IS NULL) AND (invoiced_at IS NULL))
+  ```
+
+  **Veredito:** M19 VERMELHA 3/3 **no planner padrão (Index Scan)**, justamente o plano em que a M19 sobrevivia com o T-Z3 antigo. Com isso, a prova deixa de depender do plano.
+- **Restauro — comando:** `git restore` do repositório Prisma na cópia, seguido de `git hash-object`. **Saída:** `1a96234a73fbdf194e1c5151331ecb9d3a3b8c54`, igual a `HEAD:…`; temporários apagados; nenhum `tl*` vivo. Depois, a cópia foi removida com `git worktree remove --force`.
+- **Contagem:** **30/30 mutações vermelhas** (a M19 continua a mesma; só a prova dela mudou); testes nomeados inalterados (o T-Z3 foi modificado, não acrescentado).
+- **Pendência:** `P-SAN3-02-DEADLOCK-RESIDUAL` ganha o fato "T-Z3 plano-independente desde o commit desta seção" e continua aberta só para o residual do §11 R2 da v2 (escritores fora do bloco; OS não travada). O registro em `controle/` fica com o orquestrador.

@@ -261,12 +261,50 @@ if (!connectionString) {
     assert.equal(await titleCount(t), 0);
   });
 
-  test("[T-Z3] ordem total do zero: com i1 movido para o fim do heap, o vencedor trava só i1; o zero espera em i1 (não em i2); sem 40P01/503", async () => {
+  test("[T-Z3] ordem total do zero: ordem física (TID) ≠ ordem total (created_at, id) em qualquer plano; o vencedor trava o 1º da ordem total; o zero espera nele; sem 40P01/503", async () => {
     const t = await seed("z3");
-    const i1 = await addItem(t, 10);
-    const i2 = await addItem(t, 20);
-    // PATCH em i1: a versão viva vai para o FIM do heap (premissa (b) do B3 — uma varredura sem ordem visita i2 antes).
-    await h.admin.$executeRaw`UPDATE work_order_financial_items SET notes = 'move-para-o-fim' WHERE id = ${i1}::uuid`;
+    const earlier = new Date(Date.now() - 1000);
+    const later = new Date(earlier.getTime() + 1000);
+    let i1: string | undefined;
+    let i2: string | undefined;
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      i1 = await addItem(t, 10, { createdAt: later });
+      i2 = await addItem(t, 20, { createdAt: earlier });
+      const tids = (await h.admin.$queryRaw`
+        SELECT id, ctid::text AS ctid
+        FROM work_order_financial_items
+        WHERE id IN (${i1}::uuid, ${i2}::uuid)
+      `) as Array<{ id: string; ctid: string }>;
+      const byId = new Map(tids.map((row) => [row.id, row.ctid]));
+      const ctid1 = byId.get(i1);
+      const ctid2 = byId.get(i2);
+      assert.ok(ctid1 && ctid2, "T-Z3 mede os dois ctid");
+      console.log(`[T-Z3] tentativa ${attempt}: ctid(i1)=${ctid1}; ctid(i2)=${ctid2}`);
+      const parseCtid = (value: string): [number, number] => {
+        const match = /^\((\d+),(\d+)\)$/.exec(value);
+        assert.ok(match, `ctid PostgreSQL esperado, recebido ${value}`);
+        return [Number(match[1]), Number(match[2])];
+      };
+      const [page1, slot1] = parseCtid(ctid1);
+      const [page2, slot2] = parseCtid(ctid2);
+      if (page1 < page2 || (page1 === page2 && slot1 < slot2)) break;
+      await h.admin.workOrderFinancialItem.deleteMany({ where: { id: { in: [i1, i2] } } });
+      i1 = undefined;
+      i2 = undefined;
+    }
+    assert.ok(i1 && i2, "arranjo físico não alcançado em 5 tentativas: ctid(i1) ≥ ctid(i2)");
+    const plan = (await h.admin.$queryRaw`
+      EXPLAIN (COSTS OFF)
+      SELECT id
+      FROM work_order_financial_items
+      WHERE tenant_id = ${t.tenantId}::uuid
+        AND work_order_id = ${t.workOrderId}::uuid
+        AND deleted_at IS NULL
+        AND invoiced_at IS NULL
+      ORDER BY created_at ASC, id ASC
+      FOR UPDATE
+    `) as Array<{ "QUERY PLAN": string }>;
+    console.log(`[T-Z3] EXPLAIN ordenado:\n${plan.map((row) => row["QUERY PLAN"]).join("\n")}`);
     const period = h.deriveCompetencia(new Date());
     const gate = barrierGate();
     const winner = captureSettled(
@@ -274,10 +312,10 @@ if (!connectionString) {
         async (tx: any) => {
           await h.setTenantRlsContext(tx, t.tenantId);
           await h.acquirePeriodLockShared(tx, t.tenantId, period);
-          await tx.$queryRaw`SELECT id FROM work_order_financial_items WHERE id = ${i1}::uuid FOR UPDATE`;
+          await tx.$queryRaw`SELECT id FROM work_order_financial_items WHERE id = ${i2}::uuid FOR UPDATE`;
           gate.ready();
           await gate.mayGo;
-          await tx.$queryRaw`SELECT id FROM work_order_financial_items WHERE id = ${i2}::uuid FOR UPDATE`;
+          await tx.$queryRaw`SELECT id FROM work_order_financial_items WHERE id = ${i1}::uuid FOR UPDATE`;
           const title = await new h.PrismaFinancialTitleRepository(tx).create(titleInput(t, 30, period));
           await new h.PrismaWorkOrderFinancialItemRepository(tx).markInvoiced({
             tenantId: t.tenantId,
@@ -574,7 +612,7 @@ async function seed(tag: string): Promise<Seed> {
   };
 }
 
-async function addItem(t: Seed, amount: number): Promise<string> {
+async function addItem(t: Seed, amount: number, options: { createdAt?: Date } = {}): Promise<string> {
   const item = await h.admin.workOrderFinancialItem.create({
     data: {
       tenant_id: t.tenantId,
@@ -585,6 +623,7 @@ async function addItem(t: Seed, amount: number): Promise<string> {
       total_amount: amount,
       currency: "BRL",
       source: "manual",
+      created_at: options.createdAt,
     },
   });
   return item.id as string;
