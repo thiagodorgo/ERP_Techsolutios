@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const HIST_JSON = `${ROOT}Kpis/kpis-history.json`;
 const HIST_MD = `${ROOT}Kpis/kpis-history.md`;
-export const CABECALHO_TABELA = "| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |";
+export const CABECALHO_TABELA = "| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |";
 
 // ---------- funções puras (testadas em tests/kpi-loop-ferramentas.test.ts) ----------
 

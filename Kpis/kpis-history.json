@@ -2690,8 +2690,8 @@
     "backend_tests": "3359/3361",
     "frontend_smoke_tests": "1327/1327",
     "blocks_completed": 180,
-    "description": "PR-438 — Um inventário automático passou a mostrar quem acessa cada tela, qual ação chega ao servidor e onde há bloqueios, permissões divergentes ou falta de registro. NÚMEROS DA CI no merge commit `a2506458` (push na `main`), workflow `ci`, run 38898601656, tentativa 3: backend `3361 teste(s) · pass 3359 · fail 0 · skipped 2`; frontend 1327/1327; flutter 864/864. `blocks_completed` 180 -> 180.",
-    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 438`; números do log da rodada 38898601656. Nada fica `null`."
+    "description": "PR-438 — Um inventário automático passou a mostrar quem acessa cada tela, qual ação chega ao servidor e onde há bloqueios, permissões divergentes ou falta de registro. NÚMEROS DA CI no merge commit `a2506458` (push na `main`), workflow `ci`, run 38898601656, tentativa 3: backend `3361 teste(s) · pass 3359 · fail 0 · skipped 2`; frontend 1327/1327; flutter 864/864. `blocks_completed` 180 -> 180. — tentativa 1 da CI de push VERMELHA: A10 de `tests/o6r06-usage-atomic-db.test.ts` no `backend-postgres`, teste instável por relógio consertado no #442; verde na tentativa 3 por reexecução dos jobs falhos em 2026-10-18, sobre o MESMO commit, sem o conserto.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 438`; números do log da rodada 38898601656. Nada fica `null`. A tentativa registrada é a verde; a tentativa 1 falhou por teste instável de relógio (consertado no #442) e a reexecução foi feita em 2026-10-18 sobre o mesmo commit."
   },
   {
     "snapshot_date": "2026-10-16",
@@ -2718,8 +2718,8 @@
     "backend_tests": "3359/3361",
     "frontend_smoke_tests": "1327/1327",
     "blocks_completed": 180,
-    "description": "PR-441 — As decisões sobre Despachos e a referência visual aprovada da tela foram registradas para orientar as próximas entregas. NÚMEROS DA CI no merge commit `79599143` (push na `main`), workflow `ci`, run 38999156940, tentativa 2: backend `3361 teste(s) · pass 3359 · fail 0 · skipped 2`; frontend 1327/1327; flutter 864/864. `blocks_completed` 180 -> 180.",
-    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 441`; números do log da rodada 38999156940. Nada fica `null`."
+    "description": "PR-441 — As decisões sobre Despachos e a referência visual aprovada da tela foram registradas para orientar as próximas entregas. NÚMEROS DA CI no merge commit `79599143` (push na `main`), workflow `ci`, run 38999156940, tentativa 2: backend `3361 teste(s) · pass 3359 · fail 0 · skipped 2`; frontend 1327/1327; flutter 864/864. `blocks_completed` 180 -> 180. — tentativa 1 da CI de push VERMELHA: T15 de `tests/san3-05-runtime-role-guard-db.test.ts` no `backend`, teste instável por relógio consertado no #442; verde na tentativa 2 por reexecução dos jobs falhos em 2026-10-18, sobre o MESMO commit, sem o conserto.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 441`; números do log da rodada 38999156940. Nada fica `null`. A tentativa registrada é a verde; a tentativa 1 falhou por teste instável de relógio (consertado no #442) e a reexecução foi feita em 2026-10-18 sobre o mesmo commit."
   },
   {
     "snapshot_date": "2026-10-17",

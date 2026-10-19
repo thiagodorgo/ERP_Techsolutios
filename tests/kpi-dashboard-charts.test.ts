@@ -448,6 +448,22 @@ function confereRessalvaNoCartao(cenario: string, latest: Record<string, unknown
   }
 }
 
+/**
+ * Direto, na PROSA: se a fonte declara o `mvp_vendavel` estimado, a frase da conclusão também diz "estimad".
+ * A prosa escolhe o texto por ramo (`Kpis/app.js`, `mvEstimado`); sem esta checagem, um ramo que chamasse um
+ * palpite de "medição estrita" passaria verde (conferência do KPI de 18/10, mutação `mvEstimado = false`).
+ */
+function confereProsaEstimada(cenario: string, latest: Record<string, unknown>, els: Map<string, FakeEl>) {
+  if (!ESTIMAD.test(String(metricasDe(latest).mvp_vendavel?.note ?? ""))) return;
+  const prosa = els.get("conclusion-text");
+  assert.ok(prosa && prosa.textContent !== "", `${cenario}: a conclusão não foi renderizada — a prosa não teria o que medir.`);
+  assert.match(
+    `${prosa.textContent} ${prosa.innerHTML}`,
+    ESTIMAD,
+    `${cenario}: a fonte declara o mvp_vendavel estimado e a conclusão não diz "estimad" — a prosa devolveu ao palpite a autoridade de medição.`,
+  );
+}
+
 /** Inverso: se a fonte não declara estimativa em métrica nenhuma, nenhum cartão diz "estimad" na tela. */
 function confereCartoesSemEstimativa(cenario: string, els: Map<string, FakeEl>) {
   const escopo = els.get("card-scope")?.innerHTML ?? "";
@@ -479,6 +495,7 @@ test("painel: número declarado ESTIMATIVA na fonte chega à tela dizendo que é
   assert.deepEqual(estimadasSinteticas, ["mvp_demo", "mvp_vendavel"], "a cópia sintética tem de declarar as duas métricas de escopo estimadas");
   const comEstimativa = await runDashboard({ withFetch: true, serve: { latest: sintetico, history: HISTORY } });
   confereRessalvaNoCartao("cópia com estimativa", sintetico, comEstimativa.els, estimadasSinteticas);
+  confereProsaEstimada("cópia com estimativa", sintetico, comEstimativa.els);
 
   const neutro = latestSemEstimativa();
   assert.deepEqual(estimadasDe(neutro), [], "a cópia neutra não pode declarar estimativa");
@@ -489,6 +506,7 @@ test("painel: número declarado ESTIMATIVA na fonte chega à tela dizendo que é
   const real = await runDashboard({ withFetch: true });
   if (estimadasReais.length > 0) {
     confereRessalvaNoCartao("painel real", LATEST, real.els, estimadasReais);
+    confereProsaEstimada("painel real", LATEST, real.els);
   } else {
     confereCartoesSemEstimativa("painel real", real.els);
   }

@@ -964,14 +964,19 @@ function renderScopeCard(metrics) {
   var mv = metrics.mvp_vendavel;
   var md = metrics.mvp_demo;
   if (!mv && !md) return false;
-  var html = '<p class="kicker">Escopo construído</p>';
+  // Título e rótulo da barra seguem a FONTE: estimativa de escopo e medição do gate são grandezas diferentes
+  // (marco de 18/10: o mvp_vendavel passou de estimativa de escopo a itens do gate da versão vendável fechados).
+  var mvEstimado = !!mv && /estimad/i.test(String(mv.note || ""));
+  var kicker = !mv || mvEstimado ? "Escopo construído" : "Versão vendável";
+  var html = '<p class="kicker">' + esc(kicker) + "</p>";
   if (mv) {
     if (mv.display !== undefined && mv.display !== null) {
       html += '<div class="state-value">' + esc(mv.display) + "</div>";
     }
     if (mv.label) html += '<p class="state-label">' + esc(mv.label) + "</p>";
     if (typeof mv.value === "number") {
-      html += meterHtml("Escopo do produto vendável", esc(mv.display !== undefined && mv.display !== null ? mv.display : mv.value), mv.value, false);
+      var meterLabel = mvEstimado ? "Escopo do produto vendável" : (mv.label || "Itens do gate da versão vendável fechados");
+      html += meterHtml(esc(meterLabel), esc(mv.display !== undefined && mv.display !== null ? mv.display : mv.value), mv.value, false);
     }
     if (mv.caveat) html += '<p class="state-caveat">' + esc(mv.caveat) + "</p>";
   }
