@@ -70,7 +70,7 @@ if (!connectionString) {
     try {
       const ids = [...h.tenants];
       if (ids.length > 0) {
-        for (const table of ["traccar_ingress_receipts", "field_operator_locations", "vehicle_tracking_bindings", "vehicles"]) {
+        for (const table of ["vehicle_telemetry_events", "traccar_ingress_receipts", "field_operator_locations", "vehicle_tracking_bindings", "vehicles"]) {
           await h.admin.$executeRawUnsafe(`DELETE FROM ${table} WHERE tenant_id = ANY($1::uuid[])`, ids);
         }
         await h.admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id = ANY($1::uuid[])`, ids);

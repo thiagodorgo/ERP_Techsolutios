@@ -86,6 +86,8 @@ model Tenant {
   // B-TRC-01 — relações reversas exigidas pelo Prisma para os dois modelos novos do Traccar (sem coluna em tenants).
   vehicle_tracking_bindings     VehicleTrackingBinding[]
   traccar_ingress_receipts      TraccarIngressReceipt[]
+  // B-TRC-02 — relação reversa exigida pelo Prisma (telemetria veicular do Traccar; sem coluna em tenants).
+  vehicle_telemetry_events      VehicleTelemetryEvent[]
   field_dispatch_events         FieldDispatchEvent[]
   field_dispatches              FieldDispatch[]
   work_order_assignments        WorkOrderAssignment[]
@@ -1068,6 +1070,8 @@ model VehicleTrackingBinding {
   tenant              Tenant                  @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   vehicle             Vehicle                 @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
   receipts            TraccarIngressReceipt[]
+  // B-TRC-02 — relação reversa exigida pelo Prisma (telemetria veicular deste vínculo).
+  telemetry_events    VehicleTelemetryEvent[]
 
   @@unique([tenant_id, id])
   @@map("vehicle_tracking_bindings")
@@ -1075,7 +1079,10 @@ model VehicleTrackingBinding {
 
 // B-TRC-01 (plano do Traccar v2.1 §3.1, §4.4) — recibo por posição recebida do Traccar (ENABLE + FORCE RLS).
 // ÚNICO GLOBAL (instance_key, message_kind, external_event_key): uma posição nunca vira linha em duas organizações.
-// CHECK message_kind IN ('position'); não guarda JSON bruto. location_id fica nulo até a localização ser gravada.
+// CHECK message_kind IN ('position','event','position_sample') (B-TRC-02, migração 20260879000000 + VALIDATE na 20260880000000);
+// não guarda JSON bruto. location_id fica nulo até a localização ser gravada; para 'event' e 'position_sample' fica nulo
+// sempre e fix_time é o instante do evento/fix. B-TRC-02: índice único (tenant_id, id, vehicle_id, binding_id) = alvo da FK
+// de 4 colunas de vehicle_telemetry_events (a linha e o recibo concordam em viatura e vínculo).
 model TraccarIngressReceipt {
   id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id          String                 @db.Uuid
@@ -1094,11 +1101,54 @@ model TraccarIngressReceipt {
   tenant             Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   binding            VehicleTrackingBinding @relation(fields: [tenant_id, binding_id], references: [tenant_id, id], onDelete: Restrict)
   location           FieldOperatorLocation? @relation(fields: [tenant_id, location_id], references: [tenant_id, id], onDelete: Restrict)
+  // B-TRC-02 — relação reversa (a linha de telemetria pendurada neste recibo; UNIQUE (tenant_id, receipt_id) do lado de lá).
+  telemetry_events   VehicleTelemetryEvent[]
 
   @@unique([tenant_id, id])
+  @@unique([tenant_id, id, vehicle_id, binding_id], map: "traccar_ingress_receipts_tenant_id_id_vehicle_binding_key")
   @@unique([instance_key, message_kind, external_event_key], map: "traccar_ingress_receipts_event_key")
   @@index([tenant_id, binding_id])
   @@map("traccar_ingress_receipts")
+}
+
+// B-TRC-02 (plano v2 §6.1; emenda v2.1 R1-1) — telemetria VEICULAR do Traccar, por organização (ENABLE + FORCE RLS).
+// Uma linha por recibo (UNIQUE tenant_id+receipt_id); FK de 4 colunas para o recibo (a linha e o recibo concordam em viatura e
+// vínculo); kind 'sample' = atributos da posição; os demais kinds = event.forward. Sem JSON, sem coordenada, sem texto livre.
+// Fato imutável: a aplicação nunca faz UPDATE/DELETE. CHECKs (kind, source, alarm_code, medidas, faixas, fix_key) e o índice
+// ÚNICO PARCIAL vehicle_telemetry_events_sample_fix_key (tenant_id, fix_key) WHERE kind = 'sample' — "um fix → uma amostra" por
+// organização [Q1=SIM] — vivem só na migração 20260879000000_vehicle_telemetry_events (o Prisma não os modela).
+model VehicleTelemetryEvent {
+  id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id           String                 @db.Uuid
+  vehicle_id          String                 @db.Uuid
+  binding_id          String                 @db.Uuid
+  receipt_id          String                 @db.Uuid
+  kind                String // sample | device_online | device_unknown | device_offline | device_moving | device_stopped | device_overspeed | ignition_on | ignition_off | alarm
+  alarm_code          String? // só kind='alarm'; forma no banco, catálogo no código
+  source              String                 @default("forward") // forward | reconciliation
+  occurred_at         DateTime               @db.Timestamptz(6) // event.eventTime ou position.fixTime
+  received_at         DateTime               @default(now()) @db.Timestamptz(6)
+  traccar_event_id    BigInt?
+  traccar_position_id BigInt?
+  fix_key             String? // [Q1=SIM] só kind='sample': external_event_key da posição; único parcial por organização
+  ignition            Boolean?
+  motion              Boolean?
+  odometer_m          BigInt?
+  total_distance_m    BigInt?
+  engine_hours_s      BigInt?
+  power_mv            Int?
+  battery_level_pct   Int?
+  tenant              Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  vehicle             Vehicle                @relation(fields: [tenant_id, vehicle_id], references: [tenant_id, id], onDelete: Restrict)
+  binding             VehicleTrackingBinding @relation(fields: [tenant_id, binding_id], references: [tenant_id, id], onDelete: Restrict)
+  receipt             TraccarIngressReceipt  @relation(fields: [tenant_id, receipt_id, vehicle_id, binding_id], references: [tenant_id, id, vehicle_id, binding_id], onDelete: Restrict, map: "vehicle_telemetry_events_receipt_fkey")
+
+  @@unique([tenant_id, id])
+  @@unique([tenant_id, receipt_id], map: "vehicle_telemetry_events_receipt_key")
+  @@index([tenant_id, vehicle_id, occurred_at(sort: Desc)], map: "vehicle_telemetry_events_vehicle_time_idx")
+  @@index([tenant_id, vehicle_id, kind, occurred_at(sort: Desc)], map: "vehicle_telemetry_events_vehicle_kind_time_idx")
+  @@index([tenant_id, occurred_at], map: "vehicle_telemetry_events_time_idx")
+  @@map("vehicle_telemetry_events")
 }
 
 // B-TRC-01 (plano do Traccar v2.1 §3.1, §4.5) — quarentena GLOBAL: sem RLS, sem tenant_id, sem coordenada, sem payload.
@@ -1178,6 +1228,8 @@ model Vehicle {
   stock_custody      StockMovement[]    @relation("StockMovementCustodyVehicle")
   // B-TRC-01 — relação reversa exigida pelo Prisma (vínculos de rastreador desta viatura; sem coluna em vehicles).
   tracking_bindings  VehicleTrackingBinding[]
+  // B-TRC-02 — relação reversa exigida pelo Prisma (telemetria veicular desta viatura; sem coluna em vehicles).
+  telemetry_events   VehicleTelemetryEvent[]
 
   @@unique([tenant_id, id])
   @@unique([tenant_id, plate])

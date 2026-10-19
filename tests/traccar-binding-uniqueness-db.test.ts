@@ -45,6 +45,7 @@ if (!connectionString) {
     try {
       const ids = [...h.tenants];
       if (ids.length > 0) {
+        await h.admin.$executeRawUnsafe(`DELETE FROM vehicle_telemetry_events WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM traccar_ingress_receipts WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM vehicle_tracking_bindings WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM vehicles WHERE tenant_id = ANY($1::uuid[])`, ids);

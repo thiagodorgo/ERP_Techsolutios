@@ -98,7 +98,25 @@ O comentário de cabeçalho deixa de dizer "o objeto [attributes] é ignorado po
 
 ## Passo 5 — migração (G) e 5b (arnês do 01)
 
-EM APURAÇÃO
+| Comando | Saída | Veredito |
+|---|---|---|
+| `tests/traccar-event-rls-db.test.ts` (G1–G10) escrito; retrato do worktree SEM as duas migrações → `teste-linux-dtrc02.sh <retrato> 'node --test … tests/traccar-event-rls-db.test.ts'` | `# tests 11 # pass 1 # fail 10` (G1–G6, G8–G10 vermelhos + o `after`; G7 verde — "nenhuma regra/função elevada nova" já é verdade sem a tabela) | vermelho medido |
+| `prisma/migrations/20260879000000_vehicle_telemetry_events/migration.sql` (A: tabela, CHECKs literais do domínio de `vehicle-telemetry.bounds.ts`, FK de 4 colunas, índice `(tenant_id, fix_key) WHERE kind='sample'` — emenda R1-1 —, ENABLE+FORCE RLS, CHECK do recibo alargado NOT VALID, rodapé de rollback na ordem 1→5 com os nomes da EO-1); `20260880000000_validate_receipt_message_kind_check` (B: só `VALIDATE`); `prisma/schema.prisma` (modelo, `@@unique` de 4 colunas no recibo, reversas em `Tenant`/`Vehicle`/`VehicleTrackingBinding`/`TraccarIngressReceipt`) | `npx prisma validate` → válido; `npx prisma generate` ec 0; `npm run check` ec 0 | — |
+| retrato COM as migrações → mesma suíte G | `# tests 10 # pass 10 # fail 0 # skipped 0` — inclui o **drill G9** (base própria `<db>_trc02_drill_*`: `migrate deploy` → as 2 em `_prisma_migrations` → os 6 comandos do rodapé na ordem → tabela ausente, índice do recibo ausente, CHECK só `'position'`, `_prisma_migrations` sem as duas → `DROP DATABASE`) | **verde** |
+| 5b: as 5 linhas de §7.2 por script com âncora única; `git diff --numstat c1485c94 -- tests/traccar-<x>-db.test.ts` | idempotency `1 1` · resolution-race `1 1` · quarantine `1 1` · position-ingestion `1 0` · binding-uniqueness `1 0` → **5 `+`, 3 `−`** | conforme a régua R3-1 da emenda |
+
+**Desvios declarados:**
+- **Relação reversa no recibo:** a v2 escreveu `telemetry_event VehicleTelemetryEvent?` (1:1). O Prisma exige, no lado que define a relação
+  1:1, campos `@unique` — aqui seria um `@@unique` de 4 colunas na tabela nova, que não existe na migração (drift). Usei a reversa
+  como lista (`telemetry_events VehicleTelemetryEvent[]`); a unicidade real continua sendo a do banco (`UNIQUE (tenant_id, receipt_id)`).
+  O Prisma **aceitou** a relação de 4 colunas (`fields`/`references` com o `@@unique` de 4 colunas no recibo): a FK vive no schema e na
+  migração, com o mesmo nome (`map: "vehicle_telemetry_events_receipt_fkey"`).
+- **`prisma migrate diff`:** ainda não medido (a linha de controle do comando abortou o `set -e` do executor antes do diff); fica para a
+  próxima rodada no container e para a cadeira (a).
+- **G5** cobre, além dos 5 casos da v2, `ignition_on` com código de alarme, código fora da forma (`sos,powerCut`) e `kind` fora da lista.
+
+**PRONTO PARA DBA** — migrações A e B escritas, drill G9 verde no container (2026-10-19, retrato do worktree). O parecer do
+`agente-dba-guardiao` é do orquestrador; o dev segue para os passos seguintes.
 
 ## Passo 6 — ingestão de evento (E)
 
