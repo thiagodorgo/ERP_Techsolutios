@@ -464,6 +464,27 @@ function confereProsaEstimada(cenario: string, latest: Record<string, unknown>, 
   );
 }
 
+/**
+ * O TÍTULO do cartão de escopo segue a fonte nos dois sentidos. Estimativa de escopo e itens do gate fechados são
+ * grandezas diferentes: com a fonte estimada o cartão diz "Escopo construído"; com a fonte medida ele diz
+ * "Versão vendável" e o `label` da métrica, e NUNCA "Escopo construído" (reconferência do KPI de 18/10: com o
+ * kicker fixo em "Escopo construído", a tela voltava a mostrar "Escopo construído 29%" e o guard passava).
+ */
+function confereTituloDoEscopo(cenario: string, latest: Record<string, unknown>, els: Map<string, FakeEl>) {
+  const mv = metricasDe(latest).mvp_vendavel;
+  if (!mv) return;
+  const cartao = els.get("card-scope")?.innerHTML ?? "";
+  assert.notEqual(cartao, "", `${cenario}: o cartão de escopo não foi renderizado — o título não teria o que medir.`);
+  if (ESTIMAD.test(String(mv.note ?? ""))) {
+    assert.match(cartao, /Escopo construído/, `${cenario}: a fonte declara o mvp_vendavel estimado e o cartão não diz "Escopo construído".`);
+  } else {
+    assert.doesNotMatch(cartao, /Escopo construído/, `${cenario}: a fonte declara o mvp_vendavel MEDIDO e o cartão ainda o chama de "Escopo construído".`);
+    assert.match(cartao, /Versão vendável/, `${cenario}: a fonte declara o mvp_vendavel medido e o cartão não diz "Versão vendável".`);
+    const label = String((mv as { label?: unknown }).label ?? "");
+    if (label) assert.ok(cartao.includes(escHtml(label)), `${cenario}: o rótulo da métrica medida ("${label}") não chegou ao cartão de escopo.`);
+  }
+}
+
 /** Inverso: se a fonte não declara estimativa em métrica nenhuma, nenhum cartão diz "estimad" na tela. */
 function confereCartoesSemEstimativa(cenario: string, els: Map<string, FakeEl>) {
   const escopo = els.get("card-scope")?.innerHTML ?? "";
@@ -496,19 +517,23 @@ test("painel: número declarado ESTIMATIVA na fonte chega à tela dizendo que é
   const comEstimativa = await runDashboard({ withFetch: true, serve: { latest: sintetico, history: HISTORY } });
   confereRessalvaNoCartao("cópia com estimativa", sintetico, comEstimativa.els, estimadasSinteticas);
   confereProsaEstimada("cópia com estimativa", sintetico, comEstimativa.els);
+  confereTituloDoEscopo("cópia com estimativa", sintetico, comEstimativa.els);
 
   const neutro = latestSemEstimativa();
   assert.deepEqual(estimadasDe(neutro), [], "a cópia neutra não pode declarar estimativa");
   const semEstimativa = await runDashboard({ withFetch: true, serve: { latest: neutro, history: HISTORY } });
   confereCartoesSemEstimativa("cópia sem estimativa", semEstimativa.els);
+  confereTituloDoEscopo("cópia sem estimativa", neutro, semEstimativa.els);
 
   const estimadasReais = estimadasDe(LATEST);
   const real = await runDashboard({ withFetch: true });
   if (estimadasReais.length > 0) {
     confereRessalvaNoCartao("painel real", LATEST, real.els, estimadasReais);
     confereProsaEstimada("painel real", LATEST, real.els);
+    confereTituloDoEscopo("painel real", LATEST, real.els);
   } else {
     confereCartoesSemEstimativa("painel real", real.els);
+    confereTituloDoEscopo("painel real", LATEST, real.els);
   }
 });
 
