@@ -50,6 +50,13 @@ services:
       CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
       FORWARD_URL: ${TRC_FORWARD_URL:-http://api:3200/ingest/traccar/v1/positions}
       FORWARD_HEADER: ${TRC_FORWARD_HEADER:?TRC_FORWARD_HEADER obrigatorio (o demo monta a partir do segredo da rodada)}
+      # B-TRC-02 (plano v2 §6.4; S-E15, H-12): o event.forward usa o MESMO segredo do forward de posição (um segredo, uma
+      # rotação), só por interpolação obrigatória. Status online/sem sinal ligado SÓ neste overlay de dev; produção é
+      # decisão do B-TRC-06 (P-TRC02-STATUS-TIMEOUT-PROD).
+      EVENT_FORWARD_URL: ${TRC_EVENT_FORWARD_URL:-http://api:3200/ingest/traccar/v1/events}
+      EVENT_FORWARD_HEADER: ${TRC_FORWARD_HEADER:?TRC_FORWARD_HEADER obrigatorio (o demo monta a partir do segredo da rodada)}
+      EVENT_STATUS_ENABLE: "true"
+      STATUS_TIMEOUT: "60"
     volumes:
       - ./infra/traccar/dev/traccar.xml:/opt/traccar/conf/traccar.xml:ro
 
@@ -66,6 +73,8 @@ services:
       TRC_SIM_LON: ${TRC_SIM_LON:-}
       TRC_SIM_TIMESTAMP: ${TRC_SIM_TIMESTAMP:-}
       TRC_SIM_SPEED: ${TRC_SIM_SPEED:-0}
+      # B-TRC-02: parâmetros OsmAnd extras da rodada (ex.: "ignition=true&alarm=sos"); nunca segredo.
+      TRC_SIM_EXTRA: ${TRC_SIM_EXTRA:-}
     command:
       - node
       - -e
@@ -77,6 +86,7 @@ services:
           timestamp: process.env.TRC_SIM_TIMESTAMP || "",
           speed: process.env.TRC_SIM_SPEED || "0",
         });
+        for (const [key, value] of new URLSearchParams(process.env.TRC_SIM_EXTRA || "")) params.set(key, value);
         const url = "http://traccar:5055/?" + params.toString();
         const deadline = Date.now() + 90000;
         const retriable = new Set(["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "ECONNRESET", "EHOSTUNREACH"]);
@@ -99,12 +109,15 @@ services:
         main();
 
   # Receptor de captura da fixture (scripts/traccar-capture-fixture.mjs): só na traccar_private, recebe na 3200,
-  # responde 204 e imprime o corpo e só os NOMES dos headers (nunca os valores).
+  # responde 204 e imprime o caminho, o corpo e só os NOMES dos headers (nunca os valores).
   traccar-capture:
     image: node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
     profiles: ["capture"]
     networks:
       - traccar_private
+    environment:
+      # B-TRC-02: se definido, só o corpo das requisições a ESTE caminho é impresso (as demais recebem 204 e só o caminho).
+      TRC_CAPTURE_PATH: ${TRC_CAPTURE_PATH:-}
     command:
       - node
       - -e
@@ -114,8 +127,12 @@ services:
           const chunks = [];
           request.on("data", (chunk) => chunks.push(chunk));
           request.on("end", () => {
-            console.log("TRC_CAPTURE_HEADERS " + JSON.stringify(Object.keys(request.headers).sort()));
-            console.log("TRC_CAPTURE_BODY " + Buffer.concat(chunks).toString("utf8"));
+            const only = process.env.TRC_CAPTURE_PATH || "";
+            console.log("TRC_CAPTURE_PATH " + request.url);
+            if (!only || request.url === only) {
+              console.log("TRC_CAPTURE_HEADERS " + JSON.stringify(Object.keys(request.headers).sort()));
+              console.log("TRC_CAPTURE_BODY " + Buffer.concat(chunks).toString("utf8"));
+            }
             response.statusCode = 204;
             response.end();
           });

@@ -26,6 +26,8 @@ import { createTraccarIngestHttpLogger } from "./traccar-ingest.logger.js";
 import { holdTraccarSlotUntil, traccarRateLimitMiddleware, type TraccarIngestLimiter } from "./traccar-rate-limit.js";
 
 export const TRACCAR_INGEST_PATH = "/ingest/traccar/v1/positions";
+/** B-TRC-02 (plano v2 §5.2) — a rota do `event.forward`, no MESMO listener privado e com a mesma cadeia de middlewares. */
+export const TRACCAR_EVENT_INGEST_PATH = "/ingest/traccar/v1/events";
 export const TRACCAR_INGEST_BODY_LIMIT = "64kb";
 
 export type TraccarQuarantineReason =
