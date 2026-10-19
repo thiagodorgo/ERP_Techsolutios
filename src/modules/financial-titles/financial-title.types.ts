@@ -59,6 +59,9 @@ export type FinancialTitle = {
   // Ω4C PR-02 — proveniência GENÉRICA (frota). Coexiste com workOrderId/serviceQuoteId.
   readonly sourceType?: string;
   readonly sourceId?: string;
+  // B-SAN3-02 (D-SAN3-02-TITULO-COMPLEMENTAR) — undefined = ORIGINAL; id = COMPLEMENTAR do original ativo da MESMA OS
+  // e direção (delta de itens lançados depois do 1º faturamento). Só o caminho de faturamento popula.
+  readonly parentTitleId?: string;
   readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
@@ -90,6 +93,8 @@ export type CreateFinancialTitleInput = {
   // Ω4C PR-02 — par genérico de proveniência (frota); só o caminho createForSource os popula.
   readonly sourceType?: string;
   readonly sourceId?: string;
+  // B-SAN3-02 — só o faturamento (createForWorkOrderInUnit) popula; o create público NUNCA.
+  readonly parentTitleId?: string;
   readonly clientActionId?: string;
   readonly createdBy?: string;
   readonly updatedBy?: string;
@@ -108,6 +113,8 @@ export type CreateFinancialTitleForWorkOrderInput = {
   readonly currency: string;
   readonly issueDate: Date;
   readonly dueDate: Date;
+  // B-SAN3-02 — undefined → título ORIGINAL; id → COMPLEMENTAR (o pai é validado na variante da unidade).
+  readonly parentTitleId?: string;
 };
 
 // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — payload do lançamento de conta a pagar POR ORIGEM (frota). Espelha o de

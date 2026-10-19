@@ -19,8 +19,11 @@ export interface FinancialTitleRepository {
   create(input: CreateFinancialTitleInput): Promise<FinancialTitle>;
   list(input: ListFinancialTitleInput): Promise<ListFinancialTitleResult>;
   findById(tenantId: string, financialTitleId: string): Promise<FinancialTitle | undefined>;
-  // Ω4-3 (D-Ω4-C2) — título ATIVO (deleted_at NULL) de uma OS+direção. Sustenta o PRE-CHECK de
-  // idempotência do faturamento (a rede real é o índice parcial → P2002).
+  // Ω4-3 (D-Ω4-C2) → B-SAN3-02 — título ORIGINAL ATIVO (deleted_at NULL E parent_title_id NULL) de uma OS+direção.
+  // "Ativo" é exatamente o que o índice chama de ativo: o STATUS não entra (um original cancelado por status
+  // continua sendo o original ativo). Sob o índice financial_titles_wo_direction_original_active_key há no
+  // máximo UMA linha assim por (tenant, OS, direção) — leitura determinística sem ORDER BY. Sustenta a
+  // decisão original × complementar do faturamento (a rede real do 2º original é o índice → P2002).
   findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined>;
   // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — título ATIVO (deleted_at NULL) de uma fonte de frota (source_type+
   // source_id)+direção. Sustenta o PRE-CHECK de idempotência do lançamento por origem E o badge derivado
@@ -146,6 +149,19 @@ export function workOrderAlreadyInvoicedError(): FinancialTitleError {
   );
 }
 
+// B-SAN3-02 (emenda v2.1, B1/B5) — o pai de um título COMPLEMENTAR é inválido (de outra OS/direção, removido,
+// ele próprio complementar, inexistente) ou a FK de 4 colunas recusou a referência. NÃO é conflito de negócio:
+// é referência inválida, como o resto da tradução P2003 da casa (400). Inalcançável pelo produto — o
+// faturamento só passa o pai que findActiveByWorkOrder devolveu —, é defesa contra bug, com o código certo.
+export function invalidParentTitleReferenceError(): FinancialTitleError {
+  return new FinancialTitleError(
+    400,
+    "FINANCIAL_TITLE_INVALID",
+    "invalid_parent_title_reference",
+    "The referenced parent title is not the active original title of this work order and direction.",
+  );
+}
+
 // Ω4C PR-02 (D-Ω4C-FIN-ORIGEM) — rede do índice PARCIAL de idempotência por origem: um 2º título ATIVO
 // para a mesma fonte (source_type+source_id)+direção. Espelha workOrderAlreadyInvoicedError. 409 no nível
 // do título; a rota traduz para o badge "já lançado" (relançar exige retirar antes — delete lógico).
@@ -162,10 +178,15 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
   private readonly titles = new Map<string, FinancialTitle>();
 
   async create(input: CreateFinancialTitleInput): Promise<FinancialTitle> {
-    // Ω4-3 (D-Ω4-C2) — SIMULA o índice PARCIAL do Postgres (unique tenant+work_order+direction WHERE
-    // deleted_at IS NULL AND work_order_id IS NOT NULL): rejeita um 2º título ATIVO da mesma OS+direção.
-    // Só o caminho de faturamento popula workOrderId; o create público o deixa undefined (fora do índice).
-    if (input.workOrderId && (await this.findActiveByWorkOrder(input.tenantId, input.workOrderId, input.direction))) {
+    // Ω4-3 (D-Ω4-C2) → B-SAN3-02 — SIMULA o índice PARCIAL do Postgres financial_titles_wo_direction_original_active_key
+    // (unique tenant+work_order+direction WHERE deleted_at IS NULL AND work_order_id IS NOT NULL AND
+    // parent_title_id IS NULL): rejeita um 2º ORIGINAL ativo da mesma OS+direção; COMPLEMENTARES (parentTitleId
+    // setado) ficam fora do predicado. Só o caminho de faturamento popula workOrderId/parentTitleId.
+    if (
+      input.workOrderId &&
+      !input.parentTitleId &&
+      (await this.findActiveByWorkOrder(input.tenantId, input.workOrderId, input.direction))
+    ) {
       throw workOrderAlreadyInvoicedError();
     }
 
@@ -193,6 +214,7 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
       serviceQuoteId: undefined,
       sourceType: input.sourceType,
       sourceId: input.sourceId,
+      parentTitleId: input.parentTitleId,
       createdAt: now,
       updatedAt: now,
       deletedAt: undefined,
@@ -207,6 +229,7 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
         title.tenantId === tenantId &&
         title.workOrderId === workOrderId &&
         title.direction === direction &&
+        title.parentTitleId == null &&
         title.deletedAt == null,
     );
   }

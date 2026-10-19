@@ -10,6 +10,7 @@ import {
   resetFinancialAccountRuntimeForTests,
 } from "../src/modules/financial-accounts/financial-account.service.js";
 import { getMemoryChequeRepositoryForTests } from "../src/modules/cheques/index.js";
+import { getMemoryWorkOrderFinancialRepositoryForTests } from "../src/modules/work-order-financials/work-order-financial.service.js";
 import {
   createMemoryFinancialTitleService,
   deriveCompetencia,
@@ -520,6 +521,8 @@ test("ESTORNO de liquidação com restore rejeitado → 409 fail-closed e NADA c
     titles: getMemoryFinancialTitleRepositoryForTests(),
     entries: getMemoryFinancialEntryRepositoryForTests(),
     cheques: getMemoryChequeRepositoryForTests(),
+    // B-SAN3-02 (D4) — o contexto da unidade ganhou os itens de OS.
+    workOrderItems: getMemoryWorkOrderFinancialRepositoryForTests(),
     periodCloses: getMemoryFinancialPeriodCloseRepositoryForTests(),
   });
   const faultUow: FinancialUnitOfWork = {
