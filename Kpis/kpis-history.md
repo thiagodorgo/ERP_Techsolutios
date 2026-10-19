@@ -3135,3 +3135,18 @@ pós-merge.
 | 2026-10-11 | `B-O6R-07c-a` — o técnico não atribuído não mexe em subrecurso de OS alheia (10 vias do P0 SEC-002) | #414 | `86ea8a81` | `09084d30` | 3296/3298 | 1317/1317 | 864/864 | 178 | 38159315930 (tentativa 1) |
 | 2026-10-11 | `B-SAN3-06a-telas` — o menu sai sem tela fictícia e o Console Dispatcher passa a mostrar dado real | #424 | `9566d55b` | `2f7a0573` | 3296/3298 | 1327/1327 | 864/864 | 179 | 38177861573 (tentativa 1) |
 | 2026-10-14 | `B-O6R-03a` — o sync de despesa ficou atômico e sem lançamento em dobro (fecha o P0 DIN-009) | #425 | `d910c97f` | `b75a0c2e` | 3337/3339 | 1327/1327 | 864/864 | 180 | 38574848019 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-10-18
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa 1) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-15 | `PR-436` — O histórico dos indicadores ganhou ferramentas para acrescentar entregas e recusar referências inexistentes antes da publicação | #436 | `4fe7524e` | `74912bee` | 3349/3351 | 1327/1327 | 864/864 | 180 | 38776053535 (tentativa 1) |
+| 2026-10-16 | `PR-437` — As próximas entregas foram revisadas, e Financeiro e Estoque ganharam opções visuais para decisão, com os defeitos financeiros atuais registrados | #437 | `b0fba125` | `086d8d36` | 3349/3351 | 1327/1327 | 864/864 | 180 | 38897071345 (tentativa 1) |
+| 2026-10-16 | `PR-438` — Um inventário automático passou a mostrar quem acessa cada tela, qual ação chega ao servidor e onde há bloqueios, permissões divergentes ou falta de registro | #438 | `a2506458` | `593c9c99` | 3359/3361 | 1327/1327 | 864/864 | 180 | 38898601656 (tentativa 3) |
+| 2026-10-16 | `PR-439` — As decisões do dono de 16/10 e a liberação de qualidade da entrega de despesas foram formalizadas | #439 | `af89abbb` | `c85675eb` | 3359/3361 | 1327/1327 | 864/864 | 180 | 38986024469 (tentativa 1) |
+| 2026-10-17 | `PR-441` — As decisões sobre Despachos e a referência visual aprovada da tela foram registradas para orientar as próximas entregas | #441 | `79599143` | `b9cd43ad` | 3359/3361 | 1327/1327 | 864/864 | 180 | 38999156940 (tentativa 2) |
+| 2026-10-17 | `B-ARNES-2` — A bateria automática deixou de falhar por tempo de máquina e por iniciar no modo de dados errado | #442 | `2a49b015` | `f4886680` | 3362/3364 | 1327/1327 | 864/864 | 180 | 38999996710 (tentativa 1) |
+| 2026-10-17 | `PR-443` — As pendências resolvidas pelo conserto da bateria e as decisões restantes sobre a atribuição de técnicos foram atualizadas no registro | #443 | `c260d362` | `8be95b08` | 3362/3364 | 1327/1327 | 864/864 | 180 | 39079962891 (tentativa 1) |
+| 2026-10-17 | `PR-444` — As regras de usar IAs externas primeiro, emendar o plano antes do código e limitar trabalhos simultâneos foram formalizadas | #444 | `a26f8afe` | `0de185b8` | 3362/3364 | 1327/1327 | 864/864 | 180 | 39091915007 (tentativa 1) |
+| 2026-10-18 | `B-O6R-07c-b1` — O despacho passa a gravar quem atende a OS, protege as 23 formas de alteração contra técnico não atribuído e fecha o último achado crítico de segurança | #440 | `40c3651f` | `7ff1e003` | 3563/3565 | 1327/1327 | 864/864 | 181 | 39165313495 (tentativa 1) |
+| 2026-10-18 | `B-TRC-01` — Em desenvolvimento, uma posição do Traccar chega ao mapa por ingestão privada; dispositivo desconhecido vai para quarentena e a viatura é atribuída conforme o instante do fix | #426 | `c1485c94` | `7c220467` | 3695/3697 | 1327/1327 | 864/864 | 182 | 39173912182 (tentativa 1) |
