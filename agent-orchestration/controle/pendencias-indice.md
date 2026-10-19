@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **578** |
-| IDs distintos | 567 |
-| **ABERTAS** | **431** |
+| Cabecalhos `## P-` | **579** |
+| IDs distintos | 568 |
+| **ABERTAS** | **432** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **364** |
+| — das quais **ativas nesta rodada** | **365** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 144 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **578 cabecalhos para 567 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **579 cabecalhos para 568 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -277,7 +277,7 @@
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
 
-## ABERTAS · balde B — processo/registro — 162
+## ABERTAS · balde B — processo/registro — 163
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -443,6 +443,7 @@
 | `P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA` | 11339 | BAIXA | sim | P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA (2026-10-18) — evidência `field_*` aceita `work |
 | `P-07CB1-IDEMP-VISTORIA-SEM-ATOR` | 11347 | BAIXA | sim | P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `c |
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
+| `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
