@@ -123,8 +123,8 @@ export function buildTraccarEventCommand(
   };
 }
 
-export function isTraccarEventCommand(command: { readonly messageKind?: string }): command is TraccarEventCommand {
-  return command.messageKind === "event";
+export function isTraccarEventCommand(command: object): command is TraccarEventCommand {
+  return "messageKind" in command && (command as { readonly messageKind?: unknown }).messageKind === "event";
 }
 
 /** Fase 2, passo 3 do evento (a parte que não depende do vínculo): instante além de agora + 5 min não vale. */

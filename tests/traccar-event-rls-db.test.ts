@@ -214,7 +214,14 @@ if (!connectionString) {
     const h = await harness();
     const a = await world(h, "g3a");
     const b = await world(h, "g3b");
-    await expectSqlState(insertRow(h, a.tenantId, { ...a, vehicleId: b.vehicleId }), "23503", "viatura de outra organização");
+    // O recibo do 01 não tem FK para vehicles (P-TRC02-RECIBO-VINCULO-VIATURA-FK): um recibo de A com a viatura de B passa a
+    // FK de 4 colunas — só a FK COMPOSTA (tenant_id, vehicle_id) → vehicles pode recusar a linha.
+    const crossReceipt = await newReceipt(h, a.tenantId, b.vehicleId, a.bindingId);
+    await expectSqlState(
+      insertRow(h, a.tenantId, { tenantId: a.tenantId, vehicleId: b.vehicleId, bindingId: a.bindingId, receiptId: crossReceipt }),
+      "23503",
+      "viatura de outra organização",
+    );
     assert.equal(await countRows(h, a.tenantId), 0);
   });
 

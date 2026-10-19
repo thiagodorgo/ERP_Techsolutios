@@ -15,15 +15,23 @@
 //       limitador (5) só volta quando o TRABALHO termina, não quando a resposta sai.
 // Todo o resto: 404 `{"error":{"code":"NOT_FOUND"}}`. Corpo vazio em 2xx; `{"error":{"code":"…"}}` nos demais, sem
 // detalhe.
+//
+// B-TRC-02 (plano v2 §5.2, §6.6): a SEGUNDA rota, `POST /ingest/traccar/v1/events` (`event.forward`), nasce da MESMA fábrica
+// (`mountIngestRoute`) e com a MESMA ordem de middlewares (1)–(7) e o MESMO autenticador. Diferenças declaradas: um limitador
+// PRÓPRIO (`deps.eventLimiter`, mesmos valores de ambiente: a rajada de posições não cala o evento, que o Traccar não reenvia);
+// tipo/código fora do catálogo → `ignored` (204, nada gravado, uma linha de log com `outcome`/`reason` e nunca o `type` cru).
 
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
 import pino, { type Logger } from "pino";
 
+import { buildTraccarEventCommand, type TraccarEventCommand } from "./traccar-event.adapter.js";
+import { parseTraccarEventEnvelope } from "./traccar-event.schema.js";
 import { buildTraccarPositionCommand, type TraccarPositionCommand } from "./traccar-position.adapter.js";
 import { parseTraccarPositionEnvelope, TraccarPayloadError } from "./traccar-position.schema.js";
 import { traccarForwardAuthMiddleware, type TraccarForwardAuthenticator } from "./traccar-forward-auth.js";
 import { createTraccarIngestHttpLogger } from "./traccar-ingest.logger.js";
 import { holdTraccarSlotUntil, traccarRateLimitMiddleware, type TraccarIngestLimiter } from "./traccar-rate-limit.js";
+import type { TraccarEventIgnoredReason } from "./traccar-telemetry-catalog.js";
 
 export const TRACCAR_INGEST_PATH = "/ingest/traccar/v1/positions";
 /** B-TRC-02 (plano v2 §5.2) — a rota do `event.forward`, no MESMO listener privado e com a mesma cadeia de middlewares. */
@@ -44,6 +52,7 @@ export type TraccarQuarantineReason =
 
 export type TraccarIngestOutcome =
   | { readonly kind: "stored" }
+  | { readonly kind: "ignored"; readonly reason: TraccarEventIgnoredReason }
   | { readonly kind: "duplicate" }
   | { readonly kind: "quarantined"; readonly reason: TraccarQuarantineReason }
   | { readonly kind: "conflict"; readonly reason: "digest_mismatch" | "owned_elsewhere" }
@@ -106,10 +115,19 @@ export type TraccarIngestHandler = (
   deadline: TraccarIngestDeadline,
 ) => Promise<TraccarIngestOutcome>;
 
+export type TraccarEventIngestHandler = (
+  command: TraccarEventCommand,
+  deadline: TraccarIngestDeadline,
+) => Promise<TraccarIngestOutcome>;
+
 export type TraccarIngestAppDeps = {
   readonly authenticator: TraccarForwardAuthenticator;
   readonly limiter: TraccarIngestLimiter;
   readonly ingest: TraccarIngestHandler;
+  /** B-TRC-02 — o limitador PRÓPRIO da rota de eventos (aditivo; ausente → a de eventos usa `limiter`). */
+  readonly eventLimiter?: TraccarIngestLimiter;
+  /** B-TRC-02 — o serviço do `event.forward`. Ausente → a rota de eventos não existe (404). */
+  readonly ingestEvent?: TraccarEventIngestHandler;
   readonly instanceKey: string;
   readonly timeoutMs: number;
   readonly logger?: Logger;
@@ -125,6 +143,7 @@ export function traccarIngestResponse(outcome: TraccarIngestOutcome): { readonly
   switch (outcome.kind) {
     case "stored":
     case "duplicate":
+    case "ignored":
       return { status: 204 };
     case "quarantined":
       return { status: 202 };
@@ -184,43 +203,77 @@ export function createTraccarIngestApp(deps: TraccarIngestAppDeps): Express {
   app.disable("x-powered-by");
   app.use(createTraccarIngestHttpLogger(logger));
 
-  const handle: RequestHandler = async (request, response) => {
-    let command: TraccarPositionCommand;
-    try {
-      command = buildTraccarPositionCommand(parseTraccarPositionEnvelope(request.body), {
-        instanceKey: deps.instanceKey,
-        receivedAt: now(),
-      });
-    } catch (error) {
-      if (error instanceof TraccarPayloadError) {
-        response.status(error.statusCode).json(errorBody(error.code));
+  /**
+   * Fábrica ÚNICA das rotas de ingestão (B-TRC-02): a mesma ordem fixa (1)–(7) para posição e evento. `prepare` faz o (6)
+   * (schema allowlist → 422) e devolve o trabalho do (7), ou um desfecho já decidido sem serviço (o `ignored` do evento).
+   */
+  type Prepared =
+    | { readonly kind: "work"; readonly run: (deadline: TraccarIngestDeadline) => Promise<TraccarIngestOutcome> }
+    | { readonly kind: "done"; readonly outcome: TraccarIngestOutcome };
+  const mountIngestRoute = (path: string, limiter: TraccarIngestLimiter, prepare: (body: unknown) => Prepared) => {
+    const handle: RequestHandler = async (request, response) => {
+      let prepared: Prepared;
+      try {
+        prepared = prepare(request.body);
+      } catch (error) {
+        if (error instanceof TraccarPayloadError) {
+          response.status(error.statusCode).json(errorBody(error.code));
+          return;
+        }
+        throw error;
+      }
+
+      let outcome: TraccarIngestOutcome;
+      if (prepared.kind === "done") {
+        outcome = prepared.outcome;
+      } else {
+        const gate = createTraccarCommitGate(Date.now() + deps.timeoutMs);
+        const run = prepared.run;
+        const work = (async () => run(gate.deadline))();
+        // A vaga do limitador cobre o TRABALHO, não só a resposta: o 503 por tempo sai antes de ele terminar.
+        holdTraccarSlotUntil(response, work);
+        outcome = await answerWithinDeadline(work, gate, deps.timeoutMs);
+      }
+      if (outcome.kind === "ignored") {
+        // Contado: uma linha estruturada; o `type` cru NUNCA (só o motivo fechado).
+        request.log?.info({ outcome: "ignored", reason: outcome.reason }, "traccar event ignored");
+      }
+      const { status, code } = traccarIngestResponse(outcome);
+      if (code === undefined) {
+        response.status(status).end();
         return;
       }
-      throw error;
-    }
+      response.status(status).json(errorBody(code));
+    };
 
-    const gate = createTraccarCommitGate(Date.now() + deps.timeoutMs);
-    const work = (async () => deps.ingest(command, gate.deadline))();
-    // A vaga do limitador cobre o TRABALHO, não só a resposta: o 503 por tempo sai antes de ele terminar.
-    holdTraccarSlotUntil(response, work);
-    const outcome = await answerWithinDeadline(work, gate, deps.timeoutMs);
-    const { status, code } = traccarIngestResponse(outcome);
-    if (code === undefined) {
-      response.status(status).end();
-      return;
-    }
-    response.status(status).json(errorBody(code));
+    app.post(
+      path,
+      rejectQueryString,
+      traccarForwardAuthMiddleware(deps.authenticator),
+      requireJsonContentType,
+      express.json({ limit: TRACCAR_INGEST_BODY_LIMIT, strict: true, type: "application/json" }),
+      traccarRateLimitMiddleware(limiter),
+      handle,
+    );
   };
 
-  app.post(
-    TRACCAR_INGEST_PATH,
-    rejectQueryString,
-    traccarForwardAuthMiddleware(deps.authenticator),
-    requireJsonContentType,
-    express.json({ limit: TRACCAR_INGEST_BODY_LIMIT, strict: true, type: "application/json" }),
-    traccarRateLimitMiddleware(deps.limiter),
-    handle,
-  );
+  mountIngestRoute(TRACCAR_INGEST_PATH, deps.limiter, (body) => {
+    const command: TraccarPositionCommand = buildTraccarPositionCommand(parseTraccarPositionEnvelope(body), {
+      instanceKey: deps.instanceKey,
+      receivedAt: now(),
+    });
+    return { kind: "work", run: (deadline) => deps.ingest(command, deadline) };
+  });
+
+  const ingestEvent = deps.ingestEvent;
+  if (ingestEvent) {
+    mountIngestRoute(TRACCAR_EVENT_INGEST_PATH, deps.eventLimiter ?? deps.limiter, (body) => {
+      const built = buildTraccarEventCommand(parseTraccarEventEnvelope(body), { instanceKey: deps.instanceKey, receivedAt: now() });
+      if (built.kind === "ignored") return { kind: "done", outcome: { kind: "ignored", reason: built.reason } };
+      const command = built.command;
+      return { kind: "work", run: (deadline) => ingestEvent(command, deadline) };
+    });
+  }
 
   app.use((_request, response) => {
     response.status(404).json(errorBody("NOT_FOUND"));

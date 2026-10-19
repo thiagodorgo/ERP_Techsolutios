@@ -120,15 +120,47 @@ O comentário de cabeçalho deixa de dizer "o objeto [attributes] é ignorado po
 
 ## Passo 6 — ingestão de evento (E)
 
-EM APURAÇÃO
+**Retomada (P7, 19/10 ~22:20Z).** O dev caiu por erro de rede no passo 6 e o PC reiniciou. Medido antes de confiar: head
+`f45b6410`; não commitados `prisma/schema.prisma`, o serviço (só o `errorCode` novo), os 5 arnês, as 2 migrações, os 2 arquivos do
+repositório da telemetria e a suíte G; `wc -l` + leitura do fim de cada arquivo → nenhum meio-escrito; `npx prisma generate` ec 0;
+`npm run check` ec 0; o scratchpad (ferramenta `teste-linux-dtrc02.sh` e retratos) foi recriado.
+
+| Comando | Saída | Veredito |
+|---|---|---|
+| código: `vehicle-telemetry.repository.ts` (porta) e `vehicle-telemetry-prisma.repository.ts` (`insertEvent`, `insertSample` com `ON CONFLICT ("tenant_id", "fix_key") WHERE "kind" = 'sample' DO NOTHING RETURNING id`, `latestDeviceStatus` com precedência fechada, `latestIgnition`, `listByVehicle`, `withSampleSavepoint` com `SAMPLE_DISCARD_SQLSTATES = {23514, 22003}`); repositório de ingestão por sujeito (`toIngressSubject`) e por `message_kind`; `ingestEvent` no serviço; `errorCode()` lê o SQLSTATE do adaptador | `npm run check` ec 0 | — |
+| `tests/traccar-event-ingestion-db.test.ts` (E1–E19, com E5′) escrito; retrato = commit do passo 5 + o repositório/app/adaptador novos e o serviço ANTIGO → container | (junto de F e I) `# tests 47 # pass 6 # fail 41` | vermelho (`ingestEvent` não existe; nenhuma amostra) |
+| retrato do worktree → container | E 19/19 verdes (no lote de 47: `# pass 46 # fail 1`, a falha é o I5, abaixo) | verde |
+| as 6 suítes `-db` do 01 no mesmo container, com a tabela nova populada | `# tests 50 # pass 50 # fail 0 # skipped 0` | **C-20 verde**: os arnês do 01 sobrevivem à FK RESTRICT |
 
 ## Passo 7 — amostra (F) e 7b (I, Q1 = SIM)
 
-EM APURAÇÃO
+| Comando | Saída | Veredito |
+|---|---|---|
+| `tests/traccar-event-sample-db.test.ts` (F1–F12 + F9′ = 13) e `tests/traccar-event-sample-quarantine-db.test.ts` (I1–I12, com I6′ e I6″ = 14) escritos | vermelhos no retrato com o serviço antigo (o lote de 47 acima) | vermelho |
+| passo 7 da posição: `withSampleSavepoint` (um savepoint `vehicle_sample`, os dois caminhos); 7b: gate ÚNICO na closure `quarantined(reason)` (`binding && command.telemetry && this.sampleOnQuarantineReasons.has(reason)`), `SAMPLE_ON_QUARANTINE_REASONS` com os 3 motivos de operador, costura `sampleOnQuarantineReasons` no construtor (sem variável de ambiente), `sampleWithoutOperator` (recibo `position_sample` + amostra; `skip` desfaz o recibo; `divert` = 409 `owned_elsewhere`) | F 13/13 verdes; **F10 verde** (204, posição gravada, 0 amostra, `sample_discarded` `23514`) → **H-10 fecha**: `ROLLBACK TO SAVEPOINT` por `$executeRaw` no `$transaction` interativo do Prisma 7.8 recupera a transação; F12 verde (`23503` e `Error` → 503, nada gravado); F9/F9′ verdes (2^53−1 e 1 000 000 mV entram pelo SQL de produção e saem iguais) | verde |
+| I no mesmo lote | 13/14; **I5 vermelho**: `actual [0,1,0,1]` no caso (2) | defeito do ARRANJO do teste: para aquecer a dica "sem atributos" passei `undefined`, e o parâmetro default (`ATTRIBUTES`) entrou no lugar — a posição de aquecimento (sem despacho) gravou, corretamente, uma amostra. Sentinela trocado para `null`; re-execução no passo 12 |
+
+**Desvios declarados:**
+- **I6 e I6′ são dois `test()`** (a v2 os contava como um): a suíte I tem 14 casos, não 13.
+- **F4** ganhou a asserção "0 linhas `sample_discarded`": sem ela, a M-E18 (amostra sempre) seria engolida pelo savepoint (CHECK de
+  medidas = domínio) e o teste não morderia.
+- **G3** passou a semear um recibo de A com a viatura de B (o recibo do 01 não tem FK para `vehicles` — `P-TRC02-RECIBO-VINCULO-VIATURA-FK`):
+  sem isso a FK de 4 colunas recusava a linha antes e a M-E24 (FK simples da viatura) não morderia.
+- **`errorCode()`** do serviço passa a devolver o SQLSTATE da causa do adaptador antes do `code` de topo (`P2010`); o log
+  "failed before commit" do 01 passa a trazer o SQLSTATE real. Nenhum teste do 01 dependia do `P20xx` (medido por `grep`).
 
 ## Passo 8 — listener e logs (C, D)
 
-EM APURAÇÃO
+| Comando | Saída | Veredito |
+|---|---|---|
+| `traccar-ingest.app.ts`: fábrica única `mountIngestRoute(path, limiter, prepare)` para as duas rotas (mesma ordem 1–7), `deps.eventLimiter ?? deps.limiter`, `deps.ingestEvent` (ausente → rota inexistente), `ignored` → 204 + `request.log.info({ outcome: "ignored", reason })`; `createTraccarIngestAppFromEnv` cria DOIS limitadores com os mesmos valores de ambiente | `npm run check` ec 0; as 10 suítes sem banco do 01 + A + B: `# tests 98 # pass 98` | — |
+| `tests/traccar-event-listener.test.ts` (C1–C12) | `# tests 12 # pass 12` (C11 inclui o app de PRODUÇÃO num processo filho com `TRACCAR_INGEST_BURST=1` e banco inalcançável: posição, posição=429, evento≠429, evento=429) | verde |
+| `tests/traccar-event-logs.test.ts` (D1–D5) | `# tests 5 # pass 5` | verde |
+
+**Desvio declarado (ordem testes-primeiro):** C e D foram escritos DEPOIS do código do app, que nasceu junto do serviço no passo 6
+(as duas rotas dependem da mesma fábrica). O vermelho delas fica provado pelo vermelho-controle (passo 10) e pelas mutações M-E05,
+M-E11, M-E12, M-E13, M-E36, M-E44 e as do 01 re-executadas com a suíte C (passo 11). A segunda metade do D5 da v2
+("`sample_discarded` com `code` e sem valor de atributo") é asserida no F10 (chaves da linha = `["code", "outcome"]`).
 
 ## Passo 9 — demo
 
