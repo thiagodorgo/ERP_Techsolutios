@@ -194,12 +194,35 @@ Retrato = `git archive HEAD` (`226aef21`) com o `src/` INTEIRO trocado pelo de `
 | caso §9.4 de `traccar-position-contract` | `# tests 13 # pass 12 # fail 1` — `not ok 4 - contrato: attributes só alimenta a allowlist veicular …` | vermelho EXATAMENTE na asserção nova; os 12 outros casos do 01 verdes |
 
 Nas suítes E/F/I o vermelho é `ERR_MODULE_NOT_FOUND` por caso (import dinâmico do arnês), não a asserção de cada critério: o
-vermelho POR ASSERÇÃO de cada critério vem das mutações (passo 11), uma por propriedade. (Os `# tests` das suítes `-db` contam
-também o `test()` de "exige DATABASE_URL", que só existe sem banco: E 20, F 13, G 10, I 14 casos reais.)
+vermelho POR ASSERÇÃO de cada critério vem das mutações (passo 11), uma por propriedade. (Casos reais por suíte `-db`: E 20,
+F 13, G 10, I 14; no vermelho-controle o `# tests` soma +1 pela falha do `after` de cada arquivo.)
 
 ## Passo 11 — mutações
 
-EM APURAÇÃO
+Catálogo: `docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` (79 entradas: 61 do B-TRC-02 + 18 re-executadas do 01).
+Executor: `run-mutations.mjs` — âncora ÚNICA no EOL do arquivo (checada em seco antes: só a `MUT-10@01` aparece 2×), `tsc --noEmit`
+na forma mutada quando a edição toca `src/**/*.ts` (todas as que tocaram compilaram: `tsc 0`), os testes indicados, restauro por
+BYTES com sha256 conferido (**79/79 `restoredOk`**). `host` = no worktree (35); `db` = DENTRO do container Linux, sobre a CÓPIA
+do worktree, migração mutada numa base própria `trc02_mut` criada e derrubada por mutação (44). Resultados linha a linha:
+`results-host.jsonl` e `results-db.jsonl` na mesma pasta.
+
+**Antes das mutações, no mesmo container:** E+F+G+I = `# tests 57 # pass 57 # fail 0 # skipped 0` (I5 verde com o sentinela
+corrigido); `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` sobre a base migrada →
+ec 0 e **diff vazio** (o schema Prisma, inclusive a FK de 4 colunas, bate com as migrações; o que o Prisma não modela — CHECKs,
+índice parcial — não gera diff).
+
+| Grupo | Resultado |
+|---|---|
+| Mantidas da v1 (M-E01..07, 09..15, 17..29) | todas **vermelhas**, salvo **M-E13 — VERDE, mutação EQUIVALENTE**: sem o serializador `req`, o pino não consegue serializar o `IncomingMessage` cru (sonda: `"req":"[unable to serialize, circular reference is too complex to analyze]"`), logo nenhum header vaza — a mutação não cria o defeito que nomeia. A classe "serializador de allowlist" é medida pela **MUT-16@01** (os 3 serializadores fora), **vermelha** em `traccar-ingest-logs` e em D |
+| M-E10 (ampliada) | vermelha: E4 com barreira |
+| Novas v2 (M-E30..M-E45, + M-E37b) | todas **vermelhas**; M-E37 (evento → E19) e **M-E37b** (posição → F11) separadas porque a forma do plano só alcançava o caminho do evento — declarado |
+| Novas v2.1 (M-E46..M-E50, + variantes `h`) | todas **vermelhas**; M-E43 e M-E49 medidas nos DOIS lados: o `after` do arnês do 01 falha (container) **e** o H9 (host) |
+| Controles de lacuna (esperado VERDE) | **M-E33-ctl01**: o segredo do evento no `traccar.xml` deixa a guarda do 01 (`traccar-dev-topology`) VERDE — prova da lacuna que o H6 fecha (M-E33 vermelha no H6). **M-E48-ctlB**: o `::smallint` deixa o B9 VERDE — só o caminho de produção (F9/F9′, M-E48 vermelha) vê a borda |
+| [Q1=SIM] M-Q1-01, 02′, 03, 05, 06, 07, 08, 09 | todas **vermelhas** (M-Q1-04 subsumida por M-E32, vermelha em F10 **e** I7) |
+| Re-executadas do 01 (MUT-09, 11, 12, 13, 14, 16, 17, 18, 19, 20, 25, 32, 33, 38, 42, M-C1′) com os `tests` ampliados | todas **vermelhas**; **MUT-10@01 — NÃO MEDE** (a âncora `if (raced.payloadDigest === command.payloadDigest) {` passou a existir 2×: o passo 6 do evento repete o idioma) → re-derivada como **MUT-10′@01** com o `findReceipt(command)` da posição no contexto: **vermelha** |
+
+**Total:** 79 executadas — 74 vermelhas, 2 controles verdes como esperado, 1 equivalente (M-E13, classe coberta pela MUT-16@01),
+1 "não mede" do 01 substituída pela forma re-derivada (vermelha). M-E16′ não se aplica (só Q1 = NÃO).
 
 ## Passo 12 — lista curada da CI
 
