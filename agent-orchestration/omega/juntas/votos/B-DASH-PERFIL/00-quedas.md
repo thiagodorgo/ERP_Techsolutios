@@ -1,0 +1,3 @@
+agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do redo
+| C2 Gemini 3.1 Pro (jurado-dash-c2-gemini) | pin (lançador) | 3 itens | antes de medir (etapa 1, 17 s) | cota diária do modelo esgotada ("exhausted your daily quota") | zero: sucessor Opus jurado-dash-c2-opus parte do zero |
+| C3 Codex (jurado-dash-c3-cdx) | pin (lançador) | 3 itens | durante a medição (item 1: frontend 1327/1327, check e build ec 0; sem gravar evidência no arquivo) | limite de uso do Codex (volta 06:30) | sucessor Opus jurado-dash-c3-opus re-executa o roteiro do log codex-jdash-c3.log e mede a cauda |

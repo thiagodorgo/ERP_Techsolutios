@@ -11,6 +11,7 @@ import {
 } from "../work-orders/work-order.service.js";
 import { WorkOrderError } from "../work-orders/work-order.types.js";
 import type { FinancialTitle } from "../financial-titles/financial-title.types.js";
+import { createDefaultFinancialUnitOfWork, type FinancialUowResolver } from "../financial-uow/index.js";
 import {
   InMemoryWorkOrderFinancialItemRepository,
   duplicateFinancialItemError,
@@ -216,7 +217,9 @@ export class WorkOrderFinancialService {
       updatedBy: actor.userId,
     });
     if (!updated) {
-      throw financialItemNotFoundError();
+      // B-SAN3-02 (D2) — o CAS (`invoiced_at IS NULL`) casou 0 linhas: o faturamento pode ter carimbado o item
+      // DEPOIS do pré-check. Relê para responder o motivo real (422 item_invoiced), nunca um 404 cego.
+      throw await this.casMissError(actor, current.workOrderId, current.id);
     }
     return updated;
   }
@@ -230,9 +233,24 @@ export class WorkOrderFinancialService {
     assertItemNotInvoiced(current);
     const removed = await this.repository.softDelete(actor.tenantId, current.workOrderId, current.id, actor.userId);
     if (!removed) {
-      throw financialItemNotFoundError();
+      // B-SAN3-02 (D2) — idem update: o CAS perdeu a corrida para o faturamento → 422 item_invoiced; senão 404.
+      throw await this.casMissError(actor, current.workOrderId, current.id);
     }
     return removed;
+  }
+
+  // B-SAN3-02 (D2) — o CAS de update/softDelete casou 0 linhas: relê. Existe e está carimbado → 422 item_invoiced
+  // (assertItemNotInvoiced); senão (sumiu/deletado) → 404, como antes.
+  private async casMissError(actor: WorkOrderFinancialActorContext, workOrderId: string, itemId: string): Promise<Error> {
+    const reread = await this.repository.findById(actor.tenantId, workOrderId, itemId);
+    if (reread && reread.invoicedAt != null) {
+      try {
+        assertItemNotInvoiced(reread);
+      } catch (error) {
+        return error as Error;
+      }
+    }
+    return financialItemNotFoundError();
   }
 
   // P-Ω3F6-STATUS-BYPASS (ataque, ALTA) — `zero` não pode destruir item FATURADO (lastro de Título, D-Ω4-C1).
@@ -312,13 +330,47 @@ function assertItemNotInvoiced(item: WorkOrderFinancialItem): void {
   }
 }
 
-// Ω4-3 (D-Ω4-C2) — 409 do faturamento: a OS já tem título ATIVO (idempotência anti-refaturamento).
+// Ω4-3 (D-Ω4-C2) → B-SAN3-02 — 409 do faturamento: a OS já tem título ORIGINAL ATIVO e nada novo a faturar (replay sem
+// delta), ou um 2º ORIGINAL bateu no índice dentro da unidade.
 function alreadyInvoicedError(): WorkOrderFinancialError {
   return new WorkOrderFinancialError(
     409,
     "WORK_ORDER_FINANCIAL_CONFLICT",
     "already_invoiced",
     "This work order has already been invoiced.",
+  );
+}
+
+function nothingToInvoiceError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    422,
+    "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+    "nothing_to_invoice",
+    "This work order has no invoiceable financial items.",
+  );
+}
+
+// B-SAN3-02 (D1 passo 7) — a contagem carimbada difere da selecionada. Inalcançável sob o FOR UPDATE dos itens;
+// fail-closed (precedente cheque.service.ts:288): a unidade inteira desfaz. É a guarda que torna observável a
+// falta do FOR UPDATE (M2): sem ela, o título sairia maior que o lastro carimbado.
+function invoiceItemsChangedError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    409,
+    "WORK_ORDER_FINANCIAL_CONFLICT",
+    "invoice_items_changed",
+    "The invoiceable items changed while invoicing; nothing was invoiced. Retry the operation.",
+  );
+}
+
+// B-SAN3-02 (D1/D5, A4) — deadlock/serialização/trava indisponível detectados pelo Postgres, ou transação interativa
+// expirada: a transação JÁ desfez (nada persistiu) e repetir é seguro (o carimbo impede faturar o mesmo item duas
+// vezes). 503, a forma da casa para transitórios (03a/04a).
+function invoiceTransientConflictError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    503,
+    "WORK_ORDER_FINANCIAL_UNAVAILABLE",
+    "invoice_transient_conflict",
+    "Invoicing hit a transient database conflict and nothing was invoiced. Retry the operation.",
   );
 }
 
@@ -331,10 +383,20 @@ export type WorkOrderInvoiceResult = {
   readonly totalAmount: number;
   readonly currency: string;
   readonly invoicedItemCount: number;
+  // B-SAN3-02 — id do título ORIGINAL quando este faturamento gerou um COMPLEMENTAR (delta); undefined = original.
+  readonly parentTitleId?: string;
 };
 
+// B-SAN3-02 (D1) — o faturamento roda DENTRO da unidade financeira (financial-uow): advisory SHARED do período →
+// `SELECT … FOR UPDATE ORDER BY created_at, id` dos itens faturáveis → decisão original × complementar DEPOIS da
+// trava → INSERT do título → carimbo dos itens, tudo na MESMA transação. Ou o título e exatamente o conjunto
+// carimbado persistem, ou nada persiste (P1). Os itens lançados depois de um faturamento viram um título
+// COMPLEMENTAR (`parentTitleId` = o original ativo), cobrando só os itens ainda sem carimbo (P3).
 export class WorkOrderInvoicingService {
-  constructor(private readonly repository: WorkOrderFinancialItemRepository) {}
+  constructor(
+    private readonly repository: WorkOrderFinancialItemRepository,
+    private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
+  ) {}
 
   async invoice(
     actor: WorkOrderFinancialActorContext,
@@ -347,66 +409,76 @@ export class WorkOrderInvoicingService {
     assertWorkOrderNotCancelled(workOrder);
 
     // DYNAMIC import — evita acoplar/ciclar com financial-titles (item 5 do comando / D-Ω3F-4B).
-    const { createDefaultFinancialTitleService } = await import("../financial-titles/financial-title.service.js");
+    // B-SAN3-02 — também o 422 period_closed e a competência vêm do módulo de títulos (o MESMO erro de hoje).
+    const [{ createDefaultFinancialTitleService }, { periodClosedError }, { deriveCompetencia }] = await Promise.all([
+      import("../financial-titles/financial-title.service.js"),
+      import("../financial-titles/financial-title.repository.js"),
+      import("../financial-titles/financial-title.validators.js"),
+    ]);
     const titleService = await createDefaultFinancialTitleService();
 
-    // PRE-CHECK de idempotência (D-Ω4-C2) ANTES do agregado: se a OS já tem título receivable ATIVO, é
-    // 409 already_invoiced — mesmo que todos os itens já estejam carimbados (senão o 2º faturamento cairia
-    // em nothing_to_invoice e mascararia a idempotência). `nothing_to_invoice` fica para a OS sem título
-    // ativo E sem itens faturáveis (ex.: título cancelado/removido, itens já carimbados).
-    if (await titleService.findActiveByWorkOrder(actor, workOrder.id, "receivable")) {
-      throw alreadyInvoicedError();
+    // PASSO 0 (A8) — PRÉ-CHECK fora da unidade, SEM trava: fast-fail e a precedência PÚBLICA de hoje (409/422
+    // ANTES de período e de due_date). NÃO decide dinheiro: a unidade re-decide tudo sobre dado travado (H11).
+    const preview = await this.repository.listInvoiceableByWorkOrder(actor.tenantId, workOrder.id);
+    if (preview.length === 0 || roundMoney(preview.reduce((sum, item) => sum + item.totalAmount, 0)) <= 0) {
+      throw (await titleService.findActiveByWorkOrder(actor, workOrder.id, "receivable"))
+        ? alreadyInvoicedError()
+        : nothingToInvoiceError();
     }
-
-    // Agregado CONGELADO dos itens ativos e AINDA NÃO faturados (invoiced_at IS NULL). Σ no backend.
-    const items = await this.repository.listInvoiceableByWorkOrder(actor.tenantId, workOrder.id);
-    const totalAmount = roundMoney(items.reduce((sum, item) => sum + item.totalAmount, 0));
-    if (items.length === 0 || totalAmount <= 0) {
-      throw new WorkOrderFinancialError(
-        422,
-        "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
-        "nothing_to_invoice",
-        "This work order has no invoiceable financial items.",
-      );
-    }
-    const currency = items[0].currency;
-    const dueDate = parseInvoiceDueDate(body.due_date ?? body.dueDate);
+    const dueDate = parseInvoiceDueDate(body.due_date ?? body.dueDate); // 400 invalid_due_date — mesma posição de hoje
     const now = new Date();
+    const competencia = deriveCompetencia(now);
 
-    let title: FinancialTitle;
+    const uow = await this.resolveUow();
     try {
-      title = await titleService.createForWorkOrder(actor, {
-        workOrderId: workOrder.id,
-        direction: "receivable",
-        partyType: "customer",
-        // Cliente do Título = snapshot da OS. Sem nome (OS antiga/rascunho) → rótulo neutro (NÃO 422).
-        partyName: optionalString(workOrder.customerName) ?? "Cliente não informado",
-        partyId: workOrder.customerId,
-        amount: totalAmount, // Σ CONGELADA — nunca relê tarifa.
-        currency,
-        issueDate: now, // competencia derivada disto no titleService.
-        dueDate,
+      return await uow.run(actor.tenantId, async (ctx) => {
+        // 1) advisory SHARED do período ANTES de qualquer row lock (regra do lar único, financial-period-lock.ts).
+        await ctx.assertPeriodOpenShared(competencia, periodClosedError);
+        // 2) SELECT … FOR UPDATE ORDER BY created_at, id dos itens faturáveis: a Σ vem do conjunto TRAVADO.
+        const items = await ctx.workOrderItems.listInvoiceableByWorkOrderForUpdate(actor.tenantId, workOrder.id);
+        const totalAmount = roundMoney(items.reduce((sum, item) => sum + item.totalAmount, 0));
+        // 3) re-decisão sobre dado TRAVADO: a corrida pode ter esvaziado o conjunto.
+        if (items.length === 0 || totalAmount <= 0) {
+          throw (await ctx.titles.findActiveByWorkOrder(actor.tenantId, workOrder.id, "receivable"))
+            ? alreadyInvoicedError()
+            : nothingToInvoiceError();
+        }
+        // 4) original × complementar DEPOIS da trava (A1): quem perdeu a trava para outro faturamento vê aqui o
+        //    original que o vencedor acabou de commitar e cobra só o delta, como COMPLEMENTAR.
+        const original = await ctx.titles.findActiveByWorkOrder(actor.tenantId, workOrder.id, "receivable");
+        const currency = items[0].currency;
+        // 5) INSERT do título na MESMA transação.
+        const title = await titleService.createForWorkOrderInUnit(ctx, actor, {
+          workOrderId: workOrder.id,
+          direction: "receivable",
+          partyType: "customer",
+          // Cliente do Título = snapshot da OS. Sem nome (OS antiga/rascunho) → rótulo neutro (NÃO 422).
+          partyName: optionalString(workOrder.customerName) ?? "Cliente não informado",
+          partyId: workOrder.customerId,
+          amount: totalAmount, // Σ CONGELADA do conjunto travado — nunca relê tarifa.
+          currency,
+          issueDate: now, // competencia derivada disto no titleService.
+          dueDate,
+          parentTitleId: original?.id, // undefined → ORIGINAL; id → COMPLEMENTAR
+        });
+        // 6) carimbo (D-Ω4-C1) na MESMA transação: só toca linhas que esta unidade travou.
+        const invoicedItemCount = await ctx.workOrderItems.markInvoiced({
+          tenantId: actor.tenantId,
+          workOrderId: workOrder.id,
+          itemIds: items.map((item) => item.id),
+          titleId: title.id,
+          invoicedAt: now,
+          updatedBy: actor.userId,
+        });
+        // 7) fail-closed: carimbado ≠ selecionado → a unidade inteira desfaz (inalcançável sob FOR UPDATE).
+        if (invoicedItemCount !== items.length) {
+          throw invoiceItemsChangedError();
+        }
+        return { title, totalAmount, currency, invoicedItemCount, parentTitleId: original?.id };
       });
     } catch (error) {
-      // Rede da constraint parcial (corrida que passou o pre-check): 409 do título → already_invoiced.
-      if (isConflictError(error)) {
-        throw alreadyInvoicedError();
-      }
-      throw error;
+      throw translateUnitFailure(error);
     }
-
-    // CARIMBO (D-Ω4-C1): sequencial (título → itens). Se o carimbo falhar, o título já existe e a
-    // idempotência barra o replay — ver pendência P-Ω4-3-REFATURAR-DELTA.
-    const invoicedItemCount = await this.repository.markInvoiced({
-      tenantId: actor.tenantId,
-      workOrderId: workOrder.id,
-      itemIds: items.map((item) => item.id),
-      titleId: title.id,
-      invoicedAt: now,
-      updatedBy: actor.userId,
-    });
-
-    return { title, totalAmount, currency, invoicedItemCount };
   }
 
   private async resolveWorkOrder(actor: WorkOrderFinancialActorContext, workOrderId: string) {
@@ -436,9 +508,57 @@ function parseInvoiceDueDate(value: unknown): Date {
   return date;
 }
 
-// Duck-type do 409 vindo do titleService (evita import estático de FinancialTitleError — só dynamic).
-function isConflictError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "statusCode" in error && (error as { readonly statusCode?: unknown }).statusCode === 409;
+// B-SAN3-02 (emenda v2.1, B1) — o que sai da unidade. TRADUZ SÓ o erro que o repositório de títulos produz para o
+// índice de originais (409 work_order_already_invoiced → 409 already_invoiced). Qualquer outro 409 nascido na
+// unidade (invoice_items_changed, source_already_launched, …) e o 400 invalid_parent_title_reference PROPAGAM
+// INTACTOS — o duck-type antigo por `statusCode === 409` (isConflictError) saiu daqui. Falha transiente por CÓDIGO,
+// em dois níveis (precedente checklist/inventory) → 503 invoice_transient_conflict (a transação já desfez).
+function translateUnitFailure(error: unknown): unknown {
+  if (isWorkOrderAlreadyInvoicedConflict(error)) {
+    return alreadyInvoicedError();
+  }
+  if (isTransientInvoiceFailure(error)) {
+    return invoiceTransientConflictError();
+  }
+  return error;
+}
+
+function isWorkOrderAlreadyInvoicedConflict(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { readonly statusCode?: unknown; readonly reason?: unknown };
+  return candidate.statusCode === 409 && candidate.reason === "work_order_already_invoiced";
+}
+
+// Lista FECHADA de códigos que o TEMPO resolve (nunca engolir erro determinístico); detecta pelo CÓDIGO, nunca pela
+// mensagem. P2034 conflito/impasse (wrapper Prisma) · P2028 transação interativa expirada · 40P01 deadlock ·
+// 40001 serialization_failure · 55P03 lock_not_available.
+const TRANSIENT_INVOICE_DB_CODES: ReadonlySet<string> = new Set(["P2034", "P2028", "40P01", "40001", "55P03"]);
+
+function isTransientInvoiceFailure(error: unknown): boolean {
+  return invoiceDatabaseErrorCodes(error).some((code) => TRANSIENT_INVOICE_DB_CODES.has(code));
+}
+
+// Códigos candidatos nas formas medidas no Prisma 7 + adapter-pg (precedente inventory-prisma.repository.ts):
+// `code`; `meta.code` (P2010 de query crua, forma dos checklists); `meta.driverAdapterError.cause.code|originalCode`;
+// `cause.code|originalCode` (DriverAdapterError de query ORM).
+function invoiceDatabaseErrorCodes(error: unknown): readonly string[] {
+  if (typeof error !== "object" || error === null) return [];
+  const codes: string[] = [];
+  const push = (value: unknown): void => {
+    if (typeof value === "string" && value !== "") codes.push(value);
+  };
+  const record = error as {
+    readonly code?: unknown;
+    readonly meta?: { readonly code?: unknown; readonly driverAdapterError?: { readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown } } };
+    readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown };
+  };
+  push(record.code);
+  push(record.meta?.code);
+  push(record.meta?.driverAdapterError?.cause?.code);
+  push(record.meta?.driverAdapterError?.cause?.originalCode);
+  push(record.cause?.code);
+  push(record.cause?.originalCode);
+  return codes;
 }
 
 const memoryRepository = new InMemoryWorkOrderFinancialItemRepository();
@@ -463,8 +583,8 @@ export async function createDefaultWorkOrderFinancialService(): Promise<WorkOrde
 
 // Ω4-3 — o serviço de faturamento COMPARTILHA o singleton InMemory de itens (mesma fonte que o
 // WorkOrderFinancialService), então itens criados/faturados são mutuamente visíveis nos testes memory.
-export function createMemoryWorkOrderInvoicingService(): WorkOrderInvoicingService {
-  return new WorkOrderInvoicingService(memoryRepository);
+export function createMemoryWorkOrderInvoicingService(resolveUow?: FinancialUowResolver): WorkOrderInvoicingService {
+  return new WorkOrderInvoicingService(memoryRepository, resolveUow);
 }
 
 export async function createDefaultWorkOrderInvoicingService(): Promise<WorkOrderInvoicingService> {

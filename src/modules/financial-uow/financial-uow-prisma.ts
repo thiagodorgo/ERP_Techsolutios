@@ -7,6 +7,7 @@ import {
   PrismaFinancialTitleRepository,
   assertPeriodOpenSharedInTx,
 } from "../financial-titles/financial-title-prisma.repository.js";
+import { PrismaWorkOrderFinancialItemRepository } from "../work-order-financials/work-order-financial-prisma.repository.js";
 import type { FinancialUnitOfWork, FinancialUowContext } from "./financial-uow.js";
 
 // B-O6R-02 — implementação Prisma da porta de Unit of Work do financeiro: `run` abre UMA transação
@@ -24,6 +25,8 @@ export class PrismaFinancialUnitOfWork implements FinancialUnitOfWork {
         titles: new PrismaFinancialTitleRepository(tx),
         entries: new PrismaFinancialEntryRepository(tx),
         cheques: new PrismaChequeRepository(tx),
+        // B-SAN3-02 (D4) — itens de OS no MESMO tx: FOR UPDATE + carimbo commitam ou morrem com o título.
+        workOrderItems: new PrismaWorkOrderFinancialItemRepository(tx),
         assertPeriodOpenShared: (period, onClosed) => assertPeriodOpenSharedInTx(tx, tenantId, period, onClosed),
       };
       return work(ctx);

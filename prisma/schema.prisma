@@ -2061,6 +2061,11 @@ model FinancialTitle {
   // avulso e faturamento OS não os populam. issue_date deriva a competência (chokepoint por período).
   source_type       String?                  // fuel_log|maintenance_order|fine|insurance_policy (app-level)
   source_id         String?                  @db.Uuid // id da entidade-fonte no MESMO tenant (sem FK nativa)
+  // B-SAN3-02 (D-SAN3-02-TITULO-COMPLEMENTAR) — NULL = título ORIGINAL; id = COMPLEMENTAR (delta de itens lançados
+  // depois do 1º faturamento) do original ativo da MESMA organização, OS e direção. Scalar-only: a FK de 4 colunas
+  // (tenant_id, work_order_id, direction, parent_title_id) → (tenant_id, work_order_id, direction, id) RESTRICT e o
+  // CHECK "complementar só com OS e nunca o próprio pai" vivem só na migration 20260878000000 (precedente WorkOrderComment).
+  parent_title_id   String?                  @db.Uuid
   client_action_id  String?
   created_by        String?                  @db.Uuid
   updated_by        String?                  @db.Uuid
@@ -2075,13 +2080,18 @@ model FinancialTitle {
   // Ω4-4 — lançamentos de caixa que LIQUIDAM este título (title_id preenchido pela liquidação).
   financial_entries FinancialEntry[]
 
-  // Ω4-3 (D-Ω4-C2) — a idempotência anti-refaturamento (no MÁX. 1 título ATIVO por tenant+OS+direção) é
-  // um índice PARCIAL (WHERE deleted_at IS NULL AND work_order_id IS NOT NULL) que o Prisma NÃO modela;
-  // vive só na migration 20260811000000, como o unique parcial de idempotência dos vizinhos.
+  // Ω4-3 (D-Ω4-C2) → B-SAN3-02 (D-SAN3-02-TITULO-COMPLEMENTAR) — a idempotência anti-refaturamento passou a ter
+  // DUAS âncoras: cada item é faturado uma vez (carimbo invoiced_at/title_id) e no MÁX. 1 título ORIGINAL ativo por
+  // tenant+OS+direção — o índice PARCIAL financial_titles_wo_direction_original_active_key (WHERE deleted_at IS NULL
+  // AND work_order_id IS NOT NULL AND parent_title_id IS NULL), que o Prisma NÃO modela; vive só na migration
+  // 20260878000000, que substituiu o financial_titles_wo_direction_active_key da 20260811000000. Complementares
+  // ficam fora do predicado.
   // Ω4C PR-02 — idempotência POR ORIGEM (no MÁX. 1 título ATIVO por tenant+source_type+source_id+direção):
   // outro índice PARCIAL (WHERE deleted_at IS NULL AND source_id IS NOT NULL) que o Prisma também NÃO
   // modela; vive só na migration 20260822000000 (financial_titles_source_direction_active_key).
   @@unique([tenant_id, id])
+  // B-SAN3-02 (Q4) — chave AUXILIAR, alvo da FK de 4 colunas do parent_title_id (id já é PK → sempre satisfeita).
+  @@unique([tenant_id, work_order_id, direction, id], map: "financial_titles_tenant_wo_direction_id_key")
   @@index([tenant_id, direction, status])
   @@index([tenant_id, due_date])
   @@index([tenant_id, deleted_at])

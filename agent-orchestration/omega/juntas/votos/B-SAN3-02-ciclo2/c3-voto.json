@@ -1,0 +1,108 @@
+{
+ "jurado": "jurado-san302c2-c3-opus — identidade nova (corpo jurado-san302-c3-regressao-e-contrato)",
+ "cadeira": "C3′ (refeita inteira) — regressão por nome e CI, escopo/registro/espelho, contrato de quem já usa",
+ "modelo": "Claude Opus, nível menor, declarado (§C7.6)",
+ "objeto": "09b380dab54946e16303c8bae0e95bbaa0d667a5 por duas fontes (git ls-remote origin refs/heads/fix/faturamento-atomico-e-delta; gh pr view 448 headRefOid), no início (07:14Z) e no fim (07:55Z): NÃO andou. B = git merge-base origin/main <obj> = 9009e81be3c5a711584747428c55707a17afc009; origin/main = 7f07844c no início e no fim. Merges da main no ramo: 09b380da (pais c2f9811f e B, conteúdo próprio só na resolução de 3 arquivos de registro), 8e6a6c29 e be344c85 (anteriores); o diff do bloco foi medido por B..objeto.",
+ "legalidade": "Parecer insp-san302c2-parecer.md (inspetor-san302c2-opus): LIBERADO COM RESSALVA (R-A…R-E). Ele nomeia C3′ = jurado-san302c2-c3-opus e os worktrees w-jsan302c2-c3-/c3b-; check-runs 14/14 completed success re-medidos no fim; corpo carregado × blob do objeto IDENTICO (EOL-neutro, ca59eefb…). Worktrees próprios C:/Users/AMP/w-jsan302c2-c3 (objeto) e C:/Users/AMP/w-jsan302c2-c3b (B), cada um com npm ci próprio e sem junction. Banco só descartável via teste-linux.sh, em 4 subidas sequenciais (objeto tl179248111267270, base, VC srcB, M29), nunca base e objeto juntos; P8 medido antes de cada subida (commit livre 6,63–8,04 GB, 0 trabalhos Docker alheios, disco 12,6–13 GB). Base viva e portas proibidas nunca tocadas. Não li votos de outras cadeiras deste ciclo.",
+ "quorum": "unanimidade de 3 com veto; bloco de dinheiro; ciclo 2",
+ "voto": "APROVADO",
+ "arquivos_medidos": [
+  "** (suíte backend inteira no objeto: npm test na forma do job backend, 327 arquivos, e os logs dos jobs backend/backend-postgres da CI)",
+  "src/modules/work-order-financials/** , src/modules/financial-titles/** , src/modules/financial-uow/** (sonda de contrato, M3, M13, M14)",
+  "tests/work-order-invoicing.test.ts, tests/work-order-financials.test.ts, tests/financial-*.test.ts (memória e -db), tests/work-order-financials-routes.test.ts, tests/financial-uow-*.test.ts, tests/pg-barrier-scoped-db.test.ts, tests/cheque-clear-bounce-atomic-db.test.ts",
+  "tests/work-order-invoicing-atomic-db.test.ts, tests/work-order-invoicing-migration-drill-db.test.ts (3x no objeto; contra o src de B; M29)",
+  "prisma/schema.prisma, prisma/migrations/20260878000000_invoice_complementary_title/migration.sql",
+  ".github/workflows/ci.yml, RBAC_MATRIX.md",
+  "agent-orchestration/controle/decisoes.md, pendencias.md, pendencias-indice.md (+ gerar-indice-pendencias.py numa cópia descartável)",
+  "docs/revisoes/SAN3/B-SAN3-02-plano.md (§3 D1/D4, §4, §6.1, §6.2, §7, §10, §12, Anexos B/C), agent-orchestration/omega/reprovacoes/R-B-SAN3-02-1.md (§7.1, §7.2, §9), docs/revisoes/SAN3/B-SAN3-02-dev.md",
+  ".claude/agents/** e .agents/agents/** (sync-agent-agents --check), scripts/run-backend-tests.mjs (orçamento de skip)",
+  "o diff inteiro B..objeto (51 caminhos) e o incremento 8e6a6c29..c2f9811f (16 caminhos)"
+ ],
+ "itens": {
+  "item1": "VERDE — por nome: invoicing 16 e financials 31 da base, e as 9 suítes de memória e as 8 -db do §7.6 passo 4, todas com nomes da base presentes e ok no objeto; 1 renome (o contador do harness, 30/3→40/4, asserção mais forte), declarado no plano D4. check/lint/build ec 0. npm test no contêiner 3762/3751/9/2: skips = os 2 do orçamento, nomeados; as 9 falhas são todas traccar-dev-topology (spawnSync docker ENOENT no contêiner), pre-existente de ambiente (c1485c94, 2026-10-18), ok nos 2 jobs backend da CI do objeto (3762/3760/0/2). As suítes novas 3x: 17/17 e 6/6 (com T-D(f)), 0 skip, denominador estável. CI backend-postgres 414/414/0/0, guard de skip 0, os 23 nomes novos ok (Δ +23 sobre B, que tem 391). VC: parser e comparador acusam; atomic-db contra o src de B dá 13/17 fail funcionais.",
+  "item2": "VERDE COM NOTAS — 46/51 no PERMITIDO extraído (§6.1 + §7.1); prisma/ só schema (model FinancialTitle) + 1 migração (Q2); ci.yml só as 2 linhas SUITES; RBAC_MATRIX só a frase da l.122; PROIBIDO (§6.2 e §C4) vazio; os 3 fora da tabela são registro (ata, R-file §C7.4, índice gerado). Incremento do ciclo 2: só a migração (up = +BEGIN/+COMMIT; down byte-igual) e o drill. O merge só resolve conflito, com 0 linha removida e 0 linha própria; o pendencias-indice é IGUAL byte a byte ao gerado. Registro APPEND (0 removidas); D-SAN3-02 com as palavras do dono; nenhuma P-Ω4-3 dada como FECHADA. sync --check OK 76. Mutações: 33 identificadores; a amostra M3 (1/35) e M29 (T-D(f) k=1 column 1) reproduz. Notas: Anexo D ausente, revisor do ciclo 2 ausente, contagens 30/'24→27'/33.",
+  "item3": "VERDE — sonda própria base×objeto (17 casos): só a mudança Q1 (409→201 complementar); T-PREC2/T-PREC3 iguais; DTO/auditoria só aditivos (+parentTitleId, +complementary); vermelho-controle (a)(b)(c M13)(d M14) acusados, restauro por hash"
+ },
+ "o_que_executei": [
+  "worktrees próprios do objeto e de B com npm ci; prisma generate; check/lint/build no objeto",
+  "run-named-mem.sh (11 suítes de memória, base e objeto) + tap-parse.mjs + name-compare.mjs; diff hunk a hunk de tests/ B..O",
+  "teste-linux.sh do objeto (tl179248111267270): npm test na forma do job backend + 8 regressões -db + as 2 suítes novas 3x",
+  "teste-linux.sh da base: 8 regressões -db; teste-linux.sh do c3b com a migração e as suítes do objeto (VC srcB); teste-linux.sh M29 + controle",
+  "gh api check-runs do objeto e de B; logs dos jobs backend e backend-postgres (objeto) e da base; parser e nomes",
+  "classify.mjs (§6.1+§7.1 / §6.2 / §7.2 / §C4, extraídos do blob) no bloco (51) e no incremento (16); diffs de schema, RBAC e ci.yml",
+  "merge-tree do merge 09b380da; comm contra os dois pais; gerador do índice numa cópia descartável + cmp",
+  "sync-agent-agents --check (objeto e árvore descartável alterada); mutações M3 (host) e M29 (cópia no contêiner)",
+  "sonda-contrato.mts (17 casos) base × objeto, com gancho de auditoria; keys-compare.mjs; M13 e M14 com restauro por hash",
+  "vermelhos-controle: parser (+not ok, +SKIP), comparador de nomes (remoção + renome), classificador (4 fabricados), cmp do índice (−1 linha), espelho divergente, comparador de chaves (sem invoicedItemCount, +tenant_id)"
+ ],
+ "achados": [
+  {
+   "id": "C3c2-N1",
+   "propriedade": "renome de teste da base declarado com o par antigo→novo",
+   "evidencia": "base `[P7] … 30 fixtures … + 3 test_reset` AUSENTE no objeto; `[P7] … 40 fixtures … + 4 test_reset` ok; asserções 30/3→40/4 (mais fortes); relatório do dev sem o par; plano §3 D4 declara a mudança de contagem 13+10+10→13+10+10+11 (=40+4)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "registro",
+   "N": 1,
+   "forma": "nome que embute contagem",
+   "bloqueia": false
+  },
+  {
+   "id": "C3c2-N2",
+   "propriedade": "plano do ciclo 2 §7.1: APPEND do `# ANEXO D` ao plano",
+   "evidencia": "`git show <obj>:docs/revisoes/SAN3/B-SAN3-02-plano.md | grep -c '^# ANEXO D'` = 0; o conteúdo está versionado em agent-orchestration/omega/reprovacoes/R-B-SAN3-02-1.md (§C7.4)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "registro",
+   "N": 1,
+   "forma": "cópia ausente; o conteúdo existe na ref",
+   "bloqueia": false
+  },
+  {
+   "id": "C3c2-N3",
+   "propriedade": "plano do ciclo 2 §9: revisor independente antes da junta",
+   "evidencia": "`git grep -l -i -E 'rev-san302-c2-(agyopus|opus)' <obj>` = só o R-file; 0 relatórios de revisão do ciclo 2 fora do repo (inspetor R-B); as checagens dele foram re-medidas nesta junta (2.2, 1.3, 2.5)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "processo/registro",
+   "N": 1,
+   "forma": "passo de orquestração pulado; a ata registra",
+   "bloqueia": false
+  },
+  {
+   "id": "C3c2-N4",
+   "propriedade": "contagem única de mutações no registro",
+   "evidencia": "Anexo B 30; R-B-SAN3-02-1.md l.142 '24 → 27'; dev l.238 '33/33'; corpo da cadeira '18 (M1…M16)'; recontado 33 identificadores",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "registro",
+   "N": 3,
+   "forma": "aritmética do plano do ciclo 2 sobre base errada",
+   "bloqueia": false
+  },
+  {
+   "id": "C3c2-PE1",
+   "propriedade": "suíte backend sem falha no terreno da ferramenta",
+   "evidencia": "9 falhas `traccar:` (tests/traccar-dev-topology.test.ts, spawnSync docker ENOENT no contêiner da teste-linux.sh); arquivo de c1485c94 2026-10-18 (B-TRC-01, #426), fora do diff do bloco; os 9 ok nos 2 jobs backend da CI do objeto",
+   "gravidade": "nota",
+   "escopo": "pre-existente",
+   "classe": "ambiente da ferramenta de medição",
+   "N": 9,
+   "forma": "sem binário docker no contêiner",
+   "dono": "sem pendência no objeto; a limitação é da ferramenta teste-linux.sh (orquestrador). O mandato admite a classificação pela CI verde",
+   "bloqueia": false
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "o drill contra o src de B passa 6/6 por construção, porque não importa src; quem o deixa vermelho é a M29 (reexecutada) e não o vermelho-controle srcB",
+  "T-C5-db, T-K4b, T-Z1 e T-A4b passam contra o src de B: medem o índice da migração ou comportamento que já existia (guardas de regressão)",
+  "a auditoria na sonda é lida na fronteira do controller (gancho de carga), e não no repositório prisma; o -db T-C8d cobre a gravação real e passou 3x"
+ ],
+ "pendencias_que_aceito": [
+  "P-Ω4-3-TEST-HERMETIC, P-Ω4-3-CURRENCY-BRL e P-Ω4-3-INVOICE-LEASTPRIV (pré-existentes declaradas)",
+  "P-Ω4-3-INVOICE-ATOMIC/-TOCTOU-DELETE/-REFATURAR-DELTA seguem ABERTAS no objeto; o fechamento é pós-merge (§10)",
+  "C3c2-N2 e C3c2-N3 para a ata (registro), sem bloqueio"
+ ],
+ "teardown": "Hashes restaurados = blob (dto 46b1439c, controller 011711e8, service 1d944e52, migração 663d4071; schema da base d67db69a); M29 só na cópia do contêiner (sha256 807b685e restaurado). dist/ removido. Contêineres e redes tl1792…/jsan302c2-c3 = 0 (o trap da ferramenta removeu as 4 subidas). Worktrees w-jsan302c2-c3 e w-jsan302c2-c3b removidos por git worktree remove --force (worktree list = 0). Cópias descartáveis (gen-indice, vc-espelho) removidas. Base viva erp-postgres/erp-redis intocada. Sondas e logs em C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c3/. Nada commitado.",
+ "justificativa": "Os três itens foram medidos por execução própria. Regressão: nenhum nome da base sumiu, falhou ou teve a asserção enfraquecida; o renome único está declarado no plano D4. Suíte e CI verdes no que o bloco toca, e as suítes novas rodam com banco na CI (23/23 por nome) com denominador estável 3x. Escopo: o diff do bloco está dentro do PERMITIDO e das autorizações Q2/Q3, o PROIBIDO e o §C4 estão vazios, ci.yml só SUITES e RBAC só a l.122; o merge só resolve conflito, e o índice é igual ao gerado. Registro APPEND. Espelho consistente. A amostra de mutações (M3, M29) reproduz. Contrato: só a mudança da Q1, precedência idêntica (T-PREC2/3) e DTO e auditoria só aditivos, sem vazamento. As notas N1–N4 são de registro ou processo, sem efeito em produto; o PE1 é ambiente pré-existente, verde na CI. VOTO: APROVADO — regressão, escopo e contrato íntegros no objeto 09b380da; notas N1–N4 e PE1 não bloqueiam."
+}

@@ -3,6 +3,7 @@ export {
   ENTRY_REPO_KIND,
   MemoryFinancialUnitOfWork,
   TITLE_REPO_KIND,
+  WORK_ORDER_ITEM_REPO_KIND,
   createDefaultFinancialUnitOfWork,
   createMemoryFinancialUnitOfWork,
   resetFinancialUowRuntimeForTests,

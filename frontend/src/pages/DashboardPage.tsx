@@ -9,10 +9,12 @@ import {
   type DashboardRecentEvent,
   type DashboardTone,
 } from "../modules/dashboard/dashboard.adapter";
+import { ClickableKpiCard } from "../components/kpi";
 import { InitialsAvatar, KpiStatCard, PageHeader, StatusPill, type KpiStatTag } from "../components/patterns";
 import { Alert, EmptyState, Skeleton } from "../components/ui";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
+import { buildDashboardKpiDetail, mapDashboardSource } from "../modules/dashboard/dashboard-kpi-detail";
 import { useWorkOrderTimeseries } from "../modules/dashboard/useWorkOrderTimeseries";
 import type { DashboardSource } from "../modules/dashboard/repository";
 import type { WorkOrderTimeseriesData } from "../modules/dashboard/work-order-timeseries.types";
@@ -362,10 +364,12 @@ export function DashboardPage() {
               <MapIcon size={15} aria-hidden="true" />
               Mapa operacional
             </button>
-            <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
-              <Plus size={15} aria-hidden="true" />
-              Nova OS
-            </button>
+            {can("work_orders:create") && (
+              <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
+                <Plus size={15} aria-hidden="true" />
+                Nova OS
+              </button>
+            )}
           </>
         }
       />
@@ -406,19 +410,21 @@ export function DashboardPage() {
           </div>
         ) : (
           kpiCards.map((card) => (
-            <KpiStatCard
+            <ClickableKpiCard
               key={card.key}
-              icon={card.icon}
-              iconColor={card.iconColor}
-              iconBg={card.iconBg}
-              value={card.kpi.value}
-              label={card.kpi.label}
-              hint={card.kpi.delta}
-              tag={card.tag}
-              border={card.border}
-              onClick={() => navigate("/work-orders")}
-              ariaLabel={`${card.kpi.label}: ${card.kpi.value} — ver ordens de serviço`}
-            />
+              detail={buildDashboardKpiDetail(card.kpi, mapDashboardSource(data.summarySource), timeseries.data, can)}
+            >
+              <KpiStatCard
+                icon={card.icon}
+                iconColor={card.iconColor}
+                iconBg={card.iconBg}
+                value={card.kpi.value}
+                label={card.kpi.label}
+                hint={card.kpi.delta}
+                tag={card.tag}
+                border={card.border}
+              />
+            </ClickableKpiCard>
           ))
         )}
       </div>

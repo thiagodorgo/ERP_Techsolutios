@@ -3786,6 +3786,37 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Q3 = sim:** o ERP conserva os 38 códigos de alarme do Traccar; o que vira notificação fica para o `B-TRC-05`.
 - **Plano da madrugada de 19/10 (aprovação do dono, não é regra):** ***"plano aprovado para madruga, boa noite"***, sobre `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-MADRUGADA-2026-10-19.md` (Codex, Gemini 3.1 Pro e Claude; metas: B-DASH mergeado, B-SAN3-02 em dev, plano do B-TRC-02 criticado, este registro).
 
+- **`D-JUNTA-SO-CADEIRA-VERMELHA` (decisão do dono, 2026-10-20).**
+  - **Proposta, nas palavras do dono:** ***"vamos fazer um upgrade na orquestração, quando uma junta votar e por exemplo duas cadeiras verdes e uma vermelha, somente a vermelha vai ser trabalhada, nao precisa fazer de novo o que ja esta certo, se de uma junta de tres, duas reprovarem, essas duas serao refeita e por ai em diante. o que achas?"***
+  - **Aprovação:** ***"sim"***, dada à proposta do orquestrador com a trava.
+  - **A trava (DERIVADA, desenho do orquestrador, §A6):**
+    - a cadeira verde carrega o voto só quando o diff do conserto não toca o escopo dela, e o inspetor confere por comando;
+    - se tocar, uma identidade nova re-executa os comandos registrados dela;
+    - as vermelhas são refeitas;
+    - a unanimidade é do conjunto, no objeto final.
+  - **Onde está escrito:** `CLAUDE.md`/`AGENTS.md`, §C7 item 9; corpo do `inspetor-de-terreno-da-junta`, item 6.
+  - **Precedência:** no que divergir do §C7.4 ("identidade nova nas cadeiras que votaram"), vale o item 9, só para as cadeiras verdes.
+
+- **`D-ORQ-QUEDA-DA-SESSAO` (decisão do dono, 2026-10-20).** Palavras do dono: ***"Claude, você bugou. Eu tive que reiniciar VS Code. Faça o seguinte, verifique o que ficou de pe, start novamente o que caiu, documente e implemente o conserto na orquestração e espalhe a noticia"***.
+  - **Fato medido:** o Windows registrou "memória virtual insuficiente" às 21:14, 21:48, 21:55 e 22:00 de 19/10 e às **01:16 de 20/10** (ID 2004). Os maiores consumidores eram a VM do Docker/WSL (7,4–8,9 GB) e o `Code.exe` (~2,2 GB), com até 6 agentes em paralelo. O VS Code travou e foi reiniciado pelo dono. O arquivo de paginação é fixo em 8 GB (não gerenciado), e o teto de commit é 31,7 GB.
+  - **O conserto (DERIVADO, desenho do orquestrador, §A6):** norma **P8** do §C7.7 (`CLAUDE.md` + `AGENTS.md` + `PROTOCOLO-JUNTA-RESILIENTE.md`):
+    - (a) registro de agentes vivos com id;
+    - (b) retomada mecânica por `retomada.sh`, com vigias da sessão anterior tratados como órfãos;
+    - (c) orçamento de memória: lançar só com ≥ 4 GB de commit livre e no máximo 3 subagentes Claude ao mesmo tempo; o guarda solta o cache da VM abaixo de 1,5 GB.
+  - **Fora do repositório:** as ferramentas (`agentes-vivos.tsv`, `retomada.sh`, o guarda) ficam junto das demais ferramentas do orquestrador.
+  - **Pendente do dono:** aumentar o arquivo de paginação do Windows (configuração do sistema, exige reinício).
+
+- **Complemento da `D-SAN3-02-TITULO-COMPLEMENTAR` escrito pelo dev do bloco (2026-10-19; mesmo conteúdo decidido, com o detalhe da Q4 e a divergência da l.122 do `RBAC_MATRIX.md`)** — texto original:
+  - (decisão do dono, 2026-10-19 — revê o MECANISMO da `D-Ω4-C2`; o motivo e a `D-Ω4-C1` não mudam).** Entra pelo `B-SAN3-02` (faturamento atômico e título complementar), ramo `fix/faturamento-atomico-e-delta`. Fonte: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-02-respostas-do-dono.md`. Registro anexado pelo dev do bloco (`dev-san3-02-opus`); o orquestrador consolida.
+  - **(A) Palavras do dono.** Às Q1, Q2 e Q3 do plano: ***"sim para tudo"***. À Q4 da emenda v2.1: ***"Q4, sim"***.
+    - **Q1 = SIM:** os itens lançados depois do 1º faturamento da OS são faturados em títulos COMPLEMENTARES, só os itens ainda sem carimbo; o título original e os itens já faturados ficam imutáveis.
+    - **Q2 = SIM:** a coluna aditiva e anulável `financial_titles.parent_title_id` (FK composta RESTRICT), além da troca do índice `financial_titles_wo_direction_active_key` por um só para originais.
+    - **Q3 = SIM:** a fronteira do bloco inclui `src/modules/financial-uow/{financial-uow.ts,financial-uow-prisma.ts,index.ts}`, só para pôr o repositório de itens de OS no contexto da unidade.
+    - **Q4 = SIM:** no lugar da FK de 2 colunas da Q2, a FK de 4 colunas `(tenant_id, work_order_id, direction, parent_title_id)`, o índice único auxiliar `(tenant_id, work_order_id, direction, id)` e o CHECK `parent_title_id IS NULL OR (work_order_id IS NOT NULL AND parent_title_id <> id)`.
+  - **(B) Derivação do planejador, submetida ao dono como Q4 e por ele aprovada.** Os três objetos da Q4 nasceram da crítica A6 da rodada 1, não da fala do dono: amarrar no banco que o pai é da mesma organização, OS e direção, e que complementar só existe com OS. A palavra do dono é "Q4, sim"; o desenho e o motivo são do planejador (`planejador-san3-02-fable`, emenda v2.1, B5).
+  - **O mecanismo da `D-Ω4-C2`, revisto.** O motivo (não faturar o mesmo item duas vezes, em meses diferentes ou não; competência fora da chave) segue inteiro. Passa a ter duas âncoras: cada item é faturado uma vez (carimbo `invoiced_at`/`title_id`, lido sob `FOR UPDATE` e gravado na mesma transação do título) e no máximo um título ORIGINAL ativo por (tenant, OS, direção) — o índice `financial_titles_wo_direction_original_active_key`. Replay sem delta continua 409 `already_invoiced`.
+  - **Divergência registrada (§A2).** `RBAC_MATRIX.md` l.122 descrevia o índice velho. A frase antiga era *"idempotente por OS (índice PARCIAL `(tenant_id,work_order_id,direction) WHERE deleted_at IS NULL` → replay 409 already_invoiced)"*. No mesmo ramo ela passou a descrever o anti-refaturamento por item, o índice de originais e o título complementar, com esta decisão como fonte nº 1. Nenhuma outra linha da matriz mudou.
+
 ## Registro de 20/10/2026 — B-TRC-02 (eventos e telemetria veicular do Traccar): a Q1 revista e o escopo do bloco
 
 > Gravado pelo `registrador-trc02-opus` (Claude Opus, nível menor declarado, §C7.6), a quem o orquestrador delegou o registro do bloco (plano v2 §12). Ramo `feat/traccar-b-trc-02`, head de partida `0313353b`. O texto da `D-TRC02-RESPOSTAS` (registro de 19/10, acima) **não foi reescrito**: esta seção a revisa por acréscimo.

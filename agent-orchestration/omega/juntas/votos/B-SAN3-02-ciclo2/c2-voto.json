@@ -1,0 +1,72 @@
+{
+  "jurado": "jurado-san302c2-c2-opus — identidade nova; corpo jurado-san302-c2-complementar-e-indice (blob .claude 3b379750, IDENTICO EOL-neutro ao espelho .agents 969ad6a5 e ao corpo carregado)",
+  "cadeira": "C2′ (refeita, §C7 item 9 regra (3)) — o C2-01 (atomicidade e convergência pelo CLI real do Prisma), migração e catálogo sem regressão, down e operação",
+  "modelo": "Claude Opus (claude-opus-5-5), nível menor DECLARADO (§C7.6); executor Claude Code subagente",
+  "objeto": "09b380dab54946e16303c8bae0e95bbaa0d667a5 por duas fontes (git ls-remote do ramo; gh pr view 448 headRefOid), re-medido no meio da junta; B = git merge-base origin/main objeto = 9009e81be3c5a711584747428c55707a17afc009; origin/main no início = 7f07844c; objeto do ciclo 1 = 8e6a6c29",
+  "legalidade": "insp-san302c2-parecer LIBERADO COM RESSALVA (R-A…R-E) nomeia C2′ = jurado-san302c2-c2-opus, worktree C:/Users/AMP/w-jsan302c2-c2-…, banco por teste-linux.sh (tl<epoch><pid>); check-runs 14/14 completed success (re-medido); mandato cadeira-c2.md md5 dd8fcf52 (PRE-VOO OK); meu nome fora da lista de inelegíveis; worktree próprio C:/Users/AMP/w-jsan302c2-c2 no objeto, npm ci próprio, 0 junction, removido por git worktree remove --force; contêineres meus tl179247899463276 (lote 1) e tl179248015266167 (lote 2), sem porta publicada; P8 antes de cada subida: commit livre 8,14 / 7,76 / 5,18 GB, no máximo 2 trabalhos Docker contando o meu, disco 13–14 GB; votos das outras cadeiras deste ciclo NÃO lidos",
+  "quorum": "unanimidade de 3 com veto do conjunto; bloco de DINHEIRO; ciclo 2 (último em que todo bloqueia dentro-do-bloco reprova)",
+  "dba_guardiao": "Parecer dba-san302-opus (ciclo 1, head be344c85) lido como insumo A RE-VERIFICAR e re-medido no meu terreno. CONVERGE: migração aditiva, sem destrutivo, único DROP é o do índice antigo depois do novo; legado preservado (md5 das linhas sem a coluna nova igual, parent NULL); catálogo Q4 (FK de 4 colunas del=r upd=c match=s valid, CHECK, aux, índice de originais com predicado exato, antigo ausente); RLS/policies inalteradas; ponta A volta à main e re-up = up; ponta B para em 23505 sem remover objeto nem linha (ec 3); R2 reproduzida para o psql -f comum (ec 0, sem backstop, sem coluna, migrate status up to date). DIVERGE/NUANÇA (§A2, para a ata): (1) o DBA deu item 1 VERDE sem medir a atomicidade do migrate deploy — o C2-01 do ciclo 1 estava presente no head que ele mediu (o arquivo do ciclo 1 reproduz o parcial em todo k na minha injeção); a premissa dele 'o CONCURRENTLY é vedado na transação do migrate deploy (H10)' era falsa no ciclo 1 (o deploy é sentença a sentença) e só passou a valer pelo BEGIN/COMMIT explícito do ciclo 2. (2) A R2 dele diz 'sem ON_ERROR_STOP'; medi que com --single-transaction e SEM ON_ERROR_STOP nada é aplicado (ec 0, rollback) — o dano exige faltar as DUAS flags (psql -f comum), que é o que a pendência escreve. (3) O DBA não exerceu migrate resolve --rolled-back; eu exerci 6/6 e converge.",
+  "arquivos_medidos": [
+    "prisma/migrations/20260878000000_invoice_complementary_title/migration.sql (objeto 663d4071, ciclo 1 aca531da)",
+    "tests/work-order-invoicing-migration-drill-db.test.ts (objeto 7ba02c80)",
+    "prisma/schema.prisma (objeto = ciclo 1 = d4dd5dbe; B = d67db69a)",
+    "prisma/migrations/20260811000000_add_invoicing/migration.sql (bd867f7b em B, ciclo 1 e objeto)",
+    "prisma/migrations/* (as 112 do nível da main, executadas pelo --config temporário)",
+    "agent-orchestration/controle/pendencias.md (P-SAN3-02-DOWN-COM-COMPLEMENTAR, l.11437-11449)",
+    "docs/revisoes/SAN3/B-SAN3-02-dev.md (tabela de mutações do ciclo 2, l.221-243, roteiro A RE-VERIFICAR)",
+    "docs/revisoes/SAN3/B-SAN3-02-plano.md (Anexo B §3, l.611-741, critério de drift)",
+    "agent-orchestration/omega/juntas/votos/B-SAN3-02/dba-parecer.md e c2-voto.json do ciclo 1 (roteiro, não prova)",
+    ".claude/agents/especialistas/jurado-san302-c2-complementar-e-indice.md e o espelho .agents"
+  ],
+  "itens": {
+    "item1_C2-01_atomicidade_e_convergencia": "VERDE — injeção própria (SELECT 1/0, 22012, por linha, CRLF preservado) depois da k-ésima DDL, k=1..6, migrate deploy real com --config temporário, cada k em base nova no nível da main: 6/6 ec 1 com catálogo IGUAL ao de antes (snapshot completo com constraints, RLS e policies; antigo presente) e linha falha (finished_at e rolled_back_at NULL); recuperação 6/6: redeploy P3009, resolve --rolled-back ec 0, deploy ec 0 sem 42701, catálogo = base de referência, migrate status ec 0 'up to date'. Medido em dois lotes, mesmo resultado. Base com o arquivo do ciclo 1 aplicado fica inerte (No pending migrations; up to date; catálogo igual). T-D(f) assere ESTADO, nunca a mensagem da causa. Vermelho vivo: arquivo do ciclo 1 e M29 parciais em k1..k6; M29b só k6; M29c k1..k6 (= dev, ≠ plano); os mesmos k pelo T-D(f); a minha injeção depois do COMMIT deixa as seis DDL aplicadas. R1: residual medido.",
+    "item2_migracao_e_catalogo_sem_regressao": "VERDE — classificador próprio: BEGIN/COMMIT = controle de transação, 5 aditivas, 1 troca autorizada, 0 destrutiva, 0 CONCURRENTLY ativo (vermelho: DROP COLUMN e UPDATE acusados); 6 DDL do up e 6 do down byte-iguais ao ciclo 1; 20260811 e schema.prisma iguais entre os objetos (schema só em FinancialTitle vs B); fixture legada preservada; snapshot objeto = ciclo 1 (48 linhas); FK 4 colunas confdeltype r, CHECK, predicado exato; 2º deploy sem pendência; delta de drift = exatamente ALTER TABLE financial_titles DROP CONSTRAINT financial_titles_parent_title_fkey (vermelho: coluna a mais → ADD COLUMN); drill 6/6 × 3 (+1 controle), mesmo # tests, 0 skip, 0 fail; M11b, M28 (T-D(c) nominal sem 23514) e M22 (T-D(a), T-D(e)) vermelhas; leitor acusa predicado sem parent e FK sem as 4 colunas; comparador acusa o fabricado.",
+    "item3_down_e_operacao": "VERDE com nota — com psql -v ON_ERROR_STOP=1 --single-transaction: ponta A up→down→re-up 1→1→1, catálogo do down = main, re-up = up, linhas iguais; ponta B ec 3 no 23505, nada removido, linhas iguais. R2 re-medida: sem as duas flags (psql -f comum) ec 0 e derruba coluna, FK, CHECK, aux e backstop com migrate status up to date — exatamente o que a pendência escreve; só sem ON_ERROR_STOP mas com --single-transaction nada é aplicado. O '-- down' é uma linha e downStatements() devolve as 6 sentenças sem comentário (vermelho: cabeçalho partido → texto de comentário na 1ª sentença; drill T-D(b)/(d) vermelhos). Down sem a recriação do antigo → backstop 0, acusa. O drill deixa 0 base _drill_ em 12 execuções, 8 delas com casos forçados a falhar."
+  },
+  "voto": "APROVADO",
+  "achados": [],
+  "notas_nao_bloqueantes": [
+    {
+      "id": "C2c2-N1",
+      "o_que": "R1 — no deploy falho o CLI do Prisma 7.8.0 mostra só 'current transaction is aborted' e grava logs NULL; a causa real não aparece",
+      "N": "6/6 deploys falhos (k=1..6), nos dois lotes; 0/6 com a causa (22012) ou P3018",
+      "forma": "mensagem mascarada; estado correto e recuperação convergente",
+      "gravidade": "nota",
+      "classe": "operação/diagnóstico; sem efeito de dado nem de dinheiro",
+      "escopo": "dentro-do-bloco (efeito do BEGIN/COMMIT explícito); declarado como R1 no plano do ciclo 2 e escrito no comentário da migração l.9-11"
+    },
+    {
+      "id": "C2c2-N2",
+      "o_que": "o aviso do cabeçalho do down (l.48) diz 'sem ON_ERROR_STOP o psql … derruba coluna e backstop com ec 0'; medido: isso vale para o psql -f comum (sem as duas flags); com --single-transaction sozinho nada é aplicado",
+      "N": "1 frase; 2 invocações medidas (R2a, R2b)",
+      "forma": "aviso mais largo que o efeito, no sentido da cautela; o comando prescrito é o seguro; a pendência (l.11443) está exata",
+      "gravidade": "nota",
+      "classe": "texto de operação; sem efeito de dado nem de dinheiro",
+      "escopo": "dentro-do-bloco"
+    },
+    {
+      "id": "C2c2-N3",
+      "o_que": "defeitos do MEU arnês, declarados: snapshot.sql do lote 1 sem as linhas de constraint (cast de \"char\"; refeito no lote 2) e normalização do leitor de FK (corrigida em leitor-fk.sh sobre as strings medidas). Não são do produto e não mudaram nenhum veredito.",
+      "gravidade": "nota",
+      "classe": "instrumento do jurado",
+      "escopo": "não se aplica (instrumento do jurado)"
+    }
+  ],
+  "o_que_executei": [
+    "host: classificador próprio de sentenças (+ vermelho fabricado); diffs C1×objeto do up/down/cabeçalho; hash de schema.prisma e 20260811 em B, C1 e objeto; parse dos hunks do schema contra a borda do model; downStatements() extraída verbatim do blob e rodada no objeto e na cópia com cabeçalho partido",
+    "lote 1 (tl179247899463276): item 1 completo (injeção própria k=1..6 com recuperação, post, C1/M29/M29b/M29c, inerte), item 2 e item 3 em banco, drill objeto ×3 + controle, drill sob M29, M29b, M29c, M11b, M28 (inteiro e nominal), M22 e cabeçalho partido, contagem de bases _drill_ depois de cada",
+    "lote 2 (tl179248015266167): lote 1 com snapshot corrigido e sem drills; M28 nominal com a mensagem 23514",
+    "leitor-fk.sh sobre as definições de FK medidas (objeto e fabricada)"
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "item 1: k=1..6 ec ≠ 0 e catálogo igual ao de antes; linha falha com finished_at/rolled_back_at NULL; P3009 → resolve ec 0 → deploy ec 0 sem 42701 → catálogo inteiro → status up to date; base do ciclo 1 inerte; vermelhos C1/M29/M29b/M29c pela minha injeção E pelo T-D(f); injeção depois do COMMIT aplica as seis DDL",
+    "item 2: 0 destrutiva; DDL byte-iguais; 20260811 e schema iguais; legado preservado; snapshot objeto = ciclo 1; Q4 exato; 2º deploy sem pendência; delta de drift = 1 sentença; drill 6/6 ×3; M11b/M28/M22 vermelhas; leitor, classificador e comparador acusam o fabricado",
+    "item 3: ponta A 1→1→1 sem perda; ponta B 23505 sem perda; R2 medida e coerente com a pendência; '-- down' em uma linha; vermelhos do cabeçalho partido e do down sem recriação; 0 base _drill_"
+  ],
+  "pendencias_que_aceito": [
+    "P-SAN3-02-DOWN-COM-COMPLEMENTAR com a R2 (dentro-do-bloco, operação, dono operação pós-gate, pendencias.md l.11437-11449): comportamento esperado da ponta B, medido sem perda com a invocação prescrita; o runbook de encerramento usa psql -v ON_ERROR_STOP=1 --single-transaction",
+    "R1 do plano do ciclo 2 (C2c2-N1): mensagem mascarada no deploy falho, residual medido com N"
+  ],
+  "teardown": "bases jsan302c2_c2_* = 0 e _drill_ = 0 nos dois lotes; contêineres e redes tl179247899463276 e tl179248015266167 removidos pelo trap (docker ps -a / network ls vazios); contêiner jsan302c2-c2-probe removido no --rm; mutações só na cópia /w do contêiner, restauro por git hash-object = 663d4071 em cada; worktree C:/Users/AMP/w-jsan302c2-c2 sem mutação (hash-object = blob), removido por git worktree remove --force; base viva e portas proibidas intocadas; nada commitado; sondas e logs em C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c2/",
+  "justificativa": "O C2-01, que reprovou o ciclo 1, está fechado por execução própria: com uma injeção diferente da do teste, o migrate deploy real deixa o catálogo inteiro como antes em cada um dos 6 prefixos, e a recuperação (resolve --rolled-back + deploy) converge sem 42701 até o status em dia. A base que já tinha o arquivo antigo fica inerte. Os vermelhos estão vivos: o arquivo do ciclo 1 e M29/M29b/M29c falham nos prefixos esperados pela minha injeção e pelo T-D(f). A migração segue aditiva, com catálogo idêntico ao do ciclo 1, delta de drift de exatamente uma sentença e drill 6/6 três vezes. M11b, M28 e M22 continuam vermelhas. O down nas duas pontas não perde dado com a invocação prescrita, e a R2 está registrada com exatidão na pendência. Restam só notas, sem efeito de dado nem de dinheiro. VOTO: APROVADO — C2-01 fechado por execução própria (6/6 prefixos atômicos e convergentes); migração, catálogo, drift, drill e down sem regressão, com todos os vermelhos-controle vivos"
+}

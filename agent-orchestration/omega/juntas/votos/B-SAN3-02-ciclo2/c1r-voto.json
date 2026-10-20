@@ -1,0 +1,68 @@
+{
+  "jurado": "jurado-san302c2-c1r-opus (contexto: corpo jurado-san302-c1-atomicidade-e-corrida, blob bbaed208, IDENTICO EOL-neutro) — identidade nova",
+  "cadeira": "C1r — REVALIDAÇÃO da C1 (atomicidade K1, item apagado/alterado K2, corrida de dois faturamentos e ordem advisory → row lock), §C7 item 9 regra (2)",
+  "modelo": "Claude Opus (claude-opus-5-5), executor Claude Code (subagente), nível MENOR declarado (§C7.6)",
+  "objeto": "09b380dab54946e16303c8bae0e95bbaa0d667a5 (git ls-remote = gh pr view 448 headRefOid; OPEN, MERGEABLE); B = merge-base(origin/main, objeto) = 9009e81b; origin/main início = 7f07844c; objeto que a C1 do ciclo 1 mediu = 8e6a6c29; base do vermelho-controle = 2ecfb333 (12/12 hashes provados)",
+  "legalidade": "inspetor inspetor-san302c2-opus: LIBERADO COM RESSALVA (R-A…R-E), nomeando jurado-san302c2-c1r-opus, o worktree w-jsan302c2-c1r-… e o banco teste-linux.sh/tl…. 14/14 check-runs concluídos e success no objeto. CLAUDE.md da origin/main l.809 (§C7 item 9) lido. Worktree próprio C:/Users/AMP/w-jsan302c2-c1r-a, detached no objeto, sem node_modules no Windows (zero junction), com npm ci próprio no contêiner. Clusters próprios: tl179247896563165, tl179247925364581, tl179247964465205 (abortado pelo meu arnês), tl179247979265472 e tl179248002465899. Papel do serviço com rolsuper=false e rolbypassrls=false, lido pela própria conexão",
+  "quorum": "unanimidade de 3 com veto do CONJUNTO (§C7 item 9 (4)); bloco de DINHEIRO; ciclo 2 (todo bloqueia dentro-do-bloco reprova, §C7 item 8(2))",
+  "arquivos_medidos": {
+    "valor": [
+      "**",
+      "src/modules/work-order-financials/**",
+      "src/modules/financial-titles/**",
+      "src/modules/financial-uow/**",
+      "src/database/rls.ts",
+      "src/database/financial-period-lock.ts",
+      "tests/work-order-invoicing.test.ts",
+      "tests/work-order-invoicing-atomic-db.test.ts",
+      "tests/helpers/**",
+      "prisma/schema.prisma",
+      "prisma/migrations/**"
+    ],
+    "por_que_inclui_**": "a suíte do objeto tests/work-order-invoicing.test.ts importa ../src/app.js, que traz a aplicação inteira transitivamente; e todo cluster sai de npm ci + prisma migrate deploy de todas as migrações. Pela regra (0) do §C7 item 9, comando que mede o código inteiro declara ** — fail-closed: este voto nunca carrega pela regra (1), só por revalidação",
+    "comando_que_derivou": "cd C:/Users/AMP/w-san3-02 && cat tests/work-order-invoicing.test.ts tests/work-order-invoicing-atomic-db.test.ts C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/tests/*.ts | grep -o -E '\"\\.\\./src/[^\"]+\"' | sort -u   (inclui \"../src/app.js\"); e grep -n -i -o -E 'npm ci --no-audit|npx prisma migrate deploy' C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh"
+  },
+  "voto": "APROVADO",
+  "itens": {
+    "item1": {
+      "revalidacao": "IGUAL — REVALIDADO",
+      "o_que": "Seções re-executadas pelo MESMO comando: §0 (objeto por 2 fontes; check-runs 14/0) e §0.2 (leitura estática do blob — o INSERT do título e o carimbo no MESMO tx da unidade, 0 this.repository.create no caminho do invoice, linhas 422/434/436/438/448/451/465/514 iguais nos dois objetos). Identidade dos 12 de src/: git diff 8e6a6c29..09b380da vazio e HASHCHECK 12/12 no contêiner. As três RUN [obj-…], em cluster da migração NOVA: obj-mem-invoicing 35/35, obj-db-atomic-1 17/17 e obj-db-atomic-2 17/17, com 0 fail, 0 skip e ec=0 — iguais a run2-all.log do ciclo 1",
+      "veredito": "VERDE"
+    },
+    "item2": {
+      "revalidacao": "DIFERENTE pela forma (sonda reconstruída, R-A) — VOTO NOVO com a régua do ciclo 2; desfecho a desfecho igual ao registrado",
+      "o_que": "K1 — K1A (gatilho BEFORE UPDATE no carimbo): o erro nomeado propaga; 0 título, 0 carimbo, 0 órfão, 0 auditoria; gatilho e função = 0 depois do finally. Irmão positivo: 201 com 1 título = Σ 100 carimbada. K1B (BEFORE INSERT no título): 0/0. T-A1 verde; T-A3 409 invoice_items_changed; T-A6 503 nas 2 formas; T-A7 intactos; T-PREC 422 period_closed (db e memória). K2 — T-R1 422 item_invoiced 5/5; T-R2 201 Σ60 5/5; T-R2b 422 nothing_to_invoice 5/5; T-R4 422 item_invoiced 5/5. Perdedor bloqueado provado em pg_stat_activity (usename = papel, Lock) em TODA rodada. T-M4b, T-M4c e o leitor de desfechos verdes. Vermelho-controle: a base reproduz o título sem carimbo (K1A) e o TOCTOU (R1 apaga o carimbado 3/3; R2 título 100 com Σ60 3/3). M1, M9, M3 (mem), M20, M24, M2 (R2/R2b/Z2), M4, M4′, M4m e M4i ficam vermelhas no caso que as cita",
+      "veredito": "VERDE"
+    },
+    "item3": {
+      "revalidacao": "DIFERENTE pela forma (sonda reconstruída, R-A) — VOTO NOVO com a régua do ciclo 2; desfecho igual. Duas diferenças de forma registradas, nenhuma contra o objeto: (1) o plano do UPDATE sem ordem na T-Z3 do objeto foi Index Scan nas 9 rodadas, contra o Seq Scan registrado; (2) a M1 sozinha na SYM deu 1/10 violação em run2, contra 0 registrado",
+      "o_que": "SYM N=10: 201 + 409 already_invoiced 10/10, 1 original, Σ = lastro. T-A4 na forma do plano v2, N=3: 201 COMPLEMENTAR, parent=T1, n=1, total 35, 2 títulos, perdedor bloqueado (papel). T-A4b: 409 already_invoiced, nada persiste. ORD: com acquirePeriodLockExclusive segurada, o papel espera a advisory, e pg_locks mostra só a advisory não concedida + virtualxid → 0 row lock em itens/títulos; liberada → 201. T-Z1 e T-Z2 verdes. T-Z3 9/9 e T-Z3L 9/9 sem 40P01, no planner padrão sem PGOPTIONS, com a premissa ctid(i1)<ctid(i2) medida e o EXPLAIN registrado. Vermelho-controle: M17 (A4 409 3/3); ORDINV (o leitor acusa RowShareLock + transactionid = 2); M4″ (Z1 apaga os 2 carimbados); M19 com 40P01 3/3 em Seq e 3/3 em Index, duas vezes; M5b (A4b com 2 originais); M1+M5b (SYM 30/30 violações). O leitor de pg_locks acusa as linhas fabricadas",
+      "veredito": "VERDE"
+    }
+  },
+  "achados": [],
+  "achados_gravidade_classe_escopo": "não se aplica — 0 achados (nenhum bloqueia, nenhum pre-existente novo)",
+  "criterios_que_nao_puderam_falhar": [
+    "M3 no banco: sob FOR UPDATE a contagem carimbada não diverge da selecionada. A guarda do passo 7 só morre em memória (MA3), como registrado no ciclo 1 e declarado pelo plano",
+    "M5b SOZINHA na SYM (10/10 verde): a unidade (FOR UPDATE) serializa sem o índice. A M5b morre no T-A4b (201 com 2 originais)",
+    "M1 SOZINHA na SYM com o índice: 20/20 verde no estágio m5b, mas 1/10 violação em run2 — a mutação morre mais do que o registrado. A M1 morre de qualquer forma em K1A/MA1",
+    "plano do UPDATE sem ordem na T-Z3 do OBJETO: o planner padrão escolheu Index Scan nas 9 rodadas (3 clusters); o Seq Scan só apareceu sob M19. A propriedade do objeto não depende do plano, porque o zero trava por SELECT … ORDER BY created_at, id FOR UPDATE; e a M19 morreu nas duas formas"
+  ],
+  "pendencias_que_aceito": [
+    "P-Ω4-3-TEST-HERMETIC",
+    "P-Ω4-3-CURRENCY-BRL",
+    "P-Ω4-3-INVOICE-LEASTPRIV",
+    "P-SAN3-02-OS-NAO-TRAVADA (pré-existentes pelo corpo; nenhum efeito novo medido)",
+    "P-SAN3-02-DEADLOCK-RESIDUAL (residual de escritores fora do bloco; o ciclo fatura × zero foi medido sem 40P01)"
+  ],
+  "insumos_A_RE-VERIFICAR": "c1-evidencia.md e c1-voto.json do ciclo 1, os logs em erp-pausa-2026-10-03/jsan302-c1/, o plano do ciclo 2, a ata do ciclo 1 e o relatório do dev — usados como roteiro, re-executados ou reconstruídos, nunca como prova",
+  "teardown": "Cluster: gatilhos/funções jsan302c2_c1r = 0, tenants jsan302c2c1r-% = 0 e papéis efêmeros = 0 em cada subida (RESTO); índice M5b recriado (IDX_FIM). Contêineres tl179247896563165, tl179247925364581, tl179247964465205, tl179247979265472 e tl179248002465899 removidos pela ferramenta, com volumes e rede (0 restante). Mutações e base só na cópia do contêiner, com HASHCHECK 12/12 depois de cada uma e no fim. Worktree C:/Users/AMP/w-jsan302c2-c1r-a removido por git worktree remove --force (nenhum processo o usava). Sondas guardadas em C:/Users/AMP/erp-pausa-2026-10-03/jsan302c2-c1r/. Base viva, contêineres alheios e as portas 5432/6379/3000/5173/5050/8899 intocados; nada commitado",
+  "notas": [
+    "Regra (2) do §C7 item 9: o item 1 foi re-executado pelo MESMO comando e deu saída IGUAL (REVALIDADO). Os itens 2 e 3 dependiam de sondas que sumiram (R-A). Foram reconstruídos pelo caso registrado (mesmo caso, asserção, N e vermelho-controle) e julgados como VOTO NOVO com a régua do ciclo 2 — leitura do redator, que o orquestrador pode ratificar.",
+    "A migração do bloco mudou entre os objetos (BEGIN;/COMMIT;). Todo cluster desta cadeira saiu do prisma migrate deploy dela, e todos os desfechos de K1, K2 e da corrida são iguais aos do ciclo 1.",
+    "Divergência corpo × plano (§A2, registrada no mandato): o T-A4 foi julgado no alvo do plano v2 (201 complementar), não no 409 da l.127 do corpo.",
+    "A subida 3 abortou por CRLF no MEU driver (reescrito no Windows); corrigi e refiz na subida 4. Falha de arnês, não de produto.",
+    "Monocultura Claude Opus (R-C), declarada."
+  ],
+  "justificativa": "O item 1 foi revalidado pelo mesmo comando, com saída igual: objeto, check-runs, leitura do blob (título e carimbo no mesmo tx) e as suítes do objeto, 35/35 e 17/17 ×2, em cluster da migração nova. Os itens 2 e 3 foram julgados por sonda reconstruída, com a régua do ciclo 2, em Postgres 16 descartável sob o papel NOSUPERUSER NOBYPASSRLS e com valores lidos no banco. Não há escrita parcial, e o título é igual à Σ dos carimbados. O item apagado nunca entra no título, e o carimbado nunca é apagado nem alterado (N=5 por corrida, perdedor bloqueado provado). Um só original vence, e o delta vira complementar. A advisory precede o row lock (pg_locks), e não há 40P01 no ciclo fatura × zero. A base reproduz os dois defeitos, e cada mutação fica vermelha no caso que a cita. As duas diferenças de forma (o plano escolhido e uma mutação que morre mais) não tocam o objeto. VOTO: APROVADO — K1, K2 e a corrida/ordem de travas valem no objeto 09b380da por execução, com base e mutações vermelhas; item 1 REVALIDADO (IGUAL), itens 2 e 3 VOTO NOVO verde."
+}

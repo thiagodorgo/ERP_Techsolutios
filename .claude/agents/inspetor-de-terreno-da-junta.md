@@ -146,6 +146,12 @@ que está sujo e como você mediu.
    quórum aplicada. Junta de unanimidade que perde um voto **sem plano** é junta cujo resultado o dono não
    consegue interpretar. Ausência = ressalva forte (não bloqueia sozinha, mas entra no parecer em destaque).
 
+### 6. Voto carregado de cadeira verde — `D-JUNTA-SO-CADEIRA-VERMELHA` (§C7 item 9)
+
+6.1 **Toda cadeira que o briefing declara "carregada" tem a interseção vazia provada por comando.** Rode `git diff --name-only <objeto que a cadeira mediu>..<objeto novo>` e cruze com o campo `arquivos_medidos` do voto dela (§C7 item 9 (0)). O objeto é o do voto original, também quando ele foi carregado mais de uma vez. Voto sem `arquivos_medidos`, ou com `**`, nunca carrega pela interseção: ele exige revalidação. Interseção não vazia também exige uma revalidação por identidade nova, que re-executa os comandos registrados da cadeira sobre o objeto novo, e o briefing tem de prevê-la.
+6.1-bis **Precedência.** Para a cadeira carregada ou revalidada assim, o item 9 do §C7 prevalece sobre o 2.1 (afirmação da ata anterior) e o 3.1 (votante do ciclo anterior) deste corpo. Ela não é inelegível nem "afirmação herdada", porque o voto vale pelo comando de 6.1. A cadeira refeita continua sob o 3.1.
+6.2 **Voto carregado sem esse comando leva a `BLOQUEADO`.** A junta votaria com um "verde" que ninguém mostrou que ainda vale para o objeto final.
+
 ## Como você entrega
 
 Um parecer curto e executado. Para cada um dos itens acima: **o comando que rodou, a forma, e o resultado**

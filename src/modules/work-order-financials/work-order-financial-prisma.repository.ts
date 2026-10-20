@@ -57,6 +57,36 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
     return items.map(mapRecord);
   }
 
+  // B-SAN3-02 (D1/D2) — SELECT … ORDER BY created_at, id FOR UPDATE dos itens faturáveis, na transação corrente.
+  // O Postgres aplica o ORDER BY ANTES de travar (docs PG 16, SELECT → The Locking Clause), então as travas seguem
+  // a ordem total (created_at, id) — a mesma do softDeleteAllByWorkOrder. Sob READ COMMITTED, quem bloqueia aqui
+  // re-avalia o WHERE contra a versão nova da linha (EvalPlanQual): item apagado ou carimbado por quem venceu a
+  // trava sai do conjunto. A Σ do título vem deste conjunto. As colunas são relidas pelo cliente tipado (Decimal
+  // mapeado como nos irmãos), já sob a trava desta transação.
+  async listInvoiceableByWorkOrderForUpdate(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    const locked = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM work_order_financial_items
+       WHERE tenant_id = ${tenantId}::uuid
+         AND work_order_id = ${workOrderId}::uuid
+         AND deleted_at IS NULL
+         AND invoiced_at IS NULL
+       ORDER BY created_at, id
+         FOR UPDATE
+    `;
+    if (locked.length === 0) return [];
+    const items = await this.client.workOrderFinancialItem.findMany({
+      where: {
+        tenant_id: tenantId,
+        work_order_id: workOrderId,
+        id: { in: locked.map((row) => row.id) },
+        deleted_at: null,
+        invoiced_at: null,
+      },
+      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+    });
+    return items.map(mapRecord);
+  }
+
   async findById(tenantId: string, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem | undefined> {
     const record = await this.client.workOrderFinancialItem.findFirst({
       where: { tenant_id: tenantId, work_order_id: workOrderId, id: itemId, deleted_at: null },
@@ -73,8 +103,10 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
 
   async update(input: UpdateWorkOrderFinancialItemInput): Promise<WorkOrderFinancialItem | undefined> {
     try {
+      // B-SAN3-02 (D2, P2) — CAS: `invoiced_at IS NULL` no WHERE. O PATCH que perde a corrida para o faturamento
+      // re-avalia o predicado contra a linha carimbada e casa 0 linhas (o serviço relê → 422 item_invoiced).
       const updated = await this.client.workOrderFinancialItem.updateManyAndReturn({
-        where: { tenant_id: input.tenantId, work_order_id: input.workOrderId, id: input.itemId, deleted_at: null },
+        where: { tenant_id: input.tenantId, work_order_id: input.workOrderId, id: input.itemId, deleted_at: null, invoiced_at: null },
         data: compactRecord({
           description: input.description,
           quantity: input.quantity,
@@ -92,18 +124,40 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
 
   async softDelete(tenantId: string, workOrderId: string, itemId: string, deletedBy?: string): Promise<WorkOrderFinancialItem | undefined> {
     // Delete LÓGICO: carimba deleted_at; a row persiste mas some dos reads e do total agregado.
+    // B-SAN3-02 (D2, P2) — CAS: `invoiced_at IS NULL` no WHERE (item carimbado nunca é apagado, mesmo que o
+    // pré-check do serviço tenha passado antes do faturamento commitar).
     const updated = await this.client.workOrderFinancialItem.updateManyAndReturn({
-      where: { tenant_id: tenantId, work_order_id: workOrderId, id: itemId, deleted_at: null },
+      where: { tenant_id: tenantId, work_order_id: workOrderId, id: itemId, deleted_at: null, invoiced_at: null },
       data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
 
-  // P-Ω3F6-ZERO-ATOMICIDADE — UM updateMany atômico carimba deleted_at em TODOS os itens ATIVOS e
-  // NÃO-FATURADOS da OS (o `zero` do cancel). invoiced_at:null preserva o lastro de Título (D-Ω4-C1).
+  // P-Ω3F6-ZERO-ATOMICIDADE — carimba deleted_at em TODOS os itens ATIVOS e NÃO-FATURADOS da OS (o `zero` do
+  // cancel), na transação corrente. invoiced_at IS NULL preserva o lastro de Título (D-Ω4-C1).
+  // B-SAN3-02 (D2, A4) — mesma ORDEM TOTAL de travas do faturamento: (i) `SELECT … ORDER BY created_at, id FOR
+  // UPDATE` trava as linhas na ordem (created_at, id); (ii) o UPDATE toca só as linhas que (i) travou. Um UPDATE
+  // multi-linha sem ordem travaria na ordem de varredura e podia cruzar com o faturamento (ciclo → 40P01). Contrato
+  // e retorno inalterados.
   async softDeleteAllByWorkOrder(tenantId: string, workOrderId: string, deletedBy?: string): Promise<number> {
+    const locked = await this.client.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM work_order_financial_items
+       WHERE tenant_id = ${tenantId}::uuid
+         AND work_order_id = ${workOrderId}::uuid
+         AND deleted_at IS NULL
+         AND invoiced_at IS NULL
+       ORDER BY created_at, id
+         FOR UPDATE
+    `;
+    if (locked.length === 0) return 0;
     const result = await this.client.workOrderFinancialItem.updateMany({
-      where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: null },
+      where: {
+        tenant_id: tenantId,
+        work_order_id: workOrderId,
+        id: { in: locked.map((row) => row.id) },
+        deleted_at: null,
+        invoiced_at: null,
+      },
       data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
     });
     return result.count;
@@ -138,6 +192,10 @@ export class RlsPrismaWorkOrderFinancialItemRepository implements WorkOrderFinan
   }
   listInvoiceableByWorkOrder(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).listInvoiceableByWorkOrder(tenantId, workOrderId));
+  }
+  // Standalone a trava vale só até o commit imediato; o uso REAL é via a porta UoW (tx da unidade de faturamento).
+  listInvoiceableByWorkOrderForUpdate(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).listInvoiceableByWorkOrderForUpdate(tenantId, workOrderId));
   }
   findById(tenantId: string, workOrderId: string, itemId: string): Promise<WorkOrderFinancialItem | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaWorkOrderFinancialItemRepository(tx).findById(tenantId, workOrderId, itemId));

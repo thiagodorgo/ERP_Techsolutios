@@ -15,6 +15,11 @@ import type {
   InMemoryFinancialTitleRepository,
 } from "../financial-titles/financial-title.repository.js";
 import type { FinancialTitle } from "../financial-titles/financial-title.types.js";
+import type {
+  InMemoryWorkOrderFinancialItemRepository,
+  WorkOrderFinancialItemRepository,
+} from "../work-order-financials/work-order-financial.repository.js";
+import type { WorkOrderFinancialItem } from "../work-order-financials/work-order-financial.types.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 (Ω6R-DIN-001..004/008) — PORTA de Unit of Work do financeiro.
@@ -57,6 +62,9 @@ export interface FinancialUowContext {
   // B-O6R-02 F5 (Ω6R-DIN-003) — cheques na MESMA unidade: clear/bounce fazem transição (CAS) +
   // lançamento + vínculo juntos; falha → o cheque volta ao estado anterior PELO BANCO (rollback).
   readonly cheques: ChequeRepository;
+  // B-SAN3-02 (D4, D-SAN3-02-TITULO-COMPLEMENTAR (3)) — itens do Financeiro da OS na MESMA unidade: o faturamento
+  // trava os itens faturáveis (FOR UPDATE), cria o título e carimba os itens juntos; falha → nada persiste.
+  readonly workOrderItems: WorkOrderFinancialItemRepository;
   /**
    * DIN-008 — trava SHARED de (tenant, period) + re-check de isPeriodClosed DENTRO da unidade.
    * Período fechado → lança `onClosed(period)` e a unidade inteira desfaz.
@@ -75,6 +83,7 @@ export type MemoryFinancialUowDeps = {
   readonly titles: InMemoryFinancialTitleRepository;
   readonly entries: InMemoryFinancialEntryRepository;
   readonly cheques: InMemoryChequeRepository;
+  readonly workOrderItems: InMemoryWorkOrderFinancialItemRepository;
   readonly periodCloses: FinancialPeriodCloseRepository;
 };
 
@@ -89,11 +98,13 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
       const titleJournal = new TenantRowJournal(this.deps.titles, tenantId);
       const entryJournal = new TenantRowJournal(this.deps.entries, tenantId);
       const chequeJournal = new TenantRowJournal(this.deps.cheques, tenantId);
+      const workOrderItemJournal = new TenantRowJournal(this.deps.workOrderItems, tenantId);
 
       const ctx: FinancialUowContext = {
         titles: journaledTitles(this.deps.titles, titleJournal),
         entries: journaledEntries(this.deps.entries, entryJournal),
         cheques: journaledCheques(this.deps.cheques, chequeJournal),
+        workOrderItems: journaledWorkOrderItems(this.deps.workOrderItems, workOrderItemJournal, tenantId),
         assertPeriodOpenShared: async (period, onClosed) => {
           // Memória não tem advisory lock — o mutex por tenant serializa as UNIDADES entre si (e só
           // isso: escrita direta no repositório não passa por ele). Aqui fica o re-check, que é a
@@ -108,6 +119,7 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
         return await work(ctx);
       } catch (error) {
         // Ordem inversa da escrita, como antes; cada journal só mexe nos ids que a unidade tocou.
+        workOrderItemJournal.rollback();
         chequeJournal.rollback();
         entryJournal.rollback();
         titleJournal.rollback();
@@ -166,7 +178,8 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
 //
 // CONTAGEM MEDIDA nos contratos: 13 + 10 + 10 chaves (12 + 9 + 9 membros write/read, mais o
 // `reset?` opcional de cada um) = 30 membros exercidos pelo harness + 3 `test_reset` asseverados
-// ausentes do contexto.
+// ausentes do contexto. B-SAN3-02 (D4) — o 4º repositório (itens de OS) soma 11 chaves (10 membros
+// write/read + `reset?`): 13 + 10 + 10 + 11 = 44 chaves, 40 membros exercidos + 4 `test_reset`.
 // -----------------------------------------------------------------------------------------------
 
 /**
@@ -218,6 +231,22 @@ export const CHEQUE_REPO_KIND = {
   findActiveByLinkedEntry: "read",
   reset: "test_reset",
 } as const satisfies Record<keyof ChequeRepository, UowMemberKind>;
+
+// B-SAN3-02 (D4) — itens do Financeiro da OS. Escrevem: create, update, softDelete, softDeleteAllByWorkOrder e
+// markInvoiced (o carimbo). O resto é leitura; listInvoiceableByWorkOrderForUpdate TRAVA no Postgres mas não muta.
+export const WORK_ORDER_ITEM_REPO_KIND = {
+  create: "write",
+  update: "write",
+  softDelete: "write",
+  softDeleteAllByWorkOrder: "write",
+  markInvoiced: "write",
+  listByWorkOrder: "read",
+  listInvoiceableByWorkOrder: "read",
+  listInvoiceableByWorkOrderForUpdate: "read",
+  findById: "read",
+  findActiveByClientActionId: "read",
+  reset: "test_reset",
+} as const satisfies Record<keyof WorkOrderFinancialItemRepository, UowMemberKind>;
 
 type UowRow = { readonly id: string };
 
@@ -363,6 +392,55 @@ function journaledCheques(base: InMemoryChequeRepository, journal: TenantRowJour
   };
 }
 
+// B-SAN3-02 (D4) — itens de OS. O findById do InMemory de itens ESCONDE linha deletada; a before-image tem de ser a
+// linha CRUA (inclusive deletada), senão o rollback apagaria do mapa um item que já existia. Por isso a leitura
+// da before-image vem do snapshot do tenant. Escritas multi-linha (softDeleteAllByWorkOrder, markInvoiced) guardam a
+// before-image de TODAS as linhas da OS antes de mutar.
+function journaledWorkOrderItems(
+  base: InMemoryWorkOrderFinancialItemRepository,
+  journal: TenantRowJournal<WorkOrderFinancialItem>,
+  tenantId: string,
+): WorkOrderFinancialItemRepository {
+  const rawRow = async (id: string): Promise<WorkOrderFinancialItem | undefined> =>
+    base.snapshotTenantForUow(tenantId).find((row) => row.id === id);
+  const rememberWorkOrder = (workOrderId: string): void => {
+    for (const row of base.snapshotTenantForUow(tenantId)) {
+      if (row.workOrderId === workOrderId) journal.remember(row.id, row);
+    }
+  };
+  return {
+    // ---- escritas: before-image ANTES de mutar ----
+    create: async (input) => {
+      const created = await base.create(input);
+      journal.remember(created.id, undefined); // não existia
+      return created;
+    },
+    update: async (input) => {
+      await journal.rememberById(input.itemId, rawRow);
+      return base.update(input);
+    },
+    softDelete: async (tenant, workOrderId, itemId, deletedBy) => {
+      await journal.rememberById(itemId, rawRow);
+      return base.softDelete(tenant, workOrderId, itemId, deletedBy);
+    },
+    softDeleteAllByWorkOrder: async (tenant, workOrderId, deletedBy) => {
+      rememberWorkOrder(workOrderId);
+      return base.softDeleteAllByWorkOrder(tenant, workOrderId, deletedBy);
+    },
+    markInvoiced: async (input) => {
+      rememberWorkOrder(input.workOrderId);
+      return base.markInvoiced(input);
+    },
+    // ---- leituras: delegação pura ----
+    listByWorkOrder: (tenant, workOrderId) => base.listByWorkOrder(tenant, workOrderId),
+    listInvoiceableByWorkOrder: (tenant, workOrderId) => base.listInvoiceableByWorkOrder(tenant, workOrderId),
+    listInvoiceableByWorkOrderForUpdate: (tenant, workOrderId) => base.listInvoiceableByWorkOrderForUpdate(tenant, workOrderId),
+    findById: (tenant, workOrderId, itemId) => base.findById(tenant, workOrderId, itemId),
+    findActiveByClientActionId: (tenant, workOrderId, clientActionId) =>
+      base.findActiveByClientActionId(tenant, workOrderId, clientActionId),
+  };
+}
+
 export function createMemoryFinancialUnitOfWork(deps: MemoryFinancialUowDeps): MemoryFinancialUnitOfWork {
   return new MemoryFinancialUnitOfWork(deps);
 }
@@ -384,15 +462,17 @@ export function resetFinancialUowRuntimeForTests(): void {
 
 async function createFinancialUnitOfWork(): Promise<FinancialUnitOfWork> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
-    const [titleModule, entryModule, chequeModule] = await Promise.all([
+    const [titleModule, entryModule, chequeModule, workOrderItemModule] = await Promise.all([
       import("../financial-titles/financial-title.service.js"),
       import("../financial-entries/financial-entry.service.js"),
       import("../cheques/cheque.service.js"),
+      import("../work-order-financials/work-order-financial.service.js"),
     ]);
     return createMemoryFinancialUnitOfWork({
       titles: titleModule.getMemoryFinancialTitleRepositoryForTests(),
       entries: entryModule.getMemoryFinancialEntryRepositoryForTests(),
       cheques: chequeModule.getMemoryChequeRepositoryForTests(),
+      workOrderItems: workOrderItemModule.getMemoryWorkOrderFinancialRepositoryForTests(),
       periodCloses: titleModule.getMemoryFinancialPeriodCloseRepositoryForTests(),
     });
   }
