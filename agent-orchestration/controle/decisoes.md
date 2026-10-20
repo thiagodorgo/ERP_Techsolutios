@@ -3785,3 +3785,14 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Q2 = sim:** a demonstração do Traccar concede, como `postgres`, `EXECUTE` em `public.auth_login_candidates(text)` ao papel de runtime, só na demo, como passo nomeado; produção não muda. Resolve `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE`.
   - **Q3 = sim:** o ERP conserva os 38 códigos de alarme do Traccar; o que vira notificação fica para o `B-TRC-05`.
 - **Plano da madrugada de 19/10 (aprovação do dono, não é regra):** ***"plano aprovado para madruga, boa noite"***, sobre `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-MADRUGADA-2026-10-19.md` (Codex, Gemini 3.1 Pro e Claude; metas: B-DASH mergeado, B-SAN3-02 em dev, plano do B-TRC-02 criticado, este registro).
+
+- **`D-JUNTA-SO-CADEIRA-VERMELHA` (decisão do dono, 2026-10-20).**
+  - **Proposta, nas palavras do dono:** ***"vamos fazer um upgrade na orquestração, quando uma junta votar e por exemplo duas cadeiras verdes e uma vermelha, somente a vermelha vai ser trabalhada, nao precisa fazer de novo o que ja esta certo, se de uma junta de tres, duas reprovarem, essas duas serao refeita e por ai em diante. o que achas?"***
+  - **Aprovação:** ***"sim"***, dada à proposta do orquestrador com a trava.
+  - **A trava (DERIVADA, desenho do orquestrador, §A6):**
+    - a cadeira verde carrega o voto só quando o diff do conserto não toca o escopo dela, e o inspetor confere por comando;
+    - se tocar, uma identidade nova re-executa os comandos registrados dela;
+    - as vermelhas são refeitas;
+    - a unanimidade é do conjunto, no objeto final.
+  - **Onde está escrito:** `CLAUDE.md`/`AGENTS.md`, §C7 item 9; corpo do `inspetor-de-terreno-da-junta`, item 6.
+  - **Precedência:** no que divergir do §C7.4 ("identidade nova nas cadeiras que votaram"), vale o item 9, só para as cadeiras verdes.
