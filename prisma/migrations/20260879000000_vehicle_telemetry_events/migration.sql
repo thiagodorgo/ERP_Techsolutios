@@ -5,7 +5,18 @@
 -- RLS e acesso: DML pelo papel de runtime via DEFAULT PRIVILEGES do migrador (scripts/db-runtime-role.sh); NENHUMA concessão aqui.
 -- Os domínios numéricos dos CHECKs abaixo são os MESMOS de src/modules/telemetry/vehicle-telemetry.bounds.ts (uma fonte; B9/F9 provam).
 -- Q1 = NÃO: a amostra só nasce com a posição ACEITA, pendurada no recibo dela; "uma amostra por recibo" é o UNIQUE (tenant_id, receipt_id).
--- ROLLBACK: ver o bloco no fim deste arquivo (ordem executável; só em ambiente SEM dado real).
+--
+-- TRANSAÇÃO EXPLÍCITA (emenda v2.3; achado D1 do DBA de 2026-10-20 — o mesmo fato do C2-01 do B-SAN3-02, 20260878000000): o
+-- `prisma migrate deploy` 7.8 executa o script sentença a sentença, em autocommit — NÃO numa transação única (medido: falha depois
+-- da sentença k deixava 1..k aplicadas; k = 16 deixava traccar_ingress_receipts SEM o CHECK de message_kind; `resolve --rolled-back`
+-- + redeploy quebrava em P3018). Por isso as 17 sentenças vão entre BEGIN e COMMIT — todas DDL transacionais (sem CONCURRENTLY):
+-- falha em qualquer uma → nada aplicado (drill T-M(e)). Deploy falho: o CLI mostra só "current transaction is aborted" (a causa real
+-- está no log do servidor Postgres); recuperação = `prisma migrate resolve --rolled-back 20260879000000_vehicle_telemetry_events` e
+-- `prisma migrate deploy` de novo (converge; T-M(e)). Lock: o CREATE UNIQUE INDEX do recibo segura ShareLock em traccar_ingress_receipts
+-- até o COMMIT (escritas esperam; leituras não) — ~2-4 s por 1 M de recibos, janela declarada em docs/deployment.md.
+-- ROLLBACK: o bloco `-- down` no fim deste arquivo (manual, transação única, guarda ANTES de qualquer DROP; só em ambiente SEM dado real).
+BEGIN;
+
 CREATE TABLE "vehicle_telemetry_events" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
   "tenant_id" UUID NOT NULL,
@@ -79,14 +90,16 @@ ALTER TABLE "traccar_ingress_receipts" DROP CONSTRAINT "traccar_ingress_receipts
 ALTER TABLE "traccar_ingress_receipts" ADD CONSTRAINT "traccar_ingress_receipts_message_kind_check"
   CHECK ("message_kind" IN ('position', 'event')) NOT VALID;
 
--- ROLLBACK (manual; só em ambiente SEM dado real; NUNCA como rollback produtivo).
--- ORDEM EXECUTÁVEL — a dependente cai primeiro (o drill G9 de tests/traccar-event-rls-db.test.ts executa estas linhas):
---   1. DROP TABLE IF EXISTS "vehicle_telemetry_events";
---      (política, índices e as 4 FKs caem com ela)
---   2. DROP INDEX IF EXISTS "traccar_ingress_receipts_tenant_id_id_vehicle_binding_key";
---   3. SELECT count(*) FROM "traccar_ingress_receipts" WHERE "message_kind" <> 'position';
---      (tem de ser 0. Se não for, PARE: recibo de evento/amostra é dado; não se apaga para "voltar".)
---   4. ALTER TABLE "traccar_ingress_receipts" DROP CONSTRAINT "traccar_ingress_receipts_message_kind_check";
---      ALTER TABLE "traccar_ingress_receipts" ADD CONSTRAINT "traccar_ingress_receipts_message_kind_check" CHECK ("message_kind" IN ('position'));
---   5. DELETE FROM "_prisma_migrations" WHERE "migration_name" IN ('20260879000000_vehicle_telemetry_events', '20260880000000_validate_receipt_message_kind_check');
---   Toca traccar_ingress_receipts (CHECK e um índice) e _prisma_migrations; nenhuma outra tabela.
+COMMIT;
+
+-- down (MANUAL, nunca automático; só em ambiente SEM dado real; invocar `psql -v ON_ERROR_STOP=1 --single-transaction -f <down.sql>`:
+-- a guarda é a 1ª sentença e PARA (22P02, com a contagem na mensagem) antes de qualquer DROP; sem --single-transaction o 23514 da
+-- 5ª sentença deixaria o recibo SEM CHECK (R2 do DBA). Provado no drill T-M(b)/(c)/(d): up → down → re-up pelo `migrate deploy`):
+--   SELECT CASE WHEN n = 0 THEN 'ok' ELSE ('PARE: ' || n || ' linha(s) de telemetria ou recibo(s) de evento - dado nao se apaga para voltar')::int::text END AS guarda_do_down
+--     FROM (SELECT (SELECT count(*) FROM "vehicle_telemetry_events") + (SELECT count(*) FROM "traccar_ingress_receipts" WHERE "message_kind" <> 'position') AS n) g;
+--   DROP TABLE IF EXISTS "vehicle_telemetry_events";
+--   DROP INDEX IF EXISTS "traccar_ingress_receipts_tenant_id_id_vehicle_binding_key";
+--   ALTER TABLE "traccar_ingress_receipts" DROP CONSTRAINT "traccar_ingress_receipts_message_kind_check";
+--   ALTER TABLE "traccar_ingress_receipts" ADD CONSTRAINT "traccar_ingress_receipts_message_kind_check" CHECK ("message_kind" IN ('position'));
+--   DELETE FROM "_prisma_migrations" WHERE "migration_name" IN ('20260879000000_vehicle_telemetry_events', '20260880000000_validate_receipt_message_kind_check');
+--   -- a tabela leva consigo política, índices e as 4 FKs; toca traccar_ingress_receipts (CHECK e um índice) e _prisma_migrations; nenhuma outra tabela.

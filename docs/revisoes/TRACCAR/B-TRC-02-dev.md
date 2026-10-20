@@ -403,6 +403,69 @@ no T14a/b — o único caso que lê essa coluna — está medido.
 da própria emenda manda deixá-lo para o check-run do head empurrado (b-S7). Os dois guards que o bloco tinha deixado vermelhos estão
 verdes (C-S0); o resto da forma `backend` não mudou desde a classificação por arquivo.
 
+## Emenda v2.3 — migração A transacional, down com guarda em 1º e drill por prefixo (resposta ao DBA DESFAVORÁVEL)
+
+Dev: `dev-trc02-opus` (Claude Opus, nível menor, declarado). Não achei nem planejei: quem achou foi `dba-trc02-opus` e quem planejou foi
+`planejador-trc02-v23-fable`. Norma: `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.3.md`, cópia do original com o espaço de fim de linha
+normalizado. Head de partida: `048f3313`. P8 antes de cada contêiner: 7,6 a 9,7 GB livres e só a base viva rodando (2 contêineres).
+Um trabalho Docker meu por vez, prefixo `dtrc02-`, resíduo 0 depois de cada um.
+
+| Passo (emenda §8) | Comando → saída | Veredito |
+|---|---|---|
+| 0 baseline | `sha256sum` da A do objeto → `3713c3416c47` | o objeto do DBA |
+| 1 migração A | literal de `B-TRC-02-v23-sondas/A.v23.sql`, sha256 `13e073820e0e`, igual ao da sonda. Sentenças executáveis: `orig=17 v23=19`; `diff` das 17 = 0. `^BEGIN;` 1, `^COMMIT;` 1, dollar-quote 0, grant/revoke/owner 0, sem CRLF | corpo intocado |
+| 1 migração B | `git diff --quiet HEAD -- <B> prisma/schema.prisma` → ec 0 | 0 bytes |
+| 2 drill novo | `tests/traccar-event-migration-drill-db.test.ts`: arnês copiado do molde (`bootstrap`, `after`, `rawStatements`, `upStatements`, `downStatements`, `variantWithFailureAfter`, `runPrisma`, `cliTail`, `databaseUrlFor`, `createFromTemplate`, `migrationRows(db, nome)`, `INJECTED_FAILURE`, `--config` temporário). Novos: `catalogState`, `replayDown` e T-M(a) a T-M(f). Tokens GRANT/REVOKE/OWNER TO/`*ROLE`: 0. O `after` não cita `traccar_ingress_receipts` | §5.1 |
+| 2 G sem o G9 | numstat `1 73`: o `test()` G9, `drillDatabase` e a sua linha do `after`, as constantes `ROOT`/`MIGRATION_A`/`MIGRATION_B`, os 5 imports órfãos e o comentário trocado. A única linha `+` é o comentário | §5.2 |
+| 2 `ci.yml` | +1 linha `SUITES=` depois da rls e o comentário de 4 linhas: "4 suítes", "20+13+9+6 = 48", total medido 3× | §6 |
+| 2 `mutations.mjs` | `T.M`; M-E51, M-E51b, M-E51c, M-E52, M-E53, M-E54h em `MUTATIONS_V23`; M-E35 re-ancorada (`DOWN_LAST`), M-S6 re-ancorada (`DOWN_HEAD`). Âncoras das 14 da rodada no arquivo atual: todas 1× | §5.3 |
+| 2 `deployment.md` | o parágrafo literal do §4 depois da l.401 (numstat `2 0`) | §4 |
+| 3 | `npm run check` ec 0 · `npm run lint` ec 0 | verde |
+| 4 drill 3× (contêiner) | `# tests 6 # pass 6 # fail 0 # skipped 0` nas 3 execuções; 17 linhas `k=<k>: atômico e convergente` (5,0–6,3 s cada) mais a do T-M(f) em cada uma; 117–120 s por execução | verde, denominador constante |
+| 5 G e E+F+G+M | G: `# tests 9 # pass 9`; E+F+G+M: `# tests 48 # pass 48 # fail 0 # skipped 0` | verde |
+| 6 vermelho-controle (a) | A do objeto (`3713c341`) + drill novo → `1/6`. T-M(a) cai na forma ("a migração A abre com BEGIN"). T-M(e) acusa **17/17 k** ("depois do deploy falho o catálogo é o de ANTES"). T-M(b)/(c)/(d) caem no rodapé antigo. T-M(f) passa | vermelho como previsto |
+| 6 vermelho-controle (b) | A v2.3 com o rodapé antigo (`0b43795e`) → `3/6`. T-M(b)/(c)/(d) caem em `'a migração traz o rodapé \`-- down\`'`. T-M(a)/(e)/(f) passam | vermelho como previsto |
+| 7 mutações | 13 no contêiner + M-E35 no host (`where: "host"`, guard 8 + H): **14/14 vermelhas, 14/14 `restoredOk`**, sha256 da A restaurada = `13e073820e0e`. Resultados em `B-TRC-02-evidencias/results-db-v23.jsonl` (14 linhas; a da M-E35 também foi anexada a `results-host.jsonl` pelo executor) | toda propriedade morde |
+| 8 `backend-postgres` 3× | `ci-pg-form.cjs` (55 linhas `SUITES=`), `npm run db:seed`, env do job → 3× `# tests 462 # pass 462 # fail 0 # cancelled 0 # skipped 0` | verde, constante |
+| 9 deriva | no contêiner, depois do deploy: `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` → 220 linhas, md5 `ea7c0780690adc81351cee0971215a8c`. É o mesmo md5 da `main` e da v2.3 na sonda da planejadora (§11 P3, `ea7c0780690a`) | 0 deriva nova |
+| 9 escopo | `git diff --numstat HEAD` e não rastreados: `ci.yml`, `deployment.md`, `mutations.mjs`, `results-host.jsonl`, a A, a G, a cópia da emenda, `results-db-v23.jsonl` e o drill. Tudo dentro da tabela §6; PROIBIDO intocado (`schema.prisma`, a B, `src/**`, o molde, a topologia, o guard de catálogo, `scripts/db-runtime-role.sh`, `package*.json`) | dentro |
+| 10 | `npm run build` ec 0 (`dist/` removido depois) · `sync-agent-agents.mjs --check` → OK, 79 agentes · `git diff --check` ec 0 · `node --check Kpis/app.js` ok · `git diff --name-only origin/main...HEAD -- Kpis` → 0 · `db-catalog-write-guard` no host: ratchet `ok` | verde |
+
+**Tabela das mutações v2.3** (`tests` = suíte que roda; `notOk` = casos vermelhos):
+
+| Id | Resultado | Casos vermelhos | Bate com o "esperado" do §5.3? |
+|---|---|---|---|
+| M-E51 (sem BEGIN/COMMIT) | 4/6 | T-M(a) (forma), T-M(e) | sim |
+| M-E51b (COMMIT antes da 16ª) | 4/6 | T-M(a) (forma), T-M(e) | sim |
+| M-E51c (BEGIN depois da 1ª) | 4/6 | T-M(a) (forma), T-M(e) | sim |
+| M-E52 (DROP TABLE antes da guarda) | 3/6 | T-M(b), T-M(c), T-M(d) | sim. O vermelho vem da asserção de forma do `downStatements()` (`[0]` = guarda), que a própria emenda escreveu |
+| M-E53 (guarda sem a tabela de telemetria) | 3/6 | T-M(b), T-M(c), T-M(d) | **em parte**: o vermelho vem da asserção de forma do `downStatements()` ("a guarda conta a tabela de telemetria inteira"), não do comportamento do T-M(c) ("devolve `ok` e o down vai até o fim"). A forma é a que a emenda manda assertar. O vermelho comportamental fica medido pela sonda da planejadora (§11 P6b), não por este executor |
+| M-E54h (arnês: `autocommit` no T-M(d)) | 5/6 | T-M(d) | sim |
+| M-E23, M-E24, M-E25, M-E27, M-E40 (re-execução) | 8/9 | 1 caso da G cada | sim |
+| M-E31 (re-execução) | 11/13 | 2 casos da F | sim |
+| M-E35 (re-ancorada; host) | 18/20 | guard 8 e o H7 | sim |
+| M-S6 (re-ancorada) | 10/12 | T14a/b e o B-SAN3-05 | sim |
+
+**Duas coisas fiz diferente da letra da emenda, com motivo:**
+1. **T-M(e): a forma é conferida DEPOIS do laço.** A 1ª versão chamava `upStatements()` antes do laço, como a §5.1 sugere ("chamada por
+   T-M(a) e T-M(e)"). Com a A do objeto, o caso morria na forma antes de medir qualquer k, e o vermelho-controle (a) não mostrava os
+   "17/17 k" que a §8 passo 6 pede. Agora o laço conta as 17 sentenças fora de BEGIN/COMMIT e mede cada prefixo; o `upStatements()` roda
+   depois do `failures` vazio. O caso continua chamando `upStatements()` e continua vermelho por forma (M-E51b/c). As 3 execuções verdes
+   e os dois vermelhos-controle acima são todos desta versão final.
+2. **O total do job é 462, não 439.** A emenda contou sobre os 434 da variante Q1 = NÃO, antes da integração com a `main`. O ramo
+   integrado media 457 (passo anterior). 457 − 1 (o G9) + 6 (T-M) = 462, medido 3×. O comentário do `ci.yml` traz o número medido.
+   Não declara a `P-TRC-CI-COMENTARIO-DENOMINADOR` fechada: o registro a mantém ABERTA.
+
+**Contagens v2.3** (emenda §7):
+- testes novos do bloco: 102 (G 9 + M 6);
+- mutações no catálogo do B-TRC-02: 78;
+- `backend-postgres`: 462 ×3;
+- Linux `traccar-*`: 234, **derivado** (229 − 1 + 6), não re-medido em lote;
+- `npm test` completo (forma `backend`): não repetido no contêiner (derrubou a VM duas vezes), fica para o check-run do head empurrado.
+
+**Para o orquestrador** (o registro é seu): `D-TRC02-MIGRACAO-TRANSACAO-EXPLICITA`, `P-TRC02-LOCK-INDICE-RECIBO-PROD` (dono B-TRC-06) e
+`P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA` (§10 da emenda). O DBA re-mede a cadeira vermelha no head final.
+
 ## Limpeza
 
 | Comando | Saída |

@@ -292,13 +292,14 @@ jobs:
           SUITES="$SUITES tests/traccar-position-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-quarantine-db.test.ts"
           SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
-          # B-TRC-02 — as 3 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
-          # savepoint, RLS/migração com drill de rollback; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
-          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+10 = 43 casos nas 3 suítes, 0 falha,
-          # 0 pulo, denominador constante. Total do job, re-medido no ramo integrado com a main (27ebbdee, 1×): 457/457, 0 pulo.
+          # B-TRC-02 — as 4 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
+          # savepoint, RLS, drill da migração por prefixo k = 1..17; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
+          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+9+6 = 48 casos nas 4 suítes, 0 falha,
+          # 0 pulo, denominador constante; o drill leva ~2 min. Total do job, medido 3× no ramo integrado: 462/462, 0 pulo.
           SUITES="$SUITES tests/traccar-event-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-event-sample-db.test.ts"
           SUITES="$SUITES tests/traccar-event-rls-db.test.ts"
+          SUITES="$SUITES tests/traccar-event-migration-drill-db.test.ts"
           # B-O6R-03a (Ω6R-DIN-009) — sync de despesas atômico e sem lançamento em dobro, contra o Postgres real e sob
           # papéis efêmeros SEM BYPASSRLS: claim + efeito + recibo + prova no mesmo commit (falha injetada nos três tipos),
           # corrida na PK com barreira escopada, a mesma ação reenviada por outro ator é conflito, recibo legado nunca

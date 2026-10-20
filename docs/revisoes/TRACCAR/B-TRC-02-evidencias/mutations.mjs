@@ -8,6 +8,14 @@ import { MUTATIONS as TRC01 } from "../B-TRC-01-evidencias/mutations.mjs";
 export const MIG_A = "prisma/migrations/20260879000000_vehicle_telemetry_events/migration.sql";
 export const MIG_B = "prisma/migrations/20260880000000_validate_receipt_message_kind_check/migration.sql";
 const MIG_01 = "prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql";
+// Rodapé `-- down` da A na forma da emenda v2.3 (§2.2/§3): âncoras das mutações M-E35, M-S6, M-E52 e M-E53.
+const DOWN_HEAD = "-- down (MANUAL, nunca automático; só em ambiente SEM dado real; invocar";
+const DOWN_LAST = "--   -- a tabela leva consigo política, índices e as 4 FKs; toca traccar_ingress_receipts (CHECK e um índice) e _prisma_migrations; nenhuma outra tabela.\n";
+const DOWN_GUARD =
+  "--   SELECT CASE WHEN n = 0 THEN 'ok' ELSE ('PARE: ' || n || ' linha(s) de telemetria ou recibo(s) de evento - dado nao se apaga para voltar')::int::text END AS guarda_do_down\n" +
+  "--     FROM (SELECT (SELECT count(*) FROM \"vehicle_telemetry_events\") + (SELECT count(*) FROM \"traccar_ingress_receipts\" WHERE \"message_kind\" <> 'position') AS n) g;\n";
+const DOWN_DROP = '--   DROP TABLE IF EXISTS "vehicle_telemetry_events";\n';
+const DRILL = "tests/traccar-event-migration-drill-db.test.ts";
 
 const T = {
   A: ["tests/traccar-event-contract.test.ts"],
@@ -18,6 +26,7 @@ const T = {
   E: ["tests/traccar-event-ingestion-db.test.ts"],
   F: ["tests/traccar-event-sample-db.test.ts"],
   G: ["tests/traccar-event-rls-db.test.ts"],
+  M: ["tests/traccar-event-migration-drill-db.test.ts"],
   contract01: ["tests/traccar-position-contract.test.ts"],
   topo01: ["tests/traccar-dev-topology.test.ts"],
   idem01: ["tests/traccar-idempotency-db.test.ts"],
@@ -81,7 +90,7 @@ export const MUTATIONS_TRC02 = [
   { id: "M-E33", prop: "segredo do evento fora do traccar.xml", where: "host", edits: [{ file: XML, find: "    <entry key='forward.type'>json</entry>", replace: "    <entry key='forward.type'>json</entry>\n    <entry key='event.forward.header'>X-Traccar-Forward-Token: mutacao</entry>" }], tests: T.H },
   { id: "M-E33-ctl01", prop: "lacuna medida: a guarda do 01 fica VERDE com o segredo do evento no xml (esperado: verde)", where: "host", expectGreen: true, edits: [{ file: XML, find: "    <entry key='forward.type'>json</entry>", replace: "    <entry key='forward.type'>json</entry>\n    <entry key='event.forward.header'>X-Traccar-Forward-Token: mutacao</entry>" }], tests: T.topo01 },
   { id: "M-E34", prop: "concessão só no demo (não no script do papel)", where: "host", edits: [{ file: "scripts/db-runtime-role.sh", find: "EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', v_role);", replace: "EXECUTE format('GRANT USAGE ON SCHEMA public TO %I', v_role);\n  EXECUTE format('GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO %I', v_role);" }], tests: T.H },
-  { id: "M-E35", prop: "nenhuma concessão em migração", where: "host", edits: [{ file: MIG_A, find: "--   Toca traccar_ingress_receipts (CHECK e um índice) e _prisma_migrations; nenhuma outra tabela.\n", replace: "--   Toca traccar_ingress_receipts (CHECK e um índice) e _prisma_migrations; nenhuma outra tabela.\nGRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime;\n" }], tests: [...T.guard8, ...T.H] },
+  { id: "M-E35", prop: "nenhuma concessão em migração", where: "host", edits: [{ file: MIG_A, find: DOWN_LAST, replace: DOWN_LAST + "GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime;\n" }], tests: [...T.guard8, ...T.H] },
   { id: "M-E36", prop: "limitador por rota", where: "host", edits: [{ file: APP, find: "deps.eventLimiter ?? deps.limiter", replace: "deps.limiter" }], tests: T.C },
   { id: "M-E37", prop: "tenant do payload nunca é dica (evento)", where: "db", edits: [{ file: EVT_SCHEMA, find: "    position: position ? readPosition(position) : undefined,\n  };", replace: '    position: position ? readPosition(position) : undefined,\n    ...({ forgedTenant: isObject(event.attributes) && typeof event.attributes.tenantId === "string" ? event.attributes.tenantId : undefined } as object),\n  };' }, { file: EVT_ADAPTER, find: "      hintTenantId: undefined,", replace: "      hintTenantId: (parsed as unknown as { forgedTenant?: string }).forgedTenant," }, { file: SERVICE, find: "      const resolved = await this.resolver.resolve(key, confirm, effectiveDeadline.at);", replace: FORGED_EVENT_RESOLVE }], tests: T.E },
   { id: "M-E37b", prop: "tenant do payload nunca é dica (posição/amostra)", where: "db", edits: [{ file: SERVICE, find: "      const resolved = await this.resolver.resolve(\n        key,\n        (tenantId) => this.phaseTwo(tenantId, command, effectiveDeadline),\n        effectiveDeadline.at,\n      );", replace: '      const confirmPosition = (tenantId: string) => this.phaseTwo(tenantId, command, effectiveDeadline);\n      const forgedAttributes = (command as unknown as { forged?: string }).forged;\n      const resolved = forgedAttributes\n        ? await confirmPosition(forgedAttributes).then((value) =>\n            value.kind === "confirmed"\n              ? ({ kind: "confirmed", tenantId: forgedAttributes, value: value.value, via: "hint" } as const)\n              : ({ kind: "unmapped" } as const),\n          )\n        : await this.resolver.resolve(key, confirmPosition, effectiveDeadline.at);' }, { file: POS_SCHEMA, find: "    telemetry: telemetry.sample,\n", replace: '    telemetry: telemetry.sample,\n    ...({ forged: isObject(position.attributes) && typeof position.attributes.tenantId === "string" ? position.attributes.tenantId : undefined } as object),\n' }, { file: POS_ADAPTER, find: "    telemetry: parsed.telemetry,\n  };", replace: "    telemetry: parsed.telemetry,\n    ...({ forged: (parsed as unknown as { forged?: string }).forged } as object),\n  };" }], tests: T.F },
@@ -160,8 +169,18 @@ export const MUTATIONS_ESCOPO = [
   { id: "M-S4", prop: "limite declarado: o conteúdo do regex é guardado pelo contrato, não pelo T9", where: "db", edits: [{ file: EVT_SCHEMA, find: "const EVENT_TYPE_PATTERN = /^[A-Za-z]{1,32}$/;", replace: "const EVENT_TYPE_PATTERN = /^[A-Za-z-]{1,33}$/;" }], tests: [...CENSUS, ...T.A] },
   { id: "M-S4'", prop: "o regex não vira despacho sem ser visto (contrato)", where: "db", edits: [{ file: EVT_SCHEMA, find: "const EVENT_TYPE_PATTERN = /^[A-Za-z]{1,32}$/;", replace: "const EVENT_TYPE_PATTERN = /^(ignitionOn|alarm)$/;" }], tests: T.A },
   { id: "M-S5", prop: "evasão que o detector não vê (.exec sem entrada na allowlist) — esperado VERDE, prova do buraco", where: "db", expectGreen: true, edits: [{ file: EVT_SCHEMA, find: L100, replace: '  if (typeof type !== "string" || EVENT_TYPE_PATTERN.exec(type) === null) throw new TraccarPayloadError("type_invalid");' }, { file: CENSUS_HELPER, find: RS1_LINE, replace: "" }], tests: CENSUS },
-  { id: "M-S6", prop: "o 119 pega UMA TABELA A MAIS", where: "db", migration: true, edits: [{ file: MIG_A, find: "-- ROLLBACK (manual; só em ambiente SEM dado real; NUNCA como rollback produtivo).", replace: 'CREATE TABLE "zz_mutacao_trc02" ("id" INTEGER PRIMARY KEY);\n\n-- ROLLBACK (manual; só em ambiente SEM dado real; NUNCA como rollback produtivo).' }], tests: SAN305 },
+  { id: "M-S6", prop: "o 119 pega UMA TABELA A MAIS", where: "db", migration: true, edits: [{ file: MIG_A, find: DOWN_HEAD, replace: 'CREATE TABLE "zz_mutacao_trc02" ("id" INTEGER PRIMARY KEY);\n\n' + DOWN_HEAD }], tests: SAN305 },
   { id: "M-S7", prop: "o 119 pega uma tabela SEM DML", where: "db", edits: [{ file: "scripts/db-runtime-role.sh", find: "WHERE ns.nspname = 'public' AND c.relkind IN ('r','p','S')", replace: "WHERE ns.nspname = 'public' AND c.relname <> 'vehicle_telemetry_events' AND c.relkind IN ('r','p','S')" }], tests: SAN305 },
 ];
 
-export const ALL = [...MUTATIONS_TRC02, ...REEXECUTED_01, ...MUTATIONS_ESCOPO];
+// Emenda v2.3 (§5.3): a A é UMA transação; a guarda do down vem antes de qualquer DROP e vê a amostra; o drill mede a TRANSAÇÃO.
+export const MUTATIONS_V23 = [
+  { id: "M-E51", prop: "a A é UMA transação (= o objeto do DBA)", where: "db", migration: true, edits: [{ file: MIG_A, find: 'BEGIN;\n\nCREATE TABLE "vehicle_telemetry_events" (', replace: 'CREATE TABLE "vehicle_telemetry_events" (' }, { file: MIG_A, find: "NOT VALID;\n\nCOMMIT;\n", replace: "NOT VALID;\n" }], tests: T.M },
+  { id: "M-E51b", prop: "o COMMIT fecha DEPOIS da última sentença", where: "db", migration: true, edits: [{ file: MIG_A, find: "-- (3) CHECK de message_kind do recibo: DROP + ADD NOT VALID", replace: "COMMIT;\n-- (3) CHECK de message_kind do recibo: DROP + ADD NOT VALID" }, { file: MIG_A, find: "NOT VALID;\n\nCOMMIT;\n", replace: "NOT VALID;\n" }], tests: T.M },
+  { id: "M-E51c", prop: "o BEGIN abre ANTES da primeira sentença", where: "db", migration: true, edits: [{ file: MIG_A, find: "BEGIN;\n\nCREATE TABLE", replace: "CREATE TABLE" }, { file: MIG_A, find: '("battery_level_pct" BETWEEN 0 AND 100)))\n);\n', replace: '("battery_level_pct" BETWEEN 0 AND 100)))\n);\nBEGIN;\n' }], tests: T.M },
+  { id: "M-E52", prop: "a guarda vem ANTES de qualquer DROP (R1)", where: "db", edits: [{ file: MIG_A, find: DOWN_GUARD + DOWN_DROP, replace: DOWN_DROP + DOWN_GUARD }], tests: T.M },
+  { id: "M-E53", prop: "a guarda enxerga a amostra pendurada em recibo position (R1, ponto cego)", where: "db", edits: [{ file: MIG_A, find: '(SELECT count(*) FROM "vehicle_telemetry_events") + ', replace: "" }], tests: T.M },
+  { id: "M-E54h", prop: "o teste mede a TRANSAÇÃO, não a guarda (R2) — mutação de arnês", where: "db", edits: [{ file: DRILL, find: 'downStatements().slice(1), "single-transaction")', replace: 'downStatements().slice(1), "autocommit")' }], tests: T.M },
+];
+
+export const ALL = [...MUTATIONS_TRC02, ...REEXECUTED_01, ...MUTATIONS_ESCOPO, ...MUTATIONS_V23];
