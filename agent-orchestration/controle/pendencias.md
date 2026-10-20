@@ -11365,3 +11365,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Efeito:** na tela da demo, o operador de despacho não entra pelo formulário (401); com a organização informada (login direcionado), entra (HTTP 200). Os prints de 18/10 foram tirados assim.
 - **bloqueia:** não (só a demo; nada em produção).
 - **teste de encerramento:** a demo com `--with-web` permite o login pelo formulário (sem organização) do operador de despacho criado por ela, com o passo conferido no próprio script.
+
+## P-CI-PSQL18-IMAGEM (2026-10-19) — `ubuntu-latest` virou ubuntu-26.04 com psql 18 e o job `backend` da CI reprova todo PR — ALTA
+
+- **status:** FECHADA pelo `B-CI-PSQL16` · **escopo:** `pre-existente` (mudança da imagem do GitHub, nenhum commit do repo) · **dono:** `B-CI-PSQL16`
+- **Problema (medido):** o rótulo `ubuntu-latest` passou de ubuntu-24.04 (run verde `39235996352`, 2026-10-19 10:14Z) para ubuntu-26.04 (run vermelho `39342033007`, PR #448, 23:30Z). O T14a/b de `tests/san3-05-runtime-role-guard-db.test.ts` executa o cliente `psql` do sistema e exige a versão 16 (`'T14b exige psql 16'`, recebido `psql (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg26.04+2)`): `npm test` 3750 / pass 3746 / fail 2. O `backend-postgres` passou no mesmo run porque o subconjunto dele não inclui essa suíte, e nenhuma suíte dele executa `psql`.
+- **Correção:** `.github/workflows/ci.yml`, job `backend`, `runs-on: ubuntu-24.04` (só esse job usa o `psql` do sistema). Teste e produto intocados. Descartada a instalação do `postgresql-client-16` do PGDG: depende de rede extra (apt.postgresql.org e chave) a cada run.
+- **Residual:** o ubuntu-24.04 sai de linha um dia; ao migrar, instalar o `postgresql-client-16` e pôr `/usr/lib/postgresql/16/bin` à frente no `PATH`. Fora do escopo do bloco: `backup-database.yml` (instala o cliente 16 em `ubuntu-latest`; o `pg_dump` 18 do sistema pode ficar à frente no PATH — conferir na próxima execução).
+- **bloqueia:** não (fechada).
