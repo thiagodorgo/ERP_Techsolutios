@@ -1056,6 +1056,7 @@ do Ω3F-6; endurecer quando houver um componente de menu/modal compartilhado do 
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-3-REFATURAR-DELTA — Faturar o delta de itens adicionados após o 1º faturamento (BAIXA, fatia futura)
+- status: FECHADA (2026-10-20, PR #448 `079332a5`, bloco `B-SAN3-02` — junta de dinheiro APROVADA 3×0 no ciclo 2; critério de encerramento do `docs/revisoes/SAN3/PLANO_SAN3.md` l.244 cumprido, medido pelo porteiro do #448 em `079332a5`: T-C1d (item lançado depois → título complementar), T-K4b/T-A4b (refaturar o carimbado → recusado) e T-C5-db (o índice segue impedindo dois originais), verdes em 2 rodadas; parecer `porteiro-448`)
 A idempotência do faturamento é por (tenant_id, work_order_id, direction) — 1 título receivable por OS. Um item
 lançado no Financeiro da OS APÓS o 1º faturamento fica "a faturar", mas o 2º POST /invoice dá 409 already_invoiced
 (não fatura o delta). Faturar o delta (2º título com Σ dos itens não-faturados, ou aditar o título) é fatia futura.
@@ -1079,6 +1080,7 @@ construtor do invoicing service (como o WorkOrderFinancialService faz) para o fa
   <sub>Triagem SAN2-1 (2026-08-29): balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Diferida, não descartada**, e listada nominalmente no PR para o dono vetar se discordar. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-3-INVOICE-ATOMIC — Título↔carimbo não-atômico (BAIXA)
+- status: FECHADA (2026-10-20, PR #448 `079332a5`, bloco `B-SAN3-02` — junta de dinheiro APROVADA 3×0 no ciclo 2; critério de encerramento do `docs/revisoes/SAN3/PLANO_SAN3.md` l.244 cumprido, medido pelo porteiro do #448 em `079332a5`: T-A2 (falha injetada entre título e carimbo → nada persiste), verdes em 2 rodadas; parecer `porteiro-448`)
 createForWorkOrder (título) e markInvoiced (itens) são 2 statements sem $transaction. Crash entre eles: título
 criado com itens não-travados (invoiced_at NULL → editáveis). A idempotência (índice parcial) preserva "1 título
 ativo/OS", mas a divergência amount↔itens fica possível nesse recorte raro. Ideal: envolver em $transaction.
@@ -1100,6 +1102,7 @@ Reachable só via item manual não-BRL (baixa prob). Ω3F-module — mudar toca 
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 ## P-Ω4-3-INVOICE-TOCTOU-DELETE — DELETE de item durante o faturamento infla o título (BAIXA)
+- status: FECHADA (2026-10-20, PR #448 `079332a5`, bloco `B-SAN3-02` — junta de dinheiro APROVADA 3×0 no ciclo 2; critério de encerramento do `docs/revisoes/SAN3/PLANO_SAN3.md` l.244 cumprido, medido pelo porteiro do #448 em `079332a5`: T-R1, T-R2, T-R2b (item apagado durante o faturamento → fora do título), verdes em 2 rodadas; parecer `porteiro-448`)
 Entre listInvoiceableByWorkOrder (lê o agregado) e markInvoiced, um item ainda-não-faturado pode ser soft-deleted
 (assertItemNotInvoiced passa: invoiced_at ainda null). O título nasce com a Σ que INCLUÍA o item, mas markInvoiced
 pula deletados → title.amount > Σ dos itens carimbados. TOCTOU no READ (distinto de P-Ω4-3-INVOICE-ATOMIC = crash
@@ -11383,9 +11386,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** com sessão `roles=["Super Admin"], permissions=[]`, ou com contexto ativo `role:"Super Admin"` sobre sessão do Financeiro, `can("work_orders:create")` responde `false`, com teste de comportamento do provider.
 
+- **Dono confirmado (20/10, ressalva do porteiro do #446):** a fatia de telas do `B-SAN3-06a` já mergeou no #424. A fatia de permissões (`B-SAN3-06a`, plano `B-SAN3-06a-perm`) continua aberta e é a dona desta pendência.
 ## P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organização não tem teste executado — BAIXA
 
-- **status:** RESOLVIDA em B-DASH-PERFIL ciclo 3 (2026-10-19) · `frontend/tests/context-selection-page-live.test.tsx` (casos K1–K4 com DOM mínimo do repositório; vermelho sob M3b, M3c, M3e e M1a) · **escopo:** `pre-existente` na falta de arnês de interação (`renderToString` não exercita `onClick`) · **dono:** `B-DASH-PERFIL`
+- **status:** FECHADA em 2026-10-20 (ciclo 3 do `B-DASH-PERFIL`, PR #446) · **severidade:** era BAIXA · **escopo:** `dentro-do-bloco` (corrigido — ver nota) · **dono:** encerrado
+  <sub>**FECHADA por EXECUÇÃO no ciclo 3.** O escopo `pre-existente` registrado em 19/10 não tinha evidência de data ou origem (§C7.1-ter(a)): a linha `navigate(landing)` é de `a6b91ce9` (18/10, o commit de produto deste bloco; na base `bf83cda8` era `navigate("/dashboard")`, `0b1a7dfb` de 02/07), e a justificativa "falta de arnês de interação" era FALSA no objeto — `frontend/tests/work-orders-page-live.test.tsx` (`3e40a256`, 02/10, #402) já tinha DOM mínimo + `createRoot` + `React.act` + `onClick` real, sem dependência, no `test:smoke`, e o próprio `a6b91ce9` editou esse arquivo. Achado `C2-dash2-01` (`jurado-dash2-c2-opus`, ciclo 2); auditoria e plano do ciclo 3 em `omega/reprovacoes/R-B-DASH-PERFIL-2.md`. Teste de encerramento: `frontend/tests/context-selection-page-live.test.tsx` (K1–K3, no `test:smoke`), medido em `docs/revisoes/TELAS/B-DASH-PERFIL-ciclo3-dev.md` §3: M3b (`navigate("/dashboard")`) → K1 e K2 vermelhos; M3c (`setActiveContext({ ...context })`) → K1 e K2; M3e (sem a guarda de landing nula) → K3; restauro provado por `git hash-object` = `e34d4cbd…`.</sub>
 - **Origem:** nota C2-opus-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), mutação M3b; Parte 3 item 2 do plano do ciclo 2; reprovação C2-opus-01 no ciclo 2 (`agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md`). A troca em si (M1a) passou a ter teste no ciclo 2 (`frontend/tests/dashboard-profile-provider.test.tsx`) e a ativação/navegação por clique na `ContextSelectionPage` real passou a ter 4 testes executados em `frontend/tests/context-selection-page-live.test.tsx` no ciclo 3.
 - `ContextSelectionPage.handleActivate` faz `navigate(landing)`; as mutações M3b (`navigate("/dashboard")`), M3c (`setActiveContext({ ...context })`), M3e (remoção do `if (!landing) throw`) e M1a ficam vermelhas em `frontend/tests/context-selection-page-live.test.tsx`.
 - **bloqueia:** não.
@@ -11400,7 +11405,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DASH-PERFIL-STATUS-FORA-DO-LITERAL (2026-10-20) — a linha de status da P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE diverge do literal do plano do ciclo 3 — BAIXA
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (achado C2-dash3b-01 da junta do ciclo 3 do `B-DASH-PERFIL`) · **dono:** próximo PR de registro (regra (1) de `D-GOV-PROPORCIONAL`)
+- **status:** FECHADA em 2026-10-20 (PR de registro de 20/10: a linha de status da `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` passou ao literal do §2.5 do plano do ciclo 3, com a nota `<sub>`; ressalva do porteiro do #446) · **dono:** encerrado
 - **Origem:** a entrada diz RESOLVIDA e mantém o escopo `pre-existente` ("na falta de arnês de interação"), sem a nota `<sub>`. O §2.5 do plano (`R-B-DASH-PERFIL-2.md`) mandava "FECHADA em <data>", escopo `dentro-do-bloco` e a nota. O efeito material está certo: fechada no índice, com o teste e as mutações corretos.
 - **bloqueia:** não.
 - **teste de encerramento:** a linha de status segue o literal do §2.5, e o índice regenerado é igual ao versionado.
@@ -11453,3 +11458,17 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** plano v2 §6.2 e §11. A API já devolve `parentTitleId`, o 201 complementar e o 503 `invoice_transient_conflict` repetível. A tela de faturar ainda não existe.
 - **bloqueia:** não.
 - **teste de encerramento:** a tela mostra o original e os complementares de uma OS e repete a chamada no 503, com teste de tela.
+
+## P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE (2026-10-20) — o gerador do índice lê a palavra "crítica" (de revisão crítica) como severidade CRÍTICA — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`agent-orchestration/controle/gerar-indice-pendencias.py:75-80`) · **dono:** próximo PR de ferramenta de registro (regra (1) de `D-GOV-PROPORCIONAL`)
+- **Origem:** achado 3 do porteiro do #448 (`porteiro-448`). As entradas `P-SAN3-02-PAI-CANCELADO` e `P-SAN3-02-DEADLOCK-RESIDUAL` são BAIXA, mas aparecem como CRÍTICA no índice porque o texto delas cita "crítica" no sentido de revisão crítica.
+- **bloqueia:** não.
+- **teste de encerramento:** as duas entradas aparecem como BAIXA no índice regenerado, e um caso de teste do gerador prende "crítica" em contexto de revisão.
+
+## P-KPI-REGRA-PR-FERRAMENTA (2026-10-20) — não há regra escrita sobre PR de ferramenta contar como bloco no histórico de KPI — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** o dono (regra do painel de KPI) ou o próximo PR de governança
+- **Origem:** nota do revisor do #452 (marco de KPI de 20/10). O #417 (`B-AGENTE-API`) contou como bloco; o #442 (`B-ARNES-2`) e o #449 (`B-CI-PSQL16`) não contaram. O marco de 20/10 seguiu o caso mais recente.
+- **bloqueia:** não.
+- **teste de encerramento:** a regra escrita no §C3/§C7 item 8(5), com o histórico reconciliado ou a divergência declarada.
