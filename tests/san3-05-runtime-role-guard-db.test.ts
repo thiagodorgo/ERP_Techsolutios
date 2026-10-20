@@ -1013,7 +1013,7 @@ test(
       try {
         const first = await runRoleScript(admin, connectionString, runtime, runtimeSecret);
         assert.equal(first.status, 0, first.stdout + first.stderr);
-        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|118$`, "m"));
+        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|119$`, "m"));
         const firstPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
           `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
         );
