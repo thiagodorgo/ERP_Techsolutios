@@ -1,0 +1,51 @@
+{
+  "jurado": "jurado-dash3-c2b-opus — identidade nova (sucessora de jurado-dash3-c2-argon, nunca disparada; corpo jurado-dash-c2-troca-de-organizacao)",
+  "cadeira": "C2 — Troca de organização e sessão",
+  "modelo": "Claude Opus (Claude Opus 5.5) pelo Antigravity, nível menor declarado (§C7.6); troca de executor: plano previa Antigravity, mandato pôs Gemini 4 Argon (teto mensal de gasto, 429 às 02:39Z de 20/10, registrado em 00-quedas.md e na R1 do inspetor)",
+  "objeto": "33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d (PR 446, fix/dash-perfil; git ls-remote + gh pr view: OPEN, não rascunho, MERGEABLE); B = merge-base = 2ecfb333aed0a0efcc1f171148473aad2921be66; origin/main início = fim = 2ecfb333… (cerca intacta, delta zero); frontend/src + src sem diferença desde os objetos dos ciclos 1 e 2",
+  "legalidade": "inspetor-dash3-opus: LIBERADO COM RESSALVA (R1–R5) nomeando C2 = jurado-dash3-c2b-opus, worktree C:/Users/AMP/w-jdash3-c2b-opus, sem cluster; check-runs 14/14 completed success; mandato_md5 ab74b68ba960309c352e4dd78126eba7 (cru = EOL-neutro), PRE-VOO OK; corpo canônico lido por git show no objeto, IDENTICO nos dois espelhos (EOL-neutro; só tools: e preâmbulo Codex diferem), blobs iguais nos objetos dos ciclos 1, 2 e 3; worktree próprio com npm ci próprio e zero junction",
+  "quorum": "unanimidade de 3 com veto",
+  "regua": "ciclo 3, §C7 item 8(2): só bloqueia defeito de produto grave (perde dado, vaza dado entre organizações, quebra permissão na autoridade, erra dinheiro); o resto vira pendência com dono",
+  "insumos": "plano R-B-DASH-PERFIL-2.md, atas dos ciclos 1 e 2 e relatório do dev do ciclo 3 tratados como A RE-VERIFICAR, nunca fato herdado; tudo o que voto foi re-medido por execução própria",
+  "itens": {
+    "item1_execucao_context_selection_e_vizinhos": "VERDE — node --test --import tsx (frontend/) sobre context-selection-page-live + dashboard-profile-provider + dashboard-profile-behavior: tests 12, pass 12, fail 0; K1 /finance, K2 /inventory, K3 fica em /select-context com a mensagem e sem activeContext, K4 /work-orders sem POST; zero console.error",
+    "item2_mutacoes_M3b_M3c_M3e_M1a": "VERDE — uma por vez no worktree próprio: M3b → K1/K2/K4 not ok; M3c → K1/K2/K4 not ok; M3e → K3 not ok; M1a → K1/K2/K3 not ok (conjunto exato do mandato); restauro por cópia byte a byte com git hash-object = blob do objeto (ContextSelectionPage.tsx e34d4cbd…, repository.ts 68a4804f…); git diff HEAD -- frontend/src vazio",
+    "item3_pendencia_e_indice": "VERDE com observação não grave — P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE com status RESOLVIDA apontando context-selection-page-live.test.tsx e M3b/M3c/M3e/M1a; gerar-indice-pendencias.py regenera pendencias-indice.md idêntico ao blob do objeto (47721eac…), entrada na seção FECHADAS"
+  },
+  "voto": "APROVADO",
+  "o_que_executei": [
+    "S0: md5 do mandato cru/EOL-neutro; git show + tr -d '\\r' | md5sum e git rev-parse dos corpos C2 nos dois espelhos nos objetos 849bf840/faad24ce/33345c6e; diff EOL-neutro dos espelhos; git ls-remote; gh pr view 446; git fetch + merge-base; gh api check-runs (14/0); git diff --name-only frontend/src src (0/0); docker ps -a; git worktree list",
+    "terreno: FreeVirtualMemory 5,77 GB; git worktree add C:/Users/AMP/w-jdash3-c2b-opus 33345c6e --detach; npm ci em frontend/ (ec=0, 103 pacotes, 107 s); LinkType de node_modules vazio (sem junction)",
+    "item 1: node --test --import tsx tests/context-selection-page-live.test.tsx tests/dashboard-profile-provider.test.tsx tests/dashboard-profile-behavior.test.tsx (cwd frontend/) → 12/12 pass",
+    "item 2: item2.ps1 + mut.cjs — M3b, M3c, M3e, M1a uma por vez, teste do arquivo novo, restauro byte a byte, git hash-object × git rev-parse do objeto; git status/diff de frontend/src vazio no fim",
+    "item 3: git show do objeto:pendencias.md (entrada da pendência); python gerar-indice-pendencias.py no worktree; git diff --quiet ec=0; hash-object = blob 47721eac…; git checkout do índice",
+    "teardown: git worktree remove --force (ec=0); head e origin/main re-medidos sem mudança"
+  ],
+  "achados": [
+    {
+      "id": "C2-dash3b-01",
+      "descricao": "A linha de status de P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE no objeto diverge do literal do plano §2.5: usa RESOLVIDA em vez de 'FECHADA em <data>', mantém escopo `pre-existente` com a justificativa 'na falta de arnês de interação' (que o próprio plano declara falsa no objeto e mandava corrigir para `dentro-do-bloco` com nota <sub>), mantém dono B-DASH-PERFIL em vez de 'encerrado' e não traz a nota <sub>. O efeito material (pendência fechada no índice gerado, com teste de encerramento e mutações corretos) está certo.",
+      "gravidade": "não grave (registro; não perde dado, não vaza entre organizações, não quebra permissão, não erra dinheiro)",
+      "classe": "registro/forma",
+      "escopo": "dentro-do-bloco",
+      "N": 1,
+      "forma": "texto literal da linha de status de uma entrada de pendencias.md",
+      "bloqueia": false,
+      "destino": "pendência de registro com dono no orquestrador (régua do ciclo 3)"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "K1/K2/K4 vermelhos sob M3b (landing incondicional /dashboard)",
+    "K1/K2/K4 vermelhos sob M3c (activeContext sem as permissões da sessão)",
+    "K3 vermelho sob M3e (sem a guarda de landing nula)",
+    "K1/K2/K3 vermelhos sob M1a (sessão nova herda permissões da anterior)",
+    "restauro de cada arquivo mutado com git hash-object = blob do objeto",
+    "zero console.error nos três arquivos de teste",
+    "pendencias-indice.md regenerado byte a byte igual ao blob do objeto"
+  ],
+  "pendencias_que_aceito": [
+    "C2-dash3b-01 — forma da linha de status de P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (RESOLVIDA/escopo pre-existente/dono/nota <sub>) diverge do literal do plano §2.5; não grave; dono: orquestrador (registro)"
+  ],
+  "teardown": "hashes restaurados e provados (ContextSelectionPage.tsx e34d4cbd…, repository.ts 68a4804f…, pendencias-indice.md 47721eac…); nenhum .orig-c2b restante; worktree C:/Users/AMP/w-jdash3-c2b-opus removido por git worktree remove --force (ec=0); nenhum contêiner, rede ou porta usada; base viva e processos alheios intocados; nada commitado; logs em C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c2b/",
+  "veredito": "VOTO: APROVADO — a troca por clique na ContextSelectionPage real navega pela landing das permissões da sessão nova, grava activeContext com essas permissões, bloqueia perfil sem telas e não herda permissões; as 4 mutações ficam vermelhas no conjunto exato com restauro provado; pendência fechada e índice regenerado igual ao objeto"
+}

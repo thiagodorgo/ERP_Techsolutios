@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **583** |
-| IDs distintos | 572 |
-| **ABERTAS** | **434** |
+| Cabecalhos `## P-` | **585** |
+| IDs distintos | 574 |
+| **ABERTAS** | **436** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **367** |
+| — das quais **ativas nesta rodada** | **369** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 146 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **583 cabecalhos para 572 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **585 cabecalhos para 574 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 202
+## ABERTAS · balde A — material — 203
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -276,8 +276,9 @@
 | `P-CI-LISTA-CURADA-6-PRE-EXISTENTES` | 11227 | MÉDIA | sim | P-CI-LISTA-CURADA-6-PRE-EXISTENTES (2026-10-18) — 6 suítes `-db` pré-existentes fora da  |
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
+| `P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS` | 11408 | MÉDIA | sim | P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS (2026-10-20) — o classificador de permissões do Clau |
 
-## ABERTAS · balde B — processo/registro — 165
+## ABERTAS · balde B — processo/registro — 166
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -446,6 +447,7 @@
 | `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
 | `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11377 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
 | `P-FRONT-DOM-MINIMO-TRIPLICADO` | 11394 | BAIXA | sim | P-FRONT-DOM-MINIMO-TRIPLICADO (2026-10-19) — o DOM mínimo de teste do frontend existe em |
+| `P-DASH-PERFIL-STATUS-FORA-DO-LITERAL` | 11401 | BAIXA | sim | P-DASH-PERFIL-STATUS-FORA-DO-LITERAL (2026-10-20) — a linha de status da P-DASH-PERFIL-T |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 

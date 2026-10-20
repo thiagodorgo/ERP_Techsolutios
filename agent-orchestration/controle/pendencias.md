@@ -11397,3 +11397,18 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** Parte 3, item 4, do plano do ciclo 3 (`agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md`). O DOM mínimo sem dependência está repetido em `frontend/tests/work-orders-page-live.test.tsx`, `frontend/tests/patios-dossie-versao.smoke.test.tsx` e `frontend/tests/context-selection-page-live.test.tsx`, por contrato de cada arquivo ("escrito aqui mesmo"). Quem apensou esta entrada foi o orquestrador, porque o dev do ciclo 3 (`dev-dash-ciclo3-argon`) não a apensou (registrado na ata do ciclo 3).
 - **bloqueia:** não.
 - **teste de encerramento:** os três arquivos verdes no `test:smoke` importando `frontend/tests/helpers/mini-dom.ts`, e `git grep -c 'class MiniNode' frontend/tests` = 1.
+
+## P-DASH-PERFIL-STATUS-FORA-DO-LITERAL (2026-10-20) — a linha de status da P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE diverge do literal do plano do ciclo 3 — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (achado C2-dash3b-01 da junta do ciclo 3 do `B-DASH-PERFIL`) · **dono:** próximo PR de registro (regra (1) de `D-GOV-PROPORCIONAL`)
+- **Origem:** a entrada diz RESOLVIDA e mantém o escopo `pre-existente` ("na falta de arnês de interação"), sem a nota `<sub>`. O §2.5 do plano (`R-B-DASH-PERFIL-2.md`) mandava "FECHADA em <data>", escopo `dentro-do-bloco` e a nota. O efeito material está certo: fechada no índice, com o teste e as mutações corretos.
+- **bloqueia:** não.
+- **teste de encerramento:** a linha de status segue o literal do §2.5, e o índice regenerado é igual ao versionado.
+
+## P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS (2026-10-20) — o classificador de permissões do Claude Code negou a mutação de controle de um jurado em worktree descartável — MÉDIA
+
+- **status:** ABERTA · **escopo:** processo (orquestração) · **dono:** o dono, porque são as configurações de permissão do Claude Code; o orquestrador não as altera
+- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `C:/Users/AMP/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
+- **Efeito:** o jurado que exige vermelho-controle próprio fica sem poder medir. Pelo corpo das cadeiras, "não consigo medir" vale REPROVADO; no ciclo 3 vale a régua do §C7 item 8(2).
+- **bloqueia:** não.
+- **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
