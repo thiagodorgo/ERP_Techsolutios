@@ -516,6 +516,21 @@ do gerador e o atribui à cadeira (a), em cluster descartável.
 **Para o orquestrador** (o registro é seu): a linha v2.4 em `D-TRC02-ESCOPO` (a da v2.2 também falta na `origin/main`, P14) e as
 pendências `P-SAN3-05-WRAPPERS-BUDGET`, `P-TRC-BATERIA-RATCHET-T13` e `P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR` (§4.3 da emenda).
 
+### M-E09 re-especificada depois da v2.4 (C-10: o evento não consulta operador)
+
+Quem achou foi o redator dos mandatos da junta. A M-E09 do catálogo injetava `ports.operatorAt(…)`. Depois da edição R, o tipo
+`EventPhaseTwoPorts` (`Pick<PhaseTwoPorts, "tx" | "repository">`) não tem mais esse campo, e a mutação deixou de exercer o que dizia.
+Head de partida: `a0a2d9fc`.
+
+| Medida | Comando → saída | Veredito |
+|---|---|---|
+| **M-E09-tipo** (a injeção antiga, presa pelo COMPILADOR) | `me09-tipo.mjs`, no scratchpad: aplica `ports.operatorAt(command.occurredAt, binding.vehicleId)` no passo 5 de `eventPhaseTwoSteps` e roda `npm run check`. Resultado: **ec 2**, `error TS2339: Property 'operatorAt' does not exist on type 'EventPhaseTwoPorts'` (l.320) e um TS7053 que decorre dele. Restauro por sha256 ok (`197507aa3b95`) | vermelho no build: a forma antiga não compila |
+| **M-E09** (nova, a forma ATUAL de depender de operador) | o catálogo troca a injeção por `findOperatorsForVehicleAt(tx, { tenantId, vehicleId: binding.vehicleId, at: command.occurredAt })` com o `tx` da fase 2, quarentenando se não for `single`. Rodada com `run-mutations.mjs /w db "M-E09"` no contêiner. Resultado: `tsc 0` (compila), `exit 1`, **`5/21`** | **vermelha**; restauro ok (`restoredOk` true); linha em `results-db-v23.jsonl` |
+
+Por que caem 16 casos e não só o E8: nenhuma organização de `traccar-event-ingestion-db` tem despacho, porque o evento é dado da viatura.
+Com a mutação, todo evento aceito vira quarentena `no_operator_at_fix_time`. O E8 ("viatura vinculada SEM despacho — 204 e a linha,
+C-10") está entre os vermelhos. O plano v2 §9.1 previa "M-E09 → E8"; o alvo continua o mesmo, e o vermelho é mais largo.
+
 ## Limpeza
 
 | Comando | Saída |
