@@ -11366,6 +11366,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não (só a demo; nada em produção).
 - **teste de encerramento:** a demo com `--with-web` permite o login pelo formulário (sem organização) do operador de despacho criado por ela, com o passo conferido no próprio script.
 
+## P-CI-PSQL18-IMAGEM (2026-10-19) — `ubuntu-latest` virou ubuntu-26.04 com psql 18 e o job `backend` da CI reprova todo PR — ALTA
+
+- **status:** FECHADA pelo `B-CI-PSQL16` · **escopo:** `pre-existente` (mudança da imagem do GitHub, nenhum commit do repo) · **dono:** `B-CI-PSQL16`
+- **Problema (medido):** o rótulo `ubuntu-latest` passou de ubuntu-24.04 (run verde `39235996352`, 2026-10-19 10:14Z) para ubuntu-26.04 (run vermelho `39342033007`, PR #448, 23:30Z). O T14a/b de `tests/san3-05-runtime-role-guard-db.test.ts` executa o cliente `psql` do sistema e exige a versão 16 (`'T14b exige psql 16'`, recebido `psql (PostgreSQL) 18.6 (Ubuntu 18.6-1.pgdg26.04+2)`): `npm test` 3750 / pass 3746 / fail 2. O `backend-postgres` passou no mesmo run porque o subconjunto dele não inclui essa suíte, e nenhuma suíte dele executa `psql`.
+- **Correção:** `.github/workflows/ci.yml`, job `backend`, `runs-on: ubuntu-24.04` (só esse job usa o `psql` do sistema). Teste e produto intocados. Descartada a instalação do `postgresql-client-16` do PGDG: depende de rede extra (apt.postgresql.org e chave) a cada run.
+- **Residual:** o ubuntu-24.04 sai de linha um dia; ao migrar, instalar o `postgresql-client-16` e pôr `/usr/lib/postgresql/16/bin` à frente no `PATH`. Fora do escopo do bloco: `backup-database.yml` (instala o cliente 16 em `ubuntu-latest`; o `pg_dump` 18 do sistema pode ficar à frente no PATH — conferir na próxima execução).
+- **bloqueia:** não (fechada).
+
 ## P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou do contexto ativo) passa por cima das permissões na UI — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`011632f1`, 2026-06-07; o diff do `B-DASH-PERFIL` não toca a linha) · **dono:** `B-SAN3-06a` (ou bloco próprio, se o dono preferir)

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **581** |
-| IDs distintos | 570 |
+| Cabecalhos `## P-` | **582** |
+| IDs distintos | 571 |
 | **ABERTAS** | **433** |
 | — das quais **diferidas** (balde C) | 67 |
 | — das quais **ativas nesta rodada** | **366** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 145 |
+| FECHADAS | 146 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **581 cabecalhos para 570 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **582 cabecalhos para 571 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -444,7 +444,7 @@
 | `P-07CB1-IDEMP-VISTORIA-SEM-ATOR` | 11347 | BAIXA | sim | P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `c |
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
 | `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
-| `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11369 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
+| `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11377 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -518,7 +518,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3665 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3709 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 145
+## FECHADAS — 146
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -666,4 +666,5 @@
 | `P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR` | 10975 | ALTA | sim | P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode  |
 | `P-O6R-07CB-EMENDA-DECISOES` | 11080 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
 | `P-CONFLITO-INICIO-ATENDIMENTO` | 11144 | ALTA | sim | P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o " |
-| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11378 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
+| `P-CI-PSQL18-IMAGEM` | 11369 | ALTA | sim | P-CI-PSQL18-IMAGEM (2026-10-19) — `ubuntu-latest` virou ubuntu-26.04 com psql 18 e o job |
+| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11386 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
