@@ -11596,3 +11596,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** emenda v2.4 do `B-TRC-02`. `latestDeviceStatus`, `latestIgnition` e `listByVehicle` não têm chamador em `src/**` até o `B-TRC-04`, que exibe. A `listByVehicle` está presa por 1 caso -db sob o GUC de duas organizações.
 - **bloqueia:** não.
 - **teste de encerramento:** quando o chamador nascer, o inventário de acessos ganha o motivo novo e cada porta tem teste com o chamador real.
+
+## P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA (2026-10-20) — migrações anteriores à 20260878 rodam sentença a sentença no deploy do Prisma — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (fora do veto, §C7.1-ter(a)) · **dono:** bloco de saneamento a nomear pelo orquestrador (SAN3)
+- **Origem:** emenda v2.3 do `B-TRC-02`. O `prisma migrate deploy` 7.8 executa cada sentença em autocommit. As migrações anteriores à `20260878000000` (por exemplo `20260874000000_traccar_ingestion_foundation`, com DDL em várias sentenças) não têm transação explícita. Elas já estão aplicadas em todos os ambientes; o risco só aparece numa base nova com o deploy interrompido. A mesma classe foi achada no `B-SAN3-02` (C2-01) e no `B-TRC-02` (D1 do DBA).
+- **bloqueia:** não.
+- **teste de encerramento:** cada migração com mais de uma sentença de DDL passa a ter transação explícita ou uma justificativa, com drill de falha injetada; e um guard de CI reprova migração nova com várias sentenças e sem `BEGIN`/`COMMIT` (regra geral recomendada pelo planejador, a decidir pelo dono).

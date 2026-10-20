@@ -3865,3 +3865,5 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
     - Entra 1 caso -db para `listByVehicle`.
     - O gerador, os `WRAPPERS` e o `src/database/rls.ts` ficam intocados (0 bytes de diff).
   - Planos em `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.3.md` e `-v2.4-acessos.md`.
+
+- **`D-TRC02-MIGRACAO-TRANSACAO-EXPLICITA` (2026-10-20, emenda v2.3 do `B-TRC-02`, desenho do planejador aceito pelo orquestrador; §A6).** a migração `20260879000000_vehicle_telemetry_events` do B-TRC-02 passa a transação explícita (`BEGIN;`/`COMMIT;` no próprio arquivo), pelo mesmo mecanismo medido no B-SAN3-02 (C2-01): o `prisma migrate deploy` 7.8 executa sentença a sentença em autocommit. O down é manual, transação única, com a guarda antes de qualquer DROP. A propriedade é presa por drill com o CLI real, falha injetada após cada sentença (k = 1..17). Recomendação de regra geral, a decidir pelo dono: migração nova com mais de uma sentença e só DDL transacional leva `BEGIN`/`COMMIT` e drill por prefixo; migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.

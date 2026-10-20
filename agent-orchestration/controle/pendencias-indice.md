@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **609** |
-| IDs distintos | 598 |
-| **ABERTAS** | **454** |
+| Cabecalhos `## P-` | **610** |
+| IDs distintos | 599 |
+| **ABERTAS** | **455** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **389** |
+| — das quais **ativas nesta rodada** | **390** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 152 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **609 cabecalhos para 598 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **610 cabecalhos para 599 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -289,7 +289,7 @@
 | `P-TRC02-LOCK-INDICE-RECIBO-PROD` | 11572 | MÉDIA | sim | P-TRC02-LOCK-INDICE-RECIBO-PROD (2026-10-20) — o índice único novo do recibo trava escri |
 | `P-SAN3-05-WRAPPERS-BUDGET` | 11579 | MÉDIA | sim | P-SAN3-05-WRAPPERS-BUDGET (2026-10-20) — `withTenantRlsBudget` e `findFirstTenantRls` nã |
 
-## ABERTAS · balde B — processo/registro — 175
+## ABERTAS · balde B — processo/registro — 176
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -468,6 +468,7 @@
 | `P-TRC01-IDEMPOTENCIA-CONCORRENTE-503` | 11564 | BAIXA | sim | P-TRC01-IDEMPOTENCIA-CONCORRENTE-503 (2026-10-20) — duas entregas idênticas concorrentes |
 | `P-TRC-BATERIA-RATCHET-T13` | 11586 | BAIXA | sim | P-TRC-BATERIA-RATCHET-T13 (2026-10-20) — a bateria dos blocos do Traccar não nomeia a gu |
 | `P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR` | 11593 | BAIXA | sim | P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR (2026-10-20) — três portas de leitura da telemetr |
+| `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA` | 11600 | BAIXA | sim | P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA (2026-10-20) — migrações anteriores à 202 |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
