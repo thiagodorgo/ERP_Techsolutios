@@ -11373,3 +11373,42 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Correção:** `.github/workflows/ci.yml`, job `backend`, `runs-on: ubuntu-24.04` (só esse job usa o `psql` do sistema). Teste e produto intocados. Descartada a instalação do `postgresql-client-16` do PGDG: depende de rede extra (apt.postgresql.org e chave) a cada run.
 - **Residual:** o ubuntu-24.04 sai de linha um dia; ao migrar, instalar o `postgresql-client-16` e pôr `/usr/lib/postgresql/16/bin` à frente no `PATH`. Fora do escopo do bloco: `backup-database.yml` (instala o cliente 16 em `ubuntu-latest`; o `pg_dump` 18 do sistema pode ficar à frente no PATH — conferir na próxima execução).
 - **bloqueia:** não (fechada).
+
+## P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou do contexto ativo) passa por cima das permissões na UI — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`011632f1`, 2026-06-07; o diff do `B-DASH-PERFIL` não toca a linha) · **dono:** `B-SAN3-06a` (ou bloco próprio, se o dono preferir)
+- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
+- `PermissionProvider.can`/`hasAny` fazem `|| isPlatformAdmin({ roles, permissions })`, e `isPlatformAdmin` aceita o RÓTULO `"Super Admin"`; `roles` une `session.user.roles` com `activeContext.role`. Efeito medido: sessão sintética `roles=["Super Admin"], permissions=[]` responde `can(<qualquer>)=true` (2/2 permissões sintéticas, S1), e contexto obsoleto com `role:"Super Admin"` no `localStorage` libera a UI do Financeiro (1/1, S4). Só UI: o backend continua negando, e `platform_admin`/`super_admin` recebem o catálogo inteiro (`catalog.ts:412/729`), então o fluxo real não produz o estado.
+- **Decisão que é do dono:** derivar "admin de plataforma" só de `permissions` (`platform:tenants:read`) e derivar `roles` só da sessão.
+- **bloqueia:** não.
+- **teste de encerramento:** com sessão `roles=["Super Admin"], permissions=[]`, ou com contexto ativo `role:"Super Admin"` sobre sessão do Financeiro, `can("work_orders:create")` responde `false`, com teste de comportamento do provider.
+
+## P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organização não tem teste executado — BAIXA
+
+- **status:** RESOLVIDA em B-DASH-PERFIL ciclo 3 (2026-10-19) · `frontend/tests/context-selection-page-live.test.tsx` (casos K1–K4 com DOM mínimo do repositório; vermelho sob M3b, M3c, M3e e M1a) · **escopo:** `pre-existente` na falta de arnês de interação (`renderToString` não exercita `onClick`) · **dono:** `B-DASH-PERFIL`
+- **Origem:** nota C2-opus-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), mutação M3b; Parte 3 item 2 do plano do ciclo 2; reprovação C2-opus-01 no ciclo 2 (`agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md`). A troca em si (M1a) passou a ter teste no ciclo 2 (`frontend/tests/dashboard-profile-provider.test.tsx`) e a ativação/navegação por clique na `ContextSelectionPage` real passou a ter 4 testes executados em `frontend/tests/context-selection-page-live.test.tsx` no ciclo 3.
+- `ContextSelectionPage.handleActivate` faz `navigate(landing)`; as mutações M3b (`navigate("/dashboard")`), M3c (`setActiveContext({ ...context })`), M3e (remoção do `if (!landing) throw`) e M1a ficam vermelhas em `frontend/tests/context-selection-page-live.test.tsx`.
+- **bloqueia:** não.
+- **teste de encerramento:** `frontend/tests/context-selection-page-live.test.tsx` (K1–K4: clica no botão da organização na `ContextSelectionPage` real e afirma a rota de destino derivada das permissões da sessão nova, a gravação de `activeContext.permissions` e o bloqueio quando `resolveContextLandingRoute` devolve `null`; vermelho sob M3b, M3c, M3e e M1a).
+
+## P-FRONT-DOM-MINIMO-TRIPLICADO (2026-10-19) — o DOM mínimo de teste do frontend existe em 3 cópias — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` por origem (nasce no ciclo 3 do `B-DASH-PERFIL`) · **dono:** bloco `chore(test)` próprio, regra (1) de `D-GOV-PROPORCIONAL` (um revisor independente + CI)
+- **Origem:** Parte 3, item 4, do plano do ciclo 3 (`agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md`). O DOM mínimo sem dependência está repetido em `frontend/tests/work-orders-page-live.test.tsx`, `frontend/tests/patios-dossie-versao.smoke.test.tsx` e `frontend/tests/context-selection-page-live.test.tsx`, por contrato de cada arquivo ("escrito aqui mesmo"). Quem apensou esta entrada foi o orquestrador, porque o dev do ciclo 3 (`dev-dash-ciclo3-argon`) não a apensou (registrado na ata do ciclo 3).
+- **bloqueia:** não.
+- **teste de encerramento:** os três arquivos verdes no `test:smoke` importando `frontend/tests/helpers/mini-dom.ts`, e `git grep -c 'class MiniNode' frontend/tests` = 1.
+
+## P-DASH-PERFIL-STATUS-FORA-DO-LITERAL (2026-10-20) — a linha de status da P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE diverge do literal do plano do ciclo 3 — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (achado C2-dash3b-01 da junta do ciclo 3 do `B-DASH-PERFIL`) · **dono:** próximo PR de registro (regra (1) de `D-GOV-PROPORCIONAL`)
+- **Origem:** a entrada diz RESOLVIDA e mantém o escopo `pre-existente` ("na falta de arnês de interação"), sem a nota `<sub>`. O §2.5 do plano (`R-B-DASH-PERFIL-2.md`) mandava "FECHADA em <data>", escopo `dentro-do-bloco` e a nota. O efeito material está certo: fechada no índice, com o teste e as mutações corretos.
+- **bloqueia:** não.
+- **teste de encerramento:** a linha de status segue o literal do §2.5, e o índice regenerado é igual ao versionado.
+
+## P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS (2026-10-20) — o classificador de permissões do Claude Code negou a mutação de controle de um jurado em worktree descartável — MÉDIA
+
+- **status:** ABERTA · **escopo:** processo (orquestração) · **dono:** o dono, porque são as configurações de permissão do Claude Code; o orquestrador não as altera
+- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `C:/Users/AMP/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
+- **Efeito:** o jurado que exige vermelho-controle próprio fica sem poder medir. Pelo corpo das cadeiras, "não consigo medir" vale REPROVADO; no ciclo 3 vale a régua do §C7 item 8(2).
+- **bloqueia:** não.
+- **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.

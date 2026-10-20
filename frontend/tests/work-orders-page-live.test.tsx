@@ -339,7 +339,7 @@ const { localDateString } = await import("../src/modules/work-orders/work-orders
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
 const { PermissionProvider } = await import("../src/providers/PermissionProvider");
-const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
 const { mockSession } = await import("../src/mocks/auth/context");
 // CE-G2 (§4.3 do plano) — o CATÁLOGO do backend, executado: papel novo entra sozinho; o arquivo não tem import algum.
 const { ROLE_PERMISSIONS } = await import("../../src/modules/core-saas/permissions/catalog");
@@ -459,8 +459,8 @@ async function mount(permissions: readonly string[], role: string, tree: (childr
   dom.intervals.length = 0;
   requestedUrls.length = 0;
   downloadClicks.length = 0;
-  // Sessão SEM permissões próprias: as permissões do ator vêm só do contexto ativo (o papel sob teste).
-  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: [], permissions: [] } });
+  // Mantém a sessão sem papéis e grava nela as permissões do papel sob teste, como no app real.
+  setStoredSessionPermissions({ ...mockSession, user: { ...mockSession.user, roles: [] } }, permissions);
   const context: TenantContext = { ...CONTEXT_BASE, role: role as TenantContext["role"], permissions: [...permissions] };
   dom.win.localStorage.setItem("erp-techsolutions.active-context", JSON.stringify(context));
   const container = dom.doc.createElement("div");

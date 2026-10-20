@@ -1,0 +1,45 @@
+{
+  "jurado": "jurado-dash2-c2-opus — identidade nova (corpo jurado-dash-c2-troca-de-organizacao, lido do objeto)",
+  "cadeira": "C2 — Troca de organização e sessão",
+  "modelo": "Claude Code · Claude Opus (claude-opus-5-5) · nível menor declarado (§C7.6)",
+  "objeto": "faad24ce7c00ab4d7610d0784c0beab8a479ddb0 (ls-remote = gh pr view 446); B = merge-base(origin/main, objeto) = bf83cda8a9acdc92f05f29397d1860bed9be5388 = origin/main no fetch das 22:31Z (delta 0); check-runs 14/14 completed success",
+  "legalidade": "insp-dash2-parecer.md LIBERADO COM RESSALVA por inspetor-dash2b-opus (sucessor P3 declarado de inspetor-dash2-opus, R3), nomeando C2 = jurado-dash2-c2-opus, worktree w-jdash2-c2-*, sem banco; corpo lido do objeto (R1): .claude blob bcf618d4, corpo a partir de \"# Cadeira C2\" IDENTICO nos dois espelhos (md5 EOL-neutro 77c3f623), arquivo inteiro difere só pelo cabeçalho Codex gerado; mandato_md5 9e9e46ff0cb189656368fc14940dc309; R2 não se aplicou (o mandato da C2 não manda rodar mandato-refs.sh); plano do ciclo 2, ata do ciclo 1 e relatório do dev A RE-VERIFICAR; votos de outras cadeiras do ciclo 2 não lidos",
+  "quorum": "unanimidade de 3 com veto",
+  "voto": "REPROVADO",
+  "itens": {
+    "item1": "APROVADO — no objeto o PermissionProvider usa só a sessão; T1..T4 4/4 verdes; sonda própria (catálogo real finance + contexto {work_orders:create,dashboard:view}, App real) nega /dashboard e /work-orders/new e o controle positivo entra; M1 e M1b deixam T1,T2 (e S1,S2) vermelhos; M7 deixa T3 (e S3) vermelho; mutação própria M-C2a (só contexto) vermelha em T1..T3; hash restaurado 8ab79873 = objeto. 0 achado.",
+    "item2": "APROVADO — switchTenantContext chama POST /auth/active-tenant com o Bearer antigo e body {tenantId} e grava user.permissions = resolveFrontendPermissionsFromBackend(d.permissions); T4 verde no objeto e VERMELHO com M1a; sonda própria (A→B snake_case→A, e 403 sem gravação parcial) 2/2 verde e X1 vermelho com M1a; mutação própria M-C2b (mapa estático por papel) vermelha em T4 e X1; hash restaurado 68a4804f = objeto. 0 achado.",
+    "item3": "REPROVADO (achado C2-dash2-01) — produto do bloco inalterado desde o ciclo 1 (0 arquivo de frontend/src|src entre 849bf840 e faad24ce; patch-id do produto idêntico faa83b03) e correto por execução (sonda de clique: /finance, /inventory, sem laço); o resolver está preso (M-LAND vermelho em 1+4 testes); mas M3b sobrevive a test:smoke 1335/1335 + 4/4 da raiz + check, e a premissa da pendência que a adia (falta de arnês de interação) é falsa no objeto."
+  },
+  "o_que_executei": [
+    "item1: node --test --import tsx tests/dashboard-profile-provider.test.tsx (4/4) + sonda própria zz-jdash2-c2-sonda.test.tsx via <App/> real (3/3) + M1, M1b, M7, M-C2a com restauro provado por hash-object",
+    "item2: T4 + sonda própria zz-jdash2-c2-sonda-troca.test.tsx (X1 A→B→A, X2 403) + M1a e M-C2b em repository.ts com restauro provado por hash-object",
+    "item3: git diff 849bf840..faad24ce e 3fbcaea2..bf83cda8 -- frontend/src src (0/0) + patch-id do produto (igual) + test:smoke base 1335/1335 + M3b × test:smoke (1335/1335 verde) × raiz (4/4) × check (ec 0) + M-LAND (vermelho) + git blame/ancestralidade do arnês + sonda de clique própria K1–K3 (verde no objeto; K1,K2 vermelhos sob M3b; M3c própria vermelha)"
+  ],
+  "achados": [
+    {
+      "id": "C2-dash2-01",
+      "titulo": "a navegação pós-seleção pela landing-route (mudança do bloco) não é presa por teste executado; a pendência que a adia se apoia em premissa falsa",
+      "gravidade": "bloqueia — não grave (produto correto por execução; sem perda/vazamento de dado, sem quebra de permissão: a guarda de /dashboard ainda nega)",
+      "classe": "arnês/teste — mudança central do bloco sem teste de comportamento (mesma classe do C3-01 do ciclo 1) + dado podre no registro (premissa não medida)",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "git blame -L 55,55 faad24ce -- frontend/src/pages/ContextSelectionPage.tsx → a6b91ce9 (2026-10-18, commit deste bloco) `navigate(landing);`; na base B a linha era `navigate(\"/dashboard\")` (0b1a7dfb, 2026-07-02); tabela 1.4 do plano R-B-DASH-PERFIL-1 e ata do ciclo 1 l.23 classificam C2-opus-01/M3b como dentro-do-bloco. O `pre-existente` de pendencias.md:11378 apoia-se em \"falta de arnês de interação (renderToString não exercita onClick)\" — refutado: frontend/tests/work-orders-page-live.test.tsx (3e40a256, 2026-10-02, PR #402, ancestral de B e de a6b91ce9) já tem DOM mínimo + createRoot + act + disparo do onClick real, sem dependência; a sonda própria que o reutiliza deixa M3b vermelho (K1, K2). O arquivo de teste permitido do ciclo 2 (plano §2.6) comportava o caso.",
+      "N": "1 mutação sobrevivente (M3b) em 1 ponto (ContextSelectionPage.tsx:55); 0/1335 testes do test:smoke e 0/4 da raiz vermelhos sob M3b; único vigia = 1 caso de forma (assert.match sobre o fonte) que M3b atravessa",
+      "forma": "reverter a linha do bloco ao comportamento da base (`navigate(\"/dashboard\")`) passa toda a bateria; o efeito seria mandar Financeiro/Estoque para /dashboard depois de escolher a organização — exatamente o \"envia usuário sem capacidade para o dashboard\" que o corpo da C2 lista como vermelho que reprova",
+      "propriedade_ausente": "prisão por comportamento executado de que a tela de seleção leva o ator à landing-route derivada das permissões da sessão nova"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "T1/T2 vermelhos com M1 e M1b; T3 vermelho com M7 (controle positivo não passa por provider vazio); S1/S2 vermelhos com M1/M1b pelo App real",
+    "T4 vermelho com M1a (união antiga+nova) e com M-C2b (mapa estático por papel no lugar do payload)",
+    "M-LAND (resolver sempre /dashboard) vermelho em dashboard-profile-behavior (1) e dashboard-profile-permissions da raiz (4)",
+    "sonda de clique: K1/K2 vermelhos sob M3b — prova que a medição alcança a linha e que o arnês existente basta"
+  ],
+  "pendencias_que_aceito": [
+    "P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (C1-01) — fora da minha cadeira; não a julgo",
+    "C2-opus-02 (enabledModules por mapa estático) — dono B-SAN3-06a, registrada no ciclo 1",
+    "Observação sem achado (K3): sem landing, a sessão já trocou para a organização nova e a tela fica na seleção com erro, sem navegar e sem laço; as permissões são as da sessão nova (estreitas) — não libera nada medido"
+  ],
+  "teardown": "4 arquivos mutados restaurados com git hash-object = git rev-parse faad24ce:<arq> (8ab79873, 68a4804f, e34d4cbd, b7882890); worktree C:/Users/AMP/w-jdash2-c2-a removido por git worktree remove --force (ec 0; 0 na lista); sondas zz-jdash2-c2-* removidas com ele; zero contêiner/rede/porta/Vite; nenhum processo deixado; árvore w-dash só com c2-evidencia.md e c2-voto.json; sem commit",
+  "veredito": "VOTO: REPROVADO — a navegação pós-seleção pela landing-route, mudança do bloco em ContextSelectionPage.tsx:55 (a6b91ce9), não é presa por teste executado: M3b sobrevive a 1335/1335 + 4/4, e o adiamento registrado se apoia em \"falta de arnês de interação\", refutada por execução (arnês sem dependência desde 3e40a256, que deixa M3b vermelho) | escopo: dentro-do-bloco, não grave, ciclo 2 (§C7 item 8(2)). Itens 1 e 2 APROVADOS sem achado."
+}

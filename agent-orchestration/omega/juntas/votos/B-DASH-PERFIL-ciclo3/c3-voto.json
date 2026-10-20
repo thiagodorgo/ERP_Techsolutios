@@ -1,0 +1,58 @@
+{
+  "jurado": "jurado-dash3-c3-opus — identidade nova (corpo jurado-dash-c3-regressao-e-escopo)",
+  "cadeira": "C3 — Regressão, escopo e arnês (ciclo 3)",
+  "modelo": "Claude Opus 5.5, Claude Code subagente, nível menor DECLARADO (§C7.6)",
+  "objeto": "33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d (PR 446); delta do ciclo 3 = faad24ce..33345c6e ^origin/main",
+  "legalidade": "inspetor-dash3-opus: LIBERADO COM RESSALVA (R1–R5), nomeia jurado-dash3-c3-opus / Claude Opus / worktree C:/Users/AMP/w-jdash3-c3-opus; corpos IDENTICOS nos dois espelhos (EOL-neutro, só tools: e bloco Codex diferem); 14/14 check-runs completed success no objeto; worktree próprio com npm ci próprio, sem junction; sem Docker e sem banco. Plano R-2, atas e relatório do dev tratados como A RE-VERIFICAR e re-verificados onde meu mandato toca.",
+  "quorum": "unanimidade de 3 com veto; régua do ciclo 3 (§C7 item 8(2)): só defeito de produto GRAVE reprova",
+  "voto": "APROVADO",
+  "itens": {
+    "item1_regressao_e_compilacao": "VERDE COM ACHADO — test:smoke 1339/1339 (fail 0, skip 0, K1–K4 executados, ok 168–171); frontend check/build ec=0; raiz check/lint/build ec=0 (após db:generate com URL inerte, ordem da CI). Vermelho-controle M3b NÃO executado: permissão negada pelo harness; arquivo intacto (e34d4cbd = objeto) → achado C3-dash3-03, não grave.",
+    "item2_escopo_delta_ciclo3_e_pendencia": "VERDE — delta faad24ce..33345c6e ^origin/main = 17 arquivos, PROIBIDO 0 (avaliador com vermelho-controle: 2 injetados → ec=1); merge 56a3ae0b só resolve registro; 0 linha de teste removida; 0 dep de DOM; package.json só na linha test:smoke; P-FRONT-DOM-MINIMO-TRIPLICADO apensada pelo ORQUESTRADOR em 33345c6e (dev a esqueceu em adda2a84) — conferida; índice regenerado = versionado (hash 47721eac).",
+    "item3_arquivo_A_no_smoke_espelhos_e_CI": "VERDE — context-selection-page-live.test.tsx 1x no package.json, na linha test:smoke; sync-agent-agents --check OK (73) e sync-agent-skills --check OK (12/39), ec=0/0; check-runs de 33345c6e: 14/14 completed success; head do PR não andou."
+  },
+  "o_que_executei": [
+    "git worktree add C:/Users/AMP/w-jdash3-c3-opus 33345c6e --detach; npm ci (raiz e frontend), sem junction",
+    "git log --no-merges --name-only faad24ce..33345c6e ^origin/main + avaliador PROIBIDO com vermelho-controle",
+    "git diff -U0 (linhas de teste removidas = 0); package.json; deps de DOM; lockfiles",
+    "python agent-orchestration/controle/gerar-indice-pendencias.py → hash igual ao objeto",
+    "gh api check-runs (14/14); sync-agent-agents/skills --check",
+    "npm --prefix frontend run test:smoke (1339/1339); frontend check/build; npm run db:generate (URL inerte) + check/lint/build"
+  ],
+  "achados": [
+    {
+      "id": "C3-dash3-01",
+      "gravidade": "nota",
+      "classe": "processo/registro",
+      "escopo": "dentro-do-bloco",
+      "N": 1,
+      "forma": "a pendência P-FRONT-DOM-MINIMO-TRIPLICADO, que o plano R-2 (l.180 (ii), l.282) atribuía ao dev, foi esquecida no commit adda2a84 e apensada pelo ORQUESTRADOR no commit 33345c6e; entrada e índice conferidos (índice regenerado = versionado). Não bloqueia (régua do ciclo 3)."
+    },
+    {
+      "id": "C3-dash3-02",
+      "gravidade": "nota",
+      "classe": "terreno",
+      "escopo": "pre-existente (ci.yml:98 roda db:generate antes do check)",
+      "N": 1,
+      "forma": "npm run check/lint/build num worktree novo falham com TS2305 até o cliente Prisma ser gerado; não é regressão do bloco."
+    },
+    {
+      "id": "C3-dash3-03",
+      "gravidade": "nota (não grave pela régua do §C7 item 8(2))",
+      "classe": "medição/arnês — força do teste novo não provada por mutação própria",
+      "escopo": "dentro-do-bloco (controle do ciclo 3)",
+      "N": 1,
+      "forma": "mutação M3b (navigate(landing) → navigate(\"/dashboard\")) em ContextSelectionPage.tsx l.55 do meu worktree negada duas vezes pelo classificador de permissões do harness (sed -i e Edit); hash intacto e34d4cbd = 33345c6e; não é defeito de produto — o ciclo 3 não tocou frontend/src nem src (0 arquivos desde 849bf840), o backend segue autoridade; não perde dado, não vaza entre organizações, não quebra permissão, não erra dinheiro. Mitigação medida: test:smoke executa K1–K4. Vira pendência com dono (orquestrador decide o registro; a prova por mutação cabe a quem puder escrever no worktree)."
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "vermelho-controle M3b do item 1 — não executado (permissão negada pelo harness), classificado como achado C3-dash3-03 não grave"
+  ],
+  "pendencias_que_aceito": [
+    "P-FRONT-DOM-MINIMO-TRIPLICADO (BAIXA, dono: bloco chore(test) próprio)",
+    "C3-dash3-03 — prova por mutação M3b do context-selection-page-live pela C3 (dono: orquestrador)",
+    "C3-dash3-02 — db:generate antes de check em worktree novo (nota de terreno, pré-existente)"
+  ],
+  "teardown": "ContextSelectionPage.tsx intacto (hash-object = rev-parse = e34d4cbd); worktree C:/Users/AMP/w-jdash3-c3-opus removido com git worktree remove --force (ec=0, inexistente, 0 no worktree list); nenhum contêiner, porta ou commit",
+  "justificativa": "Itens 2 e 3 VERDES por execução; item 1 VERDE na regressão (1339/1339) e na compilação, com o vermelho-controle M3b não executado por negação de permissão do harness — lacuna de medição, não defeito de produto. Régua do ciclo 3 (§C7 item 8(2), que prevalece sobre o corpo da cadeira): nenhum defeito de produto grave achado. VOTO: APROVADO — regressão, escopo e CI verdes no objeto 33345c6e; achados C3-dash3-01/02/03 viram pendência com dono."
+}
