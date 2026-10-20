@@ -32,7 +32,8 @@ Medido em 2026-10-19, ref `origin/main` = `bf83cda8a9acdc92f05f29397d1860bed9be5
 | 7 (R2-1) | `git show origin/main:agent-orchestration/controle/decisoes.md | grep -n 'D-TRC02-'` → só l.3783 (`D-TRC02-RESPOSTAS`, "Q1 sim, Q2 sim e Q3 sim"); `grep -n -E 'D-TRC02-Q1|Q1-NAO'` → nada | **Q1 = SIM por `decisoes.md:3783-3784`, sem `D-TRC02-Q1-NAO*`** | **variante Q1 = SIM** (§Q1 + emenda v2.1) |
 | 8 | idem, l.3785 (Q2 = sim; "Resolve P-TRC-DEMO-LOGIN-SEM-ORG-INERTE"); sem reversão | Q2 = SIM | **o passo do GRANT entra no demo** (§5.5) e H7 vale |
 
-**Variante que vale neste bloco: Q1 = SIM e Q2 = SIM (Q3 = SIM: os 38 alarmes).**
+**Variante que vale neste bloco: Q1 = SIM e Q2 = SIM (Q3 = SIM: os 38 alarmes)** — **SUPERADA**: ver "Variante Q1 = NÃO" no fim
+deste relatório (decisão do dono de 19/10, antes do merge).
 
 ### Baseline N (H-9) — head `bf83cda8`, sem mudança de código
 
@@ -296,6 +297,27 @@ Sem as duas, o job `backend` da CI fica vermelho em T9 e T14a/b. Contornar qualq
 de um ratchet (a classe que a emenda R3-3 proibiu); por isso o pedido e não o contorno.
 
 | 8 | demo (passo 9 acima) | 3ª rodada VERDE; `down -v` | verde |
+
+## Variante Q1 = NÃO — decisão do dono de 19/10 (antes do merge)
+
+**Ordem do orquestrador (~01:15Z), com as palavras do dono: "TRC-02 Q1 = Não".** A Q1 passa de SIM para NÃO ANTES do merge; vale o
+§Q1.7 da v2 com a R2-5 da emenda ("o NÃO antes do merge continua sendo §Q1.7"). O registro em `decisoes.md` é do orquestrador — não
+feito aqui. **Variante do código a partir do commit `498c4e26`: Q1 = NÃO, Q2 = SIM, Q3 = SIM.**
+
+| Onde (lista do §Q1.7) | O que saiu | Medida |
+|---|---|---|
+| migração A | a coluna `fix_key`, o CHECK `vehicle_telemetry_events_fix_key_check`, o índice `vehicle_telemetry_events_sample_fix_key`, o literal `'position_sample'` do CHECK do recibo (fica `('position','event')`); cabeçalho declara a variante | `grep fix_key\|position_sample` → 0 |
+| `prisma/schema.prisma` | `fix_key String?` e os comentários `[Q1=SIM]` (recibo agora diz `('position','event')`) | `prisma validate` ok; `grep` → 0 |
+| `traccar-ingestion.service.ts` | `SAMPLE_ON_QUARANTINE_REASONS`, a costura `sampleOnQuarantineReasons`, o gate na closure `quarantined()`, `sampleWithoutOperator` (42 linhas), o `fixKey` da amostra e o ramo `skip` do caminho aceito | `grep` → 0 |
+| `vehicle-telemetry*.ts`, repositório de ingestão | `'position_sample'` do tipo `TraccarMessageKind`; `fixKey` e o `ON CONFLICT (tenant_id, fix_key)` de `insertSample` (vira INSERT simples: o `UNIQUE (tenant_id, receipt_id)` basta); `withSampleSavepoint` sem `skip`/`divert` (só RELEASE ou ROLLBACK TO + classificação R4-2) | `npm run check` ec 0 |
+| testes | `tests/traccar-event-sample-quarantine-db.test.ts` inteiro (`git rm`); F3 recupera "0 amostra" (e 0 recibo de qualquer tipo); F1 sem `fix_key`; F9 sem `fix_key` nos INSERTs literais; G5/G6 sem `fix_key`; G8 passa a exigir que `'position_sample'` seja RECUSADO (`23514`) e ausente do CHECK; H9 sem a suíte I na lista nominal (8 arquivos) | sem banco: `# tests 68 # pass 68` (+1 pulo do caso de banco do guard de catálogo) |
+| `.github/workflows/ci.yml` | a linha `SUITES="$SUITES tests/traccar-event-sample-quarantine-db.test.ts"`; o comentário passa a "3 suítes" e o denominador é re-medido | abaixo |
+| mutações | as 8 M-Q1-*; entra a **M-E16′** (a closure `quarantined()` grava recibo `'position'` + amostra → F3 vermelho POR CONTAGEM); M-E32/M-E47 deixam de citar a suíte I; M-E27 re-ancorada (a linha `"fix_key" TEXT` não existe mais) | 72 entradas (35 host + 37 banco); âncoras únicas salvo a `MUT-10@01` conhecida |
+| `API_CONTRACTS.md` | a nota da Q1; entra "posição em quarentena não conserva amostra (Q1 = NÃO)" | — |
+
+**Contagens previstas × reais (sem Q1):** testes novos — previsto 96 (v2.1 §5.4); **real 97** (54 sem banco + E 20 + F 13 + G 10; E5′ é um
+`test()` à parte). Pendência que volta a existir por §Q1.7 (registro do orquestrador): `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA` (dono
+B-TRC-03). EM APURAÇÃO: E/F/G no container, `backend-postgres` 3× (previsto 433), mutações afetadas, `migrate diff`.
 
 ## Limpeza
 
