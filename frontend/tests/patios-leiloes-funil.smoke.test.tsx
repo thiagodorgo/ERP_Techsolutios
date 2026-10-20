@@ -69,13 +69,13 @@ async function renderLeiloes(permissions: readonly string[]): Promise<string> {
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { mockSessionForEmail } = await import("../src/mocks/auth/context");
-  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
   const { LeiloesPage } = await import("../src/modules/patios/auction/pages/LeiloesPage");
 
-  setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
+  setStoredSessionPermissions(mockSessionForEmail("gestor.web@techsolutions.example"), permissions);
   seedContext(permissions);
 
   return renderToString(
@@ -126,13 +126,13 @@ async function renderPanel(permissions: readonly string[]): Promise<string> {
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { mockSessionForEmail } = await import("../src/mocks/auth/context");
-  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
   const { AuctionPanel } = await import("../src/modules/patios/auction/components/AuctionPanel");
 
-  setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
+  setStoredSessionPermissions(mockSessionForEmail("gestor.web@techsolutions.example"), permissions);
   seedContext(permissions);
 
   return renderToString(

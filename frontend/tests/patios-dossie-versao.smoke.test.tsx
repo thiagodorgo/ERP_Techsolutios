@@ -889,7 +889,7 @@ async function withChecklistTransition(body: (tools: TransitionTools) => Promise
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
-  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
   const { mockSession } = await import("../src/mocks/auth/context");
   const { useProcessChecklistRuns } = await import("../src/modules/patios/processes/useProcessChecklistRuns");
   const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
@@ -912,7 +912,10 @@ async function withChecklistTransition(body: (tools: TransitionTools) => Promise
 
   dom.storage.clear();
   dom.intervals.length = 0;
-  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, roles: [], permissions: [] } });
+  setStoredSessionPermissions(
+    { ...mockSession, user: { ...mockSession.user, roles: [] } },
+    ["impound:read", "checklist_runs:read"],
+  );
   dom.storage.set("erp-techsolutions.active-context", JSON.stringify({
     tenantId: "ten-ciclo-3", tenantName: "Organização ciclo 3", tenantStatus: "active",
     branchId: "fil-ciclo-3", branchName: "Filial ciclo 3", role: "Operador",

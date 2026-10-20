@@ -70,7 +70,9 @@ async function renderProfissionais(permissions: readonly string[]): Promise<stri
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
   const { ProfissionaisPage } = await import("../src/modules/registry/operator-profiles/pages/ProfissionaisPage");
 
-  setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
+  const session = mockSessionForEmail("gestor.web@techsolutions.example");
+  session.user.permissions = permissions as string[];
+  setStoredAuthSession(session);
   seedContext(permissions);
 
   return renderToString(

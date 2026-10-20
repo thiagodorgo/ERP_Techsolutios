@@ -1,0 +1,56 @@
+{
+  "jurado": "jurado-dash3-c1-opus — identidade nova (cadeira jurado-dash-c1-cadeia-de-acesso)",
+  "cadeira": "C1 — Cadeia de acesso, do backend para a sessão",
+  "modelo": "Claude Opus (claude-opus-5-5), executor Claude Code subagente, nível menor declarado (§C7.6)",
+  "objeto": "33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d",
+  "legalidade": "inspetor-dash3-opus LIBERADO COM RESSALVA (R1–R5) nomeando jurado-dash3-c1-opus, Claude Opus, worktree C:/Users/AMP/w-jdash3-c1-opus, sem cluster; objeto 33345c6e = ls-remote = gh pr view 446 (OPEN); 14/14 check-runs completed success; corpo .claude blob e1460c56 carregado por git show do objeto = corpo julgado; espelho .agents difere só por construção (tools + bloco Codex); B=2ecfb333; mandato_md5 5f5b452d; mandato com 2 itens (§2.8 do R-2); plano, atas e relatório do dev tratados A RE-VERIFICAR, nunca fato herdado",
+  "quorum": "unanimidade de 3 com veto; régua do ciclo 3 (§C7 item 8(2))",
+  "voto": "APROVADO",
+  "itens": {
+    "item1": "VERDE — 0 arquivos de produto alterados c1→c3 e c2→c3; patch-id faa83b03 idêntico nos 3 ciclos; C1-01 re-medido: 011632f1 2026-06-07 (PR 25), catalog.ts:412/729, auth.adapter.ts:228; pre-existente, não grave (só UI), dono P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI",
+    "item2": "VERDE — tests/auth-active-tenant-permissions + dashboard-profile-permissions: 9/9 ec=0; sonda HTTP própria 18/18: T5 finance 61/61, inventory 17/17, support 10/10 (+operator/manager/tenant_admin) == resolvePermissionsForRoles([papel]), 0 extra, dashboard:view ausente; T6 403 FORBIDDEN sem data (cross-tenant, org inexistente, homônimo), 401 sem Bearer e com Bearer inválido, 400 sem tenantId; vermelho-controle M3 (3 fail + 6 FAIL sonda), M2 (3 fail + 12 FAIL), M6 (1 fail + 3 FAIL), restauro provado hash-object 0da96d08 = objeto"
+  },
+  "o_que_executei": [
+    "git diff --name-only faad24ce..33345c6e / 849bf840..33345c6e -- frontend/src src → 0/0",
+    "git diff <base> X -- frontend/src src | git patch-id --stable → faa83b03 ×3",
+    "git log -S isPlatformAdmin origin/main -- PermissionProvider.tsx → 011632f1 2026-06-07; git blame l.5/33/36",
+    "git show 33345c6e:catalog.ts | grep → 412/729; auth.adapter.ts → 228",
+    "npm ci próprio em C:/Users/AMP/w-jdash3-c1-opus (ec=0, node_modules diretório comum, sem junction)",
+    "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts → 9/9",
+    "node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/jdash3-c1/sonda/sonda-c1.ts <worktree> → 18/18",
+    "mutações M3, M2, M6 em src/modules/auth/routes/auth.routes.ts, uma por vez, testes + sonda vermelhos, restauro git hash-object = 33345c6e:<arquivo> (0da96d08)"
+  ],
+  "achados": [
+    {
+      "id": "C1-01 (re-medido)",
+      "descricao": "PermissionProvider.can/hasAny fazem || isPlatformAdmin, que aceita o rótulo 'Super Admin' em roles (que une session.user.roles e activeContext.role): atalho só de UI",
+      "gravidade": "nao-grave (não bloqueia; backend nega e super_admin/platform_admin já recebem o catálogo inteiro, catalog.ts:412/729)",
+      "escopo": "pre-existente — evidência: git log -S isPlatformAdmin origin/main → 011632f1 2026-06-07 (head do PR 25); git blame l.5/33/36 = 011632f13; o diff do bloco no provider não toca essas linhas",
+      "classe": "atalho de rótulo na UI (permissão de UI, não da autoridade)",
+      "N": 1,
+      "forma": "OR com rótulo de papel em 2 linhas (can, hasAny) do mesmo commit",
+      "dono": "P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (pendencias.md:11377, dono B-SAN3-06a)"
+    },
+    {
+      "id": "C1-nota-01",
+      "descricao": "as recusas 401 (sem Bearer) e 400 (sem tenantId) do POST /active-tenant não têm caso em tests/auth-active-tenant-permissions.test.ts; provadas só pela sonda desta cadeira",
+      "gravidade": "nota (nenhuma)",
+      "escopo": "pre-existente — auth.routes.ts l.390-405 fora do diff do bloco (git diff 2ecfb333..33345c6e -- auth.routes.ts = +1 linha, l.467)",
+      "classe": "cobertura de teste",
+      "N": 2,
+      "forma": "ramo de recusa sem teste automatizado",
+      "dono": "nenhum exigido; registrado para a ata"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "0 arquivos de produto alterados entre ciclos e patch-id idêntico (faa83b03) — teria falhado se o ciclo 3 tocasse produto",
+    "T5 exatidão de catálogo — derrubado por M3 e M2",
+    "T6 falha fechado sem data — derrubado por M6",
+    "sonda própria: fabricação de dashboard:view e permissão fora do catálogo — derrubada por M2"
+  ],
+  "pendencias_que_aceito": [
+    "P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (pre-existente, BAIXA, dono B-SAN3-06a)"
+  ],
+  "teardown": "3 mutações restauradas com prova hash-object 0da96d08 = 33345c6e:src/modules/auth/routes/auth.routes.ts; git status do worktree 0 entradas; processos node do worktree = 0; jdash3-c1-* contêineres = 0 (nenhum criado); worktree removido por git worktree remove --force (ec=0); base viva e portas proibidas intocadas; nada commitado",
+  "justificativa": "Item 1: produto inalterado do ciclo 1 ao 3 (0 arquivos; patch-id faa83b03 nos três); C1-01 permanece pre-existente (011632f1, 2026-06-07), não grave, com dono. Item 2: por execução própria, o active-tenant devolve exatamente o catálogo do backend para finance/inventory/support, sem fabricar dashboard:view, e recusa fechado (403 sem data, 401, 400); os vermelhos-controle M3/M2/M6 derrubam suíte e sonda. Pela régua do ciclo 3, nada grave dentro do bloco. VOTO: APROVADO — cadeia de acesso do active-tenant à sessão íntegra por execução; único achado (C1-01) pre-existente, não grave, com dono."
+}
