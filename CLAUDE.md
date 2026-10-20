@@ -785,6 +785,27 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      (segurança/permissão), teto de 2 ciclos; `#401` (B-SAN3-11, rótulo do dossiê) passa à regra (1); `#393` fica
      congelado pela regra (3).
 
+9. **JUNTA: SÓ A CADEIRA VERMELHA É REFEITA, COM TRAVA (decisão do dono, 2026-10-20 — `D-JUNTA-SO-CADEIRA-VERMELHA`).**
+   Proposta do dono, nas palavras dele: *"vamos fazer um upgrade na orquestração, quando uma junta votar e por exemplo duas
+   cadeiras verdes e uma vermelha, somente a vermelha vai ser trabalhada, nao precisa fazer de novo o que ja esta certo, se de
+   uma junta de tres, duas reprovarem, essas duas serao refeita e por ai em diante"*. Aprovada com a trava abaixo (*"sim"*).
+   Onde este item divergir do §C7.4 ("identidade nova nas cadeiras que votaram"), vale este item, só para as cadeiras verdes.
+   - **(1) A cadeira verde carrega o voto** para o ciclo seguinte quando o diff do conserto **não toca o escopo dela**. O
+     inspetor confere por comando, com `git diff --name-only <objeto anterior>..<objeto novo>` cruzado com a lista de
+     arquivos que a cadeira mediu no voto anterior (`arquivos_medidos` no voto, ou os caminhos das linhas de comando da
+     evidência dela). Interseção vazia significa voto carregado.
+   - **(2) Se o conserto tocar o escopo dela,** uma identidade NOVA re-executa só os comandos registrados na evidência
+     daquela cadeira (o roteiro do P3), sobre o objeto novo, e mede o que mudou. Saída igual mantém o verde. Saída
+     diferente gera voto novo, com a régua do ciclo corrente.
+   - **(3) A cadeira vermelha é refeita**, com identidade nova e a régua do ciclo corrente, focada no achado mais a
+     regressão dos itens dela. Duas ou três vermelhas: refazem-se todas as vermelhas, e as verdes seguem (1) ou (2).
+   - **(4) A unanimidade, ou a maioria, é do conjunto** (votos carregados + revalidados + refeitos), todos referidos ao
+     **objeto final**. A ata registra, por cadeira, se o voto foi carregado, revalidado ou refeito, e o comando que provou
+     isso. Voto carregado sem esse comando não é insumo (é a mesma regra do P3).
+   - **Por quê, medido:** nos ciclos 1 e 2 do `B-DASH-PERFIL`, a C1 aprovou sem achado e foi refeita do zero no ciclo
+     seguinte. Isso custou uma cadeira inteira por ciclo, sem informação nova. A trava existe porque o conserto muda o
+     código, e o verde de uma cadeira só vale enquanto o que ela mediu continua igual.
+
 ## 8. GitHub Flow & governança de commits
 
 O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:
