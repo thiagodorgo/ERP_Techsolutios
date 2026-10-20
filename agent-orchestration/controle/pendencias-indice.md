@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **582** |
-| IDs distintos | 571 |
-| **ABERTAS** | **433** |
+| Cabecalhos `## P-` | **583** |
+| IDs distintos | 572 |
+| **ABERTAS** | **434** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **366** |
+| — das quais **ativas nesta rodada** | **367** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 146 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **582 cabecalhos para 571 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **583 cabecalhos para 572 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -277,7 +277,7 @@
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
 
-## ABERTAS · balde B — processo/registro — 164
+## ABERTAS · balde B — processo/registro — 165
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -445,6 +445,7 @@
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
 | `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
 | `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11377 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
+| `P-FRONT-DOM-MINIMO-TRIPLICADO` | 11394 | BAIXA | sim | P-FRONT-DOM-MINIMO-TRIPLICADO (2026-10-19) — o DOM mínimo de teste do frontend existe em |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 

@@ -11390,3 +11390,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - `ContextSelectionPage.handleActivate` faz `navigate(landing)`; as mutações M3b (`navigate("/dashboard")`), M3c (`setActiveContext({ ...context })`), M3e (remoção do `if (!landing) throw`) e M1a ficam vermelhas em `frontend/tests/context-selection-page-live.test.tsx`.
 - **bloqueia:** não.
 - **teste de encerramento:** `frontend/tests/context-selection-page-live.test.tsx` (K1–K4: clica no botão da organização na `ContextSelectionPage` real e afirma a rota de destino derivada das permissões da sessão nova, a gravação de `activeContext.permissions` e o bloqueio quando `resolveContextLandingRoute` devolve `null`; vermelho sob M3b, M3c, M3e e M1a).
+
+## P-FRONT-DOM-MINIMO-TRIPLICADO (2026-10-19) — o DOM mínimo de teste do frontend existe em 3 cópias — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` por origem (nasce no ciclo 3 do `B-DASH-PERFIL`) · **dono:** bloco `chore(test)` próprio, regra (1) de `D-GOV-PROPORCIONAL` (um revisor independente + CI)
+- **Origem:** Parte 3, item 4, do plano do ciclo 3 (`agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md`). O DOM mínimo sem dependência está repetido em `frontend/tests/work-orders-page-live.test.tsx`, `frontend/tests/patios-dossie-versao.smoke.test.tsx` e `frontend/tests/context-selection-page-live.test.tsx`, por contrato de cada arquivo ("escrito aqui mesmo"). Quem apensou esta entrada foi o orquestrador, porque o dev do ciclo 3 (`dev-dash-ciclo3-argon`) não a apensou (registrado na ata do ciclo 3).
+- **bloqueia:** não.
+- **teste de encerramento:** os três arquivos verdes no `test:smoke` importando `frontend/tests/helpers/mini-dom.ts`, e `git grep -c 'class MiniNode' frontend/tests` = 1.
