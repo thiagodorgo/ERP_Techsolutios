@@ -176,6 +176,10 @@ já tinha terminado (falha no passo 19, abaixo) e foi derrubado na hora com o `d
 | `TRC_DEMO_PROJECT=dtrc02-demo TRC_DEMO_API_IMAGE=dtrc02-demo-api:local timeout -k 60 3600 node scripts/traccar-dev-demo.mjs --with-web` (1ª rodada) | passos 1–18 OK (inclui o 12 do 01 — agora contando só recibos `position` — e os novos 14–18: 1 `device_online`, ignição off→on = 1 `ignition_on` + 2 amostras, `alarm/sos`, reenvio do mesmo corpo = 1 linha, tipo forjado 204/0 linha, sem vínculo 202/1 episódio/0 linha); **FAIL 19**: "uma amostra nasceu do power=-1" | vermelho do ARRANJO |
 | `psql … SELECT … FROM vehicle_telemetry_events WHERE kind='sample' ORDER BY occurred_at DESC LIMIT 3` (antes do `down -v`) | a amostra do fix com `power=-1`: `motion f, total_distance_m 0, power_mv NULL` | o produto está certo: o Traccar calcula `motion`/`totalDistance` em TODA posição, então a amostra existe; o parser descartou só a tensão fora do domínio. A asserção do passo do demo é que estava errada |
 | correção do passo 19: exige 1 amostra nova **com `power_mv` NULL** | `node --check` ok | re-execução abaixo |
+| 2ª rodada (head `65861398`) | 1–19 OK (19 verde com a asserção corrigida); **FAIL 20**: `spawnSync docker ENAMETOOLONG` — os 120 corpos em base64 num argumento estouram a linha de comando do Windows | defeito do SCRIPT; `down -v` na hora (0 contêineres `dtrc02-demo`) |
+| correção: `postFromApi(route, [corpo], { repeat: 120 })` — o corpo vai UMA vez e é repetido dentro da api | `node --check` ok; H + topologia do 01 `# tests 21 # pass 21` | — |
+| 3ª rodada, mesmo comando | **`[traccar-demo] VERDE`**, 24 passos: 1–13 do 01 intactos; 14 `device_online` = 1; 15 ignição off→on = 1 `ignition_on` + 2 amostras; 16 `alarm/sos` = 1; 17 o mesmo corpo 2× → 204,204 e 1 linha; 18 tipo forjado 204/0 linha e sem vínculo 202/1 episódio/0 linha; 19 `power=-1` → localização e amostra sem tensão; 20 **rajada: 110 de 120 posições com 429; evento depois: 204**; 21 tabela sem coluna de coordenada/JSON/nome, log da api sem segredo, sem coordenada, sem o tipo forjado, `"outcome":"ignored"` contado, md5 da OS igual; 22 Traccar em `::ffff:127.0.0.1:8082`, ingestão só em `172.31.250.10:3200`; **23 o passo nomeado do `GRANT` (Q2) → `login_without_org: active`** (fecha `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE`); 24 web em `127.0.0.1:18080` | **verde** |
+| `docker compose -p dtrc02-demo … --profile tools --profile capture down -v --remove-orphans` | redes removidas; `docker ps -a \| grep -c dtrc02` → 0 | terreno limpo |
 
 ## Passo 10 — vermelho-controle
 
@@ -291,7 +295,7 @@ rodando SÓ os arquivos deles, no head e na `main`. Resíduo `dtrc02-*` depois d
 Sem as duas, o job `backend` da CI fica vermelho em T9 e T14a/b. Contornar qualquer um dos dois detectores no código seria fugir
 de um ratchet (a classe que a emenda R3-3 proibiu); por isso o pedido e não o contorno.
 
-EM APURAÇÃO: demo (passo 8 da bateria = passo 9).
+| 8 | demo (passo 9 acima) | 3ª rodada VERDE; `down -v` | verde |
 
 ## Limpeza
 

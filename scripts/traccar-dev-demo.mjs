@@ -478,9 +478,11 @@ try {
     if (!/osmand_status=2\d\d/.test(stdout)) throw new Error(`o Traccar não aceitou o ponto OsmAnd (${stdout.trim().split("\n").pop() ?? "sem saída"})`);
   };
   /** POSTs ao listener privado DE DENTRO da api (a 3200 nunca é publicada); imprime só os status. */
-  const postFromApi = (route, bodies, { parallel = false } = {}) => {
+  // `repeat`: o MESMO corpo N vezes, repetido DENTRO da api (120 corpos num argumento estouram a linha de comando do Windows).
+  const postFromApi = (route, bodies, { parallel = false, repeat = 1 } = {}) => {
     const script = [
-      "const bodies = JSON.parse(Buffer.from(process.env.TRC_DEMO_BODIES, 'base64').toString('utf8'));",
+      "const unique = JSON.parse(Buffer.from(process.env.TRC_DEMO_BODIES, 'base64').toString('utf8'));",
+      "const bodies = unique.flatMap((body) => Array.from({ length: Number(process.env.TRC_DEMO_REPEAT || '1') }, () => body));",
       "const url = 'http://' + process.env.TRACCAR_INGEST_HOST + ':3200' + process.env.TRC_DEMO_ROUTE;",
       "const send = async (body) => { const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-traccar-forward-token': process.env.TRACCAR_FORWARD_SECRET_CURRENT }, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) }); await r.arrayBuffer(); return r.status; };",
       "const statuses = process.env.TRC_DEMO_PARALLEL === '1' ? await Promise.all(bodies.map(send)) : await bodies.reduce(async (acc, body) => [...(await acc), await send(body)], Promise.resolve([]));",
@@ -488,7 +490,7 @@ try {
     ].join("\n");
     const encoded = Buffer.from(JSON.stringify(bodies)).toString("base64");
     const { stdout } = docker(
-      compose("exec", "-T", "-e", `TRC_DEMO_BODIES=${encoded}`, "-e", `TRC_DEMO_ROUTE=${route}`, "-e", `TRC_DEMO_PARALLEL=${parallel ? "1" : "0"}`, "api", "node", "--input-type=module", "-e", script),
+      compose("exec", "-T", "-e", `TRC_DEMO_BODIES=${encoded}`, "-e", `TRC_DEMO_ROUTE=${route}`, "-e", `TRC_DEMO_PARALLEL=${parallel ? "1" : "0"}`, "-e", `TRC_DEMO_REPEAT=${repeat}`, "api", "node", "--input-type=module", "-e", script),
       { timeout: 120_000 },
     );
     const statuses = /TRC_DEMO_STATUSES=(\[[^\]]*\])/.exec(stdout)?.[1];
@@ -582,7 +584,7 @@ try {
       position: { id: 0, attributes: {}, deviceId: 1, protocol: "osmand", fixTime: new Date().toISOString(), valid: true, latitude: SIM_LAT, longitude: SIM_LON, speed: 0, course: 0, accuracy: 0 },
       device: { id: 1, attributes: {}, uniqueId: "trcburst01" },
     };
-    const burst = postFromApi("/ingest/traccar/v1/positions", Array.from({ length: 120 }, () => position), { parallel: true });
+    const burst = postFromApi("/ingest/traccar/v1/positions", [position], { parallel: true, repeat: 120 });
     const at = new Date(simClock * 1000 + 900).toISOString();
     const [event] = postFromApi("/ingest/traccar/v1/events", [eventBody(DEVICE_ID, "ignitionOff", at)]);
     const limited = burst.filter((status) => status === 429).length;
