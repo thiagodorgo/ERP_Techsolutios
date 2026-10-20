@@ -11194,6 +11194,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - `.github/workflows/ci.yml:282` (na `main` `c1485c94`) diz *"363/363 no total do job"*. A (a″) do ciclo 3 mediu o job `backend-postgres` do objeto `7c220467` com **391/391**, skipped 0 (`votos/B-TRC-01-ciclo3/cadeira-a-voto.json`, campo `ci`).
 - **bloqueia:** não.
 - **teste de encerramento:** o número do comentário é igual ao `# tests` da execução do job, medido no PR que corrigir.
+- **Nota de 2026-10-20 (registro do `B-TRC-02`; o status continua ABERTA):** o plano v2 do `B-TRC-02` (§7.1, linha do `ci.yml`, e §12) previa fechar esta pendência corrigindo o comentário da l.282. No head `0313353b`, porém, a l.282 continua dizendo *"363/363 no total do job"*. O bloco acrescentou um comentário NOVO (l.291: *"434/434 no total do job … (fecha P-TRC-CI-COMENTARIO-DENOMINADOR)"*) e não corrigiu o antigo, então o teste de encerramento não passa enquanto a l.282 disser 363. Além disso, o 434 foi medido antes da integração com a `main` de 20/10, e o total do job tem de ser re-medido no head integrado.
 
 ## P-TRC-VIATURA-PERIODOS (2026-10-18) — histórico OS↔viatura por períodos — MÉDIA
 
@@ -11360,8 +11361,103 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organização fica inerte — BAIXA
 
-- **status:** ABERTA · **escopo:** `pre-existente` (a demo `scripts/traccar-dev-demo.mjs` nasceu no `B-TRC-01`, #426; o login sem organização é do `B-O6R-01`) · **dono:** `B-TRC-02` (ou bloco da demo)
+- **status:** FECHADA NA AUTORIA do `B-TRC-02` (2026-10-20; PR e head a preencher pelo orquestrador ao versionar), pelo teste de encerramento do plano v2 §12 do `B-TRC-02`; antes: ABERTA · **escopo:** `pre-existente` (a demo `scripts/traccar-dev-demo.mjs` nasceu no `B-TRC-01`, #426; o login sem organização é do `B-O6R-01`) · **dono:** `B-TRC-02` (ou bloco da demo)
 - **Origem:** demonstração do Traccar de 18/10 (orquestrador), com `--with-web`. A API da demo registrou `loginWithoutOrgOutcome: "inert_no_execute"` ("Login sem organização INATIVO — causa no desfecho da sonda"): o papel de runtime da demo não tem EXECUTE na função `auth_login_candidates`, porque a demo não roda o script de papéis do `B-SAN3-05`. O sistema falhou fechado e logou a causa, como deve.
 - **Efeito:** na tela da demo, o operador de despacho não entra pelo formulário (401); com a organização informada (login direcionado), entra (HTTP 200). Os prints de 18/10 foram tirados assim.
 - **bloqueia:** não (só a demo; nada em produção).
 - **teste de encerramento:** a demo com `--with-web` permite o login pelo formulário (sem organização) do operador de despacho criado por ela, com o passo conferido no próprio script.
+- **Fechamento (2026-10-20, registro do `B-TRC-02`, `D-TRC02-Q2-GRANT-SO-NO-DEMO`):** o passo nomeado do `GRANT` em `scripts/traccar-dev-demo.mjs` (dentro de `if (WITH_WEB)`) reinicia a api e exige `login_without_org` ≠ `inert_no_execute` no `/api/v1/health/ready`; o demo `--with-web` mediu `login_without_org: active` (passo 23, `docs/revisoes/TRACCAR/B-TRC-02-dev.md`, passo 9), e a H7 está verde. **Ressalva do registro:** o teste original desta entrada pede o login PELO FORMULÁRIO. O que o script confere é o desfecho da sonda de boot, e o relatório do dev não tem um login pelo formulário medido por processo. O fechamento segue o teste re-especificado no plano v2 §12; a cadeira (b) da junta confere.
+
+## P-TRC02-LIMITADOR-POR-ROTA (2026-10-20) — evento e posição com limitador e concorrência próprios por rota — MÉDIA
+
+- **status:** FECHADA NA AUTORIA do `B-TRC-02` (2026-10-20; PR e head a preencher pelo orquestrador ao versionar) · **escopo:** `dentro-do-bloco` (C-22 do plano v2) · **dono:** `B-TRC-02`
+- **Origem:** plano v2 §12 (`docs/revisoes/TRACCAR/B-TRC-02-plano.md`), C-22. Uma rajada de posições não pode esgotar o balde dos eventos, nem o contrário.
+- **Como fechou:** a C8 e a C11 estão verdes (`tests/traccar-event-listener.test.ts`, 12/12; a C11 roda o app de produção num processo filho), e a M-E36 ficou vermelha (`docs/revisoes/TRACCAR/B-TRC-02-dev.md`). No demo, 110 de 120 posições receberam 429 e o evento seguinte recebeu 204 (passo 20).
+- **bloqueia:** não.
+- **teste de encerramento:** C8/C11 verdes; M-E36 vermelha.
+
+## P-TRC02-LIMITES-POR-ROTA-PROD (2026-10-20) — os valores de produção dos dois baldes e da concorrência são os de dev — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (declarado no plano v2 §12) · **dono:** `B-TRC-06`
+- **Origem:** plano v2 §12. Hoje os dois baldes, o de posição e o de evento, usam os valores de dev: 20/s, rajada 100 e concorrência 10 em cada um. Eles nunca foram medidos sob carga.
+- **bloqueia:** não (dev; bloqueia a produção do Traccar até ser decidido no `B-TRC-06`).
+- **teste de encerramento:** os limites medidos sob carga, ou declarados com justificativa, em `docs/deployment.md` e nos gates de produção.
+
+## P-TRC02-QUARENTENA-SEM-TIPO-DE-MENSAGEM (2026-10-20) — o episódio de quarentena mistura posição e evento — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (§5.4 do plano v2: `traccar_quarantine_items` com o DDL intocado, por regra do bloco) · **dono:** `B-TRC-03`
+- **Origem:** plano v2 §5.4 e §12. Posição e evento do mesmo dispositivo sem vínculo caem no mesmo episódio. Por isso o replay por `last_event_key` precisa tentar os dois kinds.
+- **bloqueia:** não.
+- **teste de encerramento:** o reconciliador do `B-TRC-03` trata os dois kinds com teste, ou a tabela ganha discriminador em migração própria.
+
+## P-TRC02-RECIBO-VINCULO-VIATURA-FK (2026-10-20) — `traccar_ingress_receipts(vehicle_id)` sem FK para `vehicles` nem amarra ao vínculo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a coluna nasceu no `B-TRC-01`, #426, `c1485c94`; achado A-12 da rodada r1 do 02) · **dono:** `B-TRC-03` (mexe em vínculos)
+- **Origem:** plano v2 §12. O 02 só acrescenta `message_kind` e o índice; a FK da viatura no recibo fica para o bloco que toca vínculos.
+- **bloqueia:** não.
+- **teste de encerramento:** FK composta no recibo, ou decisão registrada de que o código basta, com teste.
+
+## P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO (2026-10-20) — o que o ERP exibe da telemetria de viatura sem despacho — ALTA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (C-10 do plano v2: o bloco GUARDA evento de viatura sem despacho) · **dono:** o dono do produto, antes do `B-TRC-04`
+- **Origem:** plano v2 §12; decisão 4 do `PLANO_TRACCAR.md` §4 ("viatura sem técnico não aparece em lugar nenhum; privacidade vem antes de cobertura") e `P-TRC-LGPD` (ALTA, ABERTA). Exibir ignição ou movimento fora do expediente é inferir o uso fora do expediente.
+- **Com Q1 = NÃO (`D-TRC02-Q1-NAO`):** a pendência vale **só para o evento** sem despacho (C-10). Não há amostra veicular sem operador. A pergunta do §Q1.6 ao dono ("o C-10 segue a mesma regra?") ficou sem registro (ver `D-TRC02-Q1-NAO`).
+- **bloqueia:** o início do `B-TRC-04` (leitura e telas).
+- **teste de encerramento:** `decisoes.md` diz o que o `B-TRC-04` exibe fora de despacho e sob que base legal, e o `B-TRC-04` implementa isso com teste.
+
+## P-TRC02-COMMANDRESULT-IGNORADO (2026-10-20) — `commandResult` e `queuedCommandSent` ignorados até o fluxo de comandos — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (fora do catálogo do 02 por desenho, plano v2 §12) · **dono:** `B-TRC-03b`
+- **Origem:** plano v2 §12. Os dois tipos caem em `ignored` (contados, sem escrita).
+- **bloqueia:** não.
+- **teste de encerramento:** os dois tipos viram linha com `source` próprio no fluxo de comandos, com teste.
+
+## P-TRC02-STATUS-TIMEOUT-PROD (2026-10-20) — `status.timeout` e `event.status.enable` de produção não medidos — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (S-E15/H-12: no dev, `STATUS_TIMEOUT: "60"` por ambiente em `docker-compose.traccar.yml`) · **dono:** `B-TRC-06`
+- **Origem:** plano v2 §12.
+- **bloqueia:** não.
+- **teste de encerramento:** os valores de produção fixados depois de medição.
+
+## P-TRC02-DEFICIT-2N (2026-10-20) — testes novos abaixo de 2N — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (declarado no plano v2 §9.3) · **dono:** `B-TRC-02` (o dev publica; a cadeira (b) da junta classifica)
+- **Origem:** plano v2 §9.3 e §12. O baseline N executado foi 149 (132 do 01 + 17 de `telemetry.test.ts`), e a meta 2N = 298. Na variante final (Q1 = NÃO) o bloco tem **97** testes novos (A 17, B 11, C 12, D 5, H 9, E 20, F 13, G 10). O déficit é declarado sem maquiagem, e a régua critério → teste → mutação vale (27 critérios; catálogo com 72 mutações), conforme `docs/revisoes/TRACCAR/B-TRC-02-dev.md`, "Contagens finais".
+- **bloqueia:** não.
+- **teste de encerramento:** o número publicado e classificado pela cadeira (b): nota, ou pendência fechada.
+
+## P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA (2026-10-20) — odômetro e ignição de viatura sem despacho não são conservados — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da `D-TRC02-Q1-NAO`, pelo §Q1.7 do plano v2) · **dono:** `B-TRC-03` (vínculo fixo, frota sem técnico e reconciliação mudam a regra de quem é dono da posição)
+- **Origem:** plano v1 §9 (risco e pendência, l.808 e l.838) e plano v2 §12 e §Q1.7. Com Q1 = NÃO, a posição que vai à quarentena por falta ou ambiguidade de operador não grava amostra veicular. A F3 prova isso (0 recibo, 0 amostra), e a M-E16′ fica vermelha.
+- **bloqueia:** não.
+- **teste de encerramento:** no `B-TRC-03`, com vínculo fixo ou frota, a posição sem operador grava amostra com teste, ou o dono decide manter a regra atual, e a decisão fica registrada.
+
+## P-07C-CENSO-TITULO-T9 (2026-10-20) — o título do T9 do censo congela "os 3 de hoje" em prosa — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`tests/o6r07c-census-guard.test.ts:165` na `origin/main` `2ecfb333`, antes do `B-TRC-02`; o arquivo é PROIBIDO no 02 pela emenda v2.2 §5.4) · **dono:** bloco do censo (`B-O6R-07c-*`)
+- **Origem:** emenda v2.2 de escopo do `B-TRC-02`, §8 item 4 (`docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.2-escopo.md`). Com a 4ª entrada em `CURINGAS_ACEITOS` (R-S1), o título passa a dizer menos que o conjunto.
+- **bloqueia:** não.
+- **teste de encerramento:** o título do T9 enuncia a propriedade (todo curinga está em `CURINGAS_ACEITOS`) sem contar entradas em prosa.
+
+## P-07C-CENSO-EXEC (2026-10-20) — o detector de curinga do censo não vê `re.exec(t)` — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`tests/helpers/o6r07c-census.ts:380-381`; a l.381 só trata `m === "test"` na `origin/main` `2ecfb333`) · **dono:** bloco do censo (`B-O6R-07c-*`)
+- **Origem:** emenda v2.2 §8 item 4. A mutação M-S5 (`.exec(type) === null` com a entrada R-S1 removida) ficou **verde**, 32/32, e isso prova o buraco. O 02 o fecha só para si, pela régua b-S5 (`git grep` sem `.exec(type)` em `src/integrations/traccar`).
+- **bloqueia:** não.
+- **teste de encerramento:** o detector trata `exec` como trata `test`, e a M-S5 fica vermelha no T9.
+
+## P-SAN3-05-LITERAL-DML (2026-10-20) — o inventário de DML do papel de runtime é um número congelado, movido à mão por cada bloco que cria tabela — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o literal de T14a/b em `tests/san3-05-runtime-role-guard-db.test.ts`: de 115 para 118 no `c1485c94`, e de 118 para 119 no `B-TRC-02`) · **dono:** `B-SAN3-05` (follow-up)
+- **Origem:** emenda v2.2 §8 item 4. Todo bloco com tabela nova precisa de emenda de escopo só para mover o literal.
+- **bloqueia:** não.
+- **teste de encerramento:** o esperado é derivado das migrações (número de `CREATE TABLE` + 1, ou o equivalente medido) sem afrouxar a guarda, e a M-S6 e a M-S7 continuam vermelhas.
+
+## P-TRC01-IDEMPOTENCIA-CONCORRENTE-503 (2026-10-20) — duas entregas idênticas concorrentes: uma sai 503 sob carga do lote paralelo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (código da `main` `bf83cda8`, sem mudança do 02; medido no baseline do `B-TRC-02`) · **dono:** a nomear pelo orquestrador; candidato `B-ARNES-2` (carga do lote paralelo) ou `B-TRC-06` (orçamento de tempo de produção)
+- **Origem:** `docs/revisoes/TRACCAR/B-TRC-02-dev.md`, passo 0, "Baseline N". O caso `not ok 48 - idempotência: duas entregas idênticas concorrentes — ambas 2xx, 1 recibo, 1 localização` (`tests/traccar-idempotency-db.test.ts:219`) deu `actual [204, 503]`.
+- **Frequência:** N = 7 execuções da suíte, com **1** vermelha. Ela veio do lote das 16 suítes, onde a taxa foi 1/4. Isolada, 3× `9/9`; no lote `-db` de 6 arquivos, 3× `50/50`, sobre um snapshot limpo de `bf83cda8`. As 3 execuções do `backend-postgres` do 02 deram 434/434.
+- **bloqueia:** não.
+- **teste de encerramento:** a causa nomeada (orçamento de tempo do 01 sob carga ou arnês), e o caso verde em N ≥ 20 execuções no lote paralelo, ou o 503 declarado como desfecho aceito do contrato, com o teste ajustado pelo dono do bloco.
