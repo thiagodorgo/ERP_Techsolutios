@@ -3856,3 +3856,12 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Por que o confinamento é testado:** a função é `SECURITY DEFINER` e lê usuários, organizações e credenciais de todas as organizações. O plano registra que o dono recebeu esse contexto depois de responder, e a revisão de 19/10 mudou só a Q1.
   - **As travas:** a H7 (a agulha em exatamente um arquivo; `tests/**` varrido; o próprio arquivo excluído), o guard 8 e as mutações M-E34, M-E35 e M-E50.
   - **Pendência:** resolve a `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE`.
+
+- **Complemento da `D-TRC02-ESCOPO` — emendas v2.3 e v2.4 (2026-10-20, orquestrador).**
+  - **v2.3** (resposta ao parecer DESFAVORÁVEL do DBA, achado D1): a migração `20260879000000_vehicle_telemetry_events` passa a ser uma transação explícita (`BEGIN;`/`COMMIT;`). O rodapé de rollback tem a guarda em primeiro lugar e roda com `psql -v ON_ERROR_STOP=1 --single-transaction`. Entra o drill `tests/traccar-event-migration-drill-db.test.ts` (k = 1..17, pelo CLI real do Prisma). O DBA re-mediu e deu FAVORÁVEL em `46dd99d1`.
+  - **v2.4** (CI vermelha na guarda de acessos do B-SAN3-05):
+    - `tests/san3-05-acessos-de-plataforma-guard.test.ts` entra no PERMITIDO só para o mapa `NOVAS` (7 chaves do B-TRC-02, uma delas o `×1→×2` do B-TRC-01) e para o literal L0 (`111→112`).
+    - Edição em `traccar-ingestion.service.ts`: sai a instanciação morta de `PrismaFieldLocationRepository(tx)` no evento.
+    - Entra 1 caso -db para `listByVehicle`.
+    - O gerador, os `WRAPPERS` e o `src/database/rls.ts` ficam intocados (0 bytes de diff).
+  - Planos em `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.3.md` e `-v2.4-acessos.md`.

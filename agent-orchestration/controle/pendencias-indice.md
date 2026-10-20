@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **605** |
-| IDs distintos | 594 |
-| **ABERTAS** | **450** |
+| Cabecalhos `## P-` | **609** |
+| IDs distintos | 598 |
+| **ABERTAS** | **454** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **385** |
+| — das quais **ativas nesta rodada** | **389** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 152 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **605 cabecalhos para 594 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **609 cabecalhos para 598 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 212
+## ABERTAS · balde A — material — 214
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -286,8 +286,10 @@
 | `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO` | 11507 | ALTA | sim | P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO (2026-10-20) — o que o ERP exibe da telemetria de v |
 | `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA` | 11536 | MÉDIA | sim | P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA (2026-10-20) — odômetro e ignição de viatura sem d |
 | `P-07C-CENSO-EXEC` | 11550 | MÉDIA | sim | P-07C-CENSO-EXEC (2026-10-20) — o detector de curinga do censo não vê `re.exec(t)` — MÉD |
+| `P-TRC02-LOCK-INDICE-RECIBO-PROD` | 11572 | MÉDIA | sim | P-TRC02-LOCK-INDICE-RECIBO-PROD (2026-10-20) — o índice único novo do recibo trava escri |
+| `P-SAN3-05-WRAPPERS-BUDGET` | 11579 | MÉDIA | sim | P-SAN3-05-WRAPPERS-BUDGET (2026-10-20) — `withTenantRlsBudget` e `findFirstTenantRls` nã |
 
-## ABERTAS · balde B — processo/registro — 173
+## ABERTAS · balde B — processo/registro — 175
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -464,6 +466,8 @@
 | `P-07C-CENSO-TITULO-T9` | 11543 | BAIXA | sim | P-07C-CENSO-TITULO-T9 (2026-10-20) — o título do T9 do censo congela "os 3 de hoje" em p |
 | `P-SAN3-05-LITERAL-DML` | 11557 | BAIXA | sim | P-SAN3-05-LITERAL-DML (2026-10-20) — o inventário de DML do papel de runtime é um número |
 | `P-TRC01-IDEMPOTENCIA-CONCORRENTE-503` | 11564 | BAIXA | sim | P-TRC01-IDEMPOTENCIA-CONCORRENTE-503 (2026-10-20) — duas entregas idênticas concorrentes |
+| `P-TRC-BATERIA-RATCHET-T13` | 11586 | BAIXA | sim | P-TRC-BATERIA-RATCHET-T13 (2026-10-20) — a bateria dos blocos do Traccar não nomeia a gu |
+| `P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR` | 11593 | BAIXA | sim | P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR (2026-10-20) — três portas de leitura da telemetr |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

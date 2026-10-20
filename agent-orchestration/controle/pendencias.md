@@ -11568,3 +11568,31 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Frequência:** N = 7 execuções da suíte, com **1** vermelha. Ela veio do lote das 16 suítes, onde a taxa foi 1/4. Isolada, 3× `9/9`; no lote `-db` de 6 arquivos, 3× `50/50`, sobre um snapshot limpo de `bf83cda8`. As 3 execuções do `backend-postgres` do 02 deram 434/434.
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada (orçamento de tempo do 01 sob carga ou arnês), e o caso verde em N ≥ 20 execuções no lote paralelo, ou o 503 declarado como desfecho aceito do contrato, com o teste ajustado pelo dono do bloco.
+
+## P-TRC02-LOCK-INDICE-RECIBO-PROD (2026-10-20) — o índice único novo do recibo trava escritas por segundos em base grande — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (ressalva R3 do parecer do DBA do `B-TRC-02`, aceita na emenda v2.3) · **dono:** `B-TRC-06` (ativação/produção do Traccar)
+- **Origem:** o `CREATE UNIQUE INDEX` do recibo na migração `20260879000000` trava as escritas em recibos por 1,6–3,7 s a cada 1 milhão de linhas, até o `COMMIT`. Nessa janela, a ingestão responde 503. `CONCURRENTLY` foi rejeitado porque não cabe na migração transacional.
+- **bloqueia:** não (dev; a tabela nasce vazia em produção).
+- **teste de encerramento:** antes de aplicar a migração numa base com mais de 100 mil recibos, o forward fica pausado ou a janela é anunciada, e a janela real é medida em staging/produção e registrada.
+
+## P-SAN3-05-WRAPPERS-BUDGET (2026-10-20) — `withTenantRlsBudget` e `findFirstTenantRls` não estão nos WRAPPERS do inventário de acessos — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (nasce no `B-TRC-01`, decisão T13 opção (ii)) · **dono:** bloco próprio de segurança (junta completa), de preferência antes do `B-TRC-04`
+- **Origem:** emenda v2.4 do `B-TRC-02`. As duas funções (`src/database/rls.ts` l.117-172) aplicam o GUC como primeira instrução, mas o gerador do inventário não as reconhece como wrapper. O 01 e o 02 já somam 5 chaves L2 e 8 L1 `PARAMETRO` por causa disso, e cada bloco do Traccar acrescenta mais.
+- **bloqueia:** não.
+- **teste de encerramento:** as duas funções entram em `WRAPPERS`, com junta completa, e as chaves `PARAMETRO` correspondentes somem do inventário.
+
+## P-TRC-BATERIA-RATCHET-T13 (2026-10-20) — a bateria dos blocos do Traccar não nomeia a guarda de acessos do B-SAN3-05 — BAIXA
+
+- **status:** ABERTA · **escopo:** processo · **dono:** planejador do `B-TRC-03`
+- **Origem:** emenda v2.4 do `B-TRC-02`. Nem a bateria §9.7 do plano do 02 nem a §8.8 do 01 nomeiam `tests/san3-05-acessos-de-plataforma-guard.test.ts`. O vermelho só apareceu na CI.
+- **bloqueia:** não.
+- **teste de encerramento:** a suíte entra, nominalmente, na bateria de todo bloco que toque `src/integrations/traccar/**` ou `src/modules/telemetry/**`.
+
+## P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR (2026-10-20) — três portas de leitura da telemetria não têm chamador — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-TRC-04`
+- **Origem:** emenda v2.4 do `B-TRC-02`. `latestDeviceStatus`, `latestIgnition` e `listByVehicle` não têm chamador em `src/**` até o `B-TRC-04`, que exibe. A `listByVehicle` está presa por 1 caso -db sob o GUC de duas organizações.
+- **bloqueia:** não.
+- **teste de encerramento:** quando o chamador nascer, o inventário de acessos ganha o motivo novo e cada porta tem teste com o chamador real.
