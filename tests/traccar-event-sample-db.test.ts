@@ -228,9 +228,9 @@ if (!connectionString) {
   const failedBeforeCommit = (lines: LogLine[]) => lines.filter((line) => line.message === "Traccar ingestion failed before commit");
   async function sampleRow(h: Harness, tenantId: string) {
     const rows = await h.admin.$queryRawUnsafe<
-      Array<{ receipt_id: string; occurred_at: Date; vehicle_id: string; binding_id: string; fix_key: string; odometer_m: string | null; total_distance_m: string | null; engine_hours_s: string | null; power_mv: number | null; battery_level_pct: number | null; ignition: boolean | null; motion: boolean | null; md5: string }>
+      Array<{ receipt_id: string; occurred_at: Date; vehicle_id: string; binding_id: string; odometer_m: string | null; total_distance_m: string | null; engine_hours_s: string | null; power_mv: number | null; battery_level_pct: number | null; ignition: boolean | null; motion: boolean | null; md5: string }>
     >(
-      `SELECT receipt_id::text, occurred_at, vehicle_id::text, binding_id::text, fix_key, odometer_m::text, total_distance_m::text,
+      `SELECT receipt_id::text, occurred_at, vehicle_id::text, binding_id::text, odometer_m::text, total_distance_m::text,
               engine_hours_s::text, power_mv, battery_level_pct, ignition, motion, md5(v::text) AS md5
          FROM vehicle_telemetry_events v WHERE tenant_id = $1::uuid AND kind = 'sample'`,
       tenantId,
@@ -255,7 +255,7 @@ if (!connectionString) {
     assert.equal(sample.occurred_at.toISOString(), at.toISOString());
     assert.equal(sample.vehicle_id, receipt.vehicle_id);
     assert.equal(sample.binding_id, receipt.binding_id);
-    assert.equal(sample.fix_key, cmd.externalEventKey, "[Q1=SIM] fix_key = chave da posição");
+    assert.ok(cmd.externalEventKey, "o comando tem chave");
   });
 
   test("amostra: reenvio idêntico e reenvio com atributo diferente — 204 e a amostra da 1ª gravação, inalterada", { timeout: 120_000 }, async () => {
@@ -270,13 +270,15 @@ if (!connectionString) {
     assert.equal((await sampleRow(h, w.tenantId))[0]!.md5, before);
   });
 
-  test("amostra: posição em quarentena por operador — 0 recibo 'position', 0 localização (a amostra sem operador é da suíte I)", { timeout: 120_000 }, async () => {
+  test("amostra: posição em quarentena por operador — 0 recibo, 0 localização, 0 amostra (Q1 = NÃO)", { timeout: 120_000 }, async () => {
     const h = await harness();
     const w = await world(h, "f3", { dispatch: false });
     const outcome = await h.main.ingestion.ingest(command(h, w.device, await fixNow(), { ignition: true }));
     assert.deepEqual(outcome, { kind: "quarantined", reason: "no_operator_at_fix_time" });
     assert.equal(await receiptsOf(h, w.tenantId), 0);
     assert.equal(await locationsOf(h, w.tenantId), 0);
+    assert.equal(await samplesOf(h, w.tenantId), 0, "Q1 = NÃO: a quarentena nunca guarda amostra");
+    assert.equal(await count(h, `SELECT count(*)::bigint AS n FROM traccar_ingress_receipts WHERE tenant_id = $1::uuid`, w.tenantId), 0);
   });
 
   test("amostra: sem atributo allowlisted — nenhuma linha sample", { timeout: 120_000 }, async () => {
@@ -349,7 +351,7 @@ if (!connectionString) {
       binding,
       w.vehicleId,
     );
-    return { receiptId: rows[0]!.id, bindingId: binding, fixKey: key };
+    return { receiptId: rows[0]!.id, bindingId: binding };
   }
 
   const BORDERS = [
@@ -376,7 +378,6 @@ if (!connectionString) {
             bindingId: r.bindingId,
             receiptId: r.receiptId,
             occurredAt: new Date(),
-            fixKey: r.fixKey,
             [border.field]: value,
           }),
         );
@@ -388,8 +389,8 @@ if (!connectionString) {
         const r = await freshReceipt(h, w);
         try {
           await h.admin.$executeRawUnsafe(
-            `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at, fix_key, ${border.column})
-             VALUES ('${w.tenantId}', '${w.vehicleId}', '${r.bindingId}', '${r.receiptId}', 'sample', now(), '${r.fixKey}', ${value})`,
+            `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at, ${border.column})
+             VALUES ('${w.tenantId}', '${w.vehicleId}', '${r.bindingId}', '${r.receiptId}', 'sample', now(), ${value})`,
           );
           assert.fail(`${border.column}=${value} deveria ser recusado`);
         } catch (error) {
@@ -402,8 +403,8 @@ if (!connectionString) {
     const r = await freshReceipt(h, w);
     try {
       await h.admin.$executeRawUnsafe(
-        `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at, fix_key, power_mv)
-         VALUES ('${w.tenantId}', '${w.vehicleId}', '${r.bindingId}', '${r.receiptId}', 'sample', now(), '${r.fixKey}', 3000000000)`,
+        `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at, power_mv)
+         VALUES ('${w.tenantId}', '${w.vehicleId}', '${r.bindingId}', '${r.receiptId}', 'sample', now(), 3000000000)`,
       );
       assert.fail("power_mv > int4 deveria ser recusado");
     } catch (error) {
@@ -447,7 +448,7 @@ if (!connectionString) {
     assert.equal(lines.length, 1);
     assert.equal(lines[0]!.fields.code, "23514");
     assert.equal(lines[0]!.level, "warn");
-    assert.deepEqual(Object.keys(lines[0]!.fields).sort(), ["code", "outcome"], "sem valor de atributo, sem fix_key");
+    assert.deepEqual(Object.keys(lines[0]!.fields).sort(), ["code", "outcome"], "sem valor de atributo");
     assert.equal(failedBeforeCommit(svc.lines).length, 0);
   });
 

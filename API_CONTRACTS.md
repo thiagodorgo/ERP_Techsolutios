@@ -122,12 +122,8 @@ domínio fechado igual ao CHECK do banco; forma/faixa errada descarta o atributo
 segue (204) e o log diz `sample_discarded`; qualquer outra recusa (FK, RLS, contenção) → `503` e nada gravado. Chave e
 digest da posição NÃO mudam.
 
-**[Q1 = SIM, `D-TRC02-RESPOSTAS`] Posição em quarentena por operador** (`no_operator_at_fix_time`,
-`ambiguous_operator_at_fix_time`, `operator_history_ambiguous`): os atributos veiculares allowlisted são conservados para a
-**viatura** (recibo `position_sample`; um fix → uma amostra por organização); a resposta continua **202**; reenvio idêntico →
-202, nada novo; reenvio com conteúdo diferente → 202 e `conflict_count` do recibo da amostra incrementado, amostra inalterada;
-chave de outra organização → **409** `traccar_idempotency_conflict` (como no passo 6). A amostra não vai ao mapa e não tem
-leitura neste bloco. Os demais motivos de quarentena não conservam nada.
+**Posição em quarentena (qualquer motivo) não conserva amostra** (Q1 = NÃO, decisão do dono de 19/10): a amostra só nasce com a
+posição ACEITA, pendurada no recibo dela; a quarentena guarda só o episódio, como no B-TRC-01.
 
 > Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2; B-TRC-02:
 > `docs/revisoes/TRACCAR/B-TRC-02-plano.md` + `B-TRC-02-emenda-v2.1.md`.

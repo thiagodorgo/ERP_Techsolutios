@@ -19,11 +19,8 @@ export type VehicleTelemetryExecutor = PrismaClient | Prisma.TransactionClient;
 export interface VehicleTelemetryRepository {
   /** A linha de um evento do `event.forward` (uma por recibo). Devolve o id. */
   insertEvent(tx: VehicleTelemetryExecutor, row: VehicleTelemetryEventInsert): Promise<string>;
-  /**
-   * A amostra (`kind='sample'`). `ON CONFLICT (tenant_id, fix_key) WHERE kind = 'sample' DO NOTHING RETURNING id`:
-   * `undefined` = 0 linhas = o fix já tem amostra NESTA organização (um fix → uma amostra; nunca lança por isso).
-   */
-  insertSample(tx: VehicleTelemetryExecutor, sample: VehicleTelemetrySampleInsert): Promise<string | undefined>;
+  /** A amostra (`kind='sample'`), pendurada no recibo da posição ACEITA; uma por recibo (UNIQUE tenant_id+receipt_id). */
+  insertSample(tx: VehicleTelemetryExecutor, sample: VehicleTelemetrySampleInsert): Promise<string>;
   /** O status derivado: maior `occurred_at` entre os 3 kinds; empate → offline > unknown > online. Nunca `received_at`. */
   latestDeviceStatus(tx: VehicleTelemetryExecutor, tenantId: string, vehicleId: string): Promise<VehicleDeviceStatusKind | undefined>;
   /** A última ignição por `occurred_at`; empate → `ignition_off`. Nunca `received_at`. */

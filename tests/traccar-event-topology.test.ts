@@ -45,7 +45,6 @@ const FK_SAFE_TEARDOWN_SUITES = [
   "traccar-event-ingestion-db.test.ts",
   "traccar-event-rls-db.test.ts",
   "traccar-event-sample-db.test.ts",
-  "traccar-event-sample-quarantine-db.test.ts",
   "traccar-idempotency-db.test.ts",
   "traccar-position-ingestion-db.test.ts",
   "traccar-quarantine-db.test.ts",

@@ -1079,9 +1079,9 @@ model VehicleTrackingBinding {
 
 // B-TRC-01 (plano do Traccar v2.1 §3.1, §4.4) — recibo por posição recebida do Traccar (ENABLE + FORCE RLS).
 // ÚNICO GLOBAL (instance_key, message_kind, external_event_key): uma posição nunca vira linha em duas organizações.
-// CHECK message_kind IN ('position','event','position_sample') (B-TRC-02, migração 20260879000000 + VALIDATE na 20260880000000);
-// não guarda JSON bruto. location_id fica nulo até a localização ser gravada; para 'event' e 'position_sample' fica nulo
-// sempre e fix_time é o instante do evento/fix. B-TRC-02: índice único (tenant_id, id, vehicle_id, binding_id) = alvo da FK
+// CHECK message_kind IN ('position','event') (B-TRC-02, migração 20260879000000 + VALIDATE na 20260880000000);
+// não guarda JSON bruto. location_id fica nulo até a localização ser gravada; para 'event' fica nulo
+// sempre e fix_time é o instante do evento. B-TRC-02: índice único (tenant_id, id, vehicle_id, binding_id) = alvo da FK
 // de 4 colunas de vehicle_telemetry_events (a linha e o recibo concordam em viatura e vínculo).
 model TraccarIngressReceipt {
   id                 String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -1111,12 +1111,11 @@ model TraccarIngressReceipt {
   @@map("traccar_ingress_receipts")
 }
 
-// B-TRC-02 (plano v2 §6.1; emenda v2.1 R1-1) — telemetria VEICULAR do Traccar, por organização (ENABLE + FORCE RLS).
+// B-TRC-02 (plano v2 §6.1; variante Q1 = NÃO, decisão do dono de 19/10) — telemetria VEICULAR do Traccar, por organização (ENABLE + FORCE RLS).
 // Uma linha por recibo (UNIQUE tenant_id+receipt_id); FK de 4 colunas para o recibo (a linha e o recibo concordam em viatura e
 // vínculo); kind 'sample' = atributos da posição; os demais kinds = event.forward. Sem JSON, sem coordenada, sem texto livre.
-// Fato imutável: a aplicação nunca faz UPDATE/DELETE. CHECKs (kind, source, alarm_code, medidas, faixas, fix_key) e o índice
-// ÚNICO PARCIAL vehicle_telemetry_events_sample_fix_key (tenant_id, fix_key) WHERE kind = 'sample' — "um fix → uma amostra" por
-// organização [Q1=SIM] — vivem só na migração 20260879000000_vehicle_telemetry_events (o Prisma não os modela).
+// Fato imutável: a aplicação nunca faz UPDATE/DELETE. Os CHECKs (kind, source, alarm_code, medidas, faixas) vivem só na migração
+// 20260879000000_vehicle_telemetry_events (o Prisma não os modela). A amostra só nasce com a posição ACEITA (Q1 = NÃO).
 model VehicleTelemetryEvent {
   id                  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id           String                 @db.Uuid
@@ -1130,7 +1129,6 @@ model VehicleTelemetryEvent {
   received_at         DateTime               @default(now()) @db.Timestamptz(6)
   traccar_event_id    BigInt?
   traccar_position_id BigInt?
-  fix_key             String? // [Q1=SIM] só kind='sample': external_event_key da posição; único parcial por organização
   ignition            Boolean?
   motion              Boolean?
   odometer_m          BigInt?

@@ -26,8 +26,7 @@
 //     Nada é publicado.
 //   - AMOSTRA no passo 7 da posição: `withSampleSavepoint` (um savepoint, `vehicle_sample`); só domínio é descartável
 //     (23514/22003 → `sample_discarded`, a posição segue); qualquer outro erro relança → 503, nada gravado (R4-2).
-//   - [Q1=SIM] amostra SEM operador: o ÚNICO gate é a closure `quarantined(reason)` (R1-4), que só grava amostra quando o
-//     vínculo já foi travado (passo 2) e o motivo está em `sampleOnQuarantineReasons` (default: os 3 de operador).
+//   - Q1 = NÃO (decisão do dono de 19/10, antes do merge; plano v2 §Q1.7): posição em quarentena NUNCA guarda amostra.
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 import type { Express } from "express";
@@ -45,7 +44,6 @@ import {
 import {
   PrismaVehicleTelemetryRepository,
   withSampleSavepoint,
-  type SampleWork,
 } from "../../modules/telemetry/vehicle-telemetry-prisma.repository.js";
 import type { VehicleTelemetrySampleInsert } from "../../modules/telemetry/vehicle-telemetry.types.js";
 import { createTraccarIngestPrismaClient } from "./traccar-db.js";
@@ -124,19 +122,7 @@ export type TraccarIngestionServiceOptions = {
     readonly phaseTwo?: { readonly maxWait: number; readonly timeout: number };
     readonly discovery?: { readonly maxWait: number; readonly timeout: number };
   };
-  /**
-   * B-TRC-02 [Q1=SIM] (emenda v2.1 R1-4, R2-4) — costura de construtor (NÃO variável de ambiente): os motivos de quarentena
-   * em que a amostra veicular é conservada para a viatura. Default `SAMPLE_ON_QUARANTINE_REASONS`; `new Set()` = Q1 = NÃO.
-   */
-  readonly sampleOnQuarantineReasons?: ReadonlySet<TraccarQuarantineReason>;
 };
-
-/**
- * B-TRC-02 [Q1=SIM] (D-TRC02-RESPOSTAS; plano v2 §Q1.1) — os 3 motivos de OPERADOR em que a posição vai à quarentena mas a
- * amostra veicular é conservada para a viatura (guardar ≠ exibir). Os outros 7 motivos não conservam nada. A reversão da Q1
- * depois do merge é este conjunto virar vazio (emenda §2: aditiva, schema e dados ficam).
- */
-export const SAMPLE_ON_QUARANTINE_REASONS: ReadonlySet<TraccarQuarantineReason> = new Set(["no_operator_at_fix_time", "ambiguous_operator_at_fix_time", "operator_history_ambiguous"]);
 
 const NO_OPERATOR_REASON = {
   none: "no_operator_at_fix_time",
@@ -173,11 +159,9 @@ export class TraccarIngestionService {
   private readonly resolver: TraccarTenantResolver;
   private readonly now: () => Date;
   private readonly telemetry = new PrismaVehicleTelemetryRepository();
-  private readonly sampleOnQuarantineReasons: ReadonlySet<TraccarQuarantineReason>;
 
   constructor(private readonly options: TraccarIngestionServiceOptions) {
     this.now = options.now ?? (() => new Date());
-    this.sampleOnQuarantineReasons = this.options.sampleOnQuarantineReasons ?? SAMPLE_ON_QUARANTINE_REASONS;
     this.resolver = new TraccarTenantResolver(
       options.discoveryPorts ?? createPrismaDiscoveryPorts(options.client, options.budgets?.discovery ?? TRACCAR_DISCOVERY_BUDGET),
       { ...options.resolver, logger: options.logger },
@@ -403,13 +387,9 @@ export class TraccarIngestionService {
     command: TraccarPositionCommand,
   ): Promise<TraccarConfirmResult<PhaseTwoResult>> {
     const { tx, repository, locations, operatorAt } = ports;
-    let binding: TraccarActiveBinding | undefined; // atribuído no passo 2; antes dele, nenhuma amostra (por tipo)
+    let binding: TraccarActiveBinding | undefined; // atribuído no passo 2
+    // Q1 = NÃO (decisão do dono de 19/10): a quarentena nunca guarda amostra — só o motivo, como no B-TRC-01.
     const quarantined = async (reason: TraccarQuarantineReason): Promise<TraccarConfirmResult<PhaseTwoResult>> => {
-      // [Q1=SIM] o ÚNICO gate da amostra sem operador (emenda v2.1 R1-4).
-      if (binding && command.telemetry && this.sampleOnQuarantineReasons.has(reason)) {
-        const diverted = await this.sampleWithoutOperator(ports, tenantId, binding, command);
-        if (diverted) return diverted;
-      }
       await repository.recordQuarantine(command, reason);
       return { kind: "confirmed", value: { kind: "quarantined", reason } };
     };
@@ -485,9 +465,8 @@ export class TraccarIngestionService {
     await repository.attachLocation(receiptId, tenantId, location.id);
     // B-TRC-02 — a amostra veicular, pendurada no recibo da POSIÇÃO, em sub-transação: nunca derruba a posição por domínio.
     if (command.telemetry) {
-      await withSampleSavepoint(tx, this.options.logger, errorCode, async (): Promise<SampleWork> => {
-        const sampleId = await this.insertVehicleSample(ports, this.sampleRow(tenantId, locked, receiptId, command));
-        return sampleId ? { kind: "inserted" } : { kind: "skip", reason: "fix_already_sampled" };
+      await withSampleSavepoint(tx, this.options.logger, errorCode, async () => {
+        await this.insertVehicleSample(ports, this.sampleRow(tenantId, locked, receiptId, command));
       });
     }
     await repository.beforeCommit();
@@ -511,57 +490,14 @@ export class TraccarIngestionService {
       bindingId: binding.id,
       receiptId,
       occurredAt: command.fixedAt,
-      fixKey: command.externalEventKey,
       source: "forward",
     };
   }
 
   /** O INSERT da amostra, com a costura de teste `beforeSampleInsert` imediatamente antes (emenda v2.1 R4-5). */
-  private async insertVehicleSample(ports: PhaseTwoPorts, sample: VehicleTelemetrySampleInsert): Promise<string | undefined> {
+  private async insertVehicleSample(ports: PhaseTwoPorts, sample: VehicleTelemetrySampleInsert): Promise<string> {
     const row = (await this.options.hooks?.beforeSampleInsert?.(sample)) ?? sample;
     return this.telemetry.insertSample(ports.tx, row);
-  }
-
-  /**
-   * [Q1=SIM] (plano v2 §Q1; emenda v2.1 §1.4) — a posição vai à quarentena por falta/ambiguidade de operador, e a amostra veicular
-   * é conservada para a VIATURA: recibo `position_sample` + amostra, juntos num savepoint. Devolve um desfecho só quando a chave é
-   * de OUTRA organização (409 `owned_elsewhere`, R1-2); senão `undefined` e quem chama registra a quarentena (202).
-   */
-  private async sampleWithoutOperator(
-    ports: PhaseTwoPorts,
-    tenantId: string,
-    binding: TraccarActiveBinding,
-    command: TraccarPositionCommand,
-  ): Promise<TraccarConfirmResult<PhaseTwoResult> | undefined> {
-    const { tx, repository } = ports;
-    type QuarantineWork =
-      | { readonly kind: "inserted" }
-      | { readonly kind: "noop" }
-      | { readonly kind: "divert"; readonly outcome: TraccarConfirmResult<PhaseTwoResult> }
-      | { readonly kind: "skip"; readonly reason: "fix_already_sampled" };
-    const result = await withSampleSavepoint(tx, this.options.logger, errorCode, async (): Promise<QuarantineWork> => {
-      const receiptId = await repository.insertReceipt({
-        tenantId,
-        command,
-        bindingId: binding.id,
-        vehicleId: binding.vehicleId,
-        messageKind: "position_sample",
-      });
-      if (!receiptId) {
-        const existing = await repository.findReceipt(command, "position_sample");
-        if (!existing) {
-          await repository.recordQuarantine(command, "idempotency_key_owned_elsewhere");
-          return { kind: "divert", outcome: { kind: "confirmed", value: { kind: "conflict", reason: "owned_elsewhere" } } };
-        }
-        assertRowsBelongToTenant([existing], tenantId, "traccar_ingress_receipts");
-        if (existing.payloadDigest !== command.payloadDigest) await repository.markConflict(existing.id);
-        return { kind: "noop" };
-      }
-      const sampleId = await this.insertVehicleSample(ports, this.sampleRow(tenantId, binding, receiptId, command));
-      if (!sampleId) return { kind: "skip", reason: "fix_already_sampled" };
-      return { kind: "inserted" };
-    });
-    return result?.kind === "divert" ? result.outcome : undefined;
   }
 
   private async publishAfterCommit(

@@ -286,14 +286,12 @@ jobs:
           SUITES="$SUITES tests/traccar-position-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-quarantine-db.test.ts"
           SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
-          # B-TRC-02 — as 4 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
-          # savepoint, RLS/migração com drill de rollback, amostra sem operador [Q1=SIM]), medidas 3× nesta forma antes de entrar.
-          # Medido antes de entrar (2026-10-19, container Linux, esta forma, 3×): 20+13+10+14 = 57 casos nas 4 suítes; 448/448 no
-          # total do job, 0 falha, 0 pulo, denominador constante (fecha P-TRC-CI-COMENTARIO-DENOMINADOR).
+          # B-TRC-02 — as 3 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
+          # savepoint, RLS/migração com drill de rollback; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
+          # DENOMINADOR-Q1-NAO (a preencher com a medição)
           SUITES="$SUITES tests/traccar-event-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-event-sample-db.test.ts"
           SUITES="$SUITES tests/traccar-event-rls-db.test.ts"
-          SUITES="$SUITES tests/traccar-event-sample-quarantine-db.test.ts"
           # B-O6R-03a (Ω6R-DIN-009) — sync de despesas atômico e sem lançamento em dobro, contra o Postgres real e sob
           # papéis efêmeros SEM BYPASSRLS: claim + efeito + recibo + prova no mesmo commit (falha injetada nos três tipos),
           # corrida na PK com barreira escopada, a mesma ação reenviada por outro ator é conflito, recibo legado nunca

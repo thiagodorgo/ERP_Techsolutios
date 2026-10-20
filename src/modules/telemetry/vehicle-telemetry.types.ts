@@ -31,15 +31,13 @@ export type VehicleTelemetrySample = {
   readonly batteryLevelPct?: number;
 };
 
-/** A linha `kind='sample'`: a amostra pendurada no recibo da posição (ou no `position_sample`, §Q1). */
+/** A linha `kind='sample'`: a amostra pendurada no recibo da posição ACEITA (Q1 = NÃO). */
 export type VehicleTelemetrySampleInsert = VehicleTelemetrySample & {
   readonly tenantId: string;
   readonly vehicleId: string;
   readonly bindingId: string;
   readonly receiptId: string;
   readonly occurredAt: Date;
-  /** [Q1=SIM] `external_event_key` da posição: "um fix → uma amostra" por organização (índice único parcial). */
-  readonly fixKey: string;
   readonly source?: VehicleTelemetrySource;
   readonly traccarPositionId?: string;
 };

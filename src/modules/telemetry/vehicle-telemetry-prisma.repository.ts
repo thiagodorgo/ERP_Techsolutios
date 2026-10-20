@@ -1,9 +1,8 @@
-// B-TRC-02 · SQL da telemetria VEICULAR (plano v2 §6.6; emenda v2.1 R1-1, R1-3, R4-1, R4-2). Todo SQL é `$queryRaw` com
+// B-TRC-02 · SQL da telemetria VEICULAR (plano v2 §6.6; emenda v2.1 R4-1, R4-2; variante Q1 = NÃO). Todo SQL é `$queryRaw` com
 // TEMPLATE (cada valor vira parâmetro). O executor é o `tx` de quem chama — sob o GUC da organização (ENABLE + FORCE RLS).
 //
 // `withSampleSavepoint` é o ÚNICO emissor de SAVEPOINT/RELEASE/ROLLBACK TO fora de `identity-resolver.ts` (R4-1), com um nome
-// só (`vehicle_sample`) para os dois caminhos da amostra (posição aceita; [Q1=SIM] quarentena por operador) — eles nunca se
-// aninham. Só o DOMÍNIO é descartável (R4-2): CHECK violado (23514) ou número fora da faixa (22003) → ROLLBACK TO + aviso
+// só (`vehicle_sample`); a amostra só nasce no passo 7 da posição ACEITA (Q1 = NÃO, decisão do dono de 19/10). Só o DOMÍNIO é descartável (R4-2): CHECK violado (23514) ou número fora da faixa (22003) → ROLLBACK TO + aviso
 // `sample_discarded` + segue. QUALQUER outro erro (FK de isolamento 23503, RLS 42501, unicidade 23505, contenção 55P03/57014,
 // transação abortada 25P02, erro de programação) → ROLLBACK TO + RELANÇA: a fase 2 inteira volta e a entrega responde 503.
 // Amostra recusada por FK ou RLS é sinal de defeito de isolamento — e sinal de isolamento não vira `warn`.
@@ -23,45 +22,31 @@ import type {
 /** A lista FECHADA do que vira `sample_discarded` (R4-2): só domínio. */
 export const SAMPLE_DISCARD_SQLSTATES: ReadonlySet<string> = new Set(["23514", "22003"]);
 
-export type SampleWork =
-  | { readonly kind: "inserted" }
-  | { readonly kind: "noop" }
-  | { readonly kind: "divert"; readonly outcome: unknown }
-  | { readonly kind: "skip"; readonly reason: "fix_already_sampled" };
-
 export type SampleSavepointLogger = {
-  info(object: Record<string, unknown>, message: string): void;
   warn(object: Record<string, unknown>, message: string): void;
 };
 
 /**
- * SAVEPOINT vehicle_sample → work() → `inserted`/`noop`/`divert` ⇒ RELEASE; `skip` ⇒ ROLLBACK TO (desfaz o que o work
- * gravou, ex.: o recibo `position_sample` cuja amostra deu 0 linhas — R1-3) + log `sample_skipped`; exceção ⇒ ROLLBACK TO +
- * classificação pelo SQLSTATE (R4-2). Devolve `undefined` só quando a amostra foi DESCARTADA por domínio.
+ * SAVEPOINT vehicle_sample → work() ⇒ RELEASE; exceção ⇒ ROLLBACK TO + classificação pelo SQLSTATE (R4-2). Devolve `false` só
+ * quando a amostra foi DESCARTADA por domínio.
  */
-export async function withSampleSavepoint<T extends SampleWork>(
+export async function withSampleSavepoint(
   tx: VehicleTelemetryExecutor,
   logger: SampleSavepointLogger | undefined,
   errorCode: (error: unknown) => string,
-  work: () => Promise<T>,
-): Promise<T | undefined> {
+  work: () => Promise<void>,
+): Promise<boolean> {
   await tx.$executeRaw`SAVEPOINT vehicle_sample`;
-  let result: T;
   try {
-    result = await work();
+    await work();
   } catch (error) {
     await tx.$executeRaw`ROLLBACK TO SAVEPOINT vehicle_sample`; // erro: desfaz e classifica
     if (!SAMPLE_DISCARD_SQLSTATES.has(errorCode(error))) throw error;
     logger?.warn({ outcome: "sample_discarded", code: errorCode(error) }, "Traccar ingestion discarded a vehicle sample");
-    return undefined;
-  }
-  if (result.kind === "skip") {
-    await tx.$executeRaw`ROLLBACK TO SAVEPOINT vehicle_sample`; // skip: desfaz o recibo
-    logger?.info({ outcome: "sample_skipped", reason: result.reason }, "Traccar ingestion skipped a vehicle sample");
-    return result;
+    return false;
   }
   await tx.$executeRaw`RELEASE SAVEPOINT vehicle_sample`;
-  return result;
+  return true;
 }
 
 type NullableSample = {
@@ -70,7 +55,6 @@ type NullableSample = {
   readonly bindingId: string;
   readonly receiptId: string;
   readonly occurredAt: Date;
-  readonly fixKey: string;
   readonly source: string;
   readonly traccarPositionId: string | null;
   readonly ignition: boolean | null;
@@ -89,7 +73,6 @@ function withNulls(input: VehicleTelemetrySampleInsert): NullableSample {
     bindingId: input.bindingId,
     receiptId: input.receiptId,
     occurredAt: input.occurredAt,
-    fixKey: input.fixKey,
     source: input.source ?? "forward",
     traccarPositionId: input.traccarPositionId ?? null,
     ignition: input.ignition ?? null,
@@ -117,20 +100,19 @@ export class PrismaVehicleTelemetryRepository implements VehicleTelemetryReposit
     return rows[0]!.id;
   }
 
-  async insertSample(tx: VehicleTelemetryExecutor, input: VehicleTelemetrySampleInsert): Promise<string | undefined> {
+  async insertSample(tx: VehicleTelemetryExecutor, input: VehicleTelemetrySampleInsert): Promise<string> {
     const sample = withNulls(input);
     const rows = await tx.$queryRaw<Array<{ id: string }>>`
       INSERT INTO vehicle_telemetry_events
-        (tenant_id, vehicle_id, binding_id, receipt_id, kind, source, occurred_at, traccar_position_id, fix_key,
+        (tenant_id, vehicle_id, binding_id, receipt_id, kind, source, occurred_at, traccar_position_id,
          ignition, motion, odometer_m, total_distance_m, engine_hours_s, power_mv, battery_level_pct)
       VALUES (${sample.tenantId}::uuid, ${sample.vehicleId}::uuid, ${sample.bindingId}::uuid, ${sample.receiptId}::uuid, 'sample',
-              ${sample.source}, ${sample.occurredAt}, ${sample.traccarPositionId}::bigint, ${sample.fixKey},
+              ${sample.source}, ${sample.occurredAt}, ${sample.traccarPositionId}::bigint,
               ${sample.ignition}::boolean, ${sample.motion}::boolean, ${bigintText(sample.odometerM)}::bigint,
               ${bigintText(sample.totalDistanceM)}::bigint, ${bigintText(sample.engineHoursS)}::bigint, ${sample.powerMv},
               ${sample.batteryLevelPct})
-      ON CONFLICT ("tenant_id", "fix_key") WHERE "kind" = 'sample' DO NOTHING
       RETURNING id::text AS "id"`;
-    return rows[0]?.id;
+    return rows[0]!.id;
   }
 
   async latestDeviceStatus(tx: VehicleTelemetryExecutor, tenantId: string, vehicleId: string): Promise<VehicleDeviceStatusKind | undefined> {

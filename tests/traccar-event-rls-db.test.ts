@@ -236,33 +236,18 @@ if (!connectionString) {
   test("banco: CHECKs — alarme sem código, amostra sem medida, evento com medida, bateria 101, power_mv 1000001 → 23514", { timeout: 120_000 }, async () => {
     const h = await harness();
     const a = await world(h, "g5");
-    const fixKey = "a".repeat(64);
     const cases: Array<[string, Parameters<typeof insertRow>[2]]> = [
       ["alarm sem código", { ...a, kind: "alarm", alarmCode: null }],
       ["ignition_on com código", { ...a, kind: "ignition_on", alarmCode: "sos" }],
       ["código fora da forma", { ...a, kind: "alarm", alarmCode: "sos,powerCut" }],
-      ["amostra sem medida", { ...a, kind: "sample", extra: `fix_key='${fixKey}'` }],
+      ["amostra sem medida", { ...a, kind: "sample" }],
       ["ignition_on com medida", { ...a, kind: "ignition_on", extra: "odometer_m=10" }],
       ["bateria 101", { ...a, kind: "sample", extra: `battery_level_pct=101` }],
       ["power_mv 1000001", { ...a, kind: "sample", extra: `power_mv=1000001` }],
       ["kind fora da lista", { ...a, kind: "geofence_enter" }],
     ];
     for (const [label, row] of cases) {
-      const withKey = row.kind === "sample" && !row.extra?.startsWith("fix_key") ? { ...row, extra: undefined } : row;
-      const statement =
-        row.kind === "sample" && !row.extra?.startsWith("fix_key")
-          ? asTenant(h, a.tenantId, (tx) =>
-              tx.$executeRawUnsafe(
-                `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at, fix_key, ${row.extra!.split("=")[0]})
-                 VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'sample', now(), $5, ${row.extra!.split("=")[1]})`,
-                a.tenantId,
-                a.vehicleId,
-                a.bindingId,
-                a.receiptId,
-                fixKey,
-              ),
-            )
-          : insertRow(h, a.tenantId, withKey);
+      const statement = insertRow(h, a.tenantId, row);
       await expectSqlState(statement, "23514", label);
     }
     assert.equal(await countRows(h, a.tenantId), 0);
@@ -289,7 +274,6 @@ if (!connectionString) {
         "received_at",
         "traccar_event_id",
         "traccar_position_id",
-        "fix_key",
         "ignition",
         "motion",
         "odometer_m",
@@ -321,17 +305,19 @@ if (!connectionString) {
     assert.deepEqual(escapes, [], "o papel efêmero não escapa de FORCE por atributo, posse nem view");
   });
 
-  test("banco: o CHECK de message_kind do recibo aceita event e position_sample, recusa foo e está VALIDADO", { timeout: 120_000 }, async () => {
+  test("banco: o CHECK de message_kind do recibo aceita event, recusa position_sample (Q1 = NÃO) e foo, e está VALIDADO", { timeout: 120_000 }, async () => {
     const h = await harness();
     const a = await world(h, "g8");
-    await newReceipt(h, a.tenantId, a.vehicleId, a.bindingId, "position_sample");
+    await newReceipt(h, a.tenantId, a.vehicleId, a.bindingId, "event");
+    await expectSqlState(newReceipt(h, a.tenantId, a.vehicleId, a.bindingId, "position_sample"), "23514", "message_kind position_sample (Q1 = NÃO)");
     await expectSqlState(newReceipt(h, a.tenantId, a.vehicleId, a.bindingId, "foo"), "23514", "message_kind foo");
     const checks = await h.admin.$queryRawUnsafe<Array<{ convalidated: boolean; def: string }>>(
       `SELECT convalidated, pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'traccar_ingress_receipts_message_kind_check'`,
     );
     assert.equal(checks.length, 1);
     assert.equal(checks[0]!.convalidated, true, "a migração B validou o CHECK");
-    for (const kind of ["position", "event", "position_sample"]) assert.ok(checks[0]!.def.includes(`'${kind}'`), kind);
+    for (const kind of ["position", "event"]) assert.ok(checks[0]!.def.includes(`'${kind}'`), kind);
+    assert.ok(!checks[0]!.def.includes("position_sample"), "Q1 = NÃO: sem position_sample");
   });
 
   test("banco: drill — migrate deploy numa base própria, rollback do rodapé na ordem executável, _prisma_migrations limpo", { timeout: 300_000 }, async () => {
@@ -381,7 +367,7 @@ if (!connectionString) {
         `SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'traccar_ingress_receipts_message_kind_check'`,
       );
       assert.match(check[0]!.def, /'position'/);
-      assert.doesNotMatch(check[0]!.def, /'event'|'position_sample'/, "CHECK re-estreitado a 'position'");
+      assert.doesNotMatch(check[0]!.def, /'event'/, "CHECK re-estreitado a 'position'");
       const left = await db.$queryRawUnsafe<Array<{ n: bigint }>>(
         `SELECT count(*)::bigint AS n FROM _prisma_migrations WHERE migration_name IN ($1, $2)`,
         MIGRATION_A,

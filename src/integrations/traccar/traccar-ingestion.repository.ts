@@ -44,7 +44,7 @@ export type TraccarIngressSubject = {
   readonly receivedAt: Date;
 };
 
-export type TraccarMessageKind = "position" | "event" | "position_sample";
+export type TraccarMessageKind = "position" | "event";
 
 export function toIngressSubject(command: TraccarPositionCommand | TraccarEventCommand): TraccarIngressSubject {
   if ("messageKind" in command && command.messageKind === "event") {
