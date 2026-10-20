@@ -230,7 +230,43 @@ EM APURAÇÃO
 
 ## Bateria §9.7
 
-EM APURAÇÃO
+| # | Comando | Saída | Veredito |
+|---|---|---|---|
+| 1 | `timeout -k 15 600 npm run check` · `timeout -k 15 600 npm run lint` (host) | ec 0 · ec 0 | verde |
+| 2 | `node --test --import tsx --test-reporter=tap tests/traccar-event-{contract,sample,listener,logs,topology}.test.ts` (host, com Docker para a H) | `# tests 54 # pass 54 # fail 0 # skipped 0` | **54** = o previsto (17+11+12+5+9) |
+| 2′ | `node --test --import tsx tests/traccar-dev-topology.test.ts tests/db-catalog-write-guard.test.ts tests/auth-invariant-guards.test.ts` (host) | `# tests 25 # pass 24 # skipped 1` (o pulo é o caso de banco do guard de catálogo, sem `DATABASE_URL` no host; roda no container) | verde; guard 8 verde |
+| 7 | `timeout -k 15 600 npm run build` · `node scripts/sync-agent-agents.mjs --check` · `node --check Kpis/app.js` | ec 0 · `[agents-sync] OK — 70 agentes, espelho consistente` · ec 0; `git diff --name-only origin/main...HEAD -- Kpis` → 0 | verde; `Kpis/` intocado |
+| 7′ | `git diff --check origin/main...HEAD` | 1ª medida: espaço no fim de linha em `B-TRC-02-critica-r1-flash.md` (cópia) e linha em branco no fim de `B-TRC-02-emenda-v2.1.md` (cópia) → normalizados (`diff -w -B` contra os originais = vazio: só espaço); 2ª medida → ec 0 | verde |
+
+| 6 | forma do job `backend-postgres` 3× (container; `ci-pg-form.cjs` extrai o `run:` do passo "Route suites against PostgreSQL" do `ci.yml` do retrato — 53 linhas `SUITES=` —, `npm run db:seed`, env do job) | 3× `# tests 448 # pass 448 # fail 0 # cancelled 0 # skipped 0` | **verde, denominador constante 448** (= 391 da `main` + os 57 casos `-db` novos; a emenda previa 446 com 109 testes — o bloco tem 111, I6′ e E5′ separados) |
+| 3 | `node --test --import tsx --test-reporter=tap $(ls tests/traccar-*.test.ts)` (container) | `# tests 243 # pass 229 # fail 14` — os 14 são os casos que EXIGEM o CLI do Docker (9 de `traccar-dev-topology`, 5 da H), que falham de propósito sem Docker | 243 = 132 do 01 + 111 do bloco (≥ 241 previsto); os 14 reexecutados no host: verdes (2 e 2′ acima) |
+| 4 | regressão (§9.7 passo 4) na 1ª tentativa | 44 vermelhos — **artefato meu**: rodou depois da forma do `backend-postgres` com `CORE_SAAS_PERSISTENCE=prisma` exportado, e essas suítes são da forma `backend` (memória) | refeita abaixo na forma certa |
+| 4 (main) | a mesma regressão, forma `backend` (memória), num retrato limpo da `origin/main` | `# tests 408 # pass 408` | baseline |
+
+**Queda da VM do Docker (~00:10Z, aviso do orquestrador).** A memória de commit do Windows chegou a 0,2 GB e a VM do WSL/Docker
+reiniciou no meio do `npm test` do retrato da `main` (`error waiting for container: unexpected EOF`, ec 125). O contêiner da 2ª
+metade (o retrato do head, `dtrc02-179245550710630-*`) subiu sozinho depois e foi derrubado por mim com `docker rm -f -v` +
+`docker network rm` (resíduo `dtrc02-*` = 0), porque o retrato já estava velho (anterior à correção do T8, abaixo). Antes de subir
+de novo: commit livre medido ≥ 3 GB (`FreeVirtualMemory` = 4,6 GB).
+
+**`npm test` (forma `backend`) — 1ª medida no head `232f728a`:** `# tests 3808 # pass 3785 # fail 21 # skipped 2` (os 2 pulos são
+os nomeados da paridade RBAC). Dos 21: 14 = os casos que exigem o CLI do Docker; 7 a classificar contra a `main`:
+`o6r07c-census-guard` T8, T9, T13; `san3-05-runtime-role-guard-db` "o papel de runtime não contorna FORCE RLS"; e 3 do censo
+no host (ambiente Windows, não reproduzem no container). **T8 e T9 são deste bloco** (abaixo).
+
+**T8/T9 do censo do 07c-a (`tests/helpers/o6r07c-census.ts`):** o censo faz análise de contaminação a partir de `.type` e trata
+como "despacho por tipo" tudo que deriva dele.
+- **T8** acusou `TRACCAR_EVENT_TYPE_TO_KIND[type]` (o `Object.freeze(...)` impedia o censo de enumerar as chaves) e o `case undefined`
+  do `switch`. **Corrigido no código, do jeito que o guard pede:** o mapa vira literal `as const satisfies …` (enumerável) e o `switch`
+  vira comparações com `undefined` (o censo ignora) e com `"alarm"` (literal resolvido). M-E04 re-ancorada na forma nova.
+- **T9** acusa `EVENT_TYPE_PATTERN.test(type)` em `traccar-event.schema.ts` como "curinga por regex". É VALIDAÇÃO de formato (A10:
+  `type` fora de `^[A-Za-z]{1,32}$` → 422), não despacho. A lista de curingas aceitos (`CURINGAS_ACEITOS`) vive em
+  `tests/helpers/o6r07c-census.ts`, **FORA do PERMITIDO** deste bloco. Contornar o detector (montar o teste do padrão de outro jeito
+  só para ele não ver) seria fugir de um ratchet — a mesma classe que a emenda R3-3 proibiu para o `GRANT`. **Não toquei o arquivo.**
+  Pedido ao orquestrador: emenda de escopo de UMA linha (`"src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)"`
+  em `CURINGAS_ACEITOS`, com o motivo), no molde da R3-4. Até lá, o job `backend` da CI fica vermelho no T9.
+
+EM APURAÇÃO: regressão e `npm test` re-medidos no head com a correção do T8 e na `main`; demo (passo 8).
 
 ## Limpeza
 

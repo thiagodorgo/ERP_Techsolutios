@@ -8,7 +8,9 @@
 
 import type { VehicleTelemetryEventKind } from "../../modules/telemetry/vehicle-telemetry.types.js";
 
-export const TRACCAR_EVENT_TYPE_TO_KIND: Readonly<Record<string, VehicleTelemetryEventKind>> = Object.freeze({
+// Literal `as const` (e não `Object.freeze(...)`): o despacho por `type` fica ESTATICAMENTE enumerável pelo censo do 07c-a
+// (tests/helpers/o6r07c-census.ts, T8 — "todo ponto de despacho por `type` resolve").
+export const TRACCAR_EVENT_TYPE_TO_KIND = {
   deviceOnline: "device_online",
   deviceUnknown: "device_unknown",
   deviceOffline: "device_offline",
@@ -18,7 +20,7 @@ export const TRACCAR_EVENT_TYPE_TO_KIND: Readonly<Record<string, VehicleTelemetr
   ignitionOn: "ignition_on",
   ignitionOff: "ignition_off",
   alarm: "alarm",
-});
+} as const satisfies Readonly<Record<string, VehicleTelemetryEventKind>>;
 
 /** Os tipos da tag que o bloco ignora de propósito (documentação e teste; o default de qualquer tipo fora é ignorar). */
 export const TRACCAR_IGNORED_EVENT_TYPES = [
@@ -89,17 +91,16 @@ export type TraccarEventClassification =
 
 /** Tipo + código → o que o ERP guarda. Desconhecido nunca vira linha (falha fechada para "o que é isto?"). */
 export function classifyTraccarEvent(type: string, alarm: string | undefined): TraccarEventClassification {
-  const eventKind = Object.prototype.hasOwnProperty.call(TRACCAR_EVENT_TYPE_TO_KIND, type)
-    ? TRACCAR_EVENT_TYPE_TO_KIND[type]
+  const eventKind: VehicleTelemetryEventKind | undefined = Object.prototype.hasOwnProperty.call(TRACCAR_EVENT_TYPE_TO_KIND, type)
+    ? TRACCAR_EVENT_TYPE_TO_KIND[type as keyof typeof TRACCAR_EVENT_TYPE_TO_KIND]
     : undefined;
-  switch (eventKind) {
-    case undefined:
-      return { kind: "ignored", reason: "unknown_type" };
-    case "alarm":
-      return alarm !== undefined && ALARM_CODES.has(alarm)
-        ? { kind: "keep", eventKind, alarmCode: alarm }
-        : { kind: "ignored", reason: "unknown_alarm" };
-    default:
-      return { kind: "keep", eventKind };
+  if (eventKind === undefined) {
+    return { kind: "ignored", reason: "unknown_type" };
   }
+  if (eventKind === "alarm") {
+    return alarm !== undefined && ALARM_CODES.has(alarm)
+      ? { kind: "keep", eventKind, alarmCode: alarm }
+      : { kind: "ignored", reason: "unknown_alarm" };
+  }
+  return { kind: "keep", eventKind };
 }
