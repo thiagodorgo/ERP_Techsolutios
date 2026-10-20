@@ -3,10 +3,12 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
+import { pathToFileURL } from "node:url";
 
 // -----------------------------------------------------------------------------------------------
 // B-SAN3-02 · T-D — DRILL DA MIGRAÇÃO 20260878000000_invoice_complementary_title EM BASE PRÓPRIA.
@@ -23,6 +25,12 @@ import test, { after } from "node:test";
 //   · executa os casos (a)–(e) LÁ, na ordem do arquivo (o node:test roda os testes de topo em sequência);
 //   · derruba a base no teardown (DROP DATABASE … WITH (FORCE)).
 // O up e o down vêm do PRÓPRIO arquivo da migração (corpo e rodapé comentado): mutar o arquivo muda o drill.
+//
+// Ciclo 2 (achado C2-01): o `prisma migrate deploy` 7.8 executa o script sentença a sentença, em autocommit; por isso
+// a migração traz BEGIN/COMMIT explícitos. O T-D(f) prende a PROPRIEDADE pelo comportamento: para cada k = 1..6, um
+// `migrate deploy` real (CLI do Prisma, `--config` temporário) de uma variante com falha injetada depois da k-ésima
+// DDL deixa o catálogo como antes, e `resolve --rolled-back` + `deploy` convergem. Assere ESTADO, nunca a mensagem
+// do CLI (que mostra só "current transaction is aborted"; a causa real fica no log do servidor Postgres).
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -44,6 +52,9 @@ if (!connectionString) {
   const drill = (): Promise<Drill> => (drillPromise ??= bootstrap());
   let createdDatabase: string | undefined;
   let adminForTeardown: any;
+  /** Bases do T-D(f) (`<drill>_main` e `<drill>_k<k>`) e o diretório temporário do `--config`: caem no `after`. */
+  const extraDatabases = new Set<string>();
+  const tempDirs = new Set<string>();
 
   async function bootstrap() {
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
@@ -75,26 +86,46 @@ if (!connectionString) {
       const d = await drillPromise.catch(() => undefined);
       await d?.db.$disconnect();
     }
+    if (adminForTeardown) {
+      for (const name of extraDatabases) {
+        await adminForTeardown.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+      }
+    }
     if (createdDatabase && adminForTeardown) {
       await adminForTeardown.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${createdDatabase}" WITH (FORCE)`);
     }
     await adminForTeardown?.$disconnect();
+    for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
   });
 
   const migrationSql = () => readFileSync(path.join(ROOT, MIGRATION), "utf8").replace(/\r\n/g, "\n");
   const prismaCliPath = (): string => createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
 
-  /** O UP: o corpo executável da migração (sem comentários), dividido por `;` de fim de sentença. */
-  function upStatements(): string[] {
+  /** O corpo executável CRU da migração (sem comentários), dividido por `;` de fim de sentença — sem asserção de forma. */
+  function rawStatements(): string[] {
     const body = migrationSql()
       .split("\n")
       .filter((line) => !line.trimStart().startsWith("--"))
       .join("\n");
-    const statements = body
+    return body
       .split(/;\s*\n/)
       .map((statement) => statement.replace(/;\s*$/, "").trim())
       .filter(Boolean);
-    assert.equal(statements.length, 6, `o corpo da migração traz 6 sentenças (achei ${statements.length})`);
+  }
+
+  const isTransactionControl = (statement: string): boolean => /^(BEGIN|COMMIT)$/i.test(statement);
+
+  /**
+   * O UP: as 6 DDL entre `BEGIN` (1ª sentença) e `COMMIT` (última). O replay pelo cliente Prisma roda cada DDL em
+   * autocommit — é replay de FORMA; a prova de atomicidade é o T-D(f), pelo `migrate deploy` real.
+   */
+  function upStatements(): string[] {
+    const raw = rawStatements();
+    assert.equal(raw[0], "BEGIN", `a migração abre com BEGIN (1ª sentença achada: ${JSON.stringify(raw[0])}; ${raw.length} sentenças)`);
+    assert.equal(raw.at(-1), "COMMIT", `a migração fecha com COMMIT (última achada: ${JSON.stringify(raw.at(-1))}; ${raw.length} sentenças)`);
+    const statements = raw.slice(1, -1);
+    assert.equal(statements.length, 6, `entre BEGIN e COMMIT, o corpo da migração traz 6 sentenças (achei ${statements.length})`);
+    assert.ok(!statements.some(isTransactionControl), `BEGIN/COMMIT só nas pontas (achei ${JSON.stringify(raw)})`);
     return statements;
   }
 
@@ -304,5 +335,203 @@ if (!connectionString) {
     await expectSqlState(insertTitle(db, { tenantId: t, workOrderId: wo, parentTitleId: parentPayable }), "23503", "pai de outra direção");
     await expectSqlState(insertTitle(db, { tenantId: t, workOrderId: wo, parentTitleId: parentOtherTenant }), "23503", "pai de outro tenant");
     await cleanup(db, [t, other]);
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // T-D(f) — atomicidade no `prisma migrate deploy` REAL, por prefixo (ciclo 2, achado C2-01).
+  // ---------------------------------------------------------------------------------------------
+
+  /** A falha injetada: tabela inexistente → 42P01 no meio do script. */
+  const INJECTED_FAILURE = `ALTER TABLE "drill_nao_existe" ADD COLUMN "x" INT`;
+
+  /**
+   * A variante da migração com a falha inserida DEPOIS da k-ésima DDL. Conta só DDL (BEGIN/COMMIT não contam) e deixa
+   * BEGIN/COMMIT onde o arquivo real os tem — assim mover ou tirar BEGIN/COMMIT do arquivo muda o comportamento medido.
+   */
+  function variantWithFailureAfter(k: number): string {
+    const out: string[] = [];
+    let ddl = 0;
+    for (const statement of rawStatements()) {
+      out.push(statement);
+      if (isTransactionControl(statement)) continue;
+      ddl += 1;
+      if (ddl === k) out.push(INJECTED_FAILURE);
+    }
+    assert.equal(out.filter((statement) => statement === INJECTED_FAILURE).length, 1, `variante k=${k}: falha injetada uma vez (DDL achadas: ${ddl})`);
+    return `${out.map((statement) => `${statement};`).join("\n\n")}\n`;
+  }
+
+  type CliResult = { status: number | null; signal: string | null; stdout: string; stderr: string };
+
+  /** O CLI do Prisma num processo filho, com o `--config` temporário e a DATABASE_URL da base alvo. */
+  function runPrisma(args: string[], configPath: string, cwd: string, databaseUrl: string): CliResult {
+    try {
+      const stdout = execFileSync(process.execPath, [prismaCliPath(), ...args, "--config", configPath], {
+        cwd,
+        env: { ...process.env, DATABASE_URL: databaseUrl },
+        stdio: "pipe",
+        timeout: 180_000,
+      });
+      return { status: 0, signal: null, stdout: stdout.toString(), stderr: "" };
+    } catch (error) {
+      const failure = error as { status?: number | null; signal?: string | null; stdout?: Buffer; stderr?: Buffer };
+      return {
+        status: failure.status ?? null,
+        signal: failure.signal ?? null,
+        stdout: failure.stdout?.toString() ?? "",
+        stderr: failure.stderr?.toString() ?? "",
+      };
+    }
+  }
+
+  const cliTail = (result: CliResult): string => `${result.stdout}\n${result.stderr}`.trim().slice(-600);
+
+  function databaseUrlFor(name: string): string {
+    const target = new URL(connectionString!);
+    target.pathname = `/${name}`;
+    return target.toString();
+  }
+
+  /** CREATE DATABASE … TEMPLATE: a template não pode ter conexão; o backend do CLI que acabou de sair pode demorar ms. */
+  async function createFromTemplate(admin: any, name: string, template: string): Promise<void> {
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        await admin.$executeRawUnsafe(`CREATE DATABASE "${name}" TEMPLATE "${template}"`);
+        extraDatabases.add(name);
+        return;
+      } catch (error) {
+        if (attempt >= 20 || !/being accessed by other users/.test(errorText(error))) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    }
+  }
+
+  async function catalogState(db: any): Promise<{ column: number; constraints: number; indexes: string[] }> {
+    const [row] = (await db.$queryRawUnsafe(
+      `SELECT
+         (SELECT count(*)::int FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = 'financial_titles' AND column_name = 'parent_title_id') AS "column",
+         (SELECT count(*)::int FROM pg_constraint
+           WHERE conrelid = 'financial_titles'::regclass
+             AND conname IN ('financial_titles_parent_title_fkey', 'financial_titles_parent_requires_work_order_check')) AS "constraints"`,
+    )) as Array<{ column: number; constraints: number }>;
+    return { column: row!.column, constraints: row!.constraints, indexes: await indexNames(db) };
+  }
+
+  async function migrationRows(db: any): Promise<{ total: number; failed: number; finished: number; rolled_back: number }> {
+    const [row] = (await db.$queryRawUnsafe(
+      `SELECT count(*)::int AS total,
+              count(*) FILTER (WHERE finished_at IS NULL AND rolled_back_at IS NULL)::int AS failed,
+              count(*) FILTER (WHERE finished_at IS NOT NULL)::int AS finished,
+              count(*) FILTER (WHERE rolled_back_at IS NOT NULL)::int AS rolled_back
+         FROM _prisma_migrations WHERE migration_name = $1`,
+      MIGRATION_NAME,
+    )) as Array<{ total: number; failed: number; finished: number; rolled_back: number }>;
+    return { total: row!.total, failed: row!.failed, finished: row!.finished, rolled_back: row!.rolled_back };
+  }
+
+  test("[T-D(f)] para k = 1..6: migrate deploy com falha injetada depois da k-ésima DDL deixa o catálogo como antes (0 objetos novos, índice antigo presente, linha falha em _prisma_migrations); resolve --rolled-back + deploy convergem (catálogo inteiro, status up to date)", async () => {
+    const { admin, name: drillName } = await drill();
+    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+
+    // Diretório temporário: as migrações da `main` (todas MENOS a 20260878) e um prisma.config.mjs com caminhos absolutos.
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "san302-drill-"));
+    tempDirs.add(tempRoot);
+    const migrationsDir = path.join(tempRoot, "migrations");
+    mkdirSync(migrationsDir);
+    const sourceDir = path.join(ROOT, "prisma/migrations");
+    const entries = readdirSync(sourceDir);
+    assert.ok(entries.includes(MIGRATION_NAME), "a migração do bloco existe no repositório");
+    for (const entry of entries) {
+      if (entry !== MIGRATION_NAME) cpSync(path.join(sourceDir, entry), path.join(migrationsDir, entry), { recursive: true });
+    }
+    assert.equal(readdirSync(migrationsDir).length, entries.length - 1, "o diretório temporário tem todas as migrações menos a do bloco");
+    const configPath = path.join(tempRoot, "prisma.config.mjs");
+    const prismaConfigModule = createRequire(path.join(ROOT, "package.json")).resolve("prisma/config");
+    writeFileSync(
+      configPath,
+      [
+        `import * as prismaConfig from ${JSON.stringify(pathToFileURL(prismaConfigModule).href)};`,
+        `const defineConfig = prismaConfig.defineConfig ?? prismaConfig.default?.defineConfig;`,
+        `export default defineConfig({`,
+        `  schema: ${JSON.stringify(path.join(ROOT, "prisma/schema.prisma"))},`,
+        `  migrations: { path: ${JSON.stringify(migrationsDir)} },`,
+        `  datasource: { url: process.env.DATABASE_URL },`,
+        `});`,
+        "",
+      ].join("\n"),
+    );
+    console.log(`[drill T-D(f)] --config temporário em ${tempRoot}`);
+
+    // Base no nível da `main` (sem a 20260878): a template de cada k.
+    const mainName = `${drillName}_main`;
+    assert.match(mainName, /^[a-z0-9_]{1,57}$/, `nome de base derivado inseguro ou longo demais: ${mainName}`);
+    await admin.$executeRawUnsafe(`CREATE DATABASE "${mainName}" TEMPLATE template0`);
+    extraDatabases.add(mainName);
+    const mainDeploy = runPrisma(["migrate", "deploy"], configPath, tempRoot, databaseUrlFor(mainName));
+    assert.equal(mainDeploy.status, 0, `deploy da base <drill>_main pelo --config temporário: ${cliTail(mainDeploy)}`);
+
+    const cleanMigration = readFileSync(path.join(ROOT, MIGRATION));
+    const migrationFile = path.join(migrationsDir, MIGRATION_NAME, "migration.sql");
+    mkdirSync(path.dirname(migrationFile));
+    const failures: string[] = [];
+    for (let k = 1; k <= 6; k += 1) {
+      const name = `${drillName}_k${k}`;
+      const url = databaseUrlFor(name);
+      const startedAt = Date.now();
+      let db: any;
+      try {
+        await createFromTemplate(admin, name, mainName);
+        writeFileSync(migrationFile, variantWithFailureAfter(k));
+        const failed = runPrisma(["migrate", "deploy"], configPath, tempRoot, url);
+        assert.ok(
+          failed.signal === null && typeof failed.status === "number" && failed.status !== 0,
+          `deploy com falha injetada depois da DDL ${k} tinha de sair com ec ≠ 0 (status ${failed.status}, sinal ${failed.signal}): ${cliTail(failed)}`,
+        );
+        db = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+        assert.deepEqual(
+          await catalogState(db),
+          { column: 0, constraints: 0, indexes: [OLD_INDEX] },
+          "depois do deploy falho o catálogo é o de ANTES: sem coluna, FK, CHECK nem índices novos; o índice antigo presente",
+        );
+        assert.deepEqual(
+          await migrationRows(db),
+          { total: 1, failed: 1, finished: 0, rolled_back: 0 },
+          "_prisma_migrations: 1 linha falha (finished_at e rolled_back_at NULL)",
+        );
+
+        // Recuperação: arquivo limpo → P3009 → resolve --rolled-back → deploy converge → status up to date.
+        writeFileSync(migrationFile, cleanMigration);
+        const blocked = runPrisma(["migrate", "deploy"], configPath, tempRoot, url);
+        assert.ok(blocked.signal === null && typeof blocked.status === "number" && blocked.status !== 0, `redeploy sobre a linha falha tinha de sair com ec ≠ 0: ${cliTail(blocked)}`);
+        assert.match(blocked.stderr, /P3009/, `redeploy sobre a linha falha: esperado P3009 no stderr — ${cliTail(blocked)}`);
+        const resolved = runPrisma(["migrate", "resolve", "--rolled-back", MIGRATION_NAME], configPath, tempRoot, url);
+        assert.equal(resolved.status, 0, `migrate resolve --rolled-back: ${cliTail(resolved)}`);
+        const redeploy = runPrisma(["migrate", "deploy"], configPath, tempRoot, url);
+        assert.equal(redeploy.status, 0, `deploy depois do resolve tinha de convergir: ${cliTail(redeploy)}`);
+        assert.deepEqual(
+          await catalogState(db),
+          { column: 1, constraints: 2, indexes: NEW_INDEXES },
+          "depois da recuperação: coluna, FK, CHECK e os dois índices novos; o antigo ausente",
+        );
+        assert.deepEqual(
+          await migrationRows(db),
+          { total: 2, failed: 0, finished: 1, rolled_back: 1 },
+          "_prisma_migrations: 1 linha aplicada e 1 revertida",
+        );
+        const status = runPrisma(["migrate", "status"], configPath, tempRoot, url);
+        assert.equal(status.status, 0, `migrate status depois da recuperação: ${cliTail(status)}`);
+        console.log(`[drill T-D(f)] k=${k}: atômico e convergente em ${Date.now() - startedAt} ms`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push(`k=${k}: ${message.slice(0, 700)}`);
+        console.log(`[drill T-D(f)] k=${k}: FALHOU em ${Date.now() - startedAt} ms — ${message.split("\n")[0]}`);
+      } finally {
+        await db?.$disconnect();
+        await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+        extraDatabases.delete(name);
+      }
+    }
+    assert.deepEqual(failures, [], `T-D(f): prefixos em que a migração não foi atômica ou a recuperação não convergiu:\n${failures.join("\n")}`);
   });
 }
