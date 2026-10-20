@@ -235,11 +235,21 @@ migrações), e o bloco não acrescenta NENHUMA linha a ela (inclusive a FK de 4
 ## Passo 12 — lista curada da CI
 
 `.github/workflows/ci.yml`, só o bloco `SUITES=` do job `backend-postgres`: entram, depois das 6 do 01, as suítes `-db` do bloco
-com um comentário que diz o número medido (fecha `P-TRC-CI-COMENTARIO-DENOMINADOR`). Variante Q1 = SIM: 4 suítes, 448/448 3×.
+com um comentário que diz o número medido (`P-TRC-CI-COMENTARIO-DENOMINADOR` segue ABERTA no registro: quem fecha é o registro,
+não este relatório). Variante Q1 = SIM: 4 suítes, 448/448 3×.
 **Variante final Q1 = NÃO: 3 suítes** (`traccar-event-ingestion-db`, `-sample-db`, `-rls-db`) — medido na forma do job (extraída do
 próprio `ci.yml` por `ci-pg-form.cjs`; `npm run db:seed`; env do job) **3× = `# tests 434 # pass 434 # fail 0 # skipped 0`**,
 denominador constante (= 391 da `main` + 43 casos `-db` novos: E 20 + F 13 + G 10; a emenda previa 433 — a diferença é o E5′, um
-`test()` à parte). O comentário no `ci.yml` traz "20+13+10 = 43 casos nas 3 suítes; 434/434 no total do job".
+`test()` à parte).
+
+**Re-medição no ramo integrado com a `main` (20/10, pedido do orquestrador).** O registrador integrou a `main` (head `27ebbdee`:
+registro `ba64626d` + merge de `539b078e`, que trouxe as 2 suítes `-db` do B-SAN3-02 para a lista curada). O comentário ANTIGO do 01
+("363/363 no total do job") tinha ficado ao lado do meu ("434/434 …"), com dois totais diferentes e uma pendência declarada fechada.
+
+| Comando | Saída | Veredito |
+|---|---|---|
+| retrato `git archive 27ebbdee` → contêiner `dtrc02-` (1 trabalho meu; outro nenhum; 8,7 GB livres) → `ci-pg-form.cjs` (54 linhas `SUITES=`), `npm run db:seed`, env do job, 1× | `# tests 457 # pass 457 # fail 0 # cancelled 0 # skipped 0` | **457/457** |
+| `ci.yml`: o comentário do 01 perde o total ("…= 48 casos nas 6 suítes)."); o do 02 diz "43 casos nas 3 suítes… Total do job, re-medido no ramo integrado com a main (27ebbdee, 1×): 457/457, 0 pulo." — UM total só, sem "fecha …" | `git diff --numstat` → `3 3` | um comentário de total; nenhuma pendência declarada fechada |
 
 ## Bateria §9.7
 
@@ -413,8 +423,9 @@ push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/505
   "Bateria §9.7".
 - **Decisão do dono** "TRC-02 Q1 = Não" (19/10) → `D-TRC02-Q1-NAO` e a pendência que volta por §Q1.7: `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA`
   (dono B-TRC-03). Com Q1 = NÃO, `P-TRC02-FIX-CONTESTADO-ENTRE-KINDS` (emenda §1.8) deixa de existir (não há recibo `position_sample`).
-- **Fecham neste bloco:** `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` (demo `--with-web`: `login_without_org: active`, H7 verde),
-  `P-TRC-CI-COMENTARIO-DENOMINADOR` (comentário com 434 medido 3×), `P-TRC02-LIMITADOR-POR-ROTA` (C8/C11 verdes, M-E36 vermelha).
+- **Evidência para o registro decidir** (quem fecha pendência é o registro, não este relatório): `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE`
+  (demo `--with-web`: `login_without_org: active`, H7 verde), `P-TRC-CI-COMENTARIO-DENOMINADOR` (comentário único com o total
+  re-medido no ramo integrado, 457/457; o registro a mantém ABERTA), `P-TRC02-LIMITADOR-POR-ROTA` (C8/C11 verdes, M-E36 vermelha).
 - **Continuam com dono** (v2 §12): `P-TRC02-LIMITES-POR-ROTA-PROD`, `P-TRC02-QUARENTENA-SEM-TIPO-DE-MENSAGEM`,
   `P-TRC02-RECIBO-VINCULO-VIATURA-FK`, `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO` (agora só para o evento sem despacho, C-10),
   `P-TRC02-COMMANDRESULT-IGNORADO`, `P-TRC02-STATUS-TIMEOUT-PROD`, `P-TRC02-DEFICIT-2N`.

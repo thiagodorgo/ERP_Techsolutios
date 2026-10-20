@@ -285,7 +285,7 @@ jobs:
           # job `backend` (medido no head 5abdf83b: 44/44 no log do run 38352262796), mas a convenção da lista curada
           # (SAN2-2, B-O6R-06) é que toda suíte `-db` nova entre AQUI, sob o guard de zero pulos, medida 3× antes.
           # Medido antes de entrar: 3 execuções na forma deste job, 0 falha, 0 pulo, denominador constante (6+9+2+20+6+5 = 48
-          # casos nas 6 suítes; 363/363 no total do job).
+          # casos nas 6 suítes).
           SUITES="$SUITES tests/traccar-binding-uniqueness-db.test.ts"
           SUITES="$SUITES tests/traccar-idempotency-db.test.ts"
           SUITES="$SUITES tests/traccar-ingest-pool-db.test.ts"
@@ -294,8 +294,8 @@ jobs:
           SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
           # B-TRC-02 — as 3 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
           # savepoint, RLS/migração com drill de rollback; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
-          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+10 = 43 casos nas 3 suítes; 434/434 no
-          # total do job, 0 falha, 0 pulo, denominador constante (fecha P-TRC-CI-COMENTARIO-DENOMINADOR).
+          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+10 = 43 casos nas 3 suítes, 0 falha,
+          # 0 pulo, denominador constante. Total do job, re-medido no ramo integrado com a main (27ebbdee, 1×): 457/457, 0 pulo.
           SUITES="$SUITES tests/traccar-event-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-event-sample-db.test.ts"
           SUITES="$SUITES tests/traccar-event-rls-db.test.ts"
