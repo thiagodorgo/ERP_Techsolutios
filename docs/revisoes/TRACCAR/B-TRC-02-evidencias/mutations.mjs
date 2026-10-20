@@ -147,4 +147,21 @@ export const REEXECUTED_01 = [
   reuse("M-C1", T01.ing, "db"),
 ];
 
-export const ALL = [...MUTATIONS_TRC02, ...REEXECUTED_01];
+// ---- emenda v2.2 de ESCOPO (§6: M-S1…M-S7; o controle C-S0 roda as duas suítes sem edição, fora do executor). Prefixo M-S.
+const CENSUS = ["tests/o6r07c-census-guard.test.ts"];
+const SAN305 = ["tests/san3-05-runtime-role-guard-db.test.ts"];
+const CENSUS_HELPER = "tests/helpers/o6r07c-census.ts";
+const RS1_LINE = '    "src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)", // B-TRC-02: validação de FORMATO do event.type (A10 → 422), não despacho; o despacho é o mapa literal enumerável (T8)\n';
+const L100 = '  if (typeof type !== "string" || !EVENT_TYPE_PATTERN.test(type)) throw new TraccarPayloadError("type_invalid");';
+export const MUTATIONS_ESCOPO = [
+  { id: "M-S1", prop: "T9 continua pegando curinga NOVO no mesmo arquivo", where: "db", edits: [{ file: EVT_SCHEMA, find: L100, replace: L100 + '\n  if (type.startsWith("device")) throw new TraccarPayloadError("type_invalid");' }], tests: CENSUS },
+  { id: "M-S2", prop: "T9 continua pegando o mesmo texto em OUTRO arquivo", where: "db", edits: [{ file: EVT_ADAPTER, find: "  const classification = classifyTraccarEvent(parsed.type, parsed.alarm);", replace: '  if (!/^[A-Za-z]{1,32}$/.test(parsed.type)) throw new Error("m");\n  const classification = classifyTraccarEvent(parsed.type, parsed.alarm);' }], tests: CENSUS },
+  { id: "M-S3", prop: "o verde do T9 depende DESTA entrada", where: "db", edits: [{ file: CENSUS_HELPER, find: RS1_LINE, replace: "" }], tests: CENSUS },
+  { id: "M-S4", prop: "limite declarado: o conteúdo do regex é guardado pelo contrato, não pelo T9", where: "db", edits: [{ file: EVT_SCHEMA, find: "const EVENT_TYPE_PATTERN = /^[A-Za-z]{1,32}$/;", replace: "const EVENT_TYPE_PATTERN = /^[A-Za-z-]{1,33}$/;" }], tests: [...CENSUS, ...T.A] },
+  { id: "M-S4'", prop: "o regex não vira despacho sem ser visto (contrato)", where: "db", edits: [{ file: EVT_SCHEMA, find: "const EVENT_TYPE_PATTERN = /^[A-Za-z]{1,32}$/;", replace: "const EVENT_TYPE_PATTERN = /^(ignitionOn|alarm)$/;" }], tests: T.A },
+  { id: "M-S5", prop: "evasão que o detector não vê (.exec sem entrada na allowlist) — esperado VERDE, prova do buraco", where: "db", expectGreen: true, edits: [{ file: EVT_SCHEMA, find: L100, replace: '  if (typeof type !== "string" || EVENT_TYPE_PATTERN.exec(type) === null) throw new TraccarPayloadError("type_invalid");' }, { file: CENSUS_HELPER, find: RS1_LINE, replace: "" }], tests: CENSUS },
+  { id: "M-S6", prop: "o 119 pega UMA TABELA A MAIS", where: "db", migration: true, edits: [{ file: MIG_A, find: "-- ROLLBACK (manual; só em ambiente SEM dado real; NUNCA como rollback produtivo).", replace: 'CREATE TABLE "zz_mutacao_trc02" ("id" INTEGER PRIMARY KEY);\n\n-- ROLLBACK (manual; só em ambiente SEM dado real; NUNCA como rollback produtivo).' }], tests: SAN305 },
+  { id: "M-S7", prop: "o 119 pega uma tabela SEM DML", where: "db", edits: [{ file: "scripts/db-runtime-role.sh", find: "WHERE ns.nspname = 'public' AND c.relkind IN ('r','p','S')", replace: "WHERE ns.nspname = 'public' AND c.relname <> 'vehicle_telemetry_events' AND c.relkind IN ('r','p','S')" }], tests: SAN305 },
+];
+
+export const ALL = [...MUTATIONS_TRC02, ...REEXECUTED_01, ...MUTATIONS_ESCOPO];
