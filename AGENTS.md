@@ -675,7 +675,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
    `agent-orchestration/omega/juntas/PROTOCOLO-JUNTA-RESILIENTE.md` (a fonte; em divergência, ela vale).
    O protocolo muda **como o trabalho sobrevive à morte de quem o fez** (P1–P6) **e à pausa ordenada pelo
-   dono** (P7, que não é morte) — quóruns, vetos, identidade nova e separação de papéis (§C7.4-bis) ficam
+   dono** (P7, que não é morte) **e à queda da sessão do orquestrador** (P8) — quóruns, vetos, identidade nova e separação de papéis (§C7.4-bis) ficam
    intactos.
 
    - **P1 — Evidência incremental.** Após **CADA item medido**, apensar a

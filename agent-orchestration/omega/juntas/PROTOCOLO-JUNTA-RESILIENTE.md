@@ -1,12 +1,12 @@
-# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01)
+# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01; P8: `D-ORQ-QUEDA-DA-SESSAO`, 2026-10-20)
 
-> Norma permanente para TODA junta, inspeção de terreno e porteiro (P1–P7); a **P7** alcança, além deles, todo
+> Norma permanente para TODA junta, inspeção de terreno e porteiro (P1–P8); a **P7** e a **P8** alcançam, além deles, todo
 > agente vivo — dev, planejador, fábrica — e o orquestrador. P1–P6 nascem do postmortem das **14 quedas de
 > agente em ~28 disparos (~50%)** da sessão de 28–29/08 — `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; a P7, da
-> ordem de pausa do dono de 2026-10-01.
+> ordem de pausa do dono de 2026-10-01; a P8, da queda da sessão do orquestrador (VS Code travado por memória) de 2026-10-20.
 > O que este protocolo NÃO muda: quóruns, vetos, identidade nova por ciclo e separação de papéis
 > (§C7.4-bis). Ele muda **como o trabalho sobrevive à morte
-> de quem o fez** (P1–P6) **e à pausa ordenada pelo dono** (P7, que não é morte).
+> de quem o fez** (P1–P6) **e à pausa ordenada pelo dono** (P7, que não é morte) **e à queda da sessão do orquestrador** (P8).
 
 ## P1 — Evidência incremental: escrever no disco a cada item, nunca só no fim
 
