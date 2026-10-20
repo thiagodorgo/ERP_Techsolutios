@@ -3150,3 +3150,13 @@ pós-merge.
 | 2026-10-17 | `PR-444` — As regras de usar IAs externas primeiro, emendar o plano antes do código e limitar trabalhos simultâneos foram formalizadas | #444 | `a26f8afe` | `0de185b8` | 3362/3364 | 1327/1327 | 864/864 | 180 | 39091915007 (tentativa 1) |
 | 2026-10-18 | `B-O6R-07c-b1` — O despacho passa a gravar quem atende a OS, protege as 23 formas de alteração contra técnico não atribuído e fecha o último achado crítico de segurança | #440 | `40c3651f` | `7ff1e003` | 3563/3565 | 1327/1327 | 864/864 | 181 | 39165313495 (tentativa 1) |
 | 2026-10-18 | `B-TRC-01` — Em desenvolvimento, uma posição do Traccar chega ao mapa por ingestão privada; dispositivo desconhecido vai para quarentena e a viatura é atribuída conforme o instante do fix | #426 | `c1485c94` | `7c220467` | 3695/3697 | 1327/1327 | 864/864 | 182 | 39173912182 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-10-20
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-19 | `PR-447` — As decisões sobre cobrança complementar, integração do rastreador e monitoramento com controle de custo foram oficializadas no registro | #447 | `bf83cda8` | `64873451` | 3695/3697 | 1327/1327 | 864/864 | 182 | 39206089699 (tentativa 1) |
+| 2026-10-19 | `B-CI-PSQL16` — A esteira automática de validação voltou a rodar normalmente depois que o GitHub trocou a imagem do servidor de testes | #449 | `2ecfb333` | `45be99b5` | 3695/3697 | 1327/1327 | 864/864 | 182 | 39348981330 (tentativa 1) |
+| 2026-10-20 | `B-DASH-PERFIL` — O painel inicial e a navegação agora levam cada colaborador exatamente para a área permitida pelo seu perfil de trabalho | #446 | `a3122bd5` | `33345c6e` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39371952146 (tentativa 1) |
+| 2026-10-20 | `PR-451` — A revisão das entregas ficou mais ágil: só o que foi reprovado é refeito, com trava para não reaproveitar o que deixou de valer | #451 | `74f78950` | `0c55df6a` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39373580150 (tentativa 1) |
+| 2026-10-20 | `PR-450` — O ambiente de trabalho ganhou proteção contra travamentos por memória e um procedimento seguro para retomar tarefas interrompidas | #450 | `9009e81b` | `305a6508` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39374741370 (tentativa 1) |
