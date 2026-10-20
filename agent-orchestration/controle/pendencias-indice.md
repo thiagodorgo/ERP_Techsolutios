@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **581** |
 | IDs distintos | 570 |
-| **ABERTAS** | **434** |
+| **ABERTAS** | **433** |
 | — das quais **diferidas** (balde C) | 67 |
-| — das quais **ativas nesta rodada** | **367** |
+| — das quais **ativas nesta rodada** | **366** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 144 |
+| FECHADAS | 145 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **581 cabecalhos para 570 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -277,7 +277,7 @@
 | `P-TRC-F1-DESPACHO-REACEITE` | 11267 | MÉDIA | sim | P-TRC-F1-DESPACHO-REACEITE (2026-10-18) — despacho re-aceito ou reatribuído depois do fi |
 | `P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA` | 11307 | CRÍTICA | sim | P-07CB1-CA6-CA7-SUPERIOR-AUTORIZA-TROCA (2026-10-18) — a autorização do superior para a  |
 
-## ABERTAS · balde B — processo/registro — 165
+## ABERTAS · balde B — processo/registro — 164
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -445,7 +445,6 @@
 | `P-07CB1-APP-SEM-MILEAGE-NA-FILA` | 11354 | BAIXA | sim | P-07CB1-APP-SEM-MILEAGE-NA-FILA (2026-10-18) — o app não emite `work_order.mileage` pela |
 | `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` | 11361 | BAIXA | sim | P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organizaç |
 | `P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI` | 11369 | BAIXA | sim | P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou  |
-| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11378 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 67
 
@@ -519,7 +518,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3665 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3709 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 144
+## FECHADAS — 145
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -667,3 +666,4 @@
 | `P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR` | 10975 | ALTA | sim | P-O6R-B03-PROVA-DE-REPLAY-POR-ATOR (2026-10-11) — a prova de replay de um ator não pode  |
 | `P-O6R-07CB-EMENDA-DECISOES` | 11080 | ALTA | sim | P-O6R-07CB-EMENDA-DECISOES (2026-10-15) — o plano do 07c-b precisa das três respostas do |
 | `P-CONFLITO-INICIO-ATENDIMENTO` | 11144 | ALTA | sim | P-CONFLITO-INICIO-ATENDIMENTO (2026-10-17) — duas decisões do dono dizem onde começa o " |
+| `P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE` | 11378 | BAIXA | sim | P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE (2026-10-19) — a navegação depois da troca de organ |
