@@ -266,7 +266,32 @@ como "despacho por tipo" tudo que deriva dele.
   Pedido ao orquestrador: emenda de escopo de UMA linha (`"src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)"`
   em `CURINGAS_ACEITOS`, com o motivo), no molde da R3-4. Até lá, o job `backend` da CI fica vermelho no T9.
 
-EM APURAÇÃO: regressão e `npm test` re-medidos no head com a correção do T8 e na `main`; demo (passo 8).
+**Segunda tentativa (~00:30–00:50Z):** o `npm ci` do contêiner do head morreu por rede (`npm error network read ETIMEDOUT`,
+ec 3); o da `main` instalou e a VM do Docker **caiu de novo no meio do `npm test` completo** (`unexpected EOF`, ec 125). As duas
+quedas foram na mesma etapa — a suíte inteira em paralelo, a mais pesada. **Decisão:** não repito o `npm test` inteiro no contêiner
+(derruba a VM que os outros agentes usam); a forma `backend` completa fica para o job da CI, e eu classifico os vermelhos medidos
+rodando SÓ os arquivos deles, no head e na `main`. Resíduo `dtrc02-*` depois da queda: 0; commit livre 5,9 GB.
+
+**Classificação por arquivo (container, head `22cd524b` × retrato limpo da `origin/main`):**
+
+| Arquivo | head | `main` | Conclusão |
+|---|---|---|---|
+| regressão §9.7 passo 4 (forma `backend`, memória) | `# tests 408 # pass 408` | `408/408` | verde, igual |
+| `tests/o6r07c-census-guard.test.ts` | `# tests 32 # pass 31 # fail 1` — só **T9**: `CURINGA-ESTATICO: src/integrations/traccar/traccar-event.schema.ts:100: EVENT_TYPE_PATTERN.test(type)` (T8 e T13 verdes depois da correção) | `32/32` | **deste bloco** — PEDIDO DE EMENDA 1 (abaixo) |
+| `tests/san3-05-runtime-role-guard-db.test.ts` | `# tests 12 # pass 10 # fail 2` — `T14a/b`: esperado `…\|0\|0\|118`, veio `…\|0\|0\|119` | `12/12` | **deste bloco**, consequência legítima: o número é a contagem de objetos de `public` que `scripts/db-runtime-role.sh` concede ao papel de runtime; a tabela nova é a 119ª. O B-TRC-01 moveu este mesmo literal quando criou as suas tabelas (`git log -S'\|118$'` → `c1485c94`). PEDIDO DE EMENDA 2 |
+| `traccar-event-contract` / `traccar-event-ingestion-db` (catálogo reescrito) | `17/17` · `20/20` | — | verde |
+| M-E04 re-ancorada (`if (eventKind === undefined) {…`) | `tsc 0`, `# tests 37 # pass 35`, exit 1 | — | **vermelha** |
+
+**PEDIDOS DE EMENDA DE ESCOPO (para o orquestrador; NÃO aplicados — os dois arquivos estão fora do PERMITIDO):**
+1. `tests/helpers/o6r07c-census.ts`, em `CURINGAS_ACEITOS`: uma entrada
+   `"src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)"` — motivo: validação de FORMATO do `event.type`
+   (A10: fora de `^[A-Za-z]{1,32}$` → 422), não despacho por prefixo; o despacho do evento é o mapa literal enumerável (T8 verde).
+2. `tests/san3-05-runtime-role-guard-db.test.ts:1016`: `118` → `119` — motivo: a tabela `vehicle_telemetry_events` recebe DML do papel de
+   runtime pelos default privileges (é o desenho do §6.1; nenhuma concessão nova, nenhuma função).
+Sem as duas, o job `backend` da CI fica vermelho em T9 e T14a/b. Contornar qualquer um dos dois detectores no código seria fugir
+de um ratchet (a classe que a emenda R3-3 proibiu); por isso o pedido e não o contorno.
+
+EM APURAÇÃO: demo (passo 8 da bateria = passo 9).
 
 ## Limpeza
 
