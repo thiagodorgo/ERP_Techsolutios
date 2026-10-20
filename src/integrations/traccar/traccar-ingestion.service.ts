@@ -98,6 +98,9 @@ type PhaseTwoPorts = {
   readonly operatorAt: (at: Date, vehicleId: string) => Promise<OperatorAtFixTime>;
 };
 
+/** B-TRC-02 (emenda v2.4): a fase 2 do EVENTO só usa o tx e o SQL da ingestão — sem localização e sem operador (C-10). */
+type EventPhaseTwoPorts = Pick<PhaseTwoPorts, "tx" | "repository">;
+
 export type TraccarIngestionLogger = TraccarResolutionLogger & {
   error(object: Record<string, unknown>, message: string): void;
 };
@@ -262,9 +265,7 @@ export class TraccarIngestionService {
     const budget = this.options.budgets?.phaseTwo ?? TRACCAR_PHASE_TWO_BUDGET;
     return withTenantRlsBudget(this.options.client, tenantId, budget, async (tx) => {
       const repository = new TraccarIngestionRepository(tx, this.options.hooks);
-      const locations = new PrismaFieldLocationRepository(tx);
-      const operatorAt = (at: Date, vehicleId: string) => findOperatorsForVehicleAt(tx, { tenantId, vehicleId, at });
-      const outcome = await this.eventPhaseTwoSteps({ tx, repository, locations, operatorAt }, tenantId, command);
+      const outcome = await this.eventPhaseTwoSteps({ tx, repository }, tenantId, command);
       if (outcome.kind === "confirmed") {
         claimTraccarCommitOrThrow(deadline);
       }
@@ -273,7 +274,7 @@ export class TraccarIngestionService {
   }
 
   private async eventPhaseTwoSteps(
-    ports: PhaseTwoPorts,
+    ports: EventPhaseTwoPorts,
     tenantId: string,
     command: TraccarEventCommand,
   ): Promise<TraccarConfirmResult<EventPhaseTwoResult>> {

@@ -466,6 +466,56 @@ Um trabalho Docker meu por vez, prefixo `dtrc02-`, resíduo 0 depois de cada um.
 **Para o orquestrador** (o registro é seu): `D-TRC02-MIGRACAO-TRANSACAO-EXPLICITA`, `P-TRC02-LOCK-INDICE-RECIBO-PROD` (dono B-TRC-06) e
 `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA` (§10 da emenda). O DBA re-mede a cadeira vermelha no head final.
 
+## Emenda v2.4 de ESCOPO — inventário de acessos de plataforma (ratchet T13 do B-SAN3-05)
+
+O que aconteceu: a CI do PR #454 (head `46dd99d1`, run `39409680755`) ficou vermelha no job `backend`, em
+`tests/san3-05-acessos-de-plataforma-guard.test.ts`. Eu não tinha rodado essa suíte, porque a bateria §9.7 não a nomeia e o `npm test`
+completo derrubava a VM. Norma: `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.4-acessos.md`, cópia sem espaço de fim de linha.
+
+Papéis:
+- quem achou: a CI;
+- quem planejou: `planejador-trc02-v24-fable`;
+- quem desenvolveu: `dev-trc02-opus` (Opus, declarado).
+
+Terreno: P8 ≥ 5,4 GB antes de cada contêiner, um trabalho Docker meu por vez, resíduo `dtrc02` = 0.
+
+| Passo | Comando → saída | Veredito |
+|---|---|---|
+| R-A3 edição R | `git diff --numstat` do serviço → `5 4`, 3 hunks: o tipo `EventPhaseTwoPorts`, a instanciação morta e o `operatorAt` fora de `eventPhaseTwo`, e a assinatura de `eventPhaseTwoSteps` | o texto exato da §2.3 |
+| gerador no head | `node scripts/san3-05-acessos-de-plataforma.mjs .` → `73 chaves · sha1=61af723d0afad4c727c24b99b4bbb52be39a1186`, `L0 … FORCE=109`, `erros sintaticos=0`. Na `main` local `539b078e`: `67 chaves · sha1=a9de7911…`, `FORCE=108`. `comm`: **7 novas** (N1–N6 e o `new TraccarIngestionRepository(tx) … ×2`) e **1 sumida** (o mesmo `×1`) | igual ao P11 da emenda |
+| R-A1 `NOVAS` | um script (`edit-novas.cjs`) colou as chaves da saída do gerador (head − main, separadas por TAB, `×N` inclusive). Os motivos vieram verbatim da tabela §1.2 da emenda: 6 entradas novas depois da de `traccar-resolution.ts`. A do 01 passou de `"×1"` a `"×2"`, com o motivo estendido pela frase do 02 | colado, não digitado |
+| R-A2 L0 | l.261: `111` → `112` nos 3 números | — |
+| b-A1/b-A2/b-A3 | o arquivo do ratchet tem numstat `29 3` e **2 hunks**. Toques em `ORIGIN_MAIN`, `SUMIDAS`, `runGenerator`, `setDiff`, `fixtures.length`, `OPS(derivados)`, `SITE_7`: **0**. Gerador, fixtures, `rls.ts` e `db-runtime-role.sh`: diff vazio | dentro |
+| b-A4 guarda | `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` → `# tests 35 # pass 35 # fail 0 # skipped 0` | verde |
+| R-A4 caso -db | +1 `test()` em `traccar-event-ingestion-db` (numstat `48 0`): 1 evento real pelo serviço e +500 linhas de A semeadas pelo admin. Sob o GUC de A: 10 linhas, todas de A. Sob o GUC de B, com os ids de A: 0. `limit` 0 → 1 e 1 000 → 500 | — |
+| comando do bloco | l.9-11 citam a v2.3 e a v2.4; o PERMITIDO soma a §6 da v2.3 e a §2.1 da v2.4 (numstat `6 2`) | — |
+| check/lint/sem banco | `npm run check` 0 · `npm run lint` 0 · A+B+C+D+H: `# tests 54 # pass 54` · `sync --check` OK (79 agentes) · `git diff --check` 0 | verde |
+| contêiner `-db` | `traccar-event-ingestion-db` → `# tests 21 # pass 21 # fail 0 # skipped 0`. Forma `backend-postgres` 3× → `# tests 463 # pass 463 # fail 0 # cancelled 0 # skipped 0` (462 + 1, constante) | verde |
+| mutações do R-A4 (cópia no contêiner, restauro por `cmp`) | `LIMIT ${limit}` no lugar da régua: **vermelha** (`20/21`, o caso novo). `WHERE` sem `tenant_id`: **verde**, como a §2.5 declara (sob NOBYPASSRLS quem filtra é a política FORCE) | como previsto |
+| `npm test` forma `backend` (contêiner, 1×) | `# tests 3865 # pass 3849 # fail 14 # cancelled 0 # skipped 2`. Os 14 vermelhos são os de sempre: os testes de topologia que exigem o CLI do Docker, ausente no contêiner (9 de `traccar-dev-topology`, 5 de `traccar-event-topology`). No host, as duas suítes: `# tests 21 # pass 21 # fail 0`. **O ratchet T13 passou nesta forma.** A VM não caiu | verde, salvo o ambiente |
+
+**Controles da cadeira (b)** (§3 da emenda; aplicados no worktree um por vez; `controles-v24.mjs` restaura por sha256; os 3 arquivos
+conferidos iguais ao antes):
+
+| Controle | Mutante | Resultado da guarda | Evidência | Restauro |
+|---|---|---|---|---|
+| C1 | método novo `countByVehicle` com `tx.$queryRaw` cru, sem motivo | **vermelho** `33/35` | `novasSemMotivo: [ … ]` | ok |
+| C2 | `insertEvent` com `prisma.$queryRaw` (client raiz importado) | **vermelho** `33/35` | `novasSemMotivo` e `sumidasSemMotivo` não vazias | ok |
+| C3 | literal L0 de volta a `111` | **vermelho** `33/35` | `L0 exato` (`did not match … FORCE=111`) | ok |
+| C4 | motivo de N6 = `""` | **vermelho** `33/35` | `chave sem motivo: L1 … listByVehicle …` | ok |
+| C6 | instanciação morta de `PrismaFieldLocationRepository` de volta em `eventPhaseTwo` | **vermelho** `33/35` | `novasSemMotivo`/`sumidasSemMotivo` | ok |
+
+**C5 não foi medido por mim.** O mutante é o chamador que passa o client raiz a um `tx`. A emenda declara que ele fica fora do alcance
+do gerador e o atribui à cadeira (a), em cluster descartável.
+
+**Contagens v2.4:**
+- testes novos do bloco: 103 (E 21);
+- `backend-postgres`: 463 ×3. A emenda previa 449 sobre a base de 448; o ramo integrado já media 462;
+- comentário do `ci.yml`: "21+13+9+6 = 49" e "463/463". Não declara a `P-TRC-CI-COMENTARIO-DENOMINADOR` fechada.
+
+**Para o orquestrador** (o registro é seu): a linha v2.4 em `D-TRC02-ESCOPO` (a da v2.2 também falta na `origin/main`, P14) e as
+pendências `P-SAN3-05-WRAPPERS-BUDGET`, `P-TRC-BATERIA-RATCHET-T13` e `P-TRC02-PORTAS-DE-LEITURA-SEM-CHAMADOR` (§4.3 da emenda).
+
 ## Limpeza
 
 | Comando | Saída |

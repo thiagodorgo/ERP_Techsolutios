@@ -7,7 +7,8 @@
 - **Branch:** `feat/traccar-b-trc-02`
 - **Autor:** `dev-trc02-opus` (Claude Opus 5.5, nível menor declarado, cobrindo o Codex)
 - **Plano (norma única):** `docs/revisoes/TRACCAR/B-TRC-02-plano.md` (v2) + `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.1.md` +
-  `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.2-escopo.md` (onde uma emenda muda a v2, vale a emenda). A v1 (`B-TRC-02-plano-v1.md`) fica como registro de medição.
+  `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.2-escopo.md` + `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.3.md` +
+  `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.4-acessos.md` (onde uma emenda muda a v2, vale a emenda). A v1 (`B-TRC-02-plano-v1.md`) fica como registro de medição.
 - **Decisões do dono:** `D-TRC02-RESPOSTAS` (Q2 = Q3 = SIM) e a reversão "TRC-02 Q1 = Não" de 19/10, antes do merge (variante
   Q1 = NÃO, §Q1.7; o registro em `agent-orchestration/controle/decisoes.md` é do orquestrador).
 - **Emenda do orquestrador (gate 3):** carimbos renumerados para `20260879000000_vehicle_telemetry_events` (A) e
@@ -30,7 +31,10 @@ nova; nunca os servidores públicos de demonstração.
 
 O do plano: v2 §7.1 ∪ §7.3, mais `tests/db-catalog-write-guard.test.ts` (uma entrada na allowlist, emenda R3-4) e os dois
 caminhos da emenda v2.2 de escopo (`tests/helpers/o6r07c-census.ts`: 1 entrada em `CURINGAS_ACEITOS`;
-`tests/san3-05-runtime-role-guard-db.test.ts:1016`: `118` → `119`). O
+`tests/san3-05-runtime-role-guard-db.test.ts:1016`: `118` → `119`), a tabela §6 da emenda v2.3 (migração A transacional, drill
+`tests/traccar-event-migration-drill-db.test.ts`, G sem o G9, `ci.yml`, `mutations.mjs`, `docs/deployment.md`) e o §2.1 da emenda
+v2.4 (`tests/san3-05-acessos-de-plataforma-guard.test.ts`: só o mapa `NOVAS` e o literal L0 `111` → `112`; edição R em
+`src/integrations/traccar/traccar-ingestion.service.ts`; 1 caso -db em `tests/traccar-event-ingestion-db.test.ts`). O
 PROIBIDO é o da v2 §7.4. `Kpis/**` congelado (`D-GOV-PROPORCIONAL`).
 
 ## Bateria de validação

@@ -294,8 +294,8 @@ jobs:
           SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
           # B-TRC-02 — as 4 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
           # savepoint, RLS, drill da migração por prefixo k = 1..17; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
-          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+9+6 = 48 casos nas 4 suítes, 0 falha,
-          # 0 pulo, denominador constante; o drill leva ~2 min. Total do job, medido 3× no ramo integrado: 462/462, 0 pulo.
+          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 21+13+9+6 = 49 casos nas 4 suítes, 0 falha,
+          # 0 pulo, denominador constante; o drill leva ~2 min. Total do job, medido 3× no ramo integrado: 463/463, 0 pulo.
           SUITES="$SUITES tests/traccar-event-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-event-sample-db.test.ts"
           SUITES="$SUITES tests/traccar-event-rls-db.test.ts"

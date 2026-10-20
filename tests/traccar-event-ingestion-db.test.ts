@@ -534,4 +534,52 @@ if (!connectionString) {
     assert.equal(await rowsOf(h, a.tenantId), 1);
     assert.deepEqual([await allReceiptsOf(h, b.tenantId), await rowsOf(h, b.tenantId), await locationsOf(h, b.tenantId)], [0, 0, 0]);
   });
+
+  // Emenda v2.4 R-A4: a porta de leitura `listByVehicle` (sem chamador em src/** até o B-TRC-04) presa sob o GUC de A e de B,
+  // com o canário por linha e os dois extremos da régua `Math.max(1, Math.min(limit, 500))`.
+  test("evento: listByVehicle sob o GUC de A devolve só A (canário); sob o GUC de B devolve 0 de A; limit 0 → 1 e 1 000 → 500", { timeout: 120_000 }, async () => {
+    const h = await harness();
+    const a = await world(h, "list-a");
+    const b = await world(h, "list-b");
+    assert.deepEqual(await h.ingestion.ingestEvent(command(h, body(a.device, "deviceOnline", await fixNow(), { position: false }))), { kind: "stored" });
+    // +500 linhas de A semeadas pela conexão administrativa (recibo 'event' + linha por recibo), para o extremo de 500 ser medível.
+    const [binding] = await h.admin.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id::text AS id FROM vehicle_tracking_bindings WHERE tenant_id = $1::uuid AND vehicle_id = $2::uuid`,
+      a.tenantId,
+      a.vehicleId,
+    );
+    const tag = randomUUID().replace(/-/g, "");
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO traccar_ingress_receipts
+         (tenant_id, instance_key, message_kind, external_event_key, payload_digest, binding_id, vehicle_id, traccar_device_id, fix_time)
+       SELECT $1::uuid, $2, 'event', md5($3 || g::text) || md5(g::text || $3), md5($3 || g::text) || md5(g::text || $3),
+              $4::uuid, $5::uuid, '1', now() - make_interval(secs => g)
+         FROM generate_series(1, 500) AS g`,
+      a.tenantId,
+      INSTANCE,
+      tag,
+      binding!.id,
+      a.vehicleId,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO vehicle_telemetry_events (tenant_id, vehicle_id, binding_id, receipt_id, kind, occurred_at)
+       SELECT r.tenant_id, r.vehicle_id, r.binding_id, r.id, 'device_online', r.fix_time
+         FROM traccar_ingress_receipts r
+        WHERE r.tenant_id = $1::uuid AND r.message_kind = 'event'
+          AND NOT EXISTS (SELECT 1 FROM vehicle_telemetry_events e WHERE e.tenant_id = r.tenant_id AND e.receipt_id = r.id)`,
+      a.tenantId,
+    );
+    assert.equal(await rowsOf(h, a.tenantId), 501);
+
+    const underA = await asTenant(h, a.tenantId, (tx) => h.repo.listByVehicle(tx, a.tenantId, a.vehicleId, 10));
+    assert.equal(underA.length, 10, "sob o GUC de A: as 10 pedidas");
+    for (const row of underA) {
+      assert.equal(row.tenantId, a.tenantId, "canário: toda linha é de A");
+      assert.equal(row.vehicleId, a.vehicleId);
+    }
+    const underB = await asTenant(h, b.tenantId, (tx) => h.repo.listByVehicle(tx, a.tenantId, a.vehicleId, 10));
+    assert.equal(underB.length, 0, "sob o GUC de B, os ids de A não devolvem nada");
+    assert.equal((await asTenant(h, a.tenantId, (tx) => h.repo.listByVehicle(tx, a.tenantId, a.vehicleId, 0))).length, 1, "limit 0 vira 1");
+    assert.equal((await asTenant(h, a.tenantId, (tx) => h.repo.listByVehicle(tx, a.tenantId, a.vehicleId, 1_000))).length, 500, "limit 1 000 vira 500");
+  });
 }
