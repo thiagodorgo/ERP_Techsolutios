@@ -18,6 +18,7 @@ import { FinancialTitleError } from "./financial-title.types.js";
 import {
   PERIOD_WRITE_BLOCKING_STATUSES,
   invalidAccountReferenceError,
+  invalidParentTitleReferenceError,
   periodClosedError,
   sourceAlreadyLaunchedError,
   workOrderAlreadyInvoicedError,
@@ -60,6 +61,9 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
           // caminho createForSource popula (create público / faturamento OS: null).
           source_type: input.sourceType ?? null,
           source_id: input.sourceId ?? null,
+          // B-SAN3-02 — NULL = ORIGINAL; id = COMPLEMENTAR. Só o faturamento popula; a FK de 4 colunas amarra o pai
+          // à mesma organização, OS e direção (migration 20260878000000).
+          parent_title_id: input.parentTitleId ?? null,
           client_action_id: input.clientActionId ?? null,
           created_by: input.createdBy ?? null,
           updated_by: input.updatedBy ?? null,
@@ -88,7 +92,9 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
 
   async findActiveByWorkOrder(tenantId: string, workOrderId: string, direction: string): Promise<FinancialTitle | undefined> {
     const record = await this.client.financialTitle.findFirst({
-      where: { tenant_id: tenantId, work_order_id: workOrderId, direction, deleted_at: null },
+      // B-SAN3-02 — ORIGINAL ativo: parent_title_id NULL. Sem ORDER BY de propósito: sob o índice parcial
+      // financial_titles_wo_direction_original_active_key há no máximo UMA linha que satisfaz este WHERE.
+      where: { tenant_id: tenantId, work_order_id: workOrderId, direction, deleted_at: null, parent_title_id: null },
     });
     return record ? mapRecord(record) : undefined;
   }
@@ -420,6 +426,7 @@ function mapRecord(record: {
   readonly service_quote_id: string | null;
   readonly source_type: string | null;
   readonly source_id: string | null;
+  readonly parent_title_id: string | null;
   readonly client_action_id: string | null;
   readonly created_by: string | null;
   readonly updated_by: string | null;
@@ -449,6 +456,7 @@ function mapRecord(record: {
     serviceQuoteId: record.service_quote_id ?? undefined,
     sourceType: record.source_type ?? undefined,
     sourceId: record.source_id ?? undefined,
+    parentTitleId: record.parent_title_id ?? undefined,
     clientActionId: record.client_action_id ?? undefined,
     createdBy: record.created_by ?? undefined,
     updatedBy: record.updated_by ?? undefined,
@@ -461,8 +469,9 @@ function mapRecord(record: {
 // P2003 (FK composta inválida — conta/OS inexistente ou de outro tenant). Nesta fatia só account_id é
 // populado, então o alvo esperado é a conta; mapeia por target para robustez. O tenant sempre vem da claim.
 function translatePersistenceError(error: unknown): unknown {
-  // Ω4-3 (D-Ω4-C2) — o índice PARCIAL financial_titles_wo_direction_active_key (só existe no SQL da
-  // migration) dispara P2002 no 2º faturamento ativo da mesma OS+direção → 409 (rede da idempotência).
+  // Ω4-3 (D-Ω4-C2) → B-SAN3-02 — o índice PARCIAL financial_titles_wo_direction_original_active_key (só existe no
+  // SQL da migration 20260878000000) dispara P2002 no 2º ORIGINAL ativo da mesma OS+direção → 409 (rede da
+  // idempotência; o nome mantém `wo_direction` e não contém `source`).
   // Ω4C PR-02 — financial_titles_source_direction_active_key dispara P2002 no 2º lançamento por origem →
   // 409 source_already_launched. Desambigua pelo alvo do índice (meta.target inclui "source").
   if (isPrismaError(error, "P2002")) {
@@ -473,6 +482,11 @@ function translatePersistenceError(error: unknown): unknown {
   }
   if (isPrismaError(error, "P2003")) {
     const target = foreignKeyTarget(error);
+    // B-SAN3-02 (emenda v2.1, B1) — FK de 4 colunas do pai: 400 de referência inválida, testado ANTES do ramo
+    // `work_order` (as colunas da FK nova contêm work_order_id).
+    if (target.includes("parent")) {
+      return invalidParentTitleReferenceError();
+    }
     if (target.includes("work_order")) {
       return new FinancialTitleError(400, "FINANCIAL_TITLE_INVALID", "invalid_work_order_reference", "The referenced work order does not exist for this tenant.");
     }
@@ -485,9 +499,18 @@ function isPrismaError(error: unknown, code: string): boolean {
   return typeof error === "object" && error !== null && "code" in error && (error as { readonly code?: unknown }).code === code;
 }
 
+// B-SAN3-02 — leitura PROFUNDA do `meta`: no Prisma 7 + adapter-pg a identidade da constraint pode vir aninhada
+// (`meta.driverAdapterError.cause.constraint`), e `String(objeto)` daria "[object Object]" — o ramo `parent` do
+// P2003 (FK de 4 colunas) nunca casaria. JSON contém todos os valores-texto que a leitura rasa já via.
 function foreignKeyTarget(error: unknown): string {
   const meta = (error as { readonly meta?: Record<string, unknown> }).meta ?? {};
-  return Object.values(meta).map((value) => String(value)).join(" ").toLowerCase();
+  let flat: string;
+  try {
+    flat = JSON.stringify(meta) ?? "";
+  } catch {
+    flat = Object.values(meta).map((value) => String(value)).join(" ");
+  }
+  return flat.toLowerCase();
 }
 
 function nullable<T>(value: T | undefined): T | null | undefined {

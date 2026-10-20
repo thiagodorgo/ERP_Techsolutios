@@ -1,0 +1,41 @@
+{
+  "jurado": "jurado-san302-c1-opus (corpo jurado-san302-c1-atomicidade-e-corrida) — identidade nova",
+  "cadeira": "C1 — atomicidade (K1), item apagado/alterado durante o faturamento (K2), corrida de dois faturamentos e ordem advisory → row lock",
+  "modelo": "Claude Opus (claude-opus-5-5), nível MENOR declarado (§C7.6)",
+  "objeto": "8e6a6c29b8a0aced5bf3968383aa9ef247019f46 (ls-remote = gh pr view 448 headRefOid, OPEN); B = merge-base = 2ecfb333aed0a0efcc1f171148473aad2921be66; origin/main início = 2ecfb333 (fim: sem nova busca — o objeto não andou: 14/14 check-runs no mesmo SHA)",
+  "legalidade": "inspetor LIBERADO COM RESSALVA (2026-10-20T01:52Z) nomeando jurado-san302-c1-opus; corpo do blob IDENTICO nos 2 espelhos (EOL-neutro); 14/14 check-runs success no objeto; worktree próprio C:/Users/AMP/w-jsan302-c1 (detached no objeto, sem node_modules no Windows, npm ci próprio no contêiner); clusters próprios tl179246253526570, tl179246297929975 e o da subida 3; papel do serviço rolsuper=false rolbypassrls=false lido pela própria conexão",
+  "quorum": "unanimidade de 3 com veto; bloco de dinheiro; ciclo 1",
+  "voto": "APROVADO",
+  "itens": {
+    "item1_K1": "VERDE no objeto — K1A/K1B (gatilho no carimbo e no INSERT): 0 título, 0 carimbo, erro propaga; irmão positivo 1 título=Σ100 + 2 carimbos; T-A1/T-A3/T-A6/T-A7/T-PREC verdes; vermelho-controle: base reproduz título sem carimbo; M1, M9, M3(m), M20, M24 vermelhas",
+    "item2_K2": "VERDE no objeto — T-R1 422 5/5, T-R2 201 Σ60 5/5, T-R2b 422 nothing 5/5, T-R4 422 5/5, bloqueio do perdedor (papel, Lock) provado em pg_stat_activity; T-M4b/T-M4c verdes; vermelho-controle: base apaga o carimbado (R1 3/3) e fatura o apagado (R2 3/3); M2 (R2/R2b/Z2), M4, M4′, M4m, M4i vermelhas; leitor de desfechos classifica os 4 baldes fabricados",
+    "item3_corrida_e_ordem": "VERDE no objeto — SYM 10/10 (201 + 409 already_invoiced, 1 original, Σ=lastro); T-A4 na forma do plano v2 3/3 (201 COMPLEMENTAR parent=T1, n=1, Σ=i2, 2 títulos); T-A4b 409 already_invoiced e nada persiste; ORD: invoice (papel) espera a advisory com 0 row lock em itens/títulos (pg_locks), liberado → 201; T-Z1/T-Z2 verdes; T-Z3 3/3 com ctid(i1)<ctid(i2) medido, EXPLAIN do UPDATE sem ordem registrado (Seq Scan) e T-Z3L 3/3 (Index Scan); vermelho-controle: M17 (A4 3/3), ordem invertida (leitor acusa RowShareLock+transactionid), M4″ (Z1 apaga carimbados), M19 deadlock 3/3 em Seq e 3/3 em Index sem PGOPTIONS, M5b (A4b: 2 originais), M1+M5b (SYM 30/30 violações); leitor de pg_locks acusa linhas fabricadas"
+  },
+  "o_que_executei": [
+    "suítes do objeto: work-order-invoicing.test.ts 35/35 (2x) e work-order-invoicing-atomic-db.test.ts 17/17 (4x) em cluster descartável",
+    "sondas próprias tests/jsan302-c1-sonda-{mem,db}.test.ts: 8/8 e 15/15 no objeto, 0 skip (2 subidas)",
+    "14 mutações uma a uma com prova de aplicação CRLF e restauro por hash 12/12; src da base 2ecfb333 com hashes provados"
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [
+    "M3 no banco: sob FOR UPDATE a contagem carimbada nunca diverge da selecionada — a guarda do passo 7 só morre em memória (MA3), como o plano declara",
+    "M1 SOZINHA na corrida simétrica sem barreira (SYM N=20): 0 violação — o índice de originais (P2002 → 409) é backstop suficiente; a M1 morre no item 1 (K1A: título sem lastro; MA1) e, junto com a M5b, na SYM (30/30)",
+    "M5b SOZINHA na SYM (10/10 verde): a unidade (FOR UPDATE) serializa sem o índice; a M5b morre no T-A4b (201 com 2 originais)"
+  ],
+  "pendencias_que_aceito": [
+    "P-Ω4-3-TEST-HERMETIC",
+    "P-Ω4-3-CURRENCY-BRL",
+    "P-Ω4-3-INVOICE-LEASTPRIV",
+    "P-SAN3-02-OS-NAO-TRAVADA (pré-existentes pelo corpo; nenhum efeito novo medido)",
+    "P-SAN3-02-DEADLOCK-RESIDUAL (residual de escritores fora do bloco; o ciclo fatura×zero medido sem 40P01 em Seq e Index)"
+  ],
+  "insumos_A_RE-VERIFICAR": "plano v2 + Anexos A/B/C, críticas r1/r2, relatório do dev, parecer do DBA, revisão independente — roteiro, não prova",
+  "teardown": "gatilhos/funções jsan302_c1 = 0 e tenants/papéis = 0 em cada subida; contêineres tl179246253526570, tl179246297929975 e da subida 3 removidos com volumes e rede pela ferramenta (0 restante); mutações só na cópia do contêiner com HASHCHECK 12/12 após cada uma e no fim; worktree C:/Users/AMP/w-jsan302-c1 removido por git worktree remove --force; base viva e portas proibidas intocadas; nada commitado",
+  "notas": [
+    "Divergência corpo×plano (§A2, registrada no mandato): T-A4 julgado no alvo do plano v2 (201 complementar), não no 409 da l.127 do corpo.",
+    "O pré-check fora da unidade lê pelo cliente default da aplicação; toda ESCRITA de dinheiro passa pelo papel sem bypass (provado por usename em pg_stat_activity/pg_locks). Nota, não achado.",
+    "Subida 1: o grep do meu arnês perdeu as linhas JSAN_OBS (comentário TAP); tudo re-executado na subida 2. Falha minha de arnês, não do produto.",
+    "R4 cumprida: 2,81 GB às 02:19:55Z → espera → 3,06 GB às 02:22:24Z; demais subidas com 3,97 e 4,40 GB."
+  ],
+  "justificativa": "K1, K2 e a corrida de dois faturamentos foram medidos por execução própria em Postgres 16 descartável, sob o papel NOSUPERUSER NOBYPASSRLS, com valores lidos no banco: nenhuma escrita parcial (gatilho no carimbo e no INSERT), título = Σ dos carimbados, o apagado nunca entra no título e o carimbado nunca é apagado/alterado (N=5 por corrida, perdedor bloqueado provado), um só faturamento original vence e o delta vira complementar, a advisory precede o row lock (pg_locks) e a ordem total elimina o ciclo fatura×zero em Seq e Index Scan. A base reproduz os dois defeitos e cada mutação do plano que cabe a esta cadeira fica vermelha no caso que a cita. VOTO: APROVADO — K1, K2 e a corrida/ordem de travas valem no objeto 8e6a6c29 por execução, com base e mutações vermelhas."
+}

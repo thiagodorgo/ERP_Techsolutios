@@ -17,6 +17,10 @@ import {
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/financial-title.service.js";
 import { createMemoryFinancialUnitOfWork } from "../src/modules/financial-uow/financial-uow.js";
+import {
+  getMemoryWorkOrderFinancialRepositoryForTests,
+  resetWorkOrderFinancialRuntimeForTests,
+} from "../src/modules/work-order-financials/work-order-financial.service.js";
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-02 (F1) — o RUNNER DE MEMÓRIA da porta de Unit of Work é um DUBLÊ HONESTO: mutex por tenant
@@ -30,11 +34,20 @@ function freshUow() {
   resetFinancialTitleRuntimeForTests();
   resetFinancialEntryRuntimeForTests();
   resetChequeRuntimeForTests();
+  resetWorkOrderFinancialRuntimeForTests();
   const titles = getMemoryFinancialTitleRepositoryForTests();
   const entries = getMemoryFinancialEntryRepositoryForTests();
   const cheques = getMemoryChequeRepositoryForTests();
+  const workOrderItems = getMemoryWorkOrderFinancialRepositoryForTests();
   const periodCloses = getMemoryFinancialPeriodCloseRepositoryForTests();
-  return { uow: createMemoryFinancialUnitOfWork({ titles, entries, cheques, periodCloses }), titles, entries, cheques, periodCloses };
+  return {
+    uow: createMemoryFinancialUnitOfWork({ titles, entries, cheques, workOrderItems, periodCloses }),
+    titles,
+    entries,
+    cheques,
+    workOrderItems,
+    periodCloses,
+  };
 }
 
 function titleInput(tenantId: string) {
@@ -277,4 +290,47 @@ test("assertPeriodOpenShared: período fechado lança o erro da fábrica e a uni
 
   periodCloses.setPeriodStatus(tenantId, "2026-01", "reopened");
   await uow.run(tenantId, (ctx) => ctx.assertPeriodOpenShared("2026-01", periodClosedError));
+});
+
+// B-SAN3-02 (D4, T-UOW "+1") — o faturamento escreve TÍTULO e CARIMBO na mesma unidade: o aborto desfaz os dois
+// juntos (o item volta a "a faturar", o título some). Dublê honesto — a prova real é a suíte -db.
+test("[B-SAN3-02] undo-log desfaz carimbo e título juntos (itens de OS na mesma unidade)", async () => {
+  const { uow, titles, workOrderItems } = freshUow();
+  const tenantId = randomUUID();
+  const workOrderId = randomUUID();
+  const item = await workOrderItems.create({
+    tenantId,
+    workOrderId,
+    description: "Guincho",
+    quantity: 1,
+    unitAmount: 150,
+    totalAmount: 150,
+    currency: "BRL",
+    source: "manual",
+  });
+
+  await assert.rejects(
+    () =>
+      uow.run(tenantId, async (ctx) => {
+        const locked = await ctx.workOrderItems.listInvoiceableByWorkOrderForUpdate(tenantId, workOrderId);
+        assert.equal(locked.length, 1);
+        const title = await ctx.titles.create({ ...titleInput(tenantId), workOrderId, amount: 150 });
+        const stamped = await ctx.workOrderItems.markInvoiced({
+          tenantId,
+          workOrderId,
+          itemIds: [item.id],
+          titleId: title.id,
+          invoicedAt: new Date(),
+        });
+        assert.equal(stamped, 1);
+        throw new Error("falha depois do carimbo");
+      }),
+    /falha depois do carimbo/,
+  );
+
+  assert.equal(titles.snapshotTenantForUow(tenantId).length, 0, "o título da unidade abortada não sobrevive");
+  const after = await workOrderItems.findById(tenantId, workOrderId, item.id);
+  assert.equal(after?.invoicedAt, undefined, "o carimbo da unidade abortada não sobrevive");
+  assert.equal(after?.titleId, undefined);
+  assert.equal((await workOrderItems.listInvoiceableByWorkOrder(tenantId, workOrderId)).length, 1, "o item volta a faturável");
 });

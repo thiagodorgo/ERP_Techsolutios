@@ -28,6 +28,9 @@ export function toFinancialTitleDto(title: FinancialTitle) {
     // tenant (mesma exposição que workOrderId — nunca vaza tenant/segredo). Sustenta o badge "lançado".
     sourceType: title.sourceType ?? null,
     sourceId: title.sourceId ?? null,
+    // B-SAN3-02 — id do título ORIGINAL quando este é COMPLEMENTAR (null nos originais e no legado). Id do PRÓPRIO
+    // tenant, mesma exposição de workOrderId.
+    parentTitleId: title.parentTitleId ?? null,
     overdue: isTitleOverdue(title.status, title.dueDate),
     active: title.deletedAt == null,
     createdBy: title.createdBy ?? null,
@@ -53,6 +56,7 @@ export function toFinancialTitleListDto(result: ListFinancialTitleResult) {
       status: title.status,
       competencia: title.competencia,
       accountId: title.accountId ?? null,
+      parentTitleId: title.parentTitleId ?? null,
       overdue: isTitleOverdue(title.status, title.dueDate),
       active: title.deletedAt == null,
       createdAt: title.createdAt.toISOString(),

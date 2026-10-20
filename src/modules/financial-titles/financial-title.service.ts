@@ -1,10 +1,16 @@
 import { env } from "../../config/env.js";
 import { getMemoryFinancialAccountRepositoryForTests } from "../financial-accounts/financial-account.service.js";
 import {
+  createDefaultFinancialUnitOfWork,
+  type FinancialUowContext,
+  type FinancialUowResolver,
+} from "../financial-uow/index.js";
+import {
   InMemoryFinancialPeriodCloseRepository,
   InMemoryFinancialTitleRepository,
   amountBelowPaidError,
   invalidAccountReferenceError,
+  invalidParentTitleReferenceError,
   overpaymentError,
   periodClosedError,
   titleAlreadyPaidError,
@@ -61,6 +67,9 @@ export class FinancialTitleService {
     private readonly repository: FinancialTitleRepository,
     private readonly periodCloseRepository: FinancialPeriodCloseRepository,
     private readonly accountResolver: AccountResolver,
+    // B-SAN3-02 (D3) — porta de Unit of Work: o createForWorkOrder legado DELEGA à variante da unidade numa
+    // unidade própria (uma receita só). Default = o resolver por env, como o FinancialEntryService.
+    private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
   ) {}
 
   async list(actor: FinancialTitleActorContext, query: RawRecord): Promise<ListFinancialTitleResult> {
@@ -119,14 +128,46 @@ export class FinancialTitleService {
   // issueDate. Passa pelo CHOKEPOINT (competência fechada → 422 period_closed). A idempotência (2º título
   // ativo da OS) é a rede do repositório: P2002 (Prisma) / índice simulado (InMemory) → 409
   // work_order_already_invoiced, que o faturamento traduz para `already_invoiced`.
+  //
+  // B-SAN3-02 (D3) — o legado PERMANECE (paridade InMemory) e DELEGA à variante da unidade numa unidade própria:
+  // uma receita só para o título de faturamento.
   async createForWorkOrder(actor: FinancialTitleActorContext, input: CreateFinancialTitleForWorkOrderInput): Promise<FinancialTitle> {
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, (ctx) => this.createForWorkOrderInUnit(ctx, actor, input));
+  }
+
+  // B-SAN3-02 (D1/D3) — o título de FATURAMENTO criado DENTRO de uma unidade financeira (`ctx`), pelo repositório da
+  // unidade: o título e o carimbo dos itens commitam ou morrem juntos. Re-chama `ctx.assertPeriodOpenShared` por
+  // contrato próprio (trava SHARED reentrante + re-check, DIN-008): não depende de o chamador já ter travado.
+  // `parentTitleId` undefined → ORIGINAL; id → COMPLEMENTAR, e o pai é validado AQUI (emenda v2.1, B5 item 4 —
+  // defesa em profundidade; a FK de 4 colunas é o backstop do banco): tem de ser o ORIGINAL ATIVO da MESMA OS e
+  // direção. Senão 400 invalid_parent_title_reference e nada é criado.
+  async createForWorkOrderInUnit(
+    ctx: FinancialUowContext,
+    actor: FinancialTitleActorContext,
+    input: CreateFinancialTitleForWorkOrderInput,
+  ): Promise<FinancialTitle> {
     const issueDate = input.issueDate;
     const competencia = deriveCompetencia(issueDate);
-    await this.assertPeriodOpen(actor.tenantId, competencia);
+    await ctx.assertPeriodOpenShared(competencia, periodClosedError);
 
-    return this.repository.create({
+    const direction = parseDirection(input.direction);
+    if (input.parentTitleId !== undefined) {
+      const parent = await ctx.titles.findById(actor.tenantId, input.parentTitleId);
+      if (
+        !parent ||
+        parent.workOrderId !== input.workOrderId ||
+        parent.direction !== direction ||
+        parent.deletedAt != null ||
+        parent.parentTitleId != null
+      ) {
+        throw invalidParentTitleReferenceError();
+      }
+    }
+
+    return ctx.titles.create({
       tenantId: actor.tenantId,
-      direction: parseDirection(input.direction),
+      direction,
       partyType: parsePartyType(input.partyType),
       partyId: input.partyId,
       partyName: parsePartyName(input.partyName),
@@ -137,12 +178,13 @@ export class FinancialTitleService {
       status: "open",
       competencia,
       workOrderId: input.workOrderId,
+      parentTitleId: input.parentTitleId,
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
   }
 
-  // Pré-check de idempotência do faturamento: existe título ATIVO para (OS, direção)?
+  // Pré-check do faturamento: existe título ORIGINAL ATIVO para (OS, direção)? (B-SAN3-02: complementares não contam.)
   async findActiveByWorkOrder(
     actor: FinancialTitleActorContext,
     workOrderId: string,

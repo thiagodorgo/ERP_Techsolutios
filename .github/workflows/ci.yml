@@ -297,6 +297,8 @@ jobs:
           # corrida na PK com barreira escopada, a mesma ação reenviada por outro ator é conflito, recibo legado nunca
           # lança de novo e a chave interna é reconhecida por outro processo. Sem DATABASE_URL a suíte pula declarando.
           SUITES="$SUITES tests/expense-sync-atomic-db.test.ts"
+          SUITES="$SUITES tests/work-order-invoicing-atomic-db.test.ts"
+          SUITES="$SUITES tests/work-order-invoicing-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

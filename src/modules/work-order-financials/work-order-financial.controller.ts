@@ -23,13 +23,19 @@ export class WorkOrderFinancialController {
     const workOrderId = readRouteParam(request.params.workOrderId);
     const result = await invoicing.invoice(actor, workOrderId, (request.body ?? {}) as Record<string, unknown>);
     // §2.8 — auditoria com metadados CURADOS: só forma/contagem, NUNCA amount/party_name/tenant.
+    // B-SAN3-02 (D5) — `complementary` diz se este faturamento gerou um título COMPLEMENTAR (delta); sem valor nem parte.
     await recordRequestAuditBestEffort(request, {
       action: "work_order.invoiced",
       resourceType: "work_order",
       resourceId: workOrderId,
       outcome: "success",
       severity: "info",
-      metadata: { titleId: result.title.id, invoicedItemCount: result.invoicedItemCount, currency: result.currency },
+      metadata: {
+        titleId: result.title.id,
+        invoicedItemCount: result.invoicedItemCount,
+        currency: result.currency,
+        complementary: result.parentTitleId !== undefined,
+      },
     });
     // Resposta: o Título criado (DTO sem tenant_id) + o total faturado e a contagem de itens carimbados.
     return {

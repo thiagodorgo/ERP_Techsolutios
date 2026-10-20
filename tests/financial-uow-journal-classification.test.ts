@@ -13,9 +13,14 @@ import {
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/index.js";
 import {
+  getMemoryWorkOrderFinancialRepositoryForTests,
+  resetWorkOrderFinancialRuntimeForTests,
+} from "../src/modules/work-order-financials/work-order-financial.service.js";
+import {
   CHEQUE_REPO_KIND,
   ENTRY_REPO_KIND,
   TITLE_REPO_KIND,
+  WORK_ORDER_ITEM_REPO_KIND,
   createMemoryFinancialUnitOfWork,
   resetFinancialUowRuntimeForTests,
   type FinancialUowContext,
@@ -66,6 +71,9 @@ type Seed = {
   // não-vazio). As PREPARES semeiam o estado casado (título por OS/fonte, estorno, cheque vinculado).
   readonly workOrderId: string;
   readonly sourceId: string;
+  // B-SAN3-02 (D4) — um item ATIVO e NÃO faturado, com client_action_id, na OS `workOrderId`.
+  readonly itemId: string;
+  readonly itemClientActionId: string;
 };
 
 function repos() {
@@ -73,6 +81,7 @@ function repos() {
     titles: getMemoryFinancialTitleRepositoryForTests(),
     entries: getMemoryFinancialEntryRepositoryForTests(),
     cheques: getMemoryChequeRepositoryForTests(),
+    workOrderItems: getMemoryWorkOrderFinancialRepositoryForTests(),
     periodCloses: getMemoryFinancialPeriodCloseRepositoryForTests(),
   };
 }
@@ -81,18 +90,20 @@ function resetAll(): void {
   resetChequeRuntimeForTests();
   resetFinancialEntryRuntimeForTests();
   resetFinancialTitleRuntimeForTests();
+  resetWorkOrderFinancialRuntimeForTests();
   resetFinancialUowRuntimeForTests();
 }
 
-/** O estado observável do tenant nos TRÊS repositórios — a grandeza que o aborto tem de preservar. */
+/** O estado observável do tenant nos QUATRO repositórios — a grandeza que o aborto tem de preservar. */
 function snapshotAll(tenantId: string): string {
-  const { titles, entries, cheques } = repos();
+  const { titles, entries, cheques, workOrderItems } = repos();
   const stable = (rows: readonly { id: string }[]) =>
     [...rows].sort((a, b) => a.id.localeCompare(b.id)).map((row) => JSON.parse(JSON.stringify(row)));
   return JSON.stringify({
     titles: stable(titles.snapshotTenantForUow(tenantId)),
     entries: stable(entries.snapshotTenantForUow(tenantId)),
     cheques: stable(cheques.snapshotTenantForUow(tenantId)),
+    workOrderItems: stable(workOrderItems.snapshotTenantForUow(tenantId)),
   });
 }
 
@@ -138,7 +149,31 @@ async function seed(): Promise<Seed> {
     createdBy: ATOR,
     updatedBy: ATOR,
   });
-  return { titleId: title.id, entryId: entry.id, chequeId: cheque.id, accountId, workOrderId: randomUUID(), sourceId: randomUUID() };
+  const workOrderId = randomUUID();
+  const itemClientActionId = `p7-${randomUUID()}`;
+  const item = await repos().workOrderItems.create({
+    tenantId: TENANT,
+    workOrderId,
+    description: "Item P7",
+    quantity: 1,
+    unitAmount: 80,
+    totalAmount: 80,
+    currency: "BRL",
+    source: "manual",
+    clientActionId: itemClientActionId,
+    createdBy: ATOR,
+    updatedBy: ATOR,
+  });
+  return {
+    titleId: title.id,
+    entryId: entry.id,
+    chequeId: cheque.id,
+    accountId,
+    workOrderId,
+    sourceId: randomUUID(),
+    itemId: item.id,
+    itemClientActionId,
+  };
 }
 
 type Invoke = (ctx: FinancialUowContext, s: Seed) => Promise<unknown>;
@@ -329,6 +364,38 @@ const CHEQUE_CALLS: Record<string, Invoke> = {
   findActiveByLinkedEntry: (ctx, s) => ctx.cheques.findActiveByLinkedEntry(TENANT, s.entryId),
 };
 
+// B-SAN3-02 (D4) — os 10 membros write/read do repositório de itens de OS.
+const WORK_ORDER_ITEM_CALLS: Record<string, Invoke> = {
+  create: (ctx, s) =>
+    ctx.workOrderItems.create({
+      tenantId: TENANT,
+      workOrderId: s.workOrderId,
+      description: "Item novo P7",
+      quantity: 2,
+      unitAmount: 5,
+      totalAmount: 10,
+      currency: "BRL",
+      source: "manual",
+    }),
+  update: (ctx, s) => ctx.workOrderItems.update({ tenantId: TENANT, workOrderId: s.workOrderId, itemId: s.itemId, notes: "mexido pelo P7" }),
+  softDelete: (ctx, s) => ctx.workOrderItems.softDelete(TENANT, s.workOrderId, s.itemId, ATOR),
+  softDeleteAllByWorkOrder: (ctx, s) => ctx.workOrderItems.softDeleteAllByWorkOrder(TENANT, s.workOrderId, ATOR),
+  markInvoiced: (ctx, s) =>
+    ctx.workOrderItems.markInvoiced({
+      tenantId: TENANT,
+      workOrderId: s.workOrderId,
+      itemIds: [s.itemId],
+      titleId: s.titleId,
+      invoicedAt: new Date("2026-08-07T12:00:00.000Z"),
+      updatedBy: ATOR,
+    }),
+  listByWorkOrder: (ctx, s) => ctx.workOrderItems.listByWorkOrder(TENANT, s.workOrderId),
+  listInvoiceableByWorkOrder: (ctx, s) => ctx.workOrderItems.listInvoiceableByWorkOrder(TENANT, s.workOrderId),
+  listInvoiceableByWorkOrderForUpdate: (ctx, s) => ctx.workOrderItems.listInvoiceableByWorkOrderForUpdate(TENANT, s.workOrderId),
+  findById: (ctx, s) => ctx.workOrderItems.findById(TENANT, s.workOrderId, s.itemId),
+  findActiveByClientActionId: (ctx, s) => ctx.workOrderItems.findActiveByClientActionId(TENANT, s.workOrderId, s.itemClientActionId),
+};
+
 // ------------------------------------------------------------------ prova de vida das LEITURAS (C3)
 
 /**
@@ -340,6 +407,7 @@ const CHEQUE_CALLS: Record<string, Invoke> = {
 const hasItems = (r: unknown): boolean => Array.isArray((r as { items?: unknown[] }).items) && (r as { items: unknown[] }).items.length > 0;
 const hasMovement = (r: unknown): boolean => Number((r as { inflow?: number }).inflow ?? 0) + Number((r as { outflow?: number }).outflow ?? 0) > 0;
 const isFound = (r: unknown): boolean => r != null;
+const hasRows = (r: unknown): boolean => Array.isArray(r) && r.length > 0;
 
 const READ_RETURN_NONEMPTY: Record<string, (result: unknown) => boolean> = {
   "titles.list": hasItems,
@@ -355,6 +423,11 @@ const READ_RETURN_NONEMPTY: Record<string, (result: unknown) => boolean> = {
   "cheques.list": hasItems,
   "cheques.findById": isFound,
   "cheques.findActiveByLinkedEntry": isFound,
+  "workOrderItems.listByWorkOrder": hasRows,
+  "workOrderItems.listInvoiceableByWorkOrder": hasRows,
+  "workOrderItems.listInvoiceableByWorkOrderForUpdate": hasRows,
+  "workOrderItems.findById": isFound,
+  "workOrderItems.findActiveByClientActionId": isFound,
 };
 
 // ------------------------------------------------------------------ o harness
@@ -363,6 +436,7 @@ const REPOSITORIES = [
   { nome: "titles", kinds: TITLE_REPO_KIND as Record<string, UowMemberKind>, calls: TITLE_CALLS },
   { nome: "entries", kinds: ENTRY_REPO_KIND as Record<string, UowMemberKind>, calls: ENTRY_CALLS },
   { nome: "cheques", kinds: CHEQUE_REPO_KIND as Record<string, UowMemberKind>, calls: CHEQUE_CALLS },
+  { nome: "workOrderItems", kinds: WORK_ORDER_ITEM_REPO_KIND as Record<string, UowMemberKind>, calls: WORK_ORDER_ITEM_CALLS },
 ] as const;
 
 let exercidos = 0;
@@ -460,9 +534,10 @@ for (const repositorio of REPOSITORIES) {
   }
 }
 
-test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 30 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 3 test_reset", () => {
-  assert.equal(exercidos, 30, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 12+9+9 = 30)`);
-  assert.equal(testReset, 3, `o harness asseverou ${testReset} membros test_reset ausentes do contexto (esperado 3)`);
+test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 40 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 4 test_reset", () => {
+  // B-SAN3-02 (D4) — o 4º repositório (itens de OS) somou 10 membros write/read + 1 test_reset.
+  assert.equal(exercidos, 40, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 12+9+9+10 = 40)`);
+  assert.equal(testReset, 4, `o harness asseverou ${testReset} membros test_reset ausentes do contexto (esperado 4)`);
 });
 
 test("[P7] o rollback é ESCOPADO: escrita de OUTRO tenant durante a unidade sobrevive ao aborto", () => {
