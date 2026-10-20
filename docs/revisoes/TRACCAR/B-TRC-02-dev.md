@@ -354,6 +354,45 @@ critério → teste → mutação vale; **mutações**: 72 no catálogo (35 host
 vermelhas salvo: 2 controles de lacuna verdes como esperado, a M-E13 equivalente (classe coberta pela MUT-16@01) e a MUT-10@01 "não
 mede" (substituída pela MUT-10′@01, vermelha); `backend-postgres` **434**.
 
+## Emenda v2.2 de ESCOPO — os dois pedidos APROVADOS e aplicados
+
+Norma: `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.2-escopo.md` (planejador `planejador-trc02-escopo-fable`; cópia do
+`planos/B-TRC-02-emenda-v2.2-escopo.md` com espaço de fim de linha normalizado — `diff -w -B` contra o original = vazio). Retomada
+depois do reinício do VS Code (P3/P7): head medido `aa266f01`; árvore limpa; o log da rodada no contêiner (`s.log` no scratchpad) já
+tinha terminado (`MUTFIM`, ec 0) antes da queda — nada a refazer, só a registrar.
+
+| Régua | Comando | Saída | Veredito |
+|---|---|---|---|
+| R-S1 / b-S1 | `git diff --numstat 6a87c3da..6192b5e8 -- tests/helpers/o6r07c-census.ts` + a linha `+` | `1 0`; a linha exata da §5.1 (`"src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)", // B-TRC-02: …`), entre a entrada `…_signatureQQ` e o `].map(` de `CURINGAS_ACEITOS` | conforme |
+| R-S2 / b-S2 | `git diff --numstat … -- tests/san3-05-runtime-role-guard-db.test.ts` + as linhas `−/+` | `1 1`; só o literal `118$` → `119$` da l.1016 | conforme |
+| b-S4 | `git diff --stat … -- tests/o6r07c-census-guard.test.ts scripts/db-runtime-role.sh` | vazio | PROIBIDO intocado |
+| b-S5 | `git grep -n -E '\.exec\((event\.)?type\)' HEAD -- src/integrations/traccar` · `git grep -n -F 'EVENT_TYPE_PATTERN.test(type)' HEAD -- …/traccar-event.schema.ts` | 0 linha · 1 linha | sem evasão do detector |
+| commits | `6192b5e8` (código: os 2 arquivos) · `aa266f01` (registro: cópia da emenda; l.9 e l.30 do comando do bloco; M-S1…M-S7 no catálogo) | — | §5.5 |
+
+**§6 — controle e mutações** (contêiner Linux `dtrc02-`, retrato do worktree em `aa266f01`; cada mutação aplicada na CÓPIA, `tsc`
+quando toca `src/`, migração mutada em base própria `trc02_mut`, restauro por hash; Docker: só este trabalho meu, 7,7 GB livres).
+Linhas completas em `B-TRC-02-evidencias/results-escopo-v2.2.jsonl`.
+
+| Id | Esperado (§6) | Medido | Veredito |
+|---|---|---|---|
+| **C-S0** | census `32/32` · san3-05 `12/12` | `# tests 32 # pass 32 # fail 0` · `# tests 12 # pass 12 # fail 0` | **T9 e T14a/b VERDES** com a emenda |
+| M-S1 (curinga novo no mesmo arquivo) | T9 vermelho | `tsc 0`; `31/32`, `not ok` = T9 | vermelha |
+| M-S2 (mesmo texto em outro arquivo: `/^[A-Za-z]{1,32}$/.test(parsed.type)` no adaptador) | T9 vermelho | `tsc 0`; `31/32`, T9 | vermelha |
+| M-S3 (entrada R-S1 removida) | T9 vermelho | `31/32`, T9 | vermelha — o verde vem DESTA entrada |
+| M-S4 (regex `/^[A-Za-z-]{1,33}$/`) | census verde, contrato vermelho | `tsc 0`; `48/49` — o único `not ok` é do contrato ("… type fora do padrão → 422"); o censo passou inteiro | conforme: limite DECLARADO (o regex é guardado pelo contrato) |
+| M-S4′ (regex `/^(ignitionOn\|alarm)$/`) | contrato vermelho | `tsc 0`; `13/17` (`deviceOnline` aceito, `tipo fora do catálogo → ignored`, …) | vermelha |
+| M-S5 (`.exec(type) === null` + entrada removida) | census VERDE (buraco do detector) | `tsc 0`; `32/32` | verde como esperado — prova do buraco `.exec` (`P-07C-CENSO-EXEC`); b-S5 o fecha por grep |
+| M-S6 (`CREATE TABLE "zz_mutacao_trc02"` na migração A, base própria) | T14a/b vermelho (veio 120) | `migrateStatus 0`; `10/12`, `not ok` = T14a/b | vermelha |
+| M-S7 (`AND c.relname <> 'vehicle_telemetry_events'` no script do papel, só na cópia) | T14a/b vermelho (veio 118) | `10/12`, T14a/b | vermelha |
+
+8/8 `restoredOk`; `docker ps -a | grep -c dtrc02` → 0 depois da rodada. **Limite do registro:** o executor guarda o título do caso
+vermelho, não o texto do `assert.match`; o valor `120`/`118` das M-S6/M-S7 está previsto pelo mecanismo (§4.2 da emenda) e o vermelho
+no T14a/b — o único caso que lê essa coluna — está medido.
+
+**`npm test` (forma `backend`) completo:** NÃO repetido no contêiner (derrubou a VM duas vezes — "Segunda tentativa", acima); a §5.5
+da própria emenda manda deixá-lo para o check-run do head empurrado (b-S7). Os dois guards que o bloco tinha deixado vermelhos estão
+verdes (C-S0); o resto da forma `backend` não mudou desde a classificação por arquivo.
+
 ## Limpeza
 
 | Comando | Saída |
