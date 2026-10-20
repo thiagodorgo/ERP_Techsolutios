@@ -668,8 +668,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
 
 7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`; P7 por decisão do dono,
-   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`) — P1–P7, inline.**
-   Toda junta, inspeção de terreno e porteiro seguem as sete normas abaixo; a **P7** alcança, além deles, **todo
+   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`; P8 por decisão do dono, 2026-10-20 — `D-ORQ-QUEDA-DA-SESSAO`) — P1–P8, inline.**
+   Toda junta, inspeção de terreno e porteiro seguem as oito normas abaixo; a **P7** e a **P8** alcançam, além deles, **todo
    agente vivo** — dev, planejador, fábrica — e o orquestrador. Origem medida de P1–P6: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
    `omega/POSTMORTEM-QUEDAS-2026-08-29.md`; narrativa completa e "por quês" longos em
@@ -731,6 +731,27 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      teria sido limpo. P7 **não substitui** P1/P2: quando a pausa não chega (429, queda), é a evidência
      incremental que salva.
 
+   - **P8 — Queda da sessão do orquestrador: registro de agentes vivos, retomada mecânica e orçamento de memória
+     (decisão do dono, 2026-10-20 — `D-ORQ-QUEDA-DA-SESSAO`).** Nas palavras do dono, depois de ter de reiniciar o
+     VS Code: *"Claude, você bugou. Eu tive que reiniciar VS Code. Faça o seguinte, verifique o que ficou de pe, start
+     novamente o que caiu, documente e implemente o conserto na orquestração e espalhe a noticia"*.
+     **(a) Registro de agentes vivos.** Todo agente que o orquestrador lança entra, no mesmo passo, num registro
+     fora do repositório (`agentes-vivos.tsv`, junto das ferramentas do orquestrador) com id para retomada, papel,
+     executor, worktree, arquivo de saída e hora; ao concluir, a linha vira `concluido`. Subagente se retoma pelo
+     **id** (com o contexto dele); braço externo, pelo arquivo de status.
+     **(b) Retomada mecânica.** Depois de qualquer queda da sessão do orquestrador (IDE reiniciada, PC reiniciado,
+     limite de sessão), o primeiro comando é o roteiro de retomada (`retomada.sh`), que lê o registro e mede, de uma
+     vez, memória, disco, Docker, saída e worktree de cada agente não concluído, processos externos e vigias. Cada
+     agente vivo é retomado pelo id e **mede o parcial antes de seguir** (P3/P7). Vigia, auditor e guarda de uma
+     sessão anterior são **órfãos** (ninguém os escuta): mata-se e relança-se na sessão nova.
+     **(c) Orçamento de memória.** Só se lança agente novo com **memória de commit livre ≥ 4 GB**, e no máximo **3
+     subagentes Claude** ao mesmo tempo (braços externos à parte; Docker segue com teto de 2 trabalhos). O guarda de
+     memória, abaixo de 1,5 GB livres, **solta o cache de página da VM do Docker** (não destrutivo) antes de alertar.
+     *Caso:* em 20/10, às 01:16, o Windows registrou "memória virtual insuficiente" (VM do Docker 7,4 GB + VS Code
+     2,2 GB, com 6 agentes em paralelo) e o VS Code travou; o orquestrador reconstruiu à mão quem estava vivo, e o
+     guarda de memória da sessão anterior ficou órfão. Os 4 agentes interrompidos foram retomados pelo id sem perda,
+     graças a P1/P2.
+
    **Modelo de mandato (colar no disparo de cada cadeira — verbatim da fonte):**
    ```
    Após CADA item: apense a <cadeira>-evidencia.md → comando · saída resumida · veredito parcial.  [P1]
@@ -757,7 +778,7 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    congelado também"*. **Onde este item divergir de §C1 (feature atualiza KPI), §C2 (itens 5, 6 e 8), §C3, §C4
    (KPI em todo PR), §C7.1, §C7.1-ter(b), §C7.1-bis, §C7.4, §C7.4-bis, §8 (itens 4 e 7), §10 (DoD) e da
    `D-MANDATO-FORMA`, vale este item** — inclusive onde esses trechos mandam todo PR passar por junta ou atualizar `Kpis/*`. As paradas irredutíveis (§C7.5), a separação de papéis
-   (§C7.4-bis: quem acha ≠ quem planeja ≠ quem desenvolve) e P1–P7 continuam valendo onde houver junta.
+   (§C7.4-bis: quem acha ≠ quem planeja ≠ quem desenvolve) e P1–P8 continuam valendo onde houver junta.
 
    - **(1) Junta proporcional ao risco.** Junta completa — inspetor de terreno, 3 cadeiras, **unanimidade** — só
      quando o bloco mexe em **dinheiro, segurança, permissão ou perda de dado**. Todo o resto (telas e textos sem

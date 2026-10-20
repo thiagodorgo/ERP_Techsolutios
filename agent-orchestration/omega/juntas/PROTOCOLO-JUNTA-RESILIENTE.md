@@ -112,6 +112,16 @@ comando e economiza o redo inteiro.
 **O que P7 não faz:** não substitui P1/P2 — quando a pausa não chega (429, queda do harness, suspensão do PC),
 é a evidência incremental que salva, e é por isso que P1/P2 continuam obrigatórias por item.
 
+## P8 — Queda da sessão do orquestrador: registro de agentes vivos, retomada mecânica e orçamento de memória (decisão do dono, 2026-10-20, `D-ORQ-QUEDA-DA-SESSAO`)
+
+Texto normativo: `CLAUDE.md` §C7.7, item P8 (espelhado em `AGENTS.md`). Resumo operacional:
+
+- **Registro de agentes vivos:** a cada lançamento, uma linha em `agentes-vivos.tsv`, nas ferramentas do orquestrador, fora do repositório. A linha leva id para retomada, papel, executor, worktree, saída e hora; ao fim, vira `concluido`.
+- **Retomada mecânica:** depois de qualquer queda da sessão do orquestrador, o primeiro comando é `retomada.sh`. Cada agente vivo é retomado pelo id, medindo o parcial antes de seguir (P3/P7). Vigias da sessão anterior são órfãos: mata-se e relança-se.
+- **Orçamento de memória:** só se lança agente novo com memória de commit livre ≥ 4 GB, e no máximo 3 subagentes Claude ao mesmo tempo. O guarda solta o cache da VM do Docker abaixo de 1,5 GB.
+
+**Caso:** em 20/10, às 01:16, houve "memória virtual insuficiente" no Windows. A VM do Docker ocupava 7,4 GB e o VS Code 2,2 GB, com 6 agentes em paralelo. O VS Code travou e o dono o reiniciou. Os 4 agentes interrompidos foram retomados pelo id sem perda.
+
 ## Modelo de mandato (colar no disparo de cada cadeira)
 
 ```
