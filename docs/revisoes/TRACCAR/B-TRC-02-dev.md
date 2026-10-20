@@ -317,7 +317,16 @@ feito aqui. **Variante do código a partir do commit `498c4e26`: Q1 = NÃO, Q2 =
 
 **Contagens previstas × reais (sem Q1):** testes novos — previsto 96 (v2.1 §5.4); **real 97** (54 sem banco + E 20 + F 13 + G 10; E5′ é um
 `test()` à parte). Pendência que volta a existir por §Q1.7 (registro do orquestrador): `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA` (dono
-B-TRC-03). EM APURAÇÃO: E/F/G no container, `backend-postgres` 3× (previsto 433), mutações afetadas, `migrate diff`.
+B-TRC-03).
+
+| Comando | Saída | Veredito |
+|---|---|---|
+| mutações do host afetadas pela reversão (`run-mutations.mjs <wt> host "M-E35,M-E48-ctlB,M-E43h,M-E49h,M-E34,M-E50"`) | M-E34, M-E35, M-E43h, M-E49h, M-E50 **vermelhas**; M-E48-ctlB **verde como esperado**; 6/6 `restoredOk` (as 6 linhas novas estão no fim de `results-host.jsonl`; as 35 anteriores são da variante Q1 = SIM) | ok |
+| 1º contêiner da bateria Q1 = NÃO (head `30853d25`) | `npm ci` morreu por rede (`ECONNRESET` no registry), ec 3 — nada medido | refazer; a cópia do executor passa a tentar o `npm ci` 3× antes de desistir |
+| contêiner das 37 mutações de banco (mesmo retrato `30853d25`) | **36 vermelhas + 1 "não mede"** (a `MUT-10@01`, âncora 2× como antes; a `MUT-10′@01` re-derivada: vermelha); **M-E16′ vermelha** (F3 por contagem); 37/37 `restoredOk`; resultados em `results-db-q1nao.jsonl` (o `results-db.jsonl` anterior é a variante Q1 = SIM, guardado como histórico). O `ec=2` do executor saiu DEPOIS do `MUTFIM`: eu editei a cópia do script enquanto o bash a lia; resíduo `dtrc02-*` conferido = 0 | verde (toda propriedade morde) |
+| 2º contêiner da bateria | `n: unbound variable` — erro de escape meu na retentativa do `npm ci` (o `$n` expandido pelo shell de fora); corrigido (`\$n`, conferido por `od -c`) | refazer |
+
+EM APURAÇÃO: E/F/G no container, `backend-postgres` 3× (previsto 433), mutações de banco, `migrate diff`.
 
 ## Limpeza
 
