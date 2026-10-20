@@ -1,0 +1,98 @@
+{
+  "jurado": "jurado-dash-c3-regressao-e-escopo — identidade nova jurado-dash-c3-opus (sucessor P3 de jurado-dash-c3-cdx, Codex, caído por limite de uso às 05:38Z)",
+  "cadeira": "C3 — Regressão, escopo e arnês",
+  "executor": "Claude Opus, reserva declarada, sucessor P3 do Codex",
+  "modelo": "Claude Opus (claude-opus-5-5), nível menor (§C7.6); reserva nomeada no mandato e no parecer do inspetor",
+  "objeto": "849bf840f2bdecae87b82a17b26adf505d8a2a8e; B = git merge-base origin/main <objeto> = 3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d; origin/main no fim = bf83cda8 (andou; B inalterada); delta B..objeto = a6b91ce9 (produto) + a594b09a (corpos da junta) + 849bf840 (merge de main sem conteúdo próprio: merge-tree == árvore do objeto 5f58493d)",
+  "legalidade": "Inspetor LIBERADO (insp-dash-parecer.md, Claude Opus como reserva declarada); md5 EOL-neutro do corpo (f707a03b…) e do mandato (f373ad80…) conferidos; check-runs 14/14 completed/success no objeto; worktree próprio C:/Users/AMP/w-jdash-c3-opus detached no objeto, npm ci próprio, sem junction; Docker só via teste-linux.sh (contêineres tl*), 1 trabalho por vez, memória medida antes de cada subida (8,7 GB e 8,8 GB); base viva e portas proibidas intocadas. Plano, crítica, emenda e relatórios tratados como A RE-VERIFICAR. P3: o Codex gravou a evidência em caminho errado (C:/Users/AMP/Documents/GitHub/w-dash/...); re-executei e comparei cada comando dele antes de medir a cauda.",
+  "quorum": "unanimidade de 3 com veto",
+  "voto": "REPROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "REPROVADO",
+      "resumo": "M1 (o provider volta a unir o contexto, igual ao blob da base 89a51e87) e M1b (união + dashboard:view forçado) sobrevivem ao test:smoke inteiro, 1327/1327. M3 (resolveLoginPermissions força dashboard:view sem mudar a linha vigiada) sobrevive a 92/92 nos 14 arquivos de backend que alcançam o roteador de auth. Só M2, que muda o texto da linha vigiada, fica vermelha. Hashes restaurados."
+    },
+    {
+      "item": 2,
+      "estado": "APROVADO com ressalva",
+      "resumo": "Frontend 1327/1327, check 0, build 0 (2182 módulos). Raiz: check, lint e build 0. Backend npm test na forma da CI: 3706 testes, 3695 pass, 2 skip e 9 fail, todos em traccar-dev-topology por docker ENOENT no contêiner (pre-existente; 12/12 com Docker; CI success). Testes novos de backend verdes; CI 14/14; vermelho de renderização 21/22, restaurado 22/22. Ressalva: dashboard-profile-behavior está fora do test:smoke e da CI."
+    },
+    {
+      "item": 3,
+      "estado": "APROVADO",
+      "resumo": "64 caminhos (14 A, 50 M). Avaliador próprio: 58 permitidos, 6 de governança da junta, 0 fora, 0 proibidos. Controle com prisma/schema.prisma injetado dá ec=1. 0 asserção removida; merge sem conteúdo próprio; git diff --check vazio."
+    }
+  ],
+  "o_que_executei": [
+    "git show 849bf840:.claude/agents/especialistas/jurado-dash-c3-regressao-e-escopo.md | tr -d CR | md5sum ; tr -d CR < 00-mandatos/cadeira-c3.md | md5sum",
+    "git -C C:/Users/AMP/w-dash worktree add --detach C:/Users/AMP/w-jdash-c3-opus 849bf840 ; npm ci ; npm --prefix frontend ci ; Get-Item node_modules LinkType (vazio)",
+    "git merge-base origin/main 849bf840 ; git diff --name-status B...HEAD ; git merge-tree --write-tree 849bf840^1 849bf840^2 vs 849bf840^{tree} ; avaliador-escopo.sh com e sem path proibido injetado ; git diff --check B...HEAD ; grep de asserções removidas",
+    "M1 e M1b no PermissionProvider + npm --prefix frontend run test:smoke (2 rodadas) ; restauro git checkout + git hash-object",
+    "M2 e M3 em auth.routes.ts + node --test --import tsx (5 arquivos) ; M3 + teste-linux.sh com os 14 arquivos de auth (inclui -db)",
+    "teste-linux.sh C:/Users/AMP/w-jdash-c3-opus 'npm test' (forma do job backend) ; node --test --import tsx tests/traccar-dev-topology.test.ts no Windows com Docker",
+    "npm run check / lint / build (raiz; prisma generate com DATABASE_URL inválido, sem conexão) ; npm --prefix frontend run test:smoke / check / build",
+    "DashboardPage com throw → node --test tests/smoke-flow.test.tsx (21/22) → restauro → 22/22",
+    "gh api repos/thiagodorgo/ERP_Techsolutios/commits/849bf840/check-runs ; grep -c dashboard-profile-behavior frontend/package.json .github/workflows/ci.yml"
+  ],
+  "achados": [
+    {
+      "id": "C3-01",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "PermissionProvider.tsx mudado em a6b91ce9 (B..objeto). O helper frontend/tests/helpers/session-permissions.ts e os 37 setups entram no mesmo PR (A/M no diff 3fbcaea2...849bf840). tests/auth-active-tenant-permissions.test.ts é A no diff.",
+      "classe": "falso verde de teste de permissão; guarda que reconhece a forma em vez da propriedade",
+      "propriedade_ausente": "o arnês não detecta a quebra de permissão que o bloco existe para impedir",
+      "N_e_forma": "2/2 mutações de provider sobrevivem a 1327/1327: M1 é o provider da base (blob 89a51e87); M1b é a união + dashboard:view, que reabre /dashboard via App.tsx:273. 1/2 mutações de backend sobrevive (M3, 92/92 em 14 arquivos de auth). A única vermelha (M2) muda o texto da linha vigiada por assert.match. Causa medida: o helper semeia a mesma lista na sessão e no contexto ativo em todo setup, e nenhum teste semeia contexto mais largo que a sessão.",
+      "comando": "patch em PermissionProvider.tsx (união [+ \"dashboard:view\"]) && npm --prefix frontend run test:smoke ; patch resolveLoginPermissions -> [...resolvePermissionsForRoles(known), \"dashboard:view\"] && bash teste-linux.sh <wt> \"node --test --import tsx <14 arquivos de auth>\""
+    },
+    {
+      "id": "C3-02",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "frontend/tests/dashboard-profile-behavior.test.tsx é A em a6b91ce9",
+      "classe": "teste novo fora da bateria automática",
+      "N_e_forma": "1 arquivo (4 casos) que nem o test:smoke nem job algum da CI executam. Rodado à mão, fica verde (31/31 com kpi-cards-clickable e dashboard.adapter). Não reprova: o plano o previu por comando direto (plano.md:184) e proíbe frontend/package.json.",
+      "comando": "grep -c dashboard-profile-behavior frontend/package.json .github/workflows/ci.yml -> 0 e 0"
+    },
+    {
+      "id": "C3-03",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "commit a594b09a, 2026-10-19T00:03:27-03:00",
+      "classe": "artefato de processo da junta",
+      "N_e_forma": "6 corpos de jurado (.claude|.agents/agents/especialistas/jurado-dash-c[123]-*) estão fora da allowlist textual do plano, mas também fora da denylist. Precedente na main: corpos de jurado entram pelo PR do bloco (#414 86ea8a81, #401 749a5cf8, #405 a9fbe283), e o inspetor e o mandato exigem os corpos no objeto. Reprovar por isso seria critério impossível de passar. Nisto divirjo do bloqueio registrado pelo Codex.",
+      "comando": "git diff --name-only B...HEAD | bash avaliador-escopo.sh ; git log origin/main --diff-filter=A -- .claude/agents/especialistas/<corpo>.md"
+    },
+    {
+      "id": "C3-04",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "emenda do PR",
+      "classe": "entrada de teste ampliada",
+      "N_e_forma": "Em checklists-editor.smoke.test.tsx:308, o teste somente-leitura passa a receber [tenant_checklists:read, checklist_runs:read] em vez de [tenant_checklists:read]. Asserções intactas (0 asserção removida no diff de testes).",
+      "comando": "git diff 3fbcaea2...849bf840 -- frontend/tests/checklists-editor.smoke.test.tsx"
+    },
+    {
+      "id": "C3-05",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "evidencia_de_escopo": "tests/traccar-dev-topology.test.ts nasce em c1485c94 (#426, 2026-10-18), ancestral da base 3fbcaea2; fora do diff",
+      "classe": "artefato de terreno",
+      "N_e_forma": "9 fails no npm test em contêiner por docker ENOENT: a imagem erp-teste-linux:1 não tem docker compose. 12/12 no Windows com Docker; o job backend da CI está success.",
+      "comando": "grep '^not ok' docker-A-npmtest.log ; git merge-base --is-ancestor c1485c94 3fbcaea2 ; node --test --import tsx tests/traccar-dev-topology.test.ts"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "avaliador de escopo com path proibido injetado: prisma/schema.prisma dá ec=1; appearance.css e package-lock.json dão PROIBIDO; UsersPage.tsx dá FORA",
+    "vermelho de renderização: DashboardPage com throw deixa smoke-flow em 21/22, com a falha no caso 'dashboard operacional (C3)'",
+    "M2: active-tenant anexando dashboard:view dá 1 fail em auth-active-tenant-permissions"
+  ],
+  "pendencias_que_aceito": [
+    "C3-02: incluir dashboard-profile-behavior numa bateria que a CI execute (dono: o bloco, ou quem responde por frontend/package.json)",
+    "C3-05: a imagem erp-teste-linux:1 não tem docker compose e produz 9 fails de ambiente no traccar-dev-topology (dono: a ferramenta do terreno)",
+    "Resíduo alheio, reportado e não removido: C:/Users/AMP/Documents/GitHub/w-dash/ (c3-evidencia.md e c3-voto.json do Codex, gravados em caminho errado)"
+  ],
+  "teardown": "Hashes restaurados e provados (PermissionProvider 8ab79873, auth.routes 0da96d08, DashboardPage 5d5b8e08; git status vazio). Worktree C:/Users/AMP/w-jdash-c3-opus removido com git worktree remove --force (ec=0, ausente). Os dois trabalhos Docker meus foram removidos pelo trap do helper. tl179239039814374-* (criado às 06:13Z) não é meu e não foi tocado.",
+  "justificativa": "Os itens 2 e 3 passam. A suíte inteira está verde, exceto por um artefato de terreno pre-existente; a CI está 14/14; e o diff não toca área proibida. O item 1 reprova. Nenhum teste prende a mudança central do bloco (o provider passa a ler só a sessão) nem a garantia de backend (o active-tenant não fabrica capacidade). Devolver o provider da base, ou forçar dashboard:view para todo perfil, mantém 1327/1327. Forçar dashboard:view no resolvedor do login mantém 92/92. O helper da emenda semeia a mesma lista na sessão e no contexto, e por isso a diferença que o bloco cria fica invisível ao arnês. VOTO: REPROVADO — o arnês não detecta a regressão de permissão que o bloco corrige (provider M1/M1b e backend M3 sobrevivem) | escopo: dentro-do-bloco"
+}

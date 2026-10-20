@@ -1,0 +1,34 @@
+{
+  "jurado": "jurado-dash-c1-cdx — identidade nova",
+  "cadeira": "C1 — Cadeia de acesso, do backend para a sessão",
+  "modelo": "Codex GPT-5.6 Sol, esforço médio, nível menor, autorizado pelo mandato e §C7.6",
+  "objeto": "head 849bf840f2bdecae87b82a17b26adf505d8a2a8e; merge-base B=3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d; origin/main início=3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d e fim=3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d; cerca origin/main...objeto=0/3 commits exclusivos; delta julgado B..objeto",
+  "legalidade": "Inspetor LIBERADO; remoto e PR #446 coincidem no objeto; 14/14 check-runs completed/success; corpo canônico blob e1460c5647f38ab93b82d41085b32e294eba86b4 md5 EOL-neutro 1af93b3df464a6442c8dc97cf31bb22e; espelho blob 81c11c21d67c927fbef266e9614ed784d638d0f0 md5 10f73b163cba5f61f5866bcaf3d7764d; mandato md5 d93c0139a8f63a8b85e70347bf67d608; worktree próprio detached, npm ci próprio, zero junction; plano, crítica, emenda e relatórios tratados A RE-VERIFICAR",
+  "quorum": "unanimidade de 3 com veto",
+  "voto": "REPROVADO",
+  "o_que_executei": [
+    {"item": 1, "estado": "APROVADO", "execucao": "3/3 verdes; vermelho-controle sem permissions: 1/3 falhou; restauração 3/3 e hash igual ao blob"},
+    {"item": 2, "estado": "REPROVADO", "execucao": "Financeiro usa somente session.user.permissions; sessão Super Admin com permissions=[] recebeu dashboard:view e permissão arbitrária; vermelho-controle foi detectado pelo probe, mas o teste versionado permaneceu 4/4 verde"},
+    {"item": 3, "estado": "APROVADO", "execucao": "4/4 verdes; censo de 13 papéis; guards de dashboard/finance/inventory conferidos; mutante Financeiro ec=1 e mutante Estoque ec=1; restauração 4/4 e hash igual ao blob"}
+  ],
+  "achados": [
+    {
+      "id": "C1-01",
+      "gravidade": "bloqueia — grave",
+      "classe": "quebra de permissão",
+      "escopo": "dentro-do-bloco",
+      "evidencia_escopo_origem": "O diff 3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d..849bf840f2bdecae87b82a17b26adf505d8a2a8e toca frontend/src/providers/PermissionProvider.tsx, a superfície julgada; o corpo C1 Item 2 determina que promover acesso sem base no array real da sessão é dentro-do-bloco.",
+      "n_forma_causa": "N=2/2 permissões ausentes amostradas (dashboard:view e definitely:not:granted) retornaram true; forma genérica: can(permission) faz OR com isPlatformAdmin e este aceita o rótulo Super Admin; causa observada no objeto: autorização por papel fora de session.user.permissions.",
+      "comando": "npx --no-install tsx -e '<probe runtime renderizando AuthProvider→TenantProvider→PermissionProvider com roles=[Super Admin], permissions=[] e assert can(dashboard:view)===false>'",
+      "evidencia": "permissions=[]; can_dashboard_view=true; can_arbitrary=true; AssertionError; ec=1. O vermelho-controle explícito para dashboard:view também falhou no probe, enquanto frontend/tests/dashboard-profile-behavior.test.tsx permaneceu 4/4 verde."
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "Item 1: active-tenant e login precisam entregar permissões canônicas de ROLE_PERMISSIONS; aprovado com vermelho-controle.",
+    "Item 2: PermissionProvider não pode conceder capacidade ausente de session.user.permissions; falhou para Super Admin com array vazio.",
+    "Item 3: Financeiro e Estoque precisam cair em /finance e /inventory, com guards compatíveis; aprovado com vermelhos-controle separados."
+  ],
+  "pendencias_que_aceito": [],
+  "teardown": "Hashes de auth.routes.ts, PermissionProvider.tsx e landing-route.ts restaurados e iguais aos blobs do objeto; git status limpo e diff-check verde antes da remoção; node_modules próprios eram diretórios reais; processos iniciados=0; jdash-c1-* containers/redes/volumes=0; worktree C:/Users/AMP/w-jdash-c1-cdx desregistrado e pasta removida; base viva e portas 5432/6379/3000/5173/5050/8899 intocadas.",
+  "justificativa": "Os Itens 1 e 3 passaram por execução e mutação, mas o Item 2 viola a propriedade central: com session.user.permissions vazio, o PermissionProvider autoriza dashboard:view e até uma permissão arbitrária somente pelo rótulo Super Admin. Em bloco de PERMISSÃO no ciclo 1, um bloqueia dentro do bloco veta. VOTO: REPROVADO — PermissionProvider promove capacidades ausentes do array efetivo entregue pelo backend | escopo: dentro-do-bloco | classe: quebra de permissão | evidência: probe runtime N=2/2 retornou true com permissions=[]; ec=1"
+}

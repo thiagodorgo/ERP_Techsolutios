@@ -22,7 +22,7 @@ export function PermissionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<PermissionContextValue>(
     () => {
-      const permissions = [...new Set([...(session?.user.permissions ?? []), ...(activeContext?.permissions ?? [])])];
+      const permissions = [...new Set(session?.user.permissions ?? [])];
       const roles = [...new Set([...(session?.user.roles ?? []), ...(activeContext ? [activeContext.role] : [])])];
 
       return {

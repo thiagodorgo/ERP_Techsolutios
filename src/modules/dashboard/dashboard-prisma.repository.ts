@@ -76,8 +76,9 @@ export class PrismaDashboardRepository implements DashboardRepository {
       this.client.workOrder.findMany({
         where: {
           tenant_id: tenantId,
+          status: nonTerminalStatus,
           OR: [
-            { scheduled_for: { lt: now }, status: nonTerminalStatus },
+            { scheduled_for: { lt: now } },
             { priority: { in: ["high", "urgent"] } },
           ],
         },

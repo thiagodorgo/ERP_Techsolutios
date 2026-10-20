@@ -4,6 +4,19 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
+import { isCriticalWorkOrder } from "../src/modules/dashboard/dashboard.repository.js";
+
+test("fila crítica exclui as três situações terminais mesmo com prioridade urgente", () => {
+  const now = new Date("2026-10-17T12:00:00.000Z");
+  for (const status of ["completed", "cancelled", "rejected"] as const) {
+    assert.equal(isCriticalWorkOrder({ status, priority: "urgent" }, now), false, status);
+  }
+  assert.equal(isCriticalWorkOrder({ status: "open", priority: "urgent" }, now), true);
+  assert.equal(
+    isCriticalWorkOrder({ status: "open", priority: "low", scheduledFor: new Date("2026-10-16T12:00:00.000Z") }, now),
+    true,
+  );
+});
 
 test("GET /dashboard/summary reflete total e byStatus da organizacao A (nao da B)", async () => {
   await withDashboardApi(async ({ baseUrl, seed }) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import { listAvailableContexts, switchTenantContext } from "../modules/context/repository";
+import { resolveContextLandingRoute } from "../modules/context/landing-route";
 import type { TenantContext } from "../modules/context/types";
 import { useAuth } from "../providers/AuthProvider";
 import { useTenantContext } from "../providers/TenantProvider";
@@ -38,11 +39,20 @@ export function ContextSelectionPage() {
     setActivateError(null);
     setActivating(context.tenantId);
     try {
-      if (context.tenantId !== session?.tenant?.id) {
-        await switchTenantContext(context.tenantId);
+      const nextSession = context.tenantId !== session?.tenant?.id
+        ? await switchTenantContext(context.tenantId)
+        : session;
+      if (!nextSession) {
+        throw new Error("Sessão não encontrada. Faça login novamente.");
       }
-      setActiveContext(context);
-      navigate("/dashboard");
+
+      const permissions = nextSession.user.permissions;
+      const landing = resolveContextLandingRoute(permissions);
+      if (!landing) {
+        throw new Error("Seu perfil não possui telas associadas.");
+      }
+      setActiveContext({ ...context, permissions });
+      navigate(landing);
     } catch (err) {
       setActivateError(err instanceof Error ? err.message : "Não foi possível acessar a organização.");
       setActivating(null);

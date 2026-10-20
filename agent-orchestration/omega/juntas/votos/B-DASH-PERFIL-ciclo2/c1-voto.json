@@ -1,0 +1,44 @@
+{
+  "jurado": "jurado-dash2-c1-opus — identidade nova (jurado-dash-c1-cadeia-de-acesso, ciclo 2)",
+  "cadeira": "C1 — Cadeia de acesso, do backend para a sessão",
+  "modelo": "Claude Opus (claude-opus-5-5), executor Claude Code, nível menor declarado (§C7.6)",
+  "objeto": "faad24ce7c00ab4d7610d0784c0beab8a479ddb0; B = merge-base(origin/main, objeto) = bf83cda8a9acdc92f05f29397d1860bed9be5388 = origin/main às 22:29Z",
+  "legalidade": "inspetor-dash2b-opus (sucessor P3 de inspetor-dash2-opus): LIBERADO COM RESSALVA; corpo .claude/.agents IDENTICO (EOL-neutro, corpo); check-runs 14/14 success; insumos A RE-VERIFICAR",
+  "quorum": "unanimidade de 3 com veto",
+  "voto": "APROVADO",
+  "itens": {
+    "item1_reclassificacao_C1-01": "VERDE — C1-01/S4 pre-existente (011632f1, 2026-06-07, PR #25); diff do bloco só troca a linha 25 (permissions só da sessão), não toca can/hasAny nem a união de roles; pendência dona P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI registrada no objeto",
+    "item2_active_tenant_permissions_T5": "VERDE — teste do dev 5/5 no objeto; sonda HTTP própria (node:http, 11 papéis atribuíveis + multi-papel, expectativa por 2 caminhos) 0 falha; M3, M2 e M6 (tabela §2.5 C) cada uma deixa T5a/b/c vermelhos (not ok 2/3/4) e a sonda vermelha (48/48/27 FALHA); restauro provado por hash-object = 0da96d08",
+    "item3_active_tenant_falha_fechado_T6": "VERDE — sonda própria: 403 FORBIDDEN sem data/permissions/tenant_id/token (B sem vínculo por tenantId e por tenant_id, e org inexistente), 401 UNAUTHORIZED sem Bearer, 400 BAD_REQUEST sem tenantId e vazio; fallback F1 (200 com permissões) e F2 (403 + data.permissions) deixam T6 vermelho (not ok 5) e a sonda vermelha (12 e 6 FALHA); restauro por hash; 0 assert.match no arquivo (eram 3 em 2 testes de forma no 849bf840) e o caso do catálogo ficou (l.16)"
+  },
+  "o_que_executei": [
+    "item1: mandato-refs.sh 25 (cópia R2), git log -S isPlatformAdmin, git blame no objeto, catalog.ts l.412/729, auth.adapter.ts l.228, git diff origin/main...objeto do PermissionProvider, isPlatformAdmin em navigation/types.ts, git grep da pendência",
+    "item2: worktree C:/Users/AMP/w-jdash2-c1-a + npm ci próprio (sem junction); node --test tests/auth-active-tenant-permissions.test.ts (5/5); sonda própria .jdash2-c1-sonda/sonda.ts (117 OK/0 FALHA após recalibrar 2 expectativas da própria sonda); M3/M2/M6 uma por vez com teste+sonda vermelhos e restauro por hash",
+    "item3: sonda própria modo item3 (7 casos de recusa × 6 checagens); F1 e F2 (troca do 403 por fallback) uma por vez com T6 e sonda vermelhos e restauro por hash; grep de assert.match no objeto do ciclo 1 (849bf840) e no objeto"
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [
+    "T5a/b/c: M3, M2 e M6 cada uma vermelha no teste do dev E na sonda própria",
+    "T6: fallback F1 (200 com permissões) e F2 (403 com data.permissions) cada um vermelho no teste do dev E na sonda própria",
+    "item 1: provenência por git log -S/git blame no objeto; o diff do bloco no PermissionProvider é 1 linha (l.25) e não toca can/hasAny nem a união de roles"
+  ],
+  "pendencias_que_aceito": [
+    {
+      "id": "P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI",
+      "achado": "C1-01 + S4: can/hasAny || isPlatformAdmin aceita o rótulo Super Admin; roles une sessão com activeContext.role",
+      "gravidade": "nao-grave (BAIXA)",
+      "classe": "atalho de UI por rótulo",
+      "escopo": "pre-existente",
+      "evidencia_escopo": "git log -S isPlatformAdmin origin/main → 011632f1 2026-06-07 (head do PR #25, MERGED); git blame faad24ce l.26/33/36 = 011632f13; diff do bloco só toca l.25",
+      "N": "1 linha de can + 1 de hasAny + 1 de união de roles",
+      "forma": "atalho por rótulo na UI; backend não afetado",
+      "dono": "B-SAN3-06a"
+    }
+  ],
+  "teardown": "auth.routes.ts e PermissionProvider.tsx com hash-object = blobs do objeto (0da96d08, 8ab79873); sonda removida; worktree C:/Users/AMP/w-jdash2-c1-a removido por git worktree remove --force (ec=0, 0 na lista, 0 no disco); processos node jdash2-c1 = 0; contêineres/redes jdash2-c1 = 0/0 (Docker não usado); base viva e portas proibidas intocadas; sem commit",
+  "notas": [
+    "Sonda: 2 expectativas da própria sonda recalibradas na 1ª rodada (Bearer inválido responde 401 INVALID_TOKEN; a regex de token casava a palavra token da mensagem) — calibração do instrumento, não defeito do produto; registrado na evidência.",
+    "Limitação declarada: os detectores sem tenant_id e sem token das recusas não tiveram vermelho-controle próprio."
+  ],
+  "justificativa": "Item 1: C1-01/S4 pre-existente (011632f1, 2026-06-07, PR #25), não grave, dona P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI registrada; o diff do bloco não toca as linhas. Item 2: active-tenant devolve exatamente resolvePermissionsForRoles([papel]) para finance/inventory/support (e os 11 papéis atribuíveis e um multi-papel na sonda própria), sem dashboard:view em ninguém; M3, M2 e M6 vermelhas. Item 3: falha fechado (403/401/400) sem data/permissions/tenant_id/token; F1 e F2 vermelhos; regex de forma saíram, caso do catálogo ficou. VOTO: APROVADO — cadeia de acesso backend→active-tenant provada por execução nos 3 itens, com vermelho-controle em cada um."
+}
