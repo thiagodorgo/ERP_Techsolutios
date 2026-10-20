@@ -171,13 +171,13 @@ async function renderEditor(
   process.env.VITE_USE_MOCKS = "true";
   browser.clear();
   const { mockSessionForEmail } = await import("../src/mocks/auth/context");
-  const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
+  const { setStoredSessionPermissions } = await import("./helpers/session-permissions");
   const { AuthProvider } = await import("../src/providers/AuthProvider");
   const { TenantProvider } = await import("../src/providers/TenantProvider");
   const { PermissionProvider } = await import("../src/providers/PermissionProvider");
   const { ChecklistEditorPage } = await import("../src/modules/checklists/pages/ChecklistEditorPage");
 
-  setStoredAuthSession(mockSessionForEmail("gestor.web@techsolutions.example"));
+  setStoredSessionPermissions(mockSessionForEmail("gestor.web@techsolutions.example"), permissions);
   seedContext(permissions);
 
   return renderToString(
@@ -305,7 +305,7 @@ test("editor: modelo SEM campos mostra o vazio verbatim do protótipo (nada fabr
 });
 
 test("editor (somente-leitura): banner verbatim, ZERO escrita — sem paleta, sem Salvar, sem ações de campo", async () => {
-  const html = await renderEditor(["tenant_checklists:read"]);
+  const html = await renderEditor(["tenant_checklists:read", "checklist_runs:read"]);
 
   assert.match(html, /Você está no modo somente leitura/);
   assert.match(html, /Seu perfil permite consultar os modelos, mas não criar, editar ou publicar\./);

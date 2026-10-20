@@ -464,6 +464,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           tenant: { id: match.tenant.id, name: match.tenant.name },
           user: { id: match.user.id, name: match.user.name, email: match.user.email },
           roles: [...match.user.roles],
+          permissions: resolveLoginPermissions(match.user.roles),
         },
       });
     } catch {

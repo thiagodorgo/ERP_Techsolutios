@@ -1,0 +1,55 @@
+{
+  "jurado": "jurado-dash-c2-opus — identidade nova, reserva declarada de jurado-dash-c2-gemini (Gemini 3.1 Pro, caído antes de medir por cota diária, sem evidência; 00-quedas.md). Corpo: jurado-dash-c2-troca-de-organizacao",
+  "cadeira": "C2 — Troca de organização e sessão",
+  "modelo": "Claude Opus (claude-opus-5-5), nível menor (§C7.6), reserva nomeada no mandato e no parecer do inspetor",
+  "objeto": "849bf840f2bdecae87b82a17b26adf505d8a2a8e (= head de origin/fix/dash-perfil e headRefOid do PR 446, medido 04:52Z); B = merge-base = origin/main = 3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d",
+  "legalidade": "corpo md5 EOL-neutro afee3f7f17f45301dde10ad9a5970c78 (blob bcf618d4) = esperado; mandato ec4cb9b8671efc0a77dbfe09ddc0a813 = esperado; inspetor LIBERADO (insp-dash-parecer.md) nomeando Claude Opus como reserva; check-runs 14/14 completed success; worktree próprio C:/Users/AMP/w-jdash-c2-opus detached no objeto, npm ci próprio, zero junction. Plano, crítica, emenda e relatórios tratados como A RE-VERIFICAR.",
+  "quorum": "unanimidade de 3 com veto",
+  "voto": "APROVADO",
+  "itens": {
+    "item1": "APROVADO — troca substitui integralmente (4 pares de papéis no frontend; ponta a ponta com servidor e Postgres descartável, ida e volta manager↔finance; navegador real). Vermelho-controle M1a (...oldPermissions) e M1b (união com contexto ativo) deixam as sondas vermelhas; restaurados por hash.",
+    "item2": "APROVADO — sessão relida do armazenamento é idêntica e coerente com o tenant ativo; nenhum caminho de load recompõe permissões por mapa estático. Vermelho-controle M2 (mapa por papel na restauração) vermelho na sonda (2), no navegador (6) e no test:smoke (71); restaurado.",
+    "item3": "APROVADO — landing por capacidades efetivas: 13/13 papéis do catálogo caem em rota admitida pela guarda; navegador real: finance→/finance, só-estoque→/inventory, sem capacidade fica em /select-context com erro, mesma organização sem active-tenant, PlatformGuard redireciona por capacidade, sem laço. Vermelho-controle M3 (resolver → /dashboard) vermelho no navegador (10), no censo (2 papéis) e nos testes do bloco (4+1); restaurado."
+  },
+  "o_que_executei": [
+    "git show <O>:<corpo> | tr -d '\r' | md5sum ; tr -d '\r' < 00-mandatos/cadeira-c2.md | md5sum",
+    "git ls-remote origin refs/heads/fix/dash-perfil refs/heads/main ; gh pr view 446 ; gh api repos/thiagodorgo/ERP_Techsolutios/commits/<O>/check-runs",
+    "git worktree add --detach C:/Users/AMP/w-jdash-c2-opus <O> ; npm ci ; npm --prefix frontend ci",
+    "timeout 60 node --import tsx .jdash-c2-probe/landing-census.ts",
+    "cd frontend && timeout 120 node --test --import tsx .jdash-c2-probe/switch.test.tsx  (6/6 no objeto)",
+    "timeout 900 bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-jdash-c2-opus \"node --test --import tsx .jdash-c2-probe/switch-e2e-db.test.ts\"  (1ª: ECONNRESET no npm ci do container, ambiente; 2ª: ec=0, 1/1)",
+    "Vite próprio 127.0.0.1:5291 + timeout 300 node --import tsx .jdash-c2-probe/browser.ts  (S1–S7, 23 checagens, 0 falhas no objeto)",
+    "timeout 60 node --import tsx frontend/.jdash-c2-probe/modules-census.ts",
+    "mutações M1a, M1b, M2, M3, M3b por .jdash-c2-probe/mut.mjs (âncora única, CRLF respeitado) com sonda própria, navegador, testes do bloco e npm --prefix frontend run test:smoke; restauro por cp e md5 == hashes-antes.txt"
+  ],
+  "achados": [
+    {
+      "id": "C2-opus-01",
+      "titulo": "A troca e o fio da página não têm teste executado no repositório: a herança de permissões e o retorno ao /dashboard incondicional passam pela suíte inteira",
+      "gravidade": "nao-bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "os casos que citam a troca nascem neste bloco (frontend/tests/dashboard-profile-behavior.test.tsx e tests/auth-active-tenant-permissions.test.ts estão no diff B..O) e são regex sobre o fonte; o plano (docs/revisoes/TELAS/B-DASH-PERFIL-plano.md, Passos de implementação, item 3) prometia 'componente simula Financeiro, Estoque, Suporte e ausência de destino'",
+      "classe": "guarda que reconhece forma em vez de enunciar propriedade",
+      "N_e_forma": "3 mutações de produto sobrevivem a todo o repositório: M1a (repository.ts `permissions: [...currentSession.user.permissions, ...permissions]`), M1b (PermissionProvider volta a unir activeContext.permissions, a forma anterior ao bloco) e M3b (ContextSelectionPage `navigate(\"/dashboard\")`, o defeito que o bloco corrige) — cada uma: dashboard-profile-behavior 4/4 verde, raiz 7/7 verde, test:smoke 1327/1327 verde. As sondas próprias (unidade, E2E com banco e navegador) ficam vermelhas nas três.",
+      "por_que_nao_bloqueia": "o meu corpo define como reprovação o COMPORTAMENTO do produto (permissões fundidas, sessão incoerente, redirect errado/laço), e o produto no objeto está correto por execução nos três itens; a adequação dos testes às mutações do provider é atribuída pelo corpo à C3. Registro com N e forma para a C3 e para o orquestrador nomearem dono.",
+      "comando": "mutar com .jdash-c2-probe/mut.mjs e rodar `cd frontend && node --test --import tsx tests/dashboard-profile-behavior.test.tsx`, `node --test --import tsx tests/dashboard-profile-permissions.test.ts tests/auth-active-tenant-permissions.test.ts` e `npm --prefix frontend run test:smoke`"
+    },
+    {
+      "id": "C2-opus-02",
+      "titulo": "enabledModules do contexto ativo ainda nasce do mapa estático por papel e é persistido pela seleção",
+      "gravidade": "nao-bloqueia",
+      "escopo": "pre-existente",
+      "evidencia_de_escopo": "membershipToContext/resolveEnabledModules em frontend/src/modules/context/repository.ts:131-143 vêm de 0b1a7dfb (2026-07-02, `git log -S\"resolveEnabledModules(permissions)\"`), não estão no diff do bloco; o plano registra o mapa como sobreposição parcial com B-SAN3-06a (R1)",
+      "classe": "mapa estático residual sem efeito vivo",
+      "N_e_forma": "11 de 13 papéis com enabledModules estático ≠ efetivo (modules-census.ts); efeito vivo 0: o único consumidor na navegação é `Sidebar` de components/erp/index.tsx:114-121, sem importador (`grep -rnw Sidebar frontend/src`); activeContext.permissions só vira X-Permissions em modo mock (services/api/client.ts:149-154).",
+      "comando": "timeout 60 node --import tsx frontend/.jdash-c2-probe/modules-census.ts ; grep -rnw Sidebar frontend/src"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [
+    "C2-opus-01 — teste executado da troca e do destino pós-seleção (dono: a nomear pelo orquestrador / C3)",
+    "C2-opus-02 — enabledModules por mapa estático (dono: pendência do B-SAN3-06a, absorção parcial declarada no plano R1)"
+  ],
+  "teardown": "6 arquivos mutados com md5 == antes; Vite 5291 parado (PID 26500); worktree removido por git worktree remove --force (ec=0, diretório ausente); meus containers tl* removidos pela ferramenta; containers tl17923874008469-* são da C3 (montam w-jdash-c3) e não foram tocados; erp-* intocados; sem prune; sem commit/push; logs temporários apagados.",
+  "veredito": "VOTO: APROVADO — a troca de organização substitui integralmente as permissões, a sessão restaurada é coerente sem mapa estático, e a landing segue as capacidades efetivas, tudo provado por execução com vermelho-controle; ressalva não-bloqueante C2-opus-01 (guarda por forma) para a C3 e o orquestrador."
+}

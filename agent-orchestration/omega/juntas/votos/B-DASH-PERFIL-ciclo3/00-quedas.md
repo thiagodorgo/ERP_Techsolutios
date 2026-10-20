@@ -1,0 +1,2 @@
+agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do redo
+| C2 Gemini 4 Argon (jurado-dash3-c2-argon) | pin (lançador) | 3 itens | nunca disparada: a API do Gemini atingiu o teto mensal de gasto do projeto (429, medido 02:39Z de 20/10 no lançamento da C3 do B-SAN3-02) | teto mensal do Gemini | zero: sucessora jurado-dash3-c2b-opus (Claude Opus) com o mesmo mandato |
