@@ -3786,6 +3786,17 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Q3 = sim:** o ERP conserva os 38 códigos de alarme do Traccar; o que vira notificação fica para o `B-TRC-05`.
 - **Plano da madrugada de 19/10 (aprovação do dono, não é regra):** ***"plano aprovado para madruga, boa noite"***, sobre `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-MADRUGADA-2026-10-19.md` (Codex, Gemini 3.1 Pro e Claude; metas: B-DASH mergeado, B-SAN3-02 em dev, plano do B-TRC-02 criticado, este registro).
 
+- **`D-JUNTA-SO-CADEIRA-VERMELHA` (decisão do dono, 2026-10-20).**
+  - **Proposta, nas palavras do dono:** ***"vamos fazer um upgrade na orquestração, quando uma junta votar e por exemplo duas cadeiras verdes e uma vermelha, somente a vermelha vai ser trabalhada, nao precisa fazer de novo o que ja esta certo, se de uma junta de tres, duas reprovarem, essas duas serao refeita e por ai em diante. o que achas?"***
+  - **Aprovação:** ***"sim"***, dada à proposta do orquestrador com a trava.
+  - **A trava (DERIVADA, desenho do orquestrador, §A6):**
+    - a cadeira verde carrega o voto só quando o diff do conserto não toca o escopo dela, e o inspetor confere por comando;
+    - se tocar, uma identidade nova re-executa os comandos registrados dela;
+    - as vermelhas são refeitas;
+    - a unanimidade é do conjunto, no objeto final.
+  - **Onde está escrito:** `CLAUDE.md`/`AGENTS.md`, §C7 item 9; corpo do `inspetor-de-terreno-da-junta`, item 6.
+  - **Precedência:** no que divergir do §C7.4 ("identidade nova nas cadeiras que votaram"), vale o item 9, só para as cadeiras verdes.
+
 - **`D-ORQ-QUEDA-DA-SESSAO` (decisão do dono, 2026-10-20).** Palavras do dono: ***"Claude, você bugou. Eu tive que reiniciar VS Code. Faça o seguinte, verifique o que ficou de pe, start novamente o que caiu, documente e implemente o conserto na orquestração e espalhe a noticia"***.
   - **Fato medido:** o Windows registrou "memória virtual insuficiente" às 21:14, 21:48, 21:55 e 22:00 de 19/10 e às **01:16 de 20/10** (ID 2004). Os maiores consumidores eram a VM do Docker/WSL (7,4–8,9 GB) e o `Code.exe` (~2,2 GB), com até 6 agentes em paralelo. O VS Code travou e foi reiniciado pelo dono. O arquivo de paginação é fixo em 8 GB (não gerenciado), e o teto de commit é 31,7 GB.
   - **O conserto (DERIVADO, desenho do orquestrador, §A6):** norma **P8** do §C7.7 (`CLAUDE.md` + `AGENTS.md` + `PROTOCOLO-JUNTA-RESILIENTE.md`):
