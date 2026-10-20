@@ -29,7 +29,13 @@ concurrency:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    # B-CI-PSQL16 — imagem FIXADA. Em 2026-10-19 o rótulo `ubuntu-latest` passou de ubuntu-24.04
+    # (psql 16) para ubuntu-26.04 (psql 18.6): run verde 39235996352 (10:14Z, ubuntu-24.04) × run
+    # vermelho 39342033007 (23:30Z, ubuntu-26.04). O T14a/b de `tests/san3-05-runtime-role-guard-db.test.ts`
+    # executa o CLIENTE `psql` do sistema e exige a versão 16 — o teste descreve o psql 16 e não se
+    # afrouxa. Só este job usa o `psql` do sistema (o `backend-postgres` não roda essa suíte), por isso
+    # só ele é fixado. Ao migrar de imagem: instalar `postgresql-client-16` e pôr o bin dele à frente no PATH.
+    runs-on: ubuntu-24.04
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public
       REDIS_URL: redis://localhost:6379
