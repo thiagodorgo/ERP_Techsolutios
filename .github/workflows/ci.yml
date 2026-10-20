@@ -288,7 +288,8 @@ jobs:
           SUITES="$SUITES tests/traccar-resolution-race-db.test.ts"
           # B-TRC-02 — as 3 suítes `-db` dos eventos e da telemetria veicular do Traccar (ingestão de evento, amostra no
           # savepoint, RLS/migração com drill de rollback; variante Q1 = NÃO), medidas 3× nesta forma antes de entrar.
-          # DENOMINADOR-Q1-NAO (a preencher com a medição)
+          # Medido antes de entrar (2026-10-20, container Linux, esta forma, 3×): 20+13+10 = 43 casos nas 3 suítes; 434/434 no
+          # total do job, 0 falha, 0 pulo, denominador constante (fecha P-TRC-CI-COMENTARIO-DENOMINADOR).
           SUITES="$SUITES tests/traccar-event-ingestion-db.test.ts"
           SUITES="$SUITES tests/traccar-event-sample-db.test.ts"
           SUITES="$SUITES tests/traccar-event-rls-db.test.ts"

@@ -213,8 +213,11 @@ do worktree, migração mutada numa base própria `trc02_mut` criada e derrubada
 
 **Antes das mutações, no mesmo container:** E+F+G+I = `# tests 57 # pass 57 # fail 0 # skipped 0` (I5 verde com o sentinela
 corrigido); `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` sobre a base migrada →
-ec 0 e **diff vazio** (o schema Prisma, inclusive a FK de 4 colunas, bate com as migrações; o que o Prisma não modela — CHECKs,
-índice parcial — não gera diff).
+ec 0 e ~~diff vazio~~ — **CORRIGIDO na variante final:** a leitura "vazio" estava errada (o trecho do log não imprimiu o
+SQL). Medido de novo (head `79448602` e `origin/main`, contêineres separados, o mesmo comando): **146 linhas nos dois, md5
+`34594a709a1169dbf70a5a6a87016459` idêntico**, e `grep -ciE "vehicle_telemetry|traccar|fix_key|position_sample"` = **0** — é deriva
+PRÉ-EXISTENTE do repositório (`DropForeignKey` de `financial_entries`, `service_quote_items`, `service_quotes`…, FKs que vivem só em
+migrações), e o bloco não acrescenta NENHUMA linha a ela (inclusive a FK de 4 colunas, que o schema modela).
 
 | Grupo | Resultado |
 |---|---|
@@ -231,7 +234,12 @@ ec 0 e **diff vazio** (o schema Prisma, inclusive a FK de 4 colunas, bate com as
 
 ## Passo 12 — lista curada da CI
 
-EM APURAÇÃO
+`.github/workflows/ci.yml`, só o bloco `SUITES=` do job `backend-postgres`: entram, depois das 6 do 01, as suítes `-db` do bloco
+com um comentário que diz o número medido (fecha `P-TRC-CI-COMENTARIO-DENOMINADOR`). Variante Q1 = SIM: 4 suítes, 448/448 3×.
+**Variante final Q1 = NÃO: 3 suítes** (`traccar-event-ingestion-db`, `-sample-db`, `-rls-db`) — medido na forma do job (extraída do
+próprio `ci.yml` por `ci-pg-form.cjs`; `npm run db:seed`; env do job) **3× = `# tests 434 # pass 434 # fail 0 # skipped 0`**,
+denominador constante (= 391 da `main` + 43 casos `-db` novos: E 20 + F 13 + G 10; a emenda previa 433 — a diferença é o E5′, um
+`test()` à parte). O comentário no `ci.yml` traz "20+13+10 = 43 casos nas 3 suítes; 434/434 no total do job".
 
 ## Bateria §9.7
 
@@ -326,8 +334,54 @@ B-TRC-03).
 | contêiner das 37 mutações de banco (mesmo retrato `30853d25`) | **36 vermelhas + 1 "não mede"** (a `MUT-10@01`, âncora 2× como antes; a `MUT-10′@01` re-derivada: vermelha); **M-E16′ vermelha** (F3 por contagem); 37/37 `restoredOk`; resultados em `results-db-q1nao.jsonl` (o `results-db.jsonl` anterior é a variante Q1 = SIM, guardado como histórico). O `ec=2` do executor saiu DEPOIS do `MUTFIM`: eu editei a cópia do script enquanto o bash a lia; resíduo `dtrc02-*` conferido = 0 | verde (toda propriedade morde) |
 | 2º contêiner da bateria | `n: unbound variable` — erro de escape meu na retentativa do `npm ci` (o `$n` expandido pelo shell de fora); corrigido (`\$n`, conferido por `od -c`) | refazer |
 
-EM APURAÇÃO: E/F/G no container, `backend-postgres` 3× (previsto 433), mutações de banco, `migrate diff`.
+| 3º/4º contêiner | o 3º: `ok: unbound variable` (o mesmo erro de escape no `$ok`); corrigido e conferido por `od -c`. O 4º (retrato `30853d25`): ok | — |
+| E + F + G (drill G9 incluso) | `# tests 43 # pass 43 # fail 0 # skipped 0` | **verde** |
+| `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` | ec 0; 146 linhas, md5 idêntico ao da `origin/main`; 0 menção às tabelas/colunas do bloco | sem deriva NOVA (a de 146 linhas é pré-existente; ver a correção no passo 11) |
+| forma do `backend-postgres` 3× | `434/434` ×3, 0 pulo | **verde** (passo 12) |
+| `$(ls tests/traccar-*.test.ts)` no Linux | `# tests 229 # pass 215 # fail 14` — os 14 que exigem o CLI do Docker | 229 = 132 do 01 + **97** do bloco; os 14 verdes no host (abaixo) |
+| regressão §9.7 passo 4 (forma `backend`) | `408/408` | verde, igual à `main` |
+| `o6r07c-census-guard` · `san3-05-runtime-role-guard-db` · `db-catalog-write-guard` | `31/32` (só T9) · `10/12` (só T14a/b: `…\|0\|0\|119`) · `5/5` | T9 e T14a/b = os **2 PEDIDOS DE EMENDA** de escopo (passo "Bateria §9.7"), inalterados pela reversão |
+| host: `npm run check` · `lint` · `build` | ec 0 · ec 0 · ec 0 | verde |
+| host: A+B+C+D+H | `# tests 54 # pass 54` | verde |
+| host: `traccar-dev-topology` + `auth-invariant-guards` (guard 8) + `traccar-position-contract` | `# tests 36 # pass 36` | verde |
+| `node scripts/sync-agent-agents.mjs --check` · `git diff --check origin/main...HEAD` · `node --check Kpis/app.js` · `git diff --name-only origin/main...HEAD -- Kpis \| wc -l` | `OK — 70 agentes` · ec 0 · ec 0 · 0 | verde; `Kpis/` intocado |
+| escopo: `git diff --name-only origin/main...HEAD` contra o PROIBIDO (§7.4: `src/app.ts`, `portal-app.ts`, `frontend/`, `mobile/`, `notifications/`, `work-orders/`, `field-dispatch/`, `field-location/`, `rls.ts`, `src/infra/`, `package*.json`, `Kpis/`, `docker-compose.prod.yml`, `db-runtime-role.sh`) | 0 arquivo | PROIBIDO vazio; o diff está em §7.1 ∪ §7.3 ∪ R3-4 + as cópias de registro em `docs/revisoes/TRACCAR/` |
+| os 9 testes do 01 que não podem mudar (`git diff --quiet c1485c94 HEAD -- …`) · os 5 arnês (`--numstat`) | 9× "igual" · `1 1`,`1 1`,`1 1`,`1 0`,`1 0` | régua R3-1 (5 `+`, 3 `−`) |
+
+**Contagens finais (variante Q1 = NÃO):** critérios 27 (C-01..C-27; os C-Q1-* saem); **testes novos 97** (A 17 · B 11 · C 12 · D 5 · H 9 ·
+E 20 · F 13 · G 10); baseline N = 149 executado; meta 2N = 298 **não atingida** — déficit declarado (`P-TRC02-DEFICIT-2N`), a régua
+critério → teste → mutação vale; **mutações**: 72 no catálogo (35 host + 37 banco; 54 do B-TRC-02 + 18 re-executadas do 01), todas
+vermelhas salvo: 2 controles de lacuna verdes como esperado, a M-E13 equivalente (classe coberta pela MUT-16@01) e a MUT-10@01 "não
+mede" (substituída pela MUT-10′@01, vermelha); `backend-postgres` **434**.
 
 ## Limpeza
 
-EM APURAÇÃO
+| Comando | Saída |
+|---|---|
+| `docker ps -a \| grep -c dtrc02` · `docker network ls \| grep -c dtrc02` · `docker volume ls \| grep -c dtrc02` | 0 · 0 · 0 (todo contêiner/rede do bloco derrubado — os do executor pelo `trap`, os do demo pelo `down -v`) |
+| `docker rmi dtrc02-demo-api:local dtrc02-demo-migrate:latest dtrc02-demo-web:latest` | 3 imagens do demo removidas (≈ 2,2 GB) |
+| retratos `snap-*` do scratchpad desta sessão | removidos (só os meus) |
+| `dist/` do worktree (gitignored, do `npm run build`) | removido |
+| `df -h /c` | 14 GB livres |
+
+**Worktree `C:/Users/AMP/w-trc02` MANTIDO** (com o `node_modules` próprio, sem junction): o mandato proíbe push/PR por mim, e o
+orquestrador precisa dele para empurrar o ramo `feat/traccar-b-trc-02`. A remoção (`git worktree remove --force`) fica para depois do
+push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/5050/8899 nunca foram tocadas.
+
+## Para o orquestrador — pendências e decisões a registrar (não gravei em `controle/`)
+
+- **Dois pedidos de emenda de escopo** (uma linha cada; sem eles o job `backend` fica vermelho em T9 e T14a/b) — texto exato na seção
+  "Bateria §9.7".
+- **Decisão do dono** "TRC-02 Q1 = Não" (19/10) → `D-TRC02-Q1-NAO` e a pendência que volta por §Q1.7: `P-TRC02-AMOSTRA-SO-COM-POSICAO-ACEITA`
+  (dono B-TRC-03). Com Q1 = NÃO, `P-TRC02-FIX-CONTESTADO-ENTRE-KINDS` (emenda §1.8) deixa de existir (não há recibo `position_sample`).
+- **Fecham neste bloco:** `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` (demo `--with-web`: `login_without_org: active`, H7 verde),
+  `P-TRC-CI-COMENTARIO-DENOMINADOR` (comentário com 434 medido 3×), `P-TRC02-LIMITADOR-POR-ROTA` (C8/C11 verdes, M-E36 vermelha).
+- **Continuam com dono** (v2 §12): `P-TRC02-LIMITES-POR-ROTA-PROD`, `P-TRC02-QUARENTENA-SEM-TIPO-DE-MENSAGEM`,
+  `P-TRC02-RECIBO-VINCULO-VIATURA-FK`, `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO` (agora só para o evento sem despacho, C-10),
+  `P-TRC02-COMMANDRESULT-IGNORADO`, `P-TRC02-STATUS-TIMEOUT-PROD`, `P-TRC02-DEFICIT-2N`.
+- **Vermelho pré-existente medido no baseline:** `traccar-idempotency-db` "duas entregas idênticas concorrentes" saiu 503 em 1 de 7
+  execuções (lote paralelo); 0/6 nas re-execuções. Fora do escopo; registrar com N e forma.
+- **Terreno:** 2 quedas da VM do Docker durante o `npm test` completo no contêiner (a forma inteira derruba a VM de 10 GB): a forma
+  `backend` completa fica para a CI; aqui foi medida arquivo a arquivo.
+- **Parecer do `agente-dba-guardiao`:** PRONTO PARA DBA desde o passo 5; a migração A mudou com a reversão (sai `fix_key`, o índice
+  parcial e o `'position_sample'` do CHECK) — o parecer deve ser sobre o head final.
