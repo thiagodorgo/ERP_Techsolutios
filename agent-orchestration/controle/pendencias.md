@@ -356,6 +356,7 @@
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
+- **emenda (2026-10-21, `D-SAN3-04B-PAINEL-PROPRIO`):** FECHADA a parte "Financeiro e Estoque sem `dashboard:read` / home em 403" (item 12 do portão): a matriz passou a dar `none` a `finance` e `inventory` no painel geral, e a home de cada um é o próprio painel (`/finance`, `/inventory`; `tests/dashboard-profile-permissions.test.ts` 4/4, PR #446). Segue ABERTO, com o mesmo dono: as chaves órfãs do catálogo, o apelido `os.read` no front (emenda C2-04) e o `docs/navigation-matrix.md`, que ainda concede o Dashboard a `finance`/`inventory`.
 - **dono:** `B-SAN3-04b` (plano SAN3, §4.1 item 12 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
 ## P-029 - Ω2-a.2: modal de edicao de Tarifa mantem selects de referencia habilitados, mas o backend os ignora (2026-07-12)
@@ -9738,6 +9739,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - status: ABERTA (B-SAN3-04a, plano do bloco §3 B2 e §4.7)
 - **prova (N = 1 hoje — `RBAC_MATRIX.md:34` × `field_technician` = "scoped" com `dashboard:read` sem recorte; +2 quando o `B-SAN3-04b` conceder `dashboard:read` a `finance` e `inventory`, também "scoped" na l.34; causa: o painel não tem recorte por papel no backend):** mantida na `ALLOWLIST_QUALIFICADAS`.
 - **escopo:** `pre-existente`.
+- **emenda (2026-10-21, `D-SAN3-04B-PAINEL-PROPRIO`):** o "+2" sai — Financeiro e Estoque não terão o painel geral (`RBAC_MATRIX.md:34` = `none`). N = 1 (`field_technician`).
 - **dono:** `B-SAN3-04b` (entrega o recorte da matriz).
 - **teste de encerramento:** o painel devolve só o recorte do papel "scoped", com vermelho-controle; a entrada sai da allowlist com evidência.
 
