@@ -3816,3 +3816,24 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **(B) Derivação do planejador, submetida ao dono como Q4 e por ele aprovada.** Os três objetos da Q4 nasceram da crítica A6 da rodada 1, não da fala do dono: amarrar no banco que o pai é da mesma organização, OS e direção, e que complementar só existe com OS. A palavra do dono é "Q4, sim"; o desenho e o motivo são do planejador (`planejador-san3-02-fable`, emenda v2.1, B5).
   - **O mecanismo da `D-Ω4-C2`, revisto.** O motivo (não faturar o mesmo item duas vezes, em meses diferentes ou não; competência fora da chave) segue inteiro. Passa a ter duas âncoras: cada item é faturado uma vez (carimbo `invoiced_at`/`title_id`, lido sob `FOR UPDATE` e gravado na mesma transação do título) e no máximo um título ORIGINAL ativo por (tenant, OS, direção) — o índice `financial_titles_wo_direction_original_active_key`. Replay sem delta continua 409 `already_invoiced`.
   - **Divergência registrada (§A2).** `RBAC_MATRIX.md` l.122 descrevia o índice velho. A frase antiga era *"idempotente por OS (índice PARCIAL `(tenant_id,work_order_id,direction) WHERE deleted_at IS NULL` → replay 409 already_invoiced)"*. No mesmo ramo ela passou a descrever o anti-refaturamento por item, o índice de originais e o título complementar, com esta decisão como fonte nº 1. Nenhuma outra linha da matriz mudou.
+
+## D-SAN3-04B-PAINEL-PROPRIO (decisão do dono, 2026-10-21) — Financeiro e Estoque usam o próprio painel; a matriz segue o código
+
+- **Pergunta do orquestrador (§A2, conflito matriz × catálogo):** *"Financeiro e Estoque: a RBAC_MATRIX promete a eles um painel geral com
+  recorte, mas hoje cada um abre direto o próprio painel (/finance e /inventory). O que vale?"* Opções: "Ajustar a matriz (Recomendado)" —
+  só registro, o item 12 fecha; ou "Fazer o painel com recorte" — `dashboard:read` aos dois + painel recortado, bloco de permissão com junta.
+- **Resposta literal do dono:** ***"Ajustar a matriz (Recomendado)"***.
+- **Fatos medidos em `origin/main` `539b078e`:**
+  - `RBAC_MATRIX.md:34` dava `scoped` a `finance` e `inventory` no "Dashboard and operational overview";
+  - `src/modules/core-saas/permissions/catalog.ts`: os blocos `finance` e `inventory` não têm `dashboard:read`;
+  - `tests/dashboard-profile-permissions.test.ts`: 4/4 verdes — a rota inicial de cada perfil é a primeira permitida pelo catálogo
+    (Financeiro → `/finance`, Estoque → `/inventory`), entregue pelo `B-DASH-PERFIL` (PR #446);
+  - `tests/dashboard-summary.test.ts`: o caso "[permissao] … sem dashboard:read retornam 403" usa o papel `finance` (403 no painel geral é o esperado).
+- **Consequência:**
+  - `RBAC_MATRIX.md:34`: `finance` e `inventory` passam de `scoped` para `none`, com nota na seção Notes;
+  - o **item 12 do portão** (`PLANO_SAN3.md`) fecha: a home não abre mais em 403, e o painel geral deixa de ser promessa para esses dois papéis;
+  - a `P-027` continua ABERTA, com o mesmo dono `B-SAN3-04b`, só no que sobra: chaves órfãs do catálogo e o apelido `os.read` no front
+    (emenda C2-04), e o texto do `docs/navigation-matrix.md`, que ainda concede o Dashboard a `finance`/`inventory`;
+  - a `P-SAN3-04A-DASHBOARD-SCOPED` deixa de contar com "+2" (Financeiro e Estoque); segue com N = 1 (`field_technician`).
+- **Derivado pelo orquestrador (§A6), não dito pelo dono:** o valor `none` na célula (a capacidade "painel geral" não existe para esses papéis)
+  e a redação das emendas acima. Corrige-se numa linha se o dono preferir outra palavra.
