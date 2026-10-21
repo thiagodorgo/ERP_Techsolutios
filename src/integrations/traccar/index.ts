@@ -19,3 +19,16 @@ export {
   type TraccarFixQuarantineReason,
   type TraccarPositionCommand,
 } from "./traccar-position.adapter.js";
+// B-TRC-02 — o event.forward (parser, adaptador, catálogo) e o domínio fechado dos atributos veiculares.
+export { TRACCAR_EVENT_INGEST_PATH } from "./traccar-ingest.app.js";
+export { parseTraccarEventEnvelope, type ParsedTraccarEvent } from "./traccar-event.schema.js";
+export {
+  buildTraccarEventCommand,
+  computeTraccarEventDigest,
+  computeTraccarEventKey,
+  eventQuarantineReason,
+  type TraccarEventBuildResult,
+  type TraccarEventCommand,
+} from "./traccar-event.adapter.js";
+export { classifyTraccarEvent, TRACCAR_ALARM_CODES, TRACCAR_EVENT_TYPE_TO_KIND, TRACCAR_IGNORED_EVENT_TYPES } from "./traccar-telemetry-catalog.js";
+export { normalizeVehicleTelemetry, VEHICLE_TELEMETRY_BOUNDS } from "../../modules/telemetry/vehicle-telemetry.bounds.js";

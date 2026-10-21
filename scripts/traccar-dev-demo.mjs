@@ -25,6 +25,17 @@
 //  11. derruba tudo com `down -v --remove-orphans` (com os perfis), SEMPRE, inclusive em falha — salvo `--keep`;
 //  12. mede, dentro dos contêineres, onde a web/REST do Traccar e a ingestão escutam (só endereço:porta).
 // Nenhuma porta 3200, 5055 ou 8082 aparece no host; nunca os servidores públicos de demonstração do Traccar.
+//
+// B-TRC-02 (plano v2 §5.1, §5.5; emenda v2.1) — passos 13-19, com o event.forward ligado no overlay (status de dev):
+//  13. o 1º fix gerou 1 device_online;  14. ignição off → on: 1 ignition_on e 2 amostras novas;  15. alarm=sos: 1 alarm/sos;
+//  16. o MESMO corpo de evento entregue 2× direto no listener (de dentro da api): 1 linha;  17. tipo forjado → 204 e 0 linha;
+//      dispositivo sem vínculo → 202 e 1 episódio de quarentena, 0 linha;  18. fix com power=-1 → a localização entra e
+//      a amostra nova vem SEM tensão (o domínio fechado descarta o atributo no parser; motion/totalDistance seguem);  19. rajada de 120 posições + 1 evento: o evento
+//      entra (204) enquanto posições levam 429 — o bucket é por rota; depois: SELECT sem coordenada/JSON/nome na tabela,
+//      log da api sem segredo, coordenada nem tipo forjado, e o md5 da OS igual.
+//  --with-web [Q2 = SIM, D-TRC02-RESPOSTAS]: o passo nomeado do EXECUTE em auth_login_candidates ao papel de runtime, SÓ na
+//  demonstração (produção = passo 5 do runbook de docs/deployment.md, ato do dono), e a leitura de /health/ready.
+// Projeto: `erp-trc01-demo` por padrão; `TRC_DEMO_PROJECT` troca o nome (o terreno de cada dev).
 
 import { spawnSync } from "node:child_process";
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
@@ -33,7 +44,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
-const PROJECT = "erp-trc01-demo";
+const PROJECT = process.env.TRC_DEMO_PROJECT?.trim() || "erp-trc01-demo";
 const BASE_FILE = path.join(REPO_ROOT, "docker-compose.prod.yml");
 const OVERLAY_FILE = path.join(REPO_ROOT, "docker-compose.traccar.yml");
 const PRIVATE_SUBNET = process.env.TRC_PRIVATE_SUBNET?.trim() || "172.31.250.0/24";
@@ -429,7 +440,8 @@ try {
     ),
   );
 
-  const countsSql = `SELECT (SELECT count(*) FROM traccar_ingress_receipts WHERE tenant_id = '${seed.tenantId}') || ',' ||
+  // B-TRC-02: com o event.forward ligado, a organização também ganha recibos 'event' — este passo conta só os de POSIÇÃO.
+  const countsSql = `SELECT (SELECT count(*) FROM traccar_ingress_receipts WHERE tenant_id = '${seed.tenantId}' AND message_kind = 'position') || ',' ||
        (SELECT count(*) FROM field_operator_locations WHERE tenant_id = '${seed.tenantId}' AND source = 'traccar') || ',' ||
        (SELECT count(*) FROM traccar_quarantine_items WHERE instance_key = '${INSTANCE_KEY}');`;
   await step("SQL: 1 recibo, 1 localização traccar, 0 quarentena", async () => {
@@ -442,6 +454,156 @@ try {
     await sleep(10_000);
     const counts = psql(countsSql);
     if (counts !== "1,1,0") throw new Error(`contagens depois do reenvio = ${counts}`);
+  });
+
+  // ------------------------------------------------------------------ B-TRC-02: eventos e telemetria veicular
+  const kindCount = (kind, extra = "") =>
+    Number(psql(`SELECT count(*) FROM vehicle_telemetry_events WHERE tenant_id = '${seed.tenantId}' AND kind = '${kind}' ${extra};`));
+  const workOrderMd5 = () => psql(`SELECT md5(w::text) FROM work_orders w WHERE tenant_id = '${seed.tenantId}';`);
+  const md5Before = workOrderMd5();
+  let simClock = Number(simTimestamp);
+  const sendFix = (extra) => {
+    simClock += 2;
+    const { stdout } = docker(compose("--profile", "tools", "run", "--rm", "-T", "traccar-sim"), {
+      extraEnv: {
+        TRC_SIM_ID: DEVICE_ID,
+        TRC_SIM_LAT: String(SIM_LAT),
+        TRC_SIM_LON: String(SIM_LON),
+        TRC_SIM_TIMESTAMP: String(simClock),
+        TRC_SIM_SPEED: "0",
+        TRC_SIM_EXTRA: extra,
+      },
+      timeout: 180_000,
+    });
+    if (!/osmand_status=2\d\d/.test(stdout)) throw new Error(`o Traccar não aceitou o ponto OsmAnd (${stdout.trim().split("\n").pop() ?? "sem saída"})`);
+  };
+  /** POSTs ao listener privado DE DENTRO da api (a 3200 nunca é publicada); imprime só os status. */
+  // `repeat`: o MESMO corpo N vezes, repetido DENTRO da api (120 corpos num argumento estouram a linha de comando do Windows).
+  const postFromApi = (route, bodies, { parallel = false, repeat = 1 } = {}) => {
+    const script = [
+      "const unique = JSON.parse(Buffer.from(process.env.TRC_DEMO_BODIES, 'base64').toString('utf8'));",
+      "const bodies = unique.flatMap((body) => Array.from({ length: Number(process.env.TRC_DEMO_REPEAT || '1') }, () => body));",
+      "const url = 'http://' + process.env.TRACCAR_INGEST_HOST + ':3200' + process.env.TRC_DEMO_ROUTE;",
+      "const send = async (body) => { const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-traccar-forward-token': process.env.TRACCAR_FORWARD_SECRET_CURRENT }, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) }); await r.arrayBuffer(); return r.status; };",
+      "const statuses = process.env.TRC_DEMO_PARALLEL === '1' ? await Promise.all(bodies.map(send)) : await bodies.reduce(async (acc, body) => [...(await acc), await send(body)], Promise.resolve([]));",
+      "process.stdout.write('TRC_DEMO_STATUSES=' + JSON.stringify(statuses) + '\\n');",
+    ].join("\n");
+    const encoded = Buffer.from(JSON.stringify(bodies)).toString("base64");
+    const { stdout } = docker(
+      compose("exec", "-T", "-e", `TRC_DEMO_BODIES=${encoded}`, "-e", `TRC_DEMO_ROUTE=${route}`, "-e", `TRC_DEMO_PARALLEL=${parallel ? "1" : "0"}`, "-e", `TRC_DEMO_REPEAT=${repeat}`, "api", "node", "--input-type=module", "-e", script),
+      { timeout: 120_000 },
+    );
+    const statuses = /TRC_DEMO_STATUSES=(\[[^\]]*\])/.exec(stdout)?.[1];
+    if (!statuses) throw new Error("o POST de dentro da api não devolveu status");
+    return JSON.parse(statuses);
+  };
+  const eventBody = (uniqueId, type, eventTime, attributes = {}) => ({
+    event: { id: 0, attributes, deviceId: 1, type, eventTime, positionId: 0, geofenceId: 0, maintenanceId: 0 },
+    device: { id: 1, attributes: {}, name: "Viatura Sintetica TRC01", uniqueId, phone: "+550000000000", contact: "Contato Sintetico" },
+  });
+  const FORGED_TYPE = "tipoForjadoDemoTrc";
+
+  await step("evento: o 1º fix gerou 1 device_online (status de dev ligado no overlay)", async () =>
+    pollUntil(
+      "device_online",
+      async () => {
+        const online = kindCount("device_online");
+        if (online !== 1) throw new Error(`device_online = ${online}`);
+      },
+      30_000,
+    ),
+  );
+
+  const samplesBefore = kindCount("sample");
+  await step("evento: ignição off → on → 1 ignition_on e 2 amostras novas", async () => {
+    sendFix("ignition=false");
+    sendFix("ignition=true");
+    await pollUntil(
+      "ignition_on",
+      async () => {
+        const on = kindCount("ignition_on");
+        const samples = kindCount("sample") - samplesBefore;
+        if (on !== 1 || samples !== 2) throw new Error(`ignition_on = ${on}, amostras novas = ${samples}`);
+      },
+      30_000,
+    );
+  });
+
+  await step("evento: alarm=sos → 1 linha alarm/sos", async () => {
+    sendFix("ignition=true&alarm=sos");
+    await pollUntil(
+      "alarm",
+      async () => {
+        const sos = kindCount("alarm", "AND alarm_code = 'sos'");
+        if (sos !== 1) throw new Error(`alarm/sos = ${sos}`);
+      },
+      30_000,
+    );
+  });
+
+  await step("evento: o MESMO corpo entregue 2× direto no listener → 204 e 1 linha só", async () => {
+    const at = new Date(simClock * 1000 + 500).toISOString();
+    const statuses = postFromApi("/ingest/traccar/v1/events", [eventBody(DEVICE_ID, "deviceStopped", at), eventBody(DEVICE_ID, "deviceStopped", at)]);
+    if (JSON.stringify(statuses) !== "[204,204]") throw new Error(`status do reenvio = ${JSON.stringify(statuses)}`);
+    if (kindCount("device_stopped") !== 1) throw new Error(`device_stopped = ${kindCount("device_stopped")}`);
+  });
+
+  await step("evento: tipo forjado → 204 e 0 linha; dispositivo sem vínculo → 202, 1 episódio de quarentena e 0 linha", async () => {
+    const rows = () => Number(psql(`SELECT count(*) FROM vehicle_telemetry_events WHERE tenant_id = '${seed.tenantId}';`));
+    const before = rows();
+    const now = new Date().toISOString();
+    const [forged] = postFromApi("/ingest/traccar/v1/events", [eventBody(DEVICE_ID, FORGED_TYPE, now)]);
+    if (forged !== 204 || rows() !== before) throw new Error(`tipo forjado: ${forged}, linhas ${before} → ${rows()}`);
+    const [unmapped] = postFromApi("/ingest/traccar/v1/events", [eventBody("trcdemo99", "ignitionOn", now)]);
+    const episodes = psql(`SELECT count(*) FROM traccar_quarantine_items WHERE instance_key = '${INSTANCE_KEY}' AND external_device_key = 'trcdemo99' AND reason = 'unmapped_device';`);
+    if (unmapped !== 202 || episodes !== "1" || rows() !== before) throw new Error(`sem vínculo: ${unmapped}, episódios ${episodes}`);
+  });
+
+  await step("amostra: fix com power=-1 → a localização entra e a amostra nova NÃO tem tensão (o parser descarta só o atributo fora do domínio)", async () => {
+    const locations = () => Number(psql(`SELECT count(*) FROM field_operator_locations WHERE tenant_id = '${seed.tenantId}' AND source = 'traccar';`));
+    const beforeLocations = locations();
+    const beforeSamples = kindCount("sample");
+    sendFix("power=-1");
+    await pollUntil(
+      "localização do fix com power=-1",
+      async () => {
+        if (locations() !== beforeLocations + 1) throw new Error("localização ainda não chegou");
+      },
+      30_000,
+    );
+    // O Traccar calcula motion/totalDistance em TODA posição: a amostra existe; o que não pode existir é a tensão inválida.
+    if (kindCount("sample") !== beforeSamples + 1) throw new Error(`amostras novas = ${kindCount("sample") - beforeSamples}`);
+    const power = psql(
+      `SELECT coalesce(power_mv::text, 'NULL') FROM vehicle_telemetry_events WHERE tenant_id = '${seed.tenantId}' AND kind = 'sample' ORDER BY occurred_at DESC LIMIT 1;`,
+    );
+    if (power !== "NULL") throw new Error(`a amostra do power=-1 gravou power_mv = ${power}`);
+  });
+
+  await step("limitador por rota: 120 posições em rajada e 1 evento — o evento entra (204) enquanto posições levam 429", async () => {
+    const position = {
+      position: { id: 0, attributes: {}, deviceId: 1, protocol: "osmand", fixTime: new Date().toISOString(), valid: true, latitude: SIM_LAT, longitude: SIM_LON, speed: 0, course: 0, accuracy: 0 },
+      device: { id: 1, attributes: {}, uniqueId: "trcburst01" },
+    };
+    const burst = postFromApi("/ingest/traccar/v1/positions", [position], { parallel: true, repeat: 120 });
+    const at = new Date(simClock * 1000 + 900).toISOString();
+    const [event] = postFromApi("/ingest/traccar/v1/events", [eventBody(DEVICE_ID, "ignitionOff", at)]);
+    const limited = burst.filter((status) => status === 429).length;
+    console.log(`[traccar-demo]      rajada: ${limited} de 120 posições com 429; evento depois: ${event}`);
+    if (limited === 0) throw new Error("nenhuma posição levou 429: a rajada não esgotou o bucket de posições");
+    if (event !== 204) throw new Error(`o evento depois da rajada respondeu ${event}`);
+  });
+
+  await step("banco e log: a tabela não tem coluna de coordenada/JSON/nome; o log da api não tem segredo, coordenada nem tipo forjado; OS intacta", async () => {
+    const columns = psql(
+      `SELECT string_agg(column_name || ':' || data_type, ',') FROM information_schema.columns WHERE table_name = 'vehicle_telemetry_events';`,
+    );
+    if (/lat|lon|json|name|phone|contact|double/i.test(columns)) throw new Error(`coluna suspeita em vehicle_telemetry_events: ${columns}`);
+    const { stdout } = docker(compose("logs", "--no-color", "--no-log-prefix", "api"), { timeout: 60_000, allowFailure: true });
+    if (stdout.includes(forwardSecret)) throw new Error("o segredo do forward apareceu no log da api");
+    if (/23\.5505|46\.6333/.test(stdout)) throw new Error("a coordenada apareceu no log da api");
+    if (stdout.includes(FORGED_TYPE)) throw new Error("o tipo forjado apareceu no log da api");
+    if (!/"outcome":"ignored"/.test(stdout)) throw new Error("o ignored não foi contado no log");
+    if (workOrderMd5() !== md5Before) throw new Error("a OS mudou (nada pode escrever em mileage_*)");
   });
 
   await step("onde escutam, medido dentro dos contêineres (Traccar e ingestão)", async () => {
@@ -460,6 +622,24 @@ try {
   });
 
   if (WITH_WEB) {
+    await step("demo: GRANT EXECUTE em auth_login_candidates ao erp_runtime (SÓ nesta demonstração; produção = passo 5 do runbook, ato do dono)", async () => {
+      psql("GRANT EXECUTE ON FUNCTION public.auth_login_candidates(text) TO erp_runtime;");
+      // O desfecho do login sem organização é instantâneo de boot: a api relê depois de reiniciar.
+      docker(compose("restart", "api"), { timeout: 300_000 });
+      await pollUntil(
+        "login sem organização depois da concessão",
+        async () => {
+          const response = await fetchWithTimeout(`${BASE_URL}/api/v1/health/ready`);
+          const body = await response.json();
+          if (response.status !== 200) throw new Error(`readiness ${response.status}`);
+          if (body.login_without_org === "inert_no_execute") throw new Error("login_without_org ainda inert_no_execute");
+          console.log(`[traccar-demo]      login_without_org: ${body.login_without_org}`);
+        },
+        240_000,
+        3_000,
+      );
+    });
+
     await step(`web do ERP em 127.0.0.1:${WEB_PORT} (opcional, --with-web)`, async () => {
       docker(compose("up", "-d", "--build", "web"), { timeout: 1_500_000 });
       console.log(`[traccar-demo]      abra http://127.0.0.1:${WEB_PORT} e entre como o operador de despacho (${process.env.TRC_DEMO_PASSWORD ? "senha: a que você passou em TRC_DEMO_PASSWORD" : "sem TRC_DEMO_PASSWORD: sem login criado"})`);

@@ -4,10 +4,18 @@
 // descoberta, o `tx` de `findFirstTenantRls` (somente leitura, GUC da volta); e, só para a quarentena sem
 // organização resolvida, uma transação própria SEM GUC (a quarentena é global, sem tenant_id, sem coordenada, sem
 // payload — nota N-02).
+//
+// B-TRC-02 (plano v2 §6.6; emenda v2.1): recibo e quarentena passam a receber um SUJEITO (`TraccarIngressSubject`) em vez do
+// comando de posição — a posição o satisfaz como sempre, e o EVENTO entra por `toIngressSubject` (o instante do evento faz o papel
+// de `fixedAt`). `findReceipt`/`insertReceipt` ganham o `message_kind` (default 'position': os chamadores do 01 não mudam em
+// efeito). A quarentena de evento usa o MESMO episódio (instância, dispositivo, motivo) da posição — sem tipo de mensagem (§5.4,
+// P-TRC02-QUARENTENA-SEM-TIPO-DE-MENSAGEM).
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import type { TraccarQuarantineReason } from "./traccar-ingest.app.js";
+import type { VehicleTelemetrySampleInsert } from "../../modules/telemetry/vehicle-telemetry.types.js";
+import type { TraccarEventCommand } from "./traccar-event.adapter.js";
 import type { TraccarPositionCommand } from "./traccar-position.adapter.js";
 
 type Executor = PrismaClient | Prisma.TransactionClient;
@@ -24,6 +32,35 @@ export type TraccarActiveBinding = {
   readonly validFrom: Date;
 };
 
+/** O que recibo e quarentena leem de uma entrega (posição ou evento). Nunca coordenada, nunca payload. */
+export type TraccarIngressSubject = {
+  readonly instanceKey: string;
+  readonly externalDeviceKey: string;
+  readonly traccarDeviceId: string;
+  readonly externalEventKey: string;
+  readonly payloadDigest: string;
+  /** O instante do fix (posição) ou do evento. */
+  readonly fixedAt: Date;
+  readonly receivedAt: Date;
+};
+
+export type TraccarMessageKind = "position" | "event";
+
+export function toIngressSubject(command: TraccarPositionCommand | TraccarEventCommand): TraccarIngressSubject {
+  if ("messageKind" in command && command.messageKind === "event") {
+    return {
+      instanceKey: command.instanceKey,
+      externalDeviceKey: command.externalDeviceKey,
+      traccarDeviceId: command.traccarDeviceId,
+      externalEventKey: command.externalEventKey,
+      payloadDigest: command.payloadDigest,
+      fixedAt: command.occurredAt,
+      receivedAt: command.receivedAt,
+    };
+  }
+  return command as TraccarPositionCommand;
+}
+
 export type TraccarReceiptRow = {
   readonly id: string;
   readonly tenantId: string;
@@ -35,6 +72,13 @@ export type TraccarIngestionHooks = {
   readonly afterBindingLocked?: () => Promise<void> | void;
   readonly afterReceiptInsert?: () => Promise<void> | void;
   readonly beforeCommit?: () => Promise<void> | void;
+  /**
+   * B-TRC-02 (emenda v2.1 R4-5) — SÓ DE TESTE: chamada pelo serviço dentro do savepoint da amostra, imediatamente antes do
+   * INSERT. Lançar = erro sem SQLSTATE; devolver uma amostra alterada = forçar uma violação REAL do banco pelo caminho real.
+   */
+  readonly beforeSampleInsert?: (
+    sample: VehicleTelemetrySampleInsert,
+  ) => VehicleTelemetrySampleInsert | void | Promise<VehicleTelemetrySampleInsert | void>;
 };
 
 export class TraccarIngestionRepository {
@@ -78,12 +122,15 @@ export class TraccarIngestionRepository {
   }
 
   /** Fase 2, passos 4 e 6 — o recibo pela chave de identidade, se visível sob o GUC corrente. */
-  async findReceipt(command: TraccarPositionCommand): Promise<TraccarReceiptRow | undefined> {
+  async findReceipt(
+    command: TraccarIngressSubject,
+    messageKind: TraccarMessageKind = "position",
+  ): Promise<TraccarReceiptRow | undefined> {
     const rows = await this.executor.$queryRaw<TraccarReceiptRow[]>`
       SELECT id::text AS "id", tenant_id::text AS "tenantId", payload_digest AS "payloadDigest"
         FROM traccar_ingress_receipts
        WHERE instance_key = ${command.instanceKey}
-         AND message_kind = 'position'
+         AND message_kind = ${messageKind}
          AND external_event_key = ${command.externalEventKey}`;
     return rows[0];
   }
@@ -104,15 +151,17 @@ export class TraccarIngestionRepository {
    */
   async insertReceipt(input: {
     readonly tenantId: string;
-    readonly command: TraccarPositionCommand;
+    readonly command: TraccarIngressSubject;
     readonly bindingId: string;
     readonly vehicleId: string;
+    readonly messageKind?: TraccarMessageKind;
   }): Promise<string | undefined> {
+    const messageKind: TraccarMessageKind = input.messageKind ?? "position";
     const rows = await this.executor.$queryRaw<Array<{ id: string }>>`
       INSERT INTO traccar_ingress_receipts
         (tenant_id, instance_key, message_kind, external_event_key, payload_digest, binding_id, vehicle_id,
          traccar_device_id, fix_time, received_at)
-      VALUES (${input.tenantId}::uuid, ${input.command.instanceKey}, 'position', ${input.command.externalEventKey},
+      VALUES (${input.tenantId}::uuid, ${input.command.instanceKey}, ${messageKind}, ${input.command.externalEventKey},
               ${input.command.payloadDigest}, ${input.bindingId}::uuid, ${input.vehicleId}::uuid,
               ${input.command.traccarDeviceId}, ${input.command.fixedAt}, ${input.command.receivedAt})
       ON CONFLICT (instance_key, message_kind, external_event_key) DO NOTHING
@@ -139,7 +188,7 @@ export class TraccarIngestionRepository {
    * inclusive), não posições distintas; a janela `first_fix_at … last_fix_at` acompanha mínimo e máximo. Episódio
    * resolvido não reabre: a entrega seguinte abre outro. Sem coordenada, sem payload, sem organização.
    */
-  async recordQuarantine(command: TraccarPositionCommand, reason: TraccarQuarantineReason): Promise<void> {
+  async recordQuarantine(command: TraccarIngressSubject, reason: TraccarQuarantineReason): Promise<void> {
     await this.executor.$queryRaw`
       INSERT INTO traccar_quarantine_items
         (instance_key, external_device_key, reason, first_fix_at, last_fix_at, last_event_key, last_payload_digest)

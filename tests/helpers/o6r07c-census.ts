@@ -410,6 +410,7 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
     "src/modules/mobile/mobile-evidence-sync.ts: type.includes(QQ.work_order_QQ)",
     "src/modules/mobile/mobile-evidence-sync.ts: type.endsWith(QQ_photoQQ)",
     "src/modules/mobile/mobile-evidence-sync.ts: type.endsWith(QQ_signatureQQ)",
+    "src/integrations/traccar/traccar-event.schema.ts: EVENT_TYPE_PATTERN.test(type)", // B-TRC-02: validação de FORMATO do event.type (A10 → 422), não despacho; o despacho é o mapa literal enumerável (T8)
   ].map((x) => x.split("QQ").join(String.fromCharCode(34))));
   const semLinha = (x: string) => x.replace(/:[0-9]+: /, ": ");
   const SEG = /[/](work-orders|checklist-runs|dispatches)[/]:[A-Za-z0-9_]+/;

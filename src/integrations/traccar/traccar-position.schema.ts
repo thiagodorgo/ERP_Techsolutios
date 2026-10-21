@@ -7,7 +7,15 @@
 // Todo o resto — device.name/phone/contact/model/attributes, position.attributes/network/address/geofenceIds — é
 // ignorado e NUNCA lido para o domínio. Chave reservada (tenantId, tenant_id, token, secret, authorization, path,
 // bucket, storageKey) no envelope, em `position` ou em `device` dá 422 — a organização NUNCA vem do payload. Dentro
-// de `attributes` não se procura: o objeto é ignorado por inteiro.
+// de `attributes` não se procura.
+//
+// B-TRC-02 (plano v2 §6.3): de `position.attributes` passam a ser lidas SÓ as 7 chaves veiculares allowlisted (ignition,
+// motion, odometer, totalDistance, hours, power, batteryLevel), normalizadas pelo domínio fechado de
+// `src/modules/telemetry/vehicle-telemetry.bounds.ts` → `telemetry`. Forma ou faixa errada descarta o ATRIBUTO (contado), nunca
+// a posição. Nada mais de `attributes` é lido; chave reservada lá dentro continua sem ser procurada e não influencia nada.
+
+import { normalizeVehicleTelemetry } from "../../modules/telemetry/vehicle-telemetry.bounds.js";
+import type { VehicleTelemetrySample } from "../../modules/telemetry/vehicle-telemetry.types.js";
 
 export const TRACCAR_RESERVED_KEYS = [
   "tenantid",
@@ -21,7 +29,7 @@ export const TRACCAR_RESERVED_KEYS = [
 ] as const;
 
 const RESERVED = new Set<string>(TRACCAR_RESERVED_KEYS);
-const UNIQUE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,64}$/;
+export const UNIQUE_ID_PATTERN = /^[A-Za-z0-9_.:-]{1,64}$/;
 const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})$/;
 const PROTOCOL_PATTERN = /^[A-Za-z0-9_-]{1,32}$/;
 
@@ -38,7 +46,12 @@ export type TraccarPayloadErrorReason =
   | "date_invalid"
   | "valid_missing"
   | "number_invalid"
-  | "protocol_invalid";
+  | "protocol_invalid"
+  // B-TRC-02 — o envelope do `event.forward` (traccar-event.schema.ts).
+  | "event_missing"
+  | "event_id_invalid"
+  | "type_invalid"
+  | "alarm_missing";
 
 // A resposta pública é SEMPRE `{"error":{"code":"invalid_payload"}}`: o motivo (`reason`) fica só no processo,
 // para teste e métrica — nunca no corpo da resposta nem no log com o payload.
@@ -65,15 +78,19 @@ export type ParsedTraccarPosition = {
   readonly speedKnots?: number;
   readonly course?: number;
   readonly accuracy?: number;
+  /** B-TRC-02 — os atributos veiculares allowlisted, normalizados; ausente se nenhum passou. Fora da chave e do digest. */
+  readonly telemetry?: VehicleTelemetrySample;
+  /** B-TRC-02 — quantos atributos allowlisted presentes foram descartados por forma ou faixa (contagem, nunca o valor). */
+  readonly telemetryDiscarded: number;
 };
 
 type JsonObject = Record<string, unknown>;
 
-function isObject(value: unknown): value is JsonObject {
+export function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function assertNoReservedKeys(object: JsonObject): void {
+export function assertNoReservedKeys(object: JsonObject): void {
   for (const key of Object.keys(object)) {
     if (RESERVED.has(key.toLowerCase())) {
       throw new TraccarPayloadError("reserved_key");
@@ -81,7 +98,7 @@ function assertNoReservedKeys(object: JsonObject): void {
   }
 }
 
-function present(value: unknown): boolean {
+export function present(value: unknown): boolean {
   return value !== undefined && value !== null;
 }
 
@@ -106,7 +123,7 @@ function optionalCourse(value: unknown): number | undefined {
   return parsed;
 }
 
-function isoDate(value: unknown): Date {
+export function isoDate(value: unknown): Date {
   if (typeof value !== "string" || !ISO_WITH_ZONE.test(value)) {
     throw new TraccarPayloadError("date_invalid");
   }
@@ -119,7 +136,7 @@ function optionalIsoDate(value: unknown): Date | undefined {
   return present(value) ? isoDate(value) : undefined;
 }
 
-function positiveInteger(value: unknown): number | undefined {
+export function positiveInteger(value: unknown): number | undefined {
   if (!present(value)) return undefined;
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value <= 0) {
     throw new TraccarPayloadError("device_id_invalid");
@@ -175,6 +192,8 @@ export function parseTraccarPositionEnvelope(body: unknown): ParsedTraccarPositi
 
   if (typeof position.valid !== "boolean") throw new TraccarPayloadError("valid_missing");
 
+  const telemetry = isObject(position.attributes) ? normalizeVehicleTelemetry(position.attributes) : { sample: undefined, discarded: 0 };
+
   return {
     uniqueId,
     traccarDeviceId: String(traccarDeviceId),
@@ -188,5 +207,7 @@ export function parseTraccarPositionEnvelope(body: unknown): ParsedTraccarPositi
     speedKnots: optionalNonNegative(position.speed),
     course: optionalCourse(position.course),
     accuracy: optionalNonNegative(position.accuracy),
+    telemetry: telemetry.sample,
+    telemetryDiscarded: telemetry.discarded,
   };
 }

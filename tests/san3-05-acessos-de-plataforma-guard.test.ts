@@ -172,12 +172,38 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-TRC-01: a quarentena SEM organização resolvida (l.277; dispositivo não mapeado ou teto de organizações) é uma instrução em autocommit, sem GUC, só na tabela GLOBAL `traccar_quarantine_items` (sem RLS, sem tenant_id, sem coordenada, sem payload — nota N-02 do plano); não toca tabela FORCE.",
   ],
   [
-    k("L2", "src/integrations/traccar/traccar-ingestion.service.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-TRC-01: o SQL da fase 2 (vínculo FOR SHARE, recibo, quarentena por organização) é instanciado no callback de `withTenantRlsBudget` (l.156); o helper põe o setter do GUC da candidata como 1ª instrução da transação (src/database/rls.ts l.128) e o canário confere o tenant do vínculo e do recibo.",
+    k("L2", "src/integrations/traccar/traccar-ingestion.service.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-TRC-01: o SQL da fase 2 (vínculo FOR SHARE, recibo, quarentena por organização) é instanciado no callback de `withTenantRlsBudget` (l.156); o helper põe o setter do GUC da candidata como 1ª instrução da transação (src/database/rls.ts l.128) e o canário confere o tenant do vínculo e do recibo. B-TRC-02 (emenda v2.4): ×2 — a 2ª instanciação é a de eventPhaseTwo (o event.forward, l.264 do head 46dd99d1), no callback de withTenantRlsBudget: mesma forma, mesmo helper (src/database/rls.ts l.128), mesmo canário assertRowsBelongToTenant no vínculo e no recibo.",
   ],
   [
     k("L2", "src/integrations/traccar/traccar-resolution.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de findFirstTenantRls)", "×1"),
     "B-TRC-01: a sondagem da descoberta (l.238) roda no callback de `findFirstTenantRls`, que troca o GUC antes de cada volta (src/database/rls.ts l.156 e l.160), em transação somente leitura, e passa as linhas pelo canário `assertRowsBelongToTenant` antes de usá-las.",
+  ],
+  // B-TRC-02 (emenda v2.4 de escopo, docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.4-acessos.md §1.2): as 6 chaves L1 da telemetria
+  // veicular, coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados.
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "-.withSampleSavepoint", "tx", "RAW-SQL($executeRaw) OPACO", "?", "PARAMETRO(tx)", "×3"),
+    "B-TRC-02: os 3 $executeRaw de withSampleSavepoint (l.39/43/48) são SAVEPOINT vehicle_sample / ROLLBACK TO SAVEPOINT / RELEASE SAVEPOINT — controle de sub-transação sem tabela (OPACO por desenho do gerador, a classe de acquirePeriodLock* e normalizePairIdentity já congeladas); o tx é o do passo 7 da posição (phaseTwoSteps, l.468), que só existe dentro do callback de withTenantRlsBudget (phaseTwo), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128); não lê nem grava dado.",
+  ],
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.insertEvent", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
+    "B-TRC-02: o INSERT da linha de evento em vehicle_telemetry_events (l.93; tabela ENABLE+FORCE com política WITH CHECK no GUC, migração 20260879000000 l.81-86) recebe o tx do passo 7 de eventPhaseTwoSteps (l.344), que só existe dentro do callback de withTenantRlsBudget (eventPhaseTwo); o helper põe setTenantRlsContext(tx, tenantId) como 1ª instrução (src/database/rls.ts l.128) e a FK de 4 colunas amarra a linha ao recibo da mesma organização.",
+  ],
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.insertSample", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
+    "B-TRC-02: o INSERT da amostra (l.105) roda no passo 7 da posição ACEITA, dentro do savepoint vehicle_sample, sobre o MESMO tx do recibo (phaseTwoSteps l.468 → insertVehicleSample(ports.tx) l.500), nascido em withTenantRlsBudget (phaseTwo) com o setter do GUC como 1ª instrução (src/database/rls.ts l.128); Q1 = NÃO: nunca fora da transação da posição, nunca em quarentena.",
+  ],
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.latestDeviceStatus", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
+    "B-TRC-02: porta de LEITURA interna (plano v2 §6.6, v2.1 R1-3) para o B-TRC-04, sem chamador em src/** no head; SELECT filtrado por tenant_id sobre tabela FORCE RLS, executor = parâmetro tx por contrato (VehicleTelemetryRepository), exercida em tests/traccar-event-ingestion-db.test.ts só via withTenantRls sob papel NOBYPASSRLS (asTenant, l.200-201); quando o B-TRC-04 a chamar, o chamador entra no inventário e exige motivo próprio.",
+  ],
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.latestIgnition", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
+    "B-TRC-02: porta de LEITURA interna (plano v2 §6.6, v2.1 R1-3) para o B-TRC-04, sem chamador em src/** no head; SELECT filtrado por tenant_id sobre tabela FORCE RLS, executor = parâmetro tx por contrato, exercida em tests/traccar-event-ingestion-db.test.ts só via withTenantRls sob papel NOBYPASSRLS (asTenant, l.200-201); mesma regra da chave irmã latestDeviceStatus.",
+  ],
+  [
+    k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.listByVehicle", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
+    "B-TRC-02: porta de LEITURA interna (plano v2 §6.6, v2.1 R1-3) para o B-TRC-04, sem chamador em src/** no head; SELECT filtrado por tenant_id e LIMIT 1..500 sobre tabela FORCE RLS, executor = parâmetro tx por contrato; presa pelo caso \"listByVehicle sob o GUC de A devolve só A; sob o GUC de B devolve 0 de A\" de tests/traccar-event-ingestion-db.test.ts (emenda v2.4 R-A4), via withTenantRls sob papel NOBYPASSRLS.",
   ],
 ]);
 
@@ -258,7 +284,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     ]);
     assert.equal(f2.status, 0, `o gerador das grafias C3-F2 falhou:\n${f2.stderr}`);
     assert.equal(f2.stderr, "");
-    assert.match(f2.stdout, /tabelas ENABLE=111 FORCE=111 · acessores Prisma em FORCE=111/);
+    assert.match(f2.stdout, /tabelas ENABLE=112 FORCE=112 · acessores Prisma em FORCE=112/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

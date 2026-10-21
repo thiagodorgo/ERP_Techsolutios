@@ -1,0 +1,57 @@
+{
+  "event": {
+    "id": 3,
+    "attributes": {
+      "alarm": "sos"
+    },
+    "deviceId": 1,
+    "type": "alarm",
+    "eventTime": "2026-10-19T10:34:10.000+00:00",
+    "positionId": 3,
+    "geofenceId": 0,
+    "maintenanceId": 0
+  },
+  "position": {
+    "id": 3,
+    "attributes": {
+      "ignition": true,
+      "alarm": "sos",
+      "distance": 0,
+      "totalDistance": 0,
+      "motion": false,
+      "hours": 5000
+    },
+    "deviceId": 1,
+    "protocol": "osmand",
+    "serverTime": "2026-10-19T10:34:44.803+00:00",
+    "deviceTime": "2026-10-19T10:34:10.000+00:00",
+    "fixTime": "2026-10-19T10:34:10.000+00:00",
+    "valid": true,
+    "latitude": -23.55052,
+    "longitude": -46.633308,
+    "altitude": 0,
+    "speed": 0,
+    "course": 0,
+    "address": null,
+    "accuracy": 0,
+    "network": null,
+    "geofenceIds": null
+  },
+  "device": {
+    "id": 1,
+    "attributes": {},
+    "groupId": 0,
+    "calendarId": 0,
+    "name": "Viatura Sintetica TRC01",
+    "uniqueId": "trcdemo01",
+    "status": "online",
+    "lastUpdate": "2026-10-19T10:34:44.919+00:00",
+    "positionId": 2,
+    "phone": "+550000000000",
+    "model": null,
+    "contact": "Contato Sintetico",
+    "category": null,
+    "disabled": false,
+    "expirationTime": null
+  }
+}

@@ -99,6 +99,7 @@ if (!connectionString) {
       const ids = [...h.tenants];
       if (ids.length > 0) {
         for (const table of [
+          "vehicle_telemetry_events",
           "traccar_ingress_receipts",
           "field_operator_locations",
           "vehicle_tracking_bindings",

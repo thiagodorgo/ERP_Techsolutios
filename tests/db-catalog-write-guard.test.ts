@@ -128,6 +128,13 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
       },
     ],
     [
+      "traccar-event-topology.test.ts",
+      {
+        count: 3,
+        reason: "fala SOBRE o GRANT do demo (H7: regex + título + mensagem) — não escreve catálogo",
+      },
+    ],
+    [
       "inventory-migration-drill-db.test.ts",
       {
         count: 4,
