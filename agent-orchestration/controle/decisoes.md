@@ -3867,3 +3867,12 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - Planos em `docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.3.md` e `-v2.4-acessos.md`.
 
 - **`D-TRC02-MIGRACAO-TRANSACAO-EXPLICITA` (2026-10-20, emenda v2.3 do `B-TRC-02`, desenho do planejador aceito pelo orquestrador; §A6).** a migração `20260879000000_vehicle_telemetry_events` do B-TRC-02 passa a transação explícita (`BEGIN;`/`COMMIT;` no próprio arquivo), pelo mesmo mecanismo medido no B-SAN3-02 (C2-01): o `prisma migrate deploy` 7.8 executa sentença a sentença em autocommit. O down é manual, transação única, com a guarda antes de qualquer DROP. A propriedade é presa por drill com o CLI real, falha injetada após cada sentença (k = 1..17). Recomendação de regra geral, a decidir pelo dono: migração nova com mais de uma sentença e só DDL transacional leva `BEGIN`/`COMMIT` e drill por prefixo; migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.
+
+- **`D-TRC02-C10-EVENTO-SEM-DESPACHO-GUARDA` (decisão do dono, 2026-10-21).** Palavras do dono: ***"1=a"***, em resposta à pergunta do orquestrador sobre o C-10, feita junto com o NÃO da Q1, como manda o §Q1.6 do plano.
+  - **A pergunta:** o evento da viatura (alarme, SOS, ignição, cerca virtual) que chega com a viatura vinculada e SEM despacho segue a regra da Q1?
+  - **A decisão:** opção A, **guardar**.
+  - **Efeito:** o evento fica gravado para a viatura, sem pessoa. Nenhuma tela o exibe; exibir fica para o `B-TRC-04`, sob `P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO`. O código já se comporta assim (C-10/E8 do plano v2), e nada muda.
+- **`D-MIGRACAO-COM-TRANSACAO-EXPLICITA` (decisão do dono, 2026-10-21).** Palavras do dono: ***"3=aprovo"***, à regra geral recomendada pelo planejador do `B-TRC-02` (emenda v2.3) depois de a mesma classe de defeito aparecer em dois blocos seguidos (`B-SAN3-02` C2-01 e `B-TRC-02` D1).
+  - **A regra:** toda migração nova com mais de uma sentença, e só de DDL transacional, leva `BEGIN;`/`COMMIT;` no próprio arquivo e um drill por prefixo (falha injetada após cada sentença, pelo `prisma migrate deploy` real).
+  - **Exceção:** migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.
+  - **Guard de CI:** um guard reprova migração nova que viole a regra. Ele é implementado por um bloco de ferramenta (regra (1) de `D-GOV-PROPORCIONAL`), dono a nomear; até lá, vale como regra do planejador e do DBA. As migrações antigas seguem pela `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`.
