@@ -459,7 +459,7 @@ docker rm -f plan-san320-pg plan-san320-node (2026-10-21T04:51:35Z):
 plan-san320-pg
 plan-san320-node
 docker ps -a --filter name=plan-san320 -q | wc -l: 0
-erp-* ainda no ar: erp-postgres erp-redis 
+erp-* ainda no ar: erp-postgres erp-redis
 git -C C:/Users/AMP/w-plan21 status --short | wc -l: 0
 git -C C:/Users/AMP/w-plan21 rev-parse HEAD: 539b078e311a5521b0d496ba5afae8f73acc43a0
 ```
@@ -483,7 +483,7 @@ Terreno: host (node v20.19.5; `tsx` e `prisma` do `node_modules` do próprio wor
 docker rm -f plan-san320-pg2 (2026-10-21T08:49:26Z):
 plan-san320-pg2
 docker ps -a --filter name=plan-san320 -q | wc -l: 0
-containers restantes: jtrc02-b-pg jtrc02-b-redis jtrc02-a-redis jtrc02-a-pg erp-postgres erp-redis 
+containers restantes: jtrc02-b-pg jtrc02-b-redis jtrc02-a-redis jtrc02-a-pg erp-postgres erp-redis
 git -C C:/Users/AMP/w-plan21 status --short | wc -l: 0
 git -C C:/Users/AMP/w-plan21 rev-parse HEAD: 539b078e311a5521b0d496ba5afae8f73acc43a0
 ```
