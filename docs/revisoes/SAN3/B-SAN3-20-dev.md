@@ -114,6 +114,39 @@ Mecanismo: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/m
   - No head antes do bloco o mesmo roteiro dava **saldo 200 com dois lançamentos** (F14). Agora: ±100, 1 lançamento, título pago, a 2ª porta recusada.
   - **Sondas das críticas:** a `sonda-r101.mts` (R1-01) refeita é o T-K10a (com barreira) + T-K10e (sequencial): `422 cheque_not_editable`, cheque `cleared` com `title_id` NULL, `UPDATE … AND status='registered'` → 0 linhas. A `sonda-r201.mts` forma A (R2-01) refeita é o T-K11a + T-K11c: `422 invalid_status_transition`, título `paid`/100, cheque `cleared`, lançamento com `title_id`; o `bounce` seguinte restaura (título `open`, saldo 0). As duas rodam com os serviços reais e o perdedor observado bloqueado; os arquivos `.mts` originais das críticas não estão no disco (só os logs) e por isso viraram testes.
 
+### R7 — bateria §4.6, passos 6 a 8 (suíte inteira, build, guardas, CI)
+
+- `npm run check` → ec 0 · `npm run lint` → ec 0 · `npm run build` → ec 0 · `node --check Kpis/app.js` → ec 0 · `git diff --check` → ec 0 · `git diff --quiet 7ab2fe71 HEAD -- Kpis` → ec 0 (**`Kpis/**` intocado**).
+- `npm test` **local (Windows)**, na forma do job `backend` da CI (runner em memória, `DATABASE_URL` do descartável presente — o job da CI também a define, `ci.yml` l.40): `331 arquivo(s) · 3820 teste(s) · pass 3809 · fail 9 · skipped 2`. Os 9 vermelhos estão em arquivos que o bloco **não toca** (`git diff --quiet 7ab2fe71 HEAD -- tests/san3-05-runtime-role-guard-db.test.ts tests/san3-09-bootstrap-platform-admin-db.test.ts tests/traccar-position-ingestion-db.test.ts tests/work-order-invoicing-migration-drill-db.test.ts src/database src/integrations scripts` → exit 0) e são de ambiente desta máquina: `san3-05` (3 subtestes, `SyntaxError: missing ) after argument list` ao montar o script de papel no Windows), `san3-09` (drill de bootstrap), `traccar-position-ingestion-db` ×2 (orçamento de tempo sob a carga da suíte inteira) e o `EBUSY` do drill do B-SAN3-02 (R3/R6). Sem `DATABASE_URL`, o mesmo `npm test` dá `3264 · pass 3171 · fail 1 · skipped 92` — o 1 vermelho é `core-saas-role-authority.test.ts` lançando `DATABASE_URL is required to initialize Prisma Client.` no import (com a variável: 12/12).
+- **O juiz é a CI (Linux)** — rodada `40122569009` (push) e `40122572370` (pull_request) sobre `044e33cd` (o código deste bloco; os commits seguintes só mexem neste relatório): **todos os jobs `success`**. Job `backend`: `331 arquivo(s) · 3829 teste(s) · pass 3827 · fail 0 · skipped 2`. Job `backend-postgres` (lista curada com as **3 suítes novas** e o guard de zero skip): `# tests 444 · pass 444 · fail 0 · skipped 0`, com `[drill K12] diff atual: 72 sentenças; fixture: 72; a mais: 0; a menos: 0` no Postgres da CI (a fixture gerada aqui vale lá), `ok … T-K2d`, `ok … T-K11h`, `ok … [T-D(f)] k = 1..3`. Job `frontend`: `# tests 1339 · pass 1339`.
+- **Risco residual 8 (contrato `409`):** a tela de títulos chama `PATCH /financial-titles/:id/status` (`frontend/src/modules/finance/titles/financial-titles.service.ts` l.69, `TitlesListView.tsx` l.123) e trata **qualquer** erro pelo `ApiError.safeMessage` na linha — um `409 title_status_conflict` aparece como mensagem, não quebra a tela. Nenhum cliente usa `/cheques` nem `payment_method` (`git grep -iE "/cheques|payment_method" -- frontend/src mobile/flutter_app/lib` → vazio).
+
+### Critérios K1–K12 — fechamento (contagens reais)
+
+| K | testes (arquivo · nº) | resultado | mutações (todas vermelhas, R5) |
+|---|---|---|---|
+| K1 | memória: 9 casos K1 + T-K1d (cheque-title-link) · `-db`: K1-db | verde | M1, M2, M3, M4, M5 |
+| K2 | memória: 5 K2 (inclui T-K8d) · `-db`: 4 K2-db + T-K2d + T-K2e | verde; H3 medida (perdedor bloqueado no `UPDATE` do título, sem `40P01`) | M6, M7, M8 (no T-K2d; equivalente no T-K2b), M9 |
+| K3 | memória: 3 K3 + T-K3c · `-db`: K3-db | verde | M10, M11 |
+| K4 | memória: 5 K4 + T-K4a/b/c HTTP | verde | M12, M13, M14 |
+| K5 | memória: T-K5 HTTP ×2 · `-db`: T-K5 ×2 · roteiros nos dois executores | verde (±100, 1 lançamento, título pago) | M16 |
+| K6 | memória: K6 + T-K6b · `-db`: K6-db · `financial-entry-undo-owners` 6/6 com a ordem nova | verde (asserção por `reason`) | M17, M18 |
+| K7 | drill T-D(a), (b), (c), (e), (f) k = 1..3 | verde | M19, M20′, M21 |
+| K8 | `npm run check`; `financial-entry-link-census` 3/3; `financial-uow-journal-classification` sem `applyPayment`; T-K8d | verde | M22, M36 |
+| K9 | memória: K9 ×2 + T-K9a/T-K9c HTTP | verde | M25, M26 |
+| K10 | memória: T-K10d (+T-K10e mem) · `-db`: T-K10a, T-K10b, T-K10c, T-K10e | verde; F-DEV-02 (R2) | M27, M28, M29 |
+| K11 | memória: T-K11d, T-K11e, T-K11f · `-db`: 5 do parcial + T-K11a, T-K11b, T-K11c, T-K11h (3 execuções) | verde; H11 medida | M30, M31, M32, M33, M37 |
+| K12 | drill T-D(d′) contra a fixture (sha256 `592908e9…`, 76 linhas / 72 sentenças, gerada antes de editar schema/migração) | verde local e na CI | M21, M34 |
+
+**Contagem de testes novos do bloco:** memória **38** (`tests/cheque-title-link.test.ts`) · `-db` **24** (`cheque-title-link-atomic-db` 15 + `financial-title-status-cas-db` 9) · drill **6** → **68** (plano: 58). Mutações executadas: **33** linhas + M5 (todas vermelhas no teste-alvo; M8 vermelha no T-K2d).
+
+### Limpeza (§C5)
+
+- `dist/` (do `npm run build`) e 25 diretórios `storage/checklist-attachments/*` (da suíte inteira) removidos com `git clean -fdX dist storage` (só ignorados; dry-run antes: 26 entradas).
+- Bases do drill: cada execução derruba as suas (`DROP DATABASE … WITH (FORCE)` no `after`); `san320_m5` (M5) derrubada à mão. Restavam `san320_drill_482ce0e734` e `…_main`, deixadas pela execução do drill do B-SAN3-02 que a queda do Codex interrompeu — caem com o container.
+- Diretórios `%TEMP%/san320-drill-*`: os meus foram removidos; `san302-drill-YayLa8` e `san302-drill-f1gYx3` (da execução interrompida do Codex) ficam — a remoção foi negada pelo classificador desta sessão; são 2 diretórios de ~200 KB.
+- Container `dev-san320-pg` removido ao fim: `docker rm -f dev-san320-pg` → `dev-san320-pg`; `docker ps -a | grep -c dev-san320` → 0. Base viva (`erp-postgres`/`erp-redis`, 5432/6379) não foi tocada. `node_modules` próprio preservado.
+
 ## P1 — pré-voo
 
 ### Medição 0 — retomada pela Emenda E1
@@ -183,7 +216,7 @@ Mecanismo: `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-20-dev-evidencia/m
 
 ## Bateria completa
 
-Em andamento. Os resultados finais e as três rodadas com denominador constante serão apensados antes de deixar o PR pronto.
+Registrada na seção "Retomada": R6 (passos 2–5) e R7 (passos 6–8, com a CI).
 
 ## Falsificações de premissa
 
