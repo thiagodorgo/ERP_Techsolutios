@@ -71,15 +71,6 @@ export function currencyMismatchError(): FinancialEntryError {
   return new FinancialEntryError(422, "FINANCIAL_ENTRY_UNPROCESSABLE", "currency_mismatch", "currency must match the account currency.");
 }
 
-export function chequeRequiredError(): FinancialEntryError {
-  return new FinancialEntryError(
-    422,
-    "FINANCIAL_ENTRY_UNPROCESSABLE",
-    "cheque_required",
-    "Register the cheque linked to the financial title and clear it through the cheque flow.",
-  );
-}
-
 export function periodClosedError(competencia: string): FinancialEntryError {
   return new FinancialEntryError(
     422,

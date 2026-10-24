@@ -120,9 +120,13 @@ export class InMemoryChequeRepository implements ChequeRepository {
     return cheque?.tenantId === tenantId ? cheque : undefined;
   }
 
+  // B-SAN3-20 (D1′) — check-and-set SÍNCRONO, como `transition`: nenhum await entre ler a linha e gravar.
+  // Ler por `await this.findById(...)` abriria uma janela em que uma transição intercalada (deposit/clear)
+  // seria sobrescrita pela cópia velha — o equivalente em memória do `WHERE status = 'registered'`.
   async update(input: UpdateChequeInput): Promise<Cheque | undefined> {
-    const current = await this.findById(input.tenantId, input.chequeId);
-    if (!current || current.deletedAt != null || current.status !== "registered") return undefined;
+    const current = this.cheques.get(input.chequeId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status !== "registered") return undefined;
 
     const updated: Cheque = {
       ...current,
@@ -139,8 +143,9 @@ export class InMemoryChequeRepository implements ChequeRepository {
   }
 
   async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
-    const current = await this.findById(tenantId, chequeId);
-    if (!current || current.deletedAt != null || current.status !== "registered") return undefined;
+    const current = this.cheques.get(chequeId);
+    if (!current || current.tenantId !== tenantId || current.deletedAt != null) return undefined;
+    if (current.status !== "registered") return undefined;
 
     const removed: Cheque = {
       ...current,
