@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-10-24 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: o Gemini propõe, o orquestrador confere e o script grava; o KPI segue CONGELADO para os PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 24/10: o faturamento fica atômico e o produto vendável sobe para 33%",
-    "pr": null,
+    "pr": 457,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
