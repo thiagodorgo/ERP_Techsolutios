@@ -388,7 +388,6 @@ export class TraccarIngestionService {
     command: TraccarPositionCommand,
   ): Promise<TraccarConfirmResult<PhaseTwoResult>> {
     const { tx, repository, locations, operatorAt } = ports;
-    let binding: TraccarActiveBinding | undefined; // atribuído no passo 2
     // Q1 = NÃO (decisão do dono de 19/10): a quarentena nunca guarda amostra — só o motivo, como no B-TRC-01.
     const quarantined = async (reason: TraccarQuarantineReason): Promise<TraccarConfirmResult<PhaseTwoResult>> => {
       await repository.recordQuarantine(command, reason);
@@ -409,13 +408,12 @@ export class TraccarIngestionService {
     if (bindings.length > 1) {
       throw new Error("traccar_binding_not_unique");
     }
-    binding = bindings[0]!;
-    const locked = binding;
+    const binding = bindings[0]!;
 
     // 3. fix válido, dentro do vínculo e não no futuro.
     const fixReason = fixQuarantineReason(command, this.now());
     if (fixReason) return quarantined(fixReason);
-    if (command.fixedAt.getTime() < locked.validFrom.getTime()) return quarantined("fix_before_active_binding");
+    if (command.fixedAt.getTime() < binding.validFrom.getTime()) return quarantined("fix_before_active_binding");
 
     // 4. reenvio: o recibo ANTES de resolver o operador (N2-03).
     const existing = await repository.findReceipt(command);
@@ -429,13 +427,13 @@ export class TraccarIngestionService {
     }
 
     // 5. o operador no instante do fix (A2-12).
-    const operator = await operatorAt(command.fixedAt, locked.vehicleId);
+    const operator = await operatorAt(command.fixedAt, binding.vehicleId);
     if (operator.kind !== "single") {
       return quarantined(NO_OPERATOR_REASON[operator.kind]);
     }
 
     // 6. o recibo (corrida entre duas entregas, ou chave de outra organização).
-    const receiptId = await repository.insertReceipt({ tenantId, command, bindingId: locked.id, vehicleId: locked.vehicleId });
+    const receiptId = await repository.insertReceipt({ tenantId, command, bindingId: binding.id, vehicleId: binding.vehicleId });
     if (!receiptId) {
       const raced = await repository.findReceipt(command);
       if (!raced) {
@@ -467,7 +465,7 @@ export class TraccarIngestionService {
     // B-TRC-02 — a amostra veicular, pendurada no recibo da POSIÇÃO, em sub-transação: nunca derruba a posição por domínio.
     if (command.telemetry) {
       await withSampleSavepoint(tx, this.options.logger, errorCode, async () => {
-        await this.insertVehicleSample(ports, this.sampleRow(tenantId, locked, receiptId, command));
+        await this.insertVehicleSample(ports, this.sampleRow(tenantId, binding, receiptId, command));
       });
     }
     await repository.beforeCommit();
