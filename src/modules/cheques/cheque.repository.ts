@@ -57,6 +57,14 @@ export function invalidAccountReferenceError(): ChequeError {
   return new ChequeError(400, "CHEQUE_INVALID", "invalid_account_reference", "The referenced financial account does not exist for this tenant.");
 }
 
+export function invalidTitleReferenceError(): ChequeError {
+  return new ChequeError(400, "CHEQUE_INVALID", "invalid_title_reference", "The referenced financial title does not exist for this tenant.");
+}
+
+export function titleDirectionMismatchError(): ChequeError {
+  return new ChequeError(422, "CHEQUE_UNPROCESSABLE", "title_direction_mismatch", "The cheque direction does not match the financial title direction.");
+}
+
 export function accountInactiveError(): ChequeError {
   return new ChequeError(422, "CHEQUE_UNPROCESSABLE", "account_inactive", "The referenced financial account is inactive.");
 }
@@ -70,6 +78,7 @@ export class InMemoryChequeRepository implements ChequeRepository {
       id: randomUUID(),
       tenantId: input.tenantId,
       accountId: input.accountId,
+      titleId: input.titleId,
       direction: input.direction,
       chequeNumber: input.chequeNumber,
       bank: input.bank,
@@ -94,6 +103,7 @@ export class InMemoryChequeRepository implements ChequeRepository {
       .filter((cheque) => cheque.tenantId === input.tenantId)
       .filter((cheque) => (input.includeDeleted ? true : cheque.deletedAt == null))
       .filter((cheque) => input.accountId === undefined || cheque.accountId === input.accountId)
+      .filter((cheque) => input.titleId === undefined || cheque.titleId === input.titleId)
       .filter((cheque) => input.direction === undefined || cheque.direction === input.direction)
       .filter((cheque) => input.status === undefined || cheque.status === input.status);
 
@@ -112,13 +122,13 @@ export class InMemoryChequeRepository implements ChequeRepository {
 
   async update(input: UpdateChequeInput): Promise<Cheque | undefined> {
     const current = await this.findById(input.tenantId, input.chequeId);
-    if (!current || current.deletedAt != null) return undefined;
-    // A checagem "editável só quando 'registered'" vive no SERVIÇO (paridade com o Prisma). Aqui só grava.
+    if (!current || current.deletedAt != null || current.status !== "registered") return undefined;
 
     const updated: Cheque = {
       ...current,
       ...(input.chequeNumber !== undefined ? { chequeNumber: input.chequeNumber } : {}),
       ...(input.bank !== undefined ? { bank: input.bank } : {}),
+      ...(input.titleId !== undefined ? { titleId: input.titleId ?? undefined } : {}),
       ...(input.dueDate !== undefined ? { dueDate: input.dueDate ?? undefined } : {}),
       ...(input.notes !== undefined ? { notes: input.notes ?? undefined } : {}),
       ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
@@ -130,8 +140,7 @@ export class InMemoryChequeRepository implements ChequeRepository {
 
   async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
     const current = await this.findById(tenantId, chequeId);
-    if (!current || current.deletedAt != null) return undefined;
-    // "Só 'registered' pode ser removido" é checado no SERVIÇO (assertEditable → 422) antes daqui.
+    if (!current || current.deletedAt != null || current.status !== "registered") return undefined;
 
     const removed: Cheque = {
       ...current,

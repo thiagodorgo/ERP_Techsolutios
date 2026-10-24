@@ -136,6 +136,12 @@ export function parseRequiredUuid(value: unknown, field: string): string {
   return normalized;
 }
 
+export function parseNullableUuid(value: unknown, field: string): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  return parseRequiredUuid(value, field);
+}
+
 export function parseLimit(value: unknown): number {
   if (value === undefined || value === null || value === "") return 20;
   const parsed = Number.parseInt(String(value), 10);

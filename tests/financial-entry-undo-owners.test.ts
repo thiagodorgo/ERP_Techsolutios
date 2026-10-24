@@ -114,7 +114,7 @@ test("[C2/P5] buildUndoOwnerPolicies célula a célula: par/cheque recusam nas d
 
 test("[C2/P5] a tabela REAL cobre toda recusa (não lança); DELETE_UNDO_ORDER e REVERSE_UNDO_ORDER conhecidos", () => {
   assert.doesNotThrow(() => assertUndoOrdersCoverEveryRefusal(buildUndoOwnerPolicies(errorFactories)));
-  assert.deepEqual([...DELETE_UNDO_ORDER], ["reversal_pair", "title_settlement", "cheque_link"]);
+  assert.deepEqual([...DELETE_UNDO_ORDER], ["reversal_pair", "cheque_link", "title_settlement"]);
   assert.deepEqual([...REVERSE_UNDO_ORDER], ["reversal_pair", "cheque_link"]);
 });
 

@@ -9,6 +9,7 @@ export function toChequeDto(cheque: Cheque) {
   return {
     id: cheque.id,
     accountId: cheque.accountId,
+    titleId: cheque.titleId ?? null,
     direction: cheque.direction,
     chequeNumber: cheque.chequeNumber,
     bank: cheque.bank,
@@ -33,6 +34,7 @@ export function toChequeListDto(result: ListChequeResult) {
     items: result.items.map((cheque) => ({
       id: cheque.id,
       accountId: cheque.accountId,
+      titleId: cheque.titleId ?? null,
       direction: cheque.direction,
       chequeNumber: cheque.chequeNumber,
       bank: cheque.bank,

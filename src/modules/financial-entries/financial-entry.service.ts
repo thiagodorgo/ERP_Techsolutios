@@ -36,6 +36,7 @@ import {
   accountNotFoundError,
   alreadyReversedError,
   chequeEntryImmutableError,
+  chequeRequiredError,
   reversalPairImmutableError,
   currencyMismatchError,
   entryNotFoundError,
@@ -180,6 +181,8 @@ export class FinancialEntryService {
     const currency = resolveCurrency(body.currency, account.currency);
     const occurredAt = parseOccurredAt(body.occurred_at ?? body.occurredAt);
     const competencia = deriveCompetencia(occurredAt);
+    const paymentMethod = parsePaymentMethod(body.payment_method ?? body.paymentMethod);
+    if (paymentMethod === "check") throw chequeRequiredError();
 
     // CHOKEPOINT (D-Ω4-A3) — toda escrita de lançamento atravessa ANTES de gravar (competência fechada
     // → 422 period_closed). Mesma tabela financial_period_closes do título (chokepoint reusado).
@@ -191,7 +194,7 @@ export class FinancialEntryService {
       direction: parseDirection(body.direction),
       amount: parseAmount(body.amount),
       currency,
-      paymentMethod: parsePaymentMethod(body.payment_method ?? body.paymentMethod),
+      paymentMethod,
       category: parseOptionalCategory(body.category),
       occurredAt,
       competencia,
@@ -421,6 +424,7 @@ export class FinancialEntryService {
     if (account.currency !== title.currency) {
       throw currencyMismatchError();
     }
+    if (paymentMethod === "check") throw chequeRequiredError();
     // receivable → dinheiro ENTRA (in); payable → dinheiro SAI (out).
     const direction = title.direction === "receivable" ? "in" : "out";
 

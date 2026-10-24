@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 
 import type {
-  ApplyTitlePaymentInput,
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   FinancialTitle,
@@ -31,8 +30,6 @@ export interface FinancialTitleRepository {
   findActiveBySource(tenantId: string, sourceType: string, sourceId: string, direction: string): Promise<FinancialTitle | undefined>;
   update(input: UpdateFinancialTitleInput): Promise<UpdateFinancialTitleResult>;
   changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined>;
-  // Ω4-4 — WRITE-PATH da liquidação: paid_amount + status juntos (contorna a máquina de status).
-  applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined>;
   softDelete(tenantId: string, financialTitleId: string, deletedBy?: string): Promise<DeleteFinancialTitleResult>;
   // B-O6R-02 F3 (Ω6R-DIN-001) — leitura ESTÁVEL para CLASSIFICAR o erro quando o CAS casa 0 linhas
   // (distinguir 404 / title_cancelled / title_already_paid / overpayment sobre a tupla travada).
@@ -118,6 +115,15 @@ export function titleAlreadyPaidError(): FinancialTitleError {
 
 export function overpaymentError(): FinancialTitleError {
   return new FinancialTitleError(422, "FINANCIAL_TITLE_UNPROCESSABLE", "overpayment", "Payment amount exceeds the outstanding balance of the title.");
+}
+
+export function titleStatusConflictError(): FinancialTitleError {
+  return new FinancialTitleError(
+    409,
+    "FINANCIAL_TITLE_CONFLICT",
+    "title_status_conflict",
+    "The financial title status changed concurrently; retry the operation.",
+  );
 }
 
 export function amountBelowPaidError(): FinancialTitleError {
@@ -313,28 +319,12 @@ export class InMemoryFinancialTitleRepository implements FinancialTitleRepositor
   }
 
   async changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
-    const current = await this.findById(input.tenantId, input.financialTitleId);
-    if (!current || current.deletedAt != null) return undefined;
+    const current = this.titles.get(input.financialTitleId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (current.status !== input.fromStatus) return undefined;
 
     const updated: FinancialTitle = {
       ...current,
-      status: input.status,
-      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
-      updatedAt: new Date(),
-    };
-    this.titles.set(updated.id, updated);
-    return updated;
-  }
-
-  async applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
-    const current = await this.findById(input.tenantId, input.financialTitleId);
-    if (!current || current.deletedAt != null) return undefined;
-
-    // Ω4-4 — grava paid_amount ABSOLUTO + status juntos, contornando a máquina de status (o service já
-    // validou a invariante paid_amount <= amount). Único caminho a alcançar partially_paid/paid.
-    const updated: FinancialTitle = {
-      ...current,
-      paidAmount: input.paidAmount,
       status: input.status,
       ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
       updatedAt: new Date(),
