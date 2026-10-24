@@ -31,7 +31,7 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Platform configuration | full | none | none | none | none | none | none | read | limited-support |
 | Tenant administration | full | full | read | none | none | none | none | read | limited-support |
 | User and role assignment | full | full | limited | none | none | none | none | read | limited-support |
-| Dashboard and operational overview | full | full | full | full | scoped | scoped | scoped | read | scoped |
+| Dashboard and operational overview | full | full | full | full | none | none | scoped | read | scoped |
 | Backend navigation menu | full | tenant-scoped | scoped | scoped | scoped | scoped | scoped | read | scoped |
 | Field operator location | support-audited | full-tenant | read-history | send-own/read-tenant | none | none | send-own | full-read | support-view |
 | Master data | full | full | approve/edit | edit-scoped | read | read/edit-scoped | read | read | read-support |
@@ -156,3 +156,4 @@ Operational rules:
 - Approval-related permissions should be refined together with APPROVAL_LIMITS.md.
 - This matrix must stay consistent with the operational mission in PRODUCT_CONTEXT.md and the rules consolidated in agent-orchestration/docs/regras-de-negocio.md.
 - This matrix is the baseline and should be decomposed later into project documentation under the standard structure.
+- Dashboard and operational overview × `finance`/`inventory` = `none` (2026-10-21, `D-SAN3-04B-PAINEL-PROPRIO`): Finance and Inventory do not use the general dashboard and have no `dashboard:read`; after login, Finance lands on its own panel `/finance` and Inventory on `/inventory` (first route allowed by the catalog, delivered by `B-DASH-PERFIL`, PR #446).

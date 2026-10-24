@@ -3877,6 +3877,26 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **Exceção:** migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.
   - **Guard de CI:** um guard reprova migração nova que viole a regra. Ele é implementado por um bloco de ferramenta (regra (1) de `D-GOV-PROPORCIONAL`), dono a nomear; até lá, vale como regra do planejador e do DBA. As migrações antigas seguem pela `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`.
 
+## D-SAN3-04B-PAINEL-PROPRIO (decisão do dono, 2026-10-21) — Financeiro e Estoque usam o próprio painel; a matriz segue o código
+
+- **Pergunta do orquestrador (§A2, conflito matriz × catálogo):** *"Financeiro e Estoque: a RBAC_MATRIX promete a eles um painel geral com
+  recorte, mas hoje cada um abre direto o próprio painel (/finance e /inventory). O que vale?"* Opções: "Ajustar a matriz (Recomendado)" —
+  só registro, o item 12 fecha; ou "Fazer o painel com recorte" — `dashboard:read` aos dois + painel recortado, bloco de permissão com junta.
+- **Resposta literal do dono:** ***"Ajustar a matriz (Recomendado)"***.
+- **Fatos medidos em `origin/main` `539b078e`:**
+  - `RBAC_MATRIX.md:34` dava `scoped` a `finance` e `inventory` no "Dashboard and operational overview";
+  - `src/modules/core-saas/permissions/catalog.ts`: os blocos `finance` e `inventory` não têm `dashboard:read`;
+  - `tests/dashboard-profile-permissions.test.ts`: 4/4 verdes — a rota inicial de cada perfil é a primeira permitida pelo catálogo
+    (Financeiro → `/finance`, Estoque → `/inventory`), entregue pelo `B-DASH-PERFIL` (PR #446);
+  - `tests/dashboard-summary.test.ts`: o caso "[permissao] … sem dashboard:read retornam 403" usa o papel `finance` (403 no painel geral é o esperado).
+- **Consequência:**
+  - `RBAC_MATRIX.md:34`: `finance` e `inventory` passam de `scoped` para `none`, com nota na seção Notes;
+  - o **item 12 do portão** (`PLANO_SAN3.md`) fecha: a home não abre mais em 403, e o painel geral deixa de ser promessa para esses dois papéis;
+  - a `P-027` continua ABERTA, com o mesmo dono `B-SAN3-04b`, só no que sobra: chaves órfãs do catálogo e o apelido `os.read` no front
+    (emenda C2-04), e o texto do `docs/navigation-matrix.md`, que ainda concede o Dashboard a `finance`/`inventory`;
+  - a `P-SAN3-04A-DASHBOARD-SCOPED` deixa de contar com "+2" (Financeiro e Estoque); segue com N = 1 (`field_technician`).
+- **Derivado pelo orquestrador (§A6), não dito pelo dono:** o valor `none` na célula (a capacidade "painel geral" não existe para esses papéis)
+  e a redação das emendas acima. Corrige-se numa linha se o dono preferir outra palavra.
 ## Registro de 24/10/2026 — o topo é do Claude
 
 - **`D-TOPO-E-O-CLAUDE` (decisão do dono, 2026-10-24).** O dono determinou: *"vc faz 1.1 Auditar a reprovação e planejar o conserto, sempre trocar o astra por vc. esgota o codex rapido e vc tambem cobre que cair por limite. retorne o plano antes de começar para aprovação"*. Ao receber o plano, aprovou: *"1- 60 uss. 2- nao. 3-sim. aprovado, pode começar, meu filho!"*
