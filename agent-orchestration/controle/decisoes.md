@@ -3876,3 +3876,8 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **A regra:** toda migração nova com mais de uma sentença, e só de DDL transacional, leva `BEGIN;`/`COMMIT;` no próprio arquivo e um drill por prefixo (falha injetada após cada sentença, pelo `prisma migrate deploy` real).
   - **Exceção:** migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.
   - **Guard de CI:** um guard reprova migração nova que viole a regra. Ele é implementado por um bloco de ferramenta (regra (1) de `D-GOV-PROPORCIONAL`), dono a nomear; até lá, vale como regra do planejador e do DBA. As migrações antigas seguem pela `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`.
+
+## Registro de 24/10/2026 — o topo é do Claude
+
+- **`D-TOPO-E-O-CLAUDE` (decisão do dono, 2026-10-24).** O dono determinou: *"vc faz 1.1 Auditar a reprovação e planejar o conserto, sempre trocar o astra por vc. esgota o codex rapido e vc tambem cobre que cair por limite. retorne o plano antes de começar para aprovação"*. Ao receber o plano, aprovou: *"1- 60 uss. 2- nao. 3-sim. aprovado, pode começar, meu filho!"*
+  - **Consequência derivada, declarada (§A6):** o papel de topo do §C7.6 — plano inicial do bloco e, em toda reprovação de junta, auditoria mais plano de resolução — passa a ser do Claude (`planejador-mestre`), nunca do Codex Astra. Braço que cair por limite é coberto pelo Claude, com a substituição declarada no artefato e na ata.
