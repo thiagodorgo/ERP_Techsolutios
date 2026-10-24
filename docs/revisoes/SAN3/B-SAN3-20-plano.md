@@ -518,3 +518,20 @@ Pergunta feita pelo orquestrador: *"B-SAN3-20 (cheque × baixa): hoje dá para b
 Resposta literal do dono: ***"A: só pela compensação (Recomendado)"***.
 
 Consequência: o D4 do §2.3 segue a opção **A** — `/pay` e `/financial-entries` com `payment_method=check` → `422 cheque_required`; dinheiro de cheque só entra pela compensação do cheque registrado. Registrar como `D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO` no PR do bloco (revê a frase de `D-Ω4-7-NO-TITLE`, conforme §5.4). O inspetor do bloco confere que esta resposta está apensada.
+
+---
+
+## Emenda E1 (24/10, orquestrador) — preparar o cliente Prisma antes do baseline
+
+**Origem:** falsificação de premissa F-DEV-01, registrada pelo dev (Codex) em `docs/revisoes/SAN3/B-SAN3-20-dev.md` do PR #456. Medido: depois de `npm ci` num worktree novo, o
+passo 0 (baseline) dá `249/280` com 31 falhas `SyntaxError: The requested module '@prisma/client' does not provide an export named 'Prisma'` — o cliente gerado
+não existe ainda. O `npm ci` não roda `prisma generate`; o `package.json` tem `"db:generate": "prisma generate"`.
+
+**Mudança (só de ordem de preparo, sem efeito de produto):** no §3.3, antes do passo 0, entra o **passo −1: `npm run db:generate` sobre o `schema.prisma` da BASE
+(antes de qualquer edição)**. O passo 1 (fixture do drift) e o `db:generate` posterior (depois de editar o schema) ficam como estão.
+
+**Critério de aceite da emenda:** com o passo −1, o passo 0 dá `280/280` em memória e `30/30` no `-db`, como o plano previa; se não der, o dev para de novo e registra.
+**Mutação/controle:** pular o passo −1 reproduz `249/280` com o erro acima (é exatamente a medição F-DEV-01).
+
+**Revisão da emenda:** é ordem de preparo de ambiente, não muda propriedade, escopo nem critério de produto; a junta do bloco confere que o baseline publicado
+saiu do passo −1 sobre a base (comando e saída no relatório do dev).

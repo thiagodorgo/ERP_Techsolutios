@@ -11,6 +11,30 @@
 
 ## P1 — pré-voo
 
+### Medição 0 — retomada pela Emenda E1
+
+- **Comando:** `npm run db:generate` sem `DATABASE_URL`.
+- **Saída resumida:** exit 1, `PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL`.
+- **Veredito:** tentativa ambiental incompleta; `prisma.config.ts` exige a variável até para gerar o cliente. Nenhum arquivo versionado foi alterado pelo comando.
+
+- **Comando:** criação do Postgres 16 descartável `dev-san320-pg` em `127.0.0.1:55433`, seguida de `DATABASE_URL=<dev-san320> npm run db:generate` sobre o `schema.prisma` da base.
+- **Saída resumida:** Prisma Client 7.8.0 gerado em `node_modules/@prisma/client`; exit 0.
+- **Veredito:** passo −1 da Emenda E1 concluído sobre o schema-base, sem tocar em `src`, `tests`, `prisma`, contratos ou registros.
+
+- **Comando:** repetição literal do baseline de memória da Medição 2.
+- **Saída resumida:** 9 arquivos; `# tests 280`, `# pass 280`, `# fail 0`, `# skipped 0`; exit 0.
+- **Veredito:** baseline de memória restaurado exatamente ao esperado pela Emenda E1.
+
+- **Comando:** `DATABASE_URL=<dev-san320> npx prisma migrate deploy`, seguido de `DATABASE_URL=<dev-san320> CORE_SAAS_PERSISTENCE=prisma npm test -- tests/cheque-clear-bounce-atomic-db.test.ts tests/financial-pay-title-atomic-db.test.ts tests/financial-title-invariants-db.test.ts`.
+- **Saída resumida:** 113 migrações aplicadas; 3 arquivos; `# tests 30`, `# pass 30`, `# fail 0`, `# skipped 0`; exit 0.
+- **Veredito:** baseline PostgreSQL verde e sem pulos; autorizado seguir ao passo 1 do plano.
+
+### Medição 3 — fixture do drift antes de qualquer edição de schema/migração
+
+- **Comando:** `DATABASE_URL=<dev-san320> npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` sobre a base com as 113 migrações, materializado em `tests/fixtures/prisma-migrate-diff-baseline.sql`.
+- **Saída resumida:** 76 linhas de sentença iniciadas por `ALTER|CREATE|DROP`; SHA-256 `592908e92be1f3a0402ff715c6c8f499c8bb052fa104f0f095ba220d3ef5ff64`.
+- **Veredito:** fixture K12 criada antes de qualquer alteração em `prisma/schema.prisma` ou migração, conforme passo 1.
+
 ### Medição 1 — terreno e dependências
 
 - **Comando:** `git status --short --branch; git rev-parse HEAD; git rev-parse --abbrev-ref HEAD; git rev-parse origin/main`.
