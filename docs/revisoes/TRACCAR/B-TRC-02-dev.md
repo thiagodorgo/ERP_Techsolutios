@@ -363,6 +363,7 @@ E 20 · F 13 · G 10); baseline N = 149 executado; meta 2N = 298 **não atingida
 critério → teste → mutação vale; **mutações**: 72 no catálogo (35 host + 37 banco; 54 do B-TRC-02 + 18 re-executadas do 01), todas
 vermelhas salvo: 2 controles de lacuna verdes como esperado, a M-E13 equivalente (classe coberta pela MUT-16@01) e a MUT-10@01 "não
 mede" (substituída pela MUT-10′@01, vermelha); `backend-postgres` **434**.
+SUPERADO pelas seções v2.3/v2.4 (103/463).
 
 ## Emenda v2.2 de ESCOPO — os dois pedidos APROVADOS e aplicados
 
@@ -563,3 +564,67 @@ push. Base viva (`erp-postgres`/`erp-redis`) e as portas 5432/6379/3000/5173/505
   `backend` completa fica para a CI; aqui foi medida arquivo a arquivo.
 - **Parecer do `agente-dba-guardiao`:** PRONTO PARA DBA desde o passo 5; a migração A mudou com a reversão (sai `fix_key`, o índice
   parcial e o `'position_sample'` do CHECK) — o parecer deve ser sobre o head final.
+
+## Ciclo 2 — conserto do achado b-1
+
+> **Identidade:** `dev-trc02-c2-argon` (NOVA). **Executor:** Antigravity (`agy`). **Modelo:** Gemini 4 Argon (`gemini-4-argon`, nível menor declarado, §C7.6).
+> Não votou no ciclo 1, não achou o defeito (`jurado-trc02-b-opus`) e não planejou o conserto (`planejador-trc02-c2-fable` — §C7.4-bis).
+> **Norma única do ciclo 2:** `docs/revisoes/TRACCAR/B-TRC-02-ciclo2-auditoria-e-plano.md` (cópia de `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-ciclo2-auditoria-e-plano.md`).
+> **Worktree:** `C:/Users/AMP/w-trc02`, ramo `feat/traccar-b-trc-02`, head de partida `c33e5d6f7a037070f85b0d496485c1635d332cdd` (commit R do redator).
+
+### 1. Merge da `main` (§3.6 — commit M)
+
+| # | Comando | Saída | Veredito |
+|---|---|---|---|
+| 1 | `git fetch origin && git rev-parse HEAD origin/main` | `HEAD` = `c33e5d6f7a037070f85b0d496485c1635d332cdd`; `origin/main` = `7ab2fe71d0d40c2be51a790f0d20893651cdf972` | medido |
+| 2 | `git merge --no-ff origin/main` | auto-merge em `RBAC_MATRIX.md`, `agent-orchestration/controle/pendencias.md` e `docs/revisoes/SAN3/PLANO_SAN3.md`; conflitos **só** em `agent-orchestration/controle/decisoes.md` e `agent-orchestration/controle/pendencias-indice.md` | exatamente os 2 arquivos previstos no §0/§3.6 |
+| 3 | resolução de `agent-orchestration/controle/decisoes.md` (ambos os lados preservados em ordem cronológica pelos cabeçalhos: bloco 20–21/10 do ramo → `D-SAN3-04B-PAINEL-PROPRIO` de 21/10 da `main` → `D-TOPO-E-O-CLAUDE` de 24/10 do commit R); `grep -c` de cada `D-…` antes × depois | `D-TRC02-Q1-NAO`: 2/0 → 2 · `D-TRC02-ESCOPO`: 2/0 → 2 · `D-TRC02-CHAVE-DE-EVENTO`: 1/0 → 1 · `D-TRC02-Q2-GRANT-SO-NO-DEMO`: 1/0 → 1 · `D-TRC02-MIGRACAO-TRANSACAO-EXPLICITA`: 1/0 → 1 · `D-TRC02-C10-EVENTO-SEM-DESPACHO-GUARDA`: 1/0 → 1 · `D-MIGRACAO-COM-TRANSACAO-EXPLICITA`: 1/0 → 1 · `D-TOPO-E-O-CLAUDE`: 1/0 → 1 · `D-SAN3-04B-PAINEL-PROPRIO`: 0/1 → 1; marcadores `<<<<<<<`/`=======`/`>>>>>>>` = 0 | verde (0 linhas apagadas, §A2) |
+| 4 | conferência de `agent-orchestration/controle/pendencias.md` (auto-merge): `grep -c` antes (`c33e5d6f`/`origin/main`) × depois | `P-TRC02-`: 11/0 → 11 · `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`: 1/0 → 1 · `D-SAN3-04B-PAINEL-PROPRIO`: 0/2 → 2 · `P-027`: 3/3 → 3 · `P-SAN3-04A-DASHBOARD-SCOPED`: 1/1 → 1 | verde |
+| 5 | `python agent-orchestration/controle/gerar-indice-pendencias.py` (rodado 2×) | `indice: 610 cabecalhos / 599 IDs \| {'FECHADA': 152, 'ABERTA': 455, 'SEM-STATUS': 3} \| baldes {'-': 152, 'C': 65, 'B': 176, '?': 3, 'A': 214} \| diferidas-materiais 13` nas 2 execuções; sha256 `0617EB13E4D19EFC04687F49B2ED753DFF0B486752D57B8F7A9240DD239D6261` idêntico (`idempotente=True`) | verde |
+| 6 | `git add agent-orchestration/controle/decisoes.md agent-orchestration/controle/pendencias-indice.md && git diff --cached --check && git diff --check` | saída vazia (ec 0) | verde |
+| 7 | `git commit -m "Merge remote-tracking branch 'origin/main' into feat/traccar-b-trc-02"` | commit M = `96821af82d1086949ce66baaaf8da9517c824ef3` (merge `c33e5d6f` + `7ab2fe71`, 5 arquivos) | verde |
+| 8 | `DATABASE_URL="postgresql://build:build@localhost:5432/build" npm run db:generate && npm run check` | Prisma Client v7.8.0 gerado; `tsc -p tsconfig.json --noEmit` ec 0 | verde |
+
+### 2. Conserto do código (§3.2), re-ancoragem da `M-E16″` (§3.3) e prova de equivalência (§3.8 (1)–(4) — commit C)
+
+| # | Comando | Saída | Veredito |
+|---|---|---|---|
+| 1 | `git diff --numstat 38504427 HEAD -- src/` | `5	7	src/integrations/traccar/traccar-ingestion.service.ts` (uma linha; 590 → 588 linhas) | §3.2 / §3.8(1) |
+| 2 | `git diff --numstat 38504427 HEAD -- docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` + conferência do catálogo | `5	2`; `ALL.length = 86` · `has M-E16' = false` · `has M-E16'' = true`; âncora `if (operator.kind !== "single") {` única em `traccar-ingestion.service.ts` | §3.3 |
+| 3 | `git commit` de `src/integrations/traccar/traccar-ingestion.service.ts` e `docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs` | commit C = `1887250352d6bc9792a8ea42486d66c52f132ff7` (`fix(traccar): phaseTwoSteps sem o andaime da Q1 = SIM revertida e M-E16″ ancorada no passo 5 (B-TRC-02, ciclo 2)`) | §3.1 |
+| 4 | `ts.transpileModule` (`ES2022`, `removeComments: true`) sobre `git show 38504427:<service>` (377 linhas JS) × `git show 18872503:<service>` (375 linhas JS) | diferem **exatamente** nas 7 linhas do andaime: `-L226: let binding;`, `-L242: binding = bindings[0];`, `-L243: const locked = binding;` → `+L241: const binding = bindings[0];` e nas 4 leituras `locked` → `binding` (`L247→L245`, `L258→L256`, `L262→L260`, `L291→L289`); normalizado `\blocked\b` → `binding`, resta **só a forma da declaração** | §3.8(2) |
+| 5 | `node C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-hunks.mjs C:/Users/AMP/w-trc02 c1485c94 18872503 src/integrations/traccar/traccar-ingestion.service.ts` (md5 `392a997bdf254ff580c12650e8ee1a42`) × controle positivo sobre `38504427` | em `18872503`: `phaseTwoSteps` tem **só** `+ { tx, repository, locations, operatorAt }` (1), `+ phaseTwoSteps` (8 = comentário + passo 7 `withSampleSavepoint`) e `- { repository, locations, operatorAt }` / `locations` / `operatorAt` / `repository` / `phaseTwoSteps` (destructuring) → **linhas fora das faixas = 0**. Controle positivo (`38504427`): acusa `+ phaseTwoSteps > binding` (1), `+ phaseTwoSteps > locked` (1), `+ phaseTwoSteps > operator` (1), `+ phaseTwoSteps > receiptId` (1), `+ phaseTwoSteps` (10) e `- phaseTwoSteps > binding` / `operator` / `receiptId` (as 7 linhas) | §3.8(3) |
+| 6 | `grep -c -E '\blocked\b\|let binding' src/integrations/traccar/traccar-ingestion.service.ts` e `grep -n 'const binding = bindings\[0\]!;' src/integrations/traccar/traccar-ingestion.service.ts` | `0` · `302:    const binding = bindings[0]!;` (evento) e `411:    const binding = bindings[0]!;` (posição) | §3.8(4) |
+| 7 | `node C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-b/zz-jtrc02b-decl.mjs` (`28ed176ae738c54af77b7434c095e6c5`) `38504427` × `18872503` e `c1485c94` × `18872503` + conferência do §3.5 | `eventPhaseTwoSteps`, `quarantined`, `sampleRow`, `insertVehicleSample`, `publishAfterCommit`, `NO_OPERATOR_REASON`, `quarantineWithoutTenant`, `createTraccarIngestAppFromEnv`, `computeExternalEventKey`, `computePayloadDigest`, `lockActiveBinding`, `attachLocation`: todos **IGUAL**; 9 testes intocáveis do 01 sem diff contra `c1485c94`; 5 arnês `1 0`, `1 1`, `1 0`, `1 1`, `1 1`; 3 corpos de jurado nos blobs `649c6f80`, `3fa735d1`, `2b749424` | §3.5 |
+
+### 3. Bateria de validação (§3.7) e mutações do `SERVICE` (§3.3 / §3.8(6))
+
+| # | Comando | Saída | Veredito |
+|---|---|---|---|
+| 1 | `npm run check && npm run lint` | `tsc -p tsconfig.json --noEmit` ec 0 · `npm run check` ec 0 | verde |
+| 2 | Suítes de host (§3.7 passo 2): `node --test --import tsx --test-reporter=tap <suíte>` | `traccar-event-contract` `17/17` · `traccar-event-sample` `11/11` · `traccar-event-listener` `12/12` · `traccar-event-logs` `5/5` · `traccar-event-topology` `9/9` · `traccar-position-contract` `13/13` · `auth-invariant-guards` `11/11` · `db-catalog-write-guard` `2 testes, pass 1, fail 0, skipped 1` (caso `-db` sem `DATABASE_URL` no host) · `san3-05-acessos-de-plataforma-guard` `35/35` — `fail 0` em todas | verde |
+| 3 | Suítes `-db` do fluxo da posição e do bloco (§3.7 passo 3 / §3.8(5); contêiner Linux `dev-trc02-c2-tl`, Postgres 16 + Redis 7 próprios, papel efêmero `NOSUPERUSER`) | `traccar-event-sample-db` `13/13` · `traccar-event-ingestion-db` `21/21` · `traccar-event-rls-db` `9/9` · `traccar-event-migration-drill-db` `6/6` · `traccar-position-ingestion-db` `22/22` · `traccar-quarantine-db` `6/6` · `traccar-idempotency-db` `9/9` · `traccar-resolution-race-db` `5/5` · `traccar-binding-uniqueness-db` `6/6` · `san3-05-runtime-role-guard-db` `12/12` — `fail 0`, `skipped 0` em todas | verde |
+| 4 | Mutações do `SERVICE` (§3.7 passo 4 / §3.8(6)): `node docs/revisoes/TRACCAR/B-TRC-02-evidencias/run-mutations.mjs /w db "M-E09,M-E16'',M-E17,M-E18,M-E22,M-E37b,M-E38,MUT-10′@01"` (TAP em `docs/revisoes/TRACCAR/B-TRC-02-evidencias/results-db-c2.jsonl`) | **8/8 vermelhas** nos casos nomeados, `tsc: 0` em todas, **8/8 `restoredOk: true`** (por sha256) — tabela detalhada abaixo | verde |
+| 5 | Forma do job `backend-postgres` 1× local (§3.7 passo 5; contêiner Linux `dev-trc02-c2-tl`, `npm run db:seed`, 55 suítes extraídas de `.github/workflows/ci.yml`, `CORE_SAAS_PERSISTENCE=prisma RBAC_DB_PARITY=1 LOG_LEVEL=silent`) | `# tests 463 # pass 463 # fail 0 # cancelled 0 # skipped 0` | verde |
+| 6 | Regressão forma `backend` (memória, sem `CORE_SAAS_PERSISTENCE` exportado — `unset CORE_SAAS_PERSISTENCE`) + `o6r07c-census-guard` + `traccar-dev-topology` + `npm run build` (`dist/` removido depois) · `node scripts/sync-agent-agents.mjs --check` · `node --check Kpis/app.js` · `git diff --check` (§3.7 passo 6) | regressão §9.7 passo 4 (41 arquivos): `# tests 400 # pass 394 # fail 0 # skipped 6`, ec 0 · `o6r07c-census-guard` `32/32` · `traccar-dev-topology` `12/12` · `core-saas-role-authority` `12/12` (na rodada `DATABASE_URL="" npm test` do host sem contêiner, 336 arquivos / 3282 testes: `pass 3187, skipped 93`, e os 2 `fail` são artefato de `DATABASE_URL=""` vazio e `REDIS_URL` sem contêiner no host; o job `backend` completo com Postgres+Redis descartáveis roda no check-run da CI após o push, §3.7 passo 7) · `npm run build` ec 0 · `[agents-sync] OK — 79 agentes, espelho consistente` · `Kpis/app.js` ok · `git diff --check` ec 0 | verde |
+
+**Detalhe das 8 mutações do `SERVICE` re-executadas no ciclo 2 (`docs/revisoes/TRACCAR/B-TRC-02-evidencias/results-db-c2.jsonl`):**
+
+| ID | Propriedade | `tsc` | TAP (`tests/pass/fail/skipped`) | Caso(s) vermelho(s) (`notOk`) | `restoredOk` | Veredito |
+|---|---|---|---|---|---|---|
+| `M-E09` | evento não exige operador (C-10) | `0` | `21 / 5 / 16 / 0` | 16 casos de `traccar-event-ingestion-db` (inclui `"evento: viatura vinculada SEM despacho — 204 e a linha (o evento é dado da viatura, C-10)"`) | `true` | vermelho |
+| **`M-E16''`** | quarentena por operador nunca guarda amostra (Q1 = NÃO) | `0` | `13 / 12 / 1 / 0` | `"amostra: posição em quarentena por operador — 0 recibo, 0 localização, 0 amostra (Q1 = NÃO)"` (F3 l.273, por contagem) | `true` | **vermelho** |
+| `M-E17` | amostra no MESMO tx da posição | `0` | `13 / 4 / 9 / 0` | 9 casos de `traccar-event-sample-db` (inclui F1, F5, F10, F12) | `true` | vermelho |
+| `M-E18` | sem atributo allowlisted, nenhuma amostra | `0` | `13 / 12 / 1 / 0` | `"amostra: sem atributo allowlisted — nenhuma linha sample"` (F4) | `true` | vermelho |
+| `M-E22` | nada em `work_orders.mileage_*` | `0` | `13 / 12 / 1 / 0` | `"amostra: nenhuma escrita em work_orders (md5 da OS igual antes e depois)"` (F6) | `true` | vermelho |
+| `M-E37b` | tenant do payload nunca é dica (posição/amostra) | `0` | `13 / 12 / 1 / 0` | `"amostra: attributes.tenantId = B com dispositivo de A — amostra em A, B 0/0"` (F11) | `true` | vermelho |
+| `M-E38` | quarentena de evento grava | `0` | `21 / 18 / 3 / 0` | E5 (`unmapped_device`), E5′ (`delivery_count = 2`), E18 (`resolution_budget_exceeded`) | `true` | vermelho |
+| `MUT-10′@01` | conteúdo divergente não é sucesso (passo 6 da posição) | `0` | `9 / 8 / 1 / 0` | `"idempotência: duas divergentes concorrentes — uma 204 e uma 409"` | `true` | vermelho |
+
+### 4. Contagens re-medidas (§3.4 / §3.9) e limpeza
+
+- **Testes novos do bloco (inalterados):** **103** (A 17 · B 11 · C 12 · D 5 · H 9 · E 21 · F 13 · G 9 · M 6; 0 novos, 0 removidos no ciclo 2).
+- **Job `backend-postgres`:** **463 / 463**, `fail 0`, `skipped 0` (1× local no contêiner Linux + check-run da CI no head empurrado; comentário do `.github/workflows/ci.yml` inalterado).
+- **Catálogo de mutações (`mutations.mjs`):** **86** entradas (`M-E16'` substituída por `M-E16''`, 1 por 1).
+- **Baseline N e meta 2N (§3.9):** N = 149 executado; déficit `P-TRC02-DEFICIT-2N` (aberta com dono) inalterado.
+- **Limpeza (ciclo 2):** `docker ps -a --format '{{.Names}}' | grep -c 'dev-trc02-c2'` = `0`; `docker network ls --format '{{.Name}}' | grep -c 'dev-trc02-c2'` = `0`; `dist/` removido; base viva (`erp-postgres`/`erp-redis`, 5432/6379) e contêiner alheio (`dev-san320-pg`) nunca tocados.
