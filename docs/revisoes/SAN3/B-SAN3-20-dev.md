@@ -5,6 +5,7 @@
 - Worktree: `C:/Users/AMP/w-san320`.
 - Branch: `fix/cheque-x-baixa`.
 - Base inicial: `origin/main@7ab2fe71d0d40c2be51a790f0d20893651cdf972`.
+- PR: `#456` — aberto como **rascunho bloqueado**, sem autorização de merge.
 - Plano: v3 final, lido integralmente com as críticas r1/r2 e a resposta literal do dono: **"A: só pela compensação (Recomendado)"**.
 - Regra de parada: premissa do plano falsificada pelo código ou pela execução é registrada aqui com comando e saída; o DEV não improvisa remédio novo.
 
@@ -48,5 +49,6 @@ Não iniciada: a parada ocorreu no passo 0 da bateria. Resultado disponível: ba
 ## Limpeza
 
 - Container descartável `dev-san320-pg` removido ao fim.
+- **Verificação:** `docker ps -a --filter name=dev-san320- --format '{{.Names}}'` não retornou containers; `git diff --check` ficou verde após normalizar duas linhas com espaço final na cópia do plano.
 - Base viva `erp-postgres`/`erp-redis` e portas 5432/6379 não foram tocadas.
 - `node_modules` próprio preservado conforme §C5; nenhum artefato de build foi produzido.
