@@ -10,13 +10,13 @@
 | 0 terreno | GRAVADO |
 | 1 vermelho-controle (B1/B14-db/F1) | GRAVADO |
 | 2 backend: escopo, resolver estrito, AND, openOnly | GRAVADO |
-| 3 backend: cursor por id | EM APURAÇÃO |
+| 3 backend: cursor por id | PARADA — F-1 |
 | 4 app: rede (scope/openOnly/cursor) | EM APURAÇÃO |
 | 5 app: reconciliação, retenção, lock, sementes | EM APURAÇÃO |
 | 6 app: Home/lista sob a E1 | EM APURAÇÃO |
 | 7 registro | EM APURAÇÃO |
 | Bateria §8 | EM APURAÇÃO |
-| Falsificações de premissa | EM APURAÇÃO |
+| Falsificações de premissa | F-1 GRAVADA |
 | Limpeza §C5 | EM APURAÇÃO |
 
 ## Etapa 0 — terreno (GRAVADO)
@@ -41,3 +41,36 @@
 - `node --test --import tsx tests/san3-13-wo-list-scope.test.ts tests/san3-13-wo-list-prisma-where.test.ts` + as 4 regressões → `# tests 29 # pass 29 # fail 0`.
 - `DATABASE_URL=…55313… node --test --import tsx tests/san3-13-wo-list-cursor-db.test.ts` → B17-db `ok`, B18-db `ok`, B14-db `not ok` (esperado: o cursor é o commit 3). Teardown escopado: `select count(*) from tenants` → `0` depois da suíte.
 - Ajuste de teste declarado: B3 buscava `"Via ii"` e casava também `"Via iii"` (`contains`) — trocado para `"Via iii"`; B18-db: OS `cancelled` exige `financial_cancellation_decision` (CHECK `work_orders_cancelled_decision_check`).
+
+## Etapa 3 — backend: cursor por `id` — PARADA por premissa falsificada (GRAVADO)
+
+### FALSIFICAÇÃO F-1 — o contrato do §3 não diz como a 1ª página da caminhada entra na ordem `id desc`
+**O que o plano escreve (v3):**
+- §3 `cursor`: "Modo cursor: ordem **`id desc`** …, página = `id < cursor`"; "Com `cursor`, `offset` ausente ou `0`".
+- §3 `limit/offset/total`: "Modo `offset` continua `created_at desc, code desc`".
+- §3 `pagination`: "`nextCursor` — regra única: `id` do último item se `items.length === limit`, senão `null` (**em ambos os modos**)".
+- §4.1 (app): `GET /work-orders?scope=assigned&openOnly=true&limit=100[&cursor=<nextCursor>]` — a **1ª página vai SEM `cursor`**.
+- Nenhum trecho define o que seleciona o "modo cursor" numa requisição sem `cursor`.
+
+**A leitura literal** (modo cursor ⇔ `cursor` presente) foi implementada e medida: a 1ª página sai em `created_at desc, code desc` e o seu `nextCursor` é o `id` do último item; a 2ª página em diante é `id < cursor` em `id desc`. As duas ordens não são a mesma, então a caminhada pula OS e termina "completa".
+
+**Execução (head do ramo `9cfa5111` + o cursor literal não commitado, salvo em `<scratchpad>/cursor-letra.patch`):**
+`DATABASE_URL=postgresql://…@127.0.0.1:55313/erp_san313 node --test --import tsx tests/san3-13-wo-list-cursor-db.test.ts` →
+```
+not ok 1 - B14-db (CA-9): 6 OS de A, 5 com created_at idêntico até µs e 1 no mesmo ms — limit=1 entrega todas e termina nextCursor=null
+    FALTARAM=["b403c39a-9491-4329-a088-892a8e341aa4","8c5e4399-c720-4f2c-889d-78bb58b3004d"] paginas=5
+ok 2 - B17-db …
+ok 3 - B18-db …
+```
+**Consequência:** é a classe do CRIT-11/R2-1 (OS ainda do técnico não entregue, caminhada "completa", purga no aparelho), reaberta pelo contrato. A classe não depende do Postgres: vale em qualquer conjunto em que a ordem por `created_at` difira da ordem por `id` (uuid aleatório — quase sempre). O CA-9 do próprio plano a pega.
+
+**O que falta decidir (é contrato público, `API_CONTRACTS.md`; não é do dev — §C2.2 e a regra do mandato "não improvise remédio"):** o que coloca a 1ª página na ordem `id desc`. Leituras possíveis, SEM escolha minha:
+1. um parâmetro que o app já manda na 1ª página seleciona o modo (ex.: `scope=assigned` ou `openOnly=true` ⇒ ordem `id desc`) — muda a ordem dessas listas também para a web;
+2. um marcador explícito na 1ª página (ex.: `cursor=` de início, ou `paginate=cursor`) — muda o §3 ("cursor que não é UUID → 400") e o §4.1;
+3. a regra do `nextCursor` muda ("só no modo cursor") — sozinha não fecha: a 1ª página continua sem modo.
+
+**Estado do trabalho na parada:**
+- Commits no ramo (não empurrado): `f6b1ea37` (vermelho-controle B1/B14-db/F1) e `9cfa5111` (escopo, resolver estrito, AND por cláusula, `openOnly`), ambos verdes no que cobrem (29/29 sem banco; B17-db e B18-db verdes no Postgres próprio).
+- Não commitado no worktree: o cursor na leitura literal (5 arquivos de `src/modules/work-orders/`, `+62 −13`), cópia em `<scratchpad>/cursor-letra.patch`. Ao retomar: aplicar a emenda do planejador sobre ele.
+- Não iniciados: commits 4-7 (app: rede, reconciliação/retenção/lock/sementes, Home/lista; registro). Nenhum depende da escolha acima, exceto o parâmetro que o app manda na 1ª página (§4.1, CA-13).
+- Terreno: worktree `C:/Users/AMP/w-san313` intacto; container `dev-san313-pg` **parado** (`docker stop`, não removido — `docker start dev-san313-pg` na retomada; porta 127.0.0.1:55313).
