@@ -7,6 +7,7 @@ import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/api_error.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/permissions/permission_resolver.dart';
+import '../../core/sync/sync_models.dart';
 import '../../features/expenses/data/expense_repository.dart';
 import '../../features/expenses/domain/expense_models.dart';
 import '../../features/work_orders/data/work_order_repository.dart';
@@ -122,15 +123,14 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
         .where((o) => o.tenantId == session.activeTenant.tenantId)
         .toList();
     final openOrders = allTenantOrders.where((o) => !o.status.isFinal).toList();
-    final todayOrders = allTenantOrders
+    // B-SAN3-13 (E1, "Só as abertas") — "OS hoje" conta as ABERTAS agendadas hoje; e o tile que contava as
+    // concluídas (sempre 0 depois de cada sync, já que a OS concluída e sincronizada sai do aparelho) passa a contar
+    // o que o técnico ainda tem a ENVIAR: OS com `syncStatus` diferente de sincronizado.
+    final todayOrders = openOrders
         .where((o) => o.scheduledAt != null && _sameDay(o.scheduledAt!, today))
         .toList();
-    final doneCount = allTenantOrders
-        .where(
-          (o) =>
-              o.status == WorkOrderStatus.completed ||
-              o.status == WorkOrderStatus.approved,
-        )
+    final toSyncCount = allTenantOrders
+        .where((o) => o.syncStatus != SyncStatus.synced)
         .length;
     final pendingApprovalCount = allTenantOrders
         .where((o) => o.status == WorkOrderStatus.pendingApproval)
@@ -188,10 +188,14 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                           padding: EdgeInsets.only(bottom: 10),
                           child: LinearProgressIndicator(),
                         ),
-                      if (woRepository.lastPullError != null &&
+                      if ((woRepository.lastPullError != null ||
+                              woRepository.lastPullIncomplete) &&
                           !woRepository.isPulling) ...[
                         _WoPullErrorBanner(
-                          message: woRepository.lastPullError!,
+                          message:
+                              woRepository.lastPullError ??
+                              'Não foi possível baixar todas as suas OS agora. '
+                                  'Os dados podem estar desatualizados.',
                           onRetry: () => woRepository.refresh(),
                         ),
                         const SizedBox(height: 10),
@@ -210,8 +214,8 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: MobileStatTile(
-                              value: '$doneCount',
-                              label: 'Concluídas',
+                              value: '$toSyncCount',
+                              label: 'A sincronizar',
                               color: ErpMobileTheme.success,
                             ),
                           ),
