@@ -561,3 +561,66 @@ Reter a OS com vistoria ou material pendente **não é regra nova**: é a Q3 já
 | Rc2-7 | Dev reinterpretar o escopo e "aproveitar" para tocar `checklists/**` ou `prestador/**` | PROIBIDO explícito (§C); o inspetor mede o diff pela lista de §F |
 
 **Resumo em 3 linhas:** 2 defeitos reais (C2-01 grave, C2-02 não grave), 1 artefato de processo (C2-03), 1 nota (C2-04); **7 requisitos (RQ-1..RQ-6 + F24 reforçado dentro de RQ-2), ≥12 testes novos, 12 mutações, 0 perguntas ao dono.** Conserto só em `mobile/flutter_app/**` + registro; backend intocado (C1 carrega); C2 refeita; C3 revalida.
+
+## Ciclo 3 — plano de resolução (reprovação da junta de DADO, ciclo 2 · `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`, §C7.4)
+
+**Papel · modelo:** `planejador-san313-c3-fable`, `planejador-mestre` em **Fable** (`claude-fable-5-1`), topo, identidade nova; sem substituição. Quem achou (`jurado-san313-c3-opus`) não planeja nem desenvolve; o dev do ciclo 3 é identidade nova ≠ achador ≠ planejador (§C7.4-bis). Insumos: `R-B-SAN3-13-ciclo2.md`, `c3-voto.json`, `c3-evidencia.md`, `c1-voto.json`, `c2b-voto.json`; tudo medido no objeto `cbf2db292f0643b9647017005c361a2e11da61c7` por `git show`/`git grep` (§A7).
+
+### A. Auditoria do C3-01 — defeito real, NÃO grave; causa no processo (texto da E2)
+| Pergunta | Medido no objeto `cbf2db29` | Resposta |
+|---|---|---|
+| O código emite os 4 motivos? | `work-order.validators.ts:54` → `(400, "WORK_ORDER_FILTER_INVALID", "invalid_scope")`; `:61` → `"invalid_open_only"`; `work-order.service.ts:489-491` → `(503, "WORK_ORDER_SCOPE_UNAVAILABLE", "scope_resolver_unavailable")`; `:501-503` → `"scope_resolution_failed"` | sim |
+| São públicos? | `tests/san3-13-wo-list-scope.test.ts:85-97` (B4/CA-3) afirma por HTTP `body.error.code` e `body.error.reason` | sim — `error.reason` é contrato |
+| O contrato os traz? | `git show cbf2db29:docs/claude-code-handoff/API_CONTRACTS.md \| grep -c` → `invalid_scope 0 · invalid_open_only 0 · scope_resolver_unavailable 0 · scope_resolution_failed 0` (os outros 6 códigos = 1) | não |
+| O plano exigia? | v3 §3 l.215 (`invalid_scope`), l.218 (os 2 motivos do 503), l.219 (`invalid_open_only`); CA-3 l.281; CA-8 l.286; §14 l.408 | sim |
+| De onde veio a omissão? | E2 l.438-439 ("Texto exato do contrato… substituindo a linha da v3") só mudou a paginação e **não** carregou os motivos de `scope`/`openOnly`/503; o dev copiou fielmente (`cmp` igual, 1180 bytes — medido pela C3); nenhuma decisão os retira | **artefato do planejador** (texto da E2), não erro do dev |
+| Grave pela régua do §C7 item 8(2)? | não perde dado, não vaza entre organizações, não quebra permissão, não erra dinheiro — o código responde certo; só o documento não diz | **NÃO grave** |
+
+**Veredito:** C3-01 é **defeito real do entregável** (contrato público incompleto, reproduzível por comando, critério atingível e exigido pela própria v3), **não artefato de medição**; a **causa** está no processo (o texto exato da E2 perdeu os motivos). Reprovou porque no ciclo 2 todo `bloqueia dentro-do-bloco` reprova; no ciclo 3 não bloquearia. O conserto é **documental**, 1 linha.
+
+### B. Texto exato do contrato (substitui, para fins de conferência, o bloco `> ` da E2; a E2 fica como histórico, não se reescreve)
+Em `docs/claude-code-handoff/API_CONTRACTS.md`, a linha que começa por `` `GET /api/v1/work-orders` — filtros: `` (hoje l.32) passa a ser, byte a byte:
+
+> `GET /api/v1/work-orders` — filtros: `status`, `priority`, `assignedOperatorId`, `assignedUserId`, `from`, `to`, `search`, `scope=assigned` (forçado para papel de campo), `openOnly=true`. **Paginação em dois modos, excludentes:** (1) **offset** (padrão): `limit` (1..100, default 20), `offset` (≥0); ordem `created_at desc, code desc`; `pagination = {limit, offset, total, nextCursor: null}`. (2) **cursor**: `paginate=cursor` **obrigatório em toda página, inclusive a primeira**; ordem `id desc` (uuid, total e exata); `cursor=<uuid>` opcional = `id` do último item da página anterior (ausente na 1ª página) → página = `id < cursor`; `offset` ausente ou `0`; `pagination = {limit, offset: 0, total (sem a cláusula do cursor), nextCursor}` com `nextCursor` = `id` do último item se `items.length === limit`, senão `null`. Erros `400 WORK_ORDER_FILTER_INVALID` (`error.code`; o motivo vai em `error.reason`): `scope` presente e ≠ `assigned` → `invalid_scope`; `openOnly` presente e ≠ `true` → `invalid_open_only`; `paginate` ≠ `cursor` → `invalid_paginate`; `cursor` sem `paginate=cursor` → `invalid_cursor_mode`; `cursor` que não é UUID → `invalid_cursor`; `paginate=cursor` com `offset>0` → `invalid_cursor_offset`. `503 WORK_ORDER_SCOPE_UNAVAILABLE` quando o escopo do ator não pode ser resolvido (`error.reason`): referência estrita ausente → `scope_resolver_unavailable`; referência lançando → `scope_resolution_failed`.
+
+O que muda em relação à E2 é **só a frase dos erros**: entram `scope`/`openOnly` no 400 (antes dos motivos de paginação), a nota de que o motivo vai em `error.reason`, e os 2 motivos do 503. Nada de rota, filtro, paginação ou DTO muda. "Presente" = valor não vazio (`parseListScope`/`parseOpenOnly` tratam ausente, `null` e `""` como default).
+
+### C. PERMITIDO / PROIBIDO do ciclo 3
+- **PERMITIDO (só isto):** `docs/claude-code-handoff/API_CONTRACTS.md` (a linha de §B) · registro: `docs/revisoes/SAN3/B-SAN3-13-dev.md` (seção "Ciclo 3", curta) e este plano (esta seção) · `agent-orchestration/omega/**` (R-, ata, votos, mandatos) · corpos de jurado novos em `.claude/agents/` + espelho `.agents/agents/` (se o orquestrador criar a C3 nova).
+- **PROIBIDO:** todo caminho de código e teste (`src/**`, `tests/**`, `prisma/**`, `frontend/**`, `mobile/**`, `scripts/**`, `.github/**`), `Kpis/**`, `PLANO_SAN3.md`, **`agent-orchestration/controle/pendencias.md`** e `decisoes.md` (nada a abrir ou fechar — §D; e tocar `pendencias.md` tiraria a C2b da regra (1)), lockfiles, `.env*`. **Sem merge da `main` no ramo durante o ciclo 3** (o PR está `MERGEABLE` em `cbf2db29`; um merge traria caminhos de código ao diff e cruzaria o escopo da C1/C2b).
+- **Dev:** identidade nova (IA externa com limite primeiro — `D-IAS-EXTERNAS-PRIMEIRO`; senão Claude Opus, declarado), ≠ `jurado-san313-c3-opus` ≠ `planejador-san313-c3-fable`. **1 commit** sobre `cbf2db29` no ramo `fix/mobile-minhas-os`: `docs(contracts): GET /work-orders — motivos invalid_scope/invalid_open_only e do 503 no contrato (B-SAN3-13, ciclo 3)`. Bateria: `git diff --check` · `node scripts/sync-agent-agents.mjs --check` (só se tocar corpos) · push → **CI verde no head novo (H3)**. Sem Docker, sem Postgres, sem base viva, sem código. **Rollback:** `git revert` do commit.
+
+### D. C3-02, C3-03, C3-04 — nada a fazer (1 linha cada na ata, nenhuma pendência)
+- **C3-02** (PLANO_SAN3: texto antigo riscado só em parte): a norma "riscar sem apagar" **não existe na ref** (`grep -c -i 'riscad|riscar'` em CLAUDE.md = 0, PLANO_SAN3.md = 0 — medido pela C3; §A7: norma não escrita não se aplica); o texto antigo está no histórico do git. **Nada.**
+- **C3-03** (índice põe #32/#33 em FECHADAS antes do merge): é o que o §12 manda ("fechar com prova no PR"); só vale na `main` com o merge. **Nada.**
+- **C3-04** (5 hunks de `import` fora da lista nominal do §5): consequência sintática das funções permitidas; 0 hunk em guard/get/assign/trava (medido pela C3, `fnmap.py`). **Nada.**
+
+### E. Critério de aceite do ciclo 3 (por comando, no checkout de H3 = head novo do PR #460)
+| CA | Comando | Esperado | Vermelho-controle |
+|---|---|---|---|
+| CA-c3-1 | `for k in invalid_scope invalid_open_only scope_resolver_unavailable scope_resolution_failed; do printf "$k="; grep -c "$k" docs/claude-code-handoff/API_CONTRACTS.md; done` | os 4 = `1` | na base `cbf2db29` os 4 = `0` |
+| CA-c3-2 | `awk '/^## Ciclo 3 — plano de resolução/{f=1} f && /^> `GET \/api\/v1\/work-orders`/{sub(/^> /,""); print; exit}' docs/revisoes/SAN3/B-SAN3-13-plano.md \| tr -d '\r' > p.txt; grep -m1 '^`GET /api/v1/work-orders` — filtros' docs/claude-code-handoff/API_CONTRACTS.md \| tr -d '\r' > c.txt; cmp p.txt c.txt` | `cmp` igual (o texto de §B é o contrato, byte a byte) | 1 caractere trocado em `c.txt` → `cmp` acusa |
+| CA-c3-3 | `git diff 8a7885f4 H3 -- src/modules/work-orders \| grep '^+' \| grep -o -E '"(invalid_[a-z_]+\|scope_[a-z_]+)"' \| tr -d '"' \| sort -u \| while read r; do grep -q "$r" docs/claude-code-handoff/API_CONTRACTS.md \|\| echo "FALTA $r"; done` (só o que o BLOCO acrescentou desde o head-base `8a7885f4`; o módulo inteiro tem motivos pré-existentes de outras rotas, fora do bloco) | saída vazia — os 8 motivos do bloco (`invalid_scope`, `invalid_open_only`, `invalid_paginate`, `invalid_cursor_mode`, `invalid_cursor`, `invalid_cursor_offset`, `scope_resolver_unavailable`, `scope_resolution_failed`) estão no contrato | `invalid_fabricado` acrescentado a uma cópia da saída do grep → `FALTA`; na base `cbf2db29`, `FALTA` ×4 |
+| CA-c3-4 | `git diff --name-only cbf2db29..H3 \| grep -E '^(src\|tests\|prisma\|frontend\|mobile\|scripts\|\.github)/\|^Kpis/\|PLANO_SAN3\|controle/(pendencias\|decisoes)\.md'` | vazio | — |
+| CA-c3-5 | `gh api repos/<owner>/<repo>/commits/H3/check-runs --jq '.check_runs[] \| [.name,.status,.conclusion] \| @tsv'` | todos `completed success`; contagens iguais ao objeto do ciclo 2 (backend `345·3981·3979·0·2`, backend-postgres `493/493`, flutter `+905`) | CI ausente/`queued`/`cancelled` = ausente (§C7.1-bis) |
+
+### F. Cadeiras do ciclo 3 (§C7 item 9 — `arquivos_medidos` × `git diff --name-only cbf2db29..H3`)
+- **C1 (`jurado-san313-c1-opus`, APROVADO): CARREGA, regra (1).** `arquivos_medidos` por item, sem `**`: `src/**`, `prisma/**`, `tests/**`, `frontend/src/modules/work-orders/**`, `.github/workflows/ci.yml`, `scripts/run-backend-tests.mjs`. Comando do inspetor: `git diff --name-only cbf2db29..H3 | grep -E '^(src|prisma|tests|frontend|scripts|\.github)/'` → **vazio** ⇒ voto carregado, referido a H3. Notas N-1..N-4 seguem como notas.
+- **C2b (`jurado-san313-c2b-opus`, APROVADO): CARREGA, regra (1)** — condicionado ao PROIBIDO de §C. `arquivos_medidos`: `mobile/flutter_app/**` (lib, pubspec.lock, testes nomeados) e `agent-orchestration/controle/pendencias.md`. Comando: `git diff --name-only cbf2db29..H3 | grep -E '^mobile/flutter_app/|^agent-orchestration/controle/pendencias\.md$'` → **vazio** ⇒ carregado. Se o orquestrador precisar tocar `pendencias.md`, a C2b cai na **regra (2)**: identidade nova re-executa só o item 3 "pendencia" da `c2b-evidencia.md` (leitura de `P-MOBILE-ORFAOS-POS-PURGA`) sobre H3; saída igual mantém o verde. C2b-01 (ajuste) e C2b-02/03 (notas) ficam para a ata/pendência como o orquestrador já decidiu no ciclo 2.
+- **C3 (vermelha, `**`): REFEITA**, identidade nova ≠ `jurado-san313-c3-opus` ≠ dev do ciclo 3 ≠ este planejador, nível menor declarado, **régua do ciclo 3** (só grave bloqueia; o resto vira pendência com dono — §C7 item 8(2)), ≤3 itens (P4), roteiro P3 = `c3-evidencia.md`:
+  1. **C3-01 fechado:** CA-c3-1, CA-c3-2, CA-c3-3 com os vermelhos-controle;
+  2. **Escopo e merge:** CA-c3-4; `git log --merges cbf2db29..H3` = 0; commits novos = 1 (ou os declarados no `-dev.md`);
+  3. **Regressão por construção + CI:** `git diff --quiet cbf2db29 H3 -- src tests prisma mobile frontend scripts .github && echo CODIGO-IDENTICO` (não há código novo: as suítes do ciclo 2 valem por identidade de árvore) + CA-c3-5 lido dos check-runs/logs de H3. Rerodar suíte local é opcional; se rodar, compara com `c3-evidencia.md` (item 1).
+- **Quórum:** unanimidade de 3 referida a **H3** = C1 carregado + C2b carregado + C3 refeita. A ata registra, por cadeira, carregado/revalidado/refeito **e o comando** (voto carregado sem comando não é insumo). Inspetor de terreno antes (§C7.1-bis), com os comandos de §F como prova das cargas.
+
+### G. Perguntas ao dono: **nenhuma.** Não há regra de negócio nova — os 4 motivos já existem no código, no teste B4 e no plano v3; o contrato só passa a dizê-los.
+
+### H. Riscos do ciclo 3
+| # | Risco | Mitigação |
+|---|---|---|
+| Rc3-1 | Dev "aproveita" e toca código/teste/registro de pendência | PROIBIDO explícito (§C); CA-c3-4; o inspetor bloqueia; tocar `pendencias.md` custa a carga da C2b |
+| Rc3-2 | Merge da `main` no ramo traz caminhos de código ao diff e desfaz as cargas | sem merge no ciclo 3 (PR `MERGEABLE`); se inevitável, os caminhos da `main` são `pre-existente` (§C7.1-ter(a)) e C1/C2b vão à regra (2) só sobre eles |
+| Rc3-3 | Texto de §B divergir do código numa condição (ex.: valor vazio) | §B diz "presente e ≠" porque `parseListScope`/`parseOpenOnly` aceitam ausente/`null`/`""`; CA-c3-3 prova a cobertura dos motivos emitidos |
+| Rc3-4 | A E2 e §B divergirem e a próxima cadeira comparar com o bloco errado | §B declara que substitui o bloco `> ` da E2 para conferência; CA-c3-2 lê a seção "Ciclo 3" por parse |
+
+**Resumo em 3 linhas:** C3-01 é defeito real do entregável (contrato omite 4 motivos que o código emite e o teste afirma), **não grave**, com causa no texto da E2 do planejador — conserto de **1 linha** em `API_CONTRACTS.md`, PERMITIDO = contrato + registro, 1 commit, CI verde. C3-02/03/04: nada (notas na ata). Cadeiras: **C1 e C2b carregam** pela regra (1) (diff sem `src/tests/prisma/frontend/mobile/pendencias.md`); **C3 refeita** com a régua do ciclo 3. 0 perguntas ao dono.
