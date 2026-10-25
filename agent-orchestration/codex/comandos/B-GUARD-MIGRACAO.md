@@ -78,5 +78,5 @@ declaração `NAO-ATOMICA` sem DDL não transacional.
 
 ## Rastreabilidade
 
-ID `B-GUARD-MIGRACAO` · PR # (preenchido após `gh pr create`) · merge commit / approved head: pós-merge · gate: revisor
+ID `B-GUARD-MIGRACAO` · PR #458 · merge commit / approved head: pós-merge · gate: revisor
 independente + CI · status: `published_per_pr` (KPI congelado, `D-GOV-PROPORCIONAL` (5)).

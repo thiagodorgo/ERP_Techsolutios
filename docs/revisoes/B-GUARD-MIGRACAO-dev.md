@@ -130,3 +130,8 @@ não tem `.env`). O arquivo e todo o `src/` estão intocados pelo bloco (`git di
 Isolado, com `DATABASE_URL` fictícia: 12 testes · 12 pass · 0 fail. Rodar a suíte inteira com a URL fictícia não serve:
 o guard de skip do runner (P8) reprovaria os 96 `-db` que se pulam sem banco. A CI exporta `DATABASE_URL` (Postgres de
 serviço), onde o arquivo roda. O denominador 3347 é o desta máquina sem banco; o da CI (com os `-db`) vem do check-run.
+
+## Etapa 5 — entrega
+
+Ramo `chore/guard-migracao-transacao` empurrado; **PR #458** aberto contra `main` (sem merge). O número do PR foi gravado no
+registro num commit próprio. Aguarda o revisor independente (checklist em `comandos/B-GUARD-MIGRACAO.md`) e a CI.
