@@ -138,7 +138,8 @@ test("reconcile em período FECHADO passa e não altera o snapshot congelado", a
   const frozenMaterial = record.snapshot!.latest.material;
 
   // reconcile atravessa período fechado (não chama o guard).
-  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value" });
+  // B-SAN3-12a (§4.6) — o CAS da conciliação é obrigatório: o lançamento nunca foi conciliado.
+  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value", expected_reconciled: false, expected_reconciled_at: null });
   assert.equal(reconciled.reconciled, true);
   // snapshot congelado inalterado (frozen).
   const reread = await periods.get(ctx, "2026-07");

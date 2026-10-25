@@ -326,6 +326,9 @@ const ENTRY_CALLS: Record<string, Invoke> = {
     ctx.entries.reconcile({
       tenantId: TENANT,
       financialEntryId: s.entryId,
+      // B-SAN3-12a (§4.6) — o CAS por estado lógico: o lançamento da semente nunca foi conciliado.
+      expectedReconciled: false,
+      expectedReconciledAt: null,
       reconciled: true,
       divergenceType: null,
       reconciliationRef: "P7",

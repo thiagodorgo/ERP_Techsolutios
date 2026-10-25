@@ -481,7 +481,8 @@ test("bounce cleared→bounced FUNCIONA mesmo com o lançamento de compensação
   await cheques.deposit(ctx, cheque.id);
   const cleared = await cheques.clear(ctx, cheque.id);
   // extrato chega e concilia o lançamento compensado (Ω4-5) — reverse() travaria aqui (entry_reconciled)
-  await entries.reconcile(ctx, cleared.clearedEntryId!, { reconciled: true });
+  // B-SAN3-12a (§4.6) — o CAS da conciliação é obrigatório: o lançamento acabou de nascer (nunca conciliado).
+  await entries.reconcile(ctx, cleared.clearedEntryId!, { reconciled: true, expected_reconciled: false, expected_reconciled_at: null });
   const bounced = await cheques.bounce(ctx, cheque.id, {});
   assert.equal(bounced.status, "bounced");
   const balance = await entries.balance(ctx, account.id);
