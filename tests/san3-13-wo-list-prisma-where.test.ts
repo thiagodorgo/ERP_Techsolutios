@@ -91,3 +91,42 @@ test("B12 (R2-N3) — ator escopado sem id com forma de UUID: resposta vazia SEM
   assert.equal(captured.findMany.length, 0);
   assert.equal(captured.count.length, 0);
 });
+
+test("B12 (CA-6, E2) — orderBy por MODO: paginate=cursor → [{id: desc}] + id.lt; offset → created_at/code; count sem id", async () => {
+  const cursor = { executor: fakeExecutor() };
+  const cursorId = randomUUID();
+  await new PrismaWorkOrderRepository(cursor.executor.executor).list({
+    ...base,
+    assignedToActor: { userId: randomUUID() },
+    openOnly: true,
+    search: "x",
+    paginate: "cursor",
+    cursorId,
+  });
+  const comCursor = cursor.executor.captured.findMany[0] as {
+    where: { id?: { lt: string }; OR?: unknown; AND: unknown[] };
+    orderBy: unknown;
+    skip?: number;
+  };
+  assert.deepEqual(comCursor.orderBy, [{ id: "desc" }]);
+  assert.equal(comCursor.where.id?.lt, cursorId);
+  assert.equal(comCursor.where.OR, undefined);
+  assert.equal(comCursor.where.AND.length, 3);
+  assert.equal(comCursor.skip, undefined, "modo cursor não usa skip");
+  const countWhere = cursor.executor.captured.count[0]?.where as Record<string, unknown>;
+  assert.equal("id" in countWhere, false, "count sem a cláusula do cursor");
+  const { id: _semId, ...whereSemId } = comCursor.where;
+  assert.deepEqual(countWhere, whereSemId);
+
+  const primeira = { executor: fakeExecutor() };
+  await new PrismaWorkOrderRepository(primeira.executor.executor).list({ ...base, paginate: "cursor" });
+  const pagina1 = primeira.executor.captured.findMany[0] as { where: Record<string, unknown>; orderBy: unknown };
+  assert.deepEqual(pagina1.orderBy, [{ id: "desc" }], "a 1ª página do modo cursor já em id desc (F-1)");
+  assert.equal("id" in pagina1.where, false);
+
+  const offset = { executor: fakeExecutor() };
+  await new PrismaWorkOrderRepository(offset.executor.executor).list({ ...base, offset: 40 });
+  const modoOffset = offset.executor.captured.findMany[0] as { orderBy: unknown; skip: number };
+  assert.deepEqual(modoOffset.orderBy, [{ created_at: "desc" }, { code: "desc" }]);
+  assert.equal(modoOffset.skip, 40);
+});

@@ -61,6 +61,13 @@ export function parseOpenOnly(value: unknown): boolean {
   throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_open_only", "openOnly must be 'true'.");
 }
 
+/** B-SAN3-13 (E2) — `paginate`: ausente → modo offset (`undefined`); `cursor` → modo cursor; outro valor → 400. */
+export function parsePaginate(value: unknown): "cursor" | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (value === "cursor") return "cursor";
+  throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_paginate", "paginate must be 'cursor'.");
+}
+
 /** B-SAN3-13 — `cursor` OPACO (hoje o `id` da última OS): ausente → `undefined`; fora da forma de UUID → 400. */
 export function parseCursorId(value: unknown): string | undefined {
   if (value === undefined || value === null || value === "") return undefined;

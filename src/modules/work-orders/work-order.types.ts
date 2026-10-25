@@ -277,6 +277,13 @@ export type ListWorkOrdersInput = {
   readonly assignedToActor?: WorkOrderAssignedToActorScope;
   // B-SAN3-13 (E1 do dono, "Só as abertas") — só OS com status FORA de `WORK_ORDER_TERMINAL_STATUSES`.
   readonly openOnly?: boolean;
+  // B-SAN3-13 (R2-1 + Emenda E2) — modo de paginação EXPLÍCITO. `paginate: "cursor"` em TODA página da caminhada,
+  // inclusive a 1ª: ordem `id desc` (uuid, PK: ordem total e comparação EXATA — o `created_at` é µs no Postgres e ms
+  // no JS, e um cursor por ele pulava OS). O modo NUNCA vem da presença de `cursor`: com a 1ª página em
+  // `created_at desc` e as seguintes em `id < cursor`, a caminhada pulava OS (F-1, B14-db `FALTARAM=[2]`).
+  readonly paginate?: "cursor";
+  // `id` da última OS da página anterior (só no modo cursor; ausente na 1ª página) → página `id < cursor`.
+  readonly cursorId?: string;
 };
 
 export type ListWorkOrdersResult = {
@@ -284,6 +291,9 @@ export type ListWorkOrdersResult = {
   readonly total: number;
   readonly limit: number;
   readonly offset: number;
+  // B-SAN3-13 (E2) — só no modo cursor: `id` do último item quando a página veio cheia (`items.length === limit`);
+  // senão `null`. No modo offset é sempre `null`. O cliente o devolve TAL COMO veio (opaco).
+  readonly nextCursor: string | null;
 };
 
 /** B-SAN3-13 — quem é "o ator" para o predicado da lista: o user id e, se existir, o PERFIL de campo dele. */

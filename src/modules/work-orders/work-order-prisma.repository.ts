@@ -27,6 +27,7 @@ import { isWorkOrderUuid, WORK_ORDER_TERMINAL_STATUSES } from "./work-order.vali
 import {
   duplicateWorkOrderError,
   formatWorkOrderCode,
+  nextWorkOrderCursor,
   mirrorColumnsFromInputs,
   mirrorColumnsFromLinks,
   type CreateWorkOrderEventInput,
@@ -361,27 +362,40 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     // B-SAN3-13 (R2-N3) — ator escopado cujo id não tem forma de UUID (o `sub` de bancada, `tecnico.demo`): nenhuma OS
     // pode casar (`assigned_operator_id` é `uuid`). Responde vazio SEM consultar — `OR: []` não é falso no Prisma 7.
     if (input.assignedToActor && assignedToActorUuidOperatorIds(input).length === 0) {
-      return { items: [], total: 0, limit: input.limit, offset: input.offset };
+      return { items: [], total: 0, limit: input.limit, offset: input.offset, nextCursor: null };
     }
     const where = buildWhere(input);
-    const [items, total] = await Promise.all([
-      this.client.workOrder.findMany({
-        where,
-        orderBy: [
-          { created_at: "desc" },
-          { code: "desc" },
-        ],
-        take: input.limit,
-        skip: input.offset,
-      }),
+    // B-SAN3-13 (R2-1 + E2) — modo cursor (`paginate: "cursor"`, inclusive na 1ª página): ordem `id desc` —
+    // comparação EXATA sobre a PK, sem o `created_at` (µs no banco × ms no JS) — e, havendo cursor, `id < cursor` como
+    // chave simples (não colide com nada do `where`). O `count` usa o `where` SEM o cursor: `total` é o do conjunto,
+    // não o do resto da caminhada. Modo offset: a ordem de sempre e `nextCursor: null`.
+    const cursorMode = input.paginate === "cursor";
+    const [records, total] = await Promise.all([
+      cursorMode
+        ? this.client.workOrder.findMany({
+            where: input.cursorId ? { ...where, id: { lt: input.cursorId } } : where,
+            orderBy: [{ id: "desc" }],
+            take: input.limit,
+          })
+        : this.client.workOrder.findMany({
+            where,
+            orderBy: [
+              { created_at: "desc" },
+              { code: "desc" },
+            ],
+            take: input.limit,
+            skip: input.offset,
+          }),
       this.client.workOrder.count({ where }),
     ]);
+    const items = records.map(mapWorkOrderRecord);
 
     return {
-      items: items.map(mapWorkOrderRecord),
+      items,
       total,
       limit: input.limit,
-      offset: input.offset,
+      offset: cursorMode ? 0 : input.offset,
+      nextCursor: cursorMode ? nextWorkOrderCursor(items, input.limit) : null,
     };
   }
 

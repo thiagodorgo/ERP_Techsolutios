@@ -49,7 +49,9 @@ import {
   parseChecklistAdjustment,
   parseChecklistSetSelection,
   isWorkOrderUuid,
+  parseCursorId,
   parseFinancialCancellationDecision,
+  parsePaginate,
   parseLimit,
   parseListScope,
   parseOffset,
@@ -436,6 +438,27 @@ export class WorkOrderService {
     // a OS do colega. `scope=assigned` oferece o mesmo recorte a qualquer papel (a gestão no app vê só as suas).
     const scope = parseListScope(query.scope);
     const openOnly = parseOpenOnly(query.openOnly);
+    // B-SAN3-13 (R2-1 + Emenda E2) — dois modos de paginação, excludentes, e o modo é DECLARADO por `paginate=cursor`
+    // em toda página (nunca inferido da presença de `cursor`). `cursor` sem o modo → 400; modo cursor com `offset > 0`
+    // → 400.
+    const paginate = parsePaginate(query.paginate);
+    const cursorId = parseCursorId(query.cursor);
+    if (cursorId && paginate !== "cursor") {
+      throw new WorkOrderError(
+        400,
+        "WORK_ORDER_FILTER_INVALID",
+        "invalid_cursor_mode",
+        "cursor requires paginate=cursor.",
+      );
+    }
+    if (paginate === "cursor" && input.offset !== 0) {
+      throw new WorkOrderError(
+        400,
+        "WORK_ORDER_FILTER_INVALID",
+        "invalid_cursor_offset",
+        "cursor and offset cannot be combined.",
+      );
+    }
     const assignedToActor =
       scope === "assigned" || actorMutatesAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined;
 
@@ -443,6 +466,8 @@ export class WorkOrderService {
       ...input,
       ...(assignedToActor ? { assignedToActor } : {}),
       ...(openOnly ? { openOnly } : {}),
+      ...(paginate ? { paginate } : {}),
+      ...(cursorId ? { cursorId } : {}),
     });
   }
 

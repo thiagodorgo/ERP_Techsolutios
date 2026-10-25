@@ -43,11 +43,93 @@ if (!connectionString) {
       );
       assert.deepEqual([...new Set(micros.map((row) => row.us))].sort(), ["123100", "123456"]);
 
-      const caminhada = await h.caminhar(h.atorTecnico(h.tecnicoA), { limit: "1" });
+      // Emenda E2: a caminhada começa com `paginate=cursor` SEM `cursor` e o leva em TODA página.
+      const caminhada = await h.caminhar(h.atorTecnico(h.tecnicoA), { paginate: "cursor", limit: "1" });
       const faltaram = deA.filter((id) => !caminhada.ids.includes(id));
       assert.deepEqual(faltaram, [], `FALTARAM=${JSON.stringify(faltaram)} paginas=${caminhada.paginas}`);
       assert.equal(caminhada.ids.length, 6, "nenhuma OS repetida nem de B");
+      assert.equal(caminhada.paginasComItens, 6, "6 páginas com 1 OS cada");
+      // A regra do `nextCursor` (último id se `items.length === limit`) faz a 6ª página cheia apontar para uma 7ª, vazia,
+      // que fecha com `null`: 7 requisições, 6 páginas com OS.
+      assert.equal(caminhada.paginas, 7);
       assert.equal(caminhada.terminouComNull, true, "a caminhada termina com nextCursor === null");
+      assert.deepEqual(caminhada.ids, [...caminhada.ids].sort().reverse(), "a caminhada inteira sai em id desc");
+
+      // A 1ª página (sem cursor) já vem em `id desc` — é o que a F-1 quebrava.
+      const primeira = await h.listar(h.atorTecnico(h.tecnicoA), { paginate: "cursor", limit: "100" });
+      const ids = primeira.items.map((item) => item.id);
+      assert.deepEqual(ids, [...deA].sort().reverse(), "1ª página em id desc (uuid)");
+      assert.equal(primeira.pagination.nextCursor, null, "6 < limit: acabou");
+    });
+  });
+
+  // ── B15-db (CA-11) — a ordem do modo cursor é a MESMA na memória (string do uuid) e no Postgres (`uuid`).
+  test("B15-db (CA-11): sequência de ids do modo cursor no Postgres == a do repositório de memória para o mesmo conjunto", async () => {
+    await withPostgresWorkOrders(connection, async (h) => {
+      for (let index = 0; index < 20; index += 1) {
+        await h.criarOs({ code: `B15-${index}`, operador: h.tecnicoA });
+      }
+      const ator = h.atorTecnico(h.tecnicoA);
+      const doBanco = (await h.caminhar(ator, { paginate: "cursor", limit: "3" })).ids;
+      assert.equal(doBanco.length, 20);
+
+      const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
+      const memoria = new InMemoryWorkOrderRepository();
+      const mapa = (memoria as unknown as { workOrders: Map<string, unknown> }).workOrders;
+      // Mesmos ids, inseridos em ordem EMBARALHADA (a ordem de inserção não pode decidir nada).
+      for (const id of [...doBanco].sort(() => Math.random() - 0.5)) {
+        mapa.set(id, {
+          id, tenantId: h.tenantId, code: id, title: id, priority: "medium", status: "assigned",
+          assignedOperatorId: h.tecnicoA, createdAt: new Date(), updatedAt: new Date(),
+        });
+      }
+      const daMemoria: string[] = [];
+      let cursorId: string | undefined;
+      for (let pagina = 0; pagina < 20; pagina += 1) {
+        const resultado = await memoria.list({
+          tenantId: h.tenantId, limit: 3, offset: 0, paginate: "cursor", ...(cursorId ? { cursorId } : {}),
+        });
+        daMemoria.push(...resultado.items.map((item) => item.id));
+        if (!resultado.nextCursor) break;
+        cursorId = resultado.nextCursor;
+      }
+      assert.deepEqual(daMemoria, doBanco, "memória e Postgres entregam a mesma sequência");
+    });
+  });
+
+  // ── B19-db (E2) — o modo vem de `paginate`, nunca da presença de `cursor`; `nextCursor` só no modo cursor.
+  test("B19-db (E2): paginate=cursor sem cursor → id desc + nextCursor; offset → nextCursor null e ordem created_at; erros 400", async () => {
+    await withPostgresWorkOrders(connection, async (h) => {
+      const antiga = await h.criarOs({ code: "B19-1", operador: h.tecnicoA, createdAt: "2026-10-20T10:00:00.000001Z" });
+      const meio = await h.criarOs({ code: "B19-2", operador: h.tecnicoA, createdAt: "2026-10-21T10:00:00.000001Z" });
+      const nova = await h.criarOs({ code: "B19-3", operador: h.tecnicoA, createdAt: "2026-10-22T10:00:00.000001Z" });
+      const ator = h.atorTecnico(h.tecnicoA);
+
+      const cursor1 = await h.listar(ator, { paginate: "cursor", limit: "2" });
+      const esperado = [antiga, meio, nova].sort().reverse();
+      assert.deepEqual(cursor1.items.map((item) => item.id), esperado.slice(0, 2));
+      assert.equal(cursor1.pagination.nextCursor, esperado[1]);
+      const cursor2 = await h.listar(ator, { paginate: "cursor", limit: "2", cursor: String(cursor1.pagination.nextCursor) });
+      assert.deepEqual(cursor2.items.map((item) => item.id), esperado.slice(2));
+      assert.equal(cursor2.pagination.nextCursor, null);
+      assert.equal(cursor2.pagination.total, 3, "total sem a cláusula do cursor");
+
+      const offset = await h.listar(ator, { limit: "2" });
+      assert.deepEqual(offset.items.map((item) => item.id), [nova, meio], "modo offset: created_at desc, inalterado");
+      assert.equal(offset.pagination.nextCursor, null, "modo offset nunca devolve nextCursor");
+
+      for (const [query, reason] of [
+        [{ paginate: "xyz" }, "invalid_paginate"],
+        [{ cursor: nova }, "invalid_cursor_mode"],
+        [{ paginate: "cursor", cursor: "lixo" }, "invalid_cursor"],
+        [{ paginate: "cursor", offset: "20" }, "invalid_cursor_offset"],
+      ] as const) {
+        await assert.rejects(() => h.listar(ator, query), (error: { statusCode: number; reason: string }) => {
+          assert.equal(error.statusCode, 400, JSON.stringify(query));
+          assert.equal(error.reason, reason, JSON.stringify(query));
+          return true;
+        });
+      }
     });
   });
 
@@ -98,7 +180,12 @@ if (!connectionString) {
 // ───────────────────────────── harness ─────────────────────────────
 
 type Actor = { readonly tenantId: string; readonly userId: string; readonly roles: readonly string[]; readonly permissions: readonly string[] };
-type Caminhada = { readonly ids: string[]; readonly paginas: number; readonly terminouComNull: boolean };
+type Caminhada = {
+  readonly ids: string[];
+  readonly paginas: number;
+  readonly paginasComItens: number;
+  readonly terminouComNull: boolean;
+};
 type Harness = {
   readonly client: {
     $queryRawUnsafe<T>(sql: string, ...values: unknown[]): Promise<T>;
@@ -196,15 +283,17 @@ async function withPostgresWorkOrders(connection: string, callback: (harness: Ha
         const ids: string[] = [];
         let cursor: string | null | undefined;
         let paginas = 0;
+        let paginasComItens = 0;
         let terminouComNull = false;
         do {
           const pagina = await harness.listar(actor, { ...query, ...(cursor ? { cursor } : {}) });
           paginas += 1;
+          if (pagina.items.length > 0) paginasComItens += 1;
           ids.push(...pagina.items.map((item) => item.id));
           cursor = pagina.pagination.nextCursor;
           terminouComNull = cursor === null;
         } while (cursor && paginas < 50);
-        return { ids, paginas, terminouComNull };
+        return { ids, paginas, paginasComItens, terminouComNull };
       },
     };
 
