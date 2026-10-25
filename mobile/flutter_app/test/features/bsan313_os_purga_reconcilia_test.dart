@@ -7,6 +7,7 @@
 // material do prestador não sincronizados.
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
@@ -67,6 +68,21 @@ class _WalkingApi implements WorkOrderRemoteApi, WalkingWorkOrderRemoteApi {
   @override
   Future<void> createApprovalRequest(String id, WorkOrderApprovalRequest r) =>
       throw UnimplementedError();
+}
+
+/// Ciclo 2 (F35) — API antiga: só a lista, sem caminhada (não implementa `WalkingWorkOrderRemoteApi`).
+class _ListOnlyApi implements WorkOrderRemoteApi {
+  _ListOnlyApi(this.serverIds);
+
+  final List<String> serverIds;
+
+  @override
+  Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async => [
+    for (final id in serverIds) _order(id, serverId: id),
+  ];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// Fila em memória com uma COMPORTA no `enqueue`: segura a mutação entre "gravou a linha/linha do tempo" e
@@ -644,6 +660,81 @@ void main() {
     );
   });
 
+  // Ciclo 2 (C2-03, RQ-3) — o produto já estava certo; estes testes existem para ficar VERMELHOS sob a mutação.
+  group('B-SAN3-13 ciclo 2 · J1/J2/J6 acusados', () {
+    // F32 (J1) — ação em `syncing` (o replay a pegou e ainda não voltou) retém, por `local_id` e por
+    // `work_order_local_id`.
+    test(
+      'F32 — ação syncing por local_id e por work_order_local_id: ficam',
+      () async {
+        final store = InMemoryWorkOrderLocalStore([
+          _order('sl', serverId: 'srv-sl'),
+          _order('sm', serverId: 'srv-sm'),
+          _order('livre', serverId: 'srv-livre'),
+        ]);
+        final queue = InMemorySyncQueueRepository();
+        await queue.enqueue(
+          _action(WorkOrderSyncActionTypes.statusUpdate, {
+            'local_id': 'sl',
+          }, status: SyncStatus.syncing),
+        );
+        await queue.enqueue(
+          _action(InventorySyncActionTypes.materialAdd, {
+            'work_order_local_id': 'sm',
+            'sku': 'ELE-0102',
+            'quantity': 1,
+          }, status: SyncStatus.syncing),
+        );
+        final repo = _repo(store: store, queue: queue, api: _WalkingApi([]));
+        await repo.refresh();
+        expect(await _ids(store), ['sl', 'sm']);
+      },
+    );
+
+    // F33 (J2) — exceção dentro da trava (bytes ≠ tamanho declarado) libera a cauda: a mutação seguinte completa.
+    test(
+      'F33 — exceção no corpo da trava não prende a próxima mutação',
+      () async {
+        final store = InMemoryWorkOrderLocalStore([
+          _order('z', serverId: 'srv-z', status: WorkOrderStatus.inService),
+        ]);
+        final repo = _repo(store: store);
+        await repo.load(seedIfEmpty: false);
+        await expectLater(
+          repo.attachEvidence(
+            workOrderLocalId: 'z',
+            fileName: 'a.jpg',
+            mimeType: 'image/jpeg',
+            sizeBytes: 5,
+            captureSource: 'camera',
+            bytes: Uint8List.fromList([1, 2]),
+          ),
+          throwsArgumentError,
+        );
+        final next = await repo
+            .updateStatus('z', WorkOrderStatus.paused)
+            .timeout(const Duration(seconds: 5));
+        expect(next.workOrder.status, WorkOrderStatus.paused);
+      },
+    );
+
+    // F35 (J6) — API que só implementa `WorkOrderRemoteApi` (sem caminhada) = caminhada incompleta: atualiza, nunca
+    // tira nada, e a tela sabe ("dados desatualizados").
+    test(
+      'F35 — API sem caminhada: nada sai e o pull fica incompleto',
+      () async {
+        final store = InMemoryWorkOrderLocalStore([
+          _order('a', serverId: 'srv-a'),
+          _order('b', serverId: 'srv-b'),
+        ]);
+        final repo = _repo(store: store, api: _ListOnlyApi(['srv-a']));
+        await repo.refresh();
+        expect(await _ids(store), ['a', 'b']);
+        expect(repo.lastPullIncomplete, isTrue);
+      },
+    );
+  });
+
   // F24 (CA-24) — TESTE-GUARDA das famílias: toda constante de `*SyncActionTypes` está classificada, e toda chave
   // classificada (exceto `run_id`, que é o ramo 4) está nas chaves do ramo 1.
   test('F24 — toda ação da fila está classificada no mapa de retenção', () {
@@ -693,10 +784,7 @@ void main() {
         reason: 'chave sem leitor em ${entry.key}: ${entry.value}',
       );
     }
-    expect(
-      workOrderRunReferenceKeys,
-      {'local_run_id', 'server_run_id'},
-    );
+    expect(workOrderRunReferenceKeys, {'local_run_id', 'server_run_id'});
     final producers = File(
       'lib/features/checklists/data/checklist_repository.dart',
     ).readAsStringSync();

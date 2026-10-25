@@ -7,12 +7,16 @@
 import 'dart:async';
 
 import 'package:drift/native.dart';
+import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/database_provider.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_checklist_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_prestador_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
+import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_factory.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
@@ -25,6 +29,7 @@ import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_lo
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_remote_api.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _tenant = 'tenant-a';
@@ -93,27 +98,26 @@ WorkOrderMaterial _material(
   syncStatus: sync,
 );
 
-MobileChecklistRun _run(String localId, String workOrderId, {String? serverId}) =>
-    MobileChecklistRun(
-      localId: localId,
-      serverId: serverId,
-      tenantId: _tenant,
-      checklistId: 'cl-1',
-      workOrderId: workOrderId,
-      schemaVersion: '1',
-      status: MobileChecklistRunStatus.inProgress,
-      executedByUserId: 'u-1',
-      startedAt: DateTime.utc(2026, 10, 25),
-      syncStatus: SyncStatus.synced,
-      answers: const {},
-    );
+MobileChecklistRun _run(
+  String localId,
+  String workOrderId, {
+  String? serverId,
+}) => MobileChecklistRun(
+  localId: localId,
+  serverId: serverId,
+  tenantId: _tenant,
+  checklistId: 'cl-1',
+  workOrderId: workOrderId,
+  schemaVersion: '1',
+  status: MobileChecklistRunStatus.inProgress,
+  executedByUserId: 'u-1',
+  startedAt: DateTime.utc(2026, 10, 25),
+  syncStatus: SyncStatus.synced,
+  answers: const {},
+);
 
 SyncAction _action(String type, Map<String, Object?> payload) =>
-    SyncActionFactory().create(
-      tenantId: _tenant,
-      type: type,
-      payload: payload,
-    );
+    SyncActionFactory().create(tenantId: _tenant, type: type, payload: payload);
 
 /// O terreno de Drift em memória: as três tabelas de módulos diferentes no MESMO banco, como no aparelho.
 class _Terrain {
@@ -448,6 +452,42 @@ void main() {
       await repo.refresh();
       expect(await t.ids(), isEmpty);
       expect(await t.checklists.loadRun('run-e'), isNotNull);
+    });
+  });
+
+  // F34 (J5, RQ-3) — pelo PROVIDER real: no build remoto (sem token no 1º load) o repositório não semeia; no app de
+  // demonstração local, semeia (b099 6.x preservado).
+  group('B-SAN3-13 ciclo 2 · J5 — sementes pelo provider', () {
+    Future<List<String>> loadWith({required bool remote}) async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final store = InMemoryWorkOrderLocalStore();
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          bootstrapSessionProvider.overrideWith((ref) async => _session),
+          authenticatedApiConfigProvider.overrideWithValue(const ApiConfig()),
+          remoteAuthModeProvider.overrideWithValue(remote),
+          workOrderLocalStoreProvider.overrideWithValue(store),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(bootstrapSessionProvider.future);
+      final repo = container.read(workOrderRepositoryProvider);
+      expect(repo.hasRemote, isFalse);
+      await repo.load();
+      final stored = (await store.loadWorkOrders()).map((o) => o.localId);
+      expect(repo.workOrders.map((o) => o.localId).toSet(), stored.toSet());
+      return stored.toList()..sort();
+    }
+
+    test('F34 — build remoto sem token: store vazio; local: semeia', () async {
+      expect(await loadWith(remote: true), isEmpty);
+      expect(await loadWith(remote: false), [
+        'wo-local-1',
+        'wo-local-2',
+        'wo-local-3',
+      ]);
     });
   });
 }

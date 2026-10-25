@@ -1015,10 +1015,15 @@ final workOrderLocalStoreProvider = Provider<WorkOrderLocalStore>(
   (ref) => DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
 );
 
+/// B-SAN3-13 ciclo 2 (J5, RQ-3) — o modo de autenticação remota como provider (padrão: a constante de build
+/// `kIsRemoteAuth`). Os dois providers abaixo o leem, para que o teste prove, sem `--dart-define`, que o build remoto
+/// não semeia OS.
+final remoteAuthModeProvider = Provider<bool>((_) => kIsRemoteAuth);
+
 // Returns DioWorkOrderRemoteApi when ERP_AUTH_MODE=remote and a token is available.
 // Returns null in local/dev mode so WorkOrderRepository stays in seed-only mode.
 final workOrderRemoteApiProvider = Provider<WorkOrderRemoteApi?>((ref) {
-  if (!kIsRemoteAuth) return null;
+  if (!ref.watch(remoteAuthModeProvider)) return null;
   final config = ref.watch(authenticatedApiConfigProvider);
   if (config.accessToken == null) return null;
   return DioWorkOrderRemoteApi.create(config);
@@ -1037,7 +1042,7 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
     remoteApi: ref.watch(workOrderRemoteApiProvider),
     evidenceBlobStore: ref.watch(evidenceBlobStoreProvider),
     // B-SAN3-13 (Q5) — sementes só no app de demonstração local.
-    allowSeedOrders: !kIsRemoteAuth,
+    allowSeedOrders: !ref.watch(remoteAuthModeProvider),
     // B-SAN3-13 (§2.3 ramos 4 e 5) — vistoria e materiais do prestador moram em tabelas de outros módulos, que este
     // bloco só LÊ. Lidos na hora (não no build do provider); falha de leitura = RETÉM (fail-closed: na dúvida, a
     // OS fica no aparelho).
