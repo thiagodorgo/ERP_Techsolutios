@@ -222,3 +222,78 @@ das medições) — os tempos de execução abaixo não são comparáveis aos do
 | **E1.F6** | `scripts/provision-rbac.ts` | não tocado (saiu do PERMITIDO); 1 linha em `P-RBAC-PROVISION-DESCRICOES` |
 | **Contrato/matriz** | `API_CONTRACTS.md` (D1 + os 409 do A27), `RBAC_MATRIX.md` (l. dos cheques) | — |
 | **Registro** | `pendencias.md` (emenda e critério B1 em `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`; novas `P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE` e `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`, `pre-existente`), `decisoes.md` (D1, A26, A27, F5 como leitura do planejador), índice regenerado (635 cabeçalhos · 479 abertas), `status-geral.md` | — |
+
+## E11 — mutações da E1/E1-bis (uma a uma, restauro por hash; roteiro `…/scratchpad/san312a/mutations2.py`, saída `C:/Users/AMP/w-san312a-mutations2.json`)
+
+**17 de 17 conformes** (16 vermelhas no caso do critério + a variante "só o fast-fail" da M2, que fica VERDE como a E1-bis previu: a trava
+sob o lock segura). `git status --porcelain -- src prisma` vazio ao fim. Mais a do A5-bis reescrito (tirar `title_id = <lido>` do `WHERE`
+do `unlinkTitle` no Prisma) → `not ok 6 A5-bis (db, CAS)` · 6 · pass 5 · fail 1 · skipped 0, restaurado.
+
+| id | mutação | teste | esperado | resultado | conformidade |
+|---|---|---|---|---|---|
+| A27a-db | tirar o title_id lido do WHERE do update (Prisma) | b-san3-12a-link-toctou-db.test.ts | vermelho | **vermelho** · 5 · pass 3 · fail 2 · skipped 0 | conforme |
+| A27b-db | tirar o title_id lido do WHERE do transition (Prisma) | b-san3-12a-link-toctou-db.test.ts | vermelho | **vermelho** · 5 · pass 4 · fail 1 · skipped 0 | conforme |
+| A27c-db | tirar o title_id lido do WHERE do softDelete (Prisma) | b-san3-12a-link-toctou-db.test.ts | vermelho | **vermelho** · 5 · pass 4 · fail 1 · skipped 0 | conforme |
+| A27e-mem | tirar a comparação de expectedTitleId do check-and-set em memória | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 12 · fail 3 · skipped 0 | conforme |
+| D1 | apagar o ramo do 422 do PATCH privilegiado | b-san3-12a-unlink-title.test.ts, cheque-title-link.test.ts | vermelho | **vermelho** · 53 · pass 51 · fail 2 · skipped 0 | conforme |
+| M2-ambas | remover o fast-fail assertPayable do clear E trocar o throw do título pago sob a trava por return | cheque-title-link.test.ts | vermelho | **vermelho** · 38 · pass 37 · fail 1 · skipped 0 | conforme |
+| M2-ambas-db | idem, no Postgres | cheque-title-link-atomic-db.test.ts | vermelho | **vermelho** · 15 · pass 13 · fail 2 · skipped 0 | conforme |
+| M2-so-fastfail | remover SÓ o fast-fail do clear (a trava sob o lock segura) | cheque-title-link.test.ts | verde | verde · 38 · pass 38 · fail 0 · skipped 0 | conforme |
+| F7-wrapper-entries | apagar o wrapper de details do controller de lançamentos | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 14 · fail 1 · skipped 0 | conforme |
+| F7-wrapper-cheques | apagar o wrapper de details do controller de cheques | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 14 · fail 1 · skipped 0 | conforme |
+| B2-tenant-em-details | pôr o tenant no details do 422 da baixa | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 14 · fail 1 · skipped 0 | conforme |
+| A1-ambas | remover as duas checagens da baixa | b-san3-12a-pay-pending-cheque.test.ts, cheque-title-link.test.ts | vermelho | **vermelho** · 53 · pass 47 · fail 6 · skipped 0 | conforme |
+| A6 | remover a guarda do título atual no PATCH | b-san3-12a-unlink-title.test.ts, cheque-title-link.test.ts | vermelho | **vermelho** · 53 · pass 49 · fail 4 · skipped 0 | conforme |
+| A19 | comparar com > em vez de igualdade no valor exato | b-san3-12a-pay-pending-cheque.test.ts, cheque-title-link.test.ts | vermelho | **vermelho** · 53 · pass 48 · fail 5 · skipped 0 | conforme |
+| A21 | remover a leitura da porta cheque-pending-reader (título) | b-san3-12a-pay-pending-cheque.test.ts, cheque-title-link.test.ts | vermelho | **vermelho** · 53 · pass 51 · fail 2 · skipped 0 | conforme |
+| A17bis | criar reason novo sem contrato | b-san3-12a-reasons-census.test.ts | vermelho | **vermelho** · 4 · pass 2 · fail 2 · skipped 0 | conforme |
+| Rres2 | não exigir motivo no bounce de cheque vinculado | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 14 · fail 1 · skipped 0 | conforme |
+
+## E12 — bateria (B2: todo passo com `tests · pass · fail · skipped`, lido do TAP; roteiro `…/scratchpad/san312a/battery2.sh`, logs `C:/Users/AMP/w-san312a-bat2/`)
+
+| Passo | ec | tests · pass · fail · skipped |
+|---|---|---|
+| check · lint · build · provision-rbac `--dry-run` · `git diff --check 8a7885f4 HEAD` | 0 · 0 · 0 · 0 · 0 | (sem TAP) |
+| módulos financeiros (5 arquivos) | 0 | 227 · pass 227 · fail 0 · skipped 0 |
+| `b-san3-12a-*` em memória (5 arquivos) | 0 | 51 · pass 51 · fail 0 · skipped 0 |
+| guards da E1 (`cheque-title-link`, arnês P7, migration-parity, `core-saas`, period-closes) | 0 | 126 · pass 126 · fail 0 · skipped 0 |
+| `core-saas-role-authority` com banco (sem `prisma`) | 0 | 12 · pass 12 · fail 0 · skipped 0 |
+| `-db` A (drill, corridas, fuso, reverse-restore, **link-toctou**) | 1 | 24 · pass 23 · fail 1 · skipped 0 — o 1 era o A5-bis CAS ainda trocando pelo PATCH (D1); corrigido no `a0b8f4be` e re-rodado: 6 · pass 6 · fail 0 · skipped 0 |
+| `db:provision-rbac` → `permission-catalog-db-parity` (`RBAC_DB_PARITY=1`) | 0 | 2 · pass 2 · fail 0 · skipped 0 |
+| `-db` B (recusa, CAS, agregado, `cheque-title-link-atomic-db`, `financial-pay-title-atomic-db`) | 0 | 30 · pass 30 · fail 0 · skipped 0 |
+| `audit-security` **COM banco** (B2) | 0 | 1 · pass 1 · fail 0 · skipped 0 |
+| `o6r07c-census-guard` (isolado) | 0 | 32 · pass 32 · fail 0 · skipped 0 |
+
+## E13 — B1 (critério de fechamento da `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`)
+
+**(1) CI no head `a0b8f4be`** (`gh api repos/thiagodorgo/ERP_Techsolutios/commits/a0b8f4be…/check-runs`): `backend completed success`
+(job 121208746478: `352 arquivo(s) · 4013 teste(s) · pass 4011 · fail 0 · skipped 2`), `backend-postgres completed success` (job
+121208746575: `# tests 493 · pass 493 · fail 0 · skipped 0`, "testes pulados: 0"), frontend/flutter/owner-portal/authority-portal success,
+docker em andamento na leitura. Nota: no head anterior `f458f3a1` o `backend` falhou com 4 vermelhos — o A5-bis (corrigido) e T0/T12/"tempo
+do censo" do `o6r07c-census-guard` por `semente incompleta` (o `POST /operations/dispatches` do censo estourou o `AbortSignal.timeout(4000)`
+sob carga); no `a0b8f4be` o mesmo job passou inteiro, e isolado o censo dá 32/32 — flutuação de tempo, registrada.
+
+**(2) base × head normalizado por script** (`…/scratchpad/san312a/normaliza.py`: chave = `tests/<arquivo>` lido do `location` do TAP + nome do
+caso, sem o prefixo do worktree; saída `C:/Users/AMP/w-san312a-b1-listas.txt`). Base `8a7885f4` (worktree limpo, banco fresco, E6):
+`340 arquivos · 3924 · pass 3906 · fail 16 · skipped 2`. Head (`a0b8f4be`, banco fresco `erp_san312a_fresh2`): `352 · 4005 · pass 3987 · fail 16 · skipped 2`.
+- **só no head — N=1:** `tests/traccar-position-ingestion-db.test.ts :: ingestão: tempo esgotado → 503 e, depois do fim do trabalho, 0 posição, 0 recibo e 0 evento`.
+  Causa: teste de TEMPO do Traccar (módulo que o bloco não toca); o caso irmão do mesmo arquivo ("…quarentena interna e conflito…") está
+  na lista "nos dois lados"; o arquivo isolado no head deu `22 · pass 22 · fail 0 · skipped 0`, e passou na CI (`backend` 0 fail). **O "= 0"
+  da letra do B1 NÃO foi atingido nesta máquina carregada** — declarado; a 1ª rodada fresca do head teve 6 só-head (o A5-bis, já corrigido,
+  e 5 de tempo/carga: Traccar ×3, drill do Traccar [T-M(a)], `o6r07c-b-scope-db` FORCE RLS), todos verdes isolados (13/13, 22/22, 5/5) e na CI.
+- **só na base — N=1:** `tests/o6r07c-b-scope-db.test.ts :: [atômica · controle 2]` (flutuação; verde no head).
+- **nos dois lados — N=11, com causa:** `domain-events` ×2, `job-queue` ×3 e `worker-heartbeat` ×1 — Redis inalcançável (`REDIS_URL=redis://127.0.0.1:1`,
+  a base viva não é alvo); `traccar-event-migration-drill-db` (arquivo) e `work-order-invoicing-migration-drill-db` (arquivo) — drill que invoca o
+  shim bash de `node_modules/.bin/prisma` com `node` no Windows (`P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`); `san3-09 T2` — bootstrap em banco de
+  drill (mesma família, Windows); `san3-05` — RLS do papel de runtime (medido na CI); `traccar-position-ingestion-db` "quarentena interna…" — tempo.
+- **skipped:** base 2 · head 2 · pulados só no head **0** (B2).
+
+**(3) T2.1 medido à mão** no descartável só migrado (`erp_san312a_t21`): `roles=0 · role_permissions=0 · permissions=4
+(checklist_runs:reopen, cheques:unlink_title, financial_entries:unreconcile, work_orders:approve) · super_admin_grants=0` ⇒ o
+`bootstrap-platform-admin` recusa `RBAC_NOT_PROVISIONED` (a propriedade do T2.1); a convergência real vem do `db:provision-rbac` (E12).
+
+## E14 — estado e limpeza
+
+Head `a0b8f4be` + este registro. PR #459 sai de rascunho (`gh pr ready 459`) por ordem do orquestrador; a pendência
+`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` fica ABERTA para o porteiro/orquestrador fechar pelo B1 (o item (2) tem 1 só-head de tempo, declarado acima).
+Limpeza: container `dev-san312a-pg2` removido (com os bancos `erp_san312a`, `_t21`, `_fresh2`); worktree `C:/Users/AMP/w-san312a` mantido.
