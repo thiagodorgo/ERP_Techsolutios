@@ -182,4 +182,91 @@ void main() {
       },
     );
   });
+
+  group('B-SAN3-13 · caminhada (rede)', () {
+    // F2 (CA-13, E2) — o capturador exige `paginate=cursor` em TODA página, `cursor` só da 2ª em diante e IGUAL ao
+    // `nextCursor` recebido (opaco: o app não interpreta), e nunca `offset`.
+    test(
+      'F2 — query: scope=assigned, openOnly=true, paginate=cursor, limit=100 em toda página; cursor opaco; sem offset',
+      () async {
+        final cursores = ['opaco/1 ä', 'opaco-2'];
+        final backend = _FakeBackend((options) {
+          final cursor = options.queryParameters['cursor'];
+          if (cursor == null) {
+            return _page([_remoteItem('a')], nextCursor: cursores[0]);
+          }
+          if (cursor == cursores[0]) {
+            return _page([_remoteItem('b')], nextCursor: cursores[1]);
+          }
+          return _page([_remoteItem('c')], nextCursor: null);
+        });
+
+        final result = await _apiOver(
+          backend,
+        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+
+        expect(result.complete, isTrue);
+        expect(backend.requests, hasLength(3));
+        for (final (index, uri) in backend.requests.indexed) {
+          final query = uri.queryParameters;
+          expect(uri.path, '/api/v1/work-orders');
+          expect(query['scope'], 'assigned', reason: 'página ${index + 1}');
+          expect(query['openOnly'], 'true', reason: 'página ${index + 1}');
+          expect(query['paginate'], 'cursor', reason: 'página ${index + 1}');
+          expect(query['limit'], '100', reason: 'página ${index + 1}');
+          expect(query.containsKey('offset'), isFalse);
+        }
+        expect(
+          backend.requests[0].queryParameters.containsKey('cursor'),
+          isFalse,
+        );
+        expect(backend.requests[1].queryParameters['cursor'], cursores[0]);
+        expect(backend.requests[2].queryParameters['cursor'], cursores[1]);
+        expect(result.orders.map((o) => o.serverId), ['a', 'b', 'c']);
+      },
+    );
+
+    // F3 (CA-13) — 3 páginas cheias/parciais → 230 OS, completa só com `nextCursor: null`.
+    test('F3 — 100 + 100 + 30 = 230 OS; completa', () async {
+      var pagina = 0;
+      final backend = _FakeBackend((_) {
+        pagina += 1;
+        final tamanho = pagina < 3 ? 100 : 30;
+        return _page([
+          for (var i = 0; i < tamanho; i++) _remoteItem('p$pagina-$i'),
+        ], nextCursor: pagina < 3 ? 'c$pagina' : null);
+      });
+      final result = await _apiOver(
+        backend,
+      ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+      expect(result.orders, hasLength(230));
+      expect(result.complete, isTrue);
+    });
+
+    // F4 (CA-14) — sem prova de fim, nunca "completa": teto de 50 páginas e resposta sem `nextCursor`.
+    test(
+      'F4 — teto de 50 páginas e resposta sem nextCursor → incompleta',
+      () async {
+        final semFim = _FakeBackend(
+          (options) => _page([
+            _remoteItem('x${options.queryParameters['cursor'] ?? 0}'),
+          ], nextCursor: 'mais'),
+        );
+        final teto = await _apiOver(
+          semFim,
+        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+        expect(teto.complete, isFalse);
+        expect(semFim.requests, hasLength(DioWorkOrderRemoteApi.maxPages));
+
+        final antigo = _FakeBackend(
+          (_) => _page([_remoteItem('y')], withNextCursor: false),
+        );
+        final semCursor = await _apiOver(
+          antigo,
+        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+        expect(semCursor.complete, isFalse, reason: 'backend antigo');
+        expect(semCursor.orders.map((o) => o.serverId), ['y']);
+      },
+    );
+  });
 }

@@ -25,6 +25,23 @@ abstract class WorkOrderRemoteApi {
   );
 }
 
+/// B-SAN3-13 — o resultado de uma caminhada de "Minhas OS": as OS que o backend devolveu e se a caminhada foi
+/// COMPLETA (última página com `nextCursor == null`, sem falha). Só uma caminhada completa autoriza o repositório
+/// a tirar do aparelho o que não veio (plano v3 §4.1/§4.2; Emenda E2).
+class WorkOrderFetchResult {
+  const WorkOrderFetchResult({required this.orders, required this.complete});
+
+  final List<WorkOrder> orders;
+  final bool complete;
+}
+
+/// B-SAN3-13 — a API que sabe caminhar "Minhas OS" até o fim e dizer se terminou. É uma interface À PARTE (e não
+/// um método novo de [WorkOrderRemoteApi]) para que `fetchWorkOrders` mantenha a assinatura: quem só implementa a
+/// interface antiga cai no caminho sem purga (o repositório trata como caminhada incompleta).
+abstract interface class WalkingWorkOrderRemoteApi {
+  Future<WorkOrderFetchResult> fetchAssignedOpenWorkOrders({String? tenantId});
+}
+
 // Safe stub — used when backend is not yet connected.
 // Never throws with sensitive info; always returns ApiNetworkError.
 class PendingBackendWorkOrderRemoteApi implements WorkOrderRemoteApi {
@@ -62,7 +79,8 @@ class PendingBackendWorkOrderRemoteApi implements WorkOrderRemoteApi {
   ) => Future.error(const ApiNetworkError());
 }
 
-class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
+class DioWorkOrderRemoteApi
+    implements WorkOrderRemoteApi, WalkingWorkOrderRemoteApi {
   DioWorkOrderRemoteApi(this._dio);
 
   final Dio _dio;
@@ -70,21 +88,75 @@ class DioWorkOrderRemoteApi implements WorkOrderRemoteApi {
   static DioWorkOrderRemoteApi create(ApiConfig config) =>
       DioWorkOrderRemoteApi(createExpenseHttpClient(config));
 
+  /// B-SAN3-13 — teto da caminhada. Passou disso, a caminhada é INCOMPLETA ("dados desatualizados"), nunca
+  /// "completa" fingida: com "Só as abertas" (E1) 50 páginas de 100 é borda, não o caminho normal.
+  static const maxPages = 50;
+  static const pageSize = 100;
+
   @override
-  Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async {
+  Future<List<WorkOrder>> fetchWorkOrders({String? tenantId}) async =>
+      (await fetchAssignedOpenWorkOrders(tenantId: tenantId)).orders;
+
+  /// B-SAN3-13 (#32, E1, E2) — "Minhas OS": só as OS ABERTAS do próprio técnico, que o backend impõe ao papel de
+  /// campo. Toda página leva `scope=assigned&openOnly=true&paginate=cursor&limit=100`; da 2ª em diante, o
+  /// `cursor` EXATAMENTE como veio em `nextCursor` (opaco); nunca `offset`. Completa ⇔ a última página trouxe
+  /// `nextCursor: null`. Resposta sem `pagination.nextCursor` (backend antigo) ou teto atingido → incompleta.
+  @override
+  Future<WorkOrderFetchResult> fetchAssignedOpenWorkOrders({
+    String? tenantId,
+  }) async {
+    final byServerId = <String, WorkOrder>{};
+    String? cursor;
     try {
-      final resp = await _dio.get<Map<String, dynamic>>(
-        WorkOrderApiEndpoints.workOrders,
+      for (var page = 0; page < maxPages; page++) {
+        final resp = await _dio.get<Map<String, dynamic>>(
+          WorkOrderApiEndpoints.workOrders,
+          queryParameters: <String, dynamic>{
+            'scope': 'assigned',
+            'openOnly': 'true',
+            'paginate': 'cursor',
+            'limit': pageSize,
+            if (cursor != null) 'cursor': cursor,
+          },
+        );
+        final data = resp.data ?? const <String, dynamic>{};
+        final items = (data['items'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>();
+        for (final json in items) {
+          final order = _workOrderFromRemoteJson(
+            json,
+            fallbackTenantId: tenantId ?? '',
+          );
+          final serverId = order.serverId;
+          if (serverId != null) byServerId[serverId] = order;
+        }
+        final pagination = data['pagination'];
+        if (pagination is! Map<String, dynamic> ||
+            !pagination.containsKey('nextCursor')) {
+          return WorkOrderFetchResult(
+            orders: byServerId.values.toList(),
+            complete: false,
+          );
+        }
+        final next = pagination['nextCursor'];
+        if (next == null) {
+          return WorkOrderFetchResult(
+            orders: byServerId.values.toList(),
+            complete: true,
+          );
+        }
+        if (next is! String || next.isEmpty) {
+          return WorkOrderFetchResult(
+            orders: byServerId.values.toList(),
+            complete: false,
+          );
+        }
+        cursor = next;
+      }
+      return WorkOrderFetchResult(
+        orders: byServerId.values.toList(),
+        complete: false,
       );
-      final data = resp.data ?? const <String, dynamic>{};
-      final items = (data['items'] as List<dynamic>? ?? [])
-          .cast<Map<String, dynamic>>();
-      return items
-          .map(
-            (j) =>
-                _workOrderFromRemoteJson(j, fallbackTenantId: tenantId ?? ''),
-          )
-          .toList();
     } on DioException catch (e) {
       throw mapDioError(e);
     }
