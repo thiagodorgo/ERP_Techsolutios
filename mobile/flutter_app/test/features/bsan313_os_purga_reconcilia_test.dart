@@ -683,5 +683,15 @@ void main() {
         reason: '${entry.key}: ${entry.value}',
       );
     }
+    // Ciclo 2 (C2-02, RQ-2) — toda chave citada no mapa é LIDA por um ramo: as do ramo 1 ou as do run que os
+    // produtores de vistoria gravam e o ramo 4 lê. Uma chave sem leitor (como `run_id`) fica vermelha.
+    const runKeys = {'local_run_id', 'server_run_id'};
+    for (final entry in workOrderActionReferenceKeys.entries) {
+      expect(
+        {...ramo1, ...runKeys}.containsAll(entry.value),
+        isTrue,
+        reason: 'chave sem leitor em ${entry.key}: ${entry.value}',
+      );
+    }
   });
 }

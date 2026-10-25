@@ -231,3 +231,35 @@ FM18 purga por isFinal [F23]: VERMELHO pass=5 fail=1 restaurado=True
 ## Limpeza §C5 (GRAVADO)
 - Removidos: container `dev-san313-pg` (`docker rm -f`; `docker ps -a | grep -c dev-san313` → 0), `dist/` (6,1 MB), `mobile/flutter_app/build/` (61 MB), os anexos de teste não rastreados em `storage/` (`git clean -fdx -- storage`; o `.gitkeep` rastreado fica). Mantidos: `node_modules` e `.dart_tool` do worktree (reinstalar custa caro; o worktree fica para re-execução), e os roteiros de mutação no scratchpad (`mut_backend.py`, `mut_flutter.py`, `cursor-letra.patch`) para P3. Nada rastreado apagado; base viva e prefixo `dev-san312a-` intocados.
 - **2ª tentativa (head `84dcaab2`, run `40166705012`):** o `flutter` acusou de novo o mesmo arquivo — o palpite estava errado. Medido com o formatador DA CI: Flutter 3.47.5 = Dart **3.13.4** (`releases_windows.json`), SDK avulso baixado no scratchpad (`dartsdk-windows-x64-release.zip` 3.13.4). `dart format` 3.13.4 mudava um único `expect(…, ['srv-1'], reason: …)` do F1. Aplicada a saída do formatador da CI; `dart format --output=none --set-exit-if-changed lib test` com o 3.13.4 → exit 0; `+6` no arquivo.
+
+## Ciclo 2 (dev-san313-c2-opus)
+
+- **Papel:** DEV do conserto do ciclo 2. Identidade **`dev-san313-c2-opus`**, nova: não achou (`jurado-san313-c2-opus`), não planejou (`planejador-san313-c2-fable`), não vota. **Modelo: Claude Opus 5.5 (`claude-opus-5-5`), nível menor DECLARADO.** O plano nomeava o Codex Sol; ele está sem limite até 20:13 BRT e o dono mandou o Claude cobrir uma tarefa por vez (`D-IAS-EXTERNAS-PRIMEIRO`, cobertura de limite esgotado).
+- **Fonte única:** `B-SAN3-13-plano.md`, seção "Ciclo 2 — plano de resolução" (RQ-1..RQ-6, §C, §E).
+- **Terreno:** worktree `C:/Users/AMP/w-san313`, ramo `fix/mobile-minhas-os`, objeto do ciclo 1 `ed4e229e`. Flutter local 3.41.6 (Dart 3.11.4); formatador da CI = Dart 3.13.4 (SDK avulso no scratchpad). Drift em memória; sem Docker, sem Postgres, sem base viva.
+
+### Estado (P2 — esqueleto)
+| Etapa | Estado |
+|---|---|
+| C2-0 terreno | EM APURAÇÃO |
+| C2-1 vermelho-controle no objeto `ed4e229e` (F28a, F29, F24 reforçado) | EM APURAÇÃO |
+| C2-2 RQ-1 `deleteWorkOrderUnlessPending` (F29, F30, F31) | EM APURAÇÃO |
+| C2-3 RQ-2 ramo 4 completo (F28a-e, F24) | EM APURAÇÃO |
+| C2-4 RQ-3 J1/J2/J5/J6 (F32-F35) + `remoteAuthModeProvider` | EM APURAÇÃO |
+| C2-5 mutações (12) | EM APURAÇÃO |
+| C2-6 bateria | EM APURAÇÃO |
+| C2-7 registro (R8'', pendência, índice) | EM APURAÇÃO |
+| C2-8 entrega (push, CI) | EM APURAÇÃO |
+
+### C2-0 — terreno (GRAVADO)
+- `git rev-parse HEAD` → `ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d`; `git status --porcelain` → só o plano (seção Ciclo 2, do planejador, não commitada), este relatório e os não rastreados da junta (`votos/B-SAN3-13/`, `R-B-SAN3-13-ciclo1.md` — não apagados, não commitados). `df -h /c` → 10-11 G livres (piso 7 G).
+- Formatador da CI: `curl …/dart-archive/channels/stable/release/3.13.4/sdk/dartsdk-windows-x64-release.zip` no scratchpad → `dart-sdk/bin/dart.exe --version` = 3.13.4.
+- O plano (seção Ciclo 2) entra commitado no primeiro commit do ciclo, sem alteração (é o que a junta julga).
+
+### C2-1 — vermelho-controle no objeto `ed4e229e` (GRAVADO)
+Testes escritos contra a API do objeto (gancho de 1 argumento, como as sondas S2/S3), asserção invertida; código intocado.
+`flutter test test/features/bsan313_retencao_ciclo2_test.dart test/features/bsan313_os_purga_reconcilia_test.dart --plain-name "F2" --reporter expanded` →
+- F29: `Expected: ['w'] Actual: [] — OS_restantes` (a S3 da C2: OS e material apagados na janela).
+- F28a: `Expected: ['c'] Actual: [] — OS_restantes` (a S2 da C2: resposta de vistoria pendente com o run `synced` não retém).
+- F24 reforçado: `Expected: true Actual: <false> — chave sem leitor em checklist_run.create: {run_id}`.
+- `+5 -3: Some tests failed.` — as 3 vermelhas **pela asserção** (compilaram e rodaram); as 5 outras F2x do arquivo antigo verdes.
