@@ -328,3 +328,19 @@ Todas "restaurado hash==blob"; `git status --porcelain` ao fim → só os não r
 
 ### C2-8 — entrega (GRAVADO)
 - Commits do ciclo: `23ce3850` docs(plano) · `be2eef8f` test vermelho-controle · `b9dc578f` fix RQ-1 · `2fa6e079` fix RQ-2 · `b4a4ac3c` test RQ-3 · o commit `docs(registro)` desta seção (head empurrado). `git push origin fix/mobile-minhas-os`; CI do head conferida por `gh api repos/<owner>/<repo>/commits/<head>/check-runs` logo após o push.
+
+## Ciclo 3 (dev-san313-c3-sol)
+
+**Identidade:** `dev-san313-c3-opus` — Claude Opus 5.5, nível menor DECLARADO, cobrindo o Codex (`dev-san313-c3-sol`, GPT-5.6 Sol) que estava sem limite até 20:13 de Brasília (`D-IAS-EXTERNAS-PRIMEIRO`). Não achou (`jurado-san313-c3-opus`) nem planejou (`planejador-san313-c3-fable`). Fonte única: "## Ciclo 3 — plano de resolução" de `B-SAN3-13-plano.md`.
+
+**Commits sobre `cbf2db29`:** `d9e9ecf6` docs(plano) — o plano do ciclo 3, commitado como veio · `4eb6d9aa` docs(registro) — `R-B-SAN3-13-ciclo1.md` e `-ciclo2.md` (PERMITIDO §C: `agent-orchestration/omega/**`) · `01ef2e43` docs(contracts) — a linha de `GET /api/v1/work-orders` (l.32) substituída pelo texto de §B, extraído do plano pelo mesmo `awk` do CA-c3-2 (byte a byte; 1 inserção, 1 remoção) · o commit desta seção. Sem merge da `main`. Votos não rastreados da junta intocados.
+
+| CA | Comando (resumo) | Saída | Vermelho-controle |
+|---|---|---|---|
+| CA-c3-1 | `grep -c` dos 4 motivos em `API_CONTRACTS.md` | `invalid_scope=1 invalid_open_only=1 scope_resolver_unavailable=1 scope_resolution_failed=1` | em `cbf2db29`: os 4 = `0` |
+| CA-c3-2 | `awk` da seção "Ciclo 3" → `p.txt`; `grep -m1` da linha do contrato → `c.txt`; `cmp` | `CMP-IGUAL` (1473 = 1473 bytes) | `invalid_scope`→`invalid_scopX` em cópia: `differ: char 980, line 1`, ec=1 |
+| CA-c3-3 | `git diff 8a7885f4 01ef2e43 -- src/modules/work-orders` → motivos acrescentados → `grep -q` no contrato | 8 motivos (`invalid_cursor`, `invalid_cursor_mode`, `invalid_cursor_offset`, `invalid_open_only`, `invalid_paginate`, `invalid_scope`, `scope_resolution_failed`, `scope_resolver_unavailable`); `FALTA` = vazio | `+invalid_fabricado` → `FALTA invalid_fabricado`; na base `cbf2db29` → `FALTA` ×4 (os 4 do C3-01) |
+| CA-c3-4 | `git diff --name-only cbf2db29..01ef2e43 \| grep -E` (código, `Kpis/`, `PLANO_SAN3`, `pendencias`/`decisoes`) | vazio; diff = `R-…-ciclo1.md`, `R-…-ciclo2.md`, `API_CONTRACTS.md`, `B-SAN3-13-plano.md`; `git log --merges` = 0 | — |
+| CA-c3-5 | `gh api repos/<owner>/<repo>/commits/<head>/check-runs` | lido pelo orquestrador/inspetor no head empurrado (a CI nasce com o push; este relatório entra no mesmo push) | ausente/`queued`/`cancelled` = ausente |
+
+**Bateria:** `git diff --check cbf2db29 01ef2e43` → ok · `npm run check` (worktree com `node_modules` próprio) → `tsc --noEmit` ec=0 · `sync-agent-agents --check` não se aplica (nenhum corpo tocado). Sem Docker, sem Postgres, sem base viva; disco 9,8 GB livres. Limpeza §C5: só `p.txt`/`c.txt` no scratchpad da sessão. Rollback: `git revert 01ef2e43`.
