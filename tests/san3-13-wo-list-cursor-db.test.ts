@@ -50,6 +50,49 @@ if (!connectionString) {
       assert.equal(caminhada.terminouComNull, true, "a caminhada termina com nextCursor === null");
     });
   });
+
+  // ── B17-db (CA-2 no Postgres; CRIT-1) — `?search=` como técnico NÃO devolve a OS do colega. É no Postgres que o
+  // `OR` do search e o `OR` do escopo colidiriam (no repositório de memória os filtros são em cadeia).
+  test("B17-db (CA-2): search como técnico fica dentro das dele; perfil real nos dois ramos; sub não-UUID → 200 vazio", async () => {
+    await withPostgresWorkOrders(connection, async (h) => {
+      const perfilA = await h.criarPerfil(h.tecnicoA);
+      const pelaPessoa = await h.criarOs({ code: "B17-1", operador: h.tecnicoA, title: "Bomba do tecnico A" });
+      const peloPerfil = await h.criarOs({ code: "B17-2", operador: perfilA, title: "Bomba pelo perfil de A" });
+      const doColega = await h.criarOs({ code: "B17-3", operador: h.tecnicoB, title: "Bomba do colega B" });
+      const mista = await h.criarOs({ code: "B17-4", operador: h.tecnicoB, usuario: h.tecnicoA, title: "Bomba mista" });
+
+      const comoA = await h.listar(h.atorTecnico(h.tecnicoA), { search: "Bomba", limit: "100" });
+      assert.deepEqual(comoA.items.map((item) => item.id).sort(), [pelaPessoa, peloPerfil].sort());
+      assert.equal(comoA.pagination.total, 2, "o count no Postgres usa o mesmo where (CRIT-10)");
+
+      const gestor = await h.listar(h.atorGestor(), { search: "Bomba", limit: "100" });
+      assert.deepEqual(gestor.items.map((item) => item.id).sort(), [pelaPessoa, peloPerfil, doColega, mista].sort());
+
+      const naoUuid = await h.listar({ ...h.atorTecnico(h.tecnicoA), userId: "tecnico.demo" }, { limit: "100" });
+      assert.deepEqual(naoUuid.items, [], "OR vazio é falso no Prisma: nunca a organização inteira");
+      assert.equal(naoUuid.pagination.total, 0);
+    });
+  });
+
+  // ── B18-db (CA-10 no Postgres; R2-2) — `openOnly` é `status notIn` DENTRO do AND: o `?status=` do chamador fica.
+  test("B18-db (CA-10): openOnly + status=in_progress mantém o filtro do chamador; status=completed&openOnly=true → []", async () => {
+    await withPostgresWorkOrders(connection, async (h) => {
+      const emAndamento = await h.criarOs({ code: "B18-1", operador: h.tecnicoA, status: "in_progress" });
+      const atribuida = await h.criarOs({ code: "B18-2", operador: h.tecnicoA, status: "assigned" });
+      await h.criarOs({ code: "B18-3", operador: h.tecnicoA, status: "completed" });
+      await h.criarOs({ code: "B18-4", operador: h.tecnicoA, status: "cancelled" });
+      await h.criarOs({ code: "B18-5", operador: h.tecnicoA, status: "rejected" });
+      const ator = h.atorTecnico(h.tecnicoA);
+
+      const filtrada = await h.listar(ator, { status: "in_progress", openOnly: "true" });
+      assert.deepEqual(filtrada.items.map((item) => item.id), [emAndamento]);
+      const abertas = await h.listar(ator, { openOnly: "true", limit: "100" });
+      assert.deepEqual(abertas.items.map((item) => item.id).sort(), [emAndamento, atribuida].sort());
+      assert.equal(abertas.pagination.total, 2);
+      assert.deepEqual((await h.listar(ator, { status: "completed", openOnly: "true" })).items, []);
+      assert.equal((await h.listar(ator, { limit: "100" })).pagination.total, 5, "sem openOnly → todas as dele");
+    });
+  });
 }
 
 // ───────────────────────────── harness ─────────────────────────────
@@ -67,6 +110,7 @@ type Harness = {
   readonly gestor: string;
   atorTecnico(userId: string): Actor;
   atorGestor(): Actor;
+  criarPerfil(userId: string): Promise<string>;
   criarOs(input: {
     readonly code: string;
     readonly operador?: string;
@@ -119,6 +163,9 @@ async function withPostgresWorkOrders(connection: string, callback: (harness: Ha
       gestor,
       atorTecnico: (userId) => ({ tenantId: tenant.id, userId, roles: ["field_technician"], permissions: [] }),
       atorGestor: () => ({ tenantId: tenant.id, userId: gestor, roles: ["manager"], permissions: [] }),
+      async criarPerfil(userId) {
+        return (await client.operatorProfile.create({ data: { tenant_id: tenant.id, user_id: userId, full_name: "Perfil" } })).id;
+      },
       async criarOs(input) {
         const created = await client.workOrder.create({
           data: {
@@ -128,6 +175,8 @@ async function withPostgresWorkOrders(connection: string, callback: (harness: Ha
             status: input.status ?? "assigned",
             assigned_operator_id: input.operador ?? null,
             assigned_user_id: input.usuario ?? null,
+            // CHECK `work_orders_cancelled_decision_check`: OS cancelada exige a decisão financeira.
+            ...(input.status === "cancelled" ? { financial_cancellation_decision: "keep" } : {}),
           },
         });
         if (input.createdAt) {
@@ -164,6 +213,7 @@ async function withPostgresWorkOrders(connection: string, callback: (harness: Ha
     if (tenantId) {
       // Teardown ESCOPADO à organização criada por este teste (nunca DELETE em massa).
       await client.$executeRawUnsafe("DELETE FROM work_orders WHERE tenant_id = $1::uuid", tenantId);
+      await client.$executeRawUnsafe("DELETE FROM operator_profiles WHERE tenant_id = $1::uuid", tenantId);
       await client.$executeRawUnsafe("DELETE FROM users WHERE tenant_id = $1::uuid", tenantId);
       await client.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
     }

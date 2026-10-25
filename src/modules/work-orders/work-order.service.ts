@@ -23,6 +23,7 @@ import type {
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderInput,
+  WorkOrderAssignedToActorScope,
   WorkOrder,
   WorkOrderActorContext,
   WorkOrderCustomerLink,
@@ -47,14 +48,17 @@ import {
   optionalString,
   parseChecklistAdjustment,
   parseChecklistSetSelection,
+  isWorkOrderUuid,
   parseFinancialCancellationDecision,
   parseLimit,
+  parseListScope,
   parseOffset,
   parseOptionalClientActionId,
   parseOptionalCoordinate,
   parseOptionalDate,
   parseOptionalMileage,
   parseOptionalSearch,
+  parseOpenOnly,
   parseOptionalUuid,
   parseRequiredUuid,
   parseServiceDetails,
@@ -180,6 +184,11 @@ export type WorkOrderReferenceResolvers = {
   // quando o usuário não tem perfil profissional — e, para um ator de campo, "sem perfil" significa
   // "nenhuma ordem é dele", que é a recusa correta.
   readonly resolveActorOperatorProfileId?: (actor: WorkOrderActorContext) => Promise<string | undefined>;
+  // B-SAN3-13 (#32, CRIT-3) — o MESMO mapeamento ator→perfil, mas ESTRITO: sem `catch`. Consumidor: a LISTA. Lá,
+  // `undefined` por erro engolido virava 200 com MENOS OS, e o app trata pull completo como autoridade para APAGAR do
+  // aparelho o que não veio. Aqui erro PROPAGA e a lista responde 503 (`WORK_ORDER_SCOPE_UNAVAILABLE`); `undefined`
+  // só significa "o ator não tem perfil". O guard de mutação segue na referência acima, intocado.
+  readonly resolveActorOperatorProfileIdStrict?: (actor: WorkOrderActorContext) => Promise<string | undefined>;
   // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — existe despacho ATIVO desta OS em "No local" (`arrived`/`in_service`)? É a
   // metade do predicado "atendimento iniciado" que só o despacho sabe. AUSENTE = a trava RECUSA toda troca de técnico
   // (fail-closed por composição incompleta, como `assertMutationObjectScope`). Sem `catch`: erro de leitura propaga.
@@ -421,8 +430,57 @@ export class WorkOrderService {
       limit: parseLimit(query.limit),
       offset: parseOffset(query.offset),
     };
+    // B-SAN3-13 (#32) — a lista do técnico é IMPOSTA aqui: o ator que só alcança OS por papel de campo
+    // (`actorMutatesAssignedOnly`, a mesma régua do guard) recebe só as que pode mutar, peça o que pedir; os demais
+    // filtros (`assignedUserId`, `status`, `search`, …) INTERSECTAM — `?assignedUserId=<colega>` dá 200 vazio, não
+    // a OS do colega. `scope=assigned` oferece o mesmo recorte a qualquer papel (a gestão no app vê só as suas).
+    const scope = parseListScope(query.scope);
+    const openOnly = parseOpenOnly(query.openOnly);
+    const assignedToActor =
+      scope === "assigned" || actorMutatesAssignedOnly(actor) ? await this.resolveListActorScope(actor) : undefined;
 
-    return this.repository.list(input);
+    return this.repository.list({
+      ...input,
+      ...(assignedToActor ? { assignedToActor } : {}),
+      ...(openOnly ? { openOnly } : {}),
+    });
+  }
+
+  /**
+   * B-SAN3-13 (CRIT-3, R2-N3) — quem é o ator para o predicado da lista. Fail-closed SEM encolher: o app apaga do
+   * aparelho o que um pull completo não trouxe, então "não consegui saber o perfil" NUNCA pode virar 200 com menos OS.
+   *  · `actor.userId` fora da forma de UUID → nenhum perfil pode existir para ele (OperatorProfile é chaveado por UUID):
+   *    só o ramo user id, de forma DETERMINÍSTICA — não 503 permanente para o `sub` de bancada (`tecnico.demo`);
+   *  · referência estrita AUSENTE (composição incompleta) → 503 `scope_resolver_unavailable`;
+   *  · referência LANÇANDO → 503 `scope_resolution_failed`;
+   *  · `undefined` → o ator não tem perfil: só o ramo user id, 200.
+   */
+  private async resolveListActorScope(actor: WorkOrderActorContext): Promise<WorkOrderAssignedToActorScope> {
+    if (!isWorkOrderUuid(actor.userId)) return { userId: actor.userId };
+
+    const resolver = this.references.resolveActorOperatorProfileIdStrict;
+    if (!resolver) {
+      throw new WorkOrderError(
+        503,
+        "WORK_ORDER_SCOPE_UNAVAILABLE",
+        "scope_resolver_unavailable",
+        "Não foi possível montar a lista das suas ordens agora. Tente de novo.",
+      );
+    }
+
+    let operatorProfileId: string | undefined;
+    try {
+      operatorProfileId = await resolver(actor);
+    } catch {
+      throw new WorkOrderError(
+        503,
+        "WORK_ORDER_SCOPE_UNAVAILABLE",
+        "scope_resolution_failed",
+        "Não foi possível montar a lista das suas ordens agora. Tente de novo.",
+      );
+    }
+
+    return operatorProfileId ? { userId: actor.userId, operatorProfileId } : { userId: actor.userId };
   }
 
   async create(
@@ -2197,6 +2255,14 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
       } catch {
         return undefined;
       }
+    },
+    // B-SAN3-13 (CRIT-3) — a MESMA leitura, SEM `catch`, para a LISTA: lá erro engolido = 200 encolhido = purga no
+    // aparelho. Erro propaga e o serviço responde 503. O `sub` que não é UUID não chega aqui (o serviço o trata antes).
+    resolveActorOperatorProfileIdStrict: async (actor) => {
+      const { createDefaultOperatorProfileService } = await import("../operator-profiles/operator-profile.service.js");
+      const service = await createDefaultOperatorProfileService();
+
+      return (await service.findByUserId(actor.tenantId, actor.userId))?.id;
     },
     // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a metade "despacho em No local" do predicado da trava. Import DINÂMICO
     // (field-dispatch importa work-orders estaticamente; o estático aqui fecharia o ciclo), no idioma do resolver de

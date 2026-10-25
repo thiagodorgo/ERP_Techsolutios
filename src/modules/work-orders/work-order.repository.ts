@@ -19,7 +19,8 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { WorkOrderError } from "./work-order.types.js";
+import { matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
+import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   assertChecklistRemovalHasActor,
   liveChecklistLinks,
@@ -297,7 +298,11 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       .filter((workOrder) => !input.assignedUserId || workOrder.assignedUserId === input.assignedUserId)
       .filter((workOrder) => !input.from || workOrder.createdAt >= input.from)
       .filter((workOrder) => !input.to || workOrder.createdAt <= input.to)
-      .filter((workOrder) => matchesSearch(workOrder, input.search));
+      .filter((workOrder) => matchesSearch(workOrder, input.search))
+      // B-SAN3-13 — o escopo do ator (predicado do guard) e a E1 ("Só as abertas"): mais dois filtros em cadeia, que
+      // só restringem — a mesma semântica que o `AND` por cláusula do Prisma (`buildWhere`).
+      .filter((workOrder) => !input.assignedToActor || matchesAssignedToActor(workOrder, input.assignedToActor))
+      .filter((workOrder) => !input.openOnly || !WORK_ORDER_TERMINAL_STATUSES.includes(workOrder.status));
 
     return {
       items: filtered.slice(input.offset, input.offset + input.limit),

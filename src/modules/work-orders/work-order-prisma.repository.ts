@@ -22,6 +22,8 @@ import type {
   WorkOrderPriority,
   WorkOrderStatus,
 } from "./work-order.types.js";
+import { assignedToActorOperatorIds } from "./work-order.types.js";
+import { isWorkOrderUuid, WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   duplicateWorkOrderError,
   formatWorkOrderCode,
@@ -356,6 +358,11 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   }
 
   async list(input: ListWorkOrdersInput): Promise<ListWorkOrdersResult> {
+    // B-SAN3-13 (R2-N3) — ator escopado cujo id não tem forma de UUID (o `sub` de bancada, `tecnico.demo`): nenhuma OS
+    // pode casar (`assigned_operator_id` é `uuid`). Responde vazio SEM consultar — `OR: []` não é falso no Prisma 7.
+    if (input.assignedToActor && assignedToActorUuidOperatorIds(input).length === 0) {
+      return { items: [], total: 0, limit: input.limit, offset: input.offset };
+    }
     const where = buildWhere(input);
     const [items, total] = await Promise.all([
       this.client.workOrder.findMany({
@@ -784,7 +791,47 @@ export async function createPrismaWorkOrderRepository(): Promise<RlsPrismaWorkOr
   return new RlsPrismaWorkOrderRepository(prisma);
 }
 
+// B-SAN3-13 (CRIT-1) — toda cláusula que precisa de `OR` (ou que colidiria com uma chave simples) vai num ELEMENTO
+// PRÓPRIO de um `AND` de topo; nunca `OR` no topo. Em objeto JS a segunda chave `OR` substitui a primeira: com o
+// escopo do ator e o `search` lado a lado, um apagava o outro e `?search=a` como técnico devolvia a organização
+// inteira no Postgres. Pela mesma razão o `openOnly` é `status notIn` DENTRO do `AND` — como chave simples, ele
+// substituiria o `?status=` do chamador. As chaves simples (tenant, status, prioridade, atribuição, datas) ficam onde
+// estavam: são conjunção implícita e não colidem entre si.
+function assignedToActorUuidOperatorIds(input: ListWorkOrdersInput): string[] {
+  return input.assignedToActor
+    ? assignedToActorOperatorIds(input.assignedToActor).filter((operatorId) => isWorkOrderUuid(operatorId))
+    : [];
+}
+
 function buildWhere(input: ListWorkOrdersInput): Prisma.WorkOrderWhereInput {
+  const and: Prisma.WorkOrderWhereInput[] = [];
+  if (input.search) {
+    and.push({
+      OR: [
+        { code: { contains: input.search, mode: "insensitive" } },
+        { title: { contains: input.search, mode: "insensitive" } },
+        { description: { contains: input.search, mode: "insensitive" } },
+        { customer_name: { contains: input.search, mode: "insensitive" } },
+        { customer_document: { contains: input.search, mode: "insensitive" } },
+        { customer_phone: { contains: input.search, mode: "insensitive" } },
+        { service_address: { contains: input.search, mode: "insensitive" } },
+        { service_city: { contains: input.search, mode: "insensitive" } },
+      ],
+    });
+  }
+  if (input.assignedToActor) {
+    // O MESMO predicado do guard (`matchesAssignedToActor`): 1 elemento (sem perfil) ou 2 — nunca `undefined`. A coluna
+    // é `uuid`, então só entram ids com forma de UUID (`assignedToActorUuidOperatorIds`); o caso "nenhum" nem chega
+    // aqui — `list` responde vazio antes, porque `OR: []` NÃO é falso no Prisma 7 (medido no B17-db: devolvia a
+    // organização inteira).
+    and.push({
+      OR: assignedToActorUuidOperatorIds(input).map((operatorId) => ({ assigned_operator_id: operatorId })),
+    });
+  }
+  if (input.openOnly) {
+    and.push({ status: { notIn: [...WORK_ORDER_TERMINAL_STATUSES] } });
+  }
+
   return {
     tenant_id: input.tenantId,
     ...(input.status ? { status: input.status } : {}),
@@ -799,20 +846,7 @@ function buildWhere(input: ListWorkOrdersInput): Prisma.WorkOrderWhereInput {
           },
         }
       : {}),
-    ...(input.search
-      ? {
-          OR: [
-            { code: { contains: input.search, mode: "insensitive" } },
-            { title: { contains: input.search, mode: "insensitive" } },
-            { description: { contains: input.search, mode: "insensitive" } },
-            { customer_name: { contains: input.search, mode: "insensitive" } },
-            { customer_document: { contains: input.search, mode: "insensitive" } },
-            { customer_phone: { contains: input.search, mode: "insensitive" } },
-            { service_address: { contains: input.search, mode: "insensitive" } },
-            { service_city: { contains: input.search, mode: "insensitive" } },
-          ],
-        }
-      : {}),
+    ...(and.length > 0 ? { AND: and } : {}),
   };
 }
 

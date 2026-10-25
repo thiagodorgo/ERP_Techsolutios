@@ -272,6 +272,11 @@ export type ListWorkOrdersInput = {
   readonly search?: string;
   readonly limit: number;
   readonly offset: number;
+  // B-SAN3-13 (#32) — "só as minhas": o predicado DO GUARD de mutação (ver `matchesAssignedToActor`). Imposto pelo
+  // serviço ao ator `actorMutatesAssignedOnly`; oferecido a todos por `scope=assigned`. Os demais filtros RESTRINGEM.
+  readonly assignedToActor?: WorkOrderAssignedToActorScope;
+  // B-SAN3-13 (E1 do dono, "Só as abertas") — só OS com status FORA de `WORK_ORDER_TERMINAL_STATUSES`.
+  readonly openOnly?: boolean;
 };
 
 export type ListWorkOrdersResult = {
@@ -280,6 +285,31 @@ export type ListWorkOrdersResult = {
   readonly limit: number;
   readonly offset: number;
 };
+
+/** B-SAN3-13 — quem é "o ator" para o predicado da lista: o user id e, se existir, o PERFIL de campo dele. */
+export type WorkOrderAssignedToActorScope = {
+  readonly userId: string;
+  readonly operatorProfileId?: string;
+};
+
+/**
+ * B-SAN3-13 (#32, plano v3 §3) — a OS é "do ator" na LISTA exatamente quando o guard de mutação
+ * (`assertMutationObjectScope`) a deixaria mutar: `assigned_operator_id` = user id do ator OU = o perfil de campo
+ * dele. SEM o ramo `assigned_user_id` (CRIT-2: a via mista `{operatorId: P_B, userId: A}` entra no guard de B, não
+ * no de A) — "lista = mutáveis", por construção. O Prisma constrói o MESMO predicado a partir de
+ * `assignedToActorOperatorIds` (`buildWhere`).
+ */
+export function matchesAssignedToActor(
+  workOrder: { readonly assignedOperatorId?: string },
+  scope: WorkOrderAssignedToActorScope,
+): boolean {
+  return workOrder.assignedOperatorId !== undefined && assignedToActorOperatorIds(scope).includes(workOrder.assignedOperatorId);
+}
+
+/** Os valores de `assigned_operator_id` que casam o ator: 1 elemento (sem perfil) ou 2 — nunca `undefined`. */
+export function assignedToActorOperatorIds(scope: WorkOrderAssignedToActorScope): readonly string[] {
+  return scope.operatorProfileId ? [scope.userId, scope.operatorProfileId] : [scope.userId];
+}
 
 export type CreateWorkOrderInput = Omit<
   WorkOrder,
