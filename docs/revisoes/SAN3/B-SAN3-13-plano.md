@@ -1,0 +1,428 @@
+# B-SAN3-13 — PLANO v3 (FINAL) · "Minhas OS" só com as OS ABERTAS do técnico (imposto no backend) e purga das OS semente do aparelho
+
+- **Papel:** `planejador-mestre` (TOPO). **Modelo efetivo: Fable 5.1 (`claude-fable-5-1`), o do frontmatter — sem fallback.** Decisão do dono (2026-10-24): o topo é sempre do Claude.
+- **Versão:** **v3, final** (2026-10-25) — responde à crítica r2 (`crit-san313-opus-r2`, Claude Opus 5.5 declarado; `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-13-critica-r2.md`: 3 `bloqueia` R2-1/R2-2/R2-6, 3 `ajuste` R2-3/R2-4/R2-5, 3 `nota`). **Não há rodada 3 de crítica:** cada bloqueante e ajuste virou **requisito explícito com critério e mutação** (seção "Resposta à crítica r2" e §6). A **Emenda E1 do dono** ("Só as abertas", apêndice) está **incorporada ao contrato** (§3, §4, §6). Nova seção "Riscos residuais para a junta" (§11-bis). As respostas à r1 ficam como histórico; onde a v3 diz diferente (cursor por `id`, E1 no lugar de `terminalSince`, ramo 3 da retenção), **vale a v3**.
+- **Itens do gate SAN3:** #32 `P-MOBILE-MINHAS-OS-SEM-FILTRO` · #33 `P-MOBILE-OS-SEEDS` (`PLANO_SAN3.md` l.151-152, l.284, §10.7).
+- **Base medida:** `C:/Users/AMP/w-plan21` detached em `origin/main` = **`37a3f360731a25afc13d218a2449909ca2458f09`** (#456 B-SAN3-20 entrou; `git diff --name-only c76ec481 37a3f360` → 58 arquivos, **nenhum** em `src/modules/work-orders`, `src/modules/mobile`, `mobile/`; em `prisma/schema.prisma` a única linha que casa "WorkOrder" é `invoiced_items WorkOrderFinancialItem[]` — relação, não coluna de `work_orders`). v1 mediu `7ab2fe71`, v2 `c76ec481`: toda linha citada vale no head novo. Worktree intocado (`status --short` vazio); nenhum container. O #454 (TRC-02) ainda não entrou — se entrar antes do dev, o inspetor re-mede `src/modules/work-orders` e `mobile/flutter_app/lib/features/work_orders` (esperado: sem interseção).
+- **Classe:** DADO → junta completa, unanimidade de 3, inspetor antes. KPI congelado. **Dev: Claude Opus (nível menor, DECLARADO) — o dono: "vc cobre o codex nessa rodada".** Quem desenvolve não vota nem critica.
+- **Decisões do dono já tomadas:** Q1-Q5 aceitas ("Aceito as 5 (Recomendado)"); Q6 respondida pela **E1: "Só as abertas"**. A v3 **não abre pergunta nova**; registra 2 notas (predicado sem `assigned_user_id`; rótulo do tile "Concluídas" sob a E1) em §13.
+
+## Índice
+| § | Seção | v3 |
+|---|---|---|
+| R1 | Resposta à crítica r1 | histórico (v2); superada onde a v3 diz diferente |
+| **R2** | **Resposta à crítica r2** — re-execução, veredito, requisito, CA e mutação por achado | **NOVA** |
+| 0 | MEDIDO × HIPÓTESE | H2/H5 derrubadas; M21-M27 novas (famílias de trabalho pendente, `timestamptz(6)`, materiais) |
+| 1 | Defeitos por execução | mantida |
+| 2 | Propriedade; retenção v3 (6 ramos + fabricação); lock entre instâncias; drenagem | **reescrita** |
+| 3 | Contrato backend (E1: `openOnly`; cursor por `id`; resolver estrito; `AND` por cláusula) | **reescrito** |
+| 4 | Desenho do app (E1; cursor; lock estático; Home/lista sob E1) | **reescrito** |
+| 5 | Escopo | ampliado (dto, `work_order_materials`, textos da Home/lista) |
+| 6 | Critérios de aceite × mutação | **reescritos** (CA-1..CA-24) |
+| 7 | Testes, N e M | M ≥ 40 |
+| 8 | Bateria | + suíte `-db` no job `backend-postgres` |
+| 9 | Junta | executores por disponibilidade |
+| 10 | Dev (Claude Opus), ordem, rollback | atualizado |
+| 11 | Riscos | R18-R22 |
+| **11-bis** | **Riscos residuais para a junta** | **NOVA** |
+| 12 | Pendências | +5 |
+| 13 | Perguntas | nenhuma nova; 2 notas |
+| 14 | Registro | `API_CONTRACTS` v3 |
+
+## Resumo em 8 linhas
+1. **Diagnóstico inalterado e re-medido:** backend lista a organização inteira a qualquer papel; app não filtra, não pagina, nunca apaga; sementes eternas.
+2. **Predicado da lista = o do guard** (`assigned_operator_id` = user id OU = perfil), imposto a `actorMutatesAssignedOnly`, oferecido a todos por `scope=assigned`; perfil por resolver **estrito** (erro → 503; `sub` não-UUID → sem perfil, determinístico). Lista = mutáveis.
+3. **E1 no contrato:** `openOnly=true` — o backend define "aberta" uma única vez (`WORK_ORDER_TERMINAL_STATUSES` = `completed, cancelled, rejected`, derivado de `WORK_ORDER_STATUS_TRANSITIONS`); o app pede `scope=assigned&openOnly=true`; o que não voltou e não tem trabalho pendente **sai do aparelho** — inclusive a OS concluída e já sincronizada.
+4. **Cursor por `id`** (uuid; ordem total e exata; `id < cursor`), não por `created_at` (µs × ms pulava OS no Postgres — R2-1); provado em **Postgres real** (`-db`) com `created_at` empatado em µs.
+5. **Retenção v3, por família medida:** ação na fila referenciando a OS por **qualquer** das 5 chaves (`local_id`, `work_order_local_id`, `server_id`, `work_order_id`, `work_order_server_id`) em qualquer tipo; linha `pending`; evidência com blob presente; **materiais do prestador** não sincronizados; vistoria pendente; teste-guarda que falha se nascer família nova sem classificação (R2-6).
+6. **Lock estático** (entre instâncias do repositório) e releitura da linha no store dentro da seção crítica (R2-4); `deleteWorkOrder` apaga OS + timeline + evidência + **materiais**.
+7. **Home/lista sob E1:** tile "Concluídas" → "A sincronizar" (contagem honesta); aba "Concluidas" com estado vazio explicado; "OS hoje" = abertas de hoje (R2-5). Sem layout novo.
+8. **Sem drenagem possível neste bloco** (ação `failed`, tipos não replayados, evidência em `conflict`): retém **com selo** e **pendência nomeada** — nunca apaga; blob ausente (`LOCAL_BLOB_MISSING`) não retém (nada a perder). Dev Claude Opus; junta 3/3.
+
+## Resposta à crítica r1 (histórico da v2 — onde a v3 diz diferente, vale a v3: cursor por `id`, E1 no lugar de `terminalSince`, ramo 3 da retenção)
+
+**Re-execução (comandos e saídas).** Backend, na cópia `san313-medicao` (cujo `src` o crítico conferiu idêntico ao head por `cmp`, 794/794), com o gancho de resolução dele (o link `node_modules → w-agapi2` está morto; nenhum `npm ci`): `node --import file:///<scratchpad>/hook/register.mjs --import file:///C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/node_modules/tsx/dist/loader.mjs --test tests/crit-opus-r1-{backend,ca1,paginacao}.test.ts` →
+`CRIT-OPUS-A: assign status 200 assignedUserId cc0c… assignedOperatorId aee3… · lista ?assignedUserId=A total 1 · PATCH /status por A: 403 not_assigned_to_actor · ok 1` ·
+`CA-1 × mutacoes: predicado completo: 3 · sem ramo assigned_user_id: 3 · sem ramo operator=userId: 3 · sem ramo operator=perfil: 2 · ok 1` ·
+`offset + reatribuicao: acumulado=149 total_ultima_pagina=149 criterio_completo=true OS_ainda_de_A_que_o_pull_nao_trouxe=1 · ok 1`.
+Flutter, na cópia `san313-critica/flutter_app` (`flutter pub get --offline` → `Got dependencies!`): `flutter test test/crit_opus_r1_test.dart test/crit_opus_r1_ca10_test.dart --reporter expanded` → `CRIT-OPUS-B … +1`, `CRIT-OPUS-C … +2`, `sementes=[wo-local-1..3] timeline={…: 0} evidencia={…: 0}`, `+3: All tests passed!`. Colisão de `OR` (CRIT-1): `node -e` com os dois spreads → `escopo antes: {"tenant_id":"t","OR":[{"code"…` (escopo sumiu) · `escopo depois: …"OR":[{"assigned_user_id"…` (search sumiu) · `AND: {"tenant_id":"t","AND":[{"OR":[…search…]},{"OR":[…escopo…]}]}` (os dois ficam). Leituras: `sed -n 787,817p work-order-prisma.repository.ts` (o `search` ocupa `OR` de topo); `sed -n 2189,2199p work-order.service.ts` (resolver com `catch { return undefined }`); `sync_conflict_resolver.dart:20-40` (`useServer` → só a AÇÃO vira `synced`); `sync_screen.dart:30,72` (resolve só `conflict`; `failed` l.444 só é contado); `sync_providers.dart:267-298` (`uploadStatus` de evidência sem blob nunca muda); `evidence_upload.dart:149-156` (o upload só pega `localBlobRef != null && uploadStatus ∈ {pending, failed}`), l.40-48 do trecho 160-215 (`stored` → `uploadStatus: synced` + `blobStore.delete`); `sync_replay_service.dart:778/792` (`_queue.update` ANTES do `_entityUpdater`); `work-order.repository.ts:567-568` (memória ordena só por `createdAt`); `prisma/schema.prisma:142` `@@unique([tenant_id, code])`.
+
+| id | Veredito meu | Mudança na v2 | Mutação que deixa o critério novo vermelho |
+|---|---|---|---|
+| **CRIT-1** `OR`×`OR` | **ACEITO** (re-executado) | §3: `buildWhere` passa a pôr **cada cláusula com `OR` num elemento próprio de um `AND` de topo** (`search`, `assignedToActor`, `terminalSince`, `cursor`); chaves simples ficam onde estão. CA-6/B12 com `PrismaExecutor` falso: `where.OR === undefined` e `where.AND.length` = nº de cláusulas ativas; B3 ganha `search` | voltar a `...{OR}` para qualquer cláusula → `where.OR` definido / `AND` com menos elementos → B12 vermelho; `?search=` como técnico no job `backend-postgres` devolve a OS do colega → B3 vermelho |
+| **CRIT-2** via mista por REST | **ACEITO** (re-executado: `assign {operatorId: P_B, userId: A}` → 200; A lista e recebe 403) | §2.2: o predicado da lista é **exatamente o do guard** — `assigned_operator_id = userId OR = perfil`. **Sem** ramo `assigned_user_id`. H2 derrubada e reescrita: "lista = mutáveis" vale por construção e é testada com a via mista dentro (B6) | acrescentar `assigned_user_id = userId` → a OS mista entra na lista de A e A recebe 403 no PATCH → B6 vermelho |
+| **CRIT-3** resolver engole erro → 200 encolhido → purga | **ACEITO** | §3: a lista usa uma referência **estrita** nova (`resolveActorOperatorProfileIdStrict`, mesmo import, **sem** `try/catch`, ligada ao lado da atual em l.2189). Ausente ou lançando, com ator escopado → **`503 WORK_ORDER_SCOPE_UNAVAILABLE`** (`scope_resolver_unavailable` / `scope_resolution_failed`) — nunca 200 com menos. `undefined` (ator sem perfil) → só o ramo `userId`, com `200`. O guard continua com a referência antiga, intocado. No app, 503 → `lastPullError` → `cached`, **nenhuma purga** (já era) | engolir o erro na lista → B9 (resolver que lança) recebe 200 → vermelho; F5 (erro → sem purga) continua guardando o lado do app |
+| **CRIT-4** outras leituras tenant-wide | **ACEITO** (`pre-existente`; rotas conferidas: `/approvals/pending`, `/approvals/:id`, `/work-orders/:id/{timeline,attachments,attachments/:id/download,map-start-points}`, `/operations/dispatches{,/:id,/:id/timeline}`) | §12: a pendência vira `P-WO-LEITURAS-TENANT-WIDE-TECNICO` e **enumera** todas; o resumo deixa de dizer "imposto no backend" sem o adendo "na lista" | — (registro) |
+| **CRIT-5** conflito resolvido não drena; evidência sem blob retém para sempre | **ACEITO** (CRIT-OPUS-B re-executado: ação `synced`, linha `conflict`, regra v1 = retém) | §2.3: **ramo 2 (`linha.syncStatus == conflict`) sai**; o conflito que retém é o da **fila** (ramo 1 já cobre `conflict`). **Ramo 3 vira "blob ainda no aparelho"**: `localBlobRef != null && uploadStatus ∈ {pending, failed, conflict}` (o predicado do próprio `evidence_upload.dart:149-156`); evidência **sem blob** com metadado já enviado não retém (não há o que perder). Drenagem: `useServer` → ação `synced` → próximo pull → linha sai. F13 ponta a ponta (replay→conflito→resolução→pull) e F20 (evidência sem blob) | voltar o ramo 2 → F13 vermelho (linha fica); reter por `uploadStatus != synced` sem exigir blob → F20 vermelho |
+| **CRIT-6** janela grava-linha/enfileira; check-then-act | **ACEITO** (CRIT-OPUS-C re-executado: linha `pending`, fila 0, regra v1 = não retém) | §4.2: **exclusão mútua no repositório** — toda mutação pública (`updateStatus`, `assignRegistry`, `createWorkOrder`, `createApprovalRequest`, `completeWorkOrder`, `attachEvidence`, `reportUnableToStart`) e a reconciliação/regra de fabricação rodam num mesmo `_serial` (cadeia de `Future`, sem lib); o check+delete de cada linha acontece dentro da seção crítica. **E** a linha `syncStatus == pending` volta a reter (a proteção que o head já usa em l.191) — cobre escritores fora do lock (atualizador do replay: `_queue.update` antes do `_entityUpdater`, l.778/792). Semente 3 (`pending` sem ação) sai pela regra de fabricação, que corre antes | tirar o lock → F18 (enfileirar retido por `Completer` enquanto a reconciliação roda) apaga a linha → vermelho; tirar o ramo `pending` → F11 vermelho |
+| **CRIT-7** replay ressuscita linha | **ACEITO** como nota | Fechado pelo ramo `pending`: enquanto o atualizador pode escrever (`load`→`save`), a ação acabou de virar `synced` e a linha ainda está `pending` → retida; só depois do `save` (linha `synced`) ela vira purgável. Declarado em R8' | tirar o ramo `pending` → F11 vermelho |
+| **CRIT-8** CA-1 não mata 2 de 3 mutações | **ACEITO** (re-executado: `sem ramo assigned_user_id: 3 · sem ramo operator=userId: 3`) | Com o predicado = guard (2 ramos), CA-1 passa a **4 OS**: (i) assign `userId` (operator = A), (ii) assign só perfil (operator = P_A), (iii) despacho (user = A, operator = P_A), (iv) **via mista** (user = A, operator = P_B) — A vê (i)(ii)(iii) e **não** vê (iv); B vê (iv). Cada ramo tem OS que só ele traz | tirar ramo `operator = userId` → (i) some → vermelho; tirar ramo perfil → (ii)(iii) somem → vermelho; acrescentar `assigned_user_id` → (iv) aparece → vermelho |
+| **CRIT-9** CA-10 não mata a mutação das filhas | **ACEITO** (re-executado: filhas = 0 antes da purga) | CA-10/F1 semeia **timeline e evidência (sem blob) das 3 sementes** e afirma que somem; F16 no Drift em memória | `deleteWorkOrder` só em `work_orders` → `loadTimeline('wo-local-1')` não vazio → vermelho |
+| **CRIT-10** mutação do `count` só existe no Prisma | **ACEITO** | B12 com `PrismaExecutor` falso (o construtor l.52 aceita qualquer executor): afirma `count.where` **igual** a `findMany.where` sem o elemento do cursor; e o job `backend-postgres` da CI é **obrigatório** para B7 (§8 item 15) | `count` sem o escopo → B12 vermelho |
+| **CRIT-11** offset + "itens ≥ total" perde OS | **ACEITO** (re-executado: `OS_ainda_de_A_que_o_pull_nao_trouxe=1`) | §3/§4: **paginação por cursor** (`cursor` opaco = `created_at|code`, ordem `created_at desc, code desc` nos DOIS repositórios — `@@unique([tenant_id, code])` garante ordem total; `pagination.nextCursor`; `offset` com `cursor` → 400). Completo = `nextCursor == null` sem erro, **não** `itens ≥ total`. Remoção/inserção durante a caminhada não desloca posição (a página seguinte é "chaves menores que o cursor") | voltar ao `offset`/`total` → B10 (sonda do crítico invertida: reatribuir entre páginas → `OS_ainda_de_A_que_o_pull_nao_trouxe` deve ser 0) vermelho; F3 confere que o app envia `cursor` e não `offset` na página 2 |
+| **CRIT-12** histórico ilimitado × teto | **ACEITO** | §3: `terminalSince=<ISO>` — OS não terminal (`WORK_ORDER_STATUS_TRANSITIONS[status].length > 0`) sempre; terminal (`completed/cancelled/rejected`) só se `updated_at ≥ terminalSince`. O app manda `now − 30 d` (Q6). O teto sobe para 50 páginas e volta a ser borda. H5 derrubada e reescrita | ignorar `terminalSince` no repositório → B11 (terminal antiga aparece) vermelho; não enviar no app → F2 vermelho |
+| **CRIT-13** CA-12 por ramo isolado | **ACEITO** como nota | F13 ponta a ponta (acima) além dos ramos | — |
+
+**O que a v2 NÃO muda (e por quê):** `scope=assigned` (nome e semântica); imposição por `actorMutatesAssignedOnly`; interseção silenciosa com `assignedUserId` (não 403); nenhuma purga em pull com erro/incompleto; isolamento por organização; `clearAll` proibido; escopo do detalhe fora do bloco (Q2 do dono); nenhuma tela nova; nenhuma migration/coluna Drift; `lib/core/sync/**` continua **proibido** — a v2 só o **lê** e o usa como biblioteca nos testes (`buildWorkOrderSyncEntityUpdater`, `resolveConflictAction`).
+
+**Decisões do dono revisitadas:** Q3 ("visível até drenar") — a v2 é o que a torna verdadeira; a drenagem vale para quem chega a `synced`; `failed`/não replayado retém **com selo "Erro"** até o `B-SAN3-16` dar descarte (pendência §12) — não é regressão: hoje essas linhas ficam sem selo e para sempre. Q1/Q2/Q4/Q5 inalteradas. **Nota ao dono (não pergunta):** o ramo `assigned_user_id` saiu do predicado; a OS atribuída "torta" (`Ω6R-QUA-004`, aberta) aparece para o dono do perfil, que é quem pode agir nela.
+
+## Resposta à crítica r2 (cada achado RE-EXECUTADO por mim antes de aceitar/refutar — P3; última rodada: o que sobreviveu virou requisito com CA e mutação)
+
+**Re-execução.** Base `w-plan21` em `37a3f360` (o crítico mediu `c76ec481`; delta sem interseção — cabeçalho). Sondas do crítico rodadas por mim: `node <scratchpad>/r2/prisma-sql-probe.mjs` (Prisma 7.8 do repo, adapter falso) → casos A-D `WHERE (tenant_id = $1 AND assigned_operator_id = $2)` (perfil `undefined` NÃO abre a organização — R2-N1 derrubada, confirmada); caso E `WHERE (… created_at < $2 OR (created_at = $3 AND code < $4))`, `args … "2026-10-25T12:00:00.123Z"` (ms). `node <scratchpad>/r2/cursor-us-probe.mjs` (PGlite em memória) → `ordem real: OS-0003@…123456 | OS-0002@…123100 | …` · `limit=1: … FALTARAM=[OS-0002] (caminhada "completa": nextCursor=null)`. Flutter em `san313-critica/flutter_app` (`pub get --offline` → `Got dependencies!`): `flutter test test/crit_opus_r2_{instancia,evidencia,material}_test.dart` → `identical(r1,r2)=false … durante.tenant=tenant-demo` · `e-conf.upload=conflict ramo3=true · e-miss code=LOCAL_BLOB_MISSING ramo3=true` · `acoes=[work_order_material.add/pending/[work_order_local_id, sku, quantity]] ramo1(retem)=false` · `+3: All tests passed!`. Leituras no head: §0.5 (M21-M27).
+
+| id | Veredito | Requisito v3 (onde) | CA / mutação que o deixa vermelho |
+|---|---|---|---|
+| **R2-1** cursor `created_at` ms × `timestamptz(6)` | **ACEITO** (`FALTARAM=[OS-0002]` reproduzido) | **Cursor por `id`** (uuid, PK): modo cursor ordena `id desc`, página = `id < cursor`; comparação exata, ordem total, `created_at` fora. Modo `offset` (web) intocado. Prova em **Postgres real**: `tests/san3-13-wo-list-cursor-db.test.ts` (job `backend-postgres`) com `created_at` igualado em µs por SQL (§3, §7) | **CA-9/B14-db**: 5 OS com `created_at` idêntico até µs + 1 no mesmo ms com µs diferente → `limit=1` entrega todas, termina `nextCursor == null`. Mutação: cursor por `created_at|code` → `FALTARAM` → vermelho. **B15-db**: ordem memória (string) == Postgres (`uuid`); mutação: outra chave na memória → vermelho |
+| **R2-2** E1 sem contrato | **ACEITO** | **E1 no contrato (§3):** `openOnly=true`; "aberta" definida UMA vez no backend (`WORK_ORDER_TERMINAL_STATUSES = {completed, cancelled, rejected}`, derivada de `WORK_ORDER_STATUS_TRANSITIONS`); no Prisma num elemento do `AND`, nunca chave simples (colide com `?status=`); o app pede `scope=assigned&openOnly=true` e **não** recalcula "aberta" para purgar (o conjunto devolvido é a verdade; `isFinal` é só exibição). `terminalSince` removido do plano inteiro; CA-6/10/11, B11/B16, F2 reescritos; `API_CONTRACTS.md` (§14) | **CA-10/B11**: exclui `completed/cancelled/rejected`, inclui `paused/on_site/…`; `?status=completed&openOnly=true` → `[]`; `openOnly=sim` → 400. Mutação: `status: {notIn}` como chave simples → com `?status=in_progress` o filtro do chamador some → vermelho; app sem `openOnly` → F2 vermelho; **F23**: linha local `approved` (final só no app) devolvida pelo backend não pode sair → app purgando por `isFinal` → vermelho |
+| **R2-6** material do prestador fora da retenção | **ACEITO** (`ramo1(retem)=false` reproduzido) | **Famílias medidas (M21) e fechadas (§2.3):** ramo 1 casa qualquer ação por `local_id`/`work_order_local_id` = `wo.localId` ou `server_id`/`work_order_id`/`work_order_server_id` = `wo.serverId`; **ramo 5 novo:** `loadMaterials(wo.localId)` com `sync_status != synced` → retém; `deleteWorkOrder` apaga também `work_order_materials`; **teste-guarda F24** enumera todas as constantes `*SyncActionTypes` e exige classificação (`refere OS por <chaves>` / `não refere`) | **CA-15**: `work_order_material.add` `pending` (`work_order_local_id`) e `inventory_exit.create` (`work_order_id`) retêm. **CA-19**: material `pending` na tabela, fila vazia → retém. Mutação: tirar `work_order_local_id` das chaves → vermelho; `deleteWorkOrder` sem materiais → F16 vermelho; constante nova sem classificar → F24 vermelho |
+| **R2-3** ramo 3 com premissa falsa; `conflict`/blob sumido retêm para sempre | **ACEITO** (reproduzido) | Ramo 3 v3: `localBlobRef != null && uploadStatus ∈ {pending, failed, conflict} && uploadErrorCode != 'LOCAL_BLOB_MISSING'`. Blob ausente → nada a perder → **não retém**. Evidência em `conflict` com blob → retém **sem drenagem neste bloco** → pendência `P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE` (§12) + selo. Texto da v2 corrigido: o uploader retenta só `pending/failed` (M26) | **CA-16**: `failed`+`LOCAL_BLOB_MISSING` → OS sai; `conflict` com blob → fica. Mutação: ignorar `uploadErrorCode` → fica → vermelho; tirar `conflict` → blob não enviado se perde → vermelho |
+| **R2-4** lock por instância; provider troca a instância | **ACEITO** (`identical(r1,r2)=false` reproduzido) | `_serial` **estático** (um por processo, todas as instâncias); `hasPendingWork`/`_reconcile`/upsert **releem linha e evidência do store** dentro da seção crítica (nunca `_orders`). Lateral pre-existente (`devBootstrapSession` no `orElse`, 2026-06-13) → `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD` | **CA-20/F22**: duas instâncias no mesmo store; A em `_reconcile`, B em `updateStatus` com `enqueue` retido → linha fica. Mutação: lock de instância → apagada → vermelho; ler `_orders` → vermelho |
+| **R2-5** Home/lista sob E1 | **ACEITO** | §4.4: tile "Concluídas" → **"A sincronizar"** (OS com `syncStatus != synced`); "OS hoje" = abertas agendadas hoje; "Pendentes" = abertas; aba "Concluidas" mostra terminais retidas e, vazia, explica: "As OS concluídas saem do aparelho depois de sincronizar. O histórico fica no portal." Componentes existentes; nenhum layout novo | **CA-21**: Home com cache só de abertas sincronizadas → sem texto "Concluídas"; "A sincronizar" = 0; com 1 linha `pending` → 1. Mutação: manter `doneCount` → vermelho. **CA-22**: aba vazia → texto presente |
+| R2-N1 perfil `undefined` | derrubada (SQL sem a cláusula, confirmado) | `OR` **construído** com 1 ou 2 elementos (nunca `undefined`); B12 afirma `OR.length == 1` sem perfil | B12 vermelho se houver elemento `undefined` |
+| R2-N2 fila ler-tudo/gravar-tudo | pre-existente | `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO` (§12) | — |
+| R2-N3 `sub` não-UUID → 503 permanente | **ACEITO** | Resolver estrito: `actor.userId` fora do padrão UUID → `undefined` (nenhum perfil pode existir; determinístico); UUID válido → erro propaga → 503 | **CA-8**: `sub = "tecnico.demo"` → 200 só ramo `userId`; resolver lança → 503. Mutação: não-UUID como erro → vermelho |
+
+**As 4 propriedades que a r2 deixou como requisito — onde vivem:** (1) caminhada completa ⇒ tudo entregue, provado em Postgres com µs e empates → CA-9/B14-db, B15-db; (2) E1 como contrato ANTES do dev → §3/§4/§6/§14 desta v3 (esta v3 é a revisão exigida pelo §C2.2); (3) toda família de trabalho pendente enumerada por medição → M21/M22 + ramos 1 e 5 + F24; (4) "para sempre" nomeado, lock entre instâncias testado, Home/lista definidas → §12, CA-20, CA-21/22.
+## §0 — MEDIDO × HIPÓTESE
+
+### 0.1 Medido (comando → saída), no head `7ab2fe71`
+| # | Premissa | Comando | Saída |
+|---|---|---|---|
+| M1 | A lista do backend **oferece** `assignedUserId`/`assignedOperatorId` como filtro opcional e **não impõe** escopo por papel | `sed -n '411,426p' src/modules/work-orders/work-order.service.ts` | `list(actor, query)` monta `ListWorkOrdersInput` com `tenantId: actor.tenantId` + `parseOptionalUuid(query.assignedUserId)`; nenhuma consulta a `actor.roles` nem a `actorMutatesAssignedOnly` |
+| M2 | Sonda executada: técnico lista a organização inteira e até filtra pela OS do colega | `cd C:/Users/AMP/erp-pausa-2026-10-03/planos/san313-medicao && npx tsx --test tests/sonda-list-assigned.test.ts` (re-executada por mim, P3; `diff -q` do `work-order.service.ts` da cópia contra o worktree: idêntico) | `ok 1 … NAO impoe escopo para field_technician · # pass 1` — sem param: `total 3` (a dele, a do colega, a órfã); `?assignedUserId=<colega>`: `total 1` = a do colega |
+| M3 | Escopo de mutação já existe e classifica papéis | `sed -n '90,129p' src/modules/work-orders/work-order.types.ts` | `WORK_ORDER_MUTATION_SCOPE`: `technician`/`field_technician` = `assigned_only`; gestão = `tenant_wide`; `actorMutatesAssignedOnly` = tem papel de campo E nenhum `tenant_wide` |
+| M4 | **O guard de mutação casa a atribuição por `assigned_operator_id` apenas** (perfil OU user id); **não lê `assigned_user_id`** | `sed -n '836,838p' src/modules/work-orders/work-order.service.ts` | `atribuidoPorPerfil = Boolean(operatorProfileId) && workOrder.assignedOperatorId === operatorProfileId; atribuidoPorUsuario = workOrder.assignedOperatorId === actor.userId` |
+| M5 | O write do `assign` REST grava `assigned_operator_id = body.operatorId ?? body.userId` e `assigned_user_id = body.userId` (opcional) | `sed -n '1712,1713p' work-order.service.ts`; repositório memória l.432-433, Prisma l.537-538 | `operatorId = parseRequiredUuid(body.operatorId ?? body.userId)`; `userId = parseOptionalUuid(body.userId)` → **uma OS atribuída só por perfil tem `assigned_user_id = null`** |
+| M6 | O despacho grava os dois campos | `sed -n '1792,1794p;1826,1830p' work-order.service.ts` | `assigned_user_id = usuário alvo`, `assigned_operator_id = perfil ?? user id` |
+| M7 | Paginação do backend: default 20, teto 100; `total` vem no `pagination` | `sed -n '385,404p' work-order.validators.ts`; `work-order.dto.ts:121-145`; Prisma `list` l.358-379 (`findMany`+`count` com o mesmo `where`) | `limit` default `20`, `1..100` senão 400 `WORK_ORDER_FILTER_INVALID`; `offset ≥ 0`; DTO emite `assignedOperatorId`/`assignedUserId` (`?? null`) e `pagination` |
+| M8 | O app chama `GET /api/v1/work-orders` **sem nenhum query param** e lê só `items` (ignora `pagination`) | `sed -n '73,91p' mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart` | `_dio.get(WorkOrderApiEndpoints.workOrders)` sem `queryParameters`; `data['items']` → **só a 1ª página de 20** |
+| M9 | O repositório filtra o cache **só por organização**; o método `workOrdersForUser` tem **0 chamadores** | `sed -n '110,133p;181,205p' work_order_repository.dart`; `git grep -n workOrdersForUser mobile/flutter_app/` | `_orders = tenantOrders` (`o.tenantId == activeTenant`); `_upsertRemoteOrders` só faz `saveWorkOrder` (`INSERT OR REPLACE`) e **nunca apaga** linha ausente do retorno; único hit do grep é a própria definição (l.88) |
+| M10 | A Home ("Minhas OS") e a tela "Ordens de Servico" não filtram por atribuição | `sed -n '121,144p' lib/shared/ui/home_screen.dart`; `sed -n '138,141p;349,364p' lib/features/work_orders/ui/work_order_list_screen.dart` | Home: `allTenantOrders = woRepository.workOrders.where(tenantId)` → `take(5)`; lista: `_applyFilters(repo.workOrders)` = grupo/prioridade/busca. O vazio diz "Voce ainda nao possui ordens atribuidas." (l.304) — texto promete o que o código não faz |
+| M11 | Seeds: 3 OS fabricadas (`wo-local-1..3`, `OS-1042..1044`, `serverId: null`; a 3ª nasce `syncStatus: pending`) gravadas no SQLite quando `stored.isEmpty && seedIfEmpty && _remoteApi == null` | `sed -n '118,122p;743,790p' work_order_repository.dart` | confirmado; `_remoteApi` vem de `workOrderRemoteApiProvider` (l.692-697): `null` se `!kIsRemoteAuth` **ou se `config.accessToken == null`** |
+| M12 | Nenhum caminho de produção apaga OS do cache | `git grep -n clearAll mobile/flutter_app/lib` ; leitura de `drift_work_order_local_store.dart` (281 linhas) | `clearAll()` só definido (store l.187-191; interface l.13) — sem chamador em `lib/`; o store **não tem `deleteWorkOrder`**; `INSERT OR REPLACE` por `local_id` nunca colide com `wo-local-1..3` |
+| M13 | Ações offline referenciam a OS por `payload['local_id']` (+ `server_id`); evidência por `work_order_id` = serverId; `SyncAction` não tem campo de entidade | `grep -n "'local_id'\|'server_id'\|'work_order_id'" work_order_repository.dart`; `sed -n '5,28p' lib/core/sync/sync_models.dart`; `sync_providers.dart:164-195` | l.235/237, 300/302, 369/371, 428, 476-477, 609, 639/641; `buildWorkOrderSyncEntityUpdater` acha a OS por `payload['local_id']`; `WorkOrderConflictResolutionService` idem (l.30, 100: `result_ref`/`server_id`/`work_order_id`) |
+| M14 | Fila: `SyncQueueRepository` expõe `pendingForTenant`/`actionsForTenant`/`update` | `sed -n '4,9p' lib/core/sync/sync_queue_repository.dart` | confirmado; `SyncStatus = {local, pending, syncing, failed, conflict, synced}` |
+| M15 | Store de vistoria expõe `loadRunsForWorkOrder(workOrderId)` | `grep -n loadRunsForWorkOrder lib/features/checklists/data/checklist_local_store.dart` | l.9 (interface) e l.65 |
+| M16 | RBAC do técnico | `sed -n '45p;66p' RBAC_MATRIX.md` | `field_technician` = `execute/update-assigned`; "updates assigned operational flows" — não declara leitura tenant-wide |
+| M17 | Baselines | `Kpis/kpis-latest.json` l.17-33 (CI no head `9009e81b`); `grep -cE '^\s*(test|testWidgets)\(' …` | Flutter `864/864`; backend `3706/3708`; `b099_real_work_orders_pull_test.dart` = 30 testes (grupo 6 "Modo dev/local" depende do seed: 6.1, 6.2); `work_orders/work_order_test.dart` = 20; backend `work-orders.test.ts` 2 + `work-orders-routes.test.ts` 3 + `o6r07a-wo-object-scope.test.ts` 8 = 13 (`# pass 13`, re-executados pelo Argon) — **nenhum** passa `assignedUserId` à lista nem testa purga |
+| M18 | Convenção de nome de teste Flutter para bloco não numérico | `ls mobile/flutter_app/test/features \| grep -viE '^b[0-9]{3}_'` | `bo6r01_login_sem_org_erros_test.dart` → para este bloco: `bsan313_*_test.dart` |
+| M19 | CI Flutter | `sed -n '403,418p' .github/workflows/ci.yml` | `flutter pub get` → `dart format --output=none --set-exit-if-changed lib test` → `flutter analyze` → `flutter test --reporter compact` (Flutter 3.47.5) |
+| M20 | Rota de lista do app não tem equivalente em `/mobile/*` | `grep -n "router.get(" src/modules/mobile/mobile.routes.ts` | só `/mobile/bootstrap` e `/mobile/inventory/availability` → o app lista pela rota geral `GET /api/v1/work-orders` (M8) |
+
+### 0.2 Correções à medição do Argon (insumo re-verificado — P3). Nenhuma invalida os vereditos ABERTO/ABERTO; a 1ª muda o desenho.
+| # | A medição diz | O head diz (comando) | Consequência para o plano |
+|---|---|---|---|
+| C1 | §2.1 item 3: o guard reconhece atribuição por `workOrder.assignedUserId === actor.userId \|\| workOrder.assignedOperatorId === actor.userId` | `sed -n '836,838p' work-order.service.ts`: só `assignedOperatorId` (= perfil OU = `actor.userId`). `assignedUserId` **não entra** no guard | O filtro "só as minhas" **não pode ser `?assignedUserId=<eu>`**: uma OS atribuída pela web só com `operatorId=<perfil>` tem `assigned_user_id = null` (M5) e sumiria da lista do próprio técnico, embora ele possa mutá-la. O predicado da lista tem de ser o **mesmo casamento do guard** (+ `assigned_user_id`, §2.2) e viver no **backend** |
+| C2 | §1.3 e §4.1: `_upsertRemoteOrders` lê `stored = await _localStore.loadWorkOrders()` e indexa a partir dele | l.181-185: indexa `_orders` (memória) e **pula `ro.serverId == null`** (l.188) | Só precisão; o comportamento (nunca apaga) é o mesmo |
+| C3 | §4.1: `DriftWorkOrderLocalStore.loadWorkOrders()` (l.76-119) carrega `evidence`, `approvalRequests` e `timeline` por join | `sed -n '17,23p' drift_work_order_local_store.dart`: `SELECT * FROM work_orders` → `_workOrderFromRow`, sem join; `loadEvidence`/`loadTimeline` são chamadas separadas | A purga de uma linha de `work_orders` **não** apaga evidência por cascata — mas as linhas filhas ficariam **órfãs** (`work_order_evidence`/`work_order_timeline` por `work_order_local_id`). O `deleteWorkOrder` novo tem de apagar as três tabelas, e **só** quando não há nada pendente (§2.3) |
+| C4 | §4.2 item 4: `b107BackendWorkOrderActionTypes = {status_change, assign, mileage}` | `sed -n '580,586p' sync_replay_service.dart`: `{create, statusUpdate, assign}` (constantes de `WorkOrderSyncActionTypes`) | Irrelevante para este bloco; confirma que `approval_request` e `unable_to_start` **não são replayados** (dono: `B-SAN3-16`) — logo uma OS com essas ações na fila tem de ser **retida** pela regra do §2.3, senão o dado da fila órfã some junto |
+
+### 0.3 Hipóteses (cada uma com o comando que a derruba)
+| # | Hipótese | Como derrubar |
+|---|---|---|
+| H1 | Em build `ERP_AUTH_MODE=remote`, se `load()` rodar enquanto `accessToken == null`, `_remoteApi` é `null` e o app **semeia** no SQLite — a semente nasce em produção, não só em bancada | Teste Flutter: `WorkOrderRepository(remoteApi: null, allowSeedOrders: false)` + `load()` → `loadWorkOrders()` vazio. Hoje não há flag; a hipótese se confirma lendo `load()` l.118 (critério é `_remoteApi == null`, não o modo do build) |
+| H2 | **DERRUBADA na v2 (CRIT-2, re-executada: `assign {operatorId: P_B, userId: A}` → 200, A lista a OS e recebe 403 no PATCH).** A v1 dizia que a via mista só nascia por escrita direta no banco; nasce por REST. Remédio: predicado da lista = o do guard, sem `assigned_user_id` (§2.2 v2) | Teste backend B6 (§7): para cada OS criada pelas 3 vias de atribuição, `PATCH /status` pelo técnico e presença na lista têm de coincidir. Corner declarado: OS com `assigned_user_id = eu` e `assigned_operator_id = perfil de outro` (só por escrita direta no banco) aparece e não muta — aceito e registrado |
+| H3 | Nenhum chamador interno do backend depende de `WorkOrderService.list` devolver a organização inteira a um ator de campo | `grep -rn "workOrderService.list\|\.list(actor" src --include=*.ts \| grep -v work-order.service.ts` → só controllers de outros módulos; único chamador é `work-order.controller.ts:22`. Derruba-se se um módulo passar a chamar `list` com ator de campo |
+| H4 | A web (console) não tem tela que dependa de técnico listar tudo | Papéis da web são de escritório (`tenant_wide`); um usuário só `technician` na web passaria a ver só as dele — comportamento desejado. Derruba-se se `frontend/src/modules/work-orders/work-orders.service.ts` enviar `assignedUserId` de terceiros com sessão de técnico (hoje só usa o campo no mock, l.144) |
+| H5 | **DERRUBADA na v2 (CRIT-12):** `scope=assigned` devolvia TODO o histórico; ~10 OS/dia passa de 2 000 em ~200 dias e o teto virava o caminho normal. Remédio v3: E1 do dono — `openOnly=true` (só abertas) recorta o domínio (§3) e o teto de 50 páginas volta a ser borda | Se o `total` passar do teto, o pull marca `lastPullIncomplete = true` (estado "dados desatualizados", §7 do CLAUDE.md) em vez de fingir completo. Derruba-se com um tenant real acima disso — não há |
+| H6 | `b099` grupo 6 (6.1 "sem remoteApi, load() usa seed", 6.2 "modo local faz seed") continua verde **sem alteração** se o default do construtor preservar o comportamento atual (`allowSeedOrders = true`) e o provider passar `!kIsRemoteAuth` | `flutter test test/features/b099_real_work_orders_pull_test.dart` após a mudança. Se ficar vermelho, o teste é **ajustado às claras** (nunca apagado) e a ata registra |
+
+### 0.4 Onde mora a propriedade "o técnico só vê as suas OS"
+| | Backend | App — rede | App — cache/repositório | App — UI |
+|---|---|---|---|---|
+| **Antes (head)** | **Em lugar nenhum.** `list` é tenant-wide para todo papel (M1, M2) | Não pede filtro, não pagina (M8) | Filtra só por organização; nunca apaga (M9, M12) | Promete "ordens atribuidas" e mostra tudo (M10) |
+| **Depois (v2)** | **Imposta aqui**, por papel (`actorMutatesAssignedOnly`) com o predicado DO guard (sem `assigned_user_id`), perfil por resolver estrito (erro → 503), `scope=assigned` opcional a todos; `AND` por cláusula no Prisma (§3) | Pede `scope=assigned` + `openOnly=true` e percorre as páginas por `cursor` (por `id`) até `nextCursor == null` (§4.1) | **Reconcilia**: o que o backend não devolveu e não tem trabalho pendente **sai**; OS fabricada (sem `serverId` e sem criação na fila) **sai** (§2.3, §4.2) | Continua consumindo `repo.workOrders` — a UI **não** refiltra por `assignedUserId` (C1 explica por quê) |
+
+### 0.5 Medições novas da v3 (R2) — famílias de trabalho pendente, tabelas filhas, precisão de `created_at`
+| # | Premissa | Comando | Saída |
+|---|---|---|---|
+| M21 | **Toda família de ação da fila e sua chave de OS** | `grep -n "static const .* = '" lib/core/network/api_contracts.dart`; `grep -rn "'work_order_local_id'\|'work_order_id'\|'local_id'\|'server_id'\|'work_order_server_id'\|'run_id'" lib` | `work_order.{status_update,create,approval_request,evidence_attach,unable_to_start,assign}` → `local_id` (+`server_id`); `evidence.work_order_{photo,signature,observation}` → `work_order_id` (serverId) + `local_evidence_id`; `evidence.field_*` → sem OS; **`work_order_material.add` → `work_order_local_id`** (`prestador_repository.dart:127`); `inventory_exit.create` → `work_order_id` (`inventory_repository.dart:155`); `inventory_entry.create` → sem OS; `checklist_*` → `run_id` (OS via `checklist_runs.work_order_id`); `expense_*` → sem OS |
+| M22 | Tabelas Drift com coluna de OS | `grep -n "CREATE TABLE\|work_order_local_id\|work_order_id\|work_order_server_id" app_database.dart` | filhas por `work_order_local_id`: `work_order_timeline`, `work_order_evidence`, **`work_order_materials`** (`sync_status`), `field_location_events` (+`work_order_server_id`); por `work_order_id` (serverId): `checklist_runs`, `telemetry_events` |
+| M23 | Materiais: store e replay | `grep -n "Future<" prestador_local_store.dart`; `grep -rn InventorySyncActionTypes lib/core/sync` | `loadMaterials(workOrderLocalId)`, `saveMaterial`, `deleteMaterial`; **nenhum replay** de `work_order_material.add` (fica `pending`) |
+| M24 | Localização/telemetria não dependem da linha da OS | `field_location_api.dart:66-69`; `telemetry_local_store.dart:202` | enviam `work_order_id` (serverId) quando há; pipelines próprios; não são apagados pelo `deleteWorkOrder` nem retêm a OS |
+| M25 | `created_at` e `id` da OS | `awk '/^model WorkOrder \{/,/^\}/' prisma/schema.prisma` | `id … @db.Uuid` (PK, `gen_random_uuid()`), `created_at … @db.Timestamptz(6)` (µs), `@@unique([tenant_id, code])`, `@@index([tenant_id, created_at])`; `Date` do JS tem ms |
+| M26 | Uploader de evidência | `evidence_upload.dart:149-156, 165-170` | só `localBlobRef != null && uploadStatus ∈ {pending, failed}`; blob ausente → `failed` + `LOCAL_BLOB_MISSING` |
+| M27 | Provider recria o repositório | `work_order_repository.dart:699-703`; `bootstrap_repository.dart:519-520`; `auth_notifier.dart:117-126` | instância nova a cada mudança de sessão/token; `orElse: devBootstrapSession` (`tenant-demo`) durante o recarregamento (pre-existente, `e79616aa4`, 2026-06-13) |
+| M28 | Terminal no backend × final no app | `work-order.validators.ts:21-32`; `work_order_models.dart:62-65` | backend: listas vazias = `completed, cancelled, rejected`; app `isFinal` = `completed, approved, cancelled` (`approved` não existe no backend; `rejected` não é final no app) → o app **não** decide "aberta" |
+
+## §1 — Os dois defeitos, por execução, no head `7ab2fe71`
+
+### 1(a) O técnico vê OS de outro técnico (e a OS órfã) — **reproduzido por execução**
+- **Sonda:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/san313-medicao/tests/sonda-list-assigned.test.ts` (Argon), **re-executada por mim** (`npx tsx --test …` → `ok 1`, `# pass 1`): manager cria 3 OS, atribui `woA → techA` e `woB → techB`; `GET /api/v1/work-orders` como `field_technician` techA devolve `pagination.total = 3` (`[woA, woB, woOrfa]`); `?assignedUserId=<techB>` devolve `woB`.
+- **No app**, o mesmo resultado chega ao cache (M8, M9) e à Home/lista (M10). Com mais de 20 OS abertas na organização, a do técnico pode **nem vir** (1ª página só) — o impacto vendável declarado na pendência (l.8877).
+- **O teste de encerramento vermelho-controle** (§7, B1): no head, `assert.equal(total, 1)` para o técnico **falha** com `3`. É a mesma sonda, com a asserção invertida — a prova de que o teste novo mede o defeito e não a forma.
+
+### 1(b) A OS semente fica no aparelho para sempre — **reproduzido por leitura executável; teste vermelho-controle especificado**
+- **Hoje já provado por teste existente:** `b099` 6.2 ("modo local faz seed quando cache esta vazio") grava `wo-local-1..3` no store quando `remoteApi == null`.
+- **Vermelho-controle novo (Flutter, §7 F1):** store com as 3 sementes (`InMemoryWorkOrderLocalStore(_seedOrders)`) + `remoteApi` fake devolvendo 1 OS real `srv-1` + `load()` e `await` do pull → no head, `loadWorkOrders()` devolve **4** linhas (3 sementes + `srv-1`) e `repo.workOrders` lista as 4 — `_upsertRemoteOrders` (l.181-205) não tem `delete`. O mesmo teste, com a asserção `length == 1`, é o critério de aceite CA-13 (v2: as sementes do teste ganham timeline e evidência — CRIT-9).
+- **Em aparelho** (origem da pendência, 2026-08-06): AVD `erp_pixel`, `tecnico.demo` vê `OS-1042/1043/1044` enquanto `GET /work-orders` com o token dele devolve 0 itens.
+
+## §2 — A propriedade, onde é imposta, e a OS que deixou de ser do técnico (v3, com a E1)
+
+### 2.1 Enunciado
+> **O aparelho do técnico só guarda e mostra as OS ABERTAS que o backend diz que ele pode ver; o que deixou de ser dele — ou deixou de estar aberto — sai, sem perder nenhuma ação pendente da fila offline, nenhuma evidência não enviada, nenhum material lançado e nenhum conflito não resolvido.**
+
+- **I1 (backend):** para ator `actorMutatesAssignedOnly`, `GET /api/v1/work-orders` devolve exatamente as OS que ele pode mutar (predicado do guard); com `openOnly=true`, só as de status não terminal. Outros filtros só restringem. Lista = mutáveis (B6).
+- **I2 (app, cache):** após caminhada **completa** por cursor, toda linha de `work_orders` da organização ativa ou (a) está no conjunto devolvido S, ou (b) tem **trabalho pendente** (§2.3); nenhuma outra existe. Linha sem `serverId` e sem ação `work_order.create` na fila nunca existe (fabricação).
+- **I3 (app, não-perda):** linha retida por (b) só sai quando o trabalho drenar; `deleteWorkOrder` apaga OS + timeline + evidência + **materiais** da mesma OS, dentro da seção crítica e só nesse estado.
+
+### 2.2 Onde é imposta
+| Camada | Papel | Por quê não basta sozinha |
+|---|---|---|
+| **Backend** | Impõe I1 (predicado do guard; `openOnly`; resolver estrito → 503 em erro) | cliente velho, outro cliente, chamada à mão (M2) |
+| **App — rede** | `scope=assigned&openOnly=true&limit=100[&cursor]` até `nextCursor == null` | dois papéis veriam tudo; sem cursor por `id`, reatribuição ou empate de µs pula OS (R2-1); sem E1 o histórico cresce (CRIT-12) |
+| **App — cache** | Reconcilia sob **lock estático**, relendo do store | reatribuída/concluída/semente ficariam para sempre (M12) |
+| **App — UI** | não refiltra por `assignedUserId` nem decide "aberta" por `isFinal` (M28) | esconderia OS legítimas ou apagaria o que o backend ainda devolve (F23) |
+
+### 2.3 Trabalho pendente — `hasPendingWork(wo)` v3 (por linha, **relida do store**, dentro da seção crítica, imediatamente antes de apagar)
+| Ramo | Condição | Família que protege (M21/M22) | Drena quando |
+|---|---|---|---|
+| 1 | ação na fila da organização, `status ∈ {pending, syncing, failed, conflict}`, com **qualquer** chave `local_id`/`work_order_local_id` = `wo.localId` **ou** `server_id`/`work_order_id`/`work_order_server_id` = `wo.serverId` — **qualquer tipo** | `work_order.*`, `evidence.work_order_*`, `work_order_material.add`, `inventory_exit.create`, tipos futuros (F24 guarda) | ação `synced` (replay OK ou `useServer`); `failed`/não replayado: só com descarte (`B-SAN3-16`) |
+| 2 | linha `wo.syncStatus == pending` (relida do store) | janela gravar→enfileirar fora do lock; atualizador do replay (`update` da ação antes do `save` da linha) | atualizador escreve `synced` |
+| 3 | evidência da OS com `localBlobRef != null && uploadStatus ∈ {pending, failed, conflict} && uploadErrorCode != 'LOCAL_BLOB_MISSING'` | blob ainda no aparelho | `stored` → `synced`; `conflict`: só com descarte (`P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE`) |
+| 4 | gancho de vistoria: `loadRunsForWorkOrder(wo.serverId)` com run/anexo não sincronizado | `checklist_*` (via `run_id`) | replay da vistoria |
+| **5** | **material**: `loadMaterials(wo.localId).any(sync_status != synced)` | `work_order_materials` (prestador; consumo de estoque = dinheiro) | replay de material (não existe hoje — fica retida, com selo; `B-SAN3-16`/bloco de estoque) |
+**Não retêm (medido, M24):** `field_location_events` e `telemetry_events` — enviam `work_order_id` (serverId), pipelines próprios, não dependem da linha. **Carimbo `conflict` da linha não retém** (CRIT-5). **Fabricação** (antes dos ramos, sob o lock): `serverId == null` e nenhuma ação `work_order.create` com `local_id` = `wo.localId` → apaga (sementes, inclusive a 3ª com `pending`).
+
+### 2.4 Exclusão mútua entre instâncias (CRIT-6 + R2-4)
+`WorkOrderRepository._serial` é **estático** (uma cadeia de `Future` por processo; sem lib). Dentro dela: todas as mutações públicas (`updateStatus`, `assignRegistry`, `createWorkOrder`, `createApprovalRequest`, `completeWorkOrder`, `attachEvidence`, `reportUnableToStart` — corpo igual ao de hoje), a regra de fabricação do `load()` e `_reconcile`. Na seção crítica **nada vem de `_orders`**: linha, evidência, materiais e fila são relidos do store/fila. A caminhada de rede acontece **antes** de entrar no lock (R17). Instância velha que continua com um pull em voo (M27) entra no mesmo lock e relê o mesmo store — a janela entre instâncias fecha (CA-20). Residual declarado R8': escritor de vistoria/material fora do lock entre o ramo 4/5 e o `delete` da mesma linha → run/material sobrevivem em tabelas próprias; só o contexto da OS some até o próximo pull.
+
+### 2.5 Drenagem (Q3 aceita) e o que fica "até existir descarte"
+replay → `conflict · assignment_changed_pending_review` → tela de sincronização → `useServer` → ação `synced` → próximo pull completo → linha sai (F13). `keepMine` → `pending` → retém. **Sem drenagem neste bloco** (retém com selo e pendência nomeada): ação `failed` ou de tipo não replayado (`P-MOBILE-SYNC-FAILED-SEM-DESCARTE`), evidência em `conflict` com blob (`P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE`), material (`work_order_material.add` sem replay — `B-SAN3-16`/estoque). **Nunca** se apaga nesses estados.
+
+### 2.6 Casos (após caminhada completa com S = abertas e minhas)
+| Linha no cache | Em S? | Pendente? | Resultado |
+|---|---|---|---|
+| Aberta, minha, sincronizada | sim | — | upsert (preserva `localId` e linha `pending`) |
+| Reatribuída, nada pendente | não | não | **apaga** (OS + timeline + evidência + materiais) |
+| **Concluída/cancelada e já sincronizada** (E1) | não | não | **apaga** — o caso normal depois de cada sync |
+| Concluída offline (ação `status_update` na fila) | não | sim | **retém** até sincronizar; depois sai |
+| Reatribuída ou concluída com ação/blob/material pendente | não | sim | **retém**, visível com selo; sai ao drenar |
+| Conflito resolvido com `useServer`, linha ainda `conflict` | não | não | **apaga** |
+| Blob ausente (`LOCAL_BLOB_MISSING`), nada mais pendente | não | não | **apaga** (nada a perder) |
+| Linha local `approved` (final só no app) devolvida em S | sim | — | upsert — o app **não** apaga por `isFinal` (F23) |
+| Semente (`serverId null`, sem `create`) | não | — | **apaga** (também no `load()` em build remoto) |
+| Criada offline (`create` na fila) | não | sim | **retém** |
+| Outra organização | fora | — | **não tocada** |
+| Erro / 503 / teto 50 / sem `nextCursor == null` | — | — | **nenhuma purga**; "dados desatualizados" |
+
+## §3 — Contrato backend v3: `GET /api/v1/work-orders` (aditivo; sem rota nova; DTO só ganha `pagination.nextCursor`)
+
+| Elemento | Hoje | Depois (v3) |
+|---|---|---|
+| Permissão | `work_orders:read` | inalterada |
+| `scope` | — | opcional `scope=assigned`; outro valor → `400 WORK_ORDER_FILTER_INVALID`/`invalid_scope` |
+| Ator `actorMutatesAssignedOnly` | tenant-wide | **forçado** a `assigned`; demais filtros restringem por interseção (`?assignedUserId=<colega>` → `200`, `items: []`) |
+| Predicado `assignedToActor` | — | `assigned_operator_id = userId OR (profileId AND assigned_operator_id = profileId)` — **igual ao guard**; função única `matchesAssignedToActor` em `work-order.types.ts`; o `OR` é **construído** com 1 ou 2 elementos (nunca `undefined`) |
+| Perfil do ator | — | referência nova `resolveActorOperatorProfileIdStrict?` (ligada em l.2189, mesmo import, **sem** `try/catch`). Regras: `actor.userId` fora do padrão UUID → `undefined` (sem perfil possível; determinístico); referência ausente **ou** lançando, com ator escopado → `503 WORK_ORDER_SCOPE_UNAVAILABLE` (`scope_resolver_unavailable` / `scope_resolution_failed`); `undefined` → só ramo `userId`, `200`. Guard e referência antiga intocados |
+| **`openOnly`** (E1) | — | opcional `openOnly=true` (só a string `true`; outro valor → 400 `invalid_open_only`): devolve só OS com `status ∉ WORK_ORDER_TERMINAL_STATUSES`. **Definição única** em `work-order.validators.ts`: `WORK_ORDER_TERMINAL_STATUSES = Object.entries(WORK_ORDER_STATUS_TRANSITIONS).filter(([, t]) => t.length === 0)` → `completed, cancelled, rejected`. No Prisma: elemento do `AND` `{ status: { notIn: TERMINAL } }` (chave simples colidiria com `?status=`). Interseção com `?status=` vale (`status=completed&openOnly=true` → `[]`) |
+| **`cursor`** | — | opcional, **opaco** (hoje = o `id` da última OS; o cliente devolve o que recebeu). Modo cursor: ordem **`id desc`** (uuid, PK — ordem total, comparação exata), página = `id < cursor` (chave simples `id: {lt}`; não colide). Com `cursor`, `offset` ausente ou `0`, senão 400 `invalid_cursor_offset`; cursor que não é UUID → 400 `invalid_cursor` |
+| `limit`/`offset`/`total` | default 20, `1..100`; `total` com o mesmo `where` | inalterados (web). Modo `offset` continua `created_at desc, code desc`. Com `cursor`, `total` = contagem **sem** a cláusula do cursor |
+| `pagination` | `{limit, offset, total}` | `+ nextCursor: string \| null` — regra única: `id` do último item se `items.length === limit`, senão `null` (em ambos os modos) |
+| `buildWhere` (Prisma) | chaves simples + `OR` do `search` | chaves simples (`tenant_id`, `status`, `priority`, `assigned_*`, `created_at`, **`id`** do cursor) + **`AND: [ {OR search}?, {OR assignedToActor}?, {status notIn}? ]`** — nunca `OR` no topo |
+| `count` | mesmo `where` | mesmo `where` sem `id` do cursor (B12) |
+| Cross-tenant / detalhe / sub-recursos | `tenant_id` sempre; leitura tenant-wide | inalterados (Q2; `P-WO-LEITURAS-TENANT-WIDE-TECNICO`) |
+
+**Modelagem:** sem migration/coluna. `ListWorkOrdersInput` += `assignedToActor?: {userId; operatorProfileId?}`, `openOnly?: boolean`, `cursorId?: string`; `ListWorkOrdersResult` += `nextCursor: string | null`. Memória: filtros em cadeia + ordenação por `id` (string) no modo cursor — uuid canônico minúsculo em string tem a **mesma ordem** do `uuid` do Postgres (B15-db prova). Prisma: `orderBy` por modo; `findMany`/`count` com o mesmo `where` (menos `id`).
+
+## §4 — Desenho do app v3. Sem migração Drift (`schemaVersion` 13); sem lib; `lib/core/sync/**` intocado.
+
+### 4.1 Rede — `work_order_remote_api.dart`
+- `fetchWorkOrders({String? tenantId})` mantém a assinatura (10 fakes) e devolve `orders` + `complete`. Internamente: `GET /work-orders?scope=assigned&openOnly=true&limit=100[&cursor=<nextCursor>]` enquanto `nextCursor != null`; **nunca** `offset`; dedupe por `serverId`; o cursor é devolvido tal como veio. **Completo** ⇔ última página com `nextCursor == null` e nenhuma falha. Teto **50 páginas** → `complete = false`. Resposta sem `pagination.nextCursor` (backend antigo) → `complete = false`.
+- Erros: `mapDioError` → `safeMessage`; 503 do resolver estrito cai aqui (`cached`, sem purga).
+
+### 4.2 Repositório — `work_order_repository.dart`
+- **`static` `_serial<T>(…)`** (§2.4). Envolve as 7 mutações públicas, a fabricação do `load()` e `_reconcile`.
+- Construtor += `bool allowSeedOrders = true` (provider: `!kIsRemoteAuth`), `Future<bool> Function(WorkOrder)? hasExternalPendingWork` — o provider compõe **vistoria** (`checklistLocalStore.loadRunsForWorkOrder(serverId)`) **e materiais** (`prestadorLocalStore.loadMaterials(localId)`); e `WorkOrderLocalStore` passa a expor `deleteWorkOrder`.
+- `load()`: semeia só se `allowSeedOrders && stored.isEmpty && seedIfEmpty && _remoteApi == null`; em `!allowSeedOrders` aplica a fabricação sob o lock.
+- `_pullInBackground()`: caminhada fora do lock; `complete` → `_reconcile(S)` sob o lock: para cada linha da organização **relida do store**: em S → upsert (preserva `localId`; preserva `pending`); fora de S → `hasPendingWork` (5 ramos, relidos) → `deleteWorkOrder` ou retenção. `!complete` → upsert sem purga + `lastPullIncomplete = true`. Erro → `cached`/`error`, sem purga.
+- O app **não** decide "aberta": nenhuma purga por `isFinal`/status local (F23). `workOrdersForUser` removido. Getter `lastPullIncomplete`.
+
+### 4.3 Store — `work_order_local_store.dart` (+`InMemory`) e `drift_work_order_local_store.dart`
+- `deleteWorkOrder(localId)`: `DELETE FROM work_order_evidence`, `work_order_timeline`, **`work_order_materials`** `WHERE work_order_local_id = ?`; `DELETE FROM work_orders WHERE local_id = ?` (molde `clearAll`). **Não** toca `field_location_events`, `telemetry_events`, `checklist_*` (M24). `InMemory` idem (materiais via mapa próprio ou no-op declarado).
+
+### 4.4 UI sob a E1 — `home_screen.dart`, `work_order_list_screen.dart` (componentes existentes; nenhum layout novo)
+- Home "Resumo de hoje": tile 1 "OS hoje" = abertas agendadas hoje (código igual; semântica declarada); tile 2 **"A sincronizar"** = OS da organização com `syncStatus != synced` (substitui "Concluídas", que sob a E1 seria sempre 0 — D-007); tile 3 "Pendentes" = abertas (igual). Faixa "dados desatualizados" quando `lastPullError != null || lastPullIncomplete`.
+- Lista: aba "Concluidas" mostra o que resta local (terminais retidas); vazia → `EmptyState` com "As OS concluídas saem do aparelho depois de sincronizar. O histórico fica no portal." Linhas retidas levam o selo que já existe (`b114`).
+- Fluxo: **login → `load()` (fabricação fora) → caminhada (`scope=assigned&openOnly=true`, cursor) → reconciliação sob lock → Home / lista → detalhe**. Ator: `field_technician`/`technician` e qualquer papel no app (Q4).
+
+## §5 — Escopo PERMITIDO / PROIBIDO v3 (caminhos exatos; espelho = módulo de referência)
+
+### PERMITIDO
+**Backend**
+- `src/modules/work-orders/work-order.service.ts` — `list()` (l.411-426) e a ligação da referência estrita em l.2189-2199 (aditiva). Guard, `get`, `assign`, `assignFromDispatch`, trava: **intocados**.
+- `src/modules/work-orders/work-order.types.ts` — `ListWorkOrdersInput.{assignedToActor, openOnly, cursorId}`, `ListWorkOrdersResult.nextCursor`, `matchesAssignedToActor`, `resolveActorOperatorProfileIdStrict?` (l.182).
+- `src/modules/work-orders/work-order.validators.ts` — `parseScope`, `parseOpenOnly`, `parseCursorId`, `WORK_ORDER_TERMINAL_STATUSES` (derivada de l.21-32).
+- `src/modules/work-orders/work-order.dto.ts` — `pagination.nextCursor`.
+- `src/modules/work-orders/work-order.repository.ts` — `list` (l.291-306); ordenação por `id` no modo cursor.
+- `src/modules/work-orders/work-order-prisma.repository.ts` — `list` (l.358-379), `buildWhere` (l.787-817).
+- Testes novos: `tests/san3-13-wo-list-scope.test.ts` (espelho `o6r07a-wo-object-scope.test.ts`), `tests/san3-13-wo-list-cursor.test.ts`, `tests/san3-13-wo-list-prisma-where.test.ts` (executor falso), **`tests/san3-13-wo-list-cursor-db.test.ts`** (espelho `tests/checklist-routes-db.test.ts` + guarda `DATABASE_URL` de `financial-title-status-cas-db.test.ts`).
+
+**Flutter** (`mobile/flutter_app/`)
+- `lib/features/work_orders/data/{work_order_remote_api,work_order_repository,work_order_local_store}.dart`; `lib/core/local_db/drift_work_order_local_store.dart` (só `deleteWorkOrder`, incluindo `work_order_materials`).
+- `lib/shared/ui/home_screen.dart` (tile "A sincronizar", faixa), `lib/features/work_orders/ui/work_order_list_screen.dart` (faixa; texto do vazio da aba Concluidas).
+- Testes novos: `test/features/bsan313_minhas_os_escopo_test.dart`, `test/features/bsan313_os_purga_reconcilia_test.dart`, `test/features/bsan313_home_lista_e1_test.dart` (widget; espelho `test/features/work_orders/b114_work_order_list_badges_test.dart` e `test/home_screen_test.dart`); ajuste declarado de `b099` 6.x se H6 cair; fakes de `WorkOrderLocalStore` ganham `deleteWorkOrder`.
+
+**Registro** — `controle/pendencias.md`, `controle/decisoes.md` (`D-SAN3-13-SCOPE-ASSIGNED` + E1), `PLANO_SAN3.md` l.284, `omega/juntas/J-SAN3-13-*.md`, `docs/claude-code-handoff/API_CONTRACTS.md` l.24.
+
+### PROIBIDO
+- `prisma/**`, `migrations/**`, `infra/**`, `.env*`, lockfiles, `pubspec.*`, `Kpis/*`, `app_database.dart` (schema 13).
+- `work-order.service.ts` fora de `list()` e da ligação l.2189; `src/modules/mobile/**`, `src/modules/checklists/**`, `src/modules/field-dispatch/**`, `src/modules/operator-profiles/**`, `frontend/**`.
+- `lib/core/sync/**`, `lib/core/evidence/**`, `lib/core/location/**`, `lib/core/telemetry/**`, `lib/features/checklists/**`, `lib/features/prestador/**` (prestador e vistoria são **lidos** pelo gancho via provider; nada neles muda), `lib/shared/ui/sync_screen.dart`.
+- `clearAll()`/DELETE em massa; purga fora do lock ou sem §2.3; apagar blob; `offset` na caminhada; cursor por `created_at`; purga por `isFinal`; textos além dos nomeados; tela nova.
+
+## §6 — Critérios de aceite v3 (cada um com a mutação que o deixa vermelho) — backend
+
+| CA | Critério (verde) | Mutação que o deixa vermelho |
+|---|---|---|
+| CA-1 | Técnico A, 4 OS: (i) assign `userId` (operator=A); (ii) assign só `operatorId=P_A`; (iii) despacho (user=A, operator=P_A); (iv) mista (user=A, operator=P_B). A lista (i)(ii)(iii), não (iv); B lista (iv) | tirar ramo `operator=userId` → (i) some; tirar ramo perfil → (ii)(iii) somem; acrescentar `assigned_user_id` → (iv) aparece |
+| CA-2 | A com `?assignedUserId=<B>` → `200/[]/0`; `?status=`, `?search=<título da OS de B>` restringem dentro das dele — **também no Postgres** | escopo substituindo em vez de intersectar → OS de B volta; `OR` do search no topo → no `-db` a OS de B volta |
+| CA-3 | `scope=xyz` → 400 `invalid_scope`; `openOnly=sim` → 400 `invalid_open_only`; `cursor=lixo` → 400 `invalid_cursor`; `cursor`+`offset=20` → 400 `invalid_cursor_offset` | aceitar qualquer string → vermelho |
+| CA-4 | `manager` sem params: tudo; `manager`+`scope=assigned`: só as dele; `manager`+`field_technician`: tudo | forçar por "tem papel de campo" sem a união → vermelho |
+| CA-5 | 25 de A + 10 de B: `offset` → `total 25`, 20+5, nenhuma de B; cursor → união 25 em 1 página de 100 (`nextCursor == null`) | `count` sem escopo → `total 35` (`-db`/B12); cursor ignorado → página repete |
+| CA-6 | Executor falso: `search`+escopo+`openOnly`+cursor → `findMany.where.OR === undefined`, `where.AND.length == 3`, `where.id.lt == cursor`, `count.where` == `findMany.where` sem `id`; sem perfil → `OR` do escopo com **1** elemento | qualquer `OR` no topo; `status: {notIn}` como chave simples (colide com `?status=`); `count` com `id`; elemento `undefined` no `OR` → vermelho |
+| CA-7 | **Lista = mutáveis**: para as 4 OS + órfã, `∈ lista de A` ⇔ `PATCH /status por A ≠ 403` | ramo a mais/menos → vermelho |
+| CA-8 | Resolver estrito: ausente → 503 `scope_resolver_unavailable`; lança (`Error`) → 503 `scope_resolution_failed`; `undefined` → 200 só ramo `userId`; **`sub` não-UUID** (`tecnico.demo`) → 200 só ramo `userId` (não 503) | engolir erro → 200 com menos → vermelho; não-UUID → 503 → vermelho |
+| CA-9 | **Cursor em Postgres (`-db`)**: 6 OS de A, 5 com `created_at` igualado até µs por `UPDATE … SET created_at = '…123456'` e 1 em `…123100`; caminhada `limit=1` entrega **todas**, termina `nextCursor == null`; reatribuição de uma OS da página 1 entre páginas → união = todas as ainda de A | cursor por `created_at|code` → `FALTARAM` ≠ [] → vermelho; `offset` → OS pulada → vermelho |
+| CA-10 | **E1**: `openOnly=true` devolve `open/assigned/accepted/on_route/on_site/in_progress/paused`, exclui `completed/cancelled/rejected`; `status=completed&openOnly=true` → `[]`; sem `openOnly` → tudo (web igual) | ignorar o param → terminal aparece; `notIn` como chave simples → com `?status=in_progress` o filtro do chamador some → vermelho |
+| CA-11 | **Ordem**: memória × Postgres (`-db`) devolvem a **mesma sequência** de ids no modo cursor; modo `offset` segue `created_at desc, code desc` nos dois | ordenar memória por outra chave → vermelho |
+| CA-12 | Regressões backend: `work-orders*.test.ts` (5), `o6r07a` (8), `work-orders-list-coordinates`, `npm run check/lint/test/build`, `git diff --check`, job `backend-postgres` verde | — |
+
+### Critérios de aceite v3 — app (Flutter)
+| CA | Critério (verde) | Mutação que o deixa vermelho |
+|---|---|---|
+| CA-13 | Query capturada: `scope=assigned`, `openOnly=true`, `limit=100`; página 2 leva `cursor` **igual** ao `nextCursor` recebido e **não** leva `offset`; 3 páginas → 230; `nextCursor == null` → `complete` | sem `scope`/`openOnly`/`cursor` → capturador vermelho; cursor reinterpretado → vermelho; parar na 1ª → 100 |
+| CA-14 | Teto 50 páginas, resposta sem `nextCursor`, erro HTTP/503 → `complete=false`, **nenhuma purga**, faixa "desatualizado" | purgar com `complete=false` → vermelho |
+| CA-15 | **Retenção por família (ramo 1 por chave):** ação `pending` com `local_id`; com `server_id`; com `work_order_id` (`evidence.*`, `inventory_exit.create`); **`work_order_material.add` com `work_order_local_id`**; ação `failed` → **ficam** | tirar uma chave do conjunto → sua família some → um vermelho por chave |
+| CA-16 | **Evidência:** `failed`+`LOCAL_BLOB_MISSING` sem mais nada → OS **sai**; blob presente `pending`/`failed`/`conflict` → **fica**; evidência **sem blob** com ação `synced` → sai | ignorar `uploadErrorCode` → fica → vermelho; tirar `conflict` → blob se perde → vermelho; `uploadStatus != synced` sem exigir blob → vermelho |
+| CA-17 | Linha `pending` sem ação **retém**; linha `conflict` com ação `synced` **não retém** | tirar ramo 2 → vermelho; voltar `conflict` como ramo → vermelho |
+| CA-18 | **Drenagem ponta a ponta:** `updateStatus` → `buildWorkOrderSyncEntityUpdater(conflict)` → `resolveConflictAction(useServer)` → pull completo sem a OS → OS, timeline, evidência sincronizada e materiais sincronizados saem; `keepMine` → fica | pular a resolução e a linha sair → vermelho; `useServer` e a linha ficar → vermelho |
+| CA-19 | **Material (ramo 5):** `work_order_materials` com `sync_status: pending` para a OS, fila vazia → **fica**; material `synced` → sai junto com a OS e **a linha de material também sai** | tirar ramo 5 → OS some com peça lançada → vermelho; `deleteWorkOrder` sem materiais → linha órfã → vermelho |
+| CA-20 | **Lock entre instâncias:** repositórios A e B sobre o mesmo store; A entra em `_reconcile`; B chama `updateStatus` com `enqueue` retido por `Completer` → ao fim, linha e ação existem. Também: A com `_orders` velho (linha `synced` em memória, `pending` no store) → não apaga | lock de instância → apagada → vermelho; ler `_orders` → vermelho |
+| CA-21 | **Home sob E1** (widget): sem texto "Concluídas"; "A sincronizar" = 0 com cache só de abertas sincronizadas, = 1 com uma linha `pending`; "OS hoje" conta só abertas agendadas hoje | manter `doneCount`/rótulo → vermelho |
+| CA-22 | **Lista sob E1** (widget): aba "Concluidas" vazia → texto "As OS concluídas saem do aparelho depois de sincronizar…"; com terminal retida → a linha com selo | sem o texto → vermelho |
+| CA-23 | **Sementes com filhas** (timeline + evidência + material): após `load()`+pull `[srv-1]` → só `srv-1` em todas as tabelas; `allowSeedOrders:false` remove já no `load()`; criada offline (`create` na fila) fica; **linha local `approved` devolvida em S fica** (F23) | sem varredura → 4 linhas; `delete` só em `work_orders` → filhas sobram; purga por `isFinal` → `approved` some → vermelho |
+| CA-24 | **Teste-guarda de famílias (F24):** toda constante de `*SyncActionTypes` em `api_contracts.dart` está classificada no mapa de retenção (`refere OS por <chaves>` ou `não refere OS`) | acrescentar `static const foo = 'foo.bar'` sem classificar → vermelho |
+| CA-25 | Regressões Flutter: `b099` 30, `work_order_test` 20, `b103` 43, `b107`, `work_orders/*`; `dart format`, `flutter analyze`, suíte inteira (`864 + M`) | — |
+
+## §7 — Testes, baseline N e meta M (v3)
+
+**N = 0** sobre a superfície (M17). Regressão vizinha: backend 13, Flutter 93. **M ≥ 40: backend ≥ 16 (dos quais ≥ 4 em `-db`), Flutter ≥ 24.** Suítes esperadas: backend `3706+≥16`, Flutter `864+≥24`. Nada apagado; ajuste de `b099` 6.x declarado se H6 cair. **Vermelho-controle no commit 1:** B1 (A vê 3), B14-db (cursor por `created_at` perde OS — a sonda PGlite do crítico transposta ao `-db`), F1 (4 linhas + filhas).
+
+### Backend
+`tests/san3-13-wo-list-scope.test.ts` (espelho `o6r07a`): B1 4 OS (CA-1) · B2 órfã/colega fora · B3 interseção `assignedUserId`/`status`/`search` (CA-2) · B4 params inválidos (CA-3) · B5 papéis (CA-4) · B6 lista = mutáveis (CA-7) · B7 `offset` escopado (CA-5) · B8 cross-tenant · B9 resolver estrito: ausente/lança/`undefined`/não-UUID (CA-8) · B11 `openOnly` (CA-10).
+`tests/san3-13-wo-list-cursor.test.ts` (memória): B10 150 OS → 100+50, `nextCursor` null · B13 `cursor`+`offset`, cursor malformado → 400 · B16 reatribuição entre páginas → união = todas as ainda de A.
+`tests/san3-13-wo-list-prisma-where.test.ts` (executor falso): B12 `where.OR` indefinido, `AND.length == 3`, `id.lt`, `count.where` sem `id`, `OR` do escopo com 1 elemento sem perfil (CA-6).
+**`tests/san3-13-wo-list-cursor-db.test.ts`** (Postgres, job `backend-postgres`; pula sem `DATABASE_URL` com motivo declarado; `CORE_SAAS_PERSISTENCE=prisma`): **B14-db** 6 OS com `created_at` igualado em µs por SQL → `limit=1` entrega todas (CA-9) · **B15-db** sequência de ids igual à da memória para o mesmo conjunto (CA-11) · **B17-db** `?search=` como técnico não devolve a OS do colega (CA-2 no Postgres) · **B18-db** `openOnly` + `status=in_progress` mantém o filtro do chamador (CA-10 no Postgres).
+
+### Flutter
+`test/features/bsan313_minhas_os_escopo_test.dart` (rede/repositório; fake `Dio`/`HttpClientAdapter`): F1 vermelho-controle sementes com filhas → CA-23 · F2 query (`scope`, `openOnly`, `limit`, `cursor` sem `offset`) · F3 3 páginas → 230 · F4 teto/sem `nextCursor` → incompleto · F5 erro/503 → sem purga · F6 `allowSeedOrders:false` · F7 default preserva `b099` 6.x · **F23** linha `approved` devolvida em S fica.
+`test/features/bsan313_os_purga_reconcilia_test.dart` (store/retenção/lock): F8 reatribuída sai · F9-F10 ação `local_id`/`server_id`/`work_order_id` · **F11** `work_order_material.add` por `work_order_local_id` · F12 linha `pending` retém; `conflict`+ação `synced` não (CA-17) · F13 drenagem ponta a ponta (CA-18) · F14 `keepMine` · F15 criada offline × semente · F16 Drift `deleteWorkOrder` 4 tabelas, só a OS alvo · F17 outra organização · F18 lock numa instância · **F19** ação `failed` retém com selo · F20 evidência: `LOCAL_BLOB_MISSING` sai, blob `conflict` fica, sem blob+ação synced sai (CA-16) · **F21** material `pending` retém; `synced` sai com a OS (CA-19) · **F22** duas instâncias + `_orders` velho (CA-20) · **F24** teste-guarda das famílias (CA-24) · F25 gancho de vistoria.
+`test/features/bsan313_home_lista_e1_test.dart` (widget): F26 Home "A sincronizar" 0/1, sem "Concluídas" (CA-21) · F27 aba Concluidas vazia com texto; com retida mostra selo (CA-22).
+
+## §8 — Bateria exata (v3; na ordem; worktree do bloco com `npm ci` próprio — §C7.1-ter(c))
+
+**Flutter** (`cd mobile/flutter_app`): 1 `flutter pub get` · 2 `dart format --output=none --set-exit-if-changed lib test` · 3 `flutter analyze` · 4 `flutter test test/features/bsan313_minhas_os_escopo_test.dart test/features/bsan313_os_purga_reconcilia_test.dart test/features/bsan313_home_lista_e1_test.dart --reporter compact` · 5 regressões `flutter test test/features/b099_real_work_orders_pull_test.dart test/features/b103_work_order_sync_test.dart test/features/b097_mvp_stabilization_test.dart test/features/b107_work_order_remote_create_conflicts_test.dart test/features/work_orders test/home_screen_test.dart --reporter compact` · 6 `flutter test --reporter compact` (`864 + M_flutter`, 0 falhas, 0 skip) → `cd ../..`
+
+**Backend/raiz:** 7 `npm run check` · 8 `npm run lint` · 9 `node --test --import tsx tests/san3-13-wo-list-scope.test.ts tests/san3-13-wo-list-cursor.test.ts tests/san3-13-wo-list-prisma-where.test.ts` · 10 **com Postgres descartável** (`DATABASE_URL` apontando para cluster próprio do bloco, nunca 5432 vivo): `node --test --import tsx tests/san3-13-wo-list-cursor-db.test.ts` (4 testes, 0 skip) · 11 regressões `node --test --import tsx tests/work-orders.test.ts tests/work-orders-routes.test.ts tests/o6r07a-wo-object-scope.test.ts tests/work-orders-list-coordinates.test.ts` · 12 `npm test` (`3706 + M_backend`) · 13 `npm run build` · 14 `git diff --check` · 15 `node scripts/sync-agent-agents.mjs --check` · 16 **CI verde no head do PR, inclusive `backend-postgres`** (onde B14-db..B18-db executam de verdade) · 17 limpeza §C5 (1 linha).
+
+## §9 — Junta v3 (completa: inspetor de terreno → 3 cadeiras ≤ 3 itens → unanimidade de 3). Quem desenvolveu (Claude Opus) e quem planejou não votam; pelo menos uma cadeira não-Gemini; nível menor declarado; `arquivos_medidos` em todo voto.
+| Cadeira | Competência | Itens (≤3) | Executor (por disponibilidade) |
+|---|---|---|---|
+| **C1 — Acessos/backend** (`coordenador-de-acessos`) | permissão, isolamento, contrato | (1) CA-1/2/4/7/8 por execução (B1-B9) — lista = mutáveis, resolver estrito, não-UUID; (2) CA-3/5/6/9/10/11 (B10-B18) **incluindo os 4 `-db` em Postgres descartável próprio**; (3) `check/lint/test/build`, `git diff --check`, job `backend-postgres` verde. `arquivos_medidos`: `src/modules/work-orders/**`, `tests/san3-13-*`, `**` | Codex se houver limite; senão Argon |
+| **C2 — Dado no aparelho** | não-perda, famílias, lock | (1) CA-15/16/17/19 (ramos por família: ação por 5 chaves, evidência com/sem blob, linha, **material**) por execução; (2) CA-18/20/23/24 (drenagem ponta a ponta, duas instâncias, sementes com filhas, teste-guarda); (3) F16 as 4 tabelas e só a OS alvo; `git grep` sem `clearAll`/DELETE em massa/`offset`/`isFinal` na purga. `arquivos_medidos`: `lib/features/work_orders/data/**`, `lib/core/local_db/drift_work_order_local_store.dart`, `test/features/bsan313_*` | Codex se houver limite; senão **Claude Opus em identidade nova** (não o dev), declarado — Argon e Gemini Pro contam como Gemini e não podem ocupar as três cadeiras |
+| **C3 — Rede/UI/bateria** | contrato cliente, E1 na UI, estados, bateria | (1) CA-13/14 (query, cursor sem `offset`, teto, erro) por execução; (2) CA-21/22 (Home "A sincronizar", aba Concluidas) + nenhum layout/termo técnico novo + `b099`/`b103`/`work_orders` verdes; (3) `dart format`, `flutter analyze`, suíte inteira, `sync-agent-agents.mjs --check`, KPI intocado. `arquivos_medidos`: `mobile/flutter_app/**`, `**` | Gemini Pro (API, teto) ou Codex |
+Regra de composição: **nunca** três cadeiras Gemini (Argon + Gemini Pro contam como Gemini); o dev (Claude Opus) e o planejador (Fable) são inelegíveis; Claude Opus em identidade nova pode ocupar C2 se Codex faltar (declarado na ata). Reprovação → topo (Claude, Fable) audita e replaneja; só a cadeira vermelha é refeita; ciclo 3+: só defeito grave de produto bloqueia.
+
+## §10 — Dev, ordem, rollback (v3)
+- **Dev: Claude Opus (nível menor, DECLARADO no artefato e na ata)** — o dono: *"vc cobre o codex nessa rodada"* (`D-IAS-EXTERNAS-PRIMEIRO`: o Claude entra para cobrir limite esgotado). Identidade de dev distinta do planejador e das cadeiras. Prompt do dev cita: este plano v3 inteiro (inclusive Respostas r1/r2 e §11-bis), as telas existentes, os espelhos (§7), `CLAUDE.md` §5-§7, `D-JUNTA-SEPARACAO-DE-PAPEIS`. O dev **não** reinterpreta a E1 nem o predicado: o que não estiver escrito aqui volta ao planejador (§C2.2).
+- **Ordem (um PR, commits separados):**
+  1. `test(work-orders): vermelho-controle B1/B14-db/F1 no head`.
+  2. `feat(work-orders): lista escopada por papel (scope=assigned), resolver estrito, AND por cláusula, openOnly (E1)` — types → validators (`WORK_ORDER_TERMINAL_STATUSES`) → dto → 2 repositórios → service (`list` + ligação l.2189) → B1-B9, B11, B12, B17-db, B18-db.
+  3. `feat(work-orders): paginação por cursor (id)` — B10, B13, B16, B14-db, B15-db.
+  4. `fix(mobile): "Minhas OS" pede scope=assigned&openOnly=true e caminha por cursor` — remote api + F2-F5, F23.
+  5. `fix(mobile): reconciliação sob lock estático, retenção por família (ação/linha/evidência/vistoria/material) e purga das sementes` — store `deleteWorkOrder` (4 tabelas) → repositório → provider (ganchos de vistoria e material) → F1, F6-F25.
+  6. `fix(mobile): Home e lista sob a E1 ("A sincronizar", vazio da aba Concluidas, faixa desatualizado)` — F26, F27.
+  7. `docs(registro)`: pendências (§12), decisões (`D-SAN3-13-SCOPE-ASSIGNED` com E1), emenda PLANO_SAN3 l.284, `API_CONTRACTS.md`.
+- **Rollback:** `git revert` do squash — sem migration, coluna ou lib. Irreversível declarado: linhas de cache já apagadas não voltam; por isso só sai linha sem trabalho pendente, sob lock, após caminhada completa — e o pull seguinte repõe o que o backend devolve (abertas). Backend: o revert devolve lista tenant-wide e `offset`; `cursor`/`nextCursor`/`openOnly` são aditivos.
+
+## §11 — Riscos (v3)
+| # | Risco | Mitigação / onde está escrito |
+|---|---|---|
+| R1 | Ator sem perfil: OS atribuída só por perfil fora da lista | igual ao guard (403); CA-8; erro/ausência do resolver → 503, nunca encolhe |
+| R2 | Web: só-`technician` vê só as dele | desejado; H4; ata |
+| R3 | Purga apaga dado pendente | §2.3 (5 ramos + fabricação) + §2.4 (lock estático, releitura do store); CA-15..20, 23; `git grep` (C2) |
+| R4 | Muitas requisições | E1 (`openOnly`) recorta a abertas; `limit=100`; teto 50 como borda |
+| R5 | Cold start offline mostra cache velho | faixa "desatualizado"; nenhuma purga sem caminhada completa |
+| R6 | Fila de merge em `work-order.service.ts` | toca só `list()` e l.2189; #454 (TRC-02) sem interseção esperada — inspetor re-mede |
+| R7 | `b099` 6.x | `allowSeedOrders = true` por padrão; ajuste declarado |
+| R8' | Escritor fora do lock (vistoria/material) entre ramo 4/5 e `delete` | run/material sobrevivem em tabelas próprias; só o contexto da OS some até o próximo pull (§2.4) |
+| R9 | Linha `pending` sem ação (enqueue falhou antes do lock) | retida pelo ramo 2 enquanto não vier do backend; `B-SAN3-16` dá descarte; sementes não caem aqui |
+| R10 | Gancho externo ausente numa composição | `false` declarado; provider real compõe vistoria + material; F21/F25 |
+| R11 | Dono pedir fechar o detalhe (Q2) | `P-WO-LEITURAS-TENANT-WIDE-TECNICO`; não estica |
+| R12 | Gemini como cadeira | nunca três Gemini; achado conferido |
+| R13 | Harness que monta o serviço à mão com ator de campo recebe 503 na lista | desejado; o dev liga a referência estrita onde lista como técnico |
+| R15 | Cursor interpretado pelo cliente | contrato: opaco; F2 |
+| R17 | Lock serializa toques do técnico com a reconciliação | nenhuma rede dentro do lock; custo = varredura local (ms) |
+| **R18** | Ordem por `id` no modo cursor ≠ ordem de apresentação | o app ordena localmente (store `ORDER BY created_at DESC`; Home por `scheduledAt`); a web não usa cursor |
+| **R19** | `-db` pulam sem `DATABASE_URL` e a suíte "passa" | o `run-backend-tests.mjs` já tem orçamento de skip com banco presente; o job `backend-postgres` roda com banco; a cadeira C1 roda os 4 `-db` em cluster próprio e exige 0 skip |
+| **R20** | E1 esvazia o aparelho de histórico: técnico quer rever OS concluída ontem | decisão do dono (E1); o portal tem o histórico; o texto do vazio diz isso (CA-22); se o dono mudar, volta ao plano (§13 nota) |
+| **R21** | `approved` existe no app e não no backend; `rejected` é terminal lá e não aqui (M28) | o app nunca decide "aberta" (F23); exibição por `isFinal` fica como está; pendência de vocabulário em §12 |
+| **R22** | Material do prestador sem replay (M23): OS com peça lançada fica retida indefinidamente | correto (não perder dinheiro); selo "A sincronizar"; pendência §12 para o replay |
+
+## §11-bis — Riscos residuais para a junta (o que a v3 NÃO fecha e a junta deve julgar sabendo)
+1. **Sem drenagem neste bloco** (retêm com selo, para sempre até outro bloco): ação `failed`/não replayada (`approval_request`, `unable_to_start`, `work_order_material.add`), evidência em `conflict` com blob, material pendente. É o preço de "nunca perder dado"; as pendências §12 nomeiam o bloco que dá saída (`B-SAN3-16`). A junta confere que **nenhum** CA apaga nesses estados.
+2. **Leituras tenant-wide do técnico fora da lista** (detalhe, timeline, anexos, mapa, `/approvals/*`, `/operations/dispatches*`) continuam — Q2 do dono; `P-WO-LEITURAS-TENANT-WIDE-TECNICO`. O #32 fecha **a lista**.
+3. **Escritores fora do lock** (vistoria, material, atualizadores do replay): cobertos pelos ramos 2/4/5 e pela releitura do store; janela residual R8' declarada — custo = contexto da OS até o próximo pull, nunca a ação.
+4. **Provider recria o repositório** (M27) com `devBootstrapSession` durante o recarregamento — pre-existente; o lock estático e a releitura do store neutralizam para esta purga; a instância "demo" não lista nem purga tenant real (filtro por organização). Pendência nomeada.
+5. **Fila ler-tudo/gravar-tudo** (R2-N2, pre-existente): `update` do replay concorrente a `enqueue` pode sobrescrever ação — fora do bloco; pendência nomeada.
+6. **E1 muda o que o técnico vê:** sem histórico no aparelho; Home sem "Concluídas". Decisão do dono; rótulo "A sincronizar" é escolha do planejador (nota §13) — a junta pode pedir outro rótulo sem reprovar.
+7. **`-db` dependem de Postgres**: no worktree do dev/cadeira exigem cluster descartável próprio; sem ele os 4 testes pulam **declarando** — a cadeira C1 não aceita skip.
+8. **Vocabulário de status** divergente app × backend (M28): não afeta a purga (o app não decide); afeta só exibição — pendência.
+
+## §12 — Pendências (v3)
+- **Fechar com prova (no PR):** `P-MOBILE-MINHAS-OS-SEM-FILTRO` (#32) — B1-B9, B14-db, F2-F3 verdes; sonda §1a com `total 1`. `P-MOBILE-OS-SEEDS` (#33) — F1/F6/CA-23.
+- **Abrir — `P-WO-LEITURAS-TENANT-WIDE-TECNICO`** (MÉDIA; dono proposto `B-SAN3-23` ou bloco novo): `GET /work-orders/:id`, `/:id/timeline`, `/:id/attachments`, `/:id/attachments/:attachmentId/download`, `/:id/map-start-points`, `/approvals/pending`, `/approvals/:approvalId` (`work_orders:read`); `GET /operations/dispatches`, `/:dispatchId`, `/:dispatchId/timeline` (`field_dispatch:read`). O #32 fecha a lista.
+- **Abrir — `P-MOBILE-SYNC-FAILED-SEM-DESCARTE`** (MÉDIA; dono `B-SAN3-16`): tela de sincronização resolve só `conflict`; `failed` e tipos não replayados (`approval_request`, `unable_to_start`, **`work_order_material.add`**) sem saída → OS retida com selo até existir descarte/replay.
+- **Abrir — `P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE`** (MÉDIA; dono: bloco de sync): o uploader só retenta `pending/failed`; evidência em `conflict` com blob não tem caminho → OS retida com selo.
+- **Abrir — `P-MOBILE-MATERIAL-SEM-REPLAY`** (ALTA — dinheiro/estoque; dono: `B-SAN3-16` ou bloco de estoque do prestador): `work_order_material.add` fica `pending` para sempre (M23); com este bloco a OS fica retida, nunca apagada.
+- **Abrir — `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA`** (BAIXA): `useServer` muda só a ação; a linha fica `conflict` (selo errado se a OS continuar do técnico).
+- **Abrir — `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD`** (BAIXA, pre-existente `e79616aa4` 2026-06-13): `workOrderRepositoryProvider` nasce com `devBootstrapSession` (`tenant-demo`) durante o recarregamento da sessão.
+- **Abrir — `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO`** (BAIXA, pre-existente): `PersistentSyncQueueRepository.enqueue/update` sobrescrevem a fila inteira; `update` do replay concorrente a `enqueue` pode perder ação.
+- **Abrir — `P-WO-STATUS-VOCABULARIO-APP-BACKEND`** (BAIXA): `approved` só no app; `rejected` terminal só no backend (M28).
+- **Abrir — `P-WO-LIST-SCOPE-WEB-TECNICO`** (BAIXA; frontend): confirmar que nenhuma tela web com sessão `technician` depende de lista tenant-wide (H4).
+- **Já existentes, citadas:** `B-SAN3-16`; `P-O6R-B11`/`Ω6R-QUA-004` (write torto do `assign` — a via mista do CRIT-2); `P-MOBILE-FAXINA-TERMOS-TECNICOS`; `P-MOBILE-BANNER-INTEGRACAO`.
+
+## §13 — Perguntas ao dono (v3): **nenhuma nova.**
+- **Q1-Q5:** "Aceito as 5 (Recomendado)". Mantidas: Q1 imposto no backend; Q2 detalhe segue legível (pendência enumerada); Q3 visível até drenar (a v3 nomeia os estados sem drenagem e nunca os apaga); Q4 só as dele; Q5 sementes só em build local.
+- **Q6 → E1: "Só as abertas".** Incorporada ao contrato (§3 `openOnly=true`, §4, §6 CA-10/13/21/22/23). `terminalSince` saiu do plano.
+
+**Duas notas (não são perguntas; o dono corrige numa linha se quiser):**
+1. O predicado da lista é **o mesmo** que decide quem pode mudar a OS (`assigned_operator_id`), sem `assigned_user_id`. Efeito visível: uma OS atribuída de forma torta pela web (usuário X, perfil de Y — `Ω6R-QUA-004`) aparece para **Y**, que consegue agir nela, não para X.
+2. Sob a E1, o tile "Concluídas" da Home deixaria de ter o que contar; a v3 o troca por **"A sincronizar"** (OS com envio pendente — número que o técnico produz e controla). Se o dono preferir outro rótulo ou outro número (ex.: "Concluídas hoje" vindo do backend), é bloco próprio ou uma linha de texto — não muda a purga.
+
+## §14 — Registro obrigatório (v3)
+- **Emenda ao `PLANO_SAN3.md` l.284 (§A2):** o teste de encerramento passa a: *"Minhas OS chama o GET com `scope=assigned&openOnly=true` e caminha por `cursor` (por `id`); o backend impõe ao papel de campo o predicado do guard; lista = mutáveis; OS concluída e sincronizada sai do aparelho; nada pendente é apagado"*. Registrar em `controle/decisoes.md` como `D-SAN3-13-SCOPE-ASSIGNED` (Q1-Q5, E1 literal "Só as abertas", as 2 notas).
+- **Ata da junta** `agent-orchestration/omega/juntas/J-SAN3-13-minhas-os.md`: papéis (mediu: Argon; criticou r1: `crit-san313-opus`; criticou r2: `crit-san313-opus-r2`; planejou v1-v3: `planejador-mestre` Fable 5.1; **dev: Claude Opus, declarado, cobrindo o Codex por ordem do dono**), modelo de cada cadeira, `arquivos_medidos`, vermelho-controle B1/B14-db/F1, re-execuções das sondas r1/r2 (comando e saída, nesta v3).
+- **`docs/claude-code-handoff/API_CONTRACTS.md` l.24:** `GET /work-orders?scope=assigned&openOnly=true&limit=&cursor=` → `pagination.nextCursor` (opaco); `scope` forçado para papel de campo; `503 WORK_ORDER_SCOPE_UNAVAILABLE`; 400 `invalid_scope`/`invalid_open_only`/`invalid_cursor`/`invalid_cursor_offset`.
+- **KPI:** congelado — nada em `Kpis/*`.
+- **Porteiro pós-merge:** merge de produto → porteiro; reexecuta §8 itens 4, 9, 10, 16.
+
+---
+
+## Resposta do dono às 5 perguntas do §13 (24/10, ~19:40 BRT)
+Pergunta do orquestrador: "B-SAN3-13 (app de campo): aceita as 5 recomendações do plano? (1) default do §10.7; (2) o detalhe de OS do técnico segue legível neste bloco, com pendência para depois; (3) OS reatribuída com ação pendente fica visível com selo até a fila drenar; (4) usuário de escritório no app vê só as OS dele; (5) OS semente só existem no app de demonstração local."
+Resposta literal do dono: ***"Aceito as 5 (Recomendado)"***.
+
+---
+
+## Emenda E1 (24/10, ~22:45 BRT) — resposta do dono à Q6 (histórico no aparelho)
+Pergunta do orquestrador: "B-SAN3-13 (app de campo): quanto tempo uma OS já concluída fica guardada no aparelho do técnico?" (opções: 30 dias (Recomendado) · 90 dias · Só as abertas).
+Resposta literal do dono: ***"Só as abertas"***.
+Consequência para a v2 (decisão nova no meio do bloco vira emenda antes do código, §C2.2): o recorte `terminalSince` sai; o aparelho guarda e mostra só OS NÃO terminais
+do técnico; OS que fica terminal sai do aparelho na reconciliação seguinte, **respeitando a retenção** da v2 (ação na fila, linha `pending`, evidência com blob, vistoria
+pendente — nada que não sincronizou é apagado). Critério: CA de histórico passa a "OS concluída sem pendência sai do aparelho; com pendência, fica até drenar";
+mutação: manter as terminais → vermelho. O teto de páginas da v2 vale sobre as abertas. A crítica r2 (em curso sobre a v2) e o dev aplicam esta emenda.
+
+_(v3, 25/10: a E1 está incorporada ao contrato — §3 `openOnly=true`, §4, §6 CA-10/13/21/22/23, §14. O texto acima é o registro literal da decisão.)_
