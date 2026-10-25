@@ -1,0 +1,33 @@
+{
+ "jurado": "jurado-trc02-c2-b-argon (corpo jurado-trc02-b-superficie-escopo-registro, blob 3fa735d1; identidade nova; tudo A RE-VERIFICAR)",
+ "cadeira": "(b) B-TRC-02 ciclo 2 — superfície, segredo, escopo (com emendas v2.2, v2.3, v2.4 e plano do ciclo 2), auth e registro (variante Q1 = NÃO)",
+ "arquivos_medidos": {
+  "uniao": "**",
+  "item_1": [],
+  "item_2": ["**"],
+  "item_3": []
+ },
+ "sondas_persistentes": "EM APURAÇÃO",
+ "memoria_p8": "EM APURAÇÃO",
+ "ciclo": "2 · régua aplicada: último ciclo em que bloqueia dentro-do-bloco não grave reprova (§C7 item 8(2)) · item 3: só nota salvo encerramento falso",
+ "mandato_md5": "e78c4a96377341a8c082eb311248c2ad (EOL-neutro)",
+ "modelo": "gemini-4-argon (Antigravity agy, nível menor declarado, §C7.6)",
+ "corpo_md5": "2bea60cd0b00640c29c7068c17e11062 (EOL-neutro do blob .claude 3fa735d1 no objeto) → IDENTICO",
+ "objeto": "42800d0dcece29c7e3a39476c9b40c917a66dfd0",
+ "migracoes": "EM APURAÇÃO",
+ "legalidade": "insp-trc02-c2-parecer.md (insp-trc02-c2-argon) · LIBERADO COM RESSALVA · A RE-VERIFICAR · C-10 (D-TRC02-C10-EVENTO-SEM-DESPACHO-GUARDA) e D-MIGRACAO-COM-TRANSACAO-EXPLICITA registradas",
+ "quorum": "unanimidade de 3, com veto",
+ "docker": "EM APURAÇÃO",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a)/(c) desta junta",
+ "pausa": "nenhuma",
+ "voto": "EM APURAÇÃO",
+ "superficie": "EM APURAÇÃO",
+ "escopo": "EM APURAÇÃO",
+ "registro": "EM APURAÇÃO",
+ "justificativa": "EM APURAÇÃO",
+ "o_que_executei": [],
+ "achados": [],
+ "criterios_que_nao_puderam_falhar": [],
+ "pendencias_que_aceito": [],
+ "teardown": "EM APURAÇÃO"
+}

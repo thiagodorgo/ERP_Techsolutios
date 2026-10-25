@@ -1,0 +1,11 @@
+**APROVADO**, cadeira (a), B-TRC-02, ciclo 2, no objeto `42800d0d`. O voto, que deixa tr├¬s coisas sem medir (abaixo), est├í em `/saida/cadeira-a-voto.json` e a evid├¬ncia em `/saida/cadeira-a-evidencia.md`.
+
+- **Ressalva de legalidade:** o parecer do inspetor libera a cadeira (a) com o nome `jurado-trc02-c2-a-pro`, n├úo com o meu. A troca at├® `jurado-trc02-c2-a-api` s├│ est├í registrada em `00-quedas.md`, pelo orquestrador.
+- **Item 1, organiza├º├úo separada no banco: verde.** Os dados de uma organiza├º├úo ficam fechados para as outras, testado com o papel que a aplica├º├úo usa (sem superusu├írio, sem pular RLS). Um insert com outra organiza├º├úo d├í erro 42501 e, sem a organiza├º├úo definida na sess├úo, a consulta v├¬ 0 linhas. Esse papel ganha acesso exatamente a uma tabela nova, a `vehicle_telemetry_events` (118 ÔåÆ 119). As migra├º├Áes n├úo t├¬m nenhum `GRANT`, e o rollback cita os dois nomes renumerados.
+- **Item 2, corrida e amostra: verde.** Duas entregas iguais ao mesmo tempo passaram 20 de 20 vezes (um recibo, uma linha, as duas com 204). Nove muta├º├Áes rodaram e todas foram pegas pelos testes (M-E10, 26, 31, 32, 46, 47, 48, 43, 49). N├úo ficou nada da variante revertida (Q1 = SIM) no banco, na migra├º├úo nem nos testes.
+- **Item 3, CI: verde.** Rodei a forma do job `backend-postgres` tr├¬s vezes: 463/463, 462/463 e 463/463, com 0 pulos.
+  - **A falha da 2┬¬ rodada ├® o achado A-1**, pr├®-existente e que n├úo bloqueia. Um teste de tempo do bloco anterior (`traccar-position-ingestion-db.test.ts:819`, de `c1485c94`) recebeu 503 em vez de 204 sob carga paralela. Isolado, passou 5 de 5.
+  - **Ressalva honesta:** o bloco p├Áe mais trabalho na transa├º├úo da posi├º├úo, o que pode aumentar a frequ├¬ncia dessa falha. N├úo medi a taxa no merge-base.
+- **Erro meu, j├í corrigido:** uma primeira rodada sem as vari├íveis de ambiente do job teve 2 testes pulados e n├úo conta.
+
+**N├úo medido por limite do ambiente, n├úo do objeto:** a muta├º├úo M-E14, a sonda pr├│pria que for├ºa o erro 23505 e a sonda pr├│pria com a organiza├º├úo B povoada. Os dois ├║ltimos casos ficaram cobertos s├│ pelos testes do pr├│prio bloco e pelo c├│digo. O or├ºamento de US$ 4 tamb├®m me levou a usar o script de muta├º├Áes do dev em vez de um meu. A CI no GitHub e a su├¡te `backend` completa eu n├úo rodei: v├¬m do parecer do inspetor.

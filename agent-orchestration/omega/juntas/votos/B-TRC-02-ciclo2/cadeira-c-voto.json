@@ -1,0 +1,161 @@
+{
+ "jurado": "jurado-trc02-c2-c-opus (corpo jurado-trc02-c-contrato-evento-unidades; identidade nova; nenhum número, SHA, linha ou trecho do plano, das emendas, das críticas, do relatório do dev, da captura, do inspetor, do mandato ou do corpo herdado como fato)",
+ "cadeira": "(c) B-TRC-02 — contrato de evento, allowlist, unidades e ordem no tempo; a regra no código de que a posição em quarentena não guarda amostra (Q1 = NÃO)",
+ "ciclo": "2 · régua aplicada: ciclos 1–2, bloqueia dentro-do-bloco reprova (§C7 item 8(2)) · cadeira REFEITA (§C7 item 9: o ciclo 1 não deixou voto da (c))",
+ "objeto": "42800d0dcece29c7e3a39476c9b40c917a66dfd0 (ls-remote = gh headRefOid, no início e no fim) · c1485c94 = c1485c94f3e99a33f5b8f6aec96a12bc922a237e · origin/main início/fim c76ec481ea9af23dea8cb58ce28fb72bf1965f2b/c76ec481ea9af23dea8cb58ce28fb72bf1965f2b · HC = H0 (cerca do mandato = objeto; delta vazio) · objeto no fim: igual",
+ "variante": "no código: Q1 NÃO · Q2 SIM · símbolos da Q1 em src: 0 · suíte I na árvore: 0 · registro do dono Q1 = NÃO: decisoes.md:3824 (D-TRC02-Q1-NAO) no objeto",
+ "arquivos_medidos": {
+  "uniao": "** (toda mutação roda tsc -p tsconfig.json --noEmit = npm run check; npm ci e prisma generate próprios)",
+  "item_1": [
+   "infra/traccar/fixtures/6.16.0/event-*.json",
+   "infra/traccar/fixtures/6.16.0/position-osmand.json",
+   "src/integrations/traccar/traccar-event.schema.ts",
+   "src/integrations/traccar/traccar-event.adapter.ts",
+   "src/integrations/traccar/traccar-telemetry-catalog.ts",
+   "src/integrations/traccar/traccar-position.adapter.ts",
+   "src/integrations/traccar/traccar-position.schema.ts",
+   "src/integrations/traccar/traccar-ingest.app.ts",
+   "src/integrations/traccar/traccar-ingest.logger.ts",
+   "src/integrations/traccar/traccar-ingestion.service.ts",
+   "src/integrations/traccar/traccar-ingestion.repository.ts",
+   "src/integrations/traccar/traccar-resolution.ts",
+   "src/integrations/traccar/traccar-forward-auth.ts",
+   "src/integrations/traccar/traccar-rate-limit.ts",
+   "src/database/rls.ts",
+   "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts",
+   "prisma/migrations/**",
+   "tests/traccar-event-contract.test.ts",
+   "tests/traccar-event-logs.test.ts",
+   "tests/traccar-event-listener.test.ts",
+   "tests/traccar-event-ingestion-db.test.ts",
+   "tests/helpers/auth-identity-fixture.ts",
+   "docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs",
+   "docs/revisoes/TRACCAR/B-TRC-02-evento-captura.md"
+  ],
+  "item_2": [
+   "src/integrations/traccar/traccar-ingestion.service.ts",
+   "src/integrations/traccar/traccar-ingestion.repository.ts",
+   "src/integrations/traccar/traccar-event.adapter.ts",
+   "src/integrations/traccar/traccar-position.adapter.ts",
+   "src/integrations/traccar/traccar-position.schema.ts",
+   "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts",
+   "src/modules/telemetry/vehicle-telemetry.bounds.ts",
+   "src/modules/field-dispatch/field-dispatch-prisma.repository.ts",
+   "src/database/rls.ts",
+   "prisma/migrations/**",
+   "tests/traccar-event-ingestion-db.test.ts",
+   "tests/traccar-event-sample-db.test.ts",
+   "tests/traccar-event-rls-db.test.ts",
+   "tests/**",
+   "docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs",
+   "docs/revisoes/TRACCAR/B-TRC-02-evidencias/results-db-c2.jsonl",
+   "docs/revisoes/TRACCAR/B-TRC-02-plano.md",
+   "docs/revisoes/TRACCAR/B-TRC-02-dev.md",
+   "agent-orchestration/controle/decisoes.md"
+  ],
+  "item_3": [
+   "src/modules/telemetry/vehicle-telemetry.bounds.ts",
+   "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts",
+   "src/modules/telemetry/**",
+   "src/integrations/traccar/**",
+   "prisma/migrations/20260879000000_vehicle_telemetry_events/migration.sql",
+   "tests/traccar-event-sample.test.ts",
+   "tests/traccar-event-sample-db.test.ts",
+   "tests/traccar-position-contract.test.ts",
+   "tests/traccar-event-contract.test.ts",
+   "docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs"
+  ]
+ },
+ "sondas_persistentes": "C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-c/ — MD5SUMS lá (zz-jt2c2c-borda.mts 5bd2eec6 · casos01.cjs b06c9897 · catalogo.mts 4517615c · chave.mts 485a549c · env.sh d118929c · fixture-vs-tag.cjs edf0bb15 · mut.mjs 6936318a · residuo.cjs 0942c354 · runtest.sh 360d31a9 · sonda-db.mts 5a05c313 · troca-c01.sh c5f858ea · voto.cjs dc960d57 · own-E17tx.json 5ea2e328 · ctl-bounds/bounds-minV-1.ts 4057cfed · c01/*.ts c7e97509/fe1d9c6f · migA-objeto.sql 6e222f9d) · tag/ com 21 .java + tree.json e SHA256SUMS (14 iguais ao ciclo 1 por cmp) · grep da senha = 0 · revalidador: recriar o $SCRATCH (…/scratchpad/c) com um jt2c2-c.pw novo e os containers jt2c2-c-pg/-redis em 127.0.0.1:47783/47793",
+ "memoria_p8": "commit livre no lançamento 14,2 GB · antes dos containers 13,48 · durante 12,9 · no fim 12,81 · mínimo 12,81 · esperas por < 4 GB: 0",
+ "mandato_md5": "a8df20ae2eb3cdaf9697af032c61f12c (EOL-neutro) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus (claude-opus-5-5) · nível menor (§C7.6) · substituição: cobre jurado-trc02-c2-c-sol (Codex gpt-5.6-sol em limite de uso; D-TOPO-E-O-CLAUDE) · sucessora de: ninguém (cadeira refeita; o ciclo 1 caiu no cabeçalho)",
+ "corpo_md5": "706f8d58dad7d864a533592a4f2e775f (.claude, blob no objeto, EOL-neutro) · 226b676ca9c5078979a8de1d8cb7a90d (.agents, difere por construção do espelho; IDENTICO descontado frontmatter e bloco Codex, conforme o mandato e o inspetor) · recebido: carregado do blob do objeto = 706f8d58 → IDENTICO",
+ "tag": "v6.16.0 de raw.githubusercontent.com (só GET), 21 arquivos com sha256 em tag/SHA256SUMS · S-E conferidos com arquivo:linha: S-E1 forward_EventData.java:25-68 + EventForwarderJson.java:53; S-E3 NotificationManager.java:85,90,168-170; S-E15 Keys.java:1192-1193 + Config.java:140-141; alarme AlarmEventHandler.java:42,52-55 (um evento por código); 38 ALARM_* em Position.java; 23 TYPE_* em Event.java:42-72; status ConnectionManager.java:94,96,269-273 + Keys.java:519-522,898-901; ignição IgnitionEventHandler.java:42-48; unidades Position.java:41,44,55,57,73; eventTime = deviceTime (Event.java:25-29) · divergências: 0 (o 'falta type' do meu comparador é artefato: Position.java:341-344 @JsonIgnore getType)",
+ "legalidade": "inspetor insp-trc02-c2-argon: insp-trc02-c2-parecer.md (17:08 local) · LIBERADO COM RESSALVA · nomeia jurado-trc02-c2-c-opus, Claude Code subagente opus, worktree C:/Users/AMP/w-jt2c2-c, terreno jt2c2-c-pg/-redis em 127.0.0.1, sondas em jt2c2-c/ · corpo IDENTICO nos dois espelhos · variante (vi): não herdada como Q1=SIM; medida por mim no código (Q1 = NÃO) · ressalva R-1 de disco resolvida (12–13 GB livres durante a medição) · check-runs 14 | 0 | 0",
+ "quorum": "unanimidade de 3, com veto",
+ "docker": "trabalhos de outros contados antes de subir: 0 (só erp-postgres/erp-redis, ignorados e nunca tocados); depois apareceram agv3-jt2c2-a-api-* e agv3-proxy (cadeira (a)), não tocados · o meu: 1 trabalho (jt2c2-c-pg, jt2c2-c-redis, rede jt2c2-c-net)",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a)/(b) desta junta (nem os DESCARTADO/QUEDA) · li: 00-quedas.md, insp-trc02-c2-parecer.md, o mandato cadeira-c.md, o corpo, a evidência da (c) do ciclo 1 (roteiro P3), B-TRC-02-plano.md (linhas de C-13 e F1–F11, l.699/775/940), B-TRC-02-dev.md (l.607, 617), B-TRC-02-evento-captura.md (l.24-49), decisoes.md (âncoras D-TRC02-*), mutations.mjs/run-mutations.mjs/results-db-c2.jsonl do objeto",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "item_1_chave_e_catalogo": "VERDE — fixtures = tag (event 8/8, device 15/15, position sem extra; _sintetica rotulada); catálogo 38/38 alarmes e 23/23 tipos, diferença vazia; event.id/positionId/receivedAt fora (A3/A4; 1000 chamadas = 1 chave); coordenada na chave (A15–A17); relógio travado = 2 linhas no banco; chave/digest da posição = c1485c94 em 40/40; ignored 204, 0/0/0, 5 linhas contadas sem type; 422 sem alarm, ignition-on e 33 letras; 0 sentinela e 0 coordenada no banco; M-E02/03/04/07/39/44 vermelhas no caso nomeado; 3 controles acusaram",
+ "item_2_ordem_e_amostra": "VERDE — E8 (0 despachos → 204, 1 linha; C-10 = guardar cumprido: EventPhaseTwoPorts sem operador) com M-E09 re-especificada vermelha em E8; precedência 6/6 no mesmo ms nas duas ordens; E10/E11/E16/E17 com M-E15/M-E41/M-E42 vermelhas; F1–F5 verdes, M-E16″ vermelha no F3 por contagem (0→1), M-E18 vermelha (F4); M-E17 vermelha em 9 casos mas não no F5 — critério M-E17→F5 impossível por construção (42501/23503 → 503 nada gravado; forma própria idem): achado contra a régua; Q1 = NÃO: 9 motivos com 0 recibo/0 loc/0 amostra, A e B 0/0/0; quarentena → aceitação depois = 204 stored, 1 loc, 1 recibo, 1 amostra; borda/hook sem operador: 0 sample_discarded, 0 chamadas, 0 failed before commit; resíduo Q1: 0 em src, 3 em tests todas recusando position_sample, 0 M-Q1-*; formas próprias: alarme duplo 2 chaves/2 linhas (cru → ignored), status invertido → unknown, aceita-depois-sem-operador → duplicate 1/1/0; 3 controles acusaram",
+ "item_3_unidades_e_km": "VERDE — B1–B11 11/11; tabela de borda própria (83 linhas) coerente com B9 e com linhas a mais; unidades exatas (hours ms→s, power V→mV, odômetro arredondado, bateria round-then-clamp); parser ⊆ CHECK e igual nas 5 colunas; F7/F9 verdes; M-E19/20/30/45 vermelhas no caso nomeado; M-E48 → F9 e F9′ vermelhos com B9 verde (lacuna declarada, não achado); B5 e §9.4 (12 casos idênticos por parse, l.88 com as 3 asserções antigas + a nova); M-E21 vermelha em B5 e no caso do 01; F6 e sonda de km: md5 da OS e de todas as OS iguais, mileage_* intocado, 0 referência a mileage/work_orders no código; M-E22 vermelha; vermelho-controle c1485c94: B 6/11 e §9.4 por asserção, A por import (não mede, por construção — achado contra a régua); 3 controles acusaram",
+ "achados": [
+  {
+   "defeito": "o critério do plano 'M-E17 → F5 vermelho (linha sobrevive ao rollback)' não pode passar por construção",
+   "evidencia": "M-E17 → F 4/13, 9 not ok sem o F5; diagnóstico: M-E17 → 503 code 42501 (RLS sem GUC); forma própria own-E17tx.json (amostra numa tx própria sob o GUC) → 503 code 23503 (FK de 4 colunas para o recibo não commitado), F5 verde também; plano B-TRC-02-plano.md:699 (C-13)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (régua do plano), achado contra a RÉGUA e não contra o objeto",
+   "classe": "não grave",
+   "reprova_neste_ciclo": "não (critério que não pode passar = achado contra a régua, corolário do corpo; a propriedade 'amostra no mesmo tx' é presa pelo F1 e pelo esquema)",
+   "motivo": "a amostra fora do tx da fase 2 não consegue sobreviver ao rollback: o desenho (RLS + FK para o recibo do mesmo tx) a impede; o caso nomeado F5 não tem como ficar vermelho por essa mutação"
+  },
+  {
+   "defeito": "vermelho-controle da suíte A com o src/ de c1485c94 só pode falhar por import",
+   "evidencia": "troca dos 6 arquivos M: A → SyntaxError 'does not provide an export named coordinate'; B 6/11 e §9.4 por asserção",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (régua do corpo), achado contra a RÉGUA",
+   "classe": "não grave",
+   "reprova_neste_ciclo": "não (a A só exercita arquivos novos que importam um export que o 01 não tinha; a medição por asserção da A está nas mutações M-E02/M-E39/M-E04/M-E07)",
+   "motivo": "o controle 'A vermelha por asserção no src do 01' não pode passar por construção"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "achado contra a régua: 'M-E17 → F5 vermelho' não pode PASSAR (RLS/FK impedem a amostra fora do tx; medido 42501 e 23503)",
+  "achado contra a régua: 'suíte A vermelha por asserção com o src/ de c1485c94' não pode PASSAR (A depende de export novo; vermelho por import)",
+  "nota contra o corpo: a hipótese 'digest diferente na quarentena → conflict_count 1' não se aplica — a quarentena não cria recibo; medido delivery_count 3 no mesmo episódio",
+  "todos os outros controles foram vistos acusando: injeção no catálogo, 7ª casa da coordenada, sentinela minha na varredura, offline posterior no leitor de estado, contador por kind, a sonda da quarentena sob M-E16″, a busca de resíduo com símbolo injetado, a tabela de borda com minV −1, o comparador com CHECK fabricado, o md5 da OS com mileage_end meu"
+ ],
+ "pendencias_que_aceito": [
+  "(b) registro: B-TRC-02-dev.md:617 diz que os 9 casos vermelhos da M-E17 'incluem F1, F5, F10, F12' — o F5 não está entre eles (TAP meu e results-db-c2.jsonl do objeto: 9 títulos sem o F5); nota de registro, não reprova por esta cadeira",
+  "(a) RLS, FK, migração, savepoint, F9′, CI, arnês e a ausência da Q1 no banco (CHECK do recibo, índice) — não julgados aqui",
+  "(b) superfície, segredo, escopo, emenda v2.2, contrato escrito e registro da variante — não julgados aqui",
+  "P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO (exibição no B-TRC-04): guardar ≠ exibir, C-10 cumprido; P-TRC02-COMMANDRESULT-IGNORADO (B-TRC-03b); reconciliação/H-11 (B-TRC-03); expurgo (B-TRC-05) — reprovação por construção, não cobrados",
+  "M-E48 com B9 verde: lacuna declarada pela emenda v2.1, não achado"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "npm ci --no-audit --no-fund; DATABASE_URL=<porta 1> npx prisma generate",
+   "forma": "worktree próprio C:/Users/AMP/w-jt2c2-c (detached no objeto), sem junction",
+   "resultado": "ec 0 / ec 0"
+  },
+  {
+   "comando": "docker run postgres:16 / redis:7 em 127.0.0.1:47783/47793; CREATE DATABASE jt2c2_c_obj; npx prisma migrate deploy",
+   "forma": "containers jt2c2-c-pg/-redis, rede jt2c2-c-net, senha aleatória só no $SCRATCH",
+   "resultado": "PostgreSQL 16.14; migrate ec 0"
+  },
+  {
+   "comando": "node --test --import tsx --test-reporter=tap <suíte> (zz-jt2c2c-runtest.sh)",
+   "forma": "REDIS_URL e DATABASE_URL próprios; A, B, C, D, E, F, contrato do 01",
+   "resultado": "17/17, 11/11, 12/12, 5/5, 21/21, 13/13, 13/13; skipped 0"
+  },
+  {
+   "comando": "curl -sS --max-time 60 raw.githubusercontent.com/traccar/traccar/v6.16.0/... ; grep -n",
+   "forma": "21 arquivos da tag em jt2c2-c/tag/, sha256",
+   "resultado": "14/14 iguais ao ciclo 1 (cmp); fatos S-E com arquivo:linha"
+  },
+  {
+   "comando": "node zz-jt2c2c-fixture-vs-tag.cjs; node --import tsx zz-jt2c2c-catalogo.mts; zz-jt2c2c-chave.mts",
+   "forma": "import do objeto; c01/ = blobs de c1485c94",
+   "resultado": "fixtures = tag; 38/38 e 23/23; FALHAS=0"
+  },
+  {
+   "comando": "node --import tsx zz-jt2c2c-sonda-db.mts item1 | item2 | item2q | e17 | item3km",
+   "forma": "serviço e listener do objeto sob papel efêmero NOSUPERUSER NOBYPASSRLS, contagem pelo admin, limpeza escopada (0 organizações restantes em cada execução)",
+   "resultado": "FALHAS=0 em todas (item2q sob M-E16″: FALHAS=6, o controle)"
+  },
+  {
+   "comando": "node zz-jt2c2c-mut.mjs run <M> (catálogo do objeto)",
+   "forma": "âncora 1 EOL-CRLF, numstat, tsc ec 0, TAP, git checkout, hash-object = blob, porcelain vazio",
+   "resultado": "M-E02/03/04/07/39/44 · M-E09/15/41/42 · M-E16″/17/18 · M-E19/20/30/45/21/22/48 vermelhas; M-E48-ctlB verde (esperado); OWN-C-E17tx (própria) vermelha sem F5; restauro provado em todas"
+  },
+  {
+   "comando": "node --import tsx zz-jt2c2c-borda.mts (objeto, cópia minV −1, CHECK fabricado); zz-jt2c2c-casos01.cjs; zz-jt2c2c-residuo.cjs; zz-jt2c2c-troca-c01.sh troca|restaura",
+   "forma": "AST TypeScript; blobs do objeto e de c1485c94",
+   "resultado": "parser ⊆ CHECK 5/5; 12 casos idênticos + l.88; resíduo 0; c1485c94: B 6/11 e §9.4 por asserção, A por import; restauro provado"
+  }
+ ],
+ "teardown": "src/ de c1485c94 restaurado (6 arquivos, hash-object = blob do objeto, porcelain vazio) · mutações restauradas (todas com prova) · banco jt2c2_c_obj removido (DROP DATABASE … WITH (FORCE)); papéis efêmeros removidos pelo arnês (0 papéis além do admin antes do DROP); organizações jt2c2c-* = 0 · containers jt2c2-c-pg/-redis removidos (docker rm -f -v) e rede jt2c2-c-net removida, contagem 0 · processos vivos com w-jt2c2-c = 0 antes da remoção · worktree removido por git worktree remove --force (ec 0) · senha, logs crus e cópias de trabalho do $SCRATCH apagados (grep da senha = 0 no $SCRATCH, no diretório persistente, na evidência e no voto) · sondas, scripts e fonte da tag MANTIDOS em C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-c/ (MD5SUMS, tag/SHA256SUMS) · base viva e recursos da cadeira (a) nunca tocados · w-trc02 só com os meus dois arquivos de saída · resíduo alheio: nenhum varrido",
+ "justificativa": "terreno: worktree próprio no objeto, npm ci próprio sem junction, containers jt2c2-c-* em 127.0.0.1:47783/47793 testadas antes, .env ausente, REDIS_URL próprio em todo teste, base viva intocada, só GET de leitura ao fonte da tag, 1 trabalho Docker meu, disco 12–13 GB, memória ≥ 12,8 GB. Item 1: fixtures sustentadas pela tag v6.16.0 (arquivo:linha), catálogo = 38 alarmes e 23 tipos da tag, chave sem event.id/positionId/receivedAt e com coordenada (relógio travado: 2 linhas no banco), chave/digest da posição = c1485c94 (40/40), ignored 204 sem escrita e contado sem type, 422 nas formas fora do contrato, 0 sentinela/coordenada no banco; mutações vermelhas no caso nomeado; 3 controles acusaram. Item 2: E8 com C-10 (guardar) cumprido no código e no banco; precedência fechada 6/6 nas duas ordens; F1–F5 verdes; M-E16″ morde F3 por contagem e a minha sonda vê 1 recibo + 1 amostra e a aceitação engolida sob ela; Q1 = NÃO: 9 motivos sem recibo nem amostra (A e B 0/0/0), a aceitação posterior grava tudo, borda e hook fora do caminho sem operador, nenhum resíduo da Q1 em src/tests; formas próprias (alarme duplo, status invertido, aceita-depois-sem-operador) conforme o contrato; M-E17 não morde o F5 porque o desenho torna a falha impossível — achado contra a régua. Item 3: bordas por coluna com parser ⊆ CHECK (e igual), unidades exatas, posição do 01 inalterada (12 casos idênticos, l.88 com as 3 asserções antigas + a nova), mileage_* intocado (md5 de todas as OS igual), mutações vermelhas, M-E48 com B9 verde declarada; vermelho-controle c1485c94 por asserção em B e §9.4, A só por import (achado contra a régua). Nenhum achado bloqueia contra o objeto; os dois achados são contra a régua (critérios que não podem passar) e uma nota de registro vai para a (b). Limpeza: worktree, containers, rede, banco e $SCRATCH removidos; sondas mantidas com md5.\nVOTO: APROVADO — fixtures sustentadas pela tag v6.16.0 (arquivo:linha), catálogo = 38 da tag, chave sem event.id/receivedAt e com coordenada (relógio travado: 2 linhas), ignored 204 sem escrita e contado sem type, nada pessoal no banco; E8, precedência fechada nas 6 combinações e nas duas ordens, latestIgnition, F1–F5 com M-E16″ mordendo F3; Q1 = NÃO: 9 motivos de quarentena sem recibo nem amostra, a aceitação posterior grava tudo, nenhum resíduo da Q1 em src/tests; forma própria: alarme duplo 2 chaves/2 linhas, status invertido → unknown, aceita-depois-sem-operador → duplicate; bordas por coluna parser ⊆ CHECK, unidades exatas, posição do 01 inalterada, mileage_* intocado; arquivos_medidos: **; pendências: M-E17→F5 e A-no-c1485c94 são critérios que não podem passar (contra a régua), nota de registro de B-TRC-02-dev.md:617 para a (b)"
+}

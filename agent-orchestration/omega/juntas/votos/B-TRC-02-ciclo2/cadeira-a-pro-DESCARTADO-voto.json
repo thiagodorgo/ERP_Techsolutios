@@ -1,0 +1,40 @@
+{
+  "jurado": "jurado-trc02-a-opus (corpo jurado-trc02-a-banco-rls-arnes; identidade nova; nada herdado como fato)",
+  "cadeira": "(a) B-TRC-02 - banco, RLS, migração e arnês",
+  "ciclo": "1 – régua: bloqueia dentro-do-bloco reprova",
+  "voto": "REPROVADO",
+  "arquivos_medidos": {
+    "uniao": "**",
+    "item_1": "Nenhum",
+    "item_2": "Nenhum",
+    "item_3": "Nenhum"
+  },
+  "legalidade": "A RE-VERIFICAR",
+  "dba_guardiao": "A RE-VERIFICAR",
+  "C-10": "A RE-VERIFICAR",
+  "D-MIGRACAO-COM-TRANSACAO-EXPLICITA": "A RE-VERIFICAR",
+  "achados": [
+    {
+      "item": 1,
+      "gravidade": "grave",
+      "classe": "infraestrutura",
+      "escopo": "dentro-do-bloco",
+      "descricao": "Não consigo medir o item 1 (comandos npm ci bloqueados)"
+    },
+    {
+      "item": 2,
+      "gravidade": "grave",
+      "classe": "infraestrutura",
+      "escopo": "dentro-do-bloco",
+      "descricao": "Não consigo medir o item 2 (comandos npm ci bloqueados)"
+    },
+    {
+      "item": 3,
+      "gravidade": "grave",
+      "classe": "infraestrutura",
+      "escopo": "dentro-do-bloco",
+      "descricao": "Não consigo medir o item 3 (comandos npm ci bloqueados)"
+    }
+  ],
+  "quorum": "unanimidade de 3, com veto"
+}

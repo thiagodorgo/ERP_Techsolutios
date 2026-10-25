@@ -1,0 +1,163 @@
+{
+ "jurado": "jurado-trc02-c2-b-opus (corpo jurado-trc02-b-superficie-escopo-registro, blob 3fa735d1; identidade NOVA; sucessor declarado de jurado-trc02-c2-b-argon, caído 23:01Z por créditos; tudo A RE-VERIFICAR)",
+ "cadeira": "(b) B-TRC-02 ciclo 2 — superfície, segredo, escopo (emendas v2.2/v2.3/v2.4 e plano do ciclo 2), auth e registro (variante Q1 = NÃO)",
+ "objeto": "42800d0dcece29c7e3a39476c9b40c917a66dfd0 (ls-remote = gh headRefOid, início e fim; OPEN, MERGEABLE) · c1485c94 ancestral: sim · B (merge-base) 7ab2fe71d0d40c2be51a790f0d20893651cdf972 · forma de separar a main: laço sobre git diff B..<obj>; RBAC_MATRIX.md e PLANO_SAN3.md do merge da main com blob = B · origin/main início/fim c76ec481/c76ec481 · cerca do mandato = objeto (delta vazio) · objeto no fim: igual",
+ "arquivos_medidos": {
+  "uniao": "** (laço de escopo do item 2, npm ci, npm run check nas mutações, sync --check)",
+  "item_1": [
+   "src/integrations/traccar/**",
+   "src/app.ts",
+   "src/portal-app.ts",
+   "src/config/env.ts",
+   ".env.example",
+   "docker-compose.traccar.yml",
+   "docker-compose.prod.yml",
+   "infra/traccar/**",
+   "scripts/traccar-dev-demo.mjs",
+   "scripts/db-runtime-role.sh",
+   "prisma/migrations/**",
+   "tests/traccar-event-{listener,logs,topology,sample}.test.ts",
+   "tests/traccar-dev-topology.test.ts",
+   "tests/traccar-forward-auth.test.ts",
+   "tests/db-catalog-write-guard.test.ts",
+   "tests/auth-invariant-guards.test.ts",
+   "docs/**",
+   "agent-orchestration/** (varredura do GRANT)",
+   "** (npm run check nas mutações)"
+  ],
+  "item_2": [
+   "**"
+  ],
+  "item_3": [
+   "docs/revisoes/TRACCAR/**",
+   "agent-orchestration/controle/**",
+   "agent-orchestration/codex/comandos/B-TRC-02-traccar-eventos-e-telemetria.md",
+   "agent-orchestration/omega/juntas/**",
+   "agent-orchestration/omega/reprovacoes/**",
+   ".github/workflows/ci.yml",
+   "API_CONTRACTS.md",
+   "infra/traccar/fixtures/**",
+   "scripts/traccar-dev-demo.mjs",
+   "scripts/db-runtime-role.sh",
+   "src/** (app da API no health; suítes E/F/G)",
+   "tests/traccar-event-*-db.test.ts",
+   "prisma/migrations/**"
+  ]
+ },
+ "sondas_persistentes": "C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-b2/ · 17 do ciclo 1 copiadas de jtrc02-b/ e conferidas por md5 (mut 627a13ab, runmut f40bf0d5, rotas c8615eb4, ingest 8a596f08, catalogcount e8102493, quar 51042c71, hunks 392a997b, decl 28ed176a, contrato cdd7833d, ctlv24 2c590f3f, contagens 1ddf59ba, conta-test 39c81fe6, grantstep c0310862, health 6299cf40, teste-linux-jtrc02b.sh 3ce6276e, laco 27f792dc, classify 9bff72ad) + minhas: zz-jt2c2b2-faixas.mjs d48df7d9, zz-jt2c2b2-runmut.sh a07bb221 (diff: 2 linhas), zz-jt2c2b2-rtrole.sh dbc6fba4, teste-linux-jt2c2b2.sh ef149f6d (diff: só o ID), delta-B-obj.txt b67e1939, laco-saida.txt ac48b7d8 · grep das senhas e dos valores fictícios = 0",
+ "memoria_p8": "commit livre no lançamento 11,83 GB · antes dos contêineres 12,65 · antes do teste-linux 12,02 · fim 14,06 · mínimo 11,83 · esperas por < 4 GB: 0",
+ "ciclo": "2 · régua aplicada: último ciclo em que bloqueia dentro-do-bloco não grave reprova (§C7 item 8(2)) · item 3: só nota salvo encerramento falso · §C7 item 9: cadeira vermelha do ciclo 1, REFEITA (nenhum voto carregado)",
+ "mandato_md5": "e78c4a96377341a8c082eb311248c2ad (EOL-neutro) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus (subagente do orquestrador) · nível menor (§C7.6) · substituição: SIM — sucessor declarado (P3/P6) de jurado-trc02-c2-b-argon (Antigravity gemini-4-argon), caído 23:01Z por créditos esgotados no item 1 com o voto ainda em esqueleto; arquivos dele renomeados para cadeira-b-argon-QUEDA-*; o roteiro dele (só cabeçalho) re-executado com saídas iguais",
+ "corpo_md5": "2bea60cd0b00640c29c7068c17e11062 (EOL-neutro do blob .claude/agents/especialistas/jurado-trc02-b-superficie-escopo-registro.md no objeto) · .agents/ idêntico descontado o adaptador (mandato; sync --check ec 0) · carregado do blob: 2bea60cd… → IDENTICO",
+ "migracoes": "20260879000000_vehicle_telemetry_events e 20260880000000_validate_receipt_message_kind_check · COBERTO (renumeração, gate 3) · 20260878000000 = invoice_complementary_title do B-SAN3-02, fora do delta B..<obj> · nomes velhos ausentes · prisma/ não mudou no ciclo 2",
+ "legalidade": "inspetor insp-trc02-c2-argon: insp-trc02-c2-parecer.md · LIBERADO COM RESSALVA (A RE-VERIFICAR) · nomeia a (b) = jurado-trc02-c2-b-argon / w-jt2c2-b / jt2c2-b-*; eu sou o sucessor declarado pelo orquestrador (P3), worktree w-jt2c2-b2, prefixo jt2c2-b2- · nome fora do obituário e dos inelegíveis (0/0/0) · variante Q1 = NÃO / Q2 = SIM: sim · check-runs 14 | 0 | 0 · backend completed success (b-S7) · decisões do dono registradas e não reabertas: C-10 = opção A guardar (D-TRC02-C10-EVENTO-SEM-DESPACHO-GUARDA, \"1=a\"; a LGPD da exibição segue em P-TRC02-LGPD-TELEMETRIA-SEM-DESPACHO, antes do B-TRC-04) e D-MIGRACAO-COM-TRANSACAO-EXPLICITA (\"3=aprovo\")",
+ "quorum": "unanimidade de 3, com veto",
+ "docker": "trabalhos de outros antes de subir: 1 (jt2c2-a2-*; depois jsan320-c1) · erp-* ignorados e listados à parte · meu trabalho: jt2c2-b2-pg/jt2c2-b2-redis (127.0.0.1:47883/47893) + jt2c2-b2-tl* (teste-linux) · demo: forma reduzida",
+ "leitura_de_outras_cadeiras": "não li arquivo das cadeiras (a)/(c) deste ciclo · li: mandato, corpo do blob, plano do ciclo 2, parecer do inspetor, evidência/voto do ciclo 1 da (b), cabeçalho do caído, relatório do dev, pendencias/decisoes/comando do bloco no objeto",
+ "pausa": "nenhuma",
+ "voto": "APROVADO",
+ "superficie": "VERDE — C 12/12, D 5/5, H 9/9, guard 8 11/11, catalog-guard 1+skip (5/5 com banco), sample 11/11 · rota /events só no app de ingestão; público 395 rotas md5 48bc8737 IGUAL em c1485c94 e no objeto (controle 396); 404 no público/portal · cadeia igual salvo instâncias; authenticator: 6 chamadas no mesmo objeto · 401×4/415/413/400×2/422×3 · burst por rota e ignored consome a ficha de eventos; dois limitadores no FromEnv · logs: 0 de cada sentinela (segredo, coordenada, type, alarme, atributo), ignored contado, 202 sem operador sem linha sample_*, Q1 em src 0 (controle extra-log acusa 1) · H2 compose recusa sem TRC_FORWARD_HEADER · H6 e guarda do 01 verde sob M-E33 (lacuna declarada) · ports novos 0, 3200/5055/8082 0 · GRANT: 20 ocorrências classificadas, 1 no demo dentro de WITH_WEB, H7 com auto-exclusão, controle M-E34 → 2 arquivos · allowlist count 3 medido = declarado · token não escondido · M-E05/11/12/28/33/34/35/36/44/50 vermelhas, M-E13 equivalente medida, MUT-18@01 vermelha no módulo",
+ "escopo": "VERDE — b-1 FECHADO: numstat <obj>~5..<obj> -- src = 5 7 (só o service); locked/let binding 0 (controle <obj>~5: 6); faixas por parse c1485c94..<obj> em phaseTwoSteps: FORA = 0 (controle positivo <obj>~5: FORA = 11); declarações do service iguais exceto phaseTwoSteps; transpile-diff só a forma da declaração · M-E16″ vermelha em F3 por contagem (receiptsOf 1≠0), tsc ec 0, restauro = blob · laço B=7ab2fe71..<obj>: 92 caminhos (75 do bloco + 17 de registro do ciclo), SEM COBERTURA 0, PROIBIDO 0 (controle acusa 3/2); RBAC_MATRIX.md e PLANO_SAN3.md do merge da main com blob = B · 6 intocáveis e 9 testes do 01 sem diff; suíte I ausente · arnês 5 só vehicle_telemetry_events; position-contract título + 1 asserção; ci.yml só SUITES (4) + comentário 49/463 · b-S1 1 0 (linha = R-S1, dentro do Set) · b-S2 1 1 118→119 · b-S3 só vehicle_telemetry_events, model 118=B+1 · b-S4 vazio · b-S5 0/1 regex igual · b-S6/C-S0 44/44 em Linux · b-S7 backend success · M-S1/S2/S3 T9 vermelho, M-S4 census verde+contrato vermelho, M-S4′ contrato vermelho, M-S5 verde (declarado), M-S6 120, M-S7 118 · b-A1 29 3 (112), b-A2/A3 vazio, b-A5 5 4, controles C1/C2/C3/C4/C6 vermelhos · contrato: ignored 204, delivery_count 2 no mesmo episódio, Q1 = NÃO conferida contra comportamento (controle acusa) · deployment fiel, passo 5 inalterado · sync --check ec 0 (79), 6 corpos · nenhuma rota/permissão/tela/SSE; UPDATE/DELETE na tabela 0",
+ "registro": "relatório do dev com seção do ciclo 2 (comando → saída → veredito; results-db-c2.jsonl 8/8 vermelhas, restoredOk) · contagens de execução da variante final conferidas contra as minhas medidas: A17 B11 C12 D5 H9 E21 F13 G9 M6 = 103; 463 = ci.yml; 49 = E+F+G+M (controle E 22 acusa) · números da revertida como finais: 0 · catálogo 86, M-Q1 0, M-E16′ 0, M-E16″ 1 · b-4: linha SUPERADO acrescentada sem apagar · b-3: critério reescrito active × inactive (1 linha, texto anterior preservado) e MEDIDO pela forma reduzida: sem passo inactive/inert_no_execute, com passo active/active, REVOKE inactive → FECHA · LIMITADOR-POR-ROTA fecha · CI-COMENTARIO-DENOMINADOR ABERTA (não declarada fechada) · 17 pendências do bloco com dono no objeto (FIX-CONTESTADO extinta; controle NAO-EXISTE 0/0) · decisões Q1-NAO, ESCOPO, Q2, MIGRACAO, C10, D-MIGRACAO-COM-TRANSACAO-EXPLICITA, D-TOPO-E-O-CLAUDE no objeto · registro do ciclo 1 (ata REPROVADO, R-B-TRC-02-1, quedas) no objeto · código × registro Q1 = NÃO coerentes",
+ "o_que_executei": [
+  {
+   "comando": "git ls-remote / gh pr view 454 / git merge-base / gh api check-runs",
+   "forma": "início e fim",
+   "resultado": "42800d0d nos dois; B 7ab2fe71; 14|0|0; backend success"
+  },
+  {
+   "comando": "npm ci --no-audit --no-fund; npx prisma generate",
+   "forma": "worktree w-jt2c2-b2, sem junction",
+   "resultado": "ec 0 / ec 0"
+  },
+  {
+   "comando": "git diff --numstat <obj>~5 <obj> -- src/; grep locked/let binding; zz-jtrc02b-hunks.mjs; zz-jt2c2b2-faixas.mjs c1485c94..<obj> e ..<obj>~5; zz-jtrc02b-decl.mjs; transpileModule",
+   "forma": "git show dos blobs, TypeScript do worktree",
+   "resultado": "5 7 (1 linha); 0 vs 6; FORA 0 vs 11; só phaseTwoSteps difere; só a forma da declaração"
+  },
+  {
+   "comando": "zz-jtrc02b-laco.mjs < delta-B-obj.txt (B..<obj>) + controle fabricado; pathspecs PROIBIDO; numstat dos arquivos do 01; b-S1…b-S5; b-A1…b-A5; sync --check; git diff --check",
+   "forma": "base B = 7ab2fe71",
+   "resultado": "92/92 cobertos, PROIBIDO 0 (controle 3/2); réguas conformes; sync ec 0 (79); diff-check ec 0"
+  },
+  {
+   "comando": "zz-jt2c2b2-runmut.sh M-E16″, M-S1, M-S2, M-S3, M-S4, M-S4′, M-S5, M-E11, M-E12, M-E36, M-E05, M-E44, M-E13, M-E28, M-E33 (+traccar-dev-topology), M-E34, M-E35, M-E50, MUT-18@01",
+   "forma": "catálogo do objeto, âncora 1, npm run check, REDIS_URL 47893, DATABASE_URL do meu Postgres onde -db",
+   "resultado": "todas como previsto (vermelhas no caso nomeado; M-S4/M-S5/M-E13 verdes declaradas; guarda do 01 verde sob M-E33); restauro = blob em todas"
+  },
+  {
+   "comando": "teste-linux-jt2c2b2.sh … o6r07c-census-guard + san3-05-runtime-role-guard-db",
+   "forma": "contêineres jt2c2-b2-tl*",
+   "resultado": "44/44, skipped 0 (C-S0)"
+  },
+  {
+   "comando": "zz-jt2c2b2-rtrole.sh (db-runtime-role.sh no jt2c2-b2-pg) — controle, M-S7, M-S6",
+   "forma": "bancos novos jt2c2_b2_ms7/ms6",
+   "resultado": "119 / 118 (+119 restaurado) / 120"
+  },
+  {
+   "comando": "zz-jtrc02b-ctlv24.mjs C1 C2 C3 C4 + C6 (d1223f25^) com tests/san3-05-acessos-de-plataforma-guard.test.ts",
+   "forma": "host",
+   "resultado": "base 35/35; os 5 controles vermelhos"
+  },
+  {
+   "comando": "node --test listener/logs/topology/auth-invariant-guards/db-catalog-write-guard/sample/contract; sample-db, ingestion-db, rls-db",
+   "forma": "REDIS_URL 47893; -db no jt2c2_b2_obj",
+   "resultado": "12/5/9/11/1+skip (5/5 com banco)/11/17; 13/21/9 — fail 0"
+  },
+  {
+   "comando": "zz-jtrc02b-rotas.mts (objeto, extra, src de c1485c94); zz-jtrc02b-ingest.mts (normal, extra-log, sob M-E13); zz-jtrc02b-quar.mts; zz-jtrc02b-contrato.mjs (+cópia falsa)",
+   "forma": "apps reais em processo",
+   "resultado": "395/48bc8737 igual; 396 no controle; cadeia/spy/códigos/burst/logs como no ciclo 1; sentinelas 0 (controle 1); delivery_count 2; contrato CONFERE (controle ACUSA)"
+  },
+  {
+   "comando": "docker compose config (prod + traccar overlay) sem/com TRC_FORWARD_HEADER",
+   "forma": "valores fictícios, nada sobe",
+   "resultado": "ec 1 required variable / ec 0; ports só 127.0.0.1:3102 e :18080"
+  },
+  {
+   "comando": "git grep do GRANT; posição no demo; H7; catalogcount; controle M-E34 com a minha varredura",
+   "forma": "objeto",
+   "resultado": "20 ocorrências classificadas, 0 fora; 1 no demo dentro de WITH_WEB; count 3; controle → 2 arquivos"
+  },
+  {
+   "comando": "zz-jtrc02b-contagens.mjs (+cópia E 22); conta-test; pendências/decisões obj × origin/main; zz-jtrc02b-grantstep.mjs + db-runtime-role.sh + zz-jtrc02b-health.mts sem/com/REVOKE",
+   "forma": "banco jt2c2_b2_demo",
+   "resultado": "CONFEREM (controle ACUSA); IDs com dono; inactive / active / inactive"
+  }
+ ],
+ "achados": [
+  {
+   "defeito": "nota (b-3 residual): a autoverificação do passo do GRANT no demo (scripts/traccar-dev-demo.mjs l.635, if (body.login_without_org === \"inert_no_execute\") throw) não pode falhar, porque o corpo público só carrega active|inactive; e o parágrafo Fechamento de P-TRC-DEMO-LOGIN-SEM-ORG-INERTE ainda descreve essa guarda",
+   "evidencia": "grep -n login_without_org scripts/traccar-dev-demo.mjs (l.635-636); health sem o passo → público inactive; o encerramento re-especificado (active × inactive) SE SUSTENTA pela minha medida",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_neste_ciclo": "não (item 3 é só nota; não é encerramento falso)",
+   "motivo": "a autoverificação do demo não distingue com e sem o passo"
+  },
+  {
+   "defeito": "nota: vermelho-controle POR CRITÉRIO (27/27) não publicado para a variante final — o passo 10 do relatório é por suíte, no retrato Q1 = SIM",
+   "evidencia": "docs/revisoes/TRACCAR/B-TRC-02-dev.md l.185-203 no objeto",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "reprova_neste_ciclo": "não (item 3 só nota)",
+   "motivo": "o vermelho por critério vem das mutações (passo 11), não de um vermelho-controle por critério na variante final"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "régua b-S2 escrita (sort -u das linhas com o sinal −/+) dá 2 por construção; lida com o sinal tirado (cut -c2-) dá 1 — re-medido, igual ao ciclo 1",
+  "a autoverificação do demo === \"inert_no_execute\" sobre o corpo público (ver achado nota)"
+ ],
+ "pendencias_que_aceito": [
+  "matéria da (a): o gerador san3-05 no host imprime L0 ENABLE=109 FORCE=109 enquanto o teste do objeto confere 112 e passa (35/35) — observado igual ao ciclo 1, não julgado por mim",
+  "matéria da (a)/(c): as outras 7 mutações do SERVICE (M-E09, M-E17, M-E18, M-E22, M-E37b, M-E38, MUT-10′@01) — conferi só o registro (results-db-c2.jsonl), não re-executei",
+  "b-2 (desvio declarado de position.schema, pressuposto pelo plano) — o ciclo 2 não tocou",
+  "P-TRC-CI-COMENTARIO-DENOMINADOR ABERTA com dono; P-TRC02-DEFICIT-2N ABERTA; demais pendências do §12/emendas com dono",
+  "ressalva do próprio registro: login PELO FORMULÁRIO na demo não medido"
+ ],
+ "teardown": "mutações e cópias de controle restauradas (porcelain 0, hash-object = blob, item a item) · bancos jt2c2_b2_obj/ms6/ms7/demo removidos pelo nome · jt2c2-b2-pg, jt2c2-b2-redis e rede jt2c2-b2-net removidos, jt2c2-b2-tl* pelo trap → 0 contêineres/redes · processos com w-jt2c2-b2 = 0 → git worktree remove --force ec 0 · senhas, valores fictícios e logs crus do $SCRATCH apagados, grep = 0 no diretório persistente e no de votos · sondas e scripts MANTIDOS em C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-b2/ · base viva e contêineres alheios nunca tocados · w-trc02: só os meus 2 arquivos (+ os 2 do caído renomeados por ordem do disparo)",
+ "justificativa": "terreno: worktree próprio w-jt2c2-b2 com npm ci próprio, sem junction, .env ausente; contêineres jt2c2-b2-* em 127.0.0.1:47883/47893 testadas; REDIS_URL próprio em todo teste; base viva intocada; 1 trabalho Docker de outros; disco ≥ 10 GB decimais (leitura declarada; 9,90 GiB no ponto mais baixo) · item 1 VERDE: regressão do roteiro do ciclo 1 sobre o objeto novo com as mesmas saídas; controles: rota extra 396, extra-log lat 1, M-E34 2 arquivos · item 2 VERDE: b-1 fechado (FORA 0; controle positivo 11), laço 92/92 (controle 3/2), réguas v2.2/v2.4 e mutações M-S*/C1…C6 como previsto, contrato conferido contra comportamento (controle ACUSA) · item 3 só nota: contagens conferem (controle E 22 acusa), pendência inexistente 0/0, b-3 medido active × inactive (distingue), nenhum encerramento falso · nenhum achado bloqueia · limpeza feita\nVOTO: APROVADO — b-1 fechado (phaseTwoSteps 0 linhas fora das faixas; controle positivo acusa 11; M-E16″ vermelha em F3 por contagem); superfície igual ao ciclo 1 (rota /events só no app de ingestão, mesma cadeia e authenticator, limitador por rota, logs limpos, segredo só por interpolação, GRANT só no WITH_WEB do demo, ports novos 0); delta 92/92 ⊆ PERMITIDO, PROIBIDO 0, réguas b-S/b-A e M-S*/C* como previsto, contrato fiel, sync verde; registro com contagens de execução e Q1 = NÃO coerente, b-3/b-4 fechadas; arquivos_medidos: **; notas: autoverificação do demo não falha; vermelho-controle por critério"
+}
