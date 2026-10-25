@@ -85,6 +85,35 @@ if (!connectionString) {
       await teardown(h);
     }
   });
+
+  test("A7 (db): o unlink-title pelo controller grava a auditoria CRÍTICA cheque.title_unlinked com título anterior e justificativa — sem tenant nos metadados", async () => {
+    const h = await bootstrap();
+    try {
+      const s = await seed(h, "a7");
+      const cheque = await h.chequeService.create(s.actor, chequeBody(s, s.titleId));
+      const { ChequeController } = await import("../src/modules/cheques/cheque.controller.js");
+      const controller = new ChequeController(async () => h.chequeService);
+      const request = {
+        params: { chequeId: cheque.id },
+        body: { justification: "cliente pagou por pix no balcão" },
+        tenantContext: s.admin,
+        header: () => undefined,
+        ip: "127.0.0.1",
+      } as never;
+      const result = (await controller.unlinkTitle(request)) as { body: { data: { titleId: string | null } } };
+      assert.equal(result.body.data.titleId, null);
+      const rows = await h.withTenantRls(h.client, s.tenantId, (tx) => tx.auditLog.findMany({ where: { tenant_id: s.tenantId, action: "cheque.title_unlinked" } }));
+      assert.equal(rows.length, 1, "uma entrada de auditoria do desvínculo");
+      const metadata = rows[0]!.metadata as Record<string, unknown>;
+      assert.equal(metadata.severity, "critical");
+      assert.equal(metadata.previousTitleId, s.titleId);
+      assert.equal(metadata.justification, "cliente pagou por pix no balcão");
+      assert.equal(rows[0]!.entity_id, cheque.id);
+      assert.ok(!JSON.stringify(metadata).includes(s.tenantId), "metadados sem o tenant");
+    } finally {
+      await teardown(h);
+    }
+  });
 }
 
 type Outcome = { readonly ok: boolean; readonly reason?: { readonly reason?: string; readonly details?: Record<string, unknown> } };
