@@ -176,10 +176,10 @@ export class MemoryFinancialUnitOfWork implements FinancialUnitOfWork {
 // por exclusão silenciosa: um `Exclude<..., "reset">` faria a próxima chave test-only sumir do mapa
 // sem ninguém decidir nada, que é a classe de defeito deste bloco inteiro.
 //
-// CONTAGEM MEDIDA nos contratos: 13 + 10 + 10 chaves (12 + 9 + 9 membros write/read, mais o
+// CONTAGEM MEDIDA nos contratos: 12 + 10 + 10 chaves (11 + 9 + 9 membros write/read, mais o
 // `reset?` opcional de cada um) = 30 membros exercidos pelo harness + 3 `test_reset` asseverados
 // ausentes do contexto. B-SAN3-02 (D4) — o 4º repositório (itens de OS) soma 11 chaves (10 membros
-// write/read + `reset?`): 13 + 10 + 10 + 11 = 44 chaves, 40 membros exercidos + 4 `test_reset`.
+// write/read + `reset?`): 12 + 10 + 10 + 11 = 43 chaves, 39 membros exercidos + 4 `test_reset`.
 // -----------------------------------------------------------------------------------------------
 
 /**
@@ -194,7 +194,6 @@ export const TITLE_REPO_KIND = {
   create: "write",
   update: "write",
   changeStatus: "write",
-  applyPayment: "write",
   applyPaymentGuarded: "write",
   restorePaymentGuarded: "write",
   softDelete: "write",
@@ -306,10 +305,6 @@ function journaledTitles(base: InMemoryFinancialTitleRepository, journal: Tenant
     changeStatus: async (input) => {
       await journal.rememberById(input.financialTitleId, (id) => base.findById(input.tenantId, id));
       return base.changeStatus(input);
-    },
-    applyPayment: async (input) => {
-      await journal.rememberById(input.financialTitleId, (id) => base.findById(input.tenantId, id));
-      return base.applyPayment(input);
     },
     applyPaymentGuarded: async (input) => {
       await journal.rememberById(input.financialTitleId, (id) => base.findById(input.tenantId, id));

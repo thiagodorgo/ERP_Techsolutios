@@ -5040,3 +5040,10 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 
 - #389 mergeado (`ab52ec50`) depois de 3 ciclos: ciclo 2 REPROVADO 2 × 1 (forma do guard), ciclo 3 sem dev e APROVADO 3 × 0; quedas por limite de sessão do Claude (o inspetor, antes da renovação das 07:00Z) e do Codex (C2, 14:33Z), relançadas na mesma identidade.
 - Registro: as ressalvas do porteiro do #389 (P-020 FECHADA, P-O6R-B04 PARCIAL, os blocos `B-GOV-GUARDA-POR-PROPRIEDADE` e `B-BAT-01` como pendências com dono), as 9 pendências do plano do Traccar, a pendência de dinheiro do 07c (`P-O6R-07C-DANO-DEBITA-EXTRATO-DE-COLEGA`), o defeito de severidade do gerador do índice, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` e `D-FORMATO-DO-ESTADO`.
+
+## 2026-10-24 — B-SAN3-20 (DEV, retomada F-DEV-01)
+
+- Emenda E1 executada: `npm run db:generate`; baseline retomado em 280/280 memória e 30/30 PostgreSQL.
+- Implementados vínculo cheque→título, baixa só pela compensação, restauração no bounce e CAS de estado; migração com `BEGIN`/`COMMIT`.
+- Plano e críticas versionados em `docs/revisoes/SAN3/`; relatório incremental em `B-SAN3-20-dev.md`; PR #456 sem merge.
+- O dev Codex (`gpt-5.6-sol`) caiu por limite de uso às 18:15Z; o Claude Opus (`dev-san320-opus`, nível menor, declarado) cobriu e terminou o bloco: mediu o parcial, corrigiu a pendência fechada por engano (`P-Ω4-3-INVOICE-LEASTPRIV` voltou a ABERTA; a fechada é `P-Ω4-7-DUPLA-CONTAGEM`), o drill e as barreiras faltantes, o vermelho-controle e a bateria (seção "Retomada" do relatório).

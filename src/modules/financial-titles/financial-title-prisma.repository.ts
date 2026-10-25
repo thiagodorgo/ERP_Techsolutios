@@ -3,7 +3,6 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { acquirePeriodLockShared } from "../../database/financial-period-lock.js";
 import { withTenantRls } from "../../database/rls.js";
 import type {
-  ApplyTitlePaymentInput,
   ChangeFinancialTitleStatusInput,
   CreateFinancialTitleInput,
   DeleteFinancialTitleResult,
@@ -154,17 +153,8 @@ export class PrismaFinancialTitleRepository implements FinancialTitleRepository 
 
   async changeStatus(input: ChangeFinancialTitleStatusInput): Promise<FinancialTitle | undefined> {
     const updated = await this.client.financialTitle.updateManyAndReturn({
-      where: { tenant_id: input.tenantId, id: input.financialTitleId, deleted_at: null },
+      where: { tenant_id: input.tenantId, id: input.financialTitleId, status: input.fromStatus, deleted_at: null },
       data: compactRecord({ status: input.status, updated_by: input.updatedBy }),
-    });
-    return updated[0] ? mapRecord(updated[0]) : undefined;
-  }
-
-  async applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
-    // Ω4-4 — grava paid_amount ABSOLUTO + status juntos (o service já validou paid_amount <= amount).
-    const updated = await this.client.financialTitle.updateManyAndReturn({
-      where: { tenant_id: input.tenantId, id: input.financialTitleId, deleted_at: null },
-      data: compactRecord({ paid_amount: input.paidAmount, status: input.status, updated_by: input.updatedBy }),
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
   }
@@ -333,14 +323,6 @@ export class RlsPrismaFinancialTitleRepository implements FinancialTitleReposito
       }
       return repository.changeStatus(input);
     });
-  }
-  applyPayment(input: ApplyTitlePaymentInput): Promise<FinancialTitle | undefined> {
-    // SEM guard de período AQUI (deliberado, §12.1 do plano B-O6R-02): liquidar título de competência
-    // já fechada segue permitido — o snapshot é foto point-in-time. O DIN-008 da liquidação é guardado
-    // pelo LANÇAMENTO de caixa (competência de occurred_at), no repositório de financial-entries.
-    // A atomicidade lançamento+applyPayment é o DIN-001 (F3 deste bloco — payTitle usa a porta UoW,
-    // onde entra o CAS applyPaymentGuarded; este applyPayment absoluto permanece para o InMemory/legado).
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialTitleRepository(tx).applyPayment(input));
   }
   // B-O6R-02 F3/F4 — standalone as três operações abrem a própria transação (o FOR UPDATE solto vale
   // só até o commit imediato; o uso REAL delas é via a porta UoW, onde `tx` é a transação da unidade).

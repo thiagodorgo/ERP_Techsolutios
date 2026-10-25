@@ -294,9 +294,8 @@ const TITLE_CALLS: Record<string, Invoke> = {
       competencia: "2026-08",
     }),
   update: (ctx, s) => ctx.titles.update({ tenantId: TENANT, financialTitleId: s.titleId, description: "mexido pelo P7" }),
-  changeStatus: (ctx, s) => ctx.titles.changeStatus({ tenantId: TENANT, financialTitleId: s.titleId, status: "cancelled" }),
-  applyPayment: (ctx, s) =>
-    ctx.titles.applyPayment({ tenantId: TENANT, financialTitleId: s.titleId, paidAmount: 50, status: "partially_paid" }),
+  changeStatus: (ctx, s) =>
+    ctx.titles.changeStatus({ tenantId: TENANT, financialTitleId: s.titleId, fromStatus: "open", status: "cancelled" }),
   applyPaymentGuarded: (ctx, s) => ctx.titles.applyPaymentGuarded({ tenantId: TENANT, financialTitleId: s.titleId, amount: 50 }),
   // O membro do ATAQUE do ciclo 2: era ele que virava delegação pura sem ninguém notar. O pagamento
   // que ele estorna é preparado FORA da unidade (ver PREPARES) — dentro dela, este membro é o único
@@ -534,9 +533,9 @@ for (const repositorio of REPOSITORIES) {
   }
 }
 
-test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 40 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 4 test_reset", () => {
+test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 39 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 4 test_reset", () => {
   // B-SAN3-02 (D4) — o 4º repositório (itens de OS) somou 10 membros write/read + 1 test_reset.
-  assert.equal(exercidos, 40, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 12+9+9+10 = 40)`);
+  assert.equal(exercidos, 39, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 11+9+9+10 = 39)`);
   assert.equal(testReset, 4, `o harness asseverou ${testReset} membros test_reset ausentes do contexto (esperado 4)`);
 });
 

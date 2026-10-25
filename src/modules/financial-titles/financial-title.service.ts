@@ -17,6 +17,7 @@ import {
   titleCancelledError,
   titleHasPaymentsError,
   titleNotFoundError,
+  titleStatusConflictError,
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
@@ -304,13 +305,25 @@ export class FinancialTitleService {
     const updated = await this.repository.changeStatus({
       tenantId: actor.tenantId,
       financialTitleId: current.id,
+      fromStatus: current.status,
       status: target,
       updatedBy: actor.userId,
     });
-    if (!updated) {
-      throw titleNotFoundError();
-    }
-    return updated;
+    if (updated) return updated;
+
+    const fresh = await this.repository.findById(actor.tenantId, current.id);
+    if (!fresh || fresh.deletedAt != null) throw titleNotFoundError();
+    assertStatusTransition(fresh.status as never, target);
+
+    const retried = await this.repository.changeStatus({
+      tenantId: actor.tenantId,
+      financialTitleId: fresh.id,
+      fromStatus: fresh.status,
+      status: target,
+      updatedBy: actor.userId,
+    });
+    if (!retried) throw titleStatusConflictError();
+    return retried;
   }
 
   // Ω4-4 — guard-only read usado pela LIQUIDAÇÃO (módulo financial-entries) ANTES de gravar o lançamento
@@ -329,19 +342,25 @@ export class FinancialTitleService {
   async applyPayment(actor: FinancialTitleActorContext, financialTitleId: string, amount: number): Promise<FinancialTitle> {
     const current = await this.getWritable(actor, financialTitleId);
     this.guardPayable(current, amount);
-    const newPaid = roundMoney(current.paidAmount + amount);
-    const status = newPaid >= current.amount ? "paid" : "partially_paid";
-    const updated = await this.repository.applyPayment({
+    const updated = await this.repository.applyPaymentGuarded({
       tenantId: actor.tenantId,
       financialTitleId: current.id,
-      paidAmount: newPaid,
-      status,
+      amount,
       updatedBy: actor.userId,
     });
-    if (!updated) {
-      throw titleNotFoundError();
-    }
-    return updated;
+    if (updated) return updated;
+
+    const fresh = await this.repository.findById(actor.tenantId, current.id);
+    if (!fresh || fresh.deletedAt != null) throw titleNotFoundError();
+    this.guardPayable(fresh, amount);
+    const retried = await this.repository.applyPaymentGuarded({
+      tenantId: actor.tenantId,
+      financialTitleId: fresh.id,
+      amount,
+      updatedBy: actor.userId,
+    });
+    if (!retried) throw overpaymentError();
+    return retried;
   }
 
   // Invariante da liquidação: título liquidável e paid_amount + amount <= amount (sem overpayment).

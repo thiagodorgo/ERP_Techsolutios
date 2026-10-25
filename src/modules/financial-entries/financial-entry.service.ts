@@ -79,6 +79,15 @@ import {
   roundMoney,
 } from "./financial-entry.validators.js";
 
+function chequeRequiredError(): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "cheque_required",
+    "Register the cheque linked to the financial title and clear it through the cheque flow.",
+  );
+}
+
 type RawRecord = Record<string, unknown>;
 
 export type FinancialTitleServiceResolver = () => Promise<FinancialTitleService>;
@@ -180,6 +189,15 @@ export class FinancialEntryService {
     const currency = resolveCurrency(body.currency, account.currency);
     const occurredAt = parseOccurredAt(body.occurred_at ?? body.occurredAt);
     const competencia = deriveCompetencia(occurredAt);
+    const direction = parseDirection(body.direction);
+    const amount = parseAmount(body.amount);
+    const paymentMethod = parsePaymentMethod(body.payment_method ?? body.paymentMethod);
+    const category = parseOptionalCategory(body.category);
+    const description = parseOptionalDescription(body.description);
+    const clientActionId = parseOptionalClientActionId(body.client_action_id ?? body.clientActionId);
+    // B-SAN3-20 (D4, decisão do dono = A) — dinheiro de cheque só entra pela compensação do cheque registrado.
+    // Precedência pública: 400 de corpo → 400/422 de conta → 422 cheque_required → 422 period_closed.
+    if (paymentMethod === "check") throw chequeRequiredError();
 
     // CHOKEPOINT (D-Ω4-A3) — toda escrita de lançamento atravessa ANTES de gravar (competência fechada
     // → 422 period_closed). Mesma tabela financial_period_closes do título (chokepoint reusado).
@@ -188,15 +206,15 @@ export class FinancialEntryService {
     return this.repository.create({
       tenantId: actor.tenantId,
       accountId: account.id,
-      direction: parseDirection(body.direction),
-      amount: parseAmount(body.amount),
+      direction,
+      amount,
       currency,
-      paymentMethod: parsePaymentMethod(body.payment_method ?? body.paymentMethod),
-      category: parseOptionalCategory(body.category),
+      paymentMethod,
+      category,
       occurredAt,
       competencia,
-      description: parseOptionalDescription(body.description),
-      clientActionId: parseOptionalClientActionId(body.client_action_id ?? body.clientActionId),
+      description,
+      clientActionId,
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
@@ -421,6 +439,8 @@ export class FinancialEntryService {
     if (account.currency !== title.currency) {
       throw currencyMismatchError();
     }
+    // B-SAN3-20 (D4, decisão do dono = A): depois da identidade/moeda do título, antes do período.
+    if (paymentMethod === "check") throw chequeRequiredError();
     // receivable → dinheiro ENTRA (in); payable → dinheiro SAI (out).
     const direction = title.direction === "receivable" ? "in" : "out";
 
