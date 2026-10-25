@@ -1,0 +1,8 @@
+# Quedas de jurado — B-TRC-02 ciclo 2 (P6)
+
+| agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do redo |
+|---|---|---|---|---|---|
+| `jurado-trc02-c2-a-pro` | `gemini-3.1-pro-preview` (pin, Gemini CLI pela API) | 3 | terreno (`npm ci` no worktree próprio) | `npm ci` bloqueado pela política de ferramentas do Gemini CLI; sem medir nada, gravou REPROVADO por "não consigo medir" no diretório do ciclo 1 do próprio worktree (cópia em `cadeira-a-pro-DESCARTADO-voto.json`). Falha do executor, não do objeto: tratado como QUEDA (P3), voto não conta | redo = tudo; sucessor `jurado-trc02-c2-a-sol2` (Codex `gpt-5.6-sol`), declarado pelo orquestrador às 22:48Z |
+| `jurado-trc02-c2-b-argon` | `gemini-4-argon-medium` (pin, Antigravity) | 3 | item 1 em curso (12 linhas de evidência, voto EM APURAÇÃO) | "AI credits balance is too low to continue" (créditos do Antigravity esgotados, 23:01Z) | redo = quase tudo; evidência dele é roteiro P3; sucessor `jurado-trc02-c2-b-opus` (Claude Opus), declarado |
+| `jurado-trc02-c2-a-sol2` | `gpt-5.6-sol` (pin, Codex) | 3 | terreno/item 1 (só o esqueleto da evidência em ~1 h; nenhum item medido) | limite de uso do Codex 23:47Z ("try again at Oct 25th 12:28 AM") | redo = tudo; sucessor `jurado-trc02-c2-a-opus` (Claude Opus), declarado |
+| `jurado-trc02-c2-a-argon` | `gemini-4-argon-medium` (pin, Antigravity) | 3 | antes do 1º comando (30 s) | "AI credits balance is too low to continue" | redo = tudo; sucessor `jurado-trc02-c2-a-api` (Claude Opus pela API, container cercado `run-api-v3`, teto US$ 4 — decisão do dono de 24/10), declarado |

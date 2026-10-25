@@ -1,0 +1,30 @@
+{
+ "cadeira": "a (complemento das 3 medições não feitas por jurado-trc02-c2-a-api)",
+ "identidade": "jurado-trc02-c2-a-compl-opus",
+ "modelo": "Claude Opus · nível menor (§C7.6) · substituição: nenhuma",
+ "objeto": "42800d0dcece29c7e3a39476c9b40c917a66dfd0",
+ "ciclo": "2 · régua: bloqueia dentro-do-bloco reprova; não medido = REPROVADO",
+ "mandato_md5": "f55e1e5e4dbe176bd522e6e7dd2f4de5 (cadeira-a.md, EOL-neutro) · declarado no disparo: não declarado",
+ "corpo_md5": ".claude 147850658e1d5974b058ab147dd0ca1c · .agents f2a879c5588597872e8296ea1e85ec22 · recebido no prompt: n/a",
+ "terreno": "worktree C:/Users/AMP/w-jt2c2-a4 (detached no objeto, npm ci próprio, .env ausente) · jt2c2-a4-pg postgres:16 em 127.0.0.1:47881 · jt2c2-a4-redis redis:7 em 127.0.0.1:47891 · 1 trabalho Docker alheio (agv3-proxy) + o meu; erp-* intocados · memória livre 12,15–12,71 GB",
+ "papel_medido": "jt2c2_a4_runtime criado por scripts/db-runtime-role.sh do objeto: rolsuper=f rolbypassrls=f rolinherit=f, DML em 119 relações",
+ "medicoes": {
+  "1_M-E14": "VERDE — aplicador próprio (âncora 1 em cada um dos 2 arquivos, CRLF), numstat 1/1 ×2, npm run check ec=0, banco novo com o índice mutado no catálogo; tests/traccar-event-ingestion-db.test.ts 21/20/1: not ok 10 E9 em :370 expected {conflict, owned_elsewhere} actual {stored}; controle no objeto 21/21; restauro porcelain 0, hash-object = rev-parse",
+  "2_sonda_23505": "VERDE — 34/34: evento pelo listener HTTP com 23505 REAL (índice único extra só da sonda) → 503, log error 23505 failed before commit, 0 recibo/0 linha novos, reenvio 503 sem gravação parcial, sem o índice grava 1× e depois duplicate, 1 linha por recibo; amostra com receiptId de recibo que já tem amostra → UNIQUE(tenant_id, receipt_id) 23505 → 503, 0 sample_discarded, nada gravado; 0 25P02. Controle: 23505 na lista de descarte → 7 FAIL (stored/204, sample_discarded 23505, amostra perdida), restauro provado",
+  "3_sonda_B_povoada": "VERDE — B povoada pelo caminho real (9 kinds + posição com amostra + localização + quarentena do dispositivo de B), visível só sob o GUC de B (10/10/1 × 0/0/0); vínculo de B com o uniqueId de d1 recusado 23505 (vehicle_tracking_bindings_active_device_key); 16 entregas de A (9 kinds, posição, Q1=NÃO só quar +1, tenantId forjado em evento e posição, dica envenenada, repetição, não mapeado) com B igual em contagens e impressão md5; controle: entrega para B muda contagens e impressão"
+ },
+ "arquivos_medidos": {
+  "uniao": "**",
+  "motivo_uniao": "npm ci, prisma generate e npm run check (tsc do projeto inteiro) rodaram nas mutações",
+  "medicao_1": ["prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql", "src/integrations/traccar/traccar-ingestion.repository.ts", "tests/traccar-event-ingestion-db.test.ts", "tests/helpers/auth-identity-fixture.ts", "docs/revisoes/TRACCAR/B-TRC-02-evidencias/mutations.mjs", "prisma/migrations/**", "src/**"],
+  "medicao_2": ["src/integrations/traccar/**", "src/modules/telemetry/**", "src/modules/field-dispatch/**", "src/database/rls.ts", "scripts/db-runtime-role.sh", "infra/traccar/fixtures/6.16.0/**", "prisma/migrations/**", "src/**"],
+  "medicao_3": ["src/integrations/traccar/**", "src/modules/telemetry/**", "src/modules/field-dispatch/**", "src/database/rls.ts", "scripts/db-runtime-role.sh", "infra/traccar/fixtures/6.16.0/**", "prisma/migrations/**"]
+ },
+ "sondas_persistentes": "C:/Users/AMP/erp-pausa-2026-10-03/jt2c2-a4/ · zz-jt2c2a4-mut-apply.mjs 0e273099c025bae96b2e3c079ddc7924 · zz-jt2c2a4-lib.mts 6e3fbf2a8b19cabeac76e6441eb5309d · zz-jt2c2a4-p23505.mts 99dc089e9f53742139eb1b8fab4212de · zz-jt2c2a4-ctl-23505.mjs 4364dba227e3a562455d28ebe7d04fde · zz-jt2c2a4-bpov.mts 9bd34e48099b5f315c074f7910813336 · grep das senhas = 0",
+ "achados": [],
+ "criterios_que_nao_puderam_falhar": [],
+ "nao_medido": [],
+ "teardown": "mutações restauradas (porcelain 0, hash-object = blob) · bancos jt2c2_a4_me14/jt2c2_a4_p23505 removidos pelo nome · dados de sonda 0 · containers jt2c2-a4-* 0 · worktree removido por git worktree remove --force com 0 processos · senhas e env apagados do scratchpad, grep 0 · base viva intocada · resíduo alheio (jtrc02-a.* no scratchpad) só reportado",
+ "voto": "APROVADO",
+ "justificativa": "As 3 medições que a cadeira (a) deixou abertas foram feitas por execução própria no objeto, cada uma com vermelho-controle que acusou. VOTO: APROVADO — M-E14 vermelha (E9) com restauro provado; 23505 no evento e na amostra → 503, nada gravado, sem duplicata, reentrega idempotente; B povoada inalterada em 16/16 entregas de A sob o papel do runtime sem superusuário nem BYPASSRLS; arquivos_medidos: **; pendências: nenhuma"
+}

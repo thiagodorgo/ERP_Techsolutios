@@ -1,0 +1,22 @@
+{
+  "jurado": "jurado-trc02-c2-a-sol2",
+  "cadeira": "(a) B-TRC-02 — banco, RLS, migração e arnês",
+  "modelo": "Codex gpt-5.6-sol, nível menor declarado; sucessor de jurado-trc02-c2-a-pro por queda P3/P6",
+  "ciclo": "2 — bloqueia dentro-do-bloco reprova, grave ou não",
+  "objeto": "42800d0dcece29c7e3a39476c9b40c917a66dfd0",
+  "mandato_md5": "f55e1e5e4dbe176bd522e6e7dd2f4de5",
+  "corpo_md5": "147850658e1d5974b058ab147dd0ca1c — IDENTICO EOL-neutro ao blob .claude do objeto",
+  "arquivos_medidos": {
+    "uniao": "EM APURAÇÃO",
+    "item_1": [],
+    "item_2": [],
+    "item_3": []
+  },
+  "itens": [
+    {"item": 1, "estado": "EM APURAÇÃO", "veredito": null},
+    {"item": 2, "estado": "EM APURAÇÃO", "veredito": null},
+    {"item": 3, "estado": "EM APURAÇÃO", "veredito": null}
+  ],
+  "achados": [],
+  "voto": "EM APURAÇÃO"
+}

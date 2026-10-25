@@ -1,0 +1,14 @@
+{
+ "jurado": "jurado-trc02-a-opus (corpo jurado-trc02-a-banco-rls-arnes; identidade nova; nada herdado como fato)",
+ "cadeira": "(a) B-TRC-02 — banco, RLS, migração e arnês",
+ "ciclo": "1 · régua: ciclos 1–2, bloqueia dentro-do-bloco reprova",
+ "objeto": "38504427a7b962545e559bd4d312b520b458ac42",
+ "legalidade": "EM APURAÇÃO",
+ "arquivos_medidos": "EM APURAÇÃO",
+ "isolamento": "PARCIAL (09:15Z), ainda EM APURAÇÃO: G 9/9 (G9 drill saiu para a suíte própria), E 21/21 (E13 e E19 ok), F 13/13 (F8, F11 ok) skipped 0; sonda: 15 entregas, B povoada (10/1/10/0) inalterada em 15/15 por contagem e md5; posição com atributos cheios sem operador: só quar +1, 0 recibo, 0 sample; EXPLAIN sob o runtime com One-Time Filter current_setting em latestDeviceStatus e latestIgnition, ausente no superusuário e em papel BYPASSRLS; INSERT tenant B sob GUC A = 42501; G10 próprio 23503/23503 com controle positivo aceito; FORCE t/t; pg_rules 0; prosecdef B=objeto (1, mesmo md5); DML do runtime B 118 → objeto 119, diferença {vehicle_telemetry_events}, REVOKE acusou; upgrade de B aplica exatamente 2; injeção própria k=1..17 atômica e convergente, post acusa, M-E51/51b/51c acusam; pontas A/B/C do down conforme; M-E52/M-E53 pelo comportamento; M-E40 e M-E23 vermelhas (G9 e G1); motivos NOVAS 7/7 sustentados. Falta: san3-05 runtime-role 12/12, guard 8, aditiva com recibos position, parecer do DBA, T-M sob M-E5x.",
+ "atomicidade": "EM APURAÇÃO",
+ "ci_e_arnes": "EM APURAÇÃO",
+ "dba_guardiao": "EM APURAÇÃO",
+ "achados": [],
+ "voto": "EM APURAÇÃO"
+}

@@ -85,13 +85,14 @@ test("contrato: `device.name`, `phone`, `contact` e `model` não chegam ao coman
   assert.equal(command(body).payloadDigest, command(fixture()).payloadDigest, "campos pessoais não entram no digest");
 });
 
-test("contrato: `attributes` é ignorado por inteiro (nem chave reservada lá dentro conta)", { timeout: 30_000 }, () => {
+test("contrato: `attributes` só alimenta a allowlist veicular (B-TRC-02); chave e digest não mudam; chave reservada lá dentro não conta", { timeout: 30_000 }, () => {
   const body = fixture();
   body.position.attributes = { tenantId: "00000000-0000-0000-0000-00000000000b", ignition: true, odometer: 99 };
   const cmd = command(body);
   assert.equal(cmd.externalEventKey, command(fixture()).externalEventKey);
   assert.equal(cmd.payloadDigest, command(fixture()).payloadDigest);
   assert.ok(!JSON.stringify(cmd).includes("00000000-0000-0000-0000-00000000000b"));
+  assert.deepEqual(cmd.telemetry, { ignition: true, odometerM: 99 });
 });
 
 test("contrato: chave reservada no ENVELOPE dá 422", { timeout: 30_000 }, () => {

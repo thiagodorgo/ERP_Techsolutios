@@ -14,7 +14,17 @@
 //   8. derruba o projeto com `down -v --remove-orphans` SEMPRE, inclusive em falha.
 // Imprime só nomes de passo, nomes de header e estado — nunca valor de header, segredo ou coordenada.
 //
-// USO: node scripts/traccar-capture-fixture.mjs
+// USO: node scripts/traccar-capture-fixture.mjs                 (posição: a fixture do B-TRC-01)
+//      node scripts/traccar-capture-fixture.mjs --kind event    (B-TRC-02: as fixtures de EVENTO)
+//
+// B-TRC-02 (plano v2 §3.4, §9.6 passo 3) — `--kind event`: mesmo teto, mesma sanitização, `down -v` sempre. O Traccar
+// encaminha posições E eventos para o `traccar-capture`, que só imprime o corpo das requisições ao caminho de eventos
+// (TRC_CAPTURE_PATH). A rodada manda, do mesmo dispositivo e com relógio crescente: um fix com `ignition=false` (o 1º
+// fix liga o status → `deviceOnline`), um com `ignition=true` (→ `ignitionOn`) e um com `alarm=sos` (→ `alarm`); depois
+// espera o silêncio passar de `STATUS_TIMEOUT=60` (→ `deviceUnknown`). Grava 4 fixtures capturadas + 1 SINTÉTICA
+// rotulada (`event-device-offline.json`, derivada da `deviceUnknown` com `_sintetica`: o OsmAnd nunca gera deviceOffline,
+// S-E9) e imprime, além dos nomes dos headers, o `event.id`, se a posição anexada traz coordenada e se houve 2ª entrega.
+// Projeto compose: `erp-trc01-capture` por padrão; `TRC_CAPTURE_PROJECT` troca o nome (o terreno de cada dev).
 
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -23,13 +33,23 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
-const PROJECT = "erp-trc01-capture";
+const KIND = process.argv.includes("--kind") ? process.argv[process.argv.indexOf("--kind") + 1] : "position";
+if (KIND !== "position" && KIND !== "event") {
+  console.error("[traccar-capture] --kind aceita só position ou event");
+  process.exit(2);
+}
+const PROJECT = process.env.TRC_CAPTURE_PROJECT?.trim() || "erp-trc01-capture";
 const BASE_FILE = path.join(REPO_ROOT, "docker-compose.prod.yml");
 const OVERLAY_FILE = path.join(REPO_ROOT, "docker-compose.traccar.yml");
 const FIXTURE_FILE = path.join(REPO_ROOT, "infra", "traccar", "fixtures", "6.16.0", "position-osmand.json");
 const DEVICE_ID = "trcdemo01";
 const PRIVATE_SUBNET = process.env.TRC_PRIVATE_SUBNET?.trim() || "172.31.250.0/24";
 const CAPTURE_URL = "http://traccar-capture:3200/ingest/traccar/v1/positions";
+const EVENT_CAPTURE_PATH = "/ingest/traccar/v1/events";
+const EVENT_CAPTURE_URL = `http://traccar-capture:3200${EVENT_CAPTURE_PATH}`;
+const FIXTURES_DIR = path.join(REPO_ROOT, "infra", "traccar", "fixtures", "6.16.0");
+// O silêncio que faz o Traccar marcar o dispositivo como sem sinal: STATUS_TIMEOUT=60 do overlay + folga.
+const UNKNOWN_WAIT_MS = 150_000;
 const DOCKER_TIMEOUT_MS = 600_000;
 const WAIT_TIMEOUT_MS = 120_000;
 
@@ -52,6 +72,7 @@ function composeEnv(extra = {}) {
     TRC_FORWARD_SECRET: secret,
     TRC_FORWARD_HEADER: `X-Traccar-Forward-Token: ${secret}`,
     TRC_FORWARD_URL: CAPTURE_URL,
+    ...(KIND === "event" ? { TRC_EVENT_FORWARD_URL: EVENT_CAPTURE_URL, TRC_CAPTURE_PATH: EVENT_CAPTURE_PATH } : {}),
     ...extra,
   };
 }
@@ -98,14 +119,14 @@ async function step(name, fn) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function waitFor(description, probe) {
-  const deadline = Date.now() + WAIT_TIMEOUT_MS;
+async function waitFor(description, probe, timeoutMs = WAIT_TIMEOUT_MS) {
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const value = probe();
     if (value !== undefined) return value;
     await sleep(1_000);
   }
-  throw new Error(`${description}: expirou em ${WAIT_TIMEOUT_MS / 1000}s`);
+  throw new Error(`${description}: expirou em ${timeoutMs / 1000}s`);
 }
 
 function ipv4ToInt(ip) {
@@ -148,6 +169,114 @@ function captureLines(prefix) {
     .map((line) => line.slice(prefix.length).trim());
 }
 
+function sanitizeDevice(device) {
+  if ("name" in device) device.name = "Viatura Sintetica TRC01";
+  if ("phone" in device) device.phone = "+550000000000";
+  if ("contact" in device) device.contact = "Contato Sintetico";
+  if ("attributes" in device) device.attributes = {};
+}
+
+function sendOsmAnd(epochSeconds, extra) {
+  const { stdout } = docker(compose("--profile", "tools", "run", "--rm", "-T", "traccar-sim"), {
+    extraEnv: {
+      TRC_SIM_ID: DEVICE_ID,
+      TRC_SIM_LAT: SIM_LAT,
+      TRC_SIM_LON: SIM_LON,
+      TRC_SIM_TIMESTAMP: String(epochSeconds),
+      TRC_SIM_SPEED: "0",
+      TRC_SIM_EXTRA: extra,
+    },
+    timeout: 180_000,
+  });
+  if (!/osmand_status=2\d\d/.test(stdout)) {
+    throw new Error(`o Traccar não aceitou o ponto OsmAnd (${stdout.trim().split("\n").pop() ?? "sem saída"})`);
+  }
+}
+
+function capturedEvents() {
+  return captureLines("TRC_CAPTURE_BODY").map((raw) => {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error("um corpo encaminhado ao caminho de eventos não é JSON");
+    }
+  });
+}
+
+function eventsOfType(type, alarm) {
+  return capturedEvents().filter(
+    (body) => body?.event?.type === type && (alarm === undefined || body?.event?.attributes?.alarm === alarm),
+  );
+}
+
+function describe(body) {
+  const position = body.position && typeof body.position === "object" ? body.position : undefined;
+  return {
+    eventId: body.event?.id,
+    positionId: body.event?.positionId,
+    eventTimeEqualsDeviceTime: position ? body.event?.eventTime === position.deviceTime : null,
+    deviceTimeEqualsFixTime: position ? position.deviceTime === position.fixTime : null,
+    positionCoordinates: position ? typeof position.latitude === "number" && typeof position.longitude === "number" : "sem position",
+    keys: Object.keys(body).sort(),
+    eventKeys: Object.keys(body.event ?? {}).sort(),
+    eventAttributes: Object.keys(body.event?.attributes ?? {}).sort(),
+  };
+}
+
+function writeEventFixture(name, body) {
+  const fixture = structuredClone(body);
+  if (fixture.device && typeof fixture.device === "object") sanitizeDevice(fixture.device);
+  mkdirSync(FIXTURES_DIR, { recursive: true });
+  writeFileSync(path.join(FIXTURES_DIR, name), `${JSON.stringify(fixture, null, 2)}\n`, "utf8");
+  return fixture;
+}
+
+const tally = (values) => values.reduce((acc, value) => ({ ...acc, [String(value)]: (acc[String(value)] ?? 0) + 1 }), {});
+
+async function captureEvents() {
+  const t0 = Math.floor(Date.now() / 1000) - 30;
+  await step("fix 1 (ignition=false): o 1º fix liga o status (deviceOnline)", async () => sendOsmAnd(t0, "ignition=false"));
+  await step("deviceOnline recebido no caminho de eventos", async () =>
+    waitFor("deviceOnline", () => (eventsOfType("deviceOnline").length > 0 ? true : undefined)),
+  );
+  await step("fix 2 (ignition=true) → ignitionOn", async () => sendOsmAnd(t0 + 5, "ignition=true"));
+  await step("ignitionOn recebido", async () => waitFor("ignitionOn", () => (eventsOfType("ignitionOn").length > 0 ? true : undefined)));
+  await step("fix 3 (ignition=true&alarm=sos) → alarm/sos", async () => sendOsmAnd(t0 + 10, "ignition=true&alarm=sos"));
+  await step("alarm/sos recebido", async () => waitFor("alarm sos", () => (eventsOfType("alarm", "sos").length > 0 ? true : undefined)));
+  await step(`silêncio até deviceUnknown (STATUS_TIMEOUT=60; teto ${UNKNOWN_WAIT_MS / 1000}s)`, async () =>
+    waitFor("deviceUnknown", () => (eventsOfType("deviceUnknown").length > 0 ? true : undefined), UNKNOWN_WAIT_MS),
+  );
+
+  console.log(`[traccar-capture] nomes dos headers recebidos no caminho de eventos: ${[...new Set(captureLines("TRC_CAPTURE_HEADERS"))].join(" ")}`);
+  console.log(`[traccar-capture] requisições por caminho: ${JSON.stringify(tally(captureLines("TRC_CAPTURE_PATH")))}`);
+  const all = capturedEvents();
+  console.log(`[traccar-capture] eventos recebidos por tipo: ${JSON.stringify(tally(all.map((body) => body.event?.type)))}`);
+  const ids = all.map((body) => body.event?.id);
+  console.log(`[traccar-capture] 2ª entrega do mesmo event.id: ${ids.length === new Set(ids).size ? "não" : "SIM"}`);
+
+  await step("4 fixtures capturadas + 1 sintética gravadas (dado pessoal sintético)", async () => {
+    const plan = [
+      ["event-device-online.json", eventsOfType("deviceOnline")[0]],
+      ["event-ignition-on.json", eventsOfType("ignitionOn")[0]],
+      ["event-alarm-sos.json", eventsOfType("alarm", "sos")[0]],
+      ["event-device-unknown.json", eventsOfType("deviceUnknown")[0]],
+    ];
+    for (const [name, body] of plan) {
+      if (!body || !body.event || !body.device) throw new Error(`PARADA (§9.6 passo 3): ${name} sem {event, device}`);
+      if (body.device.uniqueId !== DEVICE_ID) throw new Error(`RECUSADO: ${name} com device.uniqueId diferente de ${DEVICE_ID}`);
+      console.log(`[traccar-capture] ${name}: ${JSON.stringify(describe(body))}`);
+      writeEventFixture(name, body);
+    }
+    const offline = structuredClone(eventsOfType("deviceUnknown")[0]);
+    offline.event.type = "deviceOffline";
+    writeEventFixture("event-device-offline.json", {
+      _sintetica:
+        "fixture SINTÉTICA (B-TRC-02 §3.4): derivada da event-device-unknown capturada, só com event.type trocado para deviceOffline — o OsmAnd nunca gera deviceOffline (S-E9)",
+      ...offline,
+    });
+  });
+}
+
 let broughtUp = false;
 let tornDown = false;
 function teardown() {
@@ -183,6 +312,10 @@ try {
     waitFor("traccar-capture pronto", () => (captureLines("TRC_CAPTURE_READY").length > 0 ? true : undefined)),
   );
 
+  if (KIND === "event") {
+    await captureEvents();
+    console.log(`[traccar-capture] fixtures de evento em ${path.relative(REPO_ROOT, FIXTURES_DIR)}`);
+  } else {
   await step("ponto OsmAnd trcdemo01 enviado pelo traccar-sim", async () => {
     const { stdout } = docker(compose("--profile", "tools", "run", "--rm", "-T", "traccar-sim"), {
       extraEnv: {
@@ -248,6 +381,7 @@ try {
   });
 
   console.log(`[traccar-capture] fixture em ${path.relative(REPO_ROOT, FIXTURE_FILE)}`);
+  }
 } catch {
   process.exitCode = 1;
 } finally {

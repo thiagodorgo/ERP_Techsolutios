@@ -97,7 +97,36 @@ e status.
 `vehicle_assigned_at`, ou OS com despacho ativo cuja viatura foi (re)atribuída depois do instante do fix (B-TRC-01
 ciclo 3); linhas anteriores à migração ficam inelegíveis até o próximo `UPDATE`/atribuição da OS.
 
-> Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2.
+**Eventos do Traccar (B-TRC-02, contrato `traccar_event_ingest@2026-10-19.b-trc-02`):**
+
+| Método | Rota | Auth | Descrição |
+|---|---|---|---|
+| POST | `/ingest/traccar/v1/events` | o MESMO header e o MESMO segredo do forward de posição | Recebe `{event, position?, device, geofence?, maintenance?}` do `event.forward` do Traccar 6.16.0. Mesma organização pelo vínculo ativo (`FOR SHARE`), nunca do payload; grava UMA linha em `vehicle_telemetry_events` (por viatura, ENABLE + FORCE RLS) pendurada num recibo `message_kind='event'`. Sem passo de operador (o evento é dado da viatura). Nada publicado, nenhuma leitura pública. |
+
+Mesma ordem fixa e mesmos códigos de `/positions`, com estas diferenças declaradas:
+- **Limitador próprio:** bucket e concorrência da rota de eventos são OUTROS (mesmos valores de
+  `TRACCAR_INGEST_RATE_PER_SECOND/BURST/MAX_CONCURRENCY`): a rajada de posições não cala o evento, que o Traccar não
+  reenvia. O pool do banco (`TRACCAR_DB_POOL_MAX`) é o teto real comum.
+- **`204` também para `ignored`:** tipo fora do catálogo (`commandResult`, `geofence*`, `deviceFuel*`, … e qualquer outro) ou
+  código de alarme fora dos 38 da tag → nada gravado; contado numa linha de log `{outcome:"ignored", reason}` sem o tipo cru.
+- **Chave:** SHA-256 de `v1|instância|uniqueId|type|eventTime ms|alarme|lat7|lon7` (coordenada da posição anexada quando há;
+  vazia nos eventos de status); nunca `event.id`/`positionId`. Digest diferente na mesma chave → `409`.
+- **Quarentena (`202`):** os mesmos motivos da posição, lidos como "instante do evento"; o episódio é por (instância,
+  dispositivo, motivo) **sem tipo de mensagem** — `delivery_count` soma posições e eventos, `last_event_key` pode ser de
+  posição ou de evento (`P-TRC02-QUARENTENA-SEM-TIPO-DE-MENSAGEM`, dono B-TRC-03).
+
+**Atributos veiculares da posição (B-TRC-02):** `/positions` passa a ler de `position.attributes` SÓ `ignition`, `motion`,
+`odometer`, `totalDistance`, `hours` (ms → s), `power` (V → mV, 0..1000 V) e `batteryLevel` (arredonda e depois 0..100), num
+domínio fechado igual ao CHECK do banco; forma/faixa errada descarta o atributo, nunca a posição. A amostra vira uma linha
+`kind='sample'` na mesma transação, pendurada no recibo da posição, num savepoint: recusa de domínio do banco → a posição
+segue (204) e o log diz `sample_discarded`; qualquer outra recusa (FK, RLS, contenção) → `503` e nada gravado. Chave e
+digest da posição NÃO mudam.
+
+**Posição em quarentena (qualquer motivo) não conserva amostra** (Q1 = NÃO, decisão do dono de 19/10): a amostra só nasce com a
+posição ACEITA, pendurada no recibo dela; a quarentena guarda só o episódio, como no B-TRC-01.
+
+> Fonte: `src/integrations/traccar/**`, plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` §4 e §8.2; B-TRC-02:
+> `docs/revisoes/TRACCAR/B-TRC-02-plano.md` + `B-TRC-02-emenda-v2.1.md`.
 
 ### 2.2 Health / readiness (infra)
 
