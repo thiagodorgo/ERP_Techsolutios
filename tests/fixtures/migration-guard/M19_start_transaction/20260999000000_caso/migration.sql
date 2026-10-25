@@ -1,0 +1,5 @@
+-- M19 (A2): a forma START TRANSACTION / END não é aceita; uma forma só, BEGIN;/COMMIT; -> G2.
+START TRANSACTION;
+ALTER TABLE "caso" ADD COLUMN "a" TEXT;
+ALTER TABLE "caso" ADD COLUMN "b" TEXT;
+END;
