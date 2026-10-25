@@ -7880,6 +7880,9 @@ button.opmap-os--atd {
 .pat-ab-row[aria-current="true"] td:first-child { box-shadow: inset 3px 0 0 #2563eb; }
 .pat-ab-row td { padding: 0 12px; height: 40px; max-height: 40px; line-height: 40px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; color: #475569; }
 .pat-ab-row td:last-child { padding: 0 8px; text-overflow: clip; }
+/* A pílula de situação e a barra de ocupação não herdam a altura de linha de 40px da célula (a linha fica em 40px). */
+.pat-ab-row td .pat-pill,
+.pat-ab-row td .pat-occ-inline { line-height: 1.2; vertical-align: middle; }
 .pat-chevron-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; color: #94a3b8; transition: transform .2s ease; vertical-align: middle; }
 .pat-ab-row[aria-expanded="true"] .pat-chevron-icon { transform: rotate(180deg); color: #2563eb; }
 .pat-ab-detail-row { background: #f8fafc; border-bottom: 2px solid #e2e8f0; }
@@ -7955,9 +7958,9 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .pat-legenda button[aria-pressed="true"] { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
 .pat-legenda button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 .pat-legenda i { width: 10px; height: 10px; border-radius: 3px; border: 1px solid; }
-.pat-lg-livre { background: #f0fdf4; border-color: #86efac; }
-.pat-lg-ocupada { background: #fffbeb; border-color: #fcd34d; }
-.pat-lg-bloqueada { background: #fef2f2; border-color: #fca5a5; }
+.pat-legenda i.pat-lg-livre { background: #f0fdf4; border-color: #86efac; }
+.pat-legenda i.pat-lg-ocupada { background: #fffbeb; border-color: #fcd34d; }
+.pat-legenda i.pat-lg-bloqueada { background: #fef2f2; border-color: #fca5a5; }
 .pat-c-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
 .pat-vaga-c { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 1px solid; border-radius: 9px; padding: 6px 8px; min-height: 46px; text-align: left; font-size: 11px; text-decoration: none; }
 .pat-vaga-c b { font-size: 12px; color: #0f172a; }

@@ -405,6 +405,11 @@ export function PatiosViewB({ items, serverTotal, partialWindow, loading, error,
   );
 }
 
+/** Rótulo curto dos gráficos e do KPI de crítico (referência: o prefixo "Pátio " sai). */
+function shortYardName(name: string): string {
+  return name.replace(/^Pátio\s+/i, "");
+}
+
 function AnalyticKpis({
   summary,
   totals,
@@ -424,7 +429,7 @@ function AnalyticKpis({
 }) {
   const pct = totals.pct ?? 0;
   const band = occupancyBandTag(pct);
-  const criticalNames = critical.map((row) => `${row.yard.name} ${row.pct ?? 0}%`).join(" · ");
+  const criticalNames = critical.map((row) => `${shortYardName(row.yard.name).split(" — ")[0]} ${row.pct ?? 0}%`).join(" · ");
   return (
     <>
       <KpiStatCard
@@ -583,7 +588,8 @@ function OccupancyBars({ rows, onOpen }: { readonly rows: readonly YardRow[]; re
             const y = top + index * rowHeight;
             const pct = row.pct ?? 0;
             const tone = occupancyTone(pct);
-            const name = row.yard.name.length > 24 ? `${row.yard.name.slice(0, 23)}…` : row.yard.name;
+            const short = shortYardName(row.yard.name);
+            const name = short.length > 24 ? `${short.slice(0, 23)}…` : short;
             return (
               <g
                 key={row.yard.id}
@@ -593,6 +599,7 @@ function OccupancyBars({ rows, onOpen }: { readonly rows: readonly YardRow[]; re
                 onClick={() => onOpen(row.yard.id)}
                 onKeyDown={(event) => rowKeyToggle(event, () => onOpen(row.yard.id))}
               >
+                <title>{`${row.yard.name}: ${pct}% ocupado`}</title>
                 <rect className="pat-bar-bg" x="0" y={y} width={width} height={rowHeight - 2} rx="4" fill="transparent" />
                 <text x="6" y={y + 14} fontSize="11" fontWeight="600" fill="#334155">
                   {name}

@@ -62,4 +62,32 @@ Skills: `ts-frontend-full` (implementar) carregada; `ui-ux-pro-max` na etapa de 
 
 ## Etapa 3 — testes novos e mutações
 
+Commit `ed3d375c`. Os 5 testes novos rodaram juntos com as regressões vizinhas (`patios-yards.smoke`, `pattern-css-guard`, `notifications.smoke`, que monta o `AppShell`): `node --test --import tsx …` → **40 testes, 40 ok, 0 falha**.
+
+| Teste | Casos | O que prende |
+|---|---|---|
+| `tests/aparencia-storage.test.ts` | 9 | chave por organização E usuário (sem um dos dois, nada); padrão por tela; round-trip `{ tela: letra }`; isolamento entre usuários e entre organizações; inválido/corrompido/lista → padrão; saneamento (sem `__proto__`); sem chave não grava; navegador que recusa gravar ou ler não quebra; A/B/C só |
+| `tests/aparencia-hook.test.tsx` | 5 | **o contrato do `B-SAN3-22`**: sai do índice do módulo; Pátios → B e as demais → A; `setAppearance` grava na chave certa e o próximo render usa a escolha; inválido → padrão da tela; sem organização ativa, padrão e nada gravado |
+| `tests/aparencia-menu.smoke.test.tsx` | 2 | **todo papel** (os 9 rótulos de `UserRole`, sem permissão nenhuma) vê o item no menu do usuário (crítica, ajuste 2); o menu oferece as 3 de Pátios, com a B marcada e como "padrão", sem termo técnico no texto visível |
+| `tests/aparencia-patios.smoke.test.tsx` | 8 | sem nada guardado abre na B (**asserção explícita do padrão**, crítica, ajuste 3); a guardada é a que abre (A, B, C); inválido/corrompido → B; a A é a tela de antes; B e C sem resumo não desenham gráfico nem número inventado; sem "tenant" nem o id da organização nas 3; os 3 exports seguem em `PatiosPage` (ajuste 6); faixas, totais e fuso legível |
+| `tests/aparencia-patios-live.test.tsx` | 5 | DOM mínimo do repo (o de `context-selection-page-live`, sem dependência nova; acrescentei só `options`/`selected` para o `<select>` do paginador) com `fetch` no contrato real: abre na B; **o clique no menu troca a aparência da página aberta e grava a chave**; **"um fetch só"**: `/yards` e `/patios/dashboard/summary` pedidos 1 vez cada, também depois de A→C→B (crítica, ajuste 1); B: KPI de crítico filtra, chip aparece e sai; linha abre o detalhe embaixo, um por vez, Enter/Espaço, e só então busca `/yards/:id/occupancy`, com a vaga ocupada levando ao dossiê; C: bloco filtra, linha escolhe o pátio do quadro |
+
+**Mutações** (`mutar.mjs` no scratchpad: âncora única, EOL-neutra, roda o teste-alvo e restaura; `git status` limpo depois de cada uma):
+
+| # | Mutação | Resultado |
+|---|---|---|
+| M1 | tirar o `userId` da chave | `aparencia-storage` 4 de 9 vermelhos (inclusive "isolamento") |
+| M2 | aceitar valor fora de A/B/C (as duas travas: saneamento e resolução) | 2 vermelhos ("inválido cai no padrão" no storage e no contrato do hook) |
+| M3 | padrão de Pátios = A | 6 vermelhos (hook, smoke e live) |
+| M4 | `write` sem efeito no navegador | 3 vermelhos (round-trip, contrato do hook, recusa do navegador) |
+| M5 | a view B chama `usePatiosDashboardSummary` por conta própria | `aparencia-patios-live` vermelho ("resumo pedido uma vez") |
+| M6 | o item só para o papel administrador | `aparencia-menu` vermelho ("todo papel vê o item") |
+| M7 | a linha nunca fecha (abrir não fecha a anterior) | `aparencia-patios-live` vermelho ("um por vez", Espaço fecha) |
+| M8 | gravar sem organização ativa | 2 vermelhos (chave e contrato do hook) |
+| M9 | o KPI de crítico não filtra | `aparencia-patios-live` vermelho |
+
+Todas restauradas (`git status --short` limpo após cada uma). Saída integral em `scratchpad/mutacoes.txt` (não versionada).
+
+## Etapa 4 — bateria (§9 Frontend + raiz)
+
 EM APURAÇÃO
