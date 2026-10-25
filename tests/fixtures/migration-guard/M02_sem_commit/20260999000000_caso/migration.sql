@@ -1,0 +1,4 @@
+-- M02 (A2): BEGIN na ponta, sem COMMIT -> G2.
+BEGIN;
+ALTER TABLE "caso" ADD COLUMN "a" TEXT;
+ALTER TABLE "caso" ADD COLUMN "b" TEXT;

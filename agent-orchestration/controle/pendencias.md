@@ -11606,6 +11606,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** emenda v2.3 do `B-TRC-02`. O `prisma migrate deploy` 7.8 executa cada sentença em autocommit. As migrações anteriores à `20260878000000` (por exemplo `20260874000000_traccar_ingestion_foundation`, com DDL em várias sentenças) não têm transação explícita. Elas já estão aplicadas em todos os ambientes; o risco só aparece numa base nova com o deploy interrompido. A mesma classe foi achada no `B-SAN3-02` (C2-01) e no `B-TRC-02` (D1 do DBA).
 - **bloqueia:** não.
 - **teste de encerramento:** cada migração com mais de uma sentença de DDL passa a ter transação explícita ou uma justificativa, com drill de falha injetada; e um guard de CI reprova migração nova com várias sentenças e sem `BEGIN`/`COMMIT` (regra geral recomendada pelo planejador, a decidir pelo dono).
+- **fechamento PARCIAL (2026-10-25, `B-GUARD-MIGRACAO`, PR #458, ramo `chore/guard-migracao-transacao`):** a metade "guard de CI" do teste de encerramento está entregue — `scripts/migration-transaction-guard.mjs` (regras G0–G7), lido pelo `npm test` via `tests/migration-transaction-guard.test.ts`; a regra foi decidida pelo dono (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`). As 112 anteriores à `20260878000000` ficam congeladas na lista `ANTERIORES` do guard, que só encolhe: quem sanear uma remove o nome e o guard passa a julgá-la. **Resta, e segue ABERTA:** a primeira metade (transação explícita ou justificativa, com drill, para cada anterior multi-sentença — 104 delas pelo splitter do guard), dono a nomear.
 
 ## P-SAN3-20-DESVINCULAR-DEPOSITADO (2026-10-24) — cheque pago por outro meio não pode ser desvinculado — BAIXA
 - **status:** ABERTA · **dono:** próximo bloco de cheques/tela · **bloqueia:** não.
@@ -11650,3 +11651,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** `dentro-do-bloco` do B-SAN3-20, classificado `ajuste` (não bloqueia).
 - **dono:** `B-SAN3-24` (telas de cheque — primeiro consumidor da lista).
 - **teste de encerramento:** asserção de `titleId` no item da lista; a M4b passa a vermelho.
+
+## P-DRILL-GENERICO-POR-PREFIXO (2026-10-25) — o guard de migração prova que o drill CITA a migração, não que injeta falha por prefixo — BAIXA
+
+- **status:** ABERTA · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` (bloco de ferramenta seguinte, Q3 do plano do `B-GUARD-MIGRACAO`, resposta do dono: *"Aceito as recomendações"*) · **bloqueia:** não.
+- **Origem:** limite declarado (D-007) da regra G6 do `scripts/migration-transaction-guard.mjs`: ela exige que algum `tests/*-migration-drill-db.test.ts` cite o nome da migração nova; não prova o laço k = 1..n com falha injetada pelo `prisma migrate deploy` real nem a comparação de estado. Hoje há três cópias do arnês (~450–550 linhas cada: `work-order-invoicing`, `traccar-event`, `cheque-title-link`).
+- **teste de encerramento:** uma suíte `-db` genérica que, para toda migração nova com `BEGIN`/`COMMIT`, injeta falha depois de cada sentença pelo `migrate deploy` real, compara um retrato genérico do catálogo antes × depois e converge com `resolve --rolled-back` + `deploy`; com teto de crescimento, entrada na lista curada do `ci.yml` e medição 3×; a mutação "tirar o BEGIN" de uma migração nova deixa a suíte vermelha.

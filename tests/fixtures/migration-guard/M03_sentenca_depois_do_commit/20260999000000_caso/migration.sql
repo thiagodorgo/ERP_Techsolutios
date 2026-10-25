@@ -1,0 +1,5 @@
+-- M03 (A2): uma sentença DEPOIS do COMMIT -> G2.
+BEGIN;
+ALTER TABLE "caso" ADD COLUMN "a" TEXT;
+COMMIT;
+ALTER TABLE "caso" ADD COLUMN "b" TEXT;

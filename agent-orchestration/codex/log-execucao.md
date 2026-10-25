@@ -5047,3 +5047,8 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Implementados vínculo cheque→título, baixa só pela compensação, restauração no bounce e CAS de estado; migração com `BEGIN`/`COMMIT`.
 - Plano e críticas versionados em `docs/revisoes/SAN3/`; relatório incremental em `B-SAN3-20-dev.md`; PR #456 sem merge.
 - O dev Codex (`gpt-5.6-sol`) caiu por limite de uso às 18:15Z; o Claude Opus (`dev-san320-opus`, nível menor, declarado) cobriu e terminou o bloco: mediu o parcial, corrigiu a pendência fechada por engano (`P-Ω4-3-INVOICE-LEASTPRIV` voltou a ABERTA; a fechada é `P-Ω4-7-DUPLA-CONTAGEM`), o drill e as barreiras faltantes, o vermelho-controle e a bateria (seção "Retomada" do relatório).
+
+## 2026-10-25 — B-GUARD-MIGRACAO (DEV, bloco de ferramenta)
+
+- Dev `dev-guard-migracao-opus` (Claude Opus, nível menor, declarado; o dono: *"vc cobre o codex nessa rodada"*). Base `origin/main` `8a7885f4`; 116 migrações, 112 anteriores à `20260878000000`, 4 novas.
+- Entregues `scripts/migration-transaction-guard.mjs` (G0–G7) e `tests/migration-transaction-guard.test.ts` com fixtures em `tests/fixtures/migration-guard/`; seção em `docs/deployment.md`; frase espelhada no §C4 de `CLAUDE.md` e `AGENTS.md`. Relatório em `docs/revisoes/B-GUARD-MIGRACAO-dev.md`. Sem banco, sem Docker, `Kpis/**` intocado.
