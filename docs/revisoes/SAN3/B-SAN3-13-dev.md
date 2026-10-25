@@ -10,12 +10,12 @@
 | 0 terreno | GRAVADO |
 | 1 vermelho-controle (B1/B14-db/F1) | GRAVADO |
 | 2 backend: escopo, resolver estrito, AND, openOnly | GRAVADO |
-| 3 backend: cursor por id | PARADA — F-1 |
-| 4 app: rede (scope/openOnly/cursor) | EM APURAÇÃO |
-| 5 app: reconciliação, retenção, lock, sementes | EM APURAÇÃO |
-| 6 app: Home/lista sob a E1 | EM APURAÇÃO |
-| 7 registro | EM APURAÇÃO |
-| Bateria §8 | EM APURAÇÃO |
+| 3 backend: cursor por id | GRAVADO (E2) |
+| 4 app: rede (scope/openOnly/paginate/cursor) | GRAVADO |
+| 5 app: reconciliação, retenção, lock, sementes | GRAVADO |
+| 6 app: Home/lista sob a E1 | GRAVADO |
+| 7 registro | GRAVADO |
+| Bateria §8 | GRAVADO (CI no fim) |
 | Falsificações de premissa | F-1 GRAVADA |
 | Limpeza §C5 | EM APURAÇÃO |
 
@@ -74,3 +74,151 @@ ok 3 - B18-db …
 - Não commitado no worktree: o cursor na leitura literal (5 arquivos de `src/modules/work-orders/`, `+62 −13`), cópia em `<scratchpad>/cursor-letra.patch`. Ao retomar: aplicar a emenda do planejador sobre ele.
 - Não iniciados: commits 4-7 (app: rede, reconciliação/retenção/lock/sementes, Home/lista; registro). Nenhum depende da escolha acima, exceto o parâmetro que o app manda na 1ª página (§4.1, CA-13).
 - Terreno: worktree `C:/Users/AMP/w-san313` intacto; container `dev-san313-pg` **parado** (`docker stop`, não removido — `docker start dev-san313-pg` na retomada; porta 127.0.0.1:55313).
+
+## Etapa 3 (retomada) — cursor por `id` sob a Emenda E2 (GRAVADO)
+- E2 lida inteira (plano l.432-453; cópia versionada atualizada em `docs/revisoes/SAN3/B-SAN3-13-plano.md`). Aplicada sobre `cursor-letra.patch`: `paginate=cursor` (`parsePaginate`) declara o modo em toda página; `cursor` sem o modo → 400 `invalid_cursor_mode`; `nextCursor` só no modo cursor (`null` no offset); `offset` devolvido `0` no modo cursor. `docker start dev-san313-pg`.
+- `DATABASE_URL=…55313… node --test --import tsx tests/san3-13-wo-list-cursor-db.test.ts` → `# tests 5 # pass 5 # fail 0 # skipped 0` (B14-db, B15-db, B19-db, B17-db, B18-db).
+- **Precisão (não falsificação):** a E2 pede `paginas = 6` no B14-db com `limit=1`. Pela regra que a própria E2 escreve (`nextCursor` = último `id` se `items.length === limit`), a 6ª página — cheia — aponta para uma 7ª, vazia, que fecha com `null`. O teste afirma as duas coisas: `paginasComItens = 6` e `paginas (requisições) = 7`.
+- Memória: `node --test --import tsx tests/san3-13-wo-list-cursor.test.ts` → B10, B13, B16 (`OS_ainda_de_A_que_o_pull_nao_trouxe=0`), B19 → `# pass 4`. B12 com `orderBy` por modo → `# pass 5`.
+- Todas as suítes backend do bloco + regressões (sem banco): `# tests 34 # pass 34 # fail 0`.
+- Commit `d051328b`.
+
+### Mutações backend (`<scratchpad>/mut_backend.py`: aplica com âncora única, roda, restaura com `git checkout`, confere árvore limpa)
+```
+M1 sem ramo operator=userId [B1]: VERMELHO fail=8 restaurado=True
+M2 sem ramo perfil [B1]: VERMELHO fail=5 restaurado=True
+M3 + ramo assigned_user_id (memória) [B1/B6]: VERMELHO fail=5 restaurado=True
+M4 filtro do chamador substitui o escopo [B3]: VERMELHO fail=1 restaurado=True
+M5 forçar por 'tem papel de campo' sem a união [B5]: VERMELHO fail=1 restaurado=True
+M6 resolver engole erro (200 encolhido) [B9]: VERMELHO fail=1 restaurado=True
+M7 sub não-UUID vira 503 [B9]: VERMELHO fail=1 restaurado=True
+M8 ignorar openOnly (memória) [B11]: VERMELHO fail=1 restaurado=True
+M9 OR do search no topo (Prisma) [B12/B17-db]: VERMELHO fail=4 restaurado=True
+M10 count sem escopo (Prisma) [B12/B17-db]: VERMELHO fail=4 restaurado=True
+M11 openOnly como chave simples (Prisma) [B12/B18-db]: VERMELHO fail=3 restaurado=True
+M12 F-1: modo pela presença de cursor (Prisma) [B14-db/B19-db]: VERMELHO fail=3 restaurado=True
+M13 orderBy único nos dois modos (Prisma) [B12/B14-db]: VERMELHO fail=4 restaurado=True
+M14 nextCursor também no modo offset (memória) [B19]: VERMELHO fail=1 restaurado=True
+M15 cursor sem paginate aceito (serviço) [B13]: VERMELHO fail=1 restaurado=True
+M16 memória ordena por outra chave no modo cursor [B15-db]: VERMELHO fail=1 restaurado=True
+M17 escopo do Prisma com OR: [] (sem curto-circuito) [B12/B17-db]: VERMELHO fail=2 restaurado=True
+```
+17/17 vermelhas; 17/17 restauradas (`git status --short` vazio depois).
+
+## Etapa 4 — app: rede (GRAVADO)
+- `work_order_remote_api.dart`: `WorkOrderFetchResult {orders, complete}` e a interface À PARTE `WalkingWorkOrderRemoteApi` (o `DioWorkOrderRemoteApi` implementa as duas). `fetchWorkOrders` mantém a assinatura e devolve as `orders` da caminhada. Toda página: `scope=assigned&openOnly=true&paginate=cursor&limit=100`; da 2ª em diante `cursor` tal como veio; nunca `offset`; teto 50 páginas; sem `pagination.nextCursor` → incompleta.
+- **Leitura declarada (não falsificação):** o §4.1 diz "mantém a assinatura (10 fakes) e devolve `orders` + `complete`". Uma assinatura não devolve dois valores; para manter a de `fetchWorkOrders` e os fakes existentes, a completude vem pela interface à parte, e o repositório trata a API que não a implementa como caminhada incompleta (atualiza, nunca apaga — o comportamento de antes; `b099` 30/30 sem ajuste, H6 não caiu).
+- Testes F2 (capturador com `paginate=cursor` em toda página, cursor opaco `'opaco/1 ä'` devolvido igual, sem `offset`), F3 (230), F4 (teto e backend antigo). Commit `b45af82a`.
+
+## Etapa 5 — app: reconciliação, retenção, trava, sementes (GRAVADO)
+- Store: `deleteWorkOrder` na interface, no `InMemory` (materiais: no-op declarado — moram no `PrestadorLocalStore`) e no Drift (evidência, linha do tempo, `work_order_materials` e a linha, numa transação).
+- Repositório: trava ESTÁTICA `_serial` (fila ociosa = `null`, ver abaixo) envolvendo as 7 mutações públicas (corpo de antes, renomeado `_…Locked`), a fabricação do `load()` e a reconciliação; `_reconcile` relê cada linha candidata e a fila do store; `_hasPendingWork` com os 5 ramos; `_isFabricated` (sem `serverId` e sem `work_order.create` de qualquer status); `allowSeedOrders` (provider: `!kIsRemoteAuth`); `hasExternalPendingWork` composto por `buildWorkOrderExternalPendingWork` (vistoria + materiais; falha de leitura = retém); `lastPullIncomplete`; `workOrdersForUser` removido (0 chamadores). Mapa `workOrderActionReferenceKeys` classifica as 26 constantes de `*SyncActionTypes` (F24).
+- **Achado de execução (meu, corrigido):** a 1ª versão da trava encadeava sempre no `Future` anterior; em `testWidgets` o `Future` estático pertencia à zona do teste anterior, que ninguém mais bombeia → `pumpAndSettle timed out` em `b126` e `b115`. Remédio: com a fila ociosa, a operação corre já (o `Future` da cauda zera ao terminar). `work_orders/` + `b099` → `+119: All tests passed!`.
+- Ajustes de teste declarados: F18 precisava que o pull do `load()` trouxesse a OS (senão a reconciliação a tirava antes da mutação — o próprio comportamento certo).
+- Testes: `bsan313_os_purga_reconcilia_test.dart` 19 (F5, F8, F9-F11/F19, F12, F13/F14 ×2, F15, F16, F17, F18, F20, F21/F25, F21 Drift, F22, F22b, F6, F7, F24, R10) + F1, F5(503), F23 no arquivo de escopo. Commit `5e6c0f0c`.
+
+## Etapa 6 — app: Home e lista sob a E1 (GRAVADO)
+- Home: "OS hoje" = abertas agendadas hoje; tile "Concluídas" → **"A sincronizar"** (OS com `syncStatus != synced`); faixa de "dados desatualizados" também com `lastPullIncomplete` (o mesmo `_WoPullErrorBanner`). Lista: mesma faixa (`_PullErrorBanner`); aba "Concluidas" vazia → `EmptyState` com "As OS concluídas saem do aparelho depois de sincronizar. O histórico fica no portal." Componentes existentes; nenhum layout novo.
+- **Ajuste de teste declarado, fora da lista nominal do §5:** `test/features/b084_home_stats_test.dart` afirmava o rótulo "Concluídas" (testes 1 e 3) e o "doneCount" (teste 4). O CA-21 manda o rótulo sumir, então os três foram ajustados às claras (nada apagado): rótulo "A sincronizar"; o teste 4 passa a contar OS com envio pendente.
+- Testes F26, F26b, F27, F27b (`bsan313_home_lista_e1_test.dart`). Commit 6.
+
+### Mutações do app (`<scratchpad>/mut_flutter.py`: âncora única, roda os testes do bloco, restaura com `git checkout`, confere árvore limpa)
+Rodada 1 (25 mutações):
+```
+FM1 sem scope na query [F2]: VERMELHO pass=5 fail=1 restaurado=True
+FM2 paginate só com cursor (1ª página sem) [F2]: VERMELHO pass=5 fail=1 restaurado=True
+FM3 cursor reinterpretado [F2]: VERDE(!) pass=6 fail=0 restaurado=True
+FM4 para na 1ª página [F3]: VERMELHO pass=3 fail=3 restaurado=True
+FM5 purga com caminhada incompleta [F5]: VERMELHO pass=18 fail=1 restaurado=True
+FM6 sem a chave work_order_local_id [F11/F24]: VERMELHO pass=17 fail=2 restaurado=True
+FM7 sem a chave server_id [F9]: VERMELHO pass=17 fail=2 restaurado=True
+FM8 sem a chave work_order_id [F10]: VERMELHO pass=17 fail=2 restaurado=True
+FM9 sem o ramo 2 (linha pending) [F12/F22b]: VERMELHO pass=17 fail=2 restaurado=True
+FM10 ramo 3 sem conflict [F20]: VERMELHO pass=18 fail=1 restaurado=True
+FM11 ramo 3 ignora LOCAL_BLOB_MISSING [F20]: VERMELHO pass=18 fail=1 restaurado=True
+FM12 ramo 3 sem exigir blob [F20]: VERMELHO pass=18 fail=1 restaurado=True
+FM13 sem os ramos 4/5 (gancho) [F21/F25]: VERMELHO pass=16 fail=3 restaurado=True
+FM14 Drift sem apagar materiais [F16/F21]: VERMELHO pass=17 fail=2 restaurado=True
+FM15 store em memória sem apagar filhas [F1/F8]: VERMELHO pass=22 fail=3 restaurado=True
+FM16 trava por instância [F22]: VERMELHO pass=18 fail=1 restaurado=True
+FM17 reconcilia lendo _orders [F22b]: VERDE(!) pass=19 fail=0 restaurado=True
+FM18 purga por isFinal [F23]: VERDE(!) pass=6 fail=0 restaurado=True
+FM19 sem varredura (só upsert) [F1/F8]: VERMELHO pass=15 fail=10 restaurado=True
+FM20 failed não retém [F19]: VERMELHO pass=18 fail=1 restaurado=True
+FM21 constante nova sem classificar [F24]: VERMELHO pass=18 fail=1 restaurado=True
+FM22 Home mantém 'Concluídas' [F26]: VERMELHO pass=2 fail=2 restaurado=True
+FM23 sem o texto do vazio [F27]: VERMELHO pass=3 fail=1 restaurado=True
+FM24 sem trava [F18/F22]: VERMELHO pass=17 fail=2 restaurado=True
+FM25 fabricação ignora a criação na fila [F15]: VERMELHO pass=18 fail=1 restaurado=True
+```
+**Três verdes na rodada 1 — o teste é que era fraco, e foi endurecido (commit `ee1477bd`):**
+- FM3 (cursor reinterpretado com `trim().toLowerCase()`): os cursores do F2 já eram minúsculos e sem espaço. F2 passa a usar `' OpAcO/1 Ä '`.
+- FM17 (decidir pelo `_orders` da instância): como escrita, a mutação lia o `_orders` DEPOIS do upsert, que já o recarrega do store — não era a classe. Reescrita para o instantâneo tirado ANTES (o `_orders` velho do R2-4).
+- FM18 (purga por `isFinal`): o F23 tinha a `approved` local `synced`, que o upsert sobrescreve com o status do backend antes de qualquer decisão. F23 passa a usar a `approved` local AINDA `pending` (o caso real em que ela sobrevive ao upsert), e a mutação passa a apagar toda linha `isFinal` sem consultar a retenção.
+Rodada 2:
+```
+FM3 cursor reinterpretado [F2]: VERMELHO pass=5 fail=1 restaurado=True
+FM17 reconcilia lendo o _orders da instância [F22b]: VERMELHO pass=10 fail=9 restaurado=True
+FM18 purga por isFinal [F23]: VERMELHO pass=5 fail=1 restaurado=True
+```
+**25/25 vermelhas** (22 na 1ª rodada + 3 depois do endurecimento); 25/25 restauradas.
+
+## Etapa 7 — registro (GRAVADO)
+- `controle/decisoes.md`: `D-SAN3-13-SCOPE-ASSIGNED`, com as palavras literais do dono (Q1-Q5 "Aceito as 5 (Recomendado)", E1 "Só as abertas", "vc cobre o codex nessa rodada"), a Emenda E2 e a precisão do `OR: []`.
+- `controle/pendencias.md`: `P-MOBILE-MINHAS-OS-SEM-FILTRO` e `P-MOBILE-OS-SEEDS` → RESOLVIDA com o merge (prova nomeada); 10 abertas com dono: as 9 do §12 do plano (`P-WO-LEITURAS-TENANT-WIDE-TECNICO`, `P-MOBILE-SYNC-FAILED-SEM-DESCARTE`, `P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE`, `P-MOBILE-MATERIAL-SEM-REPLAY` ALTA, `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA`, `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD`, `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO`, `P-WO-STATUS-VOCABULARIO-APP-BACKEND`, `P-WO-LIST-SCOPE-WEB-TECNICO`) + `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL` (pre-existente, medida nesta bateria).
+- `pendencias-indice.md` regenerado (`python agent-orchestration/controle/gerar-indice-pendencias.py`): placar 621 → 630 cabeçalhos, ABERTAS 465 → 472, FECHADAS 153 → 155. (Uma palavra "crítica" no corpo fazia o gerador classificar a `P-WO-LEITURAS…` como CRÍTICA; reescrita para "revisão adversarial" — fica MÉDIA, como o cabeçalho.)
+- `PLANO_SAN3.md` (linha do `B-SAN3-13`): emenda do teste de encerramento (§14 do plano + E2), texto antigo riscado, não apagado.
+- `docs/claude-code-handoff/API_CONTRACTS.md`: linha da lista + o texto exato do contrato da E2.
+- Ata da junta (`omega/juntas/J-SAN3-13-*.md`): é da junta, não do dev — não criada aqui. `Kpis/**` intocado.
+
+## Bateria §8 — no head final do ramo (GRAVADO)
+| # | Comando | Resultado |
+|---|---|---|
+| 1 | `flutter pub get` | `Got dependencies!` |
+| 2 | `dart format --output=none --set-exit-if-changed lib test` | exit 0 |
+| 3 | `flutter analyze` | `No issues found!` |
+| 4 | `flutter test test/features/bsan313_*` (3 arquivos) | `+29: All tests passed!` |
+| 5 | regressões `b099`, `b103`, `b097`, `b107`, `work_orders/`, `home_screen_test` | `+217: All tests passed!` |
+| 6 | `flutter test --reporter compact` | 1ª execução `+893: All tests passed!` (864 + 29; no commit 6, antes do `ee1477bd`, que só endureceu F2 e F23); 2ª e 3ª, no head final, `+892 -1` — o vermelho é sempre `telemetry_test.dart` 16 (instável e pre-existente: 2/5 isolado; `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL`). 0 skip |
+| 7 | `npm run check` | exit 0 |
+| 8 | `npm run lint` | exit 0 |
+| 9 | `node --test --import tsx tests/san3-13-wo-list-{scope,cursor,prisma-where}.test.ts` | `# tests 19 # pass 19 # fail 0` |
+| 10 | `DATABASE_URL=…127.0.0.1:55313… node --test --import tsx tests/san3-13-wo-list-cursor-db.test.ts` | `# tests 5 # pass 5 # fail 0 # skipped 0` (B14-db, B15-db, B19-db, B17-db, B18-db) |
+| 11 | regressões `work-orders`, `work-orders-routes`, `o6r07a`, `work-orders-list-coordinates` | `# tests 15 # pass 15 # fail 0` |
+| 12 | `npm test` (forma 1: sem `DATABASE_URL`, sem Redis) | `344 arquivo(s) · 3342 teste(s) · pass 3244 · fail 1 · skipped 97`. O `fail 1` é `tests/core-saas-role-authority.test.ts`, que derruba o arquivo inteiro com `DATABASE_URL is required to initialize Prisma Client` — **pre-existente**: com o `src/` da `origin/main` (`git checkout origin/main -- src`, rodado e desfeito) dá o mesmo erro. A contagem oficial (forma do job `backend` da CI, com Postgres e Redis) sai do item 16 |
+| 13 | `npm run build` | exit 0 |
+| 14 | `git diff --check origin/main...HEAD` | exit 0 |
+| 15 | `node scripts/sync-agent-agents.mjs --check` | `OK — 82 agentes, espelho consistente.` |
+| 16 | CI no head empurrado | ver "Entrega" |
+| 17 | limpeza §C5 | ver "Limpeza" |
+
+**Testes novos (M):** backend 24 (scope 10, cursor 4, prisma-where 5, `-db` 5) · Flutter 29 (escopo 6, purga/reconciliação 19, Home/lista 4). Meta do §7 (backend ≥ 16 com ≥ 4 `-db`; Flutter ≥ 24) cumprida. Nada apagado; `b084` ajustado às claras (Etapa 6).
+
+### Critérios × teste × mutação
+| CA | Teste(s) | Mutação → vermelho observado |
+|---|---|---|
+| CA-1 | B1 | M1, M2, M3 |
+| CA-2 | B3, B17-db | M4, M9 |
+| CA-3 | B4, B13, B19-db | M15 |
+| CA-4 | B5 | M5 |
+| CA-5 | B7, B17-db (`total`) | M10 |
+| CA-6 | B12 (5) | M9, M11, M13, M17 |
+| CA-7 | B6 | M3 |
+| CA-8 | B9, B17-db (não-UUID), B12 R2-N3 | M6, M7, M17 |
+| CA-9 | B14-db, B10, B16 | M12 (a F-1), M13 |
+| CA-10 | B11, B18-db | M8, M11 |
+| CA-11 | B15-db, B19 | M16, M14 |
+| CA-12 | regressões backend | — |
+| CA-13 | F2, F3 | FM1, FM2, FM3, FM4 |
+| CA-14 | F4, F5 (incompleta), F5 (503) | FM5 |
+| CA-15 | F9-F11/F19 | FM6, FM7, FM8, FM20 |
+| CA-16 | F20 | FM10, FM11, FM12 |
+| CA-17 | F12 | FM9 |
+| CA-18 | F13/F14 | FM19 |
+| CA-19 | F21/F25, F21 Drift, F16 | FM13, FM14 |
+| CA-20 | F18, F22, F22b | FM16, FM17, FM24 |
+| CA-21 | F26, F26b | FM22 |
+| CA-22 | F27, F27b | FM23 |
+| CA-23 | F1, F6, F15, F23 | FM15, FM18, FM19, FM25 |
+| CA-24 | F24 | FM21, FM6 |
+| CA-25 | regressões Flutter e suíte | — |

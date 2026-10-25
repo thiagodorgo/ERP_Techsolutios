@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **620** |
-| IDs distintos | 609 |
-| **ABERTAS** | **464** |
+| Cabecalhos `## P-` | **630** |
+| IDs distintos | 619 |
+| **ABERTAS** | **472** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **399** |
+| — das quais **ativas nesta rodada** | **407** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 153 |
+| FECHADAS | 155 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **620 cabecalhos para 609 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **630 cabecalhos para 619 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 217
+## ABERTAS · balde A — material — 219
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -80,7 +80,6 @@
 | `P-AUDIT-FOLLOWUPS` | 1684 | MÉDIA | **a atribuir** | P-AUDIT-FOLLOWUPS - Melhorias de Auditoria (2026-07-20, PR-SCALE-3, todas BAIXA/MEDIA) |
 | `P-CHK-PRISMA-CLIENT-TYPING` | 1850 | MÉDIA | sim | P-CHK-PRISMA-CLIENT-TYPING (2026-08-02) — repo prisma de checklist descarta os tipos ger |
 | `P-MOBILE-BANNER-INTEGRACAO` | 2056 | MÉDIA | **a atribuir** | P-MOBILE-BANNER-INTEGRACAO (2026-08-06) — banner "Integração remota ainda não ativa" é E |
-| `P-MOBILE-OS-SEEDS` | 2070 | ALTA | sim | P-MOBILE-OS-SEEDS (2026-08-06) — lista de OS do app mostra SEEDS locais como se fossem d |
 | `P-CHK-PATCH-SEM-LOCK` | 2141 | MÉDIA | sim | P-CHK-PATCH-SEM-LOCK (2026-08-07) — PATCH de checklist é last-write-wins sem guarda de v |
 | `P-CHK-CHIPS-SEM-CONSUMIDOR` | 2164 | MÉDIA | **a atribuir** | P-CHK-CHIPS-SEM-CONSUMIDOR (2026-08-08) — inspector grava config que NINGUÉM lê (MÉDIA,  |
 | `P-JUNTA-LIMPEZA-BASE-VIVA` | 2203 | MÉDIA | **a atribuir** | P-JUNTA-LIMPEZA-BASE-VIVA (2026-08-08) — 2º incidente de limpeza ad-hoc por subagente na |
@@ -147,7 +146,6 @@
 | `P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL` | 8780 | ALTA | sim | P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca a |
 | `P-MOBILE-FILA-OS-NAO-DRENADA` | 8814 | ALTA | sim | P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" en |
 | `P-MOBILE-ESTOQUE-TECNICO-FABRICADO` | 8831 | ALTA | sim | P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente  |
-| `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8865 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
 | `P-MOBILE-FAXINA-TERMOS-TECNICOS` | 8883 | MÉDIA | sim | P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico |
 | `P-MOBILE-TESTE-ALCANCABILIDADE` | 8901 | MÉDIA | sim | P-MOBILE-TESTE-ALCANCABILIDADE (2026-09-11) — Nenhum teste prova que toda rota do app te |
 | `P-MOBILE-DESPACHO-SEM-PUSH` | 8918 | MÉDIA | sim | P-MOBILE-DESPACHO-SEM-PUSH (2026-09-11) — Despacho só chega ao técnico se ele abrir e at |
@@ -291,8 +289,12 @@
 | `P-SAN3-20-CHEQUE-FISICO-DUPLICADO` | 11626 | MÉDIA | sim | P-SAN3-20-CHEQUE-FISICO-DUPLICADO (2026-10-24) — duas linhas podem representar o mesmo c |
 | `P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA` | 11638 | MÉDIA | sim | P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA (2026-10-24) — 76 sentenças de drift preexistente — M |
 | `P-SAN3-20-CHECK-STATUS-X-PAID` | 11642 | MÉDIA | sim | P-SAN3-20-CHECK-STATUS-X-PAID (2026-10-24) — banco não amarra status a paid_amount — MÉD |
+| `P-WO-LEITURAS-TENANT-WIDE-TECNICO` | 11654 | MÉDIA | sim | P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de co |
+| `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` | 11664 | MÉDIA | sim | P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não  |
+| `P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE` | 11673 | MÉDIA | sim | P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob n |
+| `P-MOBILE-MATERIAL-SEM-REPLAY` | 11680 | ALTA | sim | P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para se |
 
-## ABERTAS · balde B — processo/registro — 182
+## ABERTAS · balde B — processo/registro — 188
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -478,6 +480,12 @@
 | `P-SAN3-20-TELA-CHEQUES` | 11630 | — | sim | P-SAN3-20-TELA-CHEQUES (2026-10-24) — backend sem tela de cheque/pagamento — PRODUTO |
 | `P-SAN3-20-ATALHO-PAY-CHEQUE-ID` | 11634 | BAIXA | sim | P-SAN3-20-ATALHO-PAY-CHEQUE-ID (2026-10-24) — não há atalho de vínculo e compensação — B |
 | `P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE` | 11646 | BAIXA | sim | P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE (2026-10-24) — o `titleId` da lista de cheques n |
+| `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA` | 11688 | BAIXA | sim | P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica  |
+| `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD` | 11694 | BAIXA | sim | P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de |
+| `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO` | 11701 | BAIXA | sim | P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a  |
+| `P-WO-STATUS-VOCABULARIO-APP-BACKEND` | 11709 | BAIXA | sim | P-WO-STATUS-VOCABULARIO-APP-BACKEND (2026-10-25) — approved só no app; rejected terminal |
+| `P-WO-LIST-SCOPE-WEB-TECNICO` | 11715 | BAIXA | sim | P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de  |
+| `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL` | 11721 | BAIXA | sim | P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (2026-10-25) — o teste 16 da telemetria falha por  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
@@ -549,7 +557,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3670 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3714 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 153
+## FECHADAS — 155
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -617,6 +625,7 @@
 | `P-DOSSIE-PAGE-TABS` | 1925 | BAIXA | sim | P-DOSSIE-PAGE-TABS — Página fallback /patios/processos/:id não reflete as abas Checklist |
 | `P-CHK-RENDER-ENVELOPE` | 1947 | ALTA | sim | P-CHK-RENDER-ENVELOPE (2026-08-03) — O run screen mobile renderiza dos SEEDS, não do bac |
 | `P-SUITE-ENV-PERSISTENCE` | 2021 | MÉDIA | **a atribuir** | P-SUITE-ENV-PERSISTENCE (2026-08-05) — suíte backend depende de `CORE_SAAS_PERSISTENCE=m |
+| `P-MOBILE-OS-SEEDS` | 2070 | ALTA | sim | P-MOBILE-OS-SEEDS (2026-08-06) — lista de OS do app mostra SEEDS locais como se fossem d |
 | `P-CHK-COMPONENT-TYPE-CHECK` | 2084 | ALTA | **a atribuir** | P-CHK-COMPONENT-TYPE-CHECK (2026-08-08) — CHECK do banco recusava os 3 tipos do PR-01 —  |
 | `P-CHK-PATCH-SEM-TYPE` | 2115 | ALTA | **a atribuir** | P-CHK-PATCH-SEM-TYPE (2026-08-06) — o PATCH de modelo de checklist não carrega `type` (M |
 | `P-CHK-INATIVAR-COM-RUN-ATIVA` | 2183 | MÉDIA | **a atribuir** | P-CHK-INATIVAR-COM-RUN-ATIVA (2026-08-08) — inativar um modelo derruba quem já está no c |
@@ -673,6 +682,7 @@
 | `P-WEB-CLOUD-BILLING-CARTAZ` | 8491 | MÉDIA | sim | P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com se |
 | `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8596 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
 | `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8614 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
+| `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8865 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9405 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9436 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
 | `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES` | 9573 | MÉDIA | sim | P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com p |

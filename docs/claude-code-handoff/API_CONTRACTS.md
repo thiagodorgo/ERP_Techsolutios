@@ -21,12 +21,15 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 ## work-orders (OS)
 | Método | Rota | Uso |
 |---|---|---|
-| GET ● | `/work-orders` · `/work-orders?priority=high` · `?status=open` | listas web/mobile |
+| GET ● | `/work-orders` · `/work-orders?priority=high` · `?status=open` · app: `?scope=assigned&openOnly=true&paginate=cursor&limit=100[&cursor=]` | listas web/mobile — contrato do B-SAN3-13 abaixo |
 | GET ● | `/work-orders/:id` · `/work-orders/:id/timeline` | detalhe + histórico |
 | POST | `/work-orders` | criar (drawer Nova OS) |
 | PATCH ● | `/work-orders/:id/status` | mudança de status |
 | POST ● | `/work-orders/:id/assign` | atribuir técnico |
 | PATCH | `/work-orders/:id` | editar |
+
+**Lista de OS — escopo do técnico e paginação (B-SAN3-13, `D-SAN3-13-SCOPE-ASSIGNED`, Emenda E2, 2026-10-25):**
+`GET /api/v1/work-orders` — filtros: `status`, `priority`, `assignedOperatorId`, `assignedUserId`, `from`, `to`, `search`, `scope=assigned` (forçado para papel de campo), `openOnly=true`. **Paginação em dois modos, excludentes:** (1) **offset** (padrão): `limit` (1..100, default 20), `offset` (≥0); ordem `created_at desc, code desc`; `pagination = {limit, offset, total, nextCursor: null}`. (2) **cursor**: `paginate=cursor` **obrigatório em toda página, inclusive a primeira**; ordem `id desc` (uuid, total e exata); `cursor=<uuid>` opcional = `id` do último item da página anterior (ausente na 1ª página) → página = `id < cursor`; `offset` ausente ou `0`; `pagination = {limit, offset: 0, total (sem a cláusula do cursor), nextCursor}` com `nextCursor` = `id` do último item se `items.length === limit`, senão `null`. Erros `400 WORK_ORDER_FILTER_INVALID`: `paginate` ≠ `cursor` → `invalid_paginate`; `cursor` sem `paginate=cursor` → `invalid_cursor_mode`; `cursor` que não é UUID → `invalid_cursor`; `paginate=cursor` com `offset>0` → `invalid_cursor_offset`. `503 WORK_ORDER_SCOPE_UNAVAILABLE` quando o escopo do ator não pode ser resolvido.
 
 ## operations / dispatch
 | Método | Rota | Uso |
