@@ -200,11 +200,9 @@ void main() {
         await _aguardarPull(repo);
 
         final linhas = await store.loadWorkOrders();
-        expect(
-          linhas.map((o) => o.serverId ?? o.localId).toList(),
-          ['srv-1'],
-          reason: 'só a OS devolvida pelo backend fica no aparelho',
-        );
+        expect(linhas.map((o) => o.serverId ?? o.localId).toList(), [
+          'srv-1',
+        ], reason: 'só a OS devolvida pelo backend fica no aparelho');
         for (final s in sementes) {
           expect(await store.loadTimeline(s.localId), isEmpty);
           expect(await store.loadEvidence(s.localId), isEmpty);
