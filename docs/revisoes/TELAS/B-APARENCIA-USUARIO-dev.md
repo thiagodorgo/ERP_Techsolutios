@@ -127,6 +127,19 @@ Todas restauradas (`git status --short` limpo após cada uma). Saída integral e
 - **Aparência guardada no servidor** — a v1 é do navegador (a); o servidor vem junto da AWS, como o dono decidiu.
 - **Ambiente local** — `tests/core-saas-role-authority.test.ts` (suíte da raiz) exige `DATABASE_URL` no carregamento: sem `.env` no worktree ele falha; com uma URL de mentira (sem conexão) passa 12 de 12. A CI exporta a variável. Não é deste bloco (não toquei `src/` nem `tests/` da raiz).
 
-## Etapa 6 — bateria (§9 Frontend + raiz) no head final
+## Etapa 6 — bateria (§9 Frontend + raiz) no head de código `bcca9c66`
 
-EM APURAÇÃO
+Os commits seguintes só mexem neste relatório.
+
+| Comando | Resultado |
+|---|---|
+| `npm --prefix frontend run check` | `tsc -b --noEmit` sem erro, exit 0 |
+| `npm --prefix frontend run build` | `✓ built in 1m 7s`, exit 0 (o aviso de bloco > 500 kB é do `maplibre-gl`, preexistente) |
+| `npm --prefix frontend run test:smoke` | **1368 testes, 1368 ok, 0 falha, 0 pulado**. Linha de base em `b08c7557`: 1339/1339. Diferença: +29, exatamente os 9+5+2+8+5 dos `aparencia-*` |
+| `npm run check` (raiz) | exit 0. Antes, o worktree não tinha o cliente Prisma gerado (`npm ci` não o gera); rodei `npx prisma generate` com uma `DATABASE_URL` de mentira, só para gerar os tipos, sem conexão e sem tocar em `prisma/**` |
+| `npm test` (raiz) | 341 arquivos, **3347 testes: 3250 ok, 96 pulados, 1 falha**, exit 1. A falha única é `tests/core-saas-role-authority.test.ts`, que exige `DATABASE_URL` já no carregamento e não acha `.env` no worktree. Com uma URL de mentira (sem conexão), o arquivo passa 12/12; a CI exporta a variável (`.github/workflows/ci.yml:40`). O diff do bloco não toca `src/` nem `tests/` da raiz. É ambiente, e fica nomeado nas pendências |
+| `git diff --check origin/main...HEAD` | limpo |
+
+## Etapa 7 — limpeza (§C5)
+
+Apaguei `frontend/dist/` (build), a página de captura temporária (antes do commit), os perfis do Edge no scratchpad e o Vite da porta 47193 (porta conferida livre). Ficaram no scratchpad, como evidência e fora do repositório, as capturas e a saída das mutações. Mantidos: o worktree (por ordem do mandato), os `node_modules` e o cliente Prisma gerado. Disco no fim: 10.614 MiB livres (11,1 GB decimais). Branch empurrada: `feat/web-aparencia-usuario`. PR não aberto: o orquestrador abre.
