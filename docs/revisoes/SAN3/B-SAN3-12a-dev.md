@@ -58,3 +58,141 @@ Falsificações por LEITURA (sem vermelho ainda; medidas nas etapas seguintes):
 **Decisão do dev (declarada):** segui implementando TODO o escopo PERMITIDO (o que não é remédio) e NÃO toquei nenhum dos
 arquivos acima. A bateria final mostra estes vermelhos e só estes; o PR sai como **rascunho**, para o orquestrador decidir a
 emenda (`D-EMENDA-ANTES-DO-CODIGO`). Quem desenvolve não julga o achado (§C7.4-bis).
+
+## E2 — o que foi implementado (só o PERMITIDO do §7.1 + as ampliações nominais)
+
+| Plano | Onde | O quê |
+|---|---|---|
+| §4.2 (A1–A4, A19, A25) | `financial-entry.service.ts` (`payTitle`), `cheque.service.ts` (`create`/`update`), `cheque.repository.ts` + `cheque-prisma.repository.ts` (`findPendingByTitle`), `financial-uow.ts` (só `CHEQUE_REPO_KIND` + `journaledCheques`), `financial-titles/cheque-pending-reader.ts` (novo) | fast-fail pelo pool (422 `title_has_pending_cheque` com `details`, nenhuma transação aberta) + re-check DEPOIS do `findByIdForUpdate` do título na unidade; vínculo de cheque (create/PATCH com `title_id`) em `uow.run` com o título travado e revalidado sob o lock; só o valor EXATO (`cheque_amount_mismatch` com `chequeAmount`/`openBalance`) |
+| §4.3 (A5–A8, A20, A21, R-res-2/3) | `cheque.service.ts` (`unlinkTitle`, fecho do bypass do `PATCH`, `cancel`/`delete`, `bounce`), `cheque.repository.ts` + Prisma (`ChequeTitleUnlinker.unlinkTitle`, CAS de estado + `title_id` lido), `cheque.routes.ts` (`POST /cheques/:id/unlink-title`, `cheques:unlink_title`), `cheque.controller.ts` (auditoria Crítica, `details`, `warning`), `financial-title.service.ts` (só `update`/`delete`) | desvínculo com justificativa 10–500; 403 `unlink_requires_privilege` para tirar/trocar título sem o privilégio; cancelar/excluir vinculado → `cheque_linked_unlink_first` para todo ator; título com cheque pendente não muda `amount` nem é apagado; `bounce` de vinculado `deposited` exige motivo e é auditado `warning` com o `titleId`; `warning: cheque_still_depositable` |
+| §4.4 (A9–A12, R4) | `financial-entry.service.ts` (`reconcileWithOutcome`, `reconciliationPolicy`), rotas/controller, `tenant-setting.validators.ts` + `tenant-setting.service.ts` (só `upsert`: `parseValue(key, value)`) | desfazer exige `financial_entries:unreconcile` OU (papel `finance` E política `"true"`); `GET /financial-entries/reconciliation-policy`; validador da chave (só `true`/`false`); auditoria do desfazer `warning` + `delegated` |
+| §4.5 (A14, A15, A23, A24) | `financial-entry.repository.ts` + Prisma (`FinancialEntryAggregateReader.aggregate`, FORA do contrato da UoW), service/rotas/controller | `GET /financial-entries/aggregate` — mês = `competencia`, dia = data civil no `BUSINESS_TIMEZONE` (`AT TIME ZONE` com o nome vindo da constante); tetos 92 dias / 24 meses; SQL `SUM` sobre Decimal, `Number` só na borda |
+| §4.6 (A13) | `financial-entry.types.ts` (`expectedReconciled`/`expectedReconciledAt`), repositórios (memória síncrona; Prisma no `WHERE`), service (`reconcile` em `uow.run`) | CAS obrigatório por estado lógico; 400 `expected_state_required`; 409 `reconciliation_stale` |
+| §4.7 (A16, A17) | `financial-entry.dto.ts`, `financial-title.dto.ts`, `financial-summary.{types,compute}.ts`, `financial-summary-prisma.repository.ts` | lista de lançamentos com `description`/`reconciliationRef`/`reconciledAt`/`reconciledBy`/`updatedAt`; lista de títulos com `workOrderId`; `cheques.linkedPending*` (memória: ver F4) |
+| §5.1/5.2 (A18, A22) | `catalog.ts` (2 chaves; `tenant_admin` por herança), migração de DADOS `20260882000000_…` (BEGIN/COMMIT, idempotente, runbook) | `scripts/provision-rbac.ts` NÃO tocado (F6) |
+| §5.5 | `RBAC_MATRIX.md` (nota + as duas frases do conflito §A2), `APPROVAL_LIMITS.md` (2 linhas), `API_CONTRACTS.md` (§3.11) | conflito registrado em `controle/decisoes.md` antes de consolidar |
+
+Precedência mudou num ponto, declarada: no `PATCH /financial-titles/:id` o `amount` passou a ser validado antes dos demais campos
+(para ler o conjunto pendente só quando o valor muda); com `amount` E outro campo inválidos ao mesmo tempo, o 400 que sai é o do `amount`.
+
+## E3 — critérios × testes (todos verdes no head, salvo A16 em memória — F4)
+
+| Critério | Teste(s) |
+|---|---|
+| A1, A2, A3, A4 (memória), A8, A19, A21, A25 (memória) | `tests/b-san3-12a-pay-pending-cheque.test.ts` (15) |
+| A1, A2, A3, A7, A8, A19, A20, A21 (Postgres) | `tests/b-san3-12a-pay-pending-cheque-db.test.ts` (4) |
+| A4 (b)(c), A4-bis, A25, A5-bis (Postgres, barreira escopada por `application_name`) | `tests/b-san3-12a-pay-link-race-db.test.ts` (6) |
+| A5, A6, A7 (entrada pura), A20, R-res-2, A5/A6/A19/A20 pela rota | `tests/b-san3-12a-unlink-title.test.ts` (12) |
+| A9–A13 (memória e rota), A18, R4 | `tests/b-san3-12a-unreconcile-policy.test.ts` (11) |
+| A13 (Postgres: barreira + 10 rodadas concorrentes + ms exato) | `tests/b-san3-12a-reconcile-cas-db.test.ts` (3) |
+| A14, A15, A17, A23, A24 (memória) e a rota do agregado | `tests/b-san3-12a-entries-aggregate.test.ts` (6) |
+| A14 (paridade memória × Prisma), A24, R-res-5 | `tests/b-san3-12a-entries-aggregate-db.test.ts` (3) |
+| A23 (Postgres, virada de mês/dia) | `tests/b-san3-12a-aggregate-tz-db.test.ts` (1) |
+| A16 (compute + serviço em memória) | `tests/financial-summary.test.ts` (+2; o de serviço é o vermelho da F4) |
+| A17-bis (censo gerado; dívida pré-existente congelada que só encolhe) | `tests/b-san3-12a-reasons-census.test.ts` (4) |
+| A22 (drill: deploy real, concessões, idempotência, rollback do rodapé, paridade pós-provisionamento) | `tests/b-san3-12a-permissions-migration-drill-db.test.ts` (4) |
+
+## E4 — mutações (uma a uma, restauro por `git checkout --` com hash do blob conferido contra o HEAD)
+
+Roteiro: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/mutations.py`
+(saída `C:/Users/AMP/w-san312a-mutations.json`). Resultado: **35 de 35 mutações deixaram vermelho o caso do critério**; ao fim,
+`git status --porcelain -- src prisma` vazio (`ARVORE-SRC-LIMPA`).
+
+| id | mutação | teste | resultado | 1º caso vermelho |
+|---|---|---|---|---|
+| A1-ambas | remover as duas checagens da baixa → 201 indevido | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 5) | A1: /pay de título com cheque registered vinculado → 422 title_has_pending_chequ |
+| A1-fastfail | remover só o fast-fail → o contador de uow.run vai a 1 | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 3) | A1: /pay de título com cheque registered vinculado → 422 title_has_pending_chequ |
+| A2 | trocar IN (registered, deposited) por <> cancelled (memória) | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 1) | A2: título sem cheque, ou com cheque cleared/bounced/cancelled vinculado, baixa  |
+| A3-fastfail | remover só o fast-fail → a 1ª fixture responde period_closed | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 3) | A1: /pay de título com cheque registered vinculado → 422 title_has_pending_chequ |
+| A3-ordem | inverter a ordem (pendente antes de cheque_required) → a 2ª fixture responde title_has_pending_cheque | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 1) | A3: precedência — cheque_required vence title_has_pending_cheque (payment_method |
+| A4-recheck-mem | remover só o re-check → em (b) os dois commitam (memória) | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 1) | A4 (b, memória): o vínculo commita DEPOIS do fast-fail do pay e ANTES do lock do |
+| A4-recheck-db | remover só o re-check → em (b) os dois commitam (Postgres) | b-san3-12a-pay-link-race-db.test.ts | **vermelho** (fail 1) | A4 (b, db): o vínculo commita entre o fast-fail e o lock do pay → 422 title_has_ |
+| A4-lock-mem | vincular fora da unidade (sem o lock do título) → em (c) o vínculo commita sobre título pago (memória) | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 2) | A4 (c, memória): o pay trava primeiro → o vínculo espera, relê o título pago sob |
+| A4-lock-db | remover o FOR UPDATE do título no vínculo → em (c) o vínculo não bloqueia (Postgres) | b-san3-12a-pay-link-race-db.test.ts | **vermelho** (fail 1) | A4 (c, db): o pay trava o título primeiro → o vínculo BLOQUEIA no FOR UPDATE do  |
+| A4bis | remover fast-fail E re-check → o pay commita com o cheque deposited vinculado (Postgres) | b-san3-12a-pay-link-race-db.test.ts | **vermelho** (fail 2) | A4 (b, db): o vínculo commita entre o fast-fail e o lock do pay → 422 title_has_ |
+| A5 | trocar o requirePermission do unlink-title por cheques:update | b-san3-12a-unlink-title.test.ts | **vermelho** (fail 1) | A5/A6/A20 (HTTP): sem cheques:unlink_title a rota responde 403; tenant_admin des |
+| A5bis-db | tirar title_id = <lido> do WHERE do unlink (Prisma) | b-san3-12a-pay-link-race-db.test.ts | **vermelho** (fail 1) | A5-bis (db, CAS): o desvínculo com o título LIDO diferente do atual casa 0 linha |
+| A6 | remover a comparação com o title_id atual (o fecho do bypass) | b-san3-12a-unlink-title.test.ts | **vermelho** (fail 2) | A6: PATCH por finance — tirar o título (null) ou trocá-lo → 403 unlink_requires_ |
+| A7 | apagar a chamada de auditoria do unlink-title | b-san3-12a-pay-pending-cheque-db.test.ts | **vermelho** (fail 1) | A7 (db): o unlink-title pelo controller grava a auditoria CRÍTICA cheque.title_u |
+| A8 | não limpar title_id no unlink (memória) | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 2) | A8: /pay logo depois do unlink-title → 201 (o título voltou a ser liquidável por |
+| A9 | fixar delegated = true sem ler a política | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 1) | A9: desfazer por finance SEM política → 403 unreconcile_forbidden; por tenant_ad |
+| A10 | aplicar o gate também ao conciliar (true) | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 4) | A9: desfazer por finance SEM política → 403 unreconcile_forbidden; por tenant_ad |
+| A11 | calcular a política pela rota, não pelo ator (sempre true) | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 1) | A11: GET /financial-entries/reconciliation-policy reflete o ATOR (finance sem po |
+| A12 | aceitar qualquer string para a chave da política | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 1) | A12: o validador da chave da política decide PELA CHAVE — fora de true/false → 4 |
+| A13-mem | tirar o par (reconciled, reconciledAt) da comparação sob o mutex (memória) | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 3) | A13: dois clientes LEEM o mesmo estado e gravam em sequência → o 1º 200, o 2º 40 |
+| A13-db | tirar reconciled/reconciled_at do WHERE (Prisma) | b-san3-12a-reconcile-cas-db.test.ts | **vermelho** (fail 3) | A13 (db, barreira): o 1º grava e segura o commit; o 2º com o MESMO estado lido b |
+| A14 | remover deleted_at IS NULL do agregado (memória) | b-san3-12a-entries-aggregate.test.ts | **vermelho** (fail 1) | A14: group_by=none&reconciled=false — count/inflow/outflow somados no servidor c |
+| A15 | remover o teto do dia | b-san3-12a-entries-aggregate.test.ts | **vermelho** (fail 2) | A15: day com 93 dias → 400 aggregate_range_too_wide; 92 passa; month com 25 mese |
+| A16 | somar também os pendentes sem título | financial-summary.test.ts | **vermelho** (fail 2) | A16 (compute): linkedPending* = Σ dos cheques PENDENTES com título; sem vínculo  |
+| A17 | remover workOrderId da lista de títulos | b-san3-12a-entries-aggregate.test.ts | **vermelho** (fail 1) | A17: a lista de lançamentos traz description, metadados de conciliação e updated |
+| A17bis | criar reason novo sem contrato | b-san3-12a-reasons-census.test.ts | **vermelho** (fail 2) | A17-bis: o censo mede de fato (lê os 5 módulos e encontra os reasons novos do bl |
+| A18 | conceder ao finance no catálogo | b-san3-12a-unreconcile-policy.test.ts | **vermelho** (fail 1) | A18: tenant_admin, super_admin e platform_admin têm cheques:unlink_title e finan |
+| A19 | comparar com <= em vez de igualdade no valor exato | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 3) | A19: vincular cheque de 40 a título de saldo 100 → 422 cheque_amount_mismatch (c |
+| A20 | remover a checagem de titleId no cancel | b-san3-12a-unlink-title.test.ts | **vermelho** (fail 2) | A20: cancel e DELETE de cheque registered VINCULADO → 422 cheque_linked_unlink_f |
+| A21 | remover a leitura da porta cheque-pending-reader (título) | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 1) | A21: PATCH {amount} e DELETE do título com cheque pendente → 422 title_has_pendi |
+| A22 | apagar o INSERT INTO role_permissions da migração | b-san3-12a-permissions-migration-drill-db.test.ts | **vermelho** (fail 2) | A22 (a): deploy real numa base própria → as 2 chaves existem; com os papéis de s |
+| A23 | agrupar o dia por toISOString (UTC) na memória | b-san3-12a-entries-aggregate.test.ts | **vermelho** (fail 1) | A23 (memória): 2026-10-31T23:30-03:00 cai em 2026-10 (mês) e 2026-10-31 (dia); 2 |
+| A23-db | agrupar o dia em UTC no Postgres | b-san3-12a-aggregate-tz-db.test.ts | **vermelho** (fail 1) | A23 (db): virada de mês e de dia no fuso do negócio — 2026-10-31T23:30-03:00 → 2 |
+| A25-mem | vincular no create fora da unidade → contador 0 | b-san3-12a-pay-pending-cheque.test.ts | **vermelho** (fail 1) | A25 (memória): vincular cheque roda em UMA unidade (create e PATCH) — contador d |
+| Rres2 | não exigir motivo no bounce de cheque vinculado | b-san3-12a-unlink-title.test.ts | **vermelho** (fail 1) | R-res-2: bounce deposited→bounced de cheque VINCULADO sem motivo → 400 bounce_re |
+
+## E5 — o censo de `reason` (F8), por comando
+
+`python` sobre `git show 8a7885f4:<arquivo>` de `src/modules/{financial-entries,financial-titles,financial-accounts,cheques,financial-summary}/**/*.ts`
+com os padrões `Error\(\s*\d{3},\s*"[A-Z_]+",\s*"([a-z_]+)"` (multi-linha), `(?:invalid|unprocessable)\(\s*"([a-z_]+)"` e `overflowReason:\s*"([a-z_]+)"`
+→ **61** `reason` na base, **37** ausentes de `API_CONTRACTS.md`. O 12a escreveu no contrato 11 deles (a lista fechada do que a tela
+traduz) e todos os seus novos; ficam **26** congelados em `tests/b-san3-12a-reasons-census.test.ts` (só encolhem; pendência
+`P-SAN3-12-REASONS-SEM-CONTRATO`, escopo `pre-existente`). Novos do bloco: os 12 do §4.1 + `bounce_reason_required`, `invalid_group_by`
+(e os dinâmicos `invalid_from`/`invalid_to`, documentados) — **F9**: fora da lista de 32 da tela, declarados no contrato.
+
+## E6 — bateria do §9.2, no head (Windows, Node 20.19.5; Postgres 16 descartável `dev-san312a-pg`, `127.0.0.1:55412`)
+
+Roteiro: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/battery.sh`
+(logs por passo em `C:/Users/AMP/w-san312a-bat/`).
+
+| Passo | Resultado |
+|---|---|
+| `npm run check` · `npm run lint` · `npm run build` | ec=0 · ec=0 · ec=0 |
+| módulos financeiros (`financial-entries`, `cheques`, `financial-summary`, `financial-titles`, `financial-accounts`) | 227 · pass 226 · **fail 1** = A16 serviço em memória (**F4**) |
+| `tests/b-san3-12a-*.test.ts` (memória, 5 arquivos) | **48/48** |
+| guards de catálogo + chamadores do `reconcile` (sem banco) | 89 · pass 86 · fail 3 = `core-saas-role-authority` sem `DATABASE_URL` (ambiente, igual à base) + P7 ×2 (**F2**) |
+| `core-saas-role-authority` com banco | 12 · pass 11 · **fail 1** = snapshot de `super_admin`/`platform_admin` (**F5**) |
+| `-db` A: drill da migração + corridas + fuso + `financial-entry-reverse-restore-db` | **19/19** |
+| `db:provision-rbac` (aplicar) → `permission-catalog-db-parity` (`RBAC_DB_PARITY=1`) | convergiu (12 papéis, 912 concessões) → **2/2** |
+| `-db` B: recusa da baixa, CAS, agregado + `cheque-title-link-atomic-db` + `financial-pay-title-atomic-db` | 29 · pass 27 · **fail 2** = `K2-db parcial` e `K2-db pago antes do clear` (**F1**, `cheque-title-link-atomic-db`) |
+| `provision-rbac --dry-run` | 0 a criar · 912 concessões já existiam · nada escrito |
+| `audit-security` (com banco) | 1/1 |
+| `git diff --check 8a7885f4 HEAD` | limpo |
+
+**`npm test` base × head, cada um num banco FRESCO migrado (forma do job `backend`: memória + `DATABASE_URL` migrado sem seed; `REDIS_URL`
+inalcançável nos dois):**
+- base `8a7885f4` (worktree limpo `C:/Users/AMP/w-s312b`, banco `erp_san312a_base`): `340 arquivos · 3924 testes · pass 3906 · fail 16 · skipped 2`;
+- head (banco `erp_san312a_head`): `351 arquivos · 3995 testes · pass 3966 · fail 27 · skipped 2` (+71 testes: os 69 dos 11 arquivos novos + 2 em `financial-summary`).
+- **Vermelhos SÓ no head = 13, e são exatamente F1–F5:** `cheque-title-link.test.ts` ×5 e `cheque-title-link-atomic-db.test.ts` ×2 (F1),
+  P7 ×2 (F2), censo T1/T14 (F3), A16 em memória (F4), snapshot (F5). Os demais vermelhos são os MESMOS da base (Redis inalcançável,
+  drills de migração/`san3-09`/`B-SAN3-05` neste Windows) — ambiente, não o bloco. Só na base (2, flutuação de drill):
+  `work-order-invoicing-migration-drill-db` e `[atômica · controle 2]`.
+- Uma 1ª rodada do head no banco SUJO (o das suítes do bloco, com papéis provisionados) deu fail 39 — os 26 a mais sumiram no banco
+  fresco (`o6r07c-b-scope-db` 13/13, `o6r07c-subresource-scope-db` 6/6, `financial-title-status-cas-db` 9/9, `traccar-position-ingestion-db`
+  22/22 isolados); descartada como contaminada pelo estado do banco.
+
+## E7 — resumo para quem decide
+
+- **Bateria do bloco:** check/lint/build verdes; testes do 12a **48/48 (memória) + 30/30 (-db: 19 + 4 + 3 + 3 + 1)**; mutações **35/35 vermelhas**.
+- **Vermelhos restantes = 13**, todos em arquivos FORA do PERMITIDO (F1–F5), nenhum tocado. O PR fica em **rascunho**; o merge
+  depende da emenda do plano (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`). Arquivos que a emenda precisa nomear: `tests/cheque-title-link.test.ts`,
+  `tests/cheque-title-link-atomic-db.test.ts`, `tests/financial-uow-journal-classification.test.ts` (além da l.326),
+  `tests/fixtures/o6r07c-classificacao-vias.json` (regenerado pelo gerador), `src/modules/financial-summary/financial-summary.repository.ts`,
+  `tests/fixtures/role-catalog-contract.snapshot.json` (super_admin/platform_admin).
+- **Riscos residuais para a junta** (os do plano, com o que foi medido): R-res-1 (vínculo × clear sem deadlock — o vínculo toma
+  título → cheque, sem trava de período; o A4/A5-bis `-db` terminam sem `deadlock detected`); R-res-2 (bounce exige motivo e é auditado,
+  segue sem privilégio — `P-SAN3-12-BOUNCE-COMO-DESVIO`); R-res-3 (medido no A5-bis); R-res-4 (não exercido — `P-SAN3-12-CAS-VERSION-COLUMN`);
+  R-res-5 (o SQL do agregado filtra `tenant_id` E roda em `withTenantRls`; o banco do teste é superusuário, logo a camada RLS sozinha
+  NÃO foi medida aqui); PATCH com `cheques:unlink_title` também desvincula SEM justificativa (o plano só pede o 403 a quem não tem; a
+  junta decide se o único caminho com justificativa deve ser o `unlink-title`).
+
+## E8 — limpeza (§C5)
+
+Worktree da base `C:/Users/AMP/w-s312b` removido por `git worktree remove --force`; container `dev-san312a-pg` removido (com os bancos
+`erp_san312a`, `_base`, `_head` e os de drill, que já tinham sido derrubados pelos testes). O worktree do bloco `C:/Users/AMP/w-san312a`
+FICA (o ramo continua depois da emenda). Logs fora do repositório em `C:/Users/AMP/w-san312a-*`.
