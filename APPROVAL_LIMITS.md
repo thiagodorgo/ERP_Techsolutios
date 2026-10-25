@@ -34,6 +34,7 @@ Define baseline approval, escalation, and exception patterns for the ERP Techsol
 - Can approve tenant-level administrative exceptions
 - Can escalate to platform_admin when platform-wide impact exists
 - Should act as the highest normal approver for tenant governance matters that do not require platform intervention
+- Can delegate undo-reconciliation to finance via tenant policy (`finance.unreconcile_delegated_to_finance`); owns cheque-link swaps (`cheques:unlink_title`, justification required, critical audit) — B-SAN3-12a
 
 ### manager
 - Can approve operational and service workflow actions within policy limits
@@ -48,6 +49,7 @@ Define baseline approval, escalation, and exception patterns for the ERP Techsol
 
 ### finance
 - Can approve finance-sensitive flows within tenant policy
+- Undoes reconciliation only when delegated by tenant policy; requests cheque-link swaps, never performs them — B-SAN3-12a
 - Can reject or return requests that violate cost, billing, or budget controls
 - Should be involved whenever approval depends on financial exposure, billing consequence, or budget breach
 

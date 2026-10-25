@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-10-25 — B-SAN3-12a (dev `dev-san312a-opus`, Claude Opus): backend de dinheiro do web financeiro — PARADO por premissa falsificada
+
+Ramo `feat/web-financeiro-baixa-e-contas-12a` (de `origin/main` `8a7885f4`), PR em **rascunho**. Implementado todo o escopo PERMITIDO do
+§7.1 do plano v3 (recusa da baixa com cheque pendente + re-check sob o lock; vínculo só do valor exato com o título travado;
+`unlink-title`; cancelar/excluir vinculado é troca; desfazer conciliação com permissão ou política; CAS obrigatório por estado lógico;
+agregado no fuso do negócio; campos de DTO; migração de dados com drill). A execução falsificou o inventário do PERMITIDO: testes e
+fixtures FORA dele quebram por construção (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`). Relatório com comandos e saídas:
+`docs/revisoes/SAN3/B-SAN3-12a-dev.md`. Próximo: emenda do plano (orquestrador + planejador), não a junta.
+
 ## Atualização 2026-10-10 — B-O6R-04a: Retomada 2026-10-10
 
 Retomado por ordem do dono (`D-ORDEM-NOITE-2026-10-10`), que revoga para o #389 o estacionamento de 08/10. O plano é
