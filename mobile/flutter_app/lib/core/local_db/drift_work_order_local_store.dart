@@ -183,6 +183,31 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
   // Maintenance
   // ---------------------------------------------------------------------------
 
+  /// B-SAN3-13 — uma OS e as filhas dela, numa transação: evidência, linha do tempo e materiais do prestador
+  /// (`work_order_materials`, R2-6) pela `work_order_local_id`, e a linha. Molde do `clearAll`, por linha.
+  @override
+  Future<void> deleteWorkOrder(String localId) async {
+    final id = [Variable<String>(localId)];
+    await _db.transaction(() async {
+      await _db.customUpdate(
+        'DELETE FROM work_order_evidence WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_timeline WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_materials WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_orders WHERE local_id = ?',
+        variables: id,
+      );
+    });
+  }
+
   @override
   Future<void> clearAll() async {
     await _db.customStatement('DELETE FROM work_order_evidence');

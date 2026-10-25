@@ -116,7 +116,7 @@ class DioWorkOrderRemoteApi
             'openOnly': 'true',
             'paginate': 'cursor',
             'limit': pageSize,
-            if (cursor != null) 'cursor': cursor,
+            'cursor': ?cursor,
           },
         );
         final data = resp.data ?? const <String, dynamic>{};

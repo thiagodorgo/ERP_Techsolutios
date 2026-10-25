@@ -49,6 +49,30 @@ class _FakeBackend implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+class _StatusBackend implements HttpClientAdapter {
+  _StatusBackend(this.status);
+
+  final int status;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async => ResponseBody.fromString(
+    jsonEncode({
+      'error': {'code': 'WORK_ORDER_SCOPE_UNAVAILABLE'},
+    }),
+    status,
+    headers: {
+      Headers.contentTypeHeader: [Headers.jsonContentType],
+    },
+  );
+
+  @override
+  void close({bool force = false}) {}
+}
+
 DioWorkOrderRemoteApi _apiOver(_FakeBackend backend) {
   final dio = Dio(BaseOptions(baseUrl: 'http://backend.test'));
   dio.httpClientAdapter = backend;
@@ -181,6 +205,59 @@ void main() {
         expect(repo.workOrders.map((o) => o.serverId).toList(), ['srv-1']);
       },
     );
+  });
+
+  group('B-SAN3-13 · o app não decide "aberta" nem purga sem prova', () {
+    // F23 (CA-23, M28) — `approved` só existe no app (`isFinal` lá); se o backend a devolve em S, ela FICA.
+    test('F23 — linha local approved devolvida pelo backend fica', () async {
+      final store = InMemoryWorkOrderLocalStore([
+        WorkOrder(
+          localId: 'srv-ap',
+          serverId: 'srv-ap',
+          tenantId: _tenant,
+          code: 'OS-ap',
+          title: 'Aprovada no app',
+          customerName: 'Cliente',
+          serviceAddress: 'Rua',
+          status: WorkOrderStatus.approved,
+          priority: WorkOrderPriority.normal,
+          syncStatus: SyncStatus.synced,
+          createdAt: DateTime.utc(2026, 10, 25),
+        ),
+      ]);
+      final backend = _FakeBackend(
+        (_) => _page([_remoteItem('srv-ap')], nextCursor: null),
+      );
+      final repo = WorkOrderRepository(
+        session: _session,
+        syncQueue: InMemorySyncQueueRepository(),
+        actionFactory: SyncActionFactory(),
+        localStore: store,
+        remoteApi: _apiOver(backend),
+      );
+      await repo.refresh();
+      expect((await store.loadWorkOrders()).map((o) => o.serverId), ['srv-ap']);
+    });
+
+    // F5 (CA-14) — erro HTTP (inclusive o 503 do resolver estrito): nenhuma purga; estado "cached".
+    test('F5 — 503 do backend: nada sai do aparelho', () async {
+      final store = InMemoryWorkOrderLocalStore(_sementes());
+      final dio = Dio(BaseOptions(baseUrl: 'http://backend.test'));
+      dio.httpClientAdapter = _StatusBackend(503);
+      final repo = WorkOrderRepository(
+        session: _session,
+        syncQueue: InMemorySyncQueueRepository(),
+        actionFactory: SyncActionFactory(),
+        localStore: store,
+        remoteApi: DioWorkOrderRemoteApi(dio),
+      );
+      await repo.load();
+      final outcome = await repo.refresh();
+      await _aguardarPull(repo);
+      expect(outcome, isNot(WorkOrderPullOutcome.success));
+      expect(repo.lastPullError, isNotNull);
+      expect(await store.loadWorkOrders(), hasLength(3));
+    });
   });
 
   group('B-SAN3-13 · caminhada (rede)', () {
