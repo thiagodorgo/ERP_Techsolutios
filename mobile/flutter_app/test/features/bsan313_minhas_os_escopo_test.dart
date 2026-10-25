@@ -73,6 +73,13 @@ class _StatusBackend implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+// Caminhada completa sobre o backend falso. Corpo em instruções curtas: a mesma forma em qualquer versão do
+// `dart format` (a CI usa a 3.47.5).
+Future<WorkOrderFetchResult> _walk(_FakeBackend backend) {
+  final api = _apiOver(backend);
+  return api.fetchAssignedOpenWorkOrders(tenantId: _tenant);
+}
+
 DioWorkOrderRemoteApi _apiOver(_FakeBackend backend) {
   final dio = Dio(BaseOptions(baseUrl: 'http://backend.test'));
   dio.httpClientAdapter = backend;
@@ -279,9 +286,7 @@ void main() {
           return _page([_remoteItem('c')], nextCursor: null);
         });
 
-        final result = await _apiOver(
-          backend,
-        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+        final result = await _walk(backend);
 
         expect(result.complete, isTrue);
         expect(backend.requests, hasLength(3));
@@ -294,10 +299,8 @@ void main() {
           expect(query['limit'], '100', reason: 'página ${index + 1}');
           expect(query.containsKey('offset'), isFalse);
         }
-        expect(
-          backend.requests[0].queryParameters.containsKey('cursor'),
-          isFalse,
-        );
+        final primeira = backend.requests[0].queryParameters;
+        expect(primeira.containsKey('cursor'), isFalse);
         expect(backend.requests[1].queryParameters['cursor'], cursores[0]);
         expect(backend.requests[2].queryParameters['cursor'], cursores[1]);
         expect(result.orders.map((o) => o.serverId), ['a', 'b', 'c']);
@@ -310,13 +313,13 @@ void main() {
       final backend = _FakeBackend((_) {
         pagina += 1;
         final tamanho = pagina < 3 ? 100 : 30;
-        return _page([
+        final items = [
           for (var i = 0; i < tamanho; i++) _remoteItem('p$pagina-$i'),
-        ], nextCursor: pagina < 3 ? 'c$pagina' : null);
+        ];
+        final next = pagina < 3 ? 'c$pagina' : null;
+        return _page(items, nextCursor: next);
       });
-      final result = await _apiOver(
-        backend,
-      ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+      final result = await _walk(backend);
       expect(result.orders, hasLength(230));
       expect(result.complete, isTrue);
     });
@@ -325,23 +328,18 @@ void main() {
     test(
       'F4 — teto de 50 páginas e resposta sem nextCursor → incompleta',
       () async {
-        final semFim = _FakeBackend(
-          (options) => _page([
-            _remoteItem('x${options.queryParameters['cursor'] ?? 0}'),
-          ], nextCursor: 'mais'),
-        );
-        final teto = await _apiOver(
-          semFim,
-        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+        final semFim = _FakeBackend((options) {
+          final cursor = options.queryParameters['cursor'] ?? 0;
+          return _page([_remoteItem('x$cursor')], nextCursor: 'mais');
+        });
+        final teto = await _walk(semFim);
         expect(teto.complete, isFalse);
         expect(semFim.requests, hasLength(DioWorkOrderRemoteApi.maxPages));
 
         final antigo = _FakeBackend(
           (_) => _page([_remoteItem('y')], withNextCursor: false),
         );
-        final semCursor = await _apiOver(
-          antigo,
-        ).fetchAssignedOpenWorkOrders(tenantId: _tenant);
+        final semCursor = await _walk(antigo);
         expect(semCursor.complete, isFalse, reason: 'backend antigo');
         expect(semCursor.orders.map((o) => o.serverId), ['y']);
       },

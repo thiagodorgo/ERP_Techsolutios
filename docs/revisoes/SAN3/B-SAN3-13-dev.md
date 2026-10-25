@@ -17,7 +17,7 @@
 | 7 registro | GRAVADO |
 | Bateria §8 | GRAVADO (CI no fim) |
 | Falsificações de premissa | F-1 GRAVADA |
-| Limpeza §C5 | EM APURAÇÃO |
+| Limpeza §C5 | GRAVADO |
 
 ## Etapa 0 — terreno (GRAVADO)
 - `git worktree add -b fix/mobile-minhas-os C:/Users/AMP/w-san313 origin/main` → `HEAD is now at 8a7885f4` (#454 B-TRC-02 entrou depois da v3, que mediu `37a3f360`).
@@ -222,3 +222,11 @@ FM18 purga por isFinal [F23]: VERMELHO pass=5 fail=1 restaurado=True
 | CA-23 | F1, F6, F15, F23 | FM15, FM18, FM19, FM25 |
 | CA-24 | F24 | FM21, FM6 |
 | CA-25 | regressões Flutter e suíte | — |
+
+## Entrega — CI (GRAVADO)
+- Ramo empurrado: `git push -u origin fix/mobile-minhas-os`. A `origin/main` andou para `b08c7557` (#458, B-GUARD-MIGRACAO) e conflitou nos registros (apensos dos dois lados): `git merge origin/main` no ramo (`2d8fe6c1`), com a entrada do #458 primeiro e as deste bloco depois, e `pendencias-indice.md` regenerado (631 cabeçalhos, 473 ABERTAS, 155 FECHADAS). Nada reescrito.
+- CI `40166075473` no head `2d8fe6c1`: `backend` **success** — `[run-backend-tests] 345 arquivo(s) · 3981 teste(s) · pass 3979 · fail 0 · skipped 2` (os 5 `-db` do bloco executados de verdade: `ok 2770…2774` B14-db, B15-db, B19-db, B17-db, B18-db); `backend-postgres` **success** (`# tests 493 # pass 493 # fail 0 # skipped 0`); `frontend`, `owner-portal`, `authority-portal` **success**; `flutter` **failure** no `dart format --set-exit-if-changed`: `Changed test/features/bsan313_minhas_os_escopo_test.dart`.
+- **Causa (terreno, não produto):** o Flutter desta máquina é 3.41.6 e o da CI é 3.47.5 — os dois `dart format` quebram de forma diferente a chamada encadeada sobre um argumento partido (`await _apiOver(\n backend,\n ).fetch…`). Remédio só no teste: helper `_walk(backend)` e expressões curtas, que as duas versões formatam igual. Local: `dart format` exit 0, `flutter analyze` limpo, `+6` no arquivo; FM1-FM4 re-executadas sobre o teste reescrito → 4/4 vermelhas, restauradas.
+
+## Limpeza §C5 (GRAVADO)
+- Removidos: container `dev-san313-pg` (`docker rm -f`; `docker ps -a | grep -c dev-san313` → 0), `dist/` (6,1 MB), `mobile/flutter_app/build/` (61 MB), os anexos de teste não rastreados em `storage/` (`git clean -fdx -- storage`; o `.gitkeep` rastreado fica). Mantidos: `node_modules` e `.dart_tool` do worktree (reinstalar custa caro; o worktree fica para re-execução), e os roteiros de mutação no scratchpad (`mut_backend.py`, `mut_flutter.py`, `cursor-letra.patch`) para P3. Nada rastreado apagado; base viva e prefixo `dev-san312a-` intocados.
