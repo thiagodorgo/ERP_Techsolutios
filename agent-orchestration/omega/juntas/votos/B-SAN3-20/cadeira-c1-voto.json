@@ -1,0 +1,79 @@
+{
+  "jurado": "jurado-san320-c1-opus",
+  "cadeira": "C1 (dinheiro)",
+  "executor_efetivo": "Claude Code, subagente do orquestrador",
+  "modelo": "Claude Opus (claude-opus-5-5)",
+  "nivel": "menor declarado (§C7.6)",
+  "objeto": "a0f5aabca6b86aba21051baffd40c245b5ef1a05",
+  "mandato_md5": "55bfbcee5829c2bc3d9d7d9c2ba67a34",
+  "corpo_canonic_veredito": "IDENTICO",
+  "legalidade": "inspetor LIBERADO COM RESSALVA (R1-R7); objeto por 2 fontes; check-runs 14/14 success",
+  "quorum": "DINHEIRO: unanimidade de 3 com veto, ciclo 1",
+  "arquivos_medidos": [
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/cheques/cheque.repository.ts",
+    "src/modules/cheques/cheque-prisma.repository.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "src/modules/financial-entries/financial-entry-undo-owners.ts",
+    "src/modules/financial-entries/financial-entry.validators.ts",
+    "src/modules/financial-titles/financial-title.service.ts",
+    "src/modules/financial-titles/financial-title.repository.ts",
+    "src/modules/financial-titles/financial-title-prisma.repository.ts",
+    "src/modules/financial-titles/financial-title.validators.ts",
+    "tests/cheque-title-link.test.ts",
+    "tests/cheque-title-link-atomic-db.test.ts",
+    "tests/financial-title-status-cas-db.test.ts",
+    "tests/financial-entry-undo-owners.test.ts",
+    "agent-orchestration/controle/decisoes.md",
+    "agent-orchestration/controle/pendencias.md",
+    "API_CONTRACTS.md",
+    "docs/revisoes/SAN3/B-SAN3-20-plano.md",
+    "docs/revisoes/SAN3/B-SAN3-20-dev.md"
+  ],
+  "leitura_de_outras_cadeiras": "nenhuma",
+  "pausa": null,
+  "voto": "APROVADO",
+  "justificativa": "Medi por execução própria, em memória/HTTP e no Postgres 16 próprio, que o dinheiro de cada linha de cheque entra no razão uma vez só: o clear vinculado é o próprio lançamento que liquida o título (title_id = t e cleared_entry_id = lançamento) na mesma transação; quando o título não comporta, nada persiste; o bounce restaura o título, inclusive com pagamento misto (partially_paid/200, pix intacto); /pay e /financial-entries recusam check com a precedência do §1; a compensação vinculada é imutável com reason cheque_entry_immutable; o changeStatus é CAS e classifica o 0-linhas em 422, retentativa, 409 e 404 (este por barreira própria com DELETE lógico concorrente). 18 mutações (16 do mandato + 2 novas) ficaram vermelhas, M8 equivalente em memória e morta no T-K2d, restauro provado por hash. F-DEV-02 é o resultado sequencial e preserva P e P2. O limite 'por linha de cheque' está publicado em decisoes.md e pendencias.md. Dois achados, ambos nota. VOTO: APROVADO — nenhum achado bloqueia; K2–K6, K10, K11, RR1, RR9 e RR10 medidos com vermelho-controle.",
+  "o_que_executei": {
+    "item1": "Suíte cheque-title-link 38/38 (memória); -db atomic 15/15 + status-cas 9/9, 2 execuções no Postgres 16 próprio (jsan320-c1-pg, 127.0.0.1:55461). Sonda própria probe-mem (HTTP real, createApp) 35/35 e probe-db (serviços sobre Prisma) 22/22: K2 integral/parcial nas 2 direções (1 lançamento check/cheque_clearing com title_id, cleared_entry_id, paid 100, saldo ±100); K2 fail-closed title_already_paid/title_cancelled/overpayment/404 title_not_found (cheque deposited, zero lançamento); K3 bounce (contra-lançamento sem title_id, título open/0, saldo 0); RR9 misto 100 cheque + 200 pix → bounce → partially_paid/200, pix intacto, saldo 200; K5 4 cenários nos 2 executores (±100, 1 lançamento, 2ª porta recusada). Vermelho: M6, M7, M8 (equivalente no T-K2b, morta no T-K2d), M10, M11, M12/M16 e M-C1b (nova) vermelhas, restauro por hash.",
+    "item2": "K4 por HTTP: precedência /pay (400 invalid_amount, 404, overpayment, title_cancelled antes de cheque_required; cheque_required antes de period_closed), /financial-entries (400 corpo, 400 conta antes; cheque_required antes de period_closed), outros métodos 201; Postgres: check → 422 sem lançamento. K10: T-K10a/b(2 ordens)/c/e verdes 2×; F-DEV-02 julgada. K11: T-K11a/b/c/h verdes 2×; barreiras próprias RR1(i) → 422 invalid_status_transition (título paid/100) e RR1(iv) → 404 title_not_found com DELETE lógico concorrente (nunca 409). RR10 por leitura (sem await entre ler e gravar) e por M33. Vermelho: M13, M14, M27, M29, M30, M31, M33, M37 e M-C1a (nova) vermelhas, restauro por hash.",
+    "item3": "K6 por HTTP e Postgres: DELETE e reverse da compensação vinculada → 422 cheque_entry_immutable; liquidação sem cheque → DELETE settlement_entry_immutable e reverse permitido (título open/0); undo-owners 6/6. R1-02: dois POST /cheques idênticos → dois ids. decisoes.md e pendencias.md publicam o limite 'por linha de cheque', P-SAN3-20-CHEQUE-FISICO-DUPLICADO aberta com dono. Vermelho: M17 (T-K6a e probe-mem pelo reason) e M18 (npm run check TS2322) vermelhas, restauro por hash."
+  },
+  "achados": [
+    {
+      "id": "C1-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "descricao": "F-DEV-02: no par PATCH title_id × deposit, quando o PATCH vence, o deposit re-avalia status='registered' e passa (cheque deposited com title_id) — o resultado sequencial PATCH→deposit. A linha do §2.5 do plano ('deposit → 409 transition_conflict') e o corolário 'um vencedor e um perdedor' não descrevem esse par. Sem dinheiro em risco: o vínculo foi pré-checado e o /clear decide pelo CAS do título. P e P2 preservadas; API_CONTRACTS.md e decisoes.md não publicam o 409.",
+      "comando": "npm test -- tests/cheque-title-link-atomic-db.test.ts (prisma, banco próprio) ×2",
+      "saida": "15/15; #13 T-K10b verde nas 2 ordens",
+      "n_forma": "1 par de 11 da tabela do §2.5"
+    },
+    {
+      "id": "C1-N2",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "origem": "titleRestoreConflictError em src/modules/financial-entries/financial-entry.repository.ts já devolve 409 na base 7ab2fe71 (git show 7ab2fe71:… l.98-101)",
+      "classe": "não grave",
+      "descricao": "A tabela do §1 do plano diz '422 title_restore_conflict' no /bounce; o código devolve 409 FINANCIAL_ENTRY_CONFLICT. Caminho inalcançável sem mutante (M-C1b o exercitou). Só o texto do plano diverge; API_CONTRACTS.md não fixa o código.",
+      "comando": "mutação M-C1b + probe-db",
+      "saida": "FinancialEntryError statusCode 409 reason title_restore_conflict",
+      "n_forma": "1 código de erro"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "K2/K3/K5/RR9 nos 2 executores por sonda própria",
+    "K4 precedência por HTTP",
+    "K10/K11 por barreira (suítes) e RR1(i)/(iv) por barreira própria",
+    "K6 com reason",
+    "limite de P publicado por linha de cheque",
+    "18 mutações vermelhas (M8 só no Postgres, como declarado)"
+  ],
+  "pendencias_que_aceito": [
+    "P-SAN3-20-CHEQUE-FISICO-DUPLICADO (limite R9′, publicado)",
+    "P-SAN3-20-DESVINCULAR-DEPOSITADO (R5: cheque depositado vinculado a título já pago fica sem compensação; saída por bounce sem caixa)",
+    "P-SAN3-20-DELETE-TITULO-COM-CHEQUE (R6: clear falha fechado com 404, medido)"
+  ],
+  "teardown": "jsan320-c1-pg removido (docker ps -a: 0); worktree C:/Users/AMP/w-jsan320-c1 sem mutação viva (status vazio, 18/18 restore_hash_ok) e removido por git worktree remove --force; sondas preservadas em C:/Users/AMP/erp-pausa-2026-10-03/jsan320-c1/; nenhum commit"
+}

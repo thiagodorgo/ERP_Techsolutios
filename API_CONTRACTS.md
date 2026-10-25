@@ -486,24 +486,24 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 |---|---|---|---|
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-accounts` | `financial_accounts:read`/`create`/`update` | Contas financeiras (caixa/banco). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-titles` | `financial_titles:read`/`create`/`update` | Títulos (a receber/pagar). |
-| PATCH | `/financial-titles/:id/status` | `financial_titles:update` | Muda status do título. |
+| PATCH | `/financial-titles/:id/status` | `financial_titles:update` | Muda status por CAS do estado lido (B-SAN3-20, D8). Caso sequencial inalterado; sob corrida, o perdedor relê e recebe o erro do caso sequencial (ex.: liquidação em voo → `422 invalid_status_transition`); estado mudado duas vezes durante a chamada (a retentativa única falhou) → `409 title_status_conflict`. |
 | GET/POST/DELETE | `/financial-titles/:id/payable` | `financial_titles:read`/`create`/`update` | Vínculo conta-a-pagar do título. |
-| POST | `/financial-titles/:id/pay` | `financial_entries:create` | Liquida título → gera lançamento no caixa (chokepoint de competência). |
-| GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-entries` | `financial_entries:read`/`create`/`update` | Lançamentos de caixa/extrato. |
+| POST | `/financial-titles/:id/pay` | `financial_entries:create` | Liquida título → gera lançamento no caixa (chokepoint de competência); `payment_method=check` → `422 cheque_required`. |
+| GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-entries` | `financial_entries:read`/`create`/`update` | Lançamentos de caixa/extrato; criação avulsa com `payment_method=check` → `422 cheque_required`. |
 | POST | `/financial-entries/:id/reverse` | `financial_entries:update` | Estorna lançamento. |
 | PATCH | `/financial-entries/:id/reconcile` | `financial_entries:update` | Concilia lançamento. |
 | GET | `/financial-accounts/:id/balance` | `financial_entries:read` | Saldo/extrato da conta. |
 | GET | `/financial-periods` (+ `/:period`) | `financial_period:read` | Competências / fechamento de período. |
 | POST | `/financial-periods/:period/close` · `/reopen` | `financial_period:close` / `:reopen` | Fecha/reabre competência (trava retroativa + snapshot). |
-| GET/POST/GET:id/PATCH:id/DELETE:id | `/cheques` | `cheques:read`/`create`/`update` | Cheques (instrumento de pagamento). |
-| POST | `/cheques/:id/deposit` · `/clear` · `/bounce` · `/cancel` | `cheques:update` (+ `financial_entries:create` em `/clear`) | Ciclo do cheque (compensar posta caixa). |
+| GET/POST/GET:id/PATCH:id/DELETE:id | `/cheques` | `cheques:read`/`create`/`update` | Cheques. B-SAN3-20: `title_id` opcional no POST e no PATCH (só enquanto `registered`; `null` desvincula), `titleId` no DTO e filtro `?title_id=`. Recusas do vínculo: `400 invalid_title_reference` (inexistente, apagado ou de outra organização — um só corpo), `422 title_direction_mismatch` (`received`↔`receivable`, `issued`↔`payable`), `422 currency_mismatch`, `422 title_cancelled`/`title_already_paid`/`overpayment`. PATCH e DELETE são CAS de estado no banco (`… AND status = 'registered'`): quem perde a corrida com `/deposit` ou `/clear` recebe `422 cheque_not_editable` (o mesmo erro do caso sequencial); apagado no meio → `404 cheque_not_found`. |
+| POST | `/cheques/:id/deposit` · `/clear` · `/bounce` · `/cancel` | `cheques:update` (+ `financial_entries:create` em `/clear`) | Ciclo do cheque. Cheque vinculado: o `/clear` posta UM lançamento (`check`/`cheque_clearing`) com `titleId` e liquida o título por CAS na mesma transação — título que não comporta → `404 title_not_found` / `422 title_cancelled` / `title_already_paid` / `overpayment`, com o cheque intacto em `deposited` e zero lançamento; o `/bounce` (cleared→bounced) posta o contra-lançamento (sem `titleId`) e restaura o título na mesma transação (`422 title_restore_conflict` fail-closed → nada persiste). |
 | GET | `/financial-summary` | `financial_entries:read` | Agregado financeiro do dashboard (somas no backend). |
 | GET/POST | `/commissions/policies` · `/basis-events` · `/calculations` · `/statements` (+ `/summary`, `/mine`, `/my-summary`) · `/settlements` | `commissions:read`/`read_own`/`manage_policy`/`calculate`/`settle` | Políticas, base, cálculo, extratos e liquidação de comissões. |
 | GET/POST/PATCH | `/expense-reports` (+ `/:id`, `/:id/items`, `/:id/submit`) · `/expense-policies` · `/expense-categories` | `expense_report:read`/`create`/`update`/`submit`, `expense_policy:read` | Relatórios de despesa (RDV). |
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile) — atômico por ação, conflito por ação (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
 
-**Invariantes de mutação de título (`financial_title_mutation@2026-08-20.b-o6r-02-f6`):**
+**Invariantes de mutação de título (`financial_title_mutation@2026-10-21.b-san3-20`, apenso a `@2026-08-20.b-o6r-02-f6`):**
 
 - `PATCH /financial-titles/:id` é CAS tenant-scoped. Se `amount < paidAmount`, retorna `422`
   `FINANCIAL_TITLE_UNPROCESSABLE` com `reason: "amount_below_paid"`, sem persistir nenhum outro campo
@@ -515,8 +515,13 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
   (`422 period_closed`) → invariante financeira. Assim, outro tenant nunca descobre valor pago ou
   estado de fechamento. Nenhum erro inclui `tenant_id`, PII ou detalhe SQL.
 - O banco mantém `0 <= paid_amount <= amount`; violação SQL direta falha com SQLSTATE `23514`.
+- (B-SAN3-20, D8) `PATCH /financial-titles/:id/status` é CAS do estado lido: o `UPDATE` casa também
+  `status = <lido>`. 0 linhas → relê: apagado → `404 title_not_found`; transição inválida a partir do estado
+  fresco → `422 invalid_status_transition` (depois de uma liquidação não há transição manual válida); ainda
+  válida → **uma** retentativa com o estado fresco; 0 linhas de novo → `409 title_status_conflict`. A liquidação
+  só escreve `paid_amount` por CAS incremental (o caminho de sobrescrita absoluta saiu do repositório).
 
-**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-09-02.b-o6r-02-c5`):**
+**Invariantes de desfazimento de lançamento (`financial_entry_undo@2026-10-21.b-san3-20`, sucede `@2026-09-02.b-o6r-02-c5`: no `DELETE`, `cheque_link` passa a vir antes de `title_settlement`):**
 
 A regra única das duas rotas: **lançamento vinculado a um agregado só se desfaz PELO FLUXO DO
 AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/reverse` recusam com
@@ -532,7 +537,7 @@ AGREGADO.** `DELETE /financial-entries/:id` e `POST /financial-entries/:id/rever
 tenant estranho recebe `404` antes de qualquer regra financeira):
 
 - `DELETE`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
-  `422 settlement_entry_immutable` → `422 cheque_entry_immutable` → `422 period_closed`.
+  `422 cheque_entry_immutable` → `422 settlement_entry_immutable` → `422 period_closed`.
 - `reverse`: `404 entry_not_found` → `422 entry_reconciled` → `422 reversal_pair_immutable` →
   `422 cheque_entry_immutable` → `409 already_reversed` → `422 period_closed`.
 

@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import {
   invalidAccountReferenceError,
+  invalidTitleReferenceError,
   type ChequeRepository,
 } from "./cheque.repository.js";
 import { CHEQUE_ENTRY_LINK_COLUMN_NAMES } from "./cheque.types.js";
@@ -26,6 +27,7 @@ export class PrismaChequeRepository implements ChequeRepository {
         data: {
           tenant_id: input.tenantId,
           account_id: input.accountId,
+          title_id: input.titleId ?? null,
           direction: input.direction,
           cheque_number: input.chequeNumber,
           bank: input.bank,
@@ -66,22 +68,27 @@ export class PrismaChequeRepository implements ChequeRepository {
   }
 
   async update(input: UpdateChequeInput): Promise<Cheque | undefined> {
-    const updated = await this.client.cheque.updateManyAndReturn({
-      where: { tenant_id: input.tenantId, id: input.chequeId, deleted_at: null },
-      data: compactRecord({
-        cheque_number: input.chequeNumber,
-        bank: input.bank,
-        due_date: input.dueDate,
-        notes: input.notes,
-        updated_by: input.updatedBy,
-      }),
-    });
-    return updated[0] ? mapRecord(updated[0]) : undefined;
+    try {
+      const updated = await this.client.cheque.updateManyAndReturn({
+        where: { tenant_id: input.tenantId, id: input.chequeId, status: "registered", deleted_at: null },
+        data: compactRecord({
+          cheque_number: input.chequeNumber,
+          bank: input.bank,
+          title_id: input.titleId,
+          due_date: input.dueDate,
+          notes: input.notes,
+          updated_by: input.updatedBy,
+        }),
+      });
+      return updated[0] ? mapRecord(updated[0]) : undefined;
+    } catch (error) {
+      throw translatePersistenceError(error);
+    }
   }
 
   async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
     const updated = await this.client.cheque.updateManyAndReturn({
-      where: { tenant_id: tenantId, id: chequeId, deleted_at: null },
+      where: { tenant_id: tenantId, id: chequeId, status: "registered", deleted_at: null },
       data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
@@ -181,6 +188,7 @@ export async function createPrismaChequeRepository(): Promise<RlsPrismaChequeRep
 function buildWhere(input: ListChequeInput): Prisma.ChequeWhereInput {
   const and: Prisma.ChequeWhereInput[] = [];
   if (input.accountId !== undefined) and.push({ account_id: input.accountId });
+  if (input.titleId !== undefined) and.push({ title_id: input.titleId });
   if (input.direction !== undefined) and.push({ direction: input.direction });
   if (input.status !== undefined) and.push({ status: input.status });
 
@@ -195,6 +203,7 @@ function mapRecord(record: {
   readonly id: string;
   readonly tenant_id: string;
   readonly account_id: string;
+  readonly title_id: string | null;
   readonly direction: string;
   readonly cheque_number: string;
   readonly bank: string;
@@ -216,6 +225,7 @@ function mapRecord(record: {
     id: record.id,
     tenantId: record.tenant_id,
     accountId: record.account_id,
+    titleId: record.title_id ?? undefined,
     direction: record.direction,
     chequeNumber: record.cheque_number,
     bank: record.bank,
@@ -239,9 +249,19 @@ function mapRecord(record: {
 // com o serviço, que já valida a conta ANTES via accountReader; a FK é a rede final).
 function translatePersistenceError(error: unknown): unknown {
   if (isPrismaError(error, "P2003")) {
+    const constraint = readPrismaConstraint(error);
+    if (constraint === "cheques_tenant_id_title_id_fkey") return invalidTitleReferenceError();
     return invalidAccountReferenceError();
   }
   return error;
+}
+
+function readPrismaConstraint(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null || !("meta" in error)) return undefined;
+  const meta = (error as { readonly meta?: unknown }).meta;
+  if (typeof meta !== "object" || meta === null || !("constraint" in meta)) return undefined;
+  const constraint = (meta as { readonly constraint?: unknown }).constraint;
+  return typeof constraint === "string" ? constraint : undefined;
 }
 
 function isPrismaError(error: unknown, code: string): boolean {

@@ -39,6 +39,7 @@ export type Cheque = {
   readonly id: string;
   readonly tenantId: string;
   readonly accountId: string;
+  readonly titleId?: string;
   readonly direction: string;
   readonly chequeNumber: string;
   readonly bank: string;
@@ -82,6 +83,7 @@ export const CHEQUE_FIELD_CLASS = {
   id: "plain",
   tenantId: "plain",
   accountId: "plain",
+  titleId: "plain",
   direction: "plain",
   chequeNumber: "plain",
   bank: "plain",
@@ -131,6 +133,7 @@ export const CHEQUE_ENTRY_LINK_COLUMN_NAMES = Object.values(
 export type CreateChequeInput = {
   readonly tenantId: string;
   readonly accountId: string;
+  readonly titleId?: string;
   readonly direction: string;
   readonly chequeNumber: string;
   readonly bank: string;
@@ -149,6 +152,7 @@ export type UpdateChequeInput = {
   readonly chequeId: string;
   readonly chequeNumber?: string;
   readonly bank?: string;
+  readonly titleId?: string | null;
   readonly dueDate?: Date | null;
   readonly notes?: string | null;
   readonly updatedBy?: string;
@@ -171,6 +175,7 @@ export type ListChequeInput = {
   readonly tenantId: string;
   readonly includeDeleted: boolean;
   readonly accountId?: string;
+  readonly titleId?: string;
   readonly direction?: string;
   readonly status?: string;
   readonly limit: number;

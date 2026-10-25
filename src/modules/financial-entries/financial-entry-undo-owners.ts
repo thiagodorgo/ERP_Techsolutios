@@ -202,7 +202,7 @@ export type UndoOwnerPolicyTable = ReturnType<typeof buildUndoOwnerPolicies>;
 // continuam onde estão, no serviço: eles não pertencem a dono nenhum.
 // -----------------------------------------------------------------------------------------------
 
-export const DELETE_UNDO_ORDER = ["reversal_pair", "title_settlement", "cheque_link"] as const;
+export const DELETE_UNDO_ORDER = ["reversal_pair", "cheque_link", "title_settlement"] as const;
 export const REVERSE_UNDO_ORDER = ["reversal_pair", "cheque_link"] as const;
 
 /** `true` só quando os dois lados são exatamente a MESMA união (nem mais, nem menos). */

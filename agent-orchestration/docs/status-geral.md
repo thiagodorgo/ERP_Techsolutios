@@ -5155,3 +5155,11 @@ Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026
   - entraram as decisões `D-TRC01-C3-SO-A-C`, `D-GEMINI-TETO-MENSAL-MAIS-10` e `D-KPI-ANTES-DA-DEMO`.
   - Relatório: `docs/revisoes/REGISTRO-2026-10-18.md`.
 - **Em andamento:** a medição realista do gate da versão vendável (`D-KPI-ANTES-DA-DEMO`). O marco de KPI pelo loop vem antes da demonstração.
+
+## Estado em 2026-10-24 — B-SAN3-20 em PR #456
+
+- `B-SAN3-20` implementado no ramo `fix/cheque-x-baixa`: cheque pode se vincular a título; compensação liquida e devolução restaura na mesma unidade.
+- A decisão do dono é `D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO`: ***"A: só pela compensação (Recomendado)"***.
+- Migração `20260881000000_cheque_title_link` é aditiva e transacional; as três novas suítes PostgreSQL estão na lista curada da CI.
+- KPI permanece congelado e `Kpis/**` não foi alterado. A junta do PR é a próxima etapa; este registro não é voto do DEV.
+- Dev: Codex `gpt-5.6-sol` até 18:15Z (caiu por limite de uso); Claude Opus (`dev-san320-opus`, nível menor) cobriu e fechou a bateria.

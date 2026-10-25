@@ -165,17 +165,7 @@ export type DeleteFinancialTitleResult =
 export type ChangeFinancialTitleStatusInput = {
   readonly tenantId: string;
   readonly financialTitleId: string;
-  readonly status: string;
-  readonly updatedBy?: string;
-};
-
-// Ω4-4 — WRITE-PATH dedicado da LIQUIDAÇÃO: grava paid_amount (valor ABSOLUTO novo, já validado
-// <= amount) e status ('partially_paid'|'paid') JUNTOS. Contorna assertStatusTransition — é o único
-// caminho que alcança partially_paid/paid (a máquina manual não tem aresta entrando neles).
-export type ApplyTitlePaymentInput = {
-  readonly tenantId: string;
-  readonly financialTitleId: string;
-  readonly paidAmount: number;
+  readonly fromStatus: string;
   readonly status: string;
   readonly updatedBy?: string;
 };

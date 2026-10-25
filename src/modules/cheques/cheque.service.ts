@@ -3,8 +3,20 @@ import { getMemoryFinancialAccountRepositoryForTests } from "../financial-accoun
 import {
   currencyMismatchError,
   periodClosedError as entryPeriodClosedError,
+  titleRestoreConflictError,
 } from "../financial-entries/financial-entry.repository.js";
-import { deriveCompetencia } from "../financial-titles/index.js";
+import {
+  FinancialTitleError,
+  createDefaultFinancialTitleService,
+  deriveCompetencia,
+  overpaymentError,
+  roundMoney,
+  titleAlreadyPaidError,
+  titleCancelledError,
+  titleNotFoundError,
+  type FinancialTitle,
+  type FinancialTitleService,
+} from "../financial-titles/index.js";
 import {
   createDefaultFinancialUnitOfWork,
   type FinancialUowContext,
@@ -16,7 +28,9 @@ import {
   chequeNotEditableError,
   chequeNotFoundError,
   invalidAccountReferenceError,
+  invalidTitleReferenceError,
   invalidTransitionError,
+  titleDirectionMismatchError,
   transitionConflictError,
   type AccountReader,
   type ChequeRepository,
@@ -39,6 +53,7 @@ import {
   parseLimit,
   parseNullableDueDate,
   parseNullableNotes,
+  parseNullableUuid,
   parseOffset,
   parseOptionalBounceReason,
   parseOptionalDueDate,
@@ -50,6 +65,7 @@ import {
 } from "./cheque.validators.js";
 
 type RawRecord = Record<string, unknown>;
+type FinancialTitleServiceResolver = () => Promise<FinancialTitleService>;
 
 // Permissão FINANCEIRA forte exigida pelas transições que MOVEM dinheiro (compensar/devolver-após-compensar):
 // a escrita do lançamento pela unidade (UoW) NÃO reatravessa a rota /financial-entries, então o gate de
@@ -75,6 +91,7 @@ export class ChequeService {
     // B-O6R-02 F5 — porta de Unit of Work: clear/bounce-após-clear rodam transição + lançamento +
     // vínculo como UMA unidade (falha → o cheque volta ao estado anterior PELO BANCO).
     private readonly resolveUow: FinancialUowResolver = createDefaultFinancialUnitOfWork,
+    private readonly resolveTitleService: FinancialTitleServiceResolver = createDefaultFinancialTitleService,
   ) {}
 
   async list(actor: ChequeActorContext, query: RawRecord): Promise<ListChequeResult> {
@@ -82,6 +99,7 @@ export class ChequeService {
       tenantId: actor.tenantId,
       includeDeleted: readOptionalBoolean(query.include_deleted ?? query.includeDeleted, "includeDeleted") ?? false,
       accountId: parseOptionalFilterUuid(query.account_id ?? query.accountId),
+      titleId: parseOptionalFilterUuid(query.title_id ?? query.titleId),
       direction: parseFilterToken(query.direction),
       status: parseFilterToken(query.status),
       limit: parseLimit(query.limit),
@@ -95,14 +113,19 @@ export class ChequeService {
   async create(actor: ChequeActorContext, body: RawRecord): Promise<Cheque> {
     const account = await this.resolveActiveAccount(actor.tenantId, parseRequiredUuid(body.account_id ?? body.accountId, "accountId"));
     const currency = resolveCurrency(body.currency, account.currency);
+    const direction = parseDirection(body.direction);
+    const amount = parseAmount(body.amount);
+    const titleId = parseNullableUuid(body.title_id ?? body.titleId, "titleId") ?? undefined;
+    if (titleId !== undefined) await this.validateTitleLink(actor, titleId, direction, amount, currency);
 
     return this.repository.create({
       tenantId: actor.tenantId,
       accountId: account.id,
-      direction: parseDirection(body.direction),
+      titleId,
+      direction,
       chequeNumber: parseChequeNumber(body.cheque_number ?? body.chequeNumber),
       bank: parseBank(body.bank),
-      amount: parseAmount(body.amount),
+      amount,
       currency,
       dueDate: parseOptionalDueDate(body.due_date ?? body.dueDate),
       notes: parseOptionalNotes(body.notes),
@@ -124,16 +147,22 @@ export class ChequeService {
     // due_date é NULÁVEL (null explícito limpa): escolher a chave por PRESENÇA, não por `??` — senão
     // {due_date: null} colapsaria para o alias camel undefined e o "limpar" seria silenciosamente ignorado.
     const dueDateRaw = body.due_date !== undefined ? body.due_date : body.dueDate;
+    const titleIdRaw = body.title_id !== undefined ? body.title_id : body.titleId;
+    const titleId = parseNullableUuid(titleIdRaw, "titleId");
+    if (typeof titleId === "string") {
+      await this.validateTitleLink(actor, titleId, current.direction, current.amount, current.currency);
+    }
     const updated = await this.repository.update({
       tenantId: actor.tenantId,
       chequeId: current.id,
       chequeNumber: body.cheque_number !== undefined || body.chequeNumber !== undefined ? parseChequeNumber(body.cheque_number ?? body.chequeNumber) : undefined,
       bank: body.bank !== undefined ? parseBank(body.bank) : undefined,
+      titleId,
       dueDate: parseNullableDueDate(dueDateRaw),
       notes: parseNullableNotes(body.notes),
       updatedBy: actor.userId,
     });
-    if (!updated) throw chequeNotFoundError();
+    if (!updated) return this.throwChequeWriteConflict(actor, current.id);
     return updated;
   }
 
@@ -141,7 +170,7 @@ export class ChequeService {
     const current = await this.getWritable(actor, chequeId);
     this.assertEditable(current);
     const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (!removed) throw chequeNotFoundError();
+    if (!removed) return this.throwChequeWriteConflict(actor, current.id);
     return removed;
   }
 
@@ -165,6 +194,9 @@ export class ChequeService {
     const current = await this.getWritable(actor, chequeId);
     this.assertTransition(current.status, "cleared");
     this.assertCanMoveMoney(actor);
+    if (current.titleId !== undefined) {
+      await (await this.resolveTitleService()).assertPayable(actor, current.titleId, current.amount);
+    }
     await this.assertPostableAccount(actor.tenantId, current);
 
     const occurredAt = new Date();
@@ -270,6 +302,7 @@ export class ChequeService {
     const entry = await ctx.entries.create({
       tenantId: actor.tenantId,
       accountId: reserved.accountId,
+      titleId: input.toStatus === "cleared" ? reserved.titleId : undefined,
       direction: input.direction,
       amount: reserved.amount,
       currency: reserved.currency,
@@ -281,6 +314,20 @@ export class ChequeService {
       createdBy: actor.userId,
       updatedBy: actor.userId,
     });
+
+    if (reserved.titleId !== undefined) {
+      if (input.toStatus === "cleared") {
+        await this.applyTitlePaymentInUnit(ctx, actor, reserved.titleId, reserved.amount);
+      } else if (input.toStatus === "bounced") {
+        const restored = await ctx.titles.restorePaymentGuarded({
+          tenantId: actor.tenantId,
+          financialTitleId: reserved.titleId,
+          amount: reserved.amount,
+          updatedBy: actor.userId,
+        });
+        if (!restored) throw titleRestoreConflictError();
+      }
+    }
 
     const linked = await input.attach(entry.id);
     // Inalcançável dentro da mesma tx (a linha acabou de ser flipada por nós e está travada); se
@@ -336,6 +383,61 @@ export class ChequeService {
     if (!account) throw invalidAccountReferenceError();
     if (!account.isActive) throw accountInactiveError();
     return account;
+  }
+
+  private async validateTitleLink(
+    actor: ChequeActorContext,
+    titleId: string,
+    chequeDirection: string,
+    amount: number,
+    currency: string,
+  ): Promise<FinancialTitle> {
+    let title: FinancialTitle;
+    try {
+      title = await (await this.resolveTitleService()).assertPayable(actor, titleId, amount);
+    } catch (error) {
+      if (error instanceof FinancialTitleError && error.reason === "title_not_found") throw invalidTitleReferenceError();
+      throw error;
+    }
+    const expectedDirection = chequeDirection === "received" ? "receivable" : "payable";
+    if (title.direction !== expectedDirection) throw titleDirectionMismatchError();
+    if (title.currency !== currency) throw currencyMismatchError();
+    return title;
+  }
+
+  private async throwChequeWriteConflict(actor: ChequeActorContext, chequeId: string): Promise<never> {
+    const fresh = await this.repository.findById(actor.tenantId, chequeId);
+    if (!fresh || fresh.deletedAt != null) throw chequeNotFoundError();
+    throw chequeNotEditableError();
+  }
+
+  private async applyTitlePaymentInUnit(
+    ctx: FinancialUowContext,
+    actor: ChequeActorContext,
+    financialTitleId: string,
+    amount: number,
+  ): Promise<void> {
+    const applied = await ctx.titles.applyPaymentGuarded({
+      tenantId: actor.tenantId,
+      financialTitleId,
+      amount,
+      updatedBy: actor.userId,
+    });
+    if (applied) return;
+
+    const locked = await ctx.titles.findByIdForUpdate(actor.tenantId, financialTitleId);
+    if (!locked || locked.deletedAt != null) throw titleNotFoundError();
+    if (locked.status === "cancelled") throw titleCancelledError();
+    if (locked.status === "paid") throw titleAlreadyPaidError();
+    if (roundMoney(locked.paidAmount + amount) > locked.amount) throw overpaymentError();
+
+    const retried = await ctx.titles.applyPaymentGuarded({
+      tenantId: actor.tenantId,
+      financialTitleId,
+      amount,
+      updatedBy: actor.userId,
+    });
+    if (!retried) throw overpaymentError();
   }
 
   // Cheque ESCREVÍVEL (existe, do tenant, não deletado) — fonte do 404 das mutações/get.

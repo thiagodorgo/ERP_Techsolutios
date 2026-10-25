@@ -2079,6 +2079,7 @@ model FinancialTitle {
   invoiced_items    WorkOrderFinancialItem[]
   // Ω4-4 — lançamentos de caixa que LIQUIDAM este título (title_id preenchido pela liquidação).
   financial_entries FinancialEntry[]
+  cheques           Cheque[]
 
   // Ω4-3 (D-Ω4-C2) → B-SAN3-02 (D-SAN3-02-TITULO-COMPLEMENTAR) — a idempotência anti-refaturamento passou a ter
   // DUAS âncoras: cada item é faturado uma vez (carimbo invoiced_at/title_id) e no MÁX. 1 título ORIGINAL ativo por
@@ -2191,6 +2192,7 @@ model Cheque {
   currency         String           @default("BRL")
   due_date         DateTime?        @db.Date // "bom para"/pré-datado — MEMO (não entra na competência)
   status           String           @default("registered") // registered|deposited|cleared|bounced|cancelled
+  title_id         String?          @db.Uuid // título liquidado pela compensação deste cheque (opcional)
   cleared_entry_id String?          @db.Uuid // lançamento postado ao compensar (app-level)
   bounce_entry_id  String?          @db.Uuid // contra-lançamento postado ao devolver-após-compensar (app-level)
   bounce_reason    String? // motivo da devolução (auditoria)
@@ -2202,9 +2204,11 @@ model Cheque {
   deleted_at       DateTime?        @db.Timestamptz(6)
   tenant           Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   account          FinancialAccount @relation(fields: [tenant_id, account_id], references: [tenant_id, id], onDelete: Restrict)
+  title            FinancialTitle?  @relation(fields: [tenant_id, title_id], references: [tenant_id, id], onDelete: Restrict)
 
   @@unique([tenant_id, id])
   @@index([tenant_id, account_id, due_date])
+  @@index([tenant_id, title_id])
   @@index([tenant_id, status])
   @@index([tenant_id, deleted_at])
   @@map("cheques")

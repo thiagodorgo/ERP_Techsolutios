@@ -2331,6 +2331,8 @@ vendável pelo critério 4 do dono ("fluxos financeiros preservam dinheiro exato
    INDEPENDENTE de título") e declarou a dupla contagem "risco de PROCESSO, fora do escopo do backend deste
    bloco". Travar a dupla porta — baixa do título por `payTitle(payment_method='check')` × compensação do cheque do
    mesmo dinheiro — exige um vínculo cheque ↔ título que a decisão excluiu.
+   *Revisto por `D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO` (decisão do dono, 2026-10-21; bloco `B-SAN3-20`, PR #456 —
+   vale no merge, depois da junta de dinheiro). Linha apensa em 2026-10-24; o texto acima não foi alterado.*
 
 **Quem resolve e como:** a junta de cada bloco (unanimidade de 3 + crítico) revê a decisão com o desenho medido
 pelo planejador — a do `B-SAN3-02` revê a `D-Ω4-C2`, a do `B-SAN3-20` revê a `D-Ω4-7-NO-TITLE`; a política de
@@ -3901,3 +3903,27 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
 
 - **`D-TOPO-E-O-CLAUDE` (decisão do dono, 2026-10-24).** O dono determinou: *"vc faz 1.1 Auditar a reprovação e planejar o conserto, sempre trocar o astra por vc. esgota o codex rapido e vc tambem cobre que cair por limite. retorne o plano antes de começar para aprovação"*. Ao receber o plano, aprovou: *"1- 60 uss. 2- nao. 3-sim. aprovado, pode começar, meu filho!"*
   - **Consequência derivada, declarada (§A6):** o papel de topo do §C7.6 — plano inicial do bloco e, em toda reprovação de junta, auditoria mais plano de resolução — passa a ser do Claude (`planejador-mestre`), nunca do Codex Astra. Braço que cair por limite é coberto pelo Claude, com a substituição declarada no artefato e na ata.
+
+
+## D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO (decisão do dono, 2026-10-21; aplicada em 2026-10-24)
+
+- **Resposta literal do dono:** ***"A: só pela compensação (Recomendado)"***.
+- A opção A fecha as duas portas paralelas: `/financial-titles/:id/pay` e `POST /financial-entries` recusam
+  `payment_method=check` com `422 cheque_required`. Um cheque que liquida título é registrado com `title_id` e
+  somente a compensação (`/cheques/:id/clear`) baixa título e caixa na mesma unidade; o bounce restaura ambos.
+- Esta decisão revê em `D-Ω4-7-NO-TITLE` apenas a frase que mandava liquidar cheque por `payTitle(check)`.
+  Preserva `D-Ω4-7-COMPETENCIA-CLEAR`, `D-Ω4-7-BOUNCE-NEW-ENTRY`, o money gate e a regra de valor compensável.
+- **Limite explícito:** a garantia é por linha de cheque. Duplicidade do mesmo instrumento físico permanece em
+  `P-SAN3-20-CHEQUE-FISICO-DUPLICADO` e exige decisão/migração próprias.
+- **Mecanismos fixados:** toda escrita em `cheques` é condicionada ao estado que a autoriza; toda escrita na linha
+  do título é CAS do estado lido — nenhuma leitura prévia decide sozinha. A ordem de travas é período → cheque →
+  lançamento → título; nenhum caminho toma título antes de cheque.
+- A migração `20260881000000_cheque_title_link` aplica `D-MIGRACAO-COM-TRANSACAO-EXPLICITA` com `BEGIN`/`COMMIT` e o
+  drill por prefixo (`tests/cheque-title-link-migration-drill-db.test.ts`, k = 1..3). **Nota (§A7):** em 2026-10-24 essa
+  decisão ainda **não está na `main`** (`git grep` em `origin/main@7ab2fe71` → vazio); ela existe, aprovada pelo dono,
+  no ramo do PR #454 (`38504427`, `decisoes.md` l.3875-3878). O bloco a segue por ser a regra aprovada, citando a ref.
+- **Evidência das duas regras de mecanismo:** a enumeração dos writers do §2.5 do plano
+  (`docs/revisoes/SAN3/B-SAN3-20-plano.md`, E1–E8: linha de título e linha de cheque, com o predicado antes/depois) e
+  as barreiras T-K10a/b/c e T-K11a/b/h (`docs/revisoes/SAN3/B-SAN3-20-dev.md`).
+- **Conflito registrado:** a frase antiga do `REGISTRO-SAN3-CONFLITOS` sobre `D-Ω4-7-NO-TITLE` fica resolvida por
+  esta decisão; não foi apagada nem reordenada.

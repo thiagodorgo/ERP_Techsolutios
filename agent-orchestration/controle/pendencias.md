@@ -1390,7 +1390,8 @@ Nada no backend impede registrar+compensar um cheque E liquidar o mesmo título 
 mesmo dinheiro físico → dois lançamentos independentes. É disciplina do usuário (fluxos distintos). Quando title_id
 entrar em escopo do cheque, vincular cheque↔título e impedir liquidação dupla. Fora do escopo do Ω4-7 (title_id não modelado).
 
-- **status:** ABERTA · **severidade:** BAIXA · **dono:** a atribuir
+- **status:** FECHADA (2026-10-24, bloco `B-SAN3-20`, PR #456 — vale no merge, depois da junta de dinheiro; decisão do dono `D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO`, ***"A: só pela compensação (Recomendado)"***) · **severidade:** BAIXA · **dono:** `B-SAN3-20`
+  <sub>Evidência (comandos e contagens em `docs/revisoes/SAN3/B-SAN3-20-dev.md`): o cheque carrega `title_id` (FK composta `(tenant_id,title_id)`→`financial_titles(tenant_id,id)` RESTRICT); só `/cheques/:id/clear` liquida o título, com o MESMO lançamento (`entry.title_id = t` e `cheque.cleared_entry_id = entry`) e o CAS do título na mesma transação; `/financial-titles/:id/pay` e `POST /financial-entries` com `payment_method=check` → `422 cheque_required`; o bounce restaura o título na mesma transação. Provas: T-K5 (o roteiro da reprodução pela porta nova, memória/HTTP e Postgres: ±100, 1 lançamento, título pago), T-K10 (o vínculo só muda em `registered`, CAS) e T-K11 (CAS de estado do título; a devolução segue possível). **Limite declarado (R1-02):** a garantia é **por linha de cheque** — dois registros do mesmo cheque físico são dois cheques; segue em `P-SAN3-20-CHEQUE-FISICO-DUPLICADO`.</sub>
   <sub>Triagem SAN2-1 (2026-08-29): a entrada não trazia linha de status. Marcada **ABERTA por padrão conservador** — não fechei o que não verifiquei. Ver `pendencias-indice.md`.</sub>
 
 - **emenda (plano SAN3 §4.1 item 22, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-20`.
@@ -11605,3 +11606,47 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** emenda v2.3 do `B-TRC-02`. O `prisma migrate deploy` 7.8 executa cada sentença em autocommit. As migrações anteriores à `20260878000000` (por exemplo `20260874000000_traccar_ingestion_foundation`, com DDL em várias sentenças) não têm transação explícita. Elas já estão aplicadas em todos os ambientes; o risco só aparece numa base nova com o deploy interrompido. A mesma classe foi achada no `B-SAN3-02` (C2-01) e no `B-TRC-02` (D1 do DBA).
 - **bloqueia:** não.
 - **teste de encerramento:** cada migração com mais de uma sentença de DDL passa a ter transação explícita ou uma justificativa, com drill de falha injetada; e um guard de CI reprova migração nova com várias sentenças e sem `BEGIN`/`COMMIT` (regra geral recomendada pelo planejador, a decidir pelo dono).
+
+## P-SAN3-20-DESVINCULAR-DEPOSITADO (2026-10-24) — cheque pago por outro meio não pode ser desvinculado — BAIXA
+- **status:** ABERTA · **dono:** próximo bloco de cheques/tela · **bloqueia:** não.
+- **encerramento:** definir e provar fluxo seguro para cheque `deposited` cujo título já foi pago.
+
+## P-SAN3-20-DELETE-TITULO-COM-CHEQUE (2026-10-24) — título com cheque pendente pode ser apagado — BAIXA
+- **status:** ABERTA · **dono:** próximo bloco de títulos · **bloqueia:** não; o clear falha fechado com `title_not_found`.
+- **encerramento:** DELETE recusa com `422 title_has_pending_cheque` e prova concorrente.
+
+## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
+- **status:** ABERTA · **dono:** bloco do painel Financeiro (3 opções) · **bloqueia:** não.
+- **encerramento:** resumo desconta ou rotula cheque vinculado pendente sem alterar o razão.
+
+## P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (2026-10-24) — legado não permite reconciliar instrumento e lançamento — BAIXA
+- **status:** ABERTA · **dono:** DBA, se o dono solicitar relatório · **bloqueia:** não.
+- **encerramento:** consulta somente leitura em ambiente autorizado e decisão explícita sobre o legado.
+
+## P-SAN3-20-CHEQUE-FISICO-DUPLICADO (2026-10-24) — duas linhas podem representar o mesmo cheque — MÉDIA
+- **status:** ABERTA · **dono:** próximo bloco de cheques + migração própria · **bloqueia:** não este bloco.
+- **encerramento:** responder se o número se repete entre bancos/contas e, se aplicável, índice único parcial com drill.
+
+## P-SAN3-20-TELA-CHEQUES (2026-10-24) — backend sem tela de cheque/pagamento — PRODUTO
+- **status:** ABERTA · **dono:** B-SAN3-24 / trilha de telas · **bloqueia:** não o backend.
+- **encerramento:** tela com três aparências aprovadas opera registro, compensação e devolução pelas rotas reais.
+
+## P-SAN3-20-ATALHO-PAY-CHEQUE-ID (2026-10-24) — não há atalho de vínculo e compensação — BAIXA
+- **status:** ABERTA · **dono:** próximo bloco de produto financeiro · **bloqueia:** não.
+- **encerramento:** decisão de produto e contrato/testes caso o atalho seja aprovado.
+
+## P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA (2026-10-24) — 76 sentenças de drift preexistente — MÉDIA
+- **status:** ABERTA · **dono:** bloco de ferramenta/DBA do guard de migração · **bloqueia:** não este bloco; K12 impede drift novo.
+- **encerramento:** inventariar as 76 sentenças e reconciliar schema/migrações com decisão registrada.
+
+## P-SAN3-20-CHECK-STATUS-X-PAID (2026-10-24) — banco não amarra status a paid_amount — MÉDIA
+- **status:** ABERTA · **dono:** DBA / bloco próprio de migração · **bloqueia:** decisão da junta antes da venda.
+- **encerramento:** varrer legado e avaliar CHECK que restrinja `paid_amount > 0` a `partially_paid|paid`, com drill próprio.
+
+## P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE (2026-10-24) — o `titleId` da lista de cheques não tem teste — BAIXA
+
+- status: ABERTA
+- **prova (N = 1 campo):** `API_CONTRACTS.md` l.469 promete `titleId` no item de `GET /cheques`; a mutação M4b (`toChequeListDto` sem `titleId`) deixa `tests/cheque-title-link.test.ts` 38/38 verde (C3 da junta do B-SAN3-20, achado A-1). Nenhum cliente consome `/cheques` hoje (0 ocorrências em frontend/mobile).
+- **escopo:** `dentro-do-bloco` do B-SAN3-20, classificado `ajuste` (não bloqueia).
+- **dono:** `B-SAN3-24` (telas de cheque — primeiro consumidor da lista).
+- **teste de encerramento:** asserção de `titleId` no item da lista; a M4b passa a vermelho.
