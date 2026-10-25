@@ -221,7 +221,8 @@ void main() {
           serviceAddress: 'Rua',
           status: WorkOrderStatus.approved,
           priority: WorkOrderPriority.normal,
-          syncStatus: SyncStatus.synced,
+          // Aprovada NO APARELHO e ainda não enviada — o caso real em que o `approved` local sobrevive ao upsert.
+          syncStatus: SyncStatus.pending,
           createdAt: DateTime.utc(2026, 10, 25),
         ),
       ]);
@@ -266,7 +267,7 @@ void main() {
     test(
       'F2 — query: scope=assigned, openOnly=true, paginate=cursor, limit=100 em toda página; cursor opaco; sem offset',
       () async {
-        final cursores = ['opaco/1 ä', 'opaco-2'];
+        final cursores = [' OpAcO/1 Ä ', 'Opaco-2'];
         final backend = _FakeBackend((options) {
           final cursor = options.queryParameters['cursor'];
           if (cursor == null) {
