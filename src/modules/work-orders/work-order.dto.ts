@@ -146,6 +146,8 @@ export function toWorkOrderListDto(result: ListWorkOrdersResult) {
       limit: result.limit,
       offset: result.offset,
       total: result.total,
+      // B-SAN3-13 — opaco: o cliente devolve em `?cursor=` tal como recebeu; `null` = acabou.
+      nextCursor: result.nextCursor,
     },
   };
 }

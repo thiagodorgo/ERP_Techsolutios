@@ -2076,7 +2076,7 @@ honesto é vazio ("nenhuma ordem atribuída a você"). Mesmo padrão que o P-CHK
 de checklist (app caía nos seeds); a trilha de OS precisa do mesmo tratamento: pull remoto → vazio honesto
 sem fallback de seed; seeds só em modo demo EXPLÍCITO e rotulado. Candidata ao **PR-08 (reconciliação
 mobile)** junto com [P-MOBILE-BANNER-INTEGRACAO].
-- status: ABERTA.
+- status: RESOLVIDA com o merge do ramo `fix/mobile-minhas-os` (B-SAN3-13, 2026-10-25) — prova: F1/F6/F15 e CA-23 (`mobile/flutter_app/test/features/bsan313_*`); a junta e o porteiro conferem. Sementes só no app de demonstração local (Q5 do dono); a fabricação (sem `serverId` e sem `work_order.create` na fila) sai no `load()` em build remoto e em toda caminhada completa.
 
 - **emenda (inventário SAN3, fatia AUSENTES §2c, 2026-09-11) — componente que falta:** apagar as OS semente já gravadas no aparelho. Prova no HEAD `c9ed9b91`: `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart` — o `_upsertRemoteOrders` não tem `delete`/`remove`/`clear`, e a semeadura só ocorre com `_remoteApi == null` (l.118-121), então o resíduo fica nos aparelhos que já rodaram o build local. O plano SAN3 põe a purga no gate (§4.1 item 33, `B-SAN3-13`).
 - **dono:** `B-SAN3-13` (plano SAN3, §4.1 item 33 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -8864,7 +8864,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, sem filtro de atribuição nem paginação — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: RESOLVIDA com o merge do ramo `fix/mobile-minhas-os` (B-SAN3-13, 2026-10-25) — a LISTA: o backend impõe ao papel de campo o predicado do guard (B1-B9, B11-B19 em `tests/san3-13-wo-list-*`), o app pede `scope=assigned&openOnly=true&paginate=cursor` e caminha por cursor (F2-F4). Leituras irmãs fora da lista: `P-WO-LEITURAS-TENANT-WIDE-TECNICO`. (Aberta no inventário SAN3, fatia AUSENTES, 2026-09-11.)
 - **junta do PR #386, ciclo 1 (C2-10, 2026-09-12):** o backend oferece o filtro `assignedUserId`, mas não impõe escopo por papel na listagem (`src/modules/work-orders/work-order.service.ts:402-418`); a matriz (l.45) dá ao técnico `execute/update-assigned` e não diz se ele lê todas as OS da organização. Pergunta ao dono no plano SAN3 v5 (§10), com default estrito: o técnico lista só as atribuídas, imposto no backend (bloco `B-SAN3-13`).
 - **fonte (fatia AUSENTES, §2a):** sintese B44
 - **situação medida pela fatia:** ATIVO
@@ -11657,3 +11657,89 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` (bloco de ferramenta seguinte, Q3 do plano do `B-GUARD-MIGRACAO`, resposta do dono: *"Aceito as recomendações"*) · **bloqueia:** não.
 - **Origem:** limite declarado (D-007) da regra G6 do `scripts/migration-transaction-guard.mjs`: ela exige que algum `tests/*-migration-drill-db.test.ts` cite o nome da migração nova; não prova o laço k = 1..n com falha injetada pelo `prisma migrate deploy` real nem a comparação de estado. Hoje há três cópias do arnês (~450–550 linhas cada: `work-order-invoicing`, `traccar-event`, `cheque-title-link`).
 - **teste de encerramento:** uma suíte `-db` genérica que, para toda migração nova com `BEGIN`/`COMMIT`, injeta falha depois de cada sentença pelo `migrate deploy` real, compara um retrato genérico do catálogo antes × depois e converge com `resolve --rolled-back` + `deploy`; com teto de crescimento, entrada na lista curada do `ci.yml` e medição 3×; a mutação "tirar o BEGIN" de uma migração nova deixa a suíte vermelha.
+
+## P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de colegas fora da lista — MÉDIA
+- status: ABERTA
+- **origem:** B-SAN3-13 (revisão adversarial r1, CRIT-4; Q2 do dono: "o detalhe segue legível neste bloco"). O #32 fecha **a lista**.
+- **prova:** `work_orders:read` em `GET /work-orders/:id`, `/:id/timeline`, `/:id/attachments`,
+  `/:id/attachments/:attachmentId/download`, `/:id/map-start-points`, `/approvals/pending`, `/approvals/:approvalId`;
+  `field_dispatch:read` em `GET /operations/dispatches`, `/:dispatchId`, `/:dispatchId/timeline` — leitura tenant-wide.
+- **escopo:** pre-existente (rotas do 07a/Ω3, anteriores ao bloco).
+- **dono:** `B-SAN3-23` ou bloco novo de escopo de leitura.
+- **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
+
+## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
+- status: ABERTA
+- **origem:** B-SAN3-13 (§2.5, §11-bis 1). A tela de sincronização resolve só `conflict`; `failed` e os tipos sem replay
+  (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) ficam para sempre.
+- **efeito:** a OS que deixou de ser do técnico (ou concluiu) com uma dessas ações fica no aparelho com selo — nunca é
+  apagada (correto), mas não drena.
+- **dono:** `B-SAN3-16`.
+- **encerramento:** descarte/replay explícito dessas ações; depois dele, a OS sai no pull completo seguinte.
+
+## P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob não tem caminho — MÉDIA
+- status: ABERTA
+- **origem:** B-SAN3-13 (R2-3). O uploader só retenta `pending`/`failed` (`evidence_upload.dart`); a evidência em
+  `conflict` com blob no aparelho retém a OS (ramo 3) sem drenagem.
+- **dono:** bloco de sync de evidência.
+- **encerramento:** resolver/descartar a evidência em conflito pela tela; a OS sai depois.
+
+## P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para sempre — ALTA
+- status: ABERTA
+- **origem:** B-SAN3-13 (R2-6, M23). Não há replay de material do prestador; com este bloco a OS com peça lançada fica
+  RETIDA (ramo 1 por `work_order_local_id` e ramo 5 por `work_order_materials`), nunca apagada.
+- **gravidade:** ALTA — consumo de estoque e base de cobrança.
+- **dono:** `B-SAN3-16` ou o bloco de estoque do prestador.
+- **encerramento:** replay de material com efeito no backend; a ação vira `synced` e a OS drena.
+
+## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13 (CRIT-5). Se a OS continuar do técnico, o selo da linha fica errado até o próximo upsert.
+- **dono:** bloco de sync.
+- **encerramento:** resolver o conflito também reescreve a linha.
+
+## P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de demonstração durante o recarregamento — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13 (R2-4, lateral). `workOrderRepositoryProvider` usa `devBootstrapSession` (`tenant-demo`) no `orElse`.
+- **escopo:** pre-existente (`e79616aa4`, 2026-06-13). A trava estática e a releitura do store neutralizam para a purga.
+- **dono:** bloco de sessão do app.
+- **encerramento:** o provider não cria repositório com sessão de demonstração em build remoto.
+
+## P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a fila inteira — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13 (R2-N2). `PersistentSyncQueueRepository.enqueue/update` leem e gravam tudo; um `update` do replay
+  concorrente a um `enqueue` pode perder a ação recém-enfileirada.
+- **escopo:** pre-existente (`e79616aa4`, 2026-06-13).
+- **dono:** bloco de sync.
+- **encerramento:** escrita por ação (ou sob trava da fila), com teste de concorrência.
+
+## P-WO-STATUS-VOCABULARIO-APP-BACKEND (2026-10-25) — approved só no app; rejected terminal só no backend — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13 (M28). Não afeta a purga (o app não decide "aberta"); afeta só exibição.
+- **dono:** bloco de contrato do app.
+- **encerramento:** um vocabulário de status único entre app e backend.
+
+## P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de técnico dependia da lista inteira — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13 (H4). A web não envia `scope`/`paginate`; um usuário só técnico na web passa a ver só as dele.
+- **dono:** trilha de telas web.
+- **encerramento:** conferência das telas web com sessão `technician`.
+
+## P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (2026-10-25) — o teste 16 da telemetria falha por tempo — BAIXA
+- status: ABERTA
+- **prova:** `flutter test test/features/telemetry/telemetry_test.dart --plain-name "16. foreground-only"`, isolado, 5 vezes no worktree do B-SAN3-13 → 2 falhas (`Expected: <3> Actual: <4>` e `<2>`/`<3>`, l.348: um heartbeat em voo grava depois do `stop`); a suíte inteira falhou nele 2 de 3 vezes, sem nenhum outro teste vermelho.
+- **escopo:** pre-existente — o teste é do #274 (`2c916222`, PR-13 da telemetria) e o B-SAN3-13 não toca `lib/core/telemetry/**` nem o teste (`git diff --stat origin/main -- lib/core/telemetry test/features/telemetry` → vazio).
+- **dono:** bloco de telemetria do app.
+- **encerramento:** o teste espera o fim da captura em voo (ou o `stop` aguarda o heartbeat corrente) e passa 20/20 isolado.
+
+## P-MOBILE-ORFAOS-POS-PURGA (2026-10-25) — ação e material órfãos da OS que saiu do aparelho — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13, ciclo 2 (RQ-4; achado C2-04 da junta de dado, ciclo 1, e P1 do `planejador-san313-c2-fable`).
+  (a) ação de linha FABRICADA (sem `serverId` e sem `work_order.create`) sai sem a OS: só dado fabricado chega lá
+  (medido pela C2: criação offline sempre enfileira `create`; a fila nunca remove ação). (b) material e ação
+  `work_order_material.add` gravados DEPOIS do commit do `deleteWorkOrderUnlessPending` sobrevivem em
+  `work_order_materials`/na fila (F31/P1); religam-se à OS se ela voltar com `localId == serverId` (linhas nascidas do
+  servidor, `work_order_remote_api.dart:380`); senão ficam órfãos até descarte/replay. Nenhum dado é apagado.
+- **gravidade:** BAIXA — nada se perde; sobra registro sem OS na tela.
+- **dono:** `B-SAN3-16`.
+- **encerramento:** replay/descarte de ação e material sem OS, com teste que prova o destino de cada um.

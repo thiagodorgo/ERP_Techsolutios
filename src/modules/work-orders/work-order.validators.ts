@@ -31,6 +31,52 @@ export const WORK_ORDER_STATUS_TRANSITIONS: Readonly<Record<WorkOrderStatus, rea
   rejected: [],
 };
 
+/**
+ * B-SAN3-13 (E1 do dono, "Só as abertas") — a definição ÚNICA de "OS terminal": o status sem transição de saída.
+ * Derivada da tabela acima (não uma segunda lista escrita à mão): `completed`, `cancelled`, `rejected`. "Aberta" é
+ * o complemento, e quem decide é o backend — o app não recalcula para purgar (plano v3 §3, M28).
+ */
+export const WORK_ORDER_TERMINAL_STATUSES: readonly WorkOrderStatus[] = Object.freeze(
+  (Object.entries(WORK_ORDER_STATUS_TRANSITIONS) as [WorkOrderStatus, readonly WorkOrderStatus[]][])
+    .filter(([, transitions]) => transitions.length === 0)
+    .map(([status]) => status),
+);
+
+/** B-SAN3-13 — `true` quando a string tem a forma de UUID que o backend aceita (o padrão de `parseRequiredUuid`). */
+export function isWorkOrderUuid(value: unknown): value is string {
+  return typeof value === "string" && uuidPattern.test(value);
+}
+
+/** B-SAN3-13 — `scope`: ausente → `undefined`; `assigned` → `"assigned"`; qualquer outro valor → 400. */
+export function parseListScope(value: unknown): "assigned" | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (value === "assigned") return "assigned";
+  throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_scope", "scope must be 'assigned'.");
+}
+
+/** B-SAN3-13 — `openOnly`: ausente → `false`; só a string `true` liga; qualquer outro valor → 400. */
+export function parseOpenOnly(value: unknown): boolean {
+  if (value === undefined || value === null || value === "") return false;
+  if (value === "true") return true;
+  throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_open_only", "openOnly must be 'true'.");
+}
+
+/** B-SAN3-13 (E2) — `paginate`: ausente → modo offset (`undefined`); `cursor` → modo cursor; outro valor → 400. */
+export function parsePaginate(value: unknown): "cursor" | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (value === "cursor") return "cursor";
+  throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_paginate", "paginate must be 'cursor'.");
+}
+
+/** B-SAN3-13 — `cursor` OPACO (hoje o `id` da última OS): ausente → `undefined`; fora da forma de UUID → 400. */
+export function parseCursorId(value: unknown): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (!isWorkOrderUuid(value)) {
+    throw new WorkOrderError(400, "WORK_ORDER_FILTER_INVALID", "invalid_cursor", "cursor is invalid.");
+  }
+  return value.toLowerCase();
+}
+
 export function assertNonEmptyString(value: unknown, field: string): string {
   const normalized = typeof value === "string" ? value.trim() : "";
 
