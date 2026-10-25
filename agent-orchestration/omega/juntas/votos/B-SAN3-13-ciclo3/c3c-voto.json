@@ -1,0 +1,98 @@
+{
+ "jurado": "jurado-san313-c3c-opus (identidade nova; nada herdado como fato)",
+ "executor": "subagente Claude Code genérico, cobrindo o Codex (sem limite até 20:13 BRT)",
+ "corpo": "jurado-san313-c3-regressao-escopo-registro",
+ "modelo": "Claude Opus 5.5 · nível menor DECLARADO · substituição: Opus no lugar do GPT-5.6 Sol",
+ "objeto": "f382422514fb2bd0f8363a191a46035c4cf7e865 (ls-remote = gh pr view 460, OPEN, MERGEABLE) · objeto do ciclo 2 <O>~4 = cbf2db29 · head-base <O>~23 · merge-base b08c755719a6cb0ed192fa04e549ac5fc67a3e67 · objeto no fim: o mesmo",
+ "quorum": "unanimidade de 3, com veto · ciclo 3 (só defeito de produto GRAVE reprova, §C7 item 8(2))",
+ "arquivos_medidos": [
+  "**"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito": "VERDE",
+   "ca_c3_1": "objeto 1/1/1/1; controle <O>~4 0/0/0/0",
+   "ca_c3_2": "cmp IGUAL 1473=1473 (disco e blob); controle 1 char trocado → differ char 980",
+   "ca_c3_3": "8 motivos do bloco desde <O>~23, FALTA vazio; controles: <O>~4 FALTA 4; lista+invalid_fabricado → FALTA invalid_fabricado",
+   "condicoes": "validators.ts:51-62 e service.ts:483-510 = texto; nenhum motivo só no texto nem só no código",
+   "nota": "‘paginate ≠ cursor’ sem ‘presente’ (frase da E2, não do delta) — nota, não grave"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito": "VERDE",
+   "caminhos": "5 no delta <O>~4..<O>: 5 PERMITIDO (§C), PROIBIDO 0, FORA 0",
+   "numstat": "R-ciclo1 13/0, R-ciclo2 12/0, API_CONTRACTS 1/1, -dev.md 16/0, -plano.md 63/0; prefixo dos dois intacto (cmp); contrato: só a frase dos erros (word-diff)",
+   "merges": "0 em <O>~4..<O>; 4 commits = declarados no -dev.md (3 hashes + o próprio commit do relatório)",
+   "diff_check": "ec 0",
+   "controles": "prisma/schema.prisma e controle/pendencias.md fabricados → PROIBIDO; README.md → FORA"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito": "VERDE",
+   "codigo": "CODIGO-IDENTICO <O>~4..<O> (controle desde <O>~23: DIFERE)",
+   "check_runs": "14 total, 0 fora de completed success; runs pull_request 40238500760 e push 40238497499 completed success",
+   "contagens": "backend jobs 121305072292/121305062462: 345·3981·3979·0·2; backend-postgres 121305072320/121305062100: 493/493, skipped 0, not ok 0; flutter 121305072231/121305062398: format 196 files 0 changed, analyze limpo, +905",
+   "comparacao_ciclo2": "cmp IGUAL; controle 3979→3978 → differ char 22"
+  }
+ ],
+ "mandato_md5": "1e99c3fa92879b6c401ccf52fbd89af7 (EOL-neutro) · declarado: o mandato não declara md5 próprio",
+ "corpo_md5": "170a5f5a325a9298cda882a271ae691c (blob .claude/ do objeto, EOL-neutro) · espelho .agents/ presente no objeto (IDENTICO descontado o bloco Codex, medido pelo mandato e pelo inspetor) · recebido por git show do blob: 170a5f5a… · IDENTICO",
+ "legalidade": "parecer insp-san313c3-parecer.md: LIBERADO COM RESSALVA (R1 corpo do blob: cumprido; R2 monocultura 3/3 Opus: declarada; R3 disco: sem npm ci; R4 carga: objeto não andou) · check-runs 14/14 completed success, runs 40238500760 (pull_request) e 40238497499 (push)",
+ "leitura_de_outras_cadeiras": "não li votos nem evidências de C1/C2b de ciclo nenhum · li: c3-evidencia.md do ciclo 2 (roteiro P3), plano seção Ciclo 3, -dev.md seção Ciclo 3, parecer do inspetor",
+ "pausa": "nenhuma",
+ "achados": [
+  {
+   "id": "C3c-N1",
+   "defeito": "frase da E2 no contrato: ‘paginate ≠ cursor → invalid_paginate’ sem ‘presente’; o código trata paginate vazio como ausente (validators.ts:66)",
+   "evidencia": "linha l.32 do API_CONTRACTS.md do objeto × parsePaginate",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "redação do contrato menos precisa que o código numa borda (valor vazio); não muda comportamento nem dado; não é do delta do ciclo 3"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "CA-c3-1 com controle <O>~4 0/4",
+  "CA-c3-2 com controle de 1 caractere",
+  "CA-c3-3 com controles <O>~4 FALTA 4 e motivo fabricado",
+  "CA-c3-4 com PROIBIDO/FORA fabricados acusados",
+  "CA-c3-5 com comparador acusando número trocado; CODIGO-IDENTICO com controle desde <O>~23"
+ ],
+ "pendencias_que_aceito": [
+  "C3c-N1 (nota; se o orquestrador quiser registrar, dono = o bloco que tocar o contrato de GET /work-orders)",
+  "C3-02, C3-03, C3-04 como notas pelo §D do plano do ciclo 3"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "git show <ref>:API_CONTRACTS.md | grep -c (4 motivos) em <O> e <O>~4",
+   "resultado": "1/1/1/1 e 0/0/0/0"
+  },
+  {
+   "comando": "awk seção Ciclo 3 do plano → p.txt; grep -m1 contrato → c.txt; cmp; cópia mutada",
+   "resultado": "ec 0 (1473=1473); controle ec 1"
+  },
+  {
+   "comando": "git diff <O>~23 <O> -- src/modules/work-orders | grep motivos; grep -q no contrato",
+   "resultado": "8 motivos, FALTA vazio; <O>~4 FALTA 4; fabricado FALTA 1"
+  },
+  {
+   "comando": "git diff --name-status/--numstat/-U0/--word-diff <O>~4 <O>; classificador case; git rev-list --merges",
+   "resultado": "5 PERMITIDO, 0 PROIBIDO, 0 FORA; só anexo; 0 merge; 4 commits"
+  },
+  {
+   "comando": "git diff --quiet <O>~4 <O> -- src tests prisma mobile frontend scripts .github",
+   "resultado": "CODIGO-IDENTICO"
+  },
+  {
+   "comando": "gh api commits/<O>/check-runs; gh api actions/jobs/<id>/logs (6 jobs)",
+   "resultado": "14/14 completed success; contagens = ciclo 2"
+  }
+ ],
+ "teardown": "worktree C:/Users/AMP/j13c3-c3-wt removido por git worktree remove --force (ec 0, 0 na lista) · nenhum container nem banco subido (0 j13*) · $SCRATCH esvaziado por nome e removido · base viva nunca tocada · w-san313 só com c3c-evidencia.md e c3c-voto.json, 0 rastreado modificado, sem commit",
+ "justificativa": "terreno: worktree próprio, sem Docker/Postgres, 14,58 GB livres de commit, 9,8 GB em C: · item 1: C3-01 fechado por CA-c3-1/2/3, condições = código · item 2: delta só no PERMITIDO, sem merge, commits = declarados · item 3: código idêntico ao ciclo 2, CI 14/14 verde com as mesmas contagens · cada comparação com vermelho-controle que acusou · nada ficou sem medir · régua do ciclo 3: nenhum defeito grave\nVOTO: APROVADO — C3-01 fechado (contrato com os 4 motivos, = §B byte a byte, 8/8 motivos do bloco cobertos); delta do ciclo 3 dentro do PERMITIDO, PROIBIDO intocado, 0 merge; CODIGO-IDENTICO e CI 14/14 com backend 345·3981·3979·0·2, backend-postgres 493/493, flutter +905 = ciclo 2; Kpis intocado; pendências: C3c-N1 (nota)"
+}

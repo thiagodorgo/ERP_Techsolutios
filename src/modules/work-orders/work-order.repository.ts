@@ -19,7 +19,8 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { WorkOrderError } from "./work-order.types.js";
+import { matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
+import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   assertChecklistRemovalHasActor,
   liveChecklistLinks,
@@ -297,13 +298,35 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       .filter((workOrder) => !input.assignedUserId || workOrder.assignedUserId === input.assignedUserId)
       .filter((workOrder) => !input.from || workOrder.createdAt >= input.from)
       .filter((workOrder) => !input.to || workOrder.createdAt <= input.to)
-      .filter((workOrder) => matchesSearch(workOrder, input.search));
+      .filter((workOrder) => matchesSearch(workOrder, input.search))
+      // B-SAN3-13 — o escopo do ator (predicado do guard) e a E1 ("Só as abertas"): mais dois filtros em cadeia, que
+      // só restringem — a mesma semântica que o `AND` por cláusula do Prisma (`buildWhere`).
+      .filter((workOrder) => !input.assignedToActor || matchesAssignedToActor(workOrder, input.assignedToActor))
+      .filter((workOrder) => !input.openOnly || !WORK_ORDER_TERMINAL_STATUSES.includes(workOrder.status));
+
+    // B-SAN3-13 (R2-1 + E2) — modo cursor (`paginate: "cursor"`, inclusive na 1ª página): ordem `id desc` (string do
+    // uuid canônico minúsculo — a mesma ordem do `uuid` do Postgres, provada no B15-db), página `id < cursor` quando
+    // há cursor; o `total` não conta a cláusula do cursor. Modo offset: a ordem de sempre e `nextCursor: null`.
+    if (input.paginate === "cursor") {
+      const items = [...filtered]
+        .sort((left, right) => (left.id < right.id ? 1 : left.id > right.id ? -1 : 0))
+        .filter((workOrder) => !input.cursorId || workOrder.id < input.cursorId)
+        .slice(0, input.limit);
+      return {
+        items,
+        total: filtered.length,
+        limit: input.limit,
+        offset: 0,
+        nextCursor: nextWorkOrderCursor(items, input.limit),
+      };
+    }
 
     return {
       items: filtered.slice(input.offset, input.offset + input.limit),
       total: filtered.length,
       limit: input.limit,
       offset: input.offset,
+      nextCursor: null,
     };
   }
 
@@ -567,6 +590,12 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   private sortedWorkOrders(): WorkOrder[] {
     return [...this.workOrders.values()].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
+}
+
+/** B-SAN3-13 — regra ÚNICA do `nextCursor` NO MODO CURSOR (os dois repositórios): o `id` do último item se a
+ * página veio cheia. No modo offset o `nextCursor` é sempre `null` (Emenda E2). */
+export function nextWorkOrderCursor(items: readonly WorkOrder[], limit: number): string | null {
+  return items.length === limit && items.length > 0 ? (items[items.length - 1] as WorkOrder).id : null;
 }
 
 export function formatWorkOrderCode(sequence: number): string {
