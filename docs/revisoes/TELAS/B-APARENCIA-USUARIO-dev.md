@@ -88,6 +88,45 @@ Commit `ed3d375c`. Os 5 testes novos rodaram juntos com as regressões vizinhas 
 
 Todas restauradas (`git status --short` limpo após cada uma). Saída integral em `scratchpad/mutacoes.txt` (não versionada).
 
-## Etapa 4 — bateria (§9 Frontend + raiz)
+## Etapa 4 — fidelidade (§11) e revisão `ui-ux-pro-max`
+
+**Como capturei.** Vite em `127.0.0.1:47193` (porta alta livre, conferida por `netstat`; nenhuma das portas proibidas), com uma página de captura TEMPORÁRIA (`frontend/captura-aparencia.{html,tsx}`, apagada ao fim, nunca commitada) que monta o `AppShell` e a `PatiosPage` reais com sessão e organização semeadas, a aparência guardada pela própria chave, e `fetch` respondendo no contrato real com 8 pátios iguais aos da referência. Edge headless (`--headless=new --window-size=1440,1700 --screenshot`), 1440 px. A referência foi capturada na mesma largura, com uma cópia no scratchpad que só troca a opção inicial (`trocarOpcao('b'|'c')`) e esconde o quadro de notas. Capturas no scratchpad (não versionadas): `patios-A.png`, `patios-B.png`, `patios-B-detalhe.png`, `patios-C.png`, `patios-C-linha.png`, `ref-a.png`, `ref-b.png`, `ref-c.png`.
+
+**Achados da própria captura, corrigidos no commit `bcca9c66`:** (1) a pílula de situação herdava a altura de linha de 40 px da célula e virava um círculo de 46 px, e a linha passava de 44 px. Medi por `getComputedStyle` no Edge (`pill:40px/46px`); depois da correção, `pill:12.6px/18.6px`, e a linha ficou em 43 px; (2) as amostras da legenda das vagas (C) saíam com borda escura, por especificidade; corrigido (`sw:rgb(134,239,172)`); (3) os rótulos das barras e da dica do KPI de crítico perderam o prefixo "Pátio ", como na referência; (4) cada barra ganhou dica com o valor exato (`<title>`). Um tropeço meu, também declarado: o Vite deste worktree não recarregou o CSS e o TSX alterados, e duas rodadas de captura saíram com o código antigo. Reiniciei o servidor e recapturei.
+
+**Divergências conscientes em relação à referência:**
+
+| Onde | Referência | Implementado | Por quê |
+|---|---|---|---|
+| A | detalhe embaixo da linha, KPIs clicáveis, fuso legível | a tela que já estava no ar (linha leva à página do pátio, "Abrir"/lápis na linha) | Pátios é uma das 5 telas de `D-OS-CABECALHO-PADRONIZADO`, que "continuam como estão até o dono responder" (`CLAUDE.md` §4 item 6); o plano (§3) diz "A = igual ao que existe hoje". B e C aplicam o padrão de blocos clicáveis |
+| B | coluna LIBERAÇÕES por pátio | sem a coluna | o resumo só traz o total da organização (`releaseQueueDepth`); a própria referência lista isso como "o que faltaria" no backend |
+| B | KPI "Liberações pendentes" filtra a lista por pátio | leva à fila de liberações (`/patios/liberacoes`) | mesmo motivo; continua clicável e leva a uma lista |
+| B | número do KPI de crítico em vermelho e o de liberações em roxo | número na cor padrão do `KpiStatCard` | o componente da biblioteca não tem cor de valor, e `components/patterns/**` está fora do PERMITIDO |
+| B | subtítulo "Ocupação da rede de guarda, pátios sob pressão…" | "Locais de guarda da organização — ocupação da rede, pátios sob pressão…" | mantém o subtítulo que o smoke antigo de Pátios exige (fora do PERMITIDO); ver a Etapa 1, item 1 |
+| B/C | o nome do pátio na linha é um link para a página do pátio | o nome é texto; a ação "Abrir vagas" / "Abrir página do pátio" fica no detalhe | a regra do dono diz "linha sem botão de ação"; um link dentro de uma linha clicável vira alvo duplo de teclado |
+| B/C | "Ver processos do pátio" no detalhe | ausente | a tela de Processos guarda o filtro de pátio em estado local, não na URL; não dá para chegar já filtrado sem mexer nela (fora do PERMITIDO) |
+| B/C | lista sem paginador | `TablePager` padrão | o padrão do sistema para listas; com até 100 pátios na janela |
+| C | bloco "Com liberações pendentes" | bloco "Com vagas bloqueadas" | liberações por pátio não existem no backend; vagas bloqueadas por pátio existem no resumo |
+| C | clicar numa vaga livre abre "alocar" | só a vaga ocupada é clicável (leva ao dossiê) | a referência anota que "o quadro compacto não mostra as ações da vaga (estão na página completa do pátio)" |
+| B/C | áreas na ordem do cadastro | áreas em ordem alfabética | a ocupação não traz a hierarquia; a página do pátio monta a árvore por `parentId` |
+| B e C | — | sem o resumo de custódia, a B degrada para os números do cadastro; a C mostra "—" nos blocos de faixa | D-007: nenhum gráfico ou número sem dado |
+
+**Checklist `ui-ux-pro-max` (web):** 4 estados nas três (carregando com esqueleto, vazio com orientação, erro com "Tentar novamente", populado), e também no quadro e no mapa de vagas; situação e faixa com rótulo além da cor; tabela com `aria-sort`, ordenação e paginação; linha com foco visível, Enter/Espaço; barras com `role="button"`, teclado e dica; menu com `role="menu"`/`menuitemradio`, setas, `Escape` e foco devolvido; texto longo cortado com reticências e `title`; nenhum termo técnico visível. **Ressalva:** em B e C, a busca, a aba e o bloco escolhidos ficam no estado da página e se perdem ao voltar da página do pátio (a A guarda tudo na URL, pela `useDenseList`). Fica como pendência (abaixo). **Ressalva 2:** as cores das classes novas vêm da referência em hex, como todas as `pat-*` existentes; não há token novo.
+
+## Etapa 5 — escopo
+
+`git diff --name-only origin/main...HEAD` → 21 arquivos, todos em `frontend/` e neste relatório. Batidos contra o PROIBIDO (`prisma/**`, `migrations/**`, `infra/**`, `src/**`, `.env*`, lockfiles, `Kpis/**`, `modules/settings/**`, `useYards.ts`, `yards.service.ts`) e contra o menu lateral (`appSidebarNav.ts`, que pela (c) não entra): **nenhum**. `AppShell.tsx` mexe só no rodapé do usuário (+8/−2). `frontend/package.json` muda só a lista do `test:smoke`. O PERMITIDO do plano não listava o shell; ele entra pela (c) do dono, como o mandato manda.
+
+## Pendências que deixo nomeadas (não são deste bloco)
+
+- **P-APARENCIA-ESTADO-NA-URL** — B e C guardam busca, aba e filtro em estado local; ao voltar da página do pátio, voltam ao início. A A guarda tudo na URL. Dono sugerido: o próximo bloco de Pátios.
+- **P-PATIOS-LIBERACOES-POR-PATIO** — o resumo `/patios/dashboard/summary` não traz liberações nem custódia por pátio; a coluna da B e o bloco da C da referência dependem disso. Backend.
+- **P-PROCESSOS-FILTRO-PATIO-NA-URL** — "Ver processos do pátio" pede que a tela de Processos aceite o pátio pela URL.
+- **P-KPI-COR-DO-VALOR** — `KpiStatCard` sem cor de valor (a referência pinta o crítico e as liberações). Biblioteca.
+- **P-BLOCOS-CLICAVEIS-NA-BIBLIOTECA** — tabela de linha única que abre o detalhe, chip de filtro e linha de KPIs nasceram como classes `pat-*` e componentes em `patios/yards/components/aparencias/` (o PERMITIDO não incluía `components/**` da biblioteca). Promover à biblioteca no próximo bloco que usar o padrão (`CLAUDE.md` §4 item 3).
+- **Aparência guardada no servidor** — a v1 é do navegador (a); o servidor vem junto da AWS, como o dono decidiu.
+- **Ambiente local** — `tests/core-saas-role-authority.test.ts` (suíte da raiz) exige `DATABASE_URL` no carregamento: sem `.env` no worktree ele falha; com uma URL de mentira (sem conexão) passa 12 de 12. A CI exporta a variável. Não é deste bloco (não toquei `src/` nem `tests/` da raiz).
+
+## Etapa 6 — bateria (§9 Frontend + raiz) no head final
 
 EM APURAÇÃO
