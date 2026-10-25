@@ -116,6 +116,43 @@ if (!connectionString) {
   });
 }
 
+// B-SAN3-12a (Emenda E1.F4(c)) — paridade memória × Prisma de `cheques.linkedPending*`: o MESMO arranjo (1 cheque pendente com
+// título + 1 sem) nos dois repositórios do resumo dá o mesmo bloco `cheques`.
+if (connectionString) {
+  test("A16 (db, paridade): cheques.linkedPending* é o mesmo no resumo em memória e no Prisma para o mesmo arranjo", async () => {
+    const h = await bootstrap();
+    try {
+      const s = await seed(h, "a16");
+      await h.chequeService.create(s.actor, chequeBody(s, s.titleId));
+      await h.chequeService.create(s.actor, { ...chequeBody(s, undefined), amount: 40 });
+      const summary = await import("../src/modules/financial-summary/index.js");
+      const fromDb = await (await summary.createDefaultFinancialSummaryService()).getSummary(s.actor);
+
+      const accounts = await import("../src/modules/financial-accounts/financial-account.service.js");
+      const titles = await import("../src/modules/financial-titles/index.js");
+      const cheques = await import("../src/modules/cheques/index.js");
+      const memActor = { ...s.actor, permissions: [...s.actor.permissions, "financial_accounts:create" as const, "financial_titles:create" as const] };
+      const account = await accounts.createMemoryFinancialAccountService().create(memActor, { name: "Conta memória" });
+      const title = await titles.createMemoryFinancialTitleService().create(memActor, {
+        direction: "receivable", party_type: "customer", party_name: "Parte", amount: 100, issue_date: "2026-10-10", due_date: "2026-12-10",
+      });
+      // Fixture direta no repositório de memória (o serviço de cheques resolve o título pelo modo do processo, aqui Prisma):
+      // o que está sob prova é a PROJEÇÃO do resumo, não o vínculo.
+      const memRepo = cheques.getMemoryChequeRepositoryForTests();
+      const base = { tenantId: s.tenantId, accountId: account.id, direction: "received", bank: "B", currency: "BRL" };
+      await memRepo.create({ ...base, titleId: title.id, chequeNumber: "M1", amount: 100 });
+      await memRepo.create({ ...base, chequeNumber: "M2", amount: 40 });
+      const fromMemory = await new summary.InMemoryFinancialSummaryRepository().getSummary({ tenantId: s.tenantId, now: new Date() });
+
+      assert.equal(fromDb.cheques.linkedPendingCount, 1);
+      assert.equal(fromDb.cheques.linkedPendingAmount, 100);
+      assert.deepEqual(fromMemory.cheques, fromDb.cheques, "o bloco cheques é o mesmo nos dois repositórios");
+    } finally {
+      await teardown(h);
+    }
+  });
+}
+
 type Outcome = { readonly ok: boolean; readonly reason?: { readonly reason?: string; readonly details?: Record<string, unknown> } };
 
 async function settle(promise: Promise<unknown>): Promise<Outcome> {

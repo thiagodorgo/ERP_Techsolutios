@@ -2312,6 +2312,7 @@ O texto humano de cada permissão vive no mapa `permissionDescriptions` de `pris
 demonstração). Permissão criada pelo provisionamento nasce com a descrição genérica `Permissão <chave>.` — a
 mesma que o próprio seed usa como fallback. Sem impacto no RBAC efetivo (nenhuma rota lê
 `permissions.description`), mas é duplicação de fonte de verdade esperando divergir.
+- **B-SAN3-12a (2026-10-25, E1.F6):** `financial_entries:unreconcile` e `cheques:unlink_title` nascem com texto curado pela migração de dados `20260882000000`; o seed (só dev/demo) faz `upsert` com `update: { description }` e as sobrescreveria pela genérica — mais 2 chaves nesta duplicação.
 - **Correção:** extrair o mapa para um módulo compartilhado (ex.: `src/modules/core-saas/permissions/`) e
   fazer seed **e** provisionamento lerem de lá. Fora do escopo desta frente (não podia tocar `prisma/seed.ts`).
 - status: ABERTA.
@@ -11656,6 +11657,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO (2026-10-25) — o PERMITIDO do 12a não cobre o que as regras do dono quebram — ALTA (processo; bloqueia o merge do 12a)
 - **status:** ABERTA · **dono:** orquestrador + `planejador-mestre` (emenda escrita do plano, `D-EMENDA-ANTES-DO-CODIGO`) · **bloqueia:** o merge do `B-SAN3-12a`.
+- **emenda (2026-10-25):** Emendas **E1** e **E1-bis** (12a) do `planejador-mestre` (Fable), apensas em `docs/revisoes/SAN3/B-SAN3-12-plano.md`; crítica `docs/revisoes/SAN3/B-SAN3-12a-E1-critica.md`. Aplicadas pelo dev (relatório E10–E14): F1–F5 ajustados nos arquivos que a E1.10 pôs no PERMITIDO; A27, D1, A28, B1, B2.
+- **critério de fechamento (B1 da E1-bis, cumulativo):** (1) CI `backend` e `backend-postgres` `completed/success` no head; (2) comparação base × head normalizada por script com "só no head = 0" e as três listas publicadas; (3) a propriedade do T2.1 medida à mão no descartável só migrado. (2) e (3) medidos no relatório E13; (1) é conferido no head empurrado — quem fecha o status é o porteiro/orquestrador com o `check-runs` do head.
 - **prova (execução):** relatório do dev `docs/revisoes/SAN3/B-SAN3-12a-dev.md`, E1 e E6 — 9 vermelhos (memória) só em arquivos FORA do §7.1:
   `tests/cheque-title-link.test.ts` (5: K1 PATCH null, K2 parcial, K2 pago por pix, K2 título apagado, K3 misto),
   `tests/financial-uow-journal-classification.test.ts` (2: fixture P7 de `findPendingByTitle` e a contagem 39),
@@ -11707,3 +11710,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (medido na base `8a7885f4`: 61 `reason` lançados, 37 sem contrato; o 12a escreveu 11).
 - **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
 - **prova:** `tests/b-san3-12a-reasons-census.test.ts` (lista congelada que só encolhe).
+
+## P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE (2026-10-25) — `changeStatus → cancelled` não consulta o cheque pendente — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`changeStatus` é anterior ao bloco; o §4.3 do plano v3 nomeia só `amount` e `DELETE`) · **dono:** próximo bloco de backend financeiro (junto de `P-SAN3-12-PAGAMENTO-MISTO-CHEQUE`) · **bloqueia:** não.
+- **prova:** crítica da E1 (2.4) — `financial-title.service.ts` `changeStatus` não chama a porta `cheque-pending-reader`; o cheque segue vinculado e o `clear` depois recusa por `title_cancelled` (fail-closed, nenhum caixa anda).
+- **recomendação registrada (E1-bis E1b.5):** `changeStatus → cancelled` com conjunto pendente não vazio → 422 `title_has_pending_cheque` pela mesma porta.
+
+## P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS (2026-10-25) — drills que chamam o shim bash de `node_modules/.bin/prisma` com `node` falham no Windows — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (vermelho igual na base `8a7885f4` e no head) · **dono:** bloco de ferramentas de processo · **bloqueia:** não.
+- **prova:** relatório do dev do B-SAN3-12a, E13 (lista "nos dois lados" com causa); `SyntaxError: missing ) after argument list`.
+- **solução provável:** `npx prisma` ou `node node_modules/prisma/build/index.js` nos drills.

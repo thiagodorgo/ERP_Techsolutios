@@ -275,6 +275,22 @@ const PREPARES: Record<string, (s: Seed) => Promise<void>> = {
     await cheques.transition({ tenantId: TENANT, chequeId: linked.id, fromStatus: "deposited", toStatus: "cleared" });
     await cheques.attachClearingEntry(TENANT, linked.id, s.entryId, ATOR);
   },
+  // B-SAN3-12a (Emenda E1.F2) — o conjunto pendente do título: um cheque `registered` vinculado ao título da semente, do
+  // valor do saldo (500), criado FORA da unidade e ANTES do snapshot. O cheque da semente segue SEM título.
+  "cheques.findPendingByTitle": async (s) => {
+    await repos().cheques.create({
+      tenantId: TENANT,
+      accountId: s.accountId,
+      titleId: s.titleId,
+      direction: "received",
+      chequeNumber: "000P7P",
+      bank: "Banco P7",
+      amount: 500,
+      currency: "BRL",
+      createdBy: ATOR,
+      updatedBy: ATOR,
+    });
+  },
 };
 
 // ------------------------------------------------------------------ tabelas de invocação
@@ -364,6 +380,8 @@ const CHEQUE_CALLS: Record<string, Invoke> = {
   list: (ctx) => ctx.cheques.list({ tenantId: TENANT, includeDeleted: true, limit: 100, offset: 0 }),
   findById: (ctx, s) => ctx.cheques.findById(TENANT, s.chequeId),
   findActiveByLinkedEntry: (ctx, s) => ctx.cheques.findActiveByLinkedEntry(TENANT, s.entryId),
+  // B-SAN3-12a (E1.F2) — leitura do conjunto pendente do título (o re-check da baixa lê por aqui, dentro da unidade).
+  findPendingByTitle: (ctx, s) => ctx.cheques.findPendingByTitle(TENANT, s.titleId),
 };
 
 // B-SAN3-02 (D4) — os 10 membros write/read do repositório de itens de OS.
@@ -425,6 +443,7 @@ const READ_RETURN_NONEMPTY: Record<string, (result: unknown) => boolean> = {
   "cheques.list": hasItems,
   "cheques.findById": isFound,
   "cheques.findActiveByLinkedEntry": isFound,
+  "cheques.findPendingByTitle": hasRows,
   "workOrderItems.listByWorkOrder": hasRows,
   "workOrderItems.listInvoiceableByWorkOrder": hasRows,
   "workOrderItems.listInvoiceableByWorkOrderForUpdate": hasRows,
@@ -536,9 +555,10 @@ for (const repositorio of REPOSITORIES) {
   }
 }
 
-test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 39 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 4 test_reset", () => {
+test("[P7] a cobertura do harness é a contagem MEDIDA dos contratos: 40 fixtures com PROVA DE VIDA (write: estado mudou durante a unidade; read: retorno asserido) + 4 test_reset", () => {
   // B-SAN3-02 (D4) — o 4º repositório (itens de OS) somou 10 membros write/read + 1 test_reset.
-  assert.equal(exercidos, 39, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 11+9+9+10 = 39)`);
+  // B-SAN3-12a (E1.F2) — o `findPendingByTitle` (read) somou 1 ao contrato dos cheques: 11+9+10+10 = 40.
+  assert.equal(exercidos, 40, `o harness exerceu ${exercidos} membros write/read (medido nos contratos: 11+9+10+10 = 40)`);
   assert.equal(testReset, 4, `o harness asseverou ${testReset} membros test_reset ausentes do contexto (esperado 4)`);
 });
 

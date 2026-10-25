@@ -3960,3 +3960,12 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   comum `core-saas/routes/http.ts` não muda); o `400 bounce_reason_required` (R-res-2, "requisito v3") e os `400 invalid_group_by`
   / `invalid_from` / `invalid_to` do agregado ficam FORA da lista de 32 do que a tela traduz; o vínculo não toma a trava de
   período (a ordem é título → cheque, sem ciclo com o `clear`, medido no `-db`).
+
+### B-SAN3-12a — Emendas E1 e E1-bis (2026-10-25): leituras do planejador dentro de respostas já dadas pelo dono (não são decisões novas)
+- **D1** (E1.F1): o `PATCH /cheques/:id` que tira ou troca o título responde 403 sem `cheques:unlink_title` e **422 `cheque_linked_unlink_first`** com
+  ele — a única porta que tira o vínculo é o `unlink-title`. Dentro da Q2 aceita (*"Aceito as 4 (Recomendado)"*: o Administrador desvincula com
+  justificativa obrigatória e auditoria Crítica) e de *"Mesmo privilégio da troca (Recomendado)"*.
+- **A26** (E1.F9): o `bounce` de cheque vinculado exige motivo (`400 bounce_reason_required`), fora da lista de 32 da tela.
+- **A27** (E1-bis): toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE` (1º vínculo, `cancel`, `delete`; 409 se mudou).
+  Faz a regra do dono valer também sob concorrência; não concede nem tira privilégio de ninguém.
+- **F5** (E1.F5): `super_admin` e `platform_admin` recebem as 2 permissões por construção (mesma referência do catálogo) — o snapshot passa a dizê-lo.

@@ -534,8 +534,14 @@ Erros saem no envelope de sempre `{ error: { code, reason, message } }`; os que 
   `404 cheque_not_found` → `422 cheque_not_linked` → `422 cheque_not_unlinkable` (`cleared`/`bounced`/`cancelled`) → `409
   cheque_write_conflict`. Auditoria `cheque.title_unlinked`, severidade `critical`, metadados `{ chequeId, previousTitleId,
   justification }`.
-- **Fecho do bypass.** `PATCH /cheques/:id` com `title_id: null` ou com um `title_id` DIFERENTE do atual exige
-  `cheques:unlink_title` → senão `403 unlink_requires_privilege`; o primeiro vínculo (título atual nulo) segue `cheques:update`.
+- **Fecho do bypass (D1 da Emenda E1).** `PATCH /cheques/:id` com `title_id: null` ou com um `title_id` DIFERENTE do atual
+  não tira nem troca o vínculo: sem `cheques:unlink_title` → `403 unlink_requires_privilege`; com ele → `422
+  cheque_linked_unlink_first` (a única porta que tira o vínculo é `POST /cheques/:id/unlink-title`, com justificativa e
+  auditoria Crítica; "trocar" = `unlink-title` e depois o 1º vínculo). O primeiro vínculo (título atual nulo) segue `cheques:update`.
+- **CAS do título lido (A27, Emenda E1-bis).** Toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE`
+  (`title_id IS NOT DISTINCT FROM <lido>`): o 1º vínculo pelo `PATCH`, o `POST /cheques/:id/cancel` e o `DELETE /cheques/:id`.
+  Se o vínculo mudou entre a leitura e a escrita: `PATCH` e `DELETE` → `409 cheque_write_conflict`; `cancel` → `409
+  transition_conflict`. O `deposit` e o `PATCH` que não mexe no título não têm esse CAS.
 - **Cancelar/excluir vinculado é troca.** `POST /cheques/:id/cancel` e `DELETE /cheques/:id` de cheque com título →
   `422 cheque_linked_unlink_first` para TODO ator (inclusive o Administrador); depois do `unlink-title`, voltam a ser
   `cheques:update`. `POST /cheques/:id/bounce` de cheque vinculado ainda `deposited` exige `reason` (`400

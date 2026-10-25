@@ -664,3 +664,274 @@ Resposta literal: ***"Aceito as 4 (Recomendado)"*** — (1) 3 PRs 12a → 12b �
 - Cheque parcial (R2-03): ***"Só cheque do valor exato (Recomendado)"*** — vincular cheque a título só se o valor do cheque for igual ao saldo do título; pagamento misto fica para bloco seguinte.
 - Cancelar/excluir cheque vinculado (R2-04): ***"Mesmo privilégio da troca (Recomendado)"*** — exige o privilégio da troca da vinculação (admin), com justificativa e auditoria crítica.
 - Migração de dados das 2 permissões novas (R2-01): ***"Autorizo (Recomendado)"*** — o 12a pode tocar `prisma/migrations` só para a migração de DADOS das permissões (aditiva, `BEGIN`/`COMMIT`, drill, DBA na junta).
+
+---
+
+## Emenda E1 (12a) — o que a execução do dev falsificou no PERMITIDO do §7.1, e o que entra (D-EMENDA-ANTES-DO-CODIGO)
+
+> **Papel:** `planejador-mestre` (TOPO), identidade nova `planejador-san312-e1-fable`. **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), o do
+> frontmatter — sem fallback. **Data:** 2026-10-25. **Insumo:** `C:/Users/AMP/w-san312a/docs/revisoes/SAN3/B-SAN3-12a-dev.md` (F1–F9, dev
+> `dev-san312a-opus`). **Ref medida:** worktree do dev `C:/Users/AMP/w-san312a`, head **`fafd4b36`** (ramo `feat/web-financeiro-baixa-e-contas-12a`,
+> base `8a7885f4`), **só leitura**: nenhum arquivo do ramo editado, nada rodou contra a base viva (5432/6379, `erp-*`); banco, se preciso, no
+> container descartável `plan12e1-pg` (porta alta em 127.0.0.1, removido ao fim). **Pendência que responde:** `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`.
+> **Estado:** COMPLETO (P1/P2 — cada F foi gravado ao ser medido; 9/9 procedem · 4 caminhos entram + 2 se ampliam · 1 sai · 0 perguntas ao dono).
+
+### E1.0 — Método
+Para cada F: **(a)** a falsificação procede? (re-medida por comando, não herdada do relatório); **(b)** o caminho exato que entra no PERMITIDO,
+ou o que muda no desenho; **(c)** a expectativa nova de cada teste antigo que muda — **sem apagar caso**; **(d)** a mutação que deixa vermelho
+cada critério novo. Regra geral que esta emenda fixa: **o PERMITIDO do §7.1 passa a listar, por nome, todo teste e toda fixture que a bateria do
+§9.2 executa e que a regra do dono muda por construção** — o plano v3 mandava rodá-los (§9.2, l.550) e não autorizava tocá-los.
+
+### E1.F1 — `tests/cheque-title-link.test.ts` e `tests/cheque-title-link-atomic-db.test.ts` (regra antiga do #456)
+**(a) Procede.** Re-medido em `fafd4b36` (só leitura):
+- `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/cheque-title-link.test.ts` → `not ok 2, 11, 13, 14, 16` = K1 l.98, K2 l.170, K2 l.189, K2 l.204, K3 l.229 — os mesmos 5 do relatório (`unlink_requires_privilege`, `cheque_amount_mismatch`, `title_has_pending_cheque` x2, `cheque_amount_mismatch`).
+- `-db` contra `plan12e1-pg` (`127.0.0.1:55499`, `prisma migrate deploy` até `20260882000000`): `tests/cheque-title-link-atomic-db.test.ts` → `# tests 15 · pass 13 · fail 2` = `K2-db: clear parcial deriva partially_paid` (l.65) e `K2-db: título pago antes do clear aborta cheque e segundo lançamento` (l.80). O `T-K2d` (barreira pay x clear) e os outros 12 seguem verdes.
+- O §7.1 cita `cheque-title-link.test.ts` só como MOLDE (K4, l.264-275) e o `-atomic-db` só na BATERIA (§9.2, l.550): o plano mandava rodá-los e não autorizava tocá-los. Falsificação do **inventário**, não do desenho: cada vermelho é a regra do dono funcionando (valor exato; mesmo privilégio da troca; baixa recusada com cheque pendente; título com cheque pendente não é apagado).
+
+**(b) Entram no PERMITIDO:** `tests/cheque-title-link.test.ts` — **só** os 5 casos nomeados abaixo (reescritos; nenhum apagado; o nome do caso passa a dizer a regra nova); `tests/cheque-title-link-atomic-db.test.ts` — **só** os 2 casos K2-db (l.65, l.80). Fora deles os dois arquivos seguem PROIBIDOS: os outros 33 + 13 casos são a regressão do #456 e continuam verdes no head.
+
+**(c) Expectativa nova, caso a caso:**
+
+| Caso (linha no head) | Afirmava (#456) | Passa a afirmar (regra do dono) |
+|---|---|---|
+| K1 l.98 "PATCH vincula e null explícito desvincula enquanto registered" | PATCH `{title_id:null}` desvincula com `cheques:update` | PATCH vincula (1º vínculo, `cheques:update`) → `titleId`; PATCH `{title_id:null}` pelo MESMO ator (sem `cheques:unlink_title`) → **403 `unlink_requires_privilege`**, vínculo intacto; pelo ator COM o privilégio → **422 `cheque_linked_unlink_first`** (D1, abaixo), vínculo intacto; `unlinkTitle(ctx admin, id, { justification })` → `titleId` undefined; em seguida PATCH `{title_id}` volta a ser 1º vínculo → 200 |
+| K2 l.170 "clear parcial deriva partially_paid" | cheque 100 em título 300 → clear → `partially_paid`/100 | cheque 100 em título 300 → **422 `cheque_amount_mismatch`** (`details.chequeAmount=100`, `openBalance=300`); `payTitle(pix 200)` → `partially_paid`/200; cheque 100 (= saldo) vincula → deposit → clear → **`paid`/300**. A propriedade do caso (o clear deriva o status pelo `paidAmount`) fica; com valor exato o clear leva sempre a `paid` |
+| K2 l.189 "título pago depois do vínculo faz clear falhar sem tocar cheque/razão" | pix paga o título com cheque `deposited` vinculado; clear → 422 `title_already_paid` | `payTitle(pix)` com cheque `deposited` vinculado → **422 `title_has_pending_cheque`** (`details.chequeIds` contém `cheque.id`, `nextStep: "unlink_cheque"`, `requiredPermission`); cheque segue `deposited`, `clearedEntryId` undefined, **0 lançamentos**, título `open`/`paidAmount 0` (o "sem tocar cheque/razão" migra para o lado da baixa); o clear em seguida liquida (`paid`, 1 lançamento) |
+| K2 l.204 "título apagado depois do vínculo faz clear falhar fechado" | `titles.delete` apaga; clear → 404 `title_not_found` | `titles.delete(ctx)` → **422 `title_has_pending_cheque`** (A21), título vivo, cheque `deposited`; **e**, para não perder o caso original, apagar pelo REPOSITÓRIO (fora do serviço: `getMemoryFinancialTitleRepositoryForTests()`, o mesmo atalho que o arnês P7 usa) → clear → 404 `title_not_found`, cheque `deposited`, 0 lançamentos — o "falha fechado" do clear continua medido |
+| K3 l.229 "pagamento misto volta ao parcial quando o cheque é devolvido" | cheque 100 + pix 200 em título 300; bounce → `partially_paid`/200 | cheque 100 em título 300 → **422 `cheque_amount_mismatch`** (misto = `P-SAN3-12-PAGAMENTO-MISTO-CHEQUE`); `payTitle(pix 200)` → `partially_paid`; cheque 100 vincula → deposit → clear → `paid`/300; `bounce` (com motivo — A26) → **`partially_paid`/`paidAmount 200`**: "a devolução restaura o estado anterior" mantida, com a ordem pix → cheque |
+| K2-db l.65 | = K2 l.170 | = K2 l.170 contra o Postgres (`paid_amount` 300, `status paid`; o 422 do cheque 100 em 300) |
+| K2-db l.80 | = K2 l.189 | = K2 l.189: `financialEntry.count = 0`, cheque `deposited`, `cleared_entry_id null`; clear → `paid`, `count 1` |
+
+**(d) Mutação que deixa vermelho cada caso reescrito** (todas já no roteiro E4 do dev, que as re-roda sobre os casos novos):
+K1 → remover o 422 do PATCH privilegiado (D1) → o admin desvincula pelo PATCH (vermelho); remover a comparação com o `titleId` atual (A6) → o finance desvincula (vermelho). K2 l.170 / K2-db l.65 / K3 → `<=` no lugar de `===` no valor exato (A19) → o cheque de 100 vincula em 300 (vermelho). K2 l.189 / K2-db l.80 → remover fast-fail **e** re-check (A1-ambas) → o pix paga (vermelho). K2 l.204 → remover a leitura da porta `cheque-pending-reader` no `delete` (A21) → o delete passa (vermelho).
+
+**D1 — ajuste de desenho (leitura do planejador, §A6; não é pergunta ao dono).** Medido no head, `cheque.service.ts:204-221`: o PATCH com `title_id: null` ou diferente **por quem tem `cheques:unlink_title`** desvincula sem justificativa e sem a auditoria Crítica — só o 403 de quem não tem o privilégio foi fechado. Isso contradiz a Q2 que o dono aceitou ("o Administrador desvincula **com justificativa obrigatória e auditoria Crítica**") e o princípio do próprio §4.3 ("um só write-path carrega o privilégio"), e é o risco residual que o dev deixou para a junta (E7, último item). Passa a ser: `titleId !== undefined && current.titleId !== undefined` → sem o privilégio **403 `unlink_requires_privilege`** (como está); com o privilégio **422 `cheque_linked_unlink_first`** — a única porta que tira ou troca o vínculo é `POST /cheques/:id/unlink-title`. "Trocar" = `unlink-title` (justificativa + auditoria) e depois PATCH do 1º vínculo (`cheques:update`). Toca só arquivos já PERMITIDOS: `cheque.service.ts` (`update`, 1 ramo), `tests/b-san3-12a-unlink-title.test.ts` (**A6-bis**: `tenant_admin` PATCH null/diferente → 422; `unlink-title` → 200; mutação = apagar o ramo do 422 → o admin recebe 200), `API_CONTRACTS.md` (l.537-538), `RBAC_MATRIX.md` (l.130). A alternativa que a junta pode preferir — 422 para todos e tirar o 403 — é mais simples, mas a tela perde a distinção "peça ao administrador" x "use Desvincular (com justificativa)"; fico com a mínima.
+
+### E1.F2 — `tests/financial-uow-journal-classification.test.ts` (arnês P7: fixture e contagem de `findPendingByTitle`)
+**(a) Procede.** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/financial-uow-journal-classification.test.ts` → `# tests 46 · pass 44 · fail 2`: `not ok 32 [P7][cheques.findPendingByTitle] classificado read … não tem fixture de invocação aqui` e `not ok 45 [P7] … o harness exerceu 40 membros write/read (medido nos contratos: 11+9+9+10 = 39)`. O arnês (l.404-440, l.469-500) julga **todo** membro de `CHEQUE_REPO_KIND` por fixture de invocação + prova de vida; a R2-07 pôs `findPendingByTitle: "read"` no mapa (`financial-uow.ts:231-232`) e o §7.1 só autorizou o chamador do `reconcile` (l.326, que o dev já ajustou). Falsificação de inventário.
+
+**(b) Entra no PERMITIDO** (ampliação de `tests/financial-uow-journal-classification.test.ts`, além da l.326), **só**:
+(i) `CHEQUE_CALLS.findPendingByTitle: (ctx, s) => ctx.cheques.findPendingByTitle(TENANT, s.titleId)`;
+(ii) `PREPARES["cheques.findPendingByTitle"]`: cria pelo repositório, FORA da unidade e ANTES do snapshot (o idioma de `cheques.findActiveByLinkedEntry`, l.265-282), um cheque `received`, `amount: 500` (= saldo do título da semente, l.116-128), `titleId: s.titleId`, status `registered` — o repositório aceita `titleId` no `create` (`cheque.repository.ts:154`); o cheque da semente (l.141-150) continua **sem** título, para `list`/`findById` não mudarem;
+(iii) `READ_RETURN_NONEMPTY["cheques.findPendingByTitle"] = hasRows` (retorno `readonly Cheque[]`, `cheque.repository.ts:35`);
+(iv) a contagem do teste l.539: `39 → 40`, comentário `11+9+10+10 = 40`.
+
+**(c)** Os 2 casos ficam verdes; os 44 restantes não mudam (leitura não muta; a PREPARES roda antes do snapshot).
+
+**(d) Mutação:** o arnês é a própria mutação — `titleId` de outro id na PREPARES → retorno vazio → vermelho "fixture MORTA"; apagar a fixture → vermelho "não tem fixture"; `findPendingByTitle` em memória que ignore `deletedAt` ou aceite `cleared` → A2 do bloco vermelho (roteiro E4).
+
+### E1.F3 — `tests/fixtures/o6r07c-classificacao-vias.json` (censo das rotas: 3 rotas novas não classificadas)
+**(a) Procede.** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/o6r07c-census-guard.test.ts` → `not ok 2 T1` (3 `NAO-CLASSIFICADA`: `ROTA GET /api/v1/financial-entries/aggregate`, `ROTA GET /api/v1/financial-entries/reconciliation-policy`, `ROTA POST /api/v1/cheques/:chequeId/unlink-title`) e `not ok 15 T14`. Gerei o instantâneo **fora do repo** (`node --import tsx tests/helpers/o6r07c-census.ts gravar <scratchpad>/e1-vias-gerado.json`): 471 chaves vivas, 0 violações; diff com a fixture commitada = **exatamente 3 entradas a mais**, nenhuma das 468 muda: `GET …/aggregate {LEITURA, n:1}`, `GET …/reconciliation-policy {LEITURA, n:1}`, `POST …/unlink-title {SEM-ALCANCE-CAMPO, n:1}`. Coerente com as irmãs (`GET /financial-entries` = LEITURA; `POST /cheques/:id/clear` = SEM-ALCANCE-CAMPO — o técnico de campo não tem `cheques:unlink_title`, o RBAC decide). `git status --porcelain` do worktree seguiu vazio.
+
+**(b) Entra no PERMITIDO:** `tests/fixtures/o6r07c-classificacao-vias.json` — **só por regeneração pelo gerador** (`node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json`, cwd = raiz do worktree), nunca à mão; o diff do PR tem de ser exatamente as 3 entradas acima (o dev cola o diff no relatório; a junta compara). `tests/helpers/o6r07c-census.ts` e `tests/o6r07c-census-guard.test.ts` seguem PROIBIDOS. Toda rota nova de backend paga esta regeneração — vai para o §7.1 como regra geral, não só deste bloco.
+
+**(c)** T1 e T14 verdes; os outros 13 T não mudam.
+
+**(d) Mutação:** editar à mão a classe de `unlink-title` para `LEITURA` → T6 `CLASSE-INCOMPATIVEL` vermelho; apagar uma das 3 entradas → T1 vermelho; conceder `cheques:unlink_title` ao `field_technician` no catálogo → a classe gerada deixa de ser `SEM-ALCANCE-CAMPO` → T14 vermelho (o guard pegando permissão errada por construção).
+
+### E1.F4 — `src/modules/financial-summary/financial-summary.repository.ts` (memória não projeta `titleId`)
+**(a) Procede.** `src/modules/financial-summary/financial-summary.repository.ts:58` projeta `{ direction, status, amount }` sem `titleId`; o `compute` do head (l.145-152) soma `linkedPending*` só quando `cheque.titleId != null` → em memória o resultado é sempre 0. `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/financial-summary.test.ts` → `# tests 15 · pass 14 · fail 1` (`A16 (serviço, memória) … expected 1, actual 0`). O §7.1 listou `compute`, `types`, `dto` e o `-prisma.repository` e esqueceu a cópia em memória — inventário.
+
+**(b) Entra no PERMITIDO:** `src/modules/financial-summary/financial-summary.repository.ts` — **só** a projeção da l.58: `titleId: c.titleId ?? null` (o campo existe na entidade, `cheque.types.ts:42`). Nada mais nesse arquivo.
+
+**(c)** A16 (serviço, memória) verde. A paridade memória x Prisma do resumo passa a cobrir `cheques.linkedPending*`: o dev acrescenta a asserção na suíte `-db` que já lê o resumo (ou em `b-san3-12a-pay-pending-cheque-db`): o mesmo arranjo (1 cheque pendente com título + 1 sem) → `linkedPendingCount = 1` e o mesmo `linkedPendingAmount` nos dois repositórios.
+
+**(d) Mutação:** tirar o `titleId` da projeção → A16 (serviço) vermelho — é o estado atual, o vermelho-controle já está medido; somar também os sem título no compute → A16 (compute) vermelho (roteiro E4).
+
+### E1.F5 — `tests/fixtures/role-catalog-contract.snapshot.json` em `super_admin`/`platform_admin` (PERMISSÃO)
+**(a) Procede — e NÃO muda quem tem o privilégio.** Medido em `fafd4b36`:
+- Script no scratchpad (`e1-snapshot.ts`, importa o catálogo do worktree e compara com o snapshot): `PERMISSION_CATALOG.length = 200`; `super_admin` e `platform_admin` no snapshot = **198** (faltam exatamente `financial_entries:unreconcile` e `cheques:unlink_title`); `tenant_admin` 187 = IGUAL (o dev editou); os outros 10 papéis IGUAIS. E `ROLE_PERMISSIONS.super_admin === PERMISSION_CATALOG` → `true`, `ROLE_PERMISSIONS.platform_admin === PERMISSION_CATALOG` → `true` (**mesma referência**, `catalog.ts:419`, `:736`): toda chave nova do catálogo é, por construção, dos dois papéis de plataforma. `TENANT_ADMIN_PERMISSIONS` = catálogo sem `platform:` (`:414`); comentários `:39`, `:446-447`: "tenant_admin/super_admin/platform_admin por HERANÇA do catálogo (o padrão)".
+- `DATABASE_URL=<plan12e1-pg> node --test --import tsx tests/core-saas-role-authority.test.ts` (sem `CORE_SAAS_PERSISTENCE=prisma`, como o dev) → `# tests 12 · pass 11 · fail 1` = `not ok 3 contrato do consumidor de deploy: snapshot…` (`deepEqual` de conteúdo E ordem, l.89-111). Nota de terreno: com `CORE_SAAS_PERSISTENCE=prisma` exportado, o caso 12 dá 500 — a suíte usa `MemoryCoreSaasAdapter`; é ambiente do invocador, não do bloco; a bateria do §9.2 ganha a observação (E1.10).
+- **Precedente, medido no history do snapshot:** na última permissão nova do catálogo (`work_orders:approve`, `dc8168b9`, B-O6R-07a) o snapshot cresceu `super_admin 197→198`, `platform_admin 197→198`, `tenant_admin 184→185` — os três juntos. No `aadaa6d5` (B-SAN3-04a, sem chave nova) só `finance` mudou (56→61). É o padrão para TODA permissão nova.
+- **Regra escrita, com fonte:** `RBAC_MATRIX.md` l.29-47 (matriz-base: `platform_admin` = **full** em "Finance" e em "Billing"); as notas por permissão sempre nomeiam os três (l.128 `financial_entries`: "create+update → super_admin, platform_admin, tenant_admin, finance"; l.130 `cheques`: idem; l.151 `checklist_runs:reopen`: "→ super_admin, platform_admin, …"); a l.131 que o dev já escreveu segue a forma. `APPROVAL_LIMITS.md` l.26 (`### platform_admin`). O plano v3 que o dono aceitou (Q3, "Aceito as 4") **já dizia** "super/platform por herança" (§4.3 l.244, §4.4 l.269, §5.2 l.346); a migração §5.1 concede a `super_admin` no banco (`platform_admin` é pseudo-papel sem linha, molde `20260861000000`) — medido no descartável depois do `provision-rbac`: `cheques:unlink_title | super_admin,tenant_admin` e `financial_entries:unreconcile | super_admin,tenant_admin`.
+- **Conclusão:** herança automática + regra escrita + já no plano aprovado → o "só `ROLE_PERMISSIONS.tenant_admin` (+2)" do §7.1 era o inventário do SNAPSHOT errado, não a distribuição do privilégio. "Admin", nas palavras do dono, cobre o administrador da organização e os papéis de plataforma acima dele (matriz-base). `finance` continua sem as duas (A18). **Sem pergunta ao dono.**
+
+**(b) Entra no PERMITIDO** (ampliação de `tests/fixtures/role-catalog-contract.snapshot.json`): `ROLE_PERMISSIONS.super_admin` e `ROLE_PERMISSIONS.platform_admin` (+2 cada, nas MESMAS posições do catálogo — `financial_entries:unreconcile` logo após `financial_entries:update`; `cheques:unlink_title` logo após `cheques:update`), além do `tenant_admin` já autorizado. Editado à mão (literais independentes, §5.1/R2-01), nunca regenerado do próprio catálogo.
+
+**(c)** `core-saas-role-authority.test.ts` caso 3 verde (12/12 com banco); `tests/core-saas.test.ts` já verde (+2 no `expectedPermissionCatalog`). A18 passa a dizer por extenso: `tenant_admin`, `super_admin`, `platform_admin` têm as duas; `finance`, `manager`, `auditor` não (o dev já escreveu assim).
+
+**(d) Mutação:** trocar a ordem das 2 chaves em `super_admin` → vermelho (`deepEqual` sensível à ordem; R-res-7); tirar uma das duas de `platform_admin` → vermelho; tirar `cheques:unlink_title` do `PERMISSION_CATALOG` → `core-saas.test.ts` vermelho; conceder ao `finance` no catálogo → A18 vermelho (roteiro E4).
+
+### E1.F6 — `scripts/provision-rbac.ts` não tem mapa de descrições
+**(a) Procede.** `scripts/provision-rbac.ts:38-47` declara: "DESCRIÇÕES (degradação declarada — D-007): o texto curado de cada permissão vive em `permissionDescriptions` de `prisma/seed.ts` … Permissão criada por este script nasce com a descrição genérica `Permissão <chave>.`" — não há mapa de descrições no script (`P-RBAC-PROVISION-DESCRICOES`, 2026-08-08, BAIXA). O §5.2 ("descrições PT-BR no mapa de descrições do `provision-rbac.ts`") afirmava um mapa que **não existe**; `prisma/seed.ts` é PROIBIDO. Confirmado em execução no descartável: `npx tsx scripts/provision-rbac.ts` → "196 criada(s) com descrição genérica" (as 4 que já existiam vieram das migrações de dados — inclusive as 2 deste bloco, com texto curado).
+
+**(b) Desenho:** as 2 descrições curadas vivem na **migração de dados** (o dev já as escreveu: `('financial_entries:unreconcile', 'Desfazer a conciliação bancária de um lançamento (delegável ao Financeiro por política da organização).')`, `('cheques:unlink_title', 'Trocar a vinculação de um cheque ao título, com justificativa e auditoria crítica.')`) — o caminho de produção. `scripts/provision-rbac.ts` **sai do PERMITIDO** (nada a fazer nele; continua na bateria com `--dry-run`). `prisma/seed.ts` segue PROIBIDO. Nota, não pendência nova: o seed (só dev/demo) faz `upsert` com `update: { description }` (`prisma/seed.ts:232-238`) e sobrescreveria o texto curado pela genérica — é a duplicação pré-existente de `P-RBAC-PROVISION-DESCRICOES`; o dev acrescenta 1 linha nessa pendência com as 2 chaves.
+
+**(c)/(d)** Sem teste novo: A22(a) já mede que as 2 chaves existem após `migrate deploy`; descrição é texto interno (nenhuma rota lê `permissions.description`). Observação medida para o drill: numa base NOVA, migrada sem papéis, o `INSERT INTO role_permissions … FROM roles` da migração casa 0 linhas (a armadilha que o cabeçalho do `provision-rbac.ts` descreve; aqui o `provision-rbac` concedeu as 2 chaves a `super_admin,tenant_admin` em seguida) — o drill A22(a) semeia os papéis de sistema antes do deploy, como o molde; a convergência real vem do `db:provision-rbac` em todo deploy (R3 do §11).
+
+### E1.F7 — `details` no envelope de erro (`core-saas/routes/http.ts` fora do PERMITIDO)
+**(a) Procede como lacuna do plano, não como bloqueio.** `src/modules/core-saas/routes/http.ts:28-45` só emite `code/reason/message`. Há precedente **na casa** para o que o dev fez: `src/modules/financial-period-closes/financial-period-close.routes.ts:61-71` serializa `details` com um wrapper LOCAL do módulo ("os demais erros caem no `sendRouteError` compartilhado"). O dev seguiu esse idioma — `cheque.controller.ts:138-149`, `financial-entry.controller.ts:84-89`; `ChequeError`/`FinancialEntryError` ganharam `details?: Readonly<Record<string, unknown>>` (`cheque.types.ts:195-200`, `financial-entry.types.ts:174-182`) — tudo em arquivos PERMITIDOS. Implementação, não remédio.
+
+**(b)** `src/modules/core-saas/routes/http.ts` **fica PROIBIDO, nomeado**. O §4 ganha a frase: "`details` sai pelo controller do módulo (idioma de `financial-period-close.routes.ts:61-71`); o envelope comum não muda". A allowlist §B2.8 vale para `details`: nunca `tenant_id`, token, path, bucket ou binário (A17 + `tests/audit-security.test.ts` medem).
+
+**(c)/(d)** A1 já assere `details.chequeIds`/`nextStep`/`requiredPermission`; A19 `details.chequeAmount`/`openBalance`. Mutação nova no roteiro, **F7-wrapper**: apagar o wrapper do controller (o erro cai no `sendRouteError` comum) → A1 e A19 vermelhos (o 422 sai sem `details`).
+
+### E1.F8 — A17-bis impossível na letra (censo de `reason` dos módulos)
+**(a) Procede.** Censo na base `8a7885f4` (E5 do dev, re-lido no teste): 61 `reason` lançados pelos 5 módulos, 37 sem contrato escrito; a lista de 32 do §4.1 é "o que a **tela** traduz". A17-bis na letra ("todo `reason` lançado pelos módulos está na lista fechada") era **impossível de passar por construção** — artefato do critério (§C7.4(a)), não defeito do produto. `node --test --import tsx tests/b-san3-12a-reasons-census.test.ts` → **4/4** no head: o censo é gerado das fontes, congela 26 pré-existentes, exige contrato para todo o resto e só deixa a dívida encolher.
+
+**(b) Desenho — A17-bis reescrito** (vale no lugar do texto do §4.1 l.217 e da linha A17-bis do §8.1): (i) todo `reason` **novo** do bloco (os 12 do §4.1 + `bounce_reason_required`, `invalid_group_by`, `invalid_from`, `invalid_to`) está em `API_CONTRACTS.md`; (ii) todo `reason` lançado por `financial-entries`, `financial-titles`, `financial-accounts`, `cheques`, `financial-summary` está no contrato **ou** na lista congelada `PRE_EXISTENTES_SEM_CONTRATO` (26; escopo `pre-existente`, §C7.1-ter(a), com N, forma e causa publicados); (iii) a lista só encolhe — documentado ou extinto sai dela. Pendência `P-SAN3-12-REASONS-SEM-CONTRATO` (dono: próximo bloco de backend financeiro), já aberta pelo dev — fica.
+
+**(c)/(d)** Verde no head. Mutações: criar `reason` novo sem contrato → vermelho (E4 `A17bis`); documentar um dos 26 no contrato sem tirá-lo da lista → vermelho (3º caso); apagar a leitura dos módulos (censo vazio) → vermelho (1º caso, `>= 61`).
+
+### E1.F9 — `bounce_reason_required` (R-res-2) fora do §4 e da lista de 32
+**(a) Procede.** `bounce_reason_required` aparece no plano só na R-res-2 (l.650, "requisito v3"), fora do §4.3, do §8.1 e da lista de 32 — inconsistência interna. O dev implementou (`cheque.service.ts:101-105`: `bounce` de cheque **com `title_id`** sem motivo → 400 `bounce_reason_required`; auditoria `cheque.bounced` com `severity: warning` e `titleId`), testou (`b-san3-12a-unlink-title.test.ts:228`, mutação `Rres2` vermelha) e documentou "fora da lista da tela" (`API_CONTRACTS.md:541-542`, `:574-575`).
+
+**(b) Desenho:** vira **A26** no §4.3/§8.1: "`POST /cheques/:id/bounce` de cheque vinculado (`title_id` presente) exige `reason`/`bounce_reason` (trim, 1–500) → senão **400 `bounce_reason_required`**; auditoria `cheque.bounced` `warning` com `titleId`; sem título o motivo segue opcional (comportamento do #456)". A lista fechada da **tela** (§4.1) fica em **32**: o 12b não chama `bounce` (a devolução é da tela de Cheques, `B-SAN3-24`, que herda a mensagem) e `group_by`/`from`/`to` são montados pela própria tela — `bounce_reason_required`, `invalid_group_by`, `invalid_from`, `invalid_to` ficam na seção "novos FORA da lista da tela" do contrato, como o dev escreveu. A R-res-2 (bounce como desvio sem privilégio) continua para a junta via `P-SAN3-12-BOUNCE-COMO-DESVIO`.
+
+**(c)/(d)** Verde no head; mutação `Rres2` (E4: não exigir motivo → 200) vermelha. K3 l.229 reescrito (E1.F1) passa a chamar `bounce` **com** motivo — o caso sem motivo é o do A26.
+
+### E1.10 — §7.1 emendado (caminhos que ENTRAM no PERMITIDO)
+Onde esta seção divergir do §7.1 ou do §9.2, **vale esta seção**. Regra geral que nasce aqui: **todo teste, fixture ou snapshot que a bateria executa e que a regra do bloco muda por construção entra no PERMITIDO por nome** — o plano não pode mandar rodar o que não autoriza tocar.
+
+**ENTRAM (4 caminhos novos):**
+
+| Caminho | Só isto | Achado |
+|---|---|---|
+| `tests/cheque-title-link.test.ts` | os 5 casos K1 l.98, K2 l.170 / l.189 / l.204, K3 l.229 — reescritos como E1.F1(c); nenhum caso apagado | F1 |
+| `tests/cheque-title-link-atomic-db.test.ts` | os 2 casos K2-db l.65 e l.80 — idem | F1 |
+| `tests/fixtures/o6r07c-classificacao-vias.json` | **só por regeneração** (`node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json`); diff = exatamente as 3 entradas de E1.F3 | F3 |
+| `src/modules/financial-summary/financial-summary.repository.ts` | a projeção da l.58 (+ `titleId: c.titleId ?? null`) | F4 |
+
+**AMPLIAM-SE (2 caminhos já listados no §7.1):**
+
+| Caminho | Além do que o §7.1 já autorizava | Achado |
+|---|---|---|
+| `tests/financial-uow-journal-classification.test.ts` | `CHEQUE_CALLS.findPendingByTitle`, `PREPARES["cheques.findPendingByTitle"]`, `READ_RETURN_NONEMPTY["cheques.findPendingByTitle"]`, contagem `39 → 40` (l.539) | F2 |
+| `tests/fixtures/role-catalog-contract.snapshot.json` | `ROLE_PERMISSIONS.super_admin` e `ROLE_PERMISSIONS.platform_admin` (+2 cada, posição do catálogo) | F5 |
+
+**Conteúdo novo em arquivos já PERMITIDOS (D1 e A26):** `src/modules/cheques/cheque.service.ts` (`update`: ramo 422 `cheque_linked_unlink_first` para o PATCH privilegiado que tira/troca o título), `tests/b-san3-12a-unlink-title.test.ts` (A6-bis + a mutação D1), `API_CONTRACTS.md` (l.537-538: "com o privilégio → 422; só `unlink-title` tira o vínculo"), `RBAC_MATRIX.md` (l.130, mesma frase); o A26 (`bounce_reason_required`) já está implementado e documentado — só ganha número no §8.1.
+
+**SAI do PERMITIDO (1):** `scripts/provision-rbac.ts` (F6: não há mapa de descrições; nada a fazer) — continua na bateria (`--dry-run`).
+
+**PROIBIDOS, nomeados para não restar dúvida:** `src/modules/core-saas/routes/http.ts` (F7), `tests/helpers/o6r07c-census.ts`, `tests/o6r07c-census-guard.test.ts`, `prisma/seed.ts`, `tests/core-saas-role-authority.test.ts`, `tests/permission-catalog-migration-parity.test.ts` (e sua linha de base), e **todos os demais casos** dos dois arquivos de F1.
+
+**Registro (mesmo PR):** `agent-orchestration/controle/pendencias.md` — fechar `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` (critério: esta E1 apensa + `npm test` base vs head com "vermelhos só no head = 0"), 1 linha em `P-RBAC-PROVISION-DESCRICOES` (as 2 chaves; o seed sobrescreve), `P-SAN3-12-REASONS-SEM-CONTRATO` fica; `decisoes.md` — D1 e A26 registrados como **leitura do planejador dentro da Q2/R2-04** (não são decisões novas do dono); `docs/revisoes/SAN3/B-SAN3-12-plano.md` — a cópia versionada recebe esta E1 apensa, verbatim; `docs/revisoes/SAN3/B-SAN3-12a-dev.md` — etapa E10 (o que a E1 mandou, comando e saída de cada item).
+
+**Bateria (§9.2) — linhas que se somam ao 12a:**
+```
+node --test --import tsx tests/cheque-title-link.test.ts tests/financial-summary.test.ts tests/financial-uow-journal-classification.test.ts tests/o6r07c-census-guard.test.ts tests/b-san3-12a-reasons-census.test.ts   # E1: os guards que a regra do dono toca
+DATABASE_URL=<descartável> node --test --import tsx tests/core-saas-role-authority.test.ts   # E1.F5 — SEM CORE_SAAS_PERSISTENCE=prisma (a suíte usa o adaptador em memória; com prisma o caso 12 dá 500 de ambiente)
+CORE_SAAS_PERSISTENCE=prisma DATABASE_URL=<descartável> node --test --import tsx tests/cheque-title-link-atomic-db.test.ts   # já estava (l.550); passa a exigir 15/15
+node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json && git diff --stat -- tests/fixtures/o6r07c-classificacao-vias.json   # E1.F3: regenerar e colar o diff (3 entradas)
+```
+**Ordem sugerida ao dev:** D1 → F1 (memória; depois `-db`) → F2 → F4 → F5 → F3 (regenerar por último, com toda rota no lugar) → registro → re-rodar as mutações E4 que a emenda toca (A1-ambas, A6, **D1**, A19, A21, **F7-wrapper**, A17bis, Rres2) → `npm test` base vs head em banco FRESCO (forma do E6) com a expectativa **"vermelhos só no head = 0"** → o PR #459 sai de rascunho. **Meta §9.1:** inalterada (os casos reescritos não reduzem N; o head já tem +71).
+
+**Junta (unanimidade de 3, dinheiro + permissão) — o que cada cadeira mede desta emenda:** C1 (DBA/dinheiro) — F1 `-db` 15/15, A4/A5-bis, paridade `linkedPending*` memória vs Prisma (F4-c); C2 (acessos) — F5 pelo comando acima com banco provisionado, D1/A6-bis, A18, catálogo vs `RBAC_MATRIX.md` vs `APPROVAL_LIMITS.md`; C3 (fail-closed/contrato) — F3 (diff do instantâneo = 3 entradas, T1–T14 verdes), F8 (A17-bis reescrito), A26, `API_CONTRACTS.md`. Quem achou (o dev) não planejou (eu) nem julga (§C7.4-bis).
+
+### E1.11 — Perguntas ao dono
+**Nenhuma.** Item a item:
+- **F5** não muda quem tem o privilégio: `super_admin`/`platform_admin` recebem toda permissão nova por construção (mesma referência do catálogo), é regra escrita (`RBAC_MATRIX.md` matriz-base l.29-47 — `platform_admin` full em Finance — e notas por permissão l.128/130/151) e o plano v3 que o dono aceitou já o dizia (§4.3, §4.4, §5.2). O "só `tenant_admin`" do §7.1 era inventário do snapshot, não distribuição.
+- **D1** está dentro da Q2 aceita ("o Administrador desvincula com justificativa obrigatória e auditoria Crítica"): fecha um caminho que a contrariava; não concede nem tira privilégio de ninguém.
+- **A26** e **A17-bis reescrito** corrigem o próprio plano (inconsistência interna e critério impossível de passar); não mudam quem pode o quê.
+- **Informação, não pergunta:** a pendência `P-SAN3-12-BOUNCE-COMO-DESVIO` (bounce de cheque vinculado tira-o do conjunto pendente sem privilégio — R-res-2) segue para a junta do 12a decidir se vira privilégio; se a junta quiser, ela sobe ao dono com opção recomendada.
+
+### E1.12 — Resumo
+- **Achados:** 9 de 9 procedem — F1–F5 com vermelho re-executado por mim no head (`fafd4b36`); F6 e F9 por leitura confirmada em execução; F7 e F8 como lacuna e critério impossível do plano (artefato de processo, não defeito do produto). Nenhum é defeito do código do dev: todos são falsificação do **inventário** (§7.1) ou de **critério** (§4.1/§8.1) do plano v3.
+- **Caminhos:** **4 entram** + **2 se ampliam** (6 no total); **1 sai** (`scripts/provision-rbac.ts`); D1 e A26 em arquivos já permitidos; `core-saas/routes/http.ts` fica PROIBIDO nomeado.
+- **Perguntas ao dono:** **0**.
+- **Desenho que muda:** D1 (PATCH privilegiado que tira/troca o título → 422; só `unlink-title` desvincula), A26 (`bounce_reason_required` como requisito explícito), A17-bis reescrito (contrato para todo `reason` novo; dívida pré-existente congelada e só encolhe).
+- **Terreno desta emenda:** worktree do dev intocado (`git status --porcelain` vazio em `fafd4b36`, conferido após cada medição); nada rodou contra 5432/6379 nem `erp-*`; container `plan12e1-pg` (127.0.0.1:55499) removido ao fim; artefatos só no scratchpad da sessão (`e1-snapshot.ts`, `e1-vias-gerado.json`, `e1-fill.py`, `f*.md`, `e1*.md`).
+
+---
+
+## Emenda E1-bis (12a) — resposta à crítica da E1 (`crit-san312a-e1-opus`): 1 bloqueia, 3 ajustes, 2 notas pré-existentes
+
+> **Papel:** `planejador-mestre` (TOPO), a mesma identidade `planejador-san312-e1-fable` (devolução de **crítico**, não reprovação de junta — §C7.4 não
+> exige identidade nova). **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), sem fallback. **Data:** 2026-10-25. **Insumo:**
+> `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/B-SAN3-12a-E1-critica.md` (Claude Opus 5.5, declarado; VOLTA À EMENDA). **Ref medida:** `fafd4b36` em
+> `C:/Users/AMP/w-san312a`, só leitura (`git status --porcelain` vazio antes e depois de cada medição); sem banco nesta rodada — o achado bloqueante
+> vem com barreira no Postgres executada e registrada pelo crítico (P1, item 2.2), e a metade em memória eu re-executei (E1b.0); nada contra
+> 5432/6379/`erp-*`. **Respostas do dono que esta emenda NÃO reabre:** "Só cheque do valor exato", "Mesmo privilégio da troca", desvínculo pelo
+> administrador com justificativa e auditoria Crítica, delegável ao Financeiro por política. **Estado:** COMPLETO. **Última rodada sobre a emenda:
+> o dev retoma com E1 + E1-bis.**
+
+### E1b.0 — Re-execução própria (P3) e o que fica de pé
+| Achado | Grav. | Re-execução / conferência própria (comando → saída) | Decisão | Vira |
+|---|---|---|---|---|
+| **2.2 D1-TOCTOU** | bloqueia | Sonda de memória do crítico, apontada para o worktree do dev (`e1bis-probe-race-mem.test.mts`, `cwd` = `w-san312a`, 3 rodadas): `RESULTS [{ok:T1},{ok:T2}] · FINAL titleId T2 · SEQ 403 unlink_requires_privilege` nas 3 — dois PATCH de 1º vínculo por `finance`, **ambos 200**, e o segundo trocou o título do primeiro sem privilégio. Código: `cheque.service.ts:193-206` (PATCH), `:258-266` (`delete`), `:275-279`/`:447-465` (`cancel` via `flipOnly`) decidem sobre `current` lido por `getWritable` (`:569`, sem trava); `cheque-prisma.repository.ts:75` (`update`), `:93` (`softDelete`), `:103` (`transition`) filtram só por `status`/`deleted_at`, **não** por `title_id`; em memória `cheque.repository.ts:199-251` idem. A barreira no Postgres (PATCH, cancel e delete; `audit_logs = 0`; Pix no T1 → 201) está no item 2.2 da crítica com comando e saída. | **ACEITO** | **A27** |
+| **3.3 F1-CLEAR** | ajuste | Conferido: a reescrita de K2 l.189 na E1.F1(c) move a asserção para a baixa e nenhum caso de memória passa a exercer `cheque.service.ts:292` (fast-fail `assertPayable` do `clear`) nem `:556` (`locked.status === "paid"` sob a trava); a M2 do crítico (285 testes em memória, 0 vermelhos causados) é a prova. | **ACEITO** | **A28** |
+| **5.1 critério cego** | ajuste | Conferido nos logs do dev citados pela crítica (base 16 vermelhos, head 27, **13 nos dois lados**, com o caminho absoluto do worktree no nome); `tests/san3-09-bootstrap-platform-admin-db.test.ts` (T2.1, `RBAC_NOT_PROVISIONED`) e `tests/san3-05-runtime-role-guard-db.test.ts` (RLS) são guards cegos no Windows. | **ACEITO** | **B1** |
+| **5.2 pulado vira verde** | ajuste | `battery.sh:25` do dev: `env -u DATABASE_URL … tests/audit-security.test.ts`; `audit-security.test.ts:23-27` pula sem `DATABASE_URL` (`# SKIP`) e o E6 publicou "1/1"; `grep -c details tests/audit-security.test.ts` → 0 — a fonte que a E1.F7(b) cita não mede `details`. | **ACEITO** | **B2** |
+| 2.3 `bounce` sem privilégio | nota · pre-existente | R-res-2 do plano v3 (§4.3 l.258); `P-SAN3-12-BOUNCE-COMO-DESVIO` já está com a junta | registrado | — |
+| 2.4 `changeStatus → cancelled` com cheque pendente | nota · pre-existente | `financial-title.service.ts:302-331` não chama `assertNoPendingCheque` (só `update` `:280` e `delete` `:392`); o cheque segue vinculado e o `clear` depois recusa por `title_cancelled` — fail-closed, nenhum caixa anda | registrado | pendência nova (E1b.5) |
+| 1.1–1.2, 2.1, 2.5, 3.1, 3.2, 3.4, 4.1–4.3 | nota | F5 confirmada por execução (12/12 com a edição do snapshot; `swap`/`dropplat` vermelhos); D1 coerente com as respostas do dono (2.5); reescritas da F1 passam sem apagar caso e com mutação vermelha; F3 = 3 entradas, 32/32; arnês P7 46/46 e não ficou frouxo | mantidos; 3 correções de texto (E1b.6) | — |
+
+**O que fica de pé:** a **D1** (422 para o PATCH privilegiado que tira/troca o título) — o crítico mediu (2.5) que ela não contradiz resposta nenhuma do dono e que o defeito é a **concorrência**, não o desenho do 422. A E1-bis não troca o desenho sequencial da E1: acrescenta o CAS que faz esse desenho valer sob corrida.
+
+### E1b.1 — A27 (2.2, bloqueia): toda escrita de cheque cuja guarda lê `title_id` leva o `title_id` LIDO no `WHERE`
+**Regra.** O `unlinkTitle` já é assim (`cheque-prisma.repository.ts:147-162`: `WHERE … AND title_id = <lido>`; A5-bis). Passa a valer para as três escritas que hoje decidem por `current.titleId` fora de trava:
+
+| Escrita | Guarda que lê `title_id` | CAS novo no `WHERE` | 0 linhas → |
+|---|---|---|---|
+| `update` com `titleId` string — o 1º vínculo (`cheque.service.ts:217-231`, dentro do `uow.run`) | `:204` (403/422 da D1 só quando `current.titleId !== undefined`) | `title_id IS NOT DISTINCT FROM <lido>` (na prática `IS NULL`: só o 1º vínculo chega à escrita) | **409 `cheque_write_conflict`** (já existe: `throwChequeWriteConflict`, `:229`) |
+| `transition` `registered → cancelled` (`cancel`, `:275-279`, via `flipOnly :447-465`) | `:277` (`cheque_linked_unlink_first`) | idem | **409 `transition_conflict`** (idioma do `flipOnly :463`) |
+| `softDelete` (`delete`, `:258-266`) | `:262` | idem | **409 `cheque_write_conflict`** (`:264`) |
+
+O `deposit` (`flipOnly` sem guarda de título) e o `update` que não mexe em `title_id` **não** ganham CAS: não decidem nada por `title_id` nem o escrevem. `clear`/`bounce` seguem como estão (`reserved.titleId` vem do CAS por status; A26).
+
+**Como.** `UpdateChequeInput` e `TransitionChequeInput` (`cheque.types.ts:150-172`) e a assinatura de `softDelete` ganham `expectedTitleId?: string | null` — a **presença** da chave liga o CAS; `null` = "tem de estar sem título"; ausência = sem CAS (os chamadores que não dependem do título, inclusive as fixtures do arnês P7 `CHEQUE_CALLS`, não mudam). Prisma: `where: { …, ...(temExpected ? { title_id: expectedTitleId } : {}) }` (Prisma traduz `null` para `IS NULL`); sob READ COMMITTED o `UPDATE` que bloqueou re-avalia o `WHERE` depois do commit do vencedor, logo o perdedor casa 0 linhas. Memória: a comparação entra no check-and-set **síncrono** já existente (`cheque.repository.ts:199-251`, sem `await` entre ler e gravar): `temExpected && (expectedTitleId ?? undefined) !== current.titleId → return undefined`. O serviço passa `expectedTitleId: current.titleId ?? null` nas três chamadas. `CHEQUE_REPO_KIND` não muda (mesmos membros).
+
+**O que NÃO muda:** quem pode o quê (o CAS só faz a regra sequencial valer na corrida — a resposta do dono "Mesmo privilégio da troca" passa a ser verdadeira também sob concorrência); os códigos públicos (os 409 já estão na lista de 32 do §4.1 — `transition_conflict` do fluxo de cheque, `cheque_write_conflict` novo do bloco — e no contrato); a ordem de travas (o CAS não trava nada a mais).
+
+**Critérios (A27), cada um com a mutação que o deixa vermelho.** Arquivo **novo** `tests/b-san3-12a-link-toctou-db.test.ts` — molde `tests/b-san3-12a-pay-link-race-db.test.ts` (barreira por `application_name`, `waitForOwnBlockedStatement` com `fragment: "cheques"`) + o `holdWinner` de `tests/cheque-title-link-atomic-db.test.ts:380-410` (vencedor por SQL próprio em **transação aberta**, `release()` decide), perdedor pelo **serviço**; **nunca por relógio**.
+
+| # | Critério | Mutação que deixa vermelho |
+|---|---|---|
+| A27-a (db, barreira) | vencedor: `UPDATE cheques SET title_id = T1` em transação aberta; perdedor: `finance` (sem `cheques:unlink_title`) `PATCH {title_id: T2}` lê `current` sem título, passa a guarda e **bloqueia** no row lock (`waitForOwnBlockedStatement`); `release` → perdedor **409 `cheque_write_conflict`**; FINAL `title_id = T1`; `audit_logs` do tenant sem evento de troca; controle sequencial em seguida: o mesmo PATCH → 403 `unlink_requires_privilege` (D1) | tirar `title_id` do `WHERE` do `update` (Prisma) → perdedor 200, FINAL T2 (a saída da crítica) |
+| A27-b (db, barreira) | vencedor: vínculo a T1 (idem); perdedor: `POST /cheques/:id/cancel` por `finance` → bloqueia → **409 `transition_conflict`**; FINAL `status = registered`, `title_id = T1`; depois `POST /financial-titles/T1/pay` (pix) → **422 `title_has_pending_cheque`** (invariante do A4: nunca "título pago por outro meio e cheque pendente vinculado") | tirar `title_id` do `WHERE` do `transition` → cancelado com título, pix 201 |
+| A27-c (db, barreira) | idem com `DELETE /cheques/:id` → **409 `cheque_write_conflict`**; FINAL `deleted_at IS NULL`, `title_id = T1`; pix → 422 | tirar `title_id` do `WHERE` do `softDelete` → excluído com título, pix 201 |
+| A27-d (db, controle) | sem corrida: 1º vínculo → 200; `cancel`/`DELETE` de cheque sem título → como hoje (o CAS com `IS NULL` casa); `deposit` de cheque vinculado → 200 (sem CAS) | — (controle: o CAS não recusa o caminho normal) |
+| A27-e (memória) | em `tests/b-san3-12a-unlink-title.test.ts`: dois `update` de 1º vínculo concorrentes (T1, T2) por `finance`, com as duas leituras antes da primeira escrita (a sonda `probe-race-mem` reproduz 3/3) → **exatamente um 200**; o outro **409 `cheque_write_conflict`**; FINAL = o título do 200; o mesmo arranjo para `cancel` × vínculo e `delete` × vínculo (→ 409; o cheque segue vinculado e vivo); **nunca dois 200** | tirar a comparação de `expectedTitleId` do check-and-set em memória → dois 200 |
+| A27-f (paridade) | o arranjo de A27-e no Postgres **sem** barreira (`Promise.allSettled`) termina em {200, 409}, nunca {200, 200} | — (invariante; A27-a é a prova determinística) |
+
+Se a intercalação de A27-e não sair determinística só com `Promise.allSettled`, o dev acrescenta um seam de teste **no serviço** (`afterRead?: () => Promise<void>`, injetado só pelas fábricas `*ForTests`) — nunca `setTimeout`.
+
+**Arquivos (todos já PERMITIDOS):** `src/modules/cheques/{cheque.types,cheque.repository,cheque-prisma.repository,cheque.service}.ts`; `tests/b-san3-12a-link-toctou-db.test.ts` (novo), `tests/b-san3-12a-unlink-title.test.ts`; `API_CONTRACTS.md` (PATCH/cancel/DELETE: "409 quando o vínculo mudou entre a leitura e a escrita"). **Conferência obrigatória do dev:** `grep -n "transition(\|softDelete(\|\.update(" src/modules/cheques/cheque.service.ts` — só `cancel`, `delete` e o 1º vínculo passam `expectedTitleId`; o resultado vai para o relatório.
+
+### E1b.2 — A28 (3.3, ajuste): o `clear` de título JÁ PAGO falha fechado — preservado em memória e no Postgres
+**Regra.** O estado "título pago por outro meio **e** cheque pendente vinculado" não nasce mais pelo serviço (A1/A4/A27), mas é alcançável por dado anterior ao 12a (o #456 permitia cheque parcial e baixa com cheque pendente) e é exatamente o estado que a guarda do `clear` (`cheque.service.ts:292`, fast-fail `assertPayable`; `:556`, `locked.status === "paid"` sob a trava) existe para conter — ela segue sendo o que impede a 2ª entrada de caixa. Essa guarda **tem de ter caso vermelho em memória**, não só o T-K2d no Postgres.
+
+**Reescrita de K2 l.189 (emenda à E1.F1(c)):** mantém as asserções da E1 (pix → 422 `title_has_pending_cheque`, 0 lançamentos, cheque `deposited`) **e acrescenta** a propriedade original pela via do repositório, fora do serviço (o idioma do K2 l.204 reescrito): `getMemoryFinancialTitleRepositoryForTests().applyPaymentGuarded({ tenantId, financialTitleId, amount: 100 })` (`financial-title.repository.ts:345`, check-and-set síncrono) → título `paid`/`paidAmount 100`; então `clear` → **422 `title_already_paid`**; cheque segue `deposited`, `clearedEntryId` undefined; `entries.list` total **0** (nenhum lançamento, nem do `clear`). **K2-db l.80:** idem, com o título pago por SQL próprio e **commitado** (o `holdWinner "pay-pix"` de `cheque-title-link-atomic-db.test.ts:380-410`, sem barreira) → `clear` → 422 `title_already_paid`; `financialEntry.count` = só o do vencedor; cheque `deposited`, `cleared_entry_id null`; título `paid`.
+
+**Mutação M2 (entra no roteiro E4):** remover o fast-fail `assertPayable` do `clear` (`:292`) **e** trocar `if (locked.status === "paid") throw titleAlreadyPaidError()` (`:556`) por `return` → K2 l.189 **vermelho em memória** (o `clear` posta caixa em título pago: `entries.list` total 1); K2-db l.80 e T-K2d vermelhos no Postgres. A variante "só o fast-fail" deixa K2 l.189 verde pela trava (`:556`) — por isso a M2 remove os dois, como o crítico fez; o dev registra as duas variantes.
+
+**Correção de texto (3.4):** em E1.F1(c) K2 l.170, onde se lê "a propriedade do caso (o clear deriva o status pelo `paidAmount`) fica", leia-se: "a derivação `partially_paid`/`paid` é do `applyPaymentGuarded` do título, compartilhado pela baixa e pelo `clear` (`cheque.service.ts:545`); o caso passa a medi-la pela baixa parcial (pix 200 → `partially_paid`) e pelo `clear` do valor exato (→ `paid`)".
+
+### E1b.3 — B1 (5.1, ajuste): o critério de fechamento não é "vermelhos só no head = 0"
+**Regra.** O PR #459 sai de rascunho e a `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` fecha **só** com, cumulativamente:
+1. **CI concluída e verde no head** — `gh api repos/<owner>/<repo>/commits/<head>/check-runs`: os jobs `backend` (`.github/workflows/ci.yml:31`, ubuntu) e `backend-postgres` (`:131`) `completed`/`success`; é lá, em Linux, que os 13 testes cegos no Windows rodam de fato; `cancelled`/`queued` conta como ausente (§C7.1-bis). A comparação local base × head é **insumo**, não critério.
+2. **Comparação base × head normalizada por script e publicada inteira:** a chave de cada vermelho é `tests/<arquivo>` + nome do caso, com o prefixo do worktree removido **por script** (não por julgamento); o relatório publica **três listas** com N: "só no head" (tem de ser **0**), "só na base", e "**nos dois lados**" — esta com a **causa** de cada um (Redis inalcançável; drill que invoca o shim bash de `node_modules/.bin/prisma` com `node` no Windows → `SyntaxError: missing ) after argument list`; RLS do papel de runtime) — nunca omitida.
+3. **A propriedade dos dois guards que a migração de dados e o RLS tocam, medida à mão no descartável só migrado** (como o crítico fez): `select count(*) from roles` → 0, `role_permissions` → 0, `permissions` → 4 (as 2 do bloco + 2 das migrações anteriores), concessões de `super_admin` → 0 ⇒ `bootstrap-platform-admin` recusa `RBAC_NOT_PROVISIONED` (`scripts/bootstrap-platform-admin.ts:215-224`) — a mesma propriedade do T2.1; para o RLS, a R-res-5 segue declarada (o agregado roda em `withTenantRls`; a camada RLS sozinha é medida pela CI em `tests/san3-05-runtime-role-guard-db.test.ts`).
+
+**Falsificador:** um vermelho de ambiente que suma da lista "nos dois lados" sem causa, ou um "só no head" mascarado por nome com caminho absoluto, deixa o critério vermelho — o `inspetor-de-terreno-da-junta` confere a normalização **por comando**, e a CI no head é item 1-bis dele. O shim do `.bin/prisma` no Windows é **pré-existente** → pendência `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (dono: bloco de ferramentas de processo; `escopo: pre-existente`; solução provável: `npx prisma` ou `node node_modules/prisma/build/index.js` nos drills).
+
+### E1b.4 — B2 (5.2, ajuste): pulado não é verde
+**Regra.** Todo passo da bateria publica, lido do TAP, **`tests · pass · fail · skipped`** (nunca só "N/N"); no `npm test` fresco, **`skipped` do head ⊆ `skipped` da base** (nenhum teste passa a ser pulado por causa do bloco); e nenhum passo da bateria do bloco termina com `pass 0 · skipped ≥ 1`. **Correção concreta:** o passo `11-audit-security` do roteiro do dev (`battery.sh:25`) roda **com** `DATABASE_URL` do descartável (`audit-security.test.ts:23-30` pula sem ela) e publica `1 · pass 1 · fail 0 · skipped 0`; o E6 do relatório é corrigido ("1/1" → a forma completa, "com banco").
+
+**Correção da E1.F7(b):** a allowlist §B2.8 do `details` é medida por `tests/b-san3-12a-unlink-title.test.ts` (caso HTTP "o corpo do 422 não leva o tenant", que o crítico pôs vermelho mutando `financial-entry.service.ts:156-161` com `tenantId` no `details`) e por A17; `tests/audit-security.test.ts` mede a allowlist dos **metadados de auditoria** (A7), não o `details`. **Mutações:** `tenantId` em `details` → esse caso HTTP vermelho; publicar um passo sem o campo `skipped` → o formato exigido falha (o inspetor confere o TAP).
+
+### E1b.5 — Notas pré-existentes (2.3, 2.4): registro com dono, sem reabrir
+- **2.3** `bounce` de cheque vinculado `deposited` sem privilégio: R-res-2 do plano v3 (§4.3 l.258); A26 exige motivo e audita `warning`; `P-SAN3-12-BOUNCE-COMO-DESVIO` já está com a junta do 12a. Nada a acrescentar.
+- **2.4** `PATCH /financial-titles/:id/status → cancelled` com cheque pendente vinculado (`financial-title.service.ts:302-331` não consulta `assertNoPendingCheque`): o cheque segue vinculado, o `clear` depois recusa por `title_cancelled` (fail-closed, nenhum caixa anda) e o administrador o desvincula/cancela pelo caminho do §4.3. **Pendência nova** `P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE` — `escopo: pre-existente` (`changeStatus` é anterior ao bloco e o §4.3 do v3 nomeia só `amount` e `DELETE`); dono: o próximo bloco de backend financeiro, junto de `P-SAN3-12-PAGAMENTO-MISTO-CHEQUE`; recomendação registrada: `changeStatus → cancelled` com conjunto pendente não vazio → 422 `title_has_pending_cheque` pela mesma porta `cheque-pending-reader`. **Não entra no 12a:** o §7.1 limita `financial-title.service.ts` a `update`/`delete`, e ampliar o alcance de um bloco em junta por achado pré-existente é o que a §C7.1-ter(a) manda não fazer.
+
+### E1b.6 — O que muda no §7.1/§9.2 em relação à E1.10, bateria e ordem ao dev
+**Arquivos (todos já PERMITIDOS pela E1.10; o único novo é um teste `-db` do bloco):** `src/modules/cheques/{cheque.types,cheque.repository,cheque-prisma.repository,cheque.service}.ts` (A27); `tests/b-san3-12a-link-toctou-db.test.ts` (**novo**, A27-a–d); `tests/b-san3-12a-unlink-title.test.ts` (A27-e, A6-bis); `tests/cheque-title-link.test.ts` K2 l.189 e `tests/cheque-title-link-atomic-db.test.ts` K2-db l.80 (A28); `API_CONTRACTS.md` (os 409 do CAS); roteiro `battery.sh` e `docs/revisoes/SAN3/B-SAN3-12a-dev.md` (B1/B2: `tests · pass · fail · skipped`, as três listas normalizadas, a medição à mão do T2.1).
+**Correções de texto na E1 (3):** F3(d) — a edição à mão da classe de `unlink-title` deixa vermelho o **T14**, não o T6 (o T6 fica vermelho na mutação do catálogo, 4.2); F1(c) K2 l.170 — frase substituída (E1b.2); F7(b) — fonte da allowlist do `details` (E1b.4).
+**Bateria (§9.2), linhas que se somam às da E1.10:**
+```
+CORE_SAAS_PERSISTENCE=prisma DATABASE_URL=<descartável> node --test --import tsx --test-reporter=tap tests/b-san3-12a-link-toctou-db.test.ts   # A27-a..d (barreira; pg-barrier por application_name)
+DATABASE_URL=<descartável> CORE_SAAS_PERSISTENCE=memory node --test --import tsx --test-reporter=tap tests/audit-security.test.ts            # B2: COM banco → 1 · pass 1 · fail 0 · skipped 0
+gh api repos/<owner>/<repo>/commits/<head>/check-runs --jq '.check_runs[] | [.name,.status,.conclusion] | @tsv'                            # B1-1: backend e backend-postgres completed/success no head
+```
+Toda linha da bateria publica `tests · pass · fail · skipped` (B2). **Mutações que se somam ao roteiro E4:** A27-a/b/c (3× tirar `title_id` do `WHERE`), A27-e (memória), **M2** (duas variantes), F7-wrapper, D1.
+**Ordem ao dev:** A27 (tipos → repositórios → serviço → `-db` com barreira → memória) → D1 → F1 (com A28 em K2 l.189 / K2-db l.80) → F2 → F4 → F5 → F3 (regenerar por último) → B2 (bateria com `skipped`) → registro (fechar `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` só pelo B1; abrir `P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE` e `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`; E1 + E1-bis apensas verbatim em `docs/revisoes/SAN3/B-SAN3-12-plano.md`) → mutações → `npm test` base vs head normalizado (B1-2) → CI verde no head (B1-1) → o PR #459 sai de rascunho.
+**Junta (unanimidade de 3, dinheiro + permissão):** C1 (DBA/dinheiro) — A27-a/b/c com `pg_locks`/barreira e A28 (M2 nos dois lados), além do que a E1.10 já lhe dava; C2 (acessos) — A27 não muda quem pode o quê (403/422/409 por ator, sequencial e em corrida), D1/A6-bis, F5; C3 (fail-closed/contrato) — B1 (três listas, CI no head), B2 (`skipped`), F3, A17-bis, os 409 no contrato. Quem achou (o crítico) ≠ quem planejou (eu) ≠ quem desenvolve (o dev).
+
+### E1b.7 — Perguntas ao dono
+**Nenhuma.** O A27 faz a regra que o dono aprovou ("Mesmo privilégio da troca"; desvínculo só pelo administrador, com justificativa e auditoria Crítica) valer também sob concorrência — não concede nem tira privilégio de ninguém, e os códigos de recusa já existiam. A28, B1 e B2 são cobertura de teste e critério de fechamento. A nota 2.4 fica registrada com recomendação para o bloco seguinte; se a junta do 12a entender que o 12a deve fechá-la, isso amplia o §7.1 (`changeStatus`) e aí sobe ao dono como pergunta — não agora.
+
+### E1b.8 — Resumo
+- **Requisitos novos: 4** — **A27** (CAS do `title_id` lido em `update`/`cancel`/`delete`, provado com barreira no Postgres e em memória), **A28** (`clear` de título já pago falha fechado, com M2 vermelha em memória e no `-db`), **B1** (fechamento: CI verde no head + três listas normalizadas por script + T2.1 medido à mão), **B2** (`skipped` publicado em todo passo e `audit-security` com banco; fonte do `details` corrigida).
+- **Pendências novas: 2** (`P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE`, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`), ambas `pre-existente`. **Correções de texto na E1: 3.** **D1 mantida.**
+- **Perguntas ao dono: 0.** Respostas do dono intactas.
+- **Terreno:** `C:/Users/AMP/w-san312a` em `fafd4b36`, `git status --porcelain` vazio antes e depois; sem container nesta rodada; a sonda de memória do crítico foi re-executada a partir do scratchpad (`e1bis-probe-race-mem.test.mts`, `cwd` no worktree) sem gravar nada nele.

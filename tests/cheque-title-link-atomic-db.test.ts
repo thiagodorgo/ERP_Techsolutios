@@ -62,37 +62,55 @@ if (!connectionString) {
     }
   });
 
-  test("K2-db: clear parcial deriva partially_paid", async () => {
+  // B-SAN3-12a (Emenda E1.F1, "Só cheque do valor exato") — o cheque menor que o saldo não vincula; pix 200 deriva
+  // partially_paid; o cheque do saldo exato compensa e leva a paid/300.
+  test("K2-db: cheque menor que o saldo não vincula (422 cheque_amount_mismatch); pix 200 → partially_paid; cheque do saldo → paid/300", async () => {
     const h = await bootstrap(connection);
     try {
       const s = await seed(h, "partial", "receivable", 300);
+      await assert.rejects(() => h.chequeService.create(s.actor, body(s, s.titleId)), (e) => domain(e, 422, "cheque_amount_mismatch"));
+      await h.entryService.payTitle(s.actor, s.titleId, { account_id: s.accountId, amount: 200, payment_method: "pix" });
+      const partial = await h.client.financialTitle.findUniqueOrThrow({ where: { id: s.titleId } });
+      assert.equal(partial.status, "partially_paid");
+      assert.equal(Number(partial.paid_amount), 200);
       const cheque = await h.chequeService.create(s.actor, body(s, s.titleId));
       await h.chequeService.deposit(s.actor, cheque.id);
       await h.chequeService.clear(s.actor, cheque.id);
       const title = await h.client.financialTitle.findUniqueOrThrow({ where: { id: s.titleId } });
-      assert.equal(title.status, "partially_paid");
-      assert.equal(Number(title.paid_amount), 100);
+      assert.equal(title.status, "paid");
+      assert.equal(Number(title.paid_amount), 300);
     } finally {
       await teardown(h);
     }
   });
 
-  test("K2-db: título pago antes do clear aborta cheque e segundo lançamento", async () => {
+  // B-SAN3-12a (E1.F1 + A28) — a baixa por pix com cheque pendente é recusada na origem; e o título pago por SQL próprio
+  // (commitado; o estado legado) faz o clear falhar fechado sem segundo lançamento.
+  test("K2-db: pix com cheque deposited vinculado → 422 title_has_pending_cheque e 0 lançamento; título pago por fora → o clear aborta sem segundo lançamento (A28)", async () => {
     const h = await bootstrap(connection);
     try {
       const s = await seed(h, "paid-first");
       const cheque = await h.chequeService.create(s.actor, body(s, s.titleId));
       await h.chequeService.deposit(s.actor, cheque.id);
-      await h.entryService.payTitle(s.actor, s.titleId, {
-        account_id: s.accountId,
-        amount: 100,
-        payment_method: "pix",
-      });
+      await assert.rejects(
+        () => h.entryService.payTitle(s.actor, s.titleId, { account_id: s.accountId, amount: 100, payment_method: "pix" }),
+        (e) => domain(e, 422, "title_has_pending_cheque"),
+      );
+      assert.equal(await h.client.financialEntry.count({ where: { tenant_id: s.tenantId } }), 0);
+      const before = await h.client.cheque.findUniqueOrThrow({ where: { id: cheque.id } });
+      assert.equal(before.status, "deposited");
+      assert.equal(before.cleared_entry_id, null);
+
+      const winner = await holdWinner(h, s, "pay-pix", { chequeId: cheque.id });
+      winner.release();
+      await winner.done;
       await assert.rejects(() => h.chequeService.clear(s.actor, cheque.id), (e) => domain(e, 422, "title_already_paid"));
       const persisted = await h.client.cheque.findUniqueOrThrow({ where: { id: cheque.id } });
       assert.equal(persisted.status, "deposited");
       assert.equal(persisted.cleared_entry_id, null);
-      assert.equal(await h.client.financialEntry.count({ where: { tenant_id: s.tenantId } }), 1);
+      assert.equal(await h.client.financialEntry.count({ where: { tenant_id: s.tenantId } }), 1, "só o lançamento do vencedor");
+      const title = await h.client.financialTitle.findUniqueOrThrow({ where: { id: s.titleId } });
+      assert.equal(title.status, "paid");
     } finally {
       await teardown(h);
     }

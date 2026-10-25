@@ -9,6 +9,8 @@ agregado no fuso do negócio; campos de DTO; migração de dados com drill). A e
 fixtures FORA dele quebram por construção (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`). Relatório com comandos e saídas:
 `docs/revisoes/SAN3/B-SAN3-12a-dev.md`. Próximo: emenda do plano (orquestrador + planejador), não a junta.
 
+**Retomada 2026-10-25 (mesmo dev):** Emendas E1 + E1-bis aplicadas (A27 CAS do título lido, D1, A28, F1–F5, B1, B2); relatório E10–E14. O PR #459 sai de rascunho pelo orquestrador depois da CI verde no head (B1-1).
+
 ## Atualização 2026-10-10 — B-O6R-04a: Retomada 2026-10-10
 
 Retomado por ordem do dono (`D-ORDEM-NOITE-2026-10-10`), que revoga para o #389 o estacionamento de 08/10. O plano é
