@@ -181,7 +181,9 @@ if (!connectionString) {
       const s = await seed(h, "a5bis-cas");
       const other = await h.withTenantRls(h.client, s.tenantId, (tx) => tx.financialTitle.create({ data: titleData(s.tenantId, "Outro") }));
       const cheque = await h.chequeService.create(s.actor, chequeBody(s, s.titleId));
-      await h.chequeService.update(s.admin, cheque.id, { title_id: other.id });
+      // A troca de título é unlink-title (justificativa + auditoria) e depois o 1º vínculo (D1 da Emenda E1: o PATCH não troca).
+      await h.chequeService.unlinkTitle(s.admin, cheque.id, { justification: "troca para o título correto" });
+      await h.chequeService.update(s.actor, cheque.id, { title_id: other.id });
       const repo = await h.createPrismaChequeRepository();
       assert.equal(await repo.unlinkTitle({ tenantId: s.tenantId, chequeId: cheque.id, expectedTitleId: s.titleId }), undefined);
       assert.equal((await h.client.cheque.findUniqueOrThrow({ where: { id: cheque.id } })).title_id, other.id, "o vínculo novo sobreviveu");
