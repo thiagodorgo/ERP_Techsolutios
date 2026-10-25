@@ -51,8 +51,10 @@ typedef ServiceRefusalTelemetryHook =
 enum WorkOrderPullOutcome { success, cached, error, pulling }
 
 /// B-SAN3-13 — gancho para trabalho pendente que mora FORA das tabelas de OS (vistoria e materiais do prestador,
-/// ramos 4 e 5 do §2.3 do plano v3). O provider o compõe; ausente = `false` (declarado, R10).
-typedef WorkOrderExternalPendingWork = Future<bool> Function(WorkOrder order);
+/// ramos 4 e 5 do §2.3 do plano v3). O provider o compõe; ausente = `false` (declarado, R10). Ciclo 2 (C2-02, RQ-2):
+/// recebe o MESMO instantâneo da fila que a reconciliação acabou de ler (uma fonte, sem releitura).
+typedef WorkOrderExternalPendingWork =
+    Future<bool> Function(WorkOrder order, List<SyncAction> actions);
 
 /// B-SAN3-13 (R2-6, CA-24) — como cada ação da fila offline aponta para a OS. O ramo 1 da retenção casa QUALQUER
 /// ação, de QUALQUER tipo, por qualquer uma destas chaves — a tabela abaixo não decide a retenção, ela PROVA que
@@ -65,8 +67,13 @@ const workOrderServerReferenceKeys = <String>{
   'work_order_server_id',
 };
 
+/// Ciclo 2 (C2-02, RQ-2) — as chaves pelas quais TODA ação de vistoria refere o run: os 7 produtores de
+/// `ChecklistSyncActionTypes` gravam `local_run_id` (e `server_run_id` quando já baixado) e o replay resolve o run
+/// por elas. O ramo 4 do gancho as LÊ (ação pendente de um run da OS retém a OS).
+const workOrderRunReferenceKeys = <String>{'local_run_id', 'server_run_id'};
+
 /// Classificação de toda constante de `*SyncActionTypes`: as chaves pelas quais a ação refere a OS (ramo 1), ou
-/// `{'run_id'}` (vistoria — a OS vem por `checklist_runs`, ramo 4), ou vazio (não refere OS).
+/// as chaves do run (vistoria — a OS vem por `checklist_runs`, ramo 4), ou vazio (não refere OS).
 const workOrderActionReferenceKeys = <String, Set<String>>{
   // WorkOrderSyncActionTypes — `local_id` + `server_id` (M21).
   'work_order.status_update': {'local_id', 'server_id'},
@@ -86,14 +93,15 @@ const workOrderActionReferenceKeys = <String, Set<String>>{
   'work_order_material.add': {'work_order_local_id'},
   'inventory_exit.create': {'work_order_id'},
   'inventory_entry.create': {},
-  // ChecklistSyncActionTypes — pela vistoria (`run_id` → `checklist_runs.work_order_id`): ramo 4.
-  'checklist_run.create': {'run_id'},
-  'checklist_answer.upsert': {'run_id'},
-  'checklist_run.complete': {'run_id'},
-  'checklist_marker.create': {'run_id'},
-  'checklist_divergence.create': {'run_id'},
-  'checklist_acknowledgement.create': {'run_id'},
-  'checklist_attachment.attach': {'run_id'},
+  // ChecklistSyncActionTypes — pela vistoria (`local_run_id`/`server_run_id` → `checklist_runs.work_order_id`):
+  // ramo 4.
+  'checklist_run.create': workOrderRunReferenceKeys,
+  'checklist_answer.upsert': workOrderRunReferenceKeys,
+  'checklist_run.complete': workOrderRunReferenceKeys,
+  'checklist_marker.create': workOrderRunReferenceKeys,
+  'checklist_divergence.create': workOrderRunReferenceKeys,
+  'checklist_acknowledgement.create': workOrderRunReferenceKeys,
+  'checklist_attachment.attach': workOrderRunReferenceKeys,
   // ExpenseSyncActionTypes — despesa não refere OS.
   'expense_report.create': {},
   'expense_item.create': {},
@@ -426,7 +434,7 @@ class WorkOrderRepository extends ChangeNotifier {
     }
     // Ramos 4 e 5 — vistoria e materiais do prestador (tabelas de outros módulos, pelo gancho do provider).
     final external = _hasExternalPendingWork;
-    if (external != null && await external(row)) return true;
+    if (external != null && await external(row, actions)) return true;
     return false;
   }
 
@@ -1058,23 +1066,50 @@ final workOrderRepositoryProvider = Provider<WorkOrderRepository>((ref) {
 /// B-SAN3-13 (§2.3 ramos 4 e 5) — vistoria e materiais do prestador moram em tabelas de outros módulos, que este
 /// bloco só LÊ. Os stores são obtidos na hora (não no build do provider). Falha de leitura = RETÉM (fail-closed: na
 /// dúvida, a OS fica no aparelho).
+///
+/// Ramo 4, completo no ciclo 2 (C2-02, RQ-2) — para cada run da OS: (a) run não sincronizado; (b) ação da fila
+/// ainda não sincronizada (pending/syncing/failed/conflict) que aponta para o run por `local_run_id` ou
+/// `server_run_id` — os 7 tipos de vistoria; (c) marcador ou ciência gravados e ainda não sincronizados (a janela
+/// gravar→enfileirar do próprio `ChecklistRepository`); (d) anexo com binário ainda por subir. Qualquer um = fica.
 WorkOrderExternalPendingWork buildWorkOrderExternalPendingWork({
   required ChecklistLocalStore Function() checklistStore,
   required PrestadorLocalStore Function() prestadorStore,
 }) {
-  return (order) async {
+  return (order, actions) async {
     try {
       final checklists = checklistStore();
-      final runIds = <String>{};
+      final runLocalIds = <String>{};
+      final runServerIds = <String>{};
       for (final key in {order.serverId, order.localId}.whereType<String>()) {
         for (final run in await checklists.loadRunsForWorkOrder(key)) {
+          // (a)
           if (run.syncStatus != SyncStatus.synced) return true;
-          runIds.add(run.localId);
+          runLocalIds.add(run.localId);
           final runServerId = run.serverId;
-          if (runServerId != null) runIds.add(runServerId);
+          if (runServerId != null && runServerId.isNotEmpty) {
+            runServerIds.add(runServerId);
+          }
+          // (c)
+          final markers = await checklists.loadMarkers(run.localId);
+          if (markers.any((m) => m.syncStatus != SyncStatus.synced)) {
+            return true;
+          }
+          final ack = await checklists.loadAcknowledgement(run.localId);
+          if (ack != null && ack.syncStatus != SyncStatus.synced) return true;
         }
       }
-      if (runIds.isNotEmpty) {
+      if (runLocalIds.isNotEmpty) {
+        // (b)
+        for (final action in actions) {
+          if (!_pendingActionStatuses.contains(action.status)) continue;
+          final payload = action.payload;
+          if (runLocalIds.contains(payload['local_run_id']) ||
+              runServerIds.contains(payload['server_run_id'])) {
+            return true;
+          }
+        }
+        // (d)
+        final runIds = {...runLocalIds, ...runServerIds};
         final attachments = await checklists.loadAttachmentsPendingUpload();
         if (attachments.any((a) => runIds.contains(a.runId))) return true;
       }

@@ -176,8 +176,8 @@ void main() {
         final real = t.realHook;
         var fired = false;
         final repo = t.repo(
-          hook: (order) async {
-            final pending = await real(order);
+          hook: (order, actions) async {
+            final pending = await real(order, actions);
             if (order.localId == 'w' && !fired) {
               fired = true;
               await t.prestador.saveMaterial(
@@ -342,5 +342,112 @@ void main() {
         expect(await t.checklists.loadRun('run-c'), isNotNull);
       },
     );
+
+    // F28b — run SEM `serverId`: a ação só leva `local_run_id`. Dois produtores reais: `addMarker` (retém também pelo
+    // marcador pendente, (c)) e `saveAnswer` (só a ação por `local_run_id` segura a OS — é o caso que a mutação
+    // "casar só `server_run_id`" derruba).
+    test(
+      'F28b — run sem serverId: marcador e resposta pendentes por local_run_id ficam',
+      () async {
+        final t = _Terrain();
+        addTearDown(t.db.close);
+        await t.store.saveWorkOrder(_order('bm', serverId: 'srv-bm'));
+        await t.store.saveWorkOrder(_order('ba', serverId: 'srv-ba'));
+        await t.checklists.saveRun(_run('run-bm', 'srv-bm'));
+        await t.checklists.saveRun(_run('run-ba', 'srv-ba'));
+        final checklistRepo = t.checklistRepo();
+        await checklistRepo.addMarker(
+          runId: 'run-bm',
+          type: 'damage',
+          fieldId: 'f1',
+        );
+        await checklistRepo.saveAnswer(
+          runId: 'run-ba',
+          answer: MobileChecklistAnswer(
+            fieldId: 'f1',
+            answeredAt: DateTime.utc(2026, 10, 25),
+            textValue: 'resposta',
+          ),
+        );
+        final payloads = [
+          for (final a in await t.queue.actionsForTenant(_tenant)) a.payload,
+        ];
+        expect(payloads.every((p) => !p.containsKey('server_run_id')), isTrue);
+
+        await t.repo().refresh();
+        expect(await t.ids(), ['ba', 'bm']);
+      },
+    );
+
+    // F28c — ciência (`acknowledge`) real: ação na fila e registro pendente.
+    test('F28c — ciência pendente com o run synced: a OS fica', () async {
+      final t = _Terrain();
+      addTearDown(t.db.close);
+      await t.store.saveWorkOrder(_order('c', serverId: 'srv-c'));
+      await t.checklists.saveRun(_run('run-c', 'srv-c', serverId: 'srv-run-c'));
+      await t.checklistRepo().acknowledge(
+        runId: 'run-c',
+        acknowledgedByName: 'Cliente',
+        acknowledgedByRole: 'customer',
+      );
+
+      await t.repo().refresh();
+      expect(await t.ids(), ['c']);
+    });
+
+    // F28d — a ação de vistoria em `syncing` (o replay a pegou) também retém.
+    test('F28d — resposta de vistoria em syncing: a OS fica', () async {
+      final t = _Terrain();
+      addTearDown(t.db.close);
+      await t.store.saveWorkOrder(_order('d', serverId: 'srv-d'));
+      await t.checklists.saveRun(_run('run-d', 'srv-d', serverId: 'srv-run-d'));
+      await t.checklistRepo().saveAnswer(
+        runId: 'run-d',
+        answer: MobileChecklistAnswer(
+          fieldId: 'f1',
+          answeredAt: DateTime.utc(2026, 10, 25),
+          textValue: 'resposta',
+        ),
+      );
+      final action = (await t.queue.actionsForTenant(_tenant)).single;
+      await t.queue.update(action.copyWith(status: SyncStatus.syncing));
+
+      await t.repo().refresh();
+      expect(await t.ids(), ['d']);
+    });
+
+    // F28e — marcador gravado e ainda não enfileirado (a janela gravar→enfileirar do `ChecklistRepository`).
+    test('F28e — marcador pendente sem ação na fila: a OS fica', () async {
+      final t = _Terrain();
+      addTearDown(t.db.close);
+      await t.store.saveWorkOrder(_order('e', serverId: 'srv-e'));
+      await t.checklists.saveRun(_run('run-e', 'srv-e', serverId: 'srv-run-e'));
+      await t.checklists.saveMarker(
+        const MobileChecklistMarker(
+          localId: 'mark-e',
+          runId: 'run-e',
+          type: 'damage',
+          syncStatus: SyncStatus.pending,
+        ),
+      );
+      expect(await t.queue.actionsForTenant(_tenant), isEmpty);
+
+      final repo = t.repo();
+      await repo.refresh();
+      expect(await t.ids(), ['e']);
+
+      // Marcador sincronizado: a OS sai (o run fica — tabela própria).
+      await t.checklists.saveMarker(
+        const MobileChecklistMarker(
+          localId: 'mark-e',
+          runId: 'run-e',
+          type: 'damage',
+          syncStatus: SyncStatus.synced,
+        ),
+      );
+      await repo.refresh();
+      expect(await t.ids(), isEmpty);
+      expect(await t.checklists.loadRun('run-e'), isNotNull);
+    });
   });
 }

@@ -676,21 +676,41 @@ void main() {
       ...workOrderServerReferenceKeys,
     };
     for (final entry in workOrderActionReferenceKeys.entries) {
-      final keys = entry.value.difference({'run_id'});
+      final keys = entry.value.difference(workOrderRunReferenceKeys);
       expect(
         ramo1.containsAll(keys),
         isTrue,
         reason: '${entry.key}: ${entry.value}',
       );
     }
-    // Ciclo 2 (C2-02, RQ-2) — toda chave citada no mapa é LIDA por um ramo: as do ramo 1 ou as do run que os
-    // produtores de vistoria gravam e o ramo 4 lê. Uma chave sem leitor (como `run_id`) fica vermelha.
-    const runKeys = {'local_run_id', 'server_run_id'};
+    // Ciclo 2 (C2-02, RQ-2) — toda chave citada no mapa é LIDA por um ramo: as do ramo 1 ou as do run que o ramo 4
+    // lê. Uma chave sem leitor (como `run_id`) fica vermelha. E toda chave do run tem PRODUTOR: os produtores de
+    // vistoria (`checklist_repository.dart`) a gravam no payload.
     for (final entry in workOrderActionReferenceKeys.entries) {
       expect(
-        {...ramo1, ...runKeys}.containsAll(entry.value),
+        {...ramo1, ...workOrderRunReferenceKeys}.containsAll(entry.value),
         isTrue,
         reason: 'chave sem leitor em ${entry.key}: ${entry.value}',
+      );
+    }
+    expect(
+      workOrderRunReferenceKeys,
+      {'local_run_id', 'server_run_id'},
+    );
+    final producers = File(
+      'lib/features/checklists/data/checklist_repository.dart',
+    ).readAsStringSync();
+    // Cada sítio que cria ação de vistoria (`type: ChecklistSyncActionTypes.…`) grava as duas chaves no payload
+    // (`server_run_id` também no carimbo da fila, por isso `>=`). `runCreate` não tem produtor no app (medido).
+    final sites = RegExp(
+      r'type: ChecklistSyncActionTypes\.',
+    ).allMatches(producers).length;
+    expect(sites, greaterThan(0));
+    for (final key in workOrderRunReferenceKeys) {
+      expect(
+        RegExp("'$key':").allMatches(producers).length,
+        greaterThanOrEqualTo(sites),
+        reason: 'produtor de vistoria sem a chave do run: $key',
       );
     }
   });
