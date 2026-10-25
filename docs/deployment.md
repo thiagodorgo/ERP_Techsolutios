@@ -238,6 +238,30 @@ que **nenhuma** organização/usuário foi criada. Ele nunca escreve no banco de
 > **Staging** roda `db:seed:demo` (seed + `seed-users`), que já povoa papéis e concessões — por isso o passo não
 > foi adicionado lá. Quando/se o seed demo sair do staging, o provisionamento passa a ser necessário lá também.
 
+#### Migrações: transação explícita (D-MIGRACAO-COM-TRANSACAO-EXPLICITA)
+
+O `prisma migrate deploy` 7.8 executa o `migration.sql` **sentença a sentença, em autocommit**: uma falha depois da
+k-ésima sentença deixa 1..k aplicadas (P3018) e o redeploy quebra (42701). Por isso, decisão do dono (2026-10-21):
+
+- **Regra:** toda migração NOVA com mais de uma sentença, só de DDL transacional, começa com `BEGIN;` e termina com
+  `COMMIT;` no próprio arquivo (só essas duas formas; `START TRANSACTION`/`END` são recusadas), e tem um **drill por
+  prefixo** em `tests/*-migration-drill-db.test.ts` que cita o nome da migração (falha injetada após cada sentença, pelo
+  `prisma migrate deploy` real). Migração de uma sentença só é isenta.
+- **Exceção (estrutural, a única):** DDL que o Postgres não executa em transação (`CREATE INDEX CONCURRENTLY`,
+  `DROP INDEX CONCURRENTLY`, `REINDEX … CONCURRENTLY`, `ALTER TYPE … ADD VALUE`, `VACUUM`, `ALTER SYSTEM`,
+  `CREATE/DROP DATABASE`, `CREATE/DROP TABLESPACE`, `DETACH PARTITION … CONCURRENTLY`, `CREATE/DROP SUBSCRIPTION`) fica
+  **sozinha** no arquivo, **sem** `BEGIN`/`COMMIT`, e declara a não-atomicidade numa linha
+  `-- NAO-ATOMICA: <motivo e plano de aplicação, com pelo menos 20 caracteres>`. A declaração não desliga regra nenhuma:
+  numa migração sem DDL não transacional ela é recusada.
+- **Histórico:** as 112 migrações anteriores a `20260878000000` estão congeladas numa lista (`ANTERIORES`) que só
+  encolhe; seguem pela `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`. Migração nova com carimbo antigo é recusada.
+- **Recuperação de deploy falho** numa migração com `BEGIN`/`COMMIT`: nada fica aplicado; o CLI mostra só "current
+  transaction is aborted" (a causa está no log do servidor Postgres); `prisma migrate resolve --rolled-back <nome>` e
+  `prisma migrate deploy` de novo (converge — é o passo provado pelos drills, não o `resolve` às cegas do Runbook A).
+- **Guard:** `node scripts/migration-transaction-guard.mjs` (regras G0–G7; uma linha por violação; exit 1 se houver
+  alguma). Roda dentro do `npm test` por `tests/migration-transaction-guard.test.ts`, logo no job `backend` da CI.
+  Rodapé medido na base `8a7885f4` (2026-10-25): `migrações: 116 · anteriores: 112 · novas: 4 · violações: 0`.
+
 #### Runbook A — rollback ensaiavel (forward-only, P-007)
 
 O deploy e a promocao da imagem GHCR `:<sha>`; o rollback e a **redeploy da imagem `:<sha-anterior>`** — simetrico.
