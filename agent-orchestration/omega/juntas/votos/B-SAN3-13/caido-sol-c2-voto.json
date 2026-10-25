@@ -1,0 +1,27 @@
+{
+  "jurado": "jurado-san313-c2-sol (identidade nova; nada herdado como fato)",
+  "corpo": "jurado-san313-c2-app-nunca-perde",
+  "cadeira": "C2 — app Flutter offline-first: retenção por família, trava estática, drenagem, sementes, rede e telas do app, desvios do dev",
+  "mandato_md5": "1f330a5de0ebe640719c75ee1d2dbbd6 · CR retirado · declarado: cadeira-c2.md",
+  "modelo": "GPT-5.6 Sol, esforço medium · nível menor · substituição: Claude retirado da execução por decisão do dono em 2026-10-25 · monocultura com o dev: não",
+  "corpo_md5": "ed96655bbf6d8ba748edc813626e99d9 EOL-neutro (.agents blob recebido) · IDENTICO",
+  "objeto": "ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d",
+  "legalidade": "parecer insp-san313-parecer.md: LIBERADO COM RESSALVA R1–R6; composição posterior alterada pelo dono para Codex Sol; identidade não inelegível; demais dados A RE-VERIFICAR",
+  "quorum": "unanimidade de 3, com veto · ciclo 1",
+  "leitura_de_outras_cadeiras": "não li c1-* nem c3-*",
+  "pausa": "nenhuma",
+  "terreno_flutter": "Flutter 3.41.6 · Dart 3.11.4 · pub get EM APURAÇÃO",
+  "arquivos_medidos": [],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    {"item": 1, "estado": "EM APURAÇÃO", "achados": []},
+    {"item": 2, "estado": "EM APURAÇÃO", "achados": []},
+    {"item": 3, "estado": "EM APURAÇÃO", "achados": []}
+  ],
+  "justificativa": "EM APURAÇÃO",
+  "o_que_executei": [],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "teardown": "EM APURAÇÃO"
+}

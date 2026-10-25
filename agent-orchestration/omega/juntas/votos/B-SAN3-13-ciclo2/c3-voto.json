@@ -1,0 +1,137 @@
+{
+ "jurado": "jurado-san313-c3-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san313-c3-regressao-escopo-registro",
+ "cadeira": "C3 — regressão (as duas suítes inteiras), escopo (§5 e §C do ciclo 2) e merge, registro",
+ "mandato_md5": "09edfdeb060174c500ee001a320fdc6a · declarado: o mesmo",
+ "modelo": "Claude Opus 5.5 · nível menor · substituição: nenhuma",
+ "objeto": "cbf2db292f0643b9647017005c361a2e11da61c7 (ls-remote = gh pr view 460, OPEN, MERGEABLE) · head-base 8a7885f4c3bfab02e6c31b318c1111e262f2907c (<objeto>~19) · objeto do ciclo 1 ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d (<objeto>~6) · merge-base b08c755719a6cb0ed192fa04e549ac5fc67a3e67 · origin/main no início e no fim: b08c7557 · objeto no fim: cbf2db29",
+ "quorum": "unanimidade de 3, com veto · ciclo 2",
+ "escopo": "dentro-do-bloco",
+ "gravidade": "bloqueia",
+ "arquivos_medidos": [
+  "**"
+ ],
+ "voto": "REPROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "backend_ci": "CI do objeto (Linux): backend 345 arquivos · 3981 · pass 3979 · fail 0 · skipped 2 (RBAC_DB_PARITY); backend-postgres 493/493; local forma da CI (Windows, PG16/Redis7 próprios): 345 · 3972 · 3962 · fail 8 · skipped 2 — os 8 = san3-05 (setsid ausente) ×4, san3-09 T2 (shim do prisma) ×2, traccar-event-migration-drill (EBUSY rmdir), traccar-position-ingestion 503/lockActiveBinding (1× só na suíte paralela)",
+   "backend_sem_banco": "345 · 3367 · 3269 · fail 1 (core-saas-role-authority: DATABASE_URL is required) · skipped 97",
+   "format_analyze": "dart format 3.13.4 (versão da CI): 196 files, 0 changed, ec 0 (local 3.11.4: 1 changed, só versão); flutter analyze: No issues found; check/lint/build ec 0",
+   "contagem_backend": "N_base 3932 (CI 8a7885f4) → N_objeto 3981 = +24 do bloco (10+4+5+5, por execução) +25 da main (migration-transaction-guard); N_ciclo1 3981 → +0; apagados 0; skip novo 1 com motivo (cursor-db sem DATABASE_URL)",
+   "residuo_backend": "isolado no objeto e no head-base (mesmo worktree, lockfile igual): mesmas falhas e mesmas mensagens nos dois; ingestão 0/3 isolada nos dois; com banco core-saas 12/12 nos dois → pre-existente de ambiente, fora do diff do bloco",
+   "veredito_parcial": "VERDE",
+   "flutter_x3": "+905 / +905 / +905, 0 falha, 0 skip (CI do objeto +905)",
+   "contagem": "backend N_base 3932 → N_objeto 3981 (+24 do bloco, +25 da main), N_ciclo1 3981; Flutter N_base 864 → N_objeto 905 (+29 ciclo 1, +12 ciclo 2; bsan313 +41), N_ciclo1 893; apagados 0; skips novos 1 com motivo",
+   "residuo": "telemetry_test 16 (2026-07-24; importa work_order_local_store/repository): objeto isolado 0/10, base isolado 0/10, objeto junto 0/3, base junto 0/2 — não reproduzido; backend: setsid/shim do prisma/EBUSY/temporização iguais no objeto e na base, fora do diff, CI Linux fail 0; core-saas-role-authority: mesmo erro sem DATABASE_URL nos dois, 12/12 com banco nos dois",
+   "controle_8a7885f4": "8 arquivos de teste do bloco na base = 0; comparador --diff-filter=D acusa teste apagado numa árvore minha; format acusa linha desformatada"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "caminhos": "37 do trabalho próprio: PERMITIDO 26 · REGISTRO-DA-JUNTA 6 · DESVIO-DECLARADO 5 (b084 em dev.md:122; plano/críticas/medição em dev.md:4) · FORA 0 · PROIBIDO 0; delta ed4e229e..cbf2db29: 9 caminhos, todos no §C/§F, src/tests/API_CONTRACTS/rede/UI/PLANO_SAN3/Kpis = 0",
+   "proibido": "vazio",
+   "trechos": "service.ts: list, resolveListActorScope, createDefaultReferenceResolvers, type WorkOrderReferenceResolvers (E2 i), 5 imports usados só em l.439-484 (nota); drift store: deleteWorkOrder (ciclo 1), deleteWorkOrderUnlessPending (ciclo 2, deleteWorkOrder intocado no ciclo 2); repository: topo (typedef, chaves), _reconcile, _hasPendingWork só a linha do ramo 4/5 (external(row, actions)), providers, buildWorkOrderExternalPendingWork; 0 hunk em _serial/_isFabricated/_purgeFabricatedOrders/_upsertRemoteOrders/load",
+   "merges": "1 merge (2d8fe6c1): conflitos pendencias.md e pendencias-indice.md; difere do automático só nesses 2; código 0; decisoes.md −0/−0; pendencias.md −0 vs P1, −2 vs P2 = status de #32/#33 editados pelo próprio ramo (base=P2=ABERTA, P1=RESOLVIDA); índice = gerador no objeto (0) e no merge (0)",
+   "controles": "classificador acusa prisma/frontend (PROIBIDO) e caminho novo (FORA); comparador acusa remoção fabricada (1) e índice adulterado (13); diff vazio no head-base; hunk fabricado em _isFabricated sai FORA; restaurados com hash-object = blob"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERMELHO (C3-01)",
+   "decisao": "seção por parse (30 linhas); 'Aceito as 5 (Recomendado)' e 'Só as abertas' byte a byte = plano; 'vc cobre o codex nessa rodada' = plano e dev.md; atribuições corretas (§13, Q6, dev); E2 e OR: [] marcadas do planejador; o corpo delimita à LISTA e nomeia P-WO-LEITURAS-TENANT-WIDE-TECNICO (CRIT-4 ok); as 2 notas registradas",
+   "pendencias": "13 geradas (§12 + RQ-4 + telemetria): todas 1 cabeçalho, severidade, dono não vago; 11 novas = 0 na base; ORFAOS = 0 no ciclo 1, BAIXA/B-SAN3-16 no objeto e no índice; LEITURAS enumera as 10 rotas; #32/#33 'RESOLVIDA com o merge' com prova nomeada (índice gerado as põe em FECHADAS, como manda o §12 'fechar com prova no PR' — nota); P-DRILL-GENERICO-POR-PREFIXO veio da main",
+   "contrato": "l.32 = texto exato da E2 normalizado (cmp igual, 1180 bytes); os 6 códigos do texto existem no código; o código emite invalid_scope e invalid_open_only (400 WORK_ORDER_FILTER_INVALID, reason público — B4 afirma body.error.reason por HTTP) e scope_resolver_unavailable/scope_resolution_failed (503), AUSENTES do API_CONTRACTS (0 no arquivo)",
+   "plano_san3": "linha do B-SAN3-13: texto antigo riscado só em parte com elisão '…'; sem norma de 'riscar sem apagar' na ref (CLAUDE.md 0, PLANO_SAN3 0) → nota (§A7)",
+   "r8": "R8'' plano × dev.md normalizados: cmp igual (522 bytes)",
+   "kpis": "base..objeto = 0 caminhos",
+   "controles": "base: D-SAN3-13 = 0, 11 novas = 0; ciclo 1: ORFAOS = 0; citação com 1 caractere trocado acusada; código fabricado só no texto acusado (src=0)"
+  }
+ ],
+ "corpo_md5": "170a5f5a325a9298cda882a271ae691c (.claude/, EOL-neutro) · .agents/ difere por construção do espelho (IDENTICO sem frontmatter e bloco Codex, medido pelo redator) · recebido: 170a5f5a325a9298cda882a271ae691c · IDENTICO",
+ "legalidade": "insp-san313c2-parecer.md: LIBERADO COM RESSALVA (R1-R3), ordem C2b → C1 → C3; check-runs no objeto: 14, todos completed success (runs 40227551055 pull_request e 40227547613 push)",
+ "leitura_de_outras_cadeiras": "não li c1-* nem c2b-* (nem as do ciclo 1); li o parecer do inspetor (legalidade) e o mandato",
+ "pausa": "nenhuma",
+ "achados": [
+  {
+   "id": "C3-01",
+   "defeito": "o contrato público de GET /api/v1/work-orders (docs/claude-code-handoff/API_CONTRACTS.md) enumera os motivos do 400 WORK_ORDER_FILTER_INVALID (invalid_paginate, invalid_cursor_mode, invalid_cursor, invalid_cursor_offset) e omite invalid_scope e invalid_open_only, que o código do bloco emite (work-order.validators.ts:54 e :61) para os filtros novos scope/openOnly; também não nomeia os motivos do 503 (scope_resolver_unavailable, scope_resolution_failed — work-order.service.ts:491/503)",
+   "evidencia": "grep -c no API_CONTRACTS.md do objeto: invalid_scope 0, invalid_open_only 0, scope_resolver_unavailable 0, scope_resolution_failed 0; o reason é público: tests/san3-13-wo-list-scope.test.ts:85-97 (B4/CA-3) afirma body.error.reason por HTTP; o plano v3 §3 (l.215, 219), CA-3 (l.281) e §14 (l.408) põem invalid_scope/invalid_open_only no contrato; o 'texto exato' da E2 (copiado fielmente: cmp igual, 1180 bytes) os perdeu e nenhuma decisão registrada os retira; na base o contrato não tinha a linha (paginate=cursor = 0)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o contrato público não diz todos os códigos de erro que o código emite"
+  },
+  {
+   "id": "C3-02",
+   "defeito": "a linha do B-SAN3-13 no PLANO_SAN3.md risca só o começo do teste de encerramento antigo, com elisão '…'; o resto do texto antigo saiu da linha",
+   "evidencia": "comparação campo a campo base × objeto: o campo 5 antigo não está contido no novo; 'riscad|riscar' na ref: CLAUDE.md 0, PLANO_SAN3.md 0",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a exigência de riscar sem apagar está só no corpo/mandato, não na ref (§A7)"
+  },
+  {
+   "id": "C3-03",
+   "defeito": "o índice gerado põe #32/#33 em FECHADAS antes do merge",
+   "evidencia": "pendencias-indice.md: P-MOBILE-OS-SEEDS e P-MOBILE-MINHAS-OS-SEM-FILTRO na seção 'FECHADAS — 155'; status 'RESOLVIDA com o merge do ramo …' com prova nomeada",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "é o que o §12 manda (fechar com prova no PR); só vale na main com o merge"
+  },
+  {
+   "id": "C3-04",
+   "defeito": "5 hunks de import em work-order.service.ts fora da lista nominal do §5",
+   "evidencia": "os 6 nomes importados são usados só nas linhas 439-484 (list/resolveListActorScope)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "consequência sintática das funções permitidas; nenhum hunk em guard/get/assign/trava"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum — cada item teve vermelho-controle que acusou (item 1: testes do bloco ausentes na base, comparador de apagados, format com linha desformatada; item 2: classificador, remoção fabricada, índice adulterado, hunk em _isFabricated; item 3: citação com 1 caractere trocado, código fabricado só no texto, base e ciclo 1 sem as entradas novas)"
+ ],
+ "pendencias_que_aceito": [
+  "P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (não reproduzida aqui: 0/10 isolado e 0/3 junto no objeto; 0/10 e 0/2 na base)",
+  "resíduo backend local de ambiente Windows (setsid, shim do prisma, EBUSY, temporização): igual na base e fora do diff; CI Linux do objeto com fail 0",
+  "as 13 pendências do registro, todas com dono"
+ ],
+ "justificativa": "Terreno: worktree e npm ci próprios, PG16/Redis7 próprios em 127.0.0.1:47633/47634, sem junction, base viva intocada. Item 1 VERDE: CI do objeto backend 345·3981·3979·0·2 e backend-postgres 493/493; local forma da CI 3972·fail 8 e sem banco 3367·fail 1, todos os vermelhos repetidos IGUAIS no head-base e fora do diff (ambiente Windows); Flutter +905 ×3 local e na CI; dart format 3.13.4 com 0 changed; analyze limpo; contagem fecha (backend +24 do bloco +25 da main; Flutter +29 ciclo 1 +12 ciclo 2); 0 apagado; 1 skip novo com motivo; telemetry 16 0/10 isolado e 0/3 junto no objeto, 0/10 e 0/2 na base. Item 2 VERDE: 37 caminhos próprios, 26 PERMITIDO, 6 registro da junta, 5 desvios declarados (b084; cópias do plano, críticas e medição), FORA 0, PROIBIDO 0; delta do conserto dentro do §C; hunks por parse de chaves nas regiões permitidas; 1 merge que só difere do automático nos 2 registros conflitados, 0 código, decisoes −0/−0, pendencias −0 vs P1 e −2 vs P2 (status de #32/#33 editados pelo próprio ramo), índice = gerador. Item 3 VERMELHO: decisão com as palavras do dono byte a byte e bem atribuídas, E2 e OR: [] como do planejador, CRIT-4 ok, pendências com dono, R8'' igual, Kpis 0; mas o API_CONTRACTS omite invalid_scope/invalid_open_only (e os motivos do 503) que o código emite (C3-01). Ciclo 2: bloqueia dentro-do-bloco reprova. Limpeza: containers 0, worktree removido, senha 0.\nVOTO: REPROVADO — o contrato público (API_CONTRACTS.md) não traz os motivos invalid_scope e invalid_open_only que o código do bloco emite no 400 WORK_ORDER_FILTER_INVALID de GET /work-orders (nem os do 503) | escopo: dentro-do-bloco | classe: não grave | ciclo 2 | evidência: git diff 8a7885f4 cbf2db29 -- src/modules/work-orders → 10 códigos emitidos; grep -c no API_CONTRACTS: invalid_scope 0, invalid_open_only 0; validators.ts:54/61; B4 afirma body.error.reason por HTTP",
+ "o_que_executei": [
+  {
+   "comando": "npm run check/lint/build; npm test (forma da CI e sem banco)",
+   "forma": "worktree j13c2-c3-wt no objeto, PG16/Redis7 próprios",
+   "resultado": "ec 0/0/0; 3972·3962·fail 8·skip 2; 3367·3269·fail 1·skip 97"
+  },
+  {
+   "comando": "node --test isolado dos 5 arquivos vermelhos",
+   "forma": "objeto e head-base (checkout 8a7885f4 -- src tests no meu worktree)",
+   "resultado": "mesmas falhas e mensagens nos dois"
+  },
+  {
+   "comando": "gh api actions/jobs/<id>/logs",
+   "forma": "runs 40227551055, 40193298559, 40158955898",
+   "resultado": "objeto 3981/0/2, 493/493, +905; ciclo 1 3981, +893; base 3932, +864"
+  },
+  {
+   "comando": "dart format (3.13.4), flutter analyze, flutter test ×3, bsan313, telemetry 16 ×10 objeto e ×10 base, suíte da base ×2",
+   "forma": "mobile/flutter_app do meu worktree",
+   "resultado": "0 changed; No issues; +905 ×3; +41; 0/10; 0/10; +864 ×2"
+  },
+  {
+   "comando": "classify.sh, fnmap.py, git merge-tree --write-tree, gerar-indice-pendencias.py",
+   "forma": "blobs do objeto, P1/P2 do merge",
+   "resultado": "ver item 2"
+  },
+  {
+   "comando": "extração e comparação de citações, pendências, contrato, PLANO_SAN3, R8''",
+   "forma": "blobs do objeto, da base e do ciclo 1",
+   "resultado": "ver item 3"
+  }
+ ],
+ "teardown": "containers j13c2-c3-* removidos (0) · controles do head-base restaurados (status 0, hash-object = blob) · processos com j13c2-c3-wt = só o shell de medição · worktree removido por git worktree remove --force · senha e logs do $SCRATCH apagados, grep da senha = 0 · temporários trc02-mdrill meus apagados (10 alheios reportados, intocados) · base viva nunca tocada · w-san313 só com c3-evidencia.md e c3-voto.json"
+}

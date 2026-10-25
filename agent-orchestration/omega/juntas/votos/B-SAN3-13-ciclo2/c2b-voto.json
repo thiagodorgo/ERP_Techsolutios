@@ -1,0 +1,103 @@
+{
+ "jurado": "jurado-san313-c2b-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san313-c2-app-nunca-perde",
+ "cadeira": "C2 refeita (C2b), ciclo 2",
+ "mandato_md5": "ed69d66d01ad35d1d47a476596a87bdf · declarado: ed69d66d01ad35d1d47a476596a87bdf",
+ "modelo": "Claude Opus 5.5 · nível menor · substituição: nenhuma · monocultura com o achador e o dev: sim",
+ "objeto": "cbf2db292f0643b9647017005c361a2e11da61c7 (ls-remote = gh pr view 460, inicio e fim) · objeto do ciclo 1 ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d (= ~6) · merge-base b08c755719a6cb0ed192fa04e549ac5fc67a3e67",
+ "quorum": "unanimidade de 3, com veto · ciclo 2",
+ "arquivos_medidos": [
+  "mobile/flutter_app/lib/**",
+  "mobile/flutter_app/pubspec.lock",
+  "mobile/flutter_app/test/features/bsan313_*",
+  "mobile/flutter_app/test/features/b084_home_stats_test.dart",
+  "mobile/flutter_app/test/features/b099_real_work_orders_pull_test.dart",
+  "mobile/flutter_app/test/features/b103_work_order_sync_test.dart",
+  "mobile/flutter_app/test/features/work_orders/b115_checkin_flow_test.dart",
+  "mobile/flutter_app/test/features/work_orders/b126_registry_assignment_test.dart",
+  "mobile/flutter_app/test/home_screen_test.dart",
+  "agent-orchestration/controle/pendencias.md"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "C2-01": "fechado: S3' OS_restantes=[w] materiais_de_w=1 (ciclo 1: [] e 0); R8'' ANTES 10/10, DURANTE 10/10 (durante=0, sobrevive=1), DEPOIS 10/10 orfao; F29-F31 verdes; M-C2-01a/b/c/d vermelhas pela assercao (01d tambem na minha R8 DURANTE 0/10)",
+   "C2-02": "fechado: S2' OS_restantes=[c], drenado []; S1r N=314 divergencias=0 (ciclo 1: 208); F28a-e verdes; M-C2-02a (5 vermelhos), 02b, 02c, 02d vermelhas",
+   "desvio_2": "F28b mede a propriedade (OS ba isola a acao so por local_run_id)",
+   "desvio_4": "confirmado: M-C2-02a derruba F28a-e",
+   "mutacao_propria": "(c) sem a ciencia -> VERDE 19/19: nenhum teste isola a ciencia gravada e nao enfileirada -> C2b-01 ajuste",
+   "controle_ciclo1": "ed4e229e: S2, S3, F28a, F29, S1r(208), F24(run_id) vermelhos pela assercao"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "C2-03": "fechado: F32-F35 verdes; J1 vermelha (F32 Expected [sl,sm] Actual []; tambem S1 52 e S1r 130), J2 vermelha por TimeoutException 5s no F33 (suite terminou em 35s), J5 vermelha (F34 Actual [wo-local-1..3]), J6 vermelha (F35 Actual [a])",
+   "remoteAuthModeProvider": "l.1021 declarado; lido em l.1026 (workOrderRemoteApiProvider) e l.1045 (workOrderRepositoryProvider); F34 true->vazio, false->semeia",
+   "F24": "verde no objeto; vermelho no ciclo 1 por run_id; M-C2-02c vermelha",
+   "desvio_1": "confirmado: nenhuma linha +/- cita F21/F25/R10; unica linha removida e a isencao do F24",
+   "desvio_3": "6 sitios; F24 conta ocorrencias agregadas; mutacao propria (divergenceCreate sem server_run_id) VERDE 22/22 -> C2b-02 nota (forma, nao propriedade por sitio; sem impacto no produto)"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "matriz": "S1 N=781 ficou=520 saiu=261 divergencias=0 (igual ao ciclo 1); S1r (chaves de run, gancho real, Drift) N=314 ficou=208 saiu=106 divergencias=0; total 1095; N cresce porque as 2 chaves de run passaram a ser lidas pelo ramo 4 (b)",
+   "trava": "S5a durante 7x false / depois 7x true; S5b ArgumentError libera; S5c 1 por vez; FM16 vermelha na minha S5a e no F22",
+   "fabricacao_S4": "OS_apos_load=[] evid=0 mat=0 acoes=1 (igual; C2-04 desenho)",
+   "verdade_parcial": "S6 apos503=2; demo nao toca tenant-a; S8b multiplo exato completo; F4/F5/F35 verdes",
+   "query": "S8 scope=assigned openOnly=true paginate=cursor limit=100, cursor igual, sem offset",
+   "busca_purga": "so deleteWorkOrder (fabricada) e deleteWorkOrderUnlessPending (reconciliada); clearAll 0 chamadores; offset 0; isFinal so em comentario l.345",
+   "vizinhos": "b099 b103 b115 b126 home_screen_test b084 + bsan313 x4: +150 nas duas ordens, 0 timed out",
+   "pendencia": "P-MOBILE-ORFAOS-POS-PURGA nomeia acao orfa (a) e material pos-commit (b); nao nomeia evidencia/material pending da linha fabricada apagados -> C2b-03 nota"
+  }
+ ],
+ "legalidade": "parecer insp-san313c2-parecer.md (inspetor-san313c2-opus) LIBERADO COM RESSALVA R1-R3, me nomeia; objeto ls-remote = gh pr view 460 = cbf2db29 (inicio e fim); check-runs 14 | 0 | 0; flutter success,success",
+ "corpo_md5": "637aecf020d024a7e5c36a6ea5531d66 (blob .claude, EOL-neutro) · espelho .agents IDENTICO (medido no mandato) · recebido 637aecf020d024a7e5c36a6ea5531d66 · IDENTICO",
+ "leitura_de_outras_cadeiras": "nao li c1-* nem c3-* deste ciclo; li c2-evidencia.md e c2-voto.json do ciclo 1 (roteiro P3)",
+ "pausa": "nenhuma",
+ "terreno_flutter": "flutter 3.41.6 · dart 3.11.4 · pub get ok · worktree C:/Users/AMP/j13c2-c2b-wt (o do disparo; o mandato dizia j13c2-c2-wt — divergencia declarada) removido",
+ "escopo": "dentro-do-bloco (todos os achados)",
+ "gravidade": "maxima: ajuste (C2b-01); nenhum bloqueia",
+ "classe": "nao grave (todos)",
+ "achados": [
+  {
+   "id": "C2b-01",
+   "defeito": "o ramo (c) do gancho, na parte da ciencia, nao tem teste que o acuse: a mutacao (c)-sem-ciencia fica verde (19/19); nenhum teste isola a ciencia gravada e ainda nao enfileirada",
+   "evidencia": "mut_c2b.py PROPRIA-ack -> +19 All tests passed (retencao + sonda); F28c usa acknowledge real, que tambem enfileira e retem pelo (b)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "classe": "nao grave",
+   "motivo": "ramo novo do conserto sem teste vermelho sob a sua remocao; nada se perde (ciencia em tabela propria nunca apagada)"
+  },
+  {
+   "id": "C2b-02",
+   "defeito": "o F24 confere os produtores de vistoria por contagem agregada de ocorrencias no arquivo, nao por sitio: tirar server_run_id do sitio divergenceCreate deixa o F24 verde",
+   "evidencia": "mut_c2b.py PROPRIA-F24 numstat 0/2 -> +22 All tests passed; 7 ocorrencias de 'server_run_id': para 6 sitios",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "nao grave",
+   "motivo": "a guarda ve a forma (contagem), nao a propriedade por sitio; sem impacto no produto (local_run_id em todo sitio; (b) casa por qualquer das duas)"
+  },
+  {
+   "id": "C2b-03",
+   "defeito": "P-MOBILE-ORFAOS-POS-PURGA nao nomeia a evidencia e o material pending da linha fabricada que a regra de fabricacao apaga, nem o blob que fica sem linha",
+   "evidencia": "S4 OS_apos_load=[] evid=0 mat=0 acoes=1; pendencias.md l.11735-11743",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "nao grave",
+   "motivo": "registro incompleto de um efeito de desenho (C2-04), nao reaberto"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum: todo criterio tem vermelho-controle (ciclo 1 ed4e229e ou mutacao) visto acusando"
+ ],
+ "pendencias_que_aceito": [
+  "P-MOBILE-ORFAOS-POS-PURGA (com a nota C2b-03)",
+  "P-MOBILE-SYNC-FAILED-SEM-DESCARTE",
+  "P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE",
+  "P-MOBILE-MATERIAL-SEM-REPLAY"
+ ],
+ "teardown": "sondas zz_j13c2b_* apagadas (0) · SQLite nenhum · nenhum container · mutacoes e o checkout do ciclo 1 restaurados (status vazio, hash-object = blob) · processos com j13c2-c2b-wt = 0 · worktree removido por git worktree remove --force · w-san313 so com c2b-evidencia.md e c2b-voto.json · nada commitado",
+ "justificativa": "terreno: worktree proprio no objeto, Drift em memoria, sem banco. Item 1: C2-01 e C2-02 fechados por S3'/S2' invertidas (verdes no objeto, vermelhas pela assercao no ciclo 1), R8'' ANTES/DURANTE/DEPOIS 30/30, F28a-e e F29-F31, M-C2-01a-d e M-C2-02a-d vermelhas; mutacao propria (c)-sem-ciencia verde -> C2b-01 ajuste. Item 2: C2-03 fechado (J1/J2/J5/J6 vermelhas, J2 por timeout sem travar); desvios 1-4 conferidos; mutacao propria no produtor -> C2b-02 nota. Item 3: sem regressao (matriz 1095/0, trava com FM16 vermelha, S4/S6/S8/S8b iguais, busca de purga limpa, vizinhos +150 nas duas ordens); C2b-03 nota. Nada sem medir. Nenhum bloqueia. VOTO: APROVADO — nenhuma OS com trabalho pendente sai em 1095 combinacoes tipo x status x chave; material pendente nunca apagado antes, durante ou depois da transacao (30/30); vistoria pendente com run synced retem; trava unica, liberada na excecao, FM16 vermelha; nenhuma purga sob verdade parcial; query E2 igual; M-C2-01a-d, M-C2-02a-d, J1, J2, J5, J6 vermelhas pela assercao; pendencias: C2b-01 (ajuste), C2b-02 e C2b-03 (notas)"
+}
