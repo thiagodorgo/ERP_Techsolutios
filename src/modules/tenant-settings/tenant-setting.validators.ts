@@ -16,11 +16,18 @@ export function parseKey(value: unknown): string {
   return key;
 }
 
+// B-SAN3-12a (§4.4, R2-08) — chaves com VALIDADOR PRÓPRIO: o valor livre não vale para elas. A política que delega
+// o desfazer da conciliação ao Financeiro só aceita "true" ou "false" (fora disso → 400 invalid_value); só o
+// Administrador a liga (`tenant_settings:update`). Chave nova com regra própria entra AQUI, com o seu teste.
+const KEY_VALUE_RULES: Readonly<Record<string, readonly string[]>> = {
+  "finance.unreconcile_delegated_to_finance": ["true", "false"],
+};
+
 // value é obrigatório no upsert; texto livre (pode conter JSON serializado), ≤5000. NÃO faz trim do
 // conteúdo (preserva JSON/formatação), mas rejeita value vazio/só-espaços — um parâmetro precisa ter
 // conteúdo (veto junta Ω2-e: value em branco é dado incompleto). Para "remover" um parâmetro use um
 // value significativo; não há DELETE nesta fatia.
-export function parseValue(value: unknown): string {
+export function parseValue(key: string, value: unknown): string {
   if (value === undefined || value === null) {
     throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "required_value", "value is required.");
   }
@@ -32,6 +39,10 @@ export function parseValue(value: unknown): string {
   }
   if (value.length > 5000) {
     throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "value_too_long", "value must be at most 5000 characters.");
+  }
+  const allowed = KEY_VALUE_RULES[key];
+  if (allowed !== undefined && !allowed.includes(value)) {
+    throw new TenantSettingError(400, "TENANT_SETTING_INVALID", "invalid_value", `value for ${key} must be one of ${allowed.join(", ")}.`);
   }
   return value;
 }

@@ -87,9 +87,13 @@ export type UpdateFinancialEntryInput = {
 
 // PATCH /reconcile — write-path da conciliação bancária (Ω4-5). O service SEMPRE resolve os 5 campos de
 // estado (reconciled + os 4 metadados), inclusive null explícito no desconciliar (limpa divergence/ref/at/by).
+// B-SAN3-12a (§4.6, R2-05) — CAS OBRIGATÓRIO por ESTADO LÓGICO: o repositório só grava se o par
+// (`reconciled`, `reconciled_at`) da linha for o que o cliente LEU (`expected*`); senão 0 linhas → undefined.
 export type ReconcileFinancialEntryInput = {
   readonly tenantId: string;
   readonly financialEntryId: string;
+  readonly expectedReconciled: boolean;
+  readonly expectedReconciledAt: Date | null;
   readonly reconciled: boolean;
   readonly divergenceType: string | null;
   readonly reconciliationRef: string | null;
@@ -110,6 +114,44 @@ export type ListFinancialEntryInput = {
   readonly occurredTo?: Date;
   readonly limit: number;
   readonly offset: number;
+};
+
+// B-SAN3-12a (§4.5) — agregado do extrato no FUSO DO NEGÓCIO. `bucket`: null (none) | "YYYY-MM" (month = a coluna
+// `competencia`) | "YYYY-MM-DD" (day = data civil de `occurred_at` em BUSINESS_TIMEZONE).
+export const FINANCIAL_ENTRY_AGGREGATE_GROUPS = ["none", "month", "day"] as const;
+export type FinancialEntryAggregateGroup = (typeof FINANCIAL_ENTRY_AGGREGATE_GROUPS)[number];
+
+export type AggregateFinancialEntryInput = {
+  readonly tenantId: string;
+  readonly groupBy: FinancialEntryAggregateGroup;
+  readonly accountId?: string;
+  readonly direction?: string;
+  readonly reconciled?: boolean;
+  readonly divergenceType?: string;
+  // Datas CIVIS do negócio (inclusivas), comparadas com a data civil de `occurred_at` em BUSINESS_TIMEZONE.
+  readonly fromDate?: string;
+  readonly toDate?: string;
+};
+
+export type FinancialEntryAggregateItem = {
+  readonly bucket: string | null;
+  readonly count: number;
+  readonly inflow: number;
+  readonly outflow: number;
+  readonly net: number;
+};
+
+export type FinancialEntryAggregate = {
+  readonly groupBy: FinancialEntryAggregateGroup;
+  readonly currency: "BRL";
+  readonly timezone: string;
+  readonly items: readonly FinancialEntryAggregateItem[];
+};
+
+// B-SAN3-12a (§4.4) — a política de DESFAZER conciliação calculada PARA O ATOR (a tela só molda; o servidor decide).
+export type ReconciliationPolicy = {
+  readonly canUnreconcile: boolean;
+  readonly delegatedToFinance: boolean;
 };
 
 export type ListFinancialEntryResult = {
@@ -135,6 +177,9 @@ export class FinancialEntryError extends Error {
     readonly code: string,
     readonly reason: string,
     message: string,
+    // B-SAN3-12a — dados do próximo passo para a tela (nunca tenant_id, token, path ou binário — §B2.8). O envelope
+    // comum (`core-saas/routes/http.ts`) não os carrega; o controller do módulo os anexa ao corpo do erro.
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "FinancialEntryError";

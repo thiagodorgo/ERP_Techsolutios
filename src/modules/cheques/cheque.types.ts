@@ -195,6 +195,9 @@ export class ChequeError extends Error {
     readonly code: string,
     readonly reason: string,
     message: string,
+    // B-SAN3-12a — dados do próximo passo para a tela (nunca tenant_id, token, path ou binário — §B2.8). O envelope
+    // comum (`core-saas/routes/http.ts`) não os carrega; o controller do módulo os anexa ao corpo do erro.
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "ChequeError";

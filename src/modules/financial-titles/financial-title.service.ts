@@ -21,6 +21,8 @@ import {
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
+import { createDefaultChequePendingReader } from "./cheque-pending-reader.js";
+import { FinancialTitleError } from "./financial-title.types.js";
 import type {
   CreateFinancialTitleForSourceInput,
   CreateFinancialTitleForWorkOrderInput,
@@ -271,6 +273,12 @@ export class FinancialTitleService {
     if (accountId !== undefined && !(await this.accountResolver(actor.tenantId, accountId))) {
       throw invalidAccountReferenceError();
     }
+    // B-SAN3-12a (§4.3, corolário do "Só cheque do valor exato") — com cheque pendente vinculado, o valor do título
+    // não muda: o cheque foi vinculado pelo saldo exato, e mudar o valor faria dele complemento (ou sobra).
+    const amount = rawAmount === undefined ? undefined : parseAmount(rawAmount);
+    if (amount !== undefined && amount !== current.amount) {
+      await assertNoPendingCheque(actor.tenantId, current.id);
+    }
 
     // Editáveis: party_name/document/category/description/amount/due_date/account_id. NÃO altera
     // status/paid_amount/competencia/direction/party_type (imutáveis pós-create nesta fatia).
@@ -281,7 +289,7 @@ export class FinancialTitleService {
       document: parseOptionalDocument(body.document),
       category: parseOptionalCategory(body.category),
       description: parseOptionalDescription(body.description),
-      amount: rawAmount === undefined ? undefined : parseAmount(rawAmount),
+      amount,
       dueDate: rawDueDate === undefined ? undefined : parseDueDate(rawDueDate),
       accountId,
       updatedBy: actor.userId,
@@ -379,6 +387,9 @@ export class FinancialTitleService {
   async delete(actor: FinancialTitleActorContext, financialTitleId: string): Promise<FinancialTitle> {
     const current = await this.getWritable(actor, financialTitleId);
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
+    // B-SAN3-12a (§4.3; fecha P-SAN3-20-DELETE-TITULO-COM-CHEQUE na origem) — título com cheque pendente vinculado
+    // não se apaga: o cheque compensaria contra um título que sumiu.
+    await assertNoPendingCheque(actor.tenantId, current.id);
 
     const result = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
     if (result.outcome === "not_found") throw titleNotFoundError();
@@ -403,6 +414,20 @@ export class FinancialTitleService {
     if (await this.periodCloseRepository.isPeriodClosed(tenantId, competencia)) {
       throw periodClosedError(competencia);
     }
+  }
+}
+
+// B-SAN3-12a (§4.3) — enquanto o conjunto "cheque pendente do título" (porta estreita `cheque-pending-reader.ts`) não
+// estiver vazio, o saldo do título só muda pela compensação do cheque ou pelo desvínculo → 422 title_has_pending_cheque.
+async function assertNoPendingCheque(tenantId: string, financialTitleId: string): Promise<void> {
+  const pending = await (await createDefaultChequePendingReader()).findPendingByTitle(tenantId, financialTitleId);
+  if (pending.length > 0) {
+    throw new FinancialTitleError(
+      422,
+      "FINANCIAL_TITLE_UNPROCESSABLE",
+      "title_has_pending_cheque",
+      "The financial title has a linked cheque awaiting clearance; unlink the cheque before changing or deleting the title.",
+    );
   }
 }
 

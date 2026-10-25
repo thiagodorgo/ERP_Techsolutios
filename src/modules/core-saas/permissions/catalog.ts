@@ -147,9 +147,16 @@ export const PERMISSION_CATALOG = [
   "financial_titles:update",
   "professional_statements:update",
   "financial_entries:update",
+  // B-SAN3-12a (§4.4, decisão do dono 24/10: "admin, mas deve existir a opcao do financeiro receber esse privilegio")
+  // — DESFAZER conciliação. Concessão: tenant_admin (herança, filtro não-`platform:`) e super_admin/platform_admin
+  // (catálogo integral); `finance` NÃO — recebe só por política da organização (`finance.unreconcile_delegated_to_finance`).
+  "financial_entries:unreconcile",
   // Ω4-7 — Cheque (instrumento de pagamento). read {…,finance,manager,auditor,viewer}; create/update {…,finance}.
   // As transições que MOVEM caixa (/clear,/bounce) exigem também financial_entries:create (gate na rota).
   "cheques:update",
+  // B-SAN3-12a (§4.3, decisão do dono 24/10: "trocar a vinculacao do cheque [...] requer privilegios altos") — tirar
+  // ou trocar o título de um cheque. Concessão: tenant_admin (herança) e super_admin/platform_admin; `finance` NÃO.
+  "cheques:unlink_title",
   // Ω4-6 — Fechamento de período (trava retroativa). read {super,platform,tenant_admin,finance,manager,
   // auditor,viewer}; close {…,finance}; reopen só admins (override administrativo — fora de finance,
   // separação de funções RN-FIN-009).

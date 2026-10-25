@@ -1,8 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import { deriveBusinessDate } from "../../config/business-time.js";
+import { roundMoney } from "../tariffs/financial-item.shape.js";
 import type {
+  AggregateFinancialEntryInput,
   CreateFinancialEntryInput,
   FinancialEntry,
+  FinancialEntryAggregateItem,
   ListFinancialEntryInput,
   ListFinancialEntryResult,
   ReconcileFinancialEntryInput,
@@ -30,6 +34,13 @@ export interface FinancialEntryRepository {
   // Saldo/Extrato: soma dos lançamentos ATIVOS da conta por direção (deletados EXCLUÍDOS).
   sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }>;
   reset?(): void;
+}
+
+// B-SAN3-12a (§4.5) — agregado do extrato. FORA do contrato `FinancialEntryRepository` de propósito: é leitura de
+// relatório, não membro da unidade de trabalho (o journal da UoW classifica só o contrato). Implementado pelo
+// InMemory e pelo Rls Prisma; no Prisma a soma é SQL sobre Decimal(12,2), `Number` só na borda + roundMoney.
+export interface FinancialEntryAggregateReader {
+  aggregate(input: AggregateFinancialEntryInput): Promise<readonly FinancialEntryAggregateItem[]>;
 }
 
 // Leitor da Conta financeira (surrogate da FK composta): resolve moeda/atividade/saldo de abertura da
@@ -155,7 +166,17 @@ export function chequeEntryImmutableError(): FinancialEntryError {
   );
 }
 
-export class InMemoryFinancialEntryRepository implements FinancialEntryRepository {
+// B-SAN3-12a (§4.6) — o estado de conciliação mudou entre a leitura do cliente e a gravação (CAS de 0 linhas).
+export function reconciliationStaleError(): FinancialEntryError {
+  return new FinancialEntryError(
+    409,
+    "FINANCIAL_ENTRY_CONFLICT",
+    "reconciliation_stale",
+    "The reconciliation state changed since it was read; reload the entry and retry.",
+  );
+}
+
+export class InMemoryFinancialEntryRepository implements FinancialEntryRepository, FinancialEntryAggregateReader {
   private readonly entries = new Map<string, FinancialEntry>();
 
   async create(input: CreateFinancialEntryInput): Promise<FinancialEntry> {
@@ -242,9 +263,14 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
   }
 
   async reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
-    const current = await this.findById(input.tenantId, input.financialEntryId);
+    // B-SAN3-12a (§4.6) — check-and-set SÍNCRONO (nenhum await entre ler e gravar), como o CAS do cheque.
+    const found = this.entries.get(input.financialEntryId);
+    const current = found?.tenantId === input.tenantId ? found : undefined;
     // reconcile em lançamento deletado → inexistente (→404), simétrico a update/softDelete.
     if (!current || current.deletedAt != null) return undefined;
+    // CAS por ESTADO LÓGICO: o par (reconciled, reconciledAt) tem de ser o que o cliente leu.
+    if (current.reconciled !== input.expectedReconciled) return undefined;
+    if ((current.reconciledAt?.getTime() ?? null) !== (input.expectedReconciledAt?.getTime() ?? null)) return undefined;
 
     const updated: FinancialEntry = {
       ...current,
@@ -292,6 +318,31 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
     return { inflow, outflow };
   }
 
+  // B-SAN3-12a (§4.5) — buckets no FUSO DO NEGÓCIO: mês = `competencia` (derivada no fuso ao gravar), dia =
+  // deriveBusinessDate(occurred_at). Filtro de datas = datas civis do negócio, inclusivas. Só lançamentos ATIVOS.
+  async aggregate(input: AggregateFinancialEntryInput): Promise<readonly FinancialEntryAggregateItem[]> {
+    const buckets = new Map<string, { count: number; inflow: number; outflow: number }>();
+    for (const entry of this.entries.values()) {
+      if (entry.tenantId !== input.tenantId || entry.deletedAt != null) continue;
+      if (input.accountId !== undefined && entry.accountId !== input.accountId) continue;
+      if (input.direction !== undefined && entry.direction !== input.direction) continue;
+      if (input.reconciled !== undefined && entry.reconciled !== input.reconciled) continue;
+      if (input.divergenceType !== undefined && entry.divergenceType !== input.divergenceType) continue;
+      const day = deriveBusinessDate(entry.occurredAt);
+      if (input.fromDate !== undefined && day < input.fromDate) continue;
+      if (input.toDate !== undefined && day > input.toDate) continue;
+      const key = input.groupBy === "none" ? "" : input.groupBy === "month" ? entry.competencia : day;
+      const bucket = buckets.get(key) ?? { count: 0, inflow: 0, outflow: 0 };
+      bucket.count += 1;
+      if (entry.direction === "in") bucket.inflow += entry.amount;
+      else if (entry.direction === "out") bucket.outflow += entry.amount;
+      buckets.set(key, bucket);
+    }
+    return [...buckets.entries()]
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([key, bucket]) => toAggregateItem(input.groupBy === "none" ? null : key, bucket.count, bucket.inflow, bucket.outflow));
+  }
+
   reset(): void {
     this.entries.clear();
   }
@@ -329,6 +380,13 @@ export class InMemoryFinancialEntryRepository implements FinancialEntryRepositor
         right.occurredAt.getTime() - left.occurredAt.getTime() || (left.id < right.id ? 1 : left.id > right.id ? -1 : 0),
     );
   }
+}
+
+// Arredonda os componentes ANTES e deriva o líquido deles (paridade com balance(): in − out == net, sem drift).
+export function toAggregateItem(bucket: string | null, count: number, inflow: number, outflow: number): FinancialEntryAggregateItem {
+  const roundedIn = roundMoney(inflow);
+  const roundedOut = roundMoney(outflow);
+  return { bucket, count, inflow: roundedIn, outflow: roundedOut, net: roundMoney(roundedIn - roundedOut) };
 }
 
 function definedFields<T extends Record<string, unknown>>(input: T): Partial<T> {

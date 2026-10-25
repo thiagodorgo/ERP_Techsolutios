@@ -33,6 +33,10 @@ export type ChequeSummary = {
   readonly pendingReceivedAmount: number;
   readonly pendingIssuedCount: number;
   readonly pendingIssuedAmount: number;
+  // B-SAN3-12a (§4.7; fecha P-SAN3-20-RESUMO-CHEQUE-VINCULADO) — dos pendentes, os que têm título (`title_id`): a tela
+  // rotula "dos quais R$ X já cobertos por cheque a compensar" sem alterar o razão.
+  readonly linkedPendingCount: number;
+  readonly linkedPendingAmount: number;
 };
 
 // Fluxo de caixa mensal (últimos N meses, ordem cronológica) — alimenta o gráfico do dashboard.

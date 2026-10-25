@@ -39,10 +39,12 @@ export class TenantSettingService {
 
   async upsert(actor: TenantSettingActorContext, key: string, body: RawRecord): Promise<TenantSetting> {
     // Tenant vem SEMPRE do ator autenticado; upsert só alcança o tenant da claim.
+    const parsedKey = parseKey(key);
     return this.repository.upsert({
       tenantId: actor.tenantId,
-      key: parseKey(key),
-      value: parseValue(body.value),
+      key: parsedKey,
+      // B-SAN3-12a (§4.4, R2-08) — o validador decide PELA CHAVE (chave com regra própria só aceita os seus valores).
+      value: parseValue(parsedKey, body.value),
       category: parseOptionalCategory(body.category),
       description: parseOptionalDescription(body.description),
       updatedBy: actor.userId,

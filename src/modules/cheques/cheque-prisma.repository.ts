@@ -2,9 +2,11 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
 import {
+  CHEQUE_PENDING_STATUSES,
   invalidAccountReferenceError,
   invalidTitleReferenceError,
   type ChequeRepository,
+  type ChequeTitleUnlinker,
 } from "./cheque.repository.js";
 import { CHEQUE_ENTRY_LINK_COLUMN_NAMES } from "./cheque.types.js";
 import type {
@@ -18,7 +20,7 @@ import type {
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaChequeRepository implements ChequeRepository {
+export class PrismaChequeRepository implements ChequeRepository, ChequeTitleUnlinker {
   constructor(private readonly client: PrismaExecutor) {}
 
   async create(input: CreateChequeInput): Promise<Cheque> {
@@ -133,6 +135,35 @@ export class PrismaChequeRepository implements ChequeRepository {
     return record ? mapRecord(record) : undefined;
   }
 
+  // B-SAN3-12a (§4.2) — conjunto pendente do título. tenant_id explícito (além da RLS), deleted_at IS NULL.
+  async findPendingByTitle(tenantId: string, titleId: string): Promise<readonly Cheque[]> {
+    const records = await this.client.cheque.findMany({
+      where: { tenant_id: tenantId, title_id: titleId, deleted_at: null, status: { in: [...CHEQUE_PENDING_STATUSES] } },
+      orderBy: [{ due_date: { sort: "desc", nulls: "last" } }, { id: "desc" }],
+    });
+    return records.map(mapRecord);
+  }
+
+  // B-SAN3-12a (§4.3) — CAS de estado do desvínculo: o WHERE carrega o status pendente E o title_id lido.
+  async unlinkTitle(input: {
+    readonly tenantId: string;
+    readonly chequeId: string;
+    readonly expectedTitleId: string;
+    readonly updatedBy?: string;
+  }): Promise<Cheque | undefined> {
+    const updated = await this.client.cheque.updateManyAndReturn({
+      where: {
+        tenant_id: input.tenantId,
+        id: input.chequeId,
+        deleted_at: null,
+        status: { in: [...CHEQUE_PENDING_STATUSES] },
+        title_id: input.expectedTitleId,
+      },
+      data: compactRecord({ title_id: null, updated_by: input.updatedBy }),
+    });
+    return updated[0] ? mapRecord(updated[0]) : undefined;
+  }
+
   private async attachEntry(
     tenantId: string,
     chequeId: string,
@@ -148,7 +179,7 @@ export class PrismaChequeRepository implements ChequeRepository {
   }
 }
 
-export class RlsPrismaChequeRepository implements ChequeRepository {
+export class RlsPrismaChequeRepository implements ChequeRepository, ChequeTitleUnlinker {
   constructor(private readonly prismaClient: PrismaClient) {}
 
   create(input: CreateChequeInput): Promise<Cheque> {
@@ -177,6 +208,12 @@ export class RlsPrismaChequeRepository implements ChequeRepository {
   }
   findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).findActiveByLinkedEntry(tenantId, entryId));
+  }
+  findPendingByTitle(tenantId: string, titleId: string): Promise<readonly Cheque[]> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).findPendingByTitle(tenantId, titleId));
+  }
+  unlinkTitle(input: { readonly tenantId: string; readonly chequeId: string; readonly expectedTitleId: string; readonly updatedBy?: string }): Promise<Cheque | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaChequeRepository(tx).unlinkTitle(input));
   }
 }
 
