@@ -241,15 +241,15 @@ FM18 purga por isFinal [F23]: VERMELHO pass=5 fail=1 restaurado=True
 ### Estado (P2 — esqueleto)
 | Etapa | Estado |
 |---|---|
-| C2-0 terreno | EM APURAÇÃO |
-| C2-1 vermelho-controle no objeto `ed4e229e` (F28a, F29, F24 reforçado) | EM APURAÇÃO |
-| C2-2 RQ-1 `deleteWorkOrderUnlessPending` (F29, F30, F31) | EM APURAÇÃO |
-| C2-3 RQ-2 ramo 4 completo (F28a-e, F24) | EM APURAÇÃO |
-| C2-4 RQ-3 J1/J2/J5/J6 (F32-F35) + `remoteAuthModeProvider` | EM APURAÇÃO |
-| C2-5 mutações (12) | EM APURAÇÃO |
-| C2-6 bateria | EM APURAÇÃO |
-| C2-7 registro (R8'', pendência, índice) | EM APURAÇÃO |
-| C2-8 entrega (push, CI) | EM APURAÇÃO |
+| C2-0 terreno | GRAVADO |
+| C2-1 vermelho-controle no objeto `ed4e229e` (F28a, F29, F24 reforçado) | GRAVADO |
+| C2-2 RQ-1 `deleteWorkOrderUnlessPending` (F29, F30, F31) | GRAVADO |
+| C2-3 RQ-2 ramo 4 completo (F28a-e, F24) | GRAVADO |
+| C2-4 RQ-3 J1/J2/J5/J6 (F32-F35) + `remoteAuthModeProvider` | GRAVADO |
+| C2-5 mutações (12) | GRAVADO |
+| C2-6 bateria | GRAVADO |
+| C2-7 registro (R8'', pendência, índice) | GRAVADO |
+| C2-8 entrega (push, CI) | GRAVADO |
 
 ### C2-0 — terreno (GRAVADO)
 - `git rev-parse HEAD` → `ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d`; `git status --porcelain` → só o plano (seção Ciclo 2, do planejador, não commitada), este relatório e os não rastreados da junta (`votos/B-SAN3-13/`, `R-B-SAN3-13-ciclo1.md` — não apagados, não commitados). `df -h /c` → 10-11 G livres (piso 7 G).
@@ -263,3 +263,68 @@ Testes escritos contra a API do objeto (gancho de 1 argumento, como as sondas S2
 - F28a: `Expected: ['c'] Actual: [] — OS_restantes` (a S2 da C2: resposta de vistoria pendente com o run `synced` não retém).
 - F24 reforçado: `Expected: true Actual: <false> — chave sem leitor em checklist_run.create: {run_id}`.
 - `+5 -3: Some tests failed.` — as 3 vermelhas **pela asserção** (compilaram e rodaram); as 5 outras F2x do arquivo antigo verdes.
+
+### C2-2 — RQ-1 `deleteWorkOrderUnlessPending` (GRAVADO) — commit `b9dc578f`
+- `WorkOrderLocalStore.deleteWorkOrderUnlessPending(localId) → Future<bool>`. Drift: UMA `transaction`; `DELETE FROM work_orders WHERE local_id = ? AND sync_status != 'pending' AND NOT EXISTS (SELECT 1 FROM work_order_materials WHERE work_order_local_id = ? AND sync_status != 'synced')`; só se afetou 1, apaga evidência, linha do tempo e materiais da OS. InMemory: retém linha `pending`, senão `deleteWorkOrder` + `true` (não guarda materiais — declarado). `deleteWorkOrder` incondicional intocado (fabricação, F16, CA-23/F6).
+- `_reconcile`: fabricada → `deleteWorkOrder`; senão, `!_hasPendingWork` → `deleteWorkOrderUnlessPending` (`false` não é erro).
+- `flutter test test/features/bsan313_retencao_ciclo2_test.dart --reporter expanded` → F29, F30, F31 verdes (`F31 apagou=true OS_restantes=[]`, material sobrevive = 1); F28a ainda vermelho (esperado: RQ-2).
+
+### C2-3 — RQ-2 ramo 4 completo (GRAVADO) — commit `2fa6e079`
+- `typedef WorkOrderExternalPendingWork = Future<bool> Function(WorkOrder order, List<SyncAction> actions)`; `_hasPendingWork` passa o mesmo instantâneo da fila. `workOrderRunReferenceKeys = {'local_run_id','server_run_id'}`; os 7 tipos `checklist_*` do mapa apontam para ele (`run_id` saiu).
+- Gancho: por run da OS — (a) run ≠ `synced`; (c) marcador ou ciência ≠ `synced`; (b) ação em `pending/syncing/failed/conflict` com `local_run_id` ∈ runs locais ou `server_run_id` ∈ runs do servidor; (d) anexo por subir. Material (ramo 5) e `catch → true` como antes. `lib/features/checklists/**` intocado (só métodos da interface `ChecklistLocalStore`).
+- F24 reforçado: toda chave do mapa ∈ ramo 1 ∪ `workOrderRunReferenceKeys`; `workOrderRunReferenceKeys == {'local_run_id','server_run_id'}`; cada sítio `type: ChecklistSyncActionTypes.` de `checklist_repository.dart` (6) tem as duas chaves (`'local_run_id':` 6, `'server_run_id':` 7). **Ajuste declarado da asserção antiga do F24:** a isenção `difference({'run_id'})` virou `difference(workOrderRunReferenceKeys)` — não afrouxa: a asserção nova, mais estrita, cobre as chaves isentas.
+- `flutter test test/features/bsan313_retencao_ciclo2_test.dart test/features/bsan313_os_purga_reconcilia_test.dart` → `+27: All tests passed!`.
+
+### C2-4 — RQ-3 J1/J2/J5/J6 (GRAVADO) — commit `b4a4ac3c`
+- `remoteAuthModeProvider = Provider<bool>((_) => kIsRemoteAuth)`; `workOrderRemoteApiProvider` e `workOrderRepositoryProvider` (`allowSeedOrders: !ref.watch(remoteAuthModeProvider)`) o leem. `app_config.dart` e os outros usos da constante intocados (Rc2-5).
+- F32 (`syncing` por `local_id` e `work_order_local_id`), F33 (`ArgumentError` na trava; `updateStatus` seguinte com `timeout(5s)`), F35 (`_ListOnlyApi`: `a`, `b` ficam, `lastPullIncomplete`), F34 (`ProviderContainer`, `remoteAuthModeProvider` true → store vazio; false → `wo-local-1..3`).
+- `flutter test …ciclo2… …purga… --reporter compact` → `+31: All tests passed!` (9 + 22).
+
+### Desvios declarados do plano (nenhum muda o produto)
+1. **Ajuste "2º argumento" em F21/F25/R10 não foi necessário:** os três usam `buildWorkOrderExternalPendingWork`, não um lambda; nenhuma linha deles mudou.
+2. **F28b:** como escrito (`addMarker` real), o F28b ficaria VERDE sob M-C2-02b, porque o ramo (c) (marcador `pending`) também retém. Para a mutação acusar, o F28b leva duas OS: `bm` (`addMarker` real, como o plano) e `ba` (`saveAnswer` real sobre run sem `serverId` — só a ação por `local_run_id` segura a OS). Medido: M-C2-02b → `Expected: ['ba', 'bm'] Actual: ['bm']`.
+3. **"7 produtores" → 6:** `runCreate` não tem produtor no app (`grep -rn "ChecklistSyncActionTypes\.\w*" lib` → só a lista de tipos e o replay); os 6 sítios gravam `local_run_id`. O F24 conta os sítios em vez de cravar 7.
+4. **M-C2-02a** derrubou F28a-**e** (5), não só a-d: a mutação tira (b) e (c), e o F28e depende do (c).
+
+### C2-5 — mutações (GRAVADO) — 12/12 vermelhas pela asserção, restauradas
+Roteiro: `<scratchpad>/mut_c2dev.py` (âncora única CRLF-ciente; roda só o teste que deve acusar, `--timeout 30s`; classifica asserção × compilação × verde; restaura com `git checkout --`; confere `git hash-object` == `git rev-parse HEAD:<arquivo>` e `git status --porcelain` sem modificados). Saída:
+
+| Mutação | O que muda | Teste | Resultado |
+|---|---|---|---|
+| M-C2-01a | `NOT EXISTS` sem efeito (`… AND 1 = 0)`) | F29 | VERMELHO — `Expected: ['w'] Actual: []` |
+| M-C2-01b | `_reconcile` chama `deleteWorkOrder` na linha não fabricada | F29 | VERMELHO — `Expected: ['w'] Actual: []` |
+| M-C2-01c | predicado sem `sync_status != 'pending'` | F30 | VERMELHO — `Expected: false Actual: <true>` |
+| M-C2-01d | sem `transaction` (`Future.sync`) | F31 | VERMELHO — `Expected: … length of <1> Actual: []`; **5/5 execuções**; F31 sem mutação verde 6/6 (Rc2-4: estável) |
+| M-C2-02a | gancho só com `run.syncStatus` (sem (b) e (c)) | F28* | VERMELHO — `-5` (`Expected: ['c'] Actual: []`) |
+| M-C2-02b | casar só `server_run_id` | F28b | VERMELHO — `Expected: ['ba', 'bm'] Actual: ['bm']` |
+| M-C2-02c | `{'run_id'}` de volta em `checklist_answer.upsert` | F24 | VERMELHO — `Expected: true Actual: <false>` |
+| M-C2-02d | sem o (c) | F28e | VERMELHO — `Expected: ['e'] Actual: []` |
+| J1 | `_pendingActionStatuses` sem `syncing` | F32 | VERMELHO — `Expected: ['sl', 'sm'] Actual: []` |
+| J2 | `_serial` sem `try/finally` | F33 | VERMELHO — `TimeoutException after 0:00:05` |
+| J5 | `allowSeedOrders: true` cravado | F34 | VERMELHO — `Expected: empty Actual: ['wo-local-1', 'wo-local-2', 'wo-local-3']` |
+| J6 | API sem caminhada = `complete: true` | F35 | VERMELHO — `Expected: ['a', 'b'] Actual: ['a']` |
+
+Todas "restaurado hash==blob"; `git status --porcelain` ao fim → só os não rastreados da junta.
+
+### C2-6 — bateria (GRAVADO) — head de código `b4a4ac3c` (o commit de registro não toca `mobile/`)
+| # | Comando (`mobile/flutter_app`) | Saída |
+|---|---|---|
+| 1 | `flutter pub get` | exit 0 |
+| 2 | `dart format --output=none --set-exit-if-changed lib test` com o **Dart 3.13.4 (formatador da CI)** | `Formatted 196 files (0 changed)`, exit 0. (O 3.11.4 local acusa só `bsan313_minhas_os_escopo_test.dart`, do ciclo 1 — a divergência conhecida de versão; o da CI manda) |
+| 3 | `flutter analyze` | `No issues found!` |
+| 4 | `flutter test test/features/bsan313_{home_lista_e1,minhas_os_escopo,os_purga_reconcilia,retencao_ciclo2}_test.dart` | `+41: All tests passed!` (29 do ciclo 1 + 12 novos) |
+| 5 | vizinhos: `b099 b103 b097 b107`, `test/features/work_orders/` (inclui `b114`), `test/home_screen_test.dart`, `b084` | `+227: All tests passed!` |
+| 6 | `flutter test --reporter compact` (suíte inteira) | `+905: All tests passed!`, 0 skip (meta do plano: ≥ 905) |
+| 7 | raiz: `git diff --check origin/main...HEAD` | exit 0 |
+| 8 | raiz: `node scripts/sync-agent-agents.mjs --check` | `OK — 85 agentes, espelho consistente.` |
+- Backend: nenhuma linha (`git diff --name-only ed4e229e..HEAD | grep -E '^(src|tests)/'` → vazio); sem Docker, sem Postgres.
+- Diff do ciclo (`git diff --name-only ed4e229e..HEAD`) ⊆ §F: os 3 arquivos de `lib/` permitidos, 2 testes `bsan313_*`, `docs/revisoes/SAN3/B-SAN3-13-{plano,dev}.md`, `agent-orchestration/controle/pendencias{,-indice}.md`.
+
+### C2-7 — registro (GRAVADO)
+- **R8'' (RQ-5; substitui o R8' de §2.4, §11 e §11-bis 3 da v3, que fica como histórico):** *"Escritor de material fora da trava: se grava ANTES do `DELETE` da linha, o predicado o vê e a linha fica (F29/F30); DURANTE a transação, o Drift o segura até o commit e ele sobrevive em `work_order_materials` (F31/P1: `durante=0`, `depois=1`); DEPOIS, idem. Em nenhum caso material pendente é apagado; o que pode sobrar é material/ação órfãos da linha (`P-MOBILE-ORFAOS-POS-PURGA`). Vistoria: tabelas próprias por `work_order_id`/`run_id`, nunca apagadas por este bloco — sobrevive sempre e, com RQ-2, retém."*
+- `controle/pendencias.md` + `P-MOBILE-ORFAOS-POS-PURGA` (BAIXA, dono `B-SAN3-16`); `python agent-orchestration/controle/gerar-indice-pendencias.py` → `632 cabecalhos / 621 IDs`, `ABERTA: 474`.
+- Não mudam: `API_CONTRACTS.md`, `PLANO_SAN3.md`, `Kpis/*` (congelado). Ata da junta e `R-B-SAN3-13-ciclo1.md` são da junta/orquestrador (não rastreados, intocados).
+- Limpeza §C5: nada de build gerado (só `flutter test`); o SDK Dart 3.13.4 e os roteiros ficam no scratchpad da sessão para P3.
+
+### C2-8 — entrega (GRAVADO)
+- Commits do ciclo: `23ce3850` docs(plano) · `be2eef8f` test vermelho-controle · `b9dc578f` fix RQ-1 · `2fa6e079` fix RQ-2 · `b4a4ac3c` test RQ-3 · o commit `docs(registro)` desta seção (head empurrado). `git push origin fix/mobile-minhas-os`; CI do head conferida por `gh api repos/<owner>/<repo>/commits/<head>/check-runs` logo após o push.

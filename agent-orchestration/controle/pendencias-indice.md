@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **631** |
-| IDs distintos | 620 |
-| **ABERTAS** | **473** |
+| Cabecalhos `## P-` | **632** |
+| IDs distintos | 621 |
+| **ABERTAS** | **474** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **408** |
+| — das quais **ativas nesta rodada** | **409** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 155 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **631 cabecalhos para 620 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **632 cabecalhos para 621 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -294,7 +294,7 @@
 | `P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE` | 11680 | MÉDIA | sim | P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob n |
 | `P-MOBILE-MATERIAL-SEM-REPLAY` | 11687 | ALTA | sim | P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para se |
 
-## ABERTAS · balde B — processo/registro — 189
+## ABERTAS · balde B — processo/registro — 190
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -487,6 +487,7 @@
 | `P-WO-STATUS-VOCABULARIO-APP-BACKEND` | 11716 | BAIXA | sim | P-WO-STATUS-VOCABULARIO-APP-BACKEND (2026-10-25) — approved só no app; rejected terminal |
 | `P-WO-LIST-SCOPE-WEB-TECNICO` | 11722 | BAIXA | sim | P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de  |
 | `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL` | 11728 | BAIXA | sim | P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (2026-10-25) — o teste 16 da telemetria falha por  |
+| `P-MOBILE-ORFAOS-POS-PURGA` | 11735 | BAIXA | sim | P-MOBILE-ORFAOS-POS-PURGA (2026-10-25) — ação e material órfãos da OS que saiu do aparel |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

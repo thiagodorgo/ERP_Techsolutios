@@ -11731,3 +11731,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente — o teste é do #274 (`2c916222`, PR-13 da telemetria) e o B-SAN3-13 não toca `lib/core/telemetry/**` nem o teste (`git diff --stat origin/main -- lib/core/telemetry test/features/telemetry` → vazio).
 - **dono:** bloco de telemetria do app.
 - **encerramento:** o teste espera o fim da captura em voo (ou o `stop` aguarda o heartbeat corrente) e passa 20/20 isolado.
+
+## P-MOBILE-ORFAOS-POS-PURGA (2026-10-25) — ação e material órfãos da OS que saiu do aparelho — BAIXA
+- status: ABERTA
+- **origem:** B-SAN3-13, ciclo 2 (RQ-4; achado C2-04 da junta de dado, ciclo 1, e P1 do `planejador-san313-c2-fable`).
+  (a) ação de linha FABRICADA (sem `serverId` e sem `work_order.create`) sai sem a OS: só dado fabricado chega lá
+  (medido pela C2: criação offline sempre enfileira `create`; a fila nunca remove ação). (b) material e ação
+  `work_order_material.add` gravados DEPOIS do commit do `deleteWorkOrderUnlessPending` sobrevivem em
+  `work_order_materials`/na fila (F31/P1); religam-se à OS se ela voltar com `localId == serverId` (linhas nascidas do
+  servidor, `work_order_remote_api.dart:380`); senão ficam órfãos até descarte/replay. Nenhum dado é apagado.
+- **gravidade:** BAIXA — nada se perde; sobra registro sem OS na tela.
+- **dono:** `B-SAN3-16`.
+- **encerramento:** replay/descarte de ação e material sem OS, com teste que prova o destino de cada um.
