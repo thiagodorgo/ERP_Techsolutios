@@ -2860,5 +2860,47 @@
     "blocks_completed": 183,
     "description": "PR-450 — O ambiente de trabalho ganhou proteção contra travamentos por memória e um procedimento seguro para retomar tarefas interrompidas. NÚMEROS DA CI no merge commit `9009e81b` (push na `main`), workflow `ci`, run 39374741370, tentativa 1: backend `3708 teste(s) · pass 3706 · fail 0 · skipped 2`; frontend 1339/1339; flutter 864/864. `blocks_completed` 183 -> 183.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 450`; números do log da rodada 39374741370. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-20",
+    "version": "B-SAN3-02",
+    "pr": 448,
+    "merge_commit": "079332a58d96e19457f851115cbdef624820d3fa",
+    "approved_head": "09b380dab54946e16303c8bae0e95bbaa0d667a5",
+    "status": "published_per_pr",
+    "flutter_tests": "864/864",
+    "backend_tests": "3760/3762",
+    "frontend_smoke_tests": "1339/1339",
+    "blocks_completed": 184,
+    "description": "B-SAN3-02 — O faturamento da OS ficou atômico: um item apagado no meio do faturamento não entra mais no título, e o item lançado depois do primeiro faturamento gera uma cobrança complementar em vez de ficar sem faturar (junta de dinheiro aprovada 3 × 0 no ciclo 2; fecha os itens 20 e 21 do portão da versão vendável). NÚMEROS DA CI no merge commit `079332a5` (push na `main`), workflow `ci`, run 39391782623, tentativa 1: backend `3762 teste(s) · pass 3760 · fail 0 · skipped 2`; frontend 1339/1339; flutter 864/864. `blocks_completed` 183 -> 184.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 448` (approved_head informado e conferido no git); números do log da rodada 39391782623. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-20",
+    "version": "PR-453",
+    "pr": 453,
+    "merge_commit": "539b078e311a5521b0d496ba5afae8f73acc43a0",
+    "approved_head": "58f780df6737d1e98eaec642c87eccbacca22d7f",
+    "status": "published_per_pr",
+    "flutter_tests": "864/864",
+    "backend_tests": "3760/3762",
+    "frontend_smoke_tests": "1339/1339",
+    "blocks_completed": 184,
+    "description": "PR-453 — O registro oficializou o fechamento dos itens 20 e 21 do portão da versão vendável, com o critério medido pelo porteiro do #448, e anotou as ressalvas dos porteiros do #446 e do #448. NÚMEROS DA CI no merge commit `539b078e` (push na `main`), workflow `ci`, run 39396717848, tentativa 1: backend `3762 teste(s) · pass 3760 · fail 0 · skipped 2`; frontend 1339/1339; flutter 864/864. `blocks_completed` 184 -> 184.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 453`; números do log da rodada 39396717848. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-21",
+    "version": "PR-455",
+    "pr": 455,
+    "merge_commit": "7ab2fe71d0d40c2be51a790f0d20893651cdf972",
+    "approved_head": "be5a74bc13732fd3f2e454f67593de7fe8616c58",
+    "status": "published_per_pr",
+    "flutter_tests": "864/864",
+    "backend_tests": "3760/3762",
+    "frontend_smoke_tests": "1339/1339",
+    "blocks_completed": 184,
+    "description": "PR-455 — O registro oficializou a decisão do dono de que Financeiro e Estoque abrem no próprio painel de trabalho, e não no painel geral, o que fecha o item 12 do portão da versão vendável. NÚMEROS DA CI no merge commit `7ab2fe71` (push na `main`), workflow `ci`, run 39571194651, tentativa 1: backend `3762 teste(s) · pass 3760 · fail 0 · skipped 2`; frontend 1339/1339; flutter 864/864. `blocks_completed` 184 -> 184.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 455`; números do log da rodada 39571194651. Nada fica `null`."
   }
 ]

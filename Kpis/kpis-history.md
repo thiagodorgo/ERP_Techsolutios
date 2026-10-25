@@ -3160,3 +3160,11 @@ pós-merge.
 | 2026-10-20 | `B-DASH-PERFIL` — O painel inicial e a navegação agora levam cada colaborador exatamente para a área permitida pelo seu perfil de trabalho | #446 | `a3122bd5` | `33345c6e` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39371952146 (tentativa 1) |
 | 2026-10-20 | `PR-451` — A revisão das entregas ficou mais ágil: só o que foi reprovado é refeito, com trava para não reaproveitar o que deixou de valer | #451 | `74f78950` | `0c55df6a` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39373580150 (tentativa 1) |
 | 2026-10-20 | `PR-450` — O ambiente de trabalho ganhou proteção contra travamentos por memória e um procedimento seguro para retomar tarefas interrompidas | #450 | `9009e81b` | `305a6508` | 3706/3708 | 1339/1339 | 864/864 | 183 | 39374741370 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-10-24
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-20 | `B-SAN3-02` — O faturamento da OS ficou atômico: um item apagado no meio do faturamento não entra mais no título, e o item lançado depois do primeiro faturamento gera uma cobrança complementar em vez de ficar sem faturar (junta de dinheiro aprovada 3 × 0 no ciclo 2; fecha os itens 20 e 21 do portão da versão vendável) | #448 | `079332a5` | `09b380da` | 3760/3762 | 1339/1339 | 864/864 | 184 | 39391782623 (tentativa 1) |
+| 2026-10-20 | `PR-453` — O registro oficializou o fechamento dos itens 20 e 21 do portão da versão vendável, com o critério medido pelo porteiro do #448, e anotou as ressalvas dos porteiros do #446 e do #448 | #453 | `539b078e` | `58f780df` | 3760/3762 | 1339/1339 | 864/864 | 184 | 39396717848 (tentativa 1) |
+| 2026-10-21 | `PR-455` — O registro oficializou a decisão do dono de que Financeiro e Estoque abrem no próprio painel de trabalho, e não no painel geral, o que fecha o item 12 do portão da versão vendável | #455 | `7ab2fe71` | `be5a74bc` | 3760/3762 | 1339/1339 | 864/864 | 184 | 39571194651 (tentativa 1) |
