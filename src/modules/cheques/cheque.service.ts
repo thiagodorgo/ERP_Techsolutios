@@ -199,10 +199,13 @@ export class ChequeService {
     const parsedTitleId = parseNullableUuid(titleIdRaw, "titleId");
     // O mesmo título que já está lá não é mudança de vínculo (nada a validar nem a privilegiar).
     const titleId = parsedTitleId === current.titleId || (parsedTitleId === null && current.titleId === undefined) ? undefined : parsedTitleId;
-    // B-SAN3-12a (§4.3, fecho do bypass) — TIRAR o título (null) ou TROCÁ-LO por outro exige o privilégio da troca;
-    // vincular pela primeira vez (título atual nulo) continua `cheques:update`.
-    if (titleId !== undefined && current.titleId !== undefined && !actor.permissions.includes(CHEQUE_UNLINK_PERMISSION)) {
-      throw unlinkRequiresPrivilegeError();
+    // B-SAN3-12a (§4.3, fecho do bypass; D1 da Emenda E1) — TIRAR o título (null) ou TROCÁ-LO por outro NÃO é PATCH:
+    // sem o privilégio da troca → 403 `unlink_requires_privilege`; com ele → 422 `cheque_linked_unlink_first` (a única
+    // porta que tira o vínculo é `POST /cheques/:id/unlink-title`, com justificativa e auditoria Crítica). Vincular pela
+    // primeira vez (título atual nulo) continua `cheques:update`.
+    if (titleId !== undefined && current.titleId !== undefined) {
+      if (!actor.permissions.includes(CHEQUE_UNLINK_PERMISSION)) throw unlinkRequiresPrivilegeError();
+      throw chequeLinkedUnlinkFirstError();
     }
     const input = {
       tenantId: actor.tenantId,
@@ -220,13 +223,14 @@ export class ChequeService {
       return updated;
     }
 
-    // Vincular (ou trocar, com privilégio) = travar o título NOVO e revalidar sob o lock (§4.2, R2-02).
+    // 1º vínculo = travar o título e revalidar sob o lock (§4.2, R2-02) e, na escrita, o CAS do título LIDO (A27): só
+    // grava se o cheque continua SEM título — quem vinculou no meio vence, e este perde com 409.
     await this.validateTitleLink(actor, titleId, current.direction, current.amount, current.currency);
     const uow = await this.resolveUow();
     return uow.run(actor.tenantId, async (ctx) => {
       await this.revalidateTitleLinkUnderLock(ctx, actor, titleId, current.direction, current.amount, current.currency);
-      const updated = await ctx.cheques.update(input);
-      if (!updated) return this.throwChequeWriteConflict(actor, current.id);
+      const updated = await ctx.cheques.update({ ...input, expectedTitleId: current.titleId ?? null });
+      if (!updated) return this.throwChequeWriteConflict(actor, current.id, current.titleId);
       return updated;
     });
   }
@@ -260,8 +264,9 @@ export class ChequeService {
     this.assertEditable(current);
     // B-SAN3-12a (§4.3, decisão do dono 25/10 "Mesmo privilégio da troca") — excluir cheque vinculado é troca.
     if (current.titleId !== undefined) throw chequeLinkedUnlinkFirstError();
-    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (!removed) return this.throwChequeWriteConflict(actor, current.id);
+    // A27 — o CAS do título lido (sem título): quem vinculou no meio vence, e o DELETE perde com 409.
+    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId, { expectedTitleId: current.titleId ?? null });
+    if (!removed) return this.throwChequeWriteConflict(actor, current.id, current.titleId);
     return removed;
   }
 
@@ -275,7 +280,7 @@ export class ChequeService {
   async cancel(actor: ChequeActorContext, chequeId: string): Promise<Cheque> {
     return this.flipOnly(actor, chequeId, "cancelled", (current) => {
       if (current.titleId !== undefined) throw chequeLinkedUnlinkFirstError();
-    });
+    }, true);
   }
 
   // COMPENSAR (deposited→cleared) — MOVE DINHEIRO. B-O6R-02 F5 (Ω6R-DIN-003): transição (CAS, o mutex
@@ -449,6 +454,8 @@ export class ChequeService {
     chequeId: string,
     toStatus: ChequeStatus,
     guard?: (current: Cheque) => void,
+    // A27 — a guarda decidiu pelo título lido: a transição carrega o CAS desse título (0 linhas → 409 transition_conflict).
+    casOnTitle = false,
   ): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     this.assertTransition(current.status, toStatus);
@@ -459,6 +466,7 @@ export class ChequeService {
       fromStatus: current.status as ChequeStatus,
       toStatus,
       updatedBy: actor.userId,
+      ...(casOnTitle ? { expectedTitleId: current.titleId ?? null } : {}),
     });
     if (!flipped) throw transitionConflictError();
     return flipped;
@@ -530,9 +538,12 @@ export class ChequeService {
     assertExactOpenBalance(locked, amount);
   }
 
-  private async throwChequeWriteConflict(actor: ChequeActorContext, chequeId: string): Promise<never> {
+  // 0 linhas na escrita → relê para dizer o porquê: sumiu → 404; saiu de 'registered' → 422 cheque_not_editable (o caso
+  // sequencial do #456); B-SAN3-12a (A27) — continua 'registered' mas o vínculo não é o LIDO → 409 cheque_write_conflict.
+  private async throwChequeWriteConflict(actor: ChequeActorContext, chequeId: string, readTitleId?: string): Promise<never> {
     const fresh = await this.repository.findById(actor.tenantId, chequeId);
     if (!fresh || fresh.deletedAt != null) throw chequeNotFoundError();
+    if (fresh.status === "registered" && fresh.titleId !== readTitleId) throw chequeWriteConflictError();
     throw chequeNotEditableError();
   }
 

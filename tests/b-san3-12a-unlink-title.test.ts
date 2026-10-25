@@ -170,14 +170,100 @@ test("A6: PATCH por finance — tirar o título (null) ou trocá-lo → 403 unli
   assert.equal(cleared.titleId, undefined, "null num cheque SEM título não é desvínculo");
 });
 
-test("A6: com cheques:unlink_title o PATCH desvincula e troca (o privilégio vive em um lugar só: a mesma constante da rota)", async () => {
+test("A6-bis (D1 da Emenda E1): COM cheques:unlink_title o PATCH que tira ou troca o título → 422 cheque_linked_unlink_first; só o unlink-title desvincula; depois, o PATCH volta a ser 1º vínculo", async () => {
   const s = await seed();
   const linked = await s.cheques.create(s.ctx, body(s.account.id, s.title.id));
-  const swapped = await s.cheques.update(s.admin, linked.id, { title_id: s.other.id });
-  assert.equal(swapped.titleId, s.other.id);
-  const removed = await s.cheques.update(s.admin, linked.id, { title_id: null });
-  assert.equal(removed.titleId, undefined);
+  await assert.rejects(() => s.cheques.update(s.admin, linked.id, { title_id: s.other.id }), (e) => domain(e, 422, "cheque_linked_unlink_first"));
+  await assert.rejects(() => s.cheques.update(s.admin, linked.id, { title_id: null }), (e) => domain(e, 422, "cheque_linked_unlink_first"));
+  assert.equal((await s.cheques.get(s.ctx, linked.id)).titleId, s.title.id, "o PATCH privilegiado não mexeu no vínculo");
+  const unlinked = await s.cheques.unlinkTitle(s.admin, linked.id, { justification: JUST });
+  assert.equal(unlinked.cheque.titleId, undefined);
+  const relinked = await s.cheques.update(s.ctx, linked.id, { title_id: s.other.id });
+  assert.equal(relinked.titleId, s.other.id, "trocar = unlink-title (justificativa + auditoria) e depois o 1º vínculo");
 });
+
+// ------------------------------------------------------------------ A27-e — o CAS do título LIDO, em memória
+
+/** UoW de memória que só abre a unidade depois do portão (o leitor já leu; o vencedor escreve antes). */
+async function gatedUow(gate: Promise<void>) {
+  const { createDefaultFinancialUnitOfWork } = await import("../src/modules/financial-uow/index.js");
+  const real = await createDefaultFinancialUnitOfWork();
+  return async () => ({
+    run: async (tenantId: string, work: Parameters<typeof real.run>[1]) => {
+      await gate;
+      return real.run(tenantId, work);
+    },
+  });
+}
+
+function memoryAccountReader() {
+  return {
+    async findAccount(tenantId: string, accountId: string) {
+      const { getMemoryFinancialAccountRepositoryForTests } = await import("../src/modules/financial-accounts/financial-account.service.js");
+      const account = await getMemoryFinancialAccountRepositoryForTests().findById(tenantId, accountId);
+      return account ? { id: account.id, currency: account.currency, isActive: account.isActive, openingBalance: account.openingBalance } : undefined;
+    },
+  };
+}
+
+test("A27-e (memória): dois 1º vínculos (T1, T2) por finance, ambos LERAM o cheque sem título → exatamente um 200 e o outro 409 cheque_write_conflict; FINAL = o título do 200", async () => {
+  const s = await seed();
+  const cheque = await s.cheques.create(s.ctx, body(s.account.id));
+  let open!: () => void;
+  const gate = new Promise<void>((resolve) => (open = resolve));
+  const { ChequeService } = await import("../src/modules/cheques/index.js");
+  const late = new ChequeService(getMemoryChequeRepositoryForTests(), memoryAccountReader(), await gatedUow(gate));
+  // O perdedor lê (sem título), passa a guarda e espera no portão ANTES da escrita; o vencedor vincula T1 e commita.
+  const loser = late.update(s.ctx, cheque.id, { title_id: s.other.id }).then(
+    (value) => ({ ok: true as const, value }),
+    (error: unknown) => ({ ok: false as const, error }),
+  );
+  await new Promise((resolve) => setImmediate(resolve));
+  const winner = await s.cheques.update(s.ctx, cheque.id, { title_id: s.title.id });
+  assert.equal(winner.titleId, s.title.id);
+  open();
+  const outcome = await loser;
+  assert.equal(outcome.ok, false, "nunca dois 200");
+  assert.ok(!outcome.ok && domain(outcome.error, 409, "cheque_write_conflict"), `motivo: ${JSON.stringify(!outcome.ok && outcome.error)}`);
+  assert.equal((await s.cheques.get(s.ctx, cheque.id)).titleId, s.title.id, "FINAL = o título do 200");
+});
+
+for (const op of ["cancel", "delete"] as const) {
+  test(`A27-e (memória): ${op} × vínculo — o ${op} leu o cheque SEM título; o vínculo commita no meio → 409; o cheque segue vinculado e vivo`, async () => {
+    const s = await seed();
+    const cheque = await s.cheques.create(s.ctx, body(s.account.id));
+    const repo = getMemoryChequeRepositoryForTests();
+    let open!: () => void;
+    const gate = new Promise<void>((resolve) => (open = resolve));
+    // Delegação explícita (os métodos vivem no prototype): só a ESCRITA do perdedor espera o portão.
+    const gated = {
+      create: repo.create.bind(repo), list: repo.list.bind(repo), findById: repo.findById.bind(repo), update: repo.update.bind(repo),
+      attachClearingEntry: repo.attachClearingEntry.bind(repo), attachBounceEntry: repo.attachBounceEntry.bind(repo),
+      findActiveByLinkedEntry: repo.findActiveByLinkedEntry.bind(repo), findPendingByTitle: repo.findPendingByTitle.bind(repo),
+      unlinkTitle: repo.unlinkTitle.bind(repo),
+      transition: async (input: Parameters<typeof repo.transition>[0]) => { await gate; return repo.transition(input); },
+      softDelete: async (...args: Parameters<typeof repo.softDelete>) => { await gate; return repo.softDelete(...args); },
+    };
+    const { ChequeService } = await import("../src/modules/cheques/index.js");
+    const loserService = new ChequeService(gated, memoryAccountReader());
+    const loser = (op === "cancel" ? loserService.cancel(s.ctx, cheque.id) : loserService.delete(s.ctx, cheque.id)).then(
+      (value) => ({ ok: true as const, value }),
+      (error: unknown) => ({ ok: false as const, error }),
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    await s.cheques.update(s.ctx, cheque.id, { title_id: s.title.id });
+    open();
+    const outcome = await loser;
+    assert.equal(outcome.ok, false, `${op} não pode passar sobre o vínculo novo`);
+    const expected = op === "cancel" ? "transition_conflict" : "cheque_write_conflict";
+    assert.ok(!outcome.ok && domain(outcome.error, 409, expected), `motivo: ${JSON.stringify(!outcome.ok && outcome.error)}`);
+    const after = await s.cheques.get(s.ctx, cheque.id);
+    assert.equal(after.titleId, s.title.id);
+    assert.equal(after.status, "registered");
+    assert.equal(after.deletedAt, undefined);
+    await assert.rejects(() => s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 100, payment_method: "pix" }), (e) => domain(e, 422, "title_has_pending_cheque"));
+  });
+}
 
 // ------------------------------------------------------------------ A7 — auditoria Crítica
 

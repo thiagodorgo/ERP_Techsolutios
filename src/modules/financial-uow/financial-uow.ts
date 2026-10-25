@@ -371,9 +371,9 @@ function journaledCheques(base: InMemoryChequeRepository, journal: TenantRowJour
       await journal.rememberById(input.chequeId, (id) => base.findById(input.tenantId, id));
       return base.transition(input);
     },
-    softDelete: async (tenantId, chequeId, deletedBy) => {
+    softDelete: async (tenantId, chequeId, deletedBy, guard) => {
       await journal.rememberById(chequeId, (id) => base.findById(tenantId, id));
-      return base.softDelete(tenantId, chequeId, deletedBy);
+      return base.softDelete(tenantId, chequeId, deletedBy, guard);
     },
     attachClearingEntry: async (tenantId, chequeId, entryId, updatedBy) => {
       await journal.rememberById(chequeId, (id) => base.findById(tenantId, id));

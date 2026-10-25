@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   Cheque,
+  ChequeTitleGuard,
   CreateChequeInput,
   ListChequeInput,
   ListChequeResult,
@@ -15,7 +16,8 @@ export interface ChequeRepository {
   list(input: ListChequeInput): Promise<ListChequeResult>;
   findById(tenantId: string, chequeId: string): Promise<Cheque | undefined>;
   update(input: UpdateChequeInput): Promise<Cheque | undefined>;
-  softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined>;
+  // B-SAN3-12a (A27) — `guard` liga o CAS do título lido (`title_id IS NOT DISTINCT FROM guard.expectedTitleId`).
+  softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined>;
   // MUTEX contra dupla-postagem: flip ATÔMICO de status só efetiva se o status ATUAL == fromStatus (e não
   // deletado). Retorna a linha atualizada ou undefined (perdeu a corrida / status já mudou). No InMemory é
   // um check-and-set SÍNCRONO (sem await no meio → atômico no event-loop); no Prisma é updateMany + rowcount.
@@ -142,6 +144,13 @@ export function unlinkRequiresPrivilegeError(): ChequeError {
   );
 }
 
+// B-SAN3-12a (A27) — o CAS do título lido, dentro do check-and-set SÍNCRONO: a chave `expectedTitleId` PRESENTE liga
+// a comparação (null = "tem de estar sem título"); ausente = sem CAS.
+function titleMatches(current: Cheque, input: { readonly expectedTitleId?: string | null }): boolean {
+  if (!("expectedTitleId" in input) || input.expectedTitleId === undefined) return true;
+  return (input.expectedTitleId ?? undefined) === current.titleId;
+}
+
 export class InMemoryChequeRepository implements ChequeRepository, ChequeTitleUnlinker {
   private readonly cheques = new Map<string, Cheque>();
 
@@ -200,6 +209,7 @@ export class InMemoryChequeRepository implements ChequeRepository, ChequeTitleUn
     const current = this.cheques.get(input.chequeId);
     if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
     if (current.status !== "registered") return undefined;
+    if (!titleMatches(current, input)) return undefined;
 
     const updated: Cheque = {
       ...current,
@@ -215,10 +225,11 @@ export class InMemoryChequeRepository implements ChequeRepository, ChequeTitleUn
     return updated;
   }
 
-  async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
+  async softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined> {
     const current = this.cheques.get(chequeId);
     if (!current || current.tenantId !== tenantId || current.deletedAt != null) return undefined;
     if (current.status !== "registered") return undefined;
+    if (guard !== undefined && !titleMatches(current, guard)) return undefined;
 
     const removed: Cheque = {
       ...current,
@@ -236,6 +247,7 @@ export class InMemoryChequeRepository implements ChequeRepository, ChequeTitleUn
     const current = this.cheques.get(input.chequeId);
     if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
     if (current.status !== input.fromStatus) return undefined;
+    if (!titleMatches(current, input)) return undefined;
 
     const updated: Cheque = {
       ...current,

@@ -11,6 +11,7 @@ import {
 import { CHEQUE_ENTRY_LINK_COLUMN_NAMES } from "./cheque.types.js";
 import type {
   Cheque,
+  ChequeTitleGuard,
   CreateChequeInput,
   ListChequeInput,
   ListChequeResult,
@@ -72,7 +73,8 @@ export class PrismaChequeRepository implements ChequeRepository, ChequeTitleUnli
   async update(input: UpdateChequeInput): Promise<Cheque | undefined> {
     try {
       const updated = await this.client.cheque.updateManyAndReturn({
-        where: { tenant_id: input.tenantId, id: input.chequeId, status: "registered", deleted_at: null },
+        // B-SAN3-12a (A27) — com `expectedTitleId`, o vínculo LIDO entra no WHERE (`null` → `IS NULL`).
+        where: { tenant_id: input.tenantId, id: input.chequeId, status: "registered", deleted_at: null, ...titleCas(input) },
         data: compactRecord({
           cheque_number: input.chequeNumber,
           bank: input.bank,
@@ -88,9 +90,9 @@ export class PrismaChequeRepository implements ChequeRepository, ChequeTitleUnli
     }
   }
 
-  async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
+  async softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined> {
     const updated = await this.client.cheque.updateManyAndReturn({
-      where: { tenant_id: tenantId, id: chequeId, status: "registered", deleted_at: null },
+      where: { tenant_id: tenantId, id: chequeId, status: "registered", deleted_at: null, ...titleCas(guard ?? {}) },
       data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),
     });
     return updated[0] ? mapRecord(updated[0]) : undefined;
@@ -100,7 +102,7 @@ export class PrismaChequeRepository implements ChequeRepository, ChequeTitleUnli
   // demais casam 0 linhas → undefined (o serviço traduz para 409 transition_conflict). deleted_at IS NULL.
   async transition(input: TransitionChequeInput): Promise<Cheque | undefined> {
     const updated = await this.client.cheque.updateManyAndReturn({
-      where: { tenant_id: input.tenantId, id: input.chequeId, status: input.fromStatus, deleted_at: null },
+      where: { tenant_id: input.tenantId, id: input.chequeId, status: input.fromStatus, deleted_at: null, ...titleCas(input) },
       data: {
         status: input.toStatus,
         ...(input.clearedEntryId !== undefined ? { cleared_entry_id: input.clearedEntryId } : {}),
@@ -194,8 +196,8 @@ export class RlsPrismaChequeRepository implements ChequeRepository, ChequeTitleU
   update(input: UpdateChequeInput): Promise<Cheque | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaChequeRepository(tx).update(input));
   }
-  softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).softDelete(tenantId, chequeId, deletedBy));
+  softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined> {
+    return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaChequeRepository(tx).softDelete(tenantId, chequeId, deletedBy, guard));
   }
   transition(input: TransitionChequeInput): Promise<Cheque | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaChequeRepository(tx).transition(input));
@@ -220,6 +222,13 @@ export class RlsPrismaChequeRepository implements ChequeRepository, ChequeTitleU
 export async function createPrismaChequeRepository(): Promise<RlsPrismaChequeRepository> {
   const { prisma } = await import("../../database/prisma.js");
   return new RlsPrismaChequeRepository(prisma);
+}
+
+// B-SAN3-12a (A27) — `expectedTitleId` presente → `title_id = <lido>` ou `title_id IS NULL` no WHERE; sob READ COMMITTED o
+// UPDATE que bloqueou re-avalia o predicado contra a tupla do vencedor e casa 0 linhas.
+function titleCas(input: { readonly expectedTitleId?: string | null }): Prisma.ChequeWhereInput {
+  if (!("expectedTitleId" in input) || input.expectedTitleId === undefined) return {};
+  return { title_id: input.expectedTitleId };
 }
 
 function buildWhere(input: ListChequeInput): Prisma.ChequeWhereInput {

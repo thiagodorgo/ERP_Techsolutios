@@ -156,6 +156,9 @@ export type UpdateChequeInput = {
   readonly dueDate?: Date | null;
   readonly notes?: string | null;
   readonly updatedBy?: string;
+  // B-SAN3-12a (A27, E1-bis) — CAS do vínculo LIDO: a PRESENÇA da chave liga o `WHERE title_id IS NOT DISTINCT FROM
+  // <lido>` (null = "tem de estar sem título"); ausente = sem CAS (escrita que não decide nada pelo título).
+  readonly expectedTitleId?: string | null;
 };
 
 // Transição ATÔMICA de status (o MUTEX contra dupla-postagem): só efetiva se o status ATUAL == fromStatus
@@ -169,7 +172,12 @@ export type TransitionChequeInput = {
   readonly bounceEntryId?: string | null;
   readonly bounceReason?: string | null;
   readonly updatedBy?: string;
+  // B-SAN3-12a (A27) — idem `UpdateChequeInput.expectedTitleId` (o `cancel` decide pelo título lido).
+  readonly expectedTitleId?: string | null;
 };
+
+/** B-SAN3-12a (A27) — guarda opcional do `softDelete`: o título LIDO tem de ser o da linha (null = sem título). */
+export type ChequeTitleGuard = { readonly expectedTitleId: string | null };
 
 export type ListChequeInput = {
   readonly tenantId: string;
