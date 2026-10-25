@@ -352,8 +352,13 @@ class WorkOrderRepository extends ChangeNotifier {
       final row = await _reloadRow(localId);
       if (row == null) continue;
       final actions = await _syncQueue.actionsForTenant(tenantId);
-      if (_isFabricated(row, actions) || !await _hasPendingWork(row, actions)) {
+      // Ciclo 2 (C2-01, RQ-1): a fabricada sai incondicional (regra de fabricação, C2-04 mantido); a reconciliada
+      // passa por duas portas — o gancho (ramos 1-5) e o predicado do próprio DELETE (linha e material), atômico.
+      // `false` do store não é erro: a linha fica, com o selo, até o próximo pull.
+      if (_isFabricated(row, actions)) {
         await _localStore.deleteWorkOrder(row.localId);
+      } else if (!await _hasPendingWork(row, actions)) {
+        await _localStore.deleteWorkOrderUnlessPending(row.localId);
       }
     }
     final refreshed = await _localStore.loadWorkOrders();

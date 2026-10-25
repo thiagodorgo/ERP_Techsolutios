@@ -215,6 +215,97 @@ void main() {
     );
   });
 
+  group('B-SAN3-13 ciclo 2 · C2-01 — deleteWorkOrderUnlessPending (Drift)', () {
+    Future<_Terrain> seeded() async {
+      final t = _Terrain();
+      addTearDown(t.db.close);
+      for (final id in ['alvo', 'outra']) {
+        await t.store.saveWorkOrder(_order(id, serverId: 'srv-$id'));
+        await t.store.saveTimelineEvent(
+          WorkOrderTimelineEvent(
+            localId: 'tl-$id',
+            workOrderLocalId: id,
+            tenantId: _tenant,
+            eventType: WorkOrderTimelineEventType.created,
+            occurredAt: DateTime.utc(2026, 10, 25),
+          ),
+        );
+        await t.store.saveEvidence(
+          WorkOrderEvidence(
+            localId: 'ev-$id',
+            workOrderLocalId: id,
+            tenantId: _tenant,
+            fileName: 'foto.jpg',
+            mimeType: 'image/jpeg',
+            sizeBytes: 10,
+            captureSource: 'camera',
+            syncStatus: SyncStatus.synced,
+            uploadStatus: SyncStatus.synced,
+            createdAt: DateTime.utc(2026, 10, 25),
+          ),
+        );
+        await t.prestador.saveMaterial(_material(id, SyncStatus.synced));
+      }
+      return t;
+    }
+
+    Future<List<int>> counts(_Terrain t, String id) async => [
+      (await t.store.loadWorkOrders()).where((o) => o.localId == id).length,
+      (await t.store.loadTimeline(id)).length,
+      (await t.store.loadEvidence(id)).length,
+      (await t.prestador.loadMaterials(id)).length,
+    ];
+
+    // F30 — unidade do store: o predicado decide, e as filhas só saem com a linha, só da OS alvo.
+    test(
+      'F30 — material pending retém; linha pending retém; tudo synced apaga só a alvo',
+      () async {
+        // (1) material `pending` → false, as 4 tabelas intactas.
+        final a = await seeded();
+        await a.prestador.saveMaterial(
+          _material('alvo', SyncStatus.pending, localId: 'mat-alvo-p'),
+        );
+        expect(await a.store.deleteWorkOrderUnlessPending('alvo'), isFalse);
+        expect(await counts(a, 'alvo'), [1, 1, 1, 2]);
+
+        // (2) linha `pending`, fila vazia, materiais synced → false.
+        final b = await seeded();
+        await b.store.saveWorkOrder(
+          _order('alvo', serverId: 'srv-alvo', sync: SyncStatus.pending),
+        );
+        expect(await b.store.deleteWorkOrderUnlessPending('alvo'), isFalse);
+        expect(await counts(b, 'alvo'), [1, 1, 1, 1]);
+
+        // (3) tudo synced → true; a alvo some das 4 tabelas, a irmã fica inteira.
+        final c = await seeded();
+        expect(await c.store.deleteWorkOrderUnlessPending('alvo'), isTrue);
+        expect(await counts(c, 'alvo'), [0, 0, 0, 0]);
+        expect(await counts(c, 'outra'), [1, 1, 1, 1]);
+      },
+    );
+
+    // F31 — o mecanismo (a P1 do planejador): o escritor de material fora da trava, disparado logo depois do apagar
+    // e não aguardado, NUNCA perde o material — ou o predicado o vê, ou a transação o segura até o commit.
+    test(
+      'F31 — escritor de material concorrente ao apagar: o material sobrevive sempre',
+      () async {
+        final t = _Terrain();
+        addTearDown(t.db.close);
+        await t.store.saveWorkOrder(_order('w', serverId: 'srv-w'));
+        final deleting = t.store.deleteWorkOrderUnlessPending('w');
+        final writer = Zone.root.run(
+          () => t.prestador.saveMaterial(_material('w', SyncStatus.pending)),
+        );
+        final deleted = await deleting;
+        await writer;
+        final left = await t.ids();
+        // ignore: avoid_print
+        print('F31 apagou=$deleted OS_restantes=$left');
+        expect(await t.prestador.loadMaterials('w'), hasLength(1));
+      },
+    );
+  });
+
   group('B-SAN3-13 ciclo 2 · C2-02 — vistoria pendente com run synced', () {
     // F28a — é a S2 da C2 com a asserção invertida, produtor REAL (`saveAnswer`).
     test(
