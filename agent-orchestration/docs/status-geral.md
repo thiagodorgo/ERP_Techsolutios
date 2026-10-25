@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-10-25 — B-GUARD-MIGRACAO: o guard de migração com transação explícita entra no `npm test`
+
+Bloco de ferramenta (`D-GOV-PROPORCIONAL` (1): revisor independente + CI). `scripts/migration-transaction-guard.mjs` (G0–G7) reprova migração nova multi-sentença sem `BEGIN;`/`COMMIT;` ou sem drill que a cite (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`); PR aberto no ramo `chore/guard-migracao-transacao`, aguarda o revisor. Próximo da trilha: `B-DRILL-GENERICO-POR-PREFIXO`.
+
 ## Atualização 2026-10-10 — B-O6R-04a: Retomada 2026-10-10
 
 Retomado por ordem do dono (`D-ORDEM-NOITE-2026-10-10`), que revoga para o #389 o estacionamento de 08/10. O plano é
