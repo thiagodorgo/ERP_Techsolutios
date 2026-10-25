@@ -196,3 +196,29 @@ inalcançável nos dois):**
 Worktree da base `C:/Users/AMP/w-s312b` removido por `git worktree remove --force`; container `dev-san312a-pg` removido (com os bancos
 `erp_san312a`, `_base`, `_head` e os de drill, que já tinham sido derrubados pelos testes). O worktree do bloco `C:/Users/AMP/w-san312a`
 FICA (o ramo continua depois da emenda). Logs fora do repositório em `C:/Users/AMP/w-san312a-*`.
+
+---
+
+## E10 — retomada pelas Emendas E1 e E1-bis (2026-10-25, mesmo dev `dev-san312a-opus`, Claude Opus declarado)
+
+Fonte: `docs/revisoes/SAN3/B-SAN3-12-plano.md` (E1 l.670+, E1-bis l.837–937; copiadas verbatim do arquivo do planejador) e
+`docs/revisoes/SAN3/B-SAN3-12a-E1-critica.md`. Ordem seguida (E1b.6): A27 → D1 → F1 (+A28) → F2 → F4 → F5 → F3 → B2 → registro →
+mutações → B1. Terreno: o mesmo worktree (HEAD de partida `fafd4b36`, limpo) e Postgres 16 descartável NOVO `dev-san312a-pg2`
+(`127.0.0.1:55413`; base viva intocada). Docker: além da base viva, só `agv3-proxy` (pré-existente) e o meu.
+Nota de terreno: a máquina estava carregada (outros worktrees com `tsc`/`npm ci` em paralelo; `npx tsc --noEmit` levou 19 min numa
+das medições) — os tempos de execução abaixo não são comparáveis aos do E6.
+
+| Item | Onde | Prova (comando → saída) |
+|---|---|---|
+| **A27** (CAS do título lido) | `cheque.types.ts` (`expectedTitleId?` em `UpdateChequeInput`/`TransitionChequeInput`; `ChequeTitleGuard`), `cheque.repository.ts` (`titleMatches` dentro do check-and-set síncrono; `softDelete(…, guard?)`), `cheque-prisma.repository.ts` (`titleCas` no `WHERE` de `update`/`transition`/`softDelete`), `financial-uow.ts` (`journaledCheques.softDelete` repassa a guarda), `cheque.service.ts` | `tests/b-san3-12a-link-toctou-db.test.ts` (novo, barreira por `application_name`, vencedor por SQL em transação aberta): **5 · pass 5 · fail 0 · skipped 0** — A27-a PATCH → 409 `cheque_write_conflict`, A27-b cancel → 409 `transition_conflict`, A27-c DELETE → 409 `cheque_write_conflict`, FINAL vinculado a T1, pix em T1 → 422, controle sequencial 403; A27-d controle; A27-f 5 rodadas sem barreira: perdedores `cheque_write_conflict ×5`, nunca dois 200. Memória (A27-e, `tests/b-san3-12a-unlink-title.test.ts`): **15 · pass 15 · fail 0 · skipped 0** |
+| conferência obrigatória | `grep -n "transition(\|softDelete(\|\.update(" src/modules/cheques/cheque.service.ts` | só o 1º vínculo (`ctx.cheques.update({ ...input, expectedTitleId })`), o `delete` (`softDelete(…, { expectedTitleId })`) e o `cancel` (`flipOnly(…, casOnTitle=true)`) passam o título lido; o `update` sem título, o `deposit`, o `clear`/`bounce` (`moveMoneyInUnit`) não |
+| **Falsificação pequena da E1-bis, resolvida sem remédio novo** | `throwChequeWriteConflict` | a E1-bis diz "409 `cheque_write_conflict` (já existe: `throwChequeWriteConflict`)"; medido: ele lançava **422 `cheque_not_editable`** (ou 404). Passou a reler e distinguir: sumiu → 404; saiu de `registered` → 422 (o caso sequencial do #456, K10 inalterado); continua `registered` com título ≠ do lido → **409 `cheque_write_conflict`**. Declarado para a junta |
+| **D1** | `cheque.service.ts` (`update`) | sem o privilégio 403; com o privilégio **422 `cheque_linked_unlink_first`** (A6-bis no `b-san3-12a-unlink-title`; K1 reescrito) |
+| **F1 (+A28)** | `tests/cheque-title-link.test.ts` (só K1 l.98, K2 l.170/189/204, K3 l.229), `tests/cheque-title-link-atomic-db.test.ts` (só K2-db l.65/l.80) | memória **38 · pass 38 · fail 0 · skipped 0**; `-db` **15 · pass 15 · fail 0 · skipped 0**; nenhum caso apagado (nomes reescritos dizem a regra nova); A28: título pago pelo repositório (`applyPaymentGuarded`) / por SQL commitado → `clear` 422 `title_already_paid`, 0 (memória) / só o do vencedor (Postgres) lançamento |
+| **F2** | `tests/financial-uow-journal-classification.test.ts` (só `CHEQUE_CALLS`/`PREPARES`/`READ_RETURN_NONEMPTY` de `findPendingByTitle` e a contagem 39 → 40) | **46 · pass 46 · fail 0 · skipped 0** |
+| **F4** | `src/modules/financial-summary/financial-summary.repository.ts` (só a projeção: `titleId: c.titleId ?? null`) | `tests/financial-summary.test.ts` **15 · pass 15 · fail 0 · skipped 0**; paridade memória × Prisma de `cheques.*` em `tests/b-san3-12a-pay-pending-cheque-db.test.ts` (caso A16 db) — **5 · pass 5 · fail 0 · skipped 0** |
+| **F5** | `tests/fixtures/role-catalog-contract.snapshot.json` (`super_admin` e `platform_admin` +2, nas posições do catálogo) | `core-saas-role-authority` + `core-saas` com banco: **38 · pass 38 · fail 0 · skipped 0**; tamanhos medidos `super_admin 200 · platform_admin 200 · tenant_admin 187` |
+| **F3** | `tests/fixtures/o6r07c-classificacao-vias.json` só por `node --import tsx tests/helpers/o6r07c-census.ts gravar …` | gerador: `chaves vivas: 471 · VIOLAÇÕES: 0`; `git diff --stat` = `12 ++++++++++++`, exatamente as 3 entradas (`GET …/aggregate` LEITURA n 1; `GET …/reconciliation-policy` LEITURA n 1; `POST /cheques/:chequeId/unlink-title` SEM-ALCANCE-CAMPO n 1); `tests/o6r07c-census-guard.test.ts` **32 · pass 32 · fail 0 · skipped 0** (uma 1ª rodada sob carga estourou o tempo do censo — 16 vermelhos de tempo — e foi refeita sem o `timeout` curto) |
+| **E1.F6** | `scripts/provision-rbac.ts` | não tocado (saiu do PERMITIDO); 1 linha em `P-RBAC-PROVISION-DESCRICOES` |
+| **Contrato/matriz** | `API_CONTRACTS.md` (D1 + os 409 do A27), `RBAC_MATRIX.md` (l. dos cheques) | — |
+| **Registro** | `pendencias.md` (emenda e critério B1 em `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`; novas `P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE` e `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`, `pre-existente`), `decisoes.md` (D1, A26, A27, F5 como leitura do planejador), índice regenerado (635 cabeçalhos · 479 abertas), `status-geral.md` | — |
