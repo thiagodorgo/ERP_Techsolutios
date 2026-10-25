@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **601** |
-| IDs distintos | 590 |
-| **ABERTAS** | **447** |
+| Cabecalhos `## P-` | **602** |
+| IDs distintos | 591 |
+| **ABERTAS** | **448** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **382** |
+| — das quais **ativas nesta rodada** | **383** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 151 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **601 cabecalhos para 590 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **602 cabecalhos para 591 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -284,7 +284,7 @@
 | `P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA` | 11507 | MÉDIA | sim | P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA (2026-10-24) — 76 sentenças de drift preexistente — M |
 | `P-SAN3-20-CHECK-STATUS-X-PAID` | 11511 | MÉDIA | sim | P-SAN3-20-CHECK-STATUS-X-PAID (2026-10-24) — banco não amarra status a paid_amount — MÉD |
 
-## ABERTAS · balde B — processo/registro — 173
+## ABERTAS · balde B — processo/registro — 174
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -461,6 +461,7 @@
 | `P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE` | 11491 | BAIXA | sim | P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (2026-10-24) — legado não permite reconciliar instrume |
 | `P-SAN3-20-TELA-CHEQUES` | 11499 | — | sim | P-SAN3-20-TELA-CHEQUES (2026-10-24) — backend sem tela de cheque/pagamento — PRODUTO |
 | `P-SAN3-20-ATALHO-PAY-CHEQUE-ID` | 11503 | BAIXA | sim | P-SAN3-20-ATALHO-PAY-CHEQUE-ID (2026-10-24) — não há atalho de vínculo e compensação — B |
+| `P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE` | 11515 | BAIXA | sim | P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE (2026-10-24) — o `titleId` da lista de cheques n |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

@@ -11511,3 +11511,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-20-CHECK-STATUS-X-PAID (2026-10-24) — banco não amarra status a paid_amount — MÉDIA
 - **status:** ABERTA · **dono:** DBA / bloco próprio de migração · **bloqueia:** decisão da junta antes da venda.
 - **encerramento:** varrer legado e avaliar CHECK que restrinja `paid_amount > 0` a `partially_paid|paid`, com drill próprio.
+
+## P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE (2026-10-24) — o `titleId` da lista de cheques não tem teste — BAIXA
+
+- status: ABERTA
+- **prova (N = 1 campo):** `API_CONTRACTS.md` l.469 promete `titleId` no item de `GET /cheques`; a mutação M4b (`toChequeListDto` sem `titleId`) deixa `tests/cheque-title-link.test.ts` 38/38 verde (C3 da junta do B-SAN3-20, achado A-1). Nenhum cliente consome `/cheques` hoje (0 ocorrências em frontend/mobile).
+- **escopo:** `dentro-do-bloco` do B-SAN3-20, classificado `ajuste` (não bloqueia).
+- **dono:** `B-SAN3-24` (telas de cheque — primeiro consumidor da lista).
+- **teste de encerramento:** asserção de `titleId` no item da lista; a M4b passa a vermelho.

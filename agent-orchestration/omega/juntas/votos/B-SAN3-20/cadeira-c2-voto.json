@@ -1,0 +1,119 @@
+{
+  "jurado": "jurado-san320-c2-opus",
+  "cadeira": "C2 (banco e migração)",
+  "executor_efetivo": "Claude Code subagente (substitui jurado-san320-c2-pro/-sol, declarado)",
+  "modelo": "claude-opus-5-5",
+  "nivel": "menor (declarado)",
+  "objeto": "a0f5aabca6b86aba21051baffd40c245b5ef1a05",
+  "mandato_md5": "6d33688805a231c859e9655a96e7ec05",
+  "corpo_canonic_veredito": "IDENTICO",
+  "legalidade": "LIBERADO COM RESSALVA (insp-san320-parecer.md); CI 14/14 success",
+  "quorum": "unanimidade de 3 com veto (DINHEIRO), ciclo 1",
+  "arquivos_medidos": [
+    "prisma/migrations/20260881000000_cheque_title_link/migration.sql",
+    "prisma/schema.prisma",
+    "tests/cheque-title-link-migration-drill-db.test.ts",
+    "tests/fixtures/prisma-migrate-diff-baseline.sql",
+    "tests/cheque-title-link-atomic-db.test.ts",
+    "src/modules/financial-titles/financial-title-prisma.repository.ts",
+    "src/modules/financial-titles/financial-title.service.ts",
+    "src/modules/financial-titles/financial-title.repository.ts",
+    "src/modules/cheques/cheque-prisma.repository.ts",
+    "src/modules/cheques/cheque.repository.ts",
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/financial-uow/financial-uow.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "tests/financial-title-status-cas-db.test.ts",
+    "agent-orchestration/controle/pendencias.md",
+    "docs/revisoes/SAN3/B-SAN3-20-plano.md",
+    "docs/revisoes/SAN3/B-SAN3-20-dev.md",
+    "tests/helpers/pg-barrier.ts",
+    "tests/cheque-clear-bounce-atomic-db.test.ts",
+    "tests/financial-pay-title-atomic-db.test.ts",
+    "tests/financial-entry-reverse-restore-db.test.ts",
+    "tests/financial-entry-delete-reverse-race-db.test.ts",
+    "tests/financial-title-invariants-db.test.ts"
+  ],
+  "leitura_de_outras_cadeiras": "nenhuma",
+  "pausa": null,
+  "itens": {
+    "item1": "APROVADO — migração aditiva/anulável/transacional; up→down→re-up 1/1/1→0/0/0→1/1/1; RLS+FORCE; 23503 cross-tenant; drill 6/6; K12 regenerado na base B = fixture (72/72, determinístico); M5/M19/M20′/M21/M34 vermelhas",
+    "item2": "APROVADO — E1–E8 + varredura ampliada sem writer escapado; applyPayment absoluto removido; P2 em todos os writers; ordem advisory→cheque→INSERT→título sem ciclo; T-K10a/b/c/e, T-K11a/b/c/h, T-K2d/e verdes sem 40P01; H3 por sonda SQL própria; RR3/RR1 por sonda própria (422/404); M9/M27/M28/M30 vermelhas; F-DEV-02 = nota",
+    "item3": "APROVADO — 8 suítes -db 3× seguidas: 77/77, fail 0, skipped 0, cancelled 0, 40P01 0, denominador constante (15+9+6+47); CORE_SAAS_PERSISTENCE=prisma antes dos imports + assert; barreira escopada por application_name em pg_stat_activity (wait_event_type=Lock), sem sleep cego; teardown limpo em verde; verificador acusa omissão (62≠77) e barreira corrompida dá timeout em T-K2d e T-K11a"
+  },
+  "voto": "APROVADO",
+  "justificativa": "Bloco de DINHEIRO, ciclo 1, cadeira C2 (banco e migração). Medi tudo por execução própria no objeto a0f5aabc, em worktree e Postgres 16 descartáveis próprios. A migração 20260881000000_cheque_title_link é aditiva, anulável e transacional. Ela preserva o legado (inclusive o cheque apagado), passa up→down→re-up com o catálogo 1/1/1→0/0/0→1/1/1, mantém RLS e FORCE, e a FK composta recusa título de outra organização (23503) e o apagamento de título referenciado. O drill k=1..3 pelo CLI real converge, e a M19 prova que sem BEGIN/COMMIT o CLI deixa DDL parcial. Regenerei a fixture K12 na base B duas vezes (saídas idênticas) e ela é igual à do objeto por conjunto de sentenças (72/72); o diff do objeto não acrescenta sentença (M35 negado; M21 e M34 vermelhas). A enumeração E1–E8 com a varredura ampliada não acha writer escapado; o applyPayment absoluto saiu; todo writer de título e de cheque tem o predicado de estado na sentença; a ordem de travas não tem ciclo, e a H3 foi confirmada por sonda SQL própria. As barreiras T-K10a/b/c, T-K11a/b/c/h e T-K2d/e passam sem 40P01, e a minha sonda dos Riscos Residuais 3 e 1 dá 422 e 404. F-DEV-02 é previsão irrealizável do plano, não defeito. A bateria -db de 8 suítes passou 3x com 77/77 e skipped 0, e o verificador e a barreira acusam corrupção. Os 5 achados são notas. VOTO: APROVADO — nenhum achado bloqueia na C2; migração, K12, mapa de concorrência e arnês provados por execução e por 11 vermelhos-controle.",
+  "o_que_executei": [
+    "legalidade: ls-remote + gh pr view (a0f5aabc), merge-base 7ab2fe71, check-runs 14/0, parecer LIBERADO COM RESSALVA; espelho do corpo IDENTICO",
+    "terreno: worktree próprio --detach, npm ci próprio (sem junction), db:generate; Postgres 16.14 jsan320-c2-pg em 127.0.0.1:55462 (docker port)",
+    "Item 1: migrate deploy sobre legado em B (3 cheques, 1 apagado) ec 0; down do rodapé --single-transaction 0/0/0; re-up 1/1/1; constraintdef; RLS t/t; 23503 INSERT/UPDATE cross-tenant e RESTRICT; drill 6/6; K12 regenerado 2x na base B (determinístico) = fixture 72/72; diff do objeto = fixture; M5/M19/M20′/M21/M34",
+    "Item 2: E1–E8 + varredura financial_titles|cheques e $executeRaw; leitura dos writers e da ordem de travas; atomic 15/15 e cas 9/9; sonda SQL H3 (INSERT com FK 2,8 ms; UPDATE do título lock timeout 2 s); sonda própria RR3 (422) e RR1 (404); pendências com dono; M9/M27/M28/M30 (+M30 contra a sonda RR3)",
+    "Item 3: bateria -db de 8 suítes 3x (77/77) + verificador; auditoria do arnês; controle por omissão (62) e por barreira corrompida (timeout em T-K2d e T-K11a)"
+  ],
+  "achados": [
+    {
+      "id": "C2-N1",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "forma do vermelho-controle",
+      "comando": "M20′ + node --test tests/cheque-title-link-migration-drill-db.test.ts",
+      "saida": "T-D(c) vermelho com column:1 após o down; morre antes do re-up, logo o 42701 previsto no corpo não é observado",
+      "N_forma": "1 mutação, 4/6 vermelhos"
+    },
+    {
+      "id": "C2-N2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "contagem",
+      "comando": "grep -c test( nas 3 suítes novas × execução",
+      "saida": "o grep (15/10/7) inclui o test() do ramo skip sem DATABASE_URL (e o K5 em laço gera 2); executados 15/9/6",
+      "N_forma": "3 arquivos"
+    },
+    {
+      "id": "C2-N3",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "F-DEV-02 — previsão do plano",
+      "comando": "T-K10b (atomic-db) 3x na bateria + solo",
+      "saida": "PATCH vence: o deposit re-avalia 'registered' e passa, cheque deposited com title_id; deposit vence: PATCH 422. A linha 'deposit → 409' do §2.5 do plano é irrealizável; o comportamento é o sequencial e correto, sem efeito em dinheiro",
+      "N_forma": "4 execuções verdes"
+    },
+    {
+      "id": "C2-N4",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "higiene do arnês no caminho de falha",
+      "comando": "M30 + node --test tests/financial-title-status-cas-db.test.ts; select slug from tenants",
+      "saida": "T-K11h morre por unhandledRejection no holdWinner e deixa 1 tenant cas-k11h-409-* (+ título, conta, usuário) na base descartável; nas rodadas verdes o resíduo é 0",
+      "N_forma": "1 de 1 rodada sob mutante; 0 de 5 rodadas verdes"
+    },
+    {
+      "id": "C2-N5",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "redação de registro (domínio da C3)",
+      "comando": "git show HEAD:agent-orchestration/controle/pendencias.md | grep P-SAN3-20-DRIFT",
+      "saida": "o título diz '76 sentenças'; medido: 76 linhas ^(ALTER|CREATE|DROP) e 72 sentenças normalizadas",
+      "N_forma": "1 linha"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "M5: K1-db (T-K1g) vermelho",
+    "M19: T-D(f) k=1/k=2 vermelho pela semântica do CLI real",
+    "M20′: T-D(c) vermelho",
+    "M21: T-D(d′) 74≠72",
+    "M34: T-D(d′) 73≠72",
+    "M9: T-K2d vermelho (23514)",
+    "M27: T-K10a vermelho",
+    "M28: T-K10c vermelho",
+    "M30: T-K11a/b/c/h vermelhos e a sonda RR3 vermelha",
+    "omissão de suíte: verificador 62≠77",
+    "barreira corrompida: timeout em T-K2d e T-K11a"
+  ],
+  "pendencias_que_aceito": [
+    "P-SAN3-20-CHECK-STATUS-X-PAID (dono: DBA / bloco próprio de migração)",
+    "P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (dono: DBA)",
+    "P-SAN3-20-DRIFT-MIGRACOES-X-SCHEMA (dono: bloco de ferramenta/DBA; o K12 impede drift novo)"
+  ],
+  "teardown": "6 arquivos mutados restaurados (hash == blob); bases jsan320_c2_* dropadas (0 restantes) e nenhuma %drill%; container jsan320-c2-pg removido; worktree C:/Users/AMP/w-jsan320-c2 removido por git worktree remove --force; extração de B apagada; base viva e jt2c2-*/agv3-* intocados; sem commit"
+}
