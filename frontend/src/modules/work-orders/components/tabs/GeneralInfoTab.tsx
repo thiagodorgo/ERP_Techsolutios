@@ -9,6 +9,8 @@ import { entityTypeLabel } from "../../approval.types";
 import type { OperationalApproval } from "../../approval.types";
 import { getWorkOrderChecklistLinkKey, getWorkOrderChecklistRoleLabel, getWorkOrderChecklistSourceLabel } from "../../work-orders.adapter";
 import { WorkOrderRegistryLinksCard } from "../WorkOrderRegistryLinksCard";
+import { WorkOrderInspectionCard } from "./WorkOrderInspectionCard";
+import type { WorkOrderInspectionData } from "../../inspection.service";
 import type { WorkOrderDetail, WorkOrderEvent, WorkOrderPriority, WorkOrderStatus } from "../../work-orders.types";
 
 // Ω3F-1 — aba "Informações gerais" do Hub da OS. Migra INTEGRAL o corpo da página de detalhe viva
@@ -116,6 +118,8 @@ export function GeneralInfoTab({
   timelineUnavailable = false,
   context,
   canDecide,
+  permissions,
+  initialInspection,
 }: {
   workOrder: WorkOrderDetail;
   timeline: WorkOrderEvent[];
@@ -123,6 +127,8 @@ export function GeneralInfoTab({
   timelineUnavailable?: boolean;
   context: Parameters<typeof listPendingApprovals>[0];
   canDecide: boolean;
+  permissions?: readonly string[];
+  initialInspection?: WorkOrderInspectionData | null;
 }) {
   const navigate = useNavigate();
   const sm = STATUS_META[workOrder.status];
@@ -167,6 +173,14 @@ export function GeneralInfoTab({
 
         {/* C2: cadastros vinculados (cliente/viatura/equipe/serviço) */}
         <WorkOrderRegistryLinksCard workOrder={workOrder} />
+
+        {/* DEMO-F (AC-13): respostas da vistoria preenchida pelo técnico no app */}
+        <WorkOrderInspectionCard
+          workOrderId={workOrder.id}
+          context={context}
+          permissions={permissions}
+          initialInspection={initialInspection}
+        />
 
         {/* timeline */}
         <div style={{ ...card, padding: 20 }}>

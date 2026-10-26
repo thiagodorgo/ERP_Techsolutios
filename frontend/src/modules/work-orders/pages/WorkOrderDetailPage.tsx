@@ -196,7 +196,14 @@ export function WorkOrderDetailView({
         ) : activeTab === "logs" ? (
           <LogsTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : (
-          <GeneralInfoTab workOrder={workOrder} timeline={timeline} timelineUnavailable={timelineUnavailable} context={context} canDecide={canDecide} />
+          <GeneralInfoTab
+            workOrder={workOrder}
+            timeline={timeline}
+            timelineUnavailable={timelineUnavailable}
+            context={context}
+            canDecide={canDecide}
+            permissions={permissions}
+          />
         )}
       </WorkOrderTabsShell>
     </div>
