@@ -54,6 +54,8 @@ function readCheques(record: Record<string, unknown> | undefined): FinancialSumm
     pendingReceivedAmount: num(record, ["pendingReceivedAmount", "pending_received_amount"]),
     pendingIssuedCount: num(record, ["pendingIssuedCount", "pending_issued_count"]),
     pendingIssuedAmount: num(record, ["pendingIssuedAmount", "pending_issued_amount"]),
+    linkedPendingCount: num(record, ["linkedPendingCount", "linked_pending_count"]),
+    linkedPendingAmount: num(record, ["linkedPendingAmount", "linked_pending_amount"]),
   };
 }
 

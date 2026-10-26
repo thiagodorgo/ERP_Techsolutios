@@ -36,6 +36,9 @@ export type FinancialSummary = {
     readonly pendingReceivedAmount: number;
     readonly pendingIssuedCount: number;
     readonly pendingIssuedAmount: number;
+    // B-SAN3-12a (§4.7) — pendentes COM título vinculado (o rótulo "já cobertos por cheque a compensar", B-SAN3-12b).
+    readonly linkedPendingCount: number;
+    readonly linkedPendingAmount: number;
   };
   readonly cashFlow: readonly CashFlowPoint[];
   readonly recentTitles: readonly RecentTitle[];
@@ -65,7 +68,7 @@ export function emptyFinancialSummary(): FinancialSummary {
     payable: { ...EMPTY_DIRECTION },
     settledThisMonth: { competencia: "", inflow: 0, outflow: 0 },
     cash: { totalBalance: 0, accountCount: 0, currency: "BRL" },
-    cheques: { pendingReceivedCount: 0, pendingReceivedAmount: 0, pendingIssuedCount: 0, pendingIssuedAmount: 0 },
+    cheques: { pendingReceivedCount: 0, pendingReceivedAmount: 0, pendingIssuedCount: 0, pendingIssuedAmount: 0, linkedPendingCount: 0, linkedPendingAmount: 0 },
     cashFlow: [],
     recentTitles: [],
   };

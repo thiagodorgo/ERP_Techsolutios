@@ -89,8 +89,9 @@ const PONTOS_INTERESSE: NavItem = { label: "Pontos de Interesse", path: "/cadast
 const ESTOQUE: NavItem = { label: "Estoque", path: "/inventory", icon: Package };
 const REMUNERACOES: NavItem = { label: "Remunerações", path: "/finance/commissions", icon: Wallet };
 const FINANCEIRO: NavItem = { label: "Financeiro", path: "/finance", icon: Receipt };
-const COBRANCAS: NavItem = { label: "Cobranças", path: "/finance/charges", icon: HandCoins };
-const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance/payments", icon: CreditCard };
+// B-SAN3-12b (F13) — Cobranças e Pagamentos são abas do Financeiro (`/finance?aba=rec|pag`).
+const COBRANCAS: NavItem = { label: "Cobranças", path: "/finance?aba=rec", icon: HandCoins };
+const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance?aba=pag", icon: CreditCard };
 
 const USUARIOS: NavItem = { label: "Usuários", path: "/users", icon: Users };
 const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications", icon: Bell };
@@ -258,8 +259,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/inventory",
   "/finance/commissions",
   "/finance",
-  "/finance/charges",
-  "/finance/payments",
+  "/finance?aba=rec",
+  "/finance?aba=pag",
   "/users",
   "/audit",
   "/controle/usuarios/acessos",

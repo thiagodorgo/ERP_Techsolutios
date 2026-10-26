@@ -33,6 +33,8 @@ export type FinancialTitle = {
   readonly status: FinancialTitleStatus;
   readonly competencia: string; // 'YYYY-MM'
   readonly accountId: string | null;
+  // B-SAN3-12a (§4.7) — a LISTA passa a trazer a OS de origem; opcional para quem monta título à mão (mock, testes).
+  readonly workOrderId?: string | null;
   readonly overdue: boolean; // DERIVADO no backend — não recalcular
   readonly active: boolean;
   readonly createdAt: string;
@@ -90,4 +92,16 @@ export type CreateFinancialTitlePayload = {
 export type ChangeFinancialTitleStatusPayload = {
   readonly status: FinancialTitleStatusTarget;
   readonly reason?: string;
+};
+
+// B-SAN3-12b — corpo da BAIXA (POST /financial-titles/:id/pay). Cheque NÃO é meio de baixa (D-SAN3-20: entra pela
+// compensação do cheque vinculado). `client_action_id` nasce ao abrir o formulário e se repete em todo reenvio (F2).
+export type BaixaPaymentMethod = "pix" | "transfer" | "boleto" | "cash" | "card";
+
+export type PayFinancialTitlePayload = {
+  readonly account_id: string;
+  readonly amount: number;
+  readonly payment_method: BaixaPaymentMethod;
+  readonly occurred_at: string;
+  readonly client_action_id: string;
 };
