@@ -415,6 +415,10 @@ lockfiles JS, `pubspec.yaml/lock`, Figma. **KPIs deixaram de ser escopo proibido
 todo PR que altere código/teste/escopo **DEVE atualizar** `Kpis/*` **no próprio PR** — ver §C3 (o painel é
 UM só desde `D-KPI-DUPLA-REVOGADA`).
 
+**Migração nova** (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`): com mais de uma sentença leva `BEGIN;`/`COMMIT;` no próprio
+`migration.sql` e drill por prefixo; DDL não transacional (`CONCURRENTLY`) fica sozinha no arquivo e declara
+`-- NAO-ATOMICA: <motivo>`; o guard é `node scripts/migration-transaction-guard.mjs`, que roda no `npm test`.
+
 ## C5. Limpeza pós-validação e **pós-merge** (permanente)
 
 Todo bloco que rodar testes/builds/Flutter/Node/Android/iOS/artefatos **limpa os temporários ao

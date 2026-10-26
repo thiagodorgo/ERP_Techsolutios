@@ -3878,6 +3878,7 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
   - **A regra:** toda migração nova com mais de uma sentença, e só de DDL transacional, leva `BEGIN;`/`COMMIT;` no próprio arquivo e um drill por prefixo (falha injetada após cada sentença, pelo `prisma migrate deploy` real).
   - **Exceção:** migração com `CONCURRENTLY` fica sozinha no arquivo e declara a não-atomicidade.
   - **Guard de CI:** um guard reprova migração nova que viole a regra. Ele é implementado por um bloco de ferramenta (regra (1) de `D-GOV-PROPORCIONAL`), dono a nomear; até lá, vale como regra do planejador e do DBA. As migrações antigas seguem pela `P-MIGRACOES-ANTERIORES-SEM-TRANSACAO-EXPLICITA`.
+  - **Guard entregue (2026-10-25, `B-GUARD-MIGRACAO`, PR #458, ramo `chore/guard-migracao-transacao`; dono do bloco nomeado pelo orquestrador, dev Claude Opus por *"vc cobre o codex nessa rodada"*):** `scripts/migration-transaction-guard.mjs`, lido pelo `npm test` via `tests/migration-transaction-guard.test.ts`. Regras G0–G7; fronteira `20260878000000`; lista congelada `ANTERIORES` de 112 nomes, que só encolhe; a única exceção é a estrutural (DDL não transacional sozinha, sem `BEGIN`/`COMMIT`, com `-- NAO-ATOMICA: <motivo ≥ 20 caracteres>`) — sem marcador genérico (Q1); o drill é exigido pela existência nomeada (G6, Q2); o drill genérico por prefixo fica para o `B-DRILL-GENERICO-POR-PREFIXO` (Q3, `P-DRILL-GENERICO-POR-PREFIXO`). Respostas do dono às Q1–Q5: *"Aceito as recomendações"* (24/10).
 
 ## D-SAN3-04B-PAINEL-PROPRIO (decisão do dono, 2026-10-21) — Financeiro e Estoque usam o próprio painel; a matriz segue o código
 
@@ -3969,3 +3970,34 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **A27** (E1-bis): toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE` (1º vínculo, `cancel`, `delete`; 409 se mudou).
   Faz a regra do dono valer também sob concorrência; não concede nem tira privilégio de ninguém.
 - **F5** (E1.F5): `super_admin` e `platform_admin` recebem as 2 permissões por construção (mesma referência do catálogo) — o snapshot passa a dizê-lo.
+
+## D-SAN3-13-SCOPE-ASSIGNED (decisões do dono, 2026-10-24; Emenda E2 do planejador, 2026-10-25) — "Minhas OS" só com as OS abertas do técnico, imposto no backend
+
+- **Respostas literais do dono:** às 5 perguntas do §13 do plano (24/10, ~19:40 BRT) — ***"Aceito as 5 (Recomendado)"***; à
+  Q6 (quanto tempo uma OS concluída fica no aparelho; 24/10, ~22:45 BRT) — ***"Só as abertas"*** (Emenda E1). Dev do bloco:
+  ***"vc cobre o codex nessa rodada"*** (Claude Opus, nível menor, declarado).
+- **O que as 5 aceitam:** (1) a lista do técnico é imposta no backend (default do §10.7 do `PLANO_SAN3.md`); (2) o
+  detalhe da OS e os sub-recursos continuam legíveis pelo técnico neste bloco, com pendência
+  (`P-WO-LEITURAS-TENANT-WIDE-TECNICO`); (3) OS reatribuída com trabalho pendente fica visível com selo até drenar; (4)
+  usuário de escritório no app vê só as OS dele (`scope=assigned`); (5) OS semente só existem no app de demonstração local.
+- **Contrato (plano v3 §3 + E2):** `GET /api/v1/work-orders` — para o ator `actorMutatesAssignedOnly` o escopo é FORÇADO e é
+  o predicado do guard de mutação (`assigned_operator_id` = user id OU = perfil de campo), sem o ramo `assigned_user_id`
+  (lista = mutáveis); `scope=assigned` oferece o mesmo recorte a qualquer papel; os demais filtros intersectam.
+  `openOnly=true` (E1) devolve só status fora de `WORK_ORDER_TERMINAL_STATUSES` (`completed`, `cancelled`, `rejected`,
+  derivada de `WORK_ORDER_STATUS_TRANSITIONS`). Perfil por resolver ESTRITO: erro/ausência → `503
+  WORK_ORDER_SCOPE_UNAVAILABLE`, nunca 200 encolhido; `sub` não-UUID → só o ramo user id.
+- **Emenda E2 (planejador, 25/10 — resposta à falsificação F-1 do dev):** paginação em dois modos, excludentes, e o modo é
+  DECLARADO: `paginate=cursor` em TODA página da caminhada (inclusive a 1ª), ordem `id desc`, `cursor` = `id` da última OS
+  da página anterior (ausente na 1ª), `nextCursor` só no modo cursor. O modo offset (padrão, web) fica `created_at desc,
+  code desc`, `nextCursor: null`. 400: `invalid_paginate`, `invalid_cursor_mode`, `invalid_cursor`,
+  `invalid_cursor_offset`. Por quê: com o modo inferido da presença de `cursor`, a 1ª página saía em `created_at desc` e as
+  seguintes em `id < cursor` — o B14-db mediu `FALTARAM=[2 ids]`, caminhada "completa", purga de OS ainda do técnico.
+- **Precisão aceita na E2:** `OR: []` não é falso no Prisma 7 (medido no B17-db: devolvia a organização inteira) — sem id
+  com forma de UUID no escopo, o repositório responde vazio sem consultar; nunca mandar `OR: []`.
+- **App (plano v3 §4):** "Minhas OS" pede `scope=assigned&openOnly=true&paginate=cursor&limit=100` e caminha até
+  `nextCursor == null`; só caminhada completa autoriza tirar do aparelho o que não veio, sob trava estática e relendo o
+  store, retendo toda linha com trabalho pendente (ação na fila por 5 chaves, linha `pending`, blob de evidência,
+  vistoria, material do prestador). Home: "Concluídas" → "A sincronizar" (nota 2 do §13, rótulo do planejador — o dono
+  corrige numa linha). Nota 1 do §13: a OS atribuída "torta" (usuário X, perfil de Y — `Ω6R-QUA-004`) aparece para Y.
+- **Fontes:** `docs/revisoes/SAN3/B-SAN3-13-plano.md` (v3 + E1 + E2), `B-SAN3-13-critica-r1.md`, `-r2.md`,
+  `B-SAN3-13-medicao.md`, relatório do dev `B-SAN3-13-dev.md`.

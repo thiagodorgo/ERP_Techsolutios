@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { CommandPalette, useCommandPalette } from "../components/command-palette";
+import { AppearanceMenu } from "../modules/appearance";
 import { useNavigationMenu } from "../modules/navigation/useNavigationMenu";
 import { getUnreadNotificationCount } from "../modules/notifications/notification.service";
 import { listAllPendingApprovals } from "../modules/work-orders/approval.service";
@@ -15,6 +16,8 @@ const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
 const NAV_IDLE = "#9FB4CC";
 const GROUP_LABEL = "#41607A";
+// Mesmo gatilho do "Recolher menu" do topo da barra (28 px, fundo translúcido).
+const APPEARANCE_TRIGGER_STYLE = { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: NAV_IDLE, padding: 0 } as const;
 
 function initials(name?: string): string {
   if (!name) return "RS";
@@ -201,14 +204,17 @@ export function AppShell() {
           ))}
         </nav>
 
-        <div style={{ flexShrink: 0, padding: 12, borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flexShrink: 0, padding: 12, borderTop: "1px solid rgba(255,255,255,.06)", display: "flex", flexDirection: collapsed ? "column" : "row", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1E3A5F", display: "flex", alignItems: "center", justifyContent: "center", color: "#9DC3E6", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{initials(userName)}</div>
+          {collapsed ? <AppearanceMenu triggerStyle={APPEARANCE_TRIGGER_STYLE} /> : null}
           {!collapsed ? (
             <>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{userName}</div>
                 <div style={{ fontSize: 10.5, color: "#5B7A96", whiteSpace: "nowrap" }}>{ROLE_SUBTITLE[roleKind]}</div>
               </div>
+              {/* B-APARENCIA-USUARIO — a aparência pessoal de cada tela fica no menu do usuário (D-APARENCIA-RESPOSTAS (c)), para todo papel. */}
+              <AppearanceMenu triggerStyle={APPEARANCE_TRIGGER_STYLE} />
               <button type="button" aria-label="Sair" onClick={() => { clearContext(); signOut(); navigate("/login", { replace: true }); }} style={{ background: "none", border: "none", color: GROUP_LABEL, cursor: "pointer", display: "flex", flexShrink: 0 }}>
                 <LogOut size={16} />
               </button>

@@ -146,9 +146,13 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                 const _ListHeader(),
                 // Pull state banners
                 if (repo.isPulling) const LinearProgressIndicator(),
-                if (repo.lastPullError != null && !repo.isPulling)
+                if ((repo.lastPullError != null || repo.lastPullIncomplete) &&
+                    !repo.isPulling)
                   _PullErrorBanner(
-                    message: repo.lastPullError!,
+                    message:
+                        repo.lastPullError ??
+                        'Não foi possível baixar todas as suas OS agora. '
+                            'Os dados podem estar desatualizados.',
                     onRetry: () => repo.refresh(),
                   ),
                 if (repo.lastPulledAt != null && !repo.isPulling)
@@ -291,6 +295,18 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                                   icon: const Icon(Icons.refresh),
                                   label: const Text('Tentar novamente'),
                                 ),
+                              )
+                            else if (_group == _WoGroup.done &&
+                                _query.isEmpty &&
+                                _priority == null)
+                              // B-SAN3-13 (E1, "Só as abertas") — a OS concluída e sincronizada sai do aparelho; a aba
+                              // mostra só as que ainda esperam envio, e diz onde está o histórico.
+                              const EmptyState(
+                                icon: Icons.check_circle_outline,
+                                title: 'Nenhuma OS concluída no aparelho',
+                                message:
+                                    'As OS concluídas saem do aparelho depois de sincronizar. '
+                                    'O histórico fica no portal.',
                               )
                             else
                               EmptyState(
