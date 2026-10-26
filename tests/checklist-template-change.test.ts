@@ -88,6 +88,15 @@ test("CE-18: type do modelo e schema estrutural são mudança de campo", () => {
   assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, schema: { ...base.schema, vehicleImage: "truck" } }), "field");
 });
 
+// E4-07 (C2-02): a âncora final de `/^schema\.sections(\..*)?$/` — chave IRMÃ de `sections` é estrutura, não texto;
+// o texto dentro de `sections` segue texto.
+for (const sibling of ["sectionsX", "sections2"]) {
+  test(`CE-18: schema.${sibling} (chave irmã de sections) é mudança de campo`, () => {
+    assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, schema: { ...base.schema, [sibling]: [{ name: "Veículo" }] } }), "field");
+    assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, schema: { ...base.schema, sections: [{ name: "Outra" }] } }), "text");
+  });
+}
+
 test("CE-18: allowlist fechada aceita somente textos", () => {
   assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, name: "Nova" }), "text");
   assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, description: null }), "text");

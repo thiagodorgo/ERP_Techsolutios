@@ -432,3 +432,7 @@ O PERMITIDO passou a incluir `tests/checklist-snapshot-dispatch.test.ts`, só pa
 | M05 | mutante só-lock (l.930), `CE-12-db` | `not ok 5 - CE-12-db` · `error: 'update: token errado em id de outra organização virou 409 stale'` · restauro igual |
 | M06a | `publishTemplate` com `SELECT` sem `FOR UPDATE` (forma da C1) | `not ok 6 - CE-5-publish` · `error: 'Missing expected rejection (ChecklistTemplateStaleError).'` (publicou por cima do arnês) · restauro igual |
 | M06b | `archiveTemplate` com `SELECT` sem `FOR UPDATE` | `not ok 7 - CE-5-archive` · `error: 'Missing expected rejection (ChecklistTemplateStaleError).'` · restauro igual |
+
+### C2-9. E4-07 — chave irmã de `schema.sections`
+- **Controle = o mutante** (o objeto já dá `field`; declarado). Dois casos novos na tabela CE-18: `schema.sectionsX` e `schema.sections2` → `field` (cada caso também afirma `schema.sections` com texto novo → `text`). `checklist-template-change.test.ts`: 31 → **33/33**.
+- **M07** (`/^schema\.sections(?:\..*)?$/` → `/^schema\.sections/`, M5 da C2): `not ok 25 - CE-18: schema.sectionsX …` e `not ok 26 - CE-18: schema.sections2 …` · `expected: 'field'` · `actual: 'text'` · 31/2. Restauro `11b2c2b137f4` igual. (Primeira tentativa abortada sem efeito: o Git Bash converteu o argumento `/^schema…` em caminho; refeita com `MSYS_NO_PATHCONV=1`, restauro conferido.)
