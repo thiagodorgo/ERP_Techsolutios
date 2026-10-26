@@ -467,3 +467,191 @@ O PERMITIDO passou a incluir `tests/checklist-snapshot-dispatch.test.ts`, só pa
 - **(a)(b)(c)** as três pendências gravadas no fim de `agent-orchestration/controle/pendencias.md` (+20/−0) → o mesmo `grep -c` = **3**. `P-FRONT-TESTE-DE-INTERACAO` cita os dois residuais (guard de forma do editor e alcance do CE-13), como a E4-11 (g) pede. Na primeira geração do índice ela saiu `CRÍTICA` (o gerador lê a primeira severidade que aparece no corpo, e o texto dizia "decisão crítica"); troquei a expressão por "pede junta de 5 + PD" e regenerei: `MÉDIA`, como o cabeçalho.
 - **Índice:** `python agent-orchestration/controle/gerar-indice-pendencias.py` → `indice: 664 cabecalhos / 653 IDs | {'FECHADA': 158, 'ABERTA': 502, 'SEM-STATUS': 4}`; `pendencias-indice.md` +10/−7 (o índice versionado contava 661: além das 3 novas, nada mais mudou de linha — o +10/−7 são os totais e as 3 linhas).
 - **(d)(e)(f)** D-W1, D-W2/D-W3 e o mutante equivalente do CE-6 estão ratificados no texto da E4 (E4-06 e E4-11), apensado ao plano; **(h)** plano recopiado: `cp …/planos/B-SAN3-22-plano.md docs/revisoes/SAN3/B-SAN3-22-plano.md` → `git diff --numstat` **+93/−0** (só a Emenda E4, apensada).
+
+### C2-15. Escopo
+- `git diff --name-only 4978f7d9..HEAD` (só os commits deste dev): `API_CONTRACTS.md`, `agent-orchestration/controle/pendencias{,-indice}.md`, `docs/revisoes/SAN3/B-SAN3-22-{dev,plano}.md`, `frontend/tests/checklists-editor-lock.smoke.test.tsx`, `src/modules/checklists/checklist.service.ts` (só `renderChecklist`, +5/−0), `tests/checklist-{routes,snapshot-dispatch,template-change,template-lock-db,template-lock}.test.ts`, `tests/helpers/o6r07c-census.ts` — tudo no PERMITIDO da E4.2. (`44d9cbb3..4978f7d9` é o commit do orquestrador com votos, evidências e o `R-`.)
+- PROIBIDO no ciclo 2 (`git diff --name-only 44d9cbb3..HEAD -- mobile/ prisma/ src/modules/core-saas/ frontend/src/ src/database/ .github/ Kpis/ …checklist-prisma.repository.ts …checklist.repository.ts package-lock.json frontend/package-lock.json`): **vazio**. Em `frontend/src` o PR segue só com os 12 arquivos que já estavam no objeto. `git diff --check 44d9cbb3..HEAD`: limpo. Nenhuma dependência nova.
+
+### C2-16. As mutações da E4 (consolidado; cada uma vermelha pelo caso indicado e restaurada com o SHA conferido)
+
+| # | Req. | Mutação | Caso vermelho (linha do `not ok`) | Restauro (SHA-256, 12 hex) |
+|---|---|---|---|---|
+| 1 | E4-01 | ramo do 404 neutralizado em `renderChecklist` (`if (false && …)`) | `not ok 9 - E3-20 (REST): arquivado → 404 nas 5 portas` · `render sem vistoria viva: 409` · `expected: 404` · `actual: 409` | `025f6db23a35` = `025f6db23a35` |
+| 2 | E4-01 | `getTemplateForRun` filtrando `archived` (memória e Prisma) | `not ok 4 - CE-10c` · `not ok 8 - CE-10a/10b/10c (REST)` (`expected: 200` · `actual: 404`) · `not ok 4 - CE-10-db` (`ChecklistError`) | `a194b198fe01`, `72870797c846` iguais |
+| 3 | E4-02 | marcador tirado da l.122 (PATCH, URL em variável) | `not ok 14 - CE-13` · `tests/checklist-template-lock.test.ts:122 PATCH sem expectedUpdatedAt (URL em variável url)` | `29b6dba861f3` igual |
+| 4 | E4-02 | marcador tirado da l.316 (DELETE, URL em variável) | `not ok 14 - CE-13` · `…:316 DELETE sem expectedUpdatedAt (URL em variável url)` | `29b6dba861f3` igual |
+| 5 | E4-02 | marcador tirado da l.423 (publish, URL em variável; l.376 do objeto) | `not ok 14 - CE-13` · `…:423 POST /publish sem expectedUpdatedAt (URL em variável url)` | `29b6dba861f3` igual |
+| 6 | E4-02 | token tirado da forma concatenada `o6r07c-census.ts:90` | `not ok 14 - CE-13` · `tests/helpers/o6r07c-census.ts:90 POST /publish sem expectedUpdatedAt (URL concatenada)` | `98d7b646b627` igual |
+| 7 | E4-02 | token tirado da forma literal `work-order-checklists-sticky.test.ts:832` | `not ok 14 - CE-13` · `tests/work-order-checklists-sticky.test.ts:832 POST /publish sem expectedUpdatedAt` | `69f1bb624178` igual |
+| 8 | E4-03 | token defasado na l.43 de `checklist-snapshot-dispatch` | `not ok 2 - [imutável pós-edição] …` · `expected: 200` · `actual: 409` | `f97105489ece` igual |
+| 9 | E4-03 | l.43 volta a `await req(...)` (resultado descartado) | `not ok 14 - CE-13` · `tests/checklist-snapshot-dispatch.test.ts:44 POST /publish com resultado descartado (status não afirmado)` | `f97105489ece` igual |
+| 10 | E4-03 | `o6r07c-census.ts:90` volta a `await chamar(...)` | `not ok 14 - CE-13` · `tests/helpers/o6r07c-census.ts:90 POST /publish com resultado descartado (status não afirmado) (URL concatenada)` | `98d7b646b627` igual |
+| 11 | E4-04 | `tenant_id` só do `FOR UPDATE` (l.930) | `not ok 1 - CE-12-forma` · `reprovadas: l.930` | `72870797c846` igual |
+| 12 | E4-04 | `tenant_id` só do `FOR KEY SHARE` (l.944) | `not ok 1 - CE-12-forma` · `reprovadas: l.944` | `72870797c846` igual |
+| 13 | E4-04 | `tenant_id` só do `FOR UPDATE` do reopen (l.828) | `not ok 1 - CE-12-forma` · `reprovadas: l.828` | `72870797c846` igual |
+| 14 | E4-05 | mutante só-lock (l.930), `CE-12-db` | `not ok 5 - CE-12-db` · `update: token errado em id de outra organização virou 409 stale` | `72870797c846` igual |
+| 15 | E4-06 | `publishTemplate` com `SELECT` sem `FOR UPDATE` | `not ok 6 - CE-5-publish` · `Missing expected rejection (ChecklistTemplateStaleError).` | `72870797c846` igual |
+| 16 | E4-06 | `archiveTemplate` com `SELECT` sem `FOR UPDATE` | `not ok 7 - CE-5-archive` · `Missing expected rejection (ChecklistTemplateStaleError).` | `72870797c846` igual |
+| 17 | E4-07 | `/^schema\.sections(?:\..*)?$/` → `/^schema\.sections/` | `not ok 25 - CE-18: schema.sectionsX …` e `not ok 26 - … sections2 …` · `expected: 'field'` · `actual: 'text'` | `11b2c2b137f4` igual |
+| 18 | E4-08 | m24b (`void changeStatus("inactive")` em `handleToggleStatus`) | `not ok 23 - C3-01 (forma)` · `(a) handleToggleStatus não abre o diálogo de inativar` | `960c5825033c` igual |
+| 19 | E4-08 | m25c (`fresh = checklist`) | `not ok 23 - C3-01 (forma)` · `(b) handleOverwriteConflict não relê o modelo` | `960c5825033c` igual |
+| 20 | E4-08 | m27b (sem `setLock({ kind: "unknown" })`) | `not ok 23 - C3-01 (forma)` · `(c) o ramo unknown de handleWriteError não trava a tela` | `960c5825033c` igual |
+| 21 | E4-09 | m1g (`b22-faixa` → `b22-faixa-x`) | `not ok 15 - CE-30 B · Analítica …` · `marcador da referência ausente na tela: "b22-faixa" (B · travado)` | `f3ffe342b476` igual |
+| 22 | E4-10 | linha (3) "Modelo arquivado responde 404…" tirada da 3.6.2 | `contrato-c2.mjs`: `FEITO E NÃO DITO F4 arquivado → 404 em todas as portas, render sem vistoria viva incluído` · `RESULTADO: 2 fato(s) fora de acordo` | `998802631858` igual |
+
+**Conta:** a E4.3 escreve "18 mutações", mas as parcelas que ela mesma lista somam 20 (E4-02 tem 5 e E4-08 tem 3), e a coluna de mutação da E4.1 pede ainda a 3ª da E4-03 (`o6r07c-census.ts:90` descartado) e a da E4-10. Executei as **22**, todas vermelhas pelo caso indicado, todas restauradas com o SHA conferido. Fora da conta: o `$queryRaw` novo sem `tenant_id` (E4-04, vermelho, C2-8) e o `silent` dos 5 sítios (E4-03, 5/5 visíveis, C2-4).
+
+**Vermelhos-controle no objeto (`44d9cbb3`), um por requisito:** E4-01 `not ok 9` (409 no render sem viva) e `not ok 4 - CE-10-db`; E4-02 guard do objeto verde sob a mutação da l.316 e guard novo sobre `b08c7557` = **35** (≥ 30); E4-03 l.43 defasada = 15/15 verde; E4-04 regex do objeto verde sob o mutante só-lock; E4-05, E4-06, E4-07 controle = o mutante (declarado na E4); E4-08 m24b/m25c/m27b = 22/22 verde; E4-09 m1g = 22/22 verde; E4-10 `RESULTADO: 7 fato(s) fora de acordo`; E4-11 `grep -c` = 0.
+
+### C2-17. Bateria do ciclo 2 (execução real neste worktree; Postgres/Redis descartáveis `dev-san322c2-*`)
+| Comando | Resultado |
+|---|---|
+| `npm run check` · `npm run lint` · `npm run build` | exit 0 · 0 · 0 |
+| `node --test --import tsx` nos 6 arquivos sem banco (`checklist-template-change`, `checklist-editor-classifier-parity`, `checklist-template-lock`, `checklist-routes`, `checklist-snapshot-dispatch`, `o6r07c-census-guard`) | **127/127**, 0 falha, 0 pulo; `# CE-13: URL em variável: 8 declarações / 35 sítios mutantes` |
+| `-db` (`checklist-template-lock-db`, `-template-prisma-db`, `-routes-db`, `-run-lifecycle-db`, `-run-create-concurrency-db`), `CORE_SAAS_PERSISTENCE=prisma`, ×3 | **28/28 ×3** (26 do ciclo 1 + `CE-5-publish` + `CE-5-archive`), 0 falha, **0 pulo**, 0 cancelado |
+| `npm test` na forma do job `backend` (`DATABASE_URL`/`REDIS_URL` descartáveis, `CORE_SAAS_PERSISTENCE=memory`) | 362 arquivos · **4146 testes · pass 4134 · fail 10 · skip 2**; exit 1 pelas falhas e pelo piso de denominador (`traccar-event-migration-drill-db`). **0 falha de checklist**; 75 linhas `ok … CE-` no TAP. As falhas: `san3-05-runtime-role-guard-db` (`setsid: ausente`), `san3-09` T2 (spawn), `traccar-event-migration-drill-db` (`EBUSY … rmdir`), `traccar-position-ingestion-db` ×2 (tempo esgotado → 503) e `o6r07c-b-scope-db` `[atômica · web]` (`Transaction API error … timeout … 5000 ms … 5043 ms passed`) — a última é nova na lista; rodou junto com o `build`/`test:smoke` do front. **Rodados sozinhos:** `o6r07c-b-scope-db` **13/13**, `traccar-position-ingestion-db` **22/22**. As outras são as classes do Windows já medidas no ciclo 1 (R4/W7). A CI é Linux. |
+| `npm --prefix frontend run check` · `test:smoke` · `build` | exit 0 · **1391/1391** (0 falha, 0 pulo, 0 cancelado) · exit 0 (`✓ built`) |
+| `node scripts/migration-transaction-guard.mjs` | `migrações: 117 · anteriores: 112 · novas: 5 · violações: 0` |
+| `git diff --name-only 44d9cbb3..HEAD -- mobile/ prisma/ src/modules/core-saas/ frontend/src/ src/database/ .github/ Kpis/ …` | vazio (C2-15) |
+| `git diff --check 44d9cbb3..HEAD` | limpo |
+### C2-18. Divergências declaradas (para a junta do ciclo 2)
+- **D-C2-1 — E4-09, régua do `assertMarker`:** a letra ("sem espaço = classe; com espaço = texto") falseada por execução (3 marcadores vermelhos sem mutação); implementei pela forma do marcador (C2-12). Mesma intenção, mesmo critério; a C3 julga.
+- **D-C2-2 — contagem das mutações:** "18" no mandato/E4.3; as parcelas da própria E4 somam 20, e a E4.1 pede mais 2 (3ª da E4-03 e a da E4-10). Executadas as 22 (C2-16).
+- **D-C2-3 — números do CE-13:** 6/26 da E4 → 8/35 no ramo; os 26 do planejador conferem linha a linha, e os 9 sítios a mais (2 declarações) são dos casos que este ciclo acrescentou (E4-01: 5; E4-05: 4) (C2-2, C2-6).
+- **D-C2-4 — linhas:** o publish do helper de `checklist-routes.test.ts` está na l.1015, não na l.1013 da E4; a l.376 do objeto (publish por variável) é a l.423 no ramo (+47 do caso novo da E4-01).
+- **D-C2-5 — `o6r07c-census.ts:90`:** o helper não importa `assert`; usei a alternativa que a E4-03 dá ("lançar com a mensagem 'semente: publish falhou'").
+- **D-C2-6 — E4-10:** o `contrato.mjs` da C2 não está no repositório; o cruzamento foi feito com ferramenta própria (`contrato-c2.mjs`, anexo A), fato a fato, nos dois sentidos.
+- **D-C2-7 — CE-6 no §8.2:** a declaração do mutante equivalente está no texto da E4 apensado ao plano; não editei o corpo do §8.2 (texto do planejador, copiado literal).
+- **D-C2-8 — regra (iv):** a E4-03 escreve `^\s*await\s+\w+\(`; usei `^\s*await\s+[\w.]+\(` (aceita também `obj.metodo(`), superconjunto da letra.
+
+### C2-19. Commits, push e limpeza
+- **Commits** (Conventional Commits, sem atribuição; `Kpis/**` intocado): `896eee7c` fix(checklists) E4-01..03 · `280ed01d` test(checklists) E4-04..06 · `4437b18b` test(checklists) E4-07 · `01d9f3cd` docs(contrato) E4-10 · `b305443a` test(checklists) E4-08/E4-09 · `c0e477b7` docs(registro) E4-11 · o commit deste relatório. `git push origin fix/checklist-trava-versao` (sem force); PR não tocado além do push.
+- **Limpeza §C5:** `dev-san322c2-pg` e `dev-san322c2-redis` removidos com os volumes (`docker rm -f -v`; `docker ps -a | grep dev-san322c2` = 0); `frontend/dist/` e `dist/` removidos; backups `*.c2mut.bak` = 0 (todo restauro conferido por SHA); `git status` limpo antes do commit final; scratchpad `c2mut/` desta identidade apagado ao fim (as ferramentas estão no anexo A). Worktree, `node_modules` e `frontend/node_modules` mantidos. Base viva (5432/6379), `erp-*` e as portas 3000/5173/5050/8899 não tocadas. Disco: 10 GB livres ao fim (piso 7 GB).
+### Anexo A — ferramentas do dev do ciclo 2 (para a junta re-executar; o scratchpad é apagado na limpeza)
+
+**`mut.mjs`** — aplica/restaura mutação por âncora única, com SHA-256 antes/depois
+
+```js
+// uso: node mut.mjs apply <arquivo> <ancora-json> <subst-json>   |  node mut.mjs restore <arquivo>
+import fs from "node:fs"; import crypto from "node:crypto";
+const [, , op, file, a, b] = process.argv;
+const bak = file + ".c2mut.bak";
+const sha = (p) => crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 12);
+if (op === "apply") {
+  if (fs.existsSync(bak)) { console.error("backup já existe"); process.exit(2); }
+  const src = fs.readFileSync(file, "utf8");
+  const anchor = JSON.parse(a), repl = JSON.parse(b);
+  const n = src.split(anchor).length - 1;
+  if (n !== 1) { console.error(`âncora ocorre ${n}x`); process.exit(3); }
+  fs.copyFileSync(file, bak);
+  fs.writeFileSync(file, src.replace(anchor, () => repl));
+  console.log(`MUT aplicada ${file} sha antes=${sha(bak)} depois=${sha(file)}`);
+} else if (op === "restore") {
+  const before = sha(bak); fs.copyFileSync(bak, file); fs.unlinkSync(bak);
+  const after = sha(file);
+  console.log(`RESTAURO ${file} sha=${after} ${before === after ? "IGUAL" : "DIFERENTE!"}`);
+  if (before !== after) process.exit(4);
+}
+```
+
+**`guardrun.mjs`** — roda o guard CE-13 EXATO do arquivo de teste sobre outra raiz (ex.: tests/ de b08c7557 extraídos por git show)
+
+```js
+// guardrun.mjs <arquivo-do-guard> <raiz-dos-testes> [--sites]
+// Extrai listFiles + checklistTokenCallSiteViolations do arquivo de teste (o guard EXATO do arquivo) e o roda
+// sobre outra raiz. Remove só as anotações de tipo para rodar em JS puro.
+import fs from "node:fs";
+import path from "node:path";
+const [, , guardFile, root, flag] = process.argv;
+const src = fs.readFileSync(guardFile, "utf8").replace(/\r\n/g, "\n");
+const grab = (start, endMark) => {
+  const i = src.indexOf(start);
+  if (i < 0) throw new Error("ausente: " + start);
+  const j = src.indexOf(endMark, i);
+  return src.slice(i, j + endMark.length);
+};
+let code = grab("function listFiles(", "\n  return out;\n}") + "\n" + grab("function checklistTokenCallSiteViolations(", "\n  return { violations, declarations, variableSites };\n}");
+code = code
+  .replace(/\(root: string\): TokenGuardReport/, "(root)")
+  .replace(/\(dir: string, accept: \(name: string\) => boolean\): string\[\]/, "(dir, accept)")
+  .replace(/const out: string\[\] = \[\];/, "const out = [];")
+  .replace(/const violations: string\[\] = \[\];/, "const violations = [];")
+  .replace(/new Set<number>\(\)/, "new Set()")
+  .replace(/\(index: number\)/g, "(index)")
+  .replace(/\(start: number, end: number, method: string, window: string, form: string\)/, "(start, end, method, window, form)")
+  .replace(/\(name\) =>/g, "(name) =>")
+  .replace("variableSites += 1;", "variableSites += 1; SITES.push(file + \":\" + lineOf(index) + \" \" + method);");
+const SITES = [];
+const fn = new Function("fs", "path", "SITES", code + "\nreturn checklistTokenCallSiteViolations;")(fs, path, SITES);
+const cwd = process.cwd();
+process.chdir(root);
+const report = fn("tests");
+process.chdir(cwd);
+console.log(`declarações=${report.declarations} sítios-por-variável=${report.variableSites} violações=${report.violations.length}`);
+for (const v of report.violations) console.log("  V " + v);
+if (flag === "--sites") for (const s of SITES) console.log("  S " + s);
+```
+
+**`contrato-c2.mjs`** — cruzamento API_CONTRACTS.md 3.6.2 × código
+
+```js
+// contrato-c2.mjs <raiz-do-repo> — cruzamento API_CONTRACTS.md 3.6.2 × código (ferramenta do dev do ciclo 2;
+// não é o contrato.mjs da C2, que não está no repositório). Fato a fato: "feito e não dito" = o código tem a
+// evidência e a seção não diz; "dito e não feito" = todo code/reason citado na seção existe no código.
+import fs from "node:fs";
+import path from "node:path";
+const root = process.argv[2] ?? ".";
+const read = (p) => fs.readFileSync(path.join(root, p), "utf8").replace(/\r\n/g, "\n");
+const contracts = read("API_CONTRACTS.md");
+const start = contracts.indexOf("#### 3.6.2");
+const end = contracts.indexOf("\n### 3.7", start);
+const section = contracts.slice(start, end);
+const code = [
+  "src/modules/checklists/checklist.service.ts",
+  "src/modules/checklists/checklist.validator.ts",
+  "src/modules/checklists/checklist.controller.ts",
+  "src/modules/checklists/checklist.repository.ts",
+  "src/modules/checklists/checklist-prisma.repository.ts",
+  "src/modules/core-saas/routes/http.ts",
+].map(read).join("\n");
+const service = read("src/modules/checklists/checklist.service.ts");
+const facts = [
+  ["F1 400 BAD_REQUEST/invalid_request p/ token ausente ou não-ISO",
+    /expectedUpdatedAtSchema = z\.string\(\)\.datetime/.test(code) && /code: "BAD_REQUEST",\s*reason: "invalid_request"/.test(code),
+    /400[^\n]*`BAD_REQUEST`[^\n]*`invalid_request`[^\n]*expectedUpdatedAt/.test(section) || /expectedUpdatedAt[^\n]*400[^\n]*`BAD_REQUEST`[^\n]*`invalid_request`/.test(section)],
+  ["F2 400 p/ components[] sem componentKey",
+    /componentKey/.test(code),
+    /componentKey[^\n]*400|400[^\n]*componentKey/.test(section)],
+  ["F3 status draft com vistoria viva → 409 template_has_active_runs",
+    /"CHECKLIST_TEMPLATE_IN_USE", "template_has_active_runs"/.test(service),
+    /`status: "draft"`[^\n]*409[^\n]*`template_has_active_runs`/.test(section)],
+  ["F4 arquivado → 404 em todas as portas, render sem vistoria viva incluído",
+    /template\.status === "archived" && !servesActiveRun\) \{\s*throw new ChecklistError\(404, "CHECKLIST_NOT_FOUND"/.test(service),
+    /[Aa]rquivado[^\n]*404[^\n]*render[^\n]*sem vistoria viva/.test(section)],
+  ["F5 render do arquivado com vistoria viva segue 200",
+    /servesActiveRun/.test(service),
+    /render[^\n]*com vistoria viva[^\n]*200/.test(section)],
+  ["F6 code do 404 = CHECKLIST_NOT_FOUND/checklist_not_found",
+    /404, "CHECKLIST_NOT_FOUND", "checklist_not_found"/.test(service),
+    /404[^\n]*`CHECKLIST_NOT_FOUND`[^\n]*`checklist_not_found`/.test(section)],
+  ["F7 ordem do PATCH: 400 → 409 porta única → trava → 404/409 stale → classificação → in-use",
+    /assertTemplateStatusUsesDedicatedEndpoint\(input\.status\);[\s\S]*?this\.repository\.updateTemplate\(/.test(service),
+    /[Oo]rdem[^\n]*400[^\n]*409[^\n]*porta única[^\n]*trava[^\n]*404[^\n]*stale[^\n]*classifica[^\n]*in-use|[Oo]rdem[^\n]*400[^\n]*porta única[^\n]*trava[^\n]*404[^\n]*classifica/.test(section)],
+  ["F8 stale 409 CHECKLIST_TEMPLATE_STALE/template_changed_since_read",
+    /"CHECKLIST_TEMPLATE_STALE", "template_changed_since_read"/.test(service),
+    /`CHECKLIST_TEMPLATE_STALE` \/ `template_changed_since_read`/.test(section)],
+];
+let missing = 0;
+for (const [name, inCode, inContract] of facts) {
+  const verdict = inCode && inContract ? "ok" : inCode && !inContract ? "FEITO E NÃO DITO" : !inCode && inContract ? "DITO E NÃO FEITO" : "ausente nos dois";
+  if (verdict !== "ok") missing += 1;
+  console.log(`${verdict.padEnd(18)} ${name}`);
+}
+const tokens = [...new Set(section.match(/`([A-Z][A-Z_]{3,}|[a-z]+(?:_[a-z]+)+)`/g) ?? [])].map((t) => t.slice(1, -1));
+const unbacked = tokens.filter((t) => !code.includes(t));
+console.log(`tokens citados na 3.6.2: ${tokens.length}; sem lastro no código: ${unbacked.length ? unbacked.join(", ") : "nenhum"}`);
+console.log(`RESULTADO: ${missing} fato(s) fora de acordo; ${unbacked.length} token(s) dito(s) e não feito(s)`);
+process.exit(missing + unbacked.length ? 1 : 0);
+```
+
+Os roteiros `drill-0203.sh`, `drill-040506.sh`, `drill-front.sh` e `silent.sh` são a sequência `mut.mjs apply` → comando → `mut.mjs restore` com as âncoras e substituições que as tabelas C2-4, C2-8 e C2-13 descrevem.
