@@ -7,6 +7,8 @@ import test, { after } from "node:test";
 // `__reactProps$` (prova a fiação da página, não a delegação de eventos do React). A borda de rede (`fetch`) é o único
 // dublê e responde com os BYTES do backend 12a (`toFinancialEntryListDto`, `toFinancialAccountListDto`, envelope de erro
 // `{ error: { code, reason, message } }`); rota não prevista responde 404 e o caso que dependesse dela falha.
+// Todo `assert.ok` leva mensagem: sem ela, o Node relê a linha-fonte para montar a mensagem e, no arquivo transpilado
+// pelo tsx numa linha só, isso trava o processo em vez de reprovar (medido na mutação do F9).
 // Prende por comportamento executado: F1, F2, F3, F6, F7, F9, F10, F11, F12, F14, F16, F20, F21 e F22 do §8.2 do plano.
 process.env.VITE_USE_MOCKS = "false";
 
@@ -951,7 +953,7 @@ test("F7: o Financeiro vê 'Nova conta' e o cadastro chama POST /financial-accou
 test("F16 carregando: esqueleto (aria-busy) enquanto o servidor não responde", async () => {
   const { container, unmount } = await mount({ override: (call) => (call.url === "/financial-summary" ? new Promise<Response>(() => undefined) : undefined) });
   try {
-    assert.ok(all(container, (el) => el.getAttribute("aria-busy") === "true").length > 0);
+    assert.ok(all(container, (el) => el.getAttribute("aria-busy") === "true").length > 0, "esqueleto com aria-busy");
   } finally {
     await unmount();
   }
@@ -964,7 +966,7 @@ test("F16 erro: resumo e contas fora do ar → painel de erro com 'Tentar novame
   try {
     const panel = all(container, (el) => el.getAttribute("data-state") === "error")[0];
     assert.ok(panel, "painel de erro");
-    assert.ok(buttonByText(panel, "Tentar novamente"));
+    assert.ok(buttonByText(panel, "Tentar novamente"), "botão Tentar novamente no painel de erro");
     assert.equal(rows(container).length, 0);
   } finally {
     await unmount();
@@ -974,7 +976,7 @@ test("F16 erro: resumo e contas fora do ar → painel de erro com 'Tentar novame
 test("F9: títulos fora do ar (fallback) → painel de erro na aba, nunca 'nenhum título'", async () => {
   const { container, unmount } = await mount({ override: (call) => (/^\/financial-titles\?/.test(call.url) ? json(500, { error: { code: "INTERNAL", message: "x" } }) : undefined) });
   try {
-    assert.ok(all(container, (el) => el.getAttribute("data-state") === "error").length > 0);
+    assert.ok(all(container, (el) => el.getAttribute("data-state") === "error").length > 0, "painel de erro na aba de títulos");
     assert.doesNotMatch(text(container), /Nenhum título em aberto|Tudo baixado/);
     assert.equal(rows(container).length, 0);
   } finally {
@@ -987,7 +989,7 @@ test("F16 vazio: sem contas → 'Cadastre a primeira conta' (botão só para que
   const fin = await mount({ url: "/finance?aba=ext", override: empty });
   try {
     assert.match(text(fin.container), /Cadastre a primeira conta/);
-    assert.ok(buttonByText(fin.container, "Cadastrar a primeira conta"));
+    assert.ok(buttonByText(fin.container, "Cadastrar a primeira conta"), "botão de cadastrar a primeira conta");
   } finally {
     await fin.unmount();
   }
