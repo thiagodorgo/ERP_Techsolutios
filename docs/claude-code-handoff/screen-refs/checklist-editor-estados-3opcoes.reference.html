@@ -2816,7 +2816,7 @@ function inspetor(){
 function painelImpacto(){
   const c = CAMPOS.find(x => x.id === sel);
   const ok = s => '<li><span style="color:#15803d">'+ic('check',15)+'</span><span>'+s+'</span></li>', no = s => '<li><span style="color:#b45309">'+ic('x',15)+'</span><span>'+s+'</span></li>';
-  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Em uso agora</div><div class="ckb-ed-col-sub">'+N_RUNS+' vistorias em andamento usam a versão 4</div></div></div>'
+  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Em uso agora</div><div class="ckb-ed-col-sub">'+N_RUNS+' vistorias em andamento usam este modelo</div></div></div>'
     + '<div class="ckb-ed-insp-body"><ul class="c22-lista">'
     + ok('Nome do modelo, descrição, nomes de seção, pergunta e texto de ajuda — <strong>podem mudar agora</strong>')
     + no('Adicionar, remover, reordenar ou duplicar campo') + no('Obrigatório ou opcional, mínimo e máximo de fotos, opções de resposta, tipos de veículo e de avaria') + no('Tipo do modelo e voltar a rascunho') + '</ul>'
@@ -2857,7 +2857,9 @@ function blocosB(){
   }
   return '<div class="b22-faixa"><div class="kpi-grid">'
     + k('runs','history',['#FEF3C7','#B45309'],N_RUNS,'Vistorias em andamento','usam este modelo agora','em uso')
-    + k('versao','layers',['#DCFCE7','#15803D'],'v4','Versão publicada','publicada em 12/10','publicada')
+    + (estado === 'inativo'
+      ? k('versao','layers',['#F1F5F9','#64748B'],'v4','Versão atual','publicada em 12/10','inativo')
+      : k('versao','layers',['#DCFCE7','#15803D'],'v4','Versão publicada','publicada em 12/10','publicada'))
     + k('campos','lock',['#F1F5F9','#475569'],'7 de 7','Campos travados',estado === 'inativo' ? 'modelo inativo; só os textos mudam' : 'só os textos podem mudar','travado')
     + '</div>' + lista + '</div>';
 }
