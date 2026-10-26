@@ -3970,6 +3970,10 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **A27** (E1-bis): toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE` (1º vínculo, `cancel`, `delete`; 409 se mudou).
   Faz a regra do dono valer também sob concorrência; não concede nem tira privilégio de ninguém.
 - **F5** (E1.F5): `super_admin` e `platform_admin` recebem as 2 permissões por construção (mesma referência do catálogo) — o snapshot passa a dizê-lo.
+- **A30** (ciclo 2, plano de resolução do `planejador-san312a-c2-fable`, E2.2; implementado por `dev-san312a-c2-opus`): a justificativa do
+  desvínculo só aceita texto bem-formado — sem U+0000, sem surrogate isolado, sem controle C0 salvo TAB/LF/CR, sem DEL → `400 invalid_justification`.
+  Leitura do planejador (§A6), não decisão do dono: integridade do rastro do ato privilegiado; não muda dinheiro nem permissão. Se o dono
+  preferir só U+0000 + surrogates (o que o jsonb recusa), a classe C0 encolhe numa linha (`JUSTIFICATION_FORBIDDEN_CONTROL`, `cheque.service.ts`).
 
 ## D-SAN3-13-SCOPE-ASSIGNED (decisões do dono, 2026-10-24; Emenda E2 do planejador, 2026-10-25) — "Minhas OS" só com as OS abertas do técnico, imposto no backend
 

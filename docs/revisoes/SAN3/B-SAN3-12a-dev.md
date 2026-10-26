@@ -297,3 +297,131 @@ caso, sem o prefixo do worktree; saída `C:/Users/AMP/w-san312a-b1-listas.txt`).
 Head `a0b8f4be` + este registro. PR #459 sai de rascunho (`gh pr ready 459`) por ordem do orquestrador; a pendência
 `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` fica ABERTA para o porteiro/orquestrador fechar pelo B1 (o item (2) tem 1 só-head de tempo, declarado acima).
 Limpeza: container `dev-san312a-pg2` removido (com os bancos `erp_san312a`, `_t21`, `_fresh2`); worktree `C:/Users/AMP/w-san312a` mantido.
+
+## Ciclo 2 (dev-san312a-c2-opus)
+
+**Papel:** dev do conserto do ciclo 2 · `dev-san312a-c2-opus` · Claude Opus 5.5 (`claude-opus-5-5`), nível menor **declarado**, identidade nova
+(≠ `dev-san312a-opus`, ≠ `planejador-san312a-c2-fable`, ≠ `jurado-san312a-c2-opus`/`-c4-opus`); cobre o Codex por ordem do dono. Não achou, não
+planejou, não vota. **Fonte única:** `B-SAN3-12-plano.md` → "Ciclo 2 (12a) — plano de resolução". **Objeto do ciclo 1:** `04b8a667`. **Terreno:**
+worktree `C:/Users/AMP/w-san312a`; Postgres 16 descartável `dev-san312a-c2-pg` em `127.0.0.1:47791` (bancos `erp_c2`, `erp_c2_fresh_head`,
+`erp_c2_fresh_base`); worktree da base `C:/Users/AMP/w-c2b` (detached em `b2f8e6cf`, merge-base com a `main`, `npm ci` próprio, sem junction).
+Base viva (5432/6379, `erp-*`) nunca foi alvo. Roteiros e TAPs: `<scratchpad>/dev-san312a-c2/` (`mut.mjs`, `battery-c2.sh`, `vc-*.tap`, `mut-*.tap`,
+`mut-summary.json`); logs da bateria `C:/Users/AMP/w-san312a-c2bat/`; listas B1-2 `C:/Users/AMP/w-san312a-c2-b1-listas.txt`.
+
+### C2-D1 — commits
+- `922456c4` docs(plano): o plano do ciclo 2 e o `R-B-SAN3-12a-ciclo1.md` (até então não rastreado), como vieram.
+- `1afb176b` fix(financeiro): A29 + A30 + testes (A29-a..h, A30-a..c, A13-bis, R-res-5-bis) + `API_CONTRACTS.md`.
+- commit de registro: `decisoes.md` (A30 como leitura do planejador), `pendencias.md` (4 novas + nota do ciclo 2 na `P-SAN3-20-DELETE-TITULO-COM-CHEQUE`),
+  `pendencias-indice.md` regenerado (`gerar-indice-pendencias.py`: 651 cabeçalhos / 640 IDs / 493 abertas), papéis do ciclo 2 no `R-…-ciclo1.md`, este relatório.
+
+### C2-D2 — o que foi implementado (só o PERMITIDO do C2.2)
+- `financial-title.service.ts` — só `update`, `delete` e `assertNoPendingCheque`. Os fast-fails ficam fora da transação e com a mesma precedência.
+  A escrita passa para `uow.run`, na ordem `ctx.assertPeriodOpenShared(current.competencia)` → `ctx.titles.findByIdForUpdate` (sumiu/apagado → 404)
+  → re-check `assertNoPendingCheque(ctx.cheques, …)` sob o lock → `ctx.titles.update`/`softDelete` → os `outcome` de sempre. `assertNoPendingCheque`
+  recebe o leitor: o pool no fast-fail e `ctx.cheques` sob o lock.
+- `cheque.service.ts` — só `parseUnlinkJustification`: 10–500 após o trim, **e** `isWellFormed()`, **e** nenhum caractere de
+  `[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]`. Senão 400 `invalid_justification`, com mensagem própria ("control characters or malformed text").
+- **Duas leituras do dev, declaradas (§A6), sem mudar critério:**
+  1. **Ordem período → título.** O passo 2 do E2.1 lista `findByIdForUpdate` → `assertPeriodOpenShared(locked.competencia)`. O passo 6 e o R2 dizem
+     "período → título", e o `payTitle` faz assim (advisory antes de qualquer row lock). Segui o passo 6, com `current.competencia`, que é imutável
+     depois do create. R3 medido: `grep -n "ctx.assertPeriodOpenShared(" financial-title.service.ts` → 3 chamadas (l.155 `createForWorkOrderInUnit`,
+     l.307 `update`, l.416 `delete`).
+  2. **`isWellFormed` com tipo local.** A `lib` do tsconfig não declara `String.prototype.isWellFormed` (TS2550 no `npm run check`). O runtime tem a
+     função desde o Node 20 (`engines >=20`, CI `node-version: 20`, local v20.19.5). Usei um tipo local `WellFormedCheckable`; o tsconfig ficou intocado.
+- **Fatos medidos que o plano diz de outro jeito (premissa não falseada, critério mantido):**
+  1. `invalid_title_reference` é **400** (`cheque.repository.ts:83`), não 422 como o A29-d diz. O teste afere o `reason` e o status medido 400.
+  2. R-res-5-bis cria o papel pelo arnês existente `createEphemeralRole` (`tests/helpers/auth-identity-fixture.ts`: `NOSUPERUSER NOINHERIT`, sem
+     `BYPASSRLS`, dentro do `withRoleCatalogLock`, teardown resiliente). Não usei o idioma literal do `san3-05` porque SQL de catálogo escrito no
+     arquivo do teste deixaria o `db-catalog-write-guard` vermelho, e a allowlist dele está fora do PERMITIDO. O teste afere
+     `rolsuper=false, rolbypassrls=false` sob o papel. Sem `rolsuper`/`rolcreaterole` ele faz skip com motivo declarado.
+  3. A29-h tem caso nos dois lados, em memória (`b-san3-12a-pay-pending-cheque.test.ts`, gancho `beforeRun` fecha o período) e no `-db`, no arquivo
+     novo. `financial-period-closes.test.ts` não precisou de caso novo e não foi tocado.
+- **Nenhuma emenda** (`D-EMENDA-ANTES-DO-CODIGO`): nenhuma decisão nova e nenhuma premissa do plano falsa. Arnês P7 intocado e verde (161/161 na
+  regressão do C2.3).
+
+### C2-D3 — vermelho-controle no objeto do ciclo 1
+Comando: `git checkout 04b8a667 -- src/modules/financial-titles/financial-title.service.ts src/modules/cheques/cheque.service.ts` (blobs `c027c78f…`,
+`a5ea113b…`). Depois rodei os 4 arquivos e restaurei com `git checkout HEAD -- …`. Hash conferido depois do restauro: `53b77014…` e `45711235…`,
+iguais aos de antes. Status limpo.
+
+| Execução | tests · pass · fail · skipped | vermelhos (pelo desfecho) |
+|---|---|---|
+| memória `pay-pending-cheque` + `unlink-title` | 37 · 31 · 6 · 0 | A29-e, A29-f (PATCH), A29-f (DELETE), A29-h, A30-a, A30-b |
+| `-db` `title-mutation-race` + `pay-pending-cheque-db` | 13 · 7 · 6 · 0 | A30-c ("NUL: era para recusar"), A29-a e A29-c ("era para recusar e passou"), A29-g ×2 ("fulfilled \| fulfilled"), A29-h |
+
+Verdes no objeto, **declarados**:
+- A29-b e A29-d (o lado do vínculo já estava certo);
+- A29-f (arranjo inverso);
+- A13-bis e R-res-5-bis (o código do objeto está certo; o vermelho deles é a mutação M13a/M5a, abaixo).
+
+Antes do código, o mesmo vermelho deu `20 · 16 · 4` (memória `pay-pending`), `17 · 15 · 2` (`unlink-title`) e `21 · 15 · 6` (os 4 `-db`). TAP em
+`vc-objeto-db.tap`.
+
+### C2-D4 — as mutações obrigatórias (cada uma sozinha; âncora com contagem exata e EOL do arquivo; restauro por bytes + `git hash-object` = blob de antes)
+Roteiro: `mut.mjs`. Saída: `mut-summary.json`.
+
+| Mutação | Arquivo | Vermelho em (memória · `-db`) | Blob restaurado |
+|---|---|---|---|
+| A29-a: tirar o re-check do `update` | title.service | A29-f PATCH (20·19·1) · A29-a, A29-g PATCH (7·5·2) | `53b77014` |
+| A29-c: tirar o re-check do `delete` | title.service | A29-f DELETE (20·19·1) · A29-c, A29-g DELETE (7·5·2) | `53b77014` |
+| A29-b: tirar `assertExactOpenBalance` da revalidação | cheque.service | A29-f inverso (20·19·1) · A29-b, A29-g PATCH (7·5·2) | `45711235` |
+| A29-e: escrever fora da unidade (contexto falso com `this.repository`) | title.service | A29-e, A29-f PATCH, A29-h (20·17·3) | `53b77014` |
+| A29-h: tirar `ctx.assertPeriodOpenShared` (2 ocorrências) | title.service | A29-h (20·19·1) · A29-h (7·6·1) | `53b77014` |
+| A30: tirar `isWellFormed()` | cheque.service | A30-a (17·16·1) · A30-c (6·5·1) | `45711235` |
+| A30: tirar a classe C0 | cheque.service | A30-a, A30-b (17·15·2) · A30-c (6·5·1) | `45711235` |
+| M13a: tirar `reconciled` do WHERE do CAS | entry-prisma.repository | — · A13-bis (4·3·1) | `3d492acd` (= blob do objeto) |
+| M5a: agregado standalone sem `withTenantRls` | entry-prisma.repository | — · R-res-5-bis (4·3·1, sob o papel sem bypass) | `3d492acd` |
+
+**Resultado: 9/9 vermelhas.** São as 8 do plano; a A30 foi aplicada em duas metades. Árvore limpa ao fim.
+
+### C2-D5 — bateria (todo passo com `tests · pass · fail · skipped` lido do TAP; `battery-c2.sh`; `JWT_SECRET` dev, `REDIS_URL=redis://127.0.0.1:1`)
+| Passo | ec | tests · pass · fail · skipped |
+|---|---|---|
+| `npm run check` · `npm run lint` · `npm run build` · provision-rbac `--dry-run` | 0 · 0 · 0 · 0 | (sem TAP) |
+| `git diff --check 04b8a667 HEAD` · `git diff --check b2f8e6cf HEAD` | 0 · 0 | (sem TAP) |
+| módulos financeiros (5 arquivos) | 0 | 227 · 227 · 0 · 0 |
+| `b-san3-12a-*` em memória (5 arquivos) | 0 | 58 · 58 · 0 · 0 (eram 51; +7) |
+| regressão do C2.3 (`financial-titles`, `financial-period-closes`, `cheque-title-link`, arnês P7) | 0 | 161 · 161 · 0 · 0 |
+| guards (`permission-catalog-migration-parity`, `core-saas`, `db-catalog-write-guard`) | 0 | 31 · 30 · 0 · 1 (o skip é a metade `-db` do catalog-guard, sem `DATABASE_URL` neste passo; a metade estática passou) |
+| `core-saas-role-authority` com banco | 0 | 12 · 12 · 0 · 0 |
+| **`b-san3-12a-title-mutation-race-db` (novo; A29-a..d, g ×2, h)** | 0 | 7 · 7 · 0 · 0 |
+| `-db` A (drill, `pay-link-race`, fuso, `reverse-restore`, `link-toctou`) | 0 | 24 · 24 · 0 · 0 |
+| `db:provision-rbac` → `permission-catalog-db-parity` (`RBAC_DB_PARITY=1`) | 0 | 2 · 2 · 0 · 0 |
+| `-db` B (`pay-pending-cheque-db`, `reconcile-cas-db`, `entries-aggregate-db`, `cheque-title-link-atomic-db`, `financial-pay-title-atomic-db`) | 0 | 33 · 33 · 0 · 0 (eram 30; +A30-c, A13-bis, R-res-5-bis) |
+| `audit-security` com banco | 0 | 1 · 1 · 0 · 0 |
+| `o6r07c-census-guard` | 0 | 32 · 32 · 0 · 0 |
+
+**Contagem do 12a:** memória 58 + `-db` (7 + 30 + 3 = 40) = **98**. A baseline N era 81 e a meta M ≥ 94. Casos novos: **17**. Em memória, 7:
+A29-e, A29-f ×3, A29-h, A30-a e A30-b. No `-db`, 10: A29-a, A29-b, A29-c, A29-d, A29-g ×2, A29-h, A30-c, A13-bis e R-res-5-bis.
+
+### C2-D6 — `npm test` base × head normalizado (B1-2)
+Base `b2f8e6cf`, o merge-base atual com a `main`, em worktree próprio com `npm ci` e banco fresco. Head `1afb176b`, banco fresco. Ambos com
+`CORE_SAAS_PERSISTENCE=memory`. A 1ª rodada da base foi descartada: o `npm ci` não gera o cliente Prisma e deu 1460 falhas de import ("does not
+provide an export named 'Prisma'"). Rodei `prisma generate` e a rodada foi refeita (`15b-npm-test-base.log`).
+
+| Lado | arquivos | tests | pass | fail | skipped |
+|---|---|---|---|---|---|
+| base | 345 | 3971 | 3949 | 20 | 2 |
+| head | 358 | 4070 | 4053 | 15 | 2 |
+
+As três listas saem do `normaliza.py`, com chave `tests/<arquivo> :: caso`:
+- **Só no head, N=1:** `tests/traccar-event-migration-drill-db.test.ts` (o arquivo).
+  - Causa: o hook de fim falha com `EBUSY: resource busy or locked, rmdir …\Temp\trc02-mdrill-…`, que é limpeza de pasta temporária no Windows.
+  - No head, os casos T-M(e) do mesmo arquivo convergem (`k=1..4: atômico e convergente`). Na base, os T-M(e) e T-M(f) falham (lista abaixo).
+  - O arquivo é do Traccar, módulo que o bloco não toca. A família é a da `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (ambiente Windows).
+  - **O "= 0" da letra do B1 não foi atingido nesta máquina.** Fica declarado; a palavra final é da CI.
+- **Só na base, N=6:**
+  - `o6r07c-census-guard` T1, T6, T10, T14 (verdes no head: 32/32 no passo da bateria);
+  - `traccar-event-migration-drill-db` T-M(e) e T-M(f).
+- **Nos dois lados, N=10, com causa:**
+  - Redis inalcançável, de propósito (a base viva não é alvo): `domain-events` ×2, `job-queue` ×3 e `worker-heartbeat` ×1;
+  - `san3-05` (RLS do papel de runtime; medido na CI);
+  - `san3-09 T2` (drill de bootstrap, Windows);
+  - `traccar-position-ingestion-db`, tempo esgotado ×2 (tempo).
+- **skipped:** base 2, head 2. Pulados só no head: **0** (B2). Os dois são a `permission-catalog-db-parity` sem `RBAC_DB_PARITY`.
+
+### C2-D7 — estado e limpeza
+Push do ramo `feat/web-financeiro-baixa-e-contas-12a`; CI do head novo conferida depois do push (B1-1 é da junta e do inspetor).
+`P-SAN3-20-DELETE-TITULO-COM-CHEQUE` fica ABERTA e **fecha no merge, pelo porteiro**, com A29-c + A29-g.
+Limpeza: container `dev-san312a-c2-pg` removido (com os três bancos); worktree da base `w-c2b` removido por `git worktree remove --force`;
+o arquivo de senha do scratchpad foi apagado. `agent-orchestration/omega/juntas/votos/B-SAN3-12a/` (da junta) ficou intocado e fora dos commits.

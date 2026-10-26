@@ -11618,6 +11618,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento previsto (B-SAN3-12a):** `DELETE`/`PATCH amount` do título com cheque pendente → `422 title_has_pending_cheque` (A21); o status muda no merge do 12a, pelo porteiro.
 - **status:** ABERTA · **dono:** próximo bloco de títulos · **bloqueia:** não; o clear falha fechado com `title_not_found`.
 - **encerramento:** DELETE recusa com `422 title_has_pending_cheque` e prova concorrente.
+- **ciclo 2 do B-SAN3-12a (2026-10-26):** a prova concorrente existe — `tests/b-san3-12a-title-mutation-race-db.test.ts` A29-c (barreira: o DELETE bloqueia no FOR UPDATE da unidade, relê e sai 422; FINAL título vivo com 1 pendente) e A29-g (N=20 sem barreira, nunca apagado com pendente); mutação "tirar o re-check do delete" deixa os dois vermelhos. **Fecha no merge do #459, pelo porteiro** (não antes).
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
 - **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
@@ -11814,3 +11815,25 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **gravidade:** BAIXA — nada se perde; sobra registro sem OS na tela.
 - **dono:** `B-SAN3-16`.
 - **encerramento:** replay/descarte de ação e material sem OS, com teste que prova o destino de cada um.
+
+## P-AUDIT-CRITICA-NA-TRANSACAO (2026-10-26) — evento de auditoria `critical` gravado DEPOIS do ato, em best-effort — MÉDIA
+- **status:** ABERTA · **escopo:** `pre-existente` (`core-saas/audit/audit-request-context.ts` nasce em `a09f6a4a`, 2026-06-08; o padrão best-effort alcança todos os eventos `critical` da casa, 20+ controllers) · **dono:** bloco de auditoria do core-saas · **bloqueia:** não.
+- **origem:** C2-01 da junta de dinheiro do B-SAN3-12a (ciclo 1) e E2.2 do plano de resolução: o ato privilegiado commita e só depois a auditoria é tentada; falha OPERACIONAL da auditoria (banco, FK, RLS) deixa o ato sem rastro. A entrada que o validador aceitava e derrubava o rastro (U+0000, surrogate) foi fechada no ciclo 2 (A30).
+- **recomendação registrada:** eventos `severity: critical` gravados na transação do ato, ou fail-closed com o rastro antes do ato.
+- **encerramento:** teste em que a gravação da auditoria falha e o ato privilegiado não persiste (ou persiste com o rastro), para todo evento `critical`.
+
+## P-TENANT-SETTING-AUDIT-SEM-VALOR (2026-10-26) — `tenant_setting.upserted` não diz o valor gravado — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`tenant-setting.controller.ts`, fora do diff e do PERMITIDO do 12a) · **dono:** módulo tenant-settings · **bloqueia:** não.
+- **origem:** C2-02 da junta do B-SAN3-12a (ciclo 1): `PUT /tenant-settings/<chave>` audita sem o valor — a trilha não diz se a delegação do desfazer foi ligada ou desligada.
+- **recomendação:** `{ key, category, value }` nos metadados para chaves de política (sem segredo).
+- **encerramento:** auditoria da chave de política com o valor, e teste que lê o valor na trilha.
+
+## P-RBAC-MIGRATION-PARITY-ESTATICA (2026-10-26) — a guarda estática não acusa migração que concede chave a papel não autorizado — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** ferramentas de processo · **bloqueia:** não.
+- **origem:** C2-03 da junta do B-SAN3-12a (ciclo 1): `permission-catalog-migration-parity` (sem banco) só confere a presença da chave; a concessão indevida só aparece na `permission-catalog-db-parity` com banco (ativa na CI).
+- **encerramento:** a guarda estática confere papel × chave da migração contra o catálogo, com mutação que concede a chave a papel errado e fica vermelha.
+
+## P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO (2026-10-26) — nenhum teste do resumo financeiro tem 2ª organização — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`7eb1a814`, 2026-07-18) · **dono:** financial-summary · **bloqueia:** não.
+- **origem:** C4-05 da junta do B-SAN3-12a (ciclo 1): a mutação M16d é invisível em memória e sob superusuário.
+- **encerramento:** caso do resumo com duas organizações na mesma base, sob papel sem bypass, que fica vermelho com o filtro de organização retirado.
