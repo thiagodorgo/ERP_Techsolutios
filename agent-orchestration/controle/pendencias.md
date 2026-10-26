@@ -11899,3 +11899,23 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (regras `.ckb-ed-grid { flex: 1; min-height: 0 }` e o `@media (max-width: 1180px)` de uma coluna, `frontend/src/styles/app.css:4919-4935`, anteriores ao B-SAN3-22 e não tocadas por ele) · **dono:** orquestrador, para planejar · **bloqueia:** não (a C3 do B-SAN3-22 não cobra, §C7.1-ter(a); ratificação do orquestrador de 2026-10-26 12:30Z).
 - **origem:** W6 do relatório da fatia web do B-SAN3-22 (`docs/revisoes/SAN3/B-SAN3-22-dev.md`). Medido no estado **livre** (nada do bloco na tela), com `probe.mjs` (Edge headless, `vite` em modo simulado) em `/administrator/checklists/chk_towing_delivery` a 924×540: as três colunas da grade em `y=175 h=452`, `y=279 h=415`, `y=382 h=262` — paleta, formulário e inspector sobrepostos. A referência `screen-refs/checklist-editor-estados-3opcoes.reference.html`, sem a altura presa, empilha sem sobrepor.
 - **encerramento:** a 924 px as colunas da grade do editor empilham sem sobrepor (o `top` de cada coluna ≥ o `bottom` da anterior, medido no navegador real), nos estados livre, travado e conflito.
+
+## P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência B pede e o servidor ainda não dá — MÉDIA
+
+- **status:** ABERTA · **escopo:** fora do B-SAN3-22 (decisão do dono) · **dono:** orquestrador, para planejar o bloco `B-CHK-EDITOR-LEITURAS-B` · **bloqueia:** não.
+- **origem:** resposta do dono à Q5 (i), 2026-10-26 (plano do B-SAN3-22, E3.3/E3.7); a pendência só existia no texto do plano e foi gravada pela Emenda E4 (E4-11 (a), M-53: `grep` = 0 antes).
+- **escopo do bloco:** leitura das vistorias vivas de um modelo com OS, placa, técnico e respostas; histórico de versões por modelo; tela de execuções com filtro por modelo. Cada leitura nova tem **decisão de permissão própria** (quem lê as vistorias de outra pessoa) antes do código.
+- **encerramento:** as três leituras servidas pelo backend com a permissão decidida, e a aparência B do editor mostrando-as sem dado fabricado (D-007).
+
+## P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo `order_index` saem em ordem indefinida — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (as 5 inclusões `orderBy: { order_index: "asc" }` sem 2ª chave já estão em `b08c7557`, `checklist-prisma.repository.ts` l.104/126/169/190/314; o `getTemplateForRun` do B-SAN3-22 copia a forma do módulo — M-54 da E4) · **dono:** orquestrador · **bloqueia:** não.
+- **origem:** nota C2-03 da junta do ciclo 1 do B-SAN3-22, classificada na auditoria `R-B-SAN3-22-ciclo1.md`.
+- **encerramento:** 2ª chave de ordenação `id` em todas as inclusões de componentes, ou `order_index` único por modelo (restrição no banco), com teste que empata dois componentes e afirma a ordem.
+
+## P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers; a fiação dos gestos vive em guard de forma — MÉDIA
+
+- **status:** ABERTA · **dono:** orquestrador · **bloqueia:** não.
+- **origem:** C3-01 da junta do ciclo 1 do B-SAN3-22 (m24b e m25c deixavam a suíte 22/22 verde); E4-08. O `frontend/package.json` não tem biblioteca de DOM (`jsdom`/`happy-dom`/`testing-library` = 0): trazer uma é **dependência nova**, que pede junta de 5 + PD (§C7.1).
+- **residual hoje (declarado nos próprios guards):** (i) `C3-01 (forma)` em `frontend/tests/checklists-editor-lock.smoke.test.tsx` lê o corpo de `handleToggleStatus`, `handleOverwriteConflict` e `handleWriteError` — forma, não comportamento; a prova de comportamento é a interceptação no navegador feita pela cadeira de tela; (ii) o CE-13 (`tests/checklist-template-lock.test.ts`) não alcança URL passada como parâmetro de helper nem declarada fora do bloco `test(` corrente, e a regra "resultado descartado" só lê a linha da chamada.
+- **encerramento:** decisão (junta de 5 + PD) sobre a biblioteca de DOM; se aprovada, testes de interação que cliquem nos três gestos do editor e substituam o guard de forma.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **661** |
-| IDs distintos | 650 |
-| **ABERTAS** | **499** |
+| Cabecalhos `## P-` | **664** |
+| IDs distintos | 653 |
+| **ABERTAS** | **502** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **434** |
+| — das quais **ativas nesta rodada** | **437** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 158 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **661 cabecalhos para 650 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **664 cabecalhos para 653 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 228
+## ABERTAS · balde A — material — 230
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -303,8 +303,10 @@
 | `P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID` | 11874 | MÉDIA | sim | P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o ho |
 | `P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO` | 11887 | MÉDIA | sim | P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO (2026-10-26) — segundo cheque do valor cheio enquanto |
 | `P-CHK-EDITOR-GRADE-ESTREITA` | 11897 | MÉDIA | sim | P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checkl |
+| `P-CHK-EDITOR-LEITURAS-B` | 11903 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
+| `P-FRONT-TESTE-DE-INTERACAO` | 11916 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
 
-## ABERTAS · balde B — processo/registro — 206
+## ABERTAS · balde B — processo/registro — 207
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -514,6 +516,7 @@
 | `P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO` | 11869 | BAIXA | sim | P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO (2026-10-26) — nenhum teste do resumo financ |
 | `P-GUARD-MIGRACAO-CONTROLES-SEM-CASO` | 11881 | BAIXA | sim | P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de r |
 | `P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO` | 11892 | BAIXA | sim | P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO (2026-10-26) — falta reaplicação após rollback man |
+| `P-CHK-COMPONENTES-EMPATE-ORDER-INDEX` | 11910 | BAIXA | sim | P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
