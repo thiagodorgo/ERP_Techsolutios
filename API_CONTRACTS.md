@@ -429,6 +429,11 @@ Contrato `checklist_template_patch@2026-10-25.b-san3-22`.
 - GET de detalhe, PATCH e publish retornam `activeRuns`; a listagem não retorna esse campo.
 - Mudança de campo em modelo publicado e sem vistoria viva incrementa `version`. Mudança apenas textual não incrementa.
 - `createRun` e `reopenRun` carimbam a versão atual lida sob lock; modelo não publicado não recebe nova vistoria e modelo arquivado não é reaberto.
+- Entrada inválida retorna 400 `BAD_REQUEST` / `invalid_request`: `expectedUpdatedAt` ausente ou fora do ISO-8601 nas três portas (corpo do PATCH e do publish, query do DELETE) e item de `components` sem `componentKey`.
+- `status: "draft"` no PATCH com vistoria viva retorna 409 `CHECKLIST_TEMPLATE_IN_USE` / `template_has_active_runs` (com vistoria viva, o status só vai para `inactive`).
+- Modelo arquivado responde 404 em todas as portas: GET de detalhe, PATCH, DELETE, publish, `createRun` e render sem vistoria viva. O render com vistoria viva segue 200 até a última vistoria viva terminar.
+- O 404 de modelo é sempre 404 `CHECKLIST_NOT_FOUND` / `checklist_not_found`, seja o modelo inexistente, de outra organização ou arquivado.
+- Ordem de avaliação do PATCH: 400 (entrada) → 409 de porta única (`status: published|archived` no corpo, avaliado antes de resolver o modelo; por isso responde 409 também para id inexistente ou de outra organização, sem revelar existência) → trava do modelo → 404 ou 409 stale → classificação da mudança → 409 in-use.
 
 ### 3.7 Dashboard
 
