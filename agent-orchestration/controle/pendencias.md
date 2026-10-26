@@ -11624,8 +11624,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
 - **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
-- **status:** ABERTA · **dono:** bloco do painel Financeiro (3 opções) · **bloqueia:** não.
+- **status:** FECHADA pelo `B-SAN3-12b` (ramo `feat/web-financeiro-baixa-e-contas`; vale no merge) · antes: ABERTA · **dono:** encerrado · **bloqueia:** não.
 - **encerramento:** resumo desconta ou rotula cheque vinculado pendente sem alterar o razão.
+- **critério medido no fechamento (B-SAN3-12b):** o resumo já trazia `cheques.linkedPendingCount/linkedPendingAmount` (12a, A16); o 12b lê os dois campos (`financial-summary.{types,adapter}.ts`) e as abas "A receber"/"A pagar" da aparência A rotulam "R$ X em N cheque(s) vinculado(s) a títulos aguardam compensação: esses títulos baixam sozinhos quando o cheque compensar" — o razão não muda. Prova: `frontend/tests/finance-page-live.test.tsx`, caso F14 (`R$ 1.000,00 em 1 cheque vinculado…`).
 
 ## P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (2026-10-24) — legado não permite reconciliar instrumento e lançamento — BAIXA
 - **status:** ABERTA · **dono:** DBA, se o dono solicitar relatório · **bloqueia:** não.
@@ -11864,3 +11865,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** operação/runbook · **dono:** próximo bloco de backend financeiro ou documentação operacional · **bloqueia:** não.
 - **origem:** C3-02 da junta do `B-SAN3-12a` (`agent-orchestration/omega/juntas/J-B-SAN3-12a.md:37`) e parecer do porteiro do #459, linha 144.
 - **encerramento:** runbook nomeia e ensaia, em base descartável, a reconciliação de `_prisma_migrations` e a reaplicação segura da `20260882000000` depois do rollback manual, sem perder ou duplicar vínculo.
+
+## P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (2026-10-26) — 8 somas de dinheiro/contagem já existentes no front financeiro — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (medidas na `origin/main` `c9a2d036`, antes do ramo do `B-SAN3-12b`) · **bloqueia:** não.
+- **origem:** ratificação do orquestrador de 2026-10-26 14:40Z no fim do plano `B-SAN3-12-plano.md` (achado do dev do 12b no F8). O F8 virou trava com inventário congelado em `frontend/tests/finance-no-money-reduce.guard.test.ts`.
+- **inventário (por arquivo e expressão normalizada):** 7 em `frontend/src/modules/finance/commissions/**` (`commissions.adapter.ts`, `CommissionDetailDrawer.tsx`, `ConferenciaRemuneracoesView.tsx` ×3, `RemuneracoesPage.tsx` ×2) e 1 em `titles/financial-titles.adapter.ts` (`sumAmount` de `computeTitleKpis`, usado só pelas telas legadas de Cobranças e Pagamentos).
+- **donos:** as 7 de `commissions/**` — o bloco das telas de comissões; a 1 de `titles/` — o `B-SAN3-24`, quando as telas legadas saírem (resposta do dono à Q4).
+- **encerramento:** inventário vazio; o guard então afirma zero ocorrência em `frontend/src/modules/finance/**`.
+
+## P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do menu viram `/finance?aba=…` — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco`, consequência declarada do F13 (D-4 do relatório do dev) · **dono:** `B-SAN3-24` (tira as telas legadas e mexe no menu) · **bloqueia:** não.
+- **origem:** `docs/revisoes/SAN3/B-SAN3-12b-dev.md`, D-4. O §7.2 manda os `path` de `COBRANCAS`/`PAGAMENTOS` apontarem para `/finance?aba=rec|pag`. Dois efeitos fora do alcance do PERMITIDO: (a) o `NavLink` compara só o caminho, então em `/finance` os três itens (Financeiro, Cobranças, Pagamentos) ficam marcados como ativos (`layouts/AppShell.tsx`, fora do PERMITIDO); (b) `computeHiddenNavPaths` esconde item governado pelo menu do backend (`navigation.registry.ts` ainda declara `/finance/charges` e `/finance/payments`, PROIBIDO no §7.4), e os caminhos com `?aba=` não casam com nenhum governado — os dois itens deixam de ser escondidos pelo provisionamento (continuam guardados pela rota `/finance`, `financial_entries:read`, e pelo servidor).
+- **encerramento:** o menu marca ativo só o item da aba aberta e os dois itens voltam a ser governados pelo menu do backend (ou saem do menu, se o `B-SAN3-24` decidir uma entrada só).
