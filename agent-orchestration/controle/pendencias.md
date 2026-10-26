@@ -11369,7 +11369,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organização fica inerte — BAIXA
 
-- **status:** FECHADA NA AUTORIA do `B-TRC-02` (2026-10-20; PR e head a preencher pelo orquestrador ao versionar), pelo teste de encerramento do plano v2 §12 do `B-TRC-02`; antes: ABERTA · **escopo:** `pre-existente` (a demo `scripts/traccar-dev-demo.mjs` nasceu no `B-TRC-01`, #426; o login sem organização é do `B-O6R-01`) · **dono:** `B-TRC-02` (ou bloco da demo)
+- **status:** FECHADA pelo `B-TRC-02` no PR #454, merge `8a7885f4` (2026-10-25; gravado pelo PR de registro da rodada de 24–26/10, conforme `porteiro-456-454-parecer.md:25,85`), pelo teste de encerramento do plano v2 §12 do `B-TRC-02`; antes: ABERTA · **escopo:** `pre-existente` (a demo `scripts/traccar-dev-demo.mjs` nasceu no `B-TRC-01`, #426; o login sem organização é do `B-O6R-01`) · **dono:** encerrado
 - **Origem:** demonstração do Traccar de 18/10 (orquestrador), com `--with-web`. A API da demo registrou `loginWithoutOrgOutcome: "inert_no_execute"` ("Login sem organização INATIVO — causa no desfecho da sonda"): o papel de runtime da demo não tem EXECUTE na função `auth_login_candidates`, porque a demo não roda o script de papéis do `B-SAN3-05`. O sistema falhou fechado e logou a causa, como deve.
 - **Efeito:** na tela da demo, o operador de despacho não entra pelo formulário (401); com a organização informada (login direcionado), entra (HTTP 200). Os prints de 18/10 foram tirados assim.
 - **bloqueia:** não (só a demo; nada em produção).
@@ -11482,7 +11482,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-TRC02-LIMITADOR-POR-ROTA (2026-10-20) — evento e posição com limitador e concorrência próprios por rota — MÉDIA
 
-- **status:** FECHADA NA AUTORIA do `B-TRC-02` (2026-10-20; PR e head a preencher pelo orquestrador ao versionar) · **escopo:** `dentro-do-bloco` (C-22 do plano v2) · **dono:** `B-TRC-02`
+- **status:** FECHADA pelo `B-TRC-02` no PR #454, merge `8a7885f4` (2026-10-25; gravado pelo PR de registro da rodada de 24–26/10, conforme `porteiro-456-454-parecer.md:25,85`); antes: ABERTA · **escopo:** `dentro-do-bloco` (C-22 do plano v2) · **dono:** encerrado
 - **Origem:** plano v2 §12 (`docs/revisoes/TRACCAR/B-TRC-02-plano.md`), C-22. Uma rajada de posições não pode esgotar o balde dos eventos, nem o contrário.
 - **Como fechou:** a C8 e a C11 estão verdes (`tests/traccar-event-listener.test.ts`, 12/12; a C11 roda o app de produção num processo filho), e a M-E36 ficou vermelha (`docs/revisoes/TRACCAR/B-TRC-02-dev.md`). No demo, 110 de 120 posições receberam 429 e o evento seguinte recebeu 204 (passo 20).
 - **bloqueia:** não.
@@ -11614,12 +11614,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento previsto (B-SAN3-12a):** `POST /cheques/:id/unlink-title` desvincula `registered` e `deposited` (A5, `tests/b-san3-12a-unlink-title.test.ts`); o status muda no merge do 12a, pelo porteiro.
 - **status:** ABERTA · **dono:** próximo bloco de cheques/tela · **bloqueia:** não.
 - **encerramento:** definir e provar fluxo seguro para cheque `deposited` cujo título já foi pago.
+- **pós-merge do #459 (2026-10-26):** segue ABERTA. O porteiro do #459 a listou entre as que deveriam mudar no merge (`porteiro-459-parecer.md:145,197`), mas a ata só autoriza o fechamento de duas (`J-B-SAN3-12a.md:39-41`) e não mediu este critério de encerramento. Divergência registrada em `D-REGISTRO-RODADA-2026-10-24-A-26`.
 
 ## P-SAN3-20-DELETE-TITULO-COM-CHEQUE (2026-10-24) — título com cheque pendente pode ser apagado — BAIXA
 - **encerramento previsto (B-SAN3-12a):** `DELETE`/`PATCH amount` do título com cheque pendente → `422 title_has_pending_cheque` (A21); o status muda no merge do 12a, pelo porteiro.
-- **status:** ABERTA · **dono:** próximo bloco de títulos · **bloqueia:** não; o clear falha fechado com `title_not_found`.
+- **status:** FECHADA pelo `B-SAN3-12a` no PR #459, merge `9dad66c0` (2026-10-26); antes: ABERTA, dono próximo bloco de títulos · **dono:** encerrado · **bloqueia:** não.
 - **encerramento:** DELETE recusa com `422 title_has_pending_cheque` e prova concorrente.
 - **ciclo 2 do B-SAN3-12a (2026-10-26):** a prova concorrente existe — `tests/b-san3-12a-title-mutation-race-db.test.ts` A29-c (barreira: o DELETE bloqueia no FOR UPDATE da unidade, relê e sai 422; FINAL título vivo com 1 pendente) e A29-g (N=20 sem barreira, nunca apagado com pendente); mutação "tirar o re-check do delete" deixa os dois vermelhos. **Fecha no merge do #459, pelo porteiro** (não antes).
+- **fechamento pós-merge:** apensado pelo PR de registro da rodada de 24–26/10, conforme `J-B-SAN3-12a.md:39-41` (C4b, item 1) e parecer do porteiro do #459, linhas 142–147.
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
 - **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
@@ -11659,7 +11661,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **teste de encerramento:** asserção de `titleId` no item da lista; a M4b passa a vermelho.
 
 ## P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO (2026-10-25) — o PERMITIDO do 12a não cobre o que as regras do dono quebram — ALTA (processo; bloqueia o merge do 12a)
-- **status:** ABERTA · **dono:** orquestrador + `planejador-mestre` (emenda escrita do plano, `D-EMENDA-ANTES-DO-CODIGO`) · **bloqueia:** o merge do `B-SAN3-12a`.
+- **status:** FECHADA pelo `B-SAN3-12a` no PR #459, merge `9dad66c0` (2026-10-26); antes: ABERTA, bloqueava o merge do `B-SAN3-12a` · **dono:** encerrado · **bloqueia:** não.
 - **emenda (2026-10-25):** Emendas **E1** e **E1-bis** (12a) do `planejador-mestre` (Fable), apensas em `docs/revisoes/SAN3/B-SAN3-12-plano.md`; crítica `docs/revisoes/SAN3/B-SAN3-12a-E1-critica.md`. Aplicadas pelo dev (relatório E10–E14): F1–F5 ajustados nos arquivos que a E1.10 pôs no PERMITIDO; A27, D1, A28, B1, B2.
 - **critério de fechamento (B1 da E1-bis, cumulativo):** (1) CI `backend` e `backend-postgres` `completed/success` no head; (2) comparação base × head normalizada por script com "só no head = 0" e as três listas publicadas; (3) a propriedade do T2.1 medida à mão no descartável só migrado. (2) e (3) medidos no relatório E13; (1) é conferido no head empurrado — quem fecha o status é o porteiro/orquestrador com o `check-runs` do head.
 - **medido (2026-10-25, E13):** (1) CI no `a0b8f4be`: `backend` success (4013 · 0 fail · 2 skipped), `backend-postgres` success (493/493, 0 pulado); (2) só no head = **1** (teste de tempo do Traccar, verde isolado e na CI — o "= 0" da letra não saiu nesta máquina carregada, declarado), só na base 1, nos dois lados 11 com causa; skipped só no head 0; (3) T2.1 à mão: roles 0 · role_permissions 0 · permissions 4 · super_admin 0.
@@ -11670,6 +11672,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   mais, por leitura e execução nas etapas seguintes: `tests/cheque-title-link-atomic-db.test.ts`, `src/modules/financial-summary/financial-summary.repository.ts`
   (A16 em memória: `linkedPendingCount` 0) e o snapshot de `super_admin`/`platform_admin` em `tests/fixtures/role-catalog-contract.snapshot.json`.
 - **encerramento:** emenda do plano nomeando esses arquivos no PERMITIDO (ou outra decisão), dev aplica, bateria verde.
+- **fechamento pós-merge:** a junta mediu o critério C3 item 3 e autorizou o fechamento no merge (`J-B-SAN3-12a.md:39-40`); o porteiro do #459 confirmou o squash, a compatibilidade promessa × diff e a CI pós-merge verde (`porteiro-459-parecer.md:85-121,142-147`).
 
 ## P-SAN3-12-FILA-PEDIDO-DESVINCULO (2026-10-25) — pedido/aprovação do desvínculo não é persistido — PRODUTO
 - **status:** ABERTA · **dono:** `B-O6R-07c-b2` (generalizar a fila de aprovações) · **bloqueia:** não.
@@ -11867,6 +11870,29 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (`7eb1a814`, 2026-07-18) · **dono:** financial-summary · **bloqueia:** não.
 - **origem:** C4-05 da junta do B-SAN3-12a (ciclo 1): a mutação M16d é invisível em memória e sob superusuário.
 - **encerramento:** caso do resumo com duas organizações na mesma base, sob papel sem bypass, que fica vermelho com o filtro de organização retirado.
+
+## P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o host não tem `setsid` — MÉDIA
+- **status:** ABERTA · **escopo:** `pre-existente`, ambiente/arnês, não produto (C3-04: frequência igual na base `8a7885f4`) · **dono:** arnês de testes · **bloqueia:** não. Gravidade MÉDIA é classificação do registrador (a C3 deu `nota`): o vermelho de ambiente impede medir no Windows o que só a CI Linux mede.
+- **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
+- **fora desta pendência:** a falha do shim do `prisma` no T2.1 (mesma lista do porteiro, linha 100) já tem dona própria, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (C3-04).
+- **efeito:** vermelho ambiental e resíduo temporário podem mascarar o resultado do drill no host; a CI Linux cobre o produto, mas o arnês local não é portátil.
+- **encerramento:** os dois drills removem o scratch com retry/fechamento de handles no Windows e T14 tem execução portátil ou skip ambiental explícito com cobertura equivalente em Linux; repetir cada caso 20 vezes sem `hookFailed`, resíduo ou falso vermelho.
+
+## P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de regressão — BAIXA
+- **status:** ABERTA · **escopo:** ferramenta de processo · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` ou próximo PR do guard · **bloqueia:** não.
+- **origem:** revisão independente do PR #458 (merge `b08c7557`), `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/PR-458-revisao.md:112-126` (N1–N3; a N1 propõe este ID, BAIXA, e o dono). O regex fica em `scripts/migration-transaction-guard.mjs:200`; os casos existentes, em `tests/migration-transaction-guard.test.ts:156-173`; a mutação MR6 sobreviveu 25/25. Remover `ROLLBACK` de `CONTROLE_DE_TRANSACAO` não deixa a suíte vermelha; faltam casos próprios para `ROLLBACK`, `SAVEPOINT` e `ABORT`.
+- **notas N2/N3:** G5 lê linhas cruas, de modo que `NAO-ATOMICA` dentro de literal também satisfaz a declaração (caso artificial); `docs/revisoes/B-GUARD-MIGRACAO-{plano,dev}.md` ficaram fora da tabela de escopo do §3, mas são somente registro e não tocaram proibidos.
+- **encerramento:** casos permanentes tornam vermelha a retirada de cada controle (`ROLLBACK`, `SAVEPOINT`, `ABORT`) e prendem a leitura de declaração fora de literal; a tabela de escopo passa a listar os dois arquivos de registro ou registra expressamente a exceção documental.
+
+## P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO (2026-10-26) — segundo cheque do valor cheio enquanto o primeiro está pendente — MÉDIA
+- **status:** ABERTA · **escopo:** `pre-existente` do PR #456 · **dono:** próximo bloco de backend financeiro · **bloqueia:** não. Gravidade MÉDIA é classificação do registrador (a ata diz "ajuste").
+- **origem:** C1-A1 da junta do `B-SAN3-12a` (`agent-orchestration/omega/juntas/J-B-SAN3-12a.md:34-35`) e parecer do porteiro do #459, linhas 142–147. O mesmo título aceita um segundo cheque do valor cheio enquanto o primeiro está pendente; a compensação do segundo falha fechada, sem caixa em dobro.
+- **encerramento:** o segundo vínculo é recusado ou limitado pelo saldo ainda vinculável, sob concorrência, com teste no backend e dinheiro exato.
+
+## P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO (2026-10-26) — falta reaplicação após rollback manual da migração 20260882000000 — BAIXA
+- **status:** ABERTA · **escopo:** operação/runbook · **dono:** próximo bloco de backend financeiro ou documentação operacional · **bloqueia:** não.
+- **origem:** C3-02 da junta do `B-SAN3-12a` (`agent-orchestration/omega/juntas/J-B-SAN3-12a.md:37`) e parecer do porteiro do #459, linha 144.
+- **encerramento:** runbook nomeia e ensaia, em base descartável, a reconciliação de `_prisma_migrations` e a reaplicação segura da `20260882000000` depois do rollback manual, sem perder ou duplicar vínculo.
 
 ## P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checklist sobrepõe as colunas — MÉDIA
 
