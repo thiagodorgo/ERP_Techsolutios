@@ -11753,11 +11753,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** por ordem do dono, esta entrega é somente backend; `frontend/**` ficou intocado. O backend agora recusa PATCH/publish/DELETE sem token, conforme Q2.
 - **encerramento:** `ChecklistEditorPage` e `TenantChecklistsPage` enviam o token, tratam 409/`activeRuns`, entregam as três aparências aprovadas e passam a bateria smoke/build da fatia de tela.
 
-## P-B-SAN3-22-CI-DB-SUITE (2026-10-26) — suíte nova de lock não está na lista PostgreSQL — ALTA
+## P-B-SAN3-22-CI-DB-SUITE (2026-10-26) — suíte nova de lock fora da lista curada do job `backend-postgres` — MÉDIA
 
-- **status:** ABERTA · **dono:** orquestrador, por emenda de escopo antes do PR · **bloqueia:** o merge do B-SAN3-22, não a entrega desta fatia backend.
-- **origem:** `tests/checklist-template-lock-db.test.ts` é novo e auto-pula sem `DATABASE_URL`, mas `.github/workflows/ci.yml` não o inclui na lista `SUITES` do job `backend-postgres`. A v2 e o comando desta fatia proíbem `.github/**`, portanto o DEV não pode ampliar o escopo em silêncio.
-- **encerramento:** emenda revisada autoriza acrescentar a suíte à lista curada; executar a forma exata do job PostgreSQL 3 vezes, com denominador constante e zero falhas/pulos, antes da junta.
+- **status:** ABERTA · **dono:** orquestrador, por emenda de escopo (`.github/**` é PROIBIDO no plano v2) · **bloqueia:** não. Re-medida pelo `dev-san322-opus` em 2026-10-26: a suíte **já roda na CI**, no job `backend` (`npm test` com `DATABASE_URL` exportada, banco migrado, usuário `postgres` superusuário); o runner barra auto-pulo pelo orçamento de skip (2). Prova local na forma do job: `npm test` com `DATABASE_URL` e `CORE_SAAS_PERSISTENCE=memory` registrou `ok … CE-4/5`, `ok … CE-12-db`, `ok … CE-22/23` no TAP.
+- **origem:** `tests/checklist-template-lock-db.test.ts` não está na lista `SUITES` do job `backend-postgres` (banco provisionado com seed, persistência `prisma`), onde o §12 do plano v2 o situa. A redação anterior desta pendência ("bloqueia o merge") supunha que a suíte não rodava em job nenhum; isso não se sustentou na medição.
+- **encerramento:** a emenda decide se a suíte também entra na lista curada do `backend-postgres`; se entrar, executar a forma exata daquele job 3 vezes, com denominador constante e zero falhas/pulos.
 
 ## P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de colegas fora da lista — MÉDIA
 - status: ABERTA

@@ -637,6 +637,19 @@ function checklistTokenCallSiteViolations(root: string): string[] {
         violations.push(`${file}:${lineOf(match.index)} PATCH com components sem componentKey`);
       }
     }
+    // URL montada por concatenação (`"/api/v1/tenant/checklists/" + id + "/publish"`, a forma de
+    // `tests/helpers/o6r07c-census.ts`, que o inventário M-27 do plano não contou): publish, ou PATCH/DELETE
+    // quando o método vem como argumento posicional antes da URL.
+    const concatPattern = /(?:(["'])(PATCH|DELETE)\1\s*,\s*)?["']\/api\/v1\/tenant\/checklists\/["']\s*\+\s*[^,]+/g;
+    for (let match = concatPattern.exec(source); match; match = concatPattern.exec(source)) {
+      const isPublish = /\+\s*["']\/publish["']\s*$/.test(match[0]);
+      const method = isPublish ? "POST /publish" : match[2] ?? null;
+      if (!method) continue;
+      const window = windowFrom(match.index);
+      if (!/sem-token-proposital/.test(window) && !window.includes("expectedUpdatedAt")) {
+        violations.push(`${file}:${lineOf(match.index)} ${method} sem expectedUpdatedAt (URL concatenada)`);
+      }
+    }
     const directPattern = /(?<!super)\.updateTemplate\(/g;
     for (let match = directPattern.exec(source); match; match = directPattern.exec(source)) {
       const window = windowFrom(match.index);
