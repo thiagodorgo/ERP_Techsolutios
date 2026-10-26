@@ -40,3 +40,11 @@ em `00-quedas.md` pelo orquestrador (P3/P6), com o motivo de cada queda.
 Os 4 mandatos tinham espaço no fim de uma linha (saída colada do pré-voo, linha "AVISO … NAO DETERMINAVEL"), o que o `git diff --check` recusa.
 As cópias versionadas tiveram SÓ o espaço final removido; os originais, byte a byte como as cadeiras os leram (e com o `mandato_md5` que elas declararam),
 ficam arquivados fora do repositório em `C:/Users/AMP/erp-pausa-2026-10-03/arquivo-mandatos-trc02-c2/` com `md5-originais.txt`.
+
+## Registro pós-merge — rodada de 24–26/10
+
+- **Head final do PR #454:** `acc14b1e04366a046e96358895f4c2b397d92783`; **merge:** `8a7885f4c3bfab02e6c31b318c1111e262f2907c`.
+- **Delta desde o `approved_head` `42800d0d`:** commit `18207efc` (registro da junta) e merge da `main` que trouxe `37a3f360` (#456) e `c76ec481` (#457). Os conflitos declarados ficaram em `decisoes.md`, `pendencias.md` e `pendencias-indice.md`; a CI do head final ficou 14/14 verde, e a árvore do squash é igual à do head final (parecer `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:47-56,76-77`).
+- **Cadeia completa da cadeira (a):** `a-pro` (Gemini CLI, bloqueio no `npm ci`) → `a-sol2` (Codex, limite) → `a-argon` (Antigravity, créditos) → `a-api` + `a-compl-opus` (votos contados). Fontes: as linhas de `votos/B-TRC-02-ciclo2/00-quedas.md` e a linha 19 desta ata.
+- **Correção do `a-opus`:** `00-quedas.md` declara `jurado-trc02-c2-a-opus` como sucessor do `a-sol2`, mas esse agente não existiu: nenhum arquivo dele em `votos/B-TRC-02-ciclo2/` (`ls`: só `a-pro-DESCARTADO`, `a-sol2-QUEDA`, `a-api-resposta-final`, `a-complemento` e os da cadeira), esta ata não o lista, e o orquestrador o registrou como inexistente (`C:/Users/AMP/erp-pausa-2026-10-03/planos/PLANO-RODADA-2026-10-24.md:81`). O sucessor efetivamente lançado depois do `a-sol2` foi o `a-argon`. A linha de `00-quedas.md` fica como foi escrita (registro P6); esta nota é a correção.
+- **Legalidade residual:** o inspetor conferiu os nomes dos mandatos, não todos os sucessores efetivos; permanece declarada como ressalva de registro, não como prova retroativa de inelegibilidade.
