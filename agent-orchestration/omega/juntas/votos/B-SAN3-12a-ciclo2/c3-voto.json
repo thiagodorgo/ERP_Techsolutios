@@ -1,0 +1,203 @@
+{
+ "jurado": "jurado-san312a-c3-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312a-c3-regressao-escopo-contrato",
+ "cadeira": "C3 — regressão (B1, B2), escopo (bloco, conserto do ciclo 2, dois merges, migração de dados) e registro/contrato (P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO, A17-bis)",
+ "executor": "Claude Opus (subagente genérico, corpo lido do blob do objeto)",
+ "mandato_md5": "77710114038554c8bef4334ca0ddb427 (CR retirado) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor (§C7.6) · substituição: cobre o Codex (fora por limite), por ordem do dono",
+ "corpo_comparacao": ".claude/ × .agents/ (os dois existem no objeto) × carregado por git show do blob: IDENTICO (md5 EOL-neutro e76fea30e07f3b47fcd0962025b06d62)",
+ "objeto": "8a9fc1d8426426403f8642e263b3e932d1738716 (rev-parse HEAD = ls-remote do ramo; 14 check-runs, 0 não-verdes, 0 pendentes) · head-base do bloco <objeto>~18 = 8a7885f4c3bfab02e6c31b318c1111e262f2907c (ancestral da origin/main) · origin/main de agora aaa9d36a = 2º pai do objeto · objeto no fim: igual",
+ "legalidade": "insp-san312a-c2-parecer.md (inspetor-san312a-c2-opus) · LIBERADO COM RESSALVA (R1–R7), ordem C2b → C4b → C1 → C3 · confere: sim (nome, worktrees j12a2-c3-wt/-wtb, containers j12a2-c3-*)",
+ "quorum": "unanimidade das 4 cadeiras do ciclo 2 (C1, C2b, C3, C4b), com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova) · a C3 vota pela primeira vez (nada a carregar, §C7 item 9)",
+ "leitura_de_outras_cadeiras": "não li c1-*, c2b-*, c4b-* (ciclo 2) nem c2-*/c4-* (ciclo 1); vi só os nomes dos arquivos no ls",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "**"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "**"
+   ],
+   "ci_objeto": "14 check-runs · 0 não-verdes · 0 pendentes; backend ×2 e backend-postgres ×2 completed/success; runner do backend: 358 arquivos · 4079 · pass 4077 · fail 0 · skipped 2; os 9 -db do bloco (45 casos) ok no job backend, 0 skip; drill do Traccar 6 ok no Linux da CI",
+   "suite_base_x_objeto": "objeto 358 arq · 4070 · pass 4059 · fail 9 · skipped 2; base 340 · 3924 · pass 3912 · fail 10 · skipped 2 (Windows, PG16/Redis7 meus, bancos frescos migrados, CORE_SAAS_PERSISTENCE=memory). Normalizador próprio: só no objeto 0; só na base 1 (work-order-invoicing-migration-drill-db, EBUSY no after); nos dois lados 7 com a mesma causa (san3-05 T14a/b, T14c, T14d: setsid ausente; san3-09 T2.1: shim do .bin/prisma; traccar-position-ingestion ×2: tempo; traccar-event-migration-drill: EBUSY no after)",
+   "traccar_tempo": "drill de eventos: caminho tocado não (imports ∩ diffs = ∅; só a pasta de migrações como dado); EBUSY objeto 5/5 × base 5/5 no Windows; Linux (container meu) 6/6 nos dois lados e CI 6 ok → ambiente pré-existente. Ingestão por tempo: isolada objeto 0/5 × base 0/5; Linux 22/22 → carga, nos dois lados. Critério B1-2 'só no head = 0': CUMPRIDO na minha lista (base certa <objeto>~18)",
+   "b2": "skipped objeto = base = 2 (RBAC_DB_PARITY), objeto ⊆ base por nome; passos com pass 0 · skipped ≥ 1: 0",
+   "b1_3": "descartável só migrado: roles 0 · role_permissions 0 · permissions 4 · super_admin 0; bootstrap-platform-admin ec=2 RBAC_NOT_PROVISIONED; tenants = users = 0",
+   "controles": "falha minha em tests/financial-accounts.test.ts (fora do diff) → 'só em A' com arquivo e causa; nome com caminho absoluto do worktree → só em A / nos dois (não se perde); reasons-census copiado na base → fail 2 pela asserção 'o censo não achou title_has_pending_cheque'"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "src/modules/**",
+    "tests/**",
+    "prisma/migrations/20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions/migration.sql",
+    "scripts/migration-transaction-guard.mjs",
+    "scripts/provision-rbac.ts",
+    "agent-orchestration/controle/**",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+    "API_CONTRACTS.md",
+    ".claude/agents/especialistas/jurado-san312a-*",
+    ".agents/agents/especialistas/jurado-san312a-*"
+   ],
+   "escopo": "bloco (67 caminhos): PROIBIDO tocado 0; fora da lista nominal 11 (6 corpos de jurado, 3 críticas, índice gerado, tests/b-san3-12a-pay-pending-cheque.test.ts ratificado no C2.2) — nota; ciclo 2 (15): PROIBIDO do C2.2 0, fora 2 (índice gerado, o próprio plano) — nota; hunks fora do 'só': auxiliares usados só pelos métodos autorizados (assertNoPendingCheque; JUSTIFICATION_FORBIDDEN_CONTROL/WellFormedCheckable) — nota; git diff --check 0 nos 5 trechos",
+   "casos": "nenhum caso apagado: renomes só os autorizados (5 K1–K3, 2 K2-db, a contagem 39→40); o ciclo 2 só acrescenta",
+   "vias": "gerado == fixture do objeto; base → objeto = exatamente 3 rotas (aggregate, reconciliation-policy, unlink-title); census-guard 32/32",
+   "merges": "ciclo 2: 0 caminho próprio; ciclo 1: 4 de registro, 0 linha perdida; índice == gerador",
+   "migracao": "BEGIN/COMMIT, 0 DDL, 2 ON CONFLICT, só super_admin/tenant_admin, ordena depois da main; trava 0 violação (teste 25/25); sonda: idempotente, rollback tira só 2 chaves e 4 concessões, falha no meio não grava metade e resolve+deploy converge, base sem papéis converge com provision-rbac; drill 3× 4/4 skipped 0; db-parity RBAC_DB_PARITY=1 3× 2/2 skipped 0",
+   "mutacoes": "T14 vermelho com a classe do unlink-title editada à mão; sem INSERT role_permissions → drill (a)(c) vermelhos (db-parity vermelha só sem seed); sem ON CONFLICT → drill (b) vermelho 23505; chaves na linha de base → 'a fronteira não apodrece' vermelho; cópia sem BEGIN → G2",
+   "controles": "laço sem as ampliações E1.10/E1b.6 acusa os caminhos que a E1 fez entrar; catálogo do objeto na base → parity 'fronteira' vermelha; sonda acusa concessão a mais (manager)"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "agent-orchestration/controle/pendencias.md",
+    "agent-orchestration/controle/pendencias-indice.md",
+    "agent-orchestration/controle/gerar-indice-pendencias.py",
+    "agent-orchestration/omega/reprovacoes/R-B-SAN3-12a-ciclo1.md",
+    "API_CONTRACTS.md",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/**",
+    "src/modules/financial-accounts/**",
+    "src/modules/cheques/**",
+    "src/modules/financial-summary/**",
+    "tests/b-san3-12a-reasons-census.test.ts",
+    "tests/b-san3-12a-title-mutation-race-db.test.ts"
+   ],
+   "pendencia": "P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO: ABERTA, critério B1 intacto, 0 linha a diz fechada; os 3 critérios do B1 estão cumpridos no objeto pela minha medição → pode fechar no merge, pelo porteiro; ALTA × CRÍTICA = artefato do gerador (a palavra 'crítica' no corpo), pré-existente",
+   "pendencias_ciclo2": "4 novas com escopo pre-existente, origem e dono; STATUS-CANCELLED e DRILL-PRISMA-SHIM existem; DELETE-TITULO-COM-CHEQUE ABERTA com critério A29-c/g para o porteiro",
+   "papeis": "achadores C2/C4 do ciclo 1 · topo planejador-san312a-c2-fable · dev dev-san312a-c2-opus — distintos; o dev não acumula papel",
+   "contrato": "censo próprio (AST) 74 reasons; 14 novos do bloco todos no contrato; 26 sem contrato = lista congelada; D1, 409 do A27, re-check sob lock (422 title_has_pending_cheque) e justificativa (400 invalid_justification) escritos e iguais ao código; invalid_title_reference 400 em código, contrato e teste (o 422 é só do texto do plano)",
+   "mutacoes": "A17bis (reason novo sem contrato) → censo vermelho; pré-existente documentado → 'só encolhe' vermelho",
+   "controles": "reason fabricado acusado pelo meu censo; revelou que o regex do teste não vê reason com dígito (C3-01)"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C3-01",
+   "defeito": "o censo A17-bis (regex \"([a-z_]+)\") não enxerga reason com dígito nem reason montado por template (invalid_${field})",
+   "evidencia": "mutação zz_c3_reason_fabricado → census 4/4 verde; zz_cadeira_reason_fabricado → fail 1; invalid_from/invalid_to vêm de financial-entry.service.ts:197 e só estão no contrato por escrita",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o guarda reconhece a forma literal sem dígito; hoje nenhum reason vivo escapa (grep de dígito vazio; os 2 de template estão no contrato)"
+  },
+  {
+   "id": "C3-02",
+   "defeito": "o rollback manual do runbook deixa _prisma_migrations como aplicada: migrate resolve --rolled-back recusa (not in a failed state) e migrate deploy é no-op; o runbook não diz como re-aplicar",
+   "evidencia": "sonda j12a2_c3_sonda: resolve ec=1, deploy 'No pending migrations', estado = PRE; re-aplicar o corpo converge",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "texto de runbook incompleto para o caminho de volta; sem perda de dado nem concessão a mais"
+  },
+  {
+   "id": "C3-03",
+   "defeito": "arquivos fora da lista nominal do PERMITIDO e auxiliares fora do 'só'",
+   "evidencia": "laço: 11 fora no bloco (corpos, críticas, índice, pay-pending-cheque.test.ts), 2 no ciclo 2; AST: assertNoPendingCheque, JUSTIFICATION_FORBIDDEN_CONTROL, WellFormedCheckable",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "nenhum é código de produto fora dos arquivos autorizados; o teste novo é nomeado no C2.2 do plano em vigor; os auxiliares servem só aos métodos autorizados"
+  },
+  {
+   "id": "C3-04",
+   "defeito": "EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows (traccar-event 5/5 nos dois lados; work-order-invoicing só na base no meu run)",
+   "evidencia": "rep-trcdrill.txt 5/5 × 5/5; container Linux e CI 6/6 sem EBUSY; a base 8a7885f4 é o commit que criou o drill",
+   "gravidade": "nota",
+   "escopo": "pre-existente (frequência igual na base 8a7885f4; o arquivo nasceu no B-TRC-02 #454) — pede pendência nova com dono (ferramentas de processo); a P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS cobre outra causa",
+   "classe": "não grave",
+   "motivo": "o arquivo termina vermelho no Windows por causa de ambiente, depois de todos os casos passarem"
+  },
+  {
+   "id": "C3-05",
+   "defeito": "o índice de pendências mostra CRÍTICA para a P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO, cujo cabeçalho diz ALTA",
+   "evidencia": "severidade() do gerar-indice-pendencias.py (87f6ae61, 2026-08-29) casa 'crítica' (revisão) no corpo com re.I antes de ALTA",
+   "gravidade": "nota",
+   "escopo": "pre-existente (gerador de 2026-08-29; dono: ferramentas de processo)",
+   "classe": "não grave",
+   "motivo": "o gerador lê a palavra de severidade em qualquer lugar do corpo"
+  },
+  {
+   "id": "C3-06",
+   "defeito": "o texto do plano (A29-d, l.986) diz 422 invalid_title_reference; código, contrato e teste dizem 400",
+   "evidencia": "cheque.repository.ts:83 ChequeError(400…); API_CONTRACTS.md l.520; b-san3-12a-title-mutation-race-db.test.ts:135 assere 400",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "divergência só no texto do plano; o contrato diz o que o código faz"
+  },
+  {
+   "id": "C3-07",
+   "defeito": "a db-parity na forma da CI (migrate + db:seed) fica verde com o INSERT de role_permissions apagado da migração",
+   "evidencia": "dbpar-mut.tap 2/2 com seed; 0/2 sem seed; o drill A22 (a)(c) acusa",
+   "gravidade": "nota",
+   "escopo": "pre-existente (P-RBAC-MIGRATION-PARITY-ESTATICA, aberta no ciclo 2 com dono)",
+   "classe": "não grave",
+   "motivo": "o seed concede pelo catálogo e mascara a concessão ausente na migração"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "censo A17-bis para reason com dígito ou montado por template (C3-01)",
+  "db-parity sob seed para concessão ausente na migração (C3-07; o drill cobre)"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS",
+  "P-SAN3-12-REASONS-SEM-CONTRATO",
+  "P-RBAC-MIGRATION-PARITY-ESTATICA",
+  "P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE",
+  "P-AUDIT-CRITICA-NA-TRANSACAO",
+  "P-TENANT-SETTING-AUDIT-SEM-VALOR",
+  "P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO",
+  "nova a registrar: EBUSY no teardown dos drills de migração no Windows (C3-04)"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "npm test (forma do job backend) no objeto e na base, bancos frescos, Redis meu",
+   "forma": "Windows, PG16/Redis7 meus",
+   "resultado": "4070/9/2 × 3924/10/2; só no objeto 0"
+  },
+  {
+   "comando": "gh api .../commits/<objeto>/check-runs; gh run view --job 121407042504 e 121407030698 --log",
+   "forma": "CI",
+   "resultado": "14/0/0; 4079 · fail 0 · skipped 2; -db do bloco 45 ok"
+  },
+  {
+   "comando": "zz-j12ac3-rep.sh traccar-event-migration-drill-db / traccar-position-ingestion-db, 5× por lado",
+   "forma": "Windows, arquivo isolado",
+   "resultado": "EBUSY 5/5 × 5/5; ingestão 0/5 × 0/5"
+  },
+  {
+   "comando": "node --test do drill e da ingestão do Traccar em node:20-bookworm",
+   "forma": "container Linux meu",
+   "resultado": "6/6 e 22/22 nos dois lados"
+  },
+  {
+   "comando": "zz-j12ac3-escopo.py / zz-j12ac3-hunks.mjs / zz-j12ac3-casos.mjs",
+   "forma": "script + AST",
+   "resultado": "PROIBIDO 0; notas C3-03; 0 caso apagado"
+  },
+  {
+   "comando": "o6r07c-census.ts gravar; o6r07c-census-guard; mutação da classe",
+   "forma": "objeto",
+   "resultado": "gerado = fixture; 3 rotas na base; T14 vermelho"
+  },
+  {
+   "comando": "sonda de migração (j12a2_c3_sonda, _t21, _falha, _par, _par2) + drill 3× + db-parity 3× + mutações",
+   "forma": "PG16 meu",
+   "resultado": "idempotente, rollback só 2 chaves, falha sem metade, converge; 4/4 e 2/2 skipped 0"
+  },
+  {
+   "comando": "zz-j12ac3-reasons.mjs + b-san3-12a-reasons-census + mutações A17bis",
+   "forma": "AST + teste",
+   "resultado": "14 novos no contrato; 26 congelados; C3-01"
+  }
+ ],
+ "justificativa": "Terreno: worktrees j12a2-c3-wt (objeto) e j12a2-c3-wtb (head-base 8a7885f4), npm ci próprio, 0 junction, disco ≥ 9,8 GB em todo o tempo; PG16 e Redis7 meus em 127.0.0.1:47833/47834; base viva nunca tocada. Item 1: CI do objeto verde e concluída; -db do bloco sem pulo; base × objeto normalizado por script meu: só no objeto 0, só na base 1, nos dois lados 7 com a mesma causa; o 'só no head' do dev (EBUSY do drill do Traccar) é ambiente Windows pré-existente (5/5 × 5/5, Linux 0); B2 skipped ⊆; B1-3 medido à mão. Controles do item 1: falha minha em teste financeiro não tocado aparece em 'só no objeto'; caminho absoluto não se perde; censo copiado na base fica vermelho. Item 2: PROIBIDO intocado; notas de lista nominal e de auxiliares; 0 caso apagado; vias = gerador (3 na base); merges sem conteúdo próprio; índice = gerador; migração com BEGIN/COMMIT, idempotente, rollback tira só as 2 chaves, falha no meio não grava metade, drill e db-parity 3× sem pulo. Controles do item 2: laço sem as ampliações acusa o que a E1 fez entrar; catálogo do objeto na base deixa a parity vermelha; a sonda acusa concessão a mais; G2 sem BEGIN. Item 3: a pendência do plano falsificado segue ABERTA com o critério B1, que está cumprido na minha medição (fecha no merge, pelo porteiro); pendências do ciclo 2 com dono; papéis distintos; o contrato cobre os 14 reasons novos, D1, os 409, o re-check e a justificativa. Controle do item 3: reason fabricado acusado pelo meu censo (e revelou C3-01). Ficou sem medir: nada dos meus 3 itens; matéria de C1/C2b/C4b não foi medida por mim. Achados: 7 notas (C3-01..07), nenhum bloqueia. Limpeza: ver teardown.\nVOTO: APROVADO — CI do objeto verde e concluída (14/14), -db do bloco sem pulo (45 ok); base × objeto: só no objeto 0, só na base 1 (EBUSY no teardown do drill de invoicing, Windows), nos dois lados 7 com a mesma causa (setsid, shim do .bin/prisma, tempo, EBUSY); Traccar: EBUSY 5/5 no objeto × 5/5 na base, 0 no Linux — ambiente pré-existente; skipped ⊆; escopo sem PROIBIDO tocado, nenhum caso apagado, vias = gerador; pendência P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO segue ABERTA com o critério B1, agora cumprido na minha medição (fecha no merge, pelo porteiro); contrato cobre os 14 reasons novos, D1 e os 409; migração com BEGIN/COMMIT, idempotente, rollback tira só as 2 chaves, drill 3×4/4 skipped 0; pendências: as aceitas acima + a nova do EBUSY (C3-04)",
+ "teardown": "containers j12a2-c3-pg, -redis, -run e a rede j12a2-c3-net removidos (docker rm -f / network rm; 0 restante); os bancos j12a2_c3_* foram junto com o container do Postgres; processos com o caminho do worktree = 0; os dois worktrees removidos por git worktree remove --force (ec 0/0; worktree list com j12a2 = 0); mutações restauradas (hash-object = blob em todas; status dos dois worktrees = 0 antes da remoção; 0 .zz-j12ac3-bak); senha apagada, grep -F da senha = 0 no SCRATCH e nos votos; base viva e containers alheios nunca tocados; w-san312a só com c3-evidencia.md e c3-voto.json (não rastreados, sem commit); disco livre no fim 10 938 MB"
+}

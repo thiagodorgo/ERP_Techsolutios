@@ -1,0 +1,26 @@
+{
+  "jurado": "jurado-san313-c3-sol (identidade nova; nada herdado como fato)",
+  "corpo": "jurado-san313-c3-regressao-escopo-registro",
+  "cadeira": "C3 — regressão (as duas suítes inteiras), escopo (§5) e merge, registro (decisão, pendências, contrato)",
+  "mandato_md5": "2e579ef70ec2130d9e5d144bb0c59c6a · declarado: não publicado no mandato",
+  "modelo": "GPT-5.6 Sol, esforço medium · nível menor · substituição: três cadeiras passaram de Claude para Codex Sol por decisão do dono em 25/10",
+  "corpo_md5": ".claude corpo útil 8764850c30d678ad9d237b3b604d67b5 · .agents blob c2e6b7390f18f8963cab49f5f89d91a0 e corpo útil 8764850c30d678ad9d237b3b604d67b5 · recebido: blob .agents do objeto · IDENTICO",
+  "objeto": "ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d",
+  "legalidade": "parecer: LIBERADO COM RESSALVA R1–R6; revalidação em andamento",
+  "quorum": "unanimidade de 3, com veto · ciclo 1",
+  "leitura_de_outras_cadeiras": "não li c1-* nem c2-*",
+  "pausa": "nenhuma",
+  "arquivos_medidos": ["**"],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    {"item": 1, "estado": "EM APURAÇÃO", "backend_ci": "EM APURAÇÃO", "backend_sem_banco": "EM APURAÇÃO", "flutter_x3": "EM APURAÇÃO", "format_analyze": "EM APURAÇÃO", "contagem": "EM APURAÇÃO", "residuo": "EM APURAÇÃO", "controle_8a7885f4": "EM APURAÇÃO"},
+    {"item": 2, "estado": "EM APURAÇÃO", "caminhos": "EM APURAÇÃO", "proibido": "EM APURAÇÃO", "trechos": "EM APURAÇÃO", "merges": "EM APURAÇÃO", "controles": "EM APURAÇÃO"},
+    {"item": 3, "estado": "EM APURAÇÃO", "decisao": "EM APURAÇÃO", "pendencias": "EM APURAÇÃO", "contrato": "EM APURAÇÃO", "plano_san3": "EM APURAÇÃO", "kpis": "EM APURAÇÃO", "controles": "EM APURAÇÃO"}
+  ],
+  "justificativa": "EM APURAÇÃO",
+  "o_que_executei": [],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "teardown": "EM APURAÇÃO"
+}

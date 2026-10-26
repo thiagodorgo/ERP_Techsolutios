@@ -21,6 +21,8 @@ import {
   type FinancialPeriodCloseRepository,
   type FinancialTitleRepository,
 } from "./financial-title.repository.js";
+import { createDefaultChequePendingReader, type ChequePendingReader } from "./cheque-pending-reader.js";
+import { FinancialTitleError } from "./financial-title.types.js";
 import type {
   CreateFinancialTitleForSourceInput,
   CreateFinancialTitleForWorkOrderInput,
@@ -271,24 +273,48 @@ export class FinancialTitleService {
     if (accountId !== undefined && !(await this.accountResolver(actor.tenantId, accountId))) {
       throw invalidAccountReferenceError();
     }
+    // B-SAN3-12a (§4.3, corolário do "Só cheque do valor exato") — com cheque pendente vinculado, o valor do título
+    // não muda: o cheque foi vinculado pelo saldo exato, e mudar o valor faria dele complemento (ou sobra).
+    // FAST-FAIL pelo pool (precedência pública; nenhuma transação abre). A corrida com o vínculo é fechada pelo re-check
+    // SOB o lock, na unidade abaixo (ciclo 2, A29).
+    const amount = rawAmount === undefined ? undefined : parseAmount(rawAmount);
+    if (amount !== undefined && amount !== current.amount) {
+      await assertNoPendingCheque(await createDefaultChequePendingReader(), actor.tenantId, current.id);
+    }
 
     // Editáveis: party_name/document/category/description/amount/due_date/account_id. NÃO altera
     // status/paid_amount/competencia/direction/party_type (imutáveis pós-create nesta fatia).
-    const result = await this.repository.update({
+    const input = {
       tenantId: actor.tenantId,
       financialTitleId: current.id,
       partyName: body.party_name === undefined && body.partyName === undefined ? undefined : parsePartyName(body.party_name ?? body.partyName),
       document: parseOptionalDocument(body.document),
       category: parseOptionalCategory(body.category),
       description: parseOptionalDescription(body.description),
-      amount: rawAmount === undefined ? undefined : parseAmount(rawAmount),
+      amount,
       dueDate: rawDueDate === undefined ? undefined : parseDueDate(rawDueDate),
       accountId,
       updatedBy: actor.userId,
+    };
+
+    // B-SAN3-12a, ciclo 2 (A29; C4-03) — a escrita roda NA UNIDADE, espelho do `payTitle`: trava SHARED do período (a
+    // standalone a fazia por dentro; o repositório da unidade não) → FOR UPDATE da linha do título (o vínculo de cheque
+    // trava a MESMA linha) → re-check do conjunto pendente SOB o lock → escrita. Vínculo que commitou depois do fast-fail
+    // é visto aqui → 422; vínculo que chega depois espera este lock e relê o valor novo → cheque_amount_mismatch.
+    // Ordem de travas: período → título → leitura de cheques (sem trava), a mesma do `payTitle`.
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      await ctx.assertPeriodOpenShared(current.competencia, periodClosedError);
+      const locked = await ctx.titles.findByIdForUpdate(actor.tenantId, current.id);
+      if (!locked || locked.deletedAt != null) throw titleNotFoundError();
+      if (amount !== undefined && amount !== locked.amount) {
+        await assertNoPendingCheque(ctx.cheques, actor.tenantId, locked.id);
+      }
+      const result = await ctx.titles.update(input);
+      if (result.outcome === "not_found") throw titleNotFoundError();
+      if (result.outcome === "amount_below_paid") throw amountBelowPaidError();
+      return result.title;
     });
-    if (result.outcome === "not_found") throw titleNotFoundError();
-    if (result.outcome === "amount_below_paid") throw amountBelowPaidError();
-    return result.title;
   }
 
   async changeStatus(actor: FinancialTitleActorContext, financialTitleId: string, body: RawRecord): Promise<FinancialTitle> {
@@ -379,11 +405,23 @@ export class FinancialTitleService {
   async delete(actor: FinancialTitleActorContext, financialTitleId: string): Promise<FinancialTitle> {
     const current = await this.getWritable(actor, financialTitleId);
     await this.assertPeriodOpen(actor.tenantId, current.competencia);
+    // B-SAN3-12a (§4.3; fecha P-SAN3-20-DELETE-TITULO-COM-CHEQUE na origem) — título com cheque pendente vinculado
+    // não se apaga: o cheque compensaria contra um título que sumiu. FAST-FAIL pelo pool; a corrida é fechada abaixo.
+    await assertNoPendingCheque(await createDefaultChequePendingReader(), actor.tenantId, current.id);
 
-    const result = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (result.outcome === "not_found") throw titleNotFoundError();
-    if (result.outcome === "title_has_payments") throw titleHasPaymentsError();
-    return result.title;
+    // B-SAN3-12a, ciclo 2 (A29; C4-04) — o mesmo conserto do `update`: período → FOR UPDATE do título → re-check do
+    // conjunto pendente SOB o lock → soft-delete, tudo na unidade (um vínculo que commitou no meio → 422, nada apagado).
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      await ctx.assertPeriodOpenShared(current.competencia, periodClosedError);
+      const locked = await ctx.titles.findByIdForUpdate(actor.tenantId, current.id);
+      if (!locked || locked.deletedAt != null) throw titleNotFoundError();
+      await assertNoPendingCheque(ctx.cheques, actor.tenantId, locked.id);
+      const result = await ctx.titles.softDelete(actor.tenantId, locked.id, actor.userId);
+      if (result.outcome === "not_found") throw titleNotFoundError();
+      if (result.outcome === "title_has_payments") throw titleHasPaymentsError();
+      return result.title;
+    });
   }
 
   // Localiza um título ESCREVÍVEL (existe, do tenant, não deletado). Fonte do 404 e da competência que o
@@ -403,6 +441,22 @@ export class FinancialTitleService {
     if (await this.periodCloseRepository.isPeriodClosed(tenantId, competencia)) {
       throw periodClosedError(competencia);
     }
+  }
+}
+
+// B-SAN3-12a (§4.3) — enquanto o conjunto "cheque pendente do título" (porta estreita `cheque-pending-reader.ts`) não
+// estiver vazio, o saldo do título só muda pela compensação do cheque ou pelo desvínculo → 422 title_has_pending_cheque.
+// Ciclo 2 (A29) — o leitor entra por parâmetro (idioma `poolUndoReaders`/`unitUndoReaders` do serviço de lançamentos):
+// a porta do pool no fast-fail, `ctx.cheques` (a transação da unidade) no re-check sob o lock.
+async function assertNoPendingCheque(reader: ChequePendingReader, tenantId: string, financialTitleId: string): Promise<void> {
+  const pending = await reader.findPendingByTitle(tenantId, financialTitleId);
+  if (pending.length > 0) {
+    throw new FinancialTitleError(
+      422,
+      "FINANCIAL_TITLE_UNPROCESSABLE",
+      "title_has_pending_cheque",
+      "The financial title has a linked cheque awaiting clearance; unlink the cheque before changing or deleting the title.",
+    );
   }
 }
 

@@ -274,3 +274,42 @@ test("serviço: competência corrente do settledThisMonth = deriveCompetencia(no
   const s = await summary.getSummary(actor());
   assert.equal(s.settledThisMonth.competencia, deriveCompetencia(new Date()));
 });
+
+// ---------------------------------------------------------------- B-SAN3-12a (§4.7, A16) — cheques pendentes COM título
+
+test("A16 (compute): linkedPending* = Σ dos cheques PENDENTES com título; sem vínculo = 0; compensado/devolvido/cancelado não contam", () => {
+  const cheques: ChequeRow[] = [
+    { direction: "received", status: "registered", amount: 100, titleId: randomUUID() },
+    { direction: "received", status: "deposited", amount: 0.1, titleId: randomUUID() },
+    { direction: "issued", status: "registered", amount: 0.2, titleId: randomUUID() },
+    { direction: "received", status: "registered", amount: 900, titleId: null },
+    { direction: "received", status: "deposited", amount: 800 },
+    { direction: "received", status: "cleared", amount: 700, titleId: randomUUID() },
+    { direction: "received", status: "bounced", amount: 600, titleId: randomUUID() },
+    { direction: "received", status: "cancelled", amount: 500, titleId: randomUUID() },
+  ];
+  const s = computeFinancialSummary({ titles: [], entries: [], cheques, accounts: [], currency: "BRL", now: NOW });
+  assert.equal(s.cheques.linkedPendingCount, 3);
+  assert.equal(s.cheques.linkedPendingAmount, 100.3);
+  assert.equal(s.cheques.pendingReceivedAmount, 1800.1, "os totais de pendentes de antes não mudam");
+  const none = computeFinancialSummary({ titles: [], entries: [], cheques: cheques.map((c) => ({ ...c, titleId: null })), accounts: [], currency: "BRL", now: NOW });
+  assert.equal(none.cheques.linkedPendingCount, 0);
+  assert.equal(none.cheques.linkedPendingAmount, 0);
+});
+
+test("A16 (serviço, memória): cheque pendente VINCULADO aparece em cheques.linkedPending*; o sem título não", async () => {
+  resetAll();
+  const ctx = actor();
+  const accounts = createMemoryFinancialAccountService();
+  const titles = createMemoryFinancialTitleService();
+  const cheques = createMemoryChequeService();
+  const summary = createMemoryFinancialSummaryService();
+  const account = await accounts.create(ctx, { name: `Caixa ${randomUUID()}` });
+  const title = await titles.create(ctx, { direction: "receivable", party_type: "customer", party_name: "Cliente 12a", amount: 250, due_date: "2026-12-10", issue_date: "2026-10-10" });
+  await cheques.create(ctx, { direction: "received", cheque_number: "L1", bank: "B", amount: 250, account_id: account.id, title_id: title.id });
+  await cheques.create(ctx, { direction: "received", cheque_number: "L2", bank: "B", amount: 40, account_id: account.id });
+  const s = await summary.getSummary(ctx);
+  assert.equal(s.cheques.pendingReceivedAmount, 290);
+  assert.equal(s.cheques.linkedPendingCount, 1);
+  assert.equal(s.cheques.linkedPendingAmount, 250);
+});

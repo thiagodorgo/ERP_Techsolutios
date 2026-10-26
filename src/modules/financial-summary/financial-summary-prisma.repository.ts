@@ -26,7 +26,10 @@ export class PrismaFinancialSummaryRepository implements FinancialSummaryReposit
         where: { tenant_id: tenantId, deleted_at: null },
         select: { direction: true, amount: true, competencia: true },
       }),
-      this.client.cheque.findMany({ where: { tenant_id: tenantId, deleted_at: null }, select: { direction: true, status: true, amount: true } }),
+      this.client.cheque.findMany({
+        where: { tenant_id: tenantId, deleted_at: null },
+        select: { direction: true, status: true, amount: true, title_id: true },
+      }),
       this.client.financialAccount.findMany({
         where: { tenant_id: tenantId, is_active: true },
         select: { id: true, currency: true, opening_balance: true },
@@ -69,7 +72,12 @@ export class PrismaFinancialSummaryRepository implements FinancialSummaryReposit
     return computeFinancialSummary({
       titles: titleRows,
       entries: entries.map((entry) => ({ direction: entry.direction, amount: Number(entry.amount), competencia: entry.competencia })),
-      cheques: cheques.map((cheque) => ({ direction: cheque.direction, status: cheque.status, amount: Number(cheque.amount) })),
+      cheques: cheques.map((cheque) => ({
+        direction: cheque.direction,
+        status: cheque.status,
+        amount: Number(cheque.amount),
+        titleId: cheque.title_id,
+      })),
       accounts: accountRows,
       currency,
       now,

@@ -5,7 +5,7 @@ import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ChequeController, type ChequeServiceResolver } from "./cheque.controller.js";
-import { FINANCIAL_WRITE_PERMISSION, createDefaultChequeService } from "./cheque.service.js";
+import { CHEQUE_UNLINK_PERMISSION, FINANCIAL_WRITE_PERMISSION, createDefaultChequeService } from "./cheque.service.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -96,6 +96,16 @@ export function createChequeRouter(resolveService: ChequeServiceResolver = creat
     requirePermission(FINANCIAL_WRITE_PERMISSION),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.clear(request));
+    }),
+  );
+
+  // B-SAN3-12a (§4.3) — TROCAR A VINCULAÇÃO do cheque ao título: privilégio alto (`cheques:unlink_title`, do
+  // Administrador da organização) + justificativa no corpo; auditoria Crítica no controller.
+  router.post(
+    "/cheques/:chequeId/unlink-title",
+    requirePermission(CHEQUE_UNLINK_PERMISSION),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.unlinkTitle(request));
     }),
   );
 

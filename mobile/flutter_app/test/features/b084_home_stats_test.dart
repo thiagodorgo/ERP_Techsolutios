@@ -99,7 +99,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('OS hoje'), findsOneWidget);
-      expect(find.text('Concluídas'), findsOneWidget);
+      // B-SAN3-13 (E1, CA-21) — "Concluídas" virou "A sincronizar" (ajuste declarado no relatório do bloco).
+      expect(find.text('A sincronizar'), findsOneWidget);
       expect(find.text('Pendentes'), findsOneWidget);
     });
 
@@ -125,21 +126,31 @@ void main() {
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
 
-      // Resumo de hoje exibe os tiles (OS hoje / Concluídas / Pendentes)
+      // Resumo de hoje exibe os tiles (OS hoje / A sincronizar / Pendentes) — B-SAN3-13 (E1, CA-21).
       expect(find.text('OS hoje'), findsOneWidget);
-      expect(find.text('Concluídas'), findsOneWidget);
+      expect(find.text('A sincronizar'), findsOneWidget);
     });
 
-    testWidgets('4. doneCount conta completed e approved', (tester) async {
+    // B-SAN3-13 (E1, CA-21) — o antigo "doneCount" (concluídas) virou "A sincronizar": sob "Só as abertas" a OS
+    // concluída e sincronizada sai do aparelho, e o tile conta as OS com envio pendente. Ajuste declarado.
+    testWidgets('4. "A sincronizar" conta OS com envio pendente', (
+      tester,
+    ) async {
       final seed = [
-        _wo(id: 'a', status: WorkOrderStatus.completed),
-        _wo(id: 'b', status: WorkOrderStatus.approved),
+        _wo(
+          id: 'a',
+          status: WorkOrderStatus.completed,
+        ).copyWith(syncStatus: SyncStatus.pending),
+        _wo(
+          id: 'b',
+          status: WorkOrderStatus.approved,
+        ).copyWith(syncStatus: SyncStatus.pending),
         _wo(id: 'c', status: WorkOrderStatus.scheduled),
       ];
       await tester.pumpWidget(_wrapHome(seed: seed));
       await tester.pumpAndSettle();
 
-      // "2" should appear as the doneCount value
+      // "2" aparece como o valor de "A sincronizar"
       expect(find.text('2'), findsWidgets);
     });
   });

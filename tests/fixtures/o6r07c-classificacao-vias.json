@@ -299,6 +299,14 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/financial-entries/aggregate": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/financial-entries/reconciliation-policy": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/financial-periods": {
   "classe": "LEITURA",
   "n": 1
@@ -1164,6 +1172,10 @@
   "n": 1
  },
  "ROTA POST /api/v1/cheques/:chequeId/deposit": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/cheques/:chequeId/unlink-title": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

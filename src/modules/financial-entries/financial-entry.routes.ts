@@ -36,6 +36,25 @@ export function createFinancialEntryRouter(
     }),
   );
 
+  // B-SAN3-12a (§4.4) — a política de DESFAZER conciliação calculada PARA O ATOR (a tela só molda). Rota de 2
+  // segmentos registrada ANTES de `/financial-entries/:financialEntryId` (senão o `:id` a capturaria → 400).
+  router.get(
+    "/financial-entries/reconciliation-policy",
+    requirePermission(FINANCIAL_ENTRY_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.reconciliationPolicy(request));
+    }),
+  );
+
+  // B-SAN3-12a (§4.5) — agregado do extrato somado no servidor, buckets no fuso do negócio. Mesma regra de ordem.
+  router.get(
+    "/financial-entries/aggregate",
+    requirePermission(FINANCIAL_ENTRY_PERMISSIONS.read),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.aggregate(request));
+    }),
+  );
+
   router.post(
     "/financial-entries",
     requirePermission(FINANCIAL_ENTRY_PERMISSIONS.create),

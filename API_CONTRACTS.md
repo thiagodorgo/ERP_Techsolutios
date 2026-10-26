@@ -500,20 +500,100 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-titles` | `financial_titles:read`/`create`/`update` | Títulos (a receber/pagar). |
 | PATCH | `/financial-titles/:id/status` | `financial_titles:update` | Muda status por CAS do estado lido (B-SAN3-20, D8). Caso sequencial inalterado; sob corrida, o perdedor relê e recebe o erro do caso sequencial (ex.: liquidação em voo → `422 invalid_status_transition`); estado mudado duas vezes durante a chamada (a retentativa única falhou) → `409 title_status_conflict`. |
 | GET/POST/DELETE | `/financial-titles/:id/payable` | `financial_titles:read`/`create`/`update` | Vínculo conta-a-pagar do título. |
-| POST | `/financial-titles/:id/pay` | `financial_entries:create` | Liquida título → gera lançamento no caixa (chokepoint de competência); `payment_method=check` → `422 cheque_required`. |
+| POST | `/financial-titles/:id/pay` | `financial_entries:create` | Liquida título → gera lançamento no caixa (chokepoint de competência); `payment_method=check` → `422 cheque_required`. B-SAN3-12a: título com cheque vinculado pendente → `422 title_has_pending_cheque` com `details` (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/financial-entries` | `financial_entries:read`/`create`/`update` | Lançamentos de caixa/extrato; criação avulsa com `payment_method=check` → `422 cheque_required`. |
 | POST | `/financial-entries/:id/reverse` | `financial_entries:update` | Estorna lançamento. |
-| PATCH | `/financial-entries/:id/reconcile` | `financial_entries:update` | Concilia lançamento. |
+| PATCH | `/financial-entries/:id/reconcile` | `financial_entries:update` (+ `financial_entries:unreconcile` ou a política da organização para `reconciled:false`) | Concilia/desconcilia lançamento. B-SAN3-12a: CAS OBRIGATÓRIO por estado lógico (`expected_reconciled` + `expected_reconciled_at`). |
+| GET | `/financial-entries/reconciliation-policy` | `financial_entries:read` | B-SAN3-12a: `{ canUnreconcile, delegatedToFinance }` calculado para o ator. |
+| GET | `/financial-entries/aggregate` | `financial_entries:read` | B-SAN3-12a: contagem e somas do extrato no servidor, buckets no fuso do negócio. |
 | GET | `/financial-accounts/:id/balance` | `financial_entries:read` | Saldo/extrato da conta. |
 | GET | `/financial-periods` (+ `/:period`) | `financial_period:read` | Competências / fechamento de período. |
 | POST | `/financial-periods/:period/close` · `/reopen` | `financial_period:close` / `:reopen` | Fecha/reabre competência (trava retroativa + snapshot). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/cheques` | `cheques:read`/`create`/`update` | Cheques. B-SAN3-20: `title_id` opcional no POST e no PATCH (só enquanto `registered`; `null` desvincula), `titleId` no DTO e filtro `?title_id=`. Recusas do vínculo: `400 invalid_title_reference` (inexistente, apagado ou de outra organização — um só corpo), `422 title_direction_mismatch` (`received`↔`receivable`, `issued`↔`payable`), `422 currency_mismatch`, `422 title_cancelled`/`title_already_paid`/`overpayment`. PATCH e DELETE são CAS de estado no banco (`… AND status = 'registered'`): quem perde a corrida com `/deposit` ou `/clear` recebe `422 cheque_not_editable` (o mesmo erro do caso sequencial); apagado no meio → `404 cheque_not_found`. |
+| POST | `/cheques/:id/unlink-title` | `cheques:unlink_title` | B-SAN3-12a: troca a vinculação do cheque ao título (privilégio alto + justificativa; auditoria Crítica). |
 | POST | `/cheques/:id/deposit` · `/clear` · `/bounce` · `/cancel` | `cheques:update` (+ `financial_entries:create` em `/clear`) | Ciclo do cheque. Cheque vinculado: o `/clear` posta UM lançamento (`check`/`cheque_clearing`) com `titleId` e liquida o título por CAS na mesma transação — título que não comporta → `404 title_not_found` / `422 title_cancelled` / `title_already_paid` / `overpayment`, com o cheque intacto em `deposited` e zero lançamento; o `/bounce` (cleared→bounced) posta o contra-lançamento (sem `titleId`) e restaura o título na mesma transação (`422 title_restore_conflict` fail-closed → nada persiste). |
 | GET | `/financial-summary` | `financial_entries:read` | Agregado financeiro do dashboard (somas no backend). |
 | GET/POST | `/commissions/policies` · `/basis-events` · `/calculations` · `/statements` (+ `/summary`, `/mine`, `/my-summary`) · `/settlements` | `commissions:read`/`read_own`/`manage_policy`/`calculate`/`settle` | Políticas, base, cálculo, extratos e liquidação de comissões. |
 | GET/POST/PATCH | `/expense-reports` (+ `/:id`, `/:id/items`, `/:id/submit`) · `/expense-policies` · `/expense-categories` | `expense_report:read`/`create`/`update`/`submit`, `expense_policy:read` | Relatórios de despesa (RDV). |
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile) — atômico por ação, conflito por ação (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
+
+**Web financeiro — baixa, conta com extrato e conciliação (`financeiro_baixa_conta_conciliacao@2026-10-24.b-san3-12`, B-SAN3-12a, plano v3 §4):**
+
+Decisões do dono que regem (literais): 24/10 *"server recusa, mas ja direciona para trocar a vinculacao do cheque por outro
+meio de pagamento e isso requer privilegios altos, no geral o usuario pege autorizacao e o superior analisa"*; *"admin, mas
+deve existir a opcao do financeiro receber esse privilegio"*; 25/10 *"Só cheque do valor exato (Recomendado)"*; *"Mesmo
+privilégio da troca (Recomendado)"*; *"Autorizo (Recomendado)"* (migração de dados das 2 permissões).
+Erros saem no envelope de sempre `{ error: { code, reason, message } }`; os que carregam o próximo passo levam também
+`error.details`. Nenhum corpo leva `tenant_id`, token, path ou binário; tenant sempre do ator; outra organização → `404`.
+
+- **Cheque vinculado só do valor EXATO.** `POST /cheques` com `title_id` e `PATCH /cheques/:id` que vincula: o valor do cheque
+  tem de ser IGUAL ao saldo aberto do título (`amount − paidAmount`, 2 casas); senão `422 cheque_amount_mismatch` com
+  `details: { chequeAmount, openBalance }`. Precedência: `400 invalid_title_reference` → `422 title_cancelled` /
+  `title_already_paid` / `overpayment` → `422 title_direction_mismatch` → `422 currency_mismatch` → `422 cheque_amount_mismatch`.
+  Vincular roda numa unidade que TRAVA a linha do título (`FOR UPDATE`) e revalida sob o lock.
+- **Conjunto "cheque pendente do título"** = cheques ativos com `title_id = T` e `status ∈ {registered, deposited}`. Enquanto
+  não está vazio, o saldo do título só muda pela compensação do cheque ou pelo desvínculo:
+  - `POST /financial-titles/:id/pay` → `422 title_has_pending_cheque`, `details: { chequeIds, pendingAmount, nextStep:
+    "unlink_cheque", requiredPermission: "cheques:unlink_title" }`. Precedência: … → `422 currency_mismatch` → `422
+    cheque_required` → `422 title_has_pending_cheque` → `422 period_closed` → (na transação) `409 duplicate_payment`. O
+    fast-fail não abre transação; dentro dela a baixa trava o título e relê o conjunto (fecha a corrida `pay × vincular`).
+  - `PATCH /financial-titles/:id` que muda `amount` e `DELETE /financial-titles/:id` → `422 title_has_pending_cheque`. O
+    fast-fail não abre transação; a escrita roda numa transação que trava o período (SHARED) e a linha do título e relê o
+    conjunto pendente SOB o lock (re-check): um vínculo que commita entre o fast-fail e a escrita também recusa (ciclo 2, A29).
+- **`POST /cheques/:id/unlink-title`** (`cheques:unlink_title`, Administrador da organização; `finance` não), corpo
+  `{ justification }` (10–500 caracteres após o trim, e texto bem-formado: sem U+0000, sem surrogate isolado, sem controle
+  C0 salvo TAB/LF/CR, sem DEL — senão `400 invalid_justification`; Unicode válido é gravado verbatim). `200 { data: <cheque com titleId null>, warning? }` — `warning:
+  "cheque_still_depositable"` quando o cheque segue `deposited` (compensar depois posta caixa sem título). CAS de estado
+  (`status IN (registered, deposited) AND title_id = <lido>`). Precedência: `403` (rota) → `400 invalid_justification` →
+  `404 cheque_not_found` → `422 cheque_not_linked` → `422 cheque_not_unlinkable` (`cleared`/`bounced`/`cancelled`) → `409
+  cheque_write_conflict`. Auditoria `cheque.title_unlinked`, severidade `critical`, metadados `{ chequeId, previousTitleId,
+  justification }`.
+- **Fecho do bypass (D1 da Emenda E1).** `PATCH /cheques/:id` com `title_id: null` ou com um `title_id` DIFERENTE do atual
+  não tira nem troca o vínculo: sem `cheques:unlink_title` → `403 unlink_requires_privilege`; com ele → `422
+  cheque_linked_unlink_first` (a única porta que tira o vínculo é `POST /cheques/:id/unlink-title`, com justificativa e
+  auditoria Crítica; "trocar" = `unlink-title` e depois o 1º vínculo). O primeiro vínculo (título atual nulo) segue `cheques:update`.
+- **CAS do título lido (A27, Emenda E1-bis).** Toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE`
+  (`title_id IS NOT DISTINCT FROM <lido>`): o 1º vínculo pelo `PATCH`, o `POST /cheques/:id/cancel` e o `DELETE /cheques/:id`.
+  Se o vínculo mudou entre a leitura e a escrita: `PATCH` e `DELETE` → `409 cheque_write_conflict`; `cancel` → `409
+  transition_conflict`. O `deposit` e o `PATCH` que não mexe no título não têm esse CAS.
+- **Cancelar/excluir vinculado é troca.** `POST /cheques/:id/cancel` e `DELETE /cheques/:id` de cheque com título →
+  `422 cheque_linked_unlink_first` para TODO ator (inclusive o Administrador); depois do `unlink-title`, voltam a ser
+  `cheques:update`. `POST /cheques/:id/bounce` de cheque vinculado ainda `deposited` exige `reason` (`400
+  bounce_reason_required`) e é auditado com `severity: warning` e o `titleId`.
+- **Desfazer conciliação.** `PATCH /financial-entries/:id/reconcile` com `reconciled: false` exige
+  `financial_entries:unreconcile` OU (papel `finance` E a política `finance.unreconcile_delegated_to_finance = "true"` da
+  organização, ligada por `PUT /tenant-settings/finance.unreconcile_delegated_to_finance` com `tenant_settings:update`; só
+  `"true"`/`"false"` → senão `400 invalid_value`; ausente = `false`) → senão `403 unreconcile_forbidden`. Conciliar
+  (`true`) não muda. Auditoria do desfazer: `financial_entry.unreconciled`, `severity: warning`, `metadata.delegated`.
+  Consequência (não regra nova): estornar/excluir lançamento conciliado já é `422 entry_reconciled`; sem a política, o
+  Financeiro depende do Administrador para desfazer.
+- **CAS obrigatório da conciliação.** O corpo do `reconcile` exige `expected_reconciled` (boolean) e `expected_reconciled_at`
+  (ISO ou `null`) — o estado que o cliente LEU (o DTO expõe `reconciled` e `reconciledAt` também na LISTA). Ausente/inválido
+  → `400 expected_state_required`; o `UPDATE` casa `reconciled = $esperado AND reconciled_at IS NOT DISTINCT FROM
+  $esperado`; 0 linhas → `409 reconciliation_stale` (ou `404` se sumiu). Precedência: `404` → `400 invalid_reconciled` →
+  `400 expected_state_required` → `403 unreconcile_forbidden` → `400 invalid_divergence_type` → `409`.
+- **`GET /financial-entries/reconciliation-policy`** → `{ data: { canUnreconcile, delegatedToFinance } }` para o ator.
+- **`GET /financial-entries/aggregate?group_by=none|month|day&account_id&direction&reconciled&divergence_type&from&to`** →
+  `{ data: { groupBy, currency: "BRL", timezone: "America/Sao_Paulo", items: [{ bucket, count, inflow, outflow, net }] } }`.
+  `bucket`: `null` (none) · `"YYYY-MM"` (= a `competencia`, idêntica ao `cashFlow` do resumo) · `"YYYY-MM-DD"` (data civil
+  de `occurred_at` no fuso do negócio). `from`/`to` são datas civis do negócio (inclusivas). Só lançamentos ativos; somas
+  no servidor. Tetos: `day` ≤ 92 dias, `month` ≤ 24 meses → `400 aggregate_range_too_wide`; sem `from`, a janela é a do
+  teto terminando em `to` (ou hoje). `group_by` inválido → `400 invalid_group_by`; data inválida → `400 invalid_from` /
+  `invalid_to`.
+- **Campos aditivos.** `GET /financial-entries` (lista) ganha `description`, `reconciliationRef`, `reconciledAt`,
+  `reconciledBy`, `updatedAt`; `GET /financial-titles` (lista) ganha `workOrderId`; `GET /financial-summary` ganha
+  `cheques.linkedPendingCount` e `cheques.linkedPendingAmount` (pendentes COM título).
+- **Lista fechada do que a tela traduz (32, derivada da lista):** existentes (17) — `404` (título/conta/lançamento/cheque,
+  cross-tenant inclusive); `400 invalid_amount`, `invalid_payment_method`, `invalid_account_reference`, `invalid_reconciled`,
+  `invalid_divergence_type`; `422 title_cancelled`, `title_already_paid`, `overpayment`, `period_closed`, `account_inactive`,
+  `currency_mismatch`, `amount_overflow`, `cheque_required`; `409 duplicate_payment`, `duplicate_account`; `403`. Do fluxo de
+  cheque (3) — `422 invalid_transition`, `cheque_not_editable`; `409 transition_conflict`. Novos (12) — `422
+  title_has_pending_cheque`, `cheque_amount_mismatch`, `cheque_linked_unlink_first`, `cheque_not_linked`,
+  `cheque_not_unlinkable`; `400 expected_state_required`, `invalid_justification`, `aggregate_range_too_wide`; `409
+  reconciliation_stale`, `cheque_write_conflict`; `403 unreconcile_forbidden`, `unlink_requires_privilege`.
+  Novos FORA da lista da tela (o 12b não os alcança: a devolução é da tela de Cheques, B-SAN3-24; `group_by`/`from`/`to`
+  são montados pela própria tela): `400 bounce_reason_required`, `invalid_group_by`, `invalid_from`, `invalid_to`.
 
 **Invariantes de mutação de título (`financial_title_mutation@2026-10-21.b-san3-20`, apenso a `@2026-08-20.b-o6r-02-f6`):**
 

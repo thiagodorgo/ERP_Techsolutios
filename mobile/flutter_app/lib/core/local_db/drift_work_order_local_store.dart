@@ -183,6 +183,62 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
   // Maintenance
   // ---------------------------------------------------------------------------
 
+  /// B-SAN3-13 — uma OS e as filhas dela, numa transação: evidência, linha do tempo e materiais do prestador
+  /// (`work_order_materials`, R2-6) pela `work_order_local_id`, e a linha. Molde do `clearAll`, por linha.
+  @override
+  Future<void> deleteWorkOrder(String localId) async {
+    final id = [Variable<String>(localId)];
+    await _db.transaction(() async {
+      await _db.customUpdate(
+        'DELETE FROM work_order_evidence WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_timeline WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_materials WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_orders WHERE local_id = ?',
+        variables: id,
+      );
+    });
+  }
+
+  /// B-SAN3-13 ciclo 2 (C2-01, RQ-1) — a OS reconciliada sai SÓ se o predicado do próprio DELETE provar, no SQL,
+  /// que a linha não está `pending` e que nenhum material dela está fora de `synced`; as filhas só saem se a linha
+  /// saiu, na MESMA transação (que segura o escritor de material de fora da trava até o commit).
+  @override
+  Future<bool> deleteWorkOrderUnlessPending(String localId) async {
+    final id = [Variable<String>(localId)];
+    return _db.transaction(() async {
+      final deleted = await _db.customUpdate(
+        'DELETE FROM work_orders WHERE local_id = ? '
+        "AND sync_status != 'pending' "
+        'AND NOT EXISTS (SELECT 1 FROM work_order_materials '
+        "WHERE work_order_local_id = ? AND sync_status != 'synced')",
+        variables: [...id, ...id],
+      );
+      if (deleted != 1) return false;
+      await _db.customUpdate(
+        'DELETE FROM work_order_evidence WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_timeline WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      await _db.customUpdate(
+        'DELETE FROM work_order_materials WHERE work_order_local_id = ?',
+        variables: id,
+      );
+      return true;
+    });
+  }
+
   @override
   Future<void> clearAll() async {
     await _db.customStatement('DELETE FROM work_order_evidence');

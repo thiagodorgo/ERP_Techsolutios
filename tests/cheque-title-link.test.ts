@@ -95,11 +95,19 @@ test("K1: registra vínculo, expõe titleId e filtra pelo título", async () => 
   assert.equal((await s.cheques.list(s.ctx, { title_id: randomUUID() })).total, 0);
 });
 
-test("K1: PATCH vincula e null explícito desvincula enquanto registered", async () => {
+// B-SAN3-12a (Emenda E1.F1 + D1) — o dono, 24/10: trocar a vinculação "requer privilegios altos"; 25/10: "Mesmo privilégio
+// da troca". O PATCH só faz o 1º vínculo; tirar o título é do `unlink-title` (justificativa + auditoria Crítica).
+test("K1: PATCH faz o 1º vínculo; null pelo PATCH não desvincula (403 sem privilégio, 422 com) — só o unlink-title tira o vínculo; depois o PATCH volta a vincular", async () => {
   const s = await seed();
+  const admin = { ...s.ctx, roles: ["tenant_admin" as const], permissions: [...s.ctx.permissions, "cheques:unlink_title" as const] };
   const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, undefined));
   assert.equal((await s.cheques.update(s.ctx, cheque.id, { title_id: s.title.id })).titleId, s.title.id);
-  assert.equal((await s.cheques.update(s.ctx, cheque.id, { title_id: null })).titleId, undefined);
+  await assert.rejects(() => s.cheques.update(s.ctx, cheque.id, { title_id: null }), (e) => domain(e, 403, "unlink_requires_privilege"));
+  await assert.rejects(() => s.cheques.update(admin, cheque.id, { title_id: null }), (e) => domain(e, 422, "cheque_linked_unlink_first"));
+  assert.equal((await s.cheques.get(s.ctx, cheque.id)).titleId, s.title.id, "as duas recusas não mexeram no vínculo");
+  const unlinked = await s.cheques.unlinkTitle(admin, cheque.id, { justification: "troca para pagamento por pix" });
+  assert.equal(unlinked.cheque.titleId, undefined);
+  assert.equal((await s.cheques.update(s.ctx, cheque.id, { title_id: s.title.id })).titleId, s.title.id, "volta a ser 1º vínculo");
 });
 
 test("K1/K9: título inexistente e de outra organização produzem o mesmo 400", async () => {
@@ -167,14 +175,27 @@ test("K2: clear recebido é o único lançamento e liquida o título", async () 
   assert.equal((await s.entries.balance(s.ctx, s.account.id)).balance, 100);
 });
 
-test("K2: clear parcial deriva partially_paid", async () => {
+// B-SAN3-12a (E1.F1, "Só cheque do valor exato") — a derivação partially_paid/paid é do applyPaymentGuarded do título,
+// compartilhado pela baixa e pelo clear: o caso a mede pela baixa parcial (pix 200 → partially_paid) e pelo clear do valor
+// exato (→ paid); o cheque menor que o saldo não se vincula mais.
+test("K2: cheque menor que o saldo não vincula (422 cheque_amount_mismatch); pix 200 deriva partially_paid; o cheque do saldo exato compensa → paid", async () => {
   const s = await seed("receivable", 300);
+  let caught: unknown;
+  await assert.rejects(() => s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id, "received", 100)), (error) => {
+    caught = error;
+    return domain(error, 422, "cheque_amount_mismatch");
+  });
+  assert.deepEqual((caught as { details?: unknown }).details, { chequeAmount: 100, openBalance: 300 });
+  await s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 200, payment_method: "pix" });
+  const partial = await s.titles.get(s.ctx, s.title.id);
+  assert.equal(partial.status, "partially_paid");
+  assert.equal(partial.paidAmount, 200);
   const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id, "received", 100));
   await s.cheques.deposit(s.ctx, cheque.id);
   await s.cheques.clear(s.ctx, cheque.id);
   const title = await s.titles.get(s.ctx, s.title.id);
-  assert.equal(title.status, "partially_paid");
-  assert.equal(title.paidAmount, 100);
+  assert.equal(title.status, "paid");
+  assert.equal(title.paidAmount, 300);
 });
 
 test("K2: clear issued/payable debita uma vez", async () => {
@@ -186,26 +207,50 @@ test("K2: clear issued/payable debita uma vez", async () => {
   assert.equal((await s.titles.get(s.ctx, s.title.id)).status, "paid");
 });
 
-test("K2: título pago depois do vínculo faz clear falhar sem tocar cheque/razão", async () => {
+// B-SAN3-12a (E1.F1 + A28) — a baixa por outro meio com cheque pendente vinculado é recusada na ORIGEM (o "sem tocar
+// cheque/razão" migra para a baixa); e o estado "título pago E cheque pendente vinculado" (alcançável por dado anterior ao
+// 12a) segue contido pela guarda do clear: o título pago pela via do repositório faz o clear falhar fechado.
+test("K2: pix com cheque deposited vinculado → 422 title_has_pending_cheque sem tocar cheque/razão; título pago pelo repositório faz o clear falhar fechado (A28)", async () => {
   const s = await seed();
   const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id));
   await s.cheques.deposit(s.ctx, cheque.id);
-  await s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 100, payment_method: "pix" });
+  let caught: unknown;
+  await assert.rejects(() => s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 100, payment_method: "pix" }), (error) => {
+    caught = error;
+    return domain(error, 422, "title_has_pending_cheque");
+  });
+  const details = (caught as { details?: Record<string, unknown> }).details;
+  assert.ok((details?.chequeIds as string[]).includes(cheque.id));
+  assert.equal(details?.nextStep, "unlink_cheque");
+  assert.equal(details?.requiredPermission, "cheques:unlink_title");
+  assert.equal((await s.cheques.get(s.ctx, cheque.id)).status, "deposited");
+  assert.equal((await s.cheques.get(s.ctx, cheque.id)).clearedEntryId, undefined);
+  assert.equal((await s.entries.list(s.ctx, { account_id: s.account.id, limit: 100 })).total, 0);
+  const open = await s.titles.get(s.ctx, s.title.id);
+  assert.equal(open.status, "open");
+  assert.equal(open.paidAmount, 0);
+
+  // A28 — o título fica pago por fora do serviço (o estado legado); o clear tem de falhar fechado, sem lançamento.
+  const paid = await getMemoryFinancialTitleRepositoryForTests().applyPaymentGuarded({ tenantId: s.ctx.tenantId, financialTitleId: s.title.id, amount: 100 });
+  assert.equal(paid?.status, "paid");
   await assert.rejects(() => s.cheques.clear(s.ctx, cheque.id), (e) => domain(e, 422, "title_already_paid"));
   assert.equal((await s.cheques.get(s.ctx, cheque.id)).status, "deposited");
   assert.equal((await s.cheques.get(s.ctx, cheque.id)).clearedEntryId, undefined);
-  assert.equal((await s.entries.list(s.ctx, { account_id: s.account.id, limit: 100 })).total, 1);
-  // T-K8d (H7): a unidade de memória não deixa o título mudar — continua pago só pelo pix.
+  assert.equal((await s.entries.list(s.ctx, { account_id: s.account.id, limit: 100 })).total, 0, "nenhum lançamento, nem do clear");
   const title = await s.titles.get(s.ctx, s.title.id);
   assert.equal(title.paidAmount, 100);
   assert.equal(title.status, "paid");
 });
 
-test("K2: título apagado depois do vínculo faz clear falhar fechado", async () => {
+// B-SAN3-12a (E1.F1, A21) — o título com cheque pendente não se apaga pelo serviço; o "falha fechado" do clear continua
+// medido apagando pelo REPOSITÓRIO (fora do serviço, o atalho do arnês P7).
+test("K2: título com cheque pendente não se apaga (422 title_has_pending_cheque); apagado pelo repositório, o clear falha fechado", async () => {
   const s = await seed();
   const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id));
   await s.cheques.deposit(s.ctx, cheque.id);
-  await s.titles.delete(s.ctx, s.title.id);
+  await assert.rejects(() => s.titles.delete(s.ctx, s.title.id), (e) => domain(e, 422, "title_has_pending_cheque"));
+  assert.equal((await s.titles.get(s.ctx, s.title.id)).deletedAt, undefined, "o título segue vivo");
+  await getMemoryFinancialTitleRepositoryForTests().softDelete(s.ctx.tenantId, s.title.id, s.ctx.userId);
   await assert.rejects(() => s.cheques.clear(s.ctx, cheque.id), (e) => domain(e, 404, "title_not_found"));
   assert.equal((await s.cheques.get(s.ctx, cheque.id)).status, "deposited");
   assert.equal((await s.entries.list(s.ctx, { account_id: s.account.id, limit: 100 })).total, 0);
@@ -226,13 +271,19 @@ test("K3: bounce restaura título e caixa, sem titleId na contrapartida", async 
   assert.equal(ledger.items.find((entry) => entry.category === "cheque_bounce")?.titleId, undefined);
 });
 
-test("K3: pagamento misto volta ao parcial quando o cheque é devolvido", async () => {
+// B-SAN3-12a (E1.F1) — misto agora é pix → cheque do saldo exato (o cheque parcial é P-SAN3-12-PAGAMENTO-MISTO-CHEQUE); a
+// devolução (com motivo, A26) restaura o estado anterior.
+test("K3: pagamento misto (pix 200 → cheque do saldo 100) volta ao parcial quando o cheque é devolvido", async () => {
   const s = await seed("receivable", 300);
+  await assert.rejects(() => s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id, "received", 100)), (e) => domain(e, 422, "cheque_amount_mismatch"));
+  await s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 200, payment_method: "pix" });
   const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, s.title.id, "received", 100));
   await s.cheques.deposit(s.ctx, cheque.id);
   await s.cheques.clear(s.ctx, cheque.id);
-  await s.entries.payTitle(s.ctx, s.title.id, { account_id: s.account.id, amount: 200, payment_method: "pix" });
-  await s.cheques.bounce(s.ctx, cheque.id, {});
+  const paid = await s.titles.get(s.ctx, s.title.id);
+  assert.equal(paid.status, "paid");
+  assert.equal(paid.paidAmount, 300);
+  await s.cheques.bounce(s.ctx, cheque.id, { reason: "sem fundos" });
   const title = await s.titles.get(s.ctx, s.title.id);
   assert.equal(title.status, "partially_paid");
   assert.equal(title.paidAmount, 200);
