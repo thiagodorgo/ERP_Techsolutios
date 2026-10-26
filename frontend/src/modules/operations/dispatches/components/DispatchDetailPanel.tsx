@@ -6,7 +6,13 @@ import type { DispatchDetail, DispatchListItem } from "../dispatches.types";
 import { DispatchPriorityBadge } from "./DispatchPriorityBadge";
 import { DispatchStatusBadge } from "./DispatchStatusBadge";
 
-export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchDetail | DispatchListItem }) {
+export function DispatchDetailPanel({
+  dispatch,
+  operatorName,
+}: {
+  readonly dispatch: DispatchDetail | DispatchListItem;
+  readonly operatorName?: string;
+}) {
   const timeline = "timeline" in dispatch ? dispatch.timeline : [];
 
   return (
@@ -23,7 +29,7 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
           </div>
           <div>
             <dt><UserRound size={16} /> Operador</dt>
-            <dd>{dispatch.operatorUserId}</dd>
+            <dd>{operatorName ?? dispatch.operatorUserId}</dd>
           </div>
           <div>
             <dt><Clock size={16} /> Criado em</dt>

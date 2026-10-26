@@ -9,6 +9,7 @@ import { DispatchStatusBadge } from "./DispatchStatusBadge";
 
 export function DispatchesTable({
   items,
+  operatorNameById,
   canChangeStatus,
   canReassign,
   canCancel,
@@ -17,6 +18,7 @@ export function DispatchesTable({
   onReassign,
 }: {
   readonly items: DispatchListItem[];
+  readonly operatorNameById?: ReadonlyMap<string, string>;
   readonly canChangeStatus: boolean;
   readonly canReassign: boolean;
   readonly canCancel: boolean;
@@ -30,7 +32,11 @@ export function DispatchesTable({
       { key: "title", header: "Título", render: (item: DispatchListItem) => item.workOrderTitle ?? "OS sem título local" },
       { key: "status", header: "Status", render: (item: DispatchListItem) => <DispatchStatusBadge status={item.status} /> },
       { key: "priority", header: "Prioridade", render: (item: DispatchListItem) => <DispatchPriorityBadge priority={item.priority} /> },
-      { key: "operator", header: "Operador", render: (item: DispatchListItem) => item.operatorUserId },
+      {
+        key: "operator",
+        header: "Operador",
+        render: (item: DispatchListItem) => operatorNameById?.get(item.operatorUserId) ?? item.operatorUserId,
+      },
       { key: "created", header: "Criado em", render: (item: DispatchListItem) => formatDispatchDate(item.createdAt) },
       {
         key: "actions",
@@ -54,7 +60,7 @@ export function DispatchesTable({
         ),
       },
     ],
-    [canCancel, canChangeStatus, canReassign, onDetail, onQuickStatus, onReassign],
+    [canCancel, canChangeStatus, canReassign, onDetail, onQuickStatus, onReassign, operatorNameById],
   );
 
   return (
@@ -81,7 +87,7 @@ export function DispatchesTable({
               </div>
               <DispatchPriorityBadge priority={item.priority} />
             </header>
-            <p>{item.operatorUserId}</p>
+            <p>{operatorNameById?.get(item.operatorUserId) ?? item.operatorUserId}</p>
             <footer>
               <DispatchStatusBadge status={item.status} />
               <span>{formatDispatchDate(item.createdAt)}</span>

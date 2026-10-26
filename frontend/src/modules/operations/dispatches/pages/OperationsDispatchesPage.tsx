@@ -18,6 +18,8 @@ import { DispatchStatusActions } from "../components/DispatchStatusActions";
 import { DispatchesFilters } from "../components/DispatchesFilters";
 import { DispatchesSummaryCards } from "../components/DispatchesSummaryCards";
 import { DispatchesTable } from "../components/DispatchesTable";
+import { listTenantUsers } from "../../../registry/teams/teams.service";
+import type { TenantUser } from "../../../registry/teams/teams.types";
 
 const initialFilters: DispatchesFilterState = {
   search: "",
@@ -59,6 +61,24 @@ export function OperationsDispatchesPage() {
       permissions: activeContext?.permissions,
     }),
     [activeContext, session?.accessToken],
+  );
+
+  // DEMO-E (AC-16) — resolução de nomes de operadores via usuários da organização autenticada.
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
+  useEffect(() => {
+    if (!activeContext) return;
+    let active = true;
+    void listTenantUsers(context).then((loaded) => {
+      if (active) setTenantUsers(loaded);
+    });
+    return () => {
+      active = false;
+    };
+  }, [activeContext, context]);
+
+  const operatorNameById = useMemo(
+    () => new Map(tenantUsers.map((user) => [user.id, user.name])),
+    [tenantUsers],
   );
 
   // B-SAN3-01 (emenda (a) do orquestrador) — o service não fabrica mais despacho no erro: o item da lista já
@@ -107,7 +127,12 @@ export function OperationsDispatchesPage() {
       ) : null}
 
       <DispatchesSummaryCards summary={summary} source={fallbackReason || error ? "fallback" : "api"} />
-      <DispatchesFilters filters={filters} operatorOptions={operatorOptions} onChange={setFilters} />
+      <DispatchesFilters
+        filters={filters}
+        operatorOptions={operatorOptions}
+        operatorNameById={operatorNameById}
+        onChange={setFilters}
+      />
 
       {showCreate && can("field_dispatch:create") ? (
         <Card title="Criar despacho">
@@ -132,6 +157,7 @@ export function OperationsDispatchesPage() {
           {items.length > 0 ? (
             <DispatchesTable
               items={items}
+              operatorNameById={operatorNameById}
               canChangeStatus={can("field_dispatch:update")}
               canCancel={can("field_dispatch:cancel")}
               canReassign={can("field_dispatch:reassign")}
@@ -148,7 +174,10 @@ export function OperationsDispatchesPage() {
                 <Alert title="Detalhes indisponíveis" tone="warning">{detailError}</Alert>
               </div>
             ) : null}
-            <DispatchDetailPanel dispatch={selectedDispatch} />
+            <DispatchDetailPanel
+              dispatch={selectedDispatch}
+              operatorName={operatorNameById.get(selectedDispatch.operatorUserId)}
+            />
           </div>
         ) : null}
       </section>
