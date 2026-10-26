@@ -2156,7 +2156,7 @@ no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: rec
   `If-Match`/`expectedUpdatedAt` (ou `version`) e o repositório fazendo `UPDATE ... WHERE updated_at = $expected`,
   devolvendo **409** quando não casar. Muda o contrato REST público e afeta todo consumidor do PATCH (web + qualquer
   automação), por isso exige junta antes de ser implementado.
-- status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
+- status: **RESOLVIDA NO BACKEND pelo B-SAN3-22** — PATCH/publish/DELETE exigem `expectedUpdatedAt`, a decisão ocorre sob `SELECT ... FOR UPDATE` tenant-first e token defasado devolve 409 sem mutação. A ligação do consumidor web é a fatia separada `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` abaixo.
 
 - **emenda (plano SAN3 §4.1 item 6, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-22`.
 - **dono:** `B-SAN3-22` (plano SAN3, §4.1 item 6 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -11657,3 +11657,32 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` (bloco de ferramenta seguinte, Q3 do plano do `B-GUARD-MIGRACAO`, resposta do dono: *"Aceito as recomendações"*) · **bloqueia:** não.
 - **Origem:** limite declarado (D-007) da regra G6 do `scripts/migration-transaction-guard.mjs`: ela exige que algum `tests/*-migration-drill-db.test.ts` cite o nome da migração nova; não prova o laço k = 1..n com falha injetada pelo `prisma migrate deploy` real nem a comparação de estado. Hoje há três cópias do arnês (~450–550 linhas cada: `work-order-invoicing`, `traccar-event`, `cheque-title-link`).
 - **teste de encerramento:** uma suíte `-db` genérica que, para toda migração nova com `BEGIN`/`COMMIT`, injeta falha depois de cada sentença pelo `migrate deploy` real, compara um retrato genérico do catálogo antes × depois e converge com `resolve --rolled-back` + `deploy`; com teto de crescimento, entrada na lista curada do `ci.yml` e medição 3×; a mutação "tirar o BEGIN" de uma migração nova deixa a suíte vermelha.
+
+## P-CHK-RUN-SNAPSHOT-IMUTAVEL (2026-10-25) — forma histórica da vistoria depende do modelo vivo — MÉDIA
+
+- **status:** ABERTA · **dono:** bloco próprio de checklist/mobile · **bloqueia:** não o backend B-SAN3-22.
+- **origem:** o B-SAN3-22 impede alteração estrutural enquanto o servidor conhece vistoria viva, mas runs antigas ainda não carregam snapshot imutável completo da forma.
+- **encerramento:** cada run resolve sua forma histórica sem depender dos componentes atuais do modelo, com migração aditiva e testes de leitura/reabertura.
+
+## P-MOBILE-RUN-SO-NO-APARELHO (2026-10-25) — vistoria offline ainda desconhecida pelo servidor — ALTA
+
+- **status:** ABERTA · **dono:** trilha mobile offline/sync · **bloqueia:** não o B-SAN3-22; risco residual declarado.
+- **origem:** uma run criada somente no aparelho não entra em `activeRuns`; uma alteração estrutural anterior ao primeiro sync pode deixar resposta apontando para componente removido.
+- **encerramento:** protocolo offline registra/reserva a forma no servidor ou sincroniza contra snapshot imutável, com teste de replay após remoção de campo.
+
+## P-DB-TIMEZONE-UTC (2026-10-25) — exibição de updatedAt depende da TimeZone da sessão — BAIXA
+
+- **status:** ABERTA · **dono:** infraestrutura/deploy · **bloqueia:** não a trava (o predicado trunca ambos no mesmo contexto).
+- **encerramento:** runtime e testes de deploy afirmam `SHOW TimeZone IN ('UTC','Etc/UTC')` e documentam a configuração do banco gerenciado.
+
+## P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS (2026-10-25) — consumidor web ainda não envia o token — PRODUTO
+
+- **status:** ABERTA · **dono:** orquestrador, fatia web do B-SAN3-22 depois da maquete A/B/C aprovada · **bloqueia:** integração/merge da mudança obrigatória de contrato com o console web antigo.
+- **origem:** por ordem do dono, esta entrega é somente backend; `frontend/**` ficou intocado. O backend agora recusa PATCH/publish/DELETE sem token, conforme Q2.
+- **encerramento:** `ChecklistEditorPage` e `TenantChecklistsPage` enviam o token, tratam 409/`activeRuns`, entregam as três aparências aprovadas e passam a bateria smoke/build da fatia de tela.
+
+## P-B-SAN3-22-CI-DB-SUITE (2026-10-26) — suíte nova de lock não está na lista PostgreSQL — ALTA
+
+- **status:** ABERTA · **dono:** orquestrador, por emenda de escopo antes do PR · **bloqueia:** o merge do B-SAN3-22, não a entrega desta fatia backend.
+- **origem:** `tests/checklist-template-lock-db.test.ts` é novo e auto-pula sem `DATABASE_URL`, mas `.github/workflows/ci.yml` não o inclui na lista `SUITES` do job `backend-postgres`. A v2 e o comando desta fatia proíbem `.github/**`, portanto o DEV não pode ampliar o escopo em silêncio.
+- **encerramento:** emenda revisada autoriza acrescentar a suíte à lista curada; executar a forma exata do job PostgreSQL 3 vezes, com denominador constante e zero falhas/pulos, antes da junta.
