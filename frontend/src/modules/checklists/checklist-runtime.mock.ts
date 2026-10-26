@@ -241,3 +241,17 @@ async function findPublishedChecklist(checklistId: string): Promise<TenantCheckl
 async function wait() {
   await new Promise((resolve) => window.setTimeout(resolve, 180));
 }
+
+/**
+ * B-SAN3-22 (E3b-06) — vistorias VIVAS deste modelo no runtime simulado (em andamento ou aguardando ciência), a mesma
+ * régua do servidor. O mock de modelos soma isto ao `activeRuns` que devolve, para o editor em modo simulado não
+ * abrir travado por "não confirmado".
+ */
+export function countMockLiveRunsForChecklist(checklistId: string): number {
+  let count = 0;
+  for (const details of runs.values()) {
+    if (details.run.templateId !== checklistId) continue;
+    if (details.run.status === "in_progress" || details.run.status === "pending_acknowledgement") count += 1;
+  }
+  return count;
+}

@@ -1,5 +1,5 @@
-import { AlertTriangle, ChevronDown, ChevronUp, GripVertical, HelpCircle, ImageIcon, Plus, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { AlertTriangle, ChevronDown, ChevronUp, GripVertical, HelpCircle, ImageIcon, Lock, Plus, Trash2 } from "lucide-react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import {
   checklistComparisonSourceLabel,
@@ -9,14 +9,17 @@ import {
   resolveChecklistComponentTypeLabel,
 } from "../checklist.constants";
 import {
+  activeRunsPhrase,
   componentChoiceConfig,
   componentFlagConfig,
   componentHelpText,
   componentListConfig,
   componentNumberConfig,
   componentOptions,
+  editorLockReason,
+  editorLockReasonFor,
 } from "../checklist-editor.model";
-import type { ChecklistConfigChange, ChecklistEditorComponent } from "../checklist-editor.model";
+import type { ChecklistConfigChange, ChecklistEditorComponent, ChecklistEditorLock } from "../checklist-editor.model";
 import { resolveChecklistComponentTile } from "../checklist-tiles";
 
 // CHECKLIST P1 PR-02c — inspector 336px do protótipo (Modelos de Checklist.dc.html, bloco
@@ -24,14 +27,39 @@ import { resolveChecklistComponentTile } from "../checklist-tiles";
 // cada um dos 10 tipos de campo. O componente é de RENDER: toda leitura/escrita de `config` vem
 // das funções puras de `checklist-editor.model.ts` e volta como `ChecklistConfigChange` — ele não
 // conhece a forma do config nem monta payload.
+//
+// B-SAN3-22 — com vistoria em andamento (ou sem confirmação, fail-closed) só a PERGUNTA e a AJUDA mudam.
+// Obrigatório e toda configuração do campo ficam TRAVADOS no padrão do Publicar travado: nunca `disabled`
+// (botão desabilitado não recebe foco nem explica nada) — `aria-disabled` + `title` + o clique explica.
 
 const VEHICLE_TYPE_KEYS = ["car", "motorcycle", "truck", "van"] as const;
 const DAMAGE_MARKER_KEYS = ["scratch", "dent", "broken", "missing", "other"] as const;
 const COMPARISON_SOURCE_KEYS = ["related_collection", "related_delivery"] as const;
 
+const FREE: ChecklistEditorLock = { kind: "free" };
+
+/** Atributos do controle travado — `null` quando livre. */
+function lockAttrs(reason: string) {
+  return reason ? ({ "aria-disabled": true, title: reason, "data-explica": reason } as const) : {};
+}
+
+/** Teclas que acionariam o controle (ou mudariam um número) explicam em vez de agir. */
+function explainOnKey(reason: string, onExplain: (message: string) => void) {
+  return (event: KeyboardEvent<HTMLElement>) => {
+    if (!reason) return;
+    if (event.key === "Enter" || event.key === " " || event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      onExplain(reason);
+    }
+  };
+}
+
 export function ChecklistFieldInspector({
   component,
   frozen = false,
+  lock = FREE,
+  showLockNote = false,
+  onExplain = () => undefined,
   onChangeLabel,
   onChangeHelp,
   onToggleRequired,
@@ -40,6 +68,12 @@ export function ChecklistFieldInspector({
   readonly component: ChecklistEditorComponent | null;
   /** Congela a edição enquanto o modelo está sendo gravado (junta PR-02b, ALTA). */
   readonly frozen?: boolean;
+  /** B-SAN3-22 — trava por vistoria em andamento (ou não confirmada). Livre por padrão. */
+  readonly lock?: ChecklistEditorLock;
+  /** Aparência A: o aviso âmbar no inspector diz o que pode mudar agora. */
+  readonly showLockNote?: boolean;
+  /** Clique num controle travado: a página mostra o motivo (toast de aviso). */
+  readonly onExplain?: (message: string) => void;
   readonly onChangeLabel: (label: string) => void;
   readonly onChangeHelp: (help: string) => void;
   readonly onToggleRequired: () => void;
@@ -47,6 +81,7 @@ export function ChecklistFieldInspector({
 }) {
   const tile = component ? resolveChecklistComponentTile(component.type) : null;
   const TileIcon = tile?.Icon;
+  const locked = lock.kind !== "free";
 
   return (
     <section className="ckb-ed-col">
@@ -109,17 +144,30 @@ export function ChecklistFieldInspector({
               />
             </div>
 
+            {locked && showLockNote ? (
+              <div className="ckb-ed-insp-warn" role="status">
+                <Lock size={14} aria-hidden="true" />
+                <span>
+                  {lock.kind === "locked"
+                    ? `A pergunta e a ajuda podem mudar agora. Obrigatório e as regras abaixo ficam travados enquanto houver ${activeRunsPhrase(lock.activeRuns)}.`
+                    : editorLockReason(lock)}
+                </span>
+              </div>
+            ) : null}
+
             <InspectorToggle
               on={component.required}
               title="Resposta obrigatória"
               sub="O técnico não conclui o checklist sem preencher"
               disabled={frozen}
+              lockedReason={editorLockReasonFor(lock, "Tornar obrigatório ou opcional muda o campo")}
+              onExplain={onExplain}
               onToggle={onToggleRequired}
             />
 
             <div className="ckb-ed-insp-section">Configurações do campo</div>
 
-            <TypedFieldConfig component={component} frozen={frozen} onConfigChange={onConfigChange} />
+            <TypedFieldConfig component={component} frozen={frozen} lock={lock} onExplain={onExplain} onConfigChange={onConfigChange} />
           </>
         )}
       </div>
@@ -127,35 +175,78 @@ export function ChecklistFieldInspector({
   );
 }
 
-/** O formulário certo para cada tipo — um bloco por tipo, como o protótipo (10 casos). */
-function TypedFieldConfig({
-  component,
-  frozen,
-  onConfigChange,
-}: {
+type ConfigProps = {
   readonly component: ChecklistEditorComponent;
   readonly frozen: boolean;
+  readonly lock: ChecklistEditorLock;
+  readonly onExplain: (message: string) => void;
   readonly onConfigChange: (change: ChecklistConfigChange) => void;
+};
+
+/** Campo numérico do config — travado vira somente leitura que explica no clique e nas setas. */
+function ConfigNumberInput({
+  id,
+  className,
+  min,
+  value,
+  frozen,
+  lockedReason,
+  onExplain,
+  onRaw,
+}: {
+  readonly id: string;
+  readonly className: string;
+  readonly min: number;
+  readonly value: number;
+  readonly frozen: boolean;
+  readonly lockedReason: string;
+  readonly onExplain: (message: string) => void;
+  readonly onRaw: (raw: string) => void;
 }) {
+  return (
+    <input
+      id={id}
+      type="number"
+      min={min}
+      className={className}
+      value={value}
+      readOnly={frozen || Boolean(lockedReason)}
+      {...lockAttrs(lockedReason)}
+      onClick={() => {
+        if (lockedReason) onExplain(lockedReason);
+      }}
+      onKeyDown={explainOnKey(lockedReason, onExplain)}
+      onChange={(event) => {
+        if (lockedReason) return;
+        onRaw(event.target.value);
+      }}
+    />
+  );
+}
+
+/** O formulário certo para cada tipo — um bloco por tipo, como o protótipo (10 casos). */
+function TypedFieldConfig({ component, frozen, lock, onExplain, onConfigChange }: ConfigProps) {
   const isChoice = component.type === "single_choice" || component.type === "multi_choice";
+  const generic = editorLockReason(lock);
 
   if (isChoice) {
     return (
       <>
-        <OptionListConfig component={component} frozen={frozen} onConfigChange={onConfigChange} />
+        <OptionListConfig component={component} frozen={frozen} lock={lock} onExplain={onExplain} onConfigChange={onConfigChange} />
         {component.type === "multi_choice" ? (
           <div className="ckb-ed-group ckb-ed-group--tight">
             <label className="ckb-ed-label" htmlFor="ckb-insp-minsel">
               Mínimo de seleções
             </label>
-            <input
+            <ConfigNumberInput
               id="ckb-insp-minsel"
-              type="number"
-              min={0}
               className="ckb-ed-input ckb-ed-input--num-sm"
+              min={0}
               value={componentNumberConfig(component, "minSelected", 0, 0)}
-              readOnly={frozen}
-              onChange={(event) => onConfigChange({ kind: "number", key: "minSelected", raw: event.target.value, min: 0 })}
+              frozen={frozen}
+              lockedReason={generic}
+              onExplain={onExplain}
+              onRaw={(raw) => onConfigChange({ kind: "number", key: "minSelected", raw, min: 0 })}
             />
           </div>
         ) : null}
@@ -172,28 +263,30 @@ function TypedFieldConfig({
             <label className="ckb-ed-label" htmlFor="ckb-insp-minphotos">
               Mínimo de fotos
             </label>
-            <input
+            <ConfigNumberInput
               id="ckb-insp-minphotos"
-              type="number"
-              min={0}
               className="ckb-ed-input"
+              min={0}
               value={minPhotos}
-              readOnly={frozen}
-              onChange={(event) => onConfigChange({ kind: "number", key: "minPhotos", raw: event.target.value, min: 0 })}
+              frozen={frozen}
+              lockedReason={editorLockReasonFor(lock, "O mínimo de fotos decide quando a vistoria pode ser concluída")}
+              onExplain={onExplain}
+              onRaw={(raw) => onConfigChange({ kind: "number", key: "minPhotos", raw, min: 0 })}
             />
           </div>
           <div className="ckb-ed-insp-row-item">
             <label className="ckb-ed-label" htmlFor="ckb-insp-maxphotos">
               Máximo de fotos
             </label>
-            <input
+            <ConfigNumberInput
               id="ckb-insp-maxphotos"
-              type="number"
-              min={1}
               className="ckb-ed-input"
+              min={1}
               value={componentNumberConfig(component, "maxPhotos", 1, 1)}
-              readOnly={frozen}
-              onChange={(event) => onConfigChange({ kind: "number", key: "maxPhotos", raw: event.target.value, min: 1 })}
+              frozen={frozen}
+              lockedReason={generic}
+              onExplain={onExplain}
+              onRaw={(raw) => onConfigChange({ kind: "number", key: "maxPhotos", raw, min: 1 })}
             />
           </div>
         </div>
@@ -216,6 +309,8 @@ function TypedFieldConfig({
           selected={componentListConfig(component, "vehicleTypes")}
           tone="vehicle"
           disabled={frozen}
+          lockedReason={editorLockReasonFor(lock, "Os tipos de veículo aceitos são as opções do campo", "ficam travados")}
+          onExplain={onExplain}
           onToggle={(value) => onConfigChange({ kind: "list_toggle", key: "vehicleTypes", value })}
         />
         <span className="ckb-ed-label">Imagem de referência da vistoria</span>
@@ -244,6 +339,8 @@ function TypedFieldConfig({
           selected={componentListConfig(component, "markerTypes")}
           tone="damage"
           disabled={frozen}
+          lockedReason={editorLockReasonFor(lock, "Os tipos de avaria mudam o campo", "ficam travados")}
+          onExplain={onExplain}
           onToggle={(value) => onConfigChange({ kind: "list_toggle", key: "markerTypes", value })}
         />
         <InspectorToggle
@@ -252,6 +349,8 @@ function TypedFieldConfig({
           sub="Protege a organização em disputas sobre o estado do veículo"
           disabled={frozen}
           flush
+          lockedReason={editorLockReasonFor(lock, "Exigir descrição muda o que é obrigatório")}
+          onExplain={onExplain}
           onToggle={() => onConfigChange({ kind: "flag", key: "requireDescription", defaultOn: false })}
         />
       </div>
@@ -267,19 +366,22 @@ function TypedFieldConfig({
           sub="Campo com várias linhas em vez de uma só"
           tight
           disabled={frozen}
+          lockedReason={generic}
+          onExplain={onExplain}
           onToggle={() => onConfigChange({ kind: "flag", key: "multiline", defaultOn: true })}
         />
         <label className="ckb-ed-label" htmlFor="ckb-insp-maxlen">
           Limite de caracteres
         </label>
-        <input
+        <ConfigNumberInput
           id="ckb-insp-maxlen"
-          type="number"
-          min={1}
           className="ckb-ed-input ckb-ed-input--num-md"
+          min={1}
           value={componentNumberConfig(component, "maxLength", 500, 1)}
-          readOnly={frozen}
-          onChange={(event) => onConfigChange({ kind: "number", key: "maxLength", raw: event.target.value, min: 1 })}
+          frozen={frozen}
+          lockedReason={generic}
+          onExplain={onExplain}
+          onRaw={(raw) => onConfigChange({ kind: "number", key: "maxLength", raw, min: 1 })}
         />
       </div>
     );
@@ -293,6 +395,8 @@ function TypedFieldConfig({
         sub="Nome completo registrado junto da assinatura"
         disabled={frozen}
         flush
+        lockedReason={editorLockReasonFor(lock, "Exigir o nome muda o que é obrigatório")}
+        onExplain={onExplain}
         onToggle={() => onConfigChange({ kind: "flag", key: "requireName", defaultOn: false })}
       />
     );
@@ -306,6 +410,8 @@ function TypedFieldConfig({
         sub="Quem dá ciência precisa justificar por escrito"
         disabled={frozen}
         flush
+        lockedReason={editorLockReasonFor(lock, "Exigir observação muda o que é obrigatório")}
+        onExplain={onExplain}
         onToggle={() => onConfigChange({ kind: "flag", key: "requireObservation", defaultOn: false })}
       />
     );
@@ -319,6 +425,8 @@ function TypedFieldConfig({
         sub="Antes e depois precisam ser registrados"
         disabled={frozen}
         flush
+        lockedReason={editorLockReasonFor(lock, "Exigir os dois estágios muda o que é obrigatório")}
+        onExplain={onExplain}
         onToggle={() => onConfigChange({ kind: "flag", key: "requireBothStages", defaultOn: true })}
       />
     );
@@ -335,7 +443,17 @@ function TypedFieldConfig({
           className="ckb-ed-select"
           value={componentChoiceConfig(component, "compareWith", COMPARISON_SOURCE_KEYS, "related_collection")}
           disabled={frozen}
-          onChange={(event) => onConfigChange({ kind: "select", key: "compareWith", value: event.target.value })}
+          {...lockAttrs(generic)}
+          onMouseDown={(event) => {
+            if (!generic) return;
+            event.preventDefault();
+            onExplain(generic);
+          }}
+          onKeyDown={explainOnKey(generic, onExplain)}
+          onChange={(event) => {
+            if (generic) return;
+            onConfigChange({ kind: "select", key: "compareWith", value: event.target.value });
+          }}
         >
           {COMPARISON_SOURCE_KEYS.map((key) => (
             <option key={key} value={key}>
@@ -353,16 +471,11 @@ function TypedFieldConfig({
 }
 
 /** Lista de opções (escolha única/múltipla) — grip + texto + ↑/↓/lixeira, como o protótipo. */
-function OptionListConfig({
-  component,
-  frozen,
-  onConfigChange,
-}: {
-  readonly component: ChecklistEditorComponent;
-  readonly frozen: boolean;
-  readonly onConfigChange: (change: ChecklistConfigChange) => void;
-}) {
+function OptionListConfig({ component, frozen, lock, onExplain, onConfigChange }: ConfigProps) {
   const options = componentOptions(component);
+  const reason = lock.kind === "locked"
+    ? `${editorLockReasonFor(lock, "As opções de resposta mudam o campo", "ficam travadas")} O texto da pergunta continua livre.`
+    : editorLockReason(lock);
 
   return (
     <div>
@@ -383,26 +496,55 @@ function OptionListConfig({
             className="ckb-ed-opt-input"
             value={option}
             aria-label={`Texto da opção ${index + 1}`}
-            readOnly={frozen}
-            onChange={(event) => onConfigChange({ kind: "option_rename", index, text: event.target.value })}
+            readOnly={frozen || Boolean(reason)}
+            {...lockAttrs(reason)}
+            onClick={() => {
+              if (reason) onExplain(reason);
+            }}
+            onKeyDown={explainOnKey(reason, onExplain)}
+            onChange={(event) => {
+              if (reason) return;
+              onConfigChange({ kind: "option_rename", index, text: event.target.value });
+            }}
           />
-          <OptionButton label={`Subir a opção ${index + 1}`} disabled={frozen || index === 0} onClick={() => onConfigChange({ kind: "option_move", index, direction: "up" })}>
+          <OptionButton
+            label={`Subir a opção ${index + 1}`}
+            disabled={frozen || (!reason && index === 0)}
+            lockedReason={reason}
+            onExplain={onExplain}
+            onClick={() => onConfigChange({ kind: "option_move", index, direction: "up" })}
+          >
             <ChevronUp size={12} />
           </OptionButton>
           <OptionButton
             label={`Descer a opção ${index + 1}`}
-            disabled={frozen || index === options.length - 1}
+            disabled={frozen || (!reason && index === options.length - 1)}
+            lockedReason={reason}
+            onExplain={onExplain}
             onClick={() => onConfigChange({ kind: "option_move", index, direction: "down" })}
           >
             <ChevronDown size={12} />
           </OptionButton>
-          <OptionButton label={`Remover a opção ${index + 1}`} danger disabled={frozen} onClick={() => onConfigChange({ kind: "option_remove", index })}>
+          <OptionButton
+            label={`Remover a opção ${index + 1}`}
+            danger
+            disabled={frozen}
+            lockedReason={reason}
+            onExplain={onExplain}
+            onClick={() => onConfigChange({ kind: "option_remove", index })}
+          >
             <Trash2 size={12} />
           </OptionButton>
         </div>
       ))}
 
-      <button type="button" className="ckb-ed-opt-add" disabled={frozen} onClick={() => onConfigChange({ kind: "option_add" })}>
+      <button
+        type="button"
+        className="ckb-ed-opt-add"
+        disabled={frozen}
+        {...lockAttrs(reason)}
+        onClick={() => (reason ? onExplain(reason) : onConfigChange({ kind: "option_add" }))}
+      >
         <Plus size={14} aria-hidden="true" />
         Adicionar opção
       </button>
@@ -415,12 +557,16 @@ function OptionButton({
   label,
   danger,
   disabled,
+  lockedReason = "",
+  onExplain = () => undefined,
   onClick,
   children,
 }: {
   readonly label: string;
   readonly danger?: boolean;
   readonly disabled?: boolean;
+  readonly lockedReason?: string;
+  readonly onExplain?: (message: string) => void;
   readonly onClick: () => void;
   readonly children: ReactNode;
 }) {
@@ -428,10 +574,12 @@ function OptionButton({
     <button
       type="button"
       className={danger ? "ckb-ed-opt-btn ckb-ed-opt-btn--danger" : "ckb-ed-opt-btn"}
-      title={label}
+      title={lockedReason || label}
       aria-label={label}
       disabled={disabled}
-      onClick={onClick}
+      aria-disabled={lockedReason ? true : undefined}
+      data-explica={lockedReason || undefined}
+      onClick={() => (lockedReason ? onExplain(lockedReason) : onClick())}
     >
       {children}
     </button>
@@ -446,6 +594,8 @@ function ChipToggleGroup({
   selected,
   tone,
   disabled,
+  lockedReason = "",
+  onExplain = () => undefined,
   onToggle,
 }: {
   readonly legend: string;
@@ -454,6 +604,8 @@ function ChipToggleGroup({
   readonly selected: readonly string[];
   readonly tone: "vehicle" | "damage";
   readonly disabled: boolean;
+  readonly lockedReason?: string;
+  readonly onExplain?: (message: string) => void;
   readonly onToggle: (value: string) => void;
 }) {
   return (
@@ -470,7 +622,15 @@ function ChipToggleGroup({
             .filter(Boolean)
             .join(" ");
           return (
-            <button key={key} type="button" className={className} aria-pressed={on} disabled={disabled} onClick={() => onToggle(key)}>
+            <button
+              key={key}
+              type="button"
+              className={className}
+              aria-pressed={on}
+              disabled={disabled}
+              {...lockAttrs(lockedReason)}
+              onClick={() => (lockedReason ? onExplain(lockedReason) : onToggle(key))}
+            >
               {labels[key] ?? key}
             </button>
           );
@@ -488,6 +648,8 @@ function InspectorToggle({
   disabled,
   flush,
   tight,
+  lockedReason = "",
+  onExplain = () => undefined,
   onToggle,
 }: {
   readonly on: boolean;
@@ -498,6 +660,9 @@ function InspectorToggle({
   readonly flush?: boolean;
   /** Junta PR-02c: gap 12px do protótipo quando o toggle é seguido de outro campo. */
   readonly tight?: boolean;
+  /** B-SAN3-22 — travado por vistoria em andamento: o clique explica em vez de alternar. */
+  readonly lockedReason?: string;
+  readonly onExplain?: (message: string) => void;
   readonly onToggle: () => void;
 }) {
   const className = [
@@ -510,7 +675,15 @@ function InspectorToggle({
     .join(" ");
 
   return (
-    <button type="button" role="switch" aria-checked={on} className={className} disabled={disabled} onClick={onToggle}>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className={className}
+      disabled={disabled}
+      {...lockAttrs(lockedReason)}
+      onClick={() => (lockedReason ? onExplain(lockedReason) : onToggle())}
+    >
       <span className="ckb-ed-switch" aria-hidden="true">
         <span className="ckb-ed-switch-knob" />
       </span>

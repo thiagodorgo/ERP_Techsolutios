@@ -28,9 +28,10 @@ import {
   hasChecklistPendingChanges,
 } from "../checklist.builder";
 import { checklistStatusLabel, checklistTypeLabel, resolveChecklistComponentTypeLabel } from "../checklist.constants";
-import { checklistEditorPath } from "../checklist-editor.model";
+import { checklistEditorPath, reactivateLockReason, resolveWriteError } from "../checklist-editor.model";
 import {
   createTenantChecklist,
+  getTenantChecklist,
   listTenantChecklistComponents,
   listTenantChecklists,
   updateTenantChecklist,
@@ -55,6 +56,53 @@ import type {
 // (`/administrator/checklists/:checklistId`), sob o mesmo gate `tenant_checklists:read`.
 
 type ChecklistFilter = TenantChecklistStatus | "all" | "pending_changes";
+
+/**
+ * B-SAN3-22 (E3-07/E3b-09, CE-29 da lista) — Inativar/Reativar a partir da LISTA. A listagem não traz `activeRuns`,
+ * então o gesto vai direto (sem leitura prévia), com o `updatedAt` da linha; o servidor decide:
+ *  · 409 `template_has_active_runs` (Reativar com vistoria em andamento) → relê o detalhe e avisa com N;
+ *  · 409 `template_changed_since_read` → relê, atualiza a linha e pede para tentar de novo;
+ *  · releitura que falha → aviso de "não confirmado".
+ * Pura nas dependências (o smoke a exercita com respostas fabricadas).
+ */
+export async function toggleChecklistStatusFromList(
+  checklist: TenantChecklist,
+  deps: {
+    readonly update: (id: string, input: { status: TenantChecklistStatus; expectedUpdatedAt: string }) => Promise<TenantChecklist>;
+    readonly readDetail: (id: string) => Promise<TenantChecklist>;
+  },
+): Promise<{ readonly row: TenantChecklist | null; readonly message: string; readonly tone: "ok" | "warn" }> {
+  const nextStatus: TenantChecklistStatus = checklist.status === "inactive" ? "draft" : "inactive";
+  try {
+    const saved = await deps.update(checklist.id, { status: nextStatus, expectedUpdatedAt: checklist.updatedAt });
+    return {
+      row: saved,
+      message:
+        nextStatus === "inactive"
+          ? "Modelo inativado — não entra em novas ordens."
+          : "Modelo reativado como rascunho. Publique para enviar ao aplicativo.",
+      tone: "ok",
+    };
+  } catch (error) {
+    const outcome = await resolveWriteError(error, () => deps.readDetail(checklist.id));
+    if (outcome.kind === "other") {
+      return { row: null, message: error instanceof Error ? error.message : "Falha ao alterar a situação do modelo.", tone: "warn" };
+    }
+    if (outcome.kind === "unknown") return { row: null, message: outcome.message, tone: "warn" };
+    if (outcome.kind === "conflict") {
+      return {
+        row: outcome.latest,
+        message: "Outra pessoa alterou este modelo depois que a lista foi carregada. A linha foi atualizada — confira e tente de novo.",
+        tone: "warn",
+      };
+    }
+    return {
+      row: outcome.latest,
+      message: nextStatus === "draft" ? reactivateLockReason(outcome.lock) || outcome.message : outcome.message,
+      tone: "warn",
+    };
+  }
+}
 
 const FILTER_OPTIONS: readonly { readonly value: ChecklistFilter; readonly label: string }[] = [
   { value: "all", label: "Todas as situações" },
@@ -255,21 +303,17 @@ export function TenantChecklistsPage({
   // (o redesign não pode custar capacidade real); o lugar definitivo dela é o editor, no PR-02c.
   async function handleToggleStatus(checklist: TenantChecklist) {
     if (!apiContext) return;
+    const context = apiContext;
 
-    const nextStatus: TenantChecklistStatus = checklist.status === "inactive" ? "draft" : "inactive";
     setSaving(true);
-
     try {
-      const saved = await updateTenantChecklist(apiContext, checklist.id, { status: nextStatus });
-      setChecklists((current) => upsertChecklist(current, saved));
-      showToast(
-        nextStatus === "inactive"
-          ? "Modelo inativado — não entra em novas ordens."
-          : "Modelo reativado como rascunho. Publique para enviar ao aplicativo.",
-        "ok",
-      );
-    } catch (item) {
-      showToast(item instanceof Error ? item.message : "Falha ao alterar a situação do modelo.", "warn");
+      const result = await toggleChecklistStatusFromList(checklist, {
+        update: (id, input) => updateTenantChecklist(context, id, input),
+        readDetail: (id) => getTenantChecklist(context, id),
+      });
+      const row = result.row;
+      if (row) setChecklists((current) => upsertChecklist(current, row));
+      showToast(result.message, result.tone);
     } finally {
       setSaving(false);
     }

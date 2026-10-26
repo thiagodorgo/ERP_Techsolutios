@@ -117,11 +117,10 @@ async function harness() {
   function save(existing: Template, edit: (draft: Draft) => Draft = (draft) => draft) {
     const front = asFront(existing);
     const draft = edit(model.createEditorDraftFromChecklist(front));
-    const built = model.buildUpdateInputFromEditorDraft(draft, front.schema, TOKEN) as Record<string, unknown>;
-    // Até a fatia web, o builder não emitia o token; o validator exige. A paridade de
-    // `expectedUpdatedAt === token` é a CE-26a (smoke do front) e é afirmada abaixo quando presente.
-    if ("expectedUpdatedAt" in built) assert.equal(built.expectedUpdatedAt, TOKEN, "o builder emite o token recebido");
-    const input = parseUpdateChecklistTemplateDto({ expectedUpdatedAt: TOKEN, ...built });
+    const built = model.buildUpdateInputFromEditorDraft(draft, front.schema, TOKEN) as unknown as Record<string, unknown>;
+    // O payload vai ao validator EXATAMENTE como o editor o monta — inclusive o token (E3-04).
+    assert.equal(built.expectedUpdatedAt, TOKEN, "o builder emite o token recebido");
+    const input = parseUpdateChecklistTemplateDto(built);
     return { kind: classifyTemplateChange(existing, input) as Kind, paths: diffTemplateChange(existing, input) };
   }
 

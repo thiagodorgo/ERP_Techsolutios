@@ -6,6 +6,7 @@ import type {
   TenantChecklistType,
   UpdateTenantChecklistInput,
 } from "./types";
+import { checklistTypeLabel } from "./checklist.constants";
 
 // CHECKLIST P1 PR-02b — modelo PURO do editor de "Modelos de Checklist" (funções sem React,
 // auditáveis por teste de unidade). Convenção de persistência das SEÇÕES fixada na ata
@@ -109,6 +110,9 @@ export function componentsInSection(draft: ChecklistEditorDraft, sectionIndex: n
 export function buildUpdateInputFromEditorDraft(
   draft: ChecklistEditorDraft,
   baseSchema: Record<string, unknown>,
+  // B-SAN3-22 (E3-04) — o `updatedAt` do modelo sobre o qual o rascunho foi feito. O servidor só grava se ninguém
+  // gravou depois dessa leitura (409 `template_changed_since_read` senão); a releitura antes de salvar saiu.
+  expectedUpdatedAt: string,
 ): UpdateTenantChecklistInput {
   const ordered = draft.sections.flatMap((_, sectionIndex) => componentsInSection(draft, sectionIndex));
   // Junta PR-02b (BAIXA): o `components` do schema anterior é reescrito pelo backend a cada PATCH
@@ -116,6 +120,7 @@ export function buildUpdateInputFromEditorDraft(
   const { components: _obsoleteComponents, ...schemaWithoutComponents } = baseSchema;
 
   return {
+    expectedUpdatedAt,
     name: draft.name.trim(),
     description: draft.description.trim() || undefined,
     type: draft.type,
@@ -549,4 +554,257 @@ export function editorFieldChips(component: {
     chips.push({ text: "dois estágios", bg: "#FFFBEB", fg: "#B45309" });
   }
   return chips;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// B-SAN3-22 — TRAVA DO MODELO NO EDITOR (fatia web). Funções PURAS: a página só renderiza e despacha.
+//
+// O servidor é a autoridade (trava otimista + vistoria em andamento): ele recusa com 409 o que a tela
+// não deveria deixar. A tela antecipa a regra para não fazer o usuário perder o clique:
+//  · `activeRuns` vem em TODA resposta de modelo único; ausente = NÃO CONFIRMADO → travado (fail-closed);
+//  · com vistoria em andamento só os TEXTOS mudam (nome, descrição, nomes de seção, pergunta, ajuda);
+//  · 409 `template_changed_since_read` → conflito (recarregar × sobrescrever com o token recém-lido);
+//  · 409 `template_has_active_runs` → relê o detalhe e diz quantas vistorias seguram o modelo.
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+
+export type ChecklistEditorLock =
+  | { readonly kind: "free" }
+  | { readonly kind: "locked"; readonly activeRuns: number }
+  | { readonly kind: "unknown" };
+
+/** CE-27 — o estado da trava a partir da resposta de modelo único (GET, salvar, publicar, inativar). */
+export function nextEditorLock(response: { readonly activeRuns?: unknown } | null | undefined): ChecklistEditorLock {
+  const raw = response?.activeRuns;
+  if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 0) return { kind: "unknown" };
+  return raw > 0 ? { kind: "locked", activeRuns: raw } : { kind: "free" };
+}
+
+export const EDITOR_LOCK_UNKNOWN_MESSAGE =
+  "Não foi possível confirmar se há vistorias em andamento — recarregue o modelo para mudar os campos.";
+
+/** "1 vistoria em andamento" · "N vistorias em andamento". */
+export function activeRunsPhrase(count: number): string {
+  return `${count} ${count === 1 ? "vistoria" : "vistorias"} em andamento`;
+}
+
+function untilTheyFinish(count: number): string {
+  return count === 1 ? "ela terminar" : "elas terminarem";
+}
+
+/** Motivo padrão de todo controle de campo travado (o clique explica — padrão do Publicar travado). */
+export function editorLockReason(lock: ChecklistEditorLock): string {
+  if (lock.kind === "free") return "";
+  if (lock.kind === "unknown") return EDITOR_LOCK_UNKNOWN_MESSAGE;
+  return `Há ${activeRunsPhrase(lock.activeRuns)} com este modelo. Agora só os textos podem mudar; para mudar campos, inative o modelo e espere ${untilTheyFinish(lock.activeRuns)}.`;
+}
+
+/** Motivo de um controle específico: "<o que muda>: fica travado enquanto houver N vistorias em andamento." */
+export function editorLockReasonFor(lock: ChecklistEditorLock, subject: string, verb = "fica travado"): string {
+  if (lock.kind === "free") return "";
+  if (lock.kind === "unknown") return EDITOR_LOCK_UNKNOWN_MESSAGE;
+  return `${subject}: ${verb} enquanto houver ${activeRunsPhrase(lock.activeRuns)}.`;
+}
+
+/** Texto da faixa âmbar (A e B) — inativo diz que as novas ordens já não usam o modelo. */
+export function editorLockBanner(lock: ChecklistEditorLock, status: TenantChecklist["status"]): string {
+  if (lock.kind === "free") return "";
+  if (lock.kind === "unknown") return EDITOR_LOCK_UNKNOWN_MESSAGE;
+  const runs = activeRunsPhrase(lock.activeRuns);
+  if (status === "inactive") {
+    return `O modelo está inativo: as novas ordens já não o usam. ${capitalize(runs)} ainda o ${lock.activeRuns === 1 ? "usa" : "usam"}; até ${untilTheyFinish(lock.activeRuns)}, só os textos podem mudar.`;
+  }
+  return `Há ${runs} com este modelo. Agora só os textos podem mudar: nome, descrição, nomes de seção, pergunta e ajuda. Para mudar campos, inative o modelo e espere as vistorias terminarem.`;
+}
+
+/** Reativar volta a rascunho, o que cortaria as vistorias: travado enquanto houver alguma (ou enquanto não confirmado). */
+export function reactivateLockReason(lock: ChecklistEditorLock): string {
+  if (lock.kind === "free") return "";
+  if (lock.kind === "unknown") return EDITOR_LOCK_UNKNOWN_MESSAGE;
+  const which = lock.activeRuns === 1 ? "a vistoria em andamento" : `as ${lock.activeRuns} vistorias em andamento`;
+  return `Reativar volta o modelo para rascunho, e isso cortaria ${which}. Espere ${untilTheyFinish(lock.activeRuns)}.`;
+}
+
+/**
+ * E3b-17/CE-29 — o que o botão de situação do editor faz: Inativar SEMPRE pede confirmação (as novas ordens deixam de
+ * usar o modelo); Reativar vai direto quando livre e, com a trava, só explica.
+ */
+export function editorStatusAction(
+  status: TenantChecklist["status"],
+  lock: ChecklistEditorLock,
+): { readonly kind: "confirm_inactivate" } | { readonly kind: "reactivate" } | { readonly kind: "explain"; readonly message: string } {
+  if (status !== "inactive") return { kind: "confirm_inactivate" };
+  const reason = reactivateLockReason(lock);
+  return reason ? { kind: "explain", message: reason } : { kind: "reactivate" };
+}
+
+/** Pílula do cabeçalho: A e B dizem o número; C diz a regra. */
+export function editorLockPill(lock: ChecklistEditorLock, appearance: "A" | "B" | "C"): string {
+  if (lock.kind === "free") return "";
+  if (appearance === "C") return "Somente textos";
+  if (lock.kind === "unknown") return "Campos travados";
+  return `Em uso por ${lock.activeRuns} ${lock.activeRuns === 1 ? "vistoria" : "vistorias"}`;
+}
+
+/** Subtítulo do painel "Em uso agora" (C) — sem afirmar versão (E3b-16, D-007). */
+export function editorLockPanelSub(lock: ChecklistEditorLock): string {
+  if (lock.kind !== "locked") return EDITOR_LOCK_UNKNOWN_MESSAGE;
+  return `${activeRunsPhrase(lock.activeRuns)} ${lock.activeRuns === 1 ? "usa" : "usam"} este modelo`;
+}
+
+function capitalize(text: string): string {
+  return text.length > 0 ? text[0].toUpperCase() + text.slice(1) : text;
+}
+
+export type ChecklistSaveErrorKind = "conflict" | "in_use" | "other";
+
+/** CE-26b — classifica o erro de gravação (salvar, publicar, inativar) pelo `reason` estável do servidor. */
+export function resolveSaveError(error: unknown): { readonly kind: ChecklistSaveErrorKind } {
+  if (error && typeof error === "object" && (error as { status?: unknown }).status === 409) {
+    const reason = (error as { reason?: unknown }).reason;
+    if (reason === "template_changed_since_read") return { kind: "conflict" };
+    if (reason === "template_has_active_runs") return { kind: "in_use" };
+  }
+  return { kind: "other" };
+}
+
+export type ChecklistWriteOutcome =
+  | { readonly kind: "conflict"; readonly latest: TenantChecklist; readonly lock: ChecklistEditorLock }
+  | { readonly kind: "in_use"; readonly latest: TenantChecklist; readonly lock: ChecklistEditorLock; readonly message: string }
+  | { readonly kind: "unknown"; readonly message: string }
+  | { readonly kind: "other" };
+
+/**
+ * CE-26b/CE-28/E3b-19 — o que fazer depois de um erro de gravação. Nos dois 409 da trava a tela RELÊ o detalhe
+ * (`readLatest`): no conflito, para apresentar o que a outra pessoa salvou; no "em uso", para dizer N (o cliente não
+ * expõe a mensagem do servidor). Se a releitura falhar, o resultado é "não confirmado" — travado, sem comparador
+ * inventado (fail-closed).
+ */
+export async function resolveWriteError(
+  error: unknown,
+  readLatest: () => Promise<TenantChecklist | null>,
+): Promise<ChecklistWriteOutcome> {
+  const kind = resolveSaveError(error).kind;
+  if (kind === "other") return { kind: "other" };
+
+  let latest: TenantChecklist | null = null;
+  try {
+    latest = await readLatest();
+  } catch {
+    latest = null;
+  }
+  if (!latest) return { kind: "unknown", message: EDITOR_LOCK_UNKNOWN_MESSAGE };
+
+  const lock = nextEditorLock(latest);
+  if (kind === "conflict") return { kind: "conflict", latest, lock };
+  return {
+    kind: "in_use",
+    latest,
+    lock,
+    message: lock.kind === "free" ? "A situação do modelo mudou enquanto você editava. Confira e tente de novo." : editorLockReason(lock),
+  };
+}
+
+/**
+ * CE-26c (E3b-07) — o token do publicar: o `updatedAt` DEVOLVIDO pelo salvar que acabou de acontecer (senão o
+ * publicar levaria o token de antes do próprio salvar e o servidor responderia 409 contra a própria gravação).
+ */
+export function publishTokenAfterSave(saved: { readonly updatedAt: string } | null, current: { readonly updatedAt: string }): string {
+  return (saved ?? current).updatedAt;
+}
+
+export type ChecklistDraftDifference = {
+  readonly label: string;
+  readonly saved: string;
+  readonly mine: string;
+};
+
+/**
+ * E3-08/E3b-14 — comparador "Salvo × Seu" (C) e "N diferenças" (B): o modelo que outra pessoa salvou × o rascunho
+ * desta tela. Puro e local (o servidor não manda a diferença pronta). Só lista o que difere.
+ */
+export function diffEditorDraft(server: TenantChecklist, draft: ChecklistEditorDraft): readonly ChecklistDraftDifference[] {
+  const saved = createEditorDraftFromChecklist(server);
+  const rows: ChecklistDraftDifference[] = [];
+  const text = (value: string) => (value.trim().length > 0 ? value : "—");
+
+  if (saved.name !== draft.name) rows.push({ label: "Nome do modelo", saved: text(saved.name), mine: text(draft.name) });
+  if (saved.description !== draft.description) {
+    rows.push({ label: "Descrição", saved: text(saved.description), mine: text(draft.description) });
+  }
+  if (saved.type !== draft.type) {
+    rows.push({ label: "Tipo do modelo", saved: checklistTypeLabel[saved.type] ?? "—", mine: checklistTypeLabel[draft.type] ?? "—" });
+  }
+
+  const sectionCount = Math.max(saved.sections.length, draft.sections.length);
+  for (let index = 0; index < sectionCount; index += 1) {
+    const before = saved.sections[index];
+    const after = draft.sections[index];
+    if (before !== after) {
+      rows.push({
+        label: `Seção ${index + 1}`,
+        saved: before === undefined ? "—" : text(before),
+        mine: after === undefined ? "—" : text(after),
+      });
+    }
+  }
+
+  const savedByKey = new Map(saved.components.map((item) => [item.componentKey, item]));
+  const mineByKey = new Map(draft.components.map((item) => [item.componentKey, item]));
+  for (const item of saved.components) {
+    if (!mineByKey.has(item.componentKey)) rows.push({ label: `“${item.label}”`, saved: "no formulário", mine: "removido" });
+  }
+  for (const item of draft.components) {
+    const before = savedByKey.get(item.componentKey);
+    if (!before) {
+      rows.push({ label: `“${item.label}”`, saved: "—", mine: "acrescentado" });
+      continue;
+    }
+    if (before.label !== item.label) rows.push({ label: `“${before.label}” — pergunta`, saved: text(before.label), mine: text(item.label) });
+    if (componentHelpText(before) !== componentHelpText(item)) {
+      rows.push({ label: `“${before.label}” — ajuda`, saved: text(componentHelpText(before)), mine: text(componentHelpText(item)) });
+    }
+    if (before.required !== item.required) {
+      rows.push({ label: `“${before.label}” — obrigatório`, saved: before.required ? "sim" : "não", mine: item.required ? "sim" : "não" });
+    }
+    const beforeSection = saved.sections[componentSectionIndex(before, saved.sections.length)] ?? "";
+    const afterSection = draft.sections[componentSectionIndex(item, draft.sections.length)] ?? "";
+    if (beforeSection !== afterSection) {
+      rows.push({ label: `“${before.label}” — seção`, saved: text(beforeSection), mine: text(afterSection) });
+    }
+    if (before.type !== item.type || JSON.stringify(configShape(before.config)) !== JSON.stringify(configShape(item.config))) {
+      rows.push({ label: `“${before.label}” — configuração`, saved: "a salva", mine: "a sua" });
+    }
+  }
+
+  const savedOrder = saved.components.map((item) => item.componentKey).filter((key) => mineByKey.has(key));
+  const mineOrder = draft.components.map((item) => item.componentKey).filter((key) => savedByKey.has(key));
+  if (savedOrder.join("|") !== mineOrder.join("|")) rows.push({ label: "Ordem dos campos", saved: "a salva", mine: "a sua" });
+
+  return rows;
+}
+
+function configShape(config: ChecklistJsonRecord): Record<string, unknown> {
+  const { help: _help, sectionIndex: _section, ...rest } = config;
+  return Object.fromEntries(Object.entries(rest).sort(([a], [b]) => a.localeCompare(b)));
+}
+
+/** "1 diferença" · "N diferenças". */
+export function differencesPhrase(count: number): string {
+  return `${count} ${count === 1 ? "diferença" : "diferenças"}`;
+}
+
+/** Hora HH:MM (pt-BR) de um instante ISO; vazio quando não é data. */
+export function editorClock(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Linha do diálogo de conflito (E3b-14): quando a outra pessoa salvou e quando esta sessão abriu o modelo. */
+export function conflictWhenLine(savedAt: string | null | undefined, openedAt: string | null | undefined): string {
+  const saved = editorClock(savedAt);
+  const opened = editorClock(openedAt);
+  if (!saved || !opened) return "";
+  return `Salvo por outra pessoa às ${saved} · você abriu às ${opened}`;
 }

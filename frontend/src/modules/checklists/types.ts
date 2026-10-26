@@ -92,6 +92,12 @@ export type TenantChecklist = {
   createdAt?: string;
   updatedAt: string;
   deletedAt?: string;
+  /**
+   * B-SAN3-22 — vistorias em andamento (conhecidas pelo servidor) que usam este modelo. Vem em TODA resposta de
+   * modelo ÚNICO (detalhe, salvar, publicar, inativar); a lista não traz. Ausente = não confirmado: o editor trava
+   * os campos por segurança (fail-closed), nunca libera.
+   */
+  activeRuns?: number;
 };
 
 export type ChecklistApiContext = {
@@ -133,6 +139,8 @@ export type CreateTenantChecklistInput = {
 };
 
 export type UpdateTenantChecklistInput = Partial<CreateTenantChecklistInput> & {
+  /** B-SAN3-22 — `updatedAt` da última leitura do modelo (GET/salvar/publicar). Obrigatório: sem ele o servidor responde 400. */
+  expectedUpdatedAt: string;
   status?: TenantChecklistStatus;
 };
 

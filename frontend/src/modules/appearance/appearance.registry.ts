@@ -25,4 +25,14 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Mesa de pátio" },
     ],
   },
+  // B-SAN3-22 — editor de modelo de checklist (referência `screen-refs/checklist-editor-estados-3opcoes.reference.html`).
+  {
+    key: "checklist-editor",
+    label: "Editor de modelo de checklist",
+    options: [
+      { value: "A", label: "Padrão fiel" },
+      { value: "B", label: "Analítica" },
+      { value: "C", label: "Painel de impacto" },
+    ],
+  },
 ];

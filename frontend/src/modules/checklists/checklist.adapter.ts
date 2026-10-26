@@ -53,15 +53,22 @@ export function updateTenantChecklistFromApi(
   }).then((response) => response.data);
 }
 
-export function publishTenantChecklistFromApi(context: ChecklistApiContext, checklistId: string): Promise<TenantChecklist> {
+// B-SAN3-22 — publicar leva o `updatedAt` da última leitura; se alguém gravou depois, o servidor responde 409.
+export function publishTenantChecklistFromApi(
+  context: ChecklistApiContext,
+  checklistId: string,
+  expectedUpdatedAt: string,
+): Promise<TenantChecklist> {
   return apiRequest<ApiResponse<TenantChecklist>>(`/tenant/checklists/${checklistId}/publish`, {
     ...toRequestOptions(context),
     method: "POST",
+    body: { expectedUpdatedAt },
   }).then((response) => response.data);
 }
 
-export function deleteTenantChecklistFromApi(context: ChecklistApiContext, checklistId: string): Promise<void> {
-  return apiRequest<void>(`/tenant/checklists/${checklistId}`, {
+// B-SAN3-22 (E3b-13) — arquivar não tem gesto na tela; a função fica com o contrato certo (token na query).
+export function deleteTenantChecklistFromApi(context: ChecklistApiContext, checklistId: string, expectedUpdatedAt: string): Promise<void> {
+  return apiRequest<void>(`/tenant/checklists/${checklistId}?expectedUpdatedAt=${encodeURIComponent(expectedUpdatedAt)}`, {
     ...toRequestOptions(context),
     method: "DELETE",
   });

@@ -5908,6 +5908,176 @@ a.pat-cell-main:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px;
   }
 }
 
+/* B-SAN3-22 — estados do editor (A/B/C) */
+/* Os dois estados do editor de modelo ("campos travados" e "conflito ao salvar") nas 3 aparências da referência
+   aprovada (screen-refs/checklist-editor-estados-3opcoes.reference.html, bloco "acréscimos desta maquete"). Só
+   tokens do design system: as cores que a referência escreve em hex vêm das variáveis de status e de superfície
+   (âmbar = --color-status-warning misturado à superfície do painel). Três regras traduzem o que a referência
+   escreve em estilo inline: a grade compacta da C, o destaque da faixa pelo bloco da B e a coluna "Agora". */
+.ckb-pill--inuse {
+  font-size: 10px;
+  padding: var(--space-2) var(--space-8);
+  background: color-mix(in srgb, var(--color-status-warning) 14%, var(--surface-panel));
+  color: var(--color-status-warning);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ckb-ed-name {
+  text-overflow: ellipsis;
+}
+.ckb-ed-blockbar .ckb-ed-link {
+  margin-left: auto;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 12.5px;
+  padding: var(--space-6) var(--space-2);
+}
+.ckb-ed-blockbar .ckb-ed-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.ckb-ed-blockbar .ckb-ed-btn,
+.ckb-ed-blockbar .ckb-ed-modal-btn {
+  flex-shrink: 0;
+}
+.ckb-ed-blockbar .ckb-ed-modal-btn:first-of-type {
+  margin-left: auto;
+}
+.ckb-ed-blockbar--destaque {
+  box-shadow: inset 0 0 0 2px var(--color-status-warning);
+}
+[aria-disabled="true"].ckb-ed-pal-item,
+[aria-disabled="true"].ckb-ed-field-btn,
+[aria-disabled="true"].ckb-ed-ghost-btn,
+[aria-disabled="true"].ckb-ed-section-del,
+[aria-disabled="true"].ckb-ed-toggle,
+[aria-disabled="true"].ckb-ed-opt-btn,
+[aria-disabled="true"].ckb-ed-opt-add,
+[aria-disabled="true"].ckb-ed-chip-toggle,
+[aria-disabled="true"].ckb-ed-btn:not(.ckb-ed-btn--publish) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ckb-ed-input[aria-disabled="true"],
+.ckb-ed-select[aria-disabled="true"],
+.ckb-ed-type[aria-disabled="true"],
+.ckb-ed-opt-input[aria-disabled="true"] {
+  background: var(--surface-panel-muted);
+  color: var(--color-chart-neutral);
+  cursor: not-allowed;
+}
+.ckb-ed-field-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--color-status-warning);
+  background: color-mix(in srgb, var(--color-status-warning) 8%, var(--surface-panel));
+  border: 1px solid color-mix(in srgb, var(--color-status-warning) 35%, var(--surface-panel));
+  border-radius: var(--radius-6);
+  padding: var(--space-2) var(--space-6);
+}
+.ckb-ed-modal-when {
+  font-size: 12px;
+  color: var(--color-status-draft);
+  background: var(--surface-panel-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  padding: var(--space-8) var(--space-10);
+  margin: calc(-1 * var(--space-4)) 0 var(--space-12);
+  text-align: left;
+}
+@media (min-width: 1181px) {
+  .ckb-ed-grid--compacta {
+    grid-template-columns: 76px minmax(400px, 1fr) 336px;
+  }
+}
+/* Opção B — composição de .pat-kpi--clickable, .pat-filtro-chip e .pat-ab-table acima da grade do editor */
+.b22-faixa {
+  padding: var(--space-12) var(--space-24) 0;
+}
+.b22-faixa .kpi-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+.b22-lista {
+  margin-top: var(--space-10);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: calc(var(--radius-6) * 2);
+  overflow: hidden;
+}
+.b22-lista .pat-filtro-chip-bar {
+  padding: var(--space-10) var(--space-12);
+}
+.b22-col-agora {
+  width: 200px;
+}
+/* Opção C — o painel usa a estrutura .ckb-ed-col e .ckb-ed-insp-* do inspector */
+.c22-lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  font-size: 12.5px;
+  color: var(--color-neutral-700);
+  margin: 0;
+  padding: 0;
+}
+.c22-lista li {
+  display: flex;
+  gap: var(--space-8);
+  align-items: flex-start;
+}
+.c22-lista li svg {
+  flex-shrink: 0;
+  margin-top: var(--space-2);
+}
+.c22-cmp {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  font-size: 12px;
+}
+.c22-cmp .h {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-status-draft);
+  padding: var(--space-2);
+}
+.c22-cmp .v {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-8);
+  padding: var(--space-6) var(--space-8);
+  color: var(--color-neutral-700);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.c22-cmp .v.dif {
+  background: color-mix(in srgb, var(--color-status-warning) 8%, var(--surface-panel));
+  border-color: color-mix(in srgb, var(--color-status-warning) 35%, var(--surface-panel));
+}
+.c22-acoes {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  margin-top: var(--space-12);
+}
+.c22-lista + .ckb-ed-insp-section,
+.c22-acoes + .ckb-ed-insp-section {
+  margin-top: calc(var(--space-16) + var(--space-2));
+}
+/* fim B-SAN3-22 */
+
 /* ══════════════════════════════════════════════════════════════════════════════════════════
    J-MAPAS-10 (PLANO-MAPA-PIXEL, PR-1) — Mapa Operacional pixel do protótipo do dono.
    Namespace próprio .opmap- com os tokens do plano §8: painel de vidro navy
