@@ -6,11 +6,35 @@ import test from "node:test";
 
 const connectionString = process.env.DATABASE_URL;
 
+// E4-04 (C1-01): julgamento POR SENTENÇA. Cada `$queryRaw`/`$executeRaw` em template literal do repositório que
+// cita `checklist_templates` ou `checklist_runs` é isolado; `INSERT` leva `tenant_id` na lista de colunas, as
+// demais têm `WHERE … tenant_id =` dentro da PRÓPRIA sentença. Os dois locks de `checklist_templates`
+// (`FOR UPDATE`, com o token truncado em milissegundos, e `FOR KEY SHARE`) têm de existir e ser tenant-first.
+// É forma (lê o arquivo, roda sem banco); a prova de comportamento é o CE-12-db com o token errado.
 test("CE-12-forma: locks raw são tenant-first", () => {
-  const source = fs.readFileSync(new URL("../src/modules/checklists/checklist-prisma.repository.ts", import.meta.url), "utf8");
-  assert.match(source, /FROM checklist_templates[\s\S]*?WHERE tenant_id[\s\S]*?FOR UPDATE/);
-  assert.match(source, /FROM checklist_templates[\s\S]*?WHERE tenant_id[\s\S]*?FOR KEY SHARE/);
-  assert.match(source, /date_trunc\('milliseconds', updated_at\)/);
+  const source = fs
+    .readFileSync(new URL("../src/modules/checklists/checklist-prisma.repository.ts", import.meta.url), "utf8")
+    .replace(/\r\n/g, "\n");
+  const lineOf = (index: number) => source.slice(0, index).split("\n").length;
+  const statements: { line: number; sql: string }[] = [];
+  for (const match of source.matchAll(/\$(?:queryRaw|executeRaw)(?:<[^`\n]*>)?`([^`]*)`/g)) {
+    if (/\bchecklist_(?:templates|runs)\b/.test(match[1])) statements.push({ line: lineOf(match.index!), sql: match[1] });
+  }
+  const failed = statements.filter(({ sql }) => {
+    const insert = /^\s*INSERT\s+INTO\s+\w+\s*\(([^)]*)\)/i.exec(sql);
+    return insert ? !/\btenant_id\b/.test(insert[1]) : !/WHERE[\s\S]*?\btenant_id\s*=/i.test(sql);
+  });
+  const census = `${statements.length} sentenças cruas de checklist (l.${statements.map((item) => item.line).join(", ")}); reprovadas: ${failed.map((item) => `l.${item.line}`).join(", ") || "nenhuma"}`;
+  assert.deepEqual(failed.map((item) => item.line), [], `sentença sem tenant_id — ${census}`);
+  const templateLocks = statements.filter(({ sql }) => /\bFROM\s+checklist_templates\b/.test(sql));
+  const forUpdate = templateLocks.filter(({ sql }) => /\bFOR UPDATE\b/.test(sql));
+  const forKeyShare = templateLocks.filter(({ sql }) => /\bFOR KEY SHARE\b/.test(sql));
+  assert.ok(forUpdate.length > 0, `nenhum FOR UPDATE de checklist_templates — ${census}`);
+  assert.ok(forKeyShare.length > 0, `nenhum FOR KEY SHARE de checklist_templates — ${census}`);
+  for (const lock of forUpdate) {
+    assert.match(lock.sql, /date_trunc\('milliseconds', updated_at\)/, `FOR UPDATE da l.${lock.line} sem o token truncado — ${census}`);
+  }
+  console.log(`CE-12-forma: ${census}`);
 });
 
 if (!connectionString) {
@@ -136,7 +160,58 @@ if (!connectionString) {
       assert.equal(await ctx.repo.publishTemplate(a.tenantId, b.template.id, a.userId, b.template.updatedAt), null);
       assert.equal(await ctx.repo.archiveTemplate(a.tenantId, b.template.id, a.userId, b.template.updatedAt), null);
       assert.deepEqual(await snapshot(ctx, b.tenantId, b.template.id), before);
+      // E4-05 (C1-01): token ERRADO — o único caminho em que o predicado do lock decide sozinho. Contexto de A,
+      // id de B, token de B − 1 ms: as 3 portas devolvem null (404) e NUNCA `ChecklistTemplateStaleError`.
+      const { ChecklistTemplateStaleError } = await import("../src/modules/checklists/checklist.repository.js");
+      const wrongToken = new Date(b.template.updatedAt.getTime() - 1);
+      const ports = {
+        update: () => ctx.repo.updateTemplate({ tenantId: a.tenantId, checklistId: b.template.id,
+          actorUserId: a.userId, expectedUpdatedAt: wrongToken, name: "intruso" }),
+        publish: () => ctx.repo.publishTemplate(a.tenantId, b.template.id, a.userId, wrongToken),
+        archive: () => ctx.repo.archiveTemplate(a.tenantId, b.template.id, a.userId, wrongToken),
+      };
+      for (const [port, call] of Object.entries(ports)) {
+        const outcome = await call().then((value) => value, (error: unknown) => error);
+        assert.ok(!(outcome instanceof ChecklistTemplateStaleError), `${port}: token errado em id de outra organização virou 409 stale`);
+        assert.equal(outcome, null, `${port}: esperado null (404)`);
+      }
+      assert.deepEqual(await snapshot(ctx, b.tenantId, b.template.id), before);
     } finally { await teardown(ctx, a.tenantId, true); await teardown(ctx, b.tenantId); }
+  });
+
+  // E4-06 (C1-02): publish e archive esperam o `FOR UPDATE` e recusam o token que o arnês defasou; o estado final
+  // é o do arnês (publicação/arquivamento não passam por cima).
+  test("CE-5-publish: publish espera o FOR UPDATE e recusa o token defasado pelo arnês", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    try {
+      const { ChecklistTemplateStaleError } = await import("../src/modules/checklists/checklist.repository.js");
+      const draft = await ctx.repo.createTemplate({ tenantId: seed.tenantId, actorUserId: seed.userId, name: "Rascunho CE-5",
+        type: "custom", schema: {}, components: [component("obs", "Observação")] });
+      const holder = await holdForUpdate(ctx, seed.tenantId, draft.id, "arnes-publish");
+      const publishing = ctx.repo.publishTemplate(seed.tenantId, draft.id, seed.userId, draft.updatedAt);
+      await assertPending(publishing);
+      await holder.commit();
+      await assert.rejects(publishing, ChecklistTemplateStaleError);
+      const final = await templateState(ctx, seed.tenantId, draft.id);
+      assert.deepEqual(final, { name: "arnes-publish", status: "draft", published_at: null, deleted_at: null });
+    } finally { await teardown(ctx, seed.tenantId); }
+  });
+
+  test("CE-5-archive: archive espera o FOR UPDATE e recusa o token defasado pelo arnês", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    try {
+      const { ChecklistTemplateStaleError } = await import("../src/modules/checklists/checklist.repository.js");
+      const before = await templateState(ctx, seed.tenantId, seed.template.id);
+      const holder = await holdForUpdate(ctx, seed.tenantId, seed.template.id, "arnes-archive");
+      const archiving = ctx.repo.archiveTemplate(seed.tenantId, seed.template.id, seed.userId, seed.template.updatedAt);
+      await assertPending(archiving);
+      await holder.commit();
+      await assert.rejects(archiving, ChecklistTemplateStaleError);
+      const final = await templateState(ctx, seed.tenantId, seed.template.id);
+      assert.deepEqual(final, { ...before, name: "arnes-archive", status: "published", deleted_at: null });
+    } finally { await teardown(ctx, seed.tenantId); }
   });
 
   test("CE-22/23: run e edição estrutural serializam nos dois sentidos", async () => {
@@ -300,6 +375,29 @@ async function rawExecute(ctx: Context, tenantId: string, sql: string, params: r
 async function snapshot(ctx: Context, tenantId: string, templateId: string) {
   return (await ctx.client.$queryRawUnsafe<Array<Record<string, unknown>>>(
     `SELECT updated_by::text, updated_at::text, version, status, deleted_at::text, name, (SELECT count(*)::int FROM checklist_template_components c WHERE c.tenant_id = t.tenant_id AND c.template_id = t.id) AS components FROM checklist_templates t WHERE tenant_id = $1::uuid AND id = $2::uuid`, tenantId, templateId))[0];
+}
+
+// Arnês do CE-5 publish/archive: segura `SELECT … FOR UPDATE` numa transação própria; `commit()` grava
+// `updated_at = clock_timestamp()` (defasa o token de quem espera) e solta a trava.
+async function holdForUpdate(ctx: Context, tenantId: string, templateId: string, name: string) {
+  let release!: () => void;
+  let locked!: () => void;
+  const mayCommit = new Promise<void>((resolve) => { release = resolve; });
+  const hasLock = new Promise<void>((resolve) => { locked = resolve; });
+  const locker = ctx.client.$transaction(async (tx) => {
+    await setTenant(tx, tenantId);
+    await tx.$queryRawUnsafe(`SELECT id FROM checklist_templates WHERE tenant_id = $1::uuid AND id = $2::uuid FOR UPDATE`, tenantId, templateId);
+    locked();
+    await mayCommit;
+    await tx.$executeRawUnsafe(`UPDATE checklist_templates SET name = $3, updated_at = clock_timestamp() WHERE tenant_id = $1::uuid AND id = $2::uuid`, tenantId, templateId, name);
+  }, { timeout: 15000 });
+  await hasLock;
+  return { commit: async () => { release(); await locker; } };
+}
+
+async function templateState(ctx: Context, tenantId: string, templateId: string) {
+  return (await ctx.client.$queryRawUnsafe<Array<Record<string, unknown>>>(
+    `SELECT name, status::text AS status, published_at::text AS published_at, deleted_at::text AS deleted_at FROM checklist_templates WHERE tenant_id = $1::uuid AND id = $2::uuid`, tenantId, templateId))[0];
 }
 
 async function assertPending<T>(promise: Promise<T>) {

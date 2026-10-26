@@ -407,3 +407,28 @@ O PERMITIDO passou a incluir `tests/checklist-snapshot-dispatch.test.ts`, só pa
 | M03b | l.43 volta a `await req(...)` | `not ok 14 - CE-13` · `tests/checklist-snapshot-dispatch.test.ts:44 POST /publish com resultado descartado (status não afirmado)` (l.44 no arquivo consertado: a asserção da l.42 entrou antes) · restauro igual |
 | M03c | `o6r07c-census.ts:90` volta a `await chamar(...)` | `not ok 14 - CE-13` · `tests/helpers/o6r07c-census.ts:90 POST /publish com resultado descartado (status não afirmado) (URL concatenada)` · restauro igual |
 - **`silent` nos 5 sítios** (token defasado `"2000-01-01T00:00:00.000Z"` em cada um, `scratchpad/c2mut/silent.sh`; complemento, fora da conta das 18): U1 `routes:925` → `not ok 15 - checklist P1 PR-03 …` (`expected: 200` · `actual: 409`); U2 helper `routes:1015` → `not ok 2`/`not ok 3` (`expected: 200` · `actual: 409`); U3 `snapshot:42` → `not ok 2 - [imutável pós-edição]` (`expected: 200` · `actual: 409`); U4 `snapshot:43` = M03a; U5 `census:90` → `not ok 1 - T0`/`not ok 2 - T1` (`Error: semente: publish falhou (409:CHECKLIST_TEMPLATE_STALE:template_changed_since_read)`). **5/5 visíveis.** Restauros iguais (`06ad12bb74e0`, `f97105489ece`, `98d7b646b627`).
+
+### C2-5. E4-04 — CE-12-forma por sentença
+- **Vermelho-controle (objeto):** mutante só-lock (tirar `tenant_id` só do `SELECT … FOR UPDATE` de `lockTemplateForMutation`, âncora única) com o `CE-12-forma` do objeto (`git show 44d9cbb3:tests/checklist-template-lock-db.test.ts`) → `# pass 1 · # fail 0` (verde); com o guard novo → `not ok 1 - CE-12-forma` · `sentença sem tenant_id — 5 sentenças cruas de checklist (l.534, 634, 828, 930, 943); reprovadas: l.930`. Restauro `72870797c846` igual.
+- **Conserto (só o caso `CE-12-forma`, sem banco):** extrai cada `$queryRaw`/`$executeRaw` em template literal (genérico na mesma linha) que cita `checklist_templates`/`checklist_runs`; `INSERT` → `tenant_id` na lista de colunas; demais → `/WHERE[\s\S]*?\btenant_id\s*=/i` na própria sentença; exige ≥ 1 `FOR UPDATE` e ≥ 1 `FOR KEY SHARE` de `checklist_templates`, e o `FOR UPDATE` com `date_trunc('milliseconds', updated_at)`; a mensagem traz a contagem e as linhas. A regex antiga saiu.
+- **Verde:** `# CE-12-forma: 5 sentenças cruas de checklist (l.534, 634, 828, 930, 944); reprovadas: nenhuma`.
+
+### C2-6. E4-05 — token errado no CE-12-db e no CE-12 (REST)
+- **Controle = o mutante** (o objeto já isola; declarado na E4). `CE-12-db`: contexto de A, id de B, token de B − 1 ms nas 3 portas → `null` e nunca `ChecklistTemplateStaleError`; snapshot de B igual ao de antes. `CE-12 (REST)`: B com o token errado → 404 `checklist_not_found` nas 3 portas, `updatedAt` de A intacto; controle positivo: A com o token certo → 200.
+- **Contagem do CE-13 depois disto:** `8 declarações / 35 sítios mutantes` (+4: os 3 sítios do token errado e o PATCH do controle positivo, todos sobre `url`).
+
+### C2-7. E4-06 — CE-5 publish e archive
+- **Controle = o mutante** (o objeto serializa; declarado). Dois casos novos com o arnês `holdForUpdate` (segura `SELECT … FOR UPDATE`; `commit()` grava `name` e `updated_at = clock_timestamp()`): `publishTemplate`/`archiveTemplate` com o token lido ficam pendentes ≥ 300 ms, recebem `ChecklistTemplateStaleError` e o estado final é o do arnês (`{ name: "arnes-publish", status: "draft", published_at: null, deleted_at: null }`; no archive, `status: "published"`, `deleted_at: null`, `published_at` igual ao de antes).
+- **CE-6:** a mutação "lançar o 409 depois do `deleteMany`" fica **declarada equivalente** pela própria E4-06/E4-11 (f), apensadas ao plano; não reescrevi o corpo do §8.2 do plano (texto do planejador; a cópia em `docs/` é literal).
+- **Bateria `-db` deste arquivo:** 11/11 (9 + 2), 0 pulo.
+
+### C2-8. Drill E4-04/E4-05/E4-06 (`scratchpad/c2mut/drill-040506.sh`, Postgres próprio)
+| # | Mutação | Saída |
+|---|---|---|
+| M04a | `tenant_id` tirado só do `FOR UPDATE` (l.930) | `not ok 1 - CE-12-forma` · `… (l.534, 634, 828, 930, 943); reprovadas: l.930` · restauro `72870797c846` igual |
+| M04b | `tenant_id` tirado só do `FOR KEY SHARE` (l.944) | `not ok 1 - CE-12-forma` · `… reprovadas: l.944` · restauro igual |
+| M04c | `tenant_id` tirado só do `FOR UPDATE` do reopen (l.828) | `not ok 1 - CE-12-forma` · `… (l.534, 634, 828, 929, 943); reprovadas: l.828` · restauro igual |
+| (extra) | `$queryRaw` novo de `checklist_runs` sem `tenant_id` | `not ok 1 - CE-12-forma` · `6 sentenças … (l.534, 634, 828, 930, 944, 945); reprovadas: l.944` (a sentença nova; o `FOR KEY SHARE` desceu para a l.945) · restauro igual — fora da conta das 18 |
+| M05 | mutante só-lock (l.930), `CE-12-db` | `not ok 5 - CE-12-db` · `error: 'update: token errado em id de outra organização virou 409 stale'` · restauro igual |
+| M06a | `publishTemplate` com `SELECT` sem `FOR UPDATE` (forma da C1) | `not ok 6 - CE-5-publish` · `error: 'Missing expected rejection (ChecklistTemplateStaleError).'` (publicou por cima do arnês) · restauro igual |
+| M06b | `archiveTemplate` com `SELECT` sem `FOR UPDATE` | `not ok 7 - CE-5-archive` · `error: 'Missing expected rejection (ChecklistTemplateStaleError).'` · restauro igual |

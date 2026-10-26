@@ -442,6 +442,19 @@ test("CE-12 (REST): as três portas devolvem 404 para o modelo de outra organiza
     const intact = (await requestJson(baseUrl, url, { headers: hA })).body.data;
     assert.equal(intact.name, "Rascunho de trava");
     assert.equal(intact.updatedAt, token);
+    // E4-05: com o token ERRADO (− 1 ms) as três portas de B continuam 404 (nunca 409 stale), e A segue intacto.
+    const wrong = new Date(Date.parse(token) - 1).toISOString();
+    const wrongPatch = await requestJson(baseUrl, url, { method: "PATCH", headers: hB, body: { expectedUpdatedAt: wrong, name: "intruso" } });
+    const wrongPublish = await requestJson(baseUrl, `${url}/publish`, { method: "POST", headers: hB, body: { expectedUpdatedAt: wrong } });
+    const wrongRemove = await requestJson(baseUrl, `${url}?expectedUpdatedAt=${encodeURIComponent(wrong)}`, { method: "DELETE", headers: hB });
+    for (const response of [wrongPatch, wrongPublish, wrongRemove]) {
+      assert.equal(response.status, 404, JSON.stringify(response.body));
+      assert.equal(response.body.error.reason, "checklist_not_found");
+    }
+    assert.equal((await requestJson(baseUrl, url, { headers: hA })).body.data.updatedAt, token);
+    // Controle positivo: o dono, com o token certo, grava.
+    const own = await requestJson(baseUrl, url, { method: "PATCH", headers: hA, body: { expectedUpdatedAt: token, name: "do dono" } });
+    assert.equal(own.status, 200, JSON.stringify(own.body));
   });
 });
 
