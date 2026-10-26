@@ -11690,7 +11690,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
 
 ## P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE (2026-10-25) — a referência de 16/10 lista "Cheque" entre os meios da baixa — BAIXA
-- **status:** ABERTA · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **status:** FECHADA (2026-10-26, ramo do `B-SAN3-12b`; antes: ABERTA) · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **fechamento:** em `financeiro-3opcoes.reference.html`, o seletor "Meio de pagamento" do formulário da baixa não oferece mais `check`. O mapa `MEIOS` continua com "Cheque", porque também mostra o meio de lançamentos antigos (lista, coluna de baixas e detalhe). Feito pelo orquestrador, porque design é só Claude (`D-DESIGN-SO-CLAUDE`).
 
 ## P-SAN3-12-PAGAMENTO-MISTO-CHEQUE (2026-10-25) — cheque parcial + outro meio no mesmo título — PRODUTO
 - **status:** ABERTA · **dono:** próximo bloco de produto financeiro · **bloqueia:** não.
