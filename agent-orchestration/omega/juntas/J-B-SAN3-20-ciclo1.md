@@ -29,3 +29,8 @@
 ## Fecha
 - Item 22 do portão (`P-Ω4-7-DUPLA-CONTAGEM`, por linha de cheque registrada — limite declarado no plano), com o merge.
 - Decisão do dono registrada no bloco: `D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO` (*"A: só pela compensação (Recomendado)"*).
+
+## Registro pós-merge — rodada de 24–26/10
+
+- **Head final do PR #456:** `bb3cbd6c35c2e6a9d143c68a36ee47711f1978ad`; **merge:** `37a3f360731a25afc13d218a2449909ca2458f09`.
+- **Delta desde o `approved_head` `a0f5aabc`:** commit `d3aa1875` (registro da junta) e merge da `main` em `c76ec481` (#457, KPI). O porteiro mediu que o delta toca somente registro e os `Kpis/*` trazidos da `main`, sem mudança posterior de produto; a árvore do squash é igual à do head final (parecer `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:47-55,75`).
