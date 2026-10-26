@@ -172,10 +172,24 @@ function visible(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ");
 }
 
-/** Marcador que precisa existir na referência aprovada E na tela renderizada. */
+/** Nome de classe: minúsculas e dígitos com hífen (`b22-faixa`, `ckb-pill--inuse`). */
+const CLASS_TOKEN = /^[a-z][a-z0-9]*(?:--?[a-z0-9]+)+$/;
+
+/**
+ * Marcador que precisa existir na referência aprovada E na tela renderizada. E4-09 (C3-02): CLASSE EXATA — marcador
+ * cujas palavras são todas nomes de classe é procurado como token(s) inteiro(s) de UM atributo `class` (assim
+ * `b22-faixa-x` não satisfaz `b22-faixa`); o resto é texto e é procurado no texto visível, como está.
+ */
 function assertMarker(html: string, marker: string, where: string) {
   assert.ok(REFERENCE.includes(marker), `marcador "${marker}" não existe na referência (${where}) — o teste lê dela`);
-  assert.ok(html.includes(marker) || visible(html).includes(marker), `marcador da referência ausente na tela: "${marker}" (${where})`);
+  const tokens = marker.split(" ");
+  const found = tokens.every((token) => CLASS_TOKEN.test(token))
+    ? [...html.matchAll(/class="([^"]*)"/g)].some((attr) => {
+        const classes = attr[1].split(/\s+/);
+        return tokens.every((token) => classes.includes(token));
+      })
+    : visible(html).includes(marker);
+  assert.ok(found, `marcador da referência ausente na tela: "${marker}" (${where})`);
 }
 
 const outraPessoa = () =>
@@ -646,4 +660,50 @@ test("E3b-08 (forma): salvar, publicar e inativar/reativar levam o erro ao mesmo
     assert.ok(source.includes(`await handleWriteError(error, "${gesture}"`), gesture);
   }
   assert.doesNotMatch(source, /showToast\(error instanceof Error \? error\.message : "Falha ao publicar o modelo\."/);
+});
+
+// ── E4-08 (C3-01) — a fiação dos três gestos (critério de FORMA, declarado) ──────────────────────────────
+// RESIDUAL declarado: o SSR não clica; a prova de COMPORTAMENTO é a interceptação no navegador da C3. Um teste de
+// interação com DOM exige dependência nova (junta de 5 + PD) → `P-FRONT-TESTE-DE-INTERACAO`. Se a página for
+// reescrita, este guard é reescrito junto.
+test("C3-01 (forma): Inativar só depois do diálogo; Sobrescrever relê antes de gravar; releitura que falha trava", () => {
+  const source = readFileSync(fileURLToPath(new URL("../src/modules/checklists/pages/ChecklistEditorPage.tsx", import.meta.url)), "utf8");
+  // Corpo da primeira chave depois de `start` até a chave que a fecha.
+  const blockAfter = (start: number, what: string) => {
+    assert.ok(start >= 0, `${what} não encontrado`);
+    const open = source.indexOf("{", start);
+    let depth = 0;
+    for (let index = open; index < source.length; index += 1) {
+      if (source[index] === "{") depth += 1;
+      else if (source[index] === "}" && (depth -= 1) === 0) return source.slice(open, index + 1);
+    }
+    throw new Error(`${what}: chaves desbalanceadas`);
+  };
+  const fn = (name: string) => blockAfter(source.search(new RegExp(`function ${name}\\(`)), name);
+
+  // (a) Inativar: o gesto só abre o diálogo; a única chamada `changeStatus("inactive")` mora no onConfirm do diálogo.
+  const toggle = fn("handleToggleStatus");
+  assert.ok(toggle.includes("setConfirmInactivate(true)"), "(a) handleToggleStatus não abre o diálogo de inativar");
+  assert.ok(!toggle.includes('changeStatus("inactive")'), "(a) handleToggleStatus inativa sem passar pelo diálogo");
+  const calls = [...source.matchAll(/changeStatus\("inactive"\)/g)].map((match) => match.index!);
+  assert.equal(calls.length, 1, `(a) changeStatus("inactive") aparece ${calls.length} vez(es); esperado 1, no onConfirm do diálogo`);
+  const dialogStart = source.indexOf("<InactivateConfirmDialog");
+  const onConfirm = blockAfter(source.indexOf("onConfirm={", dialogStart), "(a) onConfirm do InactivateConfirmDialog");
+  const onConfirmAt = source.indexOf(onConfirm, dialogStart);
+  assert.ok(calls[0]! > onConfirmAt && calls[0]! < onConfirmAt + onConfirm.length, '(a) changeStatus("inactive") fora do onConfirm do diálogo');
+
+  // (b) Sobrescrever: relê o modelo ANTES de gravar com a base recém-lida; nunca reaproveita o que está na tela.
+  const overwrite = fn("handleOverwriteConflict");
+  const reread = overwrite.indexOf("await readLatestChecklist(checklist.id)");
+  const persist = overwrite.indexOf("persistDraft({ base: fresh })");
+  assert.ok(reread >= 0, "(b) handleOverwriteConflict não relê o modelo");
+  assert.ok(persist > reread, "(b) handleOverwriteConflict grava antes de reler (ou sem a base recém-lida)");
+  assert.ok(!/fresh\s*=\s*checklist\b/.test(overwrite), "(b) handleOverwriteConflict usa o modelo da tela como base");
+
+  // (c) Releitura que falha (`unknown`) trava como não confirmado.
+  const writeError = fn("handleWriteError");
+  const branchAt = writeError.search(/if \(outcome\.kind === "unknown"\)/);
+  assert.ok(branchAt >= 0, '(c) handleWriteError sem o ramo outcome.kind === "unknown"');
+  const unknownBranch = blockAfter(source.indexOf(writeError) + branchAt, '(c) ramo outcome.kind === "unknown"');
+  assert.ok(unknownBranch.includes('setLock({ kind: "unknown" })'), "(c) o ramo unknown de handleWriteError não trava a tela");
 });
