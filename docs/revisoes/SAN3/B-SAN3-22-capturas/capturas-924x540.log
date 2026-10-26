@@ -1,0 +1,24 @@
+Aparência A
+  travado: faixa=1 pílula="Em uso por 2 vistorias"
+  captura a-travado-924x540.png
+  clique travado explica: "Há 2 vistorias em andamento com este modelo. Agora só os textos podem mudar; para mudar campos, inative o modelo e espere elas terminarem."
+  conflito (outra pessoa salvou às 2026-10-26T12:20:09.239Z): diálogo-com-horário=1 faixa=0 comparador=0
+  captura a-conflito-924x540.png
+Aparência B
+  travado: faixa=1 pílula="Em uso por 2 vistorias"
+  captura b-travado-924x540.png
+  captura b-travado-campos-924x540.png
+  clique travado explica: "Há 2 vistorias em andamento com este modelo. Agora só os textos podem mudar; para mudar campos, inative o modelo e espere elas terminarem."
+  conflito (outra pessoa salvou às 2026-10-26T12:20:15.427Z): diálogo-com-horário=0 faixa=1 comparador=0
+  captura b-conflito-924x540.png
+Aparência C
+  travado: faixa=0 pílula="Somente textos"
+  captura c-travado-924x540.png
+  captura c-travado-painel-924x540.png
+  clique travado explica: "Há 2 vistorias em andamento com este modelo. Agora só os textos podem mudar; para mudar campos, inative o modelo e espere elas terminarem."
+  conflito (outra pessoa salvou às 2026-10-26T12:20:21.531Z): diálogo-com-horário=0 faixa=0 comparador=1
+  captura c-conflito-924x540.png
+Publicar com token defasado: Recarregar=1 Sobrescrever=0
+  captura a-publicar-conflito-924x540.png
+Inativar abre a confirmação: "Inativar este modelo?"
+  captura a-inativar-confirmacao-924x540.png

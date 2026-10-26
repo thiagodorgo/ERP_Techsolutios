@@ -11030,6 +11030,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **editor de checklist registrado (B-SAN3-22, 2026-10-26):** `checklist-editor` entrou em `APPEARANCE_SCREENS` (A "Padrão fiel" · B "Analítica" · C "Painel de impacto", padrão A); o editor lê a escolha por `useScreenAppearance("checklist-editor")`.
 - **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
 - **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
 
@@ -11749,7 +11750,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS (2026-10-25) — consumidor web ainda não envia o token — PRODUTO
 
-- **status:** ABERTA · **dono:** orquestrador, fatia web do B-SAN3-22 depois da maquete A/B/C aprovada · **bloqueia:** integração/merge da mudança obrigatória de contrato com o console web antigo.
+- **status:** **RESOLVIDA no mesmo PR do B-SAN3-22** (fatia web, `dev-san322-web-opus`, 2026-10-26; E3-18) — editor e lista mandam o token nos 4 gestos (salvar, publicar com o `updatedAt` do salvar, inativar/reativar; arquivar só no adapter), tratam os dois 409 com releitura (conflito por aparência; "em uso" com N), `activeRuns` de toda resposta de modelo único com "ausente = travado", e as 3 aparências aprovadas (`useScreenAppearance("checklist-editor")`, entrada no registro). Prova: CE-26…CE-32 e CE-37 em `frontend/tests/checklists-editor-lock.smoke.test.tsx` e `tests/checklist-editor-classifier-parity.test.ts`; `test:smoke` 1390/1390; 25 mutações vermelhas e restauradas; relatório `docs/revisoes/SAN3/B-SAN3-22-dev.md`, seção "Fatia web e E3-bis". · **dono (histórico):** orquestrador, fatia web do B-SAN3-22 depois da maquete A/B/C aprovada · **bloqueava:** integração/merge da mudança obrigatória de contrato com o console web antigo.
 - **origem:** por ordem do dono, esta entrega é somente backend; `frontend/**` ficou intocado. O backend agora recusa PATCH/publish/DELETE sem token, conforme Q2.
 - **encerramento:** `ChecklistEditorPage` e `TenantChecklistsPage` enviam o token, tratam 409/`activeRuns`, entregam as três aparências aprovadas e passam a bateria smoke/build da fatia de tela.
 

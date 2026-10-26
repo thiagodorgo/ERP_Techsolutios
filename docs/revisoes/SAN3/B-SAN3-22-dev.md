@@ -246,3 +246,114 @@ Lidas no ramo antes de qualquer código: `checklist-editor.model.ts:109-142` (bu
 **D-W1 (divergência declarada, E3b-02 × E3b.4).** A E3b-02 pede `none` para "salvar sem alteração" também no modelo **legado**. Com só as 4 normalizações (E3b.4: "e só elas; `TEXT_PATHS` não muda"), o legado sai `text` com exatamente `["schema.sections","schema.source"]`, porque o editor grava a sua convenção de seções no primeiro salvar. Isso já aparecia na própria M-40 (`schema.source` no caso 3). Efeito: nenhum (`text` passa com vistoria viva e não sobe versão; só `field` faz as duas coisas). Não acrescentei 5ª normalização (seria contrato novo). O CE-37 afirma, para o legado, `text` com esses dois caminhos e nada mais; para publicado e editor, `none`. Fica para o planejador/C2 decidir se a letra da E3b-02 muda.
 - Ajuste no laço CE-18 de `config.<chave>`: para `sectionIndex` o valor de teste passou de `"novo"` (inválido ≡ 0 pela E3b-01(c)) para `1` (mover de seção), que é a mudança real.
 
+### W3. Fatia web (E3.2 + E3b-04…E3b-21) — o que foi feito
+
+Tela-modelo: a própria `ChecklistEditorPage.tsx` e `TenantChecklistsPage.tsx` (§4 item 1); componentes do repositório (`KpiStatCard` para os blocos da B, `.pat-filtro-chip`, `.pat-ab-table`, `.pat-ab-detail-*`, `.ckb-ed-*`, `ExitConfirmDialog` como molde). Skills: `ts-frontend-full` (implementar) e `ui-ux-pro-max` (revisar, lida a régua de estados, foco e alvo). `frontend/node_modules` não existia: `npm --prefix frontend ci` (103 pacotes, 46 s; disco 11 GB antes e depois). Sem junction.
+
+| Requisito | Onde | O que ficou |
+|---|---|---|
+| E3-04 token no salvar | `checklist-editor.model.ts` (`buildUpdateInputFromEditorDraft(draft, baseSchema, expectedUpdatedAt)`), `ChecklistEditorPage.tsx` (`persistDraft`) | o PATCH leva `target.updatedAt`; a releitura best-effort pré-PATCH **saiu**; `UpdateTenantChecklistInput.expectedUpdatedAt` virou obrigatório no tipo (o `tsc` apontou o único chamador sem token, a lista) |
+| E3-05/E3b-07 token no publicar | `checklist.adapter.ts`, `checklist.service.ts`, `handlePublish` | `persistDraft` devolve `TenantChecklist \| null`; o publicar usa `publishTokenAfterSave(saved, checklist)` (CE-26c) |
+| E3-06/E3b-13 arquivar | `checklist.adapter.ts` | só a URL com `?expectedUpdatedAt=` na função sem chamador; sem mock, sem gesto |
+| E3-07 Inativar/Reativar | editor (`changeStatus`) e lista (`toggleChecklistStatusFromList`) | os dois levam o `updatedAt` lido |
+| E3-08/E3b-14 409 stale por aparência | editor + `ChecklistEditorLockViews.tsx` | A: `ConcurrentEditDialog` com o texto de sempre + `.ckb-ed-modal-when` ("Salvo por outra pessoa às HH:MM · você abriu às HH:MM"); B: faixa `.ckb-ed-blockbar` (role alert) com "N diferenças" e as duas ações; C: coluna "Salvo × Seu" (`.c22-cmp`). Recarregar = GET e substitui o rascunho; Sobrescrever = GET + PATCH com o token recém-lido; nunca `force`. Comparador puro `diffEditorDraft` |
+| E3b-08 409 no publicar | `handleWriteError(error, "publish", …)` | a mesma apresentação, sem "Sobrescrever" |
+| E3-09 409 em uso | `resolveWriteError` (puro) | relê o detalhe e diz N ("Há N vistorias em andamento com este modelo. Agora só os textos podem mudar; …") |
+| E3-10 `activeRuns` | `nextEditorLock` (puro) | toda resposta de modelo único alimenta a trava (GET, salvar, publicar, inativar, releituras); ausente/ inválido = **não confirmado = travado** com "Não foi possível confirmar se há vistorias em andamento — recarregue o modelo para mudar os campos." e o link "Recarregar o modelo" na faixa |
+| E3-11 trava de campos | editor, `ChecklistFieldInspector.tsx` | paleta, mover/duplicar/remover, tipo do modelo, obrigatório, opções e toda chave de configuração ficam `aria-disabled` + `title` + `data-explica` + clique que explica (toast âmbar); nunca `disabled`. Pergunta, ajuda, nome, descrição e nomes de seção livres |
+| E3b-09 CE-29 | editor + lista | editor: Reativar travado (`editorStatusAction`); lista: PATCH direto e, no 409 em uso, GET do detalhe e aviso com N; no 409 stale, a linha é atualizada |
+| E3b-10 seção | editor | remover seção travado ("Remover a seção move os campos seguintes: fica travado…"); acrescentar e renomear livres |
+| E3-12/E3b-04 aparências | `useScreenAppearance("checklist-editor")`; `appearance.registry.ts` (só a entrada) | A "Padrão fiel", B "Analítica", C "Painel de impacto"; padrão A pelo contrato do hook; `aparencia-menu.smoke.test.tsx` deriva as contagens do registro e ganhou "A marcada para o editor" |
+| E3-13 C | `EditorImpactPanel` | "Em uso agora" (pode/não pode, como destravar, textos do campo selecionado); paleta recolhe para ícones; Inativar no painel abre a confirmação |
+| E3-19/E3b-15/E3b-16 B | `EditorLockKpis` | 3 blocos clicáveis com números reais: N, `vN` + "publicada em dd/mm" (selo pela situação: publicada · inativo · rascunho), "N de N" campos; abrem logo abaixo o resumo da versão e a tabela fixa de 5 linhas "O que muda agora"; o bloco de vistorias destaca a faixa; sem lista de vistorias, sem histórico, sem "Ver execuções" |
+| E3b-18 link | editor | A e C mantêm "Ver execuções deste modelo"; B não |
+| E3b-17 inativar | `InactivateConfirmDialog` (molde `ExitConfirmDialog`) | Inativar sempre confirma; Esc e foco na saída conservadora |
+| E3b-19 releitura falha | `resolveWriteError` | vira "não confirmado" (travado), sem comparador |
+| E3b-06 mock | `checklist.mock.ts`, `checklist-runtime.mock.ts` | `activeRuns` contado (semente + vistorias vivas do runtime simulado) em get/salvar/publicar; modelo de demonstração `chk_vistoria_em_uso` com 2 vivas; token defasado → 409; `published`/`archived` pelo salvar → portas próprias; `draft` ou mudança de campo com viva → 409 em uso |
+| E3b-05 CSS | `app.css` | um bloco contíguo `/* B-SAN3-22 — estados do editor (A/B/C) */` depois das regras `.ckb-ed-modal-*`, só `var(--…)` e `color-mix` de tokens, **0 hex** |
+| E3b-21 smoke | `frontend/package.json` | `tests/checklists-editor-lock.smoke.test.tsx` entrou na lista; `aparencia-menu` já estava |
+| E3-16 testes | `checklists-editor-lock.smoke.test.tsx` (novo, 22 testes), `checklists-editor.smoke.test.tsx` (fixture com `activeRuns: 0`; o teste do diálogo cobre o 409 e a linha de horário) | — |
+
+### W4. Bateria (execução real, worktree `C:/Users/AMP/w-san322`)
+
+Disco: 11 GB livres antes do `npm ci`, das suítes `-db` e do `npm test` (piso de 7 GB respeitado). Memória: 6,7 GB físicos e 10 GB de commit livres antes de subir o `vite` e o Edge. Docker: nenhum trabalho fora de `erp-*` antes de subir os meus. Postgres 16 `dev-san322w-pg` (127.0.0.1:55432) e Redis 7 `dev-san322w-redis` (127.0.0.1:56379), descartáveis; base viva (5432/6379) e portas 3000/5173/5050/8899 não tocadas.
+
+| Comando | Resultado |
+|---|---|
+| `npm --prefix frontend run check` | verde |
+| `npm --prefix frontend run build` | verde (só o aviso de chunk > 500 kB, que já existia) |
+| `npm --prefix frontend run test:smoke` (lista do `package.json` com `checklists-editor-lock`) | **1390/1390**, 0 falha, 0 pulo; 21 `ok` de CE-26…32/E3b no TAP + o menu de aparência |
+| `npm run check` · `npm run lint` · `npm run build` | verdes |
+| `node --test --import tsx` checklist sem banco: `checklist-template-change`, `checklist-editor-classifier-parity`, `checklist-editor-blockers-parity` | **50/50** |
+| idem: `checklist-template-lock`, `checklist-routes`, `checklist-editor-blockers-parity`, `checklist-snapshot-dispatch` | **44/44** |
+| `-db` com `CORE_SAAS_PERSISTENCE=prisma` em `dev_san322w` (`prisma migrate deploy` antes): `checklist-template-lock-db`, `checklist-template-prisma-db`, `checklist-routes-db`, `checklist-run-lifecycle-db`, `checklist-run-create-concurrency-db` | **26/26**, 0 falha, **0 pulo** |
+| `npm test` na forma do job `backend` (`DATABASE_URL`/`REDIS_URL` dos descartáveis, banco limpo `dev_san322w_t`, `CORE_SAAS_PERSISTENCE=memory`) | **4142 testes · pass 4131 · fail 9 · skip 2**; exit 1 pelas falhas e pelo piso de denominador. **0 falha de checklist**; 18 `ok … CE-37` no TAP. As 9 são as mesmas classes do Windows já medidas na retomada do backend (R4): `san3-05-runtime-role-guard-db` T14a–d (`setsid: ausente`), `san3-09` T2.1 (spawn do `prisma` em shell), `traccar-event-migration-drill-db` e `work-order-invoicing-migration-drill-db` (`EBUSY` no teardown), `traccar-position-ingestion-db` (tempo esgotado sob carga). A CI é Linux |
+| `git diff --check d7483c28` | limpo (depois de tirar a linha em branco que o meu apêndice deixou no fim deste relatório) |
+| escopo: `git diff --name-only origin/main...HEAD -- mobile/ prisma/ src/modules/core-saas/ frontend/src/services/api/ Kpis/ .github/ src/database/` | **0** |
+| backend tocado pela fatia (`git diff --name-only d7483c28 -- src/ tests/`) | exatamente os 3 da E3b.4 |
+| `frontend/src/modules/appearance/` (`git diff --name-only d7483c28`) | só `appearance.registry.ts` (a entrada) |
+
+### W5. Mutações da E3-bis (fatia web)
+
+Roteiro `mutate.py` (no scratchpad, copiado abaixo em forma de tabela): backup, mutante com âncora única, os testes nominais, restauro por cópia e SHA-256 conferido. **25 mutações, 25 vermelhas, 25 restauradas.** Mais a de forma da E3b-05 e as 4 do classificador (W2).
+
+| Mutante | Arquivo | Testes | Resultado | SHA (antes = depois) |
+|---|---|---|---|---|
+| builder sem token (CE-26a/E3-04) | `checklist-editor.model.ts` | lock smoke | 19/**3 fail** | `72a0bf54` |
+| idem, no backend (CE-37) | idem | `checklist-editor-classifier-parity` | 0/**18 fail** | `72a0bf54` |
+| publicar com o token do fechamento (CE-26c/E3b-07) | model | lock | 21/**1** | `72a0bf54` |
+| 409 do publicar no toast genérico (E3b-08, forma) | `ChecklistEditorPage.tsx` | lock | 21/**1** | `960c5825` |
+| `reason` mapeado errado (CE-26b) | model | lock | 19/**3** | `72a0bf54` |
+| ausente = livre (CE-27) | model | lock | 20/**2** | `72a0bf54` |
+| releitura que falha mantém editável (E3b-19) | model | lock | 21/**1** | `72a0bf54` |
+| 409 em uso sem reler, N fixo (CE-28) | model | lock | 20/**2** | `72a0bf54` |
+| Reativar livre (CE-29 editor, ação) | model | lock | 21/**1** | `72a0bf54` |
+| Reativar sem `aria-disabled` (CE-29 editor, tela) | página | lock | 21/**1** | `960c5825` |
+| lista sem reler no 409 em uso (E3b-09) | `TenantChecklistsPage.tsx` | lock | 21/**1** | `a956de3c` |
+| lista sem token (E3-07) | lista | lock | 21/**1** | `a956de3c` |
+| remover seção livre com a trava (E3b-10) | página | lock | 21/**1** | `960c5825` |
+| ações de campo livres com a trava (E3-11) | página | lock | 20/**2** | `960c5825` |
+| linha de horário sem a hora de abertura (E3b-14) | model | lock | 20/**2** | `72a0bf54` |
+| frase das vistorias com "versão" (E3b-16) | model | lock | 20/**2** | `72a0bf54` |
+| inativar sem diálogo (E3b-17) | model | lock | 21/**1** | `72a0bf54` |
+| comparador com 0 diferenças quando há 2 (E3-08) | model | lock | 19/**3** | `72a0bf54` |
+| ignorar o hook, sempre A (CE-30) | página | lock | 19/**3** | `960c5825` |
+| tirar a entrada do registro (E3b-04) | `appearance.registry.ts` | `aparencia-menu` | 1/**1** | `a5255d18` |
+| padrão do editor = B (E3b-04/CE-30) | `appearance.storage.ts` (só o mutante; o arquivo não é do bloco) | menu + lock | 22/**2** | `d83e4b80` |
+| mock sem `activeRuns` (E3b-06) | `checklist.mock.ts` | lock | 21/**1** | `aa9edc9f` |
+| mock aceita token defasado (CE-31) | mock | lock | 20/**2** | `aa9edc9f` |
+| termo técnico na cópia (CE-32) | model | lock | 20/**2** | `72a0bf54` |
+| link "Ver execuções" de volta na B (E3b-18) | página | lock | 21/**1** | `960c5825` |
+| **E3b-05 (forma):** hex no bloco do `app.css` | `app.css` | contagem no bloco | 0 → **2** → 0 | `4e471d98` |
+
+### W6. Capturas (Edge headless) — `docs/revisoes/SAN3/B-SAN3-22-capturas/`
+
+`vite` próprio em `127.0.0.1:47322` com `VITE_USE_MOCKS=true` (a 51735 caiu numa faixa de portas reservada do Windows: `listen EACCES`); Edge (`channel: "msedge"`, headless) dirigido pelo Playwright do `node_modules` da raiz. Sessão simulada, organização ativa e aparência gravadas no `localStorage` como o app grava. "Outra pessoa salvou" = gravação pelo mesmo módulo simulado que o app usa. Roteiros: `capture.mjs` e `capture-ref.mjs`, na mesma pasta. Registro das execuções: `capturas-924x540.log`, `capturas-1440x900.log`.
+
+- **924×540** (o pedido): `a-travado`, `a-conflito`, `b-travado`, `b-travado-campos`, `b-conflito`, `c-travado`, `c-travado-painel`, `c-conflito`, mais `a-publicar-conflito` e `a-inativar-confirmacao`; a referência nos mesmos estados: `ref-<estado>-924x540.png`.
+- **1440×900** (as 3 colunas, como a referência é desenhada): os mesmos 10 estados do app.
+- **Comportamento medido ao vivo**, nas duas larguras e nas 3 aparências: faixa da trava presente em A e B e ausente na C; pílula "Em uso por 2 vistorias" (A/B) e "Somente textos" (C); clique num controle travado explica ("Há 2 vistorias em andamento com este modelo…"); conflito ao salvar → A diálogo com a linha de horário, B faixa com "N diferenças", C comparador; **publicar com token defasado → "Recarregar o modelo" sem "Sobrescrever"** (E3b-08); **Inativar abre "Inativar este modelo?"** (E3b-17).
+- **Achado pré-existente (não deste bloco):** abaixo de 1180 px a grade do editor sobrepõe as colunas (paleta, formulário e inspector umas sobre as outras). Medido no estado **livre**, sem nada deste bloco na tela: `probe.mjs` em `chk_towing_delivery` a 924 px → colunas em `y=175 h=452`, `y=279 h=415`, `y=382 h=262`. A causa está nas regras `.ckb-ed-grid { flex: 1; min-height: 0 }` + o `@media (max-width: 1180px)` de uma coluna, que são de antes (`app.css:4919-4935`, não tocadas). A referência, que não tem a altura presa, empilha sem sobrepor. Proposta de pendência: `P-CHK-EDITOR-GRADE-ESTREITA` (dono: orquestrador). As capturas de 924 px mostram o defeito; as de 1440 px mostram a tela como desenhada.
+
+### W7. Divergências declaradas (para o planejador e a junta)
+
+- **D-W1** (W2): legado sai `text`, não `none`, com só as 4 normalizações.
+- **D-W2** `checklist-runtime.mock.ts` (+14): um contador exportado das vistorias vivas do runtime simulado. A E3b-06 manda contar "das runs do runtime mock" e o `Map` é privado do módulo; não está na lista nominal da v2 §5.
+- **D-W3** `frontend/tests/checklists-preview.smoke.test.tsx` (+1): `activeRuns: 0` no fixture. Sem ele o editor abre travado ("ausente = travado", E3-10) e o teste do dock falha no `title` da paleta. Mesma natureza das ratificações E3-01/02 (pré-condição do contrato); fora da lista nominal.
+- **D-W4** `app.css`: o bloco único tem, além das 6 classes que a E3b-05 nomeia, as outras regras do mesmo bloco "acréscimos desta maquete" da referência (`.ckb-pill--inuse`, `.ckb-ed-name`, `.ckb-ed-blockbar .ckb-ed-link`, estados `[aria-disabled="true"]` — sem o Publicar, para não mudar o "Publicar travado" de hoje —, `.ckb-ed-field-lock`) e três regras que traduzem o que a referência escreve em estilo inline (`.ckb-ed-grid--compacta` só ≥ 1181 px, `.ckb-ed-blockbar--destaque`, `.b22-col-agora`), mais `.ckb-ed-blockbar .ckb-ed-modal-btn:first-of-type` no lugar do espaçador inline. Cores: tokens e `color-mix` de tokens (âmbar = `--color-status-warning`); a premissa da E3b-05 de que `.ckb-ed-blockbar`/`.ckb-ed-modal` "já usam variáveis" não vale (usam hex), então o mapeamento foi para os tokens de `tokens.css`. 14 px/18 px/raio 12 px da referência viraram a escala (`--space-12`, `--space-16 + --space-2`, `--radius-6 × 2`).
+- **D-W5** "Nova seção" fica **livre** com a trava (E3b-10: `schema.sections` é texto); a referência a desenha travada. O plano vence.
+- **D-W6 — E3b-12 não executada.** Ela pede `assert.equal(status, 200)` em `tests/checklist-snapshot-dispatch.test.ts:78`, mas a E3b.4 e o mandato limitam o backend desta fatia a 3 arquivos ("No backend, fora desses 3 arquivos, nada"). Conflito entre requisito e permissão, registrado aqui para o orquestrador decidir (emenda de escopo de 1 linha ou outro dev).
+- **D-W7** O comparador lista só o que difere (a referência mostra também linhas iguais, como contexto). O "N diferenças" é o número de linhas.
+- **D-W8** Capturas pelo Playwright dirigindo o Edge, não pelo `--screenshot --virtual-time-budget=3000` cru: o modo de linha de comando não grava sessão nem aparência no `localStorage` nem clica para provocar o conflito. `vite` de desenvolvimento, não `preview`, porque a gravação da "outra pessoa" precisa da mesma instância do módulo simulado (no `preview` ela vem empacotada). Depois do drill de mutação o `vite` teve de ser reiniciado: o recarregamento a quente troca a instância do módulo e a "outra pessoa" passava a gravar noutra cópia.
+- **D-W9** Mutação "tirar `userId` da chave" (CE-30) não executada: a chave é do hook do `B-APARENCIA-USUARIO` (`appearance.storage.ts`, fora do escopo) e tem testes próprios (`aparencia-storage`, `aparencia-hook`); o lock smoke cobre "a escolha de outro usuário não vaza".
+- **D-W10** Os blocos da B usam o `KpiStatCard` da biblioteca, que não tem `aria-pressed` (a referência tem). Não mexi no componente compartilhado.
+- **D-W11** O teste da E3b-08 é de forma (declarado); a prova de comportamento é a captura ao vivo `a-publicar-conflito`.
+- **D-W12** Na C, o conflito do publicar/inativar também usa o comparador (E3b-08: "mesma apresentação por aparência"), sem "Sobrescrever".
+
+**Pendências propostas (não gravadas em `pendencias.md`, fora do escopo desta fatia):** `P-CHK-EDITOR-GRADE-ESTREITA` (W6) e a decisão de D-W6.
+
+### W8. Registro, commits, push e limpeza
+
+- **Registro:** `pendencias.md` — `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` marcada RESOLVIDA no mesmo PR (E3-18) e `P-APARENCIA-POR-USUARIO` com a linha "editor de checklist registrado". Plano atualizado (v2 + E3 + Q5 + E3-bis) copiado para `docs/revisoes/SAN3/B-SAN3-22-plano.md`. `Kpis/**` intocado.
+- **Commits** (Conventional Commits, sem atribuição): `506300f5` fix(checklists) classificador (E3b-01..03); `338f81dc` feat(checklists) fatia web; o commit final com o ajuste de tons da B, o guard da E3b-08, o registro, este relatório e as capturas. `git push origin fix/checklist-trava-versao`. PR **não** aberto.
+- **Limpeza §C5:** `dev-san322w-pg` e `dev-san322w-redis` removidos, com os 2 volumes anônimos deles (criados 11:58:27/28Z; os outros 18 volumes soltos no Docker são de antes desta identidade e ficam reportados, não varridos); `frontend/dist/` e `dist/` removidos; `vite` da porta 47322 encerrado; scratchpad `web22/` desta identidade apagado ao fim (roteiros de captura preservados na pasta das capturas). Worktree e `frontend/node_modules` mantidos.

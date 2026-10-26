@@ -9,6 +9,7 @@ import {
   editorLockPanelSub,
 } from "../checklist-editor.model";
 import type { ChecklistDraftDifference, ChecklistEditorComponent, ChecklistEditorLock } from "../checklist-editor.model";
+import { CHECKLIST_STATUS_TONE } from "../checklist-tiles";
 import type { TenantChecklist } from "../types";
 
 // B-SAN3-22 — as variantes dos estados "campos travados" e "conflito ao salvar" nas aparências B (Analítica) e
@@ -23,12 +24,20 @@ import type { TenantChecklist } from "../types";
 
 export type EditorLockBlock = "runs" | "versao" | "campos";
 
-const STATUS_TAG: Record<TenantChecklist["status"], { readonly label: string; readonly bg: string; readonly fg: string }> = {
-  published: { label: "publicada", bg: "#DCFCE7", fg: "#15803D" },
-  inactive: { label: "inativo", bg: "#F1F5F9", fg: "#64748B" },
-  draft: { label: "rascunho", bg: "#F1F5F9", fg: "#475569" },
-  archived: { label: "arquivado", bg: "#F1F5F9", fg: "#94A3B8" },
+/** Selo da versão pela situação real do modelo (E3b-16), nos tons da pílula de situação que a tela já usa. */
+const STATUS_TAG_LABEL: Record<TenantChecklist["status"], string> = {
+  published: "publicada",
+  inactive: "inativo",
+  draft: "rascunho",
+  archived: "arquivado",
 };
+
+/** Tons dos blocos "em uso" e "travado" — tokens do design system (nenhuma cor nova). */
+const TONE_IN_USE = {
+  bg: "color-mix(in srgb, var(--color-status-warning) 14%, var(--surface-panel))",
+  fg: "var(--color-status-warning)",
+} as const;
+const TONE_LOCKED = { bg: "var(--surface-panel-muted)", fg: "var(--color-status-audit)" } as const;
 
 /** dd/mm (pt-BR) ou vazio. */
 function shortDate(iso: string | undefined): string {
@@ -61,7 +70,8 @@ export function EditorLockKpis({
   readonly block: EditorLockBlock | null;
   readonly onBlock: (next: EditorLockBlock | null) => void;
 }) {
-  const tag = STATUS_TAG[checklist.status];
+  const tone = CHECKLIST_STATUS_TONE[checklist.status];
+  const tag = { label: STATUS_TAG_LABEL[checklist.status], bg: tone.bg, fg: tone.fg };
   const published = checklist.status === "published";
   const publishedOn = shortDate(checklist.publishedAt);
   const inactive = checklist.status === "inactive";
@@ -72,9 +82,9 @@ export function EditorLockKpis({
       <div className="kpi-grid">
         <KpiStatCard
           icon={History}
-          iconBg="#FEF3C7"
-          iconColor="#B45309"
-          tag={{ label: "em uso", bg: "#FEF3C7", fg: "#B45309" }}
+          iconBg={TONE_IN_USE.bg}
+          iconColor={TONE_IN_USE.fg}
+          tag={{ label: "em uso", bg: TONE_IN_USE.bg, fg: TONE_IN_USE.fg }}
           value={lock.activeRuns}
           label="Vistorias em andamento"
           hint="usam este modelo agora"
@@ -94,9 +104,9 @@ export function EditorLockKpis({
         />
         <KpiStatCard
           icon={Lock}
-          iconBg="#F1F5F9"
-          iconColor="#475569"
-          tag={{ label: "travado", bg: "#F1F5F9", fg: "#475569" }}
+          iconBg={TONE_LOCKED.bg}
+          iconColor={TONE_LOCKED.fg}
+          tag={{ label: "travado", bg: TONE_LOCKED.bg, fg: TONE_LOCKED.fg }}
           value={`${fieldCount} de ${fieldCount}`}
           label="Campos travados"
           hint={inactive ? "modelo inativo; só os textos mudam" : "só os textos podem mudar"}

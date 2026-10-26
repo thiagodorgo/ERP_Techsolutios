@@ -635,3 +635,15 @@ test("E3b-17: a confirmação de inativar segue o molde do 'Sair sem salvar?' e 
   assert.match(html, /autofocus=""[^>]*>Continuar editando</);
   assert.match(html, /ckb-ed-modal-btn--danger[^>]*>Inativar modelo</);
 });
+
+// ── E3b-08 — o 409 do publicar passa pela mesma apresentação (critério de FORMA, declarado) ───────
+
+test("E3b-08 (forma): salvar, publicar e inativar/reativar levam o erro ao mesmo tratamento do 409 — nunca ao toast genérico", () => {
+  // O SSR não clica nem faz rede; a prova de comportamento é a captura ao vivo do relatório do dev. Este guard só
+  // impede que um dos três gestos volte a mandar o erro direto para o toast genérico do cliente.
+  const source = readFileSync(fileURLToPath(new URL("../src/modules/checklists/pages/ChecklistEditorPage.tsx", import.meta.url)), "utf8");
+  for (const gesture of ["save", "publish", "status"]) {
+    assert.ok(source.includes(`await handleWriteError(error, "${gesture}"`), gesture);
+  }
+  assert.doesNotMatch(source, /showToast\(error instanceof Error \? error\.message : "Falha ao publicar o modelo\."/);
+});
