@@ -47,14 +47,15 @@ for (const key of [
   "options", "requireMarker", "requireAcknowledgement", "sectionIndex", "futuraChave",
 ]) {
   test(`CE-18: config.${key} é mudança de campo`, () => {
-    assert.equal(classifyTemplateChange(base, input({ config: { ...base.components[0]!.config, [key]: "novo" } })), "field");
+    // `sectionIndex` inválido ≡ 0 (E3b-01(c)); a mudança real dele é MOVER de seção (0 → 1).
+    const value = key === "sectionIndex" ? 1 : "novo";
+    assert.equal(classifyTemplateChange(base, input({ config: { ...base.components[0]!.config, [key]: value } })), "field");
   });
 }
 
 for (const [name, patch] of [
   ["required false", { required: false }],
   ["type", { type: "observation" }],
-  ["orderIndex", { orderIndex: 1 }],
   ["validationRules", { validationRules: { min: 1 } }],
   ["visibilityRules", { visibilityRules: { when: true } }],
 ] as const) {
@@ -97,4 +98,58 @@ test("CE-18: allowlist fechada aceita somente textos", () => {
 test("CE-18: payload idêntico/token/status não entram na classificação", () => {
   assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now }), "none");
   assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, status: "inactive" }), "none");
+});
+
+// B-SAN3-22, E3-bis (E3b-01/E3b-03) — o classificador normaliza o que é DERIVAÇÃO ou REPRESENTAÇÃO
+// antes de comparar: `schema.components` (cópia que só o publicar grava; ninguém a lê), a numeração
+// de `orderIndex` (vale a ORDEM relativa), `config.sectionIndex` ausente/inválido ≡ 0 (o clamp do
+// editor) e `config.help` ausente ≡ "". O resto segue mudança de campo por construção.
+const two: ChecklistTemplate = {
+  ...base,
+  schema: { ...base.schema, sections: ["Veículo", "Fotos"] },
+  components: [
+    { ...base.components[0]!, componentKey: "fotos", orderIndex: 0 },
+    { ...base.components[0]!, id: "10000000-0000-4000-8000-000000000004", componentKey: "obs", type: "observation", label: "Obs", orderIndex: 1, config: {} },
+  ],
+};
+const withComponents = (components: readonly Record<string, unknown>[]) =>
+  ({ expectedUpdatedAt: now, components }) as unknown as UpdateChecklistTemplateInput;
+
+test("CE-18c: renumerar orderIndex sem trocar a ordem não é mudança (none)", () => {
+  assert.equal(classifyTemplateChange(base, input({ orderIndex: 1 })), "none");
+  assert.equal(classifyTemplateChange(two, withComponents([
+    { ...two.components[0]!, orderIndex: 10 },
+    { ...two.components[1]!, orderIndex: 20 },
+  ])), "none");
+});
+
+test("CE-18c: reordenar campos é mudança de campo", () => {
+  assert.equal(classifyTemplateChange(two, withComponents([
+    { ...two.components[0]!, orderIndex: 1 },
+    { ...two.components[1]!, orderIndex: 0 },
+  ])), "field");
+});
+
+test("E3b-01(a): schema.components diferente nos dois lados não é mudança", () => {
+  const published: ChecklistTemplate = { ...base, schema: { ...base.schema, components: [{ componentKey: "fotos", label: "cópia antiga" }] } };
+  assert.equal(classifyTemplateChange(published, { expectedUpdatedAt: now, schema: { source: "manual", sections: [{ name: "Veículo" }], vehicleImage: "car" } }), "none");
+  assert.equal(classifyTemplateChange(base, { expectedUpdatedAt: now, schema: { ...base.schema, components: [{ qualquer: true }] } }), "none");
+});
+
+test("E3b-01(c): sectionIndex ausente × 0 não é mudança; 0 × 1 é mudança de campo", () => {
+  assert.equal(classifyTemplateChange(two, withComponents([
+    { ...two.components[0]!, config: { ...two.components[0]!.config, sectionIndex: 0 } },
+    two.components[1]!,
+  ])), "none");
+  assert.equal(classifyTemplateChange(two, withComponents([
+    { ...two.components[0]!, config: { ...two.components[0]!.config, sectionIndex: 1 } },
+    two.components[1]!,
+  ])), "field");
+});
+
+test("E3b-01(d): config.help ausente × vazio não é mudança", () => {
+  assert.equal(classifyTemplateChange(two, withComponents([
+    two.components[0]!,
+    { ...two.components[1]!, config: { help: "" } },
+  ])), "none");
 });

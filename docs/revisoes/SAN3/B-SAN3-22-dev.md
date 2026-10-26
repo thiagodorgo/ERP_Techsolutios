@@ -211,3 +211,38 @@ Cada uma: backup no scratchpad, mutante, teste nominal, restauro por cópia com 
 - `git push -u origin fix/checklist-trava-versao`. PR **não** aberto.
 - Limpeza §C5: `dev-san322-pg` e `dev-san322-redis` removidos (com os bancos `dev_san322`, `_b` e `_c`). Worktree mantido. No scratchpad, só os arquivos desta identidade.
 - **Para o orquestrador:** (1) a fatia web (`P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS`) é pré-requisito de merge: sem ela, o editor web atual leva 400 ao salvar, publicar e arquivar (R9 do plano); (2) a emenda de escopo para `helpers/o6r07c-census.ts` e `checklist-editor-blockers-parity.test.ts`; (3) `P-B-SAN3-22-CI-DB-SUITE`, agora não bloqueante.
+
+---
+
+## Fatia web e E3-bis (`dev-san322-web-opus`)
+
+- **Papel:** DEV. **Identidade:** `dev-san322-web-opus`. **Modelo:** Claude Opus 5.5, nível menor **declarado** (§C7.6). Cobre o Codex, sem limite até 14:18Z, por ordem do dono (uma tarefa por vez). Não planejou, não criticou, não vota.
+- **Fonte única:** plano `B-SAN3-22-plano.md` (v2 + E3 + resposta à Q5 + E3-bis). Mandato: `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-san3-22-web.md`.
+- **Objeto de partida:** ramo `fix/checklist-trava-versao`, head `d7483c28` (conferido com `git -C C:/Users/AMP/w-san322 log -1` às 11:23Z de 26/10). Disco livre na partida: 11 GB.
+- **Gravação:** P1, uma subseção por etapa, apensada ao ser concluída.
+
+### W1. Re-medição das citações (head `d7483c28`)
+
+Lidas no ramo antes de qualquer código: `checklist-editor.model.ts:109-142` (builder sem token; tira `schema.components`, grava `source`/`sections`, renumera `orderIndex`, grava `sectionIndex` em todo campo, `help` só não vazio) · `ChecklistEditorPage.tsx:379-421` (`persistDraft` → `boolean`, releitura best-effort em 397-403), `:467-492` (`handlePublish` com o `checklist` do fechamento), `:499-519` (Inativar/Reativar direto, `draft`), `:716-734` (Publicar travado com `aria-disabled` + `title` + clique), `:757-762` (link "Ver execuções"), `:1210-1256` (`ExitConfirmDialog`), `:1268-1300` (`ConcurrentEditDialog`) · `checklist.template-change.ts` (classificador do dev do backend, comparação crua de `schema` e de `orderIndex`) · `checklist-prisma.repository.ts:418-438` e `checklist.repository.ts:868-876` (gravam `schema.components`) · `frontend/package.json:11` (lista explícita; `aparencia-menu.smoke.test.tsx` **já** está nela) · referência `screen-refs/checklist-editor-estados-3opcoes.reference.html` (2976 linhas; bloco "B-SAN3-22 — acréscimos desta maquete" no CSS). Nenhuma premissa do plano caiu nesta leitura; as divergências achadas no caminho estão em D-W1…D-W4 abaixo.
+
+### W2. Backend — E3b-01…E3b-03 (teste antes do código)
+
+**Testes escritos primeiro:** novo `tests/checklist-editor-classifier-parity.test.ts` (CE-37: modelo do servidor → `toChecklistTemplateDetailDto` → `createEditorDraftFromChecklist` → `buildUpdateInputFromEditorDraft` → `parseUpdateChecklistTemplateDto` → `classifyTemplateChange`, para um modelo publicado com `schema.components`, um legado sem `sectionIndex` e com `orderIndex` 10/20/30, e um do editor em rascunho) e, em `tests/checklist-template-change.test.ts`, a CE-18c reescrita (renumerar → `none`; reordenar → `field`) mais os casos E3b-01 (a) `schema.components` → `none`, (c) `sectionIndex` ausente × 0 → `none` e 0 × 1 → `field`, (d) `help` ausente × `""` → `none`.
+
+**Vermelho-controle no head `d7483c28`** (`node --test --import tsx tests/checklist-editor-classifier-parity.test.ts tests/checklist-template-change.test.ts`): **49 testes, 38 pass, 11 fail.** Publicado, sem mudança: `caminhos acusados: ["schema.components"]` (a saída M-40 da crítica); só rótulo: `["components.fotos.label","schema.components"]`; legado sem mudança: `sectionIndex` ×3, `orderIndex` ×3, `schema.sections`, `schema.source`; CE-18c renumerar e os 3 casos E3b-01 vermelhos.
+
+**Conserto** só em `src/modules/checklists/checklist.template-change.ts`: (a) `schema.components` retirado dos dois lados antes do `diffValue`; (b) `orderIndex` comparado pela **ordem relativa** das chaves sobreviventes (empate pela posição no array), emitindo `components.order`; (c) `config.sectionIndex` ausente, não inteiro ou negativo ≡ 0; (d) `config.help` ausente ≡ `""`. `TEXT_PATHS` intocada. Depois: **49/49**. Regressão sem banco (`checklist-template-lock`, `checklist-routes`, `checklist-editor-blockers-parity`, `checklist-snapshot-dispatch`): **44/44**.
+
+**Mutações (backup em scratchpad, mutante, os 2 arquivos, restauro por cópia; SHA-256 do arquivo `11b2c2b1…` antes e depois):**
+
+| Mutante | Resultado |
+|---|---|
+| sem a exclusão de `schema.components` | 45 pass / **4 fail** |
+| `orderIndex` comparado por valor | 44 / **5 fail** |
+| `sectionIndex` sem normalizar | 44 / **5 fail** |
+| `help` sem normalizar | 47 / **2 fail** |
+| restaurado (`11b2c2b1`) | 49 / 0 |
+
+**D-W1 (divergência declarada, E3b-02 × E3b.4).** A E3b-02 pede `none` para "salvar sem alteração" também no modelo **legado**. Com só as 4 normalizações (E3b.4: "e só elas; `TEXT_PATHS` não muda"), o legado sai `text` com exatamente `["schema.sections","schema.source"]`, porque o editor grava a sua convenção de seções no primeiro salvar. Isso já aparecia na própria M-40 (`schema.source` no caso 3). Efeito: nenhum (`text` passa com vistoria viva e não sobe versão; só `field` faz as duas coisas). Não acrescentei 5ª normalização (seria contrato novo). O CE-37 afirma, para o legado, `text` com esses dois caminhos e nada mais; para publicado e editor, `none`. Fica para o planejador/C2 decidir se a letra da E3b-02 muda.
+- Ajuste no laço CE-18 de `config.<chave>`: para `sectionIndex` o valor de teste passou de `"novo"` (inválido ≡ 0 pela E3b-01(c)) para `1` (mover de seção), que é a mudança real.
+
