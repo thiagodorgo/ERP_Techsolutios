@@ -1,0 +1,213 @@
+{
+ "jurado": "jurado-san312a-c2-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312a-c2-permissao-e-auditoria",
+ "cadeira": "C2 — permissão e auditoria: as 2 permissões novas por ator, F5 sem ampliar, justificativa e auditoria crítica",
+ "executor": "Claude Opus (subagente genérico, corpo lido do blob do objeto)",
+ "mandato_md5": "641aba51bf7a621a7c7daf3b9d46c34a (CR retirado) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 · nível menor (§C7.6) · substituição: nenhuma (cobre o Codex sem limite)",
+ "corpo_comparacao": ".claude/ × .agents/ × recebido (blob): IDENTICO (md5 EOL-neutro 4a6c0963ae1a65ac7e926808d70e976e)",
+ "objeto": "04b8a667780930050c8af2c77c323b81fe8794bb (ls-remote = gh pr view 459) · cerca 868156f4 → objeto: só corpos (delta medido pelo mandato e pelo inspetor) · head-base do bloco 8a7885f4c3bfab02e6c31b318c1111e262f2907c · head-base da emenda fafd4b36731ae89574e1d0b3cff6ea34dc78abc7 · objeto no fim: igual",
+ "legalidade": "parecer insp-san312a-parecer.md (inspetor-san312a-opus, 2ª passada) · LIBERADO COM RESSALVA · confere: sim (C2 primeira na ordem C2→C4→C1→C3) · check-runs 14 | 0 | 0",
+ "quorum": "unanimidade das 4 cadeiras, com veto · ciclo 1",
+ "leitura_de_outras_cadeiras": "não li c1-*, c3-*, c4-* · li: insp-san312a-parecer.md e o meu mandato",
+ "pausa": "nenhuma",
+ "escopo": "dentro-do-bloco",
+ "gravidade": "bloqueia",
+ "classe": "não grave (rastro incompleto)",
+ "arquivos_medidos": [
+  "src/modules/cheques/cheque.routes.ts",
+  "src/modules/cheques/cheque.service.ts",
+  "src/modules/cheques/cheque.controller.ts",
+  "src/modules/financial-entries/financial-entry.service.ts",
+  "src/modules/financial-entries/financial-entry.routes.ts",
+  "src/modules/financial-entries/financial-entry.controller.ts",
+  "src/modules/tenant-settings/tenant-setting.validators.ts",
+  "src/modules/tenant-settings/tenant-setting.service.ts",
+  "src/modules/tenant-settings/tenant-setting.routes.ts",
+  "src/modules/core-saas/permissions/catalog.ts",
+  "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts",
+  "src/modules/core-saas/services/persistent-authorization.service.ts",
+  "src/app.ts",
+  "scripts/provision-rbac.ts",
+  "tests/b-san3-12a-unlink-title.test.ts",
+  "tests/b-san3-12a-unreconcile-policy.test.ts",
+  "tests/core-saas.test.ts",
+  "tests/core-saas-role-authority.test.ts",
+  "tests/b-san3-12a-link-toctou-db.test.ts",
+  "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+  "RBAC_MATRIX.md",
+  "tests/fixtures/role-catalog-contract.snapshot.json",
+  "tests/permission-catalog-db-parity.test.ts",
+  "tests/permission-catalog-migration-parity.test.ts",
+  "prisma/migrations/20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions/migration.sql",
+  "APPROVAL_LIMITS.md",
+  "agent-orchestration/controle/decisoes.md",
+  ".github/workflows/ci.yml",
+  "src/modules/tenant-settings/tenant-setting.controller.ts",
+  "src/modules/core-saas/audit/audit-log.service.ts",
+  "src/modules/core-saas/audit/audit-request-context.ts",
+  "src/modules/financial-titles/financial-title.service.ts",
+  "tests/audit-security.test.ts",
+  "tests/b-san3-12a-pay-pending-cheque.test.ts",
+  "tests/b-san3-12a-pay-pending-cheque-db.test.ts"
+ ],
+ "voto": "REPROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "arquivos_medidos": [
+    "src/modules/cheques/cheque.routes.ts",
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/cheques/cheque.controller.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "src/modules/financial-entries/financial-entry.routes.ts",
+    "src/modules/financial-entries/financial-entry.controller.ts",
+    "src/modules/tenant-settings/tenant-setting.validators.ts",
+    "src/modules/tenant-settings/tenant-setting.service.ts",
+    "src/modules/tenant-settings/tenant-setting.routes.ts",
+    "src/modules/core-saas/permissions/catalog.ts",
+    "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts",
+    "src/modules/core-saas/services/persistent-authorization.service.ts",
+    "src/app.ts",
+    "scripts/provision-rbac.ts",
+    "tests/b-san3-12a-unlink-title.test.ts",
+    "tests/b-san3-12a-unreconcile-policy.test.ts",
+    "tests/core-saas.test.ts",
+    "tests/core-saas-role-authority.test.ts",
+    "tests/b-san3-12a-link-toctou-db.test.ts",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+    "RBAC_MATRIX.md"
+   ],
+   "testes": "unlink-title 15|15|0|0 · unreconcile-policy 11|11|0|0 · core-saas 26|26|0|0 · link-toctou-db 5|5|0|0",
+   "matriz_efetiva": "13 papéis + finance+manager × 8 ações (+2 com política true) = 140 células; 0 divergência real; controle FABRICATE=1 acusa exatamente 1",
+   "a27_por_ator": "perdedor finance 409 cheque_write_conflict; sequencial 403 unlink_requires_privilege",
+   "dry_run": "ec=0",
+   "mutacoes": "A5,A6,D1,A9,A11,A12,A18,OWN1 — todas vermelhas pelo caso indicado; restauro hash-object=blob",
+   "controle_fafd4b36": "A6-bis vermelho por Missing expected rejection (PATCH privilegiado aceito)"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "arquivos_medidos": [
+    "src/modules/core-saas/permissions/catalog.ts",
+    "tests/fixtures/role-catalog-contract.snapshot.json",
+    "tests/core-saas.test.ts",
+    "tests/core-saas-role-authority.test.ts",
+    "tests/permission-catalog-db-parity.test.ts",
+    "tests/permission-catalog-migration-parity.test.ts",
+    "tests/b-san3-12a-unreconcile-policy.test.ts",
+    "prisma/migrations/20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions/migration.sql",
+    "scripts/provision-rbac.ts",
+    "RBAC_MATRIX.md",
+    "APPROVAL_LIMITS.md",
+    "agent-orchestration/controle/decisoes.md",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+    ".github/workflows/ci.yml"
+   ],
+   "snapshot_x_catalogo": "super 198→200, tenant_admin 185→187, platform 198→200, +2 cada; 10 papéis diferença vazia; snapshot==catálogo em ordem; posições após financial_entries:update e cheques:update",
+   "banco": "só migrado 0 concessão; após provision só super_admin e tenant_admin; db-parity 2|2|0|0; role-authority 12|12|0|0 (sem CORE_SAAS_PERSISTENCE)",
+   "regra_escrita": "RBAC_MATRIX l.131 e APPROVAL_LIMITS l.37 iguais à distribuição; §A2 decisoes.md l.3955",
+   "mutacoes": "ORD,PLAT,CAT,A18 vermelhas; MIGFIN acusada pela db-parity com banco (não pela migration-parity estática)",
+   "controle_8a7885f4": "role-authority caso 3 vermelho pela asserção com as 2 chaves no diff"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERMELHO (C2-01)",
+   "arquivos_medidos": [
+    "src/modules/cheques/cheque.controller.ts",
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/cheques/cheque.routes.ts",
+    "src/modules/financial-entries/financial-entry.controller.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "src/modules/tenant-settings/tenant-setting.controller.ts",
+    "src/modules/core-saas/audit/audit-log.service.ts",
+    "src/modules/core-saas/audit/audit-request-context.ts",
+    "src/modules/financial-titles/financial-title.service.ts",
+    "tests/audit-security.test.ts",
+    "tests/b-san3-12a-unlink-title.test.ts",
+    "tests/b-san3-12a-pay-pending-cheque.test.ts",
+    "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md"
+   ],
+   "justificativa": "0/9/501/espaços/ausente → 400 invalid_justification; 10 e 500 → 200; BEL/HTML gravados verbatim; NUL → 200 SEM auditoria (C2-01)",
+   "auditoria_banco": "cheque.title_unlinked critical {chequeId,previousTitleId,justification}; financial_entry.unreconciled warning delegated false (admin) / true (finance com política); cheque.bounced warning {titleId}; sem tenant/token/path",
+   "details": "title_has_pending_cheque {chequeIds,pendingAmount,nextStep,requiredPermission}; cheque_amount_mismatch {chequeAmount,openBalance}; sem tenant",
+   "audit_security": "com banco 1|1|0|0; sem banco 1|0|0|1 skipped",
+   "rastro_por_escrita": "7 escritas, todas com rastro; PUT da política sem o valor (nota C2-02)",
+   "mutacoes": "A7 (db), SEVW (minha), F7C, F7E, B2T, RRES2 — todas vermelhas por algum caso",
+   "controle_8a7885f4": "unlink-title 404 route_not_found na base; audit-security base 1|1|0|0; FABRICATE acusa chave fabricada"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C2-01",
+   "defeito": "POST /cheques/:id/unlink-title com justificativa que contém o byte NUL (\\u0000) e passa no limite 10–500 responde 200 e grava title_id=null, mas NÃO grava a auditoria crítica cheque.title_unlinked (0 linhas): o jsonb do Postgres recusa \\u0000 e recordRequestAuditBestEffort engole o erro depois do desvínculo já confirmado.",
+   "evidencia": "sonda C:/Users/AMP/erp-pausa-2026-10-03/j12a-c2/zz-j12ac2-audit.ts (e a parte final de zz-j12ac2-matrix.ts): NUL → http=200, title_id no banco = null, auditoria cheque.title_unlinked = 0; BEL+HTML, HTML e texto comum → auditoria 1 critical; N=3 execuções, 3/3; docker logs j12a-c2-pg: ERROR unsupported Unicode escape sequence / \\u0000 cannot be converted to text / JSON data … justification; na base 8a7885f4 a rota não existe (404 route_not_found)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave (rastro incompleto)",
+   "motivo": "todo desvínculo deixa rastro crítico — a propriedade falha: há entrada aceita pelo validador do bloco com a qual o ato privilegiado é gravado sem rastro"
+  },
+  {
+   "id": "C2-02",
+   "defeito": "PUT /tenant-settings/finance.unreconcile_delegated_to_finance (a política que concede o desfazer ao Financeiro) é auditado como tenant_setting.upserted severity info com {key, category}, sem o valor: a trilha não diz se a delegação foi ligada ou desligada.",
+   "evidencia": "audit.out: tenant_setting.upserted sev=info keys=[key,category] nas duas trocas (true e false); tenant-setting.controller.ts fora do diff do bloco",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (sem evidência de pendência com dono)",
+   "classe": "não grave",
+   "motivo": "a concessão por política não é reconstruível pela trilha"
+  },
+  {
+   "id": "C2-03",
+   "defeito": "A guarda estática permission-catalog-migration-parity não acusa uma migração que conceda as chaves também ao finance; só a db-parity com banco provisionado (RBAC_DB_PARITY=1, ativa na CI) acusa, e o provision-rbac apenas relata a divergência.",
+   "evidencia": "MIGFIN: migration-parity 3|3|0|0; db-parity no clone 2|1|1",
+   "gravidade": "nota",
+   "escopo": "pre-existente (guardas anteriores ao bloco, não alteradas por ele; sem bloco dono nomeado — vale como nota, não reprova)",
+   "classe": "não grave",
+   "motivo": "a distribuição do SQL só é vista com banco"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum dos mandados: todas as mutações listadas e as três minhas (OWN1, MIGFIN, SEVW) ficaram vermelhas por algum caso; observação: o A7 em memória (unlink-title caso 10) não acusa a remoção da chamada de auditoria (só o A7-db acusa) e nenhum teste do objeto envia NUL na justificativa"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12-FILA-PEDIDO-DESVINCULO (Q2)",
+  "P-SAN3-12-BOUNCE-COMO-DESVIO (motivo exigido e auditado: medido)",
+  "corridas A27/A28/invariante — C1",
+  "suíte, escopo, registro, drill — C3",
+  "isolamento R-res-5/A14, R-res-4/A13, A21/A16 — C4"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "prisma migrate deploy + npm run db:provision-rbac no j12a-c2-pg",
+   "forma": "Postgres 16 próprio",
+   "resultado": "117 migrações; 0 concessão antes; super_admin+tenant_admin depois"
+  },
+  {
+   "comando": "node --test unlink-title / unreconcile-policy / core-saas / core-saas-role-authority / db-parity / migration-parity / link-toctou-db / pay-pending-cheque(-db) / audit-security",
+   "forma": "tap",
+   "resultado": "15/15, 11/11, 26/26, 12/12, 2/2, 3/3, 5/5, 15/15, 5/5, 1/1 skipped 0"
+  },
+  {
+   "comando": "npx tsx zz-j12ac2-matrix.ts (e FABRICATE=1)",
+   "forma": "HTTP real, 140 células",
+   "resultado": "0 divergência real; controle acusa 1"
+  },
+  {
+   "comando": "npx tsx zz-j12ac2-audit.ts (e FABRICATE=1)",
+   "forma": "HTTP real + audit_logs sob RLS",
+   "resultado": "C2-01 3/3; demais rastros certos; controle acusa chave fabricada"
+  },
+  {
+   "comando": "runmut.sh × 18 mutações",
+   "forma": "âncora única, restauro hash-object=blob",
+   "resultado": "todas vermelhas; MIGFIN acusada só pela db-parity com banco"
+  }
+ ],
+ "justificativa": "terreno: worktree j12a-c2-wt próprio com npm ci, Postgres 16/Redis 7 próprios em 127.0.0.1:47723/47724, migrate deploy (117) + provision-rbac · item 1 VERDE: matriz efetiva de 140 células pela rota real com papéis provisionados, 0 divergência real (controle fabricado acusa 1), A27 perdedor 409 e sequencial 403, mutações A5/A6/D1/A9/A11/A12/A18/minha vermelhas, controle fafd4b36 com A6-bis vermelho · item 2 VERDE: +2 só nos três admins, posição certa, identidade de referência, banco só super_admin+tenant_admin, texto-base coerente, mutações vermelhas, minha acusada pela db-parity, controle 8a7885f4 vermelho pelo caso 3 · item 3 VERMELHO: C2-01 desvínculo com NUL na justificativa sem auditoria (3/3), demais rastros certos, audit-security com banco skipped 0, mutações vermelhas, controle 8a7885f4 404 route_not_found · limpeza: containers 0, worktree removido, senha 0 · VOTO: REPROVADO — C2-01: o desvínculo com justificativa contendo NUL sai 200 sem a auditoria crítica cheque.title_unlinked | escopo: dentro-do-bloco | classe: não grave (rastro incompleto) | ciclo 1 | evidência: zz-j12ac2-audit.ts, N=3, 3/3, log do Postgres unsupported Unicode escape sequence",
+ "teardown": "containers j12a-c2-* removidos (0) · bancos j12a_c2_* removidos com o container (j12a_c2_mig derrubado antes) · worktree removido por git worktree remove --force · mutações e checkouts restaurados (hash-object = blob) · sondas copiadas apagadas, senha apagada, grep da senha = 0 · base viva nunca tocada · w-san312a só com c2-evidencia.md e c2-voto.json"
+}

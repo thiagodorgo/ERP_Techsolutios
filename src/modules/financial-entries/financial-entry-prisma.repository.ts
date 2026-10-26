@@ -1,10 +1,14 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 
+import { BUSINESS_TIMEZONE } from "../../config/business-time.js";
 import { withTenantRls } from "../../database/rls.js";
 import { assertPeriodOpenSharedInTx } from "../financial-titles/financial-title-prisma.repository.js";
 import type {
+  AggregateFinancialEntryInput,
   CreateFinancialEntryInput,
   FinancialEntry,
+  FinancialEntryAggregateItem,
   ListFinancialEntryInput,
   ListFinancialEntryResult,
   ReconcileFinancialEntryInput,
@@ -14,14 +18,16 @@ import {
   duplicatePaymentError,
   invalidAccountReferenceError,
   periodClosedError,
+  toAggregateItem,
   type AccountReader,
   type FinancialAccountRef,
+  type FinancialEntryAggregateReader,
   type FinancialEntryRepository,
 } from "./financial-entry.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaFinancialEntryRepository implements FinancialEntryRepository {
+export class PrismaFinancialEntryRepository implements FinancialEntryRepository, FinancialEntryAggregateReader {
   constructor(private readonly client: PrismaExecutor) {}
 
   async create(input: CreateFinancialEntryInput): Promise<FinancialEntry> {
@@ -87,8 +93,16 @@ export class PrismaFinancialEntryRepository implements FinancialEntryRepository 
 
   async reconcile(input: ReconcileFinancialEntryInput): Promise<FinancialEntry | undefined> {
     // Objeto DIRETO (não compactRecord) para os nulos irem AO BANCO (desconciliar limpa divergence/ref/at/by).
+    // B-SAN3-12a (§4.6, R2-05) — CAS por ESTADO LÓGICO no banco: o par (reconciled, reconciled_at) tem de ser o que o
+    // cliente leu (`reconciled_at: null` vira `IS NULL`; um instante vira igualdade exata). 0 linhas → undefined.
     const updated = await this.client.financialEntry.updateManyAndReturn({
-      where: { tenant_id: input.tenantId, id: input.financialEntryId, deleted_at: null },
+      where: {
+        tenant_id: input.tenantId,
+        id: input.financialEntryId,
+        deleted_at: null,
+        reconciled: input.expectedReconciled,
+        reconciled_at: input.expectedReconciledAt,
+      },
       data: {
         reconciled: input.reconciled,
         divergence_type: input.divergenceType,
@@ -121,6 +135,38 @@ export class PrismaFinancialEntryRepository implements FinancialEntryRepository 
     return this.findById(tenantId, financialEntryId);
   }
 
+  // B-SAN3-12a (§4.5, R2-06) — agregado do extrato somado em SQL sobre Decimal(12,2). Buckets no FUSO DO NEGÓCIO:
+  // mês = a coluna `competencia` (derivada no fuso ao gravar — idêntica ao `cashFlow` do resumo por construção); dia =
+  // `(occurred_at AT TIME ZONE BUSINESS_TIMEZONE)::date`. O nome do fuso vem de BUSINESS_TIMEZONE (nunca literal).
+  // Roda na transação recebida (o Rls abaixo abre `withTenantRls`): fora dela a RLS não filtraria (R-res-5).
+  async aggregate(input: AggregateFinancialEntryInput): Promise<readonly FinancialEntryAggregateItem[]> {
+    const businessDay = Prisma.sql`((occurred_at AT TIME ZONE ${BUSINESS_TIMEZONE})::date)`;
+    const bucket =
+      input.groupBy === "none"
+        ? Prisma.sql`NULL::text`
+        : input.groupBy === "month"
+          ? Prisma.sql`competencia`
+          : Prisma.sql`to_char(${businessDay}, 'YYYY-MM-DD')`;
+    const filters: Prisma.Sql[] = [Prisma.sql`tenant_id = ${input.tenantId}::uuid`, Prisma.sql`deleted_at IS NULL`];
+    if (input.accountId !== undefined) filters.push(Prisma.sql`account_id = ${input.accountId}::uuid`);
+    if (input.direction !== undefined) filters.push(Prisma.sql`direction = ${input.direction}`);
+    if (input.reconciled !== undefined) filters.push(Prisma.sql`reconciled = ${input.reconciled}`);
+    if (input.divergenceType !== undefined) filters.push(Prisma.sql`divergence_type = ${input.divergenceType}`);
+    if (input.fromDate !== undefined) filters.push(Prisma.sql`${businessDay} >= ${input.fromDate}::date`);
+    if (input.toDate !== undefined) filters.push(Prisma.sql`${businessDay} <= ${input.toDate}::date`);
+    const rows = await this.client.$queryRaw<Array<{ bucket: string | null; count: number; inflow: string; outflow: string }>>`
+      SELECT ${bucket} AS bucket,
+             COUNT(*)::int AS count,
+             COALESCE(SUM(amount) FILTER (WHERE direction = 'in'), 0)::text AS inflow,
+             COALESCE(SUM(amount) FILTER (WHERE direction = 'out'), 0)::text AS outflow
+        FROM financial_entries
+       WHERE ${Prisma.join(filters, " AND ")}
+       GROUP BY 1
+       ORDER BY 1
+    `;
+    return rows.map((row) => toAggregateItem(row.bucket, row.count, Number(row.inflow), Number(row.outflow)));
+  }
+
   async sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }> {
     const grouped = await this.client.financialEntry.groupBy({
       by: ["direction"],
@@ -149,7 +195,7 @@ export class PrismaAccountReader implements AccountReader {
   }
 }
 
-export class RlsPrismaFinancialEntryRepository implements FinancialEntryRepository {
+export class RlsPrismaFinancialEntryRepository implements FinancialEntryRepository, FinancialEntryAggregateReader {
   constructor(private readonly prismaClient: PrismaClient) {}
 
   create(input: CreateFinancialEntryInput): Promise<FinancialEntry> {
@@ -204,6 +250,9 @@ export class RlsPrismaFinancialEntryRepository implements FinancialEntryReposito
   }
   sumByAccount(tenantId: string, accountId: string): Promise<{ readonly inflow: number; readonly outflow: number }> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFinancialEntryRepository(tx).sumByAccount(tenantId, accountId));
+  }
+  aggregate(input: AggregateFinancialEntryInput): Promise<readonly FinancialEntryAggregateItem[]> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFinancialEntryRepository(tx).aggregate(input));
   }
 }
 

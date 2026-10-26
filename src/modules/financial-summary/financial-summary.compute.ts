@@ -15,7 +15,13 @@ export type TitleRow = {
   readonly createdAt: Date;
 };
 export type EntryRow = { readonly direction: string; readonly amount: number; readonly competencia: string };
-export type ChequeRow = { readonly direction: string; readonly status: string; readonly amount: number };
+export type ChequeRow = {
+  readonly direction: string;
+  readonly status: string;
+  readonly amount: number;
+  // B-SAN3-12a (§4.7) — título vinculado (ausente/null = cheque sem título).
+  readonly titleId?: string | null;
+};
 export type AccountBalanceRow = { readonly openingBalance: number; readonly inflow: number; readonly outflow: number };
 
 // Aberto = status ∉ {paid,cancelled}. openAmount = Σ(amount − paidAmount). Vencido = aberto E due_date < now.
@@ -136,8 +142,14 @@ export function computeFinancialSummary(input: {
   );
 
   const chequePending = { pendingReceivedCount: 0, pendingReceivedAmount: 0, pendingIssuedCount: 0, pendingIssuedAmount: 0 };
+  let linkedPendingCount = 0;
+  let linkedPendingAmount = 0;
   for (const cheque of input.cheques) {
     if (!isChequePending(cheque.status)) continue;
+    if (cheque.titleId != null) {
+      linkedPendingCount += 1;
+      linkedPendingAmount += cheque.amount;
+    }
     if (cheque.direction === "received") {
       chequePending.pendingReceivedCount += 1;
       chequePending.pendingReceivedAmount += cheque.amount;
@@ -159,6 +171,8 @@ export function computeFinancialSummary(input: {
       pendingReceivedAmount: roundMoney(chequePending.pendingReceivedAmount),
       pendingIssuedCount: chequePending.pendingIssuedCount,
       pendingIssuedAmount: roundMoney(chequePending.pendingIssuedAmount),
+      linkedPendingCount,
+      linkedPendingAmount: roundMoney(linkedPendingAmount),
     },
     cashFlow: buildCashFlow(input.entries, cashFlowCompetencias(input.now, CASH_FLOW_MONTHS)),
     recentTitles,

@@ -45,11 +45,18 @@ export function toFinancialEntryListDto(result: ListFinancialEntryResult) {
       category: entry.category ?? null,
       occurredAt: entry.occurredAt.toISOString(),
       competencia: entry.competencia,
+      // B-SAN3-12a (§4.7) — a lista passa a trazer a descrição e os metadados de conciliação: `reconciled` +
+      // `reconciledAt` são o estado que o CAS da conciliação espera (§4.6); `updatedAt` para a tela.
+      description: entry.description ?? null,
       reversalOf: entry.reversalOf ?? null,
       reconciled: entry.reconciled,
       divergenceType: entry.divergenceType ?? null,
+      reconciliationRef: entry.reconciliationRef ?? null,
+      reconciledAt: entry.reconciledAt ? entry.reconciledAt.toISOString() : null,
+      reconciledBy: entry.reconciledBy ?? null,
       active: entry.deletedAt == null,
       createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
     })),
     pagination: {
       limit: result.limit,

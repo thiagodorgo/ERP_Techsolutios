@@ -21,6 +21,11 @@ import {
   type ChequeLinkReaderResolver,
 } from "../cheques/cheque-link-reader.js";
 import {
+  createDefaultChequePendingReader,
+  type ChequePendingReaderResolver,
+} from "../financial-titles/cheque-pending-reader.js";
+import { BUSINESS_TIMEZONE, deriveBusinessDate, parseBusinessDate } from "../../config/business-time.js";
+import {
   assertUndoOrdersCoverEveryRefusal,
   buildUndoOwnerPolicies,
   DELETE_UNDO_ORDER,
@@ -41,21 +46,27 @@ import {
   entryNotFoundError,
   invalidAccountReferenceError,
   periodClosedError,
+  reconciliationStaleError,
   settlementEntryImmutableError,
   titleRestoreConflictError,
   type AccountReader,
   type FinancialAccountRef,
+  type FinancialEntryAggregateReader,
   type FinancialEntryRepository,
 } from "./financial-entry.repository.js";
 import type {
+  AggregateFinancialEntryInput,
   CreateFinancialEntryInput,
   FinancialAccountBalance,
   FinancialEntry,
   FinancialEntryActorContext,
+  FinancialEntryAggregate,
+  FinancialEntryAggregateGroup,
   ListFinancialEntryInput,
   ListFinancialEntryResult,
+  ReconciliationPolicy,
 } from "./financial-entry.types.js";
-import { FinancialEntryError } from "./financial-entry.types.js";
+import { FINANCIAL_ENTRY_AGGREGATE_GROUPS, FinancialEntryError } from "./financial-entry.types.js";
 import {
   parseAmount,
   parseDirection,
@@ -91,6 +102,140 @@ function chequeRequiredError(): FinancialEntryError {
 type RawRecord = Record<string, unknown>;
 
 export type FinancialTitleServiceResolver = () => Promise<FinancialTitleService>;
+
+// -----------------------------------------------------------------------------------------------
+// B-SAN3-12a — regras do servidor do web financeiro (plano v3 §4.2–4.6).
+// -----------------------------------------------------------------------------------------------
+
+/** §4.4 — a permissão que DESFAZ conciliação (Administrador da organização; super/platform por herança). */
+export const UNRECONCILE_PERMISSION = "financial_entries:unreconcile" as const;
+
+/**
+ * §4.4 — a política da organização que DELEGA o desfazer ao Financeiro (decisão do dono 24/10: "admin, mas deve existir
+ * a opcao do financeiro receber esse privilegio"). Chave de `tenant-settings`; só `tenant_settings:update` (Administrador)
+ * a liga; ausente = `false` (fail-closed). O validador da chave vive em `tenant-setting.validators.ts`.
+ */
+export const UNRECONCILE_DELEGATION_SETTING_KEY = "finance.unreconcile_delegated_to_finance" as const;
+
+/** Lê a política de delegação do tenant: `true` só com o valor literal "true"; ausente/outro = `false`. */
+export type ReconciliationDelegationReader = (actor: FinancialEntryActorContext) => Promise<boolean>;
+
+export async function readUnreconcileDelegationFromSettings(actor: FinancialEntryActorContext): Promise<boolean> {
+  const { createDefaultTenantSettingService } = await import("../tenant-settings/tenant-setting.service.js");
+  const { TenantSettingError } = await import("../tenant-settings/tenant-setting.types.js");
+  try {
+    const setting = await (await createDefaultTenantSettingService()).get(actor, UNRECONCILE_DELEGATION_SETTING_KEY);
+    return setting.value === "true";
+  } catch (error) {
+    if (error instanceof TenantSettingError && error.statusCode === 404) return false;
+    throw error;
+  }
+}
+
+// §4.5 — tetos do agregado: day ≤ 92 dias civis, month ≤ 24 competências.
+const AGGREGATE_MAX_DAYS = 92;
+const AGGREGATE_MAX_MONTHS = 24;
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** As portas novas do B-SAN3-12a, num objeto (o 7º parâmetro), para não reordenar os seis de antes. */
+export type FinancialEntryServiceExtras = {
+  /** §4.2 — conjunto "cheque pendente do título" pelo POOL (fast-fail). Default: a porta estreita do título. */
+  readonly resolveChequePendingReader?: ChequePendingReaderResolver;
+  /** §4.4 — política de delegação do desfazer. Default: `tenant-settings`. */
+  readonly readUnreconcileDelegation?: ReconciliationDelegationReader;
+  /** §4.5 — fonte do agregado. Default: o próprio repositório, quando ele o implementa. */
+  readonly aggregateReader?: FinancialEntryAggregateReader;
+};
+
+function titleHasPendingChequeError(cheques: readonly { readonly id: string; readonly amount: number }[]): FinancialEntryError {
+  return new FinancialEntryError(
+    422,
+    "FINANCIAL_ENTRY_UNPROCESSABLE",
+    "title_has_pending_cheque",
+    "The financial title has a linked cheque awaiting clearance; unlink the cheque to settle it by another payment method.",
+    {
+      chequeIds: cheques.map((cheque) => cheque.id),
+      pendingAmount: roundMoney(cheques.reduce((total, cheque) => total + cheque.amount, 0)),
+      nextStep: "unlink_cheque",
+      requiredPermission: "cheques:unlink_title",
+    },
+  );
+}
+
+function expectedStateRequiredError(): FinancialEntryError {
+  return new FinancialEntryError(
+    400,
+    "FINANCIAL_ENTRY_INVALID",
+    "expected_state_required",
+    "expected_reconciled (boolean) and expected_reconciled_at (ISO timestamp or null) are required.",
+  );
+}
+
+function unreconcileForbiddenError(): FinancialEntryError {
+  return new FinancialEntryError(
+    403,
+    "FINANCIAL_ENTRY_FORBIDDEN",
+    "unreconcile_forbidden",
+    "Undoing a reconciliation requires the unreconcile permission or the organization delegation to finance.",
+  );
+}
+
+function aggregateRangeTooWideError(): FinancialEntryError {
+  return new FinancialEntryError(
+    400,
+    "FINANCIAL_ENTRY_INVALID",
+    "aggregate_range_too_wide",
+    `The aggregate range is too wide (day: up to ${AGGREGATE_MAX_DAYS} days; month: up to ${AGGREGATE_MAX_MONTHS} months).`,
+  );
+}
+
+function invalidGroupByError(): FinancialEntryError {
+  return new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", "invalid_group_by", "group_by must be one of none, month, day.");
+}
+
+function invalidAggregateDateError(field: string): FinancialEntryError {
+  return new FinancialEntryError(400, "FINANCIAL_ENTRY_INVALID", `invalid_${field}`, `${field} must be a business date (YYYY-MM-DD).`);
+}
+
+/** §4.6 — o estado de conciliação que o cliente LEU. Ausente/inválido → 400 expected_state_required. */
+function parseExpectedReconciliationState(body: RawRecord): { readonly reconciled: boolean; readonly reconciledAt: Date | null } {
+  const rawFlag = body.expected_reconciled ?? body.expectedReconciled;
+  const atKey = "expected_reconciled_at" in body ? "expected_reconciled_at" : "expectedReconciledAt" in body ? "expectedReconciledAt" : undefined;
+  if (typeof rawFlag !== "boolean" || atKey === undefined) throw expectedStateRequiredError();
+  const rawAt = body[atKey];
+  if (rawAt === null) return { reconciled: rawFlag, reconciledAt: null };
+  if (typeof rawAt !== "string") throw expectedStateRequiredError();
+  const at = new Date(rawAt);
+  if (Number.isNaN(at.getTime())) throw expectedStateRequiredError();
+  return { reconciled: rawFlag, reconciledAt: at };
+}
+
+function parseAggregateDate(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const raw = String(value).trim();
+  if (!DATE_ONLY.test(raw) || Number.isNaN(parseBusinessDate(raw).getTime())) throw invalidAggregateDateError(field);
+  return raw;
+}
+
+function monthsBetween(from: string, to: string): number {
+  const [fy, fm] = from.split("-").map(Number);
+  const [ty, tm] = to.split("-").map(Number);
+  return (ty - fy) * 12 + (tm - fm) + 1;
+}
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((parseBusinessDate(to).getTime() - parseBusinessDate(from).getTime()) / 86_400_000) + 1;
+}
+
+function shiftBusinessDays(date: string, days: number): string {
+  return deriveBusinessDate(new Date(parseBusinessDate(date).getTime() + days * 86_400_000));
+}
+
+function firstDayMonthsBack(date: string, months: number): string {
+  const [year, month] = date.split("-").map(Number);
+  const index = year * 12 + (month - 1) - months;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}-01`;
+}
 
 /**
  * B-O6R-02 ciclo 4 · C1 (P9) — a fonte de leitura dos vínculos de agregado que os detectores de
@@ -150,6 +295,8 @@ export class FinancialEntryService {
     // guards de `delete`/`reverse`. É o SEXTO parâmetro de propósito: a ordem dos cinco acima não
     // muda (a fixture do ciclo 1 posiciona o resolver da UoW na 5ª posição).
     private readonly resolveChequeLinkReader: ChequeLinkReaderResolver = createDefaultChequeLinkReader,
+    // B-SAN3-12a — o SÉTIMO parâmetro é um objeto (os seis de antes não mudam de posição).
+    private readonly extras: FinancialEntryServiceExtras = {},
   ) {
     // P5 — a ordem de precedência não pode encolher em silêncio: dono que RECUSA numa rota e está
     // fora da ordem dela é uma recusa que ninguém percorre. O compilador cobre a ordem do `delete`
@@ -386,8 +533,29 @@ export class FinancialEntryService {
   // fechamento protege. O extrato bancário chega DEPOIS do fechamento do mês → gate-ar por período fechado
   // travaria o caso de uso nº1 e congelaria o estado de conciliação para sempre. Passa independente do período.
   async reconcile(actor: FinancialEntryActorContext, financialEntryId: string, body: RawRecord): Promise<FinancialEntry> {
+    return (await this.reconcileWithOutcome(actor, financialEntryId, body)).entry;
+  }
+
+  // B-SAN3-12a (§4.4 + §4.6) — o mesmo write-path, devolvendo também SE o desfazer passou pela delegação ao Financeiro
+  // (a auditoria registra `delegated: true`). Precedência: 404 → 400 invalid_reconciled → 400 expected_state_required
+  // → 403 unreconcile_forbidden (só no desfazer) → 400 invalid_divergence_type → (unidade) 409 reconciliation_stale.
+  async reconcileWithOutcome(
+    actor: FinancialEntryActorContext,
+    financialEntryId: string,
+    body: RawRecord,
+  ): Promise<{ readonly entry: FinancialEntry; readonly delegated: boolean }> {
     const current = await this.getWritable(actor, financialEntryId); // 404 inexistente/deletado/cross-tenant
     const reconciled = parseReconciledFlag(body.reconciled);         // 400 invalid_reconciled
+    const expected = parseExpectedReconciliationState(body);        // 400 expected_state_required (§4.6, obrigatório)
+
+    // §4.4 — DESFAZER (reconciled=false) exige `financial_entries:unreconcile` OU (papel finance E a política da
+    // organização ligada). Conciliar (true) não muda. A rota continua gated por `financial_entries:update`.
+    let delegated = false;
+    if (!reconciled) {
+      const decision = await this.unreconcileDecision(actor);
+      if (!decision.canUnreconcile) throw unreconcileForbiddenError();
+      delegated = decision.viaDelegation;
+    }
 
     const divergenceType = reconciled
       ? (parseOptionalDivergenceType(body.divergence_type ?? body.divergenceType) ?? null) // 400 invalid_divergence_type
@@ -396,20 +564,80 @@ export class FinancialEntryService {
       ? (parseOptionalReconciliationRef(body.reconciliation_ref ?? body.reconciliationRef) ?? null)
       : null;
 
-    const updated = await this.repository.reconcile({
-      tenantId: actor.tenantId,
-      financialEntryId: current.id,
-      reconciled,
-      divergenceType,
-      reconciliationRef,
-      reconciledAt: reconciled ? new Date() : null, // carimbo server-side
-      reconciledBy: reconciled ? actor.userId : null,
-      updatedBy: actor.userId,
+    // §4.6 — dentro da UNIDADE (mutex do tenant na memória; transação com RLS no Postgres): o CAS por estado lógico
+    // decide; 0 linhas → relê na mesma unidade: sumiu → 404, mudou → 409 reconciliation_stale.
+    const uow = await this.resolveUow();
+    const entry = await uow.run(actor.tenantId, async (ctx) => {
+      const updated = await ctx.entries.reconcile({
+        tenantId: actor.tenantId,
+        financialEntryId: current.id,
+        expectedReconciled: expected.reconciled,
+        expectedReconciledAt: expected.reconciledAt,
+        reconciled,
+        divergenceType,
+        reconciliationRef,
+        reconciledAt: reconciled ? new Date() : null, // carimbo server-side
+        reconciledBy: reconciled ? actor.userId : null,
+        updatedBy: actor.userId,
+      });
+      if (updated) return updated;
+      const fresh = await ctx.entries.findById(actor.tenantId, current.id);
+      if (!fresh || fresh.deletedAt != null) throw entryNotFoundError();
+      throw reconciliationStaleError();
     });
-    if (!updated) {
-      throw entryNotFoundError();
+    return { entry, delegated };
+  }
+
+  // B-SAN3-12a (§4.4) — `GET /financial-entries/reconciliation-policy`: a política calculada PARA O ATOR.
+  async reconciliationPolicy(actor: FinancialEntryActorContext): Promise<ReconciliationPolicy> {
+    const delegatedToFinance = await this.readDelegation(actor);
+    return {
+      canUnreconcile: actor.permissions.includes(UNRECONCILE_PERMISSION) || (actor.roles.includes("finance") && delegatedToFinance),
+      delegatedToFinance,
+    };
+  }
+
+  private async unreconcileDecision(actor: FinancialEntryActorContext): Promise<{ readonly canUnreconcile: boolean; readonly viaDelegation: boolean }> {
+    if (actor.permissions.includes(UNRECONCILE_PERMISSION)) return { canUnreconcile: true, viaDelegation: false };
+    if (!actor.roles.includes("finance")) return { canUnreconcile: false, viaDelegation: false };
+    const delegated = await this.readDelegation(actor);
+    return { canUnreconcile: delegated, viaDelegation: delegated };
+  }
+
+  private readDelegation(actor: FinancialEntryActorContext): Promise<boolean> {
+    return (this.extras.readUnreconcileDelegation ?? readUnreconcileDelegationFromSettings)(actor);
+  }
+
+  // B-SAN3-12a (§4.5, R2-06) — `GET /financial-entries/aggregate`: contagem e somas no SERVIDOR, buckets no fuso do
+  // negócio (mês = competência, dia = data civil em BUSINESS_TIMEZONE). Tetos: day ≤ 92 dias, month ≤ 24 meses.
+  async aggregate(actor: FinancialEntryActorContext, query: RawRecord): Promise<FinancialEntryAggregate> {
+    const rawGroup = typeof query.group_by === "string" ? query.group_by : query.groupBy === undefined ? "none" : query.groupBy;
+    const groupBy = (rawGroup === undefined || rawGroup === "" ? "none" : rawGroup) as FinancialEntryAggregateGroup;
+    if (!(FINANCIAL_ENTRY_AGGREGATE_GROUPS as readonly unknown[]).includes(groupBy)) throw invalidGroupByError();
+    const fromDate = parseAggregateDate(query.from, "from");
+    const toDate = parseAggregateDate(query.to, "to");
+    let windowFrom = fromDate;
+    let windowTo = toDate;
+    if (groupBy !== "none") {
+      // O teto vale para o intervalo PEDIDO. Sem `from`, a janela é a do teto terminando em `to` (ou hoje, no fuso do
+      // negócio) — declarado em API_CONTRACTS.md; nunca um agrupamento sem limite.
+      windowTo = toDate ?? deriveBusinessDate(new Date());
+      windowFrom = fromDate ?? (groupBy === "day" ? shiftBusinessDays(windowTo, -(AGGREGATE_MAX_DAYS - 1)) : firstDayMonthsBack(windowTo, AGGREGATE_MAX_MONTHS - 1));
+      if (groupBy === "day" && daysBetween(windowFrom, windowTo) > AGGREGATE_MAX_DAYS) throw aggregateRangeTooWideError();
+      if (groupBy === "month" && monthsBetween(windowFrom, windowTo) > AGGREGATE_MAX_MONTHS) throw aggregateRangeTooWideError();
     }
-    return updated;
+    const input: AggregateFinancialEntryInput = {
+      tenantId: actor.tenantId,
+      groupBy,
+      accountId: parseOptionalFilterUuid(query.account_id ?? query.accountId),
+      direction: parseFilterToken(query.direction),
+      reconciled: parseOptionalFilterBoolean(query.reconciled),
+      divergenceType: parseFilterToken(query.divergence_type ?? query.divergenceType),
+      fromDate: windowFrom,
+      toDate: windowTo,
+    };
+    const reader = this.extras.aggregateReader ?? (this.repository as unknown as FinancialEntryAggregateReader);
+    return { groupBy, currency: "BRL", timezone: BUSINESS_TIMEZONE, items: await reader.aggregate(input) };
   }
 
   // LIQUIDAÇÃO (Ω4-4 → Título; B-O6R-02 F3, Ω6R-DIN-001 — fecha P-Ω4-4-LIQUID-ATOMIC) — TUDO-OU-NADA:
@@ -441,6 +669,13 @@ export class FinancialEntryService {
     }
     // B-SAN3-20 (D4, decisão do dono = A): depois da identidade/moeda do título, antes do período.
     if (paymentMethod === "check") throw chequeRequiredError();
+    // B-SAN3-12a (§4.2; dono 24/10: "server recusa, mas ja direciona para trocar a vinculacao do cheque por outro meio
+    // de pagamento") — FAST-FAIL pelo pool: título com cheque vinculado PENDENTE (registered|deposited) não baixa por
+    // outro meio. Serve à precedência pública (vence period_closed, perde para cheque_required) e garante que
+    // NENHUMA transação abre. A corrida `pay × vincular` é fechada pelo re-check SOB o lock, abaixo.
+    await this.assertNoPendingCheque(
+      await (await (this.extras.resolveChequePendingReader ?? createDefaultChequePendingReader)()).findPendingByTitle(actor.tenantId, title.id),
+    );
     // receivable → dinheiro ENTRA (in); payable → dinheiro SAI (out).
     const direction = title.direction === "receivable" ? "in" : "out";
 
@@ -450,6 +685,12 @@ export class FinancialEntryService {
     return uow.run(actor.tenantId, async (ctx) => {
       // Ordem global de locks: advisory de período ANTES de qualquer row lock (regra do lar único).
       await ctx.assertPeriodOpenShared(competencia, periodClosedError);
+
+      // B-SAN3-12a (§4.2, R2-02) — trava a linha do TÍTULO antes de reler o conjunto pendente: o vínculo de cheque
+      // (create/update com title_id) trava a MESMA linha. Vínculo que commitou depois do fast-fail e antes deste lock
+      // é visto aqui → 422; vínculo que chega depois espera este lock e relê o título pago → title_already_paid.
+      await ctx.titles.findByIdForUpdate(actor.tenantId, title.id);
+      await this.assertNoPendingCheque(await ctx.cheques.findPendingByTitle(actor.tenantId, title.id));
 
       // Lançamento PRIMEIRO: o replay do client_action_id estoura P2002 → 409 AQUI, com o título
       // ainda intocado (e a transação inteira desfeita).
@@ -550,6 +791,10 @@ export class FinancialEntryService {
       throw entryNotFoundError();
     }
     return current;
+  }
+
+  private async assertNoPendingCheque(pending: readonly { readonly id: string; readonly amount: number }[]): Promise<void> {
+    if (pending.length > 0) throw titleHasPendingChequeError(pending);
   }
 
   private assertMutable(entry: FinancialEntry): void {
@@ -668,6 +913,9 @@ export function createMemoryFinancialEntryService(): FinancialEntryService {
     getMemoryFinancialPeriodCloseRepositoryForTests(),
     memoryAccountReader,
     () => Promise.resolve(createMemoryFinancialTitleService()),
+    undefined,
+    undefined,
+    { aggregateReader: memoryEntryRepository },
   );
 }
 
@@ -701,5 +949,7 @@ async function createPrismaFinancialEntryService(): Promise<FinancialEntryServic
     createPrismaFinancialPeriodCloseRepository(),
   ]);
   // Chokepoint REUSADO: mesma tabela financial_period_closes (repo de fechamento do título).
-  return new FinancialEntryService(repository, periodCloseRepository, accountReader, createDefaultFinancialTitleService);
+  return new FinancialEntryService(repository, periodCloseRepository, accountReader, createDefaultFinancialTitleService, undefined, undefined, {
+    aggregateReader: repository,
+  });
 }

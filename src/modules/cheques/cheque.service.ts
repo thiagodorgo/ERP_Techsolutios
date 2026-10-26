@@ -23,17 +23,26 @@ import {
   type FinancialUowResolver,
 } from "../financial-uow/index.js";
 import {
+  CHEQUE_PENDING_STATUSES,
   InMemoryChequeRepository,
   accountInactiveError,
+  chequeAmountMismatchError,
+  chequeLinkedUnlinkFirstError,
   chequeNotEditableError,
   chequeNotFoundError,
+  chequeNotLinkedError,
+  chequeNotUnlinkableError,
+  chequeWriteConflictError,
   invalidAccountReferenceError,
+  invalidJustificationError,
   invalidTitleReferenceError,
   invalidTransitionError,
   titleDirectionMismatchError,
   transitionConflictError,
+  unlinkRequiresPrivilegeError,
   type AccountReader,
   type ChequeRepository,
+  type ChequeTitleUnlinker,
   type FinancialAccountRef,
 } from "./cheque.repository.js";
 import type {
@@ -74,6 +83,51 @@ type FinancialTitleServiceResolver = () => Promise<FinancialTitleService>;
 // (evita divergência rota↔serviço; condição BAIXA da junta).
 export const FINANCIAL_WRITE_PERMISSION = "financial_entries:create" as const;
 
+// B-SAN3-12a (§4.3, decisão do dono 24/10: "trocar a vinculacao do cheque por outro meio de pagamento [...] requer
+// privilegios altos") — a permissão que tira (ou troca) o título de um cheque. Fonte ÚNICA: a rota
+// `POST /cheques/:id/unlink-title` e o fecho do bypass do `PATCH` (título nulo ou diferente) leem daqui.
+export const CHEQUE_UNLINK_PERMISSION = "cheques:unlink_title" as const;
+
+// Justificativa do desvínculo: obrigatória, 10–500 caracteres depois do trim (400 invalid_justification).
+const JUSTIFICATION_MIN = 10;
+const JUSTIFICATION_MAX = 500;
+// B-SAN3-12a, ciclo 2 (A30; C2-01) — a justificativa é rastro de ato privilegiado: só texto GRAVÁVEL e LEGÍVEL. U+0000 e
+// surrogate isolado o jsonb recusa (a auditoria best-effort caía e o desvínculo ficava sem rastro); os demais controles C0
+// (salvo TAB, LF e CR) e o DEL adulteram a leitura em tela, terminal e log. Unicode válido segue aceito e gravado verbatim.
+// eslint-disable-next-line no-control-regex
+const JUSTIFICATION_FORBIDDEN_CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+// `String.prototype.isWellFormed` existe em runtime desde o Node 20 (o `engines` do repositório); a `lib` do tsconfig
+// ainda não a declara, daí o tipo local (sem mexer no tsconfig).
+type WellFormedCheckable = string & { isWellFormed(): boolean };
+
+export function parseUnlinkJustification(value: unknown): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  if (normalized.length < JUSTIFICATION_MIN || normalized.length > JUSTIFICATION_MAX) throw invalidJustificationError();
+  if (!(normalized as WellFormedCheckable).isWellFormed() || JUSTIFICATION_FORBIDDEN_CONTROL.test(normalized)) {
+    throw new ChequeError(
+      400,
+      "CHEQUE_INVALID",
+      "invalid_justification",
+      "justification contains control characters or malformed text (no U+0000, no lone surrogate, no C0 control except TAB/LF/CR, no DEL).",
+    );
+  }
+  return normalized;
+}
+
+// R-res-2 do plano v3 ("requisito v3: 400 bounce_reason_required") — devolver um cheque VINCULADO ainda `deposited`
+// tira-o do conjunto pendente do título sem privilégio: o motivo passa a ser obrigatório nesse caso.
+function bounceReasonRequiredError(): ChequeError {
+  return new ChequeError(400, "CHEQUE_INVALID", "bounce_reason_required", "A bounce reason is required for a cheque linked to a financial title.");
+}
+
+export type ChequeUnlinkResult = {
+  readonly cheque: Cheque;
+  readonly previousTitleId: string;
+  readonly justification: string;
+  // R-res-3 do plano v3 — o cheque desvinculado ainda `deposited` pode compensar e postar caixa SEM título.
+  readonly warning?: "cheque_still_depositable";
+};
+
 // Transições LEGAIS da máquina de estados. registered→{deposited,cancelled}; deposited→{cleared,bounced};
 // cleared→{bounced}. bounced/cancelled são TERMINAIS. Qualquer outra → 422 invalid_transition.
 const LEGAL_TRANSITIONS: Readonly<Record<ChequeStatus, readonly ChequeStatus[]>> = {
@@ -86,7 +140,8 @@ const LEGAL_TRANSITIONS: Readonly<Record<ChequeStatus, readonly ChequeStatus[]>>
 
 export class ChequeService {
   constructor(
-    private readonly repository: ChequeRepository,
+    // B-SAN3-12a — o repositório também desvincula (`ChequeTitleUnlinker`): escrita própria, fora do contrato da unidade.
+    private readonly repository: ChequeRepository & ChequeTitleUnlinker,
     private readonly accountReader: AccountReader,
     // B-O6R-02 F5 — porta de Unit of Work: clear/bounce-após-clear rodam transição + lançamento +
     // vínculo como UMA unidade (falha → o cheque volta ao estado anterior PELO BANCO).
@@ -116,9 +171,7 @@ export class ChequeService {
     const direction = parseDirection(body.direction);
     const amount = parseAmount(body.amount);
     const titleId = parseNullableUuid(body.title_id ?? body.titleId, "titleId") ?? undefined;
-    if (titleId !== undefined) await this.validateTitleLink(actor, titleId, direction, amount, currency);
-
-    return this.repository.create({
+    const input = {
       tenantId: actor.tenantId,
       accountId: account.id,
       titleId,
@@ -131,6 +184,17 @@ export class ChequeService {
       notes: parseOptionalNotes(body.notes),
       createdBy: actor.userId,
       updatedBy: actor.userId,
+    };
+    if (titleId === undefined) return this.repository.create(input);
+
+    // B-SAN3-12a (§4.2, R2-02) — VINCULAR trava a linha do título. Fast-fail pelo pool (precedência pública) e
+    // re-validação SOB o lock, dentro da unidade: a baixa (`payTitle`) trava a MESMA linha antes de reler o conjunto
+    // pendente, então vínculo e baixa do mesmo título se serializam.
+    await this.validateTitleLink(actor, titleId, direction, amount, currency);
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      await this.revalidateTitleLinkUnderLock(ctx, actor, titleId, direction, amount, currency);
+      return ctx.cheques.create(input);
     });
   }
 
@@ -148,11 +212,18 @@ export class ChequeService {
     // {due_date: null} colapsaria para o alias camel undefined e o "limpar" seria silenciosamente ignorado.
     const dueDateRaw = body.due_date !== undefined ? body.due_date : body.dueDate;
     const titleIdRaw = body.title_id !== undefined ? body.title_id : body.titleId;
-    const titleId = parseNullableUuid(titleIdRaw, "titleId");
-    if (typeof titleId === "string") {
-      await this.validateTitleLink(actor, titleId, current.direction, current.amount, current.currency);
+    const parsedTitleId = parseNullableUuid(titleIdRaw, "titleId");
+    // O mesmo título que já está lá não é mudança de vínculo (nada a validar nem a privilegiar).
+    const titleId = parsedTitleId === current.titleId || (parsedTitleId === null && current.titleId === undefined) ? undefined : parsedTitleId;
+    // B-SAN3-12a (§4.3, fecho do bypass; D1 da Emenda E1) — TIRAR o título (null) ou TROCÁ-LO por outro NÃO é PATCH:
+    // sem o privilégio da troca → 403 `unlink_requires_privilege`; com ele → 422 `cheque_linked_unlink_first` (a única
+    // porta que tira o vínculo é `POST /cheques/:id/unlink-title`, com justificativa e auditoria Crítica). Vincular pela
+    // primeira vez (título atual nulo) continua `cheques:update`.
+    if (titleId !== undefined && current.titleId !== undefined) {
+      if (!actor.permissions.includes(CHEQUE_UNLINK_PERMISSION)) throw unlinkRequiresPrivilegeError();
+      throw chequeLinkedUnlinkFirstError();
     }
-    const updated = await this.repository.update({
+    const input = {
       tenantId: actor.tenantId,
       chequeId: current.id,
       chequeNumber: body.cheque_number !== undefined || body.chequeNumber !== undefined ? parseChequeNumber(body.cheque_number ?? body.chequeNumber) : undefined,
@@ -161,16 +232,57 @@ export class ChequeService {
       dueDate: parseNullableDueDate(dueDateRaw),
       notes: parseNullableNotes(body.notes),
       updatedBy: actor.userId,
+    };
+    if (typeof titleId !== "string") {
+      const updated = await this.repository.update(input);
+      if (!updated) return this.throwChequeWriteConflict(actor, current.id);
+      return updated;
+    }
+
+    // 1º vínculo = travar o título e revalidar sob o lock (§4.2, R2-02) e, na escrita, o CAS do título LIDO (A27): só
+    // grava se o cheque continua SEM título — quem vinculou no meio vence, e este perde com 409.
+    await this.validateTitleLink(actor, titleId, current.direction, current.amount, current.currency);
+    const uow = await this.resolveUow();
+    return uow.run(actor.tenantId, async (ctx) => {
+      await this.revalidateTitleLinkUnderLock(ctx, actor, titleId, current.direction, current.amount, current.currency);
+      const updated = await ctx.cheques.update({ ...input, expectedTitleId: current.titleId ?? null });
+      if (!updated) return this.throwChequeWriteConflict(actor, current.id, current.titleId);
+      return updated;
     });
-    if (!updated) return this.throwChequeWriteConflict(actor, current.id);
-    return updated;
+  }
+
+  // B-SAN3-12a (§4.3) — TROCAR A VINCULAÇÃO: tira o título do cheque pendente (registered|deposited) para que o título
+  // possa ser liquidado por outro meio. Privilégio alto (`cheques:unlink_title`, gate na rota) + justificativa
+  // obrigatória; o controller grava a auditoria Crítica `cheque.title_unlinked`. CAS de estado: 0 linhas → 409.
+  // Precedência: 400 justificativa → 404 cheque → 422 cheque_not_linked → 422 cheque_not_unlinkable → 409.
+  async unlinkTitle(actor: ChequeActorContext, chequeId: string, body: RawRecord): Promise<ChequeUnlinkResult> {
+    const justification = parseUnlinkJustification(body.justification);
+    const current = await this.getWritable(actor, chequeId);
+    if (current.titleId === undefined) throw chequeNotLinkedError();
+    if (!(CHEQUE_PENDING_STATUSES as readonly string[]).includes(current.status)) throw chequeNotUnlinkableError();
+    const unlinked = await this.repository.unlinkTitle({
+      tenantId: actor.tenantId,
+      chequeId: current.id,
+      expectedTitleId: current.titleId,
+      updatedBy: actor.userId,
+    });
+    if (!unlinked) throw chequeWriteConflictError();
+    return {
+      cheque: unlinked,
+      previousTitleId: current.titleId,
+      justification,
+      ...(unlinked.status === "deposited" ? { warning: "cheque_still_depositable" as const } : {}),
+    };
   }
 
   async delete(actor: ChequeActorContext, chequeId: string): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     this.assertEditable(current);
-    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId);
-    if (!removed) return this.throwChequeWriteConflict(actor, current.id);
+    // B-SAN3-12a (§4.3, decisão do dono 25/10 "Mesmo privilégio da troca") — excluir cheque vinculado é troca.
+    if (current.titleId !== undefined) throw chequeLinkedUnlinkFirstError();
+    // A27 — o CAS do título lido (sem título): quem vinculou no meio vence, e o DELETE perde com 409.
+    const removed = await this.repository.softDelete(actor.tenantId, current.id, actor.userId, { expectedTitleId: current.titleId ?? null });
+    if (!removed) return this.throwChequeWriteConflict(actor, current.id, current.titleId);
     return removed;
   }
 
@@ -180,8 +292,11 @@ export class ChequeService {
   }
 
   // CANCELAR (registered→cancelled) — não posta caixa (nunca houve movimento).
+  // B-SAN3-12a (§4.3) — cancelar cheque VINCULADO é troca de instrumento: só depois do desvínculo, para todo ator.
   async cancel(actor: ChequeActorContext, chequeId: string): Promise<Cheque> {
-    return this.flipOnly(actor, chequeId, "cancelled");
+    return this.flipOnly(actor, chequeId, "cancelled", (current) => {
+      if (current.titleId !== undefined) throw chequeLinkedUnlinkFirstError();
+    }, true);
   }
 
   // COMPENSAR (deposited→cleared) — MOVE DINHEIRO. B-O6R-02 F5 (Ω6R-DIN-003): transição (CAS, o mutex
@@ -226,6 +341,9 @@ export class ChequeService {
   async bounce(actor: ChequeActorContext, chequeId: string, body: RawRecord): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     const reason = parseOptionalBounceReason(body.reason ?? body.bounce_reason) ?? null;
+    // R-res-2 do plano v3 — devolver cheque VINCULADO ainda `deposited` tira-o do conjunto pendente do título: o motivo
+    // é obrigatório (o controller audita a devolução com o título, severidade `warning`).
+    if (current.titleId !== undefined && current.status === "deposited" && reason === null) throw bounceReasonRequiredError();
 
     if (current.status === "deposited") {
       const flipped = await this.repository.transition({
@@ -347,15 +465,24 @@ export class ChequeService {
   }
 
   // Transição SEM dinheiro (deposit/cancel): valida a legalidade e flipa atômico (mutex). from = status atual.
-  private async flipOnly(actor: ChequeActorContext, chequeId: string, toStatus: ChequeStatus): Promise<Cheque> {
+  private async flipOnly(
+    actor: ChequeActorContext,
+    chequeId: string,
+    toStatus: ChequeStatus,
+    guard?: (current: Cheque) => void,
+    // A27 — a guarda decidiu pelo título lido: a transição carrega o CAS desse título (0 linhas → 409 transition_conflict).
+    casOnTitle = false,
+  ): Promise<Cheque> {
     const current = await this.getWritable(actor, chequeId);
     this.assertTransition(current.status, toStatus);
+    guard?.(current);
     const flipped = await this.repository.transition({
       tenantId: actor.tenantId,
       chequeId: current.id,
       fromStatus: current.status as ChequeStatus,
       toStatus,
       updatedBy: actor.userId,
+      ...(casOnTitle ? { expectedTitleId: current.titleId ?? null } : {}),
     });
     if (!flipped) throw transitionConflictError();
     return flipped;
@@ -402,12 +529,37 @@ export class ChequeService {
     const expectedDirection = chequeDirection === "received" ? "receivable" : "payable";
     if (title.direction !== expectedDirection) throw titleDirectionMismatchError();
     if (title.currency !== currency) throw currencyMismatchError();
+    assertExactOpenBalance(title, amount);
     return title;
   }
 
-  private async throwChequeWriteConflict(actor: ChequeActorContext, chequeId: string): Promise<never> {
+  // B-SAN3-12a (§4.2, R2-02) — a MESMA validação do vínculo, agora SOB o lock da linha do título (FOR UPDATE no
+  // Postgres; mutex do tenant na memória). Quem perdeu para uma baixa relê o título pago → 422 title_already_paid.
+  private async revalidateTitleLinkUnderLock(
+    ctx: FinancialUowContext,
+    actor: ChequeActorContext,
+    titleId: string,
+    chequeDirection: string,
+    amount: number,
+    currency: string,
+  ): Promise<void> {
+    const locked = await ctx.titles.findByIdForUpdate(actor.tenantId, titleId);
+    if (!locked || locked.deletedAt != null) throw invalidTitleReferenceError();
+    if (locked.status === "cancelled") throw titleCancelledError();
+    if (locked.status === "paid") throw titleAlreadyPaidError();
+    if (roundMoney(locked.paidAmount + amount) > locked.amount) throw overpaymentError();
+    const expectedDirection = chequeDirection === "received" ? "receivable" : "payable";
+    if (locked.direction !== expectedDirection) throw titleDirectionMismatchError();
+    if (locked.currency !== currency) throw currencyMismatchError();
+    assertExactOpenBalance(locked, amount);
+  }
+
+  // 0 linhas na escrita → relê para dizer o porquê: sumiu → 404; saiu de 'registered' → 422 cheque_not_editable (o caso
+  // sequencial do #456); B-SAN3-12a (A27) — continua 'registered' mas o vínculo não é o LIDO → 409 cheque_write_conflict.
+  private async throwChequeWriteConflict(actor: ChequeActorContext, chequeId: string, readTitleId?: string): Promise<never> {
     const fresh = await this.repository.findById(actor.tenantId, chequeId);
     if (!fresh || fresh.deletedAt != null) throw chequeNotFoundError();
+    if (fresh.status === "registered" && fresh.titleId !== readTitleId) throw chequeWriteConflictError();
     throw chequeNotEditableError();
   }
 
@@ -446,6 +598,14 @@ export class ChequeService {
     if (!current || current.deletedAt != null) throw chequeNotFoundError();
     return current;
   }
+}
+
+// B-SAN3-12a (§4.2, decisão do dono 25/10 "Só cheque do valor exato") — o cheque só se vincula se o valor for IGUAL ao
+// saldo aberto do título (amount − paidAmount, roundMoney): qualquer baixa manual sobre título com cheque pendente é,
+// por construção, TROCA de instrumento, nunca complemento.
+function assertExactOpenBalance(title: FinancialTitle, chequeAmount: number): void {
+  const openBalance = roundMoney(title.amount - title.paidAmount);
+  if (roundMoney(chequeAmount) !== openBalance) throw chequeAmountMismatchError(roundMoney(chequeAmount), openBalance);
 }
 
 const memoryChequeRepository = new InMemoryChequeRepository();

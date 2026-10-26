@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   Cheque,
+  ChequeTitleGuard,
   CreateChequeInput,
   ListChequeInput,
   ListChequeResult,
@@ -15,7 +16,8 @@ export interface ChequeRepository {
   list(input: ListChequeInput): Promise<ListChequeResult>;
   findById(tenantId: string, chequeId: string): Promise<Cheque | undefined>;
   update(input: UpdateChequeInput): Promise<Cheque | undefined>;
-  softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined>;
+  // B-SAN3-12a (A27) — `guard` liga o CAS do título lido (`title_id IS NOT DISTINCT FROM guard.expectedTitleId`).
+  softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined>;
   // MUTEX contra dupla-postagem: flip ATÔMICO de status só efetiva se o status ATUAL == fromStatus (e não
   // deletado). Retorna a linha atualizada ou undefined (perdeu a corrida / status já mudou). No InMemory é
   // um check-and-set SÍNCRONO (sem await no meio → atômico no event-loop); no Prisma é updateMany + rowcount.
@@ -29,7 +31,27 @@ export interface ChequeRepository {
   // superfície de LANÇAMENTOS: sem ela, `delete`/`reverse` nunca souberam que o lançamento pertencia
   // à máquina de estados de um cheque, e desfaziam o dinheiro por fora dela (devolução em dobro).
   findActiveByLinkedEntry(tenantId: string, entryId: string): Promise<Cheque | undefined>;
+  // B-SAN3-12a (§4.2) — o CONJUNTO "cheque pendente do título": cheques ATIVOS (deleted_at IS NULL) com
+  // title_id = titleId e status ∈ {registered, deposited}. Leitura (não trava): sustenta a recusa da baixa manual
+  // (fast-fail pelo pool, re-check pela unidade) e a porta estreita do título (cheque-pending-reader).
+  findPendingByTitle(tenantId: string, titleId: string): Promise<readonly Cheque[]>;
   reset?(): void;
+}
+
+// B-SAN3-12a (§4.2) — os status que mantêm um cheque vinculado no conjunto pendente do título. Fonte única para as
+// duas cópias do repositório (memória e Prisma) e para o resumo financeiro.
+export const CHEQUE_PENDING_STATUSES = ["registered", "deposited"] as const;
+
+// B-SAN3-12a (§4.3) — o desvínculo do título é uma escrita PRÓPRIA, fora do contrato `ChequeRepository` (não roda na
+// unidade de trabalho: é um CAS de uma linha só). CAS de estado: só desvincula se o cheque ainda está pendente
+// (registered|deposited), ativo e vinculado AO MESMO título que o serviço leu. 0 linhas → undefined (409 no serviço).
+export interface ChequeTitleUnlinker {
+  unlinkTitle(input: {
+    readonly tenantId: string;
+    readonly chequeId: string;
+    readonly expectedTitleId: string;
+    readonly updatedBy?: string;
+  }): Promise<Cheque | undefined>;
 }
 
 // Leitor da Conta financeira (moeda/atividade) para validar o cheque no REGISTRO — garante que o cheque
@@ -69,7 +91,67 @@ export function accountInactiveError(): ChequeError {
   return new ChequeError(422, "CHEQUE_UNPROCESSABLE", "account_inactive", "The referenced financial account is inactive.");
 }
 
-export class InMemoryChequeRepository implements ChequeRepository {
+// B-SAN3-12a (§4.2, decisão do dono 25/10 "Só cheque do valor exato") — o cheque só se vincula ao título se o valor
+// dele for IGUAL ao saldo aberto (amount − paidAmount). `details` diz os dois números (nada de tenant/token).
+export function chequeAmountMismatchError(chequeAmount: number, openBalance: number): ChequeError {
+  return new ChequeError(
+    422,
+    "CHEQUE_UNPROCESSABLE",
+    "cheque_amount_mismatch",
+    "A cheque can only be linked to a financial title when its amount equals the title open balance.",
+    { chequeAmount, openBalance },
+  );
+}
+
+// B-SAN3-12a (§4.3, decisão do dono 25/10 "Mesmo privilégio da troca") — cancelar/excluir um cheque VINCULADO é troca
+// de instrumento: só depois do desvínculo (POST /cheques/:id/unlink-title), para TODO ator.
+export function chequeLinkedUnlinkFirstError(): ChequeError {
+  return new ChequeError(
+    422,
+    "CHEQUE_UNPROCESSABLE",
+    "cheque_linked_unlink_first",
+    "A cheque linked to a financial title must be unlinked before it is cancelled or deleted.",
+  );
+}
+
+export function chequeNotLinkedError(): ChequeError {
+  return new ChequeError(422, "CHEQUE_UNPROCESSABLE", "cheque_not_linked", "The cheque is not linked to a financial title.");
+}
+
+export function chequeNotUnlinkableError(): ChequeError {
+  return new ChequeError(
+    422,
+    "CHEQUE_UNPROCESSABLE",
+    "cheque_not_unlinkable",
+    "Only a registered or deposited cheque can be unlinked from its financial title.",
+  );
+}
+
+export function chequeWriteConflictError(): ChequeError {
+  return new ChequeError(409, "CHEQUE_CONFLICT", "cheque_write_conflict", "The cheque changed concurrently; reload and retry.");
+}
+
+export function invalidJustificationError(): ChequeError {
+  return new ChequeError(400, "CHEQUE_INVALID", "invalid_justification", "justification is required (10 to 500 characters).");
+}
+
+export function unlinkRequiresPrivilegeError(): ChequeError {
+  return new ChequeError(
+    403,
+    "CHEQUE_FORBIDDEN",
+    "unlink_requires_privilege",
+    "Removing or replacing the financial title of a cheque requires the cheque unlink permission.",
+  );
+}
+
+// B-SAN3-12a (A27) — o CAS do título lido, dentro do check-and-set SÍNCRONO: a chave `expectedTitleId` PRESENTE liga
+// a comparação (null = "tem de estar sem título"); ausente = sem CAS.
+function titleMatches(current: Cheque, input: { readonly expectedTitleId?: string | null }): boolean {
+  if (!("expectedTitleId" in input) || input.expectedTitleId === undefined) return true;
+  return (input.expectedTitleId ?? undefined) === current.titleId;
+}
+
+export class InMemoryChequeRepository implements ChequeRepository, ChequeTitleUnlinker {
   private readonly cheques = new Map<string, Cheque>();
 
   async create(input: CreateChequeInput): Promise<Cheque> {
@@ -127,6 +209,7 @@ export class InMemoryChequeRepository implements ChequeRepository {
     const current = this.cheques.get(input.chequeId);
     if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
     if (current.status !== "registered") return undefined;
+    if (!titleMatches(current, input)) return undefined;
 
     const updated: Cheque = {
       ...current,
@@ -142,10 +225,11 @@ export class InMemoryChequeRepository implements ChequeRepository {
     return updated;
   }
 
-  async softDelete(tenantId: string, chequeId: string, deletedBy?: string): Promise<Cheque | undefined> {
+  async softDelete(tenantId: string, chequeId: string, deletedBy?: string, guard?: ChequeTitleGuard): Promise<Cheque | undefined> {
     const current = this.cheques.get(chequeId);
     if (!current || current.tenantId !== tenantId || current.deletedAt != null) return undefined;
     if (current.status !== "registered") return undefined;
+    if (guard !== undefined && !titleMatches(current, guard)) return undefined;
 
     const removed: Cheque = {
       ...current,
@@ -163,6 +247,7 @@ export class InMemoryChequeRepository implements ChequeRepository {
     const current = this.cheques.get(input.chequeId);
     if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
     if (current.status !== input.fromStatus) return undefined;
+    if (!titleMatches(current, input)) return undefined;
 
     const updated: Cheque = {
       ...current,
@@ -197,6 +282,37 @@ export class InMemoryChequeRepository implements ChequeRepository {
         cheque.deletedAt == null &&
         CHEQUE_ENTRY_LINK_FIELDS.some((field) => cheque[field] === entryId),
     );
+  }
+
+  async findPendingByTitle(tenantId: string, titleId: string): Promise<readonly Cheque[]> {
+    return this.sorted().filter(
+      (cheque) =>
+        cheque.tenantId === tenantId &&
+        cheque.deletedAt == null &&
+        cheque.titleId === titleId &&
+        (CHEQUE_PENDING_STATUSES as readonly string[]).includes(cheque.status),
+    );
+  }
+
+  // Check-and-set SÍNCRONO (nenhum await entre ler e gravar), como `transition`.
+  async unlinkTitle(input: {
+    readonly tenantId: string;
+    readonly chequeId: string;
+    readonly expectedTitleId: string;
+    readonly updatedBy?: string;
+  }): Promise<Cheque | undefined> {
+    const current = this.cheques.get(input.chequeId);
+    if (!current || current.tenantId !== input.tenantId || current.deletedAt != null) return undefined;
+    if (!(CHEQUE_PENDING_STATUSES as readonly string[]).includes(current.status)) return undefined;
+    if (current.titleId !== input.expectedTitleId) return undefined;
+    const updated: Cheque = {
+      ...current,
+      titleId: undefined,
+      ...(input.updatedBy !== undefined ? { updatedBy: input.updatedBy } : {}),
+      updatedAt: new Date(),
+    };
+    this.cheques.set(updated.id, updated);
+    return updated;
   }
 
   reset(): void {

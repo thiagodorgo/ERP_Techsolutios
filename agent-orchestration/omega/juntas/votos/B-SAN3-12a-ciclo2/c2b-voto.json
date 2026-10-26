@@ -1,0 +1,161 @@
+{
+ "jurado": "jurado-san312a-c2b-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312a-c2-permissao-e-auditoria",
+ "cadeira": "C2b — C2 REFEITA no ciclo 2 (§C7 item 9(3)): A30 (C2-01) + regressão dos itens 1 e 2 da C2 (quem pode o quê; F5)",
+ "refeito": "REFEITO (§C7 item 9(4)): não há voto verde a carregar; identidade nova ≠ jurado-san312a-c2-opus",
+ "executor": "Claude Opus (subagente genérico, corpo lido do blob do objeto)",
+ "mandato_md5": "72521977d2d6786c52639239849684ac (cadeira-c2b.md, CR retirado = cru) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor (§C7.6) · substituição: cobre o Codex por ordem do dono",
+ "corpo_comparacao": ".claude/ × .agents/ (descontada a adaptação Codex) × carregado do blob: IDENTICO (md5 EOL-neutro 4a6c0963ae1a65ac7e926808d70e976e)",
+ "objeto": "8a9fc1d8426426403f8642e263b3e932d1738716 (ls-remote = gh pr view 459) · objeto do ciclo 1 <objeto>~4 = 04b8a667780930050c8af2c77c323b81fe8794bb · head-base da emenda <objeto>~12 = fafd4b36731ae89574e1d0b3cff6ea34dc78abc7 · head-base do bloco <objeto>~18 = 8a7885f4c3bfab02e6c31b318c1111e262f2907c · objeto no fim: igual",
+ "legalidade": "parecer do inspetor: votos/B-SAN3-12a-ciclo2/insp-san312a-c2-parecer.md, inspetor-san312a-c2-opus · LIBERADO COM RESSALVA (R1–R7) · confere: sim (C2b primeira na ordem; worktree, containers, portas) · check-runs 14 | 0 não-verdes | 0 pendentes · MEDIDO do mandato tratado como A RE-VERIFICAR",
+ "quorum": "unanimidade das 4 cadeiras do ciclo 2 (C1, C2b, C3, C4b), com veto · ciclo 2: todo bloqueia dentro-do-bloco reprova",
+ "leitura_de_outras_cadeiras": "não li votos nem evidências de C1, C3, C4 nem C4b de nenhum ciclo · li (roteiro P3 autorizado no disparo): votos/B-SAN3-12a/c2-evidencia.md e as sondas de erp-pausa-2026-10-03/j12a-c2/; a reprovação e o plano do ciclo 2 como insumo do achado",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "src/modules/cheques/**",
+  "src/modules/financial-entries/**",
+  "src/modules/financial-titles/financial-title.service.ts",
+  "src/modules/tenant-settings/**",
+  "src/modules/core-saas/permissions/catalog.ts",
+  "src/modules/core-saas/audit/**",
+  "prisma/migrations/20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions/migration.sql",
+  "tests/fixtures/role-catalog-contract.snapshot.json",
+  "tests/b-san3-12a-unlink-title.test.ts",
+  "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+  "tests/b-san3-12a-unreconcile-policy.test.ts",
+  "tests/b-san3-12a-link-toctou-db.test.ts",
+  "tests/b-san3-12a-title-mutation-race-db.test.ts",
+  "tests/core-saas.test.ts",
+  "tests/core-saas-role-authority.test.ts",
+  "tests/permission-catalog-db-parity.test.ts",
+  "tests/permission-catalog-migration-parity.test.ts",
+  "scripts/provision-rbac.ts",
+  "RBAC_MATRIX.md",
+  "APPROVAL_LIMITS.md",
+  "API_CONTRACTS.md",
+  "agent-orchestration/controle/decisoes.md",
+  "agent-orchestration/controle/pendencias.md"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO — VERDE",
+   "arquivos_medidos": [
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/cheques/cheque.controller.ts",
+    "src/modules/cheques/cheque.routes.ts",
+    "src/modules/core-saas/audit/**",
+    "tests/b-san3-12a-unlink-title.test.ts",
+    "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+    "API_CONTRACTS.md"
+   ],
+   "testes": "unlink-title 17|17|0|0 (A30-a, A30-b, A7) · pay-pending-cheque-db 6|6|0|0 (A7 db e A30-c rodados, não pulados)",
+   "sonda": "N=291 pela rota como tenant_admin: C2-01 (aceita E 200 E 0 rastro) VAZIO; validador×oráculo A30 = 0; HTTP×validador = 0; recusa com efeito = 0; aceita sem rastro íntegro = 0; recusa de entrada legítima = 0; 243 aceitas (200, title_id null, 1 cheque.title_unlinked critical, justification === enviada.trim(), metadata na allowlist, sem tenant/token/path) · 48 recusadas (400 invalid_justification, title_id intacto, 0 rastro)",
+   "precedencia": "403 rota (finance) → 400 (admin+NUL, id inexistente) → 404 (válido, inexistente; cross-tenant) → 422 cheque_not_linked",
+   "contrato": "API_CONTRACTS.md l.533 diz o que o código faz",
+   "mutacoes": "WF → A30-a + A30-c vermelhos; C0 → A30-a, A30-b, A30-c; DEL (minha) → A30-a",
+   "controle_objeto_ciclo1": "cheque.service.ts de <objeto>~4: A30-a, A30-b, A30-c vermelhos pela asserção; a sonda acusa NUL e surrogates com 200, title_id null e 0 rastro; o comparador acusa a chave fabricada (FABRICATE)"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO — VERDE",
+   "arquivos_medidos": [
+    "src/modules/cheques/**",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/financial-title.service.ts",
+    "src/modules/tenant-settings/**",
+    "src/modules/core-saas/permissions/catalog.ts",
+    "tests/b-san3-12a-unreconcile-policy.test.ts",
+    "tests/core-saas.test.ts",
+    "tests/b-san3-12a-link-toctou-db.test.ts",
+    "tests/b-san3-12a-title-mutation-race-db.test.ts",
+    "RBAC_MATRIX.md"
+   ],
+   "testes": "unreconcile-policy 11|11|0|0 · core-saas 26|26|0|0 · link-toctou-db 5|5|0|0 · title-mutation-race-db 7|7|0|0",
+   "matriz_efetiva": "14 atores × 10 ações = 140; semente 20261026 (mulberry32); 60 amostradas (22 forçadas), 55 por HTTP (0,42 das 130 mensuráveis; platform_admin é pseudo-papel); 0 divergência da §4.8 e da RBAC_MATRIX l.131",
+   "titulo": "84 células (PATCH amount, PATCH description, DELETE; com/sem cheque pendente; todo ator) IGUAIS no objeto e no objeto do ciclo 1",
+   "a27_por_ator": "finance perdedor 409 cheque_write_conflict; controle sequencial 403 unlink_requires_privilege",
+   "a29": "não muda quem pode o quê (conjunto de papéis com 403 e com 422 igual ao do ciclo 1; o ator finance da corrida sai 422)",
+   "mutacoes": "OWN1 (minha: política lida sem exigir o papel finance) → caso 11 vermelho",
+   "controle_objeto12": "src/modules/cheques de <objeto>~12: A6-bis vermelho (Missing expected rejection); a matriz acusa super_admin e tenant_admin PATCH null/outro = 200 (4 células); comparador acusa a célula fabricada (1)"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO — VERDE",
+   "arquivos_medidos": [
+    "src/modules/core-saas/permissions/catalog.ts",
+    "tests/fixtures/role-catalog-contract.snapshot.json",
+    "prisma/migrations/20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions/migration.sql",
+    "scripts/provision-rbac.ts",
+    "tests/core-saas-role-authority.test.ts",
+    "tests/permission-catalog-db-parity.test.ts",
+    "tests/permission-catalog-migration-parity.test.ts",
+    "tests/b-san3-12a-unreconcile-policy.test.ts",
+    "RBAC_MATRIX.md",
+    "APPROVAL_LIMITS.md",
+    "agent-orchestration/controle/decisoes.md"
+   ],
+   "snapshot_x_catalogo": "super_admin 198→200, tenant_admin 185→187, platform_admin 198→200, +2 cada; 10 papéis com diferença vazia; snapshot == catálogo (conteúdo e ordem); posição logo após financial_entries:update e cheques:update; super_admin e platform_admin === PERMISSION_CATALOG",
+   "banco": "só migrado: 0 concessão; depois do provision: só super_admin e tenant_admin; db-parity 2|2|0|0; role-authority com banco e sem CORE_SAAS_PERSISTENCE 12|12|0|0; migration-parity 3|3|0|0",
+   "regra_escrita": "RBAC_MATRIX l.131 e APPROVAL_LIMITS l.37 = distribuição medida; registro §A2 P-SAN3-12-RBAC-MATRIX-128-CONFLITO N=1",
+   "mutacoes": "A18 → role-authority caso 3 + A18; PLAT → idem; MIGFIN (minha, banco novo) → db-parity caso 2 vermelho (a guarda estática não acusa — nota)",
+   "controle_8a7885f4": "snapshot de <objeto>~18 → role-authority caso 3 vermelho pela asserção (+2 chaves)"
+  }
+ ],
+ "justificativa": "terreno: worktree próprio j12a2-c2b-wt no objeto, npm ci próprio sem junction, Postgres 16 e Redis 7 próprios em 127.0.0.1:47823/47824, base viva nunca tocada · item 1: A30 por propriedade em N=291, C2-01 vazio, A7 não regrediu · item 2: matriz amostrada sem divergência, títulos iguais ao ciclo 1, A27/A29 por ator · item 3: F5 +2 só nos três admins, banco e textos-base coerentes · vermelho-controle de CADA item: <objeto>~4 (NUL com 200 e 0 rastro), <objeto>~12 (PATCH privilegiado 200), <objeto>~18 (caso 3 vermelho) · nada ficou sem medir · limpeza feita · VOTO: APROVADO — A30/C2-01 fechado por propriedade (N=291, aceita-e-sem-rastro vazio); as 2 chaves só em tenant_admin/super_admin/platform_admin no catálogo, no snapshot, no banco e no HTTP (60/140 amostradas, 0 divergência; 84 de título iguais ao ciclo 1); finance desfaz só com a política; PATCH privilegiado 422; F5 = +2 nos três, vazio no resto; mutações vermelhas pelo caso indicado; pendências: P-AUDIT-CRITICA-NA-TRANSACAO",
+ "achados": [
+  {
+   "id": "C2b-N1",
+   "defeito": "controles C1 (U+0080–U+009F, inclusive U+009B, o CSI de 8 bits, e U+0085) aceitos e gravados verbatim no rastro",
+   "evidencia": "a30.out: U+0085-meio e U+009B-meio com fn=A, http=200, audit=1 critical, justEq=true",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o A30 escrito (plano l.1001) proíbe só C0 e DEL; o rastro fica íntegro (C2-01 fechado); registro para quem lê o rastro em terminal, sem reabrir o plano"
+  },
+  {
+   "id": "C2b-N2",
+   "defeito": "a guarda estática permission-catalog-migration-parity não lê a distribuição de papéis do SQL da migração",
+   "evidencia": "MIGFIN: migration-parity 3|3 com o SQL concedendo a finance; só a db-parity com banco provisionado acusa (2|1|1)",
+   "gravidade": "nota",
+   "escopo": "pre-existente (a guarda é anterior ao bloco; a mesma nota consta da evidência da C2 do ciclo 1)",
+   "classe": "não grave",
+   "motivo": "a concessão a mais pela migração só é vista com banco provisionado (a CI liga RBAC_DB_PARITY)"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [],
+ "pendencias_que_aceito": [
+  "P-AUDIT-CRITICA-NA-TRANSACAO (pré-existente, MÉDIA, pendencias.md l.11819 do objeto): a falha OPERACIONAL da auditoria best-effort não reprova pela régua E2.2",
+  "A29 desfecho e corrida — C4b; ordem de travas — C1; suíte, escopo e contrato — C3"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "node --test --import tsx tests/b-san3-12a-unlink-title.test.ts (+ pay-pending-cheque-db, unreconcile-policy, core-saas, link-toctou-db, title-mutation-race-db, core-saas-role-authority, permission-catalog-db-parity com RBAC_DB_PARITY=1, permission-catalog-migration-parity)",
+   "forma": "REDIS_URL e DATABASE_URL meus como prefixo; TAP",
+   "resultado": "todos fail 0, skipped 0"
+  },
+  {
+   "comando": "npx tsx tests/zz-j12a2c2b-a30.ts (sonda minha)",
+   "forma": "N=291 pela rota; FABRICATE e SUBSET nos controles",
+   "resultado": "C2-01 vazio; o controle em <objeto>~4 acusa 4 entradas"
+  },
+  {
+   "comando": "npx tsx tests/zz-j12a2c2b-matrix.ts (sonda minha)",
+   "forma": "semente 20261026; ONLY_TITLES em <objeto>~4; FORCED_ONLY em <objeto>~12 e com FABRICATE",
+   "resultado": "0 divergência; títulos iguais; os controles acusam 4 e 1"
+  },
+  {
+   "comando": "runmut.sh WF|C0|DEL|OWN1|A18|PLAT; MIGFIN por psql -f num banco novo",
+   "forma": "âncora única, CRLF, numstat, restauro hash-object = blob",
+   "resultado": "todas vermelhas pelo caso indicado (MIGFIN pela db-parity)"
+  },
+  {
+   "comando": "node --import tsx zz-snap.mjs",
+   "forma": "snapshot <objeto>~18 × objeto × ROLE_PERMISSIONS",
+   "resultado": "+2 só nos três admins; identidade de referência true"
+  }
+ ],
+ "teardown": "containers j12a2-c2b-* removidos (0) · bancos j12a2_c2b_main (com o volume) e j12a2_c2b_mig (DROP) removidos · processos com o caminho = 0 · worktree removido por git worktree remove --force · mutações e checkouts restaurados (hash-object = blob) · sondas e senha apagadas, grep da senha = 0 · base viva nunca tocada · w-san312a só com c2b-evidencia.md e c2b-voto.json"
+}

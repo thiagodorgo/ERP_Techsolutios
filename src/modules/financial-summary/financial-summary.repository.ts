@@ -55,7 +55,8 @@ export class InMemoryFinancialSummaryRepository implements FinancialSummaryRepos
         createdAt: t.createdAt,
       })),
       entries: entriesResult.items.map((e) => ({ direction: e.direction, amount: e.amount, competencia: e.competencia })),
-      cheques: chequesResult.items.map((c) => ({ direction: c.direction, status: c.status, amount: c.amount })),
+      // B-SAN3-12a (Emenda E1.F4) — o título vinculado entra na projeção (cheques.linkedPending* do resumo, paridade com o Prisma).
+      cheques: chequesResult.items.map((c) => ({ direction: c.direction, status: c.status, amount: c.amount, titleId: c.titleId ?? null })),
       accounts,
       currency,
       now,

@@ -1,5 +1,16 @@
 # Status Geral
 
+## Atualização 2026-10-25 — B-SAN3-12a (dev `dev-san312a-opus`, Claude Opus): backend de dinheiro do web financeiro — PARADO por premissa falsificada
+
+Ramo `feat/web-financeiro-baixa-e-contas-12a` (de `origin/main` `8a7885f4`), PR em **rascunho**. Implementado todo o escopo PERMITIDO do
+§7.1 do plano v3 (recusa da baixa com cheque pendente + re-check sob o lock; vínculo só do valor exato com o título travado;
+`unlink-title`; cancelar/excluir vinculado é troca; desfazer conciliação com permissão ou política; CAS obrigatório por estado lógico;
+agregado no fuso do negócio; campos de DTO; migração de dados com drill). A execução falsificou o inventário do PERMITIDO: testes e
+fixtures FORA dele quebram por construção (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`). Relatório com comandos e saídas:
+`docs/revisoes/SAN3/B-SAN3-12a-dev.md`. Próximo: emenda do plano (orquestrador + planejador), não a junta.
+
+**Retomada 2026-10-25 (mesmo dev):** Emendas E1 + E1-bis aplicadas (A27 CAS do título lido, D1, A28, F1–F5, B1, B2); relatório E10–E14. O PR #459 sai de rascunho pelo orquestrador depois da CI verde no head (B1-1).
+
 ## Atualização 2026-10-25 — B-GUARD-MIGRACAO: o guard de migração com transação explícita entra no `npm test`
 
 Bloco de ferramenta (`D-GOV-PROPORCIONAL` (1): revisor independente + CI). `scripts/migration-transaction-guard.mjs` (G0–G7) reprova migração nova multi-sentença sem `BEGIN;`/`COMMIT;` ou sem drill que a cite (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`); PR #458 aberto no ramo `chore/guard-migracao-transacao`, aguarda o revisor. Próximo da trilha: `B-DRILL-GENERICO-POR-PREFIXO`.

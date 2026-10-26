@@ -1,0 +1,227 @@
+{
+ "jurado": "jurado-san312a-c4-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312a-c4-isolamento-e-invariantes",
+ "cadeira": "C4 — isolamento entre organizações e invariantes residuais: R-res-5/A14, R-res-4/A13, A21 e A16",
+ "executor": "Claude Opus (subagente genérico, corpo lido do blob do objeto)",
+ "mandato_md5": "02a4b61efc309574609c2829c9556465 (cadeira-c4.md sem CR) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5) · nível menor (§C7.6) · substituição: nenhuma (cobre o Codex, ordem do dono)",
+ "corpo_comparacao": "blob .claude/ do objeto × recebido: IDENTICO (EOL-neutro); espelho .agents/ existe no objeto (398 linhas)",
+ "objeto": "04b8a667780930050c8af2c77c323b81fe8794bb (ls-remote = gh pr view 459) · cerca 5efc99e2 → objeto: delta só o corpo da C4 nos 2 espelhos · head-base do bloco 8a7885f4c3bfab02e6c31b318c1111e262f2907c · objeto no fim: igual (medido no início e no fim)",
+ "legalidade": "parecer do inspetor: insp-san312a-parecer.md, inspetor-san312a-opus 2ª passada · LIBERADO COM RESSALVA · confere: sim (nome, worktree, containers, portas 47743/47744, ordem C2 → C4) · check-runs 14 | 0 | 0",
+ "quorum": "unanimidade das 4 cadeiras, com veto · ciclo 1",
+ "leitura_de_outras_cadeiras": "não li c1-*, c2-* nem c3-* (vi só os nomes no ls) · li o CORPO da C1 no blob do objeto (grep) para conferir que a corrida PATCH/DELETE do título × vínculo não é item da C1",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "src/modules/financial-entries/financial-entry-prisma.repository.ts",
+  "src/modules/financial-entries/financial-entry.repository.ts",
+  "src/modules/financial-entries/financial-entry.service.ts",
+  "src/modules/financial-entries/financial-entry.routes.ts",
+  "src/database/rls.ts",
+  "src/modules/financial-summary/**",
+  "tests/b-san3-12a-entries-aggregate.test.ts",
+  "tests/b-san3-12a-entries-aggregate-db.test.ts",
+  "tests/b-san3-12a-aggregate-tz-db.test.ts",
+  ".github/workflows/ci.yml",
+  "src/modules/financial-uow/financial-uow.ts",
+  "tests/b-san3-12a-unreconcile-policy.test.ts",
+  "tests/b-san3-12a-reconcile-cas-db.test.ts",
+  "tests/cheques.test.ts",
+  "tests/financial-entries.test.ts",
+  "tests/financial-entry-reverse-restore-db.test.ts",
+  "tests/financial-period-closes.test.ts",
+  "tests/financial-uow-journal-classification.test.ts",
+  "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+  "docs/revisoes/SAN3/B-SAN3-12a-dev.md",
+  "agent-orchestration/controle/pendencias.md",
+  "src/modules/financial-titles/financial-title.service.ts",
+  "src/modules/financial-titles/cheque-pending-reader.ts",
+  "src/modules/financial-titles/financial-title-prisma.repository.ts",
+  "src/modules/cheques/cheque.repository.ts",
+  "src/modules/cheques/cheque-prisma.repository.ts",
+  "src/modules/cheques/cheque.service.ts",
+  "src/modules/financial-summary/financial-summary.compute.ts",
+  "src/modules/financial-summary/financial-summary.repository.ts",
+  "src/modules/financial-summary/financial-summary-prisma.repository.ts",
+  "tests/b-san3-12a-pay-pending-cheque.test.ts",
+  "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+  "tests/cheque-title-link.test.ts",
+  "tests/financial-summary.test.ts",
+  "prisma/schema.prisma"
+ ],
+ "voto": "REPROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "src/modules/financial-entries/financial-entry-prisma.repository.ts",
+    "src/modules/financial-entries/financial-entry.repository.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "src/modules/financial-entries/financial-entry.routes.ts",
+    "src/database/rls.ts",
+    "src/modules/financial-summary/**",
+    "tests/b-san3-12a-entries-aggregate.test.ts",
+    "tests/b-san3-12a-entries-aggregate-db.test.ts",
+    "tests/b-san3-12a-aggregate-tz-db.test.ts",
+    ".github/workflows/ci.yml"
+   ],
+   "testes": "aggregate 6|6|0|0; aggregate-db 3|3|0|0 (R-res-5 rodou); aggregate-tz-db 1|1|0|0",
+   "terreno_rls": "financial_entries relrowsecurity=t relforcerowsecurity=t; postgres super=t bypass=t; j12a_c4_rt super=f bypass=f",
+   "sonda_cross_tenant": "52/52 ok sob superusuário e 52/52 ok sob j12a_c4_rt (13 consultas × 2 vias × 2 organizações); conta alheia = 200 items []",
+   "matriz_mutacao_x_papel": "M5a: super ok=52 (não vaza), rt empty=36 (fail-closed), teste do dev VERDE sob super; M5b: super leak=48, rt ok=52, teste do dev VERMELHO pela asserção; M5c: super leak=48, rt empty=36, teste VERMELHO; sob rt o teste do dev é vermelho sempre por teardown (23503)",
+   "consultas_cruas": "N=2: findByIdForUpdate (pré-existente 99f18403 2026-09-04, tenant_id + withTenantRls/UoW) e aggregate (do bloco, tenant_id + withTenantRls); financial-summary 0",
+   "mutacoes_a14": "M14a (sem roundMoney) memória e -db vermelhos; M14b-mem memória vermelho; M14b-db -db vermelho",
+   "controle_8a7885f4": "head-base: rota 400 sem data (cai no /:id), serviço aggregate is not a function; no objeto M5c super acusa leak=48"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "src/modules/financial-entries/financial-entry-prisma.repository.ts",
+    "src/modules/financial-entries/financial-entry.repository.ts",
+    "src/modules/financial-entries/financial-entry.service.ts",
+    "src/modules/financial-entries/financial-entry.routes.ts",
+    "src/modules/financial-uow/financial-uow.ts",
+    "tests/b-san3-12a-unreconcile-policy.test.ts",
+    "tests/b-san3-12a-reconcile-cas-db.test.ts",
+    "tests/b-san3-12a-entries-aggregate.test.ts",
+    "tests/cheques.test.ts",
+    "tests/financial-entries.test.ts",
+    "tests/financial-entry-reverse-restore-db.test.ts",
+    "tests/financial-period-closes.test.ts",
+    "tests/financial-uow-journal-classification.test.ts",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+    "docs/revisoes/SAN3/B-SAN3-12a-dev.md",
+    "agent-orchestration/controle/pendencias.md"
+   ],
+   "testes": "unreconcile-policy 11|11|0|0; reconcile-cas-db 3|3|0|0",
+   "contrato_400_409": "21/21 PASS sob super e sob j12a_c4_rt: 8 corpos inválidos → 400 sem gravar; 200+409 conciliar e desfazer; defasado → 409; by/ref/div do 1º intactos; cross-tenant 404",
+   "concorrencia_real": "N=30 × (conciliar, desfazer) × 2 papéis: 1×200+1×409 em todas; 0 deadlock",
+   "aba_via_forcada": "N=20 super + N=20 rt, READ COMMITTED: o 2º UPDATE com o mesmo T afeta 1 linha em 20/20 (sobrescreve by/ref) — resíduo declarado P-SAN3-12-CAS-VERSION-COLUMN",
+   "aba_via_real": "N=200 paralelo + N=200 sequência: mesmo ms 0, ambos gravaram 0, 1×200+1×409 em 400/400",
+   "mutacoes": "M13a sem caso vermelho do bloco (sonda acusa: (true,null) contra linha false → 200 e grava) = criterio_que_nao_pode_falhar; M13b -db #3 vermelho; M13c memória #6/#7/#8 vermelhos; M13d equivalente (CAS síncrono); M13e memória #5 e -db #3 vermelhos",
+   "controle_8a7885f4": "sonda: 18 FAIL (sem estado → 200 e grava; 2º cliente 200); casos do objeto: memória vermelho por import (motivo errado), -db pendente (barreira sem bloqueio)"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "arquivos_medidos": [
+    "src/modules/financial-titles/financial-title.service.ts",
+    "src/modules/financial-titles/cheque-pending-reader.ts",
+    "src/modules/financial-titles/financial-title-prisma.repository.ts",
+    "src/modules/cheques/cheque.repository.ts",
+    "src/modules/cheques/cheque-prisma.repository.ts",
+    "src/modules/cheques/cheque.service.ts",
+    "src/modules/financial-summary/financial-summary.compute.ts",
+    "src/modules/financial-summary/financial-summary.repository.ts",
+    "src/modules/financial-summary/financial-summary-prisma.repository.ts",
+    "tests/b-san3-12a-pay-pending-cheque.test.ts",
+    "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+    "tests/cheque-title-link.test.ts",
+    "tests/financial-summary.test.ts",
+    "prisma/schema.prisma",
+    "agent-orchestration/controle/pendencias.md",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md"
+   ],
+   "testes": "pay-pending-cheque 15|15|0|0; pay-pending-cheque-db 5|5|0|0; cheque-title-link 38|38|0|0; financial-summary 15|15|0|0",
+   "sonda_a21": "49/49 PASS sob super e rt: registered e deposited vinculados → PATCH amount maior/menor/+description e DELETE 422 title_has_pending_cheque com título e cheque intactos e sem tenant; amount igual 200; só description 200; depois do desvínculo e com cleared/bounced/cancelled/deletado: 200/2xx; cheque alheio impossível por FK (P2003). CONCORRÊNCIA: PATCH amount × vínculo simultâneos → título 150 com cheque 100 pendente vinculado em 36/37 (super 26/27, rt 10/10); DELETE × vínculo simultâneos → título apagado com cheque pendente em 100/100 (super 80/80, rt 20/20); sequencial correto 10/10",
+   "sonda_a16": "A: linkedPendingCount 2, linkedPendingAmount 0.3; B: 1, 123.45; memória = Prisma; chaves do bloco cheques sem tenant; super e rt",
+   "mutacoes": "M21a vermelho (#13 mem, #3 -db); M21b vermelho (#13, #3, K2 #14); M21c vermelho só pela via /pay (A2 #3), A21 #14 verde; M16a/M16b/M16c vermelhos; M16d sem caso vermelho (filtro pré-existente 7eb1a814 2026-07-18; RLS segura sob rt)",
+   "pendencias_12_1": "RESUMO-CHEQUE-VINCULADO: critério A16 do plano cumprido por execução (rótulo é do 12b) · DELETE-TITULO-COM-CHEQUE: critério A21 sequencial cumprido; encerramento escrito da pendência ('e prova concorrente') NÃO cumprido — 100/100 sob corrida",
+   "controle_8a7885f4": "titles do head-base: PATCH amount 200 e DELETE 200 com cheque pendente; A21 #13 do objeto vermelho pela asserção; summary do head-base: A16 #14 vermelho pela asserção (undefined !== 3)"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C4-01",
+   "defeito": "O caso 'R-res-5 (db)' do bloco não fica vermelho com a mutação que o plano nomeia para o R-res-5 (tirar o withTenantRls do aggregate) sob o superusuário — o papel da CI (ci.yml:40,134 = postgres) —, e sob papel sem bypass ele é vermelho SEMPRE por teardown (23503 users_tenant_id_fkey), inclusive no objeto sem mutação.",
+   "evidencia": "matriz M5a/M5b/M5c × super/rt: M5a super sonda 52/52 ok e R-res-5 VERDE; M5b/M5c super leak=48 e R-res-5 vermelho pela asserção; rt: M5a/M5c empty=36 (fail-closed), M5b 52/52 ok; rres5-obj-rt.tap pass 0 fail 1 por teardown",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "sem o withTenantRls, nenhum teste do bloco acusa a perda da camada RLS do agregado; o código do objeto não vaza sob nenhum dos dois papéis (52/52 + 52/52)"
+  },
+  {
+   "id": "C4-02",
+   "defeito": "Sem `reconciled` no WHERE do CAS Prisma da conciliação (M13a), nenhum caso do bloco fica vermelho.",
+   "evidencia": "M13a: unreconcile-policy 11/11, reconcile-cas-db 3/3, e os 6 outros arquivos que citam expected_reconciled verdes (6/6, 46/46, 78/78, 8/8, 13/13, 46/46); a sonda prova o mutante não equivalente: expected (true,null) contra linha (false,null) → 200 e grava (2 FAIL); corrida 30/30 segue certa (o reconciled_at segura)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o operando `reconciled` do CAS Prisma (plano §4.6, A13 'tirar reconciled/reconciled_at do WHERE (Prisma) → o 2º recebe 200') é um critério que não pode falhar; o corpo da C4 manda bloquear 'uma das mutações M13a–M13c sem nenhum caso vermelho'"
+  },
+  {
+   "id": "C4-03",
+   "defeito": "Sob corrida, o PATCH que muda o valor de um título passa enquanto um cheque pendente é vinculado a ele: o título fica com valor ≠ do cheque pendente vinculado.",
+   "evidencia": "zz-j12ac4-p4 MODES=patch-simultaneo: vínculo=ok + PATCH {amount:150}=ok, ESTADO título amount=150 | cheque amount=100 registered title_id=T — 20/20 e 6/6 sob superusuário, 10/10 sob j12a_c4_rt; 1 rodada fria com o desfecho certo (cheque_amount_mismatch) — 36/37; sequencial correto; a guarda nasce neste bloco (assertNoPendingCheque head-base 0, objeto 3)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "grave: dinheiro",
+   "motivo": "o valor de um título com cheque a compensar muda sob concorrência — a regra do plano §4.3 'nenhuma via muda o saldo de um título com cheque pendente senão a compensação ou o desvínculo' e a do dono 'Só cheque do valor exato' não valem quando o vínculo commita entre a leitura do conjunto pendente e a gravação do PATCH"
+  },
+  {
+   "id": "C4-04",
+   "defeito": "Sob corrida, o DELETE do título passa enquanto um cheque pendente é vinculado a ele: título apagado com cheque pendente vinculado.",
+   "evidencia": "zz-j12ac4-p4 simultâneo e DELETE 0–3 ms depois: 80/80 sob superusuário, 20/20 sob j12a_c4_rt; sequencial correto (422 / invalid_title_reference 5/5); head-base apaga mesmo em sequência 10/10",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente — a classe é a de P-SAN3-20-DELETE-TITULO-COM-CHEQUE (pendencias.md l.11617, aberta 2026-10-24, antes do head-base 8a7885f4 de 2026-10-25 00:38; dono 'próximo bloco de títulos'); o efeito sob corrida é o mesmo de antes do bloco (o clear falha fechado com title_not_found, segundo a pendência)",
+   "classe": "não grave",
+   "motivo": "o encerramento escrito da pendência exige 'DELETE recusa com 422 title_has_pending_cheque e prova concorrente'; a prova concorrente falha 100/100 — a pendência não fecha no merge"
+  },
+  {
+   "id": "C4-05",
+   "defeito": "Nenhum teste do resumo tem segunda organização: sem `tenant_id` na consulta Prisma de cheques do resumo (M16d), os 4 arquivos do bloco seguem verdes.",
+   "evidencia": "M16d: 15/15, 5/5, 38/38, 15/15; sonda super soma todas as organizações (pendingReceivedCount 8, 528.75); sonda rt 0 FAIL (RLS)",
+   "gravidade": "nota",
+   "escopo": "pre-existente — o filtro e a consulta vêm de 7eb1a814 2026-07-18 (#223, Ω4-8a); o bloco só acrescentou title_id ao select; dono: financial-summary (sem pendência nomeada — a registrar)",
+   "classe": "não grave",
+   "motivo": "o filtro de tenant da consulta de cheques do resumo não tem teste que o veja; o código do objeto filtra (sonda super e rt verdes)"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "R-res-5 / M5a: o caso 'R-res-5 (db)' sob o papel da CI não acusa a retirada do withTenantRls (C4-01)",
+  "A13 / M13a: nenhum caso do bloco acusa a retirada de `reconciled` do WHERE do CAS Prisma (C4-02)",
+  "A13 / M13d: mutex da UoW em memória — mutante equivalente para o reconcile (CAS síncrono); nota",
+  "A16 / M16d: filtro de tenant da consulta de cheques do resumo sem teste com 2 organizações (pré-existente, C4-05)"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12-CAS-VERSION-COLUMN — ABA da via forçada reproduzido 20/20 (super) + 20/20 (rt); via real 0/400; resíduo declarado com dono",
+  "P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE — PATCH /status cancelled com cheque pendente → 200 (registered e deposited); pré-existente com dono",
+  "Camada RLS do papel de runtime em produção — B-SAN3-05 (medi só este agregado e este resumo sob j12a_c4_rt)",
+  "Corridas do vínculo entre escritas de CHEQUE, A27, A28, D1 — C1 · permissão do desfazer — C2 · suíte inteira, escopo, registro — C3 (o fechamento de P-SAN3-20-DELETE-TITULO-COM-CHEQUE no registro é insumo para o porteiro e a C3: C4-04)"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "node --test --test-reporter=tap --import tsx tests/<9 arquivos do mandato>.test.ts (DATABASE_URL superusuário do meu PG)",
+   "forma": "TAP, 1 vez cada",
+   "resultado": "97 testes, 97 pass, 0 fail, 0 skipped"
+  },
+  {
+   "comando": "bash $SCRATCH/run-probe.sh zz-j12ac4-p1 super|rt",
+   "forma": "52 comparações × 2 papéis × (objeto, M5a, M5b, M5c, head-base)",
+   "resultado": "objeto 52/52 ok nos 2 papéis; matriz em c4-evidencia.md"
+  },
+  {
+   "comando": "PARTS=contract,race,abaf,abar bash $SCRATCH/run-probe.sh zz-j12ac4-p2 super|rt",
+   "forma": "21 asserções de contrato; N=30 corridas × 2 sentidos; N=20 ABA forçado; N=200 × 2 ABA real",
+   "resultado": "contrato 21/21, corridas 60/60, ABA forçado 20/20 passa o 2º, ABA real 0/400"
+  },
+  {
+   "comando": "node $SCRATCH/mut.mjs <arquivo> $SCRATCH/<M>.json + bateria + git checkout <objeto> -- <f>",
+   "forma": "M5a–c, M14a, M14b-mem/-db, M13a–e, M21a–c, M16a–d, cada uma sozinha",
+   "resultado": "ver c4-evidencia.md; restauro por hash-object = blob em todas"
+  },
+  {
+   "comando": "PARTS=a21,a16 bash $SCRATCH/run-probe.sh zz-j12ac4-p3 super|rt",
+   "forma": "49 asserções × 2 papéis",
+   "resultado": "49/49 nos 2 papéis"
+  },
+  {
+   "comando": "MODES=… N_DEL=… bash $SCRATCH/run-probe.sh zz-j12ac4-p4 super|rt",
+   "forma": "corrida PATCH/DELETE do título × vínculo, N=40×2 + 20 + 20 + 6 + 10 + 1",
+   "resultado": "DELETE: 100/100 título apagado com cheque pendente; PATCH: 36/37 título 150 com cheque 100 pendente; sequencial correto"
+  }
+ ],
+ "justificativa": "Terreno: worktree próprio j12a-c4-wt no objeto, npm ci próprio, Postgres 16 e Redis 7 próprios em 127.0.0.1:47743/47744, papel j12a_c4_rt NOSUPERUSER NOBYPASSRLS; inspetor LIBERADO COM RESSALVA; check-runs 14|0|0. Item 1 (R-res-5/A14): o agregado não vaza entre organizações em none/month/day e em todo filtro, pela rota e pelo serviço, sob superusuário e sob j12a_c4_rt (52/52 + 52/52); conta alheia = 200 []; a RLS sozinha filtra sob o papel sem bypass e falha fechada sem o GUC; o teste do dev não vê a M5a sob o papel da CI (C4-01, ajuste); A14 M14a/M14b vermelhos. Controle: head-base 400/aggregate inexistente; M5c acusa leak=48. Item 2 (R-res-4/A13): 400 sem gravar, 409 em toda corrida (N=30×2×2), ABA só pela via forçada (20/20) e 0/400 pela via real; M13b, M13c, M13e vermelhos, M13d equivalente, M13a SEM caso vermelho (C4-02, bloqueia). Controle: head-base 18 FAIL na sonda. Item 3 (A21/A16): sequencial correto (49/49 nos 2 papéis), A16 memória = Prisma sem soma alheia, mutações M21a/b, M16a/b/c vermelhas; sob corrida, PATCH de valor × vínculo deixa título 150 com cheque 100 pendente (36/37, C4-03, bloqueia, grave: dinheiro) e DELETE × vínculo apaga título com cheque pendente (100/100, C4-04, pré-existente, a pendência não fecha). Controle: head-base PATCH/DELETE 2xx e A21/A16 vermelhos pela asserção. Limpeza: containers j12a-c4-* removidos (0, com -v), papel j12a_c4_rt e bancos sumiram com o container, worktree removido por git worktree remove --force (processos com o caminho = 0), mutações restauradas (hash-object = blob), arquivos de senha apagados (grep da senha nos arquivos do $SCRATCH = 0), base viva nunca tocada, w-san312a só com c4-evidencia.md e c4-voto.json; sondas e scripts mantidos em $SCRATCH para re-execução.\nVOTO: REPROVADO — (C4-03) sob corrida o PATCH {amount} de um título passa enquanto um cheque pendente é vinculado a ele, e o título fica com valor 150 e cheque de 100 pendente vinculado | escopo: dentro-do-bloco | classe: grave: dinheiro | ciclo 1 | evidência: zz-j12ac4-p4 MODES=patch-simultaneo, 36/37 (super 26/27, j12a_c4_rt 10/10); e (C4-02) sem `reconciled` no WHERE do CAS Prisma nenhum caso do bloco fica vermelho | dentro-do-bloco | não grave | M13a: 11/11 + 3/3 + 6 arquivos verdes, sonda 2 FAIL",
+ "teardown": "containers j12a-c4-pg/redis removidos com -v (contagem 0) · banco j12a_c4_main e papel j12a_c4_rt removidos com o container · processos com o caminho = 0 · worktree removido por git worktree remove --force (git worktree list: 0) · mutações e checkouts restaurados (hash-object = blob; status 0) · .pw/.rpw apagados, grep da senha = 0 · base viva nunca tocada · w-san312a só com c4-evidencia.md e c4-voto.json · sondas mantidas em C:/Users/AMP/erp-pausa-2026-10-03/j12a-c4/"
+}

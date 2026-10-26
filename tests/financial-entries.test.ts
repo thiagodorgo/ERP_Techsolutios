@@ -54,8 +54,36 @@ function actor(tenantId = randomUUID()): FinancialEntryActorContext {
     tenantId,
     userId: randomUUID(),
     roles: ["finance"],
-    permissions: ["financial_entries:read", "financial_entries:create", "financial_entries:update"],
+    // B-SAN3-12a (§4.4) — desfazer conciliação passou a exigir `financial_entries:unreconcile` (ou a política da
+    // organização). As provas deste arquivo são da SEMÂNTICA da conciliação, não do RBAC (que vive em
+    // tests/b-san3-12a-unreconcile-policy.test.ts): o ator daqui carrega a permissão explicitamente.
+    permissions: ["financial_entries:read", "financial_entries:create", "financial_entries:update", "financial_entries:unreconcile"],
   };
+}
+
+// B-SAN3-12a (§4.6, R2-05) — o CAS da conciliação é OBRIGATÓRIO: todo chamador envia o estado que LEU
+// (`expected_reconciled` + `expected_reconciled_at`). Aqui o leitor é o próprio serviço, logo antes da escrita; o
+// lançamento que não se lê (cross-tenant/inexistente) segue com o estado "nunca conciliado" e cai no 404 de sempre.
+async function reconcileFresh(
+  service: FinancialEntryService,
+  ctx: FinancialEntryActorContext,
+  financialEntryId: string,
+  body: Record<string, unknown>,
+) {
+  let expected: Record<string, unknown> = { expected_reconciled: false, expected_reconciled_at: null };
+  try {
+    const current = await service.get(ctx, financialEntryId);
+    expected = { expected_reconciled: current.reconciled, expected_reconciled_at: current.reconciledAt ? current.reconciledAt.toISOString() : null };
+  } catch {
+    // o 404 é do próprio reconcile, abaixo
+  }
+  return service.reconcile(ctx, financialEntryId, { ...expected, ...body });
+}
+
+// Mesmo contrato pela ROTA: lê o lançamento (GET) e devolve o corpo com o estado esperado.
+async function withExpectedState(baseUrl: string, headers: Record<string, string>, id: string, body: Record<string, unknown>) {
+  const current = await requestJson(baseUrl, `/api/v1/financial-entries/${id}`, { headers });
+  return { expected_reconciled: current.body.data.reconciled, expected_reconciled_at: current.body.data.reconciledAt, ...body };
 }
 
 function resetAll(): void {
@@ -644,7 +672,7 @@ test("[C1] precedência do DELETE: entry_reconciled e reversal_pair_immutable v�
   // Liquidação CONCILIADA: a imutabilidade da conciliação decide primeiro.
   const titleA = await titles.create(ctx, receivableBody({ amount: 100 }));
   const conciliada = await entries.payTitle(ctx, titleA.id, { amount: 10, account_id: account.id, payment_method: "pix" });
-  await entries.reconcile(ctx, conciliada.id, { reconciled: true });
+  await reconcileFresh(entries, ctx, conciliada.id, { reconciled: true });
   await assert.rejects(
     () => entries.delete(ctx, conciliada.id),
     (e: unknown) => isDomainError(e, 422, "entry_reconciled"),
@@ -681,7 +709,7 @@ test("reconcile happy: flag+divergence+ref e carimbo server-side (reconciledAt/B
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
-  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-123" });
+  const reconciled = await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-123" });
   assert.equal(reconciled.reconciled, true);
   assert.equal(reconciled.divergenceType, "value");
   assert.equal(reconciled.reconciliationRef, "EXT-123");
@@ -698,7 +726,7 @@ test("reconcile LIMPO (sem divergence) → ok, divergenceType undefined mas cari
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
-  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true });
+  const reconciled = await reconcileFresh(entries, ctx, entry.id, { reconciled: true });
   assert.equal(reconciled.reconciled, true);
   assert.equal(reconciled.divergenceType, undefined);
   assert.equal(reconciled.reconciledAt instanceof Date, true);
@@ -710,7 +738,7 @@ test("cada divergence_type válido {value,date} é aceito", async () => {
   const account = await activeAccount(accounts, ctx);
   for (const v of ["value", "date"] as const) {
     const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
-    const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: v });
+    const reconciled = await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: v });
     assert.equal(reconciled.divergenceType, v);
   }
 });
@@ -722,7 +750,7 @@ test("divergence_type FORA da allowlist → 400 (foo, e os removidos missing/dup
   for (const bad of ["foo", "missing", "duplicate"]) {
     const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
     await assert.rejects(
-      () => entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: bad }),
+      () => reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: bad }),
       (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 400 && e.reason === "invalid_divergence_type",
     );
   }
@@ -734,7 +762,7 @@ test("reconciled AUSENTE (write-path estrito) → 400 invalid_reconciled", async
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
   await assert.rejects(
-    () => entries.reconcile(ctx, entry.id, {}),
+    () => reconcileFresh(entries, ctx, entry.id, {}),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 400 && e.reason === "invalid_reconciled",
   );
 });
@@ -744,8 +772,8 @@ test("DESCONCILIAR (reconciled=false) limpa divergence/ref/at/by", async () => {
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
-  await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "date", reconciliation_ref: "X" });
-  const undone = await entries.reconcile(ctx, entry.id, { reconciled: false });
+  await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: "date", reconciliation_ref: "X" });
+  const undone = await reconcileFresh(entries, ctx, entry.id, { reconciled: false });
   assert.equal(undone.reconciled, false);
   assert.equal(undone.divergenceType, undefined);
   assert.equal(undone.reconciliationRef, undefined);
@@ -758,12 +786,12 @@ test("[pós-análise B4] re-reconcile SOBRESCREVE a divergência; e reafirmar se
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
-  const v = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-1" });
+  const v = await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-1" });
   assert.equal(v.divergenceType, "value");
-  const d = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "date" }); // sobrescreve
+  const d = await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: "date" }); // sobrescreve
   assert.equal(d.divergenceType, "date");
   assert.equal(d.reconciliationRef, undefined); // não reenviado → limpo (write-path resolve os 5 campos)
-  const clean = await entries.reconcile(ctx, entry.id, { reconciled: true }); // reafirma sem divergência → limpa
+  const clean = await reconcileFresh(entries, ctx, entry.id, { reconciled: true }); // reafirma sem divergência → limpa
   assert.equal(clean.reconciled, true);
   assert.equal(clean.divergenceType, undefined);
 });
@@ -775,7 +803,7 @@ test("reconcile de lançamento DELETADO → 404", async () => {
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
   await entries.delete(ctx, entry.id);
   await assert.rejects(
-    () => entries.reconcile(ctx, entry.id, { reconciled: true }),
+    () => reconcileFresh(entries, ctx, entry.id, { reconciled: true }),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 404,
   );
 });
@@ -786,7 +814,7 @@ test("reconcile inexistente/cross-tenant → 404 (isolamento)", async () => {
   const account = await activeAccount(accounts, owner);
   const entry = await entries.create(owner, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
   await assert.rejects(
-    () => entries.reconcile(actor(), entry.id, { reconciled: true }),
+    () => reconcileFresh(entries, actor(), entry.id, { reconciled: true }),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 404,
   );
 });
@@ -800,7 +828,7 @@ test("reconcile em período FECHADO → SUCESSO (meta-dado; não gated pelo chok
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix", occurred_at: "2026-05-10T00:00:00.000Z" });
   getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(ctx.tenantId, "2026-05", "closed");
-  const reconciled = await entries.reconcile(ctx, entry.id, { reconciled: true, divergence_type: "value" });
+  const reconciled = await reconcileFresh(entries, ctx, entry.id, { reconciled: true, divergence_type: "value" });
   assert.equal(reconciled.reconciled, true);
   assert.equal(reconciled.reconciledAt instanceof Date, true);
 });
@@ -810,7 +838,7 @@ test("[fix P-Ω4-4-REVERSE-MUTABLE] reverse de lançamento CONCILIADO → 422 en
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
-  await entries.reconcile(ctx, entry.id, { reconciled: true });
+  await reconcileFresh(entries, ctx, entry.id, { reconciled: true });
   await assert.rejects(
     () => entries.reverse(ctx, entry.id),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "entry_reconciled",
@@ -823,8 +851,8 @@ test("conciliar → desconciliar → reverse volta a funcionar (contra-lançamen
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
-  await entries.reconcile(ctx, entry.id, { reconciled: true });
-  await entries.reconcile(ctx, entry.id, { reconciled: false });
+  await reconcileFresh(entries, ctx, entry.id, { reconciled: true });
+  await reconcileFresh(entries, ctx, entry.id, { reconciled: false });
   const contra = await entries.reverse(ctx, entry.id);
   assert.equal(contra.direction, "out");
   assert.equal(contra.reversalOf, entry.id);
@@ -835,7 +863,7 @@ test("update e delete de lançamento CONCILIADO → 422 entry_reconciled (assert
   const ctx = actor();
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
-  await entries.reconcile(ctx, entry.id, { reconciled: true });
+  await reconcileFresh(entries, ctx, entry.id, { reconciled: true });
   await assert.rejects(
     () => entries.update(ctx, entry.id, { category: "x" }),
     (e: unknown) => e instanceof FinancialEntryError && e.statusCode === 422 && e.reason === "entry_reconciled",
@@ -854,8 +882,8 @@ test("conciliar lançamento de par de estorno (original E contra) é PERMITIDO",
   const account = await activeAccount(accounts, ctx);
   const entry = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 100, payment_method: "pix" });
   const contra = await entries.reverse(ctx, entry.id);
-  assert.equal((await entries.reconcile(ctx, entry.id, { reconciled: true })).reconciled, true);
-  assert.equal((await entries.reconcile(ctx, contra.id, { reconciled: true })).reconciled, true);
+  assert.equal((await reconcileFresh(entries, ctx, entry.id, { reconciled: true })).reconciled, true);
+  assert.equal((await reconcileFresh(entries, ctx, contra.id, { reconciled: true })).reconciled, true);
 });
 
 test("extrato: filtra por reconciled=true|false", async () => {
@@ -864,7 +892,7 @@ test("extrato: filtra por reconciled=true|false", async () => {
   const account = await activeAccount(accounts, ctx);
   const a = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
   await entries.create(ctx, { account_id: account.id, direction: "in", amount: 20, payment_method: "pix" });
-  await entries.reconcile(ctx, a.id, { reconciled: true });
+  await reconcileFresh(entries, ctx, a.id, { reconciled: true });
   assert.equal((await entries.list(ctx, { reconciled: true })).total, 1);
   assert.equal((await entries.list(ctx, { reconciled: false })).total, 1);
 });
@@ -875,8 +903,8 @@ test("extrato: filtra por divergence_type", async () => {
   const account = await activeAccount(accounts, ctx);
   const a = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 10, payment_method: "pix" });
   const b = await entries.create(ctx, { account_id: account.id, direction: "in", amount: 20, payment_method: "pix" });
-  await entries.reconcile(ctx, a.id, { reconciled: true, divergence_type: "value" });
-  await entries.reconcile(ctx, b.id, { reconciled: true, divergence_type: "date" });
+  await reconcileFresh(entries, ctx, a.id, { reconciled: true, divergence_type: "value" });
+  await reconcileFresh(entries, ctx, b.id, { reconciled: true, divergence_type: "date" });
   assert.equal((await entries.list(ctx, { divergence_type: "value" })).total, 1);
 });
 
@@ -1224,7 +1252,7 @@ test("[rota] PATCH /financial-entries/:id/reconcile finance → 200; DTO §2.8 (
     const reconciled = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
       method: "PATCH",
       headers: authHeaders(seed.tenantA, "finance"),
-      body: { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-9" },
+      body: await withExpectedState(baseUrl, authHeaders(seed.tenantA, "finance"), entry.body.data.id, { reconciled: true, divergence_type: "value", reconciliation_ref: "EXT-9" }),
     });
     assert.equal(reconciled.status, 200);
     assert.equal(reconciled.body.data.reconciled, true);
@@ -1247,7 +1275,7 @@ test("[rota] reverse de lançamento CONCILIADO via API → 422 entry_reconciled 
     await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
       method: "PATCH",
       headers: authHeaders(seed.tenantA, "finance"),
-      body: { reconciled: true },
+      body: await withExpectedState(baseUrl, authHeaders(seed.tenantA, "finance"), entry.body.data.id, { reconciled: true }),
     });
     const reversed = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reverse`, {
       method: "POST",
@@ -1270,7 +1298,7 @@ test("[rota][RBAC] reconcile: finance/tenant_admin/super_admin → 200", async (
       const res = await requestJson(baseUrl, `/api/v1/financial-entries/${entry.body.data.id}/reconcile`, {
         method: "PATCH",
         headers: authHeaders(seed.tenantA, role),
-        body: { reconciled: true },
+        body: await withExpectedState(baseUrl, authHeaders(seed.tenantA, role), entry.body.data.id, { reconciled: true }),
       });
       assert.equal(res.status, 200, `reconcile as ${role}`);
     }

@@ -3929,6 +3929,52 @@ A auditoria e o plano do ciclo 2 (modelo de topo, `planejador-07cb1-ciclo2`, `C:
 - **Conflito registrado:** a frase antiga do `REGISTRO-SAN3-CONFLITOS` sobre `D-Ω4-7-NO-TITLE` fica resolvida por
   esta decisão; não foi apagada nem reordenada.
 
+
+## B-SAN3-12 — web financeiro: baixa, conta com extrato e conciliação (decisões do dono, 24/10 e 25/10/2026; registradas no PR do 12a)
+
+Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-plano.md`; críticas `-critica-r1.md` e `-critica-r2.md`.
+
+- **`D-SAN3-12-TRES-OPCOES` (24/10, ~17:10).** Resposta literal: ***"Aprovo as 3"*** — as 3 aparências da maquete
+  `B-SAN3-12-financeiro-baixa-conta-conciliacao-3opcoes.html` são entregues todas (12b e 12c).
+- **`D-SAN3-12-SERVIDOR-RECUSA-E-DIRECIONA` (24/10).** Literal: ***"server recusa, mas ja direciona para trocar a vinculacao do
+  cheque por outro meio de pagamento e isso requer privilegios altos, no geral o usuario pege autorizacao e o superior analisa"***.
+  Consequência: `/pay` de título com cheque vinculado pendente → `422 title_has_pending_cheque` com o próximo passo no corpo;
+  `POST /cheques/:id/unlink-title` com `cheques:unlink_title` (Administrador) + justificativa + auditoria Crítica.
+- **`D-SAN3-12-DESFAZER-CONCILIACAO` (24/10).** Literal: ***"admin, mas deve existir a opcao do financeiro receber esse
+  privilegio"***. Consequência: `financial_entries:unreconcile` (Administrador) e a política da organização
+  `finance.unreconcile_delegated_to_finance` que o Administrador liga.
+- **`D-SAN3-12-QUATRO-PERGUNTAS` (24/10, ~20:00).** Literal: ***"Aceito as 4 (Recomendado)"*** — 3 PRs (12a → 12b → 12c); troca da
+  vinculação na v1 = admin com justificativa + auditoria crítica, sem fila; desfazer delegável por política, com emenda na
+  `RBAC_MATRIX.md` e no `APPROVAL_LIMITS.md`; `ChargesPage`/`PaymentsPage` saem no `B-SAN3-24`.
+- **`D-SAN3-12-CHEQUE-VALOR-EXATO` (25/10, ~00:55).** Literal: ***"Só cheque do valor exato (Recomendado)"*** — o cheque só se vincula
+  ao título se o valor for igual ao saldo aberto; pagamento misto fica para bloco seguinte (`P-SAN3-12-PAGAMENTO-MISTO-CHEQUE`).
+- **`D-SAN3-12-CANCELAR-VINCULADO-E-TROCA` (25/10).** Literal: ***"Mesmo privilégio da troca (Recomendado)"*** — cancelar/excluir cheque
+  vinculado só depois do desvínculo (`422 cheque_linked_unlink_first` para todo ator).
+- **`D-SAN3-12-MIGRACAO-DE-DADOS-PERMISSOES` (25/10).** Literal: ***"Autorizo (Recomendado)"*** — o 12a toca `prisma/migrations` só para a
+  migração de DADOS `20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions` (aditiva, `BEGIN`/`COMMIT`, drill).
+- **Conflito registrado ANTES de consolidar (§A2, `P-SAN3-12-RBAC-MATRIX-128-CONFLITO`).** A linha da `RBAC_MATRIX.md` sobre a
+  conciliação dizia *"reusa a perm — sem permissão nova"*, e a do cheque *"vincula/desvincula `title_id` SÓ enquanto
+  'registered'"*. As decisões acima as superam (desfazer exige `financial_entries:unreconcile` ou a política; desvínculo só pelo
+  `unlink-title`; vínculo só do valor exato; cancelar/excluir vinculado → `cheque_linked_unlink_first`). O texto antigo não foi
+  apagado em silêncio: a emenda do 12a reescreve as duas frases citando esta entrada.
+- **Declarado pelo dev do 12a (§A6), não dito pelo dono:** o `details` dos 422 sai pelo controller do próprio módulo (o envelope
+  comum `core-saas/routes/http.ts` não muda); o `400 bounce_reason_required` (R-res-2, "requisito v3") e os `400 invalid_group_by`
+  / `invalid_from` / `invalid_to` do agregado ficam FORA da lista de 32 do que a tela traduz; o vínculo não toma a trava de
+  período (a ordem é título → cheque, sem ciclo com o `clear`, medido no `-db`).
+
+### B-SAN3-12a — Emendas E1 e E1-bis (2026-10-25): leituras do planejador dentro de respostas já dadas pelo dono (não são decisões novas)
+- **D1** (E1.F1): o `PATCH /cheques/:id` que tira ou troca o título responde 403 sem `cheques:unlink_title` e **422 `cheque_linked_unlink_first`** com
+  ele — a única porta que tira o vínculo é o `unlink-title`. Dentro da Q2 aceita (*"Aceito as 4 (Recomendado)"*: o Administrador desvincula com
+  justificativa obrigatória e auditoria Crítica) e de *"Mesmo privilégio da troca (Recomendado)"*.
+- **A26** (E1.F9): o `bounce` de cheque vinculado exige motivo (`400 bounce_reason_required`), fora da lista de 32 da tela.
+- **A27** (E1-bis): toda escrita de cheque cuja guarda lê o título leva o título LIDO no `WHERE` (1º vínculo, `cancel`, `delete`; 409 se mudou).
+  Faz a regra do dono valer também sob concorrência; não concede nem tira privilégio de ninguém.
+- **F5** (E1.F5): `super_admin` e `platform_admin` recebem as 2 permissões por construção (mesma referência do catálogo) — o snapshot passa a dizê-lo.
+- **A30** (ciclo 2, plano de resolução do `planejador-san312a-c2-fable`, E2.2; implementado por `dev-san312a-c2-opus`): a justificativa do
+  desvínculo só aceita texto bem-formado — sem U+0000, sem surrogate isolado, sem controle C0 salvo TAB/LF/CR, sem DEL → `400 invalid_justification`.
+  Leitura do planejador (§A6), não decisão do dono: integridade do rastro do ato privilegiado; não muda dinheiro nem permissão. Se o dono
+  preferir só U+0000 + surrogates (o que o jsonb recusa), a classe C0 encolhe numa linha (`JUSTIFICATION_FORBIDDEN_CONTROL`, `cheque.service.ts`).
+
 ## D-SAN3-13-SCOPE-ASSIGNED (decisões do dono, 2026-10-24; Emenda E2 do planejador, 2026-10-25) — "Minhas OS" só com as OS abertas do técnico, imposto no backend
 
 - **Respostas literais do dono:** às 5 perguntas do §13 do plano (24/10, ~19:40 BRT) — ***"Aceito as 5 (Recomendado)"***; à

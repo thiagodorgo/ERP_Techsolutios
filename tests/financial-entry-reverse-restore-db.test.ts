@@ -339,7 +339,8 @@ if (!connectionString) {
       const payment = await h.entryService.payTitle(seed.actor, seed.titleId, {
         account_id: seed.accountId, amount: 25, payment_method: "pix",
       });
-      await h.entryService.reconcile(seed.actor, payment.id, { reconciled: true });
+      // B-SAN3-12a (§4.6) — o CAS da conciliação é obrigatório: o lançamento nunca foi conciliado.
+      await h.entryService.reconcile(seed.actor, payment.id, { reconciled: true, expected_reconciled: false, expected_reconciled_at: null });
 
       await assert.rejects(
         h.entryService.delete(seed.actor, payment.id),

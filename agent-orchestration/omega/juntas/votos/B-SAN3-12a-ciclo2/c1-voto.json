@@ -1,0 +1,146 @@
+{
+ "jurado": "jurado-san312a-c1-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312a-c1-dinheiro-e-concorrencia",
+ "cadeira": "C1 — dinheiro e concorrência: A27, A28, D1 sob corrida, A5-bis, ordem de travas do A29, invariante",
+ "executor": "Claude Opus (subagente genérico, corpo lido do blob do objeto)",
+ "mandato_md5": "5b9304e73774f70b970f95dbc7d06e0e (tr -d '\\r' | md5sum) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 · nível menor (§C7.6) · substituição: nenhuma",
+ "objeto": "8a9fc1d8426426403f8642e263b3e932d1738716 (ls-remote = gh pr view 459, início e fim) · head-base do bloco <objeto>~18 = 8a7885f4c3bfab02e6c31b318c1111e262f2907c · head-base da emenda <objeto>~12 = fafd4b36731ae89574e1d0b3cff6ea34dc78abc7 · objeto do ciclo 1 <objeto>~4 = 04b8a667780930050c8af2c77c323b81fe8794bb · origin/main início/fim aaa9d36a/aaa9d36a · objeto no fim: igual",
+ "quorum": "unanimidade das 4 cadeiras do ciclo 2 (C1, C2b, C3, C4b), com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova) · a C1 vota pela 1ª vez (nada a carregar)",
+ "arquivos_medidos": [
+  "src/modules/cheques/**",
+  "src/modules/financial-uow/**",
+  "src/modules/financial-entries/**",
+  "src/modules/financial-titles/**",
+  "src/modules/financial-period-closes/**",
+  "src/database/financial-period-lock.ts",
+  "tests/helpers/pg-barrier.ts",
+  "tests/b-san3-12a-link-toctou-db.test.ts",
+  "tests/b-san3-12a-unlink-title.test.ts",
+  "tests/b-san3-12a-pay-link-race-db.test.ts",
+  "tests/b-san3-12a-title-mutation-race-db.test.ts",
+  "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+  "tests/cheque-title-link.test.ts",
+  "tests/cheque-title-link-atomic-db.test.ts",
+  "prisma/migrations/**"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito_parcial": "verde",
+   "arquivos_medidos": [
+    "src/modules/cheques/**",
+    "src/modules/financial-uow/financial-uow.ts",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/**",
+    "tests/b-san3-12a-link-toctou-db.test.ts",
+    "tests/b-san3-12a-unlink-title.test.ts",
+    "tests/helpers/pg-barrier.ts",
+    "prisma/migrations/**"
+   ],
+   "testes_x3": "link-toctou-db: 5|5|0|0 ×3 (ec=0); unlink-title (memória): 17|17|0|0",
+   "sonda_barreira": "patch→409 cheque_write_conflict, cancel→409 transition_conflict, delete→409 cheque_write_conflict; perdedor visto em pg_stat_activity wait_event_type=Lock/transactionid e pg_locks transactionid ShareLock não concedido; FINAL title_id=T1 registered vivo nos 3; audit 0; pix T1 → 422 title_has_pending_cheque; invariante N=0; A27-d sem corrida 200 nos 4 caminhos",
+   "conflito_3_desfechos": "sumiu → 404 cheque_not_found; saiu de registered → 422 cheque_not_editable; título ≠ lido → 409 cheque_write_conflict (por execução com barreira)",
+   "memoria": "A27-e: um 200 e um 409; determinístico (portão Promise + setImmediate, sem relógio)",
+   "mutacoes": "A27a-db → A27-a e A27-f vermelhos; A27b-db → A27-b; A27c-db → A27-c; A27e-mem → 3 A27-e; minha (cancel sem casOnTitle) → A27-b; todas pela asserção, irmãos verdes, restauradas por hash-object",
+   "controle_fafd4b36": "sonda na base da emenda: patch 200 com FINAL T2, cancel 200 cancelled com título, delete 200 excluído com título, pix 200; A27-e do objeto vermelho 3/3 pela asserção; no objeto o comparador acusa FINAL fabricado e o invariante acusa N=1"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "verde",
+   "arquivos_medidos": [
+    "src/modules/cheques/**",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/**",
+    "src/modules/financial-uow/**",
+    "tests/cheque-title-link.test.ts",
+    "tests/cheque-title-link-atomic-db.test.ts",
+    "prisma/migrations/**"
+   ],
+   "testes_x3": "cheque-title-link (memória) 38|38|0|0; cheque-title-link-atomic-db 15|15|0|0 x3",
+   "sonda_clear_pago": "SQL commitado: 422 title_already_paid pelo fast-fail (liquidou sem bloquear no cheque), 0 lançamento, cheque deposited; em voo: clear entra na unidade (advisory ShareLock, cheque e lançamento já escritos), bloqueia no UPDATE guardado do título, 422 title_already_paid pela defesa sob a trava, rollback total (0 lançamento)",
+   "casos_apagados": "memória 38 x 38; -db 15 x 15; renomeados 5 + 2 (os da E1.F1); nenhum apagado",
+   "mutacoes": "M2-ambas: K2 (mem) e K2-db + T-K2d (db) vermelhos; M2 só fast-fail: verde nos dois (a trava segura); minha (só a trava): mem verde, db T-K2d vermelho e a sonda (B) vermelha com clear 200 + 1 lançamento — nota C1-N1",
+   "controle_8a7885f4": "K2 reescrito do objeto vermelho na base pela asserção ('Missing expected rejection.' — pix paga com cheque pendente); restaurado por hash-object"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "verde",
+   "arquivos_medidos": [
+    "src/modules/cheques/**",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/**",
+    "src/modules/financial-uow/**",
+    "src/modules/financial-period-closes/**",
+    "src/database/financial-period-lock.ts",
+    "tests/b-san3-12a-pay-link-race-db.test.ts",
+    "tests/b-san3-12a-title-mutation-race-db.test.ts",
+    "tests/b-san3-12a-pay-pending-cheque-db.test.ts",
+    "tests/b-san3-12a-unlink-title.test.ts",
+    "prisma/migrations/**"
+   ],
+   "d1": "tenant_admin: PATCH null e troca → 422 cheque_linked_unlink_first, vínculo intacto, pix 422; unlink-title 200 titleId null (deposited: warning cheque_still_depositable); 1º vínculo depois 200; rotas de cheque N=10; métodos que gravam title_id N=3 (create, update, unlinkTitle); só unlinkTitle grava null",
+   "a5bis": "clear em voo: clear 200 cleared, unlink 409 cheque_write_conflict, 1 lançamento com título; unlink em voo: unlink 200, clear 200 com caixa SEM título + pix 200 depois (R-res-3, dono P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO); CAS do desvínculo: 409",
+   "rres1": "barreira D (inversão no mesmo cheque) 5/5 sem deadlock; barreira R N=10 clear ok | vínculo 422 title_already_paid, 0 deadlock; 13 pares x N=10 sem barreira, deadlocks 0; ordem: vínculo título→cheque (sem período), PATCH/DELETE/payTitle período→título, clear período→cheque→lançamento→título",
+   "invariante": "INVARIANT_SQL; N=0 ao fim de cada sonda, salvo estados fabricados (controle acusa N=1) e o par vínculo x clear de dois cheques (C1-A1, pré-existente #456)",
+   "mutacoes": "D1 → A6-bis vermelho + sonda d1 (PATCH 200 desvincula); A5-bis CAS → A5-bis (db, CAS) vermelho + sonda (unlink 200 apaga vínculo não lido); A4 só re-check → A4 (b, db) vermelho; minha (título antes do período no update) → title-mutation-race-db 7/7 verde (nota C1-N2), sonda W mostra soft deadlock resolvido em ~1 s, sem erro",
+   "controle_fafd4b36": "PATCH {title_id:null} do tenant_admin → 200 desvincula sem justificativa na base da emenda; invariante acusa estado fabricado (N=1)"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C1-A1",
+   "defeito": "dois cheques pendentes no mesmo título: com Y (100) vinculado e deposited em T (100), um 2º cheque X (100) vincula a T (200, a regra do valor exato compara com amount − paidAmount, sem descontar o pendente); o clear de Y paga T e X fica registered vinculado a título pago (invariante N=1); o clear de X depois recusa 422 title_already_paid (1 lançamento só)",
+   "evidencia": "sonda zz-j12ac1-i3 SEC=dois no objeto (log i3-probe-a.log) e o par vínculo×clear sem barreira N=10 (invariante 10); o mesmo roteiro no head-base do bloco 8a7885f4 dá o mesmo estado (log i3-dois-base.log); a FK/vínculo nasce em 37a3f360 (#456, B-SAN3-20, 2026-10-25)",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente — origem #456 (B-SAN3-20), medida no head-base do bloco; sugerido dono: próximo bloco de backend financeiro, junto de P-SAN3-12-PAGAMENTO-MISTO-CHEQUE / P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO",
+   "classe": "não grave",
+   "motivo": "o conjunto pendente do título não impede um 2º vínculo do valor cheio; o título pode ser pago por um cheque enquanto outro segue pendente e vinculado (a razão falha fechado; o cheque físico residual cai no caminho do R-res-3)"
+  },
+  {
+   "id": "C1-N1",
+   "defeito": "em memória, nenhum caso exerce só a defesa sob a trava do clear (locked.status === 'paid'): o mutante 'só a trava' fica 38/38 verde no cheque-title-link.test.ts",
+   "evidencia": "mut.sh C1-so-trava-mem (38|38|0) × C1-so-trava-db (15|14|1, T-K2d vermelho) e a sonda i2 (B) vermelha sob o mesmo mutante",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a defesa sob corrida tem caso que morre sem ela no -db e na sonda; em memória o fast-fail a cobre deterministicamente"
+  },
+  {
+   "id": "C1-N2",
+   "defeito": "a ordem período → título do update/delete do título (conserto do ciclo 2) não tem caso que morra sem ela: com findByIdForUpdate antes da trava do período, b-san3-12a-title-mutation-race-db fica 7/7 verde",
+   "evidencia": "mut.sh C1-titulo-antes-do-periodo (7|7|0); sonda W sob o mutante: soft deadlock 3 vias resolvido pelo deadlock_timeout, 1010–1055 ms por rodada, sem 'deadlock detected'; no objeto 38–60 ms",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o efeito do mutante é latência (≈1 s), não erro nem dinheiro; a ordem certa está no objeto, só falta o guarda"
+  },
+  {
+   "id": "C1-N3",
+   "defeito": "o plano (R-res-1) diz que o vínculo segue período(shared) → título → cheque; o código do objeto trava título → cheque sem trava de período",
+   "evidencia": "pg_locks do vínculo bloqueado no título: G:tuple AccessExclusive financial_titles, sem advisory (sonda i3 'locks'); PATCH/DELETE/payTitle seguram G:advisory:ShareLock",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "divergência texto do plano × código; nenhum deadlock medido (barreira D 5/5, barreira R N=10, 13 pares × N=10: 0)"
+  }
+ ],
+ "corpo_comparacao": ".claude/ (blob do objeto) × worktree: IDENTICO; .claude/ × .agents/ descontado o bloco Codex: IDENTICO; corpo carregado = blob do objeto",
+ "legalidade": "parecer insp-san312a-c2-parecer.md (inspetor-san312a-c2-opus) · LIBERADO COM RESSALVA · confere composição C1/C2b/C3/C4b, worktree e containers próprios j12a2-c1-*, ordem C2b → C4b → C1 → C3 (C2b e C4b já votaram e removeram o terreno, pelo disparo) · check-runs 14 | 0 não-verdes | 0 pendentes · backend success ×2 · backend-postgres success ×2 · os -db do bloco rodaram no job backend (ok, sem skip: A27-a..f, A5-bis, A29, K2-db)",
+ "leitura_de_outras_cadeiras": "não li c2b-*, c3-*, c4b-* nem os votos/evidências do ciclo 1 · li: corpo (blob), mandato cadeira-c1.md, parecer do inspetor do ciclo 2, trechos do plano (§4.2, R-res-1, A4/A4-bis/A25, E2.1 passo 6), o código e os testes do objeto",
+ "pausa": "nenhuma",
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum critério da régua deixou de poder falhar: todo comparador foi visto acusando (controles na base e estados fabricados). Observação, não critério: o guarda da ordem período → título do ciclo 2 não existe (C1-N2)"
+ ],
+ "pendencias_que_aceito": [
+  "R-res-3 / P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO — medido: unlink em voo × clear → caixa sem título + pix depois (2 entradas de caixa), comportamento declarado",
+  "C1-A1 (pré-existente #456) como pendência nova com dono a registrar",
+  "auditoria da rota do PATCH/unlink-title e o 403 × 422 por ator — da C2b (a minha sonda é de serviço)"
+ ],
+ "teardown": "containers j12a2-c1-pg e j12a2-c1-redis removidos com -v (contagem 0) · banco j12a2_c1_main foi junto com o container · 3 tenants órfãos de uma execução travada removidos por id antes · processos com o caminho = 0 · worktree removido por git worktree remove --force (git worktree list: 0 j12a2-c1) · mutações e checkouts de head-base restaurados (status 0, hash-object = blob em cada restauro) · sondas zz-j12ac1-* nunca deixadas no worktree (copiadas e apagadas por probe.sh) e mantidas em $SCRATCH para re-execução · senha apagada, grep da senha na evidência/voto/logs = 0 · base viva e dev-san322 nunca tocados · w-san312a só com c1-evidencia.md e c1-voto.json",
+ "justificativa": "Terreno: worktree, npm ci e Postgres 16/Redis 7 próprios em 127.0.0.1:47813/47814, migração até 20260882000000_*. Item 1 (A27): link-toctou-db 5/5 ×3 e A27-e 17/17; sonda própria com barreira nas 3 escritas (perdedor 409, FINAL do vencedor, pix 422, pg_locks transactionid ShareLock no instante do bloqueio), 3 desfechos 404/422/409; mutações A27a/b/c-db, A27e-mem e a minha (cancel sem CAS) vermelhas pelo caso indicado; controle em fafd4b36: perdedor 200 com FINAL T2, cancel/delete 200 com título, A27-e do objeto vermelho 3/3. Item 2 (A28): 38/38 e 15/15 ×3; sonda: título pago commitado → 422 pelo fast-fail, em voo → 422 pela trava com rollback (0 lançamento); casos 38=38 e 15=15, 5+2 renomeados; M2-ambas vermelha nos dois, M2 só fast-fail verde, a minha (só a trava) vermelha no -db e na sonda (C1-N1); controle em 8a7885f4: K2 vermelho ('Missing expected rejection.'). Item 3: D1 422 e só unlink-title grava null (rotas N=10, métodos N=3); A5-bis nos dois sentidos (409 / R-res-3 medido); ordem de travas por pg_locks; 0 deadlock em barreira D 5/5, R N=10 e 13 pares × N=10; testes do A4/A4-bis/A29 ×3 verdes; competência imutável por script; mutações D1, A5-bis CAS, A4 só re-check vermelhas; a minha (título antes do período) mostra soft deadlock de ~1 s e sobrevive à suíte (C1-N2); controle em fafd4b36: PATCH null do tenant_admin 200 sem justificativa; invariante acusa estado fabricado (N=1). Achado C1-A1 (dois cheques no mesmo título) medido no head-base do bloco: pré-existente (#456), ajuste, não reprova. Nada ficou sem medir. Limpeza: containers, worktree e senha removidos; base viva intocada.\nVOTO: APROVADO — A27 com barreira nas 3 escritas (perdedor 409, FINAL do vencedor, pix 422) e em memória (um 200, nunca dois); A28 com o clear de título pago 422 e 0 lançamento nos dois lados; D1: só unlink-title tira o vínculo; A5-bis e R-res-1 sem deadlock em 10 rodadas com barreira (e 13 pares × 10 sem barreira); invariante N = 0 fora do pré-existente C1-A1; mutações A27a/b/c/e, M2, D1, A5-bis, A4 e as minhas vermelhas pelo caso indicado (salvo C1-N1/C1-N2, notas); pendências: R-res-3 (P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO), C1-A1 (pré-existente #456, dono a registrar), C1-N1, C1-N2, C1-N3"
+}

@@ -56,6 +56,8 @@ export function toFinancialTitleListDto(result: ListFinancialTitleResult) {
       status: title.status,
       competencia: title.competencia,
       accountId: title.accountId ?? null,
+      // B-SAN3-12a (§4.7) — o nº da OS na linha da lista (a maquete marcava "falta"). Id do PRÓPRIO tenant.
+      workOrderId: title.workOrderId ?? null,
       parentTitleId: title.parentTitleId ?? null,
       overdue: isTitleOverdue(title.status, title.dueDate),
       active: title.deletedAt == null,

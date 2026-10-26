@@ -2312,6 +2312,7 @@ O texto humano de cada permissão vive no mapa `permissionDescriptions` de `pris
 demonstração). Permissão criada pelo provisionamento nasce com a descrição genérica `Permissão <chave>.` — a
 mesma que o próprio seed usa como fallback. Sem impacto no RBAC efetivo (nenhuma rota lê
 `permissions.description`), mas é duplicação de fonte de verdade esperando divergir.
+- **B-SAN3-12a (2026-10-25, E1.F6):** `financial_entries:unreconcile` e `cheques:unlink_title` nascem com texto curado pela migração de dados `20260882000000`; o seed (só dev/demo) faz `upsert` com `update: { description }` e as sobrescreveria pela genérica — mais 2 chaves nesta duplicação.
 - **Correção:** extrair o mapa para um módulo compartilhado (ex.: `src/modules/core-saas/permissions/`) e
   fazer seed **e** provisionamento lerem de lá. Fora do escopo desta frente (não podia tocar `prisma/seed.ts`).
 - status: ABERTA.
@@ -11609,14 +11610,18 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fechamento PARCIAL (2026-10-25, `B-GUARD-MIGRACAO`, PR #458, ramo `chore/guard-migracao-transacao`):** a metade "guard de CI" do teste de encerramento está entregue — `scripts/migration-transaction-guard.mjs` (regras G0–G7), lido pelo `npm test` via `tests/migration-transaction-guard.test.ts`; a regra foi decidida pelo dono (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`). As 112 anteriores à `20260878000000` ficam congeladas na lista `ANTERIORES` do guard, que só encolhe: quem sanear uma remove o nome e o guard passa a julgá-la. **Resta, e segue ABERTA:** a primeira metade (transação explícita ou justificativa, com drill, para cada anterior multi-sentença — 104 delas pelo splitter do guard), dono a nomear.
 
 ## P-SAN3-20-DESVINCULAR-DEPOSITADO (2026-10-24) — cheque pago por outro meio não pode ser desvinculado — BAIXA
+- **encerramento previsto (B-SAN3-12a):** `POST /cheques/:id/unlink-title` desvincula `registered` e `deposited` (A5, `tests/b-san3-12a-unlink-title.test.ts`); o status muda no merge do 12a, pelo porteiro.
 - **status:** ABERTA · **dono:** próximo bloco de cheques/tela · **bloqueia:** não.
 - **encerramento:** definir e provar fluxo seguro para cheque `deposited` cujo título já foi pago.
 
 ## P-SAN3-20-DELETE-TITULO-COM-CHEQUE (2026-10-24) — título com cheque pendente pode ser apagado — BAIXA
+- **encerramento previsto (B-SAN3-12a):** `DELETE`/`PATCH amount` do título com cheque pendente → `422 title_has_pending_cheque` (A21); o status muda no merge do 12a, pelo porteiro.
 - **status:** ABERTA · **dono:** próximo bloco de títulos · **bloqueia:** não; o clear falha fechado com `title_not_found`.
 - **encerramento:** DELETE recusa com `422 title_has_pending_cheque` e prova concorrente.
+- **ciclo 2 do B-SAN3-12a (2026-10-26):** a prova concorrente existe — `tests/b-san3-12a-title-mutation-race-db.test.ts` A29-c (barreira: o DELETE bloqueia no FOR UPDATE da unidade, relê e sai 422; FINAL título vivo com 1 pendente) e A29-g (N=20 sem barreira, nunca apagado com pendente); mutação "tirar o re-check do delete" deixa os dois vermelhos. **Fecha no merge do #459, pelo porteiro** (não antes).
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
+- **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
 - **status:** ABERTA · **dono:** bloco do painel Financeiro (3 opções) · **bloqueia:** não.
 - **encerramento:** resumo desconta ou rotula cheque vinculado pendente sem alterar o razão.
 
@@ -11651,6 +11656,73 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** `dentro-do-bloco` do B-SAN3-20, classificado `ajuste` (não bloqueia).
 - **dono:** `B-SAN3-24` (telas de cheque — primeiro consumidor da lista).
 - **teste de encerramento:** asserção de `titleId` no item da lista; a M4b passa a vermelho.
+
+## P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO (2026-10-25) — o PERMITIDO do 12a não cobre o que as regras do dono quebram — ALTA (processo; bloqueia o merge do 12a)
+- **status:** ABERTA · **dono:** orquestrador + `planejador-mestre` (emenda escrita do plano, `D-EMENDA-ANTES-DO-CODIGO`) · **bloqueia:** o merge do `B-SAN3-12a`.
+- **emenda (2026-10-25):** Emendas **E1** e **E1-bis** (12a) do `planejador-mestre` (Fable), apensas em `docs/revisoes/SAN3/B-SAN3-12-plano.md`; crítica `docs/revisoes/SAN3/B-SAN3-12a-E1-critica.md`. Aplicadas pelo dev (relatório E10–E14): F1–F5 ajustados nos arquivos que a E1.10 pôs no PERMITIDO; A27, D1, A28, B1, B2.
+- **critério de fechamento (B1 da E1-bis, cumulativo):** (1) CI `backend` e `backend-postgres` `completed/success` no head; (2) comparação base × head normalizada por script com "só no head = 0" e as três listas publicadas; (3) a propriedade do T2.1 medida à mão no descartável só migrado. (2) e (3) medidos no relatório E13; (1) é conferido no head empurrado — quem fecha o status é o porteiro/orquestrador com o `check-runs` do head.
+- **medido (2026-10-25, E13):** (1) CI no `a0b8f4be`: `backend` success (4013 · 0 fail · 2 skipped), `backend-postgres` success (493/493, 0 pulado); (2) só no head = **1** (teste de tempo do Traccar, verde isolado e na CI — o "= 0" da letra não saiu nesta máquina carregada, declarado), só na base 1, nos dois lados 11 com causa; skipped só no head 0; (3) T2.1 à mão: roles 0 · role_permissions 0 · permissions 4 · super_admin 0.
+- **prova (execução):** relatório do dev `docs/revisoes/SAN3/B-SAN3-12a-dev.md`, E1 e E6 — 9 vermelhos (memória) só em arquivos FORA do §7.1:
+  `tests/cheque-title-link.test.ts` (5: K1 PATCH null, K2 parcial, K2 pago por pix, K2 título apagado, K3 misto),
+  `tests/financial-uow-journal-classification.test.ts` (2: fixture P7 de `findPendingByTitle` e a contagem 39),
+  `tests/o6r07c-census-guard.test.ts` via `tests/fixtures/o6r07c-classificacao-vias.json` (2: as 3 rotas novas NÃO-CLASSIFICADAS);
+  mais, por leitura e execução nas etapas seguintes: `tests/cheque-title-link-atomic-db.test.ts`, `src/modules/financial-summary/financial-summary.repository.ts`
+  (A16 em memória: `linkedPendingCount` 0) e o snapshot de `super_admin`/`platform_admin` em `tests/fixtures/role-catalog-contract.snapshot.json`.
+- **encerramento:** emenda do plano nomeando esses arquivos no PERMITIDO (ou outra decisão), dev aplica, bateria verde.
+
+## P-SAN3-12-FILA-PEDIDO-DESVINCULO (2026-10-25) — pedido/aprovação do desvínculo não é persistido — PRODUTO
+- **status:** ABERTA · **dono:** `B-O6R-07c-b2` (generalizar a fila de aprovações) · **bloqueia:** não.
+- **encerramento:** o pedido do Financeiro vira registro durável que o Administrador aprova; hoje é pedido visível + ato do admin com justificativa.
+
+## P-SAN3-12-PREFERENCIA-APARENCIA-NO-SERVIDOR (2026-10-25) — a preferência de aparência vive no navegador — BAIXA
+- **status:** ABERTA · **dono:** bloco da AWS (`D-APARENCIA-RESPOSTAS` (a)) · **bloqueia:** não.
+
+## P-SAN3-12-STATEPANEL-NA-BIBLIOTECA (2026-10-25) — `StatePanel`/`StaleDataBanner` moram em `work-orders/components` — BAIXA
+- **status:** ABERTA · **dono:** bloco de biblioteca (fila pós-gate) · **bloqueia:** não.
+
+## P-SAN3-12-ESTORNO-DE-BAIXA-SEM-TELA (2026-10-25) — `/reverse` sem chamador na web — PRODUTO
+- **status:** ABERTA · **dono:** `B-SAN3-24` · **bloqueia:** não.
+
+## P-SAN3-12-FILTRO-EXTRATO-POR-TITULO-E-MEIO (2026-10-25) — `GET /financial-entries` não filtra por `title_id`/`payment_method` — BAIXA
+- **status:** ABERTA · **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
+
+## P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE (2026-10-25) — a referência de 16/10 lista "Cheque" entre os meios da baixa — BAIXA
+- **status:** ABERTA · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+
+## P-SAN3-12-PAGAMENTO-MISTO-CHEQUE (2026-10-25) — cheque parcial + outro meio no mesmo título — PRODUTO
+- **status:** ABERTA · **dono:** próximo bloco de produto financeiro · **bloqueia:** não.
+- **prova:** dono, 25/10: *"pagamento misto fica para bloco seguinte"*; hoje o vínculo só do valor exato (`422 cheque_amount_mismatch`).
+
+## P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO (2026-10-25) — cheque desvinculado que compensa posta caixa sem título — MÉDIA
+- **status:** ABERTA · **dono:** `B-SAN3-24` (tela de Cheques) · **bloqueia:** não.
+- **prova:** `tests/b-san3-12a-pay-link-race-db.test.ts` (A5-bis, cenário "unlink primeiro"): o `clear` posta o lançamento com `title_id` nulo; mitigação no 12a: o `200` do `unlink-title` devolve `warning: "cheque_still_depositable"`.
+
+## P-SAN3-12-BOUNCE-COMO-DESVIO (2026-10-25) — `bounce` sem privilégio tira o cheque do conjunto pendente — MÉDIA
+- **status:** ABERTA · **dono:** junta do `B-SAN3-12a` decide se vira privilégio · **bloqueia:** não.
+- **prova:** no 12a o `bounce` de cheque vinculado `deposited` exige motivo (`400 bounce_reason_required`) e é auditado com `severity: warning` e o `titleId`; segue com `cheques:update`.
+
+## P-SAN3-12-CAS-VERSION-COLUMN (2026-10-25) — ABA residual do CAS por estado lógico — BAIXA
+- **status:** ABERTA · **dono:** DBA / pedido ao dono (migração de esquema fora da autorização atual) · **bloqueia:** não.
+- **encerramento:** só se o `-db` adversarial do R-res-4 reproduzir a re-conciliação dupla no mesmo ms.
+
+## P-SAN3-12-RBAC-MATRIX-128-CONFLITO (2026-10-25) — a matriz dizia "sem permissão nova" para o `reconcile` — BAIXA
+- **status:** ABERTA · **dono:** `B-SAN3-12a` · **bloqueia:** não.
+- **encerramento:** merge do 12a com a emenda da `RBAC_MATRIX.md` (conflito registrado em `decisoes.md`, `B-SAN3-12`).
+
+## P-SAN3-12-REASONS-SEM-CONTRATO (2026-10-25) — 26 `reason` financeiros pré-existentes sem contrato escrito — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (medido na base `8a7885f4`: 61 `reason` lançados, 37 sem contrato; o 12a escreveu 11).
+- **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
+- **prova:** `tests/b-san3-12a-reasons-census.test.ts` (lista congelada que só encolhe).
+
+## P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE (2026-10-25) — `changeStatus → cancelled` não consulta o cheque pendente — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`changeStatus` é anterior ao bloco; o §4.3 do plano v3 nomeia só `amount` e `DELETE`) · **dono:** próximo bloco de backend financeiro (junto de `P-SAN3-12-PAGAMENTO-MISTO-CHEQUE`) · **bloqueia:** não.
+- **prova:** crítica da E1 (2.4) — `financial-title.service.ts` `changeStatus` não chama a porta `cheque-pending-reader`; o cheque segue vinculado e o `clear` depois recusa por `title_cancelled` (fail-closed, nenhum caixa anda).
+- **recomendação registrada (E1-bis E1b.5):** `changeStatus → cancelled` com conjunto pendente não vazio → 422 `title_has_pending_cheque` pela mesma porta.
+
+## P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS (2026-10-25) — drills que chamam o shim bash de `node_modules/.bin/prisma` com `node` falham no Windows — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (vermelho igual na base `8a7885f4` e no head) · **dono:** bloco de ferramentas de processo · **bloqueia:** não.
+- **prova:** relatório do dev do B-SAN3-12a, E13 (lista "nos dois lados" com causa); `SyntaxError: missing ) after argument list`.
+- **solução provável:** `npx prisma` ou `node node_modules/prisma/build/index.js` nos drills.
 
 ## P-DRILL-GENERICO-POR-PREFIXO (2026-10-25) — o guard de migração prova que o drill CITA a migração, não que injeta falha por prefixo — BAIXA
 
@@ -11743,3 +11815,25 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **gravidade:** BAIXA — nada se perde; sobra registro sem OS na tela.
 - **dono:** `B-SAN3-16`.
 - **encerramento:** replay/descarte de ação e material sem OS, com teste que prova o destino de cada um.
+
+## P-AUDIT-CRITICA-NA-TRANSACAO (2026-10-26) — evento de auditoria `critical` gravado DEPOIS do ato, em best-effort — MÉDIA
+- **status:** ABERTA · **escopo:** `pre-existente` (`core-saas/audit/audit-request-context.ts` nasce em `a09f6a4a`, 2026-06-08; o padrão best-effort alcança todos os eventos `critical` da casa, 20+ controllers) · **dono:** bloco de auditoria do core-saas · **bloqueia:** não.
+- **origem:** C2-01 da junta de dinheiro do B-SAN3-12a (ciclo 1) e E2.2 do plano de resolução: o ato privilegiado commita e só depois a auditoria é tentada; falha OPERACIONAL da auditoria (banco, FK, RLS) deixa o ato sem rastro. A entrada que o validador aceitava e derrubava o rastro (U+0000, surrogate) foi fechada no ciclo 2 (A30).
+- **recomendação registrada:** eventos `severity: critical` gravados na transação do ato, ou fail-closed com o rastro antes do ato.
+- **encerramento:** teste em que a gravação da auditoria falha e o ato privilegiado não persiste (ou persiste com o rastro), para todo evento `critical`.
+
+## P-TENANT-SETTING-AUDIT-SEM-VALOR (2026-10-26) — `tenant_setting.upserted` não diz o valor gravado — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`tenant-setting.controller.ts`, fora do diff e do PERMITIDO do 12a) · **dono:** módulo tenant-settings · **bloqueia:** não.
+- **origem:** C2-02 da junta do B-SAN3-12a (ciclo 1): `PUT /tenant-settings/<chave>` audita sem o valor — a trilha não diz se a delegação do desfazer foi ligada ou desligada.
+- **recomendação:** `{ key, category, value }` nos metadados para chaves de política (sem segredo).
+- **encerramento:** auditoria da chave de política com o valor, e teste que lê o valor na trilha.
+
+## P-RBAC-MIGRATION-PARITY-ESTATICA (2026-10-26) — a guarda estática não acusa migração que concede chave a papel não autorizado — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** ferramentas de processo · **bloqueia:** não.
+- **origem:** C2-03 da junta do B-SAN3-12a (ciclo 1): `permission-catalog-migration-parity` (sem banco) só confere a presença da chave; a concessão indevida só aparece na `permission-catalog-db-parity` com banco (ativa na CI).
+- **encerramento:** a guarda estática confere papel × chave da migração contra o catálogo, com mutação que concede a chave a papel errado e fica vermelha.
+
+## P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO (2026-10-26) — nenhum teste do resumo financeiro tem 2ª organização — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`7eb1a814`, 2026-07-18) · **dono:** financial-summary · **bloqueia:** não.
+- **origem:** C4-05 da junta do B-SAN3-12a (ciclo 1): a mutação M16d é invisível em memória e sob superusuário.
+- **encerramento:** caso do resumo com duas organizações na mesma base, sob papel sem bypass, que fica vermelho com o filtro de organização retirado.
