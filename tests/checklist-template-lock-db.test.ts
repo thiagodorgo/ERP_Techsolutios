@@ -115,6 +115,11 @@ if (!connectionString) {
       const written = await ctx.repo.updateRun({ tenantId: seed.tenantId, runId: run.id,
         answers: [{ componentId: seed.observationId, value: "continua gravando", metadata: {} }] });
       assert.equal(written?.answers[0]?.value, "continua gravando");
+      // E4-01: concluída a vistoria viva, o arquivado deixa de ser servido — 404, nunca 409.
+      await ctx.repo.completeRun(seed.tenantId, run.id, seed.userId, "completed", { meterCompletion: true });
+      const { ChecklistError } = await import("../src/modules/checklists/checklist.types.js");
+      await assert.rejects(ctx.service.renderChecklist({ tenantId: seed.tenantId, userId: seed.userId }, seed.template.id),
+        (error: unknown) => error instanceof ChecklistError && error.statusCode === 404 && error.reason === "checklist_not_found");
     } finally { await teardown(ctx, seed.tenantId); }
   });
 

@@ -288,6 +288,11 @@ export class ChecklistService {
         (template.status === "inactive" || template.status === "archived") &&
         (await this.repository.hasActiveRunsForTemplate(actor.tenantId, template.id));
 
+      // E4-01 (E3-20): arquivado sem vistoria viva não existe para quem pede — 404, como nas outras portas.
+      if (template.status === "archived" && !servesActiveRun) {
+        throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
+      }
+
       if (!servesActiveRun) {
         throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
       }

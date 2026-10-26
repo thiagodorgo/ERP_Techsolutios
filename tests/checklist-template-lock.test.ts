@@ -350,6 +350,53 @@ test("CE-10a/10b/10c (REST): arquivar exige token, recusa defasado e o arquivado
   });
 });
 
+// E4-01 (C2-01, E3-20 ratificada): o modelo arquivado responde 404 `checklist_not_found` em TODAS as portas,
+// inclusive o render quando não há vistoria viva; com vistoria viva o render segue 200 (R7); o rascunho sem
+// vistoria viva segue 409 `checklist_not_published` (R6, controle).
+test("E3-20 (REST): arquivado → 404 nas 5 portas", async () => {
+  await withLockApi(async ({ baseUrl, seed }) => {
+    const h = authHeaders(seed.tenantA, seed.adminA);
+    const hB = authHeaders(seed.tenantB, seed.adminB);
+    const assertNotFound = (response: { status: number; body: { error: { code: string; reason: string } } }, porta: string) => {
+      assert.equal(response.status, 404, `${porta}: ${response.status} ${JSON.stringify(response.body)}`);
+      assert.equal(response.body.error.code, "CHECKLIST_NOT_FOUND", porta);
+      assert.equal(response.body.error.reason, "checklist_not_found", porta);
+    };
+
+    // Arquivado sem nenhuma vistoria.
+    const tpl = await createPublishedTemplate(baseUrl, h);
+    const url = `/api/v1/tenant/checklists/${tpl.id}`;
+    const token = (await requestJson(baseUrl, url, { headers: h })).body.data.updatedAt as string;
+    const archived = await requestJson(baseUrl, `${url}?expectedUpdatedAt=${encodeURIComponent(token)}`, { method: "DELETE", headers: h });
+    assert.equal(archived.status, 204);
+    assertNotFound(await requestJson(baseUrl, url, { headers: h }), "GET");
+    assertNotFound(await requestJson(baseUrl, url, { method: "PATCH", headers: h, body: { expectedUpdatedAt: token, name: "depois de arquivar" } }), "PATCH");
+    assertNotFound(await requestJson(baseUrl, `${url}?expectedUpdatedAt=${encodeURIComponent(token)}`, { method: "DELETE", headers: h }), "DELETE");
+    assertNotFound(await requestJson(baseUrl, `${url}/publish`, { method: "POST", headers: h, body: { expectedUpdatedAt: token } }), "publish");
+    assertNotFound(await requestJson(baseUrl, "/api/v1/mobile/checklist-runs", { method: "POST", headers: h, body: { checklistId: tpl.id } }), "createRun");
+    assertNotFound(await requestJson(baseUrl, `/api/v1/mobile/checklists/${tpl.id}/render`, { headers: h }), "render sem vistoria viva");
+
+    // Arquivado COM vistoria viva: o render serve (R7); concluída a viva, volta ao 404.
+    const served = await createPublishedTemplate(baseUrl, h);
+    const servedUrl = `/api/v1/tenant/checklists/${served.id}`;
+    const live = await createRun(baseUrl, h, served.id);
+    const servedToken = (await requestJson(baseUrl, servedUrl, { headers: h })).body.data.updatedAt as string;
+    assert.equal((await requestJson(baseUrl, `${servedUrl}?expectedUpdatedAt=${encodeURIComponent(servedToken)}`, { method: "DELETE", headers: h })).status, 204);
+    const renderLive = await requestJson(baseUrl, `/api/v1/mobile/checklists/${served.id}/render`, { headers: h });
+    assert.equal(renderLive.status, 200, JSON.stringify(renderLive.body));
+    assertNotFound(await requestJson(baseUrl, `/api/v1/mobile/checklists/${served.id}/render`, { headers: hB }), "render de outra organização");
+    assertNotFound(await requestJson(baseUrl, "/api/v1/mobile/checklists/00000000-0000-4000-8000-0000000000ff/render", { headers: h }), "render de id inexistente");
+    assert.equal((await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${live.id}/complete`, { method: "POST", headers: h, body: { hasDivergence: false } })).status, 200);
+    assertNotFound(await requestJson(baseUrl, `/api/v1/mobile/checklists/${served.id}/render`, { headers: h }), "render depois de concluir a viva");
+
+    // Controle do R6: rascunho sem vistoria viva segue 409 `checklist_not_published`.
+    const draft = await createDraftTemplate(baseUrl, h);
+    const renderDraft = await requestJson(baseUrl, `/api/v1/mobile/checklists/${draft.id}/render`, { headers: h });
+    assert.equal(renderDraft.status, 409);
+    assert.equal(renderDraft.body.error.reason, "checklist_not_published");
+  });
+});
+
 test("CE-11a/11b (REST): publicar com o token da própria gravação depois que outra pessoa gravou → 409; relido → 200", async () => {
   await withLockApi(async ({ baseUrl, seed }) => {
     const h = authHeaders(seed.tenantA, seed.adminA);
@@ -438,8 +485,11 @@ test("CE-11c: em src/, só controller, serviço e repositórios de checklist cha
 });
 
 test("CE-13: em tests/, todo PATCH/publish/DELETE de modelo e todo updateTemplate direto levam o token", () => {
-  const missing = checklistTokenCallSiteViolations("tests");
-  assert.deepEqual(missing, [], `sítios sem expectedUpdatedAt/componentKey:\n${missing.join("\n")}`);
+  const { violations, declarations, variableSites } = checklistTokenCallSiteViolations("tests");
+  const census = `URL em variável: ${declarations} declarações / ${variableSites} sítios mutantes`;
+  assert.deepEqual(violations, [], `${census}\nsítios sem expectedUpdatedAt/componentKey ou com resultado descartado:\n${violations.join("\n")}`);
+  assert.ok(declarations > 0 && variableSites > 0, `a regra (iii) não alcançou nenhum sítio — ${census}`);
+  console.log(`CE-13: ${census}`);
 });
 
 // --- arnês ------------------------------------------------------------------------------------------------
@@ -597,12 +647,25 @@ function listFiles(dir: string, accept: (name: string) => boolean): string[] {
   return out;
 }
 
-// Leitura de arquivo (CE-13): cada chamada HTTP a `/api/v1/tenant/checklists/${…}` com PATCH, `/publish` ou
+/// Leitura de arquivo (CE-13): cada chamada HTTP a `/api/v1/tenant/checklists/${…}` com PATCH, `/publish` ou
 // DELETE, e cada `.updateTemplate(` direto, é recortada até o fim da chamada; o recorte tem de citar
 // `expectedUpdatedAt` (e `componentKey` quando traz `components: [`). Negativo de propósito leva o marcador
-// `sem-token-proposital` ou `sem-chave-proposital` dentro do recorte.
-function checklistTokenCallSiteViolations(root: string): string[] {
+// `sem-token-proposital` ou `sem-chave-proposital` dentro do recorte. Formas alcançadas: (i) URL literal na
+// chamada; (ii) URL concatenada (`"/api/v1/tenant/checklists/" + id`); (iii) URL em variável (E4-02): para cada
+// `const|let <nome> = `/api/v1/tenant/checklists/${…}`;`, do ponto da declaração até o próximo `test(` de topo,
+// toda chamada `<helper>(<arg>, <nome>, {`, `<helper>(<arg>, `${<nome>}/publish`, {` ou
+// `<helper>(<arg>, `${<nome>}?…`, {` é recortada A PARTIR DA CHAMADA e julgada pela mesma régua; (iv) resultado
+// descartado (E4-03): chamada mutante das formas (i)–(iii) cuja linha começa em `await <helper>(` não afirma o
+// status — violação, salvo o marcador `resultado-descartado-proposital` no recorte.
+// RESIDUAL declarado (E4-02; citado em `P-FRONT-TESTE-DE-INTERACAO`): URL passada como PARÂMETRO de helper, ou
+// declarada fora do bloco `test(` corrente, ou atribuída de outra forma, não é alcançada; a regra (iv) só lê a
+// linha da chamada (chamada que quebra linha antes da URL escapa dela); arquivos `.tsx` ficam fora.
+type TokenGuardReport = { readonly violations: string[]; readonly declarations: number; readonly variableSites: number };
+
+function checklistTokenCallSiteViolations(root: string): TokenGuardReport {
   const violations: string[] = [];
+  let declarations = 0;
+  let variableSites = 0;
   for (const file of listFiles(root, (name) => name.endsWith(".ts"))) {
     const source = fs.readFileSync(file, "utf8");
     const lineOf = (index: number) => source.slice(0, index).split("\n").length;
@@ -611,9 +674,18 @@ function checklistTokenCallSiteViolations(root: string): string[] {
       const end = rest.search(/\}\s*\)/);
       return end === -1 ? rest : rest.slice(0, end + 2);
     };
+    // Regra (iv): o texto da linha, do começo até o ponto da chamada, é `await <helper>(` — o resultado some.
+    const checkDiscarded = (start: number, end: number, method: string, window: string, form: string) => {
+      const lineStart = source.lastIndexOf("\n", start - 1) + 1;
+      if (/^\s*await\s+[\w.]+\(/.test(source.slice(lineStart, end)) && !window.includes("resultado-descartado-proposital")) {
+        violations.push(`${file}:${lineOf(start)} ${method} com resultado descartado (status não afirmado)${form}`);
+      }
+    };
     const urlPattern = /\/api\/v1\/tenant\/checklists\/\$\{[^}]+\}/g;
     for (let match = urlPattern.exec(source); match; match = urlPattern.exec(source)) {
       const after = source.slice(match.index + match[0].length);
+      // Declaração de variável não é chamada: quem a julga é a regra (iii), a partir de cada chamada.
+      if (after.startsWith("`;")) continue;
       const isPublish = after.startsWith("/publish`");
       if (!isPublish && !after.startsWith("`") && !after.startsWith("?")) continue;
       const window = windowFrom(match.index);
@@ -636,6 +708,51 @@ function checklistTokenCallSiteViolations(root: string): string[] {
       ) {
         violations.push(`${file}:${lineOf(match.index)} PATCH com components sem componentKey`);
       }
+      checkDiscarded(match.index, match.index, method, window, "");
+    }
+    // (iii) URL em variável (E4-02).
+    const declarationPattern = /\b(?:const|let)\s+(\w+)\s*=\s*`\/api\/v1\/tenant\/checklists\/\$\{[^}`]+\}`;/g;
+    const seenCalls = new Set<number>();
+    for (let declaration = declarationPattern.exec(source); declaration; declaration = declarationPattern.exec(source)) {
+      declarations += 1;
+      const name = declaration[1];
+      const scopeStart = declaration.index + declaration[0].length;
+      const nextTest = source.indexOf("\ntest(", scopeStart);
+      const scopeEnd = nextTest === -1 ? source.length : nextTest;
+      const callPattern = new RegExp(
+        String.raw`\b[\w.]+\(\s*[^,()\x60]+,\s*(?:${name}|\x60\$\{${name}\}(\/publish)?(?:\?[^\x60]*)?\x60)\s*,\s*\{`,
+        "g",
+      );
+      const scope = source.slice(scopeStart, scopeEnd);
+      for (let call = callPattern.exec(scope); call; call = callPattern.exec(scope)) {
+        const index = scopeStart + call.index;
+        if (seenCalls.has(index)) continue;
+        const window = windowFrom(index);
+        const method = call[1]
+          ? "POST /publish"
+          : /method:\s*"PATCH"/.test(window)
+            ? "PATCH"
+            : /method:\s*"DELETE"/.test(window)
+              ? "DELETE"
+              : null;
+        if (!method) continue;
+        seenCalls.add(index);
+        variableSites += 1;
+        const negative = /sem-token-proposital|sem-chave-proposital/.test(window);
+        if (!negative && !window.includes("expectedUpdatedAt")) {
+          violations.push(`${file}:${lineOf(index)} ${method} sem expectedUpdatedAt (URL em variável ${name})`);
+        }
+        if (
+          method === "PATCH" &&
+          !negative &&
+          /components:\s*\[/.test(window) &&
+          !window.includes("componentKey") &&
+          !window.includes("componentPayload(")
+        ) {
+          violations.push(`${file}:${lineOf(index)} PATCH com components sem componentKey (URL em variável ${name})`);
+        }
+        checkDiscarded(index, index + call[0].length, method, window, ` (URL em variável ${name})`);
+      }
     }
     // URL montada por concatenação (`"/api/v1/tenant/checklists/" + id + "/publish"`, a forma de
     // `tests/helpers/o6r07c-census.ts`, que o inventário M-27 do plano não contou): publish, ou PATCH/DELETE
@@ -649,6 +766,7 @@ function checklistTokenCallSiteViolations(root: string): string[] {
       if (!/sem-token-proposital/.test(window) && !window.includes("expectedUpdatedAt")) {
         violations.push(`${file}:${lineOf(match.index)} ${method} sem expectedUpdatedAt (URL concatenada)`);
       }
+      checkDiscarded(match.index, match.index, method, window, " (URL concatenada)");
     }
     const directPattern = /(?<!super)\.updateTemplate\(/g;
     for (let match = directPattern.exec(source); match; match = directPattern.exec(source)) {
@@ -658,5 +776,5 @@ function checklistTokenCallSiteViolations(root: string): string[] {
       }
     }
   }
-  return violations;
+  return { violations, declarations, variableSites };
 }

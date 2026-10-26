@@ -40,7 +40,9 @@ test("[imutável pós-edição] editar/republicar o template após o despacho N�
 
     // edita o nome do template e republica (nova versão)
     const edited = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: tpl.updatedAt, name: "RENOMEADO" } });
-    await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}/publish`, { method: "POST", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: edited.body.data.updatedAt } });
+    assert.equal(edited.status, 200, JSON.stringify(edited.body));
+    const republished = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}/publish`, { method: "POST", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: edited.body.data.updatedAt } });
+    assert.equal(republished.status, 200, JSON.stringify(republished.body));
 
     const after = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     assert.deepEqual(after, v1, "o snapshot congelado não pode reagir à edição do template");

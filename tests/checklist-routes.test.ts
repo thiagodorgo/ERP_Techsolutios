@@ -922,11 +922,12 @@ test("checklist P1 PR-03: modelo INATIVADO continua servindo quem já está no c
 
     // 5) Sem NENHUMA vistoria viva, o modelo inativo volta a recusar o render (nada a servir).
     const semRunAtiva = await createFieldChecklist(baseUrl, seed.tenantA, seed.adminA);
-    await requestJson(baseUrl, `/api/v1/tenant/checklists/${semRunAtiva.id}`, {
+    const inativado = await requestJson(baseUrl, `/api/v1/tenant/checklists/${semRunAtiva.id}`, {
       method: "PATCH",
       headers,
       body: { expectedUpdatedAt: semRunAtiva.updatedAt, status: "inactive" },
     });
+    assert.equal(inativado.status, 200, JSON.stringify(inativado.body));
     const renderSemRun = await requestJson(baseUrl, `/api/v1/mobile/checklists/${semRunAtiva.id}/render`, { headers });
     assert.equal(renderSemRun.status, 409);
     assert.equal(renderSemRun.body.error.reason, "checklist_not_published");
@@ -1017,6 +1018,7 @@ async function createAndPublishChecklist(
     headers: authHeaders(tenant, user),
     body: { expectedUpdatedAt: create.body.data.updatedAt },
   });
+  assert.equal(publish.status, 200, JSON.stringify(publish.body));
 
   return {
     id: publish.body.data.id as string,

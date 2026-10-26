@@ -87,7 +87,8 @@ export async function censoCamadas(injecao?: string): Promise<{ res: any; resumo
   // Semente: OS atribuída ao tecA (por user id, a forma do app), modelo publicado, despacho ao tecA (provisiona a vistoria).
   const ADM = mgr.id;
   const tpl = await chamar("POST", "/api/v1/tenant/checklists", H(ADM, "tenant_admin"), { name: "Coleta", type: "technical_evidence", schema: {}, components: [{ componentKey: "ok", type: "observation", label: "ok?", required: false, config: {}, validationRules: {}, visibilityRules: {} }] });
-  await chamar("POST", "/api/v1/tenant/checklists/" + tpl.j.data.id + "/publish", H(ADM, "tenant_admin"), { expectedUpdatedAt: tpl.j.data.updatedAt });
+  const publicado = await chamar("POST", "/api/v1/tenant/checklists/" + tpl.j.data.id + "/publish", H(ADM, "tenant_admin"), { expectedUpdatedAt: tpl.j.data.updatedAt });
+  if (publicado.s !== 200) throw new Error("semente: publish falhou (" + publicado.k + ")");
   const wo = await chamar("POST", "/api/v1/work-orders", H(ADM, "tenant_admin"), { title: "OS censo", checklistId: tpl.j.data.id });
   const osA = wo.j.data.id;
   const disp = await chamar("POST", "/api/v1/operations/dispatches", H(ADM, "tenant_admin"), { workOrderId: osA, operatorUserId: tecA.id });
