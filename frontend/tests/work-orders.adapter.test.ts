@@ -122,7 +122,7 @@ test("work orders timeline e formulario validam contrato", () => {
   assert.equal(timeline[0].eventType, "work_order_created");
   assert.deepEqual(
     validateWorkOrderForm({ title: "", priority: "", serviceLatitude: "-91", serviceLongitude: "10", scheduledFor: "" }),
-    ["Titulo obrigatorio.", "Prioridade obrigatoria.", "Latitude invalida."],
+    ["Título obrigatorio.", "Prioridade obrigatoria.", "Latitude invalida."],
   );
 });
 

@@ -23,7 +23,7 @@ extension _WoGroupX on _WoGroup {
     _WoGroup.all => 'Todas',
     _WoGroup.scheduled => 'Agendadas',
     _WoGroup.field => 'Em campo',
-    _WoGroup.done => 'Concluidas',
+    _WoGroup.done => 'Concluídas',
   };
 
   bool matches(WorkOrderStatus s) => switch (this) {
@@ -288,7 +288,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                                 repo.workOrders.isEmpty)
                               EmptyState(
                                 icon: Icons.cloud_off_outlined,
-                                title: 'Nao foi possivel carregar ordens',
+                                title: 'Não foi possível carregar ordens',
                                 message: repo.lastPullError!,
                                 action: TextButton.icon(
                                   onPressed: () => repo.refresh(),
@@ -317,7 +317,7 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
                                         _group != _WoGroup.all ||
                                         _priority != null
                                     ? 'Nenhuma OS corresponde aos filtros selecionados.'
-                                    : 'Voce ainda nao possui ordens atribuidas.',
+                                    : 'Voce ainda nao possui ordens atribuídas.',
                               ),
                           ],
                         )

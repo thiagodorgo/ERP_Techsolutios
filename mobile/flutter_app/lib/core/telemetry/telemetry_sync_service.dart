@@ -151,6 +151,6 @@ class TelemetrySyncService {
   }
   return (
     code: 'SYNC_ERROR',
-    safeMessage: 'Nao foi possivel sincronizar a telemetria.',
+    safeMessage: 'Não foi possível sincronizar a telemetria.',
   );
 }

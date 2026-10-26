@@ -18,7 +18,7 @@ export function WorkOrdersFilters({
         <input
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
-          placeholder="Buscar por codigo, titulo ou cliente"
+          placeholder="Buscar por codigo, título ou cliente"
         />
       </label>
       <Select label="Status" value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as WorkOrdersFilterState["status"] })}>

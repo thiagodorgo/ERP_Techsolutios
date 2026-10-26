@@ -70,7 +70,7 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
                   title: const Text('Mapa operacional simples conectado a OS'),
                   subtitle: Text(
                     workOrder == null
-                        ? 'Selecione uma OS para visualizar ponto de atendimento e ultimo fix do tecnico.'
+                        ? 'Selecione uma OS para visualizar ponto de atendimento e último fix do tecnico.'
                         : '${workOrder.code} - ${workOrder.customerName}',
                   ),
                 ),
@@ -86,7 +86,7 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
                     leading: Icon(Icons.info_outline),
                     title: Text('OS nao selecionada'),
                     subtitle: Text(
-                      'Abra o mapa a partir de uma OS para registrar localizacao operacional.',
+                      'Abra o mapa a partir de uma OS para registrar localização operacional.',
                     ),
                   ),
                 ),
@@ -155,13 +155,13 @@ class _OperationalLocationCardState
       if (result.status == FieldLocationCaptureStatus.unavailable) {
         _safeMessage =
             result.safeMessage ??
-            'Localizacao do dispositivo indisponivel nesta versao.';
+            'Localização do dispositivo indisponivel nesta versao.';
       } else {
         await service.syncTenant(widget.session.activeTenant.tenantId);
-        _safeMessage = 'Localizacao operacional enfileirada para sync.';
+        _safeMessage = 'Localização operacional enfileirada para sync.';
       }
     } catch (_) {
-      _safeMessage = 'Nao foi possivel registrar a localizacao operacional.';
+      _safeMessage = 'Não foi possível registrar a localização operacional.';
     } finally {
       if (mounted) {
         setState(() {
@@ -204,7 +204,7 @@ class _OperationalLocationCardState
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Localizacao operacional',
+                        'Localização operacional',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -238,7 +238,7 @@ class _OperationalLocationCardState
                 if (latest == null)
                   const Text('Nenhum fix operacional registrado nesta OS.')
                 else ...[
-                  Text('Ultimo fix: ${_fmtDate(latest.recordedAt)}'),
+                  Text('Último fix: ${_fmtDate(latest.recordedAt)}'),
                   if (latest.accuracyMeters != null)
                     Text(
                       'Precisao: ${latest.accuracyMeters!.toStringAsFixed(1)} m',
@@ -267,7 +267,7 @@ class _OperationalLocationCardState
                                 ),
                               )
                             : const Icon(Icons.my_location_outlined),
-                        label: const Text('Enviar localizacao agora'),
+                        label: const Text('Enviar localização agora'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -353,7 +353,7 @@ class _LocationPrivacyStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final current = status;
     if (current == null) {
-      return const Text('Verificando status de localizacao...');
+      return const Text('Verificando status de localização...');
     }
 
     return Column(

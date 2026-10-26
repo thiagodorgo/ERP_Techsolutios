@@ -146,7 +146,7 @@ class ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return EmptyState(
       icon: Icons.error_outline,
-      title: 'Nao foi possivel carregar',
+      title: 'Não foi possível carregar',
       message: message,
     );
   }

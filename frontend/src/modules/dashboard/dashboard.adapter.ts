@@ -32,7 +32,7 @@ export function deriveDashboardKpis(data: WorkOrdersData): OperationalKpi[] {
       tone: critical > 0 ? "danger" : "success",
     },
     { id: "in_progress", label: "Em atendimento", value: String(inProgress), delta: "agora", tone: "warning" },
-    { id: "completed", label: "Concluidas", value: String(completed), delta: "no periodo", tone: "success" },
+    { id: "completed", label: "Concluídas", value: String(completed), delta: "no periodo", tone: "success" },
   ];
 }
 

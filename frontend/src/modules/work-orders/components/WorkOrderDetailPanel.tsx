@@ -46,7 +46,7 @@ export function WorkOrderDetailPanel({ workOrder }: { readonly workOrder: WorkOr
       {workOrder.description ? <p className="work-order-description">{workOrder.description}</p> : null}
       {hasCoordinates ? (
         <Button type="button" variant="secondary" onClick={() => navigate("/operations/map")}>
-          <MapPin size={16} /> Ver localizacao no mapa operacional
+          <MapPin size={16} /> Ver localização no mapa operacional
         </Button>
       ) : null}
     </Card>

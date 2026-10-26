@@ -80,7 +80,7 @@ class _WorkOrderConclusionScreenState
       if (mounted) setState(() => _error = e.message);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Nao foi possivel concluir. Tente novamente.');
+        setState(() => _error = 'Não foi possível concluir. Tente novamente.');
       }
     } finally {
       if (mounted) setState(() => _completing = false);

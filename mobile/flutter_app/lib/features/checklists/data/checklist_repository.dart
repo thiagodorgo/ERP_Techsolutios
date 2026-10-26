@@ -160,7 +160,7 @@ class ChecklistRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+          : 'Não foi possível atualizar os modelos de checklist agora.';
       _isPulling = false;
       // fall through to local cache / seed
     }
@@ -205,7 +205,7 @@ class ChecklistRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar os modelos de checklist agora.';
+          : 'Não foi possível atualizar os modelos de checklist agora.';
       _loaded = true;
       return _templates.isEmpty
           ? ChecklistPullOutcome.error
@@ -759,8 +759,8 @@ class ChecklistRepository extends ChangeNotifier {
     final who = trimmedName.isEmpty ? 'responsavel' : trimmedName;
     final trimmedRole = role.trim();
     return trimmedRole.isEmpty
-        ? 'Ciencia registrada por $who.'
-        : 'Ciencia registrada por $who ($trimmedRole).';
+        ? 'Ciência registrada por $who.'
+        : 'Ciência registrada por $who ($trimmedRole).';
   }
 
   Future<MobileChecklistAcknowledgement?> getAcknowledgement(String runId) =>
@@ -1032,7 +1032,7 @@ List<MobileChecklistSchema> _seedSchemas(BootstrapSession session) {
         MobileChecklistField(
           id: 'f-ack',
           type: MobileChecklistFieldType.acknowledgement,
-          label: 'Ciencia do motorista',
+          label: 'Ciência do motorista',
           required: false,
           order: 3,
         ),

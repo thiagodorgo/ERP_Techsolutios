@@ -25,7 +25,7 @@ test("login: 409/400 TENANT_ID_REQUIRED/429 têm mensagem própria; os códigos 
   assert.equal(readLoginErrorMessage(400), "Revise tenant, e-mail e senha.");
   assert.equal(readLoginErrorMessage(401), "Tenant, e-mail ou senha invalidos.");
   assert.equal(readLoginErrorMessage(423), "Conta bloqueada. Solicite suporte ao administrador.");
-  assert.equal(readLoginErrorMessage(500), "Nao foi possivel autenticar agora.");
+  assert.equal(readLoginErrorMessage(500), "Não foi possível autenticar agora.");
 
   // Nenhuma mensagem nova vaza termo técnico na UI (§3 do CLAUDE.md).
   for (const [status, code] of [

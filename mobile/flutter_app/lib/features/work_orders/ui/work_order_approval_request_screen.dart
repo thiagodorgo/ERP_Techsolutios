@@ -221,7 +221,7 @@ class _WorkOrderApprovalRequestScreenState
     } catch (_) {
       setState(
         () => _safeError =
-            'Nao foi possivel registrar a solicitacao. Tente novamente.',
+            'Não foi possível registrar a solicitacao. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);

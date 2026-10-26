@@ -38,7 +38,7 @@ void main() {
       final result = await provider.currentLocation();
 
       expect(result.isAvailable, isFalse);
-      expect(result.safeMessage, contains('Servico de localizacao desligado'));
+      expect(result.safeMessage, contains('Servico de localização desligado'));
       expect(port.currentPositionCalls, 0);
     });
 
@@ -78,7 +78,7 @@ void main() {
       final result = await _provider(port, accepted: true).currentLocation();
 
       expect(result.isAvailable, isFalse);
-      expect(result.safeMessage, contains('Permissao de localizacao negada'));
+      expect(result.safeMessage, contains('Permissao de localização negada'));
       expect(result.safeMessage, isNot(contains('-23.')));
     });
 
@@ -166,7 +166,7 @@ void main() {
       await tester.pumpWidget(_cardApp(deviceProvider: provider));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Enviar localizacao agora'));
+      await tester.tap(find.text('Enviar localização agora'));
       await tester.pumpAndSettle();
 
       expect(provider.currentLocationCalls, 1);
@@ -258,7 +258,7 @@ void main() {
         store: InMemoryFieldLocationStore(),
         api: _FakeFieldLocationApi(),
         deviceLocationProvider: _UnavailableDeviceLocationProvider(
-          'Permissao de localizacao negada.',
+          'Permissao de localização negada.',
         ),
       );
 

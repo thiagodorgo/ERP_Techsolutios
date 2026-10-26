@@ -307,7 +307,7 @@ void main() {
       await t.pumpAndSettle();
       await _scrollUntilFound(t, find.byKey(const Key('checkin-block')));
 
-      expect(find.text('Nao foi possivel iniciar'), findsOneWidget);
+      expect(find.text('Não foi possível iniciar'), findsOneWidget);
       expect(find.byKey(const Key('checkin-block')), findsOneWidget);
     });
 

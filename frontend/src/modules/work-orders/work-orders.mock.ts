@@ -169,7 +169,7 @@ export function getMockWorkOrderTimeline(workOrderId: string): WorkOrderEvent[] 
       eventType: "work_order_assigned",
       fromStatus: "open",
       toStatus: "assigned",
-      message: "Atribuida ao operador informado.",
+      message: "Atribuída ao operador informado.",
       actorUserId: "usr-ops-01",
       createdAt: "2026-06-09T11:45:00.000Z",
     },

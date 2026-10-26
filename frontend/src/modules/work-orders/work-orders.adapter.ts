@@ -44,13 +44,13 @@ export function buildRegistryLinksPayload(links: WorkOrderRegistryLinks): WorkOr
 
 const statusLabels: Record<WorkOrderStatus, string> = {
   open: "Aberta",
-  assigned: "Atribuida",
+  assigned: "Atribuída",
   accepted: "Aceita",
   on_route: "Em deslocamento",
   on_site: "No local",
   in_progress: "Em atendimento",
   paused: "Pausada",
-  completed: "Concluida",
+  completed: "Concluída",
   cancelled: "Cancelada",
   rejected: "Recusada",
 };
@@ -252,7 +252,7 @@ export function validateWorkOrderForm(input: {
   readonly destinationLongitude?: string;
 }): string[] {
   const errors: string[] = [];
-  if (!input.title.trim()) errors.push("Titulo obrigatorio.");
+  if (!input.title.trim()) errors.push("Título obrigatorio.");
   if (!input.priority.trim()) errors.push("Prioridade obrigatoria.");
   if (input.serviceLatitude && !isValidLatitude(Number(input.serviceLatitude))) errors.push("Latitude invalida.");
   if (input.serviceLongitude && !isValidLongitude(Number(input.serviceLongitude))) errors.push("Longitude invalida.");

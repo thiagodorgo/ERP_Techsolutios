@@ -220,7 +220,7 @@ void main() {
       expect(find.text('Todas'), findsWidgets);
       expect(find.text('Agendadas'), findsOneWidget);
       expect(find.text('Em campo'), findsOneWidget);
-      expect(find.text('Concluidas'), findsOneWidget);
+      expect(find.text('Concluídas'), findsOneWidget);
     });
 
     testWidgets('5. tab Agendadas filtra scheduled/dispatched', (tester) async {
@@ -275,7 +275,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Concluidas'));
+      await tester.tap(find.text('Concluídas'));
       await tester.pump();
 
       expect(find.textContaining('OS-B083-done'), findsOneWidget);
@@ -299,7 +299,7 @@ void main() {
       expect(find.text('Em rota'), findsWidgets);
       expect(find.text('No local'), findsWidgets);
       expect(find.text('Em exec.'), findsWidgets);
-      expect(find.text('Concluida'), findsWidgets);
+      expect(find.text('Concluída'), findsWidgets);
     });
 
     testWidgets('9. botoes Checklist / Mapa presentes', (tester) async {
@@ -336,7 +336,7 @@ void main() {
       await tester.pumpWidget(_wrapWo(const NewWorkOrderScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Titulo *'), findsOneWidget);
+      expect(find.text('Título *'), findsOneWidget);
       expect(find.text('Cliente *'), findsOneWidget);
       expect(find.text('Endereco de atendimento *'), findsOneWidget);
       expect(find.text('Prioridade *'), findsOneWidget);

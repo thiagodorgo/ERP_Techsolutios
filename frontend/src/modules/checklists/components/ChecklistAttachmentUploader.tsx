@@ -87,7 +87,7 @@ export function ChecklistAttachmentUploader({
       if (inputRef.current) inputRef.current.value = "";
       onUploaded?.(result.attachment);
     } catch {
-      setError("Nao foi possivel enviar a evidencia. Verifique permissoes e tente novamente.");
+      setError("Não foi possível enviar a evidencia. Verifique permissoes e tente novamente.");
     } finally {
       setUploading(false);
     }

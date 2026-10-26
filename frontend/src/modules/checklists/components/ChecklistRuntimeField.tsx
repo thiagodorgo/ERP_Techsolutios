@@ -107,7 +107,7 @@ export function ChecklistRuntimeField({
     if (component.type === "acknowledgement") {
       const acknowledgement = readAcknowledgementValue(value);
       const requireObservation = requiresAcknowledgementObservation(component);
-      const message = readConfiguredMessage(component, "Declaro ciencia das informacoes registradas nesta execucao.");
+      const message = readConfiguredMessage(component, "Declaro ciência das informacoes registradas nesta execucao.");
 
       return (
         <div className="checklist-runtime-acknowledgement">
@@ -280,7 +280,7 @@ function DamageMapField({
 
   async function handleAddMarker() {
     if (!description.trim()) {
-      setError("Informe uma descricao para o marcador.");
+      setError("Informe uma descrição para o marcador.");
       return;
     }
 
@@ -297,7 +297,7 @@ function DamageMapField({
       });
       setDescription("");
     } catch {
-      setError("Nao foi possivel registrar o marcador.");
+      setError("Não foi possível registrar o marcador.");
     } finally {
       setSaving(false);
     }
@@ -319,7 +319,7 @@ function DamageMapField({
             <option value="attention">Atenção</option>
           </Select>
           <label className="ui-field">
-            <span>Descricao</span>
+            <span>Descrição</span>
             <input className="ui-input" value={description} onChange={(event) => setDescription(event.target.value)} />
           </label>
           <Button type="button" variant="secondary" onClick={handleAddMarker} disabled={saving}>
@@ -335,7 +335,7 @@ function DamageMapField({
             <li key={marker.id}>
               <div>
                 <strong>{marker.markerType}</strong>
-                <span>{marker.description ?? "Sem descricao"}</span>
+                <span>{marker.description ?? "Sem descrição"}</span>
               </div>
               {!disabled ? (
                 <Button type="button" size="sm" variant="ghost" onClick={() => onRemoveMarker(marker.id)}>
@@ -389,7 +389,7 @@ function ComparisonField({
       await onReportDivergence(componentId, observation.trim(), evidence);
       setObservation("");
     } catch {
-      setError("Nao foi possivel registrar a divergencia.");
+      setError("Não foi possível registrar a divergencia.");
     } finally {
       setSubmitting(false);
     }
@@ -435,7 +435,7 @@ function ComparisonField({
               value={observation}
               onChange={(event) => setObservation(event.target.value)}
             />
-            <small>Use evidencia ja anexada ao run; o backend registra a divergencia e exige ciencia quando aplicavel.</small>
+            <small>Use evidencia ja anexada ao run; o backend registra a divergencia e exige ciência quando aplicavel.</small>
           </label>
           {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
           <Button type="button" variant="secondary" onClick={handleReportDivergence} disabled={submitting}>
@@ -466,11 +466,11 @@ function AcknowledgeRunAction({
 
   async function handleAcknowledge() {
     if (!accepted) {
-      setError("Confirme a ciencia antes de registrar.");
+      setError("Confirme a ciência antes de registrar.");
       return;
     }
     if (requireObservation && !observation.trim()) {
-      setError("Informe a observacao obrigatoria da ciencia.");
+      setError("Informe a observacao obrigatoria da ciência.");
       return;
     }
 
@@ -480,7 +480,7 @@ function AcknowledgeRunAction({
     try {
       await onAcknowledgeRun(message, observation.trim() || undefined);
     } catch {
-      setError("Nao foi possivel registrar a ciencia.");
+      setError("Não foi possível registrar a ciência.");
     } finally {
       setSubmitting(false);
     }
@@ -491,7 +491,7 @@ function AcknowledgeRunAction({
       {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
       <Button type="button" variant="secondary" onClick={handleAcknowledge} disabled={submitting}>
         <CheckCircle2 size={16} />
-        {submitting ? "Registrando..." : "Registrar ciencia"}
+        {submitting ? "Registrando..." : "Registrar ciência"}
       </Button>
     </div>
   );

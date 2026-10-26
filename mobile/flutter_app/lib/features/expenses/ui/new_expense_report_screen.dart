@@ -35,7 +35,7 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
           TextField(
             controller: _titleController,
             decoration: const InputDecoration(
-              labelText: 'Titulo da Prestação de Contas',
+              labelText: 'Título da Prestação de Contas',
             ),
           ),
           const SizedBox(height: 12),

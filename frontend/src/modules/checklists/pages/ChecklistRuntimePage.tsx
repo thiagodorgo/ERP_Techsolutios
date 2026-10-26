@@ -82,7 +82,7 @@ export function ChecklistRuntimePage() {
           void refreshComparison(createdRun.id, active);
         }
       } catch {
-        if (active) setError("Nao foi possivel iniciar a execucao do checklist.");
+        if (active) setError("Não foi possível iniciar a execucao do checklist.");
       } finally {
         if (active) setLoading(false);
       }
@@ -130,7 +130,7 @@ export function ChecklistRuntimePage() {
       setMessage("Rascunho salvo com sucesso.");
       return true;
     } catch {
-      setError("Nao foi possivel salvar o rascunho.");
+      setError("Não foi possível salvar o rascunho.");
       return false;
     } finally {
       setSaving(false);
@@ -163,7 +163,7 @@ export function ChecklistRuntimePage() {
       }
       setMessage("Checklist concluido com sucesso.");
     } catch {
-      setError("Nao foi possivel concluir o checklist.");
+      setError("Não foi possível concluir o checklist.");
     } finally {
       setCompleting(false);
     }
@@ -198,7 +198,7 @@ export function ChecklistRuntimePage() {
     setAttachments(details.attachments);
     setMarkers(details.markers);
     await refreshComparison(details.run.id);
-    setMessage("Divergencia registrada. A execucao ficou pendente de ciencia quando exigido pelo backend.");
+    setMessage("Divergencia registrada. A execucao ficou pendente de ciência quando exigido pelo backend.");
   }
 
   async function handleAcknowledgeRun(message: string, observation?: string) {
@@ -212,7 +212,7 @@ export function ChecklistRuntimePage() {
     setAttachments(details.attachments);
     setMarkers(details.markers);
     await refreshComparison(details.run.id);
-    setMessage("Ciencia registrada com sucesso.");
+    setMessage("Ciência registrada com sucesso.");
   }
 
   async function refreshComparison(runId: string, active = true) {

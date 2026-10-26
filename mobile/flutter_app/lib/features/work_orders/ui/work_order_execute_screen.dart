@@ -113,7 +113,7 @@ class _WorkOrderExecuteScreenState
     } catch (_) {
       setState(
         () =>
-            _safeError = 'Nao foi possivel alterar o status. Tente novamente.',
+            _safeError = 'Não foi possível alterar o status. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -141,7 +141,7 @@ class _WorkOrderExecuteScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao registrar evidencia: $e')),
+          SnackBar(content: Text('Erro ao registrar evidência: $e')),
         );
       }
     }
@@ -164,7 +164,7 @@ class _WorkOrderExecuteScreenState
       setState(() => _safeError = e.safeMessage);
     } catch (_) {
       setState(
-        () => _safeError = 'Nao foi possivel concluir a OS. Tente novamente.',
+        () => _safeError = 'Não foi possível concluir a OS. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -696,7 +696,7 @@ class _EvidenceSection extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: isLoading ? null : onAdd,
             icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Registrar evidencia'),
+            label: const Text('Registrar evidência'),
           ),
         ),
       ],

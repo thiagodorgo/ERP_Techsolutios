@@ -86,7 +86,7 @@ export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthS
   const payload = (await response.json()) as LoginApiResponse;
 
   if (!payload.data.authenticated) {
-    throw new Error("Nao foi possivel autenticar com a API.");
+    throw new Error("Não foi possível autenticar com a API.");
   }
 
   return mapLoginResponse(payload);
@@ -213,7 +213,7 @@ export function readLoginErrorMessage(status: number, errorCode?: string): strin
     return "Conta bloqueada. Solicite suporte ao administrador.";
   }
 
-  return "Nao foi possivel autenticar agora.";
+  return "Não foi possível autenticar agora.";
 }
 
 export function resolveFrontendRoles(backendRoles: readonly string[]): UserRole[] {
