@@ -1,0 +1,1 @@
+| jurado-san322-c1-sol | gpt-5.6-sol (Codex, medium) | 3 itens | item 1 (sub-critério 3 gravado; itens 2 e 3 EM APURAÇÃO) | limite de uso do Codex, 14:38:29Z ("try again at 4:20 PM") | item 1 parcial: re-execução dos comandos registrados + itens 2 e 3 inteiros |
