@@ -357,3 +357,13 @@ Roteiro `mutate.py` (no scratchpad, copiado abaixo em forma de tabela): backup, 
 - **Registro:** `pendencias.md` — `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` marcada RESOLVIDA no mesmo PR (E3-18) e `P-APARENCIA-POR-USUARIO` com a linha "editor de checklist registrado". Plano atualizado (v2 + E3 + Q5 + E3-bis) copiado para `docs/revisoes/SAN3/B-SAN3-22-plano.md`. `Kpis/**` intocado.
 - **Commits** (Conventional Commits, sem atribuição): `506300f5` fix(checklists) classificador (E3b-01..03); `338f81dc` feat(checklists) fatia web; o commit final com o ajuste de tons da B, o guard da E3b-08, o registro, este relatório e as capturas. `git push origin fix/checklist-trava-versao`. PR **não** aberto.
 - **Limpeza §C5:** `dev-san322w-pg` e `dev-san322w-redis` removidos, com os 2 volumes anônimos deles (criados 11:58:27/28Z; os outros 18 volumes soltos no Docker são de antes desta identidade e ficam reportados, não varridos); `frontend/dist/` e `dist/` removidos; `vite` da porta 47322 encerrado; scratchpad `web22/` desta identidade apagado ao fim (roteiros de captura preservados na pasta das capturas). Worktree e `frontend/node_modules` mantidos.
+
+### W9. D-W6 fechada (ratificação do orquestrador, 2026-10-26 12:30Z)
+
+O PERMITIDO passou a incluir `tests/checklist-snapshot-dispatch.test.ts`, só para a asserção da E3b-12 (plano, seção "Ratificação do orquestrador (2026-10-26 12:30Z)", copiado de novo para `docs/revisoes/SAN3/B-SAN3-22-plano.md`).
+
+- **Mudança:** o PATCH "OUTRO" do teste `[reassign mantém o original]` (l.78) passou a ser lido em `edit` e ganhou `assert.equal(edit.status, 200)`. `git diff --numstat`: `2 1`.
+- **Arquivo:** `node --test --import tsx tests/checklist-snapshot-dispatch.test.ts` → **15/15**, 0 falha, 0 pulo.
+- **Mutação** (token defasado no mesmo sítio: `expectedUpdatedAt: "2020-01-01T00:00:00.000Z"`): `not ok 5 - [reassign mantém o original] reassign do despacho NÃO re-congela o snapshot` · `expected: 200` · `actual: 409` · 14 pass / **1 fail**. Restauro por cópia: SHA-256 `b3915f08` antes e depois; o arquivo volta a 15/15.
+- **Vermelho-controle** (a classe que a E3b-12 fecha): a mesma mutação na versão de `d7483c28`, sem a asserção, passa **15/15** — a requisição virava 409 em silêncio. Restaurado (`b3915f08`).
+- **Pendência nova `P-CHK-EDITOR-GRADE-ESTREITA`** (W6) gravada em `pendencias.md` (pré-existente; dono: orquestrador, para planejar; fecha quando a 924 px as colunas empilham sem sobrepor). `python agent-orchestration/controle/gerar-indice-pendencias.py` → `indice: 657 cabecalhos / 646 IDs | {'FECHADA': 156, 'ABERTA': 497, 'SEM-STATUS': 4}`; o índice estava defasado (651 cabeçalhos) e foi regenerado inteiro.

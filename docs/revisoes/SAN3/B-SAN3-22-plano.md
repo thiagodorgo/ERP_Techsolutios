@@ -643,3 +643,12 @@ Nenhum outro arquivo de `src/` (repositórios, serviço, validator, controller, 
 - **Perguntas ao dono: 0.** (Q1–Q5 intactas; E3b-16 é D-007, não produto; E3b-17 está na referência aprovada.)
 
 **Fechamento desta identidade (E3-bis):** worktree `C:/Users/AMP/w-plan22d` removido com `git worktree remove --force`; `w-san322` não tocado; nenhum container; nenhum arquivo do repositório alterado; base viva não acessada.
+
+## Ratificação do orquestrador (2026-10-26 12:30Z) — escopo da E3b-12 (D-W6 do dev)
+
+A E3b-12 exige `assert.equal(status, 200)` em `tests/checklist-snapshot-dispatch.test.ts:78`, mas a §E3b.4 esqueceu de listar o arquivo no PERMITIDO. Não há decisão nova: o requisito já estava escrito e passou pela crítica da E3. Falhou só a lista de caminhos. **O PERMITIDO passa a incluir `tests/checklist-snapshot-dispatch.test.ts`, apenas para a asserção da E3b-12.**
+
+Os demais pontos do relatório do dev (W7):
+- **D-W1** (legado sai `text`, não `none`): vai à C2 da junta como divergência declarada. O efeito é nulo, porque `text` não sobe versão nem dá 409. O dev não acrescenta uma 5ª normalização.
+- **D-W5** ("Nova seção" livre com a trava): o plano vence a referência (E3b-10).
+- **Achado pré-existente** (a grade do editor sobrepõe as colunas abaixo de 1180 px, `app.css:4919-4935`, anterior ao bloco): vira a pendência `P-CHK-EDITOR-GRADE-ESTREITA`, registrada neste PR, com dono no orquestrador para planejar. **A C3 não cobra isso do bloco:** é pré-existente, §C7.1-ter(a), e a evidência é a medição do estado livre no `probe.mjs`.

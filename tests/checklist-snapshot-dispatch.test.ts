@@ -75,7 +75,8 @@ test("[reassign mantém o original] reassign do despacho NÃO re-congela o snaps
     const dispatch = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
     const v1 = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     // edita o template no meio, depois reassign — o reassign não deve tocar o snapshot
-    await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: tpl.updatedAt, name: "OUTRO" } });
+    const edit = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: tpl.updatedAt, name: "OUTRO" } });
+    assert.equal(edit.status, 200); // B-SAN3-22 (E3b-12): a edição do meio tem de acontecer de fato
     await req(baseUrl, `/api/v1/operations/dispatches/${dispatch.body.data.id}/reassign`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { operatorUserId: seed.techB.id } });
     const after = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     assert.deepEqual(after, v1);

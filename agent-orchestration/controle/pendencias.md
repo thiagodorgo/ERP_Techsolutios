@@ -11867,3 +11867,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (`7eb1a814`, 2026-07-18) · **dono:** financial-summary · **bloqueia:** não.
 - **origem:** C4-05 da junta do B-SAN3-12a (ciclo 1): a mutação M16d é invisível em memória e sob superusuário.
 - **encerramento:** caso do resumo com duas organizações na mesma base, sob papel sem bypass, que fica vermelho com o filtro de organização retirado.
+
+## P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checklist sobrepõe as colunas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (regras `.ckb-ed-grid { flex: 1; min-height: 0 }` e o `@media (max-width: 1180px)` de uma coluna, `frontend/src/styles/app.css:4919-4935`, anteriores ao B-SAN3-22 e não tocadas por ele) · **dono:** orquestrador, para planejar · **bloqueia:** não (a C3 do B-SAN3-22 não cobra, §C7.1-ter(a); ratificação do orquestrador de 2026-10-26 12:30Z).
+- **origem:** W6 do relatório da fatia web do B-SAN3-22 (`docs/revisoes/SAN3/B-SAN3-22-dev.md`). Medido no estado **livre** (nada do bloco na tela), com `probe.mjs` (Edge headless, `vite` em modo simulado) em `/administrator/checklists/chk_towing_delivery` a 924×540: as três colunas da grade em `y=175 h=452`, `y=279 h=415`, `y=382 h=262` — paleta, formulário e inspector sobrepostos. A referência `screen-refs/checklist-editor-estados-3opcoes.reference.html`, sem a altura presa, empilha sem sobrepor.
+- **encerramento:** a 924 px as colunas da grade do editor empilham sem sobrepor (o `top` de cada coluna ≥ o `bottom` da anterior, medido no navegador real), nos estados livre, travado e conflito.
