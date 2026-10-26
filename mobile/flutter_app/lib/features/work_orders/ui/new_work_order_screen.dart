@@ -80,7 +80,7 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
                       TextFormField(
                         controller: _titleCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Titulo *',
+                          labelText: 'Título *',
                           hintText: 'Ex: Instalacao de ar-condicionado',
                         ),
                         validator: (v) => (v == null || v.trim().isEmpty)

@@ -331,7 +331,7 @@ class _WorkOrderStepper extends StatelessWidget {
     'Em rota',
     'No local',
     'Em exec.',
-    'Concluida',
+    'Concluída',
   ];
 
   int get _current => switch (status) {
@@ -817,7 +817,7 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
               key: const Key('checkin-block'),
               onPressed: _loading ? null : _openBlockSheet,
               icon: const Icon(Icons.cancel_outlined),
-              label: const Text('Nao foi possivel iniciar'),
+              label: const Text('Não foi possível iniciar'),
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
@@ -1005,7 +1005,7 @@ class _PlateDialogState extends State<_PlateDialog> {
                 Expanded(
                   child: Text(
                     widget.gpsOk
-                        ? 'Localizacao confirmada · voce esta no local'
+                        ? 'Localização confirmada · voce esta no local'
                         : 'Ative o GPS para confirmar que chegou ao local',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: widget.gpsOk ? Colors.green.shade700 : cs.error,
@@ -1109,7 +1109,7 @@ class _PlateDialogState extends State<_PlateDialog> {
 }
 
 // ---------------------------------------------------------------------------
-// "Nao foi possivel iniciar" bottom sheet
+// "Não foi possível iniciar" bottom sheet
 // ---------------------------------------------------------------------------
 
 class _BlockSheet extends StatefulWidget {
@@ -1180,7 +1180,7 @@ class _BlockSheetState extends State<_BlockSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Nao foi possivel iniciar',
+                      'Não foi possível iniciar',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     Text(

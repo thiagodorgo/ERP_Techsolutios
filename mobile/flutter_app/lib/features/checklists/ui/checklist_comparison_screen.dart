@@ -154,7 +154,7 @@ class _ChecklistComparisonScreenState
       return const EmptyState(
         icon: Icons.compare_arrows_outlined,
         title: 'Comparacao indisponivel',
-        message: 'E necessario ter coleta e entrega concluidas para comparar.',
+        message: 'E necessario ter coleta e entrega concluídas para comparar.',
       );
     }
     if (data.divergences.isEmpty) {

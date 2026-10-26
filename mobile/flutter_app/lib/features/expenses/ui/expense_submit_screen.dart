@@ -125,7 +125,7 @@ class ExpenseSubmitScreen extends ConsumerWidget {
       _CheckItem(
         label: 'Relatorio preenchido',
         ok: hasTitle,
-        detail: hasTitle ? null : 'Titulo obrigatorio',
+        detail: hasTitle ? null : 'Título obrigatorio',
       ),
       _CheckItem(
         label: 'Itens adicionados',

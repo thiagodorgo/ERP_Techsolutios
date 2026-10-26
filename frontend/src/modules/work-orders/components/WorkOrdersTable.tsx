@@ -21,7 +21,7 @@ export function WorkOrdersTable({
   const columns = useMemo(
     () => [
       { key: "code", header: "Codigo", render: (item: WorkOrderListItem) => <strong>{item.code}</strong> },
-      { key: "title", header: "Titulo", render: (item: WorkOrderListItem) => item.title },
+      { key: "title", header: "Título", render: (item: WorkOrderListItem) => item.title },
       { key: "customer", header: "Cliente", render: (item: WorkOrderListItem) => item.customerName ?? "Nao informado" },
       { key: "status", header: "Status", render: (item: WorkOrderListItem) => <WorkOrderStatusBadge status={item.status} /> },
       { key: "priority", header: "Prioridade", render: (item: WorkOrderListItem) => <WorkOrderPriorityBadge priority={item.priority} /> },

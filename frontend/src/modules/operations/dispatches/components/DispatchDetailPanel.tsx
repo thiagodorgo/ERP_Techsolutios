@@ -19,7 +19,7 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
           </div>
           <div>
             <dt><FileText size={16} /> Atendimento</dt>
-            <dd>{dispatch.workOrderTitle ?? "Titulo nao carregado"}</dd>
+            <dd>{dispatch.workOrderTitle ?? "Título nao carregado"}</dd>
           </div>
           <div>
             <dt><UserRound size={16} /> Operador</dt>

@@ -485,7 +485,7 @@ class _FieldCard extends StatelessWidget {
           '/checklists/$checklistId/run/acknowledgement?runId=$runId',
         ),
         icon: const Icon(Icons.verified_user_outlined),
-        label: const Text('Registrar ciencia'),
+        label: const Text('Registrar ciência'),
       ),
       MobileChecklistFieldType.signature => _SignatureField(
         field: field,

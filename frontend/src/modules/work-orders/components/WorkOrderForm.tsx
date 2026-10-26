@@ -175,9 +175,9 @@ export function WorkOrderForm({
         <section className="work-order-form-grid">
           <Card title="Identificacao">
             <div className="form-section">
-              <Input label="Titulo" value={state.title} onChange={(event) => setState({ ...state, title: event.target.value })} />
+              <Input label="Título" value={state.title} onChange={(event) => setState({ ...state, title: event.target.value })} />
               <label className="ui-field">
-                <span>Descricao</span>
+                <span>Descrição</span>
                 <textarea value={state.description} onChange={(event) => setState({ ...state, description: event.target.value })} />
               </label>
               <Select label="Prioridade" value={state.priority} onChange={(event) => setState({ ...state, priority: event.target.value as WorkOrderCreatePayload["priority"] })}>

@@ -57,7 +57,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
     final accepted = _accepted;
     final gpsAsync = ref.watch(gpsAvailableProvider);
     return ErpScaffold(
-      title: 'Localizacao',
+      title: 'Localização',
       body: accepted == null
           ? const Center(child: CircularProgressIndicator.adaptive())
           : ListView(
@@ -82,7 +82,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
                     subtitle: Text(
                       accepted
                           ? 'Captura manual autorizada.'
-                          : 'Autorize para poder enviar sua localizacao.',
+                          : 'Autorize para poder enviar sua localização.',
                     ),
                   ),
                 ),
@@ -94,7 +94,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Como usamos sua localizacao',
+                          'Como usamos sua localização',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 8),

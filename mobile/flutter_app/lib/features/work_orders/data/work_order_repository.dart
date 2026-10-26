@@ -297,7 +297,7 @@ class WorkOrderRepository extends ChangeNotifier {
     } catch (e) {
       _lastPullError = e is ApiError
           ? e.safeMessage
-          : 'Nao foi possivel atualizar suas ordens agora.';
+          : 'Não foi possível atualizar suas ordens agora.';
       _loaded = true;
       return _orders.isEmpty
           ? WorkOrderPullOutcome.error

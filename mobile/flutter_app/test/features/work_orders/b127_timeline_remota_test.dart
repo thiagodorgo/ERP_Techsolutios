@@ -154,7 +154,7 @@ void main() {
 
         // E o rótulo do card deixa de mentir.
         expect(eventos[0].eventType.label, 'Criada');
-        expect(eventos[1].eventType.label, 'Atribuida');
+        expect(eventos[1].eventType.label, 'Atribuída');
       },
     );
 

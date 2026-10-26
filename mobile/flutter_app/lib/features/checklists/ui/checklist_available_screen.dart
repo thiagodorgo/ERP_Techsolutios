@@ -402,7 +402,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               hasError
-                  ? 'Nao foi possivel atualizar os modelos de checklist agora.'
+                  ? 'Não foi possível atualizar os modelos de checklist agora.'
                   : 'Nenhum checklist disponivel para esta ordem.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium,

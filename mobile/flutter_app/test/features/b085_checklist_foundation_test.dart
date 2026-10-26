@@ -275,7 +275,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Nao foi possivel atualizar os modelos de checklist agora.'),
+        find.text('Não foi possível atualizar os modelos de checklist agora.'),
         findsOneWidget,
       );
       expect(
@@ -451,7 +451,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Confirmar ciencia'),
+        find.widgetWithText(FilledButton, 'Confirmar ciência'),
       );
       expect(btn.onPressed, isNull);
     });
@@ -469,7 +469,7 @@ void main() {
       await tester.pump();
 
       final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Confirmar ciencia'),
+        find.widgetWithText(FilledButton, 'Confirmar ciência'),
       );
       expect(btn.onPressed, isNotNull);
     });

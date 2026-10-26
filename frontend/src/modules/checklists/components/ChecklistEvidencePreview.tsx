@@ -33,7 +33,7 @@ export function ChecklistEvidencePreview({
         return result;
       });
     } catch {
-      setError("Nao foi possivel visualizar a evidencia.");
+      setError("Não foi possível visualizar a evidencia.");
     } finally {
       setLoading(false);
     }

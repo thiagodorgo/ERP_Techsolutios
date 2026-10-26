@@ -32,7 +32,7 @@ export function ChecklistAttachmentList({
       link.click();
       window.setTimeout(() => revokeChecklistAttachmentDownloadUrl(result.objectUrl), 1000);
     } catch {
-      setError("Nao foi possivel baixar a evidencia.");
+      setError("Não foi possível baixar a evidencia.");
     } finally {
       setActiveAttachmentId(null);
     }

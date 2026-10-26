@@ -382,7 +382,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Localizacao operacional'), findsOneWidget);
+      expect(find.text('Localização operacional'), findsOneWidget);
       expect(find.textContaining('Sem background tracking'), findsOneWidget);
     });
 
@@ -413,7 +413,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Ultimo envio'), findsOneWidget);
-      await tester.tap(find.text('Enviar localizacao agora'));
+      await tester.tap(find.text('Enviar localização agora'));
       await tester.pumpAndSettle();
 
       expect(service.captureCalls, 1);

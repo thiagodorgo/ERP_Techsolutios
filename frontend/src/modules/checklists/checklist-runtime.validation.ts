@@ -105,16 +105,16 @@ function validateComponent(
 
   if (component.type === "damage_map") {
     const hasMarker = componentMarkers.some((marker) => marker.description?.trim() && marker.markerType.trim());
-    return hasMarker ? [] : [{ componentId: component.id, message: `Registre ao menos um marcador com tipo e descricao em ${component.label}.` }];
+    return hasMarker ? [] : [{ componentId: component.id, message: `Registre ao menos um marcador com tipo e descrição em ${component.label}.` }];
   }
 
   if (component.type === "acknowledgement") {
     const acknowledgement = readAcknowledgementValue(answers[component.id]);
     if (!acknowledgement.accepted) {
-      return [{ componentId: component.id, message: `Confirme a ciencia obrigatoria em ${component.label}.` }];
+      return [{ componentId: component.id, message: `Confirme a ciência obrigatoria em ${component.label}.` }];
     }
     if (requiresAcknowledgementObservation(component) && !acknowledgement.observation.trim()) {
-      return [{ componentId: component.id, message: `Informe a observacao obrigatoria da ciencia em ${component.label}.` }];
+      return [{ componentId: component.id, message: `Informe a observacao obrigatoria da ciência em ${component.label}.` }];
     }
     return [];
   }

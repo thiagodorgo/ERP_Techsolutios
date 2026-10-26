@@ -54,7 +54,7 @@ class _ChecklistAcknowledgementScreenState
           _submitting = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ciencia registrada com sucesso.')),
+          const SnackBar(content: Text('Ciência registrada com sucesso.')),
         );
         context.pop();
       }
@@ -62,7 +62,7 @@ class _ChecklistAcknowledgementScreenState
       if (mounted) {
         setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao registrar ciencia: $e')),
+          SnackBar(content: Text('Erro ao registrar ciência: $e')),
         );
       }
     }
@@ -71,7 +71,7 @@ class _ChecklistAcknowledgementScreenState
   @override
   Widget build(BuildContext context) {
     return ErpScaffold(
-      title: 'Ciencia do responsavel',
+      title: 'Ciência do responsavel',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -90,7 +90,7 @@ class _ChecklistAcknowledgementScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Declaracao de ciencia',
+                      'Declaracao de ciência',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
@@ -134,7 +134,7 @@ class _ChecklistAcknowledgementScreenState
             FilledButton.icon(
               onPressed: _canSubmit ? _submit : null,
               icon: const Icon(Icons.check_circle_outline),
-              label: Text(_submitting ? 'Registrando...' : 'Confirmar ciencia'),
+              label: Text(_submitting ? 'Registrando...' : 'Confirmar ciência'),
             ),
           ],
         ),

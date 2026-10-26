@@ -357,7 +357,7 @@ class _AddMarkerDialogState extends State<_AddMarkerDialog> {
             TextField(
               controller: _descCtrl,
               decoration: const InputDecoration(
-                labelText: 'Descricao',
+                labelText: 'Descrição',
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,

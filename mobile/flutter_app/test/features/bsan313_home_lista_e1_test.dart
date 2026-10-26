@@ -131,7 +131,7 @@ void main() {
         _wrap(const WorkOrderListScreen(), [_wo('aberta')]),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Concluidas'));
+      await tester.tap(find.text('Concluídas'));
       await tester.pump();
 
       expect(
@@ -157,7 +157,7 @@ void main() {
         ]),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Concluidas'));
+      await tester.tap(find.text('Concluídas'));
       await tester.pump();
 
       expect(find.textContaining('OS-E1-retida'), findsOneWidget);
