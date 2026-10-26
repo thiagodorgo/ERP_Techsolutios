@@ -25,9 +25,11 @@ export type KpiStatCardProps = {
   border?: string;
   onClick?: () => void;
   ariaLabel?: string;
+  /** B-SAN3-12b — indicador que FILTRA (D-PADRAO-BLOCOS-CLICAVEIS): com `onClick`, publica `aria-pressed`. */
+  pressed?: boolean;
 };
 
-export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint, tag, border, onClick, ariaLabel }: KpiStatCardProps) {
+export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint, tag, border, onClick, ariaLabel, pressed }: KpiStatCardProps) {
   const borderStyle = border ? { borderColor: border } : undefined;
   const body = (
     <>
@@ -49,7 +51,7 @@ export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint,
 
   if (onClick) {
     return (
-      <button type="button" className="pat-kpi pat-kpi--clickable" style={borderStyle} onClick={onClick} aria-label={ariaLabel ?? label}>
+      <button type="button" className="pat-kpi pat-kpi--clickable" style={borderStyle} onClick={onClick} aria-label={ariaLabel ?? label} aria-pressed={pressed}>
         {body}
       </button>
     );
