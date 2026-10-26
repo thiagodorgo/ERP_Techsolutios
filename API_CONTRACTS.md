@@ -418,6 +418,18 @@ Fontes: `field-dispatch/`, `field-location/`, `field-ops-realtime/`, `technician
 | GET | `/mobile/checklists/available` · `/:checklistId/render` | `checklist_runs:read`\|`create` | Checklists disponíveis / render para o app. |
 | POST/PATCH | `/mobile/checklist-runs` (+ `/:runId`, `/:runId/complete`, `/attachments`, `/markers`, `/divergence`, `/acknowledgement`) | `checklist_runs:create`/`update`/`complete`/`acknowledge` | Execução de checklist no campo (+ evidências/marcadores/divergência). |
 
+#### 3.6.2 Modelos de checklist — trava otimista, estrutura em uso e portas únicas
+
+Contrato `checklist_template_patch@2026-10-25.b-san3-22`.
+
+- `PATCH /api/v1/tenant/checklists/:checklistId`: exige `expectedUpdatedAt` ISO-8601 no corpo e `componentKey` em cada item de `components`. Com vistoria viva (`in_progress` ou `pending_acknowledgement`), só textos podem mudar; qualquer mudança de campo retorna 409 `CHECKLIST_TEMPLATE_IN_USE` / `template_has_active_runs`. `status: published` e `status: archived` retornam, respectivamente, `status_requires_publish_endpoint` e `status_requires_delete_endpoint`.
+- `POST /api/v1/tenant/checklists/:checklistId/publish`: exige `{ "expectedUpdatedAt": "<ISO-8601>" }`.
+- `DELETE /api/v1/tenant/checklists/:checklistId?expectedUpdatedAt=<ISO-8601>`: token obrigatório; arquiva logicamente e mantém render, anexos e respostas das vistorias já vivas.
+- Nas três portas, token defasado retorna 409 `CHECKLIST_TEMPLATE_STALE` / `template_changed_since_read`; recurso inexistente ou de outra organização retorna 404 sem revelar existência.
+- GET de detalhe, PATCH e publish retornam `activeRuns`; a listagem não retorna esse campo.
+- Mudança de campo em modelo publicado e sem vistoria viva incrementa `version`. Mudança apenas textual não incrementa.
+- `createRun` e `reopenRun` carimbam a versão atual lida sob lock; modelo não publicado não recebe nova vistoria e modelo arquivado não é reaberto.
+
 ### 3.7 Dashboard
 
 Fonte: `src/modules/dashboard/dashboard.routes.ts`.

@@ -27,6 +27,7 @@ import type {
   ChecklistTemplate,
   ChecklistTemplateComponent,
 } from "./checklist.types.js";
+import { ChecklistError } from "./checklist.types.js";
 import type {
   ChecklistComponentInput,
   CreateChecklistAcknowledgementInput,
@@ -37,6 +38,7 @@ import type {
   UpdateChecklistTemplateInput,
   UpsertChecklistAnswerInput,
 } from "./checklist.validator.js";
+import { classifyTemplateChange } from "./checklist.template-change.js";
 
 export type CreateTemplateData = CreateChecklistTemplateInput & {
   readonly tenantId: string;
@@ -48,6 +50,26 @@ export type UpdateTemplateData = UpdateChecklistTemplateInput & {
   readonly checklistId: string;
   readonly actorUserId: string;
 };
+
+export type TemplateMutationResult = ChecklistTemplate & {
+  readonly template: ChecklistTemplate;
+  readonly previous: ChecklistTemplate;
+  readonly activeRuns: number;
+};
+
+export class ChecklistTemplateStaleError extends Error {
+  constructor() {
+    super("Checklist template changed since it was read.");
+    this.name = "ChecklistTemplateStaleError";
+  }
+}
+
+export class ChecklistTemplateInUseError extends Error {
+  constructor(readonly activeRuns: number) {
+    super("Checklist template has active runs.");
+    this.name = "ChecklistTemplateInUseError";
+  }
+}
 
 export type CreateRunData = CreateChecklistRunInput & {
   readonly tenantId: string;
@@ -133,9 +155,11 @@ export interface ChecklistRepository {
   listPublishedTemplates(tenantId: string): Promise<readonly ChecklistTemplate[]>;
   createTemplate(data: CreateTemplateData): Promise<ChecklistTemplate>;
   getTemplate(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null>;
-  updateTemplate(data: UpdateTemplateData): Promise<ChecklistTemplate | null>;
-  archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null>;
-  publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null>;
+  getTemplateDetail(tenantId: string, checklistId: string): Promise<{ readonly template: ChecklistTemplate; readonly activeRuns: number } | null>;
+  getTemplateForRun(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null>;
+  updateTemplate(data: UpdateTemplateData): Promise<TemplateMutationResult | null>;
+  archiveTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null>;
+  publishTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null>;
   listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]>;
   createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult>;
   listRuns(tenantId: string): Promise<readonly ChecklistRun[]>;
@@ -173,6 +197,7 @@ export interface ChecklistRepository {
   // deste modelo? É o que permite o `render` continuar servindo o formulário de um modelo INATIVADO para quem
   // já está no meio da vistoria, sem reabrir o modelo para NOVAS ordens.
   hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean>;
+  countActiveRunsForTemplate(tenantId: string, templateId: string): Promise<number>;
   createAttachment(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistAttachmentInput): Promise<ChecklistAttachment | null>;
   createMarker(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistMarkerInput): Promise<ChecklistMarker | null>;
   createAcknowledgement(
@@ -243,14 +268,36 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     return template;
   }
 
-  async updateTemplate(data: UpdateTemplateData): Promise<ChecklistTemplate | null> {
+  async getTemplateForRun(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null> {
+    const template = this.templates.get(checklistId);
+    return template?.tenantId === tenantId ? template : null;
+  }
+
+  async getTemplateDetail(tenantId: string, checklistId: string) {
+    const template = await this.getTemplate(tenantId, checklistId);
+    return template ? { template, activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId) } : null;
+  }
+
+  async updateTemplate(data: UpdateTemplateData): Promise<TemplateMutationResult | null> {
     const template = await this.getTemplate(data.tenantId, data.checklistId);
 
     if (!template) {
       return null;
     }
 
-    const now = new Date();
+    assertStatusUsesDedicatedEndpoint(data.status);
+
+    if (template.updatedAt.getTime() !== data.expectedUpdatedAt.getTime()) {
+      throw new ChecklistTemplateStaleError();
+    }
+
+    const activeRuns = await this.countActiveRunsForTemplate(data.tenantId, data.checklistId);
+    const changeKind = classifyTemplateChange(template, data);
+    if ((changeKind === "field" || data.status === "draft") && activeRuns > 0) {
+      throw new ChecklistTemplateInUseError(activeRuns);
+    }
+
+    const now = nextTimestamp(template.updatedAt);
     // CHECKLIST P1 PR-02c (ALTA da junta) — PRESERVA a identidade do componente, espelhando o
     // repositório Prisma: quem mantém o `componentKey` mantém o `id`. Antes, cada save gerava id
     // novo para TODOS, e no caminho real isso fazia a resposta de um técnico offline (que aponta
@@ -272,6 +319,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       // CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — o tipo agora e gravado; ausente = mantem.
       type: data.type ?? template.type,
       status,
+      version: template.status === "published" && changeKind === "field" ? template.version + 1 : template.version,
       schema: buildSchema(data.schema ?? template.schema, components),
       updatedBy: data.actorUserId,
       updatedAt: now,
@@ -281,17 +329,19 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     this.templates.set(updated.id, updated);
 
-    return updated;
+    return { ...updated, template: updated, previous: template, activeRuns };
   }
 
-  async archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+  async archiveTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
     const template = await this.getTemplate(tenantId, checklistId);
 
     if (!template) {
       return null;
     }
 
-    const now = new Date();
+    assertExpectedUpdatedAt(template, expectedUpdatedAt);
+
+    const now = nextTimestamp(template.updatedAt);
     const updated: ChecklistTemplate = {
       ...template,
       status: "archived",
@@ -302,17 +352,19 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     this.templates.set(updated.id, updated);
 
-    return updated;
+    return { ...updated, template: updated, previous: template, activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId) };
   }
 
-  async publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+  async publishTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
     const template = await this.getTemplate(tenantId, checklistId);
 
     if (!template) {
       return null;
     }
 
-    const now = new Date();
+    assertExpectedUpdatedAt(template, expectedUpdatedAt);
+
+    const now = nextTimestamp(template.updatedAt);
     const updated: ChecklistTemplate = {
       ...template,
       status: "published",
@@ -325,7 +377,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     this.templates.set(updated.id, updated);
 
-    return updated;
+    return { ...updated, template: updated, previous: template, activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId) };
   }
 
   async listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]> {
@@ -333,6 +385,10 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
   }
 
   async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult> {
+    const currentTemplate = await this.getTemplate(data.tenantId, template.id);
+    if (!currentTemplate || currentTemplate.status !== "published") {
+      throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
+    }
     // P0a — idempotência durável: se já existe uma run com esta client_run_key no tenant, devolve a existente
     // (não cria duplicata). Espelha o unique [tenant_id, client_run_key] do Postgres. `created:false` faz o
     // serviço PULAR audit + publishDomainEvent (não super-conta o faturamento).
@@ -351,7 +407,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       id: randomUUID(),
       tenantId: data.tenantId,
       templateId: template.id,
-      templateVersion: template.version,
+      templateVersion: currentTemplate.version,
       relatedEntityType: data.relatedEntityType,
       relatedEntityId: data.relatedEntityId,
       clientRunKey: data.clientRunKey,
@@ -522,7 +578,7 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       id: randomUUID(),
       tenantId: data.tenantId,
       templateId: previous.templateId,
-      templateVersion: previous.templateVersion,
+      templateVersion: template.version,
       relatedEntityType: previous.relatedEntityType,
       relatedEntityId: previous.relatedEntityId,
       reopenedFromRunId: previous.id,
@@ -575,12 +631,16 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
   }
 
   async hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
-    return [...this.runs.values()].some(
+    return (await this.countActiveRunsForTemplate(tenantId, templateId)) > 0;
+  }
+
+  async countActiveRunsForTemplate(tenantId: string, templateId: string): Promise<number> {
+    return [...this.runs.values()].filter(
       (run) =>
         run.tenantId === tenantId &&
         run.templateId === templateId &&
         (CHECKLIST_RUN_ACTIVE_STATUSES as readonly string[]).includes(run.status),
-    );
+    ).length;
   }
 
   async createAttachment(
@@ -760,6 +820,25 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       ),
     };
   }
+}
+
+function assertExpectedUpdatedAt(template: ChecklistTemplate, expectedUpdatedAt?: Date): void {
+  if (expectedUpdatedAt && template.updatedAt.getTime() !== expectedUpdatedAt.getTime()) {
+    throw new ChecklistTemplateStaleError();
+  }
+}
+
+function assertStatusUsesDedicatedEndpoint(status?: ChecklistStatus): void {
+  if (status === "published") {
+    throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_PUBLISH", "status_requires_publish_endpoint", "Publique o modelo pela ação Publicar.");
+  }
+  if (status === "archived") {
+    throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_DELETE", "status_requires_delete_endpoint", "Arquive o modelo pela ação Excluir.");
+  }
+}
+
+function nextTimestamp(previous: Date): Date {
+  return new Date(Math.max(Date.now(), previous.getTime() + 1));
 }
 
 function createComponent(

@@ -29,6 +29,8 @@ import {
   assertChecklistRunStatusTransition,
 } from "./checklist.run-lifecycle.js";
 import {
+  ChecklistTemplateInUseError,
+  ChecklistTemplateStaleError,
   InMemoryChecklistRepository,
   type ChecklistRepository,
   type RepositoryRunDetails,
@@ -62,6 +64,8 @@ type ActorContext = {
   readonly roles?: WorkOrderActorContext["roles"];
   readonly permissions?: WorkOrderActorContext["permissions"];
 };
+
+export type ChecklistTemplateDetail = ChecklistTemplate & { readonly activeRuns: number };
 
 export type ChecklistRenderSchema = {
   readonly id: string;
@@ -133,6 +137,14 @@ export class ChecklistService {
     return template;
   }
 
+  async getTemplateDetail(actor: ActorContext, checklistId: string): Promise<ChecklistTemplateDetail> {
+    const detail = await this.repository.getTemplateDetail(actor.tenantId, checklistId);
+    if (!detail) {
+      throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
+    }
+    return { ...detail.template, activeRuns: detail.activeRuns };
+  }
+
   // Ω3-c (port resolveChecklistSnapshot) — resolve o snapshot congelável de um template. Só congela
   // template PUBLICADO e não-deletado (paridade com o guard de createRun/render). tenant-scoped.
   // Retorna null (não erro) quando não há template, não está publicado, ou foi deletado — o despacho
@@ -149,23 +161,28 @@ export class ChecklistService {
     actor: ActorContext,
     checklistId: string,
     input: UpdateChecklistTemplateInput,
-  ): Promise<ChecklistTemplate> {
+  ): Promise<ChecklistTemplateDetail> {
+    assertTemplateStatusUsesDedicatedEndpoint(input.status);
+
     // CHECKLIST P1 PR-02c (junta): remover um campo JÁ RESPONDIDO esbarra na FK `Restrict` de
     // `checklist_run_answers.component_id` e o Prisma sobe P2003 cru — que chegava ao tenant admin
     // como texto de banco no toast. O Restrict está CERTO (a resposta do técnico não pode ficar
     // órfã); o que faltava era traduzir a recusa para linguagem de negócio.
-    // Estado anterior lido ANTES da gravação: sem ele a auditoria não sabe dizer o que mudou.
-    const previous = await this.repository.getTemplate(actor.tenantId, checklistId);
-
-    let template: ChecklistTemplate | null;
+    let result;
     try {
-      template = await this.repository.updateTemplate({
+      result = await this.repository.updateTemplate({
         ...input,
         tenantId: actor.tenantId,
         checklistId,
         actorUserId: actor.userId,
       });
     } catch (error) {
+      if (error instanceof ChecklistTemplateStaleError) {
+        throw new ChecklistError(409, "CHECKLIST_TEMPLATE_STALE", "template_changed_since_read", "Este modelo mudou desde a última leitura. Recarregue e tente novamente.");
+      }
+      if (error instanceof ChecklistTemplateInUseError) {
+        throw new ChecklistError(409, "CHECKLIST_TEMPLATE_IN_USE", "template_has_active_runs", `${error.activeRuns} vistoria(s) em andamento usam este modelo. Aguarde a conclusão para alterar campos.`);
+      }
       if (isForeignKeyViolation(error)) {
         throw new ChecklistError(
           409,
@@ -177,18 +194,22 @@ export class ChecklistService {
       throw error;
     }
 
-    if (!template) {
+    if (!result) {
       throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
     }
+
+    const { template, previous, activeRuns } = result;
 
     await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.templateUpdated, "checklist_template", template.id, {
       status: template.status,
       version: template.version,
+      versionFrom: previous.version,
+      versionTo: template.version,
       // Junta PR-02c (ALTA do dba): trocar o `type` de um modelo PUBLICADO muda o significado de
       // uma versão já congelada — o snapshot do despacho e as vistorias em andamento apontam para
       // (modelo, versão). A troca continua permitida (é metadado, sem efeito de runtime), mas
       // deixa de ser invisível: fica na trilha de auditoria, com destaque quando é em publicado.
-      ...(previous && input.type && input.type !== previous.type
+      ...(input.type && input.type !== previous.type
         ? {
             typeFrom: previous.type,
             typeTo: input.type,
@@ -197,27 +218,47 @@ export class ChecklistService {
         : {}),
     });
 
-    return template;
+    return { ...template, activeRuns };
   }
 
-  async archiveTemplate(actor: ActorContext, checklistId: string): Promise<void> {
-    const template = await this.repository.archiveTemplate(actor.tenantId, checklistId, actor.userId);
+  async archiveTemplate(actor: ActorContext, checklistId: string, expectedUpdatedAt?: Date): Promise<void> {
+    let result;
+    try {
+      result = await this.repository.archiveTemplate(actor.tenantId, checklistId, actor.userId, expectedUpdatedAt);
+    } catch (error) {
+      if (error instanceof ChecklistTemplateStaleError) {
+        throw new ChecklistError(409, "CHECKLIST_TEMPLATE_STALE", "template_changed_since_read", "Este modelo mudou desde a última leitura. Recarregue e tente novamente.");
+      }
+      throw error;
+    }
 
-    if (!template) {
+    if (!result) {
       throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
     }
+
+    const { template } = result;
 
     await this.audit(actor, CHECKLIST_AUDIT_ACTIONS.templateDeleted, "checklist_template", template.id, {
       status: template.status,
     });
   }
 
-  async publishTemplate(actor: ActorContext, checklistId: string): Promise<ChecklistTemplate> {
-    const template = await this.repository.publishTemplate(actor.tenantId, checklistId, actor.userId);
+  async publishTemplate(actor: ActorContext, checklistId: string, expectedUpdatedAt?: Date): Promise<ChecklistTemplateDetail> {
+    let result;
+    try {
+      result = await this.repository.publishTemplate(actor.tenantId, checklistId, actor.userId, expectedUpdatedAt);
+    } catch (error) {
+      if (error instanceof ChecklistTemplateStaleError) {
+        throw new ChecklistError(409, "CHECKLIST_TEMPLATE_STALE", "template_changed_since_read", "Este modelo mudou desde a última leitura. Recarregue e tente novamente.");
+      }
+      throw error;
+    }
 
-    if (!template) {
+    if (!result) {
       throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
     }
+
+    const { template, activeRuns } = result;
 
     if (template.components.length === 0) {
       throw new ChecklistError(422, "CHECKLIST_INVALID", "components_required", "Published checklist requires at least one component.");
@@ -228,7 +269,7 @@ export class ChecklistService {
       type: template.type,
     });
 
-    return template;
+    return { ...template, activeRuns };
   }
 
   // P-CHK-INATIVAR-COM-RUN-ATIVA (achado da junta do PR-02c) — inativar um modelo NÃO pode derrubar quem já
@@ -236,12 +277,15 @@ export class ChecklistService {
   // sendo servido enquanto existir vistoria VIVA daquele modelo na organização, e o bloqueio real fica em
   // `createRun` (nenhuma vistoria NOVA nasce de modelo inativo). Rascunho e arquivado seguem recusados.
   async renderChecklist(actor: ActorContext, checklistId: string): Promise<ChecklistRenderSchema> {
-    const template = await this.getTemplate(actor, checklistId);
+    const template = await this.repository.getTemplateForRun(actor.tenantId, checklistId);
+
+    if (!template) {
+      throw new ChecklistError(404, "CHECKLIST_NOT_FOUND", "checklist_not_found", "Checklist not found.");
+    }
 
     if (template.status !== "published") {
       const servesActiveRun =
-        template.status === "inactive" &&
-        !template.deletedAt &&
+        (template.status === "inactive" || template.status === "archived") &&
         (await this.repository.hasActiveRunsForTemplate(actor.tenantId, template.id));
 
       if (!servesActiveRun) {
@@ -755,7 +799,7 @@ export class ChecklistService {
 
   async getComparison(actor: ActorContext, runId: string) {
     const details = await this.getRun(actor, runId);
-    const template = await this.repository.getTemplate(actor.tenantId, details.run.templateId);
+    const template = await this.repository.getTemplateForRun(actor.tenantId, details.run.templateId);
 
     return {
       run: details.run,
@@ -915,7 +959,7 @@ export class ChecklistService {
 
     assertChecklistRunFieldWritable(details.run);
 
-    const template = await this.repository.getTemplate(actor.tenantId, details.run.templateId);
+    const template = await this.repository.getTemplateForRun(actor.tenantId, details.run.templateId);
     const componentBelongsToRun = template?.components.some((component) => component.id === componentId) ?? false;
 
     if (!componentBelongsToRun) {
@@ -929,6 +973,15 @@ export class ChecklistService {
     }
     const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
     return createDefaultWorkOrderService();
+  }
+}
+
+function assertTemplateStatusUsesDedicatedEndpoint(status: UpdateChecklistTemplateInput["status"]): void {
+  if (status === "published") {
+    throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_PUBLISH", "status_requires_publish_endpoint", "Publique o modelo pela ação Publicar.");
+  }
+  if (status === "archived") {
+    throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_DELETE", "status_requires_delete_endpoint", "Arquive o modelo pela ação Excluir.");
   }
 }
 
