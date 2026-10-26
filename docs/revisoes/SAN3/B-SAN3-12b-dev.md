@@ -252,3 +252,14 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 | F22 | `expected_reconciled_at: null` fixo | live "F10: desfazer" | VERMELHO |
 
 24 mutações, 24 vermelhas, 24 restauradas por hash.
+
+### S7 — limpeza (§C5) e entrega (16:47Z)
+
+- Limpeza: container `dev-san312b-pg` removido (`docker rm -f`); removidos do worktree `dist/`, `frontend/dist/`, `frontend/tsconfig.tsbuildinfo`,
+  `test-results/` e os anexos de teste em `storage/checklist-attachments/` (todos desta sessão, 15:59Z–16:20Z); o `.gitkeep` rastreado dessa
+  pasta foi apagado junto por engano e restaurado com `git checkout --` antes de qualquer commit. `node_modules` próprios e o worktree
+  preservados. Disco: 11 GB livres.
+- Commits do sucessor (Conventional Commits, sem linha de atribuição): `8ff80316` (biblioteca), `c022182d` (camada + aparência A + testes +
+  CE-4), `aa80e3fb` (mensagem nos `assert.ok` do teste vivo), `5d8aa9a3` (registro e relatório) e este.
+- `Kpis/**`, `*.reference.html`, `prisma/**`, `src/**`, lockfiles: intocados (`git diff --name-only f6c9a962 HEAD -- Kpis prisma src '*.reference.html'` → 0).
+- PR não aberto (mandato).
