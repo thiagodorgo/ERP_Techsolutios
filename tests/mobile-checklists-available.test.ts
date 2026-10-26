@@ -171,7 +171,7 @@ async function createTemplate(
   baseUrl: string,
   headers: Record<string, string>,
   name: string,
-): Promise<{ readonly id: string }> {
+): Promise<{ readonly id: string; readonly updatedAt: string }> {
   const create = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
     method: "POST",
     headers,
@@ -195,24 +195,24 @@ async function createTemplate(
 
   assert.equal(create.status, 201);
 
-  return { id: create.body.data.id as string };
+  return { id: create.body.data.id as string, updatedAt: create.body.data.updatedAt as string };
 }
 
 async function publishTemplate(
   baseUrl: string,
   headers: Record<string, string>,
   name: string,
-): Promise<{ readonly id: string }> {
+): Promise<{ readonly id: string; readonly updatedAt: string }> {
   const created = await createTemplate(baseUrl, headers, name);
   const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${created.id}/publish`, {
     method: "POST",
     headers,
-    body: {},
+    body: { expectedUpdatedAt: created.updatedAt },
   });
 
   assert.equal(publish.status, 200);
 
-  return { id: created.id };
+  return { id: created.id, updatedAt: publish.body.data.updatedAt as string };
 }
 
 function seedCoreSaas(service: CoreSaasRegistry): SeedData {

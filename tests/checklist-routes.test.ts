@@ -107,6 +107,7 @@ test("checklist routes cover tenant templates, runs, divergence and acknowledgem
     const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}/publish`, {
       method: "POST",
       headers: authHeaders(seed.tenantA, seed.adminA),
+      body: { expectedUpdatedAt: createDraft.body.data.updatedAt },
     });
     assert.equal(publish.status, 200);
     assert.equal(publish.body.data.status, "published");
@@ -256,6 +257,7 @@ test("checklist routes enforce tenant context and permission boundaries", async 
     const supervisorPublish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}/publish`, {
       method: "POST",
       headers: authHeaders(seed.tenantA, seed.supervisorA, "manager"),
+      body: { expectedUpdatedAt: checklist.updatedAt },
     });
     const operatorRender = await requestJson(baseUrl, `/api/v1/mobile/checklists/${checklist.id}/render`, {
       headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
@@ -386,6 +388,7 @@ test("checklist P1 PR-02c: PATCH grava `type` (round-trip) e rejeita tipo invali
       method: "PATCH",
       headers,
       body: {
+        expectedUpdatedAt: created.body.data.updatedAt,
         type: "technical_evidence",
         name: "Modelo que mudou de tipo",
         schema: { sections: ["Formulario"] },
@@ -405,7 +408,7 @@ test("checklist P1 PR-02c: PATCH grava `type` (round-trip) e rejeita tipo invali
     const semTipo = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, {
       method: "PATCH",
       headers,
-      body: { name: "So o nome mudou" },
+      body: { expectedUpdatedAt: patched.body.data.updatedAt, name: "So o nome mudou" },
     });
     assert.equal(semTipo.status, 200);
     assert.equal(semTipo.body.data.type, "technical_evidence");
@@ -414,7 +417,7 @@ test("checklist P1 PR-02c: PATCH grava `type` (round-trip) e rejeita tipo invali
     const invalido = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklistId}`, {
       method: "PATCH",
       headers,
-      body: { type: "nao_existe" },
+      body: { expectedUpdatedAt: semTipo.body.data.updatedAt, type: "nao_existe" },
     });
     assert.equal(invalido.status, 400);
   });
@@ -713,12 +716,11 @@ test("checklist P1 PR-03: reabrir vistoria de modelo ARQUIVADO é recusado (vers
     });
 
     // A organização aposenta o modelo DEPOIS da vistoria concluída.
-    const archive = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}`, {
-      method: "PATCH",
+    const archive = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}?expectedUpdatedAt=${encodeURIComponent(checklist.updatedAt)}`, {
+      method: "DELETE",
       headers,
-      body: { status: "archived" },
     });
-    assert.equal(archive.status, 200);
+    assert.equal(archive.status, 204);
 
     // Reabrir criaria uma versão que o app de campo nem listaria (só serve modelo publicado): recusa com
     // linguagem de negócio e caminho de saída, não uma run órfã.
@@ -875,7 +877,7 @@ test("checklist P1 PR-03: modelo INATIVADO continua servindo quem já está no c
     const inactivate = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}`, {
       method: "PATCH",
       headers,
-      body: { status: "inactive" },
+      body: { expectedUpdatedAt: checklist.updatedAt, status: "inactive" },
     });
     assert.equal(inactivate.status, 200);
     assert.equal(inactivate.body.data.status, "inactive");
@@ -923,7 +925,7 @@ test("checklist P1 PR-03: modelo INATIVADO continua servindo quem já está no c
     await requestJson(baseUrl, `/api/v1/tenant/checklists/${semRunAtiva.id}`, {
       method: "PATCH",
       headers,
-      body: { status: "inactive" },
+      body: { expectedUpdatedAt: semRunAtiva.updatedAt, status: "inactive" },
     });
     const renderSemRun = await requestJson(baseUrl, `/api/v1/mobile/checklists/${semRunAtiva.id}/render`, { headers });
     assert.equal(renderSemRun.status, 409);
@@ -936,7 +938,7 @@ async function createFieldChecklist(
   baseUrl: string,
   tenant: Tenant,
   user: User,
-): Promise<{ id: string; observationId: string; photoId: string; damageId: string }> {
+): Promise<{ id: string; observationId: string; photoId: string; damageId: string; updatedAt: string }> {
   const created = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
     method: "POST",
     headers: authHeaders(tenant, user),
@@ -957,6 +959,7 @@ async function createFieldChecklist(
   const published = await requestJson(baseUrl, `/api/v1/tenant/checklists/${created.body.data.id}/publish`, {
     method: "POST",
     headers: authHeaders(tenant, user),
+    body: { expectedUpdatedAt: created.body.data.updatedAt },
   });
   assert.equal(published.status, 200);
 
@@ -965,6 +968,7 @@ async function createFieldChecklist(
     observationId: findComponentId(published.body.data, "observation"),
     photoId: findComponentId(published.body.data, "photo_upload"),
     damageId: findComponentId(published.body.data, "damage_map"),
+    updatedAt: published.body.data.updatedAt as string,
   };
 }
 
@@ -1011,6 +1015,7 @@ async function createAndPublishChecklist(
   const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
     method: "POST",
     headers: authHeaders(tenant, user),
+    body: { expectedUpdatedAt: create.body.data.updatedAt },
   });
 
   return {

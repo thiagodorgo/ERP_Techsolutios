@@ -186,6 +186,7 @@ async function createPublishedRun(
   const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
     method: "POST",
     headers: authHeaders(tenant, user),
+    body: { expectedUpdatedAt: create.body.data.updatedAt },
   });
   assert.equal(publish.status, 200);
 
