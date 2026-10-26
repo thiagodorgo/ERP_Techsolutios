@@ -12,6 +12,7 @@ import type {
 } from "./operations-map.types";
 import { isValidMapCoordinate } from "./map/mapMarkers";
 import { findAssignedLocation } from "./map/routeLines";
+import { isActiveDispatchStatus } from "./allocation";
 import type { DispatchListItem, DispatchStatus } from "../dispatches/dispatches.types";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "../../work-orders/work-orders.types";
 import type { MaintenanceOrder } from "../../fleet/maintenance/maintenance-orders.types";
@@ -391,6 +392,45 @@ export function attachDispatchesToFieldLocations(
       dispatchesByPriority.find((dispatch) => isDispatchLinkedToLocation(dispatch, location)),
     ),
   }));
+}
+
+// ————— AC-18 (DEMO-B) — status do técnico derivado quando o servidor não manda —————
+// O `/field-locations/latest` não traz status (DTO sem o campo), então todo técnico chegava como `unknown`
+// e caía no grupo "off" ("Fora de serviço"): Alocar apagado, arrastar recusado, alocação sem efeito.
+// Regra (função PURA, sem `Date.now`: o frescor é o `isStale` já calculado no limiar de 15 min do mapa):
+//  1. o servidor mandou um status reconhecido → o dele vence;
+//  2. despacho ATIVO → status pelo despacho: `in_service` → "Em atendimento"; `arrived` → "No local";
+//     `on_route`, e também `assigned`/`accepted`/`draft` (técnico já comprometido com o chamado) → "Em deslocamento";
+//  3. sem despacho ativo e posição recente → "Disponível";
+//  4. sem despacho ativo e posição antiga → continua como hoje (`unknown`).
+const DERIVED_STATUS_BY_DISPATCH: Readonly<Partial<Record<DispatchStatus, FieldLocationStatus>>> = {
+  draft: "on_route",
+  assigned: "on_route",
+  accepted: "on_route",
+  on_route: "on_route",
+  arrived: "on_site",
+  in_service: "in_service",
+};
+
+export function deriveFieldLocationStatus(
+  location: Pick<FieldLocationItem, "status" | "isStale" | "currentDispatch">,
+): FieldLocationStatus {
+  if (location.status !== "unknown") return location.status;
+
+  const dispatchStatus = location.currentDispatch?.status;
+  if (isActiveDispatchStatus(dispatchStatus)) {
+    return DERIVED_STATUS_BY_DISPATCH[dispatchStatus as DispatchStatus] ?? location.status;
+  }
+
+  if (!location.isStale) return "available";
+  return location.status;
+}
+
+export function applyDerivedFieldLocationStatuses(locations: readonly FieldLocationItem[]): FieldLocationItem[] {
+  return locations.map((location) => {
+    const status = deriveFieldLocationStatus(location);
+    return status === location.status ? location : { ...location, status };
+  });
 }
 
 export function calculateOperationsMapSummary(locations: readonly FieldLocationItem[]): OperationsMapSummary {

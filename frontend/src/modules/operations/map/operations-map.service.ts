@@ -2,6 +2,7 @@ import { isMockMode, readFrontendEnv } from "../../../config/env";
 import { apiRequest } from "../../../services/api/client";
 import {
   adaptFieldLocationsResponse,
+  applyDerivedFieldLocationStatuses,
   attachDispatchesToFieldLocations,
   attachWorkOrdersToFieldLocations,
   deriveInsuredVehicleIds,
@@ -56,6 +57,16 @@ export async function getLatestFieldLocations(context: OperationsMapApiContext):
       fallbackReason: "Não foi possível consultar a API de localização.",
     };
   }
+}
+
+// AC-18 (DEMO-B) — leitura do MAPA: a mesma fonte de `getLatestFieldLocations`, com o status do técnico
+// derivado quando o servidor não manda (posição recente + despacho ativo). Só o Mapa usa esta leitura;
+// as outras telas que leem `getLatestFieldLocations` ficam como estão.
+export async function getOperationsMapData(context: OperationsMapApiContext): Promise<OperationsMapData> {
+  const data = await getLatestFieldLocations(context);
+  if (data.locations.length === 0) return data;
+
+  return { ...data, locations: applyDerivedFieldLocationStatuses(data.locations) };
 }
 
 export async function getFieldLocationHistory(

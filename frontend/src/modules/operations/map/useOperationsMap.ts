@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isMockMode } from "../../../config/env";
 import { useAuth } from "../../../providers/AuthProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
-import { getLatestFieldLocations, subscribeOperationsMapEvents } from "./operations-map.service";
+import { getOperationsMapData, subscribeOperationsMapEvents } from "./operations-map.service";
 import type { OperationsMapData, OperationsMapRealtimeState, OperationsMapRealtimeStatus } from "./operations-map.types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -63,7 +63,8 @@ export function useOperationsMap() {
       };
     });
 
-    const data = await getLatestFieldLocations(context);
+    // AC-18 — o Mapa lê pela leitura com status derivado (o servidor não manda o status do técnico).
+    const data = await getOperationsMapData(context);
     setState((current) => {
       const merged = mergeOperationsMapRefresh(current, data);
       const preservedExisting = merged !== data;
