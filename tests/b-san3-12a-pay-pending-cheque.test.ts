@@ -15,9 +15,11 @@ import {
   type AccountReader,
 } from "../src/modules/financial-entries/index.js";
 import {
+  FinancialTitleService,
   createMemoryFinancialTitleService,
   deriveCompetencia,
   getMemoryFinancialPeriodCloseRepositoryForTests,
+  getMemoryFinancialTitleRepositoryForTests,
   resetFinancialTitleRuntimeForTests,
 } from "../src/modules/financial-titles/index.js";
 import {
@@ -357,4 +359,87 @@ test("A2/A21: cross-tenant — o cheque pendente de OUTRA organização não rec
   await s.titles.update(s.ctx, s.title.id, { amount: 120 });
   const entry = await s.entries.payTitle(s.ctx, s.title.id, pix(s.account.id, 120));
   assert.equal(entry.titleId, s.title.id);
+});
+
+// ------------------------------------------------------------------ A29 (memória) — ciclo 2: PATCH amount e DELETE do título NA UNIDADE
+
+/** O serviço de títulos REAL (singletons de memória) com a porta de unidade instrumentada. */
+function titleServiceWith(resolveUow: FinancialUowResolver): FinancialTitleService {
+  return new FinancialTitleService(
+    getMemoryFinancialTitleRepositoryForTests(),
+    getMemoryFinancialPeriodCloseRepositoryForTests(),
+    async () => true,
+    resolveUow,
+  );
+}
+
+test("A29-e (memória): PATCH {amount} e DELETE que gravam abrem UMA unidade; recusa no fast-fail (pendente, 404, period_closed, 400) abre ZERO", async () => {
+  const s = await seed(100);
+  const { counter, resolve } = countingUow();
+  const titles = titleServiceWith(resolve);
+  await titles.update(s.ctx, s.title.id, { amount: 150 });
+  assert.equal(counter.runs, 1, "PATCH {amount} que grava = 1 unidade");
+  await titles.delete(s.ctx, s.title.id);
+  assert.equal(counter.runs, 2, "DELETE que grava = 1 unidade");
+
+  const t = await seed(100);
+  const { counter: refused, resolve: resolveRefused } = countingUow();
+  const guarded = titleServiceWith(resolveRefused);
+  await t.cheques.create(t.ctx, chequeBody(t.account.id, t.title.id));
+  await assert.rejects(() => guarded.update(t.ctx, t.title.id, { amount: 150 }), (e) => domain(e, 422, "title_has_pending_cheque"));
+  await assert.rejects(() => guarded.delete(t.ctx, t.title.id), (e) => domain(e, 422, "title_has_pending_cheque"));
+  await assert.rejects(() => guarded.update(t.ctx, randomUUID(), { amount: 150 }), (e) => domain(e, 404, "title_not_found"));
+  await assert.rejects(() => guarded.delete(t.ctx, randomUUID()), (e) => domain(e, 404, "title_not_found"));
+  await assert.rejects(() => guarded.update(t.ctx, t.title.id, { amount: -1 }), (e) => (e as { statusCode?: number }).statusCode === 400);
+  getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(t.ctx.tenantId, t.title.competencia, "closed");
+  await assert.rejects(() => guarded.update(t.ctx, t.title.id, { amount: 150 }), (e) => domain(e, 422, "period_closed"));
+  await assert.rejects(() => guarded.delete(t.ctx, t.title.id), (e) => domain(e, 422, "period_closed"));
+  assert.equal(refused.runs, 0, "nenhuma recusa do fast-fail abriu unidade");
+});
+
+for (const op of ["update", "delete"] as const) {
+  test(`A29-f (memória): o vínculo commita DEPOIS do fast-fail do ${op === "update" ? "PATCH {amount}" : "DELETE"} e ANTES da unidade → o re-check sob o lock recusa 422; o título fica intocado e o vínculo fica`, async () => {
+    const s = await seed(100);
+    const cheque = await s.cheques.create(s.ctx, chequeBody(s.account.id, undefined));
+    const { resolve } = countingUow({
+      beforeRun: async () => {
+        await s.cheques.update(s.ctx, cheque.id, { title_id: s.title.id });
+      },
+    });
+    const titles = titleServiceWith(resolve);
+    const attempt = op === "update" ? titles.update(s.ctx, s.title.id, { amount: 150 }) : titles.delete(s.ctx, s.title.id);
+    await assert.rejects(() => attempt, (e) => domain(e, 422, "title_has_pending_cheque"));
+    const title = await s.titles.get(s.ctx, s.title.id);
+    assert.equal(title.amount, 100, "valor intocado");
+    assert.equal(title.deletedAt, undefined, "título vivo");
+    assert.equal((await s.cheques.get(s.ctx, cheque.id)).titleId, s.title.id, "o vínculo venceu e ficou");
+  });
+}
+
+test("A29-f (memória, arranjo inverso): o PATCH/DELETE commita entre o fast-fail e a unidade do VÍNCULO → cheque_amount_mismatch / invalid_title_reference", async () => {
+  const s = await seed(100);
+  const loose = await s.cheques.create(s.ctx, chequeBody(s.account.id, undefined));
+  const patched = countingUow({ beforeRun: async () => { await s.titles.update(s.ctx, s.title.id, { amount: 150 }); } });
+  await assert.rejects(() => chequeServiceWith(patched.resolve).update(s.ctx, loose.id, { title_id: s.title.id }), (e) => domain(e, 422, "cheque_amount_mismatch"));
+  assert.equal((await s.cheques.get(s.ctx, loose.id)).titleId, undefined);
+
+  const t = await seed(100);
+  const deleted = countingUow({ beforeRun: async () => { await t.titles.delete(t.ctx, t.title.id); } });
+  await assert.rejects(() => chequeServiceWith(deleted.resolve).create(t.ctx, chequeBody(t.account.id, t.title.id)), (e) => domain(e, 400, "invalid_title_reference"));
+  assert.equal((await getMemoryChequeRepositoryForTests().list({ tenantId: t.ctx.tenantId, limit: 100, offset: 0 } as never)).total, 0, "nenhum cheque gravado");
+});
+
+test("A29-h (memória): o período fecha DEPOIS do fast-fail e ANTES da unidade → PATCH e DELETE saem 422 period_closed pela trava da unidade; nada gravado", async () => {
+  const s = await seed(100);
+  const close = countingUow({
+    beforeRun: async () => {
+      getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(s.ctx.tenantId, s.title.competencia, "closed");
+    },
+  });
+  await assert.rejects(() => titleServiceWith(close.resolve).update(s.ctx, s.title.id, { amount: 150 }), (e) => domain(e, 422, "period_closed"));
+  getMemoryFinancialPeriodCloseRepositoryForTests().setPeriodStatus(s.ctx.tenantId, s.title.competencia, "open");
+  await assert.rejects(() => titleServiceWith(close.resolve).delete(s.ctx, s.title.id), (e) => domain(e, 422, "period_closed"));
+  const title = await getMemoryFinancialTitleRepositoryForTests().findById(s.ctx.tenantId, s.title.id);
+  assert.equal(title?.amount, 100);
+  assert.equal(title?.deletedAt, undefined);
 });

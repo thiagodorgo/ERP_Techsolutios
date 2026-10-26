@@ -86,6 +86,39 @@ if (!connectionString) {
     }
   });
 
+  // B-SAN3-12a, ciclo 2 — A13-bis (C4-02): o operando `reconciled` do WHERE do CAS tem caso que o acusa. Com o par lido
+  // INCONSISTENTE com a linha só no flag, o CAS casa 0 linhas → 409. Tirar `reconciled: input.expectedReconciled` do WHERE (M13a)
+  // faz o 1º caso casar pelo `reconciled_at IS NULL` e gravar — vermelho. O operando é redundante em dado coerente
+  // (reconciled ⇔ reconciled_at IS NOT NULL), mas é o contrato do §4.6 e defende contra linha inconsistente.
+  test("A13-bis (db): o flag lido conta no CAS — linha (false, null) com cliente (true, null) → 409 sem gravar; linha (true, X) com cliente (false, X) → 409 sem desfazer", async () => {
+    const h = await bootstrap(connection);
+    try {
+      const s = await seed(h, "a13bis");
+      const entry = await h.entryService.create(s.actor, { account_id: s.accountId, direction: "in", amount: 30, payment_method: "pix" });
+      await assert.rejects(
+        () => h.entryService.reconcile(s.actor, entry.id, { reconciled: true, expected_reconciled: true, expected_reconciled_at: null }),
+        (e: unknown) => (e as { reason?: string; statusCode?: number }).reason === "reconciliation_stale" && (e as { statusCode?: number }).statusCode === 409,
+      );
+      const untouched = await h.client.financialEntry.findUniqueOrThrow({ where: { id: entry.id } });
+      assert.equal(untouched.reconciled, false, "nada gravado");
+      assert.equal(untouched.reconciled_by, null);
+      assert.equal(untouched.reconciled_at, null);
+
+      const done = await h.entryService.reconcile(s.actor, entry.id, { reconciled: true, expected_reconciled: false, expected_reconciled_at: null });
+      const stamp = done.reconciledAt!.toISOString();
+      await assert.rejects(
+        () => h.entryService.reconcile(s.admin, entry.id, { reconciled: false, expected_reconciled: false, expected_reconciled_at: stamp }),
+        (e: unknown) => (e as { reason?: string }).reason === "reconciliation_stale",
+      );
+      const still = await h.client.financialEntry.findUniqueOrThrow({ where: { id: entry.id } });
+      assert.equal(still.reconciled, true, "o desfazer com o flag errado não gravou");
+      assert.equal(still.reconciled_at?.toISOString(), stamp);
+      assert.equal(still.reconciled_by, s.actor.userId);
+    } finally {
+      await teardown(h);
+    }
+  });
+
   test("A13 (db): sem estado → 400 sem gravar; estado com o carimbo EXATO lido (ms) → 200 ida e volta; carimbo 1 ms diferente → 409", async () => {
     const h = await bootstrap(connection);
     try {

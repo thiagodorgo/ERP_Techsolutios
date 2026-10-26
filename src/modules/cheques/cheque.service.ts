@@ -91,10 +91,26 @@ export const CHEQUE_UNLINK_PERMISSION = "cheques:unlink_title" as const;
 // Justificativa do desvínculo: obrigatória, 10–500 caracteres depois do trim (400 invalid_justification).
 const JUSTIFICATION_MIN = 10;
 const JUSTIFICATION_MAX = 500;
+// B-SAN3-12a, ciclo 2 (A30; C2-01) — a justificativa é rastro de ato privilegiado: só texto GRAVÁVEL e LEGÍVEL. U+0000 e
+// surrogate isolado o jsonb recusa (a auditoria best-effort caía e o desvínculo ficava sem rastro); os demais controles C0
+// (salvo TAB, LF e CR) e o DEL adulteram a leitura em tela, terminal e log. Unicode válido segue aceito e gravado verbatim.
+// eslint-disable-next-line no-control-regex
+const JUSTIFICATION_FORBIDDEN_CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+// `String.prototype.isWellFormed` existe em runtime desde o Node 20 (o `engines` do repositório); a `lib` do tsconfig
+// ainda não a declara, daí o tipo local (sem mexer no tsconfig).
+type WellFormedCheckable = string & { isWellFormed(): boolean };
 
 export function parseUnlinkJustification(value: unknown): string {
   const normalized = typeof value === "string" ? value.trim() : "";
   if (normalized.length < JUSTIFICATION_MIN || normalized.length > JUSTIFICATION_MAX) throw invalidJustificationError();
+  if (!(normalized as WellFormedCheckable).isWellFormed() || JUSTIFICATION_FORBIDDEN_CONTROL.test(normalized)) {
+    throw new ChequeError(
+      400,
+      "CHEQUE_INVALID",
+      "invalid_justification",
+      "justification contains control characters or malformed text (no U+0000, no lone surrogate, no C0 control except TAB/LF/CR, no DEL).",
+    );
+  }
   return normalized;
 }
 

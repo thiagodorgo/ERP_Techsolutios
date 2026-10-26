@@ -116,6 +116,64 @@ if (!connectionString) {
   });
 }
 
+// B-SAN3-12a, ciclo 2 — A30-c: a PROPRIEDADE do rastro. Toda justificativa que o validador ACEITA grava a auditoria Crítica
+// verbatim; toda que ele RECUSA não desvincula nada. Antes (C2-01) NUL e surrogate isolado passavam no validador, o desvínculo
+// commitava e o jsonb recusava a auditoria (engolida pelo best-effort): ato privilegiado sem rastro.
+if (connectionString) {
+  test("A30-c (db): justificativa recusada (NUL, surrogate alto/baixo isolado, ESC) → 400 pelo controller, title_id intacto e 0 auditoria; aceita adversarial (emoji, NFD, HTML, 500) → 200, title_id nulo e 1 auditoria Crítica com a justificativa IGUAL à enviada", async () => {
+    const h = await bootstrap();
+    try {
+      const s = await seed(h, "a30c");
+      const { ChequeController } = await import("../src/modules/cheques/cheque.controller.js");
+      const controller = new ChequeController(async () => h.chequeService);
+      const unlink = (chequeId: string, justification: string) => controller.unlinkTitle({
+        params: { chequeId }, body: { justification }, tenantContext: s.admin, header: () => undefined, ip: "127.0.0.1",
+      } as never);
+      const audits = (chequeId: string) => h.withTenantRls(h.client, s.tenantId, (tx) => tx.auditLog.findMany({ where: { tenant_id: s.tenantId, action: "cheque.title_unlinked", entity_id: chequeId } }));
+      const ch = (code: number) => String.fromCharCode(code);
+
+      const rejected: ReadonlyArray<readonly [string, string]> = [
+        ["NUL", `cliente pagou ${ch(0x0000)} por pix`],
+        ["surrogate alto isolado", `cliente pagou ${ch(0xd800)} por pix`],
+        ["surrogate baixo isolado", `cliente pagou ${ch(0xdc00)} por pix`],
+        ["ESC", `cliente pagou ${ch(0x001b)}[2J por pix`],
+      ];
+      const linked = await h.chequeService.create(s.actor, chequeBody(s, s.titleId));
+      for (const [label, justification] of rejected) {
+        const outcome = await settle(unlink(linked.id, justification));
+        assert.equal(outcome.ok, false, `${label}: era para recusar`);
+        assert.equal((outcome.reason as { statusCode?: number }).statusCode, 400, label);
+        assert.equal(outcome.reason?.reason, "invalid_justification", label);
+        const row = await h.client.cheque.findUniqueOrThrow({ where: { id: linked.id } });
+        assert.equal(row.title_id, s.titleId, `${label}: o vínculo ficou`);
+        assert.equal((await audits(linked.id)).length, 0, `${label}: nenhuma auditoria`);
+      }
+      await h.chequeService.unlinkTitle(s.admin, linked.id, { justification: "limpeza do arranjo do teste" });
+
+      const accepted: ReadonlyArray<readonly [string, string]> = [
+        ["emoji", `cliente pagou ${String.fromCodePoint(0x1f600)} por pix`],
+        ["NFD", `cliente pagou o cafe${ch(0x0301)} por pix`],
+        ["HTML", "<script>alert(1)</script> pagou por pix"],
+        ["500 caracteres", "á".repeat(500)],
+      ];
+      for (const [label, justification] of accepted) {
+        const cheque = await h.chequeService.create(s.actor, chequeBody(s, s.titleId));
+        const result = (await unlink(cheque.id, justification)) as { body: { data: { titleId: string | null } } };
+        assert.equal(result.body.data.titleId, null, `${label}: desvinculou`);
+        const row = await h.client.cheque.findUniqueOrThrow({ where: { id: cheque.id } });
+        assert.equal(row.title_id, null, label);
+        const rows = await audits(cheque.id);
+        assert.equal(rows.length, 1, `${label}: exatamente uma auditoria`);
+        const metadata = rows[0]!.metadata as Record<string, unknown>;
+        assert.equal(metadata.severity, "critical", label);
+        assert.equal(metadata.justification, justification, `${label}: gravada VERBATIM`);
+      }
+    } finally {
+      await teardown(h);
+    }
+  });
+}
+
 // B-SAN3-12a (Emenda E1.F4(c)) — paridade memória × Prisma de `cheques.linkedPending*`: o MESMO arranjo (1 cheque pendente com
 // título + 1 sem) nos dois repositórios do resumo dá o mesmo bloco `cheques`.
 if (connectionString) {

@@ -113,6 +113,59 @@ test("A5: justificativa — 9 caracteres → 400 invalid_justification (antes do
   assert.equal((await s.cheques.get(s.ctx, cheque.id)).titleId, s.title.id, "nenhuma recusa desvinculou");
 });
 
+// ------------------------------------------------------------------ A30 (ciclo 2) — a justificativa só aceita texto gravável e legível
+
+// Caracteres construídos por código (nunca literais no fonte): U+0000, surrogates isolados, controles C0 e DEL.
+const NUL = String.fromCharCode(0x0000);
+const LONE_HIGH = String.fromCharCode(0xd800);
+const LONE_LOW = String.fromCharCode(0xdc00);
+const ESC = String.fromCharCode(0x001b);
+const BEL = String.fromCharCode(0x0007);
+const DEL = String.fromCharCode(0x007f);
+const TAB = String.fromCharCode(0x0009);
+const LF = String.fromCharCode(0x000a);
+const CR = String.fromCharCode(0x000d);
+const EMOJI = String.fromCodePoint(0x1f600);
+const NFD_E = "e" + String.fromCharCode(0x0301);
+
+const A30_REJECTED: ReadonlyArray<readonly [string, string]> = [
+  ["NUL no início", `${NUL}pagou por pix no balcão`],
+  ["NUL no meio", `pagou por ${NUL} pix no balcão`],
+  ["surrogate alto isolado", `pagou por pix ${LONE_HIGH} no balcão`],
+  ["surrogate baixo isolado", `pagou por pix ${LONE_LOW} no balcão`],
+  ["ESC", `pagou ${ESC}[31m por pix no balcão`],
+  ["BEL", `pagou por pix${BEL} no balcão`],
+  ["DEL", `pagou por pix${DEL} no balcão`],
+];
+
+const A30_ACCEPTED: ReadonlyArray<readonly [string, string]> = [
+  ["texto comum", "pagou por pix no balcão"],
+  ["emoji (par válido)", `cliente pagou ${EMOJI} por pix`],
+  ["acento NFD", `cliente pagou o caf${NFD_E} por pix`],
+  ["TAB, LF e CR no meio", `pagou por pix${TAB}no balcão${CR}${LF}conferido`],
+  ["HTML", "<b>x</b> motivo: pagou por pix"],
+];
+
+test("A30-a: justificativa com U+0000, surrogate isolado, controle C0 (salvo TAB/LF/CR) ou DEL → 400 invalid_justification; Unicode válido e TAB/LF/CR aceitos VERBATIM; 10/500 passam, 9/501 recusam", async () => {
+  for (const [label, value] of A30_REJECTED) {
+    assert.throws(() => parseUnlinkJustification(value), (e) => domain(e, 400, "invalid_justification"), label);
+  }
+  for (const [label, value] of A30_ACCEPTED) {
+    assert.equal(parseUnlinkJustification(value), value, `${label}: aceito e devolvido verbatim`);
+  }
+  assert.equal(parseUnlinkJustification("a".repeat(10)), "a".repeat(10));
+  assert.equal(parseUnlinkJustification("a".repeat(500)).length, 500);
+  assert.throws(() => parseUnlinkJustification("a".repeat(9)), (e) => domain(e, 400, "invalid_justification"));
+  assert.throws(() => parseUnlinkJustification("a".repeat(501)), (e) => domain(e, 400, "invalid_justification"));
+
+  const s = await seed();
+  const cheque = await s.cheques.create(s.ctx, body(s.account.id, s.title.id));
+  for (const [label, value] of A30_REJECTED) {
+    await assert.rejects(() => s.cheques.unlinkTitle(s.admin, cheque.id, { justification: value }), (e) => domain(e, 400, "invalid_justification"), label);
+  }
+  assert.equal((await s.cheques.get(s.ctx, cheque.id)).titleId, s.title.id, "nenhuma recusa desvinculou");
+});
+
 test("A5: sem título → 422 cheque_not_linked; cleared/bounced/cancelled → 422 cheque_not_unlinkable; cross-tenant → 404", async () => {
   const s = await seed();
   const loose = await s.cheques.create(s.ctx, body(s.account.id));
@@ -405,6 +458,28 @@ test("A5/A6/A20 (HTTP): sem cheques:unlink_title a rota responde 403; tenant_adm
 
     const paid = await call(api, api.tenantA, "finance", "POST", `/financial-titles/${title.id}/pay`, { account_id: account.id, amount: 100, payment_method: "pix" });
     assert.equal(paid.status, 201, "A8 pela rota: depois do desvínculo a baixa por outro meio passa");
+  });
+});
+
+test("A30-b (HTTP): justificativa com NUL → 400 invalid_justification e o vínculo fica; precedência 403 da rota → 400 justificativa → 404 cheque", async () => {
+  await withApi(async (api) => {
+    const account = (await call(api, api.tenantA, "finance", "POST", "/financial-accounts", { name: `Conta ${randomUUID()}` })).body.data;
+    const title = (await call(api, api.tenantA, "finance", "POST", "/financial-titles", {
+      direction: "receivable", party_type: "customer", party_name: "HTTP 12a", amount: 100, due_date: "2026-12-01",
+    })).body.data;
+    const cheque = (await call(api, api.tenantA, "finance", "POST", "/cheques", body(account.id, title.id))).body.data;
+    const withNul = { justification: `pagou por ${NUL} pix no balcão` };
+
+    const denied = await call(api, api.tenantA, "finance", "POST", `/cheques/${cheque.id}/unlink-title`, withNul);
+    assert.equal(denied.status, 403, "sem o privilégio, a rota responde antes da justificativa");
+    const refused = await call(api, api.tenantA, "tenant_admin", "POST", `/cheques/${cheque.id}/unlink-title`, withNul);
+    assert.equal(refused.status, 400);
+    assert.equal(refused.body.error.reason, "invalid_justification");
+    const foreign = await call(api, api.tenantB, "tenant_admin", "POST", `/cheques/${cheque.id}/unlink-title`, withNul);
+    assert.equal(foreign.status, 400, "a justificativa decide antes do 404 do cheque");
+    assert.equal(foreign.body.error.reason, "invalid_justification");
+    const reread = await call(api, api.tenantA, "finance", "GET", `/cheques/${cheque.id}`);
+    assert.equal(reread.body.data.titleId, title.id, "o vínculo ficou intacto");
   });
 });
 

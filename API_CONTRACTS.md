@@ -526,9 +526,12 @@ Erros saem no envelope de sempre `{ error: { code, reason, message } }`; os que 
     "unlink_cheque", requiredPermission: "cheques:unlink_title" }`. Precedência: … → `422 currency_mismatch` → `422
     cheque_required` → `422 title_has_pending_cheque` → `422 period_closed` → (na transação) `409 duplicate_payment`. O
     fast-fail não abre transação; dentro dela a baixa trava o título e relê o conjunto (fecha a corrida `pay × vincular`).
-  - `PATCH /financial-titles/:id` que muda `amount` e `DELETE /financial-titles/:id` → `422 title_has_pending_cheque`.
+  - `PATCH /financial-titles/:id` que muda `amount` e `DELETE /financial-titles/:id` → `422 title_has_pending_cheque`. O
+    fast-fail não abre transação; a escrita roda numa transação que trava o período (SHARED) e a linha do título e relê o
+    conjunto pendente SOB o lock (re-check): um vínculo que commita entre o fast-fail e a escrita também recusa (ciclo 2, A29).
 - **`POST /cheques/:id/unlink-title`** (`cheques:unlink_title`, Administrador da organização; `finance` não), corpo
-  `{ justification }` (10–500 caracteres após o trim). `200 { data: <cheque com titleId null>, warning? }` — `warning:
+  `{ justification }` (10–500 caracteres após o trim, e texto bem-formado: sem U+0000, sem surrogate isolado, sem controle
+  C0 salvo TAB/LF/CR, sem DEL — senão `400 invalid_justification`; Unicode válido é gravado verbatim). `200 { data: <cheque com titleId null>, warning? }` — `warning:
   "cheque_still_depositable"` quando o cheque segue `deposited` (compensar depois posta caixa sem título). CAS de estado
   (`status IN (registered, deposited) AND title_id = <lido>`). Precedência: `403` (rota) → `400 invalid_justification` →
   `404 cheque_not_found` → `422 cheque_not_linked` → `422 cheque_not_unlinkable` (`cleared`/`bounced`/`cancelled`) → `409

@@ -122,6 +122,56 @@ if (!connectionString) {
   });
 }
 
+// B-SAN3-12a, ciclo 2 — R-res-5-bis (C4-01): o R-res-5 acima roda sob o papel da CI (superusuário, BYPASSRLS), que nunca vê a
+// camada RLS — tirar o `withTenantRls` do agregado standalone (M5a) não deixava nada vermelho, porque o SQL também filtra
+// tenant_id. Aqui o MESMO agregado roda pela standalone `RlsPrismaFinancialEntryRepository` sob um papel descartável SEM
+// bypass (NOSUPERUSER, NOBYPASSRLS — criado pelo arnês `createEphemeralRole`, no lock de catálogo): com o `withTenantRls`
+// cada organização vê só os seus (igual ao superusuário); sem ele (M5a) o GUC não existe, a RLS falha fechada e vem vazio.
+if (connectionString) {
+  test("R-res-5-bis (db, papel SEM bypass): o agregado standalone vê só os lançamentos da organização (none e day), igual ao superusuário; sem o contexto de RLS viria vazio", async (t) => {
+    const h = await bootstrap();
+    let role: { readonly roleName: string; readonly client: import("@prisma/client").PrismaClient; drop(): Promise<void> } | undefined;
+    try {
+      const caps = (await h.client.$queryRaw`SELECT rolsuper, rolcreaterole FROM pg_roles WHERE rolname = current_user`) as Array<{ rolsuper: boolean; rolcreaterole: boolean }>;
+      if (!caps[0]?.rolsuper && !caps[0]?.rolcreaterole) {
+        t.skip("exige criar papel: a DATABASE_URL não tem rolsuper nem rolcreaterole");
+        return;
+      }
+      const a = await seed(h, "rres5bis-a");
+      const b = await seed(h, "rres5bis-b");
+      await h.entryService.create(a.actor, { account_id: a.accounts[0], direction: "in", amount: 11, payment_method: "pix", occurred_at: "2026-10-10T12:00:00-03:00" });
+      await h.entryService.create(b.actor, { account_id: b.accounts[0], direction: "in", amount: 22, payment_method: "pix", occurred_at: "2026-10-10T12:00:00-03:00" });
+
+      const { createEphemeralRole } = await import("./helpers/auth-identity-fixture.js");
+      role = await createEphemeralRole(h.client, process.env.DATABASE_URL!);
+      const attrs = (await role.client.$queryRaw`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
+      assert.deepEqual(attrs[0], { rolsuper: false, rolbypassrls: false }, "o papel da prova não contorna a RLS");
+
+      const { RlsPrismaFinancialEntryRepository } = await import("../src/modules/financial-entries/financial-entry-prisma.repository.js");
+      const underRole = new h.entries.FinancialEntryService(new h.entries.InMemoryFinancialEntryRepository(), h.noPeriods, h.noAccounts, h.titles.createDefaultFinancialTitleService, undefined, undefined, {
+        aggregateReader: new RlsPrismaFinancialEntryRepository(role.client),
+      });
+      const queries: ReadonlyArray<readonly [typeof a, Record<string, unknown>]> = [
+        [a, { group_by: "day", from: "2026-10-01", to: "2026-10-31" }],
+        [a, { group_by: "none" }],
+        [b, { group_by: "none" }],
+        [a, { group_by: "none", account_id: b.accounts[0] }],
+      ];
+      for (const [who, query] of queries) {
+        const fromRole = await underRole.aggregate(who.actor, query);
+        const fromSuper = await h.entryService.aggregate(who.actor, query);
+        assert.deepEqual(fromRole.items, fromSuper.items, `papel sem bypass × superusuário em ${JSON.stringify(query)}`);
+      }
+      assert.deepEqual((await underRole.aggregate(a.actor, { group_by: "day", from: "2026-10-01", to: "2026-10-31" })).items, [{ bucket: "2026-10-10", count: 1, inflow: 11, outflow: 0, net: 11 }]);
+      assert.deepEqual((await underRole.aggregate(b.actor, { group_by: "none" })).items, [{ bucket: null, count: 1, inflow: 22, outflow: 0, net: 22 }]);
+      assert.deepEqual((await underRole.aggregate(a.actor, { account_id: b.accounts[0] })).items, [], "a conta de outra organização não devolve nada");
+    } finally {
+      await role?.drop();
+      await teardown(h);
+    }
+  });
+}
+
 type Harness = Awaited<ReturnType<typeof bootstrap>>;
 
 async function bootstrap() {
