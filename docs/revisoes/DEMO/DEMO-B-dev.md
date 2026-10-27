@@ -76,3 +76,49 @@ Limite declarado: o M5b só é pego pela conferência de fonte do hook. O smoke 
 - Disco no fim: 8,9 GB livres.
 - Para o revisor e para o ensaio (cena 4): depois do Alocar, o técnico passa a "Em deslocamento" (grupo em rota) pelo despacho `assigned`; continua alocável e arrastável, como todo técnico fora do grupo "Fora de serviço" já era antes.
 - Push: `git push -u origin feat/demo-mapa-status-tecnico`. PR não aberto (mandato).
+
+## Correção da revisão
+
+Dev: `dev-demo-b-fix-opus`, subagente genérico Claude, modelo Claude Opus 5.5, nível menor declarado. Troca o `dev-demo-b-fix-sol` do mandato: o Codex caiu pelo limite às 21:49Z sem deixar parcial (`git -C C:/Users/AMP/w-demo-b status` limpo, head `0b03380b`). Identidade nova: não escrevi o código original e não achei o defeito (quem achou foi o `rev-demo-b-sol`, §C7.4-bis).
+
+**Achado (A1 da revisão `PR-465-revisao.md`):** `draft`, `assigned` e `accepted` apareciam como "Em deslocamento" antes de o técnico sair.
+
+**Decisão aplicada (ratificação do orquestrador, 21:55Z):** status novo derivado `dispatched`, rótulo **"Despachado"**, para `draft`, `assigned` e `accepted`. `on_route` continua "Em deslocamento", `arrived` "No local", `in_service` "Em atendimento".
+
+### O que mudou (commit `7e37e29b`)
+- `operations-map.types.ts`: `dispatched` no tipo `FieldLocationStatus` e em `FIELD_LOCATION_STATUSES`.
+- `operations-map.adapter.ts`: `DERIVED_STATUS_BY_DISPATCH` com `draft`/`assigned`/`accepted` → `dispatched`; rótulo "Despachado"; tom `info` (o mesmo de "Em deslocamento"); comentário da regra atualizado. `normalizeStatus` NÃO aceita `dispatched` do servidor: é status só derivado.
+- `map/mapMarkers.ts`: cor do anel = a de `on_route` (`#38bdf8`, sem cor nova); grupo `rota`, o mesmo de "Em deslocamento", logo no mesmo filtro da legenda e no "ativo" da lista de técnicos. Nunca no grupo `disp`.
+- `allocation.ts` e `OperationsOperatorList.tsx`: sem mudança. O `on_route` de `allocation.ts` é o status do DESPACHO (`ACTIVE_DISPATCH_STATUSES`), não do técnico, e a lista filtra por grupo (`getFieldLocationGroup`), que já leva `dispatched` para `rota`. O Alocar e o arrastar valem hoje para todo grupo que não é "Fora de serviço"; "Despachado" se comporta igual a "Em deslocamento", sem nada além.
+- Fora da pasta do Mapa, forçado pelo tipo: `dispatch/field-operators.adapter.ts` (o `Record<FieldLocationStatus, number>` exige a chave; `dispatched` na ordem 1 e no balde "engajado") e `dispatch/dispatch-console.logic.ts` (`dispatched` no conjunto `WORKING`). Esses dois leem `getLatestFieldLocations`, que não deriva, então não recebem `dispatched` hoje; a entrada só mantém o tipo exaustivo e coerente.
+- `git grep -n on_route -- frontend/src/modules/operations/map/` conferido linha a linha: os demais `on_route` são status de despacho ou de OS (pesos, normalizadores, conjunto "Em Atendimento" das OS), não do técnico.
+
+### Testes (`frontend/tests/operations-map-status-derivation.test.ts`, 6 → 8)
+- Tabela de casos: `assigned`, `accepted` e `draft` agora esperam `dispatched`; caso novo "antiga, despacho atribuído" → `dispatched`.
+- Teste novo "despacho atribuído dá Despachado e NÃO Em deslocamento": para `draft`/`assigned`/`accepted`, status `dispatched` ≠ `on_route` e rótulo "Despachado" ≠ "Em deslocamento"; `on_route`/`arrived`/`in_service` dão "Em deslocamento"/"No local"/"Em atendimento".
+- Teste novo de grupo e filtro: `dispatched` no grupo `rota` (= o de `on_route`, ≠ `disp`), cor = a de `on_route` e ≠ a de disponível; visível com a legenda toda ligada, some com "Em rota" desligado e com só "Disponível" ligado; o arrastar igual ao de `on_route`.
+- Leitura integrada pela API: técnico `loc-g` com despacho `assigned` sai `dispatched`.
+
+Comando: `cd frontend && node --test --import tsx tests/operations-map-status-derivation.test.ts` → **tests 8 · pass 8 · fail 0**.
+
+### Mutação
+Comando: hash `git hash-object frontend/src/modules/operations/map/operations-map.adapter.ts`, troca por âncora única de `  assigned: "dispatched",` por `  assigned: "on_route",`, teste dirigido, restauro pela troca inversa, hash de novo.
+
+| Mutação | Saída | Hash antes = depois |
+|---|---|---|
+| `assigned` volta a `on_route` | VERMELHO, exit 1: pass 4 · fail 4 (tabela de casos, "Despachado e NÃO Em deslocamento", grupo e filtro, leitura integrada); `expected: 'dispatched'`, `actual: 'on_route'` | `eb3f2112` = `eb3f2112` |
+
+Depois do restauro: 8/8.
+
+### Bateria (no worktree, com o código do commit `7e37e29b`)
+- `npm --prefix frontend run check` → exit 0.
+- `npm --prefix frontend run test:smoke` → exit 0 — **tests 1376 · pass 1376 · fail 0 · cancelled 0 · skipped 0** (1374 + os 2 testes novos).
+- `npm --prefix frontend run build` → exit 0 (só o aviso de chunk > 500 kB que já existia).
+- `git diff --check` → exit 0; `git diff --cached --check` no commit → exit 0.
+
+### Observação para o revisor (não mexi: fora da decisão)
+A legenda do Mapa tem um grupo só para "Em deslocamento" e "Despachado", e o rótulo dele continua "Em rota" (`MAP_LEGEND_FILTER_ITEMS`). A decisão manda os dois no mesmo grupo e filtro e não autorizou mudar a cópia da legenda; o rótulo individual (detalhe do técnico, canvas esquemático) já diz "Despachado". `calculateOperationsMapSummary.onRoute` segue contando só `on_route`; a função não tem consumidor em `frontend/src`.
+
+### Fechamento
+- Sem Docker, sem base viva. Disco: 8,1 GB livres. `frontend/dist/` do build removido. Scratchpad: só os logs e scripts de edição desta tarefa.
+- Push: `git push origin feat/demo-mapa-status-tecnico`.
