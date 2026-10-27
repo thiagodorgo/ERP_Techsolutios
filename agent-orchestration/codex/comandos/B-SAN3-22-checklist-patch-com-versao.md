@@ -1,5 +1,10 @@
 # B-SAN3-22 — Checklist com trava otimista e vistoria viva protegida
 
+> **Briefing corrigido pós-merge (2026-10-27):** a suíte `checklist-template-lock-db` foi exercida no CI pelo job
+> **`backend`**, não pelo `backend-postgres` (job 121975457986, `ok 576` a `ok 586`). A
+> `P-B-SAN3-22-CI-DB-SUITE` permanece aberta até a decisão sobre incluí-la também na lista curada do
+> `backend-postgres`.
+
 ## Papel desta execução
 
 DEV backend `dev-san322-sol`, Codex GPT-5.6 Sol, esforço medium, nível menor declarado. Não planeja, não critica e não vota.

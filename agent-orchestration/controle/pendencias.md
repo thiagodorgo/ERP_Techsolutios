@@ -11736,13 +11736,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHK-RUN-SNAPSHOT-IMUTAVEL (2026-10-25) — forma histórica da vistoria depende do modelo vivo — MÉDIA
 
-- **status:** ABERTA · **dono:** bloco próprio de checklist/mobile · **bloqueia:** não o backend B-SAN3-22.
+- **status:** ABERTA · **dono:** `B-MOBILE-CHECKLIST-VISTORIA-SNAPSHOT` · **PR-alvo:** próximo PR próprio de checklist/vistoria do app, ramo proposto `fix/mobile-checklist-vistoria-snapshot` · **bloqueia:** não o backend B-SAN3-22.
+- **classificação do registrador (`reg-2710-sol`, 2026-10-27):** agrupar esta dívida e a `P-MOBILE-RUN-SO-NO-APARELHO` no próximo bloco de checklist/vistoria do app; o nome do bloco e o ramo são atribuição de rastreabilidade, não decisão de produto do dono.
 - **origem:** o B-SAN3-22 impede alteração estrutural enquanto o servidor conhece vistoria viva, mas runs antigas ainda não carregam snapshot imutável completo da forma.
 - **encerramento:** cada run resolve sua forma histórica sem depender dos componentes atuais do modelo, com migração aditiva e testes de leitura/reabertura.
 
 ## P-MOBILE-RUN-SO-NO-APARELHO (2026-10-25) — vistoria offline ainda desconhecida pelo servidor — ALTA
 
-- **status:** ABERTA · **dono:** trilha mobile offline/sync · **bloqueia:** não o B-SAN3-22; risco residual declarado.
+- **status:** ABERTA · **dono:** `B-MOBILE-CHECKLIST-VISTORIA-SNAPSHOT` · **PR-alvo:** próximo PR próprio de checklist/vistoria do app, ramo proposto `fix/mobile-checklist-vistoria-snapshot` · **bloqueia:** não o B-SAN3-22; risco residual declarado.
+- **classificação do registrador (`reg-2710-sol`, 2026-10-27):** prioridade ALTA no mesmo próximo bloco de checklist/vistoria do app que fecha `P-CHK-RUN-SNAPSHOT-IMUTAVEL`; o nome do bloco e o ramo são atribuição de rastreabilidade, não decisão de produto do dono.
 - **origem:** uma run criada somente no aparelho não entra em `activeRuns`; uma alteração estrutural anterior ao primeiro sync pode deixar resposta apontando para componente removido.
 - **encerramento:** protocolo offline registra/reserva a forma no servidor ou sincroniza contra snapshot imutável, com teste de replay após remoção de campo.
 
