@@ -231,7 +231,7 @@ export type ConsoleStaleAlert = {
 };
 
 // Fora de operação (offline/bloqueado/desconhecido) sem posição nova é o esperado — não é "parado".
-const WORKING: ReadonlySet<FieldLocationStatus> = new Set<FieldLocationStatus>(["available", "on_route", "on_site", "in_service", "paused"]);
+const WORKING: ReadonlySet<FieldLocationStatus> = new Set<FieldLocationStatus>(["available", "dispatched", "on_route", "on_site", "in_service", "paused"]);
 
 /**
  * "Técnico parado": técnico em operação cuja última posição passou do limiar de frescor do Mapa (`isStale`, 15 min —

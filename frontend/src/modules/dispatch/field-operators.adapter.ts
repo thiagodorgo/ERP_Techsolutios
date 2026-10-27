@@ -16,6 +16,7 @@ import type { FieldOperatorRow } from "./field-operators.types";
 // desconhecido). Empate → posição mais recente primeiro (frescor).
 const STATUS_ORDER: Record<FieldLocationStatus, number> = {
   available: 0,
+  dispatched: 1,
   on_route: 1,
   on_site: 2,
   in_service: 3,
@@ -65,12 +66,12 @@ function currentOsCode(location: FieldLocationItem): string {
 export type FieldOperatorStatusSummary = {
   readonly total: number;
   readonly available: number; // available
-  readonly engaged: number; // on_route + on_site + in_service (a caminho / no local / atendendo)
+  readonly engaged: number; // dispatched + on_route + on_site + in_service (despachado / a caminho / no local / atendendo)
   readonly paused: number; // paused
   readonly offDuty: number; // offline + blocked + unknown (sem sinal / bloqueado / desconhecido)
 };
 
-// Partição das 8 categorias reais do enum em 4 baldes operacionais. Cada número é uma contagem
+// Partição das 9 categorias reais do enum em 4 baldes operacionais. Cada número é uma contagem
 // verificável sobre a MESMA lista exibida — nunca um valor inventado (D-007). unknown entra em
 // "fora de operação" porque, sem status conhecido, o operador não é despachável.
 export function summarizeFieldOperatorStatuses(
@@ -82,6 +83,7 @@ export function summarizeFieldOperatorStatuses(
       case "available":
         summary.available += 1;
         break;
+      case "dispatched":
       case "on_route":
       case "on_site":
       case "in_service":
