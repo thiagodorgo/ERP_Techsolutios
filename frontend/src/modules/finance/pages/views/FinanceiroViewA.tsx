@@ -35,6 +35,12 @@ export type FinanceListState<T> = {
   readonly total: number;
 };
 
+export type FinanceTitleListState = FinanceListState<FinancialTitle> & {
+  readonly hasMore: boolean;
+  readonly loadingMore: boolean;
+  readonly loadMore: () => Promise<void>;
+};
+
 export type FinanceiroViewModel = {
   readonly state: FinanceState;
   readonly onState: (next: FinanceState) => void;
@@ -42,8 +48,8 @@ export type FinanceiroViewModel = {
   readonly summaryLoading: boolean;
   readonly accounts: FinanceListState<FinancialAccount>;
   readonly balances: Readonly<Record<string, FinancialAccountBalance | null>>;
-  readonly receivables: FinanceListState<FinancialTitle>;
-  readonly payables: FinanceListState<FinancialTitle>;
+  readonly receivables: FinanceTitleListState;
+  readonly payables: FinanceTitleListState;
   readonly entries: FinanceListState<FinancialEntry>;
   readonly aggregates: Readonly<Record<string, EntriesAggregate | null>>;
   readonly policy: ReconciliationPolicy;
@@ -133,13 +139,13 @@ function BlockGroup({ label, children }: { readonly label: string; readonly chil
   );
 }
 
-function Block({ label, count, pressed, onClick }: { readonly label: string; readonly count: number | null; readonly pressed: boolean; readonly onClick: () => void }) {
+function Block({ label, count, unavailableLabel = "contagem indisponível", pressed, onClick }: { readonly label: string; readonly count: number | null; readonly unavailableLabel?: string; readonly pressed: boolean; readonly onClick: () => void }) {
   return (
     <button
       type="button"
       className={pressed ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
       aria-pressed={pressed}
-      aria-label={`${label}: ${count ?? "contagem indisponível"} — filtrar a lista`}
+      aria-label={`${label}: ${count ?? unavailableLabel} — filtrar a lista`}
       onClick={onClick}
     >
       {label}
@@ -359,8 +365,8 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   const openRec = model.receivables.items.filter(isOpenTitle);
   const openPag = model.payables.items.filter(isOpenTitle);
   const tabs: readonly { readonly id: FinanceTab; readonly label: string; readonly count: number | null }[] = [
-    { id: "rec", label: "A receber", count: access.readTitles && !model.receivables.failed ? openRec.length : null },
-    { id: "pag", label: "A pagar", count: access.readTitles && !model.payables.failed ? openPag.length : null },
+    { id: "rec", label: "A receber", count: access.readTitles && !model.receivables.failed && !model.summaryLoading ? summary.receivable.openCount : null },
+    { id: "pag", label: "A pagar", count: access.readTitles && !model.payables.failed && !model.summaryLoading ? summary.payable.openCount : null },
     { id: "ext", label: "Contas e extrato", count: null },
     { id: "conc", label: "Conciliação", count: pendingCount },
   ];
@@ -402,6 +408,8 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       const today = new Date();
       const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       const count = (target: string) => base.filter((title) => titleMatchesTarget(title, target, todayIso)).length;
+      const complete = list.items.length >= list.total;
+      const overdueCount = model.summaryLoading ? null : receivable ? summary.receivable.overdueCount : summary.payable.overdueCount;
       intro = (
         <>
           <BlockGroup label="Blocos de resumo — clique para filtrar">
@@ -411,7 +419,14 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
               ["sem7", "Próximos 7 dias"],
               ["parcial", receivable ? "Recebidos em parte" : "Pagos em parte"],
             ].map(([target, label]) => (
-              <Block key={target} label={label} count={count(target)} pressed={state.target === target} onClick={() => go({ target: state.target === target ? null : target })} />
+              <Block
+                key={target}
+                label={label}
+                count={target === "venc" ? overdueCount : complete ? count(target) : null}
+                unavailableLabel={target === "venc" || complete ? "contagem indisponível" : "contagem disponível depois de carregar todos os títulos"}
+                pressed={state.target === target}
+                onClick={() => go({ target: state.target === target ? null : target })}
+              />
             ))}
           </BlockGroup>
           {summary.cheques.linkedPendingCount > 0 ? (

@@ -357,3 +357,48 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 ### Próximo comando exato
 
 `"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+
+## RETOMADA 4
+
+- **Fatia:** 4 — R3(a)(b)(c) pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f4-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado. Não achou, não planejou e não vota. **Cobertura declarada (E2.6, última linha):** o Codex caiu pelo limite duas vezes nesta fatia (`dev-san312b-c2-f4-sol` às 12:08Z e a retomada `dev-san312b-c2-f4b-sol`); o dono mandou o Claude terminar. Comandos pelo Bash normal da sessão (não pelo `C:/Program Files/Git/bin/bash.exe`, que era só para o Codex).
+- **Head de entrada:** `7d8e8342fa55ea8464c5b03c53f6f9ed09aad849` (= `origin/feat/web-financeiro-baixa-e-contas`), o head publicado pela RETOMADA 3. O head de saída é o do commit desta fatia, publicado no push.
+- **Skills:** `ts-frontend-full` (camada de dados no hook existente, sem lib nova) e `ui-ux-pro-max` (contagem honesta: número do servidor, nenhum número local parcial). Tela-modelo e referência inalteradas (`WorkOrdersPage.tsx`, `financeiro-ab.reference.html`).
+
+### Parcial herdado, medido antes de confiar (P3/P7)
+
+- `git status --short` → 7 arquivos modificados, nada commitado: `FinanceiroPage.tsx`, `FinanceiroViewA.tsx`, `financial-titles.service.ts`, `financial-titles.types.ts`, `useFinancialTitles.ts`, `finance-page-live.test.tsx` e este relatório (com uma RETOMADA 4 escrita pela execução caída, aqui substituída por esta).
+- `git diff` comparado (sem as linhas `index`) com `arquivo-quedas/dev-12b-f4-sol/f4-parcial.patch` → idêntico. Nenhuma mutação pela metade: os 5 arquivos de produto lidos inteiros contra R3(a)(b)(c).
+- Aproveitado: `offset?` nos filtros e no `buildQuery`; `total/hasMore/loadingMore/loadMore` no hook com rodada em `useRef`; fiação na página; abas por `summary.<dir>.openCount`; "Vencidos" por `summary.<dir>.overdueCount`; os outros três blocos sem número e com o `aria-label` da E2 enquanto `items.length < total`; os 2 testes R3(a) e R3(b-c) com o fixture de 130.
+- Refeito por mim: (1) **falha na releitura** volta à forma de antes da paginação (o hook entrega o fallback vazio, como fazia `setData(nextData)`; o parcial mantinha as linhas velhas com `source: "fallback"`, o que mudava o que a lista legada `TitlesListView.tsx` mostra); (2) a trava contra clique duplo em `loadMore` passou a ser `useRef` (o estado só mudava no render seguinte), e `loadMore` ficou estável; (3) **fixture**: no parcial os 17 vencidos estavam todos na 1ª página, então "Vencidos" contado nas linhas carregadas também dava 17 e o teste não distinguia servidor de conta local; agora 10 vencidos estão na 1ª página e 7 depois do título 123 (total 17 só no resumo).
+
+### Feito — comando → saída
+
+- `git log --oneline -3; git status --short; git rev-parse HEAD origin/feat/web-financeiro-baixa-e-contas; df -h /c` → head `7d8e8342` nos dois; 11 GB livres (piso 7,5).
+- **Vermelho-controle** (produto do head, teste novo): os 5 arquivos de produto copiados para o scratchpad (sha256 registrado), sobrescritos por `git show HEAD:<arquivo>`, e `cd frontend && node --test --import tsx --test-name-pattern="R3\(" tests/finance-page-live.test.tsx` → `24 tests · 0 pass · 2 fail · 22 skipped`; R3(a) `expected: 130` (o hook não expõe `total`), R3(b-c) `actual: 'A receber100'`. Parcial devolvido; `sha256sum -c` → 5/5 OK.
+- `npm --prefix frontend run check` (Node `v20.19.5`) → `tsc -b --noEmit`, exit `0`.
+- Teste dono: `node --test --import tsx --test-name-pattern="R3\(" tests/finance-page-live.test.tsx` → `24 tests · 2 pass · 0 fail · 22 skipped`.
+- Regressão dirigida, depois das mutações: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/finance-titles.test.tsx tests/finance-contas-extrato.smoke.test.tsx` → `54 tests · 54 pass · 0 fail · 0 skipped` (24 página viva + 23 legado de títulos + 7 contas/extrato).
+- `git diff --check` → vazio. Escopo: só arquivos do PERMITIDO da E2.1 (os 5 de produto de R3, o teste vivo e este relatório); `src/**`, `prisma/**`, `app.css`, `components/**`, `Kpis/**`, lockfiles intocados.
+
+### Mutações (uma por vez, âncora única, teste dono, restauro com sha256 conferido)
+
+| # | Mutação | Arquivo | Teste dono | Resultado | Restauro |
+|---|---|---|---|---|---|
+| M4a | `loadMore` com `offset: 0` (sem offset) | `useFinancialTitles.ts` | R3(a) | VERMELHO (`expected 130`, `actual 100`) | hash igual `a9f9e9a0f3fc` |
+| M4b | releitura só da 1ª página (`reached = PAGE_LIMIT`) | `useFinancialTitles.ts` | R3(a) | VERMELHO (130 → 100: encolheu) | hash igual `a9f9e9a0f3fc` |
+| M4c | `loadMore` sem dedupe (repete um `id`) | `useFinancialTitles.ts` | R3(a) | VERMELHO (`actual 131`) | hash igual `a9f9e9a0f3fc` |
+| M4d | `total` = linhas carregadas, não o do servidor | `useFinancialTitles.ts` | R3(a) | VERMELHO (`actual 100`) | hash igual `a9f9e9a0f3fc` |
+| M4e | aba com `openRec.length` | `FinanceiroViewA.tsx` | R3(b-c) | VERMELHO (`'A receber100'`) | hash igual `62700f36c3b1` |
+| M4f | "Vencidos" contado nas linhas carregadas | `FinanceiroViewA.tsx` | R3(b-c) | VERMELHO (`Vencidos: 10`) | hash igual `62700f36c3b1` |
+| M4g | "Vencem hoje" conta com carga incompleta | `FinanceiroViewA.tsx` | R3(b-c) | VERMELHO (`'Vencem hoje1'`) | hash igual `62700f36c3b1` |
+
+7 mutações, 7 vermelhas, 7 restauradas. M4a, M4e e M4g são as formas de 3 das 4 mutações da R3; a FATIA 5 as re-executa como as oficiais, junto da 4ª (`TablePager` removido), que depende de R3(e). Hashes finais: `useFinancialTitles.ts` `a9f9e9a0…a424`, `FinanceiroViewA.tsx` `62700f36…0b70`, `FinanceiroPage.tsx` `0b53cb57…be2`, `financial-titles.service.ts` `decc9846…bc5b`, `financial-titles.types.ts` `e5dcd160…8e23`, `finance-page-live.test.tsx` `7981140b…58e2`.
+
+### Falta
+
+- Nada da FATIA 4. Não testado aqui (fica para a bateria da FATIA 8): `test:smoke` inteiro e Node 22. As FATIAS 5–9 da E2.6 não foram iniciadas.
+
+### Próximo comando exato
+
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`

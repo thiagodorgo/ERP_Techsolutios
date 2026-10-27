@@ -101,6 +101,7 @@ function buildQuery(filters: FinancialTitlesFilters): string {
   if (filters.from) query.set("from", filters.from);
   if (filters.to) query.set("to", filters.to);
   if (filters.limit) query.set("limit", String(filters.limit));
+  if (filters.offset !== undefined) query.set("offset", String(filters.offset));
   return `?${query.toString()}`;
 }
 

@@ -296,6 +296,7 @@ const React = await import("react");
 const { createRoot } = await import("react-dom/client");
 const { MemoryRouter } = await import("react-router-dom");
 const { FinanceiroPage } = await import("../src/modules/finance/pages/FinanceiroPage");
+const { useFinancialTitles } = await import("../src/modules/finance/titles/useFinancialTitles");
 const { PermissionGuard } = await import("../src/guards/PermissionGuard");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
@@ -403,6 +404,16 @@ const RECEIVABLES = [
   title({ id: "t-pago", partyName: "Cliente Quitado", document: "NF 0999", amount: 50, paidAmount: 50, status: "paid" }),
 ];
 const PAYABLES = [title({ id: "t-fornecedor", direction: "payable", partyType: "supplier", partyName: "Posto Gama", document: "Boleto 55", amount: 450, dueDate: daysFromToday(0) })];
+const RECEIVABLES_130 = Array.from({ length: 130 }, (_, index) =>
+  title({
+    id: `t-lote-${String(index + 1).padStart(3, "0")}`,
+    partyName: `Cliente ${String(index + 1).padStart(3, "0")}`,
+    document: `NF ${String(index + 1).padStart(4, "0")}`,
+    // 17 vencidos, 7 deles DEPOIS da 1ª página: só o resumo do servidor sabe o total.
+    dueDate: index < 10 || index >= 123 ? daysFromToday(-5) : index === 10 ? daysFromToday(0) : daysFromToday(10),
+    overdue: index < 10 || index >= 123,
+  }),
+);
 
 const entry = (over: Record<string, unknown>) => ({
   id: "e-x",
@@ -592,6 +603,33 @@ async function mount(options: { permissions?: readonly string[]; role?: string; 
   };
 }
 
+type TitlesHookSnapshot = ReturnType<typeof useFinancialTitles>;
+
+async function mountTitlesHook(override: Override) {
+  seed(FINANCE);
+  installFetch(override);
+  let snapshot: TitlesHookSnapshot | null = null;
+  function Probe() {
+    const value = useFinancialTitles("receivable");
+    snapshot = value;
+    return h("button", { type: "button", onClick: () => void value.loadMore() }, "Carregar página seguinte");
+  }
+  const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
+  const root = createRoot(container as unknown as Element);
+  await act(async () => {
+    root.render(h(AuthProvider, null, h(TenantProvider, null, h(Probe))));
+  });
+  await settle();
+  return {
+    container,
+    snapshot: () => snapshot,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      dom.doc.body.removeChild(container);
+    },
+  };
+}
+
 // =============================== F14 · carga e aparência ===============================
 
 test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as contagens por conta", async () => {
@@ -635,6 +673,78 @@ test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, se
     assert.ok(byLabel(container, "Caixa da loja: 1 a conciliar"), "a segunda contagem por conta continua presente depois da rodada situacional");
     // P-SAN3-20-RESUMO-CHEQUE-VINCULADO — o rótulo do valor já coberto por cheque a compensar (`cheques.linkedPending*`).
     assert.match(text(container).replace(/\u00a0/g, " "), /R\$ 1\.000,00 em 1 cheque vinculado a títulos aguardam compensação/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas", async () => {
+  const titlePage: Override = (call) => {
+    if (call.method !== "GET" || !call.url.startsWith("/financial-titles?")) return undefined;
+    const url = new URL(`http://x${call.url}`);
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    return json(200, {
+      items: RECEIVABLES_130.slice(offset, offset + 100),
+      pagination: { limit: 100, offset, total: RECEIVABLES_130.length },
+    });
+  };
+  const probe = await mountTitlesHook(titlePage);
+  try {
+    assert.equal(probe.snapshot()?.items.length, 100);
+    assert.equal(probe.snapshot()?.total, 130);
+    assert.equal(probe.snapshot()?.hasMore, true);
+    await press(buttonByText(probe.container, "Carregar página seguinte"));
+    assert.equal(probe.snapshot()?.items.length, 130);
+    assert.equal(new Set(probe.snapshot()?.items.map((item) => item.id)).size, 130);
+    assert.equal(probe.snapshot()?.hasMore, false);
+    assert.ok(calls.some((call) => /(?:^|[?&])offset=100(?:&|$)/.test(call.url)), "a segunda página usa offset=100");
+
+    const beforeRefresh = calls.length;
+    await act(async () => {
+      await probe.snapshot()?.refresh(true);
+    });
+    await settle();
+    assert.equal(probe.snapshot()?.items.length, 130, "a releitura das páginas alcançadas não encolhe para 100");
+    const refreshUrls = calls.slice(beforeRefresh).map((call) => call.url);
+    assert.ok(refreshUrls.some((url) => /(?:^|[?&])offset=0(?:&|$)/.test(url)), refreshUrls.join(" | "));
+    assert.ok(refreshUrls.some((url) => /(?:^|[?&])offset=100(?:&|$)/.test(url)), refreshUrls.join(" | "));
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas", async () => {
+  const summary130 = {
+    ...SUMMARY,
+    receivable: { ...SUMMARY.receivable, openCount: 130, overdueCount: 17 },
+  };
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "GET" && call.url === "/financial-summary") return json(200, { data: summary130 });
+      if (call.method === "GET" && call.url.startsWith("/financial-titles?direction=receivable")) {
+        const url = new URL(`http://x${call.url}`);
+        const offset = Number(url.searchParams.get("offset") ?? 0);
+        return json(200, {
+          items: RECEIVABLES_130.slice(offset, offset + 100),
+          pagination: { limit: 100, offset, total: RECEIVABLES_130.length },
+        });
+      }
+      return undefined;
+    },
+  });
+  try {
+    assert.match(text(tab(container, "A receber")!), /A receber\s*130/);
+    assert.match(byLabel(container, "Vencidos:")!.getAttribute("aria-label")!, /^Vencidos: 17 —/);
+    assert.equal(text(byLabel(container, "Vencidos:")!), "Vencidos17");
+    for (const label of ["Vencem hoje", "Próximos 7 dias", "Recebidos em parte"]) {
+      const block = byLabel(container, `${label}:`);
+      assert.ok(block, `bloco ${label}`);
+      assert.equal(text(block!), label, `${label} não publica contagem parcial`);
+      assert.equal(
+        block!.getAttribute("aria-label"),
+        `${label}: contagem disponível depois de carregar todos os títulos — filtrar a lista`,
+      );
+    }
   } finally {
     await unmount();
   }
