@@ -750,6 +750,67 @@ test("R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem en
   }
 });
 
+test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos", async () => {
+  const summary130 = {
+    ...SUMMARY,
+    receivable: { ...SUMMARY.receivable, openCount: 130, overdueCount: 17 },
+  };
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "GET" && call.url === "/financial-summary") return json(200, { data: summary130 });
+      if (call.method === "GET" && call.url.startsWith("/financial-titles?direction=receivable")) {
+        const url = new URL(`http://x${call.url}`);
+        const offset = Number(url.searchParams.get("offset") ?? 0);
+        return json(200, {
+          items: RECEIVABLES_130.slice(offset, offset + 100),
+          pagination: { limit: 100, offset, total: RECEIVABLES_130.length },
+        });
+      }
+      return undefined;
+    },
+  });
+  const counter = () => text(all(container, (el) => el.getAttribute("class") === "pat-table__count")[0]!);
+  const pager = () => all(container, (el) => el.localName === "nav" && el.getAttribute("aria-label") === "Paginação da lista")[0];
+  const range = () => text(all(container, (el) => el.getAttribute("class") === "pat-pager__range")[0]!);
+  const loadMoreButton = () => all(container, (el) => el.localName === "button" && text(el).startsWith("Carregar mais títulos"))[0];
+  try {
+    assert.match(text(tab(container, "A receber")!), /A receber\s*130/, "aba com a contagem do servidor");
+    assert.equal(counter(), "100 mais recentes de 130 títulos", "contador da carga incompleta");
+    assert.ok(pager(), "o TablePager da biblioteca está no rodapé da tabela");
+    assert.equal(range(), "1–20 de 100 carregados · 130 no servidor");
+    assert.equal(rows(container).length, 20, "página de 20 linhas");
+    assert.equal(text(byLabel(container, "Vencidos:")!), "Vencidos17", "Vencidos vem do resumo");
+    assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje", "sem número com a carga incompleta");
+    assert.equal(text(loadMoreButton()!).trim(), "Carregar mais títulos (30 restantes)");
+
+    await press(loadMoreButton());
+    const more = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-titles?direction=receivable"));
+    assert.ok(
+      more.some((call) => /(?:^|[?&])limit=100(?:&|$)/.test(call.url) && /(?:^|[?&])offset=100(?:&|$)/.test(call.url)),
+      more.map((call) => call.url).join(" | "),
+    );
+    assert.equal(counter(), "130 títulos", "contador da carga completa");
+    assert.equal(range(), "1–20 de 130");
+    assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje1", "com a carga completa o bloco local conta");
+    assert.equal(loadMoreButton(), undefined, "o botão some quando não falta título");
+
+    await press(buttonByText(container, "Próxima"));
+    assert.equal(range(), "21–40 de 130");
+    const page2 = rows(container);
+    assert.equal(page2.length, 20);
+    // Ordem por vencimento: 17 vencidos, 1 que vence hoje (Cliente 011), depois os demais; a linha 21 é o Cliente 014.
+    assert.ok(text(page2[0]).includes("Cliente 014"), text(page2[0]));
+    assert.ok(text(page2[19]).includes("Cliente 033"), text(page2[19]));
+
+    // A página volta à primeira a cada go() (aqui, o bloco "Vencidos").
+    await press(byLabel(container, "Vencidos:"));
+    assert.equal(range(), "1–17 de 17");
+    assert.equal(counter(), "17 títulos");
+  } finally {
+    await unmount();
+  }
+});
+
 // =============================== F11 · indicador que filtra ===============================
 
 test("F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique", async () => {

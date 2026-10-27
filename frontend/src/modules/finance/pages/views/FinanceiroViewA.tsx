@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { TrendChart } from "../../../../components/charts";
 import { DenseTable } from "../../../../components/dense-list";
 import type { DenseColumn } from "../../../../components/dense-list/types";
-import { KpiStatCard, PageHeader, StatusPill } from "../../../../components/patterns";
+import { KpiStatCard, PageHeader, StatusPill, TablePager } from "../../../../components/patterns";
 import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner";
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
 import { AccountCard } from "../../accounts/components/AccountCard";
@@ -157,8 +157,13 @@ function Block({ label, count, unavailableLabel = "contagem indisponível", pres
 export function FinanceiroViewA(model: FinanceiroViewModel) {
   const { state, onState, summary, access } = model;
   const [openKey, setOpenKey] = useState<string | null>(null);
+  // Paginação client-side da lista de títulos (TablePager da biblioteca, como na tela-modelo `WorkOrdersPage`):
+  // volta à primeira página em todo go(); trocar de página fecha o detalhe aberto.
+  const [titlePage, setTitlePage] = useState(0);
+  const [titlePageSize, setTitlePageSize] = useState(20);
   const go = (next: Partial<FinanceState>) => {
     setOpenKey(null);
+    setTitlePage(0);
     onState({ ...state, ...next });
   };
   const toggleRow = (key: string) => setOpenKey((current) => (current === key ? null : key));
@@ -373,6 +378,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
 
   let intro: ReactNode = null;
   let body: ReactNode = null;
+  let footer: ReactNode = null;
   let counter = "";
 
   if (state.tab === "rec" || state.tab === "pag") {
@@ -380,7 +386,14 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
     const list = receivable ? model.receivables : model.payables;
     const base = receivable ? openRec : openPag;
     const visible = base.filter((title) => titleMatchesTarget(title, state.target)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-    counter = plural(visible.length, "título", "títulos");
+    // Contador honesto (R3(d)): com a carga completa, as linhas visíveis; incompleta, quantas há entre as carregadas e o
+    // total do servidor (o idioma do extrato).
+    const loadedAll = list.items.length >= list.total;
+    counter = loadedAll
+      ? plural(visible.length, "título", "títulos")
+      : state.target
+        ? `${visible.length} entre os ${list.items.length} mais recentes de ${list.total} títulos`
+        : `${list.items.length} mais recentes de ${list.total} títulos`;
     if (!access.readTitles) {
       body = (
         <StatePanel
@@ -449,14 +462,49 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       } else if (visible.length === 0) {
         body = <StatePanel tone="empty" embedded title="Nada para este filtro" detail="Remova o filtro para ver todos os títulos em aberto." actions={<StatePanelAction label="Remover o filtro" variant="secondary" onClick={() => go({ target: null })} />} />;
       } else {
+        const maxPage = Math.max(0, Math.ceil(visible.length / titlePageSize) - 1);
+        const page = Math.min(titlePage, maxPage);
+        const start = page * titlePageSize;
+        const end = Math.min(start + titlePageSize, visible.length);
+        const changePage = (next: number) => {
+          setOpenKey(null);
+          setTitlePage(next);
+        };
+        footer = (
+          <TablePager
+            pageSize={titlePageSize}
+            onPageSize={(size) => {
+              setOpenKey(null);
+              setTitlePageSize(size);
+              setTitlePage(0);
+            }}
+            rangeLabel={loadedAll ? `${start + 1}–${end} de ${visible.length}` : `${start + 1}–${end} de ${visible.length} carregados · ${list.total} no servidor`}
+            onPrev={() => changePage(Math.max(0, page - 1))}
+            onNext={() => changePage(Math.min(maxPage, page + 1))}
+            canPrev={page > 0}
+            canNext={end < visible.length}
+          />
+        );
         body = (
           <TitlesTable
-            rows={visible}
+            rows={visible.slice(start, end)}
             receivable={receivable}
             openKey={openKey}
             onToggle={toggleRow}
             renderDetail={(title) => <TitleDetail title={title} canPay={access.pay} onPay={() => model.onPay(title)} />}
           />
+        );
+      }
+      if (list.hasMore) {
+        // R3(f): o servidor entrega no máximo 100 por pedido; este botão é o caminho honesto até os títulos restantes.
+        const remaining = list.total - list.items.length;
+        footer = (
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 auto", minWidth: 0 }}>{footer}</div>
+            <button type="button" className="pat-btn pat-btn--secondary" style={{ margin: "8px 18px" }} disabled={list.loadingMore} onClick={() => void list.loadMore()}>
+              {list.loadingMore ? "Carregando…" : `Carregar mais títulos (${remaining} restantes)`}
+            </button>
+          </div>
         );
       }
     }
@@ -621,6 +669,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
         {intro}
         {filterChips.length > 0 ? <FilterChips items={filterChips} /> : null}
         {body}
+        {footer}
       </div>
     </div>
   );

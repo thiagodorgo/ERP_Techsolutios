@@ -402,3 +402,39 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 ### Próximo comando exato
 
 `"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+
+## RETOMADA 5
+
+- **Fatia:** 5 — R3(d)(e)(f) pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f59-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado. Não achou, não planejou e não vota. **Cobertura declarada (E2.6, última linha):** o dono mandou o Claude terminar as fatias 5 a 9. Comandos pelo Bash normal da sessão (o `C:/Program Files/Git/bin/bash.exe` era só para o Codex).
+- **Head de entrada:** `16aa7fdce7ad80b3128b21013d1f850ece604edd` (= `origin/feat/web-financeiro-baixa-e-contas`), o head da RETOMADA 4. O head de saída é o do commit desta fatia, publicado no push.
+- **Skills:** `ts-frontend-full` (paginação client-side no padrão da tela-modelo `WorkOrdersPage.tsx:234-240,504-515`; `TablePager` da biblioteca, nada novo em `components/**`) e `ui-ux-pro-max` (contador honesto; botão com estado de carga e desabilitado durante o pedido; `app.css` intocado).
+
+### Feito — comando → saída
+
+- `git fetch origin; git status --porcelain; git rev-parse HEAD origin/feat/web-financeiro-baixa-e-contas; df -h /c` → árvore vazia; head `16aa7fdc` nos dois; 11 GB livres (piso 7,5).
+- Teste novo escrito antes do produto em `frontend/tests/finance-page-live.test.tsx`: `R3(d-e-f)` com o fixture de 130 (dublê honra `offset`; resumo `openCount=130`, `overdueCount=17`): aba "A receber 130"; contador `100 mais recentes de 130 títulos`; `TablePager` presente com `1–20 de 100 carregados · 130 no servidor` e 20 linhas; "Vencidos 17"; "Vencem hoje" sem número; "Carregar mais títulos (30 restantes)" → `GET …&limit=100&offset=100` → contador `130 títulos`, pager `1–20 de 130`, "Vencem hoje1", botão ausente; "Próxima" → `21–40 de 130`, linha 21 = Cliente 014 e linha 40 = Cliente 033 (ordem por vencimento); clicar "Vencidos" → página volta à 1ª (`1–17 de 17`, `17 títulos`).
+- **Vermelho-controle** (produto do head `16aa7fdc`, teste novo): `cd frontend && node --test --import tsx --test-name-pattern="R3\(d" tests/finance-page-live.test.tsx` → `25 tests · 0 pass · 1 fail · 24 skipped`; `expected: '100 mais recentes de 130 títulos'`, `actual: '100 títulos'`.
+- Produto (`FinanceiroViewA.tsx`, único arquivo de produto tocado): (d) contador `N títulos` com a carga completa; incompleta, `L mais recentes de T títulos` sem alvo e `N entre os L mais recentes de T títulos` com alvo; (e) `TablePager` (import de `components/patterns`) no rodapé da tabela de títulos, client-side sobre as linhas visíveis, `pageSize` 20 (opções padrão 20/50), `rangeLabel` `a–b de N` ou `a–b de N carregados · T no servidor`, página clampada como na tela-modelo; `go()` volta à página 1; trocar de página ou de tamanho fecha o detalhe aberto; (f) botão `pat-btn pat-btn--secondary` "Carregar mais títulos (R restantes)" ao lado do pager enquanto `hasMore`, desabilitado com "Carregando…" durante `loadingMore`, ausente quando `hasMore` é falso. Nada soma dinheiro (F8): contagens e fatias da lista.
+- `npm --prefix frontend run check` (Node `v20.19.5`) → `tsc -b --noEmit`, exit `0`.
+- Teste dono e regressão dirigida: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/finance-titles.test.tsx tests/finance-contas-extrato.smoke.test.tsx` → `55 tests · 55 pass · 0 fail · 0 skipped` (25 página viva + 23 legado de títulos + 7 contas/extrato).
+- `git diff --check` → vazio. Escopo: `FinanceiroViewA.tsx`, `finance-page-live.test.tsx` e este relatório (PERMITIDO da E2.1).
+
+### Mutações — as 4 oficiais da R3 (roteiro `mutar.py` no scratchpad do dev: âncora única CRLF-consciente, teste dono `--test-name-pattern="R3\("`, restauro dos bytes e sha256 conferido)
+
+| # | Mutação | Arquivo | Teste dono | Resultado | Restauro |
+|---|---|---|---|---|---|
+| R3-M1 (= M4e) | aba "A receber" com `openRec.length` | `FinanceiroViewA.tsx` | R3(b-c), R3(d-e-f) | VERMELHO (`25 · pass 1 · fail 2`) | hash igual |
+| R3-M2 (= M4a) | `loadMore` com `offset: 0` | `useFinancialTitles.ts` | R3(a), R3(d-e-f) | VERMELHO (`fail 2`) | hash igual |
+| R3-M3 (nova) | `TablePager` removido (`footer = null && (<TablePager …`) | `FinanceiroViewA.tsx` | R3(d-e-f) | VERMELHO (`fail 1`) | hash igual |
+| R3-M4 (= M4g) | "Vencem hoje" contando com a carga incompleta | `FinanceiroViewA.tsx` | R3(b-c), R3(d-e-f) | VERMELHO (`fail 2`) | hash igual |
+
+4 mutações, 4 vermelhas, 4 restauradas. Hashes verdes conferidos antes e depois: `FinanceiroViewA.tsx` `aaccfb4f…f0f4`, `useFinancialTitles.ts` `a9f9e9a0…a424` (inalterado desde a fatia 4), `finance-page-live.test.tsx` `532912de…a718` (antes desta seção do relatório).
+
+### Falta
+
+- Nada da FATIA 5. Não testado aqui (fica para a bateria da FATIA 8): `test:smoke` inteiro e Node 22. As FATIAS 6–9 não foram iniciadas.
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
