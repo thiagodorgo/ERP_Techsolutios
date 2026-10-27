@@ -3012,7 +3012,7 @@
     "backend_tests": "4153/4155",
     "frontend_smoke_tests": "1391/1391",
     "blocks_completed": 190,
-    "description": "B-SAN3-22 — Os modelos de vistoria ganharam proteção contra edições simultâneas, trava que só permite alterar textos quando há vistoria em andamento e as três opções de aparência aprovadas no editor. NÚMEROS DA CI no merge commit `f7922ab7` (push na `main`), workflow `ci`, run 40440707891, tentativa 1: backend `4155 teste(s) · pass 4153 · fail 0 · skipped 2`; frontend 1391/1391; flutter 905/905. `blocks_completed` 189 -> 190.",
+    "description": "B-SAN3-22 — Os modelos de vistoria ganharam proteção contra edições simultâneas, trava que só permite alterar textos quando há vistoria em andamento e as três opções de aparência aprovadas no editor; a entrega fecha o item 6 do portão (`P-CHK-PATCH-SEM-LOCK`). NÚMEROS DA CI no merge commit `f7922ab7` (push na `main`), workflow `ci`, run 40440707891, tentativa 1: backend `4155 teste(s) · pass 4153 · fail 0 · skipped 2`; frontend 1391/1391; flutter 905/905. `blocks_completed` 189 -> 190.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 464`; números do log da rodada 40440707891. Nada fica `null`."
   }
 ]
