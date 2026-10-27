@@ -400,13 +400,15 @@ export function attachDispatchesToFieldLocations(
 // Regra (função PURA, sem `Date.now`: o frescor é o `isStale` já calculado no limiar de 15 min do mapa):
 //  1. o servidor mandou um status reconhecido → o dele vence;
 //  2. despacho ATIVO → status pelo despacho: `in_service` → "Em atendimento"; `arrived` → "No local";
-//     `on_route`, e também `assigned`/`accepted`/`draft` (técnico já comprometido com o chamado) → "Em deslocamento";
+//     `on_route` → "Em deslocamento"; `draft`/`assigned`/`accepted` → "Despachado" (comprometido com o chamado,
+//     mas ainda NÃO saiu: só o "Iniciar rota" do técnico vira deslocamento). "Despachado" é ativo: fica no grupo
+//     e no filtro de "Em deslocamento" e nunca em "Disponível";
 //  3. sem despacho ativo e posição recente → "Disponível";
 //  4. sem despacho ativo e posição antiga → continua como hoje (`unknown`).
 const DERIVED_STATUS_BY_DISPATCH: Readonly<Partial<Record<DispatchStatus, FieldLocationStatus>>> = {
-  draft: "on_route",
-  assigned: "on_route",
-  accepted: "on_route",
+  draft: "dispatched",
+  assigned: "dispatched",
+  accepted: "dispatched",
   on_route: "on_route",
   arrived: "on_site",
   in_service: "in_service",
@@ -451,6 +453,7 @@ export function listOperationTeams(locations: readonly FieldLocationItem[]): str
 export function getFieldLocationStatusLabel(status: FieldLocationStatus): string {
   const labels: Record<FieldLocationStatus, string> = {
     available: "Disponível",
+    dispatched: "Despachado",
     on_route: "Em deslocamento",
     on_site: "No local",
     in_service: "Em atendimento",
@@ -466,7 +469,7 @@ export function getFieldLocationStatusLabel(status: FieldLocationStatus): string
 export function getFieldLocationStatusTone(status: FieldLocationStatus, isStale = false) {
   if (isStale) return "warning" as const;
   if (status === "available") return "success" as const;
-  if (status === "on_route" || status === "on_site") return "info" as const;
+  if (status === "dispatched" || status === "on_route" || status === "on_site") return "info" as const;
   if (status === "in_service") return "pending" as const;
   if (status === "paused") return "warning" as const;
   if (status === "blocked") return "danger" as const;

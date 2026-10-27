@@ -3,6 +3,7 @@ import type { DispatchStatus } from "../dispatches/dispatches.types";
 
 export type FieldLocationStatus =
   | "available"
+  | "dispatched"
   | "on_route"
   | "on_site"
   | "in_service"
@@ -222,6 +223,7 @@ export type OperationsMapSummary = {
 
 export const FIELD_LOCATION_STATUSES: readonly FieldLocationStatus[] = [
   "available",
+  "dispatched",
   "on_route",
   "on_site",
   "in_service",

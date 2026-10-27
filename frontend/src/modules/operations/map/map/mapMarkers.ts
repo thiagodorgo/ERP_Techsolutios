@@ -18,6 +18,8 @@ export type StaleLevel = "live" | "amber" | "gray";
 // Cor semântica por status do operador (anel do pin quando ao vivo).
 const STATUS_COLORS: Record<FieldLocationStatus, string> = {
   available: "#22c55e",
+  // "Despachado" reusa a cor de "Em deslocamento" (status ativo do mesmo grupo; nada de cor nova).
+  dispatched: "#38bdf8",
   on_route: "#38bdf8",
   on_site: "#14b8a6",
   in_service: "#6366f1",
@@ -85,6 +87,7 @@ export type TechnicianLegendGroup = "disp" | "rota" | "atend" | "off";
 
 const TECH_GROUP_BY_STATUS: Record<FieldLocationStatus, TechnicianLegendGroup> = {
   available: "disp",
+  dispatched: "rota",
   on_route: "rota",
   on_site: "atend",
   in_service: "atend",

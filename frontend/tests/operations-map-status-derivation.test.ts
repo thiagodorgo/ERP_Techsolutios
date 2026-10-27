@@ -9,9 +9,11 @@ import { renderToString } from "react-dom/server";
 import {
   applyDerivedFieldLocationStatuses,
   deriveFieldLocationStatus,
+  getFieldLocationStatusLabel,
 } from "../src/modules/operations/map/operations-map.adapter";
 import { OperationsOperatorList } from "../src/modules/operations/map/components/OperationsOperatorList";
-import { getFieldLocationGroup } from "../src/modules/operations/map/map/mapMarkers";
+import { getFieldLocationGroup, getStatusColor } from "../src/modules/operations/map/map/mapMarkers";
+import { LEGEND_FILTER_ALL_ON, isTechnicianVisibleInLegend } from "../src/modules/operations/map/hooks/useLegendFilter";
 import { canDropOnTechnician } from "../src/modules/operations/map/map/dnd";
 import type { DispatchStatus } from "../src/modules/operations/dispatches/dispatches.types";
 import type {
@@ -71,11 +73,13 @@ const CASES: readonly Case[] = [
   { name: "recente, despacho cancelado", status: "unknown", isStale: false, dispatch: "cancelled", expected: "available" },
   { name: "recente, despacho falhou", status: "unknown", isStale: false, dispatch: "failed", expected: "available" },
   { name: "recente, despacho reatribuído", status: "unknown", isStale: false, dispatch: "reassigned", expected: "available" },
-  // C3 — em rota / em atendimento: pelo status do despacho ativo (com posição recente OU antiga).
+  // C3 — despachado / em rota / em atendimento: pelo status do despacho ativo (com posição recente OU antiga).
+  // Revisão do PR #465 (A1): `draft`/`assigned`/`accepted` ainda não saíram → "Despachado", não "Em deslocamento".
   { name: "recente, despacho em rota", status: "unknown", isStale: false, dispatch: "on_route", expected: "on_route" },
-  { name: "recente, despacho atribuído", status: "unknown", isStale: false, dispatch: "assigned", expected: "on_route" },
-  { name: "recente, despacho aceito", status: "unknown", isStale: false, dispatch: "accepted", expected: "on_route" },
-  { name: "recente, despacho rascunho", status: "unknown", isStale: false, dispatch: "draft", expected: "on_route" },
+  { name: "recente, despacho atribuído", status: "unknown", isStale: false, dispatch: "assigned", expected: "dispatched" },
+  { name: "recente, despacho aceito", status: "unknown", isStale: false, dispatch: "accepted", expected: "dispatched" },
+  { name: "recente, despacho rascunho", status: "unknown", isStale: false, dispatch: "draft", expected: "dispatched" },
+  { name: "antiga, despacho atribuído", status: "unknown", isStale: true, dispatch: "assigned", expected: "dispatched" },
   { name: "recente, despacho chegou", status: "unknown", isStale: false, dispatch: "arrived", expected: "on_site" },
   { name: "recente, despacho em atendimento", status: "unknown", isStale: false, dispatch: "in_service", expected: "in_service" },
   { name: "antiga, despacho em rota", status: "unknown", isStale: true, dispatch: "on_route", expected: "on_route" },
@@ -100,6 +104,45 @@ test("AC-18: deriveFieldLocationStatus segue a tabela de casos", () => {
     });
     assert.equal(deriveFieldLocationStatus(location), item.expected, item.name);
   }
+});
+
+test("Revisão #465 (A1): despacho atribuído dá \"Despachado\" e NÃO \"Em deslocamento\"", () => {
+  for (const dispatch of ["draft", "assigned", "accepted"] as const) {
+    const status = deriveFieldLocationStatus(makeLocation({ currentDispatch: makeDispatch(dispatch) }));
+    assert.equal(status, "dispatched", dispatch);
+    assert.notEqual(status, "on_route", dispatch);
+    assert.equal(getFieldLocationStatusLabel(status), "Despachado", dispatch);
+    assert.notEqual(getFieldLocationStatusLabel(status), "Em deslocamento", dispatch);
+  }
+  // A partir da saída: on_route → "Em deslocamento", arrived → "No local", in_service → "Em atendimento".
+  const label = (dispatch: DispatchStatus) =>
+    getFieldLocationStatusLabel(deriveFieldLocationStatus(makeLocation({ currentDispatch: makeDispatch(dispatch) })));
+  assert.equal(label("on_route"), "Em deslocamento");
+  assert.equal(label("arrived"), "No local");
+  assert.equal(label("in_service"), "Em atendimento");
+});
+
+test("Revisão #465 (A1): \"Despachado\" é ativo — grupo e filtro de \"Em deslocamento\", nunca \"Disponível\"", () => {
+  const [dispatched] = applyDerivedFieldLocationStatuses([makeLocation({ currentDispatch: makeDispatch("assigned") })]);
+  assert.ok(dispatched);
+  assert.equal(dispatched.status, "dispatched");
+  // Grupo: o mesmo de "Em deslocamento" (rota), não "disp" nem "off".
+  assert.equal(getFieldLocationGroup(dispatched.status), getFieldLocationGroup("on_route"));
+  assert.equal(getFieldLocationGroup(dispatched.status), "rota");
+  assert.notEqual(getFieldLocationGroup(dispatched.status), "disp");
+  // Cor: reusa a de "Em deslocamento" (sem cor nova) e nunca acende o verde de disponível.
+  assert.equal(getStatusColor(dispatched.status), getStatusColor("on_route"));
+  assert.notEqual(getStatusColor(dispatched.status), getStatusColor("available"));
+  // Filtro da legenda: some com "Em rota" desligado; com só "Disponível" ligado, não aparece.
+  assert.equal(isTechnicianVisibleInLegend(dispatched, LEGEND_FILTER_ALL_ON), true);
+  assert.equal(isTechnicianVisibleInLegend(dispatched, { ...LEGEND_FILTER_ALL_ON, rota: false }), false);
+  const onlyAvailable = Object.fromEntries(Object.keys(LEGEND_FILTER_ALL_ON).map((key) => [key, key === "disp"])) as typeof LEGEND_FILTER_ALL_ON;
+  assert.equal(isTechnicianVisibleInLegend(dispatched, onlyAvailable), false);
+  // Alocar/arrastar: o mesmo comportamento de quem está "Em deslocamento" (nada além do que já vale para ele).
+  assert.equal(
+    canDropOnTechnician(getFieldLocationGroup(dispatched.status), true),
+    canDropOnTechnician(getFieldLocationGroup("on_route"), true),
+  );
 });
 
 test("AC-18: applyDerivedFieldLocationStatuses deriva por técnico e preserva quem não muda", () => {
@@ -180,6 +223,7 @@ test("AC-18: a leitura do Mapa deriva o status a partir da API real; a leitura c
       { id: "loc-d", operatorUserId: "usr-d", displayName: "D", latitude: -23.5, longitude: -46.6, capturedAt: old },
       { id: "loc-e", operatorUserId: "usr-e", displayName: "E", latitude: -23.5, longitude: -46.6, capturedAt: recent, status: "paused" },
       { id: "loc-f", operatorUserId: "usr-f", displayName: "F", latitude: -23.5, longitude: -46.6, capturedAt: recent },
+      { id: "loc-g", operatorUserId: "usr-g", displayName: "G", latitude: -23.5, longitude: -46.6, capturedAt: recent },
     ],
   };
   const dispatch = (id: string, operatorUserId: string, status: DispatchStatus) => ({
@@ -196,8 +240,9 @@ test("AC-18: a leitura do Mapa deriva o status a partir da API real; a leitura c
         dispatch("d-c", "usr-c", "in_service"),
         dispatch("d-e", "usr-e", "on_route"),
         dispatch("d-f", "usr-f", "completed"),
+        dispatch("d-g", "usr-g", "assigned"),
       ],
-      pagination: { limit: 20, offset: 0, total: 4 },
+      pagination: { limit: 20, offset: 0, total: 5 },
     },
   };
   const permissions = ["field_location:read", "field_dispatch:read"];
@@ -219,6 +264,7 @@ test("AC-18: a leitura do Mapa deriva o status a partir da API real; a leitura c
     "loc-d": "unknown", // antiga, sem despacho → como hoje
     "loc-e": "paused", // o status do servidor vence
     "loc-f": "available", // despacho concluído não ocupa
+    "loc-g": "dispatched", // despacho atribuído: ainda não saiu (revisão #465, A1)
   });
 
   // Escopo: a leitura comum (Painel, Operadores de Campo) segue sem derivação.
