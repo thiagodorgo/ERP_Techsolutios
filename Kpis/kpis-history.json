@@ -2972,5 +2972,47 @@
     "blocks_completed": 188,
     "description": "B-APARENCIA-USUARIO — Cada pessoa passa a escolher no menu sua aparência preferida para cada tela; a escolha fica guardada no navegador, e Pátios estreia com as três opções aprovadas sem mudar os dados nem as permissões. NÚMEROS DA CI no merge commit `b2f8e6cf` (push na `main`), workflow `ci`, run 40247325469, tentativa 1: backend `3981 teste(s) · pass 3979 · fail 0 · skipped 2`; frontend 1368/1368; flutter 905/905. `blocks_completed` 187 -> 188.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 461`; números do log da rodada 40247325469. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-26",
+    "version": "B-SAN3-12a",
+    "pr": 459,
+    "merge_commit": "9dad66c0e78bb438fe00b5a8148cc119342ebb60",
+    "approved_head": "dc69bf7d073d6ae543e89cdd2d73bc069ab1df94",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4077/4079",
+    "frontend_smoke_tests": "1368/1368",
+    "blocks_completed": 189,
+    "description": "B-SAN3-12a — A liquidação financeira passou a permitir registrar cheque pendente, trocar o cheque vinculado com justificativa, desfazer a conciliação de lançamento com registro de motivo e consultar o resumo dos títulos. NÚMEROS DA CI no merge commit `9dad66c0` (push na `main`), workflow `ci`, run 40298258515, tentativa 1: backend `4079 teste(s) · pass 4077 · fail 0 · skipped 2`; frontend 1368/1368; flutter 905/905. `blocks_completed` 188 -> 189.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 459`; números do log da rodada 40298258515. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-26",
+    "version": "PR-463",
+    "pr": 463,
+    "merge_commit": "c9a2d036c1aaff21df92817525d7f9c92cbbe272",
+    "approved_head": "3ff75ab82d55614444dab186b409741eaa99f4e8",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4077/4079",
+    "frontend_smoke_tests": "1368/1368",
+    "blocks_completed": 189,
+    "description": "PR-463 — As ressalvas das entregas recentes do financeiro, do rastreador e do app de campo foram anotadas no registro, e a régua do portão da versão vendável foi atualizada. NÚMEROS DA CI no merge commit `c9a2d036` (push na `main`), workflow `ci`, run 40315463474, tentativa 1: backend `4079 teste(s) · pass 4077 · fail 0 · skipped 2`; frontend 1368/1368; flutter 905/905. `blocks_completed` 189 -> 189.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 463`; números do log da rodada 40315463474. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-26",
+    "version": "B-SAN3-22",
+    "pr": 464,
+    "merge_commit": "f7922ab7360487ced44203a76de75b80c5094140",
+    "approved_head": "c9a4371cef347c2011ced65e509b53fab57d1798",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4153/4155",
+    "frontend_smoke_tests": "1391/1391",
+    "blocks_completed": 190,
+    "description": "B-SAN3-22 — Os modelos de vistoria ganharam proteção contra edições simultâneas, trava que só permite alterar textos quando há vistoria em andamento e as três opções de aparência aprovadas no editor. NÚMEROS DA CI no merge commit `f7922ab7` (push na `main`), workflow `ci`, run 40440707891, tentativa 1: backend `4155 teste(s) · pass 4153 · fail 0 · skipped 2`; frontend 1391/1391; flutter 905/905. `blocks_completed` 189 -> 190.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 464`; números do log da rodada 40440707891. Nada fica `null`."
   }
 ]
