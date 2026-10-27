@@ -11931,3 +11931,23 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco`, consequência declarada do F13 (D-4 do relatório do dev) · **dono:** `B-SAN3-24` (tira as telas legadas e mexe no menu) · **bloqueia:** não.
 - **origem:** `docs/revisoes/SAN3/B-SAN3-12b-dev.md`, D-4. O §7.2 manda os `path` de `COBRANCAS`/`PAGAMENTOS` apontarem para `/finance?aba=rec|pag`. Dois efeitos fora do alcance do PERMITIDO: (a) o `NavLink` compara só o caminho, então em `/finance` os três itens (Financeiro, Cobranças, Pagamentos) ficam marcados como ativos (`layouts/AppShell.tsx`, fora do PERMITIDO); (b) `computeHiddenNavPaths` esconde item governado pelo menu do backend (`navigation.registry.ts` ainda declara `/finance/charges` e `/finance/payments`, PROIBIDO no §7.4), e os caminhos com `?aba=` não casam com nenhum governado — os dois itens deixam de ser escondidos pelo provisionamento (continuam guardados pela rota `/finance`, `financial_entries:read`, e pelo servidor).
 - **encerramento:** o menu marca ativo só o item da aba aberta e os dois itens voltam a ser governados pelo menu do backend (ou saem do menu, se o `B-SAN3-24` decidir uma entrada só).
+
+## P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da opção A ("Buscar documento, cliente ou descrição") não existe no 12b — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco`, divergência DECLARADA na E2.2 do plano (`docs/revisoes/SAN3/B-SAN3-12-plano.md`, Emenda E2) · **dono:** `B-SAN3-12c` (mesma tela, mesma camada de dados) · **bloqueia:** não.
+- **origem:** C1-N6 da junta do ciclo 1 do `B-SAN3-12b` (`agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`). É filtro de texto sobre as linhas carregadas, e a lista de títulos passou a ser parcial por desenho (R3: 100 por pedido, "Carregar mais títulos"); entra junto da paginação completa.
+- **encerramento:** busca por documento, cliente e descrição sobre as linhas carregadas, com o contador honesto da R3 (`N entre os L mais recentes de T títulos`).
+
+## P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no guarda de rota do front — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/guards/PermissionGuard.tsx:29`, `git blame` → `98b4bee34`, 2026-06-06, antes do ramo do `B-SAN3-12b`) · **dono:** `B-SAN3-06a` (dono de `auth.adapter.ts` e do guarda do front); alternativa `B-SAN3-24` · **bloqueia:** não.
+- **origem:** C1-N4 da junta do ciclo 1 do `B-SAN3-12b`. `PermissionGuard.tsx` é PROIBIDO no 12b (E2.1).
+- **encerramento:** texto acentuado ("Acesso não autorizado") e a guarda textual F17 estendida ao guarda.
+
+## P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devolve 0 para campo ausente — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/modules/finance/dashboard/financial-summary.adapter.ts:113`, `num()`, `git blame` → `08d009492`, 2026-07-18) · **dono:** `B-SAN3-12c` (mesma camada de dados) · **bloqueia:** não.
+- **origem:** C1-N5 da junta do ciclo 1 do `B-SAN3-12b`. Campo que o servidor não mandou vira R$ 0,00 no indicador, em vez de "indisponível" (fere o espírito do F19).
+- **encerramento:** campo ausente → indicador não renderizado ou "indisponível" (F19 no adaptador), com teste.
+
+## P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 (base só migrada) — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (registro) · **dono:** `B-SAN3-12c` + o bloco de ferramentas de processo · **bloqueia:** não.
+- **origem:** C3-03 da junta do ciclo 1 do `B-SAN3-12b`. `tests/b-san3-12-ce4-db.test.ts` tem dois braços: o 1 (base PROVISIONADA por `db:provision-rbac`) e o 2 (só migrada). A CI não provisiona, então executa o braço 2; o braço 1 roda só na máquina do dev e no Postgres descartável dos jurados. `.github/**` é PROIBIDO no 12b.
+- **encerramento:** um job da CI com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head.

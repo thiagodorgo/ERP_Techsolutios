@@ -128,6 +128,11 @@ test("F17: o detector acusa 'Tenant' num rótulo (controle positivo)", () => {
   assert.ok(uiTexts('<span className="pat-x">Tenant ativo</span>').some((t) => TECH.test(t)));
   assert.ok(uiTexts('const l = "Conta do tenant";').some((t) => TECH.test(t)));
   assert.ok(!uiTexts('<button className="pat-btn" onClick={x}>Conciliar</button>').some((t) => TECH.test(t)));
-  // E2/R11: palavra única com maiúscula também é texto de tela.
-  assert.ok(uiTexts('<StatusPill label="Reconciled" />').some((t) => TECH.test(t)));
+});
+
+test("F17/R11: a régua alcança palavra única com maiúscula, o diretório titles/ e os arquivos .ts (controle positivo)", () => {
+  assert.ok(uiTexts('<StatusPill label="Reconciled" />').some((t) => TECH.test(t)), "palavra única com maiúscula é texto de tela");
+  assert.ok(uiTexts('const LABELS = { open: "Open (not reconciled)" };').some((t) => TECH.test(t)), "literal de adaptador .ts");
+  assert.ok(UI_DIRS.includes("titles"), "titles/ está na varredura");
+  assert.ok(tsxFiles(path.join(FINANCE, "titles")).some((file) => file.endsWith("financial-titles.adapter.ts")), "os .ts entram na varredura");
 });

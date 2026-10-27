@@ -108,9 +108,21 @@ test("F8: o detector acusa as duas mutações da ratificação (controle positiv
     mkdirSync(path.join(tmp, "entries"), { recursive: true });
     writeFileSync(path.join(tmp, "entries/y.ts"), "let saldo = 0;\nfor (const e of list) saldo += e.amount;\n");
     assert.deepEqual(scanFinance(tmp), ["entries/y.ts::saldo+=e.amount", "pages/views/X.tsx::props.items.reduce((s,e)=>s+e.amount,0)"]);
-    // E2/R12: a forma `x = x + …` também é acusada (controle positivo da régua nova).
-    writeFileSync(path.join(tmp, "entries/z.ts"), "let soma = 0;\nfor (const e of items) soma = soma + Number(e.amount);\n");
-    assert.ok(scanFinance(tmp).includes("entries/z.ts::soma=soma+Number(e.amount)"), scanFinance(tmp).join(" | "));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("F8/R12: o detector acusa a soma por `x = x + …` nas duas réguas (controle positivo, sem tocar no código)", async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const tmp = mkdtempSync(path.join(tmpdir(), "f8-r12-"));
+  try {
+    mkdirSync(path.join(tmp, "pages/views"), { recursive: true });
+    writeFileSync(path.join(tmp, "pages/views/Z.tsx"), "let soma = 0;\nfor (const e of items) soma = soma + Number(e.amount);\nlet resto = 10;\nresto = resto - 1;\n");
+    const expected = ["pages/views/Z.tsx::resto=resto-1", "pages/views/Z.tsx::soma=soma+Number(e.amount)"];
+    assert.deepEqual(scanFinance(tmp), expected);
+    assert.deepEqual(scanFinance(tmp, "broad"), expected);
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

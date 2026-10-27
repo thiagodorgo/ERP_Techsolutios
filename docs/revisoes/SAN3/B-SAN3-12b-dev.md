@@ -195,8 +195,11 @@ um a um. Nada de `reset --hard`, `stash` ou `clean`.
   ainda pode compensar. A pendência `P-SAN3-12-CHEQUE-DESVINCULADO-CAIXA-SEM-TITULO` (dono `B-SAN3-24`) já cobre o resto.
 - **D-7 — `422 title_has_pending_cheque.details` não chega ao front.** O `ApiError` de `services/api/client.ts` (fora do §7.2) lê só
   `code`/`reason`. O bloco do cheque (F6) lê os cheques por `GET /cheques?title_id=` (rota do §4.1), que dá número, banco, valor e situação.
-- **D-8 — Node 22 indisponível nesta máquina** (`node --version` → `v20.19.5`; sem nvm). O `test:smoke` rodou em Node 20; o de Node 22 fica
-  com a CI.
+- **D-8 — Node 22 (corrigido no ciclo 2, E2/R13(c)).** Node 22.14.0 está instalado (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`); o
+  `test:smoke` foi executado nas duas versões por caminho absoluto no PATH do comando, nunca `nvm use`; a CI roda Node 20. TAP do head da
+  FATIA 8 (RETOMADA 8): Node `v20.19.5` → `tests 1475 · pass 1475 · fail 0 · skipped 0`; Node `v22.14.0` → `tests 1475 · pass 1475 · fail 0 ·
+  skipped 0`. *Texto do ciclo 1, superado:* "Node 22 indisponível nesta máquina (`node --version` → `v20.19.5`; sem nvm). O `test:smoke`
+  rodou em Node 20; o de Node 22 fica com a CI." — a CI não roda Node 22 (C3-06 do ciclo 1).
 - **D-9 — a aparência:** a página chama `useScreenAppearance("financeiro")` e renderiza a A para qualquer valor, porque B e C são do 12c. O
   `appearance.registry.ts` (não listado no §7.2) não ganha "financeiro": o comentário dele diz que a tela entra no menu "no mesmo bloco que
   entrega as 3". Sem nada gravado, abrir a página não grava a chave (F15 já coberto pelos testes do `B-APARENCIA-USUARIO`, #461).
@@ -509,6 +512,56 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 ### Falta
 
 - Nada da FATIA 7. FATIA 8 (registro + bateria completa em Node 20 e 22) e FATIA 9 (mutações no head final) a seguir.
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 8
+
+- **Fatia:** 8 — R13 + R14 (bateria) pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f59-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado (cobertura declarada, ver RETOMADA 5).
+- **Head de entrada:** `8b7ebab5` (fatia 7, empurrado). O head de saída é o do commit desta fatia, publicado no push. `origin/main` medida agora: `972dc0ab` (andou 1 commit depois de `f7922ab7`: o #471, só `Kpis/**`); `git merge-base --is-ancestor f7922ab7 HEAD` → verdadeiro.
+
+### R13 — registro
+
+- **(a)** Apensadas **verbatim** ao fim de `docs/revisoes/SAN3/B-SAN3-12-plano.md` as linhas 939–1119 da cópia do orquestrador (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`): as duas seções "Ratificação do orquestrador" (14:35Z, com os 2 itens; 14:40Z) e a Emenda E2 inteira (E2.1–E2.7). Conferência: a E2 da cópia é idêntica à do parecer `R-B-SAN3-12b-ciclo1.md` (`diff` vazio). Medição: `grep -c "^## Ratificação do orquestrador"` → **2**; `grep -c "Emenda E2"` → **2** (≥ 1). **Divergência de transcrição declarada:** o comando literal da R13 (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2) dá **3** no head, porque a própria E2, apensa verbatim, cita essa expressão no critério da R13 (l.1202 do plano versionado). As seções de ratificação são 2 (l.1072 e l.1079); a mutação da R13 (tirar uma ratificação) leva o `grep -c "^## Ratificação do orquestrador"` de 2 para 1 e o comando literal de 3 para 2. A frase de `pendencias.md` (l.11925, "ratificação … no fim do plano") passa a ser verdadeira.
+- **(b)** Seção nova no fim do plano versionado, "Transcrições da E2 no plano versionado (R13(b))", sem editar o corpo v3: §4.1 + `POST /cheques/:chequeId/cancel`; §10 — a C3 também julga F20–F22; F4 = 32.
+- **(c)** D-8 deste relatório corrigido no lugar (o texto do ciclo 1 fica citado como superado), com os dois TAP abaixo.
+- **(d)** 4 pendências da E2.4 abertas em `agent-orchestration/controle/pendencias.md`, cada uma com status, escopo com evidência, dono e encerramento: `P-SAN3-12B-BUSCA-TABELA-TITULOS` (dono `B-SAN3-12c`), `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` (pré-existente: `git blame frontend/src/guards/PermissionGuard.tsx:29` → `98b4bee34` 2026-06-06; dono `B-SAN3-06a`, alternativa `B-SAN3-24`), `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` (pré-existente: `git blame …/financial-summary.adapter.ts:113` → `08d009492` 2026-07-18; dono `B-SAN3-12c`), `P-SAN3-12-CE4-BRACO1-NA-CI` (dono `B-SAN3-12c` + ferramentas de processo). `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` e `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` já existiam (1 cabeçalho cada) e ficam inalteradas (a R12 mediu N = 0 forma nova pré-existente, ver RETOMADA 7). Índice: `python -I agent-orchestration/controle/gerar-indice-pendencias.py` → `670 cabeçalhos / 659 IDs | ABERTA 508 · FECHADA 158 · SEM-STATUS 4`; regerado de novo → sha256 igual (`8a4b84a1db93e5c2…`), logo o versionado é o que o gerador produz da fonte deste commit (R7).
+
+### Ajuste de caso (R11/R12), declarado
+
+- Os controles positivos da R11 e da R12, que a FATIA 7 tinha posto como asserções dentro de casos existentes, viraram **casos próprios** (um por critério, como a meta da E2 conta): `F17/R11` em `finance-contas-extrato.smoke.test.tsx` (palavra única com maiúscula, literal de adaptador `.ts`, `titles/` e `.ts` na varredura) e `F8/R12` em `finance-no-money-reduce.guard.test.ts` (`soma = soma + …` e `resto = resto - 1` acusados nas duas réguas, em diretório temporário). Nenhum critério afrouxado; as mutações R11/R12 são re-executadas na FATIA 9.
+
+### R14 — bateria (head local desta fatia; cada linha com `tests · pass · fail · skipped`)
+
+| Comando | Saída | Veredito |
+|---|---|---|
+| `npm --prefix frontend run check` (Node `v20.19.5`) | `tsc -b --noEmit`, exit 0 | verde |
+| `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx` | `112 · 112 · 0 · 0` (antes do ajuste de caso: `110`) | verde |
+| por arquivo, os 9 do bloco | `finance-page-live` 33 · `finance-baixa.smoke` 9 · `finance-contas-extrato.smoke` 8 · `finance-conciliacao.smoke` 5 · `finance-no-money-reduce.guard` 4 · `finance-redirects` 3 · `financial-accounts.adapter` 6 · `financial-entries.adapter` 11 · `dense-expandable-row` 5 = **84** (baseline do ciclo 1: 67; meta da E2 ≥ 84 — **atingida**, 17 casos novos) | verde |
+| `npm --prefix frontend run test:smoke` em Node `v20.19.5` | `1475 · 1475 · 0 · 0` (fatia 1: 1458; + 17 casos novos) | verde |
+| `PATH="/c/Users/AMP/AppData/Local/nvm/v22.14.0:$PATH" npm --prefix frontend run test:smoke` (o `node --version` do comando e o de dentro de `frontend/` → `v22.14.0`; nunca `nvm use`) | `1475 · 1475 · 0 · 0` | verde |
+| `npm --prefix frontend run build` | `✓ built in 58.85s`, exit 0 | verde |
+| raiz `npm run check` · `npm run lint` · `npm run build` | exit 0 · 0 · 0 | verde |
+| **CE-4 `-db` (F18), braço 1:** Postgres 16 descartável `dev12b-f8-pg` em `127.0.0.1:55821`; `npx prisma migrate deploy` → "All migrations have been successfully applied."; `CORE_SAAS_PERSISTENCE=prisma npm run db:provision-rbac` → "912 criada(s) … CONVERGIDO"; `CORE_SAAS_PERSISTENCE=prisma node --test --import tsx tests/b-san3-12-ce4-db.test.ts` | `2 · 2 · 0 · 0` (base PROVISIONADA) | verde |
+| backend byte-idêntico | `git diff --name-only f7922ab7 HEAD -- src prisma scripts` → 0; `git diff --name-only origin/main...HEAD -- src prisma scripts` → 0. (Contra `c9a2d036` dá 7, todos `src/modules/checklists/**`, trazidos pelo merge do #464 na FATIA 1, não pelo 12b.) | igual |
+| F8 como comando: `git grep -n -E "reduce\(\|\+= *[a-zA-Z.]*amount" -- frontend/src/modules/finance` | exatamente as **8** do inventário (7 em `commissions/**`, 1 em `titles/financial-titles.adapter.ts:198`) | igual ao inventário |
+| `git diff --check` | vazio | verde |
+| índice (R7) | gerador → sha256 estável `8a4b84a1…` (acima) | verde |
+| `npm test` (raiz, `DATABASE_URL` do descartável `dev12b-f8-pg`, 14:03Z–14:22Z) | `4148 · 4131 · 15 · 2` + o aviso de denominador (1 arquivo sem teste registrado: `traccar-event-migration-drill-db.test.ts`), rc 1 | ver abaixo |
+
+**As 15 falhas do `npm test` não são do bloco** (§C7.1-ter(a), ambiente/pré-existente; o 12b não toca `src/`, `prisma/` nem `scripts/`, medido acima). São as mesmas 4 famílias do ciclo 1 (`P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID`, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`): `san3-05-runtime-role-guard-db` (9 subtestes + o pai), `san3-09` T2.1 (o shim `node_modules/.bin/prisma` lido como JS no Windows: "SyntaxError: missing ) after argument list"; + o pai), `traccar-event-migration-drill-db` (sem teste registrado — o aviso de denominador) e `traccar-position-ingestion-db` (2: "tempo esgotado → 503"). **Por que 15 e não 8:** o meu descartável foi criado com `POSTGRES_USER=dev12b`, e o T5/T6/T9 e os T8b–T8e/T15 do san3-05 procuram o escape pelo superusuário de nome `postgres` ("escape atributo/postgres não encontrado: … rolname dev12b, rolsuper true"). Controle: num segundo descartável `dev12b-f8-pg2` (`127.0.0.1:55822`, superusuário `postgres`, migrado e provisionado) o mesmo arquivo dá `12 · 8 · 4 · 0` — só T14a/b, T14c, T14d e o pai, a família do roteiro shell no Windows, como no ciclo 1. A CI Linux (`backend-postgres`) é a régua dessas suítes.
+- Limpeza parcial desta fatia: `docker rm -f dev12b-f8-pg dev12b-f8-pg2` → removidos; `docker ps -a | grep -c dev12b` → 0. Os artefatos de build ficam para a limpeza da FATIA 9 (§C5).
+
+### Mutações desta fatia
+
+- **R13:** tirar a seção "Ratificação do orquestrador (2026-10-26 14:40Z)" do plano versionado → `grep -c "^## Ratificação do orquestrador"` cai de 2 para 1. Executada no head final pela FATIA 9, com restauro por hash.
+
+### Falta
+
+- FATIA 9: as 24 + 17 mutações no head final, tabela §M, `git diff --check`, push final e "pronto para a junta".
 
 ### Próximo comando exato
 

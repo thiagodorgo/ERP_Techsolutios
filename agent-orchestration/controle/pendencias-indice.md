@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **666** |
-| IDs distintos | 655 |
-| **ABERTAS** | **504** |
+| Cabecalhos `## P-` | **670** |
+| IDs distintos | 659 |
+| **ABERTAS** | **508** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **439** |
+| — das quais **ativas nesta rodada** | **443** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 158 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **666 cabecalhos para 655 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **670 cabecalhos para 659 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -306,7 +306,7 @@
 | `P-CHK-EDITOR-LEITURAS-B` | 11903 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
 | `P-FRONT-TESTE-DE-INTERACAO` | 11916 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
 
-## ABERTAS · balde B — processo/registro — 209
+## ABERTAS · balde B — processo/registro — 213
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -519,6 +519,10 @@
 | `P-CHK-COMPONENTES-EMPATE-ORDER-INDEX` | 11910 | BAIXA | sim | P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo |
 | `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` | 11923 | BAIXA | **a atribuir** | P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (2026-10-26) — 8 somas de dinheiro/contagem  |
 | `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` | 11930 | BAIXA | sim | P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do men |
+| `P-SAN3-12B-BUSCA-TABELA-TITULOS` | 11935 | BAIXA | sim | P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da  |
+| `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` | 11940 | BAIXA | sim | P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no  |
+| `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` | 11945 | BAIXA | sim | P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devol |
+| `P-SAN3-12-CE4-BRACO1-NA-CI` | 11950 | BAIXA | sim | P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 ( |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

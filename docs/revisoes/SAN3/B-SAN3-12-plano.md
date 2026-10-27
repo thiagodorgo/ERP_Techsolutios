@@ -1068,3 +1068,193 @@ CORE_SAAS_PERSISTENCE=memory node --test --import tsx --test-reporter=tap tests/
 - **Pendências novas: 4** (todas `pre-existente`, com dono): `P-AUDIT-CRITICA-NA-TRANSACAO`, `P-TENANT-SETTING-AUDIT-SEM-VALOR`, `P-RBAC-MIGRATION-PARITY-ESTATICA`, `P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO`. **Fecha no merge:** `P-SAN3-20-DELETE-TITULO-COM-CHEQUE` (A29-c + A29-g).
 - **Código de produto tocado pelo conserto: 2 arquivos** (`financial-title.service.ts` só `update`/`delete`/`assertNoPendingCheque`; `cheque.service.ts` só `parseUnlinkJustification`). Nenhuma migração, nenhum contrato novo, nenhum membro novo na UoW.
 - **Perguntas ao dono: 0.**
+
+## Ratificação do orquestrador (2026-10-26 14:35Z) — duas incoerências internas que o dev do 12b achou antes do código
+
+O dev (`dev-san312b-sol`) parou na releitura e registrou as duas em `docs/revisoes/SAN3/B-SAN3-12b-dev.md`. Nenhuma é decisão nova: o próprio plano já decide, e o defeito está só na transcrição.
+
+1. **`frontend/src/modules/finance/entries/finance-errors.ts` entra no PERMITIDO do §7.2 (novos).** O §4.1 (l.216-217) já o exige: a lista vive uma vez no código e exporta `FINANCE_UI_ERROR_REASONS`, que o F4 itera. O §7.2 omitiu o arquivo. O mesmo vale para o teste que o importa, se ele nascer separado; senão, o teste fica num dos arquivos de teste já listados.
+2. **O F4 diz "lista fechada de 31"; vale 32.** O §4.1 (l.211, v3, R2-10) diz *"o número vem da lista, não o contrário: 32"*, e a E1.F9 confirma os 32 da tela, com `bounce_reason_required`, `invalid_group_by`, `invalid_from` e `invalid_to` FORA da lista da tela. O "31" do F4 é resto da v2. O critério do F4 passa a ser: **a lista de `finance-errors.ts` é igual, como conjunto, à do §4.1 e à seção "lista da tela" de `API_CONTRACTS.md`, e o F4 itera sobre ela.** A mutação que deixa o critério vermelho é tirar 1 reason da lista ou acrescentar 1.
+
+## Ratificação do orquestrador (2026-10-26 14:40Z) — o F8 vira trava com inventário congelado (achado do dev, F8)
+
+O dev mediu, na `origin/main` `c9a2d036`, **8 ocorrências anteriores** de `reduce` ou `+=` sobre números em `frontend/src/modules/finance/**`:
+- **7 em `commissions/**`:** `commissions.adapter.ts:144`, `CommissionDetailDrawer.tsx:80`, `ConferenciaRemuneracoesView.tsx:142,145,153` e `RemuneracoesPage.tsx:179,413`. O diretório é PROIBIDO no §7.4.
+- **1 em `titles/financial-titles.adapter.ts:198`:** é o `sumAmount` de `computeTitleKpis`, usado só por `TitlesListView.tsx:74`, que mostra as telas legadas de Cobranças e Pagamentos. O 12b as redireciona, e a remoção delas é do `B-SAN3-24`, pela resposta do dono à Q4.
+
+O "zero" do F8 era impossível sem tocar o PROIBIDO. Nenhuma das 8 é do bloco (§C7.1-ter(a), pré-existente, com origem na `main` antes do ramo). **O F8 passa a ser uma trava:**
+- o guard `finance-no-money-reduce.guard.test.ts` varre `frontend/src/modules/finance/**` inteiro e compara com um **inventário congelado** das 8 ocorrências, por arquivo e pela expressão normalizada, não por número de linha;
+- qualquer ocorrência fora do inventário reprova;
+- se uma ocorrência do inventário sumir, o guard pede que ela saia do inventário, para o inventário não guardar entrada morta;
+- nos diretórios que o 12b cria ou edita (`accounts/**`, `entries/**` e `pages/**`) o inventário é **vazio**.
+
+**Mutações** (as duas deixam o guard vermelho):
+- `items.reduce` somando `amount` numa view nova;
+- acrescentar uma entrada falsa ao inventário.
+
+O `rg` da bateria do §9 passa a ser: "`rg` lista exatamente as 8 do inventário".
+
+**Pendência nova, aberta no PR do 12b:** `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`, BAIXA, pré-existente.
+- **Dono das 7 de `commissions/**`:** o bloco das telas de comissões.
+- **Dono da 1 de `titles/`:** o `B-SAN3-24`, quando as telas legadas saírem.
+- **Fechamento:** inventário vazio.
+
+---
+
+## Emenda E2 (ciclo 2 do 12b) — plano de resolução da reprovação do ciclo 1
+
+> Autor: `planejador-san312b-c1rep-fable` (topo, Fable). Parecer: `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`. Esta emenda é apensa verbatim ao fim da cópia do orquestrador (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`) e, pelo R13, ao plano versionado `docs/revisoes/SAN3/B-SAN3-12-plano.md`. Onde divergir do plano v3 e das ratificações de 26/10, **vale a E2**; onde a E2 cala, vale o plano.
+> **Objetivo:** fechar os 6 `bloqueia` e o ajuste do ciclo 1 sem reintroduzir defeito, com o ramo trazido à `main` (`f7922ab7`), e entregar um objeto que a junta do ciclo 2 (C1 e C3 refeitas; C2 revalidada) possa aprovar. O ciclo 2 é o último em que achado não grave reprova (§C7 item 8(2)): cada requisito abaixo tem critério, mutação e vermelho-controle no objeto do ciclo 1.
+> **Ator:** Financeiro (baixa, conciliação, contas), Administrador da organização (desvincular e cancelar cheque), Gestor/Auditor (só consulta), Técnico de Campo (sem acesso).
+> **Fluxo origem → destino:** o mesmo do plano (§4 e §6): tela `/finance` → `GET /financial-summary`, `/financial-accounts(+/balance)`, `/financial-titles` (agora com `offset`), `/financial-entries(+/aggregate, /reconciliation-policy)`, `POST /financial-titles/:id/pay`, `PATCH /financial-entries/:id/reconcile`, `GET /cheques?title_id=`, `POST /cheques/:id/unlink-title` e, **de volta ao contrato**, `POST /cheques/:id/cancel`.
+> **Contrato:** sem rota nova no backend e sem mudança de DTO. O §4.1 ganha a linha que faltava: `POST /cheques/:chequeId/cancel` (sem corpo; 200 com o DTO do cheque; 403 sem `cheques:update`; 404 cross-tenant; 422 `cheque_linked_unlink_first` se ainda vinculado; 422 `invalid_transition`/`cheque_not_editable`; 409 `transition_conflict`; os 4 últimos já estão nos 32 de `finance-errors.ts`). **Modelagem:** nenhuma (sem `prisma/**`, sem migração).
+
+### E2.1 Escopo do conserto (o PERMITIDO do ciclo 2; o §7.4 continua PROIBIDO inteiro)
+- **editados (produto):** `frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx`, `pages/FinanceiroPage.tsx`, `pages/financeiro.state.ts` (se precisar), `entries/useEntriesAggregate.ts`, `entries/components/BaixaForm.tsx`, `entries/financial-entries.service.ts`, `entries/financial-entries.types.ts`, `entries/useFinanceActions.ts`, **`titles/useFinancialTitles.ts` (novo no PERMITIDO: aditivo, forma de retorno preservada para `TitlesListView.tsx`)**, `titles/financial-titles.service.ts` (`buildQuery` + `offset`), `titles/financial-titles.types.ts` (`offset?` nos filtros).
+- **testes:** `frontend/tests/finance-page-live.test.tsx`, `finance-baixa.smoke.test.tsx`, `finance-contas-extrato.smoke.test.tsx`, `finance-no-money-reduce.guard.test.ts`, `financial-entries.adapter.test.ts` (se o serviço ganhar adaptador do cancel); `frontend/package.json` **só** pelo merge da `main` (linha `test:smoke`).
+- **registro:** `agent-orchestration/controle/pendencias.md` + `pendencias-indice.md` (sempre regenerado), `docs/revisoes/SAN3/B-SAN3-12b-dev.md` (seção do ciclo 2), `docs/revisoes/SAN3/B-SAN3-12-plano.md` (apensar as 3 ratificações e esta E2, verbatim), `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md` (este parecer, commitado pelo orquestrador).
+- **merge da `main`:** os arquivos que o merge trouxer (#464) entram como vieram; o dev não os edita fora da resolução de conflito (E2.5).
+- **fora:** `frontend/src/styles/app.css` (o C1-02 se resolve inline), `components/**` da biblioteca (nada novo: `TablePager` já existe), `src/**`, `prisma/**`, `.github/**`, `Kpis/**`, `navigation.registry.ts`, `PermissionGuard.tsx`, `work-orders/**`, `commissions/**`, lockfiles.
+
+### E2.2 Divergências da opção A DECLARADAS (fidelidade, para a C1 julgar como declaradas, não como silêncio)
+- **D-5 (mantida):** "Conciliação por conta" mostra a contagem a conciliar por conta (dado do `GET /financial-entries/aggregate?group_by=none&account_id=…&reconciled=false`), não a barra conciliado/ressalva/a conciliar da maquete: o agregado do 12a não agrupa por conta, e a barra exigiria 3 consultas por conta.
+- **Busca da tabela ("Buscar documento, cliente ou descrição") ausente:** vira pendência com dono (E2.4, `P-SAN3-12B-BUSCA-TABELA-TITULOS`, dono `B-SAN3-12c`), porque é filtro de texto sobre linhas carregadas e a lista de títulos passa a ser parcial por desenho (R3); entra junto da paginação completa.
+- **"Carregar mais títulos" (R3):** elemento que a maquete não tem, porque a maquete tem todos os dados em memória; o servidor limita a 100 por pedido (`invalid_limit`), e o botão é o caminho honesto até os títulos restantes. Declarado aqui.
+- **Rótulos "Recebidos em parte"/"Pagos em parte"** (maquete: "Recebidos ou pagos em parte"), minigráfico dos indicadores e etiqueta "N com ressalva" ausentes: notas do ciclo 1, mantidas como estão (sem perda de informação; as ressalvas estão nos blocos da Conciliação).
+- **D-9 (mantida):** só a aparência A neste bloco; B e C no 12c (`screen-refs/README.md` l.41).
+- **AccountCard e FilterChip locais (C1-N7):** mantidos; o `FilterChip` vira lista (`FilterChips`) e continua local à view. Registro no COMPONENT_LIBRARY só quando o 12c os reusar.
+
+### E2.3 Requisitos (cada um: requisito · arquivos · critério · mutação que deixa vermelho · vermelho-controle no objeto do ciclo 1 `fc5ead6c`)
+
+**R1 — C1-01: o filtro de conta aparece acima da lista e sai com um clique; indicador da organização não carrega conta.**
+- Arquivos: `FinanceiroViewA.tsx` (chips; `go()` dos indicadores), `finance-page-live.test.tsx`.
+- Critério: (a) nas abas `ext` e `conc`, sempre que `state.accountId` estiver definido, a barra de filtros (`.pat-filtro-chip-bar`, acima da lista) mostra o chip `Conta: <nome>` (nome vindo de `model.accounts.items`; se a conta não estiver na lista, `Conta selecionada`), com botão `aria-label="Remover o filtro de conta"` → `go({ accountId: null })`; o pedido seguinte de `GET /financial-entries` sai **sem** `account_id` e a querystring **sem** `conta`. Chip de conta e chip de alvo coexistem (ordem: conta, alvo); na `conc`, o alvo `conc:*` continua representado pelo bloco pressionado (como no ciclo 1). (b) Os indicadores "A conciliar", "Entradas em <mês>" e "Saídas em <mês>" navegam com `accountId: null` (são números da organização; o "Saldo em caixa" já faz isso); só a faixa "Conciliação por conta" e o `AccountCard` gravam `accountId`.
+- Teste (vivo): cenário 1: faixa "Banco do Brasil: 1 a conciliar" → `conc` com `?conta=acc-banco&filtro=conc:pendente`; clicar o bloco pressionado "A conciliar" → chip `Conta: Banco do Brasil` presente; clicar "Remover o filtro de conta" → `?aba=conc`, pedido sem `account_id`, 3 linhas. Cenário 2: `ext`, cartão "Caixa da loja" (chip `Conta: Caixa da loja` visível), clicar o indicador "A conciliar" → `conc` **sem** `conta`, sem chip de conta, nº de linhas = contagem do indicador.
+- Mutação: `chipLabel` volta a olhar só `state.target` → cenário 1 vermelho; "A conciliar" volta a `go({ tab: "conc", target: "conc:pendente" })` → cenário 2 vermelho.
+- Vermelho-controle: os 2 cenários no objeto do ciclo 1 → vermelhos (`pressedAll=[]`, `?conta=` mantido; o que a C1 mediu).
+
+**R2 — C1-02: "Conciliação por conta" com o nome à esquerda e a contagem à direita.**
+- Arquivos: `FinanceiroViewA.tsx` (l.327-340), `finance-contas-extrato.smoke.test.tsx` (ou o vivo).
+- Critério: o botão de cada conta leva, inline, `display: "flex"`, `alignItems: "center"`, `justifyContent: "space-between"`, `width: "100%"`, `textAlign: "left"`; o nome fica num `<span>` com reticências (`title` = nome inteiro) e a contagem num `<b>` com `whiteSpace: "nowrap"` e `marginLeft: 8`; nenhuma regra nova em `app.css`. A C1 mede no navegador: nome à esquerda, contagem à direita, distância ≥ 8 px, como na referência.
+- Teste (SSR): o `style` do botão contém `display:flex` e `justify-content:space-between`, e os filhos são `span` (nome) + `b` (contagem).
+- Mutação: tirar o `display: "flex"` → vermelho.
+- Vermelho-controle: objeto do ciclo 1 → vermelho (sem `display:flex`; a C1 mediu `display: block`, distância 0 px).
+
+**R3 — C1-03: contagens do servidor, paginação padronizada e caminho até todos os títulos.**
+- Arquivos: `titles/useFinancialTitles.ts`, `titles/financial-titles.service.ts` (`buildQuery` + `offset`), `titles/financial-titles.types.ts` (`offset?`), `FinanceiroViewA.tsx`, `FinanceiroPage.tsx` (passa `total`, `hasMore`, `loadingMore`, `loadMore`), `finance-page-live.test.tsx`.
+- Critério: (a) **hook**: a 1ª carga continua `limit=100`; o hook expõe `total` (= `pagination.total` do servidor), `hasMore = items.length < total`, `loadingMore` e `loadMore()` → `GET /financial-titles?direction=…&limit=100&offset=<items.length>`, anexando sem repetir `id`; `refresh(background)` relê as páginas já carregadas (offsets 0, 100, … até onde o usuário chegou) e substitui o conjunto sem encolher; a forma de retorno antiga (`items, pagination, source, fallbackReason, loading, isRefreshing, refresh, context`) continua igual e `finance-titles.test.tsx` (23 casos, legado) segue verde. (b) **aba** "A receber"/"A pagar": contagem = `summary.receivable.openCount`/`summary.payable.openCount` (servidor); sem número se o resumo estiver carregando ou indisponível. (c) **bloco "Vencidos"**: `summary.<dir>.overdueCount` (servidor). **"Vencem hoje", "Próximos 7 dias", "Recebidos/Pagos em parte"**: contagem sobre as linhas carregadas **só com a carga completa** (`items.length >= total`); incompleta → sem número e `aria-label` "<rótulo>: contagem disponível depois de carregar todos os títulos — filtrar a lista" (o bloco continua filtrando as linhas carregadas). (d) **contador** (`.pat-table__count`): completa → `N títulos` (N = linhas visíveis); incompleta → `N entre os L mais recentes de T títulos` (sem alvo: `L mais recentes de T títulos`), o idioma do extrato. (e) **`TablePager`** (biblioteca) no rodapé da tabela, client-side sobre as linhas visíveis, `pageSize` 20 (opções 20/50), `rangeLabel` `a–b de N` (incompleta: `a–b de N carregados · T no servidor`); a página volta à primeira em todo `go()`; o detalhe aberto fecha ao trocar de página. (f) **botão "Carregar mais títulos (R restantes)"** (`pat-btn pat-btn--secondary`, R = `total − items.length`) ao lado do pager enquanto `hasMore`; durante `loadingMore`, desabilitado com "Carregando…"; some quando `hasMore` é falso. Nada disto soma dinheiro (F8): contagens e seleção.
+- Teste (vivo; fixture gerado de 130 títulos a receber em aberto, `pagination.total=130`, dublê honrando `offset`; `SUMMARY.receivable.openCount=130`): aba "A receber 130"; contador `100 mais recentes de 130 títulos`; pager `1–20 de 100 carregados · 130 no servidor`; "Vencidos <n>" com o número do resumo; "Vencem hoje" sem número; "Carregar mais títulos (30 restantes)" → `GET …&limit=100&offset=100` → contador `130 títulos`, pager `1–20 de 130`, "Vencem hoje" com número, botão ausente; "Próxima" → linhas 21–40. O fixture de 3 títulos ganha `openCount` coerente no `SUMMARY`.
+- Mutações (4): aba com `.length` → vermelho (100 ≠ 130); `loadMore` sem `offset` (o dublê devolve a 1ª página; dedupe segura 100) → vermelho; `TablePager` removido → vermelho; "Vencem hoje" contando linhas com carga incompleta → vermelho.
+- Vermelho-controle: o teste novo no objeto do ciclo 1 → vermelho ("A receber 100", 0 paginação; o que a C1 mediu).
+
+**R4 — C3-02: cada URL de agregado é pedida uma vez por carga; contagem por conta não some.**
+- Arquivos: `FinanceiroPage.tsx`, `entries/useEntriesAggregate.ts`, `finance-page-live.test.tsx`.
+- Critério: (a) a página chama o hook **duas vezes**, com chaves independentes: `useEntriesAggregate(SITUATION_QUERIES, …)`, com `SITUATION_QUERIES` constante de módulo (as 4 situações), e `useEntriesAggregate(accountQueries, …)`, memo sobre `accountKey` (`{}` até as contas chegarem; com `{}` o hook não pede nada); `model.aggregates = { ...situacao.data, ...porConta.data }`; `refreshAggregates(bg)` dispara os dois. (b) `useEntriesAggregate` grava `setData((current) => ({ ...current, ...rodada }))` e ignora resultado de rodada superada (contador em `useRef`): rodada velha nunca apaga chave da nova. (c) O F14 do teste vivo conta `GET /financial-entries/aggregate?…` **por URL completa**: cada URL exatamente 1 por carga (4 situações + 1 por conta ativa = 6 no fixture de 2 contas) e, concluída a carga, a faixa mostra "Banco do Brasil: 1 a conciliar" e "Caixa da loja: … a conciliar". O dublê responde `/financial-accounts` só depois de o 1º pedido de `/aggregate` sair (a ordem real; o arnês do ciclo 1 já reproduz, como a C3 provou).
+- Mutações (2): as consultas por conta de volta no mesmo `useMemo` das 4 situações (a forma do objeto) → vermelho (URL ×2); a view chama `useFinancialSummary()` de novo (mutação F14 original) → vermelho.
+- Vermelho-controle: o F14 ampliado no objeto do ciclo 1 → vermelho (4 URLs ×2; o que a C3 mediu).
+
+**R5 — C3-05: depois de desvincular um cheque `registered`, a tela oferece "Cancelar o cheque"; nenhuma frase aponta para uma tela de Cheques que a web não tem.**
+- Decisão e porquê: **a tela volta a oferecer, e isto não é pergunta ao dono.** O plano v3 decide em três cláusulas (§4.3 l.257-258; R-res-3 l.651; R-res-6 l.654) e a lista fechada do §4.1 (l.214) já traz os códigos do `cancel` ("do fluxo de cheque que a tela alcança ao desvincular/cancelar"); o dono decidiu o privilégio (R2-04, literal "Mesmo privilégio da troca"); a rota existe no backend sob `cheques:update`, sem corpo; nenhuma permissão nova, nenhuma rota nova, nenhum DTO novo. Só a linha de rotas do §4.1 omitiu `POST /cheques/:chequeId/cancel`: a E2 corrige a transcrição. A D-6 foi decisão do dev depois do código, sem emenda (`D-EMENDA-ANTES-DO-CODIGO`); o que ela tirou é a defesa do caixa 2× (R-res-3). Perguntar ao dono seria reabrir decisão já tomada.
+- Arquivos: `entries/financial-entries.service.ts` (+`cancelCheque(context, chequeId)` → `POST /cheques/<id>/cancel`, sem corpo), `entries/financial-entries.types.ts` (resultado, se precisar), `entries/useFinanceActions.ts` (+`cancelCheque`), `entries/components/BaixaForm.tsx` (fluxo + textos), `FinanceiroPage.tsx` (`access.cancelCheque = can("cheques:update")` → prop `canCancelCheque`), `finance-page-live.test.tsx` (fluxo F6 ampliado), `finance-baixa.smoke.test.tsx`.
+- Critério: (a) após `POST /unlink-title` 200 de cheque `registered`, a baixa reabre com o aviso "Cheque nº X desvinculado deste título. Se ele não vai mais ser usado, cancele-o agora: assim o dinheiro não entra duas vezes." e, para ator com `cheques:update`, o botão "Cancelar o cheque nº X" em dois passos (clique → "Confirmar o cancelamento" / "Manter o cheque"); confirmar → `POST /cheques/<id>/cancel` **sem corpo**; 200 → aviso "Cheque nº X cancelado. Ele não entra mais no caixa." e o botão some; erro → `financeErrorMessage` (os 32; `cheque_linked_unlink_first`, `invalid_transition`, `cheque_not_editable`, `transition_conflict` já traduzidos) e o botão fica. (b) cheque `deposited` (unlink 200 com `warning: cheque_still_depositable`): sem botão; aviso "Cheque nº X desvinculado deste título. Atenção: ele já estava depositado e ainda pode compensar — confira com o banco antes de receber por outro meio." (c) ator sem `cheques:update`: sem botão; o aviso acrescenta "Peça a quem administra os cheques para cancelar o cheque nº X." (d) `grep -n -E "cancele-o lá|Confira em Cheques" BaixaForm.tsx` = 0; a frase de l.210 vira "Não foi possível listar o cheque agora. Tente de novo."; a frase de l.282-283 ("A tela de Cheques chega com o próximo bloco") pode ficar: é honesta. (e) o dev publica `node --import tsx -e` que imprime `ROLE_PERMISSIONS.tenant_admin.includes("cheques:update")` e `ROLE_PERMISSIONS.finance.includes("cheques:update")` no head (a C2 confere o gate = permissão da rota, CE-G2).
+- Teste: ator `tenant_admin` (unlink + update): (a) inteiro, inclusive o POST sem corpo e o 422 `cheque_linked_unlink_first` com o botão mantido; ator sintético `so:cheques:unlink_title` (sem `update`): desvincula e **não** vê o botão; cheque `deposited`: sem botão e com o aviso (b).
+- Mutações (3): botão também para `deposited` → vermelho; gate por `cheques:unlink_title` em vez de `cheques:update` → vermelho (o ator `so:unlink` veria o botão); POST com corpo `{}` ou rota `/cheques/<id>` → vermelho.
+- Vermelho-controle: objeto do ciclo 1 → vermelho (não há botão; `git grep "Cancelar o cheque" fc5ead6c -- frontend/src` = 0).
+
+**R6 — C3-01: recusa definitiva do servidor nunca vira "esta baixa já está registrada".**
+- Arquivos: `BaixaForm.tsx` (`settleAfterFailure`), `finance-page-live.test.tsx`.
+- Critério: a fase `already` só nasce de (i) 409 `duplicate_payment` (o servidor confirma que este `client_action_id` já foi gravado) ou (ii) falha **sem** status HTTP (rede/timeout) ou 5xx **com** `fresh.paidAmount > before.paidAmount`. Toda recusa 4xx definitiva (`overpayment`, `title_already_paid`, `title_cancelled`, `period_closed`, `account_inactive`, `cheque_required`, `currency_mismatch`, `amount_overflow`, `title_has_pending_cheque`, 400, 403, 404) mostra a mensagem da razão e, se o título mudou, acrescenta "O título mudou desde que você abriu: pago R$ <paidAmount> de R$ <amount>." com o valor do formulário refeito para o saldo em aberto relido; `title_already_paid`/`title_cancelled` (ou `fresh.status` final) fecham (`closed`), o resto volta ao formulário. A ordem das checagens é: releitura → razão → só então o `paidAmount`.
+- Teste (vivo): 422 `overpayment` com releitura `paidAmount` 400 > 0 → texto da recusa + "O título mudou desde que você abriu: pago R$ 400,00 de R$ 1.000,00", fase formulário, 0 reenvio automático; rede caída com releitura paga → `already` (como hoje); 409 `duplicate_payment` → `already`.
+- Mutação: devolver o `if (fresh.paidAmount > before.paidAmount) → already` para antes da razão → vermelho.
+- Vermelho-controle: objeto do ciclo 1 → vermelho (a sonda "concorrência" da C3: "Esta baixa já está registrada" após 422 `overpayment`).
+
+**R7 — C3-07: o índice de pendências é sempre o que o gerador produz da fonte do mesmo commit.**
+- Arquivos: `agent-orchestration/controle/pendencias.md`, `pendencias-indice.md`.
+- Critério: em **todo** commit que toque `pendencias.md` (merge da `main` inclusive), o índice é regenerado por `python -I agent-orchestration/controle/gerar-indice-pendencias.py` e commitado junto; no head final, o gerador rodado numa cópia produz arquivo igual ao versionado (diff sem CR = 0 linhas). O dev publica o comando e `git diff --stat` = vazio.
+- Mutação: trocar 1 `status:` em `pendencias.md` sem regenerar → diff ≠ 0 (a C3 provou: 108 linhas).
+- Vermelho-controle: objeto do ciclo 1 → 104 linhas (medido por mim e pela C3).
+
+**R8 — merge da `main`: o ramo contém `f7922ab7` com os dois lados do registro e a união do `test:smoke`.** Procedimento em E2.5; critérios lá.
+
+**R9 — C2-01: o gate da baixa é provado por ator de PERMISSÃO, não só de papel.**
+- Arquivos: `finance-baixa.smoke.test.tsx` (ou o vivo).
+- Critério: 2 casos novos: ator com `financial_entries:create` **sem** `financial_titles:update` → "Registrar recebimento" presente; ator com `financial_titles:update` **sem** `financial_entries:create` → ausente, com a frase de consulta (CE-G2). Idem para "Conciliar" (`financial_entries:update` × `financial_titles:update`) se couber na mesma forma.
+- Mutação: gate por `financial_titles:update` (a M2 do plano) → vermelho.
+- Vermelho-controle: no objeto do ciclo 1 o código está certo e o teste novo fica **verde**; o controle é a M2 aplicada ao objeto com o teste novo → vermelho (a C2 provou que os 36 casos do bloco ficavam verdes sob a M2; o caso novo é o que a acusa).
+
+**R10 — C1-N3: aba "Contas e extrato" sem `financial_accounts:read` mostra acesso não permitido, não um vazio.**
+- Arquivos: `FinanceiroViewA.tsx` (aba `ext`, antes do "Cadastre a primeira conta"), `finance-page-live.test.tsx`.
+- Critério: com `financial_entries:read` e sem `financial_accounts:read`, a aba `ext` renderiza `StatePanel tone="forbidden"` ("Acesso não permitido — Seu perfil não inclui as contas desta organização. Para mais acesso, fale com o administrador da organização.") e nenhum botão de cadastro; as outras abas não mudam.
+- Mutação: voltar ao vazio "Cadastre a primeira conta" → vermelho. Vermelho-controle: objeto do ciclo 1 → vermelho (a C1 mediu o vazio).
+
+**R11 — C1-N8: a guarda textual do F17 alcança palavra única com maiúscula e o diretório `titles/`.**
+- Arquivos: `finance-contas-extrato.smoke.test.tsx` (o guard F17).
+- Critério: um literal conta como texto de UI se tem espaço, acento **ou começa por maiúscula**; os diretórios varridos são `accounts/`, `entries/`, `pages/` **e `titles/`** (o dev mede antes: se `titles/` já tiver ocorrência pré-existente, lista-a com `git blame` numa exclusão nominal e abre pendência; a varredura da C1 achou 0 na tela). A lista técnica continua a do ciclo 1 (tenant, role, reconciled, scope, rbac, permission, path de rota).
+- Mutações (2): `label="Reconciled"` em `EntryDetail.tsx` → vermelho; `"Open (not reconciled)"` em `financial-titles.adapter.ts` → vermelho. Vermelho-controle: no objeto do ciclo 1 as duas ficam verdes no F17 (a C1 provou); com a guarda nova, vermelhas.
+
+**R12 — C3-04: a trava do F8 alcança a soma por `x = x + …`.**
+- Arquivos: `finance-no-money-reduce.guard.test.ts`.
+- Critério: além de `reduce(` e `+=`, a guarda acusa a forma `\b(\w+)\s*=\s*\1\s*[+-]` em `frontend/src/modules/finance/**`; o inventário congelado continua o das 8 (a trava NÃO ganha entrada por mutação); se a forma nova casar linha pré-existente em `commissions/**` ou `titles/` na `main` já mergeada, ela entra no inventário com `git blame` e na pendência `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` (o dev mede e publica N).
+- Mutação: `let soma = 0; for (const e of items) soma = soma + Number(e.amount)` na view A → vermelho. Vermelho-controle: a C3 provou que esta mutação fica verde no objeto do ciclo 1; com a guarda nova, vermelha.
+
+**R13 — registro: ratificações e emenda versionadas; transcrições corrigidas; D-8 verdadeiro.**
+- Arquivos: `docs/revisoes/SAN3/B-SAN3-12-plano.md`, `docs/revisoes/SAN3/B-SAN3-12b-dev.md`, `agent-orchestration/controle/pendencias.md` (+ índice).
+- Critério: (a) as 3 ratificações de 26/10 (14:35Z ×2, 14:40Z) e esta E2 são apensas **verbatim** ao fim do plano versionado (`git grep -c "Ratificação do orquestrador" <head> -- docs/revisoes/SAN3/B-SAN3-12-plano.md` = 2; `"Emenda E2"` ≥ 1); a frase de `pendencias.md` sobre "no fim do plano" passa a ser verdadeira. (b) No plano versionado, por linha de transcrição apensa na E2 (não editar o corpo v3): o §4.1 ganha `POST /cheques/:chequeId/cancel`; o §10 passa a dar à C3 também F20–F22 (ressalva 1 do inspetor); o F4 diz 32 (ratificação). (c) D-8 do relatório corrigido: "Node 22.14.0 está instalado (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`); o `test:smoke` foi executado nas duas versões por caminho absoluto no PATH do comando, nunca `nvm use`; a CI roda Node 20" e os dois TAP (`tests · pass · fail · skipped`) publicados. (d) as pendências de E2.4 abertas com dono e critério de encerramento; o índice regenerado (R7).
+- Mutação: tirar uma ratificação do plano versionado → o `git grep` cai para 1 (vermelho). Vermelho-controle: objeto do ciclo 1 → 0 (medido pela C3).
+
+**R14 — bateria do ciclo 2, relatório e mutações.**
+- Executor: **Codex GPT-5.6 Sol** (`dev-san312b-ciclo2-sol`, identidade nova), comandos por `"C:/Program Files/Git/bin/bash.exe" -lc` (no Codex desta máquina `/bin/bash` não existe), no worktree `C:/Users/AMP/w-san312b` com os `node_modules` próprios dele (sem junction), **sem Docker**.
+- Bateria (de `frontend/` para os `.tsx`, como a D-3 transcreve; cada linha publica `tests · pass · fail · skipped`): `npm --prefix frontend run check`; `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx` (meta: ≥ 67 + 17 = **84** casos nos arquivos do bloco; baseline do ciclo 1 N = 67); `npm --prefix frontend run test:smoke` em Node 20 **e** 22 (esperado ≥ 1435 + 1 do #464 + 17 = 1453); `npm --prefix frontend run build`; raiz `npm run check`, `npm run lint`, `npm run build`; F8 como comando (`git grep -n -E "reduce\(|\+= *[a-zA-Z.]*amount" -- frontend/src/modules/finance` = exatamente o inventário); `git diff --check`; `python -I …/gerar-indice-pendencias.py` → diff vazio. **CE-4 `-db` (F18):** o backend continua byte-idêntico (`git diff --name-only c9a2d036 HEAD -- src prisma scripts` = 0, publicado); o Codex não roda Docker, então a régua do F18 neste ciclo é o job `backend` da CI no head (braço 2) mais o parecer do ciclo 1 (braço 1, 3/3 na C3); a C3 do ciclo 2 re-executa o `-db` no Postgres descartável dela se quiser.
+- Mutações (§M, uma por vez, âncora única, restauro por hash, uma linha por mutação no relatório): as **24 do ciclo 1** re-executadas no head final + as **17 novas** desta E2 (R1 ×2, R2 ×1, R3 ×4, R4 ×2, R5 ×3, R6 ×1, R9 ×1, R10 ×1, R11 ×2 — a R12 e a R7 contam como as suas próprias). O roteiro do ciclo 1 (`mutacoes.py`) vive no scratchpad do dev anterior, fora do repo: se o orquestrador não o entregar, o dev escreve o seu (mesma forma: aplicar, rodar o teste dono, restaurar, conferir hash).
+- Relatório: seção `## Ciclo 2 (dev-san312b-ciclo2-sol)` em `B-SAN3-12b-dev.md`, P1 por fatia (E2.6), com `## RETOMADA n` ao fim de cada fatia (head · feito · falta · próximo comando).
+
+### E2.4 Pendências com dono (abertas no PR, com critério de encerramento)
+| Pendência | Origem | Escopo | Dono | Encerra quando |
+|---|---|---|---|---|
+| `P-SAN3-12B-BUSCA-TABELA-TITULOS` | C1-N6 (campo de busca da barra da tabela da opção A ausente) | dentro-do-bloco, declarado em E2.2 | `B-SAN3-12c` (mesma tela, mesma camada) | busca por documento/cliente/descrição sobre as linhas carregadas, com o contador honesto da R3 |
+| `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` | C1-N4 ("Acesso nao autorizado…" em `PermissionGuard.tsx`, 98b4bee3, 2026-06-06) | pré-existente | `B-SAN3-06a` (dono de `auth.adapter.ts`/guarda do front); alternativa `B-SAN3-24` | texto acentuado e F17 estendido ao guarda |
+| `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` | C1-N5 (`num()` do adaptador do resumo devolve 0 para campo ausente; 08d00949, 2026-07-18) | pré-existente | `B-SAN3-12c` (mesma camada de dados) | campo ausente → indicador não renderizado (F19 no adaptador) |
+| `P-SAN3-12-CE4-BRACO1-NA-CI` | C3-03 (CE-4 só roda no braço 2 na CI; `.github/**` proibido aqui) | dentro-do-bloco (registro) | `B-SAN3-12c` + bloco de ferramentas de processo | job com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head |
+| `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` (já aberta) | D-4 / C2-02 | — | `B-SAN3-24` | inalterada |
+| `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` (já aberta) | ratificação 14:40Z; R12 pode ampliar o inventário com blame | pré-existente | telas de comissões / `B-SAN3-24` | inventário vazio |
+
+Notas sem pendência (ficam no relatório do ciclo 2): C1-N7 (composição local sobre classes da biblioteca), C2-03 (células de atores sintéticos decididas por F13/Q4), D-5 e D-9 (E2.2), C3-06 (corrigido pela R13).
+
+### E2.5 Merge da `main` (R8): como o dev traz `f7922ab7` (merge, nunca rebase)
+Medido por mim em worktree descartável: `git merge --no-commit --no-ff f7922ab7` sobre `fc5ead6c` → **3 conflitos**, todos de registro: `agent-orchestration/controle/pendencias.md`, `agent-orchestration/controle/pendencias-indice.md`, `frontend/package.json`. O resto (API_CONTRACTS, app.css, appearance.registry, checklists, 3 corpos de jurado do #464) mergeia sozinho. No `test:smoke`: o objeto acrescenta 9 testes; a `main` acrescenta 1 (`tests/checklists-editor-lock.smoke.test.tsx`).
+1. `git -C C:/Users/AMP/w-san312b fetch origin main && git merge origin/main` (sem `--rebase`, sem `reset`, sem `--force`; `git status` limpo antes).
+2. `pendencias.md`: **os dois lados ficam** (as entradas do #464 e as do 12b; ordem: o lado da `main` primeiro, depois o do 12b, sem apagar nem reordenar entrada alheia); conferir que os cabeçalhos `## P-…` do objeto (`P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`, `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO`, o fechamento de `P-SAN3-20-RESUMO-CHEQUE-VINCULADO`) e os do #464 existem uma vez cada (`grep -c`).
+3. `pendencias-indice.md`: **não se resolve à mão**: depois do passo 2, `python -I agent-orchestration/controle/gerar-indice-pendencias.py` e `git add` do resultado (R7).
+4. `frontend/package.json`: a linha `test:smoke` = lista da `main` + os 9 testes do 12b no fim (união; nenhum repetido; `node -e` que lê o JSON e imprime a lista, publicado).
+5. `git diff --check`; `npm --prefix frontend run check`; `npm --prefix frontend run test:smoke` (Node 20) → verde; só então `git commit` ("merge: traz a main (#464) para o ramo do B-SAN3-12b") e `git push`. Nenhum outro arquivo editado neste commit.
+6. Critério: `git merge-base --is-ancestor f7922ab7 HEAD` = 0; `gh pr view 469 --json mergeable` ≠ `CONFLICTING`; CI do head concluída (o gatilho `pull_request` volta a nascer quando o conflito some, §C7.1-bis). Mutação: resolver o índice à mão → R7 vermelho. Rollback: o merge não se reverte; se algo sair errado, `git merge --abort` antes do commit, ou novo merge por cima.
+
+### E2.6 Fatias para o Codex (≤ 45 min cada; cada fatia termina com commit, push e `## RETOMADA n` no relatório)
+Regra de cada fatia: começar por `git fetch && git status --porcelain` (vazio) e `git rev-parse HEAD` publicado; escrever o teste (vermelho) antes do código; `npm --prefix frontend run check` + o teste dono verdes antes do commit; Conventional Commits; se a janela acabar no meio, o parcial **não** é commitado: a retomada seguinte mede o `git diff` e decide (P3/P7). Nunca `nvm use`, nunca Docker, nunca `rebase`.
+| # | Fatia | Alcance | Tempo | Commit |
+|---|---|---|---|---|
+| 1 | merge da `main` | E2.5 inteira; índice regenerado; smoke Node 20 | ~25 min | `merge: traz a main (#464) para o ramo do B-SAN3-12b` |
+| 2 | R2 + R1 | botão da faixa inline; chips de conta + alvo; `accountId: null` nos indicadores; 3 casos novos | ~40 min | `fix(financeiro): filtro de conta visível e removível; "Conciliação por conta" alinhada (B-SAN3-12b c2)` |
+| 3 | R4 | dois hooks de agregado; merge e rodada no `setData`; F14 contando `/aggregate` por URL | ~35 min | `fix(financeiro): cada agregado pedido uma vez por carga (F14) (B-SAN3-12b c2)` |
+| 4 | R3 (a)(b)(c) | hook com `offset`/`loadMore`/`total`; contagens da aba e dos blocos pelo resumo; fixture de 130 | ~45 min | `feat(financeiro): contagens de títulos do servidor e carga por páginas (B-SAN3-12b c2)` |
+| 5 | R3 (d)(e)(f) | contador honesto; `TablePager`; "Carregar mais títulos"; 4 mutações da R3 | ~45 min | `feat(financeiro): paginação padronizada e caminho até todos os títulos (B-SAN3-12b c2)` |
+| 6 | R5 | `cancelCheque` no serviço e nas ações; fluxo e textos no `BaixaForm`; gate `cheques:update`; 3 casos | ~45 min | `feat(financeiro): "Cancelar o cheque" depois de desvincular, como o plano manda (B-SAN3-12b c2)` |
+| 7 | R6 + R9 + R10 + R11 + R12 | mensagem após recusa definitiva; atores por permissão; `ext` sem leitura de contas; guardas F17 e F8 ampliadas | ~40 min | `fix(financeiro): mensagem honesta após recusa; guardas e atores por permissão (B-SAN3-12b c2)` |
+| 8 | R13 + R14 (bateria) | ratificações e E2 no plano versionado; D-8; pendências de E2.4; índice; bateria completa em Node 20 e 22; relatório | ~40 min | `docs(registro): ciclo 2 do B-SAN3-12b — plano com ratificações e E2, pendências, bateria` |
+| 9 | R14 (mutações) | 24 + 17 mutações no head final, tabela §M; `git diff --check`; push final; "pronto para a junta" na retomada | ~45 min | `test(financeiro): mutações do ciclo 2 registradas (B-SAN3-12b c2)` (só se o roteiro mudar algum teste; senão sem commit, só relatório) |
+Ordem obrigatória: 1 antes de tudo (o objeto da junta tem de aceitar a `main`); 4 antes de 5; 8 e 9 por último. Se o Codex cair entre fatias, a retomada é pelo head empurrado + `## RETOMADA n`; o Gemini CLI (sem saldo hoje) e o Claude da sessão só entram para cobrir fatia que o Codex não conseguir fechar na janela, declarados no relatório.
+
+### E2.7 Riscos e rollback
+- **R3 toca um hook compartilhado com as telas legadas** (`TitlesListView.tsx:97`, sem rota desde o F13, mas compilado e testado): a forma de retorno é preservada e `finance-titles.test.tsx` (23) é a trava; rollback = `git revert` das fatias 4-5.
+- **R5 acrescenta uma ação de escrita adjacente a dinheiro** (cancelar cheque): gate exato da rota, dois passos, sem corpo; a C2 revalida o gate e a C3 mede o fluxo; rollback = `git revert` da fatia 6 (volta ao estado do ciclo 1, que a junta reprovou: não é opção de merge, só de contenção).
+- **O merge da `main` traz `app.css` e `appearance.registry.ts` do #464**: a fatia 1 só fecha com `check` + `smoke` verdes; qualquer vermelho ali é do #464 ou do merge, não do 12b, e vai para o relatório antes de qualquer conserto.
+- **Janela do Codex (~20–50 min)**: fatias atômicas; nada parcial commitado; sem `force-push`.
+- **Disco**: start de cada fatia com ≥ 8,8 GB livres (ressalva 4 do inspetor); abaixo disso, espera.
+
+## Transcrições da E2 no plano versionado (R13(b), ciclo 2 do 12b) — linhas de transcrição; o corpo v3 acima NÃO foi editado
+
+> Apensadas por `dev-san312b-c2-f59-opus` (DEV, Claude Opus 5.5, nível menor declarado) na FATIA 8 da E2.6, como a R13(b) manda. Nenhuma decisão nova: cada linha só transcreve o que a E2 e as ratificações já decidem.
+
+- **§4.1 — rotas que a tela consome:** acrescenta-se `POST /cheques/:chequeId/cancel` (sem corpo; 200 com o DTO do cheque; 403 sem `cheques:update`; 404 cross-tenant; 422 `cheque_linked_unlink_first` se ainda vinculado; 422 `invalid_transition`/`cheque_not_editable`; 409 `transition_conflict`). Os 4 códigos já estão nos 32 de `finance-errors.ts` (E2, "Contrato"; R5).
+- **§10 — junta:** a C3 julga também F20, F21 e F22 (ressalva 1 do inspetor do ciclo 1; o mandato do ciclo 1 já fazia isso, o plano não).
+- **F4 (§8):** "lista fechada de **32**", igual, como conjunto, à do §4.1 e à seção "lista da tela" de `API_CONTRACTS.md` (Ratificação de 2026-10-26 14:35Z, item 2).
