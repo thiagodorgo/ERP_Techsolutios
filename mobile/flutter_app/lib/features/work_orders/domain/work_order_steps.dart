@@ -51,7 +51,9 @@ int workOrderActiveStepIndex(
   final isTow = serviceType == WorkOrderServiceType.tow;
   if (isTow) {
     return switch (status) {
-      WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
+      WorkOrderStatus.scheduled ||
+      WorkOrderStatus.dispatched ||
+      WorkOrderStatus.accepted => 0,
       WorkOrderStatus.enRoute => 1,
       WorkOrderStatus.arrived ||
       WorkOrderStatus.inService ||
@@ -65,7 +67,9 @@ int workOrderActiveStepIndex(
     };
   }
   return switch (status) {
-    WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
+    WorkOrderStatus.scheduled ||
+    WorkOrderStatus.dispatched ||
+    WorkOrderStatus.accepted => 0,
     WorkOrderStatus.enRoute => 1,
     WorkOrderStatus.arrived ||
     WorkOrderStatus.inService ||

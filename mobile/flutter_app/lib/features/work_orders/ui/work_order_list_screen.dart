@@ -29,7 +29,9 @@ extension _WoGroupX on _WoGroup {
   bool matches(WorkOrderStatus s) => switch (this) {
     _WoGroup.all => true,
     _WoGroup.scheduled =>
-      s == WorkOrderStatus.scheduled || s == WorkOrderStatus.dispatched,
+      s == WorkOrderStatus.scheduled ||
+          s == WorkOrderStatus.dispatched ||
+          s == WorkOrderStatus.accepted,
     _WoGroup.field =>
       s == WorkOrderStatus.enRoute ||
           s == WorkOrderStatus.arrived ||

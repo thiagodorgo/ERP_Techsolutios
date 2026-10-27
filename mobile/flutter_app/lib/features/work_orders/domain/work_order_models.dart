@@ -14,6 +14,10 @@ extension WorkOrderServiceTypeX on WorkOrderServiceType {
 enum WorkOrderStatus {
   scheduled,
   dispatched,
+  // B-DEMO-C — a OS que o técnico ACEITOU (backend `accepted`). Antes não existia: `accepted` caía em
+  // `scheduled`, e o app não distinguia "falta aceitar" (`dispatched`) de "já aceitou". O Drift grava pelo
+  // `name`, então o valor novo é aditivo e não pede migração.
+  accepted,
   enRoute,
   arrived,
   inService,
@@ -32,6 +36,7 @@ extension WorkOrderStatusX on WorkOrderStatus {
   String get label => switch (this) {
     WorkOrderStatus.scheduled => 'Agendada',
     WorkOrderStatus.dispatched => 'Despachada',
+    WorkOrderStatus.accepted => 'Aceita',
     WorkOrderStatus.enRoute => 'Em rota',
     WorkOrderStatus.arrived => 'No local',
     WorkOrderStatus.inService => 'Em atendimento',
@@ -47,6 +52,7 @@ extension WorkOrderStatusX on WorkOrderStatus {
   String get statusTone => switch (this) {
     WorkOrderStatus.scheduled => 'info',
     WorkOrderStatus.dispatched => 'info',
+    WorkOrderStatus.accepted => 'info',
     WorkOrderStatus.enRoute => 'warning',
     WorkOrderStatus.arrived => 'warning',
     WorkOrderStatus.inService => 'warning',
@@ -71,6 +77,7 @@ extension WorkOrderStatusX on WorkOrderStatus {
   Set<WorkOrderStatus> get allowedTransitions => switch (this) {
     WorkOrderStatus.scheduled => {WorkOrderStatus.dispatched},
     WorkOrderStatus.dispatched => {WorkOrderStatus.enRoute},
+    WorkOrderStatus.accepted => {WorkOrderStatus.enRoute},
     WorkOrderStatus.enRoute => {WorkOrderStatus.arrived},
     WorkOrderStatus.arrived => {WorkOrderStatus.inService},
     WorkOrderStatus.inService => {

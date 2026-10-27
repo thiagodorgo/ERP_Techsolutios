@@ -13,8 +13,25 @@ class PersistentSyncQueueRepository implements SyncQueueRepository {
 
   final SyncActionStore _store;
 
+  // B-O6R-11 (Ω6R-QUA-005) — `enqueue` e `update` são read-modify-write da fila INTEIRA
+  // (`load()` → altera → `save(tudo)`). A fila é UMA instância partilhada
+  // (`syncQueueRepositoryProvider`) por replay, conflitos e repositórios de feature: duas
+  // mutações concorrentes liam o MESMO retrato e a última `save` apagava a outra. Este
+  // encadeamento executa as mutações uma de cada vez, na ordem de chegada. Leituras não passam
+  // por ele. Protege esta instância; o conserto definitivo (append/upsert atômico no
+  // `SyncActionStore`) é a pendência P-MOBILE-FILA-RMW-STORE.
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> _serialized<T>(Future<T> Function() op) {
+    final run = _tail.then((_) => op());
+    // Erro de uma mutação não trava a fila: a próxima roda mesmo assim, e o erro continua
+    // chegando a quem chamou, por `run`.
+    _tail = run.then<void>((_) {}, onError: (Object _) {});
+    return run;
+  }
+
   @override
-  Future<void> enqueue(SyncAction action) async {
+  Future<void> enqueue(SyncAction action) => _serialized(() async {
     if (action.tenantId.trim().isEmpty) {
       throw ArgumentError.value(
         action.tenantId,
@@ -31,7 +48,7 @@ class PersistentSyncQueueRepository implements SyncQueueRepository {
     }
 
     await _store.save([...actions, action]);
-  }
+  });
 
   @override
   Future<List<SyncAction>> pendingForTenant(String tenantId) async {
@@ -55,7 +72,7 @@ class PersistentSyncQueueRepository implements SyncQueueRepository {
   }
 
   @override
-  Future<void> update(SyncAction action) async {
+  Future<void> update(SyncAction action) => _serialized(() async {
     final actions = await _store.load();
     await _store.save([
       for (final existing in actions)
@@ -64,7 +81,7 @@ class PersistentSyncQueueRepository implements SyncQueueRepository {
         else
           existing,
     ]);
-  }
+  });
 }
 
 class InMemorySyncQueueRepository implements SyncQueueRepository {

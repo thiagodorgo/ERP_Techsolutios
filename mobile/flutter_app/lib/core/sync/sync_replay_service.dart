@@ -3,6 +3,10 @@ import 'package:dio/dio.dart';
 import '../network/api_contracts.dart';
 import '../network/api_error.dart';
 import '../network/http_client.dart';
+import '../../features/work_orders/data/work_order_remote_api.dart'
+    show backendStatusFor;
+import '../../features/work_orders/domain/work_order_models.dart'
+    show WorkOrderStatus;
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 
@@ -469,15 +473,20 @@ class WorkOrderSyncCodec {
     };
   }
 
+  // B-DEMO-C (S6) — delega à tabela única `backendStatusFor` (work_order_remote_api.dart); não existe mais
+  // uma segunda tabela aqui. Os estados que só existem no app (`pendingApproval`, `approved`, `exception`)
+  // e o valor que não é nome do enum seguem como estavam (passam sem tradução): lançar erro aqui mudaria o
+  // comportamento da fila fora do escopo deste bloco (plano §3.1).
+  static const Set<WorkOrderStatus> _soDoApp = {
+    WorkOrderStatus.pendingApproval,
+    WorkOrderStatus.approved,
+    WorkOrderStatus.exception,
+  };
+
   String _backendStatus(String status) {
-    return switch (status) {
-      'scheduled' => 'open',
-      'dispatched' => 'assigned',
-      'enRoute' => 'on_route',
-      'arrived' => 'on_site',
-      'inService' => 'in_progress',
-      _ => status,
-    };
+    final doApp = WorkOrderStatus.values.asNameMap()[status];
+    if (doApp == null || _soDoApp.contains(doApp)) return status;
+    return backendStatusFor(doApp);
   }
 
   String? _readNonEmptyString(Object? value) =>

@@ -324,15 +324,61 @@ WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
   );
 }
 
+// B-DEMO-C (S6) — vocabulário de status, nos DOIS sentidos, numa tabela só. A forma vem do PR #388
+// (B-O6R-11), reescrita com `accepted` DISTINTO: lá `accepted` virava `dispatched` ("lossy"), e o app não
+// conseguia distinguir "falta aceitar" de "já aceitou", que é a distinção do botão "Aceitar".
+// O backend fala `WORK_ORDER_STATUSES` (`src/modules/work-orders/work-order.types.ts`); o app, `WorkOrderStatus`.
+// O `WorkOrderSyncCodec` (fila offline) DELEGA a [backendStatusFor]: não existe uma segunda tabela.
+
+/// App → backend. O `switch` é exaustivo: estado novo no enum não compila sem decisão aqui. Estado que só
+/// existe no app ([WorkOrderStatus.pendingApproval], [WorkOrderStatus.approved],
+/// [WorkOrderStatus.exception]) lança [ArgumentError]: o app nunca pede ao backend um estado que ele não tem.
+String backendStatusFor(WorkOrderStatus status) => switch (status) {
+  WorkOrderStatus.scheduled => 'open',
+  WorkOrderStatus.dispatched => 'assigned',
+  WorkOrderStatus.accepted => 'accepted',
+  WorkOrderStatus.enRoute => 'on_route',
+  WorkOrderStatus.arrived => 'on_site',
+  WorkOrderStatus.inService => 'in_progress',
+  WorkOrderStatus.paused => 'paused',
+  WorkOrderStatus.completed => 'completed',
+  WorkOrderStatus.cancelled => 'cancelled',
+  WorkOrderStatus.rejected => 'rejected',
+  WorkOrderStatus.pendingApproval ||
+  WorkOrderStatus.approved ||
+  WorkOrderStatus.exception => throw ArgumentError.value(
+    status,
+    'status',
+    'sem equivalente no backend',
+  ),
+};
+
+/// Backend → app, entrada por entrada e EXPLÍCITA: os 10 valores de `WORK_ORDER_STATUSES` mais
+/// `pending_approval`. Pública de propósito: o teste de paridade do B-DEMO-C lê o vocabulário no arquivo do
+/// backend e exige entrada aqui para todo valor de lá.
+const Map<String, WorkOrderStatus> backendStatusToApp = {
+  'open': WorkOrderStatus.scheduled,
+  'assigned': WorkOrderStatus.dispatched,
+  'accepted': WorkOrderStatus.accepted,
+  'on_route': WorkOrderStatus.enRoute,
+  'on_site': WorkOrderStatus.arrived,
+  'in_progress': WorkOrderStatus.inService,
+  'paused': WorkOrderStatus.paused,
+  'completed': WorkOrderStatus.completed,
+  'cancelled': WorkOrderStatus.cancelled,
+  'rejected': WorkOrderStatus.rejected,
+  'pending_approval': WorkOrderStatus.pendingApproval,
+};
+
+/// Backend → app. Primeiro a tabela; depois o nome do próprio enum (fixtures e cache local). Status
+/// DESCONHECIDO continua caindo em `scheduled`, como antes deste bloco (declarado, não decidido aqui).
 WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
   final normalized = value is String ? value.trim() : '';
-  if (normalized == 'pending_approval') {
-    return WorkOrderStatus.pendingApproval;
-  }
-  return WorkOrderStatus.values.firstWhere(
-    (status) => status.name == normalized,
-    orElse: () => WorkOrderStatus.scheduled,
-  );
+  return backendStatusToApp[normalized] ??
+      WorkOrderStatus.values.firstWhere(
+        (status) => status.name == normalized,
+        orElse: () => WorkOrderStatus.scheduled,
+      );
 }
 
 /// Traduz o vocabulário do backend (`work_order_created`) para o do app (`created`).
@@ -363,8 +409,14 @@ WorkOrderTimelineEventType _eventTypeFromApi(String? valor) => switch (valor) {
 
 /// Status da transição registrada no evento. Desconhecido vira `null` — nunca um palpite: um status
 /// errado na linha do tempo é registro falso, e a tela sabe lidar com a ausência.
+///
+/// B-DEMO-C (R16) — usa a MESMA tabela [backendStatusToApp] do status da OS. Antes comparava `enum.name`
+/// com o valor do backend, e `assigned`, `on_route`, `on_site` e `in_progress` viravam `null`. O nome do
+/// próprio enum continua valendo depois da tabela (fixtures e eventos locais).
 WorkOrderStatus? _statusFromApi(String? valor) {
   if (valor == null || valor.isEmpty) return null;
+  final traduzido = backendStatusToApp[valor];
+  if (traduzido != null) return traduzido;
   for (final status in WorkOrderStatus.values) {
     if (status.name == valor) return status;
   }

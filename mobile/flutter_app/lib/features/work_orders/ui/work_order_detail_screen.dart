@@ -335,7 +335,9 @@ class _WorkOrderStepper extends StatelessWidget {
   ];
 
   int get _current => switch (status) {
-    WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
+    WorkOrderStatus.scheduled ||
+    WorkOrderStatus.dispatched ||
+    WorkOrderStatus.accepted => 0,
     WorkOrderStatus.enRoute => 1,
     WorkOrderStatus.arrived => 2,
     WorkOrderStatus.inService ||
