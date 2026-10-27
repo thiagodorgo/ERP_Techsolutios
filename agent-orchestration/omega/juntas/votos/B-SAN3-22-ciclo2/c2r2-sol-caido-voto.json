@@ -1,0 +1,107 @@
+{
+  "jurado": "jurado-san322-c2-r2-sol (identidade nova; nada herdado como fato)",
+  "executor": "Codex CLI",
+  "corpo": "jurado-san322-c2-contrato-classificador-consumidores",
+  "cadeira": "c2r2 — contrato, classificador e consumidores",
+  "ciclo2": "refeita",
+  "mandato_md5": "574264f83505bd4b43c96b474f020b76",
+  "modelo": "GPT-5.6 Sol · esforço medium · nível menor DECLARADO · substituição: nenhuma",
+  "objeto": "6b03e44d8136792398f521ccaf85d8dd45168a6d",
+  "legalidade": "LIBERADO COM RESSALVA por inspetor-san322-c2; seis ressalvas lidas; head estável no início",
+  "quorum": "unanimidade de 3 com veto · ciclo 2: todo bloqueia dentro-do-bloco reprova",
+  "leitura_de_outras_cadeiras": "não li votos nem evidências das outras cadeiras do ciclo 2",
+  "escopo": "dentro-do-bloco — conserto 44d9cbb3..6b03e44d e regressão dos itens C2",
+  "gravidade": "EM APURAÇÃO — itens 1 e 2 podem alcançar grave: perda de dado; item 3 não grave salvo impacto executado",
+  "arquivos_medidos": [
+    "src/modules/checklists/checklist.service.ts",
+    "src/modules/checklists/checklist.template-change.ts",
+    "src/modules/checklists/checklist.validator.ts",
+    "src/modules/checklists/checklist.controller.ts",
+    "src/modules/checklists/checklist.dto.ts",
+    "src/modules/checklists/checklist.repository.ts",
+    "src/modules/checklists/checklist.types.ts",
+    "tests/checklist-template-lock.test.ts",
+    "tests/checklist-routes.test.ts",
+    "tests/checklist-template-change.test.ts",
+    "tests/checklist-editor-classifier-parity.test.ts",
+    "tests/checklist-snapshot-dispatch.test.ts",
+    "tests/helpers/o6r07c-census.ts",
+    "frontend/src/modules/checklists/checklist-editor.model.ts",
+    "API_CONTRACTS.md",
+    "agent-orchestration/controle/pendencias.md",
+    "docs/revisoes/SAN3/B-SAN3-22-plano.md",
+    "docs/revisoes/SAN3/B-SAN3-22-dev.md"
+  ],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "FECHADO — VERDE",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "sem achado",
+      "testes_x3": "29/29, 29/29, 29/29; 0 falhas; denominador idêntico",
+      "sonda_rest": "arquivado sem viva: 404 checklist_not_found em GET/PATCH/DELETE/publish/createRun/render; com viva render 200; outra organização e inexistente 404; draft/inactive sem viva 409 checklist_not_published",
+      "mutacoes": "ramo 404 neutralizado → E3-20 vermelho 404/409; getTemplateForRun filtrado → CE-10c vermelho; apenas in_progress vivo → CE-7c vermelho 409/200",
+      "contrato_x_codigo": "5 fatos de cada lado; dito/não-feito=0; feito/não-dito=0; remoção da linha do arquivado acusou 2 fatos",
+      "controle_objeto_8": "render sem viva 409 checklist_not_published; E3-20 vermelho expected 404 actual 409",
+      "comando_que_provou": [
+        "REDIS_URL=redis://127.0.0.1:48032 node --test --import tsx tests/checklist-template-lock.test.ts tests/checklist-routes.test.ts (3x)",
+        "REDIS_URL=redis://127.0.0.1:48032 node --test --import tsx tests/zz-j22c2-rest.test.ts",
+        "node j22r2-c2/contrato-r2.mjs <wt> i1-rest.tsv [--sem-arquivado]",
+        "git checkout <objeto>~8 -- checklist.service.ts + sonda/E3-20 + restauro por hash-object"
+      ]
+    },
+    {
+      "item": 2,
+      "estado": "FECHADO — VERDE",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "sem achado; residual aceito e já pendenciado",
+      "ce13": "objeto verde 1/1, 0 violações; gerador próprio 8 declarações/35 sítios; <objeto>~8 = 6/26",
+      "mutacoes_forma": "3 variáveis + concatenada + literal + updateTemplate direto + componentKey: todas vermelhas e nomeando sítio",
+      "resultado_descartado": "snapshot e censo vermelhos; helper pontuado próprio também vermelho, validando [\\w.]+",
+      "cinco_sitios": "U1..U5 todos vermelhos visíveis sob token defasado; U2 refeito após âncora inicial 0",
+      "base_21": "guard novo ec=1, 35 violações únicas: 30 token + 5 resultado descartado",
+      "residual": "URL passada como parâmetro de helper escapa conforme comentário e P-FRONT-TESTE-DE-INTERACAO",
+      "controles_objeto_8": "marcador DELETE removido ficou verde; snapshot publish com token defasado ficou verde",
+      "comando_que_provou": [
+        "bash j22r2-c2/ce13.sh && bash j22r2-c2/ce13b.sh",
+        "node j22r2-c2/ce13-count-r2.mjs <wt>/tests no objeto e em <objeto>~8",
+        "bash j22r2-c2/silent.sh + mutação contextual U2",
+        "guard atual sobre tests de <objeto>~21; ec=1, 35 violações",
+        "guard/snapshot de <objeto>~8 sob os dois vermelhos-controle"
+      ]
+    },
+    {
+      "item": 3,
+      "estado": "FECHADO — VERMELHO",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "bloqueia · não grave",
+      "testes_x3": "51/51 em três rodadas; classificador isolado 33/33; REST 29/29 em três rodadas",
+      "e4_07": "mutação sem âncora final matou sectionsX e sections2 (31/33); teste de <objeto>~8 ficou verde 31/31",
+      "ce33_linha_a_linha": "26 hunks em 7 arquivos; asserção de negócio alterada=0; requisição mutante sem status=0",
+      "escopo_conserto": "proibidos nomeados=0; service só renderChecklist; TEXT_PATHS intocada; porém pendencias-indice.md está fora da lista literal de PERMITIDO da E4.2",
+      "e4_11": "3 pendências presentes com dono; D-W1 text [schema.sections,schema.source], 200 e versão 2→2 com/sem viva",
+      "comando_que_provou": [
+        "node --test --import tsx tests/checklist-template-change.test.ts tests/checklist-editor-classifier-parity.test.ts (3x)",
+        "mutação /^schema.sections/ + teste do objeto e controle <objeto>~8",
+        "git diff -U0 <objeto>~8..<objeto> nos 7 arquivos de teste",
+        "git diff --name-only <objeto>~8..<objeto> e <objeto>~7..<objeto>",
+        "git diff/log de agent-orchestration/controle/pendencias-indice.md + leitura E4-11/E4.2"
+      ]
+    }
+  ],
+  "achados": [
+    {
+      "id": "C2R2-01",
+      "defeito": "E4-11 exige regenerar o índice de pendências, mas E4.2 não inclui pendencias-indice.md no PERMITIDO e proíbe tudo o mais; o objeto toca esse arquivo",
+      "evidencia": "diff <objeto>~8..<objeto> mostra 10+/7- em pendencias-indice.md; commit c0e477b7246b21b3cd33e1a12c41280756fe71c9; texto literal de E4-11 e E4.2",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco — commit do ciclo 2 posterior ao objeto do ciclo 1",
+      "classe": "não grave",
+      "motivo": "o requisito diff do conserto ⊆ PERMITIDO falha por contradição interna do plano; §A2 impede consolidação silenciosa"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "teardown": "EM APURAÇÃO"
+}

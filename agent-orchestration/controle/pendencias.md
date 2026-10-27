@@ -2156,7 +2156,7 @@ no contrato) é backend → **PR-02c**. Mitigação de graça enquanto isso: rec
   `If-Match`/`expectedUpdatedAt` (ou `version`) e o repositório fazendo `UPDATE ... WHERE updated_at = $expected`,
   devolvendo **409** quando não casar. Muda o contrato REST público e afeta todo consumidor do PATCH (web + qualquer
   automação), por isso exige junta antes de ser implementado.
-- status: ABERTA (mitigada no cliente; correção de contrato pendente de junta).
+- status: **RESOLVIDA NO BACKEND pelo B-SAN3-22** — PATCH/publish/DELETE exigem `expectedUpdatedAt`, a decisão ocorre sob `SELECT ... FOR UPDATE` tenant-first e token defasado devolve 409 sem mutação. A ligação do consumidor web é a fatia separada `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` abaixo.
 
 - **emenda (plano SAN3 §4.1 item 6, 2026-09-11):** o plano classifica esta pendência como bloqueante do gate da versão vendável, com bloco dono `B-SAN3-22`.
 - **dono:** `B-SAN3-22` (plano SAN3, §4.1 item 6 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -11030,6 +11030,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **editor de checklist registrado (B-SAN3-22, 2026-10-26):** `checklist-editor` entrou em `APPEARANCE_SCREENS` (A "Padrão fiel" · B "Analítica" · C "Painel de impacto", padrão A); o editor lê a escolha por `useScreenAppearance("checklist-editor")`.
 - **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
 - **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
 
@@ -11733,6 +11734,35 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** limite declarado (D-007) da regra G6 do `scripts/migration-transaction-guard.mjs`: ela exige que algum `tests/*-migration-drill-db.test.ts` cite o nome da migração nova; não prova o laço k = 1..n com falha injetada pelo `prisma migrate deploy` real nem a comparação de estado. Hoje há três cópias do arnês (~450–550 linhas cada: `work-order-invoicing`, `traccar-event`, `cheque-title-link`).
 - **teste de encerramento:** uma suíte `-db` genérica que, para toda migração nova com `BEGIN`/`COMMIT`, injeta falha depois de cada sentença pelo `migrate deploy` real, compara um retrato genérico do catálogo antes × depois e converge com `resolve --rolled-back` + `deploy`; com teto de crescimento, entrada na lista curada do `ci.yml` e medição 3×; a mutação "tirar o BEGIN" de uma migração nova deixa a suíte vermelha.
 
+## P-CHK-RUN-SNAPSHOT-IMUTAVEL (2026-10-25) — forma histórica da vistoria depende do modelo vivo — MÉDIA
+
+- **status:** ABERTA · **dono:** bloco próprio de checklist/mobile · **bloqueia:** não o backend B-SAN3-22.
+- **origem:** o B-SAN3-22 impede alteração estrutural enquanto o servidor conhece vistoria viva, mas runs antigas ainda não carregam snapshot imutável completo da forma.
+- **encerramento:** cada run resolve sua forma histórica sem depender dos componentes atuais do modelo, com migração aditiva e testes de leitura/reabertura.
+
+## P-MOBILE-RUN-SO-NO-APARELHO (2026-10-25) — vistoria offline ainda desconhecida pelo servidor — ALTA
+
+- **status:** ABERTA · **dono:** trilha mobile offline/sync · **bloqueia:** não o B-SAN3-22; risco residual declarado.
+- **origem:** uma run criada somente no aparelho não entra em `activeRuns`; uma alteração estrutural anterior ao primeiro sync pode deixar resposta apontando para componente removido.
+- **encerramento:** protocolo offline registra/reserva a forma no servidor ou sincroniza contra snapshot imutável, com teste de replay após remoção de campo.
+
+## P-DB-TIMEZONE-UTC (2026-10-25) — exibição de updatedAt depende da TimeZone da sessão — BAIXA
+
+- **status:** ABERTA · **dono:** infraestrutura/deploy · **bloqueia:** não a trava (o predicado trunca ambos no mesmo contexto).
+- **encerramento:** runtime e testes de deploy afirmam `SHOW TimeZone IN ('UTC','Etc/UTC')` e documentam a configuração do banco gerenciado.
+
+## P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS (2026-10-25) — consumidor web ainda não envia o token — PRODUTO
+
+- **status:** **RESOLVIDA no mesmo PR do B-SAN3-22** (fatia web, `dev-san322-web-opus`, 2026-10-26; E3-18) — editor e lista mandam o token nos 4 gestos (salvar, publicar com o `updatedAt` do salvar, inativar/reativar; arquivar só no adapter), tratam os dois 409 com releitura (conflito por aparência; "em uso" com N), `activeRuns` de toda resposta de modelo único com "ausente = travado", e as 3 aparências aprovadas (`useScreenAppearance("checklist-editor")`, entrada no registro). Prova: CE-26…CE-32 e CE-37 em `frontend/tests/checklists-editor-lock.smoke.test.tsx` e `tests/checklist-editor-classifier-parity.test.ts`; `test:smoke` 1390/1390; 25 mutações vermelhas e restauradas; relatório `docs/revisoes/SAN3/B-SAN3-22-dev.md`, seção "Fatia web e E3-bis". · **dono (histórico):** orquestrador, fatia web do B-SAN3-22 depois da maquete A/B/C aprovada · **bloqueava:** integração/merge da mudança obrigatória de contrato com o console web antigo.
+- **origem:** por ordem do dono, esta entrega é somente backend; `frontend/**` ficou intocado. O backend agora recusa PATCH/publish/DELETE sem token, conforme Q2.
+- **encerramento:** `ChecklistEditorPage` e `TenantChecklistsPage` enviam o token, tratam 409/`activeRuns`, entregam as três aparências aprovadas e passam a bateria smoke/build da fatia de tela.
+
+## P-B-SAN3-22-CI-DB-SUITE (2026-10-26) — suíte nova de lock fora da lista curada do job `backend-postgres` — MÉDIA
+
+- **status:** ABERTA · **dono:** orquestrador, por emenda de escopo (`.github/**` é PROIBIDO no plano v2) · **bloqueia:** não. Re-medida pelo `dev-san322-opus` em 2026-10-26: a suíte **já roda na CI**, no job `backend` (`npm test` com `DATABASE_URL` exportada, banco migrado, usuário `postgres` superusuário); o runner barra auto-pulo pelo orçamento de skip (2). Prova local na forma do job: `npm test` com `DATABASE_URL` e `CORE_SAAS_PERSISTENCE=memory` registrou `ok … CE-4/5`, `ok … CE-12-db`, `ok … CE-22/23` no TAP.
+- **origem:** `tests/checklist-template-lock-db.test.ts` não está na lista `SUITES` do job `backend-postgres` (banco provisionado com seed, persistência `prisma`), onde o §12 do plano v2 o situa. A redação anterior desta pendência ("bloqueia o merge") supunha que a suíte não rodava em job nenhum; isso não se sustentou na medição.
+- **encerramento:** a emenda decide se a suíte também entra na lista curada do `backend-postgres`; se entrar, executar a forma exata daquele job 3 vezes, com denominador constante e zero falhas/pulos.
+
 ## P-WO-LEITURAS-TENANT-WIDE-TECNICO (2026-10-25) — o técnico ainda LÊ OS e despachos de colegas fora da lista — MÉDIA
 - status: ABERTA
 - **origem:** B-SAN3-13 (revisão adversarial r1, CRIT-4; Q2 do dono: "o detalhe segue legível neste bloco"). O #32 fecha **a lista**.
@@ -11863,3 +11893,29 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** operação/runbook · **dono:** próximo bloco de backend financeiro ou documentação operacional · **bloqueia:** não.
 - **origem:** C3-02 da junta do `B-SAN3-12a` (`agent-orchestration/omega/juntas/J-B-SAN3-12a.md:37`) e parecer do porteiro do #459, linha 144.
 - **encerramento:** runbook nomeia e ensaia, em base descartável, a reconciliação de `_prisma_migrations` e a reaplicação segura da `20260882000000` depois do rollback manual, sem perder ou duplicar vínculo.
+
+## P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checklist sobrepõe as colunas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (regras `.ckb-ed-grid { flex: 1; min-height: 0 }` e o `@media (max-width: 1180px)` de uma coluna, `frontend/src/styles/app.css:4919-4935`, anteriores ao B-SAN3-22 e não tocadas por ele) · **dono:** orquestrador, para planejar · **bloqueia:** não (a C3 do B-SAN3-22 não cobra, §C7.1-ter(a); ratificação do orquestrador de 2026-10-26 12:30Z).
+- **origem:** W6 do relatório da fatia web do B-SAN3-22 (`docs/revisoes/SAN3/B-SAN3-22-dev.md`). Medido no estado **livre** (nada do bloco na tela), com `probe.mjs` (Edge headless, `vite` em modo simulado) em `/administrator/checklists/chk_towing_delivery` a 924×540: as três colunas da grade em `y=175 h=452`, `y=279 h=415`, `y=382 h=262` — paleta, formulário e inspector sobrepostos. A referência `screen-refs/checklist-editor-estados-3opcoes.reference.html`, sem a altura presa, empilha sem sobrepor.
+- **encerramento:** a 924 px as colunas da grade do editor empilham sem sobrepor (o `top` de cada coluna ≥ o `bottom` da anterior, medido no navegador real), nos estados livre, travado e conflito.
+
+## P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência B pede e o servidor ainda não dá — MÉDIA
+
+- **status:** ABERTA · **escopo:** fora do B-SAN3-22 (decisão do dono) · **dono:** orquestrador, para planejar o bloco `B-CHK-EDITOR-LEITURAS-B` · **bloqueia:** não.
+- **origem:** resposta do dono à Q5 (i), 2026-10-26 (plano do B-SAN3-22, E3.3/E3.7); a pendência só existia no texto do plano e foi gravada pela Emenda E4 (E4-11 (a), M-53: `grep` = 0 antes).
+- **escopo do bloco:** leitura das vistorias vivas de um modelo com OS, placa, técnico e respostas; histórico de versões por modelo; tela de execuções com filtro por modelo. Cada leitura nova tem **decisão de permissão própria** (quem lê as vistorias de outra pessoa) antes do código.
+- **encerramento:** as três leituras servidas pelo backend com a permissão decidida, e a aparência B do editor mostrando-as sem dado fabricado (D-007).
+
+## P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo `order_index` saem em ordem indefinida — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (as 5 inclusões `orderBy: { order_index: "asc" }` sem 2ª chave já estão em `b08c7557`, `checklist-prisma.repository.ts` l.104/126/169/190/314; o `getTemplateForRun` do B-SAN3-22 copia a forma do módulo — M-54 da E4) · **dono:** orquestrador · **bloqueia:** não.
+- **origem:** nota C2-03 da junta do ciclo 1 do B-SAN3-22, classificada na auditoria `R-B-SAN3-22-ciclo1.md`.
+- **encerramento:** 2ª chave de ordenação `id` em todas as inclusões de componentes, ou `order_index` único por modelo (restrição no banco), com teste que empata dois componentes e afirma a ordem.
+
+## P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers; a fiação dos gestos vive em guard de forma — MÉDIA
+
+- **status:** ABERTA · **dono:** orquestrador · **bloqueia:** não.
+- **origem:** C3-01 da junta do ciclo 1 do B-SAN3-22 (m24b e m25c deixavam a suíte 22/22 verde); E4-08. O `frontend/package.json` não tem biblioteca de DOM (`jsdom`/`happy-dom`/`testing-library` = 0): trazer uma é **dependência nova**, que pede junta de 5 + PD (§C7.1).
+- **residual hoje (declarado nos próprios guards):** (i) `C3-01 (forma)` em `frontend/tests/checklists-editor-lock.smoke.test.tsx` lê o corpo de `handleToggleStatus`, `handleOverwriteConflict` e `handleWriteError` — forma, não comportamento; a prova de comportamento é a interceptação no navegador feita pela cadeira de tela; (ii) o CE-13 (`tests/checklist-template-lock.test.ts`) não alcança URL passada como parâmetro de helper nem declarada fora do bloco `test(` corrente, e a regra "resultado descartado" só lê a linha da chamada.
+- **encerramento:** decisão (junta de 5 + PD) sobre a biblioteca de DOM; se aprovada, testes de interação que cliquem nos três gestos do editor e substituam o guard de forma.

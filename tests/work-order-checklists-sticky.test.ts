@@ -802,7 +802,7 @@ async function withApi(cb: (c: { baseUrl: string; seed: SeedData }) => Promise<v
   }
 }
 
-async function createTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string }> {
+async function createTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string; updatedAt: string }> {
   const create = await req(baseUrl, "/api/v1/tenant/checklists", {
     method: "POST",
     headers: h,
@@ -824,14 +824,14 @@ async function createTemplate(baseUrl: string, h: Record<string, string>, name: 
     },
   });
   assert.equal(create.status, 201);
-  return { id: create.body.data.id as string };
+  return { id: create.body.data.id as string, updatedAt: create.body.data.updatedAt as string };
 }
 
-async function publishTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string }> {
+async function publishTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string; updatedAt: string }> {
   const created = await createTemplate(baseUrl, h, name);
-  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${created.id}/publish`, { method: "POST", headers: h, body: {} });
+  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${created.id}/publish`, { method: "POST", headers: h, body: { expectedUpdatedAt: created.updatedAt } });
   assert.equal(publish.status, 200);
-  return created;
+  return { id: created.id, updatedAt: publish.body.data.updatedAt as string };
 }
 
 async function createWO(baseUrl: string, seed: SeedData, body: Record<string, unknown>): Promise<{ id: string }> {

@@ -56,6 +56,7 @@ test("travas da tela × validator do backend: mesma decisão para cada payload",
     let backendAceita = true;
     try {
       parseUpdateChecklistTemplateDto({
+        expectedUpdatedAt: "2026-10-25T12:00:00.000Z",
         name: caso.nomeModelo ?? "Modelo",
         components: caso.componentes.map((component, index) => ({
           componentKey: `k_${index}`,

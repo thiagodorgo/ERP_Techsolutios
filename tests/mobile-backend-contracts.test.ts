@@ -795,10 +795,11 @@ test("mobile checklist action sync: escrita tardia em vistoria CONCLUÍDA vira c
     // transformar todo conflito em terminal passava verde. `run.create` contra modelo INATIVADO é 409
     // transitório de verdade (o operador pode reativar o modelo; repetir depois FAZ sentido): tem que
     // sair retriable com a orientação de atualizar, nunca a terminal de reabertura.
+    const currentChecklist = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.checklistId}`, { headers });
     const inactivate = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.checklistId}`, {
       method: "PATCH",
       headers,
-      body: { status: "inactive" },
+      body: { expectedUpdatedAt: currentChecklist.body.data.updatedAt, status: "inactive" },
     });
     assert.equal(inactivate.status, 200);
 
@@ -2267,7 +2268,7 @@ async function createChecklistRunForSync(
   const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
     method: "POST",
     headers,
-    body: {},
+    body: { expectedUpdatedAt: create.body.data.updatedAt },
   });
 
   assert.equal(publish.status, 200);
@@ -2325,7 +2326,7 @@ async function publishChecklistTemplateForSync(
   const publish = await requestJson(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, {
     method: "POST",
     headers,
-    body: {},
+    body: { expectedUpdatedAt: create.body.data.updatedAt },
   });
 
   assert.equal(publish.status, 200);
@@ -2458,6 +2459,7 @@ function buildReopenPrismaStub(options: {
 }) {
   const now = new Date("2026-08-01T10:00:00.000Z");
   const status = options.lockedStatus ?? "completed";
+  let queryRawCalls = 0;
   const failAt = (point: string): void => {
     if (options.at === point) {
       throw options.error;
@@ -2485,8 +2487,17 @@ function buildReopenPrismaStub(options: {
 
   return {
     $queryRaw: async () => {
-      failAt("lock");
-      return [{ status }];
+      queryRawCalls += 1;
+      if (queryRawCalls === 1) {
+        failAt("lock");
+        return [{ status }];
+      }
+      failAt("template");
+      return [{
+        id: runRecord.template_id,
+        version: runRecord.template_version,
+        status: options.templateStatus ?? "published",
+      }];
     },
     checklistTemplate: {
       findFirst: async () => {

@@ -39,8 +39,10 @@ test("[imutável pós-edição] editar/republicar o template após o despacho N�
     const v1 = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
 
     // edita o nome do template e republica (nova versão)
-    await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { name: "RENOMEADO" } });
-    await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}/publish`, { method: "POST", headers: headers(seed, "tenant_admin"), body: {} });
+    const edited = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: tpl.updatedAt, name: "RENOMEADO" } });
+    assert.equal(edited.status, 200, JSON.stringify(edited.body));
+    const republished = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}/publish`, { method: "POST", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: edited.body.data.updatedAt } });
+    assert.equal(republished.status, 200, JSON.stringify(republished.body));
 
     const after = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     assert.deepEqual(after, v1, "o snapshot congelado não pode reagir à edição do template");
@@ -75,7 +77,8 @@ test("[reassign mantém o original] reassign do despacho NÃO re-congela o snaps
     const dispatch = await createDispatch(baseUrl, seed, wo.id, seed.techA.id);
     const v1 = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     // edita o template no meio, depois reassign — o reassign não deve tocar o snapshot
-    await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { name: "OUTRO" } });
+    const edit = await req(baseUrl, `/api/v1/tenant/checklists/${tpl.id}`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { expectedUpdatedAt: tpl.updatedAt, name: "OUTRO" } });
+    assert.equal(edit.status, 200); // B-SAN3-22 (E3b-12): a edição do meio tem de acontecer de fato
     await req(baseUrl, `/api/v1/operations/dispatches/${dispatch.body.data.id}/reassign`, { method: "PATCH", headers: headers(seed, "tenant_admin"), body: { operatorUserId: seed.techB.id } });
     const after = (await req(baseUrl, `/api/v1/work-orders/${wo.id}`, { headers: headers(seed, "tenant_admin") })).body.data.checklistSnapshot;
     assert.deepEqual(after, v1);
@@ -365,7 +368,7 @@ async function withApi(cb: (c: { baseUrl: string; seed: SeedData }) => Promise<v
   }
 }
 
-async function createTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string }> {
+async function createTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string; updatedAt: string }> {
   const create = await req(baseUrl, "/api/v1/tenant/checklists", {
     method: "POST",
     headers: h,
@@ -379,14 +382,14 @@ async function createTemplate(baseUrl: string, h: Record<string, string>, name: 
     },
   });
   assert.equal(create.status, 201);
-  return { id: create.body.data.id as string };
+  return { id: create.body.data.id as string, updatedAt: create.body.data.updatedAt as string };
 }
 
-async function publishTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string }> {
+async function publishTemplate(baseUrl: string, h: Record<string, string>, name: string): Promise<{ id: string; updatedAt: string }> {
   const created = await createTemplate(baseUrl, h, name);
-  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${created.id}/publish`, { method: "POST", headers: h, body: {} });
+  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${created.id}/publish`, { method: "POST", headers: h, body: { expectedUpdatedAt: created.updatedAt } });
   assert.equal(publish.status, 200);
-  return created;
+  return { id: created.id, updatedAt: publish.body.data.updatedAt as string };
 }
 
 async function createWO(baseUrl: string, seed: SeedData, body: Record<string, unknown>): Promise<{ id: string }> {

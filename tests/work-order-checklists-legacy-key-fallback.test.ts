@@ -268,7 +268,7 @@ async function publishTemplate(baseUrl: string, h: Record<string, string>, name:
     },
   });
   assert.equal(create.status, 201);
-  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, { method: "POST", headers: h, body: {} });
+  const publish = await req(baseUrl, `/api/v1/tenant/checklists/${create.body.data.id}/publish`, { method: "POST", headers: h, body: { expectedUpdatedAt: create.body.data.updatedAt } });
   assert.equal(publish.status, 200);
   return { id: create.body.data.id as string };
 }

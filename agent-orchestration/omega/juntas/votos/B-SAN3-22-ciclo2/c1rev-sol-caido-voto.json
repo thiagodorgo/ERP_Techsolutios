@@ -1,0 +1,36 @@
+{
+  "jurado": "jurado-san322-c1-r2-sol (identidade nova; executor Codex CLI)",
+  "corpo": "jurado-san322-c1-banco-e-concorrencia",
+  "cadeira": "C1 REVALIDADA — banco e concorrência",
+  "ciclo2": "revalidada — EM APURAÇÃO",
+  "mandato_md5": "7d34f8556aedcf9362fb1edb38c34f22",
+  "modelo": "GPT-5.6 Sol · esforço medium · nível menor DECLARADO · substituição: nenhuma",
+  "corpo_md5": "8fca8229f50e7c04d5ed8739bc39c243 · carregado × blob: IDENTICO EOL-neutro",
+  "objeto": "6b03e44d8136792398f521ccaf85d8dd45168a6d",
+  "legalidade": "insp-san322c2-parecer.md: LIBERADO COM RESSALVA; head revalidado por ls-remote e gh pr view",
+  "quorum": "unanimidade de 3 com veto · ciclo 2",
+  "leitura_de_outras_cadeiras": "não li votos nem evidências das outras cadeiras do ciclo 2",
+  "arquivos_medidos": [
+    "src/modules/checklists/**",
+    "tests/checklist-template-lock-db.test.ts",
+    "tests/checklist-template-prisma-db.test.ts",
+    "tests/checklist-run-lifecycle-db.test.ts",
+    "tests/checklist-routes-db.test.ts",
+    "tests/checklist-run-create-concurrency-db.test.ts",
+    "prisma/**",
+    "src/database/**",
+    ".github/**",
+    "scripts/migration-transaction-guard.mjs"
+  ],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    {"item": 1, "estado": "EM APURAÇÃO", "comparacao_ciclo1": "EM APURAÇÃO", "resultado": "EM APURAÇÃO"},
+    {"item": 2, "estado": "EM APURAÇÃO", "comparacao_ciclo1": "cauda nova", "resultado": "EM APURAÇÃO"},
+    {"item": 3, "estado": "EM APURAÇÃO", "comparacao_ciclo1": "EM APURAÇÃO", "resultado": "EM APURAÇÃO"}
+  ],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "o_que_executei": [],
+  "teardown": "EM APURAÇÃO"
+}

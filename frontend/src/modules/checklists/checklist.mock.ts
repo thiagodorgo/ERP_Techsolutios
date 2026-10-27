@@ -1,3 +1,5 @@
+import { ApiError } from "../../services/api/client";
+import { countMockLiveRunsForChecklist } from "./checklist-runtime.mock";
 import type {
   CreateTenantChecklistInput,
   TenantChecklist,
@@ -66,7 +68,39 @@ export const mockChecklistComponents: TenantChecklistComponentCatalogItem[] = [
   },
 ];
 
+/** B-SAN3-22 (E3b-06) — modelo publicado de demonstração que nasce com 2 vistorias em andamento (estado "travado"). */
+export const MOCK_CHECKLIST_IN_USE_ID = "chk_vistoria_em_uso";
+
+/** Vistorias em andamento semeadas por modelo (as do runtime simulado somam-se a estas). */
+const SEEDED_LIVE_RUNS: Readonly<Record<string, number>> = Object.freeze({ [MOCK_CHECKLIST_IN_USE_ID]: 2 });
+
 let checklists: TenantChecklist[] = [
+  {
+    id: MOCK_CHECKLIST_IN_USE_ID,
+    tenantId: "ten-industrial-01",
+    name: "Vistoria de coleta — Guincho",
+    description: "Vistoria do veículo na coleta, com avarias, fotos e ciência do responsável.",
+    type: "towing_collection",
+    status: "published",
+    version: 4,
+    schema: { source: "ckb_editor", sections: ["Veículo", "Avarias e fotos", "Entrega ao responsável"] },
+    publishedAt: "2026-10-12T13:00:00.000Z",
+    createdAt: "2026-09-02T13:00:00.000Z",
+    updatedAt: "2026-10-12T13:00:00.000Z",
+    components: [
+      sectioned(component("vehicle_selector", "Tipo do veículo", true, 0), 0, { vehicleTypes: ["car", "motorcycle", "van"] }),
+      sectioned(component("single_choice", "Estado geral", true, 1), 0, { options: ["Bom", "Regular", "Ruim", "Sem condições de rodar"] }),
+      sectioned(component("damage_map", "Avarias encontradas", true, 2), 1, { markerTypes: ["scratch", "dent", "broken"], requireDescription: true }),
+      sectioned(component("photo_upload", "Fotos das 4 laterais", true, 3), 1, {
+        minPhotos: 4,
+        maxPhotos: 8,
+        help: "Frente, traseira e as duas laterais, com a placa visível",
+      }),
+      sectioned(component("observation", "Observações do técnico", false, 4), 1, { multiline: true, maxLength: 500 }),
+      sectioned(component("acknowledgement", "Ciência do responsável", true, 5), 2, { requireObservation: false }),
+      sectioned(component("signature", "Assinatura do responsável", true, 6), 2, { requireName: true }),
+    ],
+  },
   {
     id: "chk_towing_collection",
     tenantId: "ten-industrial-01",
@@ -141,7 +175,12 @@ export async function listMockTenantChecklists(): Promise<TenantChecklist[]> {
 
 export async function getMockTenantChecklist(checklistId: string): Promise<TenantChecklist> {
   await wait();
-  return findChecklist(checklistId);
+  return withActiveRuns(findChecklist(checklistId));
+}
+
+/** B-SAN3-22 — mesma régua do servidor: vistorias em andamento ou aguardando ciência deste modelo. */
+export function countMockActiveRuns(checklistId: string): number {
+  return (SEEDED_LIVE_RUNS[checklistId] ?? 0) + countMockLiveRunsForChecklist(checklistId);
 }
 
 export async function listMockTenantChecklistComponents(): Promise<TenantChecklistComponentCatalogItem[]> {
@@ -169,34 +208,95 @@ export async function createMockTenantChecklist(input: CreateTenantChecklistInpu
   return checklist;
 }
 
+/**
+ * B-SAN3-22 — paridade com o servidor (CE-31): token defasado → 409 `template_changed_since_read`; `published` e
+ * `archived` pelo salvar → portas próprias; com vistoria em andamento, voltar a rascunho ou mudar campo → 409
+ * `template_has_active_runs`. Nada muda quando recusa.
+ */
 export async function updateMockTenantChecklist(checklistId: string, input: UpdateTenantChecklistInput): Promise<TenantChecklist> {
   await wait();
-  checklists = checklists.map((checklist) => {
-    if (checklist.id !== checklistId) return checklist;
-    return {
-      ...checklist,
-      ...input,
-      components: input.components ? input.components.map(componentFromInput) : checklist.components,
-      updatedAt: new Date().toISOString(),
-    };
-  });
-  return findChecklist(checklistId);
+  const current = findChecklist(checklistId);
+  assertFreshToken(current, input.expectedUpdatedAt);
+  if (input.status === "published") throw mockConflict("CHECKLIST_STATUS_REQUIRES_PUBLISH", "status_requires_publish_endpoint");
+  if (input.status === "archived") throw mockConflict("CHECKLIST_STATUS_REQUIRES_DELETE", "status_requires_delete_endpoint");
+
+  const { expectedUpdatedAt: _token, ...changes } = input;
+  const activeRuns = countMockActiveRuns(checklistId);
+  if (activeRuns > 0 && (changes.status === "draft" || changesFormShape(current, changes))) {
+    throw mockConflict("CHECKLIST_TEMPLATE_IN_USE", "template_has_active_runs");
+  }
+
+  const updated: TenantChecklist = {
+    ...current,
+    ...changes,
+    components: changes.components ? changes.components.map(componentFromInput) : current.components,
+    updatedAt: nextUpdatedAt(current.updatedAt),
+  };
+  checklists = checklists.map((checklist) => (checklist.id === checklistId ? updated : checklist));
+  return withActiveRuns(updated);
 }
 
-export async function publishMockTenantChecklist(checklistId: string): Promise<TenantChecklist> {
+export async function publishMockTenantChecklist(checklistId: string, expectedUpdatedAt: string): Promise<TenantChecklist> {
   await wait();
-  checklists = checklists.map((checklist) =>
-    checklist.id === checklistId
-      ? {
-          ...checklist,
-          status: "published",
-          version: checklist.status === "published" ? checklist.version : checklist.version + 1,
-          publishedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-      : checklist,
-  );
-  return findChecklist(checklistId);
+  const current = findChecklist(checklistId);
+  assertFreshToken(current, expectedUpdatedAt);
+  const published: TenantChecklist = {
+    ...current,
+    status: "published",
+    version: current.status === "published" ? current.version : current.version + 1,
+    publishedAt: new Date().toISOString(),
+    updatedAt: nextUpdatedAt(current.updatedAt),
+  };
+  checklists = checklists.map((checklist) => (checklist.id === checklistId ? published : checklist));
+  return withActiveRuns(published);
+}
+
+function withActiveRuns(checklist: TenantChecklist): TenantChecklist {
+  return { ...checklist, activeRuns: countMockActiveRuns(checklist.id) };
+}
+
+function assertFreshToken(current: TenantChecklist, expectedUpdatedAt: string | undefined) {
+  if (!expectedUpdatedAt || expectedUpdatedAt !== current.updatedAt) {
+    throw mockConflict("CHECKLIST_TEMPLATE_STALE", "template_changed_since_read");
+  }
+}
+
+function mockConflict(code: string, reason: string): ApiError {
+  return new ApiError(409, "Conflito de dados. Recarregue e tente novamente.", code, reason);
+}
+
+/** O relógio do mock nunca repete o `updatedAt` (duas gravações no mesmo milissegundo seriam indistinguíveis). */
+function nextUpdatedAt(previous: string): string {
+  const now = Date.now();
+  const before = Date.parse(previous);
+  return new Date(Number.isFinite(before) && now <= before ? before + 1 : now).toISOString();
+}
+
+/**
+ * Régua simplificada do servidor (o classificador real é `checklist.template-change.ts`, no backend): com vistoria
+ * em andamento só os textos mudam. Tipo do modelo, campo acrescentado ou removido, ordem, tipo do campo, obrigatório
+ * e qualquer chave de `config` além de `help` (com `sectionIndex` ausente ≡ 0) contam como mudança de campo.
+ */
+function changesFormShape(current: TenantChecklist, changes: Omit<UpdateTenantChecklistInput, "expectedUpdatedAt">): boolean {
+  if (changes.type !== undefined && changes.type !== current.type) return true;
+  if (!changes.components) return false;
+  const before = current.components.slice().sort((a, b) => a.orderIndex - b.orderIndex);
+  const after = changes.components.slice().sort((a, b) => a.orderIndex - b.orderIndex);
+  if (before.map((item) => item.componentKey).join("|") !== after.map((item) => item.componentKey).join("|")) return true;
+  return after.some((next, index) => {
+    const previous = before[index];
+    return (
+      next.type !== previous.type ||
+      next.required !== previous.required ||
+      JSON.stringify(shapeOf(next.config)) !== JSON.stringify(shapeOf(previous.config))
+    );
+  });
+}
+
+function shapeOf(config: Record<string, unknown>): Record<string, unknown> {
+  const { help: _help, sectionIndex, ...rest } = config;
+  const section = typeof sectionIndex === "number" && Number.isInteger(sectionIndex) && sectionIndex > 0 ? sectionIndex : 0;
+  return Object.fromEntries(Object.entries({ ...rest, sectionIndex: section }).sort(([a], [b]) => a.localeCompare(b)));
 }
 
 function component(
@@ -216,6 +316,14 @@ function component(
     validationRules: {},
     visibilityRules: {},
   };
+}
+
+function sectioned(
+  base: TenantChecklistComponent,
+  sectionIndex: number,
+  config: TenantChecklistComponent["config"],
+): TenantChecklistComponent {
+  return { ...base, id: `cmp_em_uso_${base.orderIndex}`, componentKey: `${base.type}_em_uso`, config: { ...config, sectionIndex } };
 }
 
 function componentFromInput(input: TenantChecklistComponentInput): TenantChecklistComponent {

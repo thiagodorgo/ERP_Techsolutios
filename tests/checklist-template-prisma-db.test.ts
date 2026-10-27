@@ -62,6 +62,8 @@ if (!connectionString) {
         components: [{ type: "observation", label: "Obs", required: false, config: {}, validationRules: {}, visibilityRules: {} }],
       });
       const componentId = template.components[0].id;
+      const published = await repo.publishTemplate(ctx.tenantId, template.id, ctx.userId, template.updatedAt);
+      assert.ok(published, "o fixture precisa estar publicado antes de criar a vistoria");
 
       // Caminho REST/web: SEM clientRunKey → cai no nested `answers: { create }` (onde vivia o bug irmão).
       const result = await repo.createRun(
@@ -71,7 +73,7 @@ if (!connectionString) {
           checklistId: template.id,
           answers: [{ componentId, value: { ok: true }, metadata: {} }],
         },
-        template,
+        published!.template,
       );
 
       assert.equal(result.created, true);
@@ -104,6 +106,7 @@ if (!connectionString) {
         tenantId: ctx.tenantId,
         checklistId: base.id,
         actorUserId: ctx.userId,
+        expectedUpdatedAt: base.updatedAt,
         name: "Base v2",
         components: [
           { type: "observation", label: "Obs", required: false, config: {}, validationRules: {}, visibilityRules: {} },
@@ -112,8 +115,8 @@ if (!connectionString) {
       });
 
       assert.ok(updated, "updateTemplate não retorna null");
-      assert.equal(updated?.name, "Base v2");
-      assert.equal(updated?.components.length, 2, "o novo componente foi criado (nested-create sem tenant_id)");
+      assert.equal(updated?.template.name, "Base v2");
+      assert.equal(updated?.template.components.length, 2, "o novo componente foi criado (nested-create sem tenant_id)");
     } finally {
       await teardown(client, ctx.tenantId);
       await client.$disconnect();
@@ -151,6 +154,7 @@ if (!connectionString) {
         tenantId: ctx.tenantId,
         checklistId: created.id,
         actorUserId: ctx.userId,
+        expectedUpdatedAt: created.updatedAt,
         name: "Identidade estável v2",
         components: [
           { componentKey: "obs_1", type: "observation", label: "Observação do técnico", required: true, orderIndex: 0, config: { help: "texto" }, validationRules: {}, visibilityRules: {} },
@@ -158,7 +162,7 @@ if (!connectionString) {
         ],
       });
 
-      const obs = updated?.components.find((component) => component.componentKey === "obs_1");
+      const obs = updated?.template.components.find((component) => component.componentKey === "obs_1");
       assert.ok(obs, "o campo que continua tem de sobreviver");
       assert.equal(
         obs?.id,
