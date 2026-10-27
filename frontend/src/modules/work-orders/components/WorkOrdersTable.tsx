@@ -10,10 +10,12 @@ import { WorkOrderStatusBadge } from "./WorkOrderStatusBadge";
 
 export function WorkOrdersTable({
   items,
+  operatorNameById,
   canChangeStatus,
   onQuickStatus,
 }: {
   readonly items: WorkOrderListItem[];
+  readonly operatorNameById?: ReadonlyMap<string, string>;
   readonly canChangeStatus: boolean;
   readonly onQuickStatus: (workOrder: WorkOrderListItem) => void;
 }) {
@@ -28,7 +30,11 @@ export function WorkOrdersTable({
       {
         key: "operator",
         header: "Operador",
-        render: (item: WorkOrderListItem) => item.assignedOperatorId ?? item.assignedUserId ?? "Nao atribuido",
+        render: (item: WorkOrderListItem) => {
+          const operatorId = item.assignedOperatorId ?? item.assignedUserId;
+          if (!operatorId) return "Nao atribuido";
+          return operatorNameById?.get(operatorId) ?? operatorId;
+        },
       },
       { key: "scheduled", header: "Agendada para", render: (item: WorkOrderListItem) => formatWorkOrderDate(item.scheduledFor) },
       { key: "created", header: "Criada em", render: (item: WorkOrderListItem) => formatWorkOrderDate(item.createdAt) },
@@ -49,7 +55,7 @@ export function WorkOrdersTable({
         ),
       },
     ],
-    [canChangeStatus, navigate, onQuickStatus],
+    [canChangeStatus, navigate, onQuickStatus, operatorNameById],
   );
 
   return (

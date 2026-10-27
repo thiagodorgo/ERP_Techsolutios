@@ -7,10 +7,12 @@ import { DISPATCH_PRIORITIES, DISPATCH_STATUSES, type DispatchesFilters as Dispa
 export function DispatchesFilters({
   filters,
   operatorOptions,
+  operatorNameById,
   onChange,
 }: {
   readonly filters: DispatchesFilterState;
   readonly operatorOptions: readonly string[];
+  readonly operatorNameById?: ReadonlyMap<string, string>;
   readonly onChange: (filters: DispatchesFilterState) => void;
 }) {
   return (
@@ -38,7 +40,7 @@ export function DispatchesFilters({
       <Select label="Operador" value={filters.operatorUserId} onChange={(event) => onChange({ ...filters, operatorUserId: event.target.value })}>
         <option value="">Todos</option>
         {operatorOptions.map((operatorId) => (
-          <option key={operatorId} value={operatorId}>{operatorId}</option>
+          <option key={operatorId} value={operatorId}>{operatorNameById?.get(operatorId) ?? operatorId}</option>
         ))}
       </Select>
       <Input label="Operador manual" value={filters.operatorUserId} onChange={(event) => onChange({ ...filters, operatorUserId: event.target.value })} placeholder="Nome do operador" />

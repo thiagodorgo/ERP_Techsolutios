@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Circle, ListChecks, MapPin, Smartphone } from "lucide-react";
 
-import { listDispatchesFromApi } from "../../../operations/dispatches/dispatches.service";
+import { getDispatchFromApi, listDispatchesFromApi } from "../../../operations/dispatches/dispatches.service";
 import { formatDispatchDate, getDispatchStatusLabel } from "../../../operations/dispatches/dispatches.adapter";
 import type { DispatchListItem } from "../../../operations/dispatches/dispatches.types";
 import type { WorkOrderDetail, WorkOrdersApiContext } from "../../work-orders.types";
@@ -108,7 +108,15 @@ export function MobileTab({
       const related = data.items
         .filter((item) => item.workOrderId === workOrder.id)
         .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
-      setState({ status: "ready", dispatch: related[0] ?? null });
+      const target = related[0] ?? null;
+      if (!target) {
+        setState({ status: "ready", dispatch: null });
+        return;
+      }
+      // DEMO-E (AC-19): a lista de despachos não expõe horários intermediários (aceite, deslocamento,
+      // chegada, atendimento, conclusão). Buscamos o detalhe do despacho vinculado para alimentar a timeline.
+      const detailResult = await getDispatchFromApi(context, target.id);
+      setState({ status: "ready", dispatch: detailResult.dispatch ?? target });
     } catch {
       setState({ status: "error" });
     }

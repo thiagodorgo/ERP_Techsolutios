@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, Download, Filter, Plus, Search, Send, UserRound, Wrench } from "lucide-react";
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
@@ -30,6 +30,8 @@ import {
   WORK_ORDER_STATUS_LABEL,
 } from "../work-orders-row.logic";
 import { useWorkOrders } from "../useWorkOrders";
+import { listTenantUsers } from "../../registry/teams/teams.service";
+import type { TenantUser } from "../../registry/teams/teams.types";
 import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "../work-orders.types";
 
 // "Ordens de Serviço" (lista) — PR-B TELAS PADRONIZADAS. Reproduz o bloco `sc_os` do protótipo
@@ -147,6 +149,24 @@ export function WorkOrdersPage() {
   // B-SAN3-01 (P-008) — `status` decide o painel (§7): vazio ≠ erro ≠ sem permissão; `stale` acende a faixa
   // "dados desatualizados" sem apagar a lista. Nada aqui recebe OS fabricada.
   const { items, allItems, pagination, loading, source, status, error, stale, lastUpdatedAt, refresh, context } = useWorkOrders(apiFilters);
+
+  // DEMO-E (AC-16) — resolução de nomes de técnicos via usuários da organização autenticada.
+  const [tenantUsers, setTenantUsers] = useState<TenantUser[]>([]);
+  useEffect(() => {
+    if (!context.tenantId) return;
+    let active = true;
+    void listTenantUsers(context).then((loaded) => {
+      if (active) setTenantUsers(loaded);
+    });
+    return () => {
+      active = false;
+    };
+  }, [context]);
+
+  const operatorNameById = useMemo(
+    () => new Map(tenantUsers.map((user) => [user.id, user.name])),
+    [tenantUsers],
+  );
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
   const { permissions } = usePermissions();
@@ -456,7 +476,9 @@ export function WorkOrdersPage() {
                         >
                           <UserRound size={13} />
                         </span>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>Atribuído</span>
+                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>
+                          {operatorNameById.get((o.assignedOperatorId ?? o.assignedUserId)!) ?? "Atribuído"}
+                        </span>
                       </div>
                     ) : !isFinalStatus(o.status) && canDispatch ? (
                       <button
