@@ -21,6 +21,13 @@ import { useFinancialTitles } from "../titles/useFinancialTitles";
 import { entriesFiltersFor, financeStateSearch, readFinanceState, useLastGood, type FinanceState } from "./financeiro.state";
 import { AGGREGATE_KEYS, FinanceiroViewA, type FinanceiroViewModel } from "./views/FinanceiroViewA";
 
+const SITUATION_QUERIES: Readonly<Record<string, EntriesAggregateQuery>> = {
+  [AGGREGATE_KEYS.pending]: { groupBy: "none", reconciled: false },
+  [AGGREGATE_KEYS.reconciled]: { groupBy: "none", reconciled: true },
+  [AGGREGATE_KEYS.value]: { groupBy: "none", reconciled: true, divergenceType: "value" },
+  [AGGREGATE_KEYS.date]: { groupBy: "none", reconciled: true, divergenceType: "date" },
+};
+
 // B-SAN3-12b — o Financeiro em `/finance`: BAIXA do título, CONTAS com extrato e saldo, e CONCILIAÇÃO (plano B-SAN3-12,
 // referência aprovada `screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html`). Esta página é o
 // CONTÊINER das aparências (D-APARENCIA-POR-USUARIO; `useScreenAppearance("financeiro")`): chama UMA vez cada rota
@@ -60,17 +67,13 @@ export function FinanceiroPage() {
     .filter((account) => account.active)
     .map((account) => account.id)
     .join(",");
-  const aggregateQueries = useMemo(() => {
-    const queries: Record<string, EntriesAggregateQuery> = {
-      [AGGREGATE_KEYS.pending]: { groupBy: "none", reconciled: false },
-      [AGGREGATE_KEYS.reconciled]: { groupBy: "none", reconciled: true },
-      [AGGREGATE_KEYS.value]: { groupBy: "none", reconciled: true, divergenceType: "value" },
-      [AGGREGATE_KEYS.date]: { groupBy: "none", reconciled: true, divergenceType: "date" },
-    };
+  const accountQueries = useMemo(() => {
+    const queries: Record<string, EntriesAggregateQuery> = {};
     for (const id of accountKey ? accountKey.split(",") : []) queries[AGGREGATE_KEYS.account(id)] = { groupBy: "none", reconciled: false, accountId: id };
     return queries;
   }, [accountKey]);
-  const aggregates = useEntriesAggregate(aggregateQueries, { enabled: access.readEntries });
+  const situationAggregates = useEntriesAggregate(SITUATION_QUERIES, { enabled: access.readEntries });
+  const accountAggregates = useEntriesAggregate(accountQueries, { enabled: access.readEntries });
 
   const summaryView = useLastGood(summary.data, !summary.loading && summary.data.source !== "fallback");
   const receivablesView = useLastGood(receivables.items, !receivables.loading && receivables.source !== "fallback");
@@ -88,7 +91,14 @@ export function FinanceiroPage() {
   const refreshReceivables = receivables.refresh;
   const refreshPayables = payables.refresh;
   const refreshEntries = entries.refresh;
-  const refreshAggregates = aggregates.refresh;
+  const refreshSituationAggregates = situationAggregates.refresh;
+  const refreshAccountAggregates = accountAggregates.refresh;
+  const refreshAggregates = useCallback(
+    async (background = false) => {
+      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background)]);
+    },
+    [refreshSituationAggregates, refreshAccountAggregates],
+  );
   const refreshAll = useCallback(
     async (background = false) => {
       await Promise.all([
@@ -151,7 +161,7 @@ export function FinanceiroPage() {
       total: payables.pagination.total,
     },
     entries: { items: entries.items, loading: entries.loading, failed: !entries.loading && entries.source === "fallback", total: entries.pagination.total },
-    aggregates: aggregates.data,
+    aggregates: { ...situationAggregates.data, ...accountAggregates.data },
     policy,
     access,
     failed: summaryFailed || accountsFailed,

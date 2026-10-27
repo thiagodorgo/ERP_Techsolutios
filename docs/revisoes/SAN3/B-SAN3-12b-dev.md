@@ -326,3 +326,34 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 ### Próximo comando exato
 
 `"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+
+## RETOMADA 3
+
+- **Fatia:** 3 — R4 pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f3-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado. Não achou, não planejou e não vota.
+- **Head de entrada:** `b90aa9f0c0e4e7713049b377956f266655e2f258`, exatamente o head publicado pela RETOMADA 2. Esta seção integra o próprio commit da fatia; o head de saída é publicado pelo `git rev-parse HEAD` após o commit e no push.
+- **Skills aplicadas:** `ts-frontend-full` (IO mantido no contêiner, hooks específicos e proteção contra resposta assíncrona superada) e `ui-ux-pro-max` (contagens por conta continuam visíveis; nenhuma decisão visual ou alteração de design system).
+
+### Feito — comando → saída
+
+- `git fetch origin; git status --porcelain; git rev-parse HEAD; git log --oneline -3; df -BG /c` → árvore vazia; head `b90aa9f0`; ancestrais imediatos `b5246e8d` e `8dd477b8`; `11 GB` livres, acima do piso da E2.
+- F14 foi ampliado antes do produto em `frontend/tests/finance-page-live.test.tsx`: o dublê segura `/financial-accounts` até sair o primeiro `/financial-entries/aggregate`, conta por URL completa e exige 6 URLs únicas (4 situações + 2 contas), cada uma uma vez, além das faixas `Banco do Brasil: 1 a conciliar` e `Caixa da loja: 1 a conciliar` presentes.
+- Vermelho-controle: `cd frontend && node --test --import tsx --test-name-pattern="F14:" tests/finance-page-live.test.tsx` → `1 fail`; foram observadas `10` chamadas de agregado, não `6`, com as quatro URLs situacionais repetidas.
+- Produto: `FinanceiroPage.tsx` passou a usar `SITUATION_QUERIES` constante de módulo e dois `useEntriesAggregate` independentes (situação e contas), mescla os dois mapas no view-model e faz `refreshAggregates(background)` disparar ambos. `useEntriesAggregate.ts` agora mescla cada rodada no estado anterior e usa contador em `useRef` para ignorar resultado de rodada superada.
+- Teste dono após o produto: F14 nominal → `1 test · pass 1 · fail 0 · skipped 21`; seis URLs únicas, uma vez cada, com as duas contagens por conta presentes.
+- `npm --prefix frontend run check` → `tsc -b --noEmit`, exit `0`.
+- Regressão dirigida: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/finance-contas-extrato.smoke.test.tsx` → `29 tests · pass 29 · fail 0 · skipped 0`.
+
+### Mutações
+
+- **R4 / recolocar as consultas por conta no mesmo `useMemo` das quatro situações:** F14 nominal → `1 fail`, `10 !== 6`; as quatro URLs situacionais voltaram a sair duas vezes. Restaurada.
+- **R4 / a view chamar `useFinancialSummary()` novamente:** F14 nominal → `1 fail`, `/financial-summary` foi chamada `2` vezes, esperado `1`. Restaurada.
+- Hashes verdes conferidos após as restaurações: `FinanceiroPage.tsx` = `e29f5cf29972c0566ad2807d02a9019b95efbc0ba776a40e1b79a6e527d482cc`; `useEntriesAggregate.ts` = `eeac736740f04f3e0eada2d402f785cf27aeeb31b8361661aed3420722dd7ae0`; `FinanceiroViewA.tsx` = `6cddd6ead6e79dc67a1050315372cfd88c5a8f43ea0102883944e01fd26aea66`; `finance-page-live.test.tsx` = `a4e3da32f089a11a9093d99352fea35e00215298743172b5271948d6b117625b`.
+
+### Falta
+
+- Nada da FATIA 3. As FATIAS 4–9 da E2.6 permanecem para execuções posteriores; nenhuma delas foi iniciada aqui.
+
+### Próximo comando exato
+
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`

@@ -594,8 +594,22 @@ async function mount(options: { permissions?: readonly string[]; role?: string; 
 
 // =============================== F14 · carga e aparência ===============================
 
-test("F14: a página monta a aparência A e pede cada rota UMA vez por carga (resumo, contas, títulos, extrato, política)", async () => {
-  const { container, unmount } = await mount();
+test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as contagens por conta", async () => {
+  let releaseAccounts!: (response: Response) => void;
+  const delayedAccounts = new Promise<Response>((resolve) => {
+    releaseAccounts = resolve;
+  });
+  let accountsReleased = false;
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "GET" && /^\/financial-accounts\?/.test(call.url)) return delayedAccounts;
+      if (!accountsReleased && call.method === "GET" && /^\/financial-entries\/aggregate\?/.test(call.url)) {
+        accountsReleased = true;
+        releaseAccounts(json(200, ACCOUNTS));
+      }
+      return undefined;
+    },
+  });
   try {
     assert.equal(pageRoot(container)?.getAttribute("data-aparencia"), "A");
     assert.equal(countCalls("GET", /^\/financial-summary$/), 1, calls.map((c) => c.url).join(" | "));
@@ -605,6 +619,10 @@ test("F14: a página monta a aparência A e pede cada rota UMA vez por carga (re
     assert.equal(countCalls("GET", /^\/financial-entries\?/), 1);
     assert.equal(countCalls("GET", /^\/financial-entries\/reconciliation-policy$/), 1);
     assert.equal(countCalls("GET", /^\/financial-accounts\/acc-banco\/balance$/), 1);
+    const aggregateUrls = calls.filter((call) => call.method === "GET" && /^\/financial-entries\/aggregate\?/.test(call.url)).map((call) => call.url);
+    assert.equal(aggregateUrls.length, 6, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 6, aggregateUrls.join(" | "));
+    for (const url of aggregateUrls) assert.equal(countCalls("GET", new RegExp(`^${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)), 1, url);
     assert.equal(dom.storage.has(appearanceKey()), false, "abrir a página não grava aparência");
     for (const label of ["Saldo em caixa", "Entradas em outubro", "Saídas em outubro", "A receber vencido", "A pagar vencido", "A conciliar"]) {
       const kpi = byLabel(container, `${label}:`);
@@ -613,6 +631,8 @@ test("F14: a página monta a aparência A e pede cada rota UMA vez por carga (re
     }
     assert.match(text(byLabel(container, "Saldo em caixa:")!), /R\$\s12\.850,75/, "saldo em caixa do /financial-summary");
     assert.match(byLabel(container, "A conciliar:")!.getAttribute("aria-label")!, /^A conciliar: 2 lançamentos/, "contagem do servidor (/aggregate)");
+    assert.ok(byLabel(container, "Banco do Brasil: 1 a conciliar"), "a contagem por conta continua presente depois da rodada situacional");
+    assert.ok(byLabel(container, "Caixa da loja: 1 a conciliar"), "a segunda contagem por conta continua presente depois da rodada situacional");
     // P-SAN3-20-RESUMO-CHEQUE-VINCULADO — o rótulo do valor já coberto por cheque a compensar (`cheques.linkedPending*`).
     assert.match(text(container).replace(/\u00a0/g, " "), /R\$ 1\.000,00 em 1 cheque vinculado a títulos aguardam compensação/);
   } finally {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useFinanceApiContext } from "../accounts/useFinancialAccounts";
 import { getEntriesAggregate } from "./financial-entries.service";
@@ -13,10 +13,12 @@ export function useEntriesAggregate(queries: Readonly<Record<string, EntriesAggr
   const { context, ready } = useFinanceApiContext();
   const [data, setData] = useState<Readonly<Record<string, EntriesAggregate | null>>>({});
   const [loading, setLoading] = useState(true);
+  const roundRef = useRef(0);
   const key = JSON.stringify(queries);
 
   const refresh = useCallback(
     async (background = false) => {
+      const round = ++roundRef.current;
       if (!ready || !options.enabled) {
         setLoading(false);
         return;
@@ -24,7 +26,11 @@ export function useEntriesAggregate(queries: Readonly<Record<string, EntriesAggr
       if (!background) setLoading(true);
       const named = Object.entries(JSON.parse(key) as Record<string, EntriesAggregateQuery>);
       const results = await Promise.all(named.map(async ([name, query]) => [name, await getEntriesAggregate(context, query)] as const));
-      setData((current) => Object.fromEntries(results.map(([name, value]) => [name, value ?? (background ? current[name] ?? null : null)])));
+      if (round !== roundRef.current) return;
+      setData((current) => ({
+        ...current,
+        ...Object.fromEntries(results.map(([name, value]) => [name, value ?? (background ? current[name] ?? null : null)])),
+      }));
       setLoading(false);
     },
     [context, ready, options.enabled, key],
