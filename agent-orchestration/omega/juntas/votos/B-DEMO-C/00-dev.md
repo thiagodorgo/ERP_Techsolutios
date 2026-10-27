@@ -45,3 +45,39 @@ Demo ao sócio: `C:/Users/AMP/erp-pausa-2026-10-03/planos/DEMO-SOCIO-plano.md`.
   Nota: as mutações do §5.1 para B6/B7/B8 descrevem o efeito com o passo 5 pronto ("`failed` grava `failed_at`", "o despacho anda"). Com a S1, o efeito é cair no 501; a S2 re-executa as três sobre o passo 5 e mede o efeito do plano.
 - **Falta:** S2 (passo 4 com a tabela de posto R7; passo 5 com despacho do ator, idempotência por estado e cadeia R1; B1, B3, B4, B5, B9, R13) e S3 a S5.
 - **Próximo comando:** `git -C C:/Users/AMP/w-democ log --oneline -1` (tem de ser o commit da S1) e começar a S2 com o vermelho-controle: escrever B1, B3, B4, B5 (com `reassigned`), B9, R7 e R13 em `tests/mobile-dispatch-status-sync.test.ts` e rodar `node --test --import tsx tests/mobile-dispatch-status-sync.test.ts` (devem cair no `dispatch_status_not_implemented`).
+
+## PAUSA 00:22Z de 2026-10-27 (dev-democ-be-opus, Claude Opus 5.5, nível menor declarado) — S2 em curso
+- **Motivo:** ordem do dono (P7), repassada pelo orquestrador: o Claude sai da demo e outro executor continua. Este é um corte limpo; o commit é `wip`.
+- **Head antes deste commit:** `3dda6b97` (commit da S1, empurrado: `git rev-parse origin/feat/mobile-democ-aceite-despacho` = `3dda6b97…`). Este `wip` vai por cima.
+- **Feito na S2 (comando → saída):**
+  - testes novos em `tests/mobile-dispatch-status-sync.test.ts`: B1, B3, B4, B5/R1 (de `assigned` e de `reassigned`), B9, R7, R13; arnês ganhou `osPara`, `cancelarOs`, `cancelarDespacho`, `servicoDespacho` e `direto` (chama `syncMobileWorkOrderActions` sem a rota, para injetar falha no despacho);
+  - **vermelho-controle** no head `3dda6b97`: `node --test --import tsx tests/mobile-dispatch-status-sync.test.ts` → `# tests 10 · # pass 3 · # fail 7` (B1, B3, B4, B5, B9, R7, R13 vermelhos; B6–B8 verdes). O arnês montou todas as sementes (a falha foi sempre na asserção da ação de despacho);
+  - código em `src/modules/mobile/mobile-work-order-sync.ts`: passo 4 (`assertWorkOrderAtStep`, tabela `WORK_ORDER_STEP_RANK` do R7: `open` → `work_order_not_at_step`, `cancelled`/`rejected`/fora da tabela → `work_order_closed`); passo 5 (`list` do despacho do ator; `total > items` ou >1 ativo → `ambiguous_active_dispatch`; nenhum ativo: `assigned_only` → `accepted` `effect none` `reason no_active_dispatch` ou `already_at_status` se um encerrado já está no pedido; `tenant_wide` → `rejected` `no_own_active_dispatch` (422); um ativo: posto ≥ pedido → `already_at_status` sem escrita; senão a cadeia canônica, um `changeStatus` por passo); resposta `dispatchAcceptedResult` sem `server_state`;
+  - `npx tsc -p tsconfig.json --noEmit` → ec=0;
+  - `node --test --import tsx tests/mobile-dispatch-status-sync.test.ts` → `# tests 10 · # pass 10 · # fail 0`;
+  - `git diff --check` → ec=0; `df -h /c` → **7,7 GB** livres (piso de trabalho R11 = 7,5 GB: perto).
+  - Ajuste do B9 durante a fatia: a "OS atribuída sem despacho" pela rota `POST /work-orders/:id/assign` não serve no modo memória (o id de usuário em memória não é UUID: `400 invalid_uuid`). O caso de "nenhum ativo" usa o **despacho cancelado** com a OS ainda do técnico (premissa afirmada no teste).
+- **Mutações da S2 (sha256 do arquivo restaurado `6a33b7069f7e` == antes, em todas):**
+
+  | Id | Mutação em `mobile-work-order-sync.ts` | Teste | Resultado |
+  |---|---|---|---|
+  | M-B1 | ramo `field_dispatch.status_change` desligado | B1 | vermelho: `expected 'accepted'`, `actual 'rejected'` |
+  | M-B3 | o ramo de idempotência regrava: `changeStatus(target)` | B3 | vermelho: "accepted_at foi regravado" (`…20.309Z` × `…20.353Z`) |
+  | M-B3b | comparação de posto tirada (`if (false)`) | B3 | vermelho: `effect` ≠ `already_at_status` (deep-equal) |
+  | M-B4 | passo 4 tirado | B4 | vermelho: `expected 'conflict'`, `actual 'accepted'` |
+  | M-B5 | cadeia trocada por `changeStatus(target)` direto | B5 | vermelho: "a cadeia pulou o aceite: accepted_at nulo" |
+  | M-B9 | escolhe o 1º ativo (sem a checagem de >1) | B9 | vermelho: `expected 'conflict'`, `actual 'accepted'` |
+  | M-R7 | posto = índice em `WORK_ORDER_STATUSES` | R7 | vermelho: `expected 'conflict'`, `actual 'accepted'` (o despacho andou na OS cancelada) |
+  | M-R13 | a do R1 (sem cadeia) | R13 | vermelho: "o aceite que falhou nunca foi carimbado" |
+  | M-B6 | lista fechada tirada | B6 | vermelho: `expected 'rejected'`, `actual 'accepted'` |
+  | M-B7 | passo 1 tirado | B7 | vermelho: `expected 'rejected'`, `actual 'accepted'` (o `technician` moveu o despacho) |
+  | M-B8 | `getForMutation` → `get` | B8 | vermelho: `expected 'rejected'`, `actual 'accepted'` (o técnico B recebe `effect none`) |
+
+  **Aviso de método:** na primeira rodada, M-B3, M-B5 e M-R13 deram "vermelho" por **erro de compilação do mutante** (o script não convertia `\n`). Foram re-executadas com o script corrigido, que agora acusa `COMPILACAO:` quando o mutante não compila; a tabela acima é a da re-execução, com o efeito real.
+- **Falta na S2:**
+  1. re-medir o vermelho-controle do B9 **como ficou** (a parte do despacho cancelado mudou depois do primeiro controle; a primeira asserção, a da ambiguidade, não mudou);
+  2. bateria parcial: `npm run check`, `node --test --import tsx tests/field-dispatch.test.ts tests/field-dispatch-routes.test.ts tests/field-dispatch-target-role.test.ts tests/mobile-backend-contracts.test.ts tests/mobile-work-order-assign-registry.test.ts` (na S1: 44/44) e `node --test --import tsx tests/o6r07c-census-guard.test.ts tests/o6r07c-b-scope.test.ts` (esperado: só T1 e T14 vermelhos pela chave nova, até a S4);
+  3. commit `feat(mobile-sync): … (B-DEMO-C S2)` e a `## RETOMADA S2`. Depois, S3 a S5 conforme a §E1.3.
+- **Arquivos meio escritos:** nenhum. `mobile-work-order-sync.ts` e `tests/mobile-dispatch-status-sync.test.ts` estão completos para a S2, compilam e passam 10/10.
+- **Script de mutação** (fora do repositório, scratchpad da sessão do Claude): aplica a troca numa âncora única, roda o teste filtrado, restaura e confere o sha256. Quem continuar pode refazer a mesma forma; as âncoras estão na tabela.
+- **Próximo comando exato:** `cd C:/Users/AMP/w-democ && git log --oneline -1 && timeout 600 npm run check && node --test --import tsx tests/mobile-dispatch-status-sync.test.ts tests/field-dispatch.test.ts tests/field-dispatch-routes.test.ts tests/field-dispatch-target-role.test.ts tests/mobile-backend-contracts.test.ts tests/mobile-work-order-assign-registry.test.ts`

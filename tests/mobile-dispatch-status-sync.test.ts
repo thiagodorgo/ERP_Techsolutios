@@ -102,6 +102,228 @@ test("B8 · porta da OS — quem nunca foi da OS: rejected not_assigned_to_actor
 });
 
 // ------------------------------------------------------------------------------------------------
+// S2 — passo 4 (posto da OS, R7) e passo 5 (despacho do ator, idempotência por estado, cadeia R1)
+// ------------------------------------------------------------------------------------------------
+
+test("B1 · o técnico aceita o próprio despacho: accepted_at gravado e 1 evento com o ator", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    await ctx.osAceita(s, seed.tecnicoA);
+
+    const r = await ctx.acao(ctx.h(seed.tecnicoA, "field_technician"), TIPO, { work_order_id: s.workOrderId, status: "accepted" });
+    assert.equal(r.status, "accepted", JSON.stringify(r));
+    assert.equal(r.work_order_id, s.workOrderId);
+    assert.deepEqual(r.dispatch, { id: s.dispatchId, status: "accepted", effect: "advanced" });
+    assert.equal(r.server_state, undefined, "a ação de despacho não devolve server_state da OS");
+
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.status, "accepted");
+    assert.notEqual(d.acceptedAt, null, "accepted_at ficou nulo");
+    const eventos = mudancas(d);
+    assert.deepEqual(eventos.map((e: any) => e.toStatus), ["accepted"]);
+    assert.equal(eventos[0].actorUserId, seed.tecnicoA.id);
+  });
+});
+
+test("B3 · idempotência por estado — id novo com o mesmo status, e depois da API reiniciada: already_at_status, accepted_at idêntico, 1 evento", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    await ctx.osAceita(s, seed.tecnicoA);
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+    const id = randomUUID();
+
+    const primeiro = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "accepted" }, id);
+    assert.equal(primeiro.dispatch?.effect, "advanced");
+    const carimbo = (await ctx.despacho(s.dispatchId)).acceptedAt;
+
+    const novoId = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "accepted" });
+    assert.equal(novoId.status, "accepted", JSON.stringify(novoId));
+    assert.deepEqual(novoId.dispatch, { id: s.dispatchId, status: "accepted", effect: "already_at_status" });
+
+    ctx.reiniciarLotes(); // a API reiniciou: os recibos em memória somem
+    const reenviado = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "accepted" }, id);
+    assert.equal(reenviado.status, "accepted", JSON.stringify(reenviado));
+    assert.equal(reenviado.dispatch?.effect, "already_at_status");
+
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.acceptedAt, carimbo, "accepted_at foi regravado");
+    assert.equal(mudancas(d).length, 1, "o evento de aceite duplicou");
+  });
+});
+
+test("B4 · o despacho nunca à frente da OS — OS assigned e pedido accepted: conflict work_order_not_at_step, despacho intacto", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+
+    const r = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "accepted" });
+    assert.equal(r.status, "conflict", JSON.stringify(r));
+    assert.equal(r.conflict?.conflict_type, "work_order_not_at_step");
+    assert.equal(r.error?.reason, "work_order_not_at_step");
+
+    // OS aceita, pedido `on_route`: também à frente.
+    await ctx.osAceita(s, seed.tecnicoA);
+    const r2 = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "on_route" });
+    assert.equal(r2.conflict?.conflict_type, "work_order_not_at_step", JSON.stringify(r2));
+
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.status, "assigned");
+    assert.equal(d.acceptedAt, null);
+    assert.equal(mudancas(d).length, 0);
+  });
+});
+
+test("B5/R1 · cadeia canônica — despacho assigned (ou reassigned) e OS on_route, pedido on_route: accepted_at gravado antes de on_route, 2 eventos em ordem", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+
+    // Partindo de `assigned`.
+    const s = await ctx.semente(seed.tecnicoA);
+    await ctx.osPara(s, seed.tecnicoA, ["accepted", "on_route"]);
+    const r = await ctx.acao(ctx.h(seed.tecnicoA, "field_technician"), TIPO, { work_order_id: s.workOrderId, status: "on_route" });
+    assert.deepEqual(r.dispatch, { id: s.dispatchId, status: "on_route", effect: "advanced" }, JSON.stringify(r));
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.status, "on_route");
+    assert.notEqual(d.acceptedAt, null, "a cadeia pulou o aceite: accepted_at nulo");
+    assert.ok(Date.parse(d.acceptedAt) <= Date.parse(d.onRouteAt), `${d.acceptedAt} > ${d.onRouteAt}`);
+    assert.deepEqual(mudancas(d).map((e: any) => [e.fromStatus, e.toStatus]), [["assigned", "accepted"], ["accepted", "on_route"]]);
+
+    // Partindo de `reassigned`: o despacho passou de A para C antes de qualquer aceite.
+    const s2 = await ctx.semente(seed.tecnicoA);
+    await ctx.reatribuir(s2.dispatchId, seed.tecnicoC);
+    assert.equal((await ctx.despacho(s2.dispatchId)).status, "reassigned");
+    await ctx.osPara(s2, seed.tecnicoC, ["accepted", "on_route"]);
+    const r2 = await ctx.acao(ctx.h(seed.tecnicoC, "field_technician"), TIPO, { work_order_id: s2.workOrderId, status: "on_route" });
+    assert.equal(r2.dispatch?.effect, "advanced", JSON.stringify(r2));
+    const d2 = await ctx.despacho(s2.dispatchId);
+    assert.equal(d2.status, "on_route");
+    assert.notEqual(d2.acceptedAt, null, "a cadeia a partir de reassigned pulou o aceite");
+    assert.ok(Date.parse(d2.acceptedAt) <= Date.parse(d2.onRouteAt));
+    assert.deepEqual(mudancas(d2).map((e: any) => [e.fromStatus, e.toStatus]), [["reassigned", "accepted"], ["accepted", "on_route"]]);
+  });
+});
+
+test("B9 · dois despachos ativos do ator: conflict ambiguous_active_dispatch; sem despacho e técnico da OS: accepted effect none; tenant_wide sem despacho próprio: rejected no_own_active_dispatch", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+
+    // Dois despachos ativos do mesmo técnico na mesma OS.
+    const s = await ctx.semente(seed.tecnicoA);
+    const segundo = await ctx.despachar(s.workOrderId, seed.tecnicoA);
+    await ctx.osAceita(s, seed.tecnicoA);
+    const amb = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "accepted" });
+    assert.equal(amb.status, "conflict", JSON.stringify(amb));
+    assert.equal(amb.conflict?.conflict_type, "ambiguous_active_dispatch");
+    for (const id of [s.dispatchId, segundo]) {
+      const d = await ctx.despacho(id);
+      assert.equal(d.status, "assigned", `o despacho ${id} andou na ambiguidade`);
+      assert.equal(d.acceptedAt, null);
+    }
+
+    // O despacho foi cancelado e a OS segue do técnico: não há o que mover, a fila drena.
+    const s2 = await ctx.semente(seed.tecnicoA);
+    await ctx.osAceita(s2, seed.tecnicoA);
+    await ctx.cancelarDespacho(s2.dispatchId);
+    assert.equal((await ctx.os(s2.workOrderId)).assignedUserId, seed.tecnicoA.id, "premissa: a OS continua do técnico");
+    const nenhum = await ctx.acao(hA, TIPO, { work_order_id: s2.workOrderId, status: "accepted" });
+    assert.equal(nenhum.status, "accepted", JSON.stringify(nenhum));
+    assert.deepEqual(nenhum.dispatch, { id: null, status: null, effect: "none", reason: "no_active_dispatch" });
+    const cancelado = await ctx.despacho(s2.dispatchId);
+    assert.equal(cancelado.status, "cancelled");
+    assert.equal(cancelado.acceptedAt, null);
+
+    // O papel tenant_wide (operator) não tem despacho próprio: recusa que NÃO é escopo.
+    const s3 = await ctx.semente(seed.tecnicoA);
+    await ctx.osAceita(s3, seed.tecnicoA);
+    const wide = await ctx.acao(ctx.h(seed.gestorA, "operator"), TIPO, { work_order_id: s3.workOrderId, status: "accepted" });
+    assert.equal(wide.status, "rejected", JSON.stringify(wide));
+    assert.equal(wide.error?.reason, "no_own_active_dispatch");
+    assert.equal((await ctx.despacho(s3.dispatchId)).status, "assigned");
+  });
+});
+
+test("R7 · OS encerrada nunca anda o despacho — cancelled e rejected: conflict work_order_closed; open: work_order_not_at_step", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const hA = ctx.h(seed.tecnicoA, "field_technician");
+
+    // OS cancelada pelo gestor com a ação `on_route` do técnico ainda na fila.
+    const s = await ctx.semente(seed.tecnicoA);
+    await ctx.osAceita(s, seed.tecnicoA);
+    await ctx.cancelarOs(s.workOrderId);
+    const canc = await ctx.acao(hA, TIPO, { work_order_id: s.workOrderId, status: "on_route" });
+    assert.equal(canc.status, "conflict", JSON.stringify(canc));
+    assert.equal(canc.conflict?.conflict_type, "work_order_closed");
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.status, "assigned", "o despacho andou numa OS cancelada");
+    assert.equal(mudancas(d).length, 0);
+
+    // OS recusada pelo técnico.
+    const s2 = await ctx.semente(seed.tecnicoA);
+    await ctx.osPara(s2, seed.tecnicoA, ["rejected"]);
+    const rej = await ctx.acao(hA, TIPO, { work_order_id: s2.workOrderId, status: "accepted" });
+    assert.equal(rej.conflict?.conflict_type, "work_order_closed", JSON.stringify(rej));
+    assert.equal((await ctx.despacho(s2.dispatchId)).status, "assigned");
+
+    // OS ainda aberta (sem técnico): o papel tenant_wide alcança a OS, e o posto dela não basta.
+    const aberta = await ctx.criarOs();
+    const open = await ctx.acao(ctx.h(seed.gestorA, "operator"), TIPO, { work_order_id: aberta, status: "accepted" });
+    assert.equal(open.conflict?.conflict_type, "work_order_not_at_step", JSON.stringify(open));
+  });
+});
+
+test("R13 · despacho meio aplicado se recupera — a falha do aceite volta rejected; o passo seguinte grava accepted e on_route pela cadeia", async () => {
+  await withApi(async (ctx) => {
+    const { seed } = ctx;
+    const s = await ctx.semente(seed.tecnicoA);
+    let falhar = true;
+    const resolver = async () => {
+      const real = await ctx.servicoDespacho();
+      return {
+        list: real.list.bind(real),
+        changeStatus: async (...args: Parameters<typeof real.changeStatus>) => {
+          if (falhar) {
+            falhar = false;
+            throw new Error("falha injetada no despacho");
+          }
+          return real.changeStatus(...args);
+        },
+      };
+    };
+
+    // Passo 1 (aceitar): OS e despacho no mesmo lote; o despacho falha.
+    const p1 = await ctx.direto(seed.tecnicoA, "field_technician", [
+      { type: "work_order.status_change", payload: { work_order_id: s.workOrderId, status: "accepted" } },
+      { type: TIPO, payload: { work_order_id: s.workOrderId, status: "accepted" } },
+    ], resolver);
+    assert.equal(p1.accepted.length, 1, JSON.stringify(p1));
+    assert.equal(p1.rejected.length, 1, JSON.stringify(p1));
+    assert.equal(p1.rejected[0].type, TIPO);
+    assert.equal((await ctx.os(s.workOrderId)).status, "accepted", "a OS anda");
+    assert.equal((await ctx.despacho(s.dispatchId)).status, "assigned", "o despacho fica atrás");
+
+    // Passo 2 (iniciar rota): a cadeia alcança o aceite que faltou.
+    const p2 = await ctx.direto(seed.tecnicoA, "field_technician", [
+      { type: "work_order.status_change", payload: { work_order_id: s.workOrderId, status: "on_route" } },
+      { type: TIPO, payload: { work_order_id: s.workOrderId, status: "on_route" } },
+    ], resolver);
+    assert.equal(p2.accepted.length, 2, JSON.stringify(p2));
+    const d = await ctx.despacho(s.dispatchId);
+    assert.equal(d.status, "on_route");
+    assert.notEqual(d.acceptedAt, null, "o aceite que falhou nunca foi carimbado");
+    assert.deepEqual(mudancas(d).map((e: any) => e.toStatus), ["accepted", "on_route"]);
+  });
+});
+
+function mudancas(despacho: any): any[] {
+  return (despacho.timeline as any[]).filter((e) => e.eventType === "field_dispatch_status_changed");
+}
+
+// ------------------------------------------------------------------------------------------------
 // Arnês: o app inteiro em memória, por HTTP, com os cabeçalhos legados de desenvolvimento.
 // ------------------------------------------------------------------------------------------------
 
@@ -142,6 +364,11 @@ type Ctx = {
   reatribuir(dispatchId: string, tecnico: User): Promise<void>;
   semente(tecnico: User): Promise<Semente>;
   osAceita(s: Semente, tecnico: User, papel?: string): Promise<void>;
+  osPara(s: Semente, tecnico: User, passos: readonly string[]): Promise<void>;
+  cancelarDespacho(dispatchId: string): Promise<void>;
+  cancelarOs(workOrderId: string): Promise<void>;
+  servicoDespacho(): Promise<any>;
+  direto(user: User, role: string, acoes: readonly Acao[], resolver: () => Promise<any>): Promise<any>;
   os(workOrderId: string): Promise<any>;
   despacho(dispatchId: string): Promise<any>;
   reiniciarLotes(): void;
@@ -158,6 +385,7 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
+    { resolvePermissionsForRoles },
   ] = await Promise.all([
     import("../src/app.js"),
     import("../src/modules/work-orders/index.js"),
@@ -166,6 +394,7 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
+    import("../src/modules/core-saas/permissions/catalog.js"),
   ]);
   const resetAll = () => {
     workOrders.resetWorkOrderRuntimeForTests();
@@ -192,7 +421,8 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     tecnicoX: usuario(tenantB, "tecnico-x", ["field_technician"]),
   };
 
-  const app = createApp(new MemoryCoreSaasAdapter(core));
+  const adapter = new MemoryCoreSaasAdapter(core);
+  const app = createApp(adapter);
   const server = app.listen(0);
   const baseUrl = await getBaseUrl(server);
 
@@ -266,6 +496,43 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     async osAceita(s, tecnico, papel = "field_technician") {
       const r = await ctx.acao(h(tecnico, papel), "work_order.status_change", { work_order_id: s.workOrderId, status: "accepted" });
       assert.equal(r.status, "accepted", `a OS não foi aceita: ${JSON.stringify(r)}`);
+    },
+    async osPara(s, tecnico, passos) {
+      for (const status of passos) {
+        const r = await ctx.acao(h(tecnico, "field_technician"), "work_order.status_change", { work_order_id: s.workOrderId, status });
+        assert.equal(r.status, "accepted", `a OS não foi a ${status}: ${JSON.stringify(r)}`);
+      }
+    },
+    async cancelarDespacho(dispatchId) {
+      const r = await req(`/api/v1/operations/dispatches/${dispatchId}/status`, {
+        method: "PATCH",
+        headers: hGestor,
+        body: { status: "cancelled", reason: "teste DemoC" },
+      });
+      assert.equal(r.status, 200, `cancelamento do despacho falhou: ${JSON.stringify(r.body)}`);
+    },
+    async cancelarOs(workOrderId) {
+      const r = await req(`/api/v1/work-orders/${workOrderId}/cancel`, {
+        method: "POST",
+        headers: hGestor,
+        body: { reason: "teste DemoC", financial_decision: "keep" },
+      });
+      assert.equal(r.status, 200, `cancelamento falhou: ${JSON.stringify(r.body)}`);
+    },
+    async servicoDespacho() {
+      return fieldDispatch.createMemoryFieldDispatchService(adapter);
+    },
+    // Chama o lote sem a rota (para injetar falha no serviço de despacho). Mesmo processo, mesmos repositórios em memória.
+    async direto(user, role, acoes, resolver) {
+      return workOrderSync.syncMobileWorkOrderActions(
+        { tenantId: tenantA.id, userId: user.id, roles: [role as never], permissions: resolvePermissionsForRoles([role as never]), explicitPermissions: false },
+        {
+          client_batch_id: randomUUID(),
+          actions: acoes.map((a) => ({ client_action_id: a.client_action_id ?? randomUUID(), type: a.type, local_created_at: new Date().toISOString(), payload: a.payload })),
+        },
+        undefined,
+        resolver,
+      );
     },
     async os(workOrderId) {
       const r = await req(`/api/v1/work-orders/${workOrderId}`, { headers: hGestor });

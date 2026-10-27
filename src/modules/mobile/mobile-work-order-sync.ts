@@ -4,11 +4,13 @@ import type { FieldDispatchStatus } from "../field-dispatch/field-dispatch.types
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import {
+  actorMutatesAssignedOnly,
   ASSIGNMENT_CHANGED_CONFLICT_TYPE,
   ASSIGNMENT_CHANGED_NEXT_ACTION,
   isPreviouslyAssignedRefusal,
   WorkOrderError,
   type WorkOrder,
+  type WorkOrderStatus,
 } from "../work-orders/work-order.types.js";
 
 type RawRecord = Record<string, unknown>;
@@ -324,19 +326,140 @@ async function processDispatchStatusAction(
   requireActionPermission(actor, action, "field_dispatch:update");
 
   // 2. Lista fechada de status.
-  parseMobileDispatchTargetStatus(action.payload.status);
+
+  const target = parseMobileDispatchTargetStatus(action.payload.status);
 
   // 3. Porta da OS: 404 entre organizações; o escopo por objeto do 07a (quem nunca foi da OS → `rejected`
   //    `not_assigned_to_actor`; o ex-técnico leva a marca `wasPreviouslyAssigned` → `conflicts[]`).
-  await service.getForMutation(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"));
+  const workOrder = await service.getForMutation(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"));
+
+  // 4. O despacho nunca à frente da OS (R7: posto por TABELA, OS encerrada nunca anda o despacho).
+  assertWorkOrderAtStep(workOrder.status, target);
 
   if (!resolveDispatchService) {
     throw routeError(503, "SERVICE_UNAVAILABLE", "dispatch_service_unavailable", "Field dispatch service is not available.");
   }
-  await resolveDispatchService();
+  const dispatchService = await resolveDispatchService();
 
-  // Passos 4 (posto da OS) e 5 (despacho do ator) chegam na fatia S2. Até lá, nenhuma escrita: fail-closed.
-  throw routeError(501, "NOT_IMPLEMENTED", "dispatch_status_not_implemented", "Dispatch status change is not implemented yet.");
+  // 5. O despacho do PRÓPRIO ator nesta OS.
+  const { items, total } = await dispatchService.list(actor, {
+    workOrderId: workOrder.id,
+    operatorUserId: actor.userId,
+    limit: 100,
+  });
+  if (total > items.length) {
+    // Mais despachos do que a página alcança: não dá para provar que só um está ativo. Fail-closed.
+    throw routeError(409, "MOBILE_SYNC_CONFLICT", "ambiguous_active_dispatch", "Too many dispatches to resolve the actor's own dispatch.");
+  }
+  const own = items.filter((dispatch) => dispatch.operatorUserId === actor.userId);
+  const active = own.filter((dispatch) => DISPATCH_ACTIVE_RANK[dispatch.status] !== undefined);
+
+  if (active.length > 1) {
+    throw routeError(409, "MOBILE_SYNC_CONFLICT", "ambiguous_active_dispatch", "More than one active dispatch of this actor on the work order.");
+  }
+
+  if (active.length === 0) {
+    if (!actorMutatesAssignedOnly(actor)) {
+      // Papel tenant_wide (gestão, despacho): não tem despacho próprio. Não é recusa de escopo.
+      throw routeError(422, "UNPROCESSABLE_ENTITY", "no_own_active_dispatch", "The actor has no active dispatch of their own on this work order.");
+    }
+    // O técnico da OS (passo 3) sem despacho ativo: a OS foi atribuída sem despacho, ou o despacho foi encerrado.
+    // Nada a mover; a fila do app drena. O `completed` reenviado sobre o despacho já concluído é idempotente.
+    const closedAtTarget = own.find((dispatch) => dispatch.status === target);
+    return dispatchAcceptedResult(action, workOrder.id, closedAtTarget
+      ? { id: closedAtTarget.id, status: closedAtTarget.status, effect: "already_at_status" }
+      : { id: null, status: null, effect: "none", reason: "no_active_dispatch" });
+  }
+
+  let dispatch = active[0];
+  const currentRank = DISPATCH_ACTIVE_RANK[dispatch.status] as number;
+  const targetRank = DISPATCH_TARGET_RANK[target];
+
+  // Idempotência por ESTADO: o despacho já está no pedido (ou além). Nada é gravado — nem `accepted_at`, nem evento.
+  // Vale também depois de a API reiniciar e perder os recibos.
+  if (currentRank >= targetRank) {
+    return dispatchAcceptedResult(action, workOrder.id, { id: dispatch.id, status: dispatch.status, effect: "already_at_status" });
+  }
+
+  // Cadeia canônica (R1): um passo por vez, até o pedido. A máquina do despacho aceita `assigned → on_route`, e esse
+  // salto deixaria `accepted_at` nulo. Cada passo passa por todas as travas do serviço (escopo pelo alvo, transição,
+  // evento, `publishDomainEvent`). Falha no meio deixa o despacho no último passo gravado; o reenvio continua dali.
+  for (const step of MOBILE_DISPATCH_TARGET_STATUSES) {
+    const stepRank = DISPATCH_TARGET_RANK[step];
+    if (stepRank <= currentRank || stepRank > targetRank) continue;
+    dispatch = await dispatchService.changeStatus(actor, dispatch.id, { status: step });
+  }
+
+  return dispatchAcceptedResult(action, workOrder.id, { id: dispatch.id, status: dispatch.status, effect: "advanced" });
+}
+
+// Posto do despacho ATIVO (`assigned`/`reassigned` = 0). Status fora daqui não é ativo.
+const DISPATCH_ACTIVE_RANK: Partial<Record<FieldDispatchStatus, number>> = {
+  assigned: 0,
+  reassigned: 0,
+  accepted: 1,
+  on_route: 2,
+  arrived: 3,
+  in_service: 4,
+};
+
+const DISPATCH_TARGET_RANK: Record<MobileDispatchTargetStatus, number> = {
+  accepted: 1,
+  on_route: 2,
+  arrived: 3,
+  in_service: 4,
+  completed: 5,
+};
+
+// R7 — o posto da OS é uma TABELA explícita, não a ordem do enum: status novo no enum não ganha posto por acaso.
+const WORK_ORDER_STEP_RANK: Partial<Record<WorkOrderStatus, number>> = {
+  assigned: 1,
+  accepted: 2,
+  on_route: 3,
+  on_site: 4,
+  in_progress: 5,
+  paused: 5,
+  completed: 6,
+};
+
+// O posto que a OS precisa ter para o despacho ir ao status pedido.
+const REQUIRED_WORK_ORDER_RANK: Record<MobileDispatchTargetStatus, number> = {
+  accepted: 2,
+  on_route: 3,
+  arrived: 4,
+  in_service: 5,
+  completed: 6,
+};
+
+function assertWorkOrderAtStep(status: WorkOrderStatus, target: MobileDispatchTargetStatus): void {
+  const rank = WORK_ORDER_STEP_RANK[status];
+
+  if (rank === undefined) {
+    if (status === "open") {
+      throw routeError(409, "MOBILE_SYNC_CONFLICT", "work_order_not_at_step", "The work order has not reached the requested dispatch step.");
+    }
+    // `cancelled`, `rejected` ou qualquer status fora da tabela: a OS está encerrada para o despacho.
+    throw routeError(409, "MOBILE_SYNC_CONFLICT", "work_order_closed", "The work order is closed; the dispatch does not move.");
+  }
+
+  if (rank < REQUIRED_WORK_ORDER_RANK[target]) {
+    throw routeError(409, "MOBILE_SYNC_CONFLICT", "work_order_not_at_step", "The work order has not reached the requested dispatch step.");
+  }
+}
+
+function dispatchAcceptedResult(
+  action: MobileWorkOrderAction,
+  workOrderId: string,
+  dispatch: MobileDispatchActionOutcome,
+): MobileWorkOrderActionResult {
+  // Sem `server_state`: a OS não mudou nesta ação. Nenhum campo leva `tenant_id`, token ou caminho.
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "accepted",
+    work_order_id: workOrderId,
+    dispatch,
+  };
 }
 
 function parseMobileDispatchTargetStatus(value: unknown): MobileDispatchTargetStatus {
