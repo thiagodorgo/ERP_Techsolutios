@@ -726,11 +726,15 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
     try {
       final repo = ref.read(workOrderRepositoryProvider);
       await repo.updateStatus(_wo.localId, next);
-    } on StateError catch (e) {
+    } on StateError {
+      // B-DEMO-C — o texto do erro (`Invalid transition: WorkOrderStatus.x → …`) é termo técnico e não vai
+      // para a tela (§3 do contrato). O técnico vê uma frase de negócio.
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível mudar o status desta OS agora.'),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -785,8 +789,31 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
       children: [
         // --- Check-in buttons (status-aware) ---
         if (!isFinal && widget.canStatus) ...[
-          if (wo.status == WorkOrderStatus.scheduled ||
-              wo.status == WorkOrderStatus.dispatched)
+          // B-DEMO-C — `scheduled`: o servidor ainda não despachou; nenhum botão de avanço.
+          if (wo.status == WorkOrderStatus.scheduled)
+            const Padding(
+              key: Key('checkin-awaiting-dispatch'),
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text('Aguardando despacho.', textAlign: TextAlign.center),
+            ),
+          // B-DEMO-C — `dispatched`: o técnico ACEITA antes de sair. É o toque que grava `accepted_at` no
+          // despacho (a ação de despacho entra na fila junto, S8).
+          if (wo.status == WorkOrderStatus.dispatched)
+            FilledButton.icon(
+              key: const Key('checkin-accept'),
+              onPressed: _loading
+                  ? null
+                  : () => _doStatus(WorkOrderStatus.accepted),
+              icon: _loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_circle_outline),
+              label: const Text('Aceitar'),
+            ),
+          if (wo.status == WorkOrderStatus.accepted)
             FilledButton.icon(
               key: const Key('checkin-start-route'),
               onPressed: _loading

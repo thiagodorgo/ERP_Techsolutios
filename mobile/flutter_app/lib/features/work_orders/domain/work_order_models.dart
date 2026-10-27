@@ -76,7 +76,9 @@ extension WorkOrderStatusX on WorkOrderStatus {
   // cobrança; o botão "Cancelar" some do app junto com o fechamento do bypass.
   Set<WorkOrderStatus> get allowedTransitions => switch (this) {
     WorkOrderStatus.scheduled => {WorkOrderStatus.dispatched},
-    WorkOrderStatus.dispatched => {WorkOrderStatus.enRoute},
+    // B-DEMO-C — despachada só vai para ACEITA. O salto `dispatched → enRoute` saiu: na OS o servidor
+    // recusa `assigned → on_route` (409), e no despacho esse salto deixaria `accepted_at` nulo.
+    WorkOrderStatus.dispatched => {WorkOrderStatus.accepted},
     WorkOrderStatus.accepted => {WorkOrderStatus.enRoute},
     WorkOrderStatus.enRoute => {WorkOrderStatus.arrived},
     WorkOrderStatus.arrived => {WorkOrderStatus.inService},

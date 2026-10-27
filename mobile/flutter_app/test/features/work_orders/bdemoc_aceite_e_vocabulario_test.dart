@@ -3,13 +3,27 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
+import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/location/gps_service.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
+import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_action_factory.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_remote_api.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_steps.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/ui/work_order_detail_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 // B-DEMO-C (S6) — vocabulário de status do app, nos dois sentidos, com `accepted` DISTINTO.
 //
@@ -66,6 +80,135 @@ Map<String, dynamic> _evento(String id, String? de, String? para) => {
 };
 
 String _lote() => 'lote-bdemoc';
+
+// --- S7: o botão "Aceitar" no bloco de check-in do detalhe da OS (tela-modelo: o próprio bloco). ---
+
+const _s7Tenant = 'tenant-bdemoc-s7';
+const _s7User = 'user-bdemoc-s7';
+
+const _s7Session = BootstrapSession(
+  activeTenant: TenantContext(tenantId: _s7Tenant, displayName: 'Tenant S7'),
+  enabledModules: [],
+  permissions: PermissionSet({
+    'work_orders:read',
+    'work_orders:status',
+    'work_orders:update',
+  }),
+  user: AuthenticatedUser(
+    userId: _s7User,
+    email: 'guincheiro@bdemoc.demo',
+    tenantRole: 'field_technician',
+    tenantRoles: ['field_technician'],
+    scope: 'tenant',
+  ),
+);
+
+WorkOrder _s7Wo(WorkOrderStatus status) => WorkOrder(
+  localId: 'wo-bdemoc-s7',
+  serverId: 'srv-bdemoc-s7',
+  tenantId: _s7Tenant,
+  code: 'OS-2077',
+  title: 'Guincho da demo',
+  customerName: 'Cliente da demo',
+  serviceAddress: 'Rua da Demo, 1',
+  status: status,
+  priority: WorkOrderPriority.normal,
+  syncStatus: SyncStatus.synced,
+  createdAt: DateTime.utc(2026, 10, 27),
+  assignedUserId: _s7User,
+);
+
+/// Repositório que recusa toda mudança de status com o MESMO texto que o repositório real lança numa
+/// transição inválida (`StateError('Invalid transition: ${wo.status} → $newStatus')`).
+class _RepoQueRecusa extends WorkOrderRepository {
+  _RepoQueRecusa(WorkOrder wo, WorkOrderLocalStore store)
+    : super(
+        session: _s7Session,
+        syncQueue: InMemorySyncQueueRepository(),
+        actionFactory: SyncActionFactory(),
+        localStore: store,
+        seedWorkOrders: [wo],
+      );
+
+  @override
+  Future<WorkOrderMutationResult> updateStatus(
+    String localId,
+    WorkOrderStatus newStatus,
+  ) async {
+    throw StateError(
+      'Invalid transition: ${WorkOrderStatus.dispatched} → $newStatus',
+    );
+  }
+}
+
+Widget _s7App(WorkOrder wo, WorkOrderRepository repo, WorkOrderLocalStore st) {
+  final router = GoRouter(
+    initialLocation: '/work-orders/${wo.localId}',
+    routes: [
+      GoRoute(
+        path: '/work-orders',
+        builder: (_, _) => const Scaffold(body: Text('Lista OS')),
+      ),
+      GoRoute(
+        path: '/work-orders/:id',
+        builder: (_, state) =>
+            WorkOrderDetailScreen(workOrderId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/work-orders/:id/execute',
+        builder: (_, _) => const Scaffold(body: Text('Execute')),
+      ),
+      GoRoute(
+        path: '/work-orders/:id/approval-request',
+        builder: (_, _) => const Scaffold(body: Text('Approval')),
+      ),
+      GoRoute(
+        path: '/field-map',
+        builder: (_, _) => const Scaffold(body: Text('Mapa')),
+      ),
+      GoRoute(
+        path: '/work-orders/:id/checklists',
+        builder: (_, _) => const Scaffold(body: Text('Checklists')),
+      ),
+    ],
+  );
+  return ProviderScope(
+    overrides: [
+      bootstrapSessionProvider.overrideWith((_) async => _s7Session),
+      workOrderLocalStoreProvider.overrideWithValue(st),
+      syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore([])),
+      workOrderRepositoryProvider.overrideWithValue(repo),
+      gpsAvailableProvider.overrideWith((_) async => true),
+    ],
+    child: MaterialApp.router(routerConfig: router),
+  );
+}
+
+Future<({WorkOrderRepository repo, InMemorySyncQueueRepository fila})>
+_s7Montar(WidgetTester t, WorkOrderStatus status) async {
+  final wo = _s7Wo(status);
+  final store = InMemoryWorkOrderLocalStore([wo]);
+  final fila = InMemorySyncQueueRepository();
+  final repo = WorkOrderRepository(
+    session: _s7Session,
+    syncQueue: fila,
+    actionFactory: SyncActionFactory(),
+    localStore: store,
+    seedWorkOrders: [wo],
+  );
+  await repo.load(seedIfEmpty: false);
+  await t.pumpWidget(_s7App(wo, repo, store));
+  await t.pumpAndSettle();
+  return (repo: repo, fila: fila);
+}
+
+Future<void> _s7RolarAte(WidgetTester t, Finder alvo) async {
+  await t.scrollUntilVisible(
+    alvo,
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+}
 
 void main() {
   group('B-DEMO-C S6 · F1 vocabulário backend → app', () {
@@ -229,6 +372,126 @@ void main() {
           ['arrived', 'inService'],
           ['inService', null],
         ]);
+      },
+    );
+  });
+
+  group('B-DEMO-C S7 · F2/F3 "Aceitar" e a máquina local', () {
+    test('F3 — dispatched só vai para accepted; accepted vai para enRoute', () {
+      expect(
+        WorkOrderStatus.dispatched.canTransitionTo(WorkOrderStatus.enRoute),
+        isFalse,
+        reason: 'o servidor recusa assigned → on_route na OS (409)',
+      );
+      expect(
+        WorkOrderStatus.dispatched.canTransitionTo(WorkOrderStatus.accepted),
+        isTrue,
+      );
+      expect(WorkOrderStatus.accepted.allowedTransitions, {
+        WorkOrderStatus.enRoute,
+      });
+      expect(WorkOrderStatus.scheduled.allowedTransitions, {
+        WorkOrderStatus.dispatched,
+      });
+    });
+
+    testWidgets(
+      'F2 — dispatched mostra "Aceitar" e NÃO "Iniciar rota"; o toque enfileira status_update(accepted)',
+      (t) async {
+        final m = await _s7Montar(t, WorkOrderStatus.dispatched);
+        await _s7RolarAte(t, find.byKey(const Key('checkin-accept')));
+
+        expect(find.byKey(const Key('checkin-accept')), findsOneWidget);
+        expect(find.text('Aceitar'), findsOneWidget);
+        expect(find.byKey(const Key('checkin-start-route')), findsNothing);
+        final alvo = t.getSize(find.byKey(const Key('checkin-accept')));
+        expect(alvo.height, greaterThanOrEqualTo(44), reason: 'alvo de toque');
+
+        await t.tap(find.byKey(const Key('checkin-accept')));
+        await t.pumpAndSettle();
+
+        final acoes = await m.fila.actionsForTenant(_s7Tenant);
+        final status = acoes
+            .where((a) => a.type == WorkOrderSyncActionTypes.statusUpdate)
+            .toList();
+        expect(status, hasLength(1));
+        expect(status.single.payload['new_status'], 'accepted');
+        expect(status.single.payload['previous_status'], 'dispatched');
+        expect(
+          m.repo.workOrders
+              .singleWhere((o) => o.localId == 'wo-bdemoc-s7')
+              .status,
+          WorkOrderStatus.accepted,
+        );
+      },
+    );
+
+    testWidgets(
+      'F3 — accepted mostra "Iniciar rota" (e não "Aceitar"); o toque enfileira enRoute',
+      (t) async {
+        final m = await _s7Montar(t, WorkOrderStatus.accepted);
+        await _s7RolarAte(t, find.byKey(const Key('checkin-start-route')));
+
+        expect(find.byKey(const Key('checkin-start-route')), findsOneWidget);
+        expect(find.byKey(const Key('checkin-accept')), findsNothing);
+
+        await t.tap(find.byKey(const Key('checkin-start-route')));
+        await t.pumpAndSettle();
+
+        final acoes = await m.fila.actionsForTenant(_s7Tenant);
+        expect(
+          acoes
+              .where((a) => a.type == WorkOrderSyncActionTypes.statusUpdate)
+              .single
+              .payload['new_status'],
+          'enRoute',
+        );
+      },
+    );
+
+    testWidgets(
+      'scheduled não tem botão de avanço: mostra "Aguardando despacho."',
+      (t) async {
+        await _s7Montar(t, WorkOrderStatus.scheduled);
+        await _s7RolarAte(t, find.text('Aguardando despacho.'));
+
+        expect(find.text('Aguardando despacho.'), findsOneWidget);
+        expect(find.byKey(const Key('checkin-accept')), findsNothing);
+        expect(find.byKey(const Key('checkin-start-route')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'F3 — o SnackBar de erro não expõe StateError nem WorkOrderStatus',
+      (t) async {
+        final wo = _s7Wo(WorkOrderStatus.dispatched);
+        final store = InMemoryWorkOrderLocalStore([wo]);
+        final repo = _RepoQueRecusa(wo, store);
+        await repo.load(seedIfEmpty: false);
+        await t.pumpWidget(_s7App(wo, repo, store));
+        await t.pumpAndSettle();
+        // Na `main` o botão de dispatched é o "Iniciar rota"; neste bloco, o "Aceitar". O teste toca o que
+        // a máquina oferecer, para medir só o texto do SnackBar.
+        final botao =
+            WorkOrderStatus.dispatched.canTransitionTo(WorkOrderStatus.accepted)
+            ? find.byKey(const Key('checkin-accept'))
+            : find.byKey(const Key('checkin-start-route'));
+        await _s7RolarAte(t, botao);
+
+        await t.tap(botao);
+        await t.pump();
+
+        final barra = find.byType(SnackBar);
+        expect(barra, findsOneWidget);
+        final textos = find
+            .descendant(of: barra, matching: find.byType(Text))
+            .evaluate()
+            .map((e) => (e.widget as Text).data ?? '')
+            .join(' ');
+        expect(textos, isNot(contains('StateError')));
+        expect(textos, isNot(contains('WorkOrderStatus')));
+        expect(textos, isNot(contains('Invalid transition')));
+        expect(textos, 'Não foi possível mudar o status desta OS agora.');
       },
     );
   });
