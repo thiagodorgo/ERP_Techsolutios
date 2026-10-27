@@ -69,6 +69,11 @@ export function scanFinance(root: string = ROOT, mode: "strict" | "broad" = "str
     }
     const plus = mode === "strict" ? /([A-Za-z_$][\w$.]*)\s*\+=\s*([a-zA-Z.]*amount)(?![\w$])/g : /([A-Za-z_$][\w$.]*)\s*\+=\s*([^;\n]*)/g;
     for (const match of code.matchAll(plus)) found.push(`${rel}::${`${match[1]}+=${match[2]}`.replace(/\s+/g, "")}`);
+    // E2/R12: a soma por `x = x + …` (ou `x = x - …`), nas duas réguas. Medido no ciclo 2: 0 ocorrência pré-existente em
+    // todo o módulo, logo o inventário continua o das 8.
+    for (const match of code.matchAll(/(?<![\w$.])([A-Za-z_$][\w$.]*)\s*=\s*\1\s*([+-][^;\n]*)/g)) {
+      found.push(`${rel}::${`${match[1]}=${match[1]}${match[2]}`.replace(/\s+/g, "")}`);
+    }
   }
   return found.sort();
 }
@@ -103,6 +108,9 @@ test("F8: o detector acusa as duas mutações da ratificação (controle positiv
     mkdirSync(path.join(tmp, "entries"), { recursive: true });
     writeFileSync(path.join(tmp, "entries/y.ts"), "let saldo = 0;\nfor (const e of list) saldo += e.amount;\n");
     assert.deepEqual(scanFinance(tmp), ["entries/y.ts::saldo+=e.amount", "pages/views/X.tsx::props.items.reduce((s,e)=>s+e.amount,0)"]);
+    // E2/R12: a forma `x = x + …` também é acusada (controle positivo da régua nova).
+    writeFileSync(path.join(tmp, "entries/z.ts"), "let soma = 0;\nfor (const e of items) soma = soma + Number(e.amount);\n");
+    assert.ok(scanFinance(tmp).includes("entries/z.ts::soma=soma+Number(e.amount)"), scanFinance(tmp).join(" | "));
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

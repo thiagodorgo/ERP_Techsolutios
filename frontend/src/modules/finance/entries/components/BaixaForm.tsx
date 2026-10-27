@@ -1,6 +1,7 @@
 import { Banknote, CheckCircle2, Copy } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import { ApiError } from "../../../../services/api/client";
 import type { FinancialAccount } from "../../accounts/financial-accounts.types";
 import { formatBRL } from "../../titles/financial-titles.adapter";
 import type { BaixaPaymentMethod, FinancialTitle, PayFinancialTitlePayload } from "../../titles/financial-titles.types";
@@ -104,12 +105,16 @@ export function BaixaForm({
       setPhase("reread_failed");
       return;
     }
-    if (fresh.paidAmount > before.paidAmount) {
+    // E2/R6 — a ordem é: releitura → razão → só então o `paidAmount`. "Já está registrada" só nasce de (i) 409
+    // `duplicate_payment` (o servidor confirma que ESTE client_action_id já foi gravado) ou (ii) falha sem status HTTP
+    // (rede/timeout) ou 5xx COM a releitura mostrando o pagamento. Recusa 4xx definitiva nunca vira "já registrada".
+    const reason = financeErrorReason(error);
+    const status = error instanceof ApiError ? error.status : null;
+    if (reason === "duplicate_payment" || ((status === null || status >= 500) && fresh.paidAmount > before.paidAmount)) {
       setPhase("already");
       onDone(fresh);
       return;
     }
-    const reason = financeErrorReason(error);
     if (reason === "title_has_pending_cheque") {
       let pending: TitleCheque[] = [];
       try {
@@ -122,7 +127,12 @@ export function BaixaForm({
       setPhase("pending_cheque");
       return;
     }
-    setMessage(financeErrorMessage(error));
+    const changed = fresh.paidAmount !== before.paidAmount || fresh.status !== before.status;
+    if (changed) setAmountText(formatMoneyInput(titleOpenBalance(fresh)));
+    setMessage(
+      financeErrorMessage(error) +
+        (changed ? ` O título mudou desde que você abriu: pago ${formatBRL(fresh.paidAmount)} de ${formatBRL(fresh.amount)}.` : ""),
+    );
     setPhase(reason === "title_already_paid" || reason === "title_cancelled" || fresh.status === "paid" || fresh.status === "cancelled" ? "closed" : "form");
   }
 

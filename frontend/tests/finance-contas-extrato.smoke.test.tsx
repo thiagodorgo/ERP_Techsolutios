@@ -89,21 +89,26 @@ test("F7: lançamento a conciliar mostra 'Conciliar' só com a permissão; Gesto
 // ---------------------------------------------- F17 ----------------------------------------------
 
 const FINANCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../src/modules/finance");
-const UI_DIRS = ["accounts", "entries", "pages"];
+// E2/R11: `titles/` entra na varredura, e os `.ts` também (o adaptador de títulos produz rótulo de tela). Medido no ciclo 2:
+// 0 ocorrência pré-existente nos quatro diretórios com a régua nova, logo nenhuma exclusão nominal.
+const UI_DIRS = ["accounts", "entries", "pages", "titles"];
 const TECH = /\b(tenant|tenants|role|roles|reconciled|unreconcile|payment_method|client_action_id)\b|\/api\/|\/financial-|\/cheques\//i;
 
 function tsxFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((item) => {
     const full = path.join(dir, item.name);
-    return item.isDirectory() ? tsxFiles(full) : item.name.endsWith(".tsx") ? [full] : [];
+    return item.isDirectory() ? tsxFiles(full) : /\.tsx?$/.test(item.name) ? [full] : [];
   });
 }
 
-/** Texto que pode chegar à tela: texto de JSX (entre > e <) e literais com espaço ou letra maiúscula acentuada. */
+/**
+ * Texto que pode chegar à tela: texto de JSX (entre > e <) e literais com espaço, com acento ou que COMEÇAM por maiúscula
+ * (E2/R11: palavra única de rótulo, como `label="Reconciled"`, também conta).
+ */
 export function uiTexts(source: string): string[] {
   const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
   const jsxText = [...code.matchAll(/>([^<>{}]*[A-Za-zÀ-ú][^<>{}]*)</g)].map((m) => m[1].trim());
-  const literals = [...code.matchAll(/"([^"\n]*)"|`([^`\n]*)`/g)].map((m) => m[1] ?? m[2]).filter((s) => /\s/.test(s) || /[À-ú]/.test(s));
+  const literals = [...code.matchAll(/"([^"\n]*)"|`([^`\n]*)`/g)].map((m) => m[1] ?? m[2]).filter((s) => /\s/.test(s) || /[À-ú]/.test(s) || /^[A-ZÀ-Ý]/.test(s));
   return [...jsxText, ...literals].filter(Boolean);
 }
 
@@ -123,4 +128,6 @@ test("F17: o detector acusa 'Tenant' num rótulo (controle positivo)", () => {
   assert.ok(uiTexts('<span className="pat-x">Tenant ativo</span>').some((t) => TECH.test(t)));
   assert.ok(uiTexts('const l = "Conta do tenant";').some((t) => TECH.test(t)));
   assert.ok(!uiTexts('<button className="pat-btn" onClick={x}>Conciliar</button>').some((t) => TECH.test(t)));
+  // E2/R11: palavra única com maiúscula também é texto de tela.
+  assert.ok(uiTexts('<StatusPill label="Reconciled" />').some((t) => TECH.test(t)));
 });

@@ -1025,6 +1025,112 @@ test("F3: 409 duplicate_payment também relê antes de falar; se a releitura mos
   }
 });
 
+// =============================== R6 · recusa definitiva nunca vira "já registrada" ===============================
+
+test("R6: 422 overpayment com o título já pago em parte → razão da recusa + 'O título mudou…', formulário de volta com o saldo relido, nenhum reenvio", async () => {
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "POST" && call.url === "/financial-titles/t-vencido/pay") return apiError(422, "overpayment");
+      if (call.method === "GET" && call.url === "/financial-titles/t-vencido") return json(200, { data: { ...RECEIVABLES[0], paidAmount: 400, status: "partially_paid" } });
+      return undefined;
+    },
+  });
+  try {
+    const modal = await openBaixa(container, "Transportes Alfa");
+    await type(byName(modal, "conta"), "acc-banco");
+    await submit(formsIn(modal)[0]);
+    const baixa = dialog(container)!;
+    const body = text(baixa);
+    assert.doesNotMatch(body, /já está registrada/, "o servidor RECUSOU esta baixa: nunca 'já registrada'");
+    assert.match(body, /O valor ultrapassa o saldo em aberto do título\./);
+    assert.match(body, /O título mudou desde que você abriu: pago R\$\s400,00 de R\$\s1\.000,00\./);
+    const valor = byName(baixa, "valor");
+    assert.ok(valor, "volta ao formulário");
+    assert.equal(String((valor as unknown as { value?: unknown }).value), "600,00", "o valor é refeito para o saldo em aberto relido");
+    assert.equal(countCalls("POST", /^\/financial-titles\/t-vencido\/pay$/), 1, "nenhum reenvio automático");
+  } finally {
+    await unmount();
+  }
+});
+
+test("R6: rede caiu e a releitura mostra o pagamento → 'já está registrada'; 409 duplicate_payment → 'já está registrada' mesmo sem o título mudar", async () => {
+  for (const scenario of ["rede", "duplicate"] as const) {
+    const { container, unmount } = await mount({
+      override: (call) => {
+        if (call.method === "POST" && call.url === "/financial-titles/t-vencido/pay") return scenario === "rede" ? Promise.reject(new TypeError("Failed to fetch")) : apiError(409, "duplicate_payment");
+        if (call.method === "GET" && call.url === "/financial-titles/t-vencido") return json(200, { data: scenario === "rede" ? { ...RECEIVABLES[0], paidAmount: 1000, status: "paid" } : RECEIVABLES[0] });
+        return undefined;
+      },
+    });
+    try {
+      const modal = await openBaixa(container, "Transportes Alfa");
+      await type(byName(modal, "conta"), "acc-banco");
+      await submit(formsIn(modal)[0]);
+      assert.match(text(dialog(container)!), /Esta baixa já está registrada no servidor/, scenario);
+      assert.equal(countCalls("GET", /^\/financial-titles\/t-vencido$/), 1, `${scenario}: relê antes de falar`);
+    } finally {
+      await unmount();
+    }
+  }
+});
+
+// =============================== R9 · gate por permissão, não por papel ===============================
+
+const READS = ["financial_titles:read", "financial_entries:read", "financial_accounts:read"];
+
+test("R9: 'Registrar recebimento' segue financial_entries:create (não financial_titles:update)", async () => {
+  const comBaixa = await mount({ permissions: [...READS, "financial_entries:create"], role: "Sintético" });
+  try {
+    await press(rowFor(comBaixa.container, "Transportes Alfa"));
+    assert.ok(buttonByText(detailRows(comBaixa.container)[0]!, "Registrar recebimento"), "com financial_entries:create e sem financial_titles:update: oferece a baixa");
+  } finally {
+    await comBaixa.unmount();
+  }
+  const soTitulo = await mount({ permissions: [...READS, "financial_titles:update"], role: "Sintético" });
+  try {
+    await press(rowFor(soTitulo.container, "Transportes Alfa"));
+    const detail = detailRows(soTitulo.container)[0]!;
+    assert.equal(buttonByText(detail, "Registrar recebimento"), undefined, "com financial_titles:update e sem financial_entries:create: sem baixa");
+    assert.match(text(detail), /Seu perfil só consulta/);
+  } finally {
+    await soTitulo.unmount();
+  }
+});
+
+test("R9: 'Conciliar' segue financial_entries:update (não financial_titles:update)", async () => {
+  const comConc = await mount({ permissions: [...READS, "financial_entries:update"], role: "Sintético", url: "/finance?aba=conc" });
+  try {
+    await press(rowFor(comConc.container, "Recebimento NF 0900"));
+    assert.ok(buttonByText(detailRows(comConc.container)[0]!, "Conciliar"), "com financial_entries:update: oferece conciliar");
+  } finally {
+    await comConc.unmount();
+  }
+  const soTitulo = await mount({ permissions: [...READS, "financial_titles:update"], role: "Sintético", url: "/finance?aba=conc" });
+  try {
+    await press(rowFor(soTitulo.container, "Recebimento NF 0900"));
+    assert.equal(buttonByText(detailRows(soTitulo.container)[0]!, "Conciliar"), undefined, "só com financial_titles:update: sem conciliar");
+  } finally {
+    await soTitulo.unmount();
+  }
+});
+
+// =============================== R10 · contas sem leitura ===============================
+
+test("R10: aba 'Contas e extrato' sem financial_accounts:read mostra acesso não permitido, nunca 'Cadastre a primeira conta'", async () => {
+  const { container, unmount } = await mount({ permissions: ["financial_entries:read", "financial_titles:read"], role: "Sintético", url: "/finance?aba=ext" });
+  try {
+    const body = text(pageRoot(container)!);
+    assert.match(body, /Acesso não permitido/);
+    assert.match(body, /Seu perfil não inclui as contas desta organização\. Para mais acesso, fale com o administrador da organização\./);
+    assert.doesNotMatch(body, /Cadastre a primeira conta/);
+    assert.equal(all(container, (el) => el.localName === "button" && /Cadastrar a primeira conta|Nova conta/.test(text(el))).length, 0, "nenhum botão de cadastro");
+    await press(tab(container, "A receber"));
+    assert.ok(rowFor(container, "Transportes Alfa"), "as outras abas não mudam");
+  } finally {
+    await unmount();
+  }
+});
+
 // =============================== F6 · F21 · cheque pendente ===============================
 
 const CHEQUE = { id: "ch-1", titleId: "t-vencido", accountId: "acc-banco", direction: "received", chequeNumber: "000123", bank: "Itaú", amount: 1000, currency: "BRL", dueDate: "2026-11-05", status: "registered", active: true, createdAt: "2026-10-20T12:00:00.000Z" };

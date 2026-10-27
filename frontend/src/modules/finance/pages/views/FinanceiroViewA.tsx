@@ -541,7 +541,18 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       );
     }
     counter = plural(model.entries.items.length, "lançamento", "lançamentos");
-    if (state.tab === "ext" && accountsReady && activeAccounts.length === 0) {
+    if (state.tab === "ext" && !access.readAccounts) {
+      // E2/R10: sem `financial_accounts:read` a aba das contas é ACESSO NÃO PERMITIDO, nunca um vazio de cadastro.
+      body = (
+        <StatePanel
+          tone="forbidden"
+          embedded
+          title="Acesso não permitido"
+          detail="Seu perfil não inclui as contas desta organização. Para mais acesso, fale com o administrador da organização."
+        />
+      );
+      counter = "";
+    } else if (state.tab === "ext" && accountsReady && activeAccounts.length === 0) {
       body = (
         <StatePanel
           tone="empty"

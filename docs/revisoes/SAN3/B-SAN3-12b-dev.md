@@ -474,3 +474,42 @@ Hashes verdes (antes e depois das mutações): `BaixaForm.tsx` `ecc2a7f3…`, `F
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 7
+
+- **Fatia:** 7 — R6 + R9 + R10 + R11 + R12 pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f59-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado (cobertura declarada, ver RETOMADA 5).
+- **Head de entrada:** `702d6bbb` (fatia 6, empurrado). O head de saída é o do commit desta fatia, publicado no push.
+- **Skills:** `ts-frontend-full` (ordem das checagens depois da falha; estado de acesso no padrão `StatePanel tone="forbidden"`) e `ui-ux-pro-max` (mensagem honesta, sem afirmar o que o servidor recusou; estado obrigatório "acesso não permitido", §7).
+
+### Feito — comando → saída
+
+- `git status --porcelain; git rev-parse HEAD` → vazio; `702d6bbb`.
+- **Testes antes do produto** (`finance-page-live.test.tsx`): **R6** (2 casos) — 422 `overpayment` com a releitura em `paidAmount 400` → "O valor ultrapassa o saldo em aberto do título." + "O título mudou desde que você abriu: pago R$ 400,00 de R$ 1.000,00.", formulário de volta com valor `600,00`, 1 só POST; rede caída com a releitura paga → "já está registrada"; 409 `duplicate_payment` com a releitura SEM mudança → "já está registrada". **R9** (2 casos, atores sintéticos por permissão, leituras + 1 permissão): `financial_entries:create` sem `financial_titles:update` → "Registrar recebimento" presente; `financial_titles:update` sem `financial_entries:create` → ausente, com "Seu perfil só consulta"; idem "Conciliar" (`financial_entries:update` × `financial_titles:update`). **R10** — `financial_entries:read` + `financial_titles:read`, sem `financial_accounts:read`, em `?aba=ext` → "Acesso não permitido" + "Seu perfil não inclui as contas desta organização. Para mais acesso, fale com o administrador da organização.", sem "Cadastre a primeira conta", nenhum botão de cadastro; a aba "A receber" segue igual.
+- **Vermelho-controle** (produto do head `702d6bbb`, testes novos): `cd frontend && node --test --import tsx --test-name-pattern="^R(6|9|10):" tests/finance-page-live.test.tsx` → `33 tests · 2 pass · 3 fail · 28 skipped`: R6 ×2 vermelhos (a 422 `overpayment` virou "Esta baixa já está registrada no servidor"; a 409 sem mudança virou "Esta baixa já foi registrada." no formulário), R10 vermelho ("Cadastre a primeira conta"), **R9 ×2 verdes, como a E2 prevê** (o código do objeto está certo; o controle da R9 é a M2 aplicada, abaixo).
+- **Vermelho-controle das guardas** (mutações sob as guardas ANTIGAS, `mutar.py`): `label="Reconciled"` em `EntryDetail.tsx` → F17 **VERDE** (`7 · pass 2 · fail 0`); `"Open (not reconciled)"` em `financial-titles.adapter.ts` → F17 **VERDE**; `let soma = 0; for (const e of model.entries.items) soma = soma + Number(e.amount)` na view A → F8 **VERDE** (`3 · 3 pass`). As três escapavam, como a C1 e a C3 provaram.
+- **Medição antes de ampliar as guardas:** régua nova do F17 (literal com espaço, acento OU maiúscula inicial; `.ts` e `.tsx`) nos 4 diretórios `accounts/ entries/ pages/ titles/` → **0 ocorrência** em cada um (script de medição no scratchpad do dev); forma `\b(\w+)\s*=\s*\1\s*[+-]` em todo `frontend/src/modules/finance/**` (Python, linha a linha) → **N = 0**. Logo: nenhuma exclusão nominal no F17, nenhuma entrada nova no inventário do F8 (continua o das 8) e nada a acrescentar à `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`.
+- Produto: `BaixaForm.tsx` `settleAfterFailure` — releitura → razão → só então o `paidAmount`: "já registrada" só de 409 `duplicate_payment` ou de falha sem status/5xx com a releitura mostrando o pagamento; toda outra recusa mostra a razão e, se o título mudou (`paidAmount` ou `status`), acrescenta "O título mudou desde que você abriu: pago R$ X de R$ Y." e refaz o valor para o saldo relido; `title_already_paid`/`title_cancelled`/status final fecham. `FinanceiroViewA.tsx` — aba `ext` sem `access.readAccounts` → `StatePanel tone="forbidden"` com o texto da E2. Guardas: `finance-contas-extrato.smoke.test.tsx` (F17: `titles/` e `.ts` na varredura; maiúscula inicial conta; controle positivo `label="Reconciled"`), `finance-no-money-reduce.guard.test.ts` (F8: forma `x = x ± …` nas duas réguas; controle positivo em diretório temporário).
+- `npm --prefix frontend run check` → exit `0`. Arquivos do bloco: `cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx` → `110 tests · 110 pass · 0 fail · 0 skipped`. `git diff --check` → vazio. Escopo: `BaixaForm.tsx`, `FinanceiroViewA.tsx`, `finance-page-live.test.tsx`, `finance-contas-extrato.smoke.test.tsx`, `finance-no-money-reduce.guard.test.ts` e este relatório (PERMITIDO da E2.1).
+
+### Mutações (roteiro `mutar.py`; uma por vez; restauro dos bytes e sha256 conferido)
+
+| # | Mutação | Arquivo | Teste dono | Resultado | Restauro |
+|---|---|---|---|---|---|
+| R6-M1 | `fresh.paidAmount > before.paidAmount → already` de volta antes da razão | `BaixaForm.tsx` | R6 | VERMELHO (`33 · pass 1 · fail 1`) | hash igual |
+| R9-M1 (= M2 do plano) | gate da baixa por `financial_titles:update` | `FinanceiroPage.tsx` | R9 | VERMELHO | hash igual |
+| R9-M1b (extra) | gate de "Conciliar" por `financial_titles:update` | `FinanceiroPage.tsx` | R9 | VERMELHO | hash igual |
+| R10-M1 | aba `ext` sem leitura de contas volta ao vazio "Cadastre a primeira conta" | `FinanceiroViewA.tsx` | R10 | VERMELHO | hash igual |
+| R11-M1 | `label="Reconciled"` em `EntryDetail.tsx` | `EntryDetail.tsx` | F17 | VERMELHO (`7 · pass 1 · fail 1`) | hash igual |
+| R11-M2 | `"Open (not reconciled)"` em `financial-titles.adapter.ts` | `financial-titles.adapter.ts` | F17 | VERMELHO | hash igual |
+| R12-M1 | `soma = soma + Number(e.amount)` na view A | `FinanceiroViewA.tsx` | F8 | VERMELHO (`3 · pass 1 · fail 2`) | hash igual |
+
+Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `FinanceiroViewA.tsx` `4ef421aa…`, `finance-contas-extrato.smoke.test.tsx` `e0b5b3ef…`, `finance-no-money-reduce.guard.test.ts` `56a0af17…`, `finance-page-live.test.tsx` `c2fcf35b…`, `FinanceiroPage.tsx` `30996677…`, `EntryDetail.tsx` `68dfe2f4…`, `financial-titles.adapter.ts` `8a7cfbd6…` (os três últimos sem diff).
+
+### Falta
+
+- Nada da FATIA 7. FATIA 8 (registro + bateria completa em Node 20 e 22) e FATIA 9 (mutações no head final) a seguir.
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
