@@ -1,4 +1,6 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import type { FieldDispatchService } from "../field-dispatch/field-dispatch.service.js";
+import type { FieldDispatchStatus } from "../field-dispatch/field-dispatch.types.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import {
@@ -26,6 +28,8 @@ type MobileWorkOrderActionResult = {
   readonly status: MobileWorkOrderActionOutcome;
   readonly work_order_id?: string;
   readonly server_state?: ReturnType<typeof toWorkOrderDto>;
+  // B-DEMO-C — só na ação `field_dispatch.status_change`: o despacho do próprio ator, depois da ação.
+  readonly dispatch?: MobileDispatchActionOutcome;
   readonly error?: {
     readonly code: string;
     readonly reason: string;
@@ -39,6 +43,28 @@ type MobileWorkOrderActionResult = {
     readonly next_action: string;
   };
 };
+
+// B-DEMO-C (plano DEMO-C §3.3) — o status do despacho pelo lote do app. O app manda o status do PRÓPRIO despacho
+// (sem `dispatch_id`, sem `tenant_id`); o servidor resolve o despacho do ator pela OS. A ação é um segundo caminho
+// para a escrita que a rota `PATCH /operations/dispatches/:dispatchId/status` já faz, com MAIS trava: lista fechada,
+// só o despacho do ator, só para a frente e nunca à frente da OS.
+export const MOBILE_DISPATCH_ACTION_TYPE = "field_dispatch.status_change";
+
+// Lista fechada (passo 2): o app NUNCA pede `cancelled`, `failed`, `reassigned`, `assigned` nem `draft`.
+const MOBILE_DISPATCH_TARGET_STATUSES = ["accepted", "on_route", "arrived", "in_service", "completed"] as const satisfies readonly FieldDispatchStatus[];
+type MobileDispatchTargetStatus = (typeof MOBILE_DISPATCH_TARGET_STATUSES)[number];
+
+export type MobileDispatchActionOutcome = {
+  readonly id: string | null;
+  readonly status: FieldDispatchStatus | null;
+  readonly effect: "advanced" | "already_at_status" | "none";
+  readonly reason?: string;
+};
+
+// O que a ação usa do serviço de despacho. A rota passa o serviço de verdade; sem resolvedor, a ação é recusada
+// `dispatch_service_unavailable` (fail-closed, nunca um padrão silencioso).
+export type MobileDispatchPort = Pick<FieldDispatchService, "list" | "changeStatus">;
+export type MobileDispatchServiceResolver = () => Promise<MobileDispatchPort>;
 
 type MobileWorkOrderSyncReceipt = {
   readonly fingerprint: string;
@@ -74,6 +100,7 @@ export async function syncMobileWorkOrderActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
   resolveService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
+  resolveDispatchService?: MobileDispatchServiceResolver,
 ): Promise<MobileWorkOrderSyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
@@ -101,7 +128,7 @@ export async function syncMobileWorkOrderActions(
       continue;
     }
 
-    const result = await processAction(service, actor, action);
+    const result = await processAction(service, actor, action, resolveDispatchService);
 
     if (result.status === "accepted") {
       syncReceipts.set(receiptKey, {
@@ -214,8 +241,13 @@ async function processAction(
   service: WorkOrderService,
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
+  resolveDispatchService: MobileDispatchServiceResolver | undefined,
 ): Promise<MobileWorkOrderActionResult> {
   try {
+    if (action.type === MOBILE_DISPATCH_ACTION_TYPE) {
+      return await processDispatchStatusAction(service, actor, action, resolveDispatchService);
+    }
+
     if (action.type === "work_order.create") {
       requireActionPermission(actor, action, "work_orders:create");
       const workOrder = await service.create(actor, {
@@ -280,10 +312,53 @@ async function processAction(
   }
 }
 
+// B-DEMO-C §3.3 — o algoritmo, nesta ordem, cada passo fail-closed. Toda recusa é LANÇADA e vira resultado por
+// `actionErrorResult` (rejected/conflict), como nas outras ações do lote.
+async function processDispatchStatusAction(
+  service: WorkOrderService,
+  actor: AuthenticatedActor,
+  action: MobileWorkOrderAction,
+  resolveDispatchService: MobileDispatchServiceResolver | undefined,
+): Promise<MobileWorkOrderActionResult> {
+  // 1. Permissão: o mesmo `field_dispatch:update` que a rota REST do despacho exige.
+  requireActionPermission(actor, action, "field_dispatch:update");
+
+  // 2. Lista fechada de status.
+  parseMobileDispatchTargetStatus(action.payload.status);
+
+  // 3. Porta da OS: 404 entre organizações; o escopo por objeto do 07a (quem nunca foi da OS → `rejected`
+  //    `not_assigned_to_actor`; o ex-técnico leva a marca `wasPreviouslyAssigned` → `conflicts[]`).
+  await service.getForMutation(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"));
+
+  if (!resolveDispatchService) {
+    throw routeError(503, "SERVICE_UNAVAILABLE", "dispatch_service_unavailable", "Field dispatch service is not available.");
+  }
+  await resolveDispatchService();
+
+  // Passos 4 (posto da OS) e 5 (despacho do ator) chegam na fatia S2. Até lá, nenhuma escrita: fail-closed.
+  throw routeError(501, "NOT_IMPLEMENTED", "dispatch_status_not_implemented", "Dispatch status change is not implemented yet.");
+}
+
+function parseMobileDispatchTargetStatus(value: unknown): MobileDispatchTargetStatus {
+  const status = typeof value === "string" ? value.trim() : "";
+  const allowed: readonly string[] = MOBILE_DISPATCH_TARGET_STATUSES;
+
+  if (!allowed.includes(status)) {
+    throw routeError(
+      400,
+      "BAD_REQUEST",
+      "invalid_status",
+      `status must be one of: ${MOBILE_DISPATCH_TARGET_STATUSES.join(", ")}.`,
+    );
+  }
+
+  return status as MobileDispatchTargetStatus;
+}
+
 function requireActionPermission(
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
-  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status",
+  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status" | "field_dispatch:update",
 ): void {
   if (actor.permissions.includes(permission)) {
     return;

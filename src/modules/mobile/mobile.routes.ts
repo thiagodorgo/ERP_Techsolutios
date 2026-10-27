@@ -5,6 +5,7 @@ import type { ICoreSaasService } from "../core-saas/services/core-saas-service.i
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
+import { createDefaultFieldDispatchService } from "../field-dispatch/field-dispatch.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
@@ -142,7 +143,10 @@ export function createMobileRouter(service: ICoreSaasService): Router {
     "/mobile/sync/work-order-actions",
     handleAsyncRoute(async (request, response) => {
       response.json({
-        data: await syncMobileWorkOrderActions(request.tenantContext, request.body ?? {}),
+        // B-DEMO-C — a ação `field_dispatch.status_change` usa o serviço de despacho desta raiz.
+        data: await syncMobileWorkOrderActions(request.tenantContext, request.body ?? {}, undefined, () =>
+          createDefaultFieldDispatchService(service),
+        ),
       });
     }),
   );
