@@ -48,4 +48,3 @@ restore.sh:
 ```
 
 `mut.mjs`, `mutn.mjs`, `rawsql.mjs` e `zz-j22c1-probe.ts`: sem diferença. Assim, a cópia troca exatamente worktree, portas, banco, pasta de saída/senha e objeto de restauro; o script antigo não foi executado.
-
