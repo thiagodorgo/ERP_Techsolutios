@@ -81,3 +81,39 @@ Demo ao sócio: `C:/Users/AMP/erp-pausa-2026-10-03/planos/DEMO-SOCIO-plano.md`.
 - **Arquivos meio escritos:** nenhum. `mobile-work-order-sync.ts` e `tests/mobile-dispatch-status-sync.test.ts` estão completos para a S2, compilam e passam 10/10.
 - **Script de mutação** (fora do repositório, scratchpad da sessão do Claude): aplica a troca numa âncora única, roda o teste filtrado, restaura e confere o sha256. Quem continuar pode refazer a mesma forma; as âncoras estão na tabela.
 - **Próximo comando exato:** `cd C:/Users/AMP/w-democ && git log --oneline -1 && timeout 600 npm run check && node --test --import tsx tests/mobile-dispatch-status-sync.test.ts tests/field-dispatch.test.ts tests/field-dispatch-routes.test.ts tests/field-dispatch-target-role.test.ts tests/mobile-backend-contracts.test.ts tests/mobile-work-order-assign-registry.test.ts`
+
+## RETOMADA S2 (dev-democ-s2-argon, 2026-10-27)
+- **Executor:** `dev-democ-s2-argon` · Gemini CLI, modelo **gemini-4-argon**, pela API paga com teto de US$ 3 nesta tarefa, nível menor declarado (`D-GEMINI-ARGON-NIVEL-CODEX`). Retomada P3/P7 da pausa do `dev-democ-be-opus` em `fcf764da`.
+- **Head de partida:** `fcf764da` (commit `wip` da pausa S2, sobre `3dda6b97` da S1), medido por `git -C C:/Users/AMP/w-democ log --oneline -3`. Ramo `feat/mobile-democ-aceite-despacho`.
+- **Disco antes e depois:** `Get-PSDrive C | Select-Object Used,Free` → `10760351744` bytes (~10,0 GB livres) antes e depois (acima do piso de 7,5 GB da R11).
+- **Feito (comando → saída, 1 linha por comando; re-execução P3 + cauda da S2):**
+  - `git -C C:/Users/AMP/w-democ log --oneline -3; git -C C:/Users/AMP/w-democ status --short` → `fcf764da` limpo.
+  - `npm run check` → `tsc -p tsconfig.json --noEmit` (ec=0; `npm run lint` é alias do mesmo comando).
+  - `node --test --import tsx tests/mobile-dispatch-status-sync.test.ts tests/field-dispatch.test.ts tests/field-dispatch-routes.test.ts tests/field-dispatch-target-role.test.ts tests/mobile-backend-contracts.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 54 · # pass 54 · # fail 0` (10 testes em `tests/mobile-dispatch-status-sync.test.ts`: B6, B7, B8, B1, B3, B4, B5/R1, B9, R7 e R13; 44 nos demais).
+  - **Vermelho-controle S2 (incluindo B9 como ficou):** troca temporária de `src/modules/mobile/mobile-work-order-sync.ts` pela versão da S1 (`git show 3dda6b97:src/modules/mobile/mobile-work-order-sync.ts`) + `node --test --import tsx tests/mobile-dispatch-status-sync.test.ts` → `# tests 10 · # pass 3 · # fail 7`: B6, B7 e B8 verdes; B1, B3, B4, B5/R1, B9 (`expected: 'conflict', actual: 'rejected'`), R7 e R13 vermelhos; arquivo restaurado (`sha256` antes == depois).
+  - `node --test --import tsx tests/o6r07c-census-guard.test.ts tests/o6r07c-b-scope.test.ts` → `# tests 219 · # pass 217 · # fail 2`: **só T1 e T14 vermelhos** pela chave nova `PAR /api/v1/mobile/sync/work-order-actions · field_dispatch.status_change`, como previsto até a S4.
+  - Normalização de fim de linha (`\r\n` → `\n`) em `tests/mobile-dispatch-status-sync.test.ts` (que havia entrado com CRLF no commit `wip` `fcf764da`): `git -C C:/Users/AMP/w-democ diff 3dda6b97 --check` → ec=0 (0 erros).
+- **Mutações da S2 (re-executadas em processo próprio segundo P3, com `sha256` de `src/modules/mobile/mobile-work-order-sync.ts` conferido antes == depois: `9b3197a5015a == 9b3197a5015a`):**
+
+  | Id | Mutação em `mobile-work-order-sync.ts` | Teste | Resultado | Restauro (`sha256`) |
+  |---|---|---|---|---|
+  | M-B1 | desligar o ramo `field_dispatch.status_change` | B1 | **vermelho**: `expected: 'accepted'`, `actual: 'rejected'` (`unsupported_action_type`) | `9b3197a5015a == 9b3197a5015a` |
+  | M-B3 | chamar `changeStatus` também no ramo `currentRank >= targetRank` | B3 | **vermelho**: `accepted_at` regravado (`expected !== actual`) e evento duplicado | `9b3197a5015a == 9b3197a5015a` |
+  | M-B3b | desligar `if (currentRank >= targetRank)` | B3 | **vermelho**: `effect` sai `'advanced'` em vez de `'already_at_status'` e `accepted_at` muda | `9b3197a5015a == 9b3197a5015a` |
+  | M-B4 | comentar `assertWorkOrderAtStep(workOrder.status, target)` (passo 4) | B4 | **vermelho**: `expected: 'conflict'`, `actual: 'accepted'` | `9b3197a5015a == 9b3197a5015a` |
+  | M-B5 | trocar o laço da cadeia canônica (R1) por `changeStatus(target)` direto | B5/R1 | **vermelho**: "a cadeia pulou o aceite: `accepted_at` nulo" | `9b3197a5015a == 9b3197a5015a` |
+  | M-B9 | desligar `if (active.length > 1)` | B9 | **vermelho**: `expected: 'conflict'`, `actual: 'accepted'` (um dos dois despachos anda) | `9b3197a5015a == 9b3197a5015a` |
+  | M-B9b | recusar (`422 no_own_active_dispatch`) quando técnico da OS não tem despacho ativo | B9 | **vermelho**: `expected: 'accepted'`, `actual: 'rejected'` (no caso do despacho cancelado) | `9b3197a5015a == 9b3197a5015a` |
+  | M-B9c | desligar `if (!actorMutatesAssignedOnly(actor))` | B9 | **vermelho**: `expected: 'rejected'`, `actual: 'accepted'` (`operator` recebe `effect: 'none'`) | `9b3197a5015a == 9b3197a5015a` |
+  | M-R7 | dar posto numérico a `open`, `cancelled` e `rejected` em `WORK_ORDER_STEP_RANK` | R7 | **vermelho**: `expected: 'conflict'`, `actual: 'accepted'` (despacho anda em OS cancelada) | `9b3197a5015a == 9b3197a5015a` |
+  | M-R13 | trocar a cadeia por `changeStatus(target)` direto | R13 | **vermelho**: "o aceite que falhou nunca foi carimbado" (`accepted_at` nulo) | `9b3197a5015a == 9b3197a5015a` |
+  | M-B6 | tirar `parseMobileDispatchTargetStatus` (passo 2, agora sobre o passo 5) | B6 | **vermelho**: `expected: 'rejected'`, `actual: 'accepted'` | `9b3197a5015a == 9b3197a5015a` |
+  | M-B7 | tirar `requireActionPermission(…, "field_dispatch:update")` (passo 1, sobre o passo 5) | B7 | **vermelho**: `expected: 'rejected'`, `actual: 'accepted'` (`technician` move o despacho) | `9b3197a5015a == 9b3197a5015a` |
+  | M-B8 | trocar `getForMutation` por `get` (passo 3, sobre o passo 5) | B8 | **vermelho**: `expected: 'rejected'`, `actual: 'accepted'` (técnico B recebe `effect: 'none'`) | `9b3197a5015a == 9b3197a5015a` |
+
+- **O que falta (fatia seguinte = S3, §E1.3):**
+  - R4: trava em processo por `tenantId:userId` em volta do lote em `src/modules/mobile/mobile-work-order-sync.ts`, relendo o recibo (`syncReceipts.get`) para cada ação dentro da trava (erro dentro da trava não a prende);
+  - R6: `createPersistentRbacContextMiddleware(resolveAuthorization)` na rota `POST /mobile/sync/work-order-actions` em `src/modules/mobile/mobile.routes.ts` (depois do `tenantContextMiddleware`, com `resolveAuthorization` opcional em `createMobileRouter` para teste);
+  - B12: atualizar a versão do contrato (`2026-07-07.d1` → nova versão do bloco, se previsto no §3.3/B12, ou verificar o contrato B12 em `tests/mobile-backend-contracts.test.ts` e `tests/mobile-dispatch-status-sync.test.ts`) e fechar B2/R17, R4, R6 e B12 com vermelho-controle e mutações;
+  - ponto de retomada da S3: `"censo e laço G a fazer"`.
+- **Próximo comando exato (para a S3):** `cd C:/Users/AMP/w-democ && git log --oneline -2 && git status --short && node --test --import tsx tests/mobile-dispatch-status-sync.test.ts`
