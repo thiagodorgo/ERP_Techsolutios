@@ -652,6 +652,73 @@ test("F11: 'A conciliar' leva à aba Conciliação filtrada no servidor (reconci
   }
 });
 
+test("R2: 'Conciliação por conta' separa nome e contagem com flex e distância mínima", async () => {
+  const { container, unmount } = await mount();
+  try {
+    const accountButton = byLabel(container, "Banco do Brasil: 1 a conciliar");
+    assert.ok(accountButton, "faixa da conta Banco do Brasil presente");
+    assert.equal(accountButton.style.display, "flex");
+    assert.equal(accountButton.style.alignItems, "center");
+    assert.equal(accountButton.style.justifyContent, "space-between");
+    assert.equal(accountButton.style.width, "100%");
+    assert.equal(accountButton.style.textAlign, "left");
+    const children = accountButton.childNodes.filter((node): node is MiniElement => node instanceof MiniElement);
+    assert.deepEqual(children.map((child) => child.localName), ["span", "b"]);
+    assert.equal(children[0].getAttribute("title"), "Banco do Brasil");
+    assert.equal(children[1].style.whiteSpace, "nowrap");
+    assert.equal(children[1].style.marginLeft, "8px");
+  } finally {
+    await unmount();
+  }
+});
+
+test("R1: filtro de conta convive com o alvo e sai com um clique sem manter account_id", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await press(byLabel(container, "Banco do Brasil: 1 a conciliar"));
+    assert.equal(tab(container, "Conciliação")?.getAttribute("aria-selected"), "true");
+    assert.match(text(container), /Filtro: Conta: Banco do Brasil/);
+
+    const pressedSituation = all(
+      container,
+      (el) =>
+        el.localName === "button" &&
+        (el.getAttribute("aria-label") ?? "").startsWith("A conciliar:") &&
+        (el.getAttribute("aria-label") ?? "").includes("filtrar a lista") &&
+        el.getAttribute("aria-pressed") === "true",
+    )[0];
+    await press(pressedSituation);
+    assert.match(text(container), /Filtro: Conta: Banco do Brasil/, "tirar o alvo preserva o chip da conta");
+
+    await press(byLabel(container, "Remover o filtro de conta"));
+    assert.doesNotMatch(text(container), /Filtro: Conta:/);
+    assert.equal(rows(container).length, 3, "a lista volta aos três lançamentos da organização");
+    const lastEntriesCall = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1);
+    assert.ok(lastEntriesCall, "pedido do extrato após remover a conta");
+    assert.doesNotMatch(lastEntriesCall.url, /(?:^|[?&])account_id=/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'", async () => {
+  const { container, unmount } = await mount({ url: "/finance?aba=ext" });
+  try {
+    await press(byLabel(container, "Caixa da loja: saldo"));
+    assert.match(text(container), /Filtro: Conta: Caixa da loja/);
+    await press(byLabel(container, "A conciliar:"));
+    assert.equal(tab(container, "Conciliação")?.getAttribute("aria-selected"), "true");
+    assert.doesNotMatch(text(container), /Filtro: Conta:/);
+    assert.equal(rows(container).length, 2, "o indicador mostra os dois lançamentos pendentes da organização");
+    const lastEntriesCall = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1);
+    assert.ok(lastEntriesCall, "pedido da conciliação após clicar o indicador");
+    assert.match(lastEntriesCall.url, /(?:^|[?&])reconciled=false(?:&|$)/);
+    assert.doesNotMatch(lastEntriesCall.url, /(?:^|[?&])account_id=/);
+  } finally {
+    await unmount();
+  }
+});
+
 // =============================== F12 · linha e detalhe ===============================
 
 test("F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço abrem, Escape fecha", async () => {

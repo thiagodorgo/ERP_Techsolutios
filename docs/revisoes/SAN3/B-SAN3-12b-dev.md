@@ -293,3 +293,36 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 ### Próximo comando exato
 
 `"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`
+
+## RETOMADA 2
+
+- **Fatia:** 2 — R2 + R1 pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f2-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado. Não achou, não planejou e não vota.
+- **Head de entrada:** `b5246e8dc0db16a16b6ef41a3244720ac40115d9`, exatamente o head publicado pela RETOMADA 1. Esta seção integra o commit da fatia; o head de saída é publicado pelo `git rev-parse HEAD` após o commit e no push.
+- **Skills aplicadas:** `ts-frontend-full` (camada/view e teste no padrão existente) e `ui-ux-pro-max` (filtro visível/removível, rótulo acessível e alinhamento sem regra nova em `app.css`). Tela-modelo e referência mantidas: `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx` e `docs/claude-code-handoff/screen-refs/financeiro-ab.reference.html`.
+
+### Feito — comando → saída
+
+- `git fetch origin; git status --porcelain; git rev-parse HEAD; git log --oneline -3` → árvore vazia; head `b5246e8d`; os dois ancestrais imediatos são `8dd477b8` e `b2cbd5fd`; disco `9,94 GB` livres antes da fatia.
+- Três casos foram escritos em `frontend/tests/finance-page-live.test.tsx` antes do produto: R2 (faixa com nome e contagem separados), R1 (conta + alvo, remoção da conta) e R1 (indicador organizacional limpa a conta).
+- Vermelho-controle: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx` → `22 tests · 19 pass · 3 fail · 0 skipped`; falhas nominais: `display` ausente em R2 e chip de conta ausente nos dois cenários R1.
+- Produto: `FinanceiroViewA.tsx` ganhou `FilterChips` na barra existente, na ordem conta → alvo; fallback `Conta selecionada`; botão `aria-label="Remover o filtro de conta"`; remoção preserva o outro filtro; os indicadores "Entradas em <mês>", "Saídas em <mês>" e "A conciliar" enviam `accountId: null`; a faixa usa `display:flex`, alinhamento, reticências, `title`, contagem sem quebra e margem de `8 px`, tudo inline e sem tocar `app.css`.
+- Teste dono após o produto: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx` → `22 tests · 22 pass · 0 fail · 0 skipped`.
+- Regressão dirigida: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/finance-contas-extrato.smoke.test.tsx` → `29 tests · 29 pass · 0 fail · 0 skipped`.
+- `npm --prefix frontend run check` → `tsc -b --noEmit`, exit `0` (reexecutado depois das mutações restauradas).
+- `git diff --check` → vazio; escopo do diff antes do registro = somente `FinanceiroViewA.tsx` e `finance-page-live.test.tsx`.
+
+### Mutações
+
+- **R2 / tirar `display: "flex"`:** `node --test --import tsx --test-name-pattern="R2:" tests/finance-page-live.test.tsx` → `1 fail` nominal (`actual undefined`, esperado `flex`); restaurada.
+- **R1 / voltar o chip a olhar só o alvo (suprimir o chip de conta):** teste nominal `R1: filtro de conta convive...` → `1 fail`, sem `Filtro: Conta: Banco do Brasil`; restaurada.
+- **R1 / indicador "A conciliar" voltar a herdar `accountId`:** teste nominal `R1: indicador da organização...` → `1 fail`, chip `Conta: Caixa da loja` ainda presente e lista ainda restrita; restaurada.
+- Hash de restauração conferido depois das três: `FinanceiroViewA.tsx` = `6cddd6ead6e79dc67a1050315372cfd88c5a8f43ea0102883944e01fd26aea66`; `finance-page-live.test.tsx` = `10ee1e694f5c7c178e7c6a3a7b255aded08ce725a5b3cc9f893b6e2e934531bb`, iguais aos hashes verdes medidos antes das mutações.
+
+### Falta
+
+- Nada da FATIA 2. As FATIAS 3–9 da E2.6 permanecem para execuções posteriores; nenhuma delas foi iniciada aqui.
+
+### Próximo comando exato
+
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`

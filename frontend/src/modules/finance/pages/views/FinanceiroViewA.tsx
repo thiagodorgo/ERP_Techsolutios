@@ -103,15 +103,24 @@ function SkeletonRows({ columns }: { readonly columns: number }) {
   );
 }
 
-function FilterChip({ label, onClear }: { readonly label: string; readonly onClear: () => void }) {
+type FilterChipItem = {
+  readonly key: string;
+  readonly label: string;
+  readonly clearLabel: string;
+  readonly onClear: () => void;
+};
+
+function FilterChips({ items }: { readonly items: readonly FilterChipItem[] }) {
   return (
     <div className="pat-filtro-chip-bar">
-      <span className="pat-filtro-chip">
-        {`Filtro: ${label}`}
-        <button type="button" onClick={onClear} aria-label={`Remover o filtro ${label}`}>
-          ✕
-        </button>
-      </span>
+      {items.map((item) => (
+        <span key={item.key} className="pat-filtro-chip">
+          {`Filtro: ${item.label}`}
+          <button type="button" onClick={item.onClear} aria-label={item.clearLabel}>
+            ✕
+          </button>
+        </span>
+      ))}
     </div>
   );
 }
@@ -179,6 +188,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   }
 
   const activeAccounts = model.accounts.items.filter((account) => account.active);
+  const selectedAccountName = state.accountId ? (model.accounts.items.find((account) => account.id === state.accountId)?.name ?? "Conta selecionada") : null;
   const accountsReady = !model.accounts.loading && !model.accounts.failed;
   const pendingCount = countOf(model.aggregates[AGGREGATE_KEYS.pending]);
   const pendingAgg = model.aggregates[AGGREGATE_KEYS.pending];
@@ -219,7 +229,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
             label={`Entradas em ${mes}`}
             hint={previous ? `${monthName(previous.competencia)}: ${formatCompactBRL(previous.inflow)}` : "lançamentos do mês"}
             pressed={isPressed("ext", `mes:${competencia}:in`)}
-            onClick={() => go({ tab: "ext", target: competencia ? `mes:${competencia}:in` : null })}
+            onClick={() => go({ tab: "ext", target: competencia ? `mes:${competencia}:in` : null, accountId: null })}
             ariaLabel={`Entradas em ${mes}: ${formatBRL(summary.settledThisMonth.inflow)} — ver as entradas do mês`}
           />
           <KpiStatCard
@@ -230,7 +240,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
             label={`Saídas em ${mes}`}
             hint={previous ? `${monthName(previous.competencia)}: ${formatCompactBRL(previous.outflow)}` : "lançamentos do mês"}
             pressed={isPressed("ext", `mes:${competencia}:out`)}
-            onClick={() => go({ tab: "ext", target: competencia ? `mes:${competencia}:out` : null })}
+            onClick={() => go({ tab: "ext", target: competencia ? `mes:${competencia}:out` : null, accountId: null })}
             ariaLabel={`Saídas em ${mes}: ${formatBRL(summary.settledThisMonth.outflow)} — ver as saídas do mês`}
           />
           <KpiStatCard
@@ -265,7 +275,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
             label="A conciliar"
             hint={pendingAgg && pendingCount !== null ? `${formatBRL(pendingAgg.items[0].inflow)} a entrar · ${formatBRL(pendingAgg.items[0].outflow)} a sair` : "o servidor não respondeu a contagem"}
             pressed={isPressed("conc", "conc:pendente")}
-            onClick={() => go({ tab: "conc", target: "conc:pendente" })}
+            onClick={() => go({ tab: "conc", target: "conc:pendente", accountId: null })}
             ariaLabel={`A conciliar: ${pendingCount === null ? "contagem indisponível" : plural(pendingCount, "lançamento", "lançamentos")} — ver a conciliação`}
           />
         </>
@@ -328,7 +338,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
                   key={account.id}
                   type="button"
                   className={pressed ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
-                  style={{ justifyContent: "space-between", width: "100%" }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", textAlign: "left" }}
                   aria-pressed={pressed}
                   aria-label={`${account.name}: ${count === null ? "contagem indisponível" : `${count} a conciliar`} — ver a conciliação da conta`}
                   onClick={() => go({ tab: "conc", accountId: account.id, target: "conc:pendente" })}
@@ -336,7 +346,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={account.name}>
                     {account.name}
                   </span>
-                  <b>{count === null ? "contagem indisponível" : `${count} a conciliar`}</b>
+                  <b style={{ whiteSpace: "nowrap", marginLeft: 8 }}>{count === null ? "contagem indisponível" : `${count} a conciliar`}</b>
                 </button>
               );
             })}
@@ -536,7 +546,24 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
     }
   }
 
-  const chipLabel = state.target && !(state.tab === "conc" && state.target.startsWith("conc:")) ? targetLabel(state.target) : null;
+  const filterChips: FilterChipItem[] = [];
+  if (selectedAccountName && (state.tab === "ext" || state.tab === "conc")) {
+    filterChips.push({
+      key: "account",
+      label: `Conta: ${selectedAccountName}`,
+      clearLabel: "Remover o filtro de conta",
+      onClear: () => go({ accountId: null }),
+    });
+  }
+  if (state.target && !(state.tab === "conc" && state.target.startsWith("conc:"))) {
+    const label = targetLabel(state.target);
+    filterChips.push({
+      key: "target",
+      label,
+      clearLabel: `Remover o filtro ${label}`,
+      onClear: () => go({ target: null }),
+    });
+  }
 
   return (
     <div data-aparencia="A" style={{ color: "#0F172A" }}>
@@ -577,7 +604,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
           <span className="pat-table__count">{counter}</span>
         </div>
         {intro}
-        {chipLabel ? <FilterChip label={chipLabel} onClear={() => go({ target: null })} /> : null}
+        {filterChips.length > 0 ? <FilterChips items={filterChips} /> : null}
         {body}
       </div>
     </div>
