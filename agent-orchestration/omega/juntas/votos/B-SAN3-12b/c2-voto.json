@@ -1,0 +1,168 @@
+{
+ "jurado": "jurado-san312b-c2-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312b-c2-cadeia-de-acesso",
+ "cadeira": "C2 — cadeia de acesso: gate de cada ação = permissão exata da rota (CE-G2, F7), desvínculo do cheque (F6), redirecionamentos, menu e chave da aparência (F13, F15)",
+ "mandato_md5": "7582597482b49a20dd8ab0496d25cfc4 (sem CR; o arquivo não tem CR) · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5), subagente genérico Claude Code · nível menor (§C7.6) · substituição: nenhuma",
+ "corpo_md5": ".claude/ d91270202a8b737292ca58ab3726c314 · .agents/ f077fc6f274620e9eba0c48952bb1441 (espelho com frontmatter e bloco Codex; corpo IDENTICO sem eles, medido pelo mandato e pelo inspetor) · recebido: carregado por git show <objeto>:.claude/... · IDENTICO",
+ "objeto": "fc5ead6cf3191eb2a1485d4a16404a403a00beec (ls-remote = gh pr view 469) · cerca bfbba006 → objeto: delta só corpos (6 arquivos jurado-san312b-*) · head-base do controle c9a2d036c1aaff21df92817525d7f9c92cbbe272 · merge-base atual c9a2d036c1aaff21df92817525d7f9c92cbbe272 · origin/main início/fim c9a2d036/f7922ab7 (entrou o #464) · objeto no fim: igual",
+ "legalidade": "parecer do inspetor: insp-san312b-parecer.md, inspetor-san312b-opus · LIBERADO COM RESSALVA · confere nome/corpo/worktree: sim (Claude Opus subagente liberado na C2; worktree j12b-c2-wt; ordem C2→C1→C3; disco 9,35 GiB ≥ 8,8 no start) · check-runs 14 | 0 | 0 · frontend: completed/success ×2 · backend: completed/success ×2",
+ "quorum": "unanimidade de 3, com veto · ciclo 1 (todo bloqueia dentro-do-bloco reprova)",
+ "escopo": "dentro-do-bloco (nenhum achado bloqueia)",
+ "gravidade": "nota (só notas; nenhum bloqueia, nenhum ajuste)",
+ "leitura_de_outras_cadeiras": "não li c1-* nem c3-* antes de gravar · li: mandato cadeira-c2.md, corpo do blob, insp-san312b-parecer.md, plano B-SAN3-12-plano.md (F13, F15, Q3, Q4), relatório do dev (D-4, §M), mutacoes.py do dev (âncoras F6/F7/F13/F15), pendencias.md (P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO), catalog.ts executado",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "frontend/src/modules/finance/pages/FinanceiroPage.tsx",
+  "frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx",
+  "frontend/src/modules/finance/pages/financeiro.state.ts",
+  "frontend/src/modules/finance/entries/**",
+  "frontend/src/modules/finance/accounts/**",
+  "frontend/src/modules/finance/titles/**",
+  "frontend/src/App.tsx",
+  "frontend/src/guards/PermissionGuard.tsx",
+  "frontend/src/providers/**",
+  "frontend/src/layouts/appSidebarNav.ts",
+  "frontend/src/layouts/AppShell.tsx",
+  "frontend/src/navigation/types.ts",
+  "frontend/src/navigation/tenantNavigation.ts",
+  "frontend/src/modules/navigation/**",
+  "frontend/src/modules/auth/auth.adapter.ts",
+  "frontend/src/modules/appearance/**",
+  "src/modules/core-saas/permissions/catalog.ts",
+  "src/modules/core-saas/middleware/rbac.middleware.ts",
+  "src/modules/core-saas/middleware/tenant-context.middleware.ts",
+  "src/modules/navigation/**",
+  "src/modules/financial-entries/**",
+  "src/modules/financial-titles/**",
+  "src/modules/financial-accounts/**",
+  "src/modules/cheques/**",
+  "src/app.ts",
+  "RBAC_MATRIX.md",
+  "agent-orchestration/controle/pendencias.md",
+  "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+  "docs/revisoes/SAN3/B-SAN3-12b-dev.md",
+  "frontend/tests/finance-page-live.test.tsx",
+  "frontend/tests/finance-baixa.smoke.test.tsx",
+  "frontend/tests/finance-conciliacao.smoke.test.tsx",
+  "frontend/tests/finance-redirects.test.tsx",
+  "frontend/tests/aparencia-storage.test.ts",
+  "frontend/tests/aparencia-hook.test.tsx",
+  "frontend/tests/sidebar-nav.test.tsx",
+  "frontend/tests/san3-04a-sidebar-estoque-financeiro.test.tsx"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "tabela_ceg2": "13 papéis executados de ROLE_PERMISSIONS + 12 sintéticos × ações (Nova conta, Registrar recebimento/pagamento, Conciliar, Desfazer): tela == rota do backend em memória em 25/25 atores; escrita = super_admin, tenant_admin, platform_admin, finance; desfazer = super/tenant/platform_admin (finance 403 unreconcile_forbidden sem a política); 6 papéis sem leitura barrados na guarda",
+   "atores_sinteticos": "so:X e menos:X para as 5 permissões: 0 divergência",
+   "politica": "true→botão; false/500/403/rede→sem botão (finance e tenant_admin)",
+   "mutacoes": "M1 (pay:true) vermelha F7 Gestor; M1b F7 do dev vermelha 2 casos; M2 do plano (financial_titles:update) VERDE nos testes do bloco, acusada só pela sonda sintética; M3 minha (desfazer por update) vermelha F10/F20",
+   "controle_c9a2d036": "F6/F7 do objeto vermelhos por AssertionError; sonda mostra a página da base sem ações (18 divergentes)"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "desvincular": "finance não; tenant_admin sim; so:unlink sim; tenant_admin−unlink não; backend: finance 403 permission_required, tenant_admin 200",
+   "pedido_honesto": "textarea para quem não tem; chamadas: POST pay, GET título, GET /cheques?title_id — nenhuma fila; Copiar pedido 0 chamadas",
+   "leitura_cheques": "GET /cheques exige cheques:read; finance tem (200); sem a leitura: \"Não foi possível listar o cheque agora. Confira em Cheques.\"",
+   "mutacoes": "M4 F6 do dev vermelha F6/F21; M5 minha (cheques:update) vermelha F6/F21; sonda acusa as duas",
+   "controle_c9a2d036": "F6/F21 e F6 do objeto vermelhos por AssertionError na base"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "acesso_antes_depois": "App REAL em MemoryRouter, 13 papéis + 2 sintéticos × /finance/charges, /finance/payments, /finance, base × objeto: 0 de 39 células de papel do catálogo mudam de acesso; 4 células mudam só em sintéticos (só titles:read perde charges/payments; só entries:read ganha a página, sem dado de título) — atores impossíveis no produto (titles:read ≡ entries:read executado; sem concessão por organização) e consequência da decisão F13/Q4",
+   "menu": "menu do front executado (buildSidebarNav + computeHiddenNavPaths) sobre o menu governado do backend executado em memória: mesmos rótulos por papel na base e no objeto; nenhum ganho nem perda por papel. D-4 medida: em organização sem o módulo finance, Cobranças/Pagamentos aparecem aos 7 papéis que leem (a base escondia), sem mudar acesso a dado (rotas do front e do backend não checam módulo) — coberta por P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (ABERTA, dono B-SAN3-24); testes do §11 R9 verdes",
+   "f15": "chave techsol.aparencia.<tenantId>.<userId>; B na mesma organização lê A (não herda); A em outra organização lê A; abrir sem preferência não grava (antes [] depois [])",
+   "mutacoes": "M6 F13 do dev vermelha (finance-redirects); M7 F15 do dev vermelha em 6 casos e a minha sonda acusa a herança; M8 minha (PermissionGuard titles:read) vermelha e a tabela (a) acusa 15 células",
+   "controles": "(1) finance-redirects do objeto vermelho por AssertionError na base; (2) a tabela acusa a célula de M8; (3) a sonda F15 acusa a herança em M7"
+  }
+ ],
+ "justificativa": "Terreno: worktree próprio j12b-c2-wt detached no objeto, npm ci raiz e frontend próprios (não junction), prisma generate com URL sintética, sem banco e sem Docker; backend em memória (CORE_SAAS_PERSISTENCE=memory, REDIS_URL para porta fechada) em 127.0.0.1:47923; testes .tsx rodados de frontend/.\nItem 1: matriz EXECUTADA de ROLE_PERMISSIONS (13 papéis) × rotas do backend lidas e EXECUTADAS em memória × gates da tela; a sonda monta a página REAL para 25 atores (13 papéis + 12 sintéticos so:X/menos:X) com a política que o servidor devolveu: 0 divergência entre botão visível e rota não-403 (Nova conta, Registrar recebimento/pagamento, Conciliar, Desfazer). Gestor, Auditor e viewer só consultam, com as frases; Técnico de Campo e os outros 5 papéis sem leitura barrados na guarda; desfazer só com política true (false, 500, 403 e rede fechados); ponta a ponta finance 403 unreconcile_forbidden, tenant_admin 200. Controle: F6/F7 do objeto vermelhos por AssertionError na base; a sonda vê a base sem ações. Mutações M1, M1b (F7 do dev) e M3 (minha) vermelhas; M2 (a do plano, financial_titles:update) VERDE nos testes do bloco e acusada só pela sonda sintética — critério que não pode falhar, nota C2-01.\nItem 2: Desvincular só para quem tem cheques:unlink_title (tenant_admin, so:unlink), não para finance nem tenant_admin−unlink; o backend nega o finance (403) e aceita o tenant_admin (200); o pedido é um textarea, 0 chamada de rede ao copiar, nenhuma fila fingida; GET /cheques sob cheques:read, que o finance tem; sem a leitura a tela diz que não listou. Mutações M4 (F6 do dev) e M5 (minha, cheques:update) vermelhas; controle F6 vermelho na base por asserção.\nItem 3: tabela papel × rota pelo App real na base e no objeto: nenhum papel do catálogo muda de acesso; menu por papel com os mesmos rótulos; D-4 medida e coberta pela pendência dona (C2-02); células de atores sintéticos (C2-03) decididas pelo F13/Q4; F15 por organização e usuário, sem herança, sem gravar na abertura. Mutações M6, M7 (do dev) e M8 (minha) vermelhas; controles (1)(2)(3) acusaram.\nSem medir: nada dos 3 itens. Limpeza: sondas removidas, servidor fechado, worktree removido por git worktree remove --force (ec 0), nenhum Docker nem base. Nota de terreno: origin/main andou de c9a2d036 para f7922ab7 (#464) durante a medição; o objeto não andou.\nVOTO: APROVADO — gate = permissão da rota nas 5 ações para 13 papéis e 12 atores sintéticos; Gestor/Auditor só consultam; Técnico fora; desfazer fail-closed nos 5 estados da política; desvínculo só com cheques:unlink_title e pedido sem fila fingida; acesso por rota igual à base para todo papel do catálogo, salvo células de atores sintéticos decididas por F13/Q4; menu sem ganho nem perda por papel, salvo D-4 com dono; chave por organização e usuário; mutações F6/F7/F13/F15 e as minhas vermelhas pelo caso indicado; pendências: C2-01 (M2 não acusada pelos testes do bloco), C2-02 (D-4 provisionamento, já em P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO), C2-03 (células de atores sintéticos)",
+ "o_que_executei": [
+  {
+   "comando": "node --import tsx zz-j12bc2-matriz.mts (ROLE_PERMISSIONS do objeto)",
+   "forma": "worktree j12b-c2-wt, objeto, N=13 papéis",
+   "resultado": "ec 0; titles:update≠entries:create em [], cheques:update≠unlink em [finance], update≠unreconcile em [finance]"
+  },
+  {
+   "comando": "NODE_ENV=test REDIS_URL=redis://127.0.0.1:1 node --import tsx zz-j12bc2-backend.mts",
+   "forma": "createApp em memória, 127.0.0.1:47923, 25 atores (x-role e x-permissions)",
+   "resultado": "ec 0; backend-obj.json"
+  },
+  {
+   "comando": "node --test --import tsx (de frontend/) finance-page-live, finance-baixa.smoke, finance-redirects, aparencia-storage, aparencia-hook, sidebar-nav, san3-04a-sidebar",
+   "forma": "objeto",
+   "resultado": "ec 0; 71/71"
+  },
+  {
+   "comando": "node --test --import tsx tests/zz-j12bc2-front.test.tsx + zz-j12bc2-compare.cjs",
+   "forma": "objeto; página real, 25 atores; md5 d3ba747bb7c2eff3b3d18fecdf42b8bd",
+   "resultado": "ec 0 4/4; atores 25, divergentes 0"
+  },
+  {
+   "comando": "zz-j12bc2-mut.sh M1, M1b, M2, M3, M4, M5, M6, M7, M8",
+   "forma": "âncora única, numstat 1/1, restauro por git checkout <objeto> e hash-object = blob",
+   "resultado": "M1, M1b, M3, M4, M5, M6, M7, M8 vermelhas pelo caso indicado; M2 verde nos testes do bloco e acusada pela sonda; 9 de 9 restauradas = blob"
+  },
+  {
+   "comando": "git checkout c9a2d036 -- frontend/src; finance-page-live --test-name-pattern=F7|F6; sondas; finance-redirects; navfront",
+   "forma": "head-base no meu worktree, restaurado com status vazio e hash = blob",
+   "resultado": "F6/F7 e F13 vermelhos por AssertionError; as sondas veem a diferença"
+  },
+  {
+   "comando": "zz-j12bc2-navback.mts e zz-j12bc2-navback-semfin.mts (GET /api/v1/navigation/menu) + zz-j12bc2-navfront.mts",
+   "forma": "backend em memória; front no objeto e na base",
+   "resultado": "mesmos rótulos por papel; sem o módulo finance: Cobranças/Pagamentos aparecem no objeto aos 7 papéis que leem"
+  },
+  {
+   "comando": "node --test --import tsx tests/zz-j12bc2-front3.test.tsx",
+   "forma": "App real em MemoryRouter, objeto e base; hook real de aparência; md5 d3e10e7dc0e4dd585c713a75baeb4b6a",
+   "resultado": "ec 0, 2/2 nas duas; 0 de 39 células de papel mudam; F15 sem herança"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C2-01",
+   "defeito": "a mutação do plano para o F7 (gate da baixa por financial_titles:update, permissão vizinha) deixa os testes do bloco VERDES (36/36); só o ator sintético da sonda a acusa",
+   "evidencia": "zz-j12bc2-mut.sh M2-F7plano: ec 0, 36/36; comparador: so:financial_entries:create e menos:financial_entries:create divergem; matriz executada: titles:update≠entries:create em []",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: nenhum teste do bloco monta um ator com financial_entries:create sem financial_titles:update (ou o inverso); o código do objeto está certo (gate = permissão da rota), mas a forma 1 da classe só falha por ator sintético"
+  },
+  {
+   "id": "C2-02",
+   "defeito": "D-4 medida: numa organização sem o módulo finance, Cobranças e Pagamentos aparecem no menu dos 7 papéis que leem (a base os escondia pelo provisionamento)",
+   "evidencia": "navback-semfin.json + navfront-semfin-base.json × navfront-semfin-obj.json; pendencias.md l.11876 do objeto",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o item com ?aba= não casa com nenhum caminho governado do backend; o acesso ao dado não muda (front e backend só checam permissão) e o efeito está declarado, com dono, em P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (B-SAN3-24)"
+  },
+  {
+   "id": "C2-03",
+   "defeito": "células de acesso mudam só para atores sintéticos: só financial_titles:read perde /finance/charges e /finance/payments; só financial_entries:read passa a abrir a página (sem dado de título)",
+   "evidencia": "front-probe3.json × front-probe3-BASE.json (4 células); matriz executada titles:read ≡ entries:read; plano Q3 (sem concessão de permissão por organização)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a guarda efetiva de /finance/charges e /finance/payments passou de financial_titles:read para financial_entries:read|finance:read, decidido no F13/Q4; nenhum papel do catálogo é afetado"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [
+  "F7 por permissão vizinha (financial_titles:update) nos testes do bloco: verde sob a mutação; só o ator sintético acusa (C2-01)"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (D-4, dono B-SAN3-24) — medida em C2-02",
+  "C2-01: ator por permissão (não por papel) nos testes do F7 — dono a nomear pelo orquestrador no registro do PR",
+  "para a ata: origin/main andou para f7922ab7 (#464) durante a junta; o objeto não andou"
+ ],
+ "teardown": "servidor em memória fechado (47923 só TIME_WAIT) · processos node com o caminho = 0 · worktree removido por git worktree remove --force (ec 0) · 9 mutações e 4 checkouts do head-base restaurados (status vazio, hash-object = blob) · sondas copiadas para frontend/tests apagadas; originais só em C:/Users/AMP/erp-pausa-2026-10-03/j12b-c2 · nenhum docker, nenhuma base · w-san312b só com c2-evidencia.md e c2-voto.json"
+}
