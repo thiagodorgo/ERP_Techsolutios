@@ -378,11 +378,14 @@ if (!connectionString) {
       const { repo, service } = ctx;
       const actor = { tenantId: seed.tenantId, userId: seed.userId };
       const run = await createRun(ctx, seed);
+      const template = await repo.getTemplate(seed.tenantId, seed.templateId);
+      assert.ok(template);
 
       await repo.updateTemplate({
         tenantId: seed.tenantId,
         checklistId: seed.templateId,
         actorUserId: seed.userId,
+        expectedUpdatedAt: template.updatedAt,
         status: "inactive",
       });
 

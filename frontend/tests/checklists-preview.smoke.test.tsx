@@ -121,6 +121,7 @@ function modelo(input: {
     version: 2,
     publishedAt: null,
     updatedAt: "2026-07-20T10:00:00.000Z",
+    activeRuns: 0, // B-SAN3-22: o detalhe traz `activeRuns`; ausente travaria a tela (fail-closed).
     schema: { source: "ckb_editor", sections: [...input.sections] },
     components: input.campos.map((campo, index) => ({
       id: `cmp-${index}`,

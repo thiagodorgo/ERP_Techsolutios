@@ -263,3 +263,33 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
   CE-4), `aa80e3fb` (mensagem nos `assert.ok` do teste vivo), `5d8aa9a3` (registro e relatório) e este.
 - `Kpis/**`, `*.reference.html`, `prisma/**`, `src/**`, lockfiles: intocados (`git diff --name-only f6c9a962 HEAD -- Kpis prisma src '*.reference.html'` → 0).
 - PR não aberto (mandato).
+
+## RETOMADA 1
+
+- **Fatia:** 1 — merge da `main` pela E2.5.
+- **Executor e modelo:** `dev-san312b-c2-f1-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado. Não achou, não planejou e não vota.
+- **Head de entrada:** `8dd477b8c2f19fc047069705010ace54ad32dd2a`; `origin/main` medida em `f7922ab7360487ced44203a76de75b80c5094140`. Esta seção integra o próprio commit de merge; o head de saída é publicado pelo `git rev-parse HEAD` após o commit e no push.
+
+### Feito — comando → saída
+
+- `git fetch origin main; git status --porcelain; git rev-parse HEAD origin/main` → árvore vazia; head `8dd477b8…`; alvo `f7922ab7…`; disco `9,47 GB` livres antes da fatia.
+- `python -I agent-orchestration/controle/gerar-indice-pendencias.py` no objeto de entrada → vermelho-controle de R7: `104` linhas (`53 insertions`, `51 deletions`); restauração por `git checkout --` com hash antes/depois `0622dd90b9325f7523a7cb95549984527c88418e` igual.
+- `git merge origin/main` → os 3 conflitos previstos pela E2.5, somente em `pendencias.md`, `pendencias-indice.md` e `frontend/package.json`.
+- Resolução de `pendencias.md` → lado da `main` primeiro e as 2 entradas do 12b depois; cada cabeçalho conferido uma vez, inclusive `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`, `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO`, `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e os 4 cabeçalhos do #464 medidos.
+- `python -I agent-orchestration/controle/gerar-indice-pendencias.py` após unir a fonte → `666 cabeçalhos / 655 IDs`; índice regenerado, nunca resolvido à mão.
+- União do `test:smoke` por token, preservando a lista da `main` e anexando os 9 testes do 12b → `173` tokens, `173` únicos; `tests/checklists-editor-lock.smoke.test.tsx` aparece uma vez.
+- `git diff --check` → vazio.
+- `npm --prefix frontend run check` (Node `v20.19.5`) → `tsc -b --noEmit`, exit `0`.
+- `npm --prefix frontend run test:smoke` (Node `v20.19.5`) → TAP `1458 tests · 1458 pass · 0 fail · 0 skipped · 0 cancelled`.
+
+### Mutações
+
+- **R7 / índice não regenerado:** no head de entrada, o gerador alterou o índice em 104 linhas, portanto o critério ficou vermelho; o arquivo foi restaurado e o hash original conferido. Depois da união de `pendencias.md`, o índice foi gerado da fonte do mesmo commit.
+
+### Falta
+
+- Nada da FATIA 1. As FATIAS 2–9 da E2.6 permanecem para execuções posteriores; nenhuma delas foi iniciada aqui.
+
+### Próximo comando exato
+
+`"C:/Program Files/Git/bin/bash.exe" -lc "cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD"`

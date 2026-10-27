@@ -1,0 +1,2976 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de checklist · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) + os da referência aprovada financeiro-ab ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;--color-status-info:#206bc4;
+  --color-chart-inflow:#10b981;--color-chart-outflow:#f87171;--color-chart-neutral:#94a3b8;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (igual às aprovadas) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+
+:root{--space-12:.75rem;--space-16:1rem;--space-24:1.5rem}
+.app-content{padding:24px}
+.app-sidebar__nav{overflow:auto}
+.app-shell{min-height:900px}
+
+/* ─── CLASSES REAIS DO EDITOR (.ckb-*) — extraídas por script de frontend/src/styles/app.css @ origin/main b08c7557, sem edição ─── */
+.ckb-page {
+  color: #0f172a;
+}
+.ckb-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.ckb-header-info {
+  min-width: 320px;
+  flex: 1 1 320px;
+}
+.ckb-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #2563eb;
+  margin-bottom: 6px;
+}
+.ckb-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+  margin: 0;
+}
+.ckb-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 5px 0 0;
+  font-weight: 500;
+}
+.ckb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ckb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  width: 230px;
+  color: #94a3b8;
+}
+.ckb-search svg {
+  flex-shrink: 0;
+}
+.ckb-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  width: 100%;
+  padding: 0;
+}
+.ckb-search:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.ckb-select {
+  padding: 9px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+.ckb-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  background: #2563eb;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.ckb-btn-primary:hover {
+  background: #1d4ed8;
+}
+.ckb-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ckb-btn-primary--retry {
+  display: inline-flex;
+  padding: 10px 18px;
+  margin: 0 auto;
+}
+.ckb-select:focus-visible,
+.ckb-btn-primary:focus-visible,
+.ckb-icon-btn:focus-visible,
+.ckb-empty-cta:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.ckb-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  margin-bottom: 16px;
+}
+.ckb-readonly-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #eef2ff;
+  color: #4f46e5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-readonly-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.ckb-readonly-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 1px;
+}
+.ckb-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.ckb-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ckb-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.ckb-kpi-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ckb-kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.ckb-kpi-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.ckb-table {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ckb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) 1.1fr 0.9fr 0.5fr 0.8fr 0.9fr 120px;
+  gap: 12px;
+}
+.ckb-table-head {
+  padding: 11px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+.ckb-row {
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+  cursor: pointer;
+}
+.ckb-row:hover {
+  background: #f8fafc;
+}
+.ckb-row:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+.ckb-cell-model {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+.ckb-model-tile {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-model-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-model-summary {
+  font-size: 11.5px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-cell-type {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 600;
+}
+.ckb-cell-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.ckb-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+.ckb-pill--pending {
+  font-size: 10px;
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #b45309;
+}
+.ckb-cell-version {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-count {
+  font-size: 12.5px;
+  color: #475569;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-updated {
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+.ckb-cell-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.ckb-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ckb-icon-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-no-results {
+  padding: 44px 20px;
+  text-align: center;
+}
+.ckb-no-results-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.ckb-no-results-sub {
+  font-size: 12.5px;
+  color: #64748b;
+}
+.ckb-empty {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 56px 32px;
+  text-align: center;
+}
+.ckb-empty-tile {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+.ckb-empty-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+.ckb-empty-sub {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.6;
+  max-width: 460px;
+  margin: 0 auto 22px;
+}
+.ckb-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 20px;
+  background: #2563eb;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+.ckb-empty-cta:hover {
+  background: #1d4ed8;
+}
+.ckb-empty-cta:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ckb-error-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+}
+.ckb-error {
+  max-width: 440px;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 38px 32px;
+}
+.ckb-error-tile {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.ckb-error-title {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.ckb-error-detail {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+@keyframes ckb-shim {
+  0% {
+    background-position: -380px 0;
+  }
+  100% {
+    background-position: 380px 0;
+  }
+}
+.ckb-skl {
+  background: #e2e8f0;
+  background-image: linear-gradient(90deg, #e2e8f0 0px, #eff3f8 140px, #e2e8f0 280px);
+  background-size: 380px 100%;
+  animation: ckb-shim 1.15s linear infinite;
+  border-radius: 8px;
+}
+.ckb-skl-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.ckb-skl-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+}
+@keyframes ckb-fade-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.ckb-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 18px;
+  background: #0f172a;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  max-width: 520px;
+  animation: ckb-fade-up 0.18s ease-out both;
+}
+.ckb-toast-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-toast-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ckb-skl,
+  .ckb-toast {
+    animation: none;
+  }
+}
+.ckb-ed {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  color: #0f172a;
+  margin: calc(var(--space-24) * -1);
+}
+@media (max-width: 860px) {
+  .ckb-ed {
+    margin: calc(var(--space-16) * -1);
+  }
+}
+.ckb-ed-head {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 24px 0;
+}
+.ckb-ed-head-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ckb-ed-back {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-ed-back:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-ident {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.ckb-ed-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #0f172a;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
+  padding: 5px 9px;
+  margin-left: -9px;
+  flex: 1 1 auto;
+  min-width: 180px;
+  max-width: 420px;
+}
+.ckb-ed-name:hover:not([readonly]) {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+.ckb-ed-type {
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+}
+.ckb-ed-type:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+  background: #f8fafc;
+}
+.ckb-ed-dirty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #b45309;
+  white-space: nowrap;
+}
+.ckb-ed-dirty-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+.ckb-ed-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ckb-ed-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.ckb-ed-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.ckb-ed-btn--save-dirty {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+.ckb-ed-btn--publish {
+  padding: 9px 16px;
+  background: #2563eb;
+  border-color: transparent;
+  color: #fff;
+}
+.ckb-ed-btn--publish:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: transparent;
+  color: #fff;
+}
+.ckb-ed-btn--publish-locked,
+.ckb-ed-btn--publish-locked:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.ckb-ed-blockbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.ckb-ed-error-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ckb-ed-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 11px;
+}
+.ckb-ed-tabs {
+  display: flex;
+  gap: 4px;
+}
+.ckb-ed-tab {
+  padding: 9px 15px;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+.ckb-ed-tab--active {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-runs-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0 9px;
+}
+.ckb-ed-runs-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+.ckb-ed-readonly-banner {
+  margin: 14px 24px 0;
+}
+.ckb-ed-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 264px minmax(400px, 1fr) 336px;
+  gap: 14px;
+  padding: 16px 24px 20px;
+}
+.ckb-ed-grid--readonly {
+  grid-template-columns: minmax(400px, 1fr);
+}
+@media (max-width: 1180px) {
+  .ckb-ed-grid {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.ckb-ed-col {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.ckb-ed-col-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ckb-ed-col-head--stack {
+  padding: 14px 15px 10px;
+}
+.ckb-ed-col-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+.ckb-ed-col-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.ckb-ed-ghost-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ckb-ed-ghost-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-ed-palette-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+.ckb-ed-pal-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 9px;
+  margin-bottom: 4px;
+  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.ckb-ed-pal-item:hover {
+  background: #f8fafc;
+  border-color: #dbeafe;
+}
+.ckb-ed-pal-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-pal-text {
+  min-width: 0;
+  flex: 1;
+}
+.ckb-ed-pal-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
+}
+.ckb-ed-pal-desc {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.ckb-ed-pal-plus {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-palette-empty {
+  margin: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.ckb-ed-canvas-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px 22px;
+  background: #fbfcfe;
+}
+.ckb-ed-empty {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 52px 24px;
+  text-align: center;
+  background: #fff;
+}
+.ckb-ed-empty-tile {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+.ckb-ed-empty-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+.ckb-ed-empty-sub {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.55;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.ckb-ed-section {
+  margin-bottom: 18px;
+}
+.ckb-ed-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.ckb-ed-section-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+.ckb-ed-section-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 7px;
+  padding: 4px 8px;
+  margin-left: -8px;
+}
+.ckb-ed-section-title:hover:not([readonly]) {
+  border-color: #e2e8f0;
+  background: #fff;
+}
+.ckb-ed-section-count {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+.ckb-ed-section-items {
+  border-left: 2px solid #e2e8f0;
+  padding-left: 12px;
+}
+.ckb-ed-section-empty {
+  padding: 14px;
+  border: 1.5px dashed #e2e8f0;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.ckb-ed-field {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  margin-bottom: 7px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 11px;
+  cursor: pointer;
+}
+.ckb-ed-field:hover {
+  border-color: #93c5fd;
+}
+.ckb-ed-field:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.ckb-ed-field--selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+.ckb-ed-field-grip {
+  color: #cbd5e1;
+  flex-shrink: 0;
+  display: flex;
+}
+.ckb-ed-field-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-field-main {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ckb-ed-field-labelrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ckb-ed-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ckb-ed-field-required {
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.ckb-ed-field-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+.ckb-ed-field-type {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+.ckb-ed-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.ckb-ed-field-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.ckb-ed-field-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ckb-ed-field-btn:hover {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+.ckb-ed-field-btn--danger:hover {
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.ckb-ed-insp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+.ckb-ed-insp-empty {
+  text-align: center;
+  padding: 36px 12px;
+}
+.ckb-ed-insp-empty-tile {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+}
+.ckb-ed-insp-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.ckb-ed-insp-empty-sub {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+.ckb-ed-insp-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  margin-bottom: 16px;
+}
+.ckb-ed-insp-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-insp-type {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.ckb-ed-insp-desc {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+.ckb-ed-group {
+  margin-bottom: 14px;
+}
+.ckb-ed-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+.ckb-ed-label-soft {
+  font-weight: 500;
+  color: #94a3b8;
+}
+.ckb-ed-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.ckb-ed-textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  color: #0f172a;
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+.ckb-ed-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 18px;
+  text-align: left;
+}
+.ckb-ed-toggle--on {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.ckb-ed-switch {
+  width: 38px;
+  height: 22px;
+  border-radius: 99px;
+  background: #cbd5e1;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.ckb-ed-toggle--on .ckb-ed-switch {
+  background: #2563eb;
+}
+.ckb-ed-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+.ckb-ed-toggle--on .ckb-ed-switch-knob {
+  left: 19px;
+}
+.ckb-ed-toggle-title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.ckb-ed-toggle-sub {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+.ckb-ed-toggle--flush {
+  margin-bottom: 0;
+}
+.ckb-ed-toggle:disabled {
+  cursor: default;
+}
+.ckb-ed-insp-section {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+.ckb-ed-insp-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+.ckb-ed-insp-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  margin-bottom: 11px;
+  color: #92400e;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.ckb-ed-insp-warn svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ckb-ed-insp-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.ckb-ed-insp-row-item {
+  flex: 1;
+  min-width: 0;
+}
+.ckb-ed-group--tight {
+  margin: 14px 0 0;
+}
+.ckb-ed-input--num-sm {
+  width: 110px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.ckb-ed-input--num-md {
+  width: 130px;
+}
+.ckb-ed-select {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+}
+.ckb-ed-select:disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+.ckb-ed-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ckb-ed-opt-grip {
+  color: #cbd5e1;
+  display: flex;
+  flex-shrink: 0;
+}
+.ckb-ed-opt-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+.ckb-ed-opt-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-ed-opt-btn:hover:not(:disabled) {
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+.ckb-ed-opt-btn--danger:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.ckb-ed-opt-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ckb-ed-opt-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px;
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #2563eb;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.ckb-ed-opt-add:hover:not(:disabled) {
+  border-color: #2563eb;
+  background: #f8fafc;
+}
+.ckb-ed-opt-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.ckb-ed-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.ckb-ed-chip-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+}
+.ckb-ed-chip-toggle--on {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.ckb-ed-chip-toggle--damage.ckb-ed-chip-toggle--on {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #dc2626;
+}
+.ckb-ed-chip-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.ckb-ed-insp-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.ckb-ed-insp-slot-tile {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-insp-slot-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ckb-ed-insp-slot-sub {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 1px;
+}
+.ckb-ed-aplic {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+}
+.ckb-ed-aplic-inner {
+  max-width: 880px;
+}
+.ckb-ed-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+.ckb-ed-info-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #dbeafe;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ckb-ed-info-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+.ckb-ed-info-sub {
+  font-size: 12px;
+  color: #3b5a8f;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.ckb-ed-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.ckb-ed-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.ckb-ed-card-title {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+.ckb-ed-card-sub {
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.ckb-ed-soon-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: #f3e8ff;
+  color: #7e22ce;
+  white-space: nowrap;
+}
+.ckb-ed-rule {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 36px;
+  gap: 10px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: end;
+}
+.ckb-ed-rule-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 5px;
+}
+.ckb-ed-rule-box {
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+.ckb-ed-rule-del {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: not-allowed;
+}
+.ckb-ed-rule-add-wrap {
+  padding: 13px 18px;
+}
+.ckb-ed-rule-add {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.ckb-ed-publish-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+}
+.ckb-ed-publish-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.ckb-ed-publish-text {
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.ckb-ed-publish-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.ckb-ed-publish-tile {
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+}
+.ckb-ed-publish-tile--ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+.ckb-ed-publish-tile-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+  margin-bottom: 3px;
+}
+.ckb-ed-publish-tile--ok .ckb-ed-publish-tile-title {
+  color: #15803d;
+}
+.ckb-ed-publish-tile-sub {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.45;
+}
+.ckb-ed-publish-tile--ok .ckb-ed-publish-tile-sub {
+  color: #166534;
+}
+.ckb-ed-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, 0.55);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.ckb-ed-modal {
+  width: 420px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
+  animation: ckb-fade-up-still 0.18s ease-out both;
+}
+@keyframes ckb-fade-up-still {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ckb-ed-modal-tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #b45309;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.ckb-ed-modal-title {
+  font-size: 16.5px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.ckb-ed-modal-text {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+.ckb-ed-modal-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.ckb-ed-modal-btn {
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.ckb-ed-modal-btn--primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.ckb-ed-modal-btn--danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.ckb-ed-skl-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px 16px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.ckb-ed-back:focus-visible,
+.ckb-ed-btn:focus-visible,
+.ckb-ed-ghost-btn:focus-visible,
+.ckb-ed-tab:focus-visible,
+.ckb-ed-runs-link:focus-visible,
+.ckb-ed-pal-item:focus-visible,
+.ckb-ed-field-main:focus-visible,
+.ckb-ed-field-btn:focus-visible,
+.ckb-ed-toggle:focus-visible,
+.ckb-ed-opt-btn:focus-visible,
+.ckb-ed-opt-add:focus-visible,
+.ckb-ed-chip-toggle:focus-visible,
+.ckb-ed-modal-btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ckb-ed-modal,
+  .ckb-ed-switch,
+  .ckb-ed-switch-knob {
+    animation: none;
+    transition: none;
+  }
+}
+.ckb-ed-section-del {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+}
+.ckb-ed-section-del:hover {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.ckb-ed-section-del:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+.ckb-ed-name:focus-visible,
+.ckb-ed-section-title:focus-visible,
+.ckb-ed-input:focus-visible,
+.ckb-ed-opt-input:focus-visible,
+.ckb-ed-select:focus-visible,
+.ckb-ed-type:focus-visible,
+.ckb-ed-textarea:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+.ckb-ed-toggle--tight { margin-bottom: 12px; }
+.ckb-ed-insp-row + .ckb-ed-insp-hint { margin-top: 0; }
+.ckb-ed-type { cursor: pointer; }
+.ckb-pv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, 0.62);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+}
+.ckb-pv-modal {
+  width: 1080px;
+  max-width: 100%;
+  height: 100%;
+  max-height: 760px;
+  background: #f8fafc;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: ckb-fade-up-still 0.18s ease-out both;
+}
+.ckb-pv-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 28px;
+  overflow-y: auto;
+}
+.ckb-pv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.ckb-pv-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #2563eb;
+  margin-bottom: 6px;
+}
+.ckb-pv-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #0f172a;
+  margin: 0;
+}
+.ckb-pv-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0 0;
+  max-width: 420px;
+  line-height: 1.55;
+}
+.ckb-pv-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-pv-close:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-pv-summary {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.ckb-pv-summary-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+.ckb-pv-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ckb-pv-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.ckb-pv-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ckb-pv-stat-value {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+.ckb-pv-stat-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
+}
+.ckb-pv-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.ckb-pv-banner--block {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-weight: 600;
+}
+.ckb-pv-banner--ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  font-weight: 700;
+  align-items: center;
+}
+.ckb-pv-banner-line {
+  display: block;
+}
+.ckb-pv-banner-line + .ckb-pv-banner-line {
+  margin-top: 4px;
+}
+.ckb-pv-spacer {
+  flex: 1;
+  min-height: 14px;
+}
+.ckb-pv-actions {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.ckb-pv-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+}
+.ckb-pv-btn:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+.ckb-pv-btn--publish {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+.ckb-pv-btn--publish:hover:not(:disabled):not(.ckb-pv-btn--locked) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+.ckb-pv-btn:disabled,
+.ckb-pv-close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ckb-pv-btn,
+.ckb-pv-close,
+.ckb-pv-dock-close {
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.ckb-pv-btn--locked,
+.ckb-pv-btn--locked:hover {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.ckb-pv-stage {
+  width: 430px;
+  flex-shrink: 0;
+  background: #0d1b2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+.ckb-pv-dock {
+  background: #0d1b2a;
+  border: 1px solid #0d1b2a;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.ckb-pv-dock-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.ckb-pv-dock-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+}
+.ckb-pv-dock-sub {
+  font-size: 11px;
+  color: #7b93ab;
+  margin-top: 1px;
+}
+.ckb-pv-dock-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ckb-pv-dock-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+.ckb-pv-dock-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  justify-content: center;
+}
+.ckb-pv-phone {
+  width: 340px;
+  flex-shrink: 0;
+  height: 100%;
+  max-height: 690px;
+  border-radius: 30px;
+  border: 9px solid #1b2c40;
+  background: #f1f5f9;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+.ckb-pv-phone--dock {
+  height: auto;
+  max-height: none;
+  border-radius: 26px;
+  border-width: 8px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  align-self: flex-start;
+}
+.ckb-pv-phone-head {
+  flex-shrink: 0;
+  background: #0d1b2a;
+  padding: 9px 14px 12px;
+  color: #fff;
+}
+.ckb-pv-phone-status {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  color: #8aa2b8;
+  margin-bottom: 8px;
+}
+.ckb-pv-phone-name {
+  font-size: 13.5px;
+  font-weight: 800;
+}
+.ckb-pv-phone-context {
+  font-size: 10.5px;
+  color: #7b93ab;
+  margin-top: 2px;
+}
+.ckb-pv-phone-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px 20px;
+}
+.ckb-pv-phone-empty {
+  background: #fff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 26px 16px;
+  text-align: center;
+}
+.ckb-pv-phone-empty-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 5px;
+}
+.ckb-pv-phone-empty-sub {
+  font-size: 10.5px;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+.ckb-pv-sec {
+  margin-bottom: 12px;
+}
+.ckb-pv-sec-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #64748b;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+}
+.ckb-pv-sec-empty {
+  font-size: 10px;
+  color: #94a3b8;
+  padding: 2px 0 6px;
+}
+.ckb-pv-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  padding: 11px;
+  margin-bottom: 8px;
+}
+.ckb-pv-card-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+.ckb-pv-req {
+  color: #dc2626;
+}
+.ckb-pv-card-help {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+.ckb-pv-note {
+  margin-top: 9px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 7px 9px;
+  line-height: 1.4;
+}
+.ckb-pv-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+.ckb-pv-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+}
+.ckb-pv-chip--on {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.ckb-pv-damage {
+  margin-top: 9px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  height: 96px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ckb-pv-pin {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.ckb-pv-pin--a {
+  left: 38%;
+  top: 34%;
+  background: #dc2626;
+}
+.ckb-pv-pin--b {
+  left: 64%;
+  top: 56%;
+  background: #f59e0b;
+}
+.ckb-pv-marks {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+.ckb-pv-mark {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 99px;
+  background: #f1f5f9;
+  color: #475569;
+}
+.ckb-pv-slots {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 9px;
+}
+.ckb-pv-slot {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1.5px dashed #cbd5e1;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+.ckb-pv-hint {
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+.ckb-pv-textarea {
+  margin-top: 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+  padding: 9px;
+  font-size: 10.5px;
+  color: #b6c2d1;
+  min-height: 52px;
+}
+.ckb-pv-textarea--single {
+  min-height: 20px;
+}
+.ckb-pv-opts {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ckb-pv-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.ckb-pv-radio,
+.ckb-pv-check {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #cbd5e1;
+  flex-shrink: 0;
+}
+.ckb-pv-radio {
+  border-radius: 50%;
+}
+.ckb-pv-check {
+  border-radius: 4px;
+}
+.ckb-pv-opt-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+}
+.ckb-pv-sign {
+  margin-top: 9px;
+}
+.ckb-pv-sign-name {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+  color: #b6c2d1;
+  margin-bottom: 6px;
+}
+.ckb-pv-sign-pad {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  height: 64px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 10px;
+}
+.ckb-pv-ack {
+  margin-top: 9px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+.ckb-pv-ack .ckb-pv-check {
+  margin-top: 1px;
+}
+.ckb-pv-ack-text {
+  font-size: 10.5px;
+  color: #475569;
+  line-height: 1.4;
+}
+.ckb-pv-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 9px;
+}
+.ckb-pv-duo-slot {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 9px;
+  height: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.ckb-pv-cmp {
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  height: 58px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #64748b;
+}
+.ckb-pv-cmp--now {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.ckb-pv-cta {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 11px;
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+.ckb-pv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.ckb-pv-close:focus-visible,
+.ckb-pv-btn:focus-visible,
+.ckb-pv-dock-close:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+.ckb-pv-dock-close:focus-visible {
+  outline-color: #fff;
+}
+.ckb-ed-grid--preview {
+  grid-template-columns: 76px minmax(340px, 1fr) 300px 392px;
+}
+.ckb-ed-grid--readonly.ckb-ed-grid--preview {
+  grid-template-columns: minmax(340px, 1fr) 392px;
+}
+.ckb-ed-pal-item--compact {
+  padding: 7px;
+  justify-content: center;
+}
+.ckb-ed-col--compact .ckb-ed-palette-body {
+  padding: 8px 6px;
+}
+.ckb-ed-col--compact .ckb-ed-palette-empty {
+  font-size: 10px;
+  margin: 6px 2px;
+}
+.ckb-ed-btn--preview-on {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #2563eb;
+}
+@media (max-width: 1180px) {
+  .ckb-ed-grid--preview,
+  .ckb-ed-grid--readonly.ckb-ed-grid--preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .ckb-pv-modal {
+    flex-direction: column;
+    max-height: 100%;
+  }
+  .ckb-pv-stage {
+    width: 100%;
+    padding: 16px;
+  }
+  .ckb-pv-phone {
+    height: auto;
+    max-height: 520px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ckb-pv-modal {
+    animation: none;
+  }
+}
+
+/* ─── CLASSES REAIS DO PADRÃO DE BLOCOS CLICÁVEIS (.pat-kpi--clickable, .pat-filtro-chip, .pat-ab-*) — copiadas da maquete aprovada do B-SAN3-12 (app.css e financeiro-ab.reference.html) ─── */
+.kpi-grid{display:grid;gap:12px;margin-bottom:16px}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:left;color:#0f172a;min-width:0;font:inherit}
+.pat-kpi--clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pat-kpi--clickable:hover{border-color:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.08)}
+.pat-kpi--clickable:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;background:#f8fafc;box-shadow:0 0 0 1px #2563eb,0 4px 12px rgba(37,99,235,.12)}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.pat-kpi__tile{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:18px;font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__label{font-size:12px;font-weight:600;color:#334155;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__hint{font-size:10.5px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-filtro-chip-bar{padding:10px 18px 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.aba-intro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;font-size:12px;color:#475569;border-bottom:1px solid #f1f5f9;background:#fcfdfe}
+.aba-intro b{color:#0f172a}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-ab-table thead th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#334155}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-ab-row td b{color:#0f172a;font-weight:700}
+.doc{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.doc-os{font-family:var(--font-mono);color:#94a3b8;font-size:11px;margin-left:6px}
+.val{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.val--in{color:#15803d}.val--out{color:#b91c1c}
+.muted{color:#94a3b8}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.dir-ic{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;vertical-align:middle}
+.dir-ic--r{background:#dcfce7;color:#15803d}.dir-ic--p{background:#fef3c7;color:#b45309}
+.atraso{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1}
+.atraso i{display:block;width:54px;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.atraso i b{display:block;height:100%;border-radius:99px}
+.atraso span{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.grupo-row td{padding:9px 14px 7px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:#334155}
+.grupo-row td small{margin-left:10px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#94a3b8}
+.grupo-row--venc td{color:#b91c1c}
+.grupo-row--hoje td{color:#1d4ed8}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:14px 18px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.15fr 1fr 1.25fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4{font-size:11px;font-weight:800;color:#0f172a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+
+
+/* ─── B-SAN3-22 — acréscimos desta maquete: só estados de classes reais; nenhum token novo ─── */
+.ckb-pill--inuse{font-size:10px;padding:2px 8px;background:#fef3c7;color:#b45309;display:inline-flex;align-items:center;gap:5px}
+.ckb-ed-name{text-overflow:ellipsis}
+.ckb-ed-blockbar .ckb-ed-link{margin-left:auto;white-space:nowrap;background:none;border:0;color:#92400e;font-weight:800;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:6px 2px}
+.ckb-ed-blockbar .ckb-ed-link:focus-visible{outline:2px solid #92400e;outline-offset:2px}
+.ckb-ed-blockbar .ckb-ed-btn,.ckb-ed-blockbar .ckb-ed-modal-btn{flex-shrink:0}
+[aria-disabled="true"].ckb-ed-pal-item,[aria-disabled="true"].ckb-ed-field-btn,[aria-disabled="true"].ckb-ed-ghost-btn,[aria-disabled="true"].ckb-ed-toggle,[aria-disabled="true"].ckb-ed-opt-btn,[aria-disabled="true"].ckb-ed-opt-add,[aria-disabled="true"].ckb-ed-chip-toggle,[aria-disabled="true"].ckb-ed-btn{opacity:.5;cursor:not-allowed}
+.ckb-ed-input[aria-disabled="true"],.ckb-ed-select[aria-disabled="true"],.ckb-ed-type[aria-disabled="true"],.ckb-ed-opt-input[aria-disabled="true"]{background:#f8fafc;color:#94a3b8;cursor:not-allowed}
+.ckb-ed-field-lock{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:1px 6px}
+.ckb-ed-modal-when{font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;margin:-4px 0 14px;text-align:left}
+/* Opção B — composição de .pat-kpi--clickable / .pat-filtro-chip / .pat-ab-table no lugar do editor */
+.b22-faixa{padding:14px 24px 0}
+.b22-faixa .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:0}
+.b22-lista{margin-top:10px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
+.b22-lista .pat-filtro-chip-bar{padding:10px 12px}
+/* Opção C — o painel usa a estrutura .ckb-ed-col/.ckb-ed-insp-* do inspector */
+.c22-lista{list-style:none;display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:#334155;margin:0;padding:0}
+.c22-lista li{display:flex;gap:8px;align-items:flex-start}
+.c22-lista li svg{flex-shrink:0;margin-top:2px}
+.c22-cmp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;font-size:12px}
+.c22-cmp .h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b;padding:2px}
+.c22-cmp .v{border:1px solid #e2e8f0;border-radius:8px;padding:7px 9px;color:#334155;min-width:0;overflow-wrap:anywhere}
+.c22-cmp .v.dif{background:#fffbeb;border-color:#fde68a}
+.c22-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.c22-lista + .ckb-ed-insp-section,.c22-acoes + .ckb-ed-insp-section{margin-top:18px}
+/* Pele do quadro e do seletor flutuante (igual às maquetes aprovadas) */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code,.review-layer p.desc strong{color:#e2e8f0}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0;margin-bottom:16px}
+.review-grid .review-box{margin-bottom:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code,.rv-tabela code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.estados-bar .rot{min-width:190px;color:#94a3b8;font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#22c55e"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Modelos de Checklist · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">TA</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Thiago Andrade</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Administrador</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Modelos de Checklist</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content" id="tela"></div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir · B-SAN3-22</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc" id="rv-desc"></p>
+    <div class="estados-bar"><span class="rot">Estado da tela:</span>
+      <button type="button" class="rv-btn" data-estado="travado" aria-pressed="true">Campos travados (vistorias em andamento)</button>
+      <button type="button" class="rv-btn" data-estado="conflito" aria-pressed="false">Outra pessoa salvou antes</button>
+      <button type="button" class="rv-btn" data-estado="inativo" aria-pressed="false">Modelo inativo com vistorias</button>
+      <button type="button" class="rv-btn" data-estado="livre" aria-pressed="false">Livre (sem vistoria)</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="leitura" aria-pressed="false">Somente leitura (Auditor)</button>
+    </div>
+    <div class="review-grid review-grid--2">
+      <div class="review-box"><h3>Fluxo de hoje no sistema (fonte desta maquete)</h3><ul class="review-list" id="rv-fluxo"></ul></div>
+      <div class="review-box"><h3>Divergências conscientes</h3><ul class="review-list" id="rv-div"></ul></div>
+    </div>
+    <div class="review-grid">
+      <div class="review-box"><h3>(i) Já existe no backend e no front</h3><ul class="review-list" id="rv-existe"></ul></div>
+      <div class="review-box"><h3>(ii) O que faltaria</h3><ul class="review-list" id="rv-falta"></ul></div>
+      <div class="review-box"><h3>(iii) Prós e contras desta opção</h3><ul class="review-list" id="rv-pc"></ul></div>
+    </div>
+    <div class="review-box"><h3>Pendências para o dono</h3><ul class="review-list" id="rv-pend"></ul></div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Painel de impacto</button>
+</div>
+
+<div id="toast-host" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ── Ícones lucide (traço 2), os mesmos que o editor importa ── */
+const I = {
+  chevLeft:'<path d="m15 18-6-6 6-6"/>', chevUp:'<path d="m18 15-6-6-6 6"/>', chevDown:'<path d="m6 9 6 6 6-6"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>', rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  phone:'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
+  save:'<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>', ext:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  grip:'<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
+  copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  align:'<path d="M15 12H3"/><path d="M17 18H3"/><path d="M21 6H3"/>', clip:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  images:'<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect width="16" height="16" x="6" y="2" rx="2"/>',
+  image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  dot:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>', list:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  pen:'<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>',
+  arrows:'<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>', help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  history:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>', layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>', x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboardList:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  scroll:'<path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>', truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>', contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'
+};
+const ic = (n, s) => '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';
+
+/* ── Menus por perfil — appSidebarNav.ts (resumidos como nas maquetes aprovadas). O perfil vem da sessão. ── */
+const NAV = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboardList','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['list','Checklists']]],['FROTA',[['truck','Viaturas']]],['GESTÃO',[['contact','Clientes']]],['PÁTIOS',[['warehouse','Pátios']]],['TELEMETRIA',[['gauge','Quilometragem']]],['ADMINISTRAÇÃO',[['users','Usuários'],['bell','Notificações'],['clipboardList','Modelos de Checklist'],['settings','Configurações'],['scroll','Auditoria']]]],
+  auditor:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboardList','Ordens de Serviço'],['list','Checklists']]],['ADMINISTRAÇÃO',[['clipboardList','Modelos de Checklist'],['scroll','Auditoria']]]]
+};
+function renderNav(perfil){
+  $('#sidebar-nav').innerHTML = NAV[perfil].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Modelos de Checklist'; return '<a class="app-sidebar__item'+(on?' app-sidebar__item--active':'')+'" href="#" '+(on?'aria-current="page" ':'')+'>'+ic(it[0],17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  const P = perfil === 'auditor' ? ['HD','Helena Duarte','Auditor'] : ['TA','Thiago Andrade','Administrador'];
+  $('#sb-ini').textContent = P[0]; $('#sb-nome').textContent = P[1]; $('#sb-papel').textContent = P[2];
+}
+
+/* ── Tiles e rótulos — checklist-tiles.ts / checklist.constants.ts ── */
+const TILE = {
+  vehicle_selector:['car','#EFF6FF','#2563EB','Seletor de veículo','Tipo do veículo e imagem da vistoria'],
+  damage_map:['mapPin','#FEF2F2','#DC2626','Mapa de avarias','Marca avarias sobre a imagem do veículo'],
+  photo_upload:['camera','#F0FDF4','#15803D','Foto','Coleta fotos pela câmera ou galeria'],
+  observation:['align','#F8FAFC','#475569','Observação','Texto livre para anotações do técnico'],
+  comparison:['arrows','#EFF6FF','#2563EB','Comparação','Compara a entrega com a coleta'],
+  acknowledgement:['clip','#FAF5FF','#7E22CE','Ciência','Ciência formal de responsabilidade'],
+  before_after:['images','#FFFBEB','#B45309','Antes e depois','Evidência técnica em dois estágios'],
+  single_choice:['dot','#F0F9FF','#0369A1','Escolha única','Uma opção entre várias'],
+  multi_choice:['list','#F0F9FF','#0369A1','Múltipla escolha','Uma ou mais opções'],
+  signature:['pen','#FAF5FF','#7E22CE','Assinatura','Assinatura do cliente ou responsável']
+};
+const VEIC = [['car','Carro'],['motorcycle','Moto'],['truck','Caminhão'],['van','Utilitário']];
+const AVARIA = [['scratch','Risco'],['dent','Amassado'],['broken','Quebrado'],['missing','Faltante'],['other','Outro']];
+const tile = (t, s) => '<span class="'+s+'" style="background:'+TILE[t][1]+';color:'+TILE[t][2]+'" aria-hidden="true">'+ic(TILE[t][0],16)+'</span>';
+
+/* ── Modelo de exemplo (o protótipo do builder: Vistoria de coleta — Guincho, publicado) ── */
+const SECOES = ['Veículo', 'Avarias e fotos', 'Entrega ao responsável'];
+const CAMPOS = [
+  {id:1,s:0,type:'vehicle_selector',label:'Tipo do veículo',req:true,chips:[],cfg:{vehicleTypes:['car','motorcycle','van']}},
+  {id:2,s:0,type:'single_choice',label:'Estado geral',req:true,chips:[['4 opções','#F0F9FF','#0369A1']],cfg:{options:['Bom','Regular','Ruim','Sem condições de rodar']}},
+  {id:3,s:1,type:'damage_map',label:'Avarias encontradas',req:true,chips:[['descrição obrigatória','#FEF2F2','#DC2626']],cfg:{markerTypes:['scratch','dent','broken'],requireDescription:true}},
+  {id:4,s:1,type:'photo_upload',label:'Fotos das 4 laterais',req:true,chips:[['mín. 4 fotos','#F0FDF4','#15803D']],help:'Frente, traseira e as duas laterais, com a placa visível',cfg:{minPhotos:4,maxPhotos:8}},
+  {id:5,s:1,type:'observation',label:'Observações do técnico',req:false,chips:[['até 500 caracteres','#F1F5F9','#475569']],cfg:{multiline:true,maxLength:500}},
+  {id:6,s:2,type:'acknowledgement',label:'Ciência do responsável',req:true,chips:[],cfg:{requireObservation:false}},
+  {id:7,s:2,type:'signature',label:'Assinatura do responsável',req:true,chips:[['exige nome','#FAF5FF','#7E22CE']],cfg:{requireName:true}}
+];
+const N_RUNS = 4;
+const RUNS = [
+  ['OS-4610','Fiat Strada · RTA-2E41','Carlos Mendes','há 18 min','3 de 7 respondidos'],
+  ['OS-4652','VW Gol · QPZ-7H10','Ana Ribeiro','há 42 min','5 de 7 respondidos'],
+  ['OS-4861','Toyota Hilux · SDF-1C88','Rafael Souza','há 1 h 05','1 de 7 respondido'],
+  ['OS-4905','Honda Civic · PLM-4K23','Bruno Lima','há 2 h 10','6 de 7 respondidos']
+];
+
+let opcao = 'a', estado = 'travado', sel = 4, bloco = null, linhaAberta = null;
+const travado = () => estado === 'travado' || estado === 'inativo';
+const leitura = () => estado === 'leitura';
+
+/* Toast real do editor (ChecklistToast.tsx): tile 26 px pintado pelo tipo — warn #B45309, info #334155. */
+let tTimer;
+function toast(msg, kind){
+  const bg = kind === 'info' ? '#334155' : '#B45309';
+  $('#toast-host').innerHTML = '<div class="ckb-toast"><span class="ckb-toast-icon" style="background:'+bg+'" aria-hidden="true">'+ic(kind === 'info' ? 'help' : 'alert',14)+'</span><span class="ckb-toast-msg">'+esc(msg)+'</span></div>';
+  clearTimeout(tTimer); tTimer = setTimeout(() => $('#toast-host').innerHTML = '', 3600);
+}
+const MOTIVO = 'Há '+N_RUNS+' vistorias em andamento com este modelo. Agora só os textos podem mudar; para mudar campos, inative o modelo e espere elas terminarem.';
+const trava = extra => travado() ? ' aria-disabled="true" data-explica="'+esc(extra || MOTIVO)+'" title="'+esc(extra || MOTIVO)+'"' : '';
+
+function header(){
+  const inativo = estado === 'inativo';
+  const status = inativo ? '<span class="ckb-pill" style="background:#F1F5F9;color:#64748B">Inativo</span>' : '<span class="ckb-pill" style="background:#DCFCE7;color:#15803D">Publicado</span>';
+  const pills = status
+    + (travado() && opcao !== 'c' ? '<span class="ckb-pill ckb-pill--inuse">'+ic('lock',11)+'Em uso por '+N_RUNS+' vistorias</span>' : '')
+    + (travado() && opcao === 'c' ? '<span class="ckb-pill ckb-pill--inuse">'+ic('lock',11)+'Somente textos</span>' : '')
+    + (estado === 'conflito' ? '<span class="ckb-ed-dirty"><span class="ckb-ed-dirty-dot" aria-hidden="true"></span>Alterações não salvas</span>' : '');
+  const ro = leitura();
+  const statusBtn = inativo
+    ? '<button type="button" class="ckb-ed-btn" aria-label="Reativar modelo" aria-disabled="true" data-explica="Reativar volta o modelo para rascunho, e isso cortaria as '+N_RUNS+' vistorias em andamento. Espere elas terminarem." title="Reativar modelo">'+ic('rotate',15)+'Reativar modelo</button>'
+    : '<button type="button" class="ckb-ed-btn" title="Inativar modelo" aria-label="Inativar modelo" data-info="Abre a confirmação de inativar: as novas ordens deixam de usar o modelo; quem está no campo termina.">'+ic('ban',15)+'Inativar modelo</button>';
+  return '<header class="ckb-ed-head"><div class="ckb-ed-head-row">'
+    + '<button type="button" class="ckb-ed-back" aria-label="Voltar para a lista de modelos" title="Voltar para a lista de modelos">'+ic('chevLeft',17)+'</button>'
+    + '<div class="ckb-ed-ident"><input class="ckb-ed-name" value="Vistoria de coleta — Guincho" aria-label="Nome do modelo"'+(ro?' readonly':'')+'>'
+    + '<select class="ckb-ed-type" aria-label="Tipo do modelo"'+(ro?' disabled':'')+trava('O tipo do modelo muda os campos: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.')+'><option>Guincho — Coleta</option></select>'
+    + pills + '</div>'
+    + '<div class="ckb-ed-head-actions">'
+    + (ro ? '' : statusBtn)
+    + '<button type="button" class="ckb-ed-btn" title="Ver como o técnico verá no aplicativo">'+ic('phone',15)+'Pré-visualizar</button>'
+    + (ro ? '' : '<button type="button" class="ckb-ed-btn'+(estado==='conflito'?' ckb-ed-btn--save-dirty':'')+'">'+ic('save',15)+'Salvar</button>')
+    + (ro ? '' : '<button type="button" class="ckb-ed-btn ckb-ed-btn--publish">'+ic('send',15)+'Publicar</button>')
+    + '</div></div>'
+    + '<div class="ckb-ed-tabs-row"><div class="ckb-ed-tabs" role="tablist" aria-label="Seções do modelo">'
+    + '<button type="button" role="tab" aria-selected="true" class="ckb-ed-tab ckb-ed-tab--active">Estrutura do formulário</button>'
+    + '<button type="button" role="tab" aria-selected="false" class="ckb-ed-tab">Aplicabilidade</button></div>'
+    + (opcao === 'b' ? '' : '<button type="button" class="ckb-ed-runs-link" data-info="Abre a lista de execuções.">'+ic('ext',14)+'Ver execuções deste modelo</button>') + '</div></header>';
+}
+
+function paleta(compacta){
+  return '<section class="ckb-ed-col'+(compacta?' ckb-ed-col--compact':'')+'">'
+    + (compacta ? '' : '<div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Campos disponíveis</div><div class="ckb-ed-col-sub">Clique para adicionar ao formulário</div></div></div>')
+    + '<div class="ckb-ed-palette-body">' + Object.keys(TILE).map(t => '<button type="button" class="ckb-ed-pal-item'+(compacta?' ckb-ed-pal-item--compact':'')+'" aria-label="Adicionar campo '+TILE[t][3]+'"'+(travado()?trava():' title="'+TILE[t][3]+' — '+TILE[t][4]+'"')+'>'
+      + tile(t,'ckb-ed-pal-tile') + (compacta ? '' : '<span class="ckb-ed-pal-text"><span class="ckb-ed-pal-label">'+TILE[t][3]+'</span><span class="ckb-ed-pal-desc">'+TILE[t][4]+'</span></span><span class="ckb-ed-pal-plus" aria-hidden="true">'+ic('plus',12)+'</span>') + '</button>').join('')
+    + '</div></section>';
+}
+
+function cartao(c){
+  const s = c.id === sel;
+  const lockChip = travado() && opcao === 'b' ? '<span class="ckb-ed-field-lock" title="Em uso por '+N_RUNS+' vistorias: só o texto pode mudar">'+ic('lock',10)+'em uso</span>' : '';
+  const acoes = leitura() ? '' : '<span class="ckb-ed-field-actions">'
+    + [['Mover para cima','chevUp',''],['Mover para baixo','chevDown',''],['Duplicar campo','copy',''],['Remover campo','trash','danger']].map(a => '<button type="button" class="ckb-ed-field-btn'+(a[2]?' ckb-ed-field-btn--danger':'')+'" aria-label="'+a[0]+'"'+(travado()?trava():' title="'+a[0]+'"')+'>'+ic(a[1],13)+'</button>').join('') + '</span>';
+  return '<div class="ckb-ed-field'+(s?' ckb-ed-field--selected':'')+'" data-campo="'+c.id+'">'
+    + '<span class="ckb-ed-field-grip" title="Arrastar para reordenar" aria-hidden="true">'+ic('grip',15)+'</span>' + tile(c.type,'ckb-ed-field-tile')
+    + '<button type="button" class="ckb-ed-field-main" aria-pressed="'+s+'" aria-label="Configurar o campo '+esc(c.label)+'"><span class="ckb-ed-field-labelrow"><span class="ckb-ed-field-label">'+esc(c.label)+'</span>'+(c.req?'<span class="ckb-ed-field-required" title="Resposta obrigatória">*</span>':'')+lockChip+'</span>'
+    + '<span class="ckb-ed-field-meta"><span class="ckb-ed-field-type">'+TILE[c.type][3]+'</span>'+c.chips.map(ch => '<span class="ckb-ed-chip" style="background:'+ch[1]+';color:'+ch[2]+'">'+ch[0]+'</span>').join('')+'</span></button>'
+    + acoes + '</div>';
+}
+
+function formulario(){
+  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head"><div><div class="ckb-ed-col-title">O formulário</div><div class="ckb-ed-col-sub">7 campos · 3 seções · versão 4</div></div>'
+    + (leitura() ? '' : '<button type="button" class="ckb-ed-ghost-btn"'+trava()+'>'+ic('plus',13)+'Nova seção</button>') + '</div>'
+    + '<div class="ckb-ed-canvas-body">' + SECOES.map((t, i) => { const it = CAMPOS.filter(c => c.s === i); return '<div class="ckb-ed-section"><div class="ckb-ed-section-head"><span class="ckb-ed-section-chip">SEÇÃO</span><input class="ckb-ed-section-title" value="'+t+'" aria-label="Nome da seção"'+(leitura()?' readonly':'')+'><span class="ckb-ed-section-count">'+it.length+(it.length===1?' campo':' campos')+'</span></div><div class="ckb-ed-section-items">'+it.map(cartao).join('')+'</div></div>'; }).join('')
+    + '</div></section>';
+}
+
+/* Configurações tipadas — o mesmo bloco por tipo do ChecklistFieldInspector.tsx (10 casos). Travado = aria-disabled + explicação. */
+const toggle = (on, titulo, sub, extra, mod) => '<button type="button" role="switch" aria-checked="'+on+'" class="ckb-ed-toggle'+(on?' ckb-ed-toggle--on':'')+(mod?' '+mod:'')+'"'+(leitura()?' disabled':'')+trava(extra)+'><span class="ckb-ed-switch" aria-hidden="true"><span class="ckb-ed-switch-knob"></span></span><span><span class="ckb-ed-toggle-title">'+titulo+'</span><span class="ckb-ed-toggle-sub">'+sub+'</span></span></button>';
+const chips = (legend, lista, on, tom, extra) => '<div class="ckb-ed-group" role="group" aria-label="'+legend+'"><span class="ckb-ed-label">'+legend+'</span><div class="ckb-ed-chips">'+lista.map(k => '<button type="button" class="ckb-ed-chip-toggle'+(tom==='damage'?' ckb-ed-chip-toggle--damage':'')+(on.includes(k[0])?' ckb-ed-chip-toggle--on':'')+'" aria-pressed="'+on.includes(k[0])+'"'+(leitura()?' disabled':'')+trava(extra)+'>'+k[1]+'</button>').join('')+'</div></div>';
+function configTipada(c){
+  const ro = leitura() ? ' readonly' : '';
+  if (c.type === 'single_choice' || c.type === 'multi_choice') {
+    const ex = 'As opções de resposta mudam o campo: ficam travadas enquanto houver '+N_RUNS+' vistorias em andamento. O texto da pergunta continua livre.';
+    return '<div>' + c.cfg.options.map((o, i) => '<div class="ckb-ed-opt"><span class="ckb-ed-opt-grip" aria-hidden="true">'+ic('grip',14)+'</span><input class="ckb-ed-opt-input" value="'+esc(o)+'" aria-label="Texto da opção '+(i+1)+'"'+ro+trava(ex)+'>'
+      + [['Subir a opção '+(i+1),'chevUp',''],['Descer a opção '+(i+1),'chevDown',''],['Remover a opção '+(i+1),'trash','danger']].map(b => '<button type="button" class="ckb-ed-opt-btn'+(b[2]?' ckb-ed-opt-btn--danger':'')+'" aria-label="'+b[0]+'"'+(leitura()?' disabled':'')+trava(ex)+'>'+ic(b[1],12)+'</button>').join('') + '</div>').join('')
+      + '<button type="button" class="ckb-ed-opt-add"'+(leitura()?' disabled':'')+trava(ex)+'>'+ic('plus',14)+'Adicionar opção</button><p class="ckb-ed-insp-hint">Deixe as respostas mais comuns no topo — em campo, com luva, cada toque conta.</p></div>';
+  }
+  if (c.type === 'photo_upload') return '<div><div class="ckb-ed-insp-row"><div class="ckb-ed-insp-row-item"><label class="ckb-ed-label" for="i-min">Mínimo de fotos</label><input id="i-min" type="number" class="ckb-ed-input" value="4"'+ro+trava('O mínimo de fotos decide quando a vistoria pode ser concluída: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.')+'></div><div class="ckb-ed-insp-row-item"><label class="ckb-ed-label" for="i-max">Máximo de fotos</label><input id="i-max" type="number" class="ckb-ed-input" value="8"'+ro+trava()+'></div></div><p class="ckb-ed-insp-hint">O aplicativo mostra 4 espaços de foto e só libera a conclusão quando todos estiverem preenchidos.</p></div>';
+  if (c.type === 'vehicle_selector') return '<div>'+chips('Tipos de veículo aceitos', VEIC, c.cfg.vehicleTypes, 'vehicle', 'Os tipos de veículo aceitos são as opções do campo: ficam travados enquanto houver '+N_RUNS+' vistorias em andamento.')+'<span class="ckb-ed-label">Imagem de referência da vistoria</span><div class="ckb-ed-insp-slot"><span class="ckb-ed-insp-slot-tile" aria-hidden="true">'+ic('image',16)+'</span><span><span class="ckb-ed-insp-slot-title">Silhueta padrão por tipo de veículo</span><span class="ckb-ed-insp-slot-sub">Enviar imagem própria — em breve</span></span></div></div>';
+  if (c.type === 'damage_map') return '<div>'+chips('Tipos de avaria que o técnico pode marcar', AVARIA, c.cfg.markerTypes, 'damage', 'Os tipos de avaria mudam o campo: ficam travados enquanto houver '+N_RUNS+' vistorias em andamento.')+toggle(true,'Exigir descrição em cada avaria','Protege a organização em disputas sobre o estado do veículo','Exigir descrição muda o que é obrigatório: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.','ckb-ed-toggle--flush')+'</div>';
+  if (c.type === 'observation') return '<div>'+toggle(true,'Texto longo','Campo com várias linhas em vez de uma só',null,'ckb-ed-toggle--tight')+'<label class="ckb-ed-label" for="i-len">Limite de caracteres</label><input id="i-len" type="number" class="ckb-ed-input ckb-ed-input--num-md" value="500"'+ro+trava()+'></div>';
+  if (c.type === 'signature') return toggle(true,'Exigir nome de quem assina','Nome completo registrado junto da assinatura','Exigir o nome muda o que é obrigatório: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.','ckb-ed-toggle--flush');
+  if (c.type === 'acknowledgement') return toggle(false,'Exigir observação na ciência','Quem dá ciência precisa justificar por escrito','Exigir observação muda o que é obrigatório: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.','ckb-ed-toggle--flush');
+  return '<p class="ckb-ed-insp-hint">Este campo não tem configurações próprias além das acima.</p>';
+}
+
+function inspetor(){
+  const c = CAMPOS.find(x => x.id === sel);
+  const ro = leitura() ? ' readonly' : '';
+  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Configurações do campo</div><div class="ckb-ed-col-sub">O que o técnico vê e o que é obrigatório</div></div></div>'
+    + '<div class="ckb-ed-insp-body">'
+    + '<div class="ckb-ed-insp-card">'+tile(c.type,'ckb-ed-insp-tile')+'<span><span class="ckb-ed-insp-type">'+TILE[c.type][3]+'</span><span class="ckb-ed-insp-desc">'+TILE[c.type][4]+'</span></span></div>'
+    + '<div class="ckb-ed-group"><label class="ckb-ed-label" for="i-l">Pergunta exibida ao técnico</label><input id="i-l" class="ckb-ed-input" value="'+esc(c.label)+'"'+ro+'></div>'
+    + '<div class="ckb-ed-group"><label class="ckb-ed-label" for="i-h">Texto de ajuda <span class="ckb-ed-label-soft">(opcional)</span></label><textarea id="i-h" class="ckb-ed-textarea"'+ro+'>'+esc(c.help||'')+'</textarea></div>'
+    + (travado() && opcao === 'a' ? '<div class="ckb-ed-insp-warn" role="status">'+ic('lock',14)+'<span>A pergunta e a ajuda podem mudar agora. Obrigatório e as regras abaixo ficam travados enquanto houver '+N_RUNS+' vistorias em andamento.</span></div>' : '')
+    + toggle(c.req,'Resposta obrigatória','O técnico não conclui o checklist sem preencher','Tornar obrigatório ou opcional muda o campo: fica travado enquanto houver '+N_RUNS+' vistorias em andamento.')
+    + '<div class="ckb-ed-insp-section">Configurações do campo</div>'
+    + configTipada(c)
+    + '</div></section>';
+}
+
+/* Opção C — painel de impacto na coluna da direita; os textos do campo selecionado continuam editáveis nele. */
+function painelImpacto(){
+  const c = CAMPOS.find(x => x.id === sel);
+  const ok = s => '<li><span style="color:#15803d">'+ic('check',15)+'</span><span>'+s+'</span></li>', no = s => '<li><span style="color:#b45309">'+ic('x',15)+'</span><span>'+s+'</span></li>';
+  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Em uso agora</div><div class="ckb-ed-col-sub">'+N_RUNS+' vistorias em andamento usam este modelo</div></div></div>'
+    + '<div class="ckb-ed-insp-body"><ul class="c22-lista">'
+    + ok('Nome do modelo, descrição, nomes de seção, pergunta e texto de ajuda — <strong>podem mudar agora</strong>')
+    + no('Adicionar, remover, reordenar ou duplicar campo') + no('Obrigatório ou opcional, mínimo e máximo de fotos, opções de resposta, tipos de veículo e de avaria') + no('Tipo do modelo e voltar a rascunho') + '</ul>'
+    + '<div class="ckb-ed-insp-section">Como mudar os campos</div>'
+    + (estado === 'inativo' ? '<p class="ckb-ed-insp-hint">O modelo já está inativo: as novas ordens não o usam. Quando as '+N_RUNS+' vistorias terminarem, os campos destravam.</p>' : '<p class="ckb-ed-insp-hint">Inative o modelo: novas ordens deixam de usá-lo e quem está no campo termina. Quando as '+N_RUNS+' vistorias terminarem, os campos destravam.</p>')
+    + '<div class="c22-acoes">'+(estado === 'inativo' ? '' : '<button type="button" class="ckb-ed-btn" data-info="Abre a confirmação de inativar: as novas ordens deixam de usar o modelo; quem está no campo termina.">'+ic('ban',14)+'Inativar modelo</button>')+'</div>'
+    + '<div class="ckb-ed-insp-section">Textos do campo selecionado</div>'
+    + '<div class="ckb-ed-group"><label class="ckb-ed-label" for="c-l">Pergunta exibida ao técnico</label><input id="c-l" class="ckb-ed-input" value="'+esc(c.label)+'"></div>'
+    + '<div class="ckb-ed-group"><label class="ckb-ed-label" for="c-h">Texto de ajuda <span class="ckb-ed-label-soft">(opcional)</span></label><textarea id="c-h" class="ckb-ed-textarea">'+esc(c.help||'')+'</textarea></div>'
+    + '</div></section>';
+}
+
+/* Opção C no conflito — comparação "Salvo × Seu" na mesma coluna; ações com as classes do diálogo atual. */
+function painelComparacao(){
+  const L = [['Nome do modelo','Vistoria de coleta — Guincho','Vistoria de coleta — Guincho',0],['"Fotos das 4 laterais" — pergunta','Fotos das 4 laterais e do painel','Fotos das 4 laterais',1],['"Observações do técnico" — ajuda','—','Anote o que não aparece nas fotos',1],['Seção "Entrega ao responsável"','2 campos','2 campos',0]];
+  return '<section class="ckb-ed-col"><div class="ckb-ed-col-head ckb-ed-col-head--stack"><div><div class="ckb-ed-col-title">Outra pessoa alterou este modelo</div><div class="ckb-ed-col-sub">Salvo às 14:32 · você abriu às 14:05</div></div></div>'
+    + '<div class="ckb-ed-insp-body"><div class="c22-cmp"><div class="h">Salvo</div><div class="h">Seu (não salvo)</div>'
+    + L.map(l => '<div class="v'+(l[3]?' dif':'')+'"><b>'+l[0]+'</b><br>'+esc(l[1])+'</div><div class="v'+(l[3]?' dif':'')+'"><b>'+l[0]+'</b><br>'+esc(l[2])+'</div>').join('')
+    + '</div><p class="ckb-ed-insp-hint" style="margin-top:10px">2 diferenças. Recarregar traz a versão mais recente e descarta as suas alterações não salvas; sobrescrever mantém as suas e substitui as dela.</p>'
+    + '<div class="ckb-ed-modal-actions" style="margin-top:12px"><button type="button" class="ckb-ed-modal-btn" autofocus>Recarregar o modelo</button><button type="button" class="ckb-ed-modal-btn ckb-ed-modal-btn--danger">Sobrescrever mesmo assim</button></div>'
+    + '</div></section>';
+}
+
+/* Opção B — os blocos são .pat-kpi--clickable; cada um abre logo abaixo a sua lista; filtro em .pat-filtro-chip; linha .pat-ab-row abre o detalhe. */
+function blocosB(){
+  const k = (id, ti, cor, v, rot, dica, tag) => '<button type="button" class="pat-kpi pat-kpi--clickable" data-bloco="'+id+'" aria-pressed="'+(bloco===id)+'"><div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+cor[0]+';color:'+cor[1]+'">'+ic(ti,15)+'</span><span class="pat-kpi__tag" style="background:'+cor[0]+';color:'+cor[1]+'">'+tag+'</span></div><div class="pat-kpi__value">'+v+'</div><div class="pat-kpi__label">'+rot+'</div><div class="pat-kpi__hint">'+dica+'</div></button>';
+  let lista = '';
+  /* B (resposta do dono à Q5): sem lista de vistorias — o servidor só dá o número; o bloco rola até a faixa que explica a trava. */
+  if (bloco === 'versao') {
+    lista = '<div class="b22-lista"><div class="pat-filtro-chip-bar"><span class="pat-filtro-chip">Versão publicada <button type="button" data-limpar aria-label="Fechar o resumo">'+ic('x',11)+'</button></span></div>'
+      + '<div class="pat-ab-detail-cell"><div class="pat-ab-detail-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="pat-ab-detail-col"><h4>Versão</h4><div class="pat-ab-detail-field"><span class="pat-ab-detail-val">v4</span></div></div><div class="pat-ab-detail-col"><h4>Publicada em</h4><div class="pat-ab-detail-field"><span class="pat-ab-detail-val">12/10</span></div></div><div class="pat-ab-detail-col"><h4>Enquanto houver vistorias</h4><div class="pat-ab-detail-field"><span class="pat-ab-detail-val">os campos ficam travados; só os textos mudam</span></div></div></div></div></div>';
+  }
+  if (bloco === 'campos') {
+    lista = '<div class="b22-lista"><div class="pat-filtro-chip-bar"><span class="pat-filtro-chip">O que muda agora <button type="button" data-limpar aria-label="Tirar o filtro">'+ic('x',11)+'</button></span></div>'
+      + '<table class="pat-ab-table"><colgroup><col><col style="width:200px"></colgroup><thead><tr><th>Item</th><th>Agora</th></tr></thead><tbody>'
+      + [['Nome do modelo, descrição e nomes de seção','pode mudar'],['Pergunta e texto de ajuda de cada campo','pode mudar'],['Obrigatório, mínimo de fotos, opções, tipos de veículo e de avaria','travado'],['Adicionar, remover, reordenar ou duplicar campo','travado'],['Tipo do modelo e voltar a rascunho','travado']].map(r => '<tr class="pat-ab-row"><td title="'+r[0]+'">'+r[0]+'</td><td><b style="color:'+(r[1]==='travado'?'#b45309':'#15803d')+'">'+r[1]+'</b></td></tr>').join('')
+      + '</tbody></table></div>';
+  }
+  return '<div class="b22-faixa"><div class="kpi-grid">'
+    + k('runs','history',['#FEF3C7','#B45309'],N_RUNS,'Vistorias em andamento','usam este modelo agora','em uso')
+    + (estado === 'inativo'
+      ? k('versao','layers',['#F1F5F9','#64748B'],'v4','Versão atual','publicada em 12/10','inativo')
+      : k('versao','layers',['#DCFCE7','#15803D'],'v4','Versão publicada','publicada em 12/10','publicada'))
+    + k('campos','lock',['#F1F5F9','#475569'],'7 de 7','Campos travados',estado === 'inativo' ? 'modelo inativo; só os textos mudam' : 'só os textos podem mudar','travado')
+    + '</div>' + lista + '</div>';
+}
+
+function dialogoConflito(){
+  /* ConcurrentEditDialog (ChecklistEditorPage.tsx:1268) — texto atual; a Opção A acrescenta só a linha de horário. */
+  return '<div class="ckb-ed-modal-overlay"><div class="ckb-ed-modal" role="dialog" aria-modal="true" aria-labelledby="cf-t">'
+    + '<div class="ckb-ed-modal-tile" aria-hidden="true">'+ic('alert',22)+'</div>'
+    + '<div class="ckb-ed-modal-title" id="cf-t">Outra pessoa alterou este modelo</div>'
+    + '<p class="ckb-ed-modal-text">Este modelo foi alterado por outra pessoa depois que você o abriu. Recarregar traz a versão mais recente e descarta as suas alterações não salvas; sobrescrever mantém as suas e substitui as dela.</p>'
+    + '<div class="ckb-ed-modal-when">Salvo por outra pessoa às 14:32 · você abriu às 14:05</div>'
+    + '<div class="ckb-ed-modal-actions"><button type="button" class="ckb-ed-modal-btn" autofocus>Recarregar o modelo</button><button type="button" class="ckb-ed-modal-btn ckb-ed-modal-btn--danger">Sobrescrever mesmo assim</button></div>'
+    + '</div></div>';
+}
+
+function render(){
+  renderNav(leitura() ? 'auditor' : 'admin');
+  const tela = $('#tela');
+  if (estado === 'carregando') {
+    tela.innerHTML = '<div class="ckb-ed" aria-hidden="true"><div class="ckb-ed-skl-head"><div class="ckb-skl" style="width:34px;height:34px"></div><div class="ckb-skl" style="width:280px;height:26px"></div><div class="ckb-skl" style="width:120px;height:26px"></div></div><div class="ckb-ed-grid"><div class="ckb-skl" style="height:360px"></div><div class="ckb-skl" style="height:360px"></div><div class="ckb-skl" style="height:360px"></div></div></div>';
+    return;
+  }
+  if (estado === 'erro') {
+    /* Card de erro real (ChecklistEditorPage.tsx:556-581) com a mensagem de falha de rede de resolveEditorLoadError. */
+    tela.innerHTML = '<div class="ckb-page"><div class="ckb-error-wrap"><div class="ckb-error" role="alert"><div class="ckb-error-tile" aria-hidden="true">'+ic('alert',26)+'</div><div class="ckb-error-title">Não foi possível abrir o modelo</div><div class="ckb-error-detail">A conexão com o servidor falhou. Verifique sua internet e tente novamente — nenhum modelo foi alterado.</div><div class="ckb-ed-error-actions"><button type="button" class="ckb-btn-primary ckb-btn-primary--retry">'+ic('refresh',15)+'Tentar novamente</button><button type="button" class="ckb-ed-btn">'+ic('chevLeft',15)+'Voltar para a lista de modelos</button></div></div></div></div>';
+    return;
+  }
+  let faixa = '';
+  if (travado() && opcao === 'a') faixa = '<div class="ckb-ed-blockbar" role="status">'+ic('alert',16)+'<span>'+(estado === 'inativo' ? 'O modelo está inativo: as novas ordens já não o usam. '+N_RUNS+' vistorias em andamento ainda o usam; até elas terminarem, só os textos podem mudar.' : 'Há '+N_RUNS+' vistorias em andamento com este modelo. Agora só os textos podem mudar: nome, descrição, nomes de seção, pergunta e ajuda. Para mudar campos, inative o modelo e espere as vistorias terminarem.')+'</span></div>';
+  /* Opção B no conflito: a faixa .ckb-ed-blockbar (a mesma do "Publicar travado") com as ações do diálogo atual. */
+  if (estado === 'conflito' && opcao === 'b') faixa = '<div class="ckb-ed-blockbar" role="alert">'+ic('alert',16)+'<span>Outra pessoa alterou este modelo às 14:32, depois que você o abriu (14:05). <b>2 diferenças:</b> a pergunta de "Fotos das 4 laterais" e a ajuda de "Observações do técnico".</span><span style="flex:1"></span><button type="button" class="ckb-ed-modal-btn" autofocus>Recarregar o modelo</button><button type="button" class="ckb-ed-modal-btn ckb-ed-modal-btn--danger">Sobrescrever mesmo assim</button></div>';
+  const banner = leitura() ? '<div class="ckb-readonly-banner ckb-ed-readonly-banner"><div class="ckb-readonly-tile" aria-hidden="true">'+ic('lock',16)+'</div><div><div class="ckb-readonly-title">Você está no modo somente leitura</div><div class="ckb-readonly-sub">Seu perfil permite consultar os modelos, mas não criar, editar ou publicar.</div></div></div>' : '';
+  const blocos = travado() && opcao === 'b' ? blocosB() : '';
+  if (travado() && opcao === 'b') faixa = '<div class="ckb-ed-blockbar" role="status" id="faixa-trava"'+(bloco==='runs'?' style="box-shadow:inset 0 0 0 2px #f59e0b"':'')+'>'+ic('alert',16)+'<span>'+(estado === 'inativo' ? 'O modelo está inativo: as novas ordens já não o usam. '+N_RUNS+' vistorias em andamento ainda o usam; até elas terminarem, só os textos podem mudar.' : 'Há '+N_RUNS+' vistorias em andamento com este modelo. Agora só os textos podem mudar: nome, descrição, nomes de seção, pergunta e ajuda. Para mudar campos, inative o modelo e espere as vistorias terminarem.')+'</span></div>';
+  const colDir = (travado() && opcao === 'c') ? painelImpacto() : (estado === 'conflito' && opcao === 'c') ? painelComparacao() : (leitura() ? '' : inspetor());
+  const compacta = travado() && opcao === 'c';
+  const grade = '<div class="ckb-ed-grid'+(leitura()?' ckb-ed-grid--readonly':'')+'" role="tabpanel"'+(compacta?' style="grid-template-columns:76px minmax(400px,1fr) 336px"':'')+'>'+(leitura()?'':paleta(compacta))+formulario()+colDir+'</div>';
+  tela.innerHTML = '<div class="ckb-ed">'+header()+faixa+banner+blocos+grade+'</div>' + (estado === 'conflito' && opcao === 'a' ? dialogoConflito() : '');
+}
+
+/* ── Quadro de notas ── */
+const NOTAS = {
+  fluxo:[
+    '<strong>Editor de hoje:</strong> <code>ChecklistEditorPage.tsx</code> — cabeçalho com nome editável, tipo, situação e as ações Inativar modelo · Pré-visualizar · Salvar · Publicar (<code>:623-736</code>, rótulo <code>:589</code>); abas "Estrutura do formulário" e "Aplicabilidade" (<code>:98-101</code>) e o link "Ver execuções deste modelo" (<code>:756-762</code>).',
+    '<strong>Travado explica:</strong> o Publicar travado NÃO usa <code>disabled</code> — fica clicável em cinza e o clique explica (<code>:717-731</code>); a faixa âmbar abaixo do cabeçalho repete o motivo (<code>:768-773</code>). As 3 opções usam esse mesmo padrão em todo controle de campo; o toast é o <code>ChecklistToast</code> (tile âmbar no aviso).',
+    '<strong>Conflito hoje:</strong> mitigação só no navegador — relê o modelo antes de salvar e abre o <code>ConcurrentEditDialog</code> (<code>:397-402</code>, <code>:1268-1300</code>). O B-SAN3-22 leva a trava para o servidor.',
+    '<strong>Configurações por tipo:</strong> os 10 blocos do <code>ChecklistFieldInspector.tsx</code> (opções, tipos de veículo e de avaria, exigências, limites). Estilos: as classes <code>.ckb-*</code> do <code>app.css</code> da <code>main</code> <code>b08c7557</code>, copiadas por script sem edição; a Opção B usa <code>.pat-kpi--clickable</code>, <code>.pat-filtro-chip</code> e <code>.pat-ab-row</code>, as da maquete aprovada do Financeiro.'
+  ],
+  div:[
+    '<strong>Regra do dono (Q1, 25/10):</strong> com vistoria em andamento só os TEXTOS mudam; obrigatório ↔ opcional, mínimo de fotos, opções, tipos de veículo e de avaria, ordem e tipo do modelo contam como mudança de campo (plano v2, CE-18). Iguais nas 3 opções.',
+    '<strong>Pill "Em uso por N vistorias":</strong> nova, na família <code>.ckb-pill</code> (tom âmbar do "Alterações não publicadas"). Ela tira largura do nome do modelo: o nome corta com reticências (no código de hoje o campo corta sem reticências — o dev acrescenta <code>text-overflow</code>).',
+    '<strong>Aviso de conflito:</strong> na <strong>A</strong> é o diálogo de hoje, com o mesmo texto e os mesmos botões, mais a linha de horário. Na <strong>B</strong> ele vira a faixa âmbar no topo, sem diálogo, com as mesmas ações. Na <strong>C</strong> vira o painel "Salvo × Seu" na coluna da direita, com as mesmas ações.',
+    '<strong>Link "Ver execuções deste modelo":</strong> existe hoje no cabeçalho, mas não filtra por modelo (a tela de execuções lista modelos). Na <strong>B</strong> ele sai, conforme a emenda E3-19 e a resposta do dono à Q5; em A e C fica como está hoje.',
+    '<strong>Modelo inativo com vistorias:</strong> "Reativar modelo" fica travado e explica (reativar volta a rascunho e cortaria as vistorias — plano v2, A-05). Inativar continua permitido.'
+  ],
+  existe:[
+    'O número de vistorias em andamento (N) no GET, PATCH, publicar e inativar — entregue pelo backend do B-SAN3-22; sem o número, a tela trava por segurança.',
+    'Recusa do servidor quando o modelo mudou depois de aberto e quando há vistoria em andamento — backend do B-SAN3-22.',
+    'Estados de hoje: esqueleto, erro, somente leitura e toast — todos reaproveitados.'
+  ],
+  pend:[
+    'Aprovar as 3 opções: as aprovadas ficam todas como aparência que cada usuário escolhe (D-APARENCIA-POR-USUARIO, D-TELAS-SAEM-COM-TRES); o seletor vem no B-APARENCIA-USUARIO, antes da tela.',
+    'Os exemplos (OS, placas, técnicos, horários, versões) são fictícios.'
+  ]
+};
+const OP = {
+  a:{ t:'Opção A — Padrão fiel', d:'A tela de hoje com o mínimo novo: a faixa âmbar que já existe para o "Publicar travado" passa a explicar a trava; os controles de campo ficam travados e o clique explica; o diálogo de conflito de hoje ganha só a linha de horário.',
+      falta:['Nada além do backend do B-SAN3-22.','A lista de QUAIS vistorias seguram o modelo não existe no servidor (só o número): fica para o bloco B-CHK-EDITOR-LEITURAS-B, sem link sem destino agora.'],
+      pc:['<strong>Prós:</strong> menor custo; é a tela que o escritório já conhece; reaproveita faixa, toast e diálogo.','<strong>Contras:</strong> não mostra QUAIS vistorias seguram o modelo nem o que mudou no conflito.'] },
+  b:{ t:'Opção B — Analítica', d:'Três blocos clicáveis acima da grade, no padrão aprovado do Financeiro, com números reais: vistorias em andamento (realça a faixa que explica a trava), versão publicada (abre o resumo da versão) e campos travados (abre a lista do que pode e do que não pode mudar). Conforme a resposta do dono à Q5 (26/10), a B sai com o que o servidor já dá: sem a lista de vistorias e sem o histórico de versões. No conflito, a faixa âmbar diz quantas diferenças há, sem diálogo.',
+      falta:['Lista das vistorias em andamento DESTE modelo e histórico de versões: não existem no servidor. Ficam para o bloco B-CHK-EDITOR-LEITURAS-B (resposta do dono à Q5, 26/10).','"2 diferenças" no conflito: o front compara o salvo com o seu (o servidor não manda a diferença pronta).'],
+      pc:['<strong>Prós:</strong> números do modelo à vista e clicáveis, no padrão aprovado; pronta para ganhar as listas quando o B-CHK-EDITOR-LEITURAS-B existir.','<strong>Contras:</strong> nesta entrega não diz QUAIS vistorias seguram o modelo; comparador no front no conflito; a faixa sem diálogo é mais fácil de ignorar.'] },
+  c:{ t:'Opção C — Painel de impacto', d:'Com a trava, a coluna da direita vira "Em uso agora": o que pode e o que não pode mudar, como destravar e os textos do campo selecionado; a paleta recolhe para ícones (o modo compacto que já existe). No conflito, a mesma coluna compara "Salvo × Seu" lado a lado.',
+      falta:['Comparador "Salvo × Seu" no front (o servidor não manda a diferença pronta).','Quem salvou: o servidor só guarda o identificador, sem o nome na tela.'],
+      pc:['<strong>Prós:</strong> explica a regra inteira num lugar só e decide o conflito vendo o que muda.','<strong>Contras:</strong> com a trava, as regras do campo (obrigatório, opções) somem da coluna — ficam só os textos; comparador no front.'] }
+};
+function li(a){ return a.map(x => '<li>'+x+'</li>').join(''); }
+function renderReview(){
+  const o = OP[opcao];
+  $('#rv-titulo').textContent = o.t; $('#rv-desc').innerHTML = o.d;
+  $('#rv-fluxo').innerHTML = li(NOTAS.fluxo); $('#rv-div').innerHTML = li(NOTAS.div);
+  $('#rv-existe').innerHTML = li(NOTAS.existe); $('#rv-falta').innerHTML = li(o.falta);
+  $('#rv-pc').innerHTML = li(o.pc); $('#rv-pend').innerHTML = li(NOTAS.pend);
+  $('#banner-tag').textContent = 'Modelos de Checklist · Opção '+opcao.toUpperCase();
+}
+function marcar(attr, v){ $$('[data-'+attr+']').forEach(b => b.setAttribute('aria-pressed', b.getAttribute('data-'+attr) === v)); }
+
+document.addEventListener('click', ev => {
+  const q = s => ev.target.closest(s);
+  let el;
+  if ((el = q('[data-opcao]'))) { opcao = el.getAttribute('data-opcao'); marcar('opcao', opcao); bloco = null; linhaAberta = null; render(); renderReview(); return; }
+  if ((el = q('[data-estado]'))) { estado = el.getAttribute('data-estado'); marcar('estado', estado); bloco = null; linhaAberta = null; render(); return; }
+  if (q('#rv-recolher')) { const c = $('#rv-corpo'), b = $('#rv-recolher'); c.hidden = !c.hidden; b.textContent = c.hidden ? 'Abrir notas' : 'Recolher notas'; b.setAttribute('aria-expanded', !c.hidden); return; }
+  if ((el = q('[data-bloco]'))) { const b = el.getAttribute('data-bloco'); bloco = bloco === b ? null : b; linhaAberta = null; render(); return; }
+  if (q('[data-limpar]')) { bloco = null; linhaAberta = null; render(); return; }
+  if ((el = q('[data-linha]'))) { const i = +el.getAttribute('data-linha'); linhaAberta = linhaAberta === i ? null : i; render(); return; }
+  if ((el = q('[aria-disabled="true"][data-explica]'))) { ev.preventDefault(); toast(el.getAttribute('data-explica'), 'warn'); return; }
+  if ((el = q('[data-info]'))) { toast(el.getAttribute('data-info'), 'info'); return; }
+  if ((el = q('.ckb-ed-field'))) { sel = +el.getAttribute('data-campo'); render(); return; }
+});
+document.addEventListener('keydown', ev => {
+  if (!ev.target.closest) return;
+  const el = ev.target.closest('[aria-disabled="true"][data-explica]');
+  if (el && (ev.key === 'Enter' || ev.key === ' ' || (el.tagName === 'INPUT' && /^(ArrowUp|ArrowDown)$/.test(ev.key)))) { ev.preventDefault(); toast(el.getAttribute('data-explica'), 'warn'); return; }
+  const linha = ev.target.closest('[data-linha]');
+  if (linha && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); const i = +linha.getAttribute('data-linha'); linhaAberta = linhaAberta === i ? null : i; render(); $('[data-linha="'+i+'"]').focus(); }
+});
+document.addEventListener('input', ev => { if (ev.target.matches('[aria-disabled="true"]')) { ev.target.value = ev.target.defaultValue; toast(ev.target.getAttribute('data-explica'), 'warn'); } });
+
+(function(){ const h = (location.hash||'').slice(1).split('-'); if (OP[h[0]]) { opcao = h[0]; marcar('opcao', opcao); } if (h[1]) { estado = h[1]; marcar('estado', estado); } if (h[2] && h[2] !== 'linha') bloco = h[2]; if (h[3] === 'linha') linhaAberta = 0; })();
+render(); renderReview();
+</script>
+</body>
+</html>

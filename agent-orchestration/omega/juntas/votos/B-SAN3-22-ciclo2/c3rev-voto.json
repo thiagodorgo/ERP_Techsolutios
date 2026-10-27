@@ -1,0 +1,86 @@
+{
+ "jurado": "jurado-san322-c3-r2-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san322-c3-tela-contra-a-referencia",
+ "lente": "cognicao-visual",
+ "cadeira": "C3 REVALIDADA — ciclo 2, regra (2) do §C7 item 9",
+ "ciclo2": "revalidada",
+ "mandato_md5": "6a2d1870713df3b93f411379ec722f8c · disparo j22c2-cadeira.md 2f4c2090d1e99cb13f8a498ddefb5955",
+ "modelo": "Claude Opus 5.5 · nível menor (§C7.6) · substituição: nenhuma",
+ "corpo_md5": "d30ff8fb4660ff6f68878e95ec70a17e (blob do objeto = carregado) · IDENTICO",
+ "objeto": "6b03e44d8136792398f521ccaf85d8dd45168a6d (ls-remote = gh pr view 464, no início e no fim) · objeto do ciclo 1 <objeto>~8 (controle da cauda) · head-base da fatia web <objeto>~14 = d7483c28ccfb69f235dfcb40f0b2fd1bdd39762e · merge-base c9a2d036c1aaff21df92817525d7f9c92cbbe272 · objeto no fim: igual",
+ "legalidade": "insp-san322c2-parecer.md (inspetor-san322-c2) · LIBERADO COM RESSALVA (6 ressalvas lidas; ressalva 1 cumprida: ferramentas copiadas para j22r2-c3 com worktree, porta, saída e O do restauro trocados, diff publicado) · check-runs 14 | 0 não-verdes | 0 pendentes · frontend success x2 (1391/1391, ok 134 C3-01) · backend, backend-postgres success x2 · ordem: lançada pelo orquestrador sem C1/C2 em curso; regra de lançamento (≥8,3 GB) cumprida com 10 GB — registrado para a ata",
+ "quorum": "unanimidade de 3, com veto (PERDA DE DADO) · ciclo 2 (último em que achado não grave reprova) · regra (4): conjunto referido ao objeto final",
+ "arquivos_medidos": [
+  "**"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "resultado": "IGUAL — verde do ciclo 1 mantido",
+   "check": "ec=0 IGUAL",
+   "test_smoke": "1391/1391 (ciclo 1: 1390) — DIFERENTE +1 explicado pelo caso C3-01 (forma) do conserto",
+   "build": "ec=0 IGUAL (aviso chunk>500kB pré-existente)",
+   "job_frontend": "run 40360517110 pull_request e 40360507541 push: success, 1391/1391, ok 134 C3-01",
+   "item2_ciclo1_sem_mutacao": "s21/s26/s28 IGUAL; s24 DIFERENTE só pelo click force do próprio ciclo 1 (s26 do ciclo 1 já trazia o mesmo toast)",
+   "batch2": "12 mutações: navegador 12/12 IGUAL; smoke diferente só pela cauda E4-08 (m24b/m25c/m27b agora vermelhas pelo C3-01, letras a/b/c)",
+   "controle_objeto_14": "ctrl-base.log IGUAL ao do ciclo 1 (base livre, token AUSENTE)",
+   "comando": "bash j22r2-c3/batch2.sh; node zz-j22c3-item2.mjs …; rest.sh (ctrl ~14); npm --prefix frontend run check|test:smoke|build"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "resultado": "VERDE (cauda nova)",
+   "e4_08": "C3-01 (forma) verde no objeto; vermelho sob m24b (a), m25c (b), m27b (c), cada um pela letra certa; os 3 gestos provados por interceptação no navegador (objeto e mutantes, 3 aparências)",
+   "mutacoes_minhas": "r2a (changeStatus troca o status), r2b (persistDraft ignora a base recém-lida), r2c (destrava após unknown): smoke 23/0 VERDE, navegador VERMELHO nas 3 — residual declarado de P-FRONT-TESTE-DE-INTERACAO → nota",
+   "e4_09": "m1g vermelho pelo marcador b22-faixa (ciclo 1: verde); 49 chamadas verdes no objeto; D-C2-1: 10/10 casos meus com o assertMarker REAL, régua não aceita marcador ausente; lacuna teórica data-class sem instância → nota",
+   "controle_objeto_8": "teste do <objeto>~8 22/0 VERDE sob m24b, m25c, m27b e m1g",
+   "comando": "bash j22r2-c3/batch2.sh; bash j22r2-c3/batch-r2.sh; bash j22r2-c3/ctrl-r2.sh; bash j22r2-c3/batch1.sh; node j22r2-c3/zz-j22c3r2-dc21.mjs lock-blob.tsx"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "resultado": "IGUAL — verde do ciclo 1 mantido",
+   "capturas": "conserto sob frontend/src = 0 → as 52 capturas do ciclo 1 valem sem re-render",
+   "marcadores": "item1-obj.log e item1b-obj.log IGUAIS aos do ciclo 1",
+   "batch1": "8 mutações: navegador 8/8 IGUAL; smoke só +1 pass e m1g agora vermelho (cauda E4-09)",
+   "escopo": "CE-33 diff vazio = 0; appearance só a entrada; inventário igual salvo o teste do editor 649→709; manifestos/lockfiles 0; app.css 0 no conserto, 1 hunk, hex 0 (controle 1); vizinhas 0 px",
+   "pendencia": "P-FRONT-TESTE-DE-INTERACAO ABERTA com os 2 residuais",
+   "comando": "git diff …; node zz-j22c3-item1.mjs/item1b.mjs; bash batch1.sh; node zz-j22c3-vizinhas.mjs"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C3r2-01",
+   "defeito": "o guard C3-01 (forma) não pega 3 mutações que mantêm a forma e quebram o comportamento (r2a, r2b, r2c); a interceptação no navegador pega as 3",
+   "evidencia": "j22r2-c3/rest.log (SMOKE r2a/r2b/r2c 23/0) e mut-r2*-browser.log (status draft; PATCH com T0; ariaDis 0)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco (residual declarado em P-FRONT-TESTE-DE-INTERACAO, ABERTA, dono orquestrador)",
+   "classe": "não grave",
+   "motivo": "a suíte guarda a forma dos handlers, não o comportamento; o objeto está correto (provado no navegador)"
+  },
+  {
+   "id": "C3r2-02",
+   "defeito": "assertMarker aceita classe presente só num atributo cujo nome termina em class (ex.: data-class), por casar class= como substring",
+   "evidencia": "zz-j22c3r2-dc21.mjs caso INFORMATIVO; git grep (data|aria)-*class em frontend/src = 0",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "lacuna teórica sem instância; a régua nunca aceita marcador ausente do HTML"
+  }
+ ],
+ "leitura_de_outras_cadeiras": "não li votos nem evidências da C1/C2 do ciclo 2 · li: mandato cadeira-c3rev.md, parecer do inspetor, corpo do blob, c3-evidencia.md do ciclo 1 (roteiro), pendencias.md e o teste do objeto",
+ "pausa": "nenhuma",
+ "criterios_que_nao_puderam_falhar": [
+  "nenhum novo: m24b/m25c/m27b e m1g, que eram verdes no ciclo 1, agora ficam vermelhos; r2a/r2b/r2c verdes no smoke são o residual declarado"
+ ],
+ "pendencias_que_aceito": [
+  "P-FRONT-TESTE-DE-INTERACAO (residual do guard de forma; dono orquestrador)",
+  "P-CHK-EDITOR-GRADE-ESTREITA (pré-existente; grade re-medida igual na base)",
+  "C3-03 do ciclo 1 (KpiStatCard sem aria-pressed, pré-existente, P-FINANCEIRO-DEFEITOS-16-10)"
+ ],
+ "teardown": "vite parado (0 ouvindo em 48041) · navegadores encerrados · mutações e checkouts restaurados (status vazio, hash-object = blob) · worktree j22r2-c3-wt removido por git worktree remove --force · nenhum container · base viva intocada · no w-san322 só c3rev-evidencia.md e c3rev-voto.json · sem commit",
+ "justificativa": "Revalidada pela regra (2): re-executei os comandos registrados na evidência da C3 do ciclo 1 sobre o objeto novo. Item 1 IGUAL: check, build, item 2 sem mutação, 12 mutações do batch2 (navegador 12/12 igual) e o controle no <objeto>~14; test:smoke 1390→1391 pela adição do C3-01 (forma). Item 2 (cauda) VERDE: C3-01 vermelho pela letra certa sob m24b/m25c/m27b; m1g vermelho pelo marcador; controle no <objeto>~8 verde nas 4; minhas mutações de forma intacta são o residual declarado (nota). Item 3 IGUAL: frontend/src intocado pelo conserto, marcadores e capturas valem, batch1 8/8 igual no navegador, escopo/CSS/lockfiles iguais. Nenhum bloqueia. VOTO: APROVADO — revalidada; itens 1 e 3 IGUAIS ao ciclo 1 (diferenças só pela cauda do conserto); E4-08 e E4-09 verdes com vermelho-controle; notas C3r2-01 e C3r2-02.",
+ "insumos": "mandato MEDIDO, evidência e voto da C3 do ciclo 1, E4 e relatório do dev tratados como A RE-VERIFICAR (roteiro de re-execução, nunca fato)"
+}

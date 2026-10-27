@@ -208,12 +208,11 @@ if (!connectionString) {
         headers,
         body: { hasDivergence: false },
       });
-      const arquivar = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}`, {
-        method: "PATCH",
+      const arquivar = await requestJson(baseUrl, `/api/v1/tenant/checklists/${checklist.id}?expectedUpdatedAt=${encodeURIComponent(checklist.updatedAt)}`, {
+        method: "DELETE",
         headers,
-        body: { status: "archived" },
       });
-      assert.equal(arquivar.status, 200);
+      assert.equal(arquivar.status, 204);
 
       const reopen = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs/${run.id}/reopen`, {
         method: "POST",
@@ -419,7 +418,7 @@ async function withPostgresChecklistApi(
 async function criarModeloDeCampo(
   baseUrl: string,
   headers: Record<string, string>,
-): Promise<{ id: string; observationId: string; photoId: string; damageId: string }> {
+): Promise<{ id: string; observationId: string; photoId: string; damageId: string; updatedAt: string }> {
   const created = await requestJson(baseUrl, "/api/v1/tenant/checklists", {
     method: "POST",
     headers,
@@ -440,6 +439,7 @@ async function criarModeloDeCampo(
   const published = await requestJson(baseUrl, `/api/v1/tenant/checklists/${created.body.data.id}/publish`, {
     method: "POST",
     headers,
+    body: { expectedUpdatedAt: created.body.data.updatedAt },
   });
   assert.equal(published.status, 200);
 
@@ -455,6 +455,7 @@ async function criarModeloDeCampo(
     observationId: acharPorTipo("observation"),
     photoId: acharPorTipo("photo_upload"),
     damageId: acharPorTipo("damage_map"),
+    updatedAt: published.body.data.updatedAt as string,
   };
 }
 

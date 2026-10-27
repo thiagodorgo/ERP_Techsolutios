@@ -97,9 +97,14 @@ test("o conteúdo do menu: Pátios com A · Padrão, B · Analítica e C · Mesa
   assert.match(html, /A · Padrão/);
   assert.match(html, /B · Analítica/);
   assert.match(html, /C · Mesa de pátio/);
-  assert.equal((html.match(/role="menuitemradio"/g) ?? []).length, 3);
+  // B-SAN3-22 (E3b-04): as contagens derivam do registro — 3 opções e 1 "padrão" por tela registrada.
+  const { APPEARANCE_SCREENS } = await import("../src/modules/appearance");
+  assert.equal((html.match(/role="menuitemradio"/g) ?? []).length, 3 * APPEARANCE_SCREENS.length);
   assert.match(html, /aria-checked="true"[^>]*>(?:(?!<\/button>).)*B · Analítica/s, "a B vem marcada (padrão de Pátios)");
-  assert.equal((html.match(/>padrão</g) ?? []).length, 1, "só a B leva a etiqueta de padrão");
+  assert.equal((html.match(/>padrão</g) ?? []).length, APPEARANCE_SCREENS.length, "uma etiqueta de padrão por tela");
+  const editor = /aria-labelledby="aparencia-checklist-editor"(?:(?!role="group").)*/s.exec(html)?.[0] ?? "";
+  assert.match(editor, /Editor de modelo de checklist/, "o editor de checklist está no menu");
+  assert.match(editor, /aria-checked="true"[^>]*>(?:(?!<\/button>).)*A · Padrão fiel(?:(?!<\/button>).)*>padrão</s, "a A vem marcada e é o padrão do editor de checklist");
   const visible = html.replace(/<[^>]+>/g, " ");
   assert.doesNotMatch(visible, /\btenant\b|localStorage|screenKey|patios\b/i, "texto visível sem termo técnico");
 });

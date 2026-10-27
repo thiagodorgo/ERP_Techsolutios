@@ -595,6 +595,7 @@ async function createPublishedRun(ctx: UploadApiContext): Promise<{ runId: strin
   const published = await requestJson(ctx.baseUrl, `/api/v1/tenant/checklists/${created.body.data.id}/publish`, {
     method: "POST",
     headers: headers(ctx),
+    body: { expectedUpdatedAt: created.body.data.updatedAt },
   });
   assert.equal(published.status, 200, JSON.stringify(published.body));
   const run = await requestJson(ctx.baseUrl, "/api/v1/mobile/checklist-runs", {

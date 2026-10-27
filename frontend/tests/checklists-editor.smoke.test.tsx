@@ -81,6 +81,8 @@ const MODELO: AnyChecklist = {
   version: 3,
   publishedAt: "2026-07-01T10:00:00.000Z",
   updatedAt: "2026-07-20T10:00:00.000Z",
+  // B-SAN3-22: a resposta de modelo único traz `activeRuns`; 0 = livre (ausente travaria a tela — fail-closed).
+  activeRuns: 0,
   schema: { source: "ckb_editor", sections: ["Dados do veículo", "Avarias"] },
   components: [
     {
@@ -956,6 +958,17 @@ test("guarda de edição concorrente: cópia e as 2 saídas (P-CHK-PATCH-SEM-LOC
   assert.match(html, /autofocus=""[^>]*>Recarregar o modelo</);
   // Sobrescrever é a ação destrutiva — vestida como tal.
   assert.match(html, /ckb-ed-modal-btn--danger[^>]*>Sobrescrever mesmo assim</);
+
+  // B-SAN3-22: o diálogo agora abre pelo 409 do servidor (`template_changed_since_read`), com o texto acima
+  // inalterado e a linha de horário da referência aprovada; no conflito do publicar não há "Sobrescrever".
+  const { resolveSaveError } = await import("../src/modules/checklists/checklist-editor.model");
+  const { ApiError } = await import("../src/services/api/client");
+  assert.equal(resolveSaveError(new ApiError(409, "x", "CHECKLIST_TEMPLATE_STALE", "template_changed_since_read")).kind, "conflict");
+  const withWhen = renderToString(
+    <ConcurrentEditDialog when="Salvo por outra pessoa às 14:32 · você abriu às 14:05" onReload={() => {}} onOverwrite={() => {}} />,
+  );
+  assert.match(withWhen, /<div class="ckb-ed-modal-when">Salvo por outra pessoa às 14:32 · você abriu às 14:05<\/div>/);
+  assert.doesNotMatch(renderToString(<ConcurrentEditDialog onReload={() => {}} />), /Sobrescrever mesmo assim/);
 });
 
 test("editor: Reativar aparece no lugar de Inativar quando o modelo está inativo", async () => {

@@ -9,6 +9,7 @@ import {
   toChecklistRunAnswerDto,
   toChecklistRunDto,
   toChecklistTemplateComponentDto,
+  toChecklistTemplateDetailDto,
   toChecklistTemplateDto,
   toMobileChecklistTemplateDto,
 } from "./checklist.dto.js";
@@ -24,6 +25,8 @@ import {
   parseCreateChecklistMarkerDto,
   parseCreateChecklistRunDto,
   parseCreateChecklistTemplateDto,
+  parseExpectedUpdatedAtDto,
+  parseExpectedUpdatedAtQuery,
   parseRegisterDivergenceDto,
   parseReopenChecklistRunDto,
   parseUpdateChecklistRunDto,
@@ -69,10 +72,10 @@ export class ChecklistController {
 
   async getTenantChecklist(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const template = await service.getTemplate(actor, readRouteParam(request.params.checklistId));
+    const template = await service.getTemplateDetail(actor, readRouteParam(request.params.checklistId));
 
     return {
-      data: toChecklistTemplateDto(template),
+      data: toChecklistTemplateDetailDto(template, template.activeRuns),
     };
   }
 
@@ -85,14 +88,18 @@ export class ChecklistController {
     );
 
     return {
-      data: toChecklistTemplateDto(template),
+      data: toChecklistTemplateDetailDto(template, template.activeRuns),
     };
   }
 
   async deleteTenantChecklist(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
 
-    await service.archiveTemplate(actor, readRouteParam(request.params.checklistId));
+    await service.archiveTemplate(
+      actor,
+      readRouteParam(request.params.checklistId),
+      parseExpectedUpdatedAtQuery(request.query as Record<string, unknown>),
+    );
 
     return {
       status: 204,
@@ -101,10 +108,14 @@ export class ChecklistController {
 
   async publishTenantChecklist(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const template = await service.publishTemplate(actor, readRouteParam(request.params.checklistId));
+    const template = await service.publishTemplate(
+      actor,
+      readRouteParam(request.params.checklistId),
+      parseExpectedUpdatedAtDto(request.body as Record<string, unknown>),
+    );
 
     return {
-      data: toChecklistTemplateDto(template),
+      data: toChecklistTemplateDetailDto(template, template.activeRuns),
     };
   }
 

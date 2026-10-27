@@ -1,0 +1,167 @@
+{
+  "jurado": "jurado-san322-c1-r2-opus (identidade nova; SUCEDE jurado-san322-c1-r2-sol, caído 02:01Z — P3; nada herdado como fato)",
+  "corpo": "jurado-san322-c1-banco-e-concorrencia",
+  "cadeira": "C1 REVALIDADA (c1rev) — banco e concorrência",
+  "ciclo2": "revalidada — regra (2) do §C7 item 9: itens 1 e 3 com saída IGUAL à registrada no ciclo 1 (as únicas diferenças são vermelhos novos sob mutante, explicados pelo conserto E4-04/05/06); item 2 é a cauda nova, medida e verde",
+  "mandato_md5": "7d34f8556aedcf9362fb1edb38c34f22 (cadeira-c1rev.md, CR retirado) · disparo j22c2-cadeira.md 2f4c2090d1e99cb13f8a498ddefb5955",
+  "modelo": "Claude Opus 5.5 (claude-opus-5-5) · subagente genérico Claude · nível menor DECLARADO (§C7.6) · substituição: sucede o Codex GPT-5.6 Sol caído por limite de uso",
+  "corpo_md5": "EOL-neutro 8fca8229f50e7c04d5ed8739bc39c243 (carregado do blob = .claude no objeto = disco w-san322) · .claude × .agents sem frontmatter/bloco Codex: IDENTICO",
+  "objeto": "6b03e44d8136792398f521ccaf85d8dd45168a6d (ls-remote = gh pr view 464, no início 02:04Z e no fim 02:29Z: não andou) · <objeto>~21 = b08c755719a6cb0ed192fa04e549ac5fc67a3e67 (head-base do backend, controle) · <objeto>~8 = objeto do ciclo 1 (controle da cauda) · merge-base = origin/main = c9a2d036c1aaff21df92817525d7f9c92cbbe272 no início e no fim",
+  "legalidade": "insp-san322c2-parecer.md (inspetor-san322-c2): LIBERADO COM RESSALVA, 6 ressalvas lidas; ressalva 1 cumprida (cópia das ferramentas com worktree, portas, banco, pasta e OBJ trocados, diff publicado antes de rodar); worktree/containers trocados pelo disparo da sucessão (j22r2-c1o-wt, j22r2-c1o-*, portas 48023/48024 porque 48021/48022 estavam com o órfão do caído) · check-runs do objeto 14 | 0 não-verdes | 0 pendentes · backend, backend-postgres, frontend completed/success ×2",
+  "quorum": "unanimidade de 3, com veto · ciclo 2 (último em que achado não grave reprova) · regra (2) do §C7 item 9",
+  "leitura_de_outras_cadeiras": "não li votos nem evidências de c2r2-* nem c3rev-* do ciclo 2 · li: mandato cadeira-c1rev.md, corpo do blob, parecer do inspetor, evidência e voto do caído (c1rev-sol-caido-*), evidência da C1 do ciclo 1, E4 do plano e relatório do dev — todos A RE-VERIFICAR (roteiro, nunca fato)",
+  "arquivos_medidos": [
+    "src/modules/checklists/**",
+    "src/database/rls.ts",
+    "tests/checklist-template-lock-db.test.ts",
+    "tests/checklist-template-prisma-db.test.ts",
+    "tests/checklist-run-lifecycle-db.test.ts",
+    "tests/checklist-routes-db.test.ts",
+    "tests/checklist-run-create-concurrency-db.test.ts",
+    "prisma/**",
+    "src/database/**",
+    ".github/**",
+    "scripts/migration-transaction-guard.mjs",
+    "agent-orchestration/controle/pendencias.md"
+  ],
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "FECHADO",
+      "comparacao_ciclo1": "IGUAL",
+      "resultado": "verde do ciclo 1 mantido",
+      "lock_db_x3": "11|11|0|0 ×3 (9 casos antigos ok = ciclo 1; CE-5-publish/archive novos ok)",
+      "sondas": "barrier, parallel 10 (30/30 com exatamente 1 ok), atom, ce12, ce22 10, ce23 10, ce24, h03: saídas IGUAIS às registradas",
+      "mutacoes": "13 mutantes registrados: sonda IGUAL em todos; no -lock-db, diferenças só como vermelhos novos explicados pelo conserto (ce5-semlock, ce12 a/c/d, ce23-nokey, publish-semlock) — cauda E4-04/05/06",
+      "controle_objeto_21": "b08c7557: lock-db 0/11 por TypeError (declarado); sondas mostram 2ª gravação apagando a 1ª, run com versão velha, edição gravando com viva, render 404 do arquivado com viva — IGUAL ao ciclo 1; restauro 23/23 hash-object = blob"
+    },
+    {
+      "item": 2,
+      "estado": "FECHADO",
+      "comparacao_ciclo1": "cauda nova (sem par no ciclo 1; onde o ciclo 1 era verde por falta de teste, agora vermelho)",
+      "resultado": "VERDE",
+      "ce12_forma": "5 sentenças cruas (l.534, 634, 828, 930, 944) geradas por rawsql.mjs; tenant_id tirado só do FOR UPDATE do modelo / só do FOR KEY SHARE / só do FOR UPDATE do reopen → not ok 1 CE-12-forma nomeando l.930 / l.944 / l.828; a minha (tenant_id só em comentário SQL) → verde (nota C1R-01)",
+      "token_errado": "mutante só-lock → not ok 5 CE-12-db: 'update: token errado em id de outra organização virou 409 stale'; B intacta por SQL",
+      "ce5_publish_archive": "espera provada por pg_locks granted=false (30/32 ms), stale, estado final = T1; SELECT sem FOR UPDATE no publish → not ok 6 CE-5-publish; no archive → not ok 7 CE-5-archive",
+      "ce10_db_e401": "arquivado+viva 200; viva concluída → 404 checklist_not_found; arquivado sem vistoria 404; draft/inactive sem viva 409; inactive com viva 200; getTemplateForRun filtrando archived → not ok 4 CE-10-db",
+      "controle_objeto_8": "teste de ~8 sob só-lock / publish-semlock / archive-semlock: 9/9 VERDE; serviço de ~8 → not ok 4 CE-10-db na asserção nova (l.145; 409 em vez de 404)"
+    },
+    {
+      "item": 3,
+      "estado": "FECHADO",
+      "comparacao_ciclo1": "IGUAL",
+      "resultado": "verde do ciclo 1 mantido",
+      "ce4": "TimeZone UTC; .342199/.342999/.999999 → token ms → ok ×3; mutante sem date_trunc → not ok CE-4/5 (+CE-12-forma, CE-22/23), sonda stale ×3; America/Sao_Paulo: token −3 h e a trava aceita ×3; -lock-db 10/1 pela premissa UTC do arnês — IGUAL",
+      "ce7_8_db_paridade": "Postgres = memória nos 5 casos (inuse ×2 com campos intactos; concluída não conta v2→v3; + campo v2→v3; só texto v2→v2); ce7-text → not ok CE-6/7/8, CE-22/23, CE-24 — IGUAL",
+      "ce10_db": "render ok, anexo ok, updateRun ok, available não lista, createRun 404 — IGUAL",
+      "crossrun": "viva de B no template de A recusada por FK 23503; fabricada sem FK: edição de A ok; conta-semtenant → -lock-db verde, sonda inuse (nota C1-04 do ciclo 1) — IGUAL",
+      "vizinhas_x3": "template-prisma-db 5/5/0/0, run-lifecycle-db 6/6/0/0, routes-db 4/4/0/0, run-create-concurrency-db 2/2/0/0, nas 3 rodadas; deadlock detected = 0 — IGUAL",
+      "diff_prisma_database_github": "merge-base..objeto vazio; <objeto>~21..objeto = +42 da migração da main (merge 7cbae4c1); conserto ~8..objeto sob prisma/src/database/.github/repositórios = 0; comparador acusou a diferença fabricada — IGUAL",
+      "migration_guard": "migrações: 117 · anteriores: 112 · novas: 5 · violações: 0, ec=0 — IGUAL",
+      "pendencia_ci_db": "P-B-SAN3-22-CI-DB-SUITE ABERTA, dono orquestrador, bloqueia: não, encerramento 3× com denominador constante; ci.yml sem checklist-template-lock-db — IGUAL",
+      "tap_job_backend": "runs 40360517110 (pull_request) e 40360507541 (push), job backend passo 11 Tests success: ok 576–586 (CE-12-forma, CE-4/5, CE-6/7/8, CE-10-db, CE-12-db, CE-5-publish, CE-5-archive, CE-22/23, CE-22, CE-24, CE-25), 0 SKIP nessas linhas; 4155/4153/0/2 (os 2 SKIP são ok 2692/2693, catálogo de permissões) — condição (i) da E3-22 cumprida"
+    }
+  ],
+  "achados": [
+    {
+      "id": "C1R-01",
+      "defeito": "o CE-12-forma aceita uma sentença cujo único `tenant_id =` está num comentário SQL: com o FOR KEY SHARE de lockTemplateForRun sem tenant real (`WHERE id = … -- tenant_id = …`), o -lock-db fica 11/11 verde e o caso imprime 'reprovadas: nenhuma'",
+      "evidencia": "mut-item2.sh forma-comentario (numstat 1 2) → tap-mut-forma-comentario.log: # tests 11 # pass 11 # fail 0 # skipped 0; restauro hash-object 214a43ee = blob",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "o guard de forma reconhece o texto `tenant_id =` em qualquer ponto depois de WHERE, inclusive em comentário; o próprio caso declara que a prova de comportamento é o CE-12-db, e a inserção com tenant trocado é barrada pela FK composta — forma que o guard não declara alcançar, sem efeito de produto medido"
+    },
+    {
+      "id": "C1R-02",
+      "defeito": "persistem do ciclo 1, re-medidos IGUAIS: (a) ce6-409-depois é mutante equivalente (o throw desfaz a transação inteira; atom idêntico ×3, -lock-db 11/11 verde) — C1-03; (b) só o tenant_id do `update` do PATCH tirado (ce12 (b)) segue verde: o lock tenant-first devolve null antes, camada sem teste própria e sem efeito observável; (c) countActiveRunsForTemplate sem tenant_id segue sem teste, alcançável só com a FK desligada (crossrun: 23503 com FK ativa) — C1-04",
+      "evidencia": "tap-mut-ce6-409-depois.log 11/11; tap-mut-ce12-update.log 11/11 + probe-mut-ce12-update.log null ×6, B idêntica; tap-mut-conta-semtenant.log 11/11 + probe-mut-conta-semtenant.log inuse só com replica",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "critérios que não distinguem formas sem efeito de produto medido (equivalência, defesa mascarada pela camada anterior, cenário só sem integridade referencial)"
+    },
+    {
+      "id": "C1R-03",
+      "defeito": "com o banco em America/Sao_Paulo o token sai deslocado −3 h na exibição; a trava aceita nas 3 frações (só exibição) — C1-05 do ciclo 1, re-medido IGUAL",
+      "evidencia": "probe-ce4-tz.log: 3/3 ok com token 09:00:00.342Z para 12:00:00.342199 UTC; tap-lock-tz.log 10/1 só pela premissa UTC do arnês",
+      "gravidade": "nota",
+      "escopo": "pre-existente — A-01/R11 do plano do bloco (linha 13 da tabela de achados da v2), já registrada no ciclo 1",
+      "classe": "não grave",
+      "motivo": "a exibição do token depende do fuso da sessão; a propriedade da trava não"
+    }
+  ],
+  "criterios_que_nao_puderam_falhar": [
+    "CE-12-forma × `tenant_id =` em comentário SQL (C1R-01): o guard textual não distingue comentário — declarado como forma fora do alcance que o caso declara; o comportamento é coberto pelo CE-12-db e pela FK composta",
+    "ce12 (b) e ce6-409-depois: mutantes que nenhum caso pode acusar, porque não mudam comportamento observável (C1R-02)"
+  ],
+  "pendencias_que_aceito": [
+    "P-B-SAN3-22-CI-DB-SUITE (ABERTA, dono orquestrador, bloqueia: não) — a condição (i) da E3-22 está cumprida no TAP do job backend do objeto",
+    "órfãos j22r2-c1-pg e j22r2-c1-redis do caído jurado-san322-c1-r2-sol seguem de pé em 48021/48022 (não removidos por mim: prefixo alheio) — para o orquestrador"
+  ],
+  "o_que_executei": [
+    {
+      "comando": "git ls-remote origin refs/heads/fix/checklist-trava-versao; gh pr view 464 --json headRefOid,state (início e fim); git fetch; rev-parse origin/main; merge-base; gh api …/commits/<objeto>/check-runs; gh run list --commit <objeto>",
+      "forma": "w-san322 e worktree próprio",
+      "resultado": "objeto 6b03e44d estável; origin/main = merge-base = c9a2d036; check-runs 14/0/0"
+    },
+    {
+      "comando": "git worktree add --detach C:/Users/AMP/j22r2-c1o-wt <objeto>; npm ci; prisma generate (URL fictícia); docker run j22r2-c1o-pg (postgres:16-alpine, 127.0.0.1:48023) e j22r2-c1o-redis (redis:7-alpine, 127.0.0.1:48024); prisma migrate deploy",
+      "forma": "env DATABASE_URL/REDIS_URL/CORE_SAAS_PERSISTENCE só como prefixo",
+      "resultado": "ec=0 em todos; 117 migrações; PostgreSQL 16.15; TimeZone UTC; rolsuper t"
+    },
+    {
+      "comando": "cp j22-c1o/{run-test,probe,mutrun,restore}.sh,{mut,mutn,rawsql}.mjs,zz-j22c1-probe.ts → j22r2-c1o/ + sed; diff original × cópia",
+      "forma": "ressalva 1",
+      "resultado": "diff só em worktree, pasta/senha, portas, banco e OBJ; publicado na evidência antes de rodar"
+    },
+    {
+      "comando": "run-test.sh lock-r{1,2,3} tests/checklist-template-lock-db.test.ts",
+      "forma": "objeto, Postgres próprio, N=3",
+      "resultado": "11|11|0|0 ×3"
+    },
+    {
+      "comando": "probe.sh barrier | parallel 10 | atom | ce12 | ce22 10 | ce23 10 | ce24 | h03 | ce4 | ce78 | ce10 | crossrun; probe.sh ce4-tz ce4 10 j22r2_c1o_tz",
+      "forma": "sonda md5 29959b46 copiada para tests/ e apagada; espera por pg_stat_activity ⋈ pg_locks",
+      "resultado": "todas IGUAIS às registradas no ciclo 1"
+    },
+    {
+      "comando": "mut-item1.sh {ce5-semlock, ce6-409-depois, ce6-conta-fora, ce12-lock, ce12-update, ce12-lock-update, ce12-tres, publish-semlock, archive-semlock}; mut-c1item2.sh {ce22-arg, ce23-nokey, ce24-prev, vivas-so-inprogress}; mut-item2.sh {forma-keyshare, forma-reopen, forma-comentario, ce10-filtra}; mut-item3.sh {ce4-semtrunc, ce7-text, conta-semtenant}",
+      "forma": "mutn.mjs, âncora com 1 casamento, CRLF; -lock-db + sonda por mutante; restore.sh",
+      "resultado": "20 mutações; restauro hash-object = blob em todas; resultados na evidência"
+    },
+    {
+      "comando": "git checkout <objeto>~21 -- src/modules/checklists; -lock-db + sondas barrier, parallel 10, ce12, ce22 3, ce23 3, ce24, ce10, ce78; git checkout <objeto> -- src/modules/checklists",
+      "forma": "controle no head-base b08c7557",
+      "resultado": "lock-db 0/11 por TypeError (declarado); sondas mostram os defeitos; restauro 23/23 hash = blob"
+    },
+    {
+      "comando": "git checkout <objeto>~8 -- tests/checklist-template-lock-db.test.ts + mutantes só-lock/publish-semlock/archive-semlock; git checkout <objeto>~8 -- src/modules/checklists/checklist.service.ts + -lock-db + probe2.sh e401",
+      "forma": "controle da cauda no objeto do ciclo 1",
+      "resultado": "teste de ~8 9/9 verde sob os 3 mutantes; serviço de ~8 → not ok 4 CE-10-db na asserção nova; restauros provados"
+    },
+    {
+      "comando": "node rawsql.mjs src/modules/checklists/checklist-prisma.repository.ts; grep de $queryRaw/$executeRaw em src",
+      "forma": "gerador próprio da cadeira",
+      "resultado": "5 sentenças cruas reais, todas tenant-first"
+    },
+    {
+      "comando": "run-test.sh viz-<4 suítes>-r{1,2,3}; docker logs j22r2-c1o-pg",
+      "forma": "CORE_SAAS_PERSISTENCE=prisma, N=3",
+      "resultado": "5/6/4/2 nas 3 rodadas, skipped 0; deadlock 0"
+    },
+    {
+      "comando": "git diff --stat <merge-base>|<objeto>~21|<objeto>~8 <objeto> -- prisma/ src/database/ .github/; git log --first-parent; node scripts/migration-transaction-guard.mjs; controle fabricado em src/database/rls.ts",
+      "forma": "worktree próprio",
+      "resultado": "vazio no PR; +42 da main; 0 no conserto; guard 117/112/5/0 ec=0; comparador acusou e foi restaurado"
+    },
+    {
+      "comando": "gh run view 40360517110 --log; gh run view 40360507541 --log; gh api …/runs/<id>/jobs",
+      "forma": "arquivos em $SCRATCH",
+      "resultado": "job backend passo 11 Tests: ok 576–586 do -lock-db, 0 SKIP; 4155/4153/0/2"
+    }
+  ],
+  "teardown": "containers j22r2-c1o-pg e j22r2-c1o-redis removidos (docker rm -f -v; contagem 0) · bancos j22r2_c1o e j22r2_c1o_tz foram com o container · 0 processos com o caminho → git worktree remove --force C:/Users/AMP/j22r2-c1o-wt (ec=0, ausente) · mutações, head-base e ~8 restaurados (hash-object = blob; status 0 antes da remoção) · sondas apagadas da árvore · senha apagada; grep da senha na evidência, voto e logs = 0 · base viva (erp-postgres, erp-redis) nunca tocada · órfãos j22r2-c1-* do caído NÃO tocados (reportados) · w-san322 só com c1rev-evidencia.md e c1rev-voto.json escritos por mim, sem commit",
+  "justificativa": "Terreno: worktree, Postgres 16 e Redis 7 próprios, cópia das ferramentas do ciclo 1 com diff publicado (ressalva 1). Item 1 (regra 2): -lock-db 11/11 ×3, os 9 casos antigos ok como no ciclo 1; barrier, parallel 10 (30/30 com exatamente 1 ok), atom, ce12, ce22, ce23, ce24 e h03 com saída IGUAL; os 13 mutantes registrados com sonda IGUAL e, no -lock-db, só vermelhos novos explicados pelo conserto; controle em <objeto>~21 IGUAL ao do ciclo 1. Item 2 (cauda): CE-12-forma por sentença acusa cada uma das três sentenças mutadas nomeando a linha (no ciclo 1 ficavam verdes); o mutante só-lock fica vermelho pela asserção do token errado com B intacta; CE-5-publish/archive esperam o FOR UPDATE (pg_locks) e as mutações sem FOR UPDATE ficam vermelhas pelo caso; o render do arquivado sem viva é 404 depois de concluir a viva e a asserção nova fica vermelha com o serviço de <objeto>~8; o teste de <objeto>~8 fica verde sob os mutantes (controle). Item 3 (regra 2): CE-4 (e fuso de São Paulo), CE-7/8 com paridade, CE-10, crossrun, vizinhas 5/6/4/2 ×3, diffs, guard e pendência (ii) IGUAIS; o TAP do job backend dos dois runs do objeto tem as 11 linhas ok do -lock-db, inclusive CE-5-publish e CE-5-archive, sem SKIP. Achados: C1R-01 (nota, comentário SQL no CE-12-forma), C1R-02 e C1R-03 (notas persistentes do ciclo 1). Nenhum bloqueia. Limpeza: containers, worktree e senha removidos; base viva intocada.\nVOTO: APROVADO — revalidada pela regra (2): itens 1 e 3 IGUAIS ao ciclo 1 (trava serializa nas 3 portas, 30/30 rodadas paralelas com 1 ok, espera por pg_locks; 409 stale/in-use sem gravar; superusuário de A não toca B; R6 nos dois sentidos com recarimbo; CE-4 sem 409 falso; arquivado serve a viva; nada do bloco em prisma/database/.github; TAP do job backend com as 11 linhas ok do -lock-db); cauda E4-04/05/06/01 verde com os mutantes vermelhos e o controle de <objeto>~8 verde; pendências: C1R-01, C1R-02, C1R-03 (notas), P-B-SAN3-22-CI-DB-SUITE"
+}

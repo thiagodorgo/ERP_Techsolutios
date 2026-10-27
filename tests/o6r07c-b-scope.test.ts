@@ -1103,7 +1103,7 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
       },
     });
     assert.equal(criado.status, 201, JSON.stringify(criado.body));
-    const publicado = await req(`/api/v1/tenant/checklists/${criado.body.data.id}/publish`, { method: "POST", headers: hAdmin, body: {} });
+    const publicado = await req(`/api/v1/tenant/checklists/${criado.body.data.id}/publish`, { method: "POST", headers: hAdmin, body: { expectedUpdatedAt: criado.body.data.updatedAt } });
     assert.equal(publicado.status, 200, JSON.stringify(publicado.body));
     modeloId = criado.body.data.id as string;
     componentId = publicado.body.data.components[0].id as string;

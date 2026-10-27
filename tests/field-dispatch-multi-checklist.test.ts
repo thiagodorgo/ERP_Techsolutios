@@ -793,7 +793,8 @@ async function withDispatch(cb: (ctx: DispatchContext) => Promise<void>): Promis
     // "Inativar" é o fluxo do editor que tira o modelo das NOVAS ordens sem apagá-lo (P-CHK-INATIVAR-COM-RUN-ATIVA).
     // Para o provisionamento é o mesmo muro que o rascunho: `createRun` recusa com `checklist_not_published`.
     inactivateTemplate: async (checklistId) => {
-      await checklistService.updateTemplate(actorContext, checklistId, { status: "inactive" });
+      const template = await checklistService.getTemplate(actorContext, checklistId);
+      await checklistService.updateTemplate(actorContext, checklistId, { expectedUpdatedAt: template.updatedAt, status: "inactive" });
     },
     failProvisionOnce: () => {
       provisionFailures += 1;

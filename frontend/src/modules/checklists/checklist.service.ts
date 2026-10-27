@@ -53,7 +53,12 @@ export function updateTenantChecklist(
   return updateTenantChecklistFromApi(context, checklistId, input);
 }
 
-export function publishTenantChecklist(context: ChecklistApiContext, checklistId: string): Promise<TenantChecklist> {
-  if (isMockMode()) return publishMockTenantChecklist(checklistId);
-  return publishTenantChecklistFromApi(context, checklistId);
+/** B-SAN3-22 — `expectedUpdatedAt` é o `updatedAt` da última leitura (o do salvar, quando houve salvar antes). */
+export function publishTenantChecklist(
+  context: ChecklistApiContext,
+  checklistId: string,
+  expectedUpdatedAt: string,
+): Promise<TenantChecklist> {
+  if (isMockMode()) return publishMockTenantChecklist(checklistId, expectedUpdatedAt);
+  return publishTenantChecklistFromApi(context, checklistId, expectedUpdatedAt);
 }

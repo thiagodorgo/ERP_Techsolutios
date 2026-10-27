@@ -28,6 +28,10 @@ export function toChecklistTemplateDto(template: ChecklistTemplate) {
   };
 }
 
+export function toChecklistTemplateDetailDto(template: ChecklistTemplate, activeRuns: number) {
+  return { ...toChecklistTemplateDto(template), activeRuns };
+}
+
 // Mobile-facing template DTO for GET /api/v1/mobile/checklists/available.
 // Maps the persisted template to the contract the Flutter B-100 client parses:
 // it exposes `title` (from name), `schema_version` (from version), and a

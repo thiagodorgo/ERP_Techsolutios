@@ -48,6 +48,12 @@ const componentSchema = z
     }
   });
 
+const updateComponentSchema = componentSchema.and(z.object({
+  componentKey: z.string().trim().min(1),
+}));
+
+const expectedUpdatedAtSchema = z.string().datetime({ offset: true }).transform((value) => new Date(value));
+
 export type ChecklistComponentInput = {
   readonly componentKey?: string;
   readonly type: ChecklistComponentType;
@@ -68,6 +74,7 @@ export type CreateChecklistTemplateInput = {
 };
 
 export type UpdateChecklistTemplateInput = {
+  readonly expectedUpdatedAt: Date;
   readonly name?: string;
   readonly description?: string | null;
   // CHECKLIST P1 PR-02c (P-CHK-PATCH-SEM-TYPE) — `type` passa a ser aceito no PATCH. Antes o
@@ -166,19 +173,28 @@ export function parseCreateChecklistTemplateDto(body: Record<string, unknown>): 
 
 export function parseUpdateChecklistTemplateDto(body: Record<string, unknown>): UpdateChecklistTemplateInput {
   const parsed = z.object({
+    expectedUpdatedAt: expectedUpdatedAtSchema,
     name: z.string().trim().min(1).optional(),
     description: z.union([z.string().trim().min(1), z.null()]).optional(),
     // PR-02c — mesmo enum do create (tipo invalido continua 400; ausente continua no-op).
     type: checklistTypeSchema.optional(),
     status: checklistStatusSchema.optional(),
     schema: jsonRecordSchema.optional(),
-    components: z.array(componentSchema).min(1).optional(),
+    components: z.array(updateComponentSchema).min(1).optional(),
   }).parse(body);
 
   return {
     ...parsed,
     ...(parsed.components ? { components: normalizeComponents(parsed.components) } : {}),
   };
+}
+
+export function parseExpectedUpdatedAtDto(body: Record<string, unknown>): Date {
+  return z.object({ expectedUpdatedAt: expectedUpdatedAtSchema }).parse(body).expectedUpdatedAt;
+}
+
+export function parseExpectedUpdatedAtQuery(query: Record<string, unknown>): Date {
+  return z.object({ expectedUpdatedAt: expectedUpdatedAtSchema }).parse(query).expectedUpdatedAt;
 }
 
 export function parseCreateChecklistRunDto(body: Record<string, unknown>): CreateChecklistRunInput {

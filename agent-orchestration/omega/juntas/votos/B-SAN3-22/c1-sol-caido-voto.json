@@ -1,0 +1,34 @@
+{
+  "jurado": "jurado-san322-c1-sol (identidade nova; nada herdado como fato)",
+  "corpo": "jurado-san322-c1-banco-e-concorrencia",
+  "cadeira": "C1 — banco e concorrência: trava nas três portas, atomicidade do 409, isolamento como superusuário, R6 nos dois sentidos, arquivado que serve",
+  "mandato_md5": "ee09ec6b87d68859240e658fbc552b05 · declarado no disparo: não declarado",
+  "modelo": "Codex CLI · GPT-5.6 Sol · esforço medium · nível menor (§C7.6) · substituição: nenhuma",
+  "corpo_md5": ".claude completo 8fca8229f50e7c04d5ed8739bc39c243 · .agents completo bf78eebf06ddba916bf09d9e238bd2ad · payload canônico EOL-neutro 440ea193 nos dois espelhos · recebido no prompt: n/a, carregado do blob · IDENTICO",
+  "objeto": "44d9cbb3874e45340ca43c934364c3d0103c53b8",
+  "legalidade": "insp-san322-parecer.md · inspetor-san322 · LIBERADO COM RESSALVA R1–R7 · C1 Codex Sol autorizada · head/check-runs a revalidar no fim",
+  "quorum": "unanimidade de 3, com veto · ciclo 1 (todo bloqueia dentro-do-bloco reprova)",
+  "leitura_de_outras_cadeiras": "não li c2-* nem c3-*; li mandato C1, corpo C1, plano/relatório dirigido, críticas R1/E3, revisões de maquete exigidas e parecer do inspetor",
+  "pausa": "nenhuma",
+  "arquivos_medidos": [
+    "src/modules/checklists/checklist-prisma.repository.ts",
+    "tests/checklist-template-lock-db.test.ts",
+    "tests/checklist-template-prisma-db.test.ts",
+    "tests/checklist-run-lifecycle-db.test.ts",
+    "prisma/**",
+    "src/database/**",
+    ".github/**"
+  ],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    { "item": 1, "estado": "EM APURAÇÃO" },
+    { "item": 2, "estado": "EM APURAÇÃO" },
+    { "item": 3, "estado": "EM APURAÇÃO" }
+  ],
+  "justificativa": "EM APURAÇÃO",
+  "o_que_executei": [],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "teardown": "EM APURAÇÃO"
+}

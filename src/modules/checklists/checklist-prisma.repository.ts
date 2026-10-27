@@ -38,6 +38,7 @@ import type {
 } from "./checklist.types.js";
 import type {
   ChecklistRepository,
+  TemplateMutationResult,
   CompleteRunBilling,
   CreateRunData,
   CreateRunResult,
@@ -48,6 +49,11 @@ import type {
   UpdateRunData,
   UpdateTemplateData,
 } from "./checklist.repository.js";
+import {
+  ChecklistTemplateInUseError,
+  ChecklistTemplateStaleError,
+} from "./checklist.repository.js";
+import { classifyTemplateChange } from "./checklist.template-change.js";
 import type {
   CreateChecklistAcknowledgementInput,
   CreateChecklistAttachmentInput,
@@ -59,6 +65,7 @@ import type {
 const logger = pino({ level: env.LOG_LEVEL });
 
 type PrismaModelDelegate = {
+  count(args?: unknown): Promise<number>;
   findMany(args?: unknown): Promise<unknown[]>;
   findFirst(args: unknown): Promise<unknown | null>;
   create(args: unknown): Promise<unknown>;
@@ -196,11 +203,41 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     return record ? mapTemplateRecord(record) : null;
   }
 
-  async updateTemplate(data: UpdateTemplateData): Promise<ChecklistTemplate | null> {
+  async getTemplateForRun(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null> {
+    const record = await this.client.checklistTemplate.findFirst({
+      where: { tenant_id: tenantId, id: checklistId },
+      include: { components: { orderBy: { order_index: "asc" } } },
+    });
+    return record ? mapTemplateRecord(record) : null;
+  }
+
+  async getTemplateDetail(tenantId: string, checklistId: string) {
+    const template = await this.getTemplate(tenantId, checklistId);
+    return template ? { template, activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId) } : null;
+  }
+
+  async updateTemplate(data: UpdateTemplateData): Promise<TemplateMutationResult | null> {
+    const locked = await this.lockTemplateForMutation(data.tenantId, data.checklistId, data.expectedUpdatedAt);
+    if (!locked) return null;
+    if (!locked.token_ok) throw new ChecklistTemplateStaleError();
+
     const existing = await this.getTemplate(data.tenantId, data.checklistId);
 
     if (!existing) {
       return null;
+    }
+
+    if (data.status === "published") {
+      throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_PUBLISH", "status_requires_publish_endpoint", "Publique o modelo pela ação Publicar.");
+    }
+    if (data.status === "archived") {
+      throw new ChecklistError(409, "CHECKLIST_STATUS_REQUIRES_DELETE", "status_requires_delete_endpoint", "Arquive o modelo pela ação Excluir.");
+    }
+
+    const activeRuns = await this.countActiveRunsForTemplate(data.tenantId, data.checklistId);
+    const changeKind = classifyTemplateChange(existing, data);
+    if ((changeKind === "field" || data.status === "draft") && activeRuns > 0) {
+      throw new ChecklistTemplateInUseError(activeRuns);
     }
 
     // CHECKLIST P1 PR-02c (ALTA da junta) — PRESERVA a identidade dos componentes.
@@ -297,6 +334,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         ...(data.type ? { type: data.type } : {}),
         ...(data.status ? { status: data.status } : {}),
         ...(data.schema ? { schema: data.schema } : {}),
+        ...(existing.status === "published" && changeKind === "field" ? { version: existing.version + 1 } : {}),
         updated_by: data.actorUserId,
         ...(componentsToCreate.length > 0
           ? {
@@ -317,10 +355,14 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return mapTemplateRecord(record);
+    const template = mapTemplateRecord(record);
+    return { ...template, template, previous: existing, activeRuns };
   }
 
-  async archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+  async archiveTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
+    const locked = await this.lockTemplateForMutation(tenantId, checklistId, expectedUpdatedAt);
+    if (!locked) return null;
+    if (!locked.token_ok) throw new ChecklistTemplateStaleError();
     const existing = await this.getTemplate(tenantId, checklistId);
 
     if (!existing) {
@@ -348,10 +390,19 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return mapTemplateRecord(record);
+    const template = mapTemplateRecord(record);
+    return {
+      ...template,
+      template,
+      previous: existing,
+      activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId),
+    };
   }
 
-  async publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
+  async publishTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
+    const locked = await this.lockTemplateForMutation(tenantId, checklistId, expectedUpdatedAt);
+    if (!locked) return null;
+    if (!locked.token_ok) throw new ChecklistTemplateStaleError();
     const existing = await this.getTemplate(tenantId, checklistId);
 
     if (!existing) {
@@ -394,7 +445,13 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       },
     });
 
-    return mapTemplateRecord(record);
+    const template = mapTemplateRecord(record);
+    return {
+      ...template,
+      template,
+      previous: existing,
+      activeRuns: await this.countActiveRunsForTemplate(tenantId, checklistId),
+    };
   }
 
   async listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]> {
@@ -402,6 +459,11 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   }
 
   async createRun(data: CreateRunData, template: ChecklistTemplate): Promise<CreateRunResult> {
+    const lockedTemplate = await this.lockTemplateForRun(data.tenantId, template.id);
+    if (!lockedTemplate || lockedTemplate.status !== "published") {
+      throw new ChecklistError(409, "CHECKLIST_NOT_PUBLISHED", "checklist_not_published", "Checklist must be published before execution.");
+    }
+    const currentTemplate = { ...template, version: lockedTemplate.version };
     // P0a — idempotência durável do replay de `checklist.run_create`. Com client_run_key, pré-checa (atalho
     // feliz) e insere via ON CONFLICT DO NOTHING (não pelo `create`, que abortaria a tx no P2002) — ver
     // `createRunWithClientKey`. Sem chave (web/despacho manual), o `create` normal roda: NULLs distintos no
@@ -413,14 +475,14 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         return { run: existing, created: false };
       }
 
-      return this.createRunWithClientKey(data, template, data.clientRunKey);
+      return this.createRunWithClientKey(data, currentTemplate, data.clientRunKey);
     }
 
     const record = await this.client.checklistRun.create({
       data: {
         tenant_id: data.tenantId,
-        template_id: template.id,
-        template_version: template.version,
+        template_id: currentTemplate.id,
+        template_version: currentTemplate.version,
         related_entity_type: data.relatedEntityType ?? null,
         related_entity_id: data.relatedEntityId ?? null,
         client_run_key: null,
@@ -786,10 +848,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     assertChecklistRunReopenable({ status: locked[0]!.status as ChecklistRunStatus });
 
     // Junta PR-03 (MÉDIA): modelo arquivado não recebe novo preenchimento — nem por reabertura.
-    const template = (await this.client.checklistTemplate.findFirst({
-      where: { tenant_id: data.tenantId, id: previous.run.templateId, deleted_at: null },
-      select: { status: true },
-    })) as { status?: string } | null;
+    const template = await this.lockTemplateForRun(data.tenantId, previous.run.templateId);
 
     if (!template || template.status === "archived") {
       throw checklistRunTemplateArchivedError();
@@ -802,7 +861,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
       data: {
         tenant_id: data.tenantId,
         template_id: previous.run.templateId,
-        template_version: previous.run.templateVersion,
+        template_version: template.version,
         related_entity_type: previous.run.relatedEntityType ?? null,
         related_entity_id: previous.run.relatedEntityId ?? null,
         client_run_key: null,
@@ -852,7 +911,11 @@ export class PrismaChecklistRepository implements ChecklistRepository {
   }
 
   async hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
-    const record = await this.client.checklistRun.findFirst({
+    return (await this.countActiveRunsForTemplate(tenantId, templateId)) > 0;
+  }
+
+  async countActiveRunsForTemplate(tenantId: string, templateId: string): Promise<number> {
+    return this.client.checklistRun.count({
       where: {
         tenant_id: tenantId,
         template_id: templateId,
@@ -861,8 +924,32 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         },
       },
     });
+  }
 
-    return record !== null;
+  private async lockTemplateForMutation(tenantId: string, checklistId: string, expectedUpdatedAt?: Date) {
+    const rows = await this.client.$queryRaw<Array<{ id: string; token_ok: boolean }>>`
+      SELECT id,
+             (${expectedUpdatedAt ?? null}::timestamptz IS NULL OR
+              date_trunc('milliseconds', updated_at) = ${expectedUpdatedAt ?? null}::timestamptz) AS token_ok
+        FROM checklist_templates
+       WHERE tenant_id = ${tenantId}::uuid
+         AND id = ${checklistId}::uuid
+         AND deleted_at IS NULL
+       FOR UPDATE
+    `;
+    return rows[0] ?? null;
+  }
+
+  private async lockTemplateForRun(tenantId: string, checklistId: string) {
+    const rows = await this.client.$queryRaw<Array<{ id: string; version: number; status: ChecklistStatus }>>`
+      SELECT id, version, status
+        FROM checklist_templates
+       WHERE tenant_id = ${tenantId}::uuid
+         AND id = ${checklistId}::uuid
+         AND deleted_at IS NULL
+       FOR KEY SHARE
+    `;
+    return rows[0] ?? null;
   }
 
   async createAttachment(
@@ -996,16 +1083,24 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     return this.withTenant(tenantId, (repository) => repository.getTemplate(tenantId, checklistId));
   }
 
-  updateTemplate(data: UpdateTemplateData): Promise<ChecklistTemplate | null> {
+  getTemplateForRun(tenantId: string, checklistId: string): Promise<ChecklistTemplate | null> {
+    return this.withTenant(tenantId, (repository) => repository.getTemplateForRun(tenantId, checklistId));
+  }
+
+  getTemplateDetail(tenantId: string, checklistId: string) {
+    return this.withTenant(tenantId, (repository) => repository.getTemplateDetail(tenantId, checklistId));
+  }
+
+  updateTemplate(data: UpdateTemplateData): Promise<TemplateMutationResult | null> {
     return this.withTenant(data.tenantId, (repository) => repository.updateTemplate(data));
   }
 
-  archiveTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
-    return this.withTenant(tenantId, (repository) => repository.archiveTemplate(tenantId, checklistId, actorUserId));
+  archiveTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
+    return this.withTenant(tenantId, (repository) => repository.archiveTemplate(tenantId, checklistId, actorUserId, expectedUpdatedAt));
   }
 
-  publishTemplate(tenantId: string, checklistId: string, actorUserId: string): Promise<ChecklistTemplate | null> {
-    return this.withTenant(tenantId, (repository) => repository.publishTemplate(tenantId, checklistId, actorUserId));
+  publishTemplate(tenantId: string, checklistId: string, actorUserId: string, expectedUpdatedAt?: Date): Promise<TemplateMutationResult | null> {
+    return this.withTenant(tenantId, (repository) => repository.publishTemplate(tenantId, checklistId, actorUserId, expectedUpdatedAt));
   }
 
   listTemplatesByType(tenantId: string): Promise<readonly ChecklistTemplate[]> {
@@ -1070,6 +1165,10 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
 
   hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean> {
     return this.withTenant(tenantId, (repository) => repository.hasActiveRunsForTemplate(tenantId, templateId));
+  }
+
+  countActiveRunsForTemplate(tenantId: string, templateId: string): Promise<number> {
+    return this.withTenant(tenantId, (repository) => repository.countActiveRunsForTemplate(tenantId, templateId));
   }
 
   createAttachment(

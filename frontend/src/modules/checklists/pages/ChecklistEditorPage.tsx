@@ -17,11 +17,12 @@ import {
   Smartphone,
   Trash2,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { ApiError } from "../../../services/api/client";
+import { useScreenAppearance } from "../../appearance/useScreenAppearance";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
@@ -56,8 +57,32 @@ import {
   removeEditorSection,
   renameEditorSection,
   updateEditorComponent,
+  conflictWhenLine,
+  diffEditorDraft,
+  editorLockBanner,
+  editorLockPill,
+  editorLockReason,
+  editorLockReasonFor,
+  editorStatusAction,
+  EDITOR_LOCK_UNKNOWN_MESSAGE,
+  nextEditorLock,
+  publishTokenAfterSave,
+  reactivateLockReason,
+  resolveWriteError,
 } from "../checklist-editor.model";
-import type { ChecklistConfigChange, ChecklistEditorComponent, ChecklistEditorDraft } from "../checklist-editor.model";
+import type {
+  ChecklistConfigChange,
+  ChecklistEditorComponent,
+  ChecklistEditorDraft,
+  ChecklistEditorLock,
+} from "../checklist-editor.model";
+import {
+  EditorConflictBar,
+  EditorConflictCompare,
+  EditorImpactPanel,
+  EditorLockKpis,
+} from "../components/ChecklistEditorLockViews";
+import type { EditorLockBlock } from "../components/ChecklistEditorLockViews";
 import { resolveChecklistPreviewMode } from "../checklist-preview.model";
 import type { ChecklistPreviewMode } from "../checklist-preview.model";
 import {
@@ -87,6 +112,17 @@ import type { TenantChecklist, TenantChecklistComponentCatalogItem, TenantCheckl
 // protótipo ou como 4ª coluna (dock) quando a janela comporta — decisão automática e única, em
 // `resolveChecklistPreviewMode`. O selo "Em breve" saiu do botão Pré-visualizar (segue apenas onde
 // a capacidade REALMENTE não existe: as regras de aplicabilidade, que são o PR-04).
+//
+// B-SAN3-22 (fatia web) — a trava do modelo saiu do navegador para o servidor: salvar, publicar e
+// inativar/reativar levam o `updatedAt` da última leitura (409 se alguém gravou depois), e o servidor diz
+// em TODA resposta de modelo quantas vistorias em andamento o usam (`activeRuns`; ausente = travado). Com
+// vistoria em andamento só os textos mudam. Os dois estados ("campos travados" e "conflito ao salvar") saem
+// nas 3 aparências aprovadas (`useScreenAppearance("checklist-editor")`; referência
+// `screen-refs/checklist-editor-estados-3opcoes.reference.html`): A · Padrão fiel, B · Analítica,
+// C · Painel de impacto.
+
+/** Chave da tela no registro de aparências (o menu do usuário oferece a escolha). */
+export const CHECKLIST_EDITOR_APPEARANCE_KEY = "checklist-editor";
 
 export const CHECKLIST_LIST_PATH = "/administrator/checklists";
 const CHECKLIST_RUNS_PATH = "/operations/checklists";
@@ -165,8 +201,17 @@ export function ChecklistEditorPage({
   initialSelectedComponentKey,
   initialPreviewOpen,
   initialPreviewMode,
+  initialConflict,
+  initialLockBlock,
 }: {
   readonly initialChecklist?: TenantChecklist;
+  /**
+   * Costura de teste (SSR não roda clique nem rede): abre já no estado de conflito, com o modelo que "outra
+   * pessoa" salvou e o rascunho desta sessão. Produção nunca passa.
+   */
+  readonly initialConflict?: { readonly latest: TenantChecklist; readonly draft?: ChecklistEditorDraft; readonly openedAt?: string };
+  /** Costura de teste: o bloco da aparência B já aberto. */
+  readonly initialLockBlock?: EditorLockBlock;
   readonly initialComponents?: readonly TenantChecklistComponentCatalogItem[];
   readonly initialTab?: EditorTab;
   /** Costura de teste: seleciona o campo pela CHAVE (o id é regenerado pelo backend a cada PATCH). */
@@ -192,10 +237,22 @@ export function ChecklistEditorPage({
   );
   const { toast, showToast } = useChecklistToast();
 
+  const { appearance } = useScreenAppearance(CHECKLIST_EDITOR_APPEARANCE_KEY);
+
   const [checklist, setChecklist] = useState<TenantChecklist | null>(initialChecklist ?? null);
   const [draft, setDraft] = useState<ChecklistEditorDraft | null>(
-    initialChecklist ? createEditorDraftFromChecklist(initialChecklist) : null,
+    initialConflict?.draft ?? (initialChecklist ? createEditorDraftFromChecklist(initialChecklist) : null),
   );
+  /** B-SAN3-22 (CE-27) — trava alimentada por TODA resposta de modelo único; ausente = travado (fail-closed). */
+  const [lock, setLock] = useState<ChecklistEditorLock>(() =>
+    initialChecklist ? nextEditorLock(initialConflict?.latest ?? initialChecklist) : { kind: "unknown" },
+  );
+  /** Quando esta sessão leu o modelo sobre o qual o rascunho é feito (linha de horário do conflito, E3b-14). */
+  const [openedAt, setOpenedAt] = useState<string | null>(initialConflict?.openedAt ?? (initialChecklist ? new Date().toISOString() : null));
+  /** Bloco aberto da aparência B (vistorias · versão · campos). */
+  const [lockBlock, setLockBlock] = useState<EditorLockBlock | null>(initialLockBlock ?? null);
+  /** E3b-17 — confirmação de inativar (molde do "Sair sem salvar?"). */
+  const [confirmInactivate, setConfirmInactivate] = useState(false);
   const [catalog, setCatalog] = useState<readonly TenantChecklistComponentCatalogItem[]>(initialComponents ?? []);
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(
     initialSelectedComponentKey && initialChecklist
@@ -210,8 +267,14 @@ export function ChecklistEditorPage({
   const [confirmExit, setConfirmExit] = useState(false);
   /** Para onde o usuário tentou ir com o rascunho sujo — `null` = a lista de modelos (botão Voltar). */
   const [pendingExitPath, setPendingExitPath] = useState<string | null>(null);
-  /** P-CHK-PATCH-SEM-LOCK: versão do servidor que mudou embaixo desta sessão de edição. */
-  const [conflict, setConflict] = useState<TenantChecklist | null>(null);
+  /**
+   * P-CHK-PATCH-SEM-LOCK / B-SAN3-22: o modelo que outra pessoa salvou depois da nossa leitura (relido no 409
+   * `template_changed_since_read`). `source` diz qual gesto bateu: só o SALVAR pode sobrescrever (publicar e
+   * inativar não carregam rascunho — a saída é recarregar e repetir).
+   */
+  const [conflict, setConflict] = useState<{ readonly latest: TenantChecklist; readonly source: "save" | "publish" | "status" } | null>(
+    initialConflict ? { latest: initialConflict.latest, source: "save" } : null,
+  );
   const [loading, setLoading] = useState(initialChecklist === undefined);
   const [saving, setSaving] = useState(false);
   const visibility = editorActionVisibility({ canUpdate, canReadRuns, busy: saving });
@@ -311,6 +374,9 @@ export function ChecklistEditorPage({
       ]);
       setChecklist(nextChecklist);
       setDraft(createEditorDraftFromChecklist(nextChecklist));
+      setLock(nextEditorLock(nextChecklist));
+      setOpenedAt(new Date().toISOString());
+      setConflict(null);
       setCatalog(nextCatalog);
       setSelectedComponentId(null);
       setDirty(false);
@@ -331,6 +397,11 @@ export function ChecklistEditorPage({
 
   function handleAddField(item: TenantChecklistComponentCatalogItem) {
     if (!draft) return;
+    // B-SAN3-22: com vistoria em andamento (ou não confirmado) só textos mudam — a ação explica em vez de agir.
+    if (lock.kind !== "free") {
+      explainLocked(editorLockReason(lock));
+      return;
+    }
 
     const targetSection = selectedComponent
       ? componentSectionIndex(selectedComponent, draft.sections.length)
@@ -355,6 +426,11 @@ export function ChecklistEditorPage({
 
   function handleDuplicate(componentId: string) {
     if (!draft) return;
+    // B-SAN3-22: com vistoria em andamento (ou não confirmado) só textos mudam — a ação explica em vez de agir.
+    if (lock.kind !== "free") {
+      explainLocked(editorLockReason(lock));
+      return;
+    }
 
     const result = duplicateEditorComponent(draft, componentId);
     applyDraft(result.draft);
@@ -363,9 +439,19 @@ export function ChecklistEditorPage({
 
   function handleRemove(componentId: string) {
     if (!draft) return;
+    // B-SAN3-22: com vistoria em andamento (ou não confirmado) só textos mudam — a ação explica em vez de agir.
+    if (lock.kind !== "free") {
+      explainLocked(editorLockReason(lock));
+      return;
+    }
 
     applyDraft(removeEditorComponent(draft, componentId));
     if (selectedComponentId === componentId) setSelectedComponentId(null);
+  }
+
+  /** B-SAN3-22 — controle de campo travado: o clique explica (toast de aviso) em vez de agir. */
+  function explainLocked(message: string) {
+    showToast(message, "warn");
   }
 
   /**
@@ -373,57 +459,53 @@ export function ChecklistEditorPage({
    * é que sobrevive), então a seleção é reancorada pela chave — senão o inspector "perderia" o
    * campo que o usuário acabou de configurar.
    *
-   * `base` é o modelo do servidor usado como referência (schema-base + id). `force` pula a
-   * checagem de edição concorrente (o usuário já escolheu sobrescrever).
+   * B-SAN3-22 (E3-04/E3b-07): `base` é o modelo do servidor sobre o qual o rascunho foi feito — dele vêm o
+   * schema-base e o TOKEN (`updatedAt`). A releitura best-effort antes de gravar SAIU: quem decide se alguém
+   * gravou por baixo é o servidor (409). Devolve o modelo salvo (o publicar usa o `updatedAt` dele) ou `null`.
    */
-  async function persistDraft(options: { readonly force?: boolean; readonly base?: TenantChecklist } = {}): Promise<boolean> {
+  async function persistDraft(options: { readonly base?: TenantChecklist } = {}): Promise<TenantChecklist | null> {
     const target = options.base ?? checklist;
-    if (!apiContext || !target || !draft) return false;
+    if (!apiContext || !target || !draft) return null;
 
     // O backend REJEITA (400) modelo sem campo e campo de escolha sem opções — espelhado aqui para
     // o usuário não perder o clique num erro de validação cru depois de montar o formulário todo.
     const blockers = checklistSaveBlockers(draft);
     if (blockers.length > 0) {
       showToast(blockers[0], "warn");
-      return false;
+      return null;
     }
 
     setSaving(true);
 
     try {
-      // P-CHK-PATCH-SEM-LOCK (mitigação sem mudar contrato): o PATCH é last-write-wins. Antes de
-      // gravar, relê o modelo; se o `updatedAt` mudou desde a carga, alguém salvou por baixo — e a
-      // decisão (recarregar × sobrescrever) passa a ser do usuário, não um apagamento silencioso.
-      if (!options.force) {
-        const latest = await readLatestChecklist(target.id);
-        if (latest && latest.updatedAt !== target.updatedAt) {
-          setConflict(latest);
-          return false;
-        }
-      }
-
-      const saved = await updateTenantChecklist(apiContext, target.id, buildUpdateInputFromEditorDraft(draft, target.schema));
+      const saved = await updateTenantChecklist(
+        apiContext,
+        target.id,
+        buildUpdateInputFromEditorDraft(draft, target.schema, target.updatedAt),
+      );
       const selectedKey = selectedComponent?.componentKey;
       const nextDraft = createEditorDraftFromChecklist(saved);
       setChecklist(saved);
+      setLock(nextEditorLock(saved));
+      setOpenedAt(new Date().toISOString());
+      setConflict(null);
       setDraft(nextDraft);
       setDirty(false);
       setSelectedComponentId(
         selectedKey ? (nextDraft.components.find((component) => component.componentKey === selectedKey)?.id ?? null) : null,
       );
-      return true;
+      return saved;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Falha ao salvar o modelo.", "warn");
-      return false;
+      await handleWriteError(error, "save", "Falha ao salvar o modelo.");
+      return null;
     } finally {
       setSaving(false);
     }
   }
 
   /**
-   * Releitura best-effort para a guarda de concorrência. Se a leitura falhar (rede), devolve
-   * `null` e a gravação SEGUE: uma checagem opcional que falha não pode tirar do usuário a
-   * capacidade de salvar — o PATCH em si mostrará o erro real se a rede estiver fora.
+   * Leitura do detalhe depois de um 409. Falha (rede) devolve `null` — e quem chama cai no fail-closed
+   * (E3b-19): campos travados como "não confirmado" e nenhum comparador sem dado.
    */
   async function readLatestChecklist(checklistIdToRead: string): Promise<TenantChecklist | null> {
     if (!apiContext) return null;
@@ -434,27 +516,73 @@ export function ChecklistEditorPage({
     }
   }
 
+  /**
+   * B-SAN3-22 — erro de gravação (salvar, publicar, inativar/reativar):
+   *  · 409 `template_changed_since_read` → relê e apresenta o conflito na aparência do usuário (CE-26b);
+   *  · 409 `template_has_active_runs` → relê e diz quantas vistorias seguram o modelo (CE-28; o cliente não
+   *    expõe a mensagem do servidor);
+   *  · releitura que falha → travado como "não confirmado" (E3b-19).
+   */
+  async function handleWriteError(error: unknown, source: "save" | "publish" | "status", fallback: string) {
+    if (!checklist) return;
+    const target = checklist;
+    const outcome = await resolveWriteError(error, () => readLatestChecklist(target.id));
+    if (outcome.kind === "other") {
+      showToast(error instanceof Error ? error.message : fallback, "warn");
+      return;
+    }
+    if (outcome.kind === "unknown") {
+      setConflict(null);
+      setLock({ kind: "unknown" });
+      showToast(outcome.message, "warn");
+      return;
+    }
+    setLock(outcome.lock);
+    if (outcome.kind === "conflict") {
+      setConflict({ latest: outcome.latest, source });
+      return;
+    }
+    showToast(outcome.message, "warn");
+  }
+
   async function handleSave() {
     if (await persistDraft()) showToast("Modelo salvo. Publique para enviar ao aplicativo.", "ok");
   }
 
-  function handleReloadFromConflict() {
-    if (!conflict) return;
-    setChecklist(conflict);
-    setDraft(createEditorDraftFromChecklist(conflict));
+  /** "Recarregar" (E3-08): GET e substitui o rascunho. Falha na leitura → travado como não confirmado. */
+  async function handleReloadFromConflict() {
+    if (!checklist) return;
+    const fresh = await readLatestChecklist(checklist.id);
+    setConflict(null);
+    if (!fresh) {
+      setLock({ kind: "unknown" });
+      showToast(EDITOR_LOCK_UNKNOWN_MESSAGE, "warn");
+      return;
+    }
+    setChecklist(fresh);
+    setDraft(createEditorDraftFromChecklist(fresh));
+    setLock(nextEditorLock(fresh));
+    setOpenedAt(new Date().toISOString());
     setSelectedComponentId(null);
     setDirty(false);
-    setConflict(null);
     showToast("Modelo recarregado com a versão mais recente. As suas alterações não salvas foram descartadas.", "info");
   }
 
+  /**
+   * "Sobrescrever" (E3-08): GET + PATCH com o token RECÉM-lido — nunca grava sem a versão. Os campos são os desta
+   * sessão; o schema-base é o recém-lido, para nenhuma chave que a outra pessoa gravou cair por um payload obsoleto.
+   */
   async function handleOverwriteConflict() {
-    const latest = conflict;
+    if (!checklist) return;
     setConflict(null);
-    if (!latest) return;
-    // Sobrescrever usa o schema RECÉM-lido como base: os campos são os desta sessão, mas nenhuma
-    // chave de schema que a outra pessoa gravou é derrubada por um payload obsoleto.
-    if (await persistDraft({ force: true, base: latest })) {
+    const fresh = await readLatestChecklist(checklist.id);
+    if (!fresh) {
+      setLock({ kind: "unknown" });
+      showToast(EDITOR_LOCK_UNKNOWN_MESSAGE, "warn");
+      return;
+    }
+    setLock(nextEditorLock(fresh));
+    if (await persistDraft({ base: fresh })) {
       showToast("Modelo salvo por cima da versão anterior. Publique para enviar ao aplicativo.", "ok");
     }
   }
@@ -464,6 +592,8 @@ export function ChecklistEditorPage({
   // PR-02c: guard-rails espelhando o validator + o rascunho é GRAVADO antes de publicar. Sem isso,
   // publicar com alterações não salvas publicava a versão ANTIGA do servidor e o editor ainda
   // sobrescrevia o rascunho com ela — perda silenciosa do trabalho na tela.
+  // B-SAN3-22 (E3b-07/08): o publicar leva o `updatedAt` DEVOLVIDO pelo salvar (não o da tela antes dele); o 409
+  // do publicar passa pela mesma apresentação de conflito, sem "Sobrescrever".
   async function handlePublish() {
     if (!apiContext || !checklist || saving) return;
 
@@ -473,19 +603,25 @@ export function ChecklistEditorPage({
       return;
     }
 
-    if (dirty && !(await persistDraft())) return;
+    let saved: TenantChecklist | null = null;
+    if (dirty) {
+      saved = await persistDraft();
+      if (!saved) return;
+    }
 
     setSaving(true);
     try {
-      const published = await publishTenantChecklist(apiContext, checklist.id);
+      const published = await publishTenantChecklist(apiContext, checklist.id, publishTokenAfterSave(saved, checklist));
       setChecklist(published);
+      setLock(nextEditorLock(published));
+      setOpenedAt(new Date().toISOString());
       setDraft(createEditorDraftFromChecklist(published));
       setDirty(false);
       // Protótipo: publicar FECHA a pré-visualização (a conferência acabou; o toast confirma).
       setPreviewOpen(false);
       showToast("Modelo publicado — já está disponível no aplicativo para as próximas ordens.", "ok");
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Falha ao publicar o modelo.", "warn");
+      await handleWriteError(error, "publish", "Falha ao publicar o modelo.");
     } finally {
       setSaving(false);
     }
@@ -495,16 +631,32 @@ export function ChecklistEditorPage({
    * Inativar/Reativar no editor (promessa da ata do PR-02a). Mesma chamada da lista
    * (`updateTenantChecklist({ status })`), gate `tenant_checklists:update`. NÃO redefine o
    * rascunho: quem tem alteração na tela não a perde por trocar a situação do modelo.
+   *
+   * B-SAN3-22: Inativar abre a confirmação (E3b-17); Reativar volta a rascunho e por isso fica TRAVADO enquanto
+   * houver vistoria em andamento ou enquanto isso não estiver confirmado (CE-29). Os dois levam o token.
    */
-  async function handleToggleStatus() {
+  function handleToggleStatus() {
     if (!apiContext || !checklist || saving) return;
+    const action = editorStatusAction(checklist.status, lock);
+    if (action.kind === "explain") {
+      explainLocked(action.message);
+      return;
+    }
+    if (action.kind === "reactivate") {
+      void changeStatus("draft");
+      return;
+    }
+    setConfirmInactivate(true);
+  }
 
-    const nextStatus: TenantChecklistStatus = checklist.status === "inactive" ? "draft" : "inactive";
+  async function changeStatus(nextStatus: TenantChecklistStatus) {
+    if (!apiContext || !checklist) return;
     setSaving(true);
 
     try {
-      const saved = await updateTenantChecklist(apiContext, checklist.id, { status: nextStatus });
+      const saved = await updateTenantChecklist(apiContext, checklist.id, { status: nextStatus, expectedUpdatedAt: checklist.updatedAt });
       setChecklist(saved);
+      setLock(nextEditorLock(saved));
       showToast(
         nextStatus === "inactive"
           ? "Modelo inativado — não entra em novas ordens."
@@ -512,7 +664,7 @@ export function ChecklistEditorPage({
         "ok",
       );
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Falha ao alterar a situação do modelo.", "warn");
+      await handleWriteError(error, "status", "Falha ao alterar a situação do modelo.");
     } finally {
       setSaving(false);
     }
@@ -594,6 +746,21 @@ export function ChecklistEditorPage({
   const showPreviewDock = previewOpen && previewMode === "dock";
   const showPreviewModal = previewOpen && previewMode === "modal";
 
+  // B-SAN3-22 — estados da trava por aparência (referência aprovada das 3 opções).
+  const locked = lock.kind !== "free";
+  const knownLock = lock.kind === "locked" ? lock : null;
+  const lockReason = editorLockReason(lock);
+  const reactivateReason = checklist.status === "inactive" ? reactivateLockReason(lock) : "";
+  const lockPill = canUpdate ? editorLockPill(lock, appearance) : "";
+  // C · Painel de impacto: com a trava conhecida, a coluna da direita vira "Em uso agora" e a paleta recolhe.
+  const showImpactPanel = appearance === "C" && knownLock !== null && canUpdate && !conflict;
+  const showConflictCompare = appearance === "C" && conflict !== null;
+  const compactPalette = showPreviewDock || showImpactPanel;
+  // A e B mostram a faixa que explica a trava; a C a explica no painel. "Não confirmado" aparece em todas.
+  const showLockBanner = canUpdate && locked && (appearance !== "C" || lock.kind === "unknown");
+  const conflictDifferences = conflict ? diffEditorDraft(conflict.latest, draft) : [];
+  const overwrite = conflict?.source === "save" ? () => void handleOverwriteConflict() : undefined;
+
   /**
    * O dock é uma COLUNA da aba Estrutura. Trocar de aba com ele aberto o transformaria num modal
    * saltando por cima da aba que o usuário acabou de abrir — então ele simplesmente fecha. O modal,
@@ -615,9 +782,18 @@ export function ChecklistEditorPage({
     "ckb-ed-grid",
     layoutReadonly ? "ckb-ed-grid--readonly" : "",
     showPreviewDock ? "ckb-ed-grid--preview" : "",
+    !showPreviewDock && showImpactPanel ? "ckb-ed-grid--compacta" : "",
   ]
     .filter(Boolean)
     .join(" ");
+
+  /** Tipo do modelo travado: o seletor não abre e explica (nunca `disabled`, que não diria nada). */
+  const typeLockReason = editorLockReasonFor(lock, "O tipo do modelo muda os campos");
+  function explainTypeKey(event: ReactKeyboardEvent<HTMLSelectElement>) {
+    if (!typeLockReason || event.key === "Tab") return;
+    event.preventDefault();
+    explainLocked(typeLockReason);
+  }
 
   return (
     <div className="ckb-ed">
@@ -643,13 +819,25 @@ export function ChecklistEditorPage({
             />
             {/* PR-02c: seletor LIGADO — o PATCH passou a aceitar `type` (validator + os dois
                 repositórios; P-CHK-PATCH-SEM-TYPE resolvida). A troca entra no rascunho e vai no
-                próximo Salvar, como qualquer outra edição. */}
+                próximo Salvar, como qualquer outra edição. B-SAN3-22: com vistoria em andamento, travado. */}
             <select
               className="ckb-ed-type"
               value={draft.type}
               aria-label="Tipo do modelo"
               disabled={!canUpdate || visibility.editingFrozen}
-              onChange={(event) => applyDraft({ ...draft, type: event.target.value as ChecklistEditorDraft["type"] })}
+              {...(canUpdate && typeLockReason
+                ? { "aria-disabled": true, title: typeLockReason, "data-explica": typeLockReason }
+                : {})}
+              onMouseDown={(event) => {
+                if (!typeLockReason) return;
+                event.preventDefault();
+                explainLocked(typeLockReason);
+              }}
+              onKeyDown={explainTypeKey}
+              onChange={(event) => {
+                if (typeLockReason) return;
+                applyDraft({ ...draft, type: event.target.value as ChecklistEditorDraft["type"] });
+              }}
             >
               {CHECKLIST_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -660,6 +848,12 @@ export function ChecklistEditorPage({
             <span className="ckb-pill" style={{ background: statusTone.bg, color: statusTone.fg }}>
               {checklistStatusLabel[checklist.status]}
             </span>
+            {lockPill ? (
+              <span className="ckb-pill ckb-pill--inuse">
+                <Lock size={11} aria-hidden="true" />
+                {lockPill}
+              </span>
+            ) : null}
             {pendingChanges ? <span className="ckb-pill ckb-pill--pending">Alterações não publicadas</span> : null}
             {dirty ? (
               <span className="ckb-ed-dirty">
@@ -672,14 +866,17 @@ export function ChecklistEditorPage({
           <div className="ckb-ed-head-actions">
             {/* PR-02c — promessa da ata do PR-02a: tirar de circulação um modelo é capacidade REAL
                 do backend e o lugar definitivo dela é o editor. Mesmo gate e mesma chamada da
-                lista (`updateTenantChecklist({ status })`). */}
+                lista (`updateTenantChecklist({ status })`). B-SAN3-22: Inativar confirma antes; Reativar
+                fica travado (e explica) enquanto houver vistoria em andamento. */}
             {visibility.save ? (
               <button
                 type="button"
                 className="ckb-ed-btn"
-                title={statusActionLabel}
+                title={reactivateReason || statusActionLabel}
                 aria-label={statusActionLabel}
-                onClick={() => void handleToggleStatus()}
+                aria-disabled={reactivateReason ? true : undefined}
+                data-explica={reactivateReason || undefined}
+                onClick={() => handleToggleStatus()}
                 disabled={saving}
               >
                 {checklist.status === "inactive" ? (
@@ -753,8 +950,10 @@ export function ChecklistEditorPage({
             ))}
           </div>
           {/* Navegação PROGRAMÁTICA do próprio editor: passa pela MESMA guarda de saída suja
-              (a interceptação de clique só pega âncoras, e este controle é um botão). */}
-          {visibility.runsLink ? (
+              (a interceptação de clique só pega âncoras, e este controle é um botão).
+              B-SAN3-22 (E3b-18): a B não tem o link — a tela de execuções não filtra por modelo
+              (fica para o B-CHK-EDITOR-LEITURAS-B); A e C o mantêm como hoje. */}
+          {visibility.runsLink && appearance !== "B" ? (
             <button type="button" className="ckb-ed-runs-link" onClick={() => guardedNavigate(CHECKLIST_RUNS_PATH)}>
               <ExternalLink size={14} aria-hidden="true" />
               Ver execuções deste modelo
@@ -772,6 +971,34 @@ export function ChecklistEditorPage({
         </div>
       ) : null}
 
+      {/* B-SAN3-22 — conflito na aparência B: a faixa âmbar com as ações do diálogo, sem diálogo. */}
+      {conflict && appearance === "B" ? (
+        <EditorConflictBar
+          differences={conflictDifferences}
+          savedAt={conflict.latest.updatedAt}
+          openedAt={openedAt}
+          onReload={() => void handleReloadFromConflict()}
+          onOverwrite={overwrite}
+        />
+      ) : null}
+
+      {/* B-SAN3-22 — a faixa que explica a trava (A e B; "não confirmado" em todas). */}
+      {showLockBanner ? (
+        <div
+          className={appearance === "B" && lockBlock === "runs" ? "ckb-ed-blockbar ckb-ed-blockbar--destaque" : "ckb-ed-blockbar"}
+          role="status"
+          id="ckb-faixa-trava"
+        >
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>{editorLockBanner(lock, checklist.status)}</span>
+          {lock.kind === "unknown" ? (
+            <button type="button" className="ckb-ed-link" onClick={() => void loadEditor()}>
+              Recarregar o modelo
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {!canUpdate ? (
         <div className="ckb-readonly-banner ckb-ed-readonly-banner">
           <div className="ckb-readonly-tile" aria-hidden="true">
@@ -784,14 +1011,27 @@ export function ChecklistEditorPage({
         </div>
       ) : null}
 
+      {/* B-SAN3-22 — aparência B: os três blocos clicáveis com números reais (resposta do dono à Q5). */}
+      {appearance === "B" && knownLock && canUpdate && tab === "estrutura" ? (
+        <EditorLockKpis
+          lock={knownLock}
+          checklist={checklist}
+          fieldCount={draft.components.length}
+          block={lockBlock}
+          onBlock={setLockBlock}
+        />
+      ) : null}
+
       {tab === "estrutura" ? (
         <div className={structureGridClass} role="tabpanel" id="ckb-panel-estrutura" aria-labelledby="ckb-tab-estrutura">
           {canUpdate ? (
             <EditorPalette
               catalog={catalog}
               onAdd={handleAddField}
-              collapsed={showPreviewDock}
+              collapsed={compactPalette}
               frozen={visibility.editingFrozen}
+              lockedReason={lockReason}
+              onExplain={explainLocked}
             />
           ) : null}
 
@@ -801,6 +1041,7 @@ export function ChecklistEditorPage({
                 <div className="ckb-ed-col-title">O formulário</div>
                 <div className="ckb-ed-col-sub">{editorCanvasMeta(draft, checklist.version)}</div>
               </div>
+              {/* B-SAN3-22 (E3b-10): acrescentar seção é texto (`schema.sections`) — segue livre com a trava. */}
               {visibility.addSection ? (
                 <button type="button" className="ckb-ed-ghost-btn" onClick={() => applyDraft(addEditorSection(draft))}>
                   <Plus size={13} aria-hidden="true" />
@@ -824,6 +1065,8 @@ export function ChecklistEditorPage({
 
               {draft.sections.map((title, sectionIndex) => {
                 const items = componentsInSection(draft, sectionIndex);
+                // E3b-10: remover seção reindexa os campos seguintes (mudança de campo) — travado com a trava.
+                const removeSectionReason = editorLockReasonFor(lock, "Remover a seção move os campos seguintes");
                 return (
                   <div key={`${title}-${sectionIndex}`} className="ckb-ed-section">
                     <div className="ckb-ed-section-head">
@@ -840,9 +1083,15 @@ export function ChecklistEditorPage({
                         <button
                           type="button"
                           className="ckb-ed-section-del"
-                          title="Remover seção vazia"
+                          title={removeSectionReason || "Remover seção vazia"}
                           aria-label={`Remover a seção ${title}`}
-                          onClick={() => applyDraft(removeEditorSection(draft, sectionIndex))}
+                          aria-disabled={removeSectionReason ? true : undefined}
+                          data-explica={removeSectionReason || undefined}
+                          onClick={() =>
+                            removeSectionReason
+                              ? explainLocked(removeSectionReason)
+                              : applyDraft(removeEditorSection(draft, sectionIndex))
+                          }
                         >
                           <Trash2 size={13} aria-hidden="true" />
                         </button>
@@ -855,6 +1104,9 @@ export function ChecklistEditorPage({
                           component={component}
                           selected={component.id === selectedComponentId}
                           showActions={visibility.fieldActions}
+                          lockedReason={lockReason}
+                          lockChip={appearance === "B" && knownLock !== null ? knownLock.activeRuns : null}
+                          onExplain={explainLocked}
                           onSelect={() => setSelectedComponentId(component.id)}
                           onMove={(direction) => applyDraft(moveEditorComponent(draft, component.id, direction))}
                           onDuplicate={() => handleDuplicate(component.id)}
@@ -871,10 +1123,32 @@ export function ChecklistEditorPage({
             </div>
           </section>
 
-          {visibility.inspector ? (
+          {showConflictCompare && conflict ? (
+            <EditorConflictCompare
+              differences={conflictDifferences}
+              savedAt={conflict.latest.updatedAt}
+              openedAt={openedAt}
+              onReload={() => void handleReloadFromConflict()}
+              onOverwrite={overwrite}
+            />
+          ) : showImpactPanel && knownLock ? (
+            <EditorImpactPanel
+              lock={knownLock}
+              status={checklist.status}
+              component={selectedComponent}
+              frozen={visibility.editingFrozen}
+              canInactivate={visibility.save}
+              onInactivate={() => handleToggleStatus()}
+              onChangeLabel={(label) => selectedComponent && applyDraft(updateEditorComponent(draft, selectedComponent.id, { label }))}
+              onChangeHelp={(help) => selectedComponent && applyDraft(updateEditorComponent(draft, selectedComponent.id, { help }))}
+            />
+          ) : visibility.inspector ? (
             <ChecklistFieldInspector
               frozen={visibility.editingFrozen}
               component={selectedComponent}
+              lock={lock}
+              showLockNote={appearance === "A"}
+              onExplain={explainLocked}
               onChangeLabel={(label) => selectedComponent && applyDraft(updateEditorComponent(draft, selectedComponent.id, { label }))}
               onChangeHelp={(help) => selectedComponent && applyDraft(updateEditorComponent(draft, selectedComponent.id, { help }))}
               onToggleRequired={() =>
@@ -926,8 +1200,24 @@ export function ChecklistEditorPage({
         />
       ) : null}
 
-      {conflict ? (
-        <ConcurrentEditDialog onReload={handleReloadFromConflict} onOverwrite={() => void handleOverwriteConflict()} />
+      {confirmInactivate ? (
+        <InactivateConfirmDialog
+          activeRuns={knownLock?.activeRuns ?? null}
+          onCancel={() => setConfirmInactivate(false)}
+          onConfirm={() => {
+            setConfirmInactivate(false);
+            void changeStatus("inactive");
+          }}
+        />
+      ) : null}
+
+      {/* A · Padrão fiel: o diálogo de hoje, com a linha de horário (E3b-14). */}
+      {conflict && appearance === "A" ? (
+        <ConcurrentEditDialog
+          when={conflictWhenLine(conflict.latest.updatedAt, openedAt)}
+          onReload={() => void handleReloadFromConflict()}
+          onOverwrite={overwrite}
+        />
       ) : null}
 
       <ChecklistToast toast={toast} />
@@ -945,10 +1235,15 @@ function EditorPalette({
   onAdd,
   collapsed = false,
   frozen = false,
+  lockedReason = "",
+  onExplain = () => undefined,
 }: {
   readonly catalog: readonly TenantChecklistComponentCatalogItem[];
   readonly onAdd: (item: TenantChecklistComponentCatalogItem) => void;
   readonly collapsed?: boolean;
+  /** B-SAN3-22 — acrescentar campo é mudança de campo: travado, o clique explica (nunca `disabled`). */
+  readonly lockedReason?: string;
+  readonly onExplain?: (message: string) => void;
   /** Junta PR-02d: durante a gravação a paleta fica MONTADA e desabilitada — desmontá-la mudava
    *  a contagem de filhos da grade e quebrava o layout (o dock saltava de linha a cada Salvar). */
   readonly frozen?: boolean;
@@ -976,10 +1271,12 @@ function EditorPalette({
               key={item.type}
               type="button"
               className={collapsed ? "ckb-ed-pal-item ckb-ed-pal-item--compact" : "ckb-ed-pal-item"}
-              title={`${label} — ${description}`}
+              title={lockedReason || `${label} — ${description}`}
               aria-label={`Adicionar campo ${label}`}
+              aria-disabled={lockedReason ? true : undefined}
+              data-explica={lockedReason || undefined}
               disabled={frozen}
-              onClick={() => onAdd(item)}
+              onClick={() => (lockedReason ? onExplain(lockedReason) : onAdd(item))}
             >
               <span className="ckb-ed-pal-tile" style={{ background: tile.bg, color: tile.fg }} aria-hidden="true">
                 <TileIcon size={16} />
@@ -1010,6 +1307,9 @@ function EditorFieldCard({
   component,
   selected,
   showActions,
+  lockedReason = "",
+  lockChip = null,
+  onExplain = () => undefined,
   onSelect,
   onMove,
   onDuplicate,
@@ -1018,6 +1318,11 @@ function EditorFieldCard({
   readonly component: ChecklistEditorComponent;
   readonly selected: boolean;
   readonly showActions: boolean;
+  /** B-SAN3-22 — mover, duplicar e remover são mudança de campo: travados, o clique explica. */
+  readonly lockedReason?: string;
+  /** Aparência B: o selo "em uso" no cartão, com N vistorias no `title`. */
+  readonly lockChip?: number | null;
+  readonly onExplain?: (message: string) => void;
   readonly onSelect: () => void;
   readonly onMove: (direction: "up" | "down") => void;
   readonly onDuplicate: () => void;
@@ -1056,6 +1361,15 @@ function EditorFieldCard({
               *
             </span>
           ) : null}
+          {lockChip !== null ? (
+            <span
+              className="ckb-ed-field-lock"
+              title={`Em uso por ${lockChip} ${lockChip === 1 ? "vistoria" : "vistorias"}: só o texto pode mudar`}
+            >
+              <Lock size={10} aria-hidden="true" />
+              em uso
+            </span>
+          ) : null}
         </span>
         <span className="ckb-ed-field-meta">
           <span className="ckb-ed-field-type">{typeLabel}</span>
@@ -1068,16 +1382,16 @@ function EditorFieldCard({
       </button>
       {showActions ? (
         <span className="ckb-ed-field-actions">
-          <FieldActionButton label="Mover para cima" onClick={() => onMove("up")}>
+          <FieldActionButton label="Mover para cima" lockedReason={lockedReason} onExplain={onExplain} onClick={() => onMove("up")}>
             <ChevronUp size={13} />
           </FieldActionButton>
-          <FieldActionButton label="Mover para baixo" onClick={() => onMove("down")}>
+          <FieldActionButton label="Mover para baixo" lockedReason={lockedReason} onExplain={onExplain} onClick={() => onMove("down")}>
             <ChevronDown size={13} />
           </FieldActionButton>
-          <FieldActionButton label="Duplicar campo" onClick={onDuplicate}>
+          <FieldActionButton label="Duplicar campo" lockedReason={lockedReason} onExplain={onExplain} onClick={onDuplicate}>
             <Copy size={12} />
           </FieldActionButton>
-          <FieldActionButton label="Remover campo" danger onClick={onRemove}>
+          <FieldActionButton label="Remover campo" danger lockedReason={lockedReason} onExplain={onExplain} onClick={onRemove}>
             <Trash2 size={13} />
           </FieldActionButton>
         </span>
@@ -1089,11 +1403,15 @@ function EditorFieldCard({
 function FieldActionButton({
   label,
   danger,
+  lockedReason = "",
+  onExplain = () => undefined,
   onClick,
   children,
 }: {
   readonly label: string;
   readonly danger?: boolean;
+  readonly lockedReason?: string;
+  readonly onExplain?: (message: string) => void;
   readonly onClick: () => void;
   readonly children: ReactNode;
 }) {
@@ -1101,10 +1419,16 @@ function FieldActionButton({
     <button
       type="button"
       className={danger ? "ckb-ed-field-btn ckb-ed-field-btn--danger" : "ckb-ed-field-btn"}
-      title={label}
+      title={lockedReason || label}
       aria-label={label}
+      aria-disabled={lockedReason ? true : undefined}
+      data-explica={lockedReason || undefined}
       onClick={(event) => {
         event.stopPropagation();
+        if (lockedReason) {
+          onExplain(lockedReason);
+          return;
+        }
         onClick();
       }}
     >
@@ -1256,21 +1580,72 @@ export function ExitConfirmDialog({
 }
 
 /**
- * P-CHK-PATCH-SEM-LOCK — mitigação de última-gravação-vence SEM mudar o contrato: o editor relê o
- * modelo antes de gravar e, se ele mudou desde a carga, entrega a decisão ao usuário em vez de
- * apagar o trabalho alheio em silêncio. Exportado porque a cópia é o contrato desta guarda (o
- * estado que a abre depende de rede + interação, que o SSR não executa).
+ * B-SAN3-22 (E3b-17) — confirmação de inativar, no molde do "Sair sem salvar?": as novas ordens deixam de usar o
+ * modelo; quem está no campo termina. Foco na saída conservadora (continuar), Esc cancela.
+ */
+export function InactivateConfirmDialog({
+  activeRuns,
+  onCancel,
+  onConfirm,
+}: {
+  /** Vistorias em andamento conhecidas (null = não confirmado). */
+  readonly activeRuns: number | null;
+  readonly onCancel: () => void;
+  readonly onConfirm: () => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  const inField =
+    activeRuns === null || activeRuns === 0
+      ? "Quem está no campo com este modelo termina a vistoria normalmente."
+      : `Quem está no campo termina: ${activeRuns === 1 ? "a vistoria em andamento continua" : `as ${activeRuns} vistorias em andamento continuam`} com este modelo.`;
+
+  return (
+    <div className="ckb-ed-modal-overlay">
+      <div className="ckb-ed-modal" role="dialog" aria-modal="true" aria-labelledby="ckb-inactivate-title">
+        <div className="ckb-ed-modal-tile" aria-hidden="true">
+          <Ban size={22} />
+        </div>
+        <div className="ckb-ed-modal-title" id="ckb-inactivate-title">
+          Inativar este modelo?
+        </div>
+        <p className="ckb-ed-modal-text">As novas ordens deixam de usar o modelo. {inField}</p>
+        <div className="ckb-ed-modal-actions">
+          <button type="button" className="ckb-ed-modal-btn" autoFocus onClick={onCancel}>
+            Continuar editando
+          </button>
+          <button type="button" className="ckb-ed-modal-btn ckb-ed-modal-btn--danger" onClick={onConfirm}>
+            Inativar modelo
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * P-CHK-PATCH-SEM-LOCK — diálogo do conflito ao salvar. Exportado porque a cópia é o contrato desta guarda (o
+ * estado que o abre depende de rede + interação, que o SSR não executa).
  *
- * NÃO é optimistic locking de verdade (o `If-Match`/versão no contrato é proposta para junta): a
- * janela entre a releitura e o PATCH continua existindo, apenas encolhe de "a sessão inteira de
- * edição" para "o tempo de uma requisição".
+ * B-SAN3-22: a trava agora é do SERVIDOR (o salvar leva o `updatedAt` lido; 409 se alguém gravou depois). O
+ * diálogo é a apresentação da aparência A, com o texto de sempre e a linha de horário da referência aprovada
+ * (E3b-14). Sem `onOverwrite` (conflito no publicar/inativar), só "Recarregar".
  */
 export function ConcurrentEditDialog({
+  when,
   onReload,
   onOverwrite,
 }: {
+  /** "Salvo por outra pessoa às HH:MM · você abriu às HH:MM" — omitida quando não há as duas horas. */
+  readonly when?: string;
   readonly onReload: () => void;
-  readonly onOverwrite: () => void;
+  readonly onOverwrite?: () => void;
 }) {
   return (
     <div className="ckb-ed-modal-overlay">
@@ -1285,14 +1660,17 @@ export function ConcurrentEditDialog({
           Este modelo foi alterado por outra pessoa depois que você o abriu. Recarregar traz a versão mais recente e
           descarta as suas alterações não salvas; sobrescrever mantém as suas e substitui as dela.
         </p>
+        {when ? <div className="ckb-ed-modal-when">{when}</div> : null}
         <div className="ckb-ed-modal-actions">
           {/* Foco na saída CONSERVADORA: recarregar não destrói o trabalho de quem já salvou. */}
           <button type="button" className="ckb-ed-modal-btn" autoFocus onClick={onReload}>
             Recarregar o modelo
           </button>
-          <button type="button" className="ckb-ed-modal-btn ckb-ed-modal-btn--danger" onClick={onOverwrite}>
-            Sobrescrever mesmo assim
-          </button>
+          {onOverwrite ? (
+            <button type="button" className="ckb-ed-modal-btn ckb-ed-modal-btn--danger" onClick={onOverwrite}>
+              Sobrescrever mesmo assim
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
