@@ -438,3 +438,39 @@ por mutação em `mutacoes.tsv`). Todas restauradas com hash igual; `git status`
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 6
+
+- **Fatia:** 6 — R5 pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f59-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado (cobertura declarada, ver RETOMADA 5).
+- **Head de entrada:** `f137e186` (fatia 5, empurrado). O head de saída é o do commit desta fatia, publicado no push.
+- **Skills:** `ts-frontend-full` (ação nova no serviço e nas ações existentes, sem rota nem DTO novos) e `ui-ux-pro-max` (ação adjacente a dinheiro em dois passos, confirmação explícita, recusa traduzida e botão mantido; nenhum termo técnico; `app.css` intocado).
+
+### Feito — comando → saída
+
+- `git status --porcelain; git rev-parse HEAD` → vazio; `f137e186`.
+- Testes escritos antes do produto em `finance-page-live.test.tsx` (3 casos, dublê `unlinkThenCancelOverride`): **R5(a)** `tenant_admin` (ADMIN do arnês: `cheques:unlink_title` + `cheques:update`) — desvincula, vê o aviso "…cancele-o agora: assim o dinheiro não entra duas vezes.", "Cancelar o cheque nº 000123" → "Confirmar o cancelamento"/"Manter o cheque" (nada sai antes da confirmação), confirmar → `POST /cheques/ch-1/cancel` com corpo `null`; a 1ª resposta é 422 `cheque_linked_unlink_first` → mensagem traduzida e o botão fica; a 2ª é 200 → "Cheque nº 000123 cancelado. Ele não entra mais no caixa." e o botão some; a baixa continua aberta. **R5(c)** ator sintético `so:cheques:unlink_title` (o FINANCE do arnês sem `cheques:update`, mais `cheques:unlink_title`) — desvincula, nenhum botão "Cancelar o cheque…", aviso com "Peça a quem administra os cheques para cancelar o cheque nº 000123.", 0 escrita de cancelamento. **R5(b)** cheque `deposited` (unlink 200 com `warning: cheque_still_depositable`) — sem botão, aviso "…Atenção: ele já estava depositado e ainda pode compensar — confira com o banco antes de receber por outro meio.". Em `finance-baixa.smoke.test.tsx`: **R5(d)** a fonte do `BaixaForm` não tem `cancele-o lá|Confira em Cheques` e tem "Não foi possível listar o cheque agora. Tente de novo."; o SSR passa `canCancelCheque={false}` e a ação `cancelCheque` no dublê.
+- **Vermelho-controle** (produto do head `f137e186`, testes novos): `cd frontend && node --test --import tsx --test-name-pattern="R5\(" tests/finance-page-live.test.tsx` → `28 tests · 0 pass · 3 fail · 25 skipped` (o texto da baixa reaberta é o antigo "Ele continua registrado em Cheques; se não for mais usado, cancele-o lá." e não há botão). E `git grep -c "Cancelar o cheque" fc5ead6c -- frontend/src` → nenhuma ocorrência (exit 1), como a E2 previa.
+- Produto: `financial-entries.service.ts` + `cancelCheque(context, chequeId)` → `POST /cheques/<id>/cancel` sem corpo (erros propagam); `useFinanceActions.ts` + `cancelCheque` em `FinanceActions`; `BaixaForm.tsx` + prop `canCancelCheque`, ação `cancelCheque` em `BaixaActions`, estado `followUp` (oferta → confirmação → envio), textos da E2 R5(a)(b)(c), frase de l.210 trocada por "Não foi possível listar o cheque agora. Tente de novo." (a de l.282-283, "A tela de Cheques chega com o próximo bloco", fica: é honesta); `FinanceiroPage.tsx` `access.cancelCheque = can("cheques:update")` → `canCancelCheque`. Nenhuma rota, permissão ou DTO novo.
+- **E2 R5(e)** (para a C2 conferir o gate = permissão da rota, CE-G2): `node --import tsx -e 'import("./src/modules/core-saas/permissions/catalog.ts").then(m=>…)'` no head → `tenant_admin cheques:update = true` · `finance cheques:update = true` · `tenant_admin cheques:unlink_title = true` · `finance cheques:unlink_title = false`. A rota: `src/modules/cheques/cheque.routes.ts:84-90` → `router.post("/cheques/:chequeId/cancel", requirePermission(CHEQUE_PERMISSIONS.update), …)`.
+- `npm --prefix frontend run check` → exit `0`. Teste dono + regressão: `cd frontend && node --test --import tsx tests/finance-page-live.test.tsx tests/finance-baixa.smoke.test.tsx` → `37 · 37 pass · 0 fail`; todos os arquivos do bloco `node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx` → `105 tests · 105 pass · 0 fail · 0 skipped`.
+- `git grep -n -E "cancele-o lá|Confira em Cheques" -- frontend/src/modules/finance/entries/components/BaixaForm.tsx` → 0 (exit 1). `git diff --check` → vazio. Escopo: `BaixaForm.tsx`, `financial-entries.service.ts`, `useFinanceActions.ts`, `FinanceiroPage.tsx`, `finance-page-live.test.tsx`, `finance-baixa.smoke.test.tsx` e este relatório (PERMITIDO da E2.1; `financial-entries.types.ts` não precisou mudar).
+
+### Mutações — as 3 da R5 (+1 variante da 3ª), roteiro `mutar.py`, teste dono `--test-name-pattern="R5\("`
+
+| # | Mutação | Arquivo | Teste dono | Resultado | Restauro |
+|---|---|---|---|---|---|
+| R5-M1 | botão de cancelar também para o cheque `deposited` | `BaixaForm.tsx` | R5(b) | VERMELHO (`28 · pass 2 · fail 1`) | hash igual |
+| R5-M2 | gate por `cheques:unlink_title` em vez de `cheques:update` | `FinanceiroPage.tsx` | R5(c) | VERMELHO (o ator `so:unlink` vê o botão) | hash igual |
+| R5-M3 | `POST /cancel` com corpo `{}` | `financial-entries.service.ts` | R5(a) | VERMELHO | hash igual |
+| R5-M3b (variante) | rota `/cheques/<id>` sem `/cancel` | `financial-entries.service.ts` | R5(a) | VERMELHO | hash igual |
+
+Hashes verdes (antes e depois das mutações): `BaixaForm.tsx` `ecc2a7f3…`, `FinanceiroPage.tsx` `30996677…`, `financial-entries.service.ts` `ce587e90…`, `useFinanceActions.ts` `6cc5a64d…`, `finance-page-live.test.tsx` `bd6adf50…`, `finance-baixa.smoke.test.tsx` `363f2b6e…`.
+
+### Falta
+
+- Nada da FATIA 6. `test:smoke` inteiro e Node 22 ficam para a FATIA 8; FATIAS 7–9 não iniciadas.
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`

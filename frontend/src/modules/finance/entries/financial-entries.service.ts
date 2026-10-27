@@ -101,3 +101,12 @@ export async function unlinkChequeFromTitle(context: FinanceApiContext, chequeId
   if (!result) throw new Error("invalid_cheque_response");
   return result;
 }
+
+/**
+ * Cancelar o cheque já desvinculado (E2/R5; R-res-3 do plano): POST /cheques/:id/cancel, SEM corpo, sob `cheques:update`.
+ * É a defesa contra o mesmo dinheiro entrar duas vezes (cheque que sobra registrado depois de receber por outro meio).
+ * Erros (422 `cheque_linked_unlink_first`/`invalid_transition`/`cheque_not_editable`, 409 `transition_conflict`) propagam.
+ */
+export async function cancelCheque(context: FinanceApiContext, chequeId: string): Promise<void> {
+  await apiRequest<unknown>(`/cheques/${encodeURIComponent(chequeId)}/cancel`, { ...context, method: "POST" });
+}

@@ -53,6 +53,8 @@ export function FinanceiroPage() {
     reconcile: can("financial_entries:update"),
     createAccount: can("financial_accounts:create"),
     unlinkCheque: can("cheques:unlink_title"),
+    // E2/R5: cancelar o cheque já desvinculado — o gate exato da rota POST /cheques/:id/cancel.
+    cancelCheque: can("cheques:update"),
   };
 
   const summary = useFinancialSummary();
@@ -194,6 +196,7 @@ export function FinanceiroPage() {
             title={payTitle}
             accounts={accounts.items}
             canUnlinkCheque={access.unlinkCheque}
+            canCancelCheque={access.cancelCheque}
             actions={actions}
             onDone={() => void refreshAll(true)}
             onClose={() => setPayTitle(null)}

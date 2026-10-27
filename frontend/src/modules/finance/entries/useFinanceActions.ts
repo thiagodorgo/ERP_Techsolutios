@@ -4,12 +4,12 @@ import { createFinancialAccount } from "../accounts/financial-accounts.service";
 import type { CreateFinancialAccountPayload, FinancialAccount } from "../accounts/financial-accounts.types";
 import { getFinancialTitle, payFinancialTitle } from "../titles/financial-titles.service";
 import type { BaixaPaymentMethod, FinancialTitle, PayFinancialTitlePayload } from "../titles/financial-titles.types";
-import { getFinancialEntry, listPendingChequesForTitle, reconcileFinancialEntry, unlinkChequeFromTitle } from "./financial-entries.service";
+import { cancelCheque, getFinancialEntry, listPendingChequesForTitle, reconcileFinancialEntry, unlinkChequeFromTitle } from "./financial-entries.service";
 import type { DivergenceType, FinanceApiContext, FinancialEntry, ReconcilePayload, TitleCheque, UnlinkResult } from "./financial-entries.types";
 
 // B-SAN3-12b (§6.3 do plano) — as AÇÕES de dinheiro do Financeiro, as mesmas nas 3 aparências: baixar, reler o título,
-// ler os cheques pendentes do título, trocar a vinculação do cheque, conciliar/desfazer, reler o lançamento e cadastrar
-// conta. As regras de corpo são funções PURAS (testáveis sem DOM): o corpo da baixa (F1/F5), o corpo da conciliação com
+// ler os cheques pendentes do título, trocar a vinculação do cheque, cancelar o cheque desvinculado (E2/R5),
+// conciliar/desfazer, reler o lançamento e cadastrar conta. As regras de corpo são funções PURAS (testáveis sem DOM): o corpo da baixa (F1/F5), o corpo da conciliação com
 // o estado lido (F10) e a régua da justificativa do desvínculo (a do servidor: 10–500).
 
 /** Meios da baixa, na ordem da maquete. Cheque NÃO entra (D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO; F5). */
@@ -104,6 +104,7 @@ export type FinanceActions = {
   readonly rereadTitle: (titleId: string) => Promise<FinancialTitle>;
   readonly listPendingCheques: (titleId: string) => Promise<TitleCheque[]>;
   readonly unlinkCheque: (chequeId: string, justification: string) => Promise<UnlinkResult>;
+  readonly cancelCheque: (chequeId: string) => Promise<void>;
   readonly reconcile: (entryId: string, payload: ReconcilePayload) => Promise<FinancialEntry>;
   readonly rereadEntry: (entryId: string) => Promise<FinancialEntry>;
   readonly createAccount: (payload: CreateFinancialAccountPayload) => Promise<FinancialAccount>;
@@ -116,6 +117,7 @@ export function useFinanceActions(context: FinanceApiContext): FinanceActions {
       rereadTitle: (titleId) => getFinancialTitle(context, titleId),
       listPendingCheques: (titleId) => listPendingChequesForTitle(context, titleId),
       unlinkCheque: (chequeId, justification) => unlinkChequeFromTitle(context, chequeId, justification),
+      cancelCheque: (chequeId) => cancelCheque(context, chequeId),
       reconcile: (entryId, payload) => reconcileFinancialEntry(context, entryId, payload),
       rereadEntry: (entryId) => getFinancialEntry(context, entryId),
       createAccount: (payload) => createFinancialAccount(context, payload),

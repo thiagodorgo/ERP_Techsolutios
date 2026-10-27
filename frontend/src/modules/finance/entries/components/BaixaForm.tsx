@@ -18,6 +18,16 @@ import { localIsoDate } from "../../pages/financeiro.state";
 //   • F6/F21: 422 `title_has_pending_cheque` vira o bloco do cheque (valor e nº, lidos de GET /cheques?title_id=), SEM
 //     campo de valor. Com `cheques:unlink_title`: "Desvincular o cheque" (justificativa → POST /unlink-title → a baixa
 //     reabre). Sem: o pedido pronto para o administrador (v1 sem fila persistida — `P-SAN3-12-FILA-PEDIDO-DESVINCULO`).
+//   • E2/R5 (R-res-3 e R-res-6 do plano): depois de desvincular um cheque REGISTRADO, quem tem `cheques:update` vê
+//     "Cancelar o cheque nº X" em dois passos (POST /cheques/:id/cancel, sem corpo) — assim o mesmo dinheiro não entra
+//     duas vezes. Cheque já depositado não oferece cancelar (ainda pode compensar); quem não tem a permissão recebe o aviso
+//     para pedir a quem administra os cheques.
+
+type ChequeFollowUp = {
+  readonly cheque: TitleCheque;
+  readonly stage: "offer" | "confirm" | "sending";
+  readonly error: string | null;
+};
 
 type Phase = "form" | "sending" | "rereading" | "reread_failed" | "pending_cheque" | "done" | "already" | "closed";
 
@@ -26,6 +36,7 @@ export type BaixaActions = {
   readonly rereadTitle: (titleId: string) => Promise<FinancialTitle>;
   readonly listPendingCheques: (titleId: string) => Promise<TitleCheque[]>;
   readonly unlinkCheque: (chequeId: string, justification: string) => Promise<UnlinkResult>;
+  readonly cancelCheque: (chequeId: string) => Promise<void>;
 };
 
 function requestText(title: FinancialTitle, cheques: readonly TitleCheque[]): string {
@@ -43,6 +54,7 @@ export function BaixaForm({
   title,
   accounts,
   canUnlinkCheque,
+  canCancelCheque,
   actions,
   onDone,
   onClose,
@@ -50,6 +62,8 @@ export function BaixaForm({
   readonly title: FinancialTitle;
   readonly accounts: readonly FinancialAccount[];
   readonly canUnlinkCheque: boolean;
+  /** `cheques:update` — o gate exato da rota POST /cheques/:id/cancel (CE-G2). */
+  readonly canCancelCheque: boolean;
   readonly actions: BaixaActions;
   readonly onDone: (title: FinancialTitle) => void;
   readonly onClose: () => void;
@@ -66,6 +80,7 @@ export function BaixaForm({
   const [notice, setNotice] = useState<string | null>(null);
   const [cheques, setCheques] = useState<readonly TitleCheque[]>([]);
   const [unlinking, setUnlinking] = useState<TitleCheque | null>(null);
+  const [followUp, setFollowUp] = useState<ChequeFollowUp | null>(null);
   const [copied, setCopied] = useState(false);
 
   const activeAccounts = accounts.filter((account) => account.active);
@@ -142,11 +157,30 @@ export function BaixaForm({
     setUnlinking(null);
     const fresh = await reread();
     if (fresh) setAmountText(formatMoneyInput(titleOpenBalance(fresh)));
-    setNotice(
-      `Cheque nº ${cheque.chequeNumber} desvinculado. Ele continua registrado em Cheques; se não for mais usado, cancele-o lá.` +
-        (result.stillDepositable ? " Atenção: o cheque já estava depositado e ainda pode compensar — confira com o banco antes de receber por outro meio." : ""),
-    );
+    const numero = cheque.chequeNumber;
+    const deposited = result.stillDepositable || cheque.status === "deposited" || result.cheque.status === "deposited";
+    if (deposited) {
+      setFollowUp(null);
+      setNotice(`Cheque nº ${numero} desvinculado deste título. Atenção: ele já estava depositado e ainda pode compensar — confira com o banco antes de receber por outro meio.`);
+    } else {
+      setFollowUp(canCancelCheque ? { cheque, stage: "offer", error: null } : null);
+      setNotice(
+        `Cheque nº ${numero} desvinculado deste título. Se ele não vai mais ser usado, cancele-o agora: assim o dinheiro não entra duas vezes.` +
+          (canCancelCheque ? "" : ` Peça a quem administra os cheques para cancelar o cheque nº ${numero}.`),
+      );
+    }
     setPhase("form");
+  }
+
+  async function confirmCancelCheque(target: TitleCheque) {
+    setFollowUp({ cheque: target, stage: "sending", error: null });
+    try {
+      await actions.cancelCheque(target.id);
+      setFollowUp(null);
+      setNotice(`Cheque nº ${target.chequeNumber} cancelado. Ele não entra mais no caixa.`);
+    } catch (error) {
+      setFollowUp({ cheque: target, stage: "offer", error: financeErrorMessage(error) });
+    }
   }
 
   async function copyRequest(text: string) {
@@ -207,7 +241,7 @@ export function BaixaForm({
             ))}
           </ul>
         ) : (
-          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Não foi possível listar o cheque agora. Confira em Cheques.</p>
+          <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Não foi possível listar o cheque agora. Tente de novo.</p>
         )}
         {!canUnlinkCheque ? (
           <label className="ui-field">
@@ -242,6 +276,31 @@ export function BaixaForm({
       {notice ? (
         <div className="ui-alert" role="status">
           {notice}
+        </div>
+      ) : null}
+      {followUp ? (
+        <div role="group" aria-label={`Cancelar o cheque nº ${followUp.cheque.chequeNumber}`} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {followUp.error ? (
+            <div className="ui-alert ui-alert--danger" role="alert">
+              {followUp.error}
+            </div>
+          ) : null}
+          <div className="pat-ab-detail-actions">
+            {followUp.stage === "offer" ? (
+              <button type="button" className="pat-btn" onClick={() => setFollowUp({ ...followUp, stage: "confirm", error: null })}>
+                {`Cancelar o cheque nº ${followUp.cheque.chequeNumber}`}
+              </button>
+            ) : (
+              <>
+                <button type="button" className="pat-btn pat-btn--primary" disabled={followUp.stage === "sending"} onClick={() => void confirmCancelCheque(followUp.cheque)}>
+                  Confirmar o cancelamento
+                </button>
+                <button type="button" className="pat-btn" disabled={followUp.stage === "sending"} onClick={() => setFollowUp({ ...followUp, stage: "offer", error: null })}>
+                  Manter o cheque
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>

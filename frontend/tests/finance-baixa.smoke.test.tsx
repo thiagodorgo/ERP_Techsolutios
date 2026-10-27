@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import React from "react";
@@ -50,10 +51,13 @@ const NOOP_ACTIONS = {
   unlinkCheque: async () => {
     throw new Error("não usado");
   },
+  cancelCheque: async () => {
+    throw new Error("não usado");
+  },
 };
 
 const form = () =>
-  renderToStaticMarkup(<BaixaForm title={TITLE} accounts={ACCOUNTS} canUnlinkCheque={false} actions={NOOP_ACTIONS} onDone={() => undefined} onClose={() => undefined} />);
+  renderToStaticMarkup(<BaixaForm title={TITLE} accounts={ACCOUNTS} canUnlinkCheque={false} canCancelCheque={false} actions={NOOP_ACTIONS} onDone={() => undefined} onClose={() => undefined} />);
 
 test("F5: os meios oferecidos são Pix, Transferência, Boleto, Dinheiro e Cartão — nunca cheque", () => {
   const html = form();
@@ -71,6 +75,12 @@ test("F5: os meios oferecidos são Pix, Transferência, Boleto, Dinheiro e Cart�
 
 test("F5: o aviso fixo do cheque está presente (cheque entra pela compensação, na tela de Cheques)", () => {
   assert.match(form(), /Recebeu em cheque\?.*Cheque não é baixado aqui/);
+});
+
+test("R5(d): nenhuma frase da baixa aponta para uma tela de Cheques que a web não tem", () => {
+  const source = readFileSync(new URL("../src/modules/finance/entries/components/BaixaForm.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /cancele-o lá|Confira em Cheques/);
+  assert.match(source, /Não foi possível listar o cheque agora\. Tente de novo\./);
 });
 
 test("F5: 422 cheque_required (cliente antigo) vira mensagem em português", () => {

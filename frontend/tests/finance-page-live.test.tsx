@@ -1090,6 +1090,109 @@ test("F6: com cheques:unlink_title → 'Desvincular o cheque' abre a justificati
   }
 });
 
+// =============================== R5 · cancelar o cheque depois de desvincular ===============================
+
+/** Cheque pendente + desvínculo + cancelamento; `cancelReplies` responde os POST /cheques/ch-1/cancel em ordem. */
+function unlinkThenCancelOverride(options: { status: "registered" | "deposited"; cancelReplies?: Response[] }): Override {
+  const state = { unlinked: false };
+  const cheque = { ...CHEQUE, status: options.status };
+  const replies = [...(options.cancelReplies ?? [])];
+  return (call) => {
+    if (call.method === "POST" && call.url === "/financial-titles/t-vencido/pay") return state.unlinked ? json(201, { data: { ...RECEIVABLES[0], paidAmount: 1000, status: "paid" } }) : apiError(422, "title_has_pending_cheque");
+    if (call.method === "GET" && /^\/cheques\?/.test(call.url)) return json(200, { items: state.unlinked ? [] : [cheque], pagination: { limit: 20, offset: 0, total: state.unlinked ? 0 : 1 } });
+    if (call.method === "POST" && call.url === "/cheques/ch-1/unlink-title") {
+      state.unlinked = true;
+      return new Response(JSON.stringify({ data: { ...cheque, titleId: null }, ...(options.status === "deposited" ? { warning: "cheque_still_depositable" } : {}) }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (call.method === "POST" && call.url === "/cheques/ch-1/cancel") return replies.shift() ?? json(200, { data: { ...cheque, titleId: null, status: "cancelled" } });
+    return undefined;
+  };
+}
+
+async function unlinkFromBaixa(container: MiniNode) {
+  const modal = await openBaixa(container, "Transportes Alfa");
+  await type(byName(modal, "conta"), "acc-banco");
+  await submit(formsIn(modal)[0]);
+  await press(buttonByText(dialog(container)!, "Desvincular o cheque"));
+  await type(byName(container, "justificativa"), "O cliente pagou por Pix; o cheque será devolvido.");
+  await submit(all(container, (el) => el.localName === "form" && el.getAttribute("aria-label") === "Desvincular o cheque")[0]);
+  assert.equal(calls.filter((c) => c.method === "POST" && c.url === "/cheques/ch-1/unlink-title").length, 1);
+}
+
+/** Toda escrita no cheque ch-1 que não seja o desvínculo (o cancelamento, por qualquer rota que a tela usar). */
+const cancelCalls = () => calls.filter((c) => c.method !== "GET" && c.url.startsWith("/cheques/ch-1") && c.url !== "/cheques/ch-1/unlink-title");
+
+test("R5(a): com cheques:update, depois de desvincular um cheque registrado a baixa oferece 'Cancelar o cheque' em dois passos; POST /cancel sem corpo; recusa mantém o botão", async () => {
+  const { container, unmount } = await mount({
+    permissions: ADMIN,
+    role: "Administrador",
+    override: unlinkThenCancelOverride({ status: "registered", cancelReplies: [apiError(422, "cheque_linked_unlink_first")] }),
+  });
+  try {
+    await unlinkFromBaixa(container);
+    const baixa = () => dialog(container)!;
+    assert.match(text(baixa()), /Cheque nº 000123 desvinculado deste título\. Se ele não vai mais ser usado, cancele-o agora: assim o dinheiro não entra duas vezes\./);
+    assert.doesNotMatch(text(baixa()), /cancele-o lá|Confira em Cheques/);
+    assert.equal(buttonByText(baixa(), "Confirmar o cancelamento"), undefined, "o primeiro clique só pede confirmação");
+    await press(buttonByText(baixa(), "Cancelar o cheque nº 000123"));
+    assert.equal(cancelCalls().length, 0, "nada sai antes da confirmação");
+    assert.ok(buttonByText(baixa(), "Manter o cheque"), "segundo passo oferece manter");
+    await press(buttonByText(baixa(), "Confirmar o cancelamento"));
+    assert.equal(cancelCalls().length, 1);
+    assert.equal(cancelCalls()[0].url, "/cheques/ch-1/cancel");
+    assert.equal(cancelCalls()[0].body, null, "POST /cheques/:id/cancel vai SEM corpo");
+    assert.match(text(baixa()), /Desvincule o cheque do título antes de cancelar ou excluir\./, "422 cheque_linked_unlink_first traduzido");
+    assert.ok(buttonByText(baixa(), "Cancelar o cheque nº 000123"), "a recusa mantém o botão");
+
+    await press(buttonByText(baixa(), "Cancelar o cheque nº 000123"));
+    await press(buttonByText(baixa(), "Confirmar o cancelamento"));
+    assert.equal(cancelCalls().length, 2);
+    assert.equal(cancelCalls()[1].body, null);
+    assert.match(text(baixa()), /Cheque nº 000123 cancelado\. Ele não entra mais no caixa\./);
+    assert.equal(buttonByText(baixa(), "Cancelar o cheque nº 000123"), undefined, "cancelado: o botão some");
+    assert.ok(byName(baixa(), "valor"), "a baixa continua aberta para receber por outro meio");
+  } finally {
+    await unmount();
+  }
+});
+
+test("R5(c): ator que desvincula mas não tem cheques:update não vê 'Cancelar o cheque' e o aviso pede a quem administra os cheques", async () => {
+  const soUnlink = [...FINANCE.filter((p) => p !== "cheques:update"), "cheques:unlink_title"];
+  const { container, unmount } = await mount({ permissions: soUnlink, role: "Financeiro", override: unlinkThenCancelOverride({ status: "registered" }) });
+  try {
+    await unlinkFromBaixa(container);
+    const body = text(dialog(container)!);
+    assert.match(body, /Cheque nº 000123 desvinculado deste título\./);
+    assert.match(body, /Peça a quem administra os cheques para cancelar o cheque nº 000123\./);
+    assert.equal(
+      all(dialog(container)!, (el) => el.localName === "button" && text(el).startsWith("Cancelar o cheque")).length,
+      0,
+      "sem cheques:update não há botão de cancelar o cheque",
+    );
+    assert.equal(cancelCalls().length, 0);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R5(b): cheque já depositado (warning cheque_still_depositable) — sem botão de cancelar e com o aviso de que ainda pode compensar", async () => {
+  const { container, unmount } = await mount({ permissions: ADMIN, role: "Administrador", override: unlinkThenCancelOverride({ status: "deposited" }) });
+  try {
+    await unlinkFromBaixa(container);
+    const body = text(dialog(container)!);
+    assert.match(body, /Cheque nº 000123 desvinculado deste título\. Atenção: ele já estava depositado e ainda pode compensar — confira com o banco antes de receber por outro meio\./);
+    assert.doesNotMatch(body, /cancele-o agora/);
+    assert.equal(
+      all(dialog(container)!, (el) => el.localName === "button" && text(el).startsWith("Cancelar o cheque")).length,
+      0,
+      "depositado: nada de cancelar",
+    );
+    assert.equal(cancelCalls().length, 0);
+  } finally {
+    await unmount();
+  }
+});
+
 // =============================== F10 · F22 · conciliação ===============================
 
 test("F10/F22: conciliar manda o estado lido; 409 reconciliation_stale → relê o lançamento, repinta a linha e só então decide se dá para tentar de novo", async () => {
