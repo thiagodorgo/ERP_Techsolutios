@@ -566,3 +566,79 @@ Hashes verdes conferidos antes e depois: `BaixaForm.tsx` `4ec00001…`, `Finance
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 9
+
+- **Fatia:** 9 — R14 (mutações) pela E2.6.
+- **Executor e modelo:** `dev-san312b-c2-f59-opus` · subagente genérico Claude · Claude Opus 5.5 · nível menor declarado (cobertura declarada, ver RETOMADA 5).
+- **Head medido (objeto das mutações):** `bb4f068022d8aa3f1ff6b4d467d84577c0b240e5` (fatia 8, empurrado; `git status --porcelain` vazio antes e depois). Esta seção é o único arquivo deste commit; nenhum teste mudou nesta fatia, então o código e os testes do head de saída são os de `bb4f0680`.
+
+### §M — as 24 do ciclo 1 + as 17 novas da E2 (+ R12, R7 e R13), no head final
+
+- Roteiro: `mutar.py` do dev (scratchpad da sessão): cada mutação aplica UMA edição de âncora única (CRLF-consciente), roda o teste dono, exige saída ≠ 0, restaura os bytes originais e confere o sha256 de cada arquivo tocado. As 24 do ciclo 1 vêm, uma a uma, do roteiro do ciclo 1 (`scratchpad/dev-san312b-opus/mutacoes.py`), com as mesmas âncoras e o mesmo teste dono; a F15 recalcula a âncora a partir de `appearance.storage.ts` como o roteiro antigo fazia. A F18 rodou contra um Postgres 16 descartável próprio (`dev12b-f9-pg`, `127.0.0.1:55823`, migrado e provisionado; CE-4 verde `2 · 2` antes das mutações) e o contêiner foi removido depois.
+- Comando: `python -I mutar.py f9/muts.py` com `DATABASE_URL` do descartável e `CORE_SAAS_PERSISTENCE=prisma`, de 14:30Z a 14:31Z.
+- **Resultado: 44 mutações, 44 VERMELHAS, 44 restauradas com sha256 igual.** São 24 do ciclo 1 (F1–F22 com F4b e F8b), 17 novas (R1 ×2, R2 ×1, R3 ×4, R4 ×2, R5 ×3, R6 ×1, R9 ×1, R10 ×1, R11 ×2) e as 3 que contam como as suas próprias (R12, R7, R13). `git status --porcelain` → vazio depois da rodada.
+
+| # | Resultado | Teste dono (`tests · pass · fail`) | Caso que caiu | Restauro |
+|---|---|---|---|---|
+| F1 | VERMELHO | `33 · pass 0 · fail 1` | F1/F2/F3: rede caiu → relê o título antes de falar e trava o reenvio até a releitura volta | igual |
+| F2 | VERMELHO | `33 · pass 0 · fail 1` | F1/F2/F3: rede caiu → relê o título antes de falar e trava o reenvio até a releitura volta | igual |
+| F3 | VERMELHO | `33 · pass 0 · fail 1` | F3: 409 duplicate_payment também relê antes de falar; se a releitura mostra o título quita | igual |
+| F4 | VERMELHO | `11 · pass 9 · fail 2` | F4: a lista do código é IGUAL, como conjunto, à lista da tela de API_CONTRACTS.md — e tem  | igual |
+| F4b | VERMELHO | `11 · pass 9 · fail 2` | F4: a lista do código é IGUAL, como conjunto, à lista da tela de API_CONTRACTS.md — e tem  | igual |
+| F5 | VERMELHO | `9 · pass 8 · fail 1` | F5: os meios oferecidos são Pix, Transferência, Boleto, Dinheiro e Cartão — nunca cheque | igual |
+| F6 | VERMELHO | `33 · pass 0 · fail 1` | F6/F21: 422 title_has_pending_cheque → bloco do cheque (valor e nº), sem campo de valor; s | igual |
+| F7 | VERMELHO | `9 · pass 8 · fail 1` | F7: no detalhe do título, 'Registrar recebimento' só com a permissão de baixa e em título  | igual |
+| F8 | VERMELHO | `4 · pass 2 · fail 2` | F8: o módulo financeiro tem EXATAMENTE as 8 ocorrências do inventário congelado (nenhuma n | igual |
+| F8b | VERMELHO | `4 · pass 2 · fail 2` | F8: o módulo financeiro tem EXATAMENTE as 8 ocorrências do inventário congelado (nenhuma n | igual |
+| F9 | VERMELHO | `33 · pass 0 · fail 1` | F9: títulos fora do ar (fallback) → painel de erro na aba, nunca 'nenhum título' | igual |
+| F10 | VERMELHO | `5 · pass 3 · fail 2` | F10: conciliar leva SEMPRE expected_reconciled e expected_reconciled_at lidos da linha | igual |
+| F11 | VERMELHO | `33 · pass 0 · fail 1` | F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um cl | igual |
+| F12 | VERMELHO | `33 · pass 0 · fail 1` | F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço  | igual |
+| F13 | VERMELHO | `3 · pass 2 · fail 1` | F13: /finance/charges e /finance/payments redirecionam (replace) para /finance?aba=rec e ? | igual |
+| F14 | VERMELHO | `33 · pass 0 · fail 1` | F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as conta | igual |
+| F15 | VERMELHO | `9 · pass 5 · fail 4` | chave por organização E usuário; sem um dos dois não há chave | igual |
+| F16 | VERMELHO | `33 · pass 0 · fail 1` | F16 desatualizado: a atualização em 2º plano falha → faixa 'Dados desatualizados' e o dado | igual |
+| F17 | VERMELHO | `8 · pass 6 · fail 2` | F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido | igual |
+| F18 | VERMELHO | `2 · pass 1 · fail 1` | B-SAN3-12 CE-4 (F18): conta → título → baixa → extrato → saldo → conciliar → 409 → 400 → 4 | igual |
+| F19 | VERMELHO | `8 · pass 7 · fail 1` | F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido | igual |
+| F20 | VERMELHO | `8 · pass 7 · fail 1` | F20: lançamento conciliado — Estornar e Excluir desabilitados com a frase; sem o privilégi | igual |
+| F21 | VERMELHO | `33 · pass 0 · fail 1` | F6/F21: 422 title_has_pending_cheque → bloco do cheque (valor e nº), sem campo de valor; s | igual |
+| F22 | VERMELHO | `33 · pass 0 · fail 1` | F10: desfazer (com o privilégio) manda reconciled=false e o carimbo lido, em ms; F20: sem  | igual |
+| R1-M1-chip-so-alvo | VERMELHO | `33 · pass 0 · fail 1` | R1: filtro de conta convive com o alvo e sai com um clique sem manter account_id | igual |
+| R1-M2-a-conciliar-herda-conta | VERMELHO | `33 · pass 0 · fail 1` | R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar' | igual |
+| R2-M1-sem-display-flex | VERMELHO | `33 · pass 0 · fail 1` | R2: 'Conciliação por conta' separa nome e contagem com flex e distância mínima | igual |
+| R3-M1-aba-length | VERMELHO | `33 · pass 1 · fail 2` | R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam pá | igual |
+| R3-M2-loadMore-sem-offset | VERMELHO | `33 · pass 1 · fail 2` | R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas | igual |
+| R3-M3-TablePager-removido | VERMELHO | `33 · pass 2 · fail 1` | R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos  | igual |
+| R3-M4-vencem-hoje-incompleta | VERMELHO | `33 · pass 1 · fail 2` | R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam pá | igual |
+| R4-M1-contas-no-memo-das-situacoes | VERMELHO | `33 · pass 0 · fail 1` | F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as conta | igual |
+| R4-M2-view-chama-resumo | VERMELHO | `33 · pass 0 · fail 1` | F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as conta | igual |
+| R5-M1-botao-tambem-depositado | VERMELHO | `33 · pass 2 · fail 1` | R5(b): cheque já depositado (warning cheque_still_depositable) — sem botão de cancelar e c | igual |
+| R5-M2-gate-unlink-title | VERMELHO | `33 · pass 2 · fail 1` | R5(c): ator que desvincula mas não tem cheques:update não vê 'Cancelar o cheque' e o aviso | igual |
+| R5-M3-post-com-corpo | VERMELHO | `33 · pass 2 · fail 1` | R5(a): com cheques:update, depois de desvincular um cheque registrado a baixa oferece 'Can | igual |
+| R6-M1-paid-antes-da-razao | VERMELHO | `33 · pass 1 · fail 1` | R6: 422 overpayment com o título já pago em parte → razão da recusa + 'O título mudou…', f | igual |
+| R9-M1-baixa-gate-titles-update | VERMELHO | `33 · pass 1 · fail 1` | R9: 'Registrar recebimento' segue financial_entries:create (não financial_titles:update) | igual |
+| R10-M1-volta-ao-vazio | VERMELHO | `33 · pass 0 · fail 1` | R10: aba 'Contas e extrato' sem financial_accounts:read mostra acesso não permitido, nunca | igual |
+| R11-M1-label-Reconciled | VERMELHO | `8 · pass 2 · fail 1` | F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Fi | igual |
+| R11-M2-adapter-open-not-reconciled | VERMELHO | `8 · pass 2 · fail 1` | F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Fi | igual |
+| R12-M1-soma-x-igual-x-mais | VERMELHO | `4 · pass 2 · fail 2` | F8: o módulo financeiro tem EXATAMENTE as 8 ocorrências do inventário congelado (nenhuma n | igual |
+| R7-M1-status-sem-regenerar | VERMELHO | `rc=1` | gerador rodado sobre a fonte mutada: `pendencias-indice.md` muda `1 file changed, 6 insertions(+), 6 deletions(-)` contra o versionado | igual |
+| R13-M1-tira-ratificacao | VERMELHO | `rc=1` | `^## Ratificação do orquestrador` cai de 2 para 1 no plano versionado | igual |
+
+Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSummary()` de novo), como a E2 a enumera; conta nas duas listas. R4-M1 põe as 4 consultas de situação dentro do memo das contas (a forma do objeto do ciclo 1). Variantes a mais executadas nas fatias 6 e 7 (R5-M3b, rota sem `/cancel`; R9-M1b, gate de "Conciliar") ficaram vermelhas lá e não entram na contagem.
+
+### Fecho
+
+- `git diff --check` → vazio. `git status --porcelain --ignored` (fora `node_modules`) → vazio depois da limpeza.
+- **Limpeza (§C5):** contêineres `dev12b-f8-pg`, `dev12b-f8-pg2` e `dev12b-f9-pg` removidos (`docker ps -a | grep -c dev12b` → 0); removidos `dist/`, `frontend/dist/`, `frontend/tsconfig.tsbuildinfo` e os 13 diretórios de anexos em `storage/checklist-attachments/` criados pelo `npm test` desta sessão (11:03–11:20 BRT); o `.gitkeep` rastreado ficou. `node_modules` próprios e o worktree preservados. Disco: 11 GB livres.
+- PR #469: `gh pr view 469 --json mergeable` → `MERGEABLE` (head `bb4f0680`); check-runs de `bb4f0680` em andamento na medição (`frontend`, `flutter`, `authority-portal` concluídos com sucesso; `backend`, `backend-postgres`, `owner-portal` em curso). O commit desta seção abre uma rodada nova de CI; a junta julga o SHA com check-runs concluídos (§C7.1-bis).
+- `origin/main` andou para `972dc0ab` (#471, só `Kpis/**`); o ramo segue mergeável e não toca `Kpis/**`.
+
+### Falta
+
+- Nada das 9 fatias da E2.6. **Pronto para a junta do ciclo 2**, sobre o head de saída deste commit, depois de os check-runs dele concluírem.
+
+### Próximo comando exato
+
+`gh api repos/{owner}/{repo}/commits/$(git -C C:/Users/AMP/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`
