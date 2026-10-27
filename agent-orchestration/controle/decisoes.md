@@ -4006,6 +4006,30 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fontes:** `docs/revisoes/SAN3/B-SAN3-13-plano.md` (v3 + E1 + E2), `B-SAN3-13-critica-r1.md`, `-r2.md`,
   `B-SAN3-13-medicao.md`, relatório do dev `B-SAN3-13-dev.md`.
 
+## D-REGISTRO-DONO-2026-10-26-A-27 (2026-10-27) — demo, ferramentas de IA e registro externo do Kryos
+
+- **Natureza:** decisões do dono de 26 e 27/10 registradas pelo orquestrador; onde não há fonte literal nesta tarefa, a formulação abaixo é **registro do orquestrador**, não citação atribuída ao dono.
+- **Demo ao sócio nesta semana:** registro do orquestrador — a demonstração ao sócio ocorre nesta semana e será completa, ao vivo.
+- **Divisão de ferramentas:** registro do orquestrador — o Codex fica no desenvolvimento; o Antigravity fica na demo.
+- **Revendedor de IA:** decisão literal do dono: *"desisto, nao vale o risco"*. Consequência registrada: não usar revendedor de IA.
+- **Kryos:** registro do orquestrador — o Kryos será todo em TypeScript e o MVP terá somente Carel. Este item é apenas registro: o Kryos pertence a outro repositório e não amplia o escopo do ERP Techsolutions.
+
+## D-REGISTRO-PORTEIRO-PR-464 (2026-10-27) — ressalvas documentais e contagem das pendências
+
+- **Ref medida:** diff `c9a2d036..f7922ab7`, PR #464, em `agent-orchestration/controle/pendencias.md`.
+- **Corpo × diff:** o corpo do PR citou 1 pendência nova (`P-CHK-EDITOR-GRADE-ESTREITA`); o diff abriu **9** cabeçalhos:
+  1. `P-CHK-RUN-SNAPSHOT-IMUTAVEL`;
+  2. `P-MOBILE-RUN-SO-NO-APARELHO`;
+  3. `P-DB-TIMEZONE-UTC`;
+  4. `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS`;
+  5. `P-B-SAN3-22-CI-DB-SUITE`;
+  6. `P-CHK-EDITOR-GRADE-ESTREITA`;
+  7. `P-CHK-EDITOR-LEITURAS-B`;
+  8. `P-CHK-COMPONENTES-EMPATE-ORDER-INDEX`;
+  9. `P-FRONT-TESTE-DE-INTERACAO`.
+- A contagem descreve cabeçalhos abertos pelo diff; `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` já nasceu marcada como resolvida no próprio PR.
+- A suíte `checklist-template-lock-db` foi medida no job `backend` 121975457986 (`ok 576` a `ok 586`), não no `backend-postgres`; a ata e o briefing do bloco foram corrigidos sem fechar `P-B-SAN3-22-CI-DB-SUITE`.
+
 ## D-REGISTRO-RODADA-2026-10-24-A-26 (2026-10-26) — conciliações factuais dos porteiros, gate e ordem do B-SAN3-22
 
 - **Natureza:** registro de fatos já decididos/medidos; não cria regra de produto nem atribui fala nova ao dono.
