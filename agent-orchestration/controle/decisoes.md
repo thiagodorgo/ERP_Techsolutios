@@ -4039,3 +4039,11 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fechamentos do #459 — 2 e não 3:** o porteiro do #459 pediu apensar o fechamento de três pendências (`porteiro-459-parecer.md:145,197`); a ata `J-B-SAN3-12a.md:39-41` autoriza o porteiro a fechar só duas, com o critério medido pela junta (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, C3 item 3; `P-SAN3-20-DELETE-TITULO-COM-CHEQUE`, C4b item 1). Prevalece a ata: a `P-SAN3-20-DESVINCULAR-DEPOSITADO` segue ABERTA, porque o critério dela (fluxo seguro para `deposited` com título já pago) não foi medido.
 - **Cadeira (a) do TRC-02 ciclo 2:** o `a-opus` de `00-quedas.md` não existiu (nenhum arquivo em `votos/B-TRC-02-ciclo2/`; `PLANO-RODADA-2026-10-24.md:81`); a cadeia corrigida está na ata `J-B-TRC-02-ciclo2.md`.
 - **Corpo do #454 defasado:** ficou com “DBA re-medindo”, `462/462` e sem citar a emenda v2.4 no escopo; o código/merge entregue foi revalidado, portanto a divergência é documental e BAIXA (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:12,71-72,103`).
+
+## D-SAN3-12C-ABERTURA-E5 (2026-10-28) — B/C usam dados reais; KPI fica no marco #473
+
+- **Natureza:** versionamento da Emenda E5 planejada por `planejador-san312c-abertura-astra`; este DEV apenas registra e executa, sem criar decisão de produto.
+- **Ref medida:** `origin/main` = `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; ramo `feat/web-financeiro-aparencias-b-c`, worktree isolado `C:/Users/AMP/w-san312c`.
+- **Interpretação §A2 declarada:** a maquete governa intenção/layout, mas valores ilustrativos, agência/número inexistentes e lista inversa de cheques não autorizam cálculo local, placeholder, UUID, mock ou N+1. A implementação usa somente contratos reais e estados honestos; as duas lacunas de dado têm pendências nomeadas.
+- **KPI:** `Kpis/**` permanece fora do PR funcional. O PR #473 fica em rascunho e recebe o 12c somente após merge + porteiro, pelo loop de marco vigente, com SHA/CI/contagens obtidos por comando.
+- **Régua:** apresentação e testes → um revisor independente + `cognicao-visual` + CI verde. Se surgir alteração de autorização, payload de escrita, CAS, idempotência, cálculo ou integridade, suspender, emendar/revisar o plano e reclassificar para junta completa.

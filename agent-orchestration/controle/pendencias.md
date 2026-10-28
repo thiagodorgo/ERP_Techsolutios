@@ -11958,25 +11958,42 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (lacuna de teste; o código cumpre a R4(b)) · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa.
+- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa. **Alias da E5:** `C3R3-N2` = `R-P3`; não é uma pendência nova.
 - **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
 
 ## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida).
+- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida). **Alias da E5:** `P-C1R3-INDICADOR-ORG-COM-CONTA` = `R-P4`; não é uma pendência nova.
 - **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
 
 ## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-12c` (alternativa: `B-SAN3-24`) · **bloqueia:** não.
-- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas.
+- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas. **Alias da E5:** `P-C1R3-ESTADO-SEM-LEITURA-LANCAMENTOS` = `R-P5`; não é uma pendência nova.
 - **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
 
 ## P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem filtrada com o total sem filtro — BAIXA
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade.
+- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade. **Alias da E5:** `P-C1R3-TEXTO-PAGER-FILTRADO` = `R-P6`; não é uma pendência nova.
 - **encerramento:** com alvo aplicado e carga parcial, o `rangeLabel` deixa de misturar a contagem filtrada com o total sem filtro.
 
 ## P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos, não o conteúdo de três vias — MÉDIA
 - **status:** ABERTA · **escopo:** processo (ferramenta) · **dono:** o bloco de ferramentas de processo (fila pós-gate) · **bloqueia:** não. Severidade: leitura do dev (a E3.4 não a fixa): dois fechamentos se perderam num merge que "conferiu os cabeçalhos".
 - **origem:** C3R2-02 da junta do ciclo 2 do `B-SAN3-12b`, ampliado pela auditoria do topo (Emenda E3, R-E3-1 e E3.4): o merge `b5246e8d` ficou com o lado da `main` nas seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE`; a fatia 1 do ciclo 3 as restaurou (`864598f5`).
 - **encerramento:** `scripts/` ganha a conferência de três vias de `pendencias.md` (as linhas que o ramo acrescentou sobrevivem; as linhas que ele removeu não voltam) e o passo entra na E2.5 e na ata de todo merge de registro.
+
+## P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número que o DTO da conta não fornece — BAIXA
+- **status:** ABERTA · **escopo:** divergência de dado, registrada pelo procedimento §A2 da E5.5 · **dono:** `B-SAN3-24` (ou bloco próprio de contrato da conta) · **bloqueia:** não.
+- **medição:** ref `3c27f1bf`, `frontend/src/modules/finance/accounts/financial-accounts.types.ts` expõe `name`, `kind`, `bankName` e `currency`, mas não agência/número; a referência aprovada mostra esses campos.
+- **consequência no B-SAN3-12c:** mostrar apenas campos reais; não renderizar “—”, UUID ou dado fictício e não ampliar o DTO neste bloco.
+- **encerramento:** contrato/backend fornece agência/número com decisão de produto aprovada, ou a referência futura aprovada deixa de exigi-los.
+
+## P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por cheque, mas o DTO não oferece filtro inverso — BAIXA
+- **status:** ABERTA · **escopo:** divergência de interação/dado, registrada pelo procedimento §A2 da E5.5 · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** ref `3c27f1bf`; o resumo financeiro fornece contagens/valores e `linkedPending*`, enquanto o DTO de título não permite listar “títulos cobertos por cheque” sem N+1.
+- **consequência no B-SAN3-12c:** preservar números reais e orientação para escolher um título; não fingir lista completa nem disparar N+1. Se o aceite visual exigir a lista, parar somente essa consolidação e pedir decisão.
+- **encerramento:** contrato expõe filtro/coleção inversa e a tela a consome sem N+1, com estados e testes.
+
+## P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 12c — BAIXA
+- **status:** ABERTA · **escopo:** acompanhamento de registro, não produto · **dono:** orquestrador do marco #473 · **bloqueia:** não bloqueia o desenvolvimento; bloqueia declarar o acompanhamento integralmente encerrado.
+- **origem/decisão:** E5.5 escolheu manter o PR #473 em rascunho, sem misturar `Kpis/**` no PR funcional, e atualizá-lo depois do merge + porteiro do 12c com referências e contagens obtidas por comando.
+- **encerramento:** #473 inclui o 12c sem duplicar merges intermediários, passa `scripts/kpi-check-refs.mjs` + testes do painel, recebe revisor independente/CI verde e é mergeado.

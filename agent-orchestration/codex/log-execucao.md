@@ -5052,3 +5052,9 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 
 - Dev `dev-guard-migracao-opus` (Claude Opus, nível menor, declarado; o dono: *"vc cobre o codex nessa rodada"*). Base `origin/main` `8a7885f4`; 116 migrações, 112 anteriores à `20260878000000`, 4 novas.
 - Entregues `scripts/migration-transaction-guard.mjs` (G0–G7) e `tests/migration-transaction-guard.test.ts` com fixtures em `tests/fixtures/migration-guard/`; seção em `docs/deployment.md`; frase espelhada no §C4 de `CLAUDE.md` e `AGENTS.md`. Relatório em `docs/revisoes/B-GUARD-MIGRACAO-dev.md`. Sem banco, sem Docker, `Kpis/**` intocado.
+
+## 2026-10-28 — B-SAN3-12c · FATIA 1 (`dev-san312c-sol`)
+
+- Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
+- E5 apensa verbatim ao plano versionado; comando, relatório, aliases e divergências §A2 registrados. Node 22.14.0 absoluto; dependências próprias sem junction.
+- Baseline: financeiro dirigido 122/122; smoke frontend 1482/1482; controle não ancestral recusado. Próxima: FATIA 2. `Kpis/**` intocado.

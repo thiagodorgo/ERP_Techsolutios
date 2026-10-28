@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **675** |
-| IDs distintos | 664 |
-| **ABERTAS** | **511** |
+| Cabecalhos `## P-` | **678** |
+| IDs distintos | 667 |
+| **ABERTAS** | **514** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **446** |
+| — das quais **ativas nesta rodada** | **449** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 160 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **675 cabecalhos para 664 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **678 cabecalhos para 667 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -307,7 +307,7 @@
 | `P-FRONT-TESTE-DE-INTERACAO` | 11920 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
 | `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 11979 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
 
-## ABERTAS · balde B — processo/registro — 215
+## ABERTAS · balde B — processo/registro — 218
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -526,6 +526,9 @@
 | `P-SAN3-12B-KPI-PRESSED-COM-CONTA` | 11964 | BAIXA | sim | P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria- |
 | `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO` | 11969 | BAIXA | sim | P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem  |
 | `P-SAN3-12B-PAGER-ROTULO-FILTRADO` | 11974 | BAIXA | sim | P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem |
+| `P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO` | 11984 | BAIXA | sim | P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número qu |
+| `P-SAN3-12C-CHEQUE-FILTRO-INVERSO` | 11990 | BAIXA | sim | P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por |
+| `P-SAN3-12C-KPI-MARCO-473` | 11996 | BAIXA | sim | P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 1 |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

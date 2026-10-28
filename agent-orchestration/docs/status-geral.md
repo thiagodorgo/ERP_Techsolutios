@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-10-28 — B-SAN3-12c FATIA 1 aberta
+
+`dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `C:/Users/AMP/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.
+
 ## Atualização 2026-10-25 — B-SAN3-12a (dev `dev-san312a-opus`, Claude Opus): backend de dinheiro do web financeiro — PARADO por premissa falsificada
 
 Ramo `feat/web-financeiro-baixa-e-contas-12a` (de `origin/main` `8a7885f4`), PR em **rascunho**. Implementado todo o escopo PERMITIDO do
