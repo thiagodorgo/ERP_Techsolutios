@@ -673,3 +673,41 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 11
+
+- **Fatia:** 2 da E3.5 — R-E3-2.
+- **Executor e modelo:** `dev-san312b-ciclo3-claude` · subagente Claude · Claude Opus · nível menor declarado (§C7.6). Substituição declarada, a mesma da RETOMADA 10 (Codex sem a janela de 5 h até cerca de 05:31Z).
+- **Head de partida:** `864598f5ad32e14e3eb6415bbac5852d2bcc169e` (fatia 1, empurrado; `git fetch` + `git status --porcelain` vazio). Início 03:22Z, fim 03:27Z (`date -u`).
+- **Arquivo tocado:** só `frontend/tests/finance-no-money-reduce.guard.test.ts` (e esta seção). Produto intocado.
+
+### Feito — comando → saída
+
+- Vermelho-controle (antes do código): os 2 casos novos escritos contra o `scanFinance` do objeto → `node --test --import tsx tests/finance-no-money-reduce.guard.test.ts` (de `frontend/`, Node v20.19.5) → `tests 6 · pass 5 · fail 1 · skipped 0`; cai `F8/E3: o detector acusa .reduce( com qualquer receptor…` (o scanner antigo não vê `f(x).reduce(`, `(a ?? []).reduce(`, `a[0].reduce(` nem a cadeia quebrada em linhas). O caso da contagem passa já no objeto (o produto tem 6 tokens e 0 nos diretórios do 12b).
+- R-E3-2(a): `scanFinance` procura o TOKEN `REDUCE_TOKEN = /\.\s*reduce\s*(?:<[^<>()]*>\s*)?\(/g` e registra uma chave para cada um; o receptor (`receiverStart`) anda para trás sobre identificadores, `.`/`?.`, chamadas e índices balanceados e um parêntese de agrupamento, com espaço e quebra de linha entre os elos, e para em palavra-chave (`return (x)` → `(x)`) e em `...spread`. Chave = `arquivo::expressão-sem-espaços`, como antes. As 8 chaves do inventário saem **idênticas** (impressas pelo `scanFinance()` do head: as mesmas 8 strings de `FROZEN_INVENTORY`; o caso F8 do inventário continua verde).
+- R-E3-2(b): `reduceTokens()` conta o token no código sem comentários, sem olhar o receptor; caso novo `F8/E3: todo token .reduce( … — 6 no módulo, 0 em accounts/, entries/ e pages/` (`FROZEN_REDUCE_TOKENS = 6`; mensagem do F8 "o dinheiro vem do servidor").
+- R-E3-2(c): controle positivo novo com 7 formas em diretório temporário — `items.filter((e) => e.ok).reduce(`, `return (rows ?? []).reduce(`, `Object.values(m).reduce(`, `(list ?? []).reduce(`, `arr[0].reduce(`, `items?.reduce(`, `items\n  .filter(Boolean)\n  .reduce<number>(` — e um `.reduce(` comentado que não conta; `scanFinance` nas duas réguas devolve as 7 chaves esperadas e `reduceTokens` conta 7 (uma chave por token, nenhuma perdida).
+- Guard no head: Node v20.19.5 → `tests 6 · pass 6 · fail 0 · skipped 0`; Node 22 por caminho absoluto (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`) → `tests 6 · pass 6 · fail 0 · skipped 0`. Meta da E3: +2 casos (4 → 6).
+- R-E3-2(d): `git grep -n -E "reduce\(|\+= *[a-zA-Z.]*amount" -- frontend/src/modules/finance` → **8** = inventário. `npm --prefix frontend run check` → rc 0. `git diff --check` → vazio.
+- **Elaboração do dev, declarada:** o token aceita argumento de tipo antes do `(` (`.reduce<number>(`), que é a mesma chamada e que a regex `\.reduce\(` da letra da E3 não veria; o produto tem 0 ocorrências dessa forma, logo a contagem 6/0 não muda. **Resíduo declarado (fora do token da E3, não coberto):** `.reduceRight(`, `["reduce"](` e `.reduce.call(`; o andar para trás conta parênteses sem olhar strings (um `")"` dentro de string na cadeia muda a chave, não a contagem). Medido: 0 ocorrência das três formas no módulo (`git grep -n -E 'reduceRight|\["reduce"\]|\.reduce\.call' -- frontend/src/modules/finance` → 0).
+
+### Mutações (roteiro `mutar.py` no scratchpad; cada uma acrescenta UMA linha ao fim do arquivo, roda o guard e restaura os bytes com sha256 conferido)
+
+| # | Arquivo | Linha injetada | Guard do head | Guard do objeto `e77a5ac1` | Restauro |
+|---|---|---|---|---|---|
+| M-E3-2a | `entries/useFinanceActions.ts` | `items.filter(f).reduce((s, e) => s + e.amount, 0)` | VERMELHO `6 · pass 3 · fail 3` (inventário, diretórios do 12b, contagem) | verde `4 · pass 4` | igual |
+| M-E3-2b | `pages/views/FinanceiroViewA.tsx` | `Object.values(m).reduce(…)` | VERMELHO `6 · pass 3 · fail 3` | verde `4 · pass 4` | igual |
+| M-E3-2c | `pages/views/FinanceiroViewA.tsx` | `(list ?? []).reduce(…)` | VERMELHO `6 · pass 3 · fail 3` | verde `4 · pass 4` | igual |
+| M-E3-2d | `pages/views/FinanceiroViewA.tsx` | `arr[0].reduce(…)` | VERMELHO `6 · pass 3 · fail 3` | verde `4 · pass 4` | igual |
+| M-E3-2e | `accounts/useFinancialAccounts.ts` | `items?.reduce(…)` | VERMELHO `6 · pass 3 · fail 3` | (não medido: a forma `?.` já era vista) | igual |
+| M-E3-2f | o próprio guard | entrada falsa `entries/falso.ts::x.reduce(…)` no `FROZEN_INVENTORY` | VERMELHO `6 · pass 4 · fail 2` (entrada morta; inventário não vazio nos diretórios do 12b) | — | igual |
+
+O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-e77a5ac1.tmp.test.ts` (`git show e77a5ac1:…`), apagada no fim; `git status --porcelain` depois da rodada → só o guard alterado.
+
+### Falta
+
+- Fatias 3 e 4 da E3.5 (não são deste disparo).
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
