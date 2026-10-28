@@ -1,4 +1,6 @@
 export { DenseTable } from "./DenseTable";
+export { DenseExpandableRow } from "./DenseExpandableRow";
+export type { DenseCell } from "./DenseExpandableRow";
 export { DenseListPagination } from "./DenseListPagination";
 export { useDenseList } from "./useDenseList";
 export type { UseDenseListOptions } from "./useDenseList";

@@ -8,6 +8,7 @@ import type {
   FinancialTitlesApiContext,
   FinancialTitlesData,
   FinancialTitlesFilters,
+  PayFinancialTitlePayload,
 } from "./financial-titles.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
@@ -37,6 +38,21 @@ export async function listFinancialTitlesFromApi(
           : "Não foi possível consultar os pagamentos.",
     };
   }
+}
+
+// B-SAN3-12b — releitura de UM título (GET /financial-titles/:id): depois de qualquer não-sucesso da baixa a tela relê
+// antes de falar (F3). O erro propaga (a tela decide o que dizer).
+export async function getFinancialTitle(context: FinancialTitlesApiContext, titleId: string): Promise<FinancialTitle> {
+  const title = adaptFinancialTitleResponse(await apiRequest<unknown>(`/financial-titles/${encodeURIComponent(titleId)}`, context));
+  if (!title) throw new Error("invalid_financial_title_response");
+  return title;
+}
+
+// B-SAN3-12b — a BAIXA (F1): POST /financial-titles/:id/pay. O ERRO do backend NÃO é engolido: a razão (422/409/400)
+// decide a mensagem, o bloco do cheque pendente e a releitura.
+export async function payFinancialTitle(context: FinancialTitlesApiContext, titleId: string, payload: PayFinancialTitlePayload): Promise<FinancialTitle | null> {
+  const response = await apiRequest<unknown>(`/financial-titles/${encodeURIComponent(titleId)}/pay`, { ...context, method: "POST", body: payload });
+  return adaptFinancialTitleResponse(response);
 }
 
 // Criação — o ERRO do backend (400/422) NÃO é engolido: o modal precisa do status para explicar a falha.
@@ -85,6 +101,7 @@ function buildQuery(filters: FinancialTitlesFilters): string {
   if (filters.from) query.set("from", filters.from);
   if (filters.to) query.set("to", filters.to);
   if (filters.limit) query.set("limit", String(filters.limit));
+  if (filters.offset !== undefined) query.set("offset", String(filters.offset));
   return `?${query.toString()}`;
 }
 

@@ -106,9 +106,7 @@ const RastreamentoPage = lazy(() => import("./modules/telemetry/pages/Rastreamen
 const FieldOperatorsPage = lazy(() => import("./modules/dispatch/pages/FieldOperatorsPage").then((m) => ({ default: m.FieldOperatorsPage })));
 const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/DispatchConsolePage").then((m) => ({ default: m.DispatchConsolePage })));
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
-const ChargesPage = lazy(() => import("./modules/finance/pages/ChargesPage").then((m) => ({ default: m.ChargesPage })));
 const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
-const PaymentsPage = lazy(() => import("./modules/finance/pages/PaymentsPage").then((m) => ({ default: m.PaymentsPage })));
 const RemuneracoesPage = lazy(() => import("./modules/finance/commissions/pages/RemuneracoesPage").then((m) => ({ default: m.RemuneracoesPage })));
 
 const PlatformCloudBillingPage = lazy(() =>
@@ -648,11 +646,8 @@ export function App() {
             />
             <Route
               path="/finance/charges"
-              element={
-                <PermissionGuard permissions={["financial_titles:read"]}>
-                  <ChargesPage />
-                </PermissionGuard>
-              }
+              // B-SAN3-12b (F13; A1 da crítica v2): uma tela só para o mesmo título — Cobranças é a aba "A receber".
+              element={<Navigate to="/finance?aba=rec" replace />}
             />
             <Route
               path="/finance/invoices"
@@ -666,11 +661,8 @@ export function App() {
             />
             <Route
               path="/finance/payments"
-              element={
-                <PermissionGuard permissions={["financial_titles:read"]}>
-                  <PaymentsPage />
-                </PermissionGuard>
-              }
+              // B-SAN3-12b (F13): Pagamentos é a aba "A pagar". As páginas antigas saem do código no B-SAN3-24 (Q4).
+              element={<Navigate to="/finance?aba=pag" replace />}
             />
             {/* F8 Remunerações — extrato de comissões (adaptativo por permissão: read → todos; read_own → próprio). */}
             <Route

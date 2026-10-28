@@ -269,6 +269,7 @@ function adaptFinancialTitle(input: unknown): FinancialTitle | null {
     status,
     competencia: readString(item, ["competencia"]) ?? "",
     accountId: readNullableString(item, ["accountId", "account_id"]),
+    workOrderId: readNullableString(item, ["workOrderId", "work_order_id"]),
     overdue: readBoolean(item, ["overdue"]) ?? false,
     active: readBoolean(item, ["active"]) ?? true,
     createdAt: readString(item, ["createdAt", "created_at"]) ?? new Date().toISOString(),

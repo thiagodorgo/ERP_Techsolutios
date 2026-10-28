@@ -1,0 +1,21 @@
+{
+ "jurado": "jurado-san312b-ciclo3-c1-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312b-c1-tela-e-fidelidade",
+ "cadeira": "C1 refeita (c1r3) — a tela",
+ "mandato_md5": "62453cf46fb519b20bcaeaceb81aaf98",
+ "modelo": "Claude Opus · nível menor (§C7.6) · substituição: nenhuma",
+ "corpo_md5": "4e27a0e164b92f8326ca42f609fe6309 · IDENTICO",
+ "objeto": "cfb19fd115bac02ef65eb94202b01a64e6730854",
+ "legalidade": "insp-san312b-c3-parecer.md · LIBERADO COM RESSALVA",
+ "quorum": "unanimidade de 3 (dinheiro) · ciclo 3: só defeito de produto GRAVE reprova (§C7 item 8(2))",
+ "escopo": "EM APURAÇÃO",
+ "gravidade": "EM APURAÇÃO",
+ "arquivos_medidos": ["EM APURAÇÃO"],
+ "voto": "EM APURAÇÃO",
+ "itens": [
+  {"item": 1, "estado": "EM APURAÇÃO"},
+  {"item": 2, "estado": "EM APURAÇÃO"},
+  {"item": 3, "estado": "EM APURAÇÃO"}
+ ],
+ "achados": []
+}

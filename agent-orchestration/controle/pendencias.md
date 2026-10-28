@@ -11625,8 +11625,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
 - **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
-- **status:** ABERTA · **dono:** bloco do painel Financeiro (3 opções) · **bloqueia:** não.
+- **status:** FECHADA pelo `B-SAN3-12b` (ramo `feat/web-financeiro-baixa-e-contas`; vale no merge) · antes: ABERTA · **dono:** encerrado · **bloqueia:** não.
 - **encerramento:** resumo desconta ou rotula cheque vinculado pendente sem alterar o razão.
+- **critério medido no fechamento (B-SAN3-12b):** o resumo já trazia `cheques.linkedPendingCount/linkedPendingAmount` (12a, A16); o 12b lê os dois campos (`financial-summary.{types,adapter}.ts`) e as abas "A receber"/"A pagar" da aparência A rotulam "R$ X em N cheque(s) vinculado(s) a títulos aguardam compensação: esses títulos baixam sozinhos quando o cheque compensar" — o razão não muda. Prova: `frontend/tests/finance-page-live.test.tsx`, caso F14 (`R$ 1.000,00 em 1 cheque vinculado…`).
 
 ## P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (2026-10-24) — legado não permite reconciliar instrumento e lançamento — BAIXA
 - **status:** ABERTA · **dono:** DBA, se o dono solicitar relatório · **bloqueia:** não.
@@ -11691,7 +11692,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
 
 ## P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE (2026-10-25) — a referência de 16/10 lista "Cheque" entre os meios da baixa — BAIXA
-- **status:** ABERTA · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **status:** FECHADA (2026-10-26, ramo do `B-SAN3-12b`; antes: ABERTA) · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **fechamento:** em `financeiro-3opcoes.reference.html`, o seletor "Meio de pagamento" do formulário da baixa não oferece mais `check`. O mapa `MEIOS` continua com "Cheque", porque também mostra o meio de lançamentos antigos (lista, coluna de baixas e detalhe). Feito pelo orquestrador, porque design é só Claude (`D-DESIGN-SO-CLAUDE`).
 
 ## P-SAN3-12-PAGAMENTO-MISTO-CHEQUE (2026-10-25) — cheque parcial + outro meio no mesmo título — PRODUTO
 - **status:** ABERTA · **dono:** próximo bloco de produto financeiro · **bloqueia:** não.
@@ -11921,3 +11923,60 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** C3-01 da junta do ciclo 1 do B-SAN3-22 (m24b e m25c deixavam a suíte 22/22 verde); E4-08. O `frontend/package.json` não tem biblioteca de DOM (`jsdom`/`happy-dom`/`testing-library` = 0): trazer uma é **dependência nova**, que pede junta de 5 + PD (§C7.1).
 - **residual hoje (declarado nos próprios guards):** (i) `C3-01 (forma)` em `frontend/tests/checklists-editor-lock.smoke.test.tsx` lê o corpo de `handleToggleStatus`, `handleOverwriteConflict` e `handleWriteError` — forma, não comportamento; a prova de comportamento é a interceptação no navegador feita pela cadeira de tela; (ii) o CE-13 (`tests/checklist-template-lock.test.ts`) não alcança URL passada como parâmetro de helper nem declarada fora do bloco `test(` corrente, e a regra "resultado descartado" só lê a linha da chamada.
 - **encerramento:** decisão (junta de 5 + PD) sobre a biblioteca de DOM; se aprovada, testes de interação que cliquem nos três gestos do editor e substituam o guard de forma.
+
+## P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (2026-10-26) — 8 somas de dinheiro/contagem já existentes no front financeiro — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (medidas na `origin/main` `c9a2d036`, antes do ramo do `B-SAN3-12b`) · **bloqueia:** não.
+- **origem:** ratificação do orquestrador de 2026-10-26 14:40Z no fim do plano `B-SAN3-12-plano.md` (achado do dev do 12b no F8). O F8 virou trava com inventário congelado em `frontend/tests/finance-no-money-reduce.guard.test.ts`.
+- **inventário (por arquivo e expressão normalizada):** 7 em `frontend/src/modules/finance/commissions/**` (`commissions.adapter.ts`, `CommissionDetailDrawer.tsx`, `ConferenciaRemuneracoesView.tsx` ×3, `RemuneracoesPage.tsx` ×2) e 1 em `titles/financial-titles.adapter.ts` (`sumAmount` de `computeTitleKpis`, usado só pelas telas legadas de Cobranças e Pagamentos).
+- **donos:** as 7 de `commissions/**` — o bloco das telas de comissões; a 1 de `titles/` — o `B-SAN3-24`, quando as telas legadas saírem (resposta do dono à Q4).
+- **encerramento:** inventário vazio; o guard então afirma zero ocorrência em `frontend/src/modules/finance/**`.
+
+## P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do menu viram `/finance?aba=…` — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco`, consequência declarada do F13 (D-4 do relatório do dev) · **dono:** `B-SAN3-24` (tira as telas legadas e mexe no menu) · **bloqueia:** não.
+- **origem:** `docs/revisoes/SAN3/B-SAN3-12b-dev.md`, D-4. O §7.2 manda os `path` de `COBRANCAS`/`PAGAMENTOS` apontarem para `/finance?aba=rec|pag`. Dois efeitos fora do alcance do PERMITIDO: (a) o `NavLink` compara só o caminho, então em `/finance` os três itens (Financeiro, Cobranças, Pagamentos) ficam marcados como ativos (`layouts/AppShell.tsx`, fora do PERMITIDO); (b) `computeHiddenNavPaths` esconde item governado pelo menu do backend (`navigation.registry.ts` ainda declara `/finance/charges` e `/finance/payments`, PROIBIDO no §7.4), e os caminhos com `?aba=` não casam com nenhum governado — os dois itens deixam de ser escondidos pelo provisionamento (continuam guardados pela rota `/finance`, `financial_entries:read`, e pelo servidor).
+- **encerramento:** o menu marca ativo só o item da aba aberta e os dois itens voltam a ser governados pelo menu do backend (ou saem do menu, se o `B-SAN3-24` decidir uma entrada só).
+
+## P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da opção A ("Buscar documento, cliente ou descrição") não existe no 12b — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco`, divergência DECLARADA na E2.2 do plano (`docs/revisoes/SAN3/B-SAN3-12-plano.md`, Emenda E2) · **dono:** `B-SAN3-12c` (mesma tela, mesma camada de dados) · **bloqueia:** não.
+- **origem:** C1-N6 da junta do ciclo 1 do `B-SAN3-12b` (`agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`). É filtro de texto sobre as linhas carregadas, e a lista de títulos passou a ser parcial por desenho (R3: 100 por pedido, "Carregar mais títulos"); entra junto da paginação completa.
+- **encerramento:** busca por documento, cliente e descrição sobre as linhas carregadas, com o contador honesto da R3 (`N entre os L mais recentes de T títulos`).
+
+## P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no guarda de rota do front — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/guards/PermissionGuard.tsx:29`, `git blame` → `98b4bee34`, 2026-06-06, antes do ramo do `B-SAN3-12b`) · **dono:** `B-SAN3-06a` (dono de `auth.adapter.ts` e do guarda do front); alternativa `B-SAN3-24` · **bloqueia:** não.
+- **origem:** C1-N4 da junta do ciclo 1 do `B-SAN3-12b`. `PermissionGuard.tsx` é PROIBIDO no 12b (E2.1).
+- **encerramento:** texto acentuado ("Acesso não autorizado") e a guarda textual F17 estendida ao guarda.
+
+## P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devolve 0 para campo ausente — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/modules/finance/dashboard/financial-summary.adapter.ts:113`, `num()`, `git blame` → `08d009492`, 2026-07-18) · **dono:** `B-SAN3-12c` (mesma camada de dados) · **bloqueia:** não.
+- **origem:** C1-N5 da junta do ciclo 1 do `B-SAN3-12b`. Campo que o servidor não mandou vira R$ 0,00 no indicador, em vez de "indisponível" (fere o espírito do F19).
+- **encerramento:** campo ausente → indicador não renderizado ou "indisponível" (F19 no adaptador), com teste.
+
+## P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 (base só migrada) — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (registro) · **dono:** `B-SAN3-12c` + o bloco de ferramentas de processo · **bloqueia:** não.
+- **origem:** C3-03 da junta do ciclo 1 do `B-SAN3-12b`. `tests/b-san3-12-ce4-db.test.ts` tem dois braços: o 1 (base PROVISIONADA por `db:provision-rbac`) e o 2 (só migrada). A CI não provisiona, então executa o braço 2; o braço 1 roda só na máquina do dev e no Postgres descartável dos jurados. `.github/**` é PROIBIDO no 12b.
+- **encerramento:** um job da CI com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head.
+
+## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (lacuna de teste; o código cumpre a R4(b)) · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa.
+- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
+
+## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida).
+- **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
+
+## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-12c` (alternativa: `B-SAN3-24`) · **bloqueia:** não.
+- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas.
+- **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
+
+## P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem filtrada com o total sem filtro — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade.
+- **encerramento:** com alvo aplicado e carga parcial, o `rangeLabel` deixa de misturar a contagem filtrada com o total sem filtro.
+
+## P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos, não o conteúdo de três vias — MÉDIA
+- **status:** ABERTA · **escopo:** processo (ferramenta) · **dono:** o bloco de ferramentas de processo (fila pós-gate) · **bloqueia:** não. Severidade: leitura do dev (a E3.4 não a fixa): dois fechamentos se perderam num merge que "conferiu os cabeçalhos".
+- **origem:** C3R2-02 da junta do ciclo 2 do `B-SAN3-12b`, ampliado pela auditoria do topo (Emenda E3, R-E3-1 e E3.4): o merge `b5246e8d` ficou com o lado da `main` nas seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE`; a fatia 1 do ciclo 3 as restaurou (`864598f5`).
+- **encerramento:** `scripts/` ganha a conferência de três vias de `pendencias.md` (as linhas que o ramo acrescentou sobrevivem; as linhas que ele removeu não voltam) e o passo entra na E2.5 e na ata de todo merge de registro.

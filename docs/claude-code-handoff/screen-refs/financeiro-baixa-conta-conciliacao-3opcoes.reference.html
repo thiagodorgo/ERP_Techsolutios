@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financeiro · baixa, contas e conciliação · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) + os da referência aprovada financeiro-ab ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;--color-status-info:#206bc4;
+  --color-chart-inflow:#10b981;--color-chart-outflow:#f87171;--color-chart-neutral:#94a3b8;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (igual às aprovadas) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css e financeiro-ab.reference.html ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:300px;flex:1 1 300px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;min-height:36px}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--perigo{color:#b91c1c;border-color:#fecaca}
+.pat-btn--perigo:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-select:focus-visible,.pat-os-tab:focus-visible,.pat-pager__btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-select{padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;min-height:36px}
+
+/* Indicadores (KpiStatCard) — grade de 6 compacta da referência */
+.kpi-grid{display:grid;gap:12px;margin-bottom:16px}
+.kpi-grid--6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:left;color:#0f172a;min-width:0;font:inherit}
+.pat-kpi--clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pat-kpi--clickable:hover{border-color:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.08)}
+.pat-kpi--clickable:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;background:#f8fafc;box-shadow:0 0 0 1px #2563eb,0 4px 12px rgba(37,99,235,.12)}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.pat-kpi__tile{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:18px;font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__label{font-size:12px;font-weight:600;color:#334155;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__hint{font-size:10.5px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-grid--5 .pat-kpi{padding:14px 15px}
+.kpi-grid--5 .pat-kpi__value{font-size:21px}
+.kpi-spark{display:block;width:100%;height:22px;margin-top:6px}
+.delta{font-size:10.5px;font-weight:800;margin-left:4px}
+.delta--up{color:#15803d}.delta--down{color:#b91c1c}
+
+.pat-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+.pat-banner--info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.pat-skel{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:6px;display:inline-block}
+@keyframes skel{to{background-position:-200% 0}}
+
+/* ─── Faixa da referência: resultado do mês + 7 dias ─── */
+.faixa-b{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
+.card__title{font-size:14px;font-weight:800;color:#0f172a}
+.card__sub{font-size:11px;color:#64748b;margin-top:1px}
+.card__tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.bar-compact-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:transparent;border:1px solid transparent;border-radius:8px;padding:3px 8px;margin-bottom:1px;font-size:12px;cursor:pointer;text-align:left;min-height:24px}
+.bar-compact-btn:hover{background:#f8fafc;border-color:#e2e8f0}
+.bar-compact-btn[aria-pressed="true"]{background:#eff6ff;border-color:#2563eb}
+.bar-compact-btn:focus-visible{outline:2px solid #2563eb;background:#eff6ff}
+.bar-compact-btn__label{font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;width:170px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.bar-compact-btn__dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.bar-compact-btn__track{flex:1;height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;min-width:40px}
+.bar-compact-btn__fill{height:100%;border-radius:99px}
+.bar-compact-btn__val{font-weight:800;font-family:var(--font-mono);font-size:11px;color:#0f172a;text-align:right;white-space:nowrap;min-width:150px;flex-shrink:0}
+.bar-compact-btn__val small{font-weight:600;color:#94a3b8;font-size:10px;margin-left:4px}
+.resultado-total{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.resultado-total b{font-size:11.5px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.04em}
+.resultado-total span{font-size:15px;font-weight:800;color:#1d4ed8;font-family:var(--font-mono)}
+.resultado-total small{font-size:11px;font-weight:700;color:#15803d;margin-left:6px;font-family:var(--font-sans)}
+.v7-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.v7-btn{display:block;width:100%;border-radius:9px;padding:8px 10px;text-align:left;cursor:pointer;min-height:44px}
+.v7-btn--rec{background:#f0fdf4;border:1px solid #bbf7d0}
+.v7-btn--pag{background:#fffbeb;border:1px solid #fde68a}
+.v7-btn:hover{box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.v7-btn[aria-pressed="true"]{box-shadow:0 0 0 2px #2563eb}
+.v7-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.v7-btn i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.v7-btn b{display:block;font-size:16px;font-weight:800;font-family:var(--font-mono);margin-top:2px}
+.v7-btn small{font-size:10.5px;font-weight:600}
+.v7-btn--rec i,.v7-btn--rec b{color:#15803d}.v7-btn--rec small{color:#16a34a}
+.v7-btn--pag i,.v7-btn--pag b{color:#b45309}.v7-btn--pag small{color:#d97706}
+.v7-saldo{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:700;color:#334155;background:#f8fafc;border:1px solid #f1f5f9;border-radius:7px;padding:6px 10px;margin-bottom:8px}
+.v7-saldo span{font-family:var(--font-mono);font-weight:800;color:#15803d}
+.v7-ag-t{font-size:10px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin:2px 0 6px}
+.ag-item{display:flex;align-items:center;gap:8px;width:100%;padding:5px 10px;border-radius:7px;background:#f8fafc;border:1px solid #f1f5f9;margin-bottom:5px;font-size:11.5px;cursor:pointer;text-align:left;min-height:30px}
+.ag-item:hover{border-color:#93c5fd}
+.ag-item:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ag-item--pag{border-left:3px solid #f59e0b}
+.ag-item--rec{border-left:3px solid #22c55e}
+.ag-item__d{font-weight:800;font-size:11px;min-width:62px;color:#334155}
+.ag-item__t{flex:1;min-width:0;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-item__v{font-family:var(--font-mono);font-weight:800;white-space:nowrap}
+
+/* ─── Painel de abas + lista densa (linha de 1 linha, detalhe embaixo) ─── */
+.painel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.painel__toolbar{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-os-tabs{display:flex;gap:3px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;white-space:nowrap;min-height:30px}
+.pat-os-tab:hover:not(.pat-os-tab--active){color:#0f172a}
+.pat-os-tab--active{background:#fff;color:#2563eb;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.pat-os-tab .n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:99px;background:#475569;color:#fff;font-size:10px;font-weight:800}
+.pat-os-tab--active .n{background:#2563eb}
+.pat-os-search{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;width:210px;color:#94a3b8;min-height:34px}
+.pat-os-search:focus-within{border-color:#2563eb}
+.pat-os-search input{border:none;outline:none;background:transparent;font-size:12px;color:#0f172a;width:100%;min-width:0}
+.pat-os-count{margin-left:auto;font-size:11.5px;color:#64748b;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-filtro-chip-bar{padding:10px 18px 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.aba-intro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;font-size:12px;color:#475569;border-bottom:1px solid #f1f5f9;background:#fcfdfe}
+.aba-intro b{color:#0f172a}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-ab-table thead th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#334155}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-ab-row td b{color:#0f172a;font-weight:700}
+.doc{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.doc-os{font-family:var(--font-mono);color:#94a3b8;font-size:11px;margin-left:6px}
+.val{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.val--in{color:#15803d}.val--out{color:#b91c1c}
+.muted{color:#94a3b8}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.dir-ic{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;vertical-align:middle}
+.dir-ic--r{background:#dcfce7;color:#15803d}.dir-ic--p{background:#fef3c7;color:#b45309}
+.atraso{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1}
+.atraso i{display:block;width:54px;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.atraso i b{display:block;height:100%;border-radius:99px}
+.atraso span{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.grupo-row td{padding:9px 14px 7px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:#334155}
+.grupo-row td small{margin-left:10px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#94a3b8}
+.grupo-row--venc td{color:#b91c1c}
+.grupo-row--hoje td{color:#1d4ed8}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:14px 18px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.15fr 1fr 1.25fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4{font-size:11px;font-weight:800;color:#0f172a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+.saldo-bar{display:block;height:7px;border-radius:99px;background:#f1f5f9;overflow:hidden;margin-top:2px}
+.saldo-bar b{display:block;height:100%;background:#22c55e;border-radius:99px}
+.baixas{display:flex;flex-direction:column;gap:5px}
+.baixa-it{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:#334155;padding:5px 8px;border:1px solid #f1f5f9;border-radius:7px;background:#fcfdfe}
+.baixa-it b{font-family:var(--font-mono);font-weight:800;color:#15803d;font-size:11.5px}
+.baixa-it small{color:#94a3b8;font-size:10.5px}
+.itens-desp{display:flex;flex-direction:column;gap:3px}
+.itens-desp div{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#334155;border-bottom:1px dashed #f1f5f9;padding:2px 0}
+.itens-desp b{font-family:var(--font-mono);font-weight:700}
+.pat-table__empty{padding:40px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{display:flex;align-items:center;gap:9px;font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__size select{padding:5px 9px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;color:#334155;background:#fff;min-height:30px}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums;font-weight:600}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:6px 11px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;min-height:32px}
+.pat-pager__btn:hover:not(:disabled){border-color:#2563eb;color:#2563eb}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+
+/* Contas (cartões clicáveis no topo da aba Contas e extrato) */
+.contas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+.conta-btn{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-align:left;cursor:pointer;min-width:0;min-height:44px}
+.conta-btn:hover{border-color:#93c5fd}
+.conta-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe;background:#f8fbff}
+.conta-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.conta-btn span{font-size:11px;font-weight:700;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conta-btn b{font-size:15px;font-weight:800;font-family:var(--font-mono);color:#0f172a}
+.conta-btn small{font-size:10.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conc-chips{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+.conc-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;color:#334155;min-height:36px}
+.conc-chip b{font-size:14px;font-variant-numeric:tabular-nums}
+.conc-chip[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.conc-chip:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* Marca "falta no backend" — âmbar tracejado; o botão do quadro de notas esconde */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+.fx{outline:1px dashed #f59e0b;outline-offset:2px;border-radius:3px;background-color:rgba(255,251,235,.7)}
+.fx-card{border:1px dashed #f59e0b!important}
+.fx-btn{border-style:dashed!important;border-color:#f59e0b!important;color:#92400e!important;background:#fffbeb!important}
+body.sem-marcas .falta{display:none}
+body.sem-marcas .fx{outline:none;background-color:transparent}
+body.sem-marcas .fx-card{border:1px solid #e2e8f0!important}
+body.sem-marcas .fx-btn{border-style:solid!important;border-color:#e2e8f0!important;color:#475569!important;background:#fff!important}
+
+/* ─── Opção B: faixa analítica (padrão de Pátios B / Usuários B) ─── */
+.analitico{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card--2{grid-column:span 2}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;flex-wrap:wrap}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.an-leitura{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#475569}
+.an-leitura b{color:#0f172a}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block;vertical-align:middle}
+.fluxo-svg{display:block;width:100%;height:auto}
+.fluxo-svg g[role="button"]{cursor:pointer}
+.fluxo-svg g[role="button"]:focus{outline:none}
+.fluxo-svg g[role="button"]:hover rect.bg,.fluxo-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.fluxo-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.eixo{display:flex;justify-content:space-around;margin-top:4px;font-size:10.5px;color:#94a3b8;font-weight:600}
+.barra-btn{display:grid;grid-template-columns:minmax(0,118px) minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:28px}
+.barra-btn:hover{background:#f8fafc}
+.barra-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.barra-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.barra-btn__rot{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-btn__rot i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.barra-btn__trilho{display:flex;height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.barra-btn__trilho b{display:block;height:100%;border-radius:99px}
+.barra-btn__n{font-size:11.5px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barra-btn__n small{font-weight:600;color:#94a3b8;margin-left:4px;font-size:10.5px}
+.rxp{display:flex;flex-direction:column;gap:8px}
+.rxp-btn{display:flex;flex-direction:column;gap:5px;width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;text-align:left;min-height:44px}
+.rxp-btn:hover{border-color:#93c5fd}
+.rxp-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.rxp-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.rxp-btn .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;font-weight:700;color:#334155}
+.rxp-btn .l b{font-family:var(--font-mono);font-size:14px;font-weight:800}
+.rxp-btn .t{display:block;height:10px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.rxp-btn .t i{display:block;height:100%;border-radius:99px}
+.rxp-liq{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:8px 10px}
+.rxp-liq b{font-family:var(--font-mono);font-size:14px}
+.seg{display:inline-flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:2px}
+.seg button{border:0;background:transparent;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;color:#64748b;cursor:pointer;min-height:28px}
+.seg button[aria-pressed="true"]{background:#fff;color:#2563eb;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:2px solid #2563eb}
+.an-sub{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 10px;flex-wrap:wrap}
+.an-sub h3{font-size:12px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase}
+.colunas{display:flex;align-items:flex-end;gap:4px;height:132px}
+.colunas .sep{width:1px;align-self:stretch;background:#e2e8f0;margin:0 3px}
+.coluna-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 1px 5px;min-width:0}
+.coluna-btn:hover{background:#f8fafc}
+.coluna-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.coluna-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.coluna-btn b{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.coluna-btn em{font-style:normal;font-size:9.5px;font-weight:700;color:#475569;white-space:nowrap}
+.coluna-btn i{display:block;width:72%;max-width:30px;border-radius:5px 5px 2px 2px;min-height:3px}
+.coluna-btn span{font-size:9.5px;font-weight:700;color:#64748b;text-align:center;line-height:1.15}
+.dev-btn{display:flex;flex-direction:column;gap:4px;width:100%;padding:5px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:36px}
+.dev-btn:hover{background:#f8fafc}
+.dev-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.dev-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.dev-btn .l{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:600;color:#334155}
+.dev-btn .l span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dev-btn .l b{font-weight:800;color:#B91C1C;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dev-btn .t{display:block;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.dev-btn .t i{display:block;height:100%;border-radius:99px;background:#f87171}
+.col-leg{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-top:6px}
+.col-leg span:first-child{color:#b91c1c}.col-leg span:last-child{color:#15803d}
+
+/* ─── Opção C: agenda de caixa ─── */
+.agenda{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:5px}
+.dia-btn{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:6px 4px 7px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;cursor:pointer;min-width:0;text-align:center;min-height:118px}
+.dia-btn:hover{border-color:#93c5fd}
+.dia-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe;background:#f8fbff}
+.dia-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.dia-btn--fds{background:#f8fafc}
+.dia-btn--hoje{border-color:#2563eb}
+.dia-btn--venc{background:#fef2f2;border-color:#fecaca}
+.dia-btn__sem{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.dia-btn--hoje .dia-btn__sem{color:#2563eb}
+.dia-btn--venc .dia-btn__sem{color:#b91c1c}
+.dia-btn__d{font-size:13px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.dia-btn__bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:38px}
+.dia-btn__bars i{display:block;width:9px;border-radius:3px 3px 1px 1px;min-height:2px}
+.dia-btn__n{font-size:9.5px;font-weight:700;color:#475569;white-space:nowrap}
+.dia-btn__liq{font-size:9.5px;font-weight:800;font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;margin:12px 0 16px}
+.proj-svg{display:block;width:100%;height:auto}
+.proj-svg g[role="button"]{cursor:pointer}
+.proj-svg g[role="button"]:focus{outline:none}
+.proj-svg g[role="button"]:hover circle.pt,.proj-svg g[role="button"]:focus-visible circle.pt{r:6}
+.proj-svg g[aria-pressed="true"] circle.pt{fill:#2563eb;r:6}
+.checks{display:flex;flex-direction:column;gap:3px}
+.check-btn{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;font-size:12.5px;color:#334155;min-height:36px}
+.check-btn:hover{background:#f8fafc}
+.check-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.check-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.check-btn .ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px}
+.check-btn .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.check-btn .t small{font-weight:600;color:#94a3b8;margin-left:6px}
+.check-btn b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ─── Estados (StatePanel) ─── */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:48px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#64748b;max-width:440px;line-height:1.5}
+.sem-mov{font-size:12.5px;color:#94a3b8;padding:18px 0;text-align:center}
+
+/* ─── Janelas (Modal) — tamanho FIXO, só o corpo rola ─── */
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.mbx{width:min(560px,94vw);height:min(640px,92vh);background:#fff;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.mbx > header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 20px;border-bottom:1px solid #e2e8f0}
+.mbx > header h2{font-size:16px;font-weight:800;color:#0f172a}
+.mbx > header button{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.mbx > header button:hover{background:#f1f5f9}
+.mbx > header button:focus-visible{outline:2px solid #2563eb}
+.mbx__corpo{flex:1;min-height:0;overflow-y:auto;padding:16px 20px;scrollbar-gutter:stable}
+.mbx > footer{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#fcfdfe}
+.mbx > footer .esq{margin-right:auto;font-size:11.5px;color:#64748b}
+.resumo-tit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.resumo-tit .top{grid-column:1 / -1;display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:#0f172a;flex-wrap:wrap}
+.resumo-tit .top span{color:#64748b;font-weight:600}
+.resumo-tit div.c{display:flex;flex-direction:column;gap:1px}
+.resumo-tit div.c > span{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.resumo-tit div.c b{font-size:13px;font-family:var(--font-mono);font-weight:800;color:#0f172a}
+.form-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-grade .larga{grid-column:1 / -1}
+.ui-field{display:grid;gap:5px;font-size:12.5px;font-weight:700;color:#334155;align-content:start}
+.ui-field small{font-weight:500;color:#64748b;font-size:11.5px}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:9px 10px;font:inherit;font-weight:400;font-size:13px;width:100%;background:#fff;color:#0f172a;min-height:40px}
+.ui-input[aria-invalid="true"]{border-color:#dc2626;box-shadow:0 0 0 1px #dc2626}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-input:disabled{background:#f1f5f9;color:#64748b}
+textarea.ui-input{resize:none;min-height:60px}
+.form-error{color:#b91c1c;font-size:11.5px;font-weight:600}
+.ui-alert{display:flex;gap:10px;padding:10px 12px;border:1px solid #f4d38b;border-radius:var(--radius-6);background:#fff8e9;color:#7c4a03;font-size:12.5px;line-height:1.45;margin-top:14px}
+.ui-alert b{display:block;margin-bottom:2px}
+.ui-alert--danger{border-color:#f0b6b0;background:#fff0ef;color:#9f1c1c}
+.ui-alert--ok{border-color:#a7f3d0;background:#ecfdf5;color:#065f46}
+.ui-alert--info{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+.spin{width:16px;height:16px;border:2px solid #bfdbfe;border-top-color:#2563eb;border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0}
+@keyframes gira{to{transform:rotate(360deg)}}
+.radio-l{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;margin-bottom:6px}
+.radio-l:has(input:checked){border-color:#2563eb;background:#eff6ff}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code,.review-layer p.desc strong{color:#e2e8f0}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0;margin-bottom:16px}
+.review-grid .review-box{margin-bottom:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code,.rv-tabela code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.estados-bar .rot{min-width:190px;color:#94a3b8;font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .kpi-grid--6{gap:10px}
+  .kpi-grid--6 .pat-kpi{padding:11px 10px}
+  .kpi-grid--6 .pat-kpi__value{font-size:15.5px;letter-spacing:-.4px}
+  .kpi-grid--6 .pat-kpi__tag{font-size:9.5px;padding:2px 6px}
+  .analitico{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analitico .an-card--2{grid-column:1 / -1}
+  .bar-compact-btn__label{width:140px}
+  .bar-compact-btn__val{min-width:132px}
+  .faixa-b{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+  .contas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pat-os-search{width:180px}
+  .c-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+  .dia-btn__liq{font-size:8.5px}
+}
+
+/* ─── B-SAN3-12 — acréscimos desta maquete (só composição das classes acima; nenhum token novo) ─── */
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.faixa-a{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.pat-ab-table col.c-chev{width:40px}
+.dir-tag{font-size:10.5px;font-weight:700;color:#94a3b8;margin-left:6px}
+.venc-tag{font-size:10.5px;font-weight:800;margin-left:6px}
+.cheque-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:#334155;padding:6px 8px;border:1px dashed #93c5fd;border-radius:7px;background:#f8fbff}
+.cheque-it b{font-family:var(--font-mono);font-weight:800;color:#1d4ed8}
+.cheque-it small{display:block;color:#64748b;font-size:10.5px}
+.meio-nota{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.45;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px}
+.meio-nota b{display:block;color:#1e3a8a;margin-bottom:1px}
+.meio-nota .pat-link{font-size:11.5px}
+/* Opção B — conta em foco */
+.b-grid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.rail{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:12px}
+.rail__total{padding:4px 4px 10px;border-bottom:1px solid #f1f5f9}
+.rail__total span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.rail__total b{display:block;font-size:20px;font-weight:800;font-family:var(--font-mono);color:#0f172a;margin-top:2px;letter-spacing:-.4px}
+.rail__total small{font-size:11px;color:#94a3b8}
+.rail .conta-btn{width:100%}
+.conta-btn .conta-btn__linha{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.conta-btn--inativa{opacity:.7}
+.b-topo{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.ponte-svg{display:block;width:100%;height:auto}
+.ponte-svg g[role="button"]{cursor:pointer}
+.ponte-svg g[role="button"]:focus{outline:none}
+.ponte-svg g[role="button"]:hover rect.bg,.ponte-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.ponte-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.rosca{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center}
+.rosca svg{display:block;width:120px;height:120px}
+.b-conta-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.b-conta-head h2{font-size:17px;font-weight:800;color:#0f172a}
+.b-conta-head p{font-size:12px;color:#64748b;margin-top:2px}
+.b-conta-head .saldo{text-align:right}
+.b-conta-head .saldo span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.b-conta-head .saldo b{font-size:24px;font-weight:800;font-family:var(--font-mono);letter-spacing:-.5px}
+.inline-form{background:#fff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.inline-form h4{font-size:11px;font-weight:800;color:#1d4ed8;letter-spacing:.04em;text-transform:uppercase}
+.inline-form .form-grade{grid-template-columns:repeat(4,minmax(0,1fr))}
+.inline-form .form-grade .larga{grid-column:span 2}
+.inline-form .form-grade .meio-nota{grid-column:1 / -1}
+.inline-form .ui-alert{margin-top:0}
+/* Opção C — conferência */
+.conf-prog{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#334155}
+.conf-prog .saldo-bar{width:180px;height:8px;margin:0}
+.conf-prog .saldo-bar b{background:#2563eb}
+.kbd{font-size:10.5px;background:#e2e8f0;color:#475569;padding:1px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+@media (max-width:1340px){
+  .faixa-a{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .b-grid{grid-template-columns:220px minmax(0,1fr)}
+  .b-topo{grid-template-columns:minmax(0,1fr)}
+  .inline-form .form-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Baixa, contas e conciliação · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">SM</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Sandra Melo</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Financeiro</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Financeiro</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir · B-SAN3-12</div>
+      <h2 id="rv-titulo">Opção A — Abas do Financeiro</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc" id="rv-desc"></p>
+    <div class="estados-bar"><span class="rot">Estado desta opção:</span>
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio (sem contas)</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Ver como (vale para as 3):</span>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="true">Financeiro</button>
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="false">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="tecnico" aria-pressed="false">Técnico de Campo</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Resposta do servidor na baixa:</span>
+      <button type="button" class="rv-btn" data-cenario="ok" aria-pressed="true">Sucesso</button>
+      <button type="button" class="rv-btn" data-cenario="ja-pago" aria-pressed="false">Já pago (422)</button>
+      <button type="button" class="rv-btn" data-cenario="cancelado" aria-pressed="false">Cancelado (422)</button>
+      <button type="button" class="rv-btn" data-cenario="acima" aria-pressed="false">Acima do saldo (422)</button>
+      <button type="button" class="rv-btn" data-cenario="duplicado" aria-pressed="false">Duplicado (409)</button>
+      <button type="button" class="rv-btn" data-cenario="cheque" aria-pressed="false">Cheque recusado (422)</button>
+      <button type="button" class="rv-btn" data-cenario="periodo" aria-pressed="false">Competência fechada (422)</button>
+      <button type="button" class="rv-btn" data-cenario="conta" aria-pressed="false">Conta inativa (422)</button>
+      <button type="button" class="rv-btn" data-cenario="rede-gravou" aria-pressed="false">Rede caiu, mas gravou</button>
+      <button type="button" class="rv-btn" data-cenario="rede" aria-pressed="false">Rede caiu, nada gravado</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Na conciliação:</span>
+      <button type="button" class="rv-btn" data-conc-cenario="ok" aria-pressed="true">Lançamento sem mudança</button>
+      <button type="button" class="rv-btn" data-conc-cenario="mudou" aria-pressed="false">Mudou antes de salvar</button>
+      <button type="button" class="rv-btn" data-conc-cenario="outro" aria-pressed="false">Outra pessoa já conciliou</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="false">Esconder as marcas “falta no backend”</button>
+      <button type="button" class="rv-btn" data-restaurar>Restaurar os dados de exemplo</button>
+    </div>
+    <div id="rv-blocos"></div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Abas do Financeiro</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Conta em foco</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Conferência do caixa</button>
+</div>
+
+<div class="ui-overlay" id="ov" hidden>
+  <section class="mbx" role="dialog" aria-modal="true" aria-labelledby="mbx-t" id="mbx">
+    <header><h2 id="mbx-t">Registrar recebimento</h2><button type="button" data-fechar aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="mbx__corpo" id="mbx-corpo"></div>
+    <footer id="mbx-rodape"></footer>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2 — a mesma família do frontend) ── */
+const I = {
+  chevron:'<path d="m6 9 6 6 6-6"/>',
+  arrowUp:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  arrowDown:'<path d="M7 7l10 10"/><path d="M17 7v10H7"/>',
+  check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  fuel:'<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  gavel:'<path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  factory:'<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>',
+  handCoins:'<path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/>',
+  card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  scroll:'<path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>',
+  landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  banknote:'<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+  skip:'<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+  undo:'<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>'
+};
+function ic(n, s){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span class="pat-chevron-icon">'+ic('chevron', 15)+'</span>';
+const FALTA = t => '<span class="falta" title="'+esc(t || 'O servidor ainda não fornece este dado')+'">falta no backend</span>';
+const FX = (html, t) => '<span class="fx" title="'+esc('Falta no backend: '+(t || 'o servidor ainda não fornece este valor'))+'">'+html+'</span>';
+
+/* ── Relógio da maquete: sexta-feira, 23/10/2026, 10:00 ── */
+const HOJE = new Date(2026, 9, 23);
+const HOJE_ISO = '2026-10-23';
+const DIA = 86400000;
+const pad = n => String(n).padStart(2, '0');
+const dt = (d, m) => new Date(2026, m - 1, d);
+const fData = d => pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const fDM = d => pad(d.getDate())+'/'+pad(d.getMonth()+1);
+const isoD = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+const SEM_L = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const diasAte = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - HOJE) / DIA);
+const mesKey = d => d.getFullYear()+'-'+pad(d.getMonth()+1);
+const MES_ATUAL = '2026-10';
+const rotMes = k => MESES[+k.slice(5)-1]+'/'+k.slice(0, 4);
+const fmtNum = n => n.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const brl = n => (n < 0 ? '−' : '')+'R$ '+fmtNum(Math.abs(n));
+function brlK(n){ const a = Math.abs(n), s = n < 0 ? '−' : ''; if (a >= 1e6) return s+'R$ '+(a/1e6).toLocaleString('pt-BR', { maximumFractionDigits:1 })+' mi'; if (a >= 1000) return s+'R$ '+(a/1000).toLocaleString('pt-BR', { maximumFractionDigits:1 })+' mil'; return s+'R$ '+Math.round(a); }
+const parseBR = s => { const t = String(s || '').trim().replace(/\s|R\$/g, ''); if (!t) return NaN; const n = Number(t.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? Math.round(n*100)/100 : NaN; };
+const r2 = n => Math.round(n*100)/100;
+const soma = (arr, f) => r2(arr.reduce((s, x) => s + f(x), 0));
+
+/* ── Rótulos do sistema (financial-titles.adapter.ts; meios de financial-entry.types.ts:11) ── */
+const ST = {
+  open:['Em aberto','#EFF6FF','#2563EB'], scheduled:['Agendado','#F5F3FF','#7C3AED'], partially_paid:['Parcial','#ECFEFF','#0891B2'],
+  paid:['Pago','#ECFDF5','#059669'], in_dispute:['Em contestação','#FFFBEB','#D97706'], cancelled:['Cancelado','#F1F5F9','#64748B']
+};
+const MEIOS = { pix:'Pix', transfer:'Transferência', boleto:'Boleto', cash:'Dinheiro', card:'Cartão', check:'Cheque' };
+/* D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO (dono, 21/10): a baixa NÃO oferece cheque; dinheiro de cheque só entra pela compensação */
+const MEIOS_BAIXA = ['pix', 'transfer', 'boleto', 'cash', 'card'];
+const KIND = { bank:'Banco', cash:'Caixa (dinheiro)', wallet:'Carteira digital' };
+const pill = (rot, bg, fg) => '<span class="pat-pill" style="background:'+bg+';color:'+fg+'"><span class="pat-pill__dot" style="background:'+fg+'"></span>'+rot+'</span>';
+
+/* ── Dados de exemplo — Guincho Exemplo Ltda ── */
+let CONTAS, TITULOS, LANC, CHQ, SEQ = 1;
+const CF = [['2026-05',118400,104900],['2026-06',126700,112300],['2026-07',131900,121600],['2026-08',139250,124800],['2026-09',144600,131900]];
+function iniciarDados(){
+  SEQ = 1;
+  /* Conta + o que GET /financial-accounts/:id/balance devolve (abertura, entradas e saídas desde a abertura) */
+  CONTAS = [
+    { id:'bb', nome:'Banco do Brasil · c/c 41.220-8', kind:'bank', banco:'Banco do Brasil', ag:'3341-7', num:'41.220-8', abertura:25000, ent:512840.35, sai:468951.20, ativa:true },
+    { id:'itau', nome:'Itaú · c/c 08.771-3', kind:'bank', banco:'Itaú Unibanco', ag:'0912', num:'08.771-3', abertura:15000, ent:286300, sai:259770, ativa:true },
+    { id:'caixa', nome:'Caixa da matriz', kind:'cash', abertura:1500, ent:6420, sai:5890.5, ativa:true },
+    { id:'cart', nome:'Carteira digital', kind:'wallet', abertura:0, ent:24310, sai:9800, ativa:true },
+    { id:'sant', nome:'Santander · c/c 13.004-1', kind:'bank', banco:'Santander', ag:'2271', num:'13.004-1', abertura:0, ent:3200, sai:3200, ativa:false }
+  ];
+  /* Cheques pendentes (GET /financial-summary → cheques) */
+  CHQ = { recN:3, recV:18450, emiN:1, emiV:2300 };
+  /* [id, dir, doc, OS, parte, categoria, valor, vencimento, situação, baixas[[d,m,valor,conta,meio,conc]], descrição, origem, cheque, complementar de]
+     conc: 1 conciliado · 0 a conciliar · 'v' ressalva de valor · 'd' ressalva de data */
+  const RAW = [
+    ['r01','r','FAT-2026-0905','OS-4848','Alfa Seguradora e Previdência','Remoção e guincho',10250,[16,10],'open',[],'Remoções de sinistro — 4 atendimentos'],
+    ['r02','r','FAT-2026-0911','OS-4861','Seguradora Porto Seguro Auto','Remoção e guincho',6750,[13,10],'open',[],'Remoções de sinistro — complemento de outubro'],
+    ['r03','r','FAT-2026-0896','OS-4829','Prefeitura de Jundiaí — Frota','Contrato de frota',19800,[22,10],'partially_paid',[[10,10,9900,'bb','transfer',0]],'Contrato de remoção — 1ª parcela recebida'],
+    ['r04','r','FAT-2026-0909','OS-4855','Transportadora Rápido Sul Ltda','Remoção e guincho',4200,[21,10],'open',[],'Guincho leve — retorno de oficina'],
+    ['r05','r','FAT-2026-0903','OS-4844','Distribuidora Minas Express','Remoção e guincho',13700,[23,10],'scheduled',[],'Remoção de 2 caminhões — Betim/Campinas'],
+    ['r06','r','FAT-2026-0899','OS-4835','Companhia de Locação Unidas','Contrato de frota',31500,[26,10],'open',[],'Assistência 24 h à frota locada — outubro/2026'],
+    ['r07','r','FAT-2026-0902','OS-4841','Viação Santa Rita','Contrato de frota',24400,[28,10],'scheduled',[],'Socorro mecânico a ônibus — contrato de outubro'],
+    ['r08','r','FAT-2026-0912','OS-4863','Locadora Via Norte','Contrato de frota',12600,[30,10],'open',[],'Assistência à frota locada — outubro/2026'],
+    ['r09','r','FAT-2026-0915','OS-4870','Cooperativa Agro Vale','Remoção e guincho',7850,[20,10],'open',[],'Remoção de colheitadeira — Itatiba',null,{ num:'004512', banco:'Sicredi', valor:7850, sit:'Depositado', em:dt(21,10) }],
+    ['r10','r','FAT-2026-0798','OS-4610','Construtora Vale do Paraíba','Remoção e guincho',11900,[20,8],'in_dispute',[],'Remoção de escavadeira — cliente contesta a quilometragem'],
+    ['r11','r','FAT-2026-0821','OS-4652','Condomínio Logístico Anhanguera','Pátio e diárias',5480,[12,9],'open',[],'Diárias de pátio — veículos retidos em agosto'],
+    ['r23','r','FAT-2026-0916','OS-4829','Prefeitura de Jundiaí — Frota','Pátio e diárias',1450,[6,11],'open',[],'2 diárias lançadas depois do faturamento',null,null,'FAT-2026-0896'],
+    ['r12','r','FAT-2026-0879','OS-4760','Auto Socorro Estrela','Remoção e guincho',9600,[2,10],'paid',[[2,10,9600,'bb','pix',1]],'Repasse de atendimentos de remoção — setembro'],
+    ['r13','r','FAT-2026-0865','OS-4730','Rodovias do Tietê Concessionária','Contrato de frota',16500,[6,10],'paid',[[6,10,16500,'bb','transfer','v']],'Remoção de veículos na pista — setembro'],
+    ['r14','r','FAT-2026-0885','OS-4788','Cooperativa Agro Vale','Remoção e guincho',12300,[8,10],'paid',[[8,10,12300,'itau','boleto',1]],'Remoção de maquinário agrícola — Itatiba'],
+    ['r15','r','FAT-2026-0874','OS-4751','Frotas Brasil Logística','Remoção e guincho',8450,[12,10],'paid',[[12,10,8450,'cart','pix',0]],'Guincho de van refrigerada — Guarulhos'],
+    ['r16','r','FAT-2026-0890','OS-4810','Viação Santa Rita','Contrato de frota',9800,[14,10],'paid',[[14,10,9800,'bb','boleto',0]],'Socorro mecânico — complemento de setembro'],
+    ['r17','r','FAT-2026-0891','OS-4812','Seguradora Porto Seguro Auto','Remoção e guincho',14850,[16,10],'paid',[[20,10,14850,'bb','transfer',0]],'Remoções de sinistro — 2ª quinzena de setembro'],
+    ['r18','r','FAT-2026-0894','OS-4820','Frotas Brasil Logística','Contrato de frota',18200,[18,10],'paid',[[21,10,18200,'itau','transfer',0]],'Contrato mensal de assistência — outubro/2026'],
+    ['r19','r','FAT-2026-0888','OS-4795','Transportadora Rápido Sul Ltda','Remoção e guincho',22400,[5,10],'paid',[[22,10,22400,'bb','transfer',0]],'Guincho pesado — carreta tombada na SP-330'],
+    ['r20','r','FAT-2026-0907','OS-4850','Alfa Seguradora e Previdência','Remoção e guincho',3400,[15,10],'paid',[[23,10,3400,'cart','pix',0]],'Remoção de sinistro — 1 atendimento'],
+    ['r21','r','FAT-2026-0860','OS-4715','Transvale Cargas Pesadas','Remoção e guincho',22400,[4,10],'paid',[[16,10,22400,'itau','check',1]],'Guincho pesado com escolta — Rod. dos Bandeirantes',null,{ num:'004388', banco:'Bradesco', valor:22400, sit:'Compensado', em:dt(16,10) }],
+    ['r22','r','FAT-2026-0870','OS-4742','Distribuidora Minas Express','Remoção e guincho',15400,[1,10],'paid',[[1,10,15400,'bb','transfer',1]],'Remoção de 3 caminhões-baú — Contagem/Jundiaí'],
+    ['p01','p','NF 118.455',null,'Posto Ipiranga RodoVia','Combustível',7350,[31,10],'open',[],'Diesel S10 — 1ª quinzena de outubro','Abastecimento da frota'],
+    ['p02','p','NF 7.801',null,'Oficina Diesel Norte','Manutenção',3900,[17,10],'open',[],'Troca de embreagem — guincho 06','Manutenção da frota'],
+    ['p03','p','NF 2.214',null,'Pneus Rodoforte Distribuidora','Manutenção',5980,[25,10],'partially_paid',[[9,10,2990,'itau','transfer',1]],'6 pneus 295/80 — pagamento em 2 parcelas','Manutenção da frota'],
+    ['p04','p','Parcela 14/48',null,'Banco Volvo — financiamento do guincho 09','Financiamento',18900,[20,10],'open',[],'Financiamento do guincho plataforma 09 — parcela 14 de 48'],
+    ['p05','p','DAS 09/2026',null,'Receita Federal — Simples Nacional','Impostos',6840,[20,10],'open',[],'Simples Nacional sobre o faturamento de setembro'],
+    ['p06','p','Fatura 10/2026',null,'Energia elétrica — pátio e oficina','Utilidades',1320,[23,10],'scheduled',[],'Energia do pátio e da oficina — outubro'],
+    ['p07','p','AIT 1F-552.088',null,'Detran-SP Infrações','Multas',880,[18,10],'open',[],'Estacionamento em local proibido — guincho 04','Multa da frota'],
+    ['p08','p','NF 4.410',null,'Lava-rápido Pesados Leste','Serviços',760,[26,10],'open',[],'Lavagem de 8 guinchos'],
+    ['p09','p','Apólice 0098.222',null,'Porto Seguro Seguros — Frota','Seguros',6200,[5,11],'scheduled',[],'Seguro da frota — parcela 8 de 12'],
+    ['p10','p','BOL 10/2026',null,'Imobiliária Anhanguera — Aluguel do pátio','Aluguel',9500,[10,10],'paid',[[11,10,9500,'itau','boleto','d']],'Aluguel do pátio de Jundiaí — outubro'],
+    ['p11','p','Apólice 0098.221',null,'Porto Seguro Seguros — Frota','Seguros',6200,[5,10],'paid',[[5,10,6200,'bb','boleto',1]],'Seguro da frota — parcela 7 de 12'],
+    ['p12','p','Fatura 0381/2026',null,'Telefonia e dados — Vivo Empresas','Utilidades',690,[8,10],'paid',[[8,10,690,'bb','boleto',1]],'Linhas móveis da frota e internet'],
+    ['p13','p','Guia ISS 09/2026',null,'Prefeitura de São Paulo — ISS','Impostos',3120,[10,10],'paid',[[10,10,3120,'bb','boleto',1]],'ISS sobre os serviços de setembro'],
+    ['p14','p','NF 33.019',null,'Rastreamento Sat Brasil','Serviços',1450,[13,10],'paid',[[13,10,1450,'bb','pix',0]],'Rastreamento de 14 veículos — outubro'],
+    ['p15','p','NF 118.402',null,'Posto Ipiranga RodoVia','Combustível',8650,[15,10],'paid',[[19,10,8650,'bb','boleto',0]],'Diesel S10 — 2ª quinzena de setembro','Abastecimento da frota'],
+    ['p16','p','DUP 2026/0412',null,'Auto Peças Bandeirantes','Manutenção',4380,[20,10],'paid',[[21,10,4380,'itau','transfer',0]],'Pastilhas, discos e filtros — guinchos 03 e 05','Manutenção da frota'],
+    ['p17','p','NF 902',null,'Escritório Contábil Prisma','Serviços',2400,[10,10],'paid',[[22,10,2400,'bb','boleto',0]],'Honorários contábeis — outubro']
+  ];
+  LANC = [];
+  TITULOS = RAW.map(r => {
+    const t = { id:r[0], dir:r[1], doc:r[2], os:r[3], parte:r[4], cat:r[5], valor:r[6], venc:dt(r[7][0], r[7][1]), status:r[8], desc:r[10], origem:r[11] || null, cheque:r[12] || null, compl:r[13] || null, pago:0, baixas:[] };
+    r[9].forEach(b => {
+      const e = novoLanc({ data:dt(b[0], b[1]), dir:t.dir === 'r' ? 'in' : 'out', valor:b[2], conta:b[3], meio:b[4], conc:b[5], titulo:t.id, cat:t.cat,
+        desc:(b[4] === 'check' ? 'Compensação do cheque '+t.cheque.num+' · ' : (t.dir === 'r' ? 'Recebimento ' : 'Pagamento '))+t.doc+' · '+t.parte, por:'Sandra Melo' });
+      t.pago = r2(t.pago + b[2]); t.baixas.push(e.id);
+    });
+    return t;
+  });
+  [[1,10,'out',189,'bb','transfer',1,'Tarifas bancárias','Tarifa do pacote de serviços PJ'],
+   [1,10,'in',412.35,'bb','transfer',1,'Rendimentos','Rendimento da aplicação automática'],
+   [3,10,'in',2150,'caixa','cash',0,'Pátio e diárias','Liberação de veículo do pátio — diárias pagas no balcão'],
+   [5,10,'out',17240,'itau','transfer',1,'Comissões','Liquidação de comissões — setembro/2026'],
+   [9,10,'out',190.5,'caixa','cash',1,'Despesas de campo','Reembolso de despesas de campo — Diego Martins'],
+   [13,10,'in',1250,'cart','pix',0,'A identificar','Pix recebido sem título — identificar o pagador'],
+   [14,10,'in',680,'caixa','cash',0,'Remoção e guincho','Atendimento particular pago no local — OS-4858'],
+   [30,9,'out',9670,'bb','boleto',1,'Combustível','Diesel S10 — 1ª quinzena de setembro · Posto Ipiranga RodoVia'],
+   [30,9,'in',3000,'bb','pix',1,'Remoção e guincho','Recebimento parcial FAT-2026-0842 · Assistência 24h Brasil'],
+   [28,9,'out',144,'caixa','cash',1,'Despesas de campo','Reembolso de despesas de campo — Marcos Lima']
+  ].forEach(x => novoLanc({ data:dt(x[0], x[1]), dir:x[2], valor:x[3], conta:x[4], meio:x[5], conc:x[6], cat:x[7], desc:x[8], titulo:null, por:'Sandra Melo' }));
+  LANC.sort((a, b) => b.data - a.data || (a.id < b.id ? 1 : -1));
+}
+function novoLanc(o){
+  const e = Object.assign({ id:'l'+pad(SEQ++), ref:null, em:null, porConc:null }, o);
+  if (e.conc !== 0) { e.ref = 'EXT '+pad(e.data.getDate())+pad(e.data.getMonth()+1)+'-'+pad(SEQ); e.em = e.data; e.porConc = 'Sandra Melo'; }
+  LANC.push(e); return e;
+}
+
+/* ── Regras de leitura (o servidor deriva; a maquete reproduz) ── */
+const byId = id => TITULOS.find(t => t.id === id);
+const lancById = id => LANC.find(e => e.id === id);
+const conta = id => CONTAS.find(c => c.id === id);
+const aberto = t => t.status !== 'paid' && t.status !== 'cancelled';
+const saldoT = t => r2(t.valor - t.pago);
+const vencido = t => aberto(t) && diasAte(t.venc) < 0;
+const conciliado = e => e.conc !== 0;
+const saldoConta = c => r2(c.abertura + c.ent - c.sai);                        /* GET /financial-accounts/:id/balance */
+const chequePendente = t => t.cheque && t.cheque.sit !== 'Compensado';
+const nomeCurto = c => c.nome.split(' · ')[0];
+
+/* ── Quem vê (o perfil vem da sessão; o seletor do quadro é só para revisar) — catalog.ts ── */
+const ESCRITA = ['ler', 'baixa', 'conciliar', 'conta'];
+const PAPEIS = {
+  financeiro:{ nome:'Sandra Melo', sub:'Financeiro', nav:'financeiro', p:ESCRITA },
+  admin:{ nome:'Thiago Andrade', sub:'Administrador', nav:'admin', p:ESCRITA },
+  gestor:{ nome:'Mariana Costa', sub:'Gestor Operacional', nav:'gestor', p:['ler'] },
+  auditor:{ nome:'Helena Duarte', sub:'Auditor', nav:'auditor', p:['ler'] },
+  tecnico:{ nome:'Carlos Mendes', sub:'Técnico de Campo', nav:'tecnico', p:[] }
+};
+let papel = 'financeiro';
+const pode = k => PAPEIS[papel].p.includes(k);
+const NAV = {
+  financeiro:[['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['factory','Fornecedores'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['calculator','Orçamentos'],['checkCircle','Aprovações']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção'],['gavel','Multas']]],['GESTÃO',[['contact','Clientes'],['factory','Fornecedores'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos']]],['ADMINISTRAÇÃO',[['users','Usuários'],['settings','Configurações'],['scroll','Auditoria']]]],
+  gestor:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  auditor:[['VISÃO GERAL',[['layout','Dashboard']]],['GESTÃO',[['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos']]],['ADMINISTRAÇÃO',[['scroll','Auditoria']]]],
+  tecnico:[['OPERAÇÃO',[['clipboard','Ordens de Serviço']]],['GESTÃO',[['wallet','Remunerações']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
+function renderNav(){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Financeiro'; return '<a class="app-sidebar__item'+(on ? ' app-sidebar__item--active' : '')+'" href="#" '+(on ? 'aria-current="page" ' : '')+'data-menu="'+it[1]+'">'+ic(it[0], 17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Estado por opção ── */
+const novoEstado = v => ({ estado:'normal', aba:v === 'a' ? 'rec' : v === 'b' ? 'ext' : 'baixar', alvo:null, aberta:null, conta:'bb', busca:'' });
+const S = { a:novoEstado('a'), b:novoEstado('b'), c:novoEstado('c') };
+let opcao = 'a', cenario = 'ok', cenarioConc = 'ok';
+const vazio = v => S[v].estado === 'vazio';
+const TIT = v => vazio(v) ? [] : TITULOS;
+const LAN = v => vazio(v) ? [] : LANC;
+const CON = v => vazio(v) ? [] : CONTAS;
+
+/* ── O que o servidor devolve somado (GET /financial-summary e contagens por pagination.total) ── */
+function resumo(v){
+  const T = TIT(v), L = LAN(v), K = CON(v).filter(c => c.ativa);
+  const lMes = L.filter(e => mesKey(e.data) === MES_ATUAL);
+  const ab = d => T.filter(t => t.dir === d && aberto(t));
+  const vc = d => T.filter(t => t.dir === d && vencido(t));
+  const inMes = soma(lMes.filter(e => e.dir === 'in'), e => e.valor), outMes = soma(lMes.filter(e => e.dir === 'out'), e => e.valor);
+  const fluxo = vazio(v) ? [] : CF.map(x => ({ m:x[0], in:x[1], out:x[2] })).concat([{ m:MES_ATUAL, in:inMes, out:outMes }]);
+  return {
+    caixa:soma(K, saldoConta), nContas:K.length, inMes, outMes, fluxo,
+    recAb:ab('r'), pagAb:ab('p'), recVc:vc('r'), pagVc:vc('p'),
+    recVcV:soma(vc('r'), saldoT), pagVcV:soma(vc('p'), saldoT),
+    aConc:L.filter(e => e.conc === 0).length, ressV:L.filter(e => e.conc === 'v').length, ressD:L.filter(e => e.conc === 'd').length, conc:L.filter(e => e.conc === 1).length,
+    chq:vazio(v) ? { recN:0, recV:0, emiN:0, emiV:0 } : CHQ,
+    hoje:T.filter(t => aberto(t) && diasAte(t.venc) === 0), sem7:T.filter(t => aberto(t) && diasAte(t.venc) > 0 && diasAte(t.venc) <= 7)
+  };
+}
+
+/* ══════════ Filtros: todo indicador, barra, cartão ou dia vira um filtro visível e removível ══════════ */
+function rotAlvo(alvo){
+  if (!alvo) return '';
+  const p = alvo.split(':');
+  if (alvo === 'venc') return 'Vencidos';
+  if (alvo === 'hoje') return 'Vencem hoje';
+  if (alvo === 'sem7') return 'Vencem nos próximos 7 dias';
+  if (alvo === 'parcial') return 'Recebidos ou pagos em parte';
+  if (alvo === 'cheque') return 'Com cheque aguardando compensação';
+  if (p[0] === 'mes') return (p[2] === 'in' ? 'Entradas de ' : p[2] === 'out' ? 'Saídas de ' : 'Lançamentos de ')+rotMes(p[1]);
+  if (p[0] === 'conta') return 'Conta: '+nomeCurto(conta(p[1]));
+  if (p[0] === 'conc') return ({ '0':'A conciliar', '1':'Conciliados', v:'Com ressalva de valor', d:'Com ressalva de data' })[p[1]]+(p[2] ? ' · '+nomeCurto(conta(p[2])) : '');
+  if (p[0] === 'dir') return p[1] === 'in' ? 'Só entradas' : 'Só saídas';
+  if (p[0] === 'idade') return 'A conciliar há '+({ '0':'até 2 dias', '3':'3 a 7 dias', '8':'8 a 15 dias', '16':'mais de 15 dias' })[p[1]];
+  if (p[0] === 'tit') { const t = byId(p[1]); return 'Título '+(t ? t.doc : ''); }
+  if (p[0] === 'dia') { const d = new Date(p[1]+'T12:00'); return 'Dia '+fDM(d)+' ('+SEM[d.getDay()]+')'; }
+  return alvo;
+}
+function filtraTit(v, list){
+  const a = S[v].alvo, b = S[v].busca.trim().toLowerCase();
+  let r = list;
+  if (a === 'venc') r = r.filter(vencido);
+  else if (a === 'hoje') r = r.filter(t => diasAte(t.venc) === 0);
+  else if (a === 'sem7') r = r.filter(t => diasAte(t.venc) > 0 && diasAte(t.venc) <= 7);
+  else if (a === 'parcial') r = r.filter(t => t.status === 'partially_paid');
+  else if (a === 'cheque') r = r.filter(chequePendente);
+  if (b) r = r.filter(t => (t.doc+' '+t.parte+' '+(t.os || '')).toLowerCase().includes(b));
+  return r.slice().sort((x, y) => x.venc - y.venc);
+}
+function filtraLanc(v, list){
+  const a = S[v].alvo || '', b = S[v].busca.trim().toLowerCase(), p = a.split(':');
+  let r = list;
+  if (p[0] === 'mes') r = r.filter(e => mesKey(e.data) === p[1] && (!p[2] || e.dir === p[2]));
+  else if (p[0] === 'conta') r = r.filter(e => e.conta === p[1]);
+  else if (p[0] === 'conc') r = r.filter(e => String(e.conc) === p[1] && (!p[2] || e.conta === p[2]));
+  else if (p[0] === 'dir') r = r.filter(e => e.dir === p[1]);
+  else if (p[0] === 'idade') { const lim = { '0':[0,2], '3':[3,7], '8':[8,15], '16':[16,9999] }[p[1]]; r = r.filter(e => e.conc === 0 && -diasAte(e.data) >= lim[0] && -diasAte(e.data) <= lim[1]); }
+  else if (p[0] === 'dia') r = r.filter(e => isoD(e.data) === p[1]);
+  if (b) r = r.filter(e => (e.desc+' '+e.cat).toLowerCase().includes(b));
+  return r;
+}
+function chipFiltro(v){
+  const a = S[v].alvo;
+  if (!a || (v === 'a' && S.a.aba === 'conc' && /^conc:[01vd]$/.test(a))) return '';
+  return '<div class="pat-filtro-chip-bar"><span class="pat-filtro-chip">Filtro: '+esc(rotAlvo(a))+'<button type="button" data-limpar aria-label="Remover o filtro '+esc(rotAlvo(a))+'">✕</button></span></div>';
+}
+
+/* ══════════ Peças comuns (as do sistema: KpiStatCard, StatusPill, StatePanel, StaleDataBanner, DenseTable) ══════════ */
+function spark(vals, cor){
+  if (!vals.length) return '';
+  const mx = Math.max(...vals), mn = Math.min(...vals), w = 100, h = 22;
+  const pts = vals.map((x, i) => (i*(w/(vals.length-1))).toFixed(1)+','+(h-2-((x-mn)/((mx-mn) || 1))*(h-4)).toFixed(1)).join(' ');
+  return '<svg class="kpi-spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+cor+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
+}
+function kpi(v, o){
+  const on = (S[v].alvo || '') === (o.alvo || '') && (!o.aba || S[v].aba === o.aba);
+  const tag = o.tag ? '<span class="pat-kpi__tag" style="background:'+o.tag[1]+';color:'+o.tag[2]+'">'+o.tag[0]+'</span>' : '';
+  return '<button type="button" class="pat-kpi pat-kpi--clickable'+(o.fx ? ' fx-card' : '')+'" data-alvo="'+(o.alvo || '')+'" data-aba="'+(o.aba || '')+'" aria-pressed="'+on+'" aria-label="'+esc(o.rot+': '+o.valorTxt+' — '+(o.acao || 'filtrar a lista'))+'"'+(o.fx ? ' title="'+esc('Falta no backend: '+o.fx)+'"' : '')+'>'+
+    '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+o.tile[0]+';color:'+o.tile[1]+'">'+ic(o.ic, 15)+'</span>'+tag+'</div>'+
+    '<div class="pat-kpi__value">'+o.valor+'</div><div class="pat-kpi__label">'+o.rot+'</div><div class="pat-kpi__hint">'+o.hint+'</div>'+(o.spark || '')+'</button>';
+}
+function cabecalho(kick, tit, sub, acoes){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kick+'</div><h1 class="pat-page-header__title">'+tit+'</h1><p class="pat-page-header__subtitle">'+sub+'</p></div><div class="pat-page-header__actions">'+(acoes || '')+'</div></div>';
+}
+function botaoNovaConta(prim){ return pode('conta') ? '<button type="button" class="pat-btn'+(prim ? ' pat-btn--primary' : '')+'" data-nova-conta>'+ic('plus', 15)+'Nova conta</button>' : ''; }
+function faixaDesatualizado(v){ return S[v].estado === 'desatualizado' ? '<div class="pat-banner pat-banner--warning" role="status" data-state="stale">'+ic('alert', 14)+'<span>Dados desatualizados — última atualização às 09:42</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>' : ''; }
+function painelEstado(v){
+  if (papel === 'tecnico' || S[v].estado === 'proibido') return '<div class="state-panel" data-state="forbidden"><div class="state-panel__icon" style="background:#f1f5f9;color:#475569">'+ic('lock', 26)+'</div><div class="state-panel__title">Sem permissão para ver o financeiro</div><div class="state-panel__detail">Seu perfil não inclui o Financeiro nesta organização. As suas comissões continuam em Remunerações. Para mais acesso, fale com o administrador da organização.</div>'+(papel === 'tecnico' ? '<button type="button" class="pat-btn" data-remun>'+ic('wallet', 14)+'Abrir minhas comissões</button>' : '')+'</div>';
+  if (S[v].estado === 'erro') return '<div class="state-panel" data-state="error" role="alert"><div class="state-panel__icon">'+ic('alert', 26)+'</div><div class="state-panel__title">Não foi possível carregar as contas e o extrato</div><div class="state-panel__detail">A consulta ao servidor falhou. Nada foi alterado. Tente de novo em instantes.</div><button type="button" class="pat-btn pat-btn--primary" data-tentar>Tentar novamente</button></div>';
+  return '';
+}
+function esqueleto(n){
+  const k = '<div class="pat-kpi"><span class="pat-skel" style="width:28px;height:28px"></span><div style="margin-top:8px"><span class="pat-skel" style="width:70%;height:18px"></span></div><div style="margin-top:6px"><span class="pat-skel" style="width:50%;height:11px"></span></div></div>';
+  const lin = '<div style="display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid #f1f5f9"><span class="pat-skel" style="width:12%;height:12px"></span><span class="pat-skel" style="width:34%;height:12px"></span><span class="pat-skel" style="width:16%;height:12px"></span><span class="pat-skel" style="width:12%;height:12px"></span><span class="pat-skel" style="width:12%;height:12px"></span></div>';
+  return '<div class="kpi-grid kpi-grid--'+n+'" aria-busy="true" aria-label="Carregando">'+k.repeat(n)+'</div><div class="card" style="height:190px;margin-bottom:16px"><span class="pat-skel" style="width:30%;height:14px"></span><div style="margin-top:14px"><span class="pat-skel" style="width:100%;height:130px"></span></div></div><div class="painel">'+lin.repeat(7)+'</div>';
+}
+function vazioPainel(tit, det, acao){ return '<div class="pat-table__empty" data-state="empty"><div class="pat-table__empty-title">'+tit+'</div><div class="pat-table__empty-detail">'+det+'</div>'+(acao ? '<div style="margin-top:12px">'+acao+'</div>' : '')+'</div>'; }
+
+const pillTit = t => pill(ST[t.status][0], ST[t.status][1], ST[t.status][2]);
+function pillConc(e){ return e.conc === 1 ? pill('Conciliado', '#ECFDF5', '#059669') : e.conc === 'v' ? pill('Com ressalva · valor', '#FFFBEB', '#B45309') : e.conc === 'd' ? pill('Com ressalva · data', '#FFFBEB', '#B45309') : pill('A conciliar', '#EFF6FF', '#2563EB'); }
+function quandoVence(t){
+  if (!aberto(t)) return '';
+  const d = diasAte(t.venc);
+  if (d < 0) return '<span class="venc-tag" style="color:#B91C1C" title="vencido há '+(-d)+' dias">vencido · '+(-d)+' d</span>';
+  if (d === 0) return '<span class="venc-tag" style="color:#B45309">hoje</span>';
+  return '<span class="venc-tag" style="color:#64748B">em '+d+' d</span>';
+}
+const td = (html, plain, cls) => '<td'+(cls ? ' class="'+cls+'"' : '')+(plain ? ' title="'+esc(plain)+'"' : '')+'>'+html+'</td>';
+
+/* Tabela densa: linha de UMA linha (40 px), sem botão; clique/Enter/Espaço abre o detalhe logo abaixo; um aberto por vez */
+function tabela(v, cols, grupos, linha, detalhe){
+  const n = cols.length + 1;
+  let corpo = '';
+  grupos.forEach(g => {
+    if (g.rot) corpo += '<tr class="grupo-row'+(g.cls ? ' '+g.cls : '')+'"><td colspan="'+n+'">'+g.rot+'<small>'+g.itens.length+' '+(g.itens.length === 1 ? (g.um || 'item') : (g.varios || 'itens'))+'</small></td></tr>';
+    g.itens.forEach(x => {
+      const on = S[v].aberta === x.id;
+      corpo += '<tr class="pat-ab-row" tabindex="0" data-linha="'+v+'-'+x.id+'" data-id="'+x.id+'" aria-expanded="'+on+'">'+linha(x)+'<td>'+CHEV+'</td></tr>';
+      if (on) corpo += '<tr class="pat-ab-detail-row"><td class="pat-ab-detail-cell" colspan="'+n+'">'+detalhe(x)+'</td></tr>';
+    });
+  });
+  return '<table class="pat-ab-table"><colgroup>'+cols.map(c => '<col'+(c.w ? ' style="width:'+c.w+'"' : '')+'>').join('')+'<col class="c-chev"></colgroup><thead><tr>'+cols.map(c => '<th scope="col"'+(c.r ? ' class="r"' : '')+'>'+c.rot+'</th>').join('')+'<th scope="col"><span class="sr">Abrir detalhe</span></th></tr></thead><tbody>'+corpo+'</tbody></table>';
+}
+const COLS_TIT = rotParte => [{ rot:'DOCUMENTO', w:'19%' }, { rot:rotParte }, { rot:'VENCIMENTO', w:'15%' }, { rot:'VALOR', w:'12%', r:1 }, { rot:'SALDO EM ABERTO', w:'13%', r:1 }, { rot:'SITUAÇÃO', w:'13%' }];
+const COLS_LANC = [{ rot:'DATA', w:'9%' }, { rot:'DESCRIÇÃO' }, { rot:'CONTA', w:'15%' }, { rot:'MEIO', w:'11%' }, { rot:'VALOR', w:'13%', r:1 }, { rot:'CONCILIAÇÃO', w:'16%' }];
+function linhaTit(t, misto){
+  const di = misto ? '<span class="dir-ic dir-ic--'+(t.dir === 'r' ? 'r' : 'p')+'" title="'+(t.dir === 'r' ? 'A receber' : 'A pagar')+'">'+ic(t.dir === 'r' ? 'arrowUp' : 'arrowDown', 13)+'</span> ' : '';
+  const os = t.os && !misto ? '<span class="doc-os fx" title="Falta no backend: a lista de títulos não traz a OS (financial-title.dto.ts:43-62); só o detalhe">· '+t.os+'</span>' : '';
+  return td(di+'<span class="doc">'+esc(t.doc)+'</span>'+os, t.doc+(t.os ? ' · '+t.os : ''))+td('<b>'+esc(t.parte)+'</b>', t.parte)+td(fDM(t.venc)+quandoVence(t), fData(t.venc))+
+    td('<span class="val">'+brl(t.valor)+'</span>', '', 'r')+td('<span class="val '+(t.dir === 'r' ? 'val--in' : 'val--out')+'">'+brl(saldoT(t))+'</span>', '', 'r')+td(pillTit(t)+(chequePendente(t) ? ' <span title="Cheque aguardando compensação">'+ic('banknote', 13)+'</span>' : ''));
+}
+function linhaLanc(e){
+  return td(fDM(e.data)+' <span class="muted">'+SEM[e.data.getDay()]+'</span>', fData(e.data))+td((e.titulo ? '<span class="muted" title="Baixa de título">'+ic('link', 12)+'</span> ' : '')+esc(e.desc), e.desc)+td(esc(nomeCurto(conta(e.conta))), conta(e.conta).nome)+
+    td(MEIOS[e.meio])+td('<span class="val '+(e.dir === 'in' ? 'val--in' : 'val--out')+'">'+(e.dir === 'in' ? '+' : '−')+brl(e.valor)+'</span>', '', 'r')+td(pillConc(e));
+}
+
+/* ── Detalhe do título (propriedades + ações; a baixa sai daqui) ── */
+const campo = (rot, val) => '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+'</span><span class="pat-ab-detail-val">'+val+'</span></div>';
+function detTitulo(v, t, inline){
+  const rec = t.dir === 'r', sal = saldoT(t);
+  const baixas = t.baixas.map(lancById).filter(Boolean);
+  let col3 = baixas.length ? '<div class="baixas">'+baixas.map(e => '<div class="baixa-it"><span>'+fDM(e.data)+'</span><span>'+MEIOS[e.meio]+' · '+esc(nomeCurto(conta(e.conta)))+(e.por && e.por !== PAPEIS[papel].nome ? ' <small>por '+esc(e.por)+'</small>' : '')+'</span><b>'+brl(e.valor)+'</b></div>').join('')+'</div>' : '<span class="pat-ab-detail-note">Nenhuma baixa registrada.</span>';
+  if (t.cheque) col3 += '<div class="cheque-it"><span>'+ic('banknote', 13)+' Cheque '+t.cheque.num+' · '+esc(t.cheque.banco)+'<small>'+t.cheque.sit+' em '+fDM(t.cheque.em)+(chequePendente(t) ? ' · baixa o título quando compensar' : ' · baixou o título')+'</small></span><b>'+brl(t.cheque.valor)+'</b></div>'+FALTA('o vínculo do cheque ao título e GET /cheques?title_id chegam com o PR #456 (B-SAN3-20), ainda fora da main');
+  let ac = '';
+  if (pode('baixa') && aberto(t) && !(inline && BX && BX.id === t.id && BX.v === v)) ac += '<button type="button" class="pat-btn pat-btn--primary" data-baixa="'+t.id+'">'+ic(rec ? 'arrowUp' : 'arrowDown', 14)+(rec ? 'Registrar recebimento' : 'Registrar pagamento')+'</button>';
+  if (t.os) ac += '<button type="button" class="pat-btn" data-ver-os="'+t.os+'">'+ic('link', 14)+'Ver '+t.os+'</button>';
+  if (t.origem) ac += '<button type="button" class="pat-btn" data-ver-origem="'+esc(t.origem)+'">'+ic('link', 14)+'Ver origem</button>';
+  if (!pode('baixa')) ac += '<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta os títulos e o extrato.</span>';
+  if (pode('baixa') && chequePendente(t)) ac += '<span class="pat-ab-detail-note" style="color:#B45309">'+ic('alert', 13)+' Há um cheque vinculado aguardando compensação: o título baixa sozinho quando ele compensar.</span>';
+  if (pode('baixa') && t.status === 'in_dispute') ac += '<span class="pat-ab-detail-note">Em contestação: registre só o valor acordado com o '+(rec ? 'cliente' : 'fornecedor')+'.</span>';
+  const forma = inline && BX && BX.id === t.id && BX.v === v ? formBaixaInline(t) : '';
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid">'+
+    '<div class="pat-ab-detail-col"><h4>Título</h4>'+campo('Documento', esc(t.doc))+campo(rec ? 'Cliente' : 'Fornecedor', esc(t.parte))+campo('Categoria', esc(t.cat))+campo('Descrição', esc(t.desc))+(t.os ? campo('OS', t.os) : '')+(t.origem ? campo('Origem', esc(t.origem)) : '')+(t.compl ? campo('Complementar de', esc(t.compl)) : '')+'</div>'+
+    '<div class="pat-ab-detail-col"><h4>Valores</h4>'+campo('Valor', '<span class="val">'+brl(t.valor)+'</span>')+campo(rec ? 'Já recebido' : 'Já pago', '<span class="val">'+brl(t.pago)+'</span>')+campo('Saldo em aberto', '<span class="val" style="font-size:14px;color:'+(sal > 0 ? '#0F172A' : '#059669')+'">'+brl(sal)+'</span>')+
+      '<span class="saldo-bar" aria-hidden="true"><b style="width:'+Math.min(100, t.pago/t.valor*100).toFixed(0)+'%"></b></span>'+campo('Vencimento', fData(t.venc)+quandoVence(t))+campo('Situação', pillTit(t))+'</div>'+
+    '<div class="pat-ab-detail-col"><h4>Baixas registradas</h4>'+col3+'</div></div>'+
+    (ac ? '<div class="pat-ab-detail-actions">'+ac+'</div>' : '')+forma+'</div>';
+}
+
+/* ── Detalhe do lançamento (propriedades + conciliação) ── */
+function detLanc(v, e, modo){
+  const t = e.titulo ? byId(e.titulo) : null;
+  const ress = e.conc === 'v' ? 'Valor do extrato diferente (R$ 16.498,40 — tarifa de R$ 1,60 descontada pelo banco)' : e.conc === 'd' ? 'Data do extrato diferente (o banco compensou em 13/10)' : '—';
+  const meio = e.meio === 'check' && t && t.cheque ? 'Cheque — entrou pela compensação do cheque '+t.cheque.num : MEIOS[e.meio];
+  let ac = '';
+  const formAqui = (modo === 'inline' && CC && CC.v === v && CC.id === e.id) || (modo === 'conferencia' && pode('conciliar') && e.conc === 0);
+  if (pode('conciliar') && !formAqui) ac += conciliado(e) ? '<button type="button" class="pat-btn" data-desconc="'+e.id+'">'+ic('undo', 14)+'Desfazer conciliação</button>' : '<button type="button" class="pat-btn pat-btn--primary" data-conciliar="'+e.id+'">'+ic('check', 14)+'Conciliar</button>';
+  if (t) ac += '<button type="button" class="pat-btn" data-ver-tit="'+t.id+'">'+ic('link', 14)+'Ver título '+esc(t.doc)+'</button>';
+  else ac += '<span class="pat-ab-detail-note">Lançamento sem título vinculado.</span>';
+  if (!pode('conciliar')) ac += '<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta o extrato.</span>';
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid">'+
+    '<div class="pat-ab-detail-col"><h4>Lançamento</h4>'+campo('Data', fData(e.data))+campo('Descrição', esc(e.desc))+campo('Categoria', esc(e.cat))+campo('Título', t ? esc(t.doc) : '—')+campo('Registrado por', esc(e.por || '—'))+'</div>'+
+    '<div class="pat-ab-detail-col"><h4>Conta e valor</h4>'+campo('Conta', esc(conta(e.conta).nome))+campo('Meio', esc(meio))+campo('Valor', '<span class="val '+(e.dir === 'in' ? 'val--in' : 'val--out')+'">'+(e.dir === 'in' ? 'entrada +' : 'saída −')+brl(e.valor)+'</span>')+campo('Competência', rotMes(mesKey(e.data)))+'</div>'+
+    '<div class="pat-ab-detail-col"><h4>Conciliação</h4>'+campo('Situação', pillConc(e))+campo('Ref. do extrato', e.ref ? esc(e.ref) : '—')+campo('Conciliado em', e.em ? fData(e.em)+(e.porConc ? ' por '+esc(e.porConc) : '') : '—')+campo('Ressalva', ress)+'</div></div>'+
+    '<div class="pat-ab-detail-actions">'+ac+'</div>'+(formAqui ? formConcInline(v, e, modo) : '')+'</div>';
+}
+
+/* ── Formulários: baixa e conciliação (a mesma regra na janela e no detalhe) ── */
+let BX = null, CC = null, NC = null;
+const novoCid = () => 'baixa-'+Math.random().toString(36).slice(2, 10);
+function alertaHtml(a){ if (!a) return ''; return '<div class="ui-alert ui-alert--'+a.tipo+'" role="'+(a.tipo === 'info' || a.tipo === 'ok' ? 'status' : 'alert')+'">'+(a.spin ? '<span class="spin" aria-hidden="true"></span>' : ic(a.tipo === 'ok' ? 'check' : 'alert', 16))+'<div><b>'+a.titulo+'</b>'+(a.texto || '')+(a.acao || '')+'</div></div>'; }
+function erroCampo(f, k){ return f.erros[k] ? '<span class="form-error" id="err-'+k+'">'+f.erros[k]+'</span>' : ''; }
+function inv(f, k){ return f.erros[k] ? ' aria-invalid="true" aria-describedby="err-'+k+'"' : ''; }
+function camposBaixa(t){
+  const rec = t.dir === 'r', c = BX.campos, dis = BX.fase !== 'form' ? ' disabled' : '';
+  return '<label class="ui-field">Valor (R$)<input class="ui-input" data-form="bx" data-campo="valor" inputmode="decimal" value="'+esc(c.valor)+'"'+dis+inv(BX, 'valor')+' data-foco><small>Padrão: o saldo em aberto. Para baixa parcial, informe um valor menor.</small>'+erroCampo(BX, 'valor')+'</label>'+
+    '<label class="ui-field">Data do '+(rec ? 'recebimento' : 'pagamento')+'<input class="ui-input" type="date" data-form="bx" data-campo="data" value="'+esc(c.data)+'"'+dis+inv(BX, 'data')+'>'+erroCampo(BX, 'data')+'</label>'+
+    '<label class="ui-field">'+(rec ? 'Conta que recebeu' : 'Conta de saída')+'<select class="ui-input" data-form="bx" data-campo="conta"'+dis+inv(BX, 'conta')+'><option value="">Escolha a conta</option>'+CONTAS.filter(k => k.ativa).map(k => '<option value="'+k.id+'"'+(k.id === c.conta ? ' selected' : '')+'>'+esc(k.nome)+'</option>').join('')+'</select>'+erroCampo(BX, 'conta')+'</label>'+
+    '<label class="ui-field">Meio de pagamento<select class="ui-input" data-form="bx" data-campo="meio"'+dis+'>'+MEIOS_BAIXA.map(k => '<option value="'+k+'"'+(k === c.meio ? ' selected' : '')+'>'+MEIOS[k]+'</option>').join('')+'</select></label>'+
+    '<div class="larga meio-nota">'+ic('banknote', 16)+'<div><b>'+(rec ? 'Recebeu em cheque?' : 'Vai pagar com cheque?')+'</b>Cheque não é baixado aqui. Registre o cheque em Cheques, vinculado a este título: o título baixa sozinho quando o cheque compensar, e o mesmo dinheiro não entra duas vezes. <button type="button" class="pat-link" data-cheques>Abrir Cheques</button> '+FALTA('a tela de Cheques chega com o bloco B-SAN3-24; o vínculo cheque → título, com o PR #456')+'</div></div>';
+}
+function formBaixaInline(t){
+  const rec = t.dir === 'r', fin = BX.fase === 'final', env = BX.fase === 'enviando';
+  return '<div class="inline-form" data-form-box="bx"><h4>'+(rec ? 'Registrar recebimento' : 'Registrar pagamento')+' · saldo '+brl(saldoT(t))+'</h4>'+
+    (chequePendente(t) ? '<div class="ui-alert">'+ic('alert', 16)+'<div><b>Há um cheque vinculado aguardando compensação ('+brl(t.cheque.valor)+').</b>Registrar outra baixa agora pode receber o mesmo valor duas vezes.</div></div>' : '')+
+    (fin ? '' : '<div class="form-grade">'+camposBaixa(t)+'</div>')+alertaHtml(BX.alerta)+
+    '<div class="pat-ab-detail-actions">'+(fin ? '<button type="button" class="pat-btn" data-bx-fechar>Fechar</button>'
+      : '<button type="button" class="pat-btn pat-btn--primary" data-bx-enviar'+(env ? ' disabled' : '')+'>'+(env ? '<span class="spin" aria-hidden="true"></span>'+BX.etapa : (BX.tentativa ? 'Tentar de novo' : rec ? 'Registrar recebimento' : 'Registrar pagamento'))+'</button><button type="button" class="pat-btn" data-bx-fechar'+(env ? ' disabled' : '')+'>Cancelar</button>'+(BX.tentativa ? '<span class="pat-ab-detail-note">O reenvio usa a mesma identificação da baixa.</span>' : ''))+'</div></div>';
+}
+function camposConc(){
+  const c = CC.campos, dis = CC.fase !== 'form' ? ' disabled' : '';
+  return '<fieldset style="border:0;display:flex;gap:8px;flex-wrap:wrap"><legend class="sr">Como o lançamento aparece no extrato do banco?</legend>'+
+    [['ok','Bate com o extrato'],['v','Bate, com ressalva de valor'],['d','Bate, com ressalva de data']].map(([k, r]) => '<label class="radio-l" style="margin:0"><input type="radio" name="conc-tipo-'+CC.id+'" data-form="cc" data-campo="tipo" value="'+k+'"'+(c.tipo === k ? ' checked' : '')+dis+(k === 'ok' ? ' data-foco' : '')+'>'+r+'</label>').join('')+'</fieldset>'+
+    '<label class="ui-field" style="max-width:340px">Referência no extrato <small>(opcional — ex.: número do documento)</small><input class="ui-input" data-form="cc" data-campo="ref" maxlength="60" value="'+esc(c.ref)+'"'+dis+'></label>';
+}
+function formConcInline(v, e, modo){
+  if (!CC || CC.id !== e.id || CC.v !== v) CC = { v, id:e.id, modo, campos:{ tipo:'ok', ref:'' }, alerta:null, fase:'form', relido:false };
+  const env = CC.fase === 'enviando', conf = modo === 'conferencia';
+  return '<div class="inline-form" data-form-box="cc"><h4>'+(conf ? 'Conferir com o extrato do banco' : 'Conciliar com o extrato do banco')+'</h4>'+camposConc()+alertaHtml(CC.alerta)+
+    '<div class="pat-ab-detail-actions"><button type="button" class="pat-btn pat-btn--primary" data-cc-enviar'+(env ? ' disabled' : '')+'>'+(env ? '<span class="spin" aria-hidden="true"></span>Conferindo o lançamento…' : conf ? ic('check', 14)+'Conciliar e abrir o próximo' : ic('check', 14)+'Conciliar')+'</button>'+
+    (conf ? '<button type="button" class="pat-btn" data-cc-pular'+(env ? ' disabled' : '')+'>'+ic('skip', 14)+'Pular</button><span class="pat-ab-detail-note">Atalho: <span class="kbd">Enter</span> na linha abre; o botão principal já vem com o foco.</span>'
+      : '<button type="button" class="pat-btn" data-cc-fechar'+(env ? ' disabled' : '')+'>Cancelar</button>')+'</div></div>';
+}
+
+/* ══════════ Peças de BI compartilhadas ══════════ */
+function blocoChip(v, alvo, rot, n, aba){ const on = S[v].alvo === alvo; return '<button type="button" class="conc-chip" data-alvo="'+alvo+'"'+(aba ? ' data-aba="'+aba+'"' : '')+' aria-pressed="'+on+'" aria-label="'+esc(rot+': '+n+' — filtrar a lista')+'">'+rot+' <b>'+n+'</b></button>'; }
+function blocosTitulos(v, list, aba, comCheque){
+  const R = list;
+  let h = '<div class="conc-chips" role="group" aria-label="Blocos de resumo — clique para filtrar">'+
+    blocoChip(v, 'venc', 'Vencidos', R.filter(vencido).length, aba)+blocoChip(v, 'hoje', 'Vencem hoje', R.filter(t => diasAte(t.venc) === 0).length, aba)+
+    blocoChip(v, 'sem7', 'Próximos 7 dias', R.filter(t => diasAte(t.venc) > 0 && diasAte(t.venc) <= 7).length, aba)+blocoChip(v, 'parcial', 'Recebidos ou pagos em parte', R.filter(t => t.status === 'partially_paid').length, aba);
+  if (comCheque) { const n = R.filter(chequePendente).length; h += '<span class="fx" title="Falta no backend: filtrar títulos pelo cheque vinculado depende do PR #456 (GET /cheques?title_id)" style="display:inline-flex">'+blocoChip(v, 'cheque', 'Com cheque a compensar', n, aba)+'</span>'; }
+  return h+'</div>';
+}
+function toolbar(v, abas, contagem){
+  return '<div class="painel__toolbar"><div class="pat-os-tabs" role="tablist" aria-label="Seções">'+abas.map(a => '<button type="button" role="tab" class="pat-os-tab'+(S[v].aba === a[0] ? ' pat-os-tab--active' : '')+'" aria-selected="'+(S[v].aba === a[0])+'" data-tab="'+a[0]+'">'+a[1]+(a[2] != null ? '<span class="n">'+a[2]+'</span>' : '')+'</button>').join('')+'</div>'+
+    '<label class="pat-os-search">'+ic('search', 14)+'<span class="sr">Buscar</span><input type="search" data-busca placeholder="Buscar documento, cliente ou descrição" value="'+esc(S[v].busca)+'"></label><span class="pat-os-count">'+contagem+'</span></div>';
+}
+function rodapeLista(n, rot){ return '<div class="pat-pager"><span class="pat-pager__range">'+(n ? '1–'+n+' de '+n+' '+rot : 'Nada para mostrar')+'</span><div class="pat-pager__nav"><button type="button" class="pat-pager__btn" disabled>Anterior</button><button type="button" class="pat-pager__btn" disabled>Próxima</button></div></div>'; }
+function semResultado(v){ return vazioPainel('Nada para este filtro', 'Remova o filtro ou ajuste a busca para ver mais.', S[v].alvo ? '<button type="button" class="pat-btn" data-limpar>Remover o filtro</button>' : ''); }
+
+/* Fluxo de 6 meses (summary.cashFlow) — clicar o mês filtra o extrato */
+function fluxoSvg(v, f){
+  if (!f.length) return '<div class="sem-mov">Sem lançamentos no período.</div>';
+  const W = 520, H = 150, base = 128, mx = Math.max(...f.map(x => Math.max(x.in, x.out))), gw = W / f.length;
+  let g = '';
+  f.forEach((x, i) => {
+    const al = 'mes:'+x.m, on = S[v].alvo === al && S[v].aba === 'ext', x0 = i*gw, hi = x.in/mx*108, ho = x.out/mx*108;
+    g += '<g role="button" tabindex="0" data-alvo="'+al+'" data-aba="ext" aria-pressed="'+on+'" aria-label="'+esc(rotMes(x.m)+': entradas '+brl(x.in)+', saídas '+brl(x.out)+' — ver o extrato do mês')+'"><title>'+rotMes(x.m)+' · entradas '+brl(x.in)+' · saídas '+brl(x.out)+'</title>'+
+      '<rect class="bg" x="'+(x0+4)+'" y="4" width="'+(gw-8)+'" height="'+(H-4)+'" rx="8" fill="transparent"/>'+
+      '<rect x="'+(x0+gw/2-19)+'" y="'+(base-hi)+'" width="17" height="'+hi+'" rx="3" fill="var(--color-chart-inflow)"/>'+
+      '<rect x="'+(x0+gw/2+2)+'" y="'+(base-ho)+'" width="17" height="'+ho+'" rx="3" fill="var(--color-chart-outflow)"/>'+
+      '<text x="'+(x0+gw/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="11" font-weight="700" fill="'+(x.m === MES_ATUAL ? '#2563EB' : '#64748B')+'">'+MES3[+x.m.slice(5)-1]+(x.m === MES_ATUAL ? ' (até 23)' : '')+'</text></g>';
+  });
+  return '<svg class="fluxo-svg" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Entradas e saídas por mês">'+g+'</svg>';
+}
+function legendaFluxo(){ return '<div class="an-leitura"><span><i class="lg-sw" style="background:var(--color-chart-inflow)"></i> Entradas</span><span><i class="lg-sw" style="background:var(--color-chart-outflow)"></i> Saídas</span><span class="muted">Clique no mês para ver o extrato daquele mês.</span></div>'; }
+
+function semContas(v){ return CON(v).some(c => c.ativa) ? '' : '<div class="pat-banner pat-banner--info" role="status">'+ic('landmark', 14)+'<span>Nenhuma conta cadastrada. A baixa precisa de uma conta (banco, caixa ou carteira digital) para lançar o dinheiro.</span>'+(pode('conta') ? '<button type="button" class="pat-link" data-nova-conta>Cadastrar a primeira conta</button>' : '<span>Peça ao Financeiro para cadastrar.</span>')+'</div>'; }
+
+/* ══════════ OPÇÃO A — Abas do Financeiro ══════════ */
+function renderA(){
+  const v = 'a', st = S.a, el = $('[data-view="a"]');
+  const head = cabecalho('Financeiro', 'Baixas, contas e conciliação', 'Registre recebimentos e pagamentos, acompanhe o saldo de cada conta e concilie com o extrato do banco.', botaoNovaConta(true));
+  const pe = painelEstado(v); if (pe) { el.innerHTML = head+pe; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+esqueleto(6); return; }
+  const R = resumo(v), f = R.fluxo, set = f.length ? f[4] : { in:0, out:0 };
+  const kp = '<div class="kpi-grid kpi-grid--6">'+
+    kpi(v, { alvo:'', aba:'ext', rot:'Saldo em caixa', valor:brl(R.caixa), valorTxt:brl(R.caixa), hint:R.nContas+' contas ativas', ic:'wallet', tile:['#EFF6FF','#2563EB'], tag:['agora','#F1F5F9','#475569'], acao:'ver as contas e o extrato' })+
+    kpi(v, { alvo:'mes:'+MES_ATUAL+':in', aba:'ext', rot:'Entradas em outubro', valor:brl(R.inMes), valorTxt:brl(R.inMes), hint:'setembro: '+brlK(set.in), ic:'arrowUp', tile:['#DCFCE7','#15803D'], tag:['até dia 23','#F1F5F9','#475569'], spark:spark(f.map(x => x.in), '#10B981') })+
+    kpi(v, { alvo:'mes:'+MES_ATUAL+':out', aba:'ext', rot:'Saídas em outubro', valor:brl(R.outMes), valorTxt:brl(R.outMes), hint:'setembro: '+brlK(set.out), ic:'arrowDown', tile:['#FEF2F2','#B91C1C'], tag:['até dia 23','#F1F5F9','#475569'], spark:spark(f.map(x => x.out), '#F87171') })+
+    kpi(v, { alvo:'venc', aba:'rec', rot:'A receber vencido', valor:brl(R.recVcV), valorTxt:brl(R.recVcV), hint:R.recVc.length+' títulos para cobrar ou baixar', ic:'alert', tile:['#FEF2F2','#DC2626'], tag:[R.recVc.length+' títulos','#FEF2F2','#B91C1C'] })+
+    kpi(v, { alvo:'venc', aba:'pag', rot:'A pagar vencido', valor:brl(R.pagVcV), valorTxt:brl(R.pagVcV), hint:R.pagVc.length+' títulos para pagar ou baixar', ic:'clock', tile:['#FFFBEB','#B45309'], tag:[R.pagVc.length+' títulos','#FFFBEB','#B45309'] })+
+    kpi(v, { alvo:'conc:0', aba:'conc', rot:'A conciliar', valor:String(R.aConc), valorTxt:R.aConc+' lançamentos', hint:'valor em R$: '+FX('—', 'o servidor só conta; somar dinheiro no front é proibido'), ic:'checkCircle', tile:['#EFF6FF','#2563EB'], tag:[R.ressV+R.ressD+' com ressalva','#FFFBEB','#B45309'] })+'</div>';
+  const porConta = CON(v).filter(c => c.ativa).map(c => {
+    const L = LAN(v).filter(e => e.conta === c.id), n0 = L.filter(e => e.conc === 0).length, nr = L.filter(e => e.conc === 'v' || e.conc === 'd').length, n1 = L.filter(e => e.conc === 1).length, tot = L.length || 1, al = 'conc:0:'+c.id;
+    return '<button type="button" class="barra-btn" data-alvo="'+al+'" data-aba="conc" aria-pressed="'+(st.alvo === al)+'" aria-label="'+esc(nomeCurto(c)+': '+n0+' a conciliar — ver')+'"><span class="barra-btn__rot"><i style="background:#2563EB"></i>'+esc(nomeCurto(c))+'</span><span class="barra-btn__trilho"><b style="width:'+(n1/tot*100)+'%;background:#22C55E;border-radius:0"></b><b style="width:'+(nr/tot*100)+'%;background:#F59E0B;border-radius:0"></b><b style="width:'+(n0/tot*100)+'%;background:#60A5FA;border-radius:0"></b></span><span class="barra-btn__n">'+n0+'<small>a conciliar</small></span></button>';
+  }).join('') || '<div class="sem-mov">Nenhuma conta cadastrada.</div>';
+  const faixa = '<div class="faixa-a">'+
+    '<div class="an-card"><div class="an-card__title">Entradas × saídas · 6 meses <small>resumo do servidor</small></div>'+fluxoSvg(v, f)+legendaFluxo()+'</div>'+
+    '<div class="an-card"><div class="an-card__title">Conciliação por conta <small>contagem de lançamentos</small></div>'+porConta+
+      '<div class="an-leitura"><span><i class="lg-sw" style="background:#22C55E"></i> Conciliado</span><span><i class="lg-sw" style="background:#F59E0B"></i> Com ressalva</span><span><i class="lg-sw" style="background:#60A5FA"></i> A conciliar</span></div></div></div>';
+
+  const recAb = TIT(v).filter(t => t.dir === 'r' && aberto(t)), pagAb = TIT(v).filter(t => t.dir === 'p' && aberto(t));
+  const abas = [['rec','A receber',recAb.length],['pag','A pagar',pagAb.length],['ext','Contas e extrato',null],['conc','Conciliação',R.aConc]];
+  let intro = '', corpo = '', n = 0, rotN = '';
+  if (st.aba === 'rec' || st.aba === 'pag') {
+    const dir = st.aba === 'rec' ? 'r' : 'p', base = dir === 'r' ? recAb : pagAb;
+    const unico = (st.alvo || '').startsWith('tit:') ? TIT(v).filter(t => t.id === st.alvo.slice(4)) : null;
+    const list = unico || filtraTit(v, base); n = list.length; rotN = 'títulos';
+    intro = blocosTitulos(v, base, st.aba, dir === 'r');
+    corpo = !base.length && !unico ? vazioPainel(vazio(v) ? 'Nenhum título em aberto' : 'Tudo baixado', vazio(v) ? 'Os títulos emitidos aparecem aqui para a baixa.' : 'Não há título em aberto nesta direção.') :
+      !list.length ? semResultado(v) : tabela(v, COLS_TIT(dir === 'r' ? 'CLIENTE' : 'FORNECEDOR'), [{ itens:list }], t => linhaTit(t, false), t => detTitulo(v, t, false));
+  } else {
+    const L = LAN(v);
+    if (st.aba === 'ext') {
+      const K = CON(v).filter(c => c.ativa);
+      intro = K.length ? '<div class="contas" role="group" aria-label="Contas — clique para ver o extrato da conta">'+K.map(c => { const al = 'conta:'+c.id, a0 = L.filter(e => e.conta === c.id && e.conc === 0).length;
+        return '<button type="button" class="conta-btn" data-alvo="'+al+'" aria-pressed="'+(st.alvo === al)+'" aria-label="'+esc(c.nome+': saldo '+brl(saldoConta(c))+' — ver o extrato')+'"><span>'+esc(c.nome)+'</span><b>'+brl(saldoConta(c))+'</b><small>'+KIND[c.kind]+' · '+(a0 ? a0+' a conciliar' : 'tudo conciliado')+'</small></button>'; }).join('')+'</div>' : '';
+    } else {
+      intro = '<div class="conc-chips" role="group" aria-label="Situação da conciliação — clique para filtrar">'+blocoChip(v, 'conc:0', 'A conciliar', R.aConc)+blocoChip(v, 'conc:v', 'Com ressalva · valor', R.ressV)+blocoChip(v, 'conc:d', 'Com ressalva · data', R.ressD)+blocoChip(v, 'conc:1', 'Conciliados', R.conc)+'</div>';
+    }
+    const list = filtraLanc(v, L); n = list.length; rotN = 'lançamentos';
+    corpo = !L.length ? vazioPainel('Nenhuma conta cadastrada', 'Cadastre a primeira conta (banco, caixa ou carteira digital) para registrar baixas e ver o extrato.', botaoNovaConta(true)) :
+      !list.length ? semResultado(v) : tabela(v, COLS_LANC, [{ itens:list }], linhaLanc, e => detLanc(v, e, 'modal'));
+  }
+  el.innerHTML = head+faixaDesatualizado(v)+semContas(v)+kp+faixa+'<div class="painel">'+toolbar(v, abas, n+' '+rotN)+intro+chipFiltro(v)+corpo+rodapeLista(n, rotN)+'</div>';
+}
+
+/* ══════════ OPÇÃO B — Conta em foco ══════════ */
+function ponteSvg(v, c){
+  const W = 470, H = 176, base = 140, ab = c.abertura, en = c.ent, sa = c.sai, sd = saldoConta(c), mx = Math.max(ab + en, 1), y = x => base - x/mx*118;
+  const cols = [
+    { rot:'Abertura', val:ab, y0:ab, y1:0, cor:'#94A3B8' },
+    { rot:'Entradas', val:en, y0:ab + en, y1:ab, cor:'var(--color-chart-inflow)', al:'dir:in', sinal:'+' },
+    { rot:'Saídas', val:sa, y0:ab + en, y1:ab + en - sa, cor:'var(--color-chart-outflow)', al:'dir:out', sinal:'−' },
+    { rot:'Saldo atual', val:sd, y0:sd, y1:0, cor:'#2563EB' }
+  ];
+  const gw = W/4;
+  let g = '';
+  cols.forEach((k, i) => {
+    const x0 = i*gw, top = y(Math.max(k.y0, k.y1)), h = Math.max(2, Math.abs(y(k.y1) - y(k.y0)));
+    const barra = '<rect x="'+(x0+gw/2-26)+'" y="'+top+'" width="52" height="'+h+'" rx="4" fill="'+k.cor+'"/>'+
+      '<text x="'+(x0+gw/2)+'" y="'+(top-6)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#0F172A" font-family="var(--font-mono)">'+(k.sinal || '')+brlK(k.val)+'</text>'+
+      '<text x="'+(x0+gw/2)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B">'+k.rot+'</text>'+
+      (i < 3 ? '<line x1="'+(x0+gw/2+26)+'" x2="'+(x0+gw+gw/2-26)+'" y1="'+y(i === 0 ? ab : i === 1 ? ab + en : ab + en - sa)+'" y2="'+y(i === 0 ? ab : i === 1 ? ab + en : ab + en - sa)+'" stroke="#CBD5E1" stroke-dasharray="3 3"/>' : '');
+    if (k.al) { const on = S[v].alvo === k.al; g += '<g role="button" tabindex="0" data-alvo="'+k.al+'" data-aba="ext" aria-pressed="'+on+'" aria-label="'+esc(k.rot+': '+brl(k.val)+' — ver só '+(k.al === 'dir:in' ? 'as entradas' : 'as saídas')+' no extrato')+'"><title>'+k.rot+' desde a abertura: '+brl(k.val)+'</title><rect class="bg" x="'+(x0+6)+'" y="2" width="'+(gw-12)+'" height="'+(H-2)+'" rx="8" fill="transparent"/>'+barra+'</g>'; }
+    else g += '<g><title>'+k.rot+': '+brl(k.val)+'</title>'+barra+'</g>';
+  });
+  return '<svg class="ponte-svg" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="De onde vem o saldo da conta">'+g+'</svg>';
+}
+function roscaHtml(v, L){
+  const n1 = L.filter(e => e.conc === 1).length, nv = L.filter(e => e.conc === 'v').length, nd = L.filter(e => e.conc === 'd').length, n0 = L.filter(e => e.conc === 0).length, tot = L.length;
+  const C = 2*Math.PI*44; let off = 0;
+  const seg = (n, cor) => { if (!tot || !n) return ''; const len = n/tot*C, s = '<circle cx="60" cy="60" r="44" fill="none" stroke="'+cor+'" stroke-width="16" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 60 60)"/>'; off += len; return s; };
+  const pct = tot ? Math.round((n1 + nv + nd)/tot*100) : 0;
+  const svg = '<svg viewBox="0 0 120 120" role="img" aria-label="'+pct+'% dos lançamentos conciliados"><circle cx="60" cy="60" r="44" fill="none" stroke="#F1F5F9" stroke-width="16"/>'+seg(n1, '#22C55E')+seg(nv + nd, '#F59E0B')+seg(n0, '#60A5FA')+'<text x="60" y="58" text-anchor="middle" font-size="20" font-weight="800" fill="#0F172A">'+pct+'%</text><text x="60" y="74" text-anchor="middle" font-size="9.5" font-weight="700" fill="#64748B">conciliado</text></svg>';
+  const it = (al, cor, rot, n) => '<button type="button" class="barra-btn" data-alvo="'+al+'" data-aba="ext" aria-pressed="'+(S[v].alvo === al)+'" aria-label="'+esc(rot+': '+n+' — filtrar o extrato')+'"><span class="barra-btn__rot"><i style="background:'+cor+'"></i>'+rot+'</span><span class="barra-btn__trilho"><b style="width:'+(tot ? n/tot*100 : 0)+'%;background:'+cor+'"></b></span><span class="barra-btn__n">'+n+'</span></button>';
+  return '<div class="rosca">'+svg+'<div>'+it('conc:0', '#60A5FA', 'A conciliar', n0)+it('conc:v', '#F59E0B', 'Ressalva de valor', nv)+it('conc:d', '#F59E0B', 'Ressalva de data', nd)+it('conc:1', '#22C55E', 'Conciliados', n1)+'</div></div>';
+}
+function mesesContaHtml(v, c){
+  /* valores por conta e mês NÃO existem no servidor: as barras abaixo são ilustrativas (marcadas) */
+  const fat = { bb:1, itau:.55, caixa:.03, cart:.08 }[c.id] || .05;
+  const f = CF.map(x => ({ m:x[0], in:Math.round(x[1]*fat), out:Math.round(x[2]*fat) })).concat([{ m:MES_ATUAL, in:Math.round(120000*fat), out:Math.round(52000*fat) }]);
+  const mx = Math.max(...f.map(x => Math.max(x.in, x.out)), 1);
+  return '<div class="colunas" style="height:96px">'+f.map(x => { const al = 'mes:'+x.m; return '<button type="button" class="coluna-btn" data-alvo="'+al+'" data-aba="ext" aria-pressed="'+(S[v].alvo === al)+'" aria-label="'+esc(rotMes(x.m)+' — ver o extrato do mês nesta conta')+'"><span style="display:flex;gap:2px;align-items:flex-end;height:60px;width:100%;justify-content:center"><i style="height:'+(x.in/mx*60)+'px;background:var(--color-chart-inflow);width:12px"></i><i style="height:'+(x.out/mx*60)+'px;background:var(--color-chart-outflow);width:12px"></i></span><span>'+MES3[+x.m.slice(5)-1]+'</span></button>'; }).join('')+'</div>';
+}
+function renderB(){
+  const v = 'b', st = S.b, el = $('[data-view="b"]');
+  const head = cabecalho('Financeiro · Contas', 'Contas e caixa', 'Uma conta por vez: saldo, extrato, baixas e conciliação no mesmo lugar.', '');
+  const pe = painelEstado(v); if (pe) { el.innerHTML = head+pe; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+'<div class="b-grid"><div class="rail"><span class="pat-skel" style="height:60px"></span><span class="pat-skel" style="height:56px"></span><span class="pat-skel" style="height:56px"></span><span class="pat-skel" style="height:56px"></span></div><div>'+esqueleto(4)+'</div></div>'; return; }
+  const R = resumo(v), K = CON(v);
+  if (!K.length) { el.innerHTML = head+'<div class="state-panel" data-state="empty"><div class="state-panel__icon" style="background:#eff6ff;color:#2563eb">'+ic('landmark', 26)+'</div><div class="state-panel__title">Nenhuma conta cadastrada</div><div class="state-panel__detail">Cadastre a primeira conta (banco, caixa ou carteira digital). As baixas de títulos entram no extrato da conta escolhida.</div>'+botaoNovaConta(true)+'</div>'; return; }
+  if (!conta(st.conta)) st.conta = K[0].id;
+  const c = conta(st.conta), L = LAN(v).filter(e => e.conta === c.id);
+  const rail = '<aside class="rail" aria-label="Contas"><div class="rail__total"><span>Total em caixa</span><b>'+brl(R.caixa)+'</b><small>'+R.nContas+' contas ativas · '+R.aConc+' lançamentos a conciliar</small></div>'+
+    K.map(k => { const a0 = LAN(v).filter(e => e.conta === k.id && e.conc === 0).length;
+      return '<button type="button" class="conta-btn'+(k.ativa ? '' : ' conta-btn--inativa')+'" data-conta-b="'+k.id+'" aria-pressed="'+(k.id === c.id)+'"><span>'+esc(k.nome)+'</span><span class="conta-btn__linha"><b>'+brl(saldoConta(k))+'</b>'+(k.ativa ? '' : pill('Inativa', '#F1F5F9', '#64748B'))+'</span><small>'+KIND[k.kind]+' · '+(a0 ? a0+' a conciliar' : 'tudo conciliado')+'</small></button>'; }).join('')+
+    botaoNovaConta(false)+'</aside>';
+  const ident = c.kind === 'bank' ? esc(c.banco)+' · agência '+esc(c.ag)+' · conta '+esc(c.num) : KIND[c.kind];
+  const cab = '<div class="b-conta-head"><div><h2>'+esc(c.nome)+'</h2><p>'+ident+' · real (BRL)</p></div><div class="saldo"><span>Saldo atual</span><b style="color:'+(saldoConta(c) >= 0 ? '#0F172A' : '#B91C1C')+'">'+brl(saldoConta(c))+'</b></div></div>'+
+    (c.ativa ? '' : '<div class="pat-banner pat-banner--info">'+ic('lock', 14)+'Conta desativada: só consulta. Ela não aparece na baixa.</div>');
+  const topo = '<div class="b-topo"><div class="an-card"><div class="an-card__title">De onde vem o saldo <small>desde a abertura da conta</small></div>'+ponteSvg(v, c)+'<div class="an-leitura"><span>Abertura <b>'+brl(c.abertura)+'</b> + entradas <b style="color:#15803D">'+brl(c.ent)+'</b> − saídas <b style="color:#B91C1C">'+brl(c.sai)+'</b> = <b>'+brl(saldoConta(c))+'</b></span><span class="muted">Clique em Entradas ou Saídas para filtrar o extrato.</span></div></div>'+
+    '<div class="an-card"><div class="an-card__title">Conciliação desta conta <small>contagem de lançamentos</small></div>'+roscaHtml(v, L)+'</div></div>'+
+    '<div class="an-card fx-card" style="margin-bottom:12px" title="Falta no backend: entradas e saídas por conta e por mês"><div class="an-card__title">Movimento por mês nesta conta '+FALTA('o resumo traz o fluxo da organização, não por conta; o saldo (/balance) não recebe período')+' <small>clique no mês para filtrar o extrato</small></div>'+mesesContaHtml(v, c)+legendaFluxo()+'</div>';
+  const titAb = TIT(v).filter(t => aberto(t) || (BX && BX.v === 'b' && BX.id === t.id));
+  const abas = [['ext','Extrato da conta',L.length],['tit','Títulos a baixar',titAb.length]];
+  let intro = '', corpo = '', n = 0, rotN = '';
+  if (st.aba === 'tit') {
+    const unico = (st.alvo || '').startsWith('tit:') ? TIT(v).filter(t => t.id === st.alvo.slice(4)) : null;
+    const list = unico || filtraTit(v, titAb); n = list.length; rotN = 'títulos';
+    intro = '<div class="aba-intro">'+ic('wallet', 14)+'<span>A baixa feita aqui já vem com a conta <b>'+esc(nomeCurto(c))+'</b> escolhida (dá para trocar). <b style="color:#15803D">↑ a receber</b> · <b style="color:#B45309">↓ a pagar</b>.</span></div>'+blocosTitulos(v, titAb, 'tit', true);
+    corpo = !list.length ? (titAb.length ? semResultado(v) : vazioPainel('Nenhum título em aberto', 'Tudo baixado por enquanto.')) : tabela(v, COLS_TIT('CLIENTE OU FORNECEDOR'), [{ itens:list }], t => linhaTit(t, true), t => detTitulo(v, t, c.ativa));
+  } else {
+    const list = filtraLanc(v, L); n = list.length; rotN = 'lançamentos';
+    corpo = !L.length ? vazioPainel('Nenhum lançamento nesta conta', 'As baixas e os lançamentos com esta conta aparecem aqui.') : !list.length ? semResultado(v) : tabela(v, COLS_LANC, [{ itens:list }], linhaLanc, e => detLanc(v, e, 'inline'));
+  }
+  el.innerHTML = head+faixaDesatualizado(v)+'<div class="b-grid">'+rail+'<div style="min-width:0">'+cab+topo+'<div class="painel">'+toolbar(v, abas, n+' '+rotN)+intro+chipFiltro(v)+corpo+rodapeLista(n, rotN)+'</div></div></div>';
+}
+
+/* ══════════ OPÇÃO C — Conferência do caixa ══════════ */
+let CONF = 0;
+function renderC(){
+  const v = 'c', st = S.c, el = $('[data-view="c"]');
+  const head = cabecalho('Financeiro · Rotina do dia', 'Conferência do caixa', 'Sexta-feira, 23/10/2026 · baixe o que venceu, confira o que entrou e saiu e concilie com o banco.', pode('conciliar') && S.c.estado !== 'carregando' ? '<button type="button" class="pat-btn pat-btn--primary" data-comecar>'+ic('play', 14)+'Começar a conferência</button>' : '');
+  const pe = painelEstado(v); if (pe) { el.innerHTML = head+pe; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+esqueleto(4); return; }
+  const R = resumo(v), T = TIT(v), L = LAN(v);
+  const aBaixar = T.filter(t => aberto(t) && diasAte(t.venc) <= 0);
+  const kp = '<div class="kpi-grid kpi-grid--4">'+
+    kpi(v, { alvo:'', aba:'baixar', rot:'Baixar o que venceu', valor:String(aBaixar.length), valorTxt:aBaixar.length+' títulos', hint:brlK(R.recVcV)+' a receber · '+brlK(R.pagVcV)+' a pagar vencidos', ic:'receipt', tile:['#FEF2F2','#DC2626'], tag:['Passo 1','#EFF6FF','#1D4ED8'], acao:'abrir o passo 1' })+
+    kpi(v, { alvo:'', aba:'conciliar', rot:'Conciliar com o banco', valor:String(R.aConc), valorTxt:R.aConc+' lançamentos', hint:'entradas e saídas ainda sem conferência', ic:'checkCircle', tile:['#EFF6FF','#2563EB'], tag:['Passo 2','#EFF6FF','#1D4ED8'], acao:'abrir o passo 2' })+
+    kpi(v, { alvo:'', aba:'ressalvas', rot:'Revisar ressalvas', valor:String(R.ressV + R.ressD), valorTxt:(R.ressV + R.ressD)+' lançamentos', hint:R.ressV+' de valor · '+R.ressD+' de data', ic:'alert', tile:['#FFFBEB','#B45309'], tag:['Passo 3','#EFF6FF','#1D4ED8'], acao:'abrir o passo 3' })+
+    kpi(v, { alvo:'cheque', aba:'baixar', rot:'Cheques a compensar', valor:String(R.chq.recN), valorTxt:R.chq.recN+' cheques', hint:brl(R.chq.recV)+' · baixam os títulos sozinhos', ic:'banknote', tile:['#F5F3FF','#7C3AED'], tag:[R.chq.emiN+' emitido','#F1F5F9','#475569'], fx:'o resumo conta os cheques; listar os títulos de cada cheque depende do PR #456 (GET /cheques?title_id)' })+'</div>';
+  const idades = [['0','até 2 dias',0,2,'#93C5FD'],['3','3 a 7 dias',3,7,'#60A5FA'],['8','8 a 15 dias',8,15,'#F59E0B'],['16','mais de 15',16,9999,'#DC2626']].map(x => ({ k:x[0], rot:x[1], cor:x[4], n:L.filter(e => e.conc === 0 && -diasAte(e.data) >= x[2] && -diasAte(e.data) <= x[3]).length }));
+  const mxI = Math.max(1, ...idades.map(x => x.n));
+  const cardIdade = '<div class="an-card"><div class="an-card__title">Há quanto tempo cada lançamento espera a conciliação <small>contagem</small></div><div class="colunas">'+
+    idades.map(x => { const al = 'idade:'+x.k; return '<button type="button" class="coluna-btn" data-alvo="'+al+'" data-aba="conciliar" aria-pressed="'+(st.alvo === al)+'" aria-label="'+esc(x.n+' lançamentos a conciliar há '+x.rot+' — filtrar')+'"><b>'+x.n+'</b><i style="height:'+(x.n/mxI*90)+'px;background:'+x.cor+'"></i><span>'+x.rot+'</span></button>'; }).join('')+
+    '</div><div class="an-leitura"><span>Quanto mais à direita, mais antigo e mais difícil de achar no extrato do banco.</span></div></div>';
+  const dias = []; for (let i = 13; i >= 0; i--) dias.push(new Date(HOJE.getTime() - i*DIA));
+  const porDia = dias.map(d => { const l = L.filter(e => isoD(e.data) === isoD(d)); return { d, in:soma(l.filter(e => e.dir === 'in'), e => e.valor), out:soma(l.filter(e => e.dir === 'out'), e => e.valor), a0:l.filter(e => e.conc === 0).length, n:l.length }; });
+  const mxD = Math.max(1, ...porDia.map(x => Math.max(x.in, x.out)));
+  const cardDias = '<div class="an-card fx-card" title="Falta no backend: o valor de entradas e saídas por dia"><div class="an-card__title">Últimos 14 dias — entradas e saídas por dia '+FALTA('não há agregado diário; o front não soma dinheiro')+' <small>clique no dia para ver o extrato</small></div>'+
+    '<div class="agenda" style="grid-template-columns:repeat(14,minmax(0,1fr))">'+porDia.map(x => { const al = 'dia:'+isoD(x.d), fds = x.d.getDay() === 0 || x.d.getDay() === 6, hj = isoD(x.d) === HOJE_ISO;
+      return '<button type="button" class="dia-btn'+(fds ? ' dia-btn--fds' : '')+(hj ? ' dia-btn--hoje' : '')+'" data-alvo="'+al+'" data-aba="extrato" aria-pressed="'+(st.alvo === al)+'" aria-label="'+esc(fDM(x.d)+': '+x.n+' lançamentos, '+x.a0+' a conciliar — ver o extrato do dia')+'"><span class="dia-btn__sem">'+(hj ? 'hoje' : SEM[x.d.getDay()])+'</span><span class="dia-btn__d">'+pad(x.d.getDate())+'</span><span class="dia-btn__bars"><i style="height:'+(x.in/mxD*38)+'px;background:var(--color-chart-inflow)"></i><i style="height:'+(x.out/mxD*38)+'px;background:var(--color-chart-outflow)"></i></span><span class="dia-btn__n">'+(x.n ? x.n+' lanç.' : '—')+'</span><span class="dia-btn__liq" style="color:'+(x.a0 ? '#1D4ED8' : '#94A3B8')+'">'+(x.a0 ? '● '+x.a0 : 'ok')+'</span></button>'; }).join('')+'</div><div class="an-leitura"><span><i class="lg-sw" style="background:var(--color-chart-inflow)"></i> Entradas</span><span><i class="lg-sw" style="background:var(--color-chart-outflow)"></i> Saídas</span><span><b style="color:#1D4ED8">●</b> lançamentos a conciliar no dia</span></div></div>';
+  const bi = '<div class="c-grid">'+cardDias+cardIdade+'</div>';
+  const abas = [['baixar','1 · Baixar',aBaixar.length],['conciliar','2 · Conciliar',R.aConc],['ressalvas','3 · Ressalvas',R.ressV + R.ressD],['extrato','Extrato completo',null]];
+  let intro = '', corpo = '', n = 0, rotN = '';
+  if (st.aba === 'baixar') {
+    const unico = (st.alvo || '').startsWith('tit:') ? T.filter(t => t.id === st.alvo.slice(4)) : null;
+    const base = st.alvo === 'cheque' ? T.filter(aberto) : T.filter(t => aberto(t) && diasAte(t.venc) <= 7);
+    const list = unico || filtraTit(v, base); n = list.length; rotN = 'títulos';
+    intro = '<div class="aba-intro">'+ic('receipt', 14)+'<span>Títulos vencidos, de hoje e dos próximos 7 dias, a receber e a pagar juntos. <b style="color:#15803D">↑ a receber</b> · <b style="color:#B45309">↓ a pagar</b>. Abra a linha para registrar a baixa.</span></div>';
+    const g = unico ? [{ itens:list }] : [
+      { rot:'Vencidos', cls:'grupo-row--venc', itens:list.filter(vencido), um:'título', varios:'títulos' },
+      { rot:'Vencem hoje', cls:'grupo-row--hoje', itens:list.filter(t => diasAte(t.venc) === 0), um:'título', varios:'títulos' },
+      { rot:'Próximos dias', itens:list.filter(t => diasAte(t.venc) > 0), um:'título', varios:'títulos' }].filter(x => x.itens.length);
+    corpo = !list.length ? (base.length ? semResultado(v) : vazioPainel('Nada para baixar', vazio(v) ? 'Os títulos emitidos aparecem aqui no vencimento.' : 'Nenhum título vence até a próxima semana.')) : tabela(v, COLS_TIT('CLIENTE OU FORNECEDOR'), g, t => linhaTit(t, true), t => detTitulo(v, t, false));
+  } else {
+    let base = st.aba === 'conciliar' ? L.filter(e => e.conc === 0) : st.aba === 'ressalvas' ? L.filter(e => e.conc === 'v' || e.conc === 'd') : L;
+    const list = filtraLanc(v, base); n = list.length; rotN = 'lançamentos';
+    if (st.aba === 'conciliar') {
+      const tot = CONF + R.aConc;
+      intro = '<div class="aba-intro"><span class="conf-prog">Conferidos nesta sessão: '+CONF+' de '+tot+'<span class="saldo-bar" aria-hidden="true"><b style="width:'+(tot ? CONF/tot*100 : 0)+'%"></b></span></span><span>Abra o lançamento, compare com o extrato do banco e concilie — o próximo abre sozinho.</span></div>';
+      const dd = [...new Set(list.map(e => isoD(e.data)))];
+      const g = dd.map(k => { const d = new Date(k+'T12:00'); return { rot:SEM_L[d.getDay()]+', '+fData(d), itens:list.filter(e => isoD(e.data) === k), um:'lançamento', varios:'lançamentos' }; });
+      corpo = !list.length ? (base.length ? semResultado(v) : vazioPainel(L.length ? 'Tudo conciliado' : 'Nenhum lançamento', L.length ? 'Não há lançamento esperando conferência.' : 'Cadastre uma conta e registre a primeira baixa.', L.length ? '' : botaoNovaConta(true))) : tabela(v, COLS_LANC, g, linhaLanc, e => detLanc(v, e, 'conferencia'));
+    } else {
+      if (st.aba === 'ressalvas') intro = '<div class="aba-intro">'+ic('alert', 14)+'<span>Conciliados com ressalva: bateram no extrato, mas com valor ou data diferentes. Confira e, se for o caso, desfaça a conciliação.</span></div>';
+      corpo = !list.length ? (base.length ? semResultado(v) : vazioPainel(st.aba === 'ressalvas' ? 'Nenhuma ressalva' : 'Nenhum lançamento', st.aba === 'ressalvas' ? 'Nenhum lançamento foi conciliado com ressalva.' : 'Cadastre uma conta e registre a primeira baixa.')) : tabela(v, COLS_LANC, [{ itens:list }], linhaLanc, e => detLanc(v, e, 'modal'));
+    }
+  }
+  el.innerHTML = head+faixaDesatualizado(v)+semContas(v)+kp+bi+'<div class="painel">'+toolbar(v, abas, n+' '+rotN)+intro+chipFiltro(v)+corpo+rodapeLista(n, rotN)+'</div>';
+}
+
+/* ══════════ Janela (Modal) de tamanho fixo — só o corpo rola ══════════ */
+let M = null;
+function abrirModal(tipo, v){
+  M = { tipo, v, retorno:document.activeElement };
+  $('#ov').hidden = false; desenharModal();
+  setTimeout(() => { const f = $('#mbx [data-foco]') || $('#mbx-corpo input, #mbx-corpo select'); if (f) f.focus(); }, 0);
+}
+function fecharModal(forcar){
+  if (!M) return;
+  if (!forcar && ((M.tipo === 'baixa' && BX && BX.fase === 'enviando') || (M.tipo === 'conc' && CC && CC.fase === 'enviando'))) return;
+  const ret = M.retorno, tipo = M.tipo;
+  $('#ov').hidden = true; M = null;
+  if (tipo === 'baixa') BX = null; if (tipo === 'conc') CC = null; if (tipo === 'conta') NC = null;
+  render();
+  if (ret && document.body.contains(ret)) ret.focus(); else { const r = $('[data-view="'+opcao+'"] .pat-ab-row[aria-expanded="true"]'); if (r) r.focus(); }
+}
+function resumoTitulo(t){
+  const rec = t.dir === 'r';
+  return '<div class="resumo-tit"><div class="top">'+esc(t.doc)+' · '+esc(t.parte)+'<span>'+(t.os ? t.os+' · ' : '')+'vence '+fData(t.venc)+'</span></div><div class="c"><span>Valor</span><b>'+brl(t.valor)+'</b></div><div class="c"><span>'+(rec ? 'Já recebido' : 'Já pago')+'</span><b>'+brl(t.pago)+'</b></div><div class="c"><span>Saldo em aberto</span><b style="color:#1D4ED8">'+brl(saldoT(t))+'</b></div><div class="c"><span>Situação</span><b style="font-family:inherit">'+pillTit(t)+'</b></div></div>';
+}
+function desenharModal(){
+  if (!M) return;
+  const corpo = $('#mbx-corpo'), rod = $('#mbx-rodape');
+  if (M.tipo === 'baixa') {
+    const t = byId(BX.id), rec = t.dir === 'r', env = BX.fase === 'enviando', fin = BX.fase === 'final';
+    $('#mbx-t').textContent = rec ? 'Registrar recebimento' : 'Registrar pagamento';
+    corpo.innerHTML = resumoTitulo(t)+(chequePendente(t) ? '<div class="ui-alert" style="margin:0 0 14px">'+ic('alert', 16)+'<div><b>Há um cheque vinculado aguardando compensação ('+brl(t.cheque.valor)+').</b>O título baixa sozinho quando o cheque compensar. Registrar outra baixa agora pode receber o mesmo valor duas vezes.</div></div>' : '')+
+      (fin ? '' : '<div class="form-grade" data-form-box="bx">'+camposBaixa(t)+'<label class="ui-field larga">Observação <small>(opcional)</small><textarea class="ui-input" data-form="bx" data-campo="obs" maxlength="280" rows="2"'+(env ? ' disabled' : '')+'>'+esc(BX.campos.obs)+'</textarea></label></div>')+alertaHtml(BX.alerta);
+    rod.innerHTML = fin ? '<span class="esq">A janela pode ser fechada.</span><button type="button" class="pat-btn pat-btn--primary" data-fechar data-foco>Fechar</button>'
+      : '<span class="esq">'+(BX.tentativa ? 'O reenvio usa a mesma identificação da baixa.' : 'Lança no extrato da conta escolhida, como “a conciliar”.')+'</span><button type="button" class="pat-btn" data-fechar'+(env ? ' disabled' : '')+'>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-enviar'+(env ? ' disabled' : '')+'>'+(env ? '<span class="spin" aria-hidden="true"></span>'+BX.etapa : (BX.tentativa ? 'Tentar de novo' : rec ? 'Registrar recebimento' : 'Registrar pagamento'))+'</button>';
+  } else if (M.tipo === 'conc') {
+    const e = lancById(CC.id), env = CC.fase === 'enviando';
+    $('#mbx-t').textContent = 'Conciliar lançamento';
+    corpo.innerHTML = '<div class="resumo-tit"><div class="top">'+esc(e.desc)+'</div><div class="c"><span>Data</span><b>'+fDM(e.data)+'</b></div><div class="c"><span>Conta</span><b style="font-family:inherit;font-size:12px">'+esc(nomeCurto(conta(e.conta)))+'</b></div><div class="c"><span>Meio</span><b style="font-family:inherit;font-size:12px">'+MEIOS[e.meio]+'</b></div><div class="c"><span>Valor</span><b style="color:'+(e.dir === 'in' ? '#15803D' : '#B91C1C')+'">'+(e.dir === 'in' ? '+' : '−')+brl(e.valor)+'</b></div></div>'+
+      '<p class="ui-field" style="margin-bottom:8px">Como o lançamento aparece no extrato do banco?</p>'+camposConc()+alertaHtml(CC.alerta);
+    rod.innerHTML = '<button type="button" class="pat-btn" data-fechar'+(env ? ' disabled' : '')+'>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-enviar'+(env ? ' disabled' : '')+'>'+(env ? '<span class="spin" aria-hidden="true"></span>Conferindo o lançamento…' : CC.relido && cenarioConc === 'outro' ? 'Conciliar mesmo assim' : 'Conciliar')+'</button>';
+  } else {
+    const c = NC.campos, banco = c.kind === 'bank';
+    $('#mbx-t').textContent = 'Nova conta';
+    corpo.innerHTML = '<div class="form-grade">'+
+      '<label class="ui-field larga">Nome da conta<input class="ui-input" data-form="nc" data-campo="nome" maxlength="120" value="'+esc(c.nome)+'"'+inv(NC, 'nome')+' data-foco><small>Como aparece na baixa e no extrato. Ex.: “Sicredi · c/c 22.310-4”.</small>'+erroCampo(NC, 'nome')+'</label>'+
+      '<label class="ui-field">Tipo<select class="ui-input" data-form="nc" data-campo="kind">'+Object.entries(KIND).map(([k, r]) => '<option value="'+k+'"'+(k === c.kind ? ' selected' : '')+'>'+r+'</option>').join('')+'</select></label>'+
+      '<label class="ui-field">Saldo de abertura (R$)<input class="ui-input" data-form="nc" data-campo="abertura" inputmode="decimal" value="'+esc(c.abertura)+'"'+inv(NC, 'abertura')+'><small>O saldo no dia do cadastro. Não pode ser negativo.</small>'+erroCampo(NC, 'abertura')+'</label>'+
+      (banco ? '<label class="ui-field">Banco<input class="ui-input" data-form="nc" data-campo="banco" maxlength="120" value="'+esc(c.banco)+'"></label><label class="ui-field">Agência<input class="ui-input" data-form="nc" data-campo="ag" maxlength="20" value="'+esc(c.ag)+'"></label><label class="ui-field">Número da conta<input class="ui-input" data-form="nc" data-campo="num" maxlength="30" value="'+esc(c.num)+'"></label>' : '')+
+      '<label class="ui-field larga">Observação <small>(opcional)</small><textarea class="ui-input" data-form="nc" data-campo="obs" rows="2" maxlength="280">'+esc(c.obs)+'</textarea></label></div>'+
+      '<div class="ui-alert ui-alert--info">'+ic('alert', 16)+'<div><b>Moeda: real (BRL).</b>Nesta versão as contas são todas em real.</div></div>'+alertaHtml(NC.alerta);
+    rod.innerHTML = '<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-enviar>Cadastrar conta</button>';
+  }
+}
+
+/* ══════════ Baixa: POST /financial-titles/:id/pay (financial_entries:create) ══════════ */
+function iniciarBaixa(v, id){
+  const cb = conta(S.b.conta), t = byId(id), inline = v === 'b' && !!cb && cb.ativa;
+  BX = { v, id, inline, campos:{ valor:fmtNum(saldoT(t)), data:HOJE_ISO, conta:inline && cb && cb.ativa ? cb.id : 'bb', meio:t.dir === 'r' ? 'pix' : 'boleto', obs:'' }, erros:{}, alerta:null, fase:'form', cid:novoCid(), tentativa:0, etapa:'', lanc:null };
+  if (inline) { render(); focar('[data-view="b"] [data-form-box="bx"] [data-foco]'); }
+  else abrirModal('baixa', v);
+}
+function redesenharBaixa(){ if (!BX) return; if (BX.inline) render(); else { render(); desenharModal(); } }
+function focarBaixa(){ const sel = BX && BX.inline ? '[data-view="b"] [data-form-box="bx"] ' : '#mbx '; const f = $(sel+'[aria-invalid="true"]') || $(sel+'.ui-alert') || $(sel+'[data-bx-enviar], '+sel+'[data-enviar], '+sel+'[data-fechar]'); if (f) { if (f.classList.contains('ui-alert')) f.setAttribute('tabindex', '-1'); f.focus(); } }
+function aplicarBaixa(t, val, c, por){
+  const e = novoLanc({ data:new Date(c.data+'T12:00'), dir:t.dir === 'r' ? 'in' : 'out', valor:val, conta:c.conta, meio:c.meio, conc:0, titulo:t.id, cat:t.cat, desc:(t.dir === 'r' ? 'Recebimento ' : 'Pagamento ')+t.doc+' · '+t.parte, por:por || PAPEIS[papel].nome });
+  LANC.sort((a, b) => b.data - a.data || (a.id < b.id ? 1 : -1));
+  const k = conta(c.conta); if (e.dir === 'in') k.ent = r2(k.ent + val); else k.sai = r2(k.sai + val);
+  t.pago = r2(t.pago + val); t.baixas.push(e.id); t.status = saldoT(t) <= 0 ? 'paid' : 'partially_paid';
+  return e;
+}
+function enviarBaixa(){
+  if (!BX || BX.fase !== 'form') return;
+  const t = byId(BX.id), c = BX.campos, e = {}, val = parseBR(c.valor);
+  if (!Number.isFinite(val) || val <= 0) e.valor = 'Informe um valor maior que zero.';
+  else if (val > saldoT(t)) e.valor = 'O valor passa do saldo em aberto ('+brl(saldoT(t))+').';
+  if (!c.data) e.data = 'Informe a data.';
+  if (!c.conta) e.conta = 'Escolha a conta.';
+  BX.erros = e;
+  if (Object.keys(e).length) { redesenharBaixa(); focarBaixa(); return; }
+  BX.fase = 'enviando'; BX.etapa = 'Registrando…'; BX.alerta = null; redesenharBaixa();
+  const cen = cenario, rec = t.dir === 'r';
+  setTimeout(() => {
+    if (!BX) return;
+    if (cen === 'ok') { const l = aplicarBaixa(t, val, c); BX.lanc = l.id; BX.fase = 'final';
+      BX.alerta = { tipo:'ok', titulo:(rec ? 'Recebimento' : 'Pagamento')+' de '+brl(val)+' registrado.', texto:'O título ficou '+ST[t.status][0]+'. O lançamento entrou no extrato de '+esc(nomeCurto(conta(c.conta)))+' como “a conciliar”. ', acao:'<button type="button" class="pat-link" data-ir-extrato="'+l.id+'">Ver no extrato</button>' };
+      redesenharBaixa(); focarBaixa(); toast((rec ? 'Recebimento' : 'Pagamento')+' registrado.'); return; }
+    if (cen === 'rede-gravou' || (cen === 'duplicado' && BX.tentativa === 0)) BX.lanc = aplicarBaixa(t, val, c).id;
+    BX.etapa = 'Conferindo o título…'; redesenharBaixa();
+    setTimeout(() => posConferencia(t, val, cen), 650);
+  }, 650);
+}
+function posConferencia(t, val, cen){
+  if (!BX) return;
+  const rec = t.dir === 'r', fim = (tipo, titulo, texto, acao) => { BX.fase = 'final'; BX.alerta = { tipo, titulo, texto, acao }; };
+  const volta = (titulo, texto) => { BX.fase = 'form'; BX.tentativa++; BX.alerta = { tipo:'danger', titulo, texto }; };
+  if (cen === 'rede-gravou' || cen === 'duplicado') fim('info', 'Este '+(rec ? 'recebimento' : 'pagamento')+' já foi registrado.', 'A conexão caiu depois que o servidor gravou. Conferimos o título: o '+(rec ? 'recebido' : 'pago')+' agora é '+brl(t.pago)+'. Nada foi lançado em dobro — confira o histórico de baixas. ', BX.lanc ? '<button type="button" class="pat-link" data-ir-extrato="'+BX.lanc+'">Ver no extrato</button>' : '');
+  else if (cen === 'ja-pago') { if (aberto(t)) aplicarBaixa(t, saldoT(t), { data:HOJE_ISO, conta:'bb', meio:'pix' }, 'Thiago Andrade'); fim('danger', 'Este título já está pago.', 'Thiago Andrade registrou a baixa às 09:58. Nada foi lançado agora.'); }
+  else if (cen === 'cancelado') { t.status = 'cancelled'; fim('danger', 'Este título foi cancelado.', 'Título cancelado não aceita baixa. Nada foi lançado.'); }
+  else if (cen === 'acima') volta('O valor passa do saldo em aberto.', 'Conferimos o título: o saldo agora é '+brl(saldoT(t))+'. Ajuste o valor e tente de novo.');
+  else if (cen === 'cheque') volta('Cheque não é aceito na baixa.', 'O servidor recusou o meio “Cheque”. Registre o cheque em Cheques, vinculado ao título: ele baixa o título quando compensar. Nada foi lançado.');
+  else if (cen === 'periodo') volta('A competência de outubro/2026 está fechada.', 'Baixas com data de outubro são recusadas até a competência ser reaberta. Use a data de um mês aberto ou peça a reabertura. Nada foi lançado.');
+  else if (cen === 'conta') { volta('A conta escolhida foi desativada.', 'Escolha outra conta e tente de novo. Nada foi lançado.'); BX.erros.conta = 'Conta desativada — escolha outra.'; }
+  else volta('Sem conexão — nada foi gravado.', 'Conferimos o título: o saldo continua '+brl(saldoT(t))+'. Tente de novo; o reenvio usa a mesma identificação da baixa.');
+  redesenharBaixa(); focarBaixa();
+}
+
+/* ══════════ Conciliação: PATCH /financial-entries/:id/reconcile (financial_entries:update) ══════════ */
+function iniciarConc(v, id){
+  const modal = v === 'a' || (v === 'c' && S.c.aba !== 'conciliar');
+  CC = { v, id, modo:modal ? 'modal' : 'inline', campos:{ tipo:'ok', ref:'' }, alerta:null, fase:'form', relido:false };
+  if (modal) abrirModal('conc', v); else { render(); focar('[data-view="'+v+'"] [data-form-box="cc"] [data-foco]'); }
+}
+function redesenharConc(){ render(); if (M && M.tipo === 'conc') desenharModal(); }
+function enviarConc(){
+  if (!CC || CC.fase !== 'form') return;
+  const e = lancById(CC.id), cen = cenarioConc;
+  CC.fase = 'enviando'; CC.alerta = null; redesenharConc();
+  setTimeout(() => {
+    if (!CC) return;
+    if (!CC.relido && cen === 'mudou') { CC.relido = true; CC.fase = 'form'; e.desc = e.desc.replace(/ \(descrição corrigida\)$/, '')+' (descrição corrigida)';
+      CC.alerta = { tipo:'aviso', titulo:'O lançamento mudou desde que você abriu.', texto:'Thiago Andrade corrigiu a descrição às 09:41. Confira os dados e concilie de novo.' }; redesenharConc(); focarConc(); return; }
+    if (!CC.relido && cen === 'outro') { CC.relido = true; CC.fase = 'form';
+      CC.alerta = { tipo:'info', titulo:'Thiago Andrade já conciliou este lançamento às 09:12.', texto:'Conciliar de novo troca a conferência e o carimbo para você. Se não precisa mudar nada, cancele.' }; redesenharConc(); focarConc(); return; }
+    const tipo = CC.campos.tipo, modo = CC.modo, v = CC.v;
+    e.conc = tipo === 'ok' ? 1 : tipo; e.ref = CC.campos.ref.trim() || 'EXT '+pad(e.data.getDate())+pad(e.data.getMonth()+1)+'-'+e.id.slice(1); e.em = HOJE; e.porConc = PAPEIS[papel].nome;
+    const msg = tipo === 'ok' ? 'Lançamento conciliado.' : 'Conciliado com ressalva de '+(tipo === 'v' ? 'valor' : 'data')+'.';
+    if (modo === 'modal') { CC = null; fecharModal(true); toast(msg); return; }
+    CC = null;
+    if (v === 'c' && S.c.aba === 'conciliar') { CONF++; seguirConferencia(e.id); toast(msg+' Abrindo o próximo…'); return; }
+    render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+e.id+'"]'); toast(msg);
+  }, 650);
+}
+function focarConc(){ const f = $('#mbx .ui-alert') || $('[data-view="'+opcao+'"] [data-form-box="cc"] .ui-alert'); if (f) { f.setAttribute('tabindex', '-1'); f.focus(); } }
+function proximoAConciliar(depoisDe){
+  const lista = filtraLanc('c', LAN('c').filter(e => e.conc === 0));
+  const dd = [...new Set(lista.map(e => isoD(e.data)))], ordem = dd.flatMap(k => lista.filter(e => isoD(e.data) === k));
+  return ordem[0] && ordem[0].id === depoisDe ? ordem[1] : ordem.find(e => e.id !== depoisDe);
+}
+function seguirConferencia(deId){
+  const nx = proximoAConciliar(deId);
+  S.c.aberta = nx ? nx.id : null; render();
+  if (nx) focar('[data-view="c"] [data-cc-enviar]'); else { focar('[data-view="c"] .pat-os-tab--active'); toast('Conferência concluída: nada mais a conciliar.'); }
+}
+function pularConferencia(){
+  if (!CC) return; const id = CC.id; CC = null;
+  const lista = filtraLanc('c', LAN('c').filter(e => e.conc === 0)), dd = [...new Set(lista.map(e => isoD(e.data)))], ordem = dd.flatMap(k => lista.filter(e => isoD(e.data) === k));
+  const i = ordem.findIndex(e => e.id === id), nx = ordem[(i + 1) % ordem.length];
+  S.c.aberta = nx && nx.id !== id ? nx.id : null; render(); focar('[data-view="c"] [data-cc-enviar]');
+}
+function desconciliar(id){
+  const e = lancById(id); if (!e || !pode('conciliar')) return;
+  e.conc = 0; e.ref = null; e.em = null; e.porConc = null; render(); focar('[data-view="'+opcao+'"] [data-linha="'+opcao+'-'+id+'"]');
+  toast('Conciliação desfeita: o lançamento voltou para “a conciliar”.');
+}
+
+/* ══════════ Nova conta: POST /financial-accounts (financial_accounts:create) ══════════ */
+function enviarConta(){
+  const c = NC.campos, e = {}, ab = parseBR(c.abertura || '0');
+  if (!c.nome.trim()) e.nome = 'Informe o nome da conta.';
+  if (!Number.isFinite(ab) || ab < 0) e.abertura = 'Informe um valor igual ou maior que zero.';
+  NC.erros = e; NC.alerta = null;
+  if (!Object.keys(e).length && CONTAS.some(k => k.ativa && k.nome.trim().toLowerCase() === c.nome.trim().toLowerCase())) NC.alerta = { tipo:'danger', titulo:'Já existe uma conta ativa com esse nome.', texto:'Use outro nome — por exemplo, com o número da conta.' };
+  if (Object.keys(e).length || NC.alerta) { desenharModal(); const f = $('#mbx [aria-invalid="true"]') || $('#mbx .ui-alert--danger'); if (f) { f.setAttribute('tabindex', '-1'); f.focus(); } return; }
+  const id = 'n'+(SEQ++);
+  CONTAS.push({ id, nome:c.nome.trim(), kind:c.kind, banco:c.banco, ag:c.ag, num:c.num, abertura:ab, ent:0, sai:0, ativa:true });
+  if (S.b.estado === 'vazio') S.b.estado = 'normal';
+  S.b.conta = id; const nome = c.nome.trim(); fecharModal(true); toast('Conta “'+nome+'” cadastrada.');
+}
+
+/* ══════════ Navegação entre peças ══════════ */
+function irTitulo(v, id){
+  const t = byId(id); if (!t) return;
+  S[v].aba = v === 'a' ? (t.dir === 'r' ? 'rec' : 'pag') : v === 'b' ? 'tit' : 'baixar';
+  S[v].alvo = 'tit:'+id; S[v].aberta = id; S[v].busca = ''; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]');
+}
+function irExtrato(lid){
+  const e = lancById(lid), v = opcao; if (!e) return;
+  if (M) { const r = M; M = null; $('#ov').hidden = true; if (r.tipo === 'baixa') BX = null; }
+  BX = null;
+  if (v === 'a') { S.a.aba = 'ext'; S.a.alvo = null; }
+  else if (v === 'b') { S.b.aba = 'ext'; S.b.conta = e.conta; S.b.alvo = null; }
+  else { S.c.aba = 'conciliar'; S.c.alvo = null; }
+  S[v].busca = ''; S[v].aberta = lid; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+lid+'"]');
+}
+
+/* ══════════ Render geral, avisos e eventos ══════════ */
+function focar(sel){ setTimeout(() => { const el = $(sel); if (el) el.focus(); }, 0); }
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4000); }
+function render(){
+  renderNav();
+  ['a', 'b', 'c'].forEach(v => { $('[data-view="'+v+'"]').style.display = v === opcao ? '' : 'none'; });
+  ({ a:renderA, b:renderB, c:renderC })[opcao]();
+}
+function marcar(attr, val){ $$('[data-'+attr+']').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-'+attr) === val))); }
+function viewDe(el){ const w = el.closest('[data-view]'); return w ? w.getAttribute('data-view') : null; }
+function alternarLinha(v, id){
+  const st = S[v]; st.aberta = st.aberta === id ? null : id;
+  if (BX && BX.inline && BX.id !== st.aberta) BX = null;
+  if (CC && CC.modo !== 'modal' && CC.id !== st.aberta) CC = null;
+  render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]');
+}
+function aplicarAlvo(v, el){
+  const st = S[v], alvo = el.getAttribute('data-alvo') || null, aba = el.getAttribute('data-aba');
+  const mesmaAba = !aba || st.aba === aba;
+  if (aba) st.aba = aba;
+  st.alvo = mesmaAba && st.alvo === alvo ? (v === 'a' && st.aba === 'conc' ? 'conc:0' : null) : alvo;
+  st.aberta = null; BX = null; CC = null; render();
+  const sel = el.tagName.toLowerCase() === 'g' ? '[data-view="'+v+'"] g[data-alvo="'+(alvo || '')+'"]' : '[data-view="'+v+'"] [data-alvo="'+(alvo || '')+'"]'+(aba ? '[data-aba="'+aba+'"]' : '');
+  focar(sel);
+}
+
+document.addEventListener('click', ev => {
+  const q = s => ev.target.closest(s);
+  let el;
+  if ((el = q('[data-opcao]'))) { opcao = el.getAttribute('data-opcao'); marcar('opcao', opcao); BX = CC = null; $('#banner-tag').textContent = 'Baixa, contas e conciliação · Opção '+opcao.toUpperCase(); marcar('estado', S[opcao].estado); render(); renderReview(); return; }
+  if ((el = q('[data-estado]'))) { S[opcao].estado = el.getAttribute('data-estado'); marcar('estado', S[opcao].estado); BX = CC = null; render(); return; }
+  if ((el = q('[data-papel]'))) { papel = el.getAttribute('data-papel'); marcar('papel', papel); BX = CC = null; render(); return; }
+  if ((el = q('[data-cenario]'))) { cenario = el.getAttribute('data-cenario'); marcar('cenario', cenario); return; }
+  if ((el = q('[data-conc-cenario]'))) { cenarioConc = el.getAttribute('data-conc-cenario'); marcar('conc-cenario', cenarioConc); return; }
+  if ((el = q('[data-marcas]'))) { const on = document.body.classList.toggle('sem-marcas'); el.setAttribute('aria-pressed', String(on)); return; }
+  if (q('[data-restaurar]')) { iniciarDados(); CONF = 0; ['a', 'b', 'c'].forEach(v => { S[v] = novoEstado(v); }); BX = CC = NC = null; marcar('estado', 'normal'); render(); toast('Dados de exemplo restaurados.'); return; }
+  if ((el = q('#rv-recolher'))) { const c = $('#rv-corpo'), ab = c.hidden; c.hidden = !ab; el.setAttribute('aria-expanded', String(ab)); el.textContent = ab ? 'Recolher notas' : 'Mostrar notas'; return; }
+  if (q('#ov') && !q('#mbx')) { fecharModal(); return; }
+  if (q('#mbx [data-fechar]')) { fecharModal(); return; }
+  if (q('#mbx [data-enviar]')) { if (M.tipo === 'baixa') enviarBaixa(); else if (M.tipo === 'conc') enviarConc(); else enviarConta(); return; }
+  if ((el = q('[data-ir-extrato]'))) { irExtrato(el.getAttribute('data-ir-extrato')); return; }
+  if (q('[data-cheques]')) { toast('Abre Cheques para registrar o cheque vinculado ao título. A tela de Cheques chega com o bloco B-SAN3-24.'); return; }
+  if ((el = q('[data-ver-os]'))) { toast('Abre a '+el.getAttribute('data-ver-os')+' (fora desta maquete).'); return; }
+  if ((el = q('[data-ver-origem]'))) { toast('Abre a origem: '+el.getAttribute('data-ver-origem')+' (fora desta maquete).'); return; }
+  if (q('[data-remun]')) { toast('Abre Remunerações (fora desta maquete).'); return; }
+  if ((el = q('[data-menu]'))) { ev.preventDefault(); toast(el.getAttribute('data-menu')+' fica fora desta maquete.'); return; }
+  const v = viewDe(ev.target);
+  if (!v) return;
+  if (q('[data-tentar]')) { S[v].estado = 'normal'; marcar('estado', 'normal'); render(); toast('Dados atualizados.'); return; }
+  if (q('[data-nova-conta]')) { NC = { campos:{ nome:'', kind:'bank', banco:'', ag:'', num:'', abertura:'0,00', obs:'' }, erros:{}, alerta:null }; abrirModal('conta', v); return; }
+  if (q('[data-comecar]')) { S.c.aba = 'conciliar'; S.c.alvo = null; S.c.busca = ''; const nx = proximoAConciliar(null); S.c.aberta = nx ? nx.id : null; CC = null; render(); focar(nx ? '[data-view="c"] [data-cc-enviar]' : '[data-view="c"] .pat-os-tab--active'); return; }
+  if ((el = q('[data-tab]'))) { const st = S[v], t = el.getAttribute('data-tab'); st.aba = t; st.alvo = v === 'a' && t === 'conc' ? 'conc:0' : null; st.aberta = null; BX = CC = null; render(); focar('[data-view="'+v+'"] [data-tab="'+t+'"]'); return; }
+  if (q('[data-limpar]')) { S[v].alvo = v === 'a' && S.a.aba === 'conc' ? 'conc:0' : null; S[v].aberta = null; render(); focar('[data-view="'+v+'"] .pat-os-tab--active'); return; }
+  if ((el = q('[data-conta-b]'))) { S.b.conta = el.getAttribute('data-conta-b'); S.b.alvo = null; S.b.aberta = null; BX = CC = null; render(); focar('[data-view="b"] [data-conta-b="'+S.b.conta+'"]'); return; }
+  if ((el = q('[data-baixa]'))) { iniciarBaixa(v, el.getAttribute('data-baixa')); return; }
+  if (q('[data-bx-enviar]')) { enviarBaixa(); return; }
+  if (q('[data-bx-fechar]')) { const id = BX && BX.id; BX = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]'); return; }
+  if ((el = q('[data-conciliar]'))) { iniciarConc(v, el.getAttribute('data-conciliar')); return; }
+  if (q('[data-cc-enviar]')) { enviarConc(); return; }
+  if (q('[data-cc-pular]')) { pularConferencia(); return; }
+  if (q('[data-cc-fechar]')) { const id = CC && CC.id; CC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]'); return; }
+  if ((el = q('[data-desconc]'))) { desconciliar(el.getAttribute('data-desconc')); return; }
+  if ((el = q('[data-ver-tit]'))) { irTitulo(v, el.getAttribute('data-ver-tit')); return; }
+  if ((el = q('[data-alvo]'))) { aplicarAlvo(v, el); return; }
+  if ((el = q('tr.pat-ab-row'))) { alternarLinha(v, el.getAttribute('data-id')); return; }
+});
+document.addEventListener('keydown', ev => {
+  if (M && ev.key === 'Escape') { ev.preventDefault(); fecharModal(); return; }
+  if (M && ev.key === 'Tab') {
+    const f = $$('#mbx button:not([disabled]), #mbx input:not([disabled]), #mbx select:not([disabled]), #mbx textarea:not([disabled])');
+    if (f.length) { const i = f.indexOf(document.activeElement); if (ev.shiftKey && i <= 0) { ev.preventDefault(); f[f.length-1].focus(); } else if (!ev.shiftKey && i === f.length-1) { ev.preventDefault(); f[0].focus(); } }
+    return;
+  }
+  const t = ev.target;
+  if ((ev.key === 'Enter' || ev.key === ' ') && t.matches && t.matches('tr.pat-ab-row')) { ev.preventDefault(); alternarLinha(viewDe(t), t.getAttribute('data-id')); return; }
+  if ((ev.key === 'Enter' || ev.key === ' ') && t.matches && t.matches('g[data-alvo]')) { ev.preventDefault(); aplicarAlvo(viewDe(t), t); }
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.matches('[data-busca]')) { const v = viewDe(t); S[v].busca = t.value; S[v].aberta = null; const pos = t.selectionStart; render(); const i = $('[data-view="'+v+'"] [data-busca]'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } return; }
+  const f = t.getAttribute('data-form'); if (!f) return;
+  const obj = { bx:BX, cc:CC, nc:NC }[f]; if (!obj) return;
+  if (t.type === 'radio' && !t.checked) return;
+  obj.campos[t.getAttribute('data-campo')] = t.value;
+});
+document.addEventListener('change', ev => {
+  const t = ev.target, f = t.getAttribute && t.getAttribute('data-form'); if (!f) return;
+  const obj = { bx:BX, cc:CC, nc:NC }[f]; if (!obj) return;
+  obj.campos[t.getAttribute('data-campo')] = t.value;
+  if (f === 'nc' && t.getAttribute('data-campo') === 'kind') { desenharModal(); const k = $('#mbx [data-campo="kind"]'); if (k) k.focus(); }
+});
+
+/* ══════════ Quadro de notas (fora da tela) ══════════ */
+const C_ = t => '<code>'+t+'</code>';
+const NOTAS = {
+  a:{ titulo:'Opção A — Abas do Financeiro',
+    i:['<strong>Saldo em caixa:</strong> '+C_('summary.cash.totalBalance')+' e '+C_('accountCount')+' ('+C_('financial-summary.types.ts:66-70')+').',
+       '<strong>Entradas e saídas de outubro:</strong> '+C_('settledThisMonth.inflow/outflow')+' ('+C_(':61-65')+'); minigráfico e gráfico de 6 meses: '+C_('cashFlow')+' ('+C_(':39-43')+', '+C_(':72')+').',
+       '<strong>A receber e a pagar vencidos:</strong> '+C_('receivable/payable.overdueAmount/overdueCount')+' ('+C_(':22-28')+').',
+       '<strong>A conciliar, com ressalva e conciliação por conta:</strong> contagens de '+C_('GET /financial-entries?reconciled&divergence_type&account_id')+' → '+C_('total')+' ('+C_('financial-entry.types.ts:101-120')+').',
+       '<strong>Abas:</strong> títulos ('+C_('GET /financial-titles')+'), cartões de conta ('+C_('GET /financial-accounts')+' + '+C_('/balance')+' de cada), extrato, baixa na janela fixa, conciliar e desfazer ('+C_('reconciled=false')+'), nova conta.'],
+    ii:['<strong>Valor em R$ a conciliar</strong> — o servidor só conta; somar dinheiro no front é proibido (T13 do plano v2).',
+        '<strong>Bloco “Com cheque a compensar”</strong> — depende do PR #456 ('+C_('GET /cheques?title_id')+', '+C_('cheque.service.ts:102')+' no ramo '+C_('fix/cheque-x-baixa')+'); o filtro inverso, “títulos com cheque pendente”, não existe em lugar nenhum.',
+        '<strong>Nº da OS na linha</strong> — a lista não traz '+C_('workOrderId')+' ('+C_('financial-title.dto.ts:43-62')+'); só o detalhe ('+C_(':25')+').',
+        '<strong>Filtro do extrato por meio de pagamento ou por título</strong> — não existe ('+C_('financial-entry.types.ts:101-113')+').'],
+    iii:['<strong>Prós:</strong> é a aparência A do Financeiro já aprovada — abas, blocos clicáveis, linha de 1 linha e janela; a janela fixa protege o formulário de dinheiro (foco preso, nada se perde ao rolar a lista); menor custo: são as peças que o plano v2 já lista.',
+         '<strong>Contras:</strong> baixa e conciliação ficam em abas diferentes; o saldo de cada conta aparece só nos cartões, sem explicação; tela longa (indicadores + faixa + abas).'] },
+  b:{ titulo:'Opção B — Conta em foco',
+    i:['<strong>“De onde vem o saldo” inteiro:</strong> '+C_('GET /financial-accounts/:id/balance')+' devolve '+C_('openingBalance, in, out, balance')+' já somados ('+C_('financial-entry.dto.ts:63-71')+'; '+C_('financial-entry.service.ts:493-510')+').',
+       '<strong>Rosca de conciliação da conta:</strong> contagens de '+C_('GET /financial-entries?account_id&reconciled&divergence_type')+'.',
+       '<strong>Trilho de contas:</strong> '+C_('GET /financial-accounts')+' (caixa, banco, carteira — '+C_('financial-account.types.ts:14-17')+') + o saldo de cada; o total vem do resumo.',
+       '<strong>Tudo no detalhe da linha:</strong> conciliar ('+C_('PATCH /financial-entries/:id/reconcile')+') e baixar ('+C_('POST /financial-titles/:id/pay')+', com o '+C_('account_id')+' da conta em foco já escolhido).'],
+    ii:['<strong>“Movimento por mês nesta conta”</strong> — entradas e saídas por conta e por mês: o '+C_('cashFlow')+' é da organização e o '+C_('/balance')+' não recebe período. As barras são ilustrativas e estão marcadas.',
+        '<strong>A ponte é desde a abertura da conta</strong>, não do mês (pelo mesmo motivo).',
+        'Cheque vinculado, OS na linha e filtro por meio: iguais à A.',
+        '<strong>O título não diz por qual conta será pago</strong> ('+C_('accountId')+' é opcional), então “Títulos a baixar” lista os da organização, não os da conta.'],
+    iii:['<strong>Prós:</strong> um contexto só — quem concilia o Banco do Brasil fica no Banco do Brasil; sem janela nenhuma (o padrão dos blocos clicáveis levado até a ação); a ponte explica o saldo, que hoje é um número solto; a baixa já sai com a conta certa.',
+         '<strong>Contras:</strong> formulário de dinheiro dentro da lista (empurra a lista e protege menos o foco que a janela); quem baixa títulos de várias contas troca de conta várias vezes; o gráfico mensal por conta depende de backend novo; dois componentes novos na biblioteca (ponte e rosca, SVG sem biblioteca — PD-004).'] },
+  c:{ titulo:'Opção C — Conferência do caixa',
+    i:['<strong>Os 3 passos:</strong> vencidos e de hoje ('+C_('GET /financial-titles?overdue&from&to')+' ('+C_('financial-title.service.ts:82-84')+')'+' → '+C_('total')+'), a conciliar e com ressalva (contagens do extrato).',
+       '<strong>Cheques a compensar:</strong> '+C_('summary.cheques.pendingReceivedCount/Amount')+' e '+C_('pendingIssued*')+' ('+C_('financial-summary.types.ts:30-36')+').',
+       '<strong>Idade das pendências:</strong> 4 contagens com '+C_('reconciled=false')+' + '+C_('from/to')+' ('+C_('financial-entry.service.ts:166-169')+').',
+       '<strong>Conferência em sequência:</strong> um '+C_('PATCH /reconcile')+' por vez; o próximo abre sozinho. Nada em lote. Clicar o dia filtra o extrato por '+C_('from/to')+'.'],
+    ii:['<strong>Valores de entrada e saída por dia</strong> — não há agregado diário e o front não soma (as barras estão marcadas).',
+        '<strong>“Conferidos nesta sessão”</strong> é um contador da tela; “conciliados hoje por mim” no servidor pediria filtro por '+C_('reconciledAt/reconciledBy')+', que não existe.',
+        '<strong>Listar os títulos de cada cheque</strong> — PR #456, como na A.'],
+    iii:['<strong>Prós:</strong> segue a rotina real (baixar → conferir → conciliar), como a aparência C do Financeiro; o passo 2 anda pelo teclado (o botão principal já vem com o foco); a idade da pendência mostra o que corre risco de não ser achado no banco; demonstra o fluxo do CE-4 de ponta a ponta.',
+         '<strong>Contras:</strong> não mostra o saldo por conta (fica na A e na B); quem só quer consultar vai à aba “Extrato completo”; a faixa de 14 dias depende de agregado novo.'] }
+};
+const lst = a => '<ul class="review-list">'+a.map(x => '<li>'+x+'</li>').join('')+'</ul>';
+function renderReview(){
+  const n = NOTAS[opcao];
+  $('#rv-titulo').textContent = n.titulo;
+  $('#rv-desc').innerHTML = 'As três opções detalham as peças do bloco <strong>B-SAN3-12</strong> (itens 28 e 55 do portão e o CE-4 — '+C_('docs/revisoes/SAN3/PLANO_SAN3.md:147, :163, :268, :327')+'): <strong>a baixa do título, a conta com o extrato e a conciliação</strong>, uma vez em cada aparência já aprovada do Financeiro ('+C_('screen-refs/financeiro-3opcoes.reference.html')+': A fiel, B analítica, C agenda de caixa), dentro do padrão de '+C_('financeiro-ab.reference.html')+' (blocos clicáveis que filtram, linha de 1 linha, detalhe embaixo, um aberto por vez). Tela-modelo: '+C_('frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx')+' ('+C_('PageHeader')+', '+C_('KpiStatCard')+', '+C_('StatePanel')+', '+C_('StaleDataBanner')+') e '+C_('components/dense-list/DenseTable.tsx')+'; skills '+C_('ts-frontend-full')+' e '+C_('ui-ux-pro-max')+'. Medido em '+C_('origin/main 7ab2fe71')+' e, para a regra do cheque, no ramo '+C_('origin/fix/cheque-x-baixa')+' (PR #456). Nomes e números são de exemplo; o que o servidor não fornece hoje tem a marca <strong>falta no backend</strong>. Hoje = sexta, 23/10/2026, 10:00. <strong>Para ver o CE-4:</strong> abra um título → Registrar → “Ver no extrato” → Conciliar.';
+  $('#rv-blocos').innerHTML =
+    '<div class="review-grid review-grid--2">'+
+      '<div class="review-box"><h3>O que o servidor já tem (iguais nas 3)</h3>'+lst([
+        '<strong>Baixa:</strong> '+C_('POST /financial-titles/:id/pay')+' com '+C_('financial_entries:create')+' ('+C_('src/modules/financial-entries/financial-entry.routes.ts:94-100')+'); corpo: valor, conta, meio, data, observação e '+C_('client_action_id')+' ('+C_('financial-entry.service.ts:406-413')+'); a direção vem do título ('+C_(':424-425')+'); baixa parcial deixa o título Parcial ('+C_('financial-title.types.ts:12-19')+').',
+        '<strong>Erros da baixa (todos com mensagem na tela):</strong> '+C_('title_cancelled')+', '+C_('title_already_paid')+', '+C_('overpayment')+' ('+C_('financial-title.repository.ts:112-120')+'); '+C_('account_inactive')+', '+C_('period_closed')+', '+C_('duplicate_payment')+' 409 ('+C_('financial-entry.repository.ts:67, :74-80, :85')+'); '+C_('invalid_amount')+' 400 ('+C_('financial-entry.validators.ts:74-89')+').',
+        '<strong>Contas:</strong> '+C_('GET/POST/PATCH/DELETE /financial-accounts')+' ('+C_('financial-account.routes.ts:31-70')+'); caixa, banco ou carteira, só real; nome repetido entre ativas → 409 '+C_('duplicate_account')+' ('+C_('financial-account.types.ts:10-17')+'). Saldo: '+C_('/balance')+', somado no servidor.',
+        '<strong>Extrato:</strong> '+C_('GET /financial-entries')+' por conta, direção, categoria, conciliado, ressalva e período, até 100 por página ('+C_('financial-entry.types.ts:101-113')+'), do mais novo para o mais antigo ('+C_('financial-entry-prisma.repository.ts:59')+').',
+        '<strong>Conciliação:</strong> '+C_('PATCH /financial-entries/:id/reconcile')+' com '+C_('reconciled')+', ressalva de valor ou de data e referência do extrato; o carimbo (quem e quando) é do servidor ('+C_('financial-entry.service.ts:370-395')+'). <strong>Não há trava de concorrência:</strong> conciliar de novo responde 200 e troca o carimbo — por isso a tela relê o lançamento antes de salvar (botões “Na conciliação”).',
+        '<strong>O front de hoje não usa nada disso:</strong> nenhuma chamada a '+C_('/pay')+', '+C_('/financial-accounts')+' ou '+C_('/financial-entries')+' em '+C_('frontend/src')+' ('+C_('PLANO_SAN3.md:147, :163')+'); o saldo aparece só como pop-up no '+C_('FinanceiroPage.tsx:95-108')+'.'])+'</div>'+
+      '<div class="review-box"><h3>Cheque não é meio de baixa — nas 3 (decisão do dono, 21/10)</h3>'+lst([
+        '<strong>A regra:</strong> '+C_('D-SAN3-20-CHEQUE-SO-PELA-COMPENSACAO')+' (“A: só pela compensação”): dinheiro de cheque só entra quando o cheque registrado compensa ('+C_('POST /cheques/:id/clear')+'). A baixa oferece Pix, Transferência, Boleto, Dinheiro e Cartão.',
+        '<strong>Onde a regra vive hoje (§A7):</strong> a <code>main</code> ainda aceita '+C_('check')+' na baixa ('+C_('financial-entry.types.ts:11')+'); a recusa '+C_('422 cheque_required')+' está no ramo do PR #456 ('+C_('financial-entry.service.ts:86')+' em '+C_('origin/fix/cheque-x-baixa')+'), que vale no merge. A tela não oferece cheque em nenhum dos dois casos.',
+        '<strong>Para onde ir:</strong> abaixo do meio, um aviso fixo — “Registre o cheque em Cheques, vinculado a este título: o título baixa sozinho quando o cheque compensar” — com o atalho <strong>Abrir Cheques</strong> (a tela chega com o B-SAN3-24; até lá, o atalho explica).',
+        '<strong>Título com cheque vinculado pendente</strong> (FAT-2026-0915): o detalhe mostra o cheque e a baixa avisa que registrar outra baixa pode receber o mesmo valor duas vezes. Não bloqueia — pergunta ao dono, abaixo.',
+        '<strong>No extrato</strong>, o dinheiro do cheque aparece como “Compensação do cheque 004388”, meio Cheque (FAT-2026-0860).',
+        '<strong>Se um aplicativo antigo mandar cheque</strong>, o 422 vira mensagem (botão “Cheque recusado (422)”).'])+'</div>'+
+    '</div>'+
+    '<div class="review-grid">'+
+      '<div class="review-box"><h3>(i) '+opcao.toUpperCase()+' — o que já tem dado</h3>'+lst(n.i)+'</div>'+
+      '<div class="review-box"><h3>(ii) '+opcao.toUpperCase()+' — o que falta no backend</h3>'+lst(n.ii)+'</div>'+
+      '<div class="review-box"><h3>(iii) '+opcao.toUpperCase()+' — prós e contras</h3>'+lst(n.iii)+'</div>'+
+    '</div>'+
+    '<div class="review-box"><h3>Comportamento por perfil (medido em '+C_('src/modules/core-saas/permissions/catalog.ts')+' e '+C_('RBAC_MATRIX.md:49')+'; a tela só molda — o servidor decide)</h3><table class="rv-tabela"><thead><tr><th>Perfil</th><th>Vê</th><th>Ações</th><th>Não vê</th></tr></thead><tbody>'+
+      '<tr><td><strong>Financeiro</strong> ('+C_('finance')+', '+C_(':812-883')+')</td><td>contas ('+C_('financial_accounts:read :859')+'), títulos ('+C_(':860')+'), extrato ('+C_('financial_entries:read :863')+'), cheques ('+C_(':864')+')</td><td>Registrar baixa ('+C_('financial_entries:create :873')+'), conciliar e desfazer ('+C_('financial_entries:update :881')+'), nova conta ('+C_('financial_accounts:create :870')+')</td><td>—</td></tr>'+
+      '<tr><td><strong>Administrador</strong> ('+C_('tenant_admin')+', herda o catálogo — '+C_('catalog.ts:39')+')</td><td>tudo</td><td>as mesmas do Financeiro</td><td>—</td></tr>'+
+      '<tr><td><strong>Gestor Operacional</strong> ('+C_('manager')+', '+C_(':466-471')+')</td><td>tudo, só leitura</td><td>nenhuma (o detalhe diz “Seu perfil só consulta os títulos e o extrato.”)</td><td>Registrar, Conciliar, Desfazer e Nova conta</td></tr>'+
+      '<tr><td><strong>Auditor</strong> ('+C_('auditor')+', '+C_(':994-999')+')</td><td>tudo, só leitura</td><td>nenhuma</td><td>idem</td></tr>'+
+      '<tr><td><strong>Técnico de Campo</strong> ('+C_('field_technician')+', '+C_(':912-962')+')</td><td>“Sem permissão para ver o financeiro” — nenhum '+C_('financial_*')+'; o menu não mostra o Financeiro</td><td>atalho para as próprias comissões</td><td>qualquer valor da organização</td></tr>'+
+    '</tbody></table></div>'+
+    '<div class="review-grid review-grid--2">'+
+      '<div class="review-box"><h3>Estados (§7) e respostas — teste pelos botões do topo do quadro</h3>'+lst([
+        '<strong>Carregando:</strong> esqueleto no lugar dos indicadores, gráficos e linhas (nunca um girador bloqueando a tela).',
+        '<strong>Vazio:</strong> organização sem contas → “Cadastre a primeira conta”, com o botão só para quem tem '+C_('financial_accounts:create')+'.',
+        '<strong>Erro:</strong> o painel de erro com “Tentar novamente” — nunca lista vazia (A10 do plano v2).',
+        '<strong>Acesso não permitido:</strong> o painel de perfil sem acesso; o Técnico de Campo cai nele sempre.',
+        '<strong>Dados desatualizados:</strong> a mesma faixa do '+C_('StaleDataBanner')+' das OS (“Dados desatualizados — última atualização às 09:42 · Tentar novamente”), sem trocar a tela.',
+        '<strong>Baixa:</strong> a identificação da baixa nasce quando o formulário abre e se repete em todo reenvio; depois de qualquer resposta que não seja sucesso, a tela <strong>relê o título</strong> (“Conferindo o título…”) antes de falar — 10 respostas nos botões.'])+'</div>'+
+      '<div class="review-box"><h3>Divergências conscientes e pendências para o dono</h3>'+lst([
+        '<strong>Cheque fora da baixa nas 3</strong> — diverge da referência aprovada '+C_('financeiro-3opcoes.reference.html')+' (o '+C_('MEIOS')+' da l.758 inclui “Cheque”), que é anterior à decisão de 21/10. Atualizar a referência junto com a aprovação desta.',
+        '<strong>Estornar uma baixa</strong> fica fora (plano v2: fora da fronteira do bloco); “Desfazer conciliação” entra, porque é a mesma rota da conciliação.',
+        '<strong>Componentes novos para a biblioteca:</strong> indicador com '+C_('aria-pressed')+' (extensão do '+C_('KpiStatCard')+', já no plano v2) e linha com detalhe ('+C_('DenseExpandableRow')+'); só na B, a ponte do saldo e a rosca.',
+        '<strong>Fonte:</strong> sem a Inter (CDN proibido); o navegador usa a fonte do sistema, como nas referências.',
+        '<strong>Para decidir:</strong> (1) aprovar as 3 como aparências do usuário; (2) título com cheque vinculado aguardando compensação: a tela só <strong>avisa</strong> (como aqui) ou o servidor <strong>recusa</strong> a baixa manual?; (3) quem pode desfazer uma conciliação — hoje é quem concilia ('+C_('financial_entries:update')+'); (4) planejar o agregado de backend (valor a conciliar, movimento por conta e mês, entradas e saídas por dia) que acende as marcas âmbar.'])+'</div>'+
+    '</div>';
+}
+
+/* ── Início ── */
+iniciarDados();
+render();
+renderReview();
+</script>
+</body>
+</html>

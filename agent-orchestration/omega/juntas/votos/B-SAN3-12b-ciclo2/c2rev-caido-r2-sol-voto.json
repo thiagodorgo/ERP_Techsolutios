@@ -1,0 +1,28 @@
+{
+  "jurado": "jurado-san312b-c2-r2-sol (identidade nova; nada herdado como fato)",
+  "corpo": "jurado-san312b-c2-cadeia-de-acesso",
+  "cadeira": "C2 revalidada — cadeia de acesso do B-SAN3-12b",
+  "mandato_md5": "49d41e724b2498fb5ad6ea316eb57e02 (EOL-neutro; declarado no disparo: não declarado)",
+  "modelo": "Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado (§C7.6) · substituição: nenhuma",
+  "corpo_md5": "d91270202a8b737292ca58ab3726c314 · recebido do blob · IDENTICO EOL-neutro",
+  "objeto": "e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2",
+  "legalidade": "LIBERADO COM RESSALVA; objeto/PR/remoto coincidentes; 14 checks verdes; recursos acima do piso",
+  "quorum": "unanimidade de 3, com veto · ciclo 2",
+  "escopo": "EM APURAÇÃO",
+  "gravidade": "EM APURAÇÃO",
+  "leitura_de_outras_cadeiras": "não li votos nem evidências c1* ou c3* do ciclo 2",
+  "pausa": "nenhuma",
+  "arquivos_medidos": [],
+  "voto": "EM APURAÇÃO",
+  "itens": [
+    {"item": 1, "estado": "EM APURAÇÃO"},
+    {"item": 2, "estado": "EM APURAÇÃO"},
+    {"item": 3, "estado": "EM APURAÇÃO"}
+  ],
+  "justificativa": "EM APURAÇÃO",
+  "o_que_executei": [],
+  "achados": [],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [],
+  "teardown": "PENDENTE"
+}

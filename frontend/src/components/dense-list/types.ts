@@ -27,6 +27,8 @@ export type DenseColumn<T> = {
   readonly tabular?: boolean;
   // Valor usado para ordenar (número → numérico; string → localeCompare pt-BR).
   readonly sortValue?: (row: T) => string | number | null | undefined;
+  // B-SAN3-12b — largura da coluna na tabela com detalhe (`renderDetail`, `.pat-ab-table` tem `table-layout: fixed`).
+  readonly width?: string | number;
 };
 
 export type DenseListState = {

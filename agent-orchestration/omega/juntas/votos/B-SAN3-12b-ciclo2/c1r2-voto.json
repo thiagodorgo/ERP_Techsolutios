@@ -1,0 +1,217 @@
+{
+ "jurado": "jurado-san312b-c1-r2-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312b-c1-tela-e-fidelidade",
+ "cadeira": "C1 refeita (c1r2) — a tela: R1/R2 (C1-01/02) + F11/F12; R3/R10 (C1-03) + F16/F19; F17/R11 + fidelidade à opção A + padrão",
+ "mandato_md5": "e20b12ae5b0317e64846b1116b5c7a16 · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 · subagente genérico Claude · nível menor (§C7.6) · substituição: nenhuma",
+ "corpo_md5": ".claude/ 4e27a0e164b92f8326ca42f609fe6309 · .agents/ dd40411c522ced46b673f2c75e7ecc29 · recebido: carregado do blob do objeto · IDENTICO",
+ "objeto": "e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 (ls-remote = gh pr view 469, no início e no fim) · objeto do ciclo 1 (controle, <objeto>~13) fc5ead6cf3191eb2a1485d4a16404a403a00beec · merge-base f076973921539165df8d406b8c061dbf4e4ee127 · origin/main início/fim f0769739…/f0769739… · objeto no fim: igual",
+ "legalidade": "insp-san312b-c2-parecer.md (inspetor-san312b-c2-sol) · LIBERADO COM RESSALVA · confere C1 Opus e j12b-c2-c1r2-wt · check-runs 14 | 0 | 0 · frontend success",
+ "quorum": "unanimidade de 3, com veto · DINHEIRO · ciclo 2 (todo bloqueia dentro-do-bloco reprova) · cadeira refeita pela regra (3) do §C7 item 9",
+ "leitura_de_outras_cadeiras": "não li votos/evidências de c2rev nem c3r2 do ciclo 2",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "frontend/src/modules/finance/**",
+  "frontend/src/components/dense-list/**",
+  "frontend/src/components/patterns/KpiStatCard.tsx",
+  "frontend/src/components/patterns/TablePager.tsx",
+  "frontend/src/styles/app.css",
+  "frontend/src/modules/work-orders/components/StatePanel.tsx",
+  "frontend/src/modules/work-orders/components/StaleDataBanner.tsx",
+  "frontend/src/modules/appearance/**",
+  "frontend/src/guards/PermissionGuard.tsx",
+  "frontend/src/App.tsx",
+  "frontend/src/layouts/**",
+  "COMPONENT_LIBRARY.md",
+  "frontend/tests/finance-page-live.test.tsx",
+  "frontend/tests/dense-expandable-row.test.tsx",
+  "frontend/tests/finance-contas-extrato.smoke.test.tsx",
+  "docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html",
+  "src/modules/core-saas/permissions/catalog.ts",
+  "src/modules/financial-summary/financial-summary.types.ts",
+  "src/modules/financial-summary/financial-summary.compute.ts",
+  "agent-orchestration/controle/pendencias.md",
+  "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+  "agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md"
+ ],
+ "voto": "REPROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "testes": "finance-page-live + dense-expandable-row + finance-contas-extrato.smoke, de frontend/: 46 | 46 | 0 | 0",
+   "r1_c1_01": "faixa → chip 'Conta: Banco do Brasil' acima da lista; tirar o bloco mantém o chip; 'Remover o filtro de conta' (1 clique) → ?aba=conc, pedido sem account_id, 3 linhas; cartão → KPI 'A conciliar'/'Entradas'/'Saídas'/'Saldo' zeram a conta (pedido sem account_id; 2 linhas = KPI 2)",
+   "r2_c1_02": "flex/space-between; nome a 13 px da esquerda, contagem a 13 px da direita; distância 290,5/305,8 px; nome de 216 car. cortado com reticências, title inteiro, distância 8 px",
+   "indicadores": "70 [aria-pressed] nas 4 abas, todos <button>, false→true; 6 KPIs (filtro no servidor: Entradas/Saídas/A conciliar; local: vencidos; Saldo só navega); chip ou bloco pressionado acima da lista, 1 clique limpa e volta a false; :focus-visible outline 2px",
+   "linhas": "4 listas; altura máx 42/42/41/41 px; 0 interativo; ellipsis + title inteiro; 1 detalhe logo abaixo (gap 0); Enter/Espaço abrem, Escape fecha com foco na linha",
+   "mutacoes": "R1-M1 (2 R1 vermelhos + sonda acusa), R1-M2 (R1 org vermelho), R2-M1 (R2 vermelho + sonda: contagem a 295 px da direita), F11 (F11 vermelho), F12 (5 vermelhos incl. F12/DenseTable), MINHA aria-pressed fixo false (F11 vermelho) — todas pela asserção, restauradas (hash = blob)",
+   "controle_ciclo1": "fc5ead6c em frontend/src/modules/finance: R1×2, R2, R3×3, R10 vermelhos pela asserção (41: 28/13); sonda r1: sem chip, conta presa, display block distância 0; restaurado (9 arquivos hash = blob)"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "r3_c1_03": "fixture honesto 130 (39 venc/13 hoje/26 7d/13 parciais), resumo openCount 130/overdueCount 39, dublê limit/offset: aba 'A receber 130'; '100 mais recentes de 130 títulos'; TablePager (.pat-pager, nav 'Paginação da lista') '1–20 de 100 carregados · 130 no servidor', 20/50; Vencidos 39 do resumo; hoje/7d/parcial sem número na carga parcial; 'Carregar mais títulos (30 restantes)' → 'Carregando…' disabled → GET limit=100&offset=100 → '130 títulos', '1–50 de 130', botão some; Próxima → 21–40; detalhe fecha ao paginar",
+   "r10_c1_n3": "ext sem financial_accounts:read → 'Acesso não permitido — Seu perfil não inclui as contas desta organização'",
+   "matriz_estados": "4 abas × {carregando, carregando tudo, vazio, vazio sem contas, 500, rede, 403 servidor, sem permissão da fonte, Técnico de Campo, desatualizado}: aria-busy; vazio honesto; erro nunca vira vazio; forbidden em rec/pag/ext; guarda da rota para o técnico; faixa 'Dados desatualizados' mantendo 3/2/3/3 linhas",
+   "nada_fingido": "38 combinações: rotas 404/500 e campo nulo → erro/'Saldo indisponível'/'contagem indisponível'; resumo 200 com campo ausente → R$ 0,00/0 (ajuste pré-existente, pendência P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO, dono B-SAN3-12c, fora do contrato do 12a)",
+   "d5": "contagem por conta vem de GET /financial-entries/aggregate?…&account_id= (dado do servidor; indisponível quando a rota cai) — declarada em E2.2, honesta",
+   "mutacoes": "R3-M1, R3-M2, R3-M3 (+ sonda: sem pager), R3-M4, R10-M1, F16, F19, MINHA saldo→0 (+ sonda: R$ 0,00 nas 3 falhas) — todas vermelhas pela asserção; restauradas (hash = blob)",
+   "controle_ciclo1": "fc5ead6c: R3(a)/(b-c)/(d-e-f) e R10 vermelhos pela asserção; sonda R3 no ciclo 1: 'A receber100', 100 linhas, sem pager"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERMELHO",
+   "f17": "varredura do DOM: 134 telas (10 estados incl. parcial130, conta filtrada, sem contas:read) × abas × detalhes × modais, 23.292 nós: 0 termo técnico, 0 grafia sem acento; teste F17/R11 verde; R11-M1, R11-M2, F17 vermelhos pela asserção; MINHA 'Scope' passa no F17 (8/8) e a varredura do DOM acusa 10",
+   "fidelidade_opcao_a": "iguais: 6 indicadores e ordem, 4 abas, colunas, cabeçalho (título + subtítulo + Nova conta à direita, mesmas coordenadas), densidade de linha 41–42 px. DIVERGÊNCIA 1 (bloqueia): valor em R$ dos indicadores a 27 px sem ellipsis passa da borda do cartão e é encoberto — 1280×720: −37/−37/−25/−25/−25 px; 1366×768: −23/−23/−11/−11/−11; 1440×900: −10/−10 nos de 6 dígitos; opção A: 15,5/18 px com ellipsis e +39..+60 px de folga. DIVERGÊNCIA 2 (ajuste): VALOR e SALDO EM ABERTO à esquerda (a coluna declara align right/tabular; a regra só existe para .dense-table). Declaradas E2.2 aceitas (D-5, busca→pendência, Carregar mais, rótulos/minigráfico/ressalva, D-9, componentes locais); OS e 'Com cheque a compensar' ausentes por dado do 12a (correto pelo F19)",
+   "padrao": "app.css intocado pelo PR (diff f0769739..objeto = 0); TablePager da biblioteca; COMPONENT_LIBRARY +5 (DenseExpandableRow, KpiStatCard.pressed); única classe sem regra: pat-btn--secondary (nota)",
+   "aparencia_d9": "preferência b/c gravada → data-aparencia=A; declarada; absorvida pela divisão 12b/12c; não reprova",
+   "controles": "comparador de KPI vê os dois lados (referência e '2' com folga positiva); comparador de indicadores acusa o rótulo escondido pela minha mutação; ciclo 1 (fc5ead6c): divergências 1 e 2 idênticas (não é regressão; não medidas no ciclo 1)"
+  }
+ ],
+ "gravidade": "bloqueia (C1r2-01)",
+ "classe": "não grave",
+ "escopo": "dentro-do-bloco",
+ "achados": [
+  {
+   "id": "C1r2-01",
+   "defeito": "Os valores em dinheiro dos indicadores não cabem no cartão e ficam encobertos. Com os números da própria opção A, em 1280×720 o texto de 5 dos 6 indicadores passa 25 a 37 px da borda do cartão e o cartão vizinho pinta por cima (lê-se 'R$ 126.958,6', 'R$ 167.692,3', 'R$ 56.999,5', 'R$ 56.330,0', 'R$ 30.520,0'); em 1366×768, 11 a 23 px; em 1440×900, os de 6 dígitos passam 10 px. Sem ellipsis nem title. Na opção A os mesmos valores cabem (15,5–18 px, ellipsis, 39–60 px de folga).",
+   "evidencia": "$S/zz-j12bc1r2-kpiclip.mjs → $S/kpiclip-obj.json (sobra por cartão; scrollWidth 175/163 > clientWidth 122 em 1280); capturas $S/cap-obj-kpi-1280.png, cap-obj-kpi-1366.png, cap-obj-kpi-1440.png; ciclo 1 igual em $S/kpiclip-ctlC1.json; FinanceiroViewA.tsx:212 gridTemplateColumns repeat(6, minmax(0, 1fr)); app.css:3176-3177 .pat-kpi__value 27px ($S = C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2)",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco (a grade de 6 colunas nasce no bloco: git log -S 'repeat(6, minmax(0, 1fr))' → c022182d 2026-10-26, só no ramo; FinanceiroViewA.tsx é arquivo novo do bloco; o 27 px é da biblioteca, 9f12ea99 2026-06-09, mas a composição que corta é do bloco)",
+   "classe": "não grave",
+   "motivo": "o usuário não lê o valor inteiro do saldo em caixa, das entradas/saídas e dos vencidos nas larguras 1280 e 1366 (e nos de 6 dígitos em 1440); a opção A aprovada mostra os mesmos valores inteiros (§11: mesma densidade, recriar e não reinterpretar)"
+  },
+  {
+   "id": "C1r2-02",
+   "defeito": "As colunas de dinheiro VALOR e SALDO EM ABERTO saem alinhadas à esquerda e sem algarismos tabulares, embora a coluna declare align 'right' e tabular; na opção A elas são alinhadas à direita.",
+   "evidencia": "$S/zz-j12bc1r2-align.mjs → $S/align-obj.json (th/td text-align left/start, font-variant-numeric normal; referência right); app.css:2706-2712 só .dense-table td.dense-col-right; DenseTable.tsx, ramo renderDetail monta .pat-ab-table (8ff80316); ciclo 1 igual (align-ctlC1.json)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (ramo renderDetail do DenseTable nasce no bloco, 8ff80316)",
+   "classe": "não grave",
+   "motivo": "propriedade declarada na coluna (direita, tabular) não chega à tela; reinterpretação do alinhamento da opção A, sem perda de informação"
+  },
+  {
+   "id": "C1r2-03",
+   "defeito": "O guard textual F17 não acusa 'scope', 'rbac' nem 'permission' (fora do TECH), embora a E2/R11 diga que a lista técnica inclui os três; um rótulo 'Scope' no detalhe do título passa no F17.",
+   "evidencia": "mutação MINE-scope (TitleDetail.tsx, label 'Scope'): finance-contas-extrato.smoke 8/8 verde ($S/mut-MINE-scope.log); a minha varredura do DOM acusa 10 ($S/item3-mutScope-sweep.json); finance-contas-extrato.smoke.test.tsx:95; mesma lista no ciclo 1 (fc5ead6c l.93)",
+   "gravidade": "ajuste",
+   "escopo": "dentro-do-bloco (o teste nasce no bloco)",
+   "classe": "não grave",
+   "motivo": "critério que não pode falhar para essa forma; a tela hoje tem 0 ocorrência (varredura do DOM)"
+  },
+  {
+   "id": "C1r2-N1",
+   "defeito": "Com a conta escolhida pela faixa 'Conciliação por conta', o KPI 'A conciliar' (contagem da organização) e o bloco 'A conciliar' ficam aria-pressed=true enquanto a lista mostra só a conta; o chip da conta está visível e sai com 1 clique.",
+   "evidencia": "$S/item1-obj.json r1_c1.a (pressedAll + chips); FinanceiroViewA.tsx:209 isPressed",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o estado pressionado do indicador da organização não distingue o filtro mais estreito"
+  },
+  {
+   "id": "C1r2-N2",
+   "defeito": "Perfil sintético com finance:read (o guarda da rota aceita hasAny) e sem financial_entries:read: abas Contas e extrato e Conciliação mostram 'Nenhum lançamento ainda' (vazio, 0 pedido) e o KPI diz 'o servidor não respondeu a contagem' sem ter perguntado.",
+   "evidencia": "$S/semEntries-obj.json; App.tsx:642; catálogo: nenhum papel tem finance:read sem financial_entries:read ($S/zz-j12bc1r2-roles.ts)",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "estado de acesso apresentado como vazio num perfil que hoje não existe (mesma classe do C1-N3 que o R10 fechou para as contas)"
+  },
+  {
+   "id": "C1r2-N3",
+   "defeito": "O botão 'Carregar mais títulos' usa a classe pat-btn--secondary, que não tem regra em frontend/src/styles; cai no .pat-btn.",
+   "evidencia": "FinanceiroViewA.tsx:504; em styles só existem pat-btn--engaged e pat-btn--primary",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "modificador inexistente (sem efeito visual)"
+  },
+  {
+   "id": "C1r2-N4",
+   "defeito": "Com 'Vencidos' aplicado e a carga parcial, o pager diz '1–30 de 30 carregados · 130 no servidor' (130 = total de títulos, não de vencidos); o contador acima diz '30 entre os 100 mais recentes de 130 títulos'.",
+   "evidencia": "$S/r3-obj.json s5_vencidosParcial",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o rótulo do pager mistura a contagem filtrada com o total sem filtro; o contador desfaz a ambiguidade (é a forma do R3(e))"
+  },
+  {
+   "id": "C1r2-A1",
+   "defeito": "Resumo em 200 com campo ausente/null → indicador R$ 0,00 / 0; no ciclo 2 a contagem da aba (R3) e linkedPending* passam pelo mesmo num().",
+   "evidencia": "$S/item2-obj.json f19 (38 combinações); financial-summary.adapter.ts:113; pendencias.md:11947",
+   "gravidade": "ajuste",
+   "escopo": "pre-existente (num() de 08d00949, 2026-07-18; pendência P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO, dono B-SAN3-12c); fora do contrato do 12a (financial-summary.types.ts:24,39 obrigatórios)",
+   "classe": "não grave",
+   "motivo": "ausência vira zero no adaptador; sem efeito com o servidor dentro do contrato"
+  }
+ ],
+ "justificativa": "terreno: worktree próprio no objeto e77a5ac1 (= ls-remote = gh pr view, no início e no fim), npm ci próprio, Vite 127.0.0.1:48121, dublê, sem banco. Item 1 VERDE: C1-01 e C1-02 fechados no navegador (chip de conta acima da lista, coexistência conta→alvo, remoção em 1 clique sem account_id; KPIs da organização zeram a conta; faixa com nome à esquerda, contagem à direita, 8 px mínimos, reticências e title); F11 (70 aria-pressed) e F12 (4 listas ≤ 42 px, 1 detalhe, teclado, foco) sem regressão; mutações R1-M1, R1-M2, R2-M1, F11, F12 e a minha vermelhas; controle no ciclo 1 vermelho. Item 2 VERDE: C1-03 fechado (130 títulos: contagens do servidor, TablePager 20/50, Carregar mais até offset 100, detalhe fecha ao paginar, blocos locais sem número na carga parcial); C1-N3 fechado (R10); matriz de estados completa; F19 nas rotas que falham; R3-M1..M4, R10-M1, F16, F19 e a minha vermelhas; controle no ciclo 1 vermelho. Item 3 VERMELHO: 0 termo técnico e 0 acento em 23.292 nós; R11-M1/M2/F17 vermelhos; mas, contra a opção A em 1280×720 e 1366×768, os valores em R$ de 5 dos 6 indicadores passam da borda do cartão e são encobertos (C1r2-01, bloqueia) — igual no objeto do ciclo 1, que não o mediu; mais 2 ajustes (dinheiro à esquerda; F17 sem scope/rbac/permission). Vermelho-controle de cada item: ciclo 1 (fc5ead6c) pela asserção e pelas sondas; comparadores vistos acusando (saldo→0, pager removido, rótulo escondido, Scope). Nada ficou sem medir. Limpeza: Vite morto, 0 processos, worktree removido, nada commitado.\nVOTO: REPROVADO — os valores em dinheiro dos indicadores não cabem no cartão e ficam encobertos em 1280×720 (−25 a −37 px em 5 de 6) e 1366×768 (−11 a −23 px), inteiros na opção A | escopo: dentro-do-bloco | classe: não grave | ciclo 2 | evidência: zz-j12bc1r2-kpiclip.mjs → kpiclip-obj.json, N = 6 indicadores × 3 larguras, capturas cap-obj-kpi-1280/1366/1440.png",
+ "criterios_que_nao_puderam_falhar": [
+  "F17 (guard textual) para scope/rbac/permission — mutação 'Scope' verde (C1r2-03)",
+  "os casos vivos não prendem o rótulo dos indicadores: 'A pagar vencido' com rótulo vazio deixa 33/33 verdes (o meu comparador acusa) — registrado, não é critério do plano",
+  "nenhum teste do bloco mede a geometria dos valores dos indicadores (C1r2-01) nem o alinhamento das colunas de dinheiro (C1r2-02)"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12B-BUSCA-TABELA-TITULOS (busca da barra, dono B-SAN3-12c)",
+  "P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (dono B-SAN3-12c)",
+  "P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (C1-N4 do ciclo 1, guarda da rota)",
+  "D-9: aparências B e C no B-SAN3-12c",
+  "para a C3/F14: em dev, a 1ª carga pede /financial-titles?…offset=0 duas vezes (StrictMode do Vite) — contagem de pedidos é da C3, não julgada aqui"
+ ],
+ "o_que_executei": [
+  {
+   "comando": "cd frontend && timeout -k 15 600 node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx",
+   "forma": "worktree j12b-c2-c1r2-wt no objeto, Node 20.19.5",
+   "resultado": "ec 0 · 46 | 46 | 0 | 0"
+  },
+  {
+   "comando": "node zz-j12bc1r2-item1.mjs $S obj",
+   "forma": "Chromium/Playwright, Vite 127.0.0.1:48121, 1440×900, dublê page.route",
+   "resultado": "ec 0 · R1/R2/F11 (70 aria-pressed)/F12 verdes"
+  },
+  {
+   "comando": "zz-j12bc1r2-mut.sh R1-M1 | R1-M2 | R2-M1 | F11 | F12 | MINE-pressed",
+   "forma": "âncora única, numstat, restauro hash = blob",
+   "resultado": "todas vermelhas pelo caso indicado; sondas acusam R1-M1 e R2-M1"
+  },
+  {
+   "comando": "git checkout fc5ead6c -- frontend/src/modules/finance; testes do objeto; sondas r1 e r3; restauro",
+   "forma": "vermelho-controle no objeto do ciclo 1",
+   "resultado": "41: 28/13 (R1×2, R2, R3×3, R10 pela asserção); sondas acusam C1-01/02/03; restauro hash = blob ×9"
+  },
+  {
+   "comando": "node zz-j12bc1r2-r3.mjs $S obj; node zz-j12bc1r2-r3b.mjs $S obj hold",
+   "forma": "fixture honesto de 130 títulos, dublê limit/offset",
+   "resultado": "R3 verde (130, pager 20/50, Carregar mais → offset=100, Carregando… desabilitado)"
+  },
+  {
+   "comando": "node zz-j12bc1r2-item2.mjs $S obj; zz-j12bc1r2-bal.mjs; zz-j12bc1r2-semEntries.mjs",
+   "forma": "matriz 4 abas × 10 estados; 38 combinações F19",
+   "resultado": "estados completos; R10 forbidden; resumo com campo ausente → 0 (ajuste pré-existente)"
+  },
+  {
+   "comando": "zz-j12bc1r2-mut.sh R3-M1 | R3-M2 | R3-M3 | R3-M4 | R10-M1 | F16 | F19 | MINE-saldo0",
+   "forma": "protocolo restaurável",
+   "resultado": "todas vermelhas pelo caso indicado; sondas acusam R3-M3 e saldo→0"
+  },
+  {
+   "comando": "node zz-j12bc1r2-item3.mjs $S obj; zz-j12bc1r2-kpiclip.mjs; zz-j12bc1r2-align.mjs; zz-j12bc1r2-full.mjs",
+   "forma": "varredura de 23.292 nós; comparação 1280/1366/1440 com a opção A",
+   "resultado": "0 termo/0 acento; C1r2-01 (bloqueia) e C1r2-02 (ajuste)"
+  },
+  {
+   "comando": "zz-j12bc1r2-mut.sh F17 | R11-M1 | R11-M2 | MINE-scope | MINE-hidekpi",
+   "forma": "protocolo restaurável + varredura/comparador sob mutante",
+   "resultado": "F17/R11-M1/R11-M2 vermelhos; MINE-scope VERDE no F17 (C1r2-03) e acusado pela varredura; comparador acusa o rótulo escondido"
+  },
+  {
+   "comando": "checkout fc5ead6c (finance + dense-list); kpiclip/align ctlC1; restauro",
+   "forma": "origem das divergências",
+   "resultado": "C1r2-01 e C1r2-02 idênticos no ciclo 1; restauro hash = blob"
+  }
+ ],
+ "teardown": "Vite morto pelo PID (taskkill 18544 + filho 27996; netstat 48121 só TIME_WAIT); processos com j12b-c2-c1r2-wt = 0; worktree removido por git worktree remove --force (ec 0, caminho ausente, 0 na worktree list); mutações e checkouts do ciclo 1 restaurados (status vazio, hash-object = blob em cada um); sondas, logs e capturas só em C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c1r2/; nenhum docker; em w-san312b só c1r2-evidencia.md e c1r2-voto.json; nada commitado; disco no fim 13G livres"
+}

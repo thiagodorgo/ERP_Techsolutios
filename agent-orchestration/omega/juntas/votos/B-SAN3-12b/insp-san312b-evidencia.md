@@ -1,0 +1,52 @@
+executor: subagente genérico Claude Code · modelo: Claude Opus 5.5 (claude-opus-5-5) · nível: MENOR, DECLARADO · identidade: inspetor-san312b-opus (nova) · objeto: fc5ead6cf3191eb2a1485d4a16404a403a00beec · mandato_md5 (CR retirado): 74fc7ebb2af169242b3f02f444b50cea · corpo carregado (blob do objeto, `git show <objeto>:.claude/agents/inspetor-de-terreno-da-junta.md`) × blob, EOL-neutro: IDENTICO (cbbed45074c7098081a9c51d47f3e373 nos dois; também = disco de w-san312b e = .claude/agents da sessão em 539b078e)
+
+# Evidência — inspetor-san312b-opus — B-SAN3-12b (PR 469), ciclo 1
+
+## Item 0 — identidade e corpo (2026-10-27T01:16Z)
+- `tr -d '\r' < 00-mandatos/inspetor-san312b.md | md5sum` → 74fc7ebb2af169242b3f02f444b50cea (= o declarado pelo redator).
+- `git show $O:.claude/agents/inspetor-de-terreno-da-junta.md | tr -d '\r' | md5sum` → cbbed450…; disco w-san312b → cbbed450…; sessão (ERP_Techsolutios em 539b078e) → cbbed450… · IDENTICO.
+- veredito parcial: corpo carregado = corpo julgado; mandato íntegro.
+
+## Item 1 — objeto, CI, delta, mandatos, corpos, S0 (01:17–01:30Z)
+- `git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas` → fc5ead6c…; `gh pr view 469 --json headRefOid,state,isDraft,mergeable` → fc5ead6c… OPEN draft=false MERGEABLE · objeto por 2 fontes = nomeado.
+- `git fetch origin main; git rev-parse origin/main` → c9a2d036…; `git merge-base $O origin/main` → c9a2d036 (= head-base do refs; a main NÃO andou). `rev-list --parents -n1` → 1 pai; head-base..objeto: 7 commits 1º pai, 7 total, 0 merge; `$O~7` = c9a2d036.
+- `git diff --name-only $O~1 $O` → exatamente os 6 corpos (3 em .claude/agents/especialistas, 3 em .agents/agents/especialistas).
+- `gh api repos/thiagodorgo/ERP_Techsolutios/commits/$O/check-runs` → total=14; authority-portal, backend, backend-postgres, docker, flutter, frontend, owner-portal ×2, todos `completed success` (0 queued/cancelled).
+- pré-voo (`MANDATO_REFS=…/redator-san312b/mandato-refs.sh bash …/redator-san312b/mandato-preflight.sh <mandato> 469`) nos 4 mandatos → PRE-VOO OK ec=0 ×4 (COLAGEM l.6-20 confere com a saída atual).
+- script próprio (toda linha "medido por:" seguida de bloco ``` e nenhum bloco vazio) → 0 MEDIDO sem saída nos 4; md5 sem CR: insp 74fc7ebb…, c1 83b7b136…, c2 75825974…, c3 d895109e… (= os do relatório do preparo); CR=0 nos 4.
+- cláusula de precedência: c1 l.273, c2 l.282, c3 l.325 "Onde o corpo divergir deste mandato quanto a objeto, itens, diretório de votos, régua, bases ou inelegíveis, vale este mandato."
+- corpos das 3 cadeiras lidos DO BLOB (`git show $O:…`), EOL-neutro, sem frontmatter e sem o bloco "Papel para o Codex" → IDENTICO ×3 (c1 fbeb5f4c…, c2 44c8a986…, c3 ea93872e…). Frontmatter sem `model:` (modelo vem do disparo, declarado).
+- S0 em worktree DESCARTÁVEL meu `C:/Users/AMP/j12b-insp-wt` (detached em $O, status 0): `node scripts/sync-agent-agents.mjs --check` → "OK — 92 agentes, espelho consistente." ec=0; status depois 0.
+- baseline (no w-san312b, node_modules próprios, NÃO junction — LinkType vazio): `npm run check` ec=0; `npm --prefix frontend run check` ec=0 (exit por variável). Gerou `frontend/tsconfig.tsbuildinfo` (ignorado) → removido por mim; status --ignored de volta ao de antes.
+- Fato lateral (§A7): o repositório da sessão (ERP_Techsolutios) está em 539b078e, ANCESTRAL de origin/main c9a2d036 (atrás); os corpos `jurado-san312b-*` NÃO existem no `.claude/agents` da sessão → nenhum jurado pode ser carregado por tipo da sessão; tem de ler o corpo do blob do objeto (como os mandatos já mandam).
+- veredito parcial item 1: VERDE.
+- (correção de hora do item 1: medido entre 01:16Z e 01:26Z.)
+
+## Item 2 — identidades, papéis, composição, cobertura, briefing (01:26–01:40Z)
+- gerador próprio: `git grep -h -o -i -E '\b[a-z]+(-[a-z0-9]+)*-san3?-?12[ab]?(-[a-z0-9]+)*' $O -- .` + o mesmo regex sobre `erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md` e `revisoes/B-SAN3-12*.md` → identidades do 12/12b iguais às do piso do redator (planejador-mestre, planejador-san312-e1-fable, crit-san312-pro, crit-san312-opus-r2, crit-san312-pro-r2, crit-san3-12-r2-pro, crit-san312a-e1-opus, dev-san312b-sol, dev-san312b-opus, fab-red-san312b-opus) + as do 12a (jurado-san312a-*, inspetor-san312a-*, dev-san312a-*, planejador-san312a-c2-fable, redator/fab-red-san312a-*).
+- `grep -o 'Você é `…`' prompts/crit-san3-12-{arg,cdx,pro,r2-pro}.md, dev-san3-12b*.md, fab-red-san312b.md` → acrescenta ao piso 2 nomes que o redator não listou: `crit-san312-argon` e `crit-san312-sol` (prompts existem; nenhuma saída deles no objeto, em revisoes/ ou em planos/ → provavelmente não rodaram). Nenhum coincide com os nomes desta junta.
+- colisão: `OBITUARIO-IDENTIDADES.md` (objeto) → 0 linha com inspetor-san312b/jurado-san312b; `git grep` dos nomes novos em J-*, R-*, docs/juntas → 0; em prompts/revisoes/planos fora do repo → só o meu prompt e o relatório do preparo. Nomes entre si distintos pelo sufixo de cadeira.
+- §C7.4-bis: planejou (planejador-mestre/Fable, planejador-san312-e1-fable) ≠ desenvolveu (dev-san312b-sol/Codex, dev-san312b-opus) ≠ fabricou/redigiu (fab-red-san312b-opus, não vota) ≠ julga (c1/c2/c3) ≠ inspeciona (eu). Nenhum papel acumulado.
+- composição: §10 do plano (objeto, l.579) sugeria C2 Codex Sol e C3 Gemini Pro; mandato C3 l.325 troca o Gemini por Opus/Sol (Gemini CLI barra terminal; D-GEMINI-SEGUNDO-REVISOR). Competência: C1 tela/fidelidade, C2 cadeia de acesso, C3 dinheiro e contrato → cobre.
+- cobertura (script do mandato reexecutado sobre as linhas `^Item [0-9] de 3` dos 3 mandatos): `faltando:` vazio. F20 está só na C3 (Item 2); F21 só na C3. Divergência §A2 "F20–F22 sem cadeira no §10, postos na C3": registrada só no relatório do preparo (fora do repo, ponto 6); NÃO há frase explícita de §A2 nos mandatos (grep '§A2|sem cadeira' → 0) — o conteúdo está atribuído (cobertura completa), falta a menção escrita.
+- briefing: os 3 mandatos citam o plano versionado (§7.2, §7.4, §8.2, §9.2, §10), o relatório do dev (E0–E7/S0–S7/§M/D-1..D-9) e a referência `financeiro-baixa-conta-conciliacao-3opcoes` (c1 3, c2 2, c3 2); `arquivos_medidos` nos 3. As 2 seções de ratificação: a C3 tem o caminho da cópia fora do repo e o texto medido (ratif=7); C1/C2 só as veem pelos cabeçalhos E5/E7 do relatório do dev — suficiente, porque F4 (32), PERMITIDO (`finance-errors.ts`) e F8 são da C3. O relatório do dev VERSIONADO (E5 l.55-58, E7 l.79-84) transcreve a substância das 3 ratificações → rastreável no objeto; o texto original segue só fora do repo.
+- executores: `FILA-CODEX-2026-10-27.md` → Codex volta 01:39Z, máx. 2 tarefas, e a tarefa 0 (às 01:39Z, em paralelo) são 2 cadeiras do #464; o #469 é a tarefa 1 (depois que uma libera). `FILA-AGY-DEMO-2026-10-27.md` → "o antigravity vai para demo" (dono, 27/10), Opus agy 01:51Z, 1 tarefa por vez, 7 itens de demo na fila. `PORTEIRO-424-codex-bloqueado-ambiente.md` → no Codex desta máquina `/bin/bash` não existe; Git Bash existe em `C:/Program Files/Git/bin/bash.exe` (ls). O dev Codex (dev-san312b-sol) NÃO usou Docker (relatório l.46); o Postgres do dev foi do sucessor Opus (l.212). Docker acessível do subagente Claude: `docker version` → server 29.6.1 (medido por mim).
+- veredito parcial item 2: VERDE com ressalvas (A2 sem frase nos mandatos; ratificações fora do repo; executores condicionados).
+- (item 2, complemento) script de cobertura do mandato REEXECUTADO por mim → c1 F9 F11 F12 F16 F17 F19 D-5 D-9 · c2 F6 F7 F13 F15 CE-G2 D-4 D-7 · c3 F1–F5 F8 F9 F10 F14 F18 F20 F21 F22 D-1..D-9 32 · `faltando: (fim)`; `grep -c '^Item [0-9] de 3'` = 3 por cadeira.
+
+## Item 3 — terreno (01:28–01:36Z)
+- árvore: `git -C w-san312b rev-parse` = fc5ead6c; `status --porcelain --untracked-files=no` = 0; `status --ignored` (sem node_modules) → só `?? …/votos/B-SAN3-12b/`. md5 EOL-neutro blob × disco de `finance-errors.ts` (78fb3e2b), `tests/b-san3-12-ce4-db.test.ts` (25e556cd), `frontend/src/App.tsx` (af93e2ec) → iguais. `node_modules` e `frontend/node_modules` do w-san312b: `(Get-Item).LinkType` vazio → não junction.
+- mandatos das cadeiras: `npm ci` próprio (1 cada), proibição de junction (1 cada), `worktree remove` (1 cada), C1/C2 "Sem banco e sem Docker", portas c1 47913, c2 47923, c3 47933/47934; C3 `j12b-c3-wt`, `j12b-c3-pg`, `j12b-c3-redis`; piso 7,5 (2 cada), 4 GB (1 cada); P3/sucessor (c1 4, c2 3, c3 3); base viva/5432 proibida (c1 1, c2 1, c3 3).
+- portas: `netstat -ano` → 47913/47923/47933/47934 livres; `netsh … excludedportrange` → nenhuma faixa contém 47913–47934. 5432/6379 = `erp-postgres`/`erp-redis` (base viva, Up 2 days).
+- Docker: `docker ps -a` → `erp-postgres`, `erp-redis` (vivos), `agv3-proxy` (Exited 34 h, inerte, alheio); trabalhos vivos fora de `erp-*` = 0; `j12b*` = 0.
+- resíduo: containers j12b 0; caminhos `C:/Users/AMP/j12b*` → só `j12b-insp-wt` (MEU, removido no fim); worktrees j12b → só o meu.
+- memória: commit livre 9,41 GB (≥ 4); RAM disponível 7,06 GB.
+- disco (`(Get-PSDrive C).Free`): 9,82 GiB às 01:28Z → 9,23 GiB às 01:35Z (df: 11G→10G→9,3G). Causa medida: `C:/Users/AMP/j22r2-c3-wt` criado 22:29 local (01:29Z) — a C3 do #464 (Claude) em voo; `FILA-CODEX-2026-10-27.md` → às 01:39Z o Codex abre mais 2 cadeiras do #464 em paralelo.
+- custo de uma cadeira (robocopy /L /BYTES no w-san312b): `node_modules` raiz 435.246.830 B + `frontend/node_modules` 173.289.590 B = 0,61 GB aparentes (mais o desperdício de cluster de arquivos pequenos); checkout do objeto 77 MB (`git ls-tree -r -l`); precedente medido por outros: worktree+`npm ci` ≈ 0,7–1,1 GB (`w-rev462`: 11 → 9,9 GB). Estimativa de pico: C1/C2 ≈ 1,3 GB; C3 ≈ 1,6 GB (+ volume do Postgres e do Redis no vhdx do Docker, que não encolhe).
+- Chromium do Playwright em cache (`ms-playwright/chromium-1243`), sem download. Node: `node -v` v20.19.5; `nvm list` → 22.14.0 instalado em `C:/Users/AMP/AppData/Local/nvm/v22.14.0` (o D-8 do dev diz "indisponível": mérito da C3).
+- baseline: CI 14/14 success no objeto (item 1); `npm run check` e `npm --prefix frontend run check` ec 0 (item 1).
+- veredito parcial item 3: VERDE com condição de disco por cadeira (o disco é compartilhado com a junta do #464 e está caindo).
+
+## Limpeza (01:37Z)
+- `git worktree remove --force C:/Users/AMP/j12b-insp-wt` → ec 0; `ls -d C:/Users/AMP/j12b*` → 0; worktrees j12b → 0. w-san312b: HEAD fc5ead6c, 0 modificação, só o diretório de votos não rastreado. Logs temporários do scratchpad removidos (só os meus).
+- parecer fechado: LIBERADO COM RESSALVA (7 ressalvas) em insp-san312b-parecer.md.

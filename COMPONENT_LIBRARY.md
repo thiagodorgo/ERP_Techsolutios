@@ -81,6 +81,13 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 6. work-order and field-service domain components
 7. tenant context, permission, and exception surfaces
 
+### Registro — componentes React na biblioteca (por bloco)
+- `DenseExpandableRow` (`frontend/src/components/dense-list/`, B-SAN3-12b) — linha de uma altura que abre o detalhe logo abaixo, no padrão `D-PADRAO-BLOCOS-CLICAVEIS`: sem botão na linha, clique/Enter/Espaço alternam, Escape fecha; texto longo corta com reticências e leva o texto inteiro no `title`. Usa as classes `.pat-ab-row`/`.pat-ab-detail-row` que já existem.
+- `DenseTable` com `renderDetail` + `expandedKey` (+ `cellTitle`, coluna `width`) (B-SAN3-12b) — vira a lista `.pat-ab-table` do mesmo padrão, um detalhe aberto por vez; sem `renderDetail` nada muda para quem já a usa.
+- `KpiStatCard` com `pressed` (B-SAN3-12b) — indicador que FILTRA: com `onClick`, publica `aria-pressed` (bloco clicável que leva à lista filtrada).
+- `.pat-kpi-row--6` (CSS, B-SAN3-12b, E3) — grade de 6 indicadores ao lado de `--4`/`--5`; o valor do `KpiStatCard` fica a 18 px (15,5 px até 1340 px), sem quebra e com reticências, para que o dinheiro caiba inteiro a 1280, 1366 e 1440 px (números da opção A do Financeiro). As outras telas seguem a 27 px.
+- `DenseTable` com `renderDetail` + coluna `align: "right"`/`tabular` (CSS, B-SAN3-12b, E3) — a lista `.pat-ab-table` passa a alinhar à direita e tabular as colunas de dinheiro, espelhando `.dense-table` (`.pat-ab-table th.dense-col-right`, `.pat-ab-row td.dense-col-right`, `…dense-col-tabular`).
+
 ## Flutter priorities
 1. app shell and auth context
 2. offline-aware list and detail screens

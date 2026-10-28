@@ -55,8 +55,8 @@
 | **Estoque `/inventory` (F7)** | `inventory_items:read` | F | E | E | E(mov) | R | F | — | R | — |
 | **Remunerações `/finance/commissions` (F8)** | `commissions:read` / `read_own` | F | F | R | own | F | — | own | R | — |
 | Financeiro `/finance` | `finance:read` | F | F | R | — | F | — | — | R | — |
-| Cobranças `/finance/charges` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
-| Pagamentos `/finance/payments` (Ω4-2b) | `financial_titles:read` (cria/edita: `:create`/`:update`) | F | F | R | — | F | — | — | R | — |
+| Cobranças `/finance?aba=rec` (B-SAN3-12b; `/finance/charges` redireciona) | `financial_titles:read` (cria/edita: `:create`/`:update`; baixa: `financial_entries:create`) | F | F | R | — | F | — | — | R | — |
+| Pagamentos `/finance?aba=pag` (B-SAN3-12b; `/finance/payments` redireciona) | `financial_titles:read` (cria/edita: `:create`/`:update`; baixa: `financial_entries:create`) | F | F | R | — | F | — | — | R | — |
 | Usuários `/users` (F9) | `users.read`/`users.manage` | F | F(manage) | R | — | — | — | — | R | limited |
 | Notificações `/notifications` | `notifications:read` | F | F | F | R | R | R | M | R | R |
 | Central de Notificações `/controle/notificacoes` (Ω4C PR-20) | `notifications:create` | F | F | E | E | — | — | — | — | — |
