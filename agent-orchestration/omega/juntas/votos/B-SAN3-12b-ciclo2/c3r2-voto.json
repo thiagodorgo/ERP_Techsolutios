@@ -1,0 +1,159 @@
+{
+ "jurado": "jurado-san312b-c3-r2-opus (identidade nova; nada herdado como fato)",
+ "corpo": "jurado-san312b-c3-dinheiro-e-contrato",
+ "cadeira": "C3 refeita (ciclo 2, regra (3)) — dinheiro e contrato; foco C3-05, C3-02, C3-07 e ajuste C3-01, mais regressão dos itens",
+ "mandato_md5": "66147331d4b6a773ec0107669cf306b4 · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 · nível menor (§C7.6) · substituição: nenhuma",
+ "corpo_md5": "3edfee9fdffd5ebd1a64620072eaad3d · IDENTICO (EOL-neutro, blob do objeto)",
+ "objeto": "e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 (ls-remote = gh pr view 469, no início e no fim) · objeto do ciclo 1 fc5ead6c (= e77a5ac1~13) · merge-base = origin/main f076973921539165df8d406b8c061dbf4e4ee127 no início e no fim · head não andou",
+ "legalidade": "parecer insp-san312b-c2-parecer.md (inspetor-san312b-c2-sol, Codex Sol): LIBERADO COM RESSALVA (1 ressalva: paralelismo condicionado aos pisos; C3 depois do teardown da C2 — medido: worktree da C2 ausente, nenhum container j12b*) · o inspetor nomeou a C3 como Codex Sol; o disparo me nomeia Claude Opus, o que mandato e R- §4 admitem · worktree j12b-c2-c3r2-wt e porta 48124 do inspetor; Redis em 48126 (livre, medido) · check-runs do objeto: 14 concluídos, 0 não-verdes (mandato), re-verificado pelos runs 40609948720/40609945219 completed/success; job backend 4157·4155·0·2",
+ "quorum": "DINHEIRO: unanimidade de 3, com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova) · C3 refeita pela regra (3) do §C7 item 9",
+ "leitura_de_outras_cadeiras": "não li c1*/c2* do ciclo 2 · li: corpo (blob), mandato genérico e específico, parecer e evidência do inspetor do ciclo 2, c3-voto.json do ciclo 1 (roteiro), plano versionado (ratificações, E2), relatório do dev, API_CONTRACTS, pendencias.md",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "**"
+ ],
+ "voto": "REPROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito": "VERDE",
+   "testes": "bloco de frontend/: 112|112|0|0 (R14); sonda própria 5|5|0 (+33 pulados por construção)",
+   "corpo_pay": "5 chaves exatas (account_id, amount número, client_action_id, occurred_at, payment_method) ×4 envios",
+   "mesmo_id": "1 id em 500→422 overpayment→rede→201; formulário novo → id novo",
+   "releitura": "1 GET do título antes de qualquer mensagem; botão disabled e 0 POST durante a releitura, nos 3 desfechos",
+   "r6_c3_01": "matriz 9 desfechos × {igual,mudou} = 18/18: já registrada só em 409 duplicate_payment ou rede/5xx com pagamento relido",
+   "r5_c3_05": "oferta após desvínculo registered; gate cheques:update; dois passos; POST /cancel corpo null; 422 e 409 mantêm o botão; 200 remove; deposited sem botão; sem permissão: aviso",
+   "razoes_32": "código 32 = plano 32 = API lista-da-tela 32 como conjunto; 4 fora sem interseção; 32 mensagens únicas; genérica distinta; controle ±1 acusa",
+   "mutacoes": "13/13 vermelhas e restauradas com hash = blob: R5-M1, R5-M2, R5-M3, R5-M3b, R6-M1, F1, F2, F3, F4, F4b, F5, F21 e a minha C3R2-MID (id novo só após rede) → F1/F2/F3 vermelho",
+   "controle_ciclo1": "sonda contra frontend/src de fc5ead6c: 4/5 vermelhos (C3-01, C3-05, C3-02, R4(b)); F2 verde como esperado"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "f14_r4": "sonda C3R2-2a: 6 URLs de /aggregate, 6 distintas, 0 repetida, em 3 ordens de chegada das contas; toda outra rota ×1; contagens por conta presentes. C3R2-2b: rodada velha não sobrescreve (222 fica). Controle ciclo 1: 10 chamadas (4 URLs ×2) e rodada velha sobrescreve",
+   "a_conciliar": "servidor (/aggregate reconciled=false; FinanceiroViewA.tsx:91)",
+   "f8_trava": "git grep §9.2 = 8 = inventário, idêntico em c9a2d036; forma R12 n=0; varredura de acumuladores em accounts/entries/pages: 0 soma de dinheiro. LACUNA: o guard não pega <chamada>(…).reduce( nem (<expr>).reduce( — C3R2-01",
+   "conciliacao": "F10/F22 verdes; mutações F10, F22 e a minha C3R2-409 (409 sem releitura) vermelhas",
+   "f20_f9": "F20 e F9 vermelhos sob mutação",
+   "ce4_ci": "backend e CE-4 byte-idênticos ao ciclo 1; CI do objeto: CE-4 ok no job backend, braço 2; braço 1 sem CI = P-SAN3-12-CE4-BRACO1-NA-CI (E2.4)",
+   "mutacoes": "R4-M1, R4-M2, R12-M1, F8b, F9, F10, F22, F20, C3R2-409 vermelhas; F8 da minha forma (([]).reduce) VERDE; C3R2-F8-filter (items.filter(...).reduce em entries/) e C3R2-F8-values (Object.values(...).reduce) VERDES; C3R2-RND (sem trava de rodada) verde na suíte oficial, vermelho só na minha sonda",
+   "veredito": "VERMELHO por C3R2-01 (resto verde)",
+   "ce4": "meu Postgres 16.15 descartável: banco A provisionado 3× 2·2·0·0 braço 1; banco B só migrado 3× 2·2·0·0 braço 2; mutação F18b (1º passo com estado errado) vermelha por 409 reconciliation_stale no braço 1; CI: braço 2 no job backend"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito": "VERMELHO por C3R2-02 (resto verde)",
+   "escopo": "PR 70 caminhos, 0 proibido (5 de components/** nominais do §7.2); ciclo 2 do dev 100% dentro do E2.1; merges só com os 3 conflitos previstos + RETOMADA 1 no relatório (nota)",
+   "r7_c3_07": "índice = gerador (0 linha) no objeto e em todo commit do ciclo 2 que tocou pendencias.md; controle ciclo 1 = 104; R7-M1 = 12",
+   "r13": "2 cabeçalhos (3 ratificações) + E2 verbatim (182×182, 0 diferença com a cópia do orquestrador); R13-M1 → 1; ciclo 1 → 0; D-8 corrigido; 4 pendências da E2.4 com dono e critério",
+   "r8_merge": "main ancestral, MERGEABLE, test:smoke 1475 casos; MAS o fechamento de P-SAN3-20-RESUMO-CHEQUE-VINCULADO se perdeu no merge b5246e8d (C3R2-02)",
+   "d1_d9": "D-1, D-2, D-3, D-7 transcrição; D-5 e D-9 declaradas na E2.2; D-6 revertida pela R5 (texto do relatório não marcado como superado: nota C3R2-04); D-8 corrigida e medida; D-4 da C2",
+   "bateria": "front check ec0; test:smoke Node 20.19.5 1475·1475·0·0; Node 22.14.0 1475·1475·0·0; front build ec0; raiz check, lint, build ec0; git diff --check vazio; npm test da raiz fora do R14 (PR sem backend; CI backend success) — redução declarada"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C3R2-01",
+   "defeito": "A trava do F8 (frontend/tests/finance-no-money-reduce.guard.test.ts, scanFinance) só reconhece `.reduce(` quando o receptor é uma cadeia de identificadores (regex ([A-Za-z_$][w$.?]*).reduce(); uma soma de dinheiro por `items.filter(f).reduce((s, e) => s + e.amount, 0)`, `Object.values(m).reduce(…)` ou `(expr).reduce(…)` num diretório do bloco passa com o guard verde, nas duas réguas (strict e broad).",
+   "evidencia": "mutações C3R2-F8-filter (entries/useFinanceActions.ts), C3R2-F8-values e F8-(expr) (pages/views/FinanceiroViewA.tsx): guard tests 4 · pass 4 · fail 0; com a mesma mutação o comando do §9.2 `git grep -n -E \"reduce(|+= *[a-zA-Z.]*amount\" -- frontend/src/modules/finance` = 9 ≠ 8. O guard está no test:smoke (job frontend da CI); o git grep é passo manual da bateria. Guard criado no bloco (c022182d, 2026-10-26). N no produto hoje = 0.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a trava não reprova ocorrência fora do inventário da forma que a ratificação de 14:40Z fixou (\"qualquer ocorrência fora do inventário reprova\"; a régua é a do rg `reduce(`), e o próprio comentário do guard promete \"broad = qualquer .reduce(\""
+  },
+  {
+   "id": "C3R2-02",
+   "defeito": "O merge da main da fatia 1 (b5246e8d) descartou o fechamento de P-SAN3-20-RESUMO-CHEQUE-VINCULADO que o bloco tinha feito (5d8aa9a3): no objeto a seção está igual à da base (status ABERTA, sem a linha do critério medido), e o índice gerado a lista como aberta.",
+   "evidencia": "status por ref: 5d8aa9a3/fc5ead6c/b5246e8d^1 FECHADA; b5246e8d^2 (main) ABERTA; b5246e8d e e77a5ac1 ABERTA; seção do objeto × c9a2d036 = 0 linhas; main não mexeu na seção (c9a2d036 × b5246e8d^2 = 0). Relatório do dev l.281 confere só o cabeçalho.",
+   "gravidade": "bloqueia",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o merge não manteve os dois lados do registro: o fechamento que a E2.5 (passo 2) manda conferir não existe no objeto, e o registro deixa de rastrear o que o bloco entregou (§A5)"
+  },
+  {
+   "id": "C3R2-03",
+   "defeito": "A trava de rodada superada de useEntriesAggregate (R4(b)) não é presa por nenhum teste do bloco: sem a linha `if (round !== roundRef.current) return;` a suíte viva inteira fica verde.",
+   "evidencia": "mutação C3R2-RND: finance-page-live 33/33 pass; só a minha sonda C3R2-2b fica vermelha. O código do objeto cumpre a R4(b) (C3R2-2b verde).",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "critério da R4(b) sem teste que o faça falhar"
+  },
+  {
+   "id": "C3R2-04",
+   "defeito": "O texto da D-6 no relatório do dev (l.192-195) continua dizendo que a tela não oferece \"Cancelar o cheque\" e manda cancelar \"lá\", sem marca de superado, embora a E2/R5 tenha revertido a D-6 no produto.",
+   "evidencia": "git show e77a5ac1:docs/revisoes/SAN3/B-SAN3-12b-dev.md | grep -n D-6 → só l.192",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "registro que descreve um estado que o objeto não tem mais (a R13 só exigiu corrigir a D-8)"
+  }
+ ],
+ "o_que_executei": [
+  {
+   "comando": "cd frontend && node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx",
+   "forma": "worktree próprio no objeto, Node 20.19.5",
+   "resultado": "ec0 112·112·0·0"
+  },
+  {
+   "comando": "node --test --import tsx tests/zz-j12bc3r2-sonda.test.tsx (sonda md5 63644677225e8808d34bace4a7e61ca6)",
+   "forma": "objeto e frontend/src do ciclo 1",
+   "resultado": "objeto 5/5 meus verdes; ciclo 1 4/5 vermelhos"
+  },
+  {
+   "comando": "node $SCRATCH/mutar.mjs <wt> e77a5ac1 mut-item1.json | mut-item2.json | mut-item2b.json | mut-f18b.json",
+   "forma": "uma por vez, âncora única, restauro por hash",
+   "resultado": "vermelhas: R5-M1, R5-M2, R5-M3, R5-M3b, R6-M1, F1, F2, F3, F4, F4b, F5, F21, C3R2-MID, R4-M1, R4-M2, R12-M1, F8b, F9, F10, F22, C3R2-409, F20, F18b; VERDES: F8-(expr), C3R2-F8-filter, C3R2-F8-values (achado C3R2-01) e C3R2-RND na suíte oficial (nota C3R2-03)"
+  },
+  {
+   "comando": "node --import tsx $SCRATCH/razoes.mjs (± controle)",
+   "forma": "FINANCE_UI_ERROR_REASONS executado × plano §4.1 × API_CONTRACTS",
+   "resultado": "32=32=32, ∅ nos dois sentidos; controles acusam"
+  },
+  {
+   "comando": "git grep -n -E \"reduce\\(|\\+= *[a-zA-Z.]*amount\" <ref> -- frontend/src/modules/finance",
+   "forma": "objeto e c9a2d036; e com a mutação C3R2-F8-filter",
+   "resultado": "8 = 8 = inventário; 9 com a mutação"
+  },
+  {
+   "comando": "python -I gen.py em cópia, por ref",
+   "forma": "e77a5ac1, fc5ead6c, R7-M1 e todo commit do ciclo 2 que tocou pendencias.md",
+   "resultado": "0 / 104 / 12 / 0 em todos"
+  },
+  {
+   "comando": "git show <ref>:agent-orchestration/controle/pendencias.md (seção P-SAN3-20-RESUMO-CHEQUE-VINCULADO)",
+   "forma": "11 refs",
+   "resultado": "FECHADA até b5246e8d^1; ABERTA de b5246e8d em diante (achado C3R2-02)"
+  },
+  {
+   "comando": "bash $SCRATCH/bateria.sh",
+   "forma": "R14: front check, test:smoke Node 20 e 22, front build, raiz check/lint/build, diff --check",
+   "resultado": "tudo ec0; smoke 1475·1475·0·0 nas duas versões"
+  },
+  {
+   "comando": "bash $SCRATCH/ce4.sh",
+   "forma": "postgres:16-alpine e redis:7-alpine descartáveis, banco A provisionado e B só migrado, 3× cada",
+   "resultado": "6/6 2·2·0·0, braço 1 em A e braço 2 em B"
+  },
+  {
+   "comando": "gh run view 40609948720 / 40609945219 --log",
+   "forma": "CI do objeto",
+   "resultado": "CE-4 ok no job backend, braço 2; backend 4157·4155·0·2"
+  }
+ ],
+ "justificativa": "Terreno: worktree próprio detached no objeto com npm ci próprio (sem junction), Postgres/Redis descartáveis j12b2-c3r2-* em 127.0.0.1, base viva nunca tocada, pisos sempre acima (>= 11,8 GiB de disco, >= 12,2 GB de memória de commit). Item 1 VERDE: C3-05 (R5) e C3-01 (R6) fechados por sonda própria (matriz 18/18; cancelar em dois passos, POST sem corpo, gate cheques:update, 409/422 mantêm o botão) e por 13 mutações vermelhas, inclusive a minha (id novo só após rede); 32 razões iguais como conjunto nas três fontes, 32 mensagens únicas. Controle: a sonda contra o frontend/src do ciclo 1 acusa 4 de 5 casos. Item 2: C3-02 (R4) fechado (6 URLs, 0 repetida, em 3 ordens; rodada velha não sobrescreve), F9/F10/F14/F18/F20/F22/R12 verdes com mutações vermelhas, CE-4 3+3 verde nos dois braços; MAS a trava F8 não pega <chamada>(…).reduce( (C3R2-01, bloqueia). Item 3: C3-07 (R7) fechado, R13 cumprida, escopo dentro do E2.1, bateria verde em Node 20 e 22; MAS o merge perdeu o fechamento de P-SAN3-20-RESUMO-CHEQUE-VINCULADO (C3R2-02, bloqueia). Controles: os 3 itens têm vermelho-controle visto acusando (ciclo 1, mutações ±1, R7-M1, R13-M1, laço com proibido injetado). Sem medir: nada do mandato; npm test da raiz fora do R14 (declarado). Limpeza: containers 0, senha 0, worktree removido, mutações restauradas com hash = blob.\nVOTO: REPROVADO — (1) a trava do F8 deixa passar soma de dinheiro por <chamada>(…).reduce( / (<expr>).reduce( nos diretórios do bloco, forma que o rg ratificado acusa (C3R2-01); (2) o merge da main perdeu o fechamento de P-SAN3-20-RESUMO-CHEQUE-VINCULADO que a E2.5 manda conferir (C3R2-02) | escopo: dentro-do-bloco | classe: não grave | ciclo 2 | evidência: guard 4·4·0 sob C3R2-F8-filter/-values com git grep = 9; status FECHADA→ABERTA em b5246e8d",
+ "criterios_que_nao_puderam_falhar": [
+  "R4(b) (rodada superada): nenhum teste do bloco falha sem a trava de rodada (só a minha sonda)",
+  "F8 nas formas <chamada>(…).reduce( e (<expr>).reduce( (achado C3R2-01)"
+ ],
+ "pendencias_que_aceito": [
+  "P-SAN3-12-CE4-BRACO1-NA-CI (CE-4 braço 1 sem CI; E2.4)",
+  "P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (as 8 do inventário)",
+  "nota: o merge b5246e8d também gravou a RETOMADA 1 no relatório, o que a E2.5 passo 5 não previa (a E2.6 manda)",
+  "D-4 é da C2 (não julgada)"
+ ],
+ "teardown": "containers j12b2-c3r2-* removidos (0) · bancos foram com o container · processos com o caminho = 0 · worktree removido por git worktree remove --force · mutações e o checkout do ciclo 1 restaurados (status 0, hash-object = blob) · sonda do worktree apagada; senha apagada, busca = 0 · base viva nunca tocada · w-san312b só com c3r2-evidencia.md e c3r2-voto.json · $SCRATCH mantido como roteiro P3"
+}

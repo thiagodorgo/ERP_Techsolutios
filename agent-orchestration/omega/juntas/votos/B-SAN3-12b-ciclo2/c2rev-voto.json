@@ -1,0 +1,165 @@
+{
+ "jurado": "jurado-san312b-c2-r2b-opus (identidade NOVA; sucessor P3 de jurado-san312b-c2-r2-sol; nada herdado como fato)",
+ "corpo": "jurado-san312b-c2-cadeia-de-acesso",
+ "cadeira": "C2 revalidada (§C7 item 9 regra (2)) — cadeia de acesso: gate de cada ação = permissão exata da rota (CE-G2, F7, R5, R9), desvínculo e cancelamento do cheque (F6, R5), redirecionamentos, menu e chave da aparência (F13, F15)",
+ "mandato_md5": "49d41e724b2498fb5ad6ea316eb57e02 (cadeira-c2rev.md, EOL-neutro) · prompts: j12b2-cadeira.md 743f31fd4c388854d45b3d4765f22f2d, j12b2-c2rev-b-sol.md e80d69f4c86a617063f491887fdfc192 · declarado no disparo: não declarado",
+ "modelo": "Claude Opus 5.5 (claude-opus-5-5), subagente Claude · nível menor (§C7.6) · substituição DECLARADA: Codex esgotou a janela de 5 h às 01:46Z (volta 28/10 02:31 local); Antigravity sem crédito; Gemini API no teto; pela regra do dono, o Claude cobre o braço que caiu por limite",
+ "corpo_md5": ".claude/ d91270202a8b737292ca58ab3726c314 (blob do objeto, EOL-neutro) · .agents/ f077fc6f274620e9eba0c48952bb1441 (espelho com frontmatter e bloco Codex) · recebido: o próprio blob por git show · IDENTICO",
+ "objeto": "e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 (ls-remote = gh pr view 469, OPEN, MERGEABLE) · objeto do ciclo 1 e77a5ac1~13 = fc5ead6cf3191eb2a1485d4a16404a403a00beec · diff ciclo1..objeto 143 caminhos (cruza o escopo da C2, logo revalidação) · merge-base = origin/main f076973921539165df8d406b8c061dbf4e4ee127 no início e no fim · objeto no fim: igual",
+ "legalidade": "parecer insp-san312b-c2-parecer.md (inspetor-san312b-c2-sol) LIBERADO COM RESSALVA; worktree j12b-c2-c2rev-wt nomeado; ressalva 1 (C1 em paralelo) cumprida: 11,21 GiB livres e 11,35 GB de commit no start; o parecer previa Codex Sol, e a troca por Claude Opus está DECLARADA (mesmo nível) · check-runs 14 | 0 não-verdes | 0 pendentes · frontend, backend, backend-postgres completed/success",
+ "quorum": "unanimidade de 3, com veto · ciclo 2 (todo bloqueia dentro-do-bloco reprova)",
+ "sucessao": "sucessor P3 de jurado-san312b-c2-r2-sol (caído às 01:40:52Z pelo lançador); os logs dele em j12b2-c2rev/ foram só roteiro e termo de comparação; tudo re-executado por mim no scratch novo j12b2-c2rev-b",
+ "escopo": "dentro-do-bloco (nenhum achado bloqueia)",
+ "gravidade": "nota (só notas)",
+ "leitura_de_outras_cadeiras": "não li c1*/c3* do ciclo 2 · li: mandato cadeira-c2rev.md, os dois prompts, corpo do blob, insp-san312b-c2-parecer.md, insp-san312b-parecer.md (ressalvas), c2-evidencia.md e c2-voto.json do ciclo 1 (a cadeira que revalido), a evidência e o voto do caído, 00-quedas.md, plano R5/R9 (E2), pendencias.md (P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO)",
+ "pausa": "nenhuma",
+ "arquivos_medidos": [
+  "frontend/src/modules/finance/pages/FinanceiroPage.tsx",
+  "frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx",
+  "frontend/src/modules/finance/pages/financeiro.state.ts",
+  "frontend/src/modules/finance/entries/**",
+  "frontend/src/modules/finance/accounts/**",
+  "frontend/src/modules/finance/titles/**",
+  "frontend/src/App.tsx",
+  "frontend/src/guards/PermissionGuard.tsx",
+  "frontend/src/providers/**",
+  "frontend/src/layouts/appSidebarNav.ts",
+  "frontend/src/layouts/AppShell.tsx",
+  "frontend/src/navigation/types.ts",
+  "frontend/src/navigation/tenantNavigation.ts",
+  "frontend/src/modules/navigation/**",
+  "frontend/src/modules/auth/auth.adapter.ts",
+  "frontend/src/modules/appearance/**",
+  "src/modules/core-saas/permissions/catalog.ts",
+  "src/modules/core-saas/middleware/rbac.middleware.ts",
+  "src/modules/core-saas/middleware/tenant-context.middleware.ts",
+  "src/modules/navigation/**",
+  "src/modules/financial-entries/**",
+  "src/modules/financial-titles/**",
+  "src/modules/financial-accounts/**",
+  "src/modules/cheques/**",
+  "src/app.ts",
+  "RBAC_MATRIX.md",
+  "agent-orchestration/controle/pendencias.md",
+  "agent-orchestration/controle/pendencias-indice.md",
+  "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+  "frontend/tests/finance-page-live.test.tsx",
+  "frontend/tests/finance-baixa.smoke.test.tsx",
+  "frontend/tests/finance-conciliacao.smoke.test.tsx",
+  "frontend/tests/finance-redirects.test.tsx",
+  "frontend/tests/aparencia-storage.test.ts",
+  "frontend/tests/aparencia-hook.test.tsx",
+  "frontend/tests/sidebar-nav.test.tsx",
+  "frontend/tests/san3-04a-sidebar-estoque-financeiro.test.tsx"
+ ],
+ "voto": "APROVADO",
+ "itens": [
+  {
+   "item": 1,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "comparacao": "cmd1 matriz IGUAL; cmd2 backend IGUAL (salvo UUID aleatório); cmd3 86/86 vs 71/71 — diferente por desenho (+15 casos E2, 1 renomeado, nenhum sumiu); cmd4 sonda 4/4 + comparador 25 atores 0 divergentes, front-probe.json IGUAL",
+   "cauda_R5": "cancel ⇔ cheques:update (back: 200 só com update; so:unlink 403); tela: botão só com update, POST /cheques/ch-1/cancel body null, so:unlink e menos:update sem botão e com 'Peça a quem administra'",
+   "cauda_R9": "so:titles:update sem Registrar e sem Conciliar (back 403 nos dois); so:entries:create Registrar; so:entries:update Conciliar"
+  },
+  {
+   "item": 2,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "mutacoes": "M1, M1b, M2=R9-M1, CONC-vizinho, M3, M4, M5, R5-M2, R5-M3(corpo) — 9/9 vermelhas pelo caso dono (AssertionError), sonda acusa; restauradas hash=blob",
+   "comparacao": "M2 mudou por desenho: verde no ciclo 1 (C2-01), agora vermelha pelo caso R9 — C2-01 fechada; demais iguais ao ciclo 1",
+   "controle_objeto_ciclo1": "fc5ead6c: R5(a)(b)(c) NOT OK por AssertionError, 0 erro de import; R9/F6/F7 verdes no ciclo 1 (previsto); sonda da cauda: 0 botão Cancelar e frase antiga presente"
+  },
+  {
+   "item": 3,
+   "estado": "FECHADO",
+   "veredito_parcial": "VERDE",
+   "comparacao": "cmd7 navback/navback-semfin IGUAIS ao ciclo 1; navfront obj/semfin IGUAIS; base f0769739 IGUAL à base c9a2d036; cmd8 front3 objeto IGUAL ao ciclo 1",
+   "acesso_antes_depois": "0 de 39 células de papel do catálogo mudam; 4 só em sintéticos (C2-03 do ciclo 1, decisão F13/Q4)",
+   "menu": "mesmos rótulos por papel; D-4 sem módulo finance igual ao ciclo 1, pendência P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO ABERTA dono B-SAN3-24",
+   "f15": "chave techsol.aparencia.<tenant>.<user>; B@T1 não herda; A@T2 não herda; abrir não grava",
+   "mutacoes": "M6, M7, M8 vermelhas por AssertionError; sondas acusam",
+   "controles": "finance-redirects do objeto vermelho na base f0769739 (2 AssertionError); tabela e sonda F15 acusam M6/M8/M7"
+  }
+ ],
+ "justificativa": "Terreno: worktree j12b-c2-c2rev-wt reaproveitado (status vazio, HEAD = objeto, node_modules Directory nos dois, sem junction), sem Docker e sem base, backend só em memória (REDIS_URL para porta fechada) em 127.0.0.1:47923/47924; testes .tsx de frontend/; Node 20 do PATH (a forma do ciclo 1). Roteiros = os 9 scripts do ciclo 1 com troca mecânica de caminhos.\nItem 1: comandos 1 (matriz) e 2 (backend, 25 atores) IGUAIS ao ciclo 1 (salvo um UUID aleatório); comando 3 86/86 contra 71/71, diferente por desenho (+15 casos da E2, 1 renomeado, nenhum sumiu); comando 4 sonda 4/4 e comparador 25 atores 0 divergentes, JSON igual. Cauda por sondas MINHAS: no backend, POST /cheques/:id/cancel sem corpo dá 200 só com cheques:update (so:cheques:unlink_title e menos:cheques:update recebem 403); na página real, 'Cancelar o cheque' aparece só para quem tem cheques:update, manda POST /cheques/ch-1/cancel com body null, e o ator só-unlink desvincula sem ver o botão e recebe 'Peça a quem administra os cheques'; R9: titles:update não abre Registrar nem Conciliar, entries:create abre Registrar, entries:update abre Conciliar, igual ao servidor.\nItem 2: 9 mutações de gate (M1, M1b, M2=R9-M1, Conciliar vizinho, M3, M4, M5, R5-M2, R5-M3 corpo) vermelhas pelo caso dono por AssertionError e acusadas pelas sondas; a M2 mudou por desenho (verde no ciclo 1, agora vermelha pelo R9: a nota C2-01 do ciclo 1 fecha). Controle no objeto do ciclo 1 (fc5ead6c): R5(a)(b)(c) NOT OK por AssertionError, 0 erro de import; a sonda da cauda vê 0 botão de cancelar e a frase antiga.\nItem 3: comando 7 (menu do backend com e sem o módulo finance; menu do front no objeto e na base) e comando 8 (App real, rotas e aparência) IGUAIS ao ciclo 1 no objeto; base f0769739 igual à base c9a2d036 no menu (delta da main = só appearance.registry.ts); 0 de 39 células de papel mudam de acesso; 4 sintéticas (C2-03); D-4 igual, com pendência dona aberta; F15 sem herança e sem gravar ao abrir. M6, M7 e M8 vermelhas; controle finance-redirects vermelho na base por AssertionError.\nSem medir: nada dos 3 itens. Limpeza: sondas apagadas, servidores fechados, worktree removido por git worktree remove --force (ec 0), nenhum Docker nem base, 11,87 GiB livres no fim.\nVOTO: APROVADO — revalidação pela regra (2): os 8 comandos do ciclo 1 com saída igual ou diferente só por desenho da E2; gate = permissão da rota nas ações para 13 papéis e os atores sintéticos, agora inclusive o 'Cancelar o cheque' (cheques:update, POST sem corpo, ator só-unlink sem botão) e a R9 por permissão; Gestor/Auditor só consultam; Técnico fora; desfazer fail-closed; desvínculo só com cheques:unlink_title e pedido sem fila fingida; acesso por rota igual à base para todo papel do catálogo, salvo as células sintéticas decididas por F13/Q4; menu sem ganho nem perda por papel, salvo a D-4 com dono; chave por organização e usuário; 12 mutações vermelhas pelo caso indicado; pendências: C2R-01, C2-02, C2-03",
+ "o_que_executei": [
+  {
+   "comando": "cd <wt> && node --import tsx $S/zz-j12bc2-matriz.mts",
+   "forma": "objeto, 13 papéis",
+   "resultado": "ec 0; diff com o ciclo 1 IGUAL"
+  },
+  {
+   "comando": "NODE_ENV=test REDIS_URL=redis://127.0.0.1:1 node --import tsx $S/zz-j12bc2-backend.mts $S/backend-obj.json",
+   "forma": "createApp em memória, 127.0.0.1:47923, 25 atores",
+   "resultado": "ec 0; igual ao ciclo 1 salvo 1 UUID aleatório"
+  },
+  {
+   "comando": "(frontend/) node --test --import tsx finance-page-live, finance-baixa.smoke, finance-redirects, aparencia-storage, aparencia-hook, sidebar-nav, san3-04a-sidebar",
+   "forma": "objeto",
+   "resultado": "ec 0; 86/86 (ciclo 1 71/71; +15 casos da E2)"
+  },
+  {
+   "comando": "node --import tsx $S/zz-j12bc2-roleperms.mts $S/role-perms.json; node --test tests/zz-j12bc2-front.test.tsx; node $S/zz-j12bc2-compare.cjs",
+   "forma": "página real, 25 atores; role-perms gerado do catálogo (cmp igual ao ciclo 1)",
+   "resultado": "ec 0, 4/4; 25 atores, 0 divergentes; JSON igual ao ciclo 1"
+  },
+  {
+   "comando": "NODE_ENV=test REDIS_URL=redis://127.0.0.1:1 node --import tsx $S/zz-j12bc2-cauda-back.mts; node --test --test-name-pattern=C2REV tests/zz-j12bc2-cauda.test.tsx",
+   "forma": "cauda R5/R9: backend 20 atores em 127.0.0.1:47924; página real 9+5 atores",
+   "resultado": "cancel 200 só com cheques:update; botão só com cheques:update; POST body null; R9 por permissão sem divergência"
+  },
+  {
+   "comando": "zz-j12bc2-mut.sh M1, M1b, M2=R9-M1, CONC-vizinho, M3, M4, M5, R5-M2 (+ sonda da cauda), R5-M3, M6, M7, M8",
+   "forma": "âncora única, numstat 1 1, restauro por git checkout <objeto> e hash-object = blob",
+   "resultado": "12/12 vermelhas pelo caso dono; sondas acusam; 12/12 restauradas = blob"
+  },
+  {
+   "comando": "git checkout fc5ead6c -- frontend/src; finance-page-live --test-name-pattern=R5|R9|F6|F7; sonda da cauda; finance-redirects; git checkout f0769739 -- frontend/src; finance-redirects",
+   "forma": "objeto do ciclo 1 e base atual no meu worktree, restaurados (status vazio, hash = blob)",
+   "resultado": "R5 x3 vermelhos por AssertionError no ciclo 1; F13 x2 vermelhos por AssertionError na base"
+  },
+  {
+   "comando": "zz-j12bc2-navback.mts, zz-j12bc2-navback-semfin.mts, zz-j12bc2-navfront.mts (objeto e base f0769739); C2_OUT3=... node --test tests/zz-j12bc2-front3.test.tsx (objeto e base)",
+   "forma": "backend em memória; front e App real",
+   "resultado": "iguais ao ciclo 1; 0 de 39 células de papel mudam; F15 sem herança"
+  }
+ ],
+ "achados": [
+  {
+   "id": "C2R-01",
+   "defeito": "o insumo role-perms.json das sondas front/front3 do ciclo 1 foi gerado por comando que não está em o_que_executei; o sucessor (e o caído) caíram em ENOENT na 1ª execução",
+   "evidencia": "$S/04-front.log da 1ª execução (ENOENT, sobrescrito na 2ª); j12b2-c2rev/04-front.log do caído (ENOENT); gerado por zz-j12bc2-roleperms.mts, cmp igual ao do ciclo 1",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "propriedade ausente: o roteiro P3 do ciclo 1 não é re-executável só com os comandos registrados (falta o passo que gera um insumo). Não afeta o produto"
+  },
+  {
+   "id": "C2-02",
+   "defeito": "(repetida do ciclo 1, igual) D-4: numa organização sem o módulo finance, Cobranças e Pagamentos aparecem no menu dos 7 papéis que leem",
+   "evidencia": "navfront-semfin-base.json × navfront-semfin-obj.json; pendencias.md l.11932 do objeto",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "o item com ?aba= não casa com caminho governado do backend; o acesso ao dado não muda; pendência P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO aberta, dono B-SAN3-24"
+  },
+  {
+   "id": "C2-03",
+   "defeito": "(repetida do ciclo 1, igual) 4 células de acesso mudam só para atores sintéticos (só financial_titles:read perde /finance/charges e /finance/payments; só financial_entries:read passa a entrar)",
+   "evidencia": "front-probe3-BASE.json × front-probe3-OBJ.json; matriz executada titles:read ≡ entries:read",
+   "gravidade": "nota",
+   "escopo": "dentro-do-bloco",
+   "classe": "não grave",
+   "motivo": "a guarda efetiva passou de financial_titles:read para financial_entries:read|finance:read pela decisão F13/Q4; nenhum papel do catálogo é afetado"
+  }
+ ],
+ "criterios_que_nao_puderam_falhar": [],
+ "pendencias_que_aceito": [
+  "C2R-01: registrar no roteiro da C2 o passo que gera role-perms.json (dono a nomear pelo orquestrador)",
+  "P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (D-4, dono B-SAN3-24): C2-02",
+  "C2-03: células de atores sintéticos, decisão F13/Q4",
+  "C2-01 do ciclo 1: FECHADA pela R9 (a M2 agora fica vermelha)"
+ ],
+ "teardown": "servidores em memória fechados (47923/47924 sem LISTEN) · 0 processo node com o caminho · worktree j12b-c2-c2rev-wt removido por git worktree remove --force (ec 0) · 12 mutações e 5 checkouts restaurados (status vazio, hash-object = blob) · sondas apagadas de frontend/tests; originais só em j12b2-c2rev-b · nenhum docker, nenhuma base · em w-san312b só c2rev-evidencia.md e c2rev-voto.json"
+}
