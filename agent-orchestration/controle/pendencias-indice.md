@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **670** |
-| IDs distintos | 659 |
-| **ABERTAS** | **506** |
+| Cabecalhos `## P-` | **675** |
+| IDs distintos | 664 |
+| **ABERTAS** | **511** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **441** |
+| — das quais **ativas nesta rodada** | **446** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 160 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **670 cabecalhos para 659 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **675 cabecalhos para 664 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 230
+## ABERTAS · balde A — material — 231
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -305,8 +305,9 @@
 | `P-CHK-EDITOR-GRADE-ESTREITA` | 11901 | MÉDIA | sim | P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checkl |
 | `P-CHK-EDITOR-LEITURAS-B` | 11907 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
 | `P-FRONT-TESTE-DE-INTERACAO` | 11920 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
+| `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 11979 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
 
-## ABERTAS · balde B — processo/registro — 211
+## ABERTAS · balde B — processo/registro — 215
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -521,6 +522,10 @@
 | `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` | 11944 | BAIXA | sim | P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no  |
 | `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` | 11949 | BAIXA | sim | P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devol |
 | `P-SAN3-12-CE4-BRACO1-NA-CI` | 11954 | BAIXA | sim | P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 ( |
+| `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE` | 11959 | BAIXA | sim | P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` ( |
+| `P-SAN3-12B-KPI-PRESSED-COM-CONTA` | 11964 | BAIXA | sim | P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria- |
+| `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO` | 11969 | BAIXA | sim | P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem  |
+| `P-SAN3-12B-PAGER-ROTULO-FILTRADO` | 11974 | BAIXA | sim | P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

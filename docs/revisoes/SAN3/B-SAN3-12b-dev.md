@@ -678,7 +678,7 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 
 - **Fatia:** 2 da E3.5 — R-E3-2.
 - **Executor e modelo:** `dev-san312b-ciclo3-claude` · subagente Claude · Claude Opus · nível menor declarado (§C7.6). Substituição declarada, a mesma da RETOMADA 10 (Codex sem a janela de 5 h até cerca de 05:31Z).
-- **Head de partida:** `864598f5ad32e14e3eb6415bbac5852d2bcc169e` (fatia 1, empurrado; `git fetch` + `git status --porcelain` vazio). Início 03:22Z, fim 03:27Z (`date -u`).
+- **Head de partida:** `864598f5ad32e14e3eb6415bbac5852d2bcc169e` (fatia 1, empurrado; `git fetch` + `git status --porcelain` vazio). Início 03:22Z, fim 03:26:45Z (hora real do push, medida com `date -u`; corrigida na fatia 4: o "03:27Z" que estava aqui era estimado, não medido).
 - **Arquivo tocado:** só `frontend/tests/finance-no-money-reduce.guard.test.ts` (e esta seção). Produto intocado.
 
 ### Feito — comando → saída
@@ -758,3 +758,113 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## Ciclo 3 (dev-san312b-ciclo3-sol)
+
+> Executor real das 4 fatias: `dev-san312b-ciclo3-claude` (subagente Claude, Claude Opus, nível menor declarado, §C7.6), no lugar do `dev-san312b-ciclo3-sol` que a E3 nomeia. Substituição DECLARADA pela E3.5 e pela regra do dono: o Codex ficou sem a janela de 5 h até cerca de 05:31Z. O cabeçalho mantém o nome que a R-E3-6(e) pede. Detalhe de cada fatia (comando → saída) nas RETOMADAS 10 a 13; abaixo, o P1 resumido, uma linha por item.
+
+| Fatia | Commit | Item | Comando → saída | Veredito parcial |
+|---|---|---|---|---|
+| 1 | `864598f5` | R-E3-1(a)(b) | `tres-vias.sh` em `e77a5ac1` → `comm-23=4 comm-12=2`; no commit → `0/0` | cumprido |
+| 1 | `864598f5` | R-E3-1(c)(d)(e) | gerador → índice sem diff; `^## P-` 670 = 670; plano `0/0`; relatório `comm-23=2` (a D-8 reescrita em `bb4f0680`, desconto nominal) | cumprido, com o desconto declarado |
+| 1 | `864598f5` | R-E3-6(a) | linha "(SUPERADA no ciclo 2 pela E2/R5 …)" antes da D-6 | cumprido |
+| 2 | `19abdf55` | R-E3-2(a)–(d) | guard Node 20 e 22 `6 · pass 6`; `git grep` F8 = 8; contagem 6/0 | cumprido |
+| 3 | `fccd77b0` | R-E3-3 | `.pat-kpi-row--6` + `@media 1340`; view sem grade inline (`repeat(6` = 0); sonda: sobra +35/+42 (1280), +33/+41 (1366), +45/+54 (1440) | cumprido |
+| 3 | `fccd77b0` | R-E3-4 | 3 regras `.pat-ab-*`; sonda: `th`/`td` de dinheiro `right` + `tabular-nums` | cumprido |
+| 3 | `fccd77b0` | R-E3-5 · R-E3-6(b) | TECH com scope, scopes, rbac, permission e permissions; `pat-btn--secondary` = 0 | cumprido |
+| 4 | este commit | R-E3-6(c) | E3 apensa ao plano versionado; `grep -c "Emenda E3"` = 3; trecho de `## Emenda E3` ao fim, sem CR, igual ao do parecer (l.50–137) e ao do plano externo | cumprido |
+| 4 | este commit | R-E3-6(d) | 5 pendências da E3.4 abertas com dono e critério; `^## P-` 670 → 675; gerador sobre o índice do git → diff 0 | cumprido |
+| 4 | este commit | R-E3-6(e) · R-E3-7 | esta seção; bateria e 29 mutações na RETOMADA 13 | cumprido |
+
+## RETOMADA 13
+
+- **Fatia:** 4 da E3.5 — R-E3-6(c)(d)(e) + R-E3-7.
+- **Executor e modelo:** `dev-san312b-ciclo3-claude` · subagente Claude · Claude Opus · nível menor declarado (§C7.6). Substituição declarada, a mesma das RETOMADAS 10 a 12.
+- **Head de partida:** `fccd77b07306311643cded56dd5135b6af839b1b` (fatia 3, empurrado às 03:36:37Z, `date -u` logo depois do `git push`; `ls-remote` = `fccd77b0`; `git fetch` + `git status --porcelain` vazio). Início 03:37:04Z; seção gravada às 03:56Z (`date -u`, antes do commit; a hora real do push desta fatia fica no relatório ao orquestrador e na próxima seção, se houver).
+- **Correção de registro (pedida pelo orquestrador):** a RETOMADA 11 dizia "fim 03:27Z", hora estimada; a hora real do push da fatia 2 foi 03:26:45Z. A linha foi corrigida lá, com a nota. Daqui em diante, só hora de `date -u`.
+- **Arquivos desta fatia:** `docs/revisoes/SAN3/B-SAN3-12-plano.md` (+91: separador e a E3), `agent-orchestration/controle/pendencias.md` (+25: 5 seções), `pendencias-indice.md` (gerado), este relatório. Produto e testes intocados nesta fatia.
+
+### Feito — comando → saída
+
+- R-E3-6(c): o trecho da E3 extraído do parecer (`R-B-SAN3-12b-ciclo2.md` l.50–137, sem CR, 88 linhas) é idêntico ao trecho do plano externo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md`, de `## Emenda E3` ao fim: `diff` vazio). Apensado ao plano versionado depois de `---`, em CRLF como a árvore → `tail` desde `## Emenda E3`, sem CR, `diff` com o trecho do parecer → vazio. `grep -c "Emenda E3"` → 3 (no objeto `e77a5ac1` → 0).
+- R-E3-6(d): 5 seções novas ao fim de `pendencias.md`, com status, escopo, dono, bloqueia, origem e encerramento da E3.4: `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE`, `P-SAN3-12B-KPI-PRESSED-COM-CONTA`, `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO`, `P-SAN3-12B-PAGER-ROTULO-FILTRADO` (BAIXA, dono `B-SAN3-12c`) e `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` (MÉDIA, leitura do dev declarada na própria seção: a E3.4 não fixa a severidade; dono: o bloco de ferramentas de processo). As 6 já abertas da E3.4 seguem inalteradas. `python -I agent-orchestration/controle/gerar-indice-pendencias.py` → `675 cabecalhos / 664 IDs | {'FECHADA': 160, 'ABERTA': 511, 'SEM-STATUS': 4}`; as 5 entram no índice com `aberta = sim`. `^## P-`: 670 (objeto) → 675 (+5, só as da E3.4; a R-E3-1(d) era sobre o restauro, que não criou nem matou cabeçalho).
+- R-E3-1 de novo, sobre o índice do git desta fatia: `tres-vias.sh :` → `pendencias.md` `A=15 B=2 comm-23=0 comm-12=0`; `B-SAN3-12-plano.md` `A=0 B=0 0/0`; `B-SAN3-12b-dev.md` `comm-23=2 comm-12=0` (as 2 linhas da D-8 antiga, reescritas de propósito em `bb4f0680`; o mesmo desconto nominal da RETOMADA 10).
+
+### R-E3-7 — bateria (head desta fatia; produto e testes = `fccd77b0`)
+
+| Comando | Saída |
+|---|---|
+| `npm --prefix frontend run check` | rc 0 |
+| linha de arquivos da R-E3-7 (de `frontend/`), Node v20.19.5 | `tests 122 · pass 122 · fail 0 · skipped 0` |
+| a mesma, Node 22 (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`) | `tests 122 · pass 122 · fail 0 · skipped 0` |
+| a mesma no objeto (os 2 arquivos de teste que a E3 mudou trocados pelas cópias de `e77a5ac1`, temporárias e apagadas) | `tests 115 · pass 115` |
+| `npm --prefix frontend run test:smoke`, Node v20.19.5 | `tests 1482 · pass 1482 · fail 0 · skipped 0` (03:40:55Z–03:45:04Z) |
+| `npm --prefix frontend run test:smoke`, Node v22.14.0 (o diretório do Node 22 na frente do `PATH`, sem `nvm use`) | `tests 1482 · pass 1482 · fail 0 · skipped 0` (03:45:12Z–03:49:09Z) |
+| `npm --prefix frontend run build` | rc 0 (`built in 34.05s`) |
+| raiz `npm run check` · `npm run lint` · `npm run build` | rc 0 · rc 0 · rc 0 |
+| o `git grep` do F8 da R-E3-2(d), em `frontend/src/modules/finance` | 8 = inventário |
+| os 2 `comm` da R-E3-1 (`pendencias.md`, índice do git) | 0 / 0 |
+| gerador sobre o índice do git → `git diff -- pendencias-indice.md` | 0 linha |
+| `git diff --check` e `git diff --cached --check` | vazios |
+| `git diff --name-only e77a5ac1 HEAD -- src prisma scripts` (e na árvore) | 0 / 0 (CE-4: backend intocado; a régua do F18 é o job `backend` da CI no head) |
+
+- **Contagem dos testes, declarada:** por arquivo, no head: `dense-expandable-row` 5, `finance-baixa` 9, `finance-conciliacao` 5, `finance-contas-extrato` 13, `finance-no-money-reduce.guard` 6, `finance-page-live` 33, `finance-redirects` 3, `finance-titles` 23, `financial-accounts.adapter` 6, `financial-entries.adapter` 11, `financial-summary.adapter` 5, `pattern-css-guard` 3 = **122**. Sem o `pattern-css-guard` (que não é do bloco): **119** no head e **112** no objeto — a baseline N = 112 da E3 é essa conta, e a meta **M ≥ 119** está cumprida exatamente (+2 R-E3-2, +2 R-E3-3, +2 R-E3-4, +1 R-E3-5). Um dos 2 casos da R-E3-4 (o SSR das classes no `th`/`td`) já passava no objeto, como a E3 previa: é trava de regressão. `test:smoke` 1475 → **1482** (+7), igual ao esperado.
+- `git diff --name-only e77a5ac1` (índice desta fatia): `COMPONENT_LIBRARY.md`, `pendencias.md`, `pendencias-indice.md`, `B-SAN3-12-plano.md`, `B-SAN3-12b-dev.md`, `FinanceiroViewA.tsx`, `app.css`, `finance-contas-extrato.smoke.test.tsx`, `finance-no-money-reduce.guard.test.ts`, mais o parecer `R-B-SAN3-12b-ciclo2.md` e os 15 arquivos de votos do ciclo 2 (commits do orquestrador `c8d455dc` e `d31f4666`). É o diff esperado do §4 do parecer; nada fora do PERMITIDO da E3.1. A interseção com o `arquivos_medidos` da C2 é não vazia (`FinanceiroViewA.tsx`, `pendencias.md`, `pendencias-indice.md`, `B-SAN3-12-plano.md`): a C2 é revalidada pela regra (2).
+
+### R-E3-7 — mutações, todas no head desta fatia (uma por vez, âncora única, restauro por hash)
+
+Roteiros: `scratchpad/mutar.py` (o do ciclo 2) com `scratchpad/f4/muts.py` (5 novas + as do ciclo 2, cujas definições vêm de `scratchpad/f9/muts.py`, sem alteração) e `scratchpad/f2/mutar.py` (as 6 da R-E3-2, que acrescentam uma linha ao fim do arquivo). 03:54:20Z–03:55Z. **Resultado: 29 mutações, 29 VERMELHAS, 29 restauradas com sha256 igual; `git status --porcelain` depois → só os arquivos desta fatia.**
+
+**As 11 novas da E3:**
+
+| # | Teste dono (`tests · pass · fail`) | Caso que caiu | Vermelho-controle no objeto |
+|---|---|---|---|
+| M-E3-2a `items.filter(f).reduce(` em `entries/` | guard `6 · 3 · 3` | inventário, diretórios do 12b, contagem | guard de `e77a5ac1` verde `4 · 4` |
+| M-E3-2b `Object.values(m).reduce(` na view | guard `6 · 3 · 3` | idem | verde `4 · 4` |
+| M-E3-2c `(list ?? []).reduce(` na view | guard `6 · 3 · 3` | idem | verde `4 · 4` |
+| M-E3-2d `arr[0].reduce(` na view | guard `6 · 3 · 3` | idem | verde `4 · 4` |
+| M-E3-2e `items?.reduce(` em `accounts/` | guard `6 · 3 · 3` | idem | (forma já vista pelo guard antigo) |
+| M-E3-2f entrada falsa no inventário | guard `6 · 4 · 2` | inventário, diretórios do 12b | — |
+| M-E3-3a sem `.pat-kpi-row--6 .pat-kpi__value` | contas `13 · 12 · 1` | R-E3-3 CSS | `e77a5ac1`: regra ausente |
+| M-E3-3b grade inline de volta, sem a classe | contas `13 · 12 · 1` | R-E3-3 SSR | sonda do objeto: −39 a 1280 |
+| M-E3-4 `td.dense-col-right` fora da regra | contas `13 · 12 · 1` | R-E3-4 CSS | `e77a5ac1`: regra ausente |
+| M-E3-5 `label="Scope"` em `TitleDetail.tsx` | contas `13 · 3 · 1` (padrão `F17`) | F17 | F17 de `e77a5ac1` verde `8 · 8` (RETOMADA 12) |
+| M-E3-6 a E3 tirada do plano versionado | `e3check.py` rc 1 (`emenda_e3 0 trecho_igual False`) | R-E3-6(c) | `e77a5ac1`: `grep -c "Emenda E3"` = 0 |
+
+**As do ciclo 2 cujo teste dono lê arquivo que a E3 tocou (re-executadas):**
+
+| # | Teste dono | Caso que caiu |
+|---|---|---|
+| R1-M1-chip-so-alvo | live `33 · 0 · 1` (padrão) | R1: filtro de conta convive com o alvo |
+| R1-M2-a-conciliar-herda-conta | live `33 · 0 · 1` | R1: indicador da organização limpa a conta |
+| R2-M1-sem-display-flex | live `33 · 0 · 1` | R2: Conciliação por conta com flex |
+| R3-M1-aba-length | live `33 · 1 · 2` | R3(b-c), R3(d-e-f) |
+| R3-M2-loadMore-sem-offset | live `33 · 1 · 2` | R3(a), R3(d-e-f) |
+| R3-M3-TablePager-removido | live `33 · 2 · 1` | R3(d-e-f) |
+| R3-M4-vencem-hoje-incompleta | live `33 · 1 · 2` | R3(b-c), R3(d-e-f) |
+| R10-M1-volta-ao-vazio | live `33 · 0 · 1` | R10 |
+| R11-M1-label-Reconciled | contas `13 · 3 · 1` (padrão `F17`) | F17 |
+| R11-M2-adapter-open-not-reconciled | contas `13 · 3 · 1` | F17 |
+| F11 | live `33 · 0 · 1` | F11 |
+| F12 | live `33 · 0 · 1` | F12 |
+| F16 | live `33 · 0 · 1` | F16 desatualizado |
+| F17 | contas `13 · 11 · 2` | F19, F17 |
+| F19 | contas `13 · 12 · 1` | F19 |
+| R12-M1-soma-x-igual-x-mais (F8/R12) | guard `6 · 4 · 2` | F8 inventário, diretórios do 12b |
+| F8 (ratificação 14:40Z, mutação 1) | guard `6 · 3 · 3` | F8 inventário, diretórios do 12b, contagem |
+| F8b (ratificação 14:40Z, mutação 2) | guard `6 · 4 · 2` | F8 inventário, diretórios do 12b |
+
+- **Contagem, declarada:** a E3 enumera "R1 ×2, R2, R3 ×4, R10, R11 ×2, F11, F12, F16, F17, F19, F8/R12 ×1 e as 2 da ratificação — 17", mas a soma dessa lista é **18** (10 + 5 + 1 + 2). Executei as 18: a R12-M1 é a "F8/R12 ×1" e as 2 da ratificação de 14:40Z são as duas mutações que ela nomeia (`items.reduce` numa view = F8; entrada falsa no inventário = F8b). Total desta fatia: 11 + 18 = **29**.
+- As outras 24 do ciclo 2 (BaixaForm, hooks, gates, registro) não se re-executam: o diff da E3 (lista acima) não toca nenhum dos arquivos delas.
+
+### Limpeza (§C5)
+
+- Removidos `dist/`, `frontend/dist/` e `frontend/tsconfig.tsbuildinfo` (saídas dos builds; ignorados pelo git). As cópias temporárias de teste do objeto (`tests/zz-*.tmp.test.ts*`) foram apagadas no fim de cada uso. Sem Docker, sem banco. `node_modules` próprios e o worktree preservados. Disco: 13 GB livres.
+
+### Falta
+
+- Nada das 4 fatias da E3.5. **Pronto para a junta do ciclo 3**, sobre o head de saída deste commit **mais** o commit do orquestrador com o parecer (§4 do parecer), depois de os check-runs desse SHA concluírem (§C7.1-bis). A C2 é revalidada pela regra (2); a C1 e a C3 são refeitas.
+
+### Próximo comando exato
+
+`gh api repos/{owner}/{repo}/commits/$(git -C C:/Users/AMP/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`

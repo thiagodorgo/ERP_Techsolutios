@@ -11955,3 +11955,28 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (registro) · **dono:** `B-SAN3-12c` + o bloco de ferramentas de processo · **bloqueia:** não.
 - **origem:** C3-03 da junta do ciclo 1 do `B-SAN3-12b`. `tests/b-san3-12-ce4-db.test.ts` tem dois braços: o 1 (base PROVISIONADA por `db:provision-rbac`) e o 2 (só migrada). A CI não provisiona, então executa o braço 2; o braço 1 roda só na máquina do dev e no Postgres descartável dos jurados. `.github/**` é PROIBIDO no 12b.
 - **encerramento:** um job da CI com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head.
+
+## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (lacuna de teste; o código cumpre a R4(b)) · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa.
+- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
+
+## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida).
+- **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
+
+## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-12c` (alternativa: `B-SAN3-24`) · **bloqueia:** não.
+- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas.
+- **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
+
+## P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem filtrada com o total sem filtro — BAIXA
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade.
+- **encerramento:** com alvo aplicado e carga parcial, o `rangeLabel` deixa de misturar a contagem filtrada com o total sem filtro.
+
+## P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos, não o conteúdo de três vias — MÉDIA
+- **status:** ABERTA · **escopo:** processo (ferramenta) · **dono:** o bloco de ferramentas de processo (fila pós-gate) · **bloqueia:** não. Severidade: leitura do dev (a E3.4 não a fixa): dois fechamentos se perderam num merge que "conferiu os cabeçalhos".
+- **origem:** C3R2-02 da junta do ciclo 2 do `B-SAN3-12b`, ampliado pela auditoria do topo (Emenda E3, R-E3-1 e E3.4): o merge `b5246e8d` ficou com o lado da `main` nas seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE`; a fatia 1 do ciclo 3 as restaurou (`864598f5`).
+- **encerramento:** `scripts/` ganha a conferência de três vias de `pendencias.md` (as linhas que o ramo acrescentou sobrevivem; as linhas que ele removeu não voltam) e o passo entra na E2.5 e na ata de todo merge de registro.
