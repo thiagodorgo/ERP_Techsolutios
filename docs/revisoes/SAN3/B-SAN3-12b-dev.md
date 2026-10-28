@@ -711,3 +711,50 @@ O guard do objeto rodou como cópia temporária em `frontend/tests/zz-f8-objeto-
 ### Próximo comando exato
 
 `cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`
+
+## RETOMADA 12
+
+- **Fatia:** 3 da E3.5 — R-E3-3 + R-E3-4 + R-E3-5 + R-E3-6(b).
+- **Executor e modelo:** `dev-san312b-ciclo3-claude` · subagente Claude · Claude Opus · nível menor declarado (§C7.6). Substituição declarada, a mesma das RETOMADAS 10 e 11 (Codex sem a janela de 5 h até cerca de 05:31Z). Tela: skills `ts-frontend-full` e `ui-ux-pro-max` do repositório carregadas; tela-modelo = a própria opção A (`FinanceiroViewA.tsx`) e a biblioteca (`.pat-kpi-row--4/--5`, `.dense-table`); nenhum componente, token ou modificador novo além das regras nomeadas na E3.1.
+- **Head de partida:** `19abdf5576e585e3390387c57b4aab021fb5361f` (fatia 2, empurrado; `git fetch` + `git status --porcelain` vazio; `origin/main` = `f0769739` = merge-base). Início 03:28:16Z; seção gravada às 03:34:38Z (`date -u`, antes do commit; a hora real do push vai na RETOMADA 13).
+- **Arquivos tocados (todos no PERMITIDO da E3.1):** `frontend/src/styles/app.css` (+8: as 3 regras `.pat-kpi-row--6` com a `@media (max-width: 1340px)` e as 3 regras espelho `.pat-ab-*`, com 1 linha de comentário por grupo), `FinanceiroViewA.tsx` (só l.212 e l.504), `COMPONENT_LIBRARY.md` (+2 linhas de registro), `frontend/tests/finance-contas-extrato.smoke.test.tsx` (TECH + 5 casos). `git diff --name-only e77a5ac1 19abdf55 -- frontend/src COMPONENT_LIBRARY.md frontend/tests/finance-contas-extrato.smoke.test.tsx` → vazio: o ponto de partida tem o produto do objeto.
+
+### Feito — comando → saída
+
+- Vermelho-controle (antes do código; produto = o do objeto `e77a5ac1`, TECH antigo): `node --test --import tsx tests/finance-contas-extrato.smoke.test.tsx` (de `frontend/`, Node v20.19.5) → `tests 13 · pass 9 · fail 4 · skipped 0`; caem os 4 casos de critério: `F17/R-E3-5` ("palavra única 'Scope' num rótulo"), `R-E3-3` CSS ("grade de 6 da biblioteca"), `R-E3-3` SSR ("classe da variante de 6 (loading=false)"), `R-E3-4` CSS (`.pat-ab-table th.dense-col-right { text-align: right }`). O 5º caso (`R-E3-4` SSR: `th`/`td` de VALOR e SALDO EM ABERTO com `dense-col-right dense-col-tabular`) já passa no objeto, como a E3 diz (a classe já chega ao DOM; faltava a regra no skin): é trava de regressão, não critério novo.
+- R-E3-3(a): `app.css`, ao lado de `--4/--5`: `.pat-kpi-row--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }`, `.pat-kpi-row--6 .pat-kpi__value { font-size: 18px; letter-spacing: -0.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`, `@media (max-width: 1340px) { .pat-kpi-row--6 .pat-kpi__value { font-size: 15.5px; letter-spacing: -0.4px; } }`. Nenhuma outra regra `.pat-kpi*` mudou (`git diff -- frontend/src/styles/app.css` → só linhas `+`).
+- R-E3-3(b): view l.212 → `className="pat-kpi-row pat-kpi-row--6"`, sem `style`; o esqueleto (`aria-busy`) é o mesmo `div`. `git grep -n "repeat(6" -- frontend/src/modules/finance` → **0**.
+- R-E3-3(c), sonda no navegador (roteiro do planejador `plan12b-c2rep/kpi/probe.{html,mjs}`, **sem CSS de override**: cada lado com o seu CSS real — `obj` = `styles/` de `e77a5ac1` + grade inline; `head` = `styles/` desta fatia + `class="pat-kpi-row pat-kpi-row--6"` sem `style`; Chromium do `ms-playwright` pelo `playwright` do `w-san312b`; script `scratchpad/f3sonda/probe-f3.mjs`, saída `probe-f3-out.txt`, capturas `cap-f3-head-{1280,1366,1440}.png`). Sobra = borda interna direita do cartão − fim do texto; `cabe` = `scrollWidth <= clientWidth` e sobra ≥ 0:
+
+  | Largura | Objeto `e77a5ac1` (27 px) — sobra nos 5 valores em R$ | Head (fatia 3) — fs · sobra nos 5 valores em R$ | Cabe (head) |
+  |---|---|---|---|
+  | 1280×720 | −39 / −39 / −27 / −27 / −27 (`scroll 175/163 > client 120`) | 15,5 px · **+35 / +35 / +42 / +42 / +42** (`scroll 120 = client 120`) | 5/5 |
+  | 1366×768 | −25 / −25 / −13 / −13 / −13 (`scroll 175/163 > client 134`) | 18 px · **+33 / +33 / +41 / +41 / +41** | 5/5 |
+  | 1440×900 | −12 / −12 / 0 / 0 / 0 (`scroll 175/163 > client 147`) | 18 px · **+45 / +45 / +54 / +54 / +54** | 5/5 |
+
+  Valores: `R$ 126.958,65`, `R$ 167.692,35`, `R$ 56.999,50`, `R$ 56.330,00`, `R$ 30.520,00` (NBSP, como o `formatBRL`). Nas 3 larguras do head: 6 colunas computadas, 12 px entre cartões (nenhum encobre o vizinho), `white-space: nowrap`, `text-overflow: ellipsis`, rótulo e `hint` sem estouro (`scrollWidth <= clientWidth`). Fonte resolvida `Inter, ui-sans-serif…` (Inter não instalada: cai no fallback desta máquina, E3.6). A sonda usa a barra lateral do token (248 px) e não a de 236 px da tela real: a diferença é a favor do rigor. Números iguais aos do planejador (`probe-out.txt`, variante "E3"). A prova no app real (Vite) é da C1 (`j12b2-c1r2/zz-j12bc1r2-kpiclip.mjs`); não subi servidor de desenvolvimento (portas da base viva proibidas).
+- R-E3-3(d): `pattern-css-guard.test.ts` verde (as regras novas não têm `*/`; `tests 16 · pass 16` junto do arquivo do bloco).
+- R-E3-3(e) e R-E3-4: `COMPONENT_LIBRARY.md` ganhou 2 linhas no registro por bloco, logo abaixo do `KpiStatCard`: `.pat-kpi-row--6` e as colunas de dinheiro do `.pat-ab-table`.
+- R-E3-4(a): `.pat-ab-table th.dense-col-right, .pat-ab-row td.dense-col-right { text-align: right; }`, `.pat-ab-table th.dense-col-tabular, .pat-ab-row td.dense-col-tabular { font-variant-numeric: tabular-nums; }`, `.pat-ab-table th.dense-col-right .dense-sort-btn { justify-content: flex-end; }` (especificidade 0,2,1 sobre `.pat-ab-table thead th` 0,1,2 e `.pat-ab-row td` 0,1,1). `DenseTable.tsx`/`DenseExpandableRow.tsx` intocados. Sonda no navegador (`scratchpad/f3sonda/table-probe.mjs`, saída `table-probe-out.txt`, 1280×720, tabela `.pat-ab-table` com as classes que o `DenseTable` emite): objeto → `th VALOR align=left nums=normal`, `td R$ 1.500,00 align=start nums=normal`; head → `th VALOR`/`SALDO EM ABERTO` e os 2 `td` `align=right nums=tabular-nums`; `DOCUMENTO` inalterado (`left`/`start`); `td` com 41 px de altura (40 + borda, ≤ 42).
+- R-E3-5: `TECH` = `/\b(tenant|tenants|role|roles|reconciled|unreconcile|payment_method|client_action_id|scope|scopes|rbac|permission|permissions)\b|\/api\/|\/financial-|\/cheques\//i`; o F17 continua verde no head (0 ofensor); controle positivo novo: `label="Scope"`, `"Sem permission"` e `"Perfil sem RBAC"` acusam, `"Sem permissão"` não.
+- R-E3-6(b): l.504 → `className="pat-btn"`; `git grep -n "pat-btn--secondary" -- frontend/src` → **0**.
+- Testes no head (de `frontend/`): `node --test --import tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts` → Node v20.19.5 `tests 16 · pass 16 · fail 0 · skipped 0`; Node 22 (`C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`, caminho absoluto) `tests 16 · pass 16 · fail 0 · skipped 0`. A linha de arquivos da R-E3-7 (`tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/finance-titles.test.tsx tests/pattern-css-guard.test.ts`, Node 20) → `tests 122 · pass 122 · fail 0 · skipped 0` (a conferência contra a meta M ≥ 119 e a baseline N = 112 é da bateria da fatia 4, que mede a mesma linha no objeto). `npm --prefix frontend run check` → rc 0. `git diff --check` → vazio.
+
+### Mutações (roteiro `scratchpad/f3sonda/mut.sh` + `mutar.py`: troca exata com âncora única, roda `finance-contas-extrato.smoke.test.tsx`, restaura os bytes e confere o sha256)
+
+| # | Arquivo | Mutação | Resultado no head | Restauro |
+|---|---|---|---|---|
+| M-E3-3a | `app.css` | tira a regra `.pat-kpi-row--6 .pat-kpi__value {…18px…}` | VERMELHO `13 · pass 12 · fail 1` (cai `R-E3-3` CSS) | sha `a2521631…` igual |
+| M-E3-3b | `FinanceiroViewA.tsx` | devolve `style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}` e tira `pat-kpi-row--6` | VERMELHO `13 · pass 12 · fail 1` (cai `R-E3-3` SSR); a sonda do objeto mede esse estado: −39 a 1280 | sha `6f61f8ab…` igual |
+| M-E3-4 | `app.css` | tira `.pat-ab-row td.dense-col-right` da regra de alinhamento (fica só o `th`) | VERMELHO `13 · pass 12 · fail 1` (cai `R-E3-4` CSS) | sha `a2521631…` igual |
+| M-E3-5 | `entries/components/TitleDetail.tsx` | `<Field label="Categoria">` → `<Field label="Scope">` | VERMELHO `13 · pass 12 · fail 1` (cai o F17). **Vermelho-controle:** o F17 de `e77a5ac1` (cópia temporária `tests/zz-f17-objeto-e77a5ac1.tmp.test.tsx`, apagada) sob a mesma mutação → verde `8 · pass 8` | sha `b96a1cc0…` igual |
+
+`git status --porcelain` depois das 4 → só os 4 arquivos da fatia (e este relatório).
+
+### Falta
+
+- Fatia 4 da E3.5: R-E3-6(c)(d)(e) + R-E3-7 (E3 verbatim no plano versionado, pendências de E3.4, índice, bateria em Node 20 e 22, as 11 + 17 mutações, a seção `## Ciclo 3`), mais a correção da hora de fim da RETOMADA 11 (o "03:27Z" foi estimado; o push real foi às 03:26:45Z).
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`

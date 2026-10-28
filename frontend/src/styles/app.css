@@ -8032,6 +8032,10 @@ button.opmap-os--atd {
 .pat-kpi-row { display: grid; gap: 12px; margin-bottom: 14px; }
 .pat-kpi-row--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .pat-kpi-row--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* 6 indicadores (Financeiro, opção A): valor a 18 px, 15,5 px até 1340 px, sem quebra e com reticências (B-SAN3-12b, E3/R-E3-3) */
+.pat-kpi-row--6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.pat-kpi-row--6 .pat-kpi__value { font-size: 18px; letter-spacing: -0.5px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1340px) { .pat-kpi-row--6 .pat-kpi__value { font-size: 15.5px; letter-spacing: -0.4px; } }
 
 /* Filtro ativo vindo de um bloco clicável: visível e removível */
 .pat-filtro-chip-bar { padding: 10px 18px 4px; display: flex; align-items: center; }
@@ -8050,6 +8054,10 @@ button.opmap-os--atd {
 .pat-ab-row[aria-current="true"] td:first-child { box-shadow: inset 3px 0 0 #2563eb; }
 .pat-ab-row td { padding: 0 12px; height: 40px; max-height: 40px; line-height: 40px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; color: #475569; }
 .pat-ab-row td:last-child { padding: 0 8px; text-overflow: clip; }
+/* Colunas de dinheiro à direita e tabulares, espelho das regras de .dense-table (B-SAN3-12b, E3/R-E3-4) */
+.pat-ab-table th.dense-col-right, .pat-ab-row td.dense-col-right { text-align: right; }
+.pat-ab-table th.dense-col-tabular, .pat-ab-row td.dense-col-tabular { font-variant-numeric: tabular-nums; }
+.pat-ab-table th.dense-col-right .dense-sort-btn { justify-content: flex-end; }
 /* A pílula de situação e a barra de ocupação não herdam a altura de linha de 40px da célula (a linha fica em 40px). */
 .pat-ab-row td .pat-pill,
 .pat-ab-row td .pat-occ-inline { line-height: 1.2; vertical-align: middle; }

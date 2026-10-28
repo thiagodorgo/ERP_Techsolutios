@@ -209,7 +209,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   const isPressed = (tab: FinanceTab, target: string | null) => state.tab === tab && state.target === target && (target !== null || state.accountId === null);
 
   const kpis = (
-    <div className="pat-kpi-row" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }} aria-busy={model.summaryLoading ? true : undefined}>
+    <div className="pat-kpi-row pat-kpi-row--6" aria-busy={model.summaryLoading ? true : undefined}>
       {model.summaryLoading ? (
         Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="pat-kpi" aria-hidden="true">
@@ -501,7 +501,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
         footer = (
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 auto", minWidth: 0 }}>{footer}</div>
-            <button type="button" className="pat-btn pat-btn--secondary" style={{ margin: "8px 18px" }} disabled={list.loadingMore} onClick={() => void list.loadMore()}>
+            <button type="button" className="pat-btn" style={{ margin: "8px 18px" }} disabled={list.loadingMore} onClick={() => void list.loadMore()}>
               {list.loadingMore ? "Carregando…" : `Carregar mais títulos (${remaining} restantes)`}
             </button>
           </div>
