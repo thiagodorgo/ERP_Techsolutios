@@ -3014,5 +3014,33 @@
     "blocks_completed": 190,
     "description": "B-SAN3-22 — Os modelos de vistoria ganharam proteção contra edições simultâneas, trava que só permite alterar textos quando há vistoria em andamento e as três opções de aparência aprovadas no editor; a entrega fecha o item 6 do portão (`P-CHK-PATCH-SEM-LOCK`). NÚMEROS DA CI no merge commit `f7922ab7` (push na `main`), workflow `ci`, run 40440707891, tentativa 1: backend `4155 teste(s) · pass 4153 · fail 0 · skipped 2`; frontend 1391/1391; flutter 905/905. `blocks_completed` 189 -> 190.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 464`; números do log da rodada 40440707891. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-27",
+    "version": "PR-472",
+    "pr": 472,
+    "merge_commit": "f076973921539165df8d406b8c061dbf4e4ee127",
+    "approved_head": "eb3e61a026f8e2ad4b7d15a9beb79d94581c7770",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4153/4155",
+    "frontend_smoke_tests": "1391/1391",
+    "blocks_completed": 190,
+    "description": "PR-472 — As ressalvas das entregas de 26 e 27 de outubro foram incorporadas ao registro oficial, mantendo explícitos os pontos que ainda exigem acompanhamento. NÚMEROS DA CI no merge commit `f0769739` (push na `main`), workflow `ci`, run 40590910998, tentativa 1: backend `4155 teste(s) · pass 4153 · fail 0 · skipped 2`; frontend 1391/1391; flutter 905/905. `blocks_completed` 190 -> 190.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 472`; números do log da rodada 40590910998. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-28",
+    "version": "B-SAN3-12b",
+    "pr": 469,
+    "merge_commit": "3c27f1bf3177d2778bdcfb0dfafd57186780efbc",
+    "approved_head": "bfc75e0759d24aa2d5391f2014702771ab53dfeb",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1482/1482",
+    "blocks_completed": 191,
+    "description": "B-SAN3-12b — Na aparência A do Financeiro, a pessoa agora pode baixar títulos, criar e consultar contas, acompanhar o extrato e conciliar lançamentos, inclusive tratando cheques pendentes. NÚMEROS DA CI no merge commit `3c27f1bf` (push na `main`), workflow `ci`, run 40778662011, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1482/1482; flutter 905/905. `blocks_completed` 190 -> 191.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 469`; números do log da rodada 40778662011. Nada fica `null`."
   }
 ]

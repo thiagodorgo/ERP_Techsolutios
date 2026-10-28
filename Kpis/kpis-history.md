@@ -3186,3 +3186,10 @@ pós-merge.
 | 2026-10-26 | `B-SAN3-12a` — A liquidação financeira passou a permitir registrar cheque pendente, trocar o cheque vinculado com justificativa, desfazer a conciliação de lançamento com registro de motivo e consultar o resumo dos títulos | #459 | `9dad66c0` | `dc69bf7d` | 4077/4079 | 1368/1368 | 905/905 | 189 | 40298258515 (tentativa 1) |
 | 2026-10-26 | `PR-463` — As ressalvas das entregas recentes do financeiro, do rastreador e do app de campo foram anotadas no registro, e a régua do portão da versão vendável foi atualizada | #463 | `c9a2d036` | `3ff75ab8` | 4077/4079 | 1368/1368 | 905/905 | 189 | 40315463474 (tentativa 1) |
 | 2026-10-26 | `B-SAN3-22` — Os modelos de vistoria ganharam proteção contra edições simultâneas, trava que só permite alterar textos quando há vistoria em andamento e as três opções de aparência aprovadas no editor; a entrega fecha o item 6 do portão (`P-CHK-PATCH-SEM-LOCK`) | #464 | `f7922ab7` | `c9a4371c` | 4153/4155 | 1391/1391 | 905/905 | 190 | 40440707891 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-10-28
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-27 | `PR-472` — As ressalvas das entregas de 26 e 27 de outubro foram incorporadas ao registro oficial, mantendo explícitos os pontos que ainda exigem acompanhamento | #472 | `f0769739` | `eb3e61a0` | 4153/4155 | 1391/1391 | 905/905 | 190 | 40590910998 (tentativa 1) |
+| 2026-10-28 | `B-SAN3-12b` — Na aparência A do Financeiro, a pessoa agora pode baixar títulos, criar e consultar contas, acompanhar o extrato e conciliar lançamentos, inclusive tratando cheques pendentes | #469 | `3c27f1bf` | `bfc75e07` | 4155/4157 | 1482/1482 | 905/905 | 191 | 40778662011 (tentativa 1) |
