@@ -189,6 +189,7 @@ um a um. Nada de `reset --hard`, `stash` ou `clean`.
   barra proporcional exige três contagens por conta; o agregado do 12a não agrupa por conta, então seriam 3 consultas por conta. A tela pede
   UMA por conta (`/aggregate?group_by=none&reconciled=false&account_id=`), e os totais por situação vão nos blocos da aba Conciliação
   (4 consultas). Nada é contado no front.
+- **(SUPERADA no ciclo 2 pela E2/R5: a tela oferece "Cancelar o cheque" após o desvínculo; o texto abaixo descreve o objeto do ciclo 1.)**
 - **D-6 — sem "Cancelar o cheque" depois do desvínculo (R-res-6).** O §4.1 não lista `POST /cheques/:id/cancel` entre as rotas que a tela
   consome e a tela de Cheques é do `B-SAN3-24`. Depois do desvínculo a baixa reabre com o aviso persistente "Ele continua registrado em
   Cheques; se não for mais usado, cancele-o lá", e, se o servidor devolver `warning: cheque_still_depositable`, o aviso diz que o cheque
@@ -642,3 +643,33 @@ Notas: R4-M2 é a mesma forma da F14 do ciclo 1 (a view chama `useFinancialSumma
 ### Próximo comando exato
 
 `gh api repos/{owner}/{repo}/commits/$(git -C C:/Users/AMP/w-san312b rev-parse HEAD)/check-runs --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'`
+
+## RETOMADA 10
+
+- **Fatia:** 1 da E3.5 — R-E3-1 + R-E3-6(a).
+- **Executor e modelo:** `dev-san312b-ciclo3-claude` · subagente Claude · Claude Opus · nível menor declarado (§C7.6). **Substituição declarada:** o Codex (`dev-san312b-ciclo3-sol`, executor da E3) está sem a janela de 5 h até cerca de 05:31Z; pela E3.5 e pela regra do dono, o Claude cobre a fatia.
+- **Head de partida:** `d31f466650a8229be9a9d689640d6867c1156c78` (= `ls-remote` do ramo; `git status --porcelain` vazio; `origin/main` = `f0769739` = merge-base, sem merge a fazer). Início 03:17Z, fim 03:22Z (hora de `date -u`).
+
+### Feito — comando → saída
+
+- Vermelho-controle (R-E3-1(b)), no head de partida: `tres-vias.sh e77a5ac1 agent-orchestration/controle/pendencias.md` (A = `git diff c9a2d036 fc5ead6c` `^+`, B = idem `^-`, sem CR, `sort -u`; H = blob da ref) → `A=15 B=2 comm-23=4 comm-12=2`: as 2 linhas de status FECHADA, a linha "critério medido no fechamento" e a linha "fechamento:" perdidas; as 2 linhas de status ABERTA de volta. Igual ao parecer (4/2).
+- R-E3-1(a): as seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE` substituídas **inteiras** pelas de `git show fc5ead6c:agent-orchestration/controle/pendencias.md` (script que confere cabeçalho igual, árvore == HEAD antes de editar e grava CRLF como a árvore) → `git diff`: `4 insertions(+), 2 deletions(-)`, só as 4/2 linhas acima; as outras linhas das duas seções eram iguais nos dois lados.
+- R-E3-1(b), no índice do git (o conteúdo deste commit): `tres-vias.sh : pendencias.md` → `comm-23=0 comm-12=0`. Lista nominal de descontos em `pendencias.md`: nenhuma.
+- R-E3-1(c): `python -I agent-orchestration/controle/gerar-indice-pendencias.py` → `670 cabecalhos / 659 IDs | {'FECHADA': 160, 'ABERTA': 506, 'SEM-STATUS': 4}` (no objeto: 158 / 508); as duas linhas saem de "ABERTAS · balde B" (213 → 211) e entram em "FECHADAS" (158 → 160). Gerador rodado de novo sobre o conteúdo do commit → `git diff` do índice = 0 linha.
+- R-E3-1(d): `grep -c "^## P-"` → `e77a5ac1` = 670, commit = 670.
+- R-E3-1(e): `tres-vias.sh` no commit → `B-SAN3-12-plano.md`: `A=0 B=0 comm-23=0 comm-12=0` (o ramo não tocou o plano versionado entre `c9a2d036` e `fc5ead6c`; vazio por vacuidade). `B-SAN3-12b-dev.md`: `A=216 B=0 comm-23=2 comm-12=0` — **o esperado "vazio" do parecer não se confirma**; as 2 linhas são a D-8 antiga ("D-8 — Node 22 indisponível nesta máquina …" e a continuação "com a CI."), **reescrita de propósito no ciclo 2 pela E2/R13(c)** no commit `bb4f0680` (`git log -S"Node 22 indisponível nesta máquina" fc5ead6c..e77a5ac1` → `bb4f0680`). Já é 2 também em `e77a5ac1`. Lista nominal de descontos, com o commit: essas 2 linhas, `bb4f0680`. Fora delas, vazio.
+- R-E3-6(a): linha nova antes da D-6: `- **(SUPERADA no ciclo 2 pela E2/R5: a tela oferece "Cancelar o cheque" após o desvínculo; o texto abaixo descreve o objeto do ciclo 1.)**`. A linha da D-6 não foi alterada (por isso a propriedade (e) do relatório continua sem perda).
+- `npm --prefix frontend run check` (Node v20.19.5) → rc 0. `git diff --cached --check` → vazio.
+
+### Mutações
+
+- **M-E3-1** — em `pendencias.md`, a linha de status de `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE` volta a `- **status:** ABERTA · **dono:** \`B-SAN3-12b\` · **bloqueia:** não.` (âncora única) → `comm -23` = **1** (a linha FECHADA perdida) e o gerador muda o índice (`1 file changed, 6 insertions(+), 6 deletions(-)`; `FECHADA 159 · ABERTA 507`) → **VERMELHO**. Restauro: `sha256` de `pendencias.md` `8db2d085…10e3` e do índice `72d4641c…f3b4` iguais antes e depois.
+
+### Falta
+
+- Fatias 2, 3 e 4 da E3.5 (a 2 a seguir, nesta mesma sessão).
+- A seção `## Ciclo 3 (dev-san312b-ciclo3-sol)` do relatório é da fatia 4 (R-E3-6(e)).
+
+### Próximo comando exato
+
+`cd /c/Users/AMP/w-san312b && git fetch origin && git status --porcelain && git rev-parse HEAD`

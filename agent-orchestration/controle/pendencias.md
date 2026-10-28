@@ -11625,8 +11625,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente — BAIXA
 - **encerramento previsto (B-SAN3-12a + 12b):** `cheques.linkedPending*` no resumo (A16; Prisma e compute prontos, memória depende de `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`) e o rótulo na tela no 12b.
-- **status:** ABERTA · **dono:** bloco do painel Financeiro (3 opções) · **bloqueia:** não.
+- **status:** FECHADA pelo `B-SAN3-12b` (ramo `feat/web-financeiro-baixa-e-contas`; vale no merge) · antes: ABERTA · **dono:** encerrado · **bloqueia:** não.
 - **encerramento:** resumo desconta ou rotula cheque vinculado pendente sem alterar o razão.
+- **critério medido no fechamento (B-SAN3-12b):** o resumo já trazia `cheques.linkedPendingCount/linkedPendingAmount` (12a, A16); o 12b lê os dois campos (`financial-summary.{types,adapter}.ts`) e as abas "A receber"/"A pagar" da aparência A rotulam "R$ X em N cheque(s) vinculado(s) a títulos aguardam compensação: esses títulos baixam sozinhos quando o cheque compensar" — o razão não muda. Prova: `frontend/tests/finance-page-live.test.tsx`, caso F14 (`R$ 1.000,00 em 1 cheque vinculado…`).
 
 ## P-SAN3-20-LEGADO-CHECK-SEM-CHEQUE (2026-10-24) — legado não permite reconciliar instrumento e lançamento — BAIXA
 - **status:** ABERTA · **dono:** DBA, se o dono solicitar relatório · **bloqueia:** não.
@@ -11691,7 +11692,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **dono:** próximo bloco de backend financeiro · **bloqueia:** não.
 
 ## P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE (2026-10-25) — a referência de 16/10 lista "Cheque" entre os meios da baixa — BAIXA
-- **status:** ABERTA · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **status:** FECHADA (2026-10-26, ramo do `B-SAN3-12b`; antes: ABERTA) · **dono:** `B-SAN3-12b` · **bloqueia:** não.
+- **fechamento:** em `financeiro-3opcoes.reference.html`, o seletor "Meio de pagamento" do formulário da baixa não oferece mais `check`. O mapa `MEIOS` continua com "Cheque", porque também mostra o meio de lançamentos antigos (lista, coluna de baixas e detalhe). Feito pelo orquestrador, porque design é só Claude (`D-DESIGN-SO-CLAUDE`).
 
 ## P-SAN3-12-PAGAMENTO-MISTO-CHEQUE (2026-10-25) — cheque parcial + outro meio no mesmo título — PRODUTO
 - **status:** ABERTA · **dono:** próximo bloco de produto financeiro · **bloqueia:** não.
