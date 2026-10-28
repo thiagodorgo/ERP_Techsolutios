@@ -1,0 +1,115 @@
+{
+  "cadeira": "c3r3",
+  "jurado": "jurado-san312b-ciclo3-c3-sol",
+  "identidade": "jurado-san312b-ciclo3-c3-sol (mesma identidade, retomada P7/P3)",
+  "executor": "Codex CLI",
+  "modelo": "GPT-5.6 Sol",
+  "esforco": "medium",
+  "nivel": "menor declarado",
+  "corpo": "jurado-san312b-c3-dinheiro-e-contrato",
+  "mandato_md5": "3f8d189297173dda540e3e92b932e90e",
+  "corpo_md5": "3edfee9fdffd5ebd1a64620072eaad3d · corpo carregado × blob do objeto: IDENTICO, EOL-neutro",
+  "objeto": "cfb19fd115bac02ef65eb94202b01a64e6730854",
+  "ciclo": 3,
+  "regua": "Só reprova defeito de produto grave: perde dado, vaza dado entre organizações, quebra permissão ou erra dinheiro.",
+  "quorum": "junta de dinheiro · unanimidade de 3 · ciclo 3",
+  "voto": "APROVADO",
+  "escopo": "dentro-do-bloco para os três itens; pre-existente apenas onde individualizado em achados",
+  "gravidade": "nota · nenhum achado bloqueia e nenhuma classe grave de produto foi encontrada",
+  "arquivos_medidos": ["**"],
+  "itens": [
+    {
+      "id": "item-1-r-e3-2-c3r2-01",
+      "status": "FECHADO — APROVADO",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "nota",
+      "classe": "não grave",
+      "N_e_forma": "guard baseline 6/6; 5 mutações de receptor + 1 entrada falsa, todas vermelhas; 4 controles verdes em objeto~6; inventário 8 e diretórios accounts/entries/pages com 0; 9 regressões isoladas vermelhas pelo caso nomeado",
+      "resultado": "C3R2-01/R-E3-2 não se reproduz. O guard do objeto acusa os cinco receptores e a entrada falsa, distingue o guard antigo e preserva F8/R12/F9/F10/F14/R4/F20/F22. Resíduos reduceRight, chamada computada e reduce.call têm N atual 0."
+    },
+    {
+      "id": "item-2-r-e3-1-c3r2-02",
+      "status": "FECHADO — APROVADO",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "nota",
+      "classe": "não grave",
+      "N_e_forma": "A=15 e B=2; objeto~6 comm=4/2; objeto comm=0/0; 2 seções restauradas; 5 pendências novas; índice regenerado com diff 0; M-E3-1 acusa 1/1 e 50 linhas; proibidos 0",
+      "resultado": "C3R2-02/R-E3-1 não se reproduz. A propriedade de três vias, o índice, a Emenda E3, os donos/critérios e o controle negativo acusam regressão. Não houve perda de dado nem alteração de dinheiro."
+    },
+    {
+      "id": "item-3-bateria-backend-baixa",
+      "status": "FECHADO — APROVADO",
+      "escopo": "dentro-do-bloco",
+      "gravidade": "nota",
+      "classe": "não grave",
+      "N_e_forma": "sonda 5/5; R5-M1 e R6-M1 vermelhos nos testes-dono; recortes 122/122 e 119/119; smoke 1482/1482 em Node 20 e 1482/1482 em Node 22; frontend e raiz check/lint/build ec=0; diff-check ec=0; backend diff 0; 14 check-runs completed/success",
+      "resultado": "R-E3-7, baixa e regressões verdes após geração obrigatória do cliente Prisma sem conexão. Backend permaneceu byte-idêntico ao objeto do ciclo 2 e a CI obrigatória ficou verde. Nenhum erro de dinheiro foi encontrado."
+    }
+  ],
+  "achados": [
+    {
+      "id": "C3R3-N1",
+      "defeito": "Inventário preexistente de somas de dinheiro/contagem no front financeiro permanece congelado; não há ocorrência nova nos diretórios do bloco.",
+      "gravidade": "nota",
+      "classe": "não grave",
+      "escopo": "pre-existente · já presente em objeto~6 e formalizado em P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE",
+      "N": 8,
+      "forma": "7 ocorrências em commissions/** e 1 em titles/financial-titles.adapter.ts; objeto e objeto~6 têm as mesmas 8 chaves; accounts/**, entries/** e pages/** têm 0",
+      "pendencia": {
+        "id": "P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE",
+        "dono": "bloco das telas de comissões para 7 ocorrências; B-SAN3-24 para 1 ocorrência em titles/",
+        "bloqueia": false
+      }
+    },
+    {
+      "id": "C3R3-N2",
+      "defeito": "A trava de rodada R4(b) continua registrada como lacuna de teste, embora o código cumpra a propriedade e as regressões executadas permaneçam verdes/vermelhas conforme o controle.",
+      "gravidade": "ajuste",
+      "classe": "não grave",
+      "escopo": "dentro-do-bloco · origem C3R2-03, preservada pela Emenda E3",
+      "N": 1,
+      "forma": "uma propriedade de resposta atrasada de /aggregate não presa diretamente pelo teste-dono; registro aparece uma vez e contém dono e critério",
+      "pendencia": {
+        "id": "P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE",
+        "dono": "B-SAN3-12c",
+        "bloqueia": false
+      }
+    }
+  ],
+  "o_que_executei": [
+    {
+      "comando": "guard F8, inventário, resíduos, seis mutações, quatro controles em objeto~6 e nove regressões isoladas",
+      "forma": "worktree exclusivo no objeto; Node 20; uma mutação por vez; restauração por hash",
+      "resultado": "guard 6/6; mutações do objeto vermelhas; controles antigos verdes; regressões vermelhas pelo caso esperado; árvore limpa"
+    },
+    {
+      "comando": "propriedade de três vias, seções restauradas, desconto D-8, gerador do índice, pendências E3.4, escopo permitido/proibido e M-E3-1",
+      "forma": "git show/diff EOL-neutro e cópia temporária; sem banco nem base viva",
+      "resultado": "objeto 0/0 contra 4/2 no ciclo 2; índice diff 0; cinco pendências presentes; proibidos 0; controle M-E3-1 acusou 1/1"
+    },
+    {
+      "comando": "sonda da baixa, R5-M1/R6-M1, frontend check/recortes/test:smoke/build, raiz check/lint/build e git diff --check",
+      "forma": "Node 20 e Node 22; Prisma generate com URL sintética sem conexão; check e build abrangentes, portanto arquivos_medidos=**",
+      "resultado": "sonda 5/5; 122/122, 119/119 e 1482/1482 nos dois Nodes; todos os checks/builds finais ec=0"
+    },
+    {
+      "comando": "retomada P3: gh pr view; gh api check-runs; amostra de pendencias.md e pathspec proibido; inspeção de worktree/processos",
+      "forma": "w-san312b e blobs do objeto, sem worktree, banco ou Docker, em 2026-10-28T21:10:58Z",
+      "resultado": "objeto inalterado; 14 checks completed/success; obrigatórios não-verdes 0; registro reproduziu 670->675 e proibidos 0; teardown limpo"
+    }
+  ],
+  "reducoes_de_amostra": [
+    "npm test da raiz não foi reexecutado: o mandato do ciclo 3 pediu check/lint/build e definiu backend/backend-postgres da CI como régua; ambos estão completed/success.",
+    "Postgres local não foi criado: backend e prisma não mudaram no ciclo 3, e a CI do objeto foi revalidada.",
+    "Na retomada P3 foram reexecutados por amostragem os comandos de check-runs e registro/escopo; os testes pesados já estavam fechados na evidência anterior."
+  ],
+  "teardown": {
+    "worktree": "C:/Users/AMP/j12b-c3-c3r3-wt ausente no disco e no registro de git worktree",
+    "processos": "0 processos estranhos referindo o caminho do worktree",
+    "containers": "nenhum container criado na retomada; Docker permaneceu desligado e não foi invocado",
+    "mutacoes": "restauradas por hash na execução anterior; status rastreado final 0",
+    "commit": "nenhum commit criado",
+    "base_viva": "nunca tocada"
+  },
+  "justificativa": "Os três itens foram fechados por execução e a retomada P3 reproduziu a estabilidade do objeto, os checks e o registro. As observações remanescentes são não graves, têm pendência e dono, e não podem reprovar no ciclo 3. VOTO: APROVADO."
+}

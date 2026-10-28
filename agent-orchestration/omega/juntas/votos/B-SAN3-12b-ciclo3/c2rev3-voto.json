@@ -1,0 +1,95 @@
+{
+  "jurado": "jurado-san312b-ciclo3-c2rev-sol (identidade nova; nada herdado como fato)",
+  "corpo": "jurado-san312b-c2-cadeia-de-acesso",
+  "cadeira": "C2 revalidada — cadeia de acesso: gate de cada ação = permissão exata da rota (CE-G2/F7), desvínculo do cheque (F6), redirecionamentos, menu e chave da aparência (F13/F15)",
+  "mandato_md5": "963c3fd52147900b79acc88b8a66a437 sem CR; Forma A 8f88d9c53e011fe7ee16140c0c3cfaa8",
+  "modelo": "Codex CLI · GPT-5.6 Sol · nível menor declarado (§C7.6) · substituição: nenhuma",
+  "corpo_md5": "d91270202a8b737292ca58ab3726c314 EOL-neutro · carregado diretamente do blob · IDENTICO",
+  "objeto": "cfb19fd115bac02ef65eb94202b01a64e6730854; ls-remote = gh pr view 469 = worktree no início/fim; não andou; objeto~19=fc5ead6cf3191eb2a1485d4a16404a403a00beec; merge-base=origin/main=f076973921539165df8d406b8c061dbf4e4ee127",
+  "legalidade": "LIBERADO COM RESSALVA por inspetor-san312b-ciclo3-opus; check-runs todos completed/success, inclusive backend, backend-postgres e frontend; C2 sem Postgres/Docker/base viva",
+  "quorum": "DINHEIRO, unanimidade de 3; ciclo 3: só perda de dado, vazamento entre organizações, quebra de permissão ou erro de dinheiro reprova",
+  "forma_do_voto": "REVALIDADO pela regra (2): interseção de 4 caminhos; 8 comandos do voto verde do ciclo 2 reexecutados no objeto final",
+  "leitura_de_outras_cadeiras": "não li c1-* nem c3-* do ciclo 3; li mandato, corpo, inspetor, C2 do ciclo 2, plano, dev, RBAC e escopo C2",
+  "pausa": "nenhuma",
+  "arquivos_medidos": [
+    "frontend/src/modules/finance/pages/FinanceiroPage.tsx",
+    "frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx",
+    "frontend/src/modules/finance/entries/**",
+    "frontend/src/modules/finance/accounts/**",
+    "frontend/src/App.tsx",
+    "frontend/src/layouts/appSidebarNav.ts",
+    "frontend/src/navigation/tenantNavigation.ts",
+    "frontend/src/modules/appearance/**",
+    "src/modules/core-saas/permissions/catalog.ts",
+    "src/modules/navigation/navigation.registry.ts",
+    "src/modules/financial-entries/**",
+    "src/modules/financial-titles/**",
+    "src/modules/financial-accounts/**",
+    "src/modules/cheques/**",
+    "RBAC_MATRIX.md",
+    "frontend/tests/finance-page-live.test.tsx",
+    "frontend/tests/finance-baixa.smoke.test.tsx",
+    "frontend/tests/finance-conciliacao.smoke.test.tsx",
+    "frontend/tests/finance-redirects.test.tsx",
+    "frontend/tests/aparencia-storage.test.ts",
+    "frontend/tests/aparencia-hook.test.tsx",
+    "frontend/tests/sidebar-nav.test.tsx",
+    "frontend/tests/san3-04a-sidebar-estoque-financeiro.test.tsx",
+    "agent-orchestration/controle/pendencias.md",
+    "agent-orchestration/controle/pendencias-indice.md",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md"
+  ],
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "FECHADO",
+      "comparacao": "comandos 1–4 iguais ao ciclo 2",
+      "tabela_ceg2": "13 papéis × 13 permissões; 5 ações preservam gate exato",
+      "atores_sinteticos": "backend/front 25 atores; zero divergentes; Gestor/Auditor só consultam; Técnico fora",
+      "politica": "true/false/500/403/rede fail-closed; desfazer só em true",
+      "resultado": "7 arquivos 86/86; sonda 4/4; JSONs iguais; backend igual salvo UUID aleatório"
+    },
+    {
+      "item": 2,
+      "estado": "FECHADO",
+      "comparacao": "comandos 5–7 preservam as propriedades do ciclo 2",
+      "cauda": "backend 20 atores e front 2/2; cancel só com cheques:update; POST sem corpo; permissões exatas separadas",
+      "mutacoes": "12/12 acusadas e restauradas; hashes finais iguais aos blobs",
+      "controles": "objeto~19: R5 3 AssertionError; merge-base: F13 2 AssertionError; sem erro de import",
+      "incidente_de_forma": "cinco agregações mutantes atingiram heap; propriedades foram medidas por sondas/casos donos; filho pós-Ctrl-C deixou M4/M5 vivos, detectados e restaurados antes do voto"
+    },
+    {
+      "item": 3,
+      "estado": "FECHADO",
+      "comparacao": "comando 8 igual ao ciclo 2",
+      "menu": "navback/navfront objeto/base, com/sem finance, byte a byte iguais; nenhum papel canônico ganhou/perdeu caminho; D-4 com dono B-SAN3-24",
+      "f15": "front3 objeto/base 2/2 e JSONs iguais; chave por tenantId+userId; sem herança; abertura não grava",
+      "intersecao_regra_2": "4 caminhos: pendencias-indice, pendencias, plano e FinanceiroViewA",
+      "head": "cfb19fd115bac02ef65eb94202b01a64e6730854 no fim; não andou"
+    }
+  ],
+  "justificativa": "Terreno legal e isolado; item 1 igual; item 2 com propriedades e controles acusados e mutações restauradas; item 3 byte a byte igual. Nenhum defeito grave do ciclo 3. Limpeza concluída.\nVOTO: APROVADO — gate = permissão da rota nas 5 ações para 13 papéis e 25 atores; Gestor/Auditor só consultam; Técnico fora; desfazer fail-closed; desvínculo só com cheques:unlink_title e pedido sem fila fingida; acesso por rota igual à base salvo células sintéticas decididas; menu sem ganho/perda canônico salvo D-4 com dono; chave por organização e usuário; mutações vermelhas; pendências C2R-01, C2-02/D-4 e C2-03, todas não graves",
+  "o_que_executei": [
+    {"comando": "1. matriz ROLE_PERMISSIONS", "forma": "objeto, Node 22, 13 papéis", "resultado": "ec 0; igual"},
+    {"comando": "2. backend em memória", "forma": "REDIS fechado, porta alta, 25 atores", "resultado": "ec 0; igual salvo UUID"},
+    {"comando": "3. sete arquivos frontend", "forma": "Node 22, objeto", "resultado": "86/86; fail 0; skip 0"},
+    {"comando": "4. roleperms + front probe + comparador", "forma": "página real, 25 atores", "resultado": "4/4; zero divergentes; JSONs iguais"},
+    {"comando": "5. cauda R5/R9", "forma": "backend 20 atores; front 2 casos", "resultado": "ec 0; JSONs iguais"},
+    {"comando": "6. 12 mutações", "forma": "âncora única, numstat, teste/sonda, checkout e hash=blob", "resultado": "12 propriedades acusadas; OOM de forma documentado; nenhuma mutação viva"},
+    {"comando": "7. controles objeto~19 e merge-base", "forma": "frontend/src no worktree próprio, depois restaurado", "resultado": "R5 3 AssertionError; F13 2 AssertionError"},
+    {"comando": "8. navback/navfront/front3 objeto e base", "forma": "backend em memória e App/menu reais", "resultado": "todos ec 0; JSONs iguais; front3 2/2 em ambos"}
+  ],
+  "achados": [
+    {"id": "C2R-01", "defeito": "roteiro histórico não registrava geração de role-perms.json", "evidencia": "histórico ENOENT; nesta rodada catálogo executado e insumo igual", "gravidade": "nota", "escopo": "dentro-do-bloco", "classe": "não grave", "motivo": "processo, sem impacto no produto", "dono": "orquestração da junta"},
+    {"id": "C2-02", "defeito": "D-4: sem módulo finance ainda mostra Cobranças/Pagamentos a 7 papéis leitores", "evidencia": "navfront-semfin igual ao ciclo 2; pendência versionada", "gravidade": "nota", "escopo": "dentro-do-bloco", "classe": "não grave", "motivo": "não concede acesso ao dado", "dono": "B-SAN3-24"},
+    {"id": "C2-03", "defeito": "quatro células sintéticas de rota mudam por F13/Q4", "evidencia": "front3 igual ao ciclo 2; 0/39 células canônicas mudam", "gravidade": "nota", "escopo": "dentro-do-bloco", "classe": "não grave", "motivo": "decisão registrada; nenhum papel canônico ganha leitura", "dono": "decisão F13/Q4"}
+  ],
+  "criterios_que_nao_puderam_falhar": [],
+  "pendencias_que_aceito": [
+    "C2R-01 — processo da junta, não grave",
+    "P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO — B-SAN3-24",
+    "C2-03 — quatro células sintéticas decididas por F13/Q4"
+  ],
+  "teardown": "servidores em memória encerrados; nenhum processo com o caminho; probes removidos; frontend/src limpo e hashes restaurados iguais aos blobs; worktree removido por git worktree remove --force e caminho ausente; nenhum Docker, Postgres, Redis vivo ou base do dono; sem commit"
+}

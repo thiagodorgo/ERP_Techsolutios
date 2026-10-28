@@ -1,0 +1,410 @@
+{
+  "jurado": "jurado-san312b-ciclo3-c1-sol61",
+  "executor": "Codex CLI conta 2",
+  "modelo": "GPT-6.1 Sol",
+  "esforco": "medium",
+  "nivel": "menor declarado pelo dono",
+  "substituicao": "Decisão do dono 28/10 §A1.1 substitui obrigatoriedade Claude Opus do R- §4 e inspetor; sucessor P3",
+  "corpo": "jurado-san312b-c1-tela-e-fidelidade",
+  "mandato_md5": "62453cf46fb519b20bcaeaceb81aaf98",
+  "corpo_md5": "4e27a0e164b92f8326ca42f609fe6309",
+  "comparacao_corpo": "IDENTICO EOL-neutro",
+  "objeto": "cfb19fd115bac02ef65eb94202b01a64e6730854",
+  "escopo": "dentro-do-bloco",
+  "gravidade": "ajuste",
+  "classe": "não grave",
+  "arquivos_medidos": [
+    ".agents/agents/especialistas/jurado-san312b-c1-tela-e-fidelidade.md",
+    ".claude/agents/especialistas/jurado-san312b-c1-tela-e-fidelidade.md",
+    "CLAUDE.md",
+    "COMPONENT_LIBRARY.md",
+    "agent-orchestration/controle/pendencias.md",
+    "agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md",
+    "docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html",
+    "docs/revisoes/SAN3/B-SAN3-12-plano.md",
+    "frontend/src/**",
+    "frontend/src/components/dense-list/**",
+    "frontend/src/components/patterns/**",
+    "frontend/src/guards/PermissionGuard.tsx",
+    "frontend/src/modules/finance/**",
+    "frontend/src/modules/finance/dashboard/financial-summary.adapter.ts",
+    "frontend/src/styles/app.css",
+    "frontend/tests/dense-expandable-row.test.tsx",
+    "frontend/tests/finance-contas-extrato.smoke.test.tsx",
+    "frontend/tests/finance-page-live.test.tsx",
+    "frontend/tests/pattern-css-guard.test.ts",
+    "src/modules/core-saas/permissions/catalog.ts",
+    "src/modules/financial-summary/financial-summary.types.ts"
+  ],
+  "voto": "APROVADO",
+  "itens": [
+    {
+      "item": 1,
+      "estado": "FECHADO",
+      "veredito_parcial": "VERDE",
+      "R_E3_3": "1280/1366/1440, valores 126958.65/167692.35/56999.50/56330/30520: scrollWidth<=clientWidth, folga mínima 35 px; referência A mesma tipografia 15,5/18 px; nenhum valor encoberto",
+      "R_E3_4": "th/td VALOR e SALDO EM ABERTO right/tabular-nums; outras colunas inalteradas; linhas 42/42/41 px",
+      "F11": "70 BUTTON after=true; 66 filtros clear=false em 1 clique; Saldo em caixa (4 ocorrências) é navegação à visão sem filtro e permanece selecionado, não há chip a remover",
+      "F12": "4 listas 41–42 px, 0 botão/a na linha; 1 detalhe imediatamente abaixo (gap 0), Enter/Espaço/Escape e foco 2px; title inteiro e ellipsis",
+      "R1_R2": "Conta acima da lista e remoção com query sem account_id; KPIs da organização limpam conta; faixa flex, bordas 13 px, nome longo 216 caracteres com ellipsis/title e gap 8 px",
+      "testes": "54/54 no recorte, antes e depois dos controles"
+    },
+    {
+      "item": 2,
+      "estado": "FECHADO",
+      "veredito_parcial": "VERDE COM RESSALVAS NÃO GRAVES",
+      "F17": "Controles Scope/Sem permission/RBAC acusam, Sem permissão não; DOM normal 25 telas (abas, detalhes e modais), 4.139 nós, zero termos técnicos e zero grafias sem acento da lista; M-E3-5 vermelha no objeto e verde no F17 antigo",
+      "R3": "130 títulos: 100 + 30, GET limit=100&offset=100, TablePager 20/50; detalhe fecha ao paginar; aba usa 130 do servidor; blocos locais sem contagem na carga parcial",
+      "R10_F16": "4 abas × 10 formas = 40 células: skeleton, vazio, falhas 500/rede/403 honestas, forbidden na conta sem read, rota bloqueada ao técnico; stale mantém 3/2/3/3 linhas e faixa",
+      "F19": "38 combinações. balance 404/500/campo ausente ou nulo: Saldo indisponível em 2 cartões; summary 404/500: erro sem KPI; aggregate fora: Indisponível sem contagem. Resumo HTTP 200 fora do contrato com campo ausente/null produz zero no adaptador: pendência pré-existente abaixo"
+    },
+    {
+      "item": 3,
+      "estado": "FECHADO",
+      "veredito_parcial": "VERDE",
+      "padrao": "CSS ciclo 3: 8 adições = 2 comentários + 6 regras E3.1; 0 remoção, nenhuma outra pat-kpi alterada. View: só 2 substituições (grade pela variante e pat-btn liso). Biblioteca registra. 0 pat-btn--secondary em frontend/src. Nenhum componente/token novo além da variante expressamente autorizada. pattern-css-guard verde.",
+      "declaracoes": "E3.2 declara 18/15,5 px da opção A; E2.2 preserva D-5 (contagem do agregado por conta), busca adiada com dono, Carregar mais e D-9 (só A; B/C no 12c). Tela-modelo: WorkOrdersPage.tsx; componentes da biblioteca usados."
+    }
+  ],
+  "achados": [
+    {
+      "id": "C1R3-A1",
+      "defeito": "Campo ausente/null num resumo financeiro HTTP 200 vira R$ 0,00/0 no adaptador.",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "classe": "não grave",
+      "motivo": "Robustez do adaptador diante de resposta fora do contrato; campos são obrigatórios e preenchidos pelo backend julgado. Não foi medido erro de dinheiro no fluxo válido.",
+      "N": 27,
+      "forma": "22 campos ausente/null + 5 grupos ausentes nas 38 formas de F19",
+      "origem": "git blame cfb19fd1, financial-summary.adapter.ts:113–119 = 08d009492, 2026-07-18; pendencias.md e E3.4 confirmam a pendência",
+      "evidencia": "item2-robusto-f19.json; origem-pendencias.log",
+      "pendencia": "P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO",
+      "dono": "B-SAN3-12c"
+    },
+    {
+      "id": "C1R3-N1",
+      "defeito": "KPI e bloco A conciliar da organização ficam pressionados com uma conta filtrada; chip da conta permanece visível e removível.",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "Estado visual mais amplo que a lista; nenhum dado perdido nem dinheiro alterado.",
+      "N": 1,
+      "forma": "cenário r1_c1.a no navegador, dois controles pressionados e conta no chip",
+      "evidencia": "item1-r1.json",
+      "pendencia": "P-C1R3-INDICADOR-ORG-COM-CONTA (proposta; mesma nota C1r2-N1)",
+      "dono": "B-SAN3-12c"
+    },
+    {
+      "id": "C1R3-N2",
+      "defeito": "Perfil sintético com finance:read e sem financial_entries:read vê vazio no extrato e na conciliação, sem pedido de lançamentos.",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "Estado de UI incorreto para a permissão ausente; não há liberação de leitura nem escrita indevida.",
+      "N": 2,
+      "forma": "abas ext/conc, entriesReqs=0; navegador com claims sintéticos",
+      "evidencia": "semEntries-obj.json e r3-confirmado.log (repetição após montagem; primeira coleta prematura descartada)",
+      "pendencia": "P-C1R3-ESTADO-SEM-LEITURA-LANCAMENTOS (proposta; mesma nota C1r2-N2)",
+      "dono": "B-SAN3-12c; cadeia de acesso pertence à C2"
+    },
+    {
+      "id": "C1R3-N3",
+      "defeito": "Pager do filtro Vencidos mistura 30 carregados filtrados com 130 títulos totais; contador acima explica a carga parcial.",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "Ambiguidade de texto sem perda de linhas ou erro monetário.",
+      "N": 1,
+      "forma": "r3-robusto.json s5_vencidosParcial: 1–30 de 30 carregados · 130 no servidor",
+      "evidencia": "r3-robusto.json; mesmo C1r2-N4",
+      "pendencia": "P-C1R3-TEXTO-PAGER-FILTRADO (proposta)",
+      "dono": "B-SAN3-12c"
+    },
+    {
+      "id": "C1R3-N4",
+      "defeito": "Guarda da rota mostra Acesso nao autorizado e demais textos sem acento.",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "classe": "não grave",
+      "motivo": "Linguagem da UI; o bloqueio de acesso continua funcionando.",
+      "N": 4,
+      "forma": "4 abas do Técnico de Campo; sonda aguarda explicitamente o texto do guarda para concluir",
+      "origem": "git blame cfb19fd1 PermissionGuard.tsx:29–30 = 98b4bee34, 2026-06-06",
+      "evidencia": "item2-robusto-matrix.json e refs-finais.log; guard fora do DOM normal varrido",
+      "pendencia": "P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO",
+      "dono": "B-SAN3-06a (alternativa B-SAN3-24)"
+    },
+    {
+      "id": "C1R3-N5",
+      "defeito": "Busca de documento/cliente/descrição da referência ainda ausente, declarada em E2.2.",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave",
+      "motivo": "Divergência declarada com pendência e dono; não impede acesso aos 130 títulos pelo pager/carga adicional.",
+      "N": 1,
+      "forma": "barra da lista da aparência A; declaração E2.2 e referência",
+      "evidencia": "static-final.log; item1-r1.json; DOM normal",
+      "pendencia": "P-SAN3-12B-BUSCA-TABELA-TITULOS",
+      "dono": "B-SAN3-12c"
+    }
+  ],
+  "legalidade": "inspetor-san312b-ciclo3-opus LIBERADO COM RESSALVA; substituição C1 autorizada explicitamente pelo dono 28/10; refs confirmadas; 14 completed/success; backend/backend-postgres/frontend verdes",
+  "quorum": "unanimidade de 3; ciclo 3 só defeito de produto GRAVE reprova",
+  "ressalva": true,
+  "ciclo": 3,
+  "pr": 469,
+  "leitura_de_outras_cadeiras": "Não li votos nem evidências de C2/C3 do ciclo 3. Li somente C1 do ciclo 2 e o parcial C1 pausado como roteiros a re-verificar.",
+  "sucessao_P3": "Antecessor jurado-san312b-ciclo3-c1-opus pausado 04:49:15Z; parciais preservados. R-E3-3/4 e item1 reexecutados; mesma geometria. Reuso de worktree/dependências expressamente autorizado pelo dono; sem reinstalação ou reexecução destrutiva da criação anterior.",
+  "objeto_no_fim": "cfb19fd115bac02ef65eb94202b01a64e6730854 (gh pr view = ls-remote); não andou",
+  "origin_main_inicio_fim": "f076973921539165df8d406b8c061dbf4e4ee127 / f076973921539165df8d406b8c061dbf4e4ee127",
+  "merge_base": "f076973921539165df8d406b8c061dbf4e4ee127",
+  "controles": "cfb19fd1~6 = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2: E3 2 pass / 3 fail pela asserção, corte em 1280 e dinheiro left/normal. Scope com F17 antigo: 3/3 verde; Scope com F17 objeto: 4/5, 1 fail. Restaurado por hash.",
+  "mutacoes": [
+    {
+      "nome": "M-E3-3a",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - R-E3-3: a variante .pat-kpi-row--6 existe no CSS efetivo — grade de 6, valor a 18 px sem quebra e com reticências, 15,5 px até 1340 px"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3a.tap"
+    },
+    {
+      "nome": "M-E3-3b",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 3 - R-E3-3: a linha de indicadores da opção A usa a classe da biblioteca, sem grade inline — carregada e no esqueleto"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-3b.tap"
+    },
+    {
+      "nome": "M-E3-4",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 3 - R-E3-4: o skin .pat-ab-table alinha à direita e tabula as colunas de dinheiro no CSS efetivo (espelho de .dense-table)"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-4.tap"
+    },
+    {
+      "nome": "M-E3-5",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F17: nenhum termo técnico (tenant, role, reconciled, rota de API) nos textos de tela do Financeiro (12b)"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-M-E3-5.tap"
+    },
+    {
+      "nome": "R1-M1",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - R1: filtro de conta convive com o alvo e sai com um clique sem manter account_id",
+        "not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M1.tap"
+    },
+    {
+      "nome": "R1-M2",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 3 - R1: indicador da organização limpa a conta selecionada antes de abrir 'A conciliar'"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R1-M2.tap"
+    },
+    {
+      "nome": "R2-M1",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - R2: 'Conciliação por conta' separa nome e contagem com flex e distância mínima"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R2-M1.tap"
+    },
+    {
+      "nome": "R3-M1",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas",
+        "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M1.tap"
+    },
+    {
+      "nome": "R3-M2",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas",
+        "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M2.tap"
+    },
+    {
+      "nome": "R3-M3",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M3.tap"
+    },
+    {
+      "nome": "R3-M4",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 3 - R3(b-c): abas e Vencidos usam o resumo; blocos locais omitem a contagem enquanto faltam páginas",
+        "not ok 4 - R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais títulos' até todos os títulos"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R3-M4.tap"
+    },
+    {
+      "nome": "R10-M1",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - R10: aba 'Contas e extrato' sem financial_accounts:read mostra acesso não permitido, nunca 'Cadastre a primeira conta'"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-R10-M1.tap"
+    },
+    {
+      "nome": "F16",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 6 - F16 desatualizado: a atualização em 2º plano falha → faixa 'Dados desatualizados' e o dado anterior continua na tela"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F16.tap"
+    },
+    {
+      "nome": "F19",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F19.tap"
+    },
+    {
+      "nome": "F11",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F11.tap"
+    },
+    {
+      "nome": "F12",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F12: linha de uma altura, sem botão; o detalhe abre logo abaixo, um por vez; Enter/Espaço abrem, Escape fecha"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-F12.tap"
+    },
+    {
+      "nome": "MINHA-pressed",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F11: o indicador 'A receber vencido' leva à aba filtrada; o filtro aparece e sai com um clique"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-pressed.tap"
+    },
+    {
+      "nome": "MINHA-saldo0",
+      "resultado": "VERMELHO pela asserção; irmão VERDE; âncora única; restauro hash=blob",
+      "casos_vermelhos": [
+        "not ok 2 - F19: conta sem saldo do servidor diz 'saldo indisponível' — nunca '—' nem R$ 0,00 fingido"
+      ],
+      "log": "C:\\Users\\AMP\\erp-pausa-2026-10-03\\j12b3-c1r3-s61\\mut-MINHA-saldo0.tap"
+    }
+  ],
+  "pendencias_que_aceito": [
+    {
+      "id": "P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO",
+      "dono": "B-SAN3-12c",
+      "gravidade": "ajuste",
+      "escopo": "pre-existente",
+      "classe": "não grave"
+    },
+    {
+      "id": "P-C1R3-INDICADOR-ORG-COM-CONTA (proposta; mesma nota C1r2-N1)",
+      "dono": "B-SAN3-12c",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave"
+    },
+    {
+      "id": "P-C1R3-ESTADO-SEM-LEITURA-LANCAMENTOS (proposta; mesma nota C1r2-N2)",
+      "dono": "B-SAN3-12c; cadeia de acesso pertence à C2",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave"
+    },
+    {
+      "id": "P-C1R3-TEXTO-PAGER-FILTRADO (proposta)",
+      "dono": "B-SAN3-12c",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave"
+    },
+    {
+      "id": "P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO",
+      "dono": "B-SAN3-06a (alternativa B-SAN3-24)",
+      "gravidade": "nota",
+      "escopo": "pre-existente",
+      "classe": "não grave"
+    },
+    {
+      "id": "P-SAN3-12B-BUSCA-TABELA-TITULOS",
+      "dono": "B-SAN3-12c",
+      "gravidade": "nota",
+      "escopo": "dentro-do-bloco",
+      "classe": "não grave"
+    }
+  ],
+  "divergencias_declaradas_aceitas": [
+    "D-5: contagem verdadeira de aggregate por conta; não é barra desenhada com dado inexistente",
+    "D-9: A nesta entrega; B/C no B-SAN3-12c",
+    "Carregar mais títulos: extensão honesta pelo limite 100",
+    "18/15,5 px: valores da referência opção A, registrados na variante autorizada"
+  ],
+  "limitacoes_resolvidas": "Timeouts iniciais de navegação/montagem e wrapper EOF ocorreram no meu arnês; repetições esperam a montagem e produziram artefatos completos. Primeiro R3/semEntries prematuro não sustenta conclusão. DOM de 134 telas interrompido não é insumo; DOM final declara só 25 telas/4.139 nós. Âncora R3-M3 inicialmente 0 por CRLF, nada foi mutado; repetição EOL-neutra única vermelha. Sem item decisivo de gravidade sem medição.",
+  "o_que_executei": [
+    {
+      "comando": "bash run.sh kpi-retry: node zz-j12bc1r3-kpi.mjs ... obj",
+      "forma": "Vite 127.0.0.1:48261; worktree próprio; Node 22 absoluto; Chromium/Playwright; API dublada page.route; 1280x720/1366x768/1440x900; referência A local",
+      "resultado": "ec=0, geometria igual à do parcial pausado; kpi-obj.json/capturas próprias"
+    },
+    {
+      "comando": "node --test --import tsx tests/finance-page-live.test.tsx tests/dense-expandable-row.test.tsx tests/finance-contas-extrato.smoke.test.tsx tests/pattern-css-guard.test.ts",
+      "forma": "cwd frontend, timeout, Node 22; antes e depois dos controles",
+      "resultado": "54 tests / 54 pass / 0 fail / 0 skipped em ambas"
+    },
+    {
+      "comando": "node item1.mjs ... r1 r1; ... f12 f12; ... f11 f11",
+      "forma": "Cópia do roteiro, app real com dublê; 70 controles e 4 listas; artefatos finais completos",
+      "resultado": "R1/R2/F11/F12 verdes, com semântica do Saldo explicitada; P3 própria"
+    },
+    {
+      "comando": "node item2.mjs ... robusto matrix; ... robusto f19; node r3.mjs ... robusto; node semEntries.mjs",
+      "forma": "Aguarda montagem; 40 células + 38 formas; 130 títulos e permissions sintéticas",
+      "resultado": "JSON completos medidos e ressalvas individualizadas"
+    },
+    {
+      "comando": "node item3.mjs ... robusto sweep normal; python static.py",
+      "forma": "25 telas, 4.139 nós; diff cfb19fd1~6..cfb19fd1 e plano/biblioteca no objeto",
+      "resultado": "zero termos/grafias sem acento no DOM normal; CSS/view/documentação conforme E3.1/E3.2; guarda pré-existente separado"
+    },
+    {
+      "comando": "python mutacoes.py; python mutacoes.py R3-M3",
+      "forma": "18 mutações uma a uma; âncora única, diff não vazio, alvo vermelho pela asserção e irmão verde, checkout de restauro e hash=blob",
+      "resultado": "18 vermelhas; logs individuais e evidência incremental"
+    },
+    {
+      "comando": "python controle.py",
+      "forma": "Somente CSS/view de cfb19fd1~6, e Scope + F17 antigo; restauro provado por hash",
+      "resultado": "ec=0; 3 falhas E3 pela asserção, sonda corta (-37/-25 px em 1280), alinhamento left; Scope 3/3 verde no teste antigo"
+    },
+    {
+      "comando": "git ls-remote; gh pr view 469; gh api check-runs; git fetch origin main; git diff --check",
+      "forma": "objeto resolvido no início/fim; nenhuma leitura de C2/C3 do ciclo 3",
+      "resultado": "head/base invariantes; 14 completed/success; árvore limpa antes da remoção"
+    }
+  ],
+  "teardown": "Vite PID Windows 20664 encerrado por PID, processo confirmado como o servidor desta porta; navegadores encerrados; 0 processo com o caminho do worktree; git worktree remove --force no caminho autorizado, diretório ausente; todas as mutações e checkouts restaurados por hash antes; nenhum Docker, commit ou alteração dos parciais pausados. Logs/sondas/capturas mantidos somente no scratch externo para P3.",
+  "justificativa": "Sucessor P3 autorizado em Codex CLI conta 2, GPT-6.1 Sol medium, nível menor declarado pelo dono (§A1.1), substituindo a obrigação C1 Claude Opus do R- §4 e inspetor. Objeto e refs estáveis. C1r2-01/02/03 fechados pela medição própria: valores cabem nas três larguras, dinheiro right/tabular, F17 acusa Scope. Regressões e 18 mutações com controles executados; nenhum defeito de produto grave medido no escopo da cadeira. Pendências não graves com N, forma, origem/escopo e dono individualizados. Limpeza comprovada; não commitei.\nVOTO: APROVADO — três itens medidos; só ressalvas não graves com dono, conforme régua do ciclo 3.",
+  "cadeira": "C1 refeita (c1r3), sucessor P3",
+  "navegador": "Chromium headless shell, revisão Playwright 1243, Google Chrome for Testing 153.0.8010.12 (--version medido localmente)",
+  "fechado_em": "2026-10-28T21:57:27.350466+00:00"
+}
