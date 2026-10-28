@@ -48,3 +48,10 @@
 
 ## Merge
 O objeto aprovado é `6b03e44d`. O commit desta ata e dos votos do ciclo 2 acrescenta só `agent-orchestration/omega/juntas/**` e `agent-orchestration/omega/reprovacoes/**`. O merge vai no head que contém esse commit, com o CI verde, e depois vem o porteiro pós-merge (é merge de produto).
+
+## Correção pós-merge — CI e briefing (2026-10-27)
+
+- O porteiro mediu no merge `f7922ab7` que `tests/checklist-template-lock-db.test.ts` roda no job **`backend`**, e não no `backend-postgres`.
+- Evidência: job `backend` **121975457986**, casos `ok 576` a `ok 586`; o log do job `backend-postgres` não contém a suíte.
+- Portanto, qualquer briefing que descreva a suíte como verde no `backend-postgres` está corrigido por esta seção. O resultado continua verde, mas no job `backend`.
+- `P-B-SAN3-22-CI-DB-SUITE` permanece ABERTA: ainda cabe à emenda decidir se a suíte também deve entrar na lista curada do `backend-postgres`.
