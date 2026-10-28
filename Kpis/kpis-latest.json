@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-10-28 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI` executado pelo Codex: o redator propõe, o orquestrador confere e o script grava; o KPI segue CONGELADO para os PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 28/10: Financeiro ganha baixa, contas, extrato e conciliação na aparência A",
-    "pr": null,
+    "pr": 473,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
