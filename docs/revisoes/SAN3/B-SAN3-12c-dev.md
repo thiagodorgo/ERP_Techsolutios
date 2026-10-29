@@ -449,3 +449,23 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** temporários TAP em `/tmp`; árvore do produto limpa.
+
+## Evidência incremental — FATIA 13A
+
+1. A fatia 13 foi dividida pelo parecer. 13A prendeu CSS escopado B/C, grids nas três larguras-alvo, colapso,
+   linha de 40px, dinheiro tabular e rótulos acessíveis. Bateria → **26 testes · 26 pass · 0 fail · 0 skipped**.
+2. Mutar a linha para 47px deixou o controle geométrico vermelho; restauro de `app.css` =
+   `15ee8720f055bc7d08c0b0b2ff73d9087ebd302d1ca46a9f52dc1bdec73e85c1`.
+3. Chrome/Edge/Chromium não foram encontrados pelos caminhos/commands medidos; portanto não se inventam nove
+   capturas nem aprovação visual. A sonda real permanece para `cognicao-visual`/CI; esta fatia prova o contrato CSS.
+
+## RETOMADA 13A
+
+- **Hora UTC real:** `2026-10-29T03:23:15Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `338c26f1`; base `3c27f1bf`.
+- **Feito:** geometria estática e responsividade B/C; indisponibilidade do navegador registrada honestamente.
+- **Falta:** FATIAS 13B e 14; próxima: 13B, interação/teclado/formulários e handoff visual.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhum servidor/artefato de navegador criado.
