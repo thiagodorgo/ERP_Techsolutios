@@ -65,6 +65,16 @@ function lastDayOfMonth(competencia: string): string {
   return `${competencia}-${String(day).padStart(2, "0")}`;
 }
 
+/** Janela civil inclusiva dos seis meses que terminam no mês da data informada. */
+export function sixMonthRange(date: Date = new Date()): { readonly from: string; readonly to: string } {
+  const first = new Date(date.getFullYear(), date.getMonth() - 5, 1);
+  const competencia = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return {
+    from: `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}-01`,
+    to: lastDayOfMonth(competencia),
+  };
+}
+
 /** Filtros do GET /financial-entries para o estado da tela — aplicados no SERVIDOR. */
 export function entriesFiltersFor(state: FinanceState): FinancialEntriesFilters {
   const filters: { -readonly [K in keyof FinancialEntriesFilters]: FinancialEntriesFilters[K] } = {};

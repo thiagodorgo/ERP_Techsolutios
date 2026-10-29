@@ -247,3 +247,34 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum artefato temporário; SVGs/testes são rastreáveis da entrega.
+
+## Evidência incremental — FATIA 6
+
+1. Pré-voo limpo em `0d28b8ad`; espaço livre 13.514.227.712 bytes na abertura e 13.523.582.976 no fechamento.
+2. Consultas nomeadas da conta em foco adicionadas sem view nova: pendente comum reaproveitado; conciliado, ressalva
+   de valor, ressalva de data e série mensal usam `account_id`; a série explicita a janela civil inclusiva de 6 meses.
+3. `filtro=mes:AAAA-MM:in|out` conserva round-trip e produz `from/to/direction` no extrato. A bateria mediu 10 URLs
+   agregadas distintas com conta em foco, sem duplicar a consulta comum.
+4. `refreshAggregates` inclui o conjunto em foco; a baixa bem-sucedida continua chamando `refreshAll(true)` e,
+   portanto, atualiza resumo, extrato e séries.
+5. Teste dono `finance-page-live.test.tsx` → **41 testes · 41 pass · 0 fail · 0 skipped**; check TypeScript e
+   `git diff --check` verdes; proibidos/lockfiles sem diff.
+
+## Mutações e vermelho-controle — FATIA 6
+
+- Retirar `accountId` da série mensal → vermelho (4 URLs da conta em vez de 5); retirar `from/to` → vermelho na
+  fronteira civil esperada; omitir `refreshFocusedAggregates` → vermelho no guard da escrita; duplicar a consulta
+  pendente comum → vermelho (11 chamadas/URL repetida).
+- Restauro de `FinanceiroPage.tsx` confirmado pelo SHA-256
+  `2ecce213d0d188df0ad501ad9850f10fcc2207ed3aa28a253969467647a95b48`; verde final 41/41.
+
+## RETOMADA 6
+
+- **Hora UTC real:** `2026-10-29T02:43:09Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `0d28b8ad36d239f8028e07ca6ccb433b02ad0d8d`; base `3c27f1bf`.
+- **Feito:** R-D da conta/situação/mês, round-trip e refresh comum.
+- **Falta:** FATIAS 7–14 (13A/13B); próxima: FATIA 7, estrutura e estados da aparência B.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch; somente mutações restauradas.

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test, { after } from "node:test";
 
 // B-SAN3-12b — a página REAL do Financeiro (aparência A) com os hooks REAIS rodando efeitos, no arnês de DOM mínimo
@@ -305,6 +306,7 @@ const { PermissionProvider } = await import("../src/providers/PermissionProvider
 const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
 const { mockSession } = await import("../src/mocks/auth/context");
 const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
+const { financeStateSearch, readFinanceState, sixMonthRange } = await import("../src/modules/finance/pages/financeiro.state");
 
 const h = React.createElement;
 type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
@@ -717,6 +719,36 @@ test("R-P3: resposta antiga da mesma consulta não substitui a nova e outra cont
     await settle();
     await probe.unmount();
   }
+});
+
+test("R-D/B: consultas da conta em foco levam conta, situação e janela civil de seis meses sem duplicar URL", async () => {
+  const probe = await mount({ url: "/finance?aba=ext&conta=acc-banco&filtro=mes:2026-10:out" });
+  try {
+    const aggregateUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?")).map((call) => call.url);
+    assert.equal(aggregateUrls.length, 10, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 10, "uma requisição por query completa");
+    const focused = aggregateUrls.filter((url) => /account_id=acc-banco/.test(url));
+    assert.equal(focused.length, 5, focused.join(" | ")); // pendente comum + conciliado/valor/data/meses
+    assert.ok(focused.some((url) => /reconciled=true/.test(url) && !/divergence_type=/.test(url)), "conciliados da conta");
+    assert.ok(focused.some((url) => /divergence_type=value/.test(url)), "ressalva de valor da conta");
+    assert.ok(focused.some((url) => /divergence_type=date/.test(url)), "ressalva de data da conta");
+    const months = focused.find((url) => /group_by=month/.test(url));
+    assert.ok(months, "série mensal da conta");
+    const range = sixMonthRange();
+    assert.match(months!, new RegExp(`from=${range.from}`));
+    assert.match(months!, new RegExp(`to=${range.to}`));
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-D/B: mês e direção fazem round-trip na URL e o refresh de escrita inclui a série em foco", () => {
+  const state = readFinanceState("?aba=ext&conta=acc-banco&filtro=mes:2026-10:out");
+  assert.deepEqual(state, { tab: "ext", accountId: "acc-banco", target: "mes:2026-10:out" });
+  assert.equal(financeStateSearch(state), "?aba=ext&conta=acc-banco&filtro=mes%3A2026-10%3Aout");
+  const source = readFileSync(new URL("../src/modules/finance/pages/FinanceiroPage.tsx", import.meta.url), "utf8");
+  assert.match(source, /refreshFocusedAggregates\(background\)/);
+  assert.match(source, /onDone=\{\(\) => void refreshAll\(true\)\}/, "baixa bem-sucedida atualiza também os agregados em foco");
 });
 
 test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as contagens por conta", async () => {

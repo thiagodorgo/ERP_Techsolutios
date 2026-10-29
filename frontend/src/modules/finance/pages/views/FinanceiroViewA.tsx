@@ -86,6 +86,10 @@ export const AGGREGATE_KEYS = {
   value: "valor",
   date: "data",
   account: (accountId: string) => `conta:${accountId}`,
+  accountReconciled: (accountId: string) => `conta:${accountId}:conciliado`,
+  accountValue: (accountId: string) => `conta:${accountId}:valor`,
+  accountDate: (accountId: string) => `conta:${accountId}:data`,
+  accountMonths: (accountId: string) => `conta:${accountId}:meses`,
 } as const;
 
 function countOf(aggregate: EntriesAggregate | null | undefined): number | null {

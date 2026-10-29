@@ -18,7 +18,7 @@ import { useFinancialEntries } from "../entries/useFinancialEntries";
 import { useReconciliationPolicy } from "../entries/useReconciliationPolicy";
 import type { FinancialTitle } from "../titles/financial-titles.types";
 import { useFinancialTitles } from "../titles/useFinancialTitles";
-import { entriesFiltersFor, financeStateSearch, readFinanceState, useLastGood, type FinanceState } from "./financeiro.state";
+import { entriesFiltersFor, financeStateSearch, readFinanceState, sixMonthRange, useLastGood, type FinanceState } from "./financeiro.state";
 import { AGGREGATE_KEYS, FinanceiroViewA, type FinanceiroViewModel } from "./views/FinanceiroViewA";
 
 const SITUATION_QUERIES: Readonly<Record<string, EntriesAggregateQuery>> = {
@@ -76,6 +76,18 @@ export function FinanceiroPage() {
   }, [accountKey]);
   const situationAggregates = useEntriesAggregate(SITUATION_QUERIES, { enabled: access.readEntries });
   const accountAggregates = useEntriesAggregate(accountQueries, { enabled: access.readEntries });
+  const focusedQueries = useMemo(() => {
+    if (!state.accountId) return {};
+    const accountId = state.accountId;
+    const range = sixMonthRange();
+    return {
+      [AGGREGATE_KEYS.accountReconciled(accountId)]: { groupBy: "none", reconciled: true, accountId },
+      [AGGREGATE_KEYS.accountValue(accountId)]: { groupBy: "none", reconciled: true, divergenceType: "value", accountId },
+      [AGGREGATE_KEYS.accountDate(accountId)]: { groupBy: "none", reconciled: true, divergenceType: "date", accountId },
+      [AGGREGATE_KEYS.accountMonths(accountId)]: { groupBy: "month", accountId, from: range.from, to: range.to },
+    } satisfies Readonly<Record<string, EntriesAggregateQuery>>;
+  }, [state.accountId]);
+  const focusedAggregates = useEntriesAggregate(focusedQueries, { enabled: access.readEntries });
 
   const summaryView = useLastGood(summary.data, !summary.loading && summary.data.source !== "fallback");
   const receivablesView = useLastGood(receivables.items, !receivables.loading && receivables.source !== "fallback");
@@ -95,11 +107,12 @@ export function FinanceiroPage() {
   const refreshEntries = entries.refresh;
   const refreshSituationAggregates = situationAggregates.refresh;
   const refreshAccountAggregates = accountAggregates.refresh;
+  const refreshFocusedAggregates = focusedAggregates.refresh;
   const refreshAggregates = useCallback(
     async (background = false) => {
-      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background)]);
+      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background), refreshFocusedAggregates(background)]);
     },
-    [refreshSituationAggregates, refreshAccountAggregates],
+    [refreshSituationAggregates, refreshAccountAggregates, refreshFocusedAggregates],
   );
   const refreshAll = useCallback(
     async (background = false) => {
@@ -169,7 +182,7 @@ export function FinanceiroPage() {
       loadMore: payables.loadMore,
     },
     entries: { items: entries.items, loading: entries.loading, failed: !entries.loading && entries.source === "fallback", total: entries.pagination.total },
-    aggregates: { ...situationAggregates.data, ...accountAggregates.data },
+    aggregates: { ...situationAggregates.data, ...accountAggregates.data, ...focusedAggregates.data },
     policy,
     access,
     failed: summaryFailed || accountsFailed,
