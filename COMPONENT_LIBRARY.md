@@ -87,6 +87,8 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 - `KpiStatCard` com `pressed` (B-SAN3-12b) — indicador que FILTRA: com `onClick`, publica `aria-pressed` (bloco clicável que leva à lista filtrada).
 - `.pat-kpi-row--6` (CSS, B-SAN3-12b, E3) — grade de 6 indicadores ao lado de `--4`/`--5`; o valor do `KpiStatCard` fica a 18 px (15,5 px até 1340 px), sem quebra e com reticências, para que o dinheiro caiba inteiro a 1280, 1366 e 1440 px (números da opção A do Financeiro). As outras telas seguem a 27 px.
 - `DenseTable` com `renderDetail` + coluna `align: "right"`/`tabular` (CSS, B-SAN3-12b, E3) — a lista `.pat-ab-table` passa a alinhar à direita e tabular as colunas de dinheiro, espelhando `.dense-table` (`.pat-ab-table th.dense-col-right`, `.pat-ab-row td.dense-col-right`, `…dense-col-tabular`).
+- `BalanceBridge` (`frontend/src/components/charts/`, B-SAN3-12c) — ponte SVG inline do saldo por conta; recebe abertura, entradas, saídas e saldo literal já calculados pelo servidor. Entradas/Saídas são filtros acessíveis por clique, Enter e Espaço; ausência de qualquer valor vira estado indisponível.
+- `ReconcileDonut` (`frontend/src/components/charts/`, B-SAN3-12c) — rosca SVG inline com segmentos disjuntos: conciliados sem ressalva, ressalva de valor, ressalva de data e a conciliar. O total conciliado inclui ressalvas; inconsistência/ausência falha fechado. A legenda é composta por botões de filtro com `aria-pressed`.
 
 ## Flutter priorities
 1. app shell and auth context

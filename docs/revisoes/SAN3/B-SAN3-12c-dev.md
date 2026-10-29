@@ -211,3 +211,39 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore ou scratch criada; só a mutação in-place restaurada por hash.
+
+## Evidência incremental — FATIA 5
+
+1. Pré-voo limpo em `b4654d1d`; espaço livre 13.511.585.792 bytes na abertura e 13.516.730.368 no fechamento.
+2. `BalanceBridge` nasceu na biblioteca de charts como SVG inline, zero dependência: recebe os quatro números do
+   `/balance`, publica o saldo literal, aceita zero/negativos, falha fechado em ausência e oferece Entradas/Saídas por
+   clique, Enter e Espaço.
+3. `ReconcileDonut` usa contagens disjuntas: conciliados sem ressalva = total conciliado − ressalva de valor −
+   ressalva de data; total = pendentes + conciliados, sem duplicar ressalvas. Ausência, negativo, fração ou domínio
+   inconsistente tornam o dado indisponível.
+4. Exports e `COMPONENT_LIBRARY.md` atualizados. Nenhum componente existente foi alterado.
+5. Testes donos: `balance-bridge.test.tsx` + `reconcile-donut.test.tsx` →
+   **10 testes · 10 pass · 0 fail · 0 skipped** (5 por componente, acima do piso de 4).
+6. `npm --prefix frontend run check` → ec=0; `git diff --check` limpo; proibidos/lockfiles sem diff.
+
+## Mutações e vermelho-controle — FATIA 5
+
+- `BalanceBridge`: substituir o saldo literal por `abertura + entradas − saídas` → vermelho (130 em vez de 999);
+  inverter os valores de Entradas/Saídas → vermelho no rótulo acessível.
+- `ReconcileDonut`: somar ressalvas novamente no total → vermelho (50% em vez de 67%); retirar simultaneamente
+  rótulo acessível e callback dos botões → vermelho na prova dos quatro filtros.
+- Restauro byte a byte: `BalanceBridge.tsx` =
+  `9e0baa3f7d0967e6ea69d42c289f3324a4064da6dc392eb2b6e15ef6cbd2640a`; `ReconcileDonut.tsx` =
+  `5278a22e55fedcd322346008f0caac3cb4b2dc70cceb2d84eb94a630f39c3b7a`; verde final 10/10.
+
+## RETOMADA 5
+
+- **Hora UTC real:** `2026-10-29T02:39:00Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit da fatia:** `b4654d1dc51449cc7c22d7db4c82ca9c9d18d181`; head-base
+  `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`.
+- **Feito:** R-B/R-D da biblioteca, exports, registro e 10 casos com quatro classes de mutação.
+- **Falta:** FATIAS 6–14 (13A/13B). A próxima é a FATIA 6, consultas/estado B por conta e mês.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhum artefato temporário; SVGs/testes são rastreáveis da entrega.
