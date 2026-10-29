@@ -297,6 +297,7 @@ const { createRoot } = await import("react-dom/client");
 const { MemoryRouter } = await import("react-router-dom");
 const { FinanceiroPage } = await import("../src/modules/finance/pages/FinanceiroPage");
 const { useFinancialTitles } = await import("../src/modules/finance/titles/useFinancialTitles");
+const { useEntriesAggregate } = await import("../src/modules/finance/entries/useEntriesAggregate");
 const { PermissionGuard } = await import("../src/guards/PermissionGuard");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
@@ -605,6 +606,7 @@ async function mount(options: { permissions?: readonly string[]; role?: string; 
 }
 
 type TitlesHookSnapshot = ReturnType<typeof useFinancialTitles>;
+type AggregateHookSnapshot = ReturnType<typeof useEntriesAggregate>;
 
 async function mountTitlesHook(override: Override) {
   seed(FINANCE);
@@ -631,7 +633,91 @@ async function mountTitlesHook(override: Override) {
   };
 }
 
+async function mountAggregateHook(override: Override) {
+  seed(FINANCE);
+  installFetch(override);
+  let snapshot: AggregateHookSnapshot | null = null;
+  function Probe() {
+    const [accountId, setAccountId] = React.useState("acc-banco");
+    const name = `conta:${accountId}`;
+    const value = useEntriesAggregate({ [name]: { groupBy: "none", accountId, reconciled: false } }, { enabled: true });
+    snapshot = value;
+    const count = value.data[name]?.items[0]?.count;
+    return h(
+      "div",
+      null,
+      h("output", { "aria-label": "Contagem do agregado" }, count === undefined ? "indisponível" : String(count)),
+      h("button", { type: "button", onClick: () => void value.refresh() }, "Atualizar agregado"),
+      h("button", { type: "button", onClick: () => setAccountId("acc-caixa") }, "Trocar conta"),
+    );
+  }
+  const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
+  const root = createRoot(container as unknown as Element);
+  await act(async () => {
+    root.render(h(AuthProvider, null, h(TenantProvider, null, h(Probe))));
+  });
+  return {
+    container,
+    snapshot: () => snapshot,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      dom.doc.body.removeChild(container);
+    },
+  };
+}
+
 // =============================== F14 · carga e aparência ===============================
+
+test("R-P3: resposta antiga da mesma consulta não substitui a nova e outra conta não herda o agregado", async () => {
+  type Pending = { resolve: (response: Response) => void; promise: Promise<Response>; url: string };
+  const pending: Pending[] = [];
+  const aggregate = (count: number) =>
+    json(200, { data: { groupBy: "none", currency: "BRL", timezone: "America/Sao_Paulo", items: [{ bucket: null, count, inflow: count, outflow: 0, net: count }] } });
+  const probe = await mountAggregateHook((call) => {
+    if (call.method !== "GET" || !call.url.startsWith("/financial-entries/aggregate?")) return undefined;
+    let resolve!: (response: Response) => void;
+    const promise = new Promise<Response>((done) => {
+      resolve = done;
+    });
+    pending.push({ resolve, promise, url: call.url });
+    return promise;
+  });
+  try {
+    assert.equal(pending.length, 1, "primeira rodada controlada");
+    let secondDone!: Promise<void>;
+    await act(async () => {
+      secondDone = probe.snapshot()!.refresh();
+      await Promise.resolve();
+    });
+    assert.equal(pending.length, 2, "segunda rodada da mesma chave");
+    pending[1].resolve(aggregate(222));
+    await act(async () => secondDone);
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-banco"]?.items[0]?.count, 222);
+    assert.equal(text(byLabel(probe.container, "Contagem do agregado")!), "222");
+
+    pending[0].resolve(aggregate(111));
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-banco"]?.items[0]?.count, 222, "a resposta antiga é descartada");
+
+    await act(async () => {
+      const button = buttonByText(probe.container, "Trocar conta");
+      (propsOf(button!).onClick as () => void)();
+      await Promise.resolve();
+    });
+    assert.equal(pending.length, 3, "a conta nova inicia consulta própria");
+    assert.match(pending[2].url, /account_id=acc-caixa/);
+    assert.equal(probe.snapshot()?.data["conta:acc-caixa"], undefined, "a conta nova não recebe o valor da anterior");
+    assert.equal(text(byLabel(probe.container, "Contagem do agregado")!), "indisponível");
+    pending[2].resolve(aggregate(333));
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-caixa"]?.items[0]?.count, 333);
+  } finally {
+    for (const item of pending) item.resolve(aggregate(0));
+    await settle();
+    await probe.unmount();
+  }
+});
 
 test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as contagens por conta", async () => {
   let releaseAccounts!: (response: Response) => void;

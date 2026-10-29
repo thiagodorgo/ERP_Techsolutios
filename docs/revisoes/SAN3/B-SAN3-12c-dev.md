@@ -178,3 +178,36 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch temporária criada; `node_modules` próprio preservado.
+
+## Evidência incremental — FATIA 4
+
+1. Pré-voo limpo em `4c693818`; `df -B1 /c` → 13.515.694.080 bytes livres na abertura e
+   13.512.994.816 no fechamento, acima do piso.
+2. O teste DOM usa o hook real `useEntriesAggregate` com promises controladas, sem sleeps: dispara duas rodadas da
+   mesma consulta, entrega 222 primeiro e 111 por último, e prova que a tela conserva 222.
+3. A mesma sonda troca `acc-banco` por `acc-caixa` usando nomes de consulta específicos por conta: antes da resposta
+   nova, `conta:acc-caixa` permanece indisponível e não herda 222; depois recebe 333.
+4. Teste dono final: `node --test --import tsx tests/finance-page-live.test.tsx` →
+   **39 testes · 39 pass · 0 fail · 0 skipped**.
+5. `npm --prefix frontend run check` → ec=0; `git diff --check` limpo; proibidos e lockfiles sem diff.
+
+## Mutações e vermelho-controle — FATIA 4
+
+- SHA-256 inicial de `useEntriesAggregate.ts`:
+  `b95e59e62ae594157114832858fd9d4cc3d47b695c263cfddd5aca42291ba424`.
+- Remoção temporária exclusiva de `if (round !== roundRef.current) return;` → R-P3 vermelho por asserção:
+  resposta antiga 111 substituiu 222.
+- Guarda restaurada com o mesmo SHA-256; teste dono e arquivo completo voltaram a verde. Nenhuma mudança do hook
+  entra no commit.
+
+## RETOMADA 4
+
+- **Hora UTC real:** `2026-10-29T02:35:16Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit da fatia:** `4c6938181c63fb98f12de0a9375b38f999592dc1`; head-base
+  `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`.
+- **Feito:** R-P3/C3R3-N2 preso por teste determinístico; o hook permaneceu byte a byte igual.
+- **Falta:** FATIAS 5–14, com 13A/13B. A próxima é a FATIA 5, `BalanceBridge` + `ReconcileDonut` na biblioteca.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore ou scratch criada; só a mutação in-place restaurada por hash.
