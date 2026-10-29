@@ -8162,4 +8162,9 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .financeiro-b__analytics{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:16px;margin-bottom:16px}
 .financeiro-b__analytics>.pat-table{padding:0 16px 14px}
 .financeiro-b>.pat-table{margin-bottom:16px;padding:0 16px 14px}
+.financeiro-b__list{margin-top:12px;overflow:hidden}
+.financeiro-b__list-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,420px);gap:12px;align-items:end;padding:12px 18px}
+.financeiro-b__list-tools p{margin:0;color:var(--color-neutral-600,#475569);font-size:12px}
+.financeiro-b__inline-form{margin-top:12px;padding-top:12px;border-top:1px solid var(--color-neutral-200,#E2E8F0)}
 @media(max-width:1100px){.financeiro-b__analytics{grid-template-columns:1fr}.financeiro-b__focus{align-items:flex-start;flex-direction:column}}
+@media(max-width:780px){.financeiro-b__list-tools{grid-template-columns:1fr}}

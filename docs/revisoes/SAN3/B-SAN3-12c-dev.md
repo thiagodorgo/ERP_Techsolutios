@@ -308,3 +308,35 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
+
+## Evidência incremental — FATIA 8
+
+1. Pré-voo limpo em `07eba33a`; espaço livre 13.497.204.736 bytes no fechamento, acima do piso.
+2. A B reutiliza as tabelas/detalhes densos da A: extrato filtrado pela conta em foco e títulos abertos da
+   organização convivem em duas abas, com uma única chave de detalhe inline e busca local sobre carregados.
+3. `BaixaForm` ganhou somente `initialAccountId` opcional: aceita a sugestão se a conta está ativa, mantém o seletor
+   editável e preserva o default vazio da A. A página compõe o mesmo formulário inline para B; A conserva o modal.
+4. O fluxo existente continua dono do payload, releitura, CAS e idempotência; nenhum protocolo de escrita mudou.
+5. Testes donos B + page-live + baixa → **61 testes · 61 pass · 0 fail · 0 skipped**; TypeScript e
+   `git diff --check` verdes; proibidos/lockfiles sem diff.
+
+## Mutações e vermelho-controle — FATIA 8
+
+- Trocar a conta inicial pela literal `acc-other` → vermelho na ligação `selected.id`; esvaziar o callback da baixa
+  → o mesmo teste vermelho.
+- Dar uma chave de detalhe independente à segunda lista → vermelho (1 em vez de 2 usos da chave única).
+- Gerar `client_action_id` a cada envio → teste F1/F2/F3 vermelho, com IDs diferentes no reenvio.
+- Restauro exato: `FinanceiroViewB.tsx` =
+  `8c4bdb5cc616d3a92ada140100a8b026c8dea564da9d4c4f8a02df5b3d1860f8`; `BaixaForm.tsx` =
+  `c2936c1d9e6d3166dd60d9fcede08d8f4490df67557d2b0ce555d09f985977a0`.
+
+## RETOMADA 8
+
+- **Hora UTC real:** `2026-10-29T02:54:43Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `07eba33a`; base `3c27f1bf`.
+- **Feito:** listas/detalhes B, baixa inline com conta ativa sugerida e invariantes de reenvio preservados.
+- **Falta:** FATIAS 9–14 (13A/13B); próxima: FATIA 9, séries e filtros da aparência C.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.

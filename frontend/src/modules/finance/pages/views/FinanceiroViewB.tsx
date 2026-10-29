@@ -1,12 +1,15 @@
 import { AlertTriangle, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { BalanceBridge, ReconcileDonut, TrendChart, type ReconcileDonutFilter } from "../../../../components/charts";
 import { PageHeader } from "../../../../components/patterns";
 import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner";
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
+import { EntryDetail } from "../../entries/components/EntryDetail";
+import { TitleDetail } from "../../entries/components/TitleDetail";
 import { formatBRL } from "../../titles/financial-titles.adapter";
-import { targetLabel } from "../financeiro.state";
-import { AGGREGATE_KEYS, type FinanceiroViewModel } from "./FinanceiroViewA";
+import { isOpenTitle, targetLabel, titleMatchesTarget } from "../financeiro.state";
+import { AGGREGATE_KEYS, EntriesTable, TitlesTable, titleMatchesSearch, type FinanceiroViewModel } from "./FinanceiroViewA";
 
 function count(model: FinanceiroViewModel, key: string): number | null {
   const aggregate = model.aggregates[key];
@@ -21,6 +24,8 @@ const donutTarget: Record<ReconcileDonutFilter, string> = {
 };
 
 export function FinanceiroViewB(model: FinanceiroViewModel) {
+  const [openKey, setOpenKey] = useState<string | null>(() => model.payPanel?.titleId ?? null);
+  const [titleSearch, setTitleSearch] = useState("");
   const active = model.accounts.items.filter((account) => account.active);
   const selected = active.find((account) => account.id === model.state.accountId) ?? active[0] ?? null;
   const go = (next: Partial<FinanceiroViewModel["state"]>) => model.onState({ ...model.state, ...next });
@@ -84,6 +89,13 @@ export function FinanceiroViewB(model: FinanceiroViewModel) {
   const date = count(model, AGGREGATE_KEYS.accountDate(selected.id));
   const months = model.aggregates[AGGREGATE_KEYS.accountMonths(selected.id)];
   const pressed = (Object.entries(donutTarget).find(([, target]) => model.state.target === target)?.[0] as ReconcileDonutFilter | undefined) ?? null;
+  const titlesMode = model.state.tab === "rec" || model.state.tab === "pag";
+  const visibleEntries = model.entries.items.filter((entry) => entry.accountId === selected.id);
+  const loadedTitles = [...model.receivables.items, ...model.payables.items].filter(isOpenTitle);
+  const visibleTitles = loadedTitles
+    .filter((title) => titleMatchesTarget(title, model.state.target) && titleMatchesSearch(title, titleSearch))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const toggle = (key: string) => setOpenKey((current) => (current === key ? null : key));
 
   return (
     <div data-aparencia="B" className="financeiro-b">
@@ -158,6 +170,84 @@ export function FinanceiroViewB(model: FinanceiroViewModel) {
           />
         )}
       </article>
+      <section className="pat-table financeiro-b__list" aria-label={titlesMode ? "Títulos a baixar da organização" : "Extrato da conta"}>
+        <div className="pat-os-tabs" role="tablist" aria-label="Dados da conta em foco">
+          <button type="button" role="tab" className={!titlesMode ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"} aria-selected={!titlesMode} onClick={() => { setOpenKey(null); go({ tab: "ext", accountId: selected.id, target: null }); }}>
+            {`Extrato da conta · ${visibleEntries.length}`}
+          </button>
+          <button type="button" role="tab" className={titlesMode ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"} aria-selected={titlesMode} onClick={() => { setOpenKey(null); go({ tab: "rec", accountId: selected.id, target: null }); }}>
+            {`Títulos a baixar · ${loadedTitles.length}`}
+          </button>
+        </div>
+        {titlesMode ? (
+          !model.access.readTitles ? (
+            <StatePanel tone="forbidden" embedded title="Acesso não permitido" detail="Seu perfil não inclui os títulos desta organização." />
+          ) : model.receivables.loading || model.payables.loading ? (
+            <div aria-busy="true" aria-label="Carregando títulos"><span className="pat-skel" style={{ display: "block", height: 120 }} /></div>
+          ) : model.receivables.failed || model.payables.failed ? (
+            <StatePanel tone="error" embedded title="Não foi possível carregar os títulos" detail="A consulta falhou. Nada foi alterado." actions={<StatePanelAction label="Tentar novamente" onClick={model.onRetry} />} />
+          ) : (
+            <>
+              <div className="financeiro-b__list-tools">
+                <p>{`A baixa já abre com ${selected.name} escolhida; você ainda pode trocar a conta.`}</p>
+                <label className="pat-field">
+                  <span>Buscar nos títulos carregados</span>
+                  <input type="search" value={titleSearch} placeholder="Documento, cliente, fornecedor ou descrição" onChange={(event) => { setOpenKey(null); setTitleSearch(event.currentTarget.value); }} />
+                </label>
+              </div>
+              {titleSearch.trim() ? <div className="pat-filtro-chip-bar"><span className="pat-filtro-chip">{`Filtro: Busca: ${titleSearch.trim()}`}<button type="button" aria-label="Limpar a busca de títulos" onClick={() => setTitleSearch("")}>✕</button></span></div> : null}
+              {visibleTitles.length === 0 ? (
+                <StatePanel tone="empty" embedded title={loadedTitles.length ? "Nada para este filtro" : "Nenhum título em aberto"} detail={loadedTitles.length ? "Limpe a busca ou o filtro para ver os títulos carregados." : "Tudo baixado por enquanto."} />
+              ) : (
+                <TitlesTable
+                  rows={visibleTitles}
+                  receivable={null}
+                  openKey={openKey}
+                  onToggle={toggle}
+                  renderDetail={(title) => (
+                    <div>
+                      <TitleDetail title={title} canPay={model.access.pay} onPay={() => model.onPay(title, selected.id)} />
+                      {model.payPanel?.titleId === title.id ? <div className="financeiro-b__inline-form">{model.payPanel.node}</div> : null}
+                    </div>
+                  )}
+                />
+              )}
+              <p className="pat-cell-muted">{`${visibleTitles.length} resultados entre ${loadedTitles.length} títulos carregados · ${model.receivables.total + model.payables.total} títulos no servidor (sem esta busca)`}</p>
+              {model.receivables.hasMore || model.payables.hasMore ? (
+                <div className="pat-ab-detail-actions">
+                  {model.receivables.hasMore ? <button type="button" className="pat-btn" disabled={model.receivables.loadingMore} onClick={() => void model.receivables.loadMore()}>Carregar mais a receber</button> : null}
+                  {model.payables.hasMore ? <button type="button" className="pat-btn" disabled={model.payables.loadingMore} onClick={() => void model.payables.loadMore()}>Carregar mais a pagar</button> : null}
+                </div>
+              ) : null}
+            </>
+          )
+        ) : model.entries.loading ? (
+          <div aria-busy="true" aria-label="Carregando extrato"><span className="pat-skel" style={{ display: "block", height: 120 }} /></div>
+        ) : model.entries.failed ? (
+          <StatePanel tone="error" embedded title="Não foi possível carregar o extrato" detail="A consulta falhou. Nada foi alterado." actions={<StatePanelAction label="Tentar novamente" onClick={model.onRetry} />} />
+        ) : visibleEntries.length === 0 ? (
+          <StatePanel tone="empty" embedded title="Nenhum lançamento nesta conta" detail="As baixas e os lançamentos desta conta aparecem aqui." />
+        ) : (
+          <EntriesTable
+            rows={visibleEntries}
+            accountName={() => selected.name}
+            openKey={openKey}
+            onToggle={toggle}
+            renderDetail={(entry) => (
+              <EntryDetail
+                entry={entry}
+                accountName={selected.name}
+                canReconcile={model.access.reconcile}
+                canUnreconcile={model.policy.canUnreconcile}
+                busy={model.entryBusyId === entry.id}
+                message={model.entryMessage?.entryId === entry.id ? model.entryMessage.text : null}
+                onReconcile={() => model.onReconcile(entry)}
+                onUnreconcile={() => model.onUnreconcile(entry)}
+              />
+            )}
+          />
+        )}
+      </section>
       {balance === null ? <div className="pat-banner pat-banner--warning"><AlertTriangle size={14} aria-hidden="true" /> Saldo indisponível: nenhum valor foi substituído por zero.</div> : null}
     </div>
   );

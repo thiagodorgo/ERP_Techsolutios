@@ -95,6 +95,7 @@ export function FinanceiroPage() {
 
   const actions = useFinanceActions(accounts.context);
   const [payTitle, setPayTitle] = useState<FinancialTitle | null>(null);
+  const [payInitialAccountId, setPayInitialAccountId] = useState<string | null>(null);
   const [reconcileEntry, setReconcileEntry] = useState<FinancialEntry | null>(null);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const [entryBusyId, setEntryBusyId] = useState<string | null>(null);
@@ -156,6 +157,24 @@ export function FinanceiroPage() {
   const accountsFailed = access.readAccounts && !accounts.loading && accounts.source === "fallback";
   const stale = summaryView.stale || receivablesView.stale || payablesView.stale || accounts.stale || entries.stale;
 
+  const closePay = () => {
+    setPayTitle(null);
+    setPayInitialAccountId(null);
+  };
+  const payForm = payTitle ? (
+    <BaixaForm
+      key={payTitle.id}
+      title={payTitle}
+      accounts={accounts.items}
+      initialAccountId={payInitialAccountId}
+      canUnlinkCheque={access.unlinkCheque}
+      canCancelCheque={access.cancelCheque}
+      actions={actions}
+      onDone={() => void refreshAll(true)}
+      onClose={closePay}
+    />
+  ) : null;
+
   const model: FinanceiroViewModel = {
     state,
     onState,
@@ -192,7 +211,11 @@ export function FinanceiroPage() {
     entryMessage,
     onRetry: () => void refreshAll(false),
     onNewAccount: () => setNewAccountOpen(true),
-    onPay: (title) => setPayTitle(title),
+    onPay: (title, initialAccountId) => {
+      setPayTitle(title);
+      setPayInitialAccountId(initialAccountId ?? null);
+    },
+    payPanel: payTitle && payInitialAccountId ? { titleId: payTitle.id, node: payForm } : null,
     onReconcile: (entry) => setReconcileEntry(entry),
     onUnreconcile: (entry) => void unreconcile(entry),
   };
@@ -202,18 +225,9 @@ export function FinanceiroPage() {
     <>
       <FinanceiroViewA {...model} />
 
-      {payTitle ? (
-        <Modal title={receivable ? "Registrar recebimento" : "Registrar pagamento"} open onClose={() => setPayTitle(null)}>
-          <BaixaForm
-            key={payTitle.id}
-            title={payTitle}
-            accounts={accounts.items}
-            canUnlinkCheque={access.unlinkCheque}
-            canCancelCheque={access.cancelCheque}
-            actions={actions}
-            onDone={() => void refreshAll(true)}
-            onClose={() => setPayTitle(null)}
-          />
+      {payTitle && !payInitialAccountId ? (
+        <Modal title={receivable ? "Registrar recebimento" : "Registrar pagamento"} open onClose={closePay}>
+          {payForm}
         </Modal>
       ) : null}
 

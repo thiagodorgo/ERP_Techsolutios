@@ -69,7 +69,9 @@ export type FinanceiroViewModel = {
   readonly entryMessage: { readonly entryId: string; readonly text: string } | null;
   readonly onRetry: () => void;
   readonly onNewAccount: () => void;
-  readonly onPay: (title: FinancialTitle) => void;
+  readonly onPay: (title: FinancialTitle, initialAccountId?: string) => void;
+  /** Formulário de baixa inline da aparência B; a A ignora e conserva seu modal. */
+  readonly payPanel?: { readonly titleId: string; readonly node: ReactNode } | null;
   readonly onReconcile: (entry: FinancialEntry) => void;
   readonly onUnreconcile: (entry: FinancialEntry) => void;
 };
@@ -104,7 +106,7 @@ function normalizeSearch(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-BR");
 }
 
-function titleMatchesSearch(title: FinancialTitle, search: string): boolean {
+export function titleMatchesSearch(title: FinancialTitle, search: string): boolean {
   const term = normalizeSearch(search);
   if (!term) return true;
   return [title.document, title.partyName, title.description].some((value) => normalizeSearch(value ?? "").includes(term));
@@ -750,7 +752,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   );
 }
 
-function TitlesTable({
+export function TitlesTable({
   rows,
   receivable,
   openKey,
@@ -758,14 +760,15 @@ function TitlesTable({
   renderDetail,
 }: {
   readonly rows: readonly FinancialTitle[];
-  readonly receivable: boolean;
+  /** `null` combina recebíveis e pagáveis, como na aparência B. */
+  readonly receivable: boolean | null;
   readonly openKey: string | null;
   readonly onToggle: (key: string) => void;
   readonly renderDetail: (title: FinancialTitle) => ReactNode;
 }) {
   const columns: DenseColumn<FinancialTitle>[] = [
     { key: "doc", header: "DOCUMENTO", width: "18%", render: (t) => t.document ?? <span className="pat-cell-muted">sem documento</span> },
-    { key: "party", header: receivable ? "CLIENTE" : "FORNECEDOR", render: (t) => <b>{t.partyName}</b> },
+    { key: "party", header: receivable === null ? "CLIENTE OU FORNECEDOR" : receivable ? "CLIENTE" : "FORNECEDOR", render: (t) => <b>{t.partyName}</b> },
     {
       key: "due",
       header: "VENCIMENTO",
@@ -787,7 +790,7 @@ function TitlesTable({
       width: "13%",
       align: "right",
       tabular: true,
-      render: (t) => <b style={{ color: receivable ? "#059669" : "#B91C1C" }}>{formatBRL(titleOpenBalance(t))}</b>,
+      render: (t) => <b style={{ color: (receivable ?? t.direction === "receivable") ? "#059669" : "#B91C1C" }}>{formatBRL(titleOpenBalance(t))}</b>,
     },
     {
       key: "status",
@@ -814,7 +817,7 @@ function TitlesTable({
   );
 }
 
-function EntriesTable({
+export function EntriesTable({
   rows,
   accountName,
   openKey,

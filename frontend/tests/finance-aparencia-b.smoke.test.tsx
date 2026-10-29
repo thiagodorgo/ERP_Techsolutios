@@ -7,11 +7,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { emptyFinancialSummary } from "../src/modules/finance/dashboard/financial-summary.types";
 import type { EntriesAggregate } from "../src/modules/finance/entries/financial-entries.types";
+import type { FinancialEntry } from "../src/modules/finance/entries/financial-entries.types";
+import type { FinancialTitle } from "../src/modules/finance/titles/financial-titles.types";
 import type { FinanceiroViewModel } from "../src/modules/finance/pages/views/FinanceiroViewA";
 import { AGGREGATE_KEYS } from "../src/modules/finance/pages/views/FinanceiroViewA";
 import { FinanceiroViewB } from "../src/modules/finance/pages/views/FinanceiroViewB";
 
 const ACCOUNT = { id: "acc-1", name: "Banco do Brasil", kind: "bank", currency: "BRL", openingBalance: 100, bankName: "BB", active: true, createdAt: "" } as const;
+const TITLE: FinancialTitle = { id: "tit-1", direction: "receivable", partyType: "customer", partyName: "Cliente Alfa", document: "NF-12", category: null, description: "Guincho urbano", amount: 500, currency: "BRL", issueDate: null, dueDate: "2026-10-20", paidAmount: 0, status: "open", competencia: "2026-10", accountId: null, overdue: true, active: true, createdAt: "" };
+const ENTRY: FinancialEntry = { id: "ent-1", accountId: "acc-1", titleId: "tit-1", direction: "in", amount: 500, currency: "BRL", paymentMethod: "pix", category: null, occurredAt: "2026-10-20T12:00:00Z", competencia: "2026-10", description: "Baixa NF-12", reversalOf: null, reconciled: false, divergenceType: null, reconciliationRef: null, reconciledAt: null, reconciledBy: null, active: true, createdAt: "", updatedAt: "" };
 const aggregate = (count: number, groupBy: "none" | "month" = "none"): EntriesAggregate => ({
   groupBy,
   currency: "BRL",
@@ -113,4 +117,35 @@ test("B expõe conta, direção, conciliação e filtro removível como controle
   const source = readFileSync(new URL("../src/modules/finance/pages/views/FinanceiroViewB.tsx", import.meta.url), "utf8");
   assert.match(source, /onDirection=\{\(direction\) => go/);
   assert.match(source, /onFilter=\{\(filter\) => go/);
+});
+
+test("B extrato mostra somente a conta em foco e um único detalhe expansível", () => {
+  const other = { ...ENTRY, id: "ent-2", accountId: "acc-2", description: "Outra conta" };
+  const html = renderToStaticMarkup(<FinanceiroViewB {...model({ entries: { items: [ENTRY, other], loading: false, failed: false, total: 2 } })} />);
+  assert.match(html, /Extrato da conta · 1/);
+  assert.match(html, /Baixa NF-12/);
+  assert.doesNotMatch(html, /Outra conta/);
+  const source = readFileSync(new URL("../src/modules/finance/pages/views/FinanceiroViewB.tsx", import.meta.url), "utf8");
+  assert.match(source, /const \[openKey, setOpenKey\]/);
+  assert.equal((source.match(/openKey=\{openKey\}/g) ?? []).length, 2, "as duas listas compartilham a mesma chave de detalhe");
+});
+
+test("B títulos mistura a organização, busca descrição e encaixa a baixa com a conta em foco", () => {
+  const html = renderToStaticMarkup(
+    <FinanceiroViewB
+      {...model({
+        state: { tab: "rec", accountId: "acc-1", target: null },
+        receivables: { items: [TITLE], loading: false, failed: false, total: 1, hasMore: false, loadingMore: false, loadMore: async () => undefined },
+        payPanel: { titleId: "tit-1", node: <div>FORMULÁRIO INLINE DA BAIXA</div> },
+      })}
+    />,
+  );
+  assert.match(html, /Títulos a baixar · 1/);
+  assert.match(html, /CLIENTE OU FORNECEDOR/);
+  assert.match(html, /A baixa já abre com Banco do Brasil escolhida/);
+  assert.match(html, /FORMULÁRIO INLINE DA BAIXA/);
+  assert.match(html, /Documento, cliente, fornecedor ou descrição/);
+  const source = readFileSync(new URL("../src/modules/finance/pages/views/FinanceiroViewB.tsx", import.meta.url), "utf8");
+  assert.match(source, /model\.onPay\(title, selected\.id\)/);
+  assert.match(source, /titleMatchesSearch\(title, titleSearch\)/);
 });
