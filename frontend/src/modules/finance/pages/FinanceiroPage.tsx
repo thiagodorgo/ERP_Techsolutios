@@ -20,6 +20,8 @@ import type { FinancialTitle } from "../titles/financial-titles.types";
 import { useFinancialTitles } from "../titles/useFinancialTitles";
 import { entriesFiltersFor, financeStateSearch, fourteenDayRange, pendingAgeRange, readFinanceState, sixMonthRange, useLastGood, type FinanceState, type PendingAgeKey } from "./financeiro.state";
 import { AGGREGATE_KEYS, FinanceiroViewA, type FinanceiroViewModel } from "./views/FinanceiroViewA";
+import { FinanceiroViewB } from "./views/FinanceiroViewB";
+import { FinanceiroViewC } from "./views/FinanceiroViewC";
 
 const SITUATION_QUERIES: Readonly<Record<string, EntriesAggregateQuery>> = {
   [AGGREGATE_KEYS.pending]: { groupBy: "none", reconciled: false },
@@ -42,7 +44,7 @@ export function FinanceiroPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { can } = usePermissions();
-  useScreenAppearance("financeiro");
+  const { appearance } = useScreenAppearance("financeiro");
   const state = readFinanceState(location.search);
 
   const access = {
@@ -243,7 +245,7 @@ export function FinanceiroPage() {
   const receivable = payTitle?.direction !== "payable";
   return (
     <>
-      <FinanceiroViewA {...model} />
+      {appearance === "B" ? <FinanceiroViewB {...model} /> : appearance === "C" ? <FinanceiroViewC {...model} /> : <FinanceiroViewA {...model} />}
 
       {payTitle && !payInitialAccountId ? (
         <Modal title={receivable ? "Registrar recebimento" : "Registrar pagamento"} open onClose={closePay}>

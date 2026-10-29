@@ -587,8 +587,9 @@ const countCalls = (method: string, pattern: RegExp) => calls.filter((c) => c.me
 const pageRoot = (root: MiniNode) => all(root, (el) => el.hasAttribute("data-aparencia"))[0];
 const appearanceKey = () => `techsol.aparencia.${TENANT_ID}.${mockSession.user.id}`;
 
-async function mount(options: { permissions?: readonly string[]; role?: string; url?: string; override?: Override; guard?: boolean } = {}) {
+async function mount(options: { permissions?: readonly string[]; role?: string; url?: string; override?: Override; guard?: boolean; appearance?: "A" | "B" | "C" } = {}) {
   seed(options.permissions ?? FINANCE, options.role);
+  if (options.appearance) dom.storage.set(appearanceKey(), JSON.stringify({ financeiro: options.appearance }));
   installFetch(options.override);
   dom.intervals.length = 0;
   const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
@@ -823,6 +824,19 @@ test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, se
     assert.match(text(container).replace(/\u00a0/g, " "), /R\$ 1\.000,00 em 1 cheque vinculado a títulos aguardam compensação/);
   } finally {
     await unmount();
+  }
+});
+
+test("R-D: a preferência pessoal seleciona B e C sem duplicar as consultas comuns", async () => {
+  for (const appearance of ["B", "C"] as const) {
+    const probe = await mount({ appearance });
+    try {
+      assert.equal(pageRoot(probe.container)?.getAttribute("data-aparencia"), appearance);
+      assert.equal(countCalls("GET", /^\/financial-summary$/), 1);
+      assert.equal(countCalls("GET", /^\/financial-entries\?/), 1);
+    } finally {
+      await probe.unmount();
+    }
   }
 });
 

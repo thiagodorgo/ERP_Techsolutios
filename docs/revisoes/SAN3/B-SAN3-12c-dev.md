@@ -428,3 +428,24 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** temporários TAP em `/tmp`; mutações restauradas.
+
+## Evidência incremental — FATIA 12
+
+1. `useScreenAppearance("financeiro")` seleciona A/B/C e o registry publica os três nomes aprovados. A prova DOM
+   escolheu B e C com uma chamada por rota comum, sem gravação automática da preferência.
+2. Bateria A/B/C + F8/F17 → **82 testes · 82 pass · 0 fail · 0 skipped**; o próprio controle F8 executa as sete
+   formas exigidas de `.reduce` em árvore temporária e o guard de linguagem varre as views novas.
+3. Forçar sempre A deixou o teste de preferência vermelho (`A !== B`); restauro: Page =
+   `a25a54a26c9ade96301f9e349fd1cb41832f6c12e6ca450098d9b2adf4121f94`, registry =
+   `e0c0456b7a1b6d2f23e8222cd2505e22b1bfba5828f75fbcdf3f4fbeb5a51cd9`. Check/diff-check verdes.
+
+## RETOMADA 12
+
+- **Hora UTC real:** `2026-10-29T03:21:56Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `b7c0cc6c`; base `3c27f1bf`.
+- **Feito:** ativação A/B/C, registry e invariantes transversais.
+- **Falta:** FATIAS 13A, 13B e 14; próxima: 13A, matriz visual/geométrica.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** temporários TAP em `/tmp`; árvore do produto limpa.
