@@ -4,9 +4,10 @@ import { DayBars, type DayBar } from "../../../../components/charts";
 import { PageHeader } from "../../../../components/patterns";
 import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner";
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
+import { EntryDetail } from "../../entries/components/EntryDetail";
 import { formatBRL } from "../../titles/financial-titles.adapter";
 import { targetLabel } from "../financeiro.state";
-import { AGGREGATE_KEYS, type FinanceiroViewModel } from "./FinanceiroViewA";
+import { AGGREGATE_KEYS, EntriesTable, type FinanceiroViewModel } from "./FinanceiroViewA";
 
 const isoToday = () => {
   const now = new Date();
@@ -16,6 +17,7 @@ const isoToday = () => {
 
 export function FinanceiroViewC(model: FinanceiroViewModel) {
   const [chequeInfo, setChequeInfo] = useState(false);
+  const [openEntryId, setOpenEntryId] = useState<string | null>(null);
   const accountId = model.state.accountId;
   const go = (next: Partial<FinanceiroViewModel["state"]>) => model.onState({ ...model.state, ...next });
   const header = <PageHeader kicker="FINANCEIRO · ROTINA DO DIA" title="Conferência do caixa" subtitle="Baixe, concilie e trate ressalvas sem transformar a página carregada em total da organização." />;
@@ -33,6 +35,11 @@ export function FinanceiroViewC(model: FinanceiroViewModel) {
   const pendingDaily = model.aggregates[AGGREGATE_KEYS.routineDaysPending(accountId)];
   const pendingByDay = new Map(pendingDaily?.items.map((item) => [item.bucket, item.count]) ?? []);
   const days: DayBar[] | null = daily === null || daily === undefined ? null : daily.items.flatMap((item) => item.bucket ? [{ date: item.bucket, inflow: item.inflow, outflow: item.outflow, count: item.count, pendingCount: pendingDaily === null || pendingDaily === undefined ? null : pendingByDay.get(item.bucket) ?? 0 }] : []);
+  const queue = model.entries.items.filter((entry) => !entry.reconciled || entry.divergenceType !== null);
+  const advanceAfterSuccess = (entryId: string) => {
+    const index = queue.findIndex((entry) => entry.id === entryId);
+    setOpenEntryId(queue[index + 1]?.id ?? null);
+  };
 
   return (
     <div data-aparencia="C" className="financeiro-c">
@@ -53,6 +60,12 @@ export function FinanceiroViewC(model: FinanceiroViewModel) {
       <section className="financeiro-c__grid">
         <article className="pat-table"><h3>Movimento diário · 14 dias</h3><DayBars days={days} pressedDate={model.state.target?.startsWith("dia:") ? model.state.target.slice(4) : null} onDay={(date) => go({ tab: "ext", target: `dia:${date}` })} valueFormat={formatBRL} /></article>
         <article className="pat-table"><h3>Cheques a compensar</h3><p className="dense-col-tabular">{`${model.summary.cheques.pendingReceivedCount} recebidos · ${formatBRL(model.summary.cheques.pendingReceivedAmount)}`}</p><p>{`${model.summary.cheques.linkedPendingCount} vinculados a títulos · ${formatBRL(model.summary.cheques.linkedPendingAmount)}`}</p><button type="button" className="pat-btn" onClick={() => setChequeInfo((value) => !value)}>Como conferir</button>{chequeInfo ? <p className="pat-cell-muted">O resumo é global e real. Escolha um título para consultar seu cheque; esta tela não inventa uma lista inversa.</p> : null}</article>
+      </section>
+      <section className="pat-table" aria-label="Conferência individual">
+        <h3>Conferência em sequência</h3>
+        {queue.length === 0 ? <StatePanel tone="empty" embedded title="Nenhum lançamento nesta página" detail={model.entries.total > model.entries.items.length ? "Há mais lançamentos no servidor; carregue a próxima página antes de concluir." : "A página carregada não tem pendências."} /> : (
+          <EntriesTable rows={queue} accountName={(id) => model.accounts.items.find((account) => account.id === id)?.name ?? "Conta"} openKey={openEntryId} onToggle={(id) => setOpenEntryId((current) => current === id ? null : id)} renderDetail={(entry) => <EntryDetail entry={entry} accountName={model.accounts.items.find((account) => account.id === entry.accountId)?.name ?? "Conta"} canReconcile={model.access.reconcile} canUnreconcile={model.policy.canUnreconcile} busy={model.entryBusyId === entry.id} message={model.entryMessage?.entryId === entry.id ? model.entryMessage.text : null} onReconcile={() => model.onReconcile(entry, () => advanceAfterSuccess(entry.id))} onUnreconcile={() => model.onUnreconcile(entry)} />} />
+        )}
       </section>
       {allTitles.length === 0 && model.entries.items.length === 0 ? <StatePanel tone="empty" embedded title="Nenhum item na página carregada" detail="Não há títulos nem lançamentos carregados para esta rotina." /> : <p className="pat-cell-muted">{`${allTitles.length} títulos carregados de ${model.receivables.total + model.payables.total} no servidor · ${model.entries.items.length} lançamentos carregados de ${model.entries.total}`}</p>}
     </div>

@@ -112,6 +112,7 @@ export function FinanceiroPage() {
   const [payTitle, setPayTitle] = useState<FinancialTitle | null>(null);
   const [payInitialAccountId, setPayInitialAccountId] = useState<string | null>(null);
   const [reconcileEntry, setReconcileEntry] = useState<FinancialEntry | null>(null);
+  const [reconcileDone, setReconcileDone] = useState<(() => void) | null>(null);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const [entryBusyId, setEntryBusyId] = useState<string | null>(null);
   const [entryMessage, setEntryMessage] = useState<{ entryId: string; text: string } | null>(null);
@@ -232,7 +233,10 @@ export function FinanceiroPage() {
       setPayInitialAccountId(initialAccountId ?? null);
     },
     payPanel: payTitle && payInitialAccountId ? { titleId: payTitle.id, node: payForm } : null,
-    onReconcile: (entry) => setReconcileEntry(entry),
+    onReconcile: (entry, onDone) => {
+      setReconcileEntry(entry);
+      setReconcileDone(() => onDone ?? null);
+    },
     onUnreconcile: (entry) => void unreconcile(entry),
   };
 
@@ -256,10 +260,12 @@ export function FinanceiroPage() {
             onDone={(updated) => {
               entries.replaceItem(updated);
               setReconcileEntry(null);
+              reconcileDone?.();
+              setReconcileDone(null);
               void Promise.all([refreshEntries(true), refreshAggregates(true)]);
             }}
             onReread={(fresh) => entries.replaceItem(fresh)}
-            onClose={() => setReconcileEntry(null)}
+            onClose={() => { setReconcileEntry(null); setReconcileDone(null); }}
           />
         </Modal>
       ) : null}

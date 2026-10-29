@@ -403,3 +403,28 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; mutações restauradas.
+
+## Evidência incremental — FATIA 11
+
+1. A C ganhou fila individual com um detalhe aberto por vez; trocar linha só muda seleção local. O mesmo
+   `ConciliarForm` continua dono da escrita, CAS, releitura e erros.
+2. O avanço é callback guardado e chamado exclusivamente pelo `onDone`; fechar/403/409/422/rede não confirma nem
+   avança. O fim parcial informa que há mais itens no servidor.
+3. Testes donos C + page-live → **52 testes · 52 pass · 0 fail · 0 skipped**; check/diff-check verdes.
+
+## Mutações e vermelho-controle — FATIA 11
+
+- Chamar o avanço no fechamento → vermelho (duas chamadas/fechar confirma); declarar “Tudo conferido” com página
+  parcial → vermelho. Restauro: `FinanceiroPage.tsx` = `a7995bb6849ad778d0cc58527ed2cf63a6913eb40f2c0bcf30797ee52bc5b3c9`;
+  `FinanceiroViewC.tsx` = `22da3052dba78a48b7b7e0fa06f107221816d3dcf8b68d81c5f04f805c5d5e7f`.
+
+## RETOMADA 11
+
+- **Hora UTC real:** `2026-10-29T03:18:59Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `55779deb`; base `3c27f1bf`.
+- **Feito:** sequência individual e avanço somente após sucesso.
+- **Falta:** FATIAS 12–14 (13A/13B); próxima: FATIA 12, ativação A/B/C e invariantes.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** temporários TAP em `/tmp`; mutações restauradas.

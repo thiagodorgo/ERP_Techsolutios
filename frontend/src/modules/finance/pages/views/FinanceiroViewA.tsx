@@ -72,7 +72,7 @@ export type FinanceiroViewModel = {
   readonly onPay: (title: FinancialTitle, initialAccountId?: string) => void;
   /** Formulário de baixa inline da aparência B; a A ignora e conserva seu modal. */
   readonly payPanel?: { readonly titleId: string; readonly node: ReactNode } | null;
-  readonly onReconcile: (entry: FinancialEntry) => void;
+  readonly onReconcile: (entry: FinancialEntry, onDone?: () => void) => void;
   readonly onUnreconcile: (entry: FinancialEntry) => void;
 };
 

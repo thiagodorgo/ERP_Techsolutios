@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -20,3 +21,5 @@ test("C sem leitura é forbidden", () => { const base = model(); assert.match(re
 test("C stale mantém dados e mostra faixa", () => { const html = renderToStaticMarkup(<FinanceiroViewC {...model({ stale: true })} />); assert.match(html, /Dados desatualizados/); assert.match(html, /3 recebidos/); });
 test("C vazio não declara total global", () => { const base = model(); const html = renderToStaticMarkup(<FinanceiroViewC {...model({ receivables: { ...base.receivables, items: [], total: 4 }, entries: { items: [], loading: false, failed: false, total: 9 } })} />); assert.match(html, /Nenhum item na página carregada/); assert.doesNotMatch(html, /Tudo conferido/); });
 test("C não inventa vínculo inverso de cheque", () => { const html = renderToStaticMarkup(<FinanceiroViewC {...model()} />); assert.match(html, /Como conferir/); assert.doesNotMatch(html, /título t1.*cheque/i); });
+test("C sequência abre uma linha por vez e só agenda avanço no sucesso", () => { const source = readFileSync(new URL("../src/modules/finance/pages/views/FinanceiroViewC.tsx", import.meta.url), "utf8"); assert.match(source, /const \[openEntryId, setOpenEntryId\]/); assert.match(source, /model\.onReconcile\(entry, \(\) => advanceAfterSuccess\(entry\.id\)\)/); assert.match(source, /setOpenEntryId\(queue\[index \+ 1\]\?\.id \?\? null\)/); });
+test("C avança somente no onDone do formulário e fechar não confirma", () => { const source = readFileSync(new URL("../src/modules/finance/pages/FinanceiroPage.tsx", import.meta.url), "utf8"); assert.equal((source.match(/reconcileDone\?\.\(\)/g) ?? []).length, 1); assert.match(source, /onDone=\{\(updated\) => \{[\s\S]*reconcileDone\?\.\(\)/); assert.doesNotMatch(source, /onClose=\{\(\) => \{[^}]*reconcileDone/); });
