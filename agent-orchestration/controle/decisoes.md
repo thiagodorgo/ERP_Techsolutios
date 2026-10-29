@@ -4039,3 +4039,36 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fechamentos do #459 — 2 e não 3:** o porteiro do #459 pediu apensar o fechamento de três pendências (`porteiro-459-parecer.md:145,197`); a ata `J-B-SAN3-12a.md:39-41` autoriza o porteiro a fechar só duas, com o critério medido pela junta (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, C3 item 3; `P-SAN3-20-DELETE-TITULO-COM-CHEQUE`, C4b item 1). Prevalece a ata: a `P-SAN3-20-DESVINCULAR-DEPOSITADO` segue ABERTA, porque o critério dela (fluxo seguro para `deposited` com título já pago) não foi medido.
 - **Cadeira (a) do TRC-02 ciclo 2:** o `a-opus` de `00-quedas.md` não existiu (nenhum arquivo em `votos/B-TRC-02-ciclo2/`; `PLANO-RODADA-2026-10-24.md:81`); a cadeia corrigida está na ata `J-B-TRC-02-ciclo2.md`.
 - **Corpo do #454 defasado:** ficou com “DBA re-medindo”, `462/462` e sem citar a emenda v2.4 no escopo; o código/merge entregue foi revalidado, portanto a divergência é documental e BAIXA (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:12,71-72,103`).
+
+## D-CODEX-DUAS-CONTAS (decisão do dono, 2026-10-28) — duas contas do Codex em paralelo
+
+- **Fala literal do dono:** *"usar as duas contas do codex"*.
+- **Leitura do orquestrador, declarada (§A6):** a conta 1 e a conta 2 (`CODEX_HOME=C:\Users\AMP\codex-conta2`) podem executar uma tarefa cada, em paralelo; o lançador distingue `-Conta 1|2`.
+
+## D-ANTIVIRUS-CLAMAV (decisão do dono, 2026-10-28) — ClamAV em container para a varredura de evidência
+
+- **Fala literal do dono:** *"autorizo usar o ClamAV num container"*.
+- **Consequência:** o item 27 do portão usa ClamAV em container para varrer evidências; GuardDuty fica descartado por agora.
+
+## D-KPI-2810-ADIADO (decisão do dono, 2026-10-28) — marco de KPI de 28/10 adiado
+
+- **Fala literal do dono:** *"vamos adiar o kpi de 28/10, no proximo bloco fazemos"*.
+- **Estado medido em 29/10:** o PR #473 (`chore/kpi-marco-2026-10-28`, Codex conta 2) permanece em rascunho; a fonte de registro o associa ao `B-SAN3-12c`.
+
+## D-TOPO-CODEX-12C (decisão do dono, 2026-10-28) — exceção de modelo para plano e desenvolvimento do 12c
+
+- **Falas literais do dono:** *"coloque o codex no topo para escrever o plano do bloco 12c"* e *"o dev do 12c pode fazer com o codex"*.
+- **Aplicação registrada:** plano E5 no Codex GPT-6 Astra (`-Topo`, conta 1) e desenvolvimento no Codex GPT-5.6 Sol, em razão do limite do Claude. Esta foi uma exceção específica ao `D-TOPO-E-O-CLAUDE` de 24/10.
+- **Estado medido em 29/10:** o PR #474 está aberto no head `33bde2ee`; o visual ainda será refeito pelo Claude, conforme a decisão posterior abaixo.
+
+## D-FUSO-SAO-PAULO (pedido do dono, 2026-10-29) — horas apresentadas no fuso de São Paulo
+
+- **Fonte:** seção de 29/10 de `REGISTRO-PENDENTE.md`; ela registra o pedido, mas não traz uma fala literal para transcrição.
+- **Preferência de comunicação:** toda hora mostrada ao dono em mensagens, painéis e avisos usa o fuso de São Paulo (UTC−3), com o fuso identificado quando houver risco de ambiguidade.
+- **Leitura do orquestrador, declarada (§A6):** a preferência muda a apresentação ao dono, não timestamps canônicos persistidos nem evidências técnicas que precisem permanecer em UTC.
+
+## D-VISUAL-E-PLANOS-COM-CLAUDE (decisão do dono, 2026-10-29) — visual e planos ficam com o Claude
+
+- **Fala literal do dono:** *"o visual e os planos ficam com o Claude"*.
+- **Aplicação em 30/10:** o Claude refaz o visual do `B-SAN3-12c` (#474 aberto) e escreve o plano do `B-SAN3-24`.
+- **Conciliação declarada (§A2):** esta decisão é posterior à `D-TOPO-CODEX-12C`. O plano E5 e o desenvolvimento já feitos pelo Codex permanecem como fato histórico; daqui em diante, o refazimento visual do 12c e o plano do 24 pertencem ao Claude.
