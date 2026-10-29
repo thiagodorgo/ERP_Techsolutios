@@ -377,3 +377,29 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
+
+## Evidência incremental — FATIA 10
+
+1. `FinanceiroViewC` nasceu pura sobre o modelo existente: passos Baixar/Conciliar/Ressalvas/Extrato, movimento
+   diário, vencimentos carregados e resumo real de cheques; não foi ativada no registry.
+2. Contagens locais dizem “títulos carregados” e mostram o universo do servidor separadamente. A lacuna de filtro
+   inverso de cheques é explicada sem mock, UUID, N+1 ou vínculo inventado.
+3. Loading, empty, error, forbidden e stale têm estados explícitos. Teste dono → **8 testes · 8 pass · 0 fail ·
+   0 skipped**; check e diff-check verdes; proibidos/lockfiles/KPIs sem diff.
+
+## Mutações e vermelho-controle — FATIA 10
+
+- Retirar o número do passo Ressalvas, retirar o banner stale, rotular subconjunto como servidor e inventar
+  “título t1 vinculado ao cheque” → quatro controles vermelhos específicos; restauro `FinanceiroViewC.tsx` =
+  `8983b34bacc61f896a158662f5e75db939100524d46e9494baa3014ee9e6fdc0`.
+
+## RETOMADA 10
+
+- **Hora UTC real:** `2026-10-29T03:15:34Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `070be295`; base `3c27f1bf`.
+- **Feito:** estrutura e estados honestos da aparência C, ainda inativa.
+- **Falta:** FATIAS 11–14 (13A/13B); próxima: FATIA 11, sequência individual da conferência.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch; mutações restauradas.
