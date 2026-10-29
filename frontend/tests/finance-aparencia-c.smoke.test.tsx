@@ -7,6 +7,7 @@ import { emptyFinancialSummary } from "../src/modules/finance/dashboard/financia
 import type { FinanceiroViewModel } from "../src/modules/finance/pages/views/FinanceiroViewA";
 import { AGGREGATE_KEYS } from "../src/modules/finance/pages/views/FinanceiroViewA";
 import { FinanceiroViewC } from "../src/modules/finance/pages/views/FinanceiroViewC";
+import type { FinancialTitle } from "../src/modules/finance/titles/financial-titles.types";
 
 const aggregate = (groupBy: "none" | "day", items: readonly { bucket: string | null; count: number; inflow: number; outflow: number; net: number }[]) => ({ groupBy, currency: "BRL", timezone: "America/Sao_Paulo", items });
 function model(over: Partial<FinanceiroViewModel> = {}): FinanceiroViewModel {
@@ -23,3 +24,28 @@ test("C vazio não declara total global", () => { const base = model(); const ht
 test("C não inventa vínculo inverso de cheque", () => { const html = renderToStaticMarkup(<FinanceiroViewC {...model()} />); assert.match(html, /Como conferir/); assert.doesNotMatch(html, /título t1.*cheque/i); });
 test("C sequência abre uma linha por vez e só agenda avanço no sucesso", () => { const source = readFileSync(new URL("../src/modules/finance/pages/views/FinanceiroViewC.tsx", import.meta.url), "utf8"); assert.match(source, /const \[openEntryId, setOpenEntryId\]/); assert.match(source, /model\.onReconcile\(entry, \(\) => advanceAfterSuccess\(entry\.id\)\)/); assert.match(source, /setOpenEntryId\(queue\[index \+ 1\]\?\.id \?\? null\)/); });
 test("C avança somente no onDone do formulário e fechar não confirma", () => { const source = readFileSync(new URL("../src/modules/finance/pages/FinanceiroPage.tsx", import.meta.url), "utf8"); assert.equal((source.match(/reconcileDone\?\.\(\)/g) ?? []).length, 1); assert.match(source, /onDone=\{\(updated\) => \{[\s\S]*reconcileDone\?\.\(\)/); assert.doesNotMatch(source, /onClose=\{\(\) => \{[^}]*reconcileDone/); });
+
+test("C conta em Próximos dias exatamente os mesmos títulos do filtro sem7", () => {
+  const now = new Date();
+  const iso = (delta: number) => {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + delta);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  };
+  const base = model();
+  const template = base.receivables.items[0] as FinancialTitle;
+  const html = renderToStaticMarkup(
+    <FinanceiroViewC
+      {...model({
+        receivables: {
+          ...base.receivables,
+          items: [
+            { ...template, id: "em-tres-dias", dueDate: iso(3), overdue: false },
+            { ...template, id: "em-dez-dias", dueDate: iso(10), overdue: false },
+          ],
+          total: 2,
+        },
+      })}
+    />,
+  );
+  assert.match(html, />Próximos dias<\/span><strong>1<\/strong>/);
+});

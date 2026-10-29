@@ -6,7 +6,7 @@ import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
 import { EntryDetail } from "../../entries/components/EntryDetail";
 import { formatBRL } from "../../titles/financial-titles.adapter";
-import { targetLabel } from "../financeiro.state";
+import { isOpenTitle, targetLabel, titleMatchesTarget } from "../financeiro.state";
 import { AGGREGATE_KEYS, EntriesTable, type FinanceiroViewModel } from "./FinanceiroViewA";
 
 const isoToday = () => {
@@ -26,11 +26,11 @@ export function FinanceiroViewC(model: FinanceiroViewModel) {
   if (!model.access.readEntries || !model.access.readTitles) return <div data-aparencia="C" className="financeiro-c">{header}<StatePanel tone="forbidden" title="Acesso não permitido" detail="Seu perfil não inclui os lançamentos e títulos desta organização." /></div>;
   if (model.summaryLoading || model.entries.loading) return <div data-aparencia="C" className="financeiro-c">{header}<div className="pat-table" aria-busy="true" aria-label="Carregando a rotina do dia"><span className="pat-skel" style={{ display: "block", height: 180 }} /></div></div>;
 
-  const allTitles = [...model.receivables.items, ...model.payables.items].filter((title) => title.status !== "paid" && title.active);
+  const allTitles = [...model.receivables.items, ...model.payables.items].filter((title) => isOpenTitle(title) && title.active);
   const today = isoToday();
   const overdue = allTitles.filter((title) => title.dueDate < today);
   const dueToday = allTitles.filter((title) => title.dueDate === today);
-  const upcoming = allTitles.filter((title) => title.dueDate > today);
+  const upcoming = allTitles.filter((title) => titleMatchesTarget(title, "sem7", today));
   const daily = model.aggregates[AGGREGATE_KEYS.routineDays(accountId)];
   const pendingDaily = model.aggregates[AGGREGATE_KEYS.routineDaysPending(accountId)];
   const pendingByDay = new Map(pendingDaily?.items.map((item) => [item.bucket, item.count]) ?? []);

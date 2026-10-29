@@ -534,3 +534,21 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Falta:** RETOMADA 16 — recorte `sem7`, escopo do teste geométrico, pendências/registro, relatório final e bateria.
 - **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run check`.
 - **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.
+
+## RETOMADA 16
+
+- **Hora UTC real:** `2026-10-29T11:14:27Z`.
+- **Executor/modelo:** `dev-san312c-nv-sol` · Codex · GPT-5.6 Sol · nível menor declarado; não revisou o PR.
+- **Head anterior:** `32f6824b`; base `3c27f1bf`.
+- **Feito:** “Próximos dias” agora reutiliza exatamente a regra `sem7` (1–7 dias civis), portanto o número do bloco
+  corresponde à lista que ele abre. O teste `finance-aparencias-geometry.test.ts`, fora da lista fechada da E5.3 e
+  incapaz de medir geometria real, foi retirado junto de sua entrada no smoke; nenhuma regra visual o substituiu.
+- **Teste dono vermelho antes do código:** cenário com títulos em +3 e +10 dias esperava 1 e recebeu 2; após a
+  correção, `finance-aparencia-c.smoke` → `11 pass · 0 fail · 0 skipped`.
+- **Mutação:** voltar a contar todo vencimento futuro reprovou o mesmo caso; restauro de `FinanceiroViewC.tsx`
+  conferido pelo SHA-256 `223a6ce1...`.
+- **Validação:** `npm --prefix frontend run check` verde; ausência do caminho fora de escopo e da entrada no script
+  comprovada por `test ! -e` + `grep`; `git diff --check` limpo.
+- **Falta:** registro/pendências, bateria smoke com N real e seção final “Correção não visual (29/10)”.
+- **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run test:smoke`.
+- **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.
