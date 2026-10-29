@@ -1440,6 +1440,43 @@ test("F16 erro: resumo e contas fora do ar → painel de erro com 'Tentar novame
   }
 });
 
+test("R-P2: resumo 200 incompleto fica indisponível e não publica R$ 0,00", async () => {
+  const { totalBalance: _missing, ...cash } = SUMMARY.cash;
+  const { container, unmount } = await mount({
+    override: (call) => (call.url === "/financial-summary" ? json(200, { data: { ...SUMMARY, cash } }) : undefined),
+  });
+  try {
+    const panel = all(container, (el) => el.getAttribute("data-state") === "error")[0];
+    assert.ok(panel, "resumo incompleto produz painel indisponível");
+    assert.match(text(panel), /Não foi possível carregar/);
+    assert.equal(byLabel(container, "Saldo em caixa:"), undefined, "nenhum indicador monetário falso");
+    assert.doesNotMatch(text(container), /R\$\s*0,00/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P2: refresh com resumo incompleto conserva o último resumo válido e marca stale", async () => {
+  let incomplete = false;
+  const { totalBalance: _missing, ...cash } = SUMMARY.cash;
+  const { container, unmount } = await mount({
+    override: (call) => (call.url === "/financial-summary" && incomplete ? json(200, { data: { ...SUMMARY, cash } }) : undefined),
+  });
+  try {
+    assert.match(text(byLabel(container, "Saldo em caixa:")!), /R\$\s12\.850,75/);
+    incomplete = true;
+    const ticks = dom.intervals.filter((interval) => interval.fn && interval.ms === DEFAULT_AUTO_REFRESH_MS);
+    assert.equal(ticks.length, 1);
+    await act(async () => ticks[0].fn!());
+    await settle();
+    assert.ok(all(container, (el) => el.getAttribute("data-state") === "stale")[0]);
+    assert.match(text(byLabel(container, "Saldo em caixa:")!), /R\$\s12\.850,75/);
+    assert.equal(all(container, (el) => el.getAttribute("data-state") === "error").length, 0);
+  } finally {
+    await unmount();
+  }
+});
+
 test("F9: títulos fora do ar (fallback) → painel de erro na aba, nunca 'nenhum título'", async () => {
   const { container, unmount } = await mount({ override: (call) => (/^\/financial-titles\?/.test(call.url) ? json(500, { error: { code: "INTERNAL", message: "x" } }) : undefined) });
   try {

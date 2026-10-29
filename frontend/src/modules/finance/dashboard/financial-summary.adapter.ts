@@ -8,62 +8,88 @@ import type {
 } from "./financial-summary.types";
 import { emptyFinancialSummary } from "./financial-summary.types";
 
-// Leitura DEFENSIVA do envelope { data }: tolera snake/camel e campos ausentes → 0/"" (o front nunca inventa).
+class InvalidFinancialSummary extends Error {
+  constructor(readonly field: string) {
+    super(field);
+  }
+}
+
+const invalidSummary = (field: string): FinancialSummaryData => ({
+  ...emptyFinancialSummary(),
+  source: "fallback",
+  fallbackReason: `Resumo financeiro indisponível: ${field} ausente ou inválido.`,
+});
+
+// Leitura defensiva do envelope { data }: aceita snake/camel, mas falha fechado quando um número obrigatório ou
+// uma coleção do contrato vem ausente/inválida. Assim, ausência nunca é apresentada como R$ 0,00 legítimo.
 export function adaptFinancialSummaryResponse(payload: unknown, source: FinancialSummarySource): FinancialSummaryData {
   const root = readRecord(payload);
   const data = readRecord(root?.data) ?? root;
-  if (!data) return { ...emptyFinancialSummary(), source };
+  if (!data) return invalidSummary("data");
 
-  return {
-    receivable: readDirection(readRecord(data.receivable)),
-    payable: readDirection(readRecord(data.payable)),
-    settledThisMonth: readSettled(readRecord(data.settledThisMonth ?? data.settled_this_month)),
-    cash: readCash(readRecord(data.cash)),
-    cheques: readCheques(readRecord(data.cheques)),
-    cashFlow: readCashFlow(data.cashFlow ?? data.cash_flow),
-    recentTitles: readRecentTitles(data.recentTitles ?? data.recent_titles),
-    source,
-  };
+  try {
+    return {
+      receivable: readDirection(readRecord(data.receivable), "receivable"),
+      payable: readDirection(readRecord(data.payable), "payable"),
+      settledThisMonth: readSettled(readRecord(data.settledThisMonth ?? data.settled_this_month)),
+      cash: readCash(readRecord(data.cash)),
+      cheques: readCheques(readRecord(data.cheques)),
+      cashFlow: readCashFlow(data.cashFlow ?? data.cash_flow),
+      recentTitles: readRecentTitles(data.recentTitles ?? data.recent_titles),
+      source,
+    };
+  } catch (error) {
+    if (error instanceof InvalidFinancialSummary) return invalidSummary(error.field);
+    throw error;
+  }
 }
 
-function readDirection(record: Record<string, unknown> | undefined): DirectionSummary {
+function readDirection(record: Record<string, unknown> | undefined, path: "receivable" | "payable"): DirectionSummary {
   return {
-    openAmount: num(record, ["openAmount", "open_amount"]),
-    openCount: num(record, ["openCount", "open_count"]),
-    overdueAmount: num(record, ["overdueAmount", "overdue_amount"]),
-    overdueCount: num(record, ["overdueCount", "overdue_count"]),
-    inDisputeCount: num(record, ["inDisputeCount", "in_dispute_count"]),
+    openAmount: requiredNum(record, ["openAmount", "open_amount"], `${path}.openAmount`),
+    openCount: requiredNum(record, ["openCount", "open_count"], `${path}.openCount`),
+    overdueAmount: requiredNum(record, ["overdueAmount", "overdue_amount"], `${path}.overdueAmount`),
+    overdueCount: requiredNum(record, ["overdueCount", "overdue_count"], `${path}.overdueCount`),
+    inDisputeCount: requiredNum(record, ["inDisputeCount", "in_dispute_count"], `${path}.inDisputeCount`),
   };
 }
 
 function readSettled(record: Record<string, unknown> | undefined): FinancialSummary["settledThisMonth"] {
-  return { competencia: str(record, ["competencia"]) ?? "", inflow: num(record, ["inflow"]), outflow: num(record, ["outflow"]) };
+  return {
+    competencia: str(record, ["competencia"]) ?? "",
+    inflow: requiredNum(record, ["inflow"], "settledThisMonth.inflow"),
+    outflow: requiredNum(record, ["outflow"], "settledThisMonth.outflow"),
+  };
 }
 
 function readCash(record: Record<string, unknown> | undefined): FinancialSummary["cash"] {
   return {
-    totalBalance: num(record, ["totalBalance", "total_balance"]),
-    accountCount: num(record, ["accountCount", "account_count"]),
+    totalBalance: requiredNum(record, ["totalBalance", "total_balance"], "cash.totalBalance"),
+    accountCount: requiredNum(record, ["accountCount", "account_count"], "cash.accountCount"),
     currency: str(record, ["currency"]) ?? "BRL",
   };
 }
 
 function readCheques(record: Record<string, unknown> | undefined): FinancialSummary["cheques"] {
   return {
-    pendingReceivedCount: num(record, ["pendingReceivedCount", "pending_received_count"]),
-    pendingReceivedAmount: num(record, ["pendingReceivedAmount", "pending_received_amount"]),
-    pendingIssuedCount: num(record, ["pendingIssuedCount", "pending_issued_count"]),
-    pendingIssuedAmount: num(record, ["pendingIssuedAmount", "pending_issued_amount"]),
-    linkedPendingCount: num(record, ["linkedPendingCount", "linked_pending_count"]),
-    linkedPendingAmount: num(record, ["linkedPendingAmount", "linked_pending_amount"]),
+    pendingReceivedCount: requiredNum(record, ["pendingReceivedCount", "pending_received_count"], "cheques.pendingReceivedCount"),
+    pendingReceivedAmount: requiredNum(record, ["pendingReceivedAmount", "pending_received_amount"], "cheques.pendingReceivedAmount"),
+    pendingIssuedCount: requiredNum(record, ["pendingIssuedCount", "pending_issued_count"], "cheques.pendingIssuedCount"),
+    pendingIssuedAmount: requiredNum(record, ["pendingIssuedAmount", "pending_issued_amount"], "cheques.pendingIssuedAmount"),
+    linkedPendingCount: requiredNum(record, ["linkedPendingCount", "linked_pending_count"], "cheques.linkedPendingCount"),
+    linkedPendingAmount: requiredNum(record, ["linkedPendingAmount", "linked_pending_amount"], "cheques.linkedPendingAmount"),
   };
 }
 
 function readCashFlow(value: unknown): CashFlowPoint[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((raw) => {
+  if (!Array.isArray(value)) throw new InvalidFinancialSummary("cashFlow");
+  return value.map((raw, index) => {
     const record = readRecord(raw);
-    return { competencia: str(record, ["competencia"]) ?? "", inflow: num(record, ["inflow"]), outflow: num(record, ["outflow"]) };
+    return {
+      competencia: str(record, ["competencia"]) ?? "",
+      inflow: requiredNum(record, ["inflow"], `cashFlow[${index}].inflow`),
+      outflow: requiredNum(record, ["outflow"], `cashFlow[${index}].outflow`),
+    };
   });
 }
 
@@ -81,15 +107,15 @@ function normalizeDirection(value: string | undefined): string {
 }
 
 function readRecentTitles(value: unknown): RecentTitle[] {
-  if (!Array.isArray(value)) return [];
-  return value.map((raw) => {
+  if (!Array.isArray(value)) throw new InvalidFinancialSummary("recentTitles");
+  return value.map((raw, index) => {
     const record = readRecord(raw);
     return {
       id: str(record, ["id"]) ?? "",
       direction: normalizeDirection(str(record, ["direction"])),
       partyName: str(record, ["partyName", "party_name"]) ?? "—",
-      amount: num(record, ["amount"]),
-      openAmount: num(record, ["openAmount", "open_amount"]),
+      amount: requiredNum(record, ["amount"], `recentTitles[${index}].amount`),
+      openAmount: requiredNum(record, ["openAmount", "open_amount"], `recentTitles[${index}].openAmount`),
       dueDate: str(record, ["dueDate", "due_date"]) ?? "",
       status: normalizeStatus(str(record, ["status"])),
       overdue: bool(record, ["overdue"]),
@@ -110,13 +136,13 @@ function str(record: Record<string, unknown> | undefined, keys: readonly string[
   return undefined;
 }
 
-function num(record: Record<string, unknown> | undefined, keys: readonly string[]): number {
-  if (!record) return 0;
+function requiredNum(record: Record<string, unknown> | undefined, keys: readonly string[], path: string): number {
+  if (!record) throw new InvalidFinancialSummary(path);
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "number" && Number.isFinite(value)) return value;
   }
-  return 0;
+  throw new InvalidFinancialSummary(path);
 }
 
 function bool(record: Record<string, unknown> | undefined, keys: readonly string[]): boolean {

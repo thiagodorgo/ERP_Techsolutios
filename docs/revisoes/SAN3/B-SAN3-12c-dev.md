@@ -39,3 +39,95 @@
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD && git rev-parse origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum artefato temporário removido; `node_modules` próprios permanecem para as fatias seguintes.
+
+## Ajustes superiores do parecer — aplicados antes do código da FATIA 2
+
+O parecer externo `rev-plano-12c-parecer.md` vale acima da E5 por ordem expressa do dono. Este DEV não altera
+requisito nem julga o plano; apenas fixa a execução reproduzível dos dois ajustes aprovados.
+
+### R-T3 — procedimento reproduzível de três vias
+
+Antes de integrar uma `origin/main` nova, registrar `BASE=$(git merge-base HEAD origin/main)`, `BRANCH=$(git
+rev-parse HEAD)` e `MAIN=$(git rev-parse origin/main)`. Depois do merge, registrar `RESULT=$(git rev-parse HEAD)`.
+Em diretório temporário fora do repositório, executar literalmente a função abaixo para cada uma das quatro refs;
+ela normaliza EOL e extrai a seção inteira de cada ID tocado, até o próximo cabeçalho `##`:
+
+```bash
+IDS='P-SAN3-12B-BUSCA-TABELA-TITULOS P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO P-SAN3-12-CE4-BRACO1-NA-CI P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE P-SAN3-12B-KPI-PRESSED-COM-CONTA P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO P-SAN3-12B-PAGER-ROTULO-FILTRADO P-REGISTRO-MERGE-CONFERE-TRES-VIAS'
+extract_sections() {
+  ref="$1"; out="$2"
+  git show "$ref:agent-orchestration/controle/pendencias.md" | tr -d '\r' |
+    awk -v ids="$IDS" 'BEGIN { n=split(ids,a," ") }
+      /^## / { keep=0; for (i=1;i<=n;i++) if ($0 ~ ("^## " a[i] "([ (]|$)")) keep=1 }
+      keep { print }' > "$out"
+}
+extract_sections "$BASE" base.sections
+extract_sections "$BRANCH" branch.sections
+extract_sections "$MAIN" main.sections
+extract_sections "$RESULT" result.sections
+for f in base branch main result; do LC_ALL=C sort -u "$f.sections" > "$f.sorted"; done
+diff -u branch.sections result.sections > branch-result.diff || true
+diff -u main.sections result.sections > main-result.diff || true
+comm -23 <(comm -13 base.sorted branch.sorted) result.sorted > branch-added-missing.txt
+comm -12 <(comm -23 base.sorted branch.sorted) result.sorted > branch-removed-reappeared.txt
+comm -23 <(comm -13 base.sorted main.sorted) result.sorted > main-added-missing.txt
+comm -12 <(comm -23 base.sorted main.sorted) result.sorted > main-removed-reappeared.txt
+```
+
+Aceite: os quatro arquivos `*-missing/reappeared.txt` ficam vazios, salvo lista nominal de edições intencionais
+registrada no relatório; os dois `diff` são lidos por seção e toda diferença de estado, dono, `bloqueia`, critério
+ou fechamento é explicada. O mesmo `git show REF:caminho | tr -d '\r'` + `diff -u` é aplicado ao plano e a este
+relatório. O índice é regenerado depois. Vermelho-controle: em cópia de `result.sections`, trocar uma linha
+`status: FECHADA` por `status: ABERTA` sem mudar cabeçalhos; `diff -u` deve acusar a linha e o conjunto
+`branch-removed-reappeared.txt` (ou o conjunto equivalente da ponta autora) deixa de ficar vazio.
+
+### FATIA 13 dividida
+
+- **13A — geometria e capturas:** nove combinações A/B/C × 1280×720, 1366×768 e 1440×900; comparação com a
+  referência, `scrollWidth <= clientWidth`, dígitos completos, grades e alinhamento tabular; mutações de 27px e
+  classe de grade; commit `test(financeiro): comprova geometria das três aparências`.
+- **13B — interação, estados e formulários:** teclado, foco/ARIA, detalhe único, formulários e estados R-T5 nas
+  três aparências; mutações de ARIA/foco e dois detalhes; recaptura somente das combinações afetadas por ajuste;
+  commit `test(financeiro): comprova interação das três aparências`.
+
+Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash, commit, push e `RETOMADA 13A/13B`.
+
+## Evidência incremental — FATIA 2
+
+1. Retomada P3/P7: `git diff --stat` mediu 4 arquivos, 238 inserções e 58 remoções; a leitura integral do diff
+   confirmou parcial restrito a R-P2 e aos dois ajustes superiores do parecer, sem arquivo fora do escopo.
+2. `df -B1 /c` → 12.217.450.496 bytes livres no fechamento, acima do piso de 7.500.000.000.
+3. Testes donos sobre o parcial restaurado: Node 22 absoluto,
+   `node --test --import tsx tests/financial-summary.adapter.test.ts tests/finance-page-live.test.tsx` →
+   **49 testes · 49 pass · 0 fail · 0 skipped**.
+4. O adapter passou de 5 para 14 casos efetivos, acima da meta M>=10, cobrindo camel/snake, ausência, null,
+   string, NaN, Infinity, zero explícito, `linkedPending*`, coleções vazias/ausentes e número inválido na série.
+5. `npm --prefix frontend run check` → `tsc -b --noEmit`, ec=0. `git diff --check` → limpo. Diff em
+   `src prisma .github Kpis mobile` e lockfiles → vazio.
+
+## Mutações e vermelho-controle — FATIA 2
+
+- **Controle na base da fatia 1 (`043eba17`):** worktree descartável no HEAD anterior; os 14 casos novos foram
+  executados por injeção do runner contra o adapter-base, sem editar a cópia. Resultado: **5 pass · 9 fail**,
+  todos os nove vermelhos por asserção R-P2 (`source api` em vez de `fallback`), não por compilação/import.
+- **Mutação obrigatória:** `invalidSummary().source` foi trocado temporariamente de `fallback` para `api`,
+  reproduzindo sucesso API com os zeros do fallback. Testes donos: **38 pass · 11 fail**; falharam os dois
+  cenários DOM e os nove casos do adapter que exigem indisponibilidade.
+- **Restauro:** hash SHA-256 do adapter antes e depois da mutação =
+  `5be301a1b1bbd5fcf7d08e082f1aa1fd2e69853716f2288b3b567256330b6674`; verde 49/49 reexecutado.
+
+## RETOMADA 2
+
+- **Hora UTC real:** `2026-10-29T00:47:12Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit da fatia:** `043eba17fa832c1bf516f9a4b2882405cfb6c0eb`; head-base
+  `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; remoto da branch ainda em `043eba17`.
+- **Feito:** R-P2 fechado no código/testes; resumo incompleto vira fallback seguro, carga inicial não publica
+  `R$ 0,00` falso e refresh conserva o último resumo válido com estado stale; ajustes do parecer registrados.
+- **Mutações:** base anterior vermelha 9/14; mutação `fallback→api/zero` vermelha 11/49; restauro por hash e
+  verde final 49/49.
+- **Falta:** FATIAS 3–14, com a 13 dividida em 13A/13B. A próxima é a FATIA 3, R-P1/P4/P5/P6 em A.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** worktree descartável `C:/Users/AMP/w-san312c-f2base` e dois arquivos scratch `fatia2-adapter-*`
+  removidos após conferir caminhos; nenhum rastreado, `.env` ou `node_modules` do dev foi removido.
