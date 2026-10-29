@@ -19,7 +19,7 @@ export type FinanceState = {
 };
 
 const TABS: readonly FinanceTab[] = ["rec", "pag", "ext", "conc"];
-const TARGET = /^(venc|hoje|sem7|parcial|mes:\d{4}-(0[1-9]|1[0-2])(:(in|out))?|conc:(pendente|conciliado|valor|data))$/;
+const TARGET = /^(venc|hoje|sem7|parcial|dir:(in|out)|mes:\d{4}-(0[1-9]|1[0-2])(:(in|out))?|conc:(pendente|conciliado|valor|data))$/;
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 export function isFinanceTarget(value: string | null | undefined): value is string {
@@ -53,6 +53,8 @@ export function targetLabel(target: string): string {
   if (target === "hoje") return "Vencem hoje";
   if (target === "sem7") return "Vencem nos próximos 7 dias";
   if (target === "parcial") return "Recebidos ou pagos em parte";
+  if (target === "dir:in") return "Entradas";
+  if (target === "dir:out") return "Saídas";
   const [kind, value, direction] = target.split(":");
   if (kind === "mes") return `${direction === "in" ? "Entradas de " : direction === "out" ? "Saídas de " : "Lançamentos de "}${monthName(value)} de ${value.slice(0, 4)}`;
   if (kind === "conc") return { pendente: "A conciliar", conciliado: "Conciliados", valor: "Com ressalva de valor", data: "Com ressalva de data" }[value] ?? target;
@@ -85,6 +87,8 @@ export function entriesFiltersFor(state: FinanceState): FinancialEntriesFilters 
     filters.from = `${competencia}-01`;
     filters.to = lastDayOfMonth(competencia);
     if (direction === "in" || direction === "out") filters.direction = direction;
+  } else if (target === "dir:in" || target === "dir:out") {
+    filters.direction = target === "dir:in" ? "in" : "out";
   } else if (target === "conc:pendente") {
     filters.reconciled = false;
   } else if (target === "conc:conciliado") {

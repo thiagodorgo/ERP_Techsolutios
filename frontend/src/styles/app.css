@@ -8154,3 +8154,12 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
   .pat-kpi-row--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pat-board { position: static; }
 }
+.financeiro-b__accounts{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.financeiro-b__focus{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;margin-bottom:12px;border:1px solid var(--color-neutral-200,#E2E8F0);border-radius:14px;background:var(--color-neutral-0,#fff)}
+.financeiro-b__focus h2,.financeiro-b__analytics h3,.financeiro-b>.pat-table>h3{margin:0;padding:14px 16px 0;color:var(--color-neutral-900,#0F172A)}
+.financeiro-b__focus p{margin:4px 0 0;color:var(--color-neutral-500,#64748B)}
+.financeiro-b__focus>strong{font-size:22px;white-space:nowrap}
+.financeiro-b__analytics{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);gap:16px;margin-bottom:16px}
+.financeiro-b__analytics>.pat-table{padding:0 16px 14px}
+.financeiro-b>.pat-table{margin-bottom:16px;padding:0 16px 14px}
+@media(max-width:1100px){.financeiro-b__analytics{grid-template-columns:1fr}.financeiro-b__focus{align-items:flex-start;flex-direction:column}}

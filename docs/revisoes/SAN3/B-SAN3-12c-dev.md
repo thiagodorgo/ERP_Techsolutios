@@ -278,3 +278,33 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações restauradas.
+
+## Evidência incremental — FATIA 7
+
+1. Pré-voo limpo em `0d8ae041`; espaço livre 13.524.750.336 bytes no fechamento, acima do piso.
+2. `FinanceiroViewB` nasceu pura e ainda inativa: conta em foco, saldo literal da conta, ponte, rosca e série mensal
+   recebem exclusivamente o modelo real já consultado; nenhum número de organização é usado como saldo da conta.
+3. Estados `loading`, `empty`, `error`, `forbidden`, `stale` e ausência parcial têm paradas explícitas. Saldo,
+   agregado ou série ausente permanece indisponível e nunca é convertido em zero.
+4. Contas, direções e situações da conciliação são controles acessíveis; o alvo ativo fica visível e removível.
+5. Teste dono `finance-aparencia-b.smoke.test.tsx` → **8 testes · 8 pass · 0 fail · 0 skipped**;
+   `tsc -b --noEmit` e `git diff --check` verdes; proibidos/lockfiles sem diff.
+
+## Mutações e vermelho-controle — FATIA 7
+
+- Trocar o saldo literal da conta pelo resumo global → vermelho (ponte recebeu 0 em vez de 999).
+- Converter agregado pendente ausente em zero → vermelho: fabricou rosca com 100% conciliado.
+- Retirar a faixa stale → vermelho; retirar o chip do filtro ativo → vermelho.
+- Restauro exato de `FinanceiroViewB.tsx` confirmado por SHA-256
+  `544fa017f58243a1fa5d921f398438500a0f899baac297a4d5baf1ec3882c75f`; verde final 8/8.
+
+## RETOMADA 7
+
+- **Hora UTC real:** `2026-10-29T02:47:41Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `0d8ae041b01b5a568f754f016dd6b98f01e11649`; base `3c27f1bf`.
+- **Feito:** estrutura, estados honestos e controles da aparência B, ainda sem ativação no registro.
+- **Falta:** FATIAS 8–14 (13A/13B); próxima: FATIA 8, listas/detalhes e baixa da aparência B.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
