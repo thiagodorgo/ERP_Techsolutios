@@ -92,6 +92,9 @@ export const AGGREGATE_KEYS = {
   accountValue: (accountId: string) => `conta:${accountId}:valor`,
   accountDate: (accountId: string) => `conta:${accountId}:data`,
   accountMonths: (accountId: string) => `conta:${accountId}:meses`,
+  routineDays: (accountId: string | null) => `rotina:dias:${accountId ?? "organizacao"}`,
+  routineDaysPending: (accountId: string | null) => `rotina:dias-pendentes:${accountId ?? "organizacao"}`,
+  routineAge: (key: string, accountId: string | null) => `rotina:idade:${key}:${accountId ?? "organizacao"}`,
 } as const;
 
 function countOf(aggregate: EntriesAggregate | null | undefined): number | null {

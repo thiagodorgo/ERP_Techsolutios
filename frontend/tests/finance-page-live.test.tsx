@@ -306,7 +306,7 @@ const { PermissionProvider } = await import("../src/providers/PermissionProvider
 const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
 const { mockSession } = await import("../src/mocks/auth/context");
 const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
-const { financeStateSearch, readFinanceState, sixMonthRange } = await import("../src/modules/finance/pages/financeiro.state");
+const { entriesFiltersFor, financeStateSearch, fourteenDayRange, pendingAgeRange, readFinanceState, sixMonthRange } = await import("../src/modules/finance/pages/financeiro.state");
 
 const h = React.createElement;
 type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
@@ -725,10 +725,10 @@ test("R-D/B: consultas da conta em foco levam conta, situação e janela civil d
   const probe = await mount({ url: "/finance?aba=ext&conta=acc-banco&filtro=mes:2026-10:out" });
   try {
     const aggregateUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?")).map((call) => call.url);
-    assert.equal(aggregateUrls.length, 10, aggregateUrls.join(" | "));
-    assert.equal(new Set(aggregateUrls).size, 10, "uma requisição por query completa");
+    assert.equal(aggregateUrls.length, 16, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 16, "uma requisição por query completa");
     const focused = aggregateUrls.filter((url) => /account_id=acc-banco/.test(url));
-    assert.equal(focused.length, 5, focused.join(" | ")); // pendente comum + conciliado/valor/data/meses
+    assert.equal(focused.length, 11, focused.join(" | ")); // pendência da conta + B (4) + C (6)
     assert.ok(focused.some((url) => /reconciled=true/.test(url) && !/divergence_type=/.test(url)), "conciliados da conta");
     assert.ok(focused.some((url) => /divergence_type=value/.test(url)), "ressalva de valor da conta");
     assert.ok(focused.some((url) => /divergence_type=date/.test(url)), "ressalva de data da conta");
@@ -737,6 +737,35 @@ test("R-D/B: consultas da conta em foco levam conta, situação e janela civil d
     const range = sixMonthRange();
     assert.match(months!, new RegExp(`from=${range.from}`));
     assert.match(months!, new RegExp(`to=${range.to}`));
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-D/C: movimento diário e idades usam calendário civil, faixas disjuntas e a conta em foco", async () => {
+  const localLateNight = new Date(0);
+  localLateNight.getFullYear = () => 2026;
+  localLateNight.getMonth = () => 0;
+  localLateNight.getDate = () => 1;
+  assert.deepEqual(fourteenDayRange(localLateNight), { from: "2025-12-19", to: "2026-01-01" }, "a janela não muda de dia pelo UTC");
+  assert.deepEqual(pendingAgeRange("0-2", localLateNight), { from: "2025-12-30", to: "2026-01-01" });
+  assert.deepEqual(pendingAgeRange("3-7", localLateNight), { from: "2025-12-25", to: "2025-12-29" });
+  assert.deepEqual(pendingAgeRange("8-15", localLateNight), { from: "2025-12-17", to: "2025-12-24" });
+  assert.deepEqual(pendingAgeRange("16+", localLateNight), { to: "2025-12-16" });
+
+  const dayState = readFinanceState("?aba=ext&conta=acc-banco&filtro=dia:2026-10-29");
+  assert.deepEqual(entriesFiltersFor(dayState), { accountId: "acc-banco", from: "2026-10-29", to: "2026-10-29" });
+  assert.equal(financeStateSearch(dayState), "?aba=ext&conta=acc-banco&filtro=dia%3A2026-10-29");
+  const ageState = readFinanceState("?aba=conc&conta=acc-banco&filtro=idade:8-15");
+  assert.deepEqual(entriesFiltersFor(ageState), { accountId: "acc-banco", from: pendingAgeRange("8-15").from, to: pendingAgeRange("8-15").to, reconciled: false });
+
+  const probe = await mount({ url: "/finance?aba=conc&conta=acc-banco&filtro=idade:8-15" });
+  try {
+    const urls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?")).map((call) => call.url);
+    const routine = urls.filter((url) => /group_by=day/.test(url) || (/reconciled=false/.test(url) && (/from=/.test(url) || /to=/.test(url))));
+    assert.equal(routine.length, 6, routine.join(" | "));
+    assert.ok(routine.every((url) => /account_id=acc-banco/.test(url)), "toda consulta da rotina conserva a conta em foco");
+    assert.equal(new Set(routine).size, 6, "duas séries e quatro faixas não se sobrepõem por URL");
   } finally {
     await probe.unmount();
   }
@@ -777,8 +806,8 @@ test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, se
     assert.equal(countCalls("GET", /^\/financial-entries\/reconciliation-policy$/), 1);
     assert.equal(countCalls("GET", /^\/financial-accounts\/acc-banco\/balance$/), 1);
     const aggregateUrls = calls.filter((call) => call.method === "GET" && /^\/financial-entries\/aggregate\?/.test(call.url)).map((call) => call.url);
-    assert.equal(aggregateUrls.length, 6, aggregateUrls.join(" | "));
-    assert.equal(new Set(aggregateUrls).size, 6, aggregateUrls.join(" | "));
+    assert.equal(aggregateUrls.length, 12, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 12, aggregateUrls.join(" | "));
     for (const url of aggregateUrls) assert.equal(countCalls("GET", new RegExp(`^${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)), 1, url);
     assert.equal(dom.storage.has(appearanceKey()), false, "abrir a página não grava aparência");
     for (const label of ["Saldo em caixa", "Entradas em outubro", "Saídas em outubro", "A receber vencido", "A pagar vencido", "A conciliar"]) {

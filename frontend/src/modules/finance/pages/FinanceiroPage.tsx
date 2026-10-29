@@ -18,7 +18,7 @@ import { useFinancialEntries } from "../entries/useFinancialEntries";
 import { useReconciliationPolicy } from "../entries/useReconciliationPolicy";
 import type { FinancialTitle } from "../titles/financial-titles.types";
 import { useFinancialTitles } from "../titles/useFinancialTitles";
-import { entriesFiltersFor, financeStateSearch, readFinanceState, sixMonthRange, useLastGood, type FinanceState } from "./financeiro.state";
+import { entriesFiltersFor, financeStateSearch, fourteenDayRange, pendingAgeRange, readFinanceState, sixMonthRange, useLastGood, type FinanceState, type PendingAgeKey } from "./financeiro.state";
 import { AGGREGATE_KEYS, FinanceiroViewA, type FinanceiroViewModel } from "./views/FinanceiroViewA";
 
 const SITUATION_QUERIES: Readonly<Record<string, EntriesAggregateQuery>> = {
@@ -88,6 +88,21 @@ export function FinanceiroPage() {
     } satisfies Readonly<Record<string, EntriesAggregateQuery>>;
   }, [state.accountId]);
   const focusedAggregates = useEntriesAggregate(focusedQueries, { enabled: access.readEntries });
+  const routineQueries = useMemo(() => {
+    const accountId = state.accountId;
+    const account = accountId ? { accountId } : {};
+    const days = fourteenDayRange();
+    const queries: Record<string, EntriesAggregateQuery> = {
+      [AGGREGATE_KEYS.routineDays(accountId)]: { groupBy: "day", from: days.from, to: days.to, ...account },
+      [AGGREGATE_KEYS.routineDaysPending(accountId)]: { groupBy: "day", from: days.from, to: days.to, reconciled: false, ...account },
+    };
+    for (const key of ["0-2", "3-7", "8-15", "16+"] as const satisfies readonly PendingAgeKey[]) {
+      const range = pendingAgeRange(key);
+      queries[AGGREGATE_KEYS.routineAge(key, accountId)] = { groupBy: "none", reconciled: false, ...range, ...account };
+    }
+    return queries;
+  }, [state.accountId]);
+  const routineAggregates = useEntriesAggregate(routineQueries, { enabled: access.readEntries });
 
   const summaryView = useLastGood(summary.data, !summary.loading && summary.data.source !== "fallback");
   const receivablesView = useLastGood(receivables.items, !receivables.loading && receivables.source !== "fallback");
@@ -109,11 +124,12 @@ export function FinanceiroPage() {
   const refreshSituationAggregates = situationAggregates.refresh;
   const refreshAccountAggregates = accountAggregates.refresh;
   const refreshFocusedAggregates = focusedAggregates.refresh;
+  const refreshRoutineAggregates = routineAggregates.refresh;
   const refreshAggregates = useCallback(
     async (background = false) => {
-      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background), refreshFocusedAggregates(background)]);
+      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background), refreshFocusedAggregates(background), refreshRoutineAggregates(background)]);
     },
-    [refreshSituationAggregates, refreshAccountAggregates, refreshFocusedAggregates],
+    [refreshSituationAggregates, refreshAccountAggregates, refreshFocusedAggregates, refreshRoutineAggregates],
   );
   const refreshAll = useCallback(
     async (background = false) => {
@@ -201,7 +217,7 @@ export function FinanceiroPage() {
       loadMore: payables.loadMore,
     },
     entries: { items: entries.items, loading: entries.loading, failed: !entries.loading && entries.source === "fallback", total: entries.pagination.total },
-    aggregates: { ...situationAggregates.data, ...accountAggregates.data, ...focusedAggregates.data },
+    aggregates: { ...situationAggregates.data, ...accountAggregates.data, ...focusedAggregates.data, ...routineAggregates.data },
     policy,
     access,
     failed: summaryFailed || accountsFailed,

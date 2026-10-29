@@ -340,3 +340,40 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
+
+## Evidência incremental — FATIA 9
+
+1. Retomada medida em `ae3e291c`: o parcial não commitado já continha `DayBars`, seis consultas da rotina e os
+   filtros de dia/idade; os testes donos expuseram somente duas contagens antigas (10/6) anteriores às seis queries
+   novas. Elas foram atualizadas para 16/12 sem afrouxar a prova de URL única.
+2. A janela diária usa 14 datas civis inclusivas; as idades `0-2`, `3-7`, `8-15` e `16+` são disjuntas. Dia e idade
+   fazem round-trip na URL e viram filtros de extrato aplicados no servidor.
+3. As duas séries diárias e as quatro faixas preservam `account_id` quando há conta em foco. `DayBars` recebe somente
+   buckets retornados, não completa dia ausente, distingue `null` de zero e oferece cada dia como filtro acessível.
+4. `DayBars` foi exportado, registrado em `COMPONENT_LIBRARY.md` e incluído em `test:smoke`, junto aos dois gráficos
+   já criados na fatia 5. Nenhuma dependência, regra financeira ou soma monetária entrou.
+5. Testes donos finais `day-bars.test.tsx` + `finance-page-live.test.tsx` → **47 testes · 47 pass · 0 fail · 0 skipped**;
+   `npm --prefix frontend run check` e `git diff --check` verdes; proibidos, lockfiles e KPIs sem diff.
+
+## Mutações e vermelho-controle — FATIA 9
+
+- Trocar os getters civis por UTC → vermelho na virada de data; retirar `accountId` da série → vermelho na prova das
+  seis consultas; sobrepor `3-7` com `0-2` → vermelho na fronteira exata.
+- Trocar a série diária por agregado global (`groupBy: none`) → vermelho (5 consultas de rotina em vez de 6); tratar
+  `days=null` como período vazio → vermelho contra o estado indisponível.
+- Restauro byte a byte: `DayBars.tsx` =
+  `6444dfd9519377a49f4bb509fb8a56ce8358163db927f8585846c5e0d403740b`, `FinanceiroPage.tsx` =
+  `d67f92db337ef962728f9845728c53f5abb1fdd13e5448b38f9ab07b6ceb793d`, `financeiro.state.ts` =
+  `9d2e83c7e2d60bb03e293ca97e464f3a5d05b3be9e38639c340fe4dab9728fac`.
+
+## RETOMADA 9
+
+- **Hora UTC real:** `2026-10-29T03:11:10Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `ae3e291c8b605c10816fa6d72b6a5f269acd4108`; base `3c27f1bf`.
+- **Feito:** R-C/R-D de séries diárias, idade das pendências, filtros navegáveis e `DayBars`, com controles
+  reproduzíveis e estados honestos segundo `ts-frontend-full` e `ui-ux-pro-max`.
+- **Falta:** FATIAS 10–14 (13A/13B); próxima: FATIA 10, estrutura da aparência C.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.

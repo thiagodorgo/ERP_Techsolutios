@@ -89,6 +89,7 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 - `DenseTable` com `renderDetail` + coluna `align: "right"`/`tabular` (CSS, B-SAN3-12b, E3) — a lista `.pat-ab-table` passa a alinhar à direita e tabular as colunas de dinheiro, espelhando `.dense-table` (`.pat-ab-table th.dense-col-right`, `.pat-ab-row td.dense-col-right`, `…dense-col-tabular`).
 - `BalanceBridge` (`frontend/src/components/charts/`, B-SAN3-12c) — ponte SVG inline do saldo por conta; recebe abertura, entradas, saídas e saldo literal já calculados pelo servidor. Entradas/Saídas são filtros acessíveis por clique, Enter e Espaço; ausência de qualquer valor vira estado indisponível.
 - `ReconcileDonut` (`frontend/src/components/charts/`, B-SAN3-12c) — rosca SVG inline com segmentos disjuntos: conciliados sem ressalva, ressalva de valor, ressalva de data e a conciliar. O total conciliado inclui ressalvas; inconsistência/ausência falha fechado. A legenda é composta por botões de filtro com `aria-pressed`.
+- `DayBars` (`frontend/src/components/charts/`, B-SAN3-12c) — barras acionáveis de movimento diário vindas do agregado; preserva buckets ausentes como ausência, sem fabricar zero.
 
 ## Flutter priorities
 1. app shell and auth context
