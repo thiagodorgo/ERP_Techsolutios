@@ -516,3 +516,21 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
   do host, registrada sem mascarar. Temporários TAP em `/tmp` são regeneráveis; nenhum rastreado foi apagado.
 
 **pronto para revisão**
+
+## RETOMADA 15
+
+- **Hora UTC real:** `2026-10-29T11:12:41Z`.
+- **Executor/modelo:** `dev-san312c-nv-sol` · Codex · GPT-5.6 Sol · nível menor declarado; não revisou o PR.
+- **Head medido antes do commit:** `33bde2eef0851190156f9686b003f9cac156465f`; base `3c27f1bf`.
+- **Feito:** a aparência B passou a resolver a conta efetiva no contêiner único; URL, extrato, agregados focados,
+  rotina e destaque usam o mesmo `accountId`. Sem conta válida, adota a primeira ativa; conta inativa pedida continua
+  selecionada para consulta. O enum `bank` passou a usar o rótulo de negócio `Conta bancária`.
+- **Teste dono vermelho antes do código:** bateria B/Page → `52 pass · 4 fail`; as falhas provaram enum cru, conta
+  inativa desviada e conta ativa destacada sem consultas focadas. Depois da correção → `56 pass · 0 fail · 0 skipped`.
+- **Mutações:** retirar o fallback da primeira ativa reprovou `R-B: B sem conta na URL`; limitar a seleção a contas
+  ativas reprovou o caso de consulta inativa; voltar ao enum `selected.kind` reprovou o rótulo. Restauro conferido:
+  `FinanceiroPage.tsx` `b189b10f...` e `FinanceiroViewB.tsx` `476a9c78...`.
+- **Validação:** `npm --prefix frontend run check` verde; `git diff --check` limpo.
+- **Falta:** RETOMADA 16 — recorte `sem7`, escopo do teste geométrico, pendências/registro, relatório final e bateria.
+- **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run check`.
+- **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.

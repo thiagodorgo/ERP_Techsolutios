@@ -840,6 +840,42 @@ test("R-D: a preferência pessoal seleciona B e C sem duplicar as consultas comu
   }
 });
 
+test("R-B: B sem conta na URL adota a primeira ativa também nas consultas e no extrato", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext" });
+  try {
+    assert.ok(byLabel(probe.container, "Conta em foco: Banco do Brasil"));
+    const entryUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).map((call) => call.url);
+    assert.ok(entryUrls.length >= 1, entryUrls.join(" | "));
+    assert.ok(entryUrls.every((url) => /account_id=acc-banco/.test(url)), `extrato fora da conta efetiva: ${entryUrls.join(" | ")}`);
+    const focused = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?") && /account_id=acc-banco/.test(call.url));
+    assert.ok(focused.some((call) => /group_by=month/.test(call.url)), "a série mensal usa a mesma conta destacada");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-B: conta inativa pedida na URL permanece em consulta e não volta para a primeira ativa", async () => {
+  const inactive = { id: "acc-inactive", name: "Conta encerrada", kind: "bank", currency: "BRL", openingBalance: 0, bankName: null, status: "inactive", isActive: false, createdAt: "2026-01-01T12:00:00.000Z" };
+  const probe = await mount({
+    appearance: "B",
+    url: "/finance?aba=ext&conta=acc-inactive",
+    override: (call) => {
+      if (call.method === "GET" && /^\/financial-accounts\?/.test(call.url)) {
+        return json(200, { items: [...ACCOUNTS.items, inactive], pagination: { limit: 100, offset: 0, total: 3 } });
+      }
+      return undefined;
+    },
+  });
+  try {
+    assert.ok(byLabel(probe.container, "Conta em foco: Conta encerrada"));
+    const entryUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).map((call) => call.url);
+    assert.ok(entryUrls.length >= 1, entryUrls.join(" | "));
+    assert.ok(entryUrls.every((url) => /account_id=acc-inactive/.test(url)), `extrato desviou da conta inativa: ${entryUrls.join(" | ")}`);
+  } finally {
+    await probe.unmount();
+  }
+});
+
 test("R3(a): o hook carrega 100, busca offset 100, deduplica e relê todas as páginas alcançadas", async () => {
   const titlePage: Override = (call) => {
     if (call.method !== "GET" || !call.url.startsWith("/financial-titles?")) return undefined;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { Modal } from "../../../components/ui";
@@ -63,14 +63,26 @@ export function FinanceiroPage() {
   const accounts = useFinancialAccounts({ enabled: access.readAccounts });
   const receivables = useFinancialTitles("receivable");
   const payables = useFinancialTitles("payable");
-  const filters = useMemo(() => entriesFiltersFor({ tab: state.tab, accountId: state.accountId, target: state.target }), [state.tab, state.accountId, state.target]);
-  const entries = useFinancialEntries(filters, { enabled: access.readEntries });
+  const effectiveAccountId = useMemo(() => {
+    if (appearance !== "B") return state.accountId;
+    const requested = accounts.items.find((account) => account.id === state.accountId);
+    return requested?.id ?? accounts.items.find((account) => account.active)?.id ?? null;
+  }, [appearance, state.accountId, accounts.items]);
+  const viewState = useMemo(
+    () => (appearance === "B" ? { ...state, accountId: effectiveAccountId } : state),
+    [appearance, state, effectiveAccountId],
+  );
+  const accountScopedReady = appearance !== "B" || Boolean(effectiveAccountId) || (!accounts.loading && accounts.items.length === 0);
+  const filters = useMemo(() => entriesFiltersFor(viewState), [viewState]);
+  const entries = useFinancialEntries(filters, { enabled: access.readEntries && accountScopedReady });
   const { policy, refresh: refreshPolicy } = useReconciliationPolicy({ enabled: access.readEntries });
 
-  const accountKey = accounts.items
-    .filter((account) => account.active)
-    .map((account) => account.id)
-    .join(",");
+  useEffect(() => {
+    if (appearance !== "B" || accounts.loading || !effectiveAccountId || state.accountId === effectiveAccountId) return;
+    navigate({ search: financeStateSearch(viewState) }, { replace: true });
+  }, [appearance, accounts.loading, effectiveAccountId, navigate, state.accountId, viewState]);
+
+  const accountKey = [...new Set(accounts.items.filter((account) => account.active || account.id === effectiveAccountId).map((account) => account.id))].join(",");
   const accountQueries = useMemo(() => {
     const queries: Record<string, EntriesAggregateQuery> = {};
     for (const id of accountKey ? accountKey.split(",") : []) queries[AGGREGATE_KEYS.account(id)] = { groupBy: "none", reconciled: false, accountId: id };
@@ -79,8 +91,8 @@ export function FinanceiroPage() {
   const situationAggregates = useEntriesAggregate(SITUATION_QUERIES, { enabled: access.readEntries });
   const accountAggregates = useEntriesAggregate(accountQueries, { enabled: access.readEntries });
   const focusedQueries = useMemo(() => {
-    if (!state.accountId) return {};
-    const accountId = state.accountId;
+    if (!viewState.accountId) return {};
+    const accountId = viewState.accountId;
     const range = sixMonthRange();
     return {
       [AGGREGATE_KEYS.accountReconciled(accountId)]: { groupBy: "none", reconciled: true, accountId },
@@ -88,10 +100,10 @@ export function FinanceiroPage() {
       [AGGREGATE_KEYS.accountDate(accountId)]: { groupBy: "none", reconciled: true, divergenceType: "date", accountId },
       [AGGREGATE_KEYS.accountMonths(accountId)]: { groupBy: "month", accountId, from: range.from, to: range.to },
     } satisfies Readonly<Record<string, EntriesAggregateQuery>>;
-  }, [state.accountId]);
-  const focusedAggregates = useEntriesAggregate(focusedQueries, { enabled: access.readEntries });
+  }, [viewState.accountId]);
+  const focusedAggregates = useEntriesAggregate(focusedQueries, { enabled: access.readEntries && accountScopedReady });
   const routineQueries = useMemo(() => {
-    const accountId = state.accountId;
+    const accountId = viewState.accountId;
     const account = accountId ? { accountId } : {};
     const days = fourteenDayRange();
     const queries: Record<string, EntriesAggregateQuery> = {
@@ -103,8 +115,8 @@ export function FinanceiroPage() {
       queries[AGGREGATE_KEYS.routineAge(key, accountId)] = { groupBy: "none", reconciled: false, ...range, ...account };
     }
     return queries;
-  }, [state.accountId]);
-  const routineAggregates = useEntriesAggregate(routineQueries, { enabled: access.readEntries });
+  }, [viewState.accountId]);
+  const routineAggregates = useEntriesAggregate(routineQueries, { enabled: access.readEntries && accountScopedReady });
 
   const summaryView = useLastGood(summary.data, !summary.loading && summary.data.source !== "fallback");
   const receivablesView = useLastGood(receivables.items, !receivables.loading && receivables.source !== "fallback");
@@ -195,7 +207,7 @@ export function FinanceiroPage() {
   ) : null;
 
   const model: FinanceiroViewModel = {
-    state,
+    state: viewState,
     onState,
     summary: summaryView.value,
     summaryLoading: summary.loading && !summaryView.stale,

@@ -66,6 +66,25 @@ test("B populada usa conta em foco, saldo literal, ponte, rosca e série mensal 
   assert.match(html, /De onde vem o saldo/);
   assert.match(html, /Conciliação desta conta/);
   assert.match(html, /Movimento da conta · 6 meses/);
+  assert.match(html, /Conta bancária · BB · BRL/);
+  assert.doesNotMatch(html, />bank(?: ·|<)/, "o enum interno nunca chega ao texto da tela");
+});
+
+test("B mantém conta inativa explicitamente escolhida em modo de consulta", () => {
+  const inactive = { ...ACCOUNT, id: "acc-inactive", name: "Conta encerrada", bankName: null, active: false };
+  const base = model();
+  const html = renderToStaticMarkup(
+    <FinanceiroViewB
+      {...model({
+        state: { tab: "ext", accountId: inactive.id, target: null },
+        accounts: { items: [ACCOUNT, inactive], loading: false, failed: false, total: 2 },
+        balances: { ...base.balances, [inactive.id]: null },
+      })}
+    />,
+  );
+  assert.match(html, /Conta em foco: Conta encerrada/);
+  assert.match(html, /Conta bancária · BRL/);
+  assert.match(html, /Conta encerrada · inativa/);
 });
 
 test("B loading publica esqueleto acessível", () => {

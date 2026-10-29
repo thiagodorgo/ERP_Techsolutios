@@ -7,6 +7,7 @@ import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
 import { EntryDetail } from "../../entries/components/EntryDetail";
 import { TitleDetail } from "../../entries/components/TitleDetail";
+import { getAccountKindLabel } from "../../accounts/financial-accounts.adapter";
 import { formatBRL } from "../../titles/financial-titles.adapter";
 import { isOpenTitle, targetLabel, titleMatchesTarget } from "../financeiro.state";
 import { AGGREGATE_KEYS, EntriesTable, TitlesTable, titleMatchesSearch, type FinanceiroViewModel } from "./FinanceiroViewA";
@@ -26,8 +27,7 @@ const donutTarget: Record<ReconcileDonutFilter, string> = {
 export function FinanceiroViewB(model: FinanceiroViewModel) {
   const [openKey, setOpenKey] = useState<string | null>(() => model.payPanel?.titleId ?? null);
   const [titleSearch, setTitleSearch] = useState("");
-  const active = model.accounts.items.filter((account) => account.active);
-  const selected = active.find((account) => account.id === model.state.accountId) ?? active[0] ?? null;
+  const selected = model.accounts.items.find((account) => account.id === model.state.accountId) ?? model.accounts.items.find((account) => account.active) ?? null;
   const go = (next: Partial<FinanceiroViewModel["state"]>) => model.onState({ ...model.state, ...next });
   const header = (
     <PageHeader
@@ -119,7 +119,7 @@ export function FinanceiroViewB(model: FinanceiroViewModel) {
         <div>
           <span className="pat-kicker">CONTA EM FOCO</span>
           <h2>{selected.name}</h2>
-          <p>{[selected.kind, selected.bankName, selected.currency].filter(Boolean).join(" · ")}</p>
+          <p>{[getAccountKindLabel(selected.kind), selected.bankName, selected.currency].filter(Boolean).join(" · ")}</p>
         </div>
         <strong className="dense-col-tabular">{balance ? formatBRL(balance.balance) : "Saldo indisponível"}</strong>
       </section>
