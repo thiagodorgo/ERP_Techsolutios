@@ -131,3 +131,50 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** worktree descartável `C:/Users/AMP/w-san312c-f2base` e dois arquivos scratch `fatia2-adapter-*`
   removidos após conferir caminhos; nenhum rastreado, `.env` ou `node_modules` do dev foi removido.
+
+## Evidência incremental — FATIA 3
+
+1. Retomada P3/P7: `git status --short` vazio em `6465f5bd`; a última `RETOMADA 2` declarou a fatia 2 íntegra e
+   nenhum arquivo meio-escrito. `df -B1 /c` → 13.524.373.504 bytes livres na abertura e 13.516.591.104 no
+   fechamento, acima do piso de 7.500.000.000.
+2. R-P1: busca local explícita sobre os títulos carregados cobre documento, cliente/fornecedor e descrição; resultado
+   fora da página só aparece depois de `Carregar mais títulos`; limpar a busca restaura as linhas. Nenhum filtro foi
+   inventado no servidor.
+3. R-P4: indicador global só publica `aria-pressed=true` sem conta em foco; acioná-lo limpa a conta e mantém o filtro
+   global visível.
+4. R-P5: `readEntries` entrou no modelo único; sem `financial_entries:read`, Extrato/Conciliação exibem
+   `StatePanel tone=forbidden`, e os spies confirmam zero GET de extrato, agregado e política.
+5. R-P6: contador e pager separam resultado filtrado, títulos carregados e universo do servidor; com filtro local o
+   universo vem qualificado como `(sem este filtro)`.
+6. Testes donos finais, no diretório `frontend` com Node 22 absoluto:
+   `node --test --import tsx tests/finance-page-live.test.tsx tests/finance-contas-extrato.smoke.test.tsx` →
+   **51 testes · 51 pass · 0 fail · 0 skipped**. A primeira tentativa a partir da raiz falhou por configuração JSX
+   (`React is not defined`) e não foi usada como evidência de produto.
+7. `npm --prefix frontend run check` → `tsc -b --noEmit`, ec=0; `git diff --check` limpo; diff em
+   `src prisma .github Kpis mobile` e lockfiles → vazio.
+
+## Mutações e vermelho-controle — FATIA 3
+
+- **R-P1 termo ignorado:** restaurar a filtragem-base somente por alvo → teste R-P1/R-P6 vermelho, 20 linhas em vez
+  de 1. **Descrição omitida:** retirar `title.description` da allowlist → vermelho, 0 linhas em vez de 1.
+- **R-P4 pressed global:** restaurar a expressão-base que aceita alvo não nulo com conta → vermelho,
+  `aria-pressed=true` em vez de `false`.
+- **R-P5 proibido:** trocar somente o painel de lançamentos de `forbidden` para `empty` → vermelho, painel proibido
+  ausente; a trava de rede permaneceu independente.
+- **R-P6 pager ambíguo:** restaurar `1–1 de 1 carregados · 130 no servidor` → vermelho contra o rótulo qualificado.
+- **Restauro:** SHA-256 de `FinanceiroViewA.tsx` antes das mutações e após todos os restauros =
+  `445c4ed8f3f88bb0f262d9ebbf6f6c5ad75f9dd894cc700fedba7da1188ea773`; bateria final 51/51.
+
+## RETOMADA 3
+
+- **Hora UTC real:** `2026-10-29T02:32:07Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit da fatia:** `6465f5bda70bb819c6efacc4915f0f6b125089ed`; head-base
+  `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`.
+- **Feito:** R-P1/R-P4/R-P5/R-P6 fechados na aparência A com testes comportamentais, controles vermelhos e
+  restauro por hash; `ts-frontend-full` orientou a camada existente e `ui-ux-pro-max` a clareza do estado/pager.
+- **Falta:** FATIAS 4–14, com 13 dividida em 13A/13B. A próxima é a FATIA 4, R-P3/C3R3-N2, somente teste
+  determinístico da rodada superada.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** nenhuma árvore/scratch temporária criada; `node_modules` próprio preservado.

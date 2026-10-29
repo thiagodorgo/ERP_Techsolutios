@@ -409,6 +409,7 @@ const RECEIVABLES_130 = Array.from({ length: 130 }, (_, index) =>
     id: `t-lote-${String(index + 1).padStart(3, "0")}`,
     partyName: `Cliente ${String(index + 1).padStart(3, "0")}`,
     document: `NF ${String(index + 1).padStart(4, "0")}`,
+    description: index === 5 ? "Contrato guincho especial" : index === 120 ? "Descrição fora da página carregada" : null,
     // 17 vencidos, 7 deles DEPOIS da 1ª página: só o resumo do servidor sabe o total.
     dueDate: index < 10 || index >= 123 ? daysFromToday(-5) : index === 10 ? daysFromToday(0) : daysFromToday(10),
     overdue: index < 10 || index >= 123,
@@ -775,9 +776,9 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
   const loadMoreButton = () => all(container, (el) => el.localName === "button" && text(el).startsWith("Carregar mais títulos"))[0];
   try {
     assert.match(text(tab(container, "A receber")!), /A receber\s*130/, "aba com a contagem do servidor");
-    assert.equal(counter(), "100 mais recentes de 130 títulos", "contador da carga incompleta");
+    assert.equal(counter(), "100 resultados entre 100 títulos carregados · 130 títulos no servidor", "contador separa resultado e universo");
     assert.ok(pager(), "o TablePager da biblioteca está no rodapé da tabela");
-    assert.equal(range(), "1–20 de 100 carregados · 130 no servidor");
+    assert.equal(range(), "1–20 de 100 resultados carregados · 130 títulos no servidor");
     assert.equal(rows(container).length, 20, "página de 20 linhas");
     assert.equal(text(byLabel(container, "Vencidos:")!), "Vencidos17", "Vencidos vem do resumo");
     assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje", "sem número com a carga incompleta");
@@ -789,13 +790,13 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
       more.some((call) => /(?:^|[?&])limit=100(?:&|$)/.test(call.url) && /(?:^|[?&])offset=100(?:&|$)/.test(call.url)),
       more.map((call) => call.url).join(" | "),
     );
-    assert.equal(counter(), "130 títulos", "contador da carga completa");
-    assert.equal(range(), "1–20 de 130");
+    assert.equal(counter(), "130 resultados", "contador da carga completa");
+    assert.equal(range(), "1–20 de 130 resultados carregados");
     assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje1", "com a carga completa o bloco local conta");
     assert.equal(loadMoreButton(), undefined, "o botão some quando não falta título");
 
     await press(buttonByText(container, "Próxima"));
-    assert.equal(range(), "21–40 de 130");
+    assert.equal(range(), "21–40 de 130 resultados carregados");
     const page2 = rows(container);
     assert.equal(page2.length, 20);
     // Ordem por vencimento: 17 vencidos, 1 que vence hoje (Cliente 011), depois os demais; a linha 21 é o Cliente 014.
@@ -804,8 +805,51 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
 
     // A página volta à primeira a cada go() (aqui, o bloco "Vencidos").
     await press(byLabel(container, "Vencidos:"));
-    assert.equal(range(), "1–17 de 17");
-    assert.equal(counter(), "17 títulos");
+    assert.equal(range(), "1–17 de 17 resultados carregados");
+    assert.equal(counter(), "17 resultados");
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P1/R-P6: busca documento, parte e descrição só nos títulos carregados, com pager e universo separados", async () => {
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "GET" && call.url.startsWith("/financial-titles?direction=receivable")) {
+        const url = new URL(`http://x${call.url}`);
+        const offset = Number(url.searchParams.get("offset") ?? 0);
+        return json(200, { items: RECEIVABLES_130.slice(offset, offset + 100), pagination: { limit: 100, offset, total: 130 } });
+      }
+      return undefined;
+    },
+  });
+  const counter = () => text(all(container, (el) => el.getAttribute("class") === "pat-table__count")[0]!);
+  const range = () => text(all(container, (el) => el.getAttribute("class") === "pat-pager__range")[0]!);
+  try {
+    await type(byName(container, "busca-titulos"), "contrato guincho");
+    assert.equal(rows(container).length, 1, "descrição participa da busca");
+    assert.match(text(rows(container)[0]), /Cliente 006/);
+    assert.equal(counter(), "1 resultados entre 100 títulos carregados · 130 títulos no servidor (sem este filtro)");
+    assert.equal(range(), "1–1 de 1 resultados carregados · 130 títulos no servidor (sem este filtro)");
+    assert.match(text(container), /Filtro: Busca: contrato guincho/);
+
+    await type(byName(container, "busca-titulos"), "NF 0099");
+    assert.equal(rows(container).length, 1, "documento participa da busca");
+    assert.match(text(rows(container)[0]), /Cliente 099/);
+
+    await type(byName(container, "busca-titulos"), "Cliente 042");
+    assert.equal(rows(container).length, 1, "cliente participa da busca");
+
+    await type(byName(container, "busca-titulos"), "fora da página carregada");
+    assert.equal(rows(container).length, 0, "resultado fora da carga atual não é inventado");
+    assert.match(counter(), /^0 resultados entre 100 títulos carregados/);
+    await press(all(container, (el) => el.localName === "button" && text(el).startsWith("Carregar mais títulos"))[0]);
+    assert.equal(rows(container).length, 1, "o resultado aparece depois de carregar a página que o contém");
+    assert.match(text(rows(container)[0]), /Cliente 121/);
+
+    await press(byLabel(container, "Limpar a busca de títulos"));
+    assert.equal(rows(container).length, 20, "limpar restaura a lista carregada");
+    assert.equal(byName(container, "busca-titulos")?.value, "");
   } finally {
     await unmount();
   }
@@ -838,6 +882,19 @@ test("F11: 'A conciliar' leva à aba Conciliação filtrada no servidor (reconci
     assert.ok(calls.some((c) => c.method === "GET" && /^\/financial-entries\?.*reconciled=false/.test(c.url)), "o filtro vai ao servidor");
     assert.equal(rows(container).length, 2);
     for (const row of rows(container)) assert.doesNotMatch(text(row), /Conciliado/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P4: indicador global não fica pressionado com conta em foco e limpa a conta ao ser acionado", async () => {
+  const { container, unmount } = await mount({ url: "/finance?aba=conc&conta=acc-banco&filtro=conc:pendente" });
+  try {
+    assert.equal(byLabel(container, "A conciliar:")?.getAttribute("aria-pressed"), "false");
+    assert.match(text(container), /Filtro: Conta: Banco do Brasil/);
+    await press(byLabel(container, "A conciliar:"));
+    assert.equal(byLabel(container, "A conciliar:")?.getAttribute("aria-pressed"), "true");
+    assert.doesNotMatch(text(container), /Filtro: Conta:/);
   } finally {
     await unmount();
   }
@@ -1523,6 +1580,19 @@ test("F16 acesso não permitido: Técnico de Campo cai no guarda da rota; sem le
     assert.equal(rows(semTitulos.container).length, 0);
   } finally {
     await semTitulos.unmount();
+  }
+});
+
+test("R-P5: sem leitura de lançamentos, extrato e conciliação mostram acesso não permitido e não consultam essas rotas", async () => {
+  const permissions = ["finance:read", "financial_titles:read", "financial_accounts:read"];
+  const probe = await mount({ permissions, role: "Auditor", url: "/finance?aba=conc" });
+  try {
+    const panel = all(probe.container, (el) => el.getAttribute("data-state") === "forbidden")[0];
+    assert.ok(panel, "painel proibido para lançamentos");
+    assert.match(text(panel), /Seu perfil não inclui os lançamentos/);
+    assert.equal(calls.filter((call) => /^\/financial-entries(?:\?|\/aggregate|\/reconciliation-policy)/.test(call.url)).length, 0, calls.map((call) => call.url).join(" | "));
+  } finally {
+    await probe.unmount();
   }
 });
 

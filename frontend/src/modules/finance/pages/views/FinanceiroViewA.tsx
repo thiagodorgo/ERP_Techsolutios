@@ -54,6 +54,7 @@ export type FinanceiroViewModel = {
   readonly aggregates: Readonly<Record<string, EntriesAggregate | null>>;
   readonly policy: ReconciliationPolicy;
   readonly access: {
+    readonly readEntries: boolean;
     readonly readTitles: boolean;
     readonly readAccounts: boolean;
     readonly pay: boolean;
@@ -93,6 +94,16 @@ function countOf(aggregate: EntriesAggregate | null | undefined): number | null 
 
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+function normalizeSearch(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-BR");
+}
+
+function titleMatchesSearch(title: FinancialTitle, search: string): boolean {
+  const term = normalizeSearch(search);
+  if (!term) return true;
+  return [title.document, title.partyName, title.description].some((value) => normalizeSearch(value ?? "").includes(term));
 }
 
 function SkeletonRows({ columns }: { readonly columns: number }) {
@@ -157,6 +168,7 @@ function Block({ label, count, unavailableLabel = "contagem indisponível", pres
 export function FinanceiroViewA(model: FinanceiroViewModel) {
   const { state, onState, summary, access } = model;
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [titleSearch, setTitleSearch] = useState("");
   // Paginação client-side da lista de títulos (TablePager da biblioteca, como na tela-modelo `WorkOrdersPage`):
   // volta à primeira página em todo go(); trocar de página fecha o detalhe aberto.
   const [titlePage, setTitlePage] = useState(0);
@@ -206,7 +218,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   const competencia = summary.settledThisMonth.competencia;
   const mes = competencia ? monthName(competencia) : "o mês";
   const previous = summary.cashFlow.length >= 2 ? summary.cashFlow[summary.cashFlow.length - 2] : null;
-  const isPressed = (tab: FinanceTab, target: string | null) => state.tab === tab && state.target === target && (target !== null || state.accountId === null);
+  const isPressed = (tab: FinanceTab, target: string | null) => state.tab === tab && state.target === target && state.accountId === null;
 
   const kpis = (
     <div className="pat-kpi-row pat-kpi-row--6" aria-busy={model.summaryLoading ? true : undefined}>
@@ -385,15 +397,18 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
     const receivable = state.tab === "rec";
     const list = receivable ? model.receivables : model.payables;
     const base = receivable ? openRec : openPag;
-    const visible = base.filter((title) => titleMatchesTarget(title, state.target)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const visible = base
+      .filter((title) => titleMatchesTarget(title, state.target) && titleMatchesSearch(title, titleSearch))
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     // Contador honesto (R3(d)): com a carga completa, as linhas visíveis; incompleta, quantas há entre as carregadas e o
     // total do servidor (o idioma do extrato).
     const loadedAll = list.items.length >= list.total;
+    const hasLocalFilter = Boolean(state.target || normalizeSearch(titleSearch));
     counter = loadedAll
-      ? plural(visible.length, "título", "títulos")
-      : state.target
-        ? `${visible.length} entre os ${list.items.length} mais recentes de ${list.total} títulos`
-        : `${list.items.length} mais recentes de ${list.total} títulos`;
+      ? plural(visible.length, "resultado", "resultados")
+      : hasLocalFilter
+        ? `${visible.length} resultados entre ${list.items.length} títulos carregados · ${list.total} títulos no servidor (sem este filtro)`
+        : `${visible.length} resultados entre ${list.items.length} títulos carregados · ${list.total} títulos no servidor`;
     if (!access.readTitles) {
       body = (
         <StatePanel
@@ -425,6 +440,22 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       const overdueCount = model.summaryLoading ? null : receivable ? summary.receivable.overdueCount : summary.payable.overdueCount;
       intro = (
         <>
+          <div style={{ padding: "12px 18px 0" }}>
+            <label className="pat-field" style={{ maxWidth: 420 }}>
+              <span>Buscar nos títulos carregados</span>
+              <input
+                type="search"
+                name="busca-titulos"
+                value={titleSearch}
+                placeholder="Documento, cliente, fornecedor ou descrição"
+                onChange={(event) => {
+                  setOpenKey(null);
+                  setTitlePage(0);
+                  setTitleSearch(event.currentTarget.value);
+                }}
+              />
+            </label>
+          </div>
           <BlockGroup label="Blocos de resumo — clique para filtrar">
             {[
               ["venc", "Vencidos"],
@@ -478,7 +509,11 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
               setTitlePageSize(size);
               setTitlePage(0);
             }}
-            rangeLabel={loadedAll ? `${start + 1}–${end} de ${visible.length}` : `${start + 1}–${end} de ${visible.length} carregados · ${list.total} no servidor`}
+            rangeLabel={
+              loadedAll
+                ? `${start + 1}–${end} de ${visible.length} resultados carregados`
+                : `${start + 1}–${end} de ${visible.length} resultados carregados · ${list.total} títulos no servidor${hasLocalFilter ? " (sem este filtro)" : ""}`
+            }
             onPrev={() => changePage(Math.max(0, page - 1))}
             onNext={() => changePage(Math.min(maxPage, page + 1))}
             canPrev={page > 0}
@@ -567,6 +602,16 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
         />
       );
       counter = "";
+    } else if (!access.readEntries) {
+      body = (
+        <StatePanel
+          tone="forbidden"
+          embedded
+          title="Acesso não permitido"
+          detail="Seu perfil não inclui os lançamentos desta organização. Para mais acesso, fale com o administrador da organização."
+        />
+      );
+      counter = "";
     } else if (model.entries.loading) {
       body = <SkeletonRows columns={6} />;
     } else if (model.entries.failed) {
@@ -638,6 +683,18 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       onClear: () => go({ target: null }),
     });
   }
+  if (normalizeSearch(titleSearch) && (state.tab === "rec" || state.tab === "pag")) {
+    filterChips.push({
+      key: "search",
+      label: `Busca: ${titleSearch.trim()}`,
+      clearLabel: "Limpar a busca de títulos",
+      onClear: () => {
+        setOpenKey(null);
+        setTitlePage(0);
+        setTitleSearch("");
+      },
+    });
+  }
 
   return (
     <div data-aparencia="A" style={{ color: "#0F172A" }}>
@@ -668,7 +725,10 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
                 role="tab"
                 aria-selected={state.tab === item.id}
                 className={state.tab === item.id ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
-                onClick={() => go({ tab: item.id, target: null })}
+                onClick={() => {
+                  if (item.id !== "rec" && item.id !== "pag") setTitleSearch("");
+                  go({ tab: item.id, target: null });
+                }}
               >
                 {item.label}
                 {item.count !== null ? <span style={{ marginLeft: 6, fontWeight: 800 }}>{item.count}</span> : null}
