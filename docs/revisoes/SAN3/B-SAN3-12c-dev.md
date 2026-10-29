@@ -469,3 +469,24 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum servidor/artefato de navegador criado.
+
+## Evidência incremental — FATIA 13B
+
+1. Bateria de interação, teclado, detalhe único, baixa e conciliação A/B/C → **91 testes · 91 pass · 0 fail ·
+   0 skipped**. O teste geométrico entrou no smoke oficial.
+2. Retirar o rótulo das etapas deixou o controle acessível vermelho; restauro de ViewC =
+   `22da3052dba78a48b7b7e0fa06f107221816d3dcf8b68d81c5f04f805c5d5e7f`. Os controles anteriores de duas chaves,
+   callback vazio e avanço no fechamento continuam verdes nesta bateria.
+3. Sem navegador instalado, capturas/medição real seguem explicitamente pendentes para `cognicao-visual`; não há
+   SHA de imagem fabricado. A prova desta cadeira é DOM/CSS/interação executada.
+
+## RETOMADA 13B
+
+- **Hora UTC real:** `2026-10-29T03:24:15Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit:** `5c44f66a`; base `3c27f1bf`.
+- **Feito:** interação/teclado/forms e inclusão do guard geométrico no smoke.
+- **Falta:** FATIA 14, bateria, registro, PR e entrega.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** `/tmp/f13b.tap` é temporário regenerável; nenhum build/browser criado.
