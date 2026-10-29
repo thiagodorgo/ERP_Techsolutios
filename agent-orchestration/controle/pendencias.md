@@ -11937,7 +11937,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** o menu marca ativo só o item da aba aberta e os dois itens voltam a ser governados pelo menu do backend (ou saem do menu, se o `B-SAN3-24` decidir uma entrada só).
 
 ## P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da opção A ("Buscar documento, cliente ou descrição") não existe no 12b — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco`, divergência DECLARADA na E2.2 do plano (`docs/revisoes/SAN3/B-SAN3-12-plano.md`, Emenda E2) · **dono:** `B-SAN3-12c` (mesma tela, mesma camada de dados) · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1-N6 da junta do ciclo 1 do `B-SAN3-12b` (`agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`). É filtro de texto sobre as linhas carregadas, e a lista de títulos passou a ser parcial por desenho (R3: 100 por pedido, "Carregar mais títulos"); entra junto da paginação completa.
 - **encerramento:** busca por documento, cliente e descrição sobre as linhas carregadas, com o contador honesto da R3 (`N entre os L mais recentes de T títulos`).
 
@@ -11947,7 +11947,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** texto acentuado ("Acesso não autorizado") e a guarda textual F17 estendida ao guarda.
 
 ## P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devolve 0 para campo ausente — BAIXA
-- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/modules/finance/dashboard/financial-summary.adapter.ts:113`, `num()`, `git blame` → `08d009492`, 2026-07-18) · **dono:** `B-SAN3-12c` (mesma camada de dados) · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `pre-existente` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1-N5 da junta do ciclo 1 do `B-SAN3-12b`. Campo que o servidor não mandou vira R$ 0,00 no indicador, em vez de "indisponível" (fere o espírito do F19).
 - **encerramento:** campo ausente → indicador não renderizado ou "indisponível" (F19 no adaptador), com teste.
 
@@ -11957,22 +11957,22 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** um job da CI com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head.
 
 ## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (lacuna de teste; o código cumpre a R4(b)) · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa. **Alias da E5:** `C3R3-N2` = `R-P3`; não é uma pendência nova.
 - **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
 
 ## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida). **Alias da E5:** `P-C1R3-INDICADOR-ORG-COM-CONTA` = `R-P4`; não é uma pendência nova.
 - **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
 
 ## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-12c` (alternativa: `B-SAN3-24`) · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas. **Alias da E5:** `P-C1R3-ESTADO-SEM-LEITURA-LANCAMENTOS` = `R-P5`; não é uma pendência nova.
 - **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
 
 ## P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem filtrada com o total sem filtro — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade. **Alias da E5:** `P-C1R3-TEXTO-PAGER-FILTRADO` = `R-P6`; não é uma pendência nova.
 - **encerramento:** com alvo aplicado e carga parcial, o `rangeLabel` deixa de misturar a contagem filtrada com o total sem filtro.
 

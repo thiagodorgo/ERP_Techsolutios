@@ -5058,3 +5058,10 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
 - E5 apensa verbatim ao plano versionado; comando, relatório, aliases e divergências §A2 registrados. Node 22.14.0 absoluto; dependências próprias sem junction.
 - Baseline: financeiro dirigido 122/122; smoke frontend 1482/1482; controle não ancestral recusado. Próxima: FATIA 2. `Kpis/**` intocado.
+
+## 2026-10-29 — B-SAN3-12c · DEV concluído (`dev-san312c-sol`)
+
+- Fatias 2–12 + 13A/13B + 14 concluídas em commits sequenciais e empurradas; PR #474 aberto.
+- Final: dirigida 180/180; smoke 1530/1530 em Node 22 e Node 20; check/build verdes; zero diff em backend,
+  Prisma, CI e KPIs. Seis pendências R-P1..R-P6 fechadas; CE-4 braço 1 e #473 preservados abertos.
+- Navegador local ausente: geometria/DOM/CSS foram executados; nove capturas reais seguem para `cognicao-visual`.

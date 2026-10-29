@@ -1,5 +1,12 @@
 # Status Geral
 
+## Atualização 2026-10-29 — B-SAN3-12c pronto para revisão (PR #474)
+
+`dev-san312c-sol` concluiu as aparências B/C do Financeiro no ramo `feat/web-financeiro-aparencias-b-c`. Bateria
+final: dirigida 180/180; smoke frontend 1530/1530 em Node 22.14.0 e 1530/1530 em Node 20.19.5; check/build verdes.
+Régua seguinte: revisor independente + `cognicao-visual` + CI. A validação visual real permanece com
+`cognicao-visual`, pois não havia Chrome/Edge/Chromium local. CE-4 braço 1 e marco KPI #473 seguem abertos.
+
 ## Atualização 2026-10-28 — B-SAN3-12c FATIA 1 aberta
 
 `dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `C:/Users/AMP/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.

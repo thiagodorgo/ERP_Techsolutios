@@ -490,3 +490,29 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** `/tmp/f13b.tap` é temporário regenerável; nenhum build/browser criado.
+
+## Evidência incremental — FATIA 14
+
+1. `origin/main` permaneceu em `3c27f1bf`, o mesmo merge-base; não houve merge concorrente. R-T3 reproduzível:
+   `BRANCH_ADDITIONS_MISSING=0`, `BRANCH_REMOVALS_REAPPEARED=0`, `MAIN_CONTRIBUTIONS_SINCE_BASE=0`; a cópia
+   mutada reabrindo um fechamento acusou a linha FECHADA perdida.
+2. Bateria final: check verde; dirigida **180/180**; smoke **1530/1530** no Node 22.14.0 e **1530/1530** no
+   Node 20.19.5; build Vite verde; diff-check limpo; backend/Prisma/.github/Kpis e lockfiles sem diff.
+3. R-P1..R-P6 foram fechadas no registro e o índice foi regenerado (678 cabeçalhos/667 IDs). CE-4 braço 1,
+   divergências de dados, validação visual e marco KPI #473 continuam abertos com dono, sem falso fechamento.
+4. PR #474 aberto: `https://github.com/thiagodorgo/ERP_Techsolutios/pull/474`.
+
+## RETOMADA 14
+
+- **Hora UTC real:** `2026-10-29T03:36:44Z`.
+- **Executor/modelo:** `dev-san312c-sol` · Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado.
+- **Head medido antes do commit final:** `5f611da72e6a6f1c918ecfbe23cdb73a1fc1b58e`; base `3c27f1bf`.
+- **Feito:** todas as fatias, bateria, registro, índice e PR #474.
+- **Falta no DEV:** nada. Próximo: revisor independente + `cognicao-visual` + CI; orquestrador cuida de #473
+  depois do merge + porteiro.
+- **Próximo comando exato:** `gh pr view 474 --repo thiagodorgo/ERP_Techsolutios --json headRefOid,statusCheckRollup`.
+- **Arquivos meio-escritos:** nenhum.
+- **Limpeza:** `frontend/dist/` foi gerado e está ignorado; a remoção explícita foi recusada pela política de execução
+  do host, registrada sem mascarar. Temporários TAP em `/tmp` são regeneráveis; nenhum rastreado foi apagado.
+
+**pronto para revisão**
