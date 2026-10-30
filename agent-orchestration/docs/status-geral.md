@@ -5178,3 +5178,16 @@ Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026
 - Migração `20260881000000_cheque_title_link` é aditiva e transacional; as três novas suítes PostgreSQL estão na lista curada da CI.
 - KPI permanece congelado e `Kpis/**` não foi alterado. A junta do PR é a próxima etapa; este registro não é voto do DEV.
 - Dev: Codex `gpt-5.6-sol` até 18:15Z (caiu por limite de uso); Claude Opus (`dev-san320-opus`, nível menor) cobriu e fechou a bateria.
+
+## Estado em 2026-10-30 — registro de 28 a 30/10
+
+- **B-SAN3-12b:** PR #469 mergeado; as quatro pendências de produto/teste da ata já estavam registradas na `origin/main` como `P-SAN3-12B-KPI-PRESSED-COM-CONTA`, `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO`, `P-SAN3-12B-PAGER-ROTULO-FILTRADO` e `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE`. Este registro acrescenta a lacuna de processo `P-C2R-01-ROLE-PERMS-NO-ROTEIRO`, sem duplicar as quatro.
+- **B-SAN3-12c:** PR #474 aberto no head `33bde2ee`; o dono disse em 29/10: *"o visual vai ser refeito amanha com vc quando seu limite voltar, o codex nao tem a manha para fazer o visual."*. O plano E5 e o desenvolvimento feitos pelo Codex permanecem registrados como fato histórico.
+- **B-SAN3-24:** o dono disse em 29/10: *"o 	Plano do B-SAN3-24 tambem nao confio no codex, fica para vc amanha"*.
+- **KPI de 28/10:** adiado pelo dono; PR #473 permanece em rascunho e é tratado junto da sequência do 12c.
+- **Operação:** duas contas do Codex podem executar uma tarefa cada em paralelo; ClamAV em container foi autorizado para a varredura de evidência do item 27.
+- **Comunicação:** horários apresentados ao dono usam São Paulo (UTC−3); timestamps técnicos canônicos permanecem no formato exigido pela evidência.
+- **Kryos e mwapi:** o dono disse *"esqueça kryos, mwapi"*; ambos saem das decisões pendentes.
+- **Demo:** continua congelada; os PRs #465–#468 e #470 permanecem abertos, sem revisão, conforme a fonte do registro.
+- **Fluxo rápido:** o dono aprovou os três níveis, uma votação e um conserto sem loop (`D-JUNTA-FLUXO-RAPIDO`). A varredura de segurança sistêmica final fica com `B-SAN3-10` antes do portão vendável.
+- **Distribuição:** o dono priorizou as duas contas do Codex para tarefas que não requeiram Claude; telas devem ser feitas no Claude Design (`D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`).

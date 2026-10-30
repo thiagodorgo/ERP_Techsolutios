@@ -11967,7 +11967,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
 
 ## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-12c` (alternativa: `B-SAN3-24`) · **bloqueia:** não.
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-24` · **bloqueia:** não.
 - **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas.
 - **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
 
@@ -11980,3 +11980,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** processo (ferramenta) · **dono:** o bloco de ferramentas de processo (fila pós-gate) · **bloqueia:** não. Severidade: leitura do dev (a E3.4 não a fixa): dois fechamentos se perderam num merge que "conferiu os cabeçalhos".
 - **origem:** C3R2-02 da junta do ciclo 2 do `B-SAN3-12b`, ampliado pela auditoria do topo (Emenda E3, R-E3-1 e E3.4): o merge `b5246e8d` ficou com o lado da `main` nas seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE`; a fatia 1 do ciclo 3 as restaurou (`864598f5`).
 - **encerramento:** `scripts/` ganha a conferência de três vias de `pendencias.md` (as linhas que o ramo acrescentou sobrevivem; as linhas que ele removeu não voltam) e o passo entra na E2.5 e na ata de todo merge de registro.
+
+## P-C2R-01-ROLE-PERMS-NO-ROTEIRO (2026-10-29) — o roteiro da C2 não registra a geração de `role-perms.json` — BAIXA
+- **status:** ABERTA · **escopo:** processo de junta · **dono:** orquestração da junta · **bloqueia:** não.
+- **origem:** nota C2R-01 da ata do PR #469 (`J-B-SAN3-12b.md`): o insumo das sondas existia, mas o passo que produz `role-perms.json` não estava em `o_que_executei`.
+- **encerramento:** o roteiro da C2 registra o comando que produz `role-perms.json`, sua saída resumida e o uso pelas sondas.
+
+## P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portão vendável — ALTA
+- **status:** ABERTA · **escopo:** segurança sistêmica final · **dono:** `B-SAN3-10` · **bloqueia:** o fechamento do portão da versão vendável.
+- **origem:** `D-JUNTA-FLUXO-RAPIDO`, regra (6): antes de fechar o portão da versão vendável, uma revisão de segurança cobre o sistema inteiro, inclusive o que não passou por junta.
+- **encerramento:** varredura de segurança integral concluída, achados graves corrigidos e evidência registrada antes do fechamento do portão vendável.
