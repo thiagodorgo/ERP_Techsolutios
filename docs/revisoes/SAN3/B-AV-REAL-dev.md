@@ -43,6 +43,23 @@
 - Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(evidence): cliente INSTREAM do clamd — framing e parser estritos (B-AV-REAL F2)"`.
 - Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
 
+## RETOMADA 3
+
+- UTC: `2026-10-30T12:56:24Z`.
+- Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `6073e3c3277b6eed906b129ca80de8bbe2b02c62` (F2 já no remoto).
+- Vermelho-controle antes do código: o caso novo `buffer acima do teto falha sem abrir socket` contra o cliente de F2 → exit `1`. A tentativa inicial de rodar o arquivo inteiro foi interrompida porque o cliente ainda não tinha prazo e o caso de servidor mudo, por definição, não terminava; o controle válido foi repetido com filtro e terminou vermelho.
+- Implementado: prazo absoluto, destruição/limpeza em todo desfecho, semáforo sem fila, pré-checagem de `sizeBytes`/tamanho, teto de resposta de 4096 bytes e razões internas estáveis.
+- Classificação: `Heuristics.Limits.Exceeded* FOUND` → `infected/scan_limit_exceeded`; `INSTREAM size limit exceeded. ERROR` → `failed/stream_limit_misconfigured`.
+- Testes novos: 9; conjunto F2+F3: 23 executados · 23 pass · 0 fail · 0 skip. Cobrem servidor mudo, recusa, erro/reset, saturação, devolução da vaga, tamanho, resposta gigante e limites.
+- Recursos: os testes conferem o `Socket.destroyed` do cliente no timeout, zero conexão para recusa local por tamanho e exatamente uma conexão sob saturação; nenhum processo ficou vivo.
+- Mutações: M-R4a/b/c, M-R5u e M-R13a/b ficaram vermelhas e foram restauradas ao SHA-256 canônico `c853846a38269fc934d00a134a42cd70129128f95498a6b842dc6bf2e5b270c9`.
+- Verde-controle final: `npm test -- tests/avreal-scanner-failures.test.ts tests/avreal-scanner-protocol.test.ts` → 23/23; `npm run check` e `git diff --check` → exit `0`.
+- Falta: commit/push de F3; depois F4.
+- Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(evidence): prazo absoluto, limites e liberação de recursos no cliente clamd (B-AV-REAL F3)"`.
+- Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
+
 ## Mutações
 
 | Fatia | Mutação | Head | Comando | Vermelho | Restauração por hash | Verde-controle |
@@ -52,4 +69,10 @@
 | F2 | M-R3a (`includes("OK")`) | `1279454e` | suíte de protocolo | 3 respostas parecidas com OK foram aprovadas | SHA-256 canônico `6d45b7d…` | 14/14 |
 | F2 | M-R3b (EOF vira clean) | `1279454e` | suíte de protocolo | 2 casos de EOF falharam | SHA-256 canônico `6d45b7d…` | 14/14 |
 | F2 | M-R3c (aceita resposta prematura) | `1279454e` | suíte de protocolo | caso de resposta antes do terminador falhou | SHA-256 canônico `6d45b7d…` | 14/14 |
+| F3 | M-R4a (sem prazo absoluto) | `6073e3c3` | caso `servidor mudo` | watchdog do teste excedido | SHA-256 canônico `c853846…` | 23/23 |
+| F3 | M-R4b (não destrói no timeout) | `6073e3c3` | caso `servidor mudo` | socket cliente permaneceu não destruído | SHA-256 canônico `c853846…` | 23/23 |
+| F3 | M-R4c (não devolve vaga no erro) | `6073e3c3` | caso `vaga do semáforo` | segunda varredura não ficou clean | SHA-256 canônico `c853846…` | 23/23 |
+| F3 | M-R5u (limite interno vira clean) | `6073e3c3` | caso `Heuristics.Limits.Exceeded` | resultado divergiu de infected | SHA-256 canônico `c853846…` | 23/23 |
+| F3 | M-R13a (sem pré-checagem de tamanho) | `6073e3c3` | caso `buffer acima do teto` | socket foi criado e razão divergiu | SHA-256 canônico `c853846…` | 23/23 |
+| F3 | M-R13b (sem teto de resposta) | `6073e3c3` | caso `resposta maior` | razão divergiu de `response_too_large` | SHA-256 canônico `c853846…` | 23/23 |
 
