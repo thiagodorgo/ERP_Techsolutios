@@ -72,7 +72,10 @@ export type FinanceiroViewModel = {
   readonly onPay: (title: FinancialTitle, initialAccountId?: string) => void;
   /** Formulário de baixa inline da aparência B; a A ignora e conserva seu modal. */
   readonly payPanel?: { readonly titleId: string; readonly node: ReactNode } | null;
-  readonly onReconcile: (entry: FinancialEntry, onDone?: () => void) => void;
+  /** Formulário de conciliação dentro do detalhe (B e C, referência `detLanc`); a A conserva seu modal. */
+  readonly reconcilePanel?: { readonly entryId: string; readonly node: ReactNode } | null;
+  readonly onCloseReconcile?: () => void;
+  readonly onReconcile: (entry: FinancialEntry, onDone?: () => void, inline?: boolean) => void;
   readonly onUnreconcile: (entry: FinancialEntry) => void;
 };
 
@@ -109,6 +112,12 @@ function normalizeSearch(value: string): string {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-BR");
 }
 
+export function entryMatchesSearch(entry: FinancialEntry, search: string): boolean {
+  const term = normalizeSearch(search);
+  if (!term) return true;
+  return [entry.description, entry.category].some((value) => normalizeSearch(value ?? "").includes(term));
+}
+
 export function titleMatchesSearch(title: FinancialTitle, search: string): boolean {
   const term = normalizeSearch(search);
   if (!term) return true;
@@ -129,14 +138,14 @@ function SkeletonRows({ columns }: { readonly columns: number }) {
   );
 }
 
-type FilterChipItem = {
+export type FilterChipItem = {
   readonly key: string;
   readonly label: string;
   readonly clearLabel: string;
   readonly onClear: () => void;
 };
 
-function FilterChips({ items }: { readonly items: readonly FilterChipItem[] }) {
+export function FilterChips({ items }: { readonly items: readonly FilterChipItem[] }) {
   return (
     <div className="pat-filtro-chip-bar">
       {items.map((item) => (
@@ -770,7 +779,26 @@ export function TitlesTable({
   readonly renderDetail: (title: FinancialTitle) => ReactNode;
 }) {
   const columns: DenseColumn<FinancialTitle>[] = [
-    { key: "doc", header: "DOCUMENTO", width: "18%", render: (t) => t.document ?? <span className="pat-cell-muted">sem documento</span> },
+    {
+      key: "doc",
+      header: "DOCUMENTO",
+      width: "18%",
+      render: (t) => {
+        const document = t.document ?? <span className="pat-cell-muted">sem documento</span>;
+        if (receivable !== null) return document;
+        // Lista mista (aparências B e C): o ícone diz a direção de cada linha, como na referência.
+        const incoming = t.direction === "receivable";
+        const Icon = incoming ? ArrowUpRight : ArrowDownRight;
+        return (
+          <>
+            <span className={incoming ? "financeiro-bc__dir financeiro-bc__dir--in" : "financeiro-bc__dir financeiro-bc__dir--out"} title={incoming ? "A receber" : "A pagar"}>
+              <Icon size={13} aria-label={incoming ? "A receber" : "A pagar"} />
+            </span>
+            <span className="financeiro-bc__doc">{document}</span>
+          </>
+        );
+      },
+    },
     { key: "party", header: receivable === null ? "CLIENTE OU FORNECEDOR" : receivable ? "CLIENTE" : "FORNECEDOR", render: (t) => <b>{t.partyName}</b> },
     {
       key: "due",

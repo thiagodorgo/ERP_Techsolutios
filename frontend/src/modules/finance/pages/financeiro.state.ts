@@ -92,6 +92,19 @@ export function fourteenDayRange(date: Date = new Date()): { readonly from: stri
   return { from: civilDate(date, -13), to: civilDate(date, 0) };
 }
 
+/** As 14 datas civis da janela, para a grade mostrar o dia sem bucket como ausência (nunca como zero). */
+export function fourteenDayDates(date: Date = new Date()): readonly string[] {
+  return Array.from({ length: 14 }, (_, index) => civilDate(date, index - 13));
+}
+
+/** As 6 competências da janela de `sixMonthRange`, da mais antiga para a atual. */
+export function sixMonthCompetencias(date: Date = new Date()): readonly string[] {
+  return Array.from({ length: 6 }, (_, index) => {
+    const month = new Date(date.getFullYear(), date.getMonth() + index - 5, 1);
+    return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+  });
+}
+
 export type PendingAgeKey = "0-2" | "3-7" | "8-15" | "16+";
 
 /** Faixas disjuntas da idade de pendências, por data civil inclusiva. */
