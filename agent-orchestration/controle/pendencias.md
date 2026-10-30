@@ -11997,3 +11997,20 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** acompanhamento de registro, não produto · **dono:** orquestrador do marco #473 · **bloqueia:** não bloqueia o desenvolvimento; bloqueia declarar o acompanhamento integralmente encerrado.
 - **origem/decisão:** E5.5 escolheu manter o PR #473 em rascunho, sem misturar `Kpis/**` no PR funcional, e atualizá-lo depois do merge + porteiro do 12c com referências e contagens obtidas por comando.
 - **encerramento:** #473 inclui o 12c sem duplicar merges intermediários, passa `scripts/kpi-check-refs.mjs` + testes do painel, recebe revisor independente/CI verde e é mergeado.
+
+## P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ (2026-10-30) — a referência mistura as duas ressalvas numa lista; o servidor filtra um tipo por vez — BAIXA
+- **status:** ABERTA · **escopo:** divergência de interação/dado, registrada pelo procedimento §A2 da E5.5, classe (c) · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** `financeiro-baixa-conta-conciliacao-3opcoes.reference.html`, `renderC`: a aba `ressalvas` filtra `conc === 'v' || conc === 'd'` no navegador. `GET /financial-entries` aceita um único `divergence_type` (`src/modules/financial-entries/financial-entry.service.ts`, `parseFilterToken`); pedir `reconciled=true` e separar no navegador esconderia ressalva antiga fora da primeira página enquanto o indicador anuncia a contagem real.
+- **consequência no B-SAN3-12c:** o passo 3 abre em "Ressalva de valor" e oferece dois blocos com as contagens do servidor (valor e data), cada um consultando o servidor. Nada é somado nem estimado sobre a página.
+- **encerramento:** o contrato aceita os dois tipos numa consulta e o passo 3 passa a uma lista só, ou o dono aprova os dois blocos como definitivos.
+
+## P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir o próximo"; o formulário reutilizado diz "Conciliar" — BAIXA
+- **status:** ABERTA · **escopo:** divergência de cópia, classe (a) do §A2 da E5.5 · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** referência, `formConcInline`, modo `conferencia`. A E5.3 põe `ConciliarForm` em "reúso por import, sem edição".
+- **consequência no B-SAN3-12c:** o comportamento é o da referência (concilia, avança só no sucesso, foco no botão principal, Pular). O texto do botão continua "Conciliar", e uma nota ao lado do Pular diz que o próximo abre sozinho. O botão Cancelar do formulário continua existindo ao lado.
+- **encerramento:** um bloco autorizado a editar `ConciliarForm` aceita o rótulo por prop, ou o dono dispensa o rótulo.
+
+## P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px; a referência pede 20 px — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (a regra `.pat-page-header` é de 2026-08-04, commit `0a38f1be`, PR-A das Telas Padronizadas) · **dono:** decisão do dono sobre as Telas Padronizadas, com `B-SAN3-24` · **bloqueia:** não.
+- **medição:** `.pat-page-header` tem `gap: 24px` para todas as telas; a referência tem 20 px. A diferença da B e da C foi corrigida com seletor próprio, porque a E5.3 proíbe mudar a regra global e a A já estava aprovada.
+- **encerramento:** o dono decide se o padrão global passa a 20 px; aí a regra escopada de B/C sai.

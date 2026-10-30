@@ -5065,3 +5065,8 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Final: dirigida 180/180; smoke 1530/1530 em Node 22 e Node 20; check/build verdes; zero diff em backend,
   Prisma, CI e KPIs. Seis pendências R-P1..R-P6 fechadas; CE-4 braço 1 e #473 preservados abertos.
 - Navegador local ausente: geometria/DOM/CSS foram executados; nove capturas reais seguem para `cognicao-visual`.
+
+## 2026-10-30 — B-SAN3-12c · correção visual (`dev-san312c-visual-opus`)
+
+- Commits `62c9b6e3`, `ffb367d4`, `db4569e1`, `719ec5ae`, `48cbee5a`, mais o registro. Achados do `cog-474` e do `rev-474` tratados um a um em `docs/revisoes/SAN3/B-SAN3-12c-dev.md`, seção "Correção visual (30/10)".
+- Smoke 1556/1556, check verde, 49 mutações com restauro conferido, zero diff em backend, Prisma, CI e KPIs.

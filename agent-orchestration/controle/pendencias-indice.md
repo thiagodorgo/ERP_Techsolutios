@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **678** |
-| IDs distintos | 667 |
-| **ABERTAS** | **508** |
+| Cabecalhos `## P-` | **681** |
+| IDs distintos | 670 |
+| **ABERTAS** | **511** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **443** |
+| — das quais **ativas nesta rodada** | **446** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 166 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **678 cabecalhos para 667 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **681 cabecalhos para 670 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -307,7 +307,7 @@
 | `P-FRONT-TESTE-DE-INTERACAO` | 11920 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
 | `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 11979 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
 
-## ABERTAS · balde B — processo/registro — 212
+## ABERTAS · balde B — processo/registro — 215
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -523,6 +523,9 @@
 | `P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO` | 11984 | BAIXA | sim | P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número qu |
 | `P-SAN3-12C-CHEQUE-FILTRO-INVERSO` | 11990 | BAIXA | sim | P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por |
 | `P-SAN3-12C-KPI-MARCO-473` | 11996 | BAIXA | sim | P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 1 |
+| `P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ` | 12001 | BAIXA | sim | P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ (2026-10-30) — a referência mistura as duas ressalv |
+| `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM` | 12007 | BAIXA | sim | P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir |
+| `P-SAN3-12C-CABECALHO-A-24PX` | 12013 | BAIXA | sim | P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 

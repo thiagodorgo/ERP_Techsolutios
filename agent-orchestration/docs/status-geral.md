@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-10-30 — B-SAN3-12c: visual de B e C refeito, pronto para o ciclo 2 de revisão (PR #474)
+
+`dev-san312c-visual-opus` (Claude Opus, nível menor declarado) refez B e C sobre a referência aprovada, por ordem do dono. Medido em navegador nas 3 larguras: sem rolagem horizontal, gap do cabeçalho em 20 px, hover e foco em todo controle, 5 estados em B e C. Smoke frontend 1556/1556 e check verde em Node 22. Régua seguinte: revisor independente + `cognicao-visual` + CI no novo head. Novas pendências, sem bloqueio: `P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ`, `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM`, `P-SAN3-12C-CABECALHO-A-24PX`.
+
 ## Atualização 2026-10-29 — B-SAN3-12c pronto para revisão (PR #474)
 
 `dev-san312c-sol` concluiu as aparências B/C do Financeiro no ramo `feat/web-financeiro-aparencias-b-c`. Bateria

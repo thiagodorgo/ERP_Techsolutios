@@ -552,3 +552,76 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Falta:** registro/pendências, bateria smoke com N real e seção final “Correção não visual (29/10)”.
 - **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run test:smoke`.
 - **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.
+
+## RETOMADA 17
+
+- **Hora UTC real:** `2026-10-30T12:36:27Z`.
+- **Executor/modelo:** `dev-san312c-visual-opus` · Claude Opus · nível menor declarado, identidade nova; não revisou, não planejou, não vota. Ordem do dono: *"o visual vai ser refeito amanha com vc quando seu limite voltar, o codex nao tem a manha para fazer o visual."*
+- **Head anterior:** `5ccce4c7`; árvore limpa conferida antes de começar.
+- **Feito (agrupa três fatias, empurradas juntas):** `62c9b6e3` gráficos com hover, foco e `ColumnBars`; `ffb367d4` aparência B; `db4569e1` aparência C.
+- **Falta:** mutações, sonda final, registro, bateria.
+- **Próximo comando exato:** `node C:/Users/AMP/erp-pausa-2026-10-03/san312c/visual/mutate.mjs`.
+- **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 18
+
+- **Hora UTC real:** `2026-10-30T12:53:15Z`.
+- **Head anterior:** `db4569e1`. **Commits:** `719ec5ae` (coluna do dia em 1280 px), `48cbee5a` (coluna de dinheiro em 1280 px e testes mais firmes).
+- **Feito:** 49 mutações executadas, medição final nas 3 larguras, 30 medições de estado, bateria.
+- **Falta:** só o registro deste commit.
+- **Arquivos meio-escritos:** nenhum.
+
+## Correção visual (30/10)
+
+**Referência medida:** `docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html`, a vigente para B e C (E5.0). A `financeiro-3opcoes.reference.html` não tem as telas "Conta em foco" nem "Conferência do caixa" (`grep` sem ocorrência): é a do painel de 16/10. **Tela-modelo:** `FinanceiroViewA.tsx` e `WorkOrdersPage.tsx`. **Skills:** `ts-frontend-full` e `ui-ux-pro-max`.
+
+**Como foi medido:** as views reais montadas no shell de 236 px + 24 px de respiro, com os dados da própria referência e o relógio em 23/10/2026, em Chromium headless (Playwright da raiz), Vite em 127.0.0.1:15180. Sondas e capturas fora do repositório, em `C:/Users/AMP/erp-pausa-2026-10-03/san312c/visual/` (`out/ref-*.png`, `out/app-*.png`, `out/estado-*.png`, `out/capture-final.txt`, `out/probe-final.txt`, `out/mutacoes-rodada1.log`).
+
+### Achado → commit → prova
+
+| Achado (parecer) | Commit | Prova |
+|---|---|---|
+| B: cabeçalho "Contas e caixa", sem ação no topo | `ffb367d4` | teste "B: cabeçalho da referência"; delta do cabeçalho: dx0 dy0 dw0 dh0 nas 3 larguras |
+| B: trilho vertical (total + cartões + Nova conta) | `ffb367d4` | testes de trilho; trilho dx0 dw0 dh+0,8 px; cartões 5/5 sem delta; 250 px, 220 px até 1340 px |
+| B: conta e saldo no topo | `ffb367d4` | teste "conta e saldo no topo"; delta 0 |
+| B: dois painéis analíticos | `62c9b6e3`, `ffb367d4` | teste dos painéis; delta 0 |
+| B: 6 meses clicáveis que filtram o extrato | `62c9b6e3`, `ffb367d4` | 6 colunas, dy−1; teste vivo: clicar envia `account_id`, `from` e `to` ao servidor, o filtro sai com um clique |
+| B: lista com abas, busca, contador e paginação | `ffb367d4`, `48cbee5a` | teste do painel; barra e busca dy−1 sem outro delta |
+| C: ação primária "Começar a conferência" | `db4569e1` | teste do cabeçalho; sonda: abre a 1ª pendência e o foco vai ao botão Conciliar |
+| C: 4 indicadores com semântica | `db4569e1` | `KpiStatCard` com ícone, selo Passo 1/2/3 e cheques; delta 0 |
+| C: movimento diário | `62c9b6e3`, `db4569e1` | 14/14 colunas; dy−1 (−24 em 1280 px, porque a referência quebra o título com a marca "falta no backend") |
+| C: gráfico de idade das pendências | `62c9b6e3`, `db4569e1` | 4 colunas, delta 0; teste com contagem do servidor e "—" na faixa ausente |
+| C: barra de ferramentas e organização da lista | `db4569e1` | 4 passos, busca, contador; títulos por vencimento, lançamentos por dia; grupos e linhas dy+0,5 no máximo |
+| Interação: hover e foco em todo controle | `62c9b6e3`, `ffb367d4`, `db4569e1` | sonda: 14 controles com `:hover` real, todos mudam; Tab em 39 paradas (B) e 50 (C), zero sem indicação visível |
+| Cabeçalho: 4 px → ±2 px | `62c9b6e3` | `gap` computado 20 px em B e C nas 3 larguras; demais telas seguem em 24 px |
+
+**Medidas finais.** Sem rolagem horizontal nas 6 combinações (`scrollWidth = clientWidth`, inclusive no contêiner). Nenhum valor em R$ cortado em nenhuma combinação, com o valor mais longo do conjunto (R$ 126.958,65 no trilho). Único delta acima de 2 px: a linha da lista mede 41 px contra 42 na referência (o contrato é até 44 px), o que soma −16 px na altura do painel com 17 linhas.
+
+**Estados:** carregando, vazio, erro, acesso não permitido e desatualizado, em B e C, nas 3 larguras: 30 medições, zero problema, zero erro no console. Também medidos: conta desativada, conciliação no detalhe, Pular, filtros de idade, dia, mês e ponte.
+
+**Dinheiro:** nenhuma soma de dinheiro em B, C, `financeiro.shared.tsx` ou nos gráficos. Somas de CONTAGEM do servidor (valor + data, a conciliar + conciliados) não são dinheiro. Trava F8 verde; mutações de `.reduce(` em B, C e `financeiro.shared.tsx` e de `+=` em B ficaram vermelhas.
+
+**Mutações:** 49 executadas, uma por vez, restauro conferido por SHA-256 em todas. Rodada 1: 45 vermelhas por asserção e 3 fora do esperado, tratadas assim: (a) "ponte sem foco" sobreviveu, porque o teste aceitava a regra de preenchimento: passou a exigir o traço de foco; (b) "conciliação em janela" derrubou o processo por falta de memória ao imprimir um nó do mini-DOM na mensagem do `assert`, sem provar a propriedade: o teste passou a comparar booleano; (c) "termo técnico no shared" sobreviveu porque a régua F17 não lê texto de JSX misturado com expressão (`{x} scope`): limite anterior a este trabalho; refeita com `placeholder="Buscar RBAC"`, ficou vermelha. Depois do ajuste, as três e a nova da coluna de dinheiro: vermelhas.
+
+**Bateria final no head `48cbee5a`:** `npm --prefix frontend run check` verde (exit 0); `npm --prefix frontend run test:smoke` → **N=1556: 1556 pass, 0 fail, 0 cancelled, 0 skipped** (Node 22.14.0; eram 1530). `git diff --check` limpo; `git diff --name-only origin/main...HEAD -- src prisma .github Kpis` vazio; lockfiles sem mudança. Disco livre 26,2 GB. CI do novo head: a conferir pela orquestração.
+
+### Divergências conscientes
+
+- **Sem marca "falta no backend":** é anotação da maquete; o agregado por mês e por dia já existe.
+- **Agência e número da conta:** omitidos (`P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO`).
+- **Filtro inverso de cheque:** o indicador explica e mostra os números reais, sem lista inversa (`P-SAN3-12C-CHEQUE-FILTRO-INVERSO`).
+- **Ressalvas:** dois blocos que consultam o servidor, um tipo por vez, em vez de uma lista mista (`P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ`).
+- **Texto do botão na conferência:** "Conciliar", não "Conciliar e abrir o próximo", com o mesmo comportamento (`P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM`).
+- **Rótulo do tipo de conta:** "Conta bancária" (o adaptador que a A já usa), a referência diz "Banco". **Situação do título:** a pílula "Vencido" da `TitlesTable` da A. **Paginação:** o `TablePager` da biblioteca.
+- **Mês ou dia sem lançamento:** coluna sem barra, com "—". O conjunto de medição só tem lançamentos em setembro e outubro; os outros meses da referência eram ilustrativos.
+
+### Pontos para quem revisa
+
+- **`.pat-os-tab:hover` é global** (`D-SAN3-12C-VISUAL-CICLO2`): a E5.3 pede escopo, o mandato manda nascer na biblioteca. Muda o hover das abas em todas as telas, não o repouso.
+- **O cabeçalho da aparência A segue em 24 px** (`P-SAN3-12C-CABECALHO-A-24PX`): fora do meu escopo; a correção vale só para B e C.
+- **`FinanceiroPage` mudou além do visual:** aba inicial da B, formulário de conciliação dentro do detalhe (B e no passo 2 da C) e saldo e pendência das contas desativadas (só leitura). Sem mudança de payload, CAS, idempotência ou permissão: o gatilho de reclassificação da E5.1 não ocorreu.
+- **Navegador sobre fixture:** a medição usa as views reais com dados simulados, sem a API; o fluxo pela API está nos testes vivos em mini-DOM.
+
+**Limpeza:** Vite encerrado pelo PID (22080), cache `.vite` da sonda removido, nenhum build gerado. Ficou um processo meu preso: um `cat` digitado por engano num comando em segundo plano (id `bebxpwtzx`); a automação recusou o encerramento por nome e não mexi nele. Não altera arquivo do repositório: a continuação daquele comando é a mesma edição já aplicada no `BalanceBridge`, que não muda mais nada.
+
+**pronto para revisão (ciclo 2)**
