@@ -105,3 +105,8 @@ test("Gráficos acionáveis têm hover e foco visível na biblioteca", () => {
   assert.ok(has('.ui-balance-bridge g[role="button"]:hover .ui-balance-bridge__hit'), "ponte sem hover");
   assert.ok(has('.ui-balance-bridge g[role="button"]:focus-visible .ui-balance-bridge__hit'), "ponte sem foco visível");
 });
+
+test("DayBars em 1280 px: o texto do dia encolhe em vez de cortar, como na referência", () => {
+  const css = readFileSync(new URL("../src/styles/app.css", import.meta.url), "utf8");
+  assert.match(css, /@media \(max-width: 1340px\)[\s\S]*?\.ui-day-bars__count, \.ui-day-bars__pending \{ font-size: 8\.5px; \}/);
+});
