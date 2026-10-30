@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **678** |
-| IDs distintos | 667 |
-| **ABERTAS** | **514** |
+| Cabecalhos `## P-` | **677** |
+| IDs distintos | 666 |
+| **ABERTAS** | **513** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **449** |
+| — das quais **ativas nesta rodada** | **448** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 160 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **678 cabecalhos para 667 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **677 cabecalhos para 666 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 233
+## ABERTAS · balde A — material — 232
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -306,8 +306,7 @@
 | `P-CHK-EDITOR-LEITURAS-B` | 11907 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
 | `P-FRONT-TESTE-DE-INTERACAO` | 11920 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
 | `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 11979 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
-| `P-SAN3-12C-VISUAL-CLAUDE-3010` | 11989 | MÉDIA | sim | P-SAN3-12C-VISUAL-CLAUDE-3010 (2026-10-29) — refazer o visual do 12c com o Claude — MÉDI |
-| `P-SAN3-24-PLANO-CLAUDE-3010` | 11994 | MÉDIA | sim | P-SAN3-24-PLANO-CLAUDE-3010 (2026-10-29) — escrever o plano do B-SAN3-24 com o Claude —  |
+| `P-SAN3-10-VARREDURA-SEGURANCA-FINAL` | 11989 | ALTA | sim | P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portã |
 
 ## ABERTAS · balde B — processo/registro — 216
 

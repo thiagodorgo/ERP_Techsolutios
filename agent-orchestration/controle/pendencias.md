@@ -11986,12 +11986,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** nota C2R-01 da ata do PR #469 (`J-B-SAN3-12b.md`): o insumo das sondas existia, mas o passo que produz `role-perms.json` não estava em `o_que_executei`.
 - **encerramento:** o roteiro da C2 registra o comando que produz `role-perms.json`, sua saída resumida e o uso pelas sondas.
 
-## P-SAN3-12C-VISUAL-CLAUDE-3010 (2026-10-29) — refazer o visual do 12c com o Claude — MÉDIA
-- **status:** ABERTA · **escopo:** visual do PR #474 · **dono:** Claude, em 30/10 · **bloqueia:** a aprovação visual do `B-SAN3-12c`.
-- **origem:** decisão do dono `D-VISUAL-E-PLANOS-COM-CLAUDE`; o PR #474 está aberto, e o visual atual deve ser refeito pelo Claude.
-- **encerramento:** visual refeito pelo Claude e submetido à validação aplicável do 12c.
-
-## P-SAN3-24-PLANO-CLAUDE-3010 (2026-10-29) — escrever o plano do B-SAN3-24 com o Claude — MÉDIA
-- **status:** ABERTA · **escopo:** plano do bloco · **dono:** Claude, em 30/10 · **bloqueia:** o início do desenvolvimento do `B-SAN3-24`.
-- **origem:** decisão do dono `D-VISUAL-E-PLANOS-COM-CLAUDE`.
-- **encerramento:** plano do `B-SAN3-24` escrito pelo Claude, com escopo, critérios de aceite e caminhos afetados.
+## P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portão vendável — ALTA
+- **status:** ABERTA · **escopo:** segurança sistêmica final · **dono:** `B-SAN3-10` · **bloqueia:** o fechamento do portão da versão vendável.
+- **origem:** `D-JUNTA-FLUXO-RAPIDO`, regra (6): antes de fechar o portão da versão vendável, uma revisão de segurança cobre o sistema inteiro, inclusive o que não passou por junta.
+- **encerramento:** varredura de segurança integral concluída, achados graves corrigidos e evidência registrada antes do fechamento do portão vendável.
