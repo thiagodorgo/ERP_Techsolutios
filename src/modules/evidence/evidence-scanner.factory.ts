@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { ClamAvEvidenceScanner } from "./clamav-scanner.js";
 import {
   NoopEvidenceScanner,
   UnavailableEvidenceScanner,
@@ -31,7 +32,18 @@ let override: EvidenceScanner | undefined;
 let resolved: EvidenceScanner | undefined;
 
 function createDefaultEvidenceScanner(): EvidenceScanner {
-  return env.EVIDENCE_SCANNER === "noop" ? new NoopEvidenceScanner() : new UnavailableEvidenceScanner();
+  if (env.EVIDENCE_SCANNER === "noop") return new NoopEvidenceScanner();
+  if (env.EVIDENCE_SCANNER === "clamav") {
+    return new ClamAvEvidenceScanner({
+      host: env.CLAMAV_HOST!,
+      port: env.CLAMAV_PORT,
+      connectTimeoutMs: env.CLAMAV_CONNECT_TIMEOUT_MS,
+      scanTimeoutMs: env.CLAMAV_SCAN_TIMEOUT_MS,
+      maxConcurrentScans: env.CLAMAV_MAX_CONCURRENT_SCANS,
+      streamMaxBytes: env.CLAMAV_STREAM_MAX_BYTES,
+    });
+  }
+  return new UnavailableEvidenceScanner();
 }
 
 /** O scanner vigente: o injetado por teste, senão o default do ambiente (memoizado). */

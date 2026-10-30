@@ -15,6 +15,7 @@ type SocketFactory = (options: net.NetConnectOpts) => Socket;
 export type ClamAvEvidenceScannerOptions = {
   readonly host: string;
   readonly port: number;
+  readonly connectTimeoutMs?: number;
   readonly scanTimeoutMs?: number;
   readonly maxConcurrentScans?: number;
   readonly streamMaxBytes?: number;
@@ -24,6 +25,7 @@ export type ClamAvEvidenceScannerOptions = {
 /** Cliente mínimo do protocolo clamd INSTREAM. Limites/prazos entram nas fatias seguintes. */
 export class ClamAvEvidenceScanner implements EvidenceScanner {
   private readonly socketFactory: SocketFactory;
+  private readonly connectTimeoutMs: number;
   private readonly scanTimeoutMs: number;
   private readonly maxConcurrentScans: number;
   private readonly streamMaxBytes: number;
@@ -31,6 +33,7 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
 
   constructor(private readonly options: ClamAvEvidenceScannerOptions) {
     this.socketFactory = options.socketFactory ?? ((connectOptions) => net.createConnection(connectOptions));
+    this.connectTimeoutMs = options.connectTimeoutMs ?? 3000;
     this.scanTimeoutMs = options.scanTimeoutMs ?? DEFAULT_SCAN_TIMEOUT_MS;
     this.maxConcurrentScans = options.maxConcurrentScans ?? DEFAULT_MAX_CONCURRENT_SCANS;
     this.streamMaxBytes = options.streamMaxBytes ?? DEFAULT_STREAM_MAX_BYTES;
@@ -53,6 +56,7 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
       let response = Buffer.alloc(0);
       let terminatorSent = false;
       let settled = false;
+      let connectDeadline: NodeJS.Timeout | undefined;
       const deadline = setTimeout(
         () => settle({ status: "failed", reason: "timeout" }),
         this.scanTimeoutMs,
@@ -62,6 +66,7 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
         if (settled) return;
         settled = true;
         clearTimeout(deadline);
+        if (connectDeadline) clearTimeout(connectDeadline);
         socket?.removeAllListeners();
         socket?.destroy();
         this.activeScans -= 1;
@@ -74,6 +79,11 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
         settle({ status: "failed", reason: "connect_failed" });
         return;
       }
+
+      connectDeadline = setTimeout(
+        () => settle({ status: "failed", reason: "connect_failed" }),
+        this.connectTimeoutMs,
+      );
 
       socket.on("error", () => settle({ status: "failed", reason: "connect_failed" }));
       socket.on("end", () => {
@@ -101,6 +111,8 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
       });
 
       socket.once("connect", () => {
+        if (connectDeadline) clearTimeout(connectDeadline);
+        connectDeadline = undefined;
         void sendInstream(socket, input.buffer)
           .then(() => {
             terminatorSent = true;

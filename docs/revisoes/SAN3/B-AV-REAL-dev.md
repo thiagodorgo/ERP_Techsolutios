@@ -60,6 +60,22 @@
 - Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(evidence): prazo absoluto, limites e liberação de recursos no cliente clamd (B-AV-REAL F3)"`.
 - Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
 
+## RETOMADA 4
+
+- UTC: `2026-10-30T12:58:31Z`.
+- Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `8f07e52c98fe96adea029f736d1fa44cff571655` (F3 já no remoto).
+- Vermelho-controle antes do código: `tests/avreal-config.test.ts` → 15 executados · 0 pass · 15 fail; enum, host, faixas, relação de timeouts, idade e factory ainda não existiam.
+- Implementado: `EVIDENCE_SCANNER=clamav`; sete `CLAMAV_*` com defaults/faixas; host obrigatório; timeout total maior que conexão; idade zero proibida em produção com ClamAV; default de idade 72 h em produção e 0 fora dela.
+- Factory: processo isolado resolve `ClamAvEvidenceScanner` e injeta host, porta, prazos, concorrência e tamanho; `noop` em produção e default `unavailable` foram preservados.
+- Regressão SAN3-05: o bloco `DATABASE_RUNTIME_ROLE_GUARD` não foi alterado; suas suítes permaneceram verdes.
+- Testes: bateria F4 com 5 arquivos → 121 pass · 0 fail · 0 skip; `npm run check` e `git diff --check` → exit `0`.
+- Mutações: M-R1a/b/c ficaram vermelhas e foram restauradas aos SHA-256 canônicos `6bd5980d…` (factory) e `55f2bcad…` (env).
+- Falta: commit/push de F4; depois F5.
+- Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(config): EVIDENCE_SCANNER=clamav e variáveis CLAMAV_* com fail-closed por ambiente (B-AV-REAL F4)"`.
+- Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
+
 ## Mutações
 
 | Fatia | Mutação | Head | Comando | Vermelho | Restauração por hash | Verde-controle |
@@ -75,4 +91,7 @@
 | F3 | M-R5u (limite interno vira clean) | `6073e3c3` | caso `Heuristics.Limits.Exceeded` | resultado divergiu de infected | SHA-256 canônico `c853846…` | 23/23 |
 | F3 | M-R13a (sem pré-checagem de tamanho) | `6073e3c3` | caso `buffer acima do teto` | socket foi criado e razão divergiu | SHA-256 canônico `c853846…` | 23/23 |
 | F3 | M-R13b (sem teto de resposta) | `6073e3c3` | caso `resposta maior` | razão divergiu de `response_too_large` | SHA-256 canônico `c853846…` | 23/23 |
+| F4 | M-R1a (factory devolve unavailable para clamav) | `8f07e52c` | caso `factory resolve` | construtor foi `UnavailableEvidenceScanner` | SHA-256 canônico `6bd5980…` | 121/121 |
+| F4 | M-R1b (remove recusa noop×produção) | `8f07e52c` | caso M-B7.2 | produção aceitou `noop` | SHA-256 canônico `55f2bca…` | 121/121 |
+| F4 | M-R1c (host opcional) | `8f07e52c` | caso `clamav sem host` | schema aceitou ausência de host | SHA-256 canônico `55f2bca…` | 121/121 |
 

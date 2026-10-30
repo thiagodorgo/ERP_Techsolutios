@@ -263,7 +263,19 @@ export const envSchema = z.object({
   // default é derivado do `NODE_ENV` lá embaixo (`production` → `unavailable`; dev/test → `noop`), para
   // que ESQUECER a variável em produção caia no lado seguro. `noop` em produção é recusado no BOOT pelo
   // gate G-EVIDENCE-SCANNER do `superRefine` — ver o comentário lá.
-  EVIDENCE_SCANNER: z.enum(["noop", "unavailable"]).optional(),
+  EVIDENCE_SCANNER: z.enum(["noop", "unavailable", "clamav"]).optional(),
+  CLAMAV_HOST: z.string().trim().min(1).optional(),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65_535).default(3310),
+  CLAMAV_CONNECT_TIMEOUT_MS: z.coerce.number().int().min(100).max(10_000).default(3000),
+  CLAMAV_SCAN_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(45_000),
+  CLAMAV_MAX_CONCURRENT_SCANS: z.coerce.number().int().min(1).max(16).default(4),
+  CLAMAV_STREAM_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1024 * 1024)
+    .max(100 * 1024 * 1024)
+    .default(100 * 1024 * 1024),
+  CLAMAV_MAX_DB_AGE_HOURS: z.coerce.number().int().nonnegative().optional(),
   // B-SAN3-05 (item 9) — a trava de boot do papel de banco (`src/database/runtime-role.bootstrap.ts`). Sem
   // `.default()` de propósito, como o EVIDENCE_SCANNER: o default sai do `NODE_ENV` no export
   // (`production` → `enforce`; dev/test → `skip`), e `skip` em produção é recusado pelo gate G-DB-ROLE.
@@ -632,6 +644,32 @@ export const envSchema = z.object({
     });
   }
 
+  if (value.EVIDENCE_SCANNER === "clamav" && !value.CLAMAV_HOST) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CLAMAV_HOST"],
+      message: "CLAMAV_HOST is required when EVIDENCE_SCANNER=clamav.",
+    });
+  }
+  if (value.CLAMAV_SCAN_TIMEOUT_MS <= value.CLAMAV_CONNECT_TIMEOUT_MS) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CLAMAV_SCAN_TIMEOUT_MS"],
+      message: "CLAMAV_SCAN_TIMEOUT_MS must be greater than CLAMAV_CONNECT_TIMEOUT_MS.",
+    });
+  }
+  if (
+    value.NODE_ENV === "production" &&
+    value.EVIDENCE_SCANNER === "clamav" &&
+    value.CLAMAV_MAX_DB_AGE_HOURS === 0
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CLAMAV_MAX_DB_AGE_HOURS"],
+      message: "CLAMAV_MAX_DB_AGE_HOURS must be at least 1 in production.",
+    });
+  }
+
   // G-DB-ROLE (B-SAN3-05, item 9) — produção não sobe com a trava do papel de banco desligada. Sem ela, um
   // DATABASE_URL de superusuário ou BYPASSRLS anula toda política FORCE ROW LEVEL SECURITY em silêncio. Não há
   // válvula: um "permitir skip em produção" seria o achado com outro nome.
@@ -728,6 +766,8 @@ export const env = {
   // sobe: o gate G-EVIDENCE-SCANNER do superRefine recusa o boot.
   EVIDENCE_SCANNER:
     parsedEnv.EVIDENCE_SCANNER ?? (parsedEnv.NODE_ENV === "production" ? "unavailable" : "noop"),
+  CLAMAV_MAX_DB_AGE_HOURS:
+    parsedEnv.CLAMAV_MAX_DB_AGE_HOURS ?? (parsedEnv.NODE_ENV === "production" ? 72 : 0),
   // B-SAN3-05 — DEFAULT DA TRAVA POR AMBIENTE (mesma forma do EVIDENCE_SCANNER): esquecer a variável em
   // produção (staging incluso — NODE_ENV=production) cai em `enforce`, o lado seguro.
   DATABASE_RUNTIME_ROLE_GUARD:
