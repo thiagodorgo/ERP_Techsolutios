@@ -281,6 +281,10 @@ test("Trilho e grade de B: 250 px, 220 px até 1340 px, trilho fixo ao rolar", (
   assert.match(ruleOf(".financeiro-b__rail") ?? "", /position:\s*sticky/);
 });
 
+test("Lista de B em 1280 px: a coluna de dinheiro não esconde dígito", () => {
+  assert.match(css, /@media \(max-width: 1340px\)[\s\S]*?\.financeiro-b \.pat-ab-row td\.dense-col-right[^{]*\{ padding-inline: 4px; \}/);
+});
+
 test("Interação: conta, abas, blocos, grupos e gráficos têm hover e foco visível", () => {
   for (const selector of [".financeiro-b__account", ".financeiro-bc__block", "button.financeiro-bc__group-head"]) {
     assert.ok(ruleOf(`${selector}:hover`), `${selector} sem hover`);

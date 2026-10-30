@@ -948,7 +948,7 @@ test("R-T5: na B a conciliação abre dentro do detalhe, sem janela, e envia uma
   try {
     await press(rowFor(probe.container, "Recebimento NF 0900"));
     await press(buttonByText(detailRows(probe.container)[0]!, "Conciliar"));
-    assert.equal(dialog(probe.container), undefined, "sem janela na B");
+    assert.equal(Boolean(dialog(probe.container)), false, "sem janela na B");
     await submit(formsIn(detailRows(probe.container)[0]!)[0]);
     const patch = calls.filter((call) => call.method === "PATCH");
     assert.equal(patch.length, 1);
@@ -985,7 +985,7 @@ test("R-C: Começar a conferência leva às pendências e abre a primeira linha 
     assert.equal(detailRows(probe.container).length, 1);
     assert.match(text(detailRows(probe.container)[0]!), /Lançamento um/);
     assert.equal(formsIn(detailRows(probe.container)[0]!).length, 1);
-    assert.equal(dialog(probe.container), undefined);
+    assert.equal(Boolean(dialog(probe.container)), false, "sem janela na conferência");
     assert.equal(calls.filter((call) => call.method === "PATCH").length, 0, "abrir nunca envia nada");
   } finally {
     await probe.unmount();

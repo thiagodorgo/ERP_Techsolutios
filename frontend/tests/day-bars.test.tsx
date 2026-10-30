@@ -103,7 +103,7 @@ test("Gráficos acionáveis têm hover e foco visível na biblioteca", () => {
     assert.ok(has(`${control}:focus-visible`), `${control} sem foco visível`);
   }
   assert.ok(has('.ui-balance-bridge g[role="button"]:hover .ui-balance-bridge__hit'), "ponte sem hover");
-  assert.ok(has('.ui-balance-bridge g[role="button"]:focus-visible .ui-balance-bridge__hit'), "ponte sem foco visível");
+  assert.match(css, /\.ui-balance-bridge g\[role="button"\]:focus-visible \.ui-balance-bridge__hit \{ stroke: #2563eb;/, "ponte sem foco visível");
 });
 
 test("DayBars em 1280 px: o texto do dia encolhe em vez de cortar, como na referência", () => {

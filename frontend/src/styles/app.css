@@ -8329,6 +8329,7 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 
 @media (max-width: 1340px) {
   .financeiro-bc__toolbar .pat-os-search { width: 180px; }
+  .financeiro-b .pat-ab-table th.dense-col-right, .financeiro-b .pat-ab-row td.dense-col-right, .financeiro-b .pat-ab-row td:nth-child(6) { padding-inline: 4px; }
   .financeiro-b__grid { grid-template-columns: 220px minmax(0, 1fr); }
   .financeiro-b__top { grid-template-columns: minmax(0, 1fr); }
   .financeiro-c__grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
