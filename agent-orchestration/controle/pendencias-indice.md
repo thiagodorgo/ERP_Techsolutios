@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **675** |
 | IDs distintos | 664 |
-| **ABERTAS** | **511** |
+| **ABERTAS** | **510** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **446** |
+| — das quais **ativas nesta rodada** | **445** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 160 |
+| FECHADAS | 161 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **675 cabecalhos para 664 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 231
+## ABERTAS · balde A — material — 230
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -193,7 +193,6 @@
 | `P-AUTH-CLAIMS-SEM-TENANT-ROLE` | 9834 | MÉDIA | sim | P-AUTH-CLAIMS-SEM-TENANT-ROLE (2026-09-18) — o JWT não carrega `tenant_role`/`tenant_rol |
 | `P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO` | 9844 | MÉDIA | sim | P-SAN3-B1-FLUTTER-CI-X-MAQUINA-DO-DONO (2026-09-21) — o Flutter do CI (3.47.5) e o da má |
 | `P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR` | 9854 | MÉDIA | sim | P-SAN3-00-RESIDUO-ELENCO-DEMO-INVESTIDOR (2026-09-21) — 33 identidades aposentadas e/ou  |
-| `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9867 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 | `P-GOV-CICLOS-CORPOS-ORFAOS` | 9880 | MÉDIA | sim | P-GOV-CICLOS-CORPOS-ORFAOS (2026-09-28) — cinco regras vivas fora do contrato ainda fala |
 | `P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS` | 9895 | MÉDIA | sim | P-GOV-AUDITORIA-MAQUINA-PECAS-ABERTAS (2026-09-28) — o gatilho da auditoria do ciclo 3 o |
 | `P-GOV-SEM-TETO-AJUSTES-DA-JUNTA` | 9910 | MÉDIA | sim | P-GOV-SEM-TETO-AJUSTES-DA-JUNTA (2026-09-28) — quatro ajustes da junta do B-GOV-SEM-TETO |
@@ -597,7 +596,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3671 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3715 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 160
+## FECHADAS — 161
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -732,6 +731,7 @@
 | `P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO` | 9661 | ALTA | sim | P-SAN3-01B-PAGINA-NAO-AMARRADA-AO-ESTADO (2026-09-19) — a decisão da página não está ama |
 | `P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES` | 9670 | ALTA | sim | P-SAN3-01B-GUARD-ALCANCE-MENOR-QUE-AS-RAIZES (2026-09-19) — o guard do mock não pega o p |
 | `P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO` | 9679 | MÉDIA | sim | P-SAN3-01B-VIGIA-TEXTUAL-DA-FIACAO (2026-09-19) — os vigias da fiação dos hooks são text |
+| `P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS` | 9867 | MÉDIA | **a atribuir** | P-SAN3-00-IGNORE-GLOBAL-POR-NOME-DENTRO-DOS-REINCLUIDOS (2026-09-21) — dentro dos diretó |
 | `P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA` | 10080 | BAIXA | sim | P-SAN3-01B-CABECALHO-OS-DIVERGE-DA-REFERENCIA (2026-10-02) — o cabeçalho da lista de OS  |
 | `P-OS-FILTRAR-EXPORTAR` | 10209 | MÉDIA | sim | P-OS-FILTRAR-EXPORTAR (2026-10-08) — a lista de OS não tem Filtrar nem Exportar, que as  |
 | `P-SAN3-05-T15-TETO-DE-RELOGIO` | 10412 | MÉDIA | sim | P-SAN3-05-T15-TETO-DE-RELOGIO (2026-10-09) — o T15 reprova por tempo de máquina sob carg |
