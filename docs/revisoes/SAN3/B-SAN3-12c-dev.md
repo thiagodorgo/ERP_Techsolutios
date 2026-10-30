@@ -567,7 +567,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 
 - **Hora UTC real:** `2026-10-30T12:53:15Z`.
 - **Head anterior:** `db4569e1`. **Commits:** `719ec5ae` (coluna do dia em 1280 px), `48cbee5a` (coluna de dinheiro em 1280 px e testes mais firmes).
-- **Feito:** 49 mutações executadas, medição final nas 3 larguras, 30 medições de estado, bateria.
+- **Feito:** 48 mutações distintas executadas, medição final nas 3 larguras, 30 medições de estado, bateria.
 - **Falta:** só o registro deste commit.
 - **Arquivos meio-escritos:** nenhum.
 
@@ -595,13 +595,13 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 | Interação: hover e foco em todo controle | `62c9b6e3`, `ffb367d4`, `db4569e1` | sonda: 14 controles com `:hover` real, todos mudam; Tab em 39 paradas (B) e 50 (C), zero sem indicação visível |
 | Cabeçalho: 4 px → ±2 px | `62c9b6e3` | `gap` computado 20 px em B e C nas 3 larguras; demais telas seguem em 24 px |
 
-**Medidas finais.** Sem rolagem horizontal nas 6 combinações (`scrollWidth = clientWidth`, inclusive no contêiner). Nenhum valor em R$ cortado em nenhuma combinação, com o valor mais longo do conjunto (R$ 126.958,65 no trilho). Único delta acima de 2 px: a linha da lista mede 41 px contra 42 na referência (o contrato é até 44 px), o que soma −16 px na altura do painel com 17 linhas.
+**Medidas finais.** Sem rolagem horizontal nas 6 combinações (`scrollWidth = clientWidth`, inclusive no contêiner). Nenhum valor em R$ cortado em nenhuma combinação, com os dados da referência. Deltas acima de 2 px: a linha da lista de B mede 41 px contra 42 na referência (o contrato é até 44 px), o que soma −16 px na altura do painel com 17 linhas e desloca o paginador; e os 14 dias de C ficam 24 px mais altos em 1280 px, pela marca da maquete citada acima.
 
 **Estados:** carregando, vazio, erro, acesso não permitido e desatualizado, em B e C, nas 3 larguras: 30 medições, zero problema, zero erro no console. Também medidos: conta desativada, conciliação no detalhe, Pular, filtros de idade, dia, mês e ponte.
 
 **Dinheiro:** nenhuma soma de dinheiro em B, C, `financeiro.shared.tsx` ou nos gráficos. Somas de CONTAGEM do servidor (valor + data, a conciliar + conciliados) não são dinheiro. Trava F8 verde; mutações de `.reduce(` em B, C e `financeiro.shared.tsx` e de `+=` em B ficaram vermelhas.
 
-**Mutações:** 49 executadas, uma por vez, restauro conferido por SHA-256 em todas. Rodada 1: 45 vermelhas por asserção e 3 fora do esperado, tratadas assim: (a) "ponte sem foco" sobreviveu, porque o teste aceitava a regra de preenchimento: passou a exigir o traço de foco; (b) "conciliação em janela" derrubou o processo por falta de memória ao imprimir um nó do mini-DOM na mensagem do `assert`, sem provar a propriedade: o teste passou a comparar booleano; (c) "termo técnico no shared" sobreviveu porque a régua F17 não lê texto de JSX misturado com expressão (`{x} scope`): limite anterior a este trabalho; refeita com `placeholder="Buscar RBAC"`, ficou vermelha. Depois do ajuste, as três e a nova da coluna de dinheiro: vermelhas.
+**Mutações:** 48 distintas, uma por vez, restauro conferido por SHA-256 em todas. Rodada 1, com 47: 44 vermelhas por asserção e 3 fora do esperado, tratadas assim: (a) "ponte sem foco" sobreviveu, porque o teste aceitava a regra de preenchimento: passou a exigir o traço de foco; (b) "conciliação em janela" derrubou o processo por falta de memória ao imprimir um nó do mini-DOM na mensagem do `assert`, sem provar a propriedade: o teste passou a comparar booleano; (c) "termo técnico no shared" sobreviveu porque a régua F17 não lê texto de JSX misturado com expressão (`{x} scope`): limite anterior a este trabalho; refeita com `placeholder="Buscar RBAC"`, ficou vermelha. Depois do ajuste, as três e a nova da coluna de dinheiro: vermelhas.
 
 **Bateria final no head `48cbee5a`:** `npm --prefix frontend run check` verde (exit 0); `npm --prefix frontend run test:smoke` → **N=1556: 1556 pass, 0 fail, 0 cancelled, 0 skipped** (Node 22.14.0; eram 1530). `git diff --check` limpo; `git diff --name-only origin/main...HEAD -- src prisma .github Kpis` vazio; lockfiles sem mudança. Disco livre 26,2 GB. CI do novo head: a conferir pela orquestração.
 

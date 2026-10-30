@@ -5069,4 +5069,4 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 ## 2026-10-30 — B-SAN3-12c · correção visual (`dev-san312c-visual-opus`)
 
 - Commits `62c9b6e3`, `ffb367d4`, `db4569e1`, `719ec5ae`, `48cbee5a`, mais o registro. Achados do `cog-474` e do `rev-474` tratados um a um em `docs/revisoes/SAN3/B-SAN3-12c-dev.md`, seção "Correção visual (30/10)".
-- Smoke 1556/1556, check verde, 49 mutações com restauro conferido, zero diff em backend, Prisma, CI e KPIs.
+- Smoke 1556/1556, check verde, 48 mutações com restauro conferido, zero diff em backend, Prisma, CI e KPIs.
