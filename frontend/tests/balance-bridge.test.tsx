@@ -48,3 +48,10 @@ test("BalanceBridge expõe grupo, dois filtros focáveis, aria-pressed e fiaçã
   assert.match(source, /onClick=\{\(\) => activate\(column\.direction!\)\}/);
   assert.match(source, /event\.key === "Enter" \|\| event\.key === " "/);
 });
+
+test("BalanceBridge usa o formato curto só no rótulo; o texto acessível mantém o valor inteiro", () => {
+  const html = renderToStaticMarkup(<BalanceBridge openingBalance={100} inflow={50} outflow={20} balance={999} valueFormat={money} labelFormat={(value) => `curto ${value}`} />);
+  assert.match(html, />curto 999</);
+  assert.match(html, /Saldo atual: R\$ 999\.00/);
+  assert.match(html, /saldo atual R\$ 999\.00/);
+});

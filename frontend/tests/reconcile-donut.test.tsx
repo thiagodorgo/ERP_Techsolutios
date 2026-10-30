@@ -50,3 +50,13 @@ test("ReconcileDonut usa círculos acessíveis e não depende de biblioteca exte
   assert.ok((html.match(/<circle/g) ?? []).length >= 4);
   assert.doesNotMatch(html, /canvas/);
 });
+
+test("ReconcileDonut mostra a legenda da referência, com trilho proporcional às contagens", () => {
+  const html = renderToStaticMarkup(<ReconcileDonut pending={5} reconciled={15} valueDivergence={0} dateDivergence={0} />);
+  const legend = html.slice(html.indexOf('role="group"'));
+  assert.ok(legend.indexOf("A conciliar") < legend.indexOf("Conciliados"), "o que falta vem primeiro");
+  assert.match(legend, /width:25%/);
+  assert.match(legend, /width:75%/);
+  assert.equal((legend.match(/ui-reconcile-donut__count/g) ?? []).length, 4);
+  assert.doesNotMatch(html, /R\$/);
+});

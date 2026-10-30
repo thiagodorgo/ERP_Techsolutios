@@ -28,29 +28,31 @@ export function ReconcileDonut({ pending, reconciled, valueDivergence, dateDiver
 
   const total = pendingCount + reconciledCount;
   const percent = total === 0 ? 0 : Math.round((reconciledCount / total) * 100);
-  const segments = [
-    { key: "reconciled" as const, label: "Conciliados", count: cleanCount, color: "var(--color-status-success, #22C55E)" },
-    { key: "value" as const, label: "Ressalva de valor", count: valueCount, color: "var(--color-status-warning, #F59E0B)" },
-    { key: "date" as const, label: "Ressalva de data", count: dateCount, color: "var(--color-status-pending, #FBBF24)" },
-    { key: "pending" as const, label: "A conciliar", count: pendingCount, color: "var(--color-status-info, #60A5FA)" },
+  const ring = [
+    { key: "reconciled" as const, label: "Conciliados", count: cleanCount },
+    { key: "value" as const, label: "Ressalva de valor", count: valueCount },
+    { key: "date" as const, label: "Ressalva de data", count: dateCount },
+    { key: "pending" as const, label: "A conciliar", count: pendingCount },
   ];
+  // A legenda segue a ordem de trabalho da referência: o que falta primeiro, o que já fechou por último.
+  const legend = [ring[3], ring[1], ring[2], ring[0]];
   let offset = 0;
 
   return (
-    <div className="ui-reconcile-donut" style={{ display: "grid", gridTemplateColumns: "120px minmax(0, 1fr)", gap: 12, alignItems: "center" }}>
+    <div className="ui-reconcile-donut">
       <svg viewBox="0 0 120 120" width={120} height={120} role="img" aria-label={ariaLabel ?? `${percent}% dos lançamentos conciliados`}>
-        <circle cx={60} cy={60} r={RADIUS} fill="none" stroke="var(--color-neutral-100, #F1F5F9)" strokeWidth={16} />
-        {segments.map((segment) => {
+        <circle className="ui-reconcile-donut__track" cx={60} cy={60} r={RADIUS} fill="none" strokeWidth={16} />
+        {ring.map((segment) => {
           const length = total === 0 ? 0 : (segment.count / total) * CIRCUMFERENCE;
           const circle =
             segment.count > 0 ? (
               <circle
                 key={segment.key}
+                className={`ui-reconcile-donut__segment ui-reconcile-donut__segment--${segment.key}`}
                 cx={60}
                 cy={60}
                 r={RADIUS}
                 fill="none"
-                stroke={segment.color}
                 strokeWidth={16}
                 strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
                 strokeDashoffset={-offset}
@@ -62,25 +64,20 @@ export function ReconcileDonut({ pending, reconciled, valueDivergence, dateDiver
           offset += length;
           return circle;
         })}
-        <text x={60} y={58} textAnchor="middle" fontSize={20} fontWeight={800} fill="var(--color-neutral-900, #0F172A)">{`${percent}%`}</text>
-        <text x={60} y={74} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="var(--color-neutral-500, #64748B)">conciliado</text>
+        <text x={60} y={58} textAnchor="middle" fontSize={20} fontWeight={800} fill="#0F172A">{`${percent}%`}</text>
+        <text x={60} y={74} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="#64748B">conciliado</text>
       </svg>
-      <div role="group" aria-label="Filtrar por situação da conciliação">
-        {segments.map((segment) => (
-          <button
-            key={segment.key}
-            type="button"
-            className="pat-os-tab"
-            aria-pressed={pressed === segment.key}
-            aria-label={`${segment.label}: ${segment.count} — filtrar o extrato`}
-            onClick={() => onFilter?.(segment.key)}
-            style={{ width: "100%", display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8, marginBottom: 4 }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: 2, background: segment.color }} />
+      <div className="ui-reconcile-donut__legend" role="group" aria-label="Filtrar por situação da conciliação">
+        {legend.map((segment) => (
+          <button key={segment.key} type="button" className="ui-reconcile-donut__item" aria-pressed={pressed === segment.key} aria-label={`${segment.label}: ${segment.count} — filtrar o extrato`} onClick={() => onFilter?.(segment.key)}>
+            <span className="ui-reconcile-donut__name">
+              <i className={`ui-reconcile-donut__swatch ui-reconcile-donut__swatch--${segment.key}`} aria-hidden="true" />
               {segment.label}
             </span>
-            <b className="dense-col-tabular">{segment.count}</b>
+            <span className="ui-reconcile-donut__meter" aria-hidden="true">
+              <b className={`ui-reconcile-donut__swatch--${segment.key}`} style={{ width: `${total === 0 ? 0 : (segment.count / total) * 100}%` }} />
+            </span>
+            <span className="ui-reconcile-donut__count">{segment.count}</span>
           </button>
         ))}
       </div>
