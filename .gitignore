@@ -159,5 +159,43 @@ postgres-subset.tap
 !.claude/skills/**/*.chatmode.md
 !.agents/agents/**/*.chatmode.md
 !.agents/skills/**/*.chatmode.md
+# B-SAN3-00b fix: denylist sensivel DEPOIS das reinclusoes nominais.
+# O ultimo casamento preserva configuracao local, env, chaves e credenciais nos quatro diretorios.
+.claude/agents/**/.mcp.json
+.claude/skills/**/.mcp.json
+.agents/agents/**/.mcp.json
+.agents/skills/**/.mcp.json
+.claude/agents/**/CLAUDE.local.md
+.claude/skills/**/CLAUDE.local.md
+.agents/agents/**/CLAUDE.local.md
+.agents/skills/**/CLAUDE.local.md
+.claude/agents/**/.env
+.claude/skills/**/.env
+.agents/agents/**/.env
+.agents/skills/**/.env
+.claude/agents/**/.env.*
+.claude/skills/**/.env.*
+.agents/agents/**/.env.*
+.agents/skills/**/.env.*
+.claude/agents/**/*.key
+.claude/skills/**/*.key
+.agents/agents/**/*.key
+.agents/skills/**/*.key
+.claude/agents/**/*.pem
+.claude/skills/**/*.pem
+.agents/agents/**/*.pem
+.agents/skills/**/*.pem
+.claude/agents/**/id_rsa
+.claude/skills/**/id_rsa
+.agents/agents/**/id_rsa
+.agents/skills/**/id_rsa
+.claude/agents/**/credentials.json
+.claude/skills/**/credentials.json
+.agents/agents/**/credentials.json
+.agents/skills/**/credentials.json
+.claude/agents/**/secrets.json
+.claude/skills/**/secrets.json
+.agents/agents/**/secrets.json
+.agents/skills/**/secrets.json
 # Reafirmado DEPOIS das reinclusoes acima (dentro do mesmo arquivo, o ultimo padrao que casa vence):
 .claude/worktrees/
