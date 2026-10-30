@@ -146,6 +146,10 @@ class MiniElement extends MiniNode {
   // Acréscimo deste arquivo ao arnês: o <select> do paginador (TablePager) — o React lê `options` e marca `selected`.
   selected = false;
   defaultSelected = false;
+  // Acréscimo deste arquivo ao arnês: a aparência C leva o foco ao formulário; o mini-DOM não faz foco (a prova é a sonda no navegador).
+  querySelector(): null {
+    return null;
+  }
   get options(): MiniElement[] {
     return elements(this, (el) => el.localName === "option");
   }
@@ -871,6 +875,175 @@ test("R-B: conta inativa pedida na URL permanece em consulta e não volta para a
     const entryUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).map((call) => call.url);
     assert.ok(entryUrls.length >= 1, entryUrls.join(" | "));
     assert.ok(entryUrls.every((url) => /account_id=acc-inactive/.test(url)), `extrato desviou da conta inativa: ${entryUrls.join(" | ")}`);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-B: B sem aba na URL abre no extrato da conta; aba pedida continua valendo", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance" });
+  try {
+    assert.equal(tab(probe.container, "Extrato da conta")?.getAttribute("aria-selected"), "true");
+    assert.ok(calls.some((call) => call.method === "GET" && /^\/financial-entries\?.*account_id=acc-banco/.test(call.url)));
+  } finally {
+    await probe.unmount();
+  }
+  const titles = await mount({ appearance: "B", url: "/finance?aba=rec" });
+  try {
+    assert.equal(tab(titles.container, "Títulos a baixar")?.getAttribute("aria-selected"), "true");
+  } finally {
+    await titles.unmount();
+  }
+});
+
+test("R-B: o trilho consulta saldo e pendência da conta desativada, sem misturar com a A", async () => {
+  const inactive = { id: "acc-inactive", name: "Conta encerrada", kind: "bank", currency: "BRL", openingBalance: 0, bankName: null, status: "inactive", isActive: false, createdAt: "2026-01-01T12:00:00.000Z" };
+  const override: Override = (call) => {
+    if (call.method === "GET" && /^\/financial-accounts\?/.test(call.url)) return json(200, { items: [...ACCOUNTS.items, inactive], pagination: { limit: 100, offset: 0, total: 3 } });
+    if (call.method === "GET" && /^\/financial-accounts\/acc-inactive\/balance/.test(call.url)) return json(200, { data: { accountId: "acc-inactive", currency: "BRL", openingBalance: 0, in: 10, out: 0, balance: 4321.5 } });
+    return undefined;
+  };
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext", override });
+  try {
+    assert.match(text(probe.container), /R\$\s4\.321,50/);
+    assert.ok(calls.some((call) => /^\/financial-entries\/aggregate\?.*account_id=acc-inactive/.test(call.url)));
+  } finally {
+    await probe.unmount();
+  }
+  const a = await mount({ appearance: "A", url: "/finance?aba=ext", override });
+  try {
+    assert.equal(calls.some((call) => /acc-inactive/.test(call.url)), false, "a A segue só com as contas ativas");
+  } finally {
+    await a.unmount();
+  }
+});
+
+test("R-B: clicar no mês filtra o extrato no servidor, na conta em foco, e o filtro sai com um clique", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext&conta=acc-banco" });
+  try {
+    const month = sixMonthRange().to.slice(0, 7);
+    const column = all(probe.container, (el) => el.getAttribute("class") === "ui-column-bars__column").at(-1);
+    assert.ok(column);
+    await press(column);
+    assert.equal(column.getAttribute("aria-pressed"), "true");
+    const last = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.match(last, /account_id=acc-banco/);
+    assert.match(last, new RegExp(`from=${month}-01`));
+    assert.match(last, new RegExp(`to=${sixMonthRange().to}`));
+    assert.match(text(probe.container), /Filtro: Lançamentos de/);
+    await press(byLabel(probe.container, "Remover o filtro Lançamentos de"));
+    const cleared = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.doesNotMatch(cleared, /from=/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-T5: na B a conciliação abre dentro do detalhe, sem janela, e envia uma vez", async () => {
+  const probe = await mount({
+    appearance: "B",
+    url: "/finance?aba=ext&conta=acc-banco",
+    override: (call) => (call.method === "PATCH" ? json(200, { data: { ...ENTRIES[0], reconciled: true, reconciledAt: STAMP, reconciledBy: "u-1" } }) : undefined),
+  });
+  try {
+    await press(rowFor(probe.container, "Recebimento NF 0900"));
+    await press(buttonByText(detailRows(probe.container)[0]!, "Conciliar"));
+    assert.equal(dialog(probe.container), undefined, "sem janela na B");
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    const patch = calls.filter((call) => call.method === "PATCH");
+    assert.equal(patch.length, 1);
+    assert.deepEqual(patch[0].body, { reconciled: true, expected_reconciled: false, expected_reconciled_at: null });
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 0, "o formulário fecha no sucesso");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+const CONFERENCE_ENTRIES = [
+  entry({ id: "e-um", description: "Lançamento um" }),
+  entry({ id: "e-dois", description: "Lançamento dois" }),
+];
+const conferenceOverride =
+  (reconcile: (id: string) => Response | undefined): Override =>
+  (call) => {
+    if (call.method === "GET" && call.url.startsWith("/financial-entries?")) {
+      return json(200, { items: /reconciled=false/.test(call.url) ? CONFERENCE_ENTRIES : ENTRIES, pagination: { limit: 100, offset: 0, total: 2 } });
+    }
+    const patch = /^\/financial-entries\/([^/]+)\/reconcile$/.exec(call.url);
+    if (call.method === "PATCH" && patch) return reconcile(patch[1]) ?? json(200, { data: { ...CONFERENCE_ENTRIES.find((row) => row.id === patch[1]), reconciled: true, reconciledAt: STAMP, reconciledBy: "u-1" } });
+    return undefined;
+  };
+
+test("R-C: Começar a conferência leva às pendências e abre a primeira linha com o formulário no detalhe", async () => {
+  const probe = await mount({ appearance: "C", override: conferenceOverride(() => undefined) });
+  try {
+    assert.equal(tab(probe.container, "1 · Baixar")?.getAttribute("aria-selected"), "true");
+    await press(buttonByText(probe.container, "Começar a conferência"));
+    await settle();
+    assert.equal(tab(probe.container, "2 · Conciliar")?.getAttribute("aria-selected"), "true");
+    assert.ok(calls.some((call) => call.method === "GET" && /^\/financial-entries\?.*reconciled=false/.test(call.url)));
+    assert.equal(detailRows(probe.container).length, 1);
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento um/);
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 1);
+    assert.equal(dialog(probe.container), undefined);
+    assert.equal(calls.filter((call) => call.method === "PATCH").length, 0, "abrir nunca envia nada");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: conciliar avança para a próxima linha só depois do sucesso, uma requisição por lançamento", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    await settle();
+    assert.deepEqual(calls.filter((call) => call.method === "PATCH").map((call) => call.url), ["/financial-entries/e-um/reconcile"]);
+    assert.equal(detailRows(probe.container).length, 1, "um detalhe aberto por vez");
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento dois/);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 1 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: erro de rede ou recusa mantém a mesma linha aberta e não conta como conferido", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => apiError(422, "period_closed")) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    await settle();
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento um/);
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 1);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 0 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: Pular troca de linha sem enviar nada", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await press(buttonByText(detailRows(probe.container)[0]!, "Pular"));
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento dois/);
+    assert.equal(calls.filter((call) => call.method === "PATCH").length, 0);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 0 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: filtrar pela idade consulta a faixa no servidor e trocar de passo fecha o formulário", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await press(tab(probe.container, "Extrato completo"));
+    assert.equal(detailRows(probe.container).length, 0);
+    await press(all(probe.container, (el) => el.getAttribute("class") === "ui-column-bars__column")[0]);
+    const last = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.match(last, /reconciled=false/);
+    assert.match(last, /from=/);
   } finally {
     await probe.unmount();
   }
