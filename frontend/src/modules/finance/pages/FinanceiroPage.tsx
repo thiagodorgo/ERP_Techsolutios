@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { Modal } from "../../../components/ui";
@@ -6,6 +6,8 @@ import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useScreenAppearance } from "../../appearance";
 import { NovaContaModal } from "../accounts/components/NovaContaModal";
+import { getFinancialAccountBalance } from "../accounts/financial-accounts.service";
+import type { FinancialAccountBalance } from "../accounts/financial-accounts.types";
 import { useFinancialAccounts } from "../accounts/useFinancialAccounts";
 import { useFinancialSummary } from "../dashboard/useFinancialSummary";
 import { BaixaForm } from "../entries/components/BaixaForm";
@@ -18,8 +20,10 @@ import { useFinancialEntries } from "../entries/useFinancialEntries";
 import { useReconciliationPolicy } from "../entries/useReconciliationPolicy";
 import type { FinancialTitle } from "../titles/financial-titles.types";
 import { useFinancialTitles } from "../titles/useFinancialTitles";
-import { entriesFiltersFor, financeStateSearch, readFinanceState, useLastGood, type FinanceState } from "./financeiro.state";
+import { entriesFiltersFor, financeStateSearch, fourteenDayRange, pendingAgeRange, readFinanceState, sixMonthRange, useLastGood, type FinanceState, type PendingAgeKey } from "./financeiro.state";
 import { AGGREGATE_KEYS, FinanceiroViewA, type FinanceiroViewModel } from "./views/FinanceiroViewA";
+import { FinanceiroViewB } from "./views/FinanceiroViewB";
+import { FinanceiroViewC } from "./views/FinanceiroViewC";
 
 const SITUATION_QUERIES: Readonly<Record<string, EntriesAggregateQuery>> = {
   [AGGREGATE_KEYS.pending]: { groupBy: "none", reconciled: false },
@@ -42,7 +46,7 @@ export function FinanceiroPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { can } = usePermissions();
-  useScreenAppearance("financeiro");
+  const { appearance } = useScreenAppearance("financeiro");
   const state = readFinanceState(location.search);
 
   const access = {
@@ -61,14 +65,29 @@ export function FinanceiroPage() {
   const accounts = useFinancialAccounts({ enabled: access.readAccounts });
   const receivables = useFinancialTitles("receivable");
   const payables = useFinancialTitles("payable");
-  const filters = useMemo(() => entriesFiltersFor({ tab: state.tab, accountId: state.accountId, target: state.target }), [state.tab, state.accountId, state.target]);
-  const entries = useFinancialEntries(filters, { enabled: access.readEntries });
+  const effectiveAccountId = useMemo(() => {
+    if (appearance !== "B") return state.accountId;
+    const requested = accounts.items.find((account) => account.id === state.accountId);
+    return requested?.id ?? accounts.items.find((account) => account.active)?.id ?? null;
+  }, [appearance, state.accountId, accounts.items]);
+  // Na B, a tela abre no extrato da conta (referência `novoEstado`); uma aba pedida na URL continua valendo.
+  const hasRequestedTab = new URLSearchParams(location.search).has("aba");
+  const viewState = useMemo(
+    () => (appearance === "B" ? { ...state, accountId: effectiveAccountId, tab: hasRequestedTab ? state.tab : ("ext" as const) } : state),
+    [appearance, state, effectiveAccountId, hasRequestedTab],
+  );
+  const accountScopedReady = appearance !== "B" || Boolean(effectiveAccountId) || (!accounts.loading && accounts.items.length === 0);
+  const filters = useMemo(() => entriesFiltersFor(viewState), [viewState]);
+  const entries = useFinancialEntries(filters, { enabled: access.readEntries && accountScopedReady });
   const { policy, refresh: refreshPolicy } = useReconciliationPolicy({ enabled: access.readEntries });
 
-  const accountKey = accounts.items
-    .filter((account) => account.active)
-    .map((account) => account.id)
-    .join(",");
+  useEffect(() => {
+    if (appearance !== "B" || accounts.loading || !effectiveAccountId || state.accountId === effectiveAccountId) return;
+    navigate({ search: financeStateSearch(viewState) }, { replace: true });
+  }, [appearance, accounts.loading, effectiveAccountId, navigate, state.accountId, viewState]);
+
+  // O trilho da B mostra a pendência de TODAS as contas, inclusive as desativadas (que seguem em consulta).
+  const accountKey = [...new Set(accounts.items.filter((account) => appearance === "B" || account.active || account.id === effectiveAccountId).map((account) => account.id))].join(",");
   const accountQueries = useMemo(() => {
     const queries: Record<string, EntriesAggregateQuery> = {};
     for (const id of accountKey ? accountKey.split(",") : []) queries[AGGREGATE_KEYS.account(id)] = { groupBy: "none", reconciled: false, accountId: id };
@@ -76,6 +95,48 @@ export function FinanceiroPage() {
   }, [accountKey]);
   const situationAggregates = useEntriesAggregate(SITUATION_QUERIES, { enabled: access.readEntries });
   const accountAggregates = useEntriesAggregate(accountQueries, { enabled: access.readEntries });
+  const focusedQueries = useMemo(() => {
+    if (!viewState.accountId) return {};
+    const accountId = viewState.accountId;
+    const range = sixMonthRange();
+    return {
+      [AGGREGATE_KEYS.accountReconciled(accountId)]: { groupBy: "none", reconciled: true, accountId },
+      [AGGREGATE_KEYS.accountValue(accountId)]: { groupBy: "none", reconciled: true, divergenceType: "value", accountId },
+      [AGGREGATE_KEYS.accountDate(accountId)]: { groupBy: "none", reconciled: true, divergenceType: "date", accountId },
+      [AGGREGATE_KEYS.accountMonths(accountId)]: { groupBy: "month", accountId, from: range.from, to: range.to },
+    } satisfies Readonly<Record<string, EntriesAggregateQuery>>;
+  }, [viewState.accountId]);
+  const focusedAggregates = useEntriesAggregate(focusedQueries, { enabled: access.readEntries && accountScopedReady });
+  const routineQueries = useMemo(() => {
+    const accountId = viewState.accountId;
+    const account = accountId ? { accountId } : {};
+    const days = fourteenDayRange();
+    const queries: Record<string, EntriesAggregateQuery> = {
+      [AGGREGATE_KEYS.routineDays(accountId)]: { groupBy: "day", from: days.from, to: days.to, ...account },
+      [AGGREGATE_KEYS.routineDaysPending(accountId)]: { groupBy: "day", from: days.from, to: days.to, reconciled: false, ...account },
+    };
+    for (const key of ["0-2", "3-7", "8-15", "16+"] as const satisfies readonly PendingAgeKey[]) {
+      const range = pendingAgeRange(key);
+      queries[AGGREGATE_KEYS.routineAge(key, accountId)] = { groupBy: "none", reconciled: false, ...range, ...account };
+    }
+    return queries;
+  }, [viewState.accountId]);
+  const routineAggregates = useEntriesAggregate(routineQueries, { enabled: access.readEntries && accountScopedReady });
+
+  // O hook de contas só busca o saldo das ativas; o trilho da B consulta também o das desativadas, nunca um valor inventado.
+  const inactiveKey = appearance === "B" ? accounts.items.filter((account) => !account.active).map((account) => account.id).join(",") : "";
+  const accountsContext = accounts.context;
+  const [inactiveBalances, setInactiveBalances] = useState<Readonly<Record<string, FinancialAccountBalance | null>>>({});
+  useEffect(() => {
+    if (!inactiveKey) return;
+    let current = true;
+    void Promise.all(inactiveKey.split(",").map(async (id) => [id, await getFinancialAccountBalance(accountsContext, id)] as const)).then((pairs) => {
+      if (current) setInactiveBalances(Object.fromEntries(pairs));
+    });
+    return () => {
+      current = false;
+    };
+  }, [inactiveKey, accountsContext]);
 
   const summaryView = useLastGood(summary.data, !summary.loading && summary.data.source !== "fallback");
   const receivablesView = useLastGood(receivables.items, !receivables.loading && receivables.source !== "fallback");
@@ -83,7 +144,8 @@ export function FinanceiroPage() {
 
   const actions = useFinanceActions(accounts.context);
   const [payTitle, setPayTitle] = useState<FinancialTitle | null>(null);
-  const [reconcileEntry, setReconcileEntry] = useState<FinancialEntry | null>(null);
+  const [payInitialAccountId, setPayInitialAccountId] = useState<string | null>(null);
+  const [reconcileOp, setReconcileOp] = useState<{ readonly entry: FinancialEntry; readonly done: (() => void) | null; readonly inline: boolean } | null>(null);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const [entryBusyId, setEntryBusyId] = useState<string | null>(null);
   const [entryMessage, setEntryMessage] = useState<{ entryId: string; text: string } | null>(null);
@@ -95,11 +157,13 @@ export function FinanceiroPage() {
   const refreshEntries = entries.refresh;
   const refreshSituationAggregates = situationAggregates.refresh;
   const refreshAccountAggregates = accountAggregates.refresh;
+  const refreshFocusedAggregates = focusedAggregates.refresh;
+  const refreshRoutineAggregates = routineAggregates.refresh;
   const refreshAggregates = useCallback(
     async (background = false) => {
-      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background)]);
+      await Promise.all([refreshSituationAggregates(background), refreshAccountAggregates(background), refreshFocusedAggregates(background), refreshRoutineAggregates(background)]);
     },
-    [refreshSituationAggregates, refreshAccountAggregates],
+    [refreshSituationAggregates, refreshAccountAggregates, refreshFocusedAggregates, refreshRoutineAggregates],
   );
   const refreshAll = useCallback(
     async (background = false) => {
@@ -143,13 +207,51 @@ export function FinanceiroPage() {
   const accountsFailed = access.readAccounts && !accounts.loading && accounts.source === "fallback";
   const stale = summaryView.stale || receivablesView.stale || payablesView.stale || accounts.stale || entries.stale;
 
+  const closePay = () => {
+    setPayTitle(null);
+    setPayInitialAccountId(null);
+  };
+  const payForm = payTitle ? (
+    <BaixaForm
+      key={payTitle.id}
+      title={payTitle}
+      accounts={accounts.items}
+      initialAccountId={payInitialAccountId}
+      canUnlinkCheque={access.unlinkCheque}
+      canCancelCheque={access.cancelCheque}
+      actions={actions}
+      onDone={() => void refreshAll(true)}
+      onClose={closePay}
+    />
+  ) : null;
+
+  const reconcileEntry = reconcileOp?.entry ?? null;
+  const reconcileDone = reconcileOp?.done ?? null;
+  const reconcileForm = reconcileEntry ? (
+    <ConciliarForm
+      key={reconcileEntry.id}
+      entry={reconcileEntry}
+      actions={actions}
+      onDone={(updated) => {
+        entries.replaceItem(updated);
+        // R-C: resposta atrasada de uma linha nunca fecha nem avança o formulário de outra.
+        setReconcileOp((current) => (current?.entry.id === updated.id ? null : current));
+        reconcileDone?.();
+        void Promise.all([refreshEntries(true), refreshAggregates(true)]);
+      }}
+      onReread={(fresh) => entries.replaceItem(fresh)}
+      onClose={() => setReconcileOp(null)}
+    />
+  ) : null;
+  const reconcileInline = appearance !== "A" && Boolean(reconcileOp?.inline);
+
   const model: FinanceiroViewModel = {
-    state,
+    state: viewState,
     onState,
     summary: summaryView.value,
     summaryLoading: summary.loading && !summaryView.stale,
     accounts: { items: accounts.items, loading: accounts.loading, failed: accountsFailed, total: accounts.pagination.total },
-    balances: accounts.balances,
+    balances: { ...inactiveBalances, ...accounts.balances },
     receivables: {
       items: receivablesView.value,
       loading: receivables.loading && !receivablesView.stale,
@@ -169,7 +271,7 @@ export function FinanceiroPage() {
       loadMore: payables.loadMore,
     },
     entries: { items: entries.items, loading: entries.loading, failed: !entries.loading && entries.source === "fallback", total: entries.pagination.total },
-    aggregates: { ...situationAggregates.data, ...accountAggregates.data },
+    aggregates: { ...situationAggregates.data, ...accountAggregates.data, ...focusedAggregates.data, ...routineAggregates.data },
     policy,
     access,
     failed: summaryFailed || accountsFailed,
@@ -179,45 +281,31 @@ export function FinanceiroPage() {
     entryMessage,
     onRetry: () => void refreshAll(false),
     onNewAccount: () => setNewAccountOpen(true),
-    onPay: (title) => setPayTitle(title),
-    onReconcile: (entry) => setReconcileEntry(entry),
+    onPay: (title, initialAccountId) => {
+      setPayTitle(title);
+      setPayInitialAccountId(initialAccountId ?? null);
+    },
+    payPanel: payTitle && payInitialAccountId ? { titleId: payTitle.id, node: payForm } : null,
+    onReconcile: (entry, onDone, inline = false) => setReconcileOp({ entry, done: onDone ?? null, inline }),
+    onCloseReconcile: () => setReconcileOp(null),
+    reconcilePanel: reconcileEntry && reconcileInline ? { entryId: reconcileEntry.id, node: reconcileForm } : null,
     onUnreconcile: (entry) => void unreconcile(entry),
   };
 
   const receivable = payTitle?.direction !== "payable";
   return (
     <>
-      <FinanceiroViewA {...model} />
+      {appearance === "B" ? <FinanceiroViewB {...model} /> : appearance === "C" ? <FinanceiroViewC {...model} /> : <FinanceiroViewA {...model} />}
 
-      {payTitle ? (
-        <Modal title={receivable ? "Registrar recebimento" : "Registrar pagamento"} open onClose={() => setPayTitle(null)}>
-          <BaixaForm
-            key={payTitle.id}
-            title={payTitle}
-            accounts={accounts.items}
-            canUnlinkCheque={access.unlinkCheque}
-            canCancelCheque={access.cancelCheque}
-            actions={actions}
-            onDone={() => void refreshAll(true)}
-            onClose={() => setPayTitle(null)}
-          />
+      {payTitle && !payInitialAccountId ? (
+        <Modal title={receivable ? "Registrar recebimento" : "Registrar pagamento"} open onClose={closePay}>
+          {payForm}
         </Modal>
       ) : null}
 
-      {reconcileEntry ? (
-        <Modal title="Conciliar com o extrato do banco" open onClose={() => setReconcileEntry(null)}>
-          <ConciliarForm
-            key={reconcileEntry.id}
-            entry={reconcileEntry}
-            actions={actions}
-            onDone={(updated) => {
-              entries.replaceItem(updated);
-              setReconcileEntry(null);
-              void Promise.all([refreshEntries(true), refreshAggregates(true)]);
-            }}
-            onReread={(fresh) => entries.replaceItem(fresh)}
-            onClose={() => setReconcileEntry(null)}
-          />
+      {reconcileEntry && !reconcileInline ? (
+        <Modal title="Conciliar com o extrato do banco" open onClose={() => setReconcileOp(null)}>
+          {reconcileForm}
         </Modal>
       ) : null}
 

@@ -54,6 +54,7 @@ function requestText(title: FinancialTitle, cheques: readonly TitleCheque[]): st
 export function BaixaForm({
   title,
   accounts,
+  initialAccountId = null,
   canUnlinkCheque,
   canCancelCheque,
   actions,
@@ -62,6 +63,8 @@ export function BaixaForm({
 }: {
   readonly title: FinancialTitle;
   readonly accounts: readonly FinancialAccount[];
+  /** Conta sugerida pela aparência B; só é aceita quando continua ativa e pode ser trocada. */
+  readonly initialAccountId?: string | null;
   readonly canUnlinkCheque: boolean;
   /** `cheques:update` — o gate exato da rota POST /cheques/:id/cancel (CE-G2). */
   readonly canCancelCheque: boolean;
@@ -70,9 +73,10 @@ export function BaixaForm({
   readonly onClose: () => void;
 }) {
   const receivable = title.direction === "receivable";
+  const activeAccounts = accounts.filter((account) => account.active);
   const [clientActionId] = useState(newClientActionId);
   const [current, setCurrent] = useState(title);
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState(() => (activeAccounts.some((account) => account.id === initialAccountId) ? (initialAccountId as string) : ""));
   const [amountText, setAmountText] = useState(() => formatMoneyInput(titleOpenBalance(title)));
   const [date, setDate] = useState(() => localIsoDate());
   const [method, setMethod] = useState<BaixaPaymentMethod>("pix");
@@ -84,7 +88,6 @@ export function BaixaForm({
   const [followUp, setFollowUp] = useState<ChequeFollowUp | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const activeAccounts = accounts.filter((account) => account.active);
   const locked = phase === "sending" || phase === "rereading" || phase === "reread_failed";
 
   async function reread(): Promise<FinancialTitle | null> {

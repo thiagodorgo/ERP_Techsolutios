@@ -11937,7 +11937,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** o menu marca ativo só o item da aba aberta e os dois itens voltam a ser governados pelo menu do backend (ou saem do menu, se o `B-SAN3-24` decidir uma entrada só).
 
 ## P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da opção A ("Buscar documento, cliente ou descrição") não existe no 12b — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco`, divergência DECLARADA na E2.2 do plano (`docs/revisoes/SAN3/B-SAN3-12-plano.md`, Emenda E2) · **dono:** `B-SAN3-12c` (mesma tela, mesma camada de dados) · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1-N6 da junta do ciclo 1 do `B-SAN3-12b` (`agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md`). É filtro de texto sobre as linhas carregadas, e a lista de títulos passou a ser parcial por desenho (R3: 100 por pedido, "Carregar mais títulos"); entra junto da paginação completa.
 - **encerramento:** busca por documento, cliente e descrição sobre as linhas carregadas, com o contador honesto da R3 (`N entre os L mais recentes de T títulos`).
 
@@ -11947,7 +11947,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** texto acentuado ("Acesso não autorizado") e a guarda textual F17 estendida ao guarda.
 
 ## P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devolve 0 para campo ausente — BAIXA
-- **status:** ABERTA · **escopo:** `pre-existente` (`frontend/src/modules/finance/dashboard/financial-summary.adapter.ts:113`, `num()`, `git blame` → `08d009492`, 2026-07-18) · **dono:** `B-SAN3-12c` (mesma camada de dados) · **bloqueia:** não.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `pre-existente` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C1-N5 da junta do ciclo 1 do `B-SAN3-12b`. Campo que o servidor não mandou vira R$ 0,00 no indicador, em vez de "indisponível" (fere o espírito do F19).
 - **encerramento:** campo ausente → indicador não renderizado ou "indisponível" (F19 no adaptador), com teste.
 
@@ -11957,23 +11957,23 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** um job da CI com `db:provision-rbac` rodando `tests/b-san3-12-ce4-db.test.ts` (braço 1) verde no head.
 
 ## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (lacuna de teste; o código cumpre a R4(b)) · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa. **Alias da E5:** `C3R3-N2` = `R-P3`; não é uma pendência nova.
 - **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
 
 ## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida).
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N1 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). `FinanceiroViewA.tsx`, `isPressed` só zera para `target === null`; o chip da conta está visível e sai com 1 clique (R1 cumprida). **Alias da E5:** `P-C1R3-INDICADOR-ORG-COM-CONTA` = `R-P4`; não é uma pendência nova.
 - **encerramento:** com `accountId` definido, o indicador da organização não publica `aria-pressed=true` (ou o chip da conta assume o estado pressionado).
 
 ## P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem `financial_entries:read` vê "Nenhum lançamento ainda" — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (perfil sintético; nenhum papel do catálogo tem essa combinação, medido pela C1 em `catalog.ts`) · **dono:** `B-SAN3-24` · **bloqueia:** não.
-- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N2 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4). Mesma classe do C1-N3, que a R10 fechou para as contas. **Alias da E5:** `P-C1R3-ESTADO-SEM-LEITURA-LANCAMENTOS` = `R-P5`; não é uma pendência nova.
 - **encerramento:** as abas `ext`/`conc` sem `financial_entries:read` mostram `StatePanel tone="forbidden"`, não um vazio (a forma da R10).
 
 ## P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem filtrada com o total sem filtro — BAIXA
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
-- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade.
+- **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
+- **origem:** C1r2-N4 da junta do ciclo 2 do `B-SAN3-12b` (Emenda E3, E3.4): "1–30 de 30 carregados · 130 no servidor" com "Vencidos" aplicado. É a forma que a R3(e) desenhou (T = total no servidor sem filtro); o contador acima desfaz a ambiguidade. **Alias da E5:** `P-C1R3-TEXTO-PAGER-FILTRADO` = `R-P6`; não é uma pendência nova.
 - **encerramento:** com alvo aplicado e carga parcial, o `rangeLabel` deixa de misturar a contagem filtrada com o total sem filtro.
 
 ## P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos, não o conteúdo de três vias — MÉDIA
@@ -11981,6 +11981,39 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** C3R2-02 da junta do ciclo 2 do `B-SAN3-12b`, ampliado pela auditoria do topo (Emenda E3, R-E3-1 e E3.4): o merge `b5246e8d` ficou com o lado da `main` nas seções `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` e `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE`; a fatia 1 do ciclo 3 as restaurou (`864598f5`).
 - **encerramento:** `scripts/` ganha a conferência de três vias de `pendencias.md` (as linhas que o ramo acrescentou sobrevivem; as linhas que ele removeu não voltam) e o passo entra na E2.5 e na ata de todo merge de registro.
 
+## P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número que o DTO da conta não fornece — BAIXA
+- **status:** ABERTA · **escopo:** divergência de dado, registrada pelo procedimento §A2 da E5.5 · **dono:** `B-SAN3-24` (ou bloco próprio de contrato da conta) · **bloqueia:** não.
+- **medição:** ref `3c27f1bf`, `frontend/src/modules/finance/accounts/financial-accounts.types.ts` expõe `name`, `kind`, `bankName` e `currency`, mas não agência/número; a referência aprovada mostra esses campos.
+- **consequência no B-SAN3-12c:** mostrar apenas campos reais; não renderizar “—”, UUID ou dado fictício e não ampliar o DTO neste bloco.
+- **encerramento:** contrato/backend fornece agência/número com decisão de produto aprovada, ou a referência futura aprovada deixa de exigi-los.
+
+## P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por cheque, mas o DTO não oferece filtro inverso — BAIXA
+- **status:** ABERTA · **escopo:** divergência de interação/dado, registrada pelo procedimento §A2 da E5.5 · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** ref `3c27f1bf`; o resumo financeiro fornece contagens/valores e `linkedPending*`, enquanto o DTO de título não permite listar “títulos cobertos por cheque” sem N+1.
+- **consequência no B-SAN3-12c:** preservar números reais e orientação para escolher um título; não fingir lista completa nem disparar N+1. Se o aceite visual exigir a lista, parar somente essa consolidação e pedir decisão.
+- **encerramento:** contrato expõe filtro/coleção inversa e a tela a consome sem N+1, com estados e testes.
+
+## P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 12c — BAIXA
+- **status:** ABERTA · **escopo:** acompanhamento de registro, não produto · **dono:** orquestrador do marco #473 · **bloqueia:** não bloqueia o desenvolvimento; bloqueia declarar o acompanhamento integralmente encerrado.
+- **origem/decisão:** E5.5 escolheu manter o PR #473 em rascunho, sem misturar `Kpis/**` no PR funcional, e atualizá-lo depois do merge + porteiro do 12c com referências e contagens obtidas por comando.
+- **encerramento:** #473 inclui o 12c sem duplicar merges intermediários, passa `scripts/kpi-check-refs.mjs` + testes do painel, recebe revisor independente/CI verde e é mergeado.
+
+## P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ (2026-10-30) — a referência mistura as duas ressalvas numa lista; o servidor filtra um tipo por vez — BAIXA
+- **status:** ABERTA · **escopo:** divergência de interação/dado, registrada pelo procedimento §A2 da E5.5, classe (c) · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** `financeiro-baixa-conta-conciliacao-3opcoes.reference.html`, `renderC`: a aba `ressalvas` filtra `conc === 'v' || conc === 'd'` no navegador. `GET /financial-entries` aceita um único `divergence_type` (`src/modules/financial-entries/financial-entry.service.ts`, `parseFilterToken`); pedir `reconciled=true` e separar no navegador esconderia ressalva antiga fora da primeira página enquanto o indicador anuncia a contagem real.
+- **consequência no B-SAN3-12c:** o passo 3 abre em "Ressalva de valor" e oferece dois blocos com as contagens do servidor (valor e data), cada um consultando o servidor. Nada é somado nem estimado sobre a página.
+- **encerramento:** o contrato aceita os dois tipos numa consulta e o passo 3 passa a uma lista só, ou o dono aprova os dois blocos como definitivos.
+
+## P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir o próximo"; o formulário reutilizado diz "Conciliar" — BAIXA
+- **status:** ABERTA · **escopo:** divergência de cópia, classe (a) do §A2 da E5.5 · **dono:** `B-SAN3-24` · **bloqueia:** não.
+- **medição:** referência, `formConcInline`, modo `conferencia`. A E5.3 põe `ConciliarForm` em "reúso por import, sem edição".
+- **consequência no B-SAN3-12c:** o comportamento é o da referência (concilia, avança só no sucesso, foco no botão principal, Pular). O texto do botão continua "Conciliar", e uma nota ao lado do Pular diz que o próximo abre sozinho. O botão Cancelar do formulário continua existindo ao lado.
+- **encerramento:** um bloco autorizado a editar `ConciliarForm` aceita o rótulo por prop, ou o dono dispensa o rótulo.
+
+## P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px; a referência pede 20 px — BAIXA
+- **status:** ABERTA · **escopo:** `pre-existente` (a regra `.pat-page-header` é de 2026-08-04, commit `0a38f1be`, PR-A das Telas Padronizadas) · **dono:** decisão do dono sobre as Telas Padronizadas, com `B-SAN3-24` · **bloqueia:** não.
+- **medição:** `.pat-page-header` tem `gap: 24px` para todas as telas; a referência tem 20 px. A diferença da B e da C foi corrigida com seletor próprio, porque a E5.3 proíbe mudar a regra global e a A já estava aprovada.
+- **encerramento:** o dono decide se o padrão global passa a 20 px; aí a regra escopada de B/C sai.
 ## P-C2R-01-ROLE-PERMS-NO-ROTEIRO (2026-10-29) — o roteiro da C2 não registra a geração de `role-perms.json` — BAIXA
 - **status:** ABERTA · **escopo:** processo de junta · **dono:** orquestração da junta · **bloqueia:** não.
 - **origem:** nota C2R-01 da ata do PR #469 (`J-B-SAN3-12b.md`): o insumo das sondas existia, mas o passo que produz `role-perms.json` não estava em `o_que_executei`.

@@ -56,8 +56,8 @@ const NOOP_ACTIONS = {
   },
 };
 
-const form = () =>
-  renderToStaticMarkup(<BaixaForm title={TITLE} accounts={ACCOUNTS} canUnlinkCheque={false} canCancelCheque={false} actions={NOOP_ACTIONS} onDone={() => undefined} onClose={() => undefined} />);
+const form = (initialAccountId?: string) =>
+  renderToStaticMarkup(<BaixaForm title={TITLE} accounts={ACCOUNTS} initialAccountId={initialAccountId} canUnlinkCheque={false} canCancelCheque={false} actions={NOOP_ACTIONS} onDone={() => undefined} onClose={() => undefined} />);
 
 test("F5: os meios oferecidos são Pix, Transferência, Boleto, Dinheiro e Cartão — nunca cheque", () => {
   const html = form();
@@ -95,6 +95,15 @@ test("baixa: valor padrão é o saldo em aberto (R$ 1.000,00), só contas ativas
   assert.match(html, /name="data"[^>]*type="date"|type="date"[^>]*name="data"/);
   assert.match(html, /Conta que recebeu/);
   assert.match(html, /Registrar recebimento/);
+});
+
+test("R-T5/B: conta inicial ativa vem selecionada, continua trocável; inativa nunca é preselecionada", () => {
+  const active = form("acc-1");
+  assert.match(active, /<option value="acc-1" selected="">Banco do Brasil<\/option>/);
+  assert.doesNotMatch(active, /<select[^>]*name="conta"[^>]*disabled/);
+  const inactive = form("acc-old");
+  assert.match(inactive, /<option value="" selected="">Escolha a conta<\/option>/);
+  assert.doesNotMatch(inactive, /Conta encerrada/);
 });
 
 test("F1: o corpo da baixa leva account_id, amount, payment_method, occurred_at e client_action_id", () => {

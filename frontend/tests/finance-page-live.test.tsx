@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test, { after } from "node:test";
 
 // B-SAN3-12b — a página REAL do Financeiro (aparência A) com os hooks REAIS rodando efeitos, no arnês de DOM mínimo
@@ -145,6 +146,10 @@ class MiniElement extends MiniNode {
   // Acréscimo deste arquivo ao arnês: o <select> do paginador (TablePager) — o React lê `options` e marca `selected`.
   selected = false;
   defaultSelected = false;
+  // Acréscimo deste arquivo ao arnês: a aparência C leva o foco ao formulário; o mini-DOM não faz foco (a prova é a sonda no navegador).
+  querySelector(): null {
+    return null;
+  }
   get options(): MiniElement[] {
     return elements(this, (el) => el.localName === "option");
   }
@@ -297,6 +302,7 @@ const { createRoot } = await import("react-dom/client");
 const { MemoryRouter } = await import("react-router-dom");
 const { FinanceiroPage } = await import("../src/modules/finance/pages/FinanceiroPage");
 const { useFinancialTitles } = await import("../src/modules/finance/titles/useFinancialTitles");
+const { useEntriesAggregate } = await import("../src/modules/finance/entries/useEntriesAggregate");
 const { PermissionGuard } = await import("../src/guards/PermissionGuard");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
 const { TenantProvider } = await import("../src/providers/TenantProvider");
@@ -304,6 +310,7 @@ const { PermissionProvider } = await import("../src/providers/PermissionProvider
 const { setStoredAuthSession } = await import("../src/modules/auth/auth.storage");
 const { mockSession } = await import("../src/mocks/auth/context");
 const { DEFAULT_AUTO_REFRESH_MS } = await import("../src/hooks/useAutoRefresh");
+const { entriesFiltersFor, financeStateSearch, fourteenDayRange, pendingAgeRange, readFinanceState, sixMonthRange } = await import("../src/modules/finance/pages/financeiro.state");
 
 const h = React.createElement;
 type ActFn = (callback: () => Promise<void> | void) => Promise<void>;
@@ -409,6 +416,7 @@ const RECEIVABLES_130 = Array.from({ length: 130 }, (_, index) =>
     id: `t-lote-${String(index + 1).padStart(3, "0")}`,
     partyName: `Cliente ${String(index + 1).padStart(3, "0")}`,
     document: `NF ${String(index + 1).padStart(4, "0")}`,
+    description: index === 5 ? "Contrato guincho especial" : index === 120 ? "Descrição fora da página carregada" : null,
     // 17 vencidos, 7 deles DEPOIS da 1ª página: só o resumo do servidor sabe o total.
     dueDate: index < 10 || index >= 123 ? daysFromToday(-5) : index === 10 ? daysFromToday(0) : daysFromToday(10),
     overdue: index < 10 || index >= 123,
@@ -583,8 +591,9 @@ const countCalls = (method: string, pattern: RegExp) => calls.filter((c) => c.me
 const pageRoot = (root: MiniNode) => all(root, (el) => el.hasAttribute("data-aparencia"))[0];
 const appearanceKey = () => `techsol.aparencia.${TENANT_ID}.${mockSession.user.id}`;
 
-async function mount(options: { permissions?: readonly string[]; role?: string; url?: string; override?: Override; guard?: boolean } = {}) {
+async function mount(options: { permissions?: readonly string[]; role?: string; url?: string; override?: Override; guard?: boolean; appearance?: "A" | "B" | "C" } = {}) {
   seed(options.permissions ?? FINANCE, options.role);
+  if (options.appearance) dom.storage.set(appearanceKey(), JSON.stringify({ financeiro: options.appearance }));
   installFetch(options.override);
   dom.intervals.length = 0;
   const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
@@ -604,6 +613,7 @@ async function mount(options: { permissions?: readonly string[]; role?: string; 
 }
 
 type TitlesHookSnapshot = ReturnType<typeof useFinancialTitles>;
+type AggregateHookSnapshot = ReturnType<typeof useEntriesAggregate>;
 
 async function mountTitlesHook(override: Override) {
   seed(FINANCE);
@@ -630,7 +640,150 @@ async function mountTitlesHook(override: Override) {
   };
 }
 
+async function mountAggregateHook(override: Override) {
+  seed(FINANCE);
+  installFetch(override);
+  let snapshot: AggregateHookSnapshot | null = null;
+  function Probe() {
+    const [accountId, setAccountId] = React.useState("acc-banco");
+    const name = `conta:${accountId}`;
+    const value = useEntriesAggregate({ [name]: { groupBy: "none", accountId, reconciled: false } }, { enabled: true });
+    snapshot = value;
+    const count = value.data[name]?.items[0]?.count;
+    return h(
+      "div",
+      null,
+      h("output", { "aria-label": "Contagem do agregado" }, count === undefined ? "indisponível" : String(count)),
+      h("button", { type: "button", onClick: () => void value.refresh() }, "Atualizar agregado"),
+      h("button", { type: "button", onClick: () => setAccountId("acc-caixa") }, "Trocar conta"),
+    );
+  }
+  const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
+  const root = createRoot(container as unknown as Element);
+  await act(async () => {
+    root.render(h(AuthProvider, null, h(TenantProvider, null, h(Probe))));
+  });
+  return {
+    container,
+    snapshot: () => snapshot,
+    unmount: async () => {
+      await act(async () => root.unmount());
+      dom.doc.body.removeChild(container);
+    },
+  };
+}
+
 // =============================== F14 · carga e aparência ===============================
+
+test("R-P3: resposta antiga da mesma consulta não substitui a nova e outra conta não herda o agregado", async () => {
+  type Pending = { resolve: (response: Response) => void; promise: Promise<Response>; url: string };
+  const pending: Pending[] = [];
+  const aggregate = (count: number) =>
+    json(200, { data: { groupBy: "none", currency: "BRL", timezone: "America/Sao_Paulo", items: [{ bucket: null, count, inflow: count, outflow: 0, net: count }] } });
+  const probe = await mountAggregateHook((call) => {
+    if (call.method !== "GET" || !call.url.startsWith("/financial-entries/aggregate?")) return undefined;
+    let resolve!: (response: Response) => void;
+    const promise = new Promise<Response>((done) => {
+      resolve = done;
+    });
+    pending.push({ resolve, promise, url: call.url });
+    return promise;
+  });
+  try {
+    assert.equal(pending.length, 1, "primeira rodada controlada");
+    let secondDone!: Promise<void>;
+    await act(async () => {
+      secondDone = probe.snapshot()!.refresh();
+      await Promise.resolve();
+    });
+    assert.equal(pending.length, 2, "segunda rodada da mesma chave");
+    pending[1].resolve(aggregate(222));
+    await act(async () => secondDone);
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-banco"]?.items[0]?.count, 222);
+    assert.equal(text(byLabel(probe.container, "Contagem do agregado")!), "222");
+
+    pending[0].resolve(aggregate(111));
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-banco"]?.items[0]?.count, 222, "a resposta antiga é descartada");
+
+    await act(async () => {
+      const button = buttonByText(probe.container, "Trocar conta");
+      (propsOf(button!).onClick as () => void)();
+      await Promise.resolve();
+    });
+    assert.equal(pending.length, 3, "a conta nova inicia consulta própria");
+    assert.match(pending[2].url, /account_id=acc-caixa/);
+    assert.equal(probe.snapshot()?.data["conta:acc-caixa"], undefined, "a conta nova não recebe o valor da anterior");
+    assert.equal(text(byLabel(probe.container, "Contagem do agregado")!), "indisponível");
+    pending[2].resolve(aggregate(333));
+    await settle();
+    assert.equal(probe.snapshot()?.data["conta:acc-caixa"]?.items[0]?.count, 333);
+  } finally {
+    for (const item of pending) item.resolve(aggregate(0));
+    await settle();
+    await probe.unmount();
+  }
+});
+
+test("R-D/B: consultas da conta em foco levam conta, situação e janela civil de seis meses sem duplicar URL", async () => {
+  const probe = await mount({ url: "/finance?aba=ext&conta=acc-banco&filtro=mes:2026-10:out" });
+  try {
+    const aggregateUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?")).map((call) => call.url);
+    assert.equal(aggregateUrls.length, 16, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 16, "uma requisição por query completa");
+    const focused = aggregateUrls.filter((url) => /account_id=acc-banco/.test(url));
+    assert.equal(focused.length, 11, focused.join(" | ")); // pendência da conta + B (4) + C (6)
+    assert.ok(focused.some((url) => /reconciled=true/.test(url) && !/divergence_type=/.test(url)), "conciliados da conta");
+    assert.ok(focused.some((url) => /divergence_type=value/.test(url)), "ressalva de valor da conta");
+    assert.ok(focused.some((url) => /divergence_type=date/.test(url)), "ressalva de data da conta");
+    const months = focused.find((url) => /group_by=month/.test(url));
+    assert.ok(months, "série mensal da conta");
+    const range = sixMonthRange();
+    assert.match(months!, new RegExp(`from=${range.from}`));
+    assert.match(months!, new RegExp(`to=${range.to}`));
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-D/C: movimento diário e idades usam calendário civil, faixas disjuntas e a conta em foco", async () => {
+  const localLateNight = new Date(0);
+  localLateNight.getFullYear = () => 2026;
+  localLateNight.getMonth = () => 0;
+  localLateNight.getDate = () => 1;
+  assert.deepEqual(fourteenDayRange(localLateNight), { from: "2025-12-19", to: "2026-01-01" }, "a janela não muda de dia pelo UTC");
+  assert.deepEqual(pendingAgeRange("0-2", localLateNight), { from: "2025-12-30", to: "2026-01-01" });
+  assert.deepEqual(pendingAgeRange("3-7", localLateNight), { from: "2025-12-25", to: "2025-12-29" });
+  assert.deepEqual(pendingAgeRange("8-15", localLateNight), { from: "2025-12-17", to: "2025-12-24" });
+  assert.deepEqual(pendingAgeRange("16+", localLateNight), { to: "2025-12-16" });
+
+  const dayState = readFinanceState("?aba=ext&conta=acc-banco&filtro=dia:2026-10-29");
+  assert.deepEqual(entriesFiltersFor(dayState), { accountId: "acc-banco", from: "2026-10-29", to: "2026-10-29" });
+  assert.equal(financeStateSearch(dayState), "?aba=ext&conta=acc-banco&filtro=dia%3A2026-10-29");
+  const ageState = readFinanceState("?aba=conc&conta=acc-banco&filtro=idade:8-15");
+  assert.deepEqual(entriesFiltersFor(ageState), { accountId: "acc-banco", from: pendingAgeRange("8-15").from, to: pendingAgeRange("8-15").to, reconciled: false });
+
+  const probe = await mount({ url: "/finance?aba=conc&conta=acc-banco&filtro=idade:8-15" });
+  try {
+    const urls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?")).map((call) => call.url);
+    const routine = urls.filter((url) => /group_by=day/.test(url) || (/reconciled=false/.test(url) && (/from=/.test(url) || /to=/.test(url))));
+    assert.equal(routine.length, 6, routine.join(" | "));
+    assert.ok(routine.every((url) => /account_id=acc-banco/.test(url)), "toda consulta da rotina conserva a conta em foco");
+    assert.equal(new Set(routine).size, 6, "duas séries e quatro faixas não se sobrepõem por URL");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-D/B: mês e direção fazem round-trip na URL e o refresh de escrita inclui a série em foco", () => {
+  const state = readFinanceState("?aba=ext&conta=acc-banco&filtro=mes:2026-10:out");
+  assert.deepEqual(state, { tab: "ext", accountId: "acc-banco", target: "mes:2026-10:out" });
+  assert.equal(financeStateSearch(state), "?aba=ext&conta=acc-banco&filtro=mes%3A2026-10%3Aout");
+  const source = readFileSync(new URL("../src/modules/finance/pages/FinanceiroPage.tsx", import.meta.url), "utf8");
+  assert.match(source, /refreshFocusedAggregates\(background\)/);
+  assert.match(source, /onDone=\{\(\) => void refreshAll\(true\)\}/, "baixa bem-sucedida atualiza também os agregados em foco");
+});
 
 test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, sem perder as contagens por conta", async () => {
   let releaseAccounts!: (response: Response) => void;
@@ -658,8 +811,8 @@ test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, se
     assert.equal(countCalls("GET", /^\/financial-entries\/reconciliation-policy$/), 1);
     assert.equal(countCalls("GET", /^\/financial-accounts\/acc-banco\/balance$/), 1);
     const aggregateUrls = calls.filter((call) => call.method === "GET" && /^\/financial-entries\/aggregate\?/.test(call.url)).map((call) => call.url);
-    assert.equal(aggregateUrls.length, 6, aggregateUrls.join(" | "));
-    assert.equal(new Set(aggregateUrls).size, 6, aggregateUrls.join(" | "));
+    assert.equal(aggregateUrls.length, 12, aggregateUrls.join(" | "));
+    assert.equal(new Set(aggregateUrls).size, 12, aggregateUrls.join(" | "));
     for (const url of aggregateUrls) assert.equal(countCalls("GET", new RegExp(`^${url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`)), 1, url);
     assert.equal(dom.storage.has(appearanceKey()), false, "abrir a página não grava aparência");
     for (const label of ["Saldo em caixa", "Entradas em outubro", "Saídas em outubro", "A receber vencido", "A pagar vencido", "A conciliar"]) {
@@ -675,6 +828,224 @@ test("F14: a página pede cada rota e cada URL de agregado UMA vez por carga, se
     assert.match(text(container).replace(/\u00a0/g, " "), /R\$ 1\.000,00 em 1 cheque vinculado a títulos aguardam compensação/);
   } finally {
     await unmount();
+  }
+});
+
+test("R-D: a preferência pessoal seleciona B e C sem duplicar as consultas comuns", async () => {
+  for (const appearance of ["B", "C"] as const) {
+    const probe = await mount({ appearance });
+    try {
+      assert.equal(pageRoot(probe.container)?.getAttribute("data-aparencia"), appearance);
+      assert.equal(countCalls("GET", /^\/financial-summary$/), 1);
+      assert.equal(countCalls("GET", /^\/financial-entries\?/), 1);
+    } finally {
+      await probe.unmount();
+    }
+  }
+});
+
+test("R-B: B sem conta na URL adota a primeira ativa também nas consultas e no extrato", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext" });
+  try {
+    assert.ok(byLabel(probe.container, "Conta em foco: Banco do Brasil"));
+    const entryUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).map((call) => call.url);
+    assert.ok(entryUrls.length >= 1, entryUrls.join(" | "));
+    assert.ok(entryUrls.every((url) => /account_id=acc-banco/.test(url)), `extrato fora da conta efetiva: ${entryUrls.join(" | ")}`);
+    const focused = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries/aggregate?") && /account_id=acc-banco/.test(call.url));
+    assert.ok(focused.some((call) => /group_by=month/.test(call.url)), "a série mensal usa a mesma conta destacada");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-B: conta inativa pedida na URL permanece em consulta e não volta para a primeira ativa", async () => {
+  const inactive = { id: "acc-inactive", name: "Conta encerrada", kind: "bank", currency: "BRL", openingBalance: 0, bankName: null, status: "inactive", isActive: false, createdAt: "2026-01-01T12:00:00.000Z" };
+  const probe = await mount({
+    appearance: "B",
+    url: "/finance?aba=ext&conta=acc-inactive",
+    override: (call) => {
+      if (call.method === "GET" && /^\/financial-accounts\?/.test(call.url)) {
+        return json(200, { items: [...ACCOUNTS.items, inactive], pagination: { limit: 100, offset: 0, total: 3 } });
+      }
+      return undefined;
+    },
+  });
+  try {
+    assert.ok(byLabel(probe.container, "Conta em foco: Conta encerrada"));
+    const entryUrls = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).map((call) => call.url);
+    assert.ok(entryUrls.length >= 1, entryUrls.join(" | "));
+    assert.ok(entryUrls.every((url) => /account_id=acc-inactive/.test(url)), `extrato desviou da conta inativa: ${entryUrls.join(" | ")}`);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-B: B sem aba na URL abre no extrato da conta; aba pedida continua valendo", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance" });
+  try {
+    assert.equal(tab(probe.container, "Extrato da conta")?.getAttribute("aria-selected"), "true");
+    assert.ok(calls.some((call) => call.method === "GET" && /^\/financial-entries\?.*account_id=acc-banco/.test(call.url)));
+  } finally {
+    await probe.unmount();
+  }
+  const titles = await mount({ appearance: "B", url: "/finance?aba=rec" });
+  try {
+    assert.equal(tab(titles.container, "Títulos a baixar")?.getAttribute("aria-selected"), "true");
+  } finally {
+    await titles.unmount();
+  }
+});
+
+test("R-B: o trilho consulta saldo e pendência da conta desativada, sem misturar com a A", async () => {
+  const inactive = { id: "acc-inactive", name: "Conta encerrada", kind: "bank", currency: "BRL", openingBalance: 0, bankName: null, status: "inactive", isActive: false, createdAt: "2026-01-01T12:00:00.000Z" };
+  const override: Override = (call) => {
+    if (call.method === "GET" && /^\/financial-accounts\?/.test(call.url)) return json(200, { items: [...ACCOUNTS.items, inactive], pagination: { limit: 100, offset: 0, total: 3 } });
+    if (call.method === "GET" && /^\/financial-accounts\/acc-inactive\/balance/.test(call.url)) return json(200, { data: { accountId: "acc-inactive", currency: "BRL", openingBalance: 0, in: 10, out: 0, balance: 4321.5 } });
+    return undefined;
+  };
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext", override });
+  try {
+    assert.match(text(probe.container), /R\$\s4\.321,50/);
+    assert.ok(calls.some((call) => /^\/financial-entries\/aggregate\?.*account_id=acc-inactive/.test(call.url)));
+  } finally {
+    await probe.unmount();
+  }
+  const a = await mount({ appearance: "A", url: "/finance?aba=ext", override });
+  try {
+    assert.equal(calls.some((call) => /acc-inactive/.test(call.url)), false, "a A segue só com as contas ativas");
+  } finally {
+    await a.unmount();
+  }
+});
+
+test("R-B: clicar no mês filtra o extrato no servidor, na conta em foco, e o filtro sai com um clique", async () => {
+  const probe = await mount({ appearance: "B", url: "/finance?aba=ext&conta=acc-banco" });
+  try {
+    const month = sixMonthRange().to.slice(0, 7);
+    const column = all(probe.container, (el) => el.getAttribute("class") === "ui-column-bars__column").at(-1);
+    assert.ok(column);
+    await press(column);
+    assert.equal(column.getAttribute("aria-pressed"), "true");
+    const last = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.match(last, /account_id=acc-banco/);
+    assert.match(last, new RegExp(`from=${month}-01`));
+    assert.match(last, new RegExp(`to=${sixMonthRange().to}`));
+    assert.match(text(probe.container), /Filtro: Lançamentos de/);
+    await press(byLabel(probe.container, "Remover o filtro Lançamentos de"));
+    const cleared = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.doesNotMatch(cleared, /from=/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-T5: na B a conciliação abre dentro do detalhe, sem janela, e envia uma vez", async () => {
+  const probe = await mount({
+    appearance: "B",
+    url: "/finance?aba=ext&conta=acc-banco",
+    override: (call) => (call.method === "PATCH" ? json(200, { data: { ...ENTRIES[0], reconciled: true, reconciledAt: STAMP, reconciledBy: "u-1" } }) : undefined),
+  });
+  try {
+    await press(rowFor(probe.container, "Recebimento NF 0900"));
+    await press(buttonByText(detailRows(probe.container)[0]!, "Conciliar"));
+    assert.equal(Boolean(dialog(probe.container)), false, "sem janela na B");
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    const patch = calls.filter((call) => call.method === "PATCH");
+    assert.equal(patch.length, 1);
+    assert.deepEqual(patch[0].body, { reconciled: true, expected_reconciled: false, expected_reconciled_at: null });
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 0, "o formulário fecha no sucesso");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+const CONFERENCE_ENTRIES = [
+  entry({ id: "e-um", description: "Lançamento um" }),
+  entry({ id: "e-dois", description: "Lançamento dois" }),
+];
+const conferenceOverride =
+  (reconcile: (id: string) => Response | undefined): Override =>
+  (call) => {
+    if (call.method === "GET" && call.url.startsWith("/financial-entries?")) {
+      return json(200, { items: /reconciled=false/.test(call.url) ? CONFERENCE_ENTRIES : ENTRIES, pagination: { limit: 100, offset: 0, total: 2 } });
+    }
+    const patch = /^\/financial-entries\/([^/]+)\/reconcile$/.exec(call.url);
+    if (call.method === "PATCH" && patch) return reconcile(patch[1]) ?? json(200, { data: { ...CONFERENCE_ENTRIES.find((row) => row.id === patch[1]), reconciled: true, reconciledAt: STAMP, reconciledBy: "u-1" } });
+    return undefined;
+  };
+
+test("R-C: Começar a conferência leva às pendências e abre a primeira linha com o formulário no detalhe", async () => {
+  const probe = await mount({ appearance: "C", override: conferenceOverride(() => undefined) });
+  try {
+    assert.equal(tab(probe.container, "1 · Baixar")?.getAttribute("aria-selected"), "true");
+    await press(buttonByText(probe.container, "Começar a conferência"));
+    await settle();
+    assert.equal(tab(probe.container, "2 · Conciliar")?.getAttribute("aria-selected"), "true");
+    assert.ok(calls.some((call) => call.method === "GET" && /^\/financial-entries\?.*reconciled=false/.test(call.url)));
+    assert.equal(detailRows(probe.container).length, 1);
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento um/);
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 1);
+    assert.equal(Boolean(dialog(probe.container)), false, "sem janela na conferência");
+    assert.equal(calls.filter((call) => call.method === "PATCH").length, 0, "abrir nunca envia nada");
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: conciliar avança para a próxima linha só depois do sucesso, uma requisição por lançamento", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    await settle();
+    assert.deepEqual(calls.filter((call) => call.method === "PATCH").map((call) => call.url), ["/financial-entries/e-um/reconcile"]);
+    assert.equal(detailRows(probe.container).length, 1, "um detalhe aberto por vez");
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento dois/);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 1 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: erro de rede ou recusa mantém a mesma linha aberta e não conta como conferido", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => apiError(422, "period_closed")) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await submit(formsIn(detailRows(probe.container)[0]!)[0]);
+    await settle();
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento um/);
+    assert.equal(formsIn(detailRows(probe.container)[0]!).length, 1);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 0 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: Pular troca de linha sem enviar nada", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await press(buttonByText(detailRows(probe.container)[0]!, "Pular"));
+    assert.match(text(detailRows(probe.container)[0]!), /Lançamento dois/);
+    assert.equal(calls.filter((call) => call.method === "PATCH").length, 0);
+    assert.match(text(probe.container), /Conferidos nesta sessão: 0 de/);
+  } finally {
+    await probe.unmount();
+  }
+});
+
+test("R-C: filtrar pela idade consulta a faixa no servidor e trocar de passo fecha o formulário", async () => {
+  const probe = await mount({ appearance: "C", url: "/finance?aba=conc&filtro=conc:pendente", override: conferenceOverride(() => undefined) });
+  try {
+    await press(rowFor(probe.container, "Lançamento um"));
+    await press(tab(probe.container, "Extrato completo"));
+    assert.equal(detailRows(probe.container).length, 0);
+    await press(all(probe.container, (el) => el.getAttribute("class") === "ui-column-bars__column")[0]);
+    const last = calls.filter((call) => call.method === "GET" && call.url.startsWith("/financial-entries?")).at(-1)?.url ?? "";
+    assert.match(last, /reconciled=false/);
+    assert.match(last, /from=/);
+  } finally {
+    await probe.unmount();
   }
 });
 
@@ -775,9 +1146,9 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
   const loadMoreButton = () => all(container, (el) => el.localName === "button" && text(el).startsWith("Carregar mais títulos"))[0];
   try {
     assert.match(text(tab(container, "A receber")!), /A receber\s*130/, "aba com a contagem do servidor");
-    assert.equal(counter(), "100 mais recentes de 130 títulos", "contador da carga incompleta");
+    assert.equal(counter(), "100 resultados entre 100 títulos carregados · 130 títulos no servidor", "contador separa resultado e universo");
     assert.ok(pager(), "o TablePager da biblioteca está no rodapé da tabela");
-    assert.equal(range(), "1–20 de 100 carregados · 130 no servidor");
+    assert.equal(range(), "1–20 de 100 resultados carregados · 130 títulos no servidor");
     assert.equal(rows(container).length, 20, "página de 20 linhas");
     assert.equal(text(byLabel(container, "Vencidos:")!), "Vencidos17", "Vencidos vem do resumo");
     assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje", "sem número com a carga incompleta");
@@ -789,13 +1160,13 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
       more.some((call) => /(?:^|[?&])limit=100(?:&|$)/.test(call.url) && /(?:^|[?&])offset=100(?:&|$)/.test(call.url)),
       more.map((call) => call.url).join(" | "),
     );
-    assert.equal(counter(), "130 títulos", "contador da carga completa");
-    assert.equal(range(), "1–20 de 130");
+    assert.equal(counter(), "130 resultados", "contador da carga completa");
+    assert.equal(range(), "1–20 de 130 resultados carregados");
     assert.equal(text(byLabel(container, "Vencem hoje:")!), "Vencem hoje1", "com a carga completa o bloco local conta");
     assert.equal(loadMoreButton(), undefined, "o botão some quando não falta título");
 
     await press(buttonByText(container, "Próxima"));
-    assert.equal(range(), "21–40 de 130");
+    assert.equal(range(), "21–40 de 130 resultados carregados");
     const page2 = rows(container);
     assert.equal(page2.length, 20);
     // Ordem por vencimento: 17 vencidos, 1 que vence hoje (Cliente 011), depois os demais; a linha 21 é o Cliente 014.
@@ -804,8 +1175,51 @@ test("R3(d-e-f): contador honesto, TablePager da biblioteca e 'Carregar mais tí
 
     // A página volta à primeira a cada go() (aqui, o bloco "Vencidos").
     await press(byLabel(container, "Vencidos:"));
-    assert.equal(range(), "1–17 de 17");
-    assert.equal(counter(), "17 títulos");
+    assert.equal(range(), "1–17 de 17 resultados carregados");
+    assert.equal(counter(), "17 resultados");
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P1/R-P6: busca documento, parte e descrição só nos títulos carregados, com pager e universo separados", async () => {
+  const { container, unmount } = await mount({
+    override: (call) => {
+      if (call.method === "GET" && call.url.startsWith("/financial-titles?direction=receivable")) {
+        const url = new URL(`http://x${call.url}`);
+        const offset = Number(url.searchParams.get("offset") ?? 0);
+        return json(200, { items: RECEIVABLES_130.slice(offset, offset + 100), pagination: { limit: 100, offset, total: 130 } });
+      }
+      return undefined;
+    },
+  });
+  const counter = () => text(all(container, (el) => el.getAttribute("class") === "pat-table__count")[0]!);
+  const range = () => text(all(container, (el) => el.getAttribute("class") === "pat-pager__range")[0]!);
+  try {
+    await type(byName(container, "busca-titulos"), "contrato guincho");
+    assert.equal(rows(container).length, 1, "descrição participa da busca");
+    assert.match(text(rows(container)[0]), /Cliente 006/);
+    assert.equal(counter(), "1 resultados entre 100 títulos carregados · 130 títulos no servidor (sem este filtro)");
+    assert.equal(range(), "1–1 de 1 resultados carregados · 130 títulos no servidor (sem este filtro)");
+    assert.match(text(container), /Filtro: Busca: contrato guincho/);
+
+    await type(byName(container, "busca-titulos"), "NF 0099");
+    assert.equal(rows(container).length, 1, "documento participa da busca");
+    assert.match(text(rows(container)[0]), /Cliente 099/);
+
+    await type(byName(container, "busca-titulos"), "Cliente 042");
+    assert.equal(rows(container).length, 1, "cliente participa da busca");
+
+    await type(byName(container, "busca-titulos"), "fora da página carregada");
+    assert.equal(rows(container).length, 0, "resultado fora da carga atual não é inventado");
+    assert.match(counter(), /^0 resultados entre 100 títulos carregados/);
+    await press(all(container, (el) => el.localName === "button" && text(el).startsWith("Carregar mais títulos"))[0]);
+    assert.equal(rows(container).length, 1, "o resultado aparece depois de carregar a página que o contém");
+    assert.match(text(rows(container)[0]), /Cliente 121/);
+
+    await press(byLabel(container, "Limpar a busca de títulos"));
+    assert.equal(rows(container).length, 20, "limpar restaura a lista carregada");
+    assert.equal(byName(container, "busca-titulos")?.value, "");
   } finally {
     await unmount();
   }
@@ -838,6 +1252,19 @@ test("F11: 'A conciliar' leva à aba Conciliação filtrada no servidor (reconci
     assert.ok(calls.some((c) => c.method === "GET" && /^\/financial-entries\?.*reconciled=false/.test(c.url)), "o filtro vai ao servidor");
     assert.equal(rows(container).length, 2);
     for (const row of rows(container)) assert.doesNotMatch(text(row), /Conciliado/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P4: indicador global não fica pressionado com conta em foco e limpa a conta ao ser acionado", async () => {
+  const { container, unmount } = await mount({ url: "/finance?aba=conc&conta=acc-banco&filtro=conc:pendente" });
+  try {
+    assert.equal(byLabel(container, "A conciliar:")?.getAttribute("aria-pressed"), "false");
+    assert.match(text(container), /Filtro: Conta: Banco do Brasil/);
+    await press(byLabel(container, "A conciliar:"));
+    assert.equal(byLabel(container, "A conciliar:")?.getAttribute("aria-pressed"), "true");
+    assert.doesNotMatch(text(container), /Filtro: Conta:/);
   } finally {
     await unmount();
   }
@@ -1440,6 +1867,43 @@ test("F16 erro: resumo e contas fora do ar → painel de erro com 'Tentar novame
   }
 });
 
+test("R-P2: resumo 200 incompleto fica indisponível e não publica R$ 0,00", async () => {
+  const { totalBalance: _missing, ...cash } = SUMMARY.cash;
+  const { container, unmount } = await mount({
+    override: (call) => (call.url === "/financial-summary" ? json(200, { data: { ...SUMMARY, cash } }) : undefined),
+  });
+  try {
+    const panel = all(container, (el) => el.getAttribute("data-state") === "error")[0];
+    assert.ok(panel, "resumo incompleto produz painel indisponível");
+    assert.match(text(panel), /Não foi possível carregar/);
+    assert.equal(byLabel(container, "Saldo em caixa:"), undefined, "nenhum indicador monetário falso");
+    assert.doesNotMatch(text(container), /R\$\s*0,00/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("R-P2: refresh com resumo incompleto conserva o último resumo válido e marca stale", async () => {
+  let incomplete = false;
+  const { totalBalance: _missing, ...cash } = SUMMARY.cash;
+  const { container, unmount } = await mount({
+    override: (call) => (call.url === "/financial-summary" && incomplete ? json(200, { data: { ...SUMMARY, cash } }) : undefined),
+  });
+  try {
+    assert.match(text(byLabel(container, "Saldo em caixa:")!), /R\$\s12\.850,75/);
+    incomplete = true;
+    const ticks = dom.intervals.filter((interval) => interval.fn && interval.ms === DEFAULT_AUTO_REFRESH_MS);
+    assert.equal(ticks.length, 1);
+    await act(async () => ticks[0].fn!());
+    await settle();
+    assert.ok(all(container, (el) => el.getAttribute("data-state") === "stale")[0]);
+    assert.match(text(byLabel(container, "Saldo em caixa:")!), /R\$\s12\.850,75/);
+    assert.equal(all(container, (el) => el.getAttribute("data-state") === "error").length, 0);
+  } finally {
+    await unmount();
+  }
+});
+
 test("F9: títulos fora do ar (fallback) → painel de erro na aba, nunca 'nenhum título'", async () => {
   const { container, unmount } = await mount({ override: (call) => (/^\/financial-titles\?/.test(call.url) ? json(500, { error: { code: "INTERNAL", message: "x" } }) : undefined) });
   try {
@@ -1486,6 +1950,19 @@ test("F16 acesso não permitido: Técnico de Campo cai no guarda da rota; sem le
     assert.equal(rows(semTitulos.container).length, 0);
   } finally {
     await semTitulos.unmount();
+  }
+});
+
+test("R-P5: sem leitura de lançamentos, extrato e conciliação mostram acesso não permitido e não consultam essas rotas", async () => {
+  const permissions = ["finance:read", "financial_titles:read", "financial_accounts:read"];
+  const probe = await mount({ permissions, role: "Auditor", url: "/finance?aba=conc" });
+  try {
+    const panel = all(probe.container, (el) => el.getAttribute("data-state") === "forbidden")[0];
+    assert.ok(panel, "painel proibido para lançamentos");
+    assert.match(text(panel), /Seu perfil não inclui os lançamentos/);
+    assert.equal(calls.filter((call) => /^\/financial-entries(?:\?|\/aggregate|\/reconciliation-policy)/.test(call.url)).length, 0, calls.map((call) => call.url).join(" | "));
+  } finally {
+    await probe.unmount();
   }
 });
 
