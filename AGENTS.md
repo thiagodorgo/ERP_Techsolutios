@@ -866,6 +866,27 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      seguinte. Isso custou uma cadeira inteira por ciclo, sem informação nova. A trava existe porque o conserto muda o
      código, e o verde de uma cadeira só vale enquanto o que ela mediu continua igual.
 
+10. **FLUXO RÁPIDO DE JUNTA: TRÊS NÍVEIS, UMA VOTAÇÃO, UM CONSERTO, SEM LOOP (decisão do dono, 2026-10-30 — `D-JUNTA-FLUXO-RAPIDO`).** Nas palavras do dono:
+   *"eu nao quero ficar vulneravel, tambem nao quero ficar atrasado por causa de juntas desnecessarias, quero aceleração no desenvolvimento, refatore o plano"*; *"nao quero refazer cadeiras, quero encontrar e resolver o problema sem ficar num loop, se for necessario se refaz uma cadeira, quero seguir um fluxo rapido"*; e, sobre a proposta do orquestrador, *"aprovo e siga"*.
+   Onde este item divergir do item 8(1) e 8(2), do item 9 e, no §C7.4, da auditoria do topo em toda reprovação, vale este item. Continuam valendo as paradas irredutíveis (§C7.5), a separação de papéis (§C7.4-bis) e P1–P8.
+   - **(1) Três níveis.**
+     - **Junta completa** (inspetor + 3 cadeiras, unanimidade): muda cálculo ou escrita de dinheiro; pode vazar dado entre organizações; muda permissão; pode perder dado sem volta; abre superfície externa.
+     - **Revisão reforçada** (1 revisor que executa testes e mutações + CI): backend sem nada do nível acima, migração simples, tela que só mostra dinheiro sem calcular.
+     - **Revisão simples** (1 revisor + CI, mais a conferência visual se tiver tela): telas, textos, registro, ajustes pequenos.
+   - **(2) Trava automática, fail-closed.** Antes da revisão, o orquestrador roda a trava sobre os arquivos alterados do PR. Se tocar banco, permissão, autenticação, isolamento entre organizações ou escrita financeira, o bloco sobe para junta completa, seja qual for o nível do plano. Na dúvida, sobe.
+   - **(3) O fluxo do bloco com junta.**
+     1. Pré-revisão: um revisor sozinho procura defeitos, e o dev conserta.
+     2. Junta, uma vez só: cada cadeira entrega a LISTA COMPLETA de achados, cada um com o comando que o reproduz.
+     3. Triagem: grave (perde dado, vaza entre organizações, quebra permissão, erra dinheiro) conserta agora; não grave e simples conserta na mesma leva; não grave e grande vira pendência com dono e não segura o bloco.
+     4. Um conserto só, por um dev que não achou, com teste que fica vermelho sem o conserto.
+     5. Conferência: um verificador, que não consertou, roda o comando de cada achado, confere o teste vermelho e o CI inteiro.
+     6. Merge, depois porteiro.
+   - **(4) Quando se refaz uma cadeira.** Só nestes dois casos, e só aquela cadeira: o conserto muda regra de dinheiro, permissão ou isolamento fora do que o achado apontava; ou a conferência mostra que um defeito GRAVE continua lá. Defeito não grave que sobra depois da conferência vira pendência com dono, e o bloco segue. Defeito grave nunca passa.
+   - **(5) Auditoria do topo.** Depois da junta, só para defeito grave ou para conserto que exija decisão de desenho.
+   - **(6) Varredura de segurança no fim.** Antes de fechar o portão da versão vendável, uma revisão de segurança cobre o sistema inteiro, inclusive o que não passou por junta.
+   - **Risco assumido, declarado:** um conserto pode criar defeito novo que nenhuma cadeira julgue. A mitigação é o CI inteiro, o verificador, a trava e a varredura final.
+   - **Quem faz o quê** (decisão do dono, 2026-10-30, `D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`): *"quero que vc priorize o uso dos codex(as duas contas), somente as tarefas que requeiram claude vc pode fazer. tarefa principal é orquestração. mas por exemplo as telas devem ser feitas no claude desing."* Telas no Claude. **Leitura do orquestrador, declarada (§A6):** planos de bloco e auditorias também no Claude, porque o dono disse *"o 	Plano do B-SAN3-24 tambem nao confio no codex"* e o plano do `B-AV-REAL` feito no Astra voltou na revisão.
+
 ## 8. GitHub Flow & governança de commits
 
 O repositório oficial vive no **GitHub**. **GitHub Flow**, um **bloco por PR**:

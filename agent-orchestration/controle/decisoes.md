@@ -4039,3 +4039,67 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fechamentos do #459 — 2 e não 3:** o porteiro do #459 pediu apensar o fechamento de três pendências (`porteiro-459-parecer.md:145,197`); a ata `J-B-SAN3-12a.md:39-41` autoriza o porteiro a fechar só duas, com o critério medido pela junta (`P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, C3 item 3; `P-SAN3-20-DELETE-TITULO-COM-CHEQUE`, C4b item 1). Prevalece a ata: a `P-SAN3-20-DESVINCULAR-DEPOSITADO` segue ABERTA, porque o critério dela (fluxo seguro para `deposited` com título já pago) não foi medido.
 - **Cadeira (a) do TRC-02 ciclo 2:** o `a-opus` de `00-quedas.md` não existiu (nenhum arquivo em `votos/B-TRC-02-ciclo2/`; `PLANO-RODADA-2026-10-24.md:81`); a cadeia corrigida está na ata `J-B-TRC-02-ciclo2.md`.
 - **Corpo do #454 defasado:** ficou com “DBA re-medindo”, `462/462` e sem citar a emenda v2.4 no escopo; o código/merge entregue foi revalidado, portanto a divergência é documental e BAIXA (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md:12,71-72,103`).
+
+## D-SAN3-12C-ABERTURA-E5 (2026-10-28) — B/C usam dados reais; KPI fica no marco #473
+
+- **Natureza:** versionamento da Emenda E5 planejada por `planejador-san312c-abertura-astra`; este DEV apenas registra e executa, sem criar decisão de produto.
+- **Ref medida:** `origin/main` = `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; ramo `feat/web-financeiro-aparencias-b-c`, worktree isolado `C:/Users/AMP/w-san312c`.
+- **Interpretação §A2 declarada:** a maquete governa intenção/layout, mas valores ilustrativos, agência/número inexistentes e lista inversa de cheques não autorizam cálculo local, placeholder, UUID, mock ou N+1. A implementação usa somente contratos reais e estados honestos; as duas lacunas de dado têm pendências nomeadas.
+- **KPI:** `Kpis/**` permanece fora do PR funcional. O PR #473 fica em rascunho e recebe o 12c somente após merge + porteiro, pelo loop de marco vigente, com SHA/CI/contagens obtidos por comando.
+- **Régua:** apresentação e testes → um revisor independente + `cognicao-visual` + CI verde. Se surgir alteração de autorização, payload de escrita, CAS, idempotência, cálculo ou integridade, suspender, emendar/revisar o plano e reclassificar para junta completa.
+
+## D-SAN3-12C-VISUAL-CICLO2 (2026-10-30) — leituras do DEV na correção visual de B e C
+
+- **Natureza:** interpretação do DEV (`dev-san312c-visual-opus`, Claude Opus, nível menor declarado), declarada como tal; não é decisão de produto. A ordem de refazer o visual é do dono: *"o visual vai ser refeito amanha com vc quando seu limite voltar, o codex nao tem a manha para fazer o visual."*
+- **Ref medida:** referência `financeiro-baixa-conta-conciliacao-3opcoes.reference.html` (E5.0), renderizada e medida em 1280, 1366 e 1440 px.
+- **Hover das abas na biblioteca:** `.pat-os-tab:hover` vale para toda tela que usa as abas. A E5.3 pede seletores escopados em `app.css`; o mandato desta correção manda o estilo nascer na biblioteca. Valeu o mandato, porque o acréscimo não muda o repouso nem o ativo. Se o revisor preferir o escopo, são duas linhas.
+- **Marcas "falta no backend" da maquete:** não entram no produto. Meses por conta e dias vêm de `GET /financial-entries/aggregate` (`B-SAN3-12a`), que nasceu depois da maquete.
+- **Mês ou dia sem bucket:** a coluna aparece, sem barra e com "—". O agregado devolve só o que existe no período pedido; a tela não publica R$ 0,00 para o que o servidor não devolveu.
+- **`ColumnBars` dentro de `DayBars.tsx`:** a lista fechada da E5.3 não autoriza arquivo novo em `components/charts/`. O componente fica no arquivo permitido e é registrado na biblioteca.
+- **Conta desativada no trilho:** o hook de contas só busca o saldo das ativas e não está na lista da E5.3. O `FinanceiroPage` consulta o `/balance` das desativadas, só na B; mesma rota e mesma permissão de leitura, nenhuma escrita.
+- **Gatilho de reclassificação (E5.1):** não ocorreu. Autorização, payload de escrita, CAS, idempotência e cálculo de saldo ou agregado ficaram intactos; o `ConciliarForm` é o mesmo, só muda o lugar onde é mostrado. O `onDone` passou a não fechar o formulário de outra linha (R-C).
+## D-CODEX-DUAS-CONTAS (decisão do dono, 2026-10-28) — duas contas do Codex em paralelo
+
+- **Fala literal do dono:** *"usar as duas contas do codex"*.
+- **Leitura do orquestrador, declarada (§A6):** a conta 1 e a conta 2 (`CODEX_HOME=C:\Users\AMP\codex-conta2`) podem executar uma tarefa cada, em paralelo; o lançador distingue `-Conta 1|2`.
+
+## D-ANTIVIRUS-CLAMAV (decisão do dono, 2026-10-28) — ClamAV em container para a varredura de evidência
+
+- **Fala literal do dono:** *"autorizo usar o ClamAV num container"*.
+- **Consequência:** o item 27 do portão usa ClamAV em container para varrer evidências; GuardDuty fica descartado por agora.
+
+## D-KPI-2810-ADIADO (decisão do dono, 2026-10-28) — marco de KPI de 28/10 adiado
+
+- **Fala literal do dono:** *"vamos adiar o kpi de 28/10, no proximo bloco fazemos"*.
+- **Estado medido em 29/10:** o PR #473 (`chore/kpi-marco-2026-10-28`, Codex conta 2) permanece em rascunho; a fonte de registro o associa ao `B-SAN3-12c`.
+
+## D-TOPO-CODEX-12C (decisão do dono, 2026-10-28) — exceção de modelo para plano e desenvolvimento do 12c
+
+- **Falas literais do dono:** *"coloque o codex no topo para escrever o plano do bloco 12c"* e *"o dev do 12c pode fazer com o codex"*.
+- **Aplicação registrada:** plano E5 no Codex GPT-6 Astra (`-Topo`, conta 1) e desenvolvimento no Codex GPT-5.6 Sol, em razão do limite do Claude. Esta foi uma exceção específica ao `D-TOPO-E-O-CLAUDE` de 24/10.
+- **Estado medido em 29/10:** o PR #474 está aberto no head `33bde2ee`; o visual ainda será refeito pelo Claude, conforme a decisão posterior abaixo.
+
+## D-FUSO-SAO-PAULO (pedido do dono, 2026-10-29) — horas apresentadas no fuso de São Paulo
+
+- **Fonte:** seção de 29/10 de `REGISTRO-PENDENTE.md`; ela registra o pedido, mas não traz uma fala literal para transcrição.
+- **Preferência de comunicação:** toda hora mostrada ao dono em mensagens, painéis e avisos usa o fuso de São Paulo (UTC−3), com o fuso identificado quando houver risco de ambiguidade.
+- **Leitura do orquestrador, declarada (§A6):** a preferência muda a apresentação ao dono, não timestamps canônicos persistidos nem evidências técnicas que precisem permanecer em UTC.
+
+## D-KRYOS-MWAPI-ESQUECIDOS (decisão do dono, 2026-10-28) — Kryos e mwapi saem das decisões pendentes
+
+- **Fala literal do dono:** *"esqueça kryos, mwapi"*.
+- **Consequência:** Kryos e mwapi não seguem como alternativas ou decisões pendentes; o registro histórico da descontaminação Kryos permanece preservado.
+
+## D-JUNTA-FLUXO-RAPIDO (decisão do dono, 2026-10-30) — três níveis, uma votação, um conserto, sem loop
+
+- **Falas literais do dono:** *"eu nao quero ficar vulneravel, tambem nao quero ficar atrasado por causa de juntas desnecessarias, quero aceleração no desenvolvimento, refatore o plano"*; *"nao quero refazer cadeiras, quero encontrar e resolver o problema sem ficar num loop, se for necessario se refaz uma cadeira, quero seguir um fluxo rapido"*; e, sobre o plano refatorado, os três níveis e o fluxo rápido, *"aprovo e siga"*.
+- **Contrato aprovado:** junta completa para dinheiro, vazamento entre organizações, permissão, perda irreversível de dado ou superfície externa; revisão reforçada para backend/migração simples/tela que apenas mostra dinheiro; revisão simples para telas, textos, registro e ajustes pequenos. A trava automática sobe o risco em modo fail-closed.
+- **Fluxo:** pré-revisão; uma junta com lista completa e comandos; triagem; um único conserto por agente distinto; conferência independente; merge e porteiro. Só se refaz a cadeira afetada quando o conserto amplia regra de dinheiro/permissão/isolamento ou um defeito grave persiste. Auditoria do topo fica reservada a defeito grave ou decisão de desenho.
+- **Risco assumido e mitigação:** um conserto pode criar defeito novo não visto pelas cadeiras; CI inteiro, verificador, trava automática e varredura final mitigam o risco.
+
+## D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE (decisão do dono, 2026-10-30) — Codex primeiro; telas e planos no Claude
+
+- **Falas literais do dono:** *"o visual vai ser refeito amanha com vc quando seu limite voltar, o codex nao tem a manha para fazer o visual."*; *"o 	Plano do B-SAN3-24 tambem nao confio no codex, fica para vc amanha"*; e *"quero que vc priorize o uso dos codex(as duas contas), somente as tarefas que requeiram claude vc pode fazer. tarefa principal é orquestração. mas por exemplo as telas devem ser feitas no claude desing."*.
+- **Aplicação:** priorizar as duas contas do Codex nas tarefas que não requeiram Claude; telas ficam no Claude. O refazimento visual do `B-SAN3-12c` e o plano do `B-SAN3-24` ficam no Claude, conforme as falas específicas de 29/10.
+- **Leitura do orquestrador, declarada (§A6):** planos de bloco e auditorias também ficam no Claude, porque o dono não confiou ao Codex o plano do `B-SAN3-24` e o plano do `B-AV-REAL` feito no Astra voltou na revisão. O dono pode corrigir esta extensão em uma linha.
+- **Conciliação declarada (§A2):** o plano E5 e o desenvolvimento do `B-SAN3-12c` já feitos pelo Codex permanecem como fato histórico; a decisão posterior rege a distribuição seguinte.

@@ -625,3 +625,8 @@ A primeira aplicação do §C.7 perdeu o critério `as_of` (teste (g) do `B-SAN3
 planejou (§C7.4-bis); **conferência de aplicação** (`agente-ci-doutor`; não é ciclo de mérito): NÃO CONFERE em `042e689e` (abaixo), **CONFERE em
 `bb3f5925`** — `agent-orchestration/omega/juntas/CONFERENCIA-SAN3-plano-opcao-B.md`.
 A conferência de aplicação (`agente-ci-doutor`, sobre `042e689e`) reprovou a primeira aplicação por enumerar os donos pela coluna de IDs do §4.1 — instrução do planejador — e não pelas entradas do registro que carregam os itens; refeita pela fonte — os achados Ω6R dos itens 1, 2, 11, 19, 24, 27, 30 e 31 ganharam emenda de dono nas hospedeiras que os têm como sujeito (`P-O6R-B03`, `P-O6R-B04`, `P-O6R-B12` e `P-O6R-B07`), e as emendas de dono desta aplicação passaram ao formato que o gerador do índice lê (`**dono:**`): 56 de 56 itens do gate com o bloco do §4.1 nomeado em toda entrada que os tem como sujeito (0 não-OK e 0 avisos na ferramenta do orquestrador); 80 ponteiros do registro para o plano, 0 divergentes; índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS.
+
+# B-SAN3-12c — aparências B/C do Financeiro
+
+DEV concluído em 2026-10-29; PR #474 pronto para revisor independente + `cognicao-visual` + CI. Relatório:
+`docs/revisoes/SAN3/B-SAN3-12c-dev.md`. O marco KPI permanece no PR #473 após merge + porteiro.

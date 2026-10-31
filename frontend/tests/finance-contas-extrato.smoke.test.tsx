@@ -202,7 +202,7 @@ function viewModel(summaryLoading: boolean): FinanceiroViewModel {
     entries: { items: [], loading: false, failed: false, total: 0 },
     aggregates: {},
     policy: { canUnreconcile: false, delegatedToFinance: false },
-    access: { readTitles: true, readAccounts: true, pay: true, reconcile: true, createAccount: true },
+    access: { readEntries: true, readTitles: true, readAccounts: true, pay: true, reconcile: true, createAccount: true },
     failed: false,
     stale: false,
     lastUpdatedAt: null,
