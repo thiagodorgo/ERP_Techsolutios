@@ -4104,3 +4104,40 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Aplicação:** priorizar as duas contas do Codex nas tarefas que não requeiram Claude; telas ficam no Claude. O refazimento visual do `B-SAN3-12c` e o plano do `B-SAN3-24` ficam no Claude, conforme as falas específicas de 29/10.
 - **Leitura do orquestrador, declarada (§A6):** planos de bloco e auditorias também ficam no Claude, porque o dono não confiou ao Codex o plano do `B-SAN3-24` e o plano do `B-AV-REAL` feito no Astra voltou na revisão. O dono pode corrigir esta extensão em uma linha.
 - **Conciliação declarada (§A2):** o plano E5 e o desenvolvimento do `B-SAN3-12c` já feitos pelo Codex permanecem como fato histórico; a decisão posterior rege a distribuição seguinte.
+
+## D-COBRANCA-ASSINATURA-FRANQUIA (decisão do dono, 2026-10-30) — assinatura com franquia, excedentes e visão de custo
+
+- **Falas literais do dono:** *"1=nao, 2 -cubra, 3=sigo a recomendação, 4= a plataforma paga a nuvem o preço pago por cada cliente é a assinatura com um limite de usuarios e espaço do db utilizado(tem uma franquia, mas se passar paga), mas o biling da plataforma mostra o gasto total de cada cliente, de rupo ou globais para permitir açoes certas da plataforma."*; *"vamos alinhar a cobrança, nada de deixar pedencias"*; *"vamos cobrar planos(3), e rastreamentos de veiculos com dois planos. 1=recomendação, 2 = recomendação, 3=recomendação, 5 recomendação+o cliente ver um grafico de pizza com o limite contratado e gasto, 5 recomendação mas ja deixar o canal do gateway e nota pronto, esperando a api externa,6=recomendação, 7=so o plano e uso da franquia de espaço, usuarios e se esta em dia"*; e *"Quantidade de planos: docs/02-mapa-modulos.md vale o que esta la."*.
+- **Contexto das sete recomendações registrado na fonte:** (1) retirar da tela e das rotas a cobrança por custo mais markup, manter as tabelas sem uso novo e usar margem por cliente com alerta; (2) planos cadastrados pela plataforma, com limites de usuários e espaço, preço mensal, excedente por usuário e por GB e ajuste por organização; (3) contar todo usuário ativo, inclusive técnico, pelo maior número do mês, sem bloquear ao exceder; (4) medir banco e arquivos por estimativa diária e mostrar o gráfico de pizza de contratado × gasto; (5) demonstrativo mensal com baixa manual, deixando gateway e nota prontos sem chamada externa; (6) grupo econômico; (7) o cliente vê somente plano, uso da franquia e situação de pagamento.
+- **Correção registrada:** valem os 4 planos de `docs/02-mapa-modulos.md`: Starter, Professional, Business e Enterprise; rastreamento conserva dois planos.
+- **Leitura do orquestrador, declarada (§A6):** o primeiro "5" da resposta às sete perguntas corresponde à pergunta 4.
+- **Conflito registrado (§A2):** o conflito com `src/modules/cloud-charges`, `docs/architecture.md:65`, `docs/cloud-cost-allocation.md` e `docs/modules.md:111`, que descrevem markup, está em detalhamento na emenda do `B-SAN3-03`. Nada é apagado, e o código continua como está até os blocos entrarem.
+
+## D-SAN3-03-BASE-DERIVADA (decisão do dono, 2026-10-30) — custo de API por ações auditadas
+
+- **Fala literal do dono:** *"3=sigo a recomendação"*.
+- **Contexto da pergunta registrada na fonte:** dividir o custo de API por ações auditadas. A base derivada foi aprovada pelo dono.
+
+## D-CLAUDE-COBRE-ATE-0411 (decisão do dono, 2026-10-30) — cobertura do desenvolvimento até 04/11, sem Pro
+
+- **Fala literal do dono:** *"1=nao, 2 -cubra, 3=sigo a recomendação, 4= a plataforma paga a nuvem o preço pago por cada cliente é a assinatura com um limite de usuarios e espaço do db utilizado(tem uma franquia, mas se passar paga), mas o biling da plataforma mostra o gasto total de cada cliente, de rupo ou globais para permitir açoes certas da plataforma."*.
+- **Contexto das perguntas registrado na fonte:** `1=nao` responde à assinatura Pro em uma conta do Codex; `2 -cubra` responde à cobertura do desenvolvimento pelo Claude até 04/11 se o Codex parar.
+
+## D-PAGAMENTO-NOTA-PRONTOS (decisão do dono, 2026-10-30) — canal de pagamento e nota fiscal preparados sem chamada externa
+
+- **Fala literal do dono:** *"em B-SAN3-03, canal de gateway e nota prontos, sem chamar nada externo; o canal deve ficar pronto, com local na administração da plataforma para habilitar uma api externa, busque na internet o que cada api(3 de cada) precisa, seus endpoints e formato da requisição. pagamento, nota fiscais devem ficar prontos"*.
+- **Leitura do orquestrador, declarada (§A6):** o trabalho é do plano de assinatura (`B-ASSINATURA-plano.md`), não do `B-SAN3-03`; o `B-SAN3-03` segue somente com o custo.
+
+## D-COFRE-CREDENCIAIS (decisão do dono, 2026-10-30) — cofre para as credenciais externas
+
+- **Fala literal do dono:** *"O que "pronto" não prova: seus testes valeram como os testes finais. crie esse cofre, deixe tudo anotado, vou desligar o pc e retornar para casa, em casa pretendo montar um ryzen 7 pro 8700ge, 32gb 5600mhz e contratar o max 20x, ai vc vai retornar com força"*.
+- **Leitura do orquestrador, declarada (§A6):** o cofre pertence ao plano de assinatura (`B-ASSINATURA-plano.md`), não ao `B-SAN3-03`.
+
+## D-TESTES-FALSOS-SAO-FINAIS (decisão do dono, 2026-10-30) — testes do canal valem como finais
+
+- **Fala literal do dono:** *"O que "pronto" não prova: seus testes valeram como os testes finais. crie esse cofre, deixe tudo anotado, vou desligar o pc e retornar para casa, em casa pretendo montar um ryzen 7 pro 8700ge, 32gb 5600mhz e contratar o max 20x, ai vc vai retornar com força"*.
+- **Leitura do orquestrador, declarada (§A6):** a regra alcança o canal de pagamento e nota do plano de assinatura (`B-ASSINATURA-plano.md`), não o `B-SAN3-03`.
+
+## D-B-O6R-11-REENVIOS (decisão do dono, 2026-10-30) — reenvio de despesas e material de estoque
+
+- **Fala literal do dono:** *"B-O6R-11 faça o reenvio de despesas e o material do estoque tambem é reenviado"*.

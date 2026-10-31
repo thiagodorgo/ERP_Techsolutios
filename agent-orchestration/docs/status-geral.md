@@ -1,5 +1,9 @@
 # Status Geral
 
+## Atualização 2026-10-31 — B-SAN3-12c mergeado; porteiro BLOQUEADO por registro pós-merge
+
+O PR #474 foi mergeado: head aprovado `ccfd4e3b`, squash merge `2b65f51a` e CI de push `41207658016` verde. O porteiro pós-merge declarou **BLOQUEADO** porque os itens 28/55 e as duas pendências do Financeiro ainda constavam abertos, e o estado/log ainda descrevia o PR como aberto; o bloqueante de limpeza foi resolvido e `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio. Este registro fecha por fato os itens 28/55 e atualiza o estado pós-merge. A sequência do marco KPI #473 também foi cumprida: merge `45435ab9`.
+
 ## Atualização 2026-10-30 — B-SAN3-12c: visual de B e C refeito, pronto para o ciclo 2 de revisão (PR #474)
 
 `dev-san312c-visual-opus` (Claude Opus, nível menor declarado) refez B e C sobre a referência aprovada, por ordem do dono. Medido em navegador nas 3 larguras: sem rolagem horizontal, gap do cabeçalho em 20 px, hover e foco em todo controle, 5 estados em B e C. Smoke frontend 1556/1556 e check verde em Node 22. Régua seguinte: revisor independente + `cognicao-visual` + CI no novo head. Novas pendências, sem bloqueio: `P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ`, `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM`, `P-SAN3-12C-CABECALHO-A-24PX`.

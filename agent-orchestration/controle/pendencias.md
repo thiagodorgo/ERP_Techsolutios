@@ -8540,7 +8540,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-10-31, PR #474; head aprovado `ccfd4e3b`; merge `2b65f51a`; CI `41207658016`)
 - **fonte (fatia AUSENTES, §2a):** sintese B9, B10, A6
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `grep -rl financial-account frontend/src` = 0; `grep -rn "/pay" frontend/src` = 0; front só lista/cria/muda status (`ChargesPage`, `PaymentsPage`, `FinanceiroPage` via `financial-titles.adapter`); backend `financial-entry.routes.ts:95` `POST /financial-titles/:id/pay`, único caminho a `paid` (`financial-title.service.ts:284-286`, sintese)
@@ -8551,7 +8551,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 7-fluxo-necessario-para-venda
 - **dependências:** B-O6R-02 (atomicidade do pay) já mergeado; conta antes da baixa
 - **dono:** `B-SAN3-12` (plano SAN3 §4.1 item 28); bloco dono proposto pela fatia: bloco web financeiro ("ciclo do dinheiro")
-- **impacto vendável:** **BLOQUEIA** — pela web um título nunca vira pago nem caixa
+- **impacto vendável:** FECHADO — o PR #474 entregou e validou as aparências A/B/C do Financeiro, inclusive baixa, conta e caixa; head aprovado `ccfd4e3b`, merge `2b65f51a`, CI `41207658016`.
 - **teste de encerramento:** smoke: criar conta → emitir título → baixar pela tela → saldo em `GET /financial-accounts/:id/balance`; título `paid`; 403 e estados §7
 
 ---
@@ -9441,11 +9441,11 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia: sem extrato nem ação — ALTA
 
-- status: ABERTA (junta do PR #386, ciclo 2, cadeira C1, achado C1-A1; registrada pela decisão do dono `D-SAN3-PLANO-OPCAO-B`; prova medida pelo aplicador em `ec4f34a8`)
+- status: FECHADA (2026-10-31, PR #474; head aprovado `ccfd4e3b`; merge `2b65f51a`; CI `41207658016`)
 - **prova:** backend `src/modules/financial-entries/financial-entry.routes.ts:84-86` (`PATCH /financial-entries/:financialEntryId/reconcile`, permissão `financial_entries:update`) e l.31-32 (`GET /financial-entries`, `financial_entries:read`); `git grep -n -E "/reconcile|financial-entries" -- frontend/src mobile/flutter_app/lib` → nenhuma linha (a busca solta por "reconcile" acha só estado de processamento, `reconciled`, não chamada); a promessa: notas `mvp_demo`/`mvp_vendavel` do `Kpis/kpis-latest.json` ("Conciliacao") e `API_CONTRACTS.md:435` ("Concilia lançamento").
 - **escopo:** `pre-existente` — a rota nasceu em `1e65b34b` (2026-07-18, #216, "Ω4-5 — Conciliação bancária") e nunca teve chamador na web nem no app; a omissão no plano é do PR #386 (C1-A1).
 - **dono:** `B-SAN3-12` (ampliado — plano SAN3 v5, §4.1 item 55; condição de entrada CE-4, §5.6).
-- **bloqueia:** o gate da versão vendável (critérios 7 e 4 — a conciliação está no núcleo que o `mvp_vendavel` conta).
+- **bloqueia:** nada — o PR #474 entregou e validou extrato e conciliação nas aparências A/B/C do Financeiro; head aprovado `ccfd4e3b`, merge `2b65f51a`, CI `41207658016`.
 - **teste de encerramento:** o do CE-4 — pela web, criar conta → emitir título → baixar pela tela → o lançamento aparece no extrato → conciliar → conciliado; conciliar de novo → a resposta que o contrato define; saldo pela rota real.
 
 ## P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dispatch-000101` com timeline inventada no erro — ALTA
