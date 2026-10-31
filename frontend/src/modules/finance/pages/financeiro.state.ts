@@ -19,7 +19,7 @@ export type FinanceState = {
 };
 
 const TABS: readonly FinanceTab[] = ["rec", "pag", "ext", "conc"];
-const TARGET = /^(venc|hoje|sem7|parcial|mes:\d{4}-(0[1-9]|1[0-2])(:(in|out))?|conc:(pendente|conciliado|valor|data))$/;
+const TARGET = /^(venc|hoje|sem7|parcial|dir:(in|out)|mes:\d{4}-(0[1-9]|1[0-2])(:(in|out))?|dia:\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])|idade:(0-2|3-7|8-15|16\+)|conc:(pendente|conciliado|valor|data))$/;
 const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 export function isFinanceTarget(value: string | null | undefined): value is string {
@@ -53,6 +53,14 @@ export function targetLabel(target: string): string {
   if (target === "hoje") return "Vencem hoje";
   if (target === "sem7") return "Vencem nos próximos 7 dias";
   if (target === "parcial") return "Recebidos ou pagos em parte";
+  if (target === "dir:in") return "Entradas";
+  if (target === "dir:out") return "Saídas";
+  if (target.startsWith("dia:")) return `Lançamentos de ${target.slice(4).split("-").reverse().join("/")}`;
+  if (target.startsWith("idade:")) {
+    const age = target.slice(6);
+    const label = age === "0-2" ? "até 2 dias" : age === "3-7" ? "3 a 7 dias" : age === "8-15" ? "8 a 15 dias" : "mais de 15 dias";
+    return `A conciliar há ${label}`;
+  }
   const [kind, value, direction] = target.split(":");
   if (kind === "mes") return `${direction === "in" ? "Entradas de " : direction === "out" ? "Saídas de " : "Lançamentos de "}${monthName(value)} de ${value.slice(0, 4)}`;
   if (kind === "conc") return { pendente: "A conciliar", conciliado: "Conciliados", valor: "Com ressalva de valor", data: "Com ressalva de data" }[value] ?? target;
@@ -65,6 +73,48 @@ function lastDayOfMonth(competencia: string): string {
   return `${competencia}-${String(day).padStart(2, "0")}`;
 }
 
+/** Janela civil inclusiva dos seis meses que terminam no mês da data informada. */
+export function sixMonthRange(date: Date = new Date()): { readonly from: string; readonly to: string } {
+  const first = new Date(date.getFullYear(), date.getMonth() - 5, 1);
+  const competencia = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  return {
+    from: `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}-01`,
+    to: lastDayOfMonth(competencia),
+  };
+}
+
+function civilDate(date: Date, delta: number): string {
+  return localIsoDate(new Date(date.getFullYear(), date.getMonth(), date.getDate() + delta));
+}
+
+/** Janela civil inclusiva dos 14 dias que terminam hoje; não usa calendário UTC. */
+export function fourteenDayRange(date: Date = new Date()): { readonly from: string; readonly to: string } {
+  return { from: civilDate(date, -13), to: civilDate(date, 0) };
+}
+
+/** As 14 datas civis da janela, para a grade mostrar o dia sem bucket como ausência (nunca como zero). */
+export function fourteenDayDates(date: Date = new Date()): readonly string[] {
+  return Array.from({ length: 14 }, (_, index) => civilDate(date, index - 13));
+}
+
+/** As 6 competências da janela de `sixMonthRange`, da mais antiga para a atual. */
+export function sixMonthCompetencias(date: Date = new Date()): readonly string[] {
+  return Array.from({ length: 6 }, (_, index) => {
+    const month = new Date(date.getFullYear(), date.getMonth() + index - 5, 1);
+    return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+  });
+}
+
+export type PendingAgeKey = "0-2" | "3-7" | "8-15" | "16+";
+
+/** Faixas disjuntas da idade de pendências, por data civil inclusiva. */
+export function pendingAgeRange(key: PendingAgeKey, date: Date = new Date()): { readonly from?: string; readonly to: string } {
+  if (key === "0-2") return { from: civilDate(date, -2), to: civilDate(date, 0) };
+  if (key === "3-7") return { from: civilDate(date, -7), to: civilDate(date, -3) };
+  if (key === "8-15") return { from: civilDate(date, -15), to: civilDate(date, -8) };
+  return { to: civilDate(date, -16) };
+}
+
 /** Filtros do GET /financial-entries para o estado da tela — aplicados no SERVIDOR. */
 export function entriesFiltersFor(state: FinanceState): FinancialEntriesFilters {
   const filters: { -readonly [K in keyof FinancialEntriesFilters]: FinancialEntriesFilters[K] } = {};
@@ -75,6 +125,16 @@ export function entriesFiltersFor(state: FinanceState): FinancialEntriesFilters 
     filters.from = `${competencia}-01`;
     filters.to = lastDayOfMonth(competencia);
     if (direction === "in" || direction === "out") filters.direction = direction;
+  } else if (target?.startsWith("dia:")) {
+    filters.from = target.slice(4);
+    filters.to = target.slice(4);
+  } else if (target?.startsWith("idade:")) {
+    const range = pendingAgeRange(target.slice(6) as PendingAgeKey);
+    filters.from = range.from;
+    filters.to = range.to;
+    filters.reconciled = false;
+  } else if (target === "dir:in" || target === "dir:out") {
+    filters.direction = target === "dir:in" ? "in" : "out";
   } else if (target === "conc:pendente") {
     filters.reconciled = false;
   } else if (target === "conc:conciliado") {

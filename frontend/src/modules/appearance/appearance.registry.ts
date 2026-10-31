@@ -35,4 +35,13 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Painel de impacto" },
     ],
   },
+  {
+    key: "financeiro",
+    label: "Financeiro",
+    options: [
+      { value: "A", label: "Abas do Financeiro" },
+      { value: "B", label: "Conta em foco" },
+      { value: "C", label: "Conferência do caixa" },
+    ],
+  },
 ];

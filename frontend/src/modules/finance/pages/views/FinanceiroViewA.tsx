@@ -54,6 +54,7 @@ export type FinanceiroViewModel = {
   readonly aggregates: Readonly<Record<string, EntriesAggregate | null>>;
   readonly policy: ReconciliationPolicy;
   readonly access: {
+    readonly readEntries: boolean;
     readonly readTitles: boolean;
     readonly readAccounts: boolean;
     readonly pay: boolean;
@@ -68,8 +69,13 @@ export type FinanceiroViewModel = {
   readonly entryMessage: { readonly entryId: string; readonly text: string } | null;
   readonly onRetry: () => void;
   readonly onNewAccount: () => void;
-  readonly onPay: (title: FinancialTitle) => void;
-  readonly onReconcile: (entry: FinancialEntry) => void;
+  readonly onPay: (title: FinancialTitle, initialAccountId?: string) => void;
+  /** Formulário de baixa inline da aparência B; a A ignora e conserva seu modal. */
+  readonly payPanel?: { readonly titleId: string; readonly node: ReactNode } | null;
+  /** Formulário de conciliação dentro do detalhe (B e C, referência `detLanc`); a A conserva seu modal. */
+  readonly reconcilePanel?: { readonly entryId: string; readonly node: ReactNode } | null;
+  readonly onCloseReconcile?: () => void;
+  readonly onReconcile: (entry: FinancialEntry, onDone?: () => void, inline?: boolean) => void;
   readonly onUnreconcile: (entry: FinancialEntry) => void;
 };
 
@@ -85,6 +91,13 @@ export const AGGREGATE_KEYS = {
   value: "valor",
   date: "data",
   account: (accountId: string) => `conta:${accountId}`,
+  accountReconciled: (accountId: string) => `conta:${accountId}:conciliado`,
+  accountValue: (accountId: string) => `conta:${accountId}:valor`,
+  accountDate: (accountId: string) => `conta:${accountId}:data`,
+  accountMonths: (accountId: string) => `conta:${accountId}:meses`,
+  routineDays: (accountId: string | null) => `rotina:dias:${accountId ?? "organizacao"}`,
+  routineDaysPending: (accountId: string | null) => `rotina:dias-pendentes:${accountId ?? "organizacao"}`,
+  routineAge: (key: string, accountId: string | null) => `rotina:idade:${key}:${accountId ?? "organizacao"}`,
 } as const;
 
 function countOf(aggregate: EntriesAggregate | null | undefined): number | null {
@@ -93,6 +106,22 @@ function countOf(aggregate: EntriesAggregate | null | undefined): number | null 
 
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+function normalizeSearch(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-BR");
+}
+
+export function entryMatchesSearch(entry: FinancialEntry, search: string): boolean {
+  const term = normalizeSearch(search);
+  if (!term) return true;
+  return [entry.description, entry.category].some((value) => normalizeSearch(value ?? "").includes(term));
+}
+
+export function titleMatchesSearch(title: FinancialTitle, search: string): boolean {
+  const term = normalizeSearch(search);
+  if (!term) return true;
+  return [title.document, title.partyName, title.description].some((value) => normalizeSearch(value ?? "").includes(term));
 }
 
 function SkeletonRows({ columns }: { readonly columns: number }) {
@@ -109,14 +138,14 @@ function SkeletonRows({ columns }: { readonly columns: number }) {
   );
 }
 
-type FilterChipItem = {
+export type FilterChipItem = {
   readonly key: string;
   readonly label: string;
   readonly clearLabel: string;
   readonly onClear: () => void;
 };
 
-function FilterChips({ items }: { readonly items: readonly FilterChipItem[] }) {
+export function FilterChips({ items }: { readonly items: readonly FilterChipItem[] }) {
   return (
     <div className="pat-filtro-chip-bar">
       {items.map((item) => (
@@ -157,6 +186,7 @@ function Block({ label, count, unavailableLabel = "contagem indisponível", pres
 export function FinanceiroViewA(model: FinanceiroViewModel) {
   const { state, onState, summary, access } = model;
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [titleSearch, setTitleSearch] = useState("");
   // Paginação client-side da lista de títulos (TablePager da biblioteca, como na tela-modelo `WorkOrdersPage`):
   // volta à primeira página em todo go(); trocar de página fecha o detalhe aberto.
   const [titlePage, setTitlePage] = useState(0);
@@ -206,7 +236,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   const competencia = summary.settledThisMonth.competencia;
   const mes = competencia ? monthName(competencia) : "o mês";
   const previous = summary.cashFlow.length >= 2 ? summary.cashFlow[summary.cashFlow.length - 2] : null;
-  const isPressed = (tab: FinanceTab, target: string | null) => state.tab === tab && state.target === target && (target !== null || state.accountId === null);
+  const isPressed = (tab: FinanceTab, target: string | null) => state.tab === tab && state.target === target && state.accountId === null;
 
   const kpis = (
     <div className="pat-kpi-row pat-kpi-row--6" aria-busy={model.summaryLoading ? true : undefined}>
@@ -385,15 +415,18 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
     const receivable = state.tab === "rec";
     const list = receivable ? model.receivables : model.payables;
     const base = receivable ? openRec : openPag;
-    const visible = base.filter((title) => titleMatchesTarget(title, state.target)).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const visible = base
+      .filter((title) => titleMatchesTarget(title, state.target) && titleMatchesSearch(title, titleSearch))
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     // Contador honesto (R3(d)): com a carga completa, as linhas visíveis; incompleta, quantas há entre as carregadas e o
     // total do servidor (o idioma do extrato).
     const loadedAll = list.items.length >= list.total;
+    const hasLocalFilter = Boolean(state.target || normalizeSearch(titleSearch));
     counter = loadedAll
-      ? plural(visible.length, "título", "títulos")
-      : state.target
-        ? `${visible.length} entre os ${list.items.length} mais recentes de ${list.total} títulos`
-        : `${list.items.length} mais recentes de ${list.total} títulos`;
+      ? plural(visible.length, "resultado", "resultados")
+      : hasLocalFilter
+        ? `${visible.length} resultados entre ${list.items.length} títulos carregados · ${list.total} títulos no servidor (sem este filtro)`
+        : `${visible.length} resultados entre ${list.items.length} títulos carregados · ${list.total} títulos no servidor`;
     if (!access.readTitles) {
       body = (
         <StatePanel
@@ -425,6 +458,22 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       const overdueCount = model.summaryLoading ? null : receivable ? summary.receivable.overdueCount : summary.payable.overdueCount;
       intro = (
         <>
+          <div style={{ padding: "12px 18px 0" }}>
+            <label className="pat-field" style={{ maxWidth: 420 }}>
+              <span>Buscar nos títulos carregados</span>
+              <input
+                type="search"
+                name="busca-titulos"
+                value={titleSearch}
+                placeholder="Documento, cliente, fornecedor ou descrição"
+                onChange={(event) => {
+                  setOpenKey(null);
+                  setTitlePage(0);
+                  setTitleSearch(event.currentTarget.value);
+                }}
+              />
+            </label>
+          </div>
           <BlockGroup label="Blocos de resumo — clique para filtrar">
             {[
               ["venc", "Vencidos"],
@@ -478,7 +527,11 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
               setTitlePageSize(size);
               setTitlePage(0);
             }}
-            rangeLabel={loadedAll ? `${start + 1}–${end} de ${visible.length}` : `${start + 1}–${end} de ${visible.length} carregados · ${list.total} no servidor`}
+            rangeLabel={
+              loadedAll
+                ? `${start + 1}–${end} de ${visible.length} resultados carregados`
+                : `${start + 1}–${end} de ${visible.length} resultados carregados · ${list.total} títulos no servidor${hasLocalFilter ? " (sem este filtro)" : ""}`
+            }
             onPrev={() => changePage(Math.max(0, page - 1))}
             onNext={() => changePage(Math.min(maxPage, page + 1))}
             canPrev={page > 0}
@@ -567,6 +620,16 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
         />
       );
       counter = "";
+    } else if (!access.readEntries) {
+      body = (
+        <StatePanel
+          tone="forbidden"
+          embedded
+          title="Acesso não permitido"
+          detail="Seu perfil não inclui os lançamentos desta organização. Para mais acesso, fale com o administrador da organização."
+        />
+      );
+      counter = "";
     } else if (model.entries.loading) {
       body = <SkeletonRows columns={6} />;
     } else if (model.entries.failed) {
@@ -638,6 +701,18 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
       onClear: () => go({ target: null }),
     });
   }
+  if (normalizeSearch(titleSearch) && (state.tab === "rec" || state.tab === "pag")) {
+    filterChips.push({
+      key: "search",
+      label: `Busca: ${titleSearch.trim()}`,
+      clearLabel: "Limpar a busca de títulos",
+      onClear: () => {
+        setOpenKey(null);
+        setTitlePage(0);
+        setTitleSearch("");
+      },
+    });
+  }
 
   return (
     <div data-aparencia="A" style={{ color: "#0F172A" }}>
@@ -668,7 +743,10 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
                 role="tab"
                 aria-selected={state.tab === item.id}
                 className={state.tab === item.id ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
-                onClick={() => go({ tab: item.id, target: null })}
+                onClick={() => {
+                  if (item.id !== "rec" && item.id !== "pag") setTitleSearch("");
+                  go({ tab: item.id, target: null });
+                }}
               >
                 {item.label}
                 {item.count !== null ? <span style={{ marginLeft: 6, fontWeight: 800 }}>{item.count}</span> : null}
@@ -686,7 +764,7 @@ export function FinanceiroViewA(model: FinanceiroViewModel) {
   );
 }
 
-function TitlesTable({
+export function TitlesTable({
   rows,
   receivable,
   openKey,
@@ -694,14 +772,34 @@ function TitlesTable({
   renderDetail,
 }: {
   readonly rows: readonly FinancialTitle[];
-  readonly receivable: boolean;
+  /** `null` combina recebíveis e pagáveis, como na aparência B. */
+  readonly receivable: boolean | null;
   readonly openKey: string | null;
   readonly onToggle: (key: string) => void;
   readonly renderDetail: (title: FinancialTitle) => ReactNode;
 }) {
   const columns: DenseColumn<FinancialTitle>[] = [
-    { key: "doc", header: "DOCUMENTO", width: "18%", render: (t) => t.document ?? <span className="pat-cell-muted">sem documento</span> },
-    { key: "party", header: receivable ? "CLIENTE" : "FORNECEDOR", render: (t) => <b>{t.partyName}</b> },
+    {
+      key: "doc",
+      header: "DOCUMENTO",
+      width: "18%",
+      render: (t) => {
+        const document = t.document ?? <span className="pat-cell-muted">sem documento</span>;
+        if (receivable !== null) return document;
+        // Lista mista (aparências B e C): o ícone diz a direção de cada linha, como na referência.
+        const incoming = t.direction === "receivable";
+        const Icon = incoming ? ArrowUpRight : ArrowDownRight;
+        return (
+          <>
+            <span className={incoming ? "financeiro-bc__dir financeiro-bc__dir--in" : "financeiro-bc__dir financeiro-bc__dir--out"} title={incoming ? "A receber" : "A pagar"}>
+              <Icon size={13} aria-label={incoming ? "A receber" : "A pagar"} />
+            </span>
+            <span className="financeiro-bc__doc">{document}</span>
+          </>
+        );
+      },
+    },
+    { key: "party", header: receivable === null ? "CLIENTE OU FORNECEDOR" : receivable ? "CLIENTE" : "FORNECEDOR", render: (t) => <b>{t.partyName}</b> },
     {
       key: "due",
       header: "VENCIMENTO",
@@ -723,7 +821,7 @@ function TitlesTable({
       width: "13%",
       align: "right",
       tabular: true,
-      render: (t) => <b style={{ color: receivable ? "#059669" : "#B91C1C" }}>{formatBRL(titleOpenBalance(t))}</b>,
+      render: (t) => <b style={{ color: (receivable ?? t.direction === "receivable") ? "#059669" : "#B91C1C" }}>{formatBRL(titleOpenBalance(t))}</b>,
     },
     {
       key: "status",
@@ -750,7 +848,7 @@ function TitlesTable({
   );
 }
 
-function EntriesTable({
+export function EntriesTable({
   rows,
   accountName,
   openKey,

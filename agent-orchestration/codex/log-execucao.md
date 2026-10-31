@@ -5058,3 +5058,20 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - `dev-avreal-docker-sol` (Codex GPT-5.6 Sol, nível menor declarado) executou somente F8, F9, F10 e F12.
 - ClamAV real: 8/8 sem pulo; M-R9, M-R11a/b, M-R5r e mutação CI vermelhas e restauradas por hash.
 - CI `antivirus` verde em 57 s (`41207885759`, head `023b565a`); nenhum PR aberto pelo DEV.
+## 2026-10-28 — B-SAN3-12c · FATIA 1 (`dev-san312c-sol`)
+
+- Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
+- E5 apensa verbatim ao plano versionado; comando, relatório, aliases e divergências §A2 registrados. Node 22.14.0 absoluto; dependências próprias sem junction.
+- Baseline: financeiro dirigido 122/122; smoke frontend 1482/1482; controle não ancestral recusado. Próxima: FATIA 2. `Kpis/**` intocado.
+
+## 2026-10-29 — B-SAN3-12c · DEV concluído (`dev-san312c-sol`)
+
+- Fatias 2–12 + 13A/13B + 14 concluídas em commits sequenciais e empurradas; PR #474 aberto.
+- Final: dirigida 180/180; smoke 1530/1530 em Node 22 e Node 20; check/build verdes; zero diff em backend,
+  Prisma, CI e KPIs. Seis pendências R-P1..R-P6 fechadas; CE-4 braço 1 e #473 preservados abertos.
+- Navegador local ausente: geometria/DOM/CSS foram executados; nove capturas reais seguem para `cognicao-visual`.
+
+## 2026-10-30 — B-SAN3-12c · correção visual (`dev-san312c-visual-opus`)
+
+- Commits `62c9b6e3`, `ffb367d4`, `db4569e1`, `719ec5ae`, `48cbee5a`, mais o registro. Achados do `cog-474` e do `rev-474` tratados um a um em `docs/revisoes/SAN3/B-SAN3-12c-dev.md`, seção "Correção visual (30/10)".
+- Smoke 1556/1556, check verde, 48 mutações com restauro conferido, zero diff em backend, Prisma, CI e KPIs.
