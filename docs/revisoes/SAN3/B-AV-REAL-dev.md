@@ -117,3 +117,21 @@
 - Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(evidence): idade da base, privacidade no fio e no log, censo do adaptador (B-AV-REAL F5)"`.
 - Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
 
+## RETOMADA 6
+
+- UTC: `2026-10-31T13:30:58Z`.
+- Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `2bf0c374` (F5 já no remoto).
+- Vermelho-controle antes do código: `test -f tests/avreal-routes.test.ts` → `AUSENTE_RED`/exit `1`.
+- Implementado: matriz comum de 16 casos — V1–V5 × `clean`/`infected`/`failed`, com scanner e gravação contados, mais `scan_limit_exceeded`; a bateria inclui os tradutores HTTP reais já existentes das cinco vias.
+- Verde-controle: teste dono 16/16; regressão HTTP pesada `o6r07b-mime-sniff-routes` 36/36; demais 6 arquivos 72/72. Total da bateria F6: 108 pass · 0 fail · 0 skip. `npm run check` e `git diff --check` verdes.
+- Mutações: M-R6a removeu a recusa de `failed` e derrubou 5/16 casos (viraram 201/store=1); M-R6b passou bytes diferentes na V5 e derrubou 1/16. Restauradas pelos hashes `44492e00972723f651274a61039de82a09569836b377d78f272f2f921121c51b` (`upload-gate.ts`) e `48e88f1c8dd988a0dc592b680e36a33cb5b7d75fa8568f6d568927c7245d9979` (`damage.service.ts`).
+- Observação do arnês: a primeira execução conjunta excedeu o yield da sessão e deixou árvores filhas do runner; somente os PIDs próprios, identificados por horário/árvore, foram encerrados. A prova foi refeita em dois grupos com resumo TAP completo (36 + 72), sem processo próprio vivo ao final.
+- Falta: commit/push de F6; depois F7.
+- Próximo comando exato: `git add tests/avreal-routes.test.ts docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "test(evidence): matriz 5 vias × 3 desfechos com scanner e storage contados (B-AV-REAL F6)"`.
+- Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
+
+| F6 | M-R6a (falha do scanner cai como limpa) | `2bf0c374` | `npm test -- tests/avreal-routes.test.ts` | 5/16 falharam; `failed` virou 201/store=1 em V1–V5 | SHA-256 canônico `44492e00972723f651274a61039de82a09569836b377d78f272f2f921121c51b` | 16/16 |
+| F6 | M-R6b (V5 grava bytes diferentes da marca) | `2bf0c374` | `npm test -- tests/avreal-routes.test.ts` | 1/16 falhou no caso clean da V5 | SHA-256 canônico `48e88f1c8dd988a0dc592b680e36a33cb5b7d75fa8568f6d568927c7245d9979` | 16/16 |
+
