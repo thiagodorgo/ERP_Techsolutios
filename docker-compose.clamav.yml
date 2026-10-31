@@ -1,0 +1,39 @@
+# B-AV-REAL — overlay local-prod do antivírus. Uso somente junto de docker-compose.prod.yml.
+services:
+  api:
+    environment:
+      EVIDENCE_SCANNER: clamav
+      CLAMAV_HOST: clamav
+      CLAMAV_MAX_DB_AGE_HOURS: "72"
+    networks:
+      - default
+      - clamav_private
+    depends_on:
+      clamav:
+        condition: service_healthy
+
+  clamav:
+    image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
+    environment:
+      CLAMAV_NO_FRESHCLAMD: ${AV_NO_FRESHCLAM:-false}
+      FRESHCLAM_CHECKS: "12"
+    volumes:
+      - clamav_db:/var/lib/clamav
+      - ./infra/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
+      - ./infra/clamav/freshclam.conf:/etc/clamav/freshclam.conf:ro
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/clamdcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 6m
+    mem_limit: 3g
+    networks:
+      - clamav_private
+
+volumes:
+  clamav_db:
+
+networks:
+  clamav_private:
+    internal: true

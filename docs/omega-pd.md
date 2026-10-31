@@ -1314,6 +1314,15 @@ repositório, onde ela ainda existe.
 
 ## PD-O6R-B07B-CLAMD-INSTREAM — antivírus real para o gate de upload: protocolo INSTREAM do clamd, limites que dão "limpo" por engano, deploy, licença, custo e semântica fail-closed (2026-09-11)
 
+> **Adendo executado em 2026-10-31 — B-AV-REAL.** Imagem escolhida:
+> `clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`
+> (OCI multi-arquitetura; linux/amd64 `sha256:6ba4e78b…b0e6a3`). Config efetiva: `StreamMaxLength
+> 110M`, `MaxFileSize 120M`, `MaxScanSize 200M` no serviço normal; `3M`/`1M`/`2M` no serviço de
+> limites; `AlertExceedsMax yes` nos dois. O digest não detectou EICAR meramente anexado a PNG, então
+> a prova HTTP usa a alternativa B planejada: HDB de teste determinística, montada somente em dev/CI;
+> o mesmo daemon provou a fixture como `FOUND` antes de a via V1 responder 422. Medição real também
+> confirmou que o excesso de INSTREAM chega sem prefixo: `INSTREAM size limit exceeded. ERROR\0`.
+
 > **Origem e consumidor.** Pesquisa do `agente-pesquisador-web` (sessão em Opus 5), 2026-09-11, **54 fontes**,
 > todas acessadas nessa data. Consumidor: o bloco `B-AV-REAL`, que fecha o residual do `Ω6R-SEC-004`
 > (`P-O6R-B07B-SCANNER-AV-REAL`: com `NODE_ENV=production` a factory do scanner só tem `noop` ou

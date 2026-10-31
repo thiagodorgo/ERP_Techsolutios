@@ -7177,6 +7177,20 @@ protocolo `zINSTREAM`, `StreamMaxLength`, respostas `OK`/`FOUND`/`ERROR`, timeou
   **escopo:** `dentro-do-bloco` (é consequência declarada e desejada do fail-closed que o 07b entrega) ·
   **dono:** bloco próprio pós-O6R (`B-AV-REAL`), a encaixar pelo dono
 
+- **nota B-AV-REAL (2026-10-31):** implementação entregue no ramo `feat/evidence-clamav-scanner`:
+  cliente INSTREAM, fail-closed, compose privado, limites reais e job `antivirus` 8/8 sem pulo. A entrada
+  permanece **ABERTA — ativação pendente**: só fecha após daemon respondendo no ambiente alvo, com ato do
+  dono, rede privada, digest/config/VERSION registrados e provas 201/422/503/limite/recuperação.
+
+## P-AVREAL-RETRY-AFTER (2026-10-31) — 503 do scanner sem `Retry-After` — MÉDIA
+
+- **descrição:** não há handler HTTP central nem emissor de `Retry-After`; acrescentá-lo em B-AV-REAL
+  exigiria alterar cinco tradutores/controllers: mobile evidence, attachments, work-order attachments,
+  checklist attachments e damages.
+- **status:** ABERTA · **escopo:** preexistente · **dono:** bloco backend de padronização de erros HTTP.
+- **condição de fechamento:** as cinco vias 503 anunciam atraso coerente, com teste de contrato comum;
+  nenhum código 422/415 ou payload público muda.
+
 ## P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do deploy — MÉDIA-ALTA
 
 Entrada **de agenda**, não de código: o remédio técnico é `P-O6R-B07B-SCANNER-AV-REAL`. Existe separada porque

@@ -467,6 +467,23 @@ Produção e staging do Traccar NÃO estão ligados aqui: dependem do Ato 2, dos
 B-TRC-06/07 (plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md`). Nunca usar os servidores públicos de demonstração do
 Traccar, em ambiente nenhum.
 
+#### Antivírus de evidência — ClamAV em container: DEV, local-prod e desenho AWS (B-AV-REAL)
+
+- DEV: `docker compose --profile av up -d --no-deps erp-clamav`; publica somente
+  `127.0.0.1:3310`. O perfil `av-limits`/porta `127.0.0.1:3311` existe apenas para provar limites.
+- Local-prod: aplicar `docker-compose.clamav.yml` sobre `docker-compose.prod.yml`; o clamd fica na rede
+  interna `clamav_private`, sem `ports`, e a API usa `EVIDENCE_SCANNER=clamav`/`CLAMAV_HOST=clamav`.
+- Os arquivos de `infra/clamav/` são LF por `.gitattributes`: com CRLF o `clamd` não aceita a configuração. Em checkout anterior a essa regra no Windows, apague os arquivos e rode `git checkout -- infra/clamav`.
+- A imagem é `clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`.
+  `AlertExceedsMax yes` é obrigatório. O job `antivirus` executa limpo, EICAR, limites e HTTP 201/422
+  contra os dois serviços e falha com qualquer pulo.
+- AWS: tarefa Fargate privada, SG TCP 3310 aceitando somente o SG da API, sem IP público nem LB;
+  atualização de assinaturas por NAT ou espelho aprovado. Provisionar/ativar e fazer deploy de produção
+  continuam atos do dono, sujeitos à junta-5/PD; este bloco não os executa.
+- Rollback seguro: `EVIDENCE_SCANNER=unavailable` (503 e blob preservado), nunca `noop` em produção.
+
+Remover somente os containers locais, preservando as bases: `docker compose --profile av --profile av-limits rm -s -f erp-clamav erp-clamav-limits`.
+
 ### Fronteira de provisionamento (hand-off humano — D-SAN-AUTONOMIA)
 
 A `D-SAN-AUTONOMIA` pre-autoriza a **decisao**/gasto de provedor, mas nao fabrica credencial. O go-live real exige,

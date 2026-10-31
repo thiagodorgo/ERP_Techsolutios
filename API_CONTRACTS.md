@@ -810,6 +810,13 @@ tamanho, 400 de campo, 403 de permissão — e a **ordem**: 409/403/404 da via p
 | V4 | `POST /api/v1/mobile/checklist-runs/:runId/attachments` (ramo multipart) | **NOVO** `415 CHECKLIST_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons (o `400 mime_type_not_allowed` do declarado permanece — inconsistência **pré-existente** e declarada, `P-O6R-B07B-CODIGOS-INCONSISTENTES`) | **NOVO** `422 CHECKLIST_ATTACHMENT_REJECTED / evidence_rejected` | **NOVO** `503 CHECKLIST_ATTACHMENT_SCAN_UNAVAILABLE / scan_unavailable` |
 | V5 | `POST /api/v1/damages/:damageId/attachments` | **NOVO** `415 DAMAGE_ATTACHMENT_UNSUPPORTED_MEDIA_TYPE` · mesmos reasons | **NOVO** `422 DAMAGE_ATTACHMENT_REJECTED / evidence_rejected` | **NOVO** `503 DAMAGE_ATTACHMENT_SCAN_UNAVAILABLE / scan_unavailable` |
 
+**B-AV-REAL — implementação do scanner real.** `EVIDENCE_SCANNER=clamav` resolve um cliente próprio
+`node:net` do protocolo `INSTREAM`; as famílias HTTP acima permanecem inalteradas. Limite interno do clamd
+com `AlertExceedsMax` é tratado como `infected` com `scanReason: "scan_limit_exceeded"` (422); pane,
+timeout, protocolo inválido, base desconhecida/velha e `StreamMaxLength` incompatível continuam `failed`
+(503). Identidade da organização/evidência, segredo, resposta bruta e bytes nunca entram no fio além dos
+frames do arquivo nem no corpo público.
+
 V4 e V5 **não tinham scanner nenhum** antes deste bloco (nem Noop): as famílias 422/503 delas nascem aqui,
 espelhando nominalmente o módulo `attachments` (Ω4C PR-01) — mesmos `reason`, mesma mensagem, mesma posição
 (nada persistido, nenhum órfão no storage).

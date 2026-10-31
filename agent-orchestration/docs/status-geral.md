@@ -5210,3 +5210,10 @@ Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026
 - **Demo:** continua congelada; os PRs #465–#468 e #470 permanecem abertos, sem revisão, conforme a fonte do registro.
 - **Fluxo rápido:** o dono aprovou os três níveis, uma votação e um conserto sem loop (`D-JUNTA-FLUXO-RAPIDO`). A varredura de segurança sistêmica final fica com `B-SAN3-10` antes do portão vendável.
 - **Distribuição:** o dono priorizou as duas contas do Codex para tarefas que não requeiram Claude; telas devem ser feitas no Claude Design (`D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`).
+
+## Estado em 2026-10-31 — B-AV-REAL (DEV F8/F9/F10/F12)
+
+- Ramo `feat/evidence-clamav-scanner`: clamd real provado localmente (limpo, EICAR, pane, recuperação,
+  saturação, limites e HTTP mobile 201/422); containers próprios removidos e volumes de assinaturas preservados.
+- Job `antivirus` do run `41207885759` verde em 57 s no head `023b565a`, 8/8 e zero pulo.
+- Implementação entregue; ativação AWS/ambiente alvo continua ato do dono. `Kpis/**` permanece congelado.
