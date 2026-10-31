@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **683** |
 | IDs distintos | 672 |
-| **ABERTAS** | **512** |
+| **ABERTAS** | **510** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **447** |
+| — das quais **ativas nesta rodada** | **445** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 167 |
+| FECHADAS | 169 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **683 cabecalhos para 672 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 231
+## ABERTAS · balde A — material — 229
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -133,7 +133,6 @@
 | `P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS` | 8411 | MÉDIA | sim | P-SAN3-INDICE-SO-PRIMEIRA-LINHA-DE-STATUS (2026-09-11) — o índice lê só a primeira linha |
 | `P-SAN3-FLIPS-DE-REGISTRO` | 8451 | MÉDIA | sim | P-SAN3-FLIPS-DE-REGISTRO (2026-09-11) — conserto feito fora da linha de status nunca fec |
 | `P-DONO-CLOUD-BILLING-ESCOPO` | 8510 | MÉDIA | sim | P-DONO-CLOUD-BILLING-ESCOPO (2026-09-11) — Cobrança de nuvem calculada nunca vira fatura |
-| `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA` | 8527 | ALTA | sim | P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem te |
 | `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA` | 8545 | MÉDIA | sim | P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA (2026-09-11) — Cheques, fechamento de perí |
 | `P-CHK-APLICABILIDADE-SEM-ROTA` | 8563 | MÉDIA | sim | P-CHK-APLICABILIDADE-SEM-ROTA (2026-09-11) — Motor de aplicabilidade de checklist existe |
 | `P-WEB-CHK-EXECUCOES-INEXISTENTES` | 8580 | MÉDIA | sim | P-WEB-CHK-EXECUCOES-INEXISTENTES (2026-09-11) — "Ver execuções" leva à lista de modelos; |
@@ -168,7 +167,6 @@
 | `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` | 9383 | ALTA | sim | P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição d |
 | `P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU` | 9396 | MÉDIA | sim | P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU (2026-09-12) — lista de módulos não resolvida l |
 | `P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA` | 9416 | MÉDIA | sim | P-SAN3-INDICE-ITEM-DO-GATE-SO-PELA-HOSPEDEIRA (2026-09-12) — dois itens do gate só apare |
-| `P-WEB-CONCILIACAO-SEM-TELA` | 9428 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
 | `P-SAN3-01-DESPACHO-FORMS-SEM-CATCH` | 9446 | MÉDIA | sim | P-SAN3-01-DESPACHO-FORMS-SEM-CATCH (2026-09-17) — formulários de despacho sem `catch`: r |
 | `P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO` | 9466 | MÉDIA | sim | P-SAN3-01-ORCAMENTO-LINHAS-TOTAL-ZERO (2026-09-17) — as linhas do orçamento falham e a a |
 | `P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS` | 9511 | MÉDIA | sim | P-SAN3-01-DESPACHOS-ALERTA-DADOS-DEMONSTRATIVOS (2026-09-17) — o alerta de erro da tela  |
@@ -598,7 +596,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3671 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3715 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 167
+## FECHADAS — 169
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -722,10 +720,12 @@
 | `P-GOV-BAIXA-CICLO1-FECHADOS` | 7963 | BAIXA | **a atribuir** | P-GOV-BAIXA-CICLO1-FECHADOS (2026-09-08) — os três achados BAIXA do ciclo 1, fechados na |
 | `P-GOV-INSPETOR-33-SEM-NORMA` | 8081 | ALTA | sim | P-GOV-INSPETOR-33-SEM-NORMA (2026-09-08) — o contrato do inspetor manda bloquear por nor |
 | `P-WEB-CLOUD-BILLING-CARTAZ` | 8492 | MÉDIA | sim | P-WEB-CLOUD-BILLING-CARTAZ (2026-09-11) — Tela Cloud Billing é cartaz de literais com se |
+| `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA` | 8527 | ALTA | sim | P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem te |
 | `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8597 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
 | `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8615 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
 | `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8866 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9406 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
+| `P-WEB-CONCILIACAO-SEM-TELA` | 9428 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9437 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
 | `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES` | 9574 | MÉDIA | sim | P-SAN3-01-MOCKMODE-TRES-AUTORIDADES (2026-09-18) — três interruptores de modo mock com p |
 | `P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO` | 9593 | BAIXA | sim | P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO (2026-09-18) — o botão "Nova OS" do cabeçalho da lis |

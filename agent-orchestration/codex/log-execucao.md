@@ -5070,3 +5070,10 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 
 - Commits `62c9b6e3`, `ffb367d4`, `db4569e1`, `719ec5ae`, `48cbee5a`, mais o registro. Achados do `cog-474` e do `rev-474` tratados um a um em `docs/revisoes/SAN3/B-SAN3-12c-dev.md`, seção "Correção visual (30/10)".
 - Smoke 1556/1556, check verde, 48 mutações com restauro conferido, zero diff em backend, Prisma, CI e KPIs.
+
+## 2026-10-31 — B-SAN3-12c · merge e porteiro pós-merge
+
+- PR #474 mergeado: head aprovado `ccfd4e3b`, squash merge `2b65f51a`, CI de push `41207658016` concluído com sucesso.
+- Porteiro pós-merge: **BLOQUEADO** porque os itens 28/55 e `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA`/`P-WEB-CONCILIACAO-SEM-TELA` ainda estavam abertos nas fontes operacionais, e estado/log ainda diziam que o PR estava aberto.
+- Limpeza conferida: `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio; o ramo remoto já foi apagado.
+- Registro de 31/10 fecha os dois itens por fato e regenera o índice de pendências. A etapa seguinte prevista no parecer também foi cumprida: o marco KPI #473 foi mergeado em `45435ab9`; `Kpis/**` permanece intocado neste PR.
