@@ -170,6 +170,22 @@ test("resposta recebida antes do terminador nunca aprova", async () => {
   });
 });
 
+test("erro real de limite recebido antes do terminador mantém razão fail-closed", async () => {
+  await withFakeClamd(
+    {
+      respondBeforeTerminator: true,
+      response: Buffer.from("INSTREAM size limit exceeded. ERROR\0"),
+    },
+    async (port) => {
+      const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });
+      assert.deepEqual(await scanner.scan(input(Buffer.alloc(1024 * 1024))), {
+        status: "failed",
+        reason: "stream_limit_misconfigured",
+      });
+    },
+  );
+});
+
 test("duas respostas no mesmo frame falham fechado", async () => {
   await withFakeClamd({ response: Buffer.from("stream: OK\0stream: OK\0") }, async (port) => {
     const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });

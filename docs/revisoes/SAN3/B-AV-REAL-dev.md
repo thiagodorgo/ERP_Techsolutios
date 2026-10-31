@@ -176,3 +176,20 @@ AGUARDANDO DOCKER (F8, F9)
 | F8 | M-R11a (host ausente) | `ae12ddab` | `env -u AVREAL_CLAMAV_HOST node scripts/avreal-integration.mjs` | exit 2: endpoint obrigatório | SHA-256 do runner `c856dddfe057e7c4be217c8ccdb5d8db1a279ed5905daf87d7d69756ffdf5ea7` | 5/5 |
 | F8 | M-R11b (porta fechada) | `ae12ddab` | `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_PORT=1 node scripts/avreal-integration.mjs` | exit 1, 5/5 falhas reais, 0 skips | SHA-256 do runner `c856dddfe057e7c4be217c8ccdb5d8db1a279ed5905daf87d7d69756ffdf5ea7` | 5/5 |
 
+## RETOMADA 9
+
+- UTC: `2026-10-31T13:55:02Z`.
+- Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `3a9b026f` (F8 já no remoto).
+- Vermelho-controle antes do código: os casos nominais de `MaxFileSize`/`StreamMaxLength` e HTTP mobile real não existiam (`grep` duplo → exit `1`). A primeira execução depois de escrevê-los também foi vermelha por comportamento real: o limite INSTREAM responde sem prefixo `stream:` e o caminho A (EICAR anexado ao PNG) ficou `clean` no digest fixado.
+- Implementado: parser fail-closed aceita a resposta real exata `INSTREAM size limit exceeded. ERROR` mesmo antes do terminador; regressão unitária fixa essa forma. Como o caminho A não detectou, foi usado o caminho B previsto: assinatura HDB de teste, montada somente nos serviços dev/CI e copiada pelo entrypoint para a base gravável; fixture PNG determinística de 63 bytes provada diretamente no mesmo daemon antes do HTTP. A via V1 real respondeu 201 para PNG limpo e 422 `evidence_rejected` para a fixture detectável.
+- Limites reais: 1,5 MiB contra `MaxFileSize 1M` → `infected/scan_limit_exceeded`; 4 MiB contra `StreamMaxLength 3M` → `failed/stream_limit_misconfigured`. Execução completa: 8/8, 0 skip. Protocolo+topologia sem daemon: 23/23; `npm run check` e `git diff --check` verdes.
+- M-R5r reproduzível: patch `AlertExceedsMax yes → no`, recriação somente de `erp-clamav-limits` com `--no-deps`, execução real 7/8 (caso MaxFileSize retornou `clean`); patch reverso e SHA-256 restaurado `34b08bb9…`; daemon recriado e verde 8/8.
+- Docker ao fim: RSS 947,4 MiB (`erp-clamav`) e 945,5 MiB (`erp-clamav-limits`), commit livre 12,43 GB. Os dois containers foram parados/removidos por nome de serviço; volumes `w-avreal_erp_clamav_db` e `w-avreal_erp_clamav_limits_db` preservados. `erp-postgres`/`erp-redis` permaneceram healthy e intocados. Disco 25 GB livres.
+- Falta: commit/push de F9; depois F10 (job CI). F11 não é executada por ordem explícita desta retomada.
+- Próximo comando exato: `git add docker-compose.yml scripts/avreal-integration.mjs src/modules/evidence/clamav-scanner.ts tests/avreal-clamd-integration.test.ts tests/avreal-scanner-protocol.test.ts infra/clamav/test-signatures/erp-test.hdb docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "test(evidence): limites efetivos do clamd e 422 real pela via mobile (B-AV-REAL F9)"`.
+- Arquivos incompletos: nenhum. Jobs/processos/containers próprios vivos: nenhum.
+
+| F9 | M-R5r (`AlertExceedsMax no`) | `3a9b026f` | recriar só `erp-clamav-limits` + `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_LIMITS_PORT=3311 node scripts/avreal-integration.mjs` | 1/8 falhou: acima de MaxFileSize retornou `clean` | SHA-256 canônico `34b08bb9d3f7bbf39a877165b8f8c412f1034cdf6cc911557b4e4ef5ee685e5e` | 8/8 |
+

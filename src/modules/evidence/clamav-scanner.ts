@@ -109,6 +109,17 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
       });
       socket.on("data", (part: Buffer) => {
         if (!terminatorSent) {
+          const early = part.indexOf(0);
+          if (early === part.length - 1) {
+            const earlyResult = parseResponse(part.subarray(0, early).toString("utf8"));
+            if (
+              earlyResult.status === "failed" &&
+              earlyResult.reason === "stream_limit_misconfigured"
+            ) {
+              settle(earlyResult);
+              return;
+            }
+          }
           settle({ status: "failed", reason: "protocol_error" });
           return;
         }
@@ -235,7 +246,10 @@ function parseResponse(response: string): EvidenceScanResult {
     return { status: "infected", reason: "scan_limit_exceeded" };
   }
   if (/^stream: .+ FOUND$/.test(response)) return { status: "infected" };
-  if (response === "stream: INSTREAM size limit exceeded. ERROR") {
+  if (
+    response === "stream: INSTREAM size limit exceeded. ERROR" ||
+    response === "INSTREAM size limit exceeded. ERROR"
+  ) {
     return { status: "failed", reason: "stream_limit_misconfigured" };
   }
   return { status: "failed", reason: "protocol_error" };

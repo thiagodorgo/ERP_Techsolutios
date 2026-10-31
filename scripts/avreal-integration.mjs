@@ -24,6 +24,7 @@ const result = spawnSync(
       CLAMAV_HOST: host,
       CLAMAV_PORT: process.env.AVREAL_CLAMAV_PORT ?? "3310",
       CLAMAV_MAX_DB_AGE_HOURS: "0",
+      LOG_LEVEL: "silent",
     },
     encoding: "utf8",
     stdio: ["inherit", "pipe", "pipe"],

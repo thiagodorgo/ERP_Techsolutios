@@ -36,6 +36,7 @@ services:
   erp-clamav:
     image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
     profiles: ["av"]
+    entrypoint: ["/bin/sh", "-c", "cp /opt/avreal/erp-test.hdb /var/lib/clamav/erp-test.hdb && exec /init"]
     ports:
       - "127.0.0.1:3310:3310"
     environment:
@@ -43,6 +44,7 @@ services:
       FRESHCLAM_CHECKS: "12"
     volumes:
       - erp_clamav_db:/var/lib/clamav
+      - ./infra/clamav/test-signatures/erp-test.hdb:/opt/avreal/erp-test.hdb:ro
       - ./infra/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
       - ./infra/clamav/freshclam.conf:/etc/clamav/freshclam.conf:ro
     healthcheck:
@@ -58,12 +60,14 @@ services:
   erp-clamav-limits:
     image: clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0
     profiles: ["av-limits"]
+    entrypoint: ["/bin/sh", "-c", "cp /opt/avreal/erp-test.hdb /var/lib/clamav/erp-test.hdb && exec /init"]
     ports:
       - "127.0.0.1:3311:3310"
     environment:
       CLAMAV_NO_FRESHCLAMD: "true"
     volumes:
       - erp_clamav_limits_db:/var/lib/clamav
+      - ./infra/clamav/test-signatures/erp-test.hdb:/opt/avreal/erp-test.hdb:ro
       - ./infra/clamav/clamd.limits-test.conf:/etc/clamav/clamd.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "test \"$(echo PING | nc 127.0.0.1 3310)\" = PONG"]
