@@ -39,19 +39,12 @@ test("integração real fica fora do npm test, e nenhuma suíte avreal do npm te
 });
 
 test("job antivirus falha quando a integração falha e gera o cliente Prisma", async () => {
-  const workflow = (await readFile(".github/workflows/ci.yml", "utf8")).replace(/
-/g, "
-");
-  const job = workflow.slice(workflow.indexOf("
-  antivirus:
-"));
-  const end = job.slice(1).search(/
-  [a-zA-Z_-]+:
-/);
+  const workflow = (await readFile(".github/workflows/ci.yml", "utf8")).replace(/\r\n/g, "\n");
+  const job = workflow.slice(workflow.indexOf("\n  antivirus:\n"));
+  const end = job.slice(1).search(/\n  [a-zA-Z_-]+:\n/);
   const body = end === -1 ? job : job.slice(0, end + 1);
   assert.match(body, /npm run db:generate/, "sem o cliente Prisma, o caso HTTP real não carrega");
-  assert.match(body, /set -o pipefail\s+node scripts\/avreal-integration\.mjs[^
-]*\| tee antivirus\.tap/, "sem pipefail, o tee esconde a falha");
+  assert.match(body, /set -o pipefail\s+node scripts\/avreal-integration\.mjs[^\n]*\| tee antivirus\.tap/, "sem pipefail, o tee esconde a falha");
   assert.match(body, /test "\$failed" -eq 0/, "o guard precisa reprovar teste falho, não só pulo");
 });
 
