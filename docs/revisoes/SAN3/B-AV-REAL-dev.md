@@ -208,3 +208,23 @@ AGUARDANDO DOCKER (F8, F9)
 
 | F10 | M-R11-CI (host obrigatório removido do job) | `13222ade` | controle estrutural do job | exit 1: `host obrigatório ausente` | SHA-256 canônico `506c9f8d8524a4dfef6c053c20f570f180b70838a658fa3d1eb163a288dc4237` | controle verde |
 
+## RETOMADA 11
+
+- UTC: `2026-10-31T18:08:40Z`.
+- Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `023b565a0029a07f8a14f17d44d10ecc33d9484d` (F10 já no remoto); parcial de F12 medido antes de seguir: 8 arquivos permitidos, 64 inserções/3 remoções, `git diff --check` verde, 24 GB livres e nenhum container próprio vivo.
+- Confirmação F10: run `41207885759`, job `antivirus` `completed/success` em 57 s, 8/8 sem pulo no head `023b565a`. O job global `backend` ficou vermelho por um único caso de protocolo prematuro; o caso foi reexecutado nas baterias focadas e ficou verde.
+- Vermelho-controle F12: os quatro marcadores documentais não existiam no `HEAD` (`RED_HEAD_MISSING_API/DEPLOY/PEND/STATUS`). O parcial os introduziu em `API_CONTRACTS.md`, deployment/AWS/PD, `PLANO_SAN3`, pendências, status e log, sem tocar `Kpis/**`.
+- M-F12: os quatro marcadores foram adulterados um a um (`B-AV-REA_`/`P-AVREA_`) e o guard ficou vermelho nos quatro; restauração confirmou os SHA-256 `0990ccf9…` (API), `738a2be1…` (deployment), `0225d907…` (pendências) e `eb2df00d…` (status), seguida do guard verde.
+- Baterias focadas: suítes novas 72/72; regressões focadas 154/154; `npm run check`, `npm run lint`, `npm run build`, guard de migração (117/112/5, zero violação), `git diff --check`, lockfiles intactos e `frontend/`/`portals/`/`mobile/flutter_app/lib/` intactos.
+- Suíte raiz local sem banco: 3.469 pass · 1 fail · 108 skip; causa isolada preexistente: `tests/core-saas-role-authority.test.ts` importa Prisma sem `DATABASE_URL` e não declara skip. Em execução isolada, esse arquivo reproduziu a falha; a suíte de protocolo passou 15/15. O job `backend` da CI usa PostgreSQL descartável e decide o head empurrado.
+- Docker: F8/F9 já removeram `erp-clamav` e `erp-clamav-limits` por nome; volumes de assinaturas preservados. `erp-postgres`/`erp-redis` não foram alvo de leitura nem escrita.
+- Falta: junta/revisão pelo orquestrador; este DEV não abre PR.
+- Próximo comando exato: `git status --short && git rev-parse HEAD && gh run list --branch feat/evidence-clamav-scanner --limit 1`.
+- Arquivos incompletos: nenhum. Jobs/processos/containers próprios vivos: nenhum.
+
+| F12 | M-F12-API/DEPLOY/PEND/STATUS (marcadores adulterados) | `023b565a` | guard de presença dos quatro marcadores | quatro vermelhos nomeados | SHA-256 `0990ccf9…` · `738a2be1…` · `0225d907…` · `eb2df00d…` | quatro verdes + `git diff --check` |
+
+PRONTO PARA JUNTA
+

@@ -5052,3 +5052,9 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 
 - Dev `dev-guard-migracao-opus` (Claude Opus, nível menor, declarado; o dono: *"vc cobre o codex nessa rodada"*). Base `origin/main` `8a7885f4`; 116 migrações, 112 anteriores à `20260878000000`, 4 novas.
 - Entregues `scripts/migration-transaction-guard.mjs` (G0–G7) e `tests/migration-transaction-guard.test.ts` com fixtures em `tests/fixtures/migration-guard/`; seção em `docs/deployment.md`; frase espelhada no §C4 de `CLAUDE.md` e `AGENTS.md`. Relatório em `docs/revisoes/B-GUARD-MIGRACAO-dev.md`. Sem banco, sem Docker, `Kpis/**` intocado.
+
+## 2026-10-31 — B-AV-REAL · DEV F8/F9/F10/F12
+
+- `dev-avreal-docker-sol` (Codex GPT-5.6 Sol, nível menor declarado) executou somente F8, F9, F10 e F12.
+- ClamAV real: 8/8 sem pulo; M-R9, M-R11a/b, M-R5r e mutação CI vermelhas e restauradas por hash.
+- CI `antivirus` verde em 57 s (`41207885759`, head `023b565a`); nenhum PR aberto pelo DEV.
