@@ -5,6 +5,8 @@ import test from "node:test";
 
 import { ClamAvEvidenceScanner } from "../src/modules/evidence/clamav-scanner.js";
 
+const TERMINATOR = Buffer.alloc(4);
+
 type ServerScenario = {
   readonly response?: Buffer;
   readonly respondBeforeTerminator?: boolean;
@@ -69,16 +71,9 @@ async function withFakeClamd<T>(
   await listen(server);
   const address = server.address();
   assert(address && typeof address !== "string");
-  let watchdog: NodeJS.Timeout | undefined;
   try {
-    return await Promise.race([
-      run(address.port, captured),
-      new Promise<never>((_resolve, reject) => {
-        watchdog = setTimeout(() => reject(new Error("watchdog do servidor falso excedido")), 2_000);
-      }),
-    ]);
+    return await run(address.port, captured);
   } finally {
-    if (watchdog) clearTimeout(watchdog);
     for (const socket of sockets) socket.destroy();
     await close(server);
   }
@@ -98,6 +93,29 @@ function close(server: Server): Promise<void> {
   return new Promise((resolve, reject) => {
     server.close((error) => (error ? reject(error) : resolve()));
   });
+}
+
+/**
+ * Barreira causal do protocolo prematuro: a escrita do terminador só acontece DEPOIS de o cliente ter
+ * recebido a resposta. Na ordem inversa (Linux da CI: as escritas terminam antes da primeira leitura) o
+ * cliente não tem como saber que a resposta foi prematura, então o caso só tem sentido com a ordem fixada.
+ * O ouvinte daqui nasce depois do ouvinte do cliente, e por isso roda depois dele no mesmo evento.
+ */
+function holdTerminatorUntilResponse(options: net.NetConnectOpts): Socket {
+  const socket = net.createConnection(options);
+  const realWrite = socket.write.bind(socket) as (
+    bytes: Buffer,
+    callback: (error?: Error | null) => void,
+  ) => boolean;
+  socket.write = ((bytes: Buffer, callback: (error?: Error | null) => void) => {
+    if (!bytes.equals(TERMINATOR)) return realWrite(bytes, callback);
+    socket.once("data", () => {
+      if (socket.destroyed) callback(new Error("socket encerrado pelo cliente"));
+      else realWrite(bytes, callback);
+    });
+    return true;
+  }) as typeof socket.write;
+  return socket;
 }
 
 function input(buffer: Buffer) {
@@ -165,8 +183,15 @@ test("EOF sem resposta falha fechado", async () => {
 
 test("resposta recebida antes do terminador nunca aprova", async () => {
   await withFakeClamd({ respondBeforeTerminator: true }, async (port) => {
-    const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });
-    assert.equal((await scanner.scan(input(Buffer.alloc(1024 * 1024)))).status, "failed");
+    const scanner = new ClamAvEvidenceScanner({
+      host: "127.0.0.1",
+      port,
+      socketFactory: holdTerminatorUntilResponse,
+    });
+    assert.deepEqual(await scanner.scan(input(Buffer.alloc(1024 * 1024))), {
+      status: "failed",
+      reason: "protocol_error",
+    });
   });
 });
 
@@ -177,7 +202,11 @@ test("erro real de limite recebido antes do terminador mantém razão fail-close
       response: Buffer.from("INSTREAM size limit exceeded. ERROR\0"),
     },
     async (port) => {
-      const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });
+      const scanner = new ClamAvEvidenceScanner({
+        host: "127.0.0.1",
+        port,
+        socketFactory: holdTerminatorUntilResponse,
+      });
       assert.deepEqual(await scanner.scan(input(Buffer.alloc(1024 * 1024))), {
         status: "failed",
         reason: "stream_limit_misconfigured",
