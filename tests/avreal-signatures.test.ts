@@ -21,6 +21,7 @@ function input() {
 async function withClamd<T>(
   version: (call: number) => string | undefined,
   run: (port: number, counts: { version: number; scan: number }) => Promise<T>,
+  versionGate?: Promise<void>,
 ): Promise<T> {
   const counts = { version: 0, scan: 0 };
   const sockets = new Set<Socket>();
@@ -31,8 +32,10 @@ async function withClamd<T>(
       if (first.toString("latin1").startsWith("zVERSION\0")) {
         counts.version += 1;
         const response = version(counts.version);
-        if (response === undefined) socket.destroy();
-        else socket.end(`${response}\0`);
+        void (versionGate ?? Promise.resolve()).then(() => {
+          if (response === undefined) socket.destroy();
+          else socket.end(`${response}\0`);
+        });
         return;
       }
       counts.scan += 1;
@@ -113,6 +116,78 @@ test("erro ao renovar não reutiliza o último VERSION bom", async () => {
       now += 61_000;
       assert.deepEqual(await scanner.scan(input()), { status: "failed", reason: "signatures_unknown" });
       assert.deepEqual(counts, { version: 2, scan: 1 });
+    },
+  );
+});
+
+function gate() {
+  let open!: () => void;
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return { open, opened };
+}
+
+for (const ceiling of [1, 2]) {
+  test(`teto ${ceiling} cobre a fase VERSION: 20 chamadas simultâneas não passam de ${ceiling} conexão(ões)`, async () => {
+    const now = Date.UTC(2026, 9, 31, 18);
+    const barrier = gate();
+    await withClamd(
+      () => versionAt(new Date(now - 60 * 60 * 1000)),
+      async (port, counts) => {
+        let opened = 0;
+        const scanner = new ClamAvEvidenceScanner({
+          host: "127.0.0.1",
+          port,
+          maxConcurrentScans: ceiling,
+          maxDbAgeHours: 72,
+          now: () => now,
+          socketFactory: (options) => {
+            opened += 1;
+            return net.createConnection(options);
+          },
+        });
+        const calls = Array.from({ length: 20 }, () => scanner.scan(input()));
+        try {
+          // A barreira segura toda resposta VERSION: nenhuma vaga pode ter voltado até aqui.
+          assert.equal(opened, ceiling);
+        } finally {
+          barrier.open();
+        }
+        const results = await Promise.all(calls);
+        assert.equal(results.filter((result) => result.status === "clean").length, ceiling);
+        assert.equal(results.filter((result) => result.reason === "scanner_busy").length, 20 - ceiling);
+        assert.equal(counts.version, ceiling);
+        assert.equal(counts.scan, ceiling);
+        assert.equal(opened, ceiling * 2);
+      },
+      barrier.opened,
+    );
+  });
+}
+
+test("a vaga volta quando a checagem de assinaturas recusa", async () => {
+  const now = Date.UTC(2026, 9, 31, 18);
+  const answers: Array<string | undefined> = [
+    versionAt(new Date(now - 100 * 60 * 60 * 1000)),
+    undefined,
+    "isto não é VERSION",
+    versionAt(new Date(now - 60 * 60 * 1000)),
+  ];
+  await withClamd(
+    (call) => answers[call - 1],
+    async (port) => {
+      const scanner = new ClamAvEvidenceScanner({
+        host: "127.0.0.1",
+        port,
+        maxConcurrentScans: 1,
+        maxDbAgeHours: 72,
+        now: () => now,
+      });
+      assert.deepEqual(await scanner.scan(input()), { status: "failed", reason: "signatures_stale" });
+      assert.deepEqual(await scanner.scan(input()), { status: "failed", reason: "signatures_unknown" });
+      assert.deepEqual(await scanner.scan(input()), { status: "failed", reason: "signatures_unknown" });
+      assert.deepEqual(await scanner.scan(input()), { status: "clean" });
     },
   );
 });

@@ -57,15 +57,15 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
       return { status: "failed", reason: "scanner_busy" };
     }
 
-    const signatureResult = await this.checkSignatures();
-    if (signatureResult) return signatureResult;
-
-    if (this.activeScans >= this.maxConcurrentScans) {
-      return { status: "failed", reason: "scanner_busy" };
-    }
-
+    // A vaga é reservada antes do primeiro `await` e cobre as duas conexões da chamada: VERSION e INSTREAM.
     this.activeScans += 1;
-    return this.scanInstream(input);
+    try {
+      const signatureResult = await this.checkSignatures();
+      if (signatureResult) return signatureResult;
+      return await this.scanInstream(input);
+    } finally {
+      this.activeScans -= 1;
+    }
   }
 
   private scanInstream(input: EvidenceScanInput): Promise<EvidenceScanResult> {
@@ -87,7 +87,6 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
         if (connectDeadline) clearTimeout(connectDeadline);
         socket?.removeAllListeners();
         socket?.destroy();
-        this.activeScans -= 1;
         resolve(result);
       };
 
