@@ -342,6 +342,8 @@ jobs:
         run: npm ci
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://erp:erp@127.0.0.1:5432/erp?schema=public
         run: npm run db:generate
 
       - name: Start ClamAV services by name
