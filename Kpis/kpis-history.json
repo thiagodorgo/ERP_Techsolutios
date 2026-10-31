@@ -3042,5 +3042,47 @@
     "blocks_completed": 191,
     "description": "B-SAN3-12b — Na aparência A do Financeiro, a pessoa agora pode baixar títulos, criar e consultar contas, acompanhar o extrato e conciliar lançamentos, inclusive tratando cheques pendentes. NÚMEROS DA CI no merge commit `3c27f1bf` (push na `main`), workflow `ci`, run 40778662011, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1482/1482; flutter 905/905. `blocks_completed` 190 -> 191.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 469`; números do log da rodada 40778662011. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-30",
+    "version": "PR-475",
+    "pr": 475,
+    "merge_commit": "264c3760ad971dc3b40aec4416ecde3bb9d3e727",
+    "approved_head": "b8b79ea21b86eb97c692e1c342b5c89245a3bded",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1482/1482",
+    "blocks_completed": 191,
+    "description": "PR-475 — As decisões de 28 a 30 de outubro foram incorporadas ao registro oficial, incluindo um fluxo de revisão mais rápido sem reduzir as proteções dos casos de maior risco. NÚMEROS DA CI no merge commit `264c3760` (push na `main`), workflow `ci`, run 41055421892, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1482/1482; flutter 905/905. `blocks_completed` 191 -> 191.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 475`; números do log da rodada 41055421892. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-30",
+    "version": "B-SAN3-00b",
+    "pr": 476,
+    "merge_commit": "f065818590ad1782e4bfabdd8959413695bfacb8",
+    "approved_head": "3a4a8f8e9d4fe9dfe64f3336d1d98b96690ecbe3",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1482/1482",
+    "blocks_completed": 191,
+    "description": "B-SAN3-00b — As regras de organização dos arquivos voltaram a aceitar os nomes globais usados pelos agentes, eliminando bloqueios indevidos na preparação do trabalho. NÚMEROS DA CI no merge commit `f0658185` (push na `main`), workflow `ci`, run 41059863314, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1482/1482; flutter 905/905. `blocks_completed` 191 -> 191.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 476`; números do log da rodada 41059863314. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-31",
+    "version": "PR-474",
+    "pr": 474,
+    "merge_commit": "2b65f51a55f513a4dc8f0116625dd345be7376ab",
+    "approved_head": "ccfd4e3bd40390afc4324eb02b5f0e08d9c7c492",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1556/1556",
+    "blocks_completed": 192,
+    "description": "PR-474 — O Financeiro passou a oferecer também as aparências B e C, com os mesmos dados e ações da aparência A; a entrega completa as três opções pessoais e fecha os itens 28 e 55 do portão da versão vendável. NÚMEROS DA CI no merge commit `2b65f51a` (push na `main`), workflow `ci`, run 41207658016, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1556/1556; flutter 905/905. `blocks_completed` 191 -> 192.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 474`; números do log da rodada 41207658016. Nada fica `null`."
   }
 ]
