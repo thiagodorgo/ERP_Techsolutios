@@ -193,3 +193,18 @@ AGUARDANDO DOCKER (F8, F9)
 
 | F9 | M-R5r (`AlertExceedsMax no`) | `3a9b026f` | recriar só `erp-clamav-limits` + `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_LIMITS_PORT=3311 node scripts/avreal-integration.mjs` | 1/8 falhou: acima de MaxFileSize retornou `clean` | SHA-256 canônico `34b08bb9d3f7bbf39a877165b8f8c412f1034cdf6cc911557b4e4ef5ee685e5e` | 8/8 |
 
+## RETOMADA 10
+
+- UTC: `2026-10-31T13:57:12Z`.
+- Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `13222ade` (F9 já no remoto).
+- Vermelho-controle antes do código: job `antivirus` ausente (`grep '^  antivirus:'` → exit `1`).
+- Implementado: job Ubuntu/Node 20 isolado, `npm ci`, subida sequencial dos dois serviços por nome com `--no-deps`, espera healthy até 8 min, integração real TAP 8/8 esperada, guard de zero teste/zero pulo, diagnósticos e remoção somente dos dois containers por nome; timeout total 20 min.
+- Mutação CI reproduzível: patch removeu `AVREAL_CLAMAV_HOST`; o controle estrutural falhou exit `1` com `host obrigatório ausente`; patch reverso restaurou o SHA-256 `506c9f8d…` do workflow. O check-run real ainda será medido após o push deste checkpoint.
+- Falta: commit/push, localizar o run do head e aguardar o job `antivirus` `completed/success`; depois registrar a confirmação da F10 antes de iniciar F12.
+- Próximo comando exato: `git add .github/workflows/ci.yml docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "ci(antivirus): job que sobe o clamd do compose e exige a integração sem pulo (B-AV-REAL F10)" && git push origin feat/evidence-clamav-scanner`.
+- Arquivos incompletos: nenhum. Jobs/containers/processos locais próprios vivos: nenhum.
+
+| F10 | M-R11-CI (host obrigatório removido do job) | `13222ade` | controle estrutural do job | exit 1: `host obrigatório ausente` | SHA-256 canônico `506c9f8d8524a4dfef6c053c20f570f180b70838a658fa3d1eb163a288dc4237` | controle verde |
+

@@ -324,6 +324,70 @@ jobs:
           test -n "$skipped" || { echo "não consegui ler a contagem de pulos — tratando como falha"; exit 1; }
           test "$skipped" -eq 0 || { echo "suíte contra o Postgres PULOU $skipped teste(s) — gate seria verde-cego"; exit 1; }
 
+  antivirus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start ClamAV services by name
+        run: |
+          docker compose --profile av up -d --no-deps erp-clamav
+          docker compose --profile av-limits up -d --no-deps erp-clamav-limits
+
+      - name: Wait for healthy ClamAV services
+        run: |
+          deadline=$((SECONDS + 480))
+          for service in erp-clamav erp-clamav-limits; do
+            container_id=$(docker compose --profile av --profile av-limits ps -q "$service")
+            test -n "$container_id" || { echo "$service não foi criado"; exit 1; }
+            until test "$(docker inspect --format '{{.State.Health.Status}}' "$container_id")" = healthy; do
+              test "$SECONDS" -lt "$deadline" || {
+                echo "timeout aguardando $service"
+                docker compose --profile av --profile av-limits logs "$service"
+                exit 1
+              }
+              sleep 5
+            done
+          done
+          docker stats --no-stream
+
+      - name: ClamAV real integration (no skips)
+        env:
+          AVREAL_CLAMAV_HOST: 127.0.0.1
+          AVREAL_CLAMAV_LIMITS_PORT: "3311"
+        run: node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap
+
+      - name: Fail on skipped antivirus tests (green-blind guard)
+        run: |
+          skipped=$(grep -E '^# skipped ' antivirus.tap | awk '{print $3}')
+          tests=$(grep -E '^# tests ' antivirus.tap | awk '{print $3}')
+          echo "antivirus: tests=${tests:-desconhecido} skipped=${skipped:-desconhecido}"
+          test -n "$tests" && test "$tests" -gt 0 || { echo "zero teste de antivírus"; exit 1; }
+          test -n "$skipped" || { echo "não consegui ler a contagem de pulos"; exit 1; }
+          test "$skipped" -eq 0 || { echo "integração antivírus pulou $skipped teste(s)"; exit 1; }
+
+      - name: ClamAV diagnostics
+        if: always()
+        run: |
+          docker compose --profile av --profile av-limits ps || true
+          docker compose --profile av --profile av-limits logs --tail 200 erp-clamav erp-clamav-limits || true
+
+      - name: Remove ClamAV containers
+        if: always()
+        run: docker compose --profile av --profile av-limits rm -s -f erp-clamav erp-clamav-limits
+
   frontend:
     runs-on: ubuntu-latest
 
