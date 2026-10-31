@@ -227,3 +227,30 @@ AGUARDANDO DOCKER (F8, F9)
 | F12 | M-F12-API/DEPLOY/PEND/STATUS (marcadores adulterados) | `023b565a` | guard de presença dos quatro marcadores | quatro vermelhos nomeados | SHA-256 `0990ccf9…` · `738a2be1…` · `0225d907…` · `eb2df00d…` | quatro verdes + `git diff --check` |
 
 PRONTO PARA JUNTA
+
+## PRÉ-REVISÃO: achado × conserto × commit
+
+- Executor/modelo: `fix-avreal-opus`, Claude Opus, nível menor declarado; cobre o Codex sem saldo até 04/11 (decisão do dono: "cubra"). Não achou os defeitos, não planejou nem desenvolveu o bloco.
+- Parecer: `prerev-avreal-sol`, objeto `f1d3463d`. Merge da `origin/main` (`e78e3968`) em `8fd0c693`.
+
+| Achado | Vermelho-controle | Conserto | Mutações (restauradas por SHA-256) | Commit |
+|---|---|---|---|---|
+| S1 protocolo prematuro | leitura do cliente retida até o callback do terminador → `clean`, o mesmo `actual` da CI | escrita do terminador retida até o evento `data`; watchdog de 2.000 ms removido; o caso exige `protocol_error` | M-S1a e M-S1b → 14/15 | `b15c7739` |
+| S2 orçamento de pulos | runner descobria o arquivo; `# skipped 1`; `evaluateDbSkipBudget` com 3 → `exceeded` | `tests/avreal-clamd.integration.ts`, fora da descoberta; sem host fica vermelho; orçamento intacto | M-S2a, b, d → censo 3/4; M-S2c → wrapper exit 1 | `1b43e6f0` |
+| S3 R12(b) verde-cego | dependência só na árvore → comando antigo exit 0 com o eco | comando compara a base do ramo com a árvore; plano v2.8 | M-R12b → exit 1 sem o eco | `d24aaeb3` |
+| S4 `clamd` no Windows | worktree novo: `w/crlf`; `Incorrect argument format for option TCPSocket` | `infra/clamav/** text eol=lf`; caso 9 da topologia | sem atributo e só `*.conf` → 8/9 | `b932ada4` |
+| S5 teto na fase VERSION | teto 1 → `actual: 20`; teto 2 → `actual: 20` | vaga reservada antes do primeiro `await`, devolvida num só `finally` | M-S5a → 7/8; M-S5b → 6/8 | `7472cc42` |
+
+**Números.**
+- S1 sozinho: 20/20 rodadas, 300/300 casos.
+- S1 junto da suíte, 3 rodadas no Windows sem banco: caso prematuro `ok` nas 3 suítes; rodada focada simultânea 15/15 nas 3; suíte 3.583 testes, 3.475 pass, 107 skip, 1 fail em cada, sempre `tests/core-saas-role-authority.test.ts` (preexistente, importa Prisma sem `DATABASE_URL`).
+- S4: worktree novo em `b932ada4`, `clamd` `healthy` em cerca de 25 s, zero erro de configuração.
+- Integração real local pelo wrapper, com os dois `clamd`: 8/8, 0 pulo.
+- CI em `1b43e6f0`, job `backend` nas duas execuções: 4.236 testes, 4.234 pass, 0 fail, 2 skip; `docker` verde.
+- `npm run check`, `npm run lint`, `git diff --check` verdes; `tests/avreal-*.test.ts` 78/78; `LOCKFILE-INTACTO`.
+
+**Achado novo, fora do lote S1–S5, sem conserto aqui (quem achou não conserta, §C7.4-bis).** O job `antivirus` está verde sem a integração estar verde:
+- Em `1b43e6f0`, `f1d3463d` e `023b565a` o log traz 7 pass, 1 fail: `not ok 8 - HTTP real mobile entrega 201 limpo e 422 para PNG detectável`, com `The requested module '@prisma/client' does not provide an export named 'Prisma'`.
+- O job termina `success` porque `node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap` roda sob `bash -e` sem `pipefail`, e o guard seguinte só olha pulo e zero teste.
+- O job não tem passo `npm run db:generate`. Localmente, com o cliente gerado, o caso 8 passa. Que esse passo baste na CI é hipótese, não medição.
+- Por isso a frase "8/8 sem pulo" da RETOMADA 11 sobre o run `41207885759` não se sustenta: aquele log tem 7/8.
