@@ -100,3 +100,16 @@ test("montagens de configuração são somente leitura e nenhum socket/storage d
     assert.equal(mounts.some((mount) => /docker\.sock|evidence/i.test(mount.target ?? "")), false);
   }
 });
+
+test("arquivos montados pelo clamd são LF em qualquer checkout, inclusive com core.autocrlf", () => {
+  const git = (...args: string[]) => {
+    const result = spawnSync("git", args, { cwd: ROOT, encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim().split(/\r?\n/).filter(Boolean);
+  };
+  const files = git("ls-files", "infra/clamav");
+  assert(files.length >= 4, `esperava ao menos 4 arquivos em infra/clamav, achei ${files.length}`);
+  for (const file of files) {
+    assert.deepEqual(git("check-attr", "eol", "--", file), [`${file}: eol: lf`]);
+  }
+});

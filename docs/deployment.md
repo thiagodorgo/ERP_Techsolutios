@@ -473,6 +473,7 @@ Traccar, em ambiente nenhum.
   `127.0.0.1:3310`. O perfil `av-limits`/porta `127.0.0.1:3311` existe apenas para provar limites.
 - Local-prod: aplicar `docker-compose.clamav.yml` sobre `docker-compose.prod.yml`; o clamd fica na rede
   interna `clamav_private`, sem `ports`, e a API usa `EVIDENCE_SCANNER=clamav`/`CLAMAV_HOST=clamav`.
+- Os arquivos de `infra/clamav/` são LF por `.gitattributes`: com CRLF o `clamd` não aceita a configuração. Em checkout anterior a essa regra no Windows, apague os arquivos e rode `git checkout -- infra/clamav`.
 - A imagem é `clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`.
   `AlertExceedsMax yes` é obrigatório. O job `antivirus` executa limpo, EICAR, limites e HTTP 201/422
   contra os dois serviços e falha com qualquer pulo.
