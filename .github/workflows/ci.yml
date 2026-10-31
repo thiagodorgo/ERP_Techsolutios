@@ -341,6 +341,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
       - name: Start ClamAV services by name
         run: |
           docker compose --profile av up -d --no-deps erp-clamav

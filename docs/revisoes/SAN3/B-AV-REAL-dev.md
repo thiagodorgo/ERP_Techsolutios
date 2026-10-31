@@ -254,3 +254,9 @@ PRONTO PARA JUNTA
 - O job termina `success` porque `node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap` roda sob `bash -e` sem `pipefail`, e o guard seguinte só olha pulo e zero teste.
 - O job não tem passo `npm run db:generate`. Localmente, com o cliente gerado, o caso 8 passa. Que esse passo baste na CI é hipótese, não medição.
 - Por isso a frase "8/8 sem pulo" da RETOMADA 11 sobre o run `41207885759` não se sustenta: aquele log tem 7/8.
+
+## CORREÇÃO DO REGISTRO (orquestrador, 31/10)
+
+A RETOMADA 11 afirma integração 8/8 no job `antivirus`. Medido nos logs do CI (`023b565a`, `f1d3463d`, `1b43e6f0`): 7 pass, 1 fail, `not ok 8 - HTTP real mobile entrega 201 limpo e 422 para PNG detectável`, e o job ficou `success`, porque o `tee` sem `pipefail` escondia a falha e o guard só olhava pulo e zero teste. O job também não gerava o cliente Prisma.
+
+Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail` e guard de falha) deu `failure` com `not ok 8`; o commit seguinte acrescenta `npm run db:generate`. Guard permanente em `tests/avreal-scanner-census.test.ts`.
