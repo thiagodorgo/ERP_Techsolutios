@@ -24,4 +24,3 @@ Executar F1 → F2 → F3 → F4 → F5 → F6 → F7, uma por vez, com vermelho
 ## Validação e rastreabilidade
 
 Executar a bateria e as mutações da fatia correspondente no §3/§4 do plano. Relatório incremental em `docs/revisoes/SAN3/B-AV-REAL-dev.md`. Nenhum PR deve ser aberto nesta execução.
-

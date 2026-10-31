@@ -227,4 +227,3 @@ AGUARDANDO DOCKER (F8, F9)
 | F12 | M-F12-API/DEPLOY/PEND/STATUS (marcadores adulterados) | `023b565a` | guard de presença dos quatro marcadores | quatro vermelhos nomeados | SHA-256 `0990ccf9…` · `738a2be1…` · `0225d907…` · `eb2df00d…` | quatro verdes + `git diff --check` |
 
 PRONTO PARA JUNTA
-
