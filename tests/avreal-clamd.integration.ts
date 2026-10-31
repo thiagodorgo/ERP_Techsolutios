@@ -59,7 +59,10 @@ function command(commandBytes: string, targetPort = port): Promise<string> {
 }
 
 if (!host) {
-  test("integração clamd requer AVREAL_CLAMAV_HOST", { skip: "endpoint clamd não informado" }, () => {});
+  // Este arquivo só roda por scripts/avreal-integration.mjs: o sufixo o deixa fora do `npm test`, e aqui não há pulo.
+  test("integração clamd requer AVREAL_CLAMAV_HOST", () => {
+    assert.fail("AVREAL_CLAMAV_HOST não informado; a integração real não pode pular.");
+  });
 } else if (mode === "unavailable") {
   test("pane do daemon falha fechado dentro do prazo", async () => {
     const scanner = new ClamAvEvidenceScanner({

@@ -13,7 +13,7 @@ const result = spawnSync(
     "--test-reporter=tap",
     "--import",
     "tsx",
-    "tests/avreal-clamd-integration.test.ts",
+    "tests/avreal-clamd.integration.ts",
   ],
   {
     cwd: process.cwd(),
