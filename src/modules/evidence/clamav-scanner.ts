@@ -19,6 +19,8 @@ export type ClamAvEvidenceScannerOptions = {
   readonly scanTimeoutMs?: number;
   readonly maxConcurrentScans?: number;
   readonly streamMaxBytes?: number;
+  readonly maxDbAgeHours?: number;
+  readonly now?: () => number;
   readonly socketFactory?: SocketFactory;
 };
 
@@ -29,7 +31,10 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
   private readonly scanTimeoutMs: number;
   private readonly maxConcurrentScans: number;
   private readonly streamMaxBytes: number;
+  private readonly maxDbAgeHours: number;
+  private readonly now: () => number;
   private activeScans = 0;
+  private lastFreshSignatureCheckAt: number | undefined;
 
   constructor(private readonly options: ClamAvEvidenceScannerOptions) {
     this.socketFactory = options.socketFactory ?? ((connectOptions) => net.createConnection(connectOptions));
@@ -37,20 +42,33 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
     this.scanTimeoutMs = options.scanTimeoutMs ?? DEFAULT_SCAN_TIMEOUT_MS;
     this.maxConcurrentScans = options.maxConcurrentScans ?? DEFAULT_MAX_CONCURRENT_SCANS;
     this.streamMaxBytes = options.streamMaxBytes ?? DEFAULT_STREAM_MAX_BYTES;
+    this.maxDbAgeHours = options.maxDbAgeHours ?? 0;
+    this.now = options.now ?? Date.now;
   }
 
-  scan(input: EvidenceScanInput): Promise<EvidenceScanResult> {
+  async scan(input: EvidenceScanInput): Promise<EvidenceScanResult> {
     if (input.buffer.length !== input.sizeBytes) {
-      return Promise.resolve({ status: "failed", reason: "size_mismatch" });
+      return { status: "failed", reason: "size_mismatch" };
     }
     if (input.buffer.length > this.streamMaxBytes) {
-      return Promise.resolve({ status: "failed", reason: "stream_too_large" });
+      return { status: "failed", reason: "stream_too_large" };
     }
     if (this.activeScans >= this.maxConcurrentScans) {
-      return Promise.resolve({ status: "failed", reason: "scanner_busy" });
+      return { status: "failed", reason: "scanner_busy" };
+    }
+
+    const signatureResult = await this.checkSignatures();
+    if (signatureResult) return signatureResult;
+
+    if (this.activeScans >= this.maxConcurrentScans) {
+      return { status: "failed", reason: "scanner_busy" };
     }
 
     this.activeScans += 1;
+    return this.scanInstream(input);
+  }
+
+  private scanInstream(input: EvidenceScanInput): Promise<EvidenceScanResult> {
     return new Promise((resolve) => {
       let socket: Socket | undefined;
       let response = Buffer.alloc(0);
@@ -119,6 +137,76 @@ export class ClamAvEvidenceScanner implements EvidenceScanner {
           })
           .catch(() => settle({ status: "failed", reason: "protocol_error" }));
       });
+    });
+  }
+
+  private async checkSignatures(): Promise<EvidenceScanResult | undefined> {
+    if (this.maxDbAgeHours <= 0) return undefined;
+    const now = this.now();
+    if (
+      this.lastFreshSignatureCheckAt !== undefined &&
+      now - this.lastFreshSignatureCheckAt < 60_000
+    ) {
+      return undefined;
+    }
+
+    const version = await this.queryVersion();
+    if (!version) {
+      this.lastFreshSignatureCheckAt = undefined;
+      return { status: "failed", reason: "signatures_unknown" };
+    }
+    const match = /^ClamAV [^/]+\/[^/]+\/(.+)$/.exec(version);
+    const signatureDate = match ? Date.parse(match[1]!) : Number.NaN;
+    if (!Number.isFinite(signatureDate)) {
+      this.lastFreshSignatureCheckAt = undefined;
+      return { status: "failed", reason: "signatures_unknown" };
+    }
+    const ageHours = (now - signatureDate) / (60 * 60 * 1000);
+    if (ageHours > this.maxDbAgeHours) {
+      this.lastFreshSignatureCheckAt = undefined;
+      return { status: "failed", reason: "signatures_stale" };
+    }
+    this.lastFreshSignatureCheckAt = now;
+    return undefined;
+  }
+
+  private queryVersion(): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      let socket: Socket | undefined;
+      let settled = false;
+      let response = Buffer.alloc(0);
+      const finish = (value: string | undefined) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(deadline);
+        socket?.removeAllListeners();
+        socket?.destroy();
+        resolve(value);
+      };
+      const deadline = setTimeout(() => finish(undefined), this.connectTimeoutMs);
+      try {
+        socket = this.socketFactory({ host: this.options.host, port: this.options.port });
+      } catch {
+        finish(undefined);
+        return;
+      }
+      socket.on("error", () => finish(undefined));
+      socket.on("end", () => finish(undefined));
+      socket.on("data", (part: Buffer) => {
+        response = Buffer.concat([response, part]);
+        if (response.length > MAX_RESPONSE_BYTES) {
+          finish(undefined);
+          return;
+        }
+        const nul = response.indexOf(0);
+        if (nul < 0) return;
+        if (nul !== response.length - 1) {
+          finish(undefined);
+          return;
+        }
+        finish(response.subarray(0, nul).toString("utf8"));
+      });
+      socket.once("connect", () => socket?.write(Buffer.from("zVERSION\0", "latin1")));
     });
   }
 }

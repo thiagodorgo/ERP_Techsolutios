@@ -94,4 +94,26 @@
 | F4 | M-R1a (factory devolve unavailable para clamav) | `8f07e52c` | caso `factory resolve` | construtor foi `UnavailableEvidenceScanner` | SHA-256 canônico `6bd5980…` | 121/121 |
 | F4 | M-R1b (remove recusa noop×produção) | `8f07e52c` | caso M-B7.2 | produção aceitou `noop` | SHA-256 canônico `55f2bca…` | 121/121 |
 | F4 | M-R1c (host opcional) | `8f07e52c` | caso `clamav sem host` | schema aceitou ausência de host | SHA-256 canônico `55f2bca…` | 121/121 |
+| F5 | M-R10a (comparação de idade invertida) | `406c6741` | `npm test -- tests/avreal-signatures.test.ts` | 3/5 falharam; VERSION fresco foi recusado e velho aprovado | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 5/5 |
+| F5 | M-R10b (erro de VERSION reaproveita aprovação) | `406c6741` | `npm test -- tests/avreal-signatures.test.ts` | 2/5 falharam; erro inicial e renovação foram aprovados | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 5/5 |
+| F5 | M-R8b-a (`tenantId` escrito no socket) | `406c6741` | `npm test -- tests/avreal-privacy.test.ts` | 1/2 falhou; canário de identidade apareceu no fio | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 2/2 |
+| F5 | M-R8b-b (resposta bruta no log) | `406c6741` | `npm test -- tests/avreal-privacy.test.ts` | 1/2 falhou; canário da resposta apareceu no log capturado | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 2/2 |
+| F5 | M-R8b-c (resposta bruta em `reason`) | `406c6741` | `npm test -- tests/avreal-privacy.test.ts` | 1/2 falhou; canário apareceu no resultado público | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 2/2 |
+| F5 | M-R12a (import npm `clamscan`) | `406c6741` | `npm test -- tests/avreal-scanner-census.test.ts` | 1/2 falhou; censo encontrou o specifier `clamscan` | SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` | 2/2 |
+
+## RETOMADA 5
+
+- UTC: `2026-10-31T13:16:38Z`.
+- Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `406c67415d72c2151dd6912f7f61a3183d6710f8` (F4 já no remoto).
+- Disco na retomada: `24 GB` livres, acima do piso de 7,5 GB.
+- Parcial encontrado no índice: 7 arquivos de F5; medição antes de seguir → 38/38 testes verdes, `npm run check` e `git diff --check` verdes.
+- Vermelho-controle refeito contra o código de F4, preservando o índice: 38 executados · 33 pass · 5 fail · 0 skip; os cinco casos de VERSION provaram a ausência da implementação. Restauração ao parcial confirmada pelos SHA-256 canônicos.
+- Implementado/medido: consulta `zVERSION`, parser de data, limite de idade, cache de 60 s que falha fechado na renovação; `scanReason` estruturado; fio sem identidade/segredo; resposta bruta ausente de resultado/log; censo de imports e instanciação.
+- Mutações: M-R10a, M-R10b, M-R8b-a, M-R8b-b, M-R8b-c e M-R12a ficaram vermelhas e foram restauradas ao SHA-256 canônico `9b381e689b350d3f65603f00840b675ef572a9c3b6bf557d743ccfc8027ba6f9` do adaptador.
+- Verde-controle da fatia: conjunto F5 com 5 arquivos → 38 pass · 0 fail · 0 skip; `npm run check` e `git diff --check` → exit `0`.
+- Falta: commit/push de F5; depois F6.
+- Próximo comando exato: `git add docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "feat(evidence): idade da base, privacidade no fio e no log, censo do adaptador (B-AV-REAL F5)"`.
+- Arquivos incompletos: nenhum. Jobs/containers/processos vivos: nenhum.
 

@@ -41,6 +41,7 @@ function createDefaultEvidenceScanner(): EvidenceScanner {
       scanTimeoutMs: env.CLAMAV_SCAN_TIMEOUT_MS,
       maxConcurrentScans: env.CLAMAV_MAX_CONCURRENT_SCANS,
       streamMaxBytes: env.CLAMAV_STREAM_MAX_BYTES,
+      maxDbAgeHours: env.CLAMAV_MAX_DB_AGE_HOURS,
     });
   }
   return new UnavailableEvidenceScanner();
