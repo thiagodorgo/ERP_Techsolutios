@@ -617,7 +617,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 
 ### Pontos para quem revisa
 
-- **`.pat-os-tab:hover` é global** (`D-SAN3-12C-VISUAL-CICLO2`): a E5.3 pede escopo, o mandato manda nascer na biblioteca. Muda o hover das abas em todas as telas, não o repouso.
+- **`.pat-os-tab:hover` ficou escopado a B e C** (conserto do ciclo 2, 31/10, pelo orquestrador; ajuste do revisor em `rev-474-r2`): a primeira versão era global e alcançava as abas de outras telas, o que a E5.3 proíbe. As outras telas não mudam.
 - **O cabeçalho da aparência A segue em 24 px** (`P-SAN3-12C-CABECALHO-A-24PX`): fora do meu escopo; a correção vale só para B e C.
 - **`FinanceiroPage` mudou além do visual:** aba inicial da B, formulário de conciliação dentro do detalhe (B e no passo 2 da C) e saldo e pendência das contas desativadas (só leitura). Sem mudança de payload, CAS, idempotência ou permissão: o gatilho de reclassificação da E5.1 não ocorreu.
 - **Navegador sobre fixture:** a medição usa as views reais com dados simulados, sem a API; o fluxo pela API está nos testes vivos em mini-DOM.

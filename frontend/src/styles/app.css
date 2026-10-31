@@ -8155,8 +8155,8 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
   .pat-board { position: static; }
 }
 /* ═══ Biblioteca (COMPONENT_LIBRARY.md) — hover das abas e gráficos acionáveis: BalanceBridge, ReconcileDonut, DayBars, ColumnBars ═══ */
-.pat-os-tab { transition: color .15s ease, background-color .15s ease; }
-.pat-os-tab:hover:not(.pat-os-tab--active) { color: #0f172a; background: rgba(255, 255, 255, .6); }
+.financeiro-b .pat-os-tab, .financeiro-c .pat-os-tab { transition: color .15s ease, background-color .15s ease; }
+.financeiro-b .pat-os-tab:hover:not(.pat-os-tab--active), .financeiro-c .pat-os-tab:hover:not(.pat-os-tab--active) { color: #0f172a; background: rgba(255, 255, 255, .6); }
 
 .ui-balance-bridge { margin: 0; }
 .ui-balance-bridge svg { display: block; width: 100%; height: auto; }

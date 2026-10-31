@@ -290,5 +290,7 @@ test("Interação: conta, abas, blocos, grupos e gráficos têm hover e foco vis
     assert.ok(ruleOf(`${selector}:hover`), `${selector} sem hover`);
     assert.match(ruleOf(`${selector}:focus-visible`) ?? "", /outline:\s*2px solid #2563eb/, `${selector} sem foco visível`);
   }
-  assert.ok(ruleOf(".pat-os-tab:hover:not(.pat-os-tab--active)"), "abas sem hover");
+  assert.ok(ruleOf(".financeiro-c .pat-os-tab:hover:not(.pat-os-tab--active)"), "abas sem hover");
+  assert.ok(css.includes(".financeiro-b .pat-os-tab:hover:not(.pat-os-tab--active),"), "abas de B sem hover");
+  assert.doesNotMatch(css, /^\.pat-os-tab(:hover| \{ transition)/m, "o hover das abas não pode valer para as outras telas");
 });
