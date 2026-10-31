@@ -135,3 +135,25 @@
 | F6 | M-R6a (falha do scanner cai como limpa) | `2bf0c374` | `npm test -- tests/avreal-routes.test.ts` | 5/16 falharam; `failed` virou 201/store=1 em V1–V5 | SHA-256 canônico `44492e00972723f651274a61039de82a09569836b377d78f272f2f921121c51b` | 16/16 |
 | F6 | M-R6b (V5 grava bytes diferentes da marca) | `2bf0c374` | `npm test -- tests/avreal-routes.test.ts` | 1/16 falhou no caso clean da V5 | SHA-256 canônico `48e88f1c8dd988a0dc592b680e36a33cb5b7d75fa8568f6d568927c7245d9979` | 16/16 |
 
+## RETOMADA 7
+
+- UTC: `2026-10-31T13:33:42Z`.
+- Executor/modelo: `dev-avreal-sol`, Codex GPT-5.6 Sol, nível menor declarado.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `10064a12` (F6 já no remoto).
+- Disco: `24 GB` livres, acima do piso de 7,5 GB.
+- Vermelho-controle antes do código: ausência de `erp-clamav`, overlay, `infra/clamav/` e teste dono → `F7_AUSENTE_RED`/exit `1`.
+- Digest medido antes da escrita: Docker Hub tag `clamav/clamav:1.4.6`, media type OCI index, digest multi-arquitetura `sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`; imagem linux/amd64 `sha256:6ba4e78b…b0e6a3`.
+- Implementado: perfis dev `av`/`av-limits` em loopback; overlay local-prod sem portas, rede `clamav_private` interna e API configurada para `clamav`; configs regular, freshclam e limites; imagem tag+digest idêntica nos três serviços.
+- Prova sem daemon: `npm test -- tests/avreal-compose-topology.test.ts` executou `docker compose config --format json` para dev e local-prod → 8 pass · 0 fail · 0 skip; `npm run check` e `git diff --check` verdes. Nenhum container foi iniciado.
+- Mutações: M-R8a-a publicou 3310 no overlay e derrubou 1/8; M-R8a-b retirou o bind de loopback e derrubou 1/8; M-R8a-c tornou a rede não interna e derrubou 1/8. Restauração confirmada pelos blobs canônicos do índice: `fabf38c45fd5b5cc2f38a802d796553dcf9dc852ab11e4acab1468c2961bd136` (`docker-compose.yml`) e `d5129da55f1dea0d25e0e4064f1e3dc2fbf03181dcc2916c92a99d35479c53bf` (`docker-compose.clamav.yml`); `git diff -- <arquivos>` vazio.
+- Falta/bloqueio: F8 e F9 exigem daemon/clamd real; F10 depende delas. F11 também para aqui porque o parecer prevalente exige consolidar as mutações reais de F8/F9 antes dela. F12 fica para depois.
+- Próximo comando exato após o dono ligar o Docker: `docker compose --profile av up -d erp-clamav` (F8).
+- Arquivos incompletos: nenhum. Jobs/containers/processos próprios vivos: nenhum.
+
+| F7 | M-R8a-a (porta publicada no overlay) | `10064a12` | `npm test -- tests/avreal-compose-topology.test.ts` | 1/8 falhou: overlay publicou uma porta | SHA-256 canônico do blob `d5129da55f1dea0d25e0e4064f1e3dc2fbf03181dcc2916c92a99d35479c53bf` | 8/8 |
+| F7 | M-R8a-b (dev sem bind loopback) | `10064a12` | `npm test -- tests/avreal-compose-topology.test.ts` | 1/8 falhou: `host_ip` deixou de ser `127.0.0.1` | SHA-256 canônico do blob `fabf38c45fd5b5cc2f38a802d796553dcf9dc852ab11e4acab1468c2961bd136` | 8/8 |
+| F7 | M-R8a-c (`clamav_private` não interna) | `10064a12` | `npm test -- tests/avreal-compose-topology.test.ts` | 1/8 falhou: `internal` deixou de ser `true` | SHA-256 canônico do blob `d5129da55f1dea0d25e0e4064f1e3dc2fbf03181dcc2916c92a99d35479c53bf` | 8/8 |
+
+AGUARDANDO DOCKER (F8, F9)
+
