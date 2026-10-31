@@ -157,3 +157,22 @@
 
 AGUARDANDO DOCKER (F8, F9)
 
+## RETOMADA 8
+
+- UTC: `2026-10-31T13:49:40Z`.
+- Executor/modelo: `dev-avreal-docker-sol`, Codex GPT-5.6 Sol, nível menor declarado; não planejou nem revisou.
+- Worktree/ramo: `C:/Users/AMP/w-avreal` · `feat/evidence-clamav-scanner`.
+- Base/head anterior: `ae12ddab` (F7 já no remoto); árvore limpa, 24 GB livres e commit livre do Windows 14,86 GB antes de subir Docker.
+- Vermelho-controle antes do código: os dois artefatos de F8 estavam ausentes (`test -f` → exit `1`). Vermelho operacional adicional: o healthcheck original da imagem retornou exit `1` em ambos os containers porque `nc localhost` resolveu fora do listener IPv4, embora o TCP em `127.0.0.1` respondesse.
+- Docker: `erp-clamav` e `erp-clamav-limits` subidos em sequência, por nome de serviço, com `--no-deps`. RSS após ambos: 950,7 MiB e 753,8 MiB na inicialização; commit livre 12,14 GB. Depois estabilizaram em 947,3 MiB e 945,3 MiB; commit livre 11,73 GB. `erp-postgres` e `erp-redis` não foram alvo de nenhum comando.
+- Implementado: suíte real auto-pulável sem endpoint; PING/PONG, VERSION com data parseável, limpo, EICAR gerado em memória, saturação N+1, pane em menos do prazo e recuperação; runner obrigatório TAP que recusa endpoint ausente, zero teste e qualquer pulo. Healthcheck dos dois serviços corrigido para PING em `127.0.0.1`; ambos chegaram a `healthy`.
+- Verde real: execução saudável 5/5; pane 1/1; recuperação 5/5; suíte comum sem endpoint 1 skip declarado; topologia 8/8; `npm run check` e `git diff --check` verdes.
+- Mutações/negativos reproduzíveis: M-R9 trocou a factory de `clamav` por `NoopEvidenceScanner` via patch e ficou 4/5 (EICAR virou `clean`); restauração ao SHA-256 `cd4c80b…`. M-R11a sem `AVREAL_CLAMAV_HOST` saiu 2; M-R11b na porta 1 saiu 1 com 5/5 falhas; como são mutações de execução, os artefatos permaneceram nos hashes `c856dddf…` (runner) e `4c4d94f9…` (suíte).
+- Falta: commit/push de F8; depois F9 usando o container de limites já saudável. Containers próprios ficam vivos somente até concluir F9; volumes de assinaturas serão preservados.
+- Próximo comando exato: `git add docker-compose.yml scripts/avreal-integration.mjs tests/avreal-clamd-integration.test.ts docs/revisoes/SAN3/B-AV-REAL-dev.md && git commit -m "test(evidence): integração contra clamd real — limpo, EICAR, pane, recuperação, saturação (B-AV-REAL F8)"`.
+- Arquivos incompletos: nenhum. Containers próprios vivos: `w-avreal-erp-clamav-1`, `w-avreal-erp-clamav-limits-1`.
+
+| F8 | M-R9 (factory ClamAV vira Noop) | `ae12ddab` | `AVREAL_CLAMAV_HOST=127.0.0.1 node scripts/avreal-integration.mjs` | 1/5 falhou: EICAR retornou `clean` | SHA-256 canônico `cd4c80b206f270fabc18d7a2f6d36089cb63f5903ed21e24b9a0462a91a778f5` | 5/5 |
+| F8 | M-R11a (host ausente) | `ae12ddab` | `env -u AVREAL_CLAMAV_HOST node scripts/avreal-integration.mjs` | exit 2: endpoint obrigatório | SHA-256 do runner `c856dddfe057e7c4be217c8ccdb5d8db1a279ed5905daf87d7d69756ffdf5ea7` | 5/5 |
+| F8 | M-R11b (porta fechada) | `ae12ddab` | `AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_PORT=1 node scripts/avreal-integration.mjs` | exit 1, 5/5 falhas reais, 0 skips | SHA-256 do runner `c856dddfe057e7c4be217c8ccdb5d8db1a279ed5905daf87d7d69756ffdf5ea7` | 5/5 |
+
