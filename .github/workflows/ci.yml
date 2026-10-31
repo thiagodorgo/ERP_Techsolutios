@@ -367,16 +367,21 @@ jobs:
         env:
           AVREAL_CLAMAV_HOST: 127.0.0.1
           AVREAL_CLAMAV_LIMITS_PORT: "3311"
-        run: node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap
+        run: |
+          set -o pipefail
+          node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap
 
       - name: Fail on skipped antivirus tests (green-blind guard)
         run: |
           skipped=$(grep -E '^# skipped ' antivirus.tap | awk '{print $3}')
           tests=$(grep -E '^# tests ' antivirus.tap | awk '{print $3}')
-          echo "antivirus: tests=${tests:-desconhecido} skipped=${skipped:-desconhecido}"
+          failed=$(grep -E '^# fail ' antivirus.tap | awk '{print $3}')
+          echo "antivirus: tests=${tests:-desconhecido} skipped=${skipped:-desconhecido} fail=${failed:-desconhecido}"
           test -n "$tests" && test "$tests" -gt 0 || { echo "zero teste de antivírus"; exit 1; }
           test -n "$skipped" || { echo "não consegui ler a contagem de pulos"; exit 1; }
           test "$skipped" -eq 0 || { echo "integração antivírus pulou $skipped teste(s)"; exit 1; }
+          test -n "$failed" || { echo "não consegui ler a contagem de falhas"; exit 1; }
+          test "$failed" -eq 0 || { echo "integração antivírus falhou $failed teste(s)"; exit 1; }
 
       - name: ClamAV diagnostics
         if: always()
