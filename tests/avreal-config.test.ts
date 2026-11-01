@@ -88,3 +88,39 @@ test("factory resolve ClamAvEvidenceScanner em processo isolado", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /ClamAvEvidenceScanner/);
 });
+
+test("produção com clamav e sem CLAMAV_MAX_DB_AGE_HOURS resolve 72; test resolve 0", () => {
+  const prodOk = {
+    NODE_ENV: "production",
+    JWT_SECRET: "a-real-production-secret",
+    JWT_REFRESH_SECRET: "a-real-production-refresh-secret",
+    CORS_ORIGIN: "https://app.exemplo.com",
+    PORTAL_SESSION_SECRET: "a-real-production-portal-session-secret",
+    PORTAL_LOG_SECRET: "a-real-production-portal-log-secret",
+    PORTAL_AUTHORITY_SESSION_SECRET: "a-real-production-authority-session-secret",
+    PORTAL_TENANT_ID: "00000000-0000-0000-0000-000000000001",
+    PORTAL_CORS_ORIGIN: "https://consulta.exemplo.com",
+    CORE_SAAS_PERSISTENCE: "prisma",
+    DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
+    JOBS_WORKER_ENABLED: "true",
+    REDIS_URL: "redis://redis.interno.exemplo.com:6379",
+    EVIDENCE_SCANNER: "clamav",
+    CLAMAV_HOST: "clamav",
+  };
+  const run = (overrides: Record<string, string>) => {
+    const childEnv: Record<string, string | undefined> = { ...process.env, ...prodOk, ...overrides };
+    delete childEnv.CLAMAV_MAX_DB_AGE_HOURS;
+    return spawnSync(
+      process.execPath,
+      ["--import", "tsx", "--input-type=module", "-e", "import('./src/config/env.ts').then(m=>console.log(m.env.CLAMAV_MAX_DB_AGE_HOURS))"],
+      { cwd: process.cwd(), encoding: "utf8", env: childEnv },
+    );
+  };
+  const prod = run({ NODE_ENV: "production" });
+  assert.equal(prod.status, 0, prod.stderr);
+  assert.equal(prod.stdout.trim(), "72");
+
+  const tst = run({ NODE_ENV: "test" });
+  assert.equal(tst.status, 0, tst.stderr);
+  assert.equal(tst.stdout.trim(), "0");
+});

@@ -354,3 +354,10 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - Head antes da fatia: `51069cb45949c01a03579be48c06981580627a79`.
 - Mutação M-E7 (apagar `scanReason: scanReason ?? null,` de `src/modules/evidence/upload-gate.ts:148`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 1 # fail 1`, `not ok 2 - nada do processo vaza: log pino real, detail, fio e JWT por valor`; restaurado com `git checkout -- src/modules/evidence/upload-gate.ts` (`git status --porcelain -- src/` vazio).
 - Verde da suíte: `npm test -- tests/avreal-privacy.test.ts tests/o6r07b-upload-gate.test.ts` → exit `0`, `# tests 23 # pass 23 # fail 0 # skipped 0`.
+- Commit E7: `b65da32ac2769f73dfb9e450788c11672e6390d4`.
+
+### E4 — default 72 h da idade da base em produção provado no export (C1-A2 + C3-A4)
+
+- Head antes da fatia: `b65da32ac2769f73dfb9e450788c11672e6390d4`.
+- Mutação X-R10-default72 (`72` → `0` em `src/config/env.ts:770`): `npm test -- tests/avreal-config.test.ts` → exit `1`, `# tests 16 # pass 15 # fail 1`, `not ok 16 - produção com clamav e sem CLAMAV_MAX_DB_AGE_HOURS resolve 72; test resolve 0`; restaurado com `git checkout -- src/config/env.ts` (`git status --porcelain -- src/` vazio).
+- Verde da suíte: `npm test -- tests/avreal-config.test.ts tests/production-runtime-gates.test.ts tests/san3-05-runtime-role-bootstrap.test.ts` → exit `0`, `# tests 100 # pass 100 # fail 0 # skipped 0` (`16/16` em `avreal-config.test.ts`).
