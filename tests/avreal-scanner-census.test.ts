@@ -7,10 +7,16 @@ import { expandTestFiles } from "../scripts/run-backend-tests.mjs";
 
 test("adaptador importa somente node:* e caminhos relativos", async () => {
   const source = await readFile("src/modules/evidence/clamav-scanner.ts", "utf8");
-  const specifiers = [...source.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]);
+  const patterns = [
+    /from\s+["']([^"']+)["']/g,
+    /^\s*import\s+["']([^"']+)["']/gm,
+    /import\(\s*["']([^"']+)["']\s*\)/g,
+    /require\(\s*["']([^"']+)["']\s*\)/g,
+  ];
+  const specifiers = patterns.flatMap((pattern) => [...source.matchAll(pattern)].map((match) => match[1]!));
   assert(specifiers.length > 0);
   assert.deepEqual(
-    specifiers.filter((specifier) => !specifier.startsWith("node:") && !specifier.startsWith(".")),
+    specifiers.filter((specifier) => !specifier.startsWith("node:") && !specifier.startsWith("./") && !specifier.startsWith("../")),
     [],
   );
 });

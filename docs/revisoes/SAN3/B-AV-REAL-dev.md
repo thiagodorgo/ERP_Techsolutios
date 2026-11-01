@@ -361,3 +361,13 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - Head antes da fatia: `b65da32ac2769f73dfb9e450788c11672e6390d4`.
 - Mutação X-R10-default72 (`72` → `0` em `src/config/env.ts:770`): `npm test -- tests/avreal-config.test.ts` → exit `1`, `# tests 16 # pass 15 # fail 1`, `not ok 16 - produção com clamav e sem CLAMAV_MAX_DB_AGE_HOURS resolve 72; test resolve 0`; restaurado com `git checkout -- src/config/env.ts` (`git status --porcelain -- src/` vazio).
 - Verde da suíte: `npm test -- tests/avreal-config.test.ts tests/production-runtime-gates.test.ts tests/san3-05-runtime-role-bootstrap.test.ts` → exit `0`, `# tests 100 # pass 100 # fail 0 # skipped 0` (`16/16` em `avreal-config.test.ts`).
+- Commit E4: `03a37ac4508f1193732d940d46bf17d726b89226`.
+
+### E5 — censo de imports do adaptador cobre import nu, dinâmico e require (C1-A3)
+
+- Head antes da fatia: `03a37ac4508f1193732d940d46bf17d726b89226`.
+- Mutações em `src/modules/evidence/clamav-scanner.ts` (todas restauradas com `git checkout -- src/modules/evidence/clamav-scanner.ts`, `git status --porcelain -- src/` vazio):
+  - X-R12-bare (`import "clamscan";`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 5 # pass 4 # fail 1`, `not ok 1 - adaptador importa somente node:* e caminhos relativos`.
+  - X-R12-dyn (`void import("clamscan");`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 5 # pass 4 # fail 1`, `not ok 1`.
+  - X-R12-req (`const x = require("clamscan");`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 5 # pass 4 # fail 1`, `not ok 1`.
+- Verde da suíte: `npm test -- tests/avreal-scanner-census.test.ts` → exit `0`, `# tests 5 # pass 5 # fail 0 # skipped 0`.
