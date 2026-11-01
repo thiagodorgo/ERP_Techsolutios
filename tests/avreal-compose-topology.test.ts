@@ -140,3 +140,56 @@ test("todo clamd.conf do bloco rebaixa o clamd para o usuário clamav", () => {
     assert.match(readFileSync(path.join(ROOT, file), "utf8"), /^User clamav$/m, file);
   }
 });
+
+test("overlay: clamd sem freshclam e só na rede privada", () => {
+  const clamav = overlay().services.clamav!;
+  assert.equal(clamav.environment?.CLAMAV_NO_FRESHCLAMD, "true");
+  assert.deepEqual(Object.keys(clamav.networks ?? {}), ["clamav_private"]);
+  const mounts = clamav.volumes ?? [];
+  assert.equal(
+    mounts.some((mount) => /freshclam/i.test(`${mount.source ?? ""} ${mount.target ?? ""}`)),
+    false,
+  );
+});
+
+test("overlay: atualizador só na rede de saída, sem porta, sem clamd", () => {
+  const updater = overlay().services["clamav-freshclam"];
+  assert.ok(updater, "serviço clamav-freshclam ausente no overlay");
+  assert.equal(updater.environment?.CLAMAV_NO_CLAMD, "true");
+  assert.equal(updater.ports?.length ?? 0, 0);
+  assert.deepEqual(Object.keys(updater.networks ?? {}), ["clamav_update"]);
+  assert.equal(updater.depends_on?.clamav?.condition, "service_healthy");
+  assert.match((updater.healthcheck?.test ?? []).join(" "), /pgrep -x freshclam/);
+  assert.equal(updater.image, overlay().services.clamav?.image);
+  const mounts = updater.volumes ?? [];
+  assert.equal(mounts.length, 2);
+  const dbMount = mounts.find((mount) => mount.target === "/var/lib/clamav");
+  assert.equal(dbMount?.source, "clamav_db");
+  const confMount = mounts.find((mount) => mount.target === "/etc/clamav/freshclam.conf");
+  assert.ok(confMount, "mount de freshclam.conf ausente");
+  assert.match(confMount.source ?? "", /freshclam\.updater\.conf$/);
+  assert.equal(confMount.read_only, true);
+  assert.equal(
+    mounts.some((mount) => /docker\.sock|evidence|clamd\.conf|hdb/i.test(`${mount.source ?? ""} ${mount.target ?? ""}`)),
+    false,
+  );
+});
+
+test("overlay: clamav-freshclam é o único serviço na rede de saída clamav_update", () => {
+  const inUpdate = Object.entries(overlay().services)
+    .filter(([, service]) => (service.networks as Record<string, unknown> | undefined)?.clamav_update !== undefined)
+    .map(([name]) => name);
+  assert.deepEqual(inUpdate, ["clamav-freshclam"]);
+  assert.notEqual(overlay().networks?.clamav_update?.internal, true);
+});
+
+test("clamd.conf declara SelfCheck 120 e updater.conf não tem NotifyClamd", () => {
+  const clamdConf = readFileSync(path.join(ROOT, "infra/clamav/clamd.conf"), "utf8");
+  assert.match(clamdConf, /^SelfCheck 120$/m);
+  const updaterConf = readFileSync(path.join(ROOT, "infra/clamav/freshclam.updater.conf"), "utf8");
+  assert.match(updaterConf, /^DatabaseDirectory \/var\/lib\/clamav$/m);
+  assert.match(updaterConf, /^DatabaseMirror database\.clamav\.net$/m);
+  assert.match(updaterConf, /^Checks 12$/m);
+  assert.match(updaterConf, /^TestDatabases yes$/m);
+  assert.doesNotMatch(updaterConf, /NotifyClamd/);
+});

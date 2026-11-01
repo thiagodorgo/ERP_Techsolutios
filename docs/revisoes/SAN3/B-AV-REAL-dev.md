@@ -296,3 +296,31 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - Mutação M-E13 (apagar `User clamav` de `infra/clamav/clamd.conf`): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# pass 11 # fail 1`, `not ok 12 - todo clamd.conf do bloco rebaixa o clamd para o usuário clamav` (`infra/clamav/clamd.conf`); restaurado com `git checkout -- infra/clamav/clamd.conf`.
 - Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 12 # pass 12 # fail 0 # skipped 0`.
 - Prova real do processo como `clamav`: executada no E2 real (abaixo) e no E12.5 (`docker exec <c> ps -o user,comm | grep clamd` → `clamav`).
+- Commit E13: `8a4fbcb762454720c8e9d8bff79e3990ee9f1161`.
+
+### E2 — overlay do clamd em dois containers, clamd privado e atualizador com saída, runbook honesto (L2 + C3-A2)
+
+- Head antes da fatia: `8a4fbcb762454720c8e9d8bff79e3990ee9f1161`.
+- Vermelho sem conserto (contra o estado pré-E2): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# tests 16 # pass 12 # fail 4` (`not ok 13`, `not ok 14`, `not ok 15`, `not ok 16`).
+- Mutações (todas restauradas com `git checkout -- <arquivo>`):
+  - M-E2a (`clamav_private` com `internal: false`): exit `1`, `# pass 15 # fail 1`, `not ok 13 - overlay: clamav_private é internal:true e clamav_update não é internal`.
+  - M-E2b (`CLAMAV_NO_FRESHCLAMD: "false"` em `clamav`): exit `1`, `# pass 14 # fail 2`, `not ok 14` e `not ok 15`.
+  - M-E2c (`CLAMAV_NO_CLAMD: "false"` em `clamav-freshclam`): exit `1`, `# pass 15 # fail 1`, `not ok 14`.
+  - M-E2d (`clamav-freshclam` sem `clamav_db:/var/lib/clamav` ou com `:ro`): exit `1`, `# pass 15 # fail 1`, `not ok 15`.
+  - M-E2e (apagar `SelfCheck` de `infra/clamav/clamd.conf`): exit `1`, `# pass 15 # fail 1`, `not ok 16 - clamd.conf de produção declara SelfCheck 60..600s`.
+  - M-E2f (`healthcheck.test: ["CMD-SHELL", "true"]` em `clamav-freshclam`): exit `1`, `# pass 15 # fail 1`, `not ok 14`.
+  - M-E2g (`networks: [clamav_private, clamav_update]` em `clamav`): exit `1`, `# pass 15 # fail 1`, `not ok 15`.
+- Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 16 # pass 16 # fail 0 # skipped 0`.
+- Prova real do par de containers no projeto descartável `j-avreal-l2`:
+  - `docker compose -p j-avreal-l2 -f docker-compose.yml -f docker-compose.clamav.yml up -d --wait --no-deps clamav clamav-freshclam` → exit `0` em `71s`, ambos `Healthy`.
+  - `docker logs j-avreal-l2-clamav-1 2>&1`: `socket found, clamd started.` = `1`, `Failed to start clamd` = `0`.
+  - `docker exec j-avreal-l2-clamav-1 ps -o user,comm | grep clamd` → `clamav   clamd`.
+  - `VERSION` inicial: `ClamAV 1.4.6/28164/Sun Oct 25 06:24:12 2026`.
+  - Sem saída no `clamav`: `docker exec j-avreal-l2-clamav-1 wget -q --spider --timeout=5 https://database.clamav.net` → exit `1`, `wget: bad address 'database.clamav.net'`.
+  - Saída no `clamav-freshclam`: `daily.cld updated (version: 28170, sigs: 355841, f-level: 90, builder: svc.clamav-publisher)` em `13s`.
+  - `clamav-freshclam` não escuta 3310: `echo PING | nc -w 2 127.0.0.1 3310` → vazio `[]`.
+  - Recarga automática pelo `SelfCheck 120`: em `+112s`, `VERSION` passou a `ClamAV 1.4.6/28170/Sat Oct 31 06:24:42 2026`.
+  - Sem restart: `RestartCount` = `0`, `StartedAt` = `2026-11-01T01:09:24.73051903Z` (idêntico ao inicial).
+  - Logs de recarga: `SelfCheck: Database modification detected. Forcing reload.` e `Database correctly reloaded (3628245 signatures)`.
+  - `docker stats --no-stream`: `j-avreal-l2-clamav-1` `946MiB / 3GiB`; `j-avreal-l2-clamav-freshclam-1` `84.87MiB / 2GiB`.
+  - Limpeza: `docker compose -p j-avreal-l2 -f docker-compose.yml -f docker-compose.clamav.yml down -v` → containers `0`, volumes `0`, networks `0`.
