@@ -12023,3 +12023,27 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** segurança sistêmica final · **dono:** `B-SAN3-10` · **bloqueia:** o fechamento do portão da versão vendável.
 - **origem:** `D-JUNTA-FLUXO-RAPIDO`, regra (6): antes de fechar o portão da versão vendável, uma revisão de segurança cobre o sistema inteiro, inclusive o que não passou por junta.
 - **encerramento:** varredura de segurança integral concluída, achados graves corrigidos e evidência registrada antes do fechamento do portão vendável.
+
+## P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobrança andar
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** o trabalho correspondente até as seis respostas.
+- **Perguntas copiadas da fonte:**
+  - **P1. Autoriza as migrações?** 7 de esquema e 3 de dados (ASS l.803), uma a uma (l.297). Recomendação: autorizar, com o texto corrigido para dizer que a do rateio automático acrescenta uma coluna.
+  - **P2. Valores dos 4 planos e dos 2 de rastreamento** (ASS Q7). Recomendação: cadastrar na tela de Planos antes do 1º fechamento.
+  - **P3. Regime, município, enquadramento e alíquota de ISS do CNPJ emissor** (ASS Q5). Recomendação: pedir ao contador. Só a emissão de nota espera; o resto anda.
+  - **P4. Comprovante de despesa** (REE Q-B1). Recomendação: fica no aparelho, e o upload vira bloco próprio, com plano e na fila logo depois do 03b. Hoje esse bloco é só um nome.
+  - **P5. O portão ganha os 8 itens? E o rastreamento?** (REE Q-D1 + ASS §7). Recomendação: sim aos 8, renumerados de 57 a 64, e cobrar rastreamento também entra, porque foi fala do dono e hoje a versão vendável sairia sem isso.
+  - **P6. Como os 6 planos nascem em produção, se produção nunca semeia?** Recomendação: uma migração de dados que cria os 6 sem preço, com mais uma autorização.
+- **Limite:** recomendações adotadas por padrão não são decisão do dono; nenhuma migração está autorizada.
+
+## P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** a definição do portão de integrações.
+- **Pergunta:** entram no portão 1 + 1 integrações — Asaas e Focus NFe — ou as 6 integrações?
+- **Recomendação do orquestrador, marcada como tal:** 1 + 1 no portão, Asaas e Focus NFe, e as outras 4 logo depois.
+
+## P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano
+
+- **status:** ABERTA · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE` · **bloqueia:** o envio do comprovante de despesa.
+- **Fato:** o envio do comprovante de despesa não tem plano.
+- **Próximo passo:** planejar o bloco `B-RDV-COMPROVANTE` se a P4 de `P-COBRANCA-PERGUNTAS-P1-P6` for aprovada.
