@@ -347,3 +347,10 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - X-R8b-jwt (`socket.write(process.env.JWT_SECRET ?? "")` antes de `zINSTREAM` em `clamav-scanner.ts`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 0 # fail 2` (`not ok 1` e `not ok 2`).
   - M-E3-http (trocar `"Evidence file was rejected by safety scan."` por `error.detail` em `src/modules/mobile/mobile-evidence-upload.ts:182`): `npm test -- tests/o6r07b-mime-sniff-routes.test.ts` → exit `1`, `# tests 41 # pass 40 # fail 1`, `not ok 37 - E3 [V1] reason do scanner (canário) fora do corpo do 422; texto fixo do contrato`.
 - Verde da suíte: `npm test -- tests/avreal-privacy.test.ts tests/o6r07b-mime-sniff-routes.test.ts` → exit `0`, `# tests 43 # pass 43 # fail 0 # skipped 0` (`2/2` + `41/41`).
+- Commit E3: `51069cb45949c01a03579be48c06981580627a79`.
+
+### E7 — scanReason do gate provado na linha de log real (C1-A4)
+
+- Head antes da fatia: `51069cb45949c01a03579be48c06981580627a79`.
+- Mutação M-E7 (apagar `scanReason: scanReason ?? null,` de `src/modules/evidence/upload-gate.ts:148`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 1 # fail 1`, `not ok 2 - nada do processo vaza: log pino real, detail, fio e JWT por valor`; restaurado com `git checkout -- src/modules/evidence/upload-gate.ts` (`git status --porcelain -- src/` vazio).
+- Verde da suíte: `npm test -- tests/avreal-privacy.test.ts tests/o6r07b-upload-gate.test.ts` → exit `0`, `# tests 23 # pass 23 # fail 0 # skipped 0`.

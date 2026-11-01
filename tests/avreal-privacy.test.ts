@@ -62,9 +62,13 @@ test("nada do processo vaza: log pino real, detail, fio e JWT por valor", async 
   const canary = `AVREAL_CANARY_${randomUUID()}`;
   const canaryJwt = `AVREAL_JWT_${randomUUID()}`;
   const variants = [
-    `stream: ${canary} FOUND\0`,
-    `stream: ${canary}\0`,
-    `stream: Heuristics.Limits.Exceeded.MaxFileSize FOUND\0`,
+    { reply: `stream: ${canary} FOUND\0`, expectedKind: "scanner_infected", expectedReason: null },
+    { reply: `stream: ${canary}\0`, expectedKind: "scanner_unavailable", expectedReason: "protocol_error" },
+    {
+      reply: `stream: Heuristics.Limits.Exceeded.MaxFileSize FOUND\0`,
+      expectedKind: "scanner_infected",
+      expectedReason: "scan_limit_exceeded",
+    },
   ] as const;
 
   const childScript = `
@@ -90,7 +94,7 @@ import('./src/modules/evidence/upload-gate.ts').then(async (g) => {
   process.exit(0);
 });`;
 
-  for (const reply of variants) {
+  for (const { reply, expectedKind, expectedReason } of variants) {
     const wireChunks: Buffer[] = [];
     const server = net.createServer((socket) => {
       socket.on("error", () => undefined);
@@ -156,6 +160,9 @@ import('./src/modules/evidence/upload-gate.ts').then(async (g) => {
 
       const pinoLines = lines.filter((line) => line.includes('"msg":"upload rejected by content gate"'));
       assert.equal(pinoLines.length, 1, `esperava 1 linha pino do gate, veio ${pinoLines.length}`);
+      const pinoEntry = JSON.parse(pinoLines[0]!) as { kind?: unknown; scanReason?: unknown };
+      assert.equal(pinoEntry.kind, expectedKind);
+      assert.equal(pinoEntry.scanReason, expectedReason);
 
       const wire = Buffer.concat(wireChunks);
       assert.equal(wire.subarray(0, 10).toString("latin1"), "zINSTREAM\0");
