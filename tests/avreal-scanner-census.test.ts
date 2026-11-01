@@ -75,3 +75,12 @@ test("nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem n
   });
   assert.equal(result.status, 1, `EICAR inteiro versionado em: ${result.stdout || result.stderr}`);
 });
+
+test("integração real: ramo saudável + limites declara exatamente 8 casos; script e CI exigem 8", async () => {
+  const source = (await readFile("tests/avreal-clamd.integration.ts", "utf8")).replace(/\r\n/g, "\n");
+  const start = source.search(/^\} else \{$/m);
+  assert.notEqual(start, -1, "ramo saudável (`} else {`) não encontrado");
+  assert.equal((source.slice(start).match(/^\s*test\(/gm) ?? []).length, 8);
+  assert.match(await readFile("scripts/avreal-integration.mjs", "utf8"), /EXPECTED_TESTS/);
+  assert.match((await readFile(".github/workflows/ci.yml", "utf8")).replace(/\r\n/g, "\n"), /test "\$tests" -eq 8/);
+});

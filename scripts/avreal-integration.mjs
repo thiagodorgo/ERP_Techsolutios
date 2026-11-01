@@ -6,6 +6,13 @@ if (!host) {
   process.exit(2);
 }
 
+const mode = process.env.AVREAL_CLAMAV_MODE ?? "healthy";
+const limitsPort = Number(process.env.AVREAL_CLAMAV_LIMITS_PORT ?? "0");
+if (mode !== "unavailable" && (!Number.isFinite(limitsPort) || limitsPort <= 0)) {
+  console.error("AVREAL_CLAMAV_LIMITS_PORT é obrigatório: os casos de limite e HTTP não podem sumir.");
+  process.exit(2);
+}
+
 const result = spawnSync(
   process.execPath,
   [
@@ -34,12 +41,14 @@ const result = spawnSync(
 process.stdout.write(result.stdout ?? "");
 process.stderr.write(result.stderr ?? "");
 
+const EXPECTED_TESTS = mode === "unavailable" ? 1 : 8;
 const tap = result.stdout ?? "";
 const tests = Number(/^# tests (\d+)$/m.exec(tap)?.[1] ?? "0");
+const pass = Number(/^# pass (\d+)$/m.exec(tap)?.[1] ?? "0");
 const skipped = Number(/^# skipped (\d+)$/m.exec(tap)?.[1] ?? "0");
-if (result.status !== 0 || tests === 0 || skipped !== 0) {
+if (result.status !== 0 || tests !== EXPECTED_TESTS || pass !== EXPECTED_TESTS || skipped !== 0) {
   console.error(
-    `integração ClamAV inválida: exit=${String(result.status)} tests=${tests} skipped=${skipped}`,
+    `integração ClamAV inválida: exit=${String(result.status)} tests=${tests}/${EXPECTED_TESTS} pass=${pass} skipped=${skipped}`,
   );
   process.exit(result.status && result.status !== 0 ? result.status : 1);
 }

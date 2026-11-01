@@ -388,3 +388,12 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 - Vermelho sem conserto (contra o objeto pré-E8): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 6 # pass 5 # fail 1`, `not ok 6 - nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução` (`EICAR inteiro versionado em: tests/avreal-clamd.integration.ts`).
 - Mutação M-E8 (recolocar o EICAR inteiro em `tests/avreal-clamd.integration.ts`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 6 # pass 5 # fail 1`, `not ok 6 - nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução` (`EICAR inteiro versionado em: tests/avreal-clamd.integration.ts`); restaurado com `git checkout -- tests/avreal-clamd.integration.ts`.
 - Verde da suíte: `npm test -- tests/avreal-scanner-census.test.ts` → exit `0`, `# tests 6 # pass 6 # fail 0 # skipped 0`.
+- Commit E8: `66534775f1d42d2fcd6127f574b08cf710c9ffae`.
+
+### E9 — script e job exigem os 8 casos reais; sumir caso fica vermelho (C1-A6b + C3-A6)
+
+- Head antes da fatia: `66534775f1d42d2fcd6127f574b08cf710c9ffae`.
+- Vermelho sem conserto (contra o estado pré-E9): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 7 # pass 6 # fail 1`, `not ok 7 - integração real: ramo saudável + limites declara exatamente 8 casos; script e CI exigem 8` (`EXPECTED_TESTS` ausente).
+- Controle negativo do wrapper sem `AVREAL_CLAMAV_LIMITS_PORT`: `AVREAL_CLAMAV_HOST=127.0.0.1 node scripts/avreal-integration.mjs` → exit `2`, `AVREAL_CLAMAV_LIMITS_PORT é obrigatório: os casos de limite e HTTP não podem sumir.`.
+- Mutação M-E9 (trocar `test("saturação N+1 …` por `test.skip("saturação N+1 …` em `tests/avreal-clamd.integration.ts`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 7 # pass 6 # fail 1`, `not ok 7 - integração real: ramo saudável + limites declara exatamente 8 casos; script e CI exigem 8` (`7 !== 8`); restaurado com `git checkout -- tests/avreal-clamd.integration.ts`.
+- Verde da suíte: `npm test -- tests/avreal-scanner-census.test.ts` → exit `0`, `# tests 7 # pass 7 # fail 0 # skipped 0`.
