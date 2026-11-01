@@ -73,3 +73,13 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Validação: `flutter analyze` → `No issues found! (ran in 11.2s)`.
 - Falta nesta tarefa: F-D1 e F4c; F-S1 retida pelo orquestrador.
 - Próximo comando: criar o teste `bo6r11_despesa_conflict_nao_reenvia_test.dart` e aplicar somente o filtro de uma linha em `sync_replay_service.dart`.
+
+## RETOMADA D1
+
+- Hora UTC: `2026-11-01T00:53:07Z`.
+- Head de partida: `d771282e` (F3 commitada e enviada).
+- F-D1: o replay de despesas agora exclui ações em `conflict` antes do limite de tentativas; o diff de `sync_replay_service.dart` é exatamente `1` adição e `0` remoções.
+- Testes: `bo6r11_despesa_conflict_nao_reenvia_test.dart` → 2/2; regressão `sync_replay_service_test.dart` → 9/9; total do comando `+11: All tests passed!`.
+- M-D1: remoção do filtro deixou o caso 1 vermelho; lote observado `[pending, failed, conflict]` em vez de `[pending, failed]`. Linha restaurada por edição inversa.
+- Falta nesta tarefa: F4c; F-S1 retida pelo orquestrador.
+- Próximo comando: medir os rótulos reais da tela e implementar `sync_interrupted_reclaim.dart`, a chamada isolada no coordenador e os 7 casos de resgate por tipo.

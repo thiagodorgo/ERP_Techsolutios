@@ -147,6 +147,7 @@ class SyncReplayService {
   Future<SyncReplayResult> replayTenant(String tenantId) async {
     final eligible = (await _queue.pendingForTenant(tenantId))
         .where((a) => _supportedActionTypes?.contains(a.type) ?? true)
+        .where((a) => a.status != SyncStatus.conflict)
         .where((a) => a.retryCount < maxRetry)
         .toList(growable: false);
 
