@@ -64,3 +64,12 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - M-G5: no arquivo real, `return await body()` trocado temporariamente por `unawaited(body())`; guard 21 vermelho com `SERIALIZADOR` + 7 V4. M-G6: ramo seguro + ramo `unawaited(body())`; mesmo vermelho. Restauração comprovada pelo hash `58c9abf0e7226ebbb1531b0591d8944a7fb932c1` e `git diff --exit-code origin/main -- mobile/flutter_app/lib/features/work_orders/`.
 - Falta nesta tarefa: F3, F-D1 e F4c; F-S1 retida pelo orquestrador.
 - Próximo comando: adicionar somente os arquivos permitidos da F2 e este diário, commitar e enviar o ramo; depois iniciar F3 com `analysis_options.yaml` do ramo antigo.
+
+## RETOMADA 3
+
+- Hora UTC: `2026-11-01T00:52:21Z`.
+- Head de partida: `9586bd83` (F2 commitada e enviada).
+- F3: `unawaited_futures: true` e o comentário do ramo antigo aplicados em `analysis_options.yaml`, conforme autorizado pela medição F1 de zero ocorrências fora do escopo.
+- Validação: `flutter analyze` → `No issues found! (ran in 11.2s)`.
+- Falta nesta tarefa: F-D1 e F4c; F-S1 retida pelo orquestrador.
+- Próximo comando: criar o teste `bo6r11_despesa_conflict_nao_reenvia_test.dart` e aplicar somente o filtro de uma linha em `sync_replay_service.dart`.
