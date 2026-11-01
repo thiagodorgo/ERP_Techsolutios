@@ -335,3 +335,15 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - M-E10c (mount `/var/run/docker.sock:/var/run/docker.sock` no `erp-clamav-limits` de `docker-compose.yml`): exit `1`, `# pass 19 # fail 1`, `not ok 19 - nenhum serviço clamd monta o socket Docker`.
   - M-E10d (`ports: ["3310:3310"]` em `api` de `docker-compose.clamav.yml`): exit `1`, `# pass 19 # fail 1`, `not ok 20 - api não publica 3310`.
 - Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 20 # pass 20 # fail 0 # skipped 0`.
+- Commit E10: `4049ae2a94b91deace7fd363b2ad314cd89fae60`.
+
+### E3 — privacidade medida no processo: log pino real, detail, corpo HTTP das 5 vias e JWT por valor (L3 + D4 + C1-A1 + C3-A1)
+
+- Head antes da fatia: `4049ae2a94b91deace7fd363b2ad314cd89fae60`.
+- Mutações em `src/` (todas restauradas com `git checkout -- <arquivo>`, `git status --porcelain -- src/` vazio):
+  - M-R8b-b (`pino` real no adaptador logando `response.toString("utf8")`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 1 # fail 1` (`not ok 2 - nada do processo vaza: log pino real, detail, fio e JWT por valor`).
+  - M-R8b-b′ (`console.warn(response.toString("utf8"))` no adaptador): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 1 # fail 1` (`not ok 2`).
+  - M-R8b-c (duas edições: `clamav-scanner.ts` devolve `reason: response` no `FOUND` e `upload-gate.ts:179` concatena `result.reason` ao `detail`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 1 # fail 1` (`not ok 2`).
+  - X-R8b-jwt (`socket.write(process.env.JWT_SECRET ?? "")` antes de `zINSTREAM` em `clamav-scanner.ts`): `npm test -- tests/avreal-privacy.test.ts` → exit `1`, `# tests 2 # pass 0 # fail 2` (`not ok 1` e `not ok 2`).
+  - M-E3-http (trocar `"Evidence file was rejected by safety scan."` por `error.detail` em `src/modules/mobile/mobile-evidence-upload.ts:182`): `npm test -- tests/o6r07b-mime-sniff-routes.test.ts` → exit `1`, `# tests 41 # pass 40 # fail 1`, `not ok 37 - E3 [V1] reason do scanner (canário) fora do corpo do 422; texto fixo do contrato`.
+- Verde da suíte: `npm test -- tests/avreal-privacy.test.ts tests/o6r07b-mime-sniff-routes.test.ts` → exit `0`, `# tests 43 # pass 43 # fail 0 # skipped 0` (`2/2` + `41/41`).
