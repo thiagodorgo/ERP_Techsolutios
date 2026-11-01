@@ -1,5 +1,9 @@
 # Status Geral
 
+## Estado em 2026-10-31, ~23:00 SP — auditoria da orquestração e §C7 item 11
+
+A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre o `B-AV-REAL` fechou em **"não comprovado"**: com N = 1 junta aberta e nenhuma conferência de verificador, não dá para afirmar nem negar o efeito do pacote em defeitos, e o ataque derrubou o "a evidência aponta o contrário" da análise, além da M2 e da M7 como estavam escritas. **Nada do item 10 foi revertido.** O dono acrescentou o cruzamento entre modelos (`D-UM-FAZ-OUTRO-VERIFICA`), que entra como §C7 item 11 em `CLAUDE.md` e `AGENTS.md` e vale por decisão dele, não pela evidência; a medição é `P-AUDITORIA-MEDIR-CRUZAMENTO`. Os relatórios ficam fora do repositório, em `erp-pausa-2026-10-03/revisoes/auditoria-orquestracao-3110/`, com cópia de `04-analise.md` e `05-ataque.md` em `agent-orchestration/omega/auditoria-orquestracao-2026-10-31/`. As respostas de cobrança da mesma noite estão em `D-COBRANCA-RESPOSTAS-3110`, `D-P14-ASAAS-FOCUS`, `D-DESPESA-SEM-DESCARTAR`, `D-PLATAFORMA-RECEBE-E-REPASSA` e `D-TABELA-CUSTOS-API-REPASSE`; P2 e P3 seguem abertas, e o parecer antes de ligar o recebimento é `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`.
+
 ## Estado em 2026-10-31, noite
 
 - **B-AV-REAL:** PR #477 aberto. A junta reprovou por unanimidade no objeto `2746eb60`, com 3 bloqueantes e nenhum grave; emenda do conserto em andamento; ata ainda não escrita.
