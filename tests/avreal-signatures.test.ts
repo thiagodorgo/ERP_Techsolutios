@@ -191,3 +191,56 @@ test("a vaga volta quando a checagem de assinaturas recusa", async () => {
     },
   );
 });
+
+const resources = () => process.getActiveResourcesInfo().sort().join(",");
+const IDLE_RESOURCES = resources();
+async function settled(baseline = IDLE_RESOURCES, maxMs = 1500): Promise<void> {
+  const start = Date.now();
+  while (resources() !== baseline && Date.now() - start < maxMs) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal(resources(), baseline);
+}
+
+test("VERSION mudo respeita o prazo", { timeout: 3000 }, async (t) => {
+  await settled();
+  const baseline = resources();
+  const sockets = new Set<Socket>();
+  const server = net.createServer((socket) => {
+    sockets.add(socket);
+    socket.on("error", () => undefined);
+    socket.on("close", () => sockets.delete(socket));
+  });
+  t.signal.addEventListener("abort", () => {
+    for (const socket of sockets) socket.destroy();
+    server.close();
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address();
+  assert(address && typeof address !== "string");
+  try {
+    const start = Date.now();
+    const scanner = new ClamAvEvidenceScanner({
+      host: "127.0.0.1",
+      port: address.port,
+      maxDbAgeHours: 1,
+      connectTimeoutMs: 200,
+    });
+    const result = await Promise.race([
+      scanner.scan(input()),
+      new Promise<never>((_resolve, reject) => {
+        const w = setTimeout(() => reject(new Error("watchdog VERSION mudo excedido")), 1000);
+        w.unref();
+      }),
+    ]);
+    assert.deepEqual(result, { status: "failed", reason: "signatures_unknown" });
+    assert(Date.now() - start < 1000);
+  } finally {
+    for (const socket of sockets) socket.destroy();
+    await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  }
+  await settled(baseline);
+});

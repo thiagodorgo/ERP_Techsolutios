@@ -371,3 +371,12 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - X-R12-dyn (`void import("clamscan");`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 5 # pass 4 # fail 1`, `not ok 1`.
   - X-R12-req (`const x = require("clamscan");`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 5 # pass 4 # fail 1`, `not ok 1`.
 - Verde da suíte: `npm test -- tests/avreal-scanner-census.test.ts` → exit `0`, `# tests 5 # pass 5 # fail 0 # skipped 0`.
+- Commit E5: `1d33e14e743999cc2976da9a3ae74b4975133d70`.
+
+### E6 — prazos de conexão e de VERSION, DNS, reset e EPIPE mordem (C1-A6 + C3-A5)
+
+- Head antes da fatia: `1d33e14e743999cc2976da9a3ae74b4975133d70`.
+- Mutações em `src/modules/evidence/clamav-scanner.ts` (todas restauradas com `git checkout -- src/modules/evidence/clamav-scanner.ts`, `git status --porcelain -- src/` vazio):
+  - X-R4-connect (apagar o timer de `connectTimeoutMs` em `scanInstream`): `npm test -- tests/avreal-scanner-failures.test.ts` → exit `1`, `# tests 13 # pass 12 # fail 1`, `not ok 10 - conexão muda respeita connectTimeoutMs`.
+  - X-R4-version (apagar `const deadline = setTimeout(...)` em `queryVersion`): `npm test -- tests/avreal-signatures.test.ts` → exit `1`, `# tests 9 # pass 8 # fail 1`, `not ok 9 - VERSION mudo respeita o prazo`.
+- Verde da suíte: `npm test -- tests/avreal-scanner-failures.test.ts tests/avreal-signatures.test.ts tests/avreal-scanner-protocol.test.ts` → exit `0`, `# tests 37 # pass 37 # fail 0 # skipped 0` (`13/13` + `9/9` + `15/15`).

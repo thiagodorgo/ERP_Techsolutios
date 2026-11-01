@@ -246,3 +246,77 @@ test("porta recusada falha fechado sem lançar", async () => {
   const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port: address.port, scanTimeoutMs: 100 });
   assert.equal((await scanner.scan(input(Buffer.from("x")))).status, "failed");
 });
+
+const resources = () => process.getActiveResourcesInfo().sort().join(",");
+const IDLE_RESOURCES = resources();
+async function settled(baseline = IDLE_RESOURCES, maxMs = 1500): Promise<void> {
+  const start = Date.now();
+  while (resources() !== baseline && Date.now() - start < maxMs) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.equal(resources(), baseline);
+}
+
+test("conexão muda respeita connectTimeoutMs", { timeout: 3000 }, async () => {
+  await settled();
+  const baseline = resources();
+  const start = Date.now();
+  const scanner = new ClamAvEvidenceScanner({
+    host: "127.0.0.1",
+    port: 1,
+    connectTimeoutMs: 200,
+    scanTimeoutMs: 2000,
+    socketFactory: () => new net.Socket(),
+  });
+  const result = await scanner.scan(input(Buffer.from("x")));
+  assert.equal(result.status, "failed");
+  assert(result.reason === "connect_failed" || result.reason === "timeout");
+  assert(Date.now() - start < 1000);
+  await settled(baseline);
+});
+
+test("DNS inválido falha como connect_failed sem pendurar recursos", { timeout: 3000 }, async () => {
+  const baseline = resources();
+  const scanner = new ClamAvEvidenceScanner({ host: "clamd.invalid", port: 3310 });
+  const result = await scanner.scan(input(Buffer.from("x")));
+  assert.deepEqual(result, { status: "failed", reason: "connect_failed" });
+  await settled(baseline);
+});
+
+test("reset após o 1.º chunk falha sem exceção não tratada", { timeout: 3000 }, async () => {
+  const baseline = resources();
+  await withServer(
+    (socket) => {
+      socket.on("error", () => undefined);
+      socket.once("data", () => socket.destroy());
+    },
+    async (port) => {
+      const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });
+      const result = await scanner.scan(input(Buffer.from("x")));
+      assert.equal(result.status, "failed");
+    },
+  );
+  await settled(baseline);
+});
+
+test("FIN sem resposta após o terminador falha sem pendurar recursos", { timeout: 3000 }, async () => {
+  const baseline = resources();
+  await withServer(
+    (socket) => {
+      const seen: Buffer[] = [];
+      socket.on("error", () => undefined);
+      socket.on("data", (part) => {
+        seen.push(part);
+        if (Buffer.concat(seen).subarray(-4).equals(Buffer.alloc(4))) {
+          socket.end();
+        }
+      });
+    },
+    async (port) => {
+      const scanner = new ClamAvEvidenceScanner({ host: "127.0.0.1", port });
+      const result = await scanner.scan(input(Buffer.from("x")));
+      assert.equal(result.status, "failed");
+    },
+  );
+  await settled(baseline);
+});
