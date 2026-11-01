@@ -5077,3 +5077,9 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Porteiro pós-merge: **BLOQUEADO** porque os itens 28/55 e `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA`/`P-WEB-CONCILIACAO-SEM-TELA` ainda estavam abertos nas fontes operacionais, e estado/log ainda diziam que o PR estava aberto.
 - Limpeza conferida: `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio; o ramo remoto já foi apagado.
 - Registro de 31/10 fecha os dois itens por fato e regenera o índice de pendências. A etapa seguinte prevista no parecer também foi cumprida: o marco KPI #473 foi mergeado em `45435ab9`; `Kpis/**` permanece intocado neste PR.
+
+## Estado em 2026-10-31, noite
+
+- **B-AV-REAL:** PR #477 aberto. A junta reprovou por unanimidade no objeto `2746eb60`, com 3 bloqueantes e nenhum grave; emenda do conserto em andamento; ata ainda não escrita.
+- **B-O6R-11:** ramo `fix/mobile-fila-duravel-b-o6r-11`; F0 e F1 feitas. A F1 achou que o guard herdado acusa `_serial` do `B-SAN3-13`; Emenda 3 fora do repositório, com cópia prevista no próprio bloco.
+- **Distribuição dos braços:** vale por último a fala do dono registrada em `D-CODEX-ZERA-CONTA-2-E-ARGON`: Codex 1, Codex 2 e Argon, uma tarefa para cada, com o Claude na orquestração ou codando quando necessário.

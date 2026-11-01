@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **683** |
-| IDs distintos | 672 |
-| **ABERTAS** | **510** |
+| Cabecalhos `## P-` | **686** |
+| IDs distintos | 675 |
+| **ABERTAS** | **513** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **445** |
+| — das quais **ativas nesta rodada** | **448** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 169 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **683 cabecalhos para 672 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **686 cabecalhos para 675 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -305,7 +305,7 @@
 | `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 11979 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
 | `P-SAN3-10-VARREDURA-SEGURANCA-FINAL` | 12022 | ALTA | sim | P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portã |
 
-## ABERTAS · balde B — processo/registro — 216
+## ABERTAS · balde B — processo/registro — 219
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -525,6 +525,9 @@
 | `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM` | 12007 | BAIXA | sim | P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir |
 | `P-SAN3-12C-CABECALHO-A-24PX` | 12013 | BAIXA | sim | P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px |
 | `P-C2R-01-ROLE-PERMS-NO-ROTEIRO` | 12017 | BAIXA | sim | P-C2R-01-ROLE-PERMS-NO-ROTEIRO (2026-10-29) — o roteiro da C2 não registra a geração de  |
+| `P-COBRANCA-PERGUNTAS-P1-P6` | 12027 | — | sim | P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobr |
+| `P-COBRANCA-ADAPTADORES-1-MAIS-1` | 12039 | — | sim | P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão |
+| `P-B-RDV-COMPROVANTE` | 12045 | — | sim | P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
