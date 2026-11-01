@@ -92,7 +92,7 @@ serviço; F8b conservação/moeda; F8c resumo; F9 laço único, bateria e regist
 controle dos testes novos aplicáveis, mutações nomeadas, `npm run check`, testes da fatia, `git diff --check`,
 commit, push e seção `## RETOMADA n` no relatório do dev.
 
-Docker somente em F2, F3, F4, F5, F7, F8c e F9: container próprio `pg-san303`, PostgreSQL 16,
+Docker somente em F0, F2, F3, F4, F5, F7, F8c e F9: container próprio `pg-san303`, PostgreSQL 16,
 `127.0.0.1:55432`, sem volume; remover ao fim de cada fatia. Nunca usar base viva ou `DATABASE_URL` do CI.
 
 ## Bateria final

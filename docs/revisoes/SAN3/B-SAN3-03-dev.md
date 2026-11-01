@@ -57,3 +57,28 @@
 - **Arquivos meio-escritos:** nenhum código de produto/teste; somente os dois documentos completos da F0.
 - **Escopo:** zero diff em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles e código de produto.
 
+### Retomada e fechamento da F0
+
+- **Emenda aplicada:** a autorização expressa do orquestrador para PostgreSQL descartável na F0 foi
+  incorporada ao comando do bloco; a ref lida foi
+  `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-03-emenda-1.md`.
+- **Pré-condições:** 24 GB livres em disco e 10,93 GB de memória de commit livre; porta `55432` livre.
+  Os containers vivos `erp-postgres`/`erp-redis` e as portas proibidas não foram tocados.
+- `docker run -d --name pg-san303 -p 127.0.0.1:55432:5432 ... postgres:16` — **exit 0**; container
+  efêmero sem volume, restrito a `127.0.0.1:55432`.
+- `npx prisma migrate deploy && npm run db:seed` com a URL exclusiva do descartável — **exit 0**;
+  117 migrações preexistentes aplicadas e seed concluído; zero diff em `prisma/**`/`migrations/**`.
+- `npm test` com o descartável — **exit 1**: 363 arquivos, 4.148 testes registrados, 4.136 passes,
+  10 fails e 2 skips. A causa raiz nomeada é preexistente e fora do escopo:
+  `tests/traccar-event-migration-drill-db.test.ts` falhou no hook final com `EBUSY` ao remover o
+  diretório temporário do Windows; isso também acionou corretamente o piso de denominador do runner.
+- Reprodução mínima `npm test -- tests/traccar-event-migration-drill-db.test.ts` — **exit 1**:
+  7 testes, 6 passes, 1 fail, 0 skips; os seis drills funcionais passaram e o hook final reproduziu
+  `EBUSY` em outro diretório temporário. A falha não foi ocultada nem corrigida fora do escopo.
+- `npm run check && git diff --check` — **exit 0**.
+- `docker rm -f pg-san303` e verificação de ausência — **exit 0**; nenhum container do bloco permaneceu.
+- **Escopo:** zero diff em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles, `frontend/**` e produto.
+- **Próximo comando exato:** `npm test -- tests/san3-03-import-memory.test.ts` após criar o
+  vermelho-controle comportamental da F1.
+- **Arquivos meio-escritos:** nenhum.
+
