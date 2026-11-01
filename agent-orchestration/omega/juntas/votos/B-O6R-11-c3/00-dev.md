@@ -51,3 +51,16 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Falta: F2, F3, F-D1, F4c, F-S1, F5, F6c, F7c.
 - Próximo comando após emenda: reexecutar `flutter test test/core/sync/bo6r11_guard_fila_await_ast_test.dart --reporter expanded` no novo objeto autorizado; somente então iniciar F2.
 - Arquivos meio escritos: nenhum código de produto; somente este diário.
+
+## RETOMADA 2
+
+- Hora UTC: `2026-11-01T00:51:38Z`.
+- Head antes da fatia: `051a96ee`; Emenda 3 copiada para `agent-orchestration/omega/planos/B-O6R-11-emenda-3-guard.md`.
+- F2 aplicada: fila persistente serializa `enqueue`/`update`; `addSelection` usa `for-in` com `await`; os três testes herdados foram incorporados.
+- Guard AST: `_serial` é declarado somente para `work_order_repository.dart`; a invocação precisa estar consumida e o corpo declarado precisa aguardar diretamente todas as referências ao callback. Ausência, descarte, `Future` intermediária, ramo inseguro e encaminhamento do callback falham fechados com `SERIALIZADOR`/V4. `lib/features/work_orders/**` permaneceu byte-idêntico a `origin/main`.
+- Validação: `flutter analyze` → `No issues found!`; três arquivos → `+21: All tests passed!` (12 casos herdados + 9 cenários a–i da Emenda 3).
+- Mutações R1/R2: M1 → caso 17 vermelho (`['b']`); M2 → caso 18 vermelho (`a` permaneceu `pending`); M3 → caso 19 vermelho (erro anterior travou a cauda); M4 → caso 13 e guard 21 vermelhos; M5 → caso 13 e guard 21 vermelhos.
+- Mutações do guard: M-G1 → 24b/24c vermelhos; M-G2 → 24d; M-G3 → 24e; M-G3b → 24g; M-G3c → 24h; M-G3d (ignorar referências não invocadas, inclusive a exigência de ao menos uma referência observada) → 24i; M-G4 → 24f. Todas revertidas por edição inversa.
+- M-G5: no arquivo real, `return await body()` trocado temporariamente por `unawaited(body())`; guard 21 vermelho com `SERIALIZADOR` + 7 V4. M-G6: ramo seguro + ramo `unawaited(body())`; mesmo vermelho. Restauração comprovada pelo hash `58c9abf0e7226ebbb1531b0591d8944a7fb932c1` e `git diff --exit-code origin/main -- mobile/flutter_app/lib/features/work_orders/`.
+- Falta nesta tarefa: F3, F-D1 e F4c; F-S1 retida pelo orquestrador.
+- Próximo comando: adicionar somente os arquivos permitidos da F2 e este diário, commitar e enviar o ramo; depois iniciar F3 com `analysis_options.yaml` do ramo antigo.
