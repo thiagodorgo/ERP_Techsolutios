@@ -21,6 +21,7 @@ type Service = {
   networks?: Record<string, unknown>;
   depends_on?: Record<string, { condition?: string }>;
   volumes?: Array<{ source?: string; target?: string; read_only?: boolean }>;
+  healthcheck?: { test?: string[] };
 };
 type Config = {
   services: Record<string, Service>;
@@ -111,5 +112,25 @@ test("arquivos montados pelo clamd são LF em qualquer checkout, inclusive com c
   assert(files.length >= 4, `esperava ao menos 4 arquivos em infra/clamav, achei ${files.length}`);
   for (const file of files) {
     assert.deepEqual(git("check-attr", "eol", "--", file), [`${file}: eol: lf`]);
+  }
+});
+
+const CLAMD_CONFS = ["infra/clamav/clamd.conf", "infra/clamav/clamd.limits-test.conf"];
+
+test("nenhum healthcheck de clamd usa localhost/clamdcheck.sh", () => {
+  for (const [name, service] of [
+    ["erp-clamav", dev().services["erp-clamav"]],
+    ["erp-clamav-limits", dev().services["erp-clamav-limits"]],
+    ["clamav", overlay().services.clamav],
+  ] as const) {
+    const cmd = (service?.healthcheck?.test ?? []).join(" ");
+    assert.match(cmd, /nc 127\.0\.0\.1 3310/, `${name}: ${cmd}`);
+    assert.doesNotMatch(cmd, /localhost|clamdcheck/, `${name}: ${cmd}`);
+  }
+});
+
+test("todo clamd.conf do bloco declara o LocalSocket que o /init da imagem espera", () => {
+  for (const file of CLAMD_CONFS) {
+    assert.match(readFileSync(path.join(ROOT, file), "utf8"), /^LocalSocket \/(tmp|run\/clamav)\/clamd\.sock$/m, file);
   }
 });

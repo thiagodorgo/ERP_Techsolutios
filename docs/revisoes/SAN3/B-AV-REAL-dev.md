@@ -260,3 +260,30 @@ PRONTO PARA JUNTA
 A RETOMADA 11 afirma integração 8/8 no job `antivirus`. Medido nos logs do CI (`023b565a`, `f1d3463d`, `1b43e6f0`): 7 pass, 1 fail, `not ok 8 - HTTP real mobile entrega 201 limpo e 422 para PNG detectável`, e o job ficou `success`, porque o `tee` sem `pipefail` escondia a falha e o guard só olhava pulo e zero teste. O job também não gerava o cliente Prisma.
 
 Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail` e guard de falha) deu `failure` com `not ok 8`; o commit seguinte acrescenta `npm run db:generate`. Guard permanente em `tests/avreal-scanner-census.test.ts`.
+
+## CONSERTO PÓS-JUNTA (E1–E13)
+
+- Executor/modelo: `fix-avreal-argon`, Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou.
+- Ramo/worktree: `feat/evidence-clamav-scanner` · `C:/Users/AMP/w-avreal`.
+- Head de partida: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`.
+- Plano de conserto: `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-AV-REAL-emenda-junta.md`.
+- Terreno inicial: `git status --porcelain` vazio; disco livre 24 GB (> 7,5 GB); commit livre 10,57 GB (> 4 GB).
+
+### E1 — healthcheck do overlay em 127.0.0.1 e LocalSocket que o `/init` espera (L1 + D1)
+
+- Head antes da fatia: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`.
+- Vermelho sem conserto (contra o objeto `2746eb60`): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# tests 11 # pass 9 # fail 2`, `not ok 10 - nenhum healthcheck de clamd usa localhost/clamdcheck.sh` (`clamav: CMD /usr/local/bin/clamdcheck.sh`) e `not ok 11 - todo clamd.conf do bloco declara o LocalSocket que o /init da imagem espera` (`infra/clamav/clamd.conf`).
+- Mutação M-E1 (voltar `test: ["CMD", "/usr/local/bin/clamdcheck.sh"]` em `docker-compose.clamav.yml`): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# pass 10 # fail 1`, `not ok 10 - nenhum healthcheck de clamd usa localhost/clamdcheck.sh` (`clamav: CMD /usr/local/bin/clamdcheck.sh`); restaurado com `git checkout -- docker-compose.clamav.yml`.
+- Mutação M-E1b (apagar `LocalSocket /tmp/clamd.sock` de `infra/clamav/clamd.limits-test.conf`): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# pass 10 # fail 1`, `not ok 11 - todo clamd.conf do bloco declara o LocalSocket que o /init da imagem espera` (`infra/clamav/clamd.limits-test.conf`); restaurado com `git checkout -- infra/clamav/clamd.limits-test.conf`.
+- Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 11 # pass 11 # fail 0 # skipped 0`.
+- Prova real acelerada positiva (`j-avreal-e1`, `CLAMD_STARTUP_TIMEOUT=25`, `sleep 50`):
+  - `docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' j-avreal-e1` → exit `0`, `running 0`.
+  - `docker logs j-avreal-e1 2>&1 | grep -c 'socket found, clamd started.'` → exit `0`, `1`.
+  - `docker logs j-avreal-e1 2>&1 | grep -c 'Failed to start clamd'` → `0`.
+  - `docker exec j-avreal-e1 sh -c 'echo PING | nc 127.0.0.1 3310'` → exit `0`, `PONG`.
+  - `MSYS_NO_PATHCONV=1 docker exec j-avreal-e1 ls -l /tmp/clamd.sock` → exit `0`, `srw-rw-rw-    1 root     root             0 Nov  1 00:59 /tmp/clamd.sock`.
+  - `docker rm -f j-avreal-e1` → removido.
+- Vermelho-controle real acelerado (`j-avreal-e1-ctl`, conf do objeto `2746eb60`, `CLAMD_STARTUP_TIMEOUT=25`):
+  - `docker wait j-avreal-e1-ctl` → exit `0`, saída `1` (container encerrado com exit 1).
+  - `docker logs j-avreal-e1-ctl 2>&1 | grep -c 'Failed to start clamd'` → exit `0`, `1`.
+  - `docker rm -f j-avreal-e1-ctl && rm -f "$TEMP/clamd.objeto.conf"` → limpo.

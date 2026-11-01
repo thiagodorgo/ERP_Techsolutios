@@ -22,7 +22,7 @@ services:
       - ./infra/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
       - ./infra/clamav/freshclam.conf:/etc/clamav/freshclam.conf:ro
     healthcheck:
-      test: ["CMD", "/usr/local/bin/clamdcheck.sh"]
+      test: ["CMD-SHELL", "test \"$(echo PING | nc 127.0.0.1 3310)\" = PONG"]
       interval: 10s
       timeout: 5s
       retries: 12
