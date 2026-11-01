@@ -6,6 +6,7 @@ import '../bootstrap/bootstrap_repository.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
 import '../telemetry/telemetry_providers.dart';
+import 'sync_interrupted_reclaim.dart';
 import 'sync_providers.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -74,6 +75,18 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
         return;
       }
       final tenantId = session.activeTenant.tenantId;
+
+      try {
+        final queue = ref.read(syncQueueRepositoryProvider);
+        final interrupted = reclaimInterruptedSyncing(
+          await queue.actionsForTenant(tenantId),
+        );
+        for (final action in interrupted) {
+          await queue.update(action);
+        }
+      } catch (_) {
+        // Resgate falho nao bloqueia os demais dominios de sincronizacao.
+      }
 
       try {
         await ref.read(fieldLocationSyncServiceProvider).syncTenant(tenantId);

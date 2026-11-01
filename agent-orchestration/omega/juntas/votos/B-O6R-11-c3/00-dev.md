@@ -83,3 +83,17 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - M-D1: remoção do filtro deixou o caso 1 vermelho; lote observado `[pending, failed, conflict]` em vez de `[pending, failed]`. Linha restaurada por edição inversa.
 - Falta nesta tarefa: F4c; F-S1 retida pelo orquestrador.
 - Próximo comando: medir os rótulos reais da tela e implementar `sync_interrupted_reclaim.dart`, a chamada isolada no coordenador e os 7 casos de resgate por tipo.
+
+## RETOMADA F4c
+
+- Hora UTC: `2026-11-01T00:56:47Z`.
+- Head de partida: `44b2a4e8` (F-D1 commitada e enviada).
+- Rótulos medidos na tela: `Minha versao` e `Versao do gestor`; os textos seguros do resgate usam exatamente esses rótulos.
+- F4c: `sync_interrupted_reclaim.dart` resgata somente ações `syncing`, preserva identidade/payload/criação/retry, limpa `processedAt` e grava `SYNC_INTERRUPTED`. Os três tipos RDV com recibo durável (`expense_report.create`, `expense_item.create`, `expense_report.submit`) voltam para `pending`; recibo, material, OS, checklist, evidência e desconhecido ficam em `conflict`, fail-closed.
+- Coordenador: resgate persistido imediatamente após resolver o tenant e antes do primeiro replay de domínio, em `try/catch` isolado.
+- Validação nominal: `flutter analyze` → `No issues found!`; 7 testes F4c + 2 F-D1 + 9 regressões do replay → `+18: All tests passed!`. A integração usa Drift em memória e prova resgate antes dos replays, RDV interrompida processada, conflito preexistente não reenviado e três conflitos `SYNC_INTERRUPTED` manuais.
+- Controles negativos, todos vermelhos e revertidos por edição inversa: M6/controle sem chamada do coordenador (integração encontrou `syncing`); M7 tudo `pending`; M8 tudo `failed`; M9 converter também não-`syncing`; M-D2 despesas em `conflict`; M-D1(e) reenviar conflito preexistente (lote `[4, 7]`); M-S10 incluir `expense_receipt.attach` no reenvio automático.
+- Escopo proibido preservado: `git diff origin/main -- mobile/flutter_app/lib/features/work_orders/` vazio; `git diff --check` limpo.
+- Feito nesta tarefa: F2, F3, F-D1 e F4c.
+- Falta: F-S1, F5, F6c e F7c; F-S1 retida pelo orquestrador.
+- Próximo comando: adicionar os três caminhos da F4c e este diário, commitar e enviar o ramo; em seguida registrar a pausa obrigatória sem iniciar F-S1.
