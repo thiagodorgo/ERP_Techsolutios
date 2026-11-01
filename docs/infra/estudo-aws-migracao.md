@@ -29,7 +29,7 @@
 - **Traccar:** Fargate x86, 0,5 vCPU e 2 GB (Java), mais RDS `db.t4g.micro` dedicado, como manda o plano do Traccar.
 - **ClamAV:** Fargate ARM, 0,5 vCPU e 3 GB (o clamd carrega a base de vírus na memória), em subnet
   privada; SG TCP 3310 aceita somente o SG da API, sem IP público nem load balancer. O `freshclam`
-  sai por NAT ou por espelho aprovado; ativação no ambiente alvo exige ato do dono e junta-5.
+  sai por NAT ou por espelho aprovado; ativação no ambiente alvo exige ato do dono e junta-5. **Alerta:** a imagem fixada no B-AV-REAL é só amd64; em Fargate ARM usar a tag `-debian` (digest a medir) ou tarefa x86.
 - **Balanceador:** ALB público só para a API, com certificado ACM grátis. Nenhuma porta pública para o Traccar.
 - **Saída para a internet das subnets privadas:** NAT gateway, ou uma **instância NAT** `t4g.nano` para economizar (ver 3.2).
 - **Segredos:** Secrets Manager.

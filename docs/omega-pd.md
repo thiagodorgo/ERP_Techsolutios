@@ -1316,7 +1316,7 @@ repositório, onde ela ainda existe.
 
 > **Adendo executado em 2026-10-31 — B-AV-REAL.** Imagem escolhida:
 > `clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`
-> (OCI multi-arquitetura; linux/amd64 `sha256:6ba4e78b…b0e6a3`). Config efetiva: `StreamMaxLength
+> (~~OCI multi-arquitetura~~ manifesto `linux/amd64` + atestação (`docker manifest inspect`): **só amd64**; Graviton/ARM exige tag `-debian` com digest próprio (PD S8); linux/amd64 `sha256:6ba4e78b…b0e6a3`). Config efetiva: `StreamMaxLength
 > 110M`, `MaxFileSize 120M`, `MaxScanSize 200M` no serviço normal; `3M`/`1M`/`2M` no serviço de
 > limites; `AlertExceedsMax yes` nos dois. O digest não detectou EICAR meramente anexado a PNG, então
 > a prova HTTP usa a alternativa B planejada: HDB de teste determinística, montada somente em dev/CI;

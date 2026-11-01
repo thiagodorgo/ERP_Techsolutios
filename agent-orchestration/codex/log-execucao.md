@@ -5056,8 +5056,8 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 ## 2026-10-31 — B-AV-REAL · DEV F8/F9/F10/F12
 
 - `dev-avreal-docker-sol` (Codex GPT-5.6 Sol, nível menor declarado) executou somente F8, F9, F10 e F12.
-- ClamAV real: 8/8 sem pulo; M-R9, M-R11a/b, M-R5r e mutação CI vermelhas e restauradas por hash.
-- CI `antivirus` verde em 57 s (`41207885759`, head `023b565a`); nenhum PR aberto pelo DEV.
+- ClamAV real: ~~8/8 sem pulo~~ 8/8 sem pulo localmente; M-R9, M-R11a/b, M-R5r e mutação CI vermelhas e restauradas por hash.
+- CI `antivirus` ~~verde em 57 s (`41207885759`, head `023b565a`), 8/8 e zero pulo~~: run `41207885759` (head `023b565a`) teve **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma) e ficou `success` por `tee` sem `pipefail`; `bf24bb2b` tornou o job vermelho, `b407692a` e `9bad1f7e` seguiram vermelhos, verde em `2746eb60` (runs `41242348719` e `41242344243`, `conclusion=success`); nenhum PR aberto pelo DEV.
 ## 2026-10-28 — B-SAN3-12c · FATIA 1 (`dev-san312c-sol`)
 
 - Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
@@ -5082,3 +5082,9 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Porteiro pós-merge: **BLOQUEADO** porque os itens 28/55 e `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA`/`P-WEB-CONCILIACAO-SEM-TELA` ainda estavam abertos nas fontes operacionais, e estado/log ainda diziam que o PR estava aberto.
 - Limpeza conferida: `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio; o ramo remoto já foi apagado.
 - Registro de 31/10 fecha os dois itens por fato e regenera o índice de pendências. A etapa seguinte prevista no parecer também foi cumprida: o marco KPI #473 foi mergeado em `45435ab9`; `Kpis/**` permanece intocado neste PR.
+
+## 2026-10-31 — B-AV-REAL · conserto pós-junta (E1–E13)
+
+- Executor/modelo: `fix-avreal-argon` (Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou).
+- D1 (clamd morria em 1800 s por socket não declarado) achado pela revisão da emenda, fora da triagem; E13 (clamd não-root) medido e incluído.
+- Fatias E1, E13, E2, E10, E3, E7, E4, E5, E6, E8, E9, E11 e E12 executadas sequencialmente no ramo `feat/evidence-clamav-scanner` (`C:/Users/AMP/w-avreal`), com `src/` intocado contra `2746eb60`, F11 (`M-R7`) provada em worktree descartável, 7 pendências residuais registradas em `pendencias.md` (+ índice regenerado) e relatório atualizado em `docs/revisoes/SAN3/B-AV-REAL-dev.md`.
