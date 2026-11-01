@@ -486,3 +486,41 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
 | E6 | `X-R4-version` (desativar timer `deadline` em `queryVersion`) | `1d33e14e` | `npm test -- tests/avreal-signatures.test.ts` | `1` | `not ok 9 - VERSION mudo respeita o prazo` | `git checkout -- src/modules/evidence/clamav-scanner.ts` |
 | E8 | `M-E8` (recolocar literal EICAR inteiro em `tests/avreal-clamd.integration.ts`) | `78f78916` | `npm test -- tests/avreal-scanner-census.test.ts` | `1` | `not ok 6 - nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução` | `git checkout -- tests/avreal-clamd.integration.ts` |
 | E9 | `M-E9` (trocar `test(` por `test.skip(` em `tests/avreal-clamd.integration.ts`) | `66534775` | `npm test -- tests/avreal-scanner-census.test.ts` | `1` | `not ok 7 - integração real: ramo saudável + limites declara exatamente 8 casos; script e CI exigem 8` (`7 !== 8`) | `git checkout -- tests/avreal-clamd.integration.ts` |
+
+- Commit E11: `b17e07d15de3d7fe89ac67fe32874a7b35ca6c84`.
+
+### E12 — bateria final, forma do job `antivirus` em local, fechamento e push
+
+- Head antes da fatia: `b17e07d15de3d7fe89ac67fe32874a7b35ca6c84`.
+- **E12.1 — Bateria passo a passo (sem `&&` entre comandos):**
+  - `npm run check` → exit `0`.
+  - `npm run lint` → exit `0`.
+  - `npm test` (sem `DATABASE_URL`) → exit `1`, `# tests 3608 # pass 3500 # fail 1 # skipped 107`; única falha: `not ok 116 - C:\\Users\\AMP\\w-avreal\\tests\\core-saas-role-authority.test.ts` (`DATABASE_URL is required to initialize Prisma Client`, preexistente, fora do PERMITIDO).
+  - Prova isolada da causa com URL falsa em porta fechada: `DATABASE_URL="postgresql://x:x@127.0.0.1:1/x?schema=public" npm test -- tests/core-saas-role-authority.test.ts` → exit `0`, `# tests 12 # pass 12 # fail 0 # skipped 0`.
+  - `npm run build` → exit `0`.
+  - `git diff --check` → exit `0`.
+  - `node scripts/migration-transaction-guard.mjs` → exit `0` (`migrações: 117 · anteriores: 112 · novas: 5 · violações: 0`).
+- **E12.2 — Dirigidos (14 suítes):**
+  - `npm test -- tests/avreal-scanner-protocol.test.ts tests/avreal-scanner-failures.test.ts tests/avreal-config.test.ts tests/avreal-signatures.test.ts tests/avreal-privacy.test.ts tests/avreal-scanner-census.test.ts tests/avreal-routes.test.ts tests/avreal-compose-topology.test.ts tests/o6r07b-scanner-failclosed.test.ts tests/o6r07b-upload-gate.test.ts tests/o6r07b-upload-gate-census.test.ts tests/o6r07b-mime-sniff-routes.test.ts tests/production-runtime-gates.test.ts tests/san3-05-runtime-role-bootstrap.test.ts` → exit `0`, `# tests 266 # pass 266 # fail 0 # skipped 0`.
+- **E12.3 — R12(b):**
+  - `git diff --quiet "$(git merge-base origin/main HEAD)" -- package.json package-lock.json && echo LOCKFILE-INTACTO` → exit `0`, `LOCKFILE-INTACTO`.
+- **E12.4 — Cliente Prisma com URL falsa em porta fechada:**
+  - `DATABASE_URL="postgresql://x:x@127.0.0.1:1/x?schema=public" npm run db:generate` → exit `0` (`Generated Prisma Client (v7.8.0)`).
+- **E12.5 — Forma do job `antivirus` em local (projeto descartável `j-avreal-ci`):**
+  - `docker compose -p j-avreal-ci --profile av up -d --no-deps erp-clamav && docker compose -p j-avreal-ci --profile av-limits up -d --no-deps erp-clamav-limits` → exit `0`; `j-avreal-ci-erp-clamav-1` e `j-avreal-ci-erp-clamav-limits-1` `healthy` em `+19s`.
+  - E1/E13 nos 2 containers de DEV:
+    - `j-avreal-ci-erp-clamav-1`: `docker logs … | grep -c 'socket found, clamd started.'` → `1`; `docker exec … ps -o user,comm | grep clamd` → `clamav   clamd`.
+    - `j-avreal-ci-erp-clamav-limits-1`: `docker logs … | grep -c 'socket found, clamd started.'` → `1`; `docker exec … ps -o user,comm | grep clamd` → `clamav   clamd`.
+  - Integração real: `set -o pipefail; AVREAL_CLAMAV_HOST=127.0.0.1 AVREAL_CLAMAV_LIMITS_PORT=3311 node scripts/avreal-integration.mjs 2>&1 | tee antivirus.tap` → exit `0`, `# tests 8 # pass 8 # fail 0 # skipped 0`.
+  - Guard do CI sobre `antivirus.tap` → exit `0`, `antivirus: tests=8 skipped=0 fail=0`.
+  - Negativos contra `j-avreal-ci`:
+    - Sem `AVREAL_CLAMAV_LIMITS_PORT`: exit `2` (`AVREAL_CLAMAV_LIMITS_PORT é obrigatório: os casos de limite e HTTP não podem sumir.`).
+    - `AVREAL_CLAMAV_PORT=1`: exit `1`, `# tests 8 # pass 2 # fail 6 # skipped 0` (falhas reais, `0` pulos).
+    - `M-E9` (`test.skip(` em `tests/avreal-clamd.integration.ts`): exit `1`, `# tests 8 # pass 7 # fail 0 # skipped 1`; restaurado com `git checkout -- tests/avreal-clamd.integration.ts`.
+    - `M-R9` (`NoopEvidenceScanner` em `src/modules/evidence/evidence-scanner.factory.ts`): exit `1`, `# tests 8 # pass 6 # fail 2 # skipped 0` (`not ok 4 - EICAR gerado em memória é detectado` e `not ok 8 - HTTP real mobile entrega 201 limpo e 422 para PNG detectável`); restaurado com `git checkout -- src/modules/evidence/evidence-scanner.factory.ts`.
+  - Limpeza: `docker compose -p j-avreal-ci --profile av --profile av-limits down -v && rm -f antivirus.tap` → `0` containers e `0` volumes `j-avreal-ci`.
+- **E12.6 — Verificação de `src/` e CI:**
+  - `git diff 2746eb60..HEAD --stat -- src/` → vazio (zero mudança em `src/`).
+  - Run da CI em `b17e07d15de3d7fe89ac67fe32874a7b35ca6c84` (E11, com todas as mudanças funcionais/testes E1–E11): run `41263051760`, todos os 8 check-runs `completed/success` (`backend`, `backend-postgres`, `authority-portal`, `owner-portal`, `antivirus` job `124720119773` com TAP `# tests 8 # pass 8 # fail 0 # skipped 0`, `frontend`, `flutter`, `docker`).
+
+PRONTO PARA CONFERÊNCIA
