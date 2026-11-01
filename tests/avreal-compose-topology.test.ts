@@ -134,3 +134,9 @@ test("todo clamd.conf do bloco declara o LocalSocket que o /init da imagem esper
     assert.match(readFileSync(path.join(ROOT, file), "utf8"), /^LocalSocket \/(tmp|run\/clamav)\/clamd\.sock$/m, file);
   }
 });
+
+test("todo clamd.conf do bloco rebaixa o clamd para o usuário clamav", () => {
+  for (const file of CLAMD_CONFS) {
+    assert.match(readFileSync(path.join(ROOT, file), "utf8"), /^User clamav$/m, file);
+  }
+});

@@ -287,3 +287,12 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - `docker wait j-avreal-e1-ctl` → exit `0`, saída `1` (container encerrado com exit 1).
   - `docker logs j-avreal-e1-ctl 2>&1 | grep -c 'Failed to start clamd'` → exit `0`, `1`.
   - `docker rm -f j-avreal-e1-ctl && rm -f "$TEMP/clamd.objeto.conf"` → limpo.
+- Commit E1: `fcf0d52daca4a136a16a7d8476f7768404cecac8`.
+
+### E13 — clamd deixa de rodar como root nos dois confs do bloco
+
+- Head antes da fatia: `fcf0d52daca4a136a16a7d8476f7768404cecac8`.
+- Vermelho sem conserto: `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# tests 12 # pass 11 # fail 1`, `not ok 12 - todo clamd.conf do bloco rebaixa o clamd para o usuário clamav` (`infra/clamav/clamd.conf`).
+- Mutação M-E13 (apagar `User clamav` de `infra/clamav/clamd.conf`): `npm test -- tests/avreal-compose-topology.test.ts` → exit `1`, `# pass 11 # fail 1`, `not ok 12 - todo clamd.conf do bloco rebaixa o clamd para o usuário clamav` (`infra/clamav/clamd.conf`); restaurado com `git checkout -- infra/clamav/clamd.conf`.
+- Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 12 # pass 12 # fail 0 # skipped 0`.
+- Prova real do processo como `clamav`: executada no E2 real (abaixo) e no E12.5 (`docker exec <c> ps -o user,comm | grep clamd` → `clamav`).
