@@ -193,3 +193,46 @@ test("clamd.conf declara SelfCheck 120 e updater.conf não tem NotifyClamd", () 
   assert.match(updaterConf, /^TestDatabases yes$/m);
   assert.doesNotMatch(updaterConf, /NotifyClamd/);
 });
+
+test("overlay: clamav só em clamav_private", () => {
+  assert.deepEqual(Object.keys(overlay().services.clamav?.networks ?? {}), ["clamav_private"]);
+});
+
+test("overlay não monta assinatura de teste", () => {
+  for (const [name, service] of [
+    ["clamav", overlay().services.clamav],
+    ["clamav-freshclam", overlay().services["clamav-freshclam"]],
+  ] as const) {
+    for (const mount of service?.volumes ?? []) {
+      assert.doesNotMatch(mount.source ?? "", /test-signatures|\.hdb$/i, `${name}: ${mount.source}`);
+    }
+  }
+});
+
+test("nenhum serviço clamd monta o socket Docker", () => {
+  for (const [name, service] of [
+    ["erp-clamav", dev().services["erp-clamav"]],
+    ["erp-clamav-limits", dev().services["erp-clamav-limits"]],
+    ["clamav", overlay().services.clamav],
+    ["clamav-freshclam", overlay().services["clamav-freshclam"]],
+  ] as const) {
+    for (const mount of service?.volumes ?? []) {
+      assert.doesNotMatch(`${mount.source ?? ""} ${mount.target ?? ""}`, /docker\.sock/i, `${name}: ${JSON.stringify(mount)}`);
+    }
+  }
+});
+
+test("api não publica 3310", () => {
+  for (const port of overlay().services.api?.ports ?? []) {
+    assert.notEqual(String(port.target ?? ""), "3310");
+    assert.notEqual(String(port.published ?? ""), "3310");
+  }
+  for (const [name, service] of Object.entries(dev().services)) {
+    for (const port of service.ports ?? []) {
+      if (["3310", "3311"].includes(String(port.target ?? "")) || ["3310", "3311"].includes(String(port.published ?? ""))) {
+        assert.ok(name === "erp-clamav" || name === "erp-clamav-limits", `${name} publica porta do clamd`);
+        assert.equal(port.host_ip, "127.0.0.1", `${name}: host_ip deve ser 127.0.0.1`);
+      }
+    }
+  }
+});

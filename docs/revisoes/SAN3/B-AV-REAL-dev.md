@@ -324,3 +324,14 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - Logs de recarga: `SelfCheck: Database modification detected. Forcing reload.` e `Database correctly reloaded (3628245 signatures)`.
   - `docker stats --no-stream`: `j-avreal-l2-clamav-1` `946MiB / 3GiB`; `j-avreal-l2-clamav-freshclam-1` `84.87MiB / 2GiB`.
   - Limpeza: `docker compose -p j-avreal-l2 -f docker-compose.yml -f docker-compose.clamav.yml down -v` → containers `0`, volumes `0`, networks `0`.
+- Commit E2: `3136f1018f258fbc7c4031b909b48228f41d15d4`.
+
+### E10 — guard de topologia cobre rede única, hdb fora do overlay, socket Docker e 3310 na api (C1-A7)
+
+- Head antes da fatia: `3136f1018f258fbc7c4031b909b48228f41d15d4`.
+- Mutações (todas restauradas com `git checkout -- <arquivo>`):
+  - M-E10a (`networks: [clamav_private, default]` no `clamav` de `docker-compose.clamav.yml`): exit `1`, `# pass 18 # fail 2`, `not ok 13` e `not ok 17 - overlay: clamav só em clamav_private`.
+  - M-E10b (mount `./infra/clamav/test-signatures/erp-test.hdb:/var/lib/clamav/erp-test.hdb:ro` no `clamav` de `docker-compose.clamav.yml`): exit `1`, `# pass 19 # fail 1`, `not ok 18 - overlay não monta assinatura de teste`.
+  - M-E10c (mount `/var/run/docker.sock:/var/run/docker.sock` no `erp-clamav-limits` de `docker-compose.yml`): exit `1`, `# pass 19 # fail 1`, `not ok 19 - nenhum serviço clamd monta o socket Docker`.
+  - M-E10d (`ports: ["3310:3310"]` em `api` de `docker-compose.clamav.yml`): exit `1`, `# pass 19 # fail 1`, `not ok 20 - api não publica 3310`.
+- Verde da suíte: `npm test -- tests/avreal-compose-topology.test.ts` → exit `0`, `# tests 20 # pass 20 # fail 0 # skipped 0`.
