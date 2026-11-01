@@ -20,6 +20,10 @@ const port = Number(process.env.AVREAL_CLAMAV_PORT ?? "3310");
 const limitsPort = Number(process.env.AVREAL_CLAMAV_LIMITS_PORT ?? "0");
 const mode = process.env.AVREAL_CLAMAV_MODE ?? "healthy";
 
+// EICAR em duas metades: a cadeia inteira nunca fica num arquivo rastreado (guard no censo, E8).
+const EICAR_HEAD = "X5O!P%@AP[4\\PZX54(P^)7CC)7}";
+const EICAR_TAIL = "$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
+
 function input(buffer: Buffer) {
   return {
     tenantId: "tenant-integration-canary",
@@ -96,10 +100,7 @@ if (!host) {
   });
 
   test("EICAR gerado em memória é detectado", async () => {
-    const eicar = Buffer.from(
-      "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*",
-      "ascii",
-    );
+    const eicar = Buffer.concat([Buffer.from(EICAR_HEAD, "ascii"), Buffer.from(EICAR_TAIL, "ascii")]);
     resetEvidenceScannerForTests();
     assert.equal((await resolveEvidenceScanner().scan(input(eicar))).status, "infected");
   });

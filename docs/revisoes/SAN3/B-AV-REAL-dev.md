@@ -380,3 +380,11 @@ Conserto em dois passos, para provar que o job morde: `bf24bb2b` (só `pipefail`
   - X-R4-connect (apagar o timer de `connectTimeoutMs` em `scanInstream`): `npm test -- tests/avreal-scanner-failures.test.ts` → exit `1`, `# tests 13 # pass 12 # fail 1`, `not ok 10 - conexão muda respeita connectTimeoutMs`.
   - X-R4-version (apagar `const deadline = setTimeout(...)` em `queryVersion`): `npm test -- tests/avreal-signatures.test.ts` → exit `1`, `# tests 9 # pass 8 # fail 1`, `not ok 9 - VERSION mudo respeita o prazo`.
 - Verde da suíte: `npm test -- tests/avreal-scanner-failures.test.ts tests/avreal-signatures.test.ts tests/avreal-scanner-protocol.test.ts` → exit `0`, `# tests 37 # pass 37 # fail 0 # skipped 0` (`13/13` + `9/9` + `15/15`).
+- Commit E6: `78f78916fe0668f43c38d5bf85c320b71344d43d`.
+
+### E8 — EICAR montado em duas metades em execução; guard vê o literal como fica no fonte (C1-A5 + D3)
+
+- Head antes da fatia: `78f78916fe0668f43c38d5bf85c320b71344d43d`.
+- Vermelho sem conserto (contra o objeto pré-E8): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 6 # pass 5 # fail 1`, `not ok 6 - nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução` (`EICAR inteiro versionado em: tests/avreal-clamd.integration.ts`).
+- Mutação M-E8 (recolocar o EICAR inteiro em `tests/avreal-clamd.integration.ts`): `npm test -- tests/avreal-scanner-census.test.ts` → exit `1`, `# tests 6 # pass 5 # fail 1`, `not ok 6 - nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução` (`EICAR inteiro versionado em: tests/avreal-clamd.integration.ts`); restaurado com `git checkout -- tests/avreal-clamd.integration.ts`.
+- Verde da suíte: `npm test -- tests/avreal-scanner-census.test.ts` → exit `0`, `# tests 6 # pass 6 # fail 0 # skipped 0`.

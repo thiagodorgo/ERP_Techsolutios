@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -59,4 +60,18 @@ test("job antivirus executa o arquivo real de integração", async () => {
   assert.match(wrapper, /"tests\/avreal-clamd\.integration\.ts"/);
   assert.match(await readFile("tests/avreal-clamd.integration.ts", "utf8"), /PING real responde PONG/);
   assert.match(await readFile(".github/workflows/ci.yml", "utf8"), /node scripts\/avreal-integration\.mjs/);
+});
+
+test("nenhum arquivo rastreado traz o EICAR inteiro, nem na forma do fonte nem na de execução", () => {
+  const BS = String.fromCharCode(92);
+  const head = "X5O!P%@AP[4" + BS + "PZX54(P^)7CC)7}";
+  const tail = "$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
+  assert.equal(head.length, 27);
+  assert.equal(tail.length, 41);
+  const headInSource = head.replace(BS, BS + BS); // como o literal fica escrito num fonte TS/JS
+  const result = spawnSync("git", ["grep", "-l", "-F", "-e", headInSource + tail, "-e", head + tail], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 1, `EICAR inteiro versionado em: ${result.stdout || result.stderr}`);
 });
