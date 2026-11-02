@@ -172,3 +172,29 @@
   vermelho-controle F5.
 - **Arquivos meio-escritos:** nenhum; F4 pronta para commit.
 
+## RETOMADA 5
+
+- **Head inicial:** `3a19365b` (F4 commitada e enviada); worktree limpo antes da F5.
+- **Pré-condições:** 302 GB livres e 13,08 GB de memória virtual disponível. Subido somente
+  `pg-san303`, sem volume, em `127.0.0.1:55432`; `erp-postgres` e `erp-redis` não foram tocados.
+- **Vermelho-controle:** `node --test --import tsx tests/san3-03-job-capture.test.ts` — **exit 1**;
+  o módulo ainda não exportava `buildJobExecutionUsageEvents`.
+- **Implementação:** builder das duas unidades do job; captura em memória ou em transação
+  `withTenantRls` no Prisma; worker reordenado para `handler → await captura → complete`; produtor
+  best-effort removido do worker; chaves estáveis derivadas do `job.id`.
+- **M10:** `complete` movido temporariamente antes da captura — **exit 1**, 3/4; T-JOB-3 observou
+  `complete` seguido de `fail`. Restaurado.
+- **M11:** captura temporariamente absorvida com `.catch` — **exit 1**, 3/4; T-JOB-3 observou
+  `complete` em vez de `fail`. Restaurado.
+- **Validação F5:** T-JOB memória/DB e regressões `job-queue`, `job-worker-bootstrap` e
+  `charging-job-idempotency` — **17/17**, 0 falhas, 0 skips; `npm run check` e `git diff --check`
+  — **exit 0**.
+- **Docker:** 117 migrações preexistentes aplicadas e seed executado no descartável; ao final,
+  `docker rm -f pg-san303` — **exit 0**. Nenhum arquivo em `prisma/**`/`migrations/**` foi tocado.
+- **Escopo:** zero alteração em `Kpis/**`, lockfiles, dependências ou `frontend/**`.
+- **Feito:** falha da medição mantém o job fora de `completed` e aciona o retry; replay não duplica.
+- **Falta:** F6–F9 (incluindo F8a/F8b/F8c), registros finais e PR.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-derived-basis.test.ts` após criar
+  o vermelho-controle T-STO/T-API da F6.
+- **Arquivos meio-escritos:** nenhum; F5 pronta para commit.
+
