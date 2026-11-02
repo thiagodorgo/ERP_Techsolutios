@@ -3435,6 +3435,17 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
 - **Apenso 2026-10-10 (plano do `B-O6R-07c` v3, §R.4):** o despacho não grava a atribuição da OS
   (`git grep -nF ".assign(" -- src/modules/field-dispatch` → 0); com o guard do 07a, o técnico despachado sem atribuição
   não muda o status da OS. A resposta é a D1-07c (pergunta aberta ao dono em `decisoes.md`).
+- **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`); emendas 2 e 4):** `Ω6R-QUA-005` **FECHADA por este PR**: a fila persistente
+  serializa `enqueue`/`update` (`sync_queue_repository.dart`) e `addSelection` espera cada gravação (`for-in` +
+  `await` em `prestador_repository.dart`). Prova: `bo6r11_fila_serializada_test.dart` (casos 17–21),
+  `bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart` (13–16, reinício Drift com N ações) e o guard
+  `bo6r11_guard_fila_await_ast_test.dart`, vermelhos no head-base e verdes no ramo. `Ω6R-QUA-004` **segue ABERTA** com
+  escopo reduzido (envelope/casing e "assign envia campo não lido"), dono **`B-O6R-11d`**. `MP5` (ação interrompida em
+  `syncing`): OS, vistoria e evidência voltam como `conflict` com `SYNC_INTERRUPTED`, visíveis para decisão na tela até o
+  `B-O6R-11c` (`P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL`); a despesa, com o canal desligado, volta a `pending` limpa e
+  aparece como "Aguardando envio", sem virar erro nem conflito. A despesa não vira erro e não tem Descartar; sai na
+  passada seguinte ao 3º PR (`B-O6R-03b`) se tiver usuário; a gravada antes do 2º PR sai depois de Assumir. A pendência
+  segue ABERTA pelo `QUA-004`.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -8915,6 +8926,10 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **impacto vendável:** **BLOQUEIA** (custo de horas) — viola §3; app não se distribui com nome "flutter_app"
 - **teste de encerramento:** cabeçalho com rótulo de negócio; guard de strings sem permissão/papel técnico; label = nome do produto
 - **emenda (plano SAN3 §4.1 item 48, 2026-09-11):** a tela de sync renderiza "Integracao remota ainda nao ativa" sem condição (`mobile/flutter_app/lib/shared/ui/sync_screen.dart:92,269`).
+- **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** resolveu: aviso (condição + texto verdadeiro), **`_actionLabel` → tabela PT-BR
+  (`sync_action_labels.dart`)**, os 20 `lastSafeError` dos 4 replays e o do coordenador acentuados, 'Auto sync'/'Ultimo
+  sync'; segue com `B-SAN3-19`: 'Checklists', 'Despesas (RDV)', lista de OS, home, placeholder, manifest, títulos do
+  Diagnóstico (e `P-O6R11-TEXTOS-FORA-DE-D-T`).
 
 ---
 
@@ -11009,10 +11024,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-O6R-03b`.
+- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
 - **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
 - **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
 - **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
+- **Apenso 2026-11-02 (corte do `B-O6R-11`, emenda 2 §1.4 e §3 R6):** o dono passa a ser **bloco próprio, o 2º PR do corte**
+  (`B-FILA-USUARIO`), pré-requisito do `B-O6R-03b` e do 4º PR. Crítica G4 reproduzida (`SyncAction` sem usuário;
+  material de u1 sob a sessão de u2). O cartão legado do 2º PR segue `D-DESPESA-SEM-DESCARTAR` e P25: despesa só Assumir;
+  Descartar de outros tipos pela `_confirmDiscard` — ver emenda 4 §7.
 
 ## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
 
@@ -11025,6 +11044,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 - **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`.
 - **teste de encerramento:** o app não enfileira tipo recusado (ou o servidor passa a suportá-lo por contrato), e o lote drena.
+- **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** o tipo fica **fora** do reenvio automático do resgate (`backendSupported` não o
+  inclui; crítica S10). Com o canal de despesas desligado, ele aparece como "Aguardando envio"; com o canal ligado, o
+  replay o trata como não suportado (emenda 4 §7 item 8).
 
 ## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
 
@@ -11801,13 +11823,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
-- status: ABERTA
+- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA.
 - **origem:** B-SAN3-13 (§2.5, §11-bis 1). A tela de sincronização resolve só `conflict`; `failed` e os tipos sem replay
   (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) ficam para sempre.
 - **efeito:** a OS que deixou de ser do técnico (ou concluiu) com uma dessas ações fica no aparelho com selo — nunca é
   apagada (correto), mas não drena.
 - **dono:** `B-SAN3-16`.
 - **encerramento:** descarte/replay explícito dessas ações; depois dele, a OS sai no pull completo seguinte.
+- **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`); emenda 2 RS1, emenda 4):** PARCIAL: OS/vistoria/evidência: Tentar de novo ou
+  Descartar com confirmação, marcado Descartado (nunca "Sincronizado"); prova `bo6r11_sync_stalled_resolver_test.dart`
+  (s1–s5) e `bo6r11_sync_screen_despesa_e_saida_test.dart` (w4–w7, w11). **Despesa nunca encalha com o canal desligado e
+  nunca ganha Descartar — regra única `canDiscardSyncAction`, que o 2º PR reutiliza** (`D-DESPESA-SEM-DESCARTAR`); tipos
+  sem replay (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) seguem com
+  `B-SAN3-16`/4º PR.
 
 ## P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob não tem caminho — MÉDIA
 - status: ABERTA
@@ -11821,8 +11849,179 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** B-SAN3-13 (R2-6, M23). Não há replay de material do prestador; com este bloco a OS com peça lançada fica
   RETIDA (ramo 1 por `work_order_local_id` e ramo 5 por `work_order_materials`), nunca apagada.
 - **gravidade:** ALTA — consumo de estoque e base de cobrança.
-- **dono:** `B-SAN3-16` ou o bloco de estoque do prestador.
+- **dono:** bloco de reenvio de material (4º PR do corte do `B-O6R-11`), desde 2026-11-02 (emenda 2 §3 R6); antes,
+  `B-SAN3-16` ou o bloco de estoque do prestador.
 - **encerramento:** replay de material com efeito no backend; a ação vira `synced` e a OS drena.
+- **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** segue ABERTA. O que o 1º PR garante é que a ação **sobrevive** (`Ω6R-QUA-005`,
+  fila serializada e `addSelection` com `await`); enviá-la é o 4º PR. Sem porta na UI (`P-MOBILE-PRESTADOR-SEM-PORTA`),
+  o efeito só é observável em teste até o `B-SAN3-15` (crítica S11).
+
+## P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL (2026-11-02) — ação de OS, vistoria ou evidência interrompida em `syncing` volta como conflito para o técnico decidir, sem reenvio automático — MÉDIA
+- status: ABERTA
+- **origem:** 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`) (emenda 2 §3 R3; emenda 4 D0/D4). No início de cada passada, `reclaimQueueAtPassStart`
+  (`sync_interrupted_reclaim.dart`, chamado pelo `SyncQueueReclaimService`) devolve a ação de OS, vistoria ou evidência
+  presa em `syncing` (o app morreu no meio do envio) como `conflict` com `SYNC_INTERRUPTED`; a tela de sincronização
+  mostra "Minha versão" / "Versão do gestor".
+- **a troca de risco (declarada):** reenviar sozinho pode duplicar (o servidor pode ter aplicado antes da queda, e a
+  idempotência durável de OS, vistoria e evidência ainda não existe); não reenviar deixa a ação esperando a decisão do
+  técnico. O 1º PR escolheu não duplicar. A despesa fica fora desta regra: com o canal desligado volta a `pending` limpa
+  ("Aguardando envio"); com o canal ligado, os tipos de `ExpenseSyncActionTypes.backendSupported` voltam a `pending` com
+  `SYNC_INTERRUPTED` (o servidor deduplica por `client_action_id` desde o `B-O6R-03a`).
+- **prova:** `bo6r11_resgate_syncing_interrompido_test.dart` e `bo6r11_despesa_aguardando_envio_test.dart` (r5, p3, p4).
+- **dono:** `B-O6R-11c` (idempotência durável de OS, vistoria e evidência).
+- **encerramento:** com a idempotência durável, cada tipo que o servidor deduplica passa ao reenvio automático (refino
+  por tipo), com teste de "interrompida → reenviada uma vez".
+
+## P-MOBILE-SYNC-SCREEN-RETRATO-VELHO (2026-11-02) — "Minha versão"/"Versão do gestor" grava a ação do retrato que a tela leu, sem reler — BAIXA
+- status: ABERTA (sonda P4 do 1º PR do `B-O6R-11`: não reproduz)
+- **o quê:** `_resolveConflict` (`sync_screen.dart`) aplica `resolveConflictAction` sobre a ação lida pelo `FutureBuilder`
+  e grava por cima; se outro escritor tivesse gravado na mesma ação entre a leitura e o toque, a escrita dele sumiria.
+  `_resolveStalled` (cartão de envio não concluído) já relê por `clientActionId` antes de aplicar (emenda 4 D7.5,
+  teste w11, mutação M-V7).
+- **sonda (resultado B, 2026-11-02):** `flutter test test/features/bo6r11_sonda_sync_screen_retrato_velho_test.dart` →
+  `+1`. O par de produção (`_mapDependentActions` grava `server_id` numa ação em `conflict`) exige dependente de OS em
+  `conflict` sem `server_id`, e esse estado é inalcançável pela API pública: as dependentes nascem com `local_id` e só têm
+  `server_id` quando a OS já tem (`work_order_repository.dart`); sem ele, `b103WorkOrderActionReadyForBackend` não as envia
+  (logo não recebem `conflict` do servidor nem ficam `syncing` para o resgate); com ele, o mapeamento as pula. Controle da
+  sonda: tornar elegível a dependente sem `server_id` (`sync_replay_service.dart` l.628 → `return true;`) deixa o caso
+  vermelho. Nenhuma linha em `sync_screen.dart`.
+- **residual:** reabrir se um escritor novo passar a gravar em ação `conflict`; fechá-la de vez exige leitura fresca dentro
+  da seção serializada da fila, o que muda a interface `SyncQueueRepository`.
+- **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; ratificado pelo orquestrador em 2026-11-02 — leitura do orquestrador, declarada; o plano não nomeou).
+
+## P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos do 1º PR do `B-O6R-11` — BAIXA
+- status: ABERTA
+- **origem:** 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`) (emenda 4, nota de 02/11 da F7c). A F-T acentuou os 20 `lastSafeError` dos 4 replays e o do
+  coordenador; ficaram, fora do PERMITIDO, `mobile/flutter_app/lib/core/sync/sync_engine.dart:54` ('Conflito remoto exige
+  decisao manual.'), `lib/core/location/field_location_service.dart:160` e `lib/core/telemetry/telemetry_sync_service.dart:141`
+  ('Falha de conexao. Tente novamente.'). Medido: `git grep -nE "decisao manual|Falha de conexao" HEAD -- mobile/flutter_app/lib`
+  (fora disso só um comentário de código em `sync_interrupted_reclaim.dart:15`, que o técnico não lê).
+- **dono:** `B-SAN3-19`.
+- **encerramento:** os três literais acentuados e o grep acima em 0 para texto que o técnico lê.
+- **Apenso 2026-11-02 (emenda 4, nota de 02/11 (d) da F7c):** também fora do PERMITIDO, `mobile/flutter_app/lib/core/network/api_error.dart:43`,
+  a mensagem padrão de `ApiIntegrationUnavailableError` ('Integracao remota ainda nao disponivel. Seus dados foram mantidos
+  localmente e serao sincronizados quando a integracao estiver ativa.'), lançada por `field_location_api.dart:24` e
+  `expense_remote_api.dart:63`; existe igual na `main` (`b56031b0`). Além de sem acento, o texto promete "serao
+  sincronizados", o que a P-TELA-VERDADEIRA evita. O encerramento inclui reescrevê-la sem a promessa.
+
+## P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mobile-work-order-contracts` que não foram portadas — MÉDIA
+- status: ABERTA (índice; cada pendência vale pelo texto no ramo)
+- **onde:** `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`). O PR #388
+  fecha sem merge e o ramo fica preservado; nenhuma se perde, nenhuma se reabre. As 3 restantes do ramo
+  (`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-FILA-RMW-STORE`, `P-MOBILE-DISCARDED-FUTURES`) foram portadas abaixo.
+- `P-MOBILE-EXPENSE-ENVELOPE` (MÉDIA; dono no ramo: `B-O6R-03b`) — 8 leituras do cliente REST de despesas do app ignoram a forma real da resposta — l.9803 do ramo.
+- `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` (BAIXA; dono no ramo: fila pós-gate) — `createRun` do cliente de vistorias do app lê `runId` na raiz de um `sendResult` e não tem chamador — l.9841 do ramo.
+- `P-WO-ASSIGN-OPERATOR-ID-TORTO` (MÉDIA; dono no ramo: `B-O6R-07c` (provisório no ramo)) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId` — l.9855 do ramo.
+- `P-MOBILE-APPROVAL-REQUEST-REST-404` (BAIXA; dono no ramo: `B-SAN3-13`) — `createApprovalRequest` REST do app posta numa rota que não existe no backend — l.9895 do ramo.
+- `P-MOBILE-STATUS-ACCEPTED-LOSSY` (MÉDIA; dono no ramo: `B-SAN3-13`) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — l.9912 do ramo.
+- `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA; dono no ramo: fila pós-gate) — o cliente de vistorias do app dá ao modelo de vistoria o tenant do CORPO da resposta, não o da sessão que o chamador passou — l.9957 do ramo.
+- `P-CHECKLIST-DTO-EMITE-TENANT-ID` (MÉDIA; dono no ramo: `B-SAN3-22`) — a API de vistorias do app devolve o `tenant_id` da organização no corpo da resposta — l.9999 do ramo.
+- `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` (MÉDIA; dono no ramo: `B-SAN3-13`) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — l.10008 do ramo.
+- `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` (MÉDIA; dono no ramo: `B-SAN3-13`) — OS urgente aparece "Normal" na lista do técnico — l.10035 do ramo.
+- `P-MOBILE-CODEC-FILA-STATUS-CRU` (BAIXA; dono no ramo: `B-SAN3-16`) — a fila offline manda ao backend três status que ele recusa com 400 — l.10059 do ramo.
+- `P-CI-FLUTTER-SEM-PIN` (MÉDIA; dono no ramo: `B-SAN3-10`) — o job `flutter` do CI instala o canal `stable` sem versão, e a versão muda entre dois runs do mesmo PR — l.10078 do ramo.
+- `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` (MÉDIA; dono no ramo: fila pós-gate) — o `stop()` da telemetria não espera o tick em voo: um ponto é capturado DEPOIS do stop, e o teste que prova o "foreground-only" cai quando a máquina está carregada — l.10133 do ramo.
+- **Apenso 2026-11-02 (emenda 4):** `SyncEngine`/`expenseSyncApiProvider`/`syncEngineProvider` são caminho morto (0
+  chamadores em `lib/` fora de `sync_providers.dart`) → `B-O6R-11b`.
+- **dono:** cada linha, o dono escrito no ramo; o índice fecha quando as 12 fecharem ou forem portadas.
+
+## P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e depois N ações em transações separadas: um crash entre as duas fases deixa material local sem ação na fila — ALTA
+
+- status: ABERTA (residual após o `B-O6R-11`; plano §6, P4)
+- **o quê:** mesmo `AppDatabase`, mas `PrestadorLocalStore` e `SyncQueueRepository` não expõem transação; o
+  `B-O6R-11` fez o método esperar cada gravação (fecha o `Ω6R-QUA-005`), não tornou as duas fases uma unidade.
+- **prova:** `mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart:117-133` no head-base
+  `9dea0ef6` (depois do bloco: `saveMaterial` na l.118, `await _syncQueue.enqueue` na l.137).
+- **estado (plano §6):** residual após este bloco.
+- **severidade:** ALTA (emenda 2 (h) do orquestrador, 2026-09-18) — um crash entre as duas transações deixa material local
+  sem ação na fila, e a ação nunca chega ao backend: perda de dado, a 1ª prioridade do gate.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:117-133` → `00293319` (2026-07-01, "feat(mobile): fluxo
+  prestador diagnostico/execucao/estoque do tecnico (PR-1.9)").
+- **magnitude (B-O6R-11 ciclo 2, C3-A5 — medida, não estimada):** sonda da cadeira C3 da junta do ciclo 1
+  (`c3_fila_test.dart`, `addSelection` real com N=8 SKUs, `save` falhando na k-ésima chamada, k=1..8): **8 materiais
+  gravados e k−1 ações** em todo k — de **1 a 8 materiais sem ação** na fila; o `StateError` chega ao chamador e
+  `notifyListeners` não é chamado. Faixa da perda: **1..N**, com N = número de SKUs do lote.
+- **dono:** `B-SAN3-15` (fronteira `features/prestador/**`, que contém o `prestador_repository.dart` desta prova;
+  troca também o catálogo semente pelo estoque real). **Fronteira a ampliar no comando do dono (C3-A4, medido no
+  ciclo 2 do `B-O6R-11`):** o conserto definitivo exige transação única sobre os DOIS stores Drift
+  (`core/local_db/drift_prestador_local_store.dart` e `core/local_db/drift_sync_action_store.dart`), e nenhum bloco
+  do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` os tem na fronteira — o arquivo é fonte de verdade fora do escopo
+  deste bloco e não foi tocado; a ampliação está reportada ao orquestrador como divergência.
+- **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
+
+## P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instância da fila; o conserto definitivo é append/upsert atômico no `SyncActionStore` — MÉDIA
+
+- status: ABERTA (residual; plano do `B-O6R-11` §6, P7)
+- **o quê:** `SyncActionStore` só expõe `load`/`save` da fila inteira; `enqueue`/`update` continuam
+  read-modify-write. O encadeamento do bloco serializa as mutações da instância única
+  (`syncQueueRepositoryProvider`, `sync_providers.dart:32`), não de duas instâncias sobre o mesmo store.
+- **prova:** Medição D do plano (§5); `mobile/flutter_app/lib/core/sync/sync_action_store.dart:8-11` (fora do escopo
+  do bloco); `core/local_db/drift_sync_action_store.dart:32` (`DELETE FROM sync_actions` + INSERT ×N no `save`).
+- **estado (plano §6):** residual.
+- **severidade:** MÉDIA (emenda 2 (h) do orquestrador, 2026-09-18).
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `sync_action_store.dart:1-20` e
+  `sync_queue_repository.dart:17-34` → `e79616aa` (2026-06-13).
+- **magnitude (B-O6R-11 ciclo 2, C3-A5 — medida, não estimada):** **0 vivo hoje** — o censo do caso 21 do
+  `bo6r11_fila_serializada_test.dart` (varredura da AST de `lib/`) acha **exatamente 1** construção de
+  `PersistentSyncQueueRepository` em runtime (`core/sync/sync_providers.dart:33`), e fica vermelho na segunda. Sob
+  DUAS instâncias no mesmo store, medido pela cadeira C3 da junta do ciclo 1 (N=20 por arranjo): Drift em memória e
+  em arquivo perdem **60 de 120 ações (50 %) e 20 de 20 atualizações (100 %)**; store lento, **43 de 120**.
+- **dono:** **fila pós-gate** (fixado no `B-O6R-11` ciclo 2, C3-A4): os arquivos que esta pendência nomeia —
+  `core/sync/sync_action_store.dart`, `core/local_db/drift_sync_action_store.dart` e
+  `core/sync/sync_queue_repository.dart` — não estão na fronteira de bloco algum do §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (só na do próprio `B-O6R-11`, que encerra aqui). O bloco vizinho é o
+  `B-SAN3-16` (fila drenada, tem `sync_replay_service.dart`), e a ampliação da fronteira dele está reportada ao
+  orquestrador como divergência — o `PLANO_SAN3.md` é fonte de verdade fora do escopo deste bloco e não foi tocado.
+  *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem nenhum dos arquivos.)*
+- **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
+- **Apenso 2026-11-02 (conserto pós-junta do PR #483, achado A-02 da C3):** o `analyzer` segue **transitivo**. O guard
+  `test/core/sync/bo6r11_guard_fila_await_ast_test.dart` importa `package:analyzer/...`; `mobile/flutter_app/pubspec.yaml`
+  não o declara e `mobile/flutter_app/pubspec.lock:12-13` o tem como `analyzer:` / `dependency: transitive`. Fonte: plano
+  do ciclo 3, linha 0.29 e risco R-f (`agent-orchestration/omega/planos/B-O6R-11-plano-ciclo3.md:63,382`), que prometia
+  esta nota. Uma atualização de `drift_dev`/`build_runner` pode removê-lo; se o CI quebrar por isso, um bloco próprio
+  declara `analyzer` em `dev_dependencies` (dependência nova → junta de 5). `pubspec` segue PROIBIDO no `B-O6R-11`.
+- **Apenso 2026-11-02 (conserto pós-junta do PR #483, achado A-C1-02 da C1, não grave):** o resgate
+  (`SyncQueueReclaimService.reclaimTenant`, `lib/core/sync/sync_queue_reclaim_service.dart`) lê `actionsForTenant`
+  **fora** da seção serializada e grava, com `update`, a cópia lida da ação inteira: uma escrita alheia na mesma ação
+  entre a leitura e a escrita se perde. Sonda da C1 (`erp-pausa-2026-10-03/revisoes/j483/c1-logs/zz_j483c1_probe_test.dart.txt`):
+  store com `load()` de 20 ms, ação `checklist_answer.upsert` em `syncing`, `reclaimTenant('t1')` e um `update` do
+  mesmo id com `server_run_id='srv-1'` → `status=conflict payload={local_run_id: r1} code=SYNC_INTERRUPTED`,
+  `Expected: 'srv-1' Actual: <null>`. A ação não some, não é reenviada em dobro e não encalha sem saída (fica
+  `conflict`, visível e decidível). **Sem par de produção provado:** o único escritor concorrente de UI achado
+  (`_stampServerRunIdOnQueue`, `checklist_repository.dart:288`) só carimba ação sem `server_run_id`, que o replay de
+  checklist quase nunca deixa em `syncing`. **Não grave.** Mesma classe RMW desta pendência; o conserto pede API de
+  leitura e escrita dentro da trava, junto do append/upsert atômico acima.
+
+## P-MOBILE-DISCARDED-FUTURES (2026-09-19) — 16 `Future`s descartadas em função síncrona mantêm o lint `discarded_futures` desligado — BAIXA
+
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; medida pelo dev do ciclo 2 — não consertada neste PR)
+- **o quê:** o ciclo 2 liga `unawaited_futures` (custo zero) como 2ª camada da propriedade P-FILA-AWAIT, mas
+  **não** liga `discarded_futures`: ele acusa 16 `Future`s descartadas fora de corpo `async` — a classe que o guard
+  sobre a AST não vê, porque a propagação de portadora dele é por ARQUIVO. Enquanto o lint estiver desligado, essa
+  classe fica sem rede nenhuma.
+- **prova:** medido pelo dev do ciclo 2 em 2026-09-19, num worktree descartável: `discarded_futures: true` em
+  `mobile/flutter_app/analysis_options.yaml` → `flutter analyze` ec=1, **16 infos**, **todas em `lib/`** (0 em
+  `test/`), em **11 arquivos**: `app/app.dart:66,79` · `core/auth/auth_notifier.dart:111` ·
+  `core/network/connectivity_bridge.dart:100` · `core/sync/auto_sync_coordinator.dart:56` ·
+  `features/auth/login_screen.dart:129,147` · `features/checklists/ui/checklist_damage_map_screen.dart:42` ·
+  `features/checklists/ui/checklist_run_screen.dart:98,475` · `features/inventory/ui/stock_entry_screen.dart:35,118` ·
+  `features/inventory/ui/stock_exit_screen.dart:34,113` · `features/location/ui/location_consent_screen.dart:32` ·
+  `features/work_orders/ui/work_order_execute_screen.dart:94`. Nenhuma delas está num repositório: são raízes de
+  evento (timer, listener de conectividade, telemetria "best-effort") e handlers de UI. Medição revertida por edição
+  inversa; o `analysis_options.yaml` do bloco ficou byte-idêntico ao commitado.
+- **escopo:** `pre-existente` — nenhum dos 11 arquivos é tocado por este PR (o diff do bloco não os inclui).
+- **severidade:** BAIXA — é o residual DECLARADO do guard P-FILA-AWAIT, com magnitude medida; não há perda de dado
+  conhecida nos sítios listados.
+- **dono:** **fila pós-gate** — nenhum bloco do §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem os 11 arquivos na
+  fronteira (`B-SAN3-19`, o mais próximo, tem só `shared/ui/{home_screen,module_placeholder_screen,sync_screen}.dart`).
+  Ampliar quatro fronteiras para cobrir 11 arquivos de UI seria reescrever o plano do dono, não registrar uma
+  pendência.
+- **bloqueia:** não bloqueia o `B-O6R-11`.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** os 16 sítios resolvidos (com `await`,
+  `unawaited(...)` explícito ou tratamento de erro declarado), `discarded_futures: true` ligado no
+  `analysis_options.yaml` e `flutter analyze` em "No issues found!"; vermelho-controle: descartar uma `Future` num
+  handler e ver o analisador acusar.
+- **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
 
 ## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
 - status: ABERTA
@@ -12168,6 +12367,18 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** orquestração/capacidade da máquina · **dono:** orquestração · **prioridade:** BAIXA · **bloqueia:** não, desde que respeitado o teto.
 - **origem medida:** três suítes Linux em paralelo morreram no mesmo instante aos 11m04s, sem causa exata provada; duas concluíram em cerca de 7m36s. A máquina fica com teto de **2 trabalhos Docker**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-69,89-97`.
 - **encerramento:** manter o teto em 2; eventual aumento só depois de medição própria que prove três trabalhos concluindo sem indisponibilidade do Docker.
+
+## P-MOBILE-BANNER-PROMETE-SINCRONIZAR (2026-11-02) — banner offline promete sincronizar "alterações" ao lado do aviso de despesa não enviada — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (origem `e79616aa`, 2026-06-13; `erp_components.dart` fora do PERMITIDO do `B-O6R-11`) · **dono:** `B-SAN3-19` · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem:** achado A-05 da cadeira C3 na junta do PR #483 (`B-O6R-11`, corte 1), 2026-11-02; triagem: pendência.
+- **o quê:** offline, a tela de sincronização mostra o `NetworkStatusBanner` (`mobile/flutter_app/lib/shared/ui/sync_screen.dart:149`),
+  cujo texto (`mobile/flutter_app/lib/shared/ui/erp_components.dart:183`) é 'Modo offline — alteracoes serao sincronizadas
+  ao reconectar.'. Ao lado está o aviso novo 'Envio de despesas ainda não ativado'; para a despesa com o canal desligado, os
+  dois textos se contradizem, e o banner está sem acento.
+- **evidência:** `git log --format='%h %ad' --date=short -S'alteracoes serao sincronizadas' origin/main -- mobile/flutter_app/lib/shared/ui/erp_components.dart`
+  → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
+- **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.
 
 ## P-SAN3-03-IMPORT-ID-EM-COLUNA (2026-11-02) — o import da run mora em `metadata.importId`, sem coluna nem FK — BAIXA
 

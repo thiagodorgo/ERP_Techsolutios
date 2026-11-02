@@ -21,6 +21,12 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # B-O6R-11 ciclo 2 (plano §3.6): 2a camada da propriedade P-FILA-AWAIT, medida com custo
+    # ZERO neste app (0 issues pre-existentes). Pega o descarte DIRETO de Future em corpo
+    # `async` -- a classe que o guard sobre a AST tambem fecha, agora tambem no `flutter
+    # analyze`, antes de qualquer teste. `discarded_futures` fica DESLIGADO: 16 infos
+    # pre-existentes em 11 arquivos fora do escopo deste bloco (P-MOBILE-DISCARDED-FUTURES).
+    unawaited_futures: true
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

@@ -49,6 +49,8 @@ void main() {
           bootstrapSessionProvider.overrideWith(
             (ref) async => devBootstrapSession,
           ),
+          // canal ligado: a despesa failed é falha real e mostra o cartão
+          expenseSyncChannelOffProvider.overrideWithValue(false),
         ],
         child: MaterialApp.router(routerConfig: router),
       ),

@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../bootstrap/bootstrap_repository.dart';
 import '../network/connectivity_repository.dart';
+import '../sync/sync_action_labels.dart';
+import '../sync/sync_action_presentation.dart';
+import '../sync/sync_interrupted_reclaim.dart';
 import '../sync/sync_models.dart';
 import '../sync/sync_providers.dart';
-import '../sync/sync_summary.dart';
+import '../sync/sync_stalled_resolver.dart';
 import '../../shared/ui/erp_components.dart';
 import '../../shared/ui/erp_scaffold.dart';
 
@@ -19,6 +22,7 @@ class DiagnosticsScreen extends ConsumerWidget {
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
     final queue = ref.watch(syncQueueRepositoryProvider);
+    final channelOff = ref.watch(expenseSyncChannelOffProvider);
 
     return ErpScaffold(
       title: 'Diagnostico',
@@ -28,7 +32,10 @@ class DiagnosticsScreen extends ConsumerWidget {
             : queue.actionsForTenant(session.activeTenant.tenantId),
         builder: (context, snapshot) {
           final actions = snapshot.data ?? const <SyncAction>[];
-          final summary = SyncQueueSummary.fromActions(actions);
+          final summary = SyncPresentationCounts.fromActions(
+            actions,
+            expenseChannelOff: channelOff,
+          );
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -51,7 +58,7 @@ class DiagnosticsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.sync_outlined),
                   title: const Text('Fila de sync'),
                   subtitle: Text(
-                    'Pendentes: ${summary.pending} · Processadas: ${summary.processed} · Erros: ${summary.failed} · Conflitos: ${summary.conflicts}',
+                    'Pendentes: ${summary.pending} · Processadas: ${summary.synced} · Erros: ${summary.errors} · Conflitos: ${summary.conflicts}',
                   ),
                 ),
               ),
@@ -81,13 +88,17 @@ class DiagnosticsScreen extends ConsumerWidget {
                 ),
               ),
               for (final action in actions.where(
-                (action) => action.lastSafeError != null,
+                (action) =>
+                    action.lastSafeError != null &&
+                    !_notAProblem.contains(
+                      presentSyncAction(action, expenseChannelOff: channelOff),
+                    ),
               ))
                 Card(
                   key: ValueKey(action.clientActionId),
                   child: ListTile(
                     leading: const Icon(Icons.report_problem_outlined),
-                    title: Text(action.lastErrorCode ?? 'erro_seguro'),
+                    title: Text(_problemTitle(action)),
                     subtitle: Text(action.lastSafeError!),
                   ),
                 ),
@@ -97,6 +108,24 @@ class DiagnosticsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+// B-O6R-11, conserto pós-junta (A-01): "Aguardando envio" e "Descartado" não
+// são problema, e os códigos deste bloco nunca aparecem crus como título.
+const _notAProblem = {
+  SyncPresentation.awaitingBackend,
+  SyncPresentation.discarded,
+};
+
+const _codesWithActionLabel = {
+  syncInterruptedErrorCode,
+  syncDiscardedErrorCode,
+};
+
+String _problemTitle(SyncAction action) {
+  final code = action.lastErrorCode;
+  if (_codesWithActionLabel.contains(code)) return syncActionLabel(action.type);
+  return code ?? 'erro_seguro';
 }
 
 String _domainBreakdown(List<SyncAction> actions) {

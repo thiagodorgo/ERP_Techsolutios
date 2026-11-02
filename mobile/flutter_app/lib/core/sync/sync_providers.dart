@@ -23,6 +23,7 @@ import 'sync_action_store.dart';
 import 'sync_engine.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
@@ -31,6 +32,13 @@ final syncActionStoreProvider = Provider<SyncActionStore>(
 
 final syncQueueRepositoryProvider = Provider<SyncQueueRepository>(
   (ref) => PersistentSyncQueueRepository(ref.watch(syncActionStoreProvider)),
+);
+
+final syncQueueReclaimServiceProvider = Provider<SyncQueueReclaimService>(
+  (ref) => SyncQueueReclaimService(
+    queue: ref.watch(syncQueueRepositoryProvider),
+    expenseChannelOff: () => ref.read(expenseSyncChannelOffProvider),
+  ),
 );
 
 final syncActionFactoryProvider = Provider<SyncActionFactory>(
@@ -47,8 +55,6 @@ final syncEngineProvider = Provider<SyncEngine>((ref) {
     api: ref.watch(expenseSyncApiProvider),
   );
 });
-
-final apiConfigProvider = Provider<ApiConfig>((ref) => const ApiConfig());
 
 final _fieldLocationFallbackStore = InMemoryFieldLocationStore();
 
@@ -106,10 +112,11 @@ final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
   ),
 );
 
-final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
-  final config = ref.watch(apiConfigProvider);
-  return DioExpenseSyncBatchApi(createExpenseHttpClient(config));
-});
+// Interruptor temporário do canal de despesas. O B-O6R-03b troca somente
+// este corpo pelo molde autenticado de workOrderSyncBatchApiProvider.
+final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>(
+  (ref) => const PendingBackendExpenseSyncBatchApi(),
+);
 
 final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
   return SyncReplayService(
@@ -118,6 +125,10 @@ final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
     supportedActionTypes: ExpenseSyncActionTypes.supported,
   );
 });
+
+final expenseSyncChannelOffProvider = Provider<bool>(
+  (ref) => ref.watch(syncReplayServiceProvider).channelOff,
+);
 
 final workOrderSyncBatchApiProvider = Provider<WorkOrderSyncBatchApi>((ref) {
   final config = ref.watch(authenticatedApiConfigProvider);

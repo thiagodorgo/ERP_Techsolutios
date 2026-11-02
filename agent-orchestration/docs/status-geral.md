@@ -1,5 +1,11 @@
 # Status Geral
 
+## Atualização 2026-11-02 — B-O6R-11, 1º PR do corte: fatias prontas, PR a abrir
+
+Ramo `fix/mobile-fila-duravel-b-o6r-11`. Fatias F0–F4c, F-S0, F-T, F-S1a, F-S1a', F-S1b, F-S1b', F5 e F6c feitas; a F7c abre o PR. Suíte Flutter `+969` (N = 905). Fecha `Ω6R-QUA-005`; `QUA-004` → `B-O6R-11d`; a metade `failed` de `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` fica PARCIAL; a sonda P4 deu **B** (não reproduz; `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO`, BAIXA). Novas: `P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL` (→ `B-O6R-11c`), `P-O6R11-TEXTOS-FORA-DE-D-T` (→ `B-SAN3-19`), o índice `P-O6R-B11-PENDENCIAS-DO-RAMO-388` e 3 portadas do ramo do #388.
+
+**Declarado:** o gestor só vê a despesa depois do 3º PR (`B-O6R-03b`); o item 30 (`Ω6R-QUA-001`) segue aberto; KPI congelado. A despesa não vira erro e não tem Descartar; sai na passada seguinte ao 3º PR se tiver usuário; a gravada antes do 2º PR sai depois de Assumir. As decisões `D-DESPESA-SEM-DESCARTAR`, `D-PRODUTO-PREMIUM-SEM-GAMBIARRA`, `D-P14-ASAAS-FOCUS` e `D-COBRANCA-RESPOSTAS-3110` já estão na `main` e não foram duplicadas.
+
 ## Estado em 2026-11-02 — #477, #480 e #481 mergeados; B-O6R-11 na Emenda 4; trabalho na RYZENCASA
 
 - **PRs no ar, conferidos por `gh pr view`:** #481 mergeado em `67f0655f` (marco de KPI de 02/11); #477 mergeado em `3d64ac34` (B-AV-REAL); #480 mergeado em `1cdb8aa8` (`D-UM-FAZ-OUTRO-VERIFICA` incorporada ao contrato). O #480 é governança/registro e não recebe porteiro, por `D-GOV-PROPORCIONAL`, §C7 item 8(3).
