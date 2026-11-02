@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { setTenantRlsContext } from "../../database/rls.js";
+import { forEachTenantRls } from "../../database/rls.js";
 import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 import {
@@ -31,9 +31,6 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
  * por prova; acima, por recusa explicita; nunca por truncamento mudo.
  */
 export const CLOUD_COST_ALLOCATION_LINE_ITEM_CAP = 100_000;
-
-/** Teto da transacao unica que varre os tenants (o default do Prisma, 5 s, nao serve para N tenants). */
-const TENANT_SWEEP_TX_TIMEOUT_MS = 60_000;
 
 export class PrismaCloudCostAllocationRepository implements CloudCostAllocationRepository {
   constructor(
@@ -144,9 +141,8 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       }
     }
 
-    const created: TenantCloudCostAllocation[] = [];
-
-    await this.forEachTenantInOneTx(
+    return forEachTenantRls<TenantCloudCostAllocation>(
+      requireSweepClient(this.client),
       tenants.map((tenant) => tenant.id),
       async (tx, tenantId) => {
         // Mesma razão: sem `tenant_id` explícito, sob superusuário a PRIMEIRA volta apagaria as
@@ -155,16 +151,16 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           where: { allocation_run_id: runId, tenant_id: tenantId },
         });
 
+        const created: TenantCloudCostAllocation[] = [];
         for (const allocation of byTenant.get(tenantId) ?? []) {
           const record = await tx.tenantCloudCostAllocation.create({
             data: buildAllocationData(runId, allocation),
           });
           created.push(mapAllocation(record));
         }
+        return created;
       },
     );
-
-    return created;
   }
 
   /**
@@ -183,9 +179,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     const targets = filters.tenantId
       ? tenants.filter((tenant) => tenant.id === filters.tenantId).map((tenant) => tenant.id)
       : tenants.map((tenant) => tenant.id);
-    const collected: TenantCloudCostAllocation[] = [];
-
-    await this.forEachTenantInOneTx(targets, async (tx, tenantId) => {
+    return forEachTenantRls<TenantCloudCostAllocation>(requireSweepClient(this.client), targets, async (tx, tenantId) => {
       const records = (await tx.tenantCloudCostAllocation.findMany({
         where: {
           allocation_run_id: runId,
@@ -202,10 +196,8 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         "tenant_cloud_cost_allocations",
       );
 
-      collected.push(...records.map((record) => mapAllocation(record as never)));
+      return records.map((record) => mapAllocation(record as never));
     });
-
-    return collected;
   }
 
   async findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined> {
@@ -293,10 +285,19 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       where: { slug: { equals: "platform", mode: "insensitive" } },
       select: { id: true },
     });
-    let platformUserIds: string[] = [];
+    const sweepClient = requireSweepClient(this.client);
+    // B-SAN3-03 · R7 — os usuários da plataforma, lidos sob o GUC da plataforma (`users` tem FORCE RLS),
+    // antes da varredura: o ato deles num cliente pesa na plataforma, não no cliente.
+    const platformUserIds =
+      platformTenant && tenantIds.includes(platformTenant.id)
+        ? await forEachTenantRls<string>(sweepClient, [platformTenant.id], async (tx, tenantId) => {
+            const users = await tx.user.findMany({ where: { tenant_id: tenantId }, select: { id: true } });
+            return users.map((user) => user.id);
+          })
+        : [];
     const auditedActionsByTenant = new Map<string, number>();
 
-    await this.forEachTenantInOneTx(tenantIds, async (tx, tenantId) => {
+    await forEachTenantRls<never>(sweepClient, tenantIds, async (tx, tenantId) => {
       // `tenant_id` NA CLÁUSULA, além da RLS — isolamento EXPLÍCITO, no padrão dos demais métodos da
       // casa (`stampRunRole` carrega a mesma nota). Não é redundância decorativa: o papel de dev e o
       // da CI são `postgres`, SUPERUSUÁRIO, e superusuário IGNORA RLS. Confiar só na policy faria este
@@ -439,14 +440,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           );
         }
       }
-    }, async (tx) => {
-      if (!platformTenant || !tenantIds.includes(platformTenant.id)) return;
-      await setTenantRlsContext(tx, platformTenant.id);
-      const users = await tx.user.findMany({
-        where: { tenant_id: platformTenant.id },
-        select: { id: true },
-      });
-      platformUserIds = users.map((user) => user.id);
+      return [];
     });
 
     for (const [tenantId, quantity] of auditedActionsByTenant) {
@@ -470,45 +464,25 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     return records;
   }
 
-  /**
-   * UMA transacao para os N tenants, com `set_config(..., true)` (transaction-local) trocado a cada
-   * volta. `setTenantRlsContext` e o setter UNICO do GUC de tenant, ja exportado por
-   * `src/database/rls.ts` — este bloco nao toca aquele arquivo.
-   *
-   * Os tres metodos que passam por aqui exigem `$transaction`, logo exigem um `PrismaClient`. O
-   * construtor continua aceitando `PrismaExecutor` para os demais metodos; aqui a exigencia e asserida
-   * em RUNTIME, com erro nomeado: um `TransactionClient` injetado falha ALTO, nunca escreve sem
-   * contexto de tenant.
-   */
-  private async forEachTenantInOneTx(
-    tenantIds: readonly string[],
-    work: (tx: Prisma.TransactionClient, tenantId: string) => Promise<void>,
-    setup?: (tx: Prisma.TransactionClient) => Promise<void>,
-  ): Promise<void> {
-    if (tenantIds.length === 0) return;
+}
 
-    const client = this.client;
-
-    if (!("$transaction" in client) || typeof client.$transaction !== "function") {
-      throw new CloudCostAllocationError(
-        500,
-        "CLOUD_COST_ALLOCATION_EXECUTOR_INVALID",
-        "tenant_sweep_requires_prisma_client",
-        "Tenant-scoped allocation access requires a PrismaClient able to open a transaction.",
-      );
-    }
-
-    await (client as PrismaClient).$transaction(
-      async (tx) => {
-        await setup?.(tx);
-        for (const tenantId of tenantIds) {
-          await setTenantRlsContext(tx, tenantId);
-          await work(tx, tenantId);
-        }
-      },
-      { timeout: TENANT_SWEEP_TX_TIMEOUT_MS },
+/**
+ * B-SAN3-03 (`P-SAN3-05-LACO-POR-TENANT-DUPLICADO`) — o laço por organização é o `forEachTenantRls` de
+ * `src/database/rls.ts` (UMA transação, GUC trocado a cada volta, mesmo teto de 60 s). Ele exige
+ * `$transaction`, logo um `PrismaClient`. O construtor continua aceitando `PrismaExecutor` para os demais
+ * métodos; aqui a exigência é asserida em RUNTIME, com erro nomeado: um `TransactionClient` injetado falha
+ * ALTO, nunca lê nem escreve sem contexto de organização.
+ */
+function requireSweepClient(client: PrismaExecutor): PrismaClient {
+  if (!("$transaction" in client) || typeof client.$transaction !== "function") {
+    throw new CloudCostAllocationError(
+      500,
+      "CLOUD_COST_ALLOCATION_EXECUTOR_INVALID",
+      "tenant_sweep_requires_prisma_client",
+      "Tenant-scoped allocation access requires a PrismaClient able to open a transaction.",
     );
   }
+  return client as PrismaClient;
 }
 
 /**

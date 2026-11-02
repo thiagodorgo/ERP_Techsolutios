@@ -51,6 +51,10 @@ test("C-4 · listCostLineItems exige importId em interface e chamador", () => {
 test("C-5 · não há teto silencioso nem laço privado no repositório de rateio", () => {
   const source = readFileSync("src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts", "utf8");
   assert.doesNotMatch(source, /^\s*take:\s*100_000,?\s*$/m);
+  assert.doesNotMatch(source, /forEachTenantInOneTx/);
+  // §2.8 da emenda: o 2º `take: 100_000` do aceite da linha 246 é o de `cloud-charge-prisma.repository.ts`.
+  const charges = readFileSync("src/modules/cloud-charges/cloud-charge-prisma.repository.ts", "utf8");
+  assert.doesNotMatch(charges, /^\s*take:\s*100_000,?\s*$/m);
 });
 
 test("C-6 · todo modelo com size_bytes está no inventário de storage", () => {
