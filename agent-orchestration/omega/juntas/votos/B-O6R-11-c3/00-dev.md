@@ -149,3 +149,12 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - F-T: 21 literais de produção acentuados nos três arquivos autorizados e três edições literais nos dois testes autorizados. Não há mutação prevista nesta fatia; a propriedade é o diff literal mascarado, com pares exatos 21 removidos/21 adicionados e estrutura inalterada.
 - `dart format` nos cinco arquivos → 0 mudanças; bateria F-T → `+71: All tests passed!`; `flutter analyze` → `No issues found!`; grep corrigido da emenda → 0 ocorrências; suíte Flutter inteira → `+937: All tests passed!`; `git diff --check` limpo; guard da fila segue byte a byte igual a `19e18e15`.
 - Próximo comando: adicionar somente os sete caminhos da F-T (incluindo emenda e diário), commitar com `fix(mobile): textos de falha dos replays e do coordenador com acento (B-O6R-11)` e enviar; depois iniciar F-S1a pelo vermelho-controle e arquivos novos previstos.
+
+## RETOMADA 6
+
+- Hora UTC: `2026-11-02T07:28:38Z`.
+- Head de partida: `e15c3f59`; F-S1a implementou D1, D4, D5, D6 e D-L somente nos oito caminhos autorizados. Vermelho-controle: `git grep -c "Aguardando envio\|isStalledAction\|canDiscardSyncAction\|syncActionLabel" 19e18e15 -- mobile/flutter_app/lib` → 0; os arquivos novos não compilam naquele head, como previsto.
+- Casos novos: s1-s5, r1-r5 e l1-l3 → `+13`; regressão de resgate existente incluída → bateria limpa `+20: All tests passed!`.
+- Mutações executadas uma por vez e revertidas por edição inversa: M-S1 → r3 `+0 -1` (OS/5 apareceu `failed`); M-S2 → s2 `+0 -1` (marca nula); M-S4 → s4 `+0 -1` (4 ≠ 5); M-S6 → s3 `+0 -1` (failed/2 virou pending); M-S7 → s5 `+0 -1` (despesa descartável); M-R1 → r1 `+0 -1` (retry 1 ≠ 0); M-R2 → r2 `+0 -1` (outros domínios resgatados); M-R5 → r1 `+0 -1` (syncing ausentes); M-R6 → r5 `+0 -1` (despesa failed não resgatada); M-PR1 → r3 `+0 -1` (pending em vez de awaitingBackend); M-PR2 → r4 `+0 -1` (synced 2 ≠ 1); M-L1 → l1 `+0 -1` (fallback genérico para tipo sem entrada).
+- Passada final: `dart format` nos oito caminhos → 0 mudanças; `flutter analyze` → `No issues found!`; suíte Flutter inteira → `+950: All tests passed!`; `git diff --check` limpo; guard da fila segue byte a byte igual a `19e18e15`; disco `302G` livres.
+- Próximo comando: adicionar somente os oito caminhos da F-S1a e este diário, commitar com `feat(mobile): despesa aguarda o canal sem virar erro — resgate, apresentação, rótulos em português e saída marcada para quem encalhar (B-O6R-11)` e enviar; depois iniciar F-S1a'.

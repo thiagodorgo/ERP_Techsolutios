@@ -74,6 +74,10 @@ class ExpenseSyncActionTypes {
     reportSubmit,
     receiptAttach,
   };
+
+  // Tipos reconhecidos pelo backend em expense-sync.ts. O comprovante ainda
+  // aguarda a integração própria e não possui recibo idempotente remoto.
+  static const backendSupported = {reportCreate, itemCreate, reportSubmit};
 }
 
 class ChecklistApiEndpoints {
