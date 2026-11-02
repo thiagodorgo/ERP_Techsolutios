@@ -319,3 +319,18 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
   - Diff mascarado de D-T: `evidence_sync.dart` 4 `-`/4 `+` pareados. `auto_sync_coordinator.dart` tem o hunk D0 (try/reclaimTenant/catch) mais 1 par do literal. O diff de `sync_replay_service.dart` foi medido nas fatias F-T e F-S1a'.
 - [08:30:00Z] PR **#483** aberto (https://github.com/thiagodorgo/ERP_Techsolutios/pull/483). Corpo sem linha de atribuição; cita a emenda 4 com a correção e as notas (a)–(d), as propriedades, a tabela de controles e mutações, N→M, as frases declaradas da F6c e "revert não reabre ações descartadas".
 - [08:30:00Z] A `main` andou para `600c5040` (#482, só registro). Segundo `git merge origin/main`, pela mesma regra. Conflitos em `status-geral.md`, `log-execucao.md` e no índice: os dois lados mantidos e o índice regerado pelo gerador (`708 / 697 | ABERTA 533`; a `main` tem 701 e este PR soma 7). Commit de merge `c810e428`. Depois do merge: `flutter analyze` → `No issues found!`; **suíte inteira → `+969: All tests passed!`**; `git diff --check origin/main...HEAD` → 0; guard 0 bytes; 48 caminhos no diff.
+- [08:46:56Z] CI do head `4934326f`: run `41413509026` (push) `completed success`, 8 jobs verdes. Resumo lido pela API em cada job:
+  - `flutter` (`125171875952`): `Formatted 213 files (0 changed)`, `No issues found!` e **`+969: All tests passed!`**;
+  - `backend` (`125171875866`): `# tests 4261`, `pass 4259`, `fail 0`, `cancelled 0`, `skipped 2`.
+  
+  PR #483 `MERGEABLE`.
+
+## PAUSA 2026-11-02T08:46:56Z
+
+- **PR aberto; próximo: pré-revisão.**
+- Papel/modelo: `dev-o6r11-e4c-opus`, Claude Opus (claude-opus-5-5), nível menor, declarado, cobrindo o Codex (`D-CLAUDE-COBRE-ATE-0411`).
+- Head: `4934326f501b4be125d371b5d7628f6f3d5f6b32`. PR **#483**. Suíte `+969` local e no CI.
+- Feito: F5 (sonda B), F6c (registro e apenso (d)), F7c (bateria, duas integrações da `main`, PR, CI).
+- Falta: pré-revisão (régua `D-JUNTA-FLUXO-RAPIDO`). Inelegíveis: este dev e o agente Claude de F-S1b/F-S1b'.
+- Próximo comando: `gh pr view 483 --json headRefOid,mergeable && git log --oneline -3`.
+- Arquivos meio-escritos: só esta seção, que vai commitada.
