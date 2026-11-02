@@ -31,38 +31,6 @@ export function recordCloudUsageForDomainEvent(event: DomainEventEnvelope): void
   // `checklists` — é a mutação M-6, e o censo `tests/o6r06-billing-census.test.ts` (C1) a mata.
 
 
-  if (event.name === "checklist_run.attachment_downloaded") {
-    const sizeBytes = readNumber(event.payload.sizeBytes);
-    recordCloudUsageBestEffort({
-      ...base,
-      sourceType: "checklist_attachment",
-      sourceId: readString(event.payload.attachmentId) ?? event.id,
-      metricKey: "checklist_attachment.downloaded.count",
-      quantity: 1,
-      unit: "count",
-    });
-    recordCloudUsageBestEffort({
-      ...base,
-      sourceType: "checklist_attachment",
-      sourceId: readString(event.payload.attachmentId) ?? event.id,
-      metricKey: "s3_get_requests",
-      quantity: 1,
-      unit: "count",
-      idempotencyKey: `${event.id}:s3_get_requests`,
-    });
-    if (sizeBytes !== undefined) {
-      recordCloudUsageBestEffort({
-        ...base,
-        sourceType: "checklist_attachment",
-        sourceId: readString(event.payload.attachmentId) ?? event.id,
-        metricKey: "checklist_attachment.downloaded.bytes",
-        quantity: sizeBytes,
-        unit: "bytes",
-        idempotencyKey: `${event.id}:checklist_attachment.downloaded.bytes`,
-      });
-    }
-  }
-
   if (event.name === "checklist_run.divergence_reported") {
     recordCloudUsageBestEffort({
       ...base,
@@ -87,9 +55,4 @@ export function recordCloudUsageForDomainEvent(event: DomainEventEnvelope): void
 function readString(value: unknown): string | undefined {
   const normalized = typeof value === "string" ? value.trim() : "";
   return normalized || undefined;
-}
-
-function readNumber(value: unknown): number | undefined {
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return undefined;
-  return value;
 }

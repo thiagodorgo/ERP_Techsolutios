@@ -50,6 +50,10 @@ export type AttachmentUploadUsageSource = {
   readonly createdAt: Date;
 };
 
+export type AttachmentDownloadUsageSource = AttachmentUploadUsageSource & {
+  readonly grantId: string;
+};
+
 export const PRODUZIDAS_EM_TX = [
   "checklist_run.created",
   "checklist_run.completed",
@@ -57,7 +61,36 @@ export const PRODUZIDAS_EM_TX = [
   "checklist_attachment.uploaded.count",
   "checklist_attachment.uploaded.bytes",
   "s3_put_requests",
+  "checklist_attachment.downloaded.count",
+  "checklist_attachment.downloaded.bytes",
+  "s3_get_requests",
 ] as const satisfies readonly CloudUsageMetricKey[];
+
+export function buildAttachmentDownloadUsageEvents(
+  attachment: AttachmentDownloadUsageSource,
+): readonly RecordUsageEventInput[] {
+  const base = {
+    tenantId: attachment.tenantId,
+    sourceType: "checklist_attachment",
+    sourceId: attachment.id,
+    occurredAt: attachment.createdAt,
+    metadata: {
+      capturedIn: "checklist_attachment_download_grant",
+      attachmentId: attachment.id,
+      runId: attachment.runId,
+      grantId: attachment.grantId,
+    },
+  };
+  const key = `checklist_attachment:${attachment.id}:download:${attachment.grantId}`;
+  const events: RecordUsageEventInput[] = [
+    { ...base, metricKey: "checklist_attachment.downloaded.count", quantity: 1, unit: "count", idempotencyKey: `${key}:count` },
+    { ...base, metricKey: "s3_get_requests", quantity: 1, unit: "count", idempotencyKey: `${key}:s3_get_requests` },
+  ];
+  if (attachment.sizeBytes !== undefined) {
+    events.push({ ...base, metricKey: "checklist_attachment.downloaded.bytes", quantity: attachment.sizeBytes, unit: "bytes", idempotencyKey: `${key}:bytes` });
+  }
+  return events;
+}
 
 export function buildAttachmentUploadUsageEvents(
   attachment: AttachmentUploadUsageSource,

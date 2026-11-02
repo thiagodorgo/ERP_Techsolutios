@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
@@ -636,6 +638,8 @@ export class ChecklistService {
     }
 
     const download = await resolveChecklistAttachmentDownload(attachment);
+
+    await this.repository.recordAttachmentDownload(actor.tenantId, attachment, randomUUID());
 
     await publishDomainEvent(
       "checklist_run.attachment_downloaded",

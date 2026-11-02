@@ -52,6 +52,39 @@ if (!connectionString) {
       await teardown(ctx, b.tenantId);
     }
   });
+
+  test("T-DOWN-db-1 · concessão persiste três unidades antes de retornar", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    try {
+      const attachment = await createAttachment(ctx.repo, seed);
+      assert.ok(attachment);
+      await ctx.repo.recordAttachmentDownload(seed.tenantId, attachment!, "grant-1");
+      assert.equal(await countUsage(ctx, seed.tenantId, attachment!.id), 6);
+    } finally {
+      await teardown(ctx, seed.tenantId);
+    }
+  });
+
+  test("T-DOWN-db-2 · falha na captura recusa a concessão sem unidade parcial", async () => {
+    const ctx = await bootstrap(connectionString);
+    const seed = await seedScenario(ctx);
+    const { RlsPrismaChecklistRepository } = await import(
+      "../src/modules/checklists/checklist-prisma.repository.js"
+    );
+    try {
+      const attachment = await createAttachment(ctx.repo, seed);
+      assert.ok(attachment);
+      const broken = new RlsPrismaChecklistRepository(withFailingUsageInsert(ctx.client));
+      await assert.rejects(
+        () => broken.recordAttachmentDownload(seed.tenantId, attachment!, "grant-fail"),
+        /falha injetada na medicao/,
+      );
+      assert.equal(await countUsage(ctx, seed.tenantId, attachment!.id), 3);
+    } finally {
+      await teardown(ctx, seed.tenantId);
+    }
+  });
 }
 
 async function bootstrap(connection: string) {

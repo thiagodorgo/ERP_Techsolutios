@@ -155,3 +155,20 @@
   T-DOWN-1..4 para o vermelho-controle F4.
 - **Arquivos meio-escritos:** nenhum; F3 pronta para commit.
 
+## RETOMADA 4
+
+- **Head inicial:** `76afbc99` (F3 commitada e enviada).
+- **Implementação:** builder de concessão de download; repositórios Prisma/memória gravam count/bytes/GET;
+  o serviço aguarda a captura antes de devolver a URL; ramo pós-commit removido.
+- **Vermelho-controle/M9:** troca temporária de `await` por `void` — **exit 1**, T-DOWN-4 falhou na
+  guarda de captura aguardada; restaurado.
+- **Validação F4:** T-UP/T-DOWN memória e DB mais regressões de anexos, storage e rotas — **34/34**,
+  0 falhas, 0 skips; `npm run check` e `git diff --check` — exit 0 após ajuste de EOF.
+- **Docker:** somente `pg-san303` em `127.0.0.1:55432`; nenhum serviço do dono tocado.
+- **Escopo:** zero alteração em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles ou frontend.
+- **Feito:** a concessão só retorna depois que suas unidades persistem; falha é fail-closed.
+- **Falta:** F5–F9 (incluindo F8a/F8b/F8c), registros finais e PR.
+- **Próximo comando exato:** `npm test -- tests/san3-03-job-capture.test.ts` após criar o
+  vermelho-controle F5.
+- **Arquivos meio-escritos:** nenhum; F4 pronta para commit.
+

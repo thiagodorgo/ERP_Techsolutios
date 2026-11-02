@@ -6,6 +6,7 @@ import { withTenantRls } from "../../database/rls.js";
 import {
   appendCloudUsageInTx,
   appendChecklistRunUsageInTx,
+  buildAttachmentDownloadUsageEvents,
   buildAttachmentUploadUsageEvents,
   buildChecklistRunUsageEvents,
 } from "../cloud-usage/cloud-usage.capture.js";
@@ -1002,6 +1003,20 @@ export class PrismaChecklistRepository implements ChecklistRepository {
     return mapAttachmentRecord(record);
   }
 
+  async recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void> {
+    await appendCloudUsageInTx(
+      this.client,
+      buildAttachmentDownloadUsageEvents({
+        id: attachment.id,
+        tenantId,
+        runId: attachment.runId,
+        sizeBytes: attachment.sizeBytes,
+        createdAt: new Date(),
+        grantId,
+      }),
+    );
+  }
+
   async createMarker(
     tenantId: string,
     runId: string,
@@ -1197,6 +1212,10 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     data: CreateChecklistAttachmentInput,
   ): Promise<ChecklistAttachment | null> {
     return this.withTenant(tenantId, (repository) => repository.createAttachment(tenantId, runId, actorUserId, data));
+  }
+
+  recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void> {
+    return this.withTenant(tenantId, (repository) => repository.recordAttachmentDownload(tenantId, attachment, grantId));
   }
 
   createMarker(
