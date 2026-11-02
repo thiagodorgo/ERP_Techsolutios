@@ -408,7 +408,11 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         });
         assertRowsBelongToTenant(actionGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
         const quantity = actionGroups.reduce((total, group) => total + group._count, 0);
-        if (quantity > 0) auditedActionsByTenant.set(tenantId, quantity);
+        // Acumula: atos de usuario da plataforma em clientes ja varridos podem estar no mapa.
+        if (quantity > 0) {
+          const current = auditedActionsByTenant.get(tenantId);
+          auditedActionsByTenant.set(tenantId, current === undefined ? quantity : current + quantity);
+        }
       } else {
         const [clientGroups, platformActorGroups] = await Promise.all([
           tx.auditLog.groupBy({
@@ -428,9 +432,10 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         const platformQuantity = platformActorGroups.reduce((total, group) => total + group._count, 0);
         if (clientQuantity > 0) auditedActionsByTenant.set(tenantId, clientQuantity);
         if (platformQuantity > 0 && platformTenant) {
+          const current = auditedActionsByTenant.get(platformTenant.id);
           auditedActionsByTenant.set(
             platformTenant.id,
-            (auditedActionsByTenant.get(platformTenant.id) ?? 0) + platformQuantity,
+            current === undefined ? platformQuantity : current + platformQuantity,
           );
         }
       }

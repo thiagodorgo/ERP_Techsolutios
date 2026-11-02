@@ -229,3 +229,47 @@
   POSTGRES_PASSWORD=postgres -e POSTGRES_DB=san303 postgres:16`.
 - **Arquivos meio-escritos:** nenhum; F6 pronta para commit.
 
+## RETOMADA 7
+
+- **Troca de executor (declarada):** a partir da F7 o dev é `dev-san303-opus`, **Claude Opus 5.5
+  (`claude-opus-5-5`), nível menor**, cobrindo o Codex (as duas contas no limite até 09:21 e 09:26 SP) pela
+  decisão do dono `D-CLAUDE-COBRE-ATE-0411` ("2 - cubra"). Não planejou nem revisou o bloco. O Codex fez F0–F6.
+- **Head inicial medido:** `1d4eea86` (F6 commitada e enviada). Parcial da F7 deixado pelo Codex, sem commit:
+  2 arquivos de `src/` modificados e 2 testes novos (`san3-03-basis-census`, `san3-03-derived-basis-db`);
+  container `pg-san303` vivo em `127.0.0.1:55432`, 117 migrações aplicadas (medido no `_prisma_migrations`).
+- **Parcial medido contra a emenda, não herdado:**
+  - **Defeito no parcial:** `sumUsageBasis` tinha `storageWhere = { created_at: … }`, SEM `tenant_id` — é a
+    M13 aplicada e não restaurada (sob superusuário soma o estoque de todas as organizações). Restaurado o
+    `tenant_id`.
+  - **Defeito novo achado:** na volta da própria plataforma, `auditedActionsByTenant.set(tenantId, quantity)`
+    SOBRESCREVIA os atos da plataforma já somados nas voltas dos clientes (depende da ordem da varredura).
+    Agora acumula. Teste novo T-API-db-3b (as duas ordens).
+  - **Lacuna de teste:** não havia teste do canário do estoque com `withLeakingGroupBy` (M18 do §2.2). Teste
+    novo T-STO-db-5 no modelo `attachment`.
+  - **Regressão da F3 achada:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` T13 vermelho (2 falhas):
+    a F3 renomeou a implementação RAW-SQL para `appendCloudUsageInTx`, e o inventário congelado identifica o
+    acesso por `appendChecklistRunUsageInTx`. Conserto DENTRO do PERMITIDO (`capture.ts`): a implementação
+    volta ao nome original e `appendCloudUsageInTx` vira o alias (o plano pede os dois nomes). Guard 35/35, sem
+    tocar o guard (fora do PERMITIDO).
+  - Os `?? 0` removidos pelo Codex no dublê e no Prisma ficam (PROIBIDO `?? 0` em soma de base).
+- **§2.9:** `san3-05-leituras-de-plataforma-db.test.ts:66` passa a listar as 8 tabelas e a nota
+  `forEachTenantRls`. Só essa linha.
+- **Comandos (todos com `DATABASE_URL` do descartável `127.0.0.1:55432`):**
+  - `node --test --import tsx tests/san3-03-derived-basis-db.test.ts tests/san3-03-basis-census.test.ts` —
+    exit 0, 15/15 (9 db + 6 censo), 0 skip.
+  - Mutações (runner de âncora única, restauro conferido byte a byte): **M13** → T-STO-db-1 vermelho;
+    **M16** → T-API-db-1 e T-API-db-3b; **M18 audit** (canário removido + vazamento) → T-API-db-2; **M18
+    storage** → T-STO-db-5; **M41** sem `deleted_at` → T-STO-db-3; **M40-db** só checklist → T-STO-db-1 e
+    T-STO-db-4; **M-ACUM** (sobrescreve) → T-API-db-3b; **C-1** `api_requests_count` de volta na regra → C-1;
+    **C-6** inventário sem `damage_attachments` → C-6; **M20** `take: 100_000` de volta → C-5. Todas
+    vermelhas e restauradas.
+  - Regressão: `san3-05-leituras-de-plataforma-db`, `o6r06-allocation-basis-rls-db`, `san3-03-*`,
+    `cloud-cost-allocation*`, `o6r06-usage-atomic(-db)`, `o6r06-billing-census` — exit 0, **117/117**, 0
+    skip. `san3-05-acessos-de-plataforma-guard` — 35/35. `npm run check` exit 0; `git diff --check` exit 0.
+- **H16 (soma > 2^31):** T-STO-db-4 verde com `groupBy` do Prisma; não precisou de `$queryRaw`.
+- **Escopo:** zero toque em `prisma/**`, `Kpis/**`, lockfiles, `frontend/**`, `cloud-charges/**`.
+- **Falta:** F8, F8a, F8b, F8c, F9, PR.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-system-org.test.ts` (vermelho-controle
+  T-SYS-2/3 da F8).
+- **Arquivos meio-escritos:** nenhum.
+

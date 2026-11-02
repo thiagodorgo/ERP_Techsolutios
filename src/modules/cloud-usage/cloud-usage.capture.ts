@@ -307,7 +307,7 @@ export function buildChecklistRunUsageEvents(
  *
  * Devolve quantas linhas foram REALMENTE inseridas (0 = já existia).
  */
-export async function appendCloudUsageInTx(
+export async function appendChecklistRunUsageInTx(
   client: CloudUsageCaptureClient,
   inputs: readonly RecordUsageEventInput[],
 ): Promise<number> {
@@ -347,7 +347,9 @@ export async function appendCloudUsageInTx(
   return inserted;
 }
 
-export const appendChecklistRunUsageInTx = appendCloudUsageInTx;
+// B-SAN3-03: nome geral, mesma função. A implementação mantém o nome original porque o inventário
+// congelado de `san3-05-acessos-de-plataforma` identifica o acesso RAW-SQL por esse símbolo.
+export const appendCloudUsageInTx = appendChecklistRunUsageInTx;
 
 /**
  * DUBLÊ em memória — para as suítes em memória continuarem exercendo a MESMA semântica pelo MESMO

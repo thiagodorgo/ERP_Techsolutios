@@ -63,7 +63,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/overview`, S("FORCE-POR-TENANT", ["users"], "S4 — controle do T11d (listUsersForTenant sob withTenantRls)")],
   [`GET ${P}/tenants/:tenantId/detail`, S("FORCE-POR-TENANT", ["users"], "listUsersForTenant sob withTenantRls")],
   [`GET ${P}/cloud-cost-allocations/runs/:runId/tenant-allocations`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations"], "S4 — controle do T11d (B-O6R-06)")],
-  [`POST ${P}/cloud-cost-allocations/runs`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations", "cloud_usage_events"], "forEachTenantInOneTx (B-O6R-06)")],
+  [`POST ${P}/cloud-cost-allocations/runs`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations", "cloud_usage_events", "audit_logs", "users", "checklist_attachments", "work_order_attachments", "attachments", "damage_attachments"], "forEachTenantRls (B-O6R-06; bases derivadas B-SAN3-03)")],
   [`GET ${P}/cloud-cost-allocations/summary`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations"], "listTenantAllocations por organização (B-O6R-06)")],
   [`GET ${P}/cloud-cost-allocations/runs`, S("SEM-FORCE", ["cloud_cost_allocation_runs"], "excluída")],
   [`GET ${P}/cloud-cost-allocations/runs/:runId`, S("SEM-FORCE", ["cloud_cost_allocation_runs"], "excluída")],

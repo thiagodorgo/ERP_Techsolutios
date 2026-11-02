@@ -203,7 +203,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
 
       const key = [event.tenantId, event.metricKey, event.unit, event.sourceType].join("|");
       const existing = groups.get(key);
-      const quantity = (existing?.quantity ?? 0) + event.quantity;
+      const quantity = existing === undefined ? event.quantity : existing.quantity + event.quantity;
 
       groups.set(key, {
         quantity,
@@ -222,10 +222,8 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       if (!allowed.has(attachment.tenantId)) continue;
       if (attachment.createdAt > periodEnd || attachment.deletedAt) continue;
       if (attachment.sizeBytes === undefined) continue;
-      storageByTenant.set(
-        attachment.tenantId,
-        (storageByTenant.get(attachment.tenantId) ?? 0) + attachment.sizeBytes,
-      );
+      const current = storageByTenant.get(attachment.tenantId);
+      storageByTenant.set(attachment.tenantId, current === undefined ? attachment.sizeBytes : current + attachment.sizeBytes);
     }
     for (const [tenantId, quantity] of storageByTenant) {
       if (quantity <= 0) continue;
@@ -253,7 +251,8 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
         ? platformTenant.id
         : action.tenantId;
       if (!allowed.has(tenantId)) continue;
-      actionsByTenant.set(tenantId, (actionsByTenant.get(tenantId) ?? 0) + 1);
+      const current = actionsByTenant.get(tenantId);
+      actionsByTenant.set(tenantId, current === undefined ? 1 : current + 1);
     }
     for (const [tenantId, quantity] of actionsByTenant) {
       groups.set(`${tenantId}|audited_actions_count|count|audit_log`, {
