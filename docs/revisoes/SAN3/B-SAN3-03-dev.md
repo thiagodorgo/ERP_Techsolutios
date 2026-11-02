@@ -356,3 +356,34 @@
   T-SUM-1/2 da F8c).
 - **Arquivos meio-escritos:** nenhum.
 
+## RETOMADA 8c
+
+- **Executor:** `dev-san303-opus`, Claude Opus 5.5, nível menor declarado.
+- **Head inicial:** `e2b3d159` (F8b commitada e enviada). Docker: o mesmo `pg-san303` em `127.0.0.1:55432`.
+- **Vermelho-controle (testes escritos antes do código, rodados no código de `e2b3d159`):** `node --test
+  --import tsx tests/san3-03-summary.test.ts tests/san3-03-system-org.test.ts tests/san3-03-system-org-db.test.ts`
+  com `DATABASE_URL` — exit 1, 4/16. T-SUM-1 actual **7** (devolveu a run de 31/10 a 30/11, B4); T-SUM-2 actual
+  **0** (a run vazia nova apagou a boa, B2); T-SUM-3..6, T-SYS-4..7 e T-SYS-db-1/2 sem `coverage`, `runId`,
+  `unallocatedByReason`, `totalPlatformCost`. T-SYS-1/2/3/8 verdes (F8).
+- **Implementação (R12 e R8-b, emenda §2.4 e §2.6):** `getAllocationSummary` com período só aceita run com o
+  mesmo dia UTC de início e de fim; sem período, todas as concluídas; preferência: mais nova com import
+  (`explicit`/`latest_completed`) → mais nova sem `importResolution` (run antiga) → mais nova com `none`. Campos
+  sempre presentes, inclusive no ramo sem run: `runId`, `importId`, `importResolution`, `coverage`
+  (`imported` | `no_import` | `no_run` | `legacy_unscoped`), `totalPlatformCost`, `platformCostByService`,
+  `unallocatedByReason` (lido de `reason`; item sem motivo em `"unspecified"`, nunca descartado; soma em
+  micro-unidades e ordem por motivo), `estimatedCategories`, `roundingResidualCost`. Run antiga com alocação da
+  plataforma aparece em `tenants[]` com nome (a plataforma continua em `listTenants()`).
+- **Mutações (vermelhas e restauradas):** **M21** funde motivos → T-SYS-4, 5, 6; **M25** plataforma somada em
+  `totalUnallocatedCost` → T-SYS-2, 3, 4; **M26** descarta item sem motivo → T-SYS-6; **M27** ramo sem run sem os
+  campos → T-SYS-7, T-SUM-1; **M28** soma por motivo em ponto flutuante sem arredondar → T-SYS-5; **M29** aceita
+  sobreposição → T-SUM-1; **M30** `runs[0]` → T-SUM-2, 6; **M31** `coverage` fixo → T-SUM-3, 4; **M31-b** compara
+  por instante → T-SUM-5. T-RULE-5 ganhou a conferência de `estimatedCategories` no resumo.
+- **Validação (com `DATABASE_URL`):** `san3-03-*`, `cloud-cost-allocation*`, `cloud-charge-*`, `cloud-usage*`,
+  `o6r06-*`, `san3-05-leituras-de-plataforma-db`, `san3-05-acessos-de-plataforma-guard` — exit 0, **231/231**,
+  0 skip. `npm run check` exit 0; `git diff --check` exit 0.
+- **Comportamento que muda (declarado na emenda):** pedido de período sem run exata recebe `coverage: "no_run"`
+  em vez da run vizinha. Rollback: revert, sem migração.
+- **Falta:** F9 (laço único, `take` de `cloud-charges`, docs, registro, bateria) e PR.
+- **Próximo comando exato:** `git grep -n "forEachTenantInOneTx" -- src scripts tests`.
+- **Arquivos meio-escritos:** nenhum.
+

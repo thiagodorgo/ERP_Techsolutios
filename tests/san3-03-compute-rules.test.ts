@@ -84,6 +84,8 @@ test("T-RULE-5 · as três categorias saem rotuladas como estimativa", async () 
   const run = await service.allocateCostsForPeriod({ periodStart, periodEnd });
   const allocations = await service.listTenantAllocations(run.id);
   assert.deepEqual(run.metadata.estimatedCategories, ["cache", "compute", "database"]);
+  const summary = await service.getAllocationSummary({ periodStart, periodEnd });
+  assert.deepEqual(summary.estimatedCategories, ["cache", "compute", "database"]);
   for (const allocation of allocations) {
     const estimated = ["cache", "compute", "database"].includes(allocation.costCategory);
     assert.equal(allocation.metadata.estimate === true, estimated, allocation.costCategory);

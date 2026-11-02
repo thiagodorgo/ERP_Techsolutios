@@ -174,7 +174,16 @@ export class CloudCostAllocationService {
       ...filters,
       status: "completed",
     });
-    const run = runs[0];
+    // B-SAN3-03 · R12 — com período, só vale run com o MESMO dia UTC de início e de fim do pedido (run que só
+    // toca o período não vale). Sem período, todas as concluídas, como antes.
+    const exactPeriod = filters.periodStart && filters.periodEnd;
+    const candidates = exactPeriod
+      ? runs.filter(
+          (candidate) =>
+            sameUtcDay(candidate.periodStart, filters.periodStart!) && sameUtcDay(candidate.periodEnd, filters.periodEnd!),
+        )
+      : runs;
+    const run = pickSummaryRun(candidates);
 
     if (!run) {
       return {
@@ -183,6 +192,15 @@ export class CloudCostAllocationService {
         totalImportedCost: 0,
         totalAllocatedCost: 0,
         totalUnallocatedCost: 0,
+        totalPlatformCost: 0,
+        roundingResidualCost: 0,
+        runId: null,
+        importId: null,
+        importResolution: null,
+        coverage: "no_run",
+        unallocatedByReason: [],
+        platformCostByService: [],
+        estimatedCategories: [],
         tenants: [],
         services: [],
         generatedAt: new Date().toISOString(),
@@ -204,11 +222,21 @@ export class CloudCostAllocationService {
       serviceGroups.set(allocation.serviceCode, service);
     }
 
+    const reasonGroups = new Map<string, bigint>();
     for (const item of readUnallocated(run.metadata)) {
       const service = serviceGroups.get(item.serviceCode) ?? { allocatedCost: 0, unallocatedCost: 0 };
       service.unallocatedCost += item.unallocatedCost;
       serviceGroups.set(item.serviceCode, service);
+      const current = reasonGroups.get(item.reason);
+      reasonGroups.set(item.reason, (current === undefined ? 0n : current) + toMicro(item.unallocatedCost));
     }
+
+    const platformGroups = new Map<string, bigint>();
+    for (const item of readPlatformCost(run.metadata)) {
+      const current = platformGroups.get(item.serviceCode);
+      platformGroups.set(item.serviceCode, (current === undefined ? 0n : current) + toMicro(item.platformCost));
+    }
+    const importResolution = typeof run.metadata.importResolution === "string" ? run.metadata.importResolution : null;
 
     return {
       periodStart: run.periodStart.toISOString(),
@@ -217,6 +245,19 @@ export class CloudCostAllocationService {
       totalImportedCost: run.totalImportedCost,
       totalAllocatedCost: run.totalAllocatedCost,
       totalUnallocatedCost: run.totalUnallocatedCost,
+      totalPlatformCost: readNumber(run.metadata.totalPlatformCost),
+      roundingResidualCost: readNumber(run.metadata.roundingResidualCost),
+      runId: run.id,
+      importId: typeof run.metadata.importId === "string" ? run.metadata.importId : null,
+      importResolution,
+      coverage: coverageOf(importResolution),
+      unallocatedByReason: [...reasonGroups.entries()]
+        .map(([reason, value]) => ({ reason, unallocatedCost: roundCost(fromMicro(value)) }))
+        .sort((a, b) => a.reason.localeCompare(b.reason)),
+      platformCostByService: [...platformGroups.entries()]
+        .map(([serviceCode, value]) => ({ serviceCode, platformCost: roundCost(fromMicro(value)) }))
+        .sort((a, b) => a.serviceCode.localeCompare(b.serviceCode)),
+      estimatedCategories: readStringList(run.metadata.estimatedCategories),
       tenants: [...tenantGroups.entries()]
         .map(([tenantId, allocatedCost]) => ({
           tenantId,
@@ -327,7 +368,10 @@ function compactRecord(input: Record<string, unknown>): Record<string, unknown> 
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
-function readUnallocated(metadata: Record<string, unknown>): { serviceCode: string; unallocatedCost: number }[] {
+type UnallocatedSummaryItem = { serviceCode: string; unallocatedCost: number; reason: string };
+
+// B-SAN3-03 · R8-b — lê também o `reason`. Item sem motivo vira "unspecified" e nunca é descartado.
+function readUnallocated(metadata: Record<string, unknown>): UnallocatedSummaryItem[] {
   const raw = metadata.unallocated;
   if (!Array.isArray(raw)) return [];
   return raw
@@ -337,9 +381,64 @@ function readUnallocated(metadata: Record<string, unknown>): { serviceCode: stri
       return {
         serviceCode: typeof record.serviceCode === "string" ? record.serviceCode : "unknown",
         unallocatedCost: typeof record.unallocatedCost === "number" ? record.unallocatedCost : 0,
+        reason: typeof record.reason === "string" && record.reason.length > 0 ? record.reason : "unspecified",
       };
     })
-    .filter((item): item is { serviceCode: string; unallocatedCost: number } => item !== undefined);
+    .filter((item): item is UnallocatedSummaryItem => item !== undefined);
+}
+
+function readPlatformCost(metadata: Record<string, unknown>): { serviceCode: string; platformCost: number }[] {
+  const raw = metadata.platformCost;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (typeof item !== "object" || item === null) return [];
+    const record = item as Record<string, unknown>;
+    if (typeof record.platformCost !== "number") return [];
+    return [{ serviceCode: typeof record.serviceCode === "string" ? record.serviceCode : "unknown", platformCost: record.platformCost }];
+  });
+}
+
+function readNumber(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function readStringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+const IMPORTED_RESOLUTIONS = new Set(["explicit", "latest_completed"]);
+
+function coverageOf(importResolution: string | null): CloudCostAllocationSummary["coverage"] {
+  if (importResolution === null) return "legacy_unscoped";
+  if (IMPORTED_RESOLUTIONS.has(importResolution)) return "imported";
+  return "no_import";
+}
+
+/**
+ * B-SAN3-03 · R12 — preferência entre as candidatas (já ordenadas da mais nova para a mais velha): a mais
+ * nova com import; senão a mais nova sem `importResolution` (run anterior a este bloco); senão a mais nova
+ * com `none`. Run vazia nova nunca apaga run boa.
+ */
+function pickSummaryRun(candidates: readonly CloudCostAllocationRun[]): CloudCostAllocationRun | undefined {
+  const resolutionOf = (run: CloudCostAllocationRun) =>
+    typeof run.metadata.importResolution === "string" ? run.metadata.importResolution : null;
+  return (
+    candidates.find((run) => IMPORTED_RESOLUTIONS.has(resolutionOf(run) ?? "")) ??
+    candidates.find((run) => resolutionOf(run) === null) ??
+    candidates[0]
+  );
+}
+
+function sameUtcDay(left: Date, right: Date): boolean {
+  return left.toISOString().slice(0, 10) === right.toISOString().slice(0, 10);
+}
+
+function toMicro(value: number): bigint {
+  return BigInt(Math.round(value * 1_000_000));
+}
+
+function fromMicro(value: bigint): number {
+  return Number(value) / 1_000_000;
 }
 
 function sumMicro(values: readonly number[]): number {

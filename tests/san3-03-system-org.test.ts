@@ -81,7 +81,76 @@ test("T-SYS-8 · sem organização platform cadastrada o rateio é o de sempre e
   assert.deepEqual(run.metadata.platformCost, []);
 });
 
-type ActionSeed = { tenantId: string; actorUserId?: string; action: string; createdAt: Date };
+test("T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, não rateado 5 por motivo", async () => {
+  const { service } = setup({
+    lines: [line("tag-p", "AmazonKMS", "Keys", 10, "platform"), line("rule-less", "AmazonCloudWatch", "Metrics", 5)],
+  });
+  await service.allocateCostsForPeriod({ periodStart, periodEnd });
+  const summary = await service.getAllocationSummary({ periodStart, periodEnd });
+  assert.equal(summary.totalPlatformCost, 10);
+  assert.equal(summary.totalUnallocatedCost, 5);
+  assert.deepEqual(summary.unallocatedByReason, [{ reason: "no_allocation_rule", unallocatedCost: 5 }]);
+  assert.deepEqual(summary.platformCostByService, [{ serviceCode: "AmazonKMS", platformCost: 10 }]);
+});
+
+test("T-SYS-5 · motivos com custos de 6 casas: soma por motivo = totalUnallocatedCost, nenhum falta", async () => {
+  const { service } = setup({
+    lines: [
+      line("nr-1", "AmazonCloudWatch", "Metrics", 0.1),
+      line("nr-2", "AmazonCloudWatch", "Alarms", 0.2),
+      line("mb-1", "AmazonApiGateway", "ApiGatewayRequest", 0.123457),
+      line("mb-2", "AmazonApiGateway", "ApiGatewayRequest", 0.000001),
+    ],
+  });
+  await service.allocateCostsForPeriod({ periodStart, periodEnd });
+  const summary = await service.getAllocationSummary({ periodStart, periodEnd });
+  assert.deepEqual(summary.unallocatedByReason, [
+    { reason: "missing_usage_basis", unallocatedCost: 0.123458 },
+    { reason: "no_allocation_rule", unallocatedCost: 0.3 },
+  ]);
+  const sum = summary.unallocatedByReason.reduce((total, item) => total + BigInt(Math.round(item.unallocatedCost * 1e6)), 0n);
+  assert.equal(sum, BigInt(Math.round(summary.totalUnallocatedCost * 1e6)));
+});
+
+test("T-SYS-6 · item de metadata.unallocated sem reason aparece em unspecified", async () => {
+  const { repository, service } = setup({ lines: [] });
+  const legacy = await repository.createRun({ periodStart, periodEnd, metadata: {} });
+  await repository.updateRun(legacy.id, {
+    status: "completed",
+    totalImportedCost: 7,
+    totalAllocatedCost: 0,
+    totalUnallocatedCost: 7,
+    completedAt: periodEnd,
+    metadata: {
+      unallocated: [
+        { serviceCode: "AmazonKMS", unallocatedCost: 4 },
+        { serviceCode: "AmazonKMS", unallocatedCost: 3, reason: "no_allocation_rule" },
+      ],
+    },
+  });
+  const summary = await service.getAllocationSummary({ periodStart, periodEnd });
+  assert.deepEqual(summary.unallocatedByReason, [
+    { reason: "no_allocation_rule", unallocatedCost: 3 },
+    { reason: "unspecified", unallocatedCost: 4 },
+  ]);
+});
+
+test("T-SYS-7 · período sem run: chaves presentes, listas vazias e custo da plataforma 0", async () => {
+  const { service } = setup({ lines: [] });
+  const summary = await service.getAllocationSummary({ periodStart, periodEnd });
+  assert.deepEqual(summary.unallocatedByReason, []);
+  assert.deepEqual(summary.platformCostByService, []);
+  assert.deepEqual(summary.estimatedCategories, []);
+  assert.equal(summary.totalPlatformCost, 0);
+  assert.equal(summary.roundingResidualCost, 0);
+  assert.equal(summary.coverage, "no_run");
+  for (const key of ["runId", "importId", "importResolution"] as const) {
+    assert.ok(key in summary, key);
+    assert.equal(summary[key], null, key);
+  }
+});
+
+type ActionSeed ={ tenantId: string; actorUserId?: string; action: string; createdAt: Date };
 
 function setup(input: {
   readonly tenants?: readonly { id: string; name: string; slug: string }[];

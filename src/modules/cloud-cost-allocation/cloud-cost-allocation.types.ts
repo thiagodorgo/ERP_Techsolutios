@@ -189,6 +189,20 @@ export type CloudCostAllocationSummary = {
   readonly totalImportedCost: number;
   readonly totalAllocatedCost: number;
   readonly totalUnallocatedCost: number;
+  /** B-SAN3-03 · R8-b — a parte da plataforma, linha própria, fora de `totalUnallocatedCost`. */
+  readonly totalPlatformCost: number;
+  /** B-SAN3-03 · R13 — resíduo de arredondamento, com sinal. */
+  readonly roundingResidualCost: number;
+  /** B-SAN3-03 · R12 — a run que responde, e o import dela. */
+  readonly runId: string | null;
+  readonly importId: string | null;
+  readonly importResolution: string | null;
+  readonly coverage: "imported" | "no_import" | "no_run" | "legacy_unscoped";
+  /** B-SAN3-03 · R8-b — Σ unallocatedByReason = totalUnallocatedCost; item sem motivo em "unspecified". */
+  readonly unallocatedByReason: readonly { readonly reason: string; readonly unallocatedCost: number }[];
+  readonly platformCostByService: readonly { readonly serviceCode: string; readonly platformCost: number }[];
+  /** B-SAN3-03 · R11 — categorias rateadas por estimativa (pelas ações). */
+  readonly estimatedCategories: readonly string[];
   readonly tenants: readonly {
     readonly tenantId: string;
     readonly tenantName?: string;
