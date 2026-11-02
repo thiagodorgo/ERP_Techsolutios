@@ -310,3 +310,10 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Emenda de 02/11 (d) (saída (a), mais a integração da `main`) copiada byte a byte: sha256 `c22b9cdd8cb66b3d…` igual dos dois lados; `grep -c` de "(b)", "(c)" e "(d)" → 1 cada.
 - Apenso em `P-O6R11-TEXTOS-FORA-DE-D-T`: `api_error.dart:43`, com a promessa "serao sincronizados". Dono da `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO`: `B-O6R-11b`, ratificado pelo orquestrador (leitura do orquestrador, declarada). Índice regerado: `690 / 679 | ABERTA 517`.
 - Próximo: commit; `git merge origin/main`; conflitos dos registros com os dois lados; índice pelo gerador; bateria F7c inteira; push; PR.
+- [08:21:33Z] Commit `05131e9d` (apenso (d), ratificação, cópia da emenda). `git merge origin/main` (`1cdb8aa8`): 3 conflitos (`log-execucao.md`, `status-geral.md`, `pendencias-indice.md`). Nos dois primeiros, os dois lados foram mantidos: no status, o deste PR no topo e o da `main` em seguida; no log, o da `main` e depois o deste PR. O índice ficou com o lado da `main` e foi regerado pelo gerador: `705 cabecalhos / 694 IDs | ABERTA 530`; a `main` tem 698 e este PR soma 7. `pendencias.md` e `PLANO_SAN3.md` entraram sem conflito; 0 marcadores restantes. Commit de merge `b0d8892f`.
+- **Bateria F7c inteira no head integrado:**
+  - `pub get` → ec 0. `format` → só o `bsan313`, artefato do SDK local já registrado. `analyze` → `No issues found!`.
+  - Comandos das fatias: F-S0 `+36`; F-T `+71`; F-S1a `+24`; F-S1a' `+47`; F-S1b `+59`; F-S1b' `+2`; F5 `+1`; R1/R2/RD1 `+11`. **Suíte inteira → `+969: All tests passed!`**.
+  - `git diff --check origin/main...HEAD` → 0. Guard: 0 bytes. Grep das duas telas (emenda (d)) → 0. Grep de acento de D-T → 0. `queue.` no coordenador → 0.
+  - `git diff --name-only origin/main...HEAD` → 48 caminhos, 0 em `src/`, `prisma/`, `Kpis/`, `frontend/`, `.github/` e `pubspec`.
+  - Diff mascarado de D-T: `evidence_sync.dart` 4 `-`/4 `+` pareados. `auto_sync_coordinator.dart` tem o hunk D0 (try/reclaimTenant/catch) mais 1 par do literal. O diff de `sync_replay_service.dart` foi medido nas fatias F-T e F-S1a'.
