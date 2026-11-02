@@ -17,6 +17,7 @@ export function DossieLiberacao({
   checks,
   canProcess,
   busy,
+  savingCodes,
   error,
   onRecipient,
   onCheck,
@@ -25,6 +26,8 @@ export function DossieLiberacao({
   readonly checks: readonly ReleaseCheckDto[];
   readonly canProcess: boolean;
   readonly busy: boolean;
+  /** Requisitos em gravação (código). Ficam indisponíveis e mostram "Salvando…" até o servidor responder. */
+  readonly savingCodes?: ReadonlySet<string>;
   readonly error: string | null;
   readonly onRecipient: (input: RecipientInput) => void;
   readonly onCheck: (code: string, satisfied: boolean) => void;
@@ -111,25 +114,37 @@ export function DossieLiberacao({
           <p style={{ fontSize: 12, color: "#64748B", margin: 0 }}>Nenhum requisito exigido pelo perfil normativo deste processo.</p>
         ) : (
           <div role="list">
-            {checks.map((check) => (
-              <div key={check.id} style={checkRow} role="listitem">
+            {checks.map((check) => {
+              const saving = savingCodes?.has(check.code) ?? false;
+              return (
+              <div key={check.id} style={checkRow} role="listitem" aria-busy={saving || undefined}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <span style={{ fontSize: 14, color: "#0F172A" }}>
                     {check.label}
                     {check.required ? <Badge tone="warning">Obrigatório</Badge> : null}
                   </span>
-                  {check.satisfied ? <small style={{ fontSize: 11, color: "#16A34A" }}>Atendido</small> : <small style={{ fontSize: 11, color: "#B45309" }}>Pendente</small>}
+                  {saving ? (
+                    <small style={{ fontSize: 11, color: "#2563EB" }} role="status">
+                      Salvando…
+                    </small>
+                  ) : check.satisfied ? (
+                    <small style={{ fontSize: 11, color: "#16A34A" }}>Atendido</small>
+                  ) : (
+                    <small style={{ fontSize: 11, color: "#B45309" }}>Pendente</small>
+                  )}
                 </div>
                 {canProcess ? (
                   <Checkbox
                     label="Atendido"
                     checked={check.satisfied}
-                    disabled={busy}
-                    onChange={(event) => onCheck(check.code, event.target.checked)}
+                    disabled={busy || saving}
+                    // Pede o OPOSTO do estado gravado (o que a tela mostra vem do servidor), nunca o do navegador.
+                    onChange={() => onCheck(check.code, !check.satisfied)}
                   />
                 ) : null}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
