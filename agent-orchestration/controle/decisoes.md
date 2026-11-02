@@ -4067,6 +4067,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal do dono:** *"autorizo usar o ClamAV num container"*.
 - **Consequência:** o item 27 do portão usa ClamAV em container para varrer evidências; GuardDuty fica descartado por agora.
+- **Aplicação no B-AV-REAL (2026-10-30, plano v2):** o PR de código toca segurança e abre conexão TCP de saída, portanto segue junta completa com inspetor + 3 cadeiras unânimes no fluxo `D-JUNTA-FLUXO-RAPIDO`. A autorização do dono resolve a escolha do ClamAV em container; não autoriza provisionamento AWS, ativação em ambiente alvo nem deploy de produção, que continuam sujeitos ao ato do dono e aos gates de custo/produção. Medido na base `origin/main@264c3760` (merge do #475).
 
 ## D-KPI-2810-ADIADO (decisão do dono, 2026-10-28) — marco de KPI de 28/10 adiado
 
@@ -4165,3 +4166,67 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 ## D-PRODUTO-PREMIUM-SEM-GAMBIARRA (decisão do dono, 2026-10-31) — padrão de produto
 
 - **Fala literal do dono:** *"nao quero gambiarra, trate como produto premium, fazer pouco e ficar com cara de gambiarra fica feio"*.
+
+## D-COBRANCA-RESPOSTAS-3110 (decisão do dono, 2026-10-31) — respostas às perguntas de cobrança e às pendências do app
+
+- **Fala literal do dono (~22:15 SP):** *"siga na recomendação de tudo, exceto p14, ligar 	Asaas e Focus NFe"*.
+- **O que a fala respondeu:** a lista da mensagem do orquestrador de ~22:10 SP, sobre `erp-pausa-2026-10-03/revisoes/fidelidade-3110.md` §6, que fica fora do repositório. O "tudo" cobre, com a recomendação daquela mensagem:
+  - **P1:** sim, migrações autorizadas uma a uma (7 de esquema e 3 de dados; a do rateio automático acrescenta uma coluna).
+  - **P2:** preços cadastrados na tela de Planos antes do 1º fechamento.
+  - **P3:** perguntar ao contador; só a emissão de nota espera.
+  - **P4:** comprovante fica no aparelho, e o envio vira bloco próprio logo depois do `B-O6R-03b`.
+  - **P5:** sim aos 8 itens e à cobrança de rastreamento; portão com 70 itens.
+  - **P6:** migração de dados que cria os 6 planos sem preço.
+  - **Integrações no portão:** 1 + 1.
+  - **P7 a P11, P13, P15 a P18, P19 a P24 e P27 a P32:** pela recomendação.
+  - **P12:** a recomendação do orquestrador, não a do plano: o cliente vê só plano, uso da franquia de espaço e usuários, e se está em dia, com o gráfico de pizza; "como pagar" só com fatura em aberto.
+  - **P14:** a exceção, em `D-P14-ASAAS-FOCUS`. **P25 e P26:** em `D-DESPESA-SEM-DESCARTAR`.
+- **Leitura do orquestrador, declarada (§A6):** migração destrutiva continua parada irredutível (§C7.5). As migrações de `D-PLATAFORMA-RECEBE-E-REPASSA` não estão na autorização da P1.
+- **O que resta:** P2 e P3 pedem um dado que a fala não traz; seguem abertas como `P-COBRANCA-P2-VALORES-DOS-PLANOS` e `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`.
+
+## D-P14-ASAAS-FOCUS (decisão do dono, 2026-10-31) — ligar Asaas e Focus NFe
+
+- **Fala literal do dono (~22:15 SP):** *"siga na recomendação de tudo, exceto p14, ligar 	Asaas e Focus NFe"*.
+- **Contexto da pergunta registrado na fonte:** a P14 perguntava qual provedor ligar primeiro; a recomendação era Asaas e Focus NFe, com nenhum ligado até o dono escolher.
+- **Leitura do orquestrador, declarada (§A6):** "ligar" vale quando o canal existir, com as contas e chaves do dono no cofre; nada chama serviço externo antes disso.
+
+## D-DESPESA-SEM-DESCARTAR (decisão do dono, 2026-10-31) — o cartão de despesa do app perde o "Descartar"
+
+- **Fala literal do dono, a pergunta:** *"quero uma recomendação para isso " até o 3º PR do B-O6R-11, despesa que falhar 5 vezes vira um cartão com "Descartar", porque o token ainda não está ligado. O que o técnico descartar nessa janela não volta quando o token for ligado, embora a linha continue no aparelho."*.
+- **Fala literal do dono, a resposta (~22:15 SP):** *"siga na recomendação de tudo, exceto p14, ligar 	Asaas e Focus NFe"*.
+- **Aplicação registrada na fonte:** tirar o "Descartar" da despesa (recomendação da mensagem de ~21:30 SP), o que resolve a P25 (confirmação no Descartar das falhas reais) e a P26 (sem 3 opções; ajuste de cartão).
+
+## D-PLATAFORMA-RECEBE-E-REPASSA (decisão do dono, 2026-10-31) — quem recebe é a plataforma, e repassa ao cliente
+
+- **Fala literal do dono (~22:30 SP):** *"seguinte, quem recebe vai ser a plataforma, o cliente so coloca nas configurações dele os dados fiscais, e o banco para deposito, e isso é dado obrigatorio para cliente, nos contratamos a api da nota e gerimos o recebimento e depois repassamos ao cliente, isso vai ter custo que mais para frente vamos precificar"*.
+- **O que a fala respondeu:** a pergunta de quem recebe, substituindo a recomendação do orquestrador (conta própria de cada organização).
+- **Leituras do orquestrador, declaradas (§A6), não decisão:** vale para a taxa de pátio on-line, pela pergunta que a originou; a nota da taxa sai no CNPJ do cliente; organização sem os dados continua com baixa manual; split do Asaas como mecanismo do repasse; tarifa da plataforma configurável e sem valor até o dono precificar; parecer de advogado e contador antes de ligar (`P-LEGAL-RECEBIMENTO-DE-TERCEIROS`).
+- **Sem resposta nesta fala:** quem absorve a taxa do provedor até precificar (ver a leitura de `D-TABELA-CUSTOS-API-REPASSE`); a exceção da saída para reparo segue como está no código.
+- **Limite:** as migrações deste bloco não estão na autorização da P1 de `D-COBRANCA-RESPOSTAS-3110`.
+
+## D-TABELA-CUSTOS-API-REPASSE (decisão do dono, 2026-10-31) — tabela dos valores das APIs, repasse e margem
+
+- **Fala literal do dono (~23:00 SP):** *"no painel de gerenciamento da plataforma vai ter uma tabela dos valores cobrados pelas apis, e um botao para repassar os valores (por padrao escolhido), mas tambem vai ter um campo para repassar com margem em percentual para os clientes que futuramente desejo cobrar."*.
+- **Aplicação:** tabela no painel da plataforma; repasse como padrão; margem em percentual por cliente, para o futuro.
+- **Leitura do orquestrador, declarada (§A6):** a taxa do provedor é repassada por padrão, e o preço de margem é zero até o dono definir.
+
+## D-UM-FAZ-OUTRO-VERIFICA (decisão do dono, 2026-10-31) — cruzamento entre modelos e aceite na forma real
+
+- **Fala literal do dono (~23:00 SP):** *"sobre a correção, so acrescento que quando o codex fizer um plano quem critica e claude, codex corrigi, claude testa e vice versa, um faz o outro verifica, ate onde tiver credito nos dois, o argon se for capaz tambem entra nesse trem, quando nao for possivel, usar um modelo so, sem preferencia e com metas a seguir, rigoroso e eficaz"*.
+- **Aplicação:** §C7 item 11 de `CLAUDE.md` e `AGENTS.md`.
+- **Leituras do orquestrador, declaradas (§A6):** "so acrescento" aprova M1 a M6 da auditoria (`agent-orchestration/omega/auditoria-orquestracao-2026-10-31/04-analise.md`); Gemini, inclusive Argon, segue como segundo revisor e tem o achado conferido até o dono dizer o contrário; telas seguem no Claude.
+- **Correções do ataque à análise (`05-ataque.md`):** M2 entra corrigida, porque a variável medida foi o prompt, não o modelo (P5): a crítica executa, e o modelo sai da regra de cruzamento. M3 entra só com o roteiro fixo, e "modelo diferente do dev" vale por esta decisão, não pela evidência (P7). M4 fica no marcador do diário, sem `ec=0` (P11), e já está aplicada na ferramenta. M7 não entra: reexecutar comandos registrados não vê defeito novo, e reabre o que o dono recusou em `D-JUNTA-FLUXO-RAPIDO` (P6).
+- **Leituras do redator (`gov-3110-opus`), declaradas (§A6):** a regra prevalece também sobre "As IAs externas vêm primeiro" do item 6, só no que trata de quem verifica; "outro modelo" é a outra casa (Claude × Codex). O dono pode corrigir qualquer uma em uma linha.
+- **Nada do item 10 foi revertido.** A medição é `P-AUDITORIA-MEDIR-CRUZAMENTO`.
+
+## D-KPI-PROPOSTA-NO-FLASH (decisão do dono, 2026-11-02) — proposta das descrições de KPI pelo Gemini Flash
+
+- **Fala literal do dono:** *"os kpis, nao usar o argon, usar o gemini flash do antigravity, ok?"*.
+- **Efeito:** no loop de KPI do §C7 item 8(5), a proposta das descrições sai do Gemini Flash pelo Antigravity, não do Argon. O Gemini continua somente propondo; o orquestrador confere e grava fatos por comando. Vale do próximo marco em diante.
+- **Leitura do orquestrador, declarada (§A6):** usar o modelo `gemini-3.8-flash-high`, medido no comando `agy models` informado na decisão. Esta leitura nomeia o modelo; não amplia o papel do Gemini além da proposta.
+
+## D-MAQUINA-RYZENCASA-REGUA-LINUX (decisão do dono, 2026-11-02) — trabalho na máquina nova e régua backend igual ao CI
+
+- **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
+- **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
+- **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.

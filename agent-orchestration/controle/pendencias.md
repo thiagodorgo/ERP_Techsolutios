@@ -7177,6 +7177,20 @@ protocolo `zINSTREAM`, `StreamMaxLength`, respostas `OK`/`FOUND`/`ERROR`, timeou
   **escopo:** `dentro-do-bloco` (é consequência declarada e desejada do fail-closed que o 07b entrega) ·
   **dono:** bloco próprio pós-O6R (`B-AV-REAL`), a encaixar pelo dono
 
+- **nota B-AV-REAL (2026-10-31):** implementação entregue no ramo `feat/evidence-clamav-scanner`:
+  cliente INSTREAM, fail-closed, compose privado, limites reais e job `antivirus` 8/8 sem pulo. A entrada
+  permanece **ABERTA — ativação pendente**: só fecha após daemon respondendo no ambiente alvo, com ato do
+  dono, rede privada, digest/config/VERSION registrados e provas 201/422/503/limite/recuperação.
+
+## P-AVREAL-RETRY-AFTER (2026-10-31) — 503 do scanner sem `Retry-After` — MÉDIA
+
+- **descrição:** não há handler HTTP central nem emissor de `Retry-After`; acrescentá-lo em B-AV-REAL
+  exigiria alterar cinco tradutores/controllers: mobile evidence, attachments, work-order attachments,
+  checklist attachments e damages (`src/modules/mobile/mobile.routes.ts`, `src/modules/attachments/attachment.controller.ts`, `src/modules/work-orders/work-order-attachment.controller.ts`, `src/modules/checklists/checklist.controller.ts`, `src/modules/damages/damage.controller.ts`).
+- **status:** ABERTA · **escopo:** preexistente · **dono:** ~~bloco backend de padronização de erros HTTP~~ o bloco que fechar `P-O6R-B07B-MOBILE-RETRY-PERMANENTE`.
+- **condição de fechamento:** as cinco vias 503 anunciam atraso coerente, com teste de contrato comum;
+  nenhum código 422/415 ou payload público muda.
+
 ## P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do deploy — MÉDIA-ALTA
 
 Entrada **de agenda**, não de código: o remédio técnico é `P-O6R-B07B-SCANNER-AV-REAL`. Existe separada porque
@@ -11182,6 +11196,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
   falha.
+- **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
 
@@ -11880,6 +11895,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
 - **fora desta pendência:** a falha do shim do `prisma` no T2.1 (mesma lista do porteiro, linha 100) já tem dona própria, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (C3-04).
 - **efeito:** vermelho ambiental e resíduo temporário podem mascarar o resultado do drill no host; a CI Linux cobre o produto, mas o arnês local não é portátil.
+- **reprodução na máquina nova (2026-11-01):** a RYZENCASA reproduziu `EBUSY` no gancho de limpeza de `tests/traccar-event-migration-drill-db.test.ts` e `tests/work-order-invoicing-migration-drill-db.test.ts`; a causa permanece **provável, processo não identificado**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-38`. Esta ocorrência é apensa aqui; não nasce pendência nova.
 - **encerramento:** os dois drills removem o scratch com retry/fechamento de handles no Windows e T14 tem execução portátil ou skip ambiental explícito com cobertura equivalente em Linux; repetir cada caso 20 vezes sem `hookFailed`, resíduo ou falso vermelho.
 
 ## P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de regressão — BAIXA
@@ -12026,7 +12042,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobrança andar
 
-- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** o trabalho correspondente até as seis respostas.
+- **status:** FECHADA (2026-10-31, `D-COBRANCA-RESPOSTAS-3110`) · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** nada; o que resta de P2 e P3 tem item próprio.
 - **Perguntas copiadas da fonte:**
   - **P1. Autoriza as migrações?** 7 de esquema e 3 de dados (ASS l.803), uma a uma (l.297). Recomendação: autorizar, com o texto corrigido para dizer que a do rateio automático acrescenta uma coluna.
   - **P2. Valores dos 4 planos e dos 2 de rastreamento** (ASS Q7). Recomendação: cadastrar na tela de Planos antes do 1º fechamento.
@@ -12035,10 +12051,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - **P5. O portão ganha os 8 itens? E o rastreamento?** (REE Q-D1 + ASS §7). Recomendação: sim aos 8, renumerados de 57 a 64, e cobrar rastreamento também entra, porque foi fala do dono e hoje a versão vendável sairia sem isso.
   - **P6. Como os 6 planos nascem em produção, se produção nunca semeia?** Recomendação: uma migração de dados que cria os 6 sem preço, com mais uma autorização.
 - **Limite:** recomendações adotadas por padrão não são decisão do dono; nenhuma migração está autorizada.
+- **Encerramento (2026-10-31):** o dono respondeu (`D-COBRANCA-RESPOSTAS-3110`). P1, P4, P5 e P6 estão decididas. A P1 autoriza as migrações uma a uma e não alcança as de `D-PLATAFORMA-RECEBE-E-REPASSA`. P2 e P3 seguem abertas em `P-COBRANCA-P2-VALORES-DOS-PLANOS` e `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`, porque a fala decide como, mas não traz o dado.
 
 ## P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão
 
-- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** a definição do portão de integrações.
+- **status:** FECHADA (2026-10-31, `D-COBRANCA-RESPOSTAS-3110`: 1 + 1, Asaas e Focus NFe) · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** nada.
 - **Pergunta:** entram no portão 1 + 1 integrações — Asaas e Focus NFe — ou as 6 integrações?
 - **Recomendação do orquestrador, marcada como tal:** 1 + 1 no portão, Asaas e Focus NFe, e as outras 4 logo depois.
 
@@ -12047,3 +12064,99 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE` · **bloqueia:** o envio do comprovante de despesa.
 - **Fato:** o envio do comprovante de despesa não tem plano.
 - **Próximo passo:** planejar o bloco `B-RDV-COMPROVANTE` se a P4 de `P-COBRANCA-PERGUNTAS-P1-P6` for aprovada.
+
+## P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em produção — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A4 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Em produção com `EVIDENCE_SCANNER=clamav`, `CLAMAV_MAX_DB_AGE_HOURS=999999` é aceito porque a regra atual só exige `>= 1`, desligando na prática a verificação de idade da base.
+- **condição de fechamento:** `src/config/env.ts` impõe teto superior razoável para `CLAMAV_MAX_DB_AGE_HOURS` em produção (ex.: `<= 168`), com teste que morde em `tests/avreal-config.test.ts` (mutação do teto fica vermelha).
+
+## P-AVREAL-PRAZO-SOMA (2026-10-31) — prazo de varredura não desconta a fase de conexão / `VERSION` (pior caso connect+scan = 48 s) — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A6 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O prazo de `scanInstream` e a consulta `VERSION` usam timers independentes por fase; no pior caso (padrão 3 s + 45 s = 48 s), a duração soma `connectTimeoutMs + scanTimeoutMs` em vez de um orçamento único desde antes do `connect`.
+- **condição de fechamento:** o orçamento de tempo de `scan()` governa a soma das fases (`VERSION` + `connect` + `INSTREAM`) ou o contrato documenta explicitamente o teto composto, com teste que morde em `tests/avreal-scanner-failures.test.ts`.
+
+## P-AVREAL-VERSION-FUTURO (2026-10-31) — data de `VERSION` no futuro ou regressão de relógio aprova no cache de idade — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A8 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Uma resposta `VERSION` com data no futuro (ex.: ano 2099) produz `ageHours < 0` e passa em `ageHours <= maxDbAgeHours`; além disso, se o relógio do processo regredir dentro da janela do cache, a aprovação anterior permanece válida até expirar.
+- **condição de fechamento:** `ClamAvEvidenceScanner` recusa carimbo de `VERSION` no futuro (acima de tolerância curta de skew) e usa relógio monotônico para o TTL do cache, com teste que morde em `tests/avreal-signatures.test.ts`.
+
+## P-AVREAL-SEGUNDA-RESPOSTA (2026-10-31) — segunda resposta em pacote TCP separado após o primeiro NUL não é vista — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A9 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Se um daemon adulterado enviar `stream: OK\0` num pacote e, milissegundos depois, `stream: X FOUND\0` em outro pacote, o cliente encerra no primeiro terminador NUL (`terminatorIndex === response.length - 1`); o teste atual de resposta dupla cobre apenas dois terminadores no mesmo chunk.
+- **condição de fechamento:** definir e testar o tratamento de bytes tardios ou documentar formalmente que o protocolo `zINSTREAM` encerra no primeiro NUL em conexão de uso único, com teste que morde em `tests/avreal-scanner-protocol.test.ts`.
+
+## P-AVREAL-ROTAS-ROTULO (2026-10-31) — `tests/avreal-routes.test.ts` chama `verifyUploadContent` direto sem exercitar os tradutores das 5 vias nem contar storage real — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C2, achado C2-A3 (`c2-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). A propriedade nas 5 vias HTTP já é guardada por `tests/o6r07b-mime-sniff-routes.test.ts` e agora também pelos casos `E3 [V1..V5]`, mas `tests/avreal-routes.test.ts` testa `verifyUploadContent` diretamente com contador local e regex sobre `damage.service.ts`.
+- **condição de fechamento:** `tests/avreal-routes.test.ts` passa a exercitar as 5 vias pelo harness HTTP com provider de storage contado (sem regex sobre fonte), com teste que morde ao quebrar a tradução HTTP ou a gravação de cada via.
+
+## P-AVREAL-B108-PROVA (2026-10-31) — `b108_evidence_storage_hardening_test.dart` não prova preservação do blob nos desfechos HTTP 422/503 reais do antivírus nem em timeout/conflito/erro genérico — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** `B-AV-REAL-RESIDUAL` (dono mobile).
+- **origem:** C2, achado C2-A6 (`c2-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O código atual do app preserva o blob local em HTTP 422, 503, timeout, erro de rede e 409 (confirmado por sonda 6/6 da C2), mas a suíte `b108_evidence_storage_hardening_test.dart` só exercita o ramo `response.status` e inspeção textual em B-108.7, deixando verdes mutações no caminho `ApiServerError` de 422/503/timeout/conflito/erro genérico.
+- **condição de fechamento:** `mobile/flutter_app/test/features/b108_evidence_storage_hardening_test.dart` ganha casos comportamentais para HTTP 422 (`evidence_rejected`), HTTP 503 (`evidence_scan_failed`), timeout, 409 e erro genérico no caminho real do cliente HTTP, com teste que morde quando qualquer ramo não-`stored` apaga o blob local.
+
+## P-AVREAL-PANE-CI (2026-10-31) — modos `unavailable`, recuperação e HTTP 503 com daemon fora não rodam no job `antivirus` da CI — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C3, achado C3-A5 (`c3-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O job `antivirus` da CI executa os 8 casos com os dois daemons saudáveis; o ramo `AVREAL_CLAMAV_MODE=unavailable`, a recuperação após parada do container e a resposta HTTP 503 com o daemon fora do ar não são exercitados no workflow da CI.
+- **condição de fechamento:** `.github/workflows/ci.yml` (job `antivirus`) e `tests/avreal-clamd.integration.ts` exercitam a parada do daemon com verificação de HTTP 503 (`evidence_scan_failed`) + `AVREAL_CLAMAV_MODE=unavailable` e a recuperação subsequente, com guard que morde se o passo for removido.
+
+- **Atualização (2026-10-31):** a P4 foi aprovada (`D-COBRANCA-RESPOSTAS-3110`): o bloco vem logo depois do `B-O6R-03b`.
+
+## P-COBRANCA-P2-VALORES-DOS-PLANOS (2026-10-31) — valores dos 4 planos e dos 2 de rastreamento
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** o 1º fechamento da cobrança.
+- **origem:** P2 de `P-COBRANCA-PERGUNTAS-P1-P6`. A fala de `D-COBRANCA-RESPOSTAS-3110` decide como (cadastrar na tela de Planos antes do 1º fechamento), mas não traz os valores.
+- **encerramento:** os 6 preços cadastrados na tela de Planos pelo dono.
+
+## P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR (2026-10-31) — regime, município, enquadramento e alíquota de ISS do CNPJ emissor
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto, com o contador · **bloqueia:** só a emissão de nota; o resto anda.
+- **origem:** P3 de `P-COBRANCA-PERGUNTAS-P1-P6`. A fala de `D-COBRANCA-RESPOSTAS-3110` decide como (perguntar ao contador), mas não traz os dados.
+- **encerramento:** os quatro dados informados pelo contador e registrados no plano de assinatura (`B-ASSINATURA-plano.md`).
+
+## P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de ligar o recebimento — ALTA
+
+- **status:** ABERTA · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** ligar o recebimento em produção.
+- **origem:** `D-PLATAFORMA-RECEBE-E-REPASSA`: a plataforma recebe e repassa ao cliente. O parecer é leitura do orquestrador, declarada, não fala do dono.
+- **Hipótese, não medida:** receber dinheiro de terceiros e repassar pode ter consequência regulatória e tributária; só o parecer responde.
+- **encerramento:** parecer de advogado e de contador registrado, e a decisão do dono sobre ele, antes de qualquer recebimento real em produção.
+
+## P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram, e o custo real — MÉDIA
+
+- **status:** ABERTA · **escopo:** orquestração · **dono:** orquestrador, com medição por identidade que não fez os blocos · **bloqueia:** nada.
+- **origem:** `D-UM-FAZ-OUTRO-VERIFICA`, §C7 item 11. A auditoria de 31/10 fechou em "não comprovado", com N = 1 junta aberta, e não mediu se trocar de modelo reduz defeito.
+- **metas, de `agent-orchestration/omega/auditoria-orquestracao-2026-10-31/04-analise.md` §5, com as bases corrigidas por `05-ataque.md`:**
+  - M1: bloqueantes de junta cuja etapa capaz foi aceite por leitura. Era 2 de 3 (P18). Meta: 0.
+  - M2 corrigida: graves achados pelo crítico ÷ bloqueantes de plano na junta. Era 0/2. Meta: ≥ 1, e junta com ≤ 1 bloqueante de plano.
+  - M3: bloqueantes que a pré-revisão deu como OK. Era 2 + job. Meta: 0. Achados da pré-revisão antes do voto: manter ≥ 5.
+  - M4: "entregue" falso por código de saída. Era 1 (P11). Meta: 0. Logs perdidos por etiqueta. Eram 2 (P18). Meta: 0.
+  - M5: commits do orquestrador no objeto julgado. Eram 4, sem base anterior (P13). Meta: 0. Mandato com caminho inexistente. Era 1. Meta: 0.
+  - M6: tabela de defeitos × executor. Só fecha com N ≥ 5 blocos; os 3 blocos daqui entram na conta.
+  - Cruzamento: em cada bloco, por etapa, quem fez e quem verificou, com modelo, e quando não houve cruzamento, por quê.
+  - Custo real: minutos por bloco contra a estimativa de 57 a 102 min por bloco de infra, que é soma de estimativas e não medida (P17).
+- **encerramento:** relatório com cada linha acima medida por comando em 3 blocos, e a decisão do dono sobre manter ou ajustar o item 11. O risco do verificador do item 10 fica de fora: M7 foi retirada (P6), N = 0.
+
+## P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE (2026-11-02) — sweep de órfã velha falhou 1 em 5 rodadas — BAIXA
+
+- **status:** ABERTA · **escopo:** arnês de testes, intermitente · **dono:** arnês de testes · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem medida:** `tests/db-catalog-write-guard.test.ts:502`, caso `(PD) sweep: órfã VELHA de cada família nova é recolhida pela próxima criação de role`, falhou 1 em 5 rodadas concluídas. O mecanismo foi lido no código, sem reprodução dirigida: outro arquivo em paralelo pode varrer a órfã criada pelo caso. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:63-73`.
+- **encerramento:** reprodução dirigida nomeia a corrida e o arnês isola a órfã/sweep, ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.
+
+## P-ARNES-TRACCAR-TEMPO-SOB-CARGA (2026-11-02) — teste de ingestão divide 400 ms com a máquina carregada — BAIXA
+
+- **status:** ABERTA · **escopo:** arnês do Traccar, sensível a tempo sob carga · **dono:** arnês do Traccar · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem medida:** `tests/traccar-position-ingestion-db.test.ts:819`. O teste usa orçamento de 400 ms; produção usa 3.000 ms. Sob carga, houve resposta 503 em 418 ms, trabalho concluído em 527 ms e zero recibos/localizações gravados; não houve achado de produto nem 503 com dado gravado. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:75-87`.
+- **encerramento:** o teste deixa de compartilhar um orçamento artificial de 400 ms com carga concorrente, preservando a prova fail-closed de 503 sem gravação.
+
+## P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA (2026-11-02) — três suítes Linux paralelas morreram aos 11m04s — BAIXA
+
+- **status:** ABERTA · **escopo:** orquestração/capacidade da máquina · **dono:** orquestração · **prioridade:** BAIXA · **bloqueia:** não, desde que respeitado o teto.
+- **origem medida:** três suítes Linux em paralelo morreram no mesmo instante aos 11m04s, sem causa exata provada; duas concluíram em cerca de 7m36s. A máquina fica com teto de **2 trabalhos Docker**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-69,89-97`.
+- **encerramento:** manter o teto em 2; eventual aumento só depois de medição própria que prove três trabalhos concluindo sem indisponibilidade do Docker.
