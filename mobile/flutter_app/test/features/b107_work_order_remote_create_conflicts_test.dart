@@ -549,12 +549,12 @@ void main() {
       // A tela agora mostra um card de conflito com resolucao manual no topo;
       // o agrupamento por dominio permanece abaixo (rolar para revelar).
       await tester.scrollUntilVisible(
-        find.text('Ordens de Servico'),
+        find.text('Ordens de Serviço'),
         200,
         scrollable: find.byType(Scrollable).first,
       );
 
-      expect(find.text('Ordens de Servico'), findsOneWidget);
+      expect(find.text('Ordens de Serviço'), findsOneWidget);
       expect(find.text('1 conflito(s)'), findsOneWidget);
       expect(find.text('Conflito'), findsOneWidget);
     });

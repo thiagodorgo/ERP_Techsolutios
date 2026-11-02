@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
+import '../../core/sync/sync_action_labels.dart';
+import '../../core/sync/sync_action_presentation.dart';
 import '../../core/sync/sync_conflict_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../core/sync/sync_providers.dart';
-import '../../core/sync/sync_summary.dart';
+import '../../core/sync/sync_stalled_resolver.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 import 'mobile_kit.dart';
@@ -32,6 +34,56 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     if (mounted) setState(() => _reloadKey++);
   }
 
+  /// Aplica "Tentar de novo"/"Descartar" sobre a versão FRESCA da ação: uma
+  /// passada concorrente pode ter mudado o item enquanto o cartão estava na
+  /// tela. Se ele não está mais encalhado, só recarrega.
+  Future<void> _resolveStalled(SyncAction action, StalledChoice choice) async {
+    final queue = ref.read(syncQueueRepositoryProvider);
+    final channelOff = ref.read(expenseSyncChannelOffProvider);
+    SyncAction? fresh;
+    for (final a in await queue.actionsForTenant(action.tenantId)) {
+      if (a.clientActionId == action.clientActionId) fresh = a;
+    }
+    if (fresh != null &&
+        presentSyncAction(fresh, expenseChannelOff: channelOff) ==
+            SyncPresentation.stalled) {
+      await queue.update(
+        resolveStalledAction(fresh, choice, resolvedAt: DateTime.now().toUtc()),
+      );
+    }
+    if (mounted) setState(() => _reloadKey++);
+  }
+
+  /// Confirmação do descarte (P25). Reutilizável pelo cartão do legado.
+  Future<bool> _confirmDiscard(BuildContext context, SyncAction action) async {
+    final id = action.clientActionId;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Descartar este item?'),
+        content: Text(
+          '«${_actionLabel(action.type)}» de ${_domainLabel(action.type)} '
+          'deixa de ser enviado e fica marcado como Descartado neste aparelho. '
+          'O que você registrou continua guardado no aparelho. Se o item '
+          'chegou ao servidor antes da falha, o registro continua lá.',
+        ),
+        actions: [
+          TextButton(
+            key: Key('stalled-discard-cancel-$id'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            key: Key('stalled-discard-confirm-$id'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final networkStatus = ref.watch(networkStatusProvider);
@@ -40,6 +92,9 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (v) => v, orElse: () => null);
     final queue = ref.watch(syncQueueRepositoryProvider);
+    final channelOff = ref.watch(expenseSyncChannelOffProvider);
+    SyncPresentation present(SyncAction a) =>
+        presentSyncAction(a, expenseChannelOff: channelOff);
 
     final online =
         networkStatus == NetworkStatus.online ||
@@ -52,7 +107,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
           // Header fiel ao prototipo (sincronizacao.png): titulo + pill de
           // conectividade Online/Offline.
           MobileScreenHeader(
-            title: 'Sincronizacao',
+            title: 'Sincronização',
             trailing: MobilePill(
               label: online ? 'Online' : 'Offline',
               tone: online ? PillTone.done : PillTone.danger,
@@ -66,10 +121,16 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                   : queue.actionsForTenant(session.activeTenant.tenantId),
               builder: (context, snapshot) {
                 final actions = snapshot.data ?? const <SyncAction>[];
-                final summary = SyncQueueSummary.fromActions(actions);
+                final counts = SyncPresentationCounts.fromActions(
+                  actions,
+                  expenseChannelOff: channelOff,
+                );
                 final grouped = _groupByDomain(actions);
                 final conflicts = actions
-                    .where((a) => a.status == SyncStatus.conflict)
+                    .where((a) => present(a) == SyncPresentation.conflict)
+                    .toList();
+                final stalled = actions
+                    .where((a) => present(a) == SyncPresentation.stalled)
                     .toList();
 
                 return RefreshIndicator(
@@ -89,11 +150,13 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                       const SizedBox(height: 12),
 
                       // ── Backend-pending notice ────────────────────────────────────
-                      _BackendPendingNotice(),
-                      const SizedBox(height: 12),
+                      if (channelOff) ...[
+                        const _BackendPendingNotice(),
+                        const SizedBox(height: 12),
+                      ],
 
                       // ── Summary KPI row ───────────────────────────────────────────
-                      _SummaryRow(summary: summary),
+                      _SummaryRow(counts: counts),
                       const SizedBox(height: 12),
 
                       // ── Conflitos (resolucao manual) ──────────────────────────────
@@ -101,10 +164,49 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                         for (final c in conflicts)
                           _ConflictCard(
                             action: c,
-                            onKeepMine: () =>
+                            keyPrefix: 'conflict',
+                            leftKeyName: 'keep-mine',
+                            rightKeyName: 'use-server',
+                            title: 'Conflito · ${_domainLabel(c.type)}',
+                            body:
+                                '${_actionLabel(c.type)} — '
+                                '${c.lastSafeError ?? 'o gestor alterou este item. '
+                                        'Escolha qual versão deve prevalecer.'}',
+                            leftLabel: 'Minha versão',
+                            rightLabel: 'Versão do gestor',
+                            onLeft: () =>
                                 _resolveConflict(c, ConflictChoice.keepMine),
-                            onUseServer: () =>
+                            onRight: () =>
                                 _resolveConflict(c, ConflictChoice.useServer),
+                          ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // ── Envios encalhados (tentar de novo / descartar) ──────────
+                      if (stalled.isNotEmpty) ...[
+                        for (final s in stalled)
+                          _ConflictCard(
+                            action: s,
+                            keyPrefix: 'stalled',
+                            leftKeyName: 'discard',
+                            rightKeyName: 'retry',
+                            title:
+                                'Envio não concluído · ${_domainLabel(s.type)}',
+                            body:
+                                '${_actionLabel(s.type)}: o envio não foi '
+                                'confirmado em ${s.retryCount} tentativas. '
+                                'Tentar de novo devolve este item à fila.'
+                                '${canDiscardSyncAction(s.type) ? ' Descartar encerra sem novo envio.' : ' Despesas não podem ser descartadas: o lançamento fica guardado até ser enviado.'}',
+                            leftLabel: 'Descartar',
+                            rightLabel: 'Tentar de novo',
+                            showLeft: canDiscardSyncAction(s.type),
+                            onLeft: () async {
+                              if (await _confirmDiscard(context, s)) {
+                                await _resolveStalled(s, StalledChoice.discard);
+                              }
+                            },
+                            onRight: () =>
+                                _resolveStalled(s, StalledChoice.retry),
                           ),
                         const SizedBox(height: 12),
                       ],
@@ -144,11 +246,15 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                           icon: Icons.cloud_done_outlined,
                           title: 'Fila vazia',
                           message:
-                              'Acoes de OS, Checklists, Despesas e Estoque aparecao aqui quando houver pendencias locais.',
+                              'Ações de OS, checklists, despesas e estoque aparecerão aqui quando houver pendências locais.',
                         )
                       else
                         for (final entry in grouped.entries)
-                          _DomainGroup(domain: entry.key, actions: entry.value),
+                          _DomainGroup(
+                            domain: entry.key,
+                            actions: entry.value,
+                            present: present,
+                          ),
                     ],
                   ),
                 );
@@ -173,22 +279,41 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
 
 // ── Conflict card (resolucao manual) ─────────────────────────────────────────
 
+// Um só cartão de decisão: serve ao conflito (Minha versão / Versão do gestor)
+// e ao envio encalhado (Descartar / Tentar de novo).
 class _ConflictCard extends StatelessWidget {
   const _ConflictCard({
     required this.action,
-    required this.onKeepMine,
-    required this.onUseServer,
+    required this.keyPrefix,
+    required this.leftKeyName,
+    required this.rightKeyName,
+    required this.title,
+    required this.body,
+    required this.leftLabel,
+    required this.rightLabel,
+    required this.onLeft,
+    required this.onRight,
+    this.showLeft = true,
   });
 
   final SyncAction action;
-  final VoidCallback onKeepMine;
-  final VoidCallback onUseServer;
+  final String keyPrefix;
+  final String leftKeyName;
+  final String rightKeyName;
+  final String title;
+  final String body;
+  final String leftLabel;
+  final String rightLabel;
+  final bool showLeft;
+  final VoidCallback onLeft;
+  final VoidCallback onRight;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final id = action.clientActionId;
     return Card(
-      key: Key('conflict-card-${action.clientActionId}'),
+      key: Key('$keyPrefix-card-$id'),
       color: scheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -201,7 +326,7 @@ class _ConflictCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Conflito · ${_domainLabel(action.type)}',
+                    title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: scheme.onErrorContainer,
                     ),
@@ -211,8 +336,7 @@ class _ConflictCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${_actionLabel(action.type)} — o gestor alterou este item. '
-              'Escolha qual versao deve prevalecer.',
+              body,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
@@ -220,19 +344,21 @@ class _ConflictCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    key: Key('conflict-keep-mine-${action.clientActionId}'),
-                    onPressed: onKeepMine,
-                    child: const Text('Minha versao'),
+                if (showLeft) ...[
+                  Expanded(
+                    child: OutlinedButton(
+                      key: Key('$keyPrefix-$leftKeyName-$id'),
+                      onPressed: onLeft,
+                      child: Text(leftLabel),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: FilledButton(
-                    key: Key('conflict-use-server-${action.clientActionId}'),
-                    onPressed: onUseServer,
-                    child: const Text('Versao do gestor'),
+                    key: Key('$keyPrefix-$rightKeyName-$id'),
+                    onPressed: onRight,
+                    child: Text(rightLabel),
                   ),
                 ),
               ],
@@ -247,6 +373,8 @@ class _ConflictCard extends StatelessWidget {
 // ── Backend pending notice ───────────────────────────────────────────────────
 
 class _BackendPendingNotice extends StatelessWidget {
+  const _BackendPendingNotice();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -266,7 +394,7 @@ class _BackendPendingNotice extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Integracao remota ainda nao ativa',
+                  'Envio de despesas ainda não ativado',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.amber.shade900,
@@ -275,9 +403,10 @@ class _BackendPendingNotice extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'OS, Checklists e Inventario estao em modo local. '
-                  'Despesas enfileiram para sync quando a integracao for ativada. '
-                  'Seus dados estao seguros no banco local do dispositivo.',
+                  'Suas despesas ficam guardadas neste aparelho com o selo '
+                  'Aguardando envio até o envio ser ativado. Ordens de '
+                  'serviço, checklists e evidências não dependem disso e '
+                  'seguem sincronizando.',
                   style: TextStyle(color: Colors.amber.shade900, fontSize: 12),
                 ),
               ],
@@ -292,9 +421,9 @@ class _BackendPendingNotice extends StatelessWidget {
 // ── Summary KPI row ──────────────────────────────────────────────────────────
 
 class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({required this.summary});
+  const _SummaryRow({required this.counts});
 
-  final SyncQueueSummary summary;
+  final SyncPresentationCounts counts;
 
   @override
   Widget build(BuildContext context) {
@@ -302,25 +431,25 @@ class _SummaryRow extends StatelessWidget {
       children: [
         _KpiChip(
           label: 'Pendentes',
-          value: summary.pending,
+          value: counts.pending,
           color: Colors.orange.shade700,
         ),
         const SizedBox(width: 8),
         _KpiChip(
           label: 'Sincronizados',
-          value: summary.processed,
+          value: counts.synced,
           color: Colors.green.shade700,
         ),
         const SizedBox(width: 8),
         _KpiChip(
           label: 'Erros',
-          value: summary.failed,
+          value: counts.errors,
           color: Colors.red.shade700,
         ),
         const SizedBox(width: 8),
         _KpiChip(
           label: 'Conflitos',
-          value: summary.conflicts,
+          value: counts.conflicts,
           color: Colors.red.shade900,
         ),
       ],
@@ -389,8 +518,8 @@ class _AutoSyncCard extends StatelessWidget {
     final subtitle = autoSync.hasError
         ? autoSync.lastSafeError!
         : lastSync != null
-        ? 'Ultimo sync: ${_formatDate(lastSync)}'
-        : 'Aguardando reconexao para sincronizar.';
+        ? 'Última sincronização: ${_formatDate(lastSync)}'
+        : 'Aguardando reconexão para sincronizar.';
 
     return Card(
       child: ListTile(
@@ -406,7 +535,9 @@ class _AutoSyncCard extends StatelessWidget {
                     : Icons.cloud_sync_outlined,
                 color: autoSync.hasError ? Colors.red : Colors.blueGrey,
               ),
-        title: Text(autoSync.isRunning ? 'Sincronizando...' : 'Auto sync'),
+        title: Text(
+          autoSync.isRunning ? 'Sincronizando...' : 'Sincronização automática',
+        ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
@@ -433,17 +564,33 @@ class _AutoSyncCard extends StatelessWidget {
 // ── Domain group ─────────────────────────────────────────────────────────────
 
 class _DomainGroup extends StatelessWidget {
-  const _DomainGroup({required this.domain, required this.actions});
+  const _DomainGroup({
+    required this.domain,
+    required this.actions,
+    required this.present,
+  });
 
   final String domain;
   final List<SyncAction> actions;
+  final SyncPresentation Function(SyncAction) present;
 
   @override
   Widget build(BuildContext context) {
-    final pending = actions.where((a) => a.status == SyncStatus.pending).length;
-    final failed = actions.where((a) => a.status == SyncStatus.failed).length;
-    final conflicts = actions
-        .where((a) => a.status == SyncStatus.conflict)
+    final presentations = actions.map(present).toList();
+    final pending = presentations
+        .where(
+          (p) =>
+              p == SyncPresentation.pending ||
+              p == SyncPresentation.awaitingBackend,
+        )
+        .length;
+    final failed = presentations
+        .where(
+          (p) => p == SyncPresentation.failed || p == SyncPresentation.stalled,
+        )
+        .length;
+    final conflicts = presentations
+        .where((p) => p == SyncPresentation.conflict)
         .length;
 
     return Column(
@@ -479,7 +626,8 @@ class _DomainGroup extends StatelessWidget {
             ],
           ),
         ),
-        for (final action in actions) _ActionRow(action: action),
+        for (final action in actions)
+          _ActionRow(action: action, presentation: present(action)),
         const SizedBox(height: 8),
       ],
     );
@@ -514,15 +662,19 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.action});
+  const _ActionRow({required this.action, required this.presentation});
 
   final SyncAction action;
+  final SyncPresentation presentation;
 
   @override
   Widget build(BuildContext context) {
     final hasError =
-        action.status == SyncStatus.failed ||
-        action.status == SyncStatus.conflict;
+        presentation == SyncPresentation.failed ||
+        presentation == SyncPresentation.stalled ||
+        presentation == SyncPresentation.conflict;
+    final awaiting = presentation == SyncPresentation.awaitingBackend;
+    final discarded = presentation == SyncPresentation.discarded;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
@@ -530,7 +682,7 @@ class _ActionRow extends StatelessWidget {
       child: ListTile(
         dense: true,
         visualDensity: VisualDensity.compact,
-        leading: Icon(_statusIcon(action.status), size: 18),
+        leading: Icon(_statusIcon(presentation), size: 18),
         title: Text(
           _actionLabel(action.type),
           style: const TextStyle(fontSize: 13),
@@ -542,12 +694,15 @@ class _ActionRow extends StatelessWidget {
               _formatDate(action.createdAt),
               style: const TextStyle(fontSize: 11),
             ),
-            if (action.lastSafeError != null)
+            if (action.lastSafeError != null && !awaiting)
               Text(
                 action.lastSafeError!,
-                style: TextStyle(fontSize: 11, color: Colors.red.shade700),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: discarded ? Colors.grey : Colors.red.shade700,
+                ),
               ),
-            if (action.retryCount > 0)
+            if (action.retryCount > 0 && !awaiting && !discarded)
               Text(
                 'Tentativa ${action.retryCount}',
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
@@ -555,8 +710,8 @@ class _ActionRow extends StatelessWidget {
           ],
         ),
         trailing: OperationalStatusChip(
-          label: _statusLabel(action.status),
-          status: _toneForSync(action.status),
+          label: _statusLabel(presentation),
+          status: _toneForSync(presentation),
         ),
       ),
     );
@@ -564,22 +719,28 @@ class _ActionRow extends StatelessWidget {
 
   String _formatDate(DateTime dt) => _fmtDate(dt);
 
-  IconData _statusIcon(SyncStatus s) => switch (s) {
-    SyncStatus.synced => Icons.check_circle_outline,
-    SyncStatus.failed => Icons.error_outline,
-    SyncStatus.conflict => Icons.warning_amber_outlined,
-    SyncStatus.syncing => Icons.sync,
-    SyncStatus.pending => Icons.schedule,
-    SyncStatus.local => Icons.storage_outlined,
+  IconData _statusIcon(SyncPresentation p) => switch (p) {
+    SyncPresentation.awaitingBackend => Icons.schedule,
+    SyncPresentation.discarded => Icons.remove_circle_outline,
+    SyncPresentation.stalled => Icons.error_outline,
+    SyncPresentation.synced => Icons.check_circle_outline,
+    SyncPresentation.failed => Icons.error_outline,
+    SyncPresentation.conflict => Icons.warning_amber_outlined,
+    SyncPresentation.syncing => Icons.sync,
+    SyncPresentation.pending => Icons.schedule,
+    SyncPresentation.local => Icons.storage_outlined,
   };
 
-  String _statusLabel(SyncStatus s) => switch (s) {
-    SyncStatus.synced => 'Sincronizado',
-    SyncStatus.failed => 'Erro',
-    SyncStatus.conflict => 'Conflito',
-    SyncStatus.syncing => 'Sincronizando',
-    SyncStatus.pending => 'Pendente',
-    SyncStatus.local => 'Local',
+  String _statusLabel(SyncPresentation p) => switch (p) {
+    SyncPresentation.awaitingBackend => 'Aguardando envio',
+    SyncPresentation.discarded => 'Descartado',
+    SyncPresentation.stalled => 'Erro',
+    SyncPresentation.synced => 'Sincronizado',
+    SyncPresentation.failed => 'Erro',
+    SyncPresentation.conflict => 'Conflito',
+    SyncPresentation.syncing => 'Sincronizando',
+    SyncPresentation.pending => 'Pendente',
+    SyncPresentation.local => 'Local',
   };
 }
 
@@ -594,43 +755,26 @@ String _fmtDate(DateTime dt) {
   return '$dd/$mm $hh:$min';
 }
 
-String _domainLabel(String actionType) {
-  if (actionType.startsWith('checklist_') ||
-      actionType.startsWith('checklist.')) {
-    return 'Checklists';
-  }
-  if (actionType.startsWith('expense_') || actionType.startsWith('rdv_')) {
-    return 'Despesas (RDV)';
-  }
-  if (actionType.startsWith('work_order') ||
-      actionType.startsWith('work-order')) {
-    return 'Ordens de Servico';
-  }
-  if (actionType.startsWith('inventory_')) return 'Estoque';
-  return 'Outros';
-}
+String _domainLabel(String actionType) => syncDomainLabel(actionType);
 
 IconData _domainIcon(String domain) => switch (domain) {
   'Checklists' => Icons.checklist_outlined,
   'Despesas (RDV)' => Icons.receipt_long_outlined,
-  'Ordens de Servico' => Icons.engineering_outlined,
+  'Ordens de Serviço' => Icons.engineering_outlined,
   'Estoque' => Icons.inventory_2_outlined,
   _ => Icons.sync_outlined,
 };
 
-String _actionLabel(String type) {
-  final parts = type
-      .replaceAll('.', '_')
-      .split('_')
-      .map((p) => p.isEmpty ? '' : p[0].toUpperCase() + p.substring(1));
-  return parts.join(' ');
-}
+String _actionLabel(String type) => syncActionLabel(type);
 
-String _toneForSync(SyncStatus status) => switch (status) {
-  SyncStatus.synced => 'success',
-  SyncStatus.failed => 'danger',
-  SyncStatus.conflict => 'danger',
-  SyncStatus.syncing => 'info',
-  SyncStatus.pending => 'warning',
-  SyncStatus.local => 'info',
+String _toneForSync(SyncPresentation p) => switch (p) {
+  SyncPresentation.awaitingBackend => 'info',
+  SyncPresentation.discarded => 'info',
+  SyncPresentation.stalled => 'danger',
+  SyncPresentation.synced => 'success',
+  SyncPresentation.failed => 'danger',
+  SyncPresentation.conflict => 'danger',
+  SyncPresentation.syncing => 'info',
+  SyncPresentation.pending => 'warning',
+  SyncPresentation.local => 'info',
 };

@@ -480,7 +480,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // SyncScreen renders human-readable label (not raw type string).
-        expect(find.text('Checklist Run Create'), findsOneWidget);
+        expect(find.text('Abertura de checklist'), findsOneWidget);
         expect(find.textContaining('Checklist'), findsWidgets);
       },
     );
