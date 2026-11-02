@@ -5110,7 +5110,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - B-O6R-11 segue na Emenda 4, ramo `fix/mobile-fila-duravel-b-o6r-11`, head remoto `0c7f421c` no início desta tarefa (02/11 ~04:40 SP; depois disso a fatia visual foi feita: `61ccf2ab`, `cad1c1cb`): F-S0, F-T, F-S1a e F-S1a' prontas, suíte Flutter `+954`, fatia visual com o Claude (`omega/juntas/votos/B-O6R-11-c3/00-dev.md`, RETOMADAS 5 a 7).
 - O trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; `erp-pausa-2026-10-03/painel/estado.json:32`). A régua backend local é Linux com `docker`, como o CI, e o Windows é referência com 8 falhas conhecidas; as medições e ressalvas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:17-44,59-97,115-117`.
 
-## 2026-11-02 — B-SAN3-03 · Cloud Billing exato (F0–F9) · PR #NNN
+## 2026-11-02 — B-SAN3-03 · Cloud Billing exato (F0–F9) · PR #484
 
 - Executores: `dev-san303-sol` (Codex GPT-5.6 Sol, nível menor) fez F0–F6; `dev-san303-opus` (Claude Opus 5.5, nível menor, declarado) fez F7–F9, cobrindo o Codex (as duas contas no limite até 09:21 e 09:26 SP) pela decisão `D-CLAUDE-COBRE-ATE-0411`. Nenhum dos dois planejou nem revisou.
 - Ramo `fix/cloud-billing-exato`; relatório `docs/revisoes/SAN3/B-SAN3-03-dev.md` (`## RETOMADA 0` a `## RETOMADA 9`); comando `agent-orchestration/codex/comandos/B-SAN3-03-cloud-billing-exato.md`.

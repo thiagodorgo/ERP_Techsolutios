@@ -7508,7 +7508,7 @@ com chave derivada da entidade. O molde já existe e está pronto para reuso:
 **Por que não foi feito aqui:** o recorte do bloco é fiel ao `local` do achado (confirmado pelo crítico);
 fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **optou por não deliberar**.
 
-- **status:** FECHADA no PR #NNN (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-attachment-capture-db.test.ts` (T-UP-db-2, T-DOWN-db-2) e `tests/san3-03-job-capture-db.test.ts` (T-JOB-db-2): falha injetada na unidade → fato e unidade juntos ou nenhum; censo `tests/san3-03-basis-census.test.ts` C-2/C-3.
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-attachment-capture-db.test.ts` (T-UP-db-2, T-DOWN-db-2) e `tests/san3-03-job-capture-db.test.ts` (T-JOB-db-2): falha injetada na unidade → fato e unidade juntos ou nenhum; censo `tests/san3-03-basis-census.test.ts` C-2/C-3.
 - **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
   *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
   genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
@@ -7534,7 +7534,7 @@ O aceite `C2` deste bloco cobre a metade que dá para cobrir agora: para a categ
 da base tem produtor na transação** — se alguém acrescentar uma chave à regra sem produtor, o censo fica
 vermelho. As outras categorias ficam com esta pendência.
 
-- **status:** FECHADA no PR #NNN (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-basis-census.test.ts` C-1 (toda chave de regra tem produtor transacional ou derivação) e `tests/san3-03-derived-basis(-db).test.ts` T-API-3 (ApiGateway e AWSELB alocados, ≠ não rateado), T-STO-2/T-STO-db-1 (estoque das 4 tabelas).
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-basis-census.test.ts` C-1 (toda chave de regra tem produtor transacional ou derivação) e `tests/san3-03-derived-basis(-db).test.ts` T-API-3 (ApiGateway e AWSELB alocados, ≠ não rateado), T-STO-2/T-STO-db-1 (estoque das 4 tabelas).
 - **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
   (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
 - **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -7603,7 +7603,7 @@ construtor (`B5`).
 - **emenda (inventário SAN3, fatia A2, 2026-09-11):** há uma segunda instância silenciosa da mesma classe, fora do rateio — `take: 100_000` sem contagem prévia em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts:223`, dentro de `listAllocationTenantAllocations` (`:219`). Reconfirmado por presença no head `15ef3fbe` (`git show HEAD:src/modules/cloud-charges/cloud-charge-prisma.repository.ts | grep -n "take: 100_000"` → `223`; nenhum `count(` no arquivo). Mesma classe do `Ω6R-DIN-007` (truncamento silencioso); impacto realista pequeno, porque as alocações por run são tenants × categorias, longe de 100 mil.
 
 ---
-- **emenda FECHADA no PR #NNN (B-SAN3-03, 2026-11-02):** a segunda instância (`take: 100_000` de `listAllocationTenantAllocations` em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`) saiu — única linha tocada em `cloud-charges/**` (§2.8 da emenda 1 do plano). Teste: `tests/san3-03-basis-census.test.ts` C-5. A pendência principal (paginação por cursor do rateio) **continua ABERTA**.
+- **emenda FECHADA no PR #484 (B-SAN3-03, 2026-11-02):** a segunda instância (`take: 100_000` de `listAllocationTenantAllocations` em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`) saiu — única linha tocada em `cloud-charges/**` (§2.8 da emenda 1 do plano). Teste: `tests/san3-03-basis-census.test.ts` C-5. A pendência principal (paginação por cursor do rateio) **continua ABERTA**.
 
 ## P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por idade sem quebrar a idempotência — BAIXA
 
@@ -8354,7 +8354,7 @@ janela por outra execução (teste ou import real) **entra na base de rateio**. 
 instância dele movendo a própria suíte para a janela reservada `2028-02`, mas a propriedade continua valendo
 para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
 
-- **status:** FECHADA no PR #NNN (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-import-scope.test.ts` T26-1 e `tests/san3-03-import-scope-db.test.ts` T26-db-1/2 (dois imports na mesma janela: o rateio de um não soma o outro).
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-import-scope.test.ts` T26-1 e `tests/san3-03-import-scope-db.test.ts` T26-db-1/2 (dois imports na mesma janela: o rateio de um não soma o outro).
 - **status anterior:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 4 — uma reimportação do mesmo período soma o custo em dobro no rateio; "há um import por período" é premissa, não trava. Bloco `B-SAN3-03`.
   **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
@@ -10114,7 +10114,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
 
-- **status:** FECHADA no PR #NNN (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `git grep -c forEachTenantInOneTx src` = 0; `tests/san3-03-basis-census.test.ts` C-5; `tests/san3-05-acessos-de-plataforma-guard.test.ts` 35/35 com a linha do wrapper privado retirada de `scripts/san3-05-acessos-de-plataforma.mjs`.
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `git grep -c forEachTenantInOneTx src` = 0; `tests/san3-03-basis-census.test.ts` C-5; `tests/san3-05-acessos-de-plataforma-guard.test.ts` 35/35 com a linha do wrapper privado retirada de `scripts/san3-05-acessos-de-plataforma.mjs`.
 - **status anterior:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
 - `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
 - **bloqueia:** não.
@@ -10544,7 +10544,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organização de sistema — MÉDIA
 
-- **status:** FECHADA no PR #NNN (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-system-org.test.ts` T-SYS-1..8 e `tests/san3-03-system-org-db.test.ts`: a plataforma pesa no rateio, não recebe alocação, e a parte dela é `totalPlatformCost`, fora de não rateado (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-system-org.test.ts` T-SYS-1..8 e `tests/san3-03-system-org-db.test.ts`: a plataforma pesa no rateio, não recebe alocação, e a parte dela é `totalPlatformCost`, fora de não rateado (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
 - **status anterior:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
 - A organização `platform` (de sistema) pode aparecer como organização cobrada e entrar na contagem de organizações do Cloud Billing; o B-SAN3-06b a tirou das métricas de clientes nas telas, mas a regra de rateio é do backend. É pergunta de produto: a plataforma paga a própria nuvem?
 - **bloqueia:** não.

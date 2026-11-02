@@ -438,3 +438,4 @@
 - **Arquivos meio-escritos:** nenhum.
 
 PRONTO PARA PRÉ-REVISÃO
+- **PR:** #484 (https://github.com/thiagodorgo/ERP_Techsolutios/pull/484).
