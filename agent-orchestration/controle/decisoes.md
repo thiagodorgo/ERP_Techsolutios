@@ -4117,6 +4117,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal do dono:** *"3=sigo a recomendação"*.
 - **Contexto da pergunta registrada na fonte:** dividir o custo de API por ações auditadas. A base derivada foi aprovada pelo dono.
+- **Errata (2026-10-31):** a fala *"3=sigo a recomendação"* responde só à divisão do custo de API por ações auditadas; a frase "A base derivada foi aprovada pelo dono" não vale além disso.
 
 ## D-CLAUDE-COBRE-ATE-0411 (decisão do dono, 2026-10-30) — cobertura do desenvolvimento até 04/11, sem Pro
 
@@ -4141,3 +4142,27 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 ## D-B-O6R-11-REENVIOS (decisão do dono, 2026-10-30) — reenvio de despesas e material de estoque
 
 - **Fala literal do dono:** *"B-O6R-11 faça o reenvio de despesas e o material do estoque tambem é reenviado"*.
+
+## D-CANAL-NO-B-ASSINATURA (decisão do dono, 2026-10-31) — canal de pagamento e nota no plano de assinatura
+
+- **Fala literal do dono:** *"1=recomendação, 2=recomendação"*.
+- **Contexto da pergunta registrado na fonte:** a pergunta 1 é se o canal de pagamento e nota fica no plano de assinatura (`B-ASSINATURA`), não no `B-SAN3-03`.
+
+## D-CUSTO-PLATAFORMA-LINHA-PROPRIA (decisão do dono, 2026-10-31) — custo da plataforma fora de “Não rateado”
+
+- **Fala literal do dono:** *"1=recomendação, 2=recomendação"*.
+- **Contexto da pergunta registrado na fonte:** a pergunta 2 é se, na visão global, o custo da plataforma fica em linha própria, “Custo da plataforma”, fora de “Não rateado”.
+
+## D-CODEX-ZERA-CONTA-2-E-ARGON (decisão do dono, 2026-10-31) — Argon e contas do Codex
+
+- **Falas literais do dono, na ordem:**
+  1. *"voce vai usar o argon do antigravity agora, esqueça o codex com limite menor semanal, use o argon para cobrir ele"*
+  2. *"o codex esquecer somente a conta 1 ate dia 04/11, depois ela volta ao rock aqui"*
+  3. *"claude, use toda a conta do codex 2 ate zerar. apos zerar vc vai usar a conta do codex 1 que esta com limite renovado para continuar e me reportar. designe uma tarefa para o codex 2"*
+  4. *"a conta do codex 2 tem o seu limite restaurado tambem"*
+- **Fala literal posterior na mesma noite:** *"use os codex 1 e codex 2 juntamente com argon uma tarefa por cada e vc na orquestração ou no cordando quando for necessario"*.
+- **Qual vale por último:** a fala posterior na mesma noite: Codex 1, Codex 2 e Argon, uma tarefa para cada, com o Claude na orquestração ou codando quando necessário.
+
+## D-PRODUTO-PREMIUM-SEM-GAMBIARRA (decisão do dono, 2026-10-31) — padrão de produto
+
+- **Fala literal do dono:** *"nao quero gambiarra, trate como produto premium, fazer pouco e ficar com cara de gambiarra fica feio"*.

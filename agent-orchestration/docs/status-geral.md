@@ -1,5 +1,11 @@
 # Status Geral
 
+## Estado em 2026-10-31, noite
+
+- **B-AV-REAL:** PR #477 aberto. A junta reprovou por unanimidade no objeto `2746eb60`, com 3 bloqueantes e nenhum grave; emenda do conserto em andamento; ata ainda não escrita.
+- **B-O6R-11:** ramo `fix/mobile-fila-duravel-b-o6r-11`; F0 e F1 feitas. A F1 achou que o guard herdado acusa `_serial` do `B-SAN3-13`; Emenda 3 fora do repositório, com cópia prevista no próprio bloco.
+- **Distribuição dos braços:** vale por último a fala do dono registrada em `D-CODEX-ZERA-CONTA-2-E-ARGON`: Codex 1, Codex 2 e Argon, uma tarefa para cada, com o Claude na orquestração ou codando quando necessário.
+
 ## Atualização 2026-10-31 — B-SAN3-12c mergeado; porteiro BLOQUEADO por registro pós-merge
 
 O PR #474 foi mergeado: head aprovado `ccfd4e3b`, squash merge `2b65f51a` e CI de push `41207658016` verde. O porteiro pós-merge declarou **BLOQUEADO** porque os itens 28/55 e as duas pendências do Financeiro ainda constavam abertos, e o estado/log ainda descrevia o PR como aberto; o bloqueante de limpeza foi resolvido e `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio. Este registro fecha por fato os itens 28/55 e atualiza o estado pós-merge. A sequência do marco KPI #473 também foi cumprida: merge `45435ab9`.
