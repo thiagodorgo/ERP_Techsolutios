@@ -38,6 +38,30 @@ export type CloudCostAllocationRepository = {
   listTenants(): Promise<readonly CloudCostAllocationTenant[]>;
 };
 
+export const STORAGE_INVENTORY_MODELS = [
+  "checklist_attachments",
+  "work_order_attachments",
+  "attachments",
+  "damage_attachments",
+] as const;
+
+export const DERIVADAS = ["storage_bytes_current", "audited_actions_count"] as const;
+
+type StorageInventorySeed = {
+  readonly tenantId: string;
+  readonly model: (typeof STORAGE_INVENTORY_MODELS)[number];
+  readonly sizeBytes?: number;
+  readonly createdAt: Date;
+  readonly deletedAt?: Date;
+};
+
+type AuditedActionSeed = {
+  readonly tenantId: string;
+  readonly actorUserId?: string;
+  readonly action: string;
+  readonly createdAt: Date;
+};
+
 export class InMemoryCloudCostAllocationRepository implements CloudCostAllocationRepository {
   private runs: CloudCostAllocationRun[] = [];
   private allocations: TenantCloudCostAllocation[] = [];
@@ -45,6 +69,9 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   private costLineItems: CloudCostLineItem[] = [];
   private usageAggregates: CloudUsageDailyAggregate[] = [];
   private usageEvents: CloudUsageEvent[] = [];
+  private attachments: StorageInventorySeed[] = [];
+  private auditedActions: AuditedActionSeed[] = [];
+  private users: Array<{ readonly id: string; readonly tenantId: string }> = [];
   private tenants: CloudCostAllocationTenant[] = [];
 
   async createRun(input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
@@ -190,6 +217,57 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       });
     }
 
+    const storageByTenant = new Map<string, number>();
+    for (const attachment of this.attachments) {
+      if (!allowed.has(attachment.tenantId)) continue;
+      if (attachment.createdAt > periodEnd || attachment.deletedAt) continue;
+      if (attachment.sizeBytes === undefined) continue;
+      storageByTenant.set(
+        attachment.tenantId,
+        (storageByTenant.get(attachment.tenantId) ?? 0) + attachment.sizeBytes,
+      );
+    }
+    for (const [tenantId, quantity] of storageByTenant) {
+      if (quantity <= 0) continue;
+      groups.set(`${tenantId}|storage_bytes_current|bytes|file_inventory`, {
+        quantity,
+        row: {
+          tenantId,
+          metricKey: "storage_bytes_current",
+          unit: "bytes",
+          sourceType: "file_inventory",
+          quantity,
+        },
+      });
+    }
+
+    const platformTenant = this.tenants.find((tenant) => tenant.slug?.toLowerCase() === "platform");
+    const platformUserIds = new Set(
+      this.users.filter((user) => user.tenantId === platformTenant?.id).map((user) => user.id),
+    );
+    const actionsByTenant = new Map<string, number>();
+    for (const action of this.auditedActions) {
+      if (action.createdAt < periodStart || action.createdAt > periodEnd) continue;
+      if (!action.actorUserId || action.action.startsWith("auth.")) continue;
+      const tenantId = platformUserIds.has(action.actorUserId) && platformTenant
+        ? platformTenant.id
+        : action.tenantId;
+      if (!allowed.has(tenantId)) continue;
+      actionsByTenant.set(tenantId, (actionsByTenant.get(tenantId) ?? 0) + 1);
+    }
+    for (const [tenantId, quantity] of actionsByTenant) {
+      groups.set(`${tenantId}|audited_actions_count|count|audit_log`, {
+        quantity,
+        row: {
+          tenantId,
+          metricKey: "audited_actions_count",
+          unit: "count",
+          sourceType: "audit_log",
+          quantity,
+        },
+      });
+    }
+
     return [...groups.values()].map((group) => ({ ...group.row, quantity: group.quantity }));
   }
 
@@ -203,12 +281,18 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     readonly costLineItems?: readonly CloudCostLineItem[];
     readonly usageAggregates?: readonly CloudUsageDailyAggregate[];
     readonly usageEvents?: readonly CloudUsageEvent[];
+    readonly attachments?: readonly StorageInventorySeed[];
+    readonly auditedActions?: readonly AuditedActionSeed[];
+    readonly users?: readonly { readonly id: string; readonly tenantId: string }[];
   }): void {
     this.imports = [...(input.imports ?? this.imports)];
     this.tenants = [...(input.tenants ?? this.tenants)];
     this.costLineItems = [...(input.costLineItems ?? this.costLineItems)];
     this.usageAggregates = [...(input.usageAggregates ?? this.usageAggregates)];
     this.usageEvents = [...(input.usageEvents ?? this.usageEvents)];
+    this.attachments = [...(input.attachments ?? this.attachments)];
+    this.auditedActions = [...(input.auditedActions ?? this.auditedActions)];
+    this.users = [...(input.users ?? this.users)];
   }
 
   reset(): void {
@@ -218,6 +302,9 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     this.costLineItems = [];
     this.usageAggregates = [];
     this.usageEvents = [];
+    this.attachments = [];
+    this.auditedActions = [];
+    this.users = [];
     this.tenants = [];
   }
 

@@ -34,7 +34,6 @@ export function resolveAllocationRule(input: {
       costCategory: "storage",
       allocationMethod: "storage_usage_weight",
       basisMetricKeys: [
-        "storage_gb_month",
         "storage_bytes_current",
         "checklist_attachment.uploaded.bytes",
         "checklist_attachment.downloaded.bytes",
@@ -50,11 +49,11 @@ export function resolveAllocationRule(input: {
     };
   }
 
-  if (service.includes("apigateway") || service.includes("elasticloadbalancing") || usageType.includes("request")) {
+  if (service.includes("apigateway") || service.includes("elasticloadbalancing") || service.includes("awselb") || usageType.includes("request")) {
     return {
       costCategory: "api_requests",
       allocationMethod: "api_request_weight",
-      basisMetricKeys: ["api_request.count", "api_requests_count"],
+      basisMetricKeys: ["audited_actions_count"],
     };
   }
 

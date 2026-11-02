@@ -113,8 +113,8 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
       costLine("cost-s3", { serviceCode: "AmazonS3", usageType: "TimedStorage-ByteHrs", unblendedCost: 10 }),
     ],
     usageEvents: [
-      usage(seed.tenantA.id, "storage_gb_month", 1),
-      usage(seed.tenantB.id, "storage_gb_month", 1),
+      usage(seed.tenantA.id, "storage_bytes_current", 1),
+      usage(seed.tenantB.id, "storage_bytes_current", 1),
     ],
   });
 

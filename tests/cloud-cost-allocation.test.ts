@@ -50,8 +50,8 @@ test("aloca custo S3 por metrica de storage/download", async () => {
       }),
     ],
     usageEvents: [
-      usage("tenant-a", "storage_gb_month", 10),
-      usage("tenant-b", "storage_gb_month", 20),
+      usage("tenant-a", "storage_bytes_current", 10),
+      usage("tenant-b", "storage_bytes_current", 20),
     ],
   });
 
@@ -163,7 +163,7 @@ test("reexecutar run nao duplica allocations indevidamente", async () => {
         unblendedCost: 10,
       }),
     ],
-    usageEvents: [usage("tenant-a", "storage_gb_month", 1)],
+    usageEvents: [usage("tenant-a", "storage_bytes_current", 1)],
   });
   const run = await service.createAllocationRun({ periodStart, periodEnd });
 

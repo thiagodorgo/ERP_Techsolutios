@@ -198,3 +198,34 @@
   o vermelho-controle T-STO/T-API da F6.
 - **Arquivos meio-escritos:** nenhum; F5 pronta para commit.
 
+## RETOMADA 6
+
+- **Head inicial medido:** `e5472319` (F0–F5 commitadas e enviadas). O handoff da máquina nova dizia
+  `6d60d864`/F1 parcial, mas o worktree real já estava cinco fatias adiante; pela regra retomável, o
+  estado real prevaleceu e F1–F5 não foram refeitas.
+- **Parcial encontrado:** 6 arquivos modificados e `tests/san3-03-derived-basis.test.ts` novo, todos
+  dentro do PERMITIDO da F6; `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles e `frontend/**` intactos.
+- **Primeira execução do parcial:** `npm test -- tests/san3-03-derived-basis.test.ts` — **exit 0**,
+  11/11, 0 falhas, 0 skips. `npm run check` — **exit 2**, incompatibilidade real entre `_count._all`
+  e `_count` numérico no caminho Prisma; corrigida pela forma numérica uniforme.
+- **Vermelhos-controle e mutações F6, sempre restaurados:** M12 sem derivação de storage — **exit 1**,
+  8/11 (T-STO-1/2/4 vermelhos); M14 sem derivação de API — **exit 1**, 6/11; M15 sem janela —
+  **exit 1**, 10/11; M38 sem `awselb` — **exit 1**, 10/11; M40 só checklist — **exit 1**, 9/11;
+  M42 contando `auth.*` — **exit 1**, 10/11; M43 ato da plataforma contado no cliente — **exit 1**,
+  10/11; M44 ato da plataforma descartado — **exit 1**, 10/11; M45 ator nulo contado — **exit 1**,
+  10/11. Cada saída TAP nomeou o teste de comportamento esperado.
+- **Implementação F6:** estoque deriva das quatro tabelas de arquivo; ações auditadas respeitam janela,
+  ignoram `auth.*` e ator nulo e atribuem atos de usuário da plataforma à própria plataforma; `AWSELB`
+  usa a base auditada; regras legadas sem produtor saíram do rateio. Recomendações 5 e 6 registradas como
+  **RECOMENDAÇÕES ADOTADAS**, não como decisão do dono.
+- **Validação final F6:** `npm test -- tests/san3-03-derived-basis.test.ts
+  tests/cloud-cost-allocation.test.ts tests/cloud-cost-allocation-routes.test.ts` — **exit 0**, 20/20,
+  0 falhas, 0 skips; `npm run check` — **exit 0**; `git diff --check` — **exit 0**.
+- **Docker:** nenhum container próprio necessário nesta fatia; `erp-postgres`/`erp-redis` apenas medidos
+  e não tocados.
+- **Feito:** F6 completa, incluindo M12, M14, M15, M38, M40 e M42–M45 vermelhas.
+- **Falta:** F7, F8, F8a, F8b, F8c, F9, registros finais e PR.
+- **Próximo comando exato:** `docker run -d --name pg-san303 -p 127.0.0.1:55432:5432 -e
+  POSTGRES_PASSWORD=postgres -e POSTGRES_DB=san303 postgres:16`.
+- **Arquivos meio-escritos:** nenhum; F6 pronta para commit.
+

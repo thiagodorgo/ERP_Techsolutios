@@ -14,7 +14,10 @@ import {
   type CreateCloudCostAllocationRunInput,
   type UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
-import type { CloudCostAllocationRepository } from "./cloud-cost-allocation.repository.js";
+import {
+  STORAGE_INVENTORY_MODELS,
+  type CloudCostAllocationRepository,
+} from "./cloud-cost-allocation.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -286,6 +289,12 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     tenantIds: readonly string[],
   ): Promise<readonly UsageBasisRow[]> {
     const rows: UsageBasisRow[] = [];
+    const platformTenant = await this.client.tenant.findFirst({
+      where: { slug: { equals: "platform", mode: "insensitive" } },
+      select: { id: true },
+    });
+    let platformUserIds: string[] = [];
+    const auditedActionsByTenant = new Map<string, number>();
 
     await this.forEachTenantInOneTx(tenantIds, async (tx, tenantId) => {
       // `tenant_id` NA CLÁUSULA, além da RLS — isolamento EXPLÍCITO, no padrão dos demais métodos da
@@ -301,7 +310,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           by: ["tenant_id", "metric_key", "unit", "source_type"],
           where,
           _sum: { quantity: true },
-          _count: { _all: true },
+          _count: true,
         }),
       ]);
 
@@ -333,7 +342,117 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           quantity: Number(group._sum.quantity),
         });
       }
+
+      const storageWhere = { tenant_id: tenantId, created_at: { lte: periodEnd } };
+      const [checklistFiles, workOrderFiles, genericFiles, damageFiles] = await Promise.all([
+        tx.checklistAttachment.groupBy({
+          by: ["tenant_id"],
+          where: storageWhere,
+          _sum: { size_bytes: true },
+        }),
+        tx.workOrderAttachment.groupBy({
+          by: ["tenant_id"],
+          where: { ...storageWhere, deleted_at: null },
+          _sum: { size_bytes: true },
+        }),
+        tx.attachment.groupBy({
+          by: ["tenant_id"],
+          where: { ...storageWhere, deleted_at: null },
+          _sum: { size_bytes: true },
+        }),
+        tx.damageAttachment.groupBy({
+          by: ["tenant_id"],
+          where: storageWhere,
+          _sum: { size_bytes: true },
+        }),
+      ]);
+      const storageGroups = [checklistFiles, workOrderFiles, genericFiles, damageFiles];
+      for (let index = 0; index < storageGroups.length; index += 1) {
+        const storageRows = storageGroups[index]!;
+        assertRowsBelongToTenant(
+          storageRows.map((group) => group.tenant_id),
+          tenantId,
+          STORAGE_INVENTORY_MODELS[index]!,
+        );
+      }
+      let storageQuantity = 0;
+      for (const storageRows of storageGroups) {
+        for (const group of storageRows) {
+          if (group._sum.size_bytes === null || group._sum.size_bytes === undefined) continue;
+          storageQuantity += Number(group._sum.size_bytes);
+        }
+      }
+      if (storageQuantity > 0) {
+        rows.push({
+          tenantId,
+          metricKey: "storage_bytes_current",
+          unit: "bytes",
+          sourceType: "file_inventory",
+          quantity: storageQuantity,
+        });
+      }
+
+      const auditWhere = {
+        tenant_id: tenantId,
+        created_at: { gte: periodStart, lte: periodEnd },
+        actor_user_id: { not: null },
+        action: { not: { startsWith: "auth." } },
+      } as const;
+      if (tenantId === platformTenant?.id || platformUserIds.length === 0) {
+        const actionGroups = await tx.auditLog.groupBy({
+          by: ["tenant_id"],
+          where: tenantId === platformTenant?.id
+            ? auditWhere
+            : { ...auditWhere, actor_user_id: { not: null } },
+          _count: true,
+        });
+        assertRowsBelongToTenant(actionGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        const quantity = actionGroups.reduce((total, group) => total + group._count, 0);
+        if (quantity > 0) auditedActionsByTenant.set(tenantId, quantity);
+      } else {
+        const [clientGroups, platformActorGroups] = await Promise.all([
+          tx.auditLog.groupBy({
+            by: ["tenant_id"],
+            where: { ...auditWhere, actor_user_id: { notIn: platformUserIds } },
+            _count: true,
+          }),
+          tx.auditLog.groupBy({
+            by: ["tenant_id"],
+            where: { ...auditWhere, actor_user_id: { in: platformUserIds } },
+            _count: true,
+          }),
+        ]);
+        assertRowsBelongToTenant(clientGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        assertRowsBelongToTenant(platformActorGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        const clientQuantity = clientGroups.reduce((total, group) => total + group._count, 0);
+        const platformQuantity = platformActorGroups.reduce((total, group) => total + group._count, 0);
+        if (clientQuantity > 0) auditedActionsByTenant.set(tenantId, clientQuantity);
+        if (platformQuantity > 0 && platformTenant) {
+          auditedActionsByTenant.set(
+            platformTenant.id,
+            (auditedActionsByTenant.get(platformTenant.id) ?? 0) + platformQuantity,
+          );
+        }
+      }
+    }, async (tx) => {
+      if (!platformTenant || !tenantIds.includes(platformTenant.id)) return;
+      await setTenantRlsContext(tx, platformTenant.id);
+      const users = await tx.user.findMany({
+        where: { tenant_id: platformTenant.id },
+        select: { id: true },
+      });
+      platformUserIds = users.map((user) => user.id);
     });
+
+    for (const [tenantId, quantity] of auditedActionsByTenant) {
+      rows.push({
+        tenantId,
+        metricKey: "audited_actions_count",
+        unit: "count",
+        sourceType: "audit_log",
+        quantity,
+      });
+    }
 
     return rows;
   }
@@ -359,6 +478,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
   private async forEachTenantInOneTx(
     tenantIds: readonly string[],
     work: (tx: Prisma.TransactionClient, tenantId: string) => Promise<void>,
+    setup?: (tx: Prisma.TransactionClient) => Promise<void>,
   ): Promise<void> {
     if (tenantIds.length === 0) return;
 
@@ -375,6 +495,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
 
     await (client as PrismaClient).$transaction(
       async (tx) => {
+        await setup?.(tx);
         for (const tenantId of tenantIds) {
           await setTenantRlsContext(tx, tenantId);
           await work(tx, tenantId);
