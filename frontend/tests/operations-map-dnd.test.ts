@@ -70,14 +70,19 @@ test("readDraggedWorkOrderId devolve o id ou null quando o payload não existe",
   assert.equal(readDraggedWorkOrderId(makeDataTransfer()), null);
 });
 
-// 3 — linha "off" NÃO aceita drop; sem permissão de alocar nenhum grupo aceita (gating D5).
-test("canDropOnTechnician: 'off' rejeita sempre; sem permissão nada aceita; ativo com permissão aceita", () => {
-  assert.equal(canDropOnTechnician("disp", true), true);
-  assert.equal(canDropOnTechnician("rota", true), true);
-  assert.equal(canDropOnTechnician("atend", true), true);
-  assert.equal(canDropOnTechnician("off", true), false);
-  assert.equal(canDropOnTechnician("disp", false), false);
-  assert.equal(canDropOnTechnician("off", false), false);
+// 3 — pausado/offline/bloqueado NÃO aceitam drop; sem status (`unknown`) aceita (o backend decide);
+//     sem permissão de alocar nada aceita (gating D5). Diagnóstico da operação, 02/11, item 2.
+test("canDropOnTechnician: só pausado/offline/bloqueado rejeitam; unknown aceita; sem permissão nada aceita", () => {
+  assert.equal(canDropOnTechnician("available", true), true);
+  assert.equal(canDropOnTechnician("on_route", true), true);
+  assert.equal(canDropOnTechnician("on_site", true), true);
+  assert.equal(canDropOnTechnician("in_service", true), true);
+  assert.equal(canDropOnTechnician("unknown", true), true);
+  assert.equal(canDropOnTechnician("paused", true), false);
+  assert.equal(canDropOnTechnician("offline", true), false);
+  assert.equal(canDropOnTechnician("blocked", true), false);
+  assert.equal(canDropOnTechnician("available", false), false);
+  assert.equal(canDropOnTechnician("unknown", false), false);
 });
 
 // 4 — card: draggable GATED por permissão; dragstart seleciona SEM pan e liga a classe .dragging.
@@ -100,7 +105,7 @@ test("card de OS: draggable gated; dragstart usa beginWorkOrderDrag + seleção 
 // 5 — linha do técnico: dragover/drop usam os helpers (droptarget verde liga/desliga; drop chama
 //     onDropAllocate com o id lido do payload).
 test("trow: dragOver/drop via canDropOnTechnician/readDraggedWorkOrderId → onDropAllocate(os, tec)", () => {
-  assert.match(LIST_SRC, /canDropOnTechnician\(group, dropEnabled\)/);
+  assert.match(LIST_SRC, /canDropOnTechnician\(location\.status, dropEnabled\)/);
   assert.match(LIST_SRC, /readDraggedWorkOrderId\(event\.dataTransfer\)/);
   assert.match(LIST_SRC, /onDropAllocate\?\.\(workOrderId, location\)/);
   assert.match(LIST_SRC, /setDropTargetId\(location\.id\)/);
