@@ -322,7 +322,7 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - [08:46:56Z] CI do head `4934326f`: run `41413509026` (push) `completed success`, 8 jobs verdes. Resumo lido pela API em cada job:
   - `flutter` (`125171875952`): `Formatted 213 files (0 changed)`, `No issues found!` e **`+969: All tests passed!`**;
   - `backend` (`125171875866`): `# tests 4261`, `pass 4259`, `fail 0`, `cancelled 0`, `skipped 2`.
-  
+
   PR #483 `MERGEABLE`.
 
 ## PAUSA 2026-11-02T08:46:56Z
