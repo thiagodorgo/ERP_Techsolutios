@@ -168,3 +168,12 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Mutações executadas uma por vez e revertidas por edição inversa: M-P1 → p1 `+0 -1` (duas ações `MISSING_RESULT`); M-P2 → p2 `+0 -1` (Dio em vez de Pending); M-P3 → p2 `+0 -1` (override do serviço ainda lido como canal desligado); M-R3 → p3 `+0 -1` (despesa failed permaneceu failed); M-R4 → p4 `+0 -1` (failed/5 virou synced).
 - Passada final: `dart format` nos cinco caminhos → 0 mudanças; `flutter analyze` → `No issues found!`; suíte Flutter inteira → `+954: All tests passed!`; `git diff --check` limpo; guard da fila segue byte a byte igual a `19e18e15`; `auto_sync_coordinator.dart` segue com zero `queue.`; disco `302G` livres.
 - Próximo comando: adicionar somente os cinco caminhos da F-S1a' e este diário, commitar com `fix(mobile): sync de despesa fica em espera enquanto o canal não liga — nada marca syncing, nada consome tentativa, nada vira conflito (B-O6R-11)` e enviar; depois gravar a pausa retendo F-S1b para o Claude.
+
+## PAUSA 2026-11-02T07:33:50Z
+
+- Motivo: F-S1b retida para o Claude.
+- Head: `46001123d187918c64786282c0407e5bd7bf3672` (F-S1a' commitada e enviada).
+- Feito: F-S0, F-T, F-S1a e F-S1a' completas, cada uma com vermelho-controle/prova negativa, todas as mutações previstas, `dart format`, `flutter analyze`, suíte Flutter inteira, commit e push. Última suíte: `+954: All tests passed!`. Cópia da Emenda 4 atualizada byte a byte no commit da F-T; guard `bo6r11_guard_fila_await_ast_test.dart` permanece byte a byte igual a `19e18e15`.
+- Falta: F-S1b e F-S1b' no Claude; depois F5, F6c e F7c conforme a Emenda 4. Nenhum PR aberto.
+- Próximo comando: `git status --porcelain && git log --oneline -5 && git rev-parse HEAD && tail -80 agent-orchestration/omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
+- Arquivos meio escritos: nenhum.
