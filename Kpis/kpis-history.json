@@ -3084,5 +3084,33 @@
     "blocks_completed": 192,
     "description": "PR-474 — O Financeiro passou a oferecer também as aparências B e C, com os mesmos dados e ações da aparência A; a entrega completa as três opções pessoais e fecha os itens 28 e 55 do portão da versão vendável. NÚMEROS DA CI no merge commit `2b65f51a` (push na `main`), workflow `ci`, run 41207658016, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1556/1556; flutter 905/905. `blocks_completed` 191 -> 192.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 474`; números do log da rodada 41207658016. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-31",
+    "version": "PR-478",
+    "pr": 478,
+    "merge_commit": "e78e3968bf054666777056481aba724db1a9006c",
+    "approved_head": "b5ae58856a86cea80f140e79d5f7a01e752908a2",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1556/1556",
+    "blocks_completed": 192,
+    "description": "PR-478 — Atualiza o registro de governança de 31/10 com decisões, pendências, andamento geral e encerramento de etapa no plano de revisão. Trata-se apenas de registro de decisões e pendências, sem mudança no produto. NÚMEROS DA CI no merge commit `e78e3968` (push na `main`), workflow `ci`, run 41232880099, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1556/1556; flutter 905/905. `blocks_completed` 192 -> 192.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 478`; números do log da rodada 41232880099. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-10-31",
+    "version": "PR-479",
+    "pr": 479,
+    "merge_commit": "0fda595a9cb37d2d75abd45ef23eacc5dc56fea8",
+    "approved_head": "d715f3ba388ccc73b696bdbb53dcb848903e6e63",
+    "status": "published_per_pr",
+    "flutter_tests": "905/905",
+    "backend_tests": "4155/4157",
+    "frontend_smoke_tests": "1556/1556",
+    "blocks_completed": 192,
+    "description": "PR-479 — Registra as decisões, as pendências de cobrança e o andamento operacional da noite de 31/10 sobre assinatura, custos da plataforma e padrão de qualidade, preservando as falas do dono e separando recomendações de decisões. Trata-se exclusivamente de registro de decisões e pendências, sem mudança no produto. NÚMEROS DA CI no merge commit `0fda595a` (push na `main`), workflow `ci`, run 41259476444, tentativa 1: backend `4157 teste(s) · pass 4155 · fail 0 · skipped 2`; frontend 1556/1556; flutter 905/905. `blocks_completed` 192 -> 192.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 479`; números do log da rodada 41259476444. Nada fica `null`."
   }
 ]
