@@ -1,0 +1,105 @@
+{
+  "cadeira": "C3",
+  "identidade": "c3-j-avreal",
+  "modelo": "Claude Opus, nível menor, declarado",
+  "objeto": "2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77",
+  "voto": "reprova",
+  "arquivos_medidos": [
+    "infra/clamav/**",
+    "scripts/avreal-integration.mjs",
+    "tests/avreal-clamd.integration.ts",
+    "tests/avreal-scanner-census.test.ts",
+    ".github/workflows/ci.yml",
+    "docker-compose.yml",
+    "docker-compose.clamav.yml",
+    ".gitattributes",
+    "docs/**",
+    "agent-orchestration/**",
+    "**"
+  ],
+  "nota_arquivos_medidos": "O mandato l.44 cita tests/avreal-clamd-integration.test.ts, que não existe no objeto; o real é tests/avreal-clamd.integration.ts. `**` porque rodei npm run check e a integração HTTP sobe a app inteira (§C7.9(0)).",
+  "resumo_verde": "R9 (limpo, EICAR, pane, recuperação, saturação, HTTP 201/422), R5r, R10r, S4, R11, pipefail, guard de falha, db:generate, DATABASE_URL, digest e l.191/270 medidos por execução no caminho dev e no CI: verdes, com vermelho-controle. Sonda: daemon fora 503 e limite 422 por HTTP também confirmados. Os achados bloqueantes são só do overlay local-prod.",
+  "achados": [
+    {
+      "id": "C3-A1",
+      "titulo": "Overlay local-prod nunca fica healthy: o healthcheck dá falso negativo com o clamd de pé, e a API depende dele",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "docker-compose.clamav.yml nasce neste bloco: git cat-file -e origin/main:docker-compose.clamav.yml falha, git log --diff-filter=A aponta commit do ramo.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); docker compose -p j-avreal-c3p -f docker-compose.prod.yml -f docker-compose.clamav.yml up -d --wait --no-deps clamav; docker exec j-avreal-c3p-clamav-1 /usr/local/bin/clamdcheck.sh; docker exec j-avreal-c3p-clamav-1 sh -c 'echo PING | nc 127.0.0.1 3310; getent hosts localhost'; docker compose -p j-avreal-c3p -f docker-compose.prod.yml -f docker-compose.clamav.yml config --format json",
+      "saida": "`container j-avreal-c3p-clamav-1 is unhealthy`, exit 1, streak=12, em cerca de 8 min do start. clamdcheck.sh exit 1 'ERROR: Unable to contact server'; no mesmo container, PING em 127.0.0.1 → PONG; localhost resolve ::1 e clamd.conf tem TCPAddr 0.0.0.0. config: api.depends_on.clamav = {condition: service_healthy, required: true}. Logo o caminho de docs/deployment.md ('aplicar o overlay') não sobe a API; a subida da API em si não foi executada, para não publicar portas vivas. Controle: serviço dev, mesma imagem e config, com nc 127.0.0.1 → healthy em 12 s; a RETOMADA 8 registrou o mesmo vermelho e consertou só o compose de dev. Topologia e job antivirus não sobem o overlay. Não é fail-open: nada é aprovado; o que falha é o entregável."
+    },
+    {
+      "id": "C3-A2",
+      "titulo": "No overlay a base nunca atualiza e a idade máxima fecha tudo: mesmo saudável, todo upload daria 503",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "docker-compose.clamav.yml nasce neste bloco: git cat-file -e origin/main:docker-compose.clamav.yml falha, git log --diff-filter=A aponta commit do ramo. A contradição vem do plano §1 (rede internal + freshclam + 72 h), e nasce neste bloco.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); docker logs j-avreal-c3p-clamav-1 | grep -E 'Could not resolve|Update failed'; docker exec j-avreal-c3p-clamav-1 sh -c 'echo VERSION | nc 127.0.0.1 3310'; NODE_ENV=test EVIDENCE_SCANNER=clamav CLAMAV_HOST=127.0.0.1 CLAMAV_PORT=3311 CLAMAV_MAX_DB_AGE_HOURS=72 LOG_LEVEL=silent node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c3-sonda-http.mts; o mesmo com CLAMAV_PORT=3310; grep -n 'congela\\|freshclam' docs/deployment.md",
+      "saida": "Overlay: 'Could not resolve hostname', 'ERROR: Update failed.'; VERSION segue ClamAV 1.4.6/28164/Sun Oct 25 2026 após 8 min, e hoje é 31/10. Overlay fixa CLAMAV_MAX_DB_AGE_HOURS=72. Sonda com idade 72 sobre a mesma base 25/10 (porta 3311, serviço de limites: o overlay não publica porta) → failed/signatures_stale, HTTP 503. Controle: base 31/10 atualizada pelo freshclam (3310) → clean, HTTP 201. O runbook não avisa nada disso, embora o plano l.257 diga que o congelamento 'é dito no runbook'. Fail-closed, mas o entregável recusa toda evidência."
+    },
+    {
+      "id": "C3-A3",
+      "titulo": "status-geral e log-execucao ainda afirmam 8/8 no run que teve 7/8",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "As linhas entram no diff do ramo: git diff origin/main...HEAD -- agent-orchestration/docs/status-geral.md agent-orchestration/codex/log-execucao.md.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); grep -n '41207885759' agent-orchestration/docs/status-geral.md agent-orchestration/codex/log-execucao.md; gh run view --repo thiagodorgo/ERP_Techsolutios --job 124556664769 --log | grep -E 'not ok|# pass|# fail'; gh api repos/thiagodorgo/ERP_Techsolutios/commits/b407692a/check-runs; grep -c 2746eb60 docs/revisoes/SAN3/B-AV-REAL-dev.md",
+      "saida": "status-geral.md:5218 '8/8 e zero pulo' e log-execucao.md:5059-5060; o log real do run tem not ok 8, 7 pass, 1 fail. A correção só entrou em B-AV-REAL-dev.md, e lá 'o commit seguinte acrescenta db:generate' omite que b407692a e 9bad1f7e também falharam (antivirus failure) e que o verde veio em 2746eb60 (0 citações)."
+    },
+    {
+      "id": "C3-A4",
+      "titulo": "O job e o script ficam verdes sem os casos de limite e sem o HTTP real, sem declarar pulo",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "scripts/avreal-integration.mjs, tests/avreal-clamd.integration.ts e o job nascem no bloco. A letra do R11 (pulo, zero teste, exit) é cumprida; a mesma classe do verde-cego consertado em bf24bb2b fica aberta por outra porta.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); AVREAL_CLAMAV_HOST=127.0.0.1 node scripts/avreal-integration.mjs; bash -e c3-guard-job.sh com esse TAP; remover AVREAL_CLAMAV_LIMITS_PORT do job e npm test -- tests/avreal-scanner-census.test.ts",
+      "saida": "exit 0, tests 5, skipped 0; guard exit 0 'tests=5'; censo 5/5 verde. Os casos 6, 7 e 8 (R5r e HTTP 201/422) somem em silêncio."
+    },
+    {
+      "id": "C3-A5",
+      "titulo": "Pane, recuperação e HTTP 503 não têm prova automatizada no CI",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Suíte e job nascem no bloco; plano l.187 lista daemon fora 503 e recuperação no mínimo real.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); grep -n 'AVREAL_CLAMAV_MODE' .github/workflows/ci.yml docs/deployment.md; grep -n '503' tests/avreal-clamd.integration.ts",
+      "saida": "Nenhuma ocorrência. O modo unavailable só roda à mão e testa o adaptador; recuperação é reexecução manual; 503 por HTTP com daemon fora só foi visto na minha sonda (porta 1 → HTTP 503 evidence_scan_failed: funciona). Ninguém a repete em CI, nem há comando no runbook."
+    },
+    {
+      "id": "C3-A6",
+      "titulo": "Literal EICAR inteiro versionado, contra o plano",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "O arquivo nasce no bloco; plano l.186: duas metades em runtime.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); git grep -n 'EICAR-STANDARD' HEAD; node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c3-sonda-eicar.mts",
+      "saida": "tests/avreal-clamd.integration.ts:100 traz os 68 bytes num literal só. Clamd sobre o arquivo → clean, sem efeito prático medido hoje."
+    },
+    {
+      "id": "C3-A7",
+      "titulo": "Digest só tem amd64, mas o registro diz multi-arquitetura e o desenho AWS diz ARM",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Adendo da PD e linha do estudo AWS foram editados no bloco (git diff origin/main...HEAD -- docs/omega-pd.md docs/infra/estudo-aws-migracao.md).",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); docker manifest inspect clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0; grep -n 'Fargate ARM' docs/infra/estudo-aws-migracao.md",
+      "saida": "Manifesto: linux/amd64 + entrada unknown (atestação). PD: 'OCI multi-arquitetura'. Estudo: 'ClamAV: Fargate ARM'. O alerta do plano l.143 ('Graviton exige tag -debian') não chegou aos documentos."
+    },
+    {
+      "id": "C3-A8",
+      "titulo": "Fatia F11 não executada e sem emenda; tabela consolidada de mutações ausente",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Plano §4 l.209; relatório nasce no bloco. R7 em si é da C2.",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); grep -c 'M-R7' docs/revisoes/SAN3/B-AV-REAL-dev.md; grep -ci consolidada docs/revisoes/SAN3/B-AV-REAL-dev.md; grep -n F11 docs/revisoes/SAN3/B-AV-REAL-dev.md",
+      "saida": "0 e 0. Última menção: 'F11 não é executada por ordem explícita desta retomada', e o relatório fecha em PRONTO PARA JUNTA."
+    },
+    {
+      "id": "C3-A9",
+      "titulo": "Registro diverge do plano: dono e caminhos da pendência, texto riscado e aceite do SAN3",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Linhas editadas no bloco (git diff -U0 origin/main...HEAD -- docs/revisoes/SAN3/PLANO_SAN3.md agent-orchestration/controle/pendencias.md).",
+      "comando": "cd C:/Users/AMP/w-jav3 (worktree detached no objeto, npm ci + db:generate com URL falsa); git diff origin/main...HEAD -- docs/revisoes/SAN3/PLANO_SAN3.md; sed -n 7185,7193p agent-orchestration/controle/pendencias.md; node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c3-sonda-http-eicar.mts",
+      "saida": "P-AVREAL-RETRY-AFTER: dono 'bloco backend de padronização de erros HTTP', sem bloco nomeado e sem os 5 caminhos; plano §0.2.8 pede o bloco que fechar P-O6R-B07B-MOBILE-RETRY-PERMANENTE, com os caminhos. SAN3 l.191/270: só fly.clamav.toml foi riscado; 'junta unânime de 5 + PD' e a dependência junta-5 sumiram sem riscado (plano §0.2.1). SAN3 l.270 diz 'EICAR em memória → 422', mas EICAR por HTTP dá 415 e o 422 vem da fixture HDB."
+    }
+  ]
+}

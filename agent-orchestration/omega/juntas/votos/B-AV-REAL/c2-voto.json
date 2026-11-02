@@ -1,0 +1,101 @@
+{
+  "cadeira": "C2",
+  "identidade": "c2-j-avreal",
+  "modelo": "Claude Opus 5.5, nivel menor, declarado",
+  "objeto": "2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77",
+  "voto": "reprova",
+  "arquivos_medidos": [
+    "src/modules/evidence/upload-gate.ts",
+    "src/modules/evidence/clamav-scanner.ts",
+    "src/modules/attachments/attachment.service.ts",
+    "src/modules/work-orders/work-order-attachment.service.ts",
+    "src/modules/checklists/checklist.service.ts",
+    "src/modules/damages/damage.service.ts",
+    "src/modules/mobile/mobile-evidence-upload.ts",
+    "tests/avreal-*.test.ts",
+    "tests/attachments-crud.test.ts",
+    "tests/checklist-attachments.test.ts",
+    "tests/work-order-attachments.test.ts",
+    "tests/work-order-attachments-routes.test.ts",
+    "tests/o6r07b-mime-sniff-routes.test.ts",
+    "tests/o6r07b-download-hardened.test.ts",
+    "tests/o6r07b-upload-gate.test.ts",
+    "tests/o6r07b-upload-gate-census.test.ts",
+    "tests/o6r07b-scanner-failclosed.test.ts",
+    "tests/o6r07b-content-sniff.test.ts",
+    "tests/mobile-backend-contracts.test.ts",
+    "docker-compose.yml",
+    "docker-compose.clamav.yml",
+    "docker-compose.prod.yml",
+    "infra/clamav/clamd.conf",
+    "infra/clamav/freshclam.conf",
+    "package.json",
+    "package-lock.json",
+    "mobile/flutter_app/test/features/b108_evidence_storage_hardening_test.dart",
+    "mobile/flutter_app/lib/core/evidence/evidence_upload.dart",
+    "mobile/flutter_app/lib/features/checklists/data/checklist_attachment_upload.dart",
+    "mobile/flutter_app/lib/core/network/http_client.dart"
+  ],
+  "resumo_por_item": {
+    "R6": "Comportamento OK nas 5 vias: 170/170 nas regressoes, M-R6a e M-R6b mordem, regressoes de rota mordem a traducao 422 e 503. Ressalvas C2-A3 e C2-A4.",
+    "R7": "Comportamento OK: 8/8; M-R7 morde; unico delete no ramo stored; nada mobile no diff. Ressalva pre-existente C2-A6.",
+    "R8a": "Nenhuma porta publica: confirmado por config resolvida e pelas 7 mutacoes que mordem. O overlay nao funciona ao subir: C2-A1 e C2-A2. Ressalva C2-A5.",
+    "R12(b)": "LOCKFILE-INTACTO, exit 0. Mutacao em package.json e em package-lock.json -> exit 1, sem eco. O comando antigo ficava verde: S3 confirmado."
+  },
+  "achados": [
+    {
+      "id": "C2-A1",
+      "titulo": "O healthcheck do overlay nunca fica saudavel e a api do local-prod nao sobe",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "docker-compose.clamav.yml e arquivo novo do bloco (status A em e78e3968..2746eb60, commit ae12ddab). O commit 3a9b026f (F8) trocou o healthcheck do compose de dev para 127.0.0.1 e deixou o overlay com clamdcheck.sh.",
+      "comando": "cd C:/Users/AMP/w-jav2 && docker compose -p j-avreal-c2 -f docker-compose.prod.yml -f docker-compose.clamav.yml up -d --no-deps clamav; apos 8 min: docker inspect -f \"{{.State.Health.Status}}\" j-avreal-c2-clamav-1; docker compose -p j-avreal-c2 -f docker-compose.prod.yml -f docker-compose.clamav.yml up -d --wait --no-deps clamav; docker exec j-avreal-c2-clamav-1 sh -c \"/usr/local/bin/clamdcheck.sh; echo exit=\\$?; echo PING | nc 127.0.0.1 3310\"",
+      "saida": "unhealthy streak=15; up --wait: 'container j-avreal-c2-clamav-1 is unhealthy', exit 1; clamdcheck.sh: 'ERROR: Unable to contact server', exit 1, com PONG em 127.0.0.1 no mesmo instante. Dependente com a clausula da api (api.depends_on.clamav.condition=service_healthy, c2-sonda-dep.yml): 'dependency failed to start: container j-avreal-c2-clamav-1 is unhealthy', exit 1. O uso documentado (docs/deployment.md, plano §1) nao chega a subir a api. O CI nao roda o overlay; o teste de topologia so le config."
+    },
+    {
+      "id": "C2-A2",
+      "titulo": "O clamd do overlay fica sem saida para assinaturas e toda varredura vira 503 signatures_stale",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "docker-compose.clamav.yml novo do bloco (ae12ddab): clamav so na rede clamav_private internal:true, com CLAMAV_MAX_DB_AGE_HOURS=72 e freshclam ligado. O plano §1 pede as duas coisas (rede interna e freshclam 12x/dia) sem dizer como o freshclam sai; docs/deployment.md nao trata disso no local-prod. Nenhuma pendencia registrada.",
+      "comando": "cd C:/Users/AMP/w-jav2 && docker compose -p j-avreal-c2 -f docker-compose.prod.yml -f docker-compose.clamav.yml up -d --no-deps clamav; docker exec j-avreal-c2-clamav-1 sh -c \"date -u; echo VERSION | nc 127.0.0.1 3310; wget -q -T 5 -O /dev/null https://database.clamav.net/; echo wget=\\$?\"; docker logs j-avreal-c2-clamav-1 2>&1 | grep -E \"Update failed|resolve hostname\"; node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-sonda-relay.mts",
+      "saida": "'Could not resolve hostname', 'ERROR: Update failed'; wget bad address; VERSION 'ClamAV 1.4.6/28164/Sun Oct 25 06:24:12 2026' com date 'Oct 31 22:46:27 2026' (~160 h, acima de 72 h, ja no primeiro boot). Adaptador real: maxDbAgeHours 72 -> failed/signatures_stale; 0 -> clean. Vermelho-controle: docker network connect bridge + freshclam -> 'daily.cld updated', e a mesma sonda com 72 -> clean. Falha fechada: nada passa sem varredura, mas nenhum upload limpo e aceito nas 5 vias."
+    },
+    {
+      "id": "C2-A3",
+      "titulo": "tests/avreal-routes.test.ts nao exercita as 5 vias nem conta storage: V1 a V5 sao so rotulo",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco (10064a12, F6). O plano R6 pede 'provider de storage contado; modelo o6r07b-mime-sniff-routes'; o commit e o dev.md dizem 'scanner e storage contados'; o codigo chama verifyUploadContent direto, com stores local e 201 literal.",
+      "comando": "cd C:/Users/AMP/w-jav2 && node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-mut-r6.mjs traducao && npm test -- tests/avreal-routes.test.ts; git checkout -- src; node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-mut-r6.mjs benigno && npm test -- tests/avreal-routes.test.ts; git checkout -- src",
+      "saida": "Traducao de 503 quebrada nas 5 vias: 16/16 verde. A mesma mutacao x mime-sniff-routes e irmas: 7 falhas (A6 V1..V5 + 2), logo a propriedade do produto tem guarda em suite pre-existente. Mudanca benigna na V5 (verification: verification): '[V5] clean' cai, porque o caso le o fonte por regex. M-R6a e M-R6b mordem (5/16 e 1/16)."
+    },
+    {
+      "id": "C2-A4",
+      "titulo": "scanReason do gate nao tem teste nenhum e nao chega a auditoria",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "A linha scanReason de upload-gate.ts e deste bloco (diff e78e3968..2746eb60). Clausula do R6 ('com scanReason no log do gate') e §0.2 item 10 do plano ('log do gate e auditoria'); o API_CONTRACTS.md do bloco cita scanReason.",
+      "comando": "cd C:/Users/AMP/w-jav2 && git grep -n scanReason -- tests | wc -l; node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-mut-r6.mjs scanreason && npm test -- tests/avreal-*.test.ts tests/o6r07b-upload-gate.test.ts tests/o6r07b-mime-sniff-routes.test.ts tests/o6r07b-scanner-failclosed.test.ts; git checkout -- src; grep -n scanner_infected src/modules/mobile/mobile-evidence-upload.ts",
+      "saida": "0 referencias em tests/ (inclui a integracao). scanReason: null -> 150/150 verde. A auditoria da V1 (l.181) grava 'scanner_infected' fixo, sem scan_limit_exceeded. Hoje o campo sai no log (sonda c2-sonda-log.mts)."
+    },
+    {
+      "id": "C2-A5",
+      "titulo": "O guard de topologia nao cobre a rede unica do clamav no overlay, a assinatura de teste nem a montagem do perfil de limites",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "tests/avreal-compose-topology.test.ts e os dois compose sao do bloco (ae12ddab). As mutacoes M-R8a-a/b/c do plano mordem; estas sao adicionais.",
+      "comando": "cd C:/Users/AMP/w-jav2 && for m in redeDefault assinaturaTeste socketDev exposeApi; do node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-mut-r8.mjs $m; npm test -- tests/avreal-compose-topology.test.ts; git checkout -- docker-compose.yml docker-compose.clamav.yml; done",
+      "saida": "As 4 ficam 9/9 verde: clamav tambem na rede default do local-prod; erp-test.hdb montado no overlay; docker.sock no erp-clamav-limits; host 3310 publicado na api. Nenhuma delas existe no objeto: resolvido, clamav ports [] nets clamav_private; dev so 127.0.0.1."
+    },
+    {
+      "id": "C2-A6",
+      "titulo": "B-108 nao prova preservacao do blob no caminho real do antivirus (HTTP 422 e 503), nem em timeout, conflito ou erro generico",
+      "gravidade": "ressalva",
+      "escopo": "pre-existente",
+      "evidencia_de_escopo": "Teste e servico sao de be750e92 (2026-06-18); checklist_attachment_upload.dart de c0630fa3 (2026-08-01); git log e78e3968..2746eb60 -- mobile/flutter_app = 0 commits; o plano proibe mobile/flutter_app neste bloco.",
+      "comando": "cd C:/Users/AMP/w-jav2/mobile/flutter_app && for m in http422 http503 timeout conflito generico; do node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2-mut-r7.mjs $m; flutter test test/features/b108_evidence_storage_hardening_test.dart --reporter expanded; git checkout -- lib; done; flutter test C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c2_sonda_r7_test.dart --reporter expanded",
+      "saida": "Apagar o blob nesses 5 desfechos: 8/8 verde (http422, http503, timeout e generico tambem 89/89 nas 6 suites do servico; checklist 26/26 em http422). B-108.7 confere so o codigo. O M-R7 do plano morde, mas no ramo response.status, e o backend recusa por HTTP, que o mapDioError leva a ApiServerError. Comportamento de hoje correto: sonda 6/6, blob preservado em 422, 503, timeout, rede e 409; replay apos stored = 1 chamada."
+    }
+  ]
+}

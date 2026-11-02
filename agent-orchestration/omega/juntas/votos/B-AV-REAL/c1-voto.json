@@ -1,0 +1,136 @@
+{
+  "cadeira": "C1",
+  "identidade": "c1-j-avreal",
+  "modelo": "Claude Opus 5.5 (claude-opus-5-5), nível menor, declarado",
+  "objeto": "2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77",
+  "voto": "reprova",
+  "arquivos_medidos": [
+    "src/modules/evidence/clamav-scanner.ts",
+    "src/modules/evidence/evidence-scanner.factory.ts",
+    "src/config/env.ts",
+    "tests/avreal-scanner-protocol.test.ts",
+    "tests/avreal-scanner-failures.test.ts",
+    "tests/avreal-config.test.ts",
+    "tests/avreal-signatures.test.ts",
+    "tests/avreal-privacy.test.ts",
+    "tests/avreal-scanner-census.test.ts",
+    "tests/o6r07b-scanner-failclosed.test.ts",
+    "tests/o6r07b-upload-gate-census.test.ts",
+    "src/modules/evidence/upload-gate.ts",
+    "tests/avreal-routes.test.ts",
+    "tests/o6r07b-upload-gate.test.ts",
+    "tests/production-runtime-gates.test.ts",
+    "tests/avreal-clamd.integration.ts"
+  ],
+  "veto_secops": "Sem VETO: nenhuma credencial real no diff, gates de produção do env.ts iguais ou mais rígidos, nenhum segredo ou resposta bruta no fio, no log ou no erro, medido por sonda com canário. O voto reprova por guarda de teste, não por exposição.",
+  "achados": [
+    {
+      "id": "A1",
+      "titulo": "R8b: a mutação M-R8b-b do plano não fica vermelha; o teste de privacidade não enxerga o log real",
+      "gravidade": "bloqueia",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "Inserir no adaptador 'import pino from \"pino\"; const logger = pino({ level: \"info\" });' e 'logger.warn({ raw: response.toString(\"utf8\") });' antes do settle(parseResponse(...)); depois: npm test -- tests/avreal-privacy.test.ts. Ou: cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'M-R8b-b$'. Conferir: grep -n -E 'upload-gate|verifyUploadContent|pino|logger' tests/avreal-privacy.test.ts; git grep 'console.' -- src/modules/evidence",
+      "saida": "exit 0, 2/2 pass, com \"raw\":\"stream: AVREAL_CANARY_...\" no stdout do processo (c1-m8bb.log). Logger em módulo relativo: privacy + censo 7/7, exit 0, canário no log (c1-m8bb2.log). Só console.warn fica vermelho, e src/modules/evidence não usa console; 13 arquivos de src/ usam pino. O plano §3 R8b pede pino em destino de memória e o caso 'log sem canário/resposta bruta', e diz que mutação sem vermelho é defeito do teste. O dev.md l.100 registra M-R8b-b vermelha; com logger.warn não reproduz. Produto hoje sem vazamento (sonda c1-sonda-gate-run.mjs)."
+    },
+    {
+      "id": "A2",
+      "titulo": "R8b: caminho detail/corpo e canário em JWT_SECRET sem teste",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'M-R8b-c-gate|X-R8b-jwt'",
+      "saida": "reason copiado para o detail do UploadGateError: privacy, routes e upload-gate 39/39 verdes. Valor de JWT_SECRET no fio: privacy 2/2 verde; o teste procura a palavra literal. O M-R8b-c do plano fica vermelho, mas só pela metade do reason."
+    },
+    {
+      "id": "A3",
+      "titulo": "Default de produção CLAMAV_MAX_DB_AGE_HOURS=72 sem guarda",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Linha acrescentada pelo bloco: git diff origin/main...2746eb60 -- src/config/env.ts.",
+      "comando": "cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'X-R10-default72'; valor real: AV_W=<worktree> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-sonda-env.mjs",
+      "saida": "Trocar o default por 0: 8 suítes verdes, inclusive production-runtime-gates. O caso 'aceita default seguro' só olha safeParse. O valor real hoje é 72."
+    },
+    {
+      "id": "A4",
+      "titulo": "Sem teto para CLAMAV_MAX_DB_AGE_HOURS em produção",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Linha acrescentada pelo bloco: git diff origin/main...2746eb60 -- src/config/env.ts.",
+      "comando": "AV_W=<worktree> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-sonda-env.mjs",
+      "saida": "prod clamav age=999999 → exit 0, ClamAvEvidenceScanner, age 999999: desliga a idade na prática e cumpre o '≥ 1' do plano."
+    },
+    {
+      "id": "A5",
+      "titulo": "Censo C8 só reconhece 'from': import nu e dinâmico passam",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'X-R12-bare|X-R12-dyn'",
+      "saida": "import \"clamscan\" e import(\"clamscan\") no adaptador: censo verde. O M-R12a do plano fica vermelho."
+    },
+    {
+      "id": "A6",
+      "titulo": "Prazo absoluto não cobre a soma das fases",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree> && AV_W=<worktree> node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-sonda.mts (linha P3)",
+      "saida": "VERSION 800 ms + INSTREAM mudo, connect=900, scan=1000 → timeout em 1861 ms. Pior caso = connect + scan (padrão 48 s, não 45 s). Limitado e fail-closed; R4 diz 'absoluto desde antes de connect' e avreal-config chama o scan de 'timeout total'."
+    },
+    {
+      "id": "A7",
+      "titulo": "Prazos de connect e de VERSION sem teste; casos do plano F3 ausentes",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'X-R4-connect|X-R4-version'; grep -n -E 'DNS|reset|EPIPE|getActiveResourcesInfo' tests/avreal-scanner-failures.test.ts",
+      "saida": "Sem cada prazo: 4 suítes verdes. Sem o de VERSION, um daemon mudo prenderia a vaga. O código está certo por sonda (P4 212 ms, P5 159 ms, P6, P9). O plano F3 lista DNS inválido, reset e EPIPE, e R4 pede getActiveResourcesInfo."
+    },
+    {
+      "id": "A8",
+      "titulo": "Data de VERSION no futuro aprova; relógio voltando mantém o cache",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree> && AV_W=<worktree> node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-sonda.mts (linhas P10a, P10c, P10d)",
+      "saida": "VERSION de 2099 → clean. Relógio volta 1 ano com VERSION quebrado → clean, sem nova consulta. Data sem fuso é lida no fuso do processo. Exige daemon adulterado ou relógio errado; daemon adulterado já poderia responder OK."
+    },
+    {
+      "id": "A9",
+      "titulo": "Segunda resposta em pacote separado não é vista",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree> && AV_W=<worktree> node --import tsx C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-sonda.mts (linha P2)",
+      "saida": "stream: OK\u0000 e 30 ms depois stream: X FOUND\u0000 → clean. R3 lista 'duas respostas → failed'; o teste cobre só o mesmo frame."
+    },
+    {
+      "id": "A10",
+      "titulo": "EICAR versionado num literal só",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "git show 2746eb60:tests/avreal-clamd.integration.ts | grep -n X5O",
+      "saida": "l.100, a string inteira numa linha. O plano §3 e R9 mandam montar em runtime com duas metades. Competência C3; registrado por ser regra de segurança."
+    },
+    {
+      "id": "A11",
+      "titulo": "scanReason no log do gate sem teste",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Linha acrescentada pelo bloco: git diff origin/main...2746eb60 -- src/modules/evidence/upload-gate.ts.",
+      "comando": "Retirar 'scanReason: scanReason ?? null,' de upload-gate.ts; npm test -- tests/avreal-routes.test.ts tests/avreal-privacy.test.ts tests/o6r07b-upload-gate.test.ts; grep -n scanReason tests/*.ts",
+      "saida": "39/39 verdes; nenhum teste cita scanReason. O R6 pede scanReason no log. Competência C2. A sonda mostra o valor correto hoje (protocol_error, scan_limit_exceeded)."
+    },
+    {
+      "id": "A12",
+      "titulo": "M-R2a e M-R2b ficam vermelhas pelo prazo do adaptador, não por watchdog do teste",
+      "gravidade": "ressalva",
+      "escopo": "dentro-do-bloco",
+      "evidencia_de_escopo": "Arquivo novo do bloco: git diff --name-status origin/main...2746eb60 o lista como A.",
+      "comando": "cd <worktree no objeto> && AV_W=<worktree> AV_EV=<arquivo> node C:/Users/AMP/erp-pausa-2026-10-03/juntas/J-B-AV-REAL/c1-mut.mjs 'M-R2a|M-R2b'",
+      "saida": "Um caso leva 46-47 s; o plano esperava ≤ 5 s. Vermelho real e sem pendurar, mas a suíte inteira sob mutação custa cerca de 45 s por caso."
+    }
+  ]
+}

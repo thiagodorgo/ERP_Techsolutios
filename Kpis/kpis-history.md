@@ -3196,3 +3196,10 @@ pós-merge.
 | 2026-10-30 | `PR-475` — As decisões de 28 a 30 de outubro foram incorporadas ao registro oficial, incluindo um fluxo de revisão mais rápido sem reduzir as proteções dos casos de maior risco | #475 | `264c3760` | `b8b79ea2` | 4155/4157 | 1482/1482 | 905/905 | 191 | 41055421892 (tentativa 1) |
 | 2026-10-30 | `B-SAN3-00b` — As regras de organização dos arquivos voltaram a aceitar os nomes globais usados pelos agentes, eliminando bloqueios indevidos na preparação do trabalho | #476 | `f0658185` | `3a4a8f8e` | 4155/4157 | 1482/1482 | 905/905 | 191 | 41059863314 (tentativa 1) |
 | 2026-10-31 | `PR-474` — O Financeiro passou a oferecer também as aparências B e C, com os mesmos dados e ações da aparência A; a entrega completa as três opções pessoais e fecha os itens 28 e 55 do portão da versão vendável | #474 | `2b65f51a` | `ccfd4e3b` | 4155/4157 | 1556/1556 | 905/905 | 192 | 41207658016 (tentativa 1) |
+
+## Entregas do KPI-MARCO-2026-11-02
+
+| Data | Bloco | PR | merge | approved_head | Backend | Web | App | Blocos | CI (run, tentativa) |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| 2026-10-31 | `PR-478` — Atualiza o registro de governança de 31/10 com decisões, pendências, andamento geral e encerramento de etapa no plano de revisão. Trata-se apenas de registro de decisões e pendências, sem mudança no produto. | #478 | `e78e3968` | `b5ae5885` | 4155/4157 | 1556/1556 | 905/905 | 192 | 41232880099 (tentativa 1) |
+| 2026-10-31 | `PR-479` — Registra as decisões, as pendências de cobrança e o andamento operacional da noite de 31/10 sobre assinatura, custos da plataforma e padrão de qualidade, preservando as falas do dono e separando recomendações de decisões. Trata-se exclusivamente de registro de decisões e pendências, sem mudança no produto. | #479 | `0fda595a` | `d715f3ba` | 4155/4157 | 1556/1556 | 905/905 | 192 | 41259476444 (tentativa 1) |

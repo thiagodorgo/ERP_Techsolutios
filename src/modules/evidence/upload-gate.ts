@@ -128,7 +128,12 @@ export async function verifyUploadContent(input: VerifyUploadContentInput): Prom
 
   // Monta o erro E registra a linha de log. Devolve (em vez de lançar) para o `throw` ficar no ponto de
   // decisão — assim o TypeScript estreita `sniffed` depois do primeiro guard.
-  const rejection = (kind: UploadGateErrorKind, sniffed: string | undefined, detail: string): UploadGateError => {
+  const rejection = (
+    kind: UploadGateErrorKind,
+    sniffed: string | undefined,
+    detail: string,
+    scanReason?: string,
+  ): UploadGateError => {
     // 1 linha de log estruturado. Sem PII, sem path, sem nome de arquivo, sem bytes.
     logger.warn(
       {
@@ -140,6 +145,7 @@ export async function verifyUploadContent(input: VerifyUploadContentInput): Prom
         sniffed: sniffed ?? null,
         sizeBytes,
         sha256,
+        scanReason: scanReason ?? null,
       },
       "upload rejected by content gate",
     );
@@ -170,10 +176,10 @@ export async function verifyUploadContent(input: VerifyUploadContentInput): Prom
     buffer: input.buffer,
   });
   if (result.status === "infected") {
-    throw rejection("scanner_infected", sniffed, "File was rejected by the safety scan.");
+    throw rejection("scanner_infected", sniffed, "File was rejected by the safety scan.", result.reason);
   }
   if (result.status === "failed") {
-    throw rejection("scanner_unavailable", sniffed, "File safety scan is unavailable; retry later.");
+    throw rejection("scanner_unavailable", sniffed, "File safety scan is unavailable; retry later.", result.reason);
   }
 
   // (3) A MARCA. Objeto opaco: nada a copiar, nada a mutar. Os fatos ficam no registro.

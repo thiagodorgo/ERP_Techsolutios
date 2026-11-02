@@ -125,9 +125,9 @@ test("C2 censo: `.scan(` sobre EvidenceScanner só ocorre em upload-gate.ts", as
 
 // ── C3: só a factory instancia scanner ────────────────────────────────────────────────────────────
 
-test("C3 censo: `new NoopEvidenceScanner(`/`new UnavailableEvidenceScanner(` só na factory", async () => {
+test("C3 censo: scanners concretos só são instanciados na factory", async () => {
   const files = await sourceFiles();
-  const found = [...filesMatching(files, /new (Noop|Unavailable)EvidenceScanner\(/)].sort();
+  const found = [...filesMatching(files, /new (Noop|Unavailable|ClamAv)EvidenceScanner\(/)].sort();
   assert.deepEqual(
     found,
     ["modules/evidence/evidence-scanner.factory.ts"],
