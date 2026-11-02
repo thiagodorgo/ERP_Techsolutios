@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-11-02 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: o Argon propõe as descrições, o orquestrador confere e o script grava; o KPI segue CONGELADO para os PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 02/11: só registro, números sem mudança",
-    "pr": null,
+    "pr": 481,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
