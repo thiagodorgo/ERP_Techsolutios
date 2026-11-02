@@ -138,12 +138,13 @@ void main() {
     await tester.pumpAndSettle();
 
     // SyncScreen renders human-readable labels (not raw type strings).
-    expect(find.text('Expense Report Create'), findsOneWidget);
-    expect(find.text('Expense Report Submit'), findsOneWidget);
+    expect(find.text('Novo relatório de despesas'), findsOneWidget);
+    expect(find.text('Envio do relatório de despesas'), findsOneWidget);
     // Domain group for expenses is shown.
     expect(find.text('Despesas (RDV)'), findsOneWidget);
     // lastSafeError is shown in the action row subtitle.
-    expect(find.textContaining('Falha segura'), findsOneWidget);
+    expect(find.text('Aguardando envio'), findsNWidgets(2));
+    expect(find.textContaining('Falha segura'), findsNothing);
   });
 
   testWidgets(

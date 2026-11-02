@@ -85,8 +85,8 @@ void main() {
       await t.pumpAndSettle();
 
       expect(find.byKey(const Key('conflict-card-c1')), findsOneWidget);
-      expect(find.text('Minha versao'), findsOneWidget);
-      expect(find.text('Versao do gestor'), findsOneWidget);
+      expect(find.text('Minha versão'), findsOneWidget);
+      expect(find.text('Versão do gestor'), findsOneWidget);
     });
 
     testWidgets('5. "Minha versao" resolve para pending e some o card', (

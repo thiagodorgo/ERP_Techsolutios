@@ -118,19 +118,24 @@ class PrestadorRepository extends ChangeNotifier {
       await _localStore.saveMaterial(material);
     }
 
-    selection.forEach((sku, qty) {
-      if (qty <= 0) return;
+    // B-O6R-11 (Ω6R-QUA-005) — `for-in` com `await`, nunca `selection.forEach`: o callback do
+    // `forEach` é `void`, a `Future` de cada `enqueue` era descartada, e o método retornava (e
+    // notificava a tela) ANTES de qualquer ação gravada. Um reinício logo depois perdia todas; e
+    // as N gravações concorrentes da fila (read-modify-write) deixavam 1 de N. Retorno e
+    // notificação só depois do último `await`.
+    for (final entry in selection.entries) {
+      if (entry.value <= 0) continue;
       final action = _actionFactory.create(
         tenantId: _session.activeTenant.tenantId,
         type: InventorySyncActionTypes.materialAdd,
         payload: {
           'work_order_local_id': workOrderLocalId,
-          'sku': sku,
-          'quantity': qty,
+          'sku': entry.key,
+          'quantity': entry.value,
         },
       );
-      _syncQueue.enqueue(action);
-    });
+      await _syncQueue.enqueue(action);
+    }
 
     notifyListeners();
     return merged;

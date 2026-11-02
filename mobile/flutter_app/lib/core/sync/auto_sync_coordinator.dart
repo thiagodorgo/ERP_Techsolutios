@@ -76,6 +76,12 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       final tenantId = session.activeTenant.tenantId;
 
       try {
+        await ref.read(syncQueueReclaimServiceProvider).reclaimTenant(tenantId);
+      } catch (_) {
+        // Resgate falho nao bloqueia os demais dominios de sincronizacao.
+      }
+
+      try {
         await ref.read(fieldLocationSyncServiceProvider).syncTenant(tenantId);
       } catch (_) {
         // Field Location falha isolada nao deve bloquear os demais dominios.
@@ -131,7 +137,7 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
 
   String _safeMessage(Object e) {
     if (e is ApiError) return e.safeMessage;
-    return 'Falha na sincronizacao. Tente novamente.';
+    return 'Falha na sincronização. Tente novamente.';
   }
 }
 
