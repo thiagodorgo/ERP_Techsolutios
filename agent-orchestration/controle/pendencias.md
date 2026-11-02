@@ -11016,7 +11016,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-O6R-03b`.
+- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
 - **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
 - **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
 - **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
@@ -11966,6 +11966,23 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   orquestrador como divergência — o `PLANO_SAN3.md` é fonte de verdade fora do escopo deste bloco e não foi tocado.
   *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem nenhum dos arquivos.)*
 - **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
+- **Apenso 2026-11-02 (conserto pós-junta do PR #483, achado A-02 da C3):** o `analyzer` segue **transitivo**. O guard
+  `test/core/sync/bo6r11_guard_fila_await_ast_test.dart` importa `package:analyzer/...`; `mobile/flutter_app/pubspec.yaml`
+  não o declara e `mobile/flutter_app/pubspec.lock:12-13` o tem como `analyzer:` / `dependency: transitive`. Fonte: plano
+  do ciclo 3, linha 0.29 e risco R-f (`agent-orchestration/omega/planos/B-O6R-11-plano-ciclo3.md:63,382`), que prometia
+  esta nota. Uma atualização de `drift_dev`/`build_runner` pode removê-lo; se o CI quebrar por isso, um bloco próprio
+  declara `analyzer` em `dev_dependencies` (dependência nova → junta de 5). `pubspec` segue PROIBIDO no `B-O6R-11`.
+- **Apenso 2026-11-02 (conserto pós-junta do PR #483, achado A-C1-02 da C1, não grave):** o resgate
+  (`SyncQueueReclaimService.reclaimTenant`, `lib/core/sync/sync_queue_reclaim_service.dart`) lê `actionsForTenant`
+  **fora** da seção serializada e grava, com `update`, a cópia lida da ação inteira: uma escrita alheia na mesma ação
+  entre a leitura e a escrita se perde. Sonda da C1 (`erp-pausa-2026-10-03/revisoes/j483/c1-logs/zz_j483c1_probe_test.dart.txt`):
+  store com `load()` de 20 ms, ação `checklist_answer.upsert` em `syncing`, `reclaimTenant('t1')` e um `update` do
+  mesmo id com `server_run_id='srv-1'` → `status=conflict payload={local_run_id: r1} code=SYNC_INTERRUPTED`,
+  `Expected: 'srv-1' Actual: <null>`. A ação não some, não é reenviada em dobro e não encalha sem saída (fica
+  `conflict`, visível e decidível). **Sem par de produção provado:** o único escritor concorrente de UI achado
+  (`_stampServerRunIdOnQueue`, `checklist_repository.dart:288`) só carimba ação sem `server_run_id`, que o replay de
+  checklist quase nunca deixa em `syncing`. **Não grave.** Mesma classe RMW desta pendência; o conserto pede API de
+  leitura e escrita dentro da trava, junto do append/upsert atômico acima.
 
 ## P-MOBILE-DISCARDED-FUTURES (2026-09-19) — 16 `Future`s descartadas em função síncrona mantêm o lint `discarded_futures` desligado — BAIXA
 
@@ -12342,3 +12359,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** orquestração/capacidade da máquina · **dono:** orquestração · **prioridade:** BAIXA · **bloqueia:** não, desde que respeitado o teto.
 - **origem medida:** três suítes Linux em paralelo morreram no mesmo instante aos 11m04s, sem causa exata provada; duas concluíram em cerca de 7m36s. A máquina fica com teto de **2 trabalhos Docker**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-69,89-97`.
 - **encerramento:** manter o teto em 2; eventual aumento só depois de medição própria que prove três trabalhos concluindo sem indisponibilidade do Docker.
+
+## P-MOBILE-BANNER-PROMETE-SINCRONIZAR (2026-11-02) — banner offline promete sincronizar "alterações" ao lado do aviso de despesa não enviada — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (origem `e79616aa`, 2026-06-13; `erp_components.dart` fora do PERMITIDO do `B-O6R-11`) · **dono:** `B-SAN3-19` · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem:** achado A-05 da cadeira C3 na junta do PR #483 (`B-O6R-11`, corte 1), 2026-11-02; triagem: pendência.
+- **o quê:** offline, a tela de sincronização mostra o `NetworkStatusBanner` (`mobile/flutter_app/lib/shared/ui/sync_screen.dart:149`),
+  cujo texto (`mobile/flutter_app/lib/shared/ui/erp_components.dart:183`) é 'Modo offline — alteracoes serao sincronizadas
+  ao reconectar.'. Ao lado está o aviso novo 'Envio de despesas ainda não ativado'; para a despesa com o canal desligado, os
+  dois textos se contradizem, e o banner está sem acento.
+- **evidência:** `git log --format='%h %ad' --date=short -S'alteracoes serao sincronizadas' origin/main -- mobile/flutter_app/lib/shared/ui/erp_components.dart`
+  → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
+- **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.

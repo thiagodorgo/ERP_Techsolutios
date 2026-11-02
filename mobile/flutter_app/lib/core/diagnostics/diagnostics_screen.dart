@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../bootstrap/bootstrap_repository.dart';
 import '../network/connectivity_repository.dart';
+import '../sync/sync_action_labels.dart';
 import '../sync/sync_action_presentation.dart';
+import '../sync/sync_interrupted_reclaim.dart';
 import '../sync/sync_models.dart';
 import '../sync/sync_providers.dart';
+import '../sync/sync_stalled_resolver.dart';
 import '../../shared/ui/erp_components.dart';
 import '../../shared/ui/erp_scaffold.dart';
 
@@ -87,14 +90,15 @@ class DiagnosticsScreen extends ConsumerWidget {
               for (final action in actions.where(
                 (action) =>
                     action.lastSafeError != null &&
-                    presentSyncAction(action, expenseChannelOff: channelOff) !=
-                        SyncPresentation.awaitingBackend,
+                    !_notAProblem.contains(
+                      presentSyncAction(action, expenseChannelOff: channelOff),
+                    ),
               ))
                 Card(
                   key: ValueKey(action.clientActionId),
                   child: ListTile(
                     leading: const Icon(Icons.report_problem_outlined),
-                    title: Text(action.lastErrorCode ?? 'erro_seguro'),
+                    title: Text(_problemTitle(action)),
                     subtitle: Text(action.lastSafeError!),
                   ),
                 ),
@@ -104,6 +108,24 @@ class DiagnosticsScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+// B-O6R-11, conserto pós-junta (A-01): "Aguardando envio" e "Descartado" não
+// são problema, e os códigos deste bloco nunca aparecem crus como título.
+const _notAProblem = {
+  SyncPresentation.awaitingBackend,
+  SyncPresentation.discarded,
+};
+
+const _codesWithActionLabel = {
+  syncInterruptedErrorCode,
+  syncDiscardedErrorCode,
+};
+
+String _problemTitle(SyncAction action) {
+  final code = action.lastErrorCode;
+  if (_codesWithActionLabel.contains(code)) return syncActionLabel(action.type);
+  return code ?? 'erro_seguro';
 }
 
 String _domainBreakdown(List<SyncAction> actions) {

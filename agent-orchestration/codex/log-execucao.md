@@ -5115,3 +5115,12 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Papel/modelo: Claude Opus (claude-opus-5-5), nível menor declarado, cobrindo o Codex (`D-CLAUDE-COBRE-ATE-0411`: conta 1 no limite, conta 2 ocupada).
 - F5: sonda P4 só para `_resolveConflict`; resultado **B** (não reproduz), comando e controle no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`; zero linhas em `sync_screen.dart`; suíte `+969`.
 - F6c: `pendencias.md` (P-O6R-B11, FAILED-SEM-DESCARTE PARCIAL, MATERIAL-SEM-REPLAY, FILA-POR-USUARIO, RECEIPT-ATTACH, FAXINA; 3 novas, 1 índice, 3 portadas), índice regenerado pelo gerador (683 → 690 cabeçalhos), `PLANO_SAN3.md` (itens 3, 30, 48 e linhas `B-O6R-11`, `B-O6R-03b`, `B-SAN3-19`, sem reescrever), comando v2, cópias de plano e emendas em `omega/planos/`. `decisoes.md` intocado (as 4 decisões já estão na `main`). `Kpis/**` intocado.
+
+## 2026-11-02 — B-O6R-11 · errata ao registro da F6c (conserto pós-junta do PR #483, achado A-06 da C3)
+
+- **Errata (append-only; a linha antiga da F6c fica como está):** o número publicado "683 → 690 cabeçalhos" era o da F6c,
+  **antes** do merge da `main` no ramo. O índice entregue no objeto da junta (`d3e80027`) vai de **701** (`origin/main`
+  `600c5040`) a **708** cabeçalhos `## P-`. Medido pela C3: `git show <ref>:agent-orchestration/controle/pendencias-indice.md | grep -m1 Cabecalhos`
+  → `2b65f51a` 683; `origin/main` 701; `d3e80027` 708.
+- O conserto pós-junta acrescenta mais 1 pendência (`P-MOBILE-BANNER-PROMETE-SINCRONIZAR`); o índice é regenerado pelo
+  gerador no mesmo commit, e o número final fica no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`.

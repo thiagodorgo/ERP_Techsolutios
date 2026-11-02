@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **708** |
-| IDs distintos | 697 |
-| **ABERTAS** | **533** |
+| Cabecalhos `## P-` | **709** |
+| IDs distintos | 698 |
+| **ABERTAS** | **534** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **468** |
+| — das quais **ativas nesta rodada** | **469** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 171 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **708 cabecalhos para 697 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **709 cabecalhos para 698 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -301,21 +301,21 @@
 | `P-O6R-B11-PENDENCIAS-DO-RAMO-388` | 11899 | MÉDIA | sim | P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mo |
 | `P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS` | 11920 | ALTA | sim | P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e  |
 | `P-MOBILE-FILA-RMW-STORE` | 11944 | MÉDIA | sim | P-MOBILE-FILA-RMW-STORE (2026-09-18) — a serialização do `B-O6R-11` protege UMA instânci |
-| `P-AUDIT-CRITICA-NA-TRANSACAO` | 12053 | MÉDIA | sim | P-AUDIT-CRITICA-NA-TRANSACAO (2026-10-26) — evento de auditoria `critical` gravado DEPOI |
-| `P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID` | 12075 | MÉDIA | sim | P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o ho |
-| `P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO` | 12089 | MÉDIA | sim | P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO (2026-10-26) — segundo cheque do valor cheio enquanto |
-| `P-CHK-EDITOR-GRADE-ESTREITA` | 12099 | MÉDIA | sim | P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checkl |
-| `P-CHK-EDITOR-LEITURAS-B` | 12105 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
-| `P-FRONT-TESTE-DE-INTERACAO` | 12118 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
-| `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 12177 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
-| `P-SAN3-10-VARREDURA-SEGURANCA-FINAL` | 12220 | ALTA | sim | P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portã |
-| `P-AVREAL-TETO-IDADE` | 12250 | MÉDIA | sim | P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em p |
-| `P-AVREAL-B108-PROVA` | 12280 | MÉDIA | sim | P-AVREAL-B108-PROVA (2026-10-31) — `b108_evidence_storage_hardening_test.dart` não prova |
-| `P-AVREAL-PANE-CI` | 12286 | MÉDIA | sim | P-AVREAL-PANE-CI (2026-10-31) — modos `unavailable`, recuperação e HTTP 503 com daemon f |
-| `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` | 12306 | ALTA | sim | P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de  |
-| `P-AUDITORIA-MEDIR-CRUZAMENTO` | 12313 | MÉDIA | sim | P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram |
+| `P-AUDIT-CRITICA-NA-TRANSACAO` | 12070 | MÉDIA | sim | P-AUDIT-CRITICA-NA-TRANSACAO (2026-10-26) — evento de auditoria `critical` gravado DEPOI |
+| `P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID` | 12092 | MÉDIA | sim | P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o ho |
+| `P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO` | 12106 | MÉDIA | sim | P-SAN3-12-CHEQUE-DUPLO-VALOR-CHEIO (2026-10-26) — segundo cheque do valor cheio enquanto |
+| `P-CHK-EDITOR-GRADE-ESTREITA` | 12116 | MÉDIA | sim | P-CHK-EDITOR-GRADE-ESTREITA (2026-10-26) — abaixo de 1180 px a grade do editor de checkl |
+| `P-CHK-EDITOR-LEITURAS-B` | 12122 | MÉDIA | sim | P-CHK-EDITOR-LEITURAS-B (2026-10-26) — editor de checklist: as leituras que a aparência  |
+| `P-FRONT-TESTE-DE-INTERACAO` | 12135 | MÉDIA | sim | P-FRONT-TESTE-DE-INTERACAO (2026-10-26) — o smoke do front é SSR e não exercita handlers |
+| `P-REGISTRO-MERGE-CONFERE-TRES-VIAS` | 12194 | MÉDIA | sim | P-REGISTRO-MERGE-CONFERE-TRES-VIAS (2026-10-28) — o merge de registro confere cabeçalhos |
+| `P-SAN3-10-VARREDURA-SEGURANCA-FINAL` | 12237 | ALTA | sim | P-SAN3-10-VARREDURA-SEGURANCA-FINAL (2026-10-30) — varredura de segurança antes do portã |
+| `P-AVREAL-TETO-IDADE` | 12267 | MÉDIA | sim | P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em p |
+| `P-AVREAL-B108-PROVA` | 12297 | MÉDIA | sim | P-AVREAL-B108-PROVA (2026-10-31) — `b108_evidence_storage_hardening_test.dart` não prova |
+| `P-AVREAL-PANE-CI` | 12303 | MÉDIA | sim | P-AVREAL-PANE-CI (2026-10-31) — modos `unavailable`, recuperação e HTTP 503 com daemon f |
+| `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` | 12323 | ALTA | sim | P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de  |
+| `P-AUDITORIA-MEDIR-CRUZAMENTO` | 12330 | MÉDIA | sim | P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram |
 
-## ABERTAS · balde B — processo/registro — 229
+## ABERTAS · balde B — processo/registro — 230
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -513,41 +513,42 @@
 | `P-DB-TIMEZONE-UTC` | 11790 | BAIXA | sim | P-DB-TIMEZONE-UTC (2026-10-25) — exibição de updatedAt depende da TimeZone da sessão — B |
 | `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO` | 11867 | BAIXA | sim | P-MOBILE-SYNC-SCREEN-RETRATO-VELHO (2026-11-02) — "Minha versão"/"Versão do gestor" grav |
 | `P-O6R11-TEXTOS-FORA-DE-D-T` | 11884 | BAIXA | sim | P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos d |
-| `P-MOBILE-DISCARDED-FUTURES` | 11970 | BAIXA | sim | P-MOBILE-DISCARDED-FUTURES (2026-09-19) — 16 `Future`s descartadas em função síncrona ma |
-| `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA` | 12001 | BAIXA | sim | P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica  |
-| `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD` | 12007 | BAIXA | sim | P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de |
-| `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO` | 12014 | BAIXA | sim | P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a  |
-| `P-WO-STATUS-VOCABULARIO-APP-BACKEND` | 12022 | BAIXA | sim | P-WO-STATUS-VOCABULARIO-APP-BACKEND (2026-10-25) — approved só no app; rejected terminal |
-| `P-WO-LIST-SCOPE-WEB-TECNICO` | 12028 | BAIXA | sim | P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de  |
-| `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL` | 12034 | BAIXA | sim | P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (2026-10-25) — o teste 16 da telemetria falha por  |
-| `P-MOBILE-ORFAOS-POS-PURGA` | 12041 | BAIXA | sim | P-MOBILE-ORFAOS-POS-PURGA (2026-10-25) — ação e material órfãos da OS que saiu do aparel |
-| `P-TENANT-SETTING-AUDIT-SEM-VALOR` | 12059 | BAIXA | sim | P-TENANT-SETTING-AUDIT-SEM-VALOR (2026-10-26) — `tenant_setting.upserted` não diz o valo |
-| `P-RBAC-MIGRATION-PARITY-ESTATICA` | 12065 | BAIXA | sim | P-RBAC-MIGRATION-PARITY-ESTATICA (2026-10-26) — a guarda estática não acusa migração que |
-| `P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO` | 12070 | BAIXA | sim | P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO (2026-10-26) — nenhum teste do resumo financ |
-| `P-GUARD-MIGRACAO-CONTROLES-SEM-CASO` | 12083 | BAIXA | sim | P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de r |
-| `P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO` | 12094 | BAIXA | sim | P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO (2026-10-26) — falta reaplicação após rollback man |
-| `P-CHK-COMPONENTES-EMPATE-ORDER-INDEX` | 12112 | BAIXA | sim | P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo |
-| `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` | 12125 | BAIXA | **a atribuir** | P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (2026-10-26) — 8 somas de dinheiro/contagem  |
-| `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` | 12132 | BAIXA | sim | P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do men |
-| `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` | 12142 | BAIXA | sim | P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no  |
-| `P-SAN3-12-CE4-BRACO1-NA-CI` | 12152 | BAIXA | sim | P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 ( |
-| `P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO` | 12182 | BAIXA | sim | P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número qu |
-| `P-SAN3-12C-CHEQUE-FILTRO-INVERSO` | 12188 | BAIXA | sim | P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por |
-| `P-SAN3-12C-KPI-MARCO-473` | 12194 | BAIXA | sim | P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 1 |
-| `P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ` | 12199 | BAIXA | sim | P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ (2026-10-30) — a referência mistura as duas ressalv |
-| `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM` | 12205 | BAIXA | sim | P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir |
-| `P-SAN3-12C-CABECALHO-A-24PX` | 12211 | BAIXA | sim | P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px |
-| `P-C2R-01-ROLE-PERMS-NO-ROTEIRO` | 12215 | BAIXA | sim | P-C2R-01-ROLE-PERMS-NO-ROTEIRO (2026-10-29) — o roteiro da C2 não registra a geração de  |
-| `P-B-RDV-COMPROVANTE` | 12244 | — | sim | P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano |
-| `P-AVREAL-PRAZO-SOMA` | 12256 | BAIXA | sim | P-AVREAL-PRAZO-SOMA (2026-10-31) — prazo de varredura não desconta a fase de conexão / ` |
-| `P-AVREAL-VERSION-FUTURO` | 12262 | BAIXA | sim | P-AVREAL-VERSION-FUTURO (2026-10-31) — data de `VERSION` no futuro ou regressão de relóg |
-| `P-AVREAL-SEGUNDA-RESPOSTA` | 12268 | BAIXA | sim | P-AVREAL-SEGUNDA-RESPOSTA (2026-10-31) — segunda resposta em pacote TCP separado após o  |
-| `P-AVREAL-ROTAS-ROTULO` | 12274 | BAIXA | sim | P-AVREAL-ROTAS-ROTULO (2026-10-31) — `tests/avreal-routes.test.ts` chama `verifyUploadCo |
-| `P-COBRANCA-P2-VALORES-DOS-PLANOS` | 12294 | — | sim | P-COBRANCA-P2-VALORES-DOS-PLANOS (2026-10-31) — valores dos 4 planos e dos 2 de rastream |
-| `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR` | 12300 | — | sim | P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR (2026-10-31) — regime, município, enquadramento e |
-| `P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE` | 12328 | BAIXA | sim | P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE (2026-11-02) — sweep de órfã velha falhou 1 em 5 r |
-| `P-ARNES-TRACCAR-TEMPO-SOB-CARGA` | 12334 | BAIXA | sim | P-ARNES-TRACCAR-TEMPO-SOB-CARGA (2026-11-02) — teste de ingestão divide 400 ms com a máq |
-| `P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA` | 12340 | BAIXA | sim | P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA (2026-11-02) — três suítes Linux paralelas morreram |
+| `P-MOBILE-DISCARDED-FUTURES` | 11987 | BAIXA | sim | P-MOBILE-DISCARDED-FUTURES (2026-09-19) — 16 `Future`s descartadas em função síncrona ma |
+| `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA` | 12018 | BAIXA | sim | P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica  |
+| `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD` | 12024 | BAIXA | sim | P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de |
+| `P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO` | 12031 | BAIXA | sim | P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a  |
+| `P-WO-STATUS-VOCABULARIO-APP-BACKEND` | 12039 | BAIXA | sim | P-WO-STATUS-VOCABULARIO-APP-BACKEND (2026-10-25) — approved só no app; rejected terminal |
+| `P-WO-LIST-SCOPE-WEB-TECNICO` | 12045 | BAIXA | sim | P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de  |
+| `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL` | 12051 | BAIXA | sim | P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL (2026-10-25) — o teste 16 da telemetria falha por  |
+| `P-MOBILE-ORFAOS-POS-PURGA` | 12058 | BAIXA | sim | P-MOBILE-ORFAOS-POS-PURGA (2026-10-25) — ação e material órfãos da OS que saiu do aparel |
+| `P-TENANT-SETTING-AUDIT-SEM-VALOR` | 12076 | BAIXA | sim | P-TENANT-SETTING-AUDIT-SEM-VALOR (2026-10-26) — `tenant_setting.upserted` não diz o valo |
+| `P-RBAC-MIGRATION-PARITY-ESTATICA` | 12082 | BAIXA | sim | P-RBAC-MIGRATION-PARITY-ESTATICA (2026-10-26) — a guarda estática não acusa migração que |
+| `P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO` | 12087 | BAIXA | sim | P-FINANCIAL-SUMMARY-SEM-SEGUNDA-ORGANIZACAO (2026-10-26) — nenhum teste do resumo financ |
+| `P-GUARD-MIGRACAO-CONTROLES-SEM-CASO` | 12100 | BAIXA | sim | P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de r |
+| `P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO` | 12111 | BAIXA | sim | P-SAN3-12A-RUNBOOK-REAPLICAR-MIGRACAO (2026-10-26) — falta reaplicação após rollback man |
+| `P-CHK-COMPONENTES-EMPATE-ORDER-INDEX` | 12129 | BAIXA | sim | P-CHK-COMPONENTES-EMPATE-ORDER-INDEX (2026-10-26) — componentes de checklist com o mesmo |
+| `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` | 12142 | BAIXA | **a atribuir** | P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE (2026-10-26) — 8 somas de dinheiro/contagem  |
+| `P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO` | 12149 | BAIXA | sim | P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do men |
+| `P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO` | 12159 | BAIXA | sim | P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO (2026-10-27) — "Acesso nao autorizado" sem acento no  |
+| `P-SAN3-12-CE4-BRACO1-NA-CI` | 12169 | BAIXA | sim | P-SAN3-12-CE4-BRACO1-NA-CI (2026-10-27) — o CE-4 `-db` do 12b roda na CI só no braço 2 ( |
+| `P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO` | 12199 | BAIXA | sim | P-SAN3-12C-CONTA-SEM-AGENCIA-NUMERO (2026-10-28) — a referência mostra agência/número qu |
+| `P-SAN3-12C-CHEQUE-FILTRO-INVERSO` | 12205 | BAIXA | sim | P-SAN3-12C-CHEQUE-FILTRO-INVERSO (2026-10-28) — a referência sugere títulos cobertos por |
+| `P-SAN3-12C-KPI-MARCO-473` | 12211 | BAIXA | sim | P-SAN3-12C-KPI-MARCO-473 (2026-10-28) — o marco de KPI aguarda o merge e o porteiro do 1 |
+| `P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ` | 12216 | BAIXA | sim | P-SAN3-12C-RESSALVAS-UM-TIPO-POR-VEZ (2026-10-30) — a referência mistura as duas ressalv |
+| `P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM` | 12222 | BAIXA | sim | P-SAN3-12C-CONFERENCIA-ROTULO-DO-FORM (2026-10-30) — a referência diz "Conciliar e abrir |
+| `P-SAN3-12C-CABECALHO-A-24PX` | 12228 | BAIXA | sim | P-SAN3-12C-CABECALHO-A-24PX (2026-10-30) — o cabeçalho da aparência A continua com 24 px |
+| `P-C2R-01-ROLE-PERMS-NO-ROTEIRO` | 12232 | BAIXA | sim | P-C2R-01-ROLE-PERMS-NO-ROTEIRO (2026-10-29) — o roteiro da C2 não registra a geração de  |
+| `P-B-RDV-COMPROVANTE` | 12261 | — | sim | P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano |
+| `P-AVREAL-PRAZO-SOMA` | 12273 | BAIXA | sim | P-AVREAL-PRAZO-SOMA (2026-10-31) — prazo de varredura não desconta a fase de conexão / ` |
+| `P-AVREAL-VERSION-FUTURO` | 12279 | BAIXA | sim | P-AVREAL-VERSION-FUTURO (2026-10-31) — data de `VERSION` no futuro ou regressão de relóg |
+| `P-AVREAL-SEGUNDA-RESPOSTA` | 12285 | BAIXA | sim | P-AVREAL-SEGUNDA-RESPOSTA (2026-10-31) — segunda resposta em pacote TCP separado após o  |
+| `P-AVREAL-ROTAS-ROTULO` | 12291 | BAIXA | sim | P-AVREAL-ROTAS-ROTULO (2026-10-31) — `tests/avreal-routes.test.ts` chama `verifyUploadCo |
+| `P-COBRANCA-P2-VALORES-DOS-PLANOS` | 12311 | — | sim | P-COBRANCA-P2-VALORES-DOS-PLANOS (2026-10-31) — valores dos 4 planos e dos 2 de rastream |
+| `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR` | 12317 | — | sim | P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR (2026-10-31) — regime, município, enquadramento e |
+| `P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE` | 12345 | BAIXA | sim | P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE (2026-11-02) — sweep de órfã velha falhou 1 em 5 r |
+| `P-ARNES-TRACCAR-TEMPO-SOB-CARGA` | 12351 | BAIXA | sim | P-ARNES-TRACCAR-TEMPO-SOB-CARGA (2026-11-02) — teste de ingestão divide 400 ms com a máq |
+| `P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA` | 12357 | BAIXA | sim | P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA (2026-11-02) — três suítes Linux paralelas morreram |
+| `P-MOBILE-BANNER-PROMETE-SINCRONIZAR` | 12363 | BAIXA | sim | P-MOBILE-BANNER-PROMETE-SINCRONIZAR (2026-11-02) — banner offline promete sincronizar "a |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
@@ -786,11 +787,11 @@
 | `P-SAN3-20-RESUMO-CHEQUE-VINCULADO` | 11663 | BAIXA | sim | P-SAN3-20-RESUMO-CHEQUE-VINCULADO (2026-10-24) — KPI pode somar título e cheque pendente |
 | `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` | 11701 | CRÍTICA | sim | P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO (2026-10-25) — o PERMITIDO do 12a não cobre o que as |
 | `P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE` | 11731 | BAIXA | sim | P-SAN3-12-REFERENCIA-FINANCEIRO-3OPCOES-CHEQUE (2026-10-25) — a referência de 16/10 list |
-| `P-SAN3-12B-BUSCA-TABELA-TITULOS` | 12137 | BAIXA | sim | P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da  |
-| `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` | 12147 | BAIXA | sim | P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devol |
-| `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE` | 12157 | BAIXA | sim | P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` ( |
-| `P-SAN3-12B-KPI-PRESSED-COM-CONTA` | 12162 | BAIXA | sim | P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria- |
-| `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO` | 12167 | BAIXA | sim | P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem  |
-| `P-SAN3-12B-PAGER-ROTULO-FILTRADO` | 12172 | BAIXA | sim | P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem |
-| `P-COBRANCA-PERGUNTAS-P1-P6` | 12225 | — | sim | P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobr |
-| `P-COBRANCA-ADAPTADORES-1-MAIS-1` | 12238 | — | sim | P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão |
+| `P-SAN3-12B-BUSCA-TABELA-TITULOS` | 12154 | BAIXA | sim | P-SAN3-12B-BUSCA-TABELA-TITULOS (2026-10-27) — a busca da barra da tabela de títulos da  |
+| `P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO` | 12164 | BAIXA | sim | P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO (2026-10-27) — o adaptador do resumo financeiro devol |
+| `P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE` | 12174 | BAIXA | sim | P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` ( |
+| `P-SAN3-12B-KPI-PRESSED-COM-CONTA` | 12179 | BAIXA | sim | P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria- |
+| `P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO` | 12184 | BAIXA | sim | P-SAN3-12B-PERFIL-SEM-ENTRIES-READ-VAZIO (2026-10-28) — perfil com `finance:read` e sem  |
+| `P-SAN3-12B-PAGER-ROTULO-FILTRADO` | 12189 | BAIXA | sim | P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem |
+| `P-COBRANCA-PERGUNTAS-P1-P6` | 12242 | — | sim | P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobr |
+| `P-COBRANCA-ADAPTADORES-1-MAIS-1` | 12255 | — | sim | P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão |
