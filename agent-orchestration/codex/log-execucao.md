@@ -5077,3 +5077,9 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Porteiro pós-merge: **BLOQUEADO** porque os itens 28/55 e `P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA`/`P-WEB-CONCILIACAO-SEM-TELA` ainda estavam abertos nas fontes operacionais, e estado/log ainda diziam que o PR estava aberto.
 - Limpeza conferida: `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio; o ramo remoto já foi apagado.
 - Registro de 31/10 fecha os dois itens por fato e regenera o índice de pendências. A etapa seguinte prevista no parecer também foi cumprida: o marco KPI #473 foi mergeado em `45435ab9`; `Kpis/**` permanece intocado neste PR.
+
+## 2026-11-02 — B-O6R-11 · 1º PR do corte · F5 e F6c (`dev-o6r11-e4c-opus`)
+
+- Papel/modelo: Claude Opus (claude-opus-5-5), nível menor declarado, cobrindo o Codex (`D-CLAUDE-COBRE-ATE-0411`: conta 1 no limite, conta 2 ocupada).
+- F5: sonda P4 só para `_resolveConflict`; resultado **B** (não reproduz), comando e controle no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`; zero linhas em `sync_screen.dart`; suíte `+969`.
+- F6c: `pendencias.md` (P-O6R-B11, FAILED-SEM-DESCARTE PARCIAL, MATERIAL-SEM-REPLAY, FILA-POR-USUARIO, RECEIPT-ATTACH, FAXINA; 3 novas, 1 índice, 3 portadas), índice regenerado pelo gerador (683 → 690 cabeçalhos), `PLANO_SAN3.md` (itens 3, 30, 48 e linhas `B-O6R-11`, `B-O6R-03b`, `B-SAN3-19`, sem reescrever), comando v2, cópias de plano e emendas em `omega/planos/`. `decisoes.md` intocado (as 4 decisões já estão na `main`). `Kpis/**` intocado.

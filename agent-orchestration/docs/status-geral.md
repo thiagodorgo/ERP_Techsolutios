@@ -1,5 +1,11 @@
 # Status Geral
 
+## Atualização 2026-11-02 — B-O6R-11, 1º PR do corte: fatias prontas, PR a abrir
+
+Ramo `fix/mobile-fila-duravel-b-o6r-11`. Fatias F0–F4c, F-S0, F-T, F-S1a, F-S1a', F-S1b, F-S1b', F5 e F6c feitas; a F7c abre o PR. Suíte Flutter `+969` (N = 905). Fecha `Ω6R-QUA-005`; `QUA-004` → `B-O6R-11d`; a metade `failed` de `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` fica PARCIAL; a sonda P4 deu **B** (não reproduz; `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO`, BAIXA). Novas: `P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL` (→ `B-O6R-11c`), `P-O6R11-TEXTOS-FORA-DE-D-T` (→ `B-SAN3-19`), o índice `P-O6R-B11-PENDENCIAS-DO-RAMO-388` e 3 portadas do ramo do #388.
+
+**Declarado:** o gestor só vê a despesa depois do 3º PR (`B-O6R-03b`); o item 30 (`Ω6R-QUA-001`) segue aberto; KPI congelado. A despesa não vira erro e não tem Descartar; sai na passada seguinte ao 3º PR se tiver usuário; a gravada antes do 2º PR sai depois de Assumir. As decisões `D-DESPESA-SEM-DESCARTAR`, `D-PRODUTO-PREMIUM-SEM-GAMBIARRA`, `D-P14-ASAAS-FOCUS` e `D-COBRANCA-RESPOSTAS-3110` já estão na `main` e não foram duplicadas.
+
 ## Atualização 2026-10-31 — B-SAN3-12c mergeado; porteiro BLOQUEADO por registro pós-merge
 
 O PR #474 foi mergeado: head aprovado `ccfd4e3b`, squash merge `2b65f51a` e CI de push `41207658016` verde. O porteiro pós-merge declarou **BLOQUEADO** porque os itens 28/55 e as duas pendências do Financeiro ainda constavam abertos, e o estado/log ainda descrevia o PR como aberto; o bloqueante de limpeza foi resolvido e `git ls-remote --heads origin feat/web-financeiro-aparencias-b-c` retornou vazio. Este registro fecha por fato os itens 28/55 e atualiza o estado pós-merge. A sequência do marco KPI #473 também foi cumprida: merge `45435ab9`.
