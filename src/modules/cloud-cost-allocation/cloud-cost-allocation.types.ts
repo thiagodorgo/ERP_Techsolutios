@@ -174,6 +174,8 @@ export type AllocationEngineResult = {
     readonly sourceCostLineItemIds: readonly string[];
     readonly reason: string;
   }[];
+  /** B-SAN3-03 · R11 — categorias cuja base é estimada (pelas ações), em ordem alfabética. */
+  readonly estimatedCategories: readonly string[];
 };
 
 export type CloudCostAllocationSummary = {

@@ -301,3 +301,28 @@
   T-RULE-1/2 da F8a).
 - **Arquivos meio-escritos:** nenhum.
 
+## RETOMADA 8a
+
+- **Executor:** `dev-san303-opus`, Claude Opus 5.5, nível menor declarado.
+- **Head inicial:** `387069a0` (F8 commitada e enviada).
+- **Vermelho-controle:** `node --test --import tsx tests/san3-03-compute-rules.test.ts` — exit 1, 1/6: T-RULE-1
+  (EC2/ECS sem regra, 300 em não rateado), T-RULE-2 (`GP2-Storage` caiu em `storage`, alocado 0), T-RULE-3,
+  T-RULE-4 (`no_allocation_rule` em vez de `missing_usage_basis`), T-RULE-5. T-RULE-6 (KMS) verde por desenho.
+- **Implementação (R11, RECOMENDACAO ADOTADA 1, não é fala do dono):** regras `compute` (`amazonec2`,
+  `amazonecs`, `amazoneks`, `awsfargate`), `database` (`amazonrds`) e `cache` (`amazonelasticache`,
+  `amazonmemorydb`), casamento exato em minúsculas, DEPOIS de `s3_requests` e ANTES de `storage`; base
+  `audited_actions_count`, método `api_request_weight` (sem método novo: CHECK no banco); `estimate: true` na
+  regra → `metadata.estimate = true` na alocação → `estimatedCategories` no resultado do motor e no metadata da
+  run (o resumo expõe na F8c). Banco pelas ações até o `B-ASS-03` (Q5, padrão).
+- **Mutações (vermelhas e restauradas):** **M35** (R11) `compute` removida → T-RULE-1, 4, 5; **M36** `database`
+  depois de `storage` → T-RULE-2; **M37** `cache` removida → T-RULE-3, 5; **M39** `estimate` removido → T-RULE-5.
+- **H14 medida:** `DATABASE_URL` do descartável; `node --test --import tsx tests/o6r06-allocation-basis-rls-db.test.ts
+  tests/cloud-usage-routes.test.ts` — exit 0, 13/13 (11 + 2). A regra `compute` não mudou a suíte.
+- **Validação:** `san3-03-*`, `cloud-cost-allocation*`, `cloud-charge-*`, `cloud-usage*` em memória — exit 0, 83
+  pass, 0 fail, 4 skip (as 4 suítes `-db` sem `DATABASE_URL`, rodadas com banco nas fatias delas). `npm run
+  check` exit 0; `git diff --check` exit 0.
+- **Falta:** F8b, F8c, F9, PR.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-conservation.test.ts` (vermelho-controle
+  T-CONS-1 e T-CUR-1 da F8b).
+- **Arquivos meio-escritos:** nenhum.
+

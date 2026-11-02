@@ -115,6 +115,7 @@ export class CloudCostAllocationService {
           // `total_unallocated_cost` (o aviso de "Não rateado" não acende por ela).
           platformCost: result.platformCost,
           totalPlatformCost: result.totalPlatformCost,
+          estimatedCategories: result.estimatedCategories,
         },
       });
     } catch (error) {

@@ -18,6 +18,7 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
   const allocations: Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[] = [];
   const platformCost: PlatformCostEntry[] = [];
   const unallocated: Array<AllocationEngineResult["unallocated"][number]> = [];
+  const estimatedCategories = new Set<string>();
   // B-SAN3-03 · R8 — a plataforma fica no universo (casa a tag e pesa no denominador), mas nunca recebe
   // alocação: a parte dela vira `platformCost`, linha própria.
   const systemTenant = input.tenants.find((tenant) => tenant.slug?.toLowerCase() === PLATFORM_SYSTEM_ORG_SLUG);
@@ -56,6 +57,8 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
       continue;
     }
 
+    if (rule.estimate) estimatedCategories.add(rule.costCategory);
+
     for (const tenantBasis of basis.byTenant) {
       if (tenantBasis.quantity <= 0) continue;
       const ratio = tenantBasis.quantity / basis.totalQuantity;
@@ -74,6 +77,7 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
           line.unblendedCost * ratio,
           tenantBasis.quantity,
           rule.costCategory,
+          rule.estimate === true,
         ),
       );
     }
@@ -94,6 +98,7 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
     totalUnallocatedCost,
     currency: currencies.length === 1 ? currencies[0] : undefined,
     unallocated,
+    estimatedCategories: [...estimatedCategories].sort(),
   };
 }
 
@@ -137,6 +142,7 @@ function createAllocation(
   allocatedCost: number,
   basisQuantity = method === "direct_tenant_tag" ? 1 : 0,
   costCategory = line.costCategory ?? method,
+  estimate = false,
 ): Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt"> {
   return {
     allocationRunId: input.runId,
@@ -156,6 +162,7 @@ function createAllocation(
     sourceCostLineItemIds: [line.id],
     metadata: {
       source: "cloud-cost-allocation.engine",
+      ...(estimate ? { estimate: true } : {}),
     },
   };
 }
