@@ -3,7 +3,7 @@
 - **Identidade:** `dev-san303-sol`
 - **Modelo:** Codex GPT-5.6 Sol, nível menor declarado
 - **Papel:** desenvolvimento; não planejou e não revisou
-- **Branch/worktree:** `fix/cloud-billing-exato` · `C:/Users/AMP/w-san303`
+- **Branch/worktree:** `fix/cloud-billing-exato` · `C:/Users/thiag/w-san303`
 - **Base medida:** `origin/main@0fda595a9cb37d2d75abd45ef23eacc5dc56fea8`
 - **Plano:** `B-SAN3-03-plano.md` + Emenda 1 (prevalece), conferida por `conf-emenda-san303.md` e
   `rev-san303b.md`
@@ -81,4 +81,33 @@
 - **Próximo comando exato:** `npm test -- tests/san3-03-import-memory.test.ts` após criar o
   vermelho-controle comportamental da F1.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 1
+
+- **Head inicial:** `6d60d864eab5c7c5eda3bb1b0818e68f898211df` (F0 commitada).
+- **Medição da máquina nova:** exatamente os 7 arquivos modificados e o teste novo informados pelo
+  orquestrador; todos dentro do PERMITIDO. Disco 302 GB livres; memória virtual disponível 14.607 MB.
+  `erp-postgres`/`erp-redis` estavam vivos nas portas proibidas e não foram tocados.
+- **Prisma Client local:** após o `npm ci` da máquina nova, `npm test` ficou 6/7 e `npm run check` falhou
+  porque o client não estava gerado. `DATABASE_URL` apontando somente para `127.0.0.1:55432` +
+  `npm run db:generate` — **exit 0**, sem conexão e sem Docker; repetição ficou verde.
+- **Vermelho-controle/M1:** filtro de `importId` neutralizado temporariamente no dublê; `npm test --
+  tests/san3-03-import-scope.test.ts` — **exit 1**, 4/7, T26-1 retornou 12 em vez de 7. Restaurado.
+- **M2:** ordenação invertida para o import mais antigo — **exit 1**, 4/7; T26-1/T26-5/T26-6
+  selecionaram o UUID antigo. Restaurado.
+- **M3:** import explícito não concluído aceito — **exit 1**, 6/7; T26-3 morreu. Restaurado.
+- **M4:** import re-resolvido na execução — **exit 1**, 5/7; T26-5 obteve 11 em vez de 7. Restaurado.
+- **M5:** `metadata.importId` do cliente prevaleceu — **exit 1**, 6/7; T26-6 morreu. Restaurado.
+- **M19:** terceiro parâmetro opcional e chamador com `undefined` — **exit 1**, 4/7; T26-1/T26-2/T26-5
+  ficaram sem linhas. Restaurado.
+- **Validação final F1:** `npm test -- tests/san3-03-import-scope.test.ts
+  tests/cloud-cost-allocation.test.ts tests/cloud-cost-allocation-routes.test.ts` — **exit 0**, 16/16,
+  0 falhas, 0 skips; `npm run check` — **exit 0**; `git diff --check` — **exit 0**.
+- **Escopo:** zero toque em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles, `frontend/**` e Docker.
+- **Feito:** R1 em memória, UUID opcional na rota, import fixado na criação e metadados protegidos; todas
+  as mutações F1 ficaram vermelhas e foram restauradas.
+- **Falta:** F2–F9 (incluindo F8a/F8b/F8c), registros finais e PR.
+- **Próximo comando exato:** `docker run -d --name pg-san303 -p 127.0.0.1:55432:5432 -e
+  POSTGRES_PASSWORD=postgres -e POSTGRES_DB=san303 postgres:16`.
+- **Arquivos meio-escritos:** nenhum; F1 pronta para commit.
 

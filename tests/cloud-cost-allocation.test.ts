@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
+import type { CloudCostImport, CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
 import type { CloudUsageEvent } from "../src/modules/cloud-usage/index.js";
 import {
   CloudCostAllocationService,
@@ -141,7 +141,11 @@ test("falha gera status failed e erro sanitizado", async () => {
     }
   }
   const repository = new FailingRepository();
-  repository.seed({ tenants });
+  repository.seed({
+    tenants,
+    imports: [costImport()],
+    costLineItems: [costLine("cost-failing", {})],
+  });
   const service = new CloudCostAllocationService(repository);
   const run = await service.createAllocationRun({ periodStart, periodEnd });
   const failed = await service.executeAllocationRun(run.id);
@@ -178,12 +182,31 @@ function createService(input: {
   const repository = new InMemoryCloudCostAllocationRepository();
   repository.seed({
     tenants,
+    imports: input.costLineItems?.length ? [costImport()] : undefined,
     costLineItems: input.costLineItems,
     usageEvents: input.usageEvents,
   });
   return {
     repository,
     service: new CloudCostAllocationService(repository),
+  };
+}
+
+function costImport(): CloudCostImport {
+  return {
+    id: "import-1",
+    provider: "aws",
+    sourceType: "manual_csv",
+    status: "completed",
+    periodStart,
+    periodEnd,
+    importedAt: periodEnd,
+    rowCount: 1,
+    totalUnblendedCost: 1,
+    currency: "USD",
+    metadata: {},
+    createdAt: periodStart,
+    updatedAt: periodEnd,
   };
 }
 

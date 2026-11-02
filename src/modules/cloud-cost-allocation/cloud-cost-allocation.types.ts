@@ -72,6 +72,7 @@ export type CloudCostAllocationTenant = {
 export type CreateCloudCostAllocationRunInput = {
   readonly periodStart: Date;
   readonly periodEnd: Date;
+  readonly importId?: string;
   readonly strategy?: CloudCostAllocationStrategy;
   readonly createdBy?: string;
   readonly metadata?: CloudCostAllocationMetadata;
@@ -104,6 +105,7 @@ export type TenantCloudCostAllocationFilters = {
 export type AllocateCostsForPeriodInput = {
   readonly periodStart: Date;
   readonly periodEnd: Date;
+  readonly importId?: string;
   readonly strategy?: CloudCostAllocationStrategy;
   readonly createdBy?: string;
   readonly metadata?: CloudCostAllocationMetadata;

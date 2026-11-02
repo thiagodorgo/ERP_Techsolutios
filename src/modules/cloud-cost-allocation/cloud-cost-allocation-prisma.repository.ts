@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { setTenantRlsContext } from "../../database/rls.js";
-import type { CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
+import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 import {
   CloudCostAllocationError,
@@ -203,6 +203,25 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     });
 
     return collected;
+  }
+
+  async findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined> {
+    const record = importId
+      ? await this.client.cloudCostImport.findUnique({ where: { id: importId } })
+      : await this.client.cloudCostImport.findFirst({
+          where: {
+            status: "completed",
+            line_items: {
+              some: {
+                billing_period_end: { gte: periodStart },
+                billing_period_start: { lte: periodEnd },
+              },
+            },
+          },
+          orderBy: [{ imported_at: "desc" }, { created_at: "desc" }],
+        });
+
+    return record ? mapCostImport(record) : undefined;
   }
 
   async listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]> {
@@ -448,6 +467,44 @@ function mapRun(record: {
     createdBy: record.created_by ?? undefined,
     errorMessage: record.error_message ?? undefined,
     metadata: isRecord(record.metadata) ? record.metadata : {},
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+}
+
+function mapCostImport(record: {
+  readonly id: string;
+  readonly provider: string;
+  readonly source_type: string;
+  readonly source_uri: string | null;
+  readonly status: string;
+  readonly period_start: Date | null;
+  readonly period_end: Date | null;
+  readonly imported_at: Date | null;
+  readonly imported_by: string | null;
+  readonly row_count: number;
+  readonly total_unblended_cost: unknown;
+  readonly currency: string | null;
+  readonly metadata: unknown;
+  readonly error_message: string | null;
+  readonly created_at: Date;
+  readonly updated_at: Date;
+}): CloudCostImport {
+  return {
+    id: record.id,
+    provider: record.provider as CloudCostImport["provider"],
+    sourceType: record.source_type as CloudCostImport["sourceType"],
+    sourceUri: record.source_uri ?? undefined,
+    status: record.status as CloudCostImport["status"],
+    periodStart: record.period_start ?? undefined,
+    periodEnd: record.period_end ?? undefined,
+    importedAt: record.imported_at ?? undefined,
+    importedBy: record.imported_by ?? undefined,
+    rowCount: record.row_count,
+    totalUnblendedCost: Number(record.total_unblended_cost),
+    currency: record.currency ?? undefined,
+    metadata: isRecord(record.metadata) ? record.metadata : {},
+    errorMessage: record.error_message ?? undefined,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
+import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageEvent } from "../cloud-usage/cloud-usage.types.js";
 import type {
   CloudCostAllocationRun,
@@ -23,7 +23,8 @@ export type CloudCostAllocationRepository = {
     allocations: readonly Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[],
   ): Promise<readonly TenantCloudCostAllocation[]>;
   listTenantAllocations(runId: string, filters?: TenantCloudCostAllocationFilters): Promise<readonly TenantCloudCostAllocation[]>;
-  listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]>;
+  findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined>;
+  listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]>;
   // B-O6R-06 — FICA (serve `GET /platform/cloud-usage/tenants/:id/daily`), mas SAIU do caminho do
   // rateio: a base de dinheiro nao pode depender de uma projecao que ninguem agenda.
   listUsageDailyAggregates(periodStart: Date, periodEnd: Date): Promise<readonly CloudUsageDailyAggregate[]>;
@@ -40,6 +41,7 @@ export type CloudCostAllocationRepository = {
 export class InMemoryCloudCostAllocationRepository implements CloudCostAllocationRepository {
   private runs: CloudCostAllocationRun[] = [];
   private allocations: TenantCloudCostAllocation[] = [];
+  private imports: CloudCostImport[] = [];
   private costLineItems: CloudCostLineItem[] = [];
   private usageAggregates: CloudUsageDailyAggregate[] = [];
   private usageEvents: CloudUsageEvent[] = [];
@@ -124,9 +126,31 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       .filter((allocation) => !filters.costCategory || allocation.costCategory === filters.costCategory);
   }
 
-  async listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]> {
+  async findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined> {
+    if (importId) return this.imports.find((costImport) => costImport.id === importId);
+
+    return this.imports
+      .filter((costImport) => costImport.status === "completed")
+      .filter((costImport) =>
+        this.costLineItems.some(
+          (line) =>
+            line.importId === costImport.id &&
+            line.billingPeriodEnd >= periodStart &&
+            line.billingPeriodStart <= periodEnd,
+        ),
+      )
+      .sort((a, b) => {
+        const importedAt = (b.importedAt?.getTime() ?? 0) - (a.importedAt?.getTime() ?? 0);
+        return importedAt || b.createdAt.getTime() - a.createdAt.getTime();
+      })[0];
+  }
+
+  async listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]> {
     return this.costLineItems.filter(
-      (line) => line.billingPeriodEnd >= periodStart && line.billingPeriodStart <= periodEnd,
+      (line) =>
+        line.importId === importId &&
+        line.billingPeriodEnd >= periodStart &&
+        line.billingPeriodStart <= periodEnd,
     );
   }
 
@@ -174,11 +198,13 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   }
 
   seed(input: {
+    readonly imports?: readonly CloudCostImport[];
     readonly tenants?: readonly CloudCostAllocationTenant[];
     readonly costLineItems?: readonly CloudCostLineItem[];
     readonly usageAggregates?: readonly CloudUsageDailyAggregate[];
     readonly usageEvents?: readonly CloudUsageEvent[];
   }): void {
+    this.imports = [...(input.imports ?? this.imports)];
     this.tenants = [...(input.tenants ?? this.tenants)];
     this.costLineItems = [...(input.costLineItems ?? this.costLineItems)];
     this.usageAggregates = [...(input.usageAggregates ?? this.usageAggregates)];
@@ -188,6 +214,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   reset(): void {
     this.runs = [];
     this.allocations = [];
+    this.imports = [];
     this.costLineItems = [];
     this.usageAggregates = [];
     this.usageEvents = [];

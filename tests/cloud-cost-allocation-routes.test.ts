@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
-import type { CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
+import type { CloudCostImport, CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
 import type { CloudUsageEvent } from "../src/modules/cloud-usage/index.js";
 
 const periodStart = new Date("2026-06-01T00:00:00.000Z");
@@ -107,6 +107,7 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
       { id: seed.tenantA.id, name: seed.tenantA.name, slug: seed.tenantA.slug },
       { id: seed.tenantB.id, name: seed.tenantB.name, slug: seed.tenantB.slug },
     ],
+    imports: [costImport()],
     costLineItems: [
       costLine("cost-direct", { tenantTag: seed.tenantA.id, serviceCode: "AmazonEC2", unblendedCost: 5 }),
       costLine("cost-s3", { serviceCode: "AmazonS3", usageType: "TimedStorage-ByteHrs", unblendedCost: 10 }),
@@ -127,6 +128,24 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
     await closeServer(server);
     resetCloudCostAllocationRuntimeForTests();
   }
+}
+
+function costImport(): CloudCostImport {
+  return {
+    id: "import-1",
+    provider: "aws",
+    sourceType: "manual_csv",
+    status: "completed",
+    periodStart,
+    periodEnd,
+    importedAt: periodEnd,
+    rowCount: 2,
+    totalUnblendedCost: 15,
+    currency: "USD",
+    metadata: {},
+    createdAt: periodStart,
+    updatedAt: periodEnd,
+  };
 }
 
 function seedCoreSaas(service: {

@@ -8,6 +8,8 @@ import {
 } from "./cloud-cost-allocation.service.js";
 import type { CloudCostAllocationRun, TenantCloudCostAllocation } from "./cloud-cost-allocation.types.js";
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export function createCloudCostAllocationPlatformRouter(): Router {
   const router = Router();
 
@@ -38,10 +40,12 @@ export function createCloudCostAllocationPlatformRouter(): Router {
       const service = await createDefaultCloudCostAllocationService();
       const body = request.body as Record<string, unknown>;
       const strategy = readQueryString(body.strategy);
+      const importId = readOptionalUuid(body.importId, "importId");
       const run = await service.allocateCostsForPeriod({
         periodStart: readRequiredDate(body.periodStart),
         periodEnd: readRequiredDate(body.periodEnd),
         strategy: strategy && isCloudCostAllocationStrategy(strategy) ? strategy : undefined,
+        importId,
         createdBy: readImportedBy(request),
       });
 
@@ -157,4 +161,21 @@ function readRequiredDate(value: unknown): Date {
   const date = readDate(value);
   if (!date) throw new Error("periodStart and periodEnd are required dates.");
   return date;
+}
+
+function readOptionalUuid(value: unknown, field: string): string | undefined {
+  const normalized = readQueryString(value);
+  if (normalized === undefined) return undefined;
+  if (!uuidPattern.test(normalized)) {
+    const error = new Error(`${field} must be a valid UUID.`) as Error & {
+      statusCode: number;
+      code: string;
+      reason: string;
+    };
+    error.statusCode = 400;
+    error.code = "CLOUD_COST_ALLOCATION_INVALID";
+    error.reason = "invalid_uuid";
+    throw error;
+  }
+  return normalized;
 }

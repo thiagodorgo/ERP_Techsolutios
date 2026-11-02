@@ -22,19 +22,48 @@ const statusSet = new Set<string>(CLOUD_COST_ALLOCATION_STATUSES);
 export class CloudCostAllocationService {
   constructor(private readonly repository: CloudCostAllocationRepository) {}
 
-  createAllocationRun(input: AllocateCostsForPeriodInput): Promise<CloudCostAllocationRun> {
+  async createAllocationRun(input: AllocateCostsForPeriodInput): Promise<CloudCostAllocationRun> {
     validatePeriod(input.periodStart, input.periodEnd);
+    const costImport = await this.repository.findBillableImport(input.periodStart, input.periodEnd, input.importId);
+    if (input.importId && costImport?.status !== "completed") {
+      throw new CloudCostAllocationError(
+        422,
+        "CLOUD_COST_ALLOCATION_IMPORT_NOT_COMPLETED",
+        "import_not_completed",
+        "Cloud cost import must exist and be completed.",
+      );
+    }
+    const metadata = sanitizeCloudCostAllocationMetadata(input.metadata);
+    delete metadata.importId;
+    delete metadata.importResolution;
     return this.repository.createRun({
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
+      importId: costImport?.id,
       strategy: normalizeStrategy(input.strategy),
       createdBy: input.createdBy,
-      metadata: sanitizeCloudCostAllocationMetadata(input.metadata),
+      metadata: {
+        ...metadata,
+        importId: costImport?.id ?? null,
+        importResolution: costImport ? (input.importId ? "explicit" : "latest_completed") : "none",
+      },
     });
   }
 
   async executeAllocationRun(runId: string): Promise<CloudCostAllocationRun> {
     const run = await this.getAllocationRun(runId);
+    const importId = readRunImportId(run);
+
+    if (!importId) {
+      return this.repository.updateRun(run.id, {
+        status: "completed",
+        totalImportedCost: 0,
+        totalAllocatedCost: 0,
+        totalUnallocatedCost: 0,
+        completedAt: new Date(),
+        metadata: run.metadata,
+      });
+    }
 
     await this.repository.updateRun(run.id, {
       status: "processing",
@@ -51,7 +80,7 @@ export class CloudCostAllocationService {
       // porque e ele que define o universo da varredura.
       const tenants = await this.repository.listTenants();
       const [costLineItems, usageBasis] = await Promise.all([
-        this.repository.listCostLineItems(run.periodStart, run.periodEnd),
+        this.repository.listCostLineItems(run.periodStart, run.periodEnd, importId),
         this.repository.sumUsageBasis(
           run.periodStart,
           run.periodEnd,
@@ -242,6 +271,10 @@ function validatePeriod(periodStart: Date, periodEnd: Date): void {
   if (Number.isNaN(periodStart.getTime()) || Number.isNaN(periodEnd.getTime()) || periodStart > periodEnd) {
     throw new CloudCostAllocationError(400, "CLOUD_COST_ALLOCATION_INVALID", "period_invalid", "Allocation period is invalid.");
   }
+}
+
+function readRunImportId(run: CloudCostAllocationRun): string | undefined {
+  return typeof run.metadata.importId === "string" ? run.metadata.importId : undefined;
 }
 
 const sensitiveKeyPattern =
