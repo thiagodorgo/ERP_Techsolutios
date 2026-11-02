@@ -42,6 +42,65 @@ export type CloudUsageCaptureClient = {
   $executeRaw(query: TemplateStringsArray, ...values: unknown[]): Promise<number>;
 };
 
+export type AttachmentUploadUsageSource = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly runId: string;
+  readonly sizeBytes?: number;
+  readonly createdAt: Date;
+};
+
+export const PRODUZIDAS_EM_TX = [
+  "checklist_run.created",
+  "checklist_run.completed",
+  "checklist_runs_count",
+  "checklist_attachment.uploaded.count",
+  "checklist_attachment.uploaded.bytes",
+  "s3_put_requests",
+] as const satisfies readonly CloudUsageMetricKey[];
+
+export function buildAttachmentUploadUsageEvents(
+  attachment: AttachmentUploadUsageSource,
+): readonly RecordUsageEventInput[] {
+  const base = {
+    tenantId: attachment.tenantId,
+    sourceType: "checklist_attachment",
+    sourceId: attachment.id,
+    occurredAt: attachment.createdAt,
+    metadata: {
+      capturedIn: "checklist_attachment_transaction",
+      attachmentId: attachment.id,
+      runId: attachment.runId,
+    },
+  };
+  const events: RecordUsageEventInput[] = [
+    {
+      ...base,
+      metricKey: "checklist_attachment.uploaded.count",
+      quantity: 1,
+      unit: "count",
+      idempotencyKey: `checklist_attachment:${attachment.id}:uploaded.count`,
+    },
+    {
+      ...base,
+      metricKey: "s3_put_requests",
+      quantity: 1,
+      unit: "count",
+      idempotencyKey: `checklist_attachment:${attachment.id}:s3_put_requests`,
+    },
+  ];
+  if (attachment.sizeBytes !== undefined) {
+    events.push({
+      ...base,
+      metricKey: "checklist_attachment.uploaded.bytes",
+      quantity: attachment.sizeBytes,
+      unit: "bytes",
+      idempotencyKey: `checklist_attachment:${attachment.id}:uploaded.bytes`,
+    });
+  }
+  return events;
+}
+
 /** Os dois marcos da vistoria que produzem unidade faturável. */
 export type ChecklistRunUsageKind = "created" | "completed";
 
@@ -155,7 +214,7 @@ export function buildChecklistRunUsageEvents(
  *
  * Devolve quantas linhas foram REALMENTE inseridas (0 = já existia).
  */
-export async function appendChecklistRunUsageInTx(
+export async function appendCloudUsageInTx(
   client: CloudUsageCaptureClient,
   inputs: readonly RecordUsageEventInput[],
 ): Promise<number> {
@@ -195,15 +254,19 @@ export async function appendChecklistRunUsageInTx(
   return inserted;
 }
 
+export const appendChecklistRunUsageInTx = appendCloudUsageInTx;
+
 /**
  * DUBLÊ em memória — para as suítes em memória continuarem exercendo a MESMA semântica pelo MESMO
  * builder. Não é evidência de atomicidade (regra do `financial-uow.ts`): a prova de que run e unidade
  * commitam juntas é a suíte `-db`, contra Postgres de verdade.
  */
-export async function appendChecklistRunUsageInMemory(
+export async function appendCloudUsageInMemory(
   inputs: readonly RecordUsageEventInput[],
 ): Promise<void> {
   if (inputs.length === 0) return;
 
   await createMemoryCloudUsageService().recordManyUsageEvents(inputs);
 }
+
+export const appendChecklistRunUsageInMemory = appendCloudUsageInMemory;

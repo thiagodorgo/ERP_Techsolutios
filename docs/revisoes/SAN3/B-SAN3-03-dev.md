@@ -135,3 +135,23 @@
   vermelho-controle F3.
 - **Arquivos meio-escritos:** nenhum; F2 pronta para commit.
 
+## RETOMADA 3
+
+- **Head inicial:** `1f834dfc` (F2 commitada e enviada).
+- **Docker:** somente `pg-san303` em `127.0.0.1:55432`, sem volume; migrações existentes aplicadas.
+- **Vermelho-controle/M6:** reintrodução temporária do produtor pós-commit — **exit 1**, T-UP-4
+  encontrou unidade duplicável; restaurado.
+- **Implementação:** captura generalizada `appendCloudUsageInTx/InMemory`; builder de upload com chaves
+  por anexo; `createAttachment` Prisma e memória capturam count/bytes/PUT; ramo de evento removido;
+  controles legados autorizados mudaram de alvo.
+- **M7:** absorver falha da captura — **exit 1**, T-UP-db-2 não recebeu a rejeição; restaurado.
+- **M8:** chave por emissão — **exit 1**, T-UP-3 somou count 2; restaurado.
+- **Validação F3:** 9 arquivos dirigidos, **57/57**, 0 falhas, 0 skips; inclui atomicidade DB,
+  isolamento, fault injection, censo e regressões de uso. `npm run check` e `git diff --check` — exit 0.
+- **Escopo:** zero alteração em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles ou frontend.
+- **Feito:** upload de anexo e três unidades persistem juntos ou nenhum persiste.
+- **Falta:** F4–F9 (incluindo F8a/F8b/F8c), registros finais e PR.
+- **Próximo comando exato:** `npm test -- tests/san3-03-attachment-capture.test.ts` após acrescentar
+  T-DOWN-1..4 para o vermelho-controle F4.
+- **Arquivos meio-escritos:** nenhum; F3 pronta para commit.
+

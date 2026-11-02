@@ -30,37 +30,6 @@ export function recordCloudUsageForDomainEvent(event: DomainEventEnvelope): void
   // linha por vistoria (chave por emissão não colide com a chave estável) e DOBRARIA a base de rateio
   // `checklists` — é a mutação M-6, e o censo `tests/o6r06-billing-census.test.ts` (C1) a mata.
 
-  if (event.name === "checklist_run.attachment_uploaded") {
-    const sizeBytes = readNumber(event.payload.sizeBytes);
-    recordCloudUsageBestEffort({
-      ...base,
-      sourceType: "checklist_attachment",
-      sourceId: readString(event.payload.attachmentId) ?? event.id,
-      metricKey: "checklist_attachment.uploaded.count",
-      quantity: 1,
-      unit: "count",
-    });
-    recordCloudUsageBestEffort({
-      ...base,
-      sourceType: "checklist_attachment",
-      sourceId: readString(event.payload.attachmentId) ?? event.id,
-      metricKey: "s3_put_requests",
-      quantity: 1,
-      unit: "count",
-      idempotencyKey: `${event.id}:s3_put_requests`,
-    });
-    if (sizeBytes !== undefined) {
-      recordCloudUsageBestEffort({
-        ...base,
-        sourceType: "checklist_attachment",
-        sourceId: readString(event.payload.attachmentId) ?? event.id,
-        metricKey: "checklist_attachment.uploaded.bytes",
-        quantity: sizeBytes,
-        unit: "bytes",
-        idempotencyKey: `${event.id}:checklist_attachment.uploaded.bytes`,
-      });
-    }
-  }
 
   if (event.name === "checklist_run.attachment_downloaded") {
     const sizeBytes = readNumber(event.payload.sizeBytes);

@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  appendCloudUsageInMemory,
   appendChecklistRunUsageInMemory,
+  buildAttachmentUploadUsageEvents,
   buildChecklistRunUsageEvents,
 } from "../cloud-usage/cloud-usage.capture.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
@@ -672,6 +674,8 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
     };
 
     this.attachments.set(attachment.id, attachment);
+
+    await appendCloudUsageInMemory(buildAttachmentUploadUsageEvents(attachment));
 
     return attachment;
   }
