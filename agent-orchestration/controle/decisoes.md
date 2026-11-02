@@ -4067,6 +4067,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal do dono:** *"autorizo usar o ClamAV num container"*.
 - **Consequência:** o item 27 do portão usa ClamAV em container para varrer evidências; GuardDuty fica descartado por agora.
+- **Aplicação no B-AV-REAL (2026-10-30, plano v2):** o PR de código toca segurança e abre conexão TCP de saída, portanto segue junta completa com inspetor + 3 cadeiras unânimes no fluxo `D-JUNTA-FLUXO-RAPIDO`. A autorização do dono resolve a escolha do ClamAV em container; não autoriza provisionamento AWS, ativação em ambiente alvo nem deploy de produção, que continuam sujeitos ao ato do dono e aos gates de custo/produção. Medido na base `origin/main@264c3760` (merge do #475).
 
 ## D-KPI-2810-ADIADO (decisão do dono, 2026-10-28) — marco de KPI de 28/10 adiado
 

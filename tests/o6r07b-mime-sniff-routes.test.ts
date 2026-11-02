@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readdir, rm } from "node:fs/promises";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -251,6 +251,34 @@ test("o mime_type GRAVADO é o verificado, não o declarado — JPEG declarado i
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
+// ── B-AV-REAL E3 (D4): o `reason` do scanner nunca chega ao corpo HTTP do 422; o texto é o do contrato ──
+// MUTAÇÃO: na via, trocar o texto fixo do 422 por `error.detail` → só o caso dessa via cai.
+
+const SCAN_REJECTED_MESSAGE: Record<Via, string> = {
+  V1: "Evidence file was rejected by safety scan.",
+  V2: "Attachment failed the malware scan.",
+  V3: "Attachment failed the malware scan.",
+  V4: "Attachment failed the malware scan.",
+  V5: "Attachment failed the malware scan.",
+};
+
+for (const via of ["V1", "V2", "V3", "V4", "V5"] as const) {
+  test(`E3 [${via}] reason do scanner (canário) fora do corpo do 422; texto fixo do contrato`, async () => {
+    await withUploadApi(async (ctx) => {
+      const { FakeEvidenceScanner } = await import("../src/modules/evidence/evidence-storage.js");
+      const canary = `AVREAL_CANARY_${randomUUID()}`;
+      ctx.setScanner(new FakeEvidenceScanner({ status: "infected", reason: canary }));
+      const target = await prepare(ctx, via);
+      const response = await target.upload(PNG_BYTES, "image/png", "foto.png");
+      assert.equal(response.status, 422, JSON.stringify(response.body));
+      assert.equal(response.body.error.reason, "evidence_rejected");
+      assert.equal(response.body.error.message, SCAN_REJECTED_MESSAGE[via], JSON.stringify(response.body));
+      assert.equal(JSON.stringify(response.body).includes(canary), false);
+      assert.equal(await target.count(), 0);
+    });
+  });
+}
+
 //                                            harness
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
 
