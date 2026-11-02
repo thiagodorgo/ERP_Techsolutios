@@ -4227,6 +4227,6 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 ## D-MAQUINA-RYZENCASA-REGUA-LINUX (decisão do dono, 2026-11-02) — trabalho na máquina nova e régua backend igual ao CI
 
-- **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono *"com as ressalvas registradas"* (decisão direta desta tarefa; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
+- **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
 - **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
 - **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.
