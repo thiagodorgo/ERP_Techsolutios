@@ -1,6 +1,6 @@
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
-import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { Alert, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
@@ -30,6 +30,61 @@ const summaryGridStyle: CSSProperties = { display: "grid", gridTemplateColumns: 
 const rowStyle: CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 4px", borderBottom: "1px solid var(--border-subtle, #E2E8F0)", flexWrap: "wrap" };
 
 type AreaNode = { readonly area: YardAreaItem; readonly depth: number };
+
+// Estado da lista de vagas da área selecionada (§7: carregando, erro e vazio são estados distintos). "Carregando" vale
+// enquanto a área selecionada ainda não teve a carga concluída (inclusive no 1º quadro, antes de o efeito disparar) e
+// numa nova tentativa sem vagas na tela; um refresh com vagas já na tela mantém o mapa visível.
+export type SpotsViewState = "loading" | "error" | "empty" | "ready";
+
+export function spotsViewState(input: {
+  readonly selectedAreaId: string | null;
+  readonly loadedAreaId: string | null;
+  readonly loading: boolean;
+  readonly error: string | null;
+  readonly count: number;
+}): SpotsViewState {
+  if (input.selectedAreaId !== input.loadedAreaId) return "loading";
+  if (input.loading && input.count === 0) return "loading";
+  if (input.error) return "error";
+  return input.count === 0 ? "empty" : "ready";
+}
+
+export function PatioSpotsState({
+  loading,
+  error,
+  isEmpty,
+  onRetry,
+  children,
+}: {
+  readonly loading: boolean;
+  readonly error: string | null;
+  readonly isEmpty: boolean;
+  readonly onRetry: () => void;
+  readonly children: ReactNode;
+}) {
+  if (loading) return <Skeleton lines={5} />;
+  if (error) {
+    return (
+      <div role="alert">
+        <Alert title="Não foi possível carregar as vagas" tone="warning">
+          {error}{" "}
+          <Button type="button" size="sm" variant="secondary" onClick={onRetry}>
+            Tentar de novo
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
+  if (isEmpty) {
+    return (
+      <EmptyState
+        title="Nenhuma vaga cadastrada"
+        detail="Cadastre a primeira vaga desta área. A situação começa como Livre; o bloqueio operacional (Livre⇄Bloqueada) é feito no botão Editar de cada vaga."
+      />
+    );
+  }
+  return <>{children}</>;
+}
 
 // Ω5P PR-08a — ação de movimentação de vaga a partir do mapa (impound:allocate). O backend garante a atomicidade
 // (I1) e o estado válido (409/422).
@@ -89,6 +144,10 @@ export function PatioDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [spotsLoading, setSpotsLoading] = useState(false);
+  const [spotsError, setSpotsError] = useState<string | null>(null);
+  const [spotsAreaId, setSpotsAreaId] = useState<string | null>(null);
+  const spotsRequestRef = useRef(0);
 
   const [yardModalOpen, setYardModalOpen] = useState(false);
   const [areaModal, setAreaModal] = useState<{ open: boolean; area: YardAreaItem | null }>({ open: false, area: null });
@@ -150,14 +209,29 @@ export function PatioDetailPage() {
   }, [yardId, activeContext, context]);
 
   const loadSpots = useCallback(async () => {
+    const requestId = ++spotsRequestRef.current;
     if (!selectedAreaId || !activeContext) {
       setSpots([]);
+      setSpotsError(null);
+      setSpotsLoading(false);
+      setSpotsAreaId(selectedAreaId);
       return;
     }
+    setSpotsLoading(true);
+    setSpotsError(null);
     try {
-      setSpots(await listYardSpots(context, selectedAreaId));
+      const data = await listYardSpots(context, selectedAreaId);
+      if (spotsRequestRef.current === requestId) setSpots(data);
     } catch {
-      setSpots([]);
+      if (spotsRequestRef.current === requestId) {
+        setSpots([]);
+        setSpotsError("Tente novamente para consultar as vagas desta área.");
+      }
+    } finally {
+      if (spotsRequestRef.current === requestId) {
+        setSpotsLoading(false);
+        setSpotsAreaId(selectedAreaId);
+      }
     }
   }, [selectedAreaId, activeContext, context]);
 
@@ -173,6 +247,13 @@ export function PatioDetailPage() {
 
   const tree = useMemo(() => toTree(areas), [areas]);
   const selectedArea = useMemo(() => areas.find((area) => area.id === selectedAreaId) ?? null, [areas, selectedAreaId]);
+  const spotsView = spotsViewState({
+    selectedAreaId,
+    loadedAreaId: spotsAreaId,
+    loading: spotsLoading,
+    error: spotsError,
+    count: spots.length,
+  });
 
   // §allowlist: currentProcessId nunca é renderizado cru — o join resolve a PLACA a partir da lista de processos.
   const resolveProcess = useCallback((processId: string) => processIndex.get(processId), [processIndex]);
@@ -305,9 +386,12 @@ export function PatioDetailPage() {
                 )
               }
             >
-              {spots.length === 0 ? (
-                <EmptyState title="Nenhuma vaga cadastrada" detail="Cadastre a primeira vaga desta área. A situação começa como Livre; o bloqueio operacional (Livre⇄Bloqueada) é feito no botão Editar de cada vaga." />
-              ) : (
+              <PatioSpotsState
+                loading={spotsView === "loading"}
+                error={spotsView === "error" ? spotsError : null}
+                isEmpty={spotsView === "empty"}
+                onRetry={() => void loadSpots()}
+              >
                 <>
                   {canUpdate ? (
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
@@ -326,7 +410,7 @@ export function PatioDetailPage() {
                     onOpenDossie={openDossie}
                   />
                 </>
-              )}
+              </PatioSpotsState>
             </Card>
           ) : null}
         </>
