@@ -5094,3 +5094,7 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Executor/modelo: `fix-avreal-argon` (Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou).
 - D1 (clamd morria em 1800 s por socket não declarado) achado pela revisão da emenda, fora da triagem; E13 (clamd não-root) medido e incluído.
 - Fatias E1, E13, E2, E10, E3, E7, E4, E5, E6, E8, E9, E11 e E12 executadas sequencialmente no ramo `feat/evidence-clamav-scanner` (`C:/Users/AMP/w-avreal`), com `src/` intocado contra `2746eb60`, F11 (`M-R7`) provada em worktree descartável, 7 pendências residuais registradas em `pendencias.md` (+ índice regenerado) e relatório atualizado em `docs/revisoes/SAN3/B-AV-REAL-dev.md`.
+
+## 2026-11-02 — B-AV-REAL · conferência aprovada no head integrado
+
+- Conferência `conf-avreal-sol` (Codex GPT-5.6 Sol) no objeto `1181537e`: APROVADO, sem achado novo. Ata: `omega/juntas/J-B-AV-REAL.md`. O item 27 segue aberto até o serviço responder no ambiente real.
