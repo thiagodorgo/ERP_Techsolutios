@@ -4230,3 +4230,20 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
 - **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
 - **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.
+
+## D-SAN3-03-IMPORT-POR-RUN (proposta do plano do `B-SAN3-03`, 2026-10-30; a junta do bloco ratifica no voto) — uma run de rateio soma exatamente um import
+
+- **Texto (plano §6, inalterado no mecanismo pela emenda 1 §2.10):** uma run de rateio soma exatamente um import, fixado na criação e gravado em `metadata.importId` (sem migração nesta rodada); sem `importId` explícito, vale o import `completed` mais recente com linha na janela; sem nenhum, a run conclui vazia e declarada (`importResolution: "none"`). Re-executar a run não troca o import.
+- **Não é fala do dono:** é decisão de desenho proposta pelo planejador; a junta do `B-SAN3-03` ratifica.
+- **Pendência que nasce:** `P-SAN3-03-IMPORT-ID-EM-COLUNA`, com dono `B-ASS-09a` (emenda 1, S14).
+
+## D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL (respondida pelo dono, 2026-10-30 e 2026-10-31) — a plataforma pesa no rateio e a parte dela é linha própria
+
+- **Texto (emenda 1 §2.10):** *"**Respondida pelo dono:** "a plataforma paga a nuvem" (30/10) e "2=recomendação" (31/10: "Custo da plataforma" é linha própria). Id mantido pela rastreabilidade. A organização da plataforma (`slug = "platform"`, mesmo critério do front) não recebe alocação e continua no universo do rateio. Custo com a tag dela, por id, nome ou slug, e a parte dela no rateio sem etiqueta (RECOMENDACAO ADOTADA 2) vão para `totalPlatformCost`, fora de `totalUnallocatedCost`. **Ninguém é cobrado por custo de nuvem**: o preço do cliente é a assinatura (`D-COBRANCA-ASSINATURA-FRANQUIA`)."*
+- **Implementado no `B-SAN3-03` (PR #NNN):** R8 e R8-b; `system_organization` deixa de ser motivo de não rateado.
+
+## D-SAN3-03-BASE-DERIVADA — complemento do `B-SAN3-03` (2026-11-02; não altera a entrada de 2026-10-30 acima)
+
+- **Texto (emenda 1 §2.10):** *"Para categorias sem fato transacional próprio, a base de rateio é derivada de fato persistido no momento do rateio, por organização sob RLS. **API por ações auditadas: decisão do dono** (30/10, "3=sigo a recomendação"); a alternativa de requests reais não foi escolhida, e nenhuma pendência nasce. **Filtro das ações (sem ato da plataforma, sem login, só usuário da organização): RECOMENDACAO ADOTADA 6.** **Storage pelas 4 tabelas de arquivo: RECOMENDACAO ADOTADA 5, não é fala do dono.** **Máquina, cache e banco pelas ações, banco pelo espaço medido quando o `B-ASS-03` entrar: RECOMENDACAO ADOTADA 1.**"*
+- **Recomendações adotadas por padrão** (o dono foi avisado de que, sem resposta, seguem; ele ainda pode corrigir; **não são decisão do dono**): 1, 2, 5 e 6 do cabeçalho da emenda 1 entram no código deste bloco; Q4 (ato da plataforma num cliente pesa na plataforma) e Q5 (banco pelas ações até o `B-ASS-03`, com rótulo de estimativa) seguem o padrão; Q3 (CloudWatch, KMS, Route 53, VPC) segue o padrão: ficam em não rateado, com o motivo visível.
+- **Implementado no `B-SAN3-03` (PR #NNN).**

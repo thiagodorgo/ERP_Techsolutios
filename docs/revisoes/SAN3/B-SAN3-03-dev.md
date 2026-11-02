@@ -387,3 +387,54 @@
 - **Próximo comando exato:** `git grep -n "forEachTenantInOneTx" -- src scripts tests`.
 - **Arquivos meio-escritos:** nenhum.
 
+## RETOMADA 9
+
+- **Executor:** `dev-san303-opus`, Claude Opus 5.5, nível menor declarado (cobre o Codex, `D-CLAUDE-COBRE-ATE-0411`).
+- **Head inicial:** `2949c83b` (F8c commitada e enviada).
+- **Vermelho-controle:** C-5 estendido (0 `forEachTenantInOneTx` no repositório de rateio; 0 `take: 100_000` em
+  `cloud-charge-prisma.repository.ts`) rodado antes do código — exit 1, `not ok 5 - C-5`.
+- **Implementação (R9, emenda §2.8):** o laço privado `forEachTenantInOneTx` saiu; as três varreduras
+  (`replaceTenantAllocations`, `listTenantAllocations`, `sumUsageBasis`) usam `forEachTenantRls` de `rls.ts`, com a
+  guarda de runtime (`requireSweepClient`, erro `tenant_sweep_requires_prisma_client`) e o canário local
+  `tenant_context_leak` mantidos; os usuários da plataforma são lidos numa volta própria sob o GUC da plataforma. A
+  linha do wrapper privado saiu de `scripts/san3-05-acessos-de-plataforma.mjs`. De `src/modules/cloud-charges/**`
+  saiu **exatamente 1 linha** (`take: 100_000`, `listAllocationTenantAllocations`). `git grep -c
+  forEachTenantInOneTx -- src scripts` → 0.
+- **Mutações:** **M46** `take` de volta em `cloud-charges` → C-5 vermelho; laço privado de volta (símbolo) → C-5
+  vermelho; laço próprio não confiado (`localSweep` em `listTenantAllocations`) → `san3-05-acessos-de-plataforma-guard`
+  T13 vermelho (2 falhas). Todas restauradas.
+- **Merge:** `origin/main` (`600c5040`) entrou no ramo por merge (sem rebase, proibido), sem conflito e sem arquivo em
+  comum com o bloco; nenhuma migração nova nem mudança de dependência.
+- **Registro:** `docs/cloud-cost-allocation.md` (passos 4-5 da ponte comercial riscados e superados por
+  `D-COBRANCA-ASSINATURA-FRANQUIA`; seção "Rateio exato"); `PLANO_SAN3.md` l.143, 246 e 506-507 (aditivo, texto antigo
+  riscado); `decisoes.md` (`D-SAN3-03-IMPORT-POR-RUN` proposta, `D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL` respondida, e o
+  complemento de `D-SAN3-03-BASE-DERIVADA` com as RECOMENDACOES ADOTADAS marcadas como não-decisão do dono;
+  `D-COBRANCA-ASSINATURA-FRANQUIA` e `D-SAN3-03-BASE-DERIVADA` já estavam na `main`); `pendencias.md` (5 pendências
+  do plano FECHADAS no PR com o teste de encerramento; emenda de `P-O6R-B06-RATEIO-CURSOR-100K` fechada, a principal
+  segue aberta; notas de dono em `P-DONO-CLOUD-BILLING-ESCOPO` e `P-SAN3-06B-CLOUD-BILLING-ESCRITA`; nova
+  `P-SAN3-03-IMPORT-ID-EM-COLUNA`, dono `B-ASS-09a`); `log-execucao.md`. `pendencias-indice.md` (gerado) não foi
+  regenerado: fora do PERMITIDO, fica com o orquestrador.
+- **Bateria final (Windows, `DATABASE_URL` do descartável, `CORE_SAAS_PERSISTENCE=memory`, forma do job `backend`):**
+  - `npm run check` — exit 0. `npm run build` — exit 0. `node scripts/sync-agent-agents.mjs --check` — exit 0, 95
+    agentes. `git diff --check` — exit 0.
+  - `npm test` — exit 1: 385 arquivos, **4.338 testes, 4.328 pass, 8 fail, 2 skip**. As 8 são exatamente as 8 falhas
+    conhecidas de ambiente do Windows (`erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`,
+    `D-MAQUINA-RYZENCASA-REGUA-LINUX`): `san3-05-runtime-role-guard-db` T14a/b, T14c, T14d + agregado (aqui com
+    `setsid: ausente`), `san3-09-bootstrap-platform-admin-db` T2.1 + agregado, e os `hookFailed` com `EBUSY` de
+    `traccar-event-migration-drill-db` e `work-order-invoicing-migration-drill-db` (o piso de denominador acusa os
+    dois). Nenhuma falha nova. A régua da máquina é Linux/CI: o CI do PR é a prova final.
+  - Suítes do bloco e regressão dirigida, com banco: `san3-03-*`, `cloud-cost-allocation*`, `cloud-charge-*` (14),
+    `cloud-usage*`, `o6r06-*`, `san3-05-leituras-de-plataforma-db`, `san3-05-acessos-de-plataforma-guard` — verdes
+    (as 4 falhas de `san3-05-runtime-role-guard-db` acima são as conhecidas).
+- **Contagem N→M (`grep -cE "^\s*(test|it)\("`):** N = 23 (`cloud-cost-allocation` 7, `-routes` 2,
+  `o6r06-billing-census` 7, `cloud-usage` 7). Arquivos `san3-03-*`: 90 por grep, dos quais 5 são o `test(…, {skip})`
+  de "sem `DATABASE_URL`" das suítes `-db` → **85 testes novos funcionais** (emenda: 81). **M = 23 + 85 = 108**
+  (113 por grep) ≥ 104 ≥ 46.
+- **Escopo:** `git diff --name-only origin/main...HEAD` ⊆ PERMITIDO do plano emendado (§4.1); `frontend/**` vazio;
+  `src/modules/cloud-charges/**` = 1 linha removida; `prisma/**`, `Kpis/**`, lockfiles: 0 linhas.
+- **Docker:** `pg-san303` (127.0.0.1:55432) removido ao fim (`docker rm -f pg-san303`).
+- **Falta:** pré-revisão (um revisor, todas as mutações M1–M46, M17-b, M31-b), junta completa (dinheiro).
+- **Próximo comando exato (do orquestrador):** `gh pr view <PR> --json headRefOid,statusCheckRollup`.
+- **Arquivos meio-escritos:** nenhum.
+
+PRONTO PARA PRÉ-REVISÃO
