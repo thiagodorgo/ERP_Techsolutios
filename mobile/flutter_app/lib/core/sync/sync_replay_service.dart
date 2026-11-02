@@ -127,6 +127,14 @@ class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
   }
 }
 
+class PendingBackendExpenseSyncBatchApi implements ExpenseSyncBatchApi {
+  const PendingBackendExpenseSyncBatchApi();
+
+  @override
+  Future<List<SyncActionResult>> sendBatch(List<SyncAction> actions) async =>
+      const [];
+}
+
 // ── Replay service ────────────────────────────────────────────────────────────
 
 class SyncReplayService {
@@ -144,7 +152,14 @@ class SyncReplayService {
   final int maxRetry;
   final Set<String>? _supportedActionTypes;
 
+  bool get channelOff => _api is PendingBackendExpenseSyncBatchApi;
+
   Future<SyncReplayResult> replayTenant(String tenantId) async {
+    // Canal desligado: o B-O6R-03b troca a API e liga o envio.
+    // Nenhuma ação muda de estado nem consome tentativa enquanto isso.
+    if (channelOff) {
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+    }
     final eligible = (await _queue.pendingForTenant(tenantId))
         .where((a) => _supportedActionTypes?.contains(a.type) ?? true)
         .where((a) => a.status != SyncStatus.conflict)

@@ -76,7 +76,10 @@ void main() {
     );
     final queue = _CountingQueue([expense, workOrder, pending]);
 
-    await SyncQueueReclaimService(queue: queue).reclaimTenant(_tenantId);
+    await SyncQueueReclaimService(
+      queue: queue,
+      expenseChannelOff: () => false,
+    ).reclaimTenant(_tenantId);
 
     final actions = await queue.actionsForTenant(_tenantId);
     final byId = {for (final action in actions) action.clientActionId: action};
@@ -94,7 +97,10 @@ void main() {
       _action('5', WorkOrderSyncActionTypes.statusUpdate, SyncStatus.failed),
     ]);
 
-    await SyncQueueReclaimService(queue: queue).reclaimTenant(_tenantId);
+    await SyncQueueReclaimService(
+      queue: queue,
+      expenseChannelOff: () => false,
+    ).reclaimTenant(_tenantId);
 
     expect(queue.updateCalls, 0);
   });
