@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../bootstrap/bootstrap_repository.dart';
 import '../network/connectivity_repository.dart';
+import '../sync/sync_action_presentation.dart';
 import '../sync/sync_models.dart';
 import '../sync/sync_providers.dart';
-import '../sync/sync_summary.dart';
 import '../../shared/ui/erp_components.dart';
 import '../../shared/ui/erp_scaffold.dart';
 
@@ -19,6 +19,7 @@ class DiagnosticsScreen extends ConsumerWidget {
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
     final queue = ref.watch(syncQueueRepositoryProvider);
+    final channelOff = ref.watch(expenseSyncChannelOffProvider);
 
     return ErpScaffold(
       title: 'Diagnostico',
@@ -28,7 +29,10 @@ class DiagnosticsScreen extends ConsumerWidget {
             : queue.actionsForTenant(session.activeTenant.tenantId),
         builder: (context, snapshot) {
           final actions = snapshot.data ?? const <SyncAction>[];
-          final summary = SyncQueueSummary.fromActions(actions);
+          final summary = SyncPresentationCounts.fromActions(
+            actions,
+            expenseChannelOff: channelOff,
+          );
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -51,7 +55,7 @@ class DiagnosticsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.sync_outlined),
                   title: const Text('Fila de sync'),
                   subtitle: Text(
-                    'Pendentes: ${summary.pending} · Processadas: ${summary.processed} · Erros: ${summary.failed} · Conflitos: ${summary.conflicts}',
+                    'Pendentes: ${summary.pending} · Processadas: ${summary.synced} · Erros: ${summary.errors} · Conflitos: ${summary.conflicts}',
                   ),
                 ),
               ),
@@ -81,7 +85,10 @@ class DiagnosticsScreen extends ConsumerWidget {
                 ),
               ),
               for (final action in actions.where(
-                (action) => action.lastSafeError != null,
+                (action) =>
+                    action.lastSafeError != null &&
+                    presentSyncAction(action, expenseChannelOff: channelOff) !=
+                        SyncPresentation.awaitingBackend,
               ))
                 Card(
                   key: ValueKey(action.clientActionId),
