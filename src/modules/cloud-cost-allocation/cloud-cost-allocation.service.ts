@@ -111,6 +111,10 @@ export class CloudCostAllocationService {
           allocationEngine: "usage_weighted_v1",
           tenantAllocationCount: result.allocations.length,
           unallocated: result.unallocated,
+          // B-SAN3-03 · R8 — sem migração: a parte da plataforma mora no metadata da run, fora de
+          // `total_unallocated_cost` (o aviso de "Não rateado" não acende por ela).
+          platformCost: result.platformCost,
+          totalPlatformCost: result.totalPlatformCost,
         },
       });
     } catch (error) {

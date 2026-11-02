@@ -273,3 +273,31 @@
   T-SYS-2/3 da F8).
 - **Arquivos meio-escritos:** nenhum.
 
+## RETOMADA 8
+
+- **Executor:** `dev-san303-opus`, Claude Opus 5.5, nível menor declarado (cobre o Codex, `D-CLAUDE-COBRE-ATE-0411`).
+- **Head inicial:** `91fff6a6` (F7 commitada e enviada). Sem Docker nesta fatia.
+- **Vermelho-controle (antes do código):** `node --test --import tsx tests/san3-03-system-org.test.ts` —
+  exit 1, 1/4: T-SYS-2 (`metadata.totalPlatformCost` ausente; a tag da plataforma virou alocação), T-SYS-3
+  (a plataforma recebeu 50 como alocação), T-SYS-8 (campo ausente). T-SYS-1 verde por desenho (controle
+  positivo; quem o prova é a M17-b).
+- **Implementação (R8, emenda §2.4):** `PLATFORM_SYSTEM_ORG_SLUG = "platform"` e `PlatformCostEntry` em
+  `types.ts`; o motor acha a plataforma por `slug` em minúsculas; tag que casa id, nome ou slug da plataforma,
+  em qualquer caixa, vira `platformCost` (`origin: "direct_tag"`) ANTES do teste de estratégia; sem tag, a
+  plataforma fica no denominador e a fatia dela vira `platformCost` (`origin: "usage_share"`); saída
+  `platformCost[]` e `totalPlatformCost`; o serviço grava os dois em `metadata`, fora de
+  `total_unallocated_cost`. `listTenants` não muda (Prisma e dublê).
+- **Mutações (todas vermelhas e restauradas):** **M17** motor trata a plataforma como cliente → T-SYS-2, T-SYS-3;
+  **M17-b** `listTenants` do dublê filtra o slug → T-SYS-1, 2, 3; **M22** casa só por slug → T-SYS-2; **M23**
+  tag da plataforma só na estratégia padrão → T-SYS-2; **M24** plataforma fora do denominador → T-SYS-3.
+- **Validação:** `san3-03-system-org`, `san3-03-derived-basis`, `san3-03-import-scope`, `cloud-cost-allocation*`,
+  `cloud-charge-markup-rules` (12) + `cloud-charge-routes` (2), `cloud-usage-checklist-reopen` — exit 0,
+  **49/49**, 0 skip. `npm run check` exit 0; `git diff --check` exit 0. `cloud-charge-*` 14 verdes sem mudança
+  de teste (H5-bis confirmada).
+- **Escopo:** `engine.ts`, `types.ts`, `service.ts` (só o metadata), teste novo. Zero `prisma/**`, `Kpis/**`,
+  `frontend/**`, `cloud-charges/**`.
+- **Falta:** F8a, F8b, F8c, F9, PR.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-compute-rules.test.ts` (vermelho-controle
+  T-RULE-1/2 da F8a).
+- **Arquivos meio-escritos:** nenhum.
+

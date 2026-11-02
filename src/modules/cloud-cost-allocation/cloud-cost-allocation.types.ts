@@ -140,10 +140,29 @@ export type AllocationEngineInput = {
   readonly tenants: readonly CloudCostAllocationTenant[];
 };
 
+/**
+ * B-SAN3-03 · R8 — a organização da plataforma (mesmo critério do front, `platform-overview.types.ts`). Ela
+ * PESA no rateio com a base dela e NÃO recebe alocação: a parte dela é `totalPlatformCost`, linha própria,
+ * fora de `totalUnallocatedCost` (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
+ */
+export const PLATFORM_SYSTEM_ORG_SLUG = "platform";
+
+export type PlatformCostEntry = {
+  readonly serviceCode: string;
+  readonly usageType: string;
+  readonly costCategory: string;
+  readonly platformCost: number;
+  readonly currency: string;
+  readonly sourceCostLineItemIds: readonly string[];
+  readonly origin: "direct_tag" | "usage_share";
+};
+
 export type AllocationEngineResult = {
   readonly allocations: readonly Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[];
+  readonly platformCost: readonly PlatformCostEntry[];
   readonly totalImportedCost: number;
   readonly totalAllocatedCost: number;
+  readonly totalPlatformCost: number;
   readonly totalUnallocatedCost: number;
   readonly currency?: string;
   readonly unallocated: readonly {

@@ -6,15 +6,21 @@ import type {
   AllocationEngineResult,
   CloudCostAllocationMethod,
   CloudCostAllocationTenant,
+  PlatformCostEntry,
   TenantCloudCostAllocation,
 } from "./cloud-cost-allocation.types.js";
+import { PLATFORM_SYSTEM_ORG_SLUG } from "./cloud-cost-allocation.types.js";
 
 const unknown = "unknown";
 
 export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngineResult {
   const tenantsByTag = new Map<string, CloudCostAllocationTenant>();
   const allocations: Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[] = [];
+  const platformCost: PlatformCostEntry[] = [];
   const unallocated: Array<AllocationEngineResult["unallocated"][number]> = [];
+  // B-SAN3-03 · R8 — a plataforma fica no universo (casa a tag e pesa no denominador), mas nunca recebe
+  // alocação: a parte dela vira `platformCost`, linha própria.
+  const systemTenant = input.tenants.find((tenant) => tenant.slug?.toLowerCase() === PLATFORM_SYSTEM_ORG_SLUG);
 
   for (const tenant of input.tenants) {
     tenantsByTag.set(tenant.id.toLowerCase(), tenant);
@@ -24,6 +30,12 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
 
   for (const line of input.costLineItems) {
     const tenant = line.tenantTag ? tenantsByTag.get(line.tenantTag.toLowerCase()) : undefined;
+
+    // Antes do teste de estratégia: custo marcado com a plataforma é dela nas DUAS estratégias.
+    if (tenant && systemTenant && tenant.id === systemTenant.id) {
+      platformCost.push(createPlatformCost(line, "direct_tag", line.unblendedCost, line.costCategory ?? "direct_tag"));
+      continue;
+    }
 
     if (tenant && input.strategy === "direct_tag_then_usage_weighted_v1") {
       allocations.push(createAllocation(input, line, tenant.id, "direct_tenant_tag", undefined, 1, line.unblendedCost));
@@ -47,6 +59,10 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
     for (const tenantBasis of basis.byTenant) {
       if (tenantBasis.quantity <= 0) continue;
       const ratio = tenantBasis.quantity / basis.totalQuantity;
+      if (systemTenant && tenantBasis.tenantId === systemTenant.id) {
+        platformCost.push(createPlatformCost(line, "usage_share", line.unblendedCost * ratio, rule.costCategory));
+        continue;
+      }
       allocations.push(
         createAllocation(
           input,
@@ -65,13 +81,16 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
 
   const totalImportedCost = roundCost(input.costLineItems.reduce((total, line) => total + line.unblendedCost, 0));
   const totalAllocatedCost = roundCost(allocations.reduce((total, item) => total + item.allocatedCost, 0));
+  const totalPlatformCost = roundCost(platformCost.reduce((total, item) => total + item.platformCost, 0));
   const totalUnallocatedCost = roundCost(unallocated.reduce((total, item) => total + item.unallocatedCost, 0));
   const currencies = [...new Set(input.costLineItems.map((line) => line.currency))];
 
   return {
     allocations: mergeAllocations(allocations),
+    platformCost: mergePlatformCost(platformCost),
     totalImportedCost,
     totalAllocatedCost,
+    totalPlatformCost,
     totalUnallocatedCost,
     currency: currencies.length === 1 ? currencies[0] : undefined,
     unallocated,
@@ -151,6 +170,42 @@ function createUnallocated(line: CloudCostLineItem, reason: string): AllocationE
     sourceCostLineItemIds: [line.id],
     reason,
   };
+}
+
+function createPlatformCost(
+  line: CloudCostLineItem,
+  origin: PlatformCostEntry["origin"],
+  cost: number,
+  costCategory: string,
+): PlatformCostEntry {
+  return {
+    serviceCode: line.serviceCode,
+    usageType: line.usageType ?? unknown,
+    costCategory,
+    platformCost: roundCost(cost),
+    currency: line.currency,
+    sourceCostLineItemIds: [line.id],
+    origin,
+  };
+}
+
+function mergePlatformCost(entries: readonly PlatformCostEntry[]): readonly PlatformCostEntry[] {
+  const merged = new Map<string, PlatformCostEntry>();
+  for (const entry of entries) {
+    const key = [entry.serviceCode, entry.usageType, entry.costCategory, entry.origin, entry.currency].join("|");
+    const existing = merged.get(key);
+    merged.set(
+      key,
+      existing
+        ? {
+            ...existing,
+            platformCost: roundCost(existing.platformCost + entry.platformCost),
+            sourceCostLineItemIds: [...existing.sourceCostLineItemIds, ...entry.sourceCostLineItemIds],
+          }
+        : entry,
+    );
+  }
+  return [...merged.values()];
 }
 
 function mergeAllocations(
