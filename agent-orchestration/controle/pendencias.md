@@ -12040,7 +12040,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobrança andar
 
-- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** o trabalho correspondente até as seis respostas.
+- **status:** FECHADA (2026-10-31, `D-COBRANCA-RESPOSTAS-3110`) · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** nada; o que resta de P2 e P3 tem item próprio.
 - **Perguntas copiadas da fonte:**
   - **P1. Autoriza as migrações?** 7 de esquema e 3 de dados (ASS l.803), uma a uma (l.297). Recomendação: autorizar, com o texto corrigido para dizer que a do rateio automático acrescenta uma coluna.
   - **P2. Valores dos 4 planos e dos 2 de rastreamento** (ASS Q7). Recomendação: cadastrar na tela de Planos antes do 1º fechamento.
@@ -12049,10 +12049,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - **P5. O portão ganha os 8 itens? E o rastreamento?** (REE Q-D1 + ASS §7). Recomendação: sim aos 8, renumerados de 57 a 64, e cobrar rastreamento também entra, porque foi fala do dono e hoje a versão vendável sairia sem isso.
   - **P6. Como os 6 planos nascem em produção, se produção nunca semeia?** Recomendação: uma migração de dados que cria os 6 sem preço, com mais uma autorização.
 - **Limite:** recomendações adotadas por padrão não são decisão do dono; nenhuma migração está autorizada.
+- **Encerramento (2026-10-31):** o dono respondeu (`D-COBRANCA-RESPOSTAS-3110`). P1, P4, P5 e P6 estão decididas. A P1 autoriza as migrações uma a uma e não alcança as de `D-PLATAFORMA-RECEBE-E-REPASSA`. P2 e P3 seguem abertas em `P-COBRANCA-P2-VALORES-DOS-PLANOS` e `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`, porque a fala decide como, mas não traz o dado.
 
 ## P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão
 
-- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** a definição do portão de integrações.
+- **status:** FECHADA (2026-10-31, `D-COBRANCA-RESPOSTAS-3110`: 1 + 1, Asaas e Focus NFe) · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** nada.
 - **Pergunta:** entram no portão 1 + 1 integrações — Asaas e Focus NFe — ou as 6 integrações?
 - **Recomendação do orquestrador, marcada como tal:** 1 + 1 no portão, Asaas e Focus NFe, e as outras 4 logo depois.
 
@@ -12103,3 +12104,39 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
 - **origem:** C3, achado C3-A5 (`c3-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O job `antivirus` da CI executa os 8 casos com os dois daemons saudáveis; o ramo `AVREAL_CLAMAV_MODE=unavailable`, a recuperação após parada do container e a resposta HTTP 503 com o daemon fora do ar não são exercitados no workflow da CI.
 - **condição de fechamento:** `.github/workflows/ci.yml` (job `antivirus`) e `tests/avreal-clamd.integration.ts` exercitam a parada do daemon com verificação de HTTP 503 (`evidence_scan_failed`) + `AVREAL_CLAMAV_MODE=unavailable` e a recuperação subsequente, com guard que morde se o passo for removido.
+
+- **Atualização (2026-10-31):** a P4 foi aprovada (`D-COBRANCA-RESPOSTAS-3110`): o bloco vem logo depois do `B-O6R-03b`.
+
+## P-COBRANCA-P2-VALORES-DOS-PLANOS (2026-10-31) — valores dos 4 planos e dos 2 de rastreamento
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto · **bloqueia:** o 1º fechamento da cobrança.
+- **origem:** P2 de `P-COBRANCA-PERGUNTAS-P1-P6`. A fala de `D-COBRANCA-RESPOSTAS-3110` decide como (cadastrar na tela de Planos antes do 1º fechamento), mas não traz os valores.
+- **encerramento:** os 6 preços cadastrados na tela de Planos pelo dono.
+
+## P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR (2026-10-31) — regime, município, enquadramento e alíquota de ISS do CNPJ emissor
+
+- **status:** ABERTA · **escopo:** decisão de produto · **dono:** dono do produto, com o contador · **bloqueia:** só a emissão de nota; o resto anda.
+- **origem:** P3 de `P-COBRANCA-PERGUNTAS-P1-P6`. A fala de `D-COBRANCA-RESPOSTAS-3110` decide como (perguntar ao contador), mas não traz os dados.
+- **encerramento:** os quatro dados informados pelo contador e registrados no plano de assinatura (`B-ASSINATURA-plano.md`).
+
+## P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de ligar o recebimento — ALTA
+
+- **status:** ABERTA · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** ligar o recebimento em produção.
+- **origem:** `D-PLATAFORMA-RECEBE-E-REPASSA`: a plataforma recebe e repassa ao cliente. O parecer é leitura do orquestrador, declarada, não fala do dono.
+- **Hipótese, não medida:** receber dinheiro de terceiros e repassar pode ter consequência regulatória e tributária; só o parecer responde.
+- **encerramento:** parecer de advogado e de contador registrado, e a decisão do dono sobre ele, antes de qualquer recebimento real em produção.
+
+## P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram, e o custo real — MÉDIA
+
+- **status:** ABERTA · **escopo:** orquestração · **dono:** orquestrador, com medição por identidade que não fez os blocos · **bloqueia:** nada.
+- **origem:** `D-UM-FAZ-OUTRO-VERIFICA`, §C7 item 11. A auditoria de 31/10 fechou em "não comprovado", com N = 1 junta aberta, e não mediu se trocar de modelo reduz defeito.
+- **metas, de `agent-orchestration/omega/auditoria-orquestracao-2026-10-31/04-analise.md` §5, com as bases corrigidas por `05-ataque.md`:**
+  - M1: bloqueantes de junta cuja etapa capaz foi aceite por leitura. Era 2 de 3 (P18). Meta: 0.
+  - M2 corrigida: graves achados pelo crítico ÷ bloqueantes de plano na junta. Era 0/2. Meta: ≥ 1, e junta com ≤ 1 bloqueante de plano.
+  - M3: bloqueantes que a pré-revisão deu como OK. Era 2 + job. Meta: 0. Achados da pré-revisão antes do voto: manter ≥ 5.
+  - M4: "entregue" falso por código de saída. Era 1 (P11). Meta: 0. Logs perdidos por etiqueta. Eram 2 (P18). Meta: 0.
+  - M5: commits do orquestrador no objeto julgado. Eram 4, sem base anterior (P13). Meta: 0. Mandato com caminho inexistente. Era 1. Meta: 0.
+  - M6: tabela de defeitos × executor. Só fecha com N ≥ 5 blocos; os 3 blocos daqui entram na conta.
+  - Cruzamento: em cada bloco, por etapa, quem fez e quem verificou, com modelo, e quando não houve cruzamento, por quê.
+  - Custo real: minutos por bloco contra a estimativa de 57 a 102 min por bloco de infra, que é soma de estimativas e não medida (P17).
+- **encerramento:** relatório com cada linha acima medida por comando em 3 blocos, e a decisão do dono sobre manter ou ajustar o item 11. O risco do verificador do item 10 fica de fora: M7 foi retirada (P6), N = 0.
