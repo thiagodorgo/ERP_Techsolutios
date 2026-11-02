@@ -243,3 +243,14 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
   - Restos declarados do `B-SAN3-19`: "Checklists", "Despesas (RDV)" e os títulos do Diagnóstico. "Sincronizando..." com três pontos é anterior e fica.
   - Alvos de toque: botões Material padrão (≥ 48 dp). Nenhum componente, cor ou espaçamento novo.
 - Próximo comando: `git add` dos 3 caminhos da fatia, da cópia da emenda e deste diário; commit `fix(mobile): diagnóstico conta a fila pela mesma apresentação da tela de sincronização (B-O6R-11)`; push; CI.
+- [08:01:50Z] Commit da F-S1b' `cad1c1cb1bfa376cbd0e6a79d36d85d4764497ad`, enviado (`git ls-remote` confere). O blob indexado da cópia da emenda tem sha256 `ec825930…5398`, igual ao do arquivo externo. CI: run `41409767971`, job `flutter` `125159991028` concluído `success`; log lido pela API: `Formatted 212 files (0 changed)`, `No issues found!`, **`+968: All tests passed!`**.
+
+## PAUSA 2026-11-02T08:01:50Z
+
+- **F-S1b e F-S1b' prontas; próximo: F5.**
+- Papel/modelo: `dev-o6r11-fs1b-opus`, Claude Opus (claude-opus-5-5), nível menor, declarado.
+- Head: `cad1c1cb1bfa376cbd0e6a79d36d85d4764497ad` (F-S1b em `61ccf2ab`, F-S1b' em `cad1c1cb`). Suíte local `+968`; CI flutter `+968`.
+- Feito: F-S1b (13 casos, vermelho-controle `+1 -12`, 10 mutações que morderam) e F-S1b' (d1, vermelho-controle, M-D3 que mordeu, revisão `ui-ux-pro-max` do autor). As emendas de 02/11 (b) e (c) estão copiadas byte a byte. Nenhum PR aberto.
+- Falta: F5, F6c, F7c, conforme a Emenda 4.
+- Próximo comando: `git status --porcelain && git log --oneline -5 && git rev-parse HEAD && tail -80 agent-orchestration/omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
+- Arquivos meio-escritos: só esta seção do diário, sem commit.
