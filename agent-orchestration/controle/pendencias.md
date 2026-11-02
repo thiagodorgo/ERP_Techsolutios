@@ -11196,6 +11196,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
   falha.
+- **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
 
@@ -11894,6 +11895,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
 - **fora desta pendência:** a falha do shim do `prisma` no T2.1 (mesma lista do porteiro, linha 100) já tem dona própria, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (C3-04).
 - **efeito:** vermelho ambiental e resíduo temporário podem mascarar o resultado do drill no host; a CI Linux cobre o produto, mas o arnês local não é portátil.
+- **reprodução na máquina nova (2026-11-01):** a RYZENCASA reproduziu `EBUSY` no gancho de limpeza de `tests/traccar-event-migration-drill-db.test.ts` e `tests/work-order-invoicing-migration-drill-db.test.ts`; a causa permanece **provável, processo não identificado**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-38`. Esta ocorrência é apensa aqui; não nasce pendência nova.
 - **encerramento:** os dois drills removem o scratch com retry/fechamento de handles no Windows e T14 tem execução portátil ou skip ambiental explícito com cobertura equivalente em Linux; repetir cada caso 20 vezes sem `hookFailed`, resíduo ou falso vermelho.
 
 ## P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de regressão — BAIXA
@@ -12140,3 +12142,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - Cruzamento: em cada bloco, por etapa, quem fez e quem verificou, com modelo, e quando não houve cruzamento, por quê.
   - Custo real: minutos por bloco contra a estimativa de 57 a 102 min por bloco de infra, que é soma de estimativas e não medida (P17).
 - **encerramento:** relatório com cada linha acima medida por comando em 3 blocos, e a decisão do dono sobre manter ou ajustar o item 11. O risco do verificador do item 10 fica de fora: M7 foi retirada (P6), N = 0.
+
+## P-ARNES-DB-CATALOG-SWEEP-INTERMITENTE (2026-11-02) — sweep de órfã velha falhou 1 em 5 rodadas — BAIXA
+
+- **status:** ABERTA · **escopo:** arnês de testes, intermitente · **dono:** arnês de testes · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem medida:** `tests/db-catalog-write-guard.test.ts:502`, caso `(PD) sweep: órfã VELHA de cada família nova é recolhida pela próxima criação de role`, falhou 1 em 5 rodadas concluídas. O mecanismo foi lido no código, sem reprodução dirigida: outro arquivo em paralelo pode varrer a órfã criada pelo caso. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:63-73`.
+- **encerramento:** reprodução dirigida nomeia a corrida e o arnês isola a órfã/sweep, ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.
+
+## P-ARNES-TRACCAR-TEMPO-SOB-CARGA (2026-11-02) — teste de ingestão divide 400 ms com a máquina carregada — BAIXA
+
+- **status:** ABERTA · **escopo:** arnês do Traccar, sensível a tempo sob carga · **dono:** arnês do Traccar · **prioridade:** BAIXA · **bloqueia:** não.
+- **origem medida:** `tests/traccar-position-ingestion-db.test.ts:819`. O teste usa orçamento de 400 ms; produção usa 3.000 ms. Sob carga, houve resposta 503 em 418 ms, trabalho concluído em 527 ms e zero recibos/localizações gravados; não houve achado de produto nem 503 com dado gravado. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:75-87`.
+- **encerramento:** o teste deixa de compartilhar um orçamento artificial de 400 ms com carga concorrente, preservando a prova fail-closed de 503 sem gravação.
+
+## P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA (2026-11-02) — três suítes Linux paralelas morreram aos 11m04s — BAIXA
+
+- **status:** ABERTA · **escopo:** orquestração/capacidade da máquina · **dono:** orquestração · **prioridade:** BAIXA · **bloqueia:** não, desde que respeitado o teto.
+- **origem medida:** três suítes Linux em paralelo morreram no mesmo instante aos 11m04s, sem causa exata provada; duas concluíram em cerca de 7m36s. A máquina fica com teto de **2 trabalhos Docker**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-69,89-97`.
+- **encerramento:** manter o teto em 2; eventual aumento só depois de medição própria que prove três trabalhos concluindo sem indisponibilidade do Docker.

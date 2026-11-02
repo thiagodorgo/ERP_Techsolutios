@@ -4218,3 +4218,15 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Correções do ataque à análise (`05-ataque.md`):** M2 entra corrigida, porque a variável medida foi o prompt, não o modelo (P5): a crítica executa, e o modelo sai da regra de cruzamento. M3 entra só com o roteiro fixo, e "modelo diferente do dev" vale por esta decisão, não pela evidência (P7). M4 fica no marcador do diário, sem `ec=0` (P11), e já está aplicada na ferramenta. M7 não entra: reexecutar comandos registrados não vê defeito novo, e reabre o que o dono recusou em `D-JUNTA-FLUXO-RAPIDO` (P6).
 - **Leituras do redator (`gov-3110-opus`), declaradas (§A6):** a regra prevalece também sobre "As IAs externas vêm primeiro" do item 6, só no que trata de quem verifica; "outro modelo" é a outra casa (Claude × Codex). O dono pode corrigir qualquer uma em uma linha.
 - **Nada do item 10 foi revertido.** A medição é `P-AUDITORIA-MEDIR-CRUZAMENTO`.
+
+## D-KPI-PROPOSTA-NO-FLASH (decisão do dono, 2026-11-02) — proposta das descrições de KPI pelo Gemini Flash
+
+- **Fala literal do dono:** *"os kpis, nao usar o argon, usar o gemini flash do antigravity, ok?"*.
+- **Efeito:** no loop de KPI do §C7 item 8(5), a proposta das descrições sai do Gemini Flash pelo Antigravity, não do Argon. O Gemini continua somente propondo; o orquestrador confere e grava fatos por comando. Vale do próximo marco em diante.
+- **Leitura do orquestrador, declarada (§A6):** usar o modelo `gemini-3.8-flash-high`, medido no comando `agy models` informado na decisão. Esta leitura nomeia o modelo; não amplia o papel do Gemini além da proposta.
+
+## D-MAQUINA-RYZENCASA-REGUA-LINUX (decisão do dono, 2026-11-02) — trabalho na máquina nova e régua backend igual ao CI
+
+- **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
+- **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
+- **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.
