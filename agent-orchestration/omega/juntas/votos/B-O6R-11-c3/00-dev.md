@@ -303,3 +303,10 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Falta: a emenda do grep; depois, conforme a saída escolhida, ajustar o registro (se (a): 1 linha em `P-O6R11-TEXTOS-FORA-DE-D-T` e regerar o índice), re-rodar o grep, `git push`, `gh pr create --base main` com o corpo do F7c (sem linha de atribuição) e conferir o resumo de cada job do CI (`flutter` e `backend`).
 - Próximo comando após a emenda: `git status --porcelain && git log --oneline -3 && git grep -n "Integracao remota\|Esgotou as tentativas\|Erro · \|não foi enviado\|Auto sync\|Ultimo sync" HEAD -- mobile/flutter_app/lib`.
 - Arquivos meio-escritos: só esta seção do diário (commitada junto).
+
+## RETOMADA 14
+
+- Hora UTC: `2026-11-02T08:19:04Z`. Papel/modelo: `dev-o6r11-e4c-opus`, Claude Opus (claude-opus-5-5), nível menor, declarado. Head `1aafc564`, status limpo.
+- Emenda de 02/11 (d) (saída (a), mais a integração da `main`) copiada byte a byte: sha256 `c22b9cdd8cb66b3d…` igual dos dois lados; `grep -c` de "(b)", "(c)" e "(d)" → 1 cada.
+- Apenso em `P-O6R11-TEXTOS-FORA-DE-D-T`: `api_error.dart:43`, com a promessa "serao sincronizados". Dono da `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO`: `B-O6R-11b`, ratificado pelo orquestrador (leitura do orquestrador, declarada). Índice regerado: `690 / 679 | ABERTA 517`.
+- Próximo: commit; `git merge origin/main`; conflitos dos registros com os dois lados; índice pelo gerador; bateria F7c inteira; push; PR.

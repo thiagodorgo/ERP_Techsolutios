@@ -11864,7 +11864,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   vermelho. Nenhuma linha em `sync_screen.dart`.
 - **residual:** reabrir se um escritor novo passar a gravar em ação `conflict`; fechá-la de vez exige leitura fresca dentro
   da seção serializada da fila, o que muda a interface `SyncQueueRepository`.
-- **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; o plano não nomeou — a ratificar pelo orquestrador).
+- **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; ratificado pelo orquestrador em 2026-11-02 — leitura do orquestrador, declarada; o plano não nomeou).
 
 ## P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos do 1º PR do `B-O6R-11` — BAIXA
 - status: ABERTA
@@ -11875,6 +11875,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   (fora disso só um comentário de código em `sync_interrupted_reclaim.dart:15`, que o técnico não lê).
 - **dono:** `B-SAN3-19`.
 - **encerramento:** os três literais acentuados e o grep acima em 0 para texto que o técnico lê.
+- **Apenso 2026-11-02 (emenda 4, nota de 02/11 (d) da F7c):** também fora do PERMITIDO, `mobile/flutter_app/lib/core/network/api_error.dart:43`,
+  a mensagem padrão de `ApiIntegrationUnavailableError` ('Integracao remota ainda nao disponivel. Seus dados foram mantidos
+  localmente e serao sincronizados quando a integracao estiver ativa.'), lançada por `field_location_api.dart:24` e
+  `expense_remote_api.dart:63`; existe igual na `main` (`b56031b0`). Além de sem acento, o texto promete "serao
+  sincronizados", o que a P-TELA-VERDADEIRA evita. O encerramento inclui reescrevê-la sem a promessa.
 
 ## P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mobile-work-order-contracts` que não foram portadas — MÉDIA
 - status: ABERTA (índice; cada pendência vale pelo texto no ramo)
