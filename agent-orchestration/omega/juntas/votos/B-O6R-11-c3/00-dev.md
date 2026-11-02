@@ -277,3 +277,29 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - `git diff --check` limpo; `Kpis/**`, `decisoes.md`, `mobile/**`, `src/**`, `prisma/**` sem diff nesta fatia.
 - Observação para quem integra: a `main` andou 4 commits desde `e78e3968` e mexeu em `pendencias.md` (fim do arquivo e l.7180), `pendencias-indice.md` (regerado), `status-geral.md` (topo), `log-execucao.md` (fim) e `PLANO_SAN3.md` (l.191 e l.270). Os apensos e as novas deste PR ficam no meio do arquivo, longe dos hunks da `main`; topo do status, fim do log e o índice devem conflitar e se resolvem mantendo os dois lados e regerando o índice.
 - Próximo comando: `git add` dos 13 caminhos da F6c e deste diário; commit `docs(registro): B-O6R-11 corte 1 — QUA-005 fechada, saída para failed, despesa/material/fila-por-usuário com bloco e dono (B-O6R-11)`; push; depois F7c.
+- [08:17:58Z] F6c commitada `6e15512d` e enviada (`git ls-remote` confere).
+
+## RETOMADA 13
+
+- Hora UTC: `2026-11-02T08:17:58Z`. Papel/modelo: `dev-o6r11-e4c-opus`, Claude Opus (claude-opus-5-5), nível menor, declarado. Head `6e15512d54f05af8c4f1a68f3caa258e10e52f17`. **F7c — bateria** (cada comando com a saída):
+  - `flutter pub get` → ec 0, `pubspec.lock` sem diff.
+  - `dart format --output=none --set-exit-if-changed lib test` → ec 1, `Formatted 213 files (1 changed)`, o único é `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco; artefato do SDK local 3.41.6, já registrado; o CI 3.47.5 deu `0 changed` nos heads `61ccf2ab` e `cad1c1cb`). Nenhum arquivo do bloco acusado.
+  - `flutter analyze` → `No issues found!`.
+  - Comandos das fatias: F-S0 → `+36: All tests passed!`; F-T → `+71`; F-S1a → `+24`; F-S1a' → `+47`; F-S1b → `+59`; F-S1b' → `+2`; F5 → `+1`; R1/R2/RD1 (fila serializada, material com reinício, despesa em conflito) → `+11`. Todos verdes, sem skip.
+  - **Suíte inteira → `+969: All tests passed!`** (N = 905 → M = 969; meta `≥ 969`).
+  - `git diff --check origin/main...HEAD` → ec 0. `git status --porcelain` vazio.
+  - `git diff 19e18e15 -- mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart | wc -c` → 0.
+  - Grep de acento de D-T nos 3 arquivos (o da F-T) → 0. `git grep -c "queue\." HEAD -- .../auto_sync_coordinator.dart` → 0.
+  - `git diff --name-only origin/main...HEAD` → 48 caminhos, todos dentro da emenda 2 §4 + emenda 4 §3 (registro, cópias de plano, `analysis_options.yaml`, os arquivos de `lib/core/**` e `lib/shared/ui/sync_screen.dart` listados, `prestador_repository.dart` do cherry-pick B, testes novos e as edições literais). Zero em `src/`, `prisma/`, `Kpis/`, `pubspec.*`.
+  - **`git grep -n "Integracao remota\|Esgotou as tentativas\|Erro · \|não foi enviado\|Auto sync\|Ultimo sync" HEAD -- mobile/flutter_app/lib` → 1, e não 0:** `mobile/flutter_app/lib/core/network/api_error.dart:43` ('Integracao remota ainda nao disponivel. ' — mensagem padrão de `ApiIntegrationUnavailableError`, lançada por `field_location_api.dart:24` e `expense_remote_api.dart:63`). Pré-existente: está igual em `origin/main` e em `19e18e15` (commit `b56031b0`). `api_error.dart` está fora do PERMITIDO.
+
+## PAUSA 2026-11-02T08:17:58Z
+
+- Papel/modelo: `dev-o6r11-e4c-opus`, Claude Opus (claude-opus-5-5), nível menor, declarado, cobrindo o Codex (`D-CLAUDE-COBRE-ATE-0411`).
+- Motivo: **premissa falsa na F7c.** O critério "`git grep -n \"Integracao remota\|…\" HEAD -- mobile/flutter_app/lib` → 0" não pode ser cumprido: o único acerto é `lib/core/network/api_error.dart:43`, pré-existente e fora do PERMITIDO (emenda 2 §4, emenda 4 §3). É a mesma classe que a nota "emenda de 02/11" da F7c já tratou para o grep de acento. Zerar o grep exige tocar arquivo PROIBIDO; mudar o critério exige emenda. Pelo mandato e por `D-EMENDA-ANTES-DO-CODIGO`, paro sem push novo de código e **sem abrir o PR**.
+- Saídas possíveis, para a emenda decidir (o dev não escolhe): (a) restringir o grep a `lib/shared/ui/sync_screen.dart` e `lib/core/diagnostics/diagnostics_screen.dart` (onde "Integracao remota" era o aviso falso) e registrar `api_error.dart:43` em `P-O6R11-TEXTOS-FORA-DE-D-T` (dono `B-SAN3-19`); (b) autorizar a troca literal da mensagem em `api_error.dart` (o texto também promete "serao sincronizados", o que a P-TELA-VERDADEIRA evita); (c) outra redação.
+- Head: `6e15512d54f05af8c4f1a68f3caa258e10e52f17` (F5 em `cbdd0526`, F6c em `6e15512d`, ambos enviados). Nenhum PR aberto.
+- Feito: F5 (resultado B, suíte `+969`), F6c (registro completo, índice estável), toda a bateria da F7c acima, verde salvo o grep.
+- Falta: a emenda do grep; depois, conforme a saída escolhida, ajustar o registro (se (a): 1 linha em `P-O6R11-TEXTOS-FORA-DE-D-T` e regerar o índice), re-rodar o grep, `git push`, `gh pr create --base main` com o corpo do F7c (sem linha de atribuição) e conferir o resumo de cada job do CI (`flutter` e `backend`).
+- Próximo comando após a emenda: `git status --porcelain && git log --oneline -3 && git grep -n "Integracao remota\|Esgotou as tentativas\|Erro · \|não foi enviado\|Auto sync\|Ultimo sync" HEAD -- mobile/flutter_app/lib`.
+- Arquivos meio-escritos: só esta seção do diário (commitada junto).
