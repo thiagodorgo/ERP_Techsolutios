@@ -106,3 +106,15 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Falta: F-S1, F5, F6c e F7c; nenhum PR aberto.
 - Próximo comando, somente após resposta/liberação do dono: `git status --porcelain && git log --oneline -5 && git ls-remote origin fix/mobile-fila-duravel-b-o6r-11`.
 - Arquivos meio escritos: nenhum.
+
+## RETOMADA 4
+
+- Hora UTC: `2026-11-02T04:53:56Z`.
+- Papel: `dev-o6r11-e4-sol`; modelo Codex GPT-5.6 Sol, nível menor declarado. Não planejou nem verificou a emenda.
+- Head de partida: `19e18e1543f6f80659c3576298ba752fde4f4985`; worktree novo `C:/Users/thiag/w-o6r11c3`; disco `302G` livres. `flutter pub get` concluído sem mudança em `pubspec.lock`.
+- F-S0: a Emenda 4 foi copiada byte a byte para `agent-orchestration/omega/planos/B-O6R-11-emenda-4-despesa.md`. O resgate da fila saiu do coordenador para `SyncQueueReclaimService`, exposto por provider; o coordenador não contém `queue.`.
+- Vermelho-controle no objeto `19e18e15`: `flutter test test/core/sync/bo6r11_guard_fila_await_ast_test.dart --reporter compact` → `+10 -1`; caso 21 vermelho em `auto_sync_coordinator.dart:57`, V3 `_triggerSync()` descartada.
+- Mutação M-Q1: removidas temporariamente as chamadas a `update`; `flutter test test/core/sync/bo6r11_sync_queue_reclaim_service_test.dart --plain-name 'resgata syncing e preserva a ação que já estava pending' --reporter compact` → `+0 -1`, esperado 2 updates e observado 0. Restaurada por edição inversa.
+- `dart format` nos quatro caminhos da fatia → 0 mudanças na passada final; `flutter analyze` → `No issues found!`; bateria F-S0 → `+36: All tests passed!`; suíte Flutter inteira → `+937: All tests passed!`.
+- Guard preservado byte a byte: `git diff 19e18e15 -- mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart` vazio; `git grep -c 'queue\.' -- lib/core/sync/auto_sync_coordinator.dart` → 0; `git diff --check` limpo.
+- Próximo comando: `git add` somente os cinco caminhos da F-S0, a cópia da Emenda 4 e este diário; commit convencional e push; depois conferir o job `flutter` do CI deste head antes de iniciar F-T.

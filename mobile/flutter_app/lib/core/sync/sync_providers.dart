@@ -23,6 +23,7 @@ import 'sync_action_store.dart';
 import 'sync_engine.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
@@ -31,6 +32,11 @@ final syncActionStoreProvider = Provider<SyncActionStore>(
 
 final syncQueueRepositoryProvider = Provider<SyncQueueRepository>(
   (ref) => PersistentSyncQueueRepository(ref.watch(syncActionStoreProvider)),
+);
+
+final syncQueueReclaimServiceProvider = Provider<SyncQueueReclaimService>(
+  (ref) =>
+      SyncQueueReclaimService(queue: ref.watch(syncQueueRepositoryProvider)),
 );
 
 final syncActionFactoryProvider = Provider<SyncActionFactory>(
