@@ -98,7 +98,7 @@ SyncAction _statusAction({
     createdAt: DateTime.utc(2026, 6, 18, 12, 1),
     lastErrorCode: status == SyncStatus.conflict ? 'REMOTE_CONFLICT' : null,
     lastSafeError: status == SyncStatus.conflict
-        ? 'Conflito remoto exige decisao manual.'
+        ? 'Conflito remoto exige decisão manual.'
         : null,
   );
 }
@@ -329,7 +329,7 @@ void main() {
         store,
       ).replayTenant(_tenantId);
 
-      expect(result.failed.single.lastSafeError, 'Servidor recusou a acao.');
+      expect(result.failed.single.lastSafeError, 'Servidor recusou a ação.');
       expect(
         (await store.loadWorkOrders()).single.syncStatus,
         SyncStatus.failed,

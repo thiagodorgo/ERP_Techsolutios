@@ -130,3 +130,22 @@ Comando: `flutter test` individual nos três arquivos trazidos de `origin/fix/mo
 - Feito: F-S0 completa, validada, commitada e enviada. F-T apenas com edição literal parcial até a descoberta da premissa falsa. F-S1a e F-S1a' não iniciadas.
 - Falta: emenda corrigir o grep da F-T (por exemplo, restringindo-o aos padrões realmente sem acento e aos três arquivos autorizados); depois reexecutar a bateria F-T inteira, suíte Flutter inteira, commit e push; só então F-S1a e F-S1a'.
 - Próximo comando após emenda: `git status --porcelain && git diff -- mobile/flutter_app/lib/core/sync/sync_replay_service.dart mobile/flutter_app/lib/core/evidence/evidence_sync.dart mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart mobile/flutter_app/test/core/evidence_sync_test.dart mobile/flutter_app/test/features/b107_work_order_remote_create_conflicts_test.dart`.
+
+## PAUSA 2026-11-02T05:11:01Z
+
+- Motivo: retomada revalidou que a premissa falsa da F-T continua no texto vigente da Emenda 4; sem nova emenda, o §3 fail-closed e `D-EMENDA-ANTES-DO-CODIGO` proíbem avançar.
+- Head: `baa8f126c39128067080b5896df114f726f550a0`; disco: `302G` livres.
+- Feito: F-S0 permanece completa, commitada e enviada. O comando obrigatório `gh run view 41390976838 --job 125102078158 --log` foi reexecutado e confirmou o job `flutter` verde, com `+937: All tests passed!`.
+- Estado medido: as cinco edições permitidas da F-T continuam vivas e não commitadas; F-S1a e F-S1a' não foram iniciadas. Nenhum arquivo proibido foi tocado nesta retomada.
+- Falta: emenda corrigir o grep da F-T para padrões realmente sem acento e restringi-lo aos três arquivos autorizados; depois validar, mutar, executar a suíte inteira, commitar e enviar F-T; só então iniciar F-S1a e F-S1a'.
+- Próximo comando após emenda: `git status --porcelain && git diff -- mobile/flutter_app/lib/core/sync/sync_replay_service.dart mobile/flutter_app/lib/core/evidence/evidence_sync.dart mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart mobile/flutter_app/test/core/evidence_sync_test.dart mobile/flutter_app/test/features/b107_work_order_remote_create_conflicts_test.dart`.
+- Arquivos meio escritos: `mobile/flutter_app/lib/core/sync/sync_replay_service.dart`, `mobile/flutter_app/lib/core/evidence/evidence_sync.dart`, `mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart`, `mobile/flutter_app/test/core/evidence_sync_test.dart`, `mobile/flutter_app/test/features/b107_work_order_remote_create_conflicts_test.dart` e este diário.
+
+## RETOMADA 5
+
+- Hora UTC: `2026-11-02T07:23:48Z`.
+- Head de partida: `baa8f126c39128067080b5896df114f726f550a0`; disco `302G` livres. As cinco edições vivas da F-T foram medidas antes de confiar nelas; `flutter pub get` concluiu sem alterar `pubspec.lock`.
+- Emenda de 02/11: a cópia em `agent-orchestration/omega/planos/B-O6R-11-emenda-4-despesa.md` ficou byte a byte igual ao arquivo externo (`sha256 35418eeb83ea5a57da7167274e93dbfaa6551477fc3235377073b34b86ca661a`).
+- F-T: 21 literais de produção acentuados nos três arquivos autorizados e três edições literais nos dois testes autorizados. Não há mutação prevista nesta fatia; a propriedade é o diff literal mascarado, com pares exatos 21 removidos/21 adicionados e estrutura inalterada.
+- `dart format` nos cinco arquivos → 0 mudanças; bateria F-T → `+71: All tests passed!`; `flutter analyze` → `No issues found!`; grep corrigido da emenda → 0 ocorrências; suíte Flutter inteira → `+937: All tests passed!`; `git diff --check` limpo; guard da fila segue byte a byte igual a `19e18e15`.
+- Próximo comando: adicionar somente os sete caminhos da F-T (incluindo emenda e diário), commitar com `fix(mobile): textos de falha dos replays e do coordenador com acento (B-O6R-11)` e enviar; depois iniciar F-S1a pelo vermelho-controle e arquivos novos previstos.

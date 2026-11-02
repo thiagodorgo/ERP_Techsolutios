@@ -328,7 +328,7 @@ void main() {
 
       final first = await service.replayTenant('tenant-local-only');
       expect(first.conflicts.single.status, SyncStatus.conflict);
-      expect(first.conflicts.single.lastSafeError, contains('decisao manual'));
+      expect(first.conflicts.single.lastSafeError, contains('decisão manual'));
 
       final secondApi = _FakeEvidenceApi(_response());
       final second = await EvidenceSyncReplayService(
