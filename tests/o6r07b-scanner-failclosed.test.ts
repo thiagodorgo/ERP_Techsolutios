@@ -80,7 +80,14 @@ test("produção COM EVIDENCE_SCANNER=unavailable: o boot passa (é o default, n
 });
 
 test("EVIDENCE_SCANNER com valor fora do enum é recusado em qualquer ambiente", () => {
-  assert.equal(envSchema.safeParse({ NODE_ENV: "test", EVIDENCE_SCANNER: "clamav" }).success, false);
+  assert.equal(envSchema.safeParse({ NODE_ENV: "test", EVIDENCE_SCANNER: "bogus" }).success, false);
+});
+
+test("EVIDENCE_SCANNER=clamav com host é aceito", () => {
+  assert.equal(
+    envSchema.safeParse({ NODE_ENV: "test", EVIDENCE_SCANNER: "clamav", CLAMAV_HOST: "127.0.0.1" }).success,
+    true,
+  );
 });
 
 test("as duas classes de scanner respondem o que prometem", async () => {

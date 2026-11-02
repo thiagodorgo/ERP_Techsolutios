@@ -5216,3 +5216,16 @@ Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026
 - **Demo:** continua congelada; os PRs #465–#468 e #470 permanecem abertos, sem revisão, conforme a fonte do registro.
 - **Fluxo rápido:** o dono aprovou os três níveis, uma votação e um conserto sem loop (`D-JUNTA-FLUXO-RAPIDO`). A varredura de segurança sistêmica final fica com `B-SAN3-10` antes do portão vendável.
 - **Distribuição:** o dono priorizou as duas contas do Codex para tarefas que não requeiram Claude; telas devem ser feitas no Claude Design (`D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`).
+
+## Estado em 2026-10-31 — B-AV-REAL (DEV F8/F9/F10/F12)
+
+- Ramo `feat/evidence-clamav-scanner`: clamd real provado localmente (limpo, EICAR, pane, recuperação,
+  saturação, limites e HTTP mobile 201/422); containers próprios removidos e volumes de assinaturas preservados.
+- Job `antivirus` do run `41207885759` ~~verde em 57 s no head `023b565a`, 8/8 e zero pulo~~: run `41207885759` (head `023b565a`) teve **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma) e ficou `success` por `tee` sem `pipefail`; `bf24bb2b` tornou o job vermelho, `b407692a` e `9bad1f7e` seguiram vermelhos, verde em `2746eb60` (runs `41242348719` e `41242344243`, `conclusion=success`).
+- Implementação entregue; ativação AWS/ambiente alvo continua ato do dono. `Kpis/**` permanece congelado.
+
+## 2026-10-31 — B-AV-REAL · conserto pós-junta (E1–E13)
+
+- Executor/modelo: `fix-avreal-argon` (Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou).
+- D1 (clamd morria em 1800 s por socket não declarado) achado pela revisão da emenda, fora da triagem; E13 (clamd não-root) medido e incluído.
+- Fatias E1–E13 entregues no ramo `feat/evidence-clamav-scanner`: healthcheck `127.0.0.1` + `LocalSocket /tmp/clamd.sock` (E1), `User clamav` (E13), overlay em dois containers `clamav` + `clamav-freshclam` com `SelfCheck 120` e runbook (E2), guards de topologia (E10), privacidade medida no processo real e 5 vias HTTP (E3), `scanReason` no log pino (E7), default 72 h em produção (E4), censo de imports (E5), prazos de conexão/VERSION/DNS/reset/EPIPE (E6), EICAR em duas metades + guard (E8), contagem obrigatória de 8 casos reais na integração/CI (E9), correções de registro, F11 (`M-R7`), emenda da junta e 7 pendências residuais (E11), bateria final e job `antivirus` (E12).

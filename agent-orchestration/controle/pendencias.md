@@ -7177,6 +7177,20 @@ protocolo `zINSTREAM`, `StreamMaxLength`, respostas `OK`/`FOUND`/`ERROR`, timeou
   **escopo:** `dentro-do-bloco` (é consequência declarada e desejada do fail-closed que o 07b entrega) ·
   **dono:** bloco próprio pós-O6R (`B-AV-REAL`), a encaixar pelo dono
 
+- **nota B-AV-REAL (2026-10-31):** implementação entregue no ramo `feat/evidence-clamav-scanner`:
+  cliente INSTREAM, fail-closed, compose privado, limites reais e job `antivirus` 8/8 sem pulo. A entrada
+  permanece **ABERTA — ativação pendente**: só fecha após daemon respondendo no ambiente alvo, com ato do
+  dono, rede privada, digest/config/VERSION registrados e provas 201/422/503/limite/recuperação.
+
+## P-AVREAL-RETRY-AFTER (2026-10-31) — 503 do scanner sem `Retry-After` — MÉDIA
+
+- **descrição:** não há handler HTTP central nem emissor de `Retry-After`; acrescentá-lo em B-AV-REAL
+  exigiria alterar cinco tradutores/controllers: mobile evidence, attachments, work-order attachments,
+  checklist attachments e damages (`src/modules/mobile/mobile.routes.ts`, `src/modules/attachments/attachment.controller.ts`, `src/modules/work-orders/work-order-attachment.controller.ts`, `src/modules/checklists/checklist.controller.ts`, `src/modules/damages/damage.controller.ts`).
+- **status:** ABERTA · **escopo:** preexistente · **dono:** ~~bloco backend de padronização de erros HTTP~~ o bloco que fechar `P-O6R-B07B-MOBILE-RETRY-PERMANENTE`.
+- **condição de fechamento:** as cinco vias 503 anunciam atraso coerente, com teste de contrato comum;
+  nenhum código 422/415 ou payload público muda.
+
 ## P-O6R-B07B-STAGING-SEM-UPLOAD (2026-09-06) — staging para de aceitar foto no dia do deploy — MÉDIA-ALTA
 
 Entrada **de agenda**, não de código: o remédio técnico é `P-O6R-B07B-SCANNER-AV-REAL`. Existe separada porque
@@ -12047,3 +12061,45 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE` · **bloqueia:** o envio do comprovante de despesa.
 - **Fato:** o envio do comprovante de despesa não tem plano.
 - **Próximo passo:** planejar o bloco `B-RDV-COMPROVANTE` se a P4 de `P-COBRANCA-PERGUNTAS-P1-P6` for aprovada.
+
+## P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em produção — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A4 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Em produção com `EVIDENCE_SCANNER=clamav`, `CLAMAV_MAX_DB_AGE_HOURS=999999` é aceito porque a regra atual só exige `>= 1`, desligando na prática a verificação de idade da base.
+- **condição de fechamento:** `src/config/env.ts` impõe teto superior razoável para `CLAMAV_MAX_DB_AGE_HOURS` em produção (ex.: `<= 168`), com teste que morde em `tests/avreal-config.test.ts` (mutação do teto fica vermelha).
+
+## P-AVREAL-PRAZO-SOMA (2026-10-31) — prazo de varredura não desconta a fase de conexão / `VERSION` (pior caso connect+scan = 48 s) — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A6 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O prazo de `scanInstream` e a consulta `VERSION` usam timers independentes por fase; no pior caso (padrão 3 s + 45 s = 48 s), a duração soma `connectTimeoutMs + scanTimeoutMs` em vez de um orçamento único desde antes do `connect`.
+- **condição de fechamento:** o orçamento de tempo de `scan()` governa a soma das fases (`VERSION` + `connect` + `INSTREAM`) ou o contrato documenta explicitamente o teto composto, com teste que morde em `tests/avreal-scanner-failures.test.ts`.
+
+## P-AVREAL-VERSION-FUTURO (2026-10-31) — data de `VERSION` no futuro ou regressão de relógio aprova no cache de idade — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A8 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Uma resposta `VERSION` com data no futuro (ex.: ano 2099) produz `ageHours < 0` e passa em `ageHours <= maxDbAgeHours`; além disso, se o relógio do processo regredir dentro da janela do cache, a aprovação anterior permanece válida até expirar.
+- **condição de fechamento:** `ClamAvEvidenceScanner` recusa carimbo de `VERSION` no futuro (acima de tolerância curta de skew) e usa relógio monotônico para o TTL do cache, com teste que morde em `tests/avreal-signatures.test.ts`.
+
+## P-AVREAL-SEGUNDA-RESPOSTA (2026-10-31) — segunda resposta em pacote TCP separado após o primeiro NUL não é vista — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C1, achado A9 (`c1-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). Se um daemon adulterado enviar `stream: OK\0` num pacote e, milissegundos depois, `stream: X FOUND\0` em outro pacote, o cliente encerra no primeiro terminador NUL (`terminatorIndex === response.length - 1`); o teste atual de resposta dupla cobre apenas dois terminadores no mesmo chunk.
+- **condição de fechamento:** definir e testar o tratamento de bytes tardios ou documentar formalmente que o protocolo `zINSTREAM` encerra no primeiro NUL em conexão de uso único, com teste que morde em `tests/avreal-scanner-protocol.test.ts`.
+
+## P-AVREAL-ROTAS-ROTULO (2026-10-31) — `tests/avreal-routes.test.ts` chama `verifyUploadContent` direto sem exercitar os tradutores das 5 vias nem contar storage real — BAIXA
+
+- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C2, achado C2-A3 (`c2-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). A propriedade nas 5 vias HTTP já é guardada por `tests/o6r07b-mime-sniff-routes.test.ts` e agora também pelos casos `E3 [V1..V5]`, mas `tests/avreal-routes.test.ts` testa `verifyUploadContent` diretamente com contador local e regex sobre `damage.service.ts`.
+- **condição de fechamento:** `tests/avreal-routes.test.ts` passa a exercitar as 5 vias pelo harness HTTP com provider de storage contado (sem regex sobre fonte), com teste que morde ao quebrar a tradução HTTP ou a gravação de cada via.
+
+## P-AVREAL-B108-PROVA (2026-10-31) — `b108_evidence_storage_hardening_test.dart` não prova preservação do blob nos desfechos HTTP 422/503 reais do antivírus nem em timeout/conflito/erro genérico — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** `B-AV-REAL-RESIDUAL` (dono mobile).
+- **origem:** C2, achado C2-A6 (`c2-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O código atual do app preserva o blob local em HTTP 422, 503, timeout, erro de rede e 409 (confirmado por sonda 6/6 da C2), mas a suíte `b108_evidence_storage_hardening_test.dart` só exercita o ramo `response.status` e inspeção textual em B-108.7, deixando verdes mutações no caminho `ApiServerError` de 422/503/timeout/conflito/erro genérico.
+- **condição de fechamento:** `mobile/flutter_app/test/features/b108_evidence_storage_hardening_test.dart` ganha casos comportamentais para HTTP 422 (`evidence_rejected`), HTTP 503 (`evidence_scan_failed`), timeout, 409 e erro genérico no caminho real do cliente HTTP, com teste que morde quando qualquer ramo não-`stored` apaga o blob local.
+
+## P-AVREAL-PANE-CI (2026-10-31) — modos `unavailable`, recuperação e HTTP 503 com daemon fora não rodam no job `antivirus` da CI — MÉDIA
+
+- **status:** ABERTA · **severidade:** MÉDIA · **escopo:** `dentro-do-bloco` · **dono:** `B-AV-REAL-RESIDUAL`.
+- **origem:** C3, achado C3-A5 (`c3-voto.json`, junta `J-B-AV-REAL`, PR #477, objeto `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`). O job `antivirus` da CI executa os 8 casos com os dois daemons saudáveis; o ramo `AVREAL_CLAMAV_MODE=unavailable`, a recuperação após parada do container e a resposta HTTP 503 com o daemon fora do ar não são exercitados no workflow da CI.
+- **condição de fechamento:** `.github/workflows/ci.yml` (job `antivirus`) e `tests/avreal-clamd.integration.ts` exercitam a parada do daemon com verificação de HTTP 503 (`evidence_scan_failed`) + `AVREAL_CLAMAV_MODE=unavailable` e a recuperação subsequente, com guard que morde se o passo for removido.

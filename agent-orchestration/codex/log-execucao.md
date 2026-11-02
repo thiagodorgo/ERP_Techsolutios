@@ -5053,6 +5053,11 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - Dev `dev-guard-migracao-opus` (Claude Opus, nível menor, declarado; o dono: *"vc cobre o codex nessa rodada"*). Base `origin/main` `8a7885f4`; 116 migrações, 112 anteriores à `20260878000000`, 4 novas.
 - Entregues `scripts/migration-transaction-guard.mjs` (G0–G7) e `tests/migration-transaction-guard.test.ts` com fixtures em `tests/fixtures/migration-guard/`; seção em `docs/deployment.md`; frase espelhada no §C4 de `CLAUDE.md` e `AGENTS.md`. Relatório em `docs/revisoes/B-GUARD-MIGRACAO-dev.md`. Sem banco, sem Docker, `Kpis/**` intocado.
 
+## 2026-10-31 — B-AV-REAL · DEV F8/F9/F10/F12
+
+- `dev-avreal-docker-sol` (Codex GPT-5.6 Sol, nível menor declarado) executou somente F8, F9, F10 e F12.
+- ClamAV real: ~~8/8 sem pulo~~ 8/8 sem pulo localmente; M-R9, M-R11a/b, M-R5r e mutação CI vermelhas e restauradas por hash.
+- CI `antivirus` ~~verde em 57 s (`41207885759`, head `023b565a`), 8/8 e zero pulo~~: run `41207885759` (head `023b565a`) teve **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma) e ficou `success` por `tee` sem `pipefail`; `bf24bb2b` tornou o job vermelho, `b407692a` e `9bad1f7e` seguiram vermelhos, verde em `2746eb60` (runs `41242348719` e `41242344243`, `conclusion=success`); nenhum PR aberto pelo DEV.
 ## 2026-10-28 — B-SAN3-12c · FATIA 1 (`dev-san312c-sol`)
 
 - Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
@@ -5083,3 +5088,13 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - **B-AV-REAL:** PR #477 aberto. A junta reprovou por unanimidade no objeto `2746eb60`, com 3 bloqueantes e nenhum grave; emenda do conserto em andamento; ata ainda não escrita.
 - **B-O6R-11:** ramo `fix/mobile-fila-duravel-b-o6r-11`; F0 e F1 feitas. A F1 achou que o guard herdado acusa `_serial` do `B-SAN3-13`; Emenda 3 fora do repositório, com cópia prevista no próprio bloco.
 - **Distribuição dos braços:** vale por último a fala do dono registrada em `D-CODEX-ZERA-CONTA-2-E-ARGON`: Codex 1, Codex 2 e Argon, uma tarefa para cada, com o Claude na orquestração ou codando quando necessário.
+
+## 2026-10-31 — B-AV-REAL · conserto pós-junta (E1–E13)
+
+- Executor/modelo: `fix-avreal-argon` (Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou).
+- D1 (clamd morria em 1800 s por socket não declarado) achado pela revisão da emenda, fora da triagem; E13 (clamd não-root) medido e incluído.
+- Fatias E1, E13, E2, E10, E3, E7, E4, E5, E6, E8, E9, E11 e E12 executadas sequencialmente no ramo `feat/evidence-clamav-scanner` (`C:/Users/AMP/w-avreal`), com `src/` intocado contra `2746eb60`, F11 (`M-R7`) provada em worktree descartável, 7 pendências residuais registradas em `pendencias.md` (+ índice regenerado) e relatório atualizado em `docs/revisoes/SAN3/B-AV-REAL-dev.md`.
+
+## 2026-11-02 — B-AV-REAL · conferência aprovada no head integrado
+
+- Conferência `conf-avreal-sol` (Codex GPT-5.6 Sol) no objeto `1181537e`: APROVADO, sem achado novo. Ata: `omega/juntas/J-B-AV-REAL.md`. O item 27 segue aberto até o serviço responder no ambiente real.

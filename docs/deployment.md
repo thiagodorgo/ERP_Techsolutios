@@ -467,6 +467,27 @@ Produção e staging do Traccar NÃO estão ligados aqui: dependem do Ato 2, dos
 B-TRC-06/07 (plano `docs/revisoes/TRACCAR/PLANO_TRACCAR.md`). Nunca usar os servidores públicos de demonstração do
 Traccar, em ambiente nenhum.
 
+#### Antivírus de evidência — ClamAV em container: DEV, local-prod e desenho AWS (B-AV-REAL)
+
+- DEV: `docker compose --profile av up -d --no-deps erp-clamav`; publica somente
+  `127.0.0.1:3310`. O perfil `av-limits`/porta `127.0.0.1:3311` existe apenas para provar limites.
+- ~~Local-prod: aplicar `docker-compose.clamav.yml` sobre `docker-compose.prod.yml`; o clamd fica na rede~~
+  ~~interna `clamav_private`, sem `ports`, e a API usa `EVIDENCE_SCANNER=clamav`/`CLAMAV_HOST=clamav`.~~
+  Local-prod (atualizado em E2): aplicar `docker-compose.clamav.yml` sobre `docker-compose.prod.yml`; a API usa `EVIDENCE_SCANNER=clamav`/`CLAMAV_HOST=clamav`, e o overlay sobe **dois** containers da mesma imagem: `clamav` (só clamd, como usuário `clamav`, só na rede interna `clamav_private`, sem saída e sem `ports`) e `clamav-freshclam` (só freshclam, na rede `clamav_update`, com saída HTTPS para `database.clamav.net`, sem `ports`); compartilham o volume `clamav_db`; o clamd recarrega a base sozinho a cada `SelfCheck 120` s.
+- **A base da imagem fixada está congelada na data do digest (25/10/2026)**: no 1º boot, e depois de qualquer parada maior que `CLAMAV_MAX_DB_AGE_HOURS` (72 h), **todo upload responde 503** (`scanReason: signatures_stale`, nada gravado, blob preservado no app) até o atualizador baixar a base **e** o clamd recarregar — janela medida na máquina do dono: ≈ 2–3 min com link bom (`healthy` 12–23 s + download 2–20 s + `SelfCheck` ≤ 120 s + recarga ≈ 20 s; 117–126 s do `updated` ao `VERSION` novo); sem saída para a internet a janela não fecha.
+- Como ver: `docker compose -p erp-avreal -f docker-compose.prod.yml -f docker-compose.clamav.yml exec clamav sh -c 'echo VERSION | nc 127.0.0.1 3310'` (data da base) e `docker compose -p erp-avreal -f docker-compose.prod.yml -f docker-compose.clamav.yml logs clamav-freshclam` (`updated`/`up-to-date`; `Could not resolve hostname` = sem saída). Se `docker ps` mostrar `clamav` `Exited`: `docker compose -p erp-avreal -f docker-compose.prod.yml -f docker-compose.clamav.yml logs clamav` (`Failed to start clamd` = conf sem `LocalSocket`, regressão do E1) e `docker compose -p erp-avreal -f docker-compose.prod.yml -f docker-compose.clamav.yml up -d clamav`; o overlay, como o `docker-compose.prod.yml`, **não** declara `restart`.
+- Nunca `CLAMAV_MAX_DB_AGE_HOURS=0` em produção (o boot recusa); a resposta certa a `signatures_stale` é restaurar a saída do atualizador, não afrouxar a idade. `AV_NO_FRESHCLAM` só vale para o compose de DEV.
+- Os arquivos de `infra/clamav/` são LF por `.gitattributes`: com CRLF o `clamd` não aceita a configuração. Em checkout anterior a essa regra no Windows, apague os arquivos e rode `git checkout -- infra/clamav`.
+- A imagem é `clamav/clamav:1.4.6@sha256:982e28f90061d0e66eb03276419f589a47c9fa601e985e472fc2f6c64b497ca0`.
+  `AlertExceedsMax yes` é obrigatório. O job `antivirus` executa limpo, EICAR, limites e HTTP 201/422
+  contra os dois serviços e falha com qualquer pulo.
+- AWS: tarefa Fargate privada, SG TCP 3310 aceitando somente o SG da API, sem IP público nem LB;
+  atualização de assinaturas por NAT ou espelho aprovado. Provisionar/ativar e fazer deploy de produção
+  continuam atos do dono, sujeitos à junta-5/PD; este bloco não os executa.
+- Rollback seguro: `EVIDENCE_SCANNER=unavailable` (503 e blob preservado), nunca `noop` em produção.
+
+Remover somente os containers locais, preservando as bases: `docker compose --profile av --profile av-limits rm -s -f erp-clamav erp-clamav-limits`.
+
 ### Fronteira de provisionamento (hand-off humano — D-SAN-AUTONOMIA)
 
 A `D-SAN-AUTONOMIA` pre-autoriza a **decisao**/gasto de provedor, mas nao fabrica credencial. O go-live real exige,
