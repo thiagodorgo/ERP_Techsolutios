@@ -184,4 +184,3 @@ Verificador: `conf-avreal-sol` — Codex GPT-5.6 Sol, nível menor declarado, id
 - Comando: `git -C C:/Users/thiag/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/thiag/w-confav`; conferir registro e existência do caminho.
 - Saída resumida: `WORKTREE_REMOVED`; caminho inexistente e sem registro em `git worktree list`.
 - Veredito parcial: **VERDE** — worktree próprio e seus artefatos foram removidos como exigido.
-
