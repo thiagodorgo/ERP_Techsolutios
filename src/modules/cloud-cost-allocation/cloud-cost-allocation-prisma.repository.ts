@@ -224,8 +224,9 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     return record ? mapCostImport(record) : undefined;
   }
 
-  async listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]> {
+  async listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]> {
     const where = {
+      import_id: importId,
       billing_period_end: { gte: periodStart },
       billing_period_start: { lte: periodEnd },
     };
@@ -262,7 +263,6 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         },
       },
       orderBy: { date: "asc" },
-      take: 100_000,
     });
 
     return records.map(mapUsageAggregate);

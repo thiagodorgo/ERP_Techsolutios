@@ -111,3 +111,27 @@
   POSTGRES_PASSWORD=postgres -e POSTGRES_DB=san303 postgres:16`.
 - **Arquivos meio-escritos:** nenhum; F1 pronta para commit.
 
+## RETOMADA 2
+
+- **Head inicial:** `1f9f7bf5` (F1 commitada e enviada).
+- **Pré-condições:** 302 GB livres; memória virtual disponível 14.298 MB. Subido somente `pg-san303`,
+  sem volume, em `127.0.0.1:55432`; serviços `erp-*` não foram tocados.
+- `npx prisma migrate deploy && npm run db:seed` — **exit 0**; 117 migrações preexistentes aplicadas e
+  seed concluído; nenhum arquivo de `prisma/**` foi alterado.
+- **Vermelho-controle:** novo `tests/san3-03-import-scope-db.test.ts` contra o código F1 — **exit 1**,
+  1/3; T26-db-1 devolveu os dois imports e T26-db-2 contou 2 linhas contra teto 1.
+- **Implementação:** `import_id` passou a integrar o mesmo `where` usado por `count` e `findMany`; o
+  `take: 100_000` da projeção diária foi removido conforme F2.
+- **M1-db:** filtro `import_id` neutralizado temporariamente — **exit 1**, 1/3, reproduzindo T26-db-1 e
+  T26-db-2; mutação restaurada.
+- **Validação F2:** suíte nova — **3/3**, 0 falhas, 0 skips; regressões
+  `o6r06-allocation-basis-rls-db`, `o6r06-cost-summary-sum-db` e
+  `o6r06-janela-reservada-guard` — **21/21**, 0 falhas, 0 skips; `npm run check` e
+  `git diff --check` — **exit 0**.
+- **Escopo:** zero alteração em `prisma/**`, `migrations/**`, `Kpis/**`, lockfiles e `frontend/**`.
+- **Feito:** R1 no Prisma, incluindo teto por import e seleção latest completed.
+- **Falta:** F3–F9 (incluindo F8a/F8b/F8c), registros finais e PR.
+- **Próximo comando exato:** `npm test -- tests/san3-03-attachment-capture.test.ts` após criar o
+  vermelho-controle F3.
+- **Arquivos meio-escritos:** nenhum; F2 pronta para commit.
+
