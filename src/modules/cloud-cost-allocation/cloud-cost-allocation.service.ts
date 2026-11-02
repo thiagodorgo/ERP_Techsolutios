@@ -1,5 +1,5 @@
 import { env } from "../../config/env.js";
-import { allocateCloudCosts } from "./cloud-cost-allocation.engine.js";
+import { allocateCloudCosts, assertConservation } from "./cloud-cost-allocation.engine.js";
 import {
   CloudCostAllocationError,
   CLOUD_COST_ALLOCATION_STRATEGIES,
@@ -20,7 +20,11 @@ const strategySet = new Set<string>(CLOUD_COST_ALLOCATION_STRATEGIES);
 const statusSet = new Set<string>(CLOUD_COST_ALLOCATION_STATUSES);
 
 export class CloudCostAllocationService {
-  constructor(private readonly repository: CloudCostAllocationRepository) {}
+  constructor(
+    private readonly repository: CloudCostAllocationRepository,
+    // B-SAN3-03 · R13 — o motor é injetável só para a prova de que a conferência do serviço não confia nele.
+    private readonly engine: typeof allocateCloudCosts = allocateCloudCosts,
+  ) {}
 
   async createAllocationRun(input: AllocateCostsForPeriodInput): Promise<CloudCostAllocationRun> {
     validatePeriod(input.periodStart, input.periodEnd);
@@ -87,7 +91,7 @@ export class CloudCostAllocationService {
           tenants.map((tenant) => tenant.id),
         ),
       ]);
-      const result = allocateCloudCosts({
+      const result = this.engine({
         runId: run.id,
         periodStart: run.periodStart,
         periodEnd: run.periodEnd,
@@ -96,6 +100,18 @@ export class CloudCostAllocationService {
         usageBasis,
         tenants,
       });
+
+      // B-SAN3-03 · R13 — confere a soma pelos ITENS que vão ser gravados, não pelos totais que o motor
+      // declarou: uma fatia perdida no caminho falha a run antes de qualquer alocação persistir.
+      const roundingResidualCost = assertConservation(
+        {
+          importedCost: result.totalImportedCost,
+          allocatedCost: sumMicro(result.allocations.map((item) => item.allocatedCost)),
+          platformCost: sumMicro(result.platformCost.map((item) => item.platformCost)),
+          unallocatedCost: sumMicro(result.unallocated.map((item) => item.unallocatedCost)),
+        },
+        result.roundingCount,
+      );
 
       await this.repository.replaceTenantAllocations(run.id, result.allocations);
 
@@ -116,6 +132,7 @@ export class CloudCostAllocationService {
           platformCost: result.platformCost,
           totalPlatformCost: result.totalPlatformCost,
           estimatedCategories: result.estimatedCategories,
+          roundingResidualCost,
         },
       });
     } catch (error) {
@@ -323,6 +340,12 @@ function readUnallocated(metadata: Record<string, unknown>): { serviceCode: stri
       };
     })
     .filter((item): item is { serviceCode: string; unallocatedCost: number } => item !== undefined);
+}
+
+function sumMicro(values: readonly number[]): number {
+  let total = 0n;
+  for (const value of values) total += BigInt(Math.round(value * 1_000_000));
+  return Number(total) / 1_000_000;
 }
 
 function roundCost(value: number): number {

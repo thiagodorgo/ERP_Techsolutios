@@ -176,6 +176,10 @@ export type AllocationEngineResult = {
   }[];
   /** B-SAN3-03 · R11 — categorias cuja base é estimada (pelas ações), em ordem alfabética. */
   readonly estimatedCategories: readonly string[];
+  /** B-SAN3-03 · R13 — `importado − alocado − plataforma − não rateado`, com sinal; fora de `totalUnallocatedCost`. */
+  readonly roundingResidualCost: number;
+  /** B-SAN3-03 · R13 — quantos valores o motor arredondou; o teto do resíduo em micro-unidades. */
+  readonly roundingCount: number;
 };
 
 export type CloudCostAllocationSummary = {

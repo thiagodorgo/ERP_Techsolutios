@@ -326,3 +326,33 @@
   T-CONS-1 e T-CUR-1 da F8b).
 - **Arquivos meio-escritos:** nenhum.
 
+## RETOMADA 8b
+
+- **Executor:** `dev-san303-opus`, Claude Opus 5.5, nível menor declarado.
+- **Head inicial:** `948489b3` (F8a commitada e enviada).
+- **Vermelho-controle por comportamento:** `engine.ts`, `service.ts` e `types.ts` do head trocados
+  temporariamente pelos de `948489b3` (`git show HEAD:…`), suíte nova copiada com `assertConservation`
+  substituída por um stub (o símbolo não existe na base); `node --test --import tsx` — exit 1, 1/8: T-CONS-1..6
+  vermelhos (sem `roundingResidualCost`; o motor omisso conclui a run), T-CUR-1 vermelho (USD + BRL concluiu).
+  T-CUR-2 verde (controle positivo). Arquivos restaurados da cópia; cópia temporária apagada.
+- **Implementação:** R13 — o motor conta `roundingCount` (uma por fatia linha × organização, uma por linha em
+  tag, plataforma ou não rateado), soma os totais em micro-unidades `BigInt`, devolve `roundingResidualCost`
+  (com sinal) e chama `assertConservation`, função pura exportada: `|resíduo| ≤ roundingCount` micro, senão
+  `CloudCostAllocationError(422, CLOUD_COST_ALLOCATION_RESIDUAL_EXCEEDED, residual_exceeded)`. O serviço confere
+  de novo pelos ITENS que vai gravar (não pelos totais declarados pelo motor) antes de `replaceTenantAllocations`
+  e grava `metadata.roundingResidualCost`, fora de `total_unallocated_cost`. O motor é injetável no construtor
+  do serviço só para o T-CONS-6. R14 — mais de uma moeda nas linhas → `CloudCostAllocationError(422,
+  CLOUD_COST_ALLOCATION_MIXED_CURRENCY, mixed_currency)`; o `catch` existente deixa a run `failed`, sem alocação.
+  Câmbio não entra (é do `B-ASS-09`).
+- **Mutações (vermelhas e restauradas):** **M32** resíduo 0 no motor → T-CONS-4; no serviço → T-CONS-1, 2, 3;
+  **M33** resíduo somado em não rateado → T-CONS-1, 3; **M34** sem teto → T-CONS-5, 6; **M35** (R13)
+  `roundingCount` fixo em 1 (no resultado e na conferência do motor) → T-CONS-1..4; **M34** (R14) trava de moeda
+  removida → T-CUR-1.
+- **Validação (com `DATABASE_URL` do descartável):** `san3-03-*`, `cloud-cost-allocation*`, `cloud-charge-*`,
+  `cloud-usage*`, `o6r06-allocation-basis-rls-db`, `o6r06-cost-summary-sum-db`, `san3-05-leituras-de-plataforma-db`
+  — exit 0, **140/140**, 0 skip. `npm run check` exit 0; `git diff --check` exit 0.
+- **Falta:** F8c, F9, PR.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-summary.test.ts` (vermelho-controle
+  T-SUM-1/2 da F8c).
+- **Arquivos meio-escritos:** nenhum.
+
