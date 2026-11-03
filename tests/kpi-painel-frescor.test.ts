@@ -21,6 +21,13 @@ const objeto = (valor: unknown): valor is JsonObject =>
 
 const copia = <T>(valor: T): T => structuredClone(valor);
 
+const numeroPr = (valor: unknown): number | null => {
+  if (typeof valor !== "number" && typeof valor !== "string") return null;
+  if (typeof valor === "string" && valor.trim() === "") return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
+};
+
 const casa = (version: string, id: string): boolean =>
   version === id ||
   (version.startsWith(id) && !/^\d$/.test(version.charAt(id.length)));
@@ -39,7 +46,8 @@ export function verificarFrescor(latest: unknown, history: unknown): string[] {
   const blocos = roadmap.blocos;
   for (const bloco of blocos) {
     if (!objeto(bloco)) return ["E0:estado:desconhecido"];
-    const id = typeof bloco.id === "string" ? bloco.id : "desconhecido";
+    if (typeof bloco.id !== "string") return ["E0:bloco-sem-id"];
+    const id = bloco.id;
     if (typeof bloco.estado !== "string" || !ESTADOS.has(bloco.estado))
       return [`E0:estado:${id}`];
   }
@@ -61,6 +69,13 @@ export function verificarFrescor(latest: unknown, history: unknown): string[] {
         : maior,
     "0000-00-00",
   );
+  for (const entrada of merges) {
+    if (entrada.snapshot_date !== dia || numeroPr(entrada.pr) !== null)
+      continue;
+    const version =
+      typeof entrada.version === "string" ? entrada.version : "desconhecido";
+    return [`E0:history-pr:${version}`];
+  }
   const codigos: string[] = [];
 
   for (const bloco of blocos) {
@@ -81,14 +96,16 @@ export function verificarFrescor(latest: unknown, history: unknown): string[] {
   const prsRecentes = new Set(
     latest.recent.itens
       .filter(objeto)
-      .map((item) => Number(item.pr))
-      .filter(Number.isFinite),
+      .flatMap((item) => {
+        const pr = numeroPr(item.pr);
+        return pr === null ? [] : [pr];
+      }),
   );
   const prsAusentes = new Set<number>();
   for (const entrada of merges) {
     if (entrada.snapshot_date !== dia) continue;
-    const pr = Number(entrada.pr);
-    if (Number.isFinite(pr) && !prsRecentes.has(pr)) prsAusentes.add(pr);
+    const pr = numeroPr(entrada.pr)!;
+    if (!prsRecentes.has(pr)) prsAusentes.add(pr);
   }
   for (const pr of prsAusentes) codigos.push(`P3:${pr}`);
 
@@ -262,6 +279,69 @@ test("frescor: M13 — recent.itens não-array falha fechado", () => {
   const latest = copia(FIX_LATEST);
   (latest.recent as JsonObject).itens = null;
   esperado(latest, FIX_HISTORY, ["E0:recent.itens"]);
+});
+
+test("frescor: M14 — roadmap.as_of fora do formato falha fechado", () => {
+  const latest = copia(FIX_LATEST);
+  (latest.roadmap as JsonObject).as_of = "31/10/2026";
+  esperado(latest, FIX_HISTORY, ["E0:roadmap.as_of"]);
+  (latest.roadmap as JsonObject).as_of = "x2026-10-31y";
+  esperado(latest, FIX_HISTORY, ["E0:roadmap.as_of"]);
+});
+
+test("frescor: M15 — merge_commit não hexadecimal não conta", () => {
+  const history = copia(FIX_HISTORY);
+  history.push({
+    snapshot_date: "2026-11-01",
+    version: "PR-999",
+    pr: 999,
+    merge_commit: "nao-hex",
+  });
+  esperado(FIX_LATEST, history, []);
+  history.at(-1)!.merge_commit = "x9f9f9f9y";
+  esperado(FIX_LATEST, history, []);
+});
+
+test("frescor: M16 — merge no dia D sem PR numérico falha fechado", () => {
+  const latest = copia(FIX_LATEST);
+  (latest.roadmap as JsonObject).as_of = "2026-11-01";
+  const history = copia(FIX_HISTORY);
+  history.push({
+    snapshot_date: "2026-11-01",
+    version: "PR-999",
+    merge_commit: "9f9f9f9",
+  });
+  esperado(latest, history, ["E0:history-pr:PR-999"]);
+});
+
+test("frescor: M17 — recent com PR nulo não satisfaz PR zero", () => {
+  const latest = copia(FIX_LATEST);
+  (latest.roadmap as JsonObject).as_of = "2026-11-01";
+  (latest.recent as JsonObject).itens = [{ pr: null }];
+  const history = copia(FIX_HISTORY);
+  history.push({
+    snapshot_date: "2026-11-01",
+    version: "PR-0",
+    pr: 0,
+    merge_commit: "9f9f9f9",
+  });
+  esperado(latest, history, ["P3:0"]);
+});
+
+test("frescor: M18 — bloco sem ID string falha fechado", () => {
+  const latest = copia(FIX_LATEST);
+  (latest.roadmap as JsonObject).blocos = [
+    ...((latest.roadmap as JsonObject).blocos as JsonObject[]),
+    { estado: "a_fazer" },
+  ];
+  const history = copia(FIX_HISTORY);
+  history.push({
+    snapshot_date: "2026-10-01",
+    version: "B-X1",
+    pr: 401,
+    merge_commit: "4014014",
+  });
+  esperado(latest, history, ["E0:bloco-sem-id"]);
 });
 
 test("frescor: N1 — fronteira numérica não casa bloco diferente", () => {
