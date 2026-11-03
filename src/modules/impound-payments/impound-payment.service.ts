@@ -58,9 +58,9 @@ export class ImpoundPaymentService {
   async create(actor: ImpoundPaymentActorContext, processId: string, body: unknown): Promise<ImpoundPaymentIntent> {
     const tenantId = actor.tenantId;
     const normalizedId = parseRequiredUuid(processId, "processId");
-    const input = parseCreateIntentBody(body);
 
-    // (a) canal ligado.
+    // (a) canal ligado. Vem ANTES de ler o corpo: com o canal desligado, a resposta é a mesma para qualquer corpo (nada do
+    // pedido é avaliado nem ecoado).
     if (!(await this.gate.isEnabled(tenantId))) {
       throw new ImpoundPaymentError(422, "ONLINE_PAYMENT_UNAVAILABLE", "channel_disabled", "Online payment is not enabled.");
     }
@@ -73,6 +73,8 @@ export class ImpoundPaymentService {
     const account = resolution.account;
     assertIntentAccount(account);
 
+    // O corpo (pagador e meios) só é lido com o canal ligado e a conta resolvida.
+    const input = parseCreateIntentBody(body);
     const now = this.clock();
     const created = await this.repository.withProcessLock(tenantId, normalizedId, async (scope) => {
       // (c) processo em liberação, com dossiê STANDARD ativo (L1/Q1: a cobrança on-line só nasce depois do Salto A).
