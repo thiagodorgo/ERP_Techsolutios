@@ -690,4 +690,26 @@ PRONTO PARA PRÉ-REVISÃO
   aguardado e seus TAPs serão lidos antes da devolução ao orquestrador.
 - **Arquivos meio-escritos:** nenhum.
 
-PRONTO PARA CONFERÊNCIA
+## RETOMADA 18
+
+- **Executor:** `dev-san303-k-sol`, Codex GPT-5.6 Sol, nível menor declarado, esforço high, identidade nova.
+- **Head inicial:** `5b628b886520bcbece0228eec9d47c965a32b577`, igual ao remoto; árvore limpa.
+- **K1 — invisíveis não escapam da ambiguidade:** `normalizeTenantTag` remove
+  `Default_Ignorable_Code_Point`/`Cf` antes de NFKC, trim, colapso de espaços e caixa. Como índice e consulta
+  usam a mesma função, o fechamento vale para id, nome, slug e tag.
+- **Testes novos:** T-TAG-14 cobre os 12 caracteres da junta nas duas estratégias; T-TAG-db-2 cobre U+00AD,
+  U+200B, U+2060 e U+FEFF no Postgres descartável `devsan303k-pg` em `127.0.0.1:55465`.
+- **Vermelho-controle em `5b628b88`:** T-TAG-14 — **exit 1**, primeira divergência U+00AD, com 10
+  alocados em vez de 0; T-TAG-db-2 — **exit 1**, quatro subcasos vermelhos porque uma das organizações
+  recebeu alocação. Depois do conserto: motor **12/12**; DB dirigido **5 pass, 0 fail** (3 testes fora do
+  padrão ficaram skip).
+- **M57 literal:** âncora da remoção dos invisíveis **=1**; sem a linha, T-TAG-14 ficou vermelho por
+  `AssertionError` (**exit 1**). Arquivo restaurado por `git checkout HEAD --`, `git status --porcelain`
+  vazio.
+- **Commit de produto:** `0f731d4b` (`fix(cloud-billing): bloqueia tags com invisiveis`). A normalização
+  LF corrigiu a conversão de EOL antes do push; diff final: 3 arquivos, 81 inserções e 2 remoções.
+- **Feito:** K1 completo e pronto para push com este registro.
+- **Falta:** K2–K5, bateria final, CI e conferência Claude.
+- **Próximo comando exato:** confirmar no objeto que o frontend envia `AAAA-MM-DD`, adicionar T-SUM-9 e
+  obter seu vermelho-controle antes de alterar `parseSummaryFilters`.
+- **Arquivos meio-escritos:** nenhum.
