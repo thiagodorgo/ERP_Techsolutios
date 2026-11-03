@@ -82,3 +82,19 @@ Gravado por fatia (P1): cada comando, exit e saída resumida.
 | `npm test` | — | **não rodado inteiro localmente.** O bloco só muda texto de `frontend/`; as 10 suítes da raiz que leem `frontend/` passaram (fatia 2, 97/97). A suíte inteira roda no job `backend` do CI, com Postgres e Redis do próprio CI (§5 do plano: "senão, as suítes afetadas e o CI"). Nenhum container Docker subido; a demo (3000, 5173, `erp-postgres`, `erp-redis`) não foi tocada. |
 | `git diff --check` | 0 | limpo |
 | `git diff --name-only origin/main` ⊆ PERMITIDO | 0 | 42 em `frontend/src`, 5 em `frontend/tests`, o guard, o relatório, o comando; nada em `prisma/`, `src/`, `mobile/`, `Kpis/`, lockfiles |
+
+## PAUSA 02:58 UTC
+
+- **Head:** `0d20deaf5ef173c03953ead30c80f26608c49852` (ramo `fix/web-acentuacao`, empurrado). Este registro entra num commit novo, só deste arquivo.
+- **Feito:** as fatias 0 a 4 acima, cada uma com comando e saída. Mais:
+  - `git push -u origin fix/web-acentuacao`: ramo criado no remoto.
+  - `gh pr create --base main …`: **PR #486** aberto, com "Não fazer merge: revisão do Codex".
+  - `gh pr checks 486 --watch` (teto de 25 min): exit 0. O head `0d20deaf` tem 2 runs, 41567709169 (push) e 41567739166 (pull_request), e os 14 check-runs concluíram `pass`.
+  - `gh run view <run> --job <id> --log | grep -E "# (tests|pass|fail)|not ok"`, nos dois runs:
+    - `frontend`: `# tests 1556 # pass 1556 # fail 0`;
+    - `backend`: `# tests 4264 # pass 4262 # fail 0` (2 pulados, o orçamento conhecido); os 3 casos do B-SAN3-21 estão `ok`.
+- **Falta:** a revisão do Codex (verificador). O dev não tem item aberto. Também falta o orquestrador registrar a pendência proposta `P-SAN3-21-PERFIL-LOGISTICO`.
+- **Próximo comando:** `gh pr checks 486` no head novo, porque este commit de registro dispara o CI de novo. Depois, a revisão do Codex sobre o PR #486. Merge só depois dela.
+- **Arquivos meio-escritos:** nenhum. Antes deste registro, `git status --short` estava vazio.
+- **Postgres descartável:** nunca foi criado (`docker ps -a --filter name=san321-pg` vazio). Nenhum container subido.
+- **Worktree:** `C:/Users/thiag/w-san321` mantido, com `frontend/dist` removido.
