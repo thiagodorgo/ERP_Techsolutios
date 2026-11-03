@@ -18,7 +18,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
     await new Promise((resolve) => window.setTimeout(resolve, 450));
 
     if (!credentials.email || !credentials.password) {
-      throw new Error("Credenciais obrigatorias");
+      throw new Error("Credenciais obrigatórias");
     }
 
     // Perfil (plataforma/gestor/despacho/financeiro/admin/auditor) resolvido pelo e-mail.
@@ -70,7 +70,7 @@ async function refreshStoredSession(): Promise<AuthSession> {
 
   if (!refreshToken) {
     clearStoredAuthSession();
-    throw new Error("Sessao expirada. Faca login novamente.");
+    throw new Error("Sessão expirada. Faça login novamente.");
   }
 
   try {
@@ -78,7 +78,7 @@ async function refreshStoredSession(): Promise<AuthSession> {
     const session = updateStoredAuthTokens(tokens);
 
     if (!session) {
-      throw new Error("Sessao local ausente.");
+      throw new Error("Sessão local ausente.");
     }
 
     return session;

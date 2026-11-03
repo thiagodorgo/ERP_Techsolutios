@@ -6,9 +6,9 @@ import type { WorkOrdersSummary } from "../work-orders.types";
 const cards = [
   { key: "total", label: "Total de OS", icon: ClipboardList },
   { key: "open", label: "Abertas", icon: Circle },
-  { key: "assigned", label: "Atribuidas", icon: UserRound },
+  { key: "assigned", label: "Atribuídas", icon: UserRound },
   { key: "inService", label: "Em atendimento", icon: Clock },
-  { key: "completed", label: "Concluidas", icon: CheckCircle2 },
+  { key: "completed", label: "Concluídas", icon: CheckCircle2 },
   { key: "cancelled", label: "Canceladas", icon: XCircle },
   { key: "urgent", label: "Urgentes", icon: AlertTriangle },
 ] as const;

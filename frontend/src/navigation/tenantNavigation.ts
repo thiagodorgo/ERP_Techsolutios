@@ -26,7 +26,7 @@ export const tenantNavigation: NavigationItem[] = [
   },
   {
     id: "tenant-work-orders",
-    label: "Ordens de Servico",
+    label: "Ordens de Serviço",
     path: "/work-orders",
     scope: "tenant",
     mode: "operation",
@@ -60,7 +60,7 @@ export const tenantNavigation: NavigationItem[] = [
   },
   {
     id: "tenant-logistics",
-    label: "Painel Logistico",
+    label: "Painel Logístico",
     path: "/logistics",
     scope: "tenant",
     mode: "operation",
@@ -367,7 +367,7 @@ export const tenantNavigation: NavigationItem[] = [
   },
   {
     id: "tenant-users",
-    label: "Usuarios",
+    label: "Usuários",
     path: "/users",
     scope: "tenant",
     // Recon §4: `users.read` (backend) é a autoridade; alias legado `users:read` mantido.
@@ -483,7 +483,7 @@ export const tenantNavigation: NavigationItem[] = [
   },
   {
     id: "tenant-settings",
-    label: "Configuracoes",
+    label: "Configurações",
     path: "/administrator/settings",
     scope: "tenant",
     mode: "tenant_admin",

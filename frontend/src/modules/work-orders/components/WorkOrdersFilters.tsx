@@ -18,7 +18,7 @@ export function WorkOrdersFilters({
         <input
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
-          placeholder="Buscar por codigo, titulo ou cliente"
+          placeholder="Buscar por código, título ou cliente"
         />
       </label>
       <Select label="Status" value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as WorkOrdersFilterState["status"] })}>
@@ -33,9 +33,9 @@ export function WorkOrdersFilters({
           <option key={priority} value={priority}>{getWorkOrderPriorityLabel(priority)}</option>
         ))}
       </Select>
-      <Input label="Operador atribuido" value={filters.assignedOperatorId} onChange={(event) => onChange({ ...filters, assignedOperatorId: event.target.value })} placeholder="UUID ou user ID" />
+      <Input label="Operador atribuído" value={filters.assignedOperatorId} onChange={(event) => onChange({ ...filters, assignedOperatorId: event.target.value })} placeholder="UUID ou user ID" />
       <Input label="De" type="date" value={filters.from} onChange={(event) => onChange({ ...filters, from: event.target.value })} />
-      <Input label="Ate" type="date" value={filters.to} onChange={(event) => onChange({ ...filters, to: event.target.value })} />
+      <Input label="Até" type="date" value={filters.to} onChange={(event) => onChange({ ...filters, to: event.target.value })} />
       <span className="work-orders-filter-label"><Filter size={16} /> Filtros ativos</span>
     </section>
   );

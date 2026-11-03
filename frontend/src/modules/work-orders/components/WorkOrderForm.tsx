@@ -168,16 +168,16 @@ export function WorkOrderForm({
     <>
       <form className="page-stack" onSubmit={submit}>
         {errors.length ? (
-          <Alert title="Revise os campos obrigatorios" tone="warning">
+          <Alert title="Revise os campos obrigatórios" tone="warning">
             {errors.join(" ")}
           </Alert>
         ) : null}
         <section className="work-order-form-grid">
-          <Card title="Identificacao">
+          <Card title="Identificação">
             <div className="form-section">
-              <Input label="Titulo" value={state.title} onChange={(event) => setState({ ...state, title: event.target.value })} />
+              <Input label="Título" value={state.title} onChange={(event) => setState({ ...state, title: event.target.value })} />
               <label className="ui-field">
-                <span>Descricao</span>
+                <span>Descrição</span>
                 <textarea value={state.description} onChange={(event) => setState({ ...state, description: event.target.value })} />
               </label>
               <Select label="Prioridade" value={state.priority} onChange={(event) => setState({ ...state, priority: event.target.value as WorkOrderCreatePayload["priority"] })}>

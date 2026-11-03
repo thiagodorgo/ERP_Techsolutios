@@ -1937,7 +1937,7 @@ test("F16 vazio: sem contas → 'Cadastre a primeira conta' (botão só para que
 test("F16 acesso não permitido: Técnico de Campo cai no guarda da rota; sem leitura de títulos, a aba mostra o painel de acesso", async () => {
   const tecnico = await mount({ permissions: ["work_orders:read"], role: "Técnico de Campo", guard: true });
   try {
-    assert.match(text(tecnico.container), /Acesso nao autorizado/);
+    assert.match(text(tecnico.container), /Acesso não autorizado/);
     assert.equal(calls.filter((c) => /financial/.test(c.url)).length, 0, "nada do Financeiro é pedido");
   } finally {
     await tecnico.unmount();

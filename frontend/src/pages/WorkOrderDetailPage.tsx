@@ -36,15 +36,15 @@ export function WorkOrderDetailPage() {
       {workOrder.blockReason ? <BlockedBanner reason={workOrder.blockReason} /> : null}
       <section className="detail-grid">
         <div className="detail-main">
-          <Card title="Resumo tecnico">
+          <Card title="Resumo técnico">
             <div className="metric-grid">
               <AuditMetric label="Lead time" value="4h 12m" />
               <AuditMetric label="Checklist" value={`${workOrder.checklistProgress}%`} />
               <AuditMetric label="Custo estimado" value={workOrder.estimatedCost.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
-              <AuditMetric label="Valor faturavel" value={workOrder.billableValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
+              <AuditMetric label="Valor faturável" value={workOrder.billableValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
             </div>
           </Card>
-          <Card title="Timeline auditavel">
+          <Card title="Timeline auditável">
             <div className="erp-timeline">
               {timeline.map((item) => (
                 <TimelineRow key={item.id} item={item} />
@@ -53,9 +53,9 @@ export function WorkOrderDetailPage() {
           </Card>
           <Accordion title="Checklist, estoque e logs financeiros" defaultOpen>
             <div className="accordion-grid">
-              <span>Checklist pendente: pressao final e assinatura tecnica</span>
+              <span>Checklist pendente: pressão final e assinatura técnica</span>
               <span>Estoque reservado: filtro, sensor, fluido refrigerante</span>
-              <span>Financeiro: aguardando aprovacao acima de limite</span>
+              <span>Financeiro: aguardando aprovação acima de limite</span>
             </div>
           </Accordion>
         </div>
@@ -65,8 +65,8 @@ export function WorkOrderDetailPage() {
         </aside>
       </section>
       <StickyActionBar>
-        <Button variant="secondary">Anexar evidencia</Button>
-        <Button variant="secondary">Solicitar aprovacao</Button>
+        <Button variant="secondary">Anexar evidência</Button>
+        <Button variant="secondary">Solicitar aprovação</Button>
         <Button>Atualizar status</Button>
       </StickyActionBar>
     </section>

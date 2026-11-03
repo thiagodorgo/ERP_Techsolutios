@@ -28,11 +28,11 @@ export function deriveDashboardKpis(data: WorkOrdersData): OperationalKpi[] {
       id: "critical",
       label: "Prioridade alta/urgente",
       value: String(critical),
-      delta: critical > 0 ? "requer atencao" : "sob controle",
+      delta: critical > 0 ? "requer atenção" : "sob controle",
       tone: critical > 0 ? "danger" : "success",
     },
     { id: "in_progress", label: "Em atendimento", value: String(inProgress), delta: "agora", tone: "warning" },
-    { id: "completed", label: "Concluidas", value: String(completed), delta: "no periodo", tone: "success" },
+    { id: "completed", label: "Concluídas", value: String(completed), delta: "no período", tone: "success" },
   ];
 }
 

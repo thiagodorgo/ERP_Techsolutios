@@ -2,7 +2,7 @@ import { Badge } from "../../../components/ui";
 import type { NotificationStatus } from "../notification.types";
 
 const labels: Record<NotificationStatus, string> = {
-  unread: "Nao lida",
+  unread: "Não lida",
   read: "Lida",
   archived: "Arquivada",
 };
