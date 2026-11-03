@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/api_error.dart';
@@ -150,7 +151,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
           MobileNavyHeader(
             greeting: '${_greetingFor(today)}!',
             subtitle:
-                '${session.user.tenantRole} · ${session.activeTenant.displayName}',
+                '${roleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
             actions: [
               MobileHeaderIconButton(
                 icon: Icons.monitor_heart_outlined,
@@ -408,7 +409,7 @@ class _UserCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${session.user.tenantRole} · ${session.activeTenant.displayName}',
+                      '${roleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
