@@ -67,3 +67,31 @@ Leitura: as quatro baselines batem com a v3 §9.1 F0. `N_san3` fica fixado em **
   aplicada a cada uma, com âncora única, e as duas mordem.
 - **C:** `[SB] tests/rec-01-intent-service.test.ts tests/charging-daily-engine.test.ts` → `# tests 30 # pass 30 # fail 0 # skipped 0`
   = 11 + 19 (emenda §10: 11). `npx tsc --noEmit` → limpo.
+
+## RETOMADA 3 — F3 (rotas, `charging:online_payment`, allowlist do DTO, snapshot do catálogo; emenda §3.1 F3)
+
+- **Entrega:** `impound-payment.{dto,controller,routes}.ts` + `index.ts`; montagem em `src/app.ts` depois do release; permissão
+  `charging:online_payment` no `PERMISSION_CATALOG` e no `manager` (o `tenant_admin` herda, `super_admin`/`platform_admin` têm o
+  catálogo inteiro) — a mesma distribuição de `charging:settle`; `tests/core-saas.test.ts` (catálogo esperado + distribuição) e o
+  snapshot `tests/fixtures/role-catalog-contract.snapshot.json` (+1 nos 4 papéis que têm `charging:settle`). O DTO é allowlist campo a
+  campo: `accountScope ∈ {group, organization}`, documento mascarado, nenhum id de organização, conexão, grupo ou externo.
+  O canário de organização vira 500 genérico no controller (nunca a linha alheia).
+- **V (V1)** — commit `test(…)` com as rotas ainda sem montagem e sem a permissão no catálogo:
+  `[SB] tests/rec-01-routes-permissions.test.ts tests/core-saas.test.ts` → `not ok 31 - T-DOM-17` com
+  `expected 422 channel_disabled, got 404` (o texto da v3) e os outros 5 do arquivo vermelhos (403/404); `# tests 32 # pass 26 # fail 6`.
+- **M** (âncora = 1, restauro com hash igual, `git status --porcelain` vazio):
+
+| # | arquivo · troca | resultado |
+|---|---|---|
+| F3-M1 | `catalog.ts` · dar `charging:online_payment` ao `operator` | `[SB]`: `not ok 28 - T-DOM-14` (`operator: online_payment ≠ settle`), `not ok 27 - T-DOM-13`, `not ok 4` do core-saas; `[UF]`: `not ok 3 - contrato do consumidor de deploy: snapshot` |
+| F3-M2 | `impound-payment.dto.ts` · `payerDocument: intent.payerDocument` (cru) | `not ok 30 - T-DOM-16` (o CPF aparece na resposta); `# pass 31 # fail 1` |
+| F3-M3 (emenda) | `impound-payment.dto.ts` · devolver `groupConnectionId` | `not ok 30 - T-DOM-16`; `# pass 31 # fail 1` |
+
+  Nota de terreno: a primeira execução da F3-M1 usou o `cmd.exe` (o `;` do comando composto não separa comandos ali) e não produziu
+  TAP; o executor de mutação passou a usar `bash -c` e a F3-M1 foi re-executada, com o resultado acima. As mutações da F1 e da F2
+  eram de comando único e não foram afetadas (as saídas registradas são TAP reais).
+- **C:** `[SB] tests/rec-01-routes-permissions.test.ts tests/core-saas.test.ts` → `# tests 32 # pass 32 # fail 0 # skipped 0` (6 + 26) ·
+  `[UF] tests/core-saas-role-authority.test.ts` → `# pass 12 # fail 0 # skipped 0`. `npx tsc --noEmit` → limpo.
+- **Pendente de propósito até a F5:** `tests/permission-catalog-migration-parity.test.ts` (roda no `npm test`) exige migração de dados
+  para toda chave nova do catálogo; a M-REC-7a é da F5 pelo plano. Entre a F3 e a F5, o `npm test` desse arquivo fica vermelho por
+  desenho do plano.
