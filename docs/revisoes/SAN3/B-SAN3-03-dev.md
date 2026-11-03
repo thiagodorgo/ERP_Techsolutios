@@ -534,3 +534,30 @@ PRONTO PARA PRÉ-REVISÃO
 - **Checkpoint C2:** código e testes completos; commit local antes dos ataques para permitir
   restauração por SHA e publicação de status vazio. Vermelho-controle, mutações C2, check e push
   ainda pendentes; não se declara a fatia concluída neste checkpoint.
+
+## PAUSA 2026-11-03 01:57:14 UTC
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado; sucessor do
+  `dev-san303-e2-astra`. Não achou nem planejou o conserto. Verificador previsto: Claude.
+- **Head medido:** `cbbae32ac1a4bedfe02c714a3932060c18908383`; árvore limpa antes das mutações. C1 e C2 estão
+  commitadas localmente, mas o remoto ainda está em `189064e8c571d5cde2cdd467e06f518a50db971f`.
+- **Vermelho-controle C2 medido:** `node C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs RED49`
+  — driver exit 0, mutante exit 1 por `AssertionError`; T-TAG-1/2/5/7/8/9/10/13 e T-TAG-db ficaram
+  vermelhos; `restored=true`; `git status --porcelain=VAZIO`.
+- **Mutações C2 executadas nesta retomada:** comando `node
+  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M48 M49 M50 M51 M52 M53
+  M53-b M53-c M55 M55-b M55-c M22 M17-b` — **exit 1**. Pela ordem literal do driver, M17-b, M22′,
+  M48, M49′, M50, M51 e M52 tiveram todas as âncoras `=1`, mutante exit 1 por asserção e
+  `restored=true`, com `git status --porcelain=VAZIO` após cada caso.
+- **Motivo da pausa:** a mutação obrigatória M53 encontrou a âncora literal com contagem **0** em
+  `cloud-cost-allocation.engine.ts`. O driver restaurou o arquivo (`restored=true`) e publicou árvore vazia,
+  mas a emenda §7 determina explicitamente: âncora 0 = `## PAUSA`, nunca equivalência presumida. Nenhuma
+  mutação posterior, C3 ou C4 foi iniciada.
+- **Diagnóstico factual, sem corrigir:** a constante `normalizer` do driver externo contém `\s` dentro de
+  uma string JavaScript simples; a âncora construída não coincide com a linha literal do motor. O autor deve
+  ajustar/emendar o driver literal antes da retomada.
+- **Falta:** M53/M53-b/M53-c, M55/M55-b/M55-c; fechar C2 com relatório/commit/push; C3, C4, bateria §6 e CI.
+- **Próximo comando exato após correção autorizada do driver:** `node
+  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M53 M53-b M53-c M55 M55-b M55-c`.
+- **Arquivos meio-escritos:** somente este relatório recebeu o registro da pausa; código e testes estão
+  restaurados no head. O Postgres descartável `devsan303e2-pg` foi removido; nenhum serviço/porta da demo foi tocado.
