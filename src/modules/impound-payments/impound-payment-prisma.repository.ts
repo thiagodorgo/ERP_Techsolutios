@@ -51,7 +51,7 @@ export class PrismaImpoundPaymentRepository {
 
   async listByProcess(tenantId: string, processId: string): Promise<readonly ImpoundPaymentIntent[]> {
     const rows = await this.client.impoundPaymentIntent.findMany({
-      where: { process_id: processId },
+      where: { tenant_id: tenantId, process_id: processId },
       orderBy: [{ created_at: "asc" }, { id: "asc" }],
     });
     return rows.map(mapIntent);
