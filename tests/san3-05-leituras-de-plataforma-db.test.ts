@@ -348,7 +348,7 @@ if (!connectionString) {
 
         const allocationSummary = await http(
           "GET",
-          `${P}/cloud-cost-allocations/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}`,
+          `${P}/cloud-cost-allocations/summary?periodStart=${MES_INICIO.slice(0, 10)}&periodEnd=${MES_FIM.slice(0, 10)}`,
         );
         assert.equal(allocationSummary.status, 200, JSON.stringify(allocationSummary.body));
         registrarRota(`GET ${P}/cloud-cost-allocations/summary`, recortarResumoPorTenant(allocationSummary.body.data, cenario));

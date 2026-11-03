@@ -1,14 +1,15 @@
 B-SAN3-03 · K5 (C3-01) — bateria dirigida do §6 da emenda 2, com lista literal e TAP por arquivo
 Executor: dev-san303-k-opus, Claude Opus, nível menor declarado. SEM cruzamento de modelo (§C7 item 11(2)):
 o Codex (dev-san303-k-sol, autor de K1–K4) bateu o limite de uso; este K5 foi feito por um modelo só.
-Objeto medido: f1a123ca0fbaea80b97a54266e35b51bdf115090 (ramo fix/cloud-billing-exato), árvore limpa.
-Data: 2026-11-03 (horário de São Paulo, manhã).
+Objeto medido: c7387fd79ca46a3544645d9ced1bf4f018734f7c + a correção da chamada do resumo em
+tests/san3-05-leituras-de-plataforma-db.test.ts:351 (§11 da emenda 2), commitada junto com este arquivo.
+O produto (src/) é o mesmo de f1a123ca. Data: 2026-11-03 (horário de São Paulo, manhã).
 
 AMBIENTE
 - Windows 11, Git Bash, Node do worktree C:/Users/thiag/w-san303 (node_modules próprio, sem junction).
 - Postgres descartável próprio: container devsan303ko-pg, imagem postgres:16, 127.0.0.1:55466, sem volume,
-  usuário postgres como no CI; `npx prisma migrate deploy` exit 0; `npm run db:generate` exit 0.
-- Memória de commit livre antes do Docker: 42,22 GB (P8: >= 4 GB).
+  usuário postgres como no CI; `npx prisma migrate deploy` exit 0.
+- Memória de commit livre antes do Docker: 41,06 GB (P8: >= 4 GB).
 
 COMANDO LITERAL (um arquivo por vez, na ordem da lista)
   export DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:55466/erp_techsolutions?schema=public'
@@ -99,15 +100,14 @@ tests/san3-03-system-org-db.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 |
 tests/san3-03-system-org.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 | # skipped 0
 tests/san3-03-tenant-tag.test.ts | exit=0 | # tests 12 | # pass 12 | # fail 0 | # skipped 0
 tests/san3-05-acessos-de-plataforma-guard.test.ts | exit=0 | # tests 35 | # pass 35 | # fail 0 | # skipped 0
-tests/san3-05-leituras-de-plataforma-db.test.ts | exit=1 | # tests 3 | # pass 2 | # fail 1 | # skipped 0
-    not ok em tests/san3-05-leituras-de-plataforma-db.test.ts: not ok 1 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
+tests/san3-05-leituras-de-plataforma-db.test.ts | exit=0 | # tests 13 | # pass 13 | # fail 0 | # skipped 0
 tests/san3-05-runtime-role-bootstrap.test.ts | exit=0 | # tests 12 | # pass 12 | # fail 0 | # skipped 0
 tests/san3-05-runtime-role-guard-db.test.ts | exit=1 | # tests 12 | # pass 8 | # fail 4 | # skipped 0
     not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 8 - T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
     not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 9 - T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
     not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 10 - T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
     not ok em tests/san3-05-runtime-role-guard-db.test.ts: not ok 1 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
-TOTAL | arquivos=38 | # tests 297 | # pass 292 | # fail 5 | # skipped 0 | arquivos com exit!=0: 2
+TOTAL | arquivos=38 | # tests 307 | # pass 303 | # fail 4 | # skipped 0 | arquivos com exit!=0: 1
 
 LEITURA DO RESULTADO
 1. tests/san3-05-runtime-role-guard-db.test.ts — 12 testes, 4 fail: DIFERENÇA DE AMBIENTE DO WINDOWS,
@@ -115,24 +115,16 @@ LEITURA DO RESULTADO
    "setsid: ausente — necessário para impedir que psql \password leia a senha do terminal". O Git Bash
    não tem setsid; no CI (Linux) o arquivo roda dentro do job backend. A cadeira C3 mediu as mesmas 4
    falhas no objeto e na base (revisoes/j484/c3-evidencia.md).
-2. tests/san3-05-leituras-de-plataforma-db.test.ts — 3 testes, 1 fail: REGRESSÃO REAL causada pelo K2,
-   NÃO é ambiente. O teste chama
-   GET /api/v1/platform/cloud-cost-allocations/summary?periodStart=<ISO completo>&periodEnd=<ISO completo>
-   (linha 351; MES_INICIO = iso(0), MES_FIM = iso(DIA_MS - 1), com hora), e o K2 passou a recusar tudo que
-   não é AAAA-MM-DD: resposta 400 CLOUD_COST_ALLOCATION_INVALID_PERIOD / summary_period_invalid
-   ("periodStart must be a unique valid date."). O teste para no 1º assert e só registra 3 dos 13 testes.
-   Vermelho-controle: com src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts de 89171135
-   (antes do K2) e o resto do objeto, o mesmo arquivo dá # tests 13 / # pass 13 / # fail 0; restaurado por
-   git checkout HEAD --, git status --porcelain vazio.
-   O CI do objeto confirma: job backend do run 41635074143 (push) — # tests 4361, # pass 4358, # fail 1,
-   # skipped 2; do run 41635064249 (pull_request) — # tests 4358, # pass 4355, # fail 1, # skipped 2; nos
-   dois, "not ok 3111 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o
-   superusuário soma", com a mesma mensagem summary_period_invalid. O arquivo NÃO está no PERMITIDO do §4
-   da emenda 2; por isso não foi tocado aqui.
+2. tests/san3-05-leituras-de-plataforma-db.test.ts — 13/13. Na 1ª execução desta bateria (sobre f1a123ca)
+   o arquivo deu 3 testes e 1 fail: o K2 recusa o ISO completo que a linha 351 mandava ao
+   /cloud-cost-allocations/summary (400 summary_period_invalid), e o CI de f1a123ca falhou no mesmo teste
+   (not ok 3111). Pelo §11 da emenda 2, a regra do K2 ficou e só essa chamada passou a mandar AAAA-MM-DD
+   (MES_INICIO.slice(0, 10) e MES_FIM.slice(0, 10)); o serviço casa a run por sameUtcDay.
+   Vermelho-controle: com o routes.ts do head e a chamada antiga, o arquivo dá # tests 3 / # pass 2 /
+   # fail 1 com summary_period_invalid; com a chamada nova, # tests 13 / # pass 13 / # fail 0.
 
 DENOMINADOR, CONFERIDO CONTRA O DA C3
 - C3, no objeto 5b628b88: 38 arquivos, 299 testes (revisoes/j484/c3-bateria-por-arquivo.txt).
-- Aqui, no objeto f1a123ca: 38 arquivos, 297 testes = 299 + 1 (tenant-tag, T-TAG-14) + 5 (system-org-db,
-  T-TAG-db-2 com 4 subcasos) + 2 (cloud-cost-allocation-routes, T-SUM-9 e T-SUM-10) − 10 (leituras, que
-  aborta em 3 de 13 por causa da regressão do item 2).
-- Com a regressão consertada, o esperado é 307 testes e só as 4 falhas de setsid no Windows.
+- Aqui: 38 arquivos, 307 testes = 299 + 1 (tenant-tag, T-TAG-14) + 5 (system-org-db, T-TAG-db-2 com 4
+  subcasos) + 2 (cloud-cost-allocation-routes, T-SUM-9 e T-SUM-10). 303 pass, 4 fail (só os do setsid),
+  0 skip.
