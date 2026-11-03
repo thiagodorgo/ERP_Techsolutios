@@ -16,7 +16,7 @@ export function DispatchStatusActions({
   readonly onSubmit: (payload: { status: DispatchStatus; observation: string; reason?: string }) => Promise<void>;
 }) {
   const [status, setStatus] = useState<DispatchStatus>(currentStatus);
-  const [observation, setObservation] = useState("Status atualizado pela operacao.");
+  const [observation, setObservation] = useState("Status atualizado pela operação.");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
   const options = DISPATCH_STATUSES.filter((item) => item !== "cancelled" || canCancel);

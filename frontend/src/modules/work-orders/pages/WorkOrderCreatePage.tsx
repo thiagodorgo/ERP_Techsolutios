@@ -42,7 +42,7 @@ export function WorkOrderCreatePage() {
   return (
     <section className="page-stack work-orders-page">
       <header className="page-heading">
-        <span>Ordens de Servico</span>
+        <span>Ordens de Serviço</span>
         <h1><ClipboardList size={24} /> Nova OS</h1>
         <p>Crie uma ordem operacional para despacho, checklist futuro e acompanhamento no mapa.</p>
       </header>

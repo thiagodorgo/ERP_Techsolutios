@@ -12,7 +12,7 @@ export function WorkOrderAssignForm({
 }) {
   const [operatorId, setOperatorId] = useState("");
   const [userId, setUserId] = useState("");
-  const [message, setMessage] = useState("Atribuido ao operador informado.");
+  const [message, setMessage] = useState("Atribuído ao operador informado.");
   const [saving, setSaving] = useState(false);
 
   async function submit() {
@@ -29,9 +29,9 @@ export function WorkOrderAssignForm({
 
   return (
     <div className="work-order-action-form">
-      <p className="work-order-helper">Informe o ID do operador/usuario. A selecao visual sera implementada na etapa de despacho.</p>
+      <p className="work-order-helper">Informe o ID do operador/usuário. A seleção visual será implementada na etapa de despacho.</p>
       <Input label="Operator ID" value={operatorId} onChange={(event) => setOperatorId(event.target.value)} disabled={disabled} placeholder="UUID do operador" />
-      <Input label="User ID" value={userId} onChange={(event) => setUserId(event.target.value)} disabled={disabled} placeholder="UUID do usuario, opcional" />
+      <Input label="User ID" value={userId} onChange={(event) => setUserId(event.target.value)} disabled={disabled} placeholder="UUID do usuário, opcional" />
       <label className="ui-field">
         <span>Mensagem</span>
         <textarea value={message} onChange={(event) => setMessage(event.target.value)} disabled={disabled} />

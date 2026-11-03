@@ -7,6 +7,7 @@ import {
   sanitizeCloudUsageMetadata,
   validateCloudUsageInput,
 } from "./cloud-usage.service.js";
+import type { PrismaClient } from "@prisma/client";
 
 // -----------------------------------------------------------------------------------------------
 // B-O6R-06 (Ω6R-DIN-005) — CAPTURA TRANSACIONAL da medição faturável da vistoria.
@@ -41,6 +42,157 @@ import {
 export type CloudUsageCaptureClient = {
   $executeRaw(query: TemplateStringsArray, ...values: unknown[]): Promise<number>;
 };
+
+export type AttachmentUploadUsageSource = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly runId: string;
+  readonly sizeBytes?: number;
+  readonly createdAt: Date;
+};
+
+export type AttachmentDownloadUsageSource = AttachmentUploadUsageSource & {
+  readonly grantId: string;
+};
+
+export type JobExecutionUsageSource = {
+  readonly id: string;
+  readonly name: string;
+  readonly tenantId?: string;
+  readonly correlationId: string;
+  readonly updatedAt: string;
+};
+
+export const PRODUZIDAS_EM_TX = [
+  "checklist_run.created",
+  "checklist_run.completed",
+  "checklist_runs_count",
+  "checklist_attachment.uploaded.count",
+  "checklist_attachment.uploaded.bytes",
+  "s3_put_requests",
+  "checklist_attachment.downloaded.count",
+  "checklist_attachment.downloaded.bytes",
+  "s3_get_requests",
+  "job.executed",
+  "job_executions_count",
+] as const satisfies readonly CloudUsageMetricKey[];
+
+export function buildJobExecutionUsageEvents(
+  job: JobExecutionUsageSource,
+): readonly RecordUsageEventInput[] {
+  if (!job.tenantId) return [];
+
+  const base = {
+    tenantId: job.tenantId,
+    sourceType: "job",
+    sourceId: job.id,
+    quantity: 1,
+    unit: "count",
+    occurredAt: new Date(job.updatedAt),
+    metadata: {
+      capturedIn: "job_worker_before_complete",
+      jobName: job.name,
+      correlationId: job.correlationId,
+    },
+  } as const;
+
+  return [
+    { ...base, metricKey: "job.executed", idempotencyKey: `${job.id}:job.executed` },
+    { ...base, metricKey: "job_executions_count", idempotencyKey: `${job.id}:job_executions_count` },
+  ];
+}
+
+export async function captureJobExecutionWithClient(
+  client: PrismaClient,
+  job: JobExecutionUsageSource,
+): Promise<void> {
+  if (!job.tenantId) return;
+
+  const { withTenantRls } = await import("../../database/rls.js");
+  await withTenantRls(client, job.tenantId, async (tx) => {
+    await appendCloudUsageInTx(tx, buildJobExecutionUsageEvents(job));
+  });
+}
+
+export async function captureJobExecution(job: JobExecutionUsageSource): Promise<void> {
+  if (!job.tenantId) return;
+
+  if (process.env.CORE_SAAS_PERSISTENCE === "prisma") {
+    const { prisma } = await import("../../database/prisma.js");
+    await captureJobExecutionWithClient(prisma, job);
+    return;
+  }
+
+  await appendCloudUsageInMemory(buildJobExecutionUsageEvents(job));
+}
+
+export function buildAttachmentDownloadUsageEvents(
+  attachment: AttachmentDownloadUsageSource,
+): readonly RecordUsageEventInput[] {
+  const base = {
+    tenantId: attachment.tenantId,
+    sourceType: "checklist_attachment",
+    sourceId: attachment.id,
+    occurredAt: attachment.createdAt,
+    metadata: {
+      capturedIn: "checklist_attachment_download_grant",
+      attachmentId: attachment.id,
+      runId: attachment.runId,
+      grantId: attachment.grantId,
+    },
+  };
+  const key = `checklist_attachment:${attachment.id}:download:${attachment.grantId}`;
+  const events: RecordUsageEventInput[] = [
+    { ...base, metricKey: "checklist_attachment.downloaded.count", quantity: 1, unit: "count", idempotencyKey: `${key}:count` },
+    { ...base, metricKey: "s3_get_requests", quantity: 1, unit: "count", idempotencyKey: `${key}:s3_get_requests` },
+  ];
+  if (attachment.sizeBytes !== undefined) {
+    events.push({ ...base, metricKey: "checklist_attachment.downloaded.bytes", quantity: attachment.sizeBytes, unit: "bytes", idempotencyKey: `${key}:bytes` });
+  }
+  return events;
+}
+
+export function buildAttachmentUploadUsageEvents(
+  attachment: AttachmentUploadUsageSource,
+): readonly RecordUsageEventInput[] {
+  const base = {
+    tenantId: attachment.tenantId,
+    sourceType: "checklist_attachment",
+    sourceId: attachment.id,
+    occurredAt: attachment.createdAt,
+    metadata: {
+      capturedIn: "checklist_attachment_transaction",
+      attachmentId: attachment.id,
+      runId: attachment.runId,
+    },
+  };
+  const events: RecordUsageEventInput[] = [
+    {
+      ...base,
+      metricKey: "checklist_attachment.uploaded.count",
+      quantity: 1,
+      unit: "count",
+      idempotencyKey: `checklist_attachment:${attachment.id}:uploaded.count`,
+    },
+    {
+      ...base,
+      metricKey: "s3_put_requests",
+      quantity: 1,
+      unit: "count",
+      idempotencyKey: `checklist_attachment:${attachment.id}:s3_put_requests`,
+    },
+  ];
+  if (attachment.sizeBytes !== undefined) {
+    events.push({
+      ...base,
+      metricKey: "checklist_attachment.uploaded.bytes",
+      quantity: attachment.sizeBytes,
+      unit: "bytes",
+      idempotencyKey: `checklist_attachment:${attachment.id}:uploaded.bytes`,
+    });
+  }
+  return events;
+}
 
 /** Os dois marcos da vistoria que produzem unidade faturável. */
 export type ChecklistRunUsageKind = "created" | "completed";
@@ -195,15 +347,21 @@ export async function appendChecklistRunUsageInTx(
   return inserted;
 }
 
+// B-SAN3-03: nome geral, mesma função. A implementação mantém o nome original porque o inventário
+// congelado de `san3-05-acessos-de-plataforma` identifica o acesso RAW-SQL por esse símbolo.
+export const appendCloudUsageInTx = appendChecklistRunUsageInTx;
+
 /**
  * DUBLÊ em memória — para as suítes em memória continuarem exercendo a MESMA semântica pelo MESMO
  * builder. Não é evidência de atomicidade (regra do `financial-uow.ts`): a prova de que run e unidade
  * commitam juntas é a suíte `-db`, contra Postgres de verdade.
  */
-export async function appendChecklistRunUsageInMemory(
+export async function appendCloudUsageInMemory(
   inputs: readonly RecordUsageEventInput[],
 ): Promise<void> {
   if (inputs.length === 0) return;
 
   await createMemoryCloudUsageService().recordManyUsageEvents(inputs);
 }
+
+export const appendChecklistRunUsageInMemory = appendCloudUsageInMemory;

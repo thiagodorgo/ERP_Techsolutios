@@ -67,12 +67,7 @@ test("C1 · a vistoria não fatura mais pelo evento de domínio; o anexo continu
 
   const doAnexo = await usageEvents(tenantDoAnexo);
 
-  assert.ok(doAnexo.length > 0, "o best-effort continua vivo para o que este bloco NÃO fecha");
-  assert.deepEqual(
-    doAnexo.map((evento) => evento.metricKey).sort(),
-    ["checklist_attachment.uploaded.bytes", "checklist_attachment.uploaded.count", "s3_put_requests"],
-    "e o censo diz exatamente QUAIS chaves seguem best-effort (P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL)",
-  );
+  assert.deepEqual(doAnexo, [], "B-SAN3-03 move o upload para a mesma transação do anexo");
 
   resetUsage();
 });

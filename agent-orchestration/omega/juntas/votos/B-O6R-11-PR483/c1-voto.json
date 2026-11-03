@@ -1,0 +1,78 @@
+{
+  "cadeira": "C1 — fila e durabilidade",
+  "identidade": "jurado-o6r11-c1-opus",
+  "modelo": "Claude Opus (claude-opus-5-5), nível menor, DECLARADO",
+  "objeto": "PR #483, head d3e80027979af647725f61eeb07606e2d000cd16",
+  "voto": "APROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j483/c1-evidencia.md",
+  "resumo": "P1, P2 e P3 sustentadas por execução: 21 casos de R1/R2 verdes, 44 de resgate/canal verdes; M1-M5, M6-M9, M-D1, M-D2, M-S10, M-Q1, M-R1..M-R6 e M-P1..M-P3 mordem; vermelhos-controle R1/R2 (17, 18, 13-16, guard 21; caso 14 5/5) e R3 (coordenador da base: ações ficam syncing) conferem. Texto do lastSafeError e posição do resgate conformes; canal desligado não consome tentativa nem gera erro/conflito na despesa. Dois achados não graves.",
+  "achados": [
+    {
+      "id": "A-C1-01",
+      "gravidade": "nao-grave",
+      "escopo": "dentro-do-bloco (a chamada do resgate e o teste de integração nascem neste PR: ausentes em origin/main 600c5040)",
+      "comando": "mutação N1: em mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart mover o bloco try { reclaimTenant } catch (l.78-82) para depois de `await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);` (l.97); flutter test test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart test/core/sync/bo6r11_despesa_aguardando_envio_test.dart test/core/sync/bo6r11_sync_queue_reclaim_service_test.dart test/features/b090b_offline_auto_sync_test.dart --reporter compact",
+      "saida": "+33: All tests passed! (mutação sobreviveu)",
+      "motivo": "A posição 'antes do 1º serviço' (plano §5 R3, item 3 do mandato) não é guardada por teste: o teste de integração se chama 'resgata ... antes dos replays de domínio', mas nenhuma asserção distingue a ordem. O objeto está na posição certa (l.78-82, antes do fieldLocation l.84). Efeito de uma regressão futura: se o replay de OS lançar, o catch externo (l.131) encerra a passada e o resgate não roda enquanto o lançamento persistir."
+    },
+    {
+      "id": "A-C1-02",
+      "gravidade": "nao-grave",
+      "escopo": "dentro-do-bloco na instância (SyncQueueReclaimService é novo); classe pré-existente e já declarada: mesma forma em origin/main 600c5040 (sync_replay_service.dart l.159/l.675, checklist_repository.dart l.398) e tratada no plano como sonda P4 / P-MOBILE-FILA-RMW-STORE",
+      "comando": "sonda temporária test/core/sync/zz_j483c1_probe_test.dart (texto em c1-logs/zz_j483c1_probe_test.dart.txt): PersistentSyncQueueRepository sobre store com load() de 20 ms; ação checklist_answer.upsert em syncing; reclaimTenant('t1') e, em seguida, queue.update(mesma ação com payload server_run_id='srv-1'); flutter test test/core/sync/zz_j483c1_probe_test.dart --reporter compact",
+      "saida": "SONDA status=SyncStatus.conflict payload={local_run_id: r1} code=SYNC_INTERRUPTED; Expected: 'srv-1' Actual: <null>; +0 -1",
+      "motivo": "O resgate lê actionsForTenant fora da seção serializada e grava a cópia velha da ação inteira; uma escrita alheia na mesma ação entre a leitura e a escrita se perde. A ação não some, não é reenviada em dobro e não encalha sem saída (fica conflict, visível e decidível), logo não viola P1/P2/P3 como o mandato as define. Par de produção não provado: o único escritor concorrente de UI achado (_stampServerRunIdOnQueue via resolveRunForWorkOrder, checklist_repository.dart:288) só carimba ação sem server_run_id, que o replay de checklist quase nunca marca syncing (sync_replay_service.dart l.1331-1343)."
+    }
+  ],
+  "arquivos_medidos": [
+    "mobile/flutter_app/lib/core/sync/sync_queue_repository.dart",
+    "mobile/flutter_app/lib/core/sync/sync_interrupted_reclaim.dart",
+    "mobile/flutter_app/lib/core/sync/auto_sync_coordinator.dart",
+    "mobile/flutter_app/lib/core/sync/sync_queue_reclaim_service.dart",
+    "mobile/flutter_app/lib/core/sync/sync_providers.dart",
+    "mobile/flutter_app/lib/core/sync/sync_replay_service.dart",
+    "mobile/flutter_app/lib/core/sync/sync_action_presentation.dart",
+    "mobile/flutter_app/lib/core/sync/sync_action_labels.dart",
+    "mobile/flutter_app/lib/core/network/api_contracts.dart",
+    "mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart",
+    "mobile/flutter_app/lib/shared/ui/sync_screen.dart",
+    "mobile/flutter_app/analysis_options.yaml",
+    "mobile/flutter_app/test/core/sync/bo6r11_*",
+    "mobile/flutter_app/test/features/prestador/bo6r11_*",
+    "mobile/flutter_app/test/features/b090b_offline_auto_sync_test.dart",
+    "mobile/flutter_app/test/core/sync/sync_replay_service_test.dart"
+  ],
+  "mutacoes": {
+    "M1": "mordeu (17, 18)",
+    "M2": "mordeu (18)",
+    "M3": "mordeu (19)",
+    "M4": "mordeu (13-16, guard 21; analyze unawaited_futures)",
+    "M5": "1ª forma não compilou (inválida, descartada); M5b (laço inteiro em forEach async) mordeu (13-16, guard 21)",
+    "M6": "mordeu (integração F4c, p3, p4)",
+    "M7": "mordeu (2 unit + integração (a))",
+    "M8": "mordeu (3 unit + integração (a))",
+    "M9": "mordeu (unit + integração (c))",
+    "M-D1": "mordeu (RD1 caso 1, integração (e))",
+    "M-D2": "mordeu (unit 3 RDV, integração (b), r5, p4)",
+    "M-S10": "mordeu (unit demais→conflict, r5, p4)",
+    "M-Q1": "mordeu (q1, integração)",
+    "M-R1": "mordeu (r1, r5, p3)",
+    "M-R2": "mordeu (r2)",
+    "M-R3": "mordeu (p3)",
+    "M-R4": "mordeu (q1, p4)",
+    "M-R5": "mordeu (r1, r5, p3)",
+    "M-R6": "mordeu (r5, p3)",
+    "M-P1": "mordeu (p1, p3)",
+    "M-P2": "mordeu (p2, p3)",
+    "M-P3": "mordeu (p2 3º ramo, integração F4c)",
+    "N1-posicao (nova)": "sobreviveu (A-C1-01)",
+    "N2-sem-isolamento (nova)": "mordeu (b090b t08, t09, t09b, t10)",
+    "N3-le-pendentes (nova)": "mordeu (q1, p3, p4, integração F4c)"
+  },
+  "controles": {
+    "R1": "17 e 18 vermelhos na base (A/B de 600c5040); 19-21 verdes (guarda, como previsto)",
+    "R2": "13-16 e guard 21 vermelhos; caso 14 5/5 vermelho",
+    "R3": "coordenador de 600c5040: integração F4c (ações ficam syncing), p3 e p4 vermelhos"
+  },
+  "terreno": "worktree próprio C:/Users/thiag/w-j483-c1 detached em d3e80027; status vazio ao fim; removido por git worktree remove --force; sem Docker, sem base viva, sem flutter run"
+}

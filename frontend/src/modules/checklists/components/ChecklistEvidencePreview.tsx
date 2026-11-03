@@ -33,7 +33,7 @@ export function ChecklistEvidencePreview({
         return result;
       });
     } catch {
-      setError("Nao foi possivel visualizar a evidencia.");
+      setError("Não foi possível visualizar a evidência.");
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export function ChecklistEvidencePreview({
       <header>
         <div>
           {isImage ? <ImageIcon size={18} /> : <FileText size={18} />}
-          <strong>{attachment.fileName ?? "Evidencia"}</strong>
+          <strong>{attachment.fileName ?? "Evidência"}</strong>
         </div>
         <Button type="button" size="sm" variant="secondary" onClick={loadPreview} disabled={loading}>
           <Download size={14} />
@@ -53,13 +53,13 @@ export function ChecklistEvidencePreview({
       </header>
 
       {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
-      {preview && isImage ? <img src={preview.objectUrl} alt={attachment.fileName ?? "Evidencia anexada"} /> : null}
+      {preview && isImage ? <img src={preview.objectUrl} alt={attachment.fileName ?? "Evidência anexada"} /> : null}
       {preview && isPdf ? (
         <a href={preview.objectUrl} target="_blank" rel="noopener noreferrer">
           Abrir PDF protegido
         </a>
       ) : null}
-      {!isImage && !isPdf ? <p>Arquivo disponivel para download protegido.</p> : null}
+      {!isImage && !isPdf ? <p>Arquivo disponível para download protegido.</p> : null}
     </section>
   );
 }

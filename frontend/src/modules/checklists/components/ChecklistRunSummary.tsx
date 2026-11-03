@@ -23,14 +23,14 @@ export function ChecklistRunSummary({
   readonly progress?: ChecklistRuntimeProgress | null;
 }) {
   return (
-    <Card title="Resumo da execucao">
+    <Card title="Resumo da execução">
       <div className="checklist-runtime-summary">
         <article>
           <ClipboardCheck size={18} />
           <div>
             <strong>{schema.name}</strong>
             <span>
-              {schema.type} · versao {schema.version}
+              {schema.type} · versão {schema.version}
             </span>
           </div>
         </article>
@@ -38,13 +38,13 @@ export function ChecklistRunSummary({
           <ShieldCheck size={18} />
           <div>
             <strong>Status</strong>
-            {run ? <ChecklistRunStatusBadge status={run.status} /> : <span>Preparando execucao</span>}
+            {run ? <ChecklistRunStatusBadge status={run.status} /> : <span>Preparando execução</span>}
           </div>
         </article>
         <article>
           <Paperclip size={18} />
           <div>
-            <strong>Evidencias</strong>
+            <strong>Evidências</strong>
             <span>
               {attachments.length} anexos · {markers.length} marcadores · {answers.length} respostas
             </span>
@@ -56,7 +56,7 @@ export function ChecklistRunSummary({
             <div>
               <strong>Preenchimento</strong>
               <span>
-                {progress.requiredCompleted}/{progress.requiredTotal} obrigatorios · {progress.percent}%
+                {progress.requiredCompleted}/{progress.requiredTotal} obrigatórios · {progress.percent}%
               </span>
             </div>
           </article>
@@ -65,8 +65,8 @@ export function ChecklistRunSummary({
           <article>
             <ShieldCheck size={18} />
             <div>
-              <strong>Comparacao</strong>
-              <span>{comparison.comparison.divergence ? "Divergencia registrada" : "Sem divergencia registrada"}</span>
+              <strong>Comparação</strong>
+              <span>{comparison.comparison.divergence ? "Divergência registrada" : "Sem divergência registrada"}</span>
             </div>
           </article>
         ) : null}
