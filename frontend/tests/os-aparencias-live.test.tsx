@@ -59,7 +59,7 @@ after(() => {
 });
 
 const TENANT_ID = "org-aparencia-os";
-const PERMISSIONS = ["work_orders:read", "work_orders:create", "work_orders:status", "field_dispatch:read", "field_dispatch:create", "field_dispatch:cancel"];
+const PERMISSIONS = ["work_orders:read", "work_orders:create", "work_orders:status", "work_orders:cancel", "field_dispatch:read", "field_dispatch:create", "field_dispatch:cancel"];
 const DETAIL = { ...toListDto(OS_FIXTURE[1]), description: "Socorro na rodovia." };
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -71,6 +71,8 @@ function installFetch() {
     const url = String(input).replace(/^.*\/api\/v1/, "");
     calls.push(`${init?.method ?? "GET"} ${url}`);
     if (/^\/work-orders(\?|$)/.test(url)) return json(200, { items: OS_FIXTURE.map(toListDto), pagination: { limit: 20, offset: 0, total: OS_FIXTURE.length } });
+    if (/^\/work-orders\/os-102\/cancel$/.test(url) && init?.method === "POST") return json(200, { data: { ...DETAIL, status: "cancelled", cancellation_reason: "Cliente desistiu.", financial_cancellation_decision: "zero" } });
+    if (/^\/work-orders\/os-102\/duplicate$/.test(url) && init?.method === "POST") return json(201, { data: { ...DETAIL, id: "os-900", code: "OS-000900" } });
     if (/^\/work-orders\/os-102\/timeline/.test(url)) return json(200, { data: [] });
     if (/^\/work-orders\/os-102(\?|$)/.test(url)) return json(200, { data: DETAIL });
     if (/^\/approvals\/pending/.test(url)) return json(200, { data: [] });
@@ -252,6 +254,113 @@ test("[L6] B: OS aberta por endereço (?os=) — fechar a janela abre o resumo d
     await documentKey("Escape");
     assert.equal(dialogs(container).length, 0);
     assert.equal(row(container, "os-102")?.getAttribute("aria-expanded"), "true", "a linha da OS fechada fica com o resumo aberto");
+  } finally {
+    await unmount();
+  }
+});
+
+// =============================== Emenda 1 do orquestrador, A11: a janela com a barra de ações de hoje ===============================
+
+async function openWindowB(container: MiniDomNode) {
+  await press(menuItem(container, "B · Analítica"));
+  await press(row(container, "os-102"));
+  await press(buttonText(container, "Abrir OS"));
+  assert.equal(dialogs(container).length, 1, "a janela abriu");
+}
+
+async function openCancel(container: MiniDomNode) {
+  await press(elements(dialogs(container)[0], (el) => el.localName === "button" && el.getAttribute("aria-label") === "Mais ações")[0]);
+  await press(elements(dialogs(container)[0], (el) => el.localName === "button" && text(el).trim() === "Cancelar")[0]);
+}
+
+async function change(el: MiniDomElement | undefined, value: string) {
+  assert.ok(el, "campo não encontrado");
+  el.value = value;
+  const onChange = propsOf(el).onChange as (ev: unknown) => void;
+  await act(async () => {
+    onChange({ target: el, currentTarget: el });
+  });
+  await settle();
+}
+
+test("[L7] A11 — Escape fecha só a camada de cima (o diálogo da OS, depois a janela) e o Tab fica preso na camada aberta", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await openWindowB(container);
+    await openCancel(container);
+    assert.equal(dialogs(container).length, 2, "o diálogo de cancelar abriu por cima da janela");
+    const inner = dialogs(container)[1];
+    const focusables = elements(inner, (el) => (el.localName === "button" && !el.hasAttribute("disabled")) || el.localName === "input" || el.localName === "textarea");
+    focusables[focusables.length - 1].focus();
+    await documentKey("Tab");
+    assert.equal(dom.doc.activeElement, focusables[0], "Tab na última volta à primeira DA CAMADA DE CIMA");
+    assert.ok(inner.contains(dom.doc.activeElement), "o foco não escapa para a janela de trás");
+    await documentKey("Escape");
+    assert.equal(dialogs(container).length, 1, "1º Escape fechou só o diálogo de cancelar");
+    assert.match(currentLocation, /os=os-102/, "a janela continua aberta");
+    await documentKey("Escape");
+    assert.equal(dialogs(container).length, 0, "2º Escape fechou a janela");
+  } finally {
+    await unmount();
+  }
+});
+
+test("[L8] A11 — depois de Cancelar dentro da janela, a lista de trás recarrega", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await openWindowB(container);
+    const before = countCalls(/^GET \/work-orders(\?|$)/);
+    await openCancel(container);
+    const inner = dialogs(container)[1];
+    await change(elements(inner, (el) => el.localName === "input")[0], "keep");
+    await change(elements(inner, (el) => el.localName === "textarea")[0], "Cliente desistiu.");
+    const form = elements(inner, (el) => el.localName === "form")[0];
+    await act(async () => {
+      (propsOf(form).onSubmit as (ev: unknown) => void)({ preventDefault() {}, target: form, currentTarget: form });
+    });
+    await settle();
+    assert.equal(countCalls(/^POST \/work-orders\/os-102\/cancel$/), 1, "o cancelamento foi enviado");
+    assert.ok(countCalls(/^GET \/work-orders(\?|$)/) > before, `a lista foi pedida de novo: ${JSON.stringify(calls)}`);
+    assert.equal(dialogs(container).length, 1, "o diálogo fechou; a janela segue com a OS");
+  } finally {
+    await unmount();
+  }
+});
+
+test("[L9] A11 — Duplicar dentro da janela abre a OS nova (comportamento de hoje); a lista é pedida de novo ao voltar", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await openWindowB(container);
+    await press(elements(dialogs(container)[0], (el) => el.localName === "button" && el.getAttribute("aria-label") === "Mais ações")[0]);
+    await press(elements(dialogs(container)[0], (el) => el.localName === "button" && text(el).trim() === "Duplicar")[0]);
+    const inner = dialogs(container)[1];
+    const form = elements(inner, (el) => el.localName === "form")[0];
+    await act(async () => {
+      (propsOf(form).onSubmit as (ev: unknown) => void)({ preventDefault() {}, target: form, currentTarget: form });
+    });
+    await settle();
+    assert.equal(currentLocation, "/work-orders/os-900", "foi à OS nova");
+    assert.equal(dialogs(container).length, 0, "a janela saiu com a lista");
+  } finally {
+    await unmount();
+  }
+});
+
+test("[L10] A11 — Imprimir dentro da janela leva à página do detalhe (a impressão de hoje), sem abrir a impressão do modal", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await openWindowB(container);
+    const wrapper = elements(container, (el) => el.hasAttribute("data-janela-os"))[0];
+    const print = elements(wrapper, (el) => el.localName === "button" && text(el).trim() === "Imprimir")[0];
+    assert.ok(print, "a barra de ações de hoje tem Imprimir");
+    let stopped = false;
+    await act(async () => {
+      (propsOf(wrapper).onClickCapture as (ev: unknown) => void)({ target: print, preventDefault() {}, stopPropagation() { stopped = true; } });
+    });
+    await settle();
+    assert.equal(stopped, true, "o clique não chega ao Imprimir do modal");
+    assert.equal(currentLocation, "/work-orders/os-102", "foi à página do detalhe");
+    assert.doesNotMatch(serialize(container), /Imprimir ordem de serviço/, "a impressão do modal não abriu");
   } finally {
     await unmount();
   }

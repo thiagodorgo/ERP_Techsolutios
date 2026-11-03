@@ -20,10 +20,6 @@ import { WorkOrdersViewA } from "./views/WorkOrdersViewA";
 import { WorkOrdersViewB } from "./views/WorkOrdersViewB";
 import { WorkOrdersViewC } from "./views/WorkOrdersViewC";
 
-// Contrato dos testes que já montam as peças da lista por este caminho (`work-orders-honest-errors.test.tsx`): as peças
-// moraram aqui até o B-APAR-OS e agora vivem no módulo compartilhado das aparências.
-export { WorkOrdersKpiGrid, WorkOrdersLoadState, type WorkOrdersKpis } from "./views/work-orders.shared";
-
 // "Ordens de Serviço" (lista). B-APAR-OS — esta página é o CONTÊINER das 3 aparências aprovadas pelo dono
 // (`screen-refs/ordens-de-servico-3opcoes.reference.html`: A · Padrão fiel, B · Analítica, C · Fila por agenda;
 // D-APARENCIA-POR-USUARIO, padrão A por D-APARENCIA-RESPOSTAS (b)), no padrão do `FinanceiroPage`: lê a aparência PESSOAL
@@ -224,7 +220,7 @@ export function WorkOrdersPage() {
     <>
       {appearance === "B" ? <WorkOrdersViewB {...model} /> : appearance === "C" ? <WorkOrdersViewC {...model} /> : <WorkOrdersViewA {...model} />}
 
-      {openWindow && state.openId ? <WorkOrderDetailWindow key={state.openId} workOrderId={state.openId} onClose={closeWindow} /> : null}
+      {openWindow && state.openId ? <WorkOrderDetailWindow key={state.openId} workOrderId={state.openId} onClose={closeWindow} onChanged={() => void refresh(true)} onOpenPage={(id) => navigate(`/work-orders/${id}`)} /> : null}
 
       {revoke ? (
         <RevokeDispatchPrompt

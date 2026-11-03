@@ -17,7 +17,21 @@
 - Node 22 **não está instalado** nesta máquina (só `C:/nvm4w/nodejs` v20.19.5): o "Node 20 e 22" do plano roda aqui só em
   20; o 22 fica com a CI (job `frontend`).
 
-## Conflitos com o plano (medidos; registrados, sem decisão do dev onde a decisão não é dele)
+## Emenda 1 do orquestrador (depois da crítica `crit-apar3-opus`) — o que mudou neste ramo
+
+A crítica do plano saiu com o dev em curso; o orquestrador decidiu a seção OS na "Emenda 1" (fim do plano) e este ramo a
+aplicou num commit próprio, antes do merge:
+
+| Item | Decisão | Feito aqui | Teste |
+|---|---|---|---|
+| A1 | sem `limit=100`; o service segue proibido; B e C usam a paginação que já existe; a C mostra o total do servidor e "ver todas" | a C diz "N ordens · T no servidor" quando o servidor tem mais; "ver todas" limpa aba, alvo e busca quando a fila está recortada. **Leitura do dev, declarada:** o serviço não pagina por aqui, então "ver todas" não pede mais OS ao servidor (seria botão morto); quando não há recorte, o link não aparece. Pendência `P-APAR-OS-LIMIT` | `[C6]` + mutação `M-A1-ver-todas-morto` |
+| A2 | técnico "Atribuído", sem junção nova | sem mudança (já era assim) | `[A11]` |
+| A9 | UMA linha `data-aparencia={appearance}` na raiz do editor de checklist; o guard sem exceção | a linha entrou em `ChecklistEditorPage.tsx`; o `todo` saiu do guard; uma raiz `data-aparencia={appearance}` no arquivo que lê `useScreenAppearance` vale pelas 3 letras (o valor é a aparência saneada) | guard 14/14 sem todo + mutação `M-A9-editor-sem-raiz` |
+| A10 | `work-orders-honest-errors.test.tsx` no permitido, só os imports | os 10 `await import(...)` de `WorkOrdersPage` passaram a `pages/views/work-orders.shared`; asserções intactas; a reexportação em `WorkOrdersPage.tsx` saiu | 66/66 |
+| A11 | janela B/C: Escape só a camada de cima + foco preso nela; Cancelar/Duplicar → lista recarrega; Imprimir → impressão da página | `WorkOrderDetailWindow`: a camada de cima é o diálogo mais interno (o da barra de ações de hoje) ou a janela; Escape fecha só ela e o Tab circula só nela; `onRefresh` da barra (Cancelar avisa por ele) chama também `onChanged` → o contêiner recarrega a lista em segundo plano; "Imprimir" dentro da janela é interceptado e vai à página `/work-orders/:id`, onde a impressão é a de hoje. **Duplicar:** o `DuplicateWorkOrderModal` de hoje (fora do escopo) navega para a OS nova ao criar; a lista sai da tela e é pedida de novo quando o usuário volta — declarado | `[L7]`, `[L8]`, `[L9]`, `[L10]` + mutações `M-A11-*` |
+| A13 | registro em `docs/revisoes/TELAS/` | este arquivo e os roteiros de captura foram movidos de `docs/revisoes/APAR/` (`git mv`) | — |
+
+## Conflitos com o plano (medidos antes da emenda; o 1 e o 3 foram decididos pela Emenda 1, A1 e A9)
 
 | ID | O que o plano diz | O que foi medido | O que o dev fez |
 |---|---|---|---|
@@ -29,7 +43,7 @@ Divergências de forma, menores, também declaradas:
 - **Ramo e caminhos.** O pedido nomeou o ramo `feat/web-apar-os`, o relatório em `docs/revisoes/APAR/` e as capturas em
   `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/apar-os/` a 1440×900 e 390×844; o plano dizia `feat/web-aparencias-os`,
   `docs/revisoes/TELAS/` e 1280/1366/1440 + 924. Segui o pedido e **somei** as larguras do plano (1366, 1280, 924). Os
-  scripts de captura ficaram ao lado do relatório: `docs/revisoes/APAR/B-APAR-capturas/`.
+  scripts de captura ficaram ao lado do relatório: `docs/revisoes/TELAS/B-APAR-capturas/`.
 - **Porta.** Vite próprio em `127.0.0.1:5191` (`--strictPort`), como o pedido; o plano sugeria 47xxx.
 - **Fixtures.** O plano pedia 14 OS; usei as **24 da referência** (`RAW` + `definirMarcos`), para os números do app e os da
   maquete serem comparáveis lado a lado (17 · 7 · 6 · 5, SLA vencido 3 etc.).
@@ -67,13 +81,13 @@ as carregadas, com o universo dito).
   `field_dispatch:create`, 0 sem), nos 13 papéis do catálogo executado.
 - **Vermelho no head-base com a estrutura nova** (`VC-LIVE-adaptado`, `WorkOrdersPage.tsx` do head-base): `pass 14 · fail
   9` (PV3, PV4, PV5, PV6, FE3, FE6, FE7, W1, GB3).
-- `work-orders-honest-errors.test.tsx` **não foi editado**: `WorkOrdersKpiGrid` e `WorkOrdersLoadState` continuam
-  exportados por `WorkOrdersPage.tsx` (reexportados do módulo das views); `kpiDetails` aceita só `null`.
+- `work-orders-honest-errors.test.tsx`: **só os imports** mudaram (Emenda 1, A10) — `WorkOrdersKpiGrid` e
+  `WorkOrdersLoadState` vêm de `pages/views/work-orders.shared`; asserções intactas; `kpiDetails` aceita só `null`.
 - `tests/approval-frontend-contract.test.ts` (raiz) **verde sem edição**: a `WorkOrderDetailView` segue em
   `WorkOrderDetailPage.tsx`.
 
-**Novos:** `aparencia-registro.guard` (13 + 1 todo), `os-aparencia-a.smoke` (11), `os-aparencia-b.smoke` (7, inclui o
-`CategoryDonut`), `os-aparencia-c.smoke` (5), `os-aparencias-live` (6), caso novo em `aparencia-menu.smoke` (1). Todos na
+**Novos:** `aparencia-registro.guard` (14), `os-aparencia-a.smoke` (11), `os-aparencia-b.smoke` (7, inclui o
+`CategoryDonut`), `os-aparencia-c.smoke` (6), `os-aparencias-live` (10), caso novo em `aparencia-menu.smoke` (1). Todos na
 string `test:smoke`; o `finance-aparencia-b.smoke` também entrou nela (fecha o achado lateral
 `P-FIN-APARENCIA-B-FORA-DO-SMOKE` do plano §7.3; passa na `main`: 20/20).
 
@@ -85,6 +99,7 @@ Ferramenta: troca os arquivos pela versão de `origin/main`, roda, restaura byte
 |---|---|---|---|
 | VC-MENU | `aparencia-menu.smoke` | 2 pass · **1 fail** (painel sem altura máxima) | sim |
 | VC-REG | `aparencia-registro.guard` | 10 pass · 0 fail · 1 todo: as 3 telas de hoje passam (salvo CONFLITO-3) | sim |
+| VC-REG-emenda | o guard depois da Emenda 1 (sem todo), com o editor e o registro do head-base | 10 pass · **1 fail** (o editor sem raiz) | sim |
 | VC-SMOKE-a/b/c | `os-aparencia-{a,b,c}.smoke` | **fail** (as views não existem) | sim |
 | VC-LIVE-adaptado | `work-orders-page-live` | 14 pass · **9 fail** | sim |
 | VC-LIVE-OS | `os-aparencias-live` | 0 pass · **6 fail** | sim |
@@ -114,13 +129,20 @@ Ferramenta: âncora única no arquivo, roda o teste, restaura e confere o hash. 
 | M-L2-ignora-aba | `readTab(null)` no lugar de `?aba=` | [L3] |
 | M-L3-escape-nao-fecha | o Escape da janela não chama `onClose` | [L4] |
 | M-L4-resumo-some | fechar a janela não reabre o resumo | **sobreviveu** à 1ª versão do teste; nasceu o [L6] (OS aberta por `?os=`), que ficou vermelho |
+| M-A9-editor-sem-raiz | tira `data-aparencia={appearance}` do editor | guard (ii) do editor de checklist |
+| M-A1-ver-todas-morto | "ver todas" sem a condição de recorte | [C6] |
+| M-A11-escape-fecha-tudo | Escape sempre fecha a janela | [L7] |
+| M-A11-trap-na-janela | o Tab circula na janela, não na camada de cima | [L7] |
+| M-A11-lista-nao-recarrega | `onRefresh` sem `onChanged` | [L8] |
+| M-A11-imprime-o-modal | a janela não intercepta "Imprimir" | [L10] |
 
 ## Bateria
 
 - `npm --prefix frontend run check` → exit 0.
-- `npm --prefix frontend run test:smoke` (Node 20.19.5) → **tests 1630 · pass 1629 · fail 0 · todo 1** (o todo é o
-  CONFLITO-3), 2 min 16 s. Baseline: 1566 pass.
-- `npm --prefix frontend run build` → exit 0 (só o aviso de tamanho de chunk que já existia).
+- `npm --prefix frontend run test:smoke` (Node 20.19.5), depois da Emenda 1 → **tests 1635 · pass 1635 · fail 0 · todo 0**,
+  2 min 08 s. Baseline: 1566 pass. (Antes da emenda: 1630 · 1629 · todo 1, o CONFLITO-3; a CI do head `077e485d` deu o mesmo
+  1630/1629/1 no job `frontend`.)
+- `npm --prefix frontend run build` → exit 0 (`✓ built in 14.62s`; só o aviso de tamanho de chunk que já existia).
 - Bateria do bloco (§1.4): `node --test --import tsx tests/aparencia-*.test.ts* tests/os-aparencia*.test.tsx
   tests/work-orders-*.test.ts* tests/kpi-cards-clickable.test.tsx tests/smoke-flow.test.tsx` → 232 pass · 0 fail · 1 todo.
 - Testes da raiz que leem o frontend (`approval-frontend-contract`, `checklist-editor-blockers-parity`,
@@ -141,7 +163,7 @@ da referência, na ordem do servidor, e o relógio preso em 14/10/2026 10:00; ro
 `GET /navigation/menu`, que o shell já trata). Portas 3000/5173 bloqueadas no navegador. Nenhum contato com a demo,
 `erp-postgres`, `erp-redis`, `w-demoint` ou a árvore principal. Capturas em
 `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/apar-os/` (`app-*` do app, `ref-*` da referência; logs `capturas-app.log` e
-`capturas-ref.log`). Scripts: `docs/revisoes/APAR/B-APAR-capturas/capture-app.mjs` e `capture-ref.mjs`.
+`capturas-ref.log`). Scripts: `docs/revisoes/TELAS/B-APAR-capturas/capture-app.mjs` e `capture-ref.mjs`.
 
 Medido:
 - **A, B e C em 1440×900, 1366×768 e 1280×720:** sem rolagem lateral na página; linhas com **42 px** (≤ 44; a referência
@@ -171,13 +193,13 @@ Divergências visuais conscientes (para o `cognicao-visual` e o revisor não ler
 
 | ID | O que falta | Dono sugerido | Bloqueia |
 |---|---|---|---|
-| CONFLITO-1 | `limit=100` na lista exige `buildQuery` (service, proibido) | orquestrador/crítica; `P-WO-LISTA-SO-20-MAIS-RECENTES` | não |
+| `P-APAR-OS-LIMIT` (Emenda 1, A1) | a lista pede só as 20 mais recentes; buscar mais exige o service | dono do service; `P-WO-LISTA-SO-20-MAIS-RECENTES` | não |
 | CONFLITO-2 | resumo com predicados × `WorkOrderRowActions` literal | crítica | não |
-| CONFLITO-3 | raízes `data-aparencia` do editor de checklist (guard em `todo`) | orquestrador | não |
 | `P-APAR-OS-MINIATURA` | miniatura de foto do anexo | bloco de backend de anexos | não |
 | `P-APAR-PATIOS-ROTULO-A` | registro "A · Padrão" × referência "A · Padrão fiel" (exceção nominal do guard) | Q-APAR-1 | não |
 | `P-APAR-OS-KPI-DETAIL-SEM-USO` | `buildWorkOrdersKpiDetails` sem uso na tela (o `pct` segue em uso) | próximo bloco que tocar `work-orders-kpi-detail.ts` | não |
-| `P-WO-LIST-TECH-NAME` (existente) | nome do técnico na lista | backend | não |
+| `P-APAR-OS-NOME-TECNICO` (Emenda 1, A2) | levar a junção com `GET /users` do PR #470 à `main` e ligar o nome nas 3 aparências; cita `P-WO-LIST-TECH-NAME` | dono do #470 | não |
+| Duplicar na janela | o `DuplicateWorkOrderModal` navega à OS nova; abrir a cópia na própria janela exigiria mexer nele | crítica/dono | não |
 | fechada aqui | `P-FIN-APARENCIA-B-FORA-DO-SMOKE` (o smoke B do Financeiro entrou na `test:smoke`) | — | — |
 
 ## Limpeza

@@ -73,3 +73,13 @@ test("[C5] estados §7: erro/sem permissão = blocos com '—' e 'dados indispon
   assert.match(stale, /data-state="stale"/);
   assert.equal(rowKeys(stale).length, 24);
 });
+
+test("[C6] Emenda 1 (A1): a C diz o total que o servidor informa e oferece 'ver todas' só quando a fila está recortada", () => {
+  const partial = render({ partial: true, loaded: 24, serverTotal: 412 });
+  assert.match(visibleText(partial), /24 ordens · 412 no servidor/);
+  assert.doesNotMatch(partial, />ver todas</, "sem recorte não há o que mostrar a mais: nada de botão morto");
+  const narrowed = render({ partial: true, loaded: 24, serverTotal: 412, state: { tab: "todas", target: "ag-prox2h", q: "", openId: null } });
+  assert.match(visibleText(narrowed), /7 ordens · 412 no servidor · ver todas/);
+  const whole = render();
+  assert.doesNotMatch(visibleText(whole), /no servidor/, "sem mais OS no servidor, só a contagem");
+});

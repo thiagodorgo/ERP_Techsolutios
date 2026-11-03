@@ -1,7 +1,7 @@
 // B-APAR-OS (fundação da trilha B-APAR-3) — capturas da REFERÊNCIA aprovada (`screen-refs/<tela>-3opcoes.reference.html`,
 // aberta por `file://`) trocando a opção no seletor dela, no Edge headless (Playwright, canal msedge), nos mesmos tamanhos
 // das capturas do app — para a conferência lado a lado (cognicao-visual + revisor Codex).
-// Uso: node ../docs/revisoes/APAR/B-APAR-capturas/capture-ref.mjs <referência.html> <saída>
+// Uso: node ../docs/revisoes/TELAS/B-APAR-capturas/capture-ref.mjs <referência.html> <saída>
 import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";

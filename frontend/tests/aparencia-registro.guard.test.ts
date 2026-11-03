@@ -17,10 +17,10 @@ import { APPEARANCE_SCREENS } from "../src/modules/appearance/appearance.registr
 //
 // Exceções NOMINAIS (registradas, não silenciosas):
 //   - `patios`, opção A: o registro diz "Padrão" e a referência "Padrão fiel" (P-APAR-PATIOS-ROTULO-A, pergunta Q-APAR-1);
-//   - `checklist-editor`, item (ii): o editor de modelo de checklist (B-SAN3-22) desenha as 3 aparências DENTRO da página,
-//     por ramos, sem raiz `data-aparencia` — medido no head-base 2e7987bd. O plano B-APAR-3 dizia que o guard passaria nas
-//     3 telas de hoje; não passa nesta. Fica como `todo` visível e registrado no relatório do dev (CONFLITO-3), para decisão
-//     do orquestrador/da crítica; nada no editor foi mexido aqui.
+// O editor de modelo de checklist (B-SAN3-22) desenha as 3 aparências por ramos dentro da própria página; a Emenda 1 do
+// orquestrador ao plano B-APAR-3 (A9) autorizou UMA linha na raiz dele, `data-aparencia={appearance}`, e o guard não ganha
+// exceção: uma raiz `data-aparencia={appearance}` no arquivo que lê `useScreenAppearance` vale pelas 3 letras, porque o
+// valor É a aparência escolhida (A, B ou C, saneada pelo armazenamento).
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = resolve(HERE, "../src");
@@ -41,9 +41,6 @@ export const SCREEN_REFERENCES: Readonly<Record<string, string>> = {
 };
 
 const LABEL_EXCEPTIONS: ReadonlySet<string> = new Set(["patios:A"]);
-const ROOTS_TODO: Readonly<Record<string, string>> = {
-  "checklist-editor": "CONFLITO-3 do B-APAR-OS: o editor desenha as 3 aparências por ramos, sem raiz data-aparencia (medido no head-base 2e7987bd)",
-};
 
 function sourceFiles(dir: string, acc: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -98,6 +95,7 @@ export function reachableRoots(container: string, files: ReadonlyMap<string, str
     seen.add(file);
     const source = files.get(file) ?? (existsSync(file) ? readFileSync(file, "utf8") : "");
     for (const match of source.matchAll(/data-aparencia="([ABC])"/g)) letters.add(match[1]);
+    if (/data-aparencia=\{appearance\}/.test(source) && /const \{ appearance \} = useScreenAppearance\(/.test(source)) for (const letter of "ABC") letters.add(letter);
     for (const match of source.matchAll(/from\s+"(\.{1,2}\/[^"]+)"/g)) {
       const next = resolveImport(file, match[1]);
       if (next && next.startsWith(SRC) && !next.startsWith(APPEARANCE_MODULE)) queue.push(next);
@@ -124,8 +122,7 @@ for (const screen of APPEARANCE_SCREENS) {
     assert.equal(found.length, 1, `contêineres da tela "${screen.key}": ${JSON.stringify(found)}`);
   });
 
-  const rootsTodo = ROOTS_TODO[screen.key];
-  test(`[${screen.key}] (ii) as 3 raízes data-aparencia A, B e C são alcançáveis a partir do contêiner`, { todo: rootsTodo }, () => {
+  test(`[${screen.key}] (ii) as 3 raízes data-aparencia A, B e C são alcançáveis a partir do contêiner`, () => {
     const [container] = containersFor(screen.key);
     assert.ok(container, `sem contêiner para "${screen.key}"`);
     const letters = [...reachableRoots(container)].sort();

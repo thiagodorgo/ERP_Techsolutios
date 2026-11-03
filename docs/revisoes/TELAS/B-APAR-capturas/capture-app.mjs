@@ -5,8 +5,8 @@
 // lista vem na ordem do servidor (mais recentes primeiro), como na referência.
 //
 // Uso (a partir de `frontend/`, para o `tsx` resolver as fixtures TypeScript):
-//   node --import tsx ../docs/revisoes/APAR/B-APAR-capturas/capture-app.mjs <base> <saída> <tela>
-//   ex.: node --import tsx ../docs/revisoes/APAR/B-APAR-capturas/capture-app.mjs http://127.0.0.1:5191 C:/…/apar-os os
+//   node --import tsx ../docs/revisoes/TELAS/B-APAR-capturas/capture-app.mjs <base> <saída> <tela>
+//   ex.: node --import tsx ../docs/revisoes/TELAS/B-APAR-capturas/capture-app.mjs http://127.0.0.1:5191 C:/…/apar-os os
 // Cada tela da trilha acrescenta o seu roteiro em `SCREENS` (os blocos seguintes só somam fixtures e roteiro).
 import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync } from "node:fs";

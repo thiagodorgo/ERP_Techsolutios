@@ -476,9 +476,26 @@ export function AnalyticCard({ title, hint, className, children }: { readonly ti
 // =============================== Lista: barra, chip, tabela ===============================
 
 /** Busca + abas (A e B) + contagem, a barra de ferramentas de hoje (`.pat-os-toolbar`). */
-export function WorkOrdersToolbar({ model, total, showTabs }: { readonly model: WorkOrdersViewModel; readonly total: number; readonly showTabs: boolean }) {
+export function WorkOrdersToolbar({
+  model,
+  total,
+  showTabs,
+  withServerTotal = false,
+}: {
+  readonly model: WorkOrdersViewModel;
+  readonly total: number;
+  readonly showTabs: boolean;
+  /**
+   * C (Emenda 1, A1): a contagem diz o total que o servidor informa quando ele tem mais OS do que as carregadas, e
+   * "ver todas" limpa o recorte (aba, alvo, busca) quando a fila está recortada. Não há pedido de mais OS ao servidor
+   * (o serviço não pagina por aqui, `P-APAR-OS-LIMIT`): "ver todas" nunca promete o que a tela não tem.
+   */
+  readonly withServerTotal?: boolean;
+}) {
   const { state } = model;
   const failure = isListFailure(model.status);
+  const narrowed = state.tab !== "todas" || Boolean(state.target) || state.q.trim() !== "";
+  const label = `${total === 1 ? "1 ordem" : `${total} ordens`}${withServerTotal && model.partial ? ` · ${model.serverTotal} no servidor` : ""}`;
   return (
     <div className="pat-os-toolbar">
       <div className="pat-os-search">
@@ -511,7 +528,17 @@ export function WorkOrdersToolbar({ model, total, showTabs }: { readonly model: 
           <span className="pat-skel" style={{ width: 70, height: 11 }} />
         </span>
       ) : failure ? null : (
-        <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>
+        <span className="pat-os-count">
+          {label}
+          {withServerTotal && narrowed ? (
+            <>
+              {" · "}
+              <button type="button" className="pat-link" onClick={() => model.onState({ ...state, tab: "todas", target: null, q: "" })}>
+                ver todas
+              </button>
+            </>
+          ) : null}
+        </span>
       )}
     </div>
   );

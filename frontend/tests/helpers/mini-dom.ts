@@ -187,6 +187,11 @@ export class MiniDomElement extends MiniDomNode {
   focus(): void {
     if (this.ownerDocument) this.ownerDocument.activeElement = this;
   }
+  /** `el.click()` aciona o `onClick` que o React registrou no nó (sem delegação de eventos). */
+  click(): void {
+    const handler = propsOf(this).onClick;
+    if (typeof handler === "function") handler({ target: this, currentTarget: this, preventDefault() {}, stopPropagation() {} });
+  }
   blur(): void {}
   get value(): string {
     return this.storedValue ?? (this.localName === "option" ? (this.getAttribute("value") ?? this.textContent) : "");
@@ -305,23 +310,24 @@ export function propsOf(el: MiniDomElement): Record<string, unknown> {
   return (el as unknown as Record<string, unknown>)[key] as Record<string, unknown>;
 }
 
-type Compound = { readonly tag: string | null; readonly attrs: readonly (readonly [string, string | null])[]; readonly not: readonly string[] };
+type Compound = { readonly tag: string | null; readonly classes: readonly string[]; readonly attrs: readonly (readonly [string, string | null])[]; readonly not: readonly string[] };
 
 function parseCompound(raw: string): Compound {
-  const re = /^([a-z][a-z0-9]*)?((?:\[[^\]]+\]|:not\(\[[^\]]+\]\))*)$/i;
-  const m = re.exec(raw);
+  const m = /^([a-z][a-z0-9]*)?((?:\.[a-z0-9_-]+)*)((?:\[[^\]]+\]|:not\(\[[^\]]+\]\))*)$/i.exec(raw);
   if (!m) throw new Error(`mini-dom: seletor não suportado: ${raw}`);
+  const classes = (m[2] ?? "").split(".").filter(Boolean);
   const attrs: (readonly [string, string | null])[] = [];
   const not: string[] = [];
-  for (const part of (m[2] ?? "").matchAll(/(:not\()?\[([a-z-]+)(?:=['"]?([^'"\]]*)['"]?)?\]\)?/gi)) {
+  for (const part of (m[3] ?? "").matchAll(/(:not\()?\[([a-z-]+)(?:=['"]?([^'"\]]*)['"]?)?\]\)?/gi)) {
     if (part[1]) not.push(part[2]);
     else attrs.push([part[2], part[3] ?? null]);
   }
-  return { tag: m[1]?.toLowerCase() ?? null, attrs, not };
+  return { tag: m[1]?.toLowerCase() ?? null, classes, attrs, not };
 }
 
 function matchesCompound(el: MiniDomElement, c: Compound): boolean {
   if (c.tag && el.localName !== c.tag) return false;
+  for (const cls of c.classes) if (!hasClass(el, cls)) return false;
   for (const [name, value] of c.attrs) if (!el.hasAttribute(name) || (value !== null && el.getAttribute(name) !== value)) return false;
   for (const name of c.not) if (el.hasAttribute(name)) return false;
   return true;

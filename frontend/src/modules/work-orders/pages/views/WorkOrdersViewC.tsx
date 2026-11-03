@@ -174,7 +174,7 @@ export function WorkOrdersViewC(model: WorkOrdersViewModel) {
         <WorkOrdersLoadState status={model.status} message={model.error} onRetry={model.onRetry} />
       ) : (
         <div className="aparos-card">
-          <WorkOrdersToolbar model={model} total={rows.length} showTabs={false} />
+          <WorkOrdersToolbar model={model} total={rows.length} showTabs={false} withServerTotal />
           <TabChip model={model} />
           <TargetChip model={model} />
           <WorkOrdersTable model={model} columns={columns} groups={groups} renderSummary={(order) => <WorkOrderSummary order={order} model={model} variant="c" />} />
