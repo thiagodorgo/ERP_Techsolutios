@@ -561,3 +561,40 @@ PRONTO PARA PRÉ-REVISÃO
   C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-mutations.mjs M53 M53-b M53-c M55 M55-b M55-c`.
 - **Arquivos meio-escritos:** somente este relatório recebeu o registro da pausa; código e testes estão
   restaurados no head. O Postgres descartável `devsan303e2-pg` foi removido; nenhum serviço/porta da demo foi tocado.
+
+## RETOMADA 13
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado; não achou nem planejou
+  o conserto. Verificador previsto: Claude.
+- **Terreno:** retomado em `cbbae32a`; C1 estava em `origin/fix/cloud-billing-exato@189064e8`, e C2 nos
+  commits locais `fe2cacf4` e `cbbae32a`. Disco 304 GB; memória de commit livre 16,13 GiB antes do Docker.
+- **C1 reexecutada:** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx
+  tests/san3-03-summary.test.ts tests/cloud-cost-allocation-routes.test.ts` — **exit 0**, TAP **10/10**,
+  0 falhas, 0 skips.
+- **Driver externo corrigido conforme Retomada 4:** em
+  `revisoes/dev-san303-e2-mutations.mjs`, sem tocar o repositório:
+  ```diff
+  -const normalizer = '  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();';
+  +const normalizer = String.raw`  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();`;
+  -'  return value.trim().replace(/\s+/g, " ").toLowerCase();'
+  +String.raw`  return value.trim().replace(/\s+/g, " ").toLowerCase();`
+  ```
+  `grep -Fn "return value.normalize" engine.ts` mostrou a linha literal 156 e a contagem publicada foi
+  **1**.
+- **Mutações pendentes da C2:** `node .../dev-san303-e2-mutations.mjs M53 M53-b M53-c M55 M55-b
+  M55-c` — driver **exit 0**; cada mutante publicou âncora **=1**, **exit 1 por AssertionError**, sem
+  `SyntaxError`/`TransformError`, `restored=true` e `git status --porcelain=VAZIO`. M53 derrubou
+  T-TAG-8/9/12; M53-b, T-TAG-8; M53-c, T-TAG-8/9/12; M55, T-TAG-10/13; M55-b, T-TAG-11;
+  M55-c, T-TAG-12.
+- **C2 no Postgres real descartável:** somente `devsan303e2-pg` (`postgres:16`) em
+  `127.0.0.1:55464`, sem volume; `npx prisma migrate deploy` — **exit 0**, 117 migrações existentes.
+  `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/san3-03-tenant-tag.test.ts
+  tests/san3-03-system-org-db.test.ts` — **exit 0**, TAP **14/14**, 0 falhas, 0 skips.
+  `npm run check` — **exit 0**; `git diff --check` — **exit 0**.
+- **Vermelho-controle e demais mutações C2:** permanecem registrados na PAUSA acima, todos executados
+  neste mesmo head de produto, com âncora única, falha por asserção e restauração limpa.
+- **Feito:** C2 completa contra §§7–8, incluindo tag ambígua, desconhecida, normalização e caminho DB.
+- **Falta:** C3, C4, bateria §6, CI e leitura TAP dos jobs `backend`/`backend-postgres`.
+- **Próximo comando exato:** `node
+  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`.
+- **Arquivos meio-escritos:** nenhum; o container próprio permanece vivo apenas para a bateria final.
