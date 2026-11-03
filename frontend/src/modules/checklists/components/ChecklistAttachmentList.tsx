@@ -16,7 +16,7 @@ export function ChecklistAttachmentList({
   const [error, setError] = useState<string | null>(null);
 
   if (attachments.length === 0) {
-    return <EmptyState title="Nenhuma evidencia anexada" detail="As evidencias enviadas para a execucao aparecerao aqui." />;
+    return <EmptyState title="Nenhuma evidência anexada" detail="As evidências enviadas para a execução aparecerão aqui." />;
   }
 
   async function handleDownload(attachment: ChecklistAttachment) {
@@ -32,7 +32,7 @@ export function ChecklistAttachmentList({
       link.click();
       window.setTimeout(() => revokeChecklistAttachmentDownloadUrl(result.objectUrl), 1000);
     } catch {
-      setError("Nao foi possivel baixar a evidencia.");
+      setError("Não foi possível baixar a evidência.");
     } finally {
       setActiveAttachmentId(null);
     }
@@ -44,7 +44,7 @@ export function ChecklistAttachmentList({
       {attachments.map((attachment) => (
         <article key={attachment.id}>
           <div>
-            <strong>{attachment.fileName ?? "Evidencia sem nome"}</strong>
+            <strong>{attachment.fileName ?? "Evidência sem nome"}</strong>
             <span>
               {formatMimeType(attachment.mimeType)} · {formatBytes(attachment.sizeBytes)} · {formatDate(attachment.createdAt)}
             </span>

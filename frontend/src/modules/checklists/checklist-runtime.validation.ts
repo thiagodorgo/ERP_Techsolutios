@@ -92,7 +92,7 @@ function validateComponent(
     const minPhotos = Math.max(readNumber(component.config.minPhotos) ?? 1, 1);
     return componentAttachments.length >= minPhotos
       ? []
-      : [{ componentId: component.id, message: `Envie ao menos ${minPhotos} evidencia(s) para ${component.label}.` }];
+      : [{ componentId: component.id, message: `Envie ao menos ${minPhotos} evidência(s) para ${component.label}.` }];
   }
 
   if (component.type === "before_after") {
@@ -100,21 +100,21 @@ function validateComponent(
     const after = componentAttachments.some((attachment) => attachment.metadata?.stage === "after");
     return before && after
       ? []
-      : [{ componentId: component.id, message: `Envie evidencias antes e depois para ${component.label}.` }];
+      : [{ componentId: component.id, message: `Envie evidências antes e depois para ${component.label}.` }];
   }
 
   if (component.type === "damage_map") {
     const hasMarker = componentMarkers.some((marker) => marker.description?.trim() && marker.markerType.trim());
-    return hasMarker ? [] : [{ componentId: component.id, message: `Registre ao menos um marcador com tipo e descricao em ${component.label}.` }];
+    return hasMarker ? [] : [{ componentId: component.id, message: `Registre ao menos um marcador com tipo e descrição em ${component.label}.` }];
   }
 
   if (component.type === "acknowledgement") {
     const acknowledgement = readAcknowledgementValue(answers[component.id]);
     if (!acknowledgement.accepted) {
-      return [{ componentId: component.id, message: `Confirme a ciencia obrigatoria em ${component.label}.` }];
+      return [{ componentId: component.id, message: `Confirme a ciência obrigatória em ${component.label}.` }];
     }
     if (requiresAcknowledgementObservation(component) && !acknowledgement.observation.trim()) {
-      return [{ componentId: component.id, message: `Informe a observacao obrigatoria da ciencia em ${component.label}.` }];
+      return [{ componentId: component.id, message: `Informe a observação obrigatória da ciência em ${component.label}.` }];
     }
     return [];
   }
@@ -123,7 +123,7 @@ function validateComponent(
     const value = answers[component.id];
     return typeof value === "string" && value.trim()
       ? []
-      : [{ componentId: component.id, message: `Preencha o campo obrigatorio ${component.label}.` }];
+      : [{ componentId: component.id, message: `Preencha o campo obrigatório ${component.label}.` }];
   }
 
   return [];

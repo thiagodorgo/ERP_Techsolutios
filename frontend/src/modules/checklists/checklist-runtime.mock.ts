@@ -228,13 +228,13 @@ export async function getMockChecklistRunComparison(runId: string): Promise<Chec
 
 function findRun(runId: string): ChecklistRunDetails {
   const run = runs.get(runId);
-  if (!run) throw new Error("Execucao de checklist nao encontrada.");
+  if (!run) throw new Error("Execução de checklist não encontrada.");
   return run;
 }
 
 async function findPublishedChecklist(checklistId: string): Promise<TenantChecklist> {
   const checklist = (await listMockAvailableChecklists()).find((item) => item.id === checklistId);
-  if (!checklist) throw new Error("Checklist publicado nao encontrado.");
+  if (!checklist) throw new Error("Checklist publicado não encontrado.");
   return checklist;
 }
 

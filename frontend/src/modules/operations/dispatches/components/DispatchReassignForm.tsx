@@ -12,7 +12,7 @@ export function DispatchReassignForm({
   readonly onSubmit: (payload: { operatorUserId: string; observation: string; reason: string }) => Promise<void>;
 }) {
   const [operatorUserId, setOperatorUserId] = useState("");
-  const [observation, setObservation] = useState("Despacho reatribuido pela operacao.");
+  const [observation, setObservation] = useState("Despacho reatribuído pela operação.");
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
 
