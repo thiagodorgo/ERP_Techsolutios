@@ -7,7 +7,7 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
-import { calculateDispatchesSummary } from "../dispatches.adapter";
+import { buildInitialDispatchesFilters, calculateDispatchesSummary } from "../dispatches.adapter";
 import { createDispatch, getDispatchFromApi, reassignDispatch, updateDispatchStatus } from "../dispatches.service";
 import type { DispatchDetail, DispatchListItem, DispatchesFilters as DispatchesFilterState } from "../dispatches.types";
 import { useOperationsDispatches } from "../useOperationsDispatches";
@@ -19,13 +19,6 @@ import { DispatchesFilters } from "../components/DispatchesFilters";
 import { DispatchesSummaryCards } from "../components/DispatchesSummaryCards";
 import { DispatchesTable } from "../components/DispatchesTable";
 
-const initialFilters: DispatchesFilterState = {
-  search: "",
-  status: "all",
-  priority: "all",
-  operatorUserId: "",
-};
-
 export function OperationsDispatchesPage() {
   const [searchParams] = useSearchParams();
   const { session } = useAuth();
@@ -34,12 +27,7 @@ export function OperationsDispatchesPage() {
   const initialWorkOrderId = searchParams.get("workOrderId") ?? "";
   const initialOperatorUserId = searchParams.get("operatorUserId") ?? searchParams.get("operatorId") ?? "";
   const initialDispatchId = searchParams.get("dispatchId") ?? "";
-  const [filters, setFilters] = useState<DispatchesFilterState>({
-    ...initialFilters,
-    search: initialDispatchId || initialWorkOrderId,
-    operatorUserId: initialOperatorUserId,
-    workOrderId: initialWorkOrderId || undefined,
-  });
+  const [filters, setFilters] = useState<DispatchesFilterState>(() => buildInitialDispatchesFilters(searchParams));
   const [selectedDispatch, setSelectedDispatch] = useState<DispatchDetail | DispatchListItem | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [quickStatusDispatch, setQuickStatusDispatch] = useState<DispatchListItem | null>(null);

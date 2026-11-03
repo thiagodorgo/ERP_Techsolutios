@@ -224,3 +224,24 @@ test("a11y: cada trow expõe botão 'Abrir detalhes de {nome}' (caminho de tecla
   const html = renderList({ locations: [makeLocation({ displayName: "Ana Souza" })] });
   assert.match(html, /aria-label="Abrir detalhes de Ana Souza"/);
 });
+
+// 14 — DIAGNÓSTICO DA OPERAÇÃO (02/11, item 2): o backend de posições não manda status de trabalho, então
+//      todo técnico chega `unknown`. "Alocar" só fica desabilitado para pausado/offline/bloqueado; sem status,
+//      habilita (o backend recusa com 422 quem não é Técnico de Campo). Vermelho sem o conserto.
+test("Alocar: técnico sem status (unknown) fica HABILITADO; pausado/offline/bloqueado desabilitados", () => {
+  const renderOne = (status: FieldLocationStatus) =>
+    renderList({
+      locations: [makeLocation({ id: `loc-${status}`, displayName: `Tec ${status}`, status })],
+      canAllocate: true,
+      selectedCallId: "wo-1",
+      selectedCallCoordinate: { lat: -23.5, lng: -46.6 },
+    });
+  const semStatus = renderOne("unknown");
+  assert.match(semStatus, />Alocar</);
+  assert.doesNotMatch(semStatus, /disabled=""/, "técnico sem status não pode ter Alocar desabilitado");
+  assert.doesNotMatch(semStatus, /opmap-trow off/, "técnico sem status não aparece apagado");
+  for (const status of ["paused", "offline", "blocked"] as const) {
+    const html = renderOne(status);
+    assert.match(html, /disabled=""/, `status ${status} deve desabilitar Alocar`);
+  }
+});

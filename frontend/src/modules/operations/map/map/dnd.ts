@@ -1,4 +1,5 @@
-import type { TechnicianLegendGroup } from "./mapMarkers";
+import { isAllocatableFieldLocationStatus } from "./mapMarkers";
+import type { FieldLocationStatus } from "../operations-map.types";
 
 /**
  * J-MAPAS-10 (PLANO-MAPA-PIXEL, D5.3) — núcleo PURO do drag-and-drop nativo HTML5 (ZERO lib):
@@ -29,9 +30,10 @@ export function readDraggedWorkOrderId(dataTransfer: DataTransferLike): string |
 }
 
 /**
- * Regra do protótipo: linha de técnico "off" (Fora de serviço) NÃO aceita drop; e sem a
- * permissão de alocar (field_dispatch:create) nenhum drop é aceito (gating D5).
+ * Técnico explicitamente indisponível (pausado, offline, bloqueado) NÃO aceita drop; status
+ * ausente (`unknown`) aceita — o backend decide. Sem a permissão de alocar (field_dispatch:create)
+ * nenhum drop é aceito (gating D5).
  */
-export function canDropOnTechnician(group: TechnicianLegendGroup, canAllocate: boolean): boolean {
-  return canAllocate && group !== "off";
+export function canDropOnTechnician(status: FieldLocationStatus, canAllocate: boolean): boolean {
+  return canAllocate && isAllocatableFieldLocationStatus(status);
 }
