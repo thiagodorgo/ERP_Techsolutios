@@ -19,6 +19,20 @@ const tenantA = { id: "tenant-a", name: "Duplicada", slug: "alpha" };
 const tenantB = { id: "tenant-b", name: "Beta", slug: "duplicada" };
 const platform = { id: "platform-id", name: "Plataforma", slug: "platform" };
 const tenants = [tenantA, tenantB, platform];
+const invisibleTenantTagCharacters = [
+  ["U+00AD", "\u00ad"],
+  ["U+200B", "\u200b"],
+  ["U+200C", "\u200c"],
+  ["U+200D", "\u200d"],
+  ["U+2060", "\u2060"],
+  ["U+FEFF", "\ufeff"],
+  ["U+034F", "\u034f"],
+  ["U+FE0F", "\ufe0f"],
+  ["U+200E", "\u200e"],
+  ["U+202E", "\u202e"],
+  ["U+180E", "\u180e"],
+  ["U+2062", "\u2062"],
+] as const;
 
 test("T-TAG-1 · nome duplicado é ambíguo independentemente da ordem", () => {
   const first = run("duplicada", "direct_tag_then_usage_weighted_v1", [
@@ -84,7 +98,7 @@ test("T-TAG-9 · slug único normalizado continua direto", () => {
 });
 
 test("T-TAG-10 · tag desconhecida falha fechada na estratégia direta", () => {
-  for (const tag of ["nao-existe", "Duplicada\u200b"]) {
+  for (const tag of ["nao-existe"]) {
     const result = run(tag);
     assert.equal(result.totalAllocatedCost, 0);
     assert.equal(result.totalPlatformCost, 0);
@@ -106,6 +120,19 @@ test("T-TAG-12 · tag só de espaço equivale a linha sem tag", () => {
   assert.deepEqual(allocationPairs(result), [[tenantA.id, 2], [tenantB.id, 6]]);
   assert.equal(result.totalPlatformCost, 2);
   assert.equal(result.totalUnallocatedCost, 0);
+});
+
+test("T-TAG-14 · invisíveis no nome não escapam da ambiguidade", () => {
+  for (const [label, character] of invisibleTenantTagCharacters) {
+    for (const strategy of ["direct_tag_then_usage_weighted_v1", "usage_weighted_v1"] as const) {
+      const result = run("Duplicada", strategy, [
+        { ...tenantA, name: `Dupli${character}cada` },
+        { ...tenantB, name: "Duplicada", slug: "beta" },
+        platform,
+      ]);
+      assert.doesNotThrow(() => assertAmbiguous(result), `${label} em ${strategy}`);
+    }
+  }
 });
 
 test("T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma", async () => {

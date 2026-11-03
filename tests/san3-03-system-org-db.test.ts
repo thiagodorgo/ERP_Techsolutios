@@ -133,6 +133,53 @@ if (!connectionString) {
       await cleanup(ctx, [importId], runIds, duplicateIds);
     }
   });
+
+  test("T-TAG-db-2 · invisíveis no nome não geram alocação no Postgres", async (context) => {
+    for (const [label, character] of [
+      ["U+00AD", "\u00ad"],
+      ["U+200B", "\u200b"],
+      ["U+2060", "\u2060"],
+      ["U+FEFF", "\ufeff"],
+    ] as const) {
+      await context.test(label, async () => {
+        const ctx = await bootstrap();
+        const importId = crypto.randomUUID();
+        const runIds: string[] = [];
+        const suffix = crypto.randomUUID();
+        const duplicateIds: string[] = [];
+        try {
+          const created = await ctx.client.$transaction([
+            ctx.client.tenant.create({
+              data: { name: `Dupli${character}cada ${suffix}`, slug: `invisible-a-${suffix}` },
+            }),
+            ctx.client.tenant.create({
+              data: { name: `Duplicada ${suffix}`, slug: `invisible-b-${suffix}` },
+            }),
+          ]);
+          duplicateIds.push(...created.map((tenant) => tenant.id));
+          await seedImport(ctx, importId, [
+            { service: "AmazonEC2", usage: "BoxUsage", tag: `Duplicada ${suffix}`, cost: "10.000000" },
+          ]);
+          const run = await ctx.service.allocateCostsForPeriod({ periodStart, periodEnd, importId });
+          runIds.push(run.id);
+          assert.equal(run.status, "completed", run.errorMessage);
+          const allocations = await ctx.service.listTenantAllocations(run.id);
+          assert.equal(allocations.some((item) => duplicateIds.includes(item.tenantId)), false);
+          assert.equal(run.totalAllocatedCost, 0);
+          assert.equal(run.totalUnallocatedCost, 10);
+          assert.deepEqual(
+            (run.metadata.unallocated as Array<{ reason: string; unallocatedCost: number }>).map((item) => [
+              item.reason,
+              item.unallocatedCost,
+            ]),
+            [["ambiguous_tenant_tag", 10]],
+          );
+        } finally {
+          await cleanup(ctx, [importId], runIds, duplicateIds);
+        }
+      });
+    }
+  });
 }
 
 async function bootstrap() {

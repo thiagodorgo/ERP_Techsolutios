@@ -153,7 +153,12 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
 }
 
 function normalizeTenantTag(value: string): string {
-  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+  return value
+    .replace(/[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu, "")
+    .normalize("NFKC")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 function addTenantTag(index: Map<string, Set<string>>, value: string, tenantId: string): void {
