@@ -26,8 +26,8 @@ export function PermissionGuard({
   if (!hasAny(permissions)) {
     return (
       <ErrorState
-        title="Acesso nao autorizado"
-        detail="Seu usuario nao possui permissao para visualizar esta area."
+        title="Acesso não autorizado"
+        detail="Seu usuário não possui permissão para visualizar esta área."
       />
     );
   }

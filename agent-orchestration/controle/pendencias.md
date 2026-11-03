@@ -7519,7 +7519,8 @@ com chave derivada da entidade. O molde já existe e está pronto para reuso:
 **Por que não foi feito aqui:** o recorte do bloco é fiel ao `local` do achado (confirmado pelo crítico);
 fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **optou por não deliberar**.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-attachment-capture-db.test.ts` (T-UP-db-2, T-DOWN-db-2) e `tests/san3-03-job-capture-db.test.ts` (T-JOB-db-2): falha injetada na unidade → fato e unidade juntos ou nenhum; censo `tests/san3-03-basis-census.test.ts` C-2/C-3.
+- **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
   *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
   genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
 - **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -7544,7 +7545,8 @@ O aceite `C2` deste bloco cobre a metade que dá para cobrir agora: para a categ
 da base tem produtor na transação** — se alguém acrescentar uma chave à regra sem produtor, o censo fica
 vermelho. As outras categorias ficam com esta pendência.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-basis-census.test.ts` C-1 (toda chave de regra tem produtor transacional ou derivação) e `tests/san3-03-derived-basis(-db).test.ts` T-API-3 (ApiGateway e AWSELB alocados, ≠ não rateado), T-STO-2/T-STO-db-1 (estoque das 4 tabelas).
+- **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
   (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
 - **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
@@ -7612,6 +7614,7 @@ construtor (`B5`).
 - **emenda (inventário SAN3, fatia A2, 2026-09-11):** há uma segunda instância silenciosa da mesma classe, fora do rateio — `take: 100_000` sem contagem prévia em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts:223`, dentro de `listAllocationTenantAllocations` (`:219`). Reconfirmado por presença no head `15ef3fbe` (`git show HEAD:src/modules/cloud-charges/cloud-charge-prisma.repository.ts | grep -n "take: 100_000"` → `223`; nenhum `count(` no arquivo). Mesma classe do `Ω6R-DIN-007` (truncamento silencioso); impacto realista pequeno, porque as alocações por run são tenants × categorias, longe de 100 mil.
 
 ---
+- **emenda FECHADA no PR #484 (B-SAN3-03, 2026-11-02):** a segunda instância (`take: 100_000` de `listAllocationTenantAllocations` em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`) saiu — única linha tocada em `cloud-charges/**` (§2.8 da emenda 1 do plano). Teste: `tests/san3-03-basis-census.test.ts` C-5. A pendência principal (paginação por cursor do rateio) **continua ABERTA**.
 
 ## P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por idade sem quebrar a idempotência — BAIXA
 
@@ -8362,7 +8365,8 @@ janela por outra execução (teste ou import real) **entra na base de rateio**. 
 instância dele movendo a própria suíte para a janela reservada `2028-02`, mas a propriedade continua valendo
 para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
 
-- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-import-scope.test.ts` T26-1 e `tests/san3-03-import-scope-db.test.ts` T26-db-1/2 (dois imports na mesma janela: o rateio de um não soma o outro).
+- **status anterior:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 4 — uma reimportação do mesmo período soma o custo em dobro no rateio; "há um import por período" é premissa, não trava. Bloco `B-SAN3-03`.
   **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
   **bloqueia:** nada. **Correção proposta:** `import_id` opcional em `listCostLineItems`, com o serviço
@@ -8548,6 +8552,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
 ---
+- **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -10124,7 +10129,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `git grep -c forEachTenantInOneTx src` = 0; `tests/san3-03-basis-census.test.ts` C-5; `tests/san3-05-acessos-de-plataforma-guard.test.ts` 35/35 com a linha do wrapper privado retirada de `scripts/san3-05-acessos-de-plataforma.mjs`.
+- **status anterior:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
 - `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
 - **bloqueia:** não.
 
@@ -10507,6 +10513,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
 - **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
+- **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -10552,7 +10559,8 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organização de sistema — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
+- **status:** FECHADA no PR #484 (B-SAN3-03, 2026-11-02; era ABERTA) · **encerramento:** `tests/san3-03-system-org.test.ts` T-SYS-1..8 e `tests/san3-03-system-org-db.test.ts`: a plataforma pesa no rateio, não recebe alocação, e a parte dela é `totalPlatformCost`, fora de não rateado (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
+- **status anterior:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
 - A organização `platform` (de sistema) pode aparecer como organização cobrada e entrar na contagem de organizações do Cloud Billing; o B-SAN3-06b a tirou das métricas de clientes nas telas, mas a regra de rateio é do backend. É pergunta de produto: a plataforma paga a própria nuvem?
 - **bloqueia:** não.
 - **teste de encerramento:** rateio com a organização de sistema semeada não a cobra (ou a decisão de cobrá-la está escrita).
@@ -11066,6 +11074,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **Apenso 2026-11-02:** a lista de Pátios do #461 já tem A/B/C, mas Processos, Liberações, Leilões, Perfis, Tarifas e Painel do pátio ainda não têm maquete de 3 opções. Elas permanecem nesta pendência: maquete pelo Claude antes do desenvolvimento, depois dos bloqueantes. Vagas e dossiê já têm maquete aprovada e foram separados em `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`.
 - **editor de checklist registrado (B-SAN3-22, 2026-10-26):** `checklist-editor` entrou em `APPEARANCE_SCREENS` (A "Padrão fiel" · B "Analítica" · C "Painel de impacto", padrão A); o editor lê a escolha por `useScreenAppearance("checklist-editor")`.
 - **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
 - **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
@@ -12322,10 +12331,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de ligar o recebimento — ALTA
 
-- **status:** ABERTA · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** ligar o recebimento em produção.
+- **status:** ABERTA, NÃO BLOQUEIA PRODUÇÃO desde a decisão do dono de 02/11/2026, ~23:45 SP · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** nada.
 - **origem:** `D-PLATAFORMA-RECEBE-E-REPASSA`: a plataforma recebe e repassa ao cliente. O parecer é leitura do orquestrador, declarada, não fala do dono.
 - **Hipótese, não medida:** receber dinheiro de terceiros e repassar pode ter consequência regulatória e tributária; só o parecer responde.
-- **encerramento:** parecer de advogado e de contador registrado, e a decisão do dono sobre ele, antes de qualquer recebimento real em produção.
+- **Apenso 2026-11-02 — risco, não decisão:** o dono definiu CNPJ único para um cliente com 100 filiais-organizações, inclusive em outras cidades. A nota de serviço sairia pelo cadastro municipal desse CNPJ; a incidência de ISS conforme o local da prestação precisa de parecer de advogado e contador. Isto não trava o desenvolvimento e não é tratado aqui como conclusão jurídica.
+- **Conflito §A2 registrado e não resolvido:** a pendência nasceu da hipótese de a plataforma receber e repassar dinheiro de terceiros; as falas posteriores dizem que a plataforma não recebe o dinheiro dos clientes dos pátios. A premissa pode ter ficado sem objeto para esse fluxo, mas nenhum dos lados foi apagado ou consolidado neste registro.
+- **Fala literal do dono, 02/11/2026, ~23:45 SP:** *"Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança"*.
+- **Leitura do orquestrador, declarada (§A6), presente na fonte:** `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` deixa de bloquear a produção por “trate como fechado”; o parecer vem depois e não trava.
+- **encerramento:** parecer de advogado e de contador registrado, sem condicionar a produção por decisão expressa do dono.
 
 ## P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram, e o custo real — MÉDIA
 
@@ -12371,3 +12384,65 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **evidência:** `git log --format='%h %ad' --date=short -S'alteracoes serao sincronizadas' origin/main -- mobile/flutter_app/lib/shared/ui/erp_components.dart`
   → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
 - **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.
+
+## P-SAN3-03-IMPORT-ID-EM-COLUNA (2026-11-02) — o import da run mora em `metadata.importId`, sem coluna nem FK — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado do `B-SAN3-03`, `D-SAN3-03-IMPORT-POR-RUN`) · **dono:** `B-ASS-09a` · **bloqueia:** não.
+- **origem:** `prisma/**` é PROIBIDO no `B-SAN3-03`; a run guarda o import escolhido em `metadata.importId` / `metadata.importResolution` (`src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts`, `createAllocationRun`).
+- **encerramento:** migração aditiva com coluna `import_id` e FK em `cloud_cost_allocation_runs`, com backfill de `metadata.importId`, só com autorização explícita do dono para essa migração; o `B-ASS-09a` usa o import para o rateio automático não repetir run.
+
+## P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a fase exata — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (PR #456, commit `37a3f360`) · **dono:** trilha financeira, `B-SAN3-12x` · **bloqueia:** não.
+- **origem medida:** pré-revisão do PR #484, achado A6. Houve 1 falha em 30 observações conhecidas (3,33%):
+  1 execução histórica falhou; as outras duas execuções conhecidas daquele head, os dois jobs `backend` do head
+  pré-revisado e 25 repetições próprias passaram. A barreira `waitForOwnBlockedStatement` casa qualquer statement
+  ativo/bloqueado pelo mesmo `application_name` e fragmento de `financial_titles`, sem provar PID, tentativa nem fase.
+- **efeito:** um casamento transitório pode soltar W2 cedo; o serviço relê `in_dispute` e aceita legitimamente a
+  transição. A evidência mede indeterminismo do teste, não defeito comprovado no CAS.
+- **encerramento:** a barreira identifica determinística e explicitamente o PID e a fase/tentativa esperados, e uma
+  série concorrente reproduzível fica verde sem casamento transitório.
+
+## P-SAN303-TAG-DESCONHECIDA (2026-11-03) — destino de tag não reconhecida no rateio direto — FECHADA
+
+- **status:** FECHADA no PR #484, Emenda 2 (§8) · **escopo:** leitura de produto sobre risco financeiro · **dono:** `B-SAN3-03` · **bloqueia:** nada.
+- **registro da leitura do autor (§A6):** o comportamento anterior, que fazia uma tag não vazia e desconhecida cair
+  em regra/uso, podia cobrar organizações diferentes da pretendida. O item 10(3) manda corrigir agora erro grave de
+  dinheiro; o dono pode reverter essa leitura.
+- **encerramento:** em `direct_tag_then_usage_weighted_v1`, tag não vazia desconhecida vai integralmente para
+  `unknown_tenant_tag`; `usage_weighted_v1` continua ignorando tags desconhecidas por definição. Provas:
+  `tests/san3-03-tenant-tag.test.ts` T-TAG-10..13 e mutações M55/M55-b/M55-c.
+
+## B-SAN3-03 — nota de fechamento da Emenda 2 (2026-11-03)
+
+- **A1 fechado:** o resumo recusa período incompleto, vazio, inválido, repetido ou de calendário impossível com
+  `CLOUD_COST_ALLOCATION_INVALID_PERIOD`; T-SUM-7/8 e M47/M54/M56 provam os ramos.
+- **A5 fechado:** chave de organização ambígua, inclusive entre campos ou com normalização equivalente, vai inteira
+  a `ambiguous_tenant_tag`, antes da plataforma e nas duas estratégias; T-TAG-1..9, T-TAG-db e M48..M53 provam o
+  comportamento. Tag desconhecida no rateio direto fecha por `P-SAN303-TAG-DESCONHECIDA` acima.
+
+## P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS (2026-11-02) — vagas e dossiê ainda usam o visual antigo — prioridade a definir
+
+- **status:** ABERTA, adiada até o fim dos bloqueantes · **escopo:** tela/UX já aprovada · **dono:** `B-PATIOS-VAGAS-DOSSIE-3-APARENCIAS` (bloco a planejar) · **prioridade:** A DEFINIR depois dos bloqueantes · **bloqueia:** nada agora.
+- **fala literal do dono, 02/11/2026, ~13:30 SP, pergunta inicial:** *"claude, eu tinha pedido a vc no pc velho uns upgrades no patio, verifiquei que ainda esta com o visual velho, procure informacoes sobre isso e me retorne para eu analisar"*.
+- **fala literal do dono, 02/11/2026, ~13:30 SP, depois do relatório:** *"derrube os servers abertos, anote isso, apos terminarmos os bloqueantes vamos ver isso"*.
+- **medido em `origin/main@7c89c73b`:** a maquete `docs/claude-code-handoff/screen-refs/patios-3opcoes.reference.html` foi aprovada em 14/10, com fluxo pátios → vagas → dossiê nas três aparências; a preferida é B (Analítica), com “Mover · Liberar · Editar” numa linha no cartão da vaga. O #461 entregou apenas a lista (`PatiosPage.tsx` e `PatiosViewA/B/C`, padrão B). `PatioDetailPage.tsx` e `OccupancyMap.tsx` têm último commit em 01/08; `VehicleDossieModal.tsx`, em 02/08; nenhum usa `useScreenAppearance`.
+- **fonte ausente, declarada:** o texto original do pedido feito no PC antigo não veio no pacote de migração. Esta pendência registra somente a fala de 02/11 e o que foi medido no repositório.
+- **encerramento:** vagas e dossiê implementam A/B/C conforme a maquete aprovada, preservando a ressalva da linha única, com plano e desenvolvimento de tela após os bloqueantes.
+
+## P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS (2026-11-02) — `D-PLATAFORMA-RECEBE-E-REPASSA` × CNPJ/conta do cliente — ALTA
+
+- **status:** ABERTA · **escopo:** conflito §A2 de produto, financeiro e fiscal · **dono:** `B-PATIO-RECEBIMENTO` · **prioridade:** ALTA antes de implementar recebimento · **bloqueia:** consolidar o desenho de recebimento e repasse; não bloqueia este PR documental.
+- **lado de 31/10:** `D-PLATAFORMA-RECEBE-E-REPASSA` diz que a plataforma recebe e repassa ao cliente.
+- **lado de 02/11:** o dono disse *"De um cliente com 100 filiais"*, *"nao, cnpj unico"* e admitiu clientes com APIs individuais; a leitura declarada é que, no modo compartilhado, CNPJ, conta e credenciais pertencem ao cliente do grupo, e, no individual, pertencem à organização. Em ambos, o dinheiro não precisaria passar pela plataforma.
+- **outros alvos do mesmo conflito §A2, registrados e não resolvidos:** Q8/Q10 da v2 do pátio modelam dados fiscais e conta para depósito por organização; `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` nasceu da hipótese de a plataforma receber e repassar; `B-PATIO-RECEBIMENTO-plano-v2.md` e `B-ASSINATURA-plano.md`, nas fontes externas, modelam conta, perfil fiscal ou nota por organização. As falas de 02/11 introduzem conta/CNPJ compartilhados por grupo e o modo individual. Nenhum desses alvos é consolidado ou revogado aqui.
+- **estado:** conflito registrado sem escolher um lado, revogar decisão ou consolidar plano.
+- **encerramento:** decisão explícita do dono define, por modo, quem recebe, quem emite, se existe repasse/split e o destino da antiga decisão.
+
+## P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO (2026-11-02) — filial é organização própria, mas não paga assinatura — ALTA
+
+- **status:** ABERTA · **escopo:** conflito §A2 de cobrança SaaS · **dono:** `B-ASSINATURA` · **prioridade:** ALTA antes de implementar cobrança · **bloqueia:** consolidar plano, fatura e entitlement das filiais; não bloqueia este PR documental.
+- **lado de 30/10:** `D-COBRANCA-ASSINATURA-FRANQUIA` descreve preço por cliente/organização, com franquia de usuários e espaço e cobrança de excedente.
+- **lado de 02/11:** o dono disse que cada filial é *"orgamizacao propria"* e, à pergunta se paga assinatura, respondeu *"Não, só vê uso e custo"*.
+- **estado:** conflito registrado sem inferir se a assinatura pertence ao grupo econômico, à matriz ou a outra entidade de cobrança.
+- **encerramento:** decisão explícita do dono define o assinante do grupo, o agregador de franquia/excedente e o comportamento de cada organização-filial.

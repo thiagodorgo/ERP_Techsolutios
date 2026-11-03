@@ -1,0 +1,130 @@
+B-SAN3-03 · K5 (C3-01) — bateria dirigida do §6 da emenda 2, com lista literal e TAP por arquivo
+Executor: dev-san303-k-opus, Claude Opus, nível menor declarado. SEM cruzamento de modelo (§C7 item 11(2)):
+o Codex (dev-san303-k-sol, autor de K1–K4) bateu o limite de uso; este K5 foi feito por um modelo só.
+Objeto medido: c7387fd79ca46a3544645d9ced1bf4f018734f7c + a correção da chamada do resumo em
+tests/san3-05-leituras-de-plataforma-db.test.ts:351 (§11 da emenda 2), commitada junto com este arquivo.
+O produto (src/) é o mesmo de f1a123ca. Data: 2026-11-03 (horário de São Paulo, manhã).
+
+AMBIENTE
+- Windows 11, Git Bash, Node do worktree C:/Users/thiag/w-san303 (node_modules próprio, sem junction).
+- Postgres descartável próprio: container devsan303ko-pg, imagem postgres:16, 127.0.0.1:55466, sem volume,
+  usuário postgres como no CI; `npx prisma migrate deploy` exit 0.
+- Memória de commit livre antes do Docker: 41,06 GB (P8: >= 4 GB).
+
+COMANDO LITERAL (um arquivo por vez, na ordem da lista)
+  export DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:55466/erp_techsolutions?schema=public'
+  export CORE_SAAS_PERSISTENCE=memory
+  while read -r f; do node --test --import tsx --test-reporter=tap "$f"; done < LISTA
+A LISTA é a expansão, no objeto, dos globs da RETOMADA 16:
+  ls tests/san3-03-*.test.ts tests/cloud-cost-allocation*.test.ts tests/cloud-charge-*.test.ts \
+     tests/cloud-usage*.test.ts tests/o6r06-*.test.ts tests/san3-05-*.test.ts tests/job-*.test.ts \
+     tests/charging-*.test.ts | sort -u
+e é idêntica (diff vazio) a revisoes/j484/c3-bateria-arquivos.txt, a lista da cadeira C3: 38 arquivos.
+Log TAP completo: docs/revisoes/SAN3/B-SAN3-03-bateria.log (espaço no fim de linha removido por
+  sed "s/[[:space:]]*$//", para o git diff --check; um bloco "=== <arquivo> ===" por arquivo,
+com EXIT=<código> no fim de cada bloco).
+
+LISTA LITERAL (38)
+tests/charging-daily-engine.test.ts
+tests/charging-job-idempotency.test.ts
+tests/cloud-charge-markup-rules.test.ts
+tests/cloud-charge-routes.test.ts
+tests/cloud-cost-allocation-routes.test.ts
+tests/cloud-cost-allocation.test.ts
+tests/cloud-usage-checklist-reopen.test.ts
+tests/cloud-usage-routes.test.ts
+tests/cloud-usage.test.ts
+tests/job-queue.test.ts
+tests/job-worker-bootstrap.test.ts
+tests/o6r06-allocation-basis-rls-db.test.ts
+tests/o6r06-billing-census.test.ts
+tests/o6r06-cost-summary-sum-db.test.ts
+tests/o6r06-cost-summary-sum.test.ts
+tests/o6r06-janela-reservada-guard.test.ts
+tests/o6r06-usage-atomic-db.test.ts
+tests/o6r06-usage-atomic.test.ts
+tests/o6r06-usage-fault-injection.test.ts
+tests/san3-03-attachment-capture-db.test.ts
+tests/san3-03-attachment-capture.test.ts
+tests/san3-03-basis-census.test.ts
+tests/san3-03-compute-rules.test.ts
+tests/san3-03-conservation.test.ts
+tests/san3-03-derived-basis-db.test.ts
+tests/san3-03-derived-basis.test.ts
+tests/san3-03-import-scope-db.test.ts
+tests/san3-03-import-scope.test.ts
+tests/san3-03-job-capture-db.test.ts
+tests/san3-03-job-capture.test.ts
+tests/san3-03-summary.test.ts
+tests/san3-03-system-org-db.test.ts
+tests/san3-03-system-org.test.ts
+tests/san3-03-tenant-tag.test.ts
+tests/san3-05-acessos-de-plataforma-guard.test.ts
+tests/san3-05-leituras-de-plataforma-db.test.ts
+tests/san3-05-runtime-role-bootstrap.test.ts
+tests/san3-05-runtime-role-guard-db.test.ts
+
+RESULTADO POR ARQUIVO (linhas # tests / # pass / # fail / # skipped do TAP de cada arquivo)
+tests/charging-daily-engine.test.ts | exit=0 | # tests 19 | # pass 19 | # fail 0 | # skipped 0
+tests/charging-job-idempotency.test.ts | exit=0 | # tests 1 | # pass 1 | # fail 0 | # skipped 0
+tests/cloud-charge-markup-rules.test.ts | exit=0 | # tests 12 | # pass 12 | # fail 0 | # skipped 0
+tests/cloud-charge-routes.test.ts | exit=0 | # tests 2 | # pass 2 | # fail 0 | # skipped 0
+tests/cloud-cost-allocation-routes.test.ts | exit=0 | # tests 5 | # pass 5 | # fail 0 | # skipped 0
+tests/cloud-cost-allocation.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/cloud-usage-checklist-reopen.test.ts | exit=0 | # tests 4 | # pass 4 | # fail 0 | # skipped 0
+tests/cloud-usage-routes.test.ts | exit=0 | # tests 3 | # pass 3 | # fail 0 | # skipped 0
+tests/cloud-usage.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/job-queue.test.ts | exit=0 | # tests 3 | # pass 3 | # fail 0 | # skipped 0
+tests/job-worker-bootstrap.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/o6r06-allocation-basis-rls-db.test.ts | exit=0 | # tests 10 | # pass 10 | # fail 0 | # skipped 0
+tests/o6r06-billing-census.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/o6r06-cost-summary-sum-db.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/o6r06-cost-summary-sum.test.ts | exit=0 | # tests 4 | # pass 4 | # fail 0 | # skipped 0
+tests/o6r06-janela-reservada-guard.test.ts | exit=0 | # tests 4 | # pass 4 | # fail 0 | # skipped 0
+tests/o6r06-usage-atomic-db.test.ts | exit=0 | # tests 17 | # pass 17 | # fail 0 | # skipped 0
+tests/o6r06-usage-atomic.test.ts | exit=0 | # tests 6 | # pass 6 | # fail 0 | # skipped 0
+tests/o6r06-usage-fault-injection.test.ts | exit=0 | # tests 6 | # pass 6 | # fail 0 | # skipped 0
+tests/san3-03-attachment-capture-db.test.ts | exit=0 | # tests 5 | # pass 5 | # fail 0 | # skipped 0
+tests/san3-03-attachment-capture.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 | # skipped 0
+tests/san3-03-basis-census.test.ts | exit=0 | # tests 6 | # pass 6 | # fail 0 | # skipped 0
+tests/san3-03-compute-rules.test.ts | exit=0 | # tests 6 | # pass 6 | # fail 0 | # skipped 0
+tests/san3-03-conservation.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 | # skipped 0
+tests/san3-03-derived-basis-db.test.ts | exit=0 | # tests 9 | # pass 9 | # fail 0 | # skipped 0
+tests/san3-03-derived-basis.test.ts | exit=0 | # tests 11 | # pass 11 | # fail 0 | # skipped 0
+tests/san3-03-import-scope-db.test.ts | exit=0 | # tests 3 | # pass 3 | # fail 0 | # skipped 0
+tests/san3-03-import-scope.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/san3-03-job-capture-db.test.ts | exit=0 | # tests 2 | # pass 2 | # fail 0 | # skipped 0
+tests/san3-03-job-capture.test.ts | exit=0 | # tests 4 | # pass 4 | # fail 0 | # skipped 0
+tests/san3-03-summary.test.ts | exit=0 | # tests 7 | # pass 7 | # fail 0 | # skipped 0
+tests/san3-03-system-org-db.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 | # skipped 0
+tests/san3-03-system-org.test.ts | exit=0 | # tests 8 | # pass 8 | # fail 0 | # skipped 0
+tests/san3-03-tenant-tag.test.ts | exit=0 | # tests 12 | # pass 12 | # fail 0 | # skipped 0
+tests/san3-05-acessos-de-plataforma-guard.test.ts | exit=0 | # tests 35 | # pass 35 | # fail 0 | # skipped 0
+tests/san3-05-leituras-de-plataforma-db.test.ts | exit=0 | # tests 13 | # pass 13 | # fail 0 | # skipped 0
+tests/san3-05-runtime-role-bootstrap.test.ts | exit=0 | # tests 12 | # pass 12 | # fail 0 | # skipped 0
+tests/san3-05-runtime-role-guard-db.test.ts | exit=1 | # tests 12 | # pass 8 | # fail 4 | # skipped 0
+    not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 8 - T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
+    not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 9 - T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
+    not ok em tests/san3-05-runtime-role-guard-db.test.ts:     not ok 10 - T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
+    not ok em tests/san3-05-runtime-role-guard-db.test.ts: not ok 1 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
+TOTAL | arquivos=38 | # tests 307 | # pass 303 | # fail 4 | # skipped 0 | arquivos com exit!=0: 1
+
+LEITURA DO RESULTADO
+1. tests/san3-05-runtime-role-guard-db.test.ts — 12 testes, 4 fail: DIFERENÇA DE AMBIENTE DO WINDOWS,
+   declarada e não consertada. Os subtestes T14a/b, T14c e T14d (e o pai) param em
+   "setsid: ausente — necessário para impedir que psql \password leia a senha do terminal". O Git Bash
+   não tem setsid; no CI (Linux) o arquivo roda dentro do job backend. A cadeira C3 mediu as mesmas 4
+   falhas no objeto e na base (revisoes/j484/c3-evidencia.md).
+2. tests/san3-05-leituras-de-plataforma-db.test.ts — 13/13. Na 1ª execução desta bateria (sobre f1a123ca)
+   o arquivo deu 3 testes e 1 fail: o K2 recusa o ISO completo que a linha 351 mandava ao
+   /cloud-cost-allocations/summary (400 summary_period_invalid), e o CI de f1a123ca falhou no mesmo teste
+   (not ok 3111). Pelo §11 da emenda 2, a regra do K2 ficou e só essa chamada passou a mandar AAAA-MM-DD
+   (MES_INICIO.slice(0, 10) e MES_FIM.slice(0, 10)); o serviço casa a run por sameUtcDay.
+   Vermelho-controle: com o routes.ts do head e a chamada antiga, o arquivo dá # tests 3 / # pass 2 /
+   # fail 1 com summary_period_invalid; com a chamada nova, # tests 13 / # pass 13 / # fail 0.
+
+DENOMINADOR, CONFERIDO CONTRA O DA C3
+- C3, no objeto 5b628b88: 38 arquivos, 299 testes (revisoes/j484/c3-bateria-por-arquivo.txt).
+- Aqui: 38 arquivos, 307 testes = 299 + 1 (tenant-tag, T-TAG-14) + 5 (system-org-db, T-TAG-db-2 com 4
+  subcasos) + 2 (cloud-cost-allocation-routes, T-SUM-9 e T-SUM-10). 303 pass, 4 fail (só os do setsid),
+  0 skip.

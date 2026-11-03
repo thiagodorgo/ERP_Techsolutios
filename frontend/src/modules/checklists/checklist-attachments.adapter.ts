@@ -56,8 +56,8 @@ export async function downloadChecklistAttachmentFromApi(
   runId: string,
   attachmentId: string,
 ): Promise<ChecklistAttachmentDownloadResult> {
-  if (!runId.trim()) throw new Error("Execucao obrigatoria para baixar evidencia.");
-  if (!attachmentId.trim()) throw new Error("Anexo obrigatorio para baixar evidencia.");
+  if (!runId.trim()) throw new Error("Execução obrigatória para baixar evidência.");
+  if (!attachmentId.trim()) throw new Error("Anexo obrigatório para baixar evidência.");
 
   const result = await apiBlobRequest(
     `/mobile/checklist-runs/${encodeURIComponent(runId)}/attachments/${encodeURIComponent(attachmentId)}/download`,
@@ -95,14 +95,14 @@ export function adaptChecklistAttachment(dto: ChecklistAttachmentDto): Checklist
 }
 
 function assertUploadInput(input: ChecklistAttachmentUploadInput): void {
-  if (!input.runId.trim()) throw new Error("Execucao obrigatoria para enviar evidencia.");
-  if (!input.componentId.trim()) throw new Error("Componente obrigatorio para enviar evidencia.");
-  if (!input.file) throw new Error("Arquivo obrigatorio para enviar evidencia.");
+  if (!input.runId.trim()) throw new Error("Execução obrigatória para enviar evidência.");
+  if (!input.componentId.trim()) throw new Error("Componente obrigatório para enviar evidência.");
+  if (!input.file) throw new Error("Arquivo obrigatório para enviar evidência.");
 }
 
 function assertSafeFileUrl(fileUrl: string): string {
   if (/^[A-Za-z]:[\\/]/.test(fileUrl) || fileUrl.startsWith("\\\\")) {
-    throw new Error("URL de evidencia invalida.");
+    throw new Error("URL de evidência inválida.");
   }
 
   return fileUrl;

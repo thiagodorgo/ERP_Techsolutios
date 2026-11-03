@@ -9,9 +9,9 @@ import type {
 const mockDownloads = new Map<string, Blob>();
 
 export async function uploadMockChecklistAttachment(input: ChecklistAttachmentUploadInput): Promise<ChecklistAttachmentUploadResult> {
-  if (!input.runId.trim()) throw new Error("Execucao obrigatoria para enviar evidencia.");
-  if (!input.componentId.trim()) throw new Error("Componente obrigatorio para enviar evidencia.");
-  if (!input.file) throw new Error("Arquivo obrigatorio para enviar evidencia.");
+  if (!input.runId.trim()) throw new Error("Execução obrigatória para enviar evidência.");
+  if (!input.componentId.trim()) throw new Error("Componente obrigatório para enviar evidência.");
+  if (!input.file) throw new Error("Arquivo obrigatório para enviar evidência.");
 
   await wait();
 
@@ -49,8 +49,8 @@ export async function downloadMockChecklistAttachment(
   runId: string,
   attachmentId: string,
 ): Promise<ChecklistAttachmentDownloadResult> {
-  if (!runId.trim()) throw new Error("Execucao obrigatoria para baixar evidencia.");
-  if (!attachmentId.trim()) throw new Error("Anexo obrigatorio para baixar evidencia.");
+  if (!runId.trim()) throw new Error("Execução obrigatória para baixar evidência.");
+  if (!attachmentId.trim()) throw new Error("Anexo obrigatório para baixar evidência.");
 
   await wait();
 

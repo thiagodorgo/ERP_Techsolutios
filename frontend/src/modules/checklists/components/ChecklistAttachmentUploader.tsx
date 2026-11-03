@@ -55,12 +55,12 @@ export function ChecklistAttachmentUploader({
 
   async function handleUpload() {
     if (!runId?.trim()) {
-      setError("Selecione uma execucao antes de enviar evidencia.");
+      setError("Selecione uma execução antes de enviar evidência.");
       return;
     }
 
     if (!componentId?.trim()) {
-      setError("Selecione um componente antes de enviar evidencia.");
+      setError("Selecione um componente antes de enviar evidência.");
       return;
     }
 
@@ -82,12 +82,12 @@ export function ChecklistAttachmentUploader({
         metadata,
       });
 
-      setSuccess("Evidencia enviada com sucesso.");
+      setSuccess("Evidência enviada com sucesso.");
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       onUploaded?.(result.attachment);
     } catch {
-      setError("Nao foi possivel enviar a evidencia. Verifique permissoes e tente novamente.");
+      setError("Não foi possível enviar a evidência. Verifique permissões e tente novamente.");
     } finally {
       setUploading(false);
     }
@@ -96,10 +96,10 @@ export function ChecklistAttachmentUploader({
   return (
     <section className="checklist-attachment-uploader">
       <label className="ui-field">
-        <span>Arquivo de evidencia</span>
+        <span>Arquivo de evidência</span>
         <input ref={inputRef} className="ui-input" type="file" accept={accept} onChange={handleFileChange} disabled={uploading} />
         <small>
-          JPG, PNG, WebP ou PDF ate {maxSizeMb} MB.
+          JPG, PNG, WebP ou PDF até {maxSizeMb} MB.
         </small>
       </label>
 
@@ -115,7 +115,7 @@ export function ChecklistAttachmentUploader({
 
       <Button type="button" onClick={handleUpload} disabled={uploading || !file}>
         <Upload size={16} />
-        {uploading ? "Enviando..." : "Enviar evidencia"}
+        {uploading ? "Enviando..." : "Enviar evidência"}
       </Button>
     </section>
   );
@@ -123,7 +123,7 @@ export function ChecklistAttachmentUploader({
 
 function validateFile(file: File, allowedMimeTypes: readonly string[], maxSizeMb: number): string | null {
   if (!allowedMimeTypes.includes(file.type)) {
-    return "Tipo de arquivo nao permitido para evidencia.";
+    return "Tipo de arquivo não permitido para evidência.";
   }
 
   if (file.size > maxSizeMb * 1024 * 1024) {
