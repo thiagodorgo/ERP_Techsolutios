@@ -95,3 +95,51 @@ Leitura: as quatro baselines batem com a v3 §9.1 F0. `N_san3` fica fixado em **
 - **Pendente de propósito até a F5:** `tests/permission-catalog-migration-parity.test.ts` (roda no `npm test`) exige migração de dados
   para toda chave nova do catálogo; a M-REC-7a é da F5 pelo plano. Entre a F3 e a F5, o `npm test` desse arquivo fica vermelho por
   desenho do plano.
+
+## RETOMADA 4 — F4 (`schema.prisma`, M-REC-1, M-REC-2, repositório Prisma; emenda §3.1 F4, §6.2.2, §8.2.5, §10.1)
+
+- **Entrega:** modelos `ImpoundPaymentIntent` e `ImpoundPaymentRef`; `prisma/migrations/20260890000000_impound_payment_intents`
+  (M-REC-1) e `20260891000000_impound_payment_refs` (M-REC-2), ambas com `BEGIN;`/`COMMIT;`, só `CREATE`, nada destrutivo no `up`;
+  `impound-payment-prisma.repository.ts` (`tenant_id` explícito em toda consulta, trava `FOR UPDATE` do processo, criação inteira
+  num `tx` de `withTenantRls`, fila do pátio falha FECHADA até o REC-02a); fiação Prisma do serviço.
+  - M-REC-1: CHECKs de status, motivo de cancelamento, dinheiro ≥ 0, **identidade** `paid_cents = applied_cents + held_cents +
+    refunded_cents`, `held > 0 ⇔ held_reason`, domínio do motivo, dinheiro por estado (abertos, retidos, revertido, quitado), meios,
+    **`impound_payment_intents_one_connection_chk`** (`num_nonnulls(...) = 1`), **`impound_payment_intents_group_pair_chk`** (emenda
+    §6.2.2), coluna **gerada** `account_scope` (emenda §8.2.5), UNIQUE parcial do link aberto `impound_payment_intents_live_link_key`
+    só em `pending`/`cancel_requested`, FKs para `tenants` e `impound_processes`, RLS ENABLE + FORCE + política do GUC.
+  - M-REC-2: tabela global (exceção declarada, sem RLS), as duas colunas de conexão + o grupo, os mesmos CHECKs de conta e
+    `refund_requested_at`.
+  - **Leitura minha, declarada (§A6):** as colunas de dinheiro têm os nomes do plano (`*_cents`, v3 §4.1, e as âncoras literais das
+    mutações) e o tipo do plano (`DECIMAL(12,2)` = reais, v3 §7); a app converte para centavos inteiros de forma exata
+    (`moneyStringToCents`/`centsToMoneyString`, T-DOM-5). O nome e o tipo vêm os dois do plano; não troquei nenhum.
+  - **Drift do Prisma medido (o K12 do `cheque-title-link-migration-drill-db`):** `prisma migrate diff --from-config-datasource
+    --to-schema` na base migrada dá **72 sentenças, as mesmas 72 da fixture** (0 a mais, 0 a menos). A coluna gerada entra no
+    schema como `@default(dbgenerated("…"))` com a expressão exata que o Postgres devolve; CHECKs e UNIQUE parcial são raw-only.
+- **V (V1)** — commit `test(…)` com a M-REC-1 sem a identidade, sem `one_connection` e sem `group_pair`, a M-REC-2 sem os dois CHECKs
+  de conta, e `listByProcess` sem `tenant_id` (base nova `rec01v`): `[DB] tests/rec-01-domain-db.test.ts` →
+  `not ok 4 - T-DOM-db-5`: `expected 23514 impound_payment_intents_money_identity_chk, got insert ok` (o texto da v3);
+  `not ok 5 - T-DOM-db-7`: `as duas conexões nulas: expected 23514 …one_connection_chk, got insert ok` (o da emenda);
+  `not ok 6 - T-ISO-db-1`: `listByProcess trouxe a cobrança de B para A`; `# tests 6 # pass 3 # fail 3 # skipped 0`.
+  Nota: no T-ISO-db-1 o 404 vem da checagem de existência do processo (filtrada por organização) e se manteve; o vermelho apareceu
+  na asserção "a lista só traz A", que é a mesma propriedade.
+- **Ajuste antes das mutações (commit `refactor`):** a restrição que era a última da lista foi movida, para que "apagar a linha" de
+  qualquer restrição mutada deixe SQL válido (senão a mutação daria erro de sintaxe, não vermelho de negócio).
+- **M** — cada mutação de migração roda numa base NOVA (`rec01m`, recriada por `f4run.sh`), migra e executa
+  `[DB] rec-01-domain-db` + `[SB] rec-01-live-link-guard`; restauro com hash igual, `git status --porcelain` vazio:
+
+| # | troca | resultado |
+|---|---|---|
+| F4-M1 | M-REC-1 · apagar a linha da identidade | `not ok 4 - T-DOM-db-5`: `expected 23514 …money_identity_chk, got insert ok` |
+| F4-M2 | M-REC-1 · UNIQUE parcial só `('pending')` | `not ok 1 - T-DOM-db-1` (`pending com irmã em cancel_requested: … got insert ok`) e `not ok 1 - T-DOM-26` |
+| F4-M3 | M-REC-1 · UNIQUE com `'funds_held', 'disputed'` | `not ok 2 - T-DOM-db-6` (a transição bate na UNIQUE) e `not ok 1 - T-DOM-26` |
+| F4-M4 | M-REC-1 · apagar `FORCE ROW LEVEL SECURITY` | `not ok 3 - T-DOM-db-2` (catálogo `relforcerowsecurity`) |
+| F4-M5 (emenda) | M-REC-1 · apagar a linha `one_connection_chk` | `not ok 5 - T-DOM-db-7`: `as duas conexões nulas: … got insert ok` |
+| F4-M6 (emenda) | M-REC-1 · `= 1` → `>= 1` | `not ok 5 - T-DOM-db-7`: `as duas conexões preenchidas: … got insert ok` |
+| F4-M7 (emenda §6.4) | M-REC-1 · apagar a linha `group_pair_chk` | `not ok 5 - T-DOM-db-7`: `grupo sem conexão de grupo: … got insert ok` |
+| F4-M8 (emenda §10) | repositório · `listByProcess` sem `tenant_id` | `not ok 6 - T-ISO-db-1` (`listByProcess trouxe a cobrança de B para A`) |
+
+  Sobre a F4-M4: o papel efêmero não é dono da tabela, e a política vale para ele com ou sem FORCE; o FORCE só muda o dono. Por isso
+  o T-DOM-db-2 afirma também o catálogo (`relrowsecurity`, `relforcerowsecurity`, a política) além do comportamento (B vê 0, recebe
+  404, e a escrita com o `tenant_id` de A dá 42501).
+- **C:** `[DB] tests/rec-01-domain-db.test.ts` → `# tests 6 # pass 6 # fail 0 # skipped 0` (emenda §10: 6) ·
+  `[SB] tests/rec-01-live-link-guard.test.ts` → `# pass 1 # fail 0 # skipped 0`. `npx tsc --noEmit` → limpo.
