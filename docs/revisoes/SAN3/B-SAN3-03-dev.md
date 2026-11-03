@@ -672,3 +672,22 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** `git add docs/revisoes/SAN3/B-SAN3-03-dev.md && git commit`, seguido de push
   e `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 17
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado.
+- **Head de produto conferido:** `d4e0e819a038c292357a6a6ac978bf1e7b65bc70`, igual ao remoto e com
+  árvore limpa antes deste registro.
+- **Check-runs:** consulta à API de checks — **exit 0**, **16/16 concluídos**, zero conclusão diferente
+  de `success`/`skipped`; runs `41564109472` (`push`) e `41564116291` (`pull_request`) terminaram com
+  sucesso, inclusive os dois jobs `docker` dependentes.
+- **TAP do push, lido com `gh run view 41564109472 --job <job> --log`:** `backend` — **4.360 testes,
+  4.358 pass, 0 fail, 2 skipped**; `backend-postgres` — **493 testes, 493 pass, 0 fail, 0 skipped**.
+- **TAP do PR, lido com `gh run view 41564116291 --job <job> --log`:** `backend` — **4.360 testes,
+  4.358 pass, 0 fail, 2 skipped**; `backend-postgres` — **493 testes, 493 pass, 0 fail, 0 skipped**.
+- **Feito:** C1, C2, C3 e C4, bateria local do §6, mutações e CI do head de produto concluídos. Este
+  registro é a única alteração posterior; após o push, o CI do head documental final também será
+  aguardado e seus TAPs serão lidos antes da devolução ao orquestrador.
+- **Arquivos meio-escritos:** nenhum.
+
+PRONTO PARA CONFERÊNCIA
