@@ -146,6 +146,33 @@ test("T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ", asy
   });
 });
 
+test("T-SUM-10 · summary recusa qualquer chave desconhecida", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+
+    for (const query of [
+      "PeriodStart=2026-06-01",
+      "periodStart[]=2026-06-01&periodEnd[]=2026-06-30",
+      "periodStart=2026-06-01&periodEnd=2026-06-30&status=completed",
+    ]) {
+      const response = await requestJson(
+        baseUrl,
+        `/api/v1/platform/cloud-cost-allocations/summary?${query}`,
+        { headers: platformHeaders() },
+      );
+      assertInvalidPeriod(response, "summary_query_invalid");
+    }
+
+    const runs = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/runs?PeriodStart=2026-06-01",
+      { headers: platformHeaders() },
+    );
+    assert.equal(runs.status, 200, "a listagem de runs continua ignorando chave desconhecida");
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;

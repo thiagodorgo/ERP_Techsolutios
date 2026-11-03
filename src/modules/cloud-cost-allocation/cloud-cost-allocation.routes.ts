@@ -92,10 +92,23 @@ function parseRunFilters(query: Record<string, unknown>) {
 }
 
 function parseSummaryFilters(query: Record<string, unknown>) {
+  assertSummaryQueryKeys(query);
   return {
     periodStart: readSummaryDate(query, "periodStart"),
     periodEnd: readSummaryDate(query, "periodEnd"),
   };
+}
+
+function assertSummaryQueryKeys(query: Record<string, unknown>): void {
+  const allowedKeys = new Set(["periodStart", "periodEnd"]);
+  if (Object.keys(query).some((key) => !allowedKeys.has(key))) {
+    throw new CloudCostAllocationError(
+      400,
+      "CLOUD_COST_ALLOCATION_INVALID_PERIOD",
+      "summary_query_invalid",
+      "Summary query accepts only periodStart and periodEnd.",
+    );
+  }
 }
 
 function parseAllocationFilters(query: Record<string, unknown>) {

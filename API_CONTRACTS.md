@@ -321,6 +321,8 @@ default. Mudar o default do detalhe é contrato do painel, fora deste bloco.
 - chave presente vazia, repetida, fora do formato literal `AAAA-MM-DD` ou com data de calendário impossível
   → `400`, mesmo `code`, `reason: "summary_period_invalid"`; a data é interpretada à meia-noite UTC e não
   aceita hora, fuso nem espaços;
+- qualquer chave além de `periodStart` e `periodEnd`, inclusive variação de caixa ou sufixo `[]` → `400`,
+  mesmo `code`, `reason: "summary_query_invalid"`;
 - sem as duas chaves, mantém o resumo mais recente; com as duas válidas, exige o período exato.
 
 Tags de organização ambíguas nunca são atribuídas: a linha inteira entra em `unallocated` com
