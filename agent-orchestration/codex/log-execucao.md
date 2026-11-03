@@ -5124,3 +5124,12 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
   → `2b65f51a` 683; `origin/main` 701; `d3e80027` 708.
 - O conserto pós-junta acrescenta mais 1 pendência (`P-MOBILE-BANNER-PROMETE-SINCRONIZAR`); o índice é regenerado pelo
   gerador no mesmo commit, e o número final fica no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
+
+## 2026-11-02 — registro pendente, segundo lote (`reg-0211b-sol`)
+
+- Autor: Codex GPT-5.6 Sol, nível menor declarado; verificação prevista por Claude, conforme `D-UM-FAZ-OUTRO-VERIFICA`.
+- Base medida: `origin/main@7c89c73b`. As seções anteriores do `REGISTRO-PENDENTE.md` já absorvidas pelos PRs #475, #479, #480 e #482 não foram duplicadas.
+- Registrados: `D-FABLE-SUSPENSO-0211`, `D-CNPJ-UNICO-FILIAIS-DOIS-MODOS`, as falas literais de 02/11 com horário e as leituras do orquestrador separadas; conflitos §A2 de recebimento/repasse e assinatura da filial, sem resolução.
+- Pendências: `P-TK11H-BARREIRA-FASE` (1/30 observações conhecidas; 0/25 na pré-revisão do #484; origem #456), `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`, `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS` e `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`, todas com status e bloco dono. Apensos em `P-APARENCIA-POR-USUARIO` e `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`.
+- Ata do #483: `omega/juntas/J-B-O6R-11-PR483.md`; votos, evidências, logs, triagem, conferência, porteiro e contraprova em `omega/juntas/votos/B-O6R-11-PR483/`. Dados do PR confirmados por `gh pr view 483`: merge `7c89c73b`, head aprovado `df84cd81`, `MERGED` em `2026-11-02T17:04:13Z`.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, contratos raiz ou lockfiles.

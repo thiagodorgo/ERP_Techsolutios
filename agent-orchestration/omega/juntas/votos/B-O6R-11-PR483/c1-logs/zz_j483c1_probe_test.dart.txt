@@ -1,0 +1,55 @@
+// SONDA TEMPORÁRIA da cadeira C1 (jurado-o6r11-c1-opus). Não é do PR; apagada ao fim.
+import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_queue_reclaim_service.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _SlowStore implements SyncActionStore {
+  _SlowStore(this._inner);
+  final InMemorySyncActionStore _inner;
+  @override
+  Future<List<SyncAction>> load() async {
+    final snap = await _inner.load();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    return snap;
+  }
+
+  @override
+  Future<void> save(List<SyncAction> actions) => _inner.save(actions);
+}
+
+void main() {
+  test('sonda: escrita concorrente durante o resgate sobrevive?', () async {
+    final x = SyncAction(
+      clientActionId: 'x1',
+      tenantId: 't1',
+      type: ChecklistSyncActionTypes.answerUpsert,
+      payload: const {'local_run_id': 'r1'},
+      status: SyncStatus.syncing,
+      createdAt: DateTime.utc(2026, 11, 2),
+    );
+    final queue = PersistentSyncQueueRepository(
+      _SlowStore(InMemorySyncActionStore([x])),
+    );
+    final service = SyncQueueReclaimService(
+      queue: queue,
+      expenseChannelOff: () => true,
+    );
+
+    final reclaim = service.reclaimTenant('t1');
+    // Outro escritor (ex.: carimbo de server_run_id) grava a mesma ação
+    // depois da leitura do resgate e antes da escrita dele.
+    final stamp = queue.update(
+      x.copyWith(payload: {...x.payload, 'server_run_id': 'srv-1'}),
+    );
+    await Future.wait([reclaim, stamp]);
+
+    final after = (await queue.actionsForTenant('t1')).single;
+    // ignore: avoid_print
+    print('SONDA status=${after.status} payload=${after.payload} '
+        'code=${after.lastErrorCode}');
+    expect(after.payload['server_run_id'], 'srv-1');
+  });
+}

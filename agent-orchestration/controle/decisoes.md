@@ -4230,3 +4230,30 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Estado:** o trabalho migrou da N3SOH82 para a RYZENCASA. A Fase 2 foi aprovada pelo dono com ressalvas, registradas na linha de base (mensagem do dono à sessão de 01/11, transmitida pelo orquestrador; confirmação em `erp-pausa-2026-10-03/painel/estado.json:32`). As ressalvas medidas ficam em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:59-97,115-117`; a linha de base foi escrita antes da aprovação e, por isso, ainda diz “aguardando o ok” na linha 117.
 - **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
 - **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.
+
+## D-FABLE-SUSPENSO-0211 (decisão do dono, 2026-11-02, ~14:00 SP) — Fable suspenso; topo em Opus Ultra Code
+
+- **Fala literal do dono, com data e hora:** 02/11/2026, ~14:00 SP — *"o fable esta suspenso, use o opus ultra code"*.
+- **Efeito:** enquanto vigorar a suspensão, todo papel de topo roda em Opus e declara no artefato e na ata o papel, o modelo e o motivo: Fable suspenso por ordem do dono. O frontmatter do `planejador-mestre` continua `fable`; a substituição é do invocador, conforme §C7.6-bis.
+- **Leitura do orquestrador, declarada (§A6):** tarefa substantiva de topo usa Workflow em modo Ultra Code. A fala suspende o uso do Fable; não altera silenciosamente o arquivo do papel nem os demais limites do §C7.6-bis.
+
+## D-CNPJ-UNICO-FILIAIS-DOIS-MODOS (decisão do dono, 2026-11-02) — grupo de filiais compartilha CNPJ, conta e APIs; cliente individual usa credenciais próprias
+
+- **Fala literal do dono, 02/11/2026, ~14:38 SP:** *"a principio so vai ter um cnpj, uma conta bancaria. os primeiros 100 clientes serao filiais, todos vao compartilhar api de notas e pagamento"*.
+- **Fala literal do dono, 02/11/2026, ~14:40 SP:** *"poderar ter mais clientes que vao ter api de notas e pagamentos individuais"*.
+- **Respostas literais do dono, 02/11/2026, ~14:47 SP:** à pergunta se a filial em outra cidade teria CNPJ próprio, *"nao, cnpj unico"*; à pergunta se o modo com API própria entra já no MVP ou em bloco posterior, *"sim"*; à pergunta de quem cadastra as credenciais do cliente com API própria, *"os dois. com trava do lado da plataforma para liberar ou nao o cliente fazer isso"*.
+- **Fala literal do dono, 02/11/2026, ~14:50 SP:** *"as apis nao podem ser quaalquer uma, somente as validadas pela plataforma"*.
+- **Respostas literais do mapa de impacto, 02/11/2026, ~15:00 SP:**
+  - CNPJ único: *"De um cliente com 100 filiais"*.
+  - Estrutura das filiais: *"orgamizacao propria, mas um usuario de uma pode receber permissa para outra ou outras filiais"*.
+  - Assinatura da filial: *"Não, só vê uso e custo"*.
+  - Provedores validados no MVP: *"Só Asaas e Focus"*.
+- **Fatos decididos pelo dono:** o CNPJ e a conta compartilhados pertencem a um cliente com 100 filiais, não à plataforma; cada filial é uma organização própria; um usuário pode receber permissão para outras filiais; a filial não paga assinatura e só vê uso e custo; haverá clientes com APIs individuais; plataforma e administrador da organização podem cadastrar credenciais, mas o administrador só o faz quando a plataforma liberar; a lista do MVP é fechada em Asaas e Focus.
+- **Leituras do orquestrador, declaradas (§A6):** há dois modos por organização. No modo **compartilhado**, organizações-filiais do mesmo cliente usam o CNPJ, a conta e as credenciais desse cliente; o dinheiro não passa pela plataforma e não há repasse entre empresas. No modo **individual**, a organização usa suas credenciais próprias e recebe diretamente. A resposta *"sim"* foi lida como escolha da primeira alternativa — o modo individual entra já no MVP. A trava para o administrador da organização nasce fechada e é liberada pela plataforma por organização. Fora da lista validada, o backend recusa; uma integração só entra depois de validação.
+- **Limite:** essas leituras não resolvem os conflitos §A2 abaixo nem autorizam integração, migração ou chamada externa neste PR de registro.
+
+## CONFLITOS-0211-CNPJ-ASSINATURA (§A2, registrados em 2026-11-02) — não consolidados
+
+- **`D-PLATAFORMA-RECEBE-E-REPASSA` × falas de 02/11:** a decisão de 31/10 diz que a plataforma recebe e repassa ao cliente. As respostas de 02/11 dizem que o CNPJ e a conta compartilhados são de um cliente com 100 filiais e que, no modo individual, a organização usa credenciais próprias. O recebimento pela plataforma fica em conflito com os dois modos. **Não resolvido:** `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS`, dono `B-PATIO-RECEBIMENTO`.
+- **`D-COBRANCA-ASSINATURA-FRANQUIA` × *"Não, só vê uso e custo"*:** a decisão de 30/10 descreve assinatura por cliente/organização com franquia; em 02/11 o dono disse que cada filial é organização própria e que a filial não paga assinatura. **Não resolvido:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`, dono `B-ASSINATURA`.
+- **Regra aplicada:** os dois lados ficam preservados; nenhum foi escolhido ou revogado neste registro.

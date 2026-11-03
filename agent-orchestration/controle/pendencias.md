@@ -11066,6 +11066,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
 - **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
+- **Apenso 2026-11-02:** a lista de Pátios do #461 já tem A/B/C, mas Processos, Liberações, Leilões, Perfis, Tarifas e Painel do pátio ainda não têm maquete de 3 opções. Elas permanecem nesta pendência: maquete pelo Claude antes do desenvolvimento, depois dos bloqueantes. Vagas e dossiê já têm maquete aprovada e foram separados em `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`.
 - **editor de checklist registrado (B-SAN3-22, 2026-10-26):** `checklist-editor` entrou em `APPEARANCE_SCREENS` (A "Padrão fiel" · B "Analítica" · C "Painel de impacto", padrão A); o editor lê a escolha por `useScreenAppearance("checklist-editor")`.
 - **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
 - **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
@@ -12325,6 +12326,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** ligar o recebimento em produção.
 - **origem:** `D-PLATAFORMA-RECEBE-E-REPASSA`: a plataforma recebe e repassa ao cliente. O parecer é leitura do orquestrador, declarada, não fala do dono.
 - **Hipótese, não medida:** receber dinheiro de terceiros e repassar pode ter consequência regulatória e tributária; só o parecer responde.
+- **Apenso 2026-11-02 — risco, não decisão:** o dono definiu CNPJ único para um cliente com 100 filiais-organizações, inclusive em outras cidades. A nota de serviço sairia pelo cadastro municipal desse CNPJ; a incidência de ISS conforme o local da prestação precisa de parecer de advogado e contador. Isto não trava o desenvolvimento e não é tratado aqui como conclusão jurídica.
 - **encerramento:** parecer de advogado e de contador registrado, e a decisão do dono sobre ele, antes de qualquer recebimento real em produção.
 
 ## P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram, e o custo real — MÉDIA
@@ -12371,3 +12373,36 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **evidência:** `git log --format='%h %ad' --date=short -S'alteracoes serao sincronizadas' origin/main -- mobile/flutter_app/lib/shared/ui/erp_components.dart`
   → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
 - **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.
+
+## P-TK11H-BARREIRA-FASE (2026-11-02) — T-K11h identifica statement bloqueado, não o PID e a fase/tentativa — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-12x` (trilha financeira) · **prioridade:** BAIXA · **bloqueia:** não bloqueia o `B-SAN3-03`.
+- **origem:** o teste `tests/financial-title-status-cas-db.test.ts` nasceu no commit `37a3f360`, de 25/10/2026, PR #456. O `B-SAN3-03` cita esta pendência na Emenda 2, achado A6.
+- **medição de 02/11:** o job `backend` do run `41416989996` no head `fb3d2575` falhou 1/4.346 em T-K11h — *"changeStatus perdedor (estado mudou duas vezes): tinha de RECUSAR e aceitou"* — e outra execução do mesmo head passou. A pré-revisão do #484 executou o caso 20 vezes isolado e 5 vezes com a suíte, com **0/25** falhas; somadas as observações conhecidas, **1/30 (3,33%)**.
+- **causa medida:** a segunda barreira encontra algum statement ativo bloqueado com o mesmo `application_name` e fragmento `financial_titles`, mas não identifica PID nem fase/tentativa. Um casamento transitório pode soltar W2 cedo e permitir a releitura legítima de `in_dispute`. A evidência é de barreira não determinística, não de defeito provado no CAS.
+- **encerramento:** a barreira identifica sem ambiguidade a conexão e a fase/tentativa esperadas; T-K11h passa em série dirigida suficiente e continua provando os quatro desfechos do CAS.
+
+## P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS (2026-11-02) — vagas e dossiê ainda usam o visual antigo — prioridade a definir
+
+- **status:** ABERTA, adiada até o fim dos bloqueantes · **escopo:** tela/UX já aprovada · **dono:** `B-PATIOS-VAGAS-DOSSIE-3-APARENCIAS` (bloco a planejar) · **prioridade:** A DEFINIR depois dos bloqueantes · **bloqueia:** nada agora.
+- **fala literal do dono, 02/11/2026, ~13:30 SP, pergunta inicial:** *"claude, eu tinha pedido a vc no pc velho uns upgrades no patio, verifiquei que ainda esta com o visual velho, procure informacoes sobre isso e me retorne para eu analisar"*.
+- **fala literal do dono, 02/11/2026, ~13:30 SP, depois do relatório:** *"derrube os servers abertos, anote isso, apos terminarmos os bloqueantes vamos ver isso"*.
+- **medido em `origin/main@7c89c73b`:** a maquete `docs/claude-code-handoff/screen-refs/patios-3opcoes.reference.html` foi aprovada em 14/10, com fluxo pátios → vagas → dossiê nas três aparências; a preferida é B (Analítica), com “Mover · Liberar · Editar” numa linha no cartão da vaga. O #461 entregou apenas a lista (`PatiosPage.tsx` e `PatiosViewA/B/C`, padrão B). `PatioDetailPage.tsx` e `OccupancyMap.tsx` têm último commit em 01/08; `VehicleDossieModal.tsx`, em 02/08; nenhum usa `useScreenAppearance`.
+- **fonte ausente, declarada:** o texto original do pedido feito no PC antigo não veio no pacote de migração. Esta pendência registra somente a fala de 02/11 e o que foi medido no repositório.
+- **encerramento:** vagas e dossiê implementam A/B/C conforme a maquete aprovada, preservando a ressalva da linha única, com plano e desenvolvimento de tela após os bloqueantes.
+
+## P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS (2026-11-02) — `D-PLATAFORMA-RECEBE-E-REPASSA` × CNPJ/conta do cliente — ALTA
+
+- **status:** ABERTA · **escopo:** conflito §A2 de produto, financeiro e fiscal · **dono:** `B-PATIO-RECEBIMENTO` · **prioridade:** ALTA antes de implementar recebimento · **bloqueia:** consolidar o desenho de recebimento e repasse; não bloqueia este PR documental.
+- **lado de 31/10:** `D-PLATAFORMA-RECEBE-E-REPASSA` diz que a plataforma recebe e repassa ao cliente.
+- **lado de 02/11:** o dono disse *"De um cliente com 100 filiais"*, *"nao, cnpj unico"* e admitiu clientes com APIs individuais; a leitura declarada é que, no modo compartilhado, CNPJ, conta e credenciais pertencem ao cliente do grupo, e, no individual, pertencem à organização. Em ambos, o dinheiro não precisaria passar pela plataforma.
+- **estado:** conflito registrado sem escolher um lado, revogar decisão ou consolidar plano.
+- **encerramento:** decisão explícita do dono define, por modo, quem recebe, quem emite, se existe repasse/split e o destino da antiga decisão.
+
+## P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO (2026-11-02) — filial é organização própria, mas não paga assinatura — ALTA
+
+- **status:** ABERTA · **escopo:** conflito §A2 de cobrança SaaS · **dono:** `B-ASSINATURA` · **prioridade:** ALTA antes de implementar cobrança · **bloqueia:** consolidar plano, fatura e entitlement das filiais; não bloqueia este PR documental.
+- **lado de 30/10:** `D-COBRANCA-ASSINATURA-FRANQUIA` descreve preço por cliente/organização, com franquia de usuários e espaço e cobrança de excedente.
+- **lado de 02/11:** o dono disse que cada filial é *"orgamizacao propria"* e, à pergunta se paga assinatura, respondeu *"Não, só vê uso e custo"*.
+- **estado:** conflito registrado sem inferir se a assinatura pertence ao grupo econômico, à matriz ou a outra entidade de cobrança.
+- **encerramento:** decisão explícita do dono define o assinante do grupo, o agregador de franquia/excedente e o comportamento de cada organização-filial.
