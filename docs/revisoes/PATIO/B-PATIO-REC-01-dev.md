@@ -43,3 +43,27 @@ Leitura: as quatro baselines batem com a v3 §9.1 F0. `N_san3` fica fixado em **
 
 - **C:** `[SB] tests/rec-01-state-machine.test.ts tests/rec-01-validators.test.ts` → `# tests 10 # pass 10 # fail 0 # skipped 0`
   (emenda §3.1: 10). `npx tsc --noEmit` → limpo.
+
+## RETOMADA 2 — F2 (`getSettleableDueCents`, regras de criação, R-ISO T-ISO-1)
+
+- **Entrega:** `ChargeService.getSettleableDueCents` (método novo, só leitura; `git diff origin/main -- src/modules/charging | grep -c "^-[^-]"` → 0);
+  fiação de memória do serviço (`createMemoryImpoundPaymentService`, portas fail-closed por padrão); testes T-DOM-7..12, 12b (nada
+  devido), 12c (caminho feliz em memória: `pending`, valor devido, referência `open`, fila `patio:<id>` sem `split`), T-DOM-24, T-DOM-25
+  e o canário T-ISO-1 (emenda §10).
+- **V (V1)** — commit `test(…)` com `getSettleableDueCents` devolvendo `getPublicSummary().totalDueCents`:
+  `[SB] tests/rec-01-intent-service.test.ts tests/charging-daily-engine.test.ts` → `not ok 28 - T-DOM-24` com `expected 35000, got 38000`
+  (o texto da v3) e `not ok 29 - T-DOM-25`; `# tests 30 # pass 28 # fail 2 # skipped 0`.
+- **M** (âncora = 1, restauro com hash igual, `git status --porcelain` vazio):
+
+| # | arquivo · troca | resultado |
+|---|---|---|
+| F2-M1 | `charge.service.ts` · apagar `if (overAccrued.has(line.id)) continue;` | `not ok 28 - T-DOM-24`: `expected 35000, got 38000`; `# pass 29 # fail 1` |
+| F2-M2 | `impound-payment.service.ts` · apagar a checagem `reconciliation_pending` | `not ok 29 - T-DOM-25`; `# pass 29 # fail 1` |
+| F2-M3 | `impound-payment.types.ts` · `LIVE_INTENT_STATUSES` sem `"funds_held"` | `not ok 24 - T-DOM-11` (`expected 'held_funds_pending'`); `# pass 29 # fail 1` |
+| F2-M4 (emenda §10) | `impound-payment.service.ts` · apagar `assertRowsBelongToTenant(siblings, …)` | `not ok 30 - T-ISO-1`: `create leu a irmã de B`; `# pass 29 # fail 1` |
+| F2-M5 (emenda §10) | `impound-payment.service.ts` · apagar `assertRowsBelongToTenant(intents, …)` | `not ok 30 - T-ISO-1`: `list devolveu a linha de B`; `# pass 29 # fail 1` |
+
+  O serviço tem 2 chamadas do canário (irmãs na criação; leitura); a mutação da emenda ("apagar o `assertRowsBelongToTenant`") foi
+  aplicada a cada uma, com âncora única, e as duas mordem.
+- **C:** `[SB] tests/rec-01-intent-service.test.ts tests/charging-daily-engine.test.ts` → `# tests 30 # pass 30 # fail 0 # skipped 0`
+  = 11 + 19 (emenda §10: 11). `npx tsc --noEmit` → limpo.
