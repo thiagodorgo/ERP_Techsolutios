@@ -616,3 +616,25 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** remover a linha em branco final do comando do bloco e editar os registros/docs
   permitidos da C4.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 15
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado.
+- **Head inicial:** `02b09335`, igual ao remoto; C3 enviada.
+- **C4 — registro:** removida a linha em branco final de
+  `agent-orchestration/codex/comandos/B-SAN3-03-cloud-billing-exato.md`; `API_CONTRACTS.md` agora registra
+  os 400 `summary_period_incomplete`/`summary_period_invalid` e os motivos
+  `ambiguous_tenant_tag`/`unknown_tenant_tag`.
+- **Pendências:** aberta `P-TK11H-BARREIRA-FASE` com origem #456, frequência conhecida **1/30**, dona
+  `B-SAN3-12x` e sem bloqueio; `P-SAN303-TAG-DESCONHECIDA` ficou como registro FECHADO da leitura do
+  autor; nota `B-SAN3-03` registra A1 e A5 fechados pela Emenda 2.
+- **Índice:** `python agent-orchestration/controle/gerar-indice-pendencias.py` — **exit 0**:
+  **712 cabeçalhos / 701 IDs; 531 abertas, 177 fechadas, 4 sem status**. As duas entradas novas aparecem
+  no índice gerado.
+- **Validação C4:** `git diff --check origin/main...HEAD` — **exit 0, saída vazia** após o commit
+  `96cfbf6d`; filtro de proibidos em `git diff --name-only origin/main...HEAD` — **exit 0, saída vazia**.
+- **Feito:** C4 completa, commitada; nenhum código, Prisma, migração, frontend, KPI, lockfile ou CI tocado.
+- **Falta:** bateria §6, commit deste relatório, push, CI e leitura TAP de `backend`/`backend-postgres`.
+- **Próximo comando exato:** executar a bateria dirigida da Emenda 1 + Emenda 2 com o Postgres próprio já
+  saudável em `127.0.0.1:55464`.
+- **Arquivos meio-escritos:** nenhum.
