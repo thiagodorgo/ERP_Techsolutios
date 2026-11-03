@@ -13,6 +13,91 @@ import type { ProcessesApiContext } from "../processes.types";
 // A UI só molda/valida a escolha; a atomicidade (I1) e as regras (409/422) vivem no backend.
 const footerStyle = { display: "flex", justifyContent: "flex-end", gap: "var(--space-8)", marginTop: "var(--space-16)" } as const;
 
+export function SpotPickerSelectors({
+  yards,
+  yardId,
+  spots,
+  spotId,
+  loadingYards,
+  loadingSpots,
+  yardsError,
+  spotsError,
+  onYardChange,
+  onSpotChange,
+  onRetryYards,
+  onRetrySpots,
+}: {
+  readonly yards: readonly YardItem[];
+  readonly yardId: string;
+  readonly spots: readonly YardSpotItem[];
+  readonly spotId: string;
+  readonly loadingYards: boolean;
+  readonly loadingSpots: boolean;
+  readonly yardsError: string | null;
+  readonly spotsError: string | null;
+  readonly onYardChange: (yardId: string) => void;
+  readonly onSpotChange: (spotId: string) => void;
+  readonly onRetryYards: () => void;
+  readonly onRetrySpots: () => void;
+}) {
+  return (
+    <>
+      <Select
+        label="Pátio de destino *"
+        value={yardId}
+        onChange={(event) => onYardChange(event.target.value)}
+        required
+        disabled={loadingYards || Boolean(yardsError)}
+      >
+        <option value="">{loadingYards ? "Carregando pátios…" : "Selecione o pátio…"}</option>
+        {yards.map((yard) => (
+          <option key={yard.id} value={yard.id}>
+            {yard.name}
+          </option>
+        ))}
+      </Select>
+
+      {yardsError ? (
+        <div role="alert">
+          <Alert title="Não foi possível carregar os pátios" tone="warning">
+            {yardsError}{" "}
+            <Button type="button" size="sm" variant="secondary" onClick={onRetryYards}>
+              Tentar de novo
+            </Button>
+          </Alert>
+        </div>
+      ) : null}
+
+      <Select
+        label="Vaga livre *"
+        value={spotId}
+        onChange={(event) => onSpotChange(event.target.value)}
+        required
+        disabled={!yardId || loadingSpots || Boolean(spotsError)}
+      >
+        <option value="">{loadingSpots ? "Carregando vagas…" : "Selecione a vaga…"}</option>
+        {spots.map((spot) => (
+          <option key={spot.id} value={spot.id}>
+            {spot.code} · {spot.vehicleClassLabel}
+            {spot.covered ? " · Coberta" : ""}
+          </option>
+        ))}
+      </Select>
+
+      {spotsError ? (
+        <div role="alert">
+          <Alert title="Não foi possível carregar as vagas" tone="warning">
+            {spotsError}{" "}
+            <Button type="button" size="sm" variant="secondary" onClick={onRetrySpots}>
+              Tentar de novo
+            </Button>
+          </Alert>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function SpotPickerModal({
   processId,
   mode,
@@ -32,33 +117,56 @@ export function SpotPickerModal({
   const [yardId, setYardId] = useState("");
   const [spots, setSpots] = useState<YardSpotItem[]>([]);
   const [spotId, setSpotId] = useState("");
+  const [loadingYards, setLoadingYards] = useState(true);
   const [loadingSpots, setLoadingSpots] = useState(false);
+  const [yardsError, setYardsError] = useState<string | null>(null);
+  const [spotsError, setSpotsError] = useState<string | null>(null);
+  const [yardsReload, setYardsReload] = useState(0);
+  const [spotsReload, setSpotsReload] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void listYardsFromApi(context, { limit: 100 }).then((data) => {
-      if (active) setYards(data.items);
-    });
+    setLoadingYards(true);
+    setYardsError(null);
+    void listYardsFromApi(context, { limit: 100 })
+      .then((data) => {
+        if (active) setYards(data.items);
+      })
+      .catch(() => {
+        if (!active) return;
+        setYards([]);
+        setYardsError("Tente novamente para consultar os pátios disponíveis.");
+      })
+      .finally(() => {
+        if (active) setLoadingYards(false);
+      });
     return () => {
       active = false;
     };
-  }, [context]);
+  }, [context, yardsReload]);
 
   useEffect(() => {
     if (!yardId) {
       setSpots([]);
       setSpotId("");
+      setSpotsError(null);
       return;
     }
     let active = true;
     setLoadingSpots(true);
+    setSpotsError(null);
     void getYardOccupancy(context, yardId)
       .then((occ) => {
         if (!active) return;
         // Só vagas LIVRES são destino válido (a vaga de origem não aparece).
         setSpots(occ.items.filter((spot) => spot.status === "FREE" && spot.id !== fromSpotId));
+      })
+      .catch(() => {
+        if (!active) return;
+        setSpots([]);
+        setSpotsError("Tente novamente para consultar as vagas livres.");
       })
       .finally(() => {
         if (active) setLoadingSpots(false);
@@ -66,7 +174,7 @@ export function SpotPickerModal({
     return () => {
       active = false;
     };
-  }, [yardId, context, fromSpotId]);
+  }, [yardId, context, fromSpotId, spotsReload]);
 
   const freeSpots = useMemo(() => spots, [spots]);
 
@@ -108,26 +216,29 @@ export function SpotPickerModal({
           </Alert>
         ) : null}
 
-        <Select label="Pátio de destino *" value={yardId} onChange={(event) => setYardId(event.target.value)} required>
-          <option value="">Selecione o pátio…</option>
-          {yards.map((yard) => (
-            <option key={yard.id} value={yard.id}>
-              {yard.name}
-            </option>
-          ))}
-        </Select>
+        <SpotPickerSelectors
+          yards={yards}
+          yardId={yardId}
+          spots={freeSpots}
+          spotId={spotId}
+          loadingYards={loadingYards}
+          loadingSpots={loadingSpots}
+          yardsError={yardsError}
+          spotsError={spotsError}
+          onYardChange={(nextYardId) => {
+            // Já no mesmo quadro: sem vagas antigas e sem "Nenhuma vaga livre" antes de a consulta começar.
+            setYardId(nextYardId);
+            setSpotId("");
+            setSpots([]);
+            setSpotsError(null);
+            setLoadingSpots(Boolean(nextYardId));
+          }}
+          onSpotChange={setSpotId}
+          onRetryYards={() => setYardsReload((value) => value + 1)}
+          onRetrySpots={() => setSpotsReload((value) => value + 1)}
+        />
 
-        <Select label="Vaga livre *" value={spotId} onChange={(event) => setSpotId(event.target.value)} required disabled={!yardId || loadingSpots}>
-          <option value="">{loadingSpots ? "Carregando vagas…" : "Selecione a vaga…"}</option>
-          {freeSpots.map((spot) => (
-            <option key={spot.id} value={spot.id}>
-              {spot.code} · {spot.vehicleClassLabel}
-              {spot.covered ? " · Coberta" : ""}
-            </option>
-          ))}
-        </Select>
-
-        {yardId && !loadingSpots && freeSpots.length === 0 ? (
+        {yardId && !loadingSpots && !spotsError && freeSpots.length === 0 ? (
           <p style={{ fontSize: 13, color: "#64748B", marginTop: 8 }}>Nenhuma vaga livre neste pátio. Escolha outro pátio ou libere uma vaga.</p>
         ) : null}
 

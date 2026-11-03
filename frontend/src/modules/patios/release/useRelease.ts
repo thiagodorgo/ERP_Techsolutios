@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { createLatestRequestGate } from "../../../hooks/latestRequestGate";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../providers/TenantProvider";
 import { ApiError } from "../../../services/api/client";
+import { mergeReleaseCheck } from "./release.adapter";
 import { getRelease } from "./release.service";
 import type { ReleaseCheckDto, ReleaseDto } from "./release.types";
 
@@ -24,6 +26,9 @@ export function useRelease(processId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Só a leitura mais nova vale: uma resposta antiga (auto-refresh, recarga anterior) que chega depois não pinta de
+  // novo o estado de ANTES de uma gravação.
+  const gate = useRef(createLatestRequestGate()).current;
 
   const context = useMemo(
     () => ({
@@ -39,14 +44,17 @@ export function useRelease(processId: string | undefined) {
   const reload = useCallback(
     async (background = false) => {
       if (!processId || !activeContext || !canRead) return;
+      const ticket = gate.begin();
       if (!background) setLoading(true);
       setError(null);
       try {
         const view = await getRelease(context, processId);
+        if (!gate.isLatest(ticket)) return;
         setRelease(view?.data ?? null);
         setChecks(view?.checks ?? []);
         setDenied(false);
       } catch (err) {
+        if (!gate.isLatest(ticket)) return;
         if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
           setDenied(true);
         } else {
@@ -57,7 +65,16 @@ export function useRelease(processId: string | undefined) {
         setLoaded(true);
       }
     },
-    [processId, activeContext, canRead, context],
+    [processId, activeContext, canRead, context, gate],
+  );
+
+  // Aplica o requisito como o SERVIDOR o gravou (resposta do POST) e descarta as leituras que já estavam em voo.
+  const applyCheck = useCallback(
+    (saved: ReleaseCheckDto) => {
+      gate.invalidate();
+      setChecks((current) => mergeReleaseCheck(current, saved));
+    },
+    [gate],
   );
 
   useEffect(() => {
@@ -66,5 +83,5 @@ export function useRelease(processId: string | undefined) {
 
   useAutoRefresh(reload, { enabled: Boolean(processId && activeContext && canRead) });
 
-  return { release, checks, loading, error, denied: denied || !canRead, loaded, reload };
+  return { release, checks, loading, error, denied: denied || !canRead, loaded, reload, applyCheck };
 }

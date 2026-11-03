@@ -1,0 +1,254 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 93.0.0 (111.0.0 available)
+  analyzer 10.0.1 (14.7.0 available)
+  build 4.0.6 (5.0.0 available)
+  build_config 1.3.0 (1.4.0 available)
+  build_daemon 4.1.1 (4.1.7 available)
+  build_runner 2.15.0 (2.17.1 available)
+  built_collection 5.1.1 (6.0.0 available)
+  built_value 8.12.6 (8.13.0 available)
+  clock 1.1.2 (1.1.3 available)
+  code_assets 1.2.1 (2.1.0 available)
+  connectivity_plus 6.1.5 (7.3.2 available)
+  coverage 1.15.1 (1.16.0 available)
+  cross_file 0.3.5+2 (0.4.0 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  dart_style 3.1.7 (3.1.14 available)
+  dbus 0.7.14 (0.8.0 available)
+  dio 5.9.2 (5.11.1 available)
+  dio_web_adapter 2.1.2 (2.2.2 available)
+  drift 2.34.0 (2.35.3 available)
+  equatable 2.0.8 (3.0.0 available)
+  file_selector_linux 0.9.4 (0.9.4+1 available)
+  file_selector_macos 0.9.5 (0.9.5+2 available)
+  file_selector_windows 0.9.3+5 (0.9.3+6 available)
+  flutter_riverpod 3.3.2 (3.4.3 available)
+  flutter_secure_storage 10.3.1 (11.2.0 available)
+  flutter_secure_storage_darwin 0.3.2 (0.4.3 available)
+  flutter_secure_storage_linux 3.0.1 (3.0.3 available)
+  flutter_secure_storage_platform_interface 2.0.1 (2.1.1 available)
+  frontend_server_client 4.0.0 (4.2.0 available)
+  geolocator 14.0.3 (14.1.2 available)
+  geolocator_android 5.0.3 (5.2.1 available)
+  geolocator_apple 2.3.14 (2.4.3 available)
+  geolocator_platform_interface 4.2.8 (4.4.1 available)
+  glob 2.1.3 (2.2.0 available)
+  go_router 17.3.0 (18.1.2 available)
+  gsettings 0.2.8 (0.2.9 available)
+  hooks 2.0.2 (2.2.0 available)
+  http_multi_server 3.2.2 (3.2.3 available)
+  image_picker 1.2.2 (1.2.4 available)
+  image_picker_android 0.8.13+17 (0.8.13+25 available)
+  image_picker_ios 0.8.13+6 (0.8.13+14 available)
+  image_picker_platform_interface 2.11.1 (2.11.2 available)
+  io 1.0.5 (1.1.0 available)
+  jni 1.0.0 (1.1.1 available)
+  jni_flutter 1.0.1 (1.0.4+1 available)
+  matcher 0.12.19 (0.12.20 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.17.0 (1.19.0 available)
+  mime 2.0.0 (2.1.0 available)
+  native_toolchain_c 0.19.1 (0.19.5 available)
+  nm 0.5.0 (0.6.0 available)
+  objective_c 9.4.1 (9.6.2 available)
+  package_config 2.2.0 (3.0.0 available)
+  package_info_plus 10.1.0 (10.2.2 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  petitparser 7.0.2 (7.1.0 available)
+  platform 3.1.6 (3.2.0 available)
+  pool 1.5.2 (1.5.3 available)
+  pub_semver 2.2.0 (2.2.1 available)
+  pubspec_parse 1.5.0 (1.7.0 available)
+  record_use 0.6.0 (1.1.1 available)
+  riverpod 3.3.2 (3.4.3 available)
+  shelf 1.4.2 (1.4.3 available)
+  shelf_static 1.1.3 (1.2.0 available)
+  source_maps 0.10.13 (0.10.14 available)
+  sqlite3 3.3.2 (3.8.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  stream_transform 2.1.1 (2.1.2 available)
+  test 1.30.0 (1.33.0 available)
+  test_api 0.7.10 (0.7.15 available)
+  test_core 0.6.16 (0.6.21 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.2.0 (2.4.4 available)
+  vm_service 15.2.0 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  win32 6.3.0 (6.4.0 available)
+  xml 6.6.1 (7.1.0 available)
+  yaml 3.1.3 (3.1.4 available)
+Got dependencies!
+81 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart                                                         00:01 +0: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart                                                         00:02 +0: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart                                                         00:02 +0: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: ... só retorna depois de gravar as N ações (store com latência)00:02 +0 -1: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: B-O6R-11 material do prestador — fila local 13. addSelection só retorna depois de gravar as N ações (store com latência) [E]
+  Expected: an object with length of <3>
+    Actual: []
+     Which: has length of <0>
+
+  package:matcher                                                                         expect
+  package:flutter_test/src/widget_tester.dart 473:18                                      expect
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 110:9  main.<fn>.<fn>
+
+
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart -p vm --plain-name "B-O6R-11 material do prestador — fila local 13. addSelection só retorna depois de gravar as N ações (store com latência)"
+00:02 +0 -1: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: ... + reinício sobre o Drift → 3 ações pendentes, na ordem  00:02 +0 -2: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: B-O6R-11 material do prestador — fila local 14. o teste do gate: 3 SKUs + reinício sobre o Drift → 3 ações pendentes, na ordem [E]
+  Expected: an object with length of <3>
+    Actual: []
+     Which: has length of <0>
+
+  package:matcher                                                                         expect
+  package:flutter_test/src/widget_tester.dart 473:18                                      expect
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 144:9  main.<fn>.<fn>
+
+
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart -p vm --plain-name "B-O6R-11 material do prestador — fila local 14. o teste do gate: 3 SKUs + reinício sobre o Drift → 3 ações pendentes, na ordem"
+  CouldNotRollBackException: Bad state: This database has already been closed.
+  For context: The transaction was rolled back because of Bad state: This database has already been closed, which was thrown here:
+  #0      DatabaseImplementation._ensureOpen (package:sqlite3/src/implementation/database.dart:72:7)
+  #1      DatabaseImplementation.execute (package:sqlite3/src/implementation/database.dart:295:7)
+  #2      Sqlite3Delegate.runWithArgsSync (package:drift/src/sqlite3/database.dart:151:16)
+  #3      _NativeDelegate.runUpdate.<anonymous closure> (package:drift/native.dart:448:7)
+  #4      new Future.sync (dart:async/future.dart:325:27)
+  #5      _NativeDelegate.runUpdate (package:drift/native.dart:447:19)
+  #6      _BaseExecutor.runUpdate.<anonymous closure> (package:drift/src/runtime/executor/helpers/engines.dart:92:19)
+  #7      _BaseExecutor._synchronized (package:drift/src/runtime/executor/helpers/engines.dart:64:20)
+  #8      _BaseExecutor.runUpdate (package:drift/src/runtime/executor/helpers/engines.dart:89:12)
+  #9      DatabaseConnectionUser.customUpdate.<anonymous closure> (package:drift/src/runtime/api/connection_user.dart:307:23)
+  #10     DatabaseConnectionUser._customWrite.<anonymous closure> (package:drift/src/runtime/api/connection_user.dart:370:20)
+  #11     DatabaseConnectionUser.doWhenOpened.<anonymous closure> (package:drift/src/runtime/api/connection_user.dart:172:16)
+  #12     StackZoneSpecification._registerUnaryCallback.<anonymous closure>.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:127:36)
+  #13     StackZoneSpecification._run (package:stack_trace/src/stack_zone_specification.dart:207:15)
+  #14     StackZoneSpecification._registerUnaryCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:127:24)
+  #15     _rootRunUnary (dart:async/zone_root.dart:48:47)
+  #16     _CustomZone.runUnary (dart:async/zone.dart:733:19)
+  <asynchronous suspension>
+  #17     DatabaseConnectionUser._customWrite (package:drift/src/runtime/api/connection_user.dart:369:20)
+  <asynchronous suspension>
+  #18     DriftSyncActionStore.save.<anonymous closure> (package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart:31:7)
+  <asynchronous suspension>
+  #19     DatabaseConnectionUser.transaction.<anonymous closure>.<anonymous closure> (package:drift/src/runtime/api/connection_user.dart:519:26)
+  <asynchronous suspension>
+  #20     DatabaseConnectionUser.transaction (package:drift/src/runtime/api/connection_user.dart:510:12)
+  <asynchronous suspension>
+  #21     DriftSyncActionStore.save (package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart:30:5)
+  <asynchronous suspension>
+  #22     PersistentSyncQueueRepository.enqueue.<anonymous closure> (package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart:50:5)
+  <asynchronous suspension>
+  #23     PrestadorRepository.addSelection.<anonymous closure> (package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart:137:7)
+  <asynchronous suspension>
+
+  package:drift/src/runtime/api/connection_user.dart 740:7                                   _extension#0.rollbackAfterException
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 _CustomZone.registerBinaryCallback
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 137:7   PrestadorRepository.addSelection.<fn>
+  dart:core                                                                                  Iterable.forEach
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 126:23  PrestadorRepository.addSelection
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 _CustomZone.registerUnaryCallback
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 107:21  PrestadorRepository.addSelection
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 131:38    main.<fn>.<fn>
+
+00:02 +0 -2: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: ... 15. quantidade <= 0 não enfileira nem vira material     00:02 +0 -2: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: B-O6R-11 material do prestador — fila local 14. o teste do gate: 3 SKUs + reinício sobre o Drift → 3 ações pendentes, na ordem [E]
+  Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+  dart:async                                                                                 new Future.error
+  package:drift/src/runtime/executor/helpers/engines.dart 495:23                             DelegatedDatabase.ensureOpen.<fn>
+  dart:async                                                                                 new Future.sync
+  package:drift/src/utils/synchronized.dart 18:21                                            Lock.synchronized.callBlockAndComplete
+  package:drift/src/utils/synchronized.dart 45:14                                            Lock.synchronized
+  package:drift/src/runtime/executor/helpers/engines.dart 493:25                             DelegatedDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 170:21                                  DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 760:19                                  InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/select/custom_select.dart 51:16         CustomSelectStatement._executeRaw
+  package:drift/src/runtime/query_builder/statements/select/custom_select.dart 37:12         CustomSelectStatement.get
+  package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart 24:10          DriftSyncActionStore.load
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 43:34                PersistentSyncQueueRepository.enqueue.<fn>
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 26:37                PersistentSyncQueueRepository._serialized.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 Future.then
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 26:23                PersistentSyncQueueRepository._serialized
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 34:46                PersistentSyncQueueRepository.enqueue
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 137:24  PrestadorRepository.addSelection.<fn>
+  dart:core                                                                                  Iterable.forEach
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 126:23  PrestadorRepository.addSelection
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 _CustomZone.registerUnaryCallback
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 107:21  PrestadorRepository.addSelection
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 131:38    main.<fn>.<fn>
+
+  Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+  dart:async                                                                                 new Future.error
+  package:drift/src/runtime/executor/helpers/engines.dart 495:23                             DelegatedDatabase.ensureOpen.<fn>
+  dart:async                                                                                 new Future.sync
+  package:drift/src/utils/synchronized.dart 18:21                                            Lock.synchronized.callBlockAndComplete
+  package:drift/src/utils/synchronized.dart 45:14                                            Lock.synchronized
+  package:drift/src/runtime/executor/helpers/engines.dart 493:25                             DelegatedDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 170:21                                  DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 760:19                                  InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/select/custom_select.dart 51:16         CustomSelectStatement._executeRaw
+  package:drift/src/runtime/query_builder/statements/select/custom_select.dart 37:12         CustomSelectStatement.get
+  package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart 24:10          DriftSyncActionStore.load
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 43:34                PersistentSyncQueueRepository.enqueue.<fn>
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 26:37                PersistentSyncQueueRepository._serialized.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 Future.then
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 26:23                PersistentSyncQueueRepository._serialized
+  package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart 34:46                PersistentSyncQueueRepository.enqueue
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 137:24  PrestadorRepository.addSelection.<fn>
+  dart:core                                                                                  Iterable.forEach
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 126:23  PrestadorRepository.addSelection
+  ===== asynchronous gap ===========================
+  dart:async                                                                                 _CustomZone.registerUnaryCallback
+  package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart 107:21  PrestadorRepository.addSelection
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 131:38    main.<fn>.<fn>
+
+00:02 +0 -3: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: B-O6R-11 material do prestador — fila local 15. quantidade <= 0 não enfileira nem vira material [E]
+  Expected: an object with length of <1>
+    Actual: []
+     Which: has length of <0>
+
+  package:matcher                                                                         expect
+  package:flutter_test/src/widget_tester.dart 473:18                                      expect
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 184:7  main.<fn>.<fn>
+
+
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart -p vm --plain-name "B-O6R-11 material do prestador — fila local 15. quantidade <= 0 não enfileira nem vira material"
+00:02 +0 -3: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: ... iguais → 2×N ações distintas e materiais somados        00:02 +0 -4: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart: B-O6R-11 material do prestador — fila local 16. duas seleções iguais → 2×N ações distintas e materiais somados [E]
+  Expected: an object with length of <4>
+    Actual: []
+     Which: has length of <0>
+
+  package:matcher                                                                         expect
+  package:flutter_test/src/widget_tester.dart 473:18                                      expect
+  test\features\prestador\bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart 212:9  main.<fn>.<fn>
+
+
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/features/prestador/bo6r11_material_enfileira_e_sobrevive_reinicio_test.dart -p vm --plain-name "B-O6R-11 material do prestador — fila local 16. duas seleções iguais → 2×N ações distintas e materiais somados"
+00:02 +0 -4: loading C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart                                                                                  00:02 +0 -4: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... — nenhuma Future de gravação na fila local é descartada (AST de lib/, default negar)00:03 +0 -4: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... — nenhuma Future de gravação na fila local é descartada (AST de lib/, default negar)Shell: [P-FILA-AWAIT] ESCRITAS=44
+Shell: [P-FILA-AWAIT] UI(43): lib/app/app.dart, lib/app/router.dart, lib/core/diagnostics/diagnostics_screen.dart, lib/features/auth/login_screen.dart, lib/features/auth/splash_screen.dart, lib/features/auth/tenant_selector_screen.dart, lib/features/checklists/ui/checklist_acknowledgement_screen.dart, lib/features/checklists/ui/checklist_available_screen.dart, lib/features/checklists/ui/checklist_comparison_screen.dart, lib/features/checklists/ui/checklist_damage_map_screen.dart, lib/features/checklists/ui/checklist_question_renderer.dart, lib/features/checklists/ui/checklist_run_screen.dart, lib/features/checklists/ui/signature_pad.dart, lib/features/checklists/ui/vehicle_asset_helper.dart, lib/features/expenses/ui/expense_item_receipts_screen.dart, lib/features/expenses/ui/expense_list_screen.dart, lib/features/expenses/ui/expense_report_detail_screen.dart, lib/features/expenses/ui/expense_submit_screen.dart, lib/features/expenses/ui/new_expense_item_screen.dart, lib/features/expenses/ui/new_expense_report_screen.dart, lib/features/inventory/ui/inventory_list_screen.dart, lib/features/inventory/ui/stock_entry_screen.dart, lib/features/inventory/ui/stock_exit_screen.dart, lib/features/location/ui/location_consent_screen.dart, lib/features/prestador/ui/prestador_service_screen.dart, lib/features/prestador/ui/technician_stock_screen.dart, lib/features/work_orders/ui/new_work_order_screen.dart, lib/features/work_orders/ui/registry_assignment_section.dart, lib/features/work_orders/ui/work_order_approval_request_screen.dart, lib/features/work_orders/ui/work_order_conclusion_screen.dart, lib/features/work_orders/ui/work_order_detail_screen.dart, lib/features/work_orders/ui/work_order_execute_screen.dart, lib/features/work_orders/ui/work_order_list_screen.dart, lib/features/work_orders/ui/work_order_operational_map_screen.dart, lib/features/work_orders/ui/work_order_stepper.dart, lib/main.dart, lib/shared/ui/erp_components.dart, lib/shared/ui/erp_scaffold.dart, lib/shared/ui/home_screen.dart, lib/shared/ui/mobile_kit.dart, lib/shared/ui/module_placeholder_screen.dart, lib/shared/ui/profile_screen.dart, lib/shared/ui/sync_screen.dart
+Shell: [P-FILA-AWAIT] UI por herança fora dos caminhos(4): lib/core/diagnostics/diagnostics_screen.dart, lib/features/auth/login_screen.dart, lib/features/auth/splash_screen.dart, lib/features/auth/tenant_selector_screen.dart
+Shell: [P-FILA-AWAIT] PORTADORAS(11): lib/core/evidence/evidence_sync.dart: replayTenant ; lib/core/sync/sync_engine.dart: flushTenant ; lib/core/sync/sync_queue_reclaim_service.dart: reclaimTenant ; lib/core/sync/sync_replay_service.dart: _mapDependentActions, _replayEligible, replayTenant ; lib/core/telemetry/telemetry_capture_service.dart: _enqueueNonGpsEvent, _onTick, captureHeartbeat, recordAppConnect, recordAppDisconnect, recordServiceRefusal ; lib/features/checklists/data/checklist_repository.dart: _stampServerRunIdOnQueue, acknowledge, addAttachment, addMarker, completeRun, downloadPendingRuns, recordDivergences, resolveRunForWorkOrder, saveAnswer ; lib/features/expenses/data/expense_repository.dart: addItem, attachReceiptPlaceholder, createReport, submitReport ; lib/features/inventory/data/inventory_repository.dart: recordEntry, recordExit ; lib/features/work_orders/data/work_order_conflict_resolution_service.dart: resolve ; lib/features/work_orders/data/work_order_repository.dart: _assignRegistryLocked, _attachEvidenceLocked, _completeWorkOrderLocked, _createApprovalRequestLocked, _createWorkOrderLocked, _reportUnableToStartLocked, _updateStatusLocked, assignRegistry, attachEvidence, completeWorkOrder, createApprovalRequest, createWorkOrder, reportUnableToStart, updateStatus ; lib/shared/ui/sync_screen.dart: _resolveConflict, _resolveStalled
+Shell: [P-FILA-AWAIT] RAIZES: lib/core/telemetry/telemetry_capture_service.dart=1 [lib/core/telemetry/telemetry_capture_service.dart:94: closure portadora]
+Shell: [P-FILA-AWAIT] VIOLACOES(2):
+Shell: lib/features/prestador/data/prestador_repository.dart:137: V2 escrita dentro de closure - _syncQueue.enqueue(action)
+Shell: lib/features/prestador/data/prestador_repository.dart:126: V4 closure portadora fora da fronteira de UI
+00:03 +0 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: B-O6R-11 ciclo 2 — P-FILA-AWAIT sobre a AST de lib/ 21. P-FILA-AWAIT — nenhuma Future de gravação na fila local é descartada (AST de lib/, default negar) [E]
+  Expected: empty
+    Actual: [
+              'lib/features/prestador/data/prestador_repository.dart:137: V2 escrita dentro de closure - _syncQueue.enqueue(action)',
+              'lib/features/prestador/data/prestador_repository.dart:126: V4 closure portadora fora da fronteira de UI'
+            ]
+  Future de gravação na fila descartada — a ação pode sumir num reinício (Ω6R-QUA-005):
+  lib/features/prestador/data/prestador_repository.dart:137: V2 escrita dentro de closure - _syncQueue.enqueue(action)
+  lib/features/prestador/data/prestador_repository.dart:126: V4 closure portadora fora da fronteira de UI
+
+  package:matcher                                             expect
+  package:flutter_test/src/widget_tester.dart 473:18          expect
+  test\core\sync\bo6r11_guard_fila_await_ast_test.dart 864:9  main.<fn>.<fn>
+
+
+To run this test again: C:\src\flutter\bin\cache\dart-sdk\bin\dart.exe test C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart -p vm --plain-name "B-O6R-11 ciclo 2 — P-FILA-AWAIT sobre a AST de lib/ 21. P-FILA-AWAIT — nenhuma Future de gravação na fila local é descartada (AST de lib/, default negar)"
+00:03 +0 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... de lib/ 22. o guard nega as 18 formas que a junta do ciclo 1 mediu como fail-open   00:03 +1 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... de lib/ 22. o guard nega as 18 formas que a junta do ciclo 1 mediu como fail-open   00:03 +1 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... as formas legítimas (for-in await, return, =>, fronteira de UI, raiz com teto)      00:03 +2 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... as formas legítimas (for-in await, return, =>, fronteira de UI, raiz com teto)      00:03 +2 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24a. serializador declarado consumido aceita closure portadora  00:03 +3 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24a. serializador declarado consumido aceita closure portadora  00:03 +3 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... P-FILA-AWAIT sobre a AST de lib/ 24b. serializador declarado descartado continua V4 00:03 +4 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... P-FILA-AWAIT sobre a AST de lib/ 24b. serializador declarado descartado continua V4 00:03 +4 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24c. unawaited do serializador declarado continua V4            00:03 +5 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24c. unawaited do serializador declarado continua V4            00:03 +5 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24d. mesmo nome fora do arquivo declarado continua V4           00:03 +6 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24d. mesmo nome fora do arquivo declarado continua V4           00:03 +6 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24e. corpo que não aguarda o parâmetro reprova SERIALIZADOR     00:03 +7 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24e. corpo que não aguarda o parâmetro reprova SERIALIZADOR     00:03 +7 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... — P-FILA-AWAIT sobre a AST de lib/ 24f. nome declarado ausente reprova SERIALIZADOR 00:03 +8 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... — P-FILA-AWAIT sobre a AST de lib/ 24f. nome declarado ausente reprova SERIALIZADOR 00:03 +8 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24g. um ramo aguardado e outro descartado reprova SERIALIZADOR  00:03 +9 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24g. um ramo aguardado e outro descartado reprova SERIALIZADOR  00:03 +9 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24h. Future guardada antes do await reprova SERIALIZADOR        00:03 +10 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24h. Future guardada antes do await reprova SERIALIZADOR       00:03 +10 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24i. parâmetro entregue a outra função reprova SERIALIZADOR    00:03 +11 -5: C:/Users/thiag/w-j483-c1/mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart: ... sobre a AST de lib/ 24i. parâmetro entregue a outra função reprova SERIALIZADOR    00:03 +11 -5: Some tests failed.

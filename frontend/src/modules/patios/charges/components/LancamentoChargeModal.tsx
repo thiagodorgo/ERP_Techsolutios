@@ -31,7 +31,10 @@ export function LancamentoChargeModal({
   readonly currency: string;
   readonly context: ChargesApiContext;
   readonly onClose: () => void;
-  readonly onDone: () => void;
+  /** Chamado depois do registro. Se devolver uma promessa (recarga da Guia de débitos), o modal continua em
+   *  "Registrando…", com o botão desabilitado, até ela terminar — a guia já mostra o encargo quando ele fecha e não
+   *  há janela para lançar o mesmo encargo duas vezes (demo 02/11). */
+  readonly onDone: () => void | Promise<void>;
 }) {
   const [kind, setKind] = useState<ManualChargeKind>("ADDITIONAL");
   const [description, setDescription] = useState("");
@@ -64,7 +67,7 @@ export function LancamentoChargeModal({
     setSaving(true);
     try {
       await createCharge(context, processId, input);
-      onDone();
+      await onDone();
     } catch (err) {
       setError(messageFor(err));
     } finally {

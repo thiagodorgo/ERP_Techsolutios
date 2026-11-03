@@ -14,6 +14,7 @@ export const CLOUD_USAGE_METRIC_KEYS = [
   "checklist_run.acknowledgement_created",
   "api_requests_count",
   "api_request.count",
+  "audited_actions_count",
   "notifications_count",
   "notification.created",
   "job_executions_count",

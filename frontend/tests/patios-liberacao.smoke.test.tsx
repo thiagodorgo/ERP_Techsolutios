@@ -340,3 +340,104 @@ test("resolveReleaseStage (PURO): mapeia estado × liberação em curso para o e
   assert.equal(resolveReleaseStage("RELEASED", buildRelease()), "completed");
   assert.equal(resolveReleaseStage("RECEPTION", null), "unavailable");
 });
+
+// ── Demo ao investidor, 02/11 (reensaio-fluxo2) ────────────────────────────────────────────────────────────────
+// Defeito 1: clicar um requisito não mostrava que gravou; o 2º clique DESFAZIA (servidor [não, não, não, sim] com a
+// tela mostrando os 4 marcados). Defeito 2: depois de "Registrar encargo" a Guia de débitos seguia "Nenhum encargo
+// registrado" (risco de lançar em dobro). Importes dinâmicos/namespace: sem o conserto, o caso fica VERMELHO por
+// asserção, não por erro de módulo que derruba o arquivo inteiro.
+
+test("demo 02/11 — defeito 1: requisito em gravação fica indisponível com 'Salvando…'; os outros seguem livres", () => {
+  const checks = [
+    buildCheck({ id: "chk-a", code: "DOC_OWNER", label: "Documento do proprietário", satisfied: false }),
+    buildCheck({ id: "chk-b", code: "CRLV", label: "CRLV em dia", satisfied: false }),
+  ];
+  const props = {
+    release: buildRelease(),
+    checks,
+    canProcess: true,
+    busy: false,
+    savingCodes: new Set(["DOC_OWNER"]),
+    error: null,
+    onRecipient: () => undefined,
+    onCheck: () => undefined,
+  };
+  const html = renderToString(<DossieLiberacao {...props} />);
+  const rows = html.split('role="listitem"').slice(1);
+  assert.equal(rows.length, 2);
+  // O que está gravando: indicador e checkbox desabilitado (o 2º clique não chega ao servidor).
+  assert.match(rows[0], /Salvando…/);
+  assert.match(rows[0], /<input[^>]*type="checkbox"[^>]*disabled=""/);
+  // O vizinho continua clicável e sem indicador.
+  assert.doesNotMatch(rows[1], /Salvando…/);
+  assert.doesNotMatch(rows[1], /<input[^>]*type="checkbox"[^>]*disabled=""/);
+});
+
+test("demo 02/11 — defeito 1: a tela aplica o requisito como o SERVIDOR gravou e as pré-condições refletem na hora", async () => {
+  const adapter: Record<string, unknown> = await import("../src/modules/patios/release/release.adapter");
+  assert.equal(typeof adapter.adaptReleaseCheckResponse, "function", "falta ler a resposta do POST /release/checks");
+  assert.equal(typeof adapter.mergeReleaseCheck, "function", "falta aplicar o estado gravado na lista");
+  const adaptResponse = adapter.adaptReleaseCheckResponse as (response: unknown) => ReleaseCheckDto | null;
+  const merge = adapter.mergeReleaseCheck as (checks: readonly ReleaseCheckDto[], saved: ReleaseCheckDto) => ReleaseCheckDto[];
+
+  const release = buildRelease({ recipientName: "Carlos", authorityApprovedAt: "2026-11-02T21:00:00.000Z", authorityApprovedBy: "u-1" });
+  const statement = buildStatement();
+  let checks: ReleaseCheckDto[] = [
+    buildCheck({ id: "chk-a", code: "DOC_OWNER", satisfied: false }),
+    buildCheck({ id: "chk-b", code: "CRLV", label: "CRLV em dia", satisfied: true }),
+  ];
+  const requirements = (list: readonly ReleaseCheckDto[]) => deriveReleaseGate(release, list, statement).find((item) => /requisit/i.test(item.label));
+  assert.equal(requirements(checks)?.satisfied, false);
+
+  // O servidor respondeu ao 1º clique (contrato do backend: { data: check }) — a lista passa a mostrar "atendido".
+  const saved = adaptResponse({ data: { id: "chk-a", releaseId: "rel-1", code: "DOC_OWNER", label: "DOC_OWNER", required: true, satisfied: true, note: null, attachmentId: null, checkedBy: "u-1", checkedAt: "2026-11-02T21:01:00.000Z", createdAt: "2026-11-02T21:00:00.000Z", updatedAt: "2026-11-02T21:01:00.000Z" } });
+  assert.ok(saved);
+  checks = merge(checks, saved);
+  assert.equal(checks[0].satisfied, true);
+  assert.equal(checks[0].label, "Documento do proprietário", "o rótulo da lista não é trocado pelo código");
+  assert.equal(requirements(checks)?.satisfied, true, "as pré-condições refletem o estado gravado logo depois");
+
+  // O próximo clique pede o OPOSTO do que o servidor gravou (marcado → desmarcar), nunca o do navegador.
+  const html = renderToString(<DossieLiberacao release={release} checks={checks} canProcess busy={false} error={null} onRecipient={() => undefined} onCheck={() => undefined} />);
+  assert.match(html.split('role="listitem"')[1], /<input[^>]*type="checkbox"[^>]*checked=""/);
+});
+
+test("demo 02/11 — defeitos 1 e 2: resposta de leitura antiga que chega depois não sobrescreve a mais nova", async () => {
+  const mod: Record<string, unknown> = await import("../src/hooks/latestRequestGate").catch(() => ({}));
+  assert.equal(typeof mod.createLatestRequestGate, "function", "falta a guarda de 'só a leitura mais nova vale'");
+  const gate = (mod.createLatestRequestGate as () => { begin: () => number; isLatest: (t: number) => boolean; invalidate: () => void })();
+
+  // Auto-refresh sai ANTES de gravar (t1) e volta DEPOIS da releitura pós-gravação (t2): só t2 pinta a tela.
+  let shown = "antes";
+  const t1 = gate.begin();
+  const t2 = gate.begin();
+  if (gate.isLatest(t2)) shown = "depois";
+  if (gate.isLatest(t1)) shown = "antes";
+  assert.equal(shown, "depois");
+
+  // A resposta da gravação aplicada invalida toda leitura que já estava em voo.
+  const t3 = gate.begin();
+  gate.invalidate();
+  assert.equal(gate.isLatest(t3), false);
+});
+
+test("demo 02/11 — defeito 2: depois de 'Registrar encargo' a Guia recarrega ANTES de o modal fechar (sem lançamento em dobro)", async () => {
+  const { readFileSync } = await import("node:fs");
+  const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+
+  // O modal espera o onDone (a recarga da Guia) ainda em "Registrando…", com o botão desabilitado.
+  const modal = read("../src/modules/patios/charges/components/LancamentoChargeModal.tsx");
+  assert.match(modal, /await createCharge\(context, processId, input\);\s*await onDone\(\);/);
+  assert.match(modal, /onDone: \(\) => void \| Promise<void>/);
+
+  // As duas portas do dossiê (página e modal do pátio) recarregam a Guia e SÓ ENTÃO fecham o modal.
+  for (const path of ["../src/modules/patios/processes/pages/ProcessoDossiePage.tsx", "../src/modules/patios/processes/components/VehicleDossieModal.tsx"]) {
+    const source = read(path);
+    const block = source.slice(source.indexOf("<LancamentoChargeModal"), source.indexOf("/>", source.indexOf("<LancamentoChargeModal")));
+    assert.match(block, /onDone=\{async \(\) => \{[\s\S]*?await reloadStatement\(\);[\s\S]*?setChargeModalOpen\(false\);/, path);
+  }
+
+  // A Guia ignora leitura antiga que volta depois da recarga pós-lançamento.
+  const hook = read("../src/modules/patios/charges/useStatement.ts");
+  assert.match(hook, /if \(!gate\.isLatest\(ticket\)\) return;\s*setStatement\(next\);/);
+});

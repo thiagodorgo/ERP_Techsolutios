@@ -23,6 +23,8 @@ import type {
 } from "./processes.types";
 
 const EMPTY_PAGINATION = { limit: 20, offset: 0, total: 0 } as const;
+const PROCESS_PAGE_LIMIT = 100;
+const PROCESS_MAX_PAGES = 50;
 
 // D-007: nunca fabricar linhas. Modo mock → dataset vazio (mock honesto); erro real → fallback vazio.
 export async function listProcessesFromApi(context: ProcessesApiContext, params: Partial<ProcessesFilters> = {}): Promise<ProcessesData> {
@@ -47,8 +49,21 @@ export async function listProcessesFromApi(context: ProcessesApiContext, params:
 export async function listProcessesByYard(context: ProcessesApiContext, yardId: string): Promise<ProcessesData["items"]> {
   if (isMockMode() || !yardId) return [];
   try {
-    const response = await apiRequest<unknown>(`/impound-processes?yard_id=${encodeURIComponent(yardId)}&limit=200`, context);
-    return adaptProcessesResponse(response, "api").items;
+    // O backend aceita limit de 1 a 100 (src/modules/impound/impound.validators.ts, parseLimit); acima disso é 400.
+    // Pagina por offset até cobrir o total, com teto de páginas para nunca entrar em laço.
+    const items: ProcessesData["items"] = [];
+    for (let pageIndex = 0; pageIndex < PROCESS_MAX_PAGES; pageIndex += 1) {
+      const query = new URLSearchParams({
+        yard_id: yardId,
+        limit: String(PROCESS_PAGE_LIMIT),
+        offset: String(pageIndex * PROCESS_PAGE_LIMIT),
+      });
+      const response = await apiRequest<unknown>(`/impound-processes?${query.toString()}`, context);
+      const page = adaptProcessesResponse(response, "api");
+      items.push(...page.items);
+      if (page.items.length < PROCESS_PAGE_LIMIT || items.length >= page.pagination.total) break;
+    }
+    return items;
   } catch {
     return [];
   }

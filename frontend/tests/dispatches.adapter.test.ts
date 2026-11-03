@@ -215,3 +215,49 @@ test("dispatches service propaga erro local de API nas acoes do mapa", async () 
     }
   }
 });
+
+// DIAGNÓSTICO DA OPERAÇÃO (02/11, item 3): vindo pelo "Atribuir" (?workOrderId=), a lista de Despachos
+// filtra SÓ por workOrderId e a busca fica vazia. Antes, o id da OS ia também para `search`, e o servidor
+// (busca E filtro) devolvia 0 itens. Vermelho sem o conserto.
+test("Despachos pelo Atribuir: workOrderId vai só para o filtro; busca vazia; a requisição não leva search", async () => {
+  const previousUseMocks = process.env.VITE_USE_MOCKS;
+  const previousApiBaseUrl = process.env.VITE_API_BASE_URL;
+  process.env.VITE_USE_MOCKS = "false";
+  process.env.VITE_API_BASE_URL = "/api/v1";
+  const calls: FetchCall[] = [];
+  Object.defineProperty(globalThis, "fetch", {
+    configurable: true,
+    value: async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ data: { items: [], pagination: { limit: 20, offset: 0, total: 0 } } }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  try {
+    const { buildInitialDispatchesFilters } = await import("../src/modules/operations/dispatches/dispatches.adapter");
+    const { listDispatchesFromApi } = await import("../src/modules/operations/dispatches/dispatches.service");
+    const workOrderId = "d0961fe2-0000-4000-8000-000000000022";
+    const filters = buildInitialDispatchesFilters(new URLSearchParams({ workOrderId }));
+    assert.equal(filters.search, "", "o campo de busca fica vazio ao vir pelo Atribuir");
+    assert.equal(filters.workOrderId, workOrderId);
+
+    await listDispatchesFromApi({ token: "jwt-test-token", tenantId: "tenant-a", permissions: ["field_dispatch:read"] }, filters, {
+      enrich: false,
+    });
+    assert.equal(calls.length, 1);
+    const query = new URL(calls[0].url, "http://localhost").searchParams;
+    assert.equal(query.get("workOrderId"), workOrderId);
+    assert.equal(query.has("search"), false, "o id da OS não pode ir para a busca");
+
+    // ?dispatchId= continua indo para a busca (comportamento anterior preservado).
+    assert.equal(buildInitialDispatchesFilters(new URLSearchParams({ dispatchId: "dsp-1" })).search, "dsp-1");
+  } finally {
+    if (previousUseMocks === undefined) delete process.env.VITE_USE_MOCKS;
+    else process.env.VITE_USE_MOCKS = previousUseMocks;
+    if (previousApiBaseUrl === undefined) delete process.env.VITE_API_BASE_URL;
+    else process.env.VITE_API_BASE_URL = previousApiBaseUrl;
+  }
+});

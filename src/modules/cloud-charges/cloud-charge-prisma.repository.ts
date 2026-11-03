@@ -198,7 +198,6 @@ export class PrismaCloudChargeRepository implements CloudChargeRepository {
     const records = await this.client.tenantCloudCostAllocation.findMany({
       where: { allocation_run_id: allocationRunId },
       orderBy: { created_at: "asc" },
-      take: 100_000,
     });
 
     return records.map(mapCostAllocation);

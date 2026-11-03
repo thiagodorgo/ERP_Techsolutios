@@ -271,6 +271,30 @@ function adaptRelease(input: Record<string, unknown> | undefined): ReleaseDto | 
   };
 }
 
+// Resposta do POST /release/checks: `{ data: check }` (release.controller.ts). A tela aplica ESTE estado (o do
+// servidor), em vez de confiar no que o checkbox do navegador mostra.
+export function adaptReleaseCheckResponse(response: unknown): ReleaseCheckDto | null {
+  const payload = readRecord(response);
+  return adaptCheck(readRecord(payload?.data) ?? payload);
+}
+
+// Aplica, na lista, o estado GRAVADO de um requisito (mesmo `code`). Só o que a gravação muda vem da resposta
+// (atendido, nota, quem e quando); rótulo e obrigatoriedade continuam os da lista (snapshot do perfil, I9).
+export function mergeReleaseCheck(checks: readonly ReleaseCheckDto[], saved: ReleaseCheckDto): ReleaseCheckDto[] {
+  return checks.map((check) =>
+    check.code === saved.code
+      ? {
+          ...check,
+          satisfied: saved.satisfied,
+          note: saved.note,
+          checkedBy: saved.checkedBy,
+          checkedAt: saved.checkedAt,
+          updatedAt: saved.updatedAt,
+        }
+      : check,
+  );
+}
+
 function adaptCheck(input: unknown): ReleaseCheckDto | null {
   const item = readRecord(input);
   if (!item) return null;

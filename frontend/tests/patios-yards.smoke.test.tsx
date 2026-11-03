@@ -167,3 +167,120 @@ test("PR-D: computeYardKpis deriva só do que existe; shouldShowInvite exige 1 p
   assert.equal(occupancyTone(70).bar, "#F59E0B");
   assert.equal(occupancyTone(92).bar, "#DC2626");
 });
+
+test("demo pátio: vagas distinguem carregamento, erro recuperável e vazio concluído", async () => {
+  const { PatioSpotsState } = await import("../src/modules/patios/yards/pages/PatioDetailPage");
+  const render = (props: { loading: boolean; error: string | null; isEmpty: boolean }) =>
+    renderToString(
+      <PatioSpotsState {...props} onRetry={() => undefined}>
+        <span>Mapa de vagas</span>
+      </PatioSpotsState>,
+    );
+
+  const loading = render({ loading: true, error: null, isEmpty: true });
+  assert.match(loading, /aria-busy="true"/);
+  assert.doesNotMatch(loading, /Nenhuma vaga cadastrada/);
+
+  const failed = render({ loading: false, error: "Falha temporária.", isEmpty: true });
+  assert.match(failed, /Não foi possível carregar as vagas/);
+  assert.match(failed, /Tentar de novo/);
+  assert.doesNotMatch(failed, /Nenhuma vaga cadastrada/);
+
+  const empty = render({ loading: false, error: null, isEmpty: true });
+  assert.match(empty, /Nenhuma vaga cadastrada/);
+  assert.doesNotMatch(empty, /aria-busy="true"/);
+});
+
+test("demo pátio: área selecionada sem carga concluída é 'carregando', nunca 'vazio'", async () => {
+  const { spotsViewState } = await import("../src/modules/patios/yards/pages/PatioDetailPage");
+  // 1º quadro: a área acabou de ser escolhida e o efeito ainda não disparou a consulta.
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: null, loading: false, error: null, count: 0 }), "loading");
+  // Troca de área: as vagas na tela ainda são da área anterior.
+  assert.equal(spotsViewState({ selectedAreaId: "area-2", loadedAreaId: "area-1", loading: false, error: null, count: 24 }), "loading");
+  // Consulta em curso sem nada na tela (inclusive "Tentar de novo").
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: "area-1", loading: true, error: null, count: 0 }), "loading");
+  // Refresh com vagas na tela mantém o mapa.
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: "area-1", loading: true, error: null, count: 24 }), "ready");
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: "area-1", loading: false, error: "falhou", count: 0 }), "error");
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: "area-1", loading: false, error: null, count: 0 }), "empty");
+  assert.equal(spotsViewState({ selectedAreaId: "area-1", loadedAreaId: "area-1", loading: false, error: null, count: 24 }), "ready");
+});
+
+test("demo pátio: seletores mostram carregamento desabilitado e erros com nova tentativa", async () => {
+  const { SpotPickerSelectors } = await import("../src/modules/patios/processes/components/SpotPickerModal");
+  const base = {
+    yards: [],
+    yardId: "yard-1",
+    spots: [],
+    spotId: "",
+    onYardChange: () => undefined,
+    onSpotChange: () => undefined,
+    onRetryYards: () => undefined,
+    onRetrySpots: () => undefined,
+  };
+
+  const loading = renderToString(
+    <SpotPickerSelectors {...base} loadingYards loadingSpots yardsError={null} spotsError={null} />,
+  );
+  assert.match(loading, /Carregando pátios…/);
+  assert.match(loading, /Carregando vagas…/);
+  assert.equal((loading.match(/disabled=""/g) ?? []).length, 2);
+
+  const failed = renderToString(
+    <SpotPickerSelectors
+      {...base}
+      loadingYards={false}
+      loadingSpots={false}
+      yardsError="Falha nos pátios."
+      spotsError="Falha nas vagas."
+    />,
+  );
+  assert.match(failed, /Não foi possível carregar os pátios/);
+  assert.match(failed, /Não foi possível carregar as vagas/);
+  assert.equal((failed.match(/Tentar de novo/g) ?? []).length, 2);
+});
+
+test("demo pátio: processos do mapa respeitam teto 100 e paginam até receber todos", async () => {
+  const originalMocks = process.env.VITE_USE_MOCKS;
+  process.env.VITE_USE_MOCKS = "false";
+  const originalFetch = globalThis.fetch;
+  const calls: URL[] = [];
+  const processDto = (index: number) => ({
+    id: `proc-${index}`,
+    yard_id: "yard-1",
+    vehicle_plate: `TST${String(index).padStart(4, "0")}`,
+    status: "ACTIVE_CUSTODY",
+  });
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(String(input), "http://localhost");
+    calls.push(url);
+    // Mesma regra do backend (parseLimit em src/modules/impound/impound.validators.ts): limit de 1 a 100, senão 400.
+    const limit = Number(url.searchParams.get("limit"));
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+      return new Response(JSON.stringify({ error: { reason: "invalid_limit" } }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    const offset = Number(url.searchParams.get("offset"));
+    const items = offset === 0
+      ? Array.from({ length: 100 }, (_, index) => processDto(index))
+      : [processDto(100)];
+    return new Response(JSON.stringify({ items, pagination: { limit: 100, offset, total: 101 } }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  try {
+    const { listProcessesByYard } = await import("../src/modules/patios/processes/processes.service");
+    const items = await listProcessesByYard({}, "yard-1");
+    assert.equal(items.length, 101);
+    assert.deepEqual(calls.map((url) => url.searchParams.get("limit")), ["100", "100"]);
+    assert.deepEqual(calls.map((url) => url.searchParams.get("offset")), ["0", "100"]);
+    assert.ok(calls.every((url) => url.searchParams.get("yard_id") === "yard-1"));
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.env.VITE_USE_MOCKS = originalMocks;
+  }
+});

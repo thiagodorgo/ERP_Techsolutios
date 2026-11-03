@@ -110,6 +110,16 @@ export function getFieldLocationGroup(status: FieldLocationStatus): TechnicianLe
   return TECH_GROUP_BY_STATUS[status] ?? "off";
 }
 
+// Quem NÃO recebe alocação: só os status EXPLÍCITOS de indisponível. O backend de posições não manda
+// status de trabalho hoje (item vira `unknown`); `unknown`/ausente continuam no grupo "off" da legenda
+// (cor e filtro intactos), mas PODEM receber alocação — o backend é a autoridade e recusa com 422 quem
+// não é Técnico de Campo (diagnóstico da operação, 02/11, item 2).
+const NOT_ALLOCATABLE_STATUSES: ReadonlySet<string> = new Set(["paused", "offline", "blocked"]);
+
+export function isAllocatableFieldLocationStatus(status: FieldLocationStatus | null | undefined): boolean {
+  return !(status && NOT_ALLOCATABLE_STATUSES.has(status));
+}
+
 export function getFieldLocationGroupColor(status: FieldLocationStatus): string {
   return TECH_GROUP_HEX[getFieldLocationGroup(status)];
 }

@@ -19,7 +19,7 @@ import { useNewWorkOrderAlert } from "../hooks/useNewWorkOrderAlert";
 import { useTechnicianPerformance } from "../hooks/useTechnicianPerformance";
 import { useLegendFilter } from "../hooks/useLegendFilter";
 import { useMapViewMemory } from "../hooks/useMapViewMemory";
-import { getFieldLocationGroup, getWorkOrderPriorityColor, isValidMapCoordinate } from "../map/mapMarkers";
+import { getWorkOrderPriorityColor, isAllocatableFieldLocationStatus, isValidMapCoordinate } from "../map/mapMarkers";
 import { buildWorkOrderRouteFeatureCollection, findAssignedLocation } from "../map/routeLines";
 import {
   buildAllocationCandidates,
@@ -208,7 +208,7 @@ export function OperationsMapPage() {
   const performAllocation = useCallback(
     async (workOrder: { readonly id: string; readonly code: string }, location: FieldLocationItem) => {
       if (!canCreateDispatches) return;
-      if (getFieldLocationGroup(location.status) === "off") return; // protótipo: técnico "off" não recebe
+      if (!isAllocatableFieldLocationStatus(location.status)) return; // pausado/offline/bloqueado não recebe; sem status, o backend decide
       const coordinate = callCoordinateById.get(workOrder.id) ?? null;
       const km = coordinate ? computeDistanceKm(location, coordinate) : null;
       // Copy HONESTA (divergência 7): estimativa sempre rotulada; a frase de chegada do
@@ -327,7 +327,7 @@ export function OperationsMapPage() {
       }
     : undefined;
 
-  // D5.2 — popup do marker: 3 técnicos REAIS mais próximos (exclui "off", km asc, slice 3).
+  // D5.2 — popup do marker: 3 técnicos REAIS mais próximos (exclui pausado/offline/bloqueado, km asc, slice 3).
   const renderWorkOrderPopup = useCallback(
     (workOrderId: string): ReactNode => {
       const pin = visibleWorkOrderPins.find((item) => item.id === workOrderId);
@@ -336,7 +336,7 @@ export function OperationsMapPage() {
       const candidates =
         phase === "rec"
           ? buildAllocationCandidates(
-              workOrderContextLocations.filter((location) => getFieldLocationGroup(location.status) !== "off"),
+              workOrderContextLocations.filter((location) => isAllocatableFieldLocationStatus(location.status)),
               { lat: pin.latitude, lng: pin.longitude },
               technicianPerformance.byOperator,
             )
