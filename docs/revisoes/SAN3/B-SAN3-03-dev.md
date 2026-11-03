@@ -772,3 +772,41 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** executar a bateria dirigida usando a lista literal de
   `revisoes/j484/c3-bateria-arquivos.txt` adaptada ao worktree e publicar o TAP por arquivo.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 22
+
+- **Executor:** `dev-san303-k-opus`, Claude Opus, nível menor declarado, identidade nova; assume o K5 no lugar
+  de `dev-san303-k-sol`, que bateu o limite de uso depois de K1–K4. Não achou os defeitos nem planejou o
+  conserto. **Sem cruzamento de modelo neste K5** (§C7 item 11(2)): o Codex estava sem limite; feito por um
+  modelo só.
+- **P3, terreno:** `git status` vazio; `git log 5b628b88..HEAD` = 8 commits (`0f731d4b` … `f1a123ca`); head
+  local `f1a123ca` igual a `origin/fix/cloud-billing-exato`.
+- **P3, K1–K4 conferidos no head** (não refeitos): com `DATABASE_URL` no descartável próprio,
+  `node --test --import tsx tests/san3-03-tenant-tag.test.ts tests/san3-03-system-org-db.test.ts
+  tests/cloud-cost-allocation-routes.test.ts` sob `TZ=UTC` e sob `TZ=America/Sao_Paulo` — **25/25, 0 fail,
+  0 skip** nos dois; T-TAG-14, T-TAG-db-2, T-SUM-9 e T-SUM-10 `ok`; a asserção T-RUN-1 vive dentro de T-SUM-8
+  (`cloud-cost-allocation-routes.test.ts:104`), também `ok`.
+- **Terreno Docker:** memória de commit livre 42,22 GB antes de subir; só `devsan303ko-pg` (`postgres:16`,
+  `127.0.0.1:55466`, sem volume, usuário `postgres`); `npx prisma migrate deploy` exit 0. `erp-postgres` e
+  `erp-redis` intocados.
+- **K5 (C3-01):** a bateria dirigida foi publicada com a lista literal, o comando e o TAP por arquivo em
+  `docs/revisoes/SAN3/B-SAN3-03-bateria.txt`, e o log TAP completo em
+  `docs/revisoes/SAN3/B-SAN3-03-bateria.log`. A lista é a expansão dos globs da RETOMADA 16 no objeto e é
+  idêntica à `revisoes/j484/c3-bateria-arquivos.txt` (38 arquivos). Resultado: **297 testes, 292 pass,
+  5 fail, 0 skip; 36 arquivos verdes, 2 com exit 1.**
+  - `san3-05-runtime-role-guard-db` — 4 fail por `setsid` ausente no Git Bash: **diferença de ambiente do
+    Windows, declarada e não consertada** (a C3 mediu as mesmas 4 no objeto e na base).
+  - `san3-05-leituras-de-plataforma-db` — **1 fail, regressão real causada pelo K2.** O teste chama o
+    `/cloud-cost-allocations/summary` com ISO completo (`:351`, `MES_INICIO = iso(0)`); o K2 recusa tudo
+    que não é `AAAA-MM-DD` e devolve 400 `summary_period_invalid`. O arquivo aborta em 3 de 13 testes.
+    Vermelho-controle: com o `routes.ts` de `89171135` (antes do K2), o mesmo arquivo dá **13/13**;
+    restaurado por `git checkout HEAD --`, status vazio. O arquivo **não está no PERMITIDO do §4 da
+    emenda 2**, por isso não foi tocado: precisa de emenda antes do código (`D-EMENDA-ANTES-DO-CODIGO`).
+- **CI do head `f1a123ca`, lido pelo TAP (item 11(3)):** job `backend` **vermelho** nos dois runs — push
+  `41635074143`: `# tests 4361`, `# pass 4358`, `# fail 1`, `# skipped 2`; pull_request `41635064249`:
+  `# tests 4358`, `# pass 4355`, `# fail 1`, `# skipped 2`. Nos dois, `not ok 3111 - B-SAN3-05 · T10–T12`,
+  com a mesma mensagem `summary_period_invalid`. Os demais jobs do head concluíram `success`.
+- **Estado:** K1–K4 conferidos; K5 publicado; **NÃO PRONTO PARA CONFERÊNCIA** — dev com CI vermelho não
+  escreve pronto (§C7 item 11(5)). O defeito é do K2, dentro do bloco, e exige emenda que ponha
+  `tests/san3-05-leituras-de-plataforma-db.test.ts` no escopo.
+- **Arquivos meio-escritos:** nenhum.
