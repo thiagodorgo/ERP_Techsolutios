@@ -84,6 +84,13 @@ export type WorkOrderDetailViewProps = {
   readonly activeTab: WorkOrderTabSlug;
   readonly onSelectTab: (slug: WorkOrderTabSlug) => void;
   readonly onRefresh: () => void;
+  /**
+   * B-APAR-OS — "Voltar às ordens". Na página, volta à lista (`/work-orders`, o padrão); na janela fixa das aparências B e
+   * C (`WorkOrderDetailWindow`), fecha a janela e devolve o foco à linha.
+   */
+  readonly onBack?: () => void;
+  /** B-APAR-OS — dentro da janela fixa: sem o link "← Voltar às ordens" (a janela tem o próprio botão de fechar). */
+  readonly embedded?: boolean;
 };
 
 const loadingPanel: CSSProperties = { padding: 40, textAlign: "center", color: "#64748B" };
@@ -103,8 +110,11 @@ export function WorkOrderDetailView({
   activeTab,
   onSelectTab,
   onRefresh,
+  onBack,
+  embedded = false,
 }: WorkOrderDetailViewProps) {
   const navigate = useNavigate();
+  const backToList = onBack ?? (() => navigate("/work-orders"));
   const canDecide = permissions.includes("work_orders:cancel") || permissions.includes("work_orders:approve");
   const activeTabDef = findTab(activeTab);
   const accessAllowed = canAccessTab(activeTabDef, permissions);
@@ -116,7 +126,6 @@ export function WorkOrderDetailView({
   // (escudo) × não encontrada (prancheta de OS) × erro (alerta vermelho, borda #FECACA, role="alert") se distinguem
   // a olho, e os botões são os do padrão (hover/foco das classes `.pat-btn`). Status não previsto cai no ERRO.
   if (!workOrder) {
-    const backToList = () => navigate("/work-orders");
     if (status === "forbidden") {
       return (
         <StatePanel
@@ -154,7 +163,12 @@ export function WorkOrderDetailView({
 
   return (
     <div style={{ color: "#0F172A" }}>
-      <div onClick={() => navigate("/work-orders")} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#2563EB", cursor: "pointer", marginBottom: 14 }}>← Voltar às ordens</div>
+      {/* B-APAR-OS — era um <div> com clique, fora do teclado; agora é botão (mesma aparência). Na janela, some. */}
+      {embedded ? null : (
+        <button type="button" className="aparos-voltar" onClick={backToList}>
+          ← Voltar às ordens
+        </button>
+      )}
 
       {stale ? (
         <div style={{ marginBottom: 12 }}>

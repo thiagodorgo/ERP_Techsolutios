@@ -108,3 +108,14 @@ test("o conteúdo do menu: Pátios com A · Padrão, B · Analítica e C · Mesa
   const visible = html.replace(/<[^>]+>/g, " ");
   assert.doesNotMatch(visible, /\btenant\b|localStorage|screenKey|patios\b/i, "texto visível sem termo técnico");
 });
+
+// B-APAR-OS (fundação da trilha B-APAR-3) — com as telas da trilha o painel passaria de ~1.200 px abrindo para cima a
+// partir do rodapé; ele precisa de altura máxima relativa à janela e rolagem própria.
+test("o painel de aparência tem altura máxima relativa à janela e rola por dentro (cabe com 9 telas)", async () => {
+  const { APPEARANCE_PANEL_STYLE } = await import("../src/modules/appearance/AppearanceMenu");
+  assert.equal(APPEARANCE_PANEL_STYLE.overflowY, "auto", "o painel rola por dentro");
+  assert.match(String(APPEARANCE_PANEL_STYLE.maxHeight ?? ""), /vh/, "a altura máxima acompanha a altura da janela");
+  // 9 grupos × (rótulo ~30 px + 3 opções × 36 px) ≈ 1.242 px: o teto em px fica bem abaixo disso.
+  const cap = Number(/(\d+)px/.exec(String(APPEARANCE_PANEL_STYLE.maxHeight))?.[1] ?? Number.NaN);
+  assert.ok(cap > 0 && cap < 9 * (30 + 3 * 36), `teto do painel em px: ${cap}`);
+});

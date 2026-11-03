@@ -796,7 +796,7 @@ export function ChecklistEditorPage({
   }
 
   return (
-    <div className="ckb-ed">
+    <div className="ckb-ed" data-aparencia={appearance}>
       <header className="ckb-ed-head">
         <div className="ckb-ed-head-row">
           <button

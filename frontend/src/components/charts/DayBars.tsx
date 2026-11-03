@@ -82,7 +82,19 @@ export function DayBars({ days, rangeDates, today = null, pressedDate = null, on
   );
 }
 
-export type ColumnBarTone = "inflow" | "outflow" | "age-recent" | "age-week" | "age-old" | "age-critical";
+// B-APAR-OS — tons de agenda (acréscimo; os seis de antes não mudam): as faixas da "Agenda das OS na fila" de Ordens de Serviço.
+export type ColumnBarTone =
+  | "inflow"
+  | "outflow"
+  | "age-recent"
+  | "age-week"
+  | "age-old"
+  | "age-critical"
+  | "agenda-overdue"
+  | "agenda-soon"
+  | "agenda-today"
+  | "agenda-later"
+  | "agenda-none";
 
 export type ColumnBarsItem = {
   readonly key: string;
