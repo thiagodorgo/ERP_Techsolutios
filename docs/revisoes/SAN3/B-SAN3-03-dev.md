@@ -598,3 +598,21 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** `node
   C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs`.
 - **Arquivos meio-escritos:** nenhum; o container próprio permanece vivo apenas para a bateria final.
+
+## RETOMADA 14
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado.
+- **Head inicial:** `9e443ac0224c278000789fe9c58ce01eca97ad3b`, igual ao remoto; C2 enviada.
+- **C3 — M28, prova exigida:** `node
+  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/san303-m28-equivalencia.mjs` — **exit 0**,
+  `checked=3000003`, `divergences=0`, `first=null`.
+- **Regime superior da prova corrigida (§8):** `node
+  C:/Users/thiag/erp-pausa-2026-10-03/revisoes/crit-san303-e2-m28-upper.mjs` — **exit 0**,
+  `checked=5000000`, `divergences=0`, `first=null`.
+- **Resultado C3:** **8.000.003 entradas, 0 divergência**. A igualdade verificada é
+  `Number(x.toFixed(6)) === x`, conforme a prova corrigida em dois regimes; a M28 permanece excluída por
+  equivalência e nenhum código foi alterado.
+- **Falta:** C4, bateria §6, CI e leitura TAP dos jobs `backend`/`backend-postgres`.
+- **Próximo comando exato:** remover a linha em branco final do comando do bloco e editar os registros/docs
+  permitidos da C4.
+- **Arquivos meio-escritos:** nenhum.
