@@ -226,3 +226,23 @@ mergeado; sem migração nova, sem rebase).
 3. `tests/san3-05-runtime-role-guard-db.test.ts:1016`: `…|0|0|119` → `…|0|0|121` (medido no CI do head `2c268dc5`: `…|f|f|f|f|0|0|121`).
 - **C:** `[SB] tests/san3-05-acessos-de-plataforma-guard.test.ts tests/o6r07c-census-guard.test.ts` → `# tests 67 # pass 67 # fail 0 # skipped 0`.
   O `san3-05-runtime-role-guard-db` exige Linux (`setsid`); a prova dele é o job `backend` do CI.
+
+## RETOMADA 6 — F5 (M-REC-7a, drill das M-REC-1/2/7a, paridade, CI)
+
+- **Entrega:** `prisma/migrations/20260892000000_grant_charging_online_payment` (M-REC-7a: `INSERT … ON CONFLICT DO NOTHING` da chave e
+  da concessão a `super_admin`, `tenant_admin` e `manager`, a mesma distribuição de `charging:settle` no banco; `BEGIN;`/`COMMIT;`;
+  runbook `-- ROLLBACK` no rodapé); `tests/rec-01-migration-drill-db.test.ts` (base própria, deploy real em processo filho; (a) as 3
+  aplicadas, concessão só a quem dá baixa, 7a idempotente; (b) down em transação única, re-up, e a M-REC-1 com sentença final quebrada
+  falha inteira); as 2 suítes `-db` do bloco na lista `SUITES` do job `backend-postgres` (`.github/workflows/ci.yml`).
+- **V (V1)** — commit `test(…)` com o drill e sem a M-REC-7a (base nova `rec01f`): `not ok 4 - (a)` (`…grant_charging_online_payment
+  existe`), `not ok 5 - (b)` e `not ok 2 - permissão acrescentada ao catálogo chega ao banco por migração` (`Permissão nova no catálogo e
+  SEM migração de dados: charging:online_payment`); `# tests 5 # pass 2 # fail 3`.
+  **Declarado:** o `[DBP]` da paridade **não** fica vermelho sem a migração: o `npm run db:seed` provisiona o catálogo inteiro, e a
+  paridade catálogo × banco é verde por construção (é a tautologia que o cabeçalho de `permission-catalog-migration-parity.test.ts`
+  descreve). O vermelho de controle que mede a falta da migração é o guard estático de paridade de migração e o drill.
+- **M:** F5-M1 · M-REC-7a · tirar `ON CONFLICT (key) DO NOTHING` → `not ok 1 - (a)` com `Code: 23505 … "permissions_key_key"` (o 2º up);
+  restauro com hash igual, `git status --porcelain` vazio.
+- **C:** `[DB] tests/rec-01-migration-drill-db.test.ts tests/rec-01-domain-db.test.ts` → `# tests 9 # pass 9 # fail 0 # skipped 0` nas
+  **3 execuções** (denominador constante, condição para entrar na lista curada) · `[SB] tests/permission-catalog-migration-parity.test.ts`
+  → `# pass 3 # fail 0` · `npm run db:seed` + `[DBP]` → `# tests 2 # pass 2 # fail 0 # skipped 0` ·
+  `node scripts/migration-transaction-guard.mjs` → `migrações: 120 · anteriores: 112 · novas: 8 · violações: 0`.
