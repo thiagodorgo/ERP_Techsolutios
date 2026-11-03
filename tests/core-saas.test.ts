@@ -88,6 +88,7 @@ const expectedPermissionCatalog = [
   "impound:create",
   "charging:create",
   "charging:settle",
+  "charging:online_payment",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -641,6 +642,8 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
   // stand-in tenant_admin+manager) = SÓ manager+admins (gestão+admins). Os SALTOS da FSM reusam impound:transition.
   for (const role of ["manager", "tenant_admin", "super_admin", "platform_admin"] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("charging:settle"), true);
+    // B-PATIO-REC-01 — gerar a cobrança on-line da taxa de pátio tem a MESMA distribuição de charging:settle.
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:online_payment"), true);
     assert.equal(ROLE_PERMISSIONS[role].includes("release:process"), true);
     assert.equal(ROLE_PERMISSIONS[role].includes("release:approve"), true);
   }
@@ -656,6 +659,7 @@ test("mantem roles padrao coerentes com o catalogo RBAC", () => {
     "support",
   ] as const) {
     assert.equal(ROLE_PERMISSIONS[role].includes("charging:settle"), false);
+    assert.equal(ROLE_PERMISSIONS[role].includes("charging:online_payment"), false);
     assert.equal(ROLE_PERMISSIONS[role].includes("release:process"), false);
     assert.equal(ROLE_PERMISSIONS[role].includes("release:approve"), false);
   }

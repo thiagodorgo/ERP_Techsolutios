@@ -47,6 +47,7 @@ import { createImpoundRouter } from "./modules/impound/index.js";
 import { createAuthorityCredentialRouter } from "./modules/authority/index.js";
 import { createChargeRouter } from "./modules/charging/index.js";
 import { createReleaseRouter } from "./modules/release/index.js";
+import { createImpoundPaymentRouter } from "./modules/impound-payments/index.js";
 import { createAuctionRouter } from "./modules/auction/index.js";
 import { createPatiosDashboardRouter } from "./modules/patios-dashboard/index.js";
 import { createVehicleIdentityRouter } from "./modules/vehicle-identities/index.js";
@@ -172,6 +173,10 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // .../release/recipient|checks (release:process) · .../release/approve (release:approve). QUITAÇÃO fica no
   // charging (.../charges/settle, charging:settle). Montado APÓS impound/charging (paths .../release não colidem).
   app.use("/api/v1", attachAuthenticatedActor(), createReleaseRouter());
+  // B-PATIO-REC-01 — cobrança on-line da taxa de pátio (domínio, sem rede). Router NOVO sob /api/v1 (git add src/app.ts,
+  // senão CI route_not_found). GET .../online-payment|online-payments (impound:read) · POST .../online-payment
+  // (charging:online_payment). Sem o REC-04/REC-02a as portas recusam por padrão: 422 channel_disabled / payment_mode_unset.
+  app.use("/api/v1", attachAuthenticatedActor(), createImpoundPaymentRouter());
   // Ω5P PR-12 — Elegibilidade ao leilão + regra dos 2-strikes (I8). Router NOVO sob /api/v1 (git add src/app.ts, senão
   // CI route_not_found). GET .../auction (impound:read) · POST .../auction/eligibility|/attempts (impound:transition,
   // os saltos da FSM de leilão). ZERO permissão nova. Montado APÓS impound/charging/release (paths .../auction não
