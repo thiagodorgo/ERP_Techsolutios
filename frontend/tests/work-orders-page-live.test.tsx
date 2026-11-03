@@ -518,10 +518,14 @@ function read(container: MiniElement) {
     dataStates: all.filter((el) => el.hasAttribute("data-state")).map((el) => el.getAttribute("data-state")!),
     kpiValues: all.filter((el) => hasClass(el, "pat-kpi__value")).map(text),
     kpiSkeletonCards: all.filter((el) => hasClass(el, "pat-kpi") && el.getAttribute("aria-hidden") === "true").length,
-    // `ClickableKpiCard` (role="button" + aria-haspopup="dialog"): só com dado E `kpiDetails` — em falha o KPI não abre pop-up sobre "—".
-    kpiClickable: all.filter((el) => el.getAttribute("role") === "button" && el.getAttribute("aria-haspopup") === "dialog").length,
-    rows: all.filter((el) => hasClass(el, "pat-os-row")).length,
-    rowSkeletons: all.filter((el) => hasClass(el, "pat-os-grid") && !hasClass(el, "pat-os-grid--head") && el.getAttribute("aria-hidden") === "true").length,
+    // B-APAR-OS — o KPI acionável deixou de abrir o pop-up de participação (`ClickableKpiCard`, aria-haspopup="dialog") e
+    // passou a FILTRAR a lista (D-PADRAO-BLOCOS-CLICAVEIS): é o botão `.pat-kpi--clickable` com `aria-pressed`. A
+    // propriedade é a mesma — só com dado o KPI é acionável; em falha não há ação sobre "—".
+    kpiClickable: all.filter((el) => el.localName === "button" && hasClass(el, "pat-kpi--clickable") && el.hasAttribute("aria-pressed")).length,
+    // B-APAR-OS — a linha de uma altura da lista nova (`DenseExpandableRow`: `tr.pat-ab-row` com `data-row-key`); o
+    // esqueleto de carregamento é a mesma linha com `aria-hidden`.
+    rows: all.filter((el) => el.localName === "tr" && hasClass(el, "pat-ab-row") && el.hasAttribute("data-row-key")).length,
+    rowSkeletons: all.filter((el) => el.localName === "tr" && hasClass(el, "pat-ab-row") && el.getAttribute("aria-hidden") === "true").length,
     alerts: all.filter((el) => el.getAttribute("role") === "alert").length,
     novaOs: all.filter((el) => el.localName === "button" && text(el).trim() === "Nova OS").length,
     headerNovaOs: all
@@ -703,7 +707,7 @@ test("[PV3] 200 vazio → 'empty' EMBUTIDO (busca presente), KPIs 0, '0 ordens',
     assert.deepEqual(r.dataStates, ["empty"], page.html());
     assert.equal(r.search, 1, "o vazio fica dentro do card: a busca continua na tela");
     assert.deepEqual(r.kpiValues, ["0", "0", "0", "0"]);
-    assert.equal(r.kpiClickable, 4, "com dado (vazio legítimo) os 4 KPIs abrem o pop-up de participação");
+    assert.equal(r.kpiClickable, 4, "com dado (vazio legítimo) os 4 KPIs são acionáveis (filtram a lista)");
     assert.deepEqual(r.count, ["0 ordens"]);
     assert.equal(r.novaOs, 2, "cabeçalho + CTA do vazio");
     assert.equal(r.rows, 0);
@@ -720,7 +724,7 @@ test("[PV4] 200 com 3 → 3 linhas, KPIs das linhas, paginador '1–3 de 3', '3 
     assert.deepEqual(r.dataStates, [], page.html());
     assert.equal(r.rows, 3);
     assert.deepEqual(r.kpiValues, ["3", "0", "0", "0"], "abertas · em andamento · atrasadas · concluídas, derivadas das 3 linhas");
-    assert.equal(r.kpiClickable, 4, "com dado os 4 KPIs abrem o pop-up de participação");
+    assert.equal(r.kpiClickable, 4, "com dado os 4 KPIs são acionáveis (filtram a lista)");
     assert.deepEqual(r.pagerRange, ["1–3 de 3"]);
     assert.deepEqual(r.count, ["3 ordens"]);
     assert.equal(r.alerts, 0);
@@ -1106,6 +1110,19 @@ test("[GB2] no VAZIO, total de 'Nova OS' (cabeçalho + CTA) = 2 com work_orders:
   assert.deepEqual(wrong, [], `papéis divergentes no vazio:\n${wrong.join("\n")}`);
 });
 
+// B-APAR-OS — "Atribuir técnico" desceu da linha para o RESUMO embaixo dela (a linha de uma altura não tem botão). A
+// contagem por papel é a mesma; para contar, abre-se o resumo de cada linha (um por vez) e soma-se o que cada um mostra.
+async function atribuirInSummaries(container: MiniElement): Promise<number> {
+  let total = 0;
+  const keys = elements(container, (el) => el.localName === "tr" && hasClass(el, "pat-ab-row") && el.hasAttribute("data-row-key")).map((el) => el.getAttribute("data-row-key")!);
+  for (const key of keys) {
+    const row = elements(container, (el) => el.localName === "tr" && el.getAttribute("data-row-key") === key)[0];
+    await fire(row, "onClick");
+    total += read(container).atribuir;
+  }
+  return total;
+}
+
 test("[GB3] 'Atribuir técnico' (gate field_dispatch:create) continua certo papel a papel: 3 botões com a permissão, 0 sem", async () => {
   assertCatalogSeen();
   installFetch(LIST_ROUTES);
@@ -1115,7 +1132,7 @@ test("[GB3] 'Atribuir técnico' (gate field_dispatch:create) continua certo pape
     await withPage(
       () => mountList(perms, role),
       async (page) => {
-        const r = read(page.container);
+        const r = { atribuir: await atribuirInSummaries(page.container) };
         const expected = perms.includes("field_dispatch:create") ? 3 : 0;
         if (r.atribuir !== expected) wrong.push(`${role}: dispatch=${expected ? "sim" : "não"} 'Atribuir'=${r.atribuir}`);
       },

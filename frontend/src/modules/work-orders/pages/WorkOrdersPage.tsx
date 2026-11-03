@@ -1,179 +1,74 @@
-import { AlertTriangle, CheckCircle2, Download, Filter, Plus, Search, Send, UserRound, Wrench } from "lucide-react";
-import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
-import { useCallback, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Download, Filter, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { ClickableKpiCard, type KpiDetail } from "../../../components/kpi";
-import { KpiStatCard, PageHeader, StatusPill, TablePager, type KpiStatTag } from "../../../components/patterns";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
-import { buildWorkOrdersKpiDetails, type WorkOrdersKpiKey } from "../work-orders-kpi-detail";
-import { listStatusKind, type WorkOrdersListStatus } from "../work-orders.state";
+import { useScreenAppearance } from "../../appearance";
 import { RevokeDispatchPrompt } from "../components/RevokeDispatchPrompt";
-import { StaleDataBanner } from "../components/StaleDataBanner";
-import { StatePanel, StatePanelAction } from "../components/StatePanel";
-import { WorkOrderDelayBadge } from "../components/WorkOrderDelayBadge";
+import { WorkOrderDetailWindow } from "../components/WorkOrderDetailWindow";
 import { WorkOrdersListFilterCard } from "../components/WorkOrdersListFilterCard";
-import { WorkOrderRowActions } from "../components/WorkOrderRowActions";
 import { exportAvailability, exportWorkOrdersCsv } from "../work-orders-export";
-import {
-  countActiveFilters,
-  EMPTY_LIST_FILTERS,
-  toApiFilters,
-  type WorkOrdersListFilterState,
-} from "../work-orders-list-filters";
+import { countActiveFilters, EMPTY_LIST_FILTERS, toApiFilters, type WorkOrdersListFilterState } from "../work-orders-list-filters";
 import { runAdvance, runRevokeConfirm, runRevokeDiscovery, type RevokeTarget } from "../work-orders-row.handlers";
-import {
-  isWorkOrderDelayed,
-  workOrderServiceLine,
-  WORK_ORDER_PRIORITY_LABEL,
-  WORK_ORDER_STATUS_LABEL,
-} from "../work-orders-row.logic";
+import { listStatusKind } from "../work-orders.state";
 import { useWorkOrders } from "../useWorkOrders";
-import type { WorkOrderListItem, WorkOrderPriority, WorkOrderStatus } from "../work-orders.types";
+import type { WorkOrderListItem } from "../work-orders.types";
+import { filterWorkOrderList, readTab, targetDef } from "./views/work-orders.shared";
+import type { WorkOrdersListState, WorkOrdersViewModel } from "./views/work-orders.view-model";
+import { WorkOrdersViewA } from "./views/WorkOrdersViewA";
+import { WorkOrdersViewB } from "./views/WorkOrdersViewB";
+import { WorkOrdersViewC } from "./views/WorkOrdersViewC";
 
-// "Ordens de Serviço" (lista) — PR-B TELAS PADRONIZADAS. Reproduz o bloco `sc_os` do protótipo
-// "ERP Web - Telas Padronizadas.dc.html" com os DADOS REAIS do módulo (useWorkOrders + adapters).
-// Nenhum número é fabricado (D-007). Degradações honestas documentadas inline:
-//  · "SLA em risco" do design não é derivável da lista (prazo de SLA não garantido no DTO) →
-//    o slot crítico é "Atrasadas" (agenda vencida e não finalizada) — precedente do PR-A.
-//  · O DTO de lista traz só o ID do técnico (sem nome) → célula TÉCNICO mostra "Atribuído"
-//    (avatar genérico, sem inventar iniciais/nome). Pendência: nome do técnico na lista.
-//  · Filtrar (Prioridade + Data de abertura, filtrados no servidor) e Exportar (CSV local das linhas
-//    visíveis) — D-OS-CABECALHO-PADRONIZADO / B-OS-FILTRAR-EXPORTAR. Técnico fica para P-WO-LIST-TECH-NAME.
-//  · "atualizado há X min" do design omitido: o hook não expõe timestamp real de atualização.
-//  · "Concluídas hoje" do design → "Concluídas" no total da lista (sem recorte diário real).
+// Contrato dos testes que já montam as peças da lista por este caminho (`work-orders-honest-errors.test.tsx`): as peças
+// moraram aqui até o B-APAR-OS e agora vivem no módulo compartilhado das aparências.
+export { WorkOrdersKpiGrid, WorkOrdersLoadState, type WorkOrdersKpis } from "./views/work-orders.shared";
 
-// Cor por status; o RÓTULO vem da fonte única WORK_ORDER_STATUS_LABEL (work-orders-row.logic) — sem
-// duas verdades de rótulo (condição fid J-Ω3F-9). Tons do design (sc_os): Aberta EFF6FF/2563EB ·
-// Em campo DCFCE7/15803D · risco FEE2E2/B91C1C · Concluída F1F5F9/475569; status reais fora do
-// design usam a família semântica mais próxima (pausada → âmbar).
-const STATUS_TONE: Record<WorkOrderStatus, { bg: string; fg: string }> = {
-  open: { bg: "#EFF6FF", fg: "#2563EB" },
-  assigned: { bg: "#EFF6FF", fg: "#2563EB" },
-  accepted: { bg: "#EFF6FF", fg: "#2563EB" },
-  on_route: { bg: "#DCFCE7", fg: "#15803D" },
-  on_site: { bg: "#DCFCE7", fg: "#15803D" },
-  in_progress: { bg: "#DCFCE7", fg: "#15803D" },
-  paused: { bg: "#FEF3C7", fg: "#B45309" },
-  completed: { bg: "#F1F5F9", fg: "#475569" },
-  cancelled: { bg: "#FEE2E2", fg: "#B91C1C" },
-  rejected: { bg: "#FEE2E2", fg: "#B91C1C" },
-};
-
-// Dot + cor do texto de prioridade (design: Alta DC2626/B91C1C · Média F59E0B/B45309 · Baixa
-// 94A3B8/64748B). "Urgente" não existe no design → família vermelha (a mais próxima), rótulo real.
-const PRIORITY_TONE: Record<WorkOrderPriority, { dot: string; fg: string }> = {
-  low: { dot: "#94A3B8", fg: "#64748B" },
-  medium: { dot: "#F59E0B", fg: "#B45309" },
-  high: { dot: "#DC2626", fg: "#B91C1C" },
-  urgent: { dot: "#DC2626", fg: "#B91C1C" },
-};
-
-const isFinalStatus = (s: WorkOrderStatus) => s === "completed" || s === "cancelled" || s === "rejected";
-const isFieldStatus = (s: WorkOrderStatus) => s === "on_route" || s === "on_site" || s === "in_progress" || s === "paused";
-
-// Tabs-pill do design [Todas | Sem técnico | Em campo | Concluídas] mapeadas aos filtros REAIS:
-// "Sem técnico" = sem operador atribuído e ainda não finalizada; "Em campo" = status de campo;
-// "Concluídas" = completed. (A antiga tab "Agendadas" foi absorvida: essas OS seguem em "Todas".)
-type TabKey = "all" | "unassigned" | "field" | "done";
-const TABS: readonly { key: TabKey; label: string; match: (o: WorkOrderListItem) => boolean }[] = [
-  { key: "all", label: "Todas", match: () => true },
-  { key: "unassigned", label: "Sem técnico", match: (o) => !isFinalStatus(o.status) && !o.assignedOperatorId },
-  { key: "field", label: "Em campo", match: (o) => isFieldStatus(o.status) },
-  { key: "done", label: "Concluídas", match: (o) => o.status === "completed" },
-];
-
-const pad = (n: number) => n.toString().padStart(2, "0");
-
-function sameDay(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-type AgendaInfo = { text: string; color: string; weight: number; overdue: boolean };
-
-/**
- * Célula AGENDA — "Hoje/Amanhã/Ontem, HH:MM" (senão dd/mm), tabular. Cor por urgência REAL
- * derivada de scheduled_for × status (design sc_os): vencida e não finalizada → vermelho 700;
- * vence em ≤2 h → âmbar-forte 700; finalizada/sem urgência → neutro; sem agenda → cinza.
- */
-function agendaInfo(iso: string | null | undefined, status: WorkOrderStatus, now: Date): AgendaInfo {
-  if (!iso) return { text: "Sem agenda", color: "#94A3B8", weight: 600, overdue: false };
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return { text: "—", color: "#94A3B8", weight: 600, overdue: false };
-
-  const hm = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  const day = sameDay(date, now)
-    ? "Hoje"
-    : sameDay(date, tomorrow)
-      ? "Amanhã"
-      : sameDay(date, yesterday)
-        ? "Ontem"
-        : `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
-  const text = `${day}, ${hm}`;
-
-  if (isFinalStatus(status)) return { text, color: "#94A3B8", weight: 600, overdue: false };
-  const diffMin = (date.getTime() - now.getTime()) / 60000;
-  if (diffMin <= 0) return { text, color: "#DC2626", weight: 700, overdue: true };
-  if (diffMin <= 120) return { text, color: "#B45309", weight: 700, overdue: false };
-  return { text, color: "#334155", weight: 600, overdue: false };
-}
-
-/** Wrapper de clique que NÃO propaga (a linha inteira navega ao detalhe no clique do corpo). */
-function stop(fn: () => void) {
-  return (event: ReactMouseEvent) => {
-    event.stopPropagation();
-    fn();
-  };
-}
-
-const TAG_ACT_NOW: KpiStatTag = { label: "agir agora", bg: "#FEE2E2", fg: "#B91C1C" };
-const TAG_UNDER_CONTROL: KpiStatTag = { label: "sob controle", bg: "#DCFCE7", fg: "#15803D" };
-const TAG_ON_TIME: KpiStatTag = { label: "no prazo", bg: "#DCFCE7", fg: "#15803D" };
-const TAG_LATE: KpiStatTag = { label: "há atrasos", bg: "#FEF3C7", fg: "#B45309" };
-const TAG_DONE: KpiStatTag = { label: "finalizadas", bg: "#DCFCE7", fg: "#15803D" };
+// "Ordens de Serviço" (lista). B-APAR-OS — esta página é o CONTÊINER das 3 aparências aprovadas pelo dono
+// (`screen-refs/ordens-de-servico-3opcoes.reference.html`: A · Padrão fiel, B · Analítica, C · Fila por agenda;
+// D-APARENCIA-POR-USUARIO, padrão A por D-APARENCIA-RESPOSTAS (b)), no padrão do `FinanceiroPage`: lê a aparência PESSOAL
+// (`useScreenAppearance("ordens-de-servico")`), chama a lista UMA vez (`useWorkOrders`, com a auto-atualização de hoje —
+// trocar de aparência NÃO repete a chamada), guarda o estado navegável na querystring (`?aba=`, `?alvo=`, `?q=`, `?os=`;
+// é o que deixa o "Ver fila" do Dashboard abrir a lista já recortada), monta UM modelo e entrega a uma view PURA. Os
+// handlers de linha (dar andamento, revogar envio), o prompt de motivo, o cartão de filtros, o CSV e a janela fixa do
+// detalhe (B e C) moram aqui. Nenhum número é fabricado (D-007): contagem sobre a lista carregada diz o universo quando o
+// servidor tem mais OS; técnico sem nome na lista é "Atribuído" (P-WO-LIST-TECH-NAME).
 
 export function WorkOrdersPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { appearance } = useScreenAppearance("ordens-de-servico");
+  const { permissions } = usePermissions();
+
   const [listFilters, setListFilters] = useState<WorkOrdersListFilterState>(EMPTY_LIST_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { priority: filterPriority, from: filterFrom, to: filterTo } = listFilters;
-  const apiFilters = useMemo(
-    () => toApiFilters({ priority: filterPriority, from: filterFrom, to: filterTo }),
-    [filterPriority, filterFrom, filterTo],
-  );
+  const apiFilters = useMemo(() => toApiFilters({ priority: filterPriority, from: filterFrom, to: filterTo }), [filterPriority, filterFrom, filterTo]);
   // B-SAN3-01 (P-008) — `status` decide o painel (§7): vazio ≠ erro ≠ sem permissão; `stale` acende a faixa
   // "dados desatualizados" sem apagar a lista. Nada aqui recebe OS fabricada.
   const { items, allItems, pagination, loading, source, status, error, stale, lastUpdatedAt, refresh, context } = useWorkOrders(apiFilters);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(context.tenantId) });
-  const { permissions } = usePermissions();
-  const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<TabKey>("all");
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+
+  const state: WorkOrdersListState = {
+    tab: readTab(searchParams.get("aba")),
+    target: targetDef(searchParams.get("alvo")) ? searchParams.get("alvo") : null,
+    q: searchParams.get("q") ?? "",
+    openId: searchParams.get("os") || null,
+  };
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   // Ω3F-9 — estado por-linha das ações (avançar/revogar) + o prompt de motivo do revogar.
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
   const [rowError, setRowError] = useState<Record<string, string | null>>({});
   const [revoke, setRevoke] = useState<RevokeTarget | null>(null);
   const [revokeBusy, setRevokeBusy] = useState(false);
   const [revokeError, setRevokeError] = useState<string | null>(null);
-  const activeFilterCount = countActiveFilters(listFilters);
-  const updateListFilters = (next: WorkOrdersListFilterState) => {
-    setListFilters(next);
-    setPage(0);
-  };
+  const [focusRowId, setFocusRowId] = useState<string | null>(null);
 
   const setBusy = useCallback((id: string, value: boolean) => setRowBusy((m) => ({ ...m, [id]: value })), []);
   const setError = useCallback((id: string, value: string | null) => setRowError((m) => ({ ...m, [id]: value })), []);
-
-  const handleAdvance = useCallback(
-    (order: WorkOrderListItem) => runAdvance({ context, refresh, setBusy, setError }, order),
-    [context, refresh, setBusy, setError],
-  );
-
+  const handleAdvance = useCallback((order: WorkOrderListItem) => runAdvance({ context, refresh, setBusy, setError }, order), [context, refresh, setBusy, setError]);
   const handleRevokeClick = useCallback(
     async (order: WorkOrderListItem) => {
       setRevokeError(null);
@@ -182,7 +77,6 @@ export function WorkOrdersPage() {
     },
     [context, setBusy, setError],
   );
-
   const handleRevokeConfirm = useCallback(
     async (reason: string) => {
       if (!revoke) return;
@@ -196,326 +90,141 @@ export function WorkOrdersPage() {
     [context, revoke, refresh],
   );
 
-  // Contagens 100% derivadas dos itens REAIS já carregados (D-007 — nada fabricado).
-  // "atrasadas" reusa isWorkOrderDelayed (agenda vencida × status não final — D-Ω3F-9-BADGE);
-  // "semTecnico" alimenta o selo do card OS abertas (o "4 sem técnico" do design, com número real).
-  const kpis = useMemo(() => {
-    const delayed = (o: WorkOrderListItem) => isWorkOrderDelayed(o.scheduledFor, o.status).delayed;
-    return {
-      abertas: items.filter((o) => !isFinalStatus(o.status)).length,
-      andamento: items.filter((o) => isFieldStatus(o.status)).length,
-      atrasadas: items.filter(delayed).length,
-      concluidas: items.filter((o) => o.status === "completed").length,
-      semTecnico: items.filter((o) => !isFinalStatus(o.status) && !o.assignedOperatorId).length,
-      // Selo do card "Em andamento" derivado do RECORTE em campo (não da contagem global —
-      // resposta à BAIXA 3 da junta do PR-A: associação semântica justa).
-      atrasadasEmCampo: items.filter((o) => isFieldStatus(o.status) && delayed(o)).length,
-    };
-  }, [items]);
+  // Fechar a janela devolve o foco à linha da OS (referência `fecharOS`); o resumo dela fica aberto.
+  useEffect(() => {
+    if (!focusRowId || typeof document === "undefined") return;
+    const key = typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(focusRowId) : focusRowId;
+    const row = document.querySelector?.<HTMLElement>(`[data-row-key="${key}"]`);
+    row?.focus?.();
+    setFocusRowId(null);
+  }, [focusRowId]);
 
-  // WS-CARDS-CHARTS-F2 — pop-up de cada KPI: "participação no total" a partir das MESMAS contagens já
-  // exibidas nos cards (derivadas de `items`); nada é somado nem fabricado (D-007).
-  const kpiDetails = useMemo(
-    () =>
-      buildWorkOrdersKpiDetails(
-        { abertas: kpis.abertas, andamento: kpis.andamento, atrasadas: kpis.atrasadas, concluidas: kpis.concluidas, total: items.length },
-        source,
-      ),
-    [kpis, items.length, source],
-  );
+  const writeState = (next: WorkOrdersListState, replace = true) => {
+    const params = new URLSearchParams(searchParams);
+    const put = (key: string, value: string | null) => (value ? params.set(key, value) : params.delete(key));
+    put("aba", next.tab === "todas" ? null : next.tab);
+    put("alvo", next.target);
+    put("q", next.q || null);
+    put("os", next.openId);
+    setSearchParams(params, { replace });
+  };
+  const onState = (next: WorkOrdersListState) => {
+    if (next.tab !== state.tab || next.target !== state.target || next.q !== state.q) setExpandedId(null);
+    writeState(next);
+  };
 
   const now = new Date();
-  const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
-  const q = search.trim().toLowerCase();
-  const filtered = items
-    .filter((o) => activeTab.match(o))
-    .filter((o) => (q ? [o.code, o.title, o.customerName, o.serviceAddress].some((v) => (v ?? "").toLowerCase().includes(q)) : true));
-
-  // Paginação client-side (TablePager padronizado). Página "clampada" quando o filtro encolhe a lista.
-  const total = filtered.length;
-  const maxPage = Math.max(0, Math.ceil(total / pageSize) - 1);
-  const effectivePage = Math.min(page, maxPage);
-  const start = effectivePage * pageSize;
-  const end = Math.min(start + pageSize, total);
-  const pageItems = filtered.slice(start, end);
-
-  const canDispatch = permissions.includes("field_dispatch:create");
-  const kpiSkeleton = loading && items.length === 0;
-  // Erro nunca vira número (§4.3-2): com a lista em FALHA os KPIs mostram "—", sem pop-up sobre "0". Ciclo 2 (P2):
-  // a falha vem da classificação EXAUSTIVA do estado (`listStatusKind`) — status não previsto é falha, nunca vazio.
+  const visible = filterWorkOrderList(items, state, now);
+  const activeFilterCount = countActiveFilters(listFilters);
   const kind = listStatusKind(status);
-  const degraded = kind === "failure";
-  // Ciclo 2 (P5) — como no protótipo (`woShowTable` falso em erro/sem permissão), a FALHA troca o card da tabela
-  // pelo card do estado (não há o que buscar num erro). O VAZIO fica dentro do card: no protótipo a busca e os
-  // filtros vivem FORA da tabela e continuam na tela no vazio; aqui a toolbar vive no card (divergência D-C2-1 do
-  // ciclo 2 — o vazio fora do card sumia com a busca e derrubava o E1 do e2e numa base sem OS).
-  const showFailure = !loading && degraded;
-  // B-SAN3-01b (P-SAN3-01-NOVA-OS-SEM-GATE-NO-BOTAO) — UMA régua para criar OS, a do backend (`POST /work-orders` →
-  // `requirePermission("work_orders:create")`, `includes` estrito): o botão "Nova OS" do cabeçalho e o CTA do vazio
-  // dividem este mesmo gate. Provado papel a papel pelo catálogo executado (`work-orders-page-live.test.tsx` [GB1]/[GB2]).
   const canCreate = permissions.includes("work_orders:create");
   const showListActions = status !== "forbidden";
   const exportState = exportAvailability({
     loading,
     failure: kind === "failure",
-    total,
+    total: visible.length,
     stale,
     demo: source === "mock",
     loaded: allItems.length,
     serverTotal: pagination.total,
   });
-  const headerActions = showListActions || canCreate ? (
-    <>
-      {showListActions ? (
-        <>
-          <button
-            type="button"
-            className={activeFilterCount > 0 ? "pat-btn pat-btn--engaged" : "pat-btn"}
-            aria-expanded={filtersOpen}
-            aria-controls={filtersOpen ? "os-filtros" : undefined}
-            onClick={() => setFiltersOpen((open) => !open)}
-          >
-            <Filter size={15} aria-hidden="true" />
-            Filtrar
-            {activeFilterCount > 0 ? <span className="pat-btn__count" aria-hidden="true">{activeFilterCount}</span> : null}
-            {activeFilterCount > 0 ? (
-              <span className="sr-only">{activeFilterCount === 1 ? ", 1 filtro ativo" : `, ${activeFilterCount} filtros ativos`}</span>
-            ) : null}
+  const updateListFilters = (next: WorkOrdersListFilterState) => setListFilters(next);
+  const openWindow = appearance !== "A";
+
+  const headerActions =
+    showListActions || canCreate ? (
+      <>
+        {showListActions ? (
+          <>
+            <button
+              type="button"
+              className={activeFilterCount > 0 ? "pat-btn pat-btn--engaged" : "pat-btn"}
+              aria-expanded={filtersOpen}
+              aria-controls={filtersOpen ? "os-filtros" : undefined}
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              <Filter size={15} aria-hidden="true" />
+              Filtrar
+              {activeFilterCount > 0 ? <span className="pat-btn__count" aria-hidden="true">{activeFilterCount}</span> : null}
+              {activeFilterCount > 0 ? <span className="sr-only">{activeFilterCount === 1 ? ", 1 filtro ativo" : `, ${activeFilterCount} filtros ativos`}</span> : null}
+            </button>
+            <button
+              type="button"
+              className="pat-btn"
+              disabled={!exportState.enabled}
+              style={exportState.enabled ? undefined : { opacity: 0.55, cursor: "not-allowed" }}
+              title={exportState.hint}
+              onClick={() => exportWorkOrdersCsv(visible, source, Date.now())}
+            >
+              <Download size={15} aria-hidden="true" />
+              Exportar
+            </button>
+          </>
+        ) : null}
+        {canCreate ? (
+          <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
+            <Plus size={15} aria-hidden="true" />
+            Nova OS
           </button>
-          <button
-            type="button"
-            className="pat-btn"
-            disabled={!exportState.enabled}
-            style={exportState.enabled ? undefined : { opacity: 0.55, cursor: "not-allowed" }}
-            title={exportState.hint}
-            onClick={() => exportWorkOrdersCsv(filtered, source, Date.now())}
-          >
-            <Download size={15} aria-hidden="true" />
-            Exportar
-          </button>
-        </>
-      ) : null}
-      {canCreate ? (
-        <button type="button" className="pat-btn pat-btn--primary" onClick={() => navigate("/work-orders/new")}>
-          <Plus size={15} aria-hidden="true" />
-          Nova OS
-        </button>
-      ) : null}
-    </>
-  ) : undefined;
+        ) : null}
+      </>
+    ) : undefined;
+
+  const filterCard =
+    filtersOpen && showListActions ? (
+      <WorkOrdersListFilterCard id="os-filtros" value={listFilters} now={now} onChange={updateListFilters} onClear={() => updateListFilters(EMPTY_LIST_FILTERS)} />
+    ) : null;
+
+  const openDetail = (id: string) => {
+    if (openWindow) writeState({ ...state, openId: id });
+    else navigate(`/work-orders/${id}`);
+  };
+
+  const model: WorkOrdersViewModel = {
+    items,
+    loaded: allItems.length,
+    serverTotal: pagination.total,
+    partial: pagination.total > allItems.length,
+    status,
+    loading,
+    error,
+    stale,
+    lastUpdatedAt,
+    demo: source === "mock" && !stale,
+    now,
+    access: { create: canCreate, dispatch: permissions.includes("field_dispatch:create"), permissions },
+    state,
+    activeFilterCount,
+    headerActions,
+    filterCard,
+    expandedId,
+    rowBusy,
+    rowError,
+    onState,
+    onToggleRow: (id) => setExpandedId((current) => (current === id ? null : id)),
+    onOpenDetail: openDetail,
+    onLink: (id) => (openWindow ? writeState({ ...state, openId: id }) : navigate(`/work-orders/${id}?aba=informacoes-gerais`)),
+    onAssign: (id) => navigate(`/operations/dispatches?workOrderId=${id}`),
+    onAdvance: (order) => void handleAdvance(order),
+    onRevoke: (order) => void handleRevokeClick(order),
+    onCreate: () => navigate("/work-orders/new"),
+    onRetry: () => void refresh(),
+  };
+
+  const closeWindow = () => {
+    const id = state.openId;
+    writeState({ ...state, openId: null });
+    if (id) {
+      setExpandedId(id);
+      setFocusRowId(id);
+    }
+  };
 
   return (
-    <div style={{ color: "#0F172A" }}>
-      <PageHeader
-        kicker="OPERAÇÃO"
-        title="Ordens de Serviço"
-        subtitle="Atribuição, execução, SLA e rastreabilidade de cada atendimento em campo."
-        // Filtrar/Exportar somem em `forbidden`; "Nova OS" mantém o gate `work_orders:create`.
-        actions={headerActions}
-      />
+    <>
+      {appearance === "B" ? <WorkOrdersViewB {...model} /> : appearance === "C" ? <WorkOrdersViewC {...model} /> : <WorkOrdersViewA {...model} />}
 
-      {/* KPIs de decisão — contagens reais derivadas da própria lista; "—" quando a lista está em erro */}
-      <WorkOrdersKpiGrid kpis={kpis} kpiDetails={degraded ? null : kpiDetails} skeleton={kpiSkeleton} degraded={degraded} />
-
-      {filtersOpen && showListActions ? (
-        <WorkOrdersListFilterCard
-          id="os-filtros"
-          value={listFilters}
-          now={now}
-          onChange={updateListFilters}
-          onClear={() => updateListFilters(EMPTY_LIST_FILTERS)}
-        />
-      ) : null}
-
-      {stale ? (
-        <div style={{ marginBottom: 12 }}>
-          <StaleDataBanner lastUpdatedAt={lastUpdatedAt} onRetry={() => void refresh()} />
-        </div>
-      ) : source === "mock" ? (
-        <div style={{ display: "flex", gap: 7, marginBottom: 12 }}>
-          <StatusPill label="Dados demonstrativos" bg="#EFF6FF" fg="#2563EB" />
-        </div>
-      ) : null}
-
-      {/* Tabela padronizada (card 14px) — toolbar: busca real + tabs-pill + contagem real */}
-      {showFailure ? (
-        <WorkOrdersLoadState status={status} message={error} onRetry={() => void refresh()} />
-      ) : (
-        <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
-          <div className="pat-os-toolbar">
-            <div className="pat-os-search">
-              <Search size={15} aria-hidden="true" style={{ flexShrink: 0 }} />
-              <input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(0);
-                }}
-                placeholder="Buscar por código, cliente ou endereço…"
-                aria-label="Buscar por código, cliente ou endereço"
-              />
-            </div>
-            <div className="pat-os-tabs">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  className={t.key === tab ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
-                  aria-pressed={t.key === tab}
-                  onClick={() => {
-                    setTab(t.key);
-                    setPage(0);
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            {/* "atualizado há X min" do design omitido: sem timestamp real exposto pelo hook. Contagem só com lista válida. */}
-            {degraded ? null : <span className="pat-os-count">{total === 1 ? "1 ordem" : `${total} ordens`}</span>}
-          </div>
-
-          <div className="pat-os-grid pat-os-grid--head" aria-hidden="true">
-            <div>CÓDIGO</div>
-            <div>CLIENTE / SERVIÇO</div>
-            <div>TÉCNICO</div>
-            <div>AGENDA</div>
-            <div>SITUAÇÃO</div>
-            <div style={{ textAlign: "right" }}>AÇÃO</div>
-          </div>
-
-          {loading ? (
-            [0, 1, 2, 3].map((i) => (
-              <div key={i} className="pat-os-grid" style={{ borderBottom: "1px solid #F1F5F9" }} aria-hidden="true">
-                <div className="pat-skel" style={{ height: 12 }} />
-                <div className="pat-skel" style={{ height: 12 }} />
-                <div className="pat-skel" style={{ height: 12 }} />
-                <div className="pat-skel" style={{ height: 12 }} />
-                <div className="pat-skel" style={{ height: 12 }} />
-                <div className="pat-skel" style={{ height: 12 }} />
-              </div>
-            ))
-          ) : total === 0 ? (
-            // Sem OS nenhuma → "Nenhuma ordem de serviço" + CTA (com o gate); OS escondidas pelo filtro → cópia do filtro.
-            <WorkOrdersLoadState
-              status="empty"
-              embedded
-              filtered={items.length > 0 || activeFilterCount > 0}
-              onCreate={items.length === 0 && activeFilterCount === 0 && canCreate ? () => navigate("/work-orders/new") : undefined}
-            />
-          ) : (
-            pageItems.map((o: WorkOrderListItem) => {
-              const st = STATUS_TONE[o.status];
-              const pr = PRIORITY_TONE[o.priority];
-              const agenda = agendaInfo(o.scheduledFor, o.status, now);
-              const svc = workOrderServiceLine(o);
-              return (
-                <div key={o.id} className="pat-os-grid pat-os-row" onClick={() => navigate(`/work-orders/${o.id}`)}>
-                  {/* CÓDIGO — mono azul + prioridade com dot */}
-                  <div>
-                    <div className="pat-mono" style={{ fontSize: 12, fontWeight: 700, color: "#2563EB" }}>{o.code}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: pr.dot, flexShrink: 0 }} aria-hidden="true" />
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: pr.fg }}>{WORK_ORDER_PRIORITY_LABEL[o.priority]}</span>
-                    </div>
-                  </div>
-
-                  {/* CLIENTE / SERVIÇO — cliente ausente vira chip âmbar + "Vincular" (destino real: detalhe da OS) */}
-                  <div style={{ minWidth: 0 }}>
-                    {o.customerName ? (
-                      <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.customerName}</div>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <span className="pat-os-noclient">Sem cliente vinculado</span>
-                        <button
-                          type="button"
-                          className="pat-link"
-                          style={{ fontSize: 11 }}
-                          onClick={stop(() => navigate(`/work-orders/${o.id}?aba=informacoes-gerais`))}
-                        >
-                          Vincular
-                        </button>
-                      </div>
-                    )}
-                    <div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{svc}</div>
-                    {o.checklistId ? (
-                      <div style={{ display: "flex", gap: 5, marginTop: 4 }}>
-                        <span style={{ fontSize: 9.5, fontWeight: 700, padding: "1px 7px", borderRadius: 99, background: "#EFF6FF", color: "#2563EB" }}>Checklist</span>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {/* TÉCNICO — DTO da lista não traz o NOME do técnico → "Atribuído" sem inventar iniciais;
-                      sem técnico → "Atribuir" leva ao fluxo real de envio (Despachos com a OS pré-selecionada). */}
-                  <div>
-                    {o.assignedOperatorId ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span
-                          style={{ width: 26, height: 26, borderRadius: "50%", background: "#EFF6FF", color: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
-                          aria-hidden="true"
-                        >
-                          <UserRound size={13} />
-                        </span>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: "#334155" }}>Atribuído</span>
-                      </div>
-                    ) : !isFinalStatus(o.status) && canDispatch ? (
-                      <button
-                        type="button"
-                        className="pat-os-assign"
-                        onClick={stop(() => navigate(`/operations/dispatches?workOrderId=${o.id}`))}
-                        aria-label={`Atribuir técnico à OS ${o.code}`}
-                      >
-                        <Send size={12} aria-hidden="true" />
-                        Atribuir
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 12.5, color: "#94A3B8" }}>Sem técnico</span>
-                    )}
-                  </div>
-
-                  {/* AGENDA — tabular, cor por urgência real; badge de atraso preservado (aria WCAG 1.4.1) */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12.5, color: agenda.color, fontWeight: agenda.weight, fontVariantNumeric: "tabular-nums" }}>{agenda.text}</span>
-                    <WorkOrderDelayBadge scheduledFor={o.scheduledFor} status={o.status} />
-                  </div>
-
-                  {/* SITUAÇÃO — pill no tamanho BASE (junta do PR-B, MÉDIA-1: no protótipo a tabela de OS usa 10.5px/3px 9px
-                      — o .pat-pill base; a variante --sm pertence às listas compactas do Dashboard, não a esta tabela). */}
-                  <div>
-                    <StatusPill label={WORK_ORDER_STATUS_LABEL[o.status]} bg={st.bg} fg={st.fg} />
-                  </div>
-
-                  {/* AÇÃO — capacidade preservada: Dar andamento (gate) · Abrir · ⋮ Revogar envio (gate) */}
-                  <WorkOrderRowActions
-                    status={o.status}
-                    permissions={permissions}
-                    busy={rowBusy[o.id] ?? false}
-                    error={rowError[o.id] ?? null}
-                    onOpen={() => navigate(`/work-orders/${o.id}`)}
-                    onAdvance={() => void handleAdvance(o)}
-                    onRevoke={() => void handleRevokeClick(o)}
-                  />
-                </div>
-              );
-            })
-          )}
-
-          {!loading && !degraded && total > 0 ? (
-            <TablePager
-              pageSize={pageSize}
-              onPageSize={(size) => {
-                setPageSize(size);
-                setPage(0);
-              }}
-              rangeLabel={`${start + 1}–${end} de ${total}`}
-              onPrev={() => setPage(Math.max(0, effectivePage - 1))}
-              onNext={() => setPage(Math.min(maxPage, effectivePage + 1))}
-              canPrev={effectivePage > 0}
-              canNext={end < total}
-            />
-          ) : null}
-        </div>
-      )}
+      {openWindow && state.openId ? <WorkOrderDetailWindow key={state.openId} workOrderId={state.openId} onClose={closeWindow} /> : null}
 
       {revoke ? (
         <RevokeDispatchPrompt
@@ -526,169 +235,7 @@ export function WorkOrdersPage() {
           onClose={() => setRevoke(null)}
         />
       ) : null}
-    </div>
-  );
-}
-
-export type WorkOrdersKpis = {
-  readonly abertas: number;
-  readonly andamento: number;
-  readonly atrasadas: number;
-  readonly concluidas: number;
-  readonly semTecnico: number;
-  readonly atrasadasEmCampo: number;
-};
-
-const NEUTRAL_ICON = "#94A3B8";
-const NEUTRAL_BG = "#F1F5F9";
-
-const skeletonCard = (index: number) => (
-  <div key={index} className="pat-kpi" aria-hidden="true">
-    <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
-    <div className="pat-skel" style={{ width: 54, height: 24, marginTop: 12 }} />
-    <div className="pat-skel" style={{ width: "70%", height: 12, marginTop: 8 }} />
-  </div>
-);
-
-/**
- * B-SAN3-01 — os 4 KPIs da lista, extraídos para o harness SSR (work-orders-honest-errors P1). `degraded`
- * (lista em erro / sem permissão): valor "—", sem selo e sem pop-up — erro nunca vira número (§4.3-2, D-007).
- */
-export function WorkOrdersKpiGrid({
-  kpis,
-  kpiDetails,
-  skeleton,
-  degraded,
-}: {
-  readonly kpis: WorkOrdersKpis;
-  readonly kpiDetails: Record<WorkOrdersKpiKey, KpiDetail> | null;
-  readonly skeleton: boolean;
-  readonly degraded: boolean;
-}) {
-  const clickable = !degraded && kpiDetails !== null;
-  const value = (n: number) => (degraded ? "—" : n);
-  // Ciclo 2 (C3-A3) — degradado = tiles NEUTROS: nenhuma cor afirma "sob controle"/"agir agora" sobre "—".
-  const tone = (color: string, bg: string) => (degraded ? { iconColor: NEUTRAL_ICON, iconBg: NEUTRAL_BG } : { iconColor: color, iconBg: bg });
-  const wrap = (key: WorkOrdersKpiKey, card: ReactElement) =>
-    clickable ? (
-      <ClickableKpiCard key={key} detail={kpiDetails[key]}>
-        {card}
-      </ClickableKpiCard>
-    ) : (
-      <div key={key}>{card}</div>
-    );
-
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 12, marginBottom: 14 }} aria-live="polite">
-      {skeleton ? (
-        Array.from({ length: 4 }).map((_, index) => skeletonCard(index))
-      ) : (
-        <>
-          {wrap(
-            "abertas",
-            <KpiStatCard
-              icon={Wrench}
-              {...tone("#2563EB", "#EFF6FF")}
-              value={value(kpis.abertas)}
-              label="OS abertas"
-              hint="ainda não concluídas nem canceladas"
-              tag={!degraded && kpis.semTecnico > 0 ? { label: `${kpis.semTecnico} sem técnico`, bg: "#FEF3C7", fg: "#B45309" } : undefined}
-            />,
-          )}
-          {wrap(
-            "andamento",
-            <KpiStatCard
-              icon={Send}
-              {...tone("#0369A1", "#F0F9FF")}
-              value={value(kpis.andamento)}
-              label="Em andamento"
-              hint="técnico em campo agora"
-              tag={degraded ? undefined : kpis.atrasadasEmCampo === 0 ? TAG_ON_TIME : TAG_LATE}
-            />,
-          )}
-          {/* Slot crítico do design ("SLA em risco") ocupado por Atrasadas — precedente do PR-A. */}
-          {wrap(
-            "atrasadas",
-            <KpiStatCard
-              icon={AlertTriangle}
-              {...tone(kpis.atrasadas > 0 ? "#DC2626" : "#15803D", kpis.atrasadas > 0 ? "#FEF2F2" : "#F0FDF4")}
-              value={value(kpis.atrasadas)}
-              label="Atrasadas"
-              hint="agenda vencida e sem conclusão"
-              tag={degraded ? undefined : kpis.atrasadas > 0 ? TAG_ACT_NOW : TAG_UNDER_CONTROL}
-              border={!degraded && kpis.atrasadas > 0 ? "#FCA5A5" : undefined}
-            />,
-          )}
-          {wrap(
-            "concluidas",
-            <KpiStatCard
-              icon={CheckCircle2}
-              {...tone("#15803D", "#F0FDF4")}
-              value={value(kpis.concluidas)}
-              label="Concluídas"
-              hint="no total da lista"
-              tag={degraded ? undefined : TAG_DONE}
-            />,
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-/**
- * B-SAN3-01 — o painel da lista quando NÃO há linhas para mostrar, um por estado (§7), marcado por `data-state` no
- * elemento raiz (é por ele que os testes SSR e o e2e afirmam o estado — comportamento, não cópia):
- *   empty     → a organização não tem OS (CTA "Nova OS" só com `onCreate`) · `embedded`: o filtro escondeu todas
- *   forbidden → o ator não tem `work_orders:read` — acesso não permitido, não é falha de sistema
- *   error     → a consulta falhou (role="alert" + "Tentar novamente"); NUNCA lista de demonstração
- * Ciclo 2: P2 — `empty` e `forbidden` são ramos EXPLÍCITOS e o `return` final é o ERRO (status que este painel não
- * conhece nunca vira "vazio"); P5 — a ficha é a do protótipo, via `StatePanel` (ERP Web.dc.html l.362-382).
- */
-export function WorkOrdersLoadState({
-  status,
-  message,
-  filtered = false,
-  embedded = false,
-  onRetry,
-  onCreate,
-}: {
-  readonly status: WorkOrdersListStatus;
-  readonly message?: string | null;
-  readonly filtered?: boolean;
-  readonly embedded?: boolean;
-  readonly onRetry?: () => void;
-  readonly onCreate?: () => void;
-}) {
-  if (status === "empty") {
-    return (
-      <StatePanel
-        tone="empty"
-        embedded={embedded}
-        title={filtered ? "Nenhuma OS para os filtros atuais" : "Nenhuma ordem de serviço"}
-        detail={filtered ? "Ajuste a busca ou os filtros acima — ou crie uma nova ordem de serviço." : "As ordens atribuídas à sua organização aparecem aqui."}
-        actions={onCreate ? <StatePanelAction label="Nova OS" narrow onClick={onCreate} /> : undefined}
-      />
-    );
-  }
-  if (status === "forbidden") {
-    return (
-      <StatePanel
-        tone="forbidden"
-        embedded={embedded}
-        title="Sem permissão para ver ordens de serviço"
-        detail="Seu perfil não inclui o módulo de OS nesta organização. Solicite acesso ao administrador da organização."
-      />
-    );
-  }
-  return (
-    <StatePanel
-      tone="error"
-      embedded={embedded}
-      title="Não foi possível carregar as ordens"
-      detail={message ?? "Tente novamente em instantes."}
-      actions={onRetry ? <StatePanelAction label="Tentar novamente" onClick={onRetry} /> : undefined}
-    />
+    </>
   );
 }
 
