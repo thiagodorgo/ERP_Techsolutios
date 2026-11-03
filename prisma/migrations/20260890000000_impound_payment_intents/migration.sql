@@ -7,9 +7,9 @@
 -- tabela existente muda. Transação EXPLÍCITA (D-MIGRACAO-COM-TRANSACAO-EXPLICITA): falha em qualquer sentença = nada aplicado.
 -- down (SÓ em drill, tests/rec-01-migration-drill-db.test.ts): DROP TABLE "impound_payment_intents".
 --
--- DINHEIRO: as colunas *_cents (nomes do plano, §4.1) guardam REAIS em DECIMAL(12,2) (regra de dinheiro do plano, §7); a app
--- converte para centavos inteiros de forma exata. Os CHECKs abaixo são a autoridade (P-REC-16), uma restrição por linha,
--- para cada mutação ter âncora única.
+-- DINHEIRO (emenda 1 §11.1): colunas *_amount em DECIMAL(12,2), em REAIS, como o resto do pátio (process_charges.total_amount);
+-- o TypeScript calcula em centavos inteiros e converte SÓ no repositório Prisma (moneyToCents/centsToMoney do charging).
+-- Os CHECKs abaixo são a autoridade (P-REC-16), uma restrição por linha, para cada mutação ter âncora única.
 -- CONTA (P-REC-22b): payment_connection_id (conexão própria) XOR payment_group_connection_id (conexão do grupo), e o grupo
 -- vem junto da conexão de grupo. A conta da plataforma não é representável. As FKs das três colunas nascem no REC-04
 -- (M-REC-14), quando as tabelas de conexão existirem; até lá a porta de conexão recusa por padrão e esta tabela fica vazia.
@@ -25,12 +25,12 @@ CREATE TABLE "impound_payment_intents" (
     "status" TEXT NOT NULL DEFAULT 'pending',
     "cancel_reason" TEXT,
     "currency" TEXT NOT NULL DEFAULT 'BRL',
-    "amount_cents" DECIMAL(12,2) NOT NULL,
-    "paid_cents" DECIMAL(12,2) NOT NULL DEFAULT 0,
-    "applied_cents" DECIMAL(12,2) NOT NULL DEFAULT 0,
-    "held_cents" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "amount" DECIMAL(12,2) NOT NULL,
+    "paid_amount" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "applied_amount" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "held_amount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "held_reason" TEXT,
-    "refunded_cents" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "refunded_amount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "methods" TEXT[],
     "payer_name" TEXT NOT NULL,
     "payer_document" TEXT NOT NULL,
@@ -55,14 +55,14 @@ CREATE TABLE "impound_payment_intents" (
     CONSTRAINT "impound_payment_intents_status_chk" CHECK ("status" IN ('pending', 'cancel_requested', 'cancelled', 'expired', 'settled', 'funds_held', 'disputed', 'reversed')),
     CONSTRAINT "impound_payment_intents_cancel_reason_chk" CHECK ("cancel_reason" IS NULL OR "cancel_reason" IN ('cancel', 'expire', 'manual_settlement', 'due_changed', 'sibling_funds_held', 'connection_retired')),
     CONSTRAINT "impound_payment_intents_cancel_requested_reason_chk" CHECK ("status" <> 'cancel_requested' OR "cancel_reason" IS NOT NULL),
-    CONSTRAINT "impound_payment_intents_money_nonnegative_chk" CHECK ("amount_cents" > 0 AND "paid_cents" >= 0 AND "applied_cents" >= 0 AND "held_cents" >= 0 AND "refunded_cents" >= 0),
-    CONSTRAINT "impound_payment_intents_money_identity_chk" CHECK (paid_cents = applied_cents + held_cents + refunded_cents),
-    CONSTRAINT "impound_payment_intents_held_reason_pair_chk" CHECK (("held_cents" > 0) = ("held_reason" IS NOT NULL)),
+    CONSTRAINT "impound_payment_intents_money_nonnegative_chk" CHECK ("amount" > 0 AND "paid_amount" >= 0 AND "applied_amount" >= 0 AND "held_amount" >= 0 AND "refunded_amount" >= 0),
+    CONSTRAINT "impound_payment_intents_money_identity_chk" CHECK (paid_amount = applied_amount + held_amount + refunded_amount),
+    CONSTRAINT "impound_payment_intents_held_reason_pair_chk" CHECK (("held_amount" > 0) = ("held_reason" IS NOT NULL)),
     CONSTRAINT "impound_payment_intents_held_reason_chk" CHECK ("held_reason" IS NULL OR "held_reason" IN ('amount_short', 'overpayment', 'duplicate_payment', 'paid_after_cancel', 'paid_after_expire', 'paid_after_manual_settlement', 'paid_after_reversal', 'reversal_remainder', 'refund_requested', 'refund_unclassified', 'chargeback_disputed')),
-    CONSTRAINT "impound_payment_intents_open_states_money_chk" CHECK ("status" NOT IN ('pending', 'cancel_requested', 'cancelled', 'expired') OR ("applied_cents" = 0 AND "held_cents" = 0)),
-    CONSTRAINT "impound_payment_intents_held_states_money_chk" CHECK ("status" NOT IN ('funds_held', 'disputed') OR ("applied_cents" = 0 AND "held_cents" > 0)),
-    CONSTRAINT "impound_payment_intents_reversed_money_chk" CHECK ("status" <> 'reversed' OR ("applied_cents" = 0 AND "held_cents" = 0 AND "refunded_cents" > 0)),
-    CONSTRAINT "impound_payment_intents_settled_money_chk" CHECK ("status" <> 'settled' OR ("applied_cents" > 0 AND ("held_reason" IS NULL OR "held_reason" IN ('overpayment', 'duplicate_payment')))),
+    CONSTRAINT "impound_payment_intents_open_states_money_chk" CHECK ("status" NOT IN ('pending', 'cancel_requested', 'cancelled', 'expired') OR ("applied_amount" = 0 AND "held_amount" = 0)),
+    CONSTRAINT "impound_payment_intents_held_states_money_chk" CHECK ("status" NOT IN ('funds_held', 'disputed') OR ("applied_amount" = 0 AND "held_amount" > 0)),
+    CONSTRAINT "impound_payment_intents_reversed_money_chk" CHECK ("status" <> 'reversed' OR ("applied_amount" = 0 AND "held_amount" = 0 AND "refunded_amount" > 0)),
+    CONSTRAINT "impound_payment_intents_settled_money_chk" CHECK ("status" <> 'settled' OR ("applied_amount" > 0 AND ("held_reason" IS NULL OR "held_reason" IN ('overpayment', 'duplicate_payment')))),
     CONSTRAINT "impound_payment_intents_methods_chk" CHECK ("methods" IS NOT NULL AND cardinality("methods") >= 1 AND "methods" <@ ARRAY['pix', 'credit_card', 'debit_card']::TEXT[]),
     CONSTRAINT "impound_payment_intents_one_connection_chk" CHECK (num_nonnulls(payment_connection_id, payment_group_connection_id) = 1),
     CONSTRAINT "impound_payment_intents_group_pair_chk" CHECK (("payment_group_id" IS NULL) = ("payment_group_connection_id" IS NULL)),

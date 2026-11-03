@@ -34,7 +34,7 @@ export const LIVE_LINK_STATUSES = ["pending", "cancel_requested"] as const;
 export const LIVE_INTENT_STATUSES = ["pending", "cancel_requested", "funds_held", "disputed"] as const;
 export const HELD_FUNDS_STATUSES = ["funds_held", "disputed"] as const;
 
-// §4.1 — motivo de toda parte RETIDA (`held_cents > 0 ⇔ held_reason`).
+// §4.1 — motivo de toda parte RETIDA (`held_amount > 0 ⇔ held_reason`).
 export const HELD_REASONS = [
   "amount_short",
   "overpayment",

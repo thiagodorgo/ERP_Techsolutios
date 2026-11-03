@@ -3547,8 +3547,8 @@ model ProcessCharge {
 // Ω5P PR-07 — bookkeeping do SWEEP de diárias (durabilidade/observabilidade, NÃO a fonte de idempotência — essa
 // é o partial-unique de period_seq). Um run por tick por tenant. tenant_id 1º; RLS forced.
 // B-PATIO-REC-01 (plano v3 §4.1/§4.2/§7 M-REC-1; emenda §3.1, §6.2.2, §8.2.5) — a cobrança ON-LINE da taxa de pátio.
-// O dinheiro mora nas colunas *_cents (nomes do plano), em Decimal(12,2) = REAIS no banco (regra de dinheiro do plano, §7);
-// a app converte para centavos inteiros, de forma exata. Identidade paid = applied + held + refunded, dinheiro por estado,
+// O dinheiro mora nas colunas *_amount, em Decimal(12,2) = REAIS (emenda 1 §11.1, como process_charges.total_amount); o
+// TypeScript calcula em centavos inteiros e converte só no repositório Prisma (moneyToCents/centsToMoney do charging). Identidade paid = applied + held + refunded, dinheiro por estado,
 // held > 0 ⇔ held_reason, conta "exatamente uma" (conexão própria XOR conexão de grupo) e o par grupo+conexão de grupo são
 // CHECKs do banco (raw-only, como os CHECKs de process_charges). account_scope é coluna GERADA (raw-only). O link aberto é a
 // UNIQUE parcial impound_payment_intents_live_link_key (raw-only). tenant_id 1º; RLS ENABLE + FORCE. As FKs das colunas de
@@ -3560,12 +3560,12 @@ model ImpoundPaymentIntent {
   status                      String         @default("pending")
   cancel_reason               String?
   currency                    String         @default("BRL")
-  amount_cents                Decimal        @db.Decimal(12, 2)
-  paid_cents                  Decimal        @default(0) @db.Decimal(12, 2)
-  applied_cents               Decimal        @default(0) @db.Decimal(12, 2)
-  held_cents                  Decimal        @default(0) @db.Decimal(12, 2)
+  amount                Decimal        @db.Decimal(12, 2)
+  paid_amount                  Decimal        @default(0) @db.Decimal(12, 2)
+  applied_amount               Decimal        @default(0) @db.Decimal(12, 2)
+  held_amount                  Decimal        @default(0) @db.Decimal(12, 2)
   held_reason                 String?
-  refunded_cents              Decimal        @default(0) @db.Decimal(12, 2)
+  refunded_amount              Decimal        @default(0) @db.Decimal(12, 2)
   methods                     String[]
   payer_name                  String
   payer_document              String

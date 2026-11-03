@@ -131,7 +131,7 @@ if (!connectionString) {
     const hasAccount = "payment_connection_id" in row || "payment_group_id" in row || "payment_group_connection_id" in row;
     return client.$queryRawUnsafe<Array<{ id: string; account_scope: string }>>(
       `INSERT INTO impound_payment_intents
-         (tenant_id, process_id, status, cancel_reason, amount_cents, paid_cents, applied_cents, held_cents, held_reason, refunded_cents,
+         (tenant_id, process_id, status, cancel_reason, amount, paid_amount, applied_amount, held_amount, held_reason, refunded_amount,
           methods, payer_name, payer_document, provider, payment_connection_id, payment_group_id, payment_group_connection_id, expires_at, settled_charge_ids)
        VALUES ($1::uuid, $2::uuid, $3, $4, $5::numeric, $6::numeric, $7::numeric, $8::numeric, $9, $10::numeric,
           ARRAY['pix','credit_card','debit_card']::text[], 'Maria', '52998224725', 'asaas', $11::uuid, $12::uuid, $13::uuid, now() + interval '1 day', '{}'::uuid[])
@@ -187,14 +187,14 @@ if (!connectionString) {
     await insertIntent(h.admin, tenantId, processId, { status: "pending" });
 
     const toHeld = await h.admin.$executeRawUnsafe(
-      `UPDATE impound_payment_intents SET status = 'funds_held', paid_cents = 350.00, held_cents = 350.00, held_reason = 'paid_after_cancel'
+      `UPDATE impound_payment_intents SET status = 'funds_held', paid_amount = 350.00, held_amount = 350.00, held_reason = 'paid_after_cancel'
         WHERE tenant_id = $1::uuid AND id = $2::uuid`,
       tenantId,
       cancelled!.id,
     );
     assert.equal(toHeld, 1, "expected commit, got 23505 (cancelled → funds_held)");
     const toDisputed = await h.admin.$executeRawUnsafe(
-      `UPDATE impound_payment_intents SET status = 'disputed', applied_cents = 0, held_cents = 350.00, held_reason = 'chargeback_disputed'
+      `UPDATE impound_payment_intents SET status = 'disputed', applied_amount = 0, held_amount = 350.00, held_reason = 'chargeback_disputed'
         WHERE tenant_id = $1::uuid AND id = $2::uuid`,
       tenantId,
       settled!.id,
@@ -318,6 +318,42 @@ if (!connectionString) {
       "referência com grupo e sem conexão de grupo",
     );
     assert.equal(await insertRef(h.admin, tenantId, { group: randomUUID(), groupConnection: randomUUID() }), 1, "controle positivo da referência");
+  });
+
+  test("T-DOM-db-8 · emenda §11.1: reais no banco ↔ centavos na app — 123.45 ida e volta exata pelo repositório", async () => {
+    const h = await harness();
+    const tenantId = await newTenant(h, "db8");
+    const processId = await newProcess(h, tenantId);
+    const [read] = await insertIntent(h.admin, tenantId, processId, { status: "funds_held", amount: "350.00", paid: "123.45", held: "123.45", held_reason: "amount_short" });
+    const repository = new h.prismaRepo.RlsPrismaImpoundPaymentRepository(h.admin);
+    const found = await repository.findById(tenantId, read!.id);
+    assert.equal(found?.paidCents, 12_345, `expected 12345, got ${found?.paidCents}`);
+    assert.equal(found?.heldCents, 12_345);
+    assert.equal(found?.amountCents, 35_000);
+
+    const other = await newProcess(h, tenantId);
+    const written = await h.rls.withTenantRls(h.admin, tenantId, (tx) =>
+      new h.prismaRepo.PrismaImpoundPaymentRepository(tx).insertIntent({
+        tenantId,
+        processId: other,
+        amountCents: 12_345,
+        currency: "BRL",
+        methods: ["pix", "credit_card", "debit_card"],
+        payerName: "Maria",
+        payerDocument: "52998224725",
+        provider: "asaas",
+        account: { scope: "organization", connectionId: randomUUID() },
+        expiresAt: new Date(Date.now() + 86_400_000),
+        occurredAt: new Date(),
+      }),
+    );
+    const [stored] = await h.admin.$queryRawUnsafe<Array<{ amount: string }>>(
+      `SELECT amount::text AS amount FROM impound_payment_intents WHERE tenant_id = $1::uuid AND id = $2::uuid`,
+      tenantId,
+      written.id,
+    );
+    assert.equal(stored?.amount, "123.45", "centavos gravados como reais");
+    assert.equal(written.amountCents, 12_345);
   });
 
   test("T-ISO-db-1 · R-ISO como SUPERUSUÁRIO (a RLS não age): processo de B pelo ator de A → 404; a lista e a busca só trazem A", async () => {

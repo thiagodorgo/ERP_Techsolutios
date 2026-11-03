@@ -162,26 +162,6 @@ export function assertIntentMoney(intent: {
   }
 }
 
-// Conversão EXATA entre o Decimal(12,2) do banco ("123.45") e centavos inteiros. Recusa o que não é dinheiro canônico.
-export function moneyStringToCents(value: string): number {
-  const match = /^(-?)(\d{1,10})(?:\.(\d{1,2}))?$/.exec(value.trim());
-  if (!match) {
-    throw new ImpoundPaymentError(500, "INTERNAL_SERVER_ERROR", "money_not_decimal", "Unexpected error.");
-  }
-  const sign = match[1] === "-" ? -1 : 1;
-  const cents = Number(match[2]) * 100 + Number((match[3] ?? "0").padEnd(2, "0"));
-  return sign * cents;
-}
-
-export function centsToMoneyString(cents: number): string {
-  if (!Number.isSafeInteger(cents)) {
-    throw new ImpoundPaymentError(500, "INTERNAL_SERVER_ERROR", "money_not_cents", "Unexpected error.");
-  }
-  const sign = cents < 0 ? "-" : "";
-  const absolute = Math.abs(cents);
-  return `${sign}${Math.floor(absolute / 100)}.${String(absolute % 100).padStart(2, "0")}`;
-}
-
 function moneyError(reason: string): ImpoundPaymentError {
   return new ImpoundPaymentError(422, "ONLINE_PAYMENT_INVALID", reason, "The payment intent money columns are inconsistent.");
 }

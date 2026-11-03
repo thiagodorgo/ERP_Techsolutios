@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import { PrismaChargeRepository } from "../charging/charge-prisma.repository.js";
 import { ChargeService } from "../charging/charge.service.js";
+import { centsToMoney, moneyToCents } from "../charging/charge.validators.js";
 import { PrismaReleaseRepository } from "../release/release-prisma.repository.js";
 import type { TariffResolver } from "../tariffs/tariff-resolution.js";
 import type { ImpoundPaymentRepository, IntentWriteScope } from "./impound-payment.repository.js";
@@ -18,7 +19,6 @@ import {
   type NewIntentInput,
   type PaymentMethod,
 } from "./impound-payment.types.js";
-import { centsToMoneyString, moneyStringToCents } from "./impound-payment.validators.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -72,7 +72,7 @@ export class PrismaImpoundPaymentRepository {
           process_id: input.processId,
           status: "pending",
           currency: input.currency,
-          amount_cents: centsToMoneyString(input.amountCents),
+          amount: centsToMoney(input.amountCents),
           methods: [...input.methods],
           payer_name: input.payerName,
           payer_document: input.payerDocument,
@@ -186,12 +186,12 @@ type IntentRecord = {
   readonly status: string;
   readonly cancel_reason: string | null;
   readonly currency: string;
-  readonly amount_cents: Prisma.Decimal;
-  readonly paid_cents: Prisma.Decimal;
-  readonly applied_cents: Prisma.Decimal;
-  readonly held_cents: Prisma.Decimal;
+  readonly amount: Prisma.Decimal;
+  readonly paid_amount: Prisma.Decimal;
+  readonly applied_amount: Prisma.Decimal;
+  readonly held_amount: Prisma.Decimal;
   readonly held_reason: string | null;
-  readonly refunded_cents: Prisma.Decimal;
+  readonly refunded_amount: Prisma.Decimal;
   readonly methods: readonly string[];
   readonly payer_name: string;
   readonly payer_document: string;
@@ -220,12 +220,12 @@ function mapIntent(row: IntentRecord): ImpoundPaymentIntent {
     status: row.status as IntentStatus,
     cancelReason: (row.cancel_reason ?? undefined) as CancelReason | undefined,
     currency: row.currency,
-    amountCents: moneyStringToCents(row.amount_cents.toFixed(2)),
-    paidCents: moneyStringToCents(row.paid_cents.toFixed(2)),
-    appliedCents: moneyStringToCents(row.applied_cents.toFixed(2)),
-    heldCents: moneyStringToCents(row.held_cents.toFixed(2)),
+    amountCents: moneyToCents(row.amount.toFixed(2)),
+    paidCents: Number(row.paid_amount.toFixed(2)),
+    appliedCents: moneyToCents(row.applied_amount.toFixed(2)),
+    heldCents: moneyToCents(row.held_amount.toFixed(2)),
     heldReason: (row.held_reason ?? undefined) as HeldReason | undefined,
-    refundedCents: moneyStringToCents(row.refunded_cents.toFixed(2)),
+    refundedCents: moneyToCents(row.refunded_amount.toFixed(2)),
     methods: row.methods as PaymentMethod[],
     payerName: row.payer_name,
     payerDocument: row.payer_document,

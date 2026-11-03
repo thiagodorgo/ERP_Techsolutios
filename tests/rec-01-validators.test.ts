@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import test from "node:test";
 
 import { CHARGE_KINDS } from "../src/modules/charging/charge.types.js";
+import { centsToMoney, moneyToCents } from "../src/modules/charging/charge.validators.js";
 import { InMemoryImpoundPaymentRepository } from "../src/modules/impound-payments/impound-payment.repository.js";
 import { ImpoundPaymentService } from "../src/modules/impound-payments/impound-payment.service.js";
 import {
@@ -13,9 +14,7 @@ import {
 } from "../src/modules/impound-payments/impound-payment.types.js";
 import {
   assertIntentMoney,
-  centsToMoneyString,
   maskPayerDocument,
-  moneyStringToCents,
   parseCreateIntentBody,
   parsePayerDocument,
   parsePayerName,
@@ -77,17 +76,15 @@ test("T-DOM-4 · §4.1: o espelho dos CHECKs na app (identidade, motivo do retid
   assert.throws(() => assertIntentMoney({ ...base, status: "pending", paidCents: 0.5 }), reason("money_not_cents"));
 });
 
-test("T-DOM-5 · conversão EXATA entre Decimal(12,2) e centavos inteiros", () => {
-  assert.equal(moneyStringToCents("350.00"), 35_000);
-  assert.equal(moneyStringToCents("0.1"), 10);
-  assert.equal(moneyStringToCents("1234567890.99"), 123_456_789_099);
-  assert.equal(centsToMoneyString(35_001), "350.01");
-  assert.equal(centsToMoneyString(5), "0.05");
+test("T-DOM-5 · emenda §11.1: a conversão Decimal(12,2) em reais ↔ centavos inteiros (a do charging, usada no repositório) é exata", () => {
+  assert.equal(moneyToCents("350.00"), 35_000);
+  assert.equal(moneyToCents("123.45"), 12_345);
+  assert.equal(moneyToCents("0.10"), 10);
+  assert.equal(centsToMoney(35_001), "350.01");
+  assert.equal(centsToMoney(5), "0.05");
   for (let cents = 0; cents <= 200_000; cents += 7) {
-    assert.equal(moneyStringToCents(centsToMoneyString(cents)), cents);
+    assert.equal(moneyToCents(centsToMoney(cents)), cents);
   }
-  assert.throws(() => moneyStringToCents("1.234"), reason("money_not_decimal"));
-  assert.throws(() => centsToMoneyString(1.5), reason("money_not_cents"));
 });
 
 test("T-DOM-6 · P-REC-3: só a taxa de pátio é cobrável on-line (remoção, diária, avulso); nada do órgão", () => {
