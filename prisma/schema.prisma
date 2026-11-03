@@ -51,6 +51,8 @@ model Tenant {
   custody_events                CustodyEvent[]
   intake_inspections            IntakeInspection[]
   process_charges               ProcessCharge[]
+  impound_payment_intents       ImpoundPaymentIntent[] // B-PATIO-REC-01 — cobranças on-line da taxa de pátio
+  impound_payment_refs          ImpoundPaymentRef[]    // B-PATIO-REC-01 — referência GLOBAL (só ids e datas)
   daily_accrual_runs            DailyAccrualRun[]
   process_notifications         ProcessNotification[]
   impound_releases              ImpoundRelease[]
@@ -3279,6 +3281,7 @@ model ImpoundProcess {
   portal_release_requests PortalReleaseRequest[] // Ω5P PR-17 — intenções de liberação originadas pelo proprietário
   outbox_events          ImpoundOutboxEvent[] // Ω5P PR-20 — fila de interop Sivec-ready (captura, nunca envio real)
   checklist_links        ImpoundProcessChecklistLink[] // Ω-VID PR-04 — vínculo dossiê↔checklist do guincho (AUTO/MANUAL)
+  payment_intents        ImpoundPaymentIntent[] // B-PATIO-REC-01 — cobranças on-line da taxa de pátio
 
   @@unique([tenant_id, id])
   @@index([tenant_id, yard_id, status])
@@ -3543,6 +3546,78 @@ model ProcessCharge {
 
 // Ω5P PR-07 — bookkeeping do SWEEP de diárias (durabilidade/observabilidade, NÃO a fonte de idempotência — essa
 // é o partial-unique de period_seq). Um run por tick por tenant. tenant_id 1º; RLS forced.
+// B-PATIO-REC-01 (plano v3 §4.1/§4.2/§7 M-REC-1; emenda §3.1, §6.2.2, §8.2.5) — a cobrança ON-LINE da taxa de pátio.
+// O dinheiro mora nas colunas *_amount, em Decimal(12,2) = REAIS (emenda 1 §11.1, como process_charges.total_amount); o
+// TypeScript calcula em centavos inteiros e converte só no repositório Prisma (moneyToCents/centsToMoney do charging). Identidade paid = applied + held + refunded, dinheiro por estado,
+// held > 0 ⇔ held_reason, conta "exatamente uma" (conexão própria XOR conexão de grupo) e o par grupo+conexão de grupo são
+// CHECKs do banco (raw-only, como os CHECKs de process_charges). account_scope é coluna GERADA (raw-only). O link aberto é a
+// UNIQUE parcial impound_payment_intents_live_link_key (raw-only). tenant_id 1º; RLS ENABLE + FORCE. As FKs das colunas de
+// conexão nascem no REC-04 (M-REC-14), quando as tabelas de conexão existirem (emenda §3.0).
+model ImpoundPaymentIntent {
+  id                          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id                   String         @db.Uuid
+  process_id                  String         @db.Uuid
+  status                      String         @default("pending")
+  cancel_reason               String?
+  currency                    String         @default("BRL")
+  amount                Decimal        @db.Decimal(12, 2)
+  paid_amount                  Decimal        @default(0) @db.Decimal(12, 2)
+  applied_amount               Decimal        @default(0) @db.Decimal(12, 2)
+  held_amount                  Decimal        @default(0) @db.Decimal(12, 2)
+  held_reason                 String?
+  refunded_amount              Decimal        @default(0) @db.Decimal(12, 2)
+  methods                     String[]
+  payer_name                  String
+  payer_document              String
+  provider                    String
+  payment_connection_id       String?        @db.Uuid
+  payment_group_id            String?        @db.Uuid
+  payment_group_connection_id String?        @db.Uuid
+  account_scope               String         @default(dbgenerated("\nCASE\n    WHEN (payment_group_connection_id IS NULL) THEN 'organization'::text\n    ELSE 'group'::text\nEND")) // coluna GERADA (emenda §8.2.5)
+  external_charge_id          String?        @unique
+  pay_url                     String?
+  pix_copy_paste              String?
+  expires_at                  DateTime       @db.Timestamptz(6)
+  settled_charge_ids          String[]       @db.Uuid
+  settled_at                  DateTime?      @db.Timestamptz(6)
+  reversed_at                 DateTime?      @db.Timestamptz(6)
+  created_by                  String?        @db.Uuid
+  updated_by                  String?        @db.Uuid
+  created_at                  DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime       @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                      Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  process                     ImpoundProcess @relation(fields: [tenant_id, process_id], references: [tenant_id, id], onDelete: Restrict)
+
+  @@unique([tenant_id, id])
+  @@index([tenant_id, process_id])
+  @@index([tenant_id, status])
+  @@map("impound_payment_intents")
+}
+
+// B-PATIO-REC-01 (plano v3 §5.5 L12, §7 M-REC-2; emenda §2.1, §3.1, X-45) — referência GLOBAL de cada cobrança on-line (exceção
+// declarada, espelho de billing_statement_refs): só ids, a conta e datas — nem valor, nem PII, nem estado de dinheiro. É o que
+// liga o aviso do provedor (patio:<intent_id>) à organização e à conta, e o que a vigilância varre. Sem RLS por desenho.
+model ImpoundPaymentRef {
+  intent_id                   String    @id @db.Uuid
+  tenant_id                   String    @db.Uuid
+  provider                    String
+  payment_connection_id       String?   @db.Uuid
+  payment_group_id            String?   @db.Uuid
+  payment_group_connection_id String?   @db.Uuid
+  external_charge_id          String?
+  watch                       String    @default("open")
+  next_check_at               DateTime? @db.Timestamptz(6)
+  watch_until                 DateTime? @db.Timestamptz(6)
+  refund_requested_at         DateTime? @db.Timestamptz(6)
+  created_at                  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  tenant                      Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([next_check_at])
+  @@index([tenant_id])
+  @@map("impound_payment_refs")
+}
+
 model DailyAccrualRun {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenant_id       String    @db.Uuid

@@ -17,11 +17,11 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 114
+  "n": 116
  },
  "MIDDLEWARE /api/v1 · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
-  "n": 56
+  "n": 57
  },
  "MIDDLEWARE /api/v1/auth/identity-links · (anônima)": {
   "classe": "MIDDLEWARE",
@@ -404,6 +404,14 @@
   "n": 1
  },
  "ROTA GET /api/v1/impound-processes/:processId/notifications": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/online-payment": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/impound-processes/:processId/online-payments": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1363,6 +1371,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/impound-processes/:processId/online-payment": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/impound-processes/:processId/release/approve": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1705,7 +1717,7 @@
  },
  "ROTEADOR /api/v1": {
   "classe": "ROTEADOR",
-  "n": 59
+  "n": 60
  },
  "ROTEADOR /api/v1/audit-events": {
   "classe": "ROTEADOR",

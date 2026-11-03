@@ -1,5 +1,15 @@
 # Status Geral
 
+## Atualização 2026-11-03 — registro de 03/11: #484, #486 e #485 no ar, junta do #484, decisões do pátio e dos braços
+
+- **Base medida:** `origin/main@e7dcbbb7`, merge do #484. As seções do `REGISTRO-PENDENTE.md` a partir de "Dono, 02/11 ~23:45 SP" foram confrontadas com `decisoes.md`, `pendencias.md`, `PLANO_SAN3.md` e o histórico; o que já estava na `main` (a fala da Q11c, levada pelo #485; a `P-SAN303-TAG-DESCONHECIDA`, criada pelo #484) não foi duplicado.
+- **No ar:** #486 (`B-SAN3-21`, merge `5da03cac`), #485 (registro de 02/11, merge `ceb62a07`) e #484 (`B-SAN3-03`, merge `e7dcbbb7`). O #487 (`B-SAN3-19`) está aberto, em revisão.
+- **Gate (`PLANO_SAN3.md` §4.1):** itens **25 e 26 FECHADOS** pelo #484 (head `35367753`, CI do merge `41647952407`; o item 25 foi medido pelo critério dele no TAP do merge) e **49 FECHADO** pelo #486 (head `03012d66`, CI do merge `41631321827`, `310/42 → 0`). O item 48 segue aberto (o #487 é proposta). A dependência residual `B-O6R-03b` saiu da linha do `B-SAN3-19`.
+- **Junta do #484:** ata `omega/juntas/J-B-SAN3-03-PR484.md`, com inspetor, cadeiras, quem achou, planejou, consertou e conferiu, as duas quedas e o fluxo rápido; votos e evidências em `omega/juntas/votos/B-SAN3-03-PR484/`.
+- **Decisões:** `D-PATIO-RESPOSTAS-0211` (as 22 respostas, a Q12 e a Q-NOTA, literais), `D-BRACOS-0211-0311` (Copilot fora, Codex em `high`, Sol por padrão e Astra em demanda alta, Claude cobre a conta 1, Antigravity com Opus 5.5), `D-SAN303-TAG-DESCONHECIDA` (leitura do orquestrador), `D-ROTULO-MANAGER-GESTOR-OPERACIONAL` (proposta no #487) e `ERRATA-0311` (O-1, O-2, O-3 do #485 e o "comentário do dono" do porteiro do #486).
+- **Pendências novas:** `P-SAN303-HOMOGLIFO-NOME`, `P-SAN303-TESTE-TAG-INVISIVEL`, `P-SAN3-21-PERFIL-LOGISTICO`, `P-WEB-LOGIN-MENSAGEM-TENANT`, `P-FRONT-SMOKE-ACOES-DESPACHO-VACUO`, `P-MOBILE-TITULOS-SEM-ACENTO`, `P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA` e `P-MOBILE-IOS-CFBUNDLENAME-17`, todas com status, dono e PR-alvo. Fechadas: `P-028` e `P-Ω3F2B-ACENTOS`. As cinco entradas fechadas pelo #484 ganharam head, merge, data do merge e CI.
+- **Escopo:** somente `agent-orchestration/**` e `docs/revisoes/SAN3/PLANO_SAN3.md`; KPI continua congelado.
+
 ## Atualização 2026-11-02 — segundo registro do dia e ata do PR #483
 
 - **Base medida:** `origin/main@7c89c73b`, merge do #483. O `REGISTRO-PENDENTE.md` foi confrontado por seção com `decisoes.md`, `pendencias.md` e o histórico; o que #475, #479, #480 e #482 já levaram não foi duplicado.
