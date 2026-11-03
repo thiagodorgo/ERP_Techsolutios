@@ -1,5 +1,15 @@
 # Status Geral
 
+## Atualização 2026-11-02 — segundo registro do dia e ata do PR #483
+
+- **Base medida:** `origin/main@7c89c73b`, merge do #483. O `REGISTRO-PENDENTE.md` foi confrontado por seção com `decisoes.md`, `pendencias.md` e o histórico; o que #475, #479, #480 e #482 já levaram não foi duplicado.
+- **Decisões e registros novos:** Fable suspenso e topo em Opus Ultra Code; meios obrigatórios de pagamento do pátio (débito, crédito e Pix), contas que condicionam a liberação e a correção factual de que Iugu não aceita débito; CNPJ/conta de um cliente com 100 filiais-organizações; dois modos de APIs (compartilhado e individual); credenciais do administrador sob trava da plataforma; somente APIs validadas, com Asaas e Focus no MVP; filial sem assinatura, vendo apenas uso e custo.
+- **Pendências novas:** `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS` e os dois conflitos §A2, sem consolidação: recebimento/repasse e assinatura da filial. O CAS de título aponta para `P-TK11H-BARREIRA-FASE`, cuja entrada é criada pelo PR #484 por mandato da Emenda 2; o #485 não cria a mesma pendência. As seis demais telas do pátio foram apensadas a `P-APARENCIA-POR-USUARIO`.
+- **Conflitos §A2 adicionais, registrados e não resolvidos:** Q8/Q10 da v2 do pátio; a premissa de recebimento de terceiros da `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`; e os planos de cobrança e assinatura que modelam conta, perfil fiscal ou nota por organização. Por decisão literal do dono às ~23:45 SP de 02/11, a `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` segue aberta para o parecer posterior, mas deixou de bloquear a produção.
+- **Porteiro do #464, ressalva 4 registrada:** `DEEP_CLEAN=1` somente sem junta rodando, pois `image prune -af` remove as imagens `postgres:16` e `redis:7` das cadeiras.
+- **PR #483:** ata `omega/juntas/J-B-O6R-11-PR483.md` e conjunto probatório em `omega/juntas/votos/B-O6R-11-PR483/`. O porteiro foi `LIBERADO COM RESSALVA`; a falta da ata é paga neste registro. Merge `7c89c73b`, head aprovado `df84cd81`.
+- **Escopo:** somente `agent-orchestration/**`; KPI continua congelado.
+
 ## Atualização 2026-11-02 — B-O6R-11, 1º PR do corte: fatias prontas, PR a abrir
 
 Ramo `fix/mobile-fila-duravel-b-o6r-11`. Fatias F0–F4c, F-S0, F-T, F-S1a, F-S1a', F-S1b, F-S1b', F5 e F6c feitas; a F7c abre o PR. Suíte Flutter `+969` (N = 905). Fecha `Ω6R-QUA-005`; `QUA-004` → `B-O6R-11d`; a metade `failed` de `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` fica PARCIAL; a sonda P4 deu **B** (não reproduz; `P-MOBILE-SYNC-SCREEN-RETRATO-VELHO`, BAIXA). Novas: `P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL` (→ `B-O6R-11c`), `P-O6R11-TEXTOS-FORA-DE-D-T` (→ `B-SAN3-19`), o índice `P-O6R-B11-PENDENCIAS-DO-RAMO-388` e 3 portadas do ramo do #388.

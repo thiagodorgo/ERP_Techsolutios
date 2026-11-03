@@ -5124,3 +5124,13 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
   → `2b65f51a` 683; `origin/main` 701; `d3e80027` 708.
 - O conserto pós-junta acrescenta mais 1 pendência (`P-MOBILE-BANNER-PROMETE-SINCRONIZAR`); o índice é regenerado pelo
   gerador no mesmo commit, e o número final fica no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
+
+## 2026-11-02 — registro pendente, segundo lote (`reg-0211b-sol`)
+
+- Autor: Codex GPT-5.6 Sol, nível menor declarado; verificação prevista por Claude, conforme `D-UM-FAZ-OUTRO-VERIFICA`.
+- Base medida: `origin/main@7c89c73b`. As seções anteriores do `REGISTRO-PENDENTE.md` já absorvidas pelos PRs #475, #479, #480 e #482 não foram duplicadas.
+- Registrados: `D-FABLE-SUSPENSO-0211`, `D-PATIO-MEIOS-PAGAMENTO-E-CONTAS-3110`, `D-CNPJ-UNICO-FILIAIS-DOIS-MODOS`, as falas literais com horário e as leituras do orquestrador separadas; correção “Iugu não aceita débito”; conflitos §A2 de recebimento/repasse, Q8/Q10, `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`, planos por organização e assinatura da filial, todos sem consolidação.
+- Pendências criadas pelo #485: `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`, `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS` e `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`, todas com status e bloco dono. O CAS aponta para `P-TK11H-BARREIRA-FASE`, entrada criada pelo PR #484 por mandato da Emenda 2; o #485 não a cria. Apensos em `P-APARENCIA-POR-USUARIO` e `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`; esta última deixou de bloquear a produção por decisão do dono às ~23:45 SP de 02/11.
+- Ressalva 4 do porteiro do #464 registrada: `DEEP_CLEAN=1` só quando nenhuma junta estiver rodando, porque `image prune -af` remove `postgres:16` e `redis:7` das cadeiras.
+- Ata do #483: `omega/juntas/J-B-O6R-11-PR483.md`; votos, evidências, logs, triagem, conferência, porteiro e contraprova em `omega/juntas/votos/B-O6R-11-PR483/`. Dados do PR confirmados por `gh pr view 483`: merge `7c89c73b`, head aprovado `df84cd81`, `MERGED` em `2026-11-02T17:04:13Z`.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, contratos raiz ou lockfiles.

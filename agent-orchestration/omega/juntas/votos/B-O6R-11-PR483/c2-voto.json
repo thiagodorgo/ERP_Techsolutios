@@ -1,0 +1,191 @@
+{
+  "cadeira": "C2",
+  "identidade": "jurado-o6r11-c2-argon",
+  "modelo": "Gemini 4 Argon (Medium) pelo Antigravity, nível menor DECLARADO (D-GEMINI-PRO-NIVEL-CODEX; Argon no lugar do Pro desde 19/10)",
+  "objeto": "d3e80027979af647725f61eeb07606e2d000cd16",
+  "voto": "APROVADO",
+  "achados": [],
+  "arquivos_medidos": "**",
+  "mutacoes": [
+    {
+      "id": "M-S1",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:11",
+      "mutacao": ">= kSyncMaxRetry -> > kSyncMaxRetry",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test test/core/sync/bo6r11_despesa_aguardando_envio_test.dart --plain-name r3 --reporter compact",
+      "resultado": "+0 -1 (Expected: SyncPresentation.stalled, Actual: SyncPresentation.failed) — MORDEU"
+    },
+    {
+      "id": "M-S2",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:36",
+      "mutacao": "remove lastErrorCode: syncDiscardedErrorCode no ramo discard",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test --no-pub test/core/sync/bo6r11_sync_stalled_resolver_test.dart --plain-name s2 --reporter compact",
+      "resultado": "+0 -1 (Expected: 'DISCARDED_BY_TECHNICIAN', Actual: 'OLD_CODE') — MORDEU"
+    },
+    {
+      "id": "M-S3",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:186",
+      "mutacao": "stalled.isNotEmpty -> false",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w4. --reporter compact",
+      "resultado": "+0 -1 (Found 0 widgets with key [<'stalled-card-os1'>]) — MORDEU"
+    },
+    {
+      "id": "M-S4",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:4",
+      "mutacao": "const kSyncMaxRetry = 5; -> const kSyncMaxRetry = 4;",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test --no-pub test/core/sync/bo6r11_sync_stalled_resolver_test.dart --plain-name s4 --reporter compact",
+      "resultado": "+0 -1 (Expected: <4>, Actual: <5>) — MORDEU"
+    },
+    {
+      "id": "M-S5",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:173",
+      "mutacao": "c.lastSafeError -> null no corpo do _ConflictCard de conflito",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w8. --reporter compact",
+      "resultado": "+0 -1 (w8 falhou ao procurar lastSafeError no cartão) — MORDEU"
+    },
+    {
+      "id": "M-S6",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:23",
+      "mutacao": "remove if (!isStalledAction(action)) return action;",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test --no-pub test/core/sync/bo6r11_sync_stalled_resolver_test.dart --plain-name s3 --reporter compact",
+      "resultado": "+0 -1 (s3 falhou: failed/2 virou pending) — MORDEU"
+    },
+    {
+      "id": "M-S7",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:14",
+      "mutacao": "canDiscardSyncAction retorna sempre true",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test --no-pub test/core/sync/bo6r11_sync_stalled_resolver_test.dart --plain-name s5 --reporter compact",
+      "resultado": "+0 -1 (Expected: false, Actual: <true> para expense_report.create) — MORDEU"
+    },
+    {
+      "id": "M-V1",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:153",
+      "mutacao": "if (channelOff) -> if (true)",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w3 --reporter compact",
+      "resultado": "+1 -1 (w3' falhou: aviso exibido com canal ligado) — MORDEU"
+    },
+    {
+      "id": "M-V2",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:735",
+      "mutacao": "'Aguardando envio' -> 'Pendente'",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w1. --reporter compact",
+      "resultado": "+0 -1 (w1 falhou) — MORDEU"
+    },
+    {
+      "id": "M-V3",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:204",
+      "mutacao": "if (await _confirmDiscard(context, s)) -> if (true)",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w5. --reporter compact",
+      "resultado": "+0 -1 (w5 falhou: AlertDialog não abriu) — MORDEU"
+    },
+    {
+      "id": "M-V4",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:202",
+      "mutacao": "showLeft: canDiscardSyncAction(s.type) -> showLeft: true",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w7. --reporter compact",
+      "resultado": "+0 -1 (w7 falhou: Found 1 widget with key [<'stalled-discard-d1'>]) — MORDEU"
+    },
+    {
+      "id": "M-V5",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:675",
+      "mutacao": "hasError inclui SyncPresentation.awaitingBackend",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w1. --reporter compact",
+      "resultado": "+0 -1 (w1 falhou: 3 Cards com fundo vermelho) — MORDEU"
+    },
+    {
+      "id": "M-V6",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:126",
+      "mutacao": "SyncPresentationCounts.fromActions ignora channelOff (expenseChannelOff: false)",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w2. --reporter compact",
+      "resultado": "+0 -1 (w2 falhou: contadores divergiram da apresentação) — MORDEU"
+    },
+    {
+      "id": "M-V7",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:45",
+      "mutacao": "_resolveStalled usa action (retrato velho) em vez de fresh",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w11. --reporter compact",
+      "resultado": "+0 -1 (w11 falhou: sobrescreveu ação já sincronizada) — MORDEU"
+    },
+    {
+      "id": "M-V8",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:723",
+      "mutacao": "SyncPresentation.awaitingBackend -> Icons.error_outline",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w1. --reporter compact",
+      "resultado": "+0 -1 (w1 falhou: ícone de erro exibido em awaitingBackend) — MORDEU"
+    },
+    {
+      "id": "M-D3",
+      "alvo": "mobile/flutter_app/lib/core/diagnostics/diagnostics_screen.dart:34",
+      "mutacao": "SyncPresentationCounts.fromActions ignora channelOff (expenseChannelOff: false)",
+      "hash_antes": "643dd6b377773be2d2759b8d65b9cad17f9c90f40f4dfad37dc0f478c1784bbf",
+      "hash_depois": "643dd6b377773be2d2759b8d65b9cad17f9c90f40f4dfad37dc0f478c1784bbf",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_diagnostics_contadores_test.dart --reporter compact",
+      "resultado": "+0 -1 (d1 falhou: Found 0 widgets with text containing Pendentes: 2) — MORDEU"
+    },
+    {
+      "id": "M-N1_C2",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_stalled_resolver.dart:33",
+      "mutacao": "NOVA (não listada no plano/emendas): remove 'when canDiscardSyncAction(action.type)' em resolveStalledAction mantendo canDiscardSyncAction intacta",
+      "hash_antes": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "hash_depois": "b34599492f2342cb9a9d5d4532234e6f271d3b6f23094a25bdfc9900c360b335",
+      "teste_decisor": "flutter test --no-pub test/core/sync/bo6r11_sync_stalled_resolver_test.dart --plain-name s5 --reporter compact",
+      "resultado": "+0 -1 (s5 falhou na l.99: resolveStalledAction descartou expense_report.create em vez de falhar fechado) — MORDEU"
+    },
+    {
+      "id": "M-N2_C2",
+      "alvo": "mobile/flutter_app/lib/shared/ui/sync_screen.dart:736",
+      "mutacao": "NOVA (não listada no plano/emendas): SyncPresentation.discarded => 'Descartado' -> 'Sincronizado'",
+      "hash_antes": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "hash_depois": "fc2af8ed9e63720664f07fc680f93cd48a89d5cc12d2cbfcc47c91cf3b306cd1",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sync_screen_despesa_e_saida_test.dart --plain-name w6. --reporter compact",
+      "resultado": "+0 -1 (w6 falhou: 'Descartado' apareceu como 'Sincronizado') — MORDEU"
+    },
+    {
+      "id": "M-N3_C2",
+      "alvo": "mobile/flutter_app/lib/core/diagnostics/diagnostics_screen.dart:90",
+      "mutacao": "NOVA (não listada no plano/emendas): filtro dos cartões de erro ignora channelOff (expenseChannelOff: false)",
+      "hash_antes": "643dd6b377773be2d2759b8d65b9cad17f9c90f40f4dfad37dc0f478c1784bbf",
+      "hash_depois": "643dd6b377773be2d2759b8d65b9cad17f9c90f40f4dfad37dc0f478c1784bbf",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_diagnostics_contadores_test.dart --reporter compact",
+      "resultado": "+0 -1 (d1 falhou na l.98: Found 1 widget with text containing NETWORK_ERROR) — MORDEU"
+    },
+    {
+      "id": "SONDA-P4-CTRL",
+      "alvo": "mobile/flutter_app/lib/core/sync/sync_replay_service.dart:628",
+      "mutacao": "return hasRealWorkOrderId; -> return true; (controle negativo da Sonda P4)",
+      "hash_antes": "409436427584d924d525b1e977d5f1dd71c5c6b364a7ef677cd6f1a1de480b83",
+      "hash_depois": "409436427584d924d525b1e977d5f1dd71c5c6b364a7ef677cd6f1a1de480b83",
+      "teste_decisor": "flutter test --no-pub test/features/bo6r11_sonda_sync_screen_retrato_velho_test.dart --reporter compact",
+      "resultado": "+0 -1 (Expected: false, Actual: <true> na l.79) — MORDEU"
+    }
+  ]
+}
