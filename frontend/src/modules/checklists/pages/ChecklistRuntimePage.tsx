@@ -82,7 +82,7 @@ export function ChecklistRuntimePage() {
           void refreshComparison(createdRun.id, active);
         }
       } catch {
-        if (active) setError("Nao foi possivel iniciar a execucao do checklist.");
+        if (active) setError("Não foi possível iniciar a execução do checklist.");
       } finally {
         if (active) setLoading(false);
       }
@@ -100,7 +100,7 @@ export function ChecklistRuntimePage() {
   }
 
   if (!checklistId) {
-    return <ErrorState title="Checklist invalido" detail="Informe um checklist publicado para iniciar execucao." />;
+    return <ErrorState title="Checklist inválido" detail="Informe um checklist publicado para iniciar execução." />;
   }
 
   // CHECKLIST P1 PR-03 (D-CHK-P1-RUN-LIFECYCLE) — vistoria concluída/cancelada é somente leitura. A tela
@@ -130,7 +130,7 @@ export function ChecklistRuntimePage() {
       setMessage("Rascunho salvo com sucesso.");
       return true;
     } catch {
-      setError("Nao foi possivel salvar o rascunho.");
+      setError("Não foi possível salvar o rascunho.");
       return false;
     } finally {
       setSaving(false);
@@ -161,9 +161,9 @@ export function ChecklistRuntimePage() {
       if (hasComparisonComponent(schema)) {
         void refreshComparison(details.run.id);
       }
-      setMessage("Checklist concluido com sucesso.");
+      setMessage("Checklist concluído com sucesso.");
     } catch {
-      setError("Nao foi possivel concluir o checklist.");
+      setError("Não foi possível concluir o checklist.");
     } finally {
       setCompleting(false);
     }
@@ -198,7 +198,7 @@ export function ChecklistRuntimePage() {
     setAttachments(details.attachments);
     setMarkers(details.markers);
     await refreshComparison(details.run.id);
-    setMessage("Divergencia registrada. A execucao ficou pendente de ciencia quando exigido pelo backend.");
+    setMessage("Divergência registrada. A execução ficou pendente de ciência quando exigido pelo backend.");
   }
 
   async function handleAcknowledgeRun(message: string, observation?: string) {
@@ -212,7 +212,7 @@ export function ChecklistRuntimePage() {
     setAttachments(details.attachments);
     setMarkers(details.markers);
     await refreshComparison(details.run.id);
-    setMessage("Ciencia registrada com sucesso.");
+    setMessage("Ciência registrada com sucesso.");
   }
 
   async function refreshComparison(runId: string, active = true) {
@@ -250,7 +250,7 @@ export function ChecklistRuntimePage() {
 
       {loading ? <Skeleton lines={5} /> : null}
       {error ? (
-        <Alert title="Atencao operacional" tone="danger">
+        <Alert title="Atenção operacional" tone="danger">
           {error}
         </Alert>
       ) : null}
@@ -271,7 +271,7 @@ export function ChecklistRuntimePage() {
           <div>
             <strong>{progress.percent}% preenchido</strong>
             <span>
-              {progress.requiredCompleted} de {progress.requiredTotal} obrigatorios completos · {typeHelpText(schema.type)}
+              {progress.requiredCompleted} de {progress.requiredTotal} obrigatórios completos · {typeHelpText(schema.type)}
             </span>
           </div>
           <progress max={100} value={progress.percent} />
@@ -284,7 +284,7 @@ export function ChecklistRuntimePage() {
       ) : null}
 
       {!loading && !schema ? (
-        <ErrorState title="Schema indisponivel" detail="O checklist publicado nao retornou schema para execucao." />
+        <ErrorState title="Schema indisponível" detail="O checklist publicado não retornou schema para execução." />
       ) : null}
 
       {schema ? (

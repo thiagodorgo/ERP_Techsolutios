@@ -107,7 +107,7 @@ export function ChecklistRuntimeField({
     if (component.type === "acknowledgement") {
       const acknowledgement = readAcknowledgementValue(value);
       const requireObservation = requiresAcknowledgementObservation(component);
-      const message = readConfiguredMessage(component, "Declaro ciencia das informacoes registradas nesta execucao.");
+      const message = readConfiguredMessage(component, "Declaro ciência das informações registradas nesta execução.");
 
       return (
         <div className="checklist-runtime-acknowledgement">
@@ -215,7 +215,7 @@ export function ChecklistRuntimeField({
 }
 
 function EvidenceBlock({
-  title = "Evidencias",
+  title = "Evidências",
   context,
   runId,
   componentId,
@@ -238,7 +238,7 @@ function EvidenceBlock({
       <strong>{title}</strong>
       {!runId ? (
         <Alert title="Execução em preparação" tone="info">
-          A evidencia podera ser enviada assim que a execucao for iniciada.
+          A evidência poderá ser enviada assim que a execução for iniciada.
         </Alert>
       ) : disabled ? null : (
         <ChecklistAttachmentUploader
@@ -280,7 +280,7 @@ function DamageMapField({
 
   async function handleAddMarker() {
     if (!description.trim()) {
-      setError("Informe uma descricao para o marcador.");
+      setError("Informe uma descrição para o marcador.");
       return;
     }
 
@@ -297,7 +297,7 @@ function DamageMapField({
       });
       setDescription("");
     } catch {
-      setError("Nao foi possivel registrar o marcador.");
+      setError("Não foi possível registrar o marcador.");
     } finally {
       setSaving(false);
     }
@@ -319,7 +319,7 @@ function DamageMapField({
             <option value="attention">Atenção</option>
           </Select>
           <label className="ui-field">
-            <span>Descricao</span>
+            <span>Descrição</span>
             <input className="ui-input" value={description} onChange={(event) => setDescription(event.target.value)} />
           </label>
           <Button type="button" variant="secondary" onClick={handleAddMarker} disabled={saving}>
@@ -335,7 +335,7 @@ function DamageMapField({
             <li key={marker.id}>
               <div>
                 <strong>{marker.markerType}</strong>
-                <span>{marker.description ?? "Sem descricao"}</span>
+                <span>{marker.description ?? "Sem descrição"}</span>
               </div>
               {!disabled ? (
                 <Button type="button" size="sm" variant="ghost" onClick={() => onRemoveMarker(marker.id)}>
@@ -373,12 +373,12 @@ function ComparisonField({
 
   async function handleReportDivergence() {
     if (!observation.trim()) {
-      setError("Informe uma observacao para registrar divergencia.");
+      setError("Informe uma observação para registrar divergência.");
       return;
     }
 
     if (!evidence) {
-      setError("Anexe ao menos uma foto ou evidencia antes de registrar divergencia.");
+      setError("Anexe ao menos uma foto ou evidência antes de registrar divergência.");
       return;
     }
 
@@ -389,7 +389,7 @@ function ComparisonField({
       await onReportDivergence(componentId, observation.trim(), evidence);
       setObservation("");
     } catch {
-      setError("Nao foi possivel registrar a divergencia.");
+      setError("Não foi possível registrar a divergência.");
     } finally {
       setSubmitting(false);
     }
@@ -397,10 +397,10 @@ function ComparisonField({
 
   return (
     <div className="checklist-runtime-comparison">
-      <Alert title="Comparacao operacional" tone="info">
+      <Alert title="Comparação operacional" tone="info">
         {loading
-          ? "Carregando comparacao da execucao."
-          : "O resumo abaixo vem do endpoint de comparacao quando houver dados para esta execucao."}
+          ? "Carregando comparação da execução."
+          : "O resumo abaixo vem do endpoint de comparação quando houver dados para esta execução."}
       </Alert>
 
       {comparison ? (
@@ -410,19 +410,19 @@ function ComparisonField({
             <span>{comparison.comparison.status}</span>
           </article>
           <article>
-            <strong>Divergencia</strong>
-            <span>{comparison.comparison.divergence ? "Sim" : "Nao registrada"}</span>
+            <strong>Divergência</strong>
+            <span>{comparison.comparison.divergence ? "Sim" : "Não registrada"}</span>
           </article>
           <article>
             <strong>Dados avaliados</strong>
             <span>
-              {comparison.answers.length} respostas · {comparison.attachments.length} evidencias · {comparison.markers.length} marcadores
+              {comparison.answers.length} respostas · {comparison.attachments.length} evidências · {comparison.markers.length} marcadores
             </span>
           </article>
         </div>
       ) : (
-        <Alert title="Comparacao ainda indisponivel" tone="warning">
-          O runtime permanece ativo, mas a API/mock nao retornou dados comparativos para esta execucao.
+        <Alert title="Comparação ainda indisponível" tone="warning">
+          O runtime permanece ativo, mas a API/mock não retornou dados comparativos para esta execução.
         </Alert>
       )}
 
@@ -435,12 +435,12 @@ function ComparisonField({
               value={observation}
               onChange={(event) => setObservation(event.target.value)}
             />
-            <small>Use evidencia ja anexada ao run; o backend registra a divergencia e exige ciencia quando aplicavel.</small>
+            <small>Use evidência já anexada ao run; o backend registra a divergência e exige ciência quando aplicável.</small>
           </label>
           {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
           <Button type="button" variant="secondary" onClick={handleReportDivergence} disabled={submitting}>
             <AlertTriangle size={16} />
-            {submitting ? "Registrando..." : "Registrar divergencia"}
+            {submitting ? "Registrando..." : "Registrar divergência"}
           </Button>
         </div>
       ) : null}
@@ -466,11 +466,11 @@ function AcknowledgeRunAction({
 
   async function handleAcknowledge() {
     if (!accepted) {
-      setError("Confirme a ciencia antes de registrar.");
+      setError("Confirme a ciência antes de registrar.");
       return;
     }
     if (requireObservation && !observation.trim()) {
-      setError("Informe a observacao obrigatoria da ciencia.");
+      setError("Informe a observação obrigatória da ciência.");
       return;
     }
 
@@ -480,7 +480,7 @@ function AcknowledgeRunAction({
     try {
       await onAcknowledgeRun(message, observation.trim() || undefined);
     } catch {
-      setError("Nao foi possivel registrar a ciencia.");
+      setError("Não foi possível registrar a ciência.");
     } finally {
       setSubmitting(false);
     }
@@ -491,7 +491,7 @@ function AcknowledgeRunAction({
       {error ? <p className="checklist-attachment-message checklist-attachment-message--error">{error}</p> : null}
       <Button type="button" variant="secondary" onClick={handleAcknowledge} disabled={submitting}>
         <CheckCircle2 size={16} />
-        {submitting ? "Registrando..." : "Registrar ciencia"}
+        {submitting ? "Registrando..." : "Registrar ciência"}
       </Button>
     </div>
   );
@@ -516,8 +516,8 @@ function readVehicleOptions(config: Record<string, unknown>): Array<{ value: str
     : [
         { value: "car", label: "Carro" },
         { value: "motorcycle", label: "Moto" },
-        { value: "truck", label: "Caminhao" },
-        { value: "van", label: "Utilitario" },
+        { value: "truck", label: "Caminhão" },
+        { value: "van", label: "Utilitário" },
       ];
 }
 

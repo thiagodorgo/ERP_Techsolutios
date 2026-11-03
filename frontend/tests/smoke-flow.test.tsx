@@ -1297,7 +1297,7 @@ test("checklist runtime valida obrigatorios por schema", async () => {
   const missing = validateChecklistRuntime(schema, { "cmp-ack": { accepted: true } }, [beforeAttachment], []);
   assert.equal(missing.length, 2);
   assert.match(missing[0].message, /antes e depois/i);
-  assert.match(missing[1].message, /observacao obrigatoria/i);
+  assert.match(missing[1].message, /observação obrigatória/i);
 
   const progress = calculateChecklistRuntimeProgress(schema, { "cmp-ack": { accepted: true } }, [beforeAttachment], []);
   assert.equal(progress.requiredTotal, 2);
@@ -1432,7 +1432,7 @@ test("smoke renderiza /login, W02A, W03, runtime e Platform Console", async () =
   );
   assert.match(loginHtml, /Acesse sua organização/);
   assert.match(protectedHtml, /Checklists Operacionais/);
-  assert.match(protectedHtml, /Ordens de Servico/);
+  assert.match(protectedHtml, /Ordens de Serviço/);
   assert.match(protectedHtml, /Nova OS/);
   assert.match(protectedHtml, /Mapa Operacional/);
   // Diretiva do dono (2026-08-06): os chips passivos do topo-esquerdo SAÍRAM ("é para sair/excluir").
@@ -1500,7 +1500,7 @@ test("anexos frontend validam ausente, renderizam lista e preview", async () => 
         componentId: "component-1",
         file: null as unknown as File,
       }),
-    /Arquivo obrigatorio/,
+    /Arquivo obrigatório/,
   );
 
   const listEmptyHtml = renderToString(<ChecklistAttachmentList attachments={[]} onDownload={async () => downloadResult()} />);
@@ -1514,12 +1514,12 @@ test("anexos frontend validam ausente, renderizam lista e preview", async () => 
   );
   const uploaderHtml = renderToString(<ChecklistAttachmentUploader context={context} runId="run-1" componentId="component-1" />);
 
-  assert.match(listEmptyHtml, /Nenhuma evidencia anexada/);
+  assert.match(listEmptyHtml, /Nenhuma evidência anexada/);
   assert.match(listItemHtml, /evidence\.jpg/);
   assert.match(imagePreviewHtml, /evidence\.jpg/);
   assert.match(pdfPreviewHtml, /evidence\.pdf/);
-  assert.match(genericPreviewHtml, /Arquivo disponivel para download protegido/);
-  assert.match(uploaderHtml, /Enviar evidencia/);
+  assert.match(genericPreviewHtml, /Arquivo disponível para download protegido/);
+  assert.match(uploaderHtml, /Enviar evidência/);
 
   const calls = installFetchJson({
     data: {

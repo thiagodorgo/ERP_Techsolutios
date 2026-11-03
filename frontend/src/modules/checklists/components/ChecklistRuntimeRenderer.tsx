@@ -66,7 +66,7 @@ export function ChecklistRuntimeRenderer({
   );
 
   if (orderedComponents.length === 0) {
-    return <EmptyState title="Schema sem componentes" detail="Publique um checklist com componentes para habilitar execucao operacional." />;
+    return <EmptyState title="Schema sem componentes" detail="Publique um checklist com componentes para habilitar execução operacional." />;
   }
 
   return (

@@ -37,24 +37,24 @@ export function WorkOrderFormPage() {
   return (
     <form className="page-stack" onSubmit={handleSubmit}>
       <header className="page-heading">
-        <span>W18 Ordem de Servico</span>
-        <h1>Criacao e edicao com validacoes obrigatorias</h1>
+        <span>W18 Ordem de Serviço</span>
+        <h1>Criação e edição com validações obrigatórias</h1>
       </header>
       <SecurityNotice />
       <section className="form-grid">
-        <Card title="Identificacao">
+        <Card title="Identificação">
           <div className="form-section">
             <Input label="Cliente" defaultValue="Atlas Refrigeração" />
             <Input label="Local de atendimento" defaultValue="Barueri / SP" />
-            <Select label="Tipo de servico" defaultValue="hvac">
-              <option value="hvac">Manutencao corretiva HVAC</option>
-              <option value="generator">Gerador em contingencia</option>
+            <Select label="Tipo de serviço" defaultValue="hvac">
+              <option value="hvac">Manutenção corretiva HVAC</option>
+              <option value="generator">Gerador em contingência</option>
               <option value="electrical">Painel eletrico</option>
             </Select>
             <Select label="Prioridade" defaultValue="critical">
-              <option value="medium">Media</option>
+              <option value="medium">Média</option>
               <option value="high">Alta</option>
-              <option value="critical">Critica</option>
+              <option value="critical">Crítica</option>
             </Select>
           </div>
         </Card>
@@ -70,14 +70,14 @@ export function WorkOrderFormPage() {
               <option value="vtr-018">VTR-018</option>
             </Select>
             <Input label="SLA limite" type="datetime-local" defaultValue="2026-05-26T17:00" />
-            <Checkbox label="Exigir evidencia antes da conclusao" defaultChecked />
+            <Checkbox label="Exigir evidência antes da conclusão" defaultChecked />
           </div>
         </Card>
         <Card title="Controle financeiro e auditoria">
           <div className="form-section">
             <Input label="Custo estimado" defaultValue="4820" inputMode="decimal" />
-            <Input label="Valor faturavel" defaultValue="7350" inputMode="decimal" />
-            <Checkbox label="Requer aprovacao se exceder limite da filial" defaultChecked />
+            <Input label="Valor faturável" defaultValue="7350" inputMode="decimal" />
+            <Checkbox label="Requer aprovação se exceder limite da filial" defaultChecked />
             <ValidationToggle checked={validated} onChange={setValidated} />
           </div>
         </Card>
