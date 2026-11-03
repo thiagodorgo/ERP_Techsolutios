@@ -9,7 +9,7 @@
 //
 // Os testes "live" NOVOS da trilha B-APAR importam daqui. Migrar as cópias que já existem nos outros arquivos NÃO é deste
 // bloco (`P-FRONT-DOM-MINIMO-TRIPLICADO`); os nomes das classes daqui (`MiniDom*`) são diferentes dos das cópias para que
-// a contagem de cópias inline (`git grep -c "class MiniNode" frontend/tests`) continue medindo só as cópias.
+// a contagem de cópias inline (contagem por `git grep` da declaração de classe `MiniNode` em `frontend/tests`) continue medindo só as cópias.
 
 const HTML_NS = "http://www.w3.org/1999/xhtml";
 

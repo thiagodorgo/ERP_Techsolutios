@@ -21,7 +21,7 @@ test("[A1] estrutura: raiz data-aparencia=A, cabeçalho OPERAÇÃO, 4 indicadore
   assert.match(html, /pat-page-header__kicker">OPERAÇÃO</);
   assert.match(html, /<h1 class="pat-page-header__title">Ordens de Serviço<\/h1>/);
   assert.deepEqual(headers(html), ["CÓDIGO", "CLIENTE / SERVIÇO", "TÉCNICO", "AGENDA", "SITUAÇÃO"]);
-  assert.match(html, /<th scope="col"><span class="sr-only">Abrir resumo<\/span><\/th>/, "a coluna do chevron tem nome acessível");
+  assert.match(html, /<th scope="col" aria-label="Abrir resumo"><\/th>/, "a coluna do chevron tem nome acessível");
   const kpis = pressedButtons(html).filter((button) => / — filtrar a lista$/.test(button.label));
   assert.equal(kpis.length, 4, "os 4 indicadores são botões com aria-pressed");
 });

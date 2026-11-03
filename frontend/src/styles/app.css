@@ -8346,7 +8346,7 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 }
 
 /* ═══ B-APAR-OS — Ordens de Serviço, as 3 aparências (`screen-refs/ordens-de-servico-3opcoes.reference.html`) ═══ */
-.aparos-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow-x: auto; }
+.aparos-card { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow-x: auto; }
 .aparos-card > .pat-ab-table { min-width: 720px; }
 .aparos-universo { margin: -6px 0 10px; font-size: 11.5px; font-weight: 600; color: #64748b; }
 .aparos-code { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #2563eb; font-variant-numeric: tabular-nums; }

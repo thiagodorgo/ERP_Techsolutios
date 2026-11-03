@@ -628,9 +628,8 @@ export function WorkOrdersTable({
               {column.header}
             </th>
           ))}
-          <th scope="col">
-            <span className="sr-only">Abrir resumo</span>
-          </th>
+          {/* Como no DenseTable: o nome acessível no próprio th (um sr-only absoluto aqui vazava a largura da página). */}
+          <th scope="col" aria-label="Abrir resumo" />
         </tr>
       </thead>
       <tbody>{body}</tbody>
