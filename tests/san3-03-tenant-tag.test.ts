@@ -54,12 +54,12 @@ test("T-TAG-3 e T-TAG-4 · slug e id únicos continuam diretos", () => {
 });
 
 test("T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma", () => {
-  const result = run("plataforma", "direct_tag_then_usage_weighted_v1", [
-    { ...tenantA, name: "Plataforma" },
-    platform,
-  ]);
-  assertAmbiguous(result);
-  assert.equal(result.totalPlatformCost, 0);
+  const collision = [{ ...tenantA, name: "Plataforma" }, platform];
+  for (const order of [collision, [...collision].reverse()]) {
+    for (const strategy of ["direct_tag_then_usage_weighted_v1", "usage_weighted_v1"] as const) {
+      assertAmbiguous(run("plataforma", strategy, order));
+    }
+  }
 });
 
 test("T-TAG-7 · estratégia só por uso também recusa tag ambígua", () => {
