@@ -14,7 +14,10 @@ import { useScreenAppearance } from "./useScreenAppearance";
 
 const wrapStyle: CSSProperties = { position: "relative", display: "flex", flexShrink: 0 };
 const overlayStyle: CSSProperties = { position: "fixed", inset: 0, zIndex: 40, background: "transparent", border: "none", cursor: "default" };
-const panelStyle: CSSProperties = {
+// B-APAR-OS — com as telas da trilha B-APAR (até 9 grupos × 3 opções) o painel passaria de ~1.200 px e sairia da
+// janela, porque abre PARA CIMA a partir do rodapé da barra lateral sem limite. Agora tem altura máxima relativa à janela
+// e rola por dentro; ao abrir, o item marcado recebe o foco e entra à vista. Só este componente: `layouts/**` intocado.
+export const APPEARANCE_PANEL_STYLE: CSSProperties = {
   position: "absolute",
   bottom: "calc(100% + 10px)",
   left: 0,
@@ -26,6 +29,9 @@ const panelStyle: CSSProperties = {
   boxShadow: "0 12px 32px rgb(15 23 42 / 18%)",
   padding: 10,
   color: "#0F172A",
+  maxHeight: "min(560px, calc(100vh - 96px))",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
 };
 const titleStyle: CSSProperties = { fontSize: 13, fontWeight: 800, padding: "2px 6px 0" };
 const noteStyle: CSSProperties = { fontSize: 11.5, color: "#64748B", padding: "2px 6px 8px", lineHeight: 1.4 };
@@ -54,7 +60,10 @@ export function AppearanceMenu({ triggerStyle }: { readonly triggerStyle?: CSSPr
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) panelRef.current?.querySelector<HTMLButtonElement>("[role='menuitemradio'][aria-checked='true'], [role='menuitemradio']")?.focus();
+    if (!open) return;
+    const item = panelRef.current?.querySelector<HTMLButtonElement>("[role='menuitemradio'][aria-checked='true'], [role='menuitemradio']");
+    item?.focus();
+    item?.scrollIntoView?.({ block: "nearest" });
   }, [open]);
 
   const closeAndReturnFocus = useCallback(() => {
@@ -93,7 +102,7 @@ export function AppearanceMenu({ triggerStyle }: { readonly triggerStyle?: CSSPr
       {open ? (
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} style={overlayStyle} onClick={() => setOpen(false)} />
-          <div ref={panelRef} role="menu" aria-label="Aparência das telas" style={panelStyle} onKeyDown={onPanelKeyDown}>
+          <div ref={panelRef} role="menu" aria-label="Aparência das telas" style={APPEARANCE_PANEL_STYLE} onKeyDown={onPanelKeyDown}>
             <AppearanceChoices onChosen={closeAndReturnFocus} />
           </div>
         </>
