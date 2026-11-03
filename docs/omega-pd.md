@@ -1696,3 +1696,49 @@ houve, código-fonte da tag como fonte primária; acesso em 2026-10-11).
 **Decisão:** aprovada por escrito pelo dono em 2026-10-11, com OsmAnd e GT06, sem SMTP, sem OIDC, sem porta pública
 além das de protocolo e só com a conta de serviço do ERP. As condições estão em `controle/decisoes.md`
 (`D-TRC-PD-APROVADA-2026-10-11`). Revisar quando sair a 6.16.1.
+
+---
+
+## PD-ASS-PAGAMENTO-NOTA — portas de pagamento e NFS-e para a assinatura do ERP (2026-11-03)
+
+### 0. Síntese
+
+Fonte técnica: pesquisa `pesquisador-pagamento-nota` de 31/10/2026, mantida fora do repositório público. Fonte de produto: falas literais do dono registradas em `D-PAGAMENTO-NOTA-PRONTOS`, `D-COFRE-CREDENCIAIS`, `D-TESTES-FALSOS-SAO-FINAIS`, `D-CANAL-NO-B-ASSINATURA`, `D-COBRANCA-RESPOSTAS-3110` e `D-P14-ASAAS-FOCUS`. O canal pertence ao pacote B-ASS, nasce desligado e não faz chamada externa durante os testes.
+
+### 1. Decisão e dono
+
+- Pagamento: porta comum, com Asaas no portão inicial; adaptadores posteriores pertencem ao `B-ASS-15`.
+- NFS-e: porta comum, com Focus NFe no portão inicial; adaptadores posteriores pertencem ao `B-ASS-15`.
+- Cofre e configuração fail-closed: `B-ASS-05`; adaptadores locais: `B-ASS-06` e `B-ASS-07`; outbox, webhooks e reconciliação: `B-ASS-08`.
+- Habilitar o canal e cadastrar credenciais são atos do dono, fora deste PR documental.
+- Dados e condições comerciais: **(valores fora do repositório público)**.
+
+### 2. Critérios técnicos
+
+1. Credenciais cifradas em repouso, chave fora do banco e resposta pública apenas mascarada.
+2. Canal desligado por padrão; sem flag, credencial válida e habilitação, nenhuma chamada de rede e webhook com aparência de rota inexistente.
+3. Toda baixa originada por provedor exige reconsulta do recurso; o corpo do webhook nunca define organização ou valor confiável.
+4. Idempotência usa referência própria estável, outbox persistida e reconciliação antes de repetir chamada incerta.
+5. Nota fiscal é assíncrona; resposta de emissão não equivale a autorização. Cancelamento, rejeição e reemissão têm estados próprios.
+6. Testes usam servidores falsos locais, incluindo erro, limite, timeout, replay e webhook autenticado. Hosts reais são proibidos na CI.
+7. Segredo, token, certificado, corpo de webhook e dados internos de armazenamento não entram em resposta, log ou auditoria.
+
+### 3. Autenticidade e idempotência
+
+Os adaptadores implementam autenticação e chaves idempotentes conforme o contrato publicado de cada provedor. Mesmo quando existe assinatura autenticada, o processamento reconsulta o recurso antes de alterar dinheiro. Replay do mesmo evento é aceito uma vez; evento repetido não produz segunda baixa.
+
+### 4. Regra fiscal
+
+Regime, município e enquadramento fiscal são dados fornecidos pelo dono com o contador e configurados fora do repositório. Enquanto faltarem, a emissão falha fechada com motivo visível; pagamento e demonstrativo continuam operando. Regras com data ficam em código testado, não em texto livre.
+
+### 5. Riscos e pendências
+
+- Formato real diferente do servidor falso: conserto por emenda, sem ligar produção até a homologação.
+- Credencial ausente ou ilegível: provedor indisponível, sem degradar o fluxo manual.
+- Webhook perdido: polling e reconsulta cobrem a lacuna.
+- Integração nova: entra somente após validação da plataforma e gate aplicável.
+- Homologação real: `P-ASS-SANDBOX-REAL`; dados fiscais: `P-ASS-REGIME-CNPJ`; chave gerenciada na AWS: `P-ASS-SECRETS-MANAGER`.
+
+### 6. Conteúdo comercial deliberadamente omitido
+
+Foram omitidos desta PD pública preços de provedores, valores de planos e franquias, cálculo ou percentual comercial, projeções econômicas e estratégia comercial. A marca aplicável é **(valores fora do repositório público)**.

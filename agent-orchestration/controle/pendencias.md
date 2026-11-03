@@ -8559,6 +8559,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
 - **dono:** dono → bloco de produto cloud billing (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **dono B-ASS-00:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`.
 - **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
@@ -10481,6 +10482,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA.
 - **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
 - **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **apenso B-ASS-00:** `B-ASS-02` persiste somente `tenant.plan`; a persistência das demais propriedades e ações da organização continua com `B-SAN3-18`.
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
@@ -10516,6 +10518,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA.
 - **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
 - **dono:** `B-SAN3-18`.
+- **dono B-ASS-00:** `B-ASS-02` entrega o catálogo de planos com preço e a rota correspondente; o gate administrativo remanescente continua com `B-SAN3-18`.
 - **bloqueia:** não.
 
 ## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
@@ -10523,6 +10526,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA.
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
 - **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **dono B-ASS-00:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (cobrança mensal).
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
 - **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
 
@@ -12521,3 +12525,51 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele) · **escopo:** decisão de nome do `B-SAN3-19` · **dono:** dono do produto (nome curto do app no iOS), aplicado no bloco de publicação do app · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
 - **origem:** a nota do orquestrador sobre o #487 (`REGISTRO-PENDENTE.md`, seção do #487); o PR #487 troca `CFBundleName` em `mobile/flutter_app/ios/Runner/Info.plist` para `ERP Techsolutions` (17 caracteres).
 - **encerramento:** `CFBundleName` com até 15 caracteres, ou decisão do dono registrada de manter os 17.
+
+## P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA
+
+- **status:** ABERTA · **escopo:** item 58 do portão vendável · **dono:** `B-ASS-03` · **PR-alvo:** PR do `B-ASS-03` · **bloqueia:** item 58.
+- **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; hoje não há medição persistida de usuários ativos e de armazenamento por organização.
+- **encerramento:** medição diária sob isolamento por organização, com pico mensal de usuários e estimativa de banco + arquivos, provada pelos critérios do item 58. **(valores fora do repositório público)**.
+
+## P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistentes — ALTA
+
+- **status:** ABERTA · **escopo:** item 59 do portão vendável · **dono:** `B-ASS-04` · **PR-alvo:** PR do `B-ASS-04` · **bloqueia:** item 59.
+- **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; não existe demonstrativo mensal persistido, fechamento idempotente nem baixa auditada da assinatura.
+- **encerramento:** fechamento mensal idempotente e baixa manual auditada, com uma linha por organização e período e dinheiro exato, provados pelos critérios do item 59. **(valores fora do repositório público)**.
+
+## P-ASS-CANAL-DESLIGADO (2026-11-03) — canal de pagamento e nota, cofre e webhooks ainda não existem — ALTA
+
+- **status:** ABERTA · **escopo:** item 60 do portão vendável · **dono:** `B-ASS-05`, `B-ASS-06`, `B-ASS-07` e `B-ASS-08` · **PR-alvo:** PRs desses quatro blocos · **bloqueia:** item 60.
+- **origem:** falas literais registradas em `D-ASS-PLANOS-FRANQUIA-E-CANAL`.
+- **encerramento:** cofre, portas Asaas/Focus NFe, outbox, webhook autenticado, baixa e emissão ficam implementados e fail-closed, com zero chamada externa nos testes e com o canal desligado por padrão.
+
+## P-ASS-VISAO-DO-CLIENTE (2026-11-03) — cliente sem rota e tela honestas da assinatura — ALTA
+
+- **status:** ABERTA · **escopo:** item 62 do portão vendável · **dono:** `B-ASS-04` (rota) e `B-ASS-11` (tela) · **PR-alvo:** PRs desses blocos · **bloqueia:** item 62.
+- **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
+- **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
+
+## P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par aprovado — MEDIA
+
+- **status:** ABERTA · **escopo:** integração posterior ao portão · **dono:** `B-ASS-15` · **PR-alvo:** PR do `B-ASS-15` · **bloqueia:** nada.
+- **origem:** `D-COBRANCA-RESPOSTAS-3110` fixa 1 + 1 no portão; o restante usa as mesmas portas depois.
+- **encerramento:** adaptadores posteriores validados contra servidores falsos e, depois, homologados por ato do dono; nenhuma chamada real faz parte desta pendência documental.
+
+## P-ASS-SANDBOX-REAL (2026-11-03) — homologação real dos provedores escolhidos depende de ato do dono — MEDIA
+
+- **status:** ABERTA · **escopo:** ato externo pós-implementação · **dono:** dono do produto, com roteiro técnico do `B-ASS-08` · **PR-alvo:** fora do PR documental; evidência anexada ao roteiro do `B-ASS-08` · **bloqueia:** ligar o canal, não bloqueia os blocos fail-closed.
+- **origem:** `D-P14-ASAAS-FOCUS`; as contas e credenciais não pertencem ao repositório.
+- **encerramento:** dono cadastra as credenciais no cofre, executa o roteiro de homologação e registra o resultado sem versionar segredo.
+
+## P-ASS-REGIME-CNPJ (2026-11-03) — dados fiscais do emissor ainda não informados — ALTA
+
+- **status:** ABERTA · **escopo:** emissão fiscal · **dono:** dono do produto, com contador; implementação em `B-ASS-07` · **PR-alvo:** PR do `B-ASS-07` para a validação e registro externo para os dados · **bloqueia:** somente a emissão de nota.
+- **origem:** mesma lacuna já registrada em `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`; esta entrada nomeia o dono técnico do pacote B-ASS.
+- **encerramento:** contador fornece os dados exigidos e a configuração é preenchida no produto; nenhum dado fiscal sensível é copiado para o repositório público.
+
+## P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador de segredos da AWS — MEDIA
+
+- **status:** ABERTA · **escopo:** infraestrutura futura · **dono:** `B-INFRA-AWS-01` · **PR-alvo:** PR do `B-INFRA-AWS-01` · **bloqueia:** produção AWS com o canal ligado; não bloqueia o cofre fail-closed local.
+- **origem:** plano B-ASS §9; a primeira implementação usa provedor de chave por ambiente e deixa a porta para o serviço gerenciado.
+- **encerramento:** integração ao gerenciador de segredos implementada sem segredo no banco, log ou repositório e aprovada pelo gate de serviço externo/dependência aplicável.
