@@ -810,3 +810,33 @@ PRONTO PARA PRÉ-REVISÃO
   escreve pronto (§C7 item 11(5)). O defeito é do K2, dentro do bloco, e exige emenda que ponha
   `tests/san3-05-leituras-de-plataforma-db.test.ts` no escopo.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 23
+
+- **Executor:** `dev-san303-k-opus`, Claude Opus, nível menor declarado. Retomada pelo §11 da emenda 2. **Sem
+  cruzamento de modelo** (§C7 item 11(2)): o Codex segue sem limite.
+- **Regressão do K2 (§11):** em `tests/san3-05-leituras-de-plataforma-db.test.ts` mudou só a chamada da
+  linha 351, que passa a mandar `MES_INICIO.slice(0, 10)` e `MES_FIM.slice(0, 10)` (`AAAA-MM-DD`); nenhuma
+  outra linha do arquivo mudou (`git diff` 1 inserção, 1 remoção). No Postgres descartável próprio
+  `devsan303ko-pg` (`postgres:16`, `127.0.0.1:55466`, memória livre 41,06 GB antes): **13/13, 0 fail**.
+  Vermelho-controle: com o `routes.ts` do head e a chamada antiga, **3 testes, 1 fail**,
+  `summary_period_invalid`; arquivo restaurado para a versão nova.
+- **Bateria do K5 refeita:** os mesmos 38 arquivos e o mesmo comando — **307 testes, 303 pass, 4 fail,
+  0 skip**. As 4 falhas são as do `setsid` no `san3-05-runtime-role-guard-db` (ambiente do Windows,
+  declarado). `docs/revisoes/SAN3/B-SAN3-03-bateria.txt` e `.log` atualizados no commit `f4bb114d`.
+- **Conflito com a `main`:** `git fetch origin` e `git merge origin/main` (sem rebase, sem push --force),
+  commit `88e63e11`. Conflitos só em registro: `codex/log-execucao.md`, `controle/decisoes.md`,
+  `controle/pendencias.md` (os dois lados mantidos, os dois apensos no fim, na ordem ramo → `main`) e
+  `controle/pendencias-indice.md`, regenerado por `python agent-orchestration/controle/gerar-indice-pendencias.py`
+  (**715 cabeçalhos / 704 IDs; 534 abertas, 177 fechadas, 4 sem status**; reexecução sem diff). Nenhum
+  conflito em código de produto. Depois do merge: `npm run check` exit 0; `git diff --check origin/main...HEAD`
+  vazio; zero arquivo em `prisma/`, `migrations/`, `frontend/`, `Kpis/`, `.github/` ou lockfile no
+  `git diff --name-only origin/main...HEAD`.
+- **CI do head `88e63e11`:** **16/16 check-runs concluídos, todos `success`** (push `41639551833` e
+  pull_request `41639559138`). TAP, lido pelo log:
+  - `backend`: `# tests 4371`, `# pass 4369`, `# fail 0`, `# skipped 2`, nos dois runs;
+  - `backend-postgres`: `# tests 493`, `# pass 493`, `# fail 0`, `# skipped 0`, nos dois runs.
+- **Container:** `devsan303ko-pg` removido (`docker rm -f`); `erp-postgres` e `erp-redis` intocados.
+- **Arquivos meio-escritos:** nenhum.
+
+PRONTO PARA CONFERÊNCIA
