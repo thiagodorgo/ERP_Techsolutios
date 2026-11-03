@@ -64,9 +64,9 @@ CREATE TABLE "impound_payment_intents" (
     CONSTRAINT "impound_payment_intents_reversed_money_chk" CHECK ("status" <> 'reversed' OR ("applied_cents" = 0 AND "held_cents" = 0 AND "refunded_cents" > 0)),
     CONSTRAINT "impound_payment_intents_settled_money_chk" CHECK ("status" <> 'settled' OR ("applied_cents" > 0 AND ("held_reason" IS NULL OR "held_reason" IN ('overpayment', 'duplicate_payment')))),
     CONSTRAINT "impound_payment_intents_methods_chk" CHECK ("methods" IS NOT NULL AND cardinality("methods") >= 1 AND "methods" <@ ARRAY['pix', 'credit_card', 'debit_card']::TEXT[]),
-    CONSTRAINT "impound_payment_intents_settled_charge_ids_chk" CHECK ("settled_charge_ids" IS NOT NULL),
     CONSTRAINT "impound_payment_intents_one_connection_chk" CHECK (num_nonnulls(payment_connection_id, payment_group_connection_id) = 1),
-    CONSTRAINT "impound_payment_intents_group_pair_chk" CHECK (("payment_group_id" IS NULL) = ("payment_group_connection_id" IS NULL))
+    CONSTRAINT "impound_payment_intents_group_pair_chk" CHECK (("payment_group_id" IS NULL) = ("payment_group_connection_id" IS NULL)),
+    CONSTRAINT "impound_payment_intents_settled_charge_ids_chk" CHECK ("settled_charge_ids" IS NOT NULL)
 );
 
 CREATE UNIQUE INDEX "impound_payment_intents_external_charge_id_key" ON "impound_payment_intents"("external_charge_id");

@@ -28,9 +28,9 @@ CREATE TABLE "impound_payment_refs" (
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "impound_payment_refs_pkey" PRIMARY KEY ("intent_id"),
-    CONSTRAINT "impound_payment_refs_watch_chk" CHECK ("watch" IN ('open', 'hot', 'warm', 'cold', 'none')),
     CONSTRAINT "impound_payment_refs_one_connection_chk" CHECK (num_nonnulls(payment_connection_id, payment_group_connection_id) = 1),
-    CONSTRAINT "impound_payment_refs_group_pair_chk" CHECK (("payment_group_id" IS NULL) = ("payment_group_connection_id" IS NULL))
+    CONSTRAINT "impound_payment_refs_group_pair_chk" CHECK (("payment_group_id" IS NULL) = ("payment_group_connection_id" IS NULL)),
+    CONSTRAINT "impound_payment_refs_watch_chk" CHECK ("watch" IN ('open', 'hot', 'warm', 'cold', 'none'))
 );
 
 CREATE INDEX "impound_payment_refs_next_check_at_idx" ON "impound_payment_refs"("next_check_at");
