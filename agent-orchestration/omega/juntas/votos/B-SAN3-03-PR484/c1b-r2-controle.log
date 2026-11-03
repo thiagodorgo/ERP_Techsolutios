@@ -1,0 +1,55 @@
+TAP version 13
+# Subtest: T-STO-db-1 · soma real das quatro tabelas por organização
+ok 1 - T-STO-db-1 · soma real das quatro tabelas por organização
+  ---
+  duration_ms: 657.2811
+  ...
+# Subtest: T-STO-db-2 · size_bytes nulo não fabrica base zero
+ok 2 - T-STO-db-2 · size_bytes nulo não fabrica base zero
+  ---
+  duration_ms: 234.0573
+  ...
+# Subtest: T-STO-db-3 · anexos soft-deleted não entram no estoque
+ok 3 - T-STO-db-3 · anexos soft-deleted não entram no estoque
+  ---
+  duration_ms: 261.5532
+  ...
+# Subtest: T-STO-db-4 · soma acima de 2^31 bytes permanece exata
+ok 4 - T-STO-db-4 · soma acima de 2^31 bytes permanece exata
+  ---
+  duration_ms: 214.2609
+  ...
+# Subtest: T-STO-db-5 · canário recusa groupBy de arquivo que devolve organização alheia
+ok 5 - T-STO-db-5 · canário recusa groupBy de arquivo que devolve organização alheia
+  ---
+  duration_ms: 205.8473
+  ...
+# Subtest: T-API-db-1 · conta por organização, janela e ator sob RLS
+ok 6 - T-API-db-1 · conta por organização, janela e ator sob RLS
+  ---
+  duration_ms: 205.609
+  ...
+# Subtest: T-API-db-2 · canário recusa groupBy que devolve organização alheia
+ok 7 - T-API-db-2 · canário recusa groupBy que devolve organização alheia
+  ---
+  duration_ms: 203.6272
+  ...
+# Subtest: T-API-db-3 · ato da plataforma no cliente pesa na plataforma sob papel sem bypass
+ok 8 - T-API-db-3 · ato da plataforma no cliente pesa na plataforma sob papel sem bypass
+  ---
+  duration_ms: 282.3898
+  ...
+# Subtest: T-API-db-3b · ato próprio da plataforma soma ao ato dela no cliente, em qualquer ordem
+ok 9 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no cliente, em qualquer ordem
+  ---
+  duration_ms: 264.7079
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2922.4226

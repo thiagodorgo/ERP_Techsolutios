@@ -1,0 +1,6 @@
+HEAD=353677535f855d931a0e02fccc64297cfdb443ae status-inicial=[]
+M57|anchor_count=1|exit=1|tests/pass/fail=20/14/6|not_ok=["U+00AD","U+200B","U+2060","U+FEFF","T-TAG-db-2 · invisíveis no nome não geram alocação no Postgres","T-TAG-14 · invisíveis no nome não escapam da ambiguidade"]|assertion=true|syntax=false|morde_T-TAG-14=true|restored=true|status=[]
+M58|anchor_count=1|exit=1|tests/pass/fail=12/11/1|not_ok=["T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ"]|assertion=true|syntax=false|morde_T-SUM-9=true|restored=true|status=[]
+M59|anchor_count=1|exit=1|tests/pass/fail=12/11/1|not_ok=["T-SUM-10 · summary recusa qualquer chave desconhecida"]|assertion=true|syntax=false|morde_T-SUM-10=true|restored=true|status=[]
+M47-c′|anchor_count=1|exit=1|tests/pass/fail=12/11/1|not_ok=["T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível"]|assertion=true|syntax=false|morde_T-RUN-1=true|restored=true|status=[]
+status-final=[]

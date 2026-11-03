@@ -1,0 +1,61 @@
+{
+  "cadeira": "C2",
+  "identidade": "jurado-j484-c2-opus",
+  "modelo": "Claude Opus, nível menor, DECLARADO",
+  "objeto": "5b628b886520bcbece0228eec9d47c965a32b577",
+  "base_do_conserto": "49ddd0f8b9efa8724923ec99fa546cce907288cc",
+  "voto": "APROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-evidencia.md",
+  "resumo": "Competência C2 (dinheiro no resumo: A1, E2-A2, E2B-A2). Pela rota HTTP real, em memória e no Postgres descartável (PrismaCloudCostAllocationRepository), uma ponta só dá 400 summary_period_incomplete; vazio, texto, array, 2026-02-31, 2026-13-01 e 2026-00-10, em cada ponta, dão 400 summary_period_invalid; 2028-02-29 passa; sem query e com as duas pontas, o resultado é o de antes. Vermelho-controle na base 49ddd0f8: T-SUM-7 e T-SUM-8 caem e a sonda recebe 200 com dinheiro para uma ponta só. parseRunFilters e readDate são idênticos (md5) na base, no merge-base e no objeto; T-RUN-1 morde (M47-c′ própria); nenhum consumidor real quebra (frontend manda AAAA-MM-DD nas duas pontas; san3-05-leituras-db 13/13). API_CONTRACTS diz o que o código faz nos 400 e em ambiguous_tenant_tag/unknown_tenant_tag. M47, M47-b, M47-c, M54, M54-b, M54-c e M56 executadas: âncora 1, exit 1 por AssertionError, restored=true, status vazio. Nenhuma forma nova faz o resumo afirmar dinheiro sem período ou de data impossível normalizada. Três não graves: o dia validado pelo parser difere do dia UTC usado com ISO de fuso/24:00/hora sem fuso (e, sem fuso, depende do TZ do processo); chave com outra grafia é ignorada; a mutação própria M-C2-a sobrevive à bateria do bloco.",
+  "itens": {
+    "1": "CUMPRIDO — contrato do mandato medido na rota real, em memória e no Postgres; formas novas medidas; achado C2-N1 e nota C2-N2 (não graves)",
+    "2": "CUMPRIDO — listagem de runs inalterada, T-RUN-1 morde, nenhum consumidor quebra, contrato fiel nos 400 e nos dois motivos (omite a semântica de instante, parte do C2-N1)",
+    "3": "CUMPRIDO — as sete mutações mordem com âncora 1 e status vazio; M-C2-a própria sobrevive (C2-N3); vermelho-controle na base"
+  },
+  "achados": [
+    {
+      "id": "C2-N1",
+      "gravidade": "não grave",
+      "escopo": "dentro-do-bloco (readSummaryDate nasceu em 189064e8, 2026-11-02, neste PR; git blame)",
+      "comando": "cd C:/Users/thiag/w-j484-c2 && node --test --import tsx C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-probe-routes.test.mts (e com TZ=UTC); DATABASE_URL=...55482... node --test --import tsx .../c2-probe-routes-db.test.mts",
+      "saida": "periodStart=2026-06-02T00:00:00%2B23:59&periodEnd=2026-07-01T00:00:00%2B23:59 → 200, total 15, run 2026-06-01..2026-06-30; 2026-06-02T00:00:00.000%2B0500/2026-07-01T00:00:00.000%2B0500 → 200, 15; 2026-05-31T24:00:00Z/2026-06-29T24:00:00Z → 200, 15; 2026-05-31T22:00/2026-06-29T22:00 → 200, 15 com TZ America/Sao_Paulo e 200 no_run, 0 com TZ=UTC; mesmo no Postgres (77).",
+      "motivo": "readSummaryDate valida a ida e volta só do prefixo AAAA-MM-DD do texto, mas devolve new Date(raw), e o serviço casa a run por sameUtcDay do instante. Com fuso, 24:00 ou hora sem fuso, o dia validado não é o dia usado, e sem fuso o mesmo pedido responde dinheiro ou zero conforme o TZ do processo. Não grave: o instante pedido cai no dia UTC da run casada, a resposta devolve o período real da run, o único consumidor (frontend) manda AAAA-MM-DD, e Dockerfile/compose não definem TZ (processo em UTC). O API_CONTRACTS não diz que o pedido aceita ISO completo nem que o casamento é pelo dia UTC do instante."
+    },
+    {
+      "id": "C2-N2",
+      "gravidade": "não grave",
+      "escopo": "pre-existente (sem chave de período, o resumo devolve o mais recente desde antes do bloco: base 49ddd0f8 'sem-query' → 200, 15 em c2-probe-base.log; Express 5 com parser simples)",
+      "comando": "mesma sonda c2-probe-routes.test.mts, casos chave-maiuscula-ignorada e ambos-bracket",
+      "saida": "PeriodStart=2026-10-01 → 200, 15 (junho); periodStart[]=2026-10-01&periodEnd[]=2026-10-31 → 200, 15 (junho), resposta com periodStart/periodEnd da run de junho",
+      "motivo": "chave com outra grafia não é 'chave presente' e cai em 'sem as duas chaves, mantém o resumo mais recente', como o contrato diz. Nota: um cliente que serialize com colchetes recebe o resumo sem filtro, autodescrito."
+    },
+    {
+      "id": "C2-N3",
+      "gravidade": "não grave",
+      "escopo": "dentro-do-bloco (T-SUM-8 e o driver das mutações são deste PR)",
+      "comando": "node C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-mutations.mjs (M-C2-a); node .../c2-mc2a-apply.cjs apply + sonda; node .../c2-m47c-detalhe.mjs",
+      "saida": "M-C2-a (regex sem (?:$|T)) → exit 0, pass 10 fail 0; sob ela, periodStart=2026-06-01%20 → 200, 15 (objeto: 400). M47-c literal cai em expected 400/actual 200 do resumo de uma ponta, não no T-RUN-1; a variante M47-c′ (recusa só na listagem) cai no T-RUN-1 (expected 200/actual 400).",
+      "motivo": "lacuna de teste, sem defeito no código do objeto: nenhum teste do bloco prende o terminador do prefixo de data (valores como '2026-06-01 GMT+1400' passariam sem vermelho), e a M47-c literal não prova o T-RUN-1 sozinha (o T-RUN-1 morde, provado pela M47-c′)."
+    }
+  ],
+  "arquivos_medidos": [
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts",
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts",
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts",
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation.types.ts",
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts",
+    "src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts",
+    "src/modules/cloud-cost-allocation/index.ts",
+    "src/app.ts",
+    "src/modules/platform/platform-permissions.ts",
+    "src/modules/core-saas/**",
+    "tests/cloud-cost-allocation-routes.test.ts",
+    "tests/san3-03-summary.test.ts",
+    "tests/san3-05-leituras-de-plataforma-db.test.ts",
+    "API_CONTRACTS.md",
+    "frontend/src/modules/platform/cloud-billing/**",
+    "frontend/tests/smoke-flow.test.tsx",
+    "frontend/tests/san3-06b-cloud-billing.smoke.test.tsx",
+    "prisma/migrations/**"
+  ]
+}

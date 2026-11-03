@@ -1,0 +1,7 @@
+
+> erp-techsolutions@0.1.0 lint
+> npm run check
+
+
+> erp-techsolutions@0.1.0 check
+> tsc -p tsconfig.json --noEmit

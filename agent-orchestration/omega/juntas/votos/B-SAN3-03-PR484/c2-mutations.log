@@ -1,0 +1,25 @@
+src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts|anchor=1
+M47|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível ; not ok 10 - T-SUM-7 · resumo recusa período com somente uma ponta|assertions=3
+M47|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts|anchor=1
+M47-b|exit=1|not ok 7 - T-SUM-7 · resumo recusa período com somente uma ponta|assertions=2
+M47-b|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts|anchor=1
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M47-c|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|assertions=1
+M47-c|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M54|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|assertions=1
+M54|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M54-b|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|assertions=1
+M54-b|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M54-c|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|assertions=1
+M54-c|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M56|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|assertions=1
+M56|restored=true|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M-C2-a|exit=0||# pass 10 # fail 0
+M-C2-a|restored=true|status=[]

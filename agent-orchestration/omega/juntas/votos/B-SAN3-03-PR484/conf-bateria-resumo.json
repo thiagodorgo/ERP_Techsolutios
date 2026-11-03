@@ -1,0 +1,315 @@
+{
+ "files": 38,
+ "tot": {
+  "tests": 307,
+  "pass": 303,
+  "fail": 4,
+  "skipped": 0
+ },
+ "per": [
+  {
+   "f": "tests/charging-daily-engine.test.ts",
+   "exit": 0,
+   "tests": 19,
+   "pass": 19,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/charging-job-idempotency.test.ts",
+   "exit": 0,
+   "tests": 1,
+   "pass": 1,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-charge-markup-rules.test.ts",
+   "exit": 0,
+   "tests": 12,
+   "pass": 12,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-charge-routes.test.ts",
+   "exit": 0,
+   "tests": 2,
+   "pass": 2,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-cost-allocation-routes.test.ts",
+   "exit": 0,
+   "tests": 5,
+   "pass": 5,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-cost-allocation.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-usage-checklist-reopen.test.ts",
+   "exit": 0,
+   "tests": 4,
+   "pass": 4,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-usage-routes.test.ts",
+   "exit": 0,
+   "tests": 3,
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/cloud-usage.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/job-queue.test.ts",
+   "exit": 0,
+   "tests": 3,
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/job-worker-bootstrap.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-allocation-basis-rls-db.test.ts",
+   "exit": 0,
+   "tests": 10,
+   "pass": 10,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-billing-census.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-cost-summary-sum-db.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-cost-summary-sum.test.ts",
+   "exit": 0,
+   "tests": 4,
+   "pass": 4,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-janela-reservada-guard.test.ts",
+   "exit": 0,
+   "tests": 4,
+   "pass": 4,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-usage-atomic-db.test.ts",
+   "exit": 0,
+   "tests": 17,
+   "pass": 17,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-usage-atomic.test.ts",
+   "exit": 0,
+   "tests": 6,
+   "pass": 6,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/o6r06-usage-fault-injection.test.ts",
+   "exit": 0,
+   "tests": 6,
+   "pass": 6,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-attachment-capture-db.test.ts",
+   "exit": 0,
+   "tests": 5,
+   "pass": 5,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-attachment-capture.test.ts",
+   "exit": 0,
+   "tests": 8,
+   "pass": 8,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-basis-census.test.ts",
+   "exit": 0,
+   "tests": 6,
+   "pass": 6,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-compute-rules.test.ts",
+   "exit": 0,
+   "tests": 6,
+   "pass": 6,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-conservation.test.ts",
+   "exit": 0,
+   "tests": 8,
+   "pass": 8,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-derived-basis-db.test.ts",
+   "exit": 0,
+   "tests": 9,
+   "pass": 9,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-derived-basis.test.ts",
+   "exit": 0,
+   "tests": 11,
+   "pass": 11,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-import-scope-db.test.ts",
+   "exit": 0,
+   "tests": 3,
+   "pass": 3,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-import-scope.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-job-capture-db.test.ts",
+   "exit": 0,
+   "tests": 2,
+   "pass": 2,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-job-capture.test.ts",
+   "exit": 0,
+   "tests": 4,
+   "pass": 4,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-summary.test.ts",
+   "exit": 0,
+   "tests": 7,
+   "pass": 7,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-system-org-db.test.ts",
+   "exit": 0,
+   "tests": 8,
+   "pass": 8,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-system-org.test.ts",
+   "exit": 0,
+   "tests": 8,
+   "pass": 8,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-03-tenant-tag.test.ts",
+   "exit": 0,
+   "tests": 12,
+   "pass": 12,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-05-acessos-de-plataforma-guard.test.ts",
+   "exit": 0,
+   "tests": 35,
+   "pass": 35,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-05-leituras-de-plataforma-db.test.ts",
+   "exit": 0,
+   "tests": 13,
+   "pass": 13,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-05-runtime-role-bootstrap.test.ts",
+   "exit": 0,
+   "tests": 12,
+   "pass": 12,
+   "fail": 0,
+   "skipped": 0
+  },
+  {
+   "f": "tests/san3-05-runtime-role-guard-db.test.ts",
+   "exit": 1,
+   "tests": 12,
+   "pass": 8,
+   "fail": 4,
+   "skipped": 0
+  }
+ ]
+}

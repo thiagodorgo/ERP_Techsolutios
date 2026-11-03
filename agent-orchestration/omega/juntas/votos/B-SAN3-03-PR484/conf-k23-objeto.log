@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: Platform Admin cria run, lista runs, consulta allocations e summary
+ok 1 - Platform Admin cria run, lista runs, consulta allocations e summary
+  ---
+  duration_ms: 1721.064
+  ...
+# Subtest: usuario tenant comum nao acessa endpoints platform de allocation
+ok 2 - usuario tenant comum nao acessa endpoints platform de allocation
+  ---
+  duration_ms: 18.8978
+  ...
+# Subtest: T-SUM-8 ┬À summary recusa per├¡odo incompleto, vazio, inv├ílido, repetido ou imposs├¡vel
+ok 3 - T-SUM-8 ┬À summary recusa per├¡odo incompleto, vazio, inv├ílido, repetido ou imposs├¡vel
+  ---
+  duration_ms: 47.1721
+  ...
+# Subtest: T-SUM-9 ┬À summary aceita somente AAAA-MM-DD independentemente do TZ
+ok 4 - T-SUM-9 ┬À summary aceita somente AAAA-MM-DD independentemente do TZ
+  ---
+  duration_ms: 30.4203
+  ...
+# Subtest: T-SUM-10 ┬À summary recusa qualquer chave desconhecida
+ok 5 - T-SUM-10 ┬À summary recusa qualquer chave desconhecida
+  ---
+  duration_ms: 22.4103
+  ...
+# Subtest: T-SUM-1 ┬À run de 31/10 a 30/11 e pedido de outubro ÔåÆ no_run, total 0
+ok 6 - T-SUM-1 ┬À run de 31/10 a 30/11 e pedido de outubro ÔåÆ no_run, total 0
+  ---
+  duration_ms: 4.3649
+  ...
+# Subtest: T-SUM-2 ┬À run boa de outubro e depois run sem import de outubro ÔåÆ devolve a boa
+ok 7 - T-SUM-2 ┬À run boa de outubro e depois run sem import de outubro ÔåÆ devolve a boa
+  ---
+  duration_ms: 20.0346
+  ...
+# Subtest: T-SUM-3 ┬À s├│ run sem import ÔåÆ no_import, diferente de no_run
+ok 8 - T-SUM-3 ┬À s├│ run sem import ÔåÆ no_import, diferente de no_run
+  ---
+  duration_ms: 0.3524
+  ...
+# Subtest: T-SUM-4 ┬À run anterior ao bloco (sem importResolution) ÔåÆ legacy_unscoped, com os valores dela
+ok 9 - T-SUM-4 ┬À run anterior ao bloco (sem importResolution) ÔåÆ legacy_unscoped, com os valores dela
+  ---
+  duration_ms: 0.2938
+  ...
+# Subtest: T-SUM-5 ┬À run at├® 23:59:59.999Z casa com pedido da mesma data
+ok 10 - T-SUM-5 ┬À run at├® 23:59:59.999Z casa com pedido da mesma data
+  ---
+  duration_ms: 0.3846
+  ...
+# Subtest: T-SUM-6 ┬À sem per├¡odo ÔåÆ a mais nova com import, com runId e importId
+ok 11 - T-SUM-6 ┬À sem per├¡odo ÔåÆ a mais nova com import, com runId e importId
+  ---
+  duration_ms: 13.8522
+  ...
+# Subtest: T-SUM-7 ┬À resumo recusa per├¡odo com somente uma ponta
+ok 12 - T-SUM-7 ┬À resumo recusa per├¡odo com somente uma ponta
+  ---
+  duration_ms: 1.2505
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2265.9629
