@@ -246,3 +246,27 @@ mergeado; sem migração nova, sem rebase).
   **3 execuções** (denominador constante, condição para entrar na lista curada) · `[SB] tests/permission-catalog-migration-parity.test.ts`
   → `# pass 3 # fail 0` · `npm run db:seed` + `[DBP]` → `# tests 2 # pass 2 # fail 0 # skipped 0` ·
   `node scripts/migration-transaction-guard.mjs` → `migrações: 120 · anteriores: 112 · novas: 8 · violações: 0`.
+
+## RETOMADA 7 — F6 (docs, `RBAC_MATRIX.md`, bateria final, PR)
+
+- **Entrega:** linha `online payment` no `RBAC_MATRIX.md` (`charging:online_payment` = a distribuição de `charging:settle`);
+  `docs/patio-recebimento.md` (seção do REC-01).
+- **Bateria final local** (Windows, base descartável nova `rec01b` no `rec01-pg`):
+
+| comando | saída |
+|---|---|
+| `npm run check` · `npm run lint` | exit 0 · exit 0 |
+| `[SB]` os 5 `rec-01` (state-machine, validators, intent-service, routes-permissions, live-link-guard) | `# tests 28 # pass 28 # fail 0 # skipped 0` (emenda §10: 28) |
+| `[SB]` regressão (release, for-repair, core-saas, daily-engine) | `# tests 63 # pass 63 # fail 0 # skipped 0` |
+| `[UF]` core-saas-role-authority | `# tests 12 # pass 12 # fail 0 # skipped 0` |
+| `[DB]` rec-01-domain-db, rec-01-migration-drill-db, release-gate-concurrency, san3-05-leituras-de-plataforma-db | `# tests 25 # pass 25 # fail 0 # skipped 0` = 7 + 2 + 3 + 13 (o T-DOM-db-8 da emenda §11.1 soma 1 aos 8 da §10) |
+| `npm run db:seed` + `[DBP]` | `# tests 2 # pass 2 # fail 0 # skipped 0` |
+| `node scripts/migration-transaction-guard.mjs` | `migrações: 120 · anteriores: 112 · novas: 8 · violações: 0` |
+| `npm run build` | exit 0 (`dist/` removido depois) |
+| `git diff --check origin/main...HEAD` | vazio |
+| `git diff origin/main --stat -- src/modules/release` | vazio |
+| `git diff origin/main -- src/modules/charging \| grep -c "^-[^-]"` | `0` |
+
+- **N/M:** N (regressão medida) = 63 + 12 + 3 + 2 + 13 = 93; M (novos) = 28 `[SB]` + 9 `[DB]` = 37.
+- `npm test` na forma do CI (Linux, `[DB]`) é o job `backend` do PR; o TAP de `backend` e `backend-postgres` é lido abaixo antes de
+  declarar pronto.
