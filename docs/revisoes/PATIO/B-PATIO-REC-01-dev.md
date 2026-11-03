@@ -143,3 +143,45 @@ Leitura: as quatro baselines batem com a v3 §9.1 F0. `N_san3` fica fixado em **
   404, e a escrita com o `tenant_id` de A dá 42501).
 - **C:** `[DB] tests/rec-01-domain-db.test.ts` → `# tests 6 # pass 6 # fail 0 # skipped 0` (emenda §10: 6) ·
   `[SB] tests/rec-01-live-link-guard.test.ts` → `# pass 1 # fail 0 # skipped 0`. `npx tsc --noEmit` → limpo.
+
+## RETOMADA 4b — o corpo só é lido depois do canal e da conta (commit `fix`, F4)
+
+Medido com o gerador do censo (`node --import tsx tests/helpers/o6r07c-census.ts gravar <saída>`): com o corpo lido ANTES do portão,
+o censo classificava `POST …/online-payment` como `LOTE` (a resposta mudava com o corpo mesmo com o canal desligado). O `create` passou
+a ler o corpo só depois de (a) canal e (b) conta: com o canal desligado, a resposta é a mesma para qualquer corpo, e o censo passa a
+classificar a rota como `SEM-ALCANCE-CAMPO`, igual a `release/approve`. Os 28 testes `[SB]` do bloco seguem verdes.
+
+## PAUSA 2026-11-03T15:05Z — a F4 exige tocar fora do PERMITIDO (o plano não nomeia estes guardas)
+
+- **Head:** `2c268dc5` (empurrado). Ramo `feat/patio-rec-01-dominio`. Sem PR aberto.
+- **Feito:** F0, F1, F2, F3 e F4 com V, M e C registrados acima; todas as mutações mordem; árvore limpa.
+- **CI do head `2c268dc5`** (run `41642206617`):
+  - `backend-postgres` (job `125938740831`): `# tests 493 # pass 492 # fail 1 # skipped 0` — só `not ok 269 - permissão acrescentada
+    ao catálogo chega ao banco por migração (fronteira)`, que a F5 fecha (M-REC-7a). **No escopo.**
+  - `backend` (job `125938740723`): `# tests 4298 # pass 4286 # fail 10 # skipped 2`. Os 10:
+    - **no escopo, fecham na F5:** `not ok 2047 - A1` e `not ok 2071 - A16` do `migration-transaction-guard` (G6: falta o drill que cita
+      as migrações novas; é a `tests/rec-01-migration-drill-db.test.ts` da F5) e `not ok 2800` (paridade de migração, M-REC-7a);
+    - **FORA do PERMITIDO do §9.1 e da emenda:**
+      1. `tests/fixtures/o6r07c-classificacao-vias.json` — `not ok 2682 - T1`, `2685 - T4`, `2695 - T14` do `o6r07c-census-guard`: as 3 rotas
+         novas não estão no instantâneo. O instantâneo é GERADO (`node --import tsx tests/helpers/o6r07c-census.ts gravar
+         tests/fixtures/o6r07c-classificacao-vias.json`); o diff medido é: `GET …/online-payment` e `GET …/online-payments` → `LEITURA`,
+         `POST …/online-payment` → `SEM-ALCANCE-CAMPO`, e as contagens `MIDDLEWARE /api/v1 · (anônima)` 114→116,
+         `MIDDLEWARE /api/v1 · tenantContextMiddleware` 56→57, `ROTEADOR /api/v1` 59→60; 474 chaves, 0 violações.
+      2. `tests/san3-05-acessos-de-plataforma-guard.test.ts` (linha 287) — `not ok 33 - L0 exato` (e o pai `not ok 3041 - T13`): o literal
+         `tabelas ENABLE=112 FORCE=112 · acessores Prisma em FORCE=112` passa a 113 com `impound_payment_intents` (FORCE). O inventário
+         de acessos NÃO mudou: o repositório só é construído no callback de `withTenantRls`, e nenhuma chave nova nasceu (as outras 32
+         subtestes do T13 passam).
+      3. `tests/san3-05-runtime-role-guard-db.test.ts:1016` — `not ok 8 - T14a/b` (e o pai `not ok 3055`): o inventário de DML do papel de
+         runtime passa de `119` a `121` (as duas tabelas novas). Saída medida no CI: `…|f|f|f|f|0|0|121`.
+  - Os três são guardas de inventário cuja atualização é "o ato consciente" que eles exigem (precedente: emenda v2.2 de escopo do
+    B-TRC-02, que fez as mesmas três edições para `vehicle_telemetry_events`). Nenhum é defeito do bloco; o plano só não os pôs no
+    PERMITIDO.
+- **Falta:** F5 (M-REC-7a, drill M-REC-1/2/7a, paridade, as 2 suítes `-db` em `SUITES` do CI medidas 3×) e F6 (docs, `RBAC_MATRIX.md`,
+  bateria final, PR), depois da emenda de escopo.
+- **Pedido ao orquestrador (emenda antes do código):** autorizar no PERMITIDO do REC-01 as três edições acima, nesta forma exata:
+  (1) o instantâneo regenerado pelo gerador, com o diff acima e nada mais; (2) `112` → `113` nas três posições do literal da linha 287;
+  (3) `119` → `121` na linha 1016. Se a emenda vier, a F5 segue sem mudança.
+- **Próximo comando ao retomar:** `cd C:/Users/thiag/w-rec01 && git fetch -q origin && git status --porcelain` (vazio) e, com a emenda,
+  aplicar as três edições num commit `test(…)` próprio; depois a F5.
+- **Arquivos meio-escritos:** nenhum. **Vivos:** o container `rec01-pg` (`127.0.0.1:55467`, bases `postgres`, `rec01c`, `rec01v`,
+  `rec01m`, `rec01g`), mantido para a retomada; o worktree `C:/Users/thiag/w-rec01`.
