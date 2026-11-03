@@ -7,10 +7,10 @@ import type { DispatchesSummary } from "../dispatches.types";
 
 const cards = [
   { key: "total", label: "Total", icon: ClipboardList },
-  { key: "assigned", label: "Atribuidos", icon: UserRound },
+  { key: "assigned", label: "Atribuídos", icon: UserRound },
   { key: "inRoute", label: "Em rota", icon: Route },
   { key: "inService", label: "Em atendimento", icon: Clock },
-  { key: "completed", label: "Concluidos", icon: CheckCircle2 },
+  { key: "completed", label: "Concluídos", icon: CheckCircle2 },
   { key: "cancelled", label: "Cancelados", icon: XCircle },
   { key: "urgent", label: "Urgentes", icon: AlertTriangle },
 ] as const;

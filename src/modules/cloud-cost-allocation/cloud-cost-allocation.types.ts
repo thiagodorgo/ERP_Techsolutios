@@ -72,6 +72,7 @@ export type CloudCostAllocationTenant = {
 export type CreateCloudCostAllocationRunInput = {
   readonly periodStart: Date;
   readonly periodEnd: Date;
+  readonly importId?: string;
   readonly strategy?: CloudCostAllocationStrategy;
   readonly createdBy?: string;
   readonly metadata?: CloudCostAllocationMetadata;
@@ -104,6 +105,7 @@ export type TenantCloudCostAllocationFilters = {
 export type AllocateCostsForPeriodInput = {
   readonly periodStart: Date;
   readonly periodEnd: Date;
+  readonly importId?: string;
   readonly strategy?: CloudCostAllocationStrategy;
   readonly createdBy?: string;
   readonly metadata?: CloudCostAllocationMetadata;
@@ -138,10 +140,29 @@ export type AllocationEngineInput = {
   readonly tenants: readonly CloudCostAllocationTenant[];
 };
 
+/**
+ * B-SAN3-03 · R8 — a organização da plataforma (mesmo critério do front, `platform-overview.types.ts`). Ela
+ * PESA no rateio com a base dela e NÃO recebe alocação: a parte dela é `totalPlatformCost`, linha própria,
+ * fora de `totalUnallocatedCost` (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
+ */
+export const PLATFORM_SYSTEM_ORG_SLUG = "platform";
+
+export type PlatformCostEntry = {
+  readonly serviceCode: string;
+  readonly usageType: string;
+  readonly costCategory: string;
+  readonly platformCost: number;
+  readonly currency: string;
+  readonly sourceCostLineItemIds: readonly string[];
+  readonly origin: "direct_tag" | "usage_share";
+};
+
 export type AllocationEngineResult = {
   readonly allocations: readonly Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[];
+  readonly platformCost: readonly PlatformCostEntry[];
   readonly totalImportedCost: number;
   readonly totalAllocatedCost: number;
+  readonly totalPlatformCost: number;
   readonly totalUnallocatedCost: number;
   readonly currency?: string;
   readonly unallocated: readonly {
@@ -153,6 +174,12 @@ export type AllocationEngineResult = {
     readonly sourceCostLineItemIds: readonly string[];
     readonly reason: string;
   }[];
+  /** B-SAN3-03 · R11 — categorias cuja base é estimada (pelas ações), em ordem alfabética. */
+  readonly estimatedCategories: readonly string[];
+  /** B-SAN3-03 · R13 — `importado − alocado − plataforma − não rateado`, com sinal; fora de `totalUnallocatedCost`. */
+  readonly roundingResidualCost: number;
+  /** B-SAN3-03 · R13 — quantos valores o motor arredondou; o teto do resíduo em micro-unidades. */
+  readonly roundingCount: number;
 };
 
 export type CloudCostAllocationSummary = {
@@ -162,6 +189,20 @@ export type CloudCostAllocationSummary = {
   readonly totalImportedCost: number;
   readonly totalAllocatedCost: number;
   readonly totalUnallocatedCost: number;
+  /** B-SAN3-03 · R8-b — a parte da plataforma, linha própria, fora de `totalUnallocatedCost`. */
+  readonly totalPlatformCost: number;
+  /** B-SAN3-03 · R13 — resíduo de arredondamento, com sinal. */
+  readonly roundingResidualCost: number;
+  /** B-SAN3-03 · R12 — a run que responde, e o import dela. */
+  readonly runId: string | null;
+  readonly importId: string | null;
+  readonly importResolution: string | null;
+  readonly coverage: "imported" | "no_import" | "no_run" | "legacy_unscoped";
+  /** B-SAN3-03 · R8-b — Σ unallocatedByReason = totalUnallocatedCost; item sem motivo em "unspecified". */
+  readonly unallocatedByReason: readonly { readonly reason: string; readonly unallocatedCost: number }[];
+  readonly platformCostByService: readonly { readonly serviceCode: string; readonly platformCost: number }[];
+  /** B-SAN3-03 · R11 — categorias rateadas por estimativa (pelas ações). */
+  readonly estimatedCategories: readonly string[];
   readonly tenants: readonly {
     readonly tenantId: string;
     readonly tenantName?: string;

@@ -106,7 +106,7 @@ export function useOperationsMap() {
           "unavailable",
           !activeContext
             ? "Selecione um contexto para habilitar realtime."
-            : "Permissao field_location:read necessaria para consumir realtime.",
+            : "Permissão field_location:read necessária para consumir realtime.",
         ),
       }));
       return;
@@ -224,7 +224,7 @@ function createRealtimeState(
     return {
       status,
       label: "Realtime conectado",
-      detail: detail ?? "Eventos de operacao em campo chegam via SSE tenant-scoped.",
+      detail: detail ?? "Eventos de operação em campo chegam via SSE tenant-scoped.",
       fallbackPolling: false,
       retryCount,
       ...timestamps,

@@ -182,7 +182,7 @@ test("contexto ativo mais largo que a sessão não libera nada", async () => {
 test("Financeiro com dashboard:view só no contexto não entra no painel", async () => {
   const { html, probe } = await renderWithSessionAndContext(["financial_entries:read"], ["dashboard:view"]);
 
-  assert.match(html, /Acesso nao autorizado/);
+  assert.match(html, /Acesso não autorizado/);
   assert.doesNotMatch(html, /PAINEL-DO-TESTE/);
   assert.equal(probe.hasAnyDashboard, false);
 });
@@ -191,7 +191,7 @@ test("controle positivo: sessão com dashboard:read entra no painel", async () =
   const { html, probe } = await renderWithSessionAndContext(["dashboard:read"], []);
 
   assert.match(html, /PAINEL-DO-TESTE/);
-  assert.doesNotMatch(html, /Acesso nao autorizado/);
+  assert.doesNotMatch(html, /Acesso não autorizado/);
   assert.equal(probe.can["dashboard:read"], true);
 });
 

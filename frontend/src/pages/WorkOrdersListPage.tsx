@@ -24,7 +24,7 @@ export function WorkOrdersListPage() {
     <section className="page-stack">
       <header className="page-heading page-heading--row">
         <div>
-          <span>W17 Ordens de Servico</span>
+          <span>W17 Ordens de Serviço</span>
           <h1>Listagem e busca global de OS</h1>
         </div>
         <Button onClick={() => navigate("/work-orders/new")}>

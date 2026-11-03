@@ -52,7 +52,7 @@ export function DispatchCreateForm({
       <Input label="OS" value={workOrderId} onChange={(event) => setWorkOrderId(event.target.value)} disabled={disabled} placeholder="workOrderId" />
       <Input label="Operador" value={operatorUserId} onChange={(event) => setOperatorUserId(event.target.value)} disabled={disabled} placeholder="operatorUserId" />
       <Select label="Status inicial" value={status} onChange={(event) => setStatus(event.target.value as "draft" | "assigned")} disabled={disabled}>
-        <option value="assigned">Atribuido</option>
+        <option value="assigned">Atribuído</option>
         <option value="draft">Rascunho</option>
       </Select>
       <label className="ui-field">

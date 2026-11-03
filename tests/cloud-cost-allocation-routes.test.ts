@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
-import type { CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
+import type { CloudCostImport, CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
 import type { CloudUsageEvent } from "../src/modules/cloud-usage/index.js";
 
 const periodStart = new Date("2026-06-01T00:00:00.000Z");
@@ -65,6 +65,114 @@ test("usuario tenant comum nao acessa endpoints platform de allocation", async (
   });
 });
 
+test("T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+
+    const invalidQueries = [
+      "periodStart=",
+      "periodStart=nao-e-data",
+      "periodStart=2026-06-01&periodEnd=",
+      "periodStart=2026-06-01&periodStart=2026-07-01&periodEnd=2026-06-30",
+      "periodStart=2026-02-31&periodEnd=2026-03-31",
+      "periodStart=2026-13-01&periodEnd=2026-06-30",
+      "periodStart=2026-00-10&periodEnd=2026-06-30",
+    ];
+
+    const partial = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2026-10-01",
+      { headers: platformHeaders() },
+    );
+    assertInvalidPeriod(partial, "summary_period_incomplete");
+
+    for (const query of invalidQueries) {
+      const response = await requestJson(
+        baseUrl,
+        `/api/v1/platform/cloud-cost-allocations/summary?${query}`,
+        { headers: platformHeaders() },
+      );
+      assertInvalidPeriod(response, "summary_period_invalid");
+    }
+
+    const runsPartial = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/runs?periodStart=2026-06-01",
+      { headers: platformHeaders() },
+    );
+    assert.equal(runsPartial.status, 200, "T-RUN-1 · listagem continua aceitando somente uma ponta");
+
+    const leapDay = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2028-02-29&periodEnd=2028-02-29",
+      { headers: platformHeaders() },
+    );
+    assert.equal(leapDay.status, 200);
+  });
+});
+
+test("T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+    const previousTimezone = process.env.TZ;
+    const invalidDates = [
+      "2026-06-02T00:00:00+23:59",
+      "2026-06-02T00:00:00+0500",
+      "2026-05-31T24:00:00Z",
+      "2026-05-31T22:00",
+      "2026-06-01 ",
+      "2026-06-01 GMT+1400",
+    ];
+
+    try {
+      for (const timezone of ["UTC", "America/Sao_Paulo"]) {
+        process.env.TZ = timezone;
+        for (const invalidDate of invalidDates) {
+          const query = new URLSearchParams({ periodStart: invalidDate, periodEnd: "2026-06-30" });
+          const response = await requestJson(
+            baseUrl,
+            `/api/v1/platform/cloud-cost-allocations/summary?${query.toString()}`,
+            { headers: platformHeaders() },
+          );
+          assertInvalidPeriod(response, "summary_period_invalid");
+        }
+      }
+    } finally {
+      if (previousTimezone === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTimezone;
+    }
+  });
+});
+
+test("T-SUM-10 · summary recusa qualquer chave desconhecida", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+
+    for (const query of [
+      "PeriodStart=2026-06-01",
+      "periodStart[]=2026-06-01&periodEnd[]=2026-06-30",
+      "periodStart=2026-06-01&periodEnd=2026-06-30&status=completed",
+    ]) {
+      const response = await requestJson(
+        baseUrl,
+        `/api/v1/platform/cloud-cost-allocations/summary?${query}`,
+        { headers: platformHeaders() },
+      );
+      assertInvalidPeriod(response, "summary_query_invalid");
+    }
+
+    const runs = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/runs?PeriodStart=2026-06-01",
+      { headers: platformHeaders() },
+    );
+    assert.equal(runs.status, 200, "a listagem de runs continua ignorando chave desconhecida");
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
@@ -107,13 +215,14 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
       { id: seed.tenantA.id, name: seed.tenantA.name, slug: seed.tenantA.slug },
       { id: seed.tenantB.id, name: seed.tenantB.name, slug: seed.tenantB.slug },
     ],
+    imports: [costImport()],
     costLineItems: [
       costLine("cost-direct", { tenantTag: seed.tenantA.id, serviceCode: "AmazonEC2", unblendedCost: 5 }),
       costLine("cost-s3", { serviceCode: "AmazonS3", usageType: "TimedStorage-ByteHrs", unblendedCost: 10 }),
     ],
     usageEvents: [
-      usage(seed.tenantA.id, "storage_gb_month", 1),
-      usage(seed.tenantB.id, "storage_gb_month", 1),
+      usage(seed.tenantA.id, "storage_bytes_current", 1),
+      usage(seed.tenantB.id, "storage_bytes_current", 1),
     ],
   });
 
@@ -127,6 +236,45 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
     await closeServer(server);
     resetCloudCostAllocationRuntimeForTests();
   }
+}
+
+async function createJuneRun(baseUrl: string) {
+  return requestJson(baseUrl, "/api/v1/platform/cloud-cost-allocations/runs", {
+    method: "POST",
+    headers: platformHeaders(),
+    body: {
+      periodStart: "2026-06-01",
+      periodEnd: "2026-06-30",
+      strategy: "direct_tag_then_usage_weighted_v1",
+    },
+  });
+}
+
+function assertInvalidPeriod(
+  response: { readonly status: number; readonly body: { readonly error?: { readonly code?: string; readonly reason?: string } } },
+  reason: string,
+): void {
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error?.code, "CLOUD_COST_ALLOCATION_INVALID_PERIOD");
+  assert.equal(response.body.error?.reason, reason);
+}
+
+function costImport(): CloudCostImport {
+  return {
+    id: "import-1",
+    provider: "aws",
+    sourceType: "manual_csv",
+    status: "completed",
+    periodStart,
+    periodEnd,
+    importedAt: periodEnd,
+    rowCount: 2,
+    totalUnblendedCost: 15,
+    currency: "USD",
+    metadata: {},
+    createdAt: periodStart,
+    updatedAt: periodEnd,
+  };
 }
 
 function seedCoreSaas(service: {

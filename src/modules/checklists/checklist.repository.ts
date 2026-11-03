@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  appendCloudUsageInMemory,
   appendChecklistRunUsageInMemory,
+  buildAttachmentDownloadUsageEvents,
+  buildAttachmentUploadUsageEvents,
   buildChecklistRunUsageEvents,
 } from "../cloud-usage/cloud-usage.capture.js";
 import type { ChecklistAuditEvent } from "./checklist.audit.js";
@@ -199,6 +202,7 @@ export interface ChecklistRepository {
   hasActiveRunsForTemplate(tenantId: string, templateId: string): Promise<boolean>;
   countActiveRunsForTemplate(tenantId: string, templateId: string): Promise<number>;
   createAttachment(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistAttachmentInput): Promise<ChecklistAttachment | null>;
+  recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void>;
   createMarker(tenantId: string, runId: string, actorUserId: string, data: CreateChecklistMarkerInput): Promise<ChecklistMarker | null>;
   createAcknowledgement(
     tenantId: string,
@@ -673,7 +677,23 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
 
     this.attachments.set(attachment.id, attachment);
 
+    await appendCloudUsageInMemory(buildAttachmentUploadUsageEvents(attachment));
+
     return attachment;
+  }
+
+  async recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void> {
+    if (attachment.tenantId !== tenantId) return;
+    await appendCloudUsageInMemory(
+      buildAttachmentDownloadUsageEvents({
+        id: attachment.id,
+        tenantId,
+        runId: attachment.runId,
+        sizeBytes: attachment.sizeBytes,
+        createdAt: new Date(),
+        grantId,
+      }),
+    );
   }
 
   async createMarker(

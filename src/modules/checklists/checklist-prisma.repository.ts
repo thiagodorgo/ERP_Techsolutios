@@ -4,7 +4,10 @@ import pino from "pino";
 import { env } from "../../config/env.js";
 import { withTenantRls } from "../../database/rls.js";
 import {
+  appendCloudUsageInTx,
   appendChecklistRunUsageInTx,
+  buildAttachmentDownloadUsageEvents,
+  buildAttachmentUploadUsageEvents,
   buildChecklistRunUsageEvents,
 } from "../cloud-usage/cloud-usage.capture.js";
 import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
@@ -966,7 +969,7 @@ export class PrismaChecklistRepository implements ChecklistRepository {
 
     assertChecklistRunFieldWritable(run.run);
 
-    const record = await this.client.checklistAttachment.create({
+    const record = (await this.client.checklistAttachment.create({
       data: {
         tenant_id: tenantId,
         run_id: runId,
@@ -978,9 +981,40 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         metadata: data.metadata,
         created_by: actorUserId,
       },
-    });
+    })) as {
+      id: string;
+      tenant_id: string;
+      run_id: string;
+      size_bytes: number | null;
+      created_at: Date;
+    };
+
+    await appendCloudUsageInTx(
+      this.client,
+      buildAttachmentUploadUsageEvents({
+        id: record.id,
+        tenantId: record.tenant_id,
+        runId: record.run_id,
+        sizeBytes: record.size_bytes ?? undefined,
+        createdAt: record.created_at,
+      }),
+    );
 
     return mapAttachmentRecord(record);
+  }
+
+  async recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void> {
+    await appendCloudUsageInTx(
+      this.client,
+      buildAttachmentDownloadUsageEvents({
+        id: attachment.id,
+        tenantId,
+        runId: attachment.runId,
+        sizeBytes: attachment.sizeBytes,
+        createdAt: new Date(),
+        grantId,
+      }),
+    );
   }
 
   async createMarker(
@@ -1178,6 +1212,10 @@ export class RlsPrismaChecklistRepository implements ChecklistRepository {
     data: CreateChecklistAttachmentInput,
   ): Promise<ChecklistAttachment | null> {
     return this.withTenant(tenantId, (repository) => repository.createAttachment(tenantId, runId, actorUserId, data));
+  }
+
+  recordAttachmentDownload(tenantId: string, attachment: ChecklistAttachment, grantId: string): Promise<void> {
+    return this.withTenant(tenantId, (repository) => repository.recordAttachmentDownload(tenantId, attachment, grantId));
   }
 
   createMarker(

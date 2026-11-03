@@ -30,17 +30,48 @@ Fora do escopo desta branch:
 - integracao AWS real alem da foundation AWS CUR existente;
 - endpoint tenant para expor custo.
 
-## Ponte comercial
+## Para que serve o rateio (B-SAN3-03, `D-COBRANCA-ASSINATURA-FRANQUIA`)
 
-Fluxo aprovado:
+Fluxo:
 
-1. `cloud_usage_*` mede uso interno por tenant.
+1. `cloud_usage_*` mede uso interno por organizacao.
 2. `cloud_cost_*` importa custo AWS bruto.
-3. `cloud_cost_allocation_*` calcula custo AWS por tenant.
-4. `cloud-charge-markup-rules` aplica markup, minimo mensal, franquia e excecoes por plano.
-5. `platform-cloud-billing-ui` e `billing-payment-provider` futuros exibem, fecham e cobram.
+3. `cloud_cost_allocation_*` calcula custo AWS por organizacao.
 
-Esta branch entrega o item 3. Ela nao cobra o tenant e nao gera preco final. A camada `cloud_charge_markup_rules` consome `tenant_cloud_cost_allocations` para calcular o valor cobrável.
+~~4. `cloud-charge-markup-rules` aplica markup, minimo mensal, franquia e excecoes por plano.~~
+~~5. `platform-cloud-billing-ui` e `billing-payment-provider` futuros exibem, fecham e cobram.~~
+
+**Passos 4 e 5 SUPERADOS por `D-COBRANCA-ASSINATURA-FRANQUIA` (decisao do dono, 2026-10-30).** A plataforma paga a
+nuvem; o preco do cliente e a assinatura com franquia. O custo rateado por organizacao alimenta a visao da plataforma
+(cliente, grupo e global) e a margem = assinatura paga − custo rateado, com alerta quando o custo passar da assinatura
+(`B-ASSINATURA`). **Nao existe preco por custo.** O texto antigo dos passos 4 e 5 fica acima, riscado (§A2).
+
+## Rateio exato (B-SAN3-03)
+
+- **Uma run, um import.** A run resolve o import na criacao (`importId` explicito, que precisa estar `completed`, ou o
+  `completed` mais recente com linha na janela) e grava `metadata.importId` e `metadata.importResolution`
+  (`explicit` | `latest_completed` | `none`). Reexecutar nao troca o import. `listCostLineItems` filtra
+  `import_id` no `count` e no `findMany` (`D-SAN3-03-IMPORT-POR-RUN`; coluna propria: `P-SAN3-03-IMPORT-ID-EM-COLUNA`,
+  dono `B-ASS-09a`).
+- **Base de fatos.** Upload e download de anexo de checklist e execucao de job gravam a unidade de uso na MESMA
+  transacao do fato (falha na unidade falha o fato). Storage pelo estoque das 4 tabelas de arquivo
+  (`checklist_attachments`, `work_order_attachments`, `attachments`, `damage_attachments`; RECOMENDACAO ADOTADA 5);
+  API por acoes auditadas de usuario da organizacao, sem `auth.*` e sem ator nulo, com o ato de usuario da plataforma
+  pesando na plataforma (`D-SAN3-03-BASE-DERIVADA`; filtro: RECOMENDACAO ADOTADA 6).
+- **Maquina, banco e cache** (`compute`, `database`, `cache`) rateados pelas acoes, rotulados como estimativa
+  (`estimatedCategories`; RECOMENDACAO ADOTADA 1). O banco passa ao espaco medido no `B-ASS-03`.
+- **Plataforma.** A organizacao `slug = "platform"` pesa no rateio e nao recebe alocacao: custo com a tag dela (id,
+  nome ou slug, qualquer caixa, nas 2 estrategias) e a fatia dela no rateio sem tag vao para `totalPlatformCost`,
+  linha propria, fora de `totalUnallocatedCost` (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`; RECOMENDACAO ADOTADA 2).
+- **A soma fecha.** `importado = alocado + plataforma + nao rateado + roundingResidualCost`, em micro-unidades; o
+  residuo so explica arredondamento (`|residuo| <= roundingCount x 0,000001`), senao a run falha com
+  `residual_exceeded`. Moeda misturada falha a run com `mixed_currency` (cambio: `B-ASS-09`).
+- **Resumo** (`GET /platform/cloud-cost-allocations/summary`): com periodo, so vale run com o mesmo dia UTC de inicio
+  e de fim; traz `runId`, `importId`, `importResolution`, `coverage` (`imported` | `no_import` | `no_run` |
+  `legacy_unscoped`), `unallocatedByReason`, `totalPlatformCost`, `platformCostByService`,
+  `estimatedCategories` e `roundingResidualCost`.
+- **Laco unico.** As leituras e escritas por organizacao passam por `forEachTenantRls` (`src/database/rls.ts`), com o
+  canario `tenant_context_leak` do modulo.
 
 ## Modelo de dados
 
@@ -174,9 +205,18 @@ Exemplo de criacao:
 
 ## Relacao com cloud charge markup rules
 
-`cloud_charge_markup_rules` consome `tenant_cloud_cost_allocations` e `cloud_cost_allocation_runs`, seleciona regras comerciais em `cloud_charge_rules`, cria runs em `cloud_charge_calculation_runs` e grava `tenant_cloud_charges`. Essa etapa calcula preco cobrável com margem, mas ainda nao gera fatura nem pagamento.
+**SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30):** o calculo abaixo nao e mais o preco do cliente; o
+codigo fica congelado, sem uso novo, ate o `B-ASS-01` retira-lo das rotas e da tela; as tabelas ficam, sem
+migracao destrutiva. Texto antigo, preservado:
+
+> `cloud_charge_markup_rules` consome `tenant_cloud_cost_allocations` e `cloud_cost_allocation_runs`, seleciona regras comerciais em `cloud_charge_rules`, cria runs em `cloud_charge_calculation_runs` e grava `tenant_cloud_charges`. Essa etapa calcula preco cobrável com margem, mas ainda nao gera fatura nem pagamento.
 
 ## Proximas branches
 
-- `feature/platform-cloud-billing-ui`: UI completa de billing/cloud para plataforma;
-- `feature/billing-payment-provider`: fechamento/cobranca com provedor de pagamento.
+**SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA`:** os donos agora sao os blocos do pacote `B-ASSINATURA` — margem e
+cambio (`B-ASS-09`), rateio automatico depois do import (`B-ASS-09a`), botoes de importar e rodar na tela
+(`B-ASS-10b`), leitura automatica da AWS (`B-ASS-13`), banco pelo espaco medido (`B-ASS-03`), requisicoes S3 das
+outras 3 tabelas de arquivo (`B-ASS-14`). Texto antigo, preservado:
+
+> - `feature/platform-cloud-billing-ui`: UI completa de billing/cloud para plataforma;
+> - `feature/billing-payment-provider`: fechamento/cobranca com provedor de pagamento.
