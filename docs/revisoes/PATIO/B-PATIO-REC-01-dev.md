@@ -185,3 +185,44 @@ classificar a rota como `SEM-ALCANCE-CAMPO`, igual a `release/approve`. Os 28 te
   aplicar as três edições num commit `test(…)` próprio; depois a F5.
 - **Arquivos meio-escritos:** nenhum. **Vivos:** o container `rec01-pg` (`127.0.0.1:55467`, bases `postgres`, `rec01c`, `rec01v`,
   `rec01m`, `rec01g`), mantido para a retomada; o worktree `C:/Users/thiag/w-rec01`.
+
+## RETOMADA 5 — emenda 1 §11 (orquestrador): unidade do dinheiro (11.1) e as três guardas (11.2)
+
+**11.1 — colunas `*_amount` em reais.** A emenda §11.1 substitui a minha leitura da RETOMADA 4: as colunas de dinheiro da M-REC-1 passam a
+`amount`, `paid_amount`, `applied_amount`, `held_amount`, `refunded_amount` (`DECIMAL(12,2)`, reais, como `process_charges.total_amount`); o
+TypeScript segue em centavos (`*Cents`) e a conversão é só no repositório Prisma, por `moneyToCents`/`centsToMoney` de
+`src/modules/charging/charge.validators.ts`. Os conversores duplicados que eu tinha em `impound-payment.validators.ts` saíram, e o T-DOM-5
+passou a provar a ida e volta exata desses dois (a contagem do arquivo não muda: 7). A M-REC-1 foi corrigida em commit novo (nada
+mergeado; sem migração nova, sem rebase).
+- **Drift do Prisma remedido** numa base nova (`rec01d`): 72 sentenças, as mesmas 72 da fixture K12 (0 a mais, 0 a menos).
+- **T-DOM-db-8 (novo):** `paid_amount = 123.45` → `findById` devolve `paidCents = 12345`; o repositório grava `amountCents = 12345` como
+  `123.45`. **V1** (commit `test(…)` com `paidCents: Number(row.paid_amount.toFixed(2))`): `not ok 6 - T-DOM-db-8`, `expected 12345, got 123.45`;
+  `# tests 7 # pass 6 # fail 1`.
+- **M da F4 refeitas com as âncoras novas** (base nova por mutação; âncora = 1; hash igual no restauro; `git status --porcelain` vazio):
+
+| # | troca | resultado |
+|---|---|---|
+| F4-M1 | apagar `CHECK (paid_amount = applied_amount + held_amount + refunded_amount)` | `not ok 4 - T-DOM-db-5`: `expected 23514 …money_identity_chk, got insert ok` |
+| F4-M2 | UNIQUE só `('pending')` | `not ok 1 - T-DOM-db-1` e `not ok 1 - T-DOM-26` |
+| F4-M3 | UNIQUE com `'funds_held', 'disputed'` | `not ok 2 - T-DOM-db-6` e `not ok 1 - T-DOM-26` |
+| F4-M4 | apagar `FORCE ROW LEVEL SECURITY` | `not ok 3 - T-DOM-db-2` |
+| F4-M5 | apagar `one_connection_chk` | `not ok 5 - T-DOM-db-7`: `as duas conexões nulas: … got insert ok` |
+| F4-M6 | `= 1` → `>= 1` | `not ok 5 - T-DOM-db-7`: `as duas conexões preenchidas: … got insert ok` |
+| F4-M7 | apagar `group_pair_chk` | `not ok 5 - T-DOM-db-7`: `grupo sem conexão de grupo: … got insert ok` |
+| F4-M8 | `listByProcess` sem `tenant_id` | `not ok 7 - T-ISO-db-1` |
+| F4-M9 (§11.1) | `paidCents: Number(row.paid_amount.toFixed(2))` (sem `moneyToCents`) | `not ok 6 - T-DOM-db-8`: `expected 12345, got 123.45` |
+
+- **C:** `[DB] tests/rec-01-domain-db.test.ts` → `# tests 7 # pass 7 # fail 0 # skipped 0` · `[SB] tests/rec-01-live-link-guard.test.ts` →
+  `# pass 1` · `[SB] tests/rec-01-validators.test.ts` → `# pass 7`.
+
+**11.2 — as três guardas, só as edições autorizadas** (commit `1630c27f`):
+1. `tests/fixtures/o6r07c-classificacao-vias.json`, **regenerado** por `node --import tsx tests/helpers/o6r07c-census.ts gravar
+   tests/fixtures/o6r07c-classificacao-vias.json` (474 chaves, 0 violações). Diff = o esperado e nada mais: `+ ROTA GET …/online-payment`
+   e `+ ROTA GET …/online-payments` (`LEITURA`), `+ ROTA POST …/online-payment` (`SEM-ALCANCE-CAMPO`), `MIDDLEWARE /api/v1 · (anônima)`
+   114→116, `MIDDLEWARE /api/v1 · tenantContextMiddleware` 56→57, `ROTEADOR /api/v1` 59→60 (15 inserções, 3 remoções).
+2. `tests/san3-05-acessos-de-plataforma-guard.test.ts:287`: `ENABLE=112 FORCE=112 · acessores Prisma em FORCE=112` → `113` (só a
+   constante). Prova de que nenhuma chave entrou no inventário: as outras subtestes do T13 (congelado com motivo por chave, formas,
+   'sumida') passaram com o head do bloco antes da edição; depois dela, o arquivo inteiro passa.
+3. `tests/san3-05-runtime-role-guard-db.test.ts:1016`: `…|0|0|119` → `…|0|0|121` (medido no CI do head `2c268dc5`: `…|f|f|f|f|0|0|121`).
+- **C:** `[SB] tests/san3-05-acessos-de-plataforma-guard.test.ts tests/o6r07c-census-guard.test.ts` → `# tests 67 # pass 67 # fail 0 # skipped 0`.
+  O `san3-05-runtime-role-guard-db` exige Linux (`setsid`); a prova dele é o job `backend` do CI.
