@@ -12,7 +12,12 @@ import {
 } from "../allocation";
 import { formatLastSeen } from "../operations-map.adapter";
 import { canDropOnTechnician, readDraggedWorkOrderId } from "../map/dnd";
-import { getFieldLocationGroup, getFieldLocationGroupColor, TECH_STALE_HEX } from "../map/mapMarkers";
+import {
+  getFieldLocationGroup,
+  getFieldLocationGroupColor,
+  isAllocatableFieldLocationStatus,
+  TECH_STALE_HEX,
+} from "../map/mapMarkers";
 import type { FieldLocationItem } from "../operations-map.types";
 
 /**
@@ -105,15 +110,15 @@ export function OperationsOperatorList({
 
   const dropEnabled = canAllocate && Boolean(onDropAllocate);
 
-  const handleDragOver = (event: DragEvent<HTMLElement>, location: FieldLocationItem, group: "disp" | "rota" | "atend" | "off") => {
-    if (!canDropOnTechnician(group, dropEnabled)) return; // linha "off" não aceita (protótipo)
+  const handleDragOver = (event: DragEvent<HTMLElement>, location: FieldLocationItem) => {
+    if (!canDropOnTechnician(location.status, dropEnabled)) return; // pausado/offline/bloqueado não aceita
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     setDropTargetId(location.id);
   };
 
-  const handleDrop = (event: DragEvent<HTMLElement>, location: FieldLocationItem, group: "disp" | "rota" | "atend" | "off") => {
-    if (!canDropOnTechnician(group, dropEnabled)) return;
+  const handleDrop = (event: DragEvent<HTMLElement>, location: FieldLocationItem) => {
+    if (!canDropOnTechnician(location.status, dropEnabled)) return;
     event.preventDefault();
     setDropTargetId(null);
     const workOrderId = readDraggedWorkOrderId(event.dataTransfer);
@@ -157,8 +162,10 @@ export function OperationsOperatorList({
         <div className="opmap-empty">Nenhum técnico neste filtro</div>
       ) : (
         <ul className="opmap-trows" aria-label="Técnicos de campo">
-          {rows.map(({ location, metrics, group }) => {
-            const isOff = group === "off";
+          {rows.map(({ location, metrics }) => {
+            // Só o indisponível EXPLÍCITO (pausado/offline/bloqueado) apaga a linha e trava "Alocar";
+            // sem status (`unknown`) aloca e o backend decide (recusa com 422 quem não é Técnico de Campo).
+            const isOff = !isAllocatableFieldLocationStatus(location.status);
             const dotColor = location.isStale ? TECH_STALE_HEX : getFieldLocationGroupColor(location.status);
             const completion = completionByOperator?.get(operatorUserIdOf(location)) ?? null;
             const etaTone = metrics ? etaToneForMinutes(metrics.min) : "far";
@@ -167,9 +174,9 @@ export function OperationsOperatorList({
                 <div
                   className={`opmap-trow${isOff ? " off" : ""}${dropTargetId === location.id ? " droptarget" : ""}`}
                   data-tec={location.id}
-                  onDragOver={(event) => handleDragOver(event, location, group)}
+                  onDragOver={(event) => handleDragOver(event, location)}
                   onDragLeave={() => setDropTargetId((current) => (current === location.id ? null : current))}
-                  onDrop={(event) => handleDrop(event, location, group)}
+                  onDrop={(event) => handleDrop(event, location)}
                   onMouseEnter={() => onHoverDetail?.(location)}
                   onMouseLeave={() => onHoverDetail?.(null)}
                   onFocus={() => onHoverDetail?.(location)}

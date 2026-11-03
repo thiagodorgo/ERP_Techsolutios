@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_notifier.dart';
+import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
@@ -56,7 +57,7 @@ class ProfileScreen extends ConsumerWidget {
 
     final email = session.user.email;
     final displayName = _displayName(email);
-    final roleLabel = _rolePtLabel(session.user.tenantRole);
+    final rotuloDoPapel = roleLabel(session.user.tenantRole);
     final orgName = session.activeTenant.displayName;
     final online =
         networkStatus == NetworkStatus.online ||
@@ -129,7 +130,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '$roleLabel · $orgName',
+                        '$rotuloDoPapel · $orgName',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 12.5,
@@ -150,7 +151,7 @@ class ProfileScreen extends ConsumerWidget {
                       _SectionCard(
                         children: [
                           _InfoRow(label: 'Organização', value: orgName),
-                          _InfoRow(label: 'Papel', value: roleLabel),
+                          _InfoRow(label: 'Papel', value: rotuloDoPapel),
                           _NavRow(
                             label: 'Trocar de organização',
                             onTap: () => context.go('/tenant-select'),
@@ -229,18 +230,6 @@ class ProfileScreen extends ConsumerWidget {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
     return name.substring(0, name.length.clamp(1, 2)).toUpperCase();
-  }
-
-  String _rolePtLabel(String role) {
-    return switch (role.toLowerCase()) {
-      'field_technician' => 'Técnico de Campo',
-      'field_dispatcher' => 'Operação de Campo',
-      'manager' => 'Gestor Operacional',
-      'tenant_admin' => 'Administrador',
-      'finance' => 'Financeiro',
-      'auditor' => 'Auditor',
-      _ => 'Membro',
-    };
   }
 
   String _fmtSyncAt(DateTime syncAt) {

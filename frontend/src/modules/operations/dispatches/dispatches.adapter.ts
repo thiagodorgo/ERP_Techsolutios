@@ -75,6 +75,23 @@ export function enrichDispatchesWithWorkOrders(items: readonly DispatchListItem[
   });
 }
 
+/**
+ * Filtros iniciais da página de Despachos a partir da URL (`?workOrderId=`, `?operatorUserId=`/`?operatorId=`,
+ * `?dispatchId=`). O id da OS vai SÓ para `workOrderId`, nunca para a busca: o servidor combina busca E
+ * filtro, e o id interno da OS não está no texto do despacho — copiar o id para a busca zerava a lista
+ * aberta pelo "Atribuir" (diagnóstico da operação, 02/11, item 3).
+ */
+export function buildInitialDispatchesFilters(searchParams: URLSearchParams): DispatchesFilters {
+  const workOrderId = searchParams.get("workOrderId") ?? "";
+  return {
+    search: searchParams.get("dispatchId") ?? "",
+    status: "all",
+    priority: "all",
+    operatorUserId: searchParams.get("operatorUserId") ?? searchParams.get("operatorId") ?? "",
+    workOrderId: workOrderId || undefined,
+  };
+}
+
 export function filterDispatches(items: readonly DispatchListItem[], filters: DispatchesFilters): DispatchListItem[] {
   const search = normalize(filters.search);
   const operator = filters.operatorUserId.trim();

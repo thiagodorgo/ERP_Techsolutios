@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/sync_models.dart';
@@ -18,7 +19,9 @@ class TenantContextBar extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.business_outlined),
         title: Text(session.activeTenant.displayName),
-        subtitle: Text('${session.user.tenantRole} · ${session.user.email}'),
+        subtitle: Text(
+          '${roleLabel(session.user.tenantRole)} · ${session.user.email}',
+        ),
         trailing: const Icon(Icons.verified_user_outlined),
       ),
     );
