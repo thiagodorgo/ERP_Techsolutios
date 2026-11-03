@@ -152,14 +152,18 @@ export class MiniDomElement extends MiniDomNode {
   get options(): MiniDomElement[] {
     return elements(this, (el) => el.localName === "option");
   }
-  /** O DOM mínimo não resolve seletor: quem procura um nó usa `elements()`. Foco real é prova do navegador. */
-  querySelector(): null {
-    return null;
+  /**
+   * Seletor SIMPLES (o bastante para os componentes da trilha): lista separada por vírgula de compostos com descendência
+   * por espaço; composto = tag opcional + `[attr]`/`[attr='v']` + `:not([attr])`. Fora disso, lança — nunca finge achar.
+   */
+  querySelector(selector: string): MiniDomElement | null {
+    return this.querySelectorAll(selector)[0] ?? null;
   }
-  querySelectorAll(): MiniDomElement[] {
-    return [];
+  querySelectorAll(selector: string): MiniDomElement[] {
+    return elements(this, (el) => matches(el, selector, this));
   }
-  closest(): null {
+  closest(selector: string): MiniDomElement | null {
+    for (let node: MiniDomNode | null = this; node; node = node.parentNode) if (node instanceof MiniDomElement && matches(node, selector)) return node;
     return null;
   }
   setAttribute(name: string, value: unknown): void {
@@ -214,6 +218,9 @@ export class MiniDomDocument extends MiniDomNode {
   }
   createComment(text: string): MiniDomComment {
     return new MiniDomComment(text, this);
+  }
+  querySelector(selector: string): MiniDomElement | null {
+    return this.documentElement?.querySelector(selector) ?? null;
   }
 }
 
@@ -296,4 +303,40 @@ export function propsOf(el: MiniDomElement): Record<string, unknown> {
   const key = Object.keys(el).find((name) => name.startsWith("__reactProps$"));
   if (!key) throw new Error(`propriedades internas do React ausentes em <${el.localName}>`);
   return (el as unknown as Record<string, unknown>)[key] as Record<string, unknown>;
+}
+
+type Compound = { readonly tag: string | null; readonly attrs: readonly (readonly [string, string | null])[]; readonly not: readonly string[] };
+
+function parseCompound(raw: string): Compound {
+  const re = /^([a-z][a-z0-9]*)?((?:\[[^\]]+\]|:not\(\[[^\]]+\]\))*)$/i;
+  const m = re.exec(raw);
+  if (!m) throw new Error(`mini-dom: seletor não suportado: ${raw}`);
+  const attrs: (readonly [string, string | null])[] = [];
+  const not: string[] = [];
+  for (const part of (m[2] ?? "").matchAll(/(:not\()?\[([a-z-]+)(?:=['"]?([^'"\]]*)['"]?)?\]\)?/gi)) {
+    if (part[1]) not.push(part[2]);
+    else attrs.push([part[2], part[3] ?? null]);
+  }
+  return { tag: m[1]?.toLowerCase() ?? null, attrs, not };
+}
+
+function matchesCompound(el: MiniDomElement, c: Compound): boolean {
+  if (c.tag && el.localName !== c.tag) return false;
+  for (const [name, value] of c.attrs) if (!el.hasAttribute(name) || (value !== null && el.getAttribute(name) !== value)) return false;
+  for (const name of c.not) if (el.hasAttribute(name)) return false;
+  return true;
+}
+
+function matches(el: MiniDomElement, selector: string, scope?: MiniDomNode): boolean {
+  return selector.split(",").some((alternative) => {
+    const parts = alternative.trim().split(/\s+/).map(parseCompound);
+    if (!matchesCompound(el, parts[parts.length - 1])) return false;
+    let node: MiniDomNode | null = el.parentNode;
+    for (let i = parts.length - 2; i >= 0; i -= 1) {
+      while (node && node !== scope && !(node instanceof MiniDomElement && matchesCompound(node, parts[i]))) node = node.parentNode;
+      if (!node || node === scope) return false;
+      node = node.parentNode;
+    }
+    return true;
+  });
 }
