@@ -270,3 +270,18 @@ mergeado; sem migração nova, sem rebase).
 - **N/M:** N (regressão medida) = 63 + 12 + 3 + 2 + 13 = 93; M (novos) = 28 `[SB]` + 9 `[DB]` = 37.
 - `npm test` na forma do CI (Linux, `[DB]`) é o job `backend` do PR; o TAP de `backend` e `backend-postgres` é lido abaixo antes de
   declarar pronto.
+
+## RETOMADA 8 — PR #488 e CI do head `2bc58290`
+
+- PR: https://github.com/thiagodorgo/ERP_Techsolutios/pull/488 (base `main`; "Não fazer merge: verificação do Codex e junta completa").
+- Check-runs do head `2bc5829066f96c630bfa7fb283b858ba141c857a`: **16, todos `completed`/`success`** (eventos `push` e `pull_request`).
+- TAP lido:
+  - `backend` (jobs `125953754107` e `125953558241`, forma do CI: Linux, `npm test` com Postgres): `# tests 4301 # pass 4299 # fail 0
+    # cancelled 0 # skipped 2` nos dois (os 2 pulos estão dentro do orçamento `SKIP_BUDGET_DB = 2` do runner); 0 linha `not ok`; o
+    `T14a/b` do `san3-05-runtime-role-guard-db` passa com `121`.
+  - `backend-postgres` (jobs `125953754260` e `125953558682`): `# tests 502 # pass 502 # fail 0 # cancelled 0 # skipped 0`; as 7 do
+    `rec-01-domain-db` e as 2 do `rec-01-migration-drill-db` aparecem como `ok`.
+- Limpeza: container `rec01-pg` removido; `dist/` removido; TAPs e executor de mutação ficam fora do repositório, em
+  `C:/Users/thiag/erp-pausa-2026-10-03/rec01/`.
+
+PRONTO PARA VERIFICAÇÃO
