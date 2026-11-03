@@ -1,5 +1,14 @@
+import { env } from "../../config/env.js";
 import { assertRowsBelongToTenant } from "../../database/rls.js";
-import type { ImpoundPaymentRepository } from "./impound-payment.repository.js";
+import { ChargeService, getMemoryChargeRepositoryForTests } from "../charging/charge.service.js";
+import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
+import { getMemoryReleaseRepositoryForTests } from "../release/release.service.js";
+import type { TariffResolver } from "../tariffs/tariff-resolution.js";
+import {
+  InMemoryImpoundPaymentRepository,
+  type ImpoundPaymentRepository,
+  type MemoryImpoundPaymentSources,
+} from "./impound-payment.repository.js";
 import {
   HELD_FUNDS_STATUSES,
   ImpoundPaymentError,
@@ -156,4 +165,59 @@ export class ImpoundPaymentService {
 
 function notFound(): ImpoundPaymentError {
   return new ImpoundPaymentError(404, "ONLINE_PAYMENT_PROCESS_NOT_FOUND", "process_not_found", "Custody process was not found.");
+}
+
+// ── runtime (env-gate memory × prisma), espelha charging/release ─────────────────────────────────────────────
+
+// O devido nunca resolve tarifa (getSettleableDueCents só lê o ledger). Se algo resolvesse, este resolvedor falha fechado:
+// sem tarifa, o motor não cria diária de valor 0 (charge.service.ts, F7). H5 da v3.
+const NO_TARIFF: TariffResolver = async () => undefined;
+
+export type ImpoundPaymentPorts = {
+  readonly connections?: PaymentConnectionPort;
+  readonly gate?: OnlinePaymentChannelGate;
+  readonly clock?: () => Date;
+};
+
+function memorySources(): MemoryImpoundPaymentSources {
+  const charges = new ChargeService(getMemoryChargeRepositoryForTests(), NO_TARIFF);
+  return {
+    processState: async (tenantId, processId) => {
+      const process = await getMemoryImpoundRepositoryForTests().findProcessById(tenantId, processId);
+      if (!process) return undefined;
+      const view = await getMemoryReleaseRepositoryForTests().getActiveReleaseView(tenantId, processId);
+      return { processStatus: process.status, activeReleaseKind: view?.release.kind };
+    },
+    settleableDue: (tenantId, processId) => charges.getSettleableDueCents(tenantId, processId),
+  };
+}
+
+const memoryRepository = new InMemoryImpoundPaymentRepository(memorySources());
+let defaultServicePromise: Promise<ImpoundPaymentService> | undefined;
+
+export function createMemoryImpoundPaymentService(ports: ImpoundPaymentPorts = {}): ImpoundPaymentService {
+  return new ImpoundPaymentService(memoryRepository, ports.connections, ports.gate, ports.clock);
+}
+
+export function getMemoryImpoundPaymentRepositoryForTests(): InMemoryImpoundPaymentRepository {
+  return memoryRepository;
+}
+
+export function resetImpoundPaymentRuntimeForTests(): void {
+  memoryRepository.reset();
+  memoryRepository.setSourcesForTests(memorySources());
+  defaultServicePromise = undefined;
+}
+
+// Sem o REC-04 e o REC-02a, as portas são as de PADRÃO FAIL-CLOSED: nenhuma cobrança nasce em produção.
+export async function createDefaultImpoundPaymentService(): Promise<ImpoundPaymentService> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return createMemoryImpoundPaymentService();
+  }
+  defaultServicePromise ??= createPrismaImpoundPaymentService();
+  return defaultServicePromise;
+}
+
+async function createPrismaImpoundPaymentService(): Promise<ImpoundPaymentService> {
+  throw new ImpoundPaymentError(503, "ONLINE_PAYMENT_UNAVAILABLE", "repository_unavailable", "Online payment storage is not available.");
 }

@@ -285,6 +285,18 @@ export class ChargeService {
     return { claimCents, currency };
   }
 
+  // B-PATIO-REC-01 (plano v3 §5.1; achado N8) — o DEVIDO CAPADO ao teto, para a cobrança on-line da taxa de pátio. READ-ONLY.
+  async getSettleableDueCents(
+    tenantId: string,
+    processId: string,
+    now: Date = new Date(),
+  ): Promise<{ dueCents: number; overAccruedUnreconciled: boolean; currency: string } | undefined> {
+    const state = await this.getReleaseChargeState(tenantId, processId, now);
+    if (!state) return undefined;
+    const { totalDueCents, currency } = await this.getPublicSummary(tenantId, processId);
+    return { dueCents: totalDueCents, overAccruedUnreconciled: false, currency };
+  }
+
   // ── Motor de diárias (I4) — acumulação de UM processo. Usado pelo SWEEP e (futuro PR-10/14) pelo congelamento
   // com asOf=frozen_at. Idempotente/DST-safe/fail-closed. Recalculabilidade (RN-DIA-05): só CRIA faltantes.
   async accrueProcess(tenantId: string, processId: string, now: Date, actorId?: string): Promise<AccrueProcessResult> {
