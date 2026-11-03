@@ -209,9 +209,10 @@ export function ProcessoDossiePage() {
           currency={statement?.currency ?? "BRL"}
           context={context}
           onClose={() => setChargeModalOpen(false)}
-          onDone={() => {
+          onDone={async () => {
+            // Recarrega a Guia ANTES de fechar: o encargo aparece nela e o modal segue travado até lá.
+            await reloadStatement();
             setChargeModalOpen(false);
-            void reloadStatement();
           }}
         />
       ) : null}
