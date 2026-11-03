@@ -1,0 +1,227 @@
+TAP version 13
+# Subtest: T-SYS-db-1 · run real: o resumo lê motivo e custo da plataforma do Postgres
+ok 1 - T-SYS-db-1 · run real: o resumo lê motivo e custo da plataforma do Postgres
+  ---
+  duration_ms: 834.3034
+  ...
+# Subtest: T-SYS-db-2 · run antiga com alocação da plataforma aparece em tenants[] com nome, sob papel sem bypass
+ok 2 - T-SYS-db-2 · run antiga com alocação da plataforma aparece em tenants[] com nome, sob papel sem bypass
+  ---
+  duration_ms: 234.6983
+  ...
+# Subtest: T-TAG-db · nomes duplicados não geram alocação e persistem motivo ambíguo
+ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo ambíguo
+  ---
+  duration_ms: 232.9647
+  ...
+# Subtest: T-TAG-db-2 · invisíveis no nome não geram alocação no Postgres
+    # Subtest: U+00AD
+    not ok 1 - U+00AD
+      ---
+      duration_ms: 244.8434
+      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+
+        true !== false
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: false
+      actual: true
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: U+200B
+    not ok 2 - U+200B
+      ---
+      duration_ms: 231.2521
+      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+
+        true !== false
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: false
+      actual: true
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: U+2060
+    not ok 3 - U+2060
+      ---
+      duration_ms: 220.4971
+      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+
+        true !== false
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: false
+      actual: true
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: U+FEFF
+    not ok 4 - U+FEFF
+      ---
+      duration_ms: 244.6725
+      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+
+        true !== false
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: false
+      actual: true
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    1..4
+not ok 4 - T-TAG-db-2 · invisíveis no nome não geram alocação no Postgres
+  ---
+  duration_ms: 942.4317
+  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:4958'
+  failureType: 'subtestsFailed'
+  error: '4 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: T-TAG-1 · nome duplicado é ambíguo independentemente da ordem
+ok 5 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem
+  ---
+  duration_ms: 2.5434
+  ...
+# Subtest: T-TAG-2 · colisão entre nome e slug também é ambígua
+ok 6 - T-TAG-2 · colisão entre nome e slug também é ambígua
+  ---
+  duration_ms: 0.4756
+  ...
+# Subtest: T-TAG-3 e T-TAG-4 · slug e id únicos continuam diretos
+ok 7 - T-TAG-3 e T-TAG-4 · slug e id únicos continuam diretos
+  ---
+  duration_ms: 0.4691
+  ...
+# Subtest: T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
+ok 8 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
+  ---
+  duration_ms: 0.4737
+  ...
+# Subtest: T-TAG-7 · estratégia só por uso também recusa tag ambígua
+ok 9 - T-TAG-7 · estratégia só por uso também recusa tag ambígua
+  ---
+  duration_ms: 0.2036
+  ...
+# Subtest: T-TAG-8 · grafias equivalentes não contornam ambiguidade
+ok 10 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
+  ---
+  duration_ms: 0.8073
+  ...
+# Subtest: T-TAG-9 · slug único normalizado continua direto
+ok 11 - T-TAG-9 · slug único normalizado continua direto
+  ---
+  duration_ms: 0.2137
+  ...
+# Subtest: T-TAG-10 · tag desconhecida falha fechada na estratégia direta
+ok 12 - T-TAG-10 · tag desconhecida falha fechada na estratégia direta
+  ---
+  duration_ms: 0.2338
+  ...
+# Subtest: T-TAG-11 · estratégia só por uso ignora tag desconhecida
+ok 13 - T-TAG-11 · estratégia só por uso ignora tag desconhecida
+  ---
+  duration_ms: 12.3844
+  ...
+# Subtest: T-TAG-12 · tag só de espaço equivale a linha sem tag
+ok 14 - T-TAG-12 · tag só de espaço equivale a linha sem tag
+  ---
+  duration_ms: 0.6097
+  ...
+# Subtest: T-TAG-14 · invisíveis no nome não escapam da ambiguidade
+not ok 15 - T-TAG-14 · invisíveis no nome não escapam da ambiguidade
+  ---
+  duration_ms: 3.7301
+  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-tenant-tag.test.ts:1:4102'
+  failureType: 'testCodeFailure'
+  error: |-
+    Got unwanted exception: U+00AD em direct_tag_then_usage_weighted_v1
+    Actual message: "Expected values to be strictly equal:
+
+    10 !== 0
+    "
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+  error: |-
+    Expected values to be strictly equal:
+
+    10 !== 0
+
+  stack: |-
+    assertAmbiguous (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:180:10)
+    <anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:33)
+    getActual (node:assert:498:5)
+    Function.doesNotThrow (node:assert:664:32)
+    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+  operator: 'doesNotThrow'
+  stack: |-
+    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+ok 16 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  ---
+  duration_ms: 2.8673
+  ...
+1..16
+# tests 20
+# suites 0
+# pass 14
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2700.9829

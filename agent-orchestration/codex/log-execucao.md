@@ -5125,6 +5125,13 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - O conserto pós-junta acrescenta mais 1 pendência (`P-MOBILE-BANNER-PROMETE-SINCRONIZAR`); o índice é regenerado pelo
   gerador no mesmo commit, e o número final fica no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
 
+## 2026-11-02 — B-SAN3-03 · Cloud Billing exato (F0–F9) · PR #484
+
+- Executores: `dev-san303-sol` (Codex GPT-5.6 Sol, nível menor) fez F0–F6; `dev-san303-opus` (Claude Opus 5.5, nível menor, declarado) fez F7–F9, cobrindo o Codex (as duas contas no limite até 09:21 e 09:26 SP) pela decisão `D-CLAUDE-COBRE-ATE-0411`. Nenhum dos dois planejou nem revisou.
+- Ramo `fix/cloud-billing-exato`; relatório `docs/revisoes/SAN3/B-SAN3-03-dev.md` (`## RETOMADA 0` a `## RETOMADA 9`); comando `agent-orchestration/codex/comandos/B-SAN3-03-cloud-billing-exato.md`.
+- Entrega: uma run = um import; base na transação do fato (upload, download, job); bases derivadas (estoque das 4 tabelas, ações auditadas filtradas); máquina, banco e cache; plataforma como linha própria; resumo por período exato com cobertura e motivos; soma que fecha com teto do resíduo; trava de moeda; laço único `forEachTenantRls`; 2º `take: 100_000` saiu de `cloud-charges`.
+- Sem migração, sem `frontend/**`, sem `Kpis/**`. Próximo: pré-revisão (um revisor, todas as mutações), depois junta completa (dinheiro).
+
 ## 2026-11-02 — registro pendente, segundo lote (`reg-0211b-sol`)
 
 - Autor: Codex GPT-5.6 Sol, nível menor declarado; verificação prevista por Claude, conforme `D-UM-FAZ-OUTRO-VERIFICA`.
@@ -5134,3 +5141,15 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Ressalva 4 do porteiro do #464 registrada: `DEEP_CLEAN=1` só quando nenhuma junta estiver rodando, porque `image prune -af` remove `postgres:16` e `redis:7` das cadeiras.
 - Ata do #483: `omega/juntas/J-B-O6R-11-PR483.md`; votos, evidências, logs, triagem, conferência, porteiro e contraprova em `omega/juntas/votos/B-O6R-11-PR483/`. Dados do PR confirmados por `gh pr view 483`: merge `7c89c73b`, head aprovado `df84cd81`, `MERGED` em `2026-11-02T17:04:13Z`.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, contratos raiz ou lockfiles.
+
+## 2026-11-03 — registro de 03/11 (`reg-0311-opus`)
+
+- Autor: `reg-0311-opus`, Claude Opus, nível menor declarado; cobre a conta 1 do Codex, sem limite, por ordem do dono (*"cubra a conta 1 do codex"*). Verificador previsto: Codex, conforme `D-UM-FAZ-OUTRO-VERIFICA`.
+- Base medida: `origin/main@e7dcbbb7`. Fonte: `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seções a partir de "Dono, 02/11 ~23:45 SP"; cada seção foi conferida na `origin/main` por `git grep` antes de entrar.
+- Porteiro do #484 (`porteiro-484-opus`, LIBERADO COM RESSALVA): (1) itens 25 e 26 FECHADOS no `PLANO_SAN3.md` e nas pendências, com head `35367753`, merge `e7dcbbb7`, 2026-11-03 e CI `41647952407`; o item 25 foi medido antes, pelo critério do §5.1, no TAP do job `backend` (`125958177192`) da run do merge; as outras duas entradas fechadas pelo #484 com a mesma data de autoria (`P-SAN3-05-LACO-POR-TENANT-DUPLICADO`, `P-CLOUD-BILLING-ORG-SISTEMA`) receberam a mesma correção; (2) ata `omega/juntas/J-B-SAN3-03-PR484.md` e votos em `omega/juntas/votos/B-SAN3-03-PR484/`; (3) `P-SAN303-HOMOGLIFO-NOME` e `P-SAN303-TESTE-TAG-INVISIVEL` com dono e PR-alvo; a `P-SAN303-TAG-DESCONHECIDA` ganhou a marca de leitura do orquestrador e a `D-SAN303-TAG-DESCONHECIDA`.
+- Porteiro do #486 (`porteiro-486-sol`, LIBERADO COM RESSALVA): item 49 FECHADO (PR #486, head `03012d66`, merge `5da03cac`, CI do head 16/16, CI do merge `41631321827`, `310/42 → 0`); três pendências do dev criadas; `B-O6R-03b` riscado da linha do `B-SAN3-19`; o parecer versionado em `omega/juntas/votos/B-SAN3-21-PR486/` com a errata do "comentário do dono".
+- #485: O-1, O-2 e O-3 de `rev-485b-opus` aplicados como marcas acrescentadas (`ERRATA-0311`).
+- Decisões do dono transcritas literalmente: as 22 respostas da emenda 1 da v3 do pátio, a Q12 e a Q-NOTA (`D-PATIO-RESPOSTAS-0211`); as falas de 02/11 noite e 03/11 sobre orquestração e braços (`D-BRACOS-0211-0311`). Leituras do orquestrador marcadas como leitura.
+- #487 (aberto): pendências do dev registradas como propostas; `D-ROTULO-MANAGER-GESTOR-OPERACIONAL` como decisão do orquestrador; o item 48 não foi fechado.
+- Índice regenerado pelo gerador: 723 cabeçalhos, 712 IDs, 179 FECHADAS, 540 ABERTAS, 0 CONTRADITÓRIAS.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, `CLAUDE.md`, `AGENTS.md` ou lockfiles.

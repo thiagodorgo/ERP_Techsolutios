@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/network/api_error.dart';
@@ -217,7 +218,7 @@ class _TenantCardState extends State<_TenantCard> {
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      _rolePtLabel(widget.tenant.userRole),
+                      roleLabel(widget.tenant.userRole ?? ''),
                       style: const TextStyle(
                         fontSize: 12,
                         color: ErpMobileTheme.inkMuted,
@@ -248,18 +249,6 @@ class _TenantCardState extends State<_TenantCard> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  String _rolePtLabel(String? role) {
-    return switch (role?.toLowerCase()) {
-      'field_technician' => 'Técnico de Campo',
-      'field_dispatcher' => 'Operação de Campo',
-      'manager' => 'Gestor Operacional',
-      'tenant_admin' => 'Administrador',
-      'finance' => 'Financeiro',
-      'auditor' => 'Auditor',
-      _ => 'Membro',
-    };
   }
 }
 

@@ -1,0 +1,106 @@
+== M48
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 14 # pass 7 # fail 7 # skipped 0
+  falhas: not ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo ambíguo ; not ok 4 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem ; not ok 5 - T-TAG-2 · colisão entre nome e slug também é ambígua ; not ok 7 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma ; not ok 8 - T-TAG-7 · estratégia só por uso também recusa tag ambígua ; not ok 9 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 14 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M49′
+  anchor cloud-cost-allocation.engine.ts count=1
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 7 # fail 4 # skipped 0
+  falhas: not ok 2 - T-TAG-2 · colisão entre nome e slug também é ambígua ; not ok 5 - T-TAG-7 · estratégia só por uso também recusa tag ambígua ; not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 11 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M50 (forma do dev)
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 5 # fail 6 # skipped 0
+  falhas: not ok 1 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem ; not ok 2 - T-TAG-2 · colisão entre nome e slug também é ambígua ; not ok 4 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma ; not ok 5 - T-TAG-7 · estratégia só por uso também recusa tag ambígua ; not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 11 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M50-lit (cai na regra/uso)
+  anchor cloud-cost-allocation.engine.ts count=1
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 5 # fail 6 # skipped 0
+  falhas: not ok 1 - T-TAG-1 · nome duplicado é ambíguo independentemente da ordem ; not ok 2 - T-TAG-2 · colisão entre nome e slug também é ambígua ; not ok 4 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma ; not ok 5 - T-TAG-7 · estratégia só por uso também recusa tag ambígua ; not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 11 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M51
+  anchor cloud-cost-allocation.engine.ts count=1
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 10 # fail 1 # skipped 0
+  falhas: not ok 4 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M52
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 8 # fail 3 # skipped 0
+  falhas: not ok 4 - T-TAG-5 · colisão com a plataforma é ambígua antes da plataforma ; not ok 5 - T-TAG-7 · estratégia só por uso também recusa tag ambígua ; not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M53
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 8 # fail 3 # skipped 0
+  falhas: not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 7 - T-TAG-9 · slug único normalizado continua direto ; not ok 10 - T-TAG-12 · tag só de espaço equivale a linha sem tag
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M53-b
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 10 # fail 1 # skipped 0
+  falhas: not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M53-c
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 8 # fail 3 # skipped 0
+  falhas: not ok 6 - T-TAG-8 · grafias equivalentes não contornam ambiguidade ; not ok 7 - T-TAG-9 · slug único normalizado continua direto ; not ok 10 - T-TAG-12 · tag só de espaço equivale a linha sem tag
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M55
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 9 # fail 2 # skipped 0
+  falhas: not ok 8 - T-TAG-10 · tag desconhecida falha fechada na estratégia direta ; not ok 11 - T-TAG-6 e T-TAG-13 · resumo separa ambígua e desconhecida e fecha a soma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M55-b
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 10 # fail 1 # skipped 0
+  falhas: not ok 9 - T-TAG-11 · estratégia só por uso ignora tag desconhecida
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M55-c
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 11 # pass 10 # fail 1 # skipped 0
+  falhas: not ok 10 - T-TAG-12 · tag só de espaço equivale a linha sem tag
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M22′
+  anchor cloud-cost-allocation.engine.ts count=1
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 8 # pass 7 # fail 1 # skipped 0
+  falhas: not ok 2 - T-SYS-2 · tag da plataforma por id, nome e slug, em qualquer caixa, nas 2 estratégias → custo da plataforma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M17-b
+  anchor cloud-cost-allocation.repository.ts count=1
+  exit=1 | # tests 8 # pass 4 # fail 4 # skipped 0
+  falhas: not ok 1 - T-SYS-1 · listTenants do dublê mantém a plataforma no universo do rateio ; not ok 2 - T-SYS-2 · tag da plataforma por id, nome e slug, em qualquer caixa, nas 2 estratégias → custo da plataforma ; not ok 3 - T-SYS-3 · linha sem tag: a plataforma fica no denominador e a fatia dela vira custo da plataforma ; not ok 5 - T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, não rateado 5 por motivo
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M23
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 8 # pass 7 # fail 1 # skipped 0
+  falhas: not ok 2 - T-SYS-2 · tag da plataforma por id, nome e slug, em qualquer caixa, nas 2 estratégias → custo da plataforma
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M-C1-NOVA (auto-colisão nome==slug vira ambígua)
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 22 # pass 21 # fail 1 # skipped 0
+  falhas: not ok 7 - T-SYS-8 · sem organização platform cadastrada o rateio é o de sempre e o custo da plataforma é 0
+  natureza: assertion
+  restored=true | git status --porcelain=[]
+== M-C1b-NOVA (id literal vence a colisão)
+  anchor cloud-cost-allocation.engine.ts count=1
+  exit=1 | # tests 22 # pass 21 # fail 1 # skipped 0
+  falhas: not ok 13 - T-TAG-2 · colisão entre nome e slug também é ambígua
+  natureza: assertion
+  restored=true | git status --porcelain=[]

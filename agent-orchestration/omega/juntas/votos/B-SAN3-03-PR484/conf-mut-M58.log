@@ -1,0 +1,90 @@
+TAP version 13
+# Subtest: Platform Admin cria run, lista runs, consulta allocations e summary
+ok 1 - Platform Admin cria run, lista runs, consulta allocations e summary
+  ---
+  duration_ms: 1881.0728
+  ...
+# Subtest: usuario tenant comum nao acessa endpoints platform de allocation
+ok 2 - usuario tenant comum nao acessa endpoints platform de allocation
+  ---
+  duration_ms: 24.9127
+  ...
+# Subtest: T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível
+ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível
+  ---
+  duration_ms: 46.6529
+  ...
+# Subtest: T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ
+not ok 4 - T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ
+  ---
+  duration_ms: 22.3945
+  location: 'C:\\Users\\thiag\\w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:3554'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    200 !== 400
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 400
+  actual: 200
+  operator: 'strictEqual'
+  stack: |-
+    assertInvalidPeriod (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:257:10)
+    <anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:139:11)
+    process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    async withAllocationApi (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
+    async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:116:3)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+# Subtest: T-SUM-10 · summary recusa qualquer chave desconhecida
+ok 5 - T-SUM-10 · summary recusa qualquer chave desconhecida
+  ---
+  duration_ms: 27.4571
+  ...
+# Subtest: T-SUM-1 · run de 31/10 a 30/11 e pedido de outubro → no_run, total 0
+ok 6 - T-SUM-1 · run de 31/10 a 30/11 e pedido de outubro → no_run, total 0
+  ---
+  duration_ms: 4.695
+  ...
+# Subtest: T-SUM-2 · run boa de outubro e depois run sem import de outubro → devolve a boa
+ok 7 - T-SUM-2 · run boa de outubro e depois run sem import de outubro → devolve a boa
+  ---
+  duration_ms: 20.7059
+  ...
+# Subtest: T-SUM-3 · só run sem import → no_import, diferente de no_run
+ok 8 - T-SUM-3 · só run sem import → no_import, diferente de no_run
+  ---
+  duration_ms: 0.4683
+  ...
+# Subtest: T-SUM-4 · run anterior ao bloco (sem importResolution) → legacy_unscoped, com os valores dela
+ok 9 - T-SUM-4 · run anterior ao bloco (sem importResolution) → legacy_unscoped, com os valores dela
+  ---
+  duration_ms: 0.4865
+  ...
+# Subtest: T-SUM-5 · run até 23:59:59.999Z casa com pedido da mesma data
+ok 10 - T-SUM-5 · run até 23:59:59.999Z casa com pedido da mesma data
+  ---
+  duration_ms: 0.6881
+  ...
+# Subtest: T-SUM-6 · sem período → a mais nova com import, com runId e importId
+ok 11 - T-SUM-6 · sem período → a mais nova com import, com runId e importId
+  ---
+  duration_ms: 13.4435
+  ...
+# Subtest: T-SUM-7 · resumo recusa período com somente uma ponta
+ok 12 - T-SUM-7 · resumo recusa período com somente uma ponta
+  ---
+  duration_ms: 1.342
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 11
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2479.0704

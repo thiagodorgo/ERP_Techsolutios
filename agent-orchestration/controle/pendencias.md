@@ -316,7 +316,11 @@
   "Operacao"/"indisponivel"/"Auditoria" espalhados). F12 corrigiu as violacoes de §3 ("tenant"/"inbox") +
   acentos DENTRO dessas strings, mas nao fez a reescrita ampla (fora do escopo do bloco de cera).
 - impacto: cosmetico/§11.1; nao afeta funcao. Concentrado em telas bespoke de plataforma/legado.
-- status: ABERTA (PARCIAL — fechado: "Situacao" zerou em `frontend/src`; aberto: ~50 literais sem acento seguem em `frontend/src`, inclusive em telas vivas — `guards/PermissionGuard.tsx:30` (texto de toda tela de acesso negado), `modules/checklists/pages/ChecklistRuntimePage.tsx`, `work-orders/pages/WorkOrderCreatePage.tsx:37,46` e o rótulo `"Operador Logistico"` (`modules/auth/types.ts:5`)) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12."
+- status: FECHADA no PR #486 (`B-SAN3-21`; head `03012d66`, merge `5da03cac`, 2026-11-03; CI do head 16/16, CI do merge
+  `41631321827` com `[B-SAN3-21] … ocorrencias=0`; vermelho-controle do porteiro `porteiro-486-sol`: `310` ocorrências em
+  `42` arquivos de `frontend/src` no pai `7c89c73b` → `0` no merge). A exceção nomeada do guard, `"Operador Logistico"`
+  (nome de perfil comparado no código, 11 literais), passa a `P-SAN3-21-PERFIL-LOGISTICO`.
+- status anterior: ABERTA (PARCIAL — fechado: "Situacao" zerou em `frontend/src`; aberto: ~50 literais sem acento seguem em `frontend/src`, inclusive em telas vivas — `guards/PermissionGuard.tsx:30` (texto de toda tela de acesso negado), `modules/checklists/pages/ChecklistRuntimePage.tsx`, `work-orders/pages/WorkOrderCreatePage.tsx:37,46` e o rótulo `"Operador Logistico"` (`modules/auth/types.ts:5`)) (inventário SAN3, fatia C1, 2026-09-11). Valor anterior, preservado: "aberto (bloco dedicado de copy/i18n varrendo `frontend/src/**` por acentuacao de UI). Nao bloqueia F12."
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
@@ -695,7 +699,9 @@
   seguiu a família certa p/ não criar dissonância lado a lado). Microcopy nova já acentua.
 - acao: bloco de varredura único acentuando labels + mensagens de `WorkOrderForm.tsx` e
   `work-orders.adapter.ts` (validateWorkOrderForm) de uma vez, destravando a convenção p/ os próximos Ω3F.
-- status: aberto (apontado por cognicao-visual)
+- status: FECHADA no PR #486, junto com a `P-028` (`B-SAN3-21`; head `03012d66`, merge `5da03cac`, 2026-11-03; CI do
+  merge `41631321827`; `310/42 → 0`).
+- status anterior: aberto (apontado por cognicao-visual)
 - **duplicata de:** `P-028` — contida nela: os rótulos sem acento do formulário de Nova OS são parte da dívida de acentuação (crítico SAN3 r1, CR1-16) — tratar junto.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
@@ -2238,6 +2244,11 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 - **dono:** `B-SAN3-07` (plano SAN3, §4.1 item 47 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **apenso 2026-11-03 (proposta do dev do PR #487, `dev-san319-opus`; o #487 está aberto):** o app de campo também mostra
+  "Tenant Demo" no modo offline: `mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186`
+  (`displayName: 'Tenant Demo'`, medido na `origin/main@e7dcbbb7`). A fronteira do `B-SAN3-07` é só `prisma/seed.ts`;
+  **leitura do redator, declarada (§A6):** o item 47 só fecha com as duas instâncias, e o plano do `B-SAN3-07` declara a
+  ampliação nominal para esse arquivo do app (ou devolve a instância a um bloco mobile com dono escrito).
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -7519,7 +7530,8 @@ com chave derivada da entidade. O molde já existe e está pronto para reuso:
 **Por que não foi feito aqui:** o recorte do bloco é fiel ao `local` do achado (confirmado pelo crítico);
 fechar todas as chaves seria o outbox genérico da `Ω6R D-002`, que o dono **optou por não deliberar**.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
+- **status:** FECHADA no PR #484 (B-SAN3-03; head `35367753`, merge `e7dcbbb7`, 2026-11-03; CI do head 16/16, CI do merge `41647952407`; a data 2026-11-02 escrita antes era a da autoria, não a do merge; era ABERTA) · **encerramento:** `tests/san3-03-attachment-capture-db.test.ts` (T-UP-db-2, T-DOWN-db-2) e `tests/san3-03-job-capture-db.test.ts` (T-JOB-db-2): falha injetada na unidade → fato e unidade juntos ou nenhum; censo `tests/san3-03-basis-census.test.ts` C-2/C-3.
+- **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origem `0648a8e1` (2026-06-08,
   *feat: add cloud usage metering foundation*) · **dono:** bloco novo `B-O6R-06b`, ou o bloco de outbox
   genérico se a `Ω6R D-002` for deliberada · **forma:** leitura cruzada, reproduzível.
 - **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -7544,7 +7556,8 @@ O aceite `C2` deste bloco cobre a metade que dá para cobrir agora: para a categ
 da base tem produtor na transação** — se alguém acrescentar uma chave à regra sem produtor, o censo fica
 vermelho. As outras categorias ficam com esta pendência.
 
-- **status:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
+- **status:** FECHADA no PR #484 (B-SAN3-03; head `35367753`, merge `e7dcbbb7`, 2026-11-03; CI do head 16/16, CI do merge `41647952407`; a data 2026-11-02 escrita antes era a da autoria, não a do merge; era ABERTA) · **encerramento:** `tests/san3-03-basis-census.test.ts` C-1 (toda chave de regra tem produtor transacional ou derivação) e `tests/san3-03-derived-basis(-db).test.ts` T-API-3 (ApiGateway e AWSELB alocados, ≠ não rateado), T-STO-2/T-STO-db-1 (estoque das 4 tabelas).
+- **status anterior:** ABERTA · **severidade:** ALTA · **escopo:** `pre-existente` — origens `6f27faae` e `0648a8e1`
   (2026-06-08) · **dono:** bloco de cloud billing / produto · **forma:** leitura cruzada, reproduzível.
 - **dono:** `B-SAN3-03` (plano SAN3, §4.1 item 25 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
 
@@ -7612,6 +7625,7 @@ construtor (`B5`).
 - **emenda (inventário SAN3, fatia A2, 2026-09-11):** há uma segunda instância silenciosa da mesma classe, fora do rateio — `take: 100_000` sem contagem prévia em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts:223`, dentro de `listAllocationTenantAllocations` (`:219`). Reconfirmado por presença no head `15ef3fbe` (`git show HEAD:src/modules/cloud-charges/cloud-charge-prisma.repository.ts | grep -n "take: 100_000"` → `223`; nenhum `count(` no arquivo). Mesma classe do `Ω6R-DIN-007` (truncamento silencioso); impacto realista pequeno, porque as alocações por run são tenants × categorias, longe de 100 mil.
 
 ---
+- **emenda FECHADA no PR #484 (B-SAN3-03; merge `e7dcbbb7`, 2026-11-03; a data 2026-11-02 era a da autoria):** a segunda instância (`take: 100_000` de `listAllocationTenantAllocations` em `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`) saiu — única linha tocada em `cloud-charges/**` (§2.8 da emenda 1 do plano). Teste: `tests/san3-03-basis-census.test.ts` C-5. A pendência principal (paginação por cursor do rateio) **continua ABERTA**.
 
 ## P-O6R-B06-SEM-PODA-POR-IDADE (2026-09-07) — `cloud_usage_events` não pode ser podada por idade sem quebrar a idempotência — BAIXA
 
@@ -8362,7 +8376,8 @@ janela por outra execução (teste ou import real) **entra na base de rateio**. 
 instância dele movendo a própria suíte para a janela reservada `2028-02`, mas a propriedade continua valendo
 para o resto da casa — é a **direção 2** da colisão que o conserto de isolamento teve de contornar.
 
-- **status:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
+- **status:** FECHADA no PR #484 (B-SAN3-03; head `35367753`, merge `e7dcbbb7`, 2026-11-03; CI do head 16/16, CI do merge `41647952407`; a data 2026-11-02 escrita antes era a da autoria, não a do merge; era ABERTA) · **encerramento:** `tests/san3-03-import-scope.test.ts` T26-1 e `tests/san3-03-import-scope-db.test.ts` T26-db-1/2 (dois imports na mesma janela: o rateio de um não soma o outro).
+- **status anterior:** ABERTA · **severidade:** BAIXA · **escopo:** `pre-existente` (`6f27faae`, 2026-06-08) ·
 - **plano SAN3 (2026-09-11, crítico r2, CR2-03):** entra no gate pelo critério 4 — uma reimportação do mesmo período soma o custo em dobro no rateio; "há um import por período" é premissa, não trava. Bloco `B-SAN3-03`.
   **dono:** próximo bloco de `cloud-cost-allocation` (o `§5` do `B-O6R-06` proíbe `src/**`) ·
   **bloqueia:** nada. **Correção proposta:** `import_id` opcional em `listCostLineItems`, com o serviço
@@ -8548,6 +8563,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
 ---
+- **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -10124,7 +10140,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-05-LACO-POR-TENANT-DUPLICADO (2026-10-03) — dois laços confiados pelo ratchet — BAIXA
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
+- **status:** FECHADA no PR #484 (B-SAN3-03; head `35367753`, merge `e7dcbbb7`, 2026-11-03; CI do head 16/16, CI do merge `41647952407`; a data 2026-11-02 escrita antes era a da autoria, não a do merge; era ABERTA) · **encerramento:** `git grep -c forEachTenantInOneTx src` = 0; `tests/san3-03-basis-census.test.ts` C-5; `tests/san3-05-acessos-de-plataforma-guard.test.ts` 35/35 com a linha do wrapper privado retirada de `scripts/san3-05-acessos-de-plataforma.mjs`.
+- **status anterior:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado) · **dono:** `B-SAN3-03`.
 - `forEachTenantInOneTx` e o canário privados do rateio duplicam os públicos de `rls.ts`; o gerador v3 confia em ambos pelo símbolo.
 - **bloqueia:** não.
 
@@ -10507,6 +10524,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
 - **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
+- **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -10552,7 +10570,8 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-CLOUD-BILLING-ORG-SISTEMA (2026-10-10) — o rateio do Cloud Billing pode cobrar a organização de sistema — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
+- **status:** FECHADA no PR #484 (B-SAN3-03; head `35367753`, merge `e7dcbbb7`, 2026-11-03; CI do head 16/16, CI do merge `41647952407`; a data 2026-11-02 escrita antes era a da autoria, não a do merge; era ABERTA) · **encerramento:** `tests/san3-03-system-org.test.ts` T-SYS-1..8 e `tests/san3-03-system-org-db.test.ts`: a plataforma pesa no rateio, não recebe alocação, e a parte dela é `totalPlatformCost`, fora de não rateado (`D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL`, respondida pelo dono).
+- **status anterior:** ABERTA · **escopo:** `pre-existente` — regra de rateio do backend (casa organização por `slug` e carrega todas); nota N6 da revisão do #411 · **dono:** `B-SAN3-03` (Cloud Billing exato).
 - A organização `platform` (de sistema) pode aparecer como organização cobrada e entrar na contagem de organizações do Cloud Billing; o B-SAN3-06b a tirou das métricas de clientes nas telas, mas a regra de rateio é do backend. É pergunta de produto: a plataforma paga a própria nuvem?
 - **bloqueia:** não.
 - **teste de encerramento:** rateio com a organização de sistema semeada não a cobra (ou a decisão de cobrá-la está escrita).
@@ -12377,6 +12396,46 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
 - **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.
 
+## P-SAN3-03-IMPORT-ID-EM-COLUNA (2026-11-02) — o import da run mora em `metadata.importId`, sem coluna nem FK — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado do `B-SAN3-03`, `D-SAN3-03-IMPORT-POR-RUN`) · **dono:** `B-ASS-09a` · **bloqueia:** não.
+- **origem:** `prisma/**` é PROIBIDO no `B-SAN3-03`; a run guarda o import escolhido em `metadata.importId` / `metadata.importResolution` (`src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts`, `createAllocationRun`).
+- **encerramento:** migração aditiva com coluna `import_id` e FK em `cloud_cost_allocation_runs`, com backfill de `metadata.importId`, só com autorização explícita do dono para essa migração; o `B-ASS-09a` usa o import para o rateio automático não repetir run.
+
+## P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a fase exata — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (PR #456, commit `37a3f360`) · **dono:** trilha financeira, `B-SAN3-12x` · **bloqueia:** não.
+- **origem medida:** pré-revisão do PR #484, achado A6. Houve 1 falha em 30 observações conhecidas (3,33%):
+  1 execução histórica falhou; as outras duas execuções conhecidas daquele head, os dois jobs `backend` do head
+  pré-revisado e 25 repetições próprias passaram. A barreira `waitForOwnBlockedStatement` casa qualquer statement
+  ativo/bloqueado pelo mesmo `application_name` e fragmento de `financial_titles`, sem provar PID, tentativa nem fase.
+- **efeito:** um casamento transitório pode soltar W2 cedo; o serviço relê `in_dispute` e aceita legitimamente a
+  transição. A evidência mede indeterminismo do teste, não defeito comprovado no CAS.
+- **encerramento:** a barreira identifica determinística e explicitamente o PID e a fase/tentativa esperados, e uma
+  série concorrente reproduzível fica verde sem casamento transitório.
+
+## P-SAN303-TAG-DESCONHECIDA (2026-11-03) — destino de tag não reconhecida no rateio direto — FECHADA
+
+- **status:** FECHADA no PR #484, Emenda 2 (§8) (head `35367753`, merge `e7dcbbb7`, 2026-11-03) · **escopo:** leitura de produto sobre risco financeiro · **dono:** `B-SAN3-03` · **bloqueia:** nada.
+- **registro da leitura do autor (§A6):** o comportamento anterior, que fazia uma tag não vazia e desconhecida cair
+  em regra/uso, podia cobrar organizações diferentes da pretendida. O item 10(3) manda corrigir agora erro grave de
+  dinheiro; o dono pode reverter essa leitura.
+- **leitura do orquestrador, declarada (§A6), registro de 2026-11-03:** o autor da §8 da emenda 2 é o orquestrador,
+  Claude Opus no papel de topo declarado (Fable suspenso). A regra "tag não vazia e desconhecida vai inteira para
+  `unknown_tenant_tag`" é **leitura do orquestrador, não decisão do dono**; o dono pode revertê-la numa linha. A junta
+  (`J-B-SAN3-03-PR484`) e a conferência mediram o comportamento, não a escolha de produto.
+- **encerramento:** em `direct_tag_then_usage_weighted_v1`, tag não vazia desconhecida vai integralmente para
+  `unknown_tenant_tag`; `usage_weighted_v1` continua ignorando tags desconhecidas por definição. Provas:
+  `tests/san3-03-tenant-tag.test.ts` T-TAG-10..13 e mutações M55/M55-b/M55-c.
+
+## B-SAN3-03 — nota de fechamento da Emenda 2 (2026-11-03)
+
+- **A1 fechado:** o resumo recusa período incompleto, vazio, inválido, repetido ou de calendário impossível com
+  `CLOUD_COST_ALLOCATION_INVALID_PERIOD`; T-SUM-7/8 e M47/M54/M56 provam os ramos.
+- **A5 fechado:** chave de organização ambígua, inclusive entre campos ou com normalização equivalente, vai inteira
+  a `ambiguous_tenant_tag`, antes da plataforma e nas duas estratégias; T-TAG-1..9, T-TAG-db e M48..M53 provam o
+  comportamento. Tag desconhecida no rateio direto fecha por `P-SAN303-TAG-DESCONHECIDA` acima.
+
 ## P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS (2026-11-02) — vagas e dossiê ainda usam o visual antigo — prioridade a definir
 
 - **status:** ABERTA, adiada até o fim dos bloqueantes · **escopo:** tela/UX já aprovada · **dono:** `B-PATIOS-VAGAS-DOSSIE-3-APARENCIAS` (bloco a planejar) · **prioridade:** A DEFINIR depois dos bloqueantes · **bloqueia:** nada agora.
@@ -12392,6 +12451,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **lado de 31/10:** `D-PLATAFORMA-RECEBE-E-REPASSA` diz que a plataforma recebe e repassa ao cliente.
 - **lado de 02/11:** o dono disse *"De um cliente com 100 filiais"*, *"nao, cnpj unico"* e admitiu clientes com APIs individuais; a leitura declarada é que, no modo compartilhado, CNPJ, conta e credenciais pertencem ao cliente do grupo, e, no individual, pertencem à organização. Em ambos, o dinheiro não precisaria passar pela plataforma.
 - **outros alvos do mesmo conflito §A2, registrados e não resolvidos:** Q8/Q10 da v2 do pátio modelam dados fiscais e conta para depósito por organização; `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` nasceu da hipótese de a plataforma receber e repassar; `B-PATIO-RECEBIMENTO-plano-v2.md` e `B-ASSINATURA-plano.md`, nas fontes externas, modelam conta, perfil fiscal ou nota por organização. As falas de 02/11 introduzem conta/CNPJ compartilhados por grupo e o modo individual. Nenhum desses alvos é consolidado ou revogado aqui.
+- **apenso 2026-11-03 (respostas do dono de 02/11 ~23:45 SP, `D-PATIO-RESPOSTAS-0211`):** Q-A *"não recebe"* e Q11c
+  *"…a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela…"* incidem sobre este
+  conflito. **Leitura do orquestrador, declarada (§A6):** `D-PLATAFORMA-RECEBE-E-REPASSA` fica superada para o pátio. Como o
+  dono não escolheu entre "suspensa" e "revogada", o conflito segue ABERTO até ele confirmar a leitura.
 - **estado:** conflito registrado sem escolher um lado, revogar decisão ou consolidar plano.
 - **encerramento:** decisão explícita do dono define, por modo, quem recebe, quem emite, se existe repasse/split e o destino da antiga decisão.
 
@@ -12402,3 +12465,59 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **lado de 02/11:** o dono disse que cada filial é *"orgamizacao propria"* e, à pergunta se paga assinatura, respondeu *"Não, só vê uso e custo"*.
 - **estado:** conflito registrado sem inferir se a assinatura pertence ao grupo econômico, à matriz ou a outra entidade de cobrança.
 - **encerramento:** decisão explícita do dono define o assinante do grupo, o agregador de franquia/excedente e o comportamento de cada organização-filial.
+
+## P-SAN303-HOMOGLIFO-NOME (2026-11-03) — letra de outro alfabeto no nome da organização desvia a tag do rateio — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (origem `6f27faae`, 2026-06-08; achado C1b-A2 da junta do PR #484) · **dono:** trilha da plataforma, validação do nome da organização (`src/modules/platform/platform-tenants.validator.ts`), bloco a nascer `B-PLAT-NOME-ORG` · **PR-alvo:** o 1º PR desse bloco · **bloqueia:** não.
+- **origem medida:** `jurado-j484-c1b-opus`, `agent-orchestration/omega/juntas/votos/B-SAN3-03-PR484/c1b-voto.json` (C1b-A2): A=`"Dupliсada"` (c cirílico) e B=`"Duplicada"`, tag `"Duplicada"` → estratégia direta `alloc [["b",10]]`, sem `ambiguous_tenant_tag`; a base `49ddd0f8` dá o mesmo (`c1-grafias-base.log`).
+- **efeito:** o custo de uma organização pode ser alocado, em silêncio, a outra de nome visualmente igual. Só se alcança por escrita deliberada do papel que grava o nome (`platform:tenants:update`); não nasce de colagem acidental, e nem a emenda 2 nem as críticas prometeram confusáveis (UTS #39). Triado como não grave e grande no §10 da emenda 2 (`votos/B-SAN3-03-PR484/emenda-2-triagem-e-conserto.md`).
+- **leitura do redator, declarada (§A6):** o nome do bloco e o PR-alvo são do redator deste registro; a fonte diz só "dona: a trilha da plataforma, na validação do nome". Corrige-se numa linha.
+- **encerramento:** o cadastro e a edição do nome recusam (ou levam a decisão) nome confundível com outro da mesma base, por esqueleto UTS #39, ou o motor recusa como ambígua a tag que casa com dois nomes de mesmo esqueleto; teste vermelho em `e7dcbbb7` e verde depois.
+
+## P-SAN303-TESTE-TAG-INVISIVEL (2026-11-03) — nenhum teste cobre tag com caractere invisível — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (ressalva 1 da conferência do PR #484) · **dono:** `B-ASS-09a` (próximo bloco do motor de rateio; já dono de `P-SAN3-03-IMPORT-ID-EM-COLUNA`) · **PR-alvo:** o PR do `B-ASS-09a` · **bloqueia:** não.
+- **origem medida:** `conf-484b-opus`, `agent-orchestration/omega/juntas/votos/B-SAN3-03-PR484/conf-484-parecer.md`, ressalva 1: `git diff 5b628b88 HEAD -- tests/san3-03-tenant-tag.test.ts` mostra `for (const tag of ["nao-existe", "Duplicada​"])` → `for (const tag of ["nao-existe"])`. O caso saiu do T-TAG-10 sem virar asserção de ambígua. O comportamento falha fechado (sonda 1b′ da conferência: `tagSide` 12/12 ambígua).
+- **leitura do redator, declarada (§A6):** a fonte anotou a pendência sem dono nem PR-alvo (o porteiro `porteiro-484-opus` cobrou os dois); o dono e o PR-alvo acima são do redator deste registro. Corrige-se numa linha.
+- **encerramento:** um teste com a tag `"Duplicada"` mais cada um dos 12 invisíveis do T-TAG-14, nas duas estratégias, afirma o motivo e o valor; a mutação que tira a remoção de invisíveis da tag fica vermelha nele.
+
+## P-SAN3-21-PERFIL-LOGISTICO (2026-11-03) — o nome de perfil "Operador Logistico" segue sem acento porque é comparado no código — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (exceção nomeada do guard do `B-SAN3-21`, PR #486) · **dono:** `B-SAN3-06a` (dono de `P-SAN3-04A-MENU-RESIDUAL`, que trata a fusão de `operator` e `field_technician` em "Operador Logistico", e já autorizado no mapa de `auth.adapter.ts` e no menu) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
+- **origem medida:** `docs/revisoes/SAN3/B-SAN3-21-dev.md:42` na `origin/main`: "`"Operador Logistico"` (11 literais) segue sem acento. É nome de perfil comparado no código; trocar muda quem vê o quê no menu. Exceção nomeada no guard." O porteiro `porteiro-486-sol` pediu a transferência da exceção para esta pendência.
+- **leitura do redator, declarada (§A6):** o dono e o PR-alvo são do redator deste registro; o dev propôs só "um bloco que mexe em navegação".
+- **encerramento:** o nome de perfil vira chave técnica + rótulo de negócio acentuado ("Operador Logístico"); nenhuma comparação de código usa o rótulo; a exceção sai do guard do `B-SAN3-21`, e o guard segue em `ocorrencias=0`.
+
+## P-WEB-LOGIN-MENSAGEM-TENANT (2026-11-03) — a tela de login mostra "Tenant, e-mail ou senha inválidos." — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (observado e não tocado pelo dev do PR #486) · **dono:** `B-SAN3-06a` (mesmo arquivo, `frontend/src/modules/auth/auth.adapter.ts`; o plano do bloco declara a ampliação nominal para a mensagem) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
+- **origem medida:** `docs/revisoes/SAN3/B-SAN3-21-dev.md:44`; `frontend/src/modules/auth/auth.adapter.ts:209` na `origin/main@e7dcbbb7`. O termo técnico "Tenant" aparece na UI (§3 e §11.1 do contrato).
+- **acoplamento:** o e2e `tests/e2e/critical-flows.spec.ts` espera essa mensagem (l.100; a entrada do `B-SAN3-10` sobre os auxiliares de login defasados, nesta mesma `pendencias.md`, já a cita). Trocar o texto exige ajustar a expectativa no mesmo PR, ou deixar o acoplamento escrito para o `B-SAN3-10`.
+- **leitura do redator, declarada (§A6):** a severidade, o dono e o PR-alvo são do redator deste registro. Corrige-se numa linha.
+- **encerramento:** a mensagem usa "organização" (ou omite o termo), e um teste do front afirma a mensagem nova.
+
+## P-FRONT-SMOKE-ACOES-DESPACHO-VACUO (2026-11-03) — a asserção `doesNotMatch(/Acoes do despacho/)` nunca falha — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (já vacuosa na `origin/main` antes do PR #486) · **dono:** `B-SAN3-06c` (estados de despachos) · **PR-alvo:** o PR do `B-SAN3-06c` · **bloqueia:** não.
+- **origem medida:** `docs/revisoes/SAN3/B-SAN3-21-dev.md:44`; `frontend/tests/smoke-flow.test.tsx:1456` na `origin/main@e7dcbbb7`: `assert.doesNotMatch(protectedHtml, /Acoes do despacho/);`. O texto não existe em `frontend/src`, nem com acento. Com a acentuação do #486, um eventual retorno do painel apareceria como "Ações do despacho", e a regex sem acento não o pegaria.
+- **leitura do redator, declarada (§A6):** o dono e o PR-alvo são do redator deste registro.
+- **encerramento:** a asserção casa as duas grafias (ou o identificador estável do painel removido), e uma mutação que reintroduz o painel no mapa a deixa vermelha.
+
+## P-MOBILE-TITULOS-SEM-ACENTO (2026-11-03) — títulos do app sem acento (`Aprovacoes`, `Diagnostico`…) — BAIXA
+
+- **status:** ABERTA (proposta do dev do PR #487, `dev-san319-opus`; o #487 está aberto) · **escopo:** `pre-existente` · **dono:** bloco próprio de acentuação mobile, a nascer `B-MOBILE-ACENTOS` · **PR-alvo:** o 1º PR desse bloco · **bloqueia:** não.
+- **origem:** corpo do PR #487, "Pendências propostas (não feitas)": "títulos sem acento no app (`Aprovacoes`, `Diagnostico`…), em bloco próprio". Relaciona-se com `P-O6R11-TEXTOS-FORA-DE-D-T` e com o apenso de 02/11 em `P-MOBILE-FAXINA-TERMOS-TECNICOS`.
+- **leitura do redator, declarada (§A6):** o nome do bloco é do redator deste registro.
+- **encerramento:** guard de termos sem acento nos textos exibidos do app, como o do `B-SAN3-21` na web, em `ocorrencias=0`.
+
+## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
+
+- **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele, que fecha o mapa de rótulos em `lib/core/auth/role_labels.dart`) · **escopo:** decisão de rótulo do `B-SAN3-19`, não defeito · **dono:** dono do produto (decidir os rótulos), aplicado no `B-SAN3-19` ou no bloco mobile seguinte · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
+- **origem:** corpo do PR #487 ("`super_admin`, `technician` e `viewer` aparecem como \"Usuário\"") e `docs/revisoes/SAN3/B-SAN3-19-dev.md` no ramo do #487: papel fora do mapa fechado aparece como "Usuário", nunca como a chave crua.
+- **encerramento:** o dono decide o rótulo de cada um dos três papéis (ou confirma "Usuário"), e o teste de rótulo do `B-SAN3-19` passa a afirmá-lo.
+
+## P-MOBILE-IOS-CFBUNDLENAME-17 (2026-11-03) — `CFBundleName` "ERP Techsolutions" tem 17 caracteres; a Apple recomenda até 15 — BAIXA
+
+- **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele) · **escopo:** decisão de nome do `B-SAN3-19` · **dono:** dono do produto (nome curto do app no iOS), aplicado no bloco de publicação do app · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
+- **origem:** a nota do orquestrador sobre o #487 (`REGISTRO-PENDENTE.md`, seção do #487); o PR #487 troca `CFBundleName` em `mobile/flutter_app/ios/Runner/Info.plist` para `ERP Techsolutions` (17 caracteres).
+- **encerramento:** `CFBundleName` com até 15 caracteres, ou decisão do dono registrada de manter os 17.

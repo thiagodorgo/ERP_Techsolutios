@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { setTenantRlsContext } from "../../database/rls.js";
-import type { CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
+import { forEachTenantRls } from "../../database/rls.js";
+import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 import {
   CloudCostAllocationError,
@@ -14,7 +14,10 @@ import {
   type CreateCloudCostAllocationRunInput,
   type UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
-import type { CloudCostAllocationRepository } from "./cloud-cost-allocation.repository.js";
+import {
+  STORAGE_INVENTORY_MODELS,
+  type CloudCostAllocationRepository,
+} from "./cloud-cost-allocation.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -28,9 +31,6 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
  * por prova; acima, por recusa explicita; nunca por truncamento mudo.
  */
 export const CLOUD_COST_ALLOCATION_LINE_ITEM_CAP = 100_000;
-
-/** Teto da transacao unica que varre os tenants (o default do Prisma, 5 s, nao serve para N tenants). */
-const TENANT_SWEEP_TX_TIMEOUT_MS = 60_000;
 
 export class PrismaCloudCostAllocationRepository implements CloudCostAllocationRepository {
   constructor(
@@ -141,9 +141,8 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       }
     }
 
-    const created: TenantCloudCostAllocation[] = [];
-
-    await this.forEachTenantInOneTx(
+    return forEachTenantRls<TenantCloudCostAllocation>(
+      requireSweepClient(this.client),
       tenants.map((tenant) => tenant.id),
       async (tx, tenantId) => {
         // Mesma razão: sem `tenant_id` explícito, sob superusuário a PRIMEIRA volta apagaria as
@@ -152,16 +151,16 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           where: { allocation_run_id: runId, tenant_id: tenantId },
         });
 
+        const created: TenantCloudCostAllocation[] = [];
         for (const allocation of byTenant.get(tenantId) ?? []) {
           const record = await tx.tenantCloudCostAllocation.create({
             data: buildAllocationData(runId, allocation),
           });
           created.push(mapAllocation(record));
         }
+        return created;
       },
     );
-
-    return created;
   }
 
   /**
@@ -180,9 +179,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     const targets = filters.tenantId
       ? tenants.filter((tenant) => tenant.id === filters.tenantId).map((tenant) => tenant.id)
       : tenants.map((tenant) => tenant.id);
-    const collected: TenantCloudCostAllocation[] = [];
-
-    await this.forEachTenantInOneTx(targets, async (tx, tenantId) => {
+    return forEachTenantRls<TenantCloudCostAllocation>(requireSweepClient(this.client), targets, async (tx, tenantId) => {
       const records = (await tx.tenantCloudCostAllocation.findMany({
         where: {
           allocation_run_id: runId,
@@ -199,14 +196,32 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         "tenant_cloud_cost_allocations",
       );
 
-      collected.push(...records.map((record) => mapAllocation(record as never)));
+      return records.map((record) => mapAllocation(record as never));
     });
-
-    return collected;
   }
 
-  async listCostLineItems(periodStart: Date, periodEnd: Date): Promise<readonly CloudCostLineItem[]> {
+  async findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined> {
+    const record = importId
+      ? await this.client.cloudCostImport.findUnique({ where: { id: importId } })
+      : await this.client.cloudCostImport.findFirst({
+          where: {
+            status: "completed",
+            line_items: {
+              some: {
+                billing_period_end: { gte: periodStart },
+                billing_period_start: { lte: periodEnd },
+              },
+            },
+          },
+          orderBy: [{ imported_at: "desc" }, { created_at: "desc" }],
+        });
+
+    return record ? mapCostImport(record) : undefined;
+  }
+
+  async listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]> {
     const where = {
+      import_id: importId,
       billing_period_end: { gte: periodStart },
       billing_period_start: { lte: periodEnd },
     };
@@ -243,7 +258,6 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         },
       },
       orderBy: { date: "asc" },
-      take: 100_000,
     });
 
     return records.map(mapUsageAggregate);
@@ -267,8 +281,23 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     tenantIds: readonly string[],
   ): Promise<readonly UsageBasisRow[]> {
     const rows: UsageBasisRow[] = [];
+    const platformTenant = await this.client.tenant.findFirst({
+      where: { slug: { equals: "platform", mode: "insensitive" } },
+      select: { id: true },
+    });
+    const sweepClient = requireSweepClient(this.client);
+    // B-SAN3-03 · R7 — os usuários da plataforma, lidos sob o GUC da plataforma (`users` tem FORCE RLS),
+    // antes da varredura: o ato deles num cliente pesa na plataforma, não no cliente.
+    const platformUserIds =
+      platformTenant && tenantIds.includes(platformTenant.id)
+        ? await forEachTenantRls<string>(sweepClient, [platformTenant.id], async (tx, tenantId) => {
+            const users = await tx.user.findMany({ where: { tenant_id: tenantId }, select: { id: true } });
+            return users.map((user) => user.id);
+          })
+        : [];
+    const auditedActionsByTenant = new Map<string, number>();
 
-    await this.forEachTenantInOneTx(tenantIds, async (tx, tenantId) => {
+    await forEachTenantRls<never>(sweepClient, tenantIds, async (tx, tenantId) => {
       // `tenant_id` NA CLÁUSULA, além da RLS — isolamento EXPLÍCITO, no padrão dos demais métodos da
       // casa (`stampRunRole` carrega a mesma nota). Não é redundância decorativa: o papel de dev e o
       // da CI são `postgres`, SUPERUSUÁRIO, e superusuário IGNORA RLS. Confiar só na policy faria este
@@ -282,7 +311,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           by: ["tenant_id", "metric_key", "unit", "source_type"],
           where,
           _sum: { quantity: true },
-          _count: { _all: true },
+          _count: true,
         }),
       ]);
 
@@ -314,7 +343,115 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
           quantity: Number(group._sum.quantity),
         });
       }
+
+      const storageWhere = { tenant_id: tenantId, created_at: { lte: periodEnd } };
+      const [checklistFiles, workOrderFiles, genericFiles, damageFiles] = await Promise.all([
+        tx.checklistAttachment.groupBy({
+          by: ["tenant_id"],
+          where: storageWhere,
+          _sum: { size_bytes: true },
+        }),
+        tx.workOrderAttachment.groupBy({
+          by: ["tenant_id"],
+          where: { ...storageWhere, deleted_at: null },
+          _sum: { size_bytes: true },
+        }),
+        tx.attachment.groupBy({
+          by: ["tenant_id"],
+          where: { ...storageWhere, deleted_at: null },
+          _sum: { size_bytes: true },
+        }),
+        tx.damageAttachment.groupBy({
+          by: ["tenant_id"],
+          where: storageWhere,
+          _sum: { size_bytes: true },
+        }),
+      ]);
+      const storageGroups = [checklistFiles, workOrderFiles, genericFiles, damageFiles];
+      for (let index = 0; index < storageGroups.length; index += 1) {
+        const storageRows = storageGroups[index]!;
+        assertRowsBelongToTenant(
+          storageRows.map((group) => group.tenant_id),
+          tenantId,
+          STORAGE_INVENTORY_MODELS[index]!,
+        );
+      }
+      let storageQuantity = 0;
+      for (const storageRows of storageGroups) {
+        for (const group of storageRows) {
+          if (group._sum.size_bytes === null || group._sum.size_bytes === undefined) continue;
+          storageQuantity += Number(group._sum.size_bytes);
+        }
+      }
+      if (storageQuantity > 0) {
+        rows.push({
+          tenantId,
+          metricKey: "storage_bytes_current",
+          unit: "bytes",
+          sourceType: "file_inventory",
+          quantity: storageQuantity,
+        });
+      }
+
+      const auditWhere = {
+        tenant_id: tenantId,
+        created_at: { gte: periodStart, lte: periodEnd },
+        actor_user_id: { not: null },
+        action: { not: { startsWith: "auth." } },
+      } as const;
+      if (tenantId === platformTenant?.id || platformUserIds.length === 0) {
+        const actionGroups = await tx.auditLog.groupBy({
+          by: ["tenant_id"],
+          where: tenantId === platformTenant?.id
+            ? auditWhere
+            : { ...auditWhere, actor_user_id: { not: null } },
+          _count: true,
+        });
+        assertRowsBelongToTenant(actionGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        const quantity = actionGroups.reduce((total, group) => total + group._count, 0);
+        // Acumula: atos de usuario da plataforma em clientes ja varridos podem estar no mapa.
+        if (quantity > 0) {
+          const current = auditedActionsByTenant.get(tenantId);
+          auditedActionsByTenant.set(tenantId, current === undefined ? quantity : current + quantity);
+        }
+      } else {
+        const [clientGroups, platformActorGroups] = await Promise.all([
+          tx.auditLog.groupBy({
+            by: ["tenant_id"],
+            where: { ...auditWhere, actor_user_id: { notIn: platformUserIds } },
+            _count: true,
+          }),
+          tx.auditLog.groupBy({
+            by: ["tenant_id"],
+            where: { ...auditWhere, actor_user_id: { in: platformUserIds } },
+            _count: true,
+          }),
+        ]);
+        assertRowsBelongToTenant(clientGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        assertRowsBelongToTenant(platformActorGroups.map((group) => group.tenant_id), tenantId, "audit_logs");
+        const clientQuantity = clientGroups.reduce((total, group) => total + group._count, 0);
+        const platformQuantity = platformActorGroups.reduce((total, group) => total + group._count, 0);
+        if (clientQuantity > 0) auditedActionsByTenant.set(tenantId, clientQuantity);
+        if (platformQuantity > 0 && platformTenant) {
+          const current = auditedActionsByTenant.get(platformTenant.id);
+          auditedActionsByTenant.set(
+            platformTenant.id,
+            current === undefined ? platformQuantity : current + platformQuantity,
+          );
+        }
+      }
+      return [];
     });
+
+    for (const [tenantId, quantity] of auditedActionsByTenant) {
+      rows.push({
+        tenantId,
+        metricKey: "audited_actions_count",
+        unit: "count",
+        sourceType: "audit_log",
+        quantity,
+      });
+    }
 
     return rows;
   }
@@ -327,43 +464,25 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     return records;
   }
 
-  /**
-   * UMA transacao para os N tenants, com `set_config(..., true)` (transaction-local) trocado a cada
-   * volta. `setTenantRlsContext` e o setter UNICO do GUC de tenant, ja exportado por
-   * `src/database/rls.ts` — este bloco nao toca aquele arquivo.
-   *
-   * Os tres metodos que passam por aqui exigem `$transaction`, logo exigem um `PrismaClient`. O
-   * construtor continua aceitando `PrismaExecutor` para os demais metodos; aqui a exigencia e asserida
-   * em RUNTIME, com erro nomeado: um `TransactionClient` injetado falha ALTO, nunca escreve sem
-   * contexto de tenant.
-   */
-  private async forEachTenantInOneTx(
-    tenantIds: readonly string[],
-    work: (tx: Prisma.TransactionClient, tenantId: string) => Promise<void>,
-  ): Promise<void> {
-    if (tenantIds.length === 0) return;
+}
 
-    const client = this.client;
-
-    if (!("$transaction" in client) || typeof client.$transaction !== "function") {
-      throw new CloudCostAllocationError(
-        500,
-        "CLOUD_COST_ALLOCATION_EXECUTOR_INVALID",
-        "tenant_sweep_requires_prisma_client",
-        "Tenant-scoped allocation access requires a PrismaClient able to open a transaction.",
-      );
-    }
-
-    await (client as PrismaClient).$transaction(
-      async (tx) => {
-        for (const tenantId of tenantIds) {
-          await setTenantRlsContext(tx, tenantId);
-          await work(tx, tenantId);
-        }
-      },
-      { timeout: TENANT_SWEEP_TX_TIMEOUT_MS },
+/**
+ * B-SAN3-03 (`P-SAN3-05-LACO-POR-TENANT-DUPLICADO`) — o laço por organização é o `forEachTenantRls` de
+ * `src/database/rls.ts` (UMA transação, GUC trocado a cada volta, mesmo teto de 60 s). Ele exige
+ * `$transaction`, logo um `PrismaClient`. O construtor continua aceitando `PrismaExecutor` para os demais
+ * métodos; aqui a exigência é asserida em RUNTIME, com erro nomeado: um `TransactionClient` injetado falha
+ * ALTO, nunca lê nem escreve sem contexto de organização.
+ */
+function requireSweepClient(client: PrismaExecutor): PrismaClient {
+  if (!("$transaction" in client) || typeof client.$transaction !== "function") {
+    throw new CloudCostAllocationError(
+      500,
+      "CLOUD_COST_ALLOCATION_EXECUTOR_INVALID",
+      "tenant_sweep_requires_prisma_client",
+      "Tenant-scoped allocation access requires a PrismaClient able to open a transaction.",
     );
   }
+  return client as PrismaClient;
 }
 
 /**
@@ -448,6 +567,44 @@ function mapRun(record: {
     createdBy: record.created_by ?? undefined,
     errorMessage: record.error_message ?? undefined,
     metadata: isRecord(record.metadata) ? record.metadata : {},
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
+  };
+}
+
+function mapCostImport(record: {
+  readonly id: string;
+  readonly provider: string;
+  readonly source_type: string;
+  readonly source_uri: string | null;
+  readonly status: string;
+  readonly period_start: Date | null;
+  readonly period_end: Date | null;
+  readonly imported_at: Date | null;
+  readonly imported_by: string | null;
+  readonly row_count: number;
+  readonly total_unblended_cost: unknown;
+  readonly currency: string | null;
+  readonly metadata: unknown;
+  readonly error_message: string | null;
+  readonly created_at: Date;
+  readonly updated_at: Date;
+}): CloudCostImport {
+  return {
+    id: record.id,
+    provider: record.provider as CloudCostImport["provider"],
+    sourceType: record.source_type as CloudCostImport["sourceType"],
+    sourceUri: record.source_uri ?? undefined,
+    status: record.status as CloudCostImport["status"],
+    periodStart: record.period_start ?? undefined,
+    periodEnd: record.period_end ?? undefined,
+    importedAt: record.imported_at ?? undefined,
+    importedBy: record.imported_by ?? undefined,
+    rowCount: record.row_count,
+    totalUnblendedCost: Number(record.total_unblended_cost),
+    currency: record.currency ?? undefined,
+    metadata: isRecord(record.metadata) ? record.metadata : {},
+    errorMessage: record.error_message ?? undefined,
     createdAt: record.created_at,
     updatedAt: record.updated_at,
   };

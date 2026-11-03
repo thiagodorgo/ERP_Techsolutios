@@ -1,0 +1,56 @@
+TAP version 13
+# C2PROBE {"case":"run","runStart":"2026-06-01T00:00:00.000Z","runEnd":"2026-06-30T00:00:00.000Z","total":15}
+# C2PROBE {"case":"sem-query","query":"","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"duas-pontas","query":"periodStart=2026-06-01&periodEnd=2026-06-30","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"so-start","query":"periodStart=2026-06-01","status":400,"reason":"summary_period_incomplete","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"so-end","query":"periodEnd=2026-06-30","status":400,"reason":"summary_period_incomplete","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-vazio","query":"periodStart=&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-texto","query":"periodStart=nao-e-data&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-31-02","query":"periodStart=2026-02-31&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-13-01","query":"periodStart=2026-13-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-00-10","query":"periodStart=2026-00-10&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-array","query":"periodStart=2026-06-01&periodStart=2026-07-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodStart-sozinho-vazio","query":"periodStart=","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-vazio","query":"periodEnd=&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-texto","query":"periodEnd=nao-e-data&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-31-02","query":"periodEnd=2026-02-31&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-13-01","query":"periodEnd=2026-13-01&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-00-10","query":"periodEnd=2026-00-10&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-array","query":"periodEnd=2026-06-01&periodEnd=2026-07-01&periodStart=2026-06-01","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"periodEnd-sozinho-vazio","query":"periodEnd=","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"bissexto-2028-02-29","query":"periodStart=2028-02-29&periodEnd=2028-02-29","status":200,"total":0,"coverage":"no_run","periodStart":"2028-02-29T00:00:00.000Z","periodEnd":"2028-02-29T00:00:00.000Z"}
+# C2PROBE {"case":"iso-fuso+05-cruza-dia","query":"periodStart=2026-06-01T00:30:00%2B05:00&periodEnd=2026-06-30","status":200,"total":0,"coverage":"no_run","periodStart":"2026-05-31T19:30:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"iso-fuso+0500-ambos","query":"periodStart=2026-06-02T00:00:00.000%2B0500&periodEnd=2026-07-01T00:00:00.000%2B0500","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"iso-fuso+23:59-texto-jun02-jul01","query":"periodStart=2026-06-02T00:00:00%2B23:59&periodEnd=2026-07-01T00:00:00%2B23:59","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"iso-fuso-23:59-texto-mai31-jun29","query":"periodStart=2026-05-31T00:00:00-23:59&periodEnd=2026-06-29T00:00:00-23:59","status":200,"total":0,"coverage":"no_run","periodStart":"2026-05-31T23:59:00.000Z","periodEnd":"2026-06-29T23:59:00.000Z"}
+# C2PROBE {"case":"hora-24-texto-mai31-jun29","query":"periodStart=2026-05-31T24:00:00Z&periodEnd=2026-06-29T24:00:00Z","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"hora-24-so-fim","query":"periodStart=2026-06-01&periodEnd=2026-06-29T24:00:00Z","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"hora-local-sem-fuso","query":"periodStart=2026-05-31T22:00&periodEnd=2026-06-29T22:00","status":200,"total":0,"coverage":"no_run","periodStart":"2026-05-31T22:00:00.000Z","periodEnd":"2026-06-29T22:00:00.000Z"}
+# C2PROBE {"case":"iso-Z-completo","query":"periodStart=2026-06-01T00:00:00.000Z&periodEnd=2026-06-30T23:59:59.999Z","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"sem-zero-2026-6-1","query":"periodStart=2026-6-1&periodEnd=2026-6-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"espaco-antes","query":"periodStart=%202026-06-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"espaco-depois","query":"periodStart=2026-06-01%20&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"mais-cru-vira-espaco","query":"periodStart=2026-06-01T00:00:00+05:00&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"epoca-ms","query":"periodStart=1780272000000&periodEnd=1782777600000","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"ano-estendido","query":"periodStart=%2B002026-06-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"hora-25","query":"periodStart=2026-06-01T25:00:00Z&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"T-vazio","query":"periodStart=2026-06-01T&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"vazio-mais-valido-array","query":"periodStart=&periodStart=2026-06-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_invalid","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"chave-maiuscula-ignorada","query":"PeriodStart=2026-10-01","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"start-bracket","query":"periodStart[]=2026-06-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_incomplete","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"start-objeto","query":"periodStart[a]=2026-06-01&periodEnd=2026-06-30","status":400,"reason":"summary_period_incomplete","code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD"}
+# C2PROBE {"case":"ambos-bracket","query":"periodStart[]=2026-10-01&periodEnd[]=2026-10-31","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# Subtest: C2 · /summary pela rota HTTP real
+ok 1 - C2 · /summary pela rota HTTP real
+  ---
+  duration_ms: 1444.0697
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1726.8438

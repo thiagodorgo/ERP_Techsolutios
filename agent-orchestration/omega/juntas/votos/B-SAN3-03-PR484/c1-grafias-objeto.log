@@ -1,0 +1,58 @@
+{"label":"zwsp-tag-nome-dup","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada​\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"zwsp-tag-nome-dup","strategy":"usage_weighted_v1","tag":"\"Duplicada​\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"zwj-tag","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Dupli‍cada\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"zwj-tag","strategy":"usage_weighted_v1","tag":"\"Dupli‍cada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"bom-tag","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"﻿Duplicada\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"bom-tag","strategy":"usage_weighted_v1","tag":"\"﻿Duplicada\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"soft-hyphen-tag","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Dupli­cada\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"soft-hyphen-tag","strategy":"usage_weighted_v1","tag":"\"Dupli­cada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"zwsp-no-NOME-A-tag-limpa","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"zwsp-no-NOME-A-tag-limpa","strategy":"usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"zwsp-no-NOME-A-nomes-iguais","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"zwsp-no-NOME-A-nomes-iguais","strategy":"usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"soft-hyphen-no-NOME-A-nomes-iguais","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"soft-hyphen-no-NOME-A-nomes-iguais","strategy":"usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"nfd-tag-vs-nfc-nome-dup","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"São Paulo\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nfd-tag-vs-nfc-nome-dup","strategy":"usage_weighted_v1","tag":"\"São Paulo\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nfd-nome-vs-nfc-nome","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"São Paulo\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nfd-nome-vs-nfc-nome","strategy":"usage_weighted_v1","tag":"\"São Paulo\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"id-upper","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"TENANT-A-UUID\"","alloc":[["tenant-a-uuid",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"id-upper","strategy":"usage_weighted_v1","tag":"\"TENANT-A-UUID\"","alloc":[["tenant-a-uuid",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"id-upper-vs-nome-outro","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"TENANT-A-UUID\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"id-upper-vs-nome-outro","strategy":"usage_weighted_v1","tag":"\"TENANT-A-UUID\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"hifen-vs-underscore","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"alpha_norte\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"hifen-vs-underscore","strategy":"usage_weighted_v1","tag":"\"alpha_norte\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"hifen-vs-underscore-nome-outro","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"alpha-norte\"","alloc":[["a",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"hifen-vs-underscore-nome-outro","strategy":"usage_weighted_v1","tag":"\"alpha-norte\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"hifen-vs-en-dash","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"alpha–norte\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"hifen-vs-en-dash","strategy":"usage_weighted_v1","tag":"\"alpha–norte\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"non-breaking-hyphen-nfkc","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"alpha‑norte\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"non-breaking-hyphen-nfkc","strategy":"usage_weighted_v1","tag":"\"alpha‑norte\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"nomeA-slugB-caixa","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"ALPHA\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nomeA-slugB-caixa","strategy":"usage_weighted_v1","tag":"\"ALPHA\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nomeA-slugB-caixa-largura","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"ａｌｐｈａ\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nomeA-slugB-caixa-largura","strategy":"usage_weighted_v1","tag":"\"ａｌｐｈａ\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"cirilico-nome-A","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"cirilico-nome-A","strategy":"usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"turco-I-ponto","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"istanbul\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"turco-I-ponto","strategy":"usage_weighted_v1","tag":"\"istanbul\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"turco-I-ponto-tag-upper","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"İSTANBUL\"","alloc":[["a",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"turco-I-ponto-tag-upper","strategy":"usage_weighted_v1","tag":"\"İSTANBUL\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"sharp-s","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"STRASSE\"","alloc":[["b",10]],"platform":0,"unalloc":[],"closes":true}
+{"label":"sharp-s","strategy":"usage_weighted_v1","tag":"\"STRASSE\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"ligadura","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"ﬁnanceira\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"ligadura","strategy":"usage_weighted_v1","tag":"\"ﬁnanceira\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"plataforma-grafia-nome-A","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"PLATFORM\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"plataforma-grafia-nome-A","strategy":"usage_weighted_v1","tag":"\"PLATFORM\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"plataforma-tag-zwsp","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"platform​\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"plataforma-tag-zwsp","strategy":"usage_weighted_v1","tag":"\"platform​\"","alloc":[["a",3.333333]],"platform":6.666667,"unalloc":[],"closes":true}
+{"label":"plataforma-id-upper","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"PLATFORM-ID\"","alloc":[],"platform":10,"unalloc":[],"closes":true}
+{"label":"plataforma-id-upper","strategy":"usage_weighted_v1","tag":"\"PLATFORM-ID\"","alloc":[],"platform":10,"unalloc":[],"closes":true}
+{"label":"line-sep-dup","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada \"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"line-sep-dup","strategy":"usage_weighted_v1","tag":"\"Duplicada \"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"nel-dup","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"nel-dup","strategy":"usage_weighted_v1","tag":"\"Duplicada\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}
+{"label":"espaco-interno-nome","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"Duplicada  Norte\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"espaco-interno-nome","strategy":"usage_weighted_v1","tag":"\"Duplicada  Norte\"","alloc":[],"platform":0,"unalloc":[["ambiguous_tenant_tag",10]],"closes":true}
+{"label":"vazio-zwsp-so","strategy":"direct_tag_then_usage_weighted_v1","tag":"\"​\"","alloc":[],"platform":0,"unalloc":[["unknown_tenant_tag",10]],"closes":true}
+{"label":"vazio-zwsp-so","strategy":"usage_weighted_v1","tag":"\"​\"","alloc":[["a",1.666667],["b",3.333333]],"platform":5,"unalloc":[],"closes":true}

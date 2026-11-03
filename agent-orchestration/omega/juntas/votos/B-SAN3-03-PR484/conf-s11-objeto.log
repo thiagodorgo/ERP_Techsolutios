@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: B-SAN3-05 ┬À T10ÔÇôT12 ÔÇö plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusu├írio soma
+    # Subtest: T10 ┬À listEvents sem tenant soma os 5 eventos de 2 organiza├º├Áes, intercalados, em ordem (A10)
+    ok 1 - T10 ┬À listEvents sem tenant soma os 5 eventos de 2 organiza├º├Áes, intercalados, em ordem (A10)
+      ---
+      duration_ms: 61.3624
+      ...
+    # Subtest: T10 ┬À listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+    ok 2 - T10 ┬À listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+      ---
+      duration_ms: 19.9473
+      ...
+    # Subtest: T11a ┬À GET /platform/cloud-usage/summary: ef├¬mero == super, e a soma ├® 50
+    ok 3 - T11a ┬À GET /platform/cloud-usage/summary: ef├¬mero == super, e a soma ├® 50
+      ---
+      duration_ms: 0.3173
+      ...
+    # Subtest: T11b ┬À job cloud-usage.aggregate-daily: ef├¬mero grava os mesmos 2 agregados que o super
+    ok 4 - T11b ┬À job cloud-usage.aggregate-daily: ef├¬mero grava os mesmos 2 agregados que o super
+      ---
+      duration_ms: 0.1449
+      ...
+    # Subtest: T11c ┬À POST calculation-runs + GET tenant-charges + GET summary: ef├¬mero == super (2 cobran├ºas)
+    ok 5 - T11c ┬À POST calculation-runs + GET tenant-charges + GET summary: ef├¬mero == super (2 cobran├ºas)
+      ---
+      duration_ms: 0.335
+      ...
+    # Subtest: T11d ┬À controles (j├í por organiza├º├úo): iguais nos dois pap├®is
+    ok 6 - T11d ┬À controles (j├í por organiza├º├úo): iguais nos dois pap├®is
+      ---
+      duration_ms: 0.163
+      ...
+    # Subtest: T11e ┬À cada rota FORCE tem cen├írio pr├│prio, n├úo vazio e igual nos dois pap├®is
+    ok 7 - T11e ┬À cada rota FORCE tem cen├írio pr├│prio, n├úo vazio e igual nos dois pap├®is
+      ---
+      duration_ms: 0.5175
+      ...
+    # Subtest: T11f ┬À job.registry fecha 3 jobs FORCE com efeito pr├│prio e etiqueta os outros 9 como B-ARNES-2
+    ok 8 - T11f ┬À job.registry fecha 3 jobs FORCE com efeito pr├│prio e etiqueta os outros 9 como B-ARNES-2
+      ---
+      duration_ms: 0.2851
+      ...
+    # Subtest: T11g ┬À a superf├¡cie de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido
+    ok 9 - T11g ┬À a superf├¡cie de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido
+      ---
+      duration_ms: 5.9081
+      ...
+    # Subtest: T12 ┬À via createPrismaCloudChargeRepository(): aloca├º├Áes, cobran├ºas, replace (B7) sob o papel sem bypass (A13)
+    ok 10 - T12 ┬À via createPrismaCloudChargeRepository(): aloca├º├Áes, cobran├ºas, replace (B7) sob o papel sem bypass (A13)
+      ---
+      duration_ms: 71.1792
+      ...
+    # Subtest: T12 ┬À B8: falha injetada na 2┬¬ organiza├º├úo n├úo deixa NENHUMA linha da 1┬¬ (uma transa├º├úo s├│)
+    ok 11 - T12 ┬À B8: falha injetada na 2┬¬ organiza├º├úo n├úo deixa NENHUMA linha da 1┬¬ (uma transa├º├úo s├│)
+      ---
+      duration_ms: 39.5993
+      ...
+    # Subtest: T12 ┬À A14: o can├írio ÔÇö linha de outra organiza├º├úo numa volta lan├ºa rows_from_another_tenant
+    ok 12 - T12 ┬À A14: o can├írio ÔÇö linha de outra organiza├º├úo numa volta lan├ºa rows_from_another_tenant
+      ---
+      duration_ms: 22.7913
+      ...
+    1..12
+ok 1 - B-SAN3-05 ┬À T10ÔÇôT12 ÔÇö plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusu├írio soma
+  ---
+  duration_ms: 3474.6226
+  ...
+1..1
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3991.6818

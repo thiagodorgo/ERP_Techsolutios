@@ -1,0 +1,3 @@
+exit!=0 {"f":"tests/san3-05-runtime-role-guard-db.test.ts","ex":"1","tests":12,"pass":8,"fail":4,"skipped":0} | not ok: T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados | T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada | T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio | B-SAN3-05 · o papel de runtime não contorna FORCE RLS | 'setsid: ausente': 3
+arquivos 38 {"tests":307,"pass":303,"fail":4,"skipped":0}
+linhas da tabela K5 38 divergentes 0

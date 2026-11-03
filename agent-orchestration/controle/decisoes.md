@@ -4232,6 +4232,23 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Régua decidida:** nesta máquina, a suíte backend vale em Linux com `docker`, na mesma forma do CI. O Windows permanece como referência, com as 8 falhas conhecidas e nomeadas em `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-44`; falha nova no Windows ainda exige causa.
 - **Limite de registro:** nenhum caminho de perfil, conta, token ou segredo da linha de base é reproduzido aqui.
 
+## D-SAN3-03-IMPORT-POR-RUN (proposta do plano do `B-SAN3-03`, 2026-10-30; a junta do bloco ratifica no voto) — uma run de rateio soma exatamente um import
+
+- **Texto (plano §6, inalterado no mecanismo pela emenda 1 §2.10):** uma run de rateio soma exatamente um import, fixado na criação e gravado em `metadata.importId` (sem migração nesta rodada); sem `importId` explícito, vale o import `completed` mais recente com linha na janela; sem nenhum, a run conclui vazia e declarada (`importResolution: "none"`). Re-executar a run não troca o import.
+- **Não é fala do dono:** é decisão de desenho proposta pelo planejador; a junta do `B-SAN3-03` ratifica.
+- **Pendência que nasce:** `P-SAN3-03-IMPORT-ID-EM-COLUNA`, com dono `B-ASS-09a` (emenda 1, S14).
+
+## D-SAN3-03-ORG-SISTEMA-NAO-COBRAVEL (respondida pelo dono, 2026-10-30 e 2026-10-31) — a plataforma pesa no rateio e a parte dela é linha própria
+
+- **Texto (emenda 1 §2.10):** *"**Respondida pelo dono:** "a plataforma paga a nuvem" (30/10) e "2=recomendação" (31/10: "Custo da plataforma" é linha própria). Id mantido pela rastreabilidade. A organização da plataforma (`slug = "platform"`, mesmo critério do front) não recebe alocação e continua no universo do rateio. Custo com a tag dela, por id, nome ou slug, e a parte dela no rateio sem etiqueta (RECOMENDACAO ADOTADA 2) vão para `totalPlatformCost`, fora de `totalUnallocatedCost`. **Ninguém é cobrado por custo de nuvem**: o preço do cliente é a assinatura (`D-COBRANCA-ASSINATURA-FRANQUIA`)."*
+- **Implementado no `B-SAN3-03` (PR #484):** R8 e R8-b; `system_organization` deixa de ser motivo de não rateado.
+
+## D-SAN3-03-BASE-DERIVADA — complemento do `B-SAN3-03` (2026-11-02; não altera a entrada de 2026-10-30 acima)
+
+- **Texto (emenda 1 §2.10):** *"Para categorias sem fato transacional próprio, a base de rateio é derivada de fato persistido no momento do rateio, por organização sob RLS. **API por ações auditadas: decisão do dono** (30/10, "3=sigo a recomendação"); a alternativa de requests reais não foi escolhida, e nenhuma pendência nasce. **Filtro das ações (sem ato da plataforma, sem login, só usuário da organização): RECOMENDACAO ADOTADA 6.** **Storage pelas 4 tabelas de arquivo: RECOMENDACAO ADOTADA 5, não é fala do dono.** **Máquina, cache e banco pelas ações, banco pelo espaço medido quando o `B-ASS-03` entrar: RECOMENDACAO ADOTADA 1.**"*
+- **Recomendações adotadas por padrão** (o dono foi avisado de que, sem resposta, seguem; ele ainda pode corrigir; **não são decisão do dono**): 1, 2, 5 e 6 do cabeçalho da emenda 1 entram no código deste bloco; Q4 (ato da plataforma num cliente pesa na plataforma) e Q5 (banco pelas ações até o `B-ASS-03`, com rótulo de estimativa) seguem o padrão; Q3 (CloudWatch, KMS, Route 53, VPC) segue o padrão: ficam em não rateado, com o motivo visível.
+- **Implementado no `B-SAN3-03` (PR #484).**
+
 ## D-FABLE-SUSPENSO-0211 (decisão do dono, 2026-11-02, ~14:00 SP) — Fable suspenso; topo em Opus Ultra Code
 
 - **Fala literal do dono, com data e hora:** 02/11/2026, ~14:00 SP — *"o fable esta suspenso, use o opus ultra code"*.
@@ -4245,7 +4262,8 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   - 31/10/2026, ~22:15 SP — *"as contas do patio o cliente tem que pagar, as multas e taxas do orgao de transito tem que ser paga por la e o orgao autorizam a entrega do veiculo, as taxas de patio tambem devem ser pagas para liberação ocorrer"*.
 - **Medido na `origin/main` em 31/10/2026, conforme a fonte:** o portão de liberação já exige débitos quitados, reconciliação, requisitos, autorização da autoridade e identificação de quem retira (`release.service.ts:146-154`); a quitação é manual, sem provedor de pagamento (`charge.types.ts:142`, `D-Ω5P-07`); a saída para reparo não exige quitação (art. 271, §2º).
 - **Perguntas abertas e recomendações do orquestrador, não decisões do dono:** pagamento on-line da taxa de pátio, conta de quem recebe e manutenção da exceção da saída para reparo.
-- **Correção factual para os planos:** Iugu não aceita débito, conforme as documentações oficiais medidas na fonte externa. Não apresentar Iugu como provedor que cubra simultaneamente débito, crédito e Pix.
+  - **Nota de 2026-11-03 (O-3 da re-conferência do #485):** "conta de quem recebe" foi respondida pelo dono às ~22:30 SP de 31/10 (`D-PLATAFORMA-RECEBE-E-REPASSA`) e de novo às ~23:45 SP de 02/11 (Q-A, *"não recebe"*, e Q11c, em `D-PATIO-RESPOSTAS-0211`). Que a decisão de 31/10 fique superada para o pátio é leitura do orquestrador, e o conflito `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS` segue aberto.
+- **Correção factual para os planos, do orquestrador (não é fala do dono; autoria declarada em 2026-11-03, O-2 da re-conferência do #485):** Iugu não aceita débito, conforme as documentações oficiais medidas na fonte externa. Não apresentar Iugu como provedor que cubra simultaneamente débito, crédito e Pix (instrução derivada, também do orquestrador).
 
 ## D-CNPJ-UNICO-FILIAIS-DOIS-MODOS (decisão do dono, 2026-11-02) — grupo de filiais compartilha CNPJ, conta e APIs; cliente individual usa credenciais próprias
 
@@ -4266,7 +4284,82 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **`D-PLATAFORMA-RECEBE-E-REPASSA` × falas de 02/11:** a decisão de 31/10 diz que a plataforma recebe e repassa ao cliente. As respostas de 02/11 dizem que o CNPJ e a conta compartilhados são de um cliente com 100 filiais e que, no modo individual, a organização usa credenciais próprias. O recebimento pela plataforma fica em conflito com os dois modos. **Não resolvido:** `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS`, dono `B-PATIO-RECEBIMENTO`.
 - **Q8/Q10 da v2 do pátio × falas de 02/11:** Q8 modela “Dados fiscais e conta para depósito” obrigatórios por organização para o pagamento on-line, e Q10 pergunta quem edita a conta para depósito da organização. As falas de 02/11 definem um CNPJ e uma conta de um cliente compartilhados por 100 organizações-filiais no modo compartilhado. **Conflito §A2 registrado e não resolvido:** o registro não escolhe se o perfil e a conta pertencem ao grupo, à organização ou aos dois por modo.
-- **`P-LEGAL-RECEBIMENTO-DE-TERCEIROS` × falas de 02/11:** a pendência nasceu da hipótese de a plataforma receber dinheiro de terceiros e repassar. As respostas de 02/11 dizem que a plataforma não recebe o dinheiro dos clientes dos pátios, apenas a mensalidade dos próprios clientes. **Conflito §A2 registrado e não resolvido:** a premissa jurídica ficou sem objeto para esse fluxo, mas o parecer posterior ainda existe. Às ~23:45 SP de 02/11, o dono disse literalmente *"Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança"*; por essa decisão, a pendência deixou de bloquear a produção.
+- **`P-LEGAL-RECEBIMENTO-DE-TERCEIROS` × falas de 02/11:** a pendência nasceu da hipótese de a plataforma receber dinheiro de terceiros e repassar. As respostas de 02/11 dizem que a plataforma não recebe o dinheiro dos clientes dos pátios, apenas a mensalidade dos próprios clientes. **Conflito §A2 registrado e não resolvido:** a premissa jurídica ficou sem objeto para esse fluxo, mas o parecer posterior ainda existe. Às ~23:45 SP de 02/11, o dono disse literalmente *"Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança"*; **leitura do orquestrador, declarada (§A6; marca acrescentada em 2026-11-03, O-1 da re-conferência do #485):** por essa decisão, a pendência deixou de bloquear a produção.
 - **Planos de cobrança e assinatura × falas de 02/11:** `B-PATIO-RECEBIMENTO-plano-v2.md` e `B-ASSINATURA-plano.md`, nas fontes externas, modelam conta, perfil fiscal ou nota por organização; as falas posteriores definem conta/CNPJ compartilhados por um grupo de organizações-filiais e também um modo individual. **Conflito §A2 registrado e não resolvido:** nenhum dos planos é consolidado ou revogado neste registro.
 - **`D-COBRANCA-ASSINATURA-FRANQUIA` × *"Não, só vê uso e custo"*:** a decisão de 30/10 descreve assinatura por cliente/organização com franquia; em 02/11 o dono disse que cada filial é organização própria e que a filial não paga assinatura. **Não resolvido:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`, dono `B-ASSINATURA`.
 - **Regra aplicada:** todos os lados ficam preservados; nenhum foi escolhido ou revogado neste registro.
+
+## D-PATIO-RESPOSTAS-0211 (decisões do dono, 2026-11-02, ~23:45 e ~23:50 SP) — as 22 respostas da emenda 1 da v3 do pátio, a Q12 e a Q-NOTA
+
+- **Fonte:** a tabela que o dono colou às ~23:45 SP de 02/11, com as respostas na coluna "Resposta", transcrita em `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md` (seção "Dono, 02/11 ~23:45 SP"). A redação das perguntas está nas §5, §6 e §7 de `erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md`, fora do repositório.
+- **Respostas literais do dono, 02/11/2026, ~23:45 SP:**
+
+| # | Resposta literal do dono |
+|---|---|
+| Q-A | "não recebe" |
+| Q-MODO | "só a plataforma" |
+| Q-NOTA | "Entra logo" |
+| Q11c | "Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança" |
+| Q-GRUPO-CRED | "só a plataforma " |
+| Q-GRUPO-VISAO | "agora não: a plataforma manda o consolidado; a tela vem num bloco próprio com junta" |
+| Q-ASSINATURA-REDE | "o cliente paga uma assinatura pelo grupo; mas tudovinra detalhado na fatura" |
+| Q-TERMO | "não: nas telas de pagamento, "organização" e "grupo"; "Filiais" continua como está" |
+| Q-ACESSO-REDE | "sim, num bloco depois do pátio, com junta (é permissão)" |
+| Q-MVP | "sim, já" |
+| Q-TRAVA | "sim" |
+| Q-DEVOLVE | "quem dá baixa (administrador e gestor), com trilha completa e o financeiro vendo" |
+| Q1 | "sim" |
+| Q4 | "pelo operador, com fila de "Devoluções pendentes" e aviso" |
+| Q5 | "sim" |
+| Q6 | "sim" |
+| Q7 | "sim: o boleto atrasa a liberação" |
+| Q8b | "sim" |
+| Q13 | "sim" |
+| Q14 | "o operador recebe a diferença no balcão e dá a baixa" |
+| Q15 | "o operador confirma, e o valor quita o débito se ainda estiver aberto" |
+| Q16 | "reabre o débito e segura a liberação" |
+| Q17 | "o sistema cancela o link novo e o operador decide" |
+
+- **Falas literais do dono, 02/11/2026, ~23:50 SP:**
+  - *"Q12 autorizo"*: autoriza as migrações do plano do pátio.
+  - *"\"Entra logo\" como \"entra agora, junto com o pátio\""*: confirma a leitura da Q-NOTA. A NFS-e da taxa de pátio entra no escopo do pátio, agora.
+- **Leituras do orquestrador, declaradas (§A6), que o dono pode corrigir numa linha:**
+  - **Q-A:** o dono não escolheu entre "suspensa" e "revogada" para a decisão de 31/10. Pela Q11c ("somente mensalidade dos clientes dela"), a leitura é que `D-PLATAFORMA-RECEBE-E-REPASSA` fica **superada para o pátio**. O conflito `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS` segue aberto até o dono confirmar essa leitura.
+  - **Q-NOTA:** "Entra logo" foi lido como **entra já, no escopo do pátio**, contra a recomendação, que era "bloco logo depois"; o dono confirmou a leitura às ~23:50. A NFS-e da taxa de pátio sai pela Focus, pelo CNPJ e pela conta do cliente, e o ISS é da matriz (Q11c).
+  - **Q11c:** `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` deixa de bloquear a produção por decisão do dono ("trate como fechado"). O parecer vem depois e não trava. Fatos do dono: a plataforma recebe só a mensalidade dos clientes dela; o ISS é da matriz; a chave digitada é guardada com segurança.
+  - **Q-ASSINATURA-REDE:** a fatura do grupo vem **detalhada por organização**.
+  - **Q12:** a autorização vale para as migrações listadas na emenda 1 da v3, inclusive as que a §8 acrescentar para a nota fiscal, desde que nenhuma seja destrutiva no `up` e todas usem `BEGIN;`/`COMMIT;` (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`). Migração destrutiva continua sendo parada irredutível (§C7.5).
+- **Limite:** este registro transcreve respostas e leituras. Ele não consolida a v3 do pátio, não resolve os conflitos §A2 de `CONFLITOS-0211-CNPJ-ASSINATURA` e não autoriza código; o plano do pátio incorpora as respostas pela própria emenda.
+
+## D-BRACOS-0211-0311 (falas do dono, 2026-11-02 noite e 2026-11-03) — orquestração e braços
+
+- **Falas literais do dono, com data e hora (SP), e as leituras do orquestrador, declaradas (§A6):**
+  - 02/11 ~21:59: *"esqueca o copilot"*. O Copilot sai, não se usa nem se repropõe.
+  - 02/11 ~22:45: *"aumente o esforço do codex"*. **Leitura do orquestrador:** o piso de esforço do Codex passa a ser `high`.
+  - 02/11 ~22:50: *"astra 5.6 ate bater o limite"*, depois *"6.1"*, e a escolha "GPT-6 Astra". *"batendo o limite volta para 5.6 sol"*; *"nao rodar as duas contas no astra 6.0"*; *"pode rodar as duas em sol 5.6 agora"*; *"se for preciso. pode usar o astra 6 para alguma demanda alta"*. **Leitura do orquestrador:** o padrão das duas contas é o 5.6 Sol, e o Astra entra em demanda alta, numa conta só e declarado.
+  - 02/11 ~23:00: *"claude vc pega a critica do que o codex fazer. ou o codex pega a critica do que vc fizer"*. Reafirma o item 11 (`D-UM-FAZ-OUTRO-VERIFICA`).
+  - 02/11 ~23:30: *"faca vc os cinco pequenos uma guerra por vez"*. **Leitura do orquestrador:** o Claude faz os bloqueantes pequenos (49, 48, 54, 47, 44), um de cada vez. O orquestrador corrigiu a lista: só o 49 e o 48 são pequenos de fato, o 54 sai do `B-SAN3-10` como bloco próprio, e o 47 tem junta de permissão.
+  - 03/11 ~09:30: *"cubra a conta 1 do codex"*. O Claude assume as tarefas da conta 1 quando ela está sem limite.
+  - 03/11 ~10:30: *"usar o antigravity, modelos claude e gpt disponiveis"*. **Leitura do orquestrador:** o Opus 5.5 do Antigravity entra como braço externo. O Sonnet e o GPT-OSS ficam abaixo do nível menor e não fazem dev nem gate. Medido pelo orquestrador: a cota individual do Claude no Antigravity aguentou ~10 min de trabalho pesado.
+- **Limite:** as falas mudam a distribuição de tarefas entre os braços; não mudam quórum, junta, separação de papéis nem o item 11 do §C7. O Gemini segue como segundo revisor (`D-GEMINI-SEGUNDO-REVISOR`); a escada do §C7.6-bis continua valendo para os papéis de gate.
+
+## D-SAN303-TAG-DESCONHECIDA (leitura do orquestrador, 2026-11-02, §8 da emenda 2 do `B-SAN3-03`; registro de 2026-11-03) — tag não reconhecida no rateio direto vai inteira para não alocado
+
+- **Não é decisão do dono.** O autor da §8 da emenda 2 é o orquestrador, Claude Opus no papel de topo declarado (Fable suspenso), respondendo à 2ª crítica (`crit-san303-e2b-sol`, E2B-A1, GRAVE: tag desconhecida cobrava outras organizações).
+- **Regra aplicada e mergeada no PR #484 (merge `e7dcbbb7`):** na estratégia `direct_tag_then_usage_weighted_v1`, uma linha com tag não vazia depois de `normalizeTenantTag` que não casa com organização nenhuma vai inteira para `unallocated`, motivo `unknown_tenant_tag`. A estratégia só por uso continua ignorando tag. Ordem no motor: ambígua → desconhecida → plataforma → direta → regra/uso.
+- **Base declarada pelo autor:** o item 10(3) manda consertar agora o que é grave; a mesma direção estava na recomendação dada ao dono no estado de 02/11, às 22:20.
+- **O dono pode reverter numa linha.** O registro operacional é `P-SAN303-TAG-DESCONHECIDA` (`pendencias.md`), e a ata é `omega/juntas/J-B-SAN3-03-PR484.md`.
+
+## D-ROTULO-MANAGER-GESTOR-OPERACIONAL (decisão do orquestrador, 2026-11-03; PROPOSTA no PR #487, aberto) — o rótulo de `manager` no app é "Gestor Operacional"
+
+- **Não é decisão do dono, e o PR ainda não mergeou.** O dev do `B-SAN3-19` (`dev-san319-opus`, PR #487, head `525660be`) achou a divergência: a tabela do plano dizia `manager` → "Gestor"; a web (`frontend/src/modules/auth/auth.adapter.ts:230` na `origin/main`) e as duas cópias antigas do app dizem "Gestor Operacional".
+- **Decisão do orquestrador, declarada (§A6):** fica "Gestor Operacional", igual à web e às cópias do app. O "Gestor" do plano foi erro do plano. Corrige-se numa linha se o dono preferir "Gestor".
+- **Efeito no gate:** o item 48 (`P-MOBILE-FAXINA-TERMOS-TECNICOS`) **segue ABERTO** até o merge do #487 e o porteiro dele.
+
+## ERRATA-0311 (registro de 2026-11-03) — marcas de autoria nas entradas do #485 e o "comentário do dono" do porteiro do #486
+
+- **O-1, O-2 e O-3** da re-conferência `rev-485b-opus` do PR #485 (todas BAIXAS; veredito APROVADO): as marcas foram **acrescentadas** às próprias entradas, sem apagar texto.
+  - **O-1:** em `CONFLITOS-0211-CNPJ-ASSINATURA`, a frase "deixou de bloquear a produção", sobre `P-LEGAL-RECEBIMENTO-DE-TERCEIROS`, ganhou a marca de leitura do orquestrador, como já estava em `pendencias.md`.
+  - **O-2:** em `D-PATIO-MEIOS-PAGAMENTO-E-CONTAS-3110`, a correção "Iugu não aceita débito" e a instrução derivada dela ficam declaradas como do orquestrador.
+  - **O-3:** na mesma entrada, "conta de quem recebe" passa a apontar a resposta do dono de 31/10 ~22:30 (`D-PLATAFORMA-RECEBE-E-REPASSA`) e a de 02/11 ~23:45 (Q-A, *"não recebe"*, em `D-PATIO-RESPOSTAS-0211`).
+- **Porteiro do #486:** o parecer do `porteiro-486-sol` diz "O comentário do dono no PR aceitou o achado". O comentário (`gh api repos/thiagodorgo/ERP_Techsolutios/issues/486/comments`, 2026-11-03T11:54:37Z) foi postado pela conta `thiagodorgo`, mas é do **orquestrador**: ele começa por "Revisão independente (Codex `rev-486-sol`): APROVADO COM AJUSTES" e registra a triagem do A1. No PR há só esse comentário e uma revisão automática do `copilot-pull-request-reviewer[bot]` sem conteúdo (`gh api …/pulls/486/reviews`); o dono não comentou. O parecer foi versionado sem alteração em `omega/juntas/votos/B-SAN3-21-PR486/porteiro-pos-merge.md`, com esta errata anexada no fim.
