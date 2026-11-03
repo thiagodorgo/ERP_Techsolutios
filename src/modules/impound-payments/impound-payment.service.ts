@@ -219,5 +219,6 @@ export async function createDefaultImpoundPaymentService(): Promise<ImpoundPayme
 }
 
 async function createPrismaImpoundPaymentService(): Promise<ImpoundPaymentService> {
-  throw new ImpoundPaymentError(503, "ONLINE_PAYMENT_UNAVAILABLE", "repository_unavailable", "Online payment storage is not available.");
+  const { createPrismaImpoundPaymentRepository } = await import("./impound-payment-prisma.repository.js");
+  return new ImpoundPaymentService(await createPrismaImpoundPaymentRepository());
 }
