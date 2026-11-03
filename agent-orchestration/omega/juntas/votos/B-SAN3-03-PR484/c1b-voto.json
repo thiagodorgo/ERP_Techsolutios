@@ -1,0 +1,43 @@
+{
+  "cadeira": "C1",
+  "identidade": "jurado-j484-c1b-opus",
+  "modelo": "Claude Opus, nível menor, DECLARADO",
+  "objeto": "5b628b886520bcbece0228eec9d47c965a32b577",
+  "voto": "REPROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c1b-evidencia.md",
+  "resumo": "O conserto do A5/E2-A1/E2B-A1 funciona no que testa: T-TAG-1..13 e T-TAG-db verdes no objeto e os exigidos vermelhos na base; ordem ambígua → desconhecida → plataforma → direta → regra conforme; plataforma nunca em allocations e conservação fechando (4000 execuções); tag com invisível falha fechada (unknown_tenant_tag); 15 mutações mordem; R2 explicada. Mas a recusa de ambiguidade não alcança DOIS NOMES DE ORGANIZAÇÃO que se leem iguais e diferem por um caractere invisível (11 Default_Ignorable medidos + U+FEFF no meio): a tag digitada como se lê (\"Duplicada\") leva o valor inteiro para a organização de nome limpo, sem ambiguous_tenant_tag, também no Postgres, com o nome entrando pelo validador da API, e a alocação alimenta a cobrança. É grave (custo para quem pode não ter usado) e dentro do bloco (o bloco tomou o A5 e escreveu o normalizador que decide a ambiguidade). REPROVADO pelo C1b-A1.",
+  "itens": {
+    "1": "MEDIDO: T-TAG verdes no objeto e vermelhos exigidos no BASE; ordem conforme; plataforma fora de allocations; conservação fecha; C1b-A1 GRAVE dentro-do-bloco (invisível no nome); C1b-A2 não grave",
+    "2": "MEDIDO: T-SYS-db e T-TAG-db 3/3 no objeto; T-TAG-db vermelho em 49ddd0f8, 0/3 antes do bloco (7c89c73b); C1b-A1 reproduz no Postgres com U+00AD/U+200B/U+2060/U+FEFF",
+    "3": "MEDIDO: M48, M49′, M50 (dev e literal), M51, M52, M53, M53-b, M53-c, M55, M55-b, M55-c, M22′, M17-b, M23 vermelhas por asserção, âncora 1, restauradas, status vazio; M-C1b-NOVA (id literal vence a colisão) vermelha em T-TAG-2; R2: M13/M16 vermelhas pela sentinela CONTEXT_LEAK, o exit 1 é do critério AssertionError do driver do dev"
+  },
+  "achados": [
+    {
+      "id": "C1b-A1 (= C1-A1 do antecessor, re-medido)",
+      "gravidade": "GRAVE",
+      "escopo": "dentro-do-bloco",
+      "comando": "cd C:/Users/thiag/w-j484-c1b && node --import tsx C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c1b-grafias-novas.mts C:/Users/thiag/w-j484-c1b/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts ; e, no Postgres: cp revisoes/j484/c1b-probe-db.test.ts tests/zz-j484-c1b-probe-db.test.ts && DATABASE_URL=postgresql://erp:erp@127.0.0.1:55484/erp_c1b CORE_SAAS_PERSISTENCE=prisma node --test --import tsx tests/zz-j484-c1b-probe-db.test.ts (remover depois)",
+      "saida": "motor do objeto, estratégia direta: A=\"Dupli\"+ch+\"cada\", B=\"Duplicada\", tag \"Duplicada\" → alloc [[\"b\",10]], sem ambiguous_tenant_tag, para ch ∈ {U+00AD, U+200B, U+200C, U+200D, U+2060, U+FEFF no meio, U+034F, U+FE0F, U+200E, U+202E, U+180E, U+2062} (12/12); invisível na ponta do nome: 11/12 iguais (só U+FEFF na ponta vira ambígua, por causa do trim). Postgres: com U+00AD/U+200B/U+2060/U+FEFF, nome aceito por parseCreatePlatformTenantDto, run completed, tenant_cloud_cost_allocations = [[\"B(limpo)\",\"10\"]]. BASE 49ddd0f8: mesmo resultado no lado do nome.",
+      "motivo": "Gravidade: duas organizações com nomes que se leem iguais (o validador de nome só faz trim e aceita Default_Ignorable; hífen suave e ZWSP chegam por colagem) e a tag escrita como se lê manda o valor inteiro, em silêncio, para uma delas; a alocação é lida pela cobrança (cloud-charges/cloud-charge-prisma.repository.ts:197). Se o custo era da outra, cobra-se quem não usou: erra dinheiro entre organizações. O critério do próprio bloco é a mesma chave humana (emenda 2 §7 E2-A1: nenhuma grafia de uma chave ambígua escapa), e o objeto já trata U+FEFF na ponta como a mesma chave mas não os outros invisíveis: a fronteira é acidente do trim(), não propriedade. Escopo: o bloco puxou o A5 para si (emenda 2 §1 conserto agora, §2 D-E2-2, §7) e escreveu normalizeTenantTag/addTenantTag (0 ocorrências no BASE), dentro do PERMITIDO (engine.ts); o sintoma do lado do nome existe desde 6f27faae (08/06), declarado, mas o defeito é o fechamento incompleto do achado que o bloco declara fechado. O lado da tag fecha (12/12 unknown_tenant_tag)."
+    },
+    {
+      "id": "C1b-A2 (homoglifo, = C1-A2 do antecessor)",
+      "gravidade": "não grave",
+      "escopo": "pre-existente",
+      "comando": "cd C:/Users/thiag/w-j484-c1b && node --import tsx C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c1b-grafias-p3.mts | grep cirilico",
+      "saida": "A=\"Dupliсada\" (c cirílico), B=\"Duplicada\", tag \"Duplicada\" → direta alloc [[\"b\",10]], sem ambiguous_tenant_tag; BASE igual (c1-grafias-base.log).",
+      "motivo": "Mesma consequência, mas só se alcança por escrita deliberada de letra de outro escrito no nome pelo papel mais privilegiado (platform:tenants:update, único que grava nome); não nasce de colagem acidental, e nem a emenda 2 nem as críticas prometeram confusáveis (UTS #39). Origem 6f27faae (08/06). Pendência com dono, não segura o bloco."
+    }
+  ],
+  "arquivos_medidos": [
+    "src/modules/cloud-cost-allocation/**",
+    "src/modules/platform/platform-tenants.validator.ts",
+    "src/modules/cloud-charges/cloud-charge-prisma.repository.ts",
+    "tests/san3-03-tenant-tag.test.ts",
+    "tests/san3-03-system-org.test.ts",
+    "tests/san3-03-system-org-db.test.ts",
+    "tests/san3-03-derived-basis-db.test.ts",
+    "prisma/**"
+  ],
+  "terreno": "worktree C:/Users/thiag/w-j484-c1b (removido por git worktree remove --force); Postgres j484-c1b-pg 127.0.0.1:55484 (removido); erp-postgres/erp-redis/3000/5173/árvore principal não tocados"
+}

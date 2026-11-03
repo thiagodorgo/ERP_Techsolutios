@@ -1,0 +1,1523 @@
+[run-backend-tests] CORE_SAAS_PERSISTENCE=memory — herdado do ambiente (exportado por quem chamou; o runner não sobrescreve)
+[run-backend-tests] 37 arquivo(s) de teste — executando...
+TAP version 13
+# {"level":40,"time":1793707384074,"pid":71916,"hostname":"RyzenCasa","tenantId":"b8fc7658-38a0-43f4-a04f-4be3a6eded95","processId":"3369f75f-0b9d-4fd9-9c63-dc9b7a4cf49a","periodSeq":1,"refDate":"2024-05-01","reason":"no_tariff_for_ref_date","msg":"charging.accrue-daily: fail-closed (sem tarifa vigente na data); diária NÃO acumulada"}
+# Subtest: ROLLING: nDue = floor(Δ/24h) para 200 pares (t0, Δ) gerados; period_seq contíguo 1..n
+ok 1 - ROLLING: nDue = floor(Δ/24h) para 200 pares (t0, Δ) gerados; period_seq contíguo 1..n
+  ---
+  duration_ms: 725.6263
+  ...
+# Subtest: ROLLING: fronteira do 1º dia — t0+24h-1s → 0; t0+24h → 1 (convenção-piso D-Ω5P-CHG-06)
+ok 2 - ROLLING: fronteira do 1º dia — t0+24h-1s → 0; t0+24h → 1 (convenção-piso D-Ω5P-CHG-06)
+  ---
+  duration_ms: 0.3435
+  ...
+# Subtest: CALENDAR: entra 23:30 e às 00:10 do dia seguinte = 2 diárias (datas locais distintas)
+ok 3 - CALENDAR: entra 23:30 e às 00:10 do dia seguinte = 2 diárias (datas locais distintas)
+  ---
+  duration_ms: 1.3738
+  ...
+# Subtest: CALENDAR: refDates estritamente crescentes por +1 dia; count = dias-calendário locais inclusivos
+ok 4 - CALENDAR: refDates estritamente crescentes por +1 dia; count = dias-calendário locais inclusivos
+  ---
+  duration_ms: 296.3359
+  ...
+# Subtest: DST spring-forward (America/New_York, 2024-03-10): ROLLING conta tempo físico; sem duplicar/pular
+ok 5 - DST spring-forward (America/New_York, 2024-03-10): ROLLING conta tempo físico; sem duplicar/pular
+  ---
+  duration_ms: 1.1762
+  ...
+# Subtest: DST fall-back (America/New_York, 2024-11-03): sem diária extra nem faltante
+ok 6 - DST fall-back (America/New_York, 2024-11-03): sem diária extra nem faltante
+  ---
+  duration_ms: 0.6264
+  ...
+# Subtest: THIRTY_DAYS_LEGACY: para em 30 diárias (Tema 124/STJ)
+ok 7 - THIRTY_DAYS_LEGACY: para em 30 diárias (Tema 124/STJ)
+  ---
+  duration_ms: 0.7156
+  ...
+# Subtest: SIX_MONTHS: teto = 6 MESES DE CALENDÁRIO (≠ 180 dias) pela data de entrada; acumulação PARA
+ok 8 - SIX_MONTHS: teto = 6 MESES DE CALENDÁRIO (≠ 180 dias) pela data de entrada; acumulação PARA
+  ---
+  duration_ms: 0.5246
+  ...
+# Subtest: UNLIMITED (privado): nunca para; capCount null
+ok 9 - UNLIMITED (privado): nunca para; capCount null
+  ---
+  duration_ms: 0.292
+  ...
+# Subtest: determinismo: computeDuePeriods com o mesmo asOf devolve o mesmo conjunto
+ok 10 - determinismo: computeDuePeriods com o mesmo asOf devolve o mesmo conjunto
+  ---
+  duration_ms: 5.4339
+  ...
+# Subtest: congelamento: asOf = min(now, frozen_at) fecha o período final; runs posteriores no-op
+ok 11 - congelamento: asOf = min(now, frozen_at) fecha o período final; runs posteriores no-op
+  ---
+  duration_ms: 6.4522
+  ...
+# Subtest: fail-closed: sem tarifa vigente ⇒ 0 diárias criadas (NÃO amount-0), errors>0; publicada, o run acumula
+ok 12 - fail-closed: sem tarifa vigente ⇒ 0 diárias criadas (NÃO amount-0), errors>0; publicada, o run acumula
+  ---
+  duration_ms: 10.1833
+  ...
+# Subtest: fail-closed: daily_service_catalog_id NULL ⇒ 0 diárias, errors>0
+ok 13 - fail-closed: daily_service_catalog_id NULL ⇒ 0 diárias, errors>0
+  ---
+  duration_ms: 1.0256
+  ...
+# Subtest: idempotência: acumular 2×/3× o mesmo now não duplica; cadeia I2 permanece valid
+ok 14 - idempotência: acumular 2×/3× o mesmo now não duplica; cadeia I2 permanece valid
+  ---
+  duration_ms: 4.1666
+  ...
+# Subtest: ADJUSTMENT: corrigir uma diária cria NOVA linha + evento ADJUSTMENT; a diária original fica intacta
+ok 15 - ADJUSTMENT: corrigir uma diária cria NOVA linha + evento ADJUSTMENT; a diária original fica intacta
+  ---
+  duration_ms: 4.6935
+  ...
+# Subtest: statement (C3): \#DAILY persistidas > nAccrue projetado ⇒ reconciliationPending + overAccruedDailies
+ok 16 - statement (C3): \#DAILY persistidas > nAccrue projetado ⇒ reconciliationPending + overAccruedDailies
+  ---
+  duration_ms: 3.6697
+  ...
+# Subtest: statement (C3): sem over-acúmulo ⇒ reconciliationPending false / overAccruedDailies 0
+ok 17 - statement (C3): sem over-acúmulo ⇒ reconciliationPending false / overAccruedDailies 0
+  ---
+  duration_ms: 13.9396
+  ...
+# Subtest: ADJUSTMENT (C5): alvo inexistente ⇒ 422; alvo de OUTRO processo ⇒ 422; alvo=ADJUSTMENT ⇒ 422
+ok 18 - ADJUSTMENT (C5): alvo inexistente ⇒ 422; alvo de OUTRO processo ⇒ 422; alvo=ADJUSTMENT ⇒ 422
+  ---
+  duration_ms: 4.3278
+  ...
+# Subtest: statement (RN-DIA-06): memória de cálculo com subtotais por kind + status do teto
+ok 19 - statement (RN-DIA-06): memória de cálculo com subtotais por kind + status do teto
+  ---
+  duration_ms: 1.7889
+  ...
+# {"level":40,"time":1793707384084,"pid":71916,"hostname":"RyzenCasa","tenantId":"c5c708e0-b3c9-4e79-a20b-36d674f04d75","processId":"b152eed7-6dc6-440b-9660-b68c5a5a55c0","periodSeq":1,"reason":"no_daily_service_catalog","msg":"charging.accrue-daily: fail-closed (sem serviço-diária); diária NÃO acumulada"}
+# Subtest: charging: motor de diárias no Postgres vivo — idempotência (period_seq), catch-up, ADJUSTMENT append-only, cadeia I2, concorrência
+ok 20 - charging: motor de diárias no Postgres vivo — idempotência (period_seq), catch-up, ADJUSTMENT append-only, cadeia I2, concorrência
+  ---
+  duration_ms: 6167.877
+  ...
+# Subtest: cria regra default de markup
+ok 21 - cria regra default de markup
+  ---
+  duration_ms: 2.1821
+  ...
+# Subtest: seleciona regra especifica por tenant antes da default
+ok 22 - seleciona regra especifica por tenant antes da default
+  ---
+  duration_ms: 2.5957
+  ...
+# Subtest: calcula markup percentage
+ok 23 - calcula markup percentage
+  ---
+  duration_ms: 0.5924
+  ...
+# Subtest: calcula fixed_multiplier
+ok 24 - calcula fixed_multiplier
+  ---
+  duration_ms: 0.5141
+  ...
+# Subtest: calcula fixed_amount
+ok 25 - calcula fixed_amount
+  ---
+  duration_ms: 0.4824
+  ...
+# Subtest: aplica minimum_monthly_charge
+ok 26 - aplica minimum_monthly_charge
+  ---
+  duration_ms: 0.5035
+  ...
+# Subtest: aplica included_cloud_cost
+ok 27 - aplica included_cloud_cost
+  ---
+  duration_ms: 0.5375
+  ...
+# Subtest: nao permite valor final negativo por markup invalido
+ok 28 - nao permite valor final negativo por markup invalido
+  ---
+  duration_ms: 0.6665
+  ...
+# Subtest: lida com allocated_cost zero
+ok 29 - lida com allocated_cost zero
+  ---
+  duration_ms: 0.6853
+  ...
+# Subtest: arredonda conforme rounding_mode
+ok 30 - arredonda conforme rounding_mode
+  ---
+  duration_ms: 3.1381
+  ...
+# Subtest: falha gera status failed e erro sanitizado
+ok 31 - falha gera status failed e erro sanitizado
+  ---
+  duration_ms: 2.1305
+  ...
+# Subtest: nao duplica charges indevidamente
+ok 32 - nao duplica charges indevidamente
+  ---
+  duration_ms: 1.2096
+  ...
+# Subtest: Platform Admin cria regra, calculation run, tenant charges e summary
+ok 33 - Platform Admin cria regra, calculation run, tenant charges e summary
+  ---
+  duration_ms: 5462.5954
+  ...
+# Subtest: usuario tenant comum nao acessa endpoints platform de charges
+ok 34 - usuario tenant comum nao acessa endpoints platform de charges
+  ---
+  duration_ms: 40.2675
+  ...
+# Subtest: Platform Admin cria run, lista runs, consulta allocations e summary
+ok 35 - Platform Admin cria run, lista runs, consulta allocations e summary
+  ---
+  duration_ms: 5664.2565
+  ...
+# Subtest: usuario tenant comum nao acessa endpoints platform de allocation
+ok 36 - usuario tenant comum nao acessa endpoints platform de allocation
+  ---
+  duration_ms: 64.3746
+  ...
+# Subtest: aloca custo direto por tenant_tag
+ok 37 - aloca custo direto por tenant_tag
+  ---
+  duration_ms: 19.6968
+  ...
+# Subtest: aloca custo S3 por metrica de storage/download
+ok 38 - aloca custo S3 por metrica de storage/download
+  ---
+  duration_ms: 1.9276
+  ...
+# Subtest: aloca custo jobs por job.executed
+ok 39 - aloca custo jobs por job.executed
+  ---
+  duration_ms: 1.0379
+  ...
+# Subtest: deixa custo unallocated quando nao ha metrica base
+ok 40 - deixa custo unallocated quando nao ha metrica base
+  ---
+  duration_ms: 0.8286
+  ...
+# Subtest: aloca checklist quando ha metrica checklist_runs_count
+ok 41 - aloca checklist quando ha metrica checklist_runs_count
+  ---
+  duration_ms: 0.8035
+  ...
+# Subtest: falha gera status failed e erro sanitizado
+ok 42 - falha gera status failed e erro sanitizado
+  ---
+  duration_ms: 0.8989
+  ...
+# Subtest: reexecutar run nao duplica allocations indevidamente
+ok 43 - reexecutar run nao duplica allocations indevidamente
+  ---
+  duration_ms: 1.7136
+  ...
+# Subtest: [cadeia real] concluir a vistoria REABERTA registra quantidade ZERO — a organização não é cobrada duas vezes
+ok 44 - [cadeia real] concluir a vistoria REABERTA registra quantidade ZERO — a organização não é cobrada duas vezes
+  ---
+  duration_ms: 990.0395
+  ...
+# Subtest: [conclusão comum] duas vistorias distintas cobram 1 cada — a correção não zera vistoria legítima
+ok 45 - [conclusão comum] duas vistorias distintas cobram 1 cada — a correção não zera vistoria legítima
+  ---
+  duration_ms: 69.8783
+  ...
+# Subtest: [reentrega] a mesma conclusão reaberta capturada duas vezes continua valendo zero e uma linha só
+ok 46 - [reentrega] a mesma conclusão reaberta capturada duas vezes continua valendo zero e uma linha só
+  ---
+  duration_ms: 31.4926
+  ...
+# Subtest: [base de rateio] a conclusão reaberta não move a agregação diária nem o rateio de custo de nuvem
+ok 47 - [base de rateio] a conclusão reaberta não move a agregação diária nem o rateio de custo de nuvem
+  ---
+  duration_ms: 88.1181
+  ...
+# Subtest: platform admin acessa cloud usage summary e usuario comum nao acessa
+ok 48 - platform admin acessa cloud usage summary e usuario comum nao acessa
+  ---
+  duration_ms: 5430.1666
+  ...
+# Subtest: cloud usage platform API filtra por tenant e data sem vazar outro tenant
+ok 49 - cloud usage platform API filtra por tenant e data sem vazar outro tenant
+  ---
+  duration_ms: 40.5075
+  ...
+# Subtest: cloud usage routes suportam eventos de checklist e notifications sem quebrar isolamento
+ok 50 - cloud usage routes suportam eventos de checklist e notifications sem quebrar isolamento
+  ---
+  duration_ms: 31.4419
+  ...
+# Subtest: recordUsageEvent cria evento com unit bytes
+ok 51 - recordUsageEvent cria evento com unit bytes
+  ---
+  duration_ms: 3.8478
+  ...
+# Subtest: idempotencyKey evita duplicidade
+ok 52 - idempotencyKey evita duplicidade
+  ---
+  duration_ms: 2.8254
+  ...
+# Subtest: metadata sensivel e sanitizada
+ok 53 - metadata sensivel e sanitizada
+  ---
+  duration_ms: 0.4133
+  ...
+# Subtest: quantity invalida falha
+ok 54 - quantity invalida falha
+  ---
+  duration_ms: 0.6963
+  ...
+# Subtest: aggregateDailyUsage soma por tenant, metrica, unit e sourceType
+ok 55 - aggregateDailyUsage soma por tenant, metrica, unit e sourceType
+  ---
+  duration_ms: 2.3476
+  ...
+# Subtest: eventos cross-tenant permanecem isolados no summary tenant
+ok 56 - eventos cross-tenant permanecem isolados no summary tenant
+  ---
+  duration_ms: 0.4216
+  ...
+# Subtest: metrica count usa unit count
+ok 57 - metrica count usa unit count
+  ---
+  duration_ms: 0.3188
+  ...
+# Subtest: Redis job queue enqueues, dequeues and completes a job
+ok 58 - Redis job queue enqueues, dequeues and completes a job
+  ---
+  duration_ms: 177.4899
+  ...
+# Subtest: job worker retries with backoff and then completes
+ok 59 - job worker retries with backoff and then completes
+  ---
+  duration_ms: 435.1743
+  ...
+# Subtest: job worker moves exhausted failures to dead-letter list
+ok 60 - job worker moves exhausted failures to dead-letter list
+  ---
+  duration_ms: 190.8943
+  ...
+# Subtest: produção válida sobe o worker E enfileira as QUATRO varreduras, uma vez cada
+ok 61 - produção válida sobe o worker E enfileira as QUATRO varreduras, uma vez cada
+  ---
+  duration_ms: 2.4887
+  ...
+# Subtest: o estado publicado segue o worker DE VERDADE, tick a tick
+ok 62 - o estado publicado segue o worker DE VERDADE, tick a tick
+  ---
+  duration_ms: 0.8437
+  ...
+# Subtest: flag ligada com persistência em memória NÃO sobe o worker — e AVISA
+ok 63 - flag ligada com persistência em memória NÃO sobe o worker — e AVISA
+  ---
+  duration_ms: 0.5585
+  ...
+# Subtest: flag ligada sem worker no ar envelhece para stale — não finge saúde
+ok 64 - flag ligada sem worker no ar envelhece para stale — não finge saúde
+  ---
+  duration_ms: 0.4587
+  ...
+# Subtest: flag desligada não sobe nada, não avisa, e o worker não é esperado
+ok 65 - flag desligada não sobe nada, não avisa, e o worker não é esperado
+  ---
+  duration_ms: 0.4977
+  ...
+# Subtest: o sinal de vida sobe junto com o laço, na chave de produção — e só com ele
+ok 66 - o sinal de vida sobe junto com o laço, na chave de produção — e só com ele
+  ---
+  duration_ms: 1.881
+  ...
+# Subtest: o boot REAL de `src/server.ts` passa pelo bootstrap do worker
+ok 67 - o boot REAL de `src/server.ts` passa pelo bootstrap do worker
+  ---
+  duration_ms: 6035.6752
+  ...
+# (node:31156) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: B1 · o rateio aloca 3:1 lendo a base DURÁVEL — sem nunca rodar a projeção diária
+ok 68 - B1 · o rateio aloca 3:1 lendo a base DURÁVEL — sem nunca rodar a projeção diária
+  ---
+  duration_ms: 5540.3082
+  ...
+# Subtest: B2′ · sob papel SEM BYPASSRLS o rateio completa, e o acesso CRU à mesma tabela é recusado
+ok 69 - B2′ · sob papel SEM BYPASSRLS o rateio completa, e o acesso CRU à mesma tabela é recusado
+  ---
+  duration_ms: 4071.7688
+  ...
+# Subtest: B3 · regressão (já verde na base): 10.001 linhas de custo entram no total importado
+ok 70 - B3 · regressão (já verde na base): 10.001 linhas de custo entram no total importado
+  ---
+  duration_ms: 7458.5518
+  ...
+# Subtest: B4 · acima do teto o rateio RECUSA ALTO (period_exceeds_line_item_cap) e não grava alocação nenhuma
+ok 71 - B4 · acima do teto o rateio RECUSA ALTO (period_exceeds_line_item_cap) e não grava alocação nenhuma
+  ---
+  duration_ms: 396.9955
+  ...
+# Subtest: B5 · a constante do teto é 100_000 e é o DEFAULT do construtor (lida do export, não do texto)
+ok 72 - B5 · a constante do teto é 100_000 e é o DEFAULT do construtor (lida do export, não do texto)
+  ---
+  duration_ms: 1.1088
+  ...
+# Subtest: B6′/B9 · o GUC é SUBSTITUÍDO a cada volta (A→B→A) e o canário pega base de outro tenant
+ok 73 - B6′/B9 · o GUC é SUBSTITUÍDO a cada volta (A→B→A) e o canário pega base de outro tenant
+  ---
+  duration_ms: 458.1575
+  ...
+# Subtest: B7 · o replace varre TODOS os tenants: quem ficou sem alocação não deixa linha órfã
+ok 74 - B7 · o replace varre TODOS os tenants: quem ficou sem alocação não deixa linha órfã
+  ---
+  duration_ms: 579.1588
+  ...
+# Subtest: B8 · atomicidade do replace: falha no 2º tenant não deixa NENHUMA linha do run gravada
+ok 75 - B8 · atomicidade do replace: falha no 2º tenant não deixa NENHUMA linha do run gravada
+  ---
+  duration_ms: 609.3056
+  ...
+# Subtest: B10 · `_sum` nulo omite o grupo; `count > 0` com groupBy vazio LANÇA (o `[]` que era suspeita)
+ok 76 - B10 · `_sum` nulo omite o grupo; `count > 0` com groupBy vazio LANÇA (o `[]` que era suspeita)
+  ---
+  duration_ms: 343.57
+  ...
+# Subtest: B11 · o canário protege TAMBÉM `listTenantAllocations` — a leitura do painel (achado R2-C)
+ok 77 - B11 · o canário protege TAMBÉM `listTenantAllocations` — a leitura do painel (achado R2-C)
+  ---
+  duration_ms: 538.7703
+  ...
+# Subtest: C1 · a vistoria não fatura mais pelo evento de domínio; o anexo continua faturando por ele
+ok 78 - C1 · a vistoria não fatura mais pelo evento de domínio; o anexo continua faturando por ele
+  ---
+  duration_ms: 767.4003
+  ...
+# Subtest: C2 · o que a captura PRODUZ é exatamente o que a regra de rateio `checklists` CONSOME
+ok 79 - C2 · o que a captura PRODUZ é exatamente o que a regra de rateio `checklists` CONSOME
+  ---
+  duration_ms: 24.9116
+  ...
+# Subtest: C3 · `normalizeSummaryFilters` não produz mais a propriedade `limit`
+ok 80 - C3 · `normalizeSummaryFilters` não produz mais a propriedade `limit`
+  ---
+  duration_ms: 11.3585
+  ...
+# Subtest: C4 · a tabela ANTES = DEPOIS por chamador: completeRun 1, registerDivergence 0, acknowledgeRun 0
+ok 81 - C4 · a tabela ANTES = DEPOIS por chamador: completeRun 1, registerDivergence 0, acknowledgeRun 0
+  ---
+  duration_ms: 172.612
+  ...
+# Subtest: C5 · linha LEGADA e linha NOVA da mesma run convivem — e a mesma chave nunca aparece duas vezes
+ok 82 - C5 · linha LEGADA e linha NOVA da mesma run convivem — e a mesma chave nunca aparece duas vezes
+  ---
+  duration_ms: 71.8822
+  ...
+# Subtest: C6 · o parâmetro `billing` é OBRIGATÓRIO para o compilador — um 4º chamador não passa no `npm run check`
+ok 83 - C6 · o parâmetro `billing` é OBRIGATÓRIO para o compilador — um 4º chamador não passa no `npm run check`
+  ---
+  duration_ms: 25202.414
+  ...
+# Subtest: C7 · a SEGUNDA trava: `updateRun` não consegue levar uma run a estado concluído (409)
+ok 84 - C7 · a SEGUNDA trava: `updateRun` não consegue levar uma run a estado concluído (409)
+  ---
+  duration_ms: 3.447
+  ...
+# (node:51980) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: S1 · a 10.001ª linha ENTRA no total, no lineItemCount e em services[] (o truncamento morreu)
+ok 85 - S1 · a 10.001ª linha ENTRA no total, no lineItemCount e em services[] (o truncamento morreu)
+  ---
+  duration_ms: 12842.963
+  ...
+# Subtest: S2 · o DETALHE continua paginado: 500 por página, e `limit` alto NÃO fura o teto
+ok 86 - S2 · o DETALHE continua paginado: 500 por página, e `limit` alto NÃO fura o teto
+  ---
+  duration_ms: 3929.8749
+  ...
+# Subtest: S3′ · referência em BigInt sobre 21 páginas de 500: tolerância ZERO contra o total exato
+ok 87 - S3′ · referência em BigInt sobre 21 páginas de 500: tolerância ZERO contra o total exato
+  ---
+  duration_ms: 3686.7895
+  ...
+# Subtest: S4 · o `where` do resumo é o MESMO do detalhe: filtrar por serviço soma só ele, e a contagem confere
+ok 88 - S4 · o `where` do resumo é o MESMO do detalhe: filtrar por serviço soma só ele, e a contagem confere
+  ---
+  duration_ms: 3671.1529
+  ...
+# Subtest: S9 · o agregado NÃO recebe take/skip/cursor/distinct — a premissa de versão, pinada por spy
+ok 89 - S9 · o agregado NÃO recebe take/skip/cursor/distinct — a premissa de versão, pinada por spy
+  ---
+  duration_ms: 3356.3754
+  ...
+# Subtest: S10 · acima de 2^53 micro-unidades o campo EXATO bate e o `number` NÃO — o Risco 6, executado
+ok 90 - S10 · acima de 2^53 micro-unidades o campo EXATO bate e o `number` NÃO — o Risco 6, executado
+  ---
+  duration_ms: 3412.1244
+  ...
+# Subtest: S11 · vaza-metro: o teardown apaga OS DOIS imports e devolve a janela reservada VAZIA
+ok 91 - S11 · vaza-metro: o teardown apaga OS DOIS imports e devolve a janela reservada VAZIA
+  ---
+  duration_ms: 3254.2882
+  ...
+# Subtest: S5 · o dublê soma SEM limite, e getSummary não passa `limit` ao repositório
+ok 92 - S5 · o dublê soma SEM limite, e getSummary não passa `limit` ao repositório
+  ---
+  duration_ms: 498.3897
+  ...
+# Subtest: S6 · exatidão: 0.1 + 0.2 + 0.3 = 0.6, e o serviço NÃO reduz o array (o total vem somado)
+ok 93 - S6 · exatidão: 0.1 + 0.2 + 0.3 = 0.6, e o serviço NÃO reduz o array (o total vem somado)
+  ---
+  duration_ms: 11.7142
+  ...
+# Subtest: S7 · janela VAZIA devolve a forma exata com zeros explícitos — nenhum null, nenhum NaN
+ok 94 - S7 · janela VAZIA devolve a forma exata com zeros explícitos — nenhum null, nenhum NaN
+  ---
+  duration_ms: 20.1696
+  ...
+# Subtest: S8 · `lineItemCount > 0` com total nulo é combinação IMPOSSÍVEL: o serviço LANÇA em vez de devolver 0
+ok 95 - S8 · `lineItemCount > 0` com total nulo é combinação IMPOSSÍVEL: o serviço LANÇA em vez de devolver 0
+  ---
+  duration_ms: 5.4313
+  ...
+# Subtest: G1 · o LITERAL da janela reservada aparece em EXATAMENTE um arquivo de `tests/` — o helper
+ok 96 - G1 · o LITERAL da janela reservada aparece em EXATAMENTE um arquivo de `tests/` — o helper
+  ---
+  duration_ms: 239.1792
+  ...
+# Subtest: G2 · a constante é CONSUMIDA — a reserva tem dono e não é literal órfão no helper
+ok 97 - G2 · a constante é CONSUMIDA — a reserva tem dono e não é literal órfão no helper
+  ---
+  duration_ms: 139.2703
+  ...
+# Subtest: G3 · o consumo é por IMPORT, não por menção em comentário — a lição do falsificador MUT-C
+ok 98 - G3 · o consumo é por IMPORT, não por menção em comentário — a lição do falsificador MUT-C
+  ---
+  duration_ms: 0.9764
+  ...
+# Subtest: G4 · o guard não é vácuo: a varredura enxerga os arquivos que deve enxergar
+ok 99 - G4 · o guard não é vácuo: a varredura enxerga os arquivos que deve enxergar
+  ---
+  duration_ms: 10.9125
+  ...
+# Subtest: A1 · createRun (com e sem client_run_key) grava 2 unidades na MESMA transação, com chave da RUN
+ok 100 - A1 · createRun (com e sem client_run_key) grava 2 unidades na MESMA transação, com chave da RUN
+  ---
+  duration_ms: 3409.5482
+  ...
+# (node:75060) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: A2 · completeRun grava 1 unidade — inclusive quando o status é pending_acknowledgement
+ok 101 - A2 · completeRun grava 1 unidade — inclusive quando o status é pending_acknowledgement
+  ---
+  duration_ms: 1773.1477
+  ...
+# Subtest: A3 · conclusão da vistoria REABERTA vale ZERO e carrega a chave :reopened (regra da junta PR-03)
+ok 102 - A3 · conclusão da vistoria REABERTA vale ZERO e carrega a chave :reopened (regra da junta PR-03)
+  ---
+  duration_ms: 1263.9948
+  ...
+# Subtest: A5′ · duas capturas do mesmo fato na MESMA transação: 2ª afeta 0 linhas e a transação CONTINUA VÁLIDA
+ok 103 - A5′ · duas capturas do mesmo fato na MESMA transação: 2ª afeta 0 linhas e a transação CONTINUA VÁLIDA
+  ---
+  duration_ms: 957.6934
+  ...
+# Subtest: A6 · 8 criações CONCORRENTES com a mesma client_run_key: 1 run, 2 unidades, 7 created:false
+ok 104 - A6 · 8 criações CONCORRENTES com a mesma client_run_key: 1 run, 2 unidades, 7 created:false
+  ---
+  duration_ms: 681.7731
+  ...
+# Subtest: A7 · sob papel SEM BYPASSRLS: o evento de A é invisível para B, e invisível sem contexto nenhum
+ok 105 - A7 · sob papel SEM BYPASSRLS: o evento de A é invisível para B, e invisível sem contexto nenhum
+  ---
+  duration_ms: 882.5061
+  ...
+# Subtest: A8′ · o UNIVERSO de I1′ por SQL: nenhuma run ORIGINAL sem as duas chaves de criação
+ok 106 - A8′ · o UNIVERSO de I1′ por SQL: nenhuma run ORIGINAL sem as duas chaves de criação
+  ---
+  duration_ms: 1291.4678
+  ...
+# Subtest: A9 · reopenRun cria a nova versão SEM unidade de criação, e o vínculo fica gravado
+ok 107 - A9 · reopenRun cria a nova versão SEM unidade de criação, e o vínculo fica gravado
+  ---
+  duration_ms: 426.2964
+  ...
+# Subtest: A10 · trilha C (divergência → ciência): ZERO unidade de conclusão, antes e depois
+ok 108 - A10 · trilha C (divergência → ciência): ZERO unidade de conclusão, antes e depois
+  ---
+  duration_ms: 767.6502
+  ...
+# Subtest: A11 · trilha B (conclusão com divergência → ciência): 1 unidade, e NUNCA 2
+ok 109 - A11 · trilha B (conclusão com divergência → ciência): 1 unidade, e NUNCA 2
+  ---
+  duration_ms: 419.5339
+  ...
+# Subtest: A10-ordem · o dreno resolve antes do primeiro DELETE do teardown
+ok 110 - A10-ordem · o dreno resolve antes do primeiro DELETE do teardown
+  ---
+  duration_ms: 201.6552
+  ...
+# Subtest: A10-drain · o dreno espera a escrita best-effort bloqueada antes da limpeza
+ok 111 - A10-drain · o dreno espera a escrita best-effort bloqueada antes da limpeza
+  ---
+  duration_ms: 308.5406
+  ...
+# Subtest: A12′ · o ALVO do ON CONFLICT é explícito no SQL da captura (guarda de texto — ver a nota sobre M-19)
+ok 112 - A12′ · o ALVO do ON CONFLICT é explícito no SQL da captura (guarda de texto — ver a nota sobre M-19)
+  ---
+  duration_ms: 1.1572
+  ...
+# Subtest: A13 · a transação da captura roda em READ COMMITTED — a premissa da PD, pinada por execução
+ok 113 - A13 · a transação da captura roda em READ COMMITTED — a premissa da PD, pinada por execução
+  ---
+  duration_ms: 181.0564
+  ...
+# Subtest: A14 · a 2ª emissão com a MESMA chave e quantidade diferente é DESCARTADA — a 1ª permanece
+ok 114 - A14 · a 2ª emissão com a MESMA chave e quantidade diferente é DESCARTADA — a 1ª permanece
+  ---
+  duration_ms: 216.619
+  ...
+# Subtest: A15 · duas emissões da mesma run em DUAS transações → 1 linha por chave (a chave é da RUN)
+ok 115 - A15 · duas emissões da mesma run em DUAS transações → 1 linha por chave (a chave é da RUN)
+  ---
+  duration_ms: 211.7232
+  ...
+# Subtest: A17 · sob papel SEM BYPASSRLS a captura PASSA no WITH CHECK: run e unidades commitam juntas
+ok 116 - A17 · sob papel SEM BYPASSRLS a captura PASSA no WITH CHECK: run e unidades commitam juntas
+  ---
+  duration_ms: 682.276
+  ...
+# Subtest: R1 · createRun grava 2 unidades no dublê; o REPLAY da mesma chave não acrescenta nenhuma
+ok 117 - R1 · createRun grava 2 unidades no dublê; o REPLAY da mesma chave não acrescenta nenhuma
+  ---
+  duration_ms: 918.5083
+  ...
+# Subtest: R2 · conclusão comum = 1, conclusão reaberta = 0, carimbo de fase em run já existente = 0 novas
+ok 118 - R2 · conclusão comum = 1, conclusão reaberta = 0, carimbo de fase em run já existente = 0 novas
+  ---
+  duration_ms: 177.3675
+  ...
+# Subtest: R3 · o consumidor de evento NÃO mede mais a vistoria — e continua medindo o que é dele
+ok 119 - R3 · o consumidor de evento NÃO mede mais a vistoria — e continua medindo o que é dele
+  ---
+  duration_ms: 16.4797
+  ...
+# Subtest: R5 · a projeção diária é idempotente sob reentrega: agregar duas vezes não soma duas vezes
+ok 120 - R5 · a projeção diária é idempotente sob reentrega: agregar duas vezes não soma duas vezes
+  ---
+  duration_ms: 57.3681
+  ...
+# Subtest: R6 · no dublê, reabrir também não cria unidade de criação
+ok 121 - R6 · no dublê, reabrir também não cria unidade de criação
+  ---
+  duration_ms: 81.5723
+  ...
+# Subtest: A16 · o builder é TOTAL: nenhuma combinação de estado o faz lançar, e tudo que ele produz é válido
+ok 122 - A16 · o builder é TOTAL: nenhuma combinação de estado o faz lançar, e tudo que ele produz é válido
+  ---
+  duration_ms: 16.3154
+  ...
+# Subtest: F1 · falha NA MEDIÇÃO dentro da tx: createRun REJEITA, 0 runs e 0 unidades; o retry repara
+ok 123 - F1 · falha NA MEDIÇÃO dentro da tx: createRun REJEITA, 0 runs e 0 unidades; o retry repara
+  ---
+  duration_ms: 2659.7599
+  ...
+# (node:73328) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: F2 · falha NA MEDIÇÃO da conclusão: o status NÃO muda e não há unidade; o retry conclui e mede
+ok 124 - F2 · falha NA MEDIÇÃO da conclusão: o status NÃO muda e não há unidade; o retry conclui e mede
+  ---
+  duration_ms: 1822.8495
+  ...
+# Subtest: F3 · falha PÓS-COMMIT (o cenário LITERAL do achado): run e unidade existem; o replay não muda nada
+ok 125 - F3 · falha PÓS-COMMIT (o cenário LITERAL do achado): run e unidade existem; o replay não muda nada
+  ---
+  duration_ms: 1018.7513
+  ...
+# Subtest: F7 · o acoplamento faturamento→operação, executado: validação quebrada derruba a criação e não persiste nada
+ok 126 - F7 · o acoplamento faturamento→operação, executado: validação quebrada derruba a criação e não persiste nada
+  ---
+  duration_ms: 746.6369
+  ...
+# Subtest: F5 · sync: lote que falha não persiste nada; o reenvio repara; o 3º envio é already_applied
+ok 127 - F5 · sync: lote que falha não persiste nada; o reenvio repara; o 3º envio é already_applied
+  ---
+  duration_ms: 407.9723
+  ...
+# Subtest: F6 · sync: divergência + ciência = ZERO unidade de conclusão; concluir = 1; replay não move nada
+ok 128 - F6 · sync: divergência + ciência = ZERO unidade de conclusão; concluir = 1; replay não move nada
+  ---
+  duration_ms: 126.5738
+  ...
+# (node:74872) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+# (Use `node --trace-deprecation ...` to show where the warning was created)
+# Subtest: T-UP-db-1 · anexo e três unidades persistem juntos
+ok 129 - T-UP-db-1 · anexo e três unidades persistem juntos
+  ---
+  duration_ms: 2557.3887
+  ...
+# Subtest: T-UP-db-2 · falha na medição reverte o anexo
+ok 130 - T-UP-db-2 · falha na medição reverte o anexo
+  ---
+  duration_ms: 1286.723
+  ...
+# Subtest: T-UP-db-3 · unidades de um tenant não aparecem no outro
+ok 131 - T-UP-db-3 · unidades de um tenant não aparecem no outro
+  ---
+  duration_ms: 1738.8532
+  ...
+# Subtest: T-DOWN-db-1 · concessão persiste três unidades antes de retornar
+ok 132 - T-DOWN-db-1 · concessão persiste três unidades antes de retornar
+  ---
+  duration_ms: 853.2283
+  ...
+# Subtest: T-DOWN-db-2 · falha na captura recusa a concessão sem unidade parcial
+ok 133 - T-DOWN-db-2 · falha na captura recusa a concessão sem unidade parcial
+  ---
+  duration_ms: 851.7337
+  ...
+# Subtest: T-UP-1 · upload gera count, bytes e put com chave da entidade
+ok 134 - T-UP-1 · upload gera count, bytes e put com chave da entidade
+  ---
+  duration_ms: 2.197
+  ...
+# Subtest: T-UP-2 · tamanho ausente não fabrica bytes
+ok 135 - T-UP-2 · tamanho ausente não fabrica bytes
+  ---
+  duration_ms: 0.3588
+  ...
+# Subtest: T-UP-3 · replay do mesmo anexo não duplica unidade
+ok 136 - T-UP-3 · replay do mesmo anexo não duplica unidade
+  ---
+  duration_ms: 21.0508
+  ...
+# Subtest: T-UP-4 · evento de domínio de upload não cria segunda medição
+ok 137 - T-UP-4 · evento de domínio de upload não cria segunda medição
+  ---
+  duration_ms: 0.5251
+  ...
+# Subtest: T-DOWN-1 · concessão gera count, bytes e GET
+ok 138 - T-DOWN-1 · concessão gera count, bytes e GET
+  ---
+  duration_ms: 0.2815
+  ...
+# Subtest: T-DOWN-2 · tamanho ausente não fabrica bytes de download
+ok 139 - T-DOWN-2 · tamanho ausente não fabrica bytes de download
+  ---
+  duration_ms: 0.1903
+  ...
+# Subtest: T-DOWN-3 · replay da mesma concessão não duplica
+ok 140 - T-DOWN-3 · replay da mesma concessão não duplica
+  ---
+  duration_ms: 0.8029
+  ...
+# Subtest: T-DOWN-4 · evento de domínio de download não cria segunda medição
+ok 141 - T-DOWN-4 · evento de domínio de download não cria segunda medição
+  ---
+  duration_ms: 34.3039
+  ...
+# Subtest: C-1 · toda chave de regra tem produtor transacional ou derivação
+ok 142 - C-1 · toda chave de regra tem produtor transacional ou derivação
+  ---
+  duration_ms: 2.0203
+  ...
+# Subtest: C-2 · eventos pós-commit não produzem nenhuma chave de base
+ok 143 - C-2 · eventos pós-commit não produzem nenhuma chave de base
+  ---
+  duration_ms: 0.7991
+  ...
+# Subtest: C-3 · best-effort não grava chave usada no rateio
+ok 144 - C-3 · best-effort não grava chave usada no rateio
+  ---
+  duration_ms: 298.4017
+  ...
+# Subtest: C-4 · listCostLineItems exige importId em interface e chamador
+ok 145 - C-4 · listCostLineItems exige importId em interface e chamador
+  ---
+  duration_ms: 0.9596
+  ...
+# Subtest: C-5 · não há teto silencioso nem laço privado no repositório de rateio
+ok 146 - C-5 · não há teto silencioso nem laço privado no repositório de rateio
+  ---
+  duration_ms: 0.9146
+  ...
+# Subtest: C-6 · todo modelo com size_bytes está no inventário de storage
+ok 147 - C-6 · todo modelo com size_bytes está no inventário de storage
+  ---
+  duration_ms: 19.1311
+  ...
+# Subtest: T-RULE-1 · EC2, transferência de dados do EC2 e Fargate → compute, 75/25 pelas ações
+ok 148 - T-RULE-1 · EC2, transferência de dados do EC2 e Fargate → compute, 75/25 pelas ações
+  ---
+  duration_ms: 6.1439
+  ...
+# Subtest: T-RULE-2 · RDS instância e GP2-Storage → database, nunca storage
+ok 149 - T-RULE-2 · RDS instância e GP2-Storage → database, nunca storage
+  ---
+  duration_ms: 1.4057
+  ...
+# Subtest: T-RULE-3 · ElastiCache e MemoryDB → cache
+ok 150 - T-RULE-3 · ElastiCache e MemoryDB → cache
+  ---
+  duration_ms: 1.0303
+  ...
+# Subtest: T-RULE-4 · máquina sem nenhuma ação → missing_usage_basis
+ok 151 - T-RULE-4 · máquina sem nenhuma ação → missing_usage_basis
+  ---
+  duration_ms: 0.8732
+  ...
+# Subtest: T-RULE-5 · as três categorias saem rotuladas como estimativa
+ok 152 - T-RULE-5 · as três categorias saem rotuladas como estimativa
+  ---
+  duration_ms: 22.0592
+  ...
+# Subtest: T-RULE-6 · KMS continua sem regra
+ok 153 - T-RULE-6 · KMS continua sem regra
+  ---
+  duration_ms: 0.7052
+  ...
+# Subtest: T-CONS-1 · 1.000 linhas de 0,004567 entre 3 organizações: os 4 termos fecham e o resíduo não é zero
+ok 154 - T-CONS-1 · 1.000 linhas de 0,004567 entre 3 organizações: os 4 termos fecham e o resíduo não é zero
+  ---
+  duration_ms: 91.4139
+  ...
+# Subtest: T-CONS-2 · 1.000 linhas de 0,0000004 com tag: alocado 0 e resíduo = importado
+ok 155 - T-CONS-2 · 1.000 linhas de 0,0000004 com tag: alocado 0 e resíduo = importado
+  ---
+  duration_ms: 22.0932
+  ...
+# Subtest: T-CONS-3 · o resíduo fica fora de não rateado
+ok 156 - T-CONS-3 · o resíduo fica fora de não rateado
+  ---
+  duration_ms: 15.329
+  ...
+# Subtest: T-CONS-4 · 500 cenários de semente fixa (plataforma, tag, sem regra, sem base) fecham dentro do teto
+ok 157 - T-CONS-4 · 500 cenários de semente fixa (plataforma, tag, sem regra, sem base) fecham dentro do teto
+  ---
+  duration_ms: 121.9028
+  ...
+# Subtest: T-CONS-5 · assertConservation recusa resíduo acima do teto e aceita o teto exato
+ok 158 - T-CONS-5 · assertConservation recusa resíduo acima do teto e aceita o teto exato
+  ---
+  duration_ms: 0.9321
+  ...
+# Subtest: T-CONS-6 · motor que omite uma fatia: run failed com residual_exceeded e 0 alocação
+ok 159 - T-CONS-6 · motor que omite uma fatia: run failed com residual_exceeded e 0 alocação
+  ---
+  duration_ms: 2.0232
+  ...
+# Subtest: T-CUR-1 · USD e BRL no mesmo import: run failed com mixed_currency e 0 alocação
+ok 160 - T-CUR-1 · USD e BRL no mesmo import: run failed com mixed_currency e 0 alocação
+  ---
+  duration_ms: 2.956
+  ...
+# Subtest: T-CUR-2 · só USD: resumo com currency USD
+ok 161 - T-CUR-2 · só USD: resumo com currency USD
+  ---
+  duration_ms: 2.0739
+  ...
+# Subtest: T-STO-db-1 · soma real das quatro tabelas por organização
+ok 162 - T-STO-db-1 · soma real das quatro tabelas por organização
+  ---
+  duration_ms: 2355.147
+  ...
+# Subtest: T-STO-db-2 · size_bytes nulo não fabrica base zero
+ok 163 - T-STO-db-2 · size_bytes nulo não fabrica base zero
+  ---
+  duration_ms: 916.5446
+  ...
+# Subtest: T-STO-db-3 · anexos soft-deleted não entram no estoque
+ok 164 - T-STO-db-3 · anexos soft-deleted não entram no estoque
+  ---
+  duration_ms: 903.4425
+  ...
+# Subtest: T-STO-db-4 · soma acima de 2^31 bytes permanece exata
+ok 165 - T-STO-db-4 · soma acima de 2^31 bytes permanece exata
+  ---
+  duration_ms: 789.0083
+  ...
+# Subtest: T-STO-db-5 · canário recusa groupBy de arquivo que devolve organização alheia
+ok 166 - T-STO-db-5 · canário recusa groupBy de arquivo que devolve organização alheia
+  ---
+  duration_ms: 553.7576
+  ...
+# Subtest: T-API-db-1 · conta por organização, janela e ator sob RLS
+ok 167 - T-API-db-1 · conta por organização, janela e ator sob RLS
+  ---
+  duration_ms: 459.7545
+  ...
+# Subtest: T-API-db-2 · canário recusa groupBy que devolve organização alheia
+ok 168 - T-API-db-2 · canário recusa groupBy que devolve organização alheia
+  ---
+  duration_ms: 353.5909
+  ...
+# Subtest: T-API-db-3 · ato da plataforma no cliente pesa na plataforma sob papel sem bypass
+ok 169 - T-API-db-3 · ato da plataforma no cliente pesa na plataforma sob papel sem bypass
+  ---
+  duration_ms: 644.0047
+  ...
+# Subtest: T-API-db-3b · ato próprio da plataforma soma ao ato dela no cliente, em qualquer ordem
+ok 170 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no cliente, em qualquer ordem
+  ---
+  duration_ms: 487.1896
+  ...
+# Subtest: T-STO-1 · dublê soma estoque das quatro tabelas por organização
+ok 171 - T-STO-1 · dublê soma estoque das quatro tabelas por organização
+  ---
+  duration_ms: 2.4399
+  ...
+# Subtest: T-STO-2 · storage usa estoque 3:1, não upload do período
+ok 172 - T-STO-2 · storage usa estoque 3:1, não upload do período
+  ---
+  duration_ms: 3.6751
+  ...
+# Subtest: T-STO-3 · sem arquivo e sem upload declara missing_usage_basis
+ok 173 - T-STO-3 · sem arquivo e sem upload declara missing_usage_basis
+  ---
+  duration_ms: 0.7302
+  ...
+# Subtest: T-STO-4 · arquivo só em damage_attachments pesa
+ok 174 - T-STO-4 · arquivo só em damage_attachments pesa
+  ---
+  duration_ms: 0.5598
+  ...
+# Subtest: T-API-1 · dublê deriva audited_actions_count por organização
+ok 175 - T-API-1 · dublê deriva audited_actions_count por organização
+  ---
+  duration_ms: 0.4135
+  ...
+# Subtest: T-API-2 · ações fora da janela não contam
+ok 176 - T-API-2 · ações fora da janela não contam
+  ---
+  duration_ms: 0.2483
+  ...
+# Subtest: T-API-3 · ApiGateway e AWSELB são alocados pela base auditada
+ok 177 - T-API-3 · ApiGateway e AWSELB são alocados pela base auditada
+  ---
+  duration_ms: 0.8933
+  ...
+# Subtest: T-API-4 · API sem ação declara missing_usage_basis
+ok 178 - T-API-4 · API sem ação declara missing_usage_basis
+  ---
+  duration_ms: 0.6059
+  ...
+# Subtest: T-API-5 · auth.* não conta
+ok 179 - T-API-5 · auth.* não conta
+  ---
+  duration_ms: 0.402
+  ...
+# Subtest: T-API-6 · ação da plataforma no cliente pesa na plataforma
+ok 180 - T-API-6 · ação da plataforma no cliente pesa na plataforma
+  ---
+  duration_ms: 0.4694
+  ...
+# Subtest: T-API-7 · ator nulo não conta
+ok 181 - T-API-7 · ator nulo não conta
+  ---
+  duration_ms: 0.272
+  ...
+# Subtest: T26-db-1 · linhas de outro import na mesma janela não entram
+ok 182 - T26-db-1 · linhas de outro import na mesma janela não entram
+  ---
+  duration_ms: 1164.7257
+  ...
+# Subtest: T26-db-2 · teto é contado dentro do import escolhido
+ok 183 - T26-db-2 · teto é contado dentro do import escolhido
+  ---
+  duration_ms: 479.9558
+  ...
+# Subtest: T26-db-3 · resolução automática escolhe o completed mais recente com linha na janela
+ok 184 - T26-db-3 · resolução automática escolhe o completed mais recente com linha na janela
+  ---
+  duration_ms: 469.09
+  ...
+# Subtest: T26-1 · sem importId usa somente o import completed mais recente
+ok 185 - T26-1 · sem importId usa somente o import completed mais recente
+  ---
+  duration_ms: 4.728
+  ...
+# Subtest: T26-2 · importId explícito usa o import completed solicitado
+ok 186 - T26-2 · importId explícito usa o import completed solicitado
+  ---
+  duration_ms: 0.727
+  ...
+# Subtest: T26-3 · import explícito processing ou failed é recusado com 422
+ok 187 - T26-3 · import explícito processing ou failed é recusado com 422
+  ---
+  duration_ms: 0.9075
+  ...
+# Subtest: T26-4 · sem import elegível conclui run vazia de forma declarada
+ok 188 - T26-4 · sem import elegível conclui run vazia de forma declarada
+  ---
+  duration_ms: 0.3541
+  ...
+# Subtest: T26-5 · reexecução conserva o import fixado mesmo após chegar import novo
+ok 189 - T26-5 · reexecução conserva o import fixado mesmo após chegar import novo
+  ---
+  duration_ms: 0.9497
+  ...
+# Subtest: T26-6 · metadata do cliente não substitui importId nem resolução da run
+ok 190 - T26-6 · metadata do cliente não substitui importId nem resolução da run
+  ---
+  duration_ms: 1.4717
+  ...
+# {"level":30,"time":1793707393155,"pid":76584,"hostname":"RyzenCasa","req":{"id":1,"method":"POST","url":"/api/v1/platform/cloud-cost-allocations/runs","query":{},"params":{},"headers":{"host":"127.0.0.1:60592","connection":"keep-alive","content-type":"application/json","x-user-id":"usr_platform","x-role":"super_admin","accept":"*/*","accept-language":"*","sec-fetch-mode":"cors","user-agent":"node","accept-encoding":"gzip, deflate","content-length":"77"},"remoteAddress":"::ffff:127.0.0.1","remotePort":60594},"res":{"statusCode":400,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"117","etag":"W/\\"75-Q6SLwT9hRFSCuB0h5bx0LlmFIDQ\\""}},"responseTime":7,"msg":"request completed"}
+# {"level":30,"time":1793707393175,"pid":76584,"hostname":"RyzenCasa","req":{"id":2,"method":"POST","url":"/api/v1/platform/cloud-cost-allocations/runs","query":{},"params":{},"headers":{"host":"127.0.0.1:60592","connection":"keep-alive","content-type":"application/json","x-user-id":"usr_platform","x-role":"super_admin","accept":"*/*","accept-language":"*","sec-fetch-mode":"cors","user-agent":"node","accept-encoding":"gzip, deflate","content-length":"103"},"remoteAddress":"::ffff:127.0.0.1","remotePort":60597},"res":{"statusCode":201,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"942","etag":"W/\\"3ae-LPFBJ3/4bWolFNV1PhS7paY4tio\\""}},"responseTime":2,"msg":"request completed"}
+# Subtest: T26-7 · rota recusa importId malformado e aceita UUID válido
+ok 191 - T26-7 · rota recusa importId malformado e aceita UUID válido
+  ---
+  duration_ms: 3715.1729
+  ...
+# Subtest: T-JOB-db-1 · job e replay persistem exatamente duas unidades
+ok 192 - T-JOB-db-1 · job e replay persistem exatamente duas unidades
+  ---
+  duration_ms: 1555.9716
+  ...
+# Subtest: T-JOB-db-2 · falha na captura mantém o job fora de completed
+ok 193 - T-JOB-db-2 · falha na captura mantém o job fora de completed
+  ---
+  duration_ms: 855.6884
+  ...
+# Subtest: T-JOB-1 · job produz as duas unidades com chaves estáveis
+ok 194 - T-JOB-1 · job produz as duas unidades com chaves estáveis
+  ---
+  duration_ms: 2.5696
+  ...
+# Subtest: T-JOB-2 · handler, captura aguardada e complete rodam nessa ordem
+ok 195 - T-JOB-2 · handler, captura aguardada e complete rodam nessa ordem
+  ---
+  duration_ms: 0.8005
+  ...
+# Subtest: T-JOB-3 · falha na captura impede complete e leva o job a retry
+ok 196 - T-JOB-3 · falha na captura impede complete e leva o job a retry
+  ---
+  duration_ms: 0.639
+  ...
+# Subtest: T-JOB-4 · replay do mesmo job não duplica as unidades em memória
+ok 197 - T-JOB-4 · replay do mesmo job não duplica as unidades em memória
+  ---
+  duration_ms: 16.9323
+  ...
+# Subtest: T-SUM-1 · run de 31/10 a 30/11 e pedido de outubro → no_run, total 0
+ok 198 - T-SUM-1 · run de 31/10 a 30/11 e pedido de outubro → no_run, total 0
+  ---
+  duration_ms: 5.117
+  ...
+# Subtest: T-SUM-2 · run boa de outubro e depois run sem import de outubro → devolve a boa
+ok 199 - T-SUM-2 · run boa de outubro e depois run sem import de outubro → devolve a boa
+  ---
+  duration_ms: 7.0199
+  ...
+# Subtest: T-SUM-3 · só run sem import → no_import, diferente de no_run
+ok 200 - T-SUM-3 · só run sem import → no_import, diferente de no_run
+  ---
+  duration_ms: 0.6804
+  ...
+# Subtest: T-SUM-4 · run anterior ao bloco (sem importResolution) → legacy_unscoped, com os valores dela
+ok 201 - T-SUM-4 · run anterior ao bloco (sem importResolution) → legacy_unscoped, com os valores dela
+  ---
+  duration_ms: 0.6675
+  ...
+# Subtest: T-SUM-5 · run até 23:59:59.999Z casa com pedido da mesma data
+ok 202 - T-SUM-5 · run até 23:59:59.999Z casa com pedido da mesma data
+  ---
+  duration_ms: 1.4138
+  ...
+# Subtest: T-SUM-6 · sem período → a mais nova com import, com runId e importId
+ok 203 - T-SUM-6 · sem período → a mais nova com import, com runId e importId
+  ---
+  duration_ms: 22.5728
+  ...
+# Subtest: T-SYS-db-1 · run real: o resumo lê motivo e custo da plataforma do Postgres
+ok 204 - T-SYS-db-1 · run real: o resumo lê motivo e custo da plataforma do Postgres
+  ---
+  duration_ms: 2798.2532
+  ...
+# Subtest: T-SYS-db-2 · run antiga com alocação da plataforma aparece em tenants[] com nome, sob papel sem bypass
+ok 205 - T-SYS-db-2 · run antiga com alocação da plataforma aparece em tenants[] com nome, sob papel sem bypass
+  ---
+  duration_ms: 762.8433
+  ...
+# Subtest: T-SYS-1 · listTenants do dublê mantém a plataforma no universo do rateio
+ok 206 - T-SYS-1 · listTenants do dublê mantém a plataforma no universo do rateio
+  ---
+  duration_ms: 2.3211
+  ...
+# Subtest: T-SYS-2 · tag da plataforma por id, nome e slug, em qualquer caixa, nas 2 estratégias → custo da plataforma
+ok 207 - T-SYS-2 · tag da plataforma por id, nome e slug, em qualquer caixa, nas 2 estratégias → custo da plataforma
+  ---
+  duration_ms: 17.8504
+  ...
+# Subtest: T-SYS-3 · linha sem tag: a plataforma fica no denominador e a fatia dela vira custo da plataforma
+ok 208 - T-SYS-3 · linha sem tag: a plataforma fica no denominador e a fatia dela vira custo da plataforma
+  ---
+  duration_ms: 2.1479
+  ...
+# Subtest: T-SYS-8 · sem organização platform cadastrada o rateio é o de sempre e o custo da plataforma é 0
+ok 209 - T-SYS-8 · sem organização platform cadastrada o rateio é o de sempre e o custo da plataforma é 0
+  ---
+  duration_ms: 2.0816
+  ...
+# Subtest: T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, não rateado 5 por motivo
+ok 210 - T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, não rateado 5 por motivo
+  ---
+  duration_ms: 1.9088
+  ...
+# Subtest: T-SYS-5 · motivos com custos de 6 casas: soma por motivo = totalUnallocatedCost, nenhum falta
+ok 211 - T-SYS-5 · motivos com custos de 6 casas: soma por motivo = totalUnallocatedCost, nenhum falta
+  ---
+  duration_ms: 15.3129
+  ...
+# Subtest: T-SYS-6 · item de metadata.unallocated sem reason aparece em unspecified
+ok 212 - T-SYS-6 · item de metadata.unallocated sem reason aparece em unspecified
+  ---
+  duration_ms: 1.6724
+  ...
+# Subtest: T-SYS-7 · período sem run: chaves presentes, listas vazias e custo da plataforma 0
+ok 213 - T-SYS-7 · período sem run: chaves presentes, listas vazias e custo da plataforma 0
+  ---
+  duration_ms: 0.5664
+  ...
+# Subtest: T13 · ratchet semântico: congelado com motivo por chave, 31 formas vermelhas e a 'sumida' vermelha
+    # Subtest: o inventário do head == congelado (origin/main − sumidas + novas), motivo por chave
+    ok 1 - o inventário do head == congelado (origin/main − sumidas + novas), motivo por chave
+      ---
+      duration_ms: 1.525
+      ...
+    # Subtest: forma Ma_alias.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 2 - forma Ma_alias.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.3547
+      ...
+    # Subtest: forma Mb_destructure.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 3 - forma Mb_destructure.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1633
+      ...
+    # Subtest: forma Mc_element.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 4 - forma Mc_element.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1529
+      ...
+    # Subtest: forma Md_tx_sem_setter.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 5 - forma Md_tx_sem_setter.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1453
+      ...
+    # Subtest: forma Me_root_dentro_wrapper.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 6 - forma Me_root_dentro_wrapper.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1309
+      ...
+    # Subtest: forma Mf_new_como_argumento.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 7 - forma Mf_new_como_argumento.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1356
+      ...
+    # Subtest: forma Mg_subclasse.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 8 - forma Mg_subclasse.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1424
+      ...
+    # Subtest: forma Mh_funcao_livre_client.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 9 - forma Mh_funcao_livre_client.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1068
+      ...
+    # Subtest: forma Mi_sql_em_constante.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 10 - forma Mi_sql_em_constante.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1232
+      ...
+    # Subtest: forma Mj_campo_arrow.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 11 - forma Mj_campo_arrow.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0887
+      ...
+    # Subtest: forma Mk_fabrica_param_tx.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 12 - forma Mk_fabrica_param_tx.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0955
+      ...
+    # Subtest: forma Ml_mutacao_do_plano.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 13 - forma Ml_mutacao_do_plano.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0987
+      ...
+    # Subtest: forma Mm_getter_prisma.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 14 - forma Mm_getter_prisma.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1269
+      ...
+    # Subtest: forma Mn_membro_nao_previsto.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 15 - forma Mn_membro_nao_previsto.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1428
+      ...
+    # Subtest: forma Mo_tx_param_helper.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 16 - forma Mo_tx_param_helper.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1759
+      ...
+    # Subtest: forma Mp_this_client_fora_de_classe_injetada.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 17 - forma Mp_this_client_fora_de_classe_injetada.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.125
+      ...
+    # Subtest: forma Mq_updateManyAndReturn.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 18 - forma Mq_updateManyAndReturn.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1464
+      ...
+    # Subtest: forma N01_destructure_renomeado.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 19 - forma N01_destructure_renomeado.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1571
+      ...
+    # Subtest: forma N02_alias_do_delegate.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 20 - forma N02_alias_do_delegate.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1248
+      ...
+    # Subtest: forma N03_new_via_namespace.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 21 - forma N03_new_via_namespace.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1176
+      ...
+    # Subtest: forma N04_import_renomeado.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 22 - forma N04_import_renomeado.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1528
+      ...
+    # Subtest: forma N05_setter_condicional.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 23 - forma N05_setter_condicional.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1155
+      ...
+    # Subtest: forma N06_setter_no_cliente_errado.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 24 - forma N06_setter_no_cliente_errado.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1508
+      ...
+    # Subtest: forma N07_delegate_como_argumento.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 25 - forma N07_delegate_como_argumento.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1011
+      ...
+    # Subtest: forma N08_subclasse_via_namespace.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 26 - forma N08_subclasse_via_namespace.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1021
+      ...
+    # Subtest: forma N09_setter_em_comentario.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 27 - forma N09_setter_em_comentario.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1168
+      ...
+    # Subtest: forma N10_any.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 28 - forma N10_any.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0969
+      ...
+    # Subtest: forma c2-c3a-generic-constructor.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 29 - forma c2-c3a-generic-constructor.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0996
+      ...
+    # Subtest: forma c2-c3b-union-constructor.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 30 - forma c2-c3b-union-constructor.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0963
+      ...
+    # Subtest: forma c2-c3c-reflect-construct.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 31 - forma c2-c3c-reflect-construct.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.0964
+      ...
+    # Subtest: forma c2-c3e-nested-relation.ts → o gerador a põe no inventário (+≥1 chave)
+    ok 32 - forma c2-c3e-nested-relation.ts → o gerador a põe no inventário (+≥1 chave)
+      ---
+      duration_ms: 0.1069
+      ...
+    # Subtest: L0 exato: tabela qualificada e model sem @@map entram por nome
+    ok 33 - L0 exato: tabela qualificada e model sem @@map entram por nome
+      ---
+      duration_ms: 12081.1672
+      ...
+    # Subtest: 'sumida': a fábrica do sítio 7 trocada por fora → novas=1 sumidas=1
+    ok 34 - 'sumida': a fábrica do sítio 7 trocada por fora → novas=1 sumidas=1
+      ---
+      duration_ms: 10385.3459
+      ...
+    1..34
+ok 214 - T13 · ratchet semântico: congelado com motivo por chave, 31 formas vermelhas e a 'sumida' vermelha
+  ---
+  duration_ms: 39286.3873
+  ...
+# Subtest: B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
+    # Subtest: T10 · listEvents sem tenant soma os 5 eventos de 2 organizações, intercalados, em ordem (A10)
+    ok 1 - T10 · listEvents sem tenant soma os 5 eventos de 2 organizações, intercalados, em ordem (A10)
+      ---
+      duration_ms: 185.2314
+      ...
+    # Subtest: T10 · listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+    ok 2 - T10 · listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+      ---
+      duration_ms: 91.9051
+      ...
+    # Subtest: T11a · GET /platform/cloud-usage/summary: efêmero == super, e a soma é 50
+    ok 3 - T11a · GET /platform/cloud-usage/summary: efêmero == super, e a soma é 50
+      ---
+      duration_ms: 0.5046
+      ...
+    # Subtest: T11b · job cloud-usage.aggregate-daily: efêmero grava os mesmos 2 agregados que o super
+    ok 4 - T11b · job cloud-usage.aggregate-daily: efêmero grava os mesmos 2 agregados que o super
+      ---
+      duration_ms: 0.3321
+      ...
+    # Subtest: T11c · POST calculation-runs + GET tenant-charges + GET summary: efêmero == super (2 cobranças)
+    ok 5 - T11c · POST calculation-runs + GET tenant-charges + GET summary: efêmero == super (2 cobranças)
+      ---
+      duration_ms: 0.4399
+      ...
+    # Subtest: T11d · controles (já por organização): iguais nos dois papéis
+    ok 6 - T11d · controles (já por organização): iguais nos dois papéis
+      ---
+      duration_ms: 0.1794
+      ...
+    # Subtest: T11e · cada rota FORCE tem cenário próprio, não vazio e igual nos dois papéis
+    ok 7 - T11e · cada rota FORCE tem cenário próprio, não vazio e igual nos dois papéis
+      ---
+      duration_ms: 0.4456
+      ...
+    # Subtest: T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2
+    ok 8 - T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2
+      ---
+      duration_ms: 0.3064
+      ...
+    # Subtest: T11g · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido
+    ok 9 - T11g · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido
+      ---
+      duration_ms: 5.1168
+      ...
+    # Subtest: T12 · via createPrismaCloudChargeRepository(): alocações, cobranças, replace (B7) sob o papel sem bypass (A13)
+    ok 10 - T12 · via createPrismaCloudChargeRepository(): alocações, cobranças, replace (B7) sob o papel sem bypass (A13)
+      ---
+      duration_ms: 110.5851
+      ...
+    # Subtest: T12 · B8: falha injetada na 2ª organização não deixa NENHUMA linha da 1ª (uma transação só)
+    ok 11 - T12 · B8: falha injetada na 2ª organização não deixa NENHUMA linha da 1ª (uma transação só)
+      ---
+      duration_ms: 48.3865
+      ...
+    # Subtest: T12 · A14: o canário — linha de outra organização numa volta lança rows_from_another_tenant
+    ok 12 - T12 · A14: o canário — linha de outra organização numa volta lança rows_from_another_tenant
+      ---
+      duration_ms: 26.1011
+      ...
+    1..12
+ok 215 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
+  ---
+  duration_ms: 7045.7376
+  ...
+# Subtest: T2 · produção sem a variável → o EXPORT resolve `enforce` (processo filho, módulo real)
+ok 216 - T2 · produção sem a variável → o EXPORT resolve `enforce` (processo filho, módulo real)
+  ---
+  duration_ms: 934.4225
+  ...
+# Subtest: T2 · produção com `enforce` explícito → `enforce`
+ok 217 - T2 · produção com `enforce` explícito → `enforce`
+  ---
+  duration_ms: 794.2132
+  ...
+# Subtest: T2 · produção com `skip` → o import do env.ts RECUSA no caminho DATABASE_RUNTIME_ROLE_GUARD
+ok 218 - T2 · produção com `skip` → o import do env.ts RECUSA no caminho DATABASE_RUNTIME_ROLE_GUARD
+  ---
+  duration_ms: 646.1057
+  ...
+# Subtest: T2 · test sem a variável → o EXPORT resolve `skip`
+ok 219 - T2 · test sem a variável → o EXPORT resolve `skip`
+  ---
+  duration_ms: 596.1149
+  ...
+# Subtest: T2 · development sem a variável → o EXPORT resolve `skip`
+ok 220 - T2 · development sem a variável → o EXPORT resolve `skip`
+  ---
+  duration_ms: 582.6572
+  ...
+# Subtest: T4 · sem enforce: não sonda, devolve {enforced:false} e deixa UMA linha info (nunca mudo)
+ok 221 - T4 · sem enforce: não sonda, devolve {enforced:false} e deixa UMA linha info (nunca mudo)
+  ---
+  duration_ms: 1.41
+  ...
+# Subtest: T4 · sem opção explícita, o default do processo de teste (NODE_ENV≠production) é skip
+ok 222 - T4 · sem opção explícita, o default do processo de teste (NODE_ENV≠production) é skip
+  ---
+  duration_ms: 0.3513
+  ...
+# Subtest: T4 · postura limpa: passa, e o veredito loga session_user, current_user e escapes: 0 — nada além
+ok 223 - T4 · postura limpa: passa, e o veredito loga session_user, current_user e escapes: 0 — nada além
+  ---
+  duration_ms: 1.3471
+  ...
+# Subtest: T4 · escape: lança RuntimeRoleGuardError (RUNTIME_ROLE_CAN_BYPASS_RLS) E chama $disconnect
+ok 224 - T4 · escape: lança RuntimeRoleGuardError (RUNTIME_ROLE_CAN_BYPASS_RLS) E chama $disconnect
+  ---
+  duration_ms: 1.5699
+  ...
+# Subtest: T4 · erro de CONEXÃO: 5 sondas, esperas 2s/4s/8s/16s, recusa com erro SANITIZADO e $disconnect
+ok 225 - T4 · erro de CONEXÃO: 5 sondas, esperas 2s/4s/8s/16s, recusa com erro SANITIZADO e $disconnect
+  ---
+  duration_ms: 1.7698
+  ...
+# Subtest: T4 · erro de conexão que se resolve na 3ª sonda → passa (esperas 2s e 4s)
+ok 226 - T4 · erro de conexão que se resolve na 3ª sonda → passa (esperas 2s e 4s)
+  ---
+  duration_ms: 0.922
+  ...
+# Subtest: T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma sonda só, recusa sanitizada
+ok 227 - T4 · erro que NÃO é de conexão (credencial recusada, 28P01) → uma sonda só, recusa sanitizada
+  ---
+  duration_ms: 0.962
+  ...
+# Subtest: B-SAN3-05 · o papel de runtime não contorna FORCE RLS
+    # Subtest: T5/T6/T9 · papel limpo passa; postgres recusa; log não expõe conexão
+    ok 1 - T5/T6/T9 · papel limpo passa; postgres recusa; log não expõe conexão
+      ---
+      duration_ms: 700.7872
+      ...
+    # Subtest: T7/T8 · super renomeado e pertença direta, NOINHERIT, cadeia e SET FALSE recusam
+    ok 2 - T7/T8 · super renomeado e pertença direta, NOINHERIT, cadeia e SET FALSE recusam
+      ---
+      duration_ms: 925.2218
+      ...
+    # Subtest: T8b/T8c · posse e session_user continuam visíveis depois de SET ROLE
+    ok 3 - T8b/T8c · posse e session_user continuam visíveis depois de SET ROLE
+      ---
+      duration_ms: 593.5542
+      ...
+    # Subtest: T8c · dois semi-mutantes session_user→current_user perdem exatamente a via do login
+    ok 4 - T8c · dois semi-mutantes session_user→current_user perdem exatamente a via do login
+      ---
+      duration_ms: 398.3989
+      ...
+    # Subtest: T8d · REPLICATION exercível, papel de servidor e view transitiva são recusados
+    ok 5 - T8d · REPLICATION exercível, papel de servidor e view transitiva são recusados
+      ---
+      duration_ms: 1069.2804
+      ...
+    # Subtest: T8e · qualquer view/matview sobre tabela FORCE recusa, sem olhar dono nem privilégio (D-405-PROIBIR-VIEWS)
+    ok 6 - T8e · qualquer view/matview sobre tabela FORCE recusa, sem olhar dono nem privilégio (D-405-PROIBIR-VIEWS)
+      ---
+      duration_ms: 1149.9094
+      ...
+    # Subtest: T8f · a trava e o MODO 6 avaliam o mesmo CTE, sem view_escape
+    ok 7 - T8f · a trava e o MODO 6 avaliam o mesmo CTE, sem view_escape
+      ---
+      duration_ms: 0.8483
+      ...
+    # Subtest: T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
+    not ok 8 - T14a/b · o procedimento converge, é idempotente e falha fechado nos modos nomeados
+      ---
+      duration_ms: 256.0814
+      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:18223'
+      failureType: 'testCodeFailure'
+      error: |-
+        DO
+        setsid: ausente — necessário para impedir que psql \\password leia a senha do terminal
+
+
+        3 !== 0
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 3
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1015:16)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:998:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
+    not ok 9 - T14c · filhos escritores respeitam a trava única e a guarda estrutural é fechada
+      ---
+      duration_ms: 756.7095
+      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:3951'
+      failureType: 'testCodeFailure'
+      error: |-
+        DO
+        setsid: ausente — necessário para impedir que psql \\password leia a senha do terminal
+
+
+        3 !== 0
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 3
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1367:18)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1319:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
+    not ok 10 - T14d · MODO 6: qualquer view/matview sobre tabela FORCE recusa o papel novo, sem olhar dono nem privilégio
+      ---
+      duration_ms: 831.3093
+      location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:15:6566'
+      failureType: 'testCodeFailure'
+      error: |-
+        caso CTL: view sobre tabela SEM FORCE deveria convergir
+        DO
+        setsid: ausente — necessário para impedir que psql \\password leia a senha do terminal
+
+
+        3 !== 0
+
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 3
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1408:24)
+        process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async TestContext.<anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-05-runtime-role-guard-db.test.ts:1382:5)
+        async Test.run (node:internal/test_runner/test:797:9)
+        async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+      ...
+    # Subtest: T15 · boot real recusa super antes do Redis e aceita papel limpo
+    ok 11 - T15 · boot real recusa super antes do Redis e aceita papel limpo
+      ---
+      duration_ms: 9111.9881
+      ...
+    1..11
+not ok 228 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS
+  ---
+  duration_ms: 15969.6874
+  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-05-runtime-role-guard-db.test.ts:3:1497'
+  failureType: 'subtestsFailed'
+  error: '3 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..228
+# tests 285
+# suites 0
+# pass 281
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 48057.9417
+[run-backend-tests] 37 arquivo(s) · 285 teste(s) · pass 281 · fail 4 · skipped 0

@@ -1,0 +1,7 @@
+src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts|anchor=1
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M47-c(literal do dev)|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|name: 'AssertionError' ¦ expected: 400 ¦ actual: 200
+M47-c(literal do dev)|status=[]
+src/modules/cloud-cost-allocation/cloud-cost-allocation.routes.ts|anchor=1
+M47-c'(só listagem, serviço intacto)|exit=1|not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível|T-RUN-1 · listagem continua aceitando somente uma ponta ¦ name: 'AssertionError' ¦ expected: 200 ¦ actual: 400
+M47-c'(só listagem, serviço intacto)|status=[]

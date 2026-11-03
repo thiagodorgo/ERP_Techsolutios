@@ -1,0 +1,49 @@
+TAP version 13
+# C2PROBE {"case":"run","runStart":"2026-06-01T00:00:00.000Z","runEnd":"2026-06-30T00:00:00.000Z","total":15}
+# C2PROBE {"case":"sem-query","query":"","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"duas-pontas","query":"periodStart=2026-06-01&periodEnd=2026-06-30","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# C2PROBE {"case":"so-start","query":"periodStart=2026-06-01","status":200,"total":15,"coverage":"imported","periodStart":"2026-06-01T00:00:00.000Z","periodEnd":"2026-06-30T00:00:00.000Z"}
+# Subtest: C2 · /summary pela rota HTTP real
+not ok 1 - C2 · /summary pela rota HTTP real
+  ---
+  duration_ms: 1439.9541
+  location: 'C:\\Users\\thiag\\erp-pausa-2026-10-03\\revisoes\\j484\\c2-probe-routes.test.mts:1:3591'
+  failureType: 'testCodeFailure'
+  error: |-
+    so-start
+    + actual - expected
+
+      [
+    +   200,
+    +   undefined,
+    +   undefined
+    -   400,
+    -   'CLOUD_COST_ALLOCATION_INVALID_PERIOD',
+    -   'summary_period_incomplete'
+      ]
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 400
+    1: 'CLOUD_COST_ALLOCATION_INVALID_PERIOD'
+    2: 'summary_period_incomplete'
+  actual:
+    0: 200
+  operator: 'deepStrictEqual'
+  stack: |-
+    <anonymous> (C:\Users\thiag\erp-pausa-2026-10-03\revisoes\j484\c2-probe-routes.test.mts:103:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    async withApi (C:\Users\thiag\erp-pausa-2026-10-03\revisoes\j484\c2-probe-routes.test.mts:60:9)
+    async TestContext.<anonymous> (C:\Users\thiag\erp-pausa-2026-10-03\revisoes\j484\c2-probe-routes.test.mts:83:3)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1763.3471

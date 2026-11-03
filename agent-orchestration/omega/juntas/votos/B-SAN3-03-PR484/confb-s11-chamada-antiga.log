@@ -1,0 +1,43 @@
+TAP version 13
+# Subtest: B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
+    # Subtest: T10 · listEvents sem tenant soma os 5 eventos de 2 organizações, intercalados, em ordem (A10)
+    ok 1 - T10 · listEvents sem tenant soma os 5 eventos de 2 organizações, intercalados, em ordem (A10)
+      ---
+      duration_ms: 38.9979
+      ...
+    # Subtest: T10 · listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+    ok 2 - T10 · listDailyAggregates sem tenant devolve os 2 agregados por date asc (A11)
+      ---
+      duration_ms: 18.579
+      ...
+    1..2
+not ok 1 - B-SAN3-05 · T10–T12 — plataforma sob papel NOSUPERUSER NOBYPASSRLS soma o que o superusuário soma
+  ---
+  duration_ms: 2262.9258
+  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-05-leituras-de-plataforma-db.test.ts:1:5660'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"error":{"code":"CLOUD_COST_ALLOCATION_INVALID_PERIOD","reason":"summary_period_invalid","message":"periodStart must be a unique valid date."}}
+
+    400 !== 200
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-05-leituras-de-plataforma-db.test.ts:353:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    async Test.run (node:internal/test_runner/test:797:9)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..1
+# tests 3
+# suites 0
+# pass 2
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2677.263

@@ -1,0 +1,30 @@
+TAP version 13
+# C2PROBE-DB {"case":"repo","ctor":"PrismaCloudCostAllocationRepository"}
+# C2PROBE-DB {"case":"duas-pontas","query":"periodStart=2031-07-01&periodEnd=2031-07-31","status":200,"total":77,"runId":"a-desta-sonda","periodStart":"2031-07-01T00:00:00.000Z","periodEnd":"2031-07-31T00:00:00.000Z"}
+# C2PROBE-DB {"case":"sem-query","query":"","status":200,"total":77,"runId":"a-desta-sonda","periodStart":"2031-07-01T00:00:00.000Z","periodEnd":"2031-07-31T00:00:00.000Z"}
+# C2PROBE-DB {"case":"so-start","query":"periodStart=2031-07-01","status":400,"reason":"summary_period_incomplete"}
+# C2PROBE-DB {"case":"so-end","query":"periodEnd=2031-07-31","status":400,"reason":"summary_period_incomplete"}
+# C2PROBE-DB {"case":"vazio","query":"periodStart=&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"texto","query":"periodStart=nao-e-data&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"array","query":"periodStart=2031-07-01&periodStart=2031-08-01&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"31-02","query":"periodStart=2031-02-31&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"13-01","query":"periodStart=2031-13-01&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"00-10","query":"periodStart=2031-00-10&periodEnd=2031-07-31","status":400,"reason":"summary_period_invalid"}
+# C2PROBE-DB {"case":"bissexto","query":"periodStart=2028-02-29&periodEnd=2028-02-29","status":200,"total":0,"runId":null,"periodStart":"2028-02-29T00:00:00.000Z","periodEnd":"2028-02-29T00:00:00.000Z"}
+# C2PROBE-DB {"case":"fuso+23:59-texto-jul02-ago01","query":"periodStart=2031-07-02T00:00:00%2B23:59&periodEnd=2031-08-01T00:00:00%2B23:59","status":200,"total":77,"runId":"a-desta-sonda","periodStart":"2031-07-01T00:00:00.000Z","periodEnd":"2031-07-31T00:00:00.000Z"}
+# C2PROBE-DB {"case":"hora-24-texto-jun30-jul30","query":"periodStart=2031-06-30T24:00:00Z&periodEnd=2031-07-30T24:00:00Z","status":200,"total":77,"runId":"a-desta-sonda","periodStart":"2031-07-01T00:00:00.000Z","periodEnd":"2031-07-31T00:00:00.000Z"}
+# C2PROBE-DB {"case":"hora-local-sem-fuso","query":"periodStart=2031-06-30T22:00&periodEnd=2031-07-30T22:00","status":200,"total":77,"runId":"a-desta-sonda","periodStart":"2031-07-01T00:00:00.000Z","periodEnd":"2031-07-31T00:00:00.000Z"}
+# Subtest: C2-db · /summary pela rota HTTP real sobre o repositório Prisma
+ok 1 - C2-db · /summary pela rota HTTP real sobre o repositório Prisma
+  ---
+  duration_ms: 1912.0878
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2266.5859

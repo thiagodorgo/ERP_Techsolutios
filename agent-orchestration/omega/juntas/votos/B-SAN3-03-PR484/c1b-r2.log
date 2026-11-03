@@ -1,0 +1,23 @@
+== controle
+  exit=0 | # tests 9 # pass 9 # fail 0 # skipped 0
+  AssertionError presente=false | SyntaxError/TransformError=false
+  restored=true | status=[]
+== M13
+  anchor count=1
+  exit=1 | # tests 9 # pass 8 # fail 1 # skipped 0
+  not ok 1 - T-STO-db-1 · soma real das quatro tabelas por organização || error: 'tenant_context_leak: attachments returned rows for another organization under the current context.'
+  not ok 1 - T-STO-db-1 · soma real das quatro tabelas por organização || code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
+  not ok 1 - T-STO-db-1 · soma real das quatro tabelas por organização || name: 'CloudCostAllocationError'
+  AssertionError presente=false | SyntaxError/TransformError=false
+  restored=true | status=[]
+== M16
+  anchor count=1
+  exit=1 | # tests 9 # pass 7 # fail 2 # skipped 0
+  not ok 6 - T-API-db-1 · conta por organização, janela e ator sob RLS || error: 'tenant_context_leak: audit_logs returned rows for another organization under the current context.'
+  not ok 6 - T-API-db-1 · conta por organização, janela e ator sob RLS || code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
+  not ok 6 - T-API-db-1 · conta por organização, janela e ator sob RLS || name: 'CloudCostAllocationError'
+  not ok 9 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no || error: 'tenant_context_leak: audit_logs returned rows for another organization under the current context.'
+  not ok 9 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no || code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
+  not ok 9 - T-API-db-3b · ato próprio da plataforma soma ao ato dela no || name: 'CloudCostAllocationError'
+  AssertionError presente=false | SyntaxError/TransformError=false
+  restored=true | status=[]
