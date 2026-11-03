@@ -96,6 +96,9 @@ export const PERMISSION_CATALOG = [
   // Ω5P PR-10a (D-Ω5P-07) — registrar QUITAÇÃO (settled_* — ATO DE DINHEIRO; reconcilia por estorno + SETTLEMENT).
   // Distribuição gestão+admins (= charging:create); NUNCA altera amount (ledger amount-imutável).
   "charging:settle",
+  // B-PATIO-REC-01 (plano v3 §6.1; Q-DEVOLVE) — gerar a cobrança ON-LINE da taxa de pátio. MESMA distribuição de
+  // charging:settle (gestão + admins): quem dá baixa é quem cobra. Devolver e classificar seguem em charging:settle.
+  "charging:online_payment",
   "service_quotes:create",
   "work_order_financials:create",
   "financial_accounts:create",
@@ -492,6 +495,8 @@ export const ROLE_PERMISSIONS = {
     "charging:create",
     // Ω5P PR-10a — gestão registra a quitação (dinheiro) e conduz o dossiê/ato de liberação I5.
     "charging:settle",
+    // B-PATIO-REC-01 — gerar a cobrança on-line da taxa de pátio (= charging:settle).
+    "charging:online_payment",
     "release:process",
     "release:approve",
     // Ω5P PR-13b — gestão registra/lê a avaliação sigilosa do leilão (art. 28; = impound:transition).

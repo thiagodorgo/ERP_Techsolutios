@@ -285,6 +285,32 @@ export class ChargeService {
     return { claimCents, currency };
   }
 
+  // B-PATIO-REC-01 (plano v3 §5.1; achado N8) — o DEVIDO CAPADO ao teto, para a cobrança on-line da taxa de pátio. READ-ONLY:
+  // não escreve no ledger. Mesmo raciocínio de getCascadeExpenseClaim, mas sobre as linhas AINDA NÃO quitadas: soma o líquido
+  // das exigíveis (cada uma com os ADJUSTMENTs que a apontam) FORA das DAILYs sobre-acumuladas (as que passam do teto AT
+  // min(now, frozen_at)). `overAccruedUnreconciled` = alguma sobre-acumulada ainda tem líquido ≠ 0: a criação da cobrança
+  // recusa (L16, um único valor público por débito) e a baixa manual reconcilia como hoje. getPublicSummary não muda.
+  async getSettleableDueCents(
+    tenantId: string,
+    processId: string,
+    now: Date = new Date(),
+  ): Promise<{ dueCents: number; overAccruedUnreconciled: boolean; currency: string } | undefined> {
+    const state = await this.getReleaseChargeState(tenantId, processId, now);
+    if (!state) return undefined;
+    const lines = await this.repository.listCharges({ tenantId, processId });
+    const currency = lines.find((line) => line.kind !== "ADJUSTMENT")?.currency ?? lines[0]?.currency ?? "BRL";
+    const overAccrued = new Set(state.overAccruedDailyIds);
+    let dueCents = 0;
+    for (const line of lines) {
+      if (line.kind === "ADJUSTMENT") continue;
+      if (line.settledAt) continue;
+      if (overAccrued.has(line.id)) continue;
+      dueCents += dailyNetCents(line.id, lines);
+    }
+    const overAccruedUnreconciled = state.overAccruedDailyIds.some((id) => dailyNetCents(id, lines) !== 0);
+    return { dueCents: Math.max(0, dueCents), overAccruedUnreconciled, currency };
+  }
+
   // ── Motor de diárias (I4) — acumulação de UM processo. Usado pelo SWEEP e (futuro PR-10/14) pelo congelamento
   // com asOf=frozen_at. Idempotente/DST-safe/fail-closed. Recalculabilidade (RN-DIA-05): só CRIA faltantes.
   async accrueProcess(tenantId: string, processId: string, now: Date, actorId?: string): Promise<AccrueProcessResult> {
