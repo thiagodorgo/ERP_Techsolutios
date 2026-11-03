@@ -347,3 +347,17 @@ regressão → `63/63` · `[UF]` → `12/12` · `[DB]` domain-db, drill, gate-co
 (8 + 2 + 3 + 13) · `[DBP]` → `2/2` · guard de migração → `novas: 8 · violações: 0` · `san3-05-acessos-de-plataforma-guard` +
 `o6r07c-census-guard` → `67/67` (o inventário de acessos e o censo não mudaram com o conserto) · `npm run build` 0 · `git diff --check` vazio ·
 `src/modules/release` sem diff · charging sem linha removida.
+
+## RETOMADA 10 — CI do head `805fb3da` (conserto da junta)
+
+- Check-runs do head `805fb3da078acab609e3d7f23678d26a5ea9466b`: **16, todos `completed`/`success`**.
+- TAP lido:
+  - `backend` evento `pull_request` (job `126111636612`, merge com a `main` `2e7987bd`): `# tests 4416 # pass 4414 # fail 0 # cancelled 0
+    # skipped 2`, 0 `not ok`;
+  - `backend` evento `push` (job `126111603506`, só o ramo): `# tests 4309 # pass 4307 # fail 0 # cancelled 0 # skipped 2`, 0 `not ok`
+    (a diferença de 107 testes é o que a `main` acrescentou depois de `ceb62a07`; os 2 pulos ficam no orçamento do runner);
+  - `backend-postgres` (jobs `126111636494` e `126111603386`): `# tests 503 # pass 503 # fail 0 # cancelled 0 # skipped 0` nos dois
+    (o T-DOM-28-db soma 1 aos 502 de antes).
+- Limpeza: container `rec01k-pg` removido; `dist/` removido; TAPs fora do repositório, em `C:/Users/thiag/erp-pausa-2026-10-03/rec01/`.
+
+PRONTO PARA CONFERÊNCIA
