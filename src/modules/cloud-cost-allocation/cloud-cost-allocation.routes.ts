@@ -173,19 +173,14 @@ function readSummaryDate(query: Record<string, unknown>, field: "periodStart" | 
   const raw = query[field];
   if (typeof raw !== "string") throwInvalidSummaryPeriod(field);
 
-  const match = /^(\d{4}-\d{2}-\d{2})(?:$|T)/.exec(raw);
+  const match = /^(\d{4}-\d{2}-\d{2})$/.exec(raw);
   if (!match) throwInvalidSummaryPeriod(field);
   const calendarDate = match[1]!;
   const strictDate = new Date(`${calendarDate}T00:00:00.000Z`);
-  const parsed = new Date(raw);
-  if (
-    Number.isNaN(strictDate.getTime()) ||
-    strictDate.toISOString().slice(0, 10) !== calendarDate ||
-    Number.isNaN(parsed.getTime())
-  ) {
+  if (Number.isNaN(strictDate.getTime()) || strictDate.toISOString().slice(0, 10) !== calendarDate) {
     throwInvalidSummaryPeriod(field);
   }
-  return parsed;
+  return strictDate;
 }
 
 function throwInvalidSummaryPeriod(field: string): never {

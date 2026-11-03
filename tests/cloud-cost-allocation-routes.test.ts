@@ -112,6 +112,40 @@ test("T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido 
   });
 });
 
+test("T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+    const previousTimezone = process.env.TZ;
+    const invalidDates = [
+      "2026-06-02T00:00:00+23:59",
+      "2026-06-02T00:00:00+0500",
+      "2026-05-31T24:00:00Z",
+      "2026-05-31T22:00",
+      "2026-06-01 ",
+      "2026-06-01 GMT+1400",
+    ];
+
+    try {
+      for (const timezone of ["UTC", "America/Sao_Paulo"]) {
+        process.env.TZ = timezone;
+        for (const invalidDate of invalidDates) {
+          const query = new URLSearchParams({ periodStart: invalidDate, periodEnd: "2026-06-30" });
+          const response = await requestJson(
+            baseUrl,
+            `/api/v1/platform/cloud-cost-allocations/summary?${query.toString()}`,
+            { headers: platformHeaders() },
+          );
+          assertInvalidPeriod(response, "summary_period_invalid");
+        }
+      }
+    } finally {
+      if (previousTimezone === undefined) delete process.env.TZ;
+      else process.env.TZ = previousTimezone;
+    }
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
