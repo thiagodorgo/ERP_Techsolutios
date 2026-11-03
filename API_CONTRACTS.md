@@ -318,8 +318,9 @@ default. Mudar o default do detalhe é contrato do painel, fora deste bloco.
 
 - exatamente uma de `periodStart`/`periodEnd` → `400`,
   `code: "CLOUD_COST_ALLOCATION_INVALID_PERIOD"`, `reason: "summary_period_incomplete"`;
-- chave presente vazia, inválida, repetida ou com data de calendário impossível → `400`, mesmo `code`,
-  `reason: "summary_period_invalid"`;
+- chave presente vazia, repetida, fora do formato literal `AAAA-MM-DD` ou com data de calendário impossível
+  → `400`, mesmo `code`, `reason: "summary_period_invalid"`; a data é interpretada à meia-noite UTC e não
+  aceita hora, fuso nem espaços;
 - sem as duas chaves, mantém o resumo mais recente; com as duas válidas, exige o período exato.
 
 Tags de organização ambíguas nunca são atribuídas: a linha inteira entra em `unallocated` com

@@ -713,3 +713,25 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** confirmar no objeto que o frontend envia `AAAA-MM-DD`, adicionar T-SUM-9 e
   obter seu vermelho-controle antes de alterar `parseSummaryFilters`.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 19
+
+- **Executor:** `dev-san303-k-sol`, Codex GPT-5.6 Sol, nível menor declarado, esforço high.
+- **Head inicial:** `89171135`, igual ao remoto; árvore limpa. O frontend foi medido em `HEAD` antes de K2:
+  `periodForMonth` produz `AAAA-MM-DD` e `withPeriod` envia as duas pontas sem transformação. A condição de
+  parada do §10 não ocorreu.
+- **K2 — data do resumo:** `readSummaryDate` agora aceita somente `^\\d{4}-\\d{2}-\\d{2}$`, mantém a ida e
+  volta de calendário e devolve `AAAA-MM-DDT00:00:00.000Z`; o resultado independe do TZ do processo.
+- **T-SUM-9:** os seis valores da sonda C2 foram exercitados sob `TZ=UTC` e
+  `TZ=America/Sao_Paulo`. Vermelho-controle no head anterior: **exit 1**, `200 !== 400`. Depois do conserto,
+  o arquivo de rotas ficou **4/4**, 0 falhas.
+- **M58 literal:** regex sem a âncora `$`, âncora original **=1**; T-SUM-9 ficou vermelho por
+  `AssertionError` (**exit 1**). `routes.ts` foi restaurado por `git checkout HEAD --` e a árvore ficou
+  vazia.
+- **Contrato:** `API_CONTRACTS.md` passa a dizer literalmente `AAAA-MM-DD`, meia-noite UTC e recusa de
+  hora, fuso ou espaço.
+- **Commit de produto:** `1af05802` (`fix(cloud-billing): restringe data do resumo`).
+- **Feito:** K2 completo; EOL dos arquivos editados normalizado para LF antes do commit.
+- **Falta:** K3–K5, bateria final, CI e conferência Claude.
+- **Próximo comando exato:** adicionar T-SUM-10 para chaves desconhecidas e obter o vermelho-controle.
+- **Arquivos meio-escritos:** nenhum.
