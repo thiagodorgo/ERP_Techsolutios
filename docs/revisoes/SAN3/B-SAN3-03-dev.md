@@ -754,3 +754,21 @@ PRONTO PARA PRÉ-REVISÃO
 - **Falta:** K4, K5, bateria final, CI e conferência Claude.
 - **Próximo comando exato:** aplicar a M47-c′ literal, provar T-RUN-1 vermelho e restaurar com status vazio.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 21
+
+- **Executor:** `dev-san303-k-sol`, Codex GPT-5.6 Sol, nível menor declarado, esforço high.
+- **Head inicial:** `4d325ccc`, igual ao remoto; árvore limpa.
+- **K4 — troca da mutação:** a M47-c literal fica substituída por **M47-c′**. O mutante acrescenta a
+  recusa de uma ponta em `parseRunFilters`, sem remover a proteção do serviço nem alterar `/summary`.
+- **Âncora e vermelho:** âncora literal `function parseRunFilters(...)` **=1**; com a recusa inserida,
+  T-RUN-1 ficou vermelho pelo motivo exato `listagem continua aceitando somente uma ponta`,
+  `expected 200`, `actual 400`, **exit 1**.
+- **Restauração:** `routes.ts` restaurado por `git checkout HEAD --`; `git status --porcelain` vazio.
+- **Código permanente:** nenhum — K4 corrige a prova, não o produto. T-RUN-1 já existia e fica como teste
+  permanente; este registro torna explícita a substituição pedida no §10.
+- **Feito:** K4 completo.
+- **Falta:** K5, bateria final literal, CI e conferência Claude.
+- **Próximo comando exato:** executar a bateria dirigida usando a lista literal de
+  `revisoes/j484/c3-bateria-arquivos.txt` adaptada ao worktree e publicar o TAP por arquivo.
+- **Arquivos meio-escritos:** nenhum.
