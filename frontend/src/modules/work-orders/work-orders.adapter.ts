@@ -44,20 +44,20 @@ export function buildRegistryLinksPayload(links: WorkOrderRegistryLinks): WorkOr
 
 const statusLabels: Record<WorkOrderStatus, string> = {
   open: "Aberta",
-  assigned: "Atribuida",
+  assigned: "Atribuída",
   accepted: "Aceita",
   on_route: "Em deslocamento",
   on_site: "No local",
   in_progress: "Em atendimento",
   paused: "Pausada",
-  completed: "Concluida",
+  completed: "Concluída",
   cancelled: "Cancelada",
   rejected: "Recusada",
 };
 
 const priorityLabels: Record<WorkOrderPriority, string> = {
   low: "Baixa",
-  medium: "Media",
+  medium: "Média",
   high: "Alta",
   urgent: "Urgente",
 };
@@ -226,9 +226,9 @@ export function getWorkOrderPriorityTone(priority: WorkOrderPriority) {
 }
 
 export function formatWorkOrderDate(value: string | null | undefined): string {
-  if (!value) return "Nao informado";
+  if (!value) return "Não informado";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data invalida";
+  if (Number.isNaN(date.getTime())) return "Data inválida";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -252,11 +252,11 @@ export function validateWorkOrderForm(input: {
   readonly destinationLongitude?: string;
 }): string[] {
   const errors: string[] = [];
-  if (!input.title.trim()) errors.push("Titulo obrigatorio.");
-  if (!input.priority.trim()) errors.push("Prioridade obrigatoria.");
-  if (input.serviceLatitude && !isValidLatitude(Number(input.serviceLatitude))) errors.push("Latitude invalida.");
-  if (input.serviceLongitude && !isValidLongitude(Number(input.serviceLongitude))) errors.push("Longitude invalida.");
-  if (input.scheduledFor && Number.isNaN(Date.parse(input.scheduledFor))) errors.push("Agendamento invalido.");
+  if (!input.title.trim()) errors.push("Título obrigatório.");
+  if (!input.priority.trim()) errors.push("Prioridade obrigatória.");
+  if (input.serviceLatitude && !isValidLatitude(Number(input.serviceLatitude))) errors.push("Latitude inválida.");
+  if (input.serviceLongitude && !isValidLongitude(Number(input.serviceLongitude))) errors.push("Longitude inválida.");
+  if (input.scheduledFor && Number.isNaN(Date.parse(input.scheduledFor))) errors.push("Agendamento inválido.");
   if (input.destinationLatitude && !isValidLatitude(Number(input.destinationLatitude))) errors.push("Latitude do destino inválida.");
   if (input.destinationLongitude && !isValidLongitude(Number(input.destinationLongitude))) errors.push("Longitude do destino inválida.");
   // Destino real = endereço OU coordenada completa não-sentinela (mesma regra do backend/mapa; 0/0 não vale).

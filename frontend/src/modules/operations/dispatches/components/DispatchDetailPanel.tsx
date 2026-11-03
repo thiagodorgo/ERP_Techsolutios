@@ -19,7 +19,7 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
           </div>
           <div>
             <dt><FileText size={16} /> Atendimento</dt>
-            <dd>{dispatch.workOrderTitle ?? "Titulo nao carregado"}</dd>
+            <dd>{dispatch.workOrderTitle ?? "Título não carregado"}</dd>
           </div>
           <div>
             <dt><UserRound size={16} /> Operador</dt>
@@ -39,11 +39,11 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
           </div>
           <div>
             <dt>Observação</dt>
-            <dd>{dispatch.observation ?? "Sem observacao"}</dd>
+            <dd>{dispatch.observation ?? "Sem observação"}</dd>
           </div>
           <div>
             <dt>Motivo</dt>
-            <dd>{dispatch.reason ?? "Nao informado"}</dd>
+            <dd>{dispatch.reason ?? "Não informado"}</dd>
           </div>
         </dl>
       </Card>
@@ -63,7 +63,7 @@ export function DispatchDetailPanel({ dispatch }: { readonly dispatch: DispatchD
               </article>
             ))
           ) : (
-            <p className="work-order-helper">Timeline carregada no detalhe da API quando disponivel.</p>
+            <p className="work-order-helper">Timeline carregada no detalhe da API quando disponível.</p>
           )}
         </div>
       </Card>

@@ -64,8 +64,8 @@ export function ActiveContextBar({ context }: { context: TenantContext }) {
 
 export function SecurityNotice() {
   return (
-    <Alert title="Acesso auditavel" tone="info">
-      Autenticacao compativel com Cognito, isolamento por tenant e autorizacao final no backend.
+    <Alert title="Acesso auditável" tone="info">
+      Autenticação compatível com Cognito, isolamento por tenant e autorização final no backend.
     </Alert>
   );
 }
@@ -133,8 +133,8 @@ export function Sidebar({
           <span>Operação multiempresa</span>
         </div>
         {onToggleCollapsed ? (
-          <Tooltip label={collapsed ? "Expandir navegacao" : "Recolher navegacao"}>
-            <button type="button" className="erp-sidebar__toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expandir navegacao" : "Recolher navegacao"}>
+          <Tooltip label={collapsed ? "Expandir navegação" : "Recolher navegação"}>
+            <button type="button" className="erp-sidebar__toggle" onClick={onToggleCollapsed} aria-label={collapsed ? "Expandir navegação" : "Recolher navegação"}>
               {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
             </button>
           </Tooltip>
@@ -190,11 +190,11 @@ export function Topbar({ context, notificationUnreadCount = 0 }: { context: Tena
       <ActiveContextBar context={context} />
       <div className="erp-topbar__actions">
         <ProcessingChip state="processing" label="Polling ativo" />
-        <Tooltip label="Notificacoes operacionais">
+        <Tooltip label="Notificações operacionais">
           <button
             type="button"
             className="erp-icon-button erp-icon-button--badge"
-            aria-label={`Notificacoes${notificationUnreadCount > 0 ? ` (${notificationUnreadCount} nao lidas)` : ""}`}
+            aria-label={`Notificações${notificationUnreadCount > 0 ? ` (${notificationUnreadCount} não lidas)` : ""}`}
             onClick={() => navigate("/notifications")}
           >
             <Bell size={18} />
@@ -223,7 +223,7 @@ export function Topbar({ context, notificationUnreadCount = 0 }: { context: Tena
 export function MobileHeader({ onMenu }: { onMenu: () => void }) {
   return (
     <header className="erp-mobile-header">
-      <button type="button" onClick={onMenu} aria-label="Abrir navegacao">
+      <button type="button" onClick={onMenu} aria-label="Abrir navegação">
         <Menu size={20} />
       </button>
       <strong>ERP Techsolutions</strong>
@@ -263,7 +263,7 @@ export function BlockedBanner({ reason }: { reason: string }) {
     <section className="erp-blocked-banner">
       <LockKeyhole size={18} />
       <div>
-        <strong>Acao bloqueada</strong>
+        <strong>Ação bloqueada</strong>
         <p>{reason}</p>
       </div>
     </section>
@@ -375,7 +375,7 @@ export function WorkOrderHeader({ workOrder }: { workOrder: WorkOrder }) {
 
 export function EvidencePanel({ evidence }: { evidence: WorkOrderEvidence[] }) {
   return (
-    <Card title="Evidencias">
+    <Card title="Evidências">
       <div className="erp-evidence-list">
         {evidence.map((item) => (
           <article key={item.id}>
@@ -394,12 +394,12 @@ export function EvidencePanel({ evidence }: { evidence: WorkOrderEvidence[] }) {
 
 export function ApprovalPanel({ state }: { state: WorkOrder["approvalState"] }) {
   return (
-    <Card title="Aprovacao">
+    <Card title="Aprovação">
       <div className="erp-approval-panel">
         <ShieldCheck size={22} />
         <div>
-          <strong>{state === "requested" ? "Aprovacao pendente" : "Estado de aprovacao"}</strong>
-          <p>Solicitante, impacto, limite e proximo aprovador preparados para contrato backend.</p>
+          <strong>{state === "requested" ? "Aprovação pendente" : "Estado de aprovação"}</strong>
+          <p>Solicitante, impacto, limite e próximo aprovador preparados para contrato backend.</p>
         </div>
         <Chip tone={state === "requested" ? "pending" : "success"}>{state}</Chip>
       </div>
@@ -453,7 +453,7 @@ export function QueueAccordion({ title, count, items }: { title: string; count: 
 export function MapPanel({ assets }: { assets: LogisticsAsset[] }) {
   return (
     <Card title="Mapa operacional">
-      <div className="erp-map-panel" aria-label="Mapa operacional sintetico">
+      <div className="erp-map-panel" aria-label="Mapa operacional sintético">
         {assets.map((asset, index) => (
           <article key={asset.id} style={{ "--x": `${18 + index * 22}%`, "--y": `${24 + (index % 2) * 34}%` } as CSSProperties}>
             <Truck size={18} />
@@ -469,12 +469,12 @@ export function MapPanel({ assets }: { assets: LogisticsAsset[] }) {
 export function FilterBar({ children }: { children?: ReactNode }) {
   return (
     <section className="erp-filter-bar">
-      <Select aria-label="Periodo" defaultValue="today">
+      <Select aria-label="Período" defaultValue="today">
         <option value="today">Hoje</option>
         <option value="week">Semana</option>
       </Select>
       <Select aria-label="Filial" defaultValue="fil-sp-01">
-        <option value="fil-sp-01">Sao Paulo - Campo</option>
+        <option value="fil-sp-01">São Paulo - Campo</option>
       </Select>
       <Select aria-label="Status" defaultValue="all">
         <option value="all">Todos status</option>
@@ -498,7 +498,7 @@ export function ValidationToggle({ checked, onChange }: { checked: boolean; onCh
   return (
     <button type="button" className={`erp-validation-toggle ${checked ? "is-active" : ""}`} onClick={() => onChange(!checked)}>
       {checked ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
-      <span>Validacao operacional</span>
+      <span>Validação operacional</span>
     </button>
   );
 }
@@ -518,8 +518,8 @@ export function DomainRail() {
     <div className="erp-domain-rail">
       <span><Activity size={14} /> Eventos</span>
       <span><CalendarClock size={14} /> SLA</span>
-      <span><UserRoundCog size={14} /> Usuarios</span>
-      <span><Map size={14} /> Logistica</span>
+      <span><UserRoundCog size={14} /> Usuários</span>
+      <span><Map size={14} /> Logística</span>
     </div>
   );
 }

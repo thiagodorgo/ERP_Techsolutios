@@ -86,7 +86,7 @@ export async function loginWithJwt(credentials: LoginCredentials): Promise<AuthS
   const payload = (await response.json()) as LoginApiResponse;
 
   if (!payload.data.authenticated) {
-    throw new Error("Nao foi possivel autenticar com a API.");
+    throw new Error("Não foi possível autenticar com a API.");
   }
 
   return mapLoginResponse(payload);
@@ -104,7 +104,7 @@ export async function refreshWithJwt(refreshToken: string): Promise<AuthTokenUpd
   });
 
   if (!response.ok) {
-    throw new Error("Sessao expirada. Faca login novamente.");
+    throw new Error("Sessão expirada. Faça login novamente.");
   }
 
   return mapTokenUpdate((await response.json()) as RefreshApiResponse);
@@ -173,7 +173,7 @@ function mapTokenUpdate(payload: LoginApiResponse | RefreshApiResponse): AuthTok
   const sessionId = payload.data.sessionId ?? payload.data.session_id;
 
   if (!accessToken || tokenType !== "Bearer" || typeof expiresIn !== "number") {
-    throw new Error("Resposta de autenticacao invalida.");
+    throw new Error("Resposta de autenticação inválida.");
   }
 
   return {
@@ -206,14 +206,14 @@ export function readLoginErrorMessage(status: number, errorCode?: string): strin
   }
 
   if (status === 401) {
-    return "Tenant, e-mail ou senha invalidos.";
+    return "Tenant, e-mail ou senha inválidos.";
   }
 
   if (status === 423) {
     return "Conta bloqueada. Solicite suporte ao administrador.";
   }
 
-  return "Nao foi possivel autenticar agora.";
+  return "Não foi possível autenticar agora.";
 }
 
 export function resolveFrontendRoles(backendRoles: readonly string[]): UserRole[] {

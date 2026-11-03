@@ -8,7 +8,7 @@ export function WorkOrderTimeline({ events }: { readonly events: WorkOrderEvent[
   return (
     <Card title="Timeline">
       {events.length === 0 ? (
-        <EmptyState title="Sem eventos" detail="A API ainda nao retornou eventos para esta OS." />
+        <EmptyState title="Sem eventos" detail="A API ainda não retornou eventos para esta OS." />
       ) : (
         <div className="work-order-timeline">
           {events.map((event) => (

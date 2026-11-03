@@ -84,7 +84,7 @@ export function PlatformTenantModulesPage() {
                   </Badge>
                 </header>
                 <Checkbox
-                  label={module.availableInPlan ? "Habilitar modulo" : "Bloqueado pelo plano"}
+                  label={module.availableInPlan ? "Habilitar módulo" : "Bloqueado pelo plano"}
                   checked={module.availableInPlan && enabledModules.includes(module.key)}
                   disabled={!module.availableInPlan}
                   onChange={() => toggleModule(module)}

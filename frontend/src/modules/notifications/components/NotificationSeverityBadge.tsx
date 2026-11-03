@@ -4,8 +4,8 @@ import type { NotificationSeverity } from "../notification.types";
 const labels: Record<NotificationSeverity, string> = {
   info: "Informativa",
   success: "Sucesso",
-  warning: "Atencao",
-  critical: "Critica",
+  warning: "Atenção",
+  critical: "Crítica",
 };
 
 const tones: Record<NotificationSeverity, "info" | "success" | "warning" | "danger"> = {
