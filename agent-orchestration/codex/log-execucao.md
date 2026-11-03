@@ -5125,6 +5125,13 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - O conserto pós-junta acrescenta mais 1 pendência (`P-MOBILE-BANNER-PROMETE-SINCRONIZAR`); o índice é regenerado pelo
   gerador no mesmo commit, e o número final fica no diário `omega/juntas/votos/B-O6R-11-c3/00-dev.md`.
 
+## 2026-11-02 — B-SAN3-03 · Cloud Billing exato (F0–F9) · PR #484
+
+- Executores: `dev-san303-sol` (Codex GPT-5.6 Sol, nível menor) fez F0–F6; `dev-san303-opus` (Claude Opus 5.5, nível menor, declarado) fez F7–F9, cobrindo o Codex (as duas contas no limite até 09:21 e 09:26 SP) pela decisão `D-CLAUDE-COBRE-ATE-0411`. Nenhum dos dois planejou nem revisou.
+- Ramo `fix/cloud-billing-exato`; relatório `docs/revisoes/SAN3/B-SAN3-03-dev.md` (`## RETOMADA 0` a `## RETOMADA 9`); comando `agent-orchestration/codex/comandos/B-SAN3-03-cloud-billing-exato.md`.
+- Entrega: uma run = um import; base na transação do fato (upload, download, job); bases derivadas (estoque das 4 tabelas, ações auditadas filtradas); máquina, banco e cache; plataforma como linha própria; resumo por período exato com cobertura e motivos; soma que fecha com teto do resíduo; trava de moeda; laço único `forEachTenantRls`; 2º `take: 100_000` saiu de `cloud-charges`.
+- Sem migração, sem `frontend/**`, sem `Kpis/**`. Próximo: pré-revisão (um revisor, todas as mutações), depois junta completa (dinheiro).
+
 ## 2026-11-02 — registro pendente, segundo lote (`reg-0211b-sol`)
 
 - Autor: Codex GPT-5.6 Sol, nível menor declarado; verificação prevista por Claude, conforme `D-UM-FAZ-OUTRO-VERIFICA`.

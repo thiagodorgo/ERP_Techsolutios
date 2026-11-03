@@ -97,7 +97,6 @@ const RAW = new Set(["$queryRaw", "$queryRawUnsafe", "$executeRaw", "$executeRaw
 const WRAPPERS = [
   { name: "withTenantRls", file: /src[\\/]database[\\/]rls\.ts$/ },
   { name: "forEachTenantRls", file: /src[\\/]database[\\/]rls\.ts$/ },
-  { name: "forEachTenantInOneTx", file: /cloud-cost-allocation-prisma\.repository\.ts$/ },
 ];
 const SETTERS = [{ name: "setTenantRlsContext", file: /src[\\/]database[\\/]rls\.ts$/ }, { name: "setIdentityRlsContext", file: /src[\\/]database[\\/]rls\.ts$/ }];
 

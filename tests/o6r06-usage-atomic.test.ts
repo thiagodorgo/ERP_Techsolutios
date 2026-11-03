@@ -102,19 +102,13 @@ test("R3 · o consumidor de evento NÃO mede mais a vistoria — e continua medi
     "publicar o evento de domínio NÃO cria unidade de vistoria — a captura é na transação",
   );
 
-  // CONTROLE POSITIVO: o best-effort continua vivo para o que este bloco não fecha (bytes de anexo,
-  // requisições S3). O resíduo é `P-O6R-B06-USAGE-BEST-EFFORT-RESIDUAL`, com dono nomeado.
+  // B-SAN3-03: upload também saiu deste consumidor e agora nasce na transação do anexo.
   recordCloudUsageForDomainEvent(
     envelope(tenantId, "checklist_run.attachment_uploaded", { attachmentId: randomUUID(), sizeBytes: 2048 }),
   );
   await drainUsage();
 
-  const doAnexo = await usageEvents(tenantId);
-  assert.ok(doAnexo.length > 0, "o ramo de anexo continua gravando — só a vistoria saiu daqui");
-  assert.ok(
-    doAnexo.some((evento) => evento.metricKey === "checklist_attachment.uploaded.count"),
-    "e grava a métrica de anexo que sempre gravou",
-  );
+  assert.equal((await usageEvents(tenantId)).length, 0, "publicar upload não duplica a captura transacional");
 
   resetUsage();
 });
