@@ -1,0 +1,27 @@
+{
+  "cadeira": "C1 — DINHEIRO E BANCO",
+  "identidade": "jurado-j488-c1-sol",
+  "modelo": "Codex GPT-5.6 Sol — nível menor declarado",
+  "objeto": "ea6d4aef54181a0dc4030ec56e174e378aec5e12",
+  "voto": "APROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c1-evidencia.md",
+  "resumo": "Sem achado confirmado. Os três itens do mandato foram medidos no objeto ea6d4aef54181a0dc4030ec56e174e378aec5e12 com Postgres 16 descartável, vermelho-controle literal restaurado e árvore limpa.",
+  "achados": [],
+  "arquivos_medidos": [
+    "prisma/migrations/20260890000000_impound_payment_intents/migration.sql",
+    "prisma/migrations/20260891000000_impound_payment_refs/migration.sql",
+    "prisma/migrations/20260892000000_grant_charging_online_payment/migration.sql",
+    "prisma/schema.prisma",
+    "src/modules/charging/charge.service.ts",
+    "src/modules/charging/charge.validators.ts",
+    "src/modules/impound-payments/impound-payment-prisma.repository.ts",
+    "src/modules/impound-payments/impound-payment.state-machine.ts",
+    "tests/rec-01-domain-db.test.ts",
+    "tests/rec-01-intent-service.test.ts",
+    "tests/rec-01-migration-drill-db.test.ts",
+    "tests/rec-01-state-machine.test.ts",
+    "tests/permission-catalog-db-parity.test.ts",
+    "scripts/migration-transaction-guard.mjs",
+    ".github/workflows/ci.yml"
+  ]
+}

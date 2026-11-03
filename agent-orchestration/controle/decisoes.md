@@ -4363,3 +4363,62 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   - **O-2:** em `D-PATIO-MEIOS-PAGAMENTO-E-CONTAS-3110`, a correção "Iugu não aceita débito" e a instrução derivada dela ficam declaradas como do orquestrador.
   - **O-3:** na mesma entrada, "conta de quem recebe" passa a apontar a resposta do dono de 31/10 ~22:30 (`D-PLATAFORMA-RECEBE-E-REPASSA`) e a de 02/11 ~23:45 (Q-A, *"não recebe"*, em `D-PATIO-RESPOSTAS-0211`).
 - **Porteiro do #486:** o parecer do `porteiro-486-sol` diz "O comentário do dono no PR aceitou o achado". O comentário (`gh api repos/thiagodorgo/ERP_Techsolutios/issues/486/comments`, 2026-11-03T11:54:37Z) foi postado pela conta `thiagodorgo`, mas é do **orquestrador**: ele começa por "Revisão independente (Codex `rev-486-sol`): APROVADO COM AJUSTES" e registra a triagem do A1. No PR há só esse comentário e uma revisão automática do `copilot-pull-request-reviewer[bot]` sem conteúdo (`gh api …/pulls/486/reviews`); o dono não comentou. O parecer foi versionado sem alteração em `omega/juntas/votos/B-SAN3-21-PR486/porteiro-pos-merge.md`, com esta errata anexada no fim.
+
+## D-APAR-3-IMPLEMENTAR-0311 (decisão do dono, 2026-11-03, ~14:55 SP) — implementar as telas com maquete aprovada, com Claude Design
+
+- **Fala literal do dono:** *"implementar Dashboard / Ordens de Serviço / Usuários / Auditoria / Despachos / Estoque / Financeiro, a parte de baixa, conta e conciliação — IMPORTANTE, FAZER COM CLAUDE DESING"*.
+- **Medido na `origin/main` pelo orquestrador, conforme a fonte:** Financeiro — baixa, conta e conciliação — já tinha as três aparências (`APPEARANCE_SCREENS.financeiro`, B-SAN3-12b/12c); faltavam as outras seis telas.
+- **Trilha:** `B-APAR-3`; plano por `plano-3apar-opus`, tela pelo Claude (`D-DESIGN-SO-CLAUDE`), revisão pelo Codex enquanto houver limite e conferência visual por `cognicao-visual`.
+
+## D-APAR-3-RESPOSTAS-0311 (respostas literais do dono, 2026-11-03, ~15:20 SP) — Usuários, Auditoria, Pátios e revisão disponível
+
+- Q-USERS-1, pesos da nota de saúde do acesso: *"Aprovar os da maquete"*.
+- Q-AUDIT-1, Auditoria C: *"Agora, agrupada por fato"*. Os grupos são Recusados, Fora do horário, Sensíveis e Demais, sem "Crítico", até o backend classificar.
+- Q-APAR-1, nome da aparência A de Pátios: *"Manter 'Padrão'"*. A maquete diz "Padrão fiel", e o menu continua "Padrão".
+- Codex sem limite disponível naquela janela: *"Claude revisa agora"*. As filas duplicadas do Codex foram paradas; a identidade verificadora continuou separada.
+- **Correção do orquestrador, declarada (§A6):** o seletor de aparência fica no **menu do usuário**, por `D-APARENCIA-RESPOSTAS` (c), e não em Configurações.
+
+## D-CRUZAMENTO-POR-LIMITE-0311 (decisão do dono, 2026-11-03, ~16:00 e ~16:20 SP) — cruzar quando houver limite; sem limite, identidade nova disponível
+
+- **Fala literal do dono às ~16:00:** *"pode desconsiderar o cruzamento"*.
+- **Fala literal posterior, às ~16:20, que ajusta a anterior:** *"quando tiver limite pra todo mundo, vale a regra anterior, um faz o outro ver, nao tendo limite vai qualquer um"*.
+- **Leitura do orquestrador, declarada (§A6):** a segunda fala substitui a dispensa geral da primeira. Com limite nos braços, vale o cruzamento de modelo do §C7 item 11(1): o que o Claude faz, o Codex verifica, e vice-versa. Sem limite no braço do outro modelo, verifica quem estiver disponível, de qualquer modelo, com identidade nova, como já prevê o item 11(2). A separação de identidade vale sempre; quem acha não conserta.
+- **Conflito:** não há conflito remanescente com o contrato depois da fala das ~16:20; a fala das ~16:00 fica preservada como estado intermediário, sem consolidá-la como regra vigente.
+
+## D-CODEX-CONTA3-SOL-MEDIUM (decisões do dono, 2026-11-03, ~16:50 e ~17:00 SP) — terceira conta e esforço médio em todas
+
+- **Falas literais:** *"tenho outra conta do codex para vc, vamos fazer login?"* e *"pronto, coloque no painel e ja manda ela trabalhar"*.
+- A conta 3 entrou na rotação 1→2→3; a primeira tarefa foi a revisão do PR #493, lançada às 16:49 SP.
+- **Fala literal posterior:** *"usar o codex sol com esforço medio em todas as contas"*.
+- **Efeito:** o padrão passa a Codex Sol com esforço `medium` nas contas 1, 2 e 3. Isso **revoga** o piso `high` inferido da fala *"aumente o esforço do codex"* em `D-BRACOS-0211-0311`. A revisão do #493, já lançada em `high`, terminou como iniciada.
+- **Segurança:** este registro não versiona caminho de perfil, credencial, token nem dado de login.
+
+## REGISTRO-CLOUD-BILLING-0311 (pergunta literal do dono, 2026-11-03, ~17:05 SP) — tela ainda fora do padrão aprovado
+
+- **Pergunta literal:** *"porque o billing da plataforma nao esta no padrao aprovado"*.
+- **Medido na `origin/main` pelo orquestrador, conforme a fonte:** `PlatformCloudBillingPage.tsx` foi tocada pela última vez no PR #411, em 10/10, antes de `D-PADRAO-BLOCOS-CLICAVEIS` e `D-TELAS-TRES-OPCOES`; o B-SAN3-03 (#484) não tinha UI; a tela não estava na lista das sete telas de 03/11 e não tinha maquete de três opções.
+- **Pendência:** `P-CLOUD-BILLING-3-APARENCIAS`, MÉDIA, aberta e não bloqueante.
+- **Leitura do orquestrador, declarada (§A6):** a tela só de leitura sai antes; importar e rodar do `B-ASS-10b` entra depois como ação. A série diária e a projeção ainda exigem uma rota de leitura no backend.
+
+## REGISTRO-TRIAGEM-493-494 (fatos medidos em 2026-11-03) — revisão das três aparências e crítica/conferência do item 54
+
+- **PR #493:** `gh pr view 493` medido neste registro retorna `OPEN`, ramo `feat/web-apar-os`, head `b26c3eeb`. A revisão `rev-493-sol` foi **APROVADO COM AJUSTES**: A1 (MÉDIA, lista não recarrega ao voltar da OS duplicada) e A2 (BAIXA, Shift+Tab não preso por teste) foram destinados ao conserto `dev-493k-opus`; A3 (`.ui-*` em `app.css`) foi aceita pela Emenda 2 do `B-APAR-3-plano.md`.
+- **Plano 54 / PR #494:** a 2ª crítica `crit-54b-sol` foi **APROVADO COM AJUSTES**; R1 e R2 foram absorvidos pela Emenda 1 com 20 testes, K9/K10 e lista do marco gerada no momento da execução. O dev inicial foi `dev-54-sol`, Codex, head `6214592e`.
+- **Conferência do conserto do #494:** `conf-494b-opus` conferiu o head `a8d66097` com 25 testes. B1 e B2 são não graves e viram `P-KPI-FRESCOR-BORDAS-ANCORA`. `gh pr view 494` medido neste registro retorna `OPEN`, ramo `test/kpi-painel-frescor-54`, head `a8d66097`.
+- **Ordem medida:** o PR #495 já mergeou na `origin/main` como `c6195c12`; o #494 ainda precisa atualizar-se com a `main` e ficar verde antes de merge. Este registro não faz merge.
+
+## D-LIMPAR-PRS-DEMO-0311 (decisão do dono e resultado, 2026-11-03, ~18:20 SP) — fechar #465–#470 parados, preservando os ramos
+
+- **Fala literal:** *"Limpar o que está parado. Os PRs #465 a #470 da demo"*.
+- **Resultado medido na fonte:** #465, #466, #467, #468 e #470 foram fechados com comentário; os ramos foram preservados. O #469 já estava mergeado.
+- #465 foi sucedido pelo #490; #466 fica fora porque contém scripts da demo e o repositório é público; #467 foi sucedido pelos #486/#487; #468 e #470 ainda têm conteúdo não levado à `main` e viram `P-OS-VISTORIA-NO-DETALHE` e `P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO`.
+- Os PRs #419 e #393 ficaram fora desse pedido; #393 permanece congelado.
+
+## ERRATA-0311-REV489 (observações baixas do revisor do PR #489, registradas em 2026-11-03)
+
+- **O-1:** a errata do parecer do porteiro do #486 alcança também a frase "comentário de triagem do dono no PR" do §5: o comentário foi do orquestrador, não do dono.
+- **O-2:** a revisão do `copilot-pull-request-reviewer[bot]` no #486 não era vazia: dizia que o Copilot não conseguiu revisar por cota insuficiente. A conclusão material permanece: o dono não comentou.
+- **O-3:** em `D-BRACOS-0211-0311`, as glosas "O Copilot sai, não se usa nem se repropõe", "Reafirma o item 11" e "quando ela está sem limite" são **leituras do orquestrador**, declaradas aqui; não são fala literal adicional.
+- **O-4:** o dono de `P-SAN3-21-PERFIL-LOGISTICO` precisa de ampliação nominal: `B-SAN3-06a` só pode assumir a correção se o plano incluir também a fonte única de rótulos e `frontend/src/modules/auth/types.ts`; o apenso da revisão do #487 amplia a pendência para paridade web × app.
+- **O-5:** o literal invisível citado em `P-SAN303-TESTE-TAG-INVISIVEL` contém U+200B real; a fidelidade é intencional, embora o caractere não apareça visualmente.
+- **O-6:** o verificador real do #489 foi `rev-489-opus`, Claude Opus, sem cruzamento, por *"Claude revisa agora"*. A previsão de Codex no corpo/log daquele PR ficou superada pelo fato executado.

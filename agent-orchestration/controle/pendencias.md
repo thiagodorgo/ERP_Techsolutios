@@ -12487,6 +12487,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `docs/revisoes/SAN3/B-SAN3-21-dev.md:42` na `origin/main`: "`"Operador Logistico"` (11 literais) segue sem acento. É nome de perfil comparado no código; trocar muda quem vê o quê no menu. Exceção nomeada no guard." O porteiro `porteiro-486-sol` pediu a transferência da exceção para esta pendência.
 - **leitura do redator, declarada (§A6):** o dono e o PR-alvo são do redator deste registro; o dev propôs só "um bloco que mexe em navegação".
 - **encerramento:** o nome de perfil vira chave técnica + rótulo de negócio acentuado ("Operador Logístico"); nenhuma comparação de código usa o rótulo; a exceção sai do guard do `B-SAN3-21`, e o guard segue em `ocorrencias=0`.
+- **apenso da revisão do PR #487 (`rev-487-sol`, 2026-11-03):** a divergência é maior que o acento. Em 4 dos 9 papéis canônicos, a web diverge do contrato e do app: `platform_admin` = "Super Admin", `operator` e `field_technician` = "Operador Logistico", `support` = "Supervisor". O app mergeado no #487 segue o contrato.
+- **dono corrigido após O-4 do `rev-489-opus`:** bloco web pequeno a nascer `B-WEB-ROTULOS-PERFIL`; **PR-alvo:** o primeiro PR desse bloco. Se entrar em `B-SAN3-06a`, o plano precisa ampliar nominalmente o escopo para a fonte única de rótulos, `auth.adapter.ts`, `types.ts` e o teste de paridade web × app. O mapa de permissões, sozinho, não autoriza essa mudança.
+- **encerramento ampliado:** fonte única de rótulos na web, alinhada a `roleLabel` do app e ao §3, com teste de paridade web × app; nenhuma comparação de permissão usa o rótulo.
 
 ## P-WEB-LOGIN-MENSAGEM-TENANT (2026-11-03) — a tela de login mostra "Tenant, e-mail ou senha inválidos." — MÉDIA
 
@@ -12521,3 +12524,88 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele) · **escopo:** decisão de nome do `B-SAN3-19` · **dono:** dono do produto (nome curto do app no iOS), aplicado no bloco de publicação do app · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
 - **origem:** a nota do orquestrador sobre o #487 (`REGISTRO-PENDENTE.md`, seção do #487); o PR #487 troca `CFBundleName` em `mobile/flutter_app/ios/Runner/Info.plist` para `ERP Techsolutions` (17 caracteres).
 - **encerramento:** `CFBundleName` com até 15 caracteres, ou decisão do dono registrada de manter os 17.
+
+## P-DEMOFIX-TESTE-REQUISITO-TOGGLE (2026-11-03) — o toggle de requisito da liberação não tem teste que prenda o valor oposto — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, achado menor do porteiro dos PRs #490–#492 · **dono:** trilha do pátio, bloco `B-PATIO-LIBERACAO-TESTES` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `porteiro-demofix-opus`: inverter `!check.satisfied` em `DossieLiberacao.tsx:142` sobrevive a `tests/patios-liberacao.smoke.test.tsx` (17/17). O código mergeado está correto; a lacuna é de prova.
+- **encerramento:** teste dispara `onChange` e prova que o valor enviado é o oposto do persistido; a mutação fica vermelha.
+
+## P-DESPACHOS-UUID-OPERADOR (2026-11-03) — a linha de Despachos mostra o UUID do operador — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, observado pelo porteiro dos PRs #490–#492 · **dono:** trilha `B-APAR-3`, tela Despachos (`B-APAR-DESPACHOS`) · **PR-alvo:** PR dessa tela · **bloqueia:** não.
+- **origem medida:** `OperationsDispatchesPage.tsx:40` usa `item.operatorUserId` cru; o DTO medido não traz nome.
+- **encerramento:** a linha mostra nome de negócio, nunca UUID; loading/ausência são explícitos.
+
+## P-DESPACHOS-NOME-TECNICO-BACKEND (2026-11-03) — o nome do técnico precisa vir do backend isolado por organização — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** bloco backend a nascer `B-DESPACHOS-NOME-TECNICO` · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não; **rito:** junta completa, porque toca isolamento.
+- **origem medida:** parecer `porteiro-demofix-opus`; não havia `operatorName`, `assignedUserName` nem `technicianName` no DTO medido.
+- **encerramento:** backend resolve o nome no contexto autenticado da organização, com teste de isolamento e DTO allowlist; frontend consome o campo sem expor UUID.
+
+## P-PATIO-MINIMAPA-SEM-CARREGANDO (2026-11-03) — minimapa tem skeleton `aria-hidden`, sem estado anunciado — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, bloco `B-PATIO-UX-ESTADOS` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `YardSpotBoard.tsx` mostra somente skeleton `aria-hidden`, sem "Carregando vagas…".
+- **encerramento:** estado de carregamento visível e anunciado, com teste acessível.
+
+## P-PATIO-DOSSIE-SEM-VAGA-PISCA (2026-11-03) — dossiê mostra "Sem vaga alocada" antes do pátio carregar — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, `B-PATIO-UX-ESTADOS` · **PR-alvo:** PR desse bloco · **bloqueia:** não.
+- **origem:** relatório do dev do pátio, confirmado pelo porteiro dos PRs #490–#492.
+- **encerramento:** distinguir carregando de vazio e prender a transição em teste.
+
+## P-PATIO-LISTPROCESSES-ERRO-VIRA-VAZIO (2026-11-03) — `listProcessesByYard` transforma qualquer erro em lista vazia — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, bloco `B-PATIO-UX-ERROS` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem:** relatório do dev do pátio, confirmado pelo porteiro dos PRs #490–#492.
+- **encerramento:** erro de rede/servidor fica distinto de vazio; teste cobre ambos.
+
+## P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua da permissão — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
+- **origem medida:** `mobile/flutter_app/lib/shared/ui/module_placeholder_screen.dart:42` mostra a chave técnica.
+- **encerramento:** texto de negócio em PT-BR, sem chave crua, com widget test.
+
+## P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue o padrão aprovado — MÉDIA
+
+- **status:** ABERTA · **escopo:** dívida visual anterior às decisões de 12–13/10 · **dono:** trilha `B-APAR-3`: maquete pelo Claude, aprovação do dono e bloco `B-APAR-CLOUD-BILLING` · **PR-alvo:** PR desse bloco · **bloqueia:** não.
+- **origem:** pergunta literal do dono às ~17:05 SP: *"porque o billing da plataforma nao esta no padrao aprovado"*. Medição da fonte: a tela foi tocada por último no #411, o #484 não tinha UI e não há maquete de três opções.
+- **leitura do orquestrador, declarada (§A6):** a leitura sai antes; importar/rodar do `B-ASS-10b` entra depois. Série diária e projeção dependem de rota de leitura.
+- **encerramento:** maquete A/B/C aprovada e implementação das três aparências, com seletor no menu do usuário e conferência visual.
+
+## P-PATIO-REC01-TDOM28-DB-CONTRAPROVA (2026-11-03) — vermelho DB do T-DOM-28 cai por `release_not_started` — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva R1 da conferência do PR #488 · **dono:** `B-PATIO-REC-04` · **PR-alvo:** PR do REC-04 · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`: o teste fica vermelho na base, mas por outro motivo; a prova de que a intenção nasceria está na memória. T-DOM-29 e T-DOM-30 não têm variante DB.
+- **encerramento:** contraprova DB falha especificamente porque a intenção indevida nasceu, e fica verde no objeto corrigido.
+
+## P-PATIO-REC01-CANARIO-SUPERUSUARIO (2026-11-03) — canário usa executor falso, não linha injetada por superusuário — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva R2 da conferência do PR #488 · **dono:** `B-PATIO-REC-04` · **PR-alvo:** PR do REC-04 · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`; a propriedade testada é a mesma, mas a forma diverge da letra do §12.
+- **encerramento:** teste de banco injeta linha alheia por executor privilegiado e prova a segunda camada na forma real, ou emenda explica e aprova a forma equivalente.
+
+## P-PATIO-BODY-PARSER-ANTES-DO-PORTAO (2026-11-03) — parser global lê JSON malformado antes do portão do pátio — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, global ao Express; ressalva R3 da conferência do PR #488 · **dono:** trilha da plataforma, bloco `B-PLAT-BODY-PARSER` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`: JSON malformado devolve 400 do `body-parser` antes do portão; a resposta é igual em rotas distintas e não revela dado do pátio. `src/app.ts` ficou fora do conserto.
+- **encerramento:** decisão de arquitetura registrada; se mudar, o portão precede leitura sensível sem regressão global e com teste na forma HTTP real.
+
+## P-OS-VISTORIA-NO-DETALHE (2026-11-03) — vistoria no detalhe da OS não chegou à `main` — BAIXA
+
+- **status:** ABERTA · **escopo:** conteúdo preservado do PR #468, fechado sem merge · **dono:** trilha das três aparências, tela de OS (`B-APAR-OS`) · **PR-alvo:** PR corretivo da tela · **bloqueia:** não.
+- **origem:** ordem do dono para limpar os PRs parados; o ramo `feat/demo-vistoria-na-os` fica apenas como referência, sem copiar material comercial para este repositório público.
+- **encerramento:** refazer no padrão atual e nas três aparências, com teste e conferência visual.
+
+## P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO (2026-11-03) — nome do técnico e horários do despacho na OS não chegaram à `main` — BAIXA
+
+- **status:** ABERTA · **escopo:** conteúdo preservado do PR #470, fechado sem merge · **dono:** trilha das três aparências, tela de OS (`B-APAR-OS`) · **PR-alvo:** PR corretivo da tela · **bloqueia:** não.
+- **origem:** ordem do dono para limpar os PRs parados; o ramo `feat/demo-despachos-nome-e-horarios` fica só como referência.
+- **encerramento:** implementar no padrão atual, consumindo nome seguro do backend, nas três aparências e com teste.
+
+## P-KPI-FRESCOR-BORDAS-ANCORA (2026-11-03) — bordas do guard de frescor ainda têm mutantes sobreviventes — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalvas B1/B2 da conferência do PR #494 · **dono:** `B-SAN3-10`, fila pós-gate · **PR-alvo:** primeiro PR pós-gate que tocar o guard · **bloqueia:** não.
+- **origem medida:** `conf-494b-opus`, head `a8d66097`: retirar só `^` ou só `$` de `DATA`/`MERGE` sobrevive; `recent.pr = ""` e `bloco.id` numérico não têm teste. Nenhum ocorre nos dados reais medidos.
+- **encerramento:** casos unilaterais de lixo, PR vazio e id numérico deixam cada mutante vermelho.

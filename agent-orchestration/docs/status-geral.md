@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-11-03 — cauda do registro, ata do #488 e decisões posteriores ao #489
+
+- **Autor:** `reg-0311-sol`, Codex Sol, nível menor declarado, esforço medium. **Base medida:** `origin/main@c6195c12`, já com os PRs #482, #489, #488 e #495. O `REGISTRO-PENDENTE.md` inteiro foi confrontado com `decisoes.md`, `pendencias.md` e `git log origin/main`; o conteúdo já levado por #482/#489 não foi duplicado.
+- **Ata do #488:** `omega/juntas/J-B-PATIO-REC-01-PR488.md`; briefing, inspetor, três votos/evidências, pré-revisão recuperada, conferência e porteiro em `omega/juntas/votos/B-PATIO-REC-01-PR488/`. Head aprovado `f472aab1`, merge `36ad6aa7`, 16/16 checks verdes no head. A junta reprovou o objeto inicial por C2-2 grave; K1–K3 foram conferidos sem grave remanescente; porteiro `LIBERADO COM RESSALVA` para B-ASS-00.
+- **Decisões literais registradas:** implementação das seis telas restantes da trilha de três aparências pelo Claude; respostas de Usuários/Auditoria/Pátios; cruzamento de modelos quando houver limite e identidade nova disponível quando não houver; conta 3 e Codex Sol em esforço `medium` nas três contas; pergunta sobre Cloud Billing; fechamento dos PRs parados da demo.
+- **Porteiros/revisões:** ressalvas do porteiro da demo e do #487 viraram pendências; `P-SAN3-21-PERFIL-LOGISTICO` foi ampliada pela revisão do #487; as seis observações baixas de `rev-489-opus` foram registradas em `ERRATA-0311-REV489`; #493 e #494 continuam abertos, conforme `gh pr view`, com suas triagens registradas.
+- **Pendências novas:** `P-DEMOFIX-TESTE-REQUISITO-TOGGLE`, `P-DESPACHOS-UUID-OPERADOR`, `P-DESPACHOS-NOME-TECNICO-BACKEND`, `P-PATIO-MINIMAPA-SEM-CARREGANDO`, `P-PATIO-DOSSIE-SEM-VAGA-PISCA`, `P-PATIO-LISTPROCESSES-ERRO-VIRA-VAZIO`, `P-SAN3-19-PLACEHOLDER-CHAVE-CRUA`, `P-CLOUD-BILLING-3-APARENCIAS`, três ressalvas do #488, `P-OS-VISTORIA-NO-DETALHE`, `P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO` e `P-KPI-FRESCOR-BORDAS-ANCORA`, todas com status, dono e PR-alvo.
+- **Escopo:** somente `agent-orchestration/**`; sem Docker, `npm ci`, código, testes, Prisma, KPI, contratos raiz, lockfiles, credencial ou conteúdo comercial.
+
 ## Atualização 2026-11-03 — registro de 03/11: #484, #486 e #485 no ar, junta do #484, decisões do pátio e dos braços
 
 - **Base medida:** `origin/main@e7dcbbb7`, merge do #484. As seções do `REGISTRO-PENDENTE.md` a partir de "Dono, 02/11 ~23:45 SP" foram confrontadas com `decisoes.md`, `pendencias.md`, `PLANO_SAN3.md` e o histórico; o que já estava na `main` (a fala da Q11c, levada pelo #485; a `P-SAN303-TAG-DESCONHECIDA`, criada pelo #484) não foi duplicado.
