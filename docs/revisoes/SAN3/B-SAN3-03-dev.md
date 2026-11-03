@@ -638,3 +638,37 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** executar a bateria dirigida da Emenda 1 + Emenda 2 com o Postgres próprio já
   saudável em `127.0.0.1:55464`.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 16
+
+- **Executor:** `dev-san303-e2-sol2`, Codex GPT-5.6 Sol, nível menor declarado.
+- **Head inicial da bateria:** `52f75601dcb3a49ddec29cab48d285e0139155f4`, igual ao remoto; C1–C4
+  commitadas e enviadas.
+- **Bateria dirigida (§6 + §4.3 da Emenda 1):** com `DATABASE_URL` exclusiva do descartável e
+  `CORE_SAAS_PERSISTENCE=memory`, `node --test --import tsx tests/san3-03-*.test.ts
+  tests/cloud-cost-allocation*.test.ts tests/cloud-charge-*.test.ts tests/cloud-usage*.test.ts` mais as
+  regressões `o6r06-*`, `san3-05-*`, jobs e charging nomeadas no comando — **exit 0**, TAP
+  **256/256**, 0 falhas, 0 skips.
+- **Bateria estática:** `npm run check` — **exit 0**; `npm run lint` — **exit 0**; `npm run build` —
+  **exit 0**; `node scripts/sync-agent-agents.mjs --check` — **exit 0**, 95 agentes; `git diff --check
+  origin/main...HEAD` — **exit 0, saída vazia**; árvore limpa.
+- **Mutações finais:** `node .../dev-san303-e2-mutations.mjs` e continuações explícitas executaram
+  **72/72 mutações obrigatórias** da Emenda 1 + M47–M56, sem M28. Todas publicaram âncora literal **=1**,
+  mutante **exit 1** com o teste nomeado `not ok`, `restored=true` e
+  `git status --porcelain=VAZIO`; não houve `SyntaxError` nem `TransformError`.
+- **Transparência do invólucro:** a chamada sem seleção terminou **exit 1** depois de M13, e a primeira
+  continuação terminou **exit 1** depois de M16, porque o driver exige também a substring textual
+  `AssertionError`. M13 ficou vermelho em T-STO-db-1 e M16 em T-API-db-1/T-API-db-3b, ambos com mutante
+  exit 1, âncora 1 e restauração limpa; a cauda foi então executada por seleções literais. Nenhuma mutação
+  obrigatória ficou verde.
+- **Escopo final local:** filtro sobre `git diff --name-only origin/main...HEAD` encontrou zero em
+  `prisma/**`, `migrations/**`, `frontend/**`, `Kpis/**`, `.github/**` e lockfiles.
+- **Docker/limpeza:** `devsan303e2-pg` (`postgres:16`, `127.0.0.1:55464`, sem volume) foi removido por
+  `docker rm -f`; verificação de ausência vazia. `erp-postgres` e `erp-redis` permaneceram vivos e intocados.
+  Disco ao fim: 304 GB livres.
+- **Feito:** bateria local do §6 completa.
+- **Falta:** commit/push deste registro, check-runs do head novo e leitura do resumo TAP de
+  `backend`/`backend-postgres`.
+- **Próximo comando exato:** `git add docs/revisoes/SAN3/B-SAN3-03-dev.md && git commit`, seguido de push
+  e `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs`.
+- **Arquivos meio-escritos:** nenhum.
