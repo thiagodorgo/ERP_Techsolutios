@@ -6,7 +6,11 @@ import {
   createDefaultCloudCostAllocationService,
   isCloudCostAllocationStrategy,
 } from "./cloud-cost-allocation.service.js";
-import type { CloudCostAllocationRun, TenantCloudCostAllocation } from "./cloud-cost-allocation.types.js";
+import {
+  CloudCostAllocationError,
+  type CloudCostAllocationRun,
+  type TenantCloudCostAllocation,
+} from "./cloud-cost-allocation.types.js";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -71,7 +75,7 @@ export function createCloudCostAllocationPlatformRouter(): Router {
     requirePlatformPermission("platform:cloud-cost-allocation:read"),
     handleAsyncRoute(async (request, response) => {
       const service = await createDefaultCloudCostAllocationService();
-      const summary = await service.getAllocationSummary(parseRunFilters(request.query));
+      const summary = await service.getAllocationSummary(parseSummaryFilters(request.query));
       response.status(200).json({ data: summary });
     }),
   );
@@ -84,6 +88,13 @@ function parseRunFilters(query: Record<string, unknown>) {
     periodStart: readDate(query.periodStart),
     periodEnd: readDate(query.periodEnd),
     status: readQueryString(query.status) as CloudCostAllocationRun["status"] | undefined,
+  };
+}
+
+function parseSummaryFilters(query: Record<string, unknown>) {
+  return {
+    periodStart: readSummaryDate(query, "periodStart"),
+    periodEnd: readSummaryDate(query, "periodEnd"),
   };
 }
 
@@ -155,6 +166,35 @@ function readDate(value: unknown): Date | undefined {
   if (!raw) return undefined;
   const date = new Date(raw);
   return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+function readSummaryDate(query: Record<string, unknown>, field: "periodStart" | "periodEnd"): Date | undefined {
+  if (!Object.prototype.hasOwnProperty.call(query, field)) return undefined;
+  const raw = query[field];
+  if (typeof raw !== "string") throwInvalidSummaryPeriod(field);
+
+  const match = /^(\d{4}-\d{2}-\d{2})(?:$|T)/.exec(raw);
+  if (!match) throwInvalidSummaryPeriod(field);
+  const calendarDate = match[1]!;
+  const strictDate = new Date(`${calendarDate}T00:00:00.000Z`);
+  const parsed = new Date(raw);
+  if (
+    Number.isNaN(strictDate.getTime()) ||
+    strictDate.toISOString().slice(0, 10) !== calendarDate ||
+    Number.isNaN(parsed.getTime())
+  ) {
+    throwInvalidSummaryPeriod(field);
+  }
+  return parsed;
+}
+
+function throwInvalidSummaryPeriod(field: string): never {
+  throw new CloudCostAllocationError(
+    400,
+    "CLOUD_COST_ALLOCATION_INVALID_PERIOD",
+    "summary_period_invalid",
+    `${field} must be a unique valid date.`,
+  );
 }
 
 function readRequiredDate(value: unknown): Date {

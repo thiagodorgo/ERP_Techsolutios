@@ -439,3 +439,25 @@
 
 PRONTO PARA PRÉ-REVISÃO
 - **PR:** #484 (https://github.com/thiagodorgo/ERP_Techsolutios/pull/484).
+
+## RETOMADA 10
+
+- **Executor desta emenda:** `dev-san303-e2-sol`, Codex GPT-5.6 Sol, nível menor declarado; identidade nova,
+  não achou nem planejou os defeitos. **Verificador previsto:** Claude, conforme a emenda 2 e o item 11(1).
+- **Head inicial medido:** `49ddd0f8`; branch `fix/cloud-billing-exato` limpa e igual ao remoto. Disco 304 GB
+  livres; memória de commit livre ~17,2 GB. Nenhum Docker foi necessário na C1.
+- **C1 — vermelho-controle:** após acrescentar T-SUM-7/T-SUM-8/T-RUN-1, `node --test --import tsx
+  tests/san3-03-summary.test.ts tests/cloud-cost-allocation-routes.test.ts` — **exit 1**, 8/10 pass,
+  T-SUM-7 e T-SUM-8 vermelhos (`200 !== 400` e `Missing expected rejection`).
+- **Implementação:** o serviço recusa exatamente uma ponta com 400/
+  `CLOUD_COST_ALLOCATION_INVALID_PERIOD`/`summary_period_incomplete`; `/summary` ganhou parser próprio,
+  fail-closed para chave vazia, inválida, repetida e data de calendário impossível. A listagem `/runs`
+  preserva uma ponta só; `2028-02-29` permanece válido.
+- **Validação C1:** o mesmo comando — **exit 0**, **10/10**, 0 falhas, 0 skips. `npm run check` —
+  **exit 0**; `git diff --check` — **exit 0**.
+- **Mutações literais:** driver externo `dev-san303-e2-c1-mutations.mjs`; M47, M47-b, M47-c, M54,
+  M54-b, M54-c e M56 publicaram **âncora = 1**, **exit 1 por AssertionError** e `restored=true`.
+- **Falta:** C2–C4, bateria final e CI do head novo.
+- **Próximo comando exato:** `node --test --import tsx tests/san3-03-tenant-tag.test.ts` após criar os
+  vermelhos-controle T-TAG-1/2/5/7/10 e o caso DB.
+- **Arquivos meio-escritos:** nenhum; C1 pronta para commit.

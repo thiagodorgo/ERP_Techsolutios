@@ -170,6 +170,14 @@ export class CloudCostAllocationService {
   }
 
   async getAllocationSummary(filters: CloudCostAllocationRunFilters = {}): Promise<CloudCostAllocationSummary> {
+    if ((filters.periodStart === undefined) !== (filters.periodEnd === undefined)) {
+      throw new CloudCostAllocationError(
+        400,
+        "CLOUD_COST_ALLOCATION_INVALID_PERIOD",
+        "summary_period_incomplete",
+        "Cloud cost allocation summary requires both periodStart and periodEnd.",
+      );
+    }
     const runs = await this.repository.listRuns({
       ...filters,
       status: "completed",

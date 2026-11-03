@@ -65,6 +65,53 @@ test("usuario tenant comum nao acessa endpoints platform de allocation", async (
   });
 });
 
+test("T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível", async () => {
+  await withAllocationApi(async ({ baseUrl }) => {
+    const created = await createJuneRun(baseUrl);
+    assert.equal(created.status, 201);
+
+    const invalidQueries = [
+      "periodStart=",
+      "periodStart=nao-e-data",
+      "periodStart=2026-06-01&periodEnd=",
+      "periodStart=2026-06-01&periodStart=2026-07-01&periodEnd=2026-06-30",
+      "periodStart=2026-02-31&periodEnd=2026-03-31",
+      "periodStart=2026-13-01&periodEnd=2026-06-30",
+      "periodStart=2026-00-10&periodEnd=2026-06-30",
+    ];
+
+    const partial = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2026-10-01",
+      { headers: platformHeaders() },
+    );
+    assertInvalidPeriod(partial, "summary_period_incomplete");
+
+    for (const query of invalidQueries) {
+      const response = await requestJson(
+        baseUrl,
+        `/api/v1/platform/cloud-cost-allocations/summary?${query}`,
+        { headers: platformHeaders() },
+      );
+      assertInvalidPeriod(response, "summary_period_invalid");
+    }
+
+    const runsPartial = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/runs?periodStart=2026-06-01",
+      { headers: platformHeaders() },
+    );
+    assert.equal(runsPartial.status, 200, "T-RUN-1 · listagem continua aceitando somente uma ponta");
+
+    const leapDay = await requestJson(
+      baseUrl,
+      "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2028-02-29&periodEnd=2028-02-29",
+      { headers: platformHeaders() },
+    );
+    assert.equal(leapDay.status, 200);
+  });
+});
+
 type SeedData = {
   readonly tenantA: Tenant;
   readonly tenantB: Tenant;
@@ -128,6 +175,27 @@ async function withAllocationApi(callback: (context: AllocationApiContext) => Pr
     await closeServer(server);
     resetCloudCostAllocationRuntimeForTests();
   }
+}
+
+async function createJuneRun(baseUrl: string) {
+  return requestJson(baseUrl, "/api/v1/platform/cloud-cost-allocations/runs", {
+    method: "POST",
+    headers: platformHeaders(),
+    body: {
+      periodStart: "2026-06-01",
+      periodEnd: "2026-06-30",
+      strategy: "direct_tag_then_usage_weighted_v1",
+    },
+  });
+}
+
+function assertInvalidPeriod(
+  response: { readonly status: number; readonly body: { readonly error?: { readonly code?: string; readonly reason?: string } } },
+  reason: string,
+): void {
+  assert.equal(response.status, 400);
+  assert.equal(response.body.error?.code, "CLOUD_COST_ALLOCATION_INVALID_PERIOD");
+  assert.equal(response.body.error?.reason, reason);
 }
 
 function costImport(): CloudCostImport {

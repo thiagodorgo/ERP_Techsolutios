@@ -99,6 +99,31 @@ test("T-SUM-6 · sem período → a mais nova com import, com runId e importId",
   assert.equal(summary.coverage, "imported");
 });
 
+test("T-SUM-7 · resumo recusa período com somente uma ponta", async () => {
+  const novemberStart = new Date("2026-11-01T00:00:00.000Z");
+  const novemberEnd = new Date("2026-11-30T23:59:59.999Z");
+  const { service } = setup(
+    [costImport("imp-nov", novemberStart, novemberEnd)],
+    [line("l-nov", "imp-nov", novemberStart, novemberEnd, 999)],
+  );
+  await service.allocateCostsForPeriod({ periodStart: novemberStart, periodEnd: novemberEnd });
+
+  await assert.rejects(
+    service.getAllocationSummary({ periodStart: OCT_START }),
+    (error: unknown) => isInvalidSummaryPeriod(error, "summary_period_incomplete"),
+  );
+  await assert.rejects(
+    service.getAllocationSummary({ periodEnd: OCT_END }),
+    (error: unknown) => isInvalidSummaryPeriod(error, "summary_period_incomplete"),
+  );
+
+  assert.equal((await service.getAllocationSummary()).totalImportedCost, 999);
+  assert.equal(
+    (await service.getAllocationSummary({ periodStart: novemberStart, periodEnd: novemberEnd })).totalImportedCost,
+    999,
+  );
+});
+
 function setup(imports: readonly CloudCostImport[], lines: readonly CloudCostLineItem[]) {
   const repository = new InMemoryCloudCostAllocationRepository();
   repository.seed({ tenants, imports, costLineItems: lines, auditedActions: [] });
@@ -107,6 +132,12 @@ function setup(imports: readonly CloudCostImport[], lines: readonly CloudCostLin
 
 function later(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 5));
+}
+
+function isInvalidSummaryPeriod(error: unknown, reason: string): boolean {
+  if (!(error instanceof Error)) return false;
+  const typed = error as Error & { readonly statusCode?: number; readonly code?: string; readonly reason?: string };
+  return typed.statusCode === 400 && typed.code === "CLOUD_COST_ALLOCATION_INVALID_PERIOD" && typed.reason === reason;
 }
 
 function costImport(id: string, periodStart: Date, periodEnd: Date): CloudCostImport {
