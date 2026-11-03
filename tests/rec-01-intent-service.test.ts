@@ -44,7 +44,8 @@ function actor(tenantId: string): ImpoundPaymentActorContext {
 
 function orgPort(methods = PAYMENT_METHODS): PaymentConnectionPort {
   const connectionId = randomUUID();
-  return { resolve: async () => ({ ok: true, account: { scope: "organization", connectionId }, provider: "asaas", methods }) };
+  // K1 (emenda §12): a porta devolve o DONO da conexão; aqui, a própria organização que pediu.
+  return { resolve: async (tenantId) => ({ ok: true, account: { scope: "organization", connectionId, ownerTenantId: tenantId }, provider: "asaas", methods }) };
 }
 
 async function reasonOf(promise: Promise<unknown>): Promise<string> {
@@ -287,6 +288,47 @@ test("T-DOM-25 · L16: criar com diária acima do teto não reconciliada → 422
   const service = createMemoryImpoundPaymentService({ connections: orgPort(), gate: OPEN });
   assert.equal(await reasonOf(service.create(actor(tenantId), processId, BODY)), "reconciliation_pending");
   assert.equal(getMemoryImpoundPaymentRepositoryForTests().allIntentsForTests().length, 0);
+});
+
+test("T-DOM-28 · K1: conexão de OUTRA organização → 422 payment_connection_not_owned, 0 intenção e 0 linha de fila", async () => {
+  const tenantId = randomUUID();
+  const foreign = randomUUID();
+  const repository = fakeRepository(IN_RELEASE);
+  const port: PaymentConnectionPort = {
+    resolve: async () => ({ ok: true, account: { scope: "organization", connectionId: randomUUID(), ownerTenantId: foreign }, provider: "asaas", methods: PAYMENT_METHODS }),
+  };
+  const service = new ImpoundPaymentService(repository, port, OPEN);
+  const outcome = await reasonOf(service.create(actor(tenantId), randomUUID(), BODY));
+  assert.equal(outcome, "payment_connection_not_owned", `expected payment_connection_not_owned, got ${outcome}`);
+  assert.equal(repository.allIntentsForTests().length, 0, "intenção nasceu na conta de outra organização");
+  assert.equal(repository.outboxForTests().length, 0);
+});
+
+test("T-DOM-29 · K1: escopo de GRUPO → 422 group_scope_unavailable até o REC-04 (sem tabela de grupo, não há pertença a conferir)", async () => {
+  const tenantId = randomUUID();
+  const repository = fakeRepository(IN_RELEASE);
+  const port: PaymentConnectionPort = {
+    resolve: async () => ({
+      ok: true,
+      account: { scope: "group", groupId: randomUUID(), groupConnectionId: randomUUID(), memberTenantIds: [tenantId] },
+      provider: "asaas",
+      methods: PAYMENT_METHODS,
+    }),
+  };
+  const service = new ImpoundPaymentService(repository, port, OPEN);
+  const outcome = await reasonOf(service.create(actor(tenantId), randomUUID(), BODY));
+  assert.equal(outcome, "group_scope_unavailable", `expected group_scope_unavailable, got ${outcome}`);
+  assert.equal(repository.allIntentsForTests().length, 0);
+});
+
+test("T-DOM-30 · K1: conexão da PRÓPRIA organização → a intenção nasce, com a conta da organização", async () => {
+  const tenantId = randomUUID();
+  const repository = fakeRepository(IN_RELEASE);
+  const service = new ImpoundPaymentService(repository, orgPort(), OPEN);
+  const intent = await service.create(actor(tenantId), randomUUID(), BODY);
+  assert.equal(intent.status, "pending");
+  assert.equal(intent.account.scope, "organization");
+  assert.equal(repository.allIntentsForTests().length, 1);
 });
 
 test("T-ISO-1 · R-ISO: o serviço lança TenantRowsLeakError quando o repositório devolve linha de outra organização", async () => {

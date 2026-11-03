@@ -320,6 +320,35 @@ if (!connectionString) {
     assert.equal(await insertRef(h.admin, tenantId, { group: randomUUID(), groupConnection: randomUUID() }), 1, "controle positivo da referência");
   });
 
+  test("T-DOM-28-db · K1 no Postgres: conexão de outra organização → 422 payment_connection_not_owned e 0 intenção gravada", async () => {
+    const h = await harness();
+    const tenantA = await newTenant(h, "k1a");
+    const tenantB = await newTenant(h, "k1b");
+    const processA = await newProcess(h, tenantA);
+    const port = {
+      resolve: async () => ({
+        ok: true as const,
+        account: { scope: "organization" as const, connectionId: randomUUID(), ownerTenantId: tenantB },
+        provider: "asaas",
+        methods: ["pix", "credit_card", "debit_card"] as const,
+      }),
+    };
+    const service = new h.service.ImpoundPaymentService(new h.prismaRepo.RlsPrismaImpoundPaymentRepository(h.admin), port, { isEnabled: async () => true });
+    let outcome = "created";
+    try {
+      await service.create({ tenantId: tenantA, userId: randomUUID(), roles: ["manager"], permissions: [] }, processA, { payerName: "Maria", payerDocument: "529.982.247-25" });
+    } catch (error) {
+      outcome = (error as { reason?: string }).reason ?? String(error);
+    }
+    assert.equal(outcome, "payment_connection_not_owned", `expected payment_connection_not_owned, got ${outcome}`);
+    const [count] = await h.admin.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM impound_payment_intents WHERE tenant_id = $1::uuid AND process_id = $2::uuid`,
+      tenantA,
+      processA,
+    );
+    assert.equal(count?.n, 0, "a intenção nasceu na conta de outra organização");
+  });
+
   test("T-DOM-db-8 · emenda §11.1: reais no banco ↔ centavos na app — 123.45 ida e volta exata pelo repositório", async () => {
     const h = await harness();
     const tenantId = await newTenant(h, "db8");

@@ -15,6 +15,7 @@ import { getMemoryImpoundRepositoryForTests, resetImpoundRuntimeForTests } from 
 import { createImpoundPaymentRouter } from "../src/modules/impound-payments/impound-payment.routes.js";
 import {
   createMemoryImpoundPaymentService,
+  getMemoryImpoundPaymentRepositoryForTests,
   resetImpoundPaymentRuntimeForTests,
 } from "../src/modules/impound-payments/impound-payment.service.js";
 import { PAYMENT_METHODS, type PaymentConnectionPort } from "../src/modules/impound-payments/impound-payment.types.js";
@@ -122,8 +123,9 @@ async function processInRelease(tenantId: string): Promise<string> {
   return process.id;
 }
 
-const groupPort: PaymentConnectionPort = {
-  resolve: async () => ({ ok: true, account: { scope: "group", groupId: randomUUID(), groupConnectionId: randomUUID() }, provider: "asaas", methods: PAYMENT_METHODS }),
+// K1 (emenda §12): a porta devolve o DONO da conexão; aqui, a própria organização que pediu.
+const ownPort: PaymentConnectionPort = {
+  resolve: async (tenantId) => ({ ok: true, account: { scope: "organization", connectionId: randomUUID(), ownerTenantId: tenantId }, provider: "asaas", methods: PAYMENT_METHODS }),
 };
 
 function deepKeys(value: unknown, keys = new Set<string>()): Set<string> {
@@ -169,7 +171,7 @@ test("T-DOM-15 · R-ISO: processo de outra organização → 404 nas leituras e 
   const tenantA = randomUUID();
   const tenantB = randomUUID();
   const processA = await processInRelease(tenantA);
-  await createMemoryImpoundPaymentService({ connections: groupPort, gate: OPEN }).create(
+  await createMemoryImpoundPaymentService({ connections: ownPort, gate: OPEN }).create(
     { tenantId: tenantA, userId: randomUUID(), roles: ["manager"], permissions: [] },
     processA,
     { payerName: "Maria", payerDocument: CPF },
@@ -184,7 +186,7 @@ test("T-DOM-15 · R-ISO: processo de outra organização → 404 nas leituras e 
     assert.equal(own.status, 200);
     assert.equal((own.body.data as unknown[]).length, 1);
   });
-  await withCustomApp(createMemoryImpoundPaymentService({ connections: groupPort, gate: OPEN }), async (baseUrl) => {
+  await withCustomApp(createMemoryImpoundPaymentService({ connections: ownPort, gate: OPEN }), async (baseUrl) => {
     const response = await call(baseUrl, `/api/v1/impound-processes/${processA}/online-payment`, {
       method: "POST",
       headers: headers(tenantB, "manager"),
@@ -198,13 +200,23 @@ test("T-DOM-16 · allowlist do DTO: documento mascarado; nenhuma chave de organi
   resetAll();
   const tenantId = randomUUID();
   const processId = await processInRelease(tenantId);
-  await withCustomApp(createMemoryImpoundPaymentService({ connections: groupPort, gate: OPEN }), async (baseUrl) => {
+  await withCustomApp(createMemoryImpoundPaymentService({ connections: ownPort, gate: OPEN }), async (baseUrl) => {
     const created = await call(baseUrl, `/api/v1/impound-processes/${processId}/online-payment`, {
       method: "POST",
       headers: headers(tenantId, "manager"),
       body: { payerName: "Maria da Silva", payerDocument: CPF },
     });
     assert.equal(created.status, 202, JSON.stringify(created.body));
+    // Uma intenção de GRUPO (que o REC-04 vai criar) semeada no mesmo processo: o DTO também não pode vazar os ids do grupo.
+    const seeded = getMemoryImpoundPaymentRepositoryForTests().allIntentsForTests()[0]!;
+    getMemoryImpoundPaymentRepositoryForTests().seedIntentForTests({
+      ...seeded,
+      id: randomUUID(),
+      status: "cancelled",
+      cancelReason: "cancel",
+      account: { scope: "group", groupId: randomUUID(), groupConnectionId: randomUUID() },
+      createdAt: new Date(seeded.createdAt.getTime() - 1000),
+    });
     const live = await call(baseUrl, `/api/v1/impound-processes/${processId}/online-payment`, { headers: headers(tenantId, "manager") });
     const list = await call(baseUrl, `/api/v1/impound-processes/${processId}/online-payments`, { headers: headers(tenantId, "manager") });
     for (const body of [created.body, live.body, list.body]) {
@@ -231,7 +243,8 @@ test("T-DOM-16 · allowlist do DTO: documento mascarado; nenhuma chave de organi
     }
     const intent = (created.body.intent ?? {}) as Record<string, unknown>;
     assert.equal(intent.payerDocument, "***.***.***-25");
-    assert.equal(intent.accountScope, "group");
+    assert.equal(intent.accountScope, "organization");
+    assert.deepEqual((list.body.data as Array<{ accountScope: string }>).map((item) => item.accountScope), ["group", "organization"]);
     assert.equal(intent.amountLabel, "R$ 150,00");
     assert.equal(intent.status, "pending");
   });
@@ -248,6 +261,18 @@ test("T-DOM-17 · no app real, o portão PADRÃO do canal recusa: 422 channel_di
     });
     assert.equal((response.body.error as { reason?: string })?.reason, "channel_disabled", `expected 422 channel_disabled, got ${response.status}`);
     assert.equal(response.status, 422);
+
+    // K3 (emenda §12, declarado): o express.json() global do app lê o corpo ANTES do roteador. JSON malformado → 400 do leitor,
+    // sem eco do conteúdo e sem nada do processo. A garantia "com o canal desligado a resposta não depende do pedido" vale para
+    // corpo JSON VÁLIDO (acima). Pendência P-PATIO-BODY-PARSER-ANTES-DO-PORTAO, da trilha de plataforma.
+    const malformed = await fetch(`${baseUrl}/api/v1/impound-processes/${randomUUID()}/online-payment`, {
+      method: "POST",
+      headers: headers(tenantId, "manager"),
+      body: "{",
+    });
+    const text = await malformed.text();
+    assert.equal(malformed.status, 400, text);
+    assert.doesNotMatch(text, /channel_disabled|impound|online/i);
   });
 });
 
