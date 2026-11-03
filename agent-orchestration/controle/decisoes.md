@@ -4029,6 +4029,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   9. `P-FRONT-TESTE-DE-INTERACAO`.
 - A contagem descreve cabeçalhos abertos pelo diff; `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` já nasceu marcada como resolvida no próprio PR.
 - A suíte `checklist-template-lock-db` foi medida no job `backend` 121975457986 (`ok 576` a `ok 586`), não no `backend-postgres`; a ata e o briefing do bloco foram corrigidos sem fechar `P-B-SAN3-22-CI-DB-SUITE`.
+- **Ressalva 4 do porteiro do #464:** executar `DEEP_CLEAN=1` somente quando nenhuma junta estiver rodando, porque `image prune -af` apaga as imagens `postgres:16` e `redis:7` usadas pelas cadeiras.
 
 ## D-REGISTRO-RODADA-2026-10-24-A-26 (2026-10-26) — conciliações factuais dos porteiros, gate e ordem do B-SAN3-22
 
@@ -4237,6 +4238,15 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Efeito:** enquanto vigorar a suspensão, todo papel de topo roda em Opus e declara no artefato e na ata o papel, o modelo e o motivo: Fable suspenso por ordem do dono. O frontmatter do `planejador-mestre` continua `fable`; a substituição é do invocador, conforme §C7.6-bis.
 - **Leitura do orquestrador, declarada (§A6):** tarefa substantiva de topo usa Workflow em modo Ultra Code. A fala suspende o uso do Fable; não altera silenciosamente o arquivo do papel nem os demais limites do §C7.6-bis.
 
+## D-PATIO-MEIOS-PAGAMENTO-E-CONTAS-3110 (registro do dono, 2026-10-31, ~22:15 SP) — meios de pagamento e liberação do veículo
+
+- **Falas literais do dono, com data e hora:**
+  - 31/10/2026, ~22:15 SP — *"qual api de pagamento vc recomenda usar, tem que ter a opção de cartao de debito, credito e pix"*.
+  - 31/10/2026, ~22:15 SP — *"as contas do patio o cliente tem que pagar, as multas e taxas do orgao de transito tem que ser paga por la e o orgao autorizam a entrega do veiculo, as taxas de patio tambem devem ser pagas para liberação ocorrer"*.
+- **Medido na `origin/main` em 31/10/2026, conforme a fonte:** o portão de liberação já exige débitos quitados, reconciliação, requisitos, autorização da autoridade e identificação de quem retira (`release.service.ts:146-154`); a quitação é manual, sem provedor de pagamento (`charge.types.ts:142`, `D-Ω5P-07`); a saída para reparo não exige quitação (art. 271, §2º).
+- **Perguntas abertas e recomendações do orquestrador, não decisões do dono:** pagamento on-line da taxa de pátio, conta de quem recebe e manutenção da exceção da saída para reparo.
+- **Correção factual para os planos:** Iugu não aceita débito, conforme as documentações oficiais medidas na fonte externa. Não apresentar Iugu como provedor que cubra simultaneamente débito, crédito e Pix.
+
 ## D-CNPJ-UNICO-FILIAIS-DOIS-MODOS (decisão do dono, 2026-11-02) — grupo de filiais compartilha CNPJ, conta e APIs; cliente individual usa credenciais próprias
 
 - **Fala literal do dono, 02/11/2026, ~14:38 SP:** *"a principio so vai ter um cnpj, uma conta bancaria. os primeiros 100 clientes serao filiais, todos vao compartilhar api de notas e pagamento"*.
@@ -4248,12 +4258,15 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   - Estrutura das filiais: *"orgamizacao propria, mas um usuario de uma pode receber permissa para outra ou outras filiais"*.
   - Assinatura da filial: *"Não, só vê uso e custo"*.
   - Provedores validados no MVP: *"Só Asaas e Focus"*.
-- **Fatos decididos pelo dono:** o CNPJ e a conta compartilhados pertencem a um cliente com 100 filiais, não à plataforma; cada filial é uma organização própria; um usuário pode receber permissão para outras filiais; a filial não paga assinatura e só vê uso e custo; haverá clientes com APIs individuais; plataforma e administrador da organização podem cadastrar credenciais, mas o administrador só o faz quando a plataforma liberar; a lista do MVP é fechada em Asaas e Focus.
+- **Fatos decididos pelo dono:** o CNPJ e a conta compartilhados pertencem a um cliente com 100 filiais, não à plataforma; cada filial é uma organização própria; um usuário pode receber permissão para outras filiais; a filial não paga assinatura e só vê uso e custo; poderá haver clientes com APIs individuais; plataforma e administrador da organização podem cadastrar credenciais, mas o administrador só o faz quando a plataforma liberar; a lista do MVP é fechada em Asaas e Focus.
 - **Leituras do orquestrador, declaradas (§A6):** há dois modos por organização. No modo **compartilhado**, organizações-filiais do mesmo cliente usam o CNPJ, a conta e as credenciais desse cliente; o dinheiro não passa pela plataforma e não há repasse entre empresas. No modo **individual**, a organização usa suas credenciais próprias e recebe diretamente. A resposta *"sim"* foi lida como escolha da primeira alternativa — o modo individual entra já no MVP. A trava para o administrador da organização nasce fechada e é liberada pela plataforma por organização. Fora da lista validada, o backend recusa; uma integração só entra depois de validação.
 - **Limite:** essas leituras não resolvem os conflitos §A2 abaixo nem autorizam integração, migração ou chamada externa neste PR de registro.
 
 ## CONFLITOS-0211-CNPJ-ASSINATURA (§A2, registrados em 2026-11-02) — não consolidados
 
 - **`D-PLATAFORMA-RECEBE-E-REPASSA` × falas de 02/11:** a decisão de 31/10 diz que a plataforma recebe e repassa ao cliente. As respostas de 02/11 dizem que o CNPJ e a conta compartilhados são de um cliente com 100 filiais e que, no modo individual, a organização usa credenciais próprias. O recebimento pela plataforma fica em conflito com os dois modos. **Não resolvido:** `P-CONFLITO-RECEBIMENTO-PLATAFORMA-X-DOIS-MODOS`, dono `B-PATIO-RECEBIMENTO`.
+- **Q8/Q10 da v2 do pátio × falas de 02/11:** Q8 modela “Dados fiscais e conta para depósito” obrigatórios por organização para o pagamento on-line, e Q10 pergunta quem edita a conta para depósito da organização. As falas de 02/11 definem um CNPJ e uma conta de um cliente compartilhados por 100 organizações-filiais no modo compartilhado. **Conflito §A2 registrado e não resolvido:** o registro não escolhe se o perfil e a conta pertencem ao grupo, à organização ou aos dois por modo.
+- **`P-LEGAL-RECEBIMENTO-DE-TERCEIROS` × falas de 02/11:** a pendência nasceu da hipótese de a plataforma receber dinheiro de terceiros e repassar. As respostas de 02/11 dizem que a plataforma não recebe o dinheiro dos clientes dos pátios, apenas a mensalidade dos próprios clientes. **Conflito §A2 registrado e não resolvido:** a premissa jurídica ficou sem objeto para esse fluxo, mas o parecer posterior ainda existe. Às ~23:45 SP de 02/11, o dono disse literalmente *"Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança"*; por essa decisão, a pendência deixou de bloquear a produção.
+- **Planos de cobrança e assinatura × falas de 02/11:** `B-PATIO-RECEBIMENTO-plano-v2.md` e `B-ASSINATURA-plano.md`, nas fontes externas, modelam conta, perfil fiscal ou nota por organização; as falas posteriores definem conta/CNPJ compartilhados por um grupo de organizações-filiais e também um modo individual. **Conflito §A2 registrado e não resolvido:** nenhum dos planos é consolidado ou revogado neste registro.
 - **`D-COBRANCA-ASSINATURA-FRANQUIA` × *"Não, só vê uso e custo"*:** a decisão de 30/10 descreve assinatura por cliente/organização com franquia; em 02/11 o dono disse que cada filial é organização própria e que a filial não paga assinatura. **Não resolvido:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`, dono `B-ASSINATURA`.
-- **Regra aplicada:** os dois lados ficam preservados; nenhum foi escolhido ou revogado neste registro.
+- **Regra aplicada:** todos os lados ficam preservados; nenhum foi escolhido ou revogado neste registro.

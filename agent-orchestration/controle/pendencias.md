@@ -12323,11 +12323,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de ligar o recebimento — ALTA
 
-- **status:** ABERTA · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** ligar o recebimento em produção.
+- **status:** ABERTA, NÃO BLOQUEIA PRODUÇÃO desde a decisão do dono de 02/11/2026, ~23:45 SP · **escopo:** jurídico e fiscal · **dono:** dono do produto · **bloqueia:** nada.
 - **origem:** `D-PLATAFORMA-RECEBE-E-REPASSA`: a plataforma recebe e repassa ao cliente. O parecer é leitura do orquestrador, declarada, não fala do dono.
 - **Hipótese, não medida:** receber dinheiro de terceiros e repassar pode ter consequência regulatória e tributária; só o parecer responde.
 - **Apenso 2026-11-02 — risco, não decisão:** o dono definiu CNPJ único para um cliente com 100 filiais-organizações, inclusive em outras cidades. A nota de serviço sairia pelo cadastro municipal desse CNPJ; a incidência de ISS conforme o local da prestação precisa de parecer de advogado e contador. Isto não trava o desenvolvimento e não é tratado aqui como conclusão jurídica.
-- **encerramento:** parecer de advogado e de contador registrado, e a decisão do dono sobre ele, antes de qualquer recebimento real em produção.
+- **Conflito §A2 registrado e não resolvido:** a pendência nasceu da hipótese de a plataforma receber e repassar dinheiro de terceiros; as falas posteriores dizem que a plataforma não recebe o dinheiro dos clientes dos pátios. A premissa pode ter ficado sem objeto para esse fluxo, mas nenhum dos lados foi apagado ou consolidado neste registro.
+- **Fala literal do dono, 02/11/2026, ~23:45 SP:** *"Parecer depois vem, trate como fechado; a plataforma não recebe o dinheiro dos clientes dos patios, somente mensalidade dos clientes dela; o iss eh da matriz; guarda a chave digitada com segurança"*.
+- **Leitura do orquestrador, declarada (§A6), presente na fonte:** `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` deixa de bloquear a produção por “trate como fechado”; o parecer vem depois e não trava.
+- **encerramento:** parecer de advogado e de contador registrado, sem condicionar a produção por decisão expressa do dono.
 
 ## P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram, e o custo real — MÉDIA
 
@@ -12374,14 +12377,6 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   → `e79616aa 2026-06-13`; `git show d3e80027:agent-orchestration/controle/pendencias.md | grep -c -E 'NetworkStatusBanner|serao sincronizadas|erp_components'` → 0 (não estava registrada).
 - **encerramento:** o banner deixa de prometer sincronização do que não será enviado (P-TELA-VERDADEIRA), com acento, e um teste da tela offline com despesa aguardando envio prova que os textos não se contradizem.
 
-## P-TK11H-BARREIRA-FASE (2026-11-02) — T-K11h identifica statement bloqueado, não o PID e a fase/tentativa — BAIXA
-
-- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-12x` (trilha financeira) · **prioridade:** BAIXA · **bloqueia:** não bloqueia o `B-SAN3-03`.
-- **origem:** o teste `tests/financial-title-status-cas-db.test.ts` nasceu no commit `37a3f360`, de 25/10/2026, PR #456. O `B-SAN3-03` cita esta pendência na Emenda 2, achado A6.
-- **medição de 02/11:** o job `backend` do run `41416989996` no head `fb3d2575` falhou 1/4.346 em T-K11h — *"changeStatus perdedor (estado mudou duas vezes): tinha de RECUSAR e aceitou"* — e outra execução do mesmo head passou. A pré-revisão do #484 executou o caso 20 vezes isolado e 5 vezes com a suíte, com **0/25** falhas; somadas as observações conhecidas, **1/30 (3,33%)**.
-- **causa medida:** a segunda barreira encontra algum statement ativo bloqueado com o mesmo `application_name` e fragmento `financial_titles`, mas não identifica PID nem fase/tentativa. Um casamento transitório pode soltar W2 cedo e permitir a releitura legítima de `in_dispute`. A evidência é de barreira não determinística, não de defeito provado no CAS.
-- **encerramento:** a barreira identifica sem ambiguidade a conexão e a fase/tentativa esperadas; T-K11h passa em série dirigida suficiente e continua provando os quatro desfechos do CAS.
-
 ## P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS (2026-11-02) — vagas e dossiê ainda usam o visual antigo — prioridade a definir
 
 - **status:** ABERTA, adiada até o fim dos bloqueantes · **escopo:** tela/UX já aprovada · **dono:** `B-PATIOS-VAGAS-DOSSIE-3-APARENCIAS` (bloco a planejar) · **prioridade:** A DEFINIR depois dos bloqueantes · **bloqueia:** nada agora.
@@ -12396,6 +12391,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** conflito §A2 de produto, financeiro e fiscal · **dono:** `B-PATIO-RECEBIMENTO` · **prioridade:** ALTA antes de implementar recebimento · **bloqueia:** consolidar o desenho de recebimento e repasse; não bloqueia este PR documental.
 - **lado de 31/10:** `D-PLATAFORMA-RECEBE-E-REPASSA` diz que a plataforma recebe e repassa ao cliente.
 - **lado de 02/11:** o dono disse *"De um cliente com 100 filiais"*, *"nao, cnpj unico"* e admitiu clientes com APIs individuais; a leitura declarada é que, no modo compartilhado, CNPJ, conta e credenciais pertencem ao cliente do grupo, e, no individual, pertencem à organização. Em ambos, o dinheiro não precisaria passar pela plataforma.
+- **outros alvos do mesmo conflito §A2, registrados e não resolvidos:** Q8/Q10 da v2 do pátio modelam dados fiscais e conta para depósito por organização; `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` nasceu da hipótese de a plataforma receber e repassar; `B-PATIO-RECEBIMENTO-plano-v2.md` e `B-ASSINATURA-plano.md`, nas fontes externas, modelam conta, perfil fiscal ou nota por organização. As falas de 02/11 introduzem conta/CNPJ compartilhados por grupo e o modo individual. Nenhum desses alvos é consolidado ou revogado aqui.
 - **estado:** conflito registrado sem escolher um lado, revogar decisão ou consolidar plano.
 - **encerramento:** decisão explícita do dono define, por modo, quem recebe, quem emite, se existe repasse/split e o destino da antiga decisão.
 
