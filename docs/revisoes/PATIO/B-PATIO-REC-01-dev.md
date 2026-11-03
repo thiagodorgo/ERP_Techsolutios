@@ -285,3 +285,65 @@ mergeado; sem migração nova, sem rebase).
   `C:/Users/thiag/erp-pausa-2026-10-03/rec01/`.
 
 PRONTO PARA VERIFICAÇÃO
+
+## RETOMADA 9 — conserto único da junta do #488 (emenda 1 §12: K1, K2, K3)
+
+- **Papéis:** quem achou foi `jurado-j488-c2-sol` (Codex); quem planejou foi o orquestrador (§12, topo declarado); quem consertou foi
+  `dev-rec01-opus` (Claude Opus, nível menor declarado), que não achou. Conferência: um Codex que não consertou.
+- **Terreno medido antes:** worktree `C:/Users/thiag/w-rec01`, head `ea6d4aef` (= `origin/feat/patio-rec-01-dominio`), árvore limpa;
+  `origin/main` = `2e7987bd`, que não toca nenhum arquivo do bloco (`git diff --stat ceb62a07 origin/main` nos arquivos do bloco: vazio) e
+  faz merge sem conflito (`git merge-tree`); sem merge da `main` no ramo. Postgres descartável `rec01k-pg` em `127.0.0.1:55494`.
+- **Diff do conserto** (`git diff --stat ea6d4aef HEAD`, sem o diário): `impound-payment.{types,service}.ts`,
+  `impound-payment-prisma.repository.ts` e 4 arquivos `tests/rec-01-*`; `src/app.ts` e `src/modules/release/**` intocados.
+
+### K1 (grave) — a conta é da organização do ator
+- O contrato da porta passa a devolver o dono (`ResolvedAccount`): `{ scope: "organization", connectionId, ownerTenantId }` ou
+  `{ scope: "group", groupId, groupConnectionId, memberTenantIds }`. O serviço, depois do `assertIntentAccount`: `group` → 422
+  `group_scope_unavailable` (TODO de contrato do REC-04, escrito no tipo); `ownerTenantId !== tenantId` → 422 `payment_connection_not_owned`.
+  Nenhuma intenção, referência ou linha de fila nasce. A porta padrão segue recusando (`payment_mode_unset`).
+- Testes: T-DOM-28 (memória: outra organização → `payment_connection_not_owned`, 0 intenção, 0 fila), T-DOM-28-db (Postgres, mesmo
+  caso, 0 linha na tabela), T-DOM-29 (grupo → `group_scope_unavailable`), T-DOM-30 (a própria organização → a intenção nasce). Os testes
+  de rota que usavam uma porta de grupo passaram a usar a da própria organização; o T-DOM-16 semeia uma intenção de grupo no mesmo
+  processo para continuar provando que o DTO não vaza os ids do grupo.
+
+### K2 — o canário em toda leitura do repositório
+- `processExists`, `lockProcess`, `findById` e `findLiveByProcess` passam por `assertRowsBelongToTenant` além do filtro `tenant_id` (as
+  duas leituras de `impound_processes` agora selecionam `tenant_id` para o canário conferir).
+- Teste `[SB] tests/rec-01-repository-canary.test.ts` (4): um executor falso devolve a linha de outra organização — a que um filtro
+  faltante traria — e cada método tem de lançar `TenantRowsLeakError`. **Declarado:** contra o Postgres, como superusuário, o filtro
+  explícito já impede a linha alheia de voltar (o T-ISO-db-1 mede o filtro); por isso a segunda camada é medida com a linha injetada no
+  executor, um caso por método.
+
+### K3 — corpo malformado (aceito, sem mexer no `app.ts`)
+- O `express.json()` global do `app.ts` lê o corpo antes do roteador: JSON malformado → 400 do leitor. O T-DOM-17 ganhou esse caso:
+  `400`, sem `channel_disabled` nem nada do processo na resposta. A garantia "com o canal desligado a resposta não depende do pedido"
+  vale para corpo JSON válido. Pendência `P-PATIO-BODY-PARSER-ANTES-DO-PORTAO` (trilha de plataforma), a registrar pelo orquestrador.
+
+### V — vermelho no código do `ea6d4aef` (commit `test(…)` `6542ef18`, só testes)
+`bash krun.sh` (base nova `rec01km`): `[DB] rec-01-domain-db` → `not ok 6 - T-DOM-28-db`, `expected payment_connection_not_owned, got
+release_not_started` (no Postgres a intenção não nasceria de qualquer jeito no REC-01, porque a fila do pátio falha fechada; o vermelho é a
+falta da recusa por dono); `[SB]` → `not ok 11 - T-DOM-28` (`expected payment_connection_not_owned, got resolved` — a intenção nasceu na
+conta de outra organização), `not ok 12 - T-DOM-29` (`expected group_scope_unavailable, got resolved`) e `not ok 15..18` do K2 (os 4
+métodos devolveram a linha alheia); `# tests 34 # pass 28 # fail 6`. O caso K3 do T-DOM-17 passou no `ea6d4aef` (documenta comportamento
+que já existia).
+Os comandos da C2 que continuam valendo como controle: o `grep` do C2-1 agora acha `assertRowsBelongToTenant` nos 4 métodos do
+repositório; o do C2-2 (`assertIntentAccount({scope:"organization",connectionId})` → `accepted`) segue imprimindo `accepted` porque o
+`assertIntentAccount` confere só a FORMA da conta — a posse é conferida no `create` (T-DOM-28/28-db); o do C2-3 segue dando 400, por K3.
+
+### M (âncora = 1, restauro com hash igual, `git status --porcelain` vazio)
+
+| # | arquivo · troca | resultado |
+|---|---|---|
+| M-K1-a | `impound-payment.service.ts` · apagar o bloco `if (account.ownerTenantId !== tenantId)` | `not ok 11 - T-DOM-28`: `expected payment_connection_not_owned, got resolved` |
+| M-K1-b | `impound-payment.service.ts` · apagar o bloco `if (account.scope === "group")` | `not ok 12 - T-DOM-29`: `expected group_scope_unavailable, got payment_connection_not_owned` |
+| M-K2-a | repositório · `processExists` sem o canário | `not ok 3 - K2 · processExists` |
+| M-K2-b | repositório · `lockProcess` sem o canário | `not ok 4 - K2 · lockProcess` |
+| M-K2-c | repositório · `findById` sem o canário | `not ok 1 - K2 · findById` |
+| M-K2-d | repositório · `findLiveByProcess` sem o canário | `not ok 2 - K2 · findLiveByProcess` |
+
+### C — bateria local depois do conserto
+`npm run check` 0 · `npm run lint` 0 · `[SB]` os 6 `rec-01` → `# tests 35 # pass 35 # fail 0 # skipped 0` (28 + 3 do K1 + 4 do K2) · `[SB]`
+regressão → `63/63` · `[UF]` → `12/12` · `[DB]` domain-db, drill, gate-concurrency, san3-05 → `# tests 26 # pass 26 # fail 0 # skipped 0`
+(8 + 2 + 3 + 13) · `[DBP]` → `2/2` · guard de migração → `novas: 8 · violações: 0` · `san3-05-acessos-de-plataforma-guard` +
+`o6r07c-census-guard` → `67/67` (o inventário de acessos e o censo não mudaram com o conserto) · `npm run build` 0 · `git diff --check` vazio ·
+`src/modules/release` sem diff · charging sem linha removida.
