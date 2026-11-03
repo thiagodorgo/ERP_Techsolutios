@@ -1,6 +1,6 @@
 import { FileText, Unlock } from "lucide-react";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Alert, Badge, Button, Card, Chip, EmptyState, Skeleton } from "../../../../components/ui";
 import { usePermissions } from "../../../../providers/PermissionProvider";
@@ -48,7 +48,7 @@ export function LiberacaoPanel({
   readonly onDone: () => void;
 }) {
   const { can } = usePermissions();
-  const { release, checks, loading, error, denied, loaded, reload } = useRelease(process.id);
+  const { release, checks, loading, error, denied, loaded, reload, applyCheck } = useRelease(process.id);
 
   const canTransition = can("impound:transition");
   const canProcess = can("release:process");
@@ -59,6 +59,10 @@ export function LiberacaoPanel({
   const [actionError, setActionError] = useState<string | null>(null);
   const [settleResult, setSettleResult] = useState<SettleResult | null>(null);
   const [comprovanteOpen, setComprovanteOpen] = useState(false);
+  // Requisitos em gravação, por código. Cada requisito grava sozinho (não trava o painel inteiro) e fica
+  // indisponível, com "Salvando…", até o servidor responder — um 2º clique não desfaz o 1º (demo 02/11).
+  const savingRef = useRef<Set<string>>(new Set());
+  const [savingCodes, setSavingCodes] = useState<ReadonlySet<string>>(() => new Set());
 
   const stage = resolveReleaseStage(process.status, release);
   const preconditions = release ? deriveReleaseGate(release, checks, statement) : [];
@@ -87,7 +91,29 @@ export function LiberacaoPanel({
 
   const handleStart = () => void run(() => startRelease(context, process.id));
   const handleRecipient = (input: RecipientInput) => void run(() => setRecipient(context, process.id, input));
-  const handleCheck = (code: string, satisfied: boolean) => void run(() => setRequirementCheck(context, process.id, { code, satisfied }));
+  async function saveCheck(code: string, satisfied: boolean): Promise<void> {
+    if (busy || savingRef.current.has(code)) return;
+    savingRef.current.add(code);
+    setSavingCodes(new Set(savingRef.current));
+    setActionError(null);
+    let saved: Awaited<ReturnType<typeof setRequirementCheck>> = null;
+    try {
+      saved = await setRequirementCheck(context, process.id, { code, satisfied });
+      // A caixa e as pré-condições mostram o estado GRAVADO (a resposta do servidor), na hora.
+      if (saved) applyCheck(saved);
+    } catch (err) {
+      setActionError(err instanceof ReleaseActionError ? err.message : "Não foi possível salvar o requisito.");
+    } finally {
+      savingRef.current.delete(code);
+      setSavingCodes(new Set(savingRef.current));
+    }
+    // Releitura do servidor depois da gravação (a guarda "só a leitura mais nova vale" descarta respostas antigas).
+    await reload(true);
+    if (saved) onDone();
+  }
+
+  const handleCheck = (code: string, satisfied: boolean) => void saveCheck(code, satisfied);
+  const checksSaving = savingCodes.size > 0;
   const handleApprove = (input: ApproveInput) => void run(() => approveRelease(context, process.id, input));
   const handleConsume = () => void run(() => consumeRelease(context, process.id));
   const handlePrepareRepair = (input: ForRepairInput) => void run(() => startForRepair(context, process.id, input));
@@ -193,18 +219,18 @@ export function LiberacaoPanel({
 
       {stage === "standard" && release ? (
         <>
-          <DossieLiberacao release={release} checks={checks} canProcess={canProcess} busy={busy} error={null} onRecipient={handleRecipient} onCheck={handleCheck} />
+          <DossieLiberacao release={release} checks={checks} canProcess={canProcess} busy={busy} savingCodes={savingCodes} error={null} onRecipient={handleRecipient} onCheck={handleCheck} />
           <QuitacaoPanel statement={statement} settleResult={settleResult} canSettle={canSettle} busy={busy} error={null} onSettle={handleSettle} />
           <AprovacaoAutoridade release={release} canApprove={canApprove} busy={busy} error={null} onApprove={handleApprove} />
-          <GateLiberacaoChecklist preconditions={preconditions} canConsume={canTransition} busy={busy} error={null} onConsume={handleConsume} />
+          <GateLiberacaoChecklist preconditions={preconditions} canConsume={canTransition} busy={busy || checksSaving} error={null} onConsume={handleConsume} />
         </>
       ) : null}
 
       {stage === "for_repair_prep" && release ? (
         <>
-          <DossieLiberacao release={release} checks={checks} canProcess={canProcess} busy={busy} error={null} onRecipient={handleRecipient} onCheck={handleCheck} />
+          <DossieLiberacao release={release} checks={checks} canProcess={canProcess} busy={busy} savingCodes={savingCodes} error={null} onRecipient={handleRecipient} onCheck={handleCheck} />
           <AprovacaoAutoridade release={release} canApprove={canApprove} busy={busy} error={null} onApprove={handleApprove} />
-          <ReparoPanel mode="effect" release={release} canTransition={canTransition} busy={busy} error={null} onPrepare={handlePrepareRepair} onEffect={handleEffectRepair} onReturn={handleReturnRepair} />
+          <ReparoPanel mode="effect" release={release} canTransition={canTransition} busy={busy || checksSaving} error={null} onPrepare={handlePrepareRepair} onEffect={handleEffectRepair} onReturn={handleReturnRepair} />
         </>
       ) : null}
 

@@ -219,7 +219,9 @@ test("gating: canAllocate/canCreateDispatches condiciona Alocar, draggable e dro
   assert.match(MARKER_POPUP_SRC, /canAllocate \?/);
 });
 
-// 15 — protótipo: técnico do grupo "off" nunca recebe alocação (guarda na página, como t.st==='off').
-test("técnico 'off' não recebe alocação (guarda do protótipo na página)", () => {
-  assert.match(PAGE_SRC, /getFieldLocationGroup\(location\.status\) === "off"\) return/);
+// 15 — técnico pausado/offline/bloqueado nunca recebe alocação (guarda na página); sem status
+//      (`unknown`) recebe e o backend decide (diagnóstico da operação, 02/11, item 2).
+test("técnico indisponível não recebe alocação (guarda na página); popup também filtra pelo mesmo predicado", () => {
+  assert.match(PAGE_SRC, /if \(!isAllocatableFieldLocationStatus\(location\.status\)\) return/);
+  assert.match(PAGE_SRC, /workOrderContextLocations\.filter\(\(location\) => isAllocatableFieldLocationStatus\(location\.status\)\)/);
 });

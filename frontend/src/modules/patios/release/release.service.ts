@@ -1,6 +1,7 @@
 import { isMockMode } from "../../../config/env";
 import { ApiError, apiRequest } from "../../../services/api/client";
 import {
+  adaptReleaseCheckResponse,
   adaptReleaseData,
   adaptReleaseView,
   adaptSettleResult,
@@ -11,6 +12,7 @@ import type {
   ForRepairInput,
   RecipientInput,
   ReleaseApiContext,
+  ReleaseCheckDto,
   ReleaseDto,
   ReleaseView,
   SettleResult,
@@ -82,11 +84,13 @@ export async function setRequirementCheck(
   context: ReleaseApiContext,
   processId: string,
   input: { readonly code: string; readonly satisfied: boolean; readonly note?: string },
-): Promise<void> {
+): Promise<ReleaseCheckDto | null> {
   try {
     const body: Record<string, unknown> = { code: input.code, satisfied: input.satisfied };
     if (input.note?.trim()) body.note = input.note.trim();
-    await apiRequest<unknown>(releasePath(processId, "/checks"), { ...context, method: "POST", body });
+    const response = await apiRequest<unknown>(releasePath(processId, "/checks"), { ...context, method: "POST", body });
+    // O estado GRAVADO volta na resposta: a tela aplica este, não o que o checkbox do navegador mostra.
+    return adaptReleaseCheckResponse(response);
   } catch (error) {
     rethrow(error);
   }

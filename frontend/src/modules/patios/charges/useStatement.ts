@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { createLatestRequestGate } from "../../../hooks/latestRequestGate";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../providers/AuthProvider";
 import { usePermissions } from "../../../providers/PermissionProvider";
@@ -22,6 +23,9 @@ export function useStatement(processId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Só a leitura mais nova vale: o auto-refresh que saiu ANTES do "Registrar encargo" e volta DEPOIS não pode
+  // pintar a guia sem o encargo recém-lançado (demo 02/11).
+  const gate = useRef(createLatestRequestGate()).current;
 
   const context = useMemo(
     () => ({
@@ -37,13 +41,16 @@ export function useStatement(processId: string | undefined) {
   const reload = useCallback(
     async (background = false) => {
       if (!processId || !activeContext || !canRead) return;
+      const ticket = gate.begin();
       if (!background) setLoading(true);
       setError(null);
       try {
         const next = await getStatement(context, processId);
+        if (!gate.isLatest(ticket)) return;
         setStatement(next);
         setDenied(false);
       } catch (err) {
+        if (!gate.isLatest(ticket)) return;
         if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
           setDenied(true);
         } else {
@@ -54,7 +61,7 @@ export function useStatement(processId: string | undefined) {
         setLoaded(true);
       }
     },
-    [processId, activeContext, canRead, context],
+    [processId, activeContext, canRead, context, gate],
   );
 
   useEffect(() => {
