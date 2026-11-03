@@ -314,6 +314,20 @@ default. Mudar o default do detalhe é contrato do painel, fora deste bloco.
   contexto RLS dela** — o rateio deixa de depender da projeção diária (que nenhum job enfileira) e passa a
   funcionar sob papel de banco **sem `BYPASSRLS`**, o que antes falhava na escrita e lia zero na leitura.
 
+`GET /api/v1/platform/cloud-cost-allocations/summary` trata o período como um par indivisível:
+
+- exatamente uma de `periodStart`/`periodEnd` → `400`,
+  `code: "CLOUD_COST_ALLOCATION_INVALID_PERIOD"`, `reason: "summary_period_incomplete"`;
+- chave presente vazia, inválida, repetida ou com data de calendário impossível → `400`, mesmo `code`,
+  `reason: "summary_period_invalid"`;
+- sem as duas chaves, mantém o resumo mais recente; com as duas válidas, exige o período exato.
+
+Tags de organização ambíguas nunca são atribuídas: a linha inteira entra em `unallocated` com
+`reason: "ambiguous_tenant_tag"`, antes da identificação da plataforma e nas duas estratégias. Na estratégia
+`direct_tag_then_usage_weighted_v1`, tag não vazia que não casa com nenhuma organização entra em `unallocated`
+com `reason: "unknown_tenant_tag"`; na estratégia `usage_weighted_v1`, a tag desconhecida continua ignorada por
+definição. Os dois motivos aparecem em `unallocatedByReason` e compõem `totalUnallocatedCost`.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).

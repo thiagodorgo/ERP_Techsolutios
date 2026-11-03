@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **710** |
-| IDs distintos | 699 |
-| **ABERTAS** | **530** |
+| Cabecalhos `## P-` | **712** |
+| IDs distintos | 701 |
+| **ABERTAS** | **531** |
 | — das quais **diferidas** (balde C) | 65 |
-| — das quais **ativas nesta rodada** | **465** |
+| — das quais **ativas nesta rodada** | **466** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 176 |
+| FECHADAS | 177 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **710 cabecalhos para 699 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **712 cabecalhos para 701 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -312,7 +312,7 @@
 | `P-LEGAL-RECEBIMENTO-DE-TERCEIROS` | 12331 | ALTA | sim | P-LEGAL-RECEBIMENTO-DE-TERCEIROS (2026-10-31) — parecer de advogado e contador antes de  |
 | `P-AUDITORIA-MEDIR-CRUZAMENTO` | 12338 | MÉDIA | sim | P-AUDITORIA-MEDIR-CRUZAMENTO (2026-10-31) — medir em 3 blocos se os falsos verdes caíram |
 
-## ABERTAS · balde B — processo/registro — 229
+## ABERTAS · balde B — processo/registro — 230
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -545,6 +545,7 @@
 | `P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA` | 12365 | BAIXA | sim | P-ORQUESTRACAO-TETO-DOCKER-RYZENCASA (2026-11-02) — três suítes Linux paralelas morreram |
 | `P-MOBILE-BANNER-PROMETE-SINCRONIZAR` | 12371 | BAIXA | sim | P-MOBILE-BANNER-PROMETE-SINCRONIZAR (2026-11-02) — banner offline promete sincronizar "a |
 | `P-SAN3-03-IMPORT-ID-EM-COLUNA` | 12383 | BAIXA | sim | P-SAN3-03-IMPORT-ID-EM-COLUNA (2026-11-02) — o import da run mora em `metadata.importId` |
+| `P-TK11H-BARREIRA-FASE` | 12389 | BAIXA | sim | P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a f |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 65
 
@@ -616,7 +617,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3682 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3726 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 176
+## FECHADAS — 177
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -796,3 +797,4 @@
 | `P-SAN3-12B-PAGER-ROTULO-FILTRADO` | 12197 | BAIXA | sim | P-SAN3-12B-PAGER-ROTULO-FILTRADO (2026-10-28) — o rótulo do paginador mistura a contagem |
 | `P-COBRANCA-PERGUNTAS-P1-P6` | 12250 | — | sim | P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobr |
 | `P-COBRANCA-ADAPTADORES-1-MAIS-1` | 12263 | — | sim | P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão |
+| `P-SAN303-TAG-DESCONHECIDA` | 12401 | — | sim | P-SAN303-TAG-DESCONHECIDA (2026-11-03) — destino de tag não reconhecida no rateio direto |

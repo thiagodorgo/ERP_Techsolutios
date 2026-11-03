@@ -12385,3 +12385,33 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado do `B-SAN3-03`, `D-SAN3-03-IMPORT-POR-RUN`) · **dono:** `B-ASS-09a` · **bloqueia:** não.
 - **origem:** `prisma/**` é PROIBIDO no `B-SAN3-03`; a run guarda o import escolhido em `metadata.importId` / `metadata.importResolution` (`src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts`, `createAllocationRun`).
 - **encerramento:** migração aditiva com coluna `import_id` e FK em `cloud_cost_allocation_runs`, com backfill de `metadata.importId`, só com autorização explícita do dono para essa migração; o `B-ASS-09a` usa o import para o rateio automático não repetir run.
+
+## P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a fase exata — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (PR #456, commit `37a3f360`) · **dono:** trilha financeira, `B-SAN3-12x` · **bloqueia:** não.
+- **origem medida:** pré-revisão do PR #484, achado A6. Houve 1 falha em 30 observações conhecidas (3,33%):
+  1 execução histórica falhou; as outras duas execuções conhecidas daquele head, os dois jobs `backend` do head
+  pré-revisado e 25 repetições próprias passaram. A barreira `waitForOwnBlockedStatement` casa qualquer statement
+  ativo/bloqueado pelo mesmo `application_name` e fragmento de `financial_titles`, sem provar PID, tentativa nem fase.
+- **efeito:** um casamento transitório pode soltar W2 cedo; o serviço relê `in_dispute` e aceita legitimamente a
+  transição. A evidência mede indeterminismo do teste, não defeito comprovado no CAS.
+- **encerramento:** a barreira identifica determinística e explicitamente o PID e a fase/tentativa esperados, e uma
+  série concorrente reproduzível fica verde sem casamento transitório.
+
+## P-SAN303-TAG-DESCONHECIDA (2026-11-03) — destino de tag não reconhecida no rateio direto — FECHADA
+
+- **status:** FECHADA no PR #484, Emenda 2 (§8) · **escopo:** leitura de produto sobre risco financeiro · **dono:** `B-SAN3-03` · **bloqueia:** nada.
+- **registro da leitura do autor (§A6):** o comportamento anterior, que fazia uma tag não vazia e desconhecida cair
+  em regra/uso, podia cobrar organizações diferentes da pretendida. O item 10(3) manda corrigir agora erro grave de
+  dinheiro; o dono pode reverter essa leitura.
+- **encerramento:** em `direct_tag_then_usage_weighted_v1`, tag não vazia desconhecida vai integralmente para
+  `unknown_tenant_tag`; `usage_weighted_v1` continua ignorando tags desconhecidas por definição. Provas:
+  `tests/san3-03-tenant-tag.test.ts` T-TAG-10..13 e mutações M55/M55-b/M55-c.
+
+## B-SAN3-03 — nota de fechamento da Emenda 2 (2026-11-03)
+
+- **A1 fechado:** o resumo recusa período incompleto, vazio, inválido, repetido ou de calendário impossível com
+  `CLOUD_COST_ALLOCATION_INVALID_PERIOD`; T-SUM-7/8 e M47/M54/M56 provam os ramos.
+- **A5 fechado:** chave de organização ambígua, inclusive entre campos ou com normalização equivalente, vai inteira
+  a `ambiguous_tenant_tag`, antes da plataforma e nas duas estratégias; T-TAG-1..9, T-TAG-db e M48..M53 provam o
+  comportamento. Tag desconhecida no rateio direto fecha por `P-SAN303-TAG-DESCONHECIDA` acima.

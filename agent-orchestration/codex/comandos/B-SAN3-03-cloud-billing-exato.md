@@ -118,4 +118,3 @@ contagem e saída; skip de teste `-db` não conta.
 - PR aberto sem atribuição; não fazer merge; linha `PRONTO PARA PRÉ-REVISÃO` no relatório.
 - **ID:** B-SAN3-03 · **PR:** preenchido ao final · **merge/approved head:** n/a na autoria.
 - **Junta:** completa após pré-revisão, fora do mandato deste dev.
-
