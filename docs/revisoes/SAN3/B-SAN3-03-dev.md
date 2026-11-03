@@ -461,3 +461,76 @@ PRONTO PARA PRÉ-REVISÃO
 - **Próximo comando exato:** `node --test --import tsx tests/san3-03-tenant-tag.test.ts` após criar os
   vermelhos-controle T-TAG-1/2/5/7/10 e o caso DB.
 - **Arquivos meio-escritos:** nenhum; C1 pronta para commit.
+
+## RETOMADA 11
+
+- **Executor:** `dev-san303-e2-astra`, Codex GPT-6 Astra, por ordem explícita do dono de 02/11;
+  sucessor de `dev-san303-e2-sol`. Não achou nem planejou o conserto. Verificador previsto: Claude.
+- **Terreno medido:** `git status --short`, `git log -6 --oneline`, `git rev-parse HEAD` e
+  `git ls-remote origin refs/heads/fix/cloud-billing-exato` — exit 0; HEAD e remoto em
+  `189064e8c571d5cde2cdd467e06f518a50db971f`. C1 já enviada. Disco: 304 GB livres; memória de commit livre: 16,92 GiB.
+- **C1 reexecutada:** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/san3-03-summary.test.ts tests/cloud-cost-allocation-routes.test.ts`
+  — **exit 0**, TAP **10 testes, 10 pass, 0 fail, 0 skip**. Saída integral:
+  `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-san303-e2-astra-c1-recheck.log`.
+  A prova anterior de vermelho-controle e mutações permanece na RETOMADA 10; não foi reexecutada nesta retomada.
+- **C2 parcial medida:** leitura integral de `cloud-cost-allocation.engine.ts`,
+  `san3-03-system-org-db.test.ts` e `san3-03-tenant-tag.test.ts`; nenhuma edição nesses arquivos
+  nesta retomada. Continuam sem commit, como recebidos. Não afirmo C2 validada.
+- **CI:** não conferido nesta retomada; não há novo head nem declaração de entrega concluída.
+
+## PAUSA 2026-11-03 01:47:34 UTC
+
+- **Motivo:** parada expressa do mandato: “se for tocar fora do PERMITIDO do §4”.
+  A C2 (§5) exige repetir a **M17-b**, mas o driver literal
+  `revisoes/prerev-san303-mutations.mjs` define
+  `memoryRepo = "src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts"`
+  e troca `return this.tenants;` pelo filtro que exclui o slug `platform`.
+  Esse arquivo NÃO está no PERMITIDO do §4 (que admite, nesse módulo, apenas engine, service, routes e types).
+  Não executei a mutação fora de escopo.
+- **Outra ocorrência na bateria §6:** M46 altera
+  `src/modules/cloud-charges/cloud-charge-prisma.repository.ts`, explicitamente PROIBIDO no §4.
+  M1/M6/M7/M8/M9/M10/M11 e outras também usam caminhos fora do PERMITIDO. A obrigação de executar
+  essas mutações e a ordem de parar antes de tocar fora do escopo precisam ser conciliadas pelo autor
+  da emenda; não presumi exceção para alteração temporária.
+- **Evidência:** leitura do driver externo por
+  `sed -n '1,170p' C:/Users/thiag/erp-pausa-2026-10-03/revisoes/prerev-san303-mutations.mjs`
+  (exit 0); declarações de `memoryRepo`/`cloudChargeRepo` e corpo de M17-b;
+  §4/§5/§6 da emenda 2 lidos no arquivo externo fornecido.
+- **Head:** `189064e8c571d5cde2cdd467e06f518a50db971f`; C1 pushada e testes próprios reexecutados verdes.
+- **Falta:** concluir e validar C2, C3, C4, bateria §6, check-runs e resumos TAP de backend/backend-postgres.
+- **Próximo passo:** o orquestrador/autor concilia o escopo das mutações obrigatórias na emenda.
+  Depois, o próximo comando de retomada é
+  `git -C C:/Users/thiag/w-san303 status --short`, seguido da releitura da emenda ajustada.
+- **Arquivos parciais preservados:** `src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts`,
+  `tests/san3-03-system-org-db.test.ts` e `tests/san3-03-tenant-tag.test.ts` (novo).
+  Este relatório recebeu apenas o registro acima; não houve commit/push nesta retomada.
+- **Limpeza:** nenhum container criado, nenhum build gerado, nenhum serviço/porta da demo tocado.
+  Log externo de evidência preservado. Sem merge.
+
+## RETOMADA 12
+
+- **Executor:** `dev-san303-e2-astra`, Codex GPT-6 Astra, por ordem do dono; verificador previsto: Claude.
+- **Retomada 2:** §9 da emenda 2 lido integralmente; resolve a PAUSA de 01:47:34 UTC. O escopo
+  de commit continua no §4; mutações temporárias seguem arquivo nomeado, âncora única e restauração
+  por hash, com status vazio. Nenhum merge autorizado ou realizado.
+- **Terreno:** `git status --short`, `git log -5 --oneline`, `git rev-parse HEAD` e
+  `git ls-remote origin refs/heads/fix/cloud-billing-exato` — exit 0; local/remoto
+  `189064e8c571d5cde2cdd467e06f518a50db971f`. Disco 304 GB; commit livre 18.252.353.536 bytes.
+- **C1 e parcial C2 reexecutados:** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx
+  tests/san3-03-summary.test.ts tests/cloud-cost-allocation-routes.test.ts
+  tests/san3-03-tenant-tag.test.ts tests/san3-03-system-org.test.ts` — exit 0,
+  **29/29**, 0 fail/skip; log externo `dev-san303-e2-astra-ret2-green.log`.
+- **C2:** três arquivos parciais lidos inteiros. Motor recebido já segue §7/§8. Complementados
+  os controles de colisão nome×id e id×slug, slug/id único com nomes iguais, normalização também
+  das chaves e espaço repetido/NBSP, e plataforma zero em toda recusa ambígua.
+- **Docker:** encontrado o descartável nominal da execução anterior (`devsan303e2-pg`, criado
+  01:43:38Z, postgres:16, exclusivamente 127.0.0.1:55464). Removido e recriado pelo executor
+  sem volume; `npx prisma migrate deploy` — exit 0, **117 migrações existentes** aplicadas.
+  Log `dev-san303-e2-astra-db-setup.log`. Nenhum serviço/porta da demo tocado.
+- **C2 verde:** `node --test --import tsx tests/san3-03-tenant-tag.test.ts
+  tests/san3-03-system-org-db.test.ts`, DATABASE_URL exclusiva do descartável, via
+  `dev-san303-e2-run.mjs c2-green` — exit 0, **14/14**, 0 fail/skip. Log externo
+  `dev-san303-e2-c2-green.log`.
+- **Checkpoint C2:** código e testes completos; commit local antes dos ataques para permitir
+  restauração por SHA e publicação de status vazio. Vermelho-controle, mutações C2, check e push
+  ainda pendentes; não se declara a fatia concluída neste checkpoint.

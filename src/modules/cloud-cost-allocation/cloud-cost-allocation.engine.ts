@@ -14,7 +14,8 @@ import { CloudCostAllocationError, PLATFORM_SYSTEM_ORG_SLUG } from "./cloud-cost
 const unknown = "unknown";
 
 export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngineResult {
-  const tenantsByTag = new Map<string, CloudCostAllocationTenant>();
+  const tenantIdsByTag = new Map<string, Set<string>>();
+  const tenantsById = new Map(input.tenants.map((tenant) => [tenant.id, tenant]));
   const allocations: Omit<TenantCloudCostAllocation, "id" | "createdAt" | "updatedAt">[] = [];
   const platformCost: PlatformCostEntry[] = [];
   const unallocated: Array<AllocationEngineResult["unallocated"][number]> = [];
@@ -35,16 +36,34 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
   }
   // B-SAN3-03 · R8 — a plataforma fica no universo (casa a tag e pesa no denominador), mas nunca recebe
   // alocação: a parte dela vira `platformCost`, linha própria.
-  const systemTenant = input.tenants.find((tenant) => tenant.slug?.toLowerCase() === PLATFORM_SYSTEM_ORG_SLUG);
+  const systemTenant = input.tenants.find(
+    (tenant) => tenant.slug && normalizeTenantTag(tenant.slug) === PLATFORM_SYSTEM_ORG_SLUG,
+  );
 
   for (const tenant of input.tenants) {
-    tenantsByTag.set(tenant.id.toLowerCase(), tenant);
-    tenantsByTag.set(tenant.name.toLowerCase(), tenant);
-    if (tenant.slug) tenantsByTag.set(tenant.slug.toLowerCase(), tenant);
+    addTenantTag(tenantIdsByTag, tenant.id, tenant.id);
+    addTenantTag(tenantIdsByTag, tenant.name, tenant.id);
+    if (tenant.slug) addTenantTag(tenantIdsByTag, tenant.slug, tenant.id);
   }
 
   for (const line of input.costLineItems) {
-    const tenant = line.tenantTag ? tenantsByTag.get(line.tenantTag.toLowerCase()) : undefined;
+    const normalizedTag = line.tenantTag ? normalizeTenantTag(line.tenantTag) : undefined;
+    const matchedTenantIds = normalizedTag ? tenantIdsByTag.get(normalizedTag) : undefined;
+
+    if (matchedTenantIds && matchedTenantIds.size > 1) {
+      unallocated.push(createUnallocated(line, "ambiguous_tenant_tag"));
+      roundingCount += 1;
+      continue;
+    }
+
+    if (normalizedTag && !matchedTenantIds && input.strategy === "direct_tag_then_usage_weighted_v1") {
+      unallocated.push(createUnallocated(line, "unknown_tenant_tag"));
+      roundingCount += 1;
+      continue;
+    }
+
+    const tenantId = matchedTenantIds?.values().next().value;
+    const tenant = tenantId ? tenantsById.get(tenantId) : undefined;
 
     // Antes do teste de estratégia: custo marcado com a plataforma é dela nas DUAS estratégias.
     if (tenant && systemTenant && tenant.id === systemTenant.id) {
@@ -131,6 +150,18 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
     roundingResidualCost,
     roundingCount,
   };
+}
+
+function normalizeTenantTag(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function addTenantTag(index: Map<string, Set<string>>, value: string, tenantId: string): void {
+  const normalized = normalizeTenantTag(value);
+  if (!normalized) return;
+  const tenantIds = index.get(normalized) ?? new Set<string>();
+  tenantIds.add(tenantId);
+  index.set(normalized, tenantIds);
 }
 
 export type ConservationTerms = {

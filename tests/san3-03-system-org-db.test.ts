@@ -99,6 +99,40 @@ if (!connectionString) {
       await cleanup(ctx, [], runIds);
     }
   });
+
+  test("T-TAG-db · nomes duplicados não geram alocação e persistem motivo ambíguo", async () => {
+    const ctx = await bootstrap();
+    const importId = crypto.randomUUID();
+    const runIds: string[] = [];
+    const duplicateName = `Duplicada ${crypto.randomUUID()}`;
+    const duplicateIds: string[] = [];
+    try {
+      const created = await ctx.client.$transaction([
+        ctx.client.tenant.create({ data: { name: duplicateName, slug: `dup-a-${crypto.randomUUID()}` } }),
+        ctx.client.tenant.create({ data: { name: duplicateName, slug: `dup-b-${crypto.randomUUID()}` } }),
+      ]);
+      duplicateIds.push(...created.map((tenant) => tenant.id));
+      await seedImport(ctx, importId, [
+        { service: "AmazonEC2", usage: "BoxUsage", tag: duplicateName, cost: "10.000000" },
+      ]);
+      const run = await ctx.service.allocateCostsForPeriod({ periodStart, periodEnd, importId });
+      runIds.push(run.id);
+      assert.equal(run.status, "completed", run.errorMessage);
+      const allocations = await ctx.service.listTenantAllocations(run.id);
+      assert.equal(allocations.some((item) => duplicateIds.includes(item.tenantId)), false);
+      assert.equal(run.totalAllocatedCost, 0);
+      assert.equal(run.totalUnallocatedCost, 10);
+      assert.deepEqual(
+        (run.metadata.unallocated as Array<{ reason: string; unallocatedCost: number }>).map((item) => [
+          item.reason,
+          item.unallocatedCost,
+        ]),
+        [["ambiguous_tenant_tag", 10]],
+      );
+    } finally {
+      await cleanup(ctx, [importId], runIds, duplicateIds);
+    }
+  });
 }
 
 async function bootstrap() {
@@ -161,7 +195,12 @@ async function seedImport(
   }
 }
 
-async function cleanup(ctx: Context, importIds: readonly string[], runIds: readonly string[]) {
+async function cleanup(
+  ctx: Context,
+  importIds: readonly string[],
+  runIds: readonly string[],
+  tenantIds: readonly string[] = [],
+) {
   try {
     if (runIds.length > 0) {
       for (const runId of runIds) await ctx.repository.replaceTenantAllocations(runId, []);
@@ -171,6 +210,7 @@ async function cleanup(ctx: Context, importIds: readonly string[], runIds: reado
       await ctx.client.cloudCostLineItem.deleteMany({ where: { import_id: { in: [...importIds] } } });
       await ctx.client.cloudCostImport.deleteMany({ where: { id: { in: [...importIds] } } });
     }
+    if (tenantIds.length > 0) await ctx.client.tenant.deleteMany({ where: { id: { in: [...tenantIds] } } });
   } finally {
     await ctx.client.$disconnect();
   }
