@@ -29,7 +29,7 @@ console.error = (...args: unknown[]) => {
 
 const React = await import("react");
 const { createRoot } = await import("react-dom/client");
-const { MemoryRouter, Routes, Route, useLocation } = await import("react-router-dom");
+const { MemoryRouter, Routes, Route, useLocation, useNavigate } = await import("react-router-dom");
 const { WorkOrdersPage } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
 const { AppearanceChoices } = await import("../src/modules/appearance");
 const { AuthProvider } = await import("../src/providers/AuthProvider");
@@ -91,11 +91,23 @@ function seedSessionAndContext() {
 
 const appearanceKey = () => `techsol.aparencia.${TENANT_ID}.${mockSession.user.id}`;
 let currentLocation = "";
+let navigateProbe: ((delta: number) => void) | null = null;
 
 function LocationProbe() {
   const location = useLocation();
+  const navigate = useNavigate();
   currentLocation = `${location.pathname}${location.search}`;
+  navigateProbe = (delta) => navigate(delta);
   return null;
+}
+
+/** O "voltar" do navegador: o histórico do roteador anda -1. */
+async function goBack() {
+  assert.ok(navigateProbe, "sonda de navegação ausente");
+  await act(async () => {
+    navigateProbe!(-1);
+  });
+  await settle();
 }
 
 async function press(el: MiniDomElement | undefined) {
@@ -108,9 +120,9 @@ async function press(el: MiniDomElement | undefined) {
   await settle();
 }
 
-async function documentKey(key: string) {
+async function documentKey(key: string, shiftKey = false) {
   await act(async () => {
-    for (const listener of [...(dom.doc.listeners.get("keydown") ?? [])]) listener({ key, shiftKey: false, preventDefault() {}, stopPropagation() {} });
+    for (const listener of [...(dom.doc.listeners.get("keydown") ?? [])]) listener({ key, shiftKey, preventDefault() {}, stopPropagation() {} });
   });
   await settle();
 }
@@ -331,6 +343,7 @@ test("[L9] A11 — Duplicar dentro da janela abre a OS nova (comportamento de ho
   const { container, unmount } = await mount();
   try {
     await openWindowB(container);
+    const before = countCalls(/^GET \/work-orders(\?|$)/);
     await press(elements(dialogs(container)[0], (el) => el.localName === "button" && el.getAttribute("aria-label") === "Mais ações")[0]);
     await press(elements(dialogs(container)[0], (el) => el.localName === "button" && text(el).trim() === "Duplicar")[0]);
     const inner = dialogs(container)[1];
@@ -339,8 +352,15 @@ test("[L9] A11 — Duplicar dentro da janela abre a OS nova (comportamento de ho
       (propsOf(form).onSubmit as (ev: unknown) => void)({ preventDefault() {}, target: form, currentTarget: form });
     });
     await settle();
+    assert.equal(countCalls(/^POST \/work-orders\/os-102\/duplicate$/), 1, "a duplicação foi enviada");
     assert.equal(currentLocation, "/work-orders/os-900", "foi à OS nova");
     assert.equal(dialogs(container).length, 0, "a janela saiu com a lista");
+    // Achado A1 (rev-493): ao voltar da OS nova, a lista de trás é pedida de novo e já traz a duplicada.
+    const beforeBack = countCalls(/^GET \/work-orders(\?|$)/);
+    await goBack();
+    assert.match(currentLocation, /^\/work-orders\?os=os-102$/, "voltou à lista com a janela da OS de origem");
+    assert.ok(countCalls(/^GET \/work-orders(\?|$)/) > beforeBack, `a lista foi pedida de novo ao voltar: antes ${beforeBack}, chamadas: ${JSON.stringify(calls)}`);
+    assert.ok(countCalls(/^GET \/work-orders(\?|$)/) > before, "a lista total foi pedida mais vezes que antes de duplicar");
   } finally {
     await unmount();
   }
@@ -361,6 +381,35 @@ test("[L10] A11 — Imprimir dentro da janela leva à página do detalhe (a impr
     assert.equal(stopped, true, "o clique não chega ao Imprimir do modal");
     assert.equal(currentLocation, "/work-orders/os-102", "foi à página do detalhe");
     assert.doesNotMatch(serialize(container), /Imprimir ordem de serviço/, "a impressão do modal não abriu");
+  } finally {
+    await unmount();
+  }
+});
+
+// Achado A2 (rev-493): o ciclo reverso do foco preso. O seletor é o MESMO da janela (`FOCUSABLE` de WorkOrderDetailWindow).
+const WINDOW_FOCUSABLE = "button:not([disabled]), [href], input, select, textarea, [tabindex='0']";
+
+test("[L11] A11 — Shift+Tab no primeiro controle vai ao último DA CAMADA ABERTA (a janela; depois o diálogo por cima dela)", async () => {
+  const { container, unmount } = await mount();
+  try {
+    await openWindowB(container);
+    const windowDialog = dialogs(container)[0];
+    const windowFocusables = windowDialog.querySelectorAll(WINDOW_FOCUSABLE);
+    assert.ok(windowFocusables.length >= 3, `denominador: a janela tem controles (${windowFocusables.length})`);
+    windowFocusables[0].focus();
+    await documentKey("Tab", true);
+    assert.equal(dom.doc.activeElement, windowFocusables[windowFocusables.length - 1], "Shift+Tab no primeiro controle da janela foi ao último da janela");
+    assert.ok(windowDialog.contains(dom.doc.activeElement), "o foco não escapa da janela");
+
+    await openCancel(container);
+    assert.equal(dialogs(container).length, 2, "o diálogo de cancelar abriu por cima da janela");
+    const inner = dialogs(container)[1];
+    const innerFocusables = inner.querySelectorAll(WINDOW_FOCUSABLE);
+    assert.ok(innerFocusables.length >= 2, `denominador: o diálogo tem controles (${innerFocusables.length})`);
+    innerFocusables[0].focus();
+    await documentKey("Tab", true);
+    assert.equal(dom.doc.activeElement, innerFocusables[innerFocusables.length - 1], "Shift+Tab no primeiro controle do diálogo foi ao último DO DIÁLOGO");
+    assert.ok(inner.contains(dom.doc.activeElement), "o foco não escapa para a janela de trás");
   } finally {
     await unmount();
   }
