@@ -17,6 +17,7 @@ import {
   PAYMENT_METHODS,
   type ImpoundPaymentActorContext,
   type ImpoundPaymentIntent,
+  type IntentAccount,
   type OnlinePaymentChannelGate,
   type PaymentConnectionPort,
 } from "./impound-payment.types.js";
@@ -73,6 +74,17 @@ export class ImpoundPaymentService {
     const account = resolution.account;
     assertIntentAccount(account);
 
+    // K1 (emenda §12; C2-2 da junta do #488) — a conta tem de ser DA organização do ator. Sem isso, uma porta que devolvesse a
+    // conexão de outra organização faria a cobrança cair na conta errada (a FK que amarra só nasce no REC-04, M-REC-14).
+    // Grupo: TODO de contrato do REC-04 — sem tabela de grupo no REC-01 não há pertença a conferir, então o escopo é recusado.
+    if (account.scope === "group") {
+      throw new ImpoundPaymentError(422, "ONLINE_PAYMENT_UNAVAILABLE", "group_scope_unavailable", "Shared group accounts are not available yet.");
+    }
+    if (account.ownerTenantId !== tenantId) {
+      throw new ImpoundPaymentError(422, "ONLINE_PAYMENT_UNAVAILABLE", "payment_connection_not_owned", "The payment account does not belong to this organization.");
+    }
+    const intentAccount: IntentAccount = { scope: "organization", connectionId: account.connectionId };
+
     // O corpo (pagador e meios) só é lido com o canal ligado e a conta resolvida.
     const input = parseCreateIntentBody(body);
     const now = this.clock();
@@ -123,7 +135,7 @@ export class ImpoundPaymentService {
         payerName: input.payerName,
         payerDocument: input.payerDocument,
         provider: resolution.provider,
-        account,
+        account: intentAccount,
         expiresAt: new Date(now.getTime() + ONLINE_PAYMENT_TTL_MS),
         actorId: actor.userId,
         occurredAt: now,
@@ -132,7 +144,7 @@ export class ImpoundPaymentService {
         intentId: intent.id,
         tenantId,
         provider: resolution.provider,
-        account,
+        account: intentAccount,
         watch: "open",
         nextCheckAt: new Date(now.getTime() + OPEN_WATCH_INTERVAL_MS),
       });

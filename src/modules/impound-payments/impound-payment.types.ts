@@ -88,8 +88,23 @@ export const PAYMENT_RESOLVER_REASONS = [
 ] as const;
 export type PaymentResolverReason = (typeof PAYMENT_RESOLVER_REASONS)[number];
 
+// K1 (emenda §12; achado C2-2 da junta do #488) — a porta devolve a conta COM O DONO dela, e o serviço confere o dono contra a
+// organização do ator antes de gravar qualquer coisa:
+// - `organization`: `ownerTenantId` tem de ser o `tenantId` do ator, senão 422 `payment_connection_not_owned`;
+// - `group`: o `tenantId` do ator tem de estar em `memberTenantIds`. TODO de contrato (REC-04): no REC-01 não existe tabela de
+//   grupo nem pertença a conferir, e o escopo de grupo é RECUSADO com 422 `group_scope_unavailable`; o REC-04 troca a recusa pela
+//   checagem real de pertença (M-REC-14).
+export type ResolvedAccount =
+  | { readonly scope: "organization"; readonly connectionId: string; readonly ownerTenantId: string }
+  | {
+      readonly scope: "group";
+      readonly groupId: string;
+      readonly groupConnectionId: string;
+      readonly memberTenantIds: readonly string[];
+    };
+
 export type PaymentConnectionResolution =
-  | { readonly ok: true; readonly account: IntentAccount; readonly provider: string; readonly methods: readonly PaymentMethod[] }
+  | { readonly ok: true; readonly account: ResolvedAccount; readonly provider: string; readonly methods: readonly PaymentMethod[] }
   | { readonly ok: false; readonly reason: PaymentResolverReason };
 
 // Porta da conexão (REC-04 injeta a real). PADRÃO FAIL-CLOSED: recusa com `payment_mode_unset` (LO-5/Q8b: sem modo, só

@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { assertRowsBelongToTenant, withTenantRls } from "../../database/rls.js";
 import { PrismaChargeRepository } from "../charging/charge-prisma.repository.js";
 import { ChargeService } from "../charging/charge.service.js";
 import { centsToMoney, moneyToCents } from "../charging/charge.validators.js";
@@ -22,6 +22,10 @@ import {
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
+const INTENTS_TABLE = "impound_payment_intents";
+const PROCESSES_TABLE = "impound_processes";
+const owner = (row: { readonly tenant_id: string }) => ({ tenantId: row.tenant_id });
+
 // B-PATIO-REC-01 (v3 §5.2; emenda §10.1 R-ISO) — repositório de baixo nível sobre um executor de TRANSAÇÃO. Só é construído
 // dentro do callback de `withTenantRls` (o setter do GUC é a 1ª instrução da transação, `src/database/rls.ts`). Toda
 // consulta filtra `tenant_id` EXPLICITAMENTE, além da RLS: no dev e no CI o app conecta como superusuário, que ignora a
@@ -29,24 +33,29 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 export class PrismaImpoundPaymentRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
+  // K2 (emenda §12; C2-1 da junta do #488): toda leitura deste repositório passa pelo CANÁRIO, além do filtro `tenant_id`.
   async processExists(tenantId: string, processId: string): Promise<boolean> {
-    const rows = await this.client.$queryRaw<Array<{ id: string }>>`
-      SELECT id FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
+    const rows = await this.client.$queryRaw<Array<{ id: string; tenant_id: string }>>`
+      SELECT id, tenant_id FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid
     `;
+    assertRowsBelongToTenant(rows.map(owner), tenantId, PROCESSES_TABLE);
     return rows.length > 0;
   }
 
   // SELECT ... FOR UPDATE do processo — a MESMA trava (e a mesma ordem) do settleProcess e da liberação (v3 §5.3).
   async lockProcess(tenantId: string, processId: string): Promise<{ status: string } | undefined> {
-    const rows = await this.client.$queryRaw<Array<{ status: string }>>`
-      SELECT status FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid FOR UPDATE
+    const rows = await this.client.$queryRaw<Array<{ status: string; tenant_id: string }>>`
+      SELECT status, tenant_id FROM impound_processes WHERE tenant_id = ${tenantId}::uuid AND id = ${processId}::uuid FOR UPDATE
     `;
-    return rows[0];
+    assertRowsBelongToTenant(rows.map(owner), tenantId, PROCESSES_TABLE);
+    return rows[0] ? { status: rows[0].status } : undefined;
   }
 
   async findById(tenantId: string, intentId: string): Promise<ImpoundPaymentIntent | undefined> {
     const row = await this.client.impoundPaymentIntent.findFirst({ where: { id: intentId, tenant_id: tenantId } });
-    return row ? mapIntent(row) : undefined;
+    const intent = row ? mapIntent(row) : undefined;
+    assertRowsBelongToTenant(intent ? [intent] : [], tenantId, INTENTS_TABLE);
+    return intent;
   }
 
   async listByProcess(tenantId: string, processId: string): Promise<readonly ImpoundPaymentIntent[]> {
@@ -61,7 +70,9 @@ export class PrismaImpoundPaymentRepository {
     const row = await this.client.impoundPaymentIntent.findFirst({
       where: { tenant_id: tenantId, process_id: processId, status: { in: [...LIVE_LINK_STATUSES] } },
     });
-    return row ? mapIntent(row) : undefined;
+    const live = row ? mapIntent(row) : undefined;
+    assertRowsBelongToTenant(live ? [live] : [], tenantId, INTENTS_TABLE);
+    return live;
   }
 
   async insertIntent(input: NewIntentInput): Promise<ImpoundPaymentIntent> {
