@@ -221,7 +221,7 @@ function mapIntent(row: IntentRecord): ImpoundPaymentIntent {
     cancelReason: (row.cancel_reason ?? undefined) as CancelReason | undefined,
     currency: row.currency,
     amountCents: moneyToCents(row.amount.toFixed(2)),
-    paidCents: Number(row.paid_amount.toFixed(2)),
+    paidCents: moneyToCents(row.paid_amount.toFixed(2)),
     appliedCents: moneyToCents(row.applied_amount.toFixed(2)),
     heldCents: moneyToCents(row.held_amount.toFixed(2)),
     heldReason: (row.held_reason ?? undefined) as HeldReason | undefined,
