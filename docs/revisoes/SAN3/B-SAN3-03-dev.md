@@ -735,3 +735,22 @@ PRONTO PARA PRÉ-REVISÃO
 - **Falta:** K3–K5, bateria final, CI e conferência Claude.
 - **Próximo comando exato:** adicionar T-SUM-10 para chaves desconhecidas e obter o vermelho-controle.
 - **Arquivos meio-escritos:** nenhum.
+
+## RETOMADA 20
+
+- **Executor:** `dev-san303-k-sol`, Codex GPT-5.6 Sol, nível menor declarado, esforço high.
+- **Head inicial:** `0bc37e75`, igual ao remoto; árvore limpa.
+- **K3 — allowlist da query do resumo:** `/summary` aceita somente `periodStart` e `periodEnd`; grafia
+  diferente, colchetes ou qualquer chave adicional devolvem `400`,
+  `CLOUD_COST_ALLOCATION_INVALID_PERIOD`/`summary_query_invalid`. A listagem de runs segue inalterada.
+- **T-SUM-10:** cobre `PeriodStart`, `periodStart[]`/`periodEnd[]` e `status` junto de um par válido;
+  também prova que `/runs?PeriodStart=...` continua 200. Vermelho-controle no head anterior: **exit 1**,
+  `200 !== 400`. Depois do conserto, o arquivo de rotas ficou **5/5**, 0 falhas.
+- **M59 literal:** remoção da chamada `assertSummaryQueryKeys(query)`, âncora **=1**; T-SUM-10 ficou
+  vermelho por `AssertionError` (**exit 1**). Restauração por `git checkout HEAD --`, árvore vazia.
+- **Contrato:** `API_CONTRACTS.md` registra a allowlist e `summary_query_invalid`.
+- **Commit de produto:** `03901eb9` (`fix(cloud-billing): recusa query desconhecida`).
+- **Feito:** K3 completo.
+- **Falta:** K4, K5, bateria final, CI e conferência Claude.
+- **Próximo comando exato:** aplicar a M47-c′ literal, provar T-RUN-1 vermelho e restaurar com status vazio.
+- **Arquivos meio-escritos:** nenhum.
