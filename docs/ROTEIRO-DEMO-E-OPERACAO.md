@@ -22,14 +22,13 @@ head, resultado numerado e hashes SHA-256 do roteiro e da evidência, sem descre
 
 ### Adiamentos desta entrega parcial
 
-| Fatia ou trecho | Estado | Motivo | Dono |
-|---|---|---|---|
-| F3 | ADIADA | O aplicativo release não declara `android.permission.INTERNET`; build debug não substitui o aceite. | `B-MOBILE-INTERNET-RELEASE` |
-| Op-10 | ADIADA | Depende da conectividade real do aplicativo release para exercitar a fila contra a API isolada. | `B-MOBILE-INTERNET-RELEASE` |
-| Op-8 mobile | ADIADA | A prova da preservação da fila após a rotação depende da mesma conectividade do release. | `B-MOBILE-INTERNET-RELEASE` |
-| F4 | ADIADA | O seed versionado não reproduz o estado funcional exigido pelo roteiro privado. | `B-SAN3-10b-F4-SEED-ISOLADO` |
+Quatro etapas ficaram ADIADAS nesta entrega: o trecho mobile da Op-8, a Op-10, a F3 (app anterior e rotação no
+emulador isolado) e a F4 (execução independente da demonstração). O veredito de cada uma, com motivo e dono, está na
+seção 3, em "Veredito por procedimento". As três primeiras pararam porque o aplicativo release do ensaio não
+declarava `android.permission.INTERNET`; o conserto entrou depois, no PR #499, e elas voltam na próxima volta deste
+bloco, sem trocar o release por build debug.
 
-Este PR é parcial. O item 44 permanece **PARCIAL** até os quatro adiamentos acima serem executados com prova real.
+Este PR é parcial. O item 44 permanece **PARCIAL** até os quatro adiamentos serem executados com prova real.
 
 ## 2. Procedimentos de operação
 
@@ -143,39 +142,74 @@ sem o sufixo. O RTO inclui o restore e o tempo até o login, junto do volume por
 **Se falhar:** não promover. Se o papel de runtime perder privilégios no restore, emendar o runbook para reaplicá-los,
 revisar a emenda e repetir o mesmo aceite.
 
-### Op-6 Bootstrap do primeiro admin
-
-**Quando usar:** primeira ativação de plataforma ou recuperação explícita de credencial.
-**Quem:** operador autorizado, em janela controlada.
-**Pré-condições:** alvo isolado; `NODE_ENV=production`; opt-in explícito; e-mail e nome conferidos; senha aleatória por
-entrada padrão.
-
-1. Sem opt-in, executar o script e confirmar recusa com exit 2.
-2. Confirmar que senha em argumento é recusada como `PASSWORD_IN_ARGV`.
-3. Executar `scripts/bootstrap-platform-admin.ts` com `--dry-run`; a contagem de usuários deve ficar igual.
-4. Executar de verdade com `--password-stdin`; confirmar exit 0 e criação de um usuário.
-5. Repetir sem reset; a contagem não muda.
-6. Fazer login e confirmar 200.
-7. Para recuperação, usar `--reset-password` conscientemente. A simulação hoje pode dizer “senha mantida” embora a
-   execução real redefina; `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` continua aberta.
-
-**Diagnóstico:** se a saída terminar apenas em `FALHOU`, verificar conectividade sem imprimir a URL do banco;
-`P-SAN3-09-FALHOU-SEM-CAUSA` continua aberta.
-**Prova de fim:** dry-run sem escrita, criação única, repetição convergente e login 200.
-**Se falhar:** não contornar o opt-in; corrigir alvo ou conectividade e repetir desde o dry-run.
-
 ### Op-7 Provisionamento de RBAC
 
-**Quando usar:** bootstrap e depois de alterar o catálogo canônico de permissões.
+**Quando usar:** bootstrap, antes da Op-6, e depois de alterar o catálogo canônico de permissões.
 **Quem:** operador de plataforma autorizado.
 **Pré-condições:** base-alvo isolada e conexão fornecida por ambiente protegido.
 
-1. Executar `scripts/provision-rbac.ts` e ler papéis, permissões, concessões e revogações nomeadas.
+1. Executar `scripts/provision-rbac.ts` (`npm run db:provision-rbac`) e ler papéis, permissões, concessões e
+   revogações nomeadas.
 2. Executar novamente no mesmo estado.
 3. Confirmar que a segunda rodada não cria nem remove nada adicional.
 
 **Prova de fim:** duas rodadas verdes e segunda rodada convergente.
 **Se falhar:** preservar o relatório, não editar RBAC diretamente e corrigir a fonte canônica.
+
+### Op-6 Bootstrap do primeiro admin
+
+**Quando usar:** primeira ativação de plataforma ou recuperação explícita de credencial.
+**Quem:** operador autorizado, em janela controlada.
+**Pré-condições:** a Op-7 já rodou nesta base. O papel global `super_admin` tem de existir:
+`SELECT count(*) FROM roles WHERE key='super_admin' AND tenant_id IS NULL` responde `1`. Sem ele, o script recusa
+com `RBAC_NOT_PROVISIONED` e exit 2, sem gravar nada. Além disso: alvo isolado; e-mail e nome conferidos; senha
+aleatória guardada em cofre ou arquivo protegido e entregue pela entrada padrão, nunca por argumento.
+
+**Variáveis:**
+- `NODE_ENV=production`;
+- `ALLOW_PROD_BOOTSTRAP=1`, o opt-in explícito. É independente de `ALLOW_PROD_SEED`: uma não abre a outra;
+- `PLATFORM_ADMIN_EMAIL`, o e-mail do primeiro administrador;
+- `PLATFORM_ADMIN_NAME`, o nome exibido (opcional);
+- `DATABASE_URL`, vinda do ambiente protegido. No ensaio isolado, é a do serviço `migrate` do projeto descartável.
+
+**Comando:** é o do "Runbook B — provisionamento do 1o tenant real" em `docs/deployment.md`, executado num checkout
+do SHA, depois de `npm ci && npx prisma generate`:
+
+```bash
+read -rs -p "Senha do admin de plataforma: " SENHA; echo
+printf '%s\n' "$SENHA" | NODE_ENV=production ALLOW_PROD_BOOTSTRAP=1 \
+  DATABASE_URL="$PROD_DATABASE_URL" PLATFORM_ADMIN_EMAIL='<e-mail>' PLATFORM_ADMIN_NAME='<nome>' \
+  npx tsx scripts/bootstrap-platform-admin.ts --password-stdin --dry-run
+unset SENHA
+```
+
+No ensaio isolado, o mesmo comando roda dentro do serviço `migrate` do projeto descartável, com os scripts montados
+só para leitura e a senha lida de um arquivo protegido:
+
+```bash
+docker compose -p <projeto-isolado> -f docker-compose.prod.yml run --rm -T -v "$(pwd)/scripts:/app/scripts:ro" \
+  -e NODE_ENV=production -e ALLOW_PROD_BOOTSTRAP=1 \
+  -e PLATFORM_ADMIN_EMAIL='<e-mail>' -e PLATFORM_ADMIN_NAME='<nome>' \
+  migrate npx tsx scripts/bootstrap-platform-admin.ts --password-stdin --dry-run < <arquivo-protegido-da-senha>
+```
+
+1. Conferir a pré-condição: o `super_admin` global existe (contagem `1`).
+2. Sem `ALLOW_PROD_BOOTSTRAP=1`, executar o comando sem `--dry-run` e confirmar `PRODUCTION_OPT_IN_MISSING` com
+   exit 2.
+3. Passar a senha como argumento (`--password=<qualquer>`) e confirmar `PASSWORD_IN_ARGV` com exit 2.
+4. Executar com `--dry-run`, como acima; a contagem de usuários deve ficar igual.
+5. Executar sem `--dry-run`; confirmar exit 0, `CONVERGIDO` e criação de um usuário.
+6. Repetir sem reset; exit 0 e a contagem não muda.
+7. Fazer login em `POST /api/v1/auth/login` com o e-mail, a senha e a organização de sistema `platform`, e confirmar
+   200.
+8. Para recuperação, usar `--reset-password` conscientemente. A simulação hoje pode dizer “senha mantida” embora a
+   execução real redefina; `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` continua aberta.
+
+**Diagnóstico:** se a saída terminar apenas em `FALHOU`, verificar conectividade sem imprimir a URL do banco;
+`P-SAN3-09-FALHOU-SEM-CAUSA` continua aberta. Se aparecer `RBAC_NOT_PROVISIONED`, rodar a Op-7 e repetir desde o
+passo 1.
+**Prova de fim:** recusas nomeadas, dry-run sem escrita, criação única, repetição convergente e login 200.
+**Se falhar:** não contornar o opt-in; corrigir alvo, RBAC ou conectividade e repetir desde o dry-run.
 
 ### Op-8 Rotação de JWT e refresh
 
@@ -250,8 +284,27 @@ As linhas resumem saídas saneadas. Logs brutos e valores sensíveis não são v
 | Op-1a | 2026-11-04 | a11d91f2 | censo e migração em banco descartável | aborto P0001 nomeado; censo inalterado; recuperação e status atualizados | passou | dev-44-sol |
 | Op-5 | 2026-11-04 | a11d91f2 | restore cronometrado com canário | API leu `/erp_restore_drill`; canário restaurado sem sufixo | passou | dev-44-sol |
 | Op-6 | 2026-11-04 | a11d91f2 | bootstrap por entrada padrão | recusas, dry-run, criação única, repetição e login comprovados | passou | dev-44-sol |
-| Op-8 | 2026-11-04 | a11d91f2 | rotação na API isolada | ADIADA: backend comprovado, trecho mobile sem INTERNET no release; dono B-MOBILE-INTERNET-RELEASE | ADIADA | dev-44-sol |
-| Op-10 | 2026-11-04 | a11d91f2 | atualização por cima no AVD isolado | ADIADA: release sem INTERNET não alcança a API isolada; dono B-MOBILE-INTERNET-RELEASE | ADIADA | dev-44-sol |
+| Op-8 | 2026-11-04 | a11d91f2 | rotação na API isolada | ADIADA: backend comprovado; trecho mobile sem INTERNET no release do ensaio, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
+| Op-10 | 2026-11-04 | a11d91f2 | atualização por cima no AVD isolado | ADIADA: release do ensaio sem INTERNET não alcança a API isolada, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
+
+### Veredito por procedimento
+
+Uma linha por procedimento obrigatório e por fatia adiada, na forma `PASSOU <op>` ou
+`ADIADA <op> — <motivo> — dono <bloco>`. A bateria do bloco confere esta lista contra o conjunto fechado das etapas
+adiadas nesta entrega (Op-8, Op-10, F3 e F4): qualquer uma delas escrita como `PASSOU`, em qualquer linha ou tabela
+deste roteiro, deixa a bateria vermelha, seja qual for o resto da linha; e qualquer outra etapa escrita como `ADIADA`
+também deixa vermelha.
+
+```text
+PASSOU Op-1
+PASSOU Op-1a
+PASSOU Op-5
+PASSOU Op-6
+ADIADA Op-8 — trecho mobile: o release do ensaio não declarava a permissão de internet (conserto no PR #499); o backend passou — dono B-SAN3-10b
+ADIADA Op-10 — o release do ensaio não alcançava a API isolada sem a permissão de internet (conserto no PR #499) — dono B-SAN3-10b
+ADIADA F3 — app anterior e rotação no emulador isolado, pela mesma causa; build debug não substitui o aceite — dono B-SAN3-10b
+ADIADA F4 — o seed versionado não reproduz o estado funcional exigido pelo roteiro privado — dono B-SAN3-10b-F4-SEED-ISOLADO
+```
 
 ## 4. Atos do dono no ambiente real
 

@@ -327,7 +327,7 @@
 | `P-ASS-SECRETS-MANAGER` | 12655 | MÉDIA | sim | P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador  |
 | `P-MOBILE-VERSAO-SEM-INCREMENTO` | 12684 | MÉDIA | sim | P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mu |
 | `P-ENSAIO-PADROES-APONTAM-PARA-DEV` | 12693 | MÉDIA | sim | P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o |
-| `P-SAN3-10B-F4-SEED-ISOLADO` | 12713 | MÉDIA | sim | P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos pri |
+| `P-SAN3-10B-F4-SEED-ISOLADO` | 12717 | MÉDIA | sim | P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos pri |
 
 ## ABERTAS · balde B — processo/registro — 249
 

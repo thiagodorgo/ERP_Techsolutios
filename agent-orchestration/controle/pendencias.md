@@ -12666,7 +12666,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   neutro da execução.
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** o dono passa a ser `B-SAN3-10b`, pela Op-1a e pelo
   acréscimo em `docs/deployment.md`. Fecha somente quando o ensaio provar recusa 42501 sob runtime, zero grupos sob
-  superusuário e recuperação do aborto 23505.
+  superusuário e recuperação do aborto P0001 nomeado (`grupo(s) DUPLICADO(S) de legado`), com o censo inalterado.
 - **`P-SAN3-09-ROTEIRO-DE-OPERACAO`:** o dono passa a ser `B-SAN3-10b`, pela Op-6. O roteiro inclui ativação,
   diagnóstico, repetição segura e recuperação; as correções de código de `P-SAN3-09-FALHOU-SEM-CAUSA`,
   `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` e `P-SAN3-09-ECO-APOS-FLAG-DE-SENHA` permanecem fora deste bloco.
@@ -12703,12 +12703,16 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## B-MOBILE-INTERNET-RELEASE (2026-11-04) — release Android sem permissão de internet — ALTA
 
-- **status:** ABERTA · **escopo:** defeito de produto preexistente, fora do B-SAN3-10b · **dono:**
-  `B-MOBILE-INTERNET-RELEASE` · **bloqueia:** F3, Op-10 e o trecho mobile da Op-8 do B-SAN3-10b.
-- **fato medido:** `android.permission.INTERNET` não existe no manifest principal do Android; existe somente nos
-  manifests de debug e profile. O APK release não alcançou a API isolada, embora a sonda de rede do AVD estivesse verde.
-- **encerramento:** o manifest release declara a permissão, o APK release prova conectividade com API isolada atrás do
-  firewall do AVD, e F3, Op-10 e o trecho mobile da Op-8 são repetidos sem substituir por build debug.
+- **status:** FECHADA pelo PR #499 (merge `8d7a99ff`, 2026-11-04): o manifest principal do Android passou a declarar
+  `android.permission.INTERNET`. · **escopo:** defeito de produto preexistente, fora do B-SAN3-10b · **dono:**
+  `B-MOBILE-INTERNET-RELEASE` · **bloqueava:** F3, Op-10 e o trecho mobile da Op-8 do B-SAN3-10b, que ficam liberados
+  para a próxima volta do `B-SAN3-10b` e continuam ADIADOS até serem executados com o release (o item 44 segue PARCIAL).
+- **fato medido (antes do #499):** `android.permission.INTERNET` não existia no manifest principal do Android; existia
+  somente nos manifests de debug e profile. O APK release não alcançou a API isolada, embora a sonda de rede do AVD
+  estivesse verde.
+- **encerramento:** o manifest release declara a permissão, com teste no PR #499. A prova de conectividade do APK
+  release atrás do firewall do AVD e a repetição de F3, Op-10 e do trecho mobile da Op-8, sem substituir por build
+  debug, passam à próxima volta do `B-SAN3-10b`, dentro de `P-SAN3-ROTEIRO-DEMO-OPERACAO`.
 
 ## P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos privados — MÉDIA
 
@@ -12724,4 +12728,4 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
   mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
-  migração: aborto P0001, frase nomeada de duplicidade e censo inalterado; a menção anterior a 23505 fica superada.
+  migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.

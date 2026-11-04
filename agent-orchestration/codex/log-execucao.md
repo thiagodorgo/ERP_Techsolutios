@@ -5181,3 +5181,15 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Registradas as decisões posteriores ao #489: três aparências; respostas de Usuários/Auditoria/Pátios; cruzamento condicionado a limite; conta 3; Codex Sol `medium`; pergunta do Cloud Billing; limpeza dos PRs parados. Falas do dono ficaram literais; leituras ficaram marcadas.
 - Ressalvas do porteiro da demo, do #487 e do #488, revisão do #487, observações do #489 e triagens dos PRs #493/#494 viraram registro e pendências com dono/status/PR-alvo.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, `CLAUDE.md`, `AGENTS.md`, lockfiles, segredo ou conteúdo comercial. Não fazer merge nesta etapa.
+
+## 2026-11-04 — B-SAN3-10b · conserto da revisão reforçada do PR #500 (`dev-44k-opus`)
+
+- Executor: Claude Opus, nível menor declarado, identidade nova, cobrindo o Codex sem limite; achados de
+  `rev-500-opus` (R-01 a R-06), triados na Emenda 4 do orquestrador.
+- `docs/deployment.md` sem 23505: o aborto real é P0001 com a frase nomeada de duplicidade.
+- Op-6 depois da Op-7, com variáveis, comando e ponteiro para o Runbook B; ensaiada como escrita em projeto
+  descartável. Antes, o ensaio da Op-6 (`dev-44-sol`, head `a11d91f2`) já rodava a Op-7 primeiro; o texto não dizia.
+- Veredito literal por procedimento no roteiro e conjunto fechado das adiadas (Op-8, Op-10, F3, F4) no B8 da bateria.
+- `B-MOBILE-INTERNET-RELEASE` FECHADA pelo PR #499 (`8d7a99ff`); as três etapas mobile seguem ADIADAS, dono
+  `B-SAN3-10b`.
+- O item 44 continua PARCIAL. KPI congelado; merge fora da alçada do dev.

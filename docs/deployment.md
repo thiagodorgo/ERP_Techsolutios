@@ -269,15 +269,11 @@ Antes da migração `20260873000000_add_stock_movements_unique_backstops`, execu
 42501 quando o papel não pode enxergar o conjunto completo. Com zero grupos, a migração pode seguir. Com um ou mais
 grupos, a decisão é humana, grupo a grupo, por movimento compensatório; nunca apague linha para fazer o índice passar.
 
-Se `prisma migrate deploy` abortar com 23505 e a contagem de duplicatas, execute
-`prisma migrate resolve --rolled-back 20260873000000_add_stock_movements_unique_backstops`, reconcilie os grupos e
-rode `prisma migrate deploy` novamente. Confirme o fim com `prisma migrate status`. O ensaio e as provas operacionais
-ficam em `docs/ROTEIRO-DEMO-E-OPERACAO.md`.
-
-> **Correção medida no B-SAN3-10b:** essa migração aborta com SQLSTATE P0001 e a frase
-> `grupo(s) DUPLICADO(S) de legado`, antes de criar os índices. O procedimento correto mantém o mesmo caminho de
-> recuperação, mas também confirma que o censo permaneceu inalterado depois do aborto. Esta correção prevalece sobre
-> a menção histórica a 23505 no parágrafo anterior.
+Se houver grupo duplicado, `prisma migrate deploy` aborta com SQLSTATE P0001 e a mensagem
+`grupo(s) DUPLICADO(S) de legado`, antes de criar os índices. Nesse caso, confirme que o censo continua igual ao de
+antes do aborto, execute `prisma migrate resolve --rolled-back 20260873000000_add_stock_movements_unique_backstops`,
+reconcilie os grupos e rode `prisma migrate deploy` novamente. Confirme o fim com `prisma migrate status`. O ensaio e
+as provas operacionais ficam em `docs/ROTEIRO-DEMO-E-OPERACAO.md`.
 
 #### Runbook A — rollback ensaiavel (forward-only, P-007)
 

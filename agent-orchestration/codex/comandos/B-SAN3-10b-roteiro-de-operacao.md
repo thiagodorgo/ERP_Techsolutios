@@ -90,3 +90,19 @@ repete a bateria e os ensaios manuais B15 previstos no plano. Todo pipe usa `set
 - F4 fica ADIADA, dono `B-SAN3-10b-F4-SEED-ISOLADO`.
 - A bateria separa falhas de adiamentos; ADIADA nunca conta como `passou`.
 - O PR é parcial e não fecha o item 44. Revisão reforçada e merge continuam fora da alçada do DEV.
+
+## Emenda 4 executada — conserto da revisão reforçada do PR #500
+
+- Executor: `dev-44k-opus` (Claude Opus, nível menor declarado, identidade nova), cobrindo o Codex sem limite. Os
+  achados R-01 a R-06 são de `rev-500-opus`; quem achou não consertou.
+- R-01: `docs/deployment.md` diz só o comportamento real do aborto (SQLSTATE P0001 e `grupo(s) DUPLICADO(S) de
+  legado`); saem a instrução com 23505 e a "menção histórica", que nasceram neste mesmo PR.
+- R-02: a Op-6 passa a vir depois da Op-7, com as variáveis, o comando exato e o ponteiro para o Runbook B; foi
+  ensaiada como escrita em projeto descartável.
+- R-03 e R-04: o roteiro ganha o "Veredito por procedimento" (`PASSOU <op>` ou `ADIADA <op> — <motivo> — dono
+  <bloco>`), e o B8 da bateria confere o conjunto fechado das adiadas desta entrega: Op-8 (trecho mobile), Op-10, F3
+  e F4.
+- R-05: `B-MOBILE-INTERNET-RELEASE` fica FECHADA pelo PR #499 (`8d7a99ff`). F3, Op-10 e o trecho mobile da Op-8
+  continuam ADIADOS e passam a ter dono `B-SAN3-10b`, na próxima volta.
+- R-06: a Op-5 e a Op-8 web ficam para a conferência (B15).
+- O item 44 continua PARCIAL.
