@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **745** |
-| IDs distintos | 734 |
-| **ABERTAS** | **562** |
+| Cabecalhos `## P-` | **748** |
+| IDs distintos | 737 |
+| **ABERTAS** | **565** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **499** |
+| — das quais **ativas nesta rodada** | **502** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 179 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **745 cabecalhos para 734 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **748 cabecalhos para 737 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 250
+## ABERTAS · balde A — material — 253
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -325,6 +325,9 @@
 | `P-ASS-ADAPTADORES-FORA-DO-PORTAO` | 12643 | MÉDIA | sim | P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par  |
 | `P-ASS-SANDBOX-REAL` | 12649 | MÉDIA | sim | P-ASS-SANDBOX-REAL (2026-11-03) — homologação real dos provedores escolhidos depende de  |
 | `P-ASS-SECRETS-MANAGER` | 12655 | MÉDIA | sim | P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador  |
+| `P-MOBILE-VERSAO-SEM-INCREMENTO` | 12684 | MÉDIA | sim | P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mu |
+| `P-ENSAIO-PADROES-APONTAM-PARA-DEV` | 12693 | MÉDIA | sim | P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o |
+| `P-SAN3-10B-F4-SEED-ISOLADO` | 12717 | MÉDIA | sim | P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos pri |
 
 ## ABERTAS · balde B — processo/registro — 249
 

@@ -4364,6 +4364,14 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   - **O-3:** na mesma entrada, "conta de quem recebe" passa a apontar a resposta do dono de 31/10 ~22:30 (`D-PLATAFORMA-RECEBE-E-REPASSA`) e a de 02/11 ~23:45 (Q-A, *"não recebe"*, em `D-PATIO-RESPOSTAS-0211`).
 - **Porteiro do #486:** o parecer do `porteiro-486-sol` diz "O comentário do dono no PR aceitou o achado". O comentário (`gh api repos/thiagodorgo/ERP_Techsolutios/issues/486/comments`, 2026-11-03T11:54:37Z) foi postado pela conta `thiagodorgo`, mas é do **orquestrador**: ele começa por "Revisão independente (Codex `rev-486-sol`): APROVADO COM AJUSTES" e registra a triagem do A1. No PR há só esse comentário e uma revisão automática do `copilot-pull-request-reviewer[bot]` sem conteúdo (`gh api …/pulls/486/reviews`); o dono não comentou. O parecer foi versionado sem alteração em `omega/juntas/votos/B-SAN3-21-PR486/porteiro-pos-merge.md`, com esta errata anexada no fim.
 
+## REG-B-SAN3-10B-DESMEMBRAMENTO (2026-11-04) — registro do orquestrador, não decisão do dono
+
+- O item 44, `P-SAN3-ROTEIRO-DEMO-OPERACAO`, sai do bloco-mãe `B-SAN3-10` e passa ao
+  `B-SAN3-10b`, dedicado ao roteiro técnico e aos ensaios isolados.
+- `docs/deployment.md` entra no escopo somente para acréscimos: pré-condição do censo e aviso de rollback restrito.
+- O quórum anterior do plano cede ao nível atual do §C7 item 10: revisão reforçada por revisor independente e CI.
+- O conteúdo funcional da demonstração fica fora do repositório público; só hashes e resultados neutros entram.
+- É registro de divisão de escopo e leitura do orquestrador (§A6), corrigível pelo dono numa linha.
 ## D-APAR-3-IMPLEMENTAR-0311 (decisão do dono, 2026-11-03, ~14:55 SP) — implementar as telas com maquete aprovada, com Claude Design
 
 - **Fala literal do dono:** *"implementar Dashboard / Ordens de Serviço / Usuários / Auditoria / Despachos / Estoque / Financeiro, a parte de baixa, conta e conciliação — IMPORTANTE, FAZER COM CLAUDE DESING"*.

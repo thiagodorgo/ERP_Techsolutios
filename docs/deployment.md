@@ -262,7 +262,25 @@ k-ésima sentença deixa 1..k aplicadas (P3018) e o redeploy quebra (42701). Por
   alguma). Roda dentro do `npm test` por `tests/migration-transaction-guard.test.ts`, logo no job `backend` da CI.
   Rodapé medido na base `8a7885f4` (2026-10-25): `migrações: 116 · anteriores: 112 · novas: 4 · violações: 0`.
 
+#### Pré-condição do deploy: censo de duplicatas
+
+Antes da migração `20260873000000_add_stock_movements_unique_backstops`, execute
+`scripts/inventory-duplicates-census.sql` sob superusuário ou papel com `BYPASSRLS`. O arquivo recusa com SQLSTATE
+42501 quando o papel não pode enxergar o conjunto completo. Com zero grupos, a migração pode seguir. Com um ou mais
+grupos, a decisão é humana, grupo a grupo, por movimento compensatório; nunca apague linha para fazer o índice passar.
+
+Se houver grupo duplicado, `prisma migrate deploy` aborta com SQLSTATE P0001 e a mensagem
+`grupo(s) DUPLICADO(S) de legado`, antes de criar os índices. Nesse caso, confirme que o censo continua igual ao de
+antes do aborto, execute `prisma migrate resolve --rolled-back 20260873000000_add_stock_movements_unique_backstops`,
+reconcilie os grupos e rode `prisma migrate deploy` novamente. Confirme o fim com `prisma migrate status`. O ensaio e
+as provas operacionais ficam em `docs/ROTEIRO-DEMO-E-OPERACAO.md`.
+
 #### Runbook A — rollback ensaiavel (forward-only, P-007)
+
+> **Restrição vigente — `P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`:** rollback com duas versões escrevendo ao mesmo
+> tempo é proibido. Para destino anterior ao 03a, entregue no PR #425, use somente fix-forward. Entre imagens que já
+> contêm o 03a, pare a API durante a troca, garanta um único escritor e execute o smoke completo depois. Os comandos
+> `fly` abaixo estão inertes desde `D-INFRA-PROVIDER-AWS`; não os use como runbook AWS.
 
 O deploy e a promocao da imagem GHCR `:<sha>`; o rollback e a **redeploy da imagem `:<sha-anterior>`** — simetrico.
 

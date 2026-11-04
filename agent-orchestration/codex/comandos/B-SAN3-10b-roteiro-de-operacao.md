@@ -1,0 +1,108 @@
+# B-SAN3-10b — Roteiro técnico de operação
+
+- **Tipo:** documentação operacional
+- **Fase:** Execution / Validation / Persistence
+- **Trilha:** documentação e operação
+- **Data:** 2026-11-04
+- **Branch:** `docs/b-san3-10b-roteiro-operacao`
+- **Executor:** `dev-44-sol`, Codex GPT-5.6 Sol, nível menor declarado
+- **Verificador:** Claude independente, revisão reforçada
+
+## Objetivo
+
+Entregar e ensaiar um roteiro técnico de operação para imagem de produção, censo pré-deploy, rollback,
+backup, restore, bootstrap, RBAC, rotação de segredos e drenagem da fila do app de campo. O conteúdo privado
+da demonstração e toda credencial permanecem fora do repositório público.
+
+## Fontes de verdade
+
+- `CLAUDE.md`, `PROJECT_MEMORY.md` e `docs/revisoes/SAN3/PLANO_SAN3.md`.
+- `docs/deployment.md`, `docs/go-live-readiness.md` e `docs/limpeza-de-disco.md`.
+- Plano externo B-SAN3-10b, com precedência: Emenda 1 > seção D > seção C > texto original.
+- Decisões e pendências em `agent-orchestration/controle/`.
+
+## Escopo PERMITIDO
+
+- `docs/ROTEIRO-DEMO-E-OPERACAO.md`.
+- `docs/deployment.md`, somente acréscimos nos dois pontos definidos pelo plano.
+- `agent-orchestration/controle/pendencias.md`, somente acréscimos.
+- `agent-orchestration/controle/pendencias-indice.md`, somente pelo gerador.
+- `agent-orchestration/controle/decisoes.md`, somente acréscimo do registro de desmembramento.
+- `agent-orchestration/codex/comandos/B-SAN3-10b-roteiro-de-operacao.md`.
+- `agent-orchestration/codex/log-execucao.md`, somente acréscimo.
+
+## Escopo PROIBIDO
+
+- Todo código, teste, migração, workflow, script, lockfile, `.env`, `mobile/**`, `src/**`, `prisma/**`,
+  `.github/**`, `tests/**`, `scripts/**`, `Kpis/**`, `CLAUDE.md`, `AGENTS.md`, `.agents/**` e `.claude/**`.
+- Credencial, senha, token, valor de segredo, dado comercial, dado pessoal ou caminho da máquina.
+- A pilha ativa, portas 3000 e 5173, os contêineres ativos, o AVD ativo e o worktree ativo da apresentação.
+- `docker system prune`, `docker builder prune`, `push --force`, `reset --hard`, `stash`, `rebase` e `git add -A`.
+- Comando contra provedor ou ambiente real.
+
+## Fatias
+
+1. F0 — registrar o desmembramento, pendências, comando e índice.
+2. F1 — redigir o roteiro e acrescentar os avisos em `docs/deployment.md`.
+3. F2 — ensaiar Op-1, Op-1a e Op-3 a Op-8 em pilha Docker isolada.
+4. F3 — ensaiar Op-10 em AVD exclusivo; se root, firewall, sonda ou gate não morderem, adiar.
+5. F4 — executar o roteiro privado em pilha isolada e publicar apenas hashes e resultados neutros.
+6. F5 — emendar por escrito e repetir somente passo cujo ensaio refutar o texto.
+7. F6 — executar a bateria literal extraída do plano e abrir o PR.
+8. F7 — revisão reforçada por Claude independente, sem merge.
+
+Antes de F2, F3 e F4, executar o pré-voo literal. Cada fatia grava comando, saída resumida e veredito no
+relatório externo incremental. Premissa falsa adia a fatia; não autoriza aceite substituto.
+
+## Bateria de validação
+
+```bash
+bash bateria-10b.sh docs/b-san3-10b-roteiro-operacao
+```
+
+O script é extraído literalmente do plano e deve terminar em `BATERIA: 0 falha(s)`. A revisão reforçada
+repete a bateria e os ensaios manuais B15 previstos no plano. Todo pipe usa `set -o pipefail`.
+
+## Definition of Done
+
+- [ ] Seis procedimentos obrigatórios registrados como `passou` por execução real.
+- [ ] Registro neutro da execução privada com dois SHA-256, sem conteúdo privado no repositório.
+- [ ] Bateria literal com zero falhas.
+- [ ] CI do head concluída e verde, com logs lidos.
+- [ ] Inventário final de alvos temporários vazio e alvos ativos preservados.
+- [ ] PR aberto com aviso de revisão reforçada e sem merge.
+- [ ] `Kpis/**` intocado: KPI congelado (§C7 item 8(5)).
+
+## Rastreabilidade
+
+- **ID:** B-SAN3-10b
+- **PR:** a preencher após abertura
+- **Merge commit:** não aplicável nesta entrega; merge proibido ao DEV
+- **Approved head:** a preencher pela revisão
+- **Nível:** revisão reforçada
+- **Status:** em execução
+
+## Emenda 3 executada — entrega parcial
+
+- Op-1a repete o caminho de aborto com aceite `abort_rc != 0`, SQLSTATE P0001, frase literal de duplicidade e
+  censo inalterado.
+- F3, Op-10 e o trecho mobile da Op-8 ficam ADIADOS, dono `B-MOBILE-INTERNET-RELEASE`.
+- F4 fica ADIADA, dono `B-SAN3-10b-F4-SEED-ISOLADO`.
+- A bateria separa falhas de adiamentos; ADIADA nunca conta como `passou`.
+- O PR é parcial e não fecha o item 44. Revisão reforçada e merge continuam fora da alçada do DEV.
+
+## Emenda 4 executada — conserto da revisão reforçada do PR #500
+
+- Executor: `dev-44k-opus` (Claude Opus, nível menor declarado, identidade nova), cobrindo o Codex sem limite. Os
+  achados R-01 a R-06 são de `rev-500-opus`; quem achou não consertou.
+- R-01: `docs/deployment.md` diz só o comportamento real do aborto (SQLSTATE P0001 e `grupo(s) DUPLICADO(S) de
+  legado`); saem a instrução com 23505 e a "menção histórica", que nasceram neste mesmo PR.
+- R-02: a Op-6 passa a vir depois da Op-7, com as variáveis, o comando exato e o ponteiro para o Runbook B; foi
+  ensaiada como escrita em projeto descartável.
+- R-03 e R-04: o roteiro ganha o "Veredito por procedimento" (`PASSOU <op>` ou `ADIADA <op> — <motivo> — dono
+  <bloco>`), e o B8 da bateria confere o conjunto fechado das adiadas desta entrega: Op-8 (trecho mobile), Op-10, F3
+  e F4.
+- R-05: `B-MOBILE-INTERNET-RELEASE` fica FECHADA pelo PR #499 (`8d7a99ff`). F3, Op-10 e o trecho mobile da Op-8
+  continuam ADIADOS e passam a ter dono `B-SAN3-10b`, na próxima volta.
+- R-06: a Op-5 e a Op-8 web ficam para a conferência (B15).
+- O item 44 continua PARCIAL.
