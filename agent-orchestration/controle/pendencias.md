@@ -12564,3 +12564,28 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** cada parâmetro passa a ser obrigatório com falha clara ou aponta a alvo inexistente, com teste:
   release sem `API_BASE_URL` falha; restore sem contêiner recusa; smoke aceita nome de projeto; compose isolado não
   publica 3000; web de ensaio exige origem explícita.
+
+## B-MOBILE-INTERNET-RELEASE (2026-11-04) — release Android sem permissão de internet — ALTA
+
+- **status:** ABERTA · **escopo:** defeito de produto preexistente, fora do B-SAN3-10b · **dono:**
+  `B-MOBILE-INTERNET-RELEASE` · **bloqueia:** F3, Op-10 e o trecho mobile da Op-8 do B-SAN3-10b.
+- **fato medido:** `android.permission.INTERNET` não existe no manifest principal do Android; existe somente nos
+  manifests de debug e profile. O APK release não alcançou a API isolada, embora a sonda de rede do AVD estivesse verde.
+- **encerramento:** o manifest release declara a permissão, o APK release prova conectividade com API isolada atrás do
+  firewall do AVD, e F3, Op-10 e o trecho mobile da Op-8 são repetidos sem substituir por build debug.
+
+## P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos privados — MÉDIA
+
+- **status:** ABERTA · **escopo:** ensaio técnico fora do repositório público · **dono:**
+  `B-SAN3-10b-F4-SEED-ISOLADO` (bloco a planejar) · **bloqueia:** fechamento completo do item 44; não bloqueia o PR parcial.
+- **fato medido:** a pilha isolada e a origem única passaram, mas os quatro fluxos expiraram porque o seed versionado
+  não fornece o estado funcional do roteiro privado. A base ativa e a execução manual continuaram proibidas.
+- **encerramento:** seed fictício próprio dos ensaios disponível fora do repositório, quatro fluxos executados na pilha
+  isolada e prova registrada com os dois SHA-256, sem conteúdo privado no repositório.
+
+## Errata dos apensos B-SAN3-10b — Emenda 3 (2026-11-04)
+
+- **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
+  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
+- **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
+  migração: aborto P0001, frase nomeada de duplicidade e censo inalterado; a menção anterior a 23505 fica superada.

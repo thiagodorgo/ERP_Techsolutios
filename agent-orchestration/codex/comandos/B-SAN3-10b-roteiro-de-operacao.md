@@ -81,3 +81,12 @@ repete a bateria e os ensaios manuais B15 previstos no plano. Todo pipe usa `set
 - **Approved head:** a preencher pela revisão
 - **Nível:** revisão reforçada
 - **Status:** em execução
+
+## Emenda 3 executada — entrega parcial
+
+- Op-1a repete o caminho de aborto com aceite `abort_rc != 0`, SQLSTATE P0001, frase literal de duplicidade e
+  censo inalterado.
+- F3, Op-10 e o trecho mobile da Op-8 ficam ADIADOS, dono `B-MOBILE-INTERNET-RELEASE`.
+- F4 fica ADIADA, dono `B-SAN3-10b-F4-SEED-ISOLADO`.
+- A bateria separa falhas de adiamentos; ADIADA nunca conta como `passou`.
+- O PR é parcial e não fecha o item 44. Revisão reforçada e merge continuam fora da alçada do DEV.

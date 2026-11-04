@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **725** |
-| IDs distintos | 714 |
-| **ABERTAS** | **542** |
+| Cabecalhos `## P-` | **726** |
+| IDs distintos | 715 |
+| **ABERTAS** | **543** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **479** |
+| — das quais **ativas nesta rodada** | **480** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 179 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **725 cabecalhos para 714 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **726 cabecalhos para 715 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 241
+## ABERTAS · balde A — material — 242
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -316,6 +316,7 @@
 | `P-WEB-LOGIN-MENSAGEM-TENANT` | 12491 | MÉDIA | sim | P-WEB-LOGIN-MENSAGEM-TENANT (2026-11-03) — a tela de login mostra "Tenant, e-mail ou sen |
 | `P-MOBILE-VERSAO-SEM-INCREMENTO` | 12548 | MÉDIA | sim | P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mu |
 | `P-ENSAIO-PADROES-APONTAM-PARA-DEV` | 12557 | MÉDIA | sim | P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o |
+| `P-SAN3-10B-F4-SEED-ISOLADO` | 12577 | MÉDIA | sim | P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos pri |
 
 ## ABERTAS · balde B — processo/registro — 238
 

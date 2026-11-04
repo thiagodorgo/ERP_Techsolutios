@@ -5164,3 +5164,11 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - F1: roteiro técnico redigido e `docs/deployment.md` ampliado somente por adição. Conteúdo privado e credenciais não
   entram no repositório.
 - KPI congelado (§C7 item 8(5)); `Kpis/**` permanece intocado.
+
+## 2026-11-04 — B-SAN3-10b · Emenda 3 e PR parcial (`dev-44-sol`)
+
+- Op-1a repetida em projeto descartável: aborto diferente de zero, SQLSTATE P0001, frase literal de duplicidade e
+  censo idêntico antes/depois; após a reconciliação sintética, migração e status ficaram verdes.
+- ADIADAS com motivo e dono: F3, Op-10 e trecho mobile da Op-8 → `B-MOBILE-INTERNET-RELEASE`; F4 →
+  `B-SAN3-10b-F4-SEED-ISOLADO`.
+- Entrega parcial: o item 44 não fecha. KPI congelado; revisão reforçada; merge proibido ao DEV.
