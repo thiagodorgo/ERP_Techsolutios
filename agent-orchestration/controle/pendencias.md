@@ -5697,7 +5697,7 @@ derivar do `history`, ou um guard permanente fica **vermelho** quando o PR-topo 
 PR-topo do `history`. Prova **por mutação**, como os outros guards de KPI já se provam: mergear uma entrega
 sem tocar `recent` tem de acender vermelho.
 
-- **status:** ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`recent.itens` com as entregas do #369 ao #386 e `as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro.""
+- **status:** FECHADA em 2026-11-04 (registro de 04/11, `reg-0411-opus`) — o critério de fechamento (guard que falha quando o painel defasa do último merge, provado por mutação; teste (g) do item 54) foi entregue pelo PR #494 (`B-SAN3-10c`; head `3b7615e2`, merge `4f260796`, 2026-11-03): `tests/kpi-painel-frescor.test.ts`, 25 testes (M1–M18 de mutação, N1–N3 de fronteira e R0–R2 sobre os dados reais), R0 `ok` no CI do merge (run `41739911616`). O marco de KPI #501 (merge `0c3c7826`, 2026-11-04) é o primeiro marco escrito com o guard já na `main` e passou nele: 25 `ok` e 0 `not ok` de `frescor:` no job `backend` do CI do head `f1b9ef3c` (run `41849732792`). Ressalvas não graves da conferência do #494 seguem em `P-KPI-FRESCOR-BORDAS-ANCORA`. Item 54 do `PLANO_SAN3.md` FECHADO. Valor anterior, preservado: "ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`recent.itens` com as entregas do #369 ao #386 e `as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — os dados da seção "Últimas demandas" foram atualizados pelo PR #386 (plano SAN3): `recent.itens` ganhou as entregas do #369 ao #386 (os 21 PRs de registro e governança do #360 ao #384 num item agregado) e `as_of` 2026-09-11 (crítico SAN3 r2, CR2-03; critério 8 do dono). A causa — nenhum PR de entrega é obrigado a alimentar `recent`, e nenhum guard confere — fica com o `B-GOV-GUARD-DERIVADOS`. Valor anterior, preservado: "ABERTA · **severidade:** MÉDIA · **dono:** bloco **SAN2-5** — "ferramentas de registro honestas", **parte 2**: o mesmo bloco que já detém `Kpis/app.js` e `Kpis/index.html` pela `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` (parte 1). É a atribuição coerente com a irmã, não um dono inventado: o conserto mora nos mesmos dois arquivos. Se o dono humano redirecionar, re-atribui-se com registro."""
 
 ---
 - **emenda (junta do PR #386, ciclo 2 — C3c2-04, `pre-existente`, 2026-09-12):** o painel diz duas coisas do mesmo merge: o item de `recent` do #357 ("Identidade global: o e-mail deixa de decidir quem você é") está com `pr: null` e data 2026-08-18, enquanto o `roadmap` do `B-O6R-01` dá `pr 357` e o merge é de 2026-08-19T23:30:07Z (`gh pr view 357`). Fica fora do intervalo que esta entrada declara corrigido (#369..#386) e é a mesma classe: seção curada à mão, atrás do history. Conferido pelo orquestrador em `ecc32712`. Dono: o resíduo do item 54 (teste (g) do `B-SAN3-10`).
@@ -8558,12 +8558,12 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** pre-existente (evidência de data/origem: a origem acima)
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
-- **dono:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`.
+- **dono:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`. A parte "custo AWS entra só por CSV manual" só fecha com o merge de `B-ASS-09a` e `B-ASS-10b` (condição restaurada no registro de 04/11, N4 de `P-ASS00-RESIDUOS-CONFERENCIA`).
 - **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
 ---
-- **nota B-SAN3-03 (2026-11-02):** resposta e divisão de donos consolidadas na linha `dono` acima; status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -9101,7 +9101,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca blocos mergeados como "a_fazer" — MÉDIA
 
-- status: ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`roadmap.blocos`: `B-O6R-02` concluido com o PR #371, `B-O6R-07` parcial, `B-O6R-06` com o PR #385; `roadmap.as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)""
+- status: FECHADA em 2026-11-04 (registro de 04/11, `reg-0411-opus`) — o critério de fechamento (guard que falha quando o painel defasa do último merge, provado por mutação; teste (g) do item 54) foi entregue pelo PR #494 (`B-SAN3-10c`; head `3b7615e2`, merge `4f260796`, 2026-11-03): `tests/kpi-painel-frescor.test.ts`, 25 testes (M1–M18 de mutação, N1–N3 de fronteira e R0–R2 sobre os dados reais), R0 `ok` no CI do merge (run `41739911616`). O marco de KPI #501 (merge `0c3c7826`, 2026-11-04) é o primeiro marco escrito com o guard já na `main` e passou nele: 25 `ok` e 0 `not ok` de `frescor:` no job `backend` do CI do head `f1b9ef3c` (run `41849732792`). Ressalvas não graves da conferência do #494 seguem em `P-KPI-FRESCOR-BORDAS-ANCORA`. Item 54 do `PLANO_SAN3.md` FECHADO. Valor anterior, preservado: "ABERTA (PARCIAL — fechado: os dados do painel foram corrigidos no PR #386 (`roadmap.blocos`: `B-O6R-02` concluido com o PR #371, `B-O6R-07` parcial, `B-O6R-06` com o PR #385; `roadmap.as_of` 2026-09-11); aberto: o critério de fechamento desta entrada — guard que falha quando o painel defasa do último merge, provado por mutação — dono B-SAN3-10, plano SAN3 v5, item 54) · reaberta em 2026-09-12 pela junta do PR #386, ciclo 1 (C3-03). Valor anterior, preservado: "FECHADA — o PR #386 (plano SAN3) atualizou `roadmap.blocos` do painel: `B-O6R-02` → `concluido` (os achados do bloco fecharam no #371) e `B-O6R-07` → `parcial` (07a e 07b mergeados; residuais no `B-O6R-07c` e no `B-AV-REAL`); crítico SAN3 r2, CR2-03; critério 8 do dono. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)"""
 - **fonte (fatia AUSENTES, §2a):** sintese §7
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `Kpis/kpis-latest.json` `roadmap.as_of` = 2026-08-19; `B-O6R-02` e `B-O6R-07` `a_fazer` (mergeados em #371 e #369/#380)
@@ -10480,7 +10480,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 - status: ABERTA.
 - **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
-- **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **dono:** `B-ASS-02` (persistência de `tenant.plan`) e `B-SAN3-18` (persistência das demais propriedades e ações da organização), este condicionado à decisão do dono sobre provisionamento pelo console. (Formato `**dono:**` aplicado no registro de 04/11, N5 de `P-ASS00-RESIDUOS-CONFERENCIA`; antes: "`B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console", com o `B-ASS-02` só no apenso abaixo.)
 - **apenso B-ASS-00:** `B-ASS-02` persiste somente `tenant.plan`; a persistência das demais propriedades e ações da organização continua com `B-SAN3-18`.
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
 
@@ -10525,7 +10525,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
 - **dono:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (margem e visão da plataforma), após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
-- **nota B-SAN3-03 (2026-11-02), donos nomeados:** divisão consolidada na linha `dono` acima; status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -12729,3 +12729,90 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
 - **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
   migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.
+
+## P-ASS00-RESIDUOS-CONFERENCIA (2026-11-04) — resíduos não graves da conferência do conserto do PR #497 — MÉDIA
+
+- **status:** ABERTA (PARCIAL — fechados no registro de 04/11: N4, N3, N2 e N5 no `agent-orchestration/**`; abertos: N1 e a correção das linhas 139 e 142 do `PLANO_SAN3.md`) · **escopo:** resíduos de registro do `B-ASS-00` · **dono:** o próximo PR de registro (N4, N3, N2 e N5, feitos neste); `B-ASS-04` para as linhas 139 (item 59) e 142 (item 62) do `docs/revisoes/SAN3/PLANO_SAN3.md`, que este registro não pode tocar (escopo: só a linha do item 54); o primeiro PR autorizado a tocar `docs/omega-pd.md` para o N1 · **PR-alvo:** este registro e os PRs nomeados · **bloqueia:** não.
+- **origem medida:** `conf-497b-opus`, 04/11 ~03:10 SP, CONFERIDO COM RESSALVA (A1–A8 FECHADOS, CI 16/16). Pelo §C7 item 10(4), o que sobra não é grave e vira pendência.
+- **N4 (média), feito:** as duas notas `nota B-SAN3-03 (2026-11-02)` voltaram ao texto de `c6195c12` (`git show c6195c12:agent-orchestration/controle/pendencias.md`; diff das duas linhas vazio), e a condição "só fecha com o merge de `B-ASS-09a` e `B-ASS-10b`" está na linha `**dono:**` de `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **N3, feito em `decisoes.md`:** `D-ASS-PLANOS-FRANQUIA-E-CANAL` citava `API_CONTRACTS.md:96-102` como contratos de billing que ganham dono. Na raiz, essas linhas são do Traccar (`operator_history_ambiguous` e o cabeçalho dos eventos do B-TRC-02); o bloco de billing é `docs/claude-code-handoff/API_CONTRACTS.md:96-102` (`## finance / billing`) e, pelo plano corrigido, não muda de dono. Errata anexada à própria entrada e em `ERRATA-0411-ASS00`. A linha 139 do `PLANO_SAN3.md` (item 59) repete a citação e fica com o dono acima.
+- **N2, feito em `decisoes.md`:** o item 62 cita `RBAC_MATRIX.md:49`; a linha do Billing é a 50 (`sed -n 50p RBAC_MATRIX.md` → `| Billing | full | full | read | none | full | none | none | read | support-view |`; a 49 é o Finance). Registrado em `ERRATA-0411-ASS00`; a linha 142 do `PLANO_SAN3.md` fica com o dono acima.
+- **N5, feito:** `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` passou a ter o `B-ASS-02` na linha `**dono:**`.
+- **N1 (baixa), aberto:** a PD do `B-ASS-00` não cita a fonte oficial das datas fiscais (RFB/CGIBS e Resolução CGSN) nem as fontes de Iugu, Mercado Pago, NFE.io e PlugNotas.
+- **encerramento:** N1 com as fontes na PD; linhas 139 e 142 do `PLANO_SAN3.md` com as citações corrigidas.
+
+## P-MOBILE-ROTAS-SEM-SERVIDOR (2026-11-04) — o app de campo chama rotas que o servidor não tem — ALTA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado de produto do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco que o orquestrador nomear · **bloqueia:** não declarado na fonte.
+- **origem:** levantamento do app de campo de 04/11 (autor `prompt-emergent-opus`, medido em `origin/main@b10e539a`), feito para um prompt que fica fora do repositório; o conteúdo do prompt não é versionado.
+- **fato medido:** o app chama `/mobile/field-assignments`, `/work-orders/:id/approval-requests`, `/work-orders/:id/evidence`, `/mobile/inventory/items` e `/movements`, `/mobile/technician/stock`, e `/mobile/work-orders/:id/materials` e `/evidence`, que o servidor não expõe. Re-medido neste registro em `origin/main@0c3c7826`: `field-assignments` está em 1 arquivo de `mobile/flutter_app/lib` e em 0 de `src`; `approval-requests`, `technician/stock` e `/materials` estão em `mobile/flutter_app/lib/core/network/api_contracts.dart:42,127,131`.
+- **encerramento:** cada rota chamada pelo app existe no servidor com teste de contrato, ou sai do app.
+
+## P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com os do servidor — ALTA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **fato medido:** o app envia `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`; o servidor só aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` (`src/modules/mobile/mobile-inventory-sync.ts:6`). Re-medido em `origin/main@0c3c7826`: `inventory_entry.create` em 3 arquivos de `mobile/flutter_app/lib` e em 0 de `src`.
+- **relação:** item 31 do portão (`Ω6R-QUA-002`, estoque no app não sincroniza).
+- **encerramento:** um conjunto único de tipos entre app e servidor, com teste de contrato que fica vermelho se um lado divergir.
+
+## P-MOBILE-STATUS-NOMES (2026-11-04) — nomes de status da OS no app divergem dos do servidor — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **fato:** os nomes de status do app (`scheduled`, `dispatched`, `enRoute`) não batem com os do servidor, e falta o passo `assigned → accepted`. Medido neste registro: existe tradução em `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:490-492` (`scheduled` → `open`, `dispatched` → `assigned`, `enRoute` → `on_route`); a pendência é a cobertura dessa tradução e o passo que falta.
+- **encerramento:** máquina de estados do app igual à do servidor, inclusive `assigned → accepted`, com teste.
+
+## P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despesa, de checklist e de estoque — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir"); por tocar permissão, o bloco tem junta completa (§C7 item 10(1)) · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **fato:** a permissão de despesa está no papel `technician`, não no `field_technician`; o `field_technician` também não tem `checklist_runs:create` nem `inventory.manage`.
+- **encerramento:** catálogo reconciliado com `RBAC_MATRIX.md`, `APPROVAL_LIMITS.md` e `docs/03-atores-papeis.md` antes do código (§2.6 do contrato), com teste de permissão no backend.
+
+## P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não.
+- **fato:** a OS não tem `serviceType`; o tipo vem do catálogo de serviço. Placa e número de série viajam em `serviceDetails`.
+- **encerramento:** decisão registrada sobre onde mora o tipo (guincho × prestador) e contrato do app alinhado a ela.
+
+## P-AUTH-TOKEN-LOCAL-CLAIMS (2026-11-04) — o token local não traz todos os claims do contrato — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir"); por tocar autenticação, o bloco sobe para junta completa pela trava do §C7 item 10(2) · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **fato:** o token local traz `roles`, mas não `tenant_role`, `tenant_roles`, `permissions` nem `scope`, que o §2.4 do contrato lista.
+- **encerramento:** o modo local emite os claims do §2.4 na mesma forma do Cognito, com teste.
+
+## P-API-ENVELOPES-IRREGULARES (2026-11-04) — listas sem `data` e `tenant_id` no topo da resposta do sync — BAIXA
+
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não.
+- **fato:** há listas sem o envelope `data`, e o sync devolve `tenant_id` no topo, o que contraria a allowlist do §2.8.
+- **encerramento:** envelope único nas listas e `tenant_id` fora das respostas públicas, com teste de contrato.
+- **nota do mesmo levantamento:** o protótipo `ERP Mobile.dc.html` não está na `origin/main` (re-medido em `0c3c7826`: ausente na raiz e em `docs/claude-code-handoff/`).
+
+## P-WEB-SHELL-CELULAR-ROLA-DE-LADO (2026-11-04) — em 390 px a web rola de lado por causa do shell — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente, vale para toda tela · **dono:** proposto pelo orquestrador: um bloco de shell depois das 6 telas das três aparências · **PR-alvo:** o primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** conferência do orquestrador do PR #493 (03/11 ~20:30 SP, `revisoes/conf-493-orquestrador.md`, fora do repositório): em 390 px a barra lateral fixa e a barra superior fazem a página rolar de lado.
+- **encerramento:** nenhuma rolagem horizontal da página em 390 px, com o shell colapsado, provada por teste no navegador.
+
+## P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de linha — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva da conferência do PR #500 · **dono:** `B-SAN3-10b` (próxima volta) · **PR-alvo:** o PR da próxima volta do `B-SAN3-10b` · **bloqueia:** não.
+- **origem medida:** `conf-500-opus`, 04/11 ~11:30 SP, head `c41c482e`, CONFERIDO COM RESSALVA: três mutações novas passam pela B8 sem deixá-la vermelha — a linha de tabela de 2 colunas `| Op-10 | passou |`, `| Op-6 | ADIADA |` e o item de lista `- PASSOU Op-10`. O roteiro e o PR dizem "qualquer linha ou tabela".
+- **encerramento:** as três formas deixam a B8 vermelha.
+
+## P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva da conferência do PR #500 · **dono:** `B-SAN3-10b` (próxima volta) · **PR-alvo:** o PR da próxima volta do `B-SAN3-10b` · **bloqueia:** não; o item 44 segue PARCIAL por F3, Op-10, Op-8 mobile e F4.
+- **origem medida:** `conf-500-opus`: ninguém mediu o passo 6 da Op-8.
+- **encerramento:** passo 6 executado e registrado com o resultado.
+
+## P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu pelo denominador — BAIXA
+
+- **status:** ABERTA · **escopo:** observação da revisão do PR #501 · **dono:** o próximo marco de KPI (loop de KPI, `D-KPI-LOOP-GEMINI`) · **PR-alvo:** o PR desse marco · **bloqueia:** não.
+- **origem:** revisão `rev-kpi-0411-opus` do #501, APROVADO, com nota: a vendável caiu de 48% para 43% porque o portão passou a 63 itens mais 6 atos (itens 57–62 e 65 da cobrança, PR #497), e o painel renderizado não diz isso.
+- **encerramento:** o painel mostra, junto da vendável, quando o denominador mudou e por quê.
+
+## P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava acesso à rede — ALTA
+
+- **status:** FECHADA pelo PR #499 (merge `8d7a99ff`, 2026-11-04; `gh pr view 499`) · **escopo:** defeito de produto pre-existente, achado pelo ensaio do item 44 · **dono:** `B-MOBILE-INTERNET-RELEASE` · **bloqueia:** nada (fechada).
+- **origem medida:** `dev-44-sol` (`aapt dump permissions`) e o orquestrador na `origin/main`: o `AndroidManifest.xml` principal não declarava `android.permission.INTERNET`; só os de debug e profile declaravam.
+- **fato no fechamento:** re-medido neste registro em `origin/main@0c3c7826`: `android.permission.INTERNET` aparece 1 vez em cada manifest (`main`, `debug`, `profile`). Revisão do orquestrador fora do repositório (`revisoes/rev-499-orquestrador.md`), CI 16/16.
+- **nota:** a entrada `## B-MOBILE-INTERNET-RELEASE (2026-11-04)`, acima, registra o mesmo defeito pelo nome do bloco; esta entrada dá a ele o ID de pendência que a fonte usa. A repetição de F3, Op-10 e Op-8 mobile com o release continua em `P-SAN3-ROTEIRO-DEMO-OPERACAO`.

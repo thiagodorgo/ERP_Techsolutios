@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **748** |
-| IDs distintos | 737 |
-| **ABERTAS** | **565** |
+| Cabecalhos `## P-` | **761** |
+| IDs distintos | 750 |
+| **ABERTAS** | **575** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **502** |
+| — das quais **ativas nesta rodada** | **512** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 179 |
+| FECHADAS | 182 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **748 cabecalhos para 737 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **761 cabecalhos para 750 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 253
+## ABERTAS · balde A — material — 258
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -95,7 +95,6 @@
 | `P-SAN2-2-INDICE-DONO-SEMPRE-SIM` | 5221 | MÉDIA | sim | P-SAN2-2-INDICE-DONO-SEMPRE-SIM (2026-08-30) — MÉDIA · a coluna "dono" do índice diz **s |
 | `P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY` | 5324 | MÉDIA | sim | P-KPI-PAINEL-NAO-RENDERIZA-SUMMARY (2026-08-30) — MÉDIA · o painel não renderiza `releas |
 | `P-OBITUARIO-DERIVADO-DO-DIRETORIO` | 5425 | MÉDIA | sim | P-OBITUARIO-DERIVADO-DO-DIRETORIO (2026-08-31) — MÉDIA · o `OBITUARIO-IDENTIDADES.md` co |
-| `P-KPI-RECENT-CONGELADO` | 5627 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
 | `P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR` | 5761 | MÉDIA | sim | P-ARNES-SWEEP-DEPENDE-DA-DISCIPLINA-DO-OPERADOR (2026-08-31) — MÉDIA · "as 68 órfãs da b |
 | `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` | 6258 | MÉDIA | sim | P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP (2026-09-02 — carve-out do CP-3 do ciclo 5) — MÉDIA · e |
 | `P-JUNTA-RECURSO-EFEMERO-POR-BLOCO` | 6343 | MÉDIA | sim | P-JUNTA-RECURSO-EFEMERO-POR-BLOCO (2026-09-04 — incidente de terreno entre sessões simul |
@@ -150,7 +149,6 @@
 | `P-NOTIF-SEM-CANAL-EXTERNO` | 8981 | MÉDIA | sim | P-NOTIF-SEM-CANAL-EXTERNO (2026-09-11) — Notificação só grava linha; não há canal de e-m |
 | `P-FLEET-ALERTAS-SEM-AGENDADOR` | 9032 | MÉDIA | sim | P-FLEET-ALERTAS-SEM-AGENDADOR (2026-09-11) — Alertas de frota só disparam por botão; nen |
 | `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS` | 9049 | MÉDIA | sim | P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e co |
-| `P-KPI-ROADMAP-CONGELADO` | 9102 | MÉDIA | sim | P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca bloc |
 | `P-KPI-MVP-REGUA-CODIGO-ESCRITO` | 9120 | MÉDIA | sim | P-KPI-MVP-REGUA-CODIGO-ESCRITO (2026-09-11) — `mvp_demo 99`/`mvp_vendavel 88` medem códi |
 | `P-DOC-GO-LIVE-READINESS-VENCIDO` | 9137 | MÉDIA | sim | P-DOC-GO-LIVE-READINESS-VENCIDO (2026-09-11) — Documento diz "nenhum código bloqueia o g |
 | `P-GOV-C28-REGULARIZACAO-NAO-ESCRITA` | 9188 | MÉDIA | sim | P-GOV-C28-REGULARIZACAO-NAO-ESCRITA (2026-09-11) — §C2.8 trava todo bloco sem parecer e  |
@@ -328,8 +326,15 @@
 | `P-MOBILE-VERSAO-SEM-INCREMENTO` | 12684 | MÉDIA | sim | P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mu |
 | `P-ENSAIO-PADROES-APONTAM-PARA-DEV` | 12693 | MÉDIA | sim | P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o |
 | `P-SAN3-10B-F4-SEED-ISOLADO` | 12717 | MÉDIA | sim | P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos pri |
+| `P-ASS00-RESIDUOS-CONFERENCIA` | 12733 | MÉDIA | sim | P-ASS00-RESIDUOS-CONFERENCIA (2026-11-04) — resíduos não graves da conferência do conser |
+| `P-MOBILE-ROTAS-SEM-SERVIDOR` | 12744 | ALTA | sim | P-MOBILE-ROTAS-SEM-SERVIDOR (2026-11-04) — o app de campo chama rotas que o servidor não |
+| `P-MOBILE-SYNC-ESTOQUE-TIPOS` | 12751 | ALTA | sim | P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com |
+| `P-MOBILE-STATUS-NOMES` | 12758 | MÉDIA | sim | P-MOBILE-STATUS-NOMES (2026-11-04) — nomes de status da OS no app divergem dos do servid |
+| `P-RBAC-FIELD-TECHNICIAN-DESPESA` | 12764 | MÉDIA | sim | P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despe |
+| `P-AUTH-TOKEN-LOCAL-CLAIMS` | 12776 | MÉDIA | sim | P-AUTH-TOKEN-LOCAL-CLAIMS (2026-11-04) — o token local não traz todos os claims do contr |
+| `P-WEB-SHELL-CELULAR-ROLA-DE-LADO` | 12789 | MÉDIA | sim | P-WEB-SHELL-CELULAR-ROLA-DE-LADO (2026-11-04) — em 390 px a web rola de lado por causa d |
 
-## ABERTAS · balde B — processo/registro — 249
+## ABERTAS · balde B — processo/registro — 254
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -582,6 +587,11 @@
 | `P-OS-VISTORIA-NO-DETALHE` | 12596 | BAIXA | sim | P-OS-VISTORIA-NO-DETALHE (2026-11-03) — vistoria no detalhe da OS não chegou à `main` —  |
 | `P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO` | 12602 | BAIXA | sim | P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO (2026-11-03) — nome do técnico e horários do despach |
 | `P-KPI-FRESCOR-BORDAS-ANCORA` | 12608 | BAIXA | sim | P-KPI-FRESCOR-BORDAS-ANCORA (2026-11-03) — bordas do guard de frescor ainda têm mutantes |
+| `P-OS-TIPO-GUINCHO-PRESTADOR` | 12770 | BAIXA | sim | P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA |
+| `P-API-ENVELOPES-IRREGULARES` | 12782 | BAIXA | sim | P-API-ENVELOPES-IRREGULARES (2026-11-04) — listas sem `data` e `tenant_id` no topo da re |
+| `P-SAN3-10B-BATERIA-B8-FORMATOS` | 12795 | BAIXA | sim | P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de lin |
+| `P-SAN3-10B-OP8-PASSO6` | 12801 | BAIXA | sim | P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA |
+| `P-KPI-PAINEL-EXPLICA-DENOMINADOR` | 12807 | BAIXA | sim | P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 63
 
@@ -651,7 +661,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3693 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3737 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 179
+## FECHADAS — 182
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -764,6 +774,7 @@
 | `P-GOV-MAIN-SEM-PROTECAO` | 4977 | ALTA | sim | P-GOV-MAIN-SEM-PROTECAO — a `main` não tem proteção nenhuma (2026-08-24) |
 | `P-C7-BIS-TER-FORA-DA-MAIN` | 5067 | MÉDIA | sim | P-C7-BIS-TER-FORA-DA-MAIN (2026-08-30) — MÉDIA · **FECHADA no mesmo PR que a abriu** |
 | `P-SAN2-2-PORTA-55432-RESERVADA` | 5144 | BAIXA | sim | P-SAN2-2-PORTA-55432-RESERVADA (2026-08-30) — armadilha de terreno, não defeito de produ |
+| `P-KPI-RECENT-CONGELADO` | 5627 | MÉDIA | sim | P-KPI-RECENT-CONGELADO (2026-08-31) — MÉDIA · a seção "Últimas demandas" do painel está  |
 | `P-SYNC-AGENTS-NAO-RECURSIVO` | 5830 | MÉDIA | sim | P-SYNC-AGENTS-NAO-RECURSIVO (2026-08-31 — medido pelo dev do `SAN2-5`, entrega E2d) — MÉ |
 | `P-O6R-B07A-REGISTRO-A2-DIVIDA-368` | 6692 | — | **a atribuir** | P-O6R-B07A-REGISTRO-A2-DIVIDA-368 (2026-09-02) — reatribuição da dívida de backfill do # |
 | `P-O6R-SUBRECURSO-OBJECT-SCOPE` | 6743 | ALTA | sim | P-O6R-SUBRECURSO-OBJECT-SCOPE (registro 2/7, 2026-09-03) — 10 vias mutantes sobre OS ALH |
@@ -784,6 +795,7 @@
 | `P-WEB-PLATAFORMA-TELAS-FICCAO` | 8638 | MÉDIA | sim | P-WEB-PLATAFORMA-TELAS-FICCAO (2026-09-11) — Planos e Módulos, Auditoria Global, APIs e  |
 | `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA` | 8656 | ALTA | sim | P-WEB-PLATAFORMA-SEGURANCA-FABRICADA (2026-09-11) — Configurações da Plataforma mostram  |
 | `P-MOBILE-MINHAS-OS-SEM-FILTRO` | 8907 | ALTA | sim | P-MOBILE-MINHAS-OS-SEM-FILTRO (2026-09-11) — "Minhas OS" lista a organização inteira, se |
+| `P-KPI-ROADMAP-CONGELADO` | 9102 | MÉDIA | sim | P-KPI-ROADMAP-CONGELADO (2026-09-11) — Roadmap do painel parado em 2026-08-19 marca bloc |
 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` | 9451 | ALTA | sim | P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz  |
 | `P-WEB-CONCILIACAO-SEM-TELA` | 9473 | ALTA | sim | P-WEB-CONCILIACAO-SEM-TELA (2026-09-13) — a conciliação é prometida e a web não concilia |
 | `P-SAN3-01-DESPACHO-DETALHE-FABRICADO` | 9482 | ALTA | sim | P-SAN3-01-DESPACHO-DETALHE-FABRICADO (2026-09-17) — o detalhe do despacho fabricava `dis |
@@ -834,3 +846,4 @@
 | `P-COBRANCA-PERGUNTAS-P1-P6` | 12263 | — | sim | P-COBRANCA-PERGUNTAS-P1-P6 (2026-10-31) — seis respostas do dono necessárias para a cobr |
 | `P-COBRANCA-ADAPTADORES-1-MAIS-1` | 12276 | — | sim | P-COBRANCA-ADAPTADORES-1-MAIS-1 (2026-10-31) — quantidade de integrações no portão |
 | `P-SAN303-TAG-DESCONHECIDA` | 12418 | — | sim | P-SAN303-TAG-DESCONHECIDA (2026-11-03) — destino de tag não reconhecida no rateio direto |
+| `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 12813 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
