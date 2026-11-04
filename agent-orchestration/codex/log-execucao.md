@@ -5172,3 +5172,12 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - ADIADAS com motivo e dono: F3, Op-10 e trecho mobile da Op-8 → `B-MOBILE-INTERNET-RELEASE`; F4 →
   `B-SAN3-10b-F4-SEED-ISOLADO`.
 - Entrega parcial: o item 44 não fecha. KPI congelado; revisão reforçada; merge proibido ao DEV.
+## 2026-11-03 — cauda do registro e ata do #488 (`reg-0311-sol`)
+
+- Autor: `reg-0311-sol`, Codex Sol, nível menor declarado, esforço medium; verificador obrigatório: Claude, por `D-UM-FAZ-OUTRO-VERIFICA` e `D-CRUZAMENTO-POR-LIMITE-0311`.
+- Worktree `C:/Users/thiag/w-reg0311`, ramo `docs/registro-0311`, base `origin/main@c6195c12`.
+- Fonte inteira `C:/Users/thiag/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md` confrontada com `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` e `git log origin/main`; as seções já levadas pelos PRs #482/#489 foram preservadas sem duplicação.
+- Ata `omega/juntas/J-B-PATIO-REC-01-PR488.md` e conjunto textual em `omega/juntas/votos/B-PATIO-REC-01-PR488/`: head aprovado `f472aab1`, merge `36ad6aa7`, junta 2× verde/1× vermelha, conserto K1–K3, conferência com ressalva e porteiro `LIBERADO COM RESSALVA`.
+- Registradas as decisões posteriores ao #489: três aparências; respostas de Usuários/Auditoria/Pátios; cruzamento condicionado a limite; conta 3; Codex Sol `medium`; pergunta do Cloud Billing; limpeza dos PRs parados. Falas do dono ficaram literais; leituras ficaram marcadas.
+- Ressalvas do porteiro da demo, do #487 e do #488, revisão do #487, observações do #489 e triagens dos PRs #493/#494 viraram registro e pendências com dono/status/PR-alvo.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, `CLAUDE.md`, `AGENTS.md`, lockfiles, segredo ou conteúdo comercial. Não fazer merge nesta etapa.

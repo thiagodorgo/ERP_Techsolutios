@@ -1,0 +1,19 @@
+{
+  "cadeira": "C3",
+  "identidade": "jurado-j488-c3-opus",
+  "modelo": "Claude Opus 5.5 (claude-opus-5-5), nível menor declarado; não cruza modelo (dev também Claude)",
+  "objeto": "ea6d4aef54181a0dc4030ec56e174e378aec5e12",
+  "voto": "APROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c3-evidencia.md",
+  "resumo": "Cadeira C3 (regressão, escopo, registro), sem cruzamento de modelo (dev também Claude). Suíte: CI base 4264/493 → objeto 4301/502, nenhum teste sumiu, virou skip ou caiu; as 37 do REC-01 (9 -db) verdes no meu Postgres e vermelhas na base. Escopo: 34 arquivos dentro do PERMITIDO, PROIBIDO vazio, diff --check vazio; censo regenerado igual ao rastreado byte a byte com o diff esperado; 112→113 e 119→121 só a constante; nenhum mutante vivo. Registro: contagens do diário reproduzidas; §11.3, RBAC_MATRIX e migrações conferidos. Nenhum achado.",
+  "itens": {
+    "1_suite": "VERDE: CI base 4264/493 → objeto 4301/502, 0 sumiu/0 novo skip/0 fail; REC-01 37/37 local (9 -db), vermelho na base",
+    "2_escopo_guardas": "VERDE: 34 arquivos dentro do PERMITIDO; PROIBIDO 0; diff --check vazio; censo regenerado = rastreado byte a byte (+3 rotas, 114→116/56→57/59→60); 112→113 e 119→121 só a constante; nenhum mutante vivo",
+    "3_registro": "VERDE: diário reproduzido (63/28/12/25/3/2; N=93, M=37; CI 4301/502); §11.3 tratada (colunas *_amount, create no F1, ordem do create); RBAC_MATRIX com charging:online_payment; 3 migrações BEGIN/COMMIT, guard 0 violações"
+  },
+  "achados": [],
+  "arquivos_medidos": [
+    "**"
+  ],
+  "nota_de_terreno": "san3-05-runtime-role-guard-db exige Linux (setsid); 121 medido pelo log do job backend do objeto e pela contagem de tabelas no Postgres da cadeira"
+}
