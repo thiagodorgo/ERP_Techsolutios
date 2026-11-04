@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-11-04 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: o Gemini Flash propõe as descrições, o orquestrador confere e o script grava; o KPI segue CONGELADO para os PRs de bloco, `D-GOV-PROPORCIONAL` (5)).",
     "title": "Marco de 04/11: 201 blocos e vendável em 43%",
-    "pr": null,
+    "pr": 501,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
